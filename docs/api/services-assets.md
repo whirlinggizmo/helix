@@ -6,12 +6,14 @@
 
 *enum* in [`services/src/helix/services/assets/AssetCacheMode.hx`](../../services/src/helix/services/assets/AssetCacheMode.hx), `import helix.services.assets.AssetCacheMode;`
 
-Specifies how an `HttpServer` source knows its kept copy of a file is current: by asking the server, by trusting it, by keeping none, or by the server's manifests.
+Specifies how an `HttpServer` source decides whether its kept copy of a file is current.
 
-- `Revalidate`: Uses a copy the server said is still fresh (its Cache-Control) and asks about any other. Unchanged, the copy is used; changed, the new file replaces it; gone, the copy is removed and the load fails. When the server doesn't answer (offline, an error) the copy is used. The default.
-- `Trust`: Uses a copy without asking, however old: for files that never change, or a game that plays offline.
-- `Off`: Keeps nothing between runs and uses nothing earlier runs kept; each file is downloaded once a run and held in memory. For development.
-- `Manifest`: Uses the server's manifests (`AssetsOptions.manifestName`, which `AssetManifests` writes): a copy with the hash its manifest lists is used without asking, and otherwise a file system source after this one with that hash is read in place, or the file is downloaded and must have it. A file its directory's manifest leaves out is asked about, however fresh. A server with no manifest is warned about once a run, and its files are treated as Revalidate treats them.
+The copy can be checked with the server, trusted, not kept at all, or checked against the server's manifests.
+
+- `Revalidate`: Uses a copy without asking while the server's Cache-Control says it is fresh, and asks the server about any other copy.
+- `Trust`: Uses a copy without asking, however old it is.
+- `Off`: Keeps nothing between runs and ignores what earlier runs kept.
+- `Manifest`: Uses the server's manifests to tell whether a copy is current.
 
 ## AssetSource
 
@@ -19,16 +21,20 @@ Specifies how an `HttpServer` source knows its kept copy of a file is current: b
 
 Specifies a place `Assets` finds files: a file system on this machine, or an HTTP server.
 
-- `FileSystem(fileSystem:IFileSystem)`: Files read as they are from a file system: natively the files the program ships with, a read-only `NativeFileSystemAdapter` over `ISystem.getProgramDirectory()`. In a page a file system starts empty, so the page's files come from an `HttpServer`.
-- `HttpServer(url:String, ?cacheMode:AssetCacheMode)`: Files on an HTTP server, under a URL: downloaded through `AssetsOptions.httpClient` and kept in `AssetsOptions.cacheFileSystem`, so a later run downloads one again only when it's missing or changed.
+- `FileSystem(fileSystem:IFileSystem)`: Reads files as they are from a file system.
+- `HttpServer(url:String, ?cacheMode:AssetCacheMode)`: Downloads files from an HTTP server, under a URL.
 
 ## Assets
 
 *class* in [`services/src/helix/services/assets/Assets.hx`](../../services/src/helix/services/assets/Assets.hx), `import helix.services.assets.Assets;`
 
-Provides files by path, from the places its sources name: a file system on this machine, or an HTTP server whose files it keeps copies of.
+Provides files by path, from a file system on this machine or from an HTTP server whose files it keeps copies of.
 
-It asks its sources in order, and the first that has the path answers: a file missing from one is looked for in the next. A game whose files never change lists its file system alone; one patched from a server lists the server first, in `Manifest` mode, and its shipped files after, so a shipped file the server's manifest lists at the same hash is read in place and only what changed is downloaded; a page, whose files are on the server that served it, lists `HttpServer("")`. A path is plain names joined by `/`, as `IFileSystem`'s. Each call answers once, on the main thread, in the platform's `poll` that finished it, never during the call; the failure's lambda may be left out, and the failure is then logged with the path. Its downloads and copies finish in the polls of the HTTP client and file systems it was given, which the program polls each frame; Assets has no `poll` of its own.
+It asks its sources in order, and the first that has the path answers. A file missing from one source is looked for in the next. A game whose files never change lists its file system alone. A game patched from a server lists the server first, in `Manifest` mode, and its shipped files after it. A shipped file that the server's manifest lists at the same hash is then read in place, and only what changed is downloaded. A page, whose files are on the server that served it, lists `HttpServer("")`.
+
+A path is plain names joined by `/`, as in `IFileSystem`. Each call answers once, on the main thread, in the platform `poll` that finished it, and never during the call. The failure callback is optional; when it is omitted, the failure is logged with the path.
+
+Downloads and copies finish in the polls of the HTTP client and file systems it was given, which the program polls each frame. Assets has no `poll` of its own.
 
 ```haxe
 var httpClient:IHttp = new HaxeHttpAdapter();
@@ -60,30 +66,31 @@ function dispose():Void
 ```
 
 - `new`: Creates the assets over their sources.
-  - `options`: The sources, and the HTTP client and file system an `HttpServer` source needs.
+  - `options`: The sources, and the HTTP client and file system that an `HttpServer` source needs.
   - throws `String`: When a source is an `HttpServer` and `httpClient` or `cacheFileSystem` is null.
 - `load`: Loads a whole file.
   - `path`: The file's path.
-  - `loaded`: Receives its bytes.
-  - `failed`: Optional. Receives why it can't be had: no source has it, or the last one asked failed.
+  - `loaded`: Receives the file's bytes.
+  - `failed`: Optional. Receives why the file can't be loaded, because no source has it or the last source asked failed.
   - returns: The abort: nothing is called after it.
-- `locate`: Finds a file for playing as it's read, without loading it whole, as `IAudio.openStream` takes it.
+- `locate`: Finds a file to be played as it is read, without loading it whole, in the form `IAudio.openStream` takes.
   - `path`: The file's path.
-  - `located`: Receives the source, and the function that lets it go, called once when it's no longer read.
-  - `failed`: Optional. Receives why it can't be had.
+  - `located`: Receives the source, and a release function to call once when the source is no longer read.
+  - `failed`: Optional. Receives why the file can't be found.
   - returns: The abort: nothing is called after it.
 
-  A file system's file is located where it is; a server's file is its kept copy when there is one, and otherwise is played as it downloads while the copy is kept.
-- `clearCache`: Empties `cacheFileSystem`, so each server's file is downloaded again.
-  - `cleared`: Optional. Called once it's empty.
-  - `failed`: Optional. Receives why it can't be emptied.
-- `dispose`: Aborts every load and locate in flight; before the HTTP client and file systems it was given are disposed.
+  A file system's file is located where it is. A server's file is its kept copy when there is one. Otherwise it plays as it downloads, and the copy is kept.
+- `clearCache`: Empties `cacheFileSystem`, so each server's files are downloaded again.
+  - `cleared`: Optional. Called once the cache is empty.
+  - `failed`: Optional. Receives why the cache can't be emptied. When omitted, the failure is logged.
+- `dispose`: Aborts every load and locate in flight.
+  Call it before disposing the HTTP client and file systems it was given.
 
 ## AssetsOptions
 
 *class* in [`services/src/helix/services/assets/AssetsOptions.hx`](../../services/src/helix/services/assets/AssetsOptions.hx), `import helix.services.assets.AssetsOptions;`
 
-Specifies where `Assets` finds files, and what it downloads with and keeps copies in when a source is an HTTP server.
+Specifies where `Assets` finds files, and, for an HTTP server source, what downloads them and where copies are kept.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -98,7 +105,9 @@ final cacheFileSystem:IFileSystem = null
 final manifestName:String = "manifest.json"
 ```
 
-- `sources`: Gets where files are found, asked in this order: a file missing from one is looked for in the next.
-- `httpClient`: Gets the HTTP client `HttpServer` sources download with; null by default, and needed when there is one.
-- `cacheFileSystem`: Gets the file system `HttpServer` sources' files are kept in; null by default, and needed when there is one. A file system of its own, as `clearCache` empties it: over `ISystem.getCacheDirectory`, a `NativeFileSystemAdapter` natively and a `BrowserFileSystemAdapter` in a page.
-- `manifestName`: Gets the name of each directory's manifest, as `AssetManifests` writes them, which a `Manifest` source reads; "manifest.json" by default.
+- `sources`: Gets the places files are found, asked in order. A file missing from one source is looked for in the next.
+- `httpClient`: Gets the HTTP client that `HttpServer` sources download with. Defaults to null, and must be provided when there is an `HttpServer` source.
+- `cacheFileSystem`: Gets the file system that `HttpServer` sources keep their copies in. Defaults to null, and must be provided when there is an `HttpServer` source.
+  It must be a file system used for nothing else, because `clearCache` empties it. Make it over `ISystem.getCacheDirectory`: a `NativeFileSystemAdapter` natively, and a `BrowserFileSystemAdapter` in a page.
+- `manifestName`: Gets the file name of each directory's manifest, which a `Manifest` source reads. Defaults to "manifest.json".
+  It matches the name `AssetManifests` writes.

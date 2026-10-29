@@ -9,9 +9,12 @@ import helix.platform.PadButton;
 
 /** Provides the keyboard, the mouse and the gamepads as state: what is held, and what went down or up this frame.
 
-	The program constructs one over its `IEvents` and calls `poll` once a frame; the state then holds until the next poll. It reads the
-	events the last `IEvents.poll` delivered, so the two may be polled in either order: polled before them, it is a frame behind. "Pressed" is true for the frame a key or button went down, once per press however long it's held. Named actions bound to several
-	of these are `Actions`.
+	The program constructs one over its `IEvents` and calls `poll` once a frame. The state then holds until the next poll. `poll` reads
+	the events the last `IEvents.poll` delivered, so the two may be polled in either order. When `Input` is polled first, it is a frame
+	behind.
+
+	"Pressed" is true for the frame a key or button went down, once per press however long it is held. For named actions bound to
+	several of these, use `Actions`.
 
 	```haxe
 	events.poll();
@@ -20,7 +23,7 @@ import helix.platform.PadButton;
 	var x = input.getPadAxis(0, LeftX);
 	``` */
 class Input implements IPollable {
-	/** The most a dead zone may be, so a stick still has some travel past it. */
+	/** The most of a dead zone the calculation uses, so a stick keeps some travel past it: the rest is scaled by 1 / (1 - dead zone). */
 	static inline final MOST_DEAD_ZONE = .95;
 
 	/** The gamepad slots. */
@@ -48,7 +51,9 @@ class Input implements IPollable {
 		this.events = events;
 	}
 
-	/** Reads the events the last `IEvents.poll` delivered: what went down or up, where the mouse is and the wheel; call once a frame. */
+	/** Reads the events the last `IEvents.poll` delivered, updating what went down or up, the mouse's position and the wheel.
+
+		Call it once a frame. When the window loses focus, every held key and mouse button is released. */
 	public function poll():Void {
 		keysPressed.clear();
 		keysReleased.clear();
@@ -127,7 +132,7 @@ class Input implements IPollable {
 	/** Returns whether a key went down this frame.
 
 		@param key  The key.
-		@return  True for that frame alone; a key the OS repeats while it's held isn't pressed again. */
+		@return  True for that frame alone. A key the OS repeats while it is held isn't pressed again. */
 	public function isKeyPressed(key:Key):Bool {
 		return keysPressed.exists(key);
 	}
@@ -140,16 +145,16 @@ class Input implements IPollable {
 		return keysReleased.exists(key);
 	}
 
-	/** Gets the mouse's distance from the window's left edge, in framebuffer pixels, where it last was over the window. */
+	/** Gets the mouse's distance from the window's left edge, in framebuffer pixels, where it was last over the window. */
 	public var mouseX(default, null):Float = 0;
 
-	/** Gets the mouse's distance from the window's top edge, in framebuffer pixels, where it last was over the window. */
+	/** Gets the mouse's distance from the window's top edge, in framebuffer pixels, where it was last over the window. */
 	public var mouseY(default, null):Float = 0;
 
-	/** Gets the wheel's turn this frame, in notches: right positive. */
+	/** Gets the wheel's horizontal turn this frame, in notches, positive to the right. */
 	public var wheelX(default, null):Float = 0;
 
-	/** Gets the wheel's turn this frame, in notches: away from the player positive. */
+	/** Gets the wheel's vertical turn this frame, in notches, positive away from the player. */
 	public var wheelY(default, null):Float = 0;
 
 	/** Returns whether a mouse button is held.
@@ -205,15 +210,18 @@ class Input implements IPollable {
 
 	/** Returns where a gamepad's stick or trigger is, past the dead zone.
 
+		A stick's axis is -1 to 1, with right and down positive. A trigger is 0 to 1. Inside `padDeadZone` the value is 0, and beyond it
+		the value is scaled so it still reaches 1. A stick's dead zone is a circle, so a diagonal push isn't cut off where one axis alone
+		would be.
+
 		@param slot  The gamepad's slot, 0 to 3.
 		@param axis  The stick's axis or the trigger.
-		@return  A stick's axis -1 to 1 (right and down positive), a trigger 0 to 1; 0 inside `padDeadZone`, and the rest scaled so it
-			still reaches 1; 0 for an empty slot. */
+		@return  The axis's value, or 0 for an empty slot or one outside 0 to 3. */
 	public function getPadAxis(slot:Int, axis:PadAxis):Float {
 		return pastDeadZone(axes, slot, axis);
 	}
 
-	/** The axis as the poll before this one read it, for `Actions` to tell when it was pushed. */
+	/** Returns the axis as the poll before this one read it, which `Actions` uses to tell when it was pushed. */
 	@:allow(helix.services.input)
 	function getLastPadAxis(slot:Int, axis:PadAxis):Float {
 		return pastDeadZone(lastAxes, slot, axis);
@@ -223,7 +231,7 @@ class Input implements IPollable {
 		if (slot < 0 || slot >= SLOTS)
 			return 0;
 		var value = from[slot * PadAxis.COUNT + axis];
-		var dead = padDeadZone;
+		var dead = padDeadZone < MOST_DEAD_ZONE ? padDeadZone : MOST_DEAD_ZONE;
 		switch axis {
 			case LeftX | LeftY | RightX | RightY:
 				// A stick's dead zone is a circle, so a diagonal push isn't cut where one axis alone would be.
@@ -245,12 +253,14 @@ class Input implements IPollable {
 		}
 	}
 
-	/** Gets or sets how far a stick or trigger moves before it counts, 0 to 1; 0.2 by default, which a worn stick resting off center stays
-		inside. */
+	/** Gets or sets how far a stick or trigger moves before it counts, 0 to 1. Clamped to that range. Defaults to 0.2.
+
+		The default is large enough that a worn stick resting off center stays inside it. A dead zone past 0.95 acts as 0.95, so the stick
+		keeps some travel. */
 	public var padDeadZone(default, set):Float = 0.2;
 
 	function set_padDeadZone(value:Float):Float {
-		return padDeadZone = value > 0 ? (value < MOST_DEAD_ZONE ? value : MOST_DEAD_ZONE) : 0;
+		return padDeadZone = value > 0 ? (value < 1 ? value : 1) : 0;
 	}
 
 	static function release(held:Map<Int, Bool>, released:Map<Int, Bool>):Void {

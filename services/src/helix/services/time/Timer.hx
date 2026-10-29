@@ -1,15 +1,15 @@
 package helix.services.time;
 
-/** Represents a function called after some of the game's time, once or repeatedly (`Time.after`, `Time.every`). */
+/** Represents a function called after some of the game's time, once (`Time.after`) or repeatedly (`Time.every`). */
 @:allow(helix.services.time)
 class Timer {
-	/** The game's elapsed seconds at which it's next called. */
+	/** The game's elapsed seconds at which it is next called. */
 	var due:Float;
 
 	/** The order it was made in, which breaks a tie between timers due at once. */
 	var order:Int;
 
-	/** Whether it was made during its time's poll, so it waits for the next. */
+	/** Whether it was created during its time's poll, so it waits for the next. */
 	var fresh = false;
 
 	final f:Void->Void;
@@ -21,16 +21,16 @@ class Timer {
 		this.f = f;
 	}
 
-	/** Gets the game's seconds until the next call. */
+	/** Gets the game's seconds until the next call. It is updated at each `Time.poll`. */
 	public var remaining(default, null):Float = 0;
 
 	/** Gets the game's seconds between calls for a repeating timer, or 0 for one called once. */
 	public var interval(default, null):Float = 0;
 
-	/** Gets a value indicating whether it will call its function no more: called once, or cancelled. */
+	/** Gets a value indicating whether the timer will call its function no more, because it was called once or cancelled. */
 	public var done(default, null):Bool = false;
 
-	/** Stops it: its function isn't called again. Does nothing once it's done. */
+	/** Cancels the timer, so its function isn't called again. Does nothing once it is done. */
 	public function cancel():Void {
 		done = true;
 	}

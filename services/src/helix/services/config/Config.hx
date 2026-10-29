@@ -4,8 +4,9 @@ import helix.platform.ISystem;
 
 /** Provides the options the program was started with, read as text, numbers or true and false, each with a fallback.
 
-	Natively an option is the environment variable HELIX_ and its name in capitals, in a page the URL's query parameter
-	(`ISystem.getOption`): `speed=2` is `HELIX_SPEED=2` natively and `?speed=2` in a page.
+	Options come from `ISystem.getOption`. Natively an option is an environment variable named HELIX_ followed by the option's name in
+	capitals. In a page it is a query parameter in the URL. The option `speed=2` is `HELIX_SPEED=2` natively and `?speed=2` in a
+	page.
 
 	```haxe
 	var sound = config.getBool("audio", true);
@@ -17,35 +18,37 @@ class Config {
 
 	final system:ISystem;
 
-	/** Creates the options over the platform's facts.
+	/** Creates the options over the platform's system.
 
-		@param system  The platform's facts, whose `getOption` it reads. */
+		@param system  The platform's system, whose `getOption` it reads. */
 	public function new(system:ISystem) {
 		this.system = system;
 	}
 
-	/** Returns whether an option was given.
+	/** Returns whether an option was provided.
 
 		@param name  The option's name.
-		@return  True when it was, even empty. */
+		@return  True when it was provided, even with an empty value. */
 	public function has(name:String):Bool {
 		return system.getOption(name) != null;
 	}
 
-	/** Returns an option as it was given.
+	/** Returns an option's text, unchanged.
 
 		@param name  The option's name.
-		@param fallback  What to return when it wasn't given.
+		@param fallback  The value to return when the option wasn't provided.
 		@return  Its text, or the fallback. */
 	public function getString(name:String, fallback:String):String {
 		var value = system.getOption(name);
 		return value == null ? fallback : value;
 	}
 
-	/** Returns an option as true or false: 1, true, yes and on are true, 0, false, no and off false, in any case.
+	/** Returns an option as true or false.
+
+		1, true, yes and on are true. 0, false, no and off are false. Case is ignored, and so are spaces around the value.
 
 		@param name  The option's name.
-		@param fallback  What to return when it wasn't given, or is none of those.
+		@param fallback  The value to return when the option wasn't provided, or is none of those words.
 		@return  The value, or the fallback. */
 	public function getBool(name:String, fallback:Bool):Bool {
 		var value = system.getOption(name);
@@ -61,7 +64,7 @@ class Config {
 	/** Returns an option as a whole number.
 
 		@param name  The option's name.
-		@param fallback  What to return when it wasn't given, or isn't a whole number.
+		@param fallback  The value to return when the option wasn't provided, or isn't a whole number in Int's range.
 		@return  The value, or the fallback. */
 	public function getInt(name:String, fallback:Int):Int {
 		var value = system.getOption(name);
@@ -78,7 +81,7 @@ class Config {
 	/** Returns an option as a number.
 
 		@param name  The option's name.
-		@param fallback  What to return when it wasn't given, or isn't a finite number.
+		@param fallback  The value to return when the option wasn't provided, or isn't a finite number.
 		@return  The value, or the fallback. */
 	public function getFloat(name:String, fallback:Float):Float {
 		var value = system.getOption(name);

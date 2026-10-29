@@ -66,7 +66,12 @@ class InputTests {
 		check(Math.abs(input.getPadAxis(0, LeftTrigger) - .5) < 1e-9, "a trigger past the dead zone, scaled to reach 1");
 		events.axes[4] = 0;
 		input.padDeadZone = 2;
-		check(input.padDeadZone < 1, "the dead zone stays under 1");
+		check(input.padDeadZone == 1, "the dead zone is clamped to 1, and reads back so");
+		events.axes[0] = 1;
+		frame();
+		check(input.getPadAxis(0, LeftX) == 1, "a dead zone of 1 still lets a full push through");
+		events.axes[0] = 0;
+		frame();
 		input.padDeadZone = .2;
 		check(input.getPadAxis(9, LeftX) == 0, "a slot past 3 reads 0");
 

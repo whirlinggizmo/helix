@@ -9,12 +9,13 @@ import helix.platform.IPollable;
 
 /** Provides small values a game keeps between runs, by key, in one file.
 
-	`load` reads the file once; after it the values are read and set at once, in memory. A change is kept at the next `poll`: everything
-	set in a frame is written as one file, one write at a time, so a program that ends between frames loses at most that frame's changes.
+	`load` reads the file once. After that, values are read and set in memory, without waiting. A change is kept at the next `poll`.
+	Everything set in a frame is written as one file, one write at a time, so a program that ends between frames loses at most that
+	frame's changes.
 
-	A write never blocks and finishes in the file system's `poll`, so a program that ends keeps polling until it's done. Natively, at
-	`CloseRequested` the program flushes and leaves its loop when the flush answers; in a page, which ends without a last frame, it
-	flushes in `IWindow.onClose`, where a write started may not finish.
+	A write never blocks, and it finishes in the file system's `poll`, so a program that is ending keeps polling until the write is done.
+	Natively, the program flushes at `CloseRequested` and leaves its loop when the flush answers. A page ends without a last frame, so it
+	flushes in `IWindow.onClose`, where a write that has started may not finish.
 
 	```haxe
 	saves.load(() -> {
@@ -29,7 +30,7 @@ import helix.platform.IPollable;
 	window.onClose = () -> saves.flush();
 	``` */
 class Saves implements IPollable {
-	/** The largest saves file read: far more than small values need, so a file this large isn't saves. */
+	/** The largest saves file read. It is far more than small values need, so a larger file doesn't hold saves. */
 	static inline final MAX_BYTES = 1 << 20;
 
 	final fileSystem:IFileSystem;
@@ -46,57 +47,66 @@ class Saves implements IPollable {
 	var waiting:Array<Flush> = [];
 	// Flushes with nothing pending, answered at the next poll.
 	var answered:Array<Flush> = [];
+	// The loads asked for while the first is in flight, answered together.
+	var loads:Array<Flush> = [];
 
 	/** Creates the saves over a file system, holding nothing until `load`.
 
-		@param fileSystem  Where the file is kept: over `ISystem.getDataDirectory`, a `NativeFileSystemAdapter` natively and a
-			`BrowserFileSystemAdapter` in a page.
-		@param name  Optional. The file's path in it; "saves.json" by default. */
+		@param fileSystem  The file system the file is kept in. Make it over `ISystem.getDataDirectory`: a `NativeFileSystemAdapter`
+			natively, and a `BrowserFileSystemAdapter` in a page.
+		@param name  Optional. The file's path in the file system. Defaults to "saves.json". */
 	public function new(fileSystem:IFileSystem, name = "saves.json") {
 		this.fileSystem = fileSystem;
 		this.name = name;
 	}
 
-	/** Reads the file. A file that isn't there yet loads as no values.
+	/** Reads the file. A file that doesn't exist yet loads as no values.
+
+		Calling it again answers too: with the first load's outcome while that is in flight, and at the next `poll` once it has finished.
 
 		@param loaded  Called once the values can be read.
-		@param failed  Optional. Receives why the file can't be read or isn't saves; left out, it's logged. */
+		@param failed  Optional. Receives why the file can't be read or doesn't hold saves. When omitted, the failure is logged. */
 	public function load(loaded:Void->Void, ?failed:String->Void):Void {
-		if (loading || this.loaded)
+		var asked = new Flush(loaded, failed);
+		if (this.loaded) {
+			answered.push(asked);
+			return;
+		}
+		loads.push(asked);
+		if (loading)
 			return;
 		loading = true;
+		function finish(failure:Null<String>) {
+			loading = false;
+			var asked = loads;
+			loads = [];
+			if (disposed)
+				return;
+			this.loaded = failure == null;
+			for (load in asked)
+				if (failure == null)
+					load.written();
+				else
+					fail(load.failed, failure);
+		}
 		fileSystem.read(name, MAX_BYTES, bytes -> {
-			loading = false;
-			if (disposed)
-				return;
 			var parsed:Dynamic = try Json.parse(bytes.toString()) catch (_:Dynamic) null;
-			if (parsed == null || Type.typeof(parsed) != TObject) {
-				fail(failed, '$name isn\'t saves');
-				return;
+			if (parsed == null || Type.typeof(parsed) != TObject)
+				finish('$name isn\'t saves');
+			else {
+				values = parsed;
+				finish(null);
 			}
-			values = parsed;
-			this.loaded = true;
-			loaded();
-		}, () -> {
-			loading = false;
-			if (disposed)
-				return;
-			this.loaded = true;
-			loaded();
-		}, message -> {
-			loading = false;
-			if (!disposed)
-				fail(failed, message);
-		});
+		}, () -> finish(null), message -> finish(message));
 	}
 
-	/** Gets a value indicating whether `load` has finished, so the values can be read and set. */
+	/** Gets a value indicating whether `load` has finished, so values can be read and set. */
 	public var loaded(default, null):Bool = false;
 
 	/** Returns whether a key has a value.
 
 		@param key  The key.
-		@return  True when one was set or loaded, and not removed. */
+		@return  True when a value was set or loaded, and not deleted since. */
 	public function has(key:String):Bool {
 		return values.exists(key);
 	}
@@ -104,7 +114,7 @@ class Saves implements IPollable {
 	/** Returns a key's value as a string.
 
 		@param key  The key.
-		@param fallback  What to return when it has none, or one that isn't a string.
+		@param fallback  The value to return when the key has no value, or one that isn't a string.
 		@return  The value, or the fallback.
 		@throws String  Before `load` has finished. */
 	public function getString(key:String, fallback:String):String {
@@ -115,7 +125,7 @@ class Saves implements IPollable {
 	/** Returns a key's value as a whole number.
 
 		@param key  The key.
-		@param fallback  What to return when it has none, or one that isn't a whole number.
+		@param fallback  The value to return when the key has no value, or one that isn't a whole number in Int's range.
 		@return  The value, or the fallback.
 		@throws String  Before `load` has finished. */
 	public function getInt(key:String, fallback:Int):Int {
@@ -127,7 +137,7 @@ class Saves implements IPollable {
 	/** Returns a key's value as a number.
 
 		@param key  The key.
-		@param fallback  What to return when it has none, or one that isn't a number.
+		@param fallback  The value to return when the key has no value, or one that isn't a finite number.
 		@return  The value, or the fallback.
 		@throws String  Before `load` has finished. */
 	public function getFloat(key:String, fallback:Float):Float {
@@ -138,7 +148,7 @@ class Saves implements IPollable {
 	/** Returns a key's value as true or false.
 
 		@param key  The key.
-		@param fallback  What to return when it has none, or one that isn't true or false.
+		@param fallback  The value to return when the key has no value, or one that isn't true or false.
 		@return  The value, or the fallback.
 		@throws String  Before `load` has finished. */
 	public function getBool(key:String, fallback:Bool):Bool {
@@ -167,8 +177,8 @@ class Saves implements IPollable {
 	/** Sets a key to a number, kept at the next `poll`.
 
 		@param key  The key.
-		@param value  The value, finite.
-		@throws String  Before `load` has finished, or for a value that isn't finite. */
+		@param value  The value. Must be finite.
+		@throws String  Before `load` has finished, or when the value isn't finite. */
 	public function setFloat(key:String, value:Float):Void {
 		if (!Math.isFinite(value))
 			throw '$key can\'t be saved as $value: a value is finite';
@@ -184,7 +194,7 @@ class Saves implements IPollable {
 		write(key, value);
 	}
 
-	/** Deletes a key and its value, kept at the next `poll`; does nothing for a key with none.
+	/** Deletes a key and its value, kept at the next `poll`. Does nothing for a key with no value.
 
 		@param key  The key.
 		@throws String  Before `load` has finished. */
@@ -194,8 +204,9 @@ class Saves implements IPollable {
 			change();
 	}
 
-	/** Deletes every key, kept at the next `poll`: a reset. The file system holds nothing else of the saves', so nothing else there
-		changes.
+	/** Deletes every key, kept at the next `poll`, resetting the saves.
+
+		Only the saves file changes. Nothing else in the file system belongs to the saves.
 
 		@throws String  Before `load` has finished. */
 	public function deleteKeys():Void {
@@ -204,19 +215,20 @@ class Saves implements IPollable {
 		change();
 	}
 
-	/** Gets a value indicating whether a change isn't kept yet: set since the last write, or being written. */
+	/** Gets a value indicating whether a change isn't kept yet, because it was set since the last write or is being written. */
 	public var pending(get, never):Bool;
 
 	function get_pending():Bool {
 		return changed || writing;
 	}
 
-	/** Starts writing what's set now, without waiting for the next `poll`; never blocks.
+	/** Starts writing the current values without waiting for the next `poll`. Never blocks.
 
-		Before `load` nothing is pending. A write started still finishes when the saves or their file system are disposed straight
-		after, as in a page's `IWindow.onClose`, but then nothing is called.
-		@param written  Optional. Called once it's kept; at the next `poll` when nothing was pending.
-		@param failed  Optional. Receives why it can't be written; left out, it's logged. */
+		Before `load`, nothing is pending. A write that has started still finishes when the saves or their file system are disposed
+		straight after, as in a page's `IWindow.onClose`, but then nothing is called.
+
+		@param written  Optional. Called once the values are kept, or at the next `poll` when nothing was pending.
+		@param failed  Optional. Receives why the values can't be written. When omitted, the failure is logged. */
 	public function flush(?written:Void->Void, ?failed:String->Void):Void {
 		var flush = new Flush(written, failed);
 		if (!changed && !writing) {
@@ -233,7 +245,9 @@ class Saves implements IPollable {
 			start();
 	}
 
-	/** Starts writing what was set since the last write, unless a write is still going; call once a frame. */
+	/** Starts writing what was set since the last write, unless a write is still in flight.
+
+		Call it once a frame. After a failed write, it waits for another change before trying again. */
 	public function poll():Void {
 		var due = answered;
 		answered = [];
@@ -244,7 +258,9 @@ class Saves implements IPollable {
 			start();
 	}
 
-	/** Lets go of the values, before the file system it was given is disposed; a write in flight still finishes. */
+	/** Releases the values. A write in flight still finishes.
+
+		Call it before disposing the file system it was given. */
 	public function dispose():Void {
 		disposed = true;
 		values = {};
@@ -326,15 +342,15 @@ class Saves implements IPollable {
 	}
 }
 
-/** A flush's answers. */
+/** Represents a flush's callbacks. */
 private class Flush {
-	/** Gets what's called once the write is kept. */
+	/** Gets the function called once the write is kept. */
 	public final written:Null<Void->Void>;
 
-	/** Gets what receives why it can't be written. */
+	/** Gets the function that receives why the write failed. */
 	public final failed:Null<String->Void>;
 
-	/** Creates a flush's answers. */
+	/** Creates a flush's callbacks. */
 	public function new(written:Null<Void->Void>, failed:Null<String->Void>) {
 		this.written = written;
 		this.failed = failed;

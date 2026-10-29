@@ -2,7 +2,8 @@ package helix.services.audio;
 
 /** Represents voices whose volume is set together, such as the music or the effects (`Audio.createGroup`).
 
-	A voice is heard at its own volume times its group's and each group's above it, and not at all while any of them is muted. */
+	A voice is heard at its own volume times the volume of its group and of each group above it. It is silent while any of those groups
+	is muted. */
 @:allow(helix.services.audio)
 class Group {
 	final audio:Audio;
@@ -14,10 +15,10 @@ class Group {
 		this.parent = parent;
 	}
 
-	/** Gets the group it's under, or null for `Audio.master`. */
+	/** Gets the group this one is under, or null for `Audio.master`. */
 	public var parent(default, null):Null<Group>;
 
-	/** Gets or sets its volume, 0 to 1; setting it ends a fade. */
+	/** Gets or sets the group's volume, 0 to 1. Defaults to 1. Setting it ends a fade. */
 	public var volume(default, set):Float = 1;
 
 	function set_volume(value:Float):Float {
@@ -25,14 +26,14 @@ class Group {
 		return volume = clamp(value);
 	}
 
-	/** Gets or sets a value indicating whether its voices are silent, their volumes kept; false by default. */
+	/** Gets or sets a value indicating whether the group's voices are silent. Defaults to false. Their volumes are unchanged. */
 	public var muted:Bool = false;
 
-	/** Fades its volume to another over some real time, on a curve the ear hears as even (in decibels).
+	/** Fades the group's volume to another over some real time, on a curve the ear hears as even (in decibels).
 
 		@param volume  The volume to end at, 0 to 1.
-		@param seconds  How long it takes, in real seconds; 0 sets it at once.
-		@param done  Optional. Called once it's reached, unless another fade or a set volume ends it first. */
+		@param seconds  The fade's length, in real seconds. 0 or less sets the volume at once.
+		@param done  Optional. Called once the volume is reached, unless another fade or a set volume ends the fade first. */
 	public function fadeTo(volume:Float, seconds:Float, ?done:Void->Void):Void {
 		if (seconds > 0)
 			fade = new Fade(this.volume, clamp(volume), audio.now(), seconds, done);
@@ -43,7 +44,7 @@ class Group {
 		}
 	}
 
-	/** Its volume times every group's above it, or 0 while any of them is muted. */
+	/** Returns its volume times the volume of every group above it, or 0 while any of them is muted. */
 	function heard():Float
 		return muted ? 0 : parent == null ? volume : volume * parent.heard();
 

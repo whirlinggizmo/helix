@@ -28,6 +28,15 @@ class SavesTests {
 		saves.load(() -> loads++);
 		files.poll();
 		check(loads == 1 && saves.loaded && !saves.has("a"), "no file: loaded, no values");
+		saves.load(() -> loads++);
+		check(loads == 1, "a second load isn't answered during the call");
+		saves.poll();
+		check(loads == 2, "a second load once loaded: answered at the next poll");
+		var both = new Saves(files), answers = 0;
+		both.load(() -> answers++);
+		both.load(() -> answers++);
+		files.poll();
+		check(answers == 2, "two loads at once: both answered by the one read");
 
 		saves.setString("name", "Ada");
 		saves.setInt("level", 3);

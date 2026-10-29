@@ -4,7 +4,7 @@ import helix.platform.IAudio;
 
 /** Represents a sound playing (`Audio.play`), until it ends or is stopped.
 
-	Once it has ended its members change nothing, and `playing` is false. */
+	Once it has ended, its members change nothing and `playing` is false. */
 @:allow(helix.services.audio)
 class Voice {
 	final output:IAudio;
@@ -33,14 +33,14 @@ class Voice {
 	/** Gets the group it plays in. */
 	public var group(default, null):Group;
 
-	/** Gets a value indicating whether it's still playing or paused: false once it ended or was stopped. */
+	/** Gets a value indicating whether the voice is playing or paused. It is false once the voice ended or was stopped. */
 	public var playing(get, never):Bool;
 
 	function get_playing():Bool {
 		return !ended && output.isPlaying(id);
 	}
 
-	/** Gets or sets its own volume, 0 to 1, before its groups'; setting it ends a fade. */
+	/** Gets or sets the voice's own volume, 0 to 1, before its groups' volumes apply. Setting it ends a fade. */
 	public var volume(default, set):Float = 1;
 
 	function set_volume(value:Float):Float {
@@ -50,7 +50,7 @@ class Voice {
 		return volume;
 	}
 
-	/** Gets or sets its playback rate, which changes its pitch and length together: 0.25 to 4, 1 as recorded. */
+	/** Gets or sets the playback rate, which changes pitch and length together. Clamped to 0.25 to 4. Defaults to 1, as recorded. */
 	public var pitch(default, set):Float = 1;
 
 	function set_pitch(value:Float):Float {
@@ -60,7 +60,7 @@ class Voice {
 		return pitch;
 	}
 
-	/** Gets or sets where it's heard: -1 left to 1 right, 0 the middle. */
+	/** Gets or sets where the voice is heard, from -1 for left to 1 for right. Clamped to -1 to 1. Defaults to 0, the middle. */
 	public var pan(default, set):Float = 0;
 
 	function set_pan(value:Float):Float {
@@ -70,7 +70,7 @@ class Voice {
 		return pan;
 	}
 
-	/** Gets or sets a value indicating whether it's paused, holding its place. */
+	/** Gets or sets a value indicating whether the voice is paused, holding its place. Defaults to false. */
 	public var paused(default, set):Bool = false;
 
 	function set_paused(value:Bool):Bool {
@@ -79,11 +79,13 @@ class Voice {
 		return paused = value;
 	}
 
-	/** Fades its own volume to another over some real time, on a curve the ear hears as even (in decibels).
+	/** Fades the voice's own volume to another over some real time, on a curve the ear hears as even (in decibels).
+
+		Does nothing once the voice has ended.
 
 		@param volume  The volume to end at, 0 to 1.
-		@param seconds  How long it takes, in real seconds; 0 sets it at once.
-		@param done  Optional. Called once it's reached, unless another fade, a set volume or the voice's end comes first. */
+		@param seconds  The fade's length, in real seconds. 0 or less sets the volume at once.
+		@param done  Optional. Called once the volume is reached, unless another fade, a set volume or the voice's end comes first. */
 	public function fadeTo(volume:Float, seconds:Float, ?done:Void->Void):Void {
 		if (ended)
 			return;
@@ -96,7 +98,7 @@ class Voice {
 		}
 	}
 
-	/** Stops it for good. Does nothing once it has ended. */
+	/** Stops the voice for good. Does nothing once it has ended. */
 	public function stop():Void {
 		if (ended)
 			return;

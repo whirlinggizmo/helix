@@ -6,9 +6,11 @@
 
 *class* in [`services/src/helix/services/tools/AssetManifests.hx`](../../services/src/helix/services/tools/AssetManifests.hx), `import helix.services.tools.AssetManifests;`
 
-Provides writing the manifests `Assets` reads: in each directory of a tree, a file listing the hash of each file in it and of each subdirectory's own manifest, so an unchanged directory is known from its parent alone.
+Provides a build-time macro that writes the manifests `Assets` reads.
 
-Called once in the program, it runs while the program builds, over the directory its files ship in and its server serves. A manifest is rewritten only when what it lists changed, and a file is hashed again only when its size or time changed since the last run, kept in a hidden file beside the directory (`.assets.manifests` for `assets`). Hidden files and names `IFileSystem` refuses are left out.
+Each directory of a tree gets a manifest listing the hash of each file in it and of each subdirectory's own manifest. An unchanged directory is then known from its parent's manifest alone.
+
+Call `write` once in the program, over the directory its files ship in and its server serves. It runs while the program builds. A manifest is rewritten only when what it lists changed. A file is hashed again only when its size or modification time changed since the last run. Those are kept in a hidden file beside the directory, such as `.assets.manifests` for `assets`. Hidden files, and names `IFileSystem` refuses, are skipped.
 
 ```haxe
 AssetManifests.write("assets");
@@ -18,6 +20,8 @@ AssetManifests.write("assets");
 static macro function write(directory:String, name:String = "manifest.json"):Void
 ```
 
-- `write`: Writes the manifests of a directory and every directory under it, while the program builds; a directory that isn't one fails the build.
+- `write`: Writes the manifests of a directory and every directory under it, while the program builds.
   - `directory`: The tree's root, relative to where the build runs.
-  - `name`: Optional. Each manifest's file name, as `AssetsOptions.manifestName`; "manifest.json" by default.
+  - `name`: Optional. Each manifest's file name, which matches `AssetsOptions.manifestName`. Defaults to "manifest.json".
+
+  The build fails when the path isn't a directory.

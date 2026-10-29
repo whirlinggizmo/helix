@@ -9,10 +9,12 @@ import helix.services.assets.Assets;
 
 /** Provides sounds by path, played as voices in groups whose volumes and fades apply to every voice in them.
 
-	A sound is loaded one of two ways: decoded whole (`load`), for short sounds played often, or played as it's read (`stream`), for music
-	and other long sounds. Every group is under `master`. A fade runs on real time from when it's asked for, whether or not anything is
-	heard yet: in a page, sound starts with the player's first key, click or tap (`IAudio.running`), and a fade asked for before then may
-	have ended by then. The program calls `poll` once a frame, which steps the fades and lets go of ended voices.
+	A sound is loaded in one of two ways. `load` decodes it whole, for short sounds played often. `stream` plays it as it is read, for
+	music and other long sounds. Every group is under `master`.
+
+	The program calls `poll` once a frame, which steps the fades and releases voices that ended. A fade runs on real time from when it
+	starts, whether or not anything is heard yet. In a page, sound starts with the player's first key, click or tap (`IAudio.running`),
+	so a fade started before then may already have ended.
 
 	```haxe
 	var effects = audio.createGroup();
@@ -32,12 +34,12 @@ class Audio implements IPollable {
 	var voices:Array<Voice> = [];
 	var disposed = false;
 
-	/** Creates the audio over the platform's output, with only `master`.
+	/** Creates the audio over the platform's output, with `master` as its only group.
 
 		@param output  The platform's sound output.
 		@param decoder  The platform's decoder, for sounds loaded whole.
-		@param assets  Where sounds are found by path.
-		@param system  The platform's facts: fades read its monotonic time (`getTime`). */
+		@param assets  The assets that sounds are found in by path.
+		@param system  The platform's system, whose monotonic time (`getTime`) times the fades. */
 	public function new(output:IAudio, decoder:IAudioDecoder, assets:Assets, system:ISystem) {
 		this.output = output;
 		this.decoder = decoder;
@@ -47,12 +49,12 @@ class Audio implements IPollable {
 		groups.push(master);
 	}
 
-	/** Gets the group every other is under: its volume and `muted` apply to every voice. */
+	/** Gets the group that every other group is under. Its volume and `muted` apply to every voice. */
 	public var master(default, null):Group;
 
 	/** Creates a group, such as music or effects, with its own volume.
 
-		@param parent  Optional. The group it's under; `master` by default.
+		@param parent  Optional. The group it is under. Defaults to `master`.
 		@return  The group, at volume 1. */
 	public function createGroup(?parent:Group):Group {
 		var group = new Group(this, parent == null ? master : parent);
@@ -60,11 +62,13 @@ class Audio implements IPollable {
 		return group;
 	}
 
-	/** Loads a sound whole: read through `Assets.load`, decoded and held as samples, so it plays at once each time.
+	/** Loads a sound whole, so it plays at once each time.
 
-		@param path  The file's path, as `Assets` finds it: WAV, Ogg Vorbis, MP3 or FLAC.
+		The file is read through `Assets.load`, decoded, and held as samples.
+
+		@param path  The file's path in `Assets`. The file is WAV, Ogg Vorbis, MP3 or FLAC.
 		@param loaded  Receives the sound.
-		@param failed  Optional. Receives why it can't be had or decoded; left out, it's logged with the path.
+		@param failed  Optional. Receives why the sound can't be loaded or decoded. When omitted, the failure is logged with the path.
 		@return  The abort: nothing is called after it. */
 	public function load(path:String, loaded:Sound->Void, ?failed:String->Void):Void->Void {
 		var aborted = false;
@@ -86,14 +90,14 @@ class Audio implements IPollable {
 		};
 	}
 
-	/** Opens a sound to be played as it's read, never held whole.
+	/** Opens a sound to be played as it is read, never held whole.
 
-		It's found through `Assets.locate`: a file system's file is read where it is; a server's file is read from its kept copy, or
-		played as it downloads while the copy is kept.
+		The file is found through `Assets.locate`. A file system's file is read where it is. A server's file is read from its kept copy,
+		or played as it downloads while the copy is kept.
 
-		@param path  The file's path, as `Assets` finds it.
-		@param opened  Receives the sound, once enough of it is there to start.
-		@param failed  Optional. Receives why it can't be had or opened; left out, it's logged with the path.
+		@param path  The file's path in `Assets`.
+		@param opened  Receives the sound, once enough of it has arrived to start.
+		@param failed  Optional. Receives why the sound can't be found or opened. When omitted, the failure is logged with the path.
 		@return  The abort: nothing is called after it. */
 	public function stream(path:String, opened:Sound->Void, ?failed:String->Void):Void->Void {
 		var aborted = false, abortOpen:Null<Void->Void> = null;
@@ -121,12 +125,12 @@ class Audio implements IPollable {
 
 	/** Starts a sound playing.
 
-		@param sound  The sound, as `load` or `stream` gave it.
-		@param group  Optional. The group it plays in; `master` by default.
-		@param loop  Optional. True to play it again from the start each time it ends; false by default.
-		@param volume  Optional. Its own volume, 0 to 1, before its groups'; 1 by default.
-		@return  The voice, to change or stop it.
-		@throws String  For a null sound, or one unloaded. */
+		@param sound  The sound, from `load` or `stream`.
+		@param group  Optional. The group it plays in. Defaults to `master`.
+		@param loop  Optional. True to play it again from the start each time it ends. Defaults to false.
+		@param volume  Optional. The voice's own volume, 0 to 1, before its groups' volumes apply. Defaults to 1.
+		@return  The voice, which changes or stops the sound.
+		@throws String  When the sound is null or unloaded. */
 	public function play(sound:Sound, ?group:Group, loop = false, volume = 1.):Voice {
 		if (sound == null || sound.unloaded)
 			throw sound == null ? 'play needs a sound' : '${sound.path} is unloaded';
@@ -142,7 +146,9 @@ class Audio implements IPollable {
 		return voice;
 	}
 
-	/** Lets go of a sound: its voices stop, and what holds it is freed.
+	/** Unloads a sound. Its voices stop, and the memory or file that holds it is released.
+
+		Does nothing for a sound already unloaded.
 
 		@param sound  The sound. */
 	public function unload(sound:Sound):Void {
@@ -161,7 +167,9 @@ class Audio implements IPollable {
 		sounds.remove(sound);
 	}
 
-	/** Steps the fades to now and lets go of the voices that ended; call once a frame. */
+	/** Steps the fades to the current time and releases the voices that ended.
+
+		Call it once a frame. */
 	public function poll():Void {
 		var time = now();
 		for (group in groups)
@@ -169,7 +177,9 @@ class Audio implements IPollable {
 		voices = [for (voice in voices) if (voice.step(time)) voice];
 	}
 
-	/** Stops every voice and lets go of every sound; before the output, decoder and `Assets` it was given are disposed. */
+	/** Stops every voice and unloads every sound.
+
+		Call it before disposing the output, decoder and `Assets` it was given. */
 	public function dispose():Void {
 		for (voice in voices)
 			voice.stop();
@@ -179,7 +189,7 @@ class Audio implements IPollable {
 		disposed = true;
 	}
 
-	/** The real seconds fades are timed by. */
+	/** Returns the real seconds that fades are timed by. */
 	@:allow(helix.services.audio)
 	function now():Float
 		return system.getTime();

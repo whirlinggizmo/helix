@@ -11,16 +11,18 @@ import helix.platform.IFileSystem;
 import helix.platform.IHttp;
 import helix.platform.StreamSource;
 
-/** Provides files by path, from the places its sources name: a file system on this machine, or an HTTP server whose files it keeps
-	copies of.
+/** Provides files by path, from a file system on this machine or from an HTTP server whose files it keeps copies of.
 
-	It asks its sources in order, and the first that has the path answers: a file missing from one is looked for in the next. A game
-	whose files never change lists its file system alone; one patched from a server lists the server first, in `Manifest` mode, and its
-	shipped files after, so a shipped file the server's manifest lists at the same hash is read in place and only what changed is
-	downloaded; a page, whose files are on the server that served it, lists `HttpServer("")`. A path is plain names joined by `/`, as `IFileSystem`'s. Each call answers once, on the main
-	thread, in the platform's `poll` that finished it, never during the call; the failure's lambda may be left out, and the failure is
-	then logged with the path. Its downloads and copies finish in the polls of the HTTP client and file systems it was given, which
-	the program polls each frame; Assets has no `poll` of its own.
+	It asks its sources in order, and the first that has the path answers. A file missing from one source is looked for in the next.
+	A game whose files never change lists its file system alone. A game patched from a server lists the server first, in `Manifest`
+	mode, and its shipped files after it. A shipped file that the server's manifest lists at the same hash is then read in place, and
+	only what changed is downloaded. A page, whose files are on the server that served it, lists `HttpServer("")`.
+
+	A path is plain names joined by `/`, as in `IFileSystem`. Each call answers once, on the main thread, in the platform `poll` that
+	finished it, and never during the call. The failure callback is optional; when it is omitted, the failure is logged with the path.
+
+	Downloads and copies finish in the polls of the HTTP client and file systems it was given, which the program polls each frame.
+	Assets has no `poll` of its own.
 
 	```haxe
 	var httpClient:IHttp = new HaxeHttpAdapter();
@@ -52,7 +54,7 @@ class Assets {
 
 	/** Creates the assets over their sources.
 
-		@param options  The sources, and the HTTP client and file system an `HttpServer` source needs.
+		@param options  The sources, and the HTTP client and file system that an `HttpServer` source needs.
 		@throws String  When a source is an `HttpServer` and `httpClient` or `cacheFileSystem` is null. */
 	public function new(options:AssetsOptions) {
 		cacheFileSystem = options.cacheFileSystem;
@@ -81,8 +83,8 @@ class Assets {
 	/** Loads a whole file.
 
 		@param path  The file's path.
-		@param loaded  Receives its bytes.
-		@param failed  Optional. Receives why it can't be had: no source has it, or the last one asked failed.
+		@param loaded  Receives the file's bytes.
+		@param failed  Optional. Receives why the file can't be loaded, because no source has it or the last source asked failed.
 		@return  The abort: nothing is called after it. */
 	public function load(path:String, loaded:Bytes->Void, ?failed:String->Void):Void->Void {
 		var request = start(path, failed);
@@ -105,13 +107,14 @@ class Assets {
 		return request.abort;
 	}
 
-	/** Finds a file for playing as it's read, without loading it whole, as `IAudio.openStream` takes it.
+	/** Finds a file to be played as it is read, without loading it whole, in the form `IAudio.openStream` takes.
 
-		A file system's file is located where it is; a server's file is its kept copy when there is one, and otherwise is played as it
-		downloads while the copy is kept.
+		A file system's file is located where it is. A server's file is its kept copy when there is one. Otherwise it plays as it
+		downloads, and the copy is kept.
+
 		@param path  The file's path.
-		@param located  Receives the source, and the function that lets it go, called once when it's no longer read.
-		@param failed  Optional. Receives why it can't be had.
+		@param located  Receives the source, and a release function to call once when the source is no longer read.
+		@param failed  Optional. Receives why the file can't be found.
 		@return  The abort: nothing is called after it. */
 	public function locate(path:String, located:(source:StreamSource, release:Void->Void) -> Void, ?failed:String->Void):Void->Void {
 		var request = start(path, failed);
@@ -139,10 +142,10 @@ class Assets {
 		return request.abort;
 	}
 
-	/** Empties `cacheFileSystem`, so each server's file is downloaded again.
+	/** Empties `cacheFileSystem`, so each server's files are downloaded again.
 
-		@param cleared  Optional. Called once it's empty.
-		@param failed  Optional. Receives why it can't be emptied. */
+		@param cleared  Optional. Called once the cache is empty.
+		@param failed  Optional. Receives why the cache can't be emptied. When omitted, the failure is logged. */
 	public function clearCache(?cleared:Void->Void, ?failed:String->Void):Void {
 		for (source in sources)
 			switch source {
@@ -163,7 +166,9 @@ class Assets {
 		});
 	}
 
-	/** Aborts every load and locate in flight; before the HTTP client and file systems it was given are disposed. */
+	/** Aborts every load and locate in flight.
+
+		Call it before disposing the HTTP client and file systems it was given. */
 	public function dispose():Void {
 		for (request in requests.copy())
 			request.abort();
@@ -176,18 +181,20 @@ class Assets {
 	}
 }
 
-/** One of the sources, as Assets asks it. */
+/** Represents one of the sources, in the form Assets asks it. */
 private enum Source {
 	Files(fileSystem:IFileSystem);
 	Server(server:ServerSource);
 }
 
-/** A load or locate in flight: the source being asked, its abort, and the last failure, reported when no source has the file. */
+/** Represents a load or locate in flight.
+
+	It holds the abort of the source being asked, and the last failure, which is reported when no source has the file. */
 private class Request {
 	/** Gets the path asked for. */
 	public final path:String;
 
-	/** Gets a value indicating whether it was aborted, so nothing more is called. */
+	/** Gets a value indicating whether it was aborted. Once aborted, nothing more is called. */
 	public var aborted(default, null) = false;
 
 	/** Gets or sets the abort of the step in flight. */
@@ -199,14 +206,14 @@ private class Request {
 	final failed:Null<String->Void>;
 	final requests:Array<Request>;
 
-	/** Creates a request, kept in requests while it's in flight. */
+	/** Creates a request, which stays in requests while it is in flight. */
 	public function new(path:String, failed:Null<String->Void>, requests:Array<Request>) {
 		this.path = path;
 		this.failed = failed;
 		this.requests = requests;
 	}
 
-	/** Calls f with the answer, unless aborted, and ends the request. */
+	/** Ends the request and calls f with the answer. Does nothing once aborted. */
 	public function answer(f:Void->Void):Void {
 		if (aborted)
 			return;
@@ -214,7 +221,7 @@ private class Request {
 		f();
 	}
 
-	/** Moves on to the next source, keeping message as the last failure. */
+	/** Moves on to the next source by calling f, keeping the optional message as the last failure. Does nothing once aborted. */
 	public function next(f:Void->Void, ?message:String):Void {
 		if (aborted)
 			return;
@@ -224,7 +231,7 @@ private class Request {
 		f();
 	}
 
-	/** Ends the request with its last failure, or none of the sources having the file. */
+	/** Ends the request with its last failure, or with no source having the file when there was none. */
 	public function fail():Void {
 		if (aborted)
 			return;
@@ -236,7 +243,7 @@ private class Request {
 			Log.warn(message, "assets");
 	}
 
-	/** Stops it: nothing more is called. */
+	/** Aborts the request and the step in flight. Nothing more is called. */
 	public function abort():Void {
 		if (aborted)
 			return;
@@ -251,7 +258,9 @@ private class Request {
 	}
 }
 
-/** What a kept copy of a server's file is known by: its hash, until when it's fresh without asking, and its validators. */
+/** Represents what a kept copy of a server's file is known by.
+
+	It holds the copy's hash, the time until which it is fresh without asking, and its HTTP validators. */
 private typedef Record = {
 	hash:String,
 	freshUntil:Float,
@@ -259,21 +268,27 @@ private typedef Record = {
 	?lastModified:String
 }
 
-/** One directory's manifest: the hash of each file in it, and of each subdirectory's manifest, by name. */
+/** Represents one directory's manifest.
+
+	It holds the hash of each file in the directory, and of each subdirectory's manifest, by name. */
 private typedef Manifest = {
 	files:Map<String, String>,
 	dirs:Map<String, String>
 }
 
-/** What a server source does for a path: use its kept copy, or download it (asking about the copy when there is one). */
+/** Specifies what a server source does for a path.
+
+	It uses its kept copy, reads a shipped file in place, or downloads the file, asking about the copy when there is one. */
 private enum Decision {
 	UseCopy(record:Record, expected:Null<String>);
 	UseShipped(fileSystem:IFileSystem, expected:String);
 	Download(record:Null<Record>, expected:Null<String>);
 }
 
-/** An `HttpServer` source: its files downloaded through the HTTP client and kept, with a record each, in the cache file system under a
-	directory of its own. */
+/** Represents an `HttpServer` source.
+
+	Its files are downloaded through the HTTP client. Each file is kept with a record in the cache file system, under a directory of the
+	source's own. */
 private class ServerSource {
 	/** Seconds a response marked immutable stays fresh. */
 	static inline final YEAR = 365 * 24 * 3600;
@@ -302,13 +317,13 @@ private class ServerSource {
 		directory = "server-" + nameOf(this.url);
 	}
 
-	/** Forgets what it holds in memory, as the cache is emptied. */
+	/** Forgets what it holds in memory, when the cache is emptied. */
 	public function forget():Void {
 		held = new Map();
 		manifests = new Map();
 	}
 
-	/** Loads a file whole: the kept copy or a download, by the manifests and the cache mode. */
+	/** Loads a file whole, from the kept copy or a download, as the manifests and the cache mode decide. */
 	public function load(path:String, request:Request, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void {
 		if (mode == Off) {
 			var bytes = held.get(path);
@@ -331,7 +346,7 @@ private class ServerSource {
 		});
 	}
 
-	/** Locates a file to play as it's read: the kept copy, or a download as it arrives. */
+	/** Locates a file to play as it is read, from the kept copy or from a download as it arrives. */
 	public function locate(path:String, request:Request, located:(StreamSource, Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void {
 		if (mode == Off) {
 			#if js
@@ -491,9 +506,11 @@ private class ServerSource {
 			message -> if (!request.aborted) failed(message));
 	}
 
-	/** Downloads a file, asking about record's copy when there is one, and keeps it; a 304 uses the copy, a 4xx removes it and the file is
-		missing here, and no answer (offline, a 5xx) uses the copy when there is one. growing, natively, receives a download of known length
-		to play as it arrives; got receives the bytes once they're kept, and the source it grew in, if any. */
+	/** Downloads a file and keeps it, asking the server about the record's copy when there is one.
+
+		A 304 answer uses the copy. A 4xx answer removes the copy, and the file is missing from this source. No answer, because the
+		machine is offline or the server answered 5xx, uses the copy when there is one. Natively, growing receives a download of known
+		length to play as it arrives. got receives the bytes once they are kept, and the source they grew in, if any. */
 	function download(path:String, request:Request, record:Null<Record>, expected:Null<String>, noCache:Bool, got:(Bytes, Null<GrowingSource>) -> Void,
 			missing:Void->Void, failed:String->Void, ?growing:GrowingSource->Void):Void {
 		var headers = new Map<String, String>();
@@ -592,8 +609,9 @@ private class ServerSource {
 		return fresh;
 	}
 
-	/** How long a response stays fresh by its Cache-Control, in seconds: its max-age, a year for immutable without one, none for no-store,
-		no-cache or nothing said; as HeliX had it. */
+	/** Returns how long a response stays fresh by its Cache-Control, in seconds.
+
+		It is the max-age, or a year for immutable without a max-age. It is 0 for no-store, no-cache, or no Cache-Control. */
 	static function freshSeconds(control:Null<String>):Float {
 		if (control == null)
 			return 0;
@@ -613,8 +631,9 @@ private class ServerSource {
 		return seconds > 0 ? seconds : immutable ? YEAR : 0;
 	}
 
-	/** Returns 16 hex digits for a URL, its cache directory's name: two 32-bit string hashes (FNV-1a and djb2), the same on every target,
-		and far smaller than a cryptographic hash for a name only this cache reads. */
+	/** Returns the name of a URL's cache directory, as 16 hex digits.
+
+		The digits are two 32-bit string hashes, FNV-1a and djb2, and are the same on every target. */
 	public static function nameOf(url:String):String {
 		var fnv = 0x811c9dc5, djb = 5381;
 		for (i in 0...url.length) {
@@ -625,12 +644,14 @@ private class ServerSource {
 		return StringTools.hex(fnv, 8) + StringTools.hex(djb, 8);
 	}
 
-	/** Returns bytes' hash as manifests write it: "sha256:" and 64 hex digits. */
+	/** Returns the hash of bytes in the form manifests write it, "sha256:" followed by 64 hex digits. */
 	public static function hashOf(bytes:Bytes):String
 		return "sha256:" + Sha256.make(bytes).toHex();
 
-	/** One directory's manifest, or null for anything that isn't one: `{"manifest": 1, "files": {"name": "sha256:<hex>"}, "dirs": {"name":
-		"sha256:<hex>"}}`, a subdirectory's hash being its own manifest's, as HeliX's manifests are. */
+	/** Returns one directory's manifest, or null for anything that isn't one.
+
+		A manifest is `{"manifest": 1, "files": {"name": "sha256:<hex>"}, "dirs": {"name": "sha256:<hex>"}}`. A subdirectory's hash is the
+		hash of its own manifest. */
 	public static function parseManifest(bytes:Bytes):Null<Manifest> {
 		var value:Dynamic = try Json.parse(bytes.toString()) catch (_:Dynamic) null;
 		if (value == null || value.manifest != 1)
@@ -650,8 +671,10 @@ private class ServerSource {
 	}
 }
 
-/** A file system's manifests, as `AssetManifests` writes them beside a program's files: read once a run, a directory at a time, to say
-	whether a file there is the one a server's manifest lists. */
+/** Represents a file system's manifests, as `AssetManifests` writes them beside a program's files.
+
+	Each directory's manifest is read once a run, when first needed. It tells whether a file there is the one a server's manifest
+	lists. */
 private class ShippedTree {
 	/** Gets the file system. */
 	public final fileSystem:IFileSystem;
@@ -660,13 +683,13 @@ private class ShippedTree {
 	var manifests = new Map<String, Null<Manifest>>();
 	var waiting = new Map<String, Array<Null<Manifest>->Void>>();
 
-	/** Creates the tree over a file system, its manifests named name. */
+	/** Creates the tree over a file system whose manifests are named name. */
 	public function new(fileSystem:IFileSystem, name:String) {
 		this.fileSystem = fileSystem;
 		this.name = name;
 	}
 
-	/** Gives the hash its manifests list for path, or null when they don't. */
+	/** Finds the hash its manifests list for path, and passes it to found, or null when they list none. */
 	public function hashOf(path:String, found:Null<String>->Void):Void {
 		var names = path.split("/");
 		function walk(depth:Int, level:String) {

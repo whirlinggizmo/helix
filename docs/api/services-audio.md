@@ -8,7 +8,9 @@
 
 Provides sounds by path, played as voices in groups whose volumes and fades apply to every voice in them.
 
-A sound is loaded one of two ways: decoded whole (`load`), for short sounds played often, or played as it's read (`stream`), for music and other long sounds. Every group is under `master`. A fade runs on real time from when it's asked for, whether or not anything is heard yet: in a page, sound starts with the player's first key, click or tap (`IAudio.running`), and a fade asked for before then may have ended by then. The program calls `poll` once a frame, which steps the fades and lets go of ended voices.
+A sound is loaded in one of two ways. `load` decodes it whole, for short sounds played often. `stream` plays it as it is read, for music and other long sounds. Every group is under `master`.
+
+The program calls `poll` once a frame, which steps the fades and releases voices that ended. A fade runs on real time from when it starts, whether or not anything is heard yet. In a page, sound starts with the player's first key, click or tap (`IAudio.running`), so a fade started before then may already have ended.
 
 ```haxe
 var effects = audio.createGroup();
@@ -31,38 +33,44 @@ function poll():Void
 function dispose():Void
 ```
 
-- `new`: Creates the audio over the platform's output, with only `master`.
+- `new`: Creates the audio over the platform's output, with `master` as its only group.
   - `output`: The platform's sound output.
   - `decoder`: The platform's decoder, for sounds loaded whole.
-  - `assets`: Where sounds are found by path.
-  - `system`: The platform's facts: fades read its monotonic time (`getTime`).
-- `master`: Gets the group every other is under: its volume and `muted` apply to every voice.
+  - `assets`: The assets that sounds are found in by path.
+  - `system`: The platform's system, whose monotonic time (`getTime`) times the fades.
+- `master`: Gets the group that every other group is under. Its volume and `muted` apply to every voice.
 - `createGroup`: Creates a group, such as music or effects, with its own volume.
-  - `parent`: Optional. The group it's under; `master` by default.
+  - `parent`: Optional. The group it is under. Defaults to `master`.
   - returns: The group, at volume 1.
-- `load`: Loads a sound whole: read through `Assets.load`, decoded and held as samples, so it plays at once each time.
-  - `path`: The file's path, as `Assets` finds it: WAV, Ogg Vorbis, MP3 or FLAC.
+- `load`: Loads a sound whole, so it plays at once each time.
+  - `path`: The file's path in `Assets`. The file is WAV, Ogg Vorbis, MP3 or FLAC.
   - `loaded`: Receives the sound.
-  - `failed`: Optional. Receives why it can't be had or decoded; left out, it's logged with the path.
-  - returns: The abort: nothing is called after it.
-- `stream`: Opens a sound to be played as it's read, never held whole.
-  - `path`: The file's path, as `Assets` finds it.
-  - `opened`: Receives the sound, once enough of it is there to start.
-  - `failed`: Optional. Receives why it can't be had or opened; left out, it's logged with the path.
+  - `failed`: Optional. Receives why the sound can't be loaded or decoded. When omitted, the failure is logged with the path.
   - returns: The abort: nothing is called after it.
 
-  It's found through `Assets.locate`: a file system's file is read where it is; a server's file is read from its kept copy, or played as it downloads while the copy is kept.
+  The file is read through `Assets.load`, decoded, and held as samples.
+- `stream`: Opens a sound to be played as it is read, never held whole.
+  - `path`: The file's path in `Assets`.
+  - `opened`: Receives the sound, once enough of it has arrived to start.
+  - `failed`: Optional. Receives why the sound can't be found or opened. When omitted, the failure is logged with the path.
+  - returns: The abort: nothing is called after it.
+
+  The file is found through `Assets.locate`. A file system's file is read where it is. A server's file is read from its kept copy, or played as it downloads while the copy is kept.
 - `play`: Starts a sound playing.
-  - `sound`: The sound, as `load` or `stream` gave it.
-  - `group`: Optional. The group it plays in; `master` by default.
-  - `loop`: Optional. True to play it again from the start each time it ends; false by default.
-  - `volume`: Optional. Its own volume, 0 to 1, before its groups'; 1 by default.
-  - returns: The voice, to change or stop it.
-  - throws `String`: For a null sound, or one unloaded.
-- `unload`: Lets go of a sound: its voices stop, and what holds it is freed.
+  - `sound`: The sound, from `load` or `stream`.
+  - `group`: Optional. The group it plays in. Defaults to `master`.
+  - `loop`: Optional. True to play it again from the start each time it ends. Defaults to false.
+  - `volume`: Optional. The voice's own volume, 0 to 1, before its groups' volumes apply. Defaults to 1.
+  - returns: The voice, which changes or stops the sound.
+  - throws `String`: When the sound is null or unloaded.
+- `unload`: Unloads a sound. Its voices stop, and the memory or file that holds it is released.
   - `sound`: The sound.
-- `poll`: Steps the fades to now and lets go of the voices that ended; call once a frame.
-- `dispose`: Stops every voice and lets go of every sound; before the output, decoder and `Assets` it was given are disposed.
+
+  Does nothing for a sound already unloaded.
+- `poll`: Steps the fades to the current time and releases the voices that ended.
+  Call it once a frame.
+- `dispose`: Stops every voice and unloads every sound.
+  Call it before disposing the output, decoder and `Assets` it was given.
 
 ## Group
 
@@ -70,7 +78,7 @@ function dispose():Void
 
 Represents voices whose volume is set together, such as the music or the effects (`Audio.createGroup`).
 
-A voice is heard at its own volume times its group's and each group's above it, and not at all while any of them is muted.
+A voice is heard at its own volume times the volume of its group and of each group above it. It is silent while any of those groups is muted.
 
 ```haxe
 var parent(default, null):Null<Group>
@@ -79,19 +87,19 @@ var muted:Bool
 function fadeTo(volume:Float, seconds:Float, ?done:() -> Void):Void
 ```
 
-- `parent`: Gets the group it's under, or null for `Audio.master`.
-- `volume`: Gets or sets its volume, 0 to 1; setting it ends a fade.
-- `muted`: Gets or sets a value indicating whether its voices are silent, their volumes kept; false by default.
-- `fadeTo`: Fades its volume to another over some real time, on a curve the ear hears as even (in decibels).
+- `parent`: Gets the group this one is under, or null for `Audio.master`.
+- `volume`: Gets or sets the group's volume, 0 to 1. Defaults to 1. Setting it ends a fade.
+- `muted`: Gets or sets a value indicating whether the group's voices are silent. Defaults to false. Their volumes are unchanged.
+- `fadeTo`: Fades the group's volume to another over some real time, on a curve the ear hears as even (in decibels).
   - `volume`: The volume to end at, 0 to 1.
-  - `seconds`: How long it takes, in real seconds; 0 sets it at once.
-  - `done`: Optional. Called once it's reached, unless another fade or a set volume ends it first.
+  - `seconds`: The fade's length, in real seconds. 0 or less sets the volume at once.
+  - `done`: Optional. Called once the volume is reached, unless another fade or a set volume ends the fade first.
 
 ## Sound
 
 *class* in [`services/src/helix/services/audio/Sound.hx`](../../services/src/helix/services/audio/Sound.hx), `import helix.services.audio.Sound;`
 
-Represents a sound ready to play: decoded whole (`Audio.load`) or opened to be read as it plays (`Audio.stream`).
+Represents a sound ready to play, either decoded whole (`Audio.load`) or opened to be read as it plays (`Audio.stream`).
 
 ```haxe
 var path(default, null):String
@@ -99,7 +107,7 @@ var streamed(default, null):Bool
 ```
 
 - `path`: Gets the path it was loaded from.
-- `streamed`: Gets a value indicating whether it's read as it plays (`Audio.stream`) rather than held whole.
+- `streamed`: Gets a value indicating whether the sound is read as it plays (`Audio.stream`) rather than held whole.
 
 ## Voice
 
@@ -107,7 +115,7 @@ var streamed(default, null):Bool
 
 Represents a sound playing (`Audio.play`), until it ends or is stopped.
 
-Once it has ended its members change nothing, and `playing` is false.
+Once it has ended, its members change nothing and `playing` is false.
 
 ```haxe
 var sound(default, null):Sound
@@ -123,13 +131,15 @@ function stop():Void
 
 - `sound`: Gets the sound it plays.
 - `group`: Gets the group it plays in.
-- `playing`: Gets a value indicating whether it's still playing or paused: false once it ended or was stopped.
-- `volume`: Gets or sets its own volume, 0 to 1, before its groups'; setting it ends a fade.
-- `pitch`: Gets or sets its playback rate, which changes its pitch and length together: 0.25 to 4, 1 as recorded.
-- `pan`: Gets or sets where it's heard: -1 left to 1 right, 0 the middle.
-- `paused`: Gets or sets a value indicating whether it's paused, holding its place.
-- `fadeTo`: Fades its own volume to another over some real time, on a curve the ear hears as even (in decibels).
+- `playing`: Gets a value indicating whether the voice is playing or paused. It is false once the voice ended or was stopped.
+- `volume`: Gets or sets the voice's own volume, 0 to 1, before its groups' volumes apply. Setting it ends a fade.
+- `pitch`: Gets or sets the playback rate, which changes pitch and length together. Clamped to 0.25 to 4. Defaults to 1, as recorded.
+- `pan`: Gets or sets where the voice is heard, from -1 for left to 1 for right. Clamped to -1 to 1. Defaults to 0, the middle.
+- `paused`: Gets or sets a value indicating whether the voice is paused, holding its place. Defaults to false.
+- `fadeTo`: Fades the voice's own volume to another over some real time, on a curve the ear hears as even (in decibels).
   - `volume`: The volume to end at, 0 to 1.
-  - `seconds`: How long it takes, in real seconds; 0 sets it at once.
-  - `done`: Optional. Called once it's reached, unless another fade, a set volume or the voice's end comes first.
-- `stop`: Stops it for good. Does nothing once it has ended.
+  - `seconds`: The fade's length, in real seconds. 0 or less sets the volume at once.
+  - `done`: Optional. Called once the volume is reached, unless another fade, a set volume or the voice's end comes first.
+
+  Does nothing once the voice has ended.
+- `stop`: Stops the voice for good. Does nothing once it has ended.

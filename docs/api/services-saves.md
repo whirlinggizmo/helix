@@ -8,9 +8,9 @@
 
 Provides small values a game keeps between runs, by key, in one file.
 
-`load` reads the file once; after it the values are read and set at once, in memory. A change is kept at the next `poll`: everything set in a frame is written as one file, one write at a time, so a program that ends between frames loses at most that frame's changes.
+`load` reads the file once. After that, values are read and set in memory, without waiting. A change is kept at the next `poll`. Everything set in a frame is written as one file, one write at a time, so a program that ends between frames loses at most that frame's changes.
 
-A write never blocks and finishes in the file system's `poll`, so a program that ends keeps polling until it's done. Natively, at `CloseRequested` the program flushes and leaves its loop when the flush answers; in a page, which ends without a last frame, it flushes in `IWindow.onClose`, where a write started may not finish.
+A write never blocks, and it finishes in the file system's `poll`, so a program that is ending keeps polling until the write is done. Natively, the program flushes at `CloseRequested` and leaves its loop when the flush answers. A page ends without a last frame, so it flushes in `IWindow.onClose`, where a write that has started may not finish.
 
 ```haxe
 saves.load(() -> {
@@ -47,33 +47,35 @@ function dispose():Void
 ```
 
 - `new`: Creates the saves over a file system, holding nothing until `load`.
-  - `fileSystem`: Where the file is kept: over `ISystem.getDataDirectory`, a `NativeFileSystemAdapter` natively and a `BrowserFileSystemAdapter` in a page.
-  - `name`: Optional. The file's path in it; "saves.json" by default.
-- `load`: Reads the file. A file that isn't there yet loads as no values.
+  - `fileSystem`: The file system the file is kept in. Make it over `ISystem.getDataDirectory`: a `NativeFileSystemAdapter` natively, and a `BrowserFileSystemAdapter` in a page.
+  - `name`: Optional. The file's path in the file system. Defaults to "saves.json".
+- `load`: Reads the file. A file that doesn't exist yet loads as no values.
   - `loaded`: Called once the values can be read.
-  - `failed`: Optional. Receives why the file can't be read or isn't saves; left out, it's logged.
-- `loaded`: Gets a value indicating whether `load` has finished, so the values can be read and set.
+  - `failed`: Optional. Receives why the file can't be read or doesn't hold saves. When omitted, the failure is logged.
+
+  Calling it again answers too: with the first load's outcome while that is in flight, and at the next `poll` once it has finished.
+- `loaded`: Gets a value indicating whether `load` has finished, so values can be read and set.
 - `has`: Returns whether a key has a value.
   - `key`: The key.
-  - returns: True when one was set or loaded, and not removed.
+  - returns: True when a value was set or loaded, and not deleted since.
 - `getString`: Returns a key's value as a string.
   - `key`: The key.
-  - `fallback`: What to return when it has none, or one that isn't a string.
+  - `fallback`: The value to return when the key has no value, or one that isn't a string.
   - returns: The value, or the fallback.
   - throws `String`: Before `load` has finished.
 - `getInt`: Returns a key's value as a whole number.
   - `key`: The key.
-  - `fallback`: What to return when it has none, or one that isn't a whole number.
+  - `fallback`: The value to return when the key has no value, or one that isn't a whole number in Int's range.
   - returns: The value, or the fallback.
   - throws `String`: Before `load` has finished.
 - `getFloat`: Returns a key's value as a number.
   - `key`: The key.
-  - `fallback`: What to return when it has none, or one that isn't a number.
+  - `fallback`: The value to return when the key has no value, or one that isn't a finite number.
   - returns: The value, or the fallback.
   - throws `String`: Before `load` has finished.
 - `getBool`: Returns a key's value as true or false.
   - `key`: The key.
-  - `fallback`: What to return when it has none, or one that isn't true or false.
+  - `fallback`: The value to return when the key has no value, or one that isn't true or false.
   - returns: The value, or the fallback.
   - throws `String`: Before `load` has finished.
 - `setString`: Sets a key to a string, kept at the next `poll`.
@@ -86,22 +88,26 @@ function dispose():Void
   - throws `String`: Before `load` has finished.
 - `setFloat`: Sets a key to a number, kept at the next `poll`.
   - `key`: The key.
-  - `value`: The value, finite.
-  - throws `String`: Before `load` has finished, or for a value that isn't finite.
+  - `value`: The value. Must be finite.
+  - throws `String`: Before `load` has finished, or when the value isn't finite.
 - `setBool`: Sets a key to true or false, kept at the next `poll`.
   - `key`: The key.
   - `value`: The value.
   - throws `String`: Before `load` has finished.
-- `deleteKey`: Deletes a key and its value, kept at the next `poll`; does nothing for a key with none.
+- `deleteKey`: Deletes a key and its value, kept at the next `poll`. Does nothing for a key with no value.
   - `key`: The key.
   - throws `String`: Before `load` has finished.
-- `deleteKeys`: Deletes every key, kept at the next `poll`: a reset. The file system holds nothing else of the saves', so nothing else there changes.
+- `deleteKeys`: Deletes every key, kept at the next `poll`, resetting the saves.
   - throws `String`: Before `load` has finished.
-- `pending`: Gets a value indicating whether a change isn't kept yet: set since the last write, or being written.
-- `flush`: Starts writing what's set now, without waiting for the next `poll`; never blocks.
-  - `written`: Optional. Called once it's kept; at the next `poll` when nothing was pending.
-  - `failed`: Optional. Receives why it can't be written; left out, it's logged.
 
-  Before `load` nothing is pending. A write started still finishes when the saves or their file system are disposed straight after, as in a page's `IWindow.onClose`, but then nothing is called.
-- `poll`: Starts writing what was set since the last write, unless a write is still going; call once a frame.
-- `dispose`: Lets go of the values, before the file system it was given is disposed; a write in flight still finishes.
+  Only the saves file changes. Nothing else in the file system belongs to the saves.
+- `pending`: Gets a value indicating whether a change isn't kept yet, because it was set since the last write or is being written.
+- `flush`: Starts writing the current values without waiting for the next `poll`. Never blocks.
+  - `written`: Optional. Called once the values are kept, or at the next `poll` when nothing was pending.
+  - `failed`: Optional. Receives why the values can't be written. When omitted, the failure is logged.
+
+  Before `load`, nothing is pending. A write that has started still finishes when the saves or their file system are disposed straight after, as in a page's `IWindow.onClose`, but then nothing is called.
+- `poll`: Starts writing what was set since the last write, unless a write is still in flight.
+  Call it once a frame. After a failed write, it waits for another change before trying again.
+- `dispose`: Releases the values. A write in flight still finishes.
+  Call it before disposing the file system it was given.

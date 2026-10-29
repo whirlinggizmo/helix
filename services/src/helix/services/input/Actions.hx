@@ -2,10 +2,10 @@ package helix.services.input;
 
 import helix.math.Point2D;
 
-/** Provides actions: names the game reads ("jump", "left"), each bound to keys, mouse buttons and gamepads, any of which works it.
+/** Provides actions, which are names the game reads, such as "jump" or "left", each bound to keys, mouse buttons and gamepads.
 
-	It reads the `Input` it was made over, so it is current once that is polled; it has no `poll` of its own. A name nothing is bound to
-	reads as not held and 0.
+	Any of an action's bindings works it. Actions reads the `Input` it was created over, so it is current once that `Input` is polled.
+	It has no `poll` of its own. A name with no bindings reads as not held, with a value of 0.
 
 	```haxe
 	actions.bind("jump", Keyboard(Space), Pad(0, South));
@@ -26,17 +26,18 @@ class Actions {
 
 	/** Creates actions with nothing bound.
 
-		@param input  The state the actions read. */
+		@param input  The input state the actions read. */
 	public function new(input:Input) {
 		this.input = input;
 	}
 
-	/** Binds a name to keys, buttons or sticks, beside what it's already bound to.
+	/** Binds a name to keys, buttons or sticks, in addition to its existing bindings.
 
-		An array already made is passed as `...bindings`.
+		An existing array is passed as `...bindings`.
+
 		@param name  The action's name.
-		@param bindings  What works it, one or more.
-		@return  False when it was already bound to every one of them; any it wasn't are bound either way. */
+		@param bindings  One or more bindings that work the action.
+		@return  False when the name was already bound to every one of them. Any new ones are bound either way. */
 	public function bind(name:String, ...bindings:Binding):Bool {
 		var bound = this.bindings.get(name);
 		if (bound == null)
@@ -50,12 +51,13 @@ class Actions {
 		return added;
 	}
 
-	/** Takes bindings off a name.
+	/** Removes bindings from a name.
 
-		Every binding of one name comes off as `unbind(name, ...getBindings(name))`.
+		`unbind(name, ...getBindings(name))` removes every binding of one name.
+
 		@param name  The action's name.
-		@param bindings  What no longer works it, one or more.
-		@return  False when it was bound to none of them; any it was are taken off either way. */
+		@param bindings  One or more bindings that no longer work the action.
+		@return  False when the name was bound to none of them. Any it was bound to are removed either way. */
 	public function unbind(name:String, ...bindings:Binding):Bool {
 		var bound = this.bindings.get(name);
 		if (bound == null)
@@ -73,24 +75,24 @@ class Actions {
 		return removed;
 	}
 
-	/** Takes every binding off every name, as before anything was bound. */
+	/** Removes every binding from every name, as before anything was bound. */
 	public function unbindAll():Void {
 		bindings.clear();
 	}
 
-	/** Returns what a name is bound to.
+	/** Returns a name's bindings.
 
 		@param name  The action's name.
-		@return  A copy of its bindings, in the order they were bound; empty for a name nothing is bound to. */
+		@return  A copy of its bindings, in the order they were bound, or an empty array for a name with no bindings. */
 	public function getBindings(name:String):Array<Binding> {
 		var bound = bindings.get(name);
 		return bound == null ? [] : bound.copy();
 	}
 
-	/** Returns whether an action is held: any of its bindings is.
+	/** Returns whether an action is held, which is when any of its bindings is held.
 
 		@param name  The action's name.
-		@return  True while any is held. */
+		@return  True while any of its bindings is held. */
 	public function isDown(name:String):Bool {
 		var bound = bindings.get(name);
 		if (bound != null)
@@ -100,7 +102,7 @@ class Actions {
 		return false;
 	}
 
-	/** Returns whether an action began this frame: one of its bindings went down while none was held.
+	/** Returns whether an action began this frame, which is when one of its bindings went down while none was held before.
 
 		@param name  The action's name.
 		@return  True for that frame alone, once per press. */
@@ -118,7 +120,7 @@ class Actions {
 		return pressed;
 	}
 
-	/** Returns whether an action ended this frame: its last held binding went up.
+	/** Returns whether an action ended this frame, which is when its last held binding went up.
 
 		@param name  The action's name.
 		@return  True for that frame alone. */
@@ -136,10 +138,12 @@ class Actions {
 		return released;
 	}
 
-	/** Returns how far an action is worked: a key or button held is 1, a stick its distance past the dead zone.
+	/** Returns how far an action is worked.
+
+		A held key or button is 1. A stick or trigger is its distance past the dead zone.
 
 		@param name  The action's name.
-		@return  The most of its bindings, 0 to 1. */
+		@return  The largest value among its bindings, 0 to 1. */
 	public function getValue(name:String):Float {
 		var bound = bindings.get(name);
 		var most = 0.;
@@ -157,7 +161,8 @@ class Actions {
 
 	/** Returns one axis made of two actions, such as "left" and "right".
 
-		Two axes read this way make a diagonal longer than either: for movement in two directions, `computeVector`.
+		Two axes read this way make a diagonal longer than either axis. For movement in two directions, use `computeVector`.
+
 		@param negative  The action toward -1.
 		@param positive  The action toward 1.
 		@return  The positive action's value less the negative's, -1 to 1. */
@@ -165,15 +170,16 @@ class Actions {
 		return getValue(positive) - getValue(negative);
 	}
 
-	/** Returns a direction made of four actions, its length held to at most 1, so a diagonal is no faster than a straight line and a stick
-		pushed partway stays partway.
+	/** Returns a direction made of four actions, with its length clamped to at most 1.
+
+		A diagonal is no faster than a straight line, and a stick pushed partway stays partway.
 
 		@param left  The action toward -x.
 		@param right  The action toward +x.
 		@param up  The action toward -y.
 		@param down  The action toward +y.
-		@param out  Optional. The point to fill; a new one when left out.
-		@return  The direction: x is `getAxis(left, right)` and y `getAxis(up, down)`, scaled down when longer than 1. */
+		@param out  Optional. The point to fill. A new point is created when omitted.
+		@return  The direction. Its x is `getAxis(left, right)` and its y is `getAxis(up, down)`, scaled down when longer than 1. */
 	public function computeVector(left:String, right:String, up:String, down:String, ?out:Point2D):Point2D {
 		var x = getAxis(left, right), y = getAxis(up, down);
 		var length = Math.sqrt(x * x + y * y);

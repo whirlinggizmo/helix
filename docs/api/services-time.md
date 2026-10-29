@@ -6,9 +6,9 @@
 
 *class* in [`services/src/helix/services/time/Time.hx`](../../services/src/helix/services/time/Time.hx), `import helix.services.time.Time;`, implements `IPollable`
 
-Provides a frame's time: the game's seconds, which can be scaled and paused and have timers on them, and the real seconds beside them.
+Provides a frame's time, in the game's seconds and in real seconds.
 
-The program constructs one and calls `poll` once a frame; game code then moves by `delta`. Something that must keep time while the game is paused, such as a menu's animation, moves by `realDelta`, or by a second `Time` of its own.
+The game's seconds can be scaled and paused, and timers run on them. The program constructs one `Time` and calls `poll` once a frame. Game code then moves by `delta`. Something that must keep time while the game is paused, such as a menu's animation, moves by `realDelta`, or by a second `Time` of its own.
 
 ```haxe
 var time = new Time(system);
@@ -32,33 +32,37 @@ function poll():Void
 function dispose():Void
 ```
 
-- `new`: Creates the game's time at 0.
-  - `system`: The platform's facts: it reads their monotonic time (`getTime`).
-- `delta`: Gets the game's seconds this frame: the real seconds times `scale`, and 0 while paused.
-- `realDelta`: Gets the real seconds this frame: not scaled, running while paused, at most `maxDelta`.
-- `elapsed`: Gets the game's seconds since this was made: the sum of every `delta`.
-- `scale`: Gets or sets how fast the game's time runs: 1 as real time, 2 twice as fast, 0 stopped; 0 or more, a negative one being 0; 1 by default.
-- `paused`: Gets or sets a value indicating whether the game's time stands still: `delta` is 0 and the timers wait; false by default.
-- `maxDelta`: Gets or sets the most real seconds one frame counts, so a frame after a stall (a page in the background, a debugger) doesn't jump; more than 0, 0.25 by default.
+- `new`: Creates the game's time, starting at 0.
+  - `system`: The platform's system, whose monotonic time (`getTime`) it reads.
+- `delta`: Gets the game's seconds this frame, which is `realDelta` times `scale`, or 0 while paused.
+- `realDelta`: Gets the real seconds this frame, at most `maxDelta`. It isn't scaled, and it keeps running while paused.
+- `elapsed`: Gets the game's seconds since this `Time` was created, which is the sum of every `delta`.
+- `scale`: Gets or sets how fast the game's time runs. Defaults to 1.
+  1 runs as real time, 2 twice as fast, and 0 stops it. A negative value is clamped to 0.
+- `paused`: Gets or sets a value indicating whether the game's time stands still. Defaults to false.
+  While paused, `delta` is 0 and the timers wait.
+- `maxDelta`: Gets or sets the most real seconds one frame counts. Defaults to 0.25, and is clamped to at least 0.001.
+  It keeps a frame after a stall, such as a page in the background or a debugger, from jumping ahead.
 - `after`: Calls a function once, after some of the game's time.
-  - `seconds`: The game's seconds from now; 0 or less calls it at the next `poll`.
+  - `seconds`: The game's seconds from now. 0 or less calls it at the next `poll`.
   - `f`: The function.
-  - returns: The timer, to cancel it.
-- `every`: Calls a function each time some of the game's time passes, until it's cancelled.
-  - `seconds`: The game's seconds between calls, more than 0.
+  - returns: The timer, which cancels the call.
+- `every`: Calls a function each time an interval of the game's time passes, until it is cancelled.
+  - `seconds`: The game's seconds between calls. Must be more than 0.
   - `f`: The function.
-  - returns: The timer, to cancel it.
-  - throws `String`: For seconds of 0 or less.
+  - returns: The timer, which cancels the calls.
+  - throws `String`: When seconds is 0 or less.
 
-  A frame longer than the interval calls it once for each interval it holds.
-- `poll`: Measures this frame from the platform's time, and calls the timers that are due, in the order they fall due; call once a frame.
+  A frame longer than the interval calls it once for each interval the frame holds.
+- `poll`: Measures this frame from the platform's time, and calls the timers that are due, in the order they fall due.
+  Call it once a frame. A timer created by a timer's function waits for the next `poll`.
 - `dispose`: Cancels every timer.
 
 ## Timer
 
 *class* in [`services/src/helix/services/time/Timer.hx`](../../services/src/helix/services/time/Timer.hx), `import helix.services.time.Timer;`
 
-Represents a function called after some of the game's time, once or repeatedly (`Time.after`, `Time.every`).
+Represents a function called after some of the game's time, once (`Time.after`) or repeatedly (`Time.every`).
 
 ```haxe
 var remaining(default, null):Float
@@ -67,7 +71,7 @@ var done(default, null):Bool
 function cancel():Void
 ```
 
-- `remaining`: Gets the game's seconds until the next call.
+- `remaining`: Gets the game's seconds until the next call. It is updated at each `Time.poll`.
 - `interval`: Gets the game's seconds between calls for a repeating timer, or 0 for one called once.
-- `done`: Gets a value indicating whether it will call its function no more: called once, or cancelled.
-- `cancel`: Stops it: its function isn't called again. Does nothing once it's done.
+- `done`: Gets a value indicating whether the timer will call its function no more, because it was called once or cancelled.
+- `cancel`: Cancels the timer, so its function isn't called again. Does nothing once it is done.
