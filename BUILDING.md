@@ -22,7 +22,7 @@ tools as they run (`tools/pins.py`).
 
 ```console
 python3 helix.py test                       # the tools' checks, the size ladders, each library's tests, Trig's bits across targets
-python3 helix.py test --native              # also the platform's native C tests and Trig natively
+python3 helix.py test --native              # also each library's tests in hxcpp and the platform's native C tests
 python3 tools/check_types.py --no-output    # type-check every entry point of every library on its targets
 python3 tools/platform_checks.py --browser <chromium>   # the platform's examples and GPU tests, natively on a private display and in Chromium
 python3 tools/format.py --check             # layout
