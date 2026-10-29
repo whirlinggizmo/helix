@@ -1,0 +1,12 @@
+{
+	"name": "helix-log",
+	"url": "https://github.com/whirlinggizmo/helix-2.0",
+	"license": "MIT",
+	"tags": ["log", "logging", "js", "cpp"],
+	"description": "A log: levels and tags, to the browser's console or the process's output, and trace through it when installed. Depends on nothing.",
+	"version": "0.1.0",
+	"classPath": "src/",
+	"releasenote": "First release.",
+	"contributors": ["whirlinggizmo"],
+	"dependencies": {}
+}

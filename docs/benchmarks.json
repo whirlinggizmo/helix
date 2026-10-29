@@ -1,0 +1,123 @@
+{
+ "commit": "e8b129d 2026-10-28",
+ "haxe": "4.3.7",
+ "ladders": {
+  "platform": {
+   "1-clear": {
+    "adds": "a window cleared each frame: the window, its events and the GPU",
+    "raw": 24262,
+    "gzip": 5653,
+    "brotli": 4900,
+    "packages": {
+     "platform/events": 10775,
+     "haxe metadata": 7456,
+     "std/js": 2992,
+     "platform/graphics": 1466,
+     "program": 642,
+     "platform/window": 368,
+     "std/haxe": 289,
+     "platform/shared": 184,
+     "platform": 91
+    }
+   },
+   "2-triangle": {
+    "adds": "a triangle drawn: a compiled shader, a buffer and a pipeline",
+    "raw": 41330,
+    "gzip": 9814,
+    "brotli": 8615,
+    "packages": {
+     "platform/graphics": 15691,
+     "platform/events": 10775,
+     "haxe metadata": 8141,
+     "std/js": 3636,
+     "program": 1903,
+     "platform/window": 368,
+     "std/haxe": 326,
+     "platform": 307,
+     "platform/shared": 184
+    }
+   },
+   "3-http": {
+    "adds": "a file downloaded over HTTP",
+    "raw": 45805,
+    "gzip": 11028,
+    "brotli": 9691,
+    "packages": {
+     "platform/graphics": 15691,
+     "platform/events": 10775,
+     "haxe metadata": 8762,
+     "std/js": 4941,
+     "program": 2333,
+     "platform/http": 2119,
+     "platform/window": 368,
+     "std/haxe": 326,
+     "platform": 307,
+     "platform/shared": 184
+    }
+   },
+   "4-audio": {
+    "adds": "the file decoded and played as a sound",
+    "raw": 56294,
+    "gzip": 13435,
+    "brotli": 11743,
+    "packages": {
+     "platform/graphics": 15691,
+     "platform/events": 10775,
+     "haxe metadata": 10157,
+     "platform/audio": 6817,
+     "std/js": 5449,
+     "program": 2715,
+     "platform/http": 2119,
+     "platform/audiodecoder": 1387,
+     "platform/window": 368,
+     "std/haxe": 326,
+     "platform": 307,
+     "platform/shared": 184
+    }
+   },
+   "5-image": {
+    "adds": "an image downloaded and decoded into a texture",
+    "raw": 57689,
+    "gzip": 13745,
+    "brotli": 12043,
+    "packages": {
+     "platform/graphics": 15691,
+     "platform/events": 10775,
+     "haxe metadata": 10439,
+     "platform/audio": 6817,
+     "std/js": 5449,
+     "program": 3072,
+     "platform/http": 2119,
+     "platform/audiodecoder": 1387,
+     "platform/imagedecoder": 756,
+     "platform/window": 368,
+     "std/haxe": 326,
+     "platform": 307,
+     "platform/shared": 184
+    }
+   },
+   "6-filesystem": {
+    "adds": "a file written to the browser's file system and read back",
+    "raw": 64357,
+    "gzip": 15296,
+    "brotli": 13377,
+    "packages": {
+     "platform/graphics": 15691,
+     "haxe metadata": 11308,
+     "platform/events": 10775,
+     "std/js": 7474,
+     "platform/audio": 6817,
+     "program": 3502,
+     "platform/filesystem": 2822,
+     "platform/http": 2119,
+     "platform/audiodecoder": 1387,
+     "platform/imagedecoder": 756,
+     "platform/shared": 706,
+     "platform/window": 368,
+     "std/haxe": 326,
+     "platform": 307
+    }
+   }
+  }
+ }
+}

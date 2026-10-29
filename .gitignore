@@ -1,0 +1,8 @@
+build/
+__pycache__/
+platform/examples/*/web/app.js
+platform/examples/*/native/
+platform/examples/*/native-gpu/
+platform/tests/graphics/web/app.js
+platform/tests/graphics/native/
+platform/tests/graphics/native-gpu/

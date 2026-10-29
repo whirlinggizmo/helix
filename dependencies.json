@@ -1,0 +1,68 @@
+{
+  "haxe": "4.3.7",
+  "hxcpp": "4.3.2",
+  "formatter": "1.18.0",
+  "dox": "1.6.0",
+  "sokol": {
+    "revision": "c237609b19a5f95b9ca3c06473cf056ba5d9524e",
+    "fork": "https://github.com/whirlinggizmo/sokol (the Whirling Gizmo fork)",
+    "upstream": "https://github.com/floooh/sokol 5e94d129",
+    "headers": {
+      "platform/vendor/sokol_gfx.h": "478679b767f811cb9208e334225f23c8adc65556f2e1b757a68a8f9c79b94e47",
+      "platform/vendor/sokol_log.h": "a8d55de21694410740e752ea8e57c4103d5951d20339ba9712e24232adef9a42"
+    }
+  },
+  "nodePackages": {
+    "playwright": "1.64.0"
+  },
+  "nativeSystemLibraries": {
+    "ALSA": "1.2.11 (system development/runtime library on measured Linux host)"
+  },
+  "sdl3": {
+    "version": "3.4.18",
+    "source": "https://github.com/libsdl-org/SDL/tree/release-3.4.18 (829a65d76)",
+    "license": "zlib",
+    "headers": {
+      "directory": "platform/vendor/sdl3",
+      "treeSha256": "d6ce28651e7e722bbf2360302eccef217a6ddb90802c3f7ce124215c2e24b53b"
+    },
+    "linux": {
+      "url": "https://github.com/libsdl-org/SDL/releases/download/release-3.4.18/SDL3-3.4.18.tar.gz",
+      "sha256": "9c75cf16330322c217dedd2e0609f1124f1b54b8633e763467b4684d0f4334a3",
+      "directory": "SDL3-3.4.18",
+      "systemMinimum": "3.4.18"
+    },
+    "windows": {
+      "url": "https://github.com/libsdl-org/SDL/releases/download/release-3.4.18/SDL3-devel-3.4.18-VC.zip",
+      "sha256": "78d84602ae616cfe26b33a73b7d3b9b6b56e8a6650e53d92c9c6ca938f747acd",
+      "directory": "SDL3-3.4.18"
+    },
+    "macos": {
+      "url": "https://github.com/libsdl-org/SDL/releases/download/release-3.4.18/SDL3-3.4.18.dmg",
+      "sha256": "c1adf3da91108dbc3e4205da5dacebc203085d283fa89e86eb2c889abd03a853",
+      "directory": "SDL3-3.4.18-macos"
+    }
+  },
+  "sdl3Mixer": {
+    "version": "3.2.4",
+    "source": "https://github.com/libsdl-org/SDL_mixer/tree/release-3.2.4 (72a8186)",
+    "license": "zlib; stb_vorbis and dr_libs public domain or MIT",
+    "vendored": {
+      "directory": "platform/vendor/sdl3_mixer",
+      "treeSha256": "34b97616b6fa2637f8486104288ccfbeebf0b159cc88af31ee7c34bf70359ba7",
+      "files": "include/SDL3_mixer/SDL_mixer.h, LICENSE.txt, and from src/: SDL_mixer.c, SDL_mixer_internal.h, SDL_mixer_metadata_tags.c, SDL_mixer_spatialization.c, the raw, sinewave, wav, stb_vorbis, drmp3 and drflac decoders, stb_vorbis/ and dr_libs/",
+      "built": "with the program by hxcpp (Sdl3MixerBridge), defining DECODER_WAV, DECODER_OGGVORBIS_STB, DECODER_MP3_DRMP3 and DECODER_FLAC_DRFLAC"
+    }
+  },
+  "stbImage": {
+    "version": "2.30",
+    "source": "https://github.com/nothings/stb (master, identical to the v2.30 header)",
+    "file": "platform/vendor/stb/stb_image.h",
+    "sha256": "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3",
+    "license": "public domain or MIT, at the end of the header"
+  },
+  "gpuShaders": {
+    "purpose": "glslang and SPIRV-Cross, which helix-platform's shader compiler runs (glslang compiles GLSL to SPIR-V; SPIRV-Cross translates it to every other dialect and reflects it)",
+    "pinned": "in platform/src/helix/platform/tools/ShaderTools.hx, so the compiler finds them wherever helix-platform is installed: glslang 16.6.0's official releases, SPIRV-Cross's vulkan-sdk-1.4.363.0 source"
+  }
+}

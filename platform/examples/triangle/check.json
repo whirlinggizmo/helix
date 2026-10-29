@@ -1,0 +1,8 @@
+{
+  "what": "The triangle at 800 x 600: a corner is the clear color, its centroid mixes the three vertex colors equally, and just under the top vertex is nearly all red.",
+  "points": [
+    {"x": 4, "y": 4, "color": [10, 14, 24], "tolerance": 3},
+    {"x": 400, "y": 360, "color": [85, 85, 85], "tolerance": 12},
+    {"x": 400, "y": 135, "color": [240, 8, 8], "tolerance": 24}
+  ]
+}

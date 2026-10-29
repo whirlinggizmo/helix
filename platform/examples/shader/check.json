@@ -1,0 +1,10 @@
+{
+  "what": "The 60th frame (frame 59) at 800 x 600: the square moved right by 0.25 sin(2.95) of clip space, its left edge at x 219, so x 210 is the clear color; its checks 50 x 37.5 pixels (the 2 x 2 texture four times across), cream then teal from the top left, each times the tint 0.75 + 0.25 cos(4.72).",
+  "points": [
+    {"x": 4, "y": 4, "color": [10, 14, 24], "tolerance": 3},
+    {"x": 210, "y": 300, "color": [10, 14, 24], "tolerance": 3},
+    {"x": 244, "y": 169, "color": [180, 165, 135], "tolerance": 3},
+    {"x": 294, "y": 169, "color": [30, 90, 105], "tolerance": 3},
+    {"x": 294, "y": 206, "color": [180, 165, 135], "tolerance": 3}
+  ]
+}

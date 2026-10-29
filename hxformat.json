@@ -1,0 +1,8 @@
+{
+	"excludes": [
+		"\\.haxelib",
+		"\\.git",
+		"node_modules",
+		"build/"
+	]
+}

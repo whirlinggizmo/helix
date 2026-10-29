@@ -1,0 +1,543 @@
+import haxe.io.Bytes;
+import helix.platform.BlendMode;
+import helix.platform.IEvents;
+import helix.platform.IGraphics;
+import helix.platform.ISystem;
+import helix.platform.VertexBuffer;
+import helix.platform.IWindow;
+import helix.platform.Sampling;
+import helix.platform.tools.ShaderCompiler;
+
+/** Represents one case: what it draws, what it reads back and what it expects there. */
+typedef Case = {
+	/** The case's name, in a failure's message. */
+	final name:String;
+
+	/** Draws its target passes, before the frame. */
+	final ?before:() -> Void;
+
+	/** The screen's clear color. */
+	final ?clear:Int;
+
+	/** Draws in the screen's pass, given its size. */
+	final ?screen:(width:Int, height:Int) -> Void;
+
+	/** The render target read back; 0 for the screen. */
+	final target:Int;
+
+	/** Checks the pixels read back. */
+	final check:Pixels->Void;
+}
+
+/** Checks helix-platform's graphics on the GPU, with the library alone: each case draws, reads the result back with `readPixels` and checks
+	its pixels against what arithmetic says they are.
+
+	The cases: a clear, a triangle's colors interpolated, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
+	additive blending, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
+	texel by texel, a cubemap's six faces, and declared textures left unbound reading clear. The shaders are `shaders/*.vert` and `*.frag`,
+	compiled by the build, so it checks the shader compiler's dialects too. One case runs a frame; on a GPU that reads back later, the next
+	waits for it.
+
+	Built from the hxml files beside it: in a page it runs on WebGL2, natively on GL, or SDL_GPU with `-D sdl_gpu`. It ends with
+	`{passed, checks, failures}` as JSON: printed natively, exiting 1 on a failure, and in a page in `window.helixResult`, null until then.
+	Run by `tools/platform_checks.py`. */
+class GraphicsTests {
+	// The render targets' size, in texels.
+	static inline final SIZE = 16;
+	// How many frames a read back may take before the case fails.
+	static inline final READ_FRAMES = 60;
+
+	static var window:IWindow;
+	static var events:IEvents;
+	static var graphics:IGraphics;
+	static var system:ISystem;
+	static var cases:Array<Case>;
+	static var next = 0;
+	static var waiting = 0;
+	static var checks = 0;
+	static var failures:Array<String> = [];
+	static var current = "";
+	// What setup made, disposed by dispose.
+	static var shaders:Array<Int> = [];
+	static var pipelines:Array<Int> = [];
+	static var buffers:Array<Int> = [];
+	static var textures:Array<Int> = [];
+
+	static function main():Void {
+		#if js
+		js.Syntax.code("window.helixResult = null");
+		var canvas:js.html.CanvasElement = cast js.Browser.document.getElementById("canvas");
+		window = new helix.platform.adapters.window.dom.DomWindowAdapter(canvas);
+		events = new helix.platform.adapters.events.dom.DomEventsAdapter(canvas);
+		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter(canvas, false, 1);
+		system = new helix.platform.adapters.system.dom.DomSystemAdapter();
+		setup();
+		var frame:Float->Void = null;
+		frame = _ -> if (tick()) js.Browser.window.requestAnimationFrame(frame) else finish();
+		js.Browser.window.requestAnimationFrame(frame);
+		#else
+		#if sdl_gpu
+		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter(1, false);
+		graphics = new helix.platform.adapters.graphics.sdl3gpu.Sdl3GpuGraphicsAdapter();
+		#else
+		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter(1, true);
+		graphics = new helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter();
+		#end
+		events = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();
+		system = new helix.platform.adapters.system.sdl3.Sdl3SystemAdapter();
+		setup();
+		while (tick()) {}
+		finish();
+		#end
+	}
+
+	/** Runs one frame: the next case, or an empty frame while a read back is awaited. False once every case has been read. */
+	static function tick():Bool {
+		events.poll();
+		for (event in events.events)
+			switch event {
+				case CloseRequested | GraphicsLost:
+					fail('stopped by $event, ${cases.length - next} cases not run');
+					return false;
+				case _:
+			}
+		var width = window.framebufferWidth, height = window.framebufferHeight;
+		if (waiting > 0) {
+			if (++waiting > READ_FRAMES) {
+				fail('no read back after $READ_FRAMES frames');
+				return false;
+			}
+			graphics.beginFrame(width, height, 0xff000000);
+			graphics.endFrame();
+			graphics.present();
+			return true;
+		}
+		if (next == cases.length)
+			return false;
+		var c = cases[next++];
+		current = c.name;
+		waiting = 1;
+		try {
+			if (c.before != null)
+				c.before();
+			graphics.beginFrame(width, height, c.clear == null ? 0xff000000 : c.clear);
+			if (c.screen != null)
+				c.screen(width, height);
+			graphics.endFrame();
+			graphics.readPixels(c.target, (pixels, w, h) -> {
+				waiting = 0;
+				current = c.name;
+				c.check(new Pixels(pixels, w, h));
+			}, why -> {
+				waiting = 0;
+				current = c.name;
+				fail('not read back: $why');
+			});
+		} catch (error:Dynamic) {
+			waiting = 0;
+			fail('threw: $error');
+		}
+		graphics.present();
+		return true;
+	}
+
+	/** Records a check's outcome. */
+	public static function check(value:Bool, message:String):Void {
+		checks++;
+		if (!value)
+			fail(message);
+	}
+
+	static function fail(message:String):Void
+		failures.push('$current: $message');
+
+	/** Makes the programs, pipelines, buffers and textures, and the cases over them. */
+	static function setup():Void {
+		window.title = "helix-platform: graphics tests";
+		var color = shader(ShaderCompiler.compile("shaders/color.vert", "shaders/color.frag"));
+		var texture = shader(ShaderCompiler.compile("shaders/texture.vert", "shaders/texture.frag"));
+		var data = shader(ShaderCompiler.compile("shaders/texture.vert", "shaders/data.frag"));
+		var cube = shader(ShaderCompiler.compile("shaders/texture.vert", "shaders/cube.frag"));
+		var tint = shader(ShaderCompiler.compile("shaders/offset.vert", "shaders/tint.frag"));
+
+		// Vertex layouts: a position and a color (24 bytes), a position and a texture coordinate (16), a position (8).
+		var colored:VertexBuffer = {
+			stride: 24,
+			instanced: false,
+			attributes: [
+				{slot: 0, componentCount: 2, offset: 0},
+				{
+					slot: 1,
+					componentCount: 4,
+					offset: 8
+				}
+			]
+		};
+		var textured:VertexBuffer = {
+			stride: 16,
+			instanced: false,
+			attributes: [
+				{slot: 0, componentCount: 2, offset: 0},
+				{
+					slot: 1,
+					componentCount: 2,
+					offset: 8
+				}
+			]
+		};
+		var plain:VertexBuffer = {stride: 8, instanced: false, attributes: [{slot: 0, componentCount: 2, offset: 0}]};
+		var opaque = pipeline(color, colored, Opaque),
+			alpha = pipeline(color, colored, Alpha),
+			additive = pipeline(color, colored, Additive);
+		var sampled = pipeline(texture, textured, Opaque),
+			fetched = pipeline(data, textured, Opaque),
+			looked = pipeline(cube, textured, Opaque);
+		var tinted = pipeline(tint, plain, Opaque);
+
+		// Clip space's square as two triangles; a texture coordinate's v runs down, as a texture's rows do.
+		var square = [-1., -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1];
+		function quad(r:Float, g:Float, b:Float, a:Float):Int {
+			var values = [];
+			for (i in 0...6)
+				values = values.concat([square[i * 2], square[i * 2 + 1], r, g, b, a]);
+			return buffer(values);
+		}
+		var white = quad(1, 1, 1, 1),
+			red = quad(1, 0, 0, 1),
+			halfRed = quad(1, 0, 0, .5);
+		var uvSquare = [];
+		for (i in 0...6)
+			uvSquare = uvSquare.concat([
+				square[i * 2],
+				square[i * 2 + 1],
+				(square[i * 2] + 1) / 2,
+				(1 - square[i * 2 + 1]) / 2
+			]);
+		var uvQuad = buffer(uvSquare);
+		// Half the square, centered on the origin, for block 1 to move.
+		var half = buffer([for (v in square) v / 2]);
+		// One triangle over the whole square: red at (-1, -1), green at (3, -1), blue at (-1, 3).
+		var triangle = buffer([-1., -1, 1, 0, 0, 1, 3, -1, 0, 1, 0, 1, -1, 3, 0, 0, 1, 1]);
+
+		var target = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false);
+		textures.push(target);
+		// 2 x 2, rows top first: red, green, then blue, white.
+		var checker = texture2D(2, 2, [0xff0000ff, 0x00ff00ff, 0x0000ffff, 0xffffffff]);
+		// One texel a face: +X red, -X green, +Y blue, -Y yellow, +Z magenta, -Z cyan.
+		var faces = Bytes.alloc(24);
+		for (i => rgba in [0xff0000ff, 0x00ff00ff, 0x0000ffff, 0xffff00ff, 0xff00ffff, 0x00ffffff])
+			faces.setInt32(i * 4, rgbaBytes(rgba));
+		var sky = graphics.createCubeTexture(1, [faces], Rgba8);
+		textures.push(sky);
+		// Floats beyond 0 to 1, which only a float texture keeps.
+		var table = graphics.createDataTexture(4, 1);
+		textures.push(table);
+		var floats = [1., -.25, .5, 0, 3, -.5, .25, 0, 5, -.75, 1, 0, 7, 0, 0, 0];
+		graphics.updateDataTexture(table, floatBytes(floats));
+
+		var clip = floatBytes([1, 1, 0, 0]);
+		function draw(pipeline:Int, buffer:Int, count:Int, ?textures:Array<Int>, ?samplings:Array<Sampling>, ?uniforms:Array<Null<Bytes>>):Void
+			graphics.draw(pipeline, [buffer], 0, 0, count, 0, 1, textures == null ? [] : textures, samplings == null ? [] : samplings,
+				uniforms == null ? [clip] : uniforms);
+		function into(r:Float, g:Float, b:Float, a:Float, draws:() -> Void):() -> Void
+			return () -> {
+				graphics.beginTargetPass(target, r, g, b, a);
+				draws();
+				graphics.endTargetPass();
+			};
+		// A texel's center in clip space.
+		function clipX(x:Int):Float
+			return (x + .5) / SIZE * 2 - 1;
+		function clipY(y:Int):Float
+			return 1 - (y + .5) / SIZE * 2;
+		// The 2 x 2 texture sampled linearly at a texel's center of the target, clamped to its edge.
+		function bilinear(x:Int, y:Int):Array<Float> {
+			var u = Math.min(Math.max((x + .5) / SIZE * 2 - .5, 0), 1),
+				v = Math.min(Math.max((y + .5) / SIZE * 2 - .5, 0), 1);
+			var top = [for (i in 0...3) [1., 0, 0][i] * (1 - u) + [0., 1, 0][i] * u];
+			var bottom = [for (i in 0...3) [0., 0, 1][i] * (1 - u) + [1., 1, 1][i] * u];
+			return [for (i in 0...3) top[i] * (1 - v) + bottom[i] * v];
+		}
+
+		cases = [
+			{
+				name: "a target cleared",
+				before: into(.25, .5, .75, 1, () -> {}),
+				target: target,
+				check: p -> for (at in [[0, 0], [15, 0], [0, 15], [15, 15], [8, 8]])
+					p.expect(at[0], at[1], [.25, .5, .75, 1], 1)
+			},
+			{
+				name: "the screen cleared",
+				clear: 0xff336699,
+				target: 0,
+				check: p -> for (at in [
+					[0, 0],
+					[p.width - 1, 0],
+					[0, p.height - 1],
+					[p.width - 1, p.height - 1],
+					[p.width >> 1, p.height >> 1]
+				])
+					p.expect(at[0], at[1], [0x33 / 255, 0x66 / 255, 0x99 / 255], 0)
+			},
+			{
+				name: "a triangle's colors interpolated",
+				before: into(0, 0, 0, 0, () -> draw(opaque, triangle, 3)),
+				target: target,
+				// Green grows along x and blue along y, each a quarter a unit; red is what's left. Row 0 is the top: blue's side.
+				check: p -> for (at in [[0, 0], [5, 10], [10, 3], [15, 15], [8, 8], [15, 0]]) {
+					var green = (clipX(at[0]) + 1) / 4,
+						blue = (clipY(at[1]) + 1) / 4;
+					p.expect(at[0], at[1], [1 - green - blue, green, blue, 1], 2);
+				}
+			},
+			{
+				name: "a texture sampled nearest",
+				before: into(0, 0, 0, 0, () -> draw(sampled, uvQuad, 6, [checker], [Sampling.NEAREST])),
+				target: target,
+				check: p -> {
+					p.expect(3, 3, [1, 0, 0, 1], 0);
+					p.expect(7, 7, [1, 0, 0, 1], 0);
+					p.expect(12, 3, [0, 1, 0, 1], 0);
+					p.expect(3, 12, [0, 0, 1, 1], 0);
+					p.expect(8, 8, [1, 1, 1, 1], 0);
+					p.expect(12, 12, [1, 1, 1, 1], 0);
+				}
+			},
+			{
+				name: "a texture sampled linearly",
+				before: into(0, 0, 0, 0, () -> draw(sampled, uvQuad, 6, [checker], [Sampling.LINEAR])),
+				target: target,
+				check: p -> for (at in [[0, 0], [7, 7], [8, 8], [5, 10], [15, 0], [10, 6]])
+					p.expect(at[0], at[1], bilinear(at[0], at[1]).concat([1]), 3)
+			},
+			{
+				name: "uniform blocks in both stages",
+				// Half the square moved up and right by a quarter of the target: its top right quarter, in block 2's color.
+				before: into(0, 0, 0, 1, () -> draw(tinted, half, 6, null, null, [clip, floatBytes([.5, .5, 0, 0]), floatBytes([.2, .4, .6, 1])])),
+				target: target,
+				check: p -> {
+					p.expect(12, 3, [.2, .4, .6, 1], 1);
+					p.expect(3, 3, [0, 0, 0, 1], 0);
+					p.expect(12, 12, [0, 0, 0, 1], 0);
+					p.expect(3, 12, [0, 0, 0, 1], 0);
+				}
+			},
+			{
+				name: "alpha and additive blending",
+				// Half-transparent red over blue: blended by its alpha on the left, added by it on the right.
+				before: into(0, 0, 1, 1, () -> {
+					graphics.applyViewport(0, 0, SIZE >> 1, SIZE);
+					draw(alpha, halfRed, 6);
+					graphics.applyViewport(SIZE >> 1, 0, SIZE >> 1, SIZE);
+					draw(additive, halfRed, 6);
+				}),
+				target: target,
+				check: p -> {
+					p.expect(3, 8, [.5, 0, .5], 1);
+					p.expect(12, 8, [.5, 0, 1], 1);
+				}
+			},
+			{
+				name: "a render target drawn to the screen",
+				// Red with a green top right quarter, drawn over the screen: the quarter stays top right.
+				before: into(1, 0, 0, 1, () -> draw(tinted, half, 6, null, null, [clip, floatBytes([.5, .5, 0, 0]), floatBytes([0, 1, 0, 1])])),
+				screen: (_, _) -> draw(sampled, uvQuad, 6, [target], [Sampling.NEAREST]),
+				target: 0,
+				check: p -> {
+					var w = p.width, h = p.height;
+					p.expect(w * 3 >> 2, h >> 2, [0, 1, 0], 0);
+					p.expect(w >> 2, h >> 2, [1, 0, 0], 0);
+					p.expect(w >> 2, h * 3 >> 2, [1, 0, 0], 0);
+					p.expect(w * 3 >> 2, h * 3 >> 2, [1, 0, 0], 0);
+				}
+			},
+			{
+				name: "viewport and scissor in a target",
+				// White through the bottom left quarter's viewport, then red clipped to the top right 4 x 4; both measured from the bottom.
+				before: into(0, 0, 0, 1, () -> {
+					graphics.applyViewport(0, 0, SIZE >> 1, SIZE >> 1);
+					draw(opaque, white, 6);
+					graphics.applyViewport(0, 0, SIZE, SIZE);
+					graphics.applyScissor(SIZE - 4, SIZE - 4, 4, 4);
+					draw(opaque, red, 6);
+				}),
+				target: target,
+				check: p -> {
+					p.expect(3, 12, [1, 1, 1, 1], 0);
+					p.expect(7, 8, [1, 1, 1, 1], 0);
+					p.expect(3, 3, [0, 0, 0, 1], 0);
+					p.expect(8, 12, [0, 0, 0, 1], 0);
+					p.expect(13, 1, [1, 0, 0, 1], 0);
+					p.expect(12, 3, [1, 0, 0, 1], 0);
+					p.expect(11, 1, [0, 0, 0, 1], 0);
+					p.expect(13, 4, [0, 0, 0, 1], 0);
+				}
+			},
+			{
+				name: "viewport and scissor on the screen",
+				screen: (w, h) -> {
+					graphics.applyViewport(0, 0, w >> 1, h >> 1);
+					draw(opaque, white, 6);
+					graphics.applyViewport(0, 0, w, h);
+					graphics.applyScissor(w - (w >> 2), h - (h >> 2), w >> 2, h >> 2);
+					draw(opaque, red, 6);
+				},
+				target: 0,
+				check: p -> {
+					var w = p.width, h = p.height;
+					p.expect(w >> 2, h * 3 >> 2, [1, 1, 1], 0);
+					p.expect(w >> 2, h >> 2, [0, 0, 0], 0);
+					p.expect(w * 3 >> 2, h * 3 >> 2, [0, 0, 0], 0);
+					p.expect(w - (w >> 3), h >> 3, [1, 0, 0], 0);
+					p.expect(w * 5 >> 3, h >> 3, [0, 0, 0], 0);
+				}
+			},
+			{
+				name: "a data texture's floats",
+				// Its sampling asks for linear, which a data texture ignores.
+				before: into(0, 0, 0, 0, () -> draw(fetched, uvQuad, 6, [table], [Sampling.LINEAR])),
+				target: target,
+				check: p -> for (i in 0...4)
+					p.expect(i * 4 + 2, 8, [floats[i * 4] / 8, -floats[i * 4 + 1], floats[i * 4 + 2], 1], 1)
+			},
+			{
+				name: "a cubemap's faces",
+				before: into(0, 0, 0, 0, () -> draw(looked, uvQuad, 6, [sky], [Sampling.LINEAR])),
+				target: target,
+				// Each sixth's middle column.
+				check: p -> for (face => rgb in [[1., 0, 0], [0., 1, 0], [0., 0, 1], [1., 1, 0], [1., 0, 1], [0., 1, 1]])
+					p.expect(Std.int((face + .5) * SIZE / 6), 8, rgb.concat([1]), 1)
+			},
+			{
+				name: "declared textures left unbound read clear",
+				// A plain texture, a cubemap and a data texture, each in a third, over white.
+				before: into(1, 1, 1, 1, () -> {
+					graphics.applyViewport(0, 0, 5, SIZE);
+					draw(sampled, uvQuad, 6);
+					graphics.applyViewport(5, 0, 5, SIZE);
+					draw(looked, uvQuad, 6);
+					graphics.applyViewport(10, 0, 6, SIZE);
+					draw(fetched, uvQuad, 6);
+				}),
+				target: target,
+				check: p -> {
+					p.expect(2, 8, [0, 0, 0, 0], 0);
+					p.expect(7, 8, [0, 0, 0, 0], 0);
+					p.expect(13, 8, [0, 0, 0, 1], 0);
+				}
+			}
+		];
+	}
+
+	static function shader(source:helix.platform.ShaderSource):Int {
+		var handle = graphics.createShader(source);
+		shaders.push(handle);
+		return handle;
+	}
+
+	static function pipeline(shader:Int, layout:VertexBuffer, blend:BlendMode):Int {
+		var handle = graphics.createPipeline({
+			shader: shader,
+			buffers: [layout],
+			primitive: Triangles,
+			indexed: false,
+			blend: blend,
+			depthTest: Off,
+			depthWrite: false,
+			cull: None,
+			clockwise: false,
+			depthOnly: false,
+			flip: ClipScale
+		});
+		pipelines.push(handle);
+		return handle;
+	}
+
+	static function buffer(values:Array<Float>):Int {
+		var handle = graphics.createStaticBuffer(floatBytes(values), values.length * 4, false);
+		buffers.push(handle);
+		return handle;
+	}
+
+	// An RGBA8 texture from texels given as 0xRRGGBBAA.
+	static function texture2D(width:Int, height:Int, texels:Array<Int>):Int {
+		var bytes = Bytes.alloc(texels.length * 4);
+		for (i => rgba in texels)
+			bytes.setInt32(i * 4, rgbaBytes(rgba));
+		var handle = graphics.createTexture(width, height, [bytes]);
+		textures.push(handle);
+		return handle;
+	}
+
+	// 0xRRGGBBAA as the little-endian int whose bytes are R, G, B, A.
+	static function rgbaBytes(rgba:Int):Int
+		return (rgba >>> 24) | (rgba >> 16 & 0xff) << 8 | (rgba >> 8 & 0xff) << 16 | (rgba & 0xff) << 24;
+
+	static function floatBytes(values:Array<Float>):Bytes {
+		var bytes = Bytes.alloc(values.length * 4);
+		for (i => v in values)
+			bytes.setFloat(i * 4, v);
+		return bytes;
+	}
+
+	/** Frees what setup made, says how it went and closes the window where the program owns one. */
+	static function finish():Void {
+		for (p in pipelines)
+			graphics.disposePipeline(p);
+		for (s in shaders)
+			graphics.disposeShader(s);
+		for (b in buffers)
+			graphics.disposeBuffer(b);
+		for (t in textures)
+			graphics.disposeTexture(t);
+		graphics.dispose();
+		events.dispose();
+		var result = {passed: failures.length == 0, checks: checks, failures: failures};
+		#if js
+		js.Syntax.code("window.helixResult = {0}", result);
+		#else
+		Sys.println(haxe.Json.stringify(result));
+		if (window.canClose())
+			window.close();
+		Sys.exit(result.passed ? 0 : 1);
+		#end
+	}
+}
+
+/** Represents pixels read back: RGBA8, rows top first. */
+class Pixels {
+	/** The bytes. */
+	public final bytes:Bytes;
+
+	/** The width, in pixels. */
+	public final width:Int;
+
+	/** The height, in pixels. */
+	public final height:Int;
+
+	/** Creates the pixels read back.
+		@param bytes  The bytes.
+		@param width  The width, in pixels.
+		@param height  The height, in pixels. */
+	public function new(bytes:Bytes, width:Int, height:Int) {
+		this.bytes = bytes;
+		this.width = width;
+		this.height = height;
+	}
+
+	/** Checks one pixel against a color.
+		@param x  The column.
+		@param y  The row, from the top.
+		@param color  The red, green, blue and optionally alpha expected, 0 to 1.
+		@param tolerance  How far each channel may be from it, in 0 to 255's steps. */
+	public function expect(x:Int, y:Int, color:Array<Float>, tolerance:Int):Void {
+		var at = (y * width + x) * 4;
+		var found = [for (i in 0...color.length) bytes.get(at + i)];
+		var close = true;
+		for (i in 0...color.length)
+			if (Math.abs(found[i] - color[i] * 255) > tolerance + .5)
+				close = false;
+		GraphicsTests.check(close, 'at $x,$y: $found, expected ${[for (c in color) Math.round(c * 255)]} within $tolerance');
+	}
+}

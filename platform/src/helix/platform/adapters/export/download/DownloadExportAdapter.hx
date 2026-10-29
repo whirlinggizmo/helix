@@ -1,0 +1,32 @@
+package helix.platform.adapters.export.download;
+
+import haxe.io.Bytes;
+import helix.platform.IExport;
+import js.Browser;
+
+/** Provides `IExport` in a page: the file is downloaded, as a link with the download attribute does it; the browser may ask where, or keep it
+	in its downloads.
+
+	The page can't know whether the user kept it: `exported` says only that the download began. */
+class DownloadExportAdapter implements IExport {
+	/** Creates the adapter, downloading through the page's document. */
+	public function new() {}
+
+	public function export(name:String, mimeType:String, bytes:Bytes, exported:(where:String) -> Void, failed:String->Void):Void {
+		if (name == "" || name.indexOf("/") >= 0 || name.indexOf("\\") >= 0 || name.charAt(0) == ".")
+			throw "Invalid export name";
+		// Its length's worth only: the buffer under a Bytes can be longer (a BytesBuffer's grows ahead of what's written).
+		var blob = new js.html.Blob([new js.lib.Uint8Array(bytes.getData(), 0, bytes.length)], {type: mimeType}),
+			url = js.html.URL.createObjectURL(blob);
+		var link = Browser.document.createAnchorElement();
+		link.href = url;
+		link.download = name;
+		link.style.display = "none";
+		Browser.document.body.appendChild(link);
+		link.click();
+		link.remove();
+		// The download has taken the blob's URL by the next task.
+		Browser.window.setTimeout(() -> js.html.URL.revokeObjectURL(url), 0);
+		exported(name);
+	}
+}

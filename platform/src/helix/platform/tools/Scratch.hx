@@ -1,0 +1,59 @@
+package helix.platform.tools;
+
+import haxe.io.Path;
+
+/** The packer's scratch: a new directory under the system's temporary one, and programs run with their output read (line ends as LF, as a
+	program on Windows writes CRLF to a text stream). */
+class Scratch {
+	/** A new, empty directory under the system's temporary directory, its name starting with prefix; the caller removes it. */
+	public static function make(prefix:String):String {
+		var base = Sys.getEnv(Sys.systemName() == "Windows" ? "TEMP" : "TMPDIR");
+		if (base == null || base == "")
+			base = Sys.systemName() == "Windows" ? Sys.getEnv("TMP") : "/tmp";
+		while (true) {
+			var directory = Path.join([
+				base,
+				prefix + Std.string(Std.random(0x7fffffff)) + Std.string(Std.int(Sys.time() * 1000) % 1000000)
+			]);
+			if (!sys.FileSystem.exists(directory)) {
+				sys.FileSystem.createDirectory(directory);
+				return Path.normalize(sys.FileSystem.absolutePath(directory));
+			}
+		}
+	}
+
+	/** program run with args: its exit code, standard output and standard error. */
+	public static function run(program:String, args:Array<String>):{code:Int, out:String, err:String} {
+		var process = new sys.io.Process(program, args);
+		var out = process.stdout.readAll().toString();
+		var err = process.stderr.readAll().toString();
+		var code = process.exitCode();
+		process.close();
+		return {code: code, out: lf(out), err: lf(err)};
+	}
+
+	/** Runs several programs at once, each with its args, and returns each one's exit code, standard output and standard error, in order. */
+	public static function runAll(calls:Array<{program:String, args:Array<String>}>):Array<{code:Int, out:String, err:String}> {
+		var processes = [for (c in calls) new sys.io.Process(c.program, c.args)];
+		return [
+			for (process in processes) {
+				var out = process.stdout.readAll().toString();
+				var err = process.stderr.readAll().toString();
+				var code = process.exitCode();
+				process.close();
+				{code: code, out: lf(out), err: lf(err)};
+			}
+		];
+	}
+
+	/** program's standard output, run with args; refuses a failure, saying its error. */
+	public static function output(program:String, args:Array<String>):String {
+		var result = run(program, args);
+		if (result.code != 0)
+			throw new CommandException('${Path.withoutDirectory(program)} failed (exit ${result.code}):\n${result.out}${result.err}');
+		return result.out;
+	}
+
+	static function lf(text:String):String
+		return StringTools.replace(text, "\r\n", "\n");
+}

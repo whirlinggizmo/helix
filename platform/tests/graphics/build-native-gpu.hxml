@@ -1,0 +1,10 @@
+# The graphics tests natively, SDL3 drawing with SDL_GPU (Vulkan, Direct3D 12 or Metal): haxe build-native-gpu.hxml ->
+# native-gpu/GraphicsTests; hxcpp compiles the adapters' C with it and links the SDL3 library HELIX_SDL3_LIBRARY names (BUILDING.md). It
+# prints {passed, checks, failures} and exits 1 on a failure.
+-lib helix-platform
+-cp .
+-main GraphicsTests
+-D sdl_gpu
+-dce full
+-D HXCPP_COMPILE_THREADS=4
+-cpp native-gpu
