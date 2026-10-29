@@ -31,9 +31,9 @@ class DomEventsAdapter implements IEvents {
 
 	/** Starts listening to the page and the canvas the program draws in.
 
-		@param canvas  The canvas: where the pointer is read and what the WebGL context belongs to. */
-	public function new(canvas:CanvasElement) {
-		this.canvas = canvas;
+		@param options  The canvas. */
+	public function new(options:DomEventsAdapterOptions) {
+		canvas = options.canvas;
 		var window = Browser.window, document = Browser.document;
 		hidden = document.hidden;
 		DomPage.focused = document.hasFocus() && !hidden;

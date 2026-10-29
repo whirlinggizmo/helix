@@ -31,9 +31,9 @@ Until it is published, link it from a checkout:
 haxelib dev helix-platform <checkout>/platform
 ```
 
-It depends on nothing. An application picks one adapter per contract for its target and constructs it with that platform's arguments;
-after that it uses the contract alone. Native builds compile the adapters' C with the program through hxcpp, against what is in
-`vendor/` (sokol_gfx, sokol_log, stb_image, SDL3's headers, and SDL3_mixer's sources, compiled with the program), found through
+It depends on nothing. An application picks one adapter per contract for its target and constructs it, passing what that platform needs
+as one object of named values (`new DomWindowAdapter({canvas: canvas})`, `new Sdl3WindowAdapter({graphics: Gl})`); after that it uses
+the contract alone. Native builds compile the adapters' C with the program through hxcpp, against what is in `vendor/` (sokol_gfx, sokol_log, stb_image, SDL3's headers, and SDL3_mixer's sources, compiled with the program), found through
 `HELIX_PLATFORM` (this directory, from `-lib helix-platform`). The SDL3 adapters link the SDL3 library that `HELIX_SDL3_LIBRARY` names.
 
 Its tests, in `tests/`, build with `-lib helix-platform` alone; `tests/native/` holds the C tests of the native adapters, and

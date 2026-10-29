@@ -27,9 +27,9 @@ class Main {
 
 	static function main():Void {
 		var canvas:js.html.CanvasElement = cast js.Browser.document.getElementById("canvas");
-		window = new DomWindowAdapter(canvas);
-		events = new DomEventsAdapter(canvas);
-		graphics = new WebGl2GraphicsAdapter(canvas, false, 1);
+		window = new DomWindowAdapter({canvas: canvas});
+		events = new DomEventsAdapter({canvas: canvas});
+		graphics = new WebGl2GraphicsAdapter({canvas: canvas});
 		var vertices = Bytes.alloc(60),
 			values = [0., .6, 1, 0, 0, -.6, -.6, 0, 1, 0, .6, -.6, 0, 0, 1];
 		for (i in 0...values.length)
@@ -57,7 +57,7 @@ class Main {
 		images = new CanvasImageDecoderAdapter();
 		download("logo.png",
 			bytes -> images.decode(bytes, (pixels, width, height) -> texture = graphics.createTexture(width, height, [pixels]), why -> trace(why)));
-		files = new BrowserFileSystemAdapter("size-ladder");
+		files = new BrowserFileSystemAdapter({name: "size-ladder"});
 		files.write("best.txt", Bytes.ofString("1200"), () -> files.read("best.txt", 64, bytes -> trace(bytes.toString()), () -> {}, why -> trace(why)),
 			why -> trace(why));
 		var frame:Float->Void = null;

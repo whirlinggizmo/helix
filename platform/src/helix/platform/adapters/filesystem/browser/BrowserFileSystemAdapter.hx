@@ -16,9 +16,9 @@ class BrowserFileSystemAdapter implements IFileSystem {
 
 	/** Opens an IndexedDB database, creating it if needed; operations fail if it can't open.
 
-		@param name  The database's name. */
-	public function new(name:String) {
-		this.name = name;
+		@param options  The database's name. */
+	public function new(options:BrowserFileSystemAdapterOptions) {
+		name = options.name;
 		function opened():Void {
 			ready = true;
 			for (w in waiting)

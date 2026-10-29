@@ -19,11 +19,10 @@ class NativeFileSystemAdapter implements IFileSystem {
 
 	/** Creates a file system over a directory, made when first written.
 
-		@param directory  The directory.
-		@param readOnly  Optional. True to refuse writing, removing and clearing, as for the files a program ships with. */
-	public function new(directory:String, readOnly = false) {
-		this.directory = directory;
-		writable = !readOnly;
+		@param options  The directory, and whether it is read-only. */
+	public function new(options:NativeFileSystemAdapterOptions) {
+		directory = options.directory;
+		writable = !options.readOnly;
 	}
 
 	public var root(get, never):String;

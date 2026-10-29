@@ -67,9 +67,9 @@ class GraphicsTests {
 		#if js
 		js.Syntax.code("window.helixResult = null");
 		var canvas:js.html.CanvasElement = cast js.Browser.document.getElementById("canvas");
-		window = new helix.platform.adapters.window.dom.DomWindowAdapter(canvas);
-		events = new helix.platform.adapters.events.dom.DomEventsAdapter(canvas);
-		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter(canvas, false, 1);
+		window = new helix.platform.adapters.window.dom.DomWindowAdapter({canvas: canvas});
+		events = new helix.platform.adapters.events.dom.DomEventsAdapter({canvas: canvas});
+		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvas: canvas});
 		system = new helix.platform.adapters.system.dom.DomSystemAdapter();
 		setup();
 		var frame:Float->Void = null;
@@ -77,10 +77,10 @@ class GraphicsTests {
 		js.Browser.window.requestAnimationFrame(frame);
 		#else
 		#if sdl_gpu
-		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter(1, false);
+		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gpu});
 		graphics = new helix.platform.adapters.graphics.sdl3gpu.Sdl3GpuGraphicsAdapter();
 		#else
-		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter(1, true);
+		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gl});
 		graphics = new helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter();
 		#end
 		events = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();

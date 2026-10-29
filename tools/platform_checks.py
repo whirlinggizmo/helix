@@ -100,7 +100,7 @@ def run(name, directory, main, browser, native_run, page_run):
                 continue
             build(directory, hxml, env)
             with private_display() as display:
-                ran = subprocess.run([str(directory / output / main)], cwd=directory, env=dict(display, HELIX_FRAMES=str(FRAMES), HELIX_AUDIO='0'), capture_output=True, text=True, encoding='utf-8', timeout=120)
+                ran = subprocess.run([str(directory / output / main)], cwd=directory, env=dict(display, HELIX_FRAMES=str(FRAMES), SDL_AUDIO_DRIVER='dummy'), capture_output=True, text=True, encoding='utf-8', timeout=120)
             problems += [f'native {label}: {p}' for p in native_run(label, ran)]
     else:
         print(f'{name}: native runs skipped here (a private display needs Linux)', flush=True)

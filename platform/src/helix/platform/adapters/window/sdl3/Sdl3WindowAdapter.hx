@@ -14,11 +14,10 @@ class Sdl3WindowAdapter implements IWindow {
 
 	/** Opens the program's window.
 
-		@param msaaSamples  The multisampling samples a pixel asked for; 1 for none. The GL context may give fewer.
-		@param gl  Whether it has a GL 4.1 context for the GL graphics adapter, rather than none for SDL_GPU's.
+		@param options  The graphics adapter it is for, and its samples.
 		@throws String  SDL or the window can't be had. */
-	public function new(msaaSamples:Int, gl:Bool) {
-		if (Sdl3Bridge.open(msaaSamples, gl ? 1 : 0) != 1)
+	public function new(options:Sdl3WindowAdapterOptions) {
+		if (Sdl3Bridge.open(options.msaaSamples, options.graphics == Gl ? 1 : 0) != 1)
 			throw "SDL3 can't open a window here (see the log)";
 		title = "HeliX";
 	}

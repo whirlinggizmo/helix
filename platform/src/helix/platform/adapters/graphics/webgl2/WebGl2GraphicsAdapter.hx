@@ -10,7 +10,6 @@ import helix.platform.ClipFlip;
 import helix.platform.Sampling;
 import helix.platform.ShaderSource;
 import helix.platform.TextureFormat;
-import js.html.CanvasElement;
 import js.html.webgl.WebGL2RenderingContext;
 
 /** Represents a render target: the framebuffer of its texture and its depth buffer (null without), its size and whether it holds half
@@ -87,17 +86,15 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	/** Creates the adapter on a canvas's WebGL2 context.
 
 		The context has a depth buffer and no alpha or stencil. When antialiased, the browser chooses the number of samples, nearly always 4.
-		@param canvas  The canvas.
-		@param preserve  Whether the drawing buffer is kept between frames, for checks that read it.
-		@param msaaSamples  The samples asked for; over 1 makes the context antialiased.
+		@param options  The canvas, its samples and whether its drawing buffer is kept.
 		@throws GraphicsUnavailableException  The browser has no WebGL2. */
-	public function new(canvas:CanvasElement, preserve:Bool, msaaSamples:Int) {
-		gl = cast canvas.getContext("webgl2", {
+	public function new(options:WebGl2GraphicsAdapterOptions) {
+		gl = cast options.canvas.getContext("webgl2", {
 			alpha: false,
-			antialias: msaaSamples > 1,
+			antialias: options.msaaSamples > 1,
 			depth: true,
 			stencil: false,
-			preserveDrawingBuffer: preserve
+			preserveDrawingBuffer: options.preserveDrawingBuffer
 		});
 		if (gl == null)
 			throw new helix.platform.GraphicsUnavailableException("WebGL2 is required");

@@ -23,7 +23,7 @@ function serve(directory){
 }
 
 async function run(address,args){
- const browser=await chromium.launch({executablePath:browserPath||undefined,headless:true,args:['--no-sandbox',...args]});const errors=[];
+ const browser=await chromium.launch({executablePath:browserPath||undefined,headless:true,args:['--no-sandbox','--mute-audio',...args]});const errors=[];
  try{const page=await browser.newPage({viewport:{width:800,height:600}});
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
   await page.goto(address);

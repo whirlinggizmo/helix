@@ -25,9 +25,9 @@ class Main {
 
 	static function main():Void {
 		var canvas:js.html.CanvasElement = cast js.Browser.document.getElementById("canvas");
-		window = new DomWindowAdapter(canvas);
-		events = new DomEventsAdapter(canvas);
-		graphics = new WebGl2GraphicsAdapter(canvas, false, 1);
+		window = new DomWindowAdapter({canvas: canvas});
+		events = new DomEventsAdapter({canvas: canvas});
+		graphics = new WebGl2GraphicsAdapter({canvas: canvas});
 		var vertices = Bytes.alloc(60),
 			values = [0., .6, 1, 0, 0, -.6, -.6, 0, 1, 0, .6, -.6, 0, 0, 1];
 		for (i in 0...values.length)

@@ -53,18 +53,11 @@ class Sdl3MixerAudioAdapter implements IAudio {
 	var nextStream = 1;
 	var output:Bool;
 
-	/** Creates the output, opening the default playback device unless told not to.
-
-		@param device  Optional. False to open no device, as when a check runs with audio off: clips are still made, nothing plays and
-			`available` is false. True when omitted. */
-	public function new(device = true) {
+	/** Creates the output, opening the default playback device; with none, clips are still made, nothing plays and `available` is
+		false. */
+	public function new() {
 		Sdl3MixerBridge.version();
-		if (device)
-			output = AudioBridge.open(1) != 0;
-		else {
-			AudioBridge.init();
-			output = false;
-		}
+		output = AudioBridge.open(1) != 0;
 	}
 
 	public var available(get, never):Bool;

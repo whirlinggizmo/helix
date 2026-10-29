@@ -17,7 +17,6 @@ package helix.platform.adapters.audio.sdl3mixer.internal;
 @:include("audio_sdl3mixer.h")
 @:noCompletion
 extern class AudioBridge {
-	@:native("helix_audio_init") static function init():Int;
 	@:native("helix_audio_open") static function open(device:Int):Int;
 	@:native("helix_audio_close") static function close():Void;
 	@:native("helix_audio_clip") static function clip(samples:cpp.RawPointer<cpp.UInt8>, count:Int):Int;

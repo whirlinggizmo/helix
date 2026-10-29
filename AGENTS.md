@@ -22,6 +22,6 @@ next is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 - **Checks:** `python3 tools/check_types.py --no-output` after an API change; `python3 helix.py test`, `tools/format.py --check` and
   `tools/check_docs.py` before committing; native builds and `tools/platform_checks.py` at the end of a feature.
-- **Never open native windows on the user's desktop.** Use `tools/private_display.py`, and `HELIX_AUDIO=0` so checks make no sound.
+- **Never open native windows on the user's desktop.** Use `tools/private_display.py`, and `SDL_AUDIO_DRIVER=dummy` so checks make no sound.
 - **Report what ran,** on which target. Measure before claiming something is faster or smaller.
 - **Ask before pushing,** opening a pull request, creating repositories or publishing packages.

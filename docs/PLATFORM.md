@@ -23,7 +23,8 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
 - **Fails before doing anything.** A call that can't be done throws, saying why; one that may be refused returns false or null and its
   doc says when.
 - **One contract per thing, one adapter per API.** An adapter's public members are its constructor and its contract's, nothing else; the
-  constructor takes the platform's own arguments (a canvas, a window's options). `check_adapters` holds both.
+  constructor takes nothing, or one `<Adapter>Options` holding the platform's own arguments (a canvas, a directory), named at the call:
+  `new DomWindowAdapter({canvas: canvas})`. `check_adapters` holds both.
 - **One directory per contract, even when one library provides several.** SDL3 provides the window, the events and the system, and a
   page does the same: each still gets its own adapter in `adapters/<contract>/<api>/` (`adapters/window/sdl3/Sdl3WindowAdapter`,
   `adapters/events/sdl3/Sdl3EventsAdapter`), so a program chooses each contract's adapter on its own. What two adapters of one library
@@ -214,16 +215,15 @@ A stream plays a `StreamSource`: `Local(location)` (a path natively, a Blob's UR
 appended as it arrives, `done` or `failure` at the end, written by whoever downloads it and read by the native output.
 
 - **In a page, `audio/webaudio` (`WebAudioAdapter`):** clips are buffer sources, streams an `HTMLAudioElement` (which plays a URL itself,
-  so `playsUrls` is true), each voice through a gain and a `StereoPannerNode`, a change approached by `setTargetAtTime`. Constructed
-  with `false`, it starts no audio and `available` is false.
+  so `playsUrls` is true), each voice through a gain and a `StereoPannerNode`, a change approached by `setTargetAtTime`.
 - **Natively, `audio/sdl3mixer` (`Sdl3MixerAudioAdapter`):** SDL3_mixer on SDL3's default playback device. A voice is a track; a clip
   is audio loaded from its PCM; pitch is the track's frequency ratio. A stream is decoded by the adapter in `poll`, for up to 2 ms a
   frame and a second ahead, into an audio stream the track plays, the track told to wait rather than stop when it runs dry. A download
   is copied into C as it arrives and read through an I/O stream whose size is what has arrived; it opens once 16 KiB have arrived,
   again each time that doubles while the codec can't yet, is decoded only while 16 KiB ahead of the decoder's reads (or complete), and
   its voice sounds once a second is decoded (a file's, a tenth). Volume and pan are equal power and ramped across each block, since SDL
-  applies a gain at once. `playsUrls` is false: a remote stream is downloaded above and handed over as `Downloading`. Constructed with
-  `false`, it opens no device: clips are still made, nothing plays, and `available` is false.
+  applies a gain at once. `playsUrls` is false: a remote stream is downloaded above and handed over as `Downloading`. With no
+  device, clips are still made, nothing plays, and `available` is false.
 
 `platform/tests/native/native_sdl3mixer_audio.c` renders the native adapter's C with no device (`MIX_CreateMixer`, `MIX_Generate`):
 clips, pan, pitch, the ramps, pause, streams from a file and from a download arriving slowly or stopping, looping, and a render thread
@@ -275,9 +275,9 @@ at most 256 characters, none empty, `.` or `..`; every adapter checks it. There 
   (a path natively, a Blob's URL in a page), held until `release` is called, once;
 - `poll`, delivering what finished on the platform's threads; `dispose`.
 
-Natively `filesystem/native` (`NativeFileSystemAdapter(directory, readOnly)`: each operation on a worker thread, each write whole or not
+Natively `filesystem/native` (`NativeFileSystemAdapter({directory: ..., readOnly: ...})`: each operation on a worker thread, each write whole or not
 at all; opened read-only over `ISystem.getProgramDirectory()` for the files a program ships with); in a page `filesystem/browser`
-(`BrowserFileSystemAdapter(name)`, IndexedDB). A file system holds only what is on this machine: fetching from a server is `IHttp`, and
+(`BrowserFileSystemAdapter({name: ...})`, IndexedDB). A file system holds only what is on this machine: fetching from a server is `IHttp`, and
 bringing a file in when it isn't there or is out of date is above.
 
 ## Export
@@ -310,8 +310,6 @@ interface ISystem {
   `~/Library/Caches`, `%LOCALAPPDATA%\<company>\<product>\cache`). Each is null in a page, where the browser keeps a program's files,
   and where the OS's directories can't be found. The SDL3 adapter keeps these rules itself rather than asking `SDL_GetPrefPath`: SDL has
   no cache directory, and it makes the directory as a side effect of the question.
-- The `audio` option (`HELIX_AUDIO=0` natively, `?audio=0` in a page) is a convention for a program that wants checks to make no sound:
-  it constructs its audio adapter with `false` when the option is `0`.
 
 ## Page errors
 

@@ -58,6 +58,11 @@ The API uses what Haxe gives: properties for values, classes for kinds, methods 
   (`WebAudioAdapter`, not `WebAudioAudioAdapter`); ARCHITECTURE.md has the directories, and `tools/check_adapters.py` checks both. A
   contract whose adapters differ only by the target they run on names the target instead of the API (`BrowserFileSystemAdapter`,
   `NativeFileSystemAdapter`), since that is what a reader picks it by.
+- **An adapter's constructor takes nothing, or one `<Adapter>Options`:** a `@:structInit` class beside it, so every value is named at
+  the call (`new NativeFileSystemAdapter({directory: path, readOnly: true})`). A value it must have is a field without a default; one it
+  may have declares its default in the field. A choice is an enum (`{graphics: Gl}`), never a `Bool` whose `false` means the other one.
+  The compiler refuses a field the class doesn't have, so a guessed setting fails to build rather than doing nothing; for the same
+  reason, every field takes effect whatever the others are set to. `tools/check_adapters.py` checks the shape and the name.
 - **A directory is a directory,** as Haxe's standard library names it (`FileSystem.readDirectory`, `Path.directory`) and as programming
   APIs generally do: in names, doc comments and docs, never "folder" (the desktop's word) or "dir" (an abbreviation):
   `getProgramDirectory`, `assetDirectory`. Only a third party's own name keeps its word.

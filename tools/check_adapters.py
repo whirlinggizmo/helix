@@ -15,12 +15,14 @@
      name being the interface's without the I, lowercased.
   6. Each API directory (adapters/<contract>/<api>/) holds the adapter <Api><Contract>Adapter implementing I<Contract>, words the API's
      name ends with and the contract's starts with written once (webaudio + Audio is WebAudioAdapter, haxehttp + Http HaxeHttpAdapter).
-  7. What an adopter of the platform writes against is visible: the adapter classes are not @:noCompletion, so the language server offers
-     them. What no caller names is hidden: every type in an adapter's internal/ and in adapters/shared/ is @:noCompletion, so the
+  7. What an adopter of the platform writes against is visible: the adapter classes and what sits beside them in their API directory (an
+     options class, an enum it takes) are not @:noCompletion, so the language server offers them. What no caller names is hidden: every type in an adapter's internal/ and in adapters/shared/ is @:noCompletion, so the
      language server doesn't offer it and the API reference leaves it out (dox and tools/gen_apidoc.py skip what's marked).
   8. An adapter class makes public only its constructor and the members of the contract it implements: anything else a caller needs
      belongs in the contract. Extern bridges (internal/) are the C's and exempt, as is an override, which the base class it extends made
      public.
+  9. An adapter's constructor takes nothing, or one <Adapter>Options: a @:structInit class in its own file beside the adapter
+     (docs/CONVENTIONS.md), so every value is named at the call.
 
 Known violations, each with what removes it, would be listed in KNOWN; one that has gone must be taken off, so the list only shrinks.
 Exits 1 on any other violation.
@@ -150,7 +152,7 @@ def main():
                 violations.append(('name', api, 0, f'no class in {area.name}/{api.name}/ implements I<{area.name}>'))
     # Rule 7: what no caller names is hidden (@:noCompletion among the metadata lines right above each type); the adapter classes are shown.
     for path in adapters('*.hx'):
-        shown = 'internal' not in path.parts and 'shared' not in path.parts and path.name.endswith('Adapter.hx')
+        shown = 'internal' not in path.parts and 'shared' not in path.parts
         lines = path.read_text(encoding='utf-8').split('\n')
         for number, line in enumerate(lines, 1):
             found = DECLARATION.match(line)
@@ -162,7 +164,7 @@ def main():
                 metas.append(lines[above])
                 above -= 1
             hidden = any('@:noCompletion' in m for m in metas)
-            if shown and hidden and found.group(1) == path.stem:
+            if shown and hidden:
                 violations.append(('hidden', path, number, f'{found.group(1)} is what an adopter constructs: take off its @:noCompletion'))
             elif not shown and not hidden:
                 violations.append(('hidden', path, number, f'{found.group(1)} is platform code: mark it @:noCompletion on the line above'))
@@ -189,6 +191,26 @@ def main():
             m = re.match(r'\s*(?:@:[\w.]+(?:\([^)]*\))?\s*)*((?:override|inline|static|final)\s+)*public\s+(?:(?:override|inline|static|final)\s+)*(?:function|var|final)\s+(\w+)', line)
             if m and m.group(2) not in allowed and not re.search(r'\boverride\b', m.group(0)):
                 violations.append(('public', path, number, f'{m.group(2)} is public but not in its contract: move it into the contract, or make it private'))
+    # Rule 9: the constructor takes nothing, or one <Adapter>Options, a @:structInit class in its own file beside it.
+    for area in areas:
+        for api in sorted(p for p in area.iterdir() if p.is_dir() and p.name != 'internal'):
+            for f in api.glob('*Adapter.hx'):
+                name = f.stem
+                body = re.search(r'^class\s+' + name + r'\b.*?(?=^(?:private\s+)?(?:class|enum|typedef|abstract)\b|\Z)', f.read_text(encoding='utf-8'), re.S | re.M)
+                found = re.search(r'\bpublic\s+function\s+new\s*\(([^)]*)\)', body.group(0)) if body else None
+                params = found.group(1).strip() if found else ''
+                if params and not re.fullmatch(r'options\s*:\s*' + name + r'Options', params):
+                    violations.append(('options', f, 0, f'{name}({params}): take nothing, or one options:{name}Options'))
+                options = api / (name + 'Options.hx')
+                if params and options.exists():
+                    text = options.read_text(encoding='utf-8')
+                    if not re.search(r'@:structInit\s*\n\s*class\s+' + name + r'Options\b', text):
+                        violations.append(('options', options, 0, f'{name}Options must be a @:structInit class'))
+                elif params:
+                    violations.append(('options', f, 0, f'{name}Options belongs in its own file beside the adapter'))
+                for other in api.glob('*Options.hx'):
+                    if other.stem != name + 'Options':
+                        violations.append(('options', other, 0, f'{other.stem} is beside {name}: name it {name}Options'))
     known = {(rule, SRC / file) for rule, file, _ in KNOWN}
     seen = set()
     failed = False

@@ -30,8 +30,8 @@ python3 tools/check_docs.py                 # doc comments
 python3 tools/gen_apidoc.py                 # remake docs/api after a doc comment changes (--check in the tests)
 ```
 
-Native checks that open a window run on a private display (`tools/private_display.py`), never on the user's desktop. `HELIX_AUDIO=0`
-(or `SDL_AUDIO_DRIVER=dummy`) keeps them silent.
+Native checks that open a window run on a private display (`tools/private_display.py`), never on the user's desktop. `SDL_AUDIO_DRIVER=dummy`
+keeps them silent; the browser checks run Chromium with `--mute-audio`.
 
 ## Tools
 

@@ -31,21 +31,15 @@ class WebAudioAdapter implements IAudio {
 	}> = [];
 	var nextClip = 1;
 	var nextPlayback = 1;
-	var output:Bool;
+	var output = true;
 
 	// The events that unlock audio. A key or a mouse button counts as it goes down, but a finger only as it lifts (pointerup, touchend,
 	// click): on a phone, a tap's pointerdown isn't a gesture the browser lets audio start in.
 	static final GESTURES = ["keydown", "pointerdown", "pointerup", "touchend", "click"];
 
 	/** Creates the output, listening for the page's gestures (as they reach the window, before the page's own handlers) and its visibility;
-		no AudioContext exists until a gesture unlocks audio.
-
-		@param output  Optional. False to start no audio, as when a check runs with audio off: nothing plays and `available` is false. True
-			when omitted. */
-	public function new(output = true) {
-		this.output = output;
-		if (!output)
-			return;
+		no AudioContext exists until a gesture unlocks audio. */
+	public function new() {
 		for (name in GESTURES)
 			js.Browser.window.addEventListener(name, _ -> unlock(), true);
 		js.Browser.window.addEventListener("blur", _ -> suspend());

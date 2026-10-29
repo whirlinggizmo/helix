@@ -74,7 +74,6 @@ jobs:
           key: helix-tools-${{ runner.os }}-${{ hashFiles('platform/src/helix/platform/tools/ShaderTools.hx') }}
       - name: The tools' checks, the libraries' tests, Trig's bits on every target, the platform's C tests (Linux)
         env:
-          HELIX_AUDIO: "0"
           SDL_AUDIO_DRIVER: dummy
         run: python helix.py test --native
       - name: Every entry point type-checked on both targets
@@ -127,7 +126,7 @@ jobs:
           key: helix-tools-${{ runner.os }}-${{ hashFiles('platform/src/helix/platform/tools/ShaderTools.hx') }}
       - name: The platform's examples and graphics tests, natively (GL, and SDL_GPU on lavapipe) and in Chromium
         env:
-          HELIX_AUDIO: "0"
+          SDL_AUDIO_DRIVER: dummy
           SDL_GPU_DRIVER: vulkan
           VK_DRIVER_FILES: /usr/share/vulkan/icd.d/lvp_icd.json
         run: python tools/platform_checks.py --browser "$CHROME"
