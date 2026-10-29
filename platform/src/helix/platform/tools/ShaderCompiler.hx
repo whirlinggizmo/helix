@@ -10,6 +10,7 @@ import sys.io.File;
 
 /** Represents a member of a compiled program's uniform block: its name, GLSL type, byte offset (std140) and element count (1 unless an
 	array). */
+@:noCompletion
 typedef ShaderMember = {
 	final name:String;
 	final type:String;
@@ -19,6 +20,7 @@ typedef ShaderMember = {
 
 /** Represents a compiled program: its `ShaderSource`; the GLSL type of each vertex attribute, by slot, for a caller packing vertices; and
 	the members of each of its uniform blocks by the block's name, for a caller that writes the blocks by member name. */
+@:noCompletion
 typedef CompiledShader = {
 	final source:helix.platform.ShaderSource;
 	final attributeTypes:Array<String>;
@@ -27,6 +29,7 @@ typedef CompiledShader = {
 
 /** Represents which dialects a compile makes besides GLSL ES 300 (WebGL2), which every `ShaderSource` carries: GLSL 410 (GL natively)
 	and SDL_GPU's (SPIR-V, MSL and HLSL). */
+@:noCompletion
 typedef ShaderDialects = {
 	final glsl410:Bool;
 	final sdlGpu:Bool;
@@ -66,7 +69,7 @@ class ShaderCompiler {
 		@param vertex  The vertex stage's file, relative to the file holding the call.
 		@param fragment  The fragment stage's file, relative to the file holding the call.
 		@return  The program, as `IGraphics.createShader` takes it. */
-	public static macro function compile(vertex:String, fragment:String):Expr {
+	public static macro function compile(vertex:String, fragment:String):ExprOf<helix.platform.ShaderSource> {
 		var pos = Context.currentPos();
 		var here = Path.directory(Context.getPosInfos(pos).file);
 		function locate(path:String):String {
@@ -98,6 +101,7 @@ class ShaderCompiler {
 			a quoted include resolves beside the file. A source using `#include` declares `#extension GL_GOOGLE_include_directive : require`.
 		@return  The program and its blocks' members.
 		@throws CommandException  A stage doesn't compile (glslang's errors, named for the stage), or the program breaks a rule above. */
+	@:noCompletion
 	public static function compileText(vertex:{name:String, text:String}, fragment:{name:String, text:String}, dialects:ShaderDialects,
 			?includes:Array<String>):CompiledShader {
 		var glslang = ShaderTools.glslang(), cross = ShaderTools.spirvCross();

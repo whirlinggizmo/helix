@@ -4,6 +4,7 @@ import haxe.io.Path;
 
 /** The packer's scratch: a new directory under the system's temporary one, and programs run with their output read (line ends as LF, as a
 	program on Windows writes CRLF to a text stream). */
+@:noCompletion
 class Scratch {
 	/** A new, empty directory under the system's temporary directory, its name starting with prefix; the caller removes it. */
 	public static function make(prefix:String):String {

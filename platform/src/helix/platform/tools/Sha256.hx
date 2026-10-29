@@ -5,6 +5,7 @@ import haxe.io.Bytes;
 
 /** SHA-256, laid out for Haxe's interpreter: about twice haxe.crypto.Sha256's speed there (some 3 MB a second), so the tools hash what they
 	download once, when it arrives, and a manifest's directories only where a write changed them. */
+@:noCompletion
 class Sha256 {
 	static final K = Vector.fromArrayCopy([
 		0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,

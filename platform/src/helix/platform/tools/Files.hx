@@ -6,6 +6,7 @@ import sys.FileSystem;
 import sys.io.File;
 
 /** File work the commands share: absolute paths, directories copied and removed whole, a path as a message shows it, and a directory zipped. */
+@:noCompletion
 class Files {
 	/** path made absolute against base (unless it already is), normalized, with forward slashes and no trailing one. */
 	public static function resolve(base:String, path:String):String {

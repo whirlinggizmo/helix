@@ -7,7 +7,9 @@ checked by tools/check_adapters.py), hidden from the language server and left ou
 once per target (XML), js and cpp; a library's code has no target conditional, so both must describe the same types with the same
 public members, and the tool fails when they differ. The adapters are each one target's: each description holds its own target's (the
 browser's name js. in their code), and the reference shows both, each marked with its target. The HTML is made from one description,
-js's with cpp's adapters added, so dox has nothing to mark as one target's. --check regenerates the Markdown in memory and fails when docs/api differs, so a change to a doc comment is committed with
+js's with cpp's adapters added, so dox has nothing to mark as one target's. Of the tools (helix.platform.tools), which run in the compiler,
+it shows ShaderCompiler, whose compile a program calls: a macro, its signature read from its source, as Haxe describes a macro's types as
+Dynamic. --check regenerates the Markdown in memory and fails when docs/api differs, so a change to a doc comment is committed with
 its reference (helix.py test runs it)."""
 import json
 import re
@@ -42,10 +44,11 @@ def adapter_packages(target):
 def describe(target):
     """Haxe's XML description of package helix for one target, with that target's adapters."""
     output=OUT/'xml'/f'{target}.xml';output.parent.mkdir(parents=True,exist_ok=True)
-    # The shader compiler's internals run in the compiler or Haxe's interpreter, not on a target.
+    # The tools run in the compiler or Haxe's interpreter, not on a target; a program meets ShaderCompiler alone, its compile a macro.
     ignore=[ADAPTERS+'*','helix.platform.tools']
     macro="include('helix',true,["+",".join(f"'{p}'" for p in ignore)+"])"
     args=['haxe',*sum((['-lib',name] for name in pins.LIBRARIES),[]),'--macro',macro,'-xml',str(output),'-D','doc-gen','--no-output']
+    args+=['helix.platform.tools.ShaderCompiler']
     for package in adapter_packages(target):args+=['--macro',f"include('{package}')"]
     args+=['-js',str(OUT/'unused.js')] if target=='js' else ['-cpp',str(OUT/'unused-cpp')]
     subprocess.run(args,cwd=ROOT,check=True)
@@ -179,6 +182,15 @@ def doc_lines(node,indent=''):
     if remarks:lines+=(['']+remarks.split('\n') if lines else remarks.split('\n'))
     return [indent+l if l else '' for l in lines]
 
+def macro_signature(source,sig):
+    """A macro function's signature as its source declares it, or sig for any other member: Haxe's description types a macro's arguments
+    and result as Dynamic on a target. Its ExprOf<T> is shown as the T the program gets."""
+    name=sig.split('(')[0].split()[-1]
+    m=re.search(r'^\s*(?:public\s+)?(static\s+)?macro\s+function\s+'+re.escape(name)+r'\s*(\(.*?\))\s*:\s*([\w.<>]+)',source,re.M|re.S)
+    if not m:return sig
+    result=re.fullmatch(r'ExprOf<(?:[\w]+\.)*(\w+)>',m.group(3))
+    return f'{m.group(1) or ""}macro function {name}{" ".join(m.group(2).split())}:{result.group(1) if result else m.group(3)}'
+
 def member_lines(member,known,instance=()):
     """A public member as a Haxe signature and its doc, or None for a private one or the meta; instance names an abstract's properties,
     statics of its implementation whose accessors take the value."""
@@ -268,6 +280,8 @@ def markdown(xml,native=frozenset()):
             # An abstract's property is the value's when its accessor takes the value (this).
             instance={c.tag for c in body if c.tag in properties and any((a.tag==f'get_{c.tag}' or a.tag==f'set_{c.tag}') and len(a) and (a[0].get('a') or '').split(':')[0]=='this' for a in body)} if node.tag=='abstract' else set()
             members=[m for m in (member_lines(c,known,instance) for c in body if c.tag not in enum and not (c.tag[:4] in ('get_','set_') and c.tag[4:] in properties)) if m]
+            text=(ROOT/source).read_text(encoding='utf-8') if (ROOT/source).is_file() else ''
+            members=[(macro_signature(text,sig) if 'macro' in text else sig,d,n) for sig,d,n in members]
             members.sort(key=lambda m:0 if m[0].split('(')[0].endswith(' new') else 1)
             if members:
                 lines.append('```haxe')

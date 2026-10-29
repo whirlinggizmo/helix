@@ -8,6 +8,7 @@ import sys.io.File;
 /** The tools' pinned downloads, kept in the user's cache for the libraries' tools (%LOCALAPPDATA%, ~/Library/Caches or $XDG_CACHE_HOME, under
 	helix/tools): each fetched once, checked against its SHA-256 as it arrives and never kept when it differs, and put in place only whole;
 	and the archives they come in unpacked (zip, and gzipped tar). Messages go to the standard error, so a command's output stays its own. */
+@:noCompletion
 class Downloads {
 	/** The user's cache for the libraries' tools. */
 	public static function cache():String {
