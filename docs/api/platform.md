@@ -442,7 +442,7 @@ function export(name:String, mimeType:String, bytes:haxe.io.Bytes, exported:(whe
 
 *interface* in [`platform/src/helix/platform/IFileSystem.hx`](../../platform/src/helix/platform/IFileSystem.hx), `import helix.platform.IFileSystem;`, extends `IPollable`
 
-Defines files under one root, read and written whole by path: natively a directory on disk, in a page the server or an IndexedDB database.
+Defines files on this machine under one root, read and written whole by path: natively a directory on disk, in a page an IndexedDB database. A file on a server is `IHttp`'s.
 
 There is no listing, no directories to make, no seeking and no metadata: a file is reached by its path, read whole or located for streaming, and written whole or not at all. Those are a page's limits, kept natively so a program works the same on both.
 
@@ -464,8 +464,8 @@ function poll():Void
 function dispose():Void
 ```
 
-- `root`: Gets the root, as the adapter was given it: a directory, a URL or a database's name.
-- `canWrite`: Gets a value indicating whether files can be written here: false for a server.
+- `root`: Gets the root, as the adapter was given it: a directory, or a database's name.
+- `canWrite`: Gets a value indicating whether files can be written here: false when opened read-only, as over the files a program ships with.
 - `read`: Reads a whole file.
   - `path`: The file's path under the root.
   - `maxBytes`: The largest file to read; a larger one fails.
