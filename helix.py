@@ -52,6 +52,8 @@ def test(native,audio_device):
     # The shader compiler runs on the interpreter alone (it runs glslang and SPIRV-Cross, fetched or built into the cache the first time).
     value=result(['haxe','-lib','helix-platform','-cp',pins.LIBRARIES['helix-platform']/'tests','-main','ShaderCompilerTests','--interp'])
     print(f'ShaderCompilerTests: {value["checks"]} checks (interpreter)',flush=True)
+    value=result(['haxe','-lib','helix-services','-cp',pins.LIBRARIES['helix-services']/'tests','-main','ManifestTests','--interp'])
+    print(f'ManifestTests: {value["checks"]} checks (interpreter)',flush=True)
     trig(native)
     if native and not sys.platform.startswith('linux'):
         print('Native C tests: skipped here (they build with cc and SDL3 as Linux has them)',flush=True)

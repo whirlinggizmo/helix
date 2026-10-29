@@ -19,7 +19,7 @@ Specifies when `Assets` uses its kept copy of an `HttpServer` file that no manif
 Specifies a place `Assets` finds files: a file system on this machine, or an HTTP server.
 
 - `FileSystem(fileSystem:IFileSystem)`: Files read as they are from a file system: natively the files the program ships with, a read-only `NativeFileSystemAdapter` over `ISystem.getProgramDirectory()`. In a page a file system starts empty, so the page's files come from an `HttpServer`.
-- `HttpServer(url:String, ?cacheMode:AssetCacheMode, ?manifest:String)`: Files on an HTTP server, under a URL: downloaded through `AssetsOptions.httpClient` and kept in `AssetsOptions.cacheFileSystem`, so a later run downloads one again only when it's missing or changed.
+- `HttpServer(url:String, ?cacheMode:AssetCacheMode)`: Files on an HTTP server, under a URL: downloaded through `AssetsOptions.httpClient` and kept in `AssetsOptions.cacheFileSystem`, so a later run downloads one again only when it's missing or changed.
 
 ## Assets
 
@@ -27,7 +27,7 @@ Specifies a place `Assets` finds files: a file system on this machine, or an HTT
 
 Provides files by path, from the places its sources name: a file system on this machine, or an HTTP server whose files it keeps copies of.
 
-It asks its sources in order, and the first that has the path answers: a file missing from one is looked for in the next. A game that ships its files lists the file system first and a server after it for the rest; a page, whose files are on the server that served it, lists `HttpServer("")`. A path is plain names joined by `/`, as `IFileSystem`'s. Each call answers once, on the main thread, in the platform's `poll` that finished it, never during the call; the failure's lambda may be left out, and the failure is then logged with the path. Its downloads and copies finish in the polls of the HTTP client and file systems it was given, which the program polls each frame; Assets has no `poll` of its own.
+It asks its sources in order, and the first that has the path answers: a file missing from one is looked for in the next. A game whose files never change lists its file system alone; one patched from a server lists the server first and its shipped files after, and a shipped file the server's manifest lists at the same hash is read in place, so only what changed is downloaded (`AssetManifests` writes the manifests); a page, whose files are on the server that served it, lists `HttpServer("")`. A path is plain names joined by `/`, as `IFileSystem`'s. Each call answers once, on the main thread, in the platform's `poll` that finished it, never during the call; the failure's lambda may be left out, and the failure is then logged with the path. Its downloads and copies finish in the polls of the HTTP client and file systems it was given, which the program polls each frame; Assets has no `poll` of its own.
 
 ```haxe
 #if js
@@ -39,7 +39,7 @@ var httpClient:IHttp = new HaxeHttpAdapter();
 var shipped:IFileSystem = new NativeFileSystemAdapter({directory: system.getProgramDirectory(), readOnly: true});
 var downloads:IFileSystem = new NativeFileSystemAdapter({directory: system.getCacheDirectory("Company", "Game")});
 var assets = new Assets({
-sources: [FileSystem(shipped), HttpServer("https://example.com/game/", Trust)],
+sources: [HttpServer("https://example.com/game/"), FileSystem(shipped)],
 httpClient: httpClient,
 cacheFileSystem: downloads,
 });
@@ -87,15 +87,17 @@ Specifies where `Assets` finds files, and what it downloads with and keeps copie
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{sources:Array<AssetSource>, ?httpClient:IHttp, ?cacheFileSystem:IFileSystem}
+{sources:Array<AssetSource>, ?httpClient:IHttp, ?cacheFileSystem:IFileSystem, ?manifestName:String}
 ```
 
 ```haxe
 final sources:Array<AssetSource>
 final httpClient:IHttp = null
 final cacheFileSystem:IFileSystem = null
+final manifestName:String = "manifest.json"
 ```
 
 - `sources`: Gets where files are found, asked in this order: a file missing from one is looked for in the next.
 - `httpClient`: Gets the HTTP client `HttpServer` sources download with; null by default, and needed when there is one.
 - `cacheFileSystem`: Gets the file system `HttpServer` sources' files are kept in; null by default, and needed when there is one. A file system of its own, as `clearCache` empties it: natively a `NativeFileSystemAdapter` over `ISystem.getCacheDirectory`, in a page a `BrowserFileSystemAdapter` with its own name.
+- `manifestName`: Gets the name of each directory's manifest, as `AssetManifests` writes them: the hash of each file in it and of each subdirectory's manifest. "manifest.json" by default; "" looks for none.

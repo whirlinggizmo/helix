@@ -11,8 +11,8 @@ enum AssetSource {
 	/** Files on an HTTP server, under a URL: downloaded through `AssetsOptions.httpClient` and kept in `AssetsOptions.cacheFileSystem`, so
 		a later run downloads one again only when it's missing or changed.
 
-		The URL is the directory the paths are under; in a page it may be relative to the page, and "" is the page's own directory. A
-		manifest, a path under the URL, lists each file's hash: a kept copy with its file's hash is used without asking the server, whatever
-		the cache mode. */
-	HttpServer(url:String, ?cacheMode:AssetCacheMode, ?manifest:String);
+		The URL is the directory the paths are under; in a page it may be relative to the page, and "" is the page's own directory. When
+		the server has manifests (`AssetsOptions.manifestName`), a kept copy with its manifest's hash is used without asking, and a file
+		system source after it with the same hash is read in place of a download; without them, the cache mode decides. */
+	HttpServer(url:String, ?cacheMode:AssetCacheMode);
 }

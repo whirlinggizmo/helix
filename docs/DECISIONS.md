@@ -24,7 +24,7 @@ Why things are the way they are, numbered, in order.
    services trial's one compile failure was that import; with every argument a `Binding`, it resolves.
 8. **Assets takes an options object:** `{sources, ?httpClient, ?cacheFileSystem}`. The HTTP client and the cache belonged to every
    server source and were passed to each; once, named where they're built, each reads as what it is. A source is `FileSystem(fileSystem)`
-   or `HttpServer(url, ?cacheMode, ?manifest)`, each named for where the files are; the cache mode is the source's, as one server's
+   or `HttpServer(url, ?cacheMode)`, each named for where the files are; the cache mode is the source's, as one server's
    files may be trusted while another's are revalidated.
 9. **Movement is read as one capped vector:** `Actions.computeVector(left, right, up, down, ?out)`, its length held to 1, so a keyboard
    diagonal is no faster than a straight line and a stick pushed partway stays partway. Two of the services trial's agents read two axes
@@ -33,3 +33,11 @@ Why things are the way they are, numbered, in order.
     save written are the same in every program the trials produced; by goal 1, what has to be explained before use is the API's to
     fix, and the services stay the pieces a game reads. What can be designed out of them is: `Input` reads the last `IEvents.poll`, so
     their order is free.
+11. **A server's manifests make shipped files patchable.** A game that patches lists its server first and its shipped files after
+    (`[HttpServer(url), FileSystem(shipped)]`): online the server's version wins, offline or for a file the server doesn't have the
+    shipped one answers. A shipped file its manifests list at the server's hash is read in place, so a first run downloads only what
+    changed. The shipped tree carries the same manifests (`AssetManifests` writes both at once, as the same tree), since a file system
+    has no size or time to keep a run-time hash honest, and hashing a file to stream it would read it whole. Manifests are looked for by
+    default (`AssetsOptions.manifestName`): a server without them costs one request a run and falls back to the cache mode, and the
+    tree is HeliX's, wgrender-c's and libwgt's, where an unchanged directory is known from its parent alone. None of them seeded from
+    shipped files; each read local files in place and never checked them.

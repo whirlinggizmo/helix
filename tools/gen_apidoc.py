@@ -184,12 +184,14 @@ def doc_lines(node,indent=''):
 
 def macro_signature(source,sig):
     """A macro function's signature as its source declares it, or sig for any other member: Haxe's description types a macro's arguments
-    and result as Dynamic on a target. Its ExprOf<T> is shown as the T the program gets."""
+    and result as Dynamic on a target. Its ExprOf<T> is shown as the T the program gets, and a bare Expr, which gives the program nothing,
+    as Void."""
     name=sig.split('(')[0].split()[-1]
     m=re.search(r'^\s*(?:public\s+)?(static\s+)?macro\s+function\s+'+re.escape(name)+r'\s*(\(.*?\))\s*:\s*([\w.<>]+)',source,re.M|re.S)
     if not m:return sig
     result=re.fullmatch(r'ExprOf<(?:[\w]+\.)*(\w+)>',m.group(3))
-    return f'{m.group(1) or ""}macro function {name}{" ".join(m.group(2).split())}:{result.group(1) if result else m.group(3)}'
+    shown=result.group(1) if result else 'Void' if m.group(3)=='Expr' else m.group(3)
+    return f'{m.group(1) or ""}macro function {name}{" ".join(m.group(2).split())}:{shown}'
 
 def member_lines(member,known,instance=()):
     """A public member as a Haxe signature and its doc, or None for a private one or the meta; instance names an abstract's properties,

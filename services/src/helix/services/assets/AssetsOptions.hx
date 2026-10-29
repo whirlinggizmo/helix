@@ -16,4 +16,8 @@ class AssetsOptions {
 		`clearCache` empties it: natively a `NativeFileSystemAdapter` over `ISystem.getCacheDirectory`, in a page a
 		`BrowserFileSystemAdapter` with its own name. */
 	public final cacheFileSystem:IFileSystem = null;
+
+	/** Gets the name of each directory's manifest, as `AssetManifests` writes them: the hash of each file in it and of each subdirectory's
+		manifest. "manifest.json" by default; "" looks for none. */
+	public final manifestName:String = "manifest.json";
 }

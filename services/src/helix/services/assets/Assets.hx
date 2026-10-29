@@ -16,8 +16,9 @@ import helix.platform.StreamSource;
 	copies of.
 
 	It asks its sources in order, and the first that has the path answers: a file missing from one is looked for in the next. A game
-	that ships its files lists the file system first and a server after it for the rest; a page, whose files are on the server that
-	served it, lists `HttpServer("")`. A path is plain names joined by `/`, as `IFileSystem`'s. Each call answers once, on the main
+	whose files never change lists its file system alone; one patched from a server lists the server first and its shipped files after,
+	and a shipped file the server's manifest lists at the same hash is read in place, so only what changed is downloaded
+	(`AssetManifests` writes the manifests); a page, whose files are on the server that served it, lists `HttpServer("")`. A path is plain names joined by `/`, as `IFileSystem`'s. Each call answers once, on the main
 	thread, in the platform's `poll` that finished it, never during the call; the failure's lambda may be left out, and the failure is
 	then logged with the path. Its downloads and copies finish in the polls of the HTTP client and file systems it was given, which
 	the program polls each frame; Assets has no `poll` of its own.
@@ -32,7 +33,7 @@ import helix.platform.StreamSource;
 	var shipped:IFileSystem = new NativeFileSystemAdapter({directory: system.getProgramDirectory(), readOnly: true});
 	var downloads:IFileSystem = new NativeFileSystemAdapter({directory: system.getCacheDirectory("Company", "Game")});
 	var assets = new Assets({
-		sources: [FileSystem(shipped), HttpServer("https://example.com/game/", Trust)],
+		sources: [HttpServer("https://example.com/game/"), FileSystem(shipped)],
 		httpClient: httpClient,
 		cacheFileSystem: downloads,
 	});
@@ -56,13 +57,22 @@ class Assets {
 		@throws String  When a source is an `HttpServer` and `httpClient` or `cacheFileSystem` is null. */
 	public function new(options:AssetsOptions) {
 		cacheFileSystem = options.cacheFileSystem;
-		for (source in options.sources)
-			sources.push(switch source {
+		var name = options.manifestName == "" ? null : options.manifestName;
+		for (i in 0...options.sources.length)
+			sources.push(switch options.sources[i] {
 				case FileSystem(fileSystem): Files(fileSystem);
-				case HttpServer(url, cacheMode, manifest):
+				case HttpServer(url, cacheMode):
 					if (options.httpClient == null || options.cacheFileSystem == null)
 						throw 'an HttpServer source needs httpClient and cacheFileSystem';
-					Server(new ServerSource(url, cacheMode == null ? Revalidate : cacheMode, manifest, options.httpClient, options.cacheFileSystem));
+					// The file systems after it, whose manifests may show a file is already here.
+					var shipped = [];
+					if (name != null)
+						for (later in options.sources.slice(i + 1))
+							switch later {
+								case FileSystem(fileSystem): shipped.push(new ShippedTree(fileSystem, name));
+								case _:
+							}
+					Server(new ServerSource(url, cacheMode == null ? Revalidate : cacheMode, name, shipped, options.httpClient, options.cacheFileSystem));
 			});
 	}
 
@@ -256,6 +266,7 @@ private typedef Manifest = {
 /** What a server source does for a path: use its kept copy, or download it (asking about the copy when there is one). */
 private enum Decision {
 	UseCopy(record:Record, expected:Null<String>);
+	UseShipped(fileSystem:IFileSystem, expected:String);
 	Download(record:Null<Record>, expected:Null<String>);
 }
 
@@ -268,6 +279,7 @@ private class ServerSource {
 	final url:String;
 	final mode:AssetCacheMode;
 	final manifestPath:Null<String>;
+	final shipped:Array<ShippedTree>;
 	final http:IHttp;
 	final cache:IFileSystem;
 	final directory:String;
@@ -278,7 +290,8 @@ private class ServerSource {
 	var manifestsWaiting = new Map<String, Array<Null<Manifest>->Void>>();
 
 	/** Creates the source for a server's URL. */
-	public function new(url:String, mode:AssetCacheMode, manifestPath:Null<String>, http:IHttp, cache:IFileSystem) {
+	public function new(url:String, mode:AssetCacheMode, manifestPath:Null<String>, shipped:Array<ShippedTree>, http:IHttp, cache:IFileSystem) {
+		this.shipped = shipped;
 		this.url = url == "" || StringTools.endsWith(url, "/") ? url : url + "/";
 		this.mode = mode;
 		this.manifestPath = manifestPath;
@@ -308,6 +321,10 @@ private class ServerSource {
 		}
 		decide(path, request, decision -> switch decision {
 			case UseCopy(record, expected): readCopy(path, request, record, expected, loaded, missing, failed);
+			case UseShipped(fileSystem, expected):
+				request.cancel = fileSystem.read(path, 1 << 30, bytes -> if (!request.aborted) loaded(bytes),
+					() -> if (!request.aborted) download(path, request, null, expected, false, (bytes, _) -> loaded(bytes), missing, failed),
+					_ -> if (!request.aborted) download(path, request, null, expected, false, (bytes, _) -> loaded(bytes), missing, failed));
 			case Download(record, expected): download(path, request, record, expected, false, (bytes, _) -> loaded(bytes), missing, failed);
 		});
 	}
@@ -327,6 +344,16 @@ private class ServerSource {
 				expected): locateCopy(path, request, located,
 					() -> download(path, request, null, expected, false, (_, _) -> locateCopy(path, request, located, missing, failed), missing, failed),
 					failed);
+			case UseShipped(fileSystem, expected):
+				fileSystem.locate(path, (location, release) -> {
+					if (request.aborted)
+						release();
+					else
+						located(Local(location), release);
+				},
+					() -> if (!request.aborted) download(path, request, null, expected, false, (_, _) -> locateCopy(path, request, located, missing, failed),
+						missing, failed),
+					message -> if (!request.aborted) failed(message));
 			case Download(record, expected):
 				download(path, request, record, expected, false, (_, growing) -> {
 					// Natively a download of known length plays as it arrives; otherwise once it's kept.
@@ -341,17 +368,36 @@ private class ServerSource {
 	// manifest leaves out, as changed or gone since it was kept; then by the cache mode.
 	function decide(path:String, request:Request, decided:Decision->Void):Void {
 		listedHash(path, request, (listed, leftOut) -> readRecord(path, request, record -> {
-			decided(if (listed != null) {
-				record != null
-				&& record.hash == listed ? UseCopy(record, listed) : Download(null, listed);
-			} else if (record == null) {
-				Download(null, null);
-			} else if (!leftOut && (mode == Trust || Date.now().getTime() / 1000 < record.freshUntil)) {
-				UseCopy(record, null);
-			} else {
-				Download(record, null);
-			});
+			if (listed != null) {
+				if (record != null && record.hash == listed)
+					decided(UseCopy(record, listed));
+				else
+					// Not kept, or kept at another hash: a file system after this source with the same file is read in place.
+					shippedWith(path, listed, 0, request, fileSystem -> decided(fileSystem != null ? UseShipped(fileSystem, listed) : Download(null, listed)));
+			} else if (record == null)
+				decided(Download(null, null));
+			else if (!leftOut && (mode == Trust || Date.now().getTime() / 1000 < record.freshUntil))
+				decided(UseCopy(record, null));
+			else
+				decided(Download(record, null));
 		}));
+	}
+
+	// The first file system after this source whose manifests give path the hash, from the i-th on; null for none.
+	function shippedWith(path:String, hash:String, i:Int, request:Request, found:Null<IFileSystem>->Void):Void {
+		if (i == shipped.length) {
+			found(null);
+			return;
+		}
+		var tree = shipped[i];
+		tree.hashOf(path, listed -> {
+			if (request.aborted)
+				return;
+			if (listed == hash)
+				found(tree.fileSystem);
+			else
+				shippedWith(path, hash, i + 1, request, found);
+		});
 	}
 
 	// The manifests' hash of path, walking down from the root's manifest one directory at a time, and whether its directory's manifest
@@ -561,12 +607,13 @@ private class ServerSource {
 		return seconds > 0 ? seconds : immutable ? YEAR : 0;
 	}
 
-	static function hashOf(bytes:Bytes):String
+	/** Returns bytes' hash as manifests write it: "sha256:" and 64 hex digits. */
+	public static function hashOf(bytes:Bytes):String
 		return "sha256:" + Sha256.make(bytes).toHex();
 
 	/** One directory's manifest, or null for anything that isn't one: `{"manifest": 1, "files": {"name": "sha256:<hex>"}, "dirs": {"name":
 		"sha256:<hex>"}}`, a subdirectory's hash being its own manifest's, as HeliX's manifests are. */
-	static function parseManifest(bytes:Bytes):Null<Manifest> {
+	public static function parseManifest(bytes:Bytes):Null<Manifest> {
 		var value:Dynamic = try Json.parse(bytes.toString()) catch (_:Dynamic) null;
 		if (value == null || value.manifest != 1)
 			return null;
@@ -582,5 +629,61 @@ private class ServerSource {
 			if (name.indexOf("/") < 0 && Std.isOfType(hash, String) && ~/^sha256:[0-9a-f]{64}$/.match(hash))
 				out.set(name, hash);
 		return out;
+	}
+}
+
+/** A file system's manifests, as `AssetManifests` writes them beside a program's files: read once a run, a directory at a time, to say
+	whether a file there is the one a server's manifest lists. */
+private class ShippedTree {
+	/** Gets the file system. */
+	public final fileSystem:IFileSystem;
+
+	final name:String;
+	var manifests = new Map<String, Null<Manifest>>();
+	var waiting = new Map<String, Array<Null<Manifest>->Void>>();
+
+	/** Creates the tree over a file system, its manifests named name. */
+	public function new(fileSystem:IFileSystem, name:String) {
+		this.fileSystem = fileSystem;
+		this.name = name;
+	}
+
+	/** Gives the hash its manifests list for path, or null when they don't. */
+	public function hashOf(path:String, found:Null<String>->Void):Void {
+		var names = path.split("/");
+		function walk(depth:Int, level:String) {
+			manifestOf(level, manifest -> {
+				if (manifest == null)
+					found(null);
+				else if (depth == names.length - 1)
+					found(manifest.files.get(names[depth]));
+				else if (!manifest.dirs.exists(names[depth]))
+					found(null);
+				else
+					walk(depth + 1, level + names[depth] + "/");
+			});
+		}
+		walk(0, "");
+	}
+
+	function manifestOf(level:String, got:Null<Manifest>->Void):Void {
+		if (manifests.exists(level)) {
+			got(manifests.get(level));
+			return;
+		}
+		var queue = waiting.get(level);
+		if (queue != null) {
+			queue.push(got);
+			return;
+		}
+		waiting.set(level, [got]);
+		function finish(manifest:Null<Manifest>) {
+			manifests.set(level, manifest);
+			var queue = waiting.get(level);
+			waiting.remove(level);
+			for (f in queue)
+				f(manifest);
+		}
+		fileSystem.read(level + name, 1 << 26, bytes -> finish(ServerSource.parseManifest(bytes)), () -> finish(null), _ -> finish(null));
 	}
 }
