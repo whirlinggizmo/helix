@@ -7,7 +7,8 @@
   A library's tests and examples (TESTS) are held to rule 1 too, as they build with that library alone.
   3. In helix-platform, contracts don't know each other (docs/PLATFORM.md): a contract's files are its interface, the types in
      helix.platform it reaches, and its adapters (adapters/<contract>/); none names another contract's. Anything else (adapters/shared/, a
-     type no contract reaches) is common, and may name at most one contract, whose it then is.
+     type no contract reaches) is common, and may name at most one contract, whose it then is. A base (BASES) is an interface any
+     contract may extend: no contract's, and naming no other type in helix.platform.
 
 LAYERS lists the libraries bottom to top, each with its directory, the package roots it owns and the libraries it's built on; a helix
 package no library owns is a violation wherever it's named. Exits 1 on any violation. Standard library only.
@@ -27,6 +28,8 @@ LAYERS = [
 ]
 # Each library's tests and examples, held to its layer too: they build with that library alone.
 TESTS = {'helix-math': ['math/tests'], 'helix-log': ['log/tests'], 'helix-platform': ['platform/tests', 'platform/examples']}
+# The interfaces in helix.platform that contracts extend (rule 3): IPollable, the poll a program calls each frame.
+BASES = {'IPollable'}
 
 PACKAGE = re.compile(r'^package\s+([\w.]+)\s*;', re.M)
 REFERENCE = re.compile(r'\bhelix(?:\.[a-z_]\w*)+')
@@ -71,11 +74,11 @@ def contracts():
 
     owner = {}
     for name, path in top.items():
-        if re.fullmatch(r'I[A-Z]\w*', name):
+        if re.fullmatch(r'I[A-Z]\w*', name) and name not in BASES:
             contract, todo = name[1:].lower(), [path]
             while todo:
                 for t in named(todo.pop()):
-                    if isinstance(t, Path) and t.parent == base and t not in owner:
+                    if isinstance(t, Path) and t.parent == base and t not in owner and t.stem not in BASES:
                         owner[t] = contract
                         todo.append(t)
             owner[path] = contract
@@ -100,7 +103,10 @@ def contracts():
     violations = []
     for path in sorted(texts):
         where = path.relative_to(ROOT)
-        if path in owner:
+        if path.parent == base and path.stem in BASES:
+            if named(path):
+                violations.append(f'{where}: a base, but names {", ".join(sorted(t if isinstance(t, str) else t.stem for t in named(path)))}')
+        elif path in owner:
             for t in sorted(named(path), key=str):
                 others = knows(t) - {owner[path]}
                 if others:

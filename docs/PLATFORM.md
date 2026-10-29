@@ -7,8 +7,9 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
 
 - **Pumped, never driving.** Nothing in the platform runs the program or calls into it on its own; the one exception is
   `IWindow.onClose`, because a browser gives no frame in which to poll it. Everything that must be serviced once a frame is its own
-  small `poll`, named for what it services and doing nothing else: input, http, the file system, each decoder, audio. The platform
-  never bundles them; whoever owns the program does, in its own order (raylib hides the same pumps inside `EndDrawing`).
+  small `poll`, named for what it services and doing nothing else: input, http, the file system, each decoder, audio. Each of those
+  contracts extends `IPollable`, the one interface they share, so a program can hold them as one list. The platform never bundles them;
+  whoever owns the program does, in its own order (raylib hides the same pumps inside `EndDrawing`).
 - **Granular, for whoever builds on it.** The platform keeps the pieces separate (end the frame, read it back, present, poll) and
   leaves their order to the layer above. A smaller surface, like raylib's `EndDrawing` that flushes, captures, swaps, waits and polls in
   one call, is a layer on top.
@@ -32,7 +33,8 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
   reach; no adapter reaches into another's directory.
 - **Contracts don't know each other.** No contract or its adapters imports another contract's (http never names graphics, the file
   system never names audio); only `adapters/shared/` is common to them. `check_layers` enforces it: a contract's files are its
-  interface, the types it reaches and its adapters; anything else may name at most one contract.
+  interface, the types it reaches and its adapters; anything else may name at most one contract. A base any contract may extend
+  (`IPollable`) is no contract's and names no other type.
 - **Both targets, one interface.** Every contract has the same members on js and cpp; an adapter is for one API on one target.
 - **Units** as CONVENTIONS: seconds, radians, framebuffer pixels for the pointer, logical pixels for the window, `0xAARRGGBB` colors.
 

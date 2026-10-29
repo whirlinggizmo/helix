@@ -6,7 +6,7 @@ import haxe.io.Bytes;
 
 	Clip, stream and voice ids are the adapter's. Samples are mono 32-bit float PCM at 44100 Hz, -1 to 1. A browser starts its audio on the
 	page's first key or pointer press and suspends it while the page is hidden or blurred; natively it runs once the device opens. */
-interface IAudio {
+interface IAudio extends IPollable {
 	/** Gets a value indicating whether there is an output at all: false natively without an audio device. */
 	var available(get, never):Bool;
 

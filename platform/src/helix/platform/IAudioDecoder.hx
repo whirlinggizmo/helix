@@ -4,7 +4,7 @@ import haxe.io.Bytes;
 
 /** Defines audio decoding: a whole WAV (PCM or float, any rate), Ogg Vorbis, MP3 or FLAC file, mono or stereo, into mono 32-bit float PCM at
 	44100 Hz, samples -1 to 1, mixed down and resampled. */
-interface IAudioDecoder {
+interface IAudioDecoder extends IPollable {
 	/** Decodes a file, off the main thread where the platform can.
 
 		One of `decoded` or `failed` is called once, on the main thread, never during this call.

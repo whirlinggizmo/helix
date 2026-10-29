@@ -19,7 +19,7 @@ package helix.platform;
 	var stick = events.getPadAxis(0, 0);
 	```
  */
-interface IEvents {
+interface IEvents extends IPollable {
 	/** Drains the OS's queue into `events`: this frame's events, in order. Last frame's are cleared. */
 	function poll():Void;
 

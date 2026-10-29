@@ -77,7 +77,7 @@ The specification is docs/PLATFORM.md; this is the map.
 | `IExport` | `export/download` (browser), `export/filesystem` (native) | Hands a finished file to the user: a download, or a file in a directory. |
 
 Each contract that answers later delivers its answers in its `poll`, on the main thread, never at any other time, and a program calls
-`poll` each frame on each it constructed (the platform's README, "Each frame"). Native adapters hand their threads' results back
+`poll` each frame on each it constructed (the platform's README, "Each frame"); each such contract is an `IPollable`. Native adapters hand their threads' results back
 through `adapters/shared/Mailbox`, drained by that `poll`.
 
 ## What each audience needs

@@ -3,7 +3,7 @@ package helix.platform;
 import haxe.io.Bytes;
 
 /** Defines HTTP GET: a response whose body arrives in parts, and its abort. */
-interface IHttp {
+interface IHttp extends IPollable {
 	/** Starts a GET.
 
 		On the main thread, never during this call: `head` once, `body` for each part of the body as it arrives, then one of `done` or

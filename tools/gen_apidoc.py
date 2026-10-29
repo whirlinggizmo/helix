@@ -207,13 +207,16 @@ def markdown(xml):
     for path in sorted(types):
         node=types[path];name=short(path);params=node.get('params','')
         header=name+(f'<{params.replace(":",", ")}>' if params else '')
-        kind={'class':'class','enum':'enum','typedef':'typedef','abstract':'abstract'}[node.tag]
+        kind='interface' if node.get('interface')=='1' else {'class':'class','enum':'enum','typedef':'typedef','abstract':'abstract'}[node.tag]
+        # What it extends and implements, by name: a contract's base, an adapter's contract.
+        parents=''.join(f', {word} '+', '.join(f'`{short(e.get("path"))}`' for e in node.findall(word))
+                        for word in ('extends','implements') if node.findall(word))
         # Its source, relative to docs/api: a link on GitHub and in a checkout alike.
         source=node.get('file','')
         # A library reached through a haxelib dev link is reported by its absolute path: made relative to the checkout.
         if Path(source).is_absolute() and Path(source).resolve().is_relative_to(ROOT.resolve()):source=Path(source).resolve().relative_to(ROOT.resolve()).as_posix()
         # The import that names it: its own path, as each shown type is its own file (checked above).
-        lines=[f'## {header}','',f'*{kind}* in [`{source}`](../../{source})'+f', `import {path};`','']
+        lines=[f'## {header}','',f'*{kind}* in [`{source}`](../../{source})'+f', `import {path};`'+parents,'']
         doc=doc_text(node)
         if doc:
             lines+=[doc,'']

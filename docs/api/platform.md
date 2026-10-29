@@ -199,7 +199,7 @@ function toString():String
 
 ## GraphicsUnavailableException
 
-*class* in [`platform/src/helix/platform/GraphicsUnavailableException.hx`](../../platform/src/helix/platform/GraphicsUnavailableException.hx), `import helix.platform.GraphicsUnavailableException;`
+*class* in [`platform/src/helix/platform/GraphicsUnavailableException.hx`](../../platform/src/helix/platform/GraphicsUnavailableException.hx), `import helix.platform.GraphicsUnavailableException;`, extends `Exception`
 
 Represents the error a graphics adapter throws when the GPU API it draws through is missing, such as WebGL2 in a browser without it.
 
@@ -248,7 +248,7 @@ function fail(message:String):Void
 
 ## IAudio
 
-*class* in [`platform/src/helix/platform/IAudio.hx`](../../platform/src/helix/platform/IAudio.hx), `import helix.platform.IAudio;`
+*interface* in [`platform/src/helix/platform/IAudio.hx`](../../platform/src/helix/platform/IAudio.hx), `import helix.platform.IAudio;`, extends `IPollable`
 
 Defines the sound output: clips held whole and streams played as they are read, each played as voices.
 
@@ -337,7 +337,7 @@ function dispose():Void
 
 ## IAudioDecoder
 
-*class* in [`platform/src/helix/platform/IAudioDecoder.hx`](../../platform/src/helix/platform/IAudioDecoder.hx), `import helix.platform.IAudioDecoder;`
+*interface* in [`platform/src/helix/platform/IAudioDecoder.hx`](../../platform/src/helix/platform/IAudioDecoder.hx), `import helix.platform.IAudioDecoder;`, extends `IPollable`
 
 Defines audio decoding: a whole WAV (PCM or float, any rate), Ogg Vorbis, MP3 or FLAC file, mono or stereo, into mono 32-bit float PCM at 44100 Hz, samples -1 to 1, mixed down and resampled.
 
@@ -358,7 +358,7 @@ function dispose():Void
 
 ## IEvents
 
-*class* in [`platform/src/helix/platform/IEvents.hx`](../../platform/src/helix/platform/IEvents.hx), `import helix.platform.IEvents;`
+*interface* in [`platform/src/helix/platform/IEvents.hx`](../../platform/src/helix/platform/IEvents.hx), `import helix.platform.IEvents;`, extends `IPollable`
 
 Defines the input and the window's events, pulled once a frame, and the gamepads' state.
 
@@ -420,7 +420,7 @@ function dispose():Void
 
 ## IExport
 
-*class* in [`platform/src/helix/platform/IExport.hx`](../../platform/src/helix/platform/IExport.hx), `import helix.platform.IExport;`
+*interface* in [`platform/src/helix/platform/IExport.hx`](../../platform/src/helix/platform/IExport.hx), `import helix.platform.IExport;`
 
 Defines handing a finished file to the user: in a page a download, natively a file in a directory chosen when the adapter is made.
 
@@ -440,7 +440,7 @@ function export(name:String, mimeType:String, bytes:haxe.io.Bytes, exported:(whe
 
 ## IFileSystem
 
-*class* in [`platform/src/helix/platform/IFileSystem.hx`](../../platform/src/helix/platform/IFileSystem.hx), `import helix.platform.IFileSystem;`
+*interface* in [`platform/src/helix/platform/IFileSystem.hx`](../../platform/src/helix/platform/IFileSystem.hx), `import helix.platform.IFileSystem;`, extends `IPollable`
 
 Defines files under one root, read and written whole by path: natively a directory on disk, in a page the server or an IndexedDB database.
 
@@ -497,7 +497,7 @@ function dispose():Void
 
 ## IGraphics
 
-*class* in [`platform/src/helix/platform/IGraphics.hx`](../../platform/src/helix/platform/IGraphics.hx), `import helix.platform.IGraphics;`
+*interface* in [`platform/src/helix/platform/IGraphics.hx`](../../platform/src/helix/platform/IGraphics.hx), `import helix.platform.IGraphics;`
 
 Defines the GPU as a platform's graphics adapter provides it: resources, passes and one draw.
 
@@ -709,7 +709,7 @@ function dispose():Void
 
 ## IHttp
 
-*class* in [`platform/src/helix/platform/IHttp.hx`](../../platform/src/helix/platform/IHttp.hx), `import helix.platform.IHttp;`
+*interface* in [`platform/src/helix/platform/IHttp.hx`](../../platform/src/helix/platform/IHttp.hx), `import helix.platform.IHttp;`, extends `IPollable`
 
 Defines HTTP GET: a response whose body arrives in parts, and its abort.
 
@@ -737,7 +737,7 @@ function dispose():Void
 
 ## IImageDecoder
 
-*class* in [`platform/src/helix/platform/IImageDecoder.hx`](../../platform/src/helix/platform/IImageDecoder.hx), `import helix.platform.IImageDecoder;`
+*interface* in [`platform/src/helix/platform/IImageDecoder.hx`](../../platform/src/helix/platform/IImageDecoder.hx), `import helix.platform.IImageDecoder;`, extends `IPollable`
 
 Defines image decoding: a PNG, JPEG, BMP, TGA or GIF file (its first frame) into 8-bit RGBA, rows top to bottom, not premultiplied.
 
@@ -756,9 +756,23 @@ function dispose():Void
 - `poll`: Delivers what finished on the platform's threads since the last poll; call once a frame.
 - `dispose`: Closes the decoder; a decode still running finishes without answering.
 
+## IPollable
+
+*interface* in [`platform/src/helix/platform/IPollable.hx`](../../platform/src/helix/platform/IPollable.hx), `import helix.platform.IPollable;`
+
+Defines a contract that answers later: what it was asked for is delivered in its `poll`, on the main thread, and at no other time.
+
+The program calls `poll` once a frame on each one it made; one it forgets never answers. `IEvents`, `IHttp`, `IFileSystem`, `IAudio`, `IAudioDecoder` and `IImageDecoder` are pollable; a layer above that answers later is too, polled the same way.
+
+```haxe
+function poll():Void
+```
+
+- `poll`: Delivers what finished since the last poll; call once a frame.
+
 ## ISystem
 
-*class* in [`platform/src/helix/platform/ISystem.hx`](../../platform/src/helix/platform/ISystem.hx), `import helix.platform.ISystem;`
+*interface* in [`platform/src/helix/platform/ISystem.hx`](../../platform/src/helix/platform/ISystem.hx), `import helix.platform.ISystem;`
 
 Defines the facts about where the program runs: the device, the options it was started with, the time, where its own files are, and where the OS keeps a program's files.
 
@@ -798,7 +812,7 @@ function getCacheDirectory(company:String, product:String):Null<String>
 
 ## IWindow
 
-*class* in [`platform/src/helix/platform/IWindow.hx`](../../platform/src/helix/platform/IWindow.hx), `import helix.platform.IWindow;`
+*interface* in [`platform/src/helix/platform/IWindow.hx`](../../platform/src/helix/platform/IWindow.hx), `import helix.platform.IWindow;`
 
 Defines the window a program draws in: its title, size, position, fullscreen, visibility and monitors.
 

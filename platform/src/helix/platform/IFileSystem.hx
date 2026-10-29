@@ -16,7 +16,7 @@ import haxe.io.Bytes;
 	files.read("levels/1.json", 1 << 20, bytes -> start(bytes), () -> trace("no level 1"), why -> trace(why));
 	```
  */
-interface IFileSystem {
+interface IFileSystem extends IPollable {
 	/** Gets the root, as the adapter was given it: a directory, a URL or a database's name. */
 	var root(get, never):String;
 

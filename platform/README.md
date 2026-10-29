@@ -42,7 +42,8 @@ Its tests, in `tests/`, build with `-lib helix-platform` alone; `tests/native/` 
 ## Each frame
 
 A contract that answers later delivers its answers in its `poll`, on the main thread, and never calls the program at any other time. So
-each frame the program calls `poll` on each of these it made, in any order; one it forgets never answers:
+each frame the program calls `poll` on each of these it made, in any order; one it forgets never answers. Each is an `IPollable`, so a
+program may keep them in one `Array<IPollable>` and poll that:
 
 | Contract | What its `poll` does |
 |---|---|
