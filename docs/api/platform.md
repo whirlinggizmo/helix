@@ -18,7 +18,7 @@ Colors use straight (not premultiplied) alpha.
 function toString():String
 ```
 
-- `toString`: Returns the value's name as written (Stopped, Playing): what Std.string, interpolation and trace show.
+- `toString`: Returns the value's name as written (Opaque, Alpha): what Std.string, interpolation and trace show.
 
 ## ClipFlip
 
@@ -36,7 +36,7 @@ An adapter whose render targets are stored bottom row first (GL's) flips its dra
 function toString():String
 ```
 
-- `toString`: Returns the value's name as written (Stopped, Playing): what Std.string, interpolation and trace show.
+- `toString`: Returns the value's name as written (None, ClipScale): what Std.string, interpolation and trace show.
 
 ## Color
 
@@ -109,7 +109,7 @@ Specifies which faces of a pipeline's triangles are not drawn.
 function toString():String
 ```
 
-- `toString`: Returns the value's name as written (Stopped, Playing): what Std.string, interpolation and trace show.
+- `toString`: Returns the value's name as written (None, Back): what Std.string, interpolation and trace show.
 
 ## DepthTest
 
@@ -125,7 +125,7 @@ Specifies which fragments a pipeline's depth test passes, compared with the dept
 function toString():String
 ```
 
-- `toString`: Returns the value's name as written (Stopped, Playing): what Std.string, interpolation and trace show.
+- `toString`: Returns the value's name as written (Off, LessEqual): what Std.string, interpolation and trace show.
 
 ## Device
 
@@ -195,7 +195,7 @@ Specifies how a texture is filtered when drawn at a size other than its own.
 function toString():String
 ```
 
-- `toString`: Returns the value's name as written (Stopped, Playing): what Std.string, interpolation and trace show.
+- `toString`: Returns the value's name as written (Nearest, Linear): what Std.string, interpolation and trace show.
 
 ## GraphicsUnavailableException
 
@@ -952,7 +952,7 @@ function toString():String
 - `all`: Every key, in order of value.
 - `named`: The key a name spells, ignoring case ("A", "space", "KeypadEnter", "0"); throws for an unknown name.
 - `getName`: The key's name as named reads it: its own spelling ("Space", "PageUp", "KeypadEnter"), a digit's its digit ("0").
-- `toString`: Returns the value's name as written (Stopped, Playing): what Std.string, interpolation and trace show.
+- `toString`: Returns the value's name as written (Space, Apostrophe): what Std.string, interpolation and trace show.
 
 ## MouseButton
 
@@ -968,7 +968,7 @@ function toString():String
 ```
 
 - `all`: Every button.
-- `toString`: Returns the value's name as written (Stopped, Playing): what Std.string, interpolation and trace show.
+- `toString`: Returns the value's name as written (Left, Right): what Std.string, interpolation and trace show.
 
 ## Orientation
 
@@ -984,7 +984,7 @@ Specifies which way up a game wants the screen (`IWindow.requestOrientation`).
 function toString():String
 ```
 
-- `toString`: Returns the value's name as written (Stopped, Playing): what Std.string, interpolation and trace show.
+- `toString`: Returns the value's name as written (Any, Landscape): what Std.string, interpolation and trace show.
 
 ## PadAxis
 
@@ -1004,7 +1004,7 @@ function toString():String
 
 - `COUNT`: One past the largest value, for arrays indexed by axis.
 - `all`: Every axis.
-- `toString`: Returns the value's name as written (Stopped, Playing): what Std.string, interpolation and trace show.
+- `toString`: Returns the value's name as written (LeftX, LeftY): what Std.string, interpolation and trace show.
 
 ## PadButton
 
@@ -1024,7 +1024,7 @@ function toString():String
 
 - `COUNT`: One past the largest value, for arrays indexed by button.
 - `all`: Every button.
-- `toString`: Returns the value's name as written (Stopped, Playing): what Std.string, interpolation and trace show.
+- `toString`: Returns the value's name as written (South, East): what Std.string, interpolation and trace show.
 
 ## PipelineDesc
 
@@ -1059,7 +1059,7 @@ Specifies what a pipeline's draws make.
 function toString():String
 ```
 
-- `toString`: Returns the value's name as written (Stopped, Playing): what Std.string, interpolation and trace show.
+- `toString`: Returns the value's name as written (Triangles, Lines): what Std.string, interpolation and trace show.
 
 ## Sampling
 
@@ -1194,7 +1194,7 @@ function toString():String
   - `width`: The level's width, in texels.
   - `height`: The level's height, in texels; for a cube, one face's.
   - returns: The level's size, in bytes.
-- `toString`: Returns the value's name as written (Stopped, Playing): what Std.string, interpolation and trace show.
+- `toString`: Returns the value's name as written (Rgba8, Bc7): what Std.string, interpolation and trace show.
 
 ## VertexAttribute
 
@@ -1232,4 +1232,4 @@ Specifies how a texture is sampled outside the 0 to 1 range of its coordinates.
 function toString():String
 ```
 
-- `toString`: Returns the value's name as written (Stopped, Playing): what Std.string, interpolation and trace show.
+- `toString`: Returns the value's name as written (Clamp, Repeat): what Std.string, interpolation and trace show.
