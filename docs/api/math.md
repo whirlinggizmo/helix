@@ -183,20 +183,20 @@ function getParameterAtDistance(distance:Float):Float
   - `dimensions`: Optional. 2 or 3; defaults to 2.
   - `closed`: Optional. Whether it comes back to the first point; defaults to false.
   - returns: The curve.
-  - `String`: Fewer than 2 points, or a count of numbers that dimensions doesn't divide.
+  - throws `String`: Fewer than 2 points, or a count of numbers that dimensions doesn't divide.
 
   It is a centripetal Catmull-Rom spline, which makes no loops or kinks between unevenly spaced points.
 - `bezier`: Returns a curve of joined cubic Bézier pieces.
   - `points`: The first point, then three for each piece: two control points and the piece's end. Flat: x, y or x, y, z each.
   - `dimensions`: Optional. 2 or 3; defaults to 2.
   - returns: The curve.
-  - `String`: A point count other than 4, 7, 10 and so on.
+  - throws `String`: A point count other than 4, 7, 10 and so on.
 - `polyline`: Returns a curve straight from point to point.
   - `points`: The points, flat: x, y or x, y, z each.
   - `dimensions`: Optional. 2 or 3; defaults to 2.
   - `closed`: Optional. Whether it comes back to the first point; defaults to false.
   - returns: The curve.
-  - `String`: Fewer than 2 points, or a count of numbers that dimensions doesn't divide.
+  - throws `String`: Fewer than 2 points, or a count of numbers that dimensions doesn't divide.
 - `kind`: Gets how the curve passes its points.
 - `dimensions`: Gets the number of dimensions: 2 or 3.
 - `closed`: Gets a value indicating whether the curve comes back to its start.

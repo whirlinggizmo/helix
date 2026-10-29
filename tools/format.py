@@ -12,7 +12,7 @@ import sys
 
 ROOT=Path(__file__).resolve().parents[1]
 HAXELIB=ROOT/'build/haxelib'
-SOURCES=['platform','log','math']
+SOURCES=['platform','log','math','services']
 
 def formatter():
     """The pinned formatter in the repository's haxelib, installed on first use."""

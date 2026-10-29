@@ -172,8 +172,8 @@ def doc_text(node):
     return doc_parts(node)[0]
 
 def tag_lines(tags):
-    """The tags as Markdown list items: a parameter by name, the return as 'returns'."""
-    return [f'- `{v}`: {t}' if n in ('param','throws','exception') else f'- {"returns" if n in ("return","returns") else n}: {t}' for n,v,t in tags]
+    """The tags as Markdown list items: a parameter by name, the return as 'returns', an exception as 'throws' and its type."""
+    return [f'- `{v}`: {t}' if n=='param' else f'- throws `{v}`: {t}' if n in ('throws','exception') else f'- {"returns" if n in ("return","returns") else n}: {t}' for n,v,t in tags]
 
 def doc_lines(node,indent=''):
     """A doc comment as Markdown lines after its summary: the tags as a list, then the remarks, each line indented."""
@@ -212,6 +212,8 @@ def member_lines(member,known,instance=()):
             ty=type_text(k,known)
             # An optional argument is nullable as written; the compiler's XML wraps a typedef's in Null<> on Windows and not elsewhere.
             if n.startswith('?') and ty.startswith('Null<') and ty.endswith('>'):ty=ty[5:-1]
+            # A rest argument as the program writes it, not the Rest<T> it compiles to.
+            if ty.startswith('haxe.Rest<') and ty.endswith('>'):n,ty='...'+n,ty[10:-1]
             args.append(f'{n}:{ty}'+(f' = {v}' if v else ''))
         sig=f'{static}function {name}({", ".join(args)})'+('' if name=='new' else f':{ret}')
     else:

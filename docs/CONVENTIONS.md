@@ -64,6 +64,9 @@ The API uses what Haxe gives: properties for values, classes for kinds, methods 
   may have declares its default in the field. A choice is an enum (`{graphics: Gl}`), never a `Bool` whose `false` means the other one.
   The compiler refuses a field the class doesn't have, so a guessed setting fails to build rather than doing nothing; for the same
   reason, every field takes effect whatever the others are set to. `tools/check_adapters.py` checks the shape and the name.
+- **An argument or option is named for what it's used for** when that's more than its type says: `Assets`' `cacheFileSystem` is the
+  `IFileSystem` downloaded copies are kept in, its `httpClient` the `IHttp` it downloads with. One that is simply the contract keeps
+  the contract's name (`system`, `events`).
 - **A directory is a directory,** as Haxe's standard library names it (`FileSystem.readDirectory`, `Path.directory`) and as programming
   APIs generally do: in names, doc comments and docs, never "folder" (the desktop's word) or "dir" (an abbreviation):
   `getProgramDirectory`, `assetDirectory`. Only a third party's own name keeps its word.
@@ -227,5 +230,8 @@ was built and where it is (`tools/variants.py` holds the lists).
 
 - An example shows one thing with its library alone, on both targets, from hxml files beside it. Work that a program would otherwise
   repeat belongs in a library; an example that has to do it by hand says so in its comment.
+- An example declares each adapter with its contract's type, named for what the program uses it for: `var httpClient:IHttp = new
+  HaxeHttpAdapter();`, `var shipped:IFileSystem = new NativeFileSystemAdapter({...})`, so a reader sees the adapter, the contract and
+  its use on one line.
 - Native checks that drive a window run on a private display (`tools/private_display.py`), never on the user's desktop: a new window
   takes the keyboard focus, so the user's typing would land in it.

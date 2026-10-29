@@ -1,0 +1,12 @@
+{
+	"name": "helix-services",
+	"url": "https://github.com/whirlinggizmo/helix-2.0",
+	"license": "MIT",
+	"tags": ["game", "time", "input", "assets", "audio", "saves", "js", "cpp"],
+	"description": "What a game program needs over helix-platform: time, input, assets, audio, saves and config, each constructed on its own.",
+	"version": "0.1.0",
+	"classPath": "src/",
+	"releasenote": "First release.",
+	"contributors": ["whirlinggizmo"],
+	"dependencies": {"helix-platform": "", "helix-math": "", "helix-log": ""}
+}

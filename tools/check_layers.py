@@ -25,6 +25,7 @@ LAYERS = [
     ('helix-math', 'math/src', ['helix.math'], []),
     ('helix-log', 'log/src', ['helix.log'], []),
     ('helix-platform', 'platform/src', ['helix.platform'], []),
+    ('helix-services', 'services/src', ['helix.services'], ['helix-platform', 'helix-math', 'helix-log']),
 ]
 # Each library's tests and examples, held to its layer too: they build with that library alone.
 TESTS = {'helix-math': ['math/tests'], 'helix-log': ['log/tests'], 'helix-platform': ['platform/tests', 'platform/examples']}

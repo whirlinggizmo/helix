@@ -121,7 +121,7 @@ function dispose():Void
 
 - `new`: Starts listening to the page and the canvas the program draws in.
   - `options`: The canvas's id.
-  - `String`: No canvas has that id.
+  - throws `String`: No canvas has that id.
 - `setTextInput`: Does nothing: the window's keys type on a computer either way, and a phone's keyboard needs a focused input element.
 - `setTiltWanted`: Listens to the device's orientation while on.
   Where the browser asks for leave (iOS), it is asked at the player's next tap, which shows its prompt. A page that isn't secure gets no readings (TiltState 6). No reading within a second and a half of the page having its focus is reported unavailable (TiltState 5), though it goes on listening: a phone's sensor may start late.
@@ -320,7 +320,7 @@ function dispose():Void
 ```
 
 - `new`: Creates the GPU device and claims the window, which must already exist.
-  - `String`: SDL cannot create the device or claim the window.
+  - throws `String`: SDL cannot create the device or claim the window.
 
 ## SokolGraphicsAdapter
 
@@ -383,8 +383,8 @@ function dispose():Void
 
 - `new`: Creates the adapter on a canvas's WebGL2 context.
   - `options`: The canvas's id, its samples and whether its drawing buffer is kept.
-  - `String`: No canvas has that id.
-  - `GraphicsUnavailableException`: The browser has no WebGL2.
+  - throws `String`: No canvas has that id.
+  - throws `GraphicsUnavailableException`: The browser has no WebGL2.
 
   The context has a depth buffer and no alpha or stencil. When antialiased, the browser chooses the number of samples, nearly always 4.
 
@@ -565,7 +565,7 @@ var onClose:Null<() -> Void>
 
 - `new`: Creates the page's window over the canvas the program draws in, sizing its drawing buffer to the viewport.
   - `options`: The canvas's id.
-  - `String`: No canvas has that id.
+  - throws `String`: No canvas has that id.
 
 ## DomWindowAdapterOptions
 
@@ -628,7 +628,7 @@ var onClose:Null<() -> Void>
 
 - `new`: Opens the program's window.
   - `options`: The graphics adapter it is for, and its samples.
-  - `String`: SDL or the window can't be had.
+  - throws `String`: SDL or the window can't be had.
 
 ## Sdl3WindowAdapterOptions
 
