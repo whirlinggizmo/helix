@@ -31,7 +31,7 @@ class Clock implements IPollable {
 	public var realDelta(default, null):Float = 0;
 
 	/** Gets the game's seconds since the clock was made: the sum of every `delta`. */
-	public var time(default, null):Float = 0;
+	public var elapsed(default, null):Float = 0;
 
 	/** Gets or sets how fast the game's time runs: 1 as real time, 2 twice as fast, 0 stopped; 0 or more, 1 by default. */
 	public var scale(default, set):Float = 1;
