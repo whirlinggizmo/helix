@@ -72,7 +72,9 @@ enum Event {
 	/** The player can't see the window: minimized or hidden, or the page in the background. */
 	Hidden;
 
-	/** The player or the OS asked to close the window; the owner decides. */
+	/** The player or the OS asked to close the window, natively; the owner decides.
+
+		A page never gets it: a tab closing gives no frame to decide in, and its end is `IWindow.onClosing`. */
 	CloseRequested;
 
 	/** The GPU's context is gone: in a page, the WebGL context lost to a GPU reset or an evicted tab. */

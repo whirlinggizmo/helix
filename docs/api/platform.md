@@ -179,7 +179,7 @@ Positions are framebuffer pixels from the window's top-left. A key is its physic
 - `FocusLost`: The window lost the keyboard; each key still down came up just before, a `KeyUp` each.
 - `Shown`: The player can see the window again: restored, or the page in front again.
 - `Hidden`: The player can't see the window: minimized or hidden, or the page in the background.
-- `CloseRequested`: The player or the OS asked to close the window; the owner decides.
+- `CloseRequested`: The player or the OS asked to close the window, natively; the owner decides.
 - `GraphicsLost`: The GPU's context is gone: in a page, the WebGL context lost to a GPU reset or an evicted tab.
 
 ## Filter
@@ -916,7 +916,7 @@ function onClosing(callback:() -> Void):Void
 - `onClosing`: Sets the call made once, as the window goes for good: natively when it is disposed, in a page at pagehide.
   - `callback`: The call.
 
-  Nothing of the program runs after it, so it is the place to save. A later call replaces an earlier callback.
+  Nothing of the program runs after it, so it is the last place to save; in a page, no frame follows, and an asynchronous write started in it may not finish. A page gets no `CloseRequested`, so this is its only end. A later call replaces an earlier callback.
 
 ## Key
 

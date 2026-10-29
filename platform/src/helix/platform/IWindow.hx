@@ -153,7 +153,8 @@ interface IWindow {
 
 	/** Sets the call made once, as the window goes for good: natively when it is disposed, in a page at pagehide.
 
-		Nothing of the program runs after it, so it is the place to save. A later call replaces an earlier callback.
+		Nothing of the program runs after it, so it is the last place to save; in a page, no frame follows, and an asynchronous write
+		started in it may not finish. A page gets no `CloseRequested`, so this is its only end. A later call replaces an earlier callback.
 		@param callback  The call. */
 	function onClosing(callback:Void->Void):Void;
 }

@@ -52,9 +52,12 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
 A request asks; the getter answers on a later frame. Presenting the frame is graphics' (`IGraphics.present`), where every backend
 actually swaps; the window only provides the surface.
 
-- A close asked for by the user or the OS (the close button, Ctrl-W, a page about to go) is an event, `CloseRequested`, delivered by
-  `IEvents.poll` like a key press: it happens once, and the owner decides, closing with `close()` or not (asking "quit without saving?"
-  first). `onClosing` is the one call the platform makes upward, and nothing of the program runs after it.
+- Natively, a close asked for by the user or the OS (the close button, the OS quitting the program) is an event, `CloseRequested`,
+  delivered by `IEvents.poll` like a key press: it happens once, and the owner decides, closing with `close()` or not (asking "quit
+  without saving?" first).
+- A page never gets `CloseRequested`: a tab closing or navigating away gives no frame to decide in. Its end is `onClosing`, at
+  pagehide, the one call the platform makes upward; nothing of the program runs after it, so work started there must not need a later
+  frame, and an asynchronous write started there may not finish.
 - Quitting is the owner's loop ending, the same on both targets: natively the owner closes the window and ends its loop; in a page a
   program doesn't offer Quit, since `canClose()` is false and a stopped program would leave the page frozen.
 - `visible` and `requestVisible` are the program's own choice to show or hide its window (in a page, the canvas). Whether the player
@@ -107,7 +110,7 @@ enum Event {
 	FocusLost;                           // each key still down came up just before, a KeyUp each
 	Shown;
 	Hidden;
-	CloseRequested;
+	CloseRequested;                      // natively; a page's end is IWindow.onClosing
 	GraphicsLost;                        // the GPU's context is gone (a page's WebGL context lost: a GPU reset, an evicted tab)
 }
 ```
