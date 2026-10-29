@@ -23,4 +23,17 @@ Until it is published, link it, and the libraries it's built on (helix-platform,
 haxelib dev helix-services <checkout>/services
 ```
 
+## Examples
+
+Each example in `examples/` shows one thing, and builds from the hxml files beside it, as the platform's do:
+
+- `time`: one timer.
+- `input`: one action, bound to a key and a gamepad button.
+- `config`: one option read.
+- `saves`: one value loaded, set and written.
+- `assets`: one file loaded.
+- `audio`: one sound loaded and played.
+
+Its tests are in `tests/`.
+
 The API reference is [docs/api/](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/api/README.md), one page per package.

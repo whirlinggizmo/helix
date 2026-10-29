@@ -1,0 +1,19 @@
+{
+  "what": "Green once the timer is called.",
+  "printed": [
+    "a quarter second of game time passed"
+  ],
+  "nativeFrames": 5000,
+  "points": [
+    {
+      "x": 400,
+      "y": 300,
+      "color": [
+        42,
+        157,
+        74
+      ],
+      "tolerance": 3
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "what": "Grey: nothing is held during the check.",
+  "printed": [
+    "hold Space or the pad's bottom button"
+  ],
+  "points": [
+    {
+      "x": 400,
+      "y": 300,
+      "color": [
+        26,
+        29,
+        38
+      ],
+      "tolerance": 3
+    }
+  ]
+}

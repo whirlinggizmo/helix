@@ -25,6 +25,7 @@ python3 helix.py test                       # the tools' checks, the size ladder
 python3 helix.py test --native              # also each library's tests in hxcpp and the platform's native C tests
 python3 tools/check_types.py --no-output    # type-check every entry point of every library on its targets
 python3 tools/platform_checks.py --browser <chromium>   # the platform's examples and GPU tests, natively on a private display and in Chromium
+python3 tools/services_checks.py --browser <chromium>   # the services' examples, natively on a private display and in Chromium
 python3 tools/format.py --check             # layout
 python3 tools/check_docs.py                 # doc comments
 python3 tools/gen_apidoc.py                 # remake docs/api after a doc comment changes (--check in the tests)
@@ -53,6 +54,7 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `tools/page_check.cjs` | A page in headless Chromium: its errors, its result and a screenshot (run by `platform_checks.py`) |
 | `tools/pins.py` | The repository's haxelib: dev links to the libraries and the pinned hxcpp (a module) |
 | `tools/platform_checks.py` | The platform's examples and graphics tests on the GPU, natively on a private display and in Chromium |
+| `tools/services_checks.py` | The services' examples on the platform's real adapters, natively on a private display and in Chromium |
 | `tools/private_display.py` | A private X display for native windows in checks (a module) |
 | `tools/remote_windows.py` | This checkout built and checked on a Windows machine over ssh |
 | `tools/sdl3.py` | The SDL3 library a native build links: the system's, or the pinned release made into `build/deps` |

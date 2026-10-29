@@ -1,0 +1,18 @@
+{
+  "what": "Green: the check starts it with frames=60.",
+  "printed": [
+    "started with frames=60"
+  ],
+  "points": [
+    {
+      "x": 400,
+      "y": 300,
+      "color": [
+        42,
+        157,
+        74
+      ],
+      "tolerance": 3
+    }
+  ]
+}
