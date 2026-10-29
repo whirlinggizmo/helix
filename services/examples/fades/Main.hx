@@ -73,7 +73,7 @@ class Main {
 		output = new helix.platform.adapters.audio.webaudio.WebAudioAdapter();
 		decoder = new helix.platform.adapters.audiodecoder.webaudio.WebAudioDecoderAdapter();
 		httpClient = new helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter();
-		downloads = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: "fades-example"});
+		downloads = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory("helix", "fades-example")});
 		polled.push(httpClient);
 		polled.push(downloads);
 		assets = new Assets({sources: [HttpServer("assets/")], httpClient: httpClient, cacheFileSystem: downloads});

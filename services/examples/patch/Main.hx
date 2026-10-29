@@ -68,7 +68,7 @@ class Main {
 	static function setup():Void {
 		#if js
 		httpClient = new helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter();
-		downloads = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: "patch-example"});
+		downloads = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory("helix", "patch-example")});
 		#else
 		cdn = new LocalServer("web/cdn");
 		httpClient = new helix.platform.adapters.http.haxehttp.HaxeHttpAdapter();

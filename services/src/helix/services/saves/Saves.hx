@@ -49,8 +49,8 @@ class Saves implements IPollable {
 
 	/** Creates the saves over a file system, holding nothing until `load`.
 
-		@param fileSystem  Where the file is kept: natively a `NativeFileSystemAdapter` over `ISystem.getDataDirectory`, in a page a
-			`BrowserFileSystemAdapter` with its own name, apart from `Assets`' cache, which `Assets.clearCache` empties.
+		@param fileSystem  Where the file is kept: over `ISystem.getDataDirectory`, a `NativeFileSystemAdapter` natively and a
+			`BrowserFileSystemAdapter` in a page.
 		@param name  Optional. The file's path in it; "saves.json" by default. */
 	public function new(fileSystem:IFileSystem, name = "saves.json") {
 		this.fileSystem = fileSystem;

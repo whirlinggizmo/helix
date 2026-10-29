@@ -492,15 +492,12 @@ function new()
 var device(get, never):Device
 function getOption(name:String):Null<String>
 function getTime():Float
-function getProgramDirectory():Null<String>
-function getDataDirectory(company:String, product:String):Null<String>
-function getCacheDirectory(company:String, product:String):Null<String>
+function getProgramDirectory():String
+function getDataDirectory(company:String, product:String):String
+function getCacheDirectory(company:String, product:String):String
 ```
 
 - `new`: Creates the system's facts.
-- `getProgramDirectory`: Returns null: a page's own files are on the server.
-- `getDataDirectory`: Returns null: the browser keeps a page's files.
-- `getCacheDirectory`: Returns null: the browser keeps a page's files.
 
 ## Sdl3SystemAdapter
 
@@ -508,16 +505,16 @@ function getCacheDirectory(company:String, product:String):Null<String>
 
 Provides `ISystem` on SDL3, natively: the platform SDL names, options from HELIX_ environment variables, SDL's monotonic clock, the program's directory as SDL finds it, and the OS's directories by each OS's rules.
 
-A mouse is assumed and no touch screen reported. The directories follow the rules SDL's `SDL_GetPrefPath` does for data, without its making the directory, and the same OS conventions for the cache, which SDL has no call for. An `XDG_` variable that isn't an absolute path is ignored, as the XDG specification says.
+A mouse is assumed and no touch screen reported. The directories follow the rules SDL's `SDL_GetPrefPath` does for data, without its making the directory, and the same OS conventions for the cache, which SDL has no call for. Each comes from its environment variable when that's set, and from the OS when it isn't (the user database's home directory, Windows' shell folders); an empty one counts as unset. A variable set to a path that isn't absolute throws, naming it, where the XDG specification would ignore it: someone set it, and quietly writing elsewhere would hide the mistake.
 
 ```haxe
 function new()
 var device(get, never):Device
 function getOption(name:String):Null<String>
 function getTime():Float
-function getProgramDirectory():Null<String>
-function getDataDirectory(company:String, product:String):Null<String>
-function getCacheDirectory(company:String, product:String):Null<String>
+function getProgramDirectory():String
+function getDataDirectory(company:String, product:String):String
+function getCacheDirectory(company:String, product:String):String
 ```
 
 - `new`: Creates the system's facts.

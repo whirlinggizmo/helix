@@ -9,8 +9,10 @@ import helix.platform.adapters.shared.sdl3.Sdl3Bridge;
 	program's directory as SDL finds it, and the OS's directories by each OS's rules.
 
 	A mouse is assumed and no touch screen reported. The directories follow the rules SDL's `SDL_GetPrefPath` does for data, without its
-	making the directory, and the same OS conventions for the cache, which SDL has no call for. An `XDG_` variable that isn't an absolute
-	path is ignored, as the XDG specification says. */
+	making the directory, and the same OS conventions for the cache, which SDL has no call for. Each comes from its environment variable
+	when that's set, and from the OS when it isn't (the user database's home directory, Windows' shell folders); an empty one counts as
+	unset. A variable set to a path that isn't absolute throws, naming it, where the XDG specification would ignore it: someone set it, and
+	quietly writing elsewhere would hide the mistake. */
 class Sdl3SystemAdapter implements ISystem {
 	/** Creates the system's facts. */
 	public function new() {}
@@ -35,38 +37,60 @@ class Sdl3SystemAdapter implements ISystem {
 	public function getTime():Float
 		return Sdl3Bridge.time();
 
-	public function getProgramDirectory():Null<String> {
+	public function getProgramDirectory():String {
 		// SDL's, ending in a separator; the executable's own if SDL can't tell.
 		var base = Sdl3Bridge.basePath();
 		return base != null && (base : String) != "" ? Path.removeTrailingSlashes(base) : Path.directory(Sys.programPath());
 	}
 
-	public function getDataDirectory(company:String, product:String):Null<String> {
+	public function getDataDirectory(company:String, product:String):String {
 		var system = Sys.systemName();
 		if (system == "Windows")
-			return under(Sys.getEnv("APPDATA"), [company, product]);
+			return Path.join([directory("APPDATA", APP_DATA), company, product]);
 		if (system == "Mac")
-			return under(Sys.getEnv("HOME"), ["Library/Application Support", company, product]);
-		return under(xdg("XDG_DATA_HOME", ".local/share"), [company, product]);
+			return Path.join([directory("HOME", HOME), "Library/Application Support", company, product]);
+		return Path.join([xdg("XDG_DATA_HOME", ".local/share"), company, product]);
 	}
 
-	public function getCacheDirectory(company:String, product:String):Null<String> {
+	public function getCacheDirectory(company:String, product:String):String {
 		var system = Sys.systemName();
 		if (system == "Windows")
 			// LOCALAPPDATA\<company>\<product> is the program's own, not only its cache.
-			return under(Sys.getEnv("LOCALAPPDATA"), [company, product, "cache"]);
+			return Path.join([directory("LOCALAPPDATA", LOCAL_APP_DATA), company, product, "cache"]);
 		if (system == "Mac")
-			return under(Sys.getEnv("HOME"), ["Library/Caches", company, product]);
-		return under(xdg("XDG_CACHE_HOME", ".cache"), [company, product]);
+			return Path.join([directory("HOME", HOME), "Library/Caches", company, product]);
+		return Path.join([xdg("XDG_CACHE_HOME", ".cache"), company, product]);
 	}
 
-	// An XDG base directory: the variable when it's an absolute path, else fallback under the home directory; null without either.
-	static function xdg(variable:String, fallback:String):Null<String> {
+	// The OS's directories the bridge asks for (helix_sdl3_os_directory).
+	static inline final HOME = 0;
+	static inline final APP_DATA = 1;
+	static inline final LOCAL_APP_DATA = 2;
+
+	// An XDG base directory: the variable's, or fallback under the home directory when it's unset.
+	static function xdg(variable:String, fallback:String):String {
+		var value = set(variable);
+		return value != null ? value : Path.join([directory("HOME", HOME), fallback]);
+	}
+
+	// A directory from its environment variable, or from the OS when that's unset.
+	static function directory(variable:String, which:Int):String {
+		var value = set(variable);
+		if (value != null)
+			return value;
+		var found = Sdl3Bridge.osDirectory(which);
+		if (found == null || (found : String) == "")
+			throw '$variable is unset, and the OS has no directory for it';
+		return found;
+	}
+
+	// A variable's value when it's set and not empty, which must then be an absolute path; null when it's unset or empty.
+	static function set(variable:String):Null<String> {
 		var value = Sys.getEnv(variable);
-		return value != null && StringTools.startsWith(value, "/") ? value : under(Sys.getEnv("HOME"), [fallback]);
+		if (value == null || value == "")
+			return null;
+		if (!Path.isAbsolute(value))
+			throw '$variable is "$value", which isn\'t an absolute path';
+		return value;
 	}
-
-	// base joined with parts, or null when base is unset or empty.
-	static function under(base:Null<String>, parts:Array<String>):Null<String>
-		return base == null || base == "" ? null : Path.join([base].concat(parts));
 }

@@ -299,20 +299,24 @@ interface ISystem {
 	var device(get, never):Device;                  // what it runs on: browser, OS, touch screen, fine pointer
 	function getOption(name:String):Null<String>;   // natively the environment variable HELIX_<NAME>; in a page the URL's query parameter
 	function getTime():Float;                       // seconds on a monotonic clock: performance.now in a page, SDL's natively
-	function getProgramDirectory():Null<String>;    // the files shipped with the program; null in a page
-	function getDataDirectory(company:String, product:String):Null<String>;    // where lasting files go; null in a page
-	function getCacheDirectory(company:String, product:String):Null<String>;   // where what can be fetched again goes; null in a page
+	function getProgramDirectory():String;    // the files shipped with the program; "./" in a page, a URL
+	function getDataDirectory(company:String, product:String):String;    // where lasting files go; a database's name in a page
+	function getCacheDirectory(company:String, product:String):String;   // where what can be fetched again goes; a database's name in a page
 }
 ```
 
 - `getTime` never goes back or jumps when the system's clock is set; a pause in the program (a debugger, a hidden page) is time that
   passed.
-- `getProgramDirectory` is the executable's directory natively (in a macOS app bundle, its `Contents/Resources`).
+- `getProgramDirectory` is the executable's directory natively (in a macOS app bundle, its `Contents/Resources`); in a page `"./"`,
+  the page's own directory on its server, a URL `IHttp` fetches from.
 - `getDataDirectory` is the user's data directory (`$XDG_DATA_HOME` or `~/.local/share` on Linux, `~/Library/Application Support` on
   macOS, `%APPDATA%` on Windows), then `<company>/<product>`; `getCacheDirectory` the cache's (`$XDG_CACHE_HOME` or `~/.cache`,
-  `~/Library/Caches`, `%LOCALAPPDATA%\<company>\<product>\cache`). Each is null in a page, where the browser keeps a program's files,
-  and where the OS's directories can't be found. The SDL3 adapter keeps these rules itself rather than asking `SDL_GetPrefPath`: SDL has
-  no cache directory, and it makes the directory as a side effect of the question.
+  `~/Library/Caches`, `%LOCALAPPDATA%\<company>\<product>\cache`). Each comes from its environment variable when that's set (empty
+  counts as unset) and from the OS when it isn't (the user database's home directory, Windows' shell folders); a variable set to a path
+  that isn't absolute throws, naming it, where XDG would ignore it, since writing elsewhere would hide the mistake. In a page each is the
+  name of a database, `<company>/<product>/data` and `/cache`, which a `BrowserFileSystemAdapter` opens. The SDL3 adapter keeps these
+  rules itself rather than asking `SDL_GetPrefPath`: SDL has no cache directory, and it makes the directory as a side effect of the
+  question.
 
 ## Page errors
 

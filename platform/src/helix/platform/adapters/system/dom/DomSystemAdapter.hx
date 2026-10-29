@@ -45,15 +45,12 @@ class DomSystemAdapter implements ISystem {
 	public function getTime():Float
 		return js.Browser.window.performance.now() / 1000;
 
-	/** Returns null: a page's own files are on the server. */
-	public function getProgramDirectory():Null<String>
-		return null;
+	public function getProgramDirectory():String
+		return "./";
 
-	/** Returns null: the browser keeps a page's files. */
-	public function getDataDirectory(company:String, product:String):Null<String>
-		return null;
+	public function getDataDirectory(company:String, product:String):String
+		return '$company/$product/data';
 
-	/** Returns null: the browser keeps a page's files. */
-	public function getCacheDirectory(company:String, product:String):Null<String>
-		return null;
+	public function getCacheDirectory(company:String, product:String):String
+		return '$company/$product/cache';
 }

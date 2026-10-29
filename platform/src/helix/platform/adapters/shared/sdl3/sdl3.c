@@ -5,6 +5,10 @@
 #if defined(_WIN32)
 #include <windows.h>
 #include <dwmapi.h>
+#include <shlobj.h>
+#else
+#include <pwd.h>
+#include <unistd.h>
 #endif
 
 static SDL_Window *window;
@@ -73,6 +77,26 @@ const char *helix_sdl3_platform(void){return SDL_GetPlatform();}
 const char *helix_sdl3_getenv(const char *name){return SDL_getenv(name);}
 const char *helix_sdl3_base_path(void){return SDL_GetBasePath();}
 double helix_sdl3_time(void){return (double)SDL_GetTicksNS()/1e9;}
+
+/* A directory the OS keeps for the user, asked of the OS when its environment variable is unset: 0 the home directory, 1 the roaming
+   application data, 2 the local application data. On Windows its shell folders (SHGetFolderPathW, as SDL_GetPrefPath asks); elsewhere the
+   home directory from the user database, and none for 1 and 2. UTF-8, valid until the next call; NULL when the OS has none. */
+const char *helix_sdl3_os_directory(int which){
+ static char path[4096];
+#if defined(_WIN32)
+ static const int folders[]={CSIDL_PROFILE,CSIDL_APPDATA,CSIDL_LOCAL_APPDATA};
+ WCHAR wide[MAX_PATH];
+ if(which<0||which>2||FAILED(SHGetFolderPathW(NULL,folders[which],NULL,0,wide)))return NULL;
+ return WideCharToMultiByte(CP_UTF8,0,wide,-1,path,(int)sizeof path,NULL,NULL)>0?path:NULL;
+#else
+ struct passwd *entry;
+ if(which!=0)return NULL;
+ entry=getpwuid(getuid());
+ if(!entry||!entry->pw_dir||!entry->pw_dir[0])return NULL;
+ snprintf(path,sizeof path,"%s",entry->pw_dir);
+ return path;
+#endif
+}
 
 /* The window's framebuffer, for the graphics adapters (surface.h). */
 int helix_surface_width(void){int w=0,h=0;if(window)SDL_GetWindowSizeInPixels(window,&w,&h);return w;}

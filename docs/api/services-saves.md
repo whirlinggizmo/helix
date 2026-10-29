@@ -47,7 +47,7 @@ function dispose():Void
 ```
 
 - `new`: Creates the saves over a file system, holding nothing until `load`.
-  - `fileSystem`: Where the file is kept: natively a `NativeFileSystemAdapter` over `ISystem.getDataDirectory`, in a page a `BrowserFileSystemAdapter` with its own name, apart from `Assets`' cache, which `Assets.clearCache` empties.
+  - `fileSystem`: Where the file is kept: over `ISystem.getDataDirectory`, a `NativeFileSystemAdapter` natively and a `BrowserFileSystemAdapter` in a page.
   - `name`: Optional. The file's path in it; "saves.json" by default.
 - `load`: Reads the file. A file that isn't there yet loads as no values.
   - `loaded`: Called once the values can be read.

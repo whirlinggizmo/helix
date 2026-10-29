@@ -15,6 +15,7 @@ const char *helix_sdl3_platform(void);
 const char *helix_sdl3_getenv(const char *name);
 const char *helix_sdl3_base_path(void);
 double helix_sdl3_time(void);
+const char *helix_sdl3_os_directory(int which);
 #ifdef __cplusplus
 }
 #endif

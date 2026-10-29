@@ -56,7 +56,7 @@ class Main {
 	/** Makes the saves over a file system of their own, and counts this run once they're loaded. */
 	static function setup():Void {
 		#if js
-		files = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: "saves-example"});
+		files = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getDataDirectory("helix", "saves-example")});
 		#else
 		files = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: system.getDataDirectory("helix", "saves-example")});
 		#end

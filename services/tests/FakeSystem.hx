@@ -24,12 +24,12 @@ class FakeSystem implements ISystem {
 	public function getTime():Float
 		return now;
 
-	public function getProgramDirectory():Null<String>
-		return null;
+	public function getProgramDirectory():String
+		return "program";
 
-	public function getDataDirectory(company:String, product:String):Null<String>
-		return null;
+	public function getDataDirectory(company:String, product:String):String
+		return '$company/$product/data';
 
-	public function getCacheDirectory(company:String, product:String):Null<String>
-		return null;
+	public function getCacheDirectory(company:String, product:String):String
+		return '$company/$product/cache';
 }

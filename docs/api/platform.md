@@ -780,9 +780,9 @@ Defines the facts about where the program runs: the device, the options it was s
 var device(get, never):Device
 function getOption(name:String):Null<String>
 function getTime():Float
-function getProgramDirectory():Null<String>
-function getDataDirectory(company:String, product:String):Null<String>
-function getCacheDirectory(company:String, product:String):Null<String>
+function getProgramDirectory():String
+function getDataDirectory(company:String, product:String):String
+function getCacheDirectory(company:String, product:String):String
 ```
 
 - `device`: Gets what the program runs on, as the platform says.
@@ -793,22 +793,24 @@ function getCacheDirectory(company:String, product:String):Null<String>
   - returns: Seconds from an unspecified zero.
 
   It never goes back or jumps when the system's clock is set; a pause in the program (a debugger, a hidden page) is time that passed. In a page `performance.now`, natively SDL's.
-- `getProgramDirectory`: Returns the directory of the files that ship with the program, such as its assets.
-  - returns: The directory, or null in a page.
+- `getProgramDirectory`: Returns where the files that ship with the program are, such as its assets.
+  - returns: The directory natively, the URL in a page.
 
-  Natively the executable's directory; in a macOS app bundle, its `Contents/Resources`. A read-only `IFileSystem` over it reads them. In a page they're on the server, fetched with `IHttp`.
+  Natively the executable's directory (in a macOS app bundle, its `Contents/Resources`), which a read-only `IFileSystem` reads; in a page "./", the page's own directory on its server, as a URL relative to the page, which `IHttp` fetches from.
 - `getDataDirectory`: Returns where the OS keeps a program's files that must last, such as its saves.
   - `company`: The company's name, a plain directory name.
   - `product`: The product's name, a plain directory name.
-  - returns: The directory, or null in a page, where the browser keeps a program's files, or when the OS's directory can't be found.
+  - returns: The directory natively, the database's name in a page.
+  - throws `String`: Natively, when the environment variable it comes from is set to a path that isn't absolute, or when it's unset and the OS has none.
 
-  Natively the user's data directory (`$XDG_DATA_HOME` or `~/.local/share` on Linux, `~/Library/Application Support` on macOS, `%APPDATA%` on Windows), then the company and the product. The directory may not exist yet.
+  Natively the user's data directory (`$XDG_DATA_HOME` or `~/.local/share` on Linux, `~/Library/Application Support` on macOS, `%APPDATA%` on Windows), then the company and the product; the directory may not exist yet. In a page, where the browser keeps a program's files, the name of its database, "company/product/data".
 - `getCacheDirectory`: Returns where the OS keeps a program's files that can be made or fetched again, such as downloaded assets.
   - `company`: The company's name, a plain directory name.
   - `product`: The product's name, a plain directory name.
-  - returns: The directory, or null in a page, where the browser keeps a program's files, or when the OS's directory can't be found.
+  - returns: The directory natively, the database's name in a page.
+  - throws `String`: Natively, when the environment variable it comes from is set to a path that isn't absolute, or when it's unset and the OS has none.
 
-  Natively the user's cache directory (`$XDG_CACHE_HOME` or `~/.cache` on Linux, `~/Library/Caches` on macOS), then the company and the product; on Windows `%LOCALAPPDATA%`, the company, the product and `cache`. The directory may not exist yet.
+  Natively the user's cache directory (`$XDG_CACHE_HOME` or `~/.cache` on Linux, `~/Library/Caches` on macOS), then the company and the product; on Windows `%LOCALAPPDATA%`, the company, the product and `cache`; the directory may not exist yet. In a page, where the browser keeps a program's files, the name of its database, "company/product/cache".
 
 ## IWindow
 

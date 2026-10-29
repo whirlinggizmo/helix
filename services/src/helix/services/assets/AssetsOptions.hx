@@ -13,8 +13,8 @@ class AssetsOptions {
 	public final httpClient:IHttp = null;
 
 	/** Gets the file system `HttpServer` sources' files are kept in; null by default, and needed when there is one. A file system of its own, as
-		`clearCache` empties it: natively a `NativeFileSystemAdapter` over `ISystem.getCacheDirectory`, in a page a
-		`BrowserFileSystemAdapter` with its own name. */
+		`clearCache` empties it: over `ISystem.getCacheDirectory`, a `NativeFileSystemAdapter` natively and a `BrowserFileSystemAdapter`
+		in a page. */
 	public final cacheFileSystem:IFileSystem = null;
 
 	/** Gets the name of each directory's manifest, as `AssetManifests` writes them, which a `Manifest` source reads; "manifest.json" by

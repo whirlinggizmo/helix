@@ -42,7 +42,7 @@ var assets = new Assets({sources: [FileSystem(shipped), HttpServer("https://exam
 // A server first, patching what shipped by its manifests:
 var assets = new Assets({sources: [HttpServer("https://example.com/game/", Manifest), FileSystem(shipped)], httpClient: httpClient, cacheFileSystem: downloads});
 // In a page, the files beside the page:
-var assets = new Assets({sources: [HttpServer("")], httpClient: new FetchApiHttpAdapter(), cacheFileSystem: new BrowserFileSystemAdapter({name: "cache"})});
+var assets = new Assets({sources: [HttpServer("")], httpClient: new FetchApiHttpAdapter(), cacheFileSystem: new BrowserFileSystemAdapter({name: system.getCacheDirectory("Company", "Game")})});
 
 assets.load("levels/1.json", bytes -> start(bytes));
 // each frame, with the platform's other polls:
@@ -100,5 +100,5 @@ final manifestName:String = "manifest.json"
 
 - `sources`: Gets where files are found, asked in this order: a file missing from one is looked for in the next.
 - `httpClient`: Gets the HTTP client `HttpServer` sources download with; null by default, and needed when there is one.
-- `cacheFileSystem`: Gets the file system `HttpServer` sources' files are kept in; null by default, and needed when there is one. A file system of its own, as `clearCache` empties it: natively a `NativeFileSystemAdapter` over `ISystem.getCacheDirectory`, in a page a `BrowserFileSystemAdapter` with its own name.
+- `cacheFileSystem`: Gets the file system `HttpServer` sources' files are kept in; null by default, and needed when there is one. A file system of its own, as `clearCache` empties it: over `ISystem.getCacheDirectory`, a `NativeFileSystemAdapter` natively and a `BrowserFileSystemAdapter` in a page.
 - `manifestName`: Gets the name of each directory's manifest, as `AssetManifests` writes them, which a `Manifest` source reads; "manifest.json" by default.

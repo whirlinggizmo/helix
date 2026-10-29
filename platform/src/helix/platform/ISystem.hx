@@ -19,28 +19,34 @@ interface ISystem {
 		@return  Seconds from an unspecified zero. */
 	function getTime():Float;
 
-	/** Returns the directory of the files that ship with the program, such as its assets.
+	/** Returns where the files that ship with the program are, such as its assets.
 
-		Natively the executable's directory; in a macOS app bundle, its `Contents/Resources`. A read-only `IFileSystem` over it reads them. In a
-		page they're on the server, fetched with `IHttp`.
-		@return  The directory, or null in a page. */
-	function getProgramDirectory():Null<String>;
+		Natively the executable's directory (in a macOS app bundle, its `Contents/Resources`), which a read-only `IFileSystem` reads; in a
+		page "./", the page's own directory on its server, as a URL relative to the page, which `IHttp` fetches from.
+		@return  The directory natively, the URL in a page. */
+	function getProgramDirectory():String;
 
 	/** Returns where the OS keeps a program's files that must last, such as its saves.
 
 		Natively the user's data directory (`$XDG_DATA_HOME` or `~/.local/share` on Linux, `~/Library/Application Support` on macOS,
-		`%APPDATA%` on Windows), then the company and the product. The directory may not exist yet.
+		`%APPDATA%` on Windows), then the company and the product; the directory may not exist yet. In a page, where the browser keeps a
+		program's files, the name of its database, "company/product/data".
 		@param company  The company's name, a plain directory name.
 		@param product  The product's name, a plain directory name.
-		@return  The directory, or null in a page, where the browser keeps a program's files, or when the OS's directory can't be found. */
-	function getDataDirectory(company:String, product:String):Null<String>;
+		@return  The directory natively, the database's name in a page.
+		@throws String  Natively, when the environment variable it comes from is set to a path that isn't absolute, or when it's unset and
+			the OS has none. */
+	function getDataDirectory(company:String, product:String):String;
 
 	/** Returns where the OS keeps a program's files that can be made or fetched again, such as downloaded assets.
 
 		Natively the user's cache directory (`$XDG_CACHE_HOME` or `~/.cache` on Linux, `~/Library/Caches` on macOS), then the company and the
-		product; on Windows `%LOCALAPPDATA%`, the company, the product and `cache`. The directory may not exist yet.
+		product; on Windows `%LOCALAPPDATA%`, the company, the product and `cache`; the directory may not exist yet. In a page, where the
+		browser keeps a program's files, the name of its database, "company/product/cache".
 		@param company  The company's name, a plain directory name.
 		@param product  The product's name, a plain directory name.
-		@return  The directory, or null in a page, where the browser keeps a program's files, or when the OS's directory can't be found. */
-	function getCacheDirectory(company:String, product:String):Null<String>;
+		@return  The directory natively, the database's name in a page.
+		@throws String  Natively, when the environment variable it comes from is set to a path that isn't absolute, or when it's unset and
+			the OS has none. */
+	function getCacheDirectory(company:String, product:String):String;
 }
