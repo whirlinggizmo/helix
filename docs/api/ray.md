@@ -1292,8 +1292,8 @@ static function EndShaderMode():Void
 - `IsWindowState`: Returns whether flags are set on the window.
   - `flag`: The flags, or'd together.
   - returns: True when all of them are.
-- `SetTargetFPS`: Sets the frame rate aimed for. Frames here follow the display's refresh, whatever it is set to.
-  - `fps`: The frames a second.
+- `SetTargetFPS`: Sets the most frames a second, as raylib's `EndDrawing` waits out the rest of each frame. Natively it waits; in a page, where frames follow the display's refresh, a frame is skipped until it is time, so a rate above the display's changes nothing.
+  - `fps`: The frames a second, or 0 for no limit.
 - `GetFPS`: Returns the frames a second, averaged over the last half second or so.
   - returns: The frames a second.
 - `GetFrameTime`: Returns the seconds the last frame took.

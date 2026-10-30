@@ -63,6 +63,12 @@ class Runtime {
 	public static var exitKey = 256;
 	public static var frames = 0;
 
+	/** The seconds a frame is to take at least, from `SetTargetFPS`; 0 for no limit. */
+	public static var frameTarget = 0.;
+
+	// When the last frame ended, after its wait; in a page, when the next frame is due.
+	static var frameEnd = 0.;
+
 	/** The keys pressed this frame, oldest first, read by `GetKeyPressed`. */
 	public static final keysPressed:Array<Int> = [];
 
@@ -294,6 +300,14 @@ class Runtime {
 		#if js
 		var frame:Float->Void = null;
 		frame = _ -> {
+			// A frame the target rate has no room for is skipped, with a millisecond's slack for the display's jitter.
+			var now = system.getTime();
+			if (frameTarget > 0 && now < frameEnd - .001) {
+				js.Browser.window.requestAnimationFrame(frame);
+				return;
+			}
+			// The next is due a target after this one was: from now when it came early or far behind, so neither adds up.
+			frameEnd = (now < frameEnd || now - frameEnd > frameTarget ? now : frameEnd) + frameTarget;
 			body();
 			if (shouldClose)
 				after();
@@ -401,14 +415,31 @@ class Runtime {
 		return gamepadsService;
 	}
 
-	/** Draws the frame, shows it, and reads the next frame's input. */
+	/** Draws the frame, shows it, waits out the rest of the frame natively, as raylib does, and reads the next frame's input. */
 	public static function endFrame():Void {
 		frame.draw(window.framebufferWidth, window.framebufferHeight);
+		#if !js
+		wait();
+		#end
 		frames++;
 		if (framesLeft > 0 && --framesLeft == 0)
 			shouldClose = true;
 		poll();
 	}
+
+	#if !js
+	// raylib's wait: a sleep for most of what is left of the frame, then a spin for the last twentieth, as a sleep can overshoot.
+	static function wait():Void {
+		var now = system.getTime();
+		var left = frameTarget - (now - frameEnd);
+		if (frameTarget > 0 && left > 0) {
+			var until = now + left;
+			Sys.sleep(left * .95);
+			while (system.getTime() < until) {}
+		}
+		frameEnd = system.getTime();
+	}
+	#end
 
 	/** Polls the platform and the services, then reads the frame's events. */
 	static function poll():Void {

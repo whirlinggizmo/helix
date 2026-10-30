@@ -138,11 +138,12 @@ class RCore {
 		return configFlags & flag == flag;
 	}
 
-	/** Sets the frame rate aimed for. Frames here follow the display's refresh, whatever it is set to.
+	/** Sets the most frames a second, as raylib's `EndDrawing` waits out the rest of each frame. Natively it waits; in a page, where
+		frames follow the display's refresh, a frame is skipped until it is time, so a rate above the display's changes nothing.
 
-		@param fps  The frames a second. */
+		@param fps  The frames a second, or 0 for no limit. */
 	static function SetTargetFPS(fps:Int):Void {
-		targetFps = fps;
+		Runtime.frameTarget = fps < 1 ? 0 : 1 / fps;
 	}
 
 	/** Returns the frames a second, averaged over the last half second or so.
@@ -693,7 +694,6 @@ class RCore {
 	static inline final SAVED = "file:";
 	static var start = 0.;
 	static var configFlags = 0;
-	static var targetFps = 0;
 	static var fps = 60.;
 	static var seed = 0x2545f491;
 	static var seeded = false;

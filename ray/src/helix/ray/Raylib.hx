@@ -976,9 +976,10 @@ class Raylib {
 	public static inline function IsWindowState(flag:Int):Bool
 		return RCore.IsWindowState(flag);
 
-	/** Sets the frame rate aimed for. Frames here follow the display's refresh, whatever it is set to.
+	/** Sets the most frames a second, as raylib's `EndDrawing` waits out the rest of each frame. Natively it waits; in a page, where
+		frames follow the display's refresh, a frame is skipped until it is time, so a rate above the display's changes nothing.
 
-		@param fps  The frames a second. */
+		@param fps  The frames a second, or 0 for no limit. */
 	public static inline function SetTargetFPS(fps:Int):Void
 		RCore.SetTargetFPS(fps);
 
