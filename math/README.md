@@ -21,6 +21,7 @@ var x = Trig.cos(angle) * speed, y = Trig.sin(angle) * speed;
 The API reference is [docs/api/math.md](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/api/math.md). Its tests, in `tests/`,
 build with `-lib helix-math` alone.
 
-## Includes
+## Credit
 
-`Matrix3D`'s formulas are raymath's, from raylib 5.5, under its zlib license (`vendor/raylib-LICENSE`).
+Portions of `Matrix3D` are from [raylib](https://www.raylib.com) 5.5's raymath, by Ramon Santamaria (@raysan5) and its contributors,
+altered; zlib license, `vendor/raylib-LICENSE`.

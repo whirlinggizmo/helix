@@ -10,8 +10,8 @@ What the libraries include or link that they didn't write, with each one's licen
 | [SDL3_mixer](https://github.com/libsdl-org/SDL_mixer) 3.2.4 | `platform/vendor/sdl3_mixer/` (its sources), compiled with the program | native audio output, mixing and decoding (WAV, Ogg Vorbis, MP3, FLAC) | zlib | `platform/vendor/sdl3_mixer/LICENSE.txt` |
 | [stb_vorbis](https://github.com/nothings/stb), in SDL3_mixer | `platform/vendor/sdl3_mixer/src/stb_vorbis/` | native Ogg Vorbis decoding | public domain, or MIT | at the end of the header |
 | [dr_mp3 and dr_flac](https://github.com/mackron/dr_libs), in SDL3_mixer | `platform/vendor/sdl3_mixer/src/dr_libs/` | native MP3 and FLAC decoding | public domain, or MIT No Attribution | `platform/vendor/sdl3_mixer/src/dr_libs/LICENSE` |
-| [raylib](https://github.com/raysan5/raylib) 5.5: its default font, default shader and header's comments | `ray/src/helix/ray/internal/DefaultFont.hx` (the font's glyph bits and widths, from `rtext.c`), `ray/src/helix/ray/internal/ShaderMacro.hx` (the default shader, from `rlgl.h`), `ray/src/helix/ray/Raylib.hx` (the constants' doc comments, from `raylib.h`) | helix-ray's `DrawText` and `MeasureText`, so text measures as raylib's does, its default shader, and its constants' docs | zlib | `ray/vendor/raylib-LICENSE` |
-| [raylib](https://github.com/raysan5/raylib) 5.5's raymath | `math/src/helix/math/Matrix3D.hx` (its formulas, from `raymath.h`) | helix-math's `Matrix3D` | zlib | `math/vendor/raylib-LICENSE` |
+| [raylib](https://github.com/raysan5/raylib) 5.5 | `ray/` (its API mirrored; portions altered: its default font, default shader and header's comments) | helix-ray | zlib | `ray/vendor/raylib-LICENSE` |
+| [raylib](https://github.com/raysan5/raylib) 5.5's raymath | `math/src/helix/math/Matrix3D.hx` (portions, altered) | helix-math's `Matrix3D` | zlib | `math/vendor/raylib-LICENSE` |
 
 Tools that run while building, and whose code isn't in builds: glslang (BSD-3-Clause and others, its `LICENSE.txt`) and SPIRV-Cross (Apache-2.0). Their output, the shaders, is the program's.
 
