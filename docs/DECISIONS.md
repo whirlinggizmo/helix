@@ -56,3 +56,8 @@ Why things are the way they are, numbered, in order.
     them in `flixel.ui` as sprites (`FlxVirtualPad`, `FlxVirtualStick`), and Lime and OpenFL have none. Where they go is open; reading
     `Touch` and implementing `IActionDevice`, they'd be read by `Actions` as the devices are. Taps, flicks and two-finger gestures
     interpret the fingers and come as their own service.
+14. **Typed text is the platform's, and a text field isn't the services'.** Only the OS turns keys into characters (the layout, dead
+    keys, an input method) and shows a phone's keyboard, so `Event.Text` and `IKeyboard.textInput` are the platform's, as Lime's
+    `onTextInput` and `textInputEnabled` are. Typing a name in trial 8 needed more than a frame's characters: Backspace with its
+    repeats, Enter to end, the game's keys left out meanwhile, which is a text field, a UI control (Flixel's `FlxInputText`). The
+    services' `Keyboard` reads keys alone.

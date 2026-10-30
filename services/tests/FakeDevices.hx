@@ -18,7 +18,7 @@ class FakeDevices implements IKeyboard implements IMouse implements ITouch imple
 	/** Creates them, with a pad in slot 0 alone. */
 	public function new() {}
 
-	/** Gets or sets whether typed text arrives; the tests deliver `Text` themselves. */
+	/** Gets or sets whether typed text arrives; nothing types in the tests. */
 	public var textInput(get, set):Bool;
 
 	var typing = false;

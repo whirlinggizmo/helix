@@ -194,8 +194,6 @@ if (keyboard.isKeyPressed(Space)) jump();
 
 ```haxe
 function new(events:IEvents, keyboard:IKeyboard)
-var textInput(get, set):Bool
-var text(default, null):String
 function poll():Void
 function isKeyDown(key:Key):Bool
 function isKeyPressed(key:Key):Bool
@@ -205,8 +203,6 @@ function isKeyReleased(key:Key):Bool
 - `new`: Creates the keyboard over the platform's events and keyboard, with nothing held.
   - `events`: The platform's events, whose last `poll` this one reads.
   - `keyboard`: The platform's keyboard, whose keys those events carry.
-- `textInput`: Gets or sets whether typed text arrives, as `IKeyboard.textInput`. A phone shows its keyboard while it is on. Defaults to false.
-- `text`: Gets the text typed this frame, in order, or "" when none was. Text is typed only while `textInput` is on.
 - `poll`: Reads the events the last `IEvents.poll` delivered. Call it once a frame. When the window loses focus, every held key is released.
 - `isKeyDown`: Returns whether a key is held.
   - `key`: The key.

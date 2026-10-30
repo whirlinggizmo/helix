@@ -7,7 +7,7 @@ import helix.services.input.Tilt;
 import helix.services.input.Touch;
 
 /** Checks the keyboard, the mouse, touch, the gamepads, the tilt and Actions over fake events: held, pressed and released by frame;
-	repeats ignored; typed text; fingers by id; focus lost letting go; sticks past a round dead zone; tilt from level; and actions over
+	repeats ignored; fingers by id; focus lost letting go; sticks past a round dead zone; tilt from level; and actions over
 	the devices given, pressed once however many bindings are held, axes as buttons, and movement capped at 1. */
 class InputTests {
 	static var checks = 0;
@@ -45,12 +45,6 @@ class InputTests {
 		check(!keyboard.isKeyDown(Space) && keyboard.isKeyReleased(Space), "up: released");
 		frame();
 		check(!keyboard.isKeyReleased(Space), "released for one frame alone");
-		frame([Text("h"), KeyDown(I, false), Text("i!")]);
-		check(keyboard.text == "hi!", "the text typed this frame, in order");
-		frame();
-		check(keyboard.text == "", "no text the next frame");
-		keyboard.textInput = true;
-		check(devices.textInput && keyboard.textInput, "textInput is the platform keyboard's");
 		frame([KeyDown(A, false), KeyUp(A)]);
 		check(keyboard.isKeyPressed(A) && keyboard.isKeyReleased(A) && !keyboard.isKeyDown(A), "a tap within a frame: pressed and released");
 
