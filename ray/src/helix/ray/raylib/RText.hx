@@ -1,9 +1,25 @@
 package helix.ray.raylib;
 
-/** Holds rtext: text in the default font, as members of `Raylib`: its build takes them from here (`helix.ray.internal.Sections`), and this class is left
-	empty. */
+#if !macro
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import helix.math.Matrix3D;
+import helix.ray.internal.DefaultFont;
+import helix.ray.internal.Models;
+import helix.ray.internal.Runtime;
+import helix.ray.internal.Textures;
+import helix.ray.raylib.RCore.*;
+import helix.ray.raylib.RShapes.*;
+import helix.ray.raylib.RTextures.*;
+import helix.ray.raylib.RText.*;
+import helix.ray.raylib.RModels.*;
+import helix.ray.raylib.RAudio.*;
+import helix.ray.raylib.RMath.*;
+import helix.ray.raylib.HelixRay.*;
+#end
+
+/** Holds raylib's rtext (text in the default font), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
-@:build(helix.ray.internal.Sections.part("text", "rtext: text"))
 class RText {
 	#if !macro
 	// ---- Text ----

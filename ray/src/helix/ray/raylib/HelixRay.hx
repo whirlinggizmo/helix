@@ -1,9 +1,25 @@
 package helix.ray.raylib;
 
-/** Holds helix-ray's own, not raylib's: loading in a page, as members of `Raylib`: its build takes them from here (`helix.ray.internal.Sections`), and this class is left
-	empty. */
+#if !macro
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import helix.math.Matrix3D;
+import helix.ray.internal.DefaultFont;
+import helix.ray.internal.Models;
+import helix.ray.internal.Runtime;
+import helix.ray.internal.Textures;
+import helix.ray.raylib.RCore.*;
+import helix.ray.raylib.RShapes.*;
+import helix.ray.raylib.RTextures.*;
+import helix.ray.raylib.RText.*;
+import helix.ray.raylib.RModels.*;
+import helix.ray.raylib.RAudio.*;
+import helix.ray.raylib.RMath.*;
+import helix.ray.raylib.HelixRay.*;
+#end
+
+/** Holds helix-ray's own, not raylib's (loading in a page), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
-@:build(helix.ray.internal.Sections.part("helix", "helix-ray's own: loading in a page"))
 class HelixRay {
 	#if !macro
 	// ---- Loading in a page: helix-ray's own, not raylib's ----
@@ -67,6 +83,7 @@ class HelixRay {
 		Runtime.fetch(path, error -> error == null ? loaded(Runtime.files.get(path).toString()) : refuse("LoadFileTextAsync", path, error, failed));
 	}
 
+	@:allow(helix.ray)
 	static function refuse(name:String, path:String, error:String, failed:Null<String->Void>):Void {
 		if (failed != null)
 			failed(error);

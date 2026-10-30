@@ -32,6 +32,7 @@ def test(native,audio_device):
     run([sys.executable,'tools/check_layers.py'])
     run([sys.executable,'tools/check_names.py'])
     run([sys.executable,'tools/check_tools.py'])
+    run([sys.executable,'tools/gen_raylib.py','--check'])
     run([sys.executable,'tools/gen_apidoc.py','--check'])
     run([sys.executable,'tools/measure_sizes.py','--check'])
     run([sys.executable,'tools/check_docs.py'])

@@ -1,9 +1,25 @@
 package helix.ray.raylib;
 
-/** Holds raudio: sounds, as members of `Raylib`: its build takes them from here (`helix.ray.internal.Sections`), and this class is left
-	empty. */
+#if !macro
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import helix.math.Matrix3D;
+import helix.ray.internal.DefaultFont;
+import helix.ray.internal.Models;
+import helix.ray.internal.Runtime;
+import helix.ray.internal.Textures;
+import helix.ray.raylib.RCore.*;
+import helix.ray.raylib.RShapes.*;
+import helix.ray.raylib.RTextures.*;
+import helix.ray.raylib.RText.*;
+import helix.ray.raylib.RModels.*;
+import helix.ray.raylib.RAudio.*;
+import helix.ray.raylib.RMath.*;
+import helix.ray.raylib.HelixRay.*;
+#end
+
+/** Holds raylib's raudio (sounds), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
-@:build(helix.ray.internal.Sections.part("audio", "raudio: sound"))
 class RAudio {
 	#if !macro
 	// ---- Audio ----
@@ -136,6 +152,8 @@ class RAudio {
 	}
 
 	// A sound's file decoded: it plays as often as it was asked to meanwhile.
+
+	@:allow(helix.ray)
 	static function arrived(sound:Sound, loaded:helix.services.audio.Sound):Void {
 		if (sound.unloaded)
 			return;

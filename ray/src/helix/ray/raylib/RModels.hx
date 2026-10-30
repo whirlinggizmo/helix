@@ -1,9 +1,25 @@
 package helix.ray.raylib;
 
-/** Holds rmodels: 3D shapes, models, meshes, materials and rays, as members of `Raylib`: its build takes them from here (`helix.ray.internal.Sections`), and this class is left
-	empty. */
+#if !macro
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import helix.math.Matrix3D;
+import helix.ray.internal.DefaultFont;
+import helix.ray.internal.Models;
+import helix.ray.internal.Runtime;
+import helix.ray.internal.Textures;
+import helix.ray.raylib.RCore.*;
+import helix.ray.raylib.RShapes.*;
+import helix.ray.raylib.RTextures.*;
+import helix.ray.raylib.RText.*;
+import helix.ray.raylib.RModels.*;
+import helix.ray.raylib.RAudio.*;
+import helix.ray.raylib.RMath.*;
+import helix.ray.raylib.HelixRay.*;
+#end
+
+/** Holds raylib's rmodels (3D shapes, models, meshes, materials and rays), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
-@:build(helix.ray.internal.Sections.part("models", "rmodels: 3D shapes, models, meshes and rays"))
 class RModels {
 	#if !macro
 	// ---- 3D shapes ----
@@ -557,7 +573,9 @@ class RModels {
 	}
 
 	// ---- What the 3D functions share ----
+	@:allow(helix.ray)
 	static var shaderDefault:Null<Shader> = null;
+	@:allow(helix.ray)
 	static final sounds = new Map<String, {
 		loaded:Null<helix.services.audio.Sound>,
 		refs:Int,
@@ -565,12 +583,18 @@ class RModels {
 		cancel:Null<Void->Void>,
 		answers:Array<Null<String>->Void>
 	}>();
+	@:allow(helix.ray)
 	static var deltaFrame = -1;
+	@:allow(helix.ray)
 	static var deltaX = 0.;
+	@:allow(helix.ray)
 	static var deltaY = 0.;
+	@:allow(helix.ray)
 	static var previousX = 0.;
+	@:allow(helix.ray)
 	static var previousY = 0.;
 
+	@:allow(helix.ray)
 	static function defaultShader():Shader {
 		if (shaderDefault == null) {
 			var p = Runtime.frame.defaultProgram;
@@ -590,6 +614,8 @@ class RModels {
 	}
 
 	// raylib's SHADER_LOC_* locations of a program.
+
+	@:allow(helix.ray)
 	static function locations(p:helix.ray.internal.Program):Array<Int> {
 		var locs = [for (_ in 0...32) -1];
 		locs[SHADER_LOC_VERTEX_POSITION] = p.attributes.indexOf("vertexPosition");
@@ -610,6 +636,8 @@ class RModels {
 	}
 
 	// The numbers of a shader value as a program writes them.
+
+	@:allow(helix.ray)
 	static function numbers(value:Dynamic):Array<Float> {
 		if (Std.isOfType(value, Array))
 			return [for (x in (value : Array<Dynamic>)) (x : Float)];
@@ -627,6 +655,8 @@ class RModels {
 	}
 
 	// raylib's Matrix, named by rows, and helix-math's, stored by columns: m0 to m3 the first column in both.
+
+	@:allow(helix.ray)
 	static function toMatrix3D(m:Matrix):Matrix3D {
 		var out = new Matrix3D(), v = out.values;
 		var all = [
@@ -637,17 +667,21 @@ class RModels {
 		return out;
 	}
 
+	@:allow(helix.ray)
 	static function toMatrix(m:Matrix3D):Matrix {
 		var a = m.values;
 		return new Matrix(a[0], a[4], a[8], a[12], a[1], a[5], a[9], a[13], a[2], a[6], a[10], a[14], a[3], a[7], a[11], a[15]);
 	}
 
+	@:allow(helix.ray)
 	static function cameraView(camera:Camera3D):Matrix3D {
 		var p = camera.position, t = camera.target, u = camera.up;
 		return new Matrix3D().makeLookAt(p.x, p.y, p.z, t.x, t.y, t.z, u.x, u.y, u.z);
 	}
 
 	// raylib's near and far planes, 0.01 and 1000.
+
+	@:allow(helix.ray)
 	static function cameraProjection(camera:Camera3D, aspect:Float):Matrix3D {
 		if (camera.projection == CAMERA_ORTHOGRAPHIC) {
 			var top = camera.fovy / 2, right = top * aspect;
@@ -656,6 +690,7 @@ class RModels {
 		return new Matrix3D().makePerspective(camera.fovy * DEG2RAD, aspect, .01, 1000);
 	}
 
+	@:allow(helix.ray)
 	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix3D, tint:Color):Void {
 		if (mesh.gpu.buffers == null)
 			Models.upload(mesh);

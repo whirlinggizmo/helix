@@ -306,9 +306,9 @@ var normal:Vector3
 
 Provides raylib 5.5's API, as `raylib.h` names it, over helix-platform and helix-services: a program writes raylib, and it runs in a page and natively.
 
-A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a frame. Natively a load reads its file when called, as raylib's does; a page loads before `main` the files its program names, and the `...Async` loads, helix-ray's own, bring in the rest. A file loaded twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its files with constants. Its members are kept in files by raylib's modules (`helix.ray.raylib`); what raylib has and helix-ray doesn't refuses to compile, naming itself.
+A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a frame. Natively a load reads its file when called, as raylib's does; a page loads before `main` the files its program names, and the `...Async` loads, helix-ray's own, bring in the rest. A file loaded twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its files with constants. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here by module; what raylib has and helix-ray doesn't refuses to compile, naming itself.
 
-### Constants and colors
+### Keys (KeyboardKey)
 
 ```haxe
 static inline var KEY_NULL:Int
@@ -421,161 +421,6 @@ static inline var KEY_BACK:Int
 static inline var KEY_MENU:Int
 static inline var KEY_VOLUME_UP:Int
 static inline var KEY_VOLUME_DOWN:Int
-static inline var MOUSE_BUTTON_LEFT:Int
-static inline var MOUSE_BUTTON_RIGHT:Int
-static inline var MOUSE_BUTTON_MIDDLE:Int
-static inline var MOUSE_BUTTON_SIDE:Int
-static inline var MOUSE_BUTTON_EXTRA:Int
-static inline var MOUSE_BUTTON_FORWARD:Int
-static inline var MOUSE_BUTTON_BACK:Int
-static inline var GAMEPAD_BUTTON_UNKNOWN:Int
-static inline var GAMEPAD_BUTTON_LEFT_FACE_UP:Int
-static inline var GAMEPAD_BUTTON_LEFT_FACE_RIGHT:Int
-static inline var GAMEPAD_BUTTON_LEFT_FACE_DOWN:Int
-static inline var GAMEPAD_BUTTON_LEFT_FACE_LEFT:Int
-static inline var GAMEPAD_BUTTON_RIGHT_FACE_UP:Int
-static inline var GAMEPAD_BUTTON_RIGHT_FACE_RIGHT:Int
-static inline var GAMEPAD_BUTTON_RIGHT_FACE_DOWN:Int
-static inline var GAMEPAD_BUTTON_RIGHT_FACE_LEFT:Int
-static inline var GAMEPAD_BUTTON_LEFT_TRIGGER_1:Int
-static inline var GAMEPAD_BUTTON_LEFT_TRIGGER_2:Int
-static inline var GAMEPAD_BUTTON_RIGHT_TRIGGER_1:Int
-static inline var GAMEPAD_BUTTON_RIGHT_TRIGGER_2:Int
-static inline var GAMEPAD_BUTTON_MIDDLE_LEFT:Int
-static inline var GAMEPAD_BUTTON_MIDDLE:Int
-static inline var GAMEPAD_BUTTON_MIDDLE_RIGHT:Int
-static inline var GAMEPAD_BUTTON_LEFT_THUMB:Int
-static inline var GAMEPAD_BUTTON_RIGHT_THUMB:Int
-static inline var GAMEPAD_AXIS_LEFT_X:Int
-static inline var GAMEPAD_AXIS_LEFT_Y:Int
-static inline var GAMEPAD_AXIS_RIGHT_X:Int
-static inline var GAMEPAD_AXIS_RIGHT_Y:Int
-static inline var GAMEPAD_AXIS_LEFT_TRIGGER:Int
-static inline var GAMEPAD_AXIS_RIGHT_TRIGGER:Int
-static inline var FLAG_VSYNC_HINT:Int
-static inline var FLAG_FULLSCREEN_MODE:Int
-static inline var FLAG_WINDOW_RESIZABLE:Int
-static inline var FLAG_WINDOW_UNDECORATED:Int
-static inline var FLAG_WINDOW_HIDDEN:Int
-static inline var FLAG_WINDOW_MINIMIZED:Int
-static inline var FLAG_WINDOW_MAXIMIZED:Int
-static inline var FLAG_WINDOW_UNFOCUSED:Int
-static inline var FLAG_WINDOW_TOPMOST:Int
-static inline var FLAG_WINDOW_ALWAYS_RUN:Int
-static inline var FLAG_WINDOW_TRANSPARENT:Int
-static inline var FLAG_WINDOW_HIGHDPI:Int
-static inline var FLAG_WINDOW_MOUSE_PASSTHROUGH:Int
-static inline var FLAG_BORDERLESS_WINDOWED_MODE:Int
-static inline var FLAG_MSAA_4X_HINT:Int
-static inline var FLAG_INTERLACED_HINT:Int
-static inline var GESTURE_NONE:Int
-static inline var GESTURE_TAP:Int
-static inline var GESTURE_DOUBLETAP:Int
-static inline var GESTURE_HOLD:Int
-static inline var GESTURE_DRAG:Int
-static inline var GESTURE_SWIPE_RIGHT:Int
-static inline var GESTURE_SWIPE_LEFT:Int
-static inline var GESTURE_SWIPE_UP:Int
-static inline var GESTURE_SWIPE_DOWN:Int
-static inline var GESTURE_PINCH_IN:Int
-static inline var GESTURE_PINCH_OUT:Int
-static inline var MATERIAL_MAP_ALBEDO:Int
-static inline var MATERIAL_MAP_METALNESS:Int
-static inline var MATERIAL_MAP_NORMAL:Int
-static inline var MATERIAL_MAP_ROUGHNESS:Int
-static inline var MATERIAL_MAP_OCCLUSION:Int
-static inline var MATERIAL_MAP_EMISSION:Int
-static inline var MATERIAL_MAP_HEIGHT:Int
-static inline var MATERIAL_MAP_CUBEMAP:Int
-static inline var MATERIAL_MAP_IRRADIANCE:Int
-static inline var MATERIAL_MAP_PREFILTER:Int
-static inline var MATERIAL_MAP_BRDF:Int
-static inline var SHADER_LOC_VERTEX_POSITION:Int
-static inline var SHADER_LOC_VERTEX_TEXCOORD01:Int
-static inline var SHADER_LOC_VERTEX_TEXCOORD02:Int
-static inline var SHADER_LOC_VERTEX_NORMAL:Int
-static inline var SHADER_LOC_VERTEX_TANGENT:Int
-static inline var SHADER_LOC_VERTEX_COLOR:Int
-static inline var SHADER_LOC_MATRIX_MVP:Int
-static inline var SHADER_LOC_MATRIX_VIEW:Int
-static inline var SHADER_LOC_MATRIX_PROJECTION:Int
-static inline var SHADER_LOC_MATRIX_MODEL:Int
-static inline var SHADER_LOC_MATRIX_NORMAL:Int
-static inline var SHADER_LOC_VECTOR_VIEW:Int
-static inline var SHADER_LOC_COLOR_DIFFUSE:Int
-static inline var SHADER_LOC_COLOR_SPECULAR:Int
-static inline var SHADER_LOC_COLOR_AMBIENT:Int
-static inline var SHADER_LOC_MAP_ALBEDO:Int
-static inline var SHADER_LOC_MAP_METALNESS:Int
-static inline var SHADER_LOC_MAP_NORMAL:Int
-static inline var SHADER_LOC_MAP_ROUGHNESS:Int
-static inline var SHADER_LOC_MAP_OCCLUSION:Int
-static inline var SHADER_LOC_MAP_EMISSION:Int
-static inline var SHADER_LOC_MAP_HEIGHT:Int
-static inline var SHADER_LOC_MAP_CUBEMAP:Int
-static inline var SHADER_LOC_MAP_IRRADIANCE:Int
-static inline var SHADER_LOC_MAP_PREFILTER:Int
-static inline var SHADER_LOC_MAP_BRDF:Int
-static inline var SHADER_LOC_VERTEX_BONEIDS:Int
-static inline var SHADER_LOC_VERTEX_BONEWEIGHTS:Int
-static inline var SHADER_LOC_BONE_MATRICES:Int
-static inline var SHADER_UNIFORM_FLOAT:Int
-static inline var SHADER_UNIFORM_VEC2:Int
-static inline var SHADER_UNIFORM_VEC3:Int
-static inline var SHADER_UNIFORM_VEC4:Int
-static inline var SHADER_UNIFORM_INT:Int
-static inline var SHADER_UNIFORM_IVEC2:Int
-static inline var SHADER_UNIFORM_IVEC3:Int
-static inline var SHADER_UNIFORM_IVEC4:Int
-static inline var SHADER_UNIFORM_SAMPLER2D:Int
-static inline var CAMERA_CUSTOM:Int
-static inline var CAMERA_FREE:Int
-static inline var CAMERA_ORBITAL:Int
-static inline var CAMERA_FIRST_PERSON:Int
-static inline var CAMERA_THIRD_PERSON:Int
-static inline var CAMERA_PERSPECTIVE:Int
-static inline var CAMERA_ORTHOGRAPHIC:Int
-static inline var TEXTURE_FILTER_POINT:Int
-static inline var TEXTURE_FILTER_BILINEAR:Int
-static inline var TEXTURE_FILTER_TRILINEAR:Int
-static inline var TEXTURE_FILTER_ANISOTROPIC_4X:Int
-static inline var TEXTURE_FILTER_ANISOTROPIC_8X:Int
-static inline var TEXTURE_FILTER_ANISOTROPIC_16X:Int
-static final LIGHTGRAY(default, null):Color
-static final GRAY(default, null):Color
-static final DARKGRAY(default, null):Color
-static final YELLOW(default, null):Color
-static final GOLD(default, null):Color
-static final ORANGE(default, null):Color
-static final PINK(default, null):Color
-static final RED(default, null):Color
-static final MAROON(default, null):Color
-static final GREEN(default, null):Color
-static final LIME(default, null):Color
-static final DARKGREEN(default, null):Color
-static final SKYBLUE(default, null):Color
-static final BLUE(default, null):Color
-static final DARKBLUE(default, null):Color
-static final PURPLE(default, null):Color
-static final VIOLET(default, null):Color
-static final DARKPURPLE(default, null):Color
-static final BEIGE(default, null):Color
-static final BROWN(default, null):Color
-static final DARKBROWN(default, null):Color
-static final WHITE(default, null):Color
-static final BLACK(default, null):Color
-static final BLANK(default, null):Color
-static final MAGENTA(default, null):Color
-static final RAYWHITE(default, null):Color
-static inline var MATERIAL_MAP_DIFFUSE:Int
-static inline var MATERIAL_MAP_SPECULAR:Int
-static inline var SHADER_LOC_MAP_DIFFUSE:Int
-static inline var SHADER_LOC_MAP_SPECULAR:Int
-static inline var MAX_MATERIAL_MAPS:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R8G8B8A8:Int
-static inline var PI:Float
-static inline var DEG2RAD:Float
-static inline var RAD2DEG:Float
 ```
 
 - `KEY_NULL`: Key: NULL, used for no key pressed.
@@ -688,6 +533,19 @@ static inline var RAD2DEG:Float
 - `KEY_MENU`: Key: Android menu button.
 - `KEY_VOLUME_UP`: Key: Android volume up button.
 - `KEY_VOLUME_DOWN`: Key: Android volume down button.
+
+### Mouse buttons (MouseButton)
+
+```haxe
+static inline var MOUSE_BUTTON_LEFT:Int
+static inline var MOUSE_BUTTON_RIGHT:Int
+static inline var MOUSE_BUTTON_MIDDLE:Int
+static inline var MOUSE_BUTTON_SIDE:Int
+static inline var MOUSE_BUTTON_EXTRA:Int
+static inline var MOUSE_BUTTON_FORWARD:Int
+static inline var MOUSE_BUTTON_BACK:Int
+```
+
 - `MOUSE_BUTTON_LEFT`: Mouse button left.
 - `MOUSE_BUTTON_RIGHT`: Mouse button right.
 - `MOUSE_BUTTON_MIDDLE`: Mouse button middle (pressed wheel).
@@ -695,6 +553,30 @@ static inline var RAD2DEG:Float
 - `MOUSE_BUTTON_EXTRA`: Mouse button extra (advanced mouse device).
 - `MOUSE_BUTTON_FORWARD`: Mouse button forward (advanced mouse device).
 - `MOUSE_BUTTON_BACK`: Mouse button back (advanced mouse device).
+
+### Gamepad buttons (GamepadButton)
+
+```haxe
+static inline var GAMEPAD_BUTTON_UNKNOWN:Int
+static inline var GAMEPAD_BUTTON_LEFT_FACE_UP:Int
+static inline var GAMEPAD_BUTTON_LEFT_FACE_RIGHT:Int
+static inline var GAMEPAD_BUTTON_LEFT_FACE_DOWN:Int
+static inline var GAMEPAD_BUTTON_LEFT_FACE_LEFT:Int
+static inline var GAMEPAD_BUTTON_RIGHT_FACE_UP:Int
+static inline var GAMEPAD_BUTTON_RIGHT_FACE_RIGHT:Int
+static inline var GAMEPAD_BUTTON_RIGHT_FACE_DOWN:Int
+static inline var GAMEPAD_BUTTON_RIGHT_FACE_LEFT:Int
+static inline var GAMEPAD_BUTTON_LEFT_TRIGGER_1:Int
+static inline var GAMEPAD_BUTTON_LEFT_TRIGGER_2:Int
+static inline var GAMEPAD_BUTTON_RIGHT_TRIGGER_1:Int
+static inline var GAMEPAD_BUTTON_RIGHT_TRIGGER_2:Int
+static inline var GAMEPAD_BUTTON_MIDDLE_LEFT:Int
+static inline var GAMEPAD_BUTTON_MIDDLE:Int
+static inline var GAMEPAD_BUTTON_MIDDLE_RIGHT:Int
+static inline var GAMEPAD_BUTTON_LEFT_THUMB:Int
+static inline var GAMEPAD_BUTTON_RIGHT_THUMB:Int
+```
+
 - `GAMEPAD_BUTTON_UNKNOWN`: Unknown button, just for error checking.
 - `GAMEPAD_BUTTON_LEFT_FACE_UP`: Gamepad left DPAD up button.
 - `GAMEPAD_BUTTON_LEFT_FACE_RIGHT`: Gamepad left DPAD right button.
@@ -713,12 +595,46 @@ static inline var RAD2DEG:Float
 - `GAMEPAD_BUTTON_MIDDLE_RIGHT`: Gamepad center buttons, right one (i.e. PS3: Start).
 - `GAMEPAD_BUTTON_LEFT_THUMB`: Gamepad joystick pressed button left.
 - `GAMEPAD_BUTTON_RIGHT_THUMB`: Gamepad joystick pressed button right.
+
+### Gamepad axes (GamepadAxis)
+
+```haxe
+static inline var GAMEPAD_AXIS_LEFT_X:Int
+static inline var GAMEPAD_AXIS_LEFT_Y:Int
+static inline var GAMEPAD_AXIS_RIGHT_X:Int
+static inline var GAMEPAD_AXIS_RIGHT_Y:Int
+static inline var GAMEPAD_AXIS_LEFT_TRIGGER:Int
+static inline var GAMEPAD_AXIS_RIGHT_TRIGGER:Int
+```
+
 - `GAMEPAD_AXIS_LEFT_X`: Gamepad left stick X axis.
 - `GAMEPAD_AXIS_LEFT_Y`: Gamepad left stick Y axis.
 - `GAMEPAD_AXIS_RIGHT_X`: Gamepad right stick X axis.
 - `GAMEPAD_AXIS_RIGHT_Y`: Gamepad right stick Y axis.
 - `GAMEPAD_AXIS_LEFT_TRIGGER`: Gamepad back trigger left, pressure level: [1..-1].
 - `GAMEPAD_AXIS_RIGHT_TRIGGER`: Gamepad back trigger right, pressure level: [1..-1].
+
+### Window flags (ConfigFlags)
+
+```haxe
+static inline var FLAG_VSYNC_HINT:Int
+static inline var FLAG_FULLSCREEN_MODE:Int
+static inline var FLAG_WINDOW_RESIZABLE:Int
+static inline var FLAG_WINDOW_UNDECORATED:Int
+static inline var FLAG_WINDOW_HIDDEN:Int
+static inline var FLAG_WINDOW_MINIMIZED:Int
+static inline var FLAG_WINDOW_MAXIMIZED:Int
+static inline var FLAG_WINDOW_UNFOCUSED:Int
+static inline var FLAG_WINDOW_TOPMOST:Int
+static inline var FLAG_WINDOW_ALWAYS_RUN:Int
+static inline var FLAG_WINDOW_TRANSPARENT:Int
+static inline var FLAG_WINDOW_HIGHDPI:Int
+static inline var FLAG_WINDOW_MOUSE_PASSTHROUGH:Int
+static inline var FLAG_BORDERLESS_WINDOWED_MODE:Int
+static inline var FLAG_MSAA_4X_HINT:Int
+static inline var FLAG_INTERLACED_HINT:Int
+```
+
 - `FLAG_VSYNC_HINT`: Set to try enabling V-Sync on GPU.
 - `FLAG_FULLSCREEN_MODE`: Set to run program in fullscreen.
 - `FLAG_WINDOW_RESIZABLE`: Set to allow resizable window.
@@ -735,6 +651,23 @@ static inline var RAD2DEG:Float
 - `FLAG_BORDERLESS_WINDOWED_MODE`: Set to run program in borderless windowed mode.
 - `FLAG_MSAA_4X_HINT`: Set to try enabling MSAA 4X.
 - `FLAG_INTERLACED_HINT`: Set to try enabling interlaced video format (for V3D).
+
+### Gestures (Gesture)
+
+```haxe
+static inline var GESTURE_NONE:Int
+static inline var GESTURE_TAP:Int
+static inline var GESTURE_DOUBLETAP:Int
+static inline var GESTURE_HOLD:Int
+static inline var GESTURE_DRAG:Int
+static inline var GESTURE_SWIPE_RIGHT:Int
+static inline var GESTURE_SWIPE_LEFT:Int
+static inline var GESTURE_SWIPE_UP:Int
+static inline var GESTURE_SWIPE_DOWN:Int
+static inline var GESTURE_PINCH_IN:Int
+static inline var GESTURE_PINCH_OUT:Int
+```
+
 - `GESTURE_NONE`: No gesture.
 - `GESTURE_TAP`: Tap gesture.
 - `GESTURE_DOUBLETAP`: Double tap gesture.
@@ -746,6 +679,23 @@ static inline var RAD2DEG:Float
 - `GESTURE_SWIPE_DOWN`: Swipe down gesture.
 - `GESTURE_PINCH_IN`: Pinch in gesture.
 - `GESTURE_PINCH_OUT`: Pinch out gesture.
+
+### Material maps (MaterialMapIndex)
+
+```haxe
+static inline var MATERIAL_MAP_ALBEDO:Int
+static inline var MATERIAL_MAP_METALNESS:Int
+static inline var MATERIAL_MAP_NORMAL:Int
+static inline var MATERIAL_MAP_ROUGHNESS:Int
+static inline var MATERIAL_MAP_OCCLUSION:Int
+static inline var MATERIAL_MAP_EMISSION:Int
+static inline var MATERIAL_MAP_HEIGHT:Int
+static inline var MATERIAL_MAP_CUBEMAP:Int
+static inline var MATERIAL_MAP_IRRADIANCE:Int
+static inline var MATERIAL_MAP_PREFILTER:Int
+static inline var MATERIAL_MAP_BRDF:Int
+```
+
 - `MATERIAL_MAP_ALBEDO`: Albedo material (same as: MATERIAL_MAP_DIFFUSE).
 - `MATERIAL_MAP_METALNESS`: Metalness material (same as: MATERIAL_MAP_SPECULAR).
 - `MATERIAL_MAP_NORMAL`: Normal material.
@@ -757,6 +707,41 @@ static inline var RAD2DEG:Float
 - `MATERIAL_MAP_IRRADIANCE`: Irradiance material (NOTE: Uses GL_TEXTURE_CUBE_MAP).
 - `MATERIAL_MAP_PREFILTER`: Prefilter material (NOTE: Uses GL_TEXTURE_CUBE_MAP).
 - `MATERIAL_MAP_BRDF`: Brdf material.
+
+### Shader locations (ShaderLocationIndex)
+
+```haxe
+static inline var SHADER_LOC_VERTEX_POSITION:Int
+static inline var SHADER_LOC_VERTEX_TEXCOORD01:Int
+static inline var SHADER_LOC_VERTEX_TEXCOORD02:Int
+static inline var SHADER_LOC_VERTEX_NORMAL:Int
+static inline var SHADER_LOC_VERTEX_TANGENT:Int
+static inline var SHADER_LOC_VERTEX_COLOR:Int
+static inline var SHADER_LOC_MATRIX_MVP:Int
+static inline var SHADER_LOC_MATRIX_VIEW:Int
+static inline var SHADER_LOC_MATRIX_PROJECTION:Int
+static inline var SHADER_LOC_MATRIX_MODEL:Int
+static inline var SHADER_LOC_MATRIX_NORMAL:Int
+static inline var SHADER_LOC_VECTOR_VIEW:Int
+static inline var SHADER_LOC_COLOR_DIFFUSE:Int
+static inline var SHADER_LOC_COLOR_SPECULAR:Int
+static inline var SHADER_LOC_COLOR_AMBIENT:Int
+static inline var SHADER_LOC_MAP_ALBEDO:Int
+static inline var SHADER_LOC_MAP_METALNESS:Int
+static inline var SHADER_LOC_MAP_NORMAL:Int
+static inline var SHADER_LOC_MAP_ROUGHNESS:Int
+static inline var SHADER_LOC_MAP_OCCLUSION:Int
+static inline var SHADER_LOC_MAP_EMISSION:Int
+static inline var SHADER_LOC_MAP_HEIGHT:Int
+static inline var SHADER_LOC_MAP_CUBEMAP:Int
+static inline var SHADER_LOC_MAP_IRRADIANCE:Int
+static inline var SHADER_LOC_MAP_PREFILTER:Int
+static inline var SHADER_LOC_MAP_BRDF:Int
+static inline var SHADER_LOC_VERTEX_BONEIDS:Int
+static inline var SHADER_LOC_VERTEX_BONEWEIGHTS:Int
+static inline var SHADER_LOC_BONE_MATRICES:Int
+```
+
 - `SHADER_LOC_VERTEX_POSITION`: Shader location: vertex attribute: position.
 - `SHADER_LOC_VERTEX_TEXCOORD01`: Shader location: vertex attribute: texcoord01.
 - `SHADER_LOC_VERTEX_TEXCOORD02`: Shader location: vertex attribute: texcoord02.
@@ -786,6 +771,21 @@ static inline var RAD2DEG:Float
 - `SHADER_LOC_VERTEX_BONEIDS`: Shader location: vertex attribute: boneIds.
 - `SHADER_LOC_VERTEX_BONEWEIGHTS`: Shader location: vertex attribute: boneWeights.
 - `SHADER_LOC_BONE_MATRICES`: Shader location: array of matrices uniform: boneMatrices.
+
+### Shader value types (ShaderUniformDataType)
+
+```haxe
+static inline var SHADER_UNIFORM_FLOAT:Int
+static inline var SHADER_UNIFORM_VEC2:Int
+static inline var SHADER_UNIFORM_VEC3:Int
+static inline var SHADER_UNIFORM_VEC4:Int
+static inline var SHADER_UNIFORM_INT:Int
+static inline var SHADER_UNIFORM_IVEC2:Int
+static inline var SHADER_UNIFORM_IVEC3:Int
+static inline var SHADER_UNIFORM_IVEC4:Int
+static inline var SHADER_UNIFORM_SAMPLER2D:Int
+```
+
 - `SHADER_UNIFORM_FLOAT`: Shader uniform type: float.
 - `SHADER_UNIFORM_VEC2`: Shader uniform type: vec2 (2 float).
 - `SHADER_UNIFORM_VEC3`: Shader uniform type: vec3 (3 float).
@@ -795,19 +795,91 @@ static inline var RAD2DEG:Float
 - `SHADER_UNIFORM_IVEC3`: Shader uniform type: ivec3 (3 int).
 - `SHADER_UNIFORM_IVEC4`: Shader uniform type: ivec4 (4 int).
 - `SHADER_UNIFORM_SAMPLER2D`: Shader uniform type: sampler2d.
+
+### Camera modes (CameraMode)
+
+```haxe
+static inline var CAMERA_CUSTOM:Int
+static inline var CAMERA_FREE:Int
+static inline var CAMERA_ORBITAL:Int
+static inline var CAMERA_FIRST_PERSON:Int
+static inline var CAMERA_THIRD_PERSON:Int
+```
+
 - `CAMERA_CUSTOM`: Camera custom, controlled by user (UpdateCamera() does nothing).
 - `CAMERA_FREE`: Camera free mode.
 - `CAMERA_ORBITAL`: Camera orbital, around target, zoom supported.
 - `CAMERA_FIRST_PERSON`: Camera first person.
 - `CAMERA_THIRD_PERSON`: Camera third person.
+
+### Camera projections (CameraProjection)
+
+```haxe
+static inline var CAMERA_PERSPECTIVE:Int
+static inline var CAMERA_ORTHOGRAPHIC:Int
+```
+
 - `CAMERA_PERSPECTIVE`: Perspective projection.
 - `CAMERA_ORTHOGRAPHIC`: Orthographic projection.
+
+### Texture filters (TextureFilter)
+
+```haxe
+static inline var TEXTURE_FILTER_POINT:Int
+static inline var TEXTURE_FILTER_BILINEAR:Int
+static inline var TEXTURE_FILTER_TRILINEAR:Int
+static inline var TEXTURE_FILTER_ANISOTROPIC_4X:Int
+static inline var TEXTURE_FILTER_ANISOTROPIC_8X:Int
+static inline var TEXTURE_FILTER_ANISOTROPIC_16X:Int
+```
+
 - `TEXTURE_FILTER_POINT`: No filter, just pixel approximation.
 - `TEXTURE_FILTER_BILINEAR`: Linear filtering.
 - `TEXTURE_FILTER_TRILINEAR`: Trilinear filtering (linear with mipmaps).
 - `TEXTURE_FILTER_ANISOTROPIC_4X`: Anisotropic filtering 4x.
 - `TEXTURE_FILTER_ANISOTROPIC_8X`: Anisotropic filtering 8x.
 - `TEXTURE_FILTER_ANISOTROPIC_16X`: Anisotropic filtering 16x.
+
+### Colors
+
+```haxe
+static final LIGHTGRAY(default, null):Color
+static final GRAY(default, null):Color
+static final DARKGRAY(default, null):Color
+static final YELLOW(default, null):Color
+static final GOLD(default, null):Color
+static final ORANGE(default, null):Color
+static final PINK(default, null):Color
+static final RED(default, null):Color
+static final MAROON(default, null):Color
+static final GREEN(default, null):Color
+static final LIME(default, null):Color
+static final DARKGREEN(default, null):Color
+static final SKYBLUE(default, null):Color
+static final BLUE(default, null):Color
+static final DARKBLUE(default, null):Color
+static final PURPLE(default, null):Color
+static final VIOLET(default, null):Color
+static final DARKPURPLE(default, null):Color
+static final BEIGE(default, null):Color
+static final BROWN(default, null):Color
+static final DARKBROWN(default, null):Color
+static final WHITE(default, null):Color
+static final BLACK(default, null):Color
+static final BLANK(default, null):Color
+static final MAGENTA(default, null):Color
+static final RAYWHITE(default, null):Color
+static inline var MATERIAL_MAP_DIFFUSE:Int
+static inline var MATERIAL_MAP_SPECULAR:Int
+static inline var SHADER_LOC_MAP_DIFFUSE:Int
+static inline var SHADER_LOC_MAP_SPECULAR:Int
+static inline var MAX_MATERIAL_MAPS:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R8G8B8A8:Int
+static inline var PI:Float
+static inline var DEG2RAD:Float
+static inline var RAD2DEG:Float
+```
+
 - `LIGHTGRAY`: Light Gray.
 - `GRAY`: Gray.
 - `DARKGRAY`: Dark Gray.
@@ -844,11 +916,9 @@ static inline var RAD2DEG:Float
 - `DEG2RAD`: Degrees to radians.
 - `RAD2DEG`: Radians to degrees.
 
-### rcore: the window and frame, input, files, cameras and shaders
+### rcore: the window and frame, input, files, cameras and shaders (raylib/RCore.hx)
 
 ```haxe
-static macro function LoadShader(vsFileName:Null<String>, fsFileName:Null<String>):Shader
-static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<String>):Shader
 static function InitWindow(width:Int, height:Int, title:String):Void
 static function CloseWindow():Void
 static function WindowShouldClose():Bool
@@ -934,14 +1004,6 @@ static function BeginShaderMode(shader:Shader):Void
 static function EndShaderMode():Void
 ```
 
-- `LoadShader`: Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the program builds, for every target, so their names are constants; the files are found under `-D helix-ray-files` (default `web`), as the program's other files are.
-  - `vsFileName`: The vertex stage's file, or null.
-  - `fsFileName`: The fragment stage's file, or null.
-  - returns: The shader.
-- `LoadShaderFromMemory`: Loads a shader from raylib GLSL text, either null for raylib's default stage. It is compiled as the program builds, so the text is a constant.
-  - `vsCode`: The vertex stage's text, or null.
-  - `fsCode`: The fragment stage's text, or null.
-  - returns: The shader.
 - `InitWindow`: Opens the window and its graphics. In a page the canvas fills the page, and width and height are ignored.
   - `width`: The window's width, in pixels.
   - `height`: The window's height, in pixels.
@@ -1173,7 +1235,7 @@ static function EndShaderMode():Void
   - `shader`: The shader.
 - `EndShaderMode`: Goes back to the default shader.
 
-### rshapes: 2D shapes and collisions
+### rshapes: 2D shapes and collisions (raylib/RShapes.hx)
 
 ```haxe
 static function DrawPixel(posX:Int, posY:Int, color:Color):Void
@@ -1291,7 +1353,7 @@ static function CheckCollisionPointCircle(point:Vector2, center:Vector2, radius:
   - `radius`: Its radius.
   - returns: True when it is inside.
 
-### rtextures: textures, render textures and colors
+### rtextures: textures, render textures and colors (raylib/RTextures.hx)
 
 ```haxe
 static function LoadTexture(fileName:String):Texture2D
@@ -1379,7 +1441,7 @@ static function SetTextureFilter(texture:Texture2D, filter:Int):Void
   - `texture`: The texture.
   - `filter`: The filter (`TEXTURE_FILTER_*`).
 
-### rtext: text
+### rtext: text (raylib/RText.hx)
 
 ```haxe
 static function DrawText(text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void
@@ -1401,7 +1463,7 @@ static function DrawFPS(posX:Int, posY:Int):Void
   - `posX`: The left edge.
   - `posY`: The top edge.
 
-### rmodels: 3D shapes, models, meshes and rays
+### rmodels: 3D shapes, models, meshes and rays (raylib/RModels.hx)
 
 ```haxe
 static function DrawLine3D(startPos:Vector3, endPos:Vector3, color:Color):Void
@@ -1591,7 +1653,7 @@ static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCol
   - `transform`: The transform.
   - returns: The hit.
 
-### raudio: sound
+### raudio: sound (raylib/RAudio.hx)
 
 ```haxe
 static function InitAudioDevice():Void
@@ -1635,7 +1697,7 @@ static function SetSoundVolume(sound:Sound, volume:Float):Void
   - `sound`: The sound.
   - `volume`: 0 (silent) to 1.
 
-### raymath: vectors, matrices and quaternions
+### raymath: vectors, matrices and quaternions (raylib/RMath.hx)
 
 ```haxe
 static function Clamp(value:Float, min:Float, max:Float):Float
@@ -1879,7 +1941,7 @@ static function QuaternionToMatrix(q:Quaternion):Matrix
   - `q`: The quaternion.
   - returns: The matrix.
 
-### helix-ray's own: loading in a page
+### helix-ray's own: loading in a page (raylib/HelixRay.hx)
 
 ```haxe
 static function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void, ?failed:String -> Void):Void
@@ -1904,6 +1966,22 @@ static function LoadFileTextAsync(fileName:String, loaded:String -> Void, ?faile
   - `fileName`: The file.
   - `loaded`: Receives its text.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+### Shaders, compiled as the program builds
+
+```haxe
+static macro function LoadShader(vsFileName:Null<String>, fsFileName:Null<String>):Shader
+static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<String>):Shader
+```
+
+- `LoadShader`: Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the program builds, for every target, so their names are constants; the files are found under `-D helix-ray-files` (default `web`), as the program's other files are.
+  - `vsFileName`: The vertex stage's file, or null.
+  - `fsFileName`: The fragment stage's file, or null.
+  - returns: The shader.
+- `LoadShaderFromMemory`: Loads a shader from raylib GLSL text, either null for raylib's default stage. It is compiled as the program builds, so the text is a constant.
+  - `vsCode`: The vertex stage's text, or null.
+  - `fsCode`: The fragment stage's text, or null.
+  - returns: The shader.
 
 ### Not in helix-ray yet
 

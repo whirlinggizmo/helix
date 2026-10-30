@@ -1,9 +1,25 @@
 package helix.ray.raylib;
 
-/** Holds rcore: the window and the frame, the keyboard, mouse, touch and gamepads, files, the 2D and 3D cameras and shaders, as members of `Raylib`: its build takes them from here (`helix.ray.internal.Sections`), and this class is left
-	empty. */
+#if !macro
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import helix.math.Matrix3D;
+import helix.ray.internal.DefaultFont;
+import helix.ray.internal.Models;
+import helix.ray.internal.Runtime;
+import helix.ray.internal.Textures;
+import helix.ray.raylib.RCore.*;
+import helix.ray.raylib.RShapes.*;
+import helix.ray.raylib.RTextures.*;
+import helix.ray.raylib.RText.*;
+import helix.ray.raylib.RModels.*;
+import helix.ray.raylib.RAudio.*;
+import helix.ray.raylib.RMath.*;
+import helix.ray.raylib.HelixRay.*;
+#end
+
+/** Holds raylib's rcore (the window and the frame, the keyboard, mouse, touch and gamepads, files, the 2D and 3D cameras and shaders), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
-@:build(helix.ray.internal.Sections.part("core", "rcore: the window and frame, input, files, cameras and shaders"))
 class RCore {
 	#if !macro
 	// ---- Window and frame ----
@@ -198,7 +214,7 @@ class RCore {
 
 		@param seed  The seed. */
 	public static function SetRandomSeed(seed:Int):Void {
-		Raylib.seed = seed == 0 ? 1 : seed;
+		RCore.seed = seed == 0 ? 1 : seed;
 		seeded = true;
 	}
 
@@ -520,20 +536,34 @@ class RCore {
 	}
 
 	// ---- What the functions share ----
+	@:allow(helix.ray)
 	static inline final SAVED = "file:";
+	@:allow(helix.ray)
 	static var start = 0.;
+	@:allow(helix.ray)
 	static var configFlags = 0;
+	@:allow(helix.ray)
 	static var targetFps = 0;
+	@:allow(helix.ray)
 	static var fps = 60.;
+	@:allow(helix.ray)
 	static var seed = 0x2545f491;
+	@:allow(helix.ray)
 	static var seeded = false;
+	@:allow(helix.ray)
 	static var lastMouseX = 0.;
+	@:allow(helix.ray)
 	static var lastMouseY = 0.;
+	@:allow(helix.ray)
 	static var lastPointerX = 0.;
+	@:allow(helix.ray)
 	static var lastPointerY = 0.;
+	@:allow(helix.ray)
 	static var font:Null<Texture2D> = null;
+	@:allow(helix.ray)
 	static var fontRecs:Array<Int> = [];
 
+	@:allow(helix.ray)
 	static function normalize(path:String):String {
 		while (StringTools.startsWith(path, "./"))
 			path = path.substr(2);
@@ -541,6 +571,8 @@ class RCore {
 	}
 
 	// raylib's KEY_* as the platform's keys: the same numbers, a right-hand modifier as the left-hand one.
+
+	@:allow(helix.ray)
 	static function toKey(key:Int):Int {
 		return switch key {
 			case 344 | 345 | 346 | 347: key - 4;
@@ -550,6 +582,8 @@ class RCore {
 	}
 
 	// raylib's GAMEPAD_BUTTON_* as the platform's buttons, by position.
+
+	@:allow(helix.ray)
 	static function toPadButton(button:Int):Int {
 		return switch button {
 			case 1: 12;
@@ -573,11 +607,14 @@ class RCore {
 		}
 	}
 
+	@:allow(helix.ray)
 	static function glyph(code:Int):Int {
 		return code >= 32 && code < 256 ? code - 32 : "?".code - 32;
 	}
 
 	// The default font's texture, made at its first use, and each glyph's place on it, as raylib lays them out.
+
+	@:allow(helix.ray)
 	static function defaultFont():Texture2D {
 		if (font != null)
 			return font;
@@ -613,10 +650,13 @@ class RCore {
 	}
 
 	// An immediate vertex in 2D, at z 0.
+
+	@:allow(helix.ray)
 	static inline function flat(texture:Int, x:Float, y:Float, u:Float, v:Float, color:Color):Void {
 		Runtime.frame.vertex(texture, false, x, y, 0, u, v, color);
 	}
 
+	@:allow(helix.ray)
 	static function quad(x:Float, y:Float, w:Float, h:Float, color:Color):Void {
 		var t = Runtime.frame.white;
 		flat(t, x, y, 0, 0, color);
@@ -627,6 +667,7 @@ class RCore {
 		flat(t, x + w, y, 0, 0, color);
 	}
 
+	@:allow(helix.ray)
 	static function line(x1:Float, y1:Float, x2:Float, y2:Float, thick:Float, color:Color):Void {
 		var dx = x2 - x1, dy = y2 - y1, length = Math.sqrt(dx * dx + dy * dy);
 		if (length == 0)
@@ -641,6 +682,7 @@ class RCore {
 		flat(t, x2 + nx, y2 + ny, 0, 0, color);
 	}
 
+	@:allow(helix.ray)
 	static function frame(x:Float, y:Float, w:Float, h:Float, thick:Float, color:Color):Void {
 		quad(x, y, w, thick, color);
 		quad(x, y + h - thick, w, thick, color);
@@ -648,11 +690,13 @@ class RCore {
 		quad(x + w - thick, y + thick, thick, h - thick * 2, color);
 	}
 
+	@:allow(helix.ray)
 	static function segments(radius:Float):Int {
 		var n = Math.ceil(radius * Math.PI / 2);
 		return n < 12 ? 12 : n > 96 ? 96 : n;
 	}
 
+	@:allow(helix.ray)
 	static function circle(cx:Float, cy:Float, radius:Float, color:Color):Void {
 		var n = segments(radius), t = Runtime.frame.white;
 		for (i in 0...n) {
@@ -663,6 +707,7 @@ class RCore {
 		}
 	}
 
+	@:allow(helix.ray)
 	static function ring(cx:Float, cy:Float, radius:Float, color:Color):Void {
 		var n = segments(radius);
 		for (i in 0...n) {

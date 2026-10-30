@@ -31,6 +31,7 @@ python3 tools/services_checks.py --browser <chromium>   # the services' examples
 python3 tools/format.py --check             # layout
 python3 tools/check_docs.py                 # doc comments
 python3 tools/gen_apidoc.py                 # remake docs/api after a doc comment changes (--check in the tests)
+python3 tools/gen_raylib.py                 # remake helix-ray's Raylib.hx after a section's function changes (--check in the tests)
 ```
 
 Native checks that open a window run on a private display (`tools/private_display.py`), never on the user's desktop. `SDL_AUDIO_DRIVER=dummy`
@@ -51,6 +52,7 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `tools/cli.cjs` | The Node tools' argument parsing (a module) |
 | `tools/format.py` | haxe-formatter over the libraries (`--check` only checks) |
 | `tools/gen_apidoc.py` | The API reference from the doc comments: `docs/api` (committed) and `build/api` (`--check`) |
+| `tools/gen_raylib.py` | helix-ray's `Raylib.hx` forwards to each function of its sections (`ray/src/helix/ray/raylib`), by raylib's modules (`--check`) |
 | `tools/measure_sizes.py` | Each library's web size ladder (`<library>/tests/sizes`) against `docs/benchmarks.json` (`--write`, `--check`) |
 | `tools/native_build.py` | hxcpp's environment for the adapters' C, and the platform's C-only tests built with CMake (a module) |
 | `tools/page_check.cjs` | A page in headless Chromium: its errors, its result and a screenshot (run by `platform_checks.py`) |
