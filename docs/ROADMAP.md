@@ -10,5 +10,6 @@
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.
 - **Gestures:** taps, double taps, drags and flicks (the mouse and fingers alike), and two fingers' pan, pinch and twist, over `Touch`
   and `Mouse`, as HeliX's `PointerGestures` and touch gesture had them.
-- **On-screen controls, with the UI layer:** touch regions and floating touch sticks (one, two halves, regions; dead zone, takeover,
-  blocked by buttons) read by `Actions` through `IActionDevice`, placed in the game's units and drawn (DECISIONS 13).
+- **On-screen controls, not as a service, where to be decided:** touch regions and floating touch sticks (one, two halves, regions;
+  dead zone, takeover, blocked by buttons) read by `Actions` through `IActionDevice`, placed in the game's units and drawn
+  (DECISIONS 13).

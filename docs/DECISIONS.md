@@ -50,9 +50,9 @@ Why things are the way they are, numbered, in order.
     Keyboard(events, keyboard)`), so the stream isn't offered under a device's name and a missing device fails at compile time. The
     first press stays the events' own, heard without any device. Natively the tilt is an SDL adapter that reports `Unavailable`: SDL
     reads motion sensors on Android, iOS and Windows, which a mobile build would take up.
-13. **On-screen controls belong with drawing, not the services.** `Touch` is the fingers as state, by id, as Flixel's `FlxTouch` is.
-    A touch region (an on-screen button) and a floating touch stick, which HeliX bound in its actions, are placed in the game's units
-    on its visible area, drawn, and kept clear of its buttons: presentation's and the UI's, which the services don't have. Flixel keeps
-    them in `flixel.ui` as sprites (`FlxVirtualPad`, `FlxVirtualStick`), and Lime and OpenFL have none. They come with the UI layer,
-    reading `Touch` and implementing `IActionDevice` so `Actions` reads them as it reads the devices. Taps, flicks and two-finger
-    gestures interpret the fingers and come as their own service.
+13. **On-screen controls aren't a service.** `Touch` is the fingers as state, by id, as Flixel's `FlxTouch` is. A touch region (an
+    on-screen button) and a floating touch stick, which HeliX bound in its actions, are placed in the game's units on its visible area,
+    drawn, and kept clear of its buttons, none of which the services have; another engine would place and draw its own. Flixel keeps
+    them in `flixel.ui` as sprites (`FlxVirtualPad`, `FlxVirtualStick`), and Lime and OpenFL have none. Where they go is open; reading
+    `Touch` and implementing `IActionDevice`, they'd be read by `Actions` as the devices are. Taps, flicks and two-finger gestures
+    interpret the fingers and come as their own service.
