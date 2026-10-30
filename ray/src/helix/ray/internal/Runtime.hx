@@ -37,6 +37,11 @@ class Runtime {
 	public static var saves:Null<Saves> = null;
 	public static var output:Null<IAudio> = null;
 	public static var audioDecoder:Null<IAudioDecoder> = null;
+	public static var audio:Null<helix.services.audio.Audio> = null;
+
+	/** The program's files, as the preload found them, for what loads from them later (`Audio`). */
+	public static var assets:Null<Assets> = null;
+
 	public static final polled:Array<IPollable> = [];
 
 	/** What runs as the window closes, before it does: keeping the saves. */
@@ -117,11 +122,13 @@ class Runtime {
 			var imageDecoder = new helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter();
 			polled.push(http);
 			var assets = new Assets({sources: [HttpServer(system.getProgramDirectory())], httpClient: http, cacheFileSystem: cache});
+			Runtime.assets = assets;
 			#else
 			var directory = haxe.io.Path.join([system.getProgramDirectory(), root]);
 			var cache = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory, readOnly: true});
 			var imageDecoder = new helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter();
 			var assets = new Assets({sources: [FileSystem(cache)]});
+			Runtime.assets = assets;
 			#end
 			polled.push(cache);
 			polled.push(imageDecoder);

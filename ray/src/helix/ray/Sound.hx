@@ -1,22 +1,20 @@
 package helix.ray;
 
-/** Represents raylib's `Sound`: a sound held whole, played by `Raylib.PlaySound`. */
+/** Represents raylib's `Sound`: a sound held whole, played by `Raylib.PlaySound`, over helix-services' `Audio`. */
 class Sound {
-	/** Gets the number of frames, 0 until it is decoded. */
+	// The service's sound once decoded; its voice last played; plays asked for before it was decoded; the load's abort while in flight.
 	@:allow(helix.ray)
-	public var frameCount(default, null):Int = 0;
-
-	// The platform's clip, 0 until decoded; the voice last played, 0 for none; plays asked for before it was decoded.
+	var sound:Null<helix.services.audio.Sound> = null;
 	@:allow(helix.ray)
-	var clip = 0;
-	@:allow(helix.ray)
-	var voice = 0;
+	var voice:Null<helix.services.audio.Voice> = null;
 	@:allow(helix.ray)
 	var volume = 1.;
 	@:allow(helix.ray)
 	var waiting = 0;
 	@:allow(helix.ray)
 	var unloaded = false;
+	@:allow(helix.ray)
+	var cancel:Null<Void->Void> = null;
 
 	@:allow(helix.ray)
 	function new() {}

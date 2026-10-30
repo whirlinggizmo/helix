@@ -664,6 +664,7 @@ static function InitAudioDevice():Void
 static function CloseAudioDevice():Void
 static function IsAudioDeviceReady():Bool
 static function SetMasterVolume(volume:Float):Void
+static function GetMasterVolume():Float
 static function LoadSound(fileName:String):Sound
 static function UnloadSound(sound:Sound):Void
 static function IsSoundValid(sound:Sound):Bool
@@ -1342,12 +1343,14 @@ static function QuaternionToMatrix(q:Quaternion):Matrix
 - `DrawFPS`: Draws the frames a second, as "60 FPS", in green.
   - `posX`: The left edge.
   - `posY`: The top edge.
-- `InitAudioDevice`: Opens the audio output. In a page it plays once the player's first press lets it.
-- `CloseAudioDevice`: Closes the audio output, stopping every sound.
+- `InitAudioDevice`: Opens the audio output, with helix-services' `Audio` over it. In a page it plays once the player's first press lets it.
+- `CloseAudioDevice`: Closes the audio output, stopping and unloading every sound.
 - `IsAudioDeviceReady`: Returns whether the audio output is open.
-  - returns: True after `InitAudioDevice`.
+  - returns: True after `InitAudioDevice`, where the platform has an output.
 - `SetMasterVolume`: Sets the volume of every sound.
   - `volume`: 0 (silent) to 1.
+- `GetMasterVolume`: Returns the volume of every sound.
+  - returns: 0 (silent) to 1.
 - `LoadSound`: Loads a sound file whole. It decodes in the background; played before then, it starts once decoded.
   - `fileName`: The file, as the program names it, such as "assets/coin.wav".
   - returns: The sound.
@@ -1904,13 +1907,7 @@ var locs(default, null):Array<Int>
 
 *class* in [`ray/src/helix/ray/Sound.hx`](../../ray/src/helix/ray/Sound.hx), `import helix.ray.Sound;`
 
-Represents raylib's `Sound`: a sound held whole, played by `Raylib.PlaySound`.
-
-```haxe
-var frameCount(default, null):Int
-```
-
-- `frameCount`: Gets the number of frames, 0 until it is decoded.
+Represents raylib's `Sound`: a sound held whole, played by `Raylib.PlaySound`, over helix-services' `Audio`.
 
 ## Texture
 
