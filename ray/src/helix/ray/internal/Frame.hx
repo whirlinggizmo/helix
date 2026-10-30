@@ -263,7 +263,7 @@ class Frame {
 		@param textures  The textures for raylib's slots 0 to 2 (0 for white). */
 	public function mesh(mesh:helix.ray.Mesh, p:Program, model:Matrix3D, diffuse:Array<Float>, textures:Array<Int>):Void {
 		open = null;
-		var indexed = mesh.indexBuffer != 0, depth = in3D;
+		var indexed = mesh.gpu.indexBuffer != 0, depth = in3D;
 		var key = 'm${indexed ? "x" : ""}${depth ? "d" : ""}';
 		var pipeline = p.pipeline(key, () -> graphics.createPipeline({
 			shader: p.handle,
@@ -294,14 +294,14 @@ class Frame {
 				bound[i] = white;
 		var buffers = [
 			for (name in p.attributes)
-				mesh.buffers[
+				mesh.gpu.buffers[
 					["vertexPosition", "vertexTexCoord", "vertexNormal", "vertexColor"].indexOf(name)
 				]
 		];
 		pass.draws.push({
 			pipeline: pipeline,
 			buffers: buffers,
-			indices: mesh.indexBuffer,
+			indices: mesh.gpu.indexBuffer,
 			first: 0,
 			count: indexed ? mesh.triangleCount * 3 : mesh.vertexCount,
 			texture: 0,

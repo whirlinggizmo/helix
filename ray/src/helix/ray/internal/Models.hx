@@ -13,7 +13,7 @@ class Models {
 		@param mesh  The mesh. */
 	public static function upload(mesh:Mesh):Void {
 		var g = Runtime.graphics, n = mesh.vertexCount;
-		if (mesh.buffers != null || n == 0)
+		if (mesh.gpu.buffers != null || n == 0)
 			return;
 		function floats(values:Null<Array<Float>>, size:Int, fallback:Array<Float>):Int {
 			var bytes = Bytes.alloc(n * size * 4);
@@ -22,7 +22,7 @@ class Models {
 			return g.createStaticBuffer(bytes, bytes.length, false);
 		}
 		var colors:Null<Array<Float>> = mesh.colors == null ? null : [for (c in mesh.colors) c / 255];
-		mesh.buffers = [
+		mesh.gpu.buffers = [
 			floats(mesh.vertices, 3, [0, 0, 0]),
 			floats(mesh.texcoords, 2, [0, 0]),
 			floats(mesh.normals, 3, [0, 0, 1]),
@@ -32,7 +32,7 @@ class Models {
 			var bytes = Bytes.alloc(mesh.indices.length * 4);
 			for (i => index in mesh.indices)
 				bytes.setInt32(i * 4, index);
-			mesh.indexBuffer = g.createStaticBuffer(bytes, bytes.length, true);
+			mesh.gpu.indexBuffer = g.createStaticBuffer(bytes, bytes.length, true);
 		}
 	}
 
@@ -40,13 +40,13 @@ class Models {
 
 		@param mesh  The mesh. */
 	public static function unload(mesh:Mesh):Void {
-		if (mesh.buffers != null)
-			for (b in mesh.buffers)
+		if (mesh.gpu.buffers != null)
+			for (b in mesh.gpu.buffers)
 				Runtime.graphics.disposeBuffer(b);
-		if (mesh.indexBuffer != 0)
-			Runtime.graphics.disposeBuffer(mesh.indexBuffer);
-		mesh.buffers = null;
-		mesh.indexBuffer = 0;
+		if (mesh.gpu.indexBuffer != 0)
+			Runtime.graphics.disposeBuffer(mesh.gpu.indexBuffer);
+		mesh.gpu.buffers = null;
+		mesh.gpu.indexBuffer = 0;
 	}
 
 	/** Returns raylib's default material: the default shader, a white diffuse map.
@@ -70,7 +70,7 @@ class Models {
 		var file = Gltf.read(bytes);
 		var directory = haxe.io.Path.directory(path);
 		for (missing in file.missingBuffers) {
-			var other = Runtime.files.get(directory == "" ? missing.uri : directory + "/" + missing.uri);
+			var other = Runtime.fileNow(directory == "" ? missing.uri : directory + "/" + missing.uri);
 			if (other != null)
 				file.setBuffer(missing.index, other);
 		}
@@ -79,9 +79,9 @@ class Models {
 			if (textures.exists(index))
 				return textures.get(index);
 			var t = Gltf.field(file.list("textures")[index], "source");
-			var image = Runtime.images.get(imageKey(path, file, t));
-			var made = image == null ? new Texture2D() : new Texture2D(Runtime.graphics.createTexture(image.width, image.height, [image.pixels]), image.width,
-				image.height);
+			var key = imageKey(path, file, t);
+			var image = Runtime.decodedNow(key, imageBytes(file, t));
+			var made = image == null ? new Texture2D() : new Texture2D(Textures.fromImage(key, image), image.width, image.height);
 			textures.set(index, made);
 			return made;
 		}
@@ -132,9 +132,71 @@ class Models {
 		}
 		for (r in roots)
 			visit(r, new Matrix3D());
-		for (mesh in meshes)
-			upload(mesh);
+		// Its meshes go to the GPU when first drawn.
 		return new Model(meshes, materials, meshMaterial);
+	}
+
+	static final loaded = new Map<String, {model:Model, refs:Int}>();
+
+	/** Returns a model loaded from a file: a copy of its first load, sharing its meshes' GPU buffers and its textures, with materials
+		of its own, so one load's changes don't reach another's.
+
+		@param path  The file.
+		@param bytes  Its bytes, read only the first time.
+		@param shader  The default shader.
+		@return  The model. */
+	public static function load(path:String, bytes:Void->Null<Bytes>, shader:Shader):Null<Model> {
+		var entry = loaded.get(path);
+		if (entry == null) {
+			var b = bytes();
+			if (b == null)
+				return null;
+			entry = {model: gltf(path, b, shader), refs: 0};
+			loaded.set(path, entry);
+		}
+		entry.refs++;
+		var original = entry.model;
+		var meshes = [for (m in original.meshes) copyMesh(m)];
+		var materials = [
+			for (m in original.materials)
+				new Material(m.shader, [
+					for (map in m.maps)
+						new MaterialMap(new Texture2D(map.texture.id, map.texture.width, map.texture.height),
+							new Color(map.color.r, map.color.g, map.color.b, map.color.a), map.value)
+				], m.params.copy())
+		];
+		var model = new Model(meshes, materials, original.meshMaterial.copy());
+		model.path = path;
+		return model;
+	}
+
+	/** Releases one load of a file's model, freeing its meshes' GPU buffers and its textures with the last.
+
+		@param model  The model. */
+	public static function release(model:Model):Void {
+		var entry = loaded.get(model.path);
+		if (entry == null || --entry.refs > 0)
+			return;
+		loaded.remove(model.path);
+		for (mesh in entry.model.meshes)
+			unload(mesh);
+		for (m in entry.model.materials)
+			for (map in m.maps)
+				if (map.texture.id != 0)
+					Textures.release(map.texture.id);
+	}
+
+	static function copyMesh(m:Mesh):Mesh {
+		var mesh = new Mesh();
+		mesh.vertexCount = m.vertexCount;
+		mesh.triangleCount = m.triangleCount;
+		mesh.vertices = m.vertices;
+		mesh.texcoords = m.texcoords;
+		mesh.normals = m.normals;
+		mesh.colors = m.colors;
+		mesh.indices = m.indices;
+		mesh.gpu = m.gpu;
+		return mesh;
 	}
 
 	/** Returns the key a glTF file's image is decoded under before `main`: its own file's path, or the file and the image's index.
@@ -276,7 +338,6 @@ class Models {
 		}
 		mesh.vertexCount = 24;
 		mesh.triangleCount = 12;
-		upload(mesh);
 		return mesh;
 	}
 
@@ -310,7 +371,6 @@ class Models {
 			}
 		mesh.vertexCount = (resX + 1) * (resZ + 1);
 		mesh.triangleCount = resX * resZ * 2;
-		upload(mesh);
 		return mesh;
 	}
 
@@ -350,7 +410,6 @@ class Models {
 			}
 		mesh.vertexCount = (rings + 1) * (slices + 1);
 		mesh.triangleCount = rings * slices * 2;
-		upload(mesh);
 		return mesh;
 	}
 

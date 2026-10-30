@@ -20,6 +20,10 @@ class Model {
 	/** Gets the material of each mesh, by its index in `materials`. */
 	public var meshMaterial:Array<Int>;
 
+	// The file it was loaded from, sharing its GPU data with the file's other loads, or "" for a model of a mesh.
+	@:allow(helix.ray)
+	var path = "";
+
 	/** Creates a model. Models are made by `Raylib.LoadModel` and `Raylib.LoadModelFromMesh`.
 
 		@param meshes  The meshes.

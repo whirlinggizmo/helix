@@ -7,6 +7,7 @@ import helix.ray.internal.DefaultFont;
 import helix.math.Matrix3D;
 import helix.ray.internal.Models;
 import helix.ray.internal.Runtime;
+import helix.ray.internal.Textures;
 #end
 
 /** Provides raylib 5.5's API, as `raylib.h` names it, over helix-platform and helix-services: a program writes raylib, and it runs in
@@ -1544,25 +1545,27 @@ class Raylib {
 
 	// ---- Textures ----
 
-	/** Loads an image file as a texture. The program's files are loaded before `main`, so it is ready at once.
+	/** Loads an image file as a texture: in a page from the files loaded before `main`, natively read now. A file loaded again shares
+		its first load's texture, and the image goes to the GPU when first drawn.
 
 		@param fileName  The file, as the program names it, such as "assets/player.png".
 		@return  The texture; its `id` is 0 when the file couldn't be read. */
 	public static function LoadTexture(fileName:String):Texture2D {
-		var image = Runtime.images.get(normalize(fileName));
+		var path = normalize(fileName);
+		var image = Runtime.imageNow(path);
 		if (image == null) {
-			trace('LoadTexture: $fileName was not loaded');
+			trace('LoadTexture: $fileName couldn\'t be loaded');
 			return new Texture2D();
 		}
-		return new Texture2D(Runtime.graphics.createTexture(image.width, image.height, [image.pixels]), image.width, image.height);
+		return new Texture2D(Textures.fromImage(path, image), image.width, image.height);
 	}
 
-	/** Frees a texture.
+	/** Frees a texture: one load of its file, the GPU's copy with the last.
 
 		@param texture  The texture. */
 	public static function UnloadTexture(texture:Texture2D):Void {
 		if (texture.id != 0)
-			Runtime.graphics.disposeTexture(texture.id);
+			Textures.release(texture.id);
 		texture.id = 0;
 	}
 
@@ -1650,7 +1653,8 @@ class Raylib {
 			v0 = 1 - v0;
 			v1 = 1 - v1;
 		}
-		var corner = (i:Int, j:Int, u:Float, v:Float) -> flat(texture.id, dest.x + xs[i] * c - ys[j] * s, dest.y + xs[i] * s + ys[j] * c, u, v, tint);
+		var handle = Textures.handle(texture.id);
+		var corner = (i:Int, j:Int, u:Float, v:Float) -> flat(handle, dest.x + xs[i] * c - ys[j] * s, dest.y + xs[i] * s + ys[j] * c, u, v, tint);
 		corner(0, 0, u0, v0);
 		corner(0, 1, u0, v1);
 		corner(1, 1, u1, v1);
@@ -1791,7 +1795,8 @@ class Raylib {
 		return Runtime.audio == null ? 1 : Runtime.audio.master.volume;
 	}
 
-	/** Loads a sound file whole. It decodes in the background; played before then, it starts once decoded.
+	/** Loads a sound file whole. It decodes in the background; played before then, it starts once decoded. A file loaded again shares
+		its first load's decoded sound.
 
 		@param fileName  The file, as the program names it, such as "assets/coin.wav".
 		@return  The sound. */
@@ -1801,31 +1806,65 @@ class Raylib {
 			trace('LoadSound: InitAudioDevice first');
 			return sound;
 		}
-		sound.cancel = Runtime.audio.load(normalize(fileName), loaded -> {
-			sound.cancel = null;
-			sound.sound = loaded;
-			for (_ in 0...sound.waiting)
-				PlaySound(sound);
-			sound.waiting = 0;
-		}, error -> {
-			sound.cancel = null;
-			trace('LoadSound: $fileName: $error');
-		});
+		var path = normalize(fileName);
+		sound.path = path;
+		var entry = sounds.get(path);
+		if (entry == null) {
+			var made = {
+				loaded: null,
+				refs: 0,
+				waiting: [],
+				cancel: null
+			};
+			entry = made;
+			sounds.set(path, made);
+			made.cancel = Runtime.audio.load(path, loaded -> {
+				made.cancel = null;
+				made.loaded = loaded;
+				for (s in made.waiting)
+					arrived(s, loaded);
+				made.waiting = [];
+			}, error -> {
+				made.cancel = null;
+				trace('LoadSound: $fileName: $error');
+			});
+		}
+		entry.refs++;
+		if (entry.loaded != null)
+			sound.sound = entry.loaded;
+		else
+			entry.waiting.push(sound);
 		return sound;
 	}
 
-	/** Frees a sound, stopping it.
+	/** Frees a sound, stopping it: one load of its file, the decoded sound with the last.
 
 		@param sound  The sound. */
 	public static function UnloadSound(sound:Sound):Void {
 		StopSound(sound);
-		if (sound.cancel != null)
-			sound.cancel();
-		if (sound.sound != null && Runtime.audio != null)
-			Runtime.audio.unload(sound.sound);
-		sound.cancel = null;
-		sound.sound = null;
 		sound.unloaded = true;
+		var entry = sounds.get(sound.path);
+		sound.sound = null;
+		if (entry == null)
+			return;
+		entry.waiting.remove(sound);
+		if (--entry.refs > 0)
+			return;
+		sounds.remove(sound.path);
+		if (entry.cancel != null)
+			entry.cancel();
+		if (entry.loaded != null && Runtime.audio != null)
+			Runtime.audio.unload(entry.loaded);
+	}
+
+	// A sound's file decoded: it plays as often as it was asked to meanwhile.
+	static function arrived(sound:Sound, loaded:helix.services.audio.Sound):Void {
+		if (sound.unloaded)
+			return;
+		sound.sound = loaded;
+		for (_ in 0...sound.waiting)
+			PlaySound(sound);
+		sound.waiting = 0;
 	}
 
 	/** Returns whether a sound was loaded.
@@ -2170,7 +2209,7 @@ class Raylib {
 				pixels.set(at + 3, (word >>> j) & 1 == 1 ? 255 : 0);
 			}
 		}
-		font = new Texture2D(Runtime.graphics.createTexture(size, size, [pixels]), size, size);
+		font = new Texture2D(Textures.fromHandle(Runtime.graphics.createTexture(size, size, [pixels])), size, size);
 		var line = 0, x = 1, test = 1;
 		for (i in 0...DefaultFont.WIDTHS.length) {
 			var w = DefaultFont.WIDTHS[i];
@@ -2638,25 +2677,28 @@ class Raylib {
 
 	// ---- Models and meshes ----
 
-	/** Loads a model from a glTF or GLB file: its meshes, their materials and its images. The program's files are loaded before `main`,
-		so it is ready at once.
+	/** Loads a model from a glTF or GLB file: its meshes, their materials and its images; in a page from the files loaded before `main`,
+		natively read now. A file loaded again shares its first load's meshes and textures, with materials of its own; meshes go to the
+		GPU when first drawn.
 
 		@param fileName  The file, as the program names it, such as "assets/trophy.glb".
 		@return  The model; with no meshes when the file couldn't be read. */
 	public static function LoadModel(fileName:String):Model {
 		var path = normalize(fileName);
-		var bytes = Runtime.files.get(path);
 		var lower = path.toLowerCase();
-		if (bytes == null || !(StringTools.endsWith(lower, ".glb") || StringTools.endsWith(lower, ".gltf"))) {
-			trace(bytes == null ? 'LoadModel: $fileName was not loaded' : 'LoadModel: $fileName: only glTF and GLB are read here');
+		if (!(StringTools.endsWith(lower, ".glb") || StringTools.endsWith(lower, ".gltf"))) {
+			trace('LoadModel: $fileName: only glTF and GLB are read here');
 			return new Model([], [Models.defaultMaterial(defaultShader())], []);
 		}
 		try {
-			return Models.gltf(path, bytes, defaultShader());
+			var model = Models.load(path, () -> Runtime.fileNow(path), defaultShader());
+			if (model != null)
+				return model;
+			trace('LoadModel: $fileName couldn\'t be loaded');
 		} catch (e:Dynamic) {
 			trace('LoadModel: $fileName: $e');
-			return new Model([], [Models.defaultMaterial(defaultShader())], []);
 		}
+		return new Model([], [Models.defaultMaterial(defaultShader())], []);
 	}
 
 	/** Makes a model of one mesh, with the default material.
@@ -2664,7 +2706,6 @@ class Raylib {
 		@param mesh  The mesh.
 		@return  The model. */
 	public static function LoadModelFromMesh(mesh:Mesh):Model {
-		Models.upload(mesh);
 		return new Model([mesh], [Models.defaultMaterial(defaultShader())], [0]);
 	}
 
@@ -2676,16 +2717,22 @@ class Raylib {
 		return model.meshCount > 0;
 	}
 
-	/** Frees a model's meshes, and the textures of its materials.
+	/** Frees a model: one load of its file, its meshes and textures with the last; a model of a mesh, its meshes and its materials'
+		textures at once.
 
 		@param model  The model. */
 	public static function UnloadModel(model:Model):Void {
+		if (model.path != "") {
+			Models.release(model);
+			model.path = "";
+			return;
+		}
 		for (mesh in model.meshes)
 			Models.unload(mesh);
 		for (m in model.materials)
 			for (map in m.maps)
 				if (map.texture.id != 0) {
-					Runtime.graphics.disposeTexture(map.texture.id);
+					Textures.release(map.texture.id);
 					map.texture.id = 0;
 				}
 	}
@@ -3006,7 +3053,7 @@ class Raylib {
 		@return  The render texture. */
 	public static function LoadRenderTexture(width:Int, height:Int):RenderTexture2D {
 		var target = Runtime.graphics.createRenderTarget(width, height);
-		var texture = new Texture2D(target, width, height);
+		var texture = new Texture2D(Textures.fromHandle(target), width, height);
 		texture.flipped = true;
 		return new RenderTexture(target, texture, new Texture2D(0, width, height));
 	}
@@ -3023,8 +3070,8 @@ class Raylib {
 
 		@param target  The render texture. */
 	public static function UnloadRenderTexture(target:RenderTexture2D):Void {
-		if (target.id != 0)
-			Runtime.graphics.disposeTexture(target.id);
+		if (target.texture.id != 0)
+			Textures.release(target.texture.id);
 		target.id = 0;
 		target.texture.id = 0;
 	}
@@ -3144,7 +3191,7 @@ class Raylib {
 		var slot = shader.program.textureSlot(locIndex);
 		if (slot >= 0) {
 			Runtime.frame.cut();
-			shader.program.textures[slot] = texture.id;
+			shader.program.textures[slot] = Textures.handle(texture.id);
 		}
 	}
 
@@ -3483,6 +3530,12 @@ class Raylib {
 
 	// ---- What the 3D functions share ----
 	static var shaderDefault:Null<Shader> = null;
+	static final sounds = new Map<String, {
+		loaded:Null<helix.services.audio.Sound>,
+		refs:Int,
+		waiting:Array<Sound>,
+		cancel:Null<Void->Void>
+	}>();
 	static var deltaFrame = -1;
 	static var deltaX = 0.;
 	static var deltaY = 0.;
@@ -3575,9 +3628,9 @@ class Raylib {
 	}
 
 	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix3D, tint:Color):Void {
-		if (mesh.buffers == null)
+		if (mesh.gpu.buffers == null)
 			Models.upload(mesh);
-		if (mesh.buffers == null)
+		if (mesh.gpu.buffers == null)
 			return;
 		var shader = material.shader == null || material.shader.program == null ? defaultShader() : material.shader;
 		var c = material.maps[MATERIAL_MAP_DIFFUSE].color;
@@ -3587,7 +3640,7 @@ class Raylib {
 			c.b / 255 * tint.b / 255,
 			c.a / 255 * tint.a / 255
 		];
-		var textures = [for (i in 0...3) material.maps[i].texture.id];
+		var textures = [for (i in 0...3) Textures.handle(material.maps[i].texture.id)];
 		Runtime.frame.mesh(mesh, shader.program, transform, diffuse, textures);
 	}
 	#end

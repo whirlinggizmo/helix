@@ -24,11 +24,9 @@ class Mesh {
 	/** Gets or sets the indices, three a triangle, or null for vertices taken three at a time. */
 	public var indices:Null<Array<Int>> = null;
 
-	// Its GPU buffers once uploaded: positions, texture coordinates, normals, colors, and the indices (0 for none).
+	// Its GPU buffers, shared with the copies of the same mesh when its model is loaded again.
 	@:allow(helix.ray)
-	var buffers:Null<Array<Int>> = null;
-	@:allow(helix.ray)
-	var indexBuffer = 0;
+	var gpu = new helix.ray.internal.MeshGpu();
 
 	/** Creates an empty mesh. */
 	public function new() {}

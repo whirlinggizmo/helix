@@ -1,0 +1,6 @@
+{
+  "what": "raylib's white background above the grid.",
+  "points": [
+    {"x": 780, "y": 20, "color": [245, 245, 245], "tolerance": 3}
+  ]
+}

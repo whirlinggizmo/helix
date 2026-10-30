@@ -1,0 +1,6 @@
+{
+  "what": "raylib's white background away from the text and the circle.",
+  "points": [
+    {"x": 20, "y": 20, "color": [245, 245, 245], "tolerance": 3}
+  ]
+}

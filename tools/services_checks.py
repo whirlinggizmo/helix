@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Checks helix-services on the platform's real adapters: its examples (services/examples/<name>), each built from its own hxml files, run
+"""Checks helix-services (or, with --library ray, helix-ray) on the platform's real adapters: its examples (services/examples/<name>, or
+ray/examples/<name>), each built from its own hxml files, run
 natively on a private display (Linux, SDL3's dummy audio driver) and in a headless Chromium, as tools/platform_checks.py runs the
 platform's. Each says in its check.json what its native run prints and what its page shows (points and the colors expected there, each
 within a tolerance per channel), and, where it waits on time, how many frames a native run lasts (nativeFrames, 60 by default), as the
 private display doesn't pace them: a frame there takes about a quarter of a millisecond. A native run's data and cache directories are
-under build/results/services/<name>/, never the user's own (XDG_DATA_HOME and XDG_CACHE_HOME; APPDATA and LOCALAPPDATA on Windows).
+under build/results/<library>/<name>/, never the user's own (XDG_DATA_HOME and XDG_CACHE_HOME; APPDATA and LOCALAPPDATA on Windows).
 Exits 1 on any failure.
 
-    python3 tools/services_checks.py --browser BROWSER [--desktop] [NAME ...]
+    python3 tools/services_checks.py --browser BROWSER [--desktop] [--library services|ray] [NAME ...]
 
 BROWSER is a Chromium to run (Edge on Windows), or "" for Playwright's own. The names are examples'; they default to all of them.
 --desktop runs the native programs on this machine's own desktop, as platform_checks' does."""
@@ -20,6 +21,7 @@ sys.path.insert(0, str(ROOT / 'tools'))
 import platform_checks
 from platform_checks import FRAMES, check_pixels, run
 
+LIBRARY = 'services'
 EXAMPLES = ROOT / 'services/examples'
 
 
@@ -45,7 +47,7 @@ def example(name, browser):
             print(f'{name}: the page ran {FRAMES} frames, {len(expected["points"])} points checked', flush=True)
         return found
 
-    home = ROOT / 'build/results/services' / name
+    home = ROOT / 'build/results' / LIBRARY / name
     home.mkdir(parents=True, exist_ok=True)
     dirs = {'XDG_DATA_HOME': str(home / 'data'), 'XDG_CACHE_HOME': str(home / 'cache'), 'APPDATA': str(home / 'data'),
             'LOCALAPPDATA': str(home / 'cache')}
@@ -57,8 +59,12 @@ def main():
     parser = cli.parser(__doc__)
     parser.add_argument('--browser', required=True)
     parser.add_argument('--desktop', action='store_true', help="run natively on this machine's own desktop, not a private display")
+    parser.add_argument('--library', choices=['services', 'ray'], default='services', help='whose examples: services (default) or ray')
     parser.add_argument('names', nargs='*')
     a = parser.parse_args()
+    global LIBRARY, EXAMPLES
+    LIBRARY = a.library
+    EXAMPLES = ROOT / a.library / 'examples'
     platform_checks.DESKTOP = a.desktop
     names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx'))
     failed = False
@@ -66,7 +72,7 @@ def main():
         for problem in example(name, a.browser):
             failed = True
             print(f'{name}: {problem}', flush=True)
-    print(f'services checks: {"FAILED" if failed else "ok"} ({", ".join(names)})')
+    print(f'{LIBRARY} checks: {"FAILED" if failed else "ok"} ({", ".join(names)})')
     return 1 if failed else 0
 
 

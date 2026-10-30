@@ -1295,10 +1295,10 @@ static function QuaternionToMatrix(q:Quaternion):Matrix
   - `center`: The circle's center.
   - `radius`: Its radius.
   - returns: True when it is inside.
-- `LoadTexture`: Loads an image file as a texture. The program's files are loaded before `main`, so it is ready at once.
+- `LoadTexture`: Loads an image file as a texture: in a page from the files loaded before `main`, natively read now. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn.
   - `fileName`: The file, as the program names it, such as "assets/player.png".
   - returns: The texture; its `id` is 0 when the file couldn't be read.
-- `UnloadTexture`: Frees a texture.
+- `UnloadTexture`: Frees a texture: one load of its file, the GPU's copy with the last.
   - `texture`: The texture.
 - `IsTextureValid`: Returns whether a texture was loaded.
   - `texture`: The texture.
@@ -1351,10 +1351,10 @@ static function QuaternionToMatrix(q:Quaternion):Matrix
   - `volume`: 0 (silent) to 1.
 - `GetMasterVolume`: Returns the volume of every sound.
   - returns: 0 (silent) to 1.
-- `LoadSound`: Loads a sound file whole. It decodes in the background; played before then, it starts once decoded.
+- `LoadSound`: Loads a sound file whole. It decodes in the background; played before then, it starts once decoded. A file loaded again shares its first load's decoded sound.
   - `fileName`: The file, as the program names it, such as "assets/coin.wav".
   - returns: The sound.
-- `UnloadSound`: Frees a sound, stopping it.
+- `UnloadSound`: Frees a sound, stopping it: one load of its file, the decoded sound with the last.
   - `sound`: The sound.
 - `IsSoundValid`: Returns whether a sound was loaded.
   - `sound`: The sound.
@@ -1554,7 +1554,7 @@ static function QuaternionToMatrix(q:Quaternion):Matrix
 - `DrawGrid`: Draws a grid on the XZ plane, centered on the origin: its center lines darker, as raylib's.
   - `slices`: The lines each way.
   - `spacing`: The space between them.
-- `LoadModel`: Loads a model from a glTF or GLB file: its meshes, their materials and its images. The program's files are loaded before `main`, so it is ready at once.
+- `LoadModel`: Loads a model from a glTF or GLB file: its meshes, their materials and its images; in a page from the files loaded before `main`, natively read now. A file loaded again shares its first load's meshes and textures, with materials of its own; meshes go to the GPU when first drawn.
   - `fileName`: The file, as the program names it, such as "assets/trophy.glb".
   - returns: The model; with no meshes when the file couldn't be read.
 - `LoadModelFromMesh`: Makes a model of one mesh, with the default material.
@@ -1563,7 +1563,7 @@ static function QuaternionToMatrix(q:Quaternion):Matrix
 - `IsModelValid`: Returns whether a model has meshes.
   - `model`: The model.
   - returns: True when it has.
-- `UnloadModel`: Frees a model's meshes, and the textures of its materials.
+- `UnloadModel`: Frees a model: one load of its file, its meshes and textures with the last; a model of a mesh, its meshes and its materials' textures at once.
   - `model`: The model.
 - `DrawModel`: Draws a model at a position and a scale, its materials' colors times a tint.
   - `model`: The model.

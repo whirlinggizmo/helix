@@ -39,8 +39,11 @@ class Runtime {
 	public static var audioDecoder:Null<IAudioDecoder> = null;
 	public static var audio:Null<helix.services.audio.Audio> = null;
 
-	/** The program's files, as the preload found them, for what loads from them later (`Audio`). */
+	/** The program's files, as the preload found them, for what loads from them later (`Audio`, and natively every load). */
 	public static var assets:Null<Assets> = null;
+
+	/** The images, decoding the program's image files and a model's. */
+	public static var decoding:Null<helix.services.images.Images> = null;
 
 	public static final polled:Array<IPollable> = [];
 
@@ -124,16 +127,24 @@ class Runtime {
 			var assets = new Assets({sources: [HttpServer(system.getProgramDirectory())], httpClient: http, cacheFileSystem: cache});
 			Runtime.assets = assets;
 			#else
+			// Natively a file is read when the program loads it, as raylib does: nothing is read before main.
 			var directory = haxe.io.Path.join([system.getProgramDirectory(), root]);
 			var cache = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory, readOnly: true});
 			var imageDecoder = new helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter();
 			var assets = new Assets({sources: [FileSystem(cache)]});
 			Runtime.assets = assets;
+			polled.push(cache);
+			polled.push(imageDecoder);
+			decoding = new helix.services.images.Images(imageDecoder, assets);
+			polled.push(decoding);
+			done();
+			return;
 			#end
 			polled.push(cache);
 			polled.push(imageDecoder);
 			var decoded = new helix.services.images.Images(imageDecoder, assets);
 			polled.push(decoded);
+			decoding = decoded;
 			var left = paths.length;
 			var one = () -> if (--left == 0) done();
 			if (left == 0)
@@ -186,6 +197,82 @@ class Runtime {
 			}
 		};
 	}
+
+	/** Returns a file's bytes: in a page as loaded before main; natively read now, polling until it answers.
+
+		@param path  The file.
+		@return  Its bytes, or null when it can't be read. */
+	public static function fileNow(path:String):Null<Bytes> {
+		#if !js
+		if (!files.exists(path) && assets != null) {
+			var answered = false;
+			assets.load(path, bytes -> {
+				files.set(path, bytes);
+				answered = true;
+			}, error -> {
+				trace(error);
+				answered = true;
+			});
+			wait(() -> answered);
+		}
+		#end
+		return files.get(path);
+	}
+
+	/** Returns an image file's image: in a page as decoded before main; natively read and decoded now.
+
+		@param path  The file.
+		@return  The image, or null when it can't be read or decoded. */
+	public static function imageNow(path:String):Null<helix.services.images.Image> {
+		#if !js
+		if (!images.exists(path) && decoding != null) {
+			var answered = false;
+			decoding.load(path, image -> {
+				images.set(path, image);
+				answered = true;
+			}, error -> {
+				trace(error);
+				answered = true;
+			});
+			wait(() -> answered);
+		}
+		#end
+		return images.get(path);
+	}
+
+	/** Returns an image held in other bytes, kept under a key: in a page as decoded before main; natively decoded now.
+
+		@param key  The key it is kept under.
+		@param bytes  The image file's bytes, or null for one in a file of its own (the key its path).
+		@return  The image, or null when it can't be decoded. */
+	public static function decodedNow(key:String, bytes:Null<Bytes>):Null<helix.services.images.Image> {
+		#if !js
+		if (bytes == null)
+			return imageNow(key);
+		if (!images.exists(key) && decoding != null) {
+			var answered = false;
+			decoding.decode(bytes, image -> {
+				images.set(key, image);
+				answered = true;
+			}, error -> {
+				trace('$key: $error');
+				answered = true;
+			});
+			wait(() -> answered);
+		}
+		#end
+		return images.get(key);
+	}
+
+	#if !js
+	// Polls what answers later until it has: natively a load answers within its call, as raylib's do.
+	static function wait(answered:Void->Bool):Void {
+		while (!answered()) {
+			pollAll();
+			Sys.sleep(.0005);
+		}
+	}
+	#end
 
 	/** Returns the preload of the saves, which hold what `SaveFileText` writes.
 
