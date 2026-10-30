@@ -1145,20 +1145,55 @@ class Raylib {
 	public static inline function GetTouchY():Int
 		return RCore.GetTouchY();
 
-	/** Returns whether a gesture happened this frame. Only `GESTURE_TAP` is read here: a finger touching, or the left mouse button
-		pressed, as raylib counts it.
+	/** Sets which gestures are detected; all of them until it is called.
+
+		@param flags  The gestures (`GESTURE_*`), or'd together. */
+	public static inline function SetGesturesEnabled(flags:Int):Void
+		RCore.SetGesturesEnabled(flags);
+
+	/** Returns whether a gesture is the one detected now. A mouse button counts as a finger, as in raylib. A tap or double tap lasts a
+		frame, then becomes a hold; a swipe lasts a frame.
 
 		@param gesture  The gesture (`GESTURE_*`).
-		@return  True for the frame it happened. */
+		@return  True while it is the gesture, and enabled. */
 	public static inline function IsGestureDetected(gesture:Int):Bool
 		return RCore.IsGestureDetected(gesture);
 
-	/** Returns the gesture this frame: `GESTURE_TAP` for a finger touching or the left mouse button pressed, else `GESTURE_NONE`. Only
-		taps are read here.
+	/** Returns the gesture detected now.
 
-		@return  The gesture (`GESTURE_*`). */
+		@return  The gesture (`GESTURE_*`), or `GESTURE_NONE` when it isn't enabled. */
 	public static inline function GetGestureDetected():Int
 		return RCore.GetGestureDetected();
+
+	/** Returns how long the hold has lasted.
+
+		@return  The seconds, or 0 when the gesture isn't `GESTURE_HOLD`. */
+	public static inline function GetGestureHoldDuration():Float
+		return RCore.GetGestureHoldDuration();
+
+	/** Returns the drag, from where the finger landed to where it is, in fractions of the screen.
+
+		@return  The vector. */
+	public static inline function GetGestureDragVector():Vector2
+		return RCore.GetGestureDragVector();
+
+	/** Returns the last swipe's angle.
+
+		@return  The degrees, counterclockwise from right. */
+	public static inline function GetGestureDragAngle():Float
+		return RCore.GetGestureDragAngle();
+
+	/** Returns the pinch, from the first finger to the second, in fractions of the screen.
+
+		@return  The vector. */
+	public static inline function GetGesturePinchVector():Vector2
+		return RCore.GetGesturePinchVector();
+
+	/** Returns the pinch's angle.
+
+		@return  The degrees, counterclockwise from right. */
+	public static inline function GetGesturePinchAngle():Float
+		return RCore.GetGesturePinchAngle();
 
 	/** Returns whether a gamepad is connected.
 
@@ -1206,7 +1241,8 @@ class Raylib {
 	public static inline function IsGamepadButtonUp(gamepad:Int, button:Int):Bool
 		return RCore.IsGamepadButtonUp(gamepad, button);
 
-	/** Returns a button held on any gamepad, as raylib's last button pressed is: set while it is held, not only as it goes down.
+	/** Returns the last button held, as raylib polls them: gamepads 0 to 3, each's buttons in the browser's order in a page (the second
+		triggers among them, the middle button never), else GLFW's (the middle button among them, the second triggers never).
 
 		@return  The button (`GAMEPAD_BUTTON_*`), or `GAMEPAD_BUTTON_UNKNOWN` when none is held. */
 	public static inline function GetGamepadButtonPressed():Int
@@ -2798,30 +2834,6 @@ class Raylib {
 	/** raylib's `GetTouchPointId` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get touch point identifier for given index. */
 	public static macro function GetTouchPointId(index:ExprOf<Int>):ExprOf<Int>
 		return helix.platform.macros.Build.unimplemented("GetTouchPointId: Not implemented", macro(0 : Int));
-
-	/** raylib's `SetGesturesEnabled` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Enable a set of gestures using flags. */
-	public static macro function SetGesturesEnabled(flags:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetGesturesEnabled: Not implemented", macro {});
-
-	/** raylib's `GetGestureHoldDuration` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get gesture hold time in seconds. */
-	public static macro function GetGestureHoldDuration():ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("GetGestureHoldDuration: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `GetGestureDragVector` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get gesture drag vector. */
-	public static macro function GetGestureDragVector():ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("GetGestureDragVector: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `GetGestureDragAngle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get gesture drag angle. */
-	public static macro function GetGestureDragAngle():ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("GetGestureDragAngle: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `GetGesturePinchVector` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get gesture pinch delta. */
-	public static macro function GetGesturePinchVector():ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("GetGesturePinchVector: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `GetGesturePinchAngle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get gesture pinch angle. */
-	public static macro function GetGesturePinchAngle():ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("GetGesturePinchAngle: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `UpdateCameraPro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update camera movement/rotation. */
 	public static macro function UpdateCameraPro(camera:ExprOf<Camera>, movement:ExprOf<Vector3>, rotation:ExprOf<Vector3>, zoom:ExprOf<Float>):ExprOf<Void>

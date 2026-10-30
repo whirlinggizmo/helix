@@ -385,23 +385,66 @@ class RCore {
 		return Std.int(GetTouchPosition(0).y);
 	}
 
-	/** Returns whether a gesture happened this frame. Only `GESTURE_TAP` is read here: a finger touching, or the left mouse button
-		pressed, as raylib counts it.
+	/** Sets which gestures are detected; all of them until it is called.
 
-		@param gesture  The gesture (`GESTURE_*`).
-		@return  True for the frame it happened. */
-	static function IsGestureDetected(gesture:Int):Bool {
-		if (gesture != GESTURE_TAP)
-			return false;
-		return Runtime.touch().pressed.length > 0 || Runtime.mouse().isButtonPressed(Left);
+		@param flags  The gestures (`GESTURE_*`), or'd together. */
+	static function SetGesturesEnabled(flags:Int):Void {
+		Runtime.gestures().enabledFlags = flags;
 	}
 
-	/** Returns the gesture this frame: `GESTURE_TAP` for a finger touching or the left mouse button pressed, else `GESTURE_NONE`. Only
-		taps are read here.
+	/** Returns whether a gesture is the one detected now. A mouse button counts as a finger, as in raylib. A tap or double tap lasts a
+		frame, then becomes a hold; a swipe lasts a frame.
 
-		@return  The gesture (`GESTURE_*`). */
+		@param gesture  The gesture (`GESTURE_*`).
+		@return  True while it is the gesture, and enabled. */
+	static function IsGestureDetected(gesture:Int):Bool {
+		var gestures = Runtime.gestures();
+		return (gestures.enabledFlags & gestures.current) == gesture;
+	}
+
+	/** Returns the gesture detected now.
+
+		@return  The gesture (`GESTURE_*`), or `GESTURE_NONE` when it isn't enabled. */
 	static function GetGestureDetected():Int {
-		return IsGestureDetected(GESTURE_TAP) ? GESTURE_TAP : GESTURE_NONE;
+		var gestures = Runtime.gestures();
+		return gestures.enabledFlags & gestures.current;
+	}
+
+	/** Returns how long the hold has lasted.
+
+		@return  The seconds, or 0 when the gesture isn't `GESTURE_HOLD`. */
+	static function GetGestureHoldDuration():Float {
+		return Runtime.gestures().holdDuration();
+	}
+
+	/** Returns the drag, from where the finger landed to where it is, in fractions of the screen.
+
+		@return  The vector. */
+	static function GetGestureDragVector():Vector2 {
+		var gestures = Runtime.gestures();
+		return new Vector2(gestures.dragX, gestures.dragY);
+	}
+
+	/** Returns the last swipe's angle.
+
+		@return  The degrees, counterclockwise from right. */
+	static function GetGestureDragAngle():Float {
+		return Runtime.gestures().dragAngle;
+	}
+
+	/** Returns the pinch, from the first finger to the second, in fractions of the screen.
+
+		@return  The vector. */
+	static function GetGesturePinchVector():Vector2 {
+		var gestures = Runtime.gestures();
+		return new Vector2(gestures.pinchX, gestures.pinchY);
+	}
+
+	/** Returns the pinch's angle.
+
+		@return  The degrees, counterclockwise from right. */
+	static function GetGesturePinchAngle():Float {
+		return Runtime.gestures().pinchAngle;
 	}
 
 	// ---- Gamepads ----
@@ -461,17 +504,22 @@ class RCore {
 		return !IsGamepadButtonDown(gamepad, button);
 	}
 
-	/** Returns a button held on any gamepad, as raylib's last button pressed is: set while it is held, not only as it goes down.
+	/** Returns the last button held, as raylib polls them: gamepads 0 to 3, each's buttons in the browser's order in a page (the second
+		triggers among them, the middle button never), else GLFW's (the middle button among them, the second triggers never).
 
 		@return  The button (`GAMEPAD_BUTTON_*`), or `GAMEPAD_BUTTON_UNKNOWN` when none is held. */
 	static function GetGamepadButtonPressed():Int {
+		var last = GAMEPAD_BUTTON_UNKNOWN;
 		for (pad in 0...4)
 			if (IsGamepadAvailable(pad))
-				for (button in 1...18)
+				for (button in pollOrder)
 					if (IsGamepadButtonDown(pad, button))
-						return button;
-		return GAMEPAD_BUTTON_UNKNOWN;
+						last = button;
+		return last;
 	}
+
+	// raylib's buttons in the order its platform polls them: the standard gamepad's in a page, GLFW's on the desktop.
+	static final pollOrder = #if js [7, 6, 8, 5, 9, 11, 10, 12, 13, 15, 16, 17, 1, 3, 4, 2] #else [7, 6, 8, 5, 9, 11, 13, 15, 14, 16, 17, 1, 2, 3, 4] #end;
 
 	/** Returns the number of axes a gamepad has.
 

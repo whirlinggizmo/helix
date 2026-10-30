@@ -70,6 +70,7 @@ class Runtime {
 	static var mouseService:Null<Mouse> = null;
 	static var touchService:Null<Touch> = null;
 	static var gamepadsService:Null<Gamepads> = null;
+	static var gesturesService:Null<Gestures> = null;
 	// The devices made so far, polled each frame; through IPollable, so a device never asked for isn't linked.
 	static final devices:Array<IPollable> = [];
 
@@ -374,6 +375,16 @@ class Runtime {
 			devices.push(touchService);
 		}
 		return touchService;
+	}
+
+	/** Gets the gestures, made when first asked for, with the mouse and touch whose events they read. */
+	public static function gestures():Gestures {
+		if (gesturesService == null) {
+			mouse();
+			gesturesService = new Gestures();
+			devices.push(gesturesService);
+		}
+		return gesturesService;
 	}
 
 	/** Gets the gamepads, made when first asked for, without a dead zone, as raylib's axes have none. */
