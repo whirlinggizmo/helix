@@ -24,16 +24,24 @@ class RTextures {
 	#if !macro
 	// ---- Textures ----
 
-	/** Loads an image file as a texture, read now. A file loaded again shares its first load's texture, and the image goes to the GPU
-		when first drawn. A page can't wait for a file, so there it doesn't compile: see `LoadTextureAsync`.
+	/** raylib's texture load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadTextureAsync` loads it.
 
-		@param fileName  The file, as the program names it, such as "assets/player.png".
-		@return  The texture; its `id` is 0 when the file couldn't be read. */
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)")
 	public static function LoadTexture(fileName:String):Texture2D {
+		throw "LoadTexture is unimplemented";
+	}
+
+	// The texture of an image file `LoadTextureAsync` brought in. A file loaded again shares its first load's texture, and the image goes
+	// to the GPU when first drawn.
+
+	@:allow(helix.ray.raylib)
+	static function loadTexture(fileName:String):Texture2D {
 		var path = normalize(fileName);
 		var image = Runtime.imageNow(path);
 		if (image == null) {
-			Runtime.log(4, Runtime.notLoaded("LoadTexture", path));
+			Runtime.log(4, 'LoadTextureAsync: $path couldn\'t be read');
 			return new Texture2D();
 		}
 		return new Texture2D(Textures.fromImage(path, image), image.width, image.height);

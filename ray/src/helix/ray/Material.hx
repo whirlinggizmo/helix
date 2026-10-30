@@ -11,7 +11,7 @@ class Material {
 	/** Gets four values for a shader's own use. */
 	public var params:Array<Float>;
 
-	/** Creates a material. Materials are made by `Raylib.LoadMaterialDefault` and `Raylib.LoadModel`.
+	/** Creates a material. Materials are made by `Raylib.LoadMaterialDefault` and `Raylib.LoadModelAsync`.
 
 		@param shader  The shader.
 		@param maps  The maps.

@@ -25,9 +25,9 @@ import helix.ray.raylib.RTextures;
 	a page and natively.
 
 	A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a
-	frame. Natively a load reads its file when called, as raylib's does; a page loads before `main` the files its program names, and
-	the `...Async` loads, helix-ray's own, bring in the rest. A file loaded twice is shared, and goes to the GPU when first drawn.
-	`SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its
+	frame. A page can't wait for a file, so on every target files are loaded by helix-ray's own `...Async` loads; raylib's
+	`LoadTexture`, `LoadModel`, `LoadSound` and `LoadFileData` don't compile, naming the load to use. A file loaded twice is shared,
+	and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its
 	files with constants. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here by module; what raylib
 	has and helix-ray doesn't refuses to compile, naming itself. */
 class Raylib {
@@ -1259,16 +1259,15 @@ class Raylib {
 	public static inline function SaveFileText(fileName:String, text:String):Bool
 		return RCore.SaveFileText(fileName, text);
 
-	/** Reads a file's bytes: through the program's `SetLoadFileDataCallback` when it has one, else one `SaveFileData` wrote, else one
-		of the program's, read now. raylib also gives the size through a pointer; here it is the bytes' `length`. A page can't wait
-		for a file, so there it doesn't compile: see `LoadFileDataAsync`.
+	/** raylib's file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileDataAsync` reads it.
 
 		@param fileName  The file.
-		@return  Its bytes, or null when it can't be read. */
-	public static function LoadFileData(fileName:String):Null<haxe.io.Bytes>
-		return RCore.LoadFileData(fileName);
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)")
+	public static inline function LoadFileData(fileName:String):Null<haxe.io.Bytes>
+		throw "LoadFileData is unimplemented";
 
-	/** Frees bytes `LoadFileData` returned. There is nothing to free here.
+	/** Frees bytes `LoadFileDataAsync` gave. There is nothing to free here.
 
 		@param data  The bytes. */
 	public static inline function UnloadFileData(data:Null<haxe.io.Bytes>):Void
@@ -1695,13 +1694,13 @@ class Raylib {
 
 	// ---- rtextures: textures, render textures and colors (raylib/RTextures.hx) ----
 
-	/** Loads an image file as a texture, read now. A file loaded again shares its first load's texture, and the image goes to the GPU
-		when first drawn. A page can't wait for a file, so there it doesn't compile: see `LoadTextureAsync`.
+	/** raylib's texture load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadTextureAsync` loads it.
 
-		@param fileName  The file, as the program names it, such as "assets/player.png".
-		@return  The texture; its `id` is 0 when the file couldn't be read. */
-	public static function LoadTexture(fileName:String):Texture2D
-		return RTextures.LoadTexture(fileName);
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)")
+	public static inline function LoadTexture(fileName:String):Texture2D
+		throw "LoadTexture is unimplemented";
 
 	/** Frees a texture: one load of its file, the GPU's copy with the last.
 
@@ -1955,14 +1954,13 @@ class Raylib {
 	public static inline function DrawGrid(slices:Int, spacing:Float):Void
 		RModels.DrawGrid(slices, spacing);
 
-	/** Loads a model from a glTF or GLB file, read now: its meshes, their materials and its images. A file loaded again shares its first
-		load's meshes and textures, with materials of its own; meshes go to the GPU when first drawn. A page can't wait for a file, so
-		there it doesn't compile: see `LoadModelAsync`.
+	/** raylib's model load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAsync` loads it.
 
-		@param fileName  The file, as the program names it, such as "assets/trophy.glb".
-		@return  The model; with no meshes when the file couldn't be read. */
-	public static function LoadModel(fileName:String):Model
-		return RModels.LoadModel(fileName);
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)")
+	public static inline function LoadModel(fileName:String):Model
+		throw "LoadModel is unimplemented";
 
 	/** Makes a model of one mesh, with the default material.
 
@@ -2013,7 +2011,7 @@ class Raylib {
 	public static inline function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void
 		RModels.DrawMesh(mesh, material, transform);
 
-	/** Sends a mesh's vertices to the GPU, so it can be drawn. The `GenMesh*` functions and `LoadModel` do it themselves.
+	/** Sends a mesh's vertices to the GPU, so it can be drawn. The `GenMesh*` functions and `LoadModelAsync` do it themselves.
 
 		@param mesh  The mesh.
 		@param isDynamic  Whether it will change (raylib names it `dynamic`, a Haxe keyword); meshes here can't, so it is ignored. */
@@ -2153,6 +2151,14 @@ class Raylib {
 	public static inline function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision
 		return RModels.GetRayCollisionMesh(ray, mesh, transform);
 
+	/** Makes a shader from a program compiled as the program built (`LoadShader`).
+
+		@param source  The compiled program.
+		@return  The shader. */
+	@:noCompletion
+	public static inline function makeShader(source:helix.ray.internal.ProgramSource):Shader
+		return RModels.makeShader(source);
+
 	// ---- raudio: sound (raylib/RAudio.hx) ----
 
 	/** Opens the audio output, with helix-services' `Audio` over it. In a page it plays once the player's first press lets it. */
@@ -2181,13 +2187,13 @@ class Raylib {
 	public static inline function GetMasterVolume():Float
 		return RAudio.GetMasterVolume();
 
-	/** Loads a sound file whole. It decodes in the background; played before then, it starts once decoded. A file loaded again shares
-		its first load's decoded sound. A page can't wait for a file, so there it doesn't compile: see `LoadSoundAsync`.
+	/** raylib's sound load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadSoundAsync` loads it.
 
-		@param fileName  The file, as the program names it, such as "assets/coin.wav".
-		@return  The sound. */
-	public static function LoadSound(fileName:String):Sound
-		return RAudio.LoadSound(fileName);
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void)")
+	public static inline function LoadSound(fileName:String):Sound
+		throw "LoadSound is unimplemented";
 
 	/** Frees a sound, stopping it: one load of its file, the decoded sound with the last.
 
@@ -2710,8 +2716,9 @@ class Raylib {
 
 	// ---- helix-ray's own: loading in a page (raylib/HelixRay.hx) ----
 
-	/** Loads an image file as a texture, answering when it is ready: helix-ray's own, as a page can't wait for a file (`LoadTexture`
-		doesn't compile there). Natively the file is read at once. Either way the answer comes at a later frame, never during the call.
+	/** Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page
+		can't wait for a file. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The
+		answer comes at a later frame, never during the call.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the texture.
@@ -2719,8 +2726,8 @@ class Raylib {
 	public static inline function LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void
 		HelixRay.LoadTextureAsync(fileName, loaded, failed);
 
-	/** Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own, as
-		`LoadTextureAsync` is for textures.
+	/** Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own,
+		in place of raylib's `LoadModel`. A file loaded again shares its first load's meshes and textures, with materials of its own.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the model.
@@ -2728,8 +2735,8 @@ class Raylib {
 	public static inline function LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void):Void
 		HelixRay.LoadModelAsync(fileName, loaded, failed);
 
-	/** Loads a sound file and decodes it, answering when it is ready to play at once: helix-ray's own, as `LoadTextureAsync` is for
-		textures. `InitAudioDevice` comes first.
+	/** Loads a sound file and decodes it, answering when it is ready to play at once: helix-ray's own, in place of raylib's `LoadSound`.
+		A file loaded again shares its first load's decoded sound. `InitAudioDevice` comes first.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the sound.
@@ -2746,8 +2753,8 @@ class Raylib {
 	public static inline function LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void):Void
 		HelixRay.LoadFileTextAsync(fileName, loaded, failed);
 
-	/** Reads a file's bytes, answering when they are read: helix-ray's own, as `LoadTextureAsync` is for textures. One
-		`SaveFileData` wrote, or the program's `SetLoadFileDataCallback`, answers too.
+	/** Reads a file's bytes, answering when they are read: helix-ray's own, in place of raylib's `LoadFileData`. The program's
+		`SetLoadFileDataCallback` answers first, then what `SaveFileData` wrote, then the program's files.
 
 		@param fileName  The file.
 		@param loaded  Receives its bytes.

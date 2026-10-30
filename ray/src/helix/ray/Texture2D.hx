@@ -22,7 +22,7 @@ class Texture2D {
 	@:allow(helix.ray)
 	var flipped = false;
 
-	/** Creates a texture's record. Textures are made by `Raylib.LoadTexture`.
+	/** Creates a texture's record. Textures are made by `Raylib.LoadTextureAsync`.
 
 		@param id  The handle.
 		@param width  The width, in pixels.

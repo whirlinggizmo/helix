@@ -205,26 +205,33 @@ class RModels {
 
 	// ---- Models and meshes ----
 
-	/** Loads a model from a glTF or GLB file, read now: its meshes, their materials and its images. A file loaded again shares its first
-		load's meshes and textures, with materials of its own; meshes go to the GPU when first drawn. A page can't wait for a file, so
-		there it doesn't compile: see `LoadModelAsync`.
+	/** raylib's model load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAsync` loads it.
 
-		@param fileName  The file, as the program names it, such as "assets/trophy.glb".
-		@return  The model; with no meshes when the file couldn't be read. */
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)")
 	public static function LoadModel(fileName:String):Model {
+		throw "LoadModel is unimplemented";
+	}
+
+	// The model of a glTF or GLB file `LoadModelAsync` brought in: its meshes, their materials and its images. A file loaded again shares
+	// its first load's meshes and textures, with materials of its own; meshes go to the GPU when first drawn.
+
+	@:allow(helix.ray.raylib)
+	static function loadModel(fileName:String):Model {
 		var path = normalize(fileName);
 		var lower = path.toLowerCase();
 		if (!(StringTools.endsWith(lower, ".glb") || StringTools.endsWith(lower, ".gltf"))) {
-			Runtime.log(4, 'LoadModel: $fileName: only glTF and GLB are read here');
+			Runtime.log(4, 'LoadModelAsync: $fileName: only glTF and GLB are read here');
 			return new Model([], [Models.defaultMaterial(defaultShader())], []);
 		}
 		try {
 			var model = Models.load(path, () -> Runtime.fileNow(path), defaultShader());
 			if (model != null)
 				return model;
-			Runtime.log(4, Runtime.notLoaded("LoadModel", path));
+			Runtime.log(4, 'LoadModelAsync: $path couldn\'t be read');
 		} catch (e:Dynamic) {
-			Runtime.log(4, 'LoadModel: $fileName: $e');
+			Runtime.log(4, 'LoadModelAsync: $fileName: $e');
 		}
 		return new Model([], [Models.defaultMaterial(defaultShader())], []);
 	}
@@ -305,7 +312,7 @@ class RModels {
 		drawMesh(mesh, material, toMatrix3D(transform), WHITE);
 	}
 
-	/** Sends a mesh's vertices to the GPU, so it can be drawn. The `GenMesh*` functions and `LoadModel` do it themselves.
+	/** Sends a mesh's vertices to the GPU, so it can be drawn. The `GenMesh*` functions and `LoadModelAsync` do it themselves.
 
 		@param mesh  The mesh.
 		@param isDynamic  Whether it will change (raylib names it `dynamic`, a Haxe keyword); meshes here can't, so it is ignored. */

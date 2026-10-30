@@ -25,30 +25,31 @@ class HelixRay {
 	#if !macro
 	// ---- Loading in a page: helix-ray's own, not raylib's ----
 
-	/** Loads an image file as a texture, answering when it is ready: helix-ray's own, as a page can't wait for a file (`LoadTexture`
-		doesn't compile there). Natively the file is read at once. Either way the answer comes at a later frame, never during the call.
+	/** Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page
+		can't wait for a file. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The
+		answer comes at a later frame, never during the call.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the texture.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	public static function LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
-		Runtime.fetch(path, error -> error == null ? loaded(LoadTexture(path)) : refuse("LoadTextureAsync", path, error, failed));
+		Runtime.fetch(path, error -> error == null ? loaded(RTextures.loadTexture(path)) : refuse("LoadTextureAsync", path, error, failed));
 	}
 
-	/** Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own, as
-		`LoadTextureAsync` is for textures.
+	/** Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own,
+		in place of raylib's `LoadModel`. A file loaded again shares its first load's meshes and textures, with materials of its own.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the model.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	public static function LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
-		Runtime.fetch(path, error -> error == null ? loaded(LoadModel(path)) : refuse("LoadModelAsync", path, error, failed));
+		Runtime.fetch(path, error -> error == null ? loaded(RModels.loadModel(path)) : refuse("LoadModelAsync", path, error, failed));
 	}
 
-	/** Loads a sound file and decodes it, answering when it is ready to play at once: helix-ray's own, as `LoadTextureAsync` is for
-		textures. `InitAudioDevice` comes first.
+	/** Loads a sound file and decodes it, answering when it is ready to play at once: helix-ray's own, in place of raylib's `LoadSound`.
+		A file loaded again shares its first load's decoded sound. `InitAudioDevice` comes first.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the sound.
@@ -59,7 +60,7 @@ class HelixRay {
 			Runtime.later(() -> refuse("LoadSoundAsync", path, "InitAudioDevice first", failed));
 			return;
 		}
-		var sound = LoadSound(path);
+		var sound = RAudio.loadSound(path);
 		var entry = sounds.get(path);
 		if (entry.loaded != null)
 			Runtime.later(() -> loaded(sound));
@@ -83,8 +84,8 @@ class HelixRay {
 		Runtime.fetch(path, error -> error == null ? loaded(Runtime.files.get(path).toString()) : refuse("LoadFileTextAsync", path, error, failed));
 	}
 
-	/** Reads a file's bytes, answering when they are read: helix-ray's own, as `LoadTextureAsync` is for textures. One
-		`SaveFileData` wrote, or the program's `SetLoadFileDataCallback`, answers too.
+	/** Reads a file's bytes, answering when they are read: helix-ray's own, in place of raylib's `LoadFileData`. The program's
+		`SetLoadFileDataCallback` answers first, then what `SaveFileData` wrote, then the program's files.
 
 		@param fileName  The file.
 		@param loaded  Receives its bytes.

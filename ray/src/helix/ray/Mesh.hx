@@ -1,7 +1,7 @@
 package helix.ray;
 
 /** Represents raylib's `Mesh`: vertices, and the indices of its triangles when it has them. `Raylib.UploadMesh` sends them to the GPU;
-	`Raylib.LoadModel` and the `GenMesh*` functions do it themselves. */
+	`Raylib.LoadModelAsync` and the `GenMesh*` functions do it themselves. */
 class Mesh {
 	/** Gets or sets the number of vertices. */
 	public var vertexCount:Int = 0;

@@ -81,15 +81,23 @@ class RAudio {
 		return Runtime.audio == null ? 1 : Runtime.audio.master.volume;
 	}
 
-	/** Loads a sound file whole. It decodes in the background; played before then, it starts once decoded. A file loaded again shares
-		its first load's decoded sound. A page can't wait for a file, so there it doesn't compile: see `LoadSoundAsync`.
+	/** raylib's sound load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadSoundAsync` loads it.
 
-		@param fileName  The file, as the program names it, such as "assets/coin.wav".
-		@return  The sound. */
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void)")
 	public static function LoadSound(fileName:String):Sound {
+		throw "LoadSound is unimplemented";
+	}
+
+	// A sound file, loaded whole for `LoadSoundAsync`: it decodes in the background, and played before then, it starts once decoded. A
+	// file loaded again shares its first load's decoded sound.
+
+	@:allow(helix.ray.raylib)
+	static function loadSound(fileName:String):Sound {
 		var sound = new Sound();
 		if (Runtime.audio == null) {
-			Runtime.log(4, 'LoadSound: InitAudioDevice first');
+			Runtime.log(4, 'LoadSoundAsync: InitAudioDevice first');
 			return sound;
 		}
 		var path = normalize(fileName);
@@ -117,7 +125,7 @@ class RAudio {
 			}, error -> {
 				made.cancel = null;
 				if (made.answers.length == 0)
-					Runtime.log(4, 'LoadSound: $fileName: $error');
+					Runtime.log(4, 'LoadSoundAsync: $fileName: $error');
 				for (answer in made.answers)
 					answer(error);
 				made.answers = [];

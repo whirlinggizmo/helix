@@ -27,10 +27,10 @@ SECTIONS = [
     ('RMath', 'raymath: vectors, matrices and quaternions'),
     ('HelixRay', "helix-ray's own: loading in a page"),
 ]
-# The loads a page can't make: not inline, so a page build's check finds each call of the program's to them where it is written
-# (helix.ray.internal.Loop).
-NOT_INLINE = {'LoadTexture', 'LoadModel', 'LoadSound', 'LoadFileData'}
-FUNCTION = re.compile(r'(\t/\*\*(?:(?!\*/).)*?\*/\n)\tpublic static function (\w+)\((.*?)\):\s*([^{\n]+?)\s*\{', re.S)
+# A function, its doc comment and any metadata before it: group 2 is the metadata, 3 the name, 4 the parameters, 5 the result.
+FUNCTION = re.compile(r'(\t/\*\*(?:(?!\*/).)*?\*/\n)((?:\t@:[^\n]*\n)*)\tpublic static function (\w+)\((.*?)\):\s*([^{\n]+?)\s*\{', re.S)
+# A function that refuses to compile (helix.ray.internal.Unimplemented), and the one its message says to use instead, with its parameters.
+UNIMPLEMENTED = re.compile(r'@:unimplemented\("[^"]*?See (\w+)\((.*?)\)"\)')
 
 
 def parameters(text):
@@ -60,11 +60,11 @@ def generated():
         source = (RAY / 'raylib' / f'{name}.hx').read_text(encoding='utf-8')
         out += ['', f'\t// ---- {title} (raylib/{name}.hx) ----', '']
         for m in FUNCTION.finditer(source):
-            doc, function, params, result = m.group(1), m.group(2), ' '.join(m.group(3).split()), m.group(4).strip()
+            doc, meta, function, params, result = m.group(1), m.group(2), m.group(3), ' '.join(m.group(4).split()), m.group(5).strip()
             call = f'{name}.{function}({", ".join(parameters(params))})'
-            body = call if result == 'Void' else f'return {call}'
-            inline = '' if function in NOT_INLINE else 'inline '
-            out += [doc.rstrip('\n'), f'\tpublic static {inline}function {function}({params}):{result}', f'\t\t{body};', '']
+            # A function that doesn't compile is declared here as it is in its section, so the build stops at the program's call.
+            body = f'throw "{function} is unimplemented"' if '@:unimplemented' in meta else call if result == 'Void' else f'return {call}'
+            out += [doc.rstrip('\n'), *meta.splitlines(), f'\tpublic static inline function {function}({params}):{result}', f'\t\t{body};', '']
     out += ['\t#end', '', END]
     # As the formatter lays it out, so formatting leaves it as it is: no blank line just inside the #if or before its #end, and never two.
     lines = []
@@ -90,10 +90,16 @@ def main():
     before, rest = text.split(BEGIN, 1)
     after = rest.split(END, 1)[1]
     # A function written in a section has no refusal left in the hand-written part.
-    clash = [m.group(2) for m in FUNCTION.finditer(''.join((RAY / 'raylib' / f'{n}.hx').read_text(encoding='utf-8') for n, _ in SECTIONS))
-             if f'Missing.refuse("{m.group(2)}"' in before + after]
+    sections = ''.join((RAY / 'raylib' / f'{n}.hx').read_text(encoding='utf-8') for n, _ in SECTIONS)
+    clash = [m.group(3) for m in FUNCTION.finditer(sections) if f'Missing.refuse("{m.group(3)}"' in before + after]
     if clash:
         print('gen_raylib: written in a section and still refused in Raylib.hx (remove the refusal): ' + ', '.join(clash))
+        return 1
+    # An unimplemented function's message gives the signature of what to use instead, as it is written.
+    signatures = {m.group(3): ' '.join(m.group(4).split()) for m in FUNCTION.finditer(sections)}
+    stale = [f'{m.group(1)}({m.group(2)})' for m in UNIMPLEMENTED.finditer(sections) if signatures.get(m.group(1)) != m.group(2)]
+    if stale:
+        print('gen_raylib: an @:unimplemented message names a signature that isn\'t written so: ' + ', '.join(stale))
         return 1
     updated = before + generated() + after
     if check:

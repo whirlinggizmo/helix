@@ -24,7 +24,7 @@ class Model {
 	@:allow(helix.ray)
 	var path = "";
 
-	/** Creates a model. Models are made by `Raylib.LoadModel` and `Raylib.LoadModelFromMesh`.
+	/** Creates a model. Models are made by `Raylib.LoadModelAsync` and `Raylib.LoadModelFromMesh`.
 
 		@param meshes  The meshes.
 		@param materials  The materials.

@@ -24,8 +24,8 @@ using StringTools;
 /** Holds what `Raylib`'s functions share: the platform's adapters and the services over them, each made when first needed, the files in
 	memory, and the frame.
 
-	raylib answers a load at once. Natively so does helix-ray, reading the file then; a page can't wait for a file, so it loads through
-	the `...Async` functions, which bring files into memory here. The saves, which hold what `SaveFileText` writes, are read before
+	raylib answers a load at once. A page can't wait for a file, so on every target helix-ray loads through the `...Async` functions,
+	which bring files into memory here. The saves, which hold what `SaveFileText` writes, are read before
 	`main` when the program uses them. */
 @:noCompletion
 class Runtime {
@@ -40,7 +40,7 @@ class Runtime {
 	public static var audioDecoder:Null<IAudioDecoder> = null;
 	public static var audio:Null<helix.services.audio.Audio> = null;
 
-	/** The program's files, as the preload found them, for what loads from them later (`Audio`, and natively every load). */
+	/** The program's files, as the preload found them, for what loads from them later (`Audio`, and the `...Async` loads). */
 	public static var assets:Null<Assets> = null;
 
 	/** The images, decoding the program's image files and a model's. */
@@ -163,7 +163,7 @@ class Runtime {
 			return;
 		}
 		assets.load(path, bytes -> {
-			// The file's bytes are kept too, for LoadFileData; an image's are small beside its pixels.
+			// The file's bytes are kept too, for LoadFileDataAsync; an image's are small beside its pixels.
 			files.set(path, bytes);
 			if (image) {
 				decoding.decode(bytes, decoded -> {
@@ -176,7 +176,7 @@ class Runtime {
 				done(null);
 				return;
 			}
-			// A model's images are decoded now too, and the files it points to brought in, so LoadModel answers at once.
+			// A model's images are decoded now too, and the files it points to brought in, so the model is made at once.
 			var file = try Gltf.read(bytes) catch (e:Dynamic) {
 				done(Std.string(e));
 				return;

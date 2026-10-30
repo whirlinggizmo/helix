@@ -11,46 +11,16 @@ import sys.FileSystem;
 
 	A page can't block, so the loop's body becomes a function called once a frame, and what follows the loop runs when it stops. The
 	program's `main` runs once its saves are read, when it uses them (`Runtime.boot`). Natively the program finds its files at
-	`-D helix-ray-native-root=<directory>` (default `../web`), relative to its own; a page reads them only through the `...Async` loads. */
+	`-D helix-ray-native-root=<directory>` (default `../web`), relative to its own; a program reads them through the `...Async` loads. */
 class Loop {
-	/** Adds `build` to the program's main class. Run by the library's `extraParams.hxml`. */
+	/** Adds `build` to the program's main class, and `Unimplemented`'s to `Raylib`. Run by the library's `extraParams.hxml`. */
 	public static function install():Void {
 		var main = Compiler.getConfiguration().mainClass;
 		if (main == null)
 			return;
 		var name = main.pack.concat([main.name]).join(".");
 		Compiler.addMetadata("@:build(helix.ray.internal.Loop.build())", name);
-		if (Context.defined("js"))
-			Context.onAfterTyping(refuseSynchronous);
-	}
-
-	/** The loads a page can't make, as it can't wait for a file. */
-	static final SYNCHRONOUS = ["LoadTexture", "LoadModel", "LoadSound", "LoadFileData"];
-
-	// In a page build, each call of the program's to a load a page can't make stops the build where it is.
-	static function refuseSynchronous(types:Array<haxe.macro.Type.ModuleType>):Void {
-		function walk(e:haxe.macro.Type.TypedExpr):Void {
-			switch e.expr {
-				case TCall({expr: TField(_, FStatic(c, f))}, _) if (c.toString() == "helix.ray.Raylib" && SYNCHRONOUS.indexOf(f.get().name) >= 0):
-					var name = f.get().name;
-					Context.reportError('$name: Synchronous loading is not supported. See ${name}Async()', e.pos);
-				case _:
-			}
-			haxe.macro.TypedExprTools.iter(e, walk);
-		}
-		for (t in types)
-			switch t {
-				case TClassDecl(c):
-					var cls = c.get();
-					if (cls.pack.length > 0 && cls.pack[0] == "helix")
-						continue;
-					for (field in cls.statics.get().concat(cls.fields.get()))
-						if (field.expr() != null)
-							walk(field.expr());
-					if (cls.constructor != null && cls.constructor.get().expr() != null)
-						walk(cls.constructor.get().expr());
-				case _:
-			}
+		Unimplemented.install();
 	}
 
 	/** Rewrites the main class: the loop in whichever static function holds it, and `main` to run once the saves are read. */
@@ -70,7 +40,7 @@ class Loop {
 		var sources = Path.directory(Context.getPosInfos(Context.getLocalClass().get().pos).file);
 		var text = sourceText(sources == "" ? "." : sources);
 		var preloads = [];
-		if (~/\b(SaveFileText|LoadFileText|LoadFileTextAsync|FileExists|SaveFileData|LoadFileData|LoadFileDataAsync)\b/.match(text))
+		if (~/\b(SaveFileText|LoadFileText|LoadFileTextAsync|FileExists|SaveFileData|LoadFileDataAsync)\b/.match(text))
 			preloads.push(macro helix.ray.internal.Runtime.preloadSaves());
 		for (field in fields)
 			if (field.name == "main")
@@ -99,8 +69,6 @@ class Loop {
 		return out.toString();
 	}
 
-	// The files a glTF file points to (its buffers' and images' uris), as paths beside it; none for anything else.
-	// The files under a directory, as paths relative to it, leaving out the page's own.
 	// Finds `while (!WindowShouldClose()) body` among a block's statements, and hands the body and the statements after it to Runtime.run.
 	static function rewriteLoop(e:Expr):Expr {
 		switch e.expr {

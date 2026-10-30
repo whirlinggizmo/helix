@@ -551,21 +551,16 @@ class RCore {
 		return true;
 	}
 
-	/** Reads a file's bytes: through the program's `SetLoadFileDataCallback` when it has one, else one `SaveFileData` wrote, else one
-		of the program's, read now. raylib also gives the size through a pointer; here it is the bytes' `length`. A page can't wait
-		for a file, so there it doesn't compile: see `LoadFileDataAsync`.
+	/** raylib's file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileDataAsync` reads it.
 
 		@param fileName  The file.
-		@return  Its bytes, or null when it can't be read. */
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)")
 	public static function LoadFileData(fileName:String):Null<haxe.io.Bytes> {
-		var path = normalize(fileName);
-		var bytes = dataNow(path);
-		if (bytes == null)
-			Runtime.log(4, Runtime.notLoaded("LoadFileData", path));
-		return bytes;
+		throw "LoadFileData is unimplemented";
 	}
 
-	/** Frees bytes `LoadFileData` returned. There is nothing to free here.
+	/** Frees bytes `LoadFileDataAsync` gave. There is nothing to free here.
 
 		@param data  The bytes. */
 	public static function UnloadFileData(data:Null<haxe.io.Bytes>):Void {}

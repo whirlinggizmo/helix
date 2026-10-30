@@ -117,7 +117,7 @@ var maps:Array<MaterialMap>
 var params:Array<Float>
 ```
 
-- `new`: Creates a material. Materials are made by `Raylib.LoadMaterialDefault` and `Raylib.LoadModel`.
+- `new`: Creates a material. Materials are made by `Raylib.LoadMaterialDefault` and `Raylib.LoadModelAsync`.
   - `shader`: The shader.
   - `maps`: The maps.
   - `params`: The values.
@@ -199,7 +199,7 @@ var m15:Float
 
 *class* in [`ray/src/helix/ray/Mesh.hx`](../../ray/src/helix/ray/Mesh.hx), `import helix.ray.Mesh;`
 
-Represents raylib's `Mesh`: vertices, and the indices of its triangles when it has them. `Raylib.UploadMesh` sends them to the GPU; `Raylib.LoadModel` and the `GenMesh*` functions do it themselves.
+Represents raylib's `Mesh`: vertices, and the indices of its triangles when it has them. `Raylib.UploadMesh` sends them to the GPU; `Raylib.LoadModelAsync` and the `GenMesh*` functions do it themselves.
 
 ```haxe
 function new()
@@ -237,7 +237,7 @@ var materials:Array<Material>
 var meshMaterial:Array<Int>
 ```
 
-- `new`: Creates a model. Models are made by `Raylib.LoadModel` and `Raylib.LoadModelFromMesh`.
+- `new`: Creates a model. Models are made by `Raylib.LoadModelAsync` and `Raylib.LoadModelFromMesh`.
   - `meshes`: The meshes.
   - `materials`: The materials.
   - `meshMaterial`: Each mesh's material.
@@ -320,7 +320,7 @@ var normal:Vector3
 
 Provides raylib 5.5's API, as `raylib.h` names it, over helix-platform and helix-services: a program writes raylib, and it runs in a page and natively.
 
-A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a frame. Natively a load reads its file when called, as raylib's does; a page loads before `main` the files its program names, and the `...Async` loads, helix-ray's own, bring in the rest. A file loaded twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its files with constants. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here by module; what raylib has and helix-ray doesn't refuses to compile, naming itself.
+A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a frame. A page can't wait for a file, so on every target files are loaded by helix-ray's own `...Async` loads; raylib's `LoadTexture`, `LoadModel`, `LoadSound` and `LoadFileData` don't compile, naming the load to use. A file loaded twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its files with constants. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here by module; what raylib has and helix-ray doesn't refuses to compile, naming itself.
 
 ### Keys (KeyboardKey)
 
@@ -1194,10 +1194,10 @@ static function EndShaderMode():Void
   - `fileName`: The file.
   - `text`: Its text.
   - returns: True when it was written, or will be.
-- `LoadFileData`: Reads a file's bytes: through the program's `SetLoadFileDataCallback` when it has one, else one `SaveFileData` wrote, else one of the program's, read now. raylib also gives the size through a pointer; here it is the bytes' `length`. A page can't wait for a file, so there it doesn't compile: see `LoadFileDataAsync`.
+- `LoadFileData`: raylib's file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileDataAsync` reads it.
   - `fileName`: The file.
-  - returns: Its bytes, or null when it can't be read.
-- `UnloadFileData`: Frees bytes `LoadFileData` returned. There is nothing to free here.
+  - returns: Never returns: a call doesn't compile.
+- `UnloadFileData`: Frees bytes `LoadFileDataAsync` gave. There is nothing to free here.
   - `data`: The bytes.
 - `SaveFileData`: Writes a file's bytes: through the program's `SetSaveFileDataCallback` when it has one, else kept across runs as `SaveFileText`'s are.
   - `fileName`: The file.
@@ -1447,9 +1447,9 @@ static function EndTextureMode():Void
 static function SetTextureFilter(texture:Texture2D, filter:Int):Void
 ```
 
-- `LoadTexture`: Loads an image file as a texture, read now. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. A page can't wait for a file, so there it doesn't compile: see `LoadTextureAsync`.
-  - `fileName`: The file, as the program names it, such as "assets/player.png".
-  - returns: The texture; its `id` is 0 when the file couldn't be read.
+- `LoadTexture`: raylib's texture load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadTextureAsync` loads it.
+  - `fileName`: The file.
+  - returns: Never returns: a call doesn't compile.
 - `UnloadTexture`: Frees a texture: one load of its file, the GPU's copy with the last.
   - `texture`: The texture.
 - `IsTextureValid`: Returns whether a texture was loaded.
@@ -1624,9 +1624,9 @@ static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCol
 - `DrawGrid`: Draws a grid on the XZ plane, centered on the origin: its center lines darker, as raylib's.
   - `slices`: The lines each way.
   - `spacing`: The space between them.
-- `LoadModel`: Loads a model from a glTF or GLB file, read now: its meshes, their materials and its images. A file loaded again shares its first load's meshes and textures, with materials of its own; meshes go to the GPU when first drawn. A page can't wait for a file, so there it doesn't compile: see `LoadModelAsync`.
-  - `fileName`: The file, as the program names it, such as "assets/trophy.glb".
-  - returns: The model; with no meshes when the file couldn't be read.
+- `LoadModel`: raylib's model load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAsync` loads it.
+  - `fileName`: The file.
+  - returns: Never returns: a call doesn't compile.
 - `LoadModelFromMesh`: Makes a model of one mesh, with the default material.
   - `mesh`: The mesh.
   - returns: The model.
@@ -1651,7 +1651,7 @@ static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCol
   - `mesh`: The mesh.
   - `material`: The material.
   - `transform`: The transform.
-- `UploadMesh`: Sends a mesh's vertices to the GPU, so it can be drawn. The `GenMesh*` functions and `LoadModel` do it themselves.
+- `UploadMesh`: Sends a mesh's vertices to the GPU, so it can be drawn. The `GenMesh*` functions and `LoadModelAsync` do it themselves.
   - `mesh`: The mesh.
   - `isDynamic`: Whether it will change (raylib names it `dynamic`, a Haxe keyword); meshes here can't, so it is ignored.
 - `UnloadMesh`: Frees a mesh's GPU buffers.
@@ -1763,9 +1763,9 @@ static function SetMusicPan(music:Music, pan:Float):Void
   - `volume`: 0 (silent) to 1.
 - `GetMasterVolume`: Returns the volume of every sound.
   - returns: 0 (silent) to 1.
-- `LoadSound`: Loads a sound file whole. It decodes in the background; played before then, it starts once decoded. A file loaded again shares its first load's decoded sound. A page can't wait for a file, so there it doesn't compile: see `LoadSoundAsync`.
-  - `fileName`: The file, as the program names it, such as "assets/coin.wav".
-  - returns: The sound.
+- `LoadSound`: raylib's sound load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadSoundAsync` loads it.
+  - `fileName`: The file.
+  - returns: Never returns: a call doesn't compile.
 - `UnloadSound`: Frees a sound, stopping it: one load of its file, the decoded sound with the last.
   - `sound`: The sound.
 - `IsSoundValid`: Returns whether a sound was loaded.
@@ -2072,15 +2072,15 @@ static function LoadFileTextAsync(fileName:String, loaded:String -> Void, ?faile
 static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):Void
 ```
 
-- `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-ray's own, as a page can't wait for a file (`LoadTexture` doesn't compile there). Natively the file is read at once. Either way the answer comes at a later frame, never during the call.
+- `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page can't wait for a file. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the texture.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadModelAsync`: Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own, as `LoadTextureAsync` is for textures.
+- `LoadModelAsync`: Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own, in place of raylib's `LoadModel`. A file loaded again shares its first load's meshes and textures, with materials of its own.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the model.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadSoundAsync`: Loads a sound file and decodes it, answering when it is ready to play at once: helix-ray's own, as `LoadTextureAsync` is for textures. `InitAudioDevice` comes first.
+- `LoadSoundAsync`: Loads a sound file and decodes it, answering when it is ready to play at once: helix-ray's own, in place of raylib's `LoadSound`. A file loaded again shares its first load's decoded sound. `InitAudioDevice` comes first.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the sound.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
@@ -2088,7 +2088,7 @@ static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void,
   - `fileName`: The file.
   - `loaded`: Receives its text.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
-- `LoadFileDataAsync`: Reads a file's bytes, answering when they are read: helix-ray's own, as `LoadTextureAsync` is for textures. One `SaveFileData` wrote, or the program's `SetLoadFileDataCallback`, answers too.
+- `LoadFileDataAsync`: Reads a file's bytes, answering when they are read: helix-ray's own, in place of raylib's `LoadFileData`. The program's `SetLoadFileDataCallback` answers first, then what `SaveFileData` wrote, then the program's files.
   - `fileName`: The file.
   - `loaded`: Receives its bytes.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
