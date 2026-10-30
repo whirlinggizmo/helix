@@ -191,7 +191,9 @@ def macro_signature(source,sig):
     if not m:return sig
     result=re.fullmatch(r'ExprOf<(?:[\w]+\.)*(\w+)>',m.group(3))
     shown=result.group(1) if result else 'Void' if m.group(3)=='Expr' else m.group(3)
-    return f'{m.group(1) or ""}macro function {name}{" ".join(m.group(2).split())}:{shown}'
+    # An argument's ExprOf<T> is the T the program passes.
+    args=re.sub(r'ExprOf<((?:[^<>]|<[^<>]*>)*)>',lambda a:a.group(1),' '.join(m.group(2).split()))
+    return f'{m.group(1) or ""}macro function {name}{args}:{shown}'
 
 def member_lines(member,known,instance=()):
     """A public member as a Haxe signature and its doc, or None for a private one or the meta; instance names an abstract's properties,
@@ -230,6 +232,46 @@ def member_lines(member,known,instance=()):
         if (get,setter)==('inline','null'):final_,access='inline var ',''
         sig=f'{static}{final_}{name}{access}:{type_text(t,known)}'
     return sig,doc_text(member),member
+
+def member_block(members):
+    """Members as one block of signatures, then each one's doc."""
+    lines=['```haxe']+[sig for sig,_,_ in members]+['```','']
+    for sig,d,node_ in members:
+        if d:
+            lines.append(f'- `{sig.split("(")[0].split(":")[0].split()[-1]}`: {d}')
+            lines+=doc_lines(node_,'  ')
+    return lines+['']
+
+def section_of(node):
+    """A member's section as its class's build tagged it (@:section(id, title)), or None."""
+    meta=node.find('meta')
+    for m in (meta if meta is not None else []):
+        if m.get('n')==':section':
+            values=[e.text.strip('"') for e in m.findall('e')]
+            return (values[0],values[-1])
+    return None
+
+# A member that only refuses to compile, naming a raylib function helix-ray doesn't have (helix-ray's Missing.refuse).
+REFUSAL=re.compile(r"^raylib's `(\w+)` \(([\w.]+)\): not in helix-ray yet")
+
+def sectioned(members):
+    """A class's members: in one block, or, when its build tagged them by section (helix-ray's Raylib), a block under a heading for each,
+    its own untagged members first, and the members that only refuse to compile as a list of names by header."""
+    if not any(section_of(n) for _,_,n in members):return member_block(members)
+    groups={};order=[];refused={}
+    for sig,d,n in members:
+        m=REFUSAL.match(d or '')
+        if m:
+            refused.setdefault(m.group(2),[]).append(m.group(1));continue
+        key=section_of(n) or ('','Constants and colors')
+        if key not in groups:groups[key]=[];order.append(key)
+        groups[key].append((sig,d,n))
+    lines=[]
+    for key in order:lines+=[f'### {key[1]}','']+member_block(groups[key])
+    if refused:
+        lines+=['### Not in helix-ray yet','','Each of these is raylib\'s name, and a call to it doesn\'t compile, saying so.','']
+        for header in sorted(refused):lines+=[f'From `{header}`: '+', '.join(f'`{n}`' for n in refused[header])+'.','']
+    return lines
 
 def merged(js,cpp,output):
     """One description from both targets': js's, and cpp's adapters; writes it to output, the description the reference is made from.
@@ -294,15 +336,7 @@ def markdown(xml,native=frozenset()):
                 fields=[n+':'+type_text(k[0] if n.startswith('?') and k.get('path')=='Null' and len(k) else k,known) for n,k in zip(names,list(f)[:-1])]
                 lines+=['Written as an object where one is expected; a field marked `?` may be left out, for its default:','','```haxe','{'+', '.join(fields)+'}','```','']
                 members=[(sig+''.join(f' = {v[0].text}' for meta in n.findall('meta') for v in meta if v.get('n')==':value' and len(v)),d,n) for sig,d,n in members if not sig.split('(')[0].endswith(' new')]
-            if members:
-                lines.append('```haxe')
-                for sig,_,_ in members:lines.append(sig)
-                lines.append('```');lines.append('')
-                for sig,d,node_ in members:
-                    if d:
-                        lines.append(f'- `{sig.split("(")[0].split(":")[0].split()[-1]}`: {d}')
-                        lines+=doc_lines(node_,'  ')
-                lines.append('')
+            if members:lines+=sectioned(members)
         elif node.tag=='enum':
             for c in node:
                 if c.tag in ('haxe_doc','meta'):continue

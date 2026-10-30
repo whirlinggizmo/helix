@@ -18,11 +18,11 @@ TYPE=re.compile(r'^\s*(?:@:[^\n]*\s)*(?:extern\s+|final\s+|private\s+)*(class|in
 MEMBER=re.compile(r'^\s*(?:@:[\w.]+(?:\([^)]*\))?\s*)*((?:public\s+|static\s+|inline\s+|override\s+|final\s+|extern\s+|dynamic\s+)*)(function|var|final)\s+(\w+)')
 
 def documented(lines,i):
-    """Whether the declaration on line i follows a doc comment (metadata lines may sit between)."""
+    """Whether the declaration on line i follows a doc comment (metadata lines, and conditional compilation around them, may sit between)."""
     j=i-1
     while j>=0:
         line=lines[j].strip()
-        if line=='' or line.startswith('@:'):
+        if line=='' or line.startswith('@:') or line.startswith('#'):
             j-=1
             continue
         # A metadata call spread over lines (a list of names): back to its @: line, its parentheses balanced.
