@@ -32,7 +32,7 @@ class Runtime {
 	public static var window:Null<IWindow> = null;
 	public static var events:Null<IEvents> = null;
 	public static var graphics:Null<IGraphics> = null;
-	public static var batch:Null<Batch> = null;
+	public static var frame:Null<Frame> = null;
 	public static var time:Null<Time> = null;
 	public static var saves:Null<Saves> = null;
 	public static var output:Null<IAudio> = null;
@@ -47,10 +47,9 @@ class Runtime {
 
 	public static final files = new Map<String, Bytes>();
 
-	/** The frame: the clear color, whether the window should close, whether it was resized this frame, frames left of the `frames` option. */
-	public static var clearColor = 0xff000000;
-
+	/** The frame: whether the window should close, whether it was resized this frame, frames left of the `frames` option. */
 	public static var shouldClose = false;
+
 	public static var resized = false;
 	public static var framesLeft = -1;
 	public static var exitKey = 256;
@@ -133,7 +132,31 @@ class Runtime {
 			for (path in paths)
 				assets.load(path, bytes -> {
 					var lower = path.toLowerCase();
-					if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".tga"))
+					if (lower.endsWith(".glb") || lower.endsWith(".gltf")) {
+						files.set(path, bytes);
+						// A model's images are decoded now too, as LoadModel answers at once.
+						var embedded = [];
+						try {
+							var file = Gltf.read(bytes);
+							for (i in 0...file.list("images").length) {
+								var encoded = Models.imageBytes(file, i);
+								if (encoded != null)
+									embedded.push({key: Models.imageKey(path, file, i), bytes: encoded});
+							}
+						} catch (e:Dynamic) {
+							trace('$path: $e');
+						}
+						left += embedded.length;
+						for (image in embedded)
+							imageDecoder.decode(image.bytes, (pixels, width, height) -> {
+								images.set(image.key, {pixels: pixels, width: width, height: height});
+								one();
+							}, error -> {
+								trace('${image.key}: $error');
+								one();
+							});
+						one();
+					} else if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".tga"))
 						imageDecoder.decode(bytes, (pixels, width, height) -> {
 							images.set(path, {pixels: pixels, width: width, height: height});
 							one();
@@ -221,15 +244,20 @@ class Runtime {
 		events = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
 		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvasId: "canvas"});
 		#else
+		#if sdl_gpu
+		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gpu});
+		graphics = new helix.platform.adapters.graphics.sdl3gpu.Sdl3GpuGraphicsAdapter();
+		#else
 		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gl});
 		graphics = new helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter();
+		#end
 		events = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();
 		window.requestSize(width, height);
 		// The exit key closes a native window, as raylib's does; a page has none.
 		keyboard();
 		#end
 		window.title = title;
-		batch = new Batch(graphics);
+		frame = new Frame(graphics);
 		time = new Time(system);
 		poll();
 	}
@@ -290,13 +318,7 @@ class Runtime {
 
 	/** Draws the frame, shows it, and reads the next frame's input. */
 	public static function endFrame():Void {
-		var ratio = window.pixelRatio;
-		graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, clearColor);
-		batch.upload();
-		batch.draw(window.framebufferWidth / ratio, window.framebufferHeight / ratio);
-		graphics.endFrame();
-		graphics.present();
-		batch.clear();
+		frame.draw(window.framebufferWidth, window.framebufferHeight);
 		frames++;
 		if (framesLeft > 0 && --framesLeft == 0)
 			shouldClose = true;
@@ -337,8 +359,8 @@ class Runtime {
 	public static function close():Void {
 		for (f in closing)
 			f();
-		if (batch != null)
-			batch.dispose();
+		if (frame != null)
+			frame.dispose();
 		if (graphics != null)
 			graphics.dispose();
 		if (events != null)

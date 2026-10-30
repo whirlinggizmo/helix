@@ -6,10 +6,11 @@ program written as raylib is written runs in a page and natively.
 | Type | What |
 |---|---|
 | `helix.ray.Raylib` | raylib's functions, constants and colors, as `raylib.h` names them, with raymath's |
-| `helix.ray.Vector2`, `Rectangle`, `Color`, `Texture2D`, `Sound` | raylib's structs, with their fields |
+| `helix.ray.Vector2`, `Vector3`, `Color`, `Texture2D`, `Camera3D`, `Model`, `Shader`, `RenderTexture2D` and the rest | raylib's structs, with their fields |
 
-It is raylib's 2D part: the window and frame, the keyboard, mouse, touch and gamepads, shapes, textures, the default font, sounds and
-text files. 3D, shaders, fonts from files and images on the CPU aren't here yet.
+The window and frame, the keyboard, mouse, touch and gamepads, shapes, textures, the default font, sounds, text files; in 3D the
+camera, glTF and GLB models, meshes, shapes, render textures, rays; raylib's shaders, compiled as the program builds for every target.
+Not here yet: skinned models and animations, fonts from files, and images on the CPU.
 
 ## Using it
 
@@ -29,6 +30,7 @@ where a native program finds them, relative to itself (default `../web`).
 ## Examples
 
 - `basic`: raylib's basic window, with a circle at the mouse.
+- `model`: a glTF model on a grid, the camera turning about it.
 
 ## Depends on
 

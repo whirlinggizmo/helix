@@ -18,6 +18,10 @@ class Texture2D {
 	/** Gets the pixel format, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` for every texture loaded here. */
 	public var format:Int;
 
+	// A render texture's color, which raylib stores bottom row first, so it draws upside down unless flipped as raylib's programs do.
+	@:allow(helix.ray)
+	var flipped = false;
+
 	/** Creates a texture's record. Textures are made by `Raylib.LoadTexture`.
 
 		@param id  The handle.

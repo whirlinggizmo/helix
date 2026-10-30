@@ -1,15 +1,22 @@
 package helix.ray;
 
+#if macro
+import haxe.macro.Expr;
+#else
 import helix.ray.internal.DefaultFont;
+import helix.ray.internal.Matrices;
+import helix.ray.internal.Models;
 import helix.ray.internal.Runtime;
+#end
 
 /** Provides raylib 5.5's API, as `raylib.h` names it, over helix-platform and helix-services: a program writes raylib, and it runs in
 	a page and natively.
 
 	A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a
-	frame. The files under the program's directory are loaded before its `main` runs, so `LoadTexture` and `LoadSound` answer at once.
-	`SaveFileText` writes are kept across runs. This is the 2D part of raylib: no 3D, shaders, fonts other than the default, or images
-	on the CPU yet. */
+	frame. The files under the program's directory are loaded before its `main` runs, so `LoadTexture`, `LoadSound` and `LoadModel`
+	answer at once. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so
+	`LoadShader` names its files with constants. Not here yet: skinned models and animations, fonts other than the default, images on the
+	CPU, and the rest of raylib's less used corners. */
 class Raylib {
 	// ---- Keys (KeyboardKey) ----
 
@@ -527,6 +534,204 @@ class Raylib {
 	/** Pinch out gesture. */
 	public static inline final GESTURE_PINCH_OUT = 512;
 
+	// ---- Material maps (MaterialMapIndex) ----
+
+	/** Albedo material (same as: MATERIAL_MAP_DIFFUSE). */
+	public static inline final MATERIAL_MAP_ALBEDO = 0;
+
+	/** Metalness material (same as: MATERIAL_MAP_SPECULAR). */
+	public static inline final MATERIAL_MAP_METALNESS = 1;
+
+	/** Normal material. */
+	public static inline final MATERIAL_MAP_NORMAL = 2;
+
+	/** Roughness material. */
+	public static inline final MATERIAL_MAP_ROUGHNESS = 3;
+
+	/** Ambient occlusion material. */
+	public static inline final MATERIAL_MAP_OCCLUSION = 4;
+
+	/** Emission material. */
+	public static inline final MATERIAL_MAP_EMISSION = 5;
+
+	/** Heightmap material. */
+	public static inline final MATERIAL_MAP_HEIGHT = 6;
+
+	/** Cubemap material (NOTE: Uses GL_TEXTURE_CUBE_MAP). */
+	public static inline final MATERIAL_MAP_CUBEMAP = 7;
+
+	/** Irradiance material (NOTE: Uses GL_TEXTURE_CUBE_MAP). */
+	public static inline final MATERIAL_MAP_IRRADIANCE = 8;
+
+	/** Prefilter material (NOTE: Uses GL_TEXTURE_CUBE_MAP). */
+	public static inline final MATERIAL_MAP_PREFILTER = 9;
+
+	/** Brdf material. */
+	public static inline final MATERIAL_MAP_BRDF = 10;
+
+	// ---- Shader locations (ShaderLocationIndex) ----
+
+	/** Shader location: vertex attribute: position. */
+	public static inline final SHADER_LOC_VERTEX_POSITION = 0;
+
+	/** Shader location: vertex attribute: texcoord01. */
+	public static inline final SHADER_LOC_VERTEX_TEXCOORD01 = 1;
+
+	/** Shader location: vertex attribute: texcoord02. */
+	public static inline final SHADER_LOC_VERTEX_TEXCOORD02 = 2;
+
+	/** Shader location: vertex attribute: normal. */
+	public static inline final SHADER_LOC_VERTEX_NORMAL = 3;
+
+	/** Shader location: vertex attribute: tangent. */
+	public static inline final SHADER_LOC_VERTEX_TANGENT = 4;
+
+	/** Shader location: vertex attribute: color. */
+	public static inline final SHADER_LOC_VERTEX_COLOR = 5;
+
+	/** Shader location: matrix uniform: model-view-projection. */
+	public static inline final SHADER_LOC_MATRIX_MVP = 6;
+
+	/** Shader location: matrix uniform: view (camera transform). */
+	public static inline final SHADER_LOC_MATRIX_VIEW = 7;
+
+	/** Shader location: matrix uniform: projection. */
+	public static inline final SHADER_LOC_MATRIX_PROJECTION = 8;
+
+	/** Shader location: matrix uniform: model (transform). */
+	public static inline final SHADER_LOC_MATRIX_MODEL = 9;
+
+	/** Shader location: matrix uniform: normal. */
+	public static inline final SHADER_LOC_MATRIX_NORMAL = 10;
+
+	/** Shader location: vector uniform: view. */
+	public static inline final SHADER_LOC_VECTOR_VIEW = 11;
+
+	/** Shader location: vector uniform: diffuse color. */
+	public static inline final SHADER_LOC_COLOR_DIFFUSE = 12;
+
+	/** Shader location: vector uniform: specular color. */
+	public static inline final SHADER_LOC_COLOR_SPECULAR = 13;
+
+	/** Shader location: vector uniform: ambient color. */
+	public static inline final SHADER_LOC_COLOR_AMBIENT = 14;
+
+	/** Shader location: sampler2d texture: albedo (same as: SHADER_LOC_MAP_DIFFUSE). */
+	public static inline final SHADER_LOC_MAP_ALBEDO = 15;
+
+	/** Shader location: sampler2d texture: metalness (same as: SHADER_LOC_MAP_SPECULAR). */
+	public static inline final SHADER_LOC_MAP_METALNESS = 16;
+
+	/** Shader location: sampler2d texture: normal. */
+	public static inline final SHADER_LOC_MAP_NORMAL = 17;
+
+	/** Shader location: sampler2d texture: roughness. */
+	public static inline final SHADER_LOC_MAP_ROUGHNESS = 18;
+
+	/** Shader location: sampler2d texture: occlusion. */
+	public static inline final SHADER_LOC_MAP_OCCLUSION = 19;
+
+	/** Shader location: sampler2d texture: emission. */
+	public static inline final SHADER_LOC_MAP_EMISSION = 20;
+
+	/** Shader location: sampler2d texture: height. */
+	public static inline final SHADER_LOC_MAP_HEIGHT = 21;
+
+	/** Shader location: samplerCube texture: cubemap. */
+	public static inline final SHADER_LOC_MAP_CUBEMAP = 22;
+
+	/** Shader location: samplerCube texture: irradiance. */
+	public static inline final SHADER_LOC_MAP_IRRADIANCE = 23;
+
+	/** Shader location: samplerCube texture: prefilter. */
+	public static inline final SHADER_LOC_MAP_PREFILTER = 24;
+
+	/** Shader location: sampler2d texture: brdf. */
+	public static inline final SHADER_LOC_MAP_BRDF = 25;
+
+	/** Shader location: vertex attribute: boneIds. */
+	public static inline final SHADER_LOC_VERTEX_BONEIDS = 26;
+
+	/** Shader location: vertex attribute: boneWeights. */
+	public static inline final SHADER_LOC_VERTEX_BONEWEIGHTS = 27;
+
+	/** Shader location: array of matrices uniform: boneMatrices. */
+	public static inline final SHADER_LOC_BONE_MATRICES = 28;
+
+	// ---- Shader value types (ShaderUniformDataType) ----
+
+	/** Shader uniform type: float. */
+	public static inline final SHADER_UNIFORM_FLOAT = 0;
+
+	/** Shader uniform type: vec2 (2 float). */
+	public static inline final SHADER_UNIFORM_VEC2 = 1;
+
+	/** Shader uniform type: vec3 (3 float). */
+	public static inline final SHADER_UNIFORM_VEC3 = 2;
+
+	/** Shader uniform type: vec4 (4 float). */
+	public static inline final SHADER_UNIFORM_VEC4 = 3;
+
+	/** Shader uniform type: int. */
+	public static inline final SHADER_UNIFORM_INT = 4;
+
+	/** Shader uniform type: ivec2 (2 int). */
+	public static inline final SHADER_UNIFORM_IVEC2 = 5;
+
+	/** Shader uniform type: ivec3 (3 int). */
+	public static inline final SHADER_UNIFORM_IVEC3 = 6;
+
+	/** Shader uniform type: ivec4 (4 int). */
+	public static inline final SHADER_UNIFORM_IVEC4 = 7;
+
+	/** Shader uniform type: sampler2d. */
+	public static inline final SHADER_UNIFORM_SAMPLER2D = 8;
+
+	// ---- Camera modes (CameraMode) ----
+
+	/** Camera custom, controlled by user (UpdateCamera() does nothing). */
+	public static inline final CAMERA_CUSTOM = 0;
+
+	/** Camera free mode. */
+	public static inline final CAMERA_FREE = 1;
+
+	/** Camera orbital, around target, zoom supported. */
+	public static inline final CAMERA_ORBITAL = 2;
+
+	/** Camera first person. */
+	public static inline final CAMERA_FIRST_PERSON = 3;
+
+	/** Camera third person. */
+	public static inline final CAMERA_THIRD_PERSON = 4;
+
+	// ---- Camera projections (CameraProjection) ----
+
+	/** Perspective projection. */
+	public static inline final CAMERA_PERSPECTIVE = 0;
+
+	/** Orthographic projection. */
+	public static inline final CAMERA_ORTHOGRAPHIC = 1;
+
+	// ---- Texture filters (TextureFilter) ----
+
+	/** No filter, just pixel approximation. */
+	public static inline final TEXTURE_FILTER_POINT = 0;
+
+	/** Linear filtering. */
+	public static inline final TEXTURE_FILTER_BILINEAR = 1;
+
+	/** Trilinear filtering (linear with mipmaps). */
+	public static inline final TEXTURE_FILTER_TRILINEAR = 2;
+
+	/** Anisotropic filtering 4x. */
+	public static inline final TEXTURE_FILTER_ANISOTROPIC_4X = 3;
+
+	/** Anisotropic filtering 8x. */
+	public static inline final TEXTURE_FILTER_ANISOTROPIC_8X = 4;
+
+	/** Anisotropic filtering 16x. */
+	public static inline final TEXTURE_FILTER_ANISOTROPIC_16X = 5;
+
 	// ---- Colors ----
 
 	/** Light Gray. */
@@ -607,6 +812,21 @@ class Raylib {
 	/** My own White (raylib logo). */
 	public static final RAYWHITE:Color = new Color(245, 245, 245, 255);
 
+	/** The diffuse map, the same as `MATERIAL_MAP_ALBEDO`. */
+	public static inline final MATERIAL_MAP_DIFFUSE = 0;
+
+	/** The specular map, the same as `MATERIAL_MAP_METALNESS`. */
+	public static inline final MATERIAL_MAP_SPECULAR = 1;
+
+	/** The diffuse texture's location, the same as `SHADER_LOC_MAP_ALBEDO`. */
+	public static inline final SHADER_LOC_MAP_DIFFUSE = 15;
+
+	/** The specular texture's location, the same as `SHADER_LOC_MAP_METALNESS`. */
+	public static inline final SHADER_LOC_MAP_SPECULAR = 16;
+
+	/** The number of a material's maps. */
+	public static inline final MAX_MATERIAL_MAPS = 12;
+
 	/** The pixel format of every texture loaded here: 8-bit red, green, blue and alpha. */
 	public static inline final PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 = 7;
 
@@ -619,6 +839,38 @@ class Raylib {
 	/** Radians to degrees. */
 	public static inline final RAD2DEG = 180 / PI;
 
+	// ---- Shaders, compiled as the program builds ----
+
+	/** Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the
+		program builds, for every target, so their names are constants; the files are found under `-D ray-files` (default `web`), as the
+		program's other files are.
+
+		@param vsFileName  The vertex stage's file, or null.
+		@param fsFileName  The fragment stage's file, or null.
+		@return  The shader. */
+	public static macro function LoadShader(vsFileName:Expr, fsFileName:Expr):Expr {
+		var vs = helix.ray.internal.ShaderMacro.text(vsFileName, true),
+			fs = helix.ray.internal.ShaderMacro.text(fsFileName, true);
+		var program = helix.ray.internal.ShaderMacro.program(vs == null ? "default vertex" : vs.name, vs == null ? null : vs.text,
+			fs == null ? "default fragment" : fs.name, fs == null ? null : fs.text, haxe.macro.Context.currentPos());
+		return macro helix.ray.Raylib.makeShader($program);
+	}
+
+	/** Loads a shader from raylib GLSL text, either null for raylib's default stage. It is compiled as the program builds, so the text is
+		a constant.
+
+		@param vsCode  The vertex stage's text, or null.
+		@param fsCode  The fragment stage's text, or null.
+		@return  The shader. */
+	public static macro function LoadShaderFromMemory(vsCode:Expr, fsCode:Expr):Expr {
+		var vs = helix.ray.internal.ShaderMacro.text(vsCode, false),
+			fs = helix.ray.internal.ShaderMacro.text(fsCode, false);
+		var program = helix.ray.internal.ShaderMacro.program("vertex text", vs == null ? null : vs.text, "fragment text", fs == null ? null : fs.text,
+			haxe.macro.Context.currentPos());
+		return macro helix.ray.Raylib.makeShader($program);
+	}
+
+	#if !macro
 	// ---- Window and frame ----
 
 	/** Opens the window and its graphics. In a page the canvas fills the page, and width and height are ignored.
@@ -629,6 +881,9 @@ class Raylib {
 	public static function InitWindow(width:Int, height:Int, title:String):Void {
 		Runtime.open(width, height, title);
 		start = Runtime.system.getTime();
+		// raylib seeds its random numbers from the time, unless SetRandomSeed says otherwise.
+		if (!seeded)
+			SetRandomSeed(Std.int(Date.now().getTime() % 0x7fffffff));
 	}
 
 	/** Closes the window, after keeping what `SaveFileText` wrote. */
@@ -708,6 +963,28 @@ class Raylib {
 		configFlags = flags;
 	}
 
+	/** Sets flags on the open window (`FLAG_*`). A window here is resizable whatever they say, and the others aren't read.
+
+		@param flags  The flags, or'd together. */
+	public static function SetWindowState(flags:Int):Void {
+		configFlags |= flags;
+	}
+
+	/** Clears flags on the open window (`FLAG_*`).
+
+		@param flags  The flags, or'd together. */
+	public static function ClearWindowState(flags:Int):Void {
+		configFlags &= ~flags;
+	}
+
+	/** Returns whether flags are set on the window.
+
+		@param flag  The flags, or'd together.
+		@return  True when all of them are. */
+	public static function IsWindowState(flag:Int):Bool {
+		return configFlags & flag == flag;
+	}
+
 	/** Sets the frame rate aimed for. Frames here follow the display's refresh, whatever it is set to.
 
 		@param fps  The frames a second. */
@@ -747,7 +1024,9 @@ class Raylib {
 	}
 
 	/** Begins a frame's drawing. */
-	public static function BeginDrawing():Void {}
+	public static function BeginDrawing():Void {
+		Runtime.frame.begin(GetScreenWidth(), GetScreenHeight());
+	}
 
 	/** Ends a frame's drawing: shows it, then reads the next frame's input. */
 	public static function EndDrawing():Void {
@@ -758,8 +1037,7 @@ class Raylib {
 
 		@param color  The color. */
 	public static function ClearBackground(color:Color):Void {
-		Runtime.batch.clear();
-		Runtime.clearColor = (color.a << 24) | (color.r << 16) | (color.g << 8) | color.b;
+		Runtime.frame.clear((color.a << 24) | (color.r << 16) | (color.g << 8) | color.b);
 	}
 
 	/** Returns a random whole number from min to max, both included.
@@ -786,6 +1064,7 @@ class Raylib {
 		@param seed  The seed. */
 	public static function SetRandomSeed(seed:Int):Void {
 		Raylib.seed = seed == 0 ? 1 : seed;
+		seeded = true;
 	}
 
 	// ---- Keyboard ----
@@ -962,6 +1241,14 @@ class Raylib {
 		if (gesture != GESTURE_TAP)
 			return false;
 		return Runtime.touch().pressed.length > 0 || Runtime.mouse().isButtonPressed(Left);
+	}
+
+	/** Returns the gesture this frame: `GESTURE_TAP` for a finger touching or the left mouse button pressed, else `GESTURE_NONE`. Only
+		taps are read here.
+
+		@return  The gesture (`GESTURE_*`). */
+	public static function GetGestureDetected():Int {
+		return IsGestureDetected(GESTURE_TAP) ? GESTURE_TAP : GESTURE_NONE;
 	}
 
 	// ---- Gamepads ----
@@ -1196,10 +1483,10 @@ class Raylib {
 		@param v3  The third point.
 		@param color  The color. */
 	public static function DrawTriangle(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void {
-		var w = Runtime.batch.white;
-		Runtime.batch.vertex(w, v1.x, v1.y, 0, 0, color);
-		Runtime.batch.vertex(w, v2.x, v2.y, 0, 0, color);
-		Runtime.batch.vertex(w, v3.x, v3.y, 0, 0, color);
+		var w = Runtime.frame.white;
+		flat(w, v1.x, v1.y, 0, 0, color);
+		flat(w, v2.x, v2.y, 0, 0, color);
+		flat(w, v3.x, v3.y, 0, 0, color);
 	}
 
 	/** Returns whether two rectangles overlap.
@@ -1359,8 +1646,11 @@ class Raylib {
 			s = Math.sin(angle);
 		var xs = [-origin.x, dest.width - origin.x],
 			ys = [-origin.y, dest.height - origin.y];
-		var corner = (i:Int, j:Int, u:Float,
-			v:Float) -> Runtime.batch.vertex(texture.id, dest.x + xs[i] * c - ys[j] * s, dest.y + xs[i] * s + ys[j] * c, u, v, tint);
+		if (texture.flipped) {
+			v0 = 1 - v0;
+			v1 = 1 - v1;
+		}
+		var corner = (i:Int, j:Int, u:Float, v:Float) -> flat(texture.id, dest.x + xs[i] * c - ys[j] * s, dest.y + xs[i] * s + ys[j] * c, u, v, tint);
 		corner(0, 0, u0, v0);
 		corner(0, 1, u0, v1);
 		corner(1, 1, u1, v1);
@@ -1576,7 +1866,7 @@ class Raylib {
 		@return  True when it exists. */
 	public static function FileExists(fileName:String):Bool {
 		var path = normalize(fileName);
-		return Runtime.saves != null && Runtime.saves.hasKey(SAVED + path) || Runtime.files.exists(path) || Runtime.images.exists(path);
+		return Runtime.saves.hasKey(SAVED + path) || Runtime.files.exists(path) || Runtime.images.exists(path);
 	}
 
 	/** Reads a text file: one `SaveFileText` wrote, or one of the program's.
@@ -1585,7 +1875,7 @@ class Raylib {
 		@return  Its text, or null when it doesn't exist. */
 	public static function LoadFileText(fileName:String):Null<String> {
 		var path = normalize(fileName);
-		if (Runtime.saves != null && Runtime.saves.hasKey(SAVED + path))
+		if (Runtime.saves.hasKey(SAVED + path))
 			return Runtime.saves.getString(SAVED + path, "");
 		var bytes = Runtime.files.get(path);
 		return bytes == null ? null : bytes.toString();
@@ -1601,15 +1891,29 @@ class Raylib {
 
 		@param fileName  The file.
 		@param text  Its text.
-		@return  True, or false when the saves weren't read. */
+		@return  True. */
 	public static function SaveFileText(fileName:String, text:String):Bool {
-		if (Runtime.saves == null)
-			return false;
 		Runtime.saves.setString(SAVED + normalize(fileName), text);
 		return true;
 	}
 
 	// ---- Colors ----
+
+	/** Returns a color as four numbers, 0 to 1 each.
+
+		@param color  The color.
+		@return  Red, green, blue and alpha as x, y, z and w. */
+	public static function ColorNormalize(color:Color):Vector4 {
+		return new Vector4(color.r / 255, color.g / 255, color.b / 255, color.a / 255);
+	}
+
+	/** Returns a color from four numbers, 0 to 1 each.
+
+		@param normalized  Red, green, blue and alpha as x, y, z and w.
+		@return  The color. */
+	public static function ColorFromNormalized(normalized:Vector4):Color {
+		return new Color(Std.int(normalized.x * 255), Std.int(normalized.y * 255), Std.int(normalized.z * 255), Std.int(normalized.w * 255));
+	}
 
 	/** Returns a color with its alpha scaled.
 
@@ -1782,6 +2086,7 @@ class Raylib {
 	static var fps = 60.;
 	static var masterVolume = 1.;
 	static var seed = 0x2545f491;
+	static var seeded = false;
 	static var lastMouseX = 0.;
 	static var lastMouseY = 0.;
 	static var lastPointerX = 0.;
@@ -1867,14 +2172,19 @@ class Raylib {
 		return font;
 	}
 
+	// An immediate vertex in 2D, at z 0.
+	static inline function flat(texture:Int, x:Float, y:Float, u:Float, v:Float, color:Color):Void {
+		Runtime.frame.vertex(texture, false, x, y, 0, u, v, color);
+	}
+
 	static function quad(x:Float, y:Float, w:Float, h:Float, color:Color):Void {
-		var b = Runtime.batch, t = b.white;
-		b.vertex(t, x, y, 0, 0, color);
-		b.vertex(t, x, y + h, 0, 0, color);
-		b.vertex(t, x + w, y + h, 0, 0, color);
-		b.vertex(t, x, y, 0, 0, color);
-		b.vertex(t, x + w, y + h, 0, 0, color);
-		b.vertex(t, x + w, y, 0, 0, color);
+		var t = Runtime.frame.white;
+		flat(t, x, y, 0, 0, color);
+		flat(t, x, y + h, 0, 0, color);
+		flat(t, x + w, y + h, 0, 0, color);
+		flat(t, x, y, 0, 0, color);
+		flat(t, x + w, y + h, 0, 0, color);
+		flat(t, x + w, y, 0, 0, color);
 	}
 
 	static function line(x1:Float, y1:Float, x2:Float, y2:Float, thick:Float, color:Color):Void {
@@ -1882,13 +2192,13 @@ class Raylib {
 		if (length == 0)
 			return;
 		var nx = -dy / length * thick / 2, ny = dx / length * thick / 2;
-		var b = Runtime.batch, t = b.white;
-		b.vertex(t, x1 + nx, y1 + ny, 0, 0, color);
-		b.vertex(t, x1 - nx, y1 - ny, 0, 0, color);
-		b.vertex(t, x2 - nx, y2 - ny, 0, 0, color);
-		b.vertex(t, x1 + nx, y1 + ny, 0, 0, color);
-		b.vertex(t, x2 - nx, y2 - ny, 0, 0, color);
-		b.vertex(t, x2 + nx, y2 + ny, 0, 0, color);
+		var t = Runtime.frame.white;
+		flat(t, x1 + nx, y1 + ny, 0, 0, color);
+		flat(t, x1 - nx, y1 - ny, 0, 0, color);
+		flat(t, x2 - nx, y2 - ny, 0, 0, color);
+		flat(t, x1 + nx, y1 + ny, 0, 0, color);
+		flat(t, x2 - nx, y2 - ny, 0, 0, color);
+		flat(t, x2 + nx, y2 + ny, 0, 0, color);
 	}
 
 	static function frame(x:Float, y:Float, w:Float, h:Float, thick:Float, color:Color):Void {
@@ -1904,12 +2214,12 @@ class Raylib {
 	}
 
 	static function circle(cx:Float, cy:Float, radius:Float, color:Color):Void {
-		var n = segments(radius), b = Runtime.batch, t = b.white;
+		var n = segments(radius), t = Runtime.frame.white;
 		for (i in 0...n) {
 			var a0 = i / n * Math.PI * 2, a1 = (i + 1) / n * Math.PI * 2;
-			b.vertex(t, cx, cy, 0, 0, color);
-			b.vertex(t, cx + Math.cos(a0) * radius, cy + Math.sin(a0) * radius, 0, 0, color);
-			b.vertex(t, cx + Math.cos(a1) * radius, cy + Math.sin(a1) * radius, 0, 0, color);
+			flat(t, cx, cy, 0, 0, color);
+			flat(t, cx + Math.cos(a0) * radius, cy + Math.sin(a0) * radius, 0, 0, color);
+			flat(t, cx + Math.cos(a1) * radius, cy + Math.sin(a1) * radius, 0, 0, color);
 		}
 	}
 
@@ -1920,4 +2230,1326 @@ class Raylib {
 			line(cx + Math.cos(a0) * radius, cy + Math.sin(a0) * radius, cx + Math.cos(a1) * radius, cy + Math.sin(a1) * radius, 1, color);
 		}
 	}
+
+	// ---- 2D camera ----
+
+	/** Draws through a 2D camera until `EndMode2D`.
+
+		@param camera  The camera. */
+	public static function BeginMode2D(camera:Camera2D):Void {
+		Runtime.frame.cut();
+		Runtime.frame.view = Matrices.of(GetCameraMatrix2D(camera));
+	}
+
+	/** Goes back to drawing in the screen's pixels. */
+	public static function EndMode2D():Void {
+		Runtime.frame.screen2D();
+	}
+
+	/** Returns a 2D camera's transform, from the world to the screen.
+
+		@param camera  The camera.
+		@return  The matrix. */
+	public static function GetCameraMatrix2D(camera:Camera2D):Matrix {
+		var m = Matrices.translate(-camera.target.x, -camera.target.y, 0);
+		m = Matrices.multiply(m, Matrices.rotate(0, 0, 1, camera.rotation * DEG2RAD));
+		m = Matrices.multiply(m, Matrices.scale(camera.zoom, camera.zoom, 1));
+		m = Matrices.multiply(m, Matrices.translate(camera.offset.x, camera.offset.y, 0));
+		return Matrices.to(m);
+	}
+
+	/** Returns where a point in a 2D camera's world is on the screen.
+
+		@param position  The point.
+		@param camera  The camera.
+		@return  The screen position. */
+	public static function GetWorldToScreen2D(position:Vector2, camera:Camera2D):Vector2 {
+		var p = Matrices.point(Matrices.of(GetCameraMatrix2D(camera)), position.x, position.y, 0);
+		return new Vector2(p[0], p[1]);
+	}
+
+	/** Returns where a screen position is in a 2D camera's world.
+
+		@param position  The screen position.
+		@param camera  The camera.
+		@return  The point. */
+	public static function GetScreenToWorld2D(position:Vector2, camera:Camera2D):Vector2 {
+		var p = Matrices.point(Matrices.invert(Matrices.of(GetCameraMatrix2D(camera))), position.x, position.y, 0);
+		return new Vector2(p[0], p[1]);
+	}
+
+	// ---- 3D camera ----
+
+	/** Draws in 3D through a camera until `EndMode3D`, with depth.
+
+		@param camera  The camera. */
+	public static function BeginMode3D(camera:Camera3D):Void {
+		var f = Runtime.frame;
+		f.cut();
+		f.in3D = true;
+		f.view = cameraView(camera);
+		f.projection = cameraProjection(camera, f.width / f.height);
+	}
+
+	/** Goes back to drawing in 2D, in the screen's pixels. */
+	public static function EndMode3D():Void {
+		Runtime.frame.screen2D();
+		Runtime.frame.in3D = false;
+	}
+
+	/** Moves a camera as one of raylib's modes does: `CAMERA_ORBITAL` turns it about its target, half a radian a second, and the
+		wheel moves it closer; `CAMERA_FREE`, `CAMERA_FIRST_PERSON` and `CAMERA_THIRD_PERSON` move it by WASD, and turn it by the mouse;
+		`CAMERA_CUSTOM` leaves it.
+
+		@param camera  The camera, changed.
+		@param mode  The mode (`CAMERA_*`). */
+	public static function UpdateCamera(camera:Camera3D, mode:Int):Void {
+		var dt = GetFrameTime();
+		switch mode {
+			case CAMERA_ORBITAL:
+				var offset = Vector3Subtract(camera.position, camera.target);
+				offset = Vector3RotateByAxisAngle(offset, camera.up, .5 * dt);
+				var wheel = GetMouseWheelMove();
+				if (wheel != 0) {
+					var d = Vector3Length(offset) - wheel;
+					if (d > .1)
+						offset = Vector3Scale(Vector3Normalize(offset), d);
+				}
+				camera.position = Vector3Add(camera.target, offset);
+			case CAMERA_FREE | CAMERA_FIRST_PERSON | CAMERA_THIRD_PERSON:
+				var forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+				if (mode != CAMERA_FREE)
+					forward = Vector3Normalize(new Vector3(forward.x, 0, forward.z));
+				var right = Vector3Normalize(Vector3CrossProduct(forward, camera.up));
+				var move = new Vector3();
+				var speed = 5.4 * dt;
+				if (IsKeyDown(KEY_W))
+					move = Vector3Add(move, Vector3Scale(forward, speed));
+				if (IsKeyDown(KEY_S))
+					move = Vector3Subtract(move, Vector3Scale(forward, speed));
+				if (IsKeyDown(KEY_D))
+					move = Vector3Add(move, Vector3Scale(right, speed));
+				if (IsKeyDown(KEY_A))
+					move = Vector3Subtract(move, Vector3Scale(right, speed));
+				camera.position = Vector3Add(camera.position, move);
+				camera.target = Vector3Add(camera.target, move);
+				var delta = GetMouseDelta();
+				var look = Vector3Subtract(camera.target, camera.position);
+				look = Vector3RotateByAxisAngle(look, camera.up, -delta.x * .003);
+				look = Vector3RotateByAxisAngle(look, right, -delta.y * .003);
+				camera.target = Vector3Add(camera.position, look);
+			case _:
+		}
+	}
+
+	/** Returns a camera's view, as `BeginMode3D` uses it.
+
+		@param camera  The camera.
+		@return  The matrix. */
+	public static function GetCameraMatrix(camera:Camera3D):Matrix {
+		return Matrices.to(cameraView(camera));
+	}
+
+	/** Returns the ray from a camera through a screen position, as raylib's picking uses it.
+
+		@param position  The screen position.
+		@param camera  The camera.
+		@return  The ray. */
+	public static function GetScreenToWorldRay(position:Vector2, camera:Camera3D):Ray {
+		return GetScreenToWorldRayEx(position, camera, GetScreenWidth(), GetScreenHeight());
+	}
+
+	/** Returns the ray from a camera through a position in a view of a size, such as a render texture's.
+
+		@param position  The position in the view.
+		@param camera  The camera.
+		@param width  The view's width.
+		@param height  The view's height.
+		@return  The ray. */
+	public static function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int):Ray {
+		var x = 2 * position.x / width - 1, y = 1 - 2 * position.y / height;
+		var inverse = Matrices.invert(Matrices.multiply(cameraView(camera), cameraProjection(camera, width / height)));
+		function unproject(z:Float):Array<Float> {
+			var p = [
+				inverse[0] * x + inverse[4] * y + inverse[8] * z + inverse[12],
+				inverse[1] * x + inverse[5] * y + inverse[9] * z + inverse[13],
+				inverse[2] * x + inverse[6] * y + inverse[10] * z + inverse[14],
+				inverse[3] * x + inverse[7] * y + inverse[11] * z + inverse[15]
+			];
+			return [p[0] / p[3], p[1] / p[3], p[2] / p[3]];
+		}
+		var near = unproject(-1), far = unproject(1);
+		var origin = camera.projection == CAMERA_ORTHOGRAPHIC ? new Vector3(near[0], near[1], near[2]) : camera.position;
+		return new Ray(new Vector3(origin.x, origin.y, origin.z), Vector3Normalize(new Vector3(far[0] - near[0], far[1] - near[1], far[2] - near[2])));
+	}
+
+	/** Returns the ray from a camera through a screen position: raylib's old name for `GetScreenToWorldRay`.
+
+		@param position  The screen position.
+		@param camera  The camera.
+		@return  The ray. */
+	public static function GetMouseRay(position:Vector2, camera:Camera3D):Ray {
+		return GetScreenToWorldRay(position, camera);
+	}
+
+	/** Returns where a point in the world is on the screen.
+
+		@param position  The point.
+		@param camera  The camera.
+		@return  The screen position. */
+	public static function GetWorldToScreen(position:Vector3, camera:Camera3D):Vector2 {
+		return GetWorldToScreenEx(position, camera, GetScreenWidth(), GetScreenHeight());
+	}
+
+	/** Returns where a point in the world is in a view of a size.
+
+		@param position  The point.
+		@param camera  The camera.
+		@param width  The view's width.
+		@param height  The view's height.
+		@return  The position in the view. */
+	public static function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int):Vector2 {
+		var m = Matrices.multiply(cameraView(camera), cameraProjection(camera, width / height));
+		var x = m[0] * position.x + m[4] * position.y + m[8] * position.z + m[12];
+		var y = m[1] * position.x + m[5] * position.y + m[9] * position.z + m[13];
+		var w = m[3] * position.x + m[7] * position.y + m[11] * position.z + m[15];
+		if (w == 0)
+			w = 1;
+		return new Vector2((x / w + 1) / 2 * width, (1 - y / w) / 2 * height);
+	}
+
+	/** Returns how far the mouse moved since the last frame, in the screen's pixels.
+
+		@return  The movement. */
+	public static function GetMouseDelta():Vector2 {
+		var now = GetMousePosition();
+		var frame = Runtime.frames;
+		if (frame != deltaFrame) {
+			deltaFrame = frame;
+			deltaX = now.x - previousX;
+			deltaY = now.y - previousY;
+			previousX = now.x;
+			previousY = now.y;
+		}
+		return new Vector2(deltaX, deltaY);
+	}
+
+	// ---- 3D shapes ----
+
+	/** Draws a line in 3D.
+
+		@param startPos  The start.
+		@param endPos  The end.
+		@param color  The color. */
+	public static function DrawLine3D(startPos:Vector3, endPos:Vector3, color:Color):Void {
+		var t = Runtime.frame.white;
+		Runtime.frame.vertex(t, true, startPos.x, startPos.y, startPos.z, 0, 0, color);
+		Runtime.frame.vertex(t, true, endPos.x, endPos.y, endPos.z, 0, 0, color);
+	}
+
+	/** Draws a filled box.
+
+		@param position  Its center.
+		@param width  Its size along x.
+		@param height  Along y.
+		@param length  Along z.
+		@param color  The color. */
+	public static function DrawCube(position:Vector3, width:Float, height:Float, length:Float, color:Color):Void {
+		var x = position.x, y = position.y, z = position.z, w = width / 2, h = height / 2, l = length / 2;
+		var f = Runtime.frame, t = f.white;
+		function face(nx:Float, ny:Float, nz:Float, corners:Array<Float>):Void {
+			f.nx = nx;
+			f.ny = ny;
+			f.nz = nz;
+			for (i in [0, 1, 2, 0, 2, 3])
+				f.vertex(t, false, x + corners[i * 3], y + corners[i * 3 + 1], z + corners[i * 3 + 2], 0, 0, color);
+		}
+		face(0, 0, 1, [-w, -h, l, w, -h, l, w, h, l, -w, h, l]);
+		face(0, 0, -1, [-w, -h, -l, -w, h, -l, w, h, -l, w, -h, -l]);
+		face(0, 1, 0, [-w, h, -l, -w, h, l, w, h, l, w, h, -l]);
+		face(0, -1, 0, [-w, -h, -l, w, -h, -l, w, -h, l, -w, -h, l]);
+		face(1, 0, 0, [w, -h, -l, w, h, -l, w, h, l, w, -h, l]);
+		face(-1, 0, 0, [-w, -h, -l, -w, -h, l, -w, h, l, -w, h, -l]);
+		f.nx = 0;
+		f.ny = 0;
+		f.nz = 1;
+	}
+
+	/** Draws a filled box.
+
+		@param position  Its center.
+		@param size  Its size.
+		@param color  The color. */
+	public static function DrawCubeV(position:Vector3, size:Vector3, color:Color):Void {
+		DrawCube(position, size.x, size.y, size.z, color);
+	}
+
+	/** Draws a box's edges.
+
+		@param position  Its center.
+		@param width  Its size along x.
+		@param height  Along y.
+		@param length  Along z.
+		@param color  The color. */
+	public static function DrawCubeWires(position:Vector3, width:Float, height:Float, length:Float, color:Color):Void {
+		var w = width / 2, h = height / 2, l = length / 2;
+		var min = new Vector3(position.x - w, position.y - h, position.z - l),
+			max = new Vector3(position.x + w, position.y + h, position.z + l);
+		DrawBoundingBox(new BoundingBox(min, max), color);
+	}
+
+	/** Draws a box's edges.
+
+		@param position  Its center.
+		@param size  Its size.
+		@param color  The color. */
+	public static function DrawCubeWiresV(position:Vector3, size:Vector3, color:Color):Void {
+		DrawCubeWires(position, size.x, size.y, size.z, color);
+	}
+
+	/** Draws a bounding box's edges.
+
+		@param box  The box.
+		@param color  The color. */
+	public static function DrawBoundingBox(box:BoundingBox, color:Color):Void {
+		var a = box.min, b = box.max;
+		var c = [
+			[a.x, a.y, a.z], [b.x, a.y, a.z], [b.x, b.y, a.z], [a.x, b.y, a.z],
+			[a.x, a.y, b.z], [b.x, a.y, b.z], [b.x, b.y, b.z], [a.x, b.y, b.z]
+		];
+		for (e in [
+			[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]])
+			DrawLine3D(new Vector3(c[e[0]][0], c[e[0]][1], c[e[0]][2]), new Vector3(c[e[1]][0], c[e[1]][1], c[e[1]][2]), color);
+	}
+
+	/** Draws a filled sphere, 16 rings and 16 slices.
+
+		@param centerPos  Its center.
+		@param radius  Its radius.
+		@param color  The color. */
+	public static function DrawSphere(centerPos:Vector3, radius:Float, color:Color):Void {
+		DrawSphereEx(centerPos, radius, 16, 16, color);
+	}
+
+	/** Draws a filled sphere.
+
+		@param centerPos  Its center.
+		@param radius  Its radius.
+		@param rings  Rings top to bottom.
+		@param slices  Slices around.
+		@param color  The color. */
+	public static function DrawSphereEx(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void {
+		var f = Runtime.frame, t = f.white;
+		function at(r:Int, s:Int):Array<Float> {
+			var phi = Math.PI * r / rings, theta = Math.PI * 2 * s / slices;
+			return [Math.sin(phi) * Math.cos(theta), Math.cos(phi), Math.sin(phi) * Math.sin(theta)];
+		}
+		function put(p:Array<Float>):Void {
+			f.nx = p[0];
+			f.ny = p[1];
+			f.nz = p[2];
+			f.vertex(t, false, centerPos.x + p[0] * radius, centerPos.y + p[1] * radius, centerPos.z + p[2] * radius, 0, 0, color);
+		}
+		for (r in 0...rings)
+			for (s in 0...slices) {
+				var a = at(r, s), b = at(r, s + 1), c = at(r + 1, s), d = at(r + 1, s + 1);
+				for (p in [a, b, c, c, b, d])
+					put(p);
+			}
+		f.nx = 0;
+		f.ny = 0;
+		f.nz = 1;
+	}
+
+	/** Draws a sphere's wires.
+
+		@param centerPos  Its center.
+		@param radius  Its radius.
+		@param rings  Rings top to bottom.
+		@param slices  Slices around.
+		@param color  The color. */
+	public static function DrawSphereWires(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void {
+		function at(r:Int, s:Int):Vector3 {
+			var phi = Math.PI * r / rings, theta = Math.PI * 2 * s / slices;
+			return new Vector3(centerPos.x
+				+ Math.sin(phi) * Math.cos(theta) * radius, centerPos.y
+				+ Math.cos(phi) * radius,
+				centerPos.z
+				+ Math.sin(phi) * Math.sin(theta) * radius);
+		}
+		for (r in 0...rings)
+			for (s in 0...slices) {
+				DrawLine3D(at(r, s), at(r + 1, s), color);
+				DrawLine3D(at(r, s), at(r, s + 1), color);
+			}
+	}
+
+	/** Draws a flat rectangle on the XZ plane, facing up.
+
+		@param centerPos  Its center.
+		@param size  Its size along x and z.
+		@param color  The color. */
+	public static function DrawPlane(centerPos:Vector3, size:Vector2, color:Color):Void {
+		var f = Runtime.frame, t = f.white, x = size.x / 2, z = size.y / 2;
+		f.nx = 0;
+		f.ny = 1;
+		f.nz = 0;
+		var c = [[-x, z], [x, z], [x, -z], [-x, z], [x, -z], [-x, -z]];
+		for (p in c)
+			f.vertex(t, false, centerPos.x + p[0], centerPos.y, centerPos.z + p[1], 0, 0, color);
+		f.nz = 1;
+		f.ny = 0;
+	}
+
+	/** Draws a grid on the XZ plane, centered on the origin: its center lines darker, as raylib's.
+
+		@param slices  The lines each way.
+		@param spacing  The space between them. */
+	public static function DrawGrid(slices:Int, spacing:Float):Void {
+		var half = slices / 2;
+		for (i in 0...slices + 1) {
+			var p = (i - half) * spacing, e = half * spacing;
+			var color = i == Std.int(half) ? new Color(128, 128, 128, 255) : new Color(191, 191, 191, 255);
+			DrawLine3D(new Vector3(p, 0, -e), new Vector3(p, 0, e), color);
+			DrawLine3D(new Vector3(-e, 0, p), new Vector3(e, 0, p), color);
+		}
+	}
+
+	// ---- Models and meshes ----
+
+	/** Loads a model from a glTF or GLB file: its meshes, their materials and its images. The program's files are loaded before `main`,
+		so it is ready at once.
+
+		@param fileName  The file, as the program names it, such as "assets/trophy.glb".
+		@return  The model; with no meshes when the file couldn't be read. */
+	public static function LoadModel(fileName:String):Model {
+		var path = normalize(fileName);
+		var bytes = Runtime.files.get(path);
+		var lower = path.toLowerCase();
+		if (bytes == null || !(StringTools.endsWith(lower, ".glb") || StringTools.endsWith(lower, ".gltf"))) {
+			trace(bytes == null ? 'LoadModel: $fileName was not loaded' : 'LoadModel: $fileName: only glTF and GLB are read here');
+			return new Model([], [Models.defaultMaterial(defaultShader())], []);
+		}
+		try {
+			return Models.gltf(path, bytes, defaultShader());
+		} catch (e:Dynamic) {
+			trace('LoadModel: $fileName: $e');
+			return new Model([], [Models.defaultMaterial(defaultShader())], []);
+		}
+	}
+
+	/** Makes a model of one mesh, with the default material.
+
+		@param mesh  The mesh.
+		@return  The model. */
+	public static function LoadModelFromMesh(mesh:Mesh):Model {
+		Models.upload(mesh);
+		return new Model([mesh], [Models.defaultMaterial(defaultShader())], [0]);
+	}
+
+	/** Returns whether a model has meshes.
+
+		@param model  The model.
+		@return  True when it has. */
+	public static function IsModelValid(model:Model):Bool {
+		return model.meshCount > 0;
+	}
+
+	/** Frees a model's meshes, and the textures of its materials.
+
+		@param model  The model. */
+	public static function UnloadModel(model:Model):Void {
+		for (mesh in model.meshes)
+			Models.unload(mesh);
+		for (m in model.materials)
+			for (map in m.maps)
+				if (map.texture.id != 0) {
+					Runtime.graphics.disposeTexture(map.texture.id);
+					map.texture.id = 0;
+				}
+	}
+
+	/** Draws a model at a position and a scale, its materials' colors times a tint.
+
+		@param model  The model.
+		@param position  Where.
+		@param scale  The scale, the same on each axis.
+		@param tint  The tint. */
+	public static function DrawModel(model:Model, position:Vector3, scale:Float, tint:Color):Void {
+		DrawModelEx(model, position, new Vector3(0, 1, 0), 0, new Vector3(scale, scale, scale), tint);
+	}
+
+	/** Draws a model scaled, turned about an axis and moved, after its own transform.
+
+		@param model  The model.
+		@param position  Where.
+		@param rotationAxis  The axis.
+		@param rotationAngle  The angle, in degrees.
+		@param scale  The scale on each axis.
+		@param tint  The tint. */
+	public static function DrawModelEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void {
+		var m = Matrices.scale(scale.x, scale.y, scale.z);
+		m = Matrices.multiply(m, Matrices.rotate(rotationAxis.x, rotationAxis.y, rotationAxis.z, rotationAngle * DEG2RAD));
+		m = Matrices.multiply(m, Matrices.translate(position.x, position.y, position.z));
+		var transform = Matrices.multiply(Matrices.of(model.transform), m);
+		for (i in 0...model.meshCount) {
+			var material = model.materials[model.meshMaterial[i]];
+			if (material == null)
+				material = model.materials[0];
+			drawMesh(model.meshes[i], material, transform, tint);
+		}
+	}
+
+	/** Draws a mesh with a material and a transform.
+
+		@param mesh  The mesh.
+		@param material  The material.
+		@param transform  The transform. */
+	public static function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void {
+		drawMesh(mesh, material, Matrices.of(transform), WHITE);
+	}
+
+	/** Sends a mesh's vertices to the GPU, so it can be drawn. The `GenMesh*` functions and `LoadModel` do it themselves.
+
+		@param mesh  The mesh.
+		@param isDynamic  Whether it will change (raylib names it `dynamic`, a Haxe keyword); meshes here can't, so it is ignored. */
+	public static function UploadMesh(mesh:Mesh, isDynamic:Bool):Void {
+		Models.upload(mesh);
+	}
+
+	/** Frees a mesh's GPU buffers.
+
+		@param mesh  The mesh. */
+	public static function UnloadMesh(mesh:Mesh):Void {
+		Models.unload(mesh);
+	}
+
+	/** Makes a box mesh, centered on the origin.
+
+		@param width  Along x.
+		@param height  Along y.
+		@param length  Along z.
+		@return  The mesh. */
+	public static function GenMeshCube(width:Float, height:Float, length:Float):Mesh {
+		return Models.cube(width, height, length);
+	}
+
+	/** Makes a flat mesh on the XZ plane, facing up.
+
+		@param width  Along x.
+		@param length  Along z.
+		@param resX  Divisions along x.
+		@param resZ  Divisions along z.
+		@return  The mesh. */
+	public static function GenMeshPlane(width:Float, length:Float, resX:Int, resZ:Int):Mesh {
+		return Models.plane(width, length, resX, resZ);
+	}
+
+	/** Makes a sphere mesh, centered on the origin.
+
+		@param radius  Its radius.
+		@param rings  Rings top to bottom.
+		@param slices  Slices around.
+		@return  The mesh. */
+	public static function GenMeshSphere(radius:Float, rings:Int, slices:Int):Mesh {
+		return Models.sphere(radius, rings, slices);
+	}
+
+	/** Returns raylib's default material: the default shader, white.
+
+		@return  The material. */
+	public static function LoadMaterialDefault():Material {
+		return Models.defaultMaterial(defaultShader());
+	}
+
+	/** Sets a texture on a material's map.
+
+		@param material  The material.
+		@param mapType  The map (`MATERIAL_MAP_*`).
+		@param texture  The texture. */
+	public static function SetMaterialTexture(material:Material, mapType:Int, texture:Texture2D):Void {
+		material.maps[mapType].texture = texture;
+	}
+
+	/** Sets the material a model's mesh draws with.
+
+		@param model  The model.
+		@param meshId  The mesh.
+		@param materialId  The material. */
+	public static function SetModelMeshMaterial(model:Model, meshId:Int, materialId:Int):Void {
+		model.meshMaterial[meshId] = materialId;
+	}
+
+	/** Returns a mesh's bounds.
+
+		@param mesh  The mesh.
+		@return  The box. */
+	public static function GetMeshBoundingBox(mesh:Mesh):BoundingBox {
+		return Models.bounds(mesh);
+	}
+
+	/** Returns a model's bounds, its transform applied.
+
+		@param model  The model.
+		@return  The box. */
+	public static function GetModelBoundingBox(model:Model):BoundingBox {
+		var t = Matrices.of(model.transform);
+		var min = [Math.POSITIVE_INFINITY, Math.POSITIVE_INFINITY, Math.POSITIVE_INFINITY];
+		var max = [Math.NEGATIVE_INFINITY, Math.NEGATIVE_INFINITY, Math.NEGATIVE_INFINITY];
+		for (mesh in model.meshes) {
+			var b = Models.bounds(mesh);
+			for (x in [b.min.x, b.max.x])
+				for (y in [b.min.y, b.max.y])
+					for (z in [b.min.z, b.max.z]) {
+						var p = Matrices.point(t, x, y, z);
+						for (c in 0...3) {
+							if (p[c] < min[c])
+								min[c] = p[c];
+							if (p[c] > max[c])
+								max[c] = p[c];
+						}
+					}
+		}
+		if (model.meshes.length == 0)
+			return new BoundingBox(new Vector3(), new Vector3());
+		return new BoundingBox(new Vector3(min[0], min[1], min[2]), new Vector3(max[0], max[1], max[2]));
+	}
+
+	// ---- Collisions in 3D ----
+
+	/** Returns whether two boxes overlap.
+
+		@param box1  One.
+		@param box2  The other.
+		@return  True when they overlap. */
+	public static function CheckCollisionBoxes(box1:BoundingBox, box2:BoundingBox):Bool {
+		return box1.max.x >= box2.min.x && box1.min.x <= box2.max.x && box1.max.y >= box2.min.y && box1.min.y <= box2.max.y && box1.max.z >= box2.min.z
+			&& box1.min.z <= box2.max.z;
+	}
+
+	/** Returns whether two spheres overlap.
+
+		@param center1  One's center.
+		@param radius1  Its radius.
+		@param center2  The other's center.
+		@param radius2  Its radius.
+		@return  True when they overlap. */
+	public static function CheckCollisionSpheres(center1:Vector3, radius1:Float, center2:Vector3, radius2:Float):Bool {
+		return Vector3Distance(center1, center2) <= radius1 + radius2;
+	}
+
+	/** Returns whether a box and a sphere overlap.
+
+		@param box  The box.
+		@param center  The sphere's center.
+		@param radius  Its radius.
+		@return  True when they overlap. */
+	public static function CheckCollisionBoxSphere(box:BoundingBox, center:Vector3, radius:Float):Bool {
+		var x = Clamp(center.x, box.min.x, box.max.x),
+			y = Clamp(center.y, box.min.y, box.max.y),
+			z = Clamp(center.z, box.min.z, box.max.z);
+		return Vector3Distance(new Vector3(x, y, z), center) <= radius;
+	}
+
+	/** Returns where a ray hits a sphere.
+
+		@param ray  The ray.
+		@param center  The sphere's center.
+		@param radius  Its radius.
+		@return  The hit. */
+	public static function GetRayCollisionSphere(ray:Ray, center:Vector3, radius:Float):RayCollision {
+		var result = new RayCollision(false, 0, new Vector3(), new Vector3());
+		var oc = Vector3Subtract(ray.position, center);
+		var b = Vector3DotProduct(oc, ray.direction),
+			c = Vector3DotProduct(oc, oc) - radius * radius;
+		var d = b * b - c;
+		if (d < 0)
+			return result;
+		var t = -b - Math.sqrt(d);
+		if (t < 0)
+			t = -b + Math.sqrt(d);
+		if (t < 0)
+			return result;
+		result.hit = true;
+		result.distance = t;
+		result.point = Vector3Add(ray.position, Vector3Scale(ray.direction, t));
+		result.normal = Vector3Normalize(Vector3Subtract(result.point, center));
+		return result;
+	}
+
+	/** Returns where a ray hits a box.
+
+		@param ray  The ray.
+		@param box  The box.
+		@return  The hit. */
+	public static function GetRayCollisionBox(ray:Ray, box:BoundingBox):RayCollision {
+		var result = new RayCollision(false, 0, new Vector3(), new Vector3());
+		var o = [ray.position.x, ray.position.y, ray.position.z],
+			d = [ray.direction.x, ray.direction.y, ray.direction.z];
+		var lo = [box.min.x, box.min.y, box.min.z],
+			hi = [box.max.x, box.max.y, box.max.z];
+		var tmin = Math.NEGATIVE_INFINITY, tmax = Math.POSITIVE_INFINITY, axis = 0, sign = 1.;
+		for (i in 0...3) {
+			if (d[i] == 0) {
+				if (o[i] < lo[i] || o[i] > hi[i])
+					return result;
+				continue;
+			}
+			var t1 = (lo[i] - o[i]) / d[i], t2 = (hi[i] - o[i]) / d[i];
+			var near = Math.min(t1, t2), far = Math.max(t1, t2);
+			if (near > tmin) {
+				tmin = near;
+				axis = i;
+				sign = t1 < t2 ? -1 : 1;
+			}
+			if (far < tmax)
+				tmax = far;
+		}
+		if (tmax < 0 || tmin > tmax)
+			return result;
+		var t = tmin >= 0 ? tmin : tmax;
+		result.hit = true;
+		result.distance = t;
+		result.point = Vector3Add(ray.position, Vector3Scale(ray.direction, t));
+		var n = [0., 0, 0];
+		n[axis] = sign;
+		result.normal = new Vector3(n[0], n[1], n[2]);
+		return result;
+	}
+
+	/** Returns where a ray hits a triangle.
+
+		@param ray  The ray.
+		@param p1  A corner.
+		@param p2  A corner.
+		@param p3  A corner.
+		@return  The hit. */
+	public static function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3):RayCollision {
+		var result = new RayCollision(false, 0, new Vector3(), new Vector3());
+		var e1 = Vector3Subtract(p2, p1), e2 = Vector3Subtract(p3, p1);
+		var p = Vector3CrossProduct(ray.direction, e2),
+			det = Vector3DotProduct(e1, p);
+		if (Math.abs(det) < 1e-6)
+			return result;
+		var inv = 1 / det, t0 = Vector3Subtract(ray.position, p1);
+		var u = Vector3DotProduct(t0, p) * inv;
+		if (u < 0 || u > 1)
+			return result;
+		var q = Vector3CrossProduct(t0, e1),
+			v = Vector3DotProduct(ray.direction, q) * inv;
+		if (v < 0 || u + v > 1)
+			return result;
+		var t = Vector3DotProduct(e2, q) * inv;
+		if (t <= 1e-6)
+			return result;
+		result.hit = true;
+		result.distance = t;
+		result.point = Vector3Add(ray.position, Vector3Scale(ray.direction, t));
+		result.normal = Vector3Normalize(Vector3CrossProduct(e1, e2));
+		return result;
+	}
+
+	/** Returns where a ray hits a mesh drawn with a transform: its nearest triangle.
+
+		@param ray  The ray.
+		@param mesh  The mesh.
+		@param transform  The transform.
+		@return  The hit. */
+	public static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision {
+		var best = new RayCollision(false, 0, new Vector3(), new Vector3());
+		var v = mesh.vertices;
+		if (v == null)
+			return best;
+		var t = Matrices.of(transform);
+		function corner(i:Int):Vector3 {
+			var p = Matrices.point(t, v[i * 3], v[i * 3 + 1], v[i * 3 + 2]);
+			return new Vector3(p[0], p[1], p[2]);
+		}
+		for (k in 0...mesh.triangleCount) {
+			var a = mesh.indices == null ? k * 3 : mesh.indices[k * 3],
+				b = mesh.indices == null ? k * 3 + 1 : mesh.indices[k * 3 + 1],
+				c = mesh.indices == null ? k * 3 + 2 : mesh.indices[k * 3 + 2];
+			var hit = GetRayCollisionTriangle(ray, corner(a), corner(b), corner(c));
+			if (hit.hit && (!best.hit || hit.distance < best.distance))
+				best = hit;
+		}
+		return best;
+	}
+
+	// ---- Render textures ----
+
+	/** Makes a texture to draw into, with depth.
+
+		@param width  Its width, in pixels.
+		@param height  Its height.
+		@return  The render texture. */
+	public static function LoadRenderTexture(width:Int, height:Int):RenderTexture2D {
+		var target = Runtime.graphics.createRenderTarget(width, height);
+		var texture = new Texture2D(target, width, height);
+		texture.flipped = true;
+		return new RenderTexture(target, texture, new Texture2D(0, width, height));
+	}
+
+	/** Returns whether a render texture was made.
+
+		@param target  The render texture.
+		@return  True when it was. */
+	public static function IsRenderTextureValid(target:RenderTexture2D):Bool {
+		return target.id != 0;
+	}
+
+	/** Frees a render texture.
+
+		@param target  The render texture. */
+	public static function UnloadRenderTexture(target:RenderTexture2D):Void {
+		if (target.id != 0)
+			Runtime.graphics.disposeTexture(target.id);
+		target.id = 0;
+		target.texture.id = 0;
+	}
+
+	/** Draws into a render texture until `EndTextureMode`. Unlike raylib's, what was drawn into it in an earlier frame isn't kept: each
+		frame's drawing into it starts cleared, to clear black unless `ClearBackground` gives a color.
+
+		@param target  The render texture. */
+	public static function BeginTextureMode(target:RenderTexture2D):Void {
+		Runtime.frame.toTarget(target.id, target.texture.width, target.texture.height);
+	}
+
+	/** Goes back to drawing on the screen. */
+	public static function EndTextureMode():Void {
+		Runtime.frame.toScreen();
+	}
+
+	/** Sets how a texture is sampled when drawn larger or smaller. Textures here are sampled as `TEXTURE_FILTER_POINT`, whatever is set.
+
+		@param texture  The texture.
+		@param filter  The filter (`TEXTURE_FILTER_*`). */
+	public static function SetTextureFilter(texture:Texture2D, filter:Int):Void {}
+
+	// ---- Shaders ----
+
+	/** Returns raylib's default shader.
+
+		@return  The shader. */
+	public static function LoadShaderDefault():Shader {
+		return defaultShader();
+	}
+
+	/** Returns whether a shader was made.
+
+		@param shader  The shader.
+		@return  True when it was. */
+	public static function IsShaderValid(shader:Shader):Bool {
+		return shader.id != 0;
+	}
+
+	/** Frees a shader; the default one stays.
+
+		@param shader  The shader. */
+	public static function UnloadShader(shader:Shader):Void {
+		if (shader.program != null && shader.program != Runtime.frame.defaultProgram) {
+			shader.program.dispose();
+			shader.program = null;
+			shader.id = 0;
+		}
+	}
+
+	/** Returns the location of a shader's uniform or texture, by its name.
+
+		@param shader  The shader.
+		@param uniformName  The name.
+		@return  Its location, or -1 when the shader doesn't declare it. */
+	public static function GetShaderLocation(shader:Shader, uniformName:String):Int {
+		return shader.program == null ? -1 : shader.program.locate(uniformName);
+	}
+
+	/** Returns the location of a shader's attribute, by its name.
+
+		@param shader  The shader.
+		@param attribName  The name.
+		@return  Its location, or -1 when the shader doesn't declare it. */
+	public static function GetShaderLocationAttrib(shader:Shader, attribName:String):Int {
+		return shader.program == null ? -1 : shader.program.attributes.indexOf(attribName);
+	}
+
+	/** Sets a shader's uniform, for the draws after it.
+
+		@param shader  The shader.
+		@param locIndex  The uniform's location.
+		@param value  The value: a number, an array of numbers, or a `Vector2`, `Vector3`, `Vector4` or `Color`.
+		@param uniformType  Its type (`SHADER_UNIFORM_*`). */
+	public static function SetShaderValue(shader:Shader, locIndex:Int, value:Dynamic, uniformType:Int):Void {
+		SetShaderValueV(shader, locIndex, value, uniformType, 1);
+	}
+
+	/** Sets elements of a shader's array uniform, for the draws after it.
+
+		@param shader  The shader.
+		@param locIndex  The uniform's location.
+		@param value  The values, in order.
+		@param uniformType  Each element's type (`SHADER_UNIFORM_*`).
+		@param count  The elements set. */
+	public static function SetShaderValueV(shader:Shader, locIndex:Int, value:Dynamic, uniformType:Int, count:Int):Void {
+		if (shader.program == null)
+			return;
+		var slot = shader.program.textureSlot(locIndex);
+		if (slot >= 0)
+			return;
+		Runtime.frame.cut();
+		shader.program.write(locIndex, numbers(value));
+	}
+
+	/** Sets a shader's matrix uniform, for the draws after it.
+
+		@param shader  The shader.
+		@param locIndex  The uniform's location.
+		@param mat  The matrix. */
+	public static function SetShaderValueMatrix(shader:Shader, locIndex:Int, mat:Matrix):Void {
+		if (shader.program == null)
+			return;
+		Runtime.frame.cut();
+		shader.program.write(locIndex, Matrices.of(mat));
+	}
+
+	/** Sets a shader's texture, for the draws after it.
+
+		@param shader  The shader.
+		@param locIndex  The texture's location.
+		@param texture  The texture. */
+	public static function SetShaderValueTexture(shader:Shader, locIndex:Int, texture:Texture2D):Void {
+		if (shader.program == null)
+			return;
+		var slot = shader.program.textureSlot(locIndex);
+		if (slot >= 0) {
+			Runtime.frame.cut();
+			shader.program.textures[slot] = texture.id;
+		}
+	}
+
+	/** Draws shapes, text and textures with a shader until `EndShaderMode`.
+
+		@param shader  The shader. */
+	public static function BeginShaderMode(shader:Shader):Void {
+		if (shader.program == null)
+			return;
+		Runtime.frame.cut();
+		Runtime.frame.program = shader.program;
+	}
+
+	/** Goes back to the default shader. */
+	public static function EndShaderMode():Void {
+		Runtime.frame.cut();
+		Runtime.frame.program = Runtime.frame.defaultProgram;
+	}
+
+	// ---- raymath: Vector3 ----
+
+	/** Returns (0, 0, 0).
+
+		@return  The vector. */
+	public static function Vector3Zero():Vector3 {
+		return new Vector3(0, 0, 0);
+	}
+
+	/** Returns (1, 1, 1).
+
+		@return  The vector. */
+	public static function Vector3One():Vector3 {
+		return new Vector3(1, 1, 1);
+	}
+
+	/** Returns the sum of two vectors.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The sum. */
+	public static function Vector3Add(v1:Vector3, v2:Vector3):Vector3 {
+		return new Vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
+	}
+
+	/** Returns one vector less another.
+
+		@param v1  The first.
+		@param v2  The one taken from it.
+		@return  The difference. */
+	public static function Vector3Subtract(v1:Vector3, v2:Vector3):Vector3 {
+		return new Vector3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
+	}
+
+	/** Returns a vector scaled.
+
+		@param v  The vector.
+		@param scalar  The scale.
+		@return  The scaled vector. */
+	public static function Vector3Scale(v:Vector3, scalar:Float):Vector3 {
+		return new Vector3(v.x * scalar, v.y * scalar, v.z * scalar);
+	}
+
+	/** Returns two vectors multiplied component by component.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The product. */
+	public static function Vector3Multiply(v1:Vector3, v2:Vector3):Vector3 {
+		return new Vector3(v1.x * v2.x, v1.y * v2.y, v1.z * v2.z);
+	}
+
+	/** Returns the cross product.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The product. */
+	public static function Vector3CrossProduct(v1:Vector3, v2:Vector3):Vector3 {
+		return new Vector3(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x);
+	}
+
+	/** Returns the dot product.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The product. */
+	public static function Vector3DotProduct(v1:Vector3, v2:Vector3):Float {
+		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+	}
+
+	/** Returns a vector's length.
+
+		@param v  The vector.
+		@return  The length. */
+	public static function Vector3Length(v:Vector3):Float {
+		return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+	}
+
+	/** Returns a vector's length squared.
+
+		@param v  The vector.
+		@return  The length squared. */
+	public static function Vector3LengthSqr(v:Vector3):Float {
+		return v.x * v.x + v.y * v.y + v.z * v.z;
+	}
+
+	/** Returns the distance between two points.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The distance. */
+	public static function Vector3Distance(v1:Vector3, v2:Vector3):Float {
+		return Vector3Length(Vector3Subtract(v1, v2));
+	}
+
+	/** Returns a vector of length 1 in the same direction, or the vector itself when its length is 0.
+
+		@param v  The vector.
+		@return  The direction. */
+	public static function Vector3Normalize(v:Vector3):Vector3 {
+		var l = Vector3Length(v);
+		return l == 0 ? new Vector3(v.x, v.y, v.z) : new Vector3(v.x / l, v.y / l, v.z / l);
+	}
+
+	/** Returns a vector pointing the other way.
+
+		@param v  The vector.
+		@return  The negated vector. */
+	public static function Vector3Negate(v:Vector3):Vector3 {
+		return new Vector3(-v.x, -v.y, -v.z);
+	}
+
+	/** Returns a point part of the way from one to another.
+
+		@param v1  The start.
+		@param v2  The end.
+		@param amount  0 for the start, 1 for the end.
+		@return  The point. */
+	public static function Vector3Lerp(v1:Vector3, v2:Vector3, amount:Float):Vector3 {
+		return new Vector3(v1.x + amount * (v2.x - v1.x), v1.y + amount * (v2.y - v1.y), v1.z + amount * (v2.z - v1.z));
+	}
+
+	/** Returns a point transformed by a matrix.
+
+		@param v  The point.
+		@param mat  The matrix.
+		@return  The transformed point. */
+	public static function Vector3Transform(v:Vector3, mat:Matrix):Vector3 {
+		var p = Matrices.point(Matrices.of(mat), v.x, v.y, v.z);
+		return new Vector3(p[0], p[1], p[2]);
+	}
+
+	/** Returns a vector turned about an axis.
+
+		@param v  The vector.
+		@param axis  The axis.
+		@param angle  The angle, in radians.
+		@return  The turned vector. */
+	public static function Vector3RotateByAxisAngle(v:Vector3, axis:Vector3, angle:Float):Vector3 {
+		var m = Matrices.rotate(axis.x, axis.y, axis.z, angle);
+		var p = Matrices.point(m, v.x, v.y, v.z);
+		return new Vector3(p[0], p[1], p[2]);
+	}
+
+	// ---- raymath: Matrix and Quaternion ----
+
+	/** Returns the identity matrix.
+
+		@return  The matrix. */
+	public static function MatrixIdentity():Matrix {
+		return Matrices.to(Matrices.identity());
+	}
+
+	/** Returns two matrices multiplied: left, then right.
+
+		@param left  The first.
+		@param right  The second.
+		@return  The product. */
+	public static function MatrixMultiply(left:Matrix, right:Matrix):Matrix {
+		return Matrices.to(Matrices.multiply(Matrices.of(left), Matrices.of(right)));
+	}
+
+	/** Returns a translation.
+
+		@param x  Along x.
+		@param y  Along y.
+		@param z  Along z.
+		@return  The matrix. */
+	public static function MatrixTranslate(x:Float, y:Float, z:Float):Matrix {
+		return Matrices.to(Matrices.translate(x, y, z));
+	}
+
+	/** Returns a scale.
+
+		@param x  Along x.
+		@param y  Along y.
+		@param z  Along z.
+		@return  The matrix. */
+	public static function MatrixScale(x:Float, y:Float, z:Float):Matrix {
+		return Matrices.to(Matrices.scale(x, y, z));
+	}
+
+	/** Returns a rotation about an axis.
+
+		@param axis  The axis.
+		@param angle  The angle, in radians.
+		@return  The matrix. */
+	public static function MatrixRotate(axis:Vector3, angle:Float):Matrix {
+		return Matrices.to(Matrices.rotate(axis.x, axis.y, axis.z, angle));
+	}
+
+	/** Returns a rotation about x.
+
+		@param angle  The angle, in radians.
+		@return  The matrix. */
+	public static function MatrixRotateX(angle:Float):Matrix {
+		return Matrices.to(Matrices.rotate(1, 0, 0, angle));
+	}
+
+	/** Returns a rotation about y.
+
+		@param angle  The angle, in radians.
+		@return  The matrix. */
+	public static function MatrixRotateY(angle:Float):Matrix {
+		return Matrices.to(Matrices.rotate(0, 1, 0, angle));
+	}
+
+	/** Returns a rotation about z.
+
+		@param angle  The angle, in radians.
+		@return  The matrix. */
+	public static function MatrixRotateZ(angle:Float):Matrix {
+		return Matrices.to(Matrices.rotate(0, 0, 1, angle));
+	}
+
+	/** Returns rotations about x, then y, then z.
+
+		@param angle  The angles, in radians.
+		@return  The matrix. */
+	public static function MatrixRotateXYZ(angle:Vector3):Matrix {
+		var m = Matrices.multiply(Matrices.rotate(1, 0, 0, angle.x), Matrices.rotate(0, 1, 0, angle.y));
+		return Matrices.to(Matrices.multiply(m, Matrices.rotate(0, 0, 1, angle.z)));
+	}
+
+	/** Returns a matrix inverted.
+
+		@param mat  The matrix.
+		@return  Its inverse. */
+	public static function MatrixInvert(mat:Matrix):Matrix {
+		return Matrices.to(Matrices.invert(Matrices.of(mat)));
+	}
+
+	/** Returns a matrix transposed.
+
+		@param mat  The matrix.
+		@return  Its transpose. */
+	public static function MatrixTranspose(mat:Matrix):Matrix {
+		return Matrices.to(Matrices.transpose(Matrices.of(mat)));
+	}
+
+	/** Returns a view looking from eye at target.
+
+		@param eye  Where from.
+		@param target  What at.
+		@param up  Up.
+		@return  The matrix. */
+	public static function MatrixLookAt(eye:Vector3, target:Vector3, up:Vector3):Matrix {
+		return Matrices.to(Matrices.lookAt(eye.x, eye.y, eye.z, target.x, target.y, target.z, up.x, up.y, up.z));
+	}
+
+	/** Returns a perspective projection.
+
+		@param fovY  The field of view, top to bottom, in radians.
+		@param aspect  Width over height.
+		@param nearPlane  The near plane.
+		@param farPlane  The far plane.
+		@return  The matrix. */
+	public static function MatrixPerspective(fovY:Float, aspect:Float, nearPlane:Float, farPlane:Float):Matrix {
+		return Matrices.to(Matrices.perspective(fovY, aspect, nearPlane, farPlane));
+	}
+
+	/** Returns an orthographic projection.
+
+		@param left  Left.
+		@param right  Right.
+		@param bottom  Bottom.
+		@param top  Top.
+		@param nearPlane  The near plane.
+		@param farPlane  The far plane.
+		@return  The matrix. */
+	public static function MatrixOrtho(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix {
+		return Matrices.to(Matrices.ortho(left, right, bottom, top, nearPlane, farPlane));
+	}
+
+	/** Returns the identity quaternion.
+
+		@return  The quaternion. */
+	public static function QuaternionIdentity():Quaternion {
+		return new Vector4(0, 0, 0, 1);
+	}
+
+	/** Returns the rotation about an axis as a quaternion.
+
+		@param axis  The axis.
+		@param angle  The angle, in radians.
+		@return  The quaternion. */
+	public static function QuaternionFromAxisAngle(axis:Vector3, angle:Float):Quaternion {
+		var a = Vector3Normalize(axis), s = Math.sin(angle / 2);
+		return new Vector4(a.x * s, a.y * s, a.z * s, Math.cos(angle / 2));
+	}
+
+	/** Returns a rotation by Euler angles as a quaternion.
+
+		@param pitch  About x, in radians.
+		@param yaw  About y.
+		@param roll  About z.
+		@return  The quaternion. */
+	public static function QuaternionFromEuler(pitch:Float, yaw:Float, roll:Float):Quaternion {
+		var x0 = Math.cos(pitch * .5),
+			x1 = Math.sin(pitch * .5),
+			y0 = Math.cos(yaw * .5),
+			y1 = Math.sin(yaw * .5),
+			z0 = Math.cos(roll * .5),
+			z1 = Math.sin(roll * .5);
+		return new Vector4(x1 * y0 * z0 - x0 * y1 * z1, x0 * y1 * z0 + x1 * y0 * z1, x0 * y0 * z1 - x1 * y1 * z0, x0 * y0 * z0 + x1 * y1 * z1);
+	}
+
+	/** Returns a quaternion's rotation as a matrix.
+
+		@param q  The quaternion.
+		@return  The matrix. */
+	public static function QuaternionToMatrix(q:Quaternion):Matrix {
+		return Matrices.to(Matrices.quaternion(q.x, q.y, q.z, q.w));
+	}
+
+	// ---- What the 3D functions share ----
+	static var shaderDefault:Null<Shader> = null;
+	static var deltaFrame = -1;
+	static var deltaX = 0.;
+	static var deltaY = 0.;
+	static var previousX = 0.;
+	static var previousY = 0.;
+
+	static function defaultShader():Shader {
+		if (shaderDefault == null) {
+			var p = Runtime.frame.defaultProgram;
+			shaderDefault = new Shader(p.handle, locations(p), p);
+		}
+		return shaderDefault;
+	}
+
+	/** Makes a shader from a program compiled as the program built (`LoadShader`).
+
+		@param source  The compiled program.
+		@return  The shader. */
+	@:noCompletion
+	public static function makeShader(source:helix.ray.internal.ProgramSource):Shader {
+		var p = new helix.ray.internal.Program(Runtime.graphics, source);
+		return new Shader(p.handle, locations(p), p);
+	}
+
+	// raylib's SHADER_LOC_* locations of a program.
+	static function locations(p:helix.ray.internal.Program):Array<Int> {
+		var locs = [for (_ in 0...32) -1];
+		locs[SHADER_LOC_VERTEX_POSITION] = p.attributes.indexOf("vertexPosition");
+		locs[SHADER_LOC_VERTEX_TEXCOORD01] = p.attributes.indexOf("vertexTexCoord");
+		locs[SHADER_LOC_VERTEX_NORMAL] = p.attributes.indexOf("vertexNormal");
+		locs[SHADER_LOC_VERTEX_COLOR] = p.attributes.indexOf("vertexColor");
+		locs[SHADER_LOC_MATRIX_MVP] = p.locate("mvp");
+		locs[SHADER_LOC_MATRIX_VIEW] = p.locate("matView");
+		locs[SHADER_LOC_MATRIX_PROJECTION] = p.locate("matProjection");
+		locs[SHADER_LOC_MATRIX_MODEL] = p.locate("matModel");
+		locs[SHADER_LOC_MATRIX_NORMAL] = p.locate("matNormal");
+		locs[SHADER_LOC_VECTOR_VIEW] = p.locate("viewPos");
+		locs[SHADER_LOC_COLOR_DIFFUSE] = p.locate("colDiffuse");
+		locs[SHADER_LOC_MAP_ALBEDO] = p.locate("texture0");
+		locs[SHADER_LOC_MAP_METALNESS] = p.locate("texture1");
+		locs[SHADER_LOC_MAP_NORMAL] = p.locate("texture2");
+		return locs;
+	}
+
+	// The numbers of a shader value as a program writes them.
+	static function numbers(value:Dynamic):Array<Float> {
+		if (Std.isOfType(value, Array))
+			return [for (x in (value : Array<Dynamic>)) (x : Float)];
+		if (Std.isOfType(value, Vector2))
+			return [value.x, value.y];
+		if (Std.isOfType(value, Vector3))
+			return [value.x, value.y, value.z];
+		if (Std.isOfType(value, Vector4))
+			return [value.x, value.y, value.z, value.w];
+		if (Std.isOfType(value, Color))
+			return [value.r / 255, value.g / 255, value.b / 255, value.a / 255];
+		if (Std.isOfType(value, Matrix))
+			return Matrices.of(value);
+		return [(value : Float)];
+	}
+
+	static function cameraView(camera:Camera3D):Array<Float> {
+		var p = camera.position, t = camera.target, u = camera.up;
+		return Matrices.lookAt(p.x, p.y, p.z, t.x, t.y, t.z, u.x, u.y, u.z);
+	}
+
+	// raylib's near and far planes, 0.01 and 1000.
+	static function cameraProjection(camera:Camera3D, aspect:Float):Array<Float> {
+		if (camera.projection == CAMERA_ORTHOGRAPHIC) {
+			var top = camera.fovy / 2, right = top * aspect;
+			return Matrices.ortho(-right, right, -top, top, .01, 1000);
+		}
+		return Matrices.perspective(camera.fovy * DEG2RAD, aspect, .01, 1000);
+	}
+
+	static function drawMesh(mesh:Mesh, material:Material, transform:Array<Float>, tint:Color):Void {
+		if (mesh.buffers == null)
+			Models.upload(mesh);
+		if (mesh.buffers == null)
+			return;
+		var shader = material.shader == null || material.shader.program == null ? defaultShader() : material.shader;
+		var c = material.maps[MATERIAL_MAP_DIFFUSE].color;
+		var diffuse = [
+			c.r / 255 * tint.r / 255,
+			c.g / 255 * tint.g / 255,
+			c.b / 255 * tint.b / 255,
+			c.a / 255 * tint.a / 255
+		];
+		var textures = [for (i in 0...3) material.maps[i].texture.id];
+		Runtime.frame.mesh(mesh, shader.program, transform, diffuse, textures);
+	}
+	#end
 }

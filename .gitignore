@@ -7,6 +7,7 @@ services/examples/*/web/app.js
 services/examples/*/native/
 ray/examples/*/web/app.js
 ray/examples/*/native/
+ray/examples/*/native-gpu/
 services/examples/patch/**/manifest.json
 services/examples/patch/**/.*.manifests
 services/examples/patch/.*.manifests
