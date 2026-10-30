@@ -188,6 +188,13 @@ int helix_sdl3gpu_setup(void){
  if(!device){fprintf(stderr,"HeliX SDL_GPU: no device: %s\n",SDL_GetError());return 0;}
  if(!window||!SDL_ClaimWindowForGPUDevice(device,window)){fprintf(stderr,"HeliX SDL_GPU: the window can't be claimed: %s\n",SDL_GetError());
   SDL_DestroyGPUDevice(device);device=NULL;return 0;}
+ /* Without vsync, presenting doesn't wait: IMMEDIATE where the window has it, else MAILBOX (waits for nothing, but doesn't tear), else
+    SDL's VSYNC, which every window has. */
+ if(!helix_surface_vsync()){
+  const SDL_GPUPresentMode mode=SDL_WindowSupportsGPUPresentMode(device,window,SDL_GPU_PRESENTMODE_IMMEDIATE)?SDL_GPU_PRESENTMODE_IMMEDIATE:
+   SDL_WindowSupportsGPUPresentMode(device,window,SDL_GPU_PRESENTMODE_MAILBOX)?SDL_GPU_PRESENTMODE_MAILBOX:SDL_GPU_PRESENTMODE_VSYNC;
+  SDL_SetGPUSwapchainParameters(device,window,SDL_GPU_SWAPCHAINCOMPOSITION_SDR,mode);
+ }
  const SDL_GPUShaderFormat formats=SDL_GetGPUShaderFormats(device);
  shader_format=formats&SDL_GPU_SHADERFORMAT_SPIRV?SDL_GPU_SHADERFORMAT_SPIRV:formats&SDL_GPU_SHADERFORMAT_MSL?SDL_GPU_SHADERFORMAT_MSL:SDL_GPU_SHADERFORMAT_DXBC;
  /* Depth: 32-bit float where it can be drawn into and sampled, else 24-bit; both are depth alone. */
@@ -769,7 +776,8 @@ static void release_pipeline(int slot){
  for(int v=1;v<VARIANTS;v++)if(pipelines[slot].variants[v])SDL_ReleaseGPUGraphicsPipeline(device,pipelines[slot].variants[v]);
  const uint32_t generation=pipelines[slot].generation;memset(&pipelines[slot],0,sizeof pipelines[slot]);pipelines[slot].generation=generation;
 }
-/* Shows the frame: the screen texture copied to the window's swapchain, acquired as the display allows (the wait that paces the loop),
+/* Shows the frame: the screen texture copied to the window's swapchain, acquired as the display allows (the wait that paces the loop,
+   unless the window was opened without vsync),
    when the window has one to give (none while minimized). */
 void helix_present(void){
  if(!device||!frame_ended)return;

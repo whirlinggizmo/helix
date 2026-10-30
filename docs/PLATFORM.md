@@ -188,7 +188,9 @@ enum Event {
 `endFrame` ends the screen's pass and submits it; `present()` shows the frame and waits for the display's refresh, which paces the
 owner's loop. Between the two the frame can still be read back (`readPixels(0)`), and the owner can do work in the time the display
 would otherwise be waited for. GL natively swaps through the window's surface (`surface.h`), SDL_GPU presents its swapchain, and in a
-page `present` does nothing, since the browser presents when the frame's callback returns.
+page `present` does nothing, since the browser presents when the frame's callback returns. A native window opened without vsync (`Sdl3WindowAdapterOptions.vsync`)
+presents at once and waits for nothing, and the frame may tear: GL swaps with interval 0, SDL_GPU presents IMMEDIATE, or MAILBOX where the
+window has no IMMEDIATE, or VSYNC where it has neither. A page always waits.
 
 Render targets are stored top row first on every backend. A declared texture a draw leaves unbound gets a placeholder, so a shader may
 declare more than a draw binds. Adapters: `graphics/webgl2` (`WebGl2GraphicsAdapter`), `graphics/sokol` (`SokolGraphicsAdapter`,

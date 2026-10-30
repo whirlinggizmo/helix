@@ -109,7 +109,9 @@ class RCore {
 		return Runtime.window.framebufferHeight;
 	}
 
-	/** Sets flags for the window before `InitWindow` (`FLAG_*`). The window is resizable here whatever they say.
+	/** Sets flags for the window before `InitWindow` (`FLAG_*`). `FLAG_MSAA_4X_HINT` asks for 4 samples a pixel, and `FLAG_VSYNC_HINT`
+		for frames shown at the display's refresh; without it, frames natively show as soon as they are drawn, as raylib's do, while a
+		page's always follow the display. The window is resizable here whatever they say.
 
 		@param flags  The flags, or'd together. */
 	static function SetConfigFlags(flags:Int):Void {

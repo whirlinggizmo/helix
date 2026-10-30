@@ -967,7 +967,7 @@ var onClose:Null<() -> Void>
 ```
 
 - `new`: Opens the program's window.
-  - `options`: The graphics adapter it is for, and its samples.
+  - `options`: The graphics adapter it is for, its samples, and whether presenting waits for the display.
   - throws `String`: SDL or the window can't be had.
 
 ## Sdl3WindowAdapterOptions
@@ -979,16 +979,18 @@ Represents how `Sdl3WindowAdapter` opens its window.
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{graphics:Sdl3WindowGraphics, ?msaaSamples:Int}
+{graphics:Sdl3WindowGraphics, ?msaaSamples:Int, ?vsync:Bool}
 ```
 
 ```haxe
 final graphics:Sdl3WindowGraphics
 final msaaSamples:Int = 1
+final vsync:Bool = true
 ```
 
 - `graphics`: Gets the graphics adapter that draws in the window.
 - `msaaSamples`: Gets the multisampling samples a pixel asks for; 1 for none, the default. The GPU may give fewer.
+- `vsync`: Gets whether presenting waits for the display's refresh, which paces the owner's loop: true, the default. False shows each frame as soon as it is drawn, which may tear.
 
 ## Sdl3WindowGraphics
 

@@ -30,7 +30,7 @@ static void key(SDL_Scancode scancode, int down, int repeat) {
 
 int main(void) {
     SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "dummy");
-    CHECK(helix_sdl3_open(1, 0));
+    CHECK(helix_sdl3_open(1, 0, 1));
     helix_events_setup();
     helix_events_poll();
     while (helix_events_next()) {}

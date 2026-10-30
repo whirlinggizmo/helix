@@ -12,6 +12,8 @@ int helix_surface_width(void);
 int helix_surface_height(void);
 /** The samples a pixel the window asked for (1 without multisampling): what pipelines drawing to the screen are made for. */
 int helix_surface_samples(void);
+/** Whether presenting waits for the display's refresh (1) or shows the frame at once (0), as the window was opened. */
+int helix_surface_vsync(void);
 /** Shows the GL frame drawn to framebuffer 0 and waits for the display: the window's swap (the GL graphics adapter's present). */
 void helix_surface_present(void);
 /** The window an adapter that presents for itself claims (the SDL3 host's SDL_Window, made without a GL context for it); only that host

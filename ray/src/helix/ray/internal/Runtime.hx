@@ -328,16 +328,20 @@ class Runtime {
 		@param height  The window's height, natively.
 		@param title  The window's title. */
 	public static function open(width:Int, height:Int, title:String):Void {
+		// SetConfigFlags' hints, as raylib takes them: 4 samples for FLAG_MSAA_4X_HINT, and vsync only for FLAG_VSYNC_HINT natively.
+		var flags = helix.ray.raylib.RCore.configFlags;
+		var samples = flags & helix.ray.Raylib.FLAG_MSAA_4X_HINT != 0 ? 4 : 1;
 		#if js
 		window = new helix.platform.adapters.window.dom.DomWindowAdapter({canvasId: "canvas"});
 		events = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
-		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvasId: "canvas"});
+		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvasId: "canvas", msaaSamples: samples});
 		#else
+		var vsync = flags & helix.ray.Raylib.FLAG_VSYNC_HINT != 0;
 		#if sdl_gpu
-		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gpu});
+		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gpu, msaaSamples: samples, vsync: vsync});
 		graphics = new helix.platform.adapters.graphics.sdl3gpu.Sdl3GpuGraphicsAdapter();
 		#else
-		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gl});
+		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gl, msaaSamples: samples, vsync: vsync});
 		graphics = new helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter();
 		#end
 		events = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();

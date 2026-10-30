@@ -13,19 +13,19 @@
 
 static SDL_Window *window;
 static SDL_GLContext context;
-static int samples=1,focused=1;
+static int samples=1,focused=1,vsync=1;
 
 /* GL's wait for the display. On Windows, where the compositor (DWM) shows the frame (windowed, and in SDL's fullscreen too, a borderless
    window at the desktop's mode), the swap interval is 0 and the swap waits on the compositor (DwmFlush), as GLFW does in a window: a GL
    driver may busy-wait inside a vsynced swap there (Intel's did, a whole core at 60 frames a second). Elsewhere the swap waits
-   (interval 1). */
+   (interval 1). A window opened without vsync swaps at once (interval 0) and waits on nothing. */
 static int compositor_waits;
 static void swap_interval(void){
 #if defined(_WIN32)
  BOOL composited=FALSE;
- compositor_waits=SUCCEEDED(DwmIsCompositionEnabled(&composited))&&composited;
+ compositor_waits=vsync&&SUCCEEDED(DwmIsCompositionEnabled(&composited))&&composited;
 #endif
- SDL_GL_SetSwapInterval(compositor_waits?0:1);
+ SDL_GL_SetSwapInterval(compositor_waits||!vsync?0:1);
 }
 
 /* The window with a GL 4.1 core context (forward compatible, as macOS requires), 24-bit depth and 8-bit stencil, and the samples asked for:
@@ -48,8 +48,9 @@ static int open_gl(int sample_count){
 /* Opens the window, asking for sample_count samples a pixel (1: none), with a GL context made current (with_gl) or without one (SDL_GPU
    claims the window and makes its own multisampled textures). 0 when SDL or the window can't be had. Windows is told the program isn't DPI
    aware, so sizes are logical pixels. */
-int helix_sdl3_open(int sample_count,int with_gl){
+int helix_sdl3_open(int sample_count,int with_gl,int with_vsync){
  if(window)return 1;
+ vsync=with_vsync!=0;
  SDL_SetHint("SDL_WINDOWS_DPI_AWARENESS","unaware");
  if(!SDL_Init(SDL_INIT_VIDEO)){fprintf(stderr,"HeliX SDL3: %s\n",SDL_GetError());return 0;}
  if(with_gl){
@@ -111,6 +112,7 @@ const char *helix_sdl3_os_directory(int which){
 int helix_surface_width(void){int w=0,h=0;if(window)SDL_GetWindowSizeInPixels(window,&w,&h);return w;}
 int helix_surface_height(void){int w=0,h=0;if(window)SDL_GetWindowSizeInPixels(window,&w,&h);return h;}
 int helix_surface_samples(void){return samples;}
+int helix_surface_vsync(void){return vsync;}
 void *helix_surface_window(void){return window;}
 void helix_surface_present(void){
  if(!context)return;
