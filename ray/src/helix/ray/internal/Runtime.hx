@@ -112,90 +112,129 @@ class Runtime {
 		#end
 	}
 
-	/** Returns the preload of the program's files: each loaded, and each image decoded.
+	/** Natively, where the program's files are, relative to the program's directory (`-D helix-ray-native-root`). */
+	public static var root = "../web";
+
+	/** Makes what loads the program's files, once: the assets over a page's server and its cache, or natively over the files' directory,
+		and the images decoding them. */
+	public static function loading():Void {
+		if (assets != null)
+			return;
+		#if js
+		var http = new helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter();
+		var cache = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory()});
+		var imageDecoder = new helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter();
+		polled.push(http);
+		assets = new Assets({sources: [HttpServer(system.getProgramDirectory())], httpClient: http, cacheFileSystem: cache});
+		#else
+		var directory = haxe.io.Path.join([system.getProgramDirectory(), root]);
+		var cache = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory, readOnly: true});
+		var imageDecoder = new helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter();
+		assets = new Assets({sources: [FileSystem(cache)]});
+		#end
+		polled.push(cache);
+		polled.push(imageDecoder);
+		decoding = new helix.services.images.Images(imageDecoder, assets);
+		polled.push(decoding);
+	}
+
+	/** Returns the preload of the program's files: in a page, those its program names, each loaded, its images decoded; natively nothing,
+		as a file is read when the program loads it.
 
 		@param paths  The files, as the program names them.
-		@param root  Natively, the directory they're under, relative to the program's.
 		@return  The preload. */
-	public static function preloadFiles(paths:Array<String>, root:String):(done:Void->Void)->Void {
+	public static function preloadFiles(paths:Array<String>):(done:Void->Void)->Void {
 		return done -> {
+			loading();
 			#if js
-			var http = new helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter();
-			var cache = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory()});
-			var imageDecoder = new helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter();
-			polled.push(http);
-			var assets = new Assets({sources: [HttpServer(system.getProgramDirectory())], httpClient: http, cacheFileSystem: cache});
-			Runtime.assets = assets;
-			#else
-			// Natively a file is read when the program loads it, as raylib does: nothing is read before main.
-			var directory = haxe.io.Path.join([system.getProgramDirectory(), root]);
-			var cache = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory, readOnly: true});
-			var imageDecoder = new helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter();
-			var assets = new Assets({sources: [FileSystem(cache)]});
-			Runtime.assets = assets;
-			polled.push(cache);
-			polled.push(imageDecoder);
-			decoding = new helix.services.images.Images(imageDecoder, assets);
-			polled.push(decoding);
-			done();
-			return;
-			#end
-			polled.push(cache);
-			polled.push(imageDecoder);
-			var decoded = new helix.services.images.Images(imageDecoder, assets);
-			polled.push(decoded);
-			decoding = decoded;
 			var left = paths.length;
-			var one = () -> if (--left == 0) done();
 			if (left == 0)
 				done();
-			for (path in paths) {
-				var lower = path.toLowerCase();
-				if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".tga")) {
-					decoded.load(path, image -> {
-						images.set(path, image);
+			for (path in paths)
+				fetch(path, _ -> if (--left == 0) done());
+			#else
+			done();
+			#end
+		};
+	}
+
+	/** Brings a file into memory: an image decoded, a glTF file with its images decoded and the files it points to, anything else as
+		bytes. Answers at a later poll, never during the call.
+
+		@param path  The file.
+		@param done  Receives whether it was brought in, and why not when it wasn't. */
+	public static function fetch(path:String, done:Null<String>->Void):Void {
+		loading();
+		var lower = path.toLowerCase();
+		if (images.exists(path) || files.exists(path)) {
+			later(() -> done(null));
+			return;
+		}
+		if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".tga")) {
+			decoding.load(path, image -> {
+				images.set(path, image);
+				done(null);
+			}, error -> done(error));
+			return;
+		}
+		assets.load(path, bytes -> {
+			files.set(path, bytes);
+			if (!(lower.endsWith(".glb") || lower.endsWith(".gltf"))) {
+				done(null);
+				return;
+			}
+			// A model's images are decoded now too, and the files it points to brought in, so LoadModel answers at once.
+			var file = try Gltf.read(bytes) catch (e:Dynamic) {
+				done(Std.string(e));
+				return;
+			}
+			var left = 1;
+			var one = () -> if (--left == 0) done(null);
+			var directory = haxe.io.Path.directory(path);
+			for (missing in file.missingBuffers) {
+				left++;
+				fetch(directory == "" ? missing.uri : directory + "/" + missing.uri, _ -> one());
+			}
+			for (i in 0...file.list("images").length) {
+				var key = Models.imageKey(path, file, i),
+					encoded = Models.imageBytes(file, i);
+				left++;
+				if (encoded == null)
+					fetch(key, _ -> one());
+				else
+					decoding.decode(encoded, image -> {
+						images.set(key, image);
 						one();
 					}, error -> {
-						trace(error);
+						trace('$key: $error');
 						one();
 					});
-					continue;
-				}
-				assets.load(path, bytes -> {
-					if (lower.endsWith(".glb") || lower.endsWith(".gltf")) {
-						files.set(path, bytes);
-						// A model's images are decoded now too, as LoadModel answers at once.
-						var embedded = [];
-						try {
-							var file = Gltf.read(bytes);
-							for (i in 0...file.list("images").length) {
-								var encoded = Models.imageBytes(file, i);
-								if (encoded != null)
-									embedded.push({key: Models.imageKey(path, file, i), bytes: encoded});
-							}
-						} catch (e:Dynamic) {
-							trace('$path: $e');
-						}
-						left += embedded.length;
-						for (image in embedded)
-							decoded.decode(image.bytes, decodedImage -> {
-								images.set(image.key, decodedImage);
-								one();
-							}, error -> {
-								trace('${image.key}: $error');
-								one();
-							});
-						one();
-					} else {
-						files.set(path, bytes);
-						one();
-					}
-				}, error -> {
-					trace('$path: $error');
-					one();
-				});
 			}
-		};
+			one();
+		}, error -> done(error));
+	}
+
+	/** Calls a function at the next poll: an answer that is ready now, given later, as every answer is.
+
+		@param f  The function. */
+	public static function later(f:Void->Void):Void {
+		waiting.push(f);
+	}
+
+	static var waiting:Array<Void->Void> = [];
+
+	/** Returns why a load found nothing: in a page, how to bring the file in.
+
+		@param function  The raylib function.
+		@param path  The file.
+		@return  The message. */
+	public static function notLoaded(name:String, path:String):String {
+		#if js
+		return '$name: $path isn\'t loaded in this page: name it in the program, so it\'s loaded before main, add its folder to '
+			+ '-D helix-ray-preload, or load it with ${name}Async';
+		#else
+		return '$name: $path couldn\'t be read';
+		#end
 	}
 
 	/** Returns a file's bytes: in a page as loaded before main; natively read now, polling until it answers.
@@ -204,7 +243,8 @@ class Runtime {
 		@return  Its bytes, or null when it can't be read. */
 	public static function fileNow(path:String):Null<Bytes> {
 		#if !js
-		if (!files.exists(path) && assets != null) {
+		loading();
+		if (!files.exists(path)) {
 			var answered = false;
 			assets.load(path, bytes -> {
 				files.set(path, bytes);
@@ -225,7 +265,8 @@ class Runtime {
 		@return  The image, or null when it can't be read or decoded. */
 	public static function imageNow(path:String):Null<helix.services.images.Image> {
 		#if !js
-		if (!images.exists(path) && decoding != null) {
+		loading();
+		if (!images.exists(path)) {
 			var answered = false;
 			decoding.load(path, image -> {
 				images.set(path, image);
@@ -249,7 +290,8 @@ class Runtime {
 		#if !js
 		if (bytes == null)
 			return imageNow(key);
-		if (!images.exists(key) && decoding != null) {
+		loading();
+		if (!images.exists(key)) {
 			var answered = false;
 			decoding.decode(bytes, image -> {
 				images.set(key, image);
@@ -427,6 +469,12 @@ class Runtime {
 	/** Polls the platform and the services, then reads the frame's events. */
 	static function poll():Void {
 		pollAll();
+		if (waiting.length > 0) {
+			var now = waiting;
+			waiting = [];
+			for (f in now)
+				f();
+		}
 		events.poll();
 		keysPressed.resize(0);
 		resized = false;

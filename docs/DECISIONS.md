@@ -90,3 +90,15 @@ Why things are the way they are, numbered, in order.
     per project (`vendor/<project>/`), as each is published from its own directory; haxelib.json says BSD, as haxelib has no zlib. Each
     library's README credits what it includes (helix-platform: Sokol, SDL, SDL3_mixer, stb, dr_libs, the shader tools; helix-ray and
     helix-math: raylib, whose small guessable API is the work helix-ray is built on), in place of a repository-wide notices file.
+
+19. **helix-ray loads as raylib does, and says what a page can't.** raylib's loads answer at once and own what they load, with no
+    sharing, deferred upload or async. helix-ray keeps the API and changes what it can underneath: a file loaded twice shares its GPU
+    copy (textures, a model's meshes and textures, a decoded sound), freed by its last unload; textures and meshes go to the GPU at
+    their first draw; natively each load reads its file when called. A page can't read synchronously, so it loads before `main` the
+    files its program names (a string in its sources equal to a file's path, the files a named glTF points to, and the folders of
+    `-D helix-ray-preload`), and a load of anything else refuses with how to bring it in. `LoadTextureAsync`, `LoadModelAsync`,
+    `LoadSoundAsync` and `LoadFileTextAsync`, helix-ray's own, answer when ready on both targets, after which the plain load answers
+    at once. Swapping a placeholder in under the plain loads was weighed and left out: sizes and bounds read at load would be the
+    placeholder's (all three 3D trial agents fitted the camera to the model's bounds); placeholders belong to a managed layer, as
+    librl has them. Every raylib and raymath function helix-ray lacks is a macro that refuses to compile, naming itself, so a program
+    knows it remembered raylib right. The defines are helix-ray's: `helix-ray-files`, `helix-ray-native-root`, `helix-ray-preload`.

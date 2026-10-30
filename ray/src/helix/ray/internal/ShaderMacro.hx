@@ -254,7 +254,7 @@ void main() {
 	}
 
 	/** Returns the text a shader argument names: a constant string, or a file's text by its path, relative to the program's files
-		(`ray-files`); null for a null argument.
+		(`helix-ray-files`); null for a null argument.
 
 		@param e  The argument.
 		@param file  Whether it names a file.
@@ -265,12 +265,12 @@ void main() {
 			return null;
 		if (!file)
 			return {name: "shader text", text: value};
-		var files = Context.definedValue("ray-files");
+		var files = Context.definedValue("helix-ray-files");
 		if (files == null)
 			files = "web";
 		var path = Path.join([files, value]);
 		if (!FileSystem.exists(path))
-			Context.error('LoadShader: $path not found (the file is read as the program builds, from -D ray-files, default web)', e.pos);
+			Context.error('LoadShader: $path not found (the file is read as the program builds, from -D helix-ray-files, default web)', e.pos);
 		Context.registerModuleDependency(Context.getLocalModule(), path);
 		return {name: value, text: File.getContent(path)};
 	}

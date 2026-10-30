@@ -1,7 +1,9 @@
 # Roadmap
 
-- **helix-ray, on trial (DECISIONS 16):** raylib's API over the services; to decide whether it merges. Not there yet: skinned models
-  and animations, fonts from files, images on the CPU, `SetTextureFilter`, sightblinder (Windows). Platform changes it would like,
+- **helix-ray, on trial (DECISIONS 16, 19):** raylib's API over the services; to decide whether it merges. Next: raylib's music
+  streaming (over `Audio.stream`), its load and save hooks with `LoadFileData`, then a managed layer beside it (assets, instances,
+  placeholders, as librl has them), designed as an API first. Not there yet: skinned models and animations, fonts from files, images
+  on the CPU, `SetTextureFilter`, `UpdateMeshBuffer`, `DrawMeshInstanced`; each refuses to compile, naming itself. Platform changes it would like,
   for review: a render-target pass that keeps what the target holds (raylib's render textures keep it; ours start cleared each
   frame), a uniform block both shader stages share (worked around: a block a stage), `ShaderCompiler.compileText` as a supported
   entry point, and a page's cache in OPFS readable at once from the main thread (a worker holding OPFS's sync handles, the page

@@ -10,9 +10,10 @@ import sys.FileSystem;
 /** Lets a program keep raylib's own shape, `while (!WindowShouldClose()) { ... }`, on every target.
 
 	A page can't block, so the loop's body becomes a function called once a frame, and what follows the loop runs when it stops. The
-	program's `main` runs once its files are loaded (`Runtime.boot`). The files are those under `-D ray-files=<directory>` (default `web`),
-	the directory the program's paths are relative to as it builds; natively the program finds them at `-D ray-native-root=<directory>`
-	(default `../web`), relative to its own. */
+	program's `main` runs once its files are loaded (`Runtime.boot`). The files are those under `-D helix-ray-files=<directory>` (default `web`),
+	the directory the program's paths are relative to as it builds; natively the program finds them at `-D helix-ray-native-root=<directory>`
+	(default `../web`), relative to its own. A page loads before `main` only the files its program names and those under
+	`-D helix-ray-preload=<folder>,...`. */
 class Loop {
 	/** Adds `build` to the program's main class. Run by the library's `extraParams.hxml`. */
 	public static function install():Void {
@@ -33,48 +34,102 @@ class Loop {
 					f.expr = rewriteLoop(f.expr);
 				case _:
 			}
-		var files = Context.definedValue("ray-files");
+		var files = Context.definedValue("helix-ray-files");
 		if (files == null)
 			files = "web";
-		var root = Context.definedValue("ray-native-root");
+		var root = Context.definedValue("helix-ray-native-root");
 		if (root == null)
 			root = "../web";
-		var paths = [];
+		var all = [];
 		if (FileSystem.exists(files))
-			list(files, "", paths);
+			list(files, "", all);
+		// A page reads before main the files the program names in its sources (a string equal to a file's path, wherever it is
+		// written), those a named glTF file points to, and every file under -D helix-ray-preload's folders; the rest it loads with the
+		// ...Async functions. Natively nothing is read before main.
+		var sources = Path.directory(Context.getPosInfos(Context.getLocalClass().get().pos).file);
+		var text = sourceText(sources == "" ? "." : sources);
+		var named = new Map<String, Bool>();
+		var literal = ~/"([^"\n]+)"|'([^'\n]+)'/;
+		var scan = text;
+		while (literal.match(scan)) {
+			var value = literal.matched(1) != null ? literal.matched(1) : literal.matched(2);
+			while (StringTools.startsWith(value, "./"))
+				value = value.substr(2);
+			named.set(value, true);
+			scan = literal.matchedRight();
+		}
+		var folders = Context.definedValue("helix-ray-preload");
+		var paths = [];
+		for (path in all) {
+			var inFolder = false;
+			if (folders != null)
+				for (folder in folders.split(","))
+					if (StringTools.trim(folder) != "" && StringTools.startsWith(path, StringTools.trim(folder) + "/"))
+						inFolder = true;
+			// A shader is compiled into the program as it builds (LoadShader), so it isn't read at all.
+			var shader = ~/\.(vs|fs|vert|frag|glsl)$/i.match(path);
+			if ((named.exists(path) || inFolder) && !shader)
+				paths.push(path);
+		}
+		for (path in paths.copy())
+			for (dependency in gltfFiles(files, path))
+				if (all.indexOf(dependency) >= 0 && paths.indexOf(dependency) < 0)
+					paths.push(dependency);
 		paths.sort(Reflect.compare);
 		// Only what the program uses is read before main, and linked: its files when it has any, the saves when its code names the
 		// functions that read or write them.
 		var preloads = [];
 		if (paths.length > 0)
-			preloads.push(macro helix.ray.internal.Runtime.preloadFiles($v{paths}, $v{root}));
-		if (namesSaves(Path.directory(Context.getPosInfos(Context.getLocalClass().get().pos).file)))
+			preloads.push(macro helix.ray.internal.Runtime.preloadFiles($v{paths}));
+		if (~/\b(SaveFileText|LoadFileText|LoadFileTextAsync|FileExists)\b/.match(text))
 			preloads.push(macro helix.ray.internal.Runtime.preloadSaves());
 		for (field in fields)
 			if (field.name == "main")
 				switch field.kind {
 					case FFun(f) if (f.expr != null):
 						var body = f.expr;
-						f.expr = macro helix.ray.internal.Runtime.boot([$a{preloads}], () -> $body);
+						f.expr = macro {
+							helix.ray.internal.Runtime.root = $v{root};
+							helix.ray.internal.Runtime.boot([$a{preloads}], () -> $body);
+						};
 					case _:
 				}
 		return fields;
 	}
 
-	// Whether the program's sources, under the main class's directory, name a function that reads or writes the saves.
-	static function namesSaves(dir:String):Bool {
-		if (dir == "")
-			dir = ".";
+	// The program's sources, under the main class's directory, as one text.
+	static function sourceText(dir:String):String {
+		var out = new StringBuf();
 		for (entry in FileSystem.readDirectory(dir)) {
 			var path = Path.join([dir, entry]);
-			if (FileSystem.isDirectory(path)) {
-				if (namesSaves(path))
-					return true;
-			} else if (StringTools.endsWith(entry, ".hx")
-				&& ~/\b(SaveFileText|LoadFileText|FileExists)\b/.match(sys.io.File.getContent(path)))
-				return true;
+			if (FileSystem.isDirectory(path))
+				out.add(sourceText(path));
+			else if (StringTools.endsWith(entry, ".hx"))
+				out.add(sys.io.File.getContent(path));
 		}
-		return false;
+		return out.toString();
+	}
+
+	// The files a glTF file points to (its buffers' and images' uris), as paths beside it; none for anything else.
+	static function gltfFiles(base:String, path:String):Array<String> {
+		var lower = path.toLowerCase();
+		if (!StringTools.endsWith(lower, ".gltf") && !StringTools.endsWith(lower, ".glb"))
+			return [];
+		try {
+			var bytes = sys.io.File.getBytes(Path.join([base, path]));
+			var json = if (bytes.length >= 20 && bytes.getString(0, 4) == "glTF") bytes.getString(20, bytes.getInt32(12)) else bytes.toString();
+			var document:Dynamic = haxe.Json.parse(json);
+			var directory = Path.directory(path);
+			var out = [];
+			for (list in [document.buffers, document.images])
+				if (list != null)
+					for (entry in (list : Array<Dynamic>))
+						if (entry.uri != null && !StringTools.startsWith(entry.uri, "data:"))
+							out.push(directory == "" ? entry.uri : directory + "/" + entry.uri);
+			return out;
+		} catch (e:Dynamic) {
+			return [];
+		}
 	}
 
 	// The files under a directory, as paths relative to it, leaving out the page's own.
