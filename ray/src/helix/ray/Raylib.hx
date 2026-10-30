@@ -1237,7 +1237,7 @@ class Raylib {
 		return RCore.FileExists(fileName);
 
 	/** Reads a text file: through the program's `SetLoadFileTextCallback` when it has one, else one `SaveFileText` wrote, else one of
-		the program's (in a page, as loaded before `main`; natively, read now).
+		the program's: natively read now; in a page, one an earlier `LoadFileTextAsync` brought in.
 
 		@param fileName  The file.
 		@return  Its text, or null when it can't be read. */
@@ -1260,12 +1260,12 @@ class Raylib {
 		return RCore.SaveFileText(fileName, text);
 
 	/** Reads a file's bytes: through the program's `SetLoadFileDataCallback` when it has one, else one `SaveFileData` wrote, else one
-		of the program's (in a page, as loaded before `main`; natively, read now). raylib also gives the size through a pointer; here it
-		is the bytes' `length`.
+		of the program's, read now. raylib also gives the size through a pointer; here it is the bytes' `length`. A page can't wait
+		for a file, so there it doesn't compile: see `LoadFileDataAsync`.
 
 		@param fileName  The file.
 		@return  Its bytes, or null when it can't be read. */
-	public static inline function LoadFileData(fileName:String):Null<haxe.io.Bytes>
+	public static function LoadFileData(fileName:String):Null<haxe.io.Bytes>
 		return RCore.LoadFileData(fileName);
 
 	/** Frees bytes `LoadFileData` returned. There is nothing to free here.
@@ -1695,12 +1695,12 @@ class Raylib {
 
 	// ---- rtextures: textures, render textures and colors (raylib/RTextures.hx) ----
 
-	/** Loads an image file as a texture: in a page from the files loaded before `main`, natively read now. A file loaded again shares
-		its first load's texture, and the image goes to the GPU when first drawn.
+	/** Loads an image file as a texture, read now. A file loaded again shares its first load's texture, and the image goes to the GPU
+		when first drawn. A page can't wait for a file, so there it doesn't compile: see `LoadTextureAsync`.
 
 		@param fileName  The file, as the program names it, such as "assets/player.png".
 		@return  The texture; its `id` is 0 when the file couldn't be read. */
-	public static inline function LoadTexture(fileName:String):Texture2D
+	public static function LoadTexture(fileName:String):Texture2D
 		return RTextures.LoadTexture(fileName);
 
 	/** Frees a texture: one load of its file, the GPU's copy with the last.
@@ -1955,13 +1955,13 @@ class Raylib {
 	public static inline function DrawGrid(slices:Int, spacing:Float):Void
 		RModels.DrawGrid(slices, spacing);
 
-	/** Loads a model from a glTF or GLB file: its meshes, their materials and its images; in a page from the files loaded before `main`,
-		natively read now. A file loaded again shares its first load's meshes and textures, with materials of its own; meshes go to the
-		GPU when first drawn.
+	/** Loads a model from a glTF or GLB file, read now: its meshes, their materials and its images. A file loaded again shares its first
+		load's meshes and textures, with materials of its own; meshes go to the GPU when first drawn. A page can't wait for a file, so
+		there it doesn't compile: see `LoadModelAsync`.
 
 		@param fileName  The file, as the program names it, such as "assets/trophy.glb".
 		@return  The model; with no meshes when the file couldn't be read. */
-	public static inline function LoadModel(fileName:String):Model
+	public static function LoadModel(fileName:String):Model
 		return RModels.LoadModel(fileName);
 
 	/** Makes a model of one mesh, with the default material.
@@ -2182,11 +2182,11 @@ class Raylib {
 		return RAudio.GetMasterVolume();
 
 	/** Loads a sound file whole. It decodes in the background; played before then, it starts once decoded. A file loaded again shares
-		its first load's decoded sound.
+		its first load's decoded sound. A page can't wait for a file, so there it doesn't compile: see `LoadSoundAsync`.
 
 		@param fileName  The file, as the program names it, such as "assets/coin.wav".
 		@return  The sound. */
-	public static inline function LoadSound(fileName:String):Sound
+	public static function LoadSound(fileName:String):Sound
 		return RAudio.LoadSound(fileName);
 
 	/** Frees a sound, stopping it: one load of its file, the decoded sound with the last.
@@ -2243,7 +2243,7 @@ class Raylib {
 		RAudio.SetSoundPan(sound, pan);
 
 	/** Opens a music file, to be played as it is read (helix-services' `Audio.stream`): natively from its file, in a page from the
-		download as it arrives, so it is never loaded before `main`. It may be played at once; it starts once it opens.
+		download as it arrives, never loaded whole. It may be played at once; it starts once it opens.
 
 		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
 		@return  The music. */
@@ -2710,9 +2710,8 @@ class Raylib {
 
 	// ---- helix-ray's own: loading in a page (raylib/HelixRay.hx) ----
 
-	/** Loads an image file as a texture, answering when it is ready: helix-ray's own, for a page, where `LoadTexture` answers only for a
-		file already loaded (one the program names, so it was loaded before `main`, or one loaded this way). Natively the file is read
-		at once. Either way the answer comes at a later frame, never during the call, and `LoadTexture` of the file answers at once after.
+	/** Loads an image file as a texture, answering when it is ready: helix-ray's own, as a page can't wait for a file (`LoadTexture`
+		doesn't compile there). Natively the file is read at once. Either way the answer comes at a later frame, never during the call.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the texture.

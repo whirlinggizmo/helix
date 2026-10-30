@@ -27,6 +27,9 @@ SECTIONS = [
     ('RMath', 'raymath: vectors, matrices and quaternions'),
     ('HelixRay', "helix-ray's own: loading in a page"),
 ]
+# The loads a page can't make: not inline, so a page build's check finds each call of the program's to them where it is written
+# (helix.ray.internal.Loop).
+NOT_INLINE = {'LoadTexture', 'LoadModel', 'LoadSound', 'LoadFileData'}
 FUNCTION = re.compile(r'(\t/\*\*(?:(?!\*/).)*?\*/\n)\tpublic static function (\w+)\((.*?)\):\s*([^{\n]+?)\s*\{', re.S)
 
 
@@ -60,7 +63,8 @@ def generated():
             doc, function, params, result = m.group(1), m.group(2), ' '.join(m.group(3).split()), m.group(4).strip()
             call = f'{name}.{function}({", ".join(parameters(params))})'
             body = call if result == 'Void' else f'return {call}'
-            out += [doc.rstrip('\n'), f'\tpublic static inline function {function}({params}):{result}', f'\t\t{body};', '']
+            inline = '' if function in NOT_INLINE else 'inline '
+            out += [doc.rstrip('\n'), f'\tpublic static {inline}function {function}({params}):{result}', f'\t\t{body};', '']
     out += ['\t#end', '', END]
     # As the formatter lays it out, so formatting leaves it as it is: no blank line just inside the #if or before its #end, and never two.
     lines = []

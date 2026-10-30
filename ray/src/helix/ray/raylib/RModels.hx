@@ -205,9 +205,9 @@ class RModels {
 
 	// ---- Models and meshes ----
 
-	/** Loads a model from a glTF or GLB file: its meshes, their materials and its images; in a page from the files loaded before `main`,
-		natively read now. A file loaded again shares its first load's meshes and textures, with materials of its own; meshes go to the
-		GPU when first drawn.
+	/** Loads a model from a glTF or GLB file, read now: its meshes, their materials and its images. A file loaded again shares its first
+		load's meshes and textures, with materials of its own; meshes go to the GPU when first drawn. A page can't wait for a file, so
+		there it doesn't compile: see `LoadModelAsync`.
 
 		@param fileName  The file, as the program names it, such as "assets/trophy.glb".
 		@return  The model; with no meshes when the file couldn't be read. */

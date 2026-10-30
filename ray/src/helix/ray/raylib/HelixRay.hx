@@ -25,9 +25,8 @@ class HelixRay {
 	#if !macro
 	// ---- Loading in a page: helix-ray's own, not raylib's ----
 
-	/** Loads an image file as a texture, answering when it is ready: helix-ray's own, for a page, where `LoadTexture` answers only for a
-		file already loaded (one the program names, so it was loaded before `main`, or one loaded this way). Natively the file is read
-		at once. Either way the answer comes at a later frame, never during the call, and `LoadTexture` of the file answers at once after.
+	/** Loads an image file as a texture, answering when it is ready: helix-ray's own, as a page can't wait for a file (`LoadTexture`
+		doesn't compile there). Natively the file is read at once. Either way the answer comes at a later frame, never during the call.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the texture.
@@ -92,12 +91,10 @@ class HelixRay {
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	public static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
-		if (CallbackFiles.load != null || Runtime.saves != null && Runtime.saves.hasKey(RCore.SAVED_DATA + path)) {
-			var bytes = LoadFileData(path);
-			if (bytes != null) {
-				Runtime.later(() -> loaded(bytes));
-				return;
-			}
+		var bytes = RCore.dataNow(path);
+		if (bytes != null) {
+			Runtime.later(() -> loaded(bytes));
+			return;
 		}
 		Runtime.fetch(path, error -> error == null ? loaded(Runtime.files.get(path)) : refuse("LoadFileDataAsync", path, error, failed));
 	}

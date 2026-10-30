@@ -21,11 +21,12 @@ import helix.services.time.Time;
 
 using StringTools;
 
-/** Holds what `Raylib`'s functions share: the platform's adapters and the services over them, each made when first needed, the files
-	loaded before the program's `main`, and the frame.
+/** Holds what `Raylib`'s functions share: the platform's adapters and the services over them, each made when first needed, the files in
+	memory, and the frame.
 
-	raylib answers at once where the platform answers later, so the files under the program's assets directory are loaded, and its
-	images decoded, before `main` runs, as raylib's web builds preload theirs; the saves, which hold what `SaveFileText` writes, too. */
+	raylib answers a load at once. Natively so does helix-ray, reading the file then; a page can't wait for a file, so it loads through
+	the `...Async` functions, which bring files into memory here. The saves, which hold what `SaveFileText` writes, are read before
+	`main` when the program uses them. */
 @:noCompletion
 class Runtime {
 	public static var system:ISystem;
@@ -50,7 +51,7 @@ class Runtime {
 	/** What runs as the window closes, before it does: keeping the saves. */
 	public static final closing:Array<Void->Void> = [];
 
-	/** The files loaded before `main`, by path: images decoded, the rest as bytes. */
+	/** The files in memory, by path, as the loads brought them in: images decoded, and every file's bytes. */
 	public static final images = new Map<String, helix.services.images.Image>();
 
 	public static final files = new Map<String, Bytes>();
@@ -75,8 +76,7 @@ class Runtime {
 
 	/** Makes the system, then runs each preload and calls the program's `main` once all have answered.
 
-		@param preloads  What must be read before `main`: the files (`preloadFiles`) and the saves (`preloadSaves`), as the program uses
-			them.
+		@param preloads  What must be read before `main`: the saves (`preloadSaves`), when the program uses them.
 		@param main  The program's `main`. */
 	public static function boot(preloads:Array<(done:Void->Void)->Void>, main:Void->Void):Void {
 		#if js
@@ -140,26 +140,6 @@ class Runtime {
 		polled.push(imageDecoder);
 		decoding = new helix.services.images.Images(imageDecoder, assets);
 		polled.push(decoding);
-	}
-
-	/** Returns the preload of the program's files: in a page, those its program names, each loaded, its images decoded; natively nothing,
-		as a file is read when the program loads it.
-
-		@param paths  The files, as the program names them.
-		@return  The preload. */
-	public static function preloadFiles(paths:Array<String>):(done:Void->Void)->Void {
-		return done -> {
-			loading();
-			#if js
-			var left = paths.length;
-			if (left == 0)
-				done();
-			for (path in paths)
-				fetch(path, _ -> if (--left == 0) done());
-			#else
-			done();
-			#end
-		};
 	}
 
 	/** Brings a file into memory: an image decoded, a glTF file with its images decoded and the files it points to, anything else as
@@ -257,15 +237,14 @@ class Runtime {
 
 	static var waiting:Array<Void->Void> = [];
 
-	/** Returns why a load found nothing: in a page, how to bring the file in.
+	/** Returns why a load found nothing: in a page, which load brings the file in.
 
 		@param function  The raylib function.
 		@param path  The file.
 		@return  The message. */
 	public static function notLoaded(name:String, path:String):String {
 		#if js
-		return '$name: $path isn\'t loaded in this page: name it in the program, so it\'s loaded before main, add its folder to '
-			+ '-D helix-ray-preload, or load it with ${name}Async';
+		return '$name: $path isn\'t loaded. See ${name}Async()';
 		#else
 		return '$name: $path couldn\'t be read';
 		#end

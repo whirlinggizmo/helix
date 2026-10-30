@@ -82,7 +82,7 @@ class RAudio {
 	}
 
 	/** Loads a sound file whole. It decodes in the background; played before then, it starts once decoded. A file loaded again shares
-		its first load's decoded sound.
+		its first load's decoded sound. A page can't wait for a file, so there it doesn't compile: see `LoadSoundAsync`.
 
 		@param fileName  The file, as the program names it, such as "assets/coin.wav".
 		@return  The sound. */
@@ -237,7 +237,7 @@ class RAudio {
 	// ---- Music ----
 
 	/** Opens a music file, to be played as it is read (helix-services' `Audio.stream`): natively from its file, in a page from the
-		download as it arrives, so it is never loaded before `main`. It may be played at once; it starts once it opens.
+		download as it arrives, never loaded whole. It may be played at once; it starts once it opens.
 
 		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
 		@return  The music. */

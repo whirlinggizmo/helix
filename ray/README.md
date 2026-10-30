@@ -24,9 +24,8 @@ Until it is published, link it, and the libraries it's built on, from a checkout
 haxelib dev helix-ray <checkout>/ray
 ```
 
-`-D helix-ray-files=<directory>` names where the program's files are as it builds (default `web`), and `-D helix-ray-native-root=<directory>`
-where a native program finds them, relative to itself (default `../web`). A page loads before `main` the files its program names, and
-those under `-D helix-ray-preload=<folder>,...`; the rest it loads with the `...Async` functions.
+`-D helix-ray-files=<directory>` names where the program's shaders are as it builds (default `web`), and `-D helix-ray-native-root=<directory>`
+where a native program finds its files, relative to itself (default `../web`).
 
 ## Examples
 

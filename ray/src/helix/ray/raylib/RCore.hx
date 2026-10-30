@@ -510,7 +510,7 @@ class RCore {
 	}
 
 	/** Reads a text file: through the program's `SetLoadFileTextCallback` when it has one, else one `SaveFileText` wrote, else one of
-		the program's (in a page, as loaded before `main`; natively, read now).
+		the program's: natively read now; in a page, one an earlier `LoadFileTextAsync` brought in.
 
 		@param fileName  The file.
 		@return  Its text, or null when it can't be read. */
@@ -552,16 +552,14 @@ class RCore {
 	}
 
 	/** Reads a file's bytes: through the program's `SetLoadFileDataCallback` when it has one, else one `SaveFileData` wrote, else one
-		of the program's (in a page, as loaded before `main`; natively, read now). raylib also gives the size through a pointer; here it
-		is the bytes' `length`.
+		of the program's, read now. raylib also gives the size through a pointer; here it is the bytes' `length`. A page can't wait
+		for a file, so there it doesn't compile: see `LoadFileDataAsync`.
 
 		@param fileName  The file.
 		@return  Its bytes, or null when it can't be read. */
 	public static function LoadFileData(fileName:String):Null<haxe.io.Bytes> {
 		var path = normalize(fileName);
-		if (Runtime.saves != null && Runtime.saves.hasKey(SAVED_DATA + path) && CallbackFiles.load == null)
-			return haxe.crypto.Base64.decode(Runtime.saves.getString(SAVED_DATA + path, ""));
-		var bytes = Runtime.fileNow(path);
+		var bytes = dataNow(path);
 		if (bytes == null)
 			Runtime.log(4, Runtime.notLoaded("LoadFileData", path));
 		return bytes;
@@ -655,6 +653,21 @@ class RCore {
 	static var saveText:Null<(String, String) -> Bool> = null;
 	@:allow(helix.ray)
 	static var saveData:Null<(String, haxe.io.Bytes, Int) -> Bool> = null;
+
+	// A file's bytes as they are at hand, without logging: the program's load callback's, then the saves', then the program's own (in
+	// a page only as an async load brought them in).
+
+	@:allow(helix.ray)
+	static function dataNow(path:String):Null<haxe.io.Bytes> {
+		if (CallbackFiles.load != null) {
+			var given = CallbackFiles.load(path);
+			if (given != null)
+				return given;
+		}
+		if (Runtime.saves != null && Runtime.saves.hasKey(SAVED_DATA + path))
+			return haxe.crypto.Base64.decode(Runtime.saves.getString(SAVED_DATA + path, ""));
+		return Runtime.fileNow(path);
+	}
 
 	// Whether a text file was written to the saves.
 

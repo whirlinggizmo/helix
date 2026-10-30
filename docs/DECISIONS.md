@@ -102,3 +102,13 @@ Why things are the way they are, numbered, in order.
     placeholder's (all three 3D trial agents fitted the camera to the model's bounds); placeholders belong to a managed layer, as
     librl has them. Every raylib and raymath function helix-ray lacks is a macro that refuses to compile, naming itself, so a program
     knows it remembered raylib right. The defines are helix-ray's: `helix-ray-files`, `helix-ray-native-root`, `helix-ray-preload`.
+
+20. **A page's loads are asynchronous, said by the compiler.** DECISIONS 19's preload, files found by scanning the program's sources for
+    their paths, guessed at build time what only a run knows: a file not preloaded may be in memory by its load, brought in by an
+    earlier async load or the program's load callback, and a computed name was missed silently. Folders named for preloading, raylib's
+    own way, still guessed. So a page build refuses `LoadTexture`, `LoadModel`, `LoadSound` and `LoadFileData` where they are written,
+    "LoadTexture: Synchronous loading is not supported. See LoadTextureAsync()": short, naming the way, raising no new question.
+    Natively they load at once, as raylib's do, and the `...Async` loads work on both, so a program for both uses them. A page reads
+    nothing before `main` but the saves, when the program uses them; `LoadFileText` and `FileExists` still answer from the saves, and
+    `LoadMusicStream` streams. Faking synchronous loads in a page, which would let raylib code build for it unchanged, waits for a
+    trial of how agents take to the async loads (ROADMAP).

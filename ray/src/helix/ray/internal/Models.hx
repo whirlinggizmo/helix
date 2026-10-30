@@ -199,7 +199,7 @@ class Models {
 		return mesh;
 	}
 
-	/** Returns the key a glTF file's image is decoded under before `main`: its own file's path, or the file and the image's index.
+	/** Returns the key a glTF file's image is kept under in memory: its own file's path, or the file and the image's index.
 
 		@param path  The glTF file.
 		@param file  The file, read.

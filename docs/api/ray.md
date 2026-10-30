@@ -1185,7 +1185,7 @@ static function EndShaderMode():Void
 - `FileExists`: Returns whether a file exists: one the program's save callback or `SaveFileText`/`SaveFileData` wrote, or one of the program's loaded in memory.
   - `fileName`: The file.
   - returns: True when it exists.
-- `LoadFileText`: Reads a text file: through the program's `SetLoadFileTextCallback` when it has one, else one `SaveFileText` wrote, else one of the program's (in a page, as loaded before `main`; natively, read now).
+- `LoadFileText`: Reads a text file: through the program's `SetLoadFileTextCallback` when it has one, else one `SaveFileText` wrote, else one of the program's: natively read now; in a page, one an earlier `LoadFileTextAsync` brought in.
   - `fileName`: The file.
   - returns: Its text, or null when it can't be read.
 - `UnloadFileText`: Frees text `LoadFileText` returned. There is nothing to free here.
@@ -1194,7 +1194,7 @@ static function EndShaderMode():Void
   - `fileName`: The file.
   - `text`: Its text.
   - returns: True when it was written, or will be.
-- `LoadFileData`: Reads a file's bytes: through the program's `SetLoadFileDataCallback` when it has one, else one `SaveFileData` wrote, else one of the program's (in a page, as loaded before `main`; natively, read now). raylib also gives the size through a pointer; here it is the bytes' `length`.
+- `LoadFileData`: Reads a file's bytes: through the program's `SetLoadFileDataCallback` when it has one, else one `SaveFileData` wrote, else one of the program's, read now. raylib also gives the size through a pointer; here it is the bytes' `length`. A page can't wait for a file, so there it doesn't compile: see `LoadFileDataAsync`.
   - `fileName`: The file.
   - returns: Its bytes, or null when it can't be read.
 - `UnloadFileData`: Frees bytes `LoadFileData` returned. There is nothing to free here.
@@ -1447,7 +1447,7 @@ static function EndTextureMode():Void
 static function SetTextureFilter(texture:Texture2D, filter:Int):Void
 ```
 
-- `LoadTexture`: Loads an image file as a texture: in a page from the files loaded before `main`, natively read now. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn.
+- `LoadTexture`: Loads an image file as a texture, read now. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. A page can't wait for a file, so there it doesn't compile: see `LoadTextureAsync`.
   - `fileName`: The file, as the program names it, such as "assets/player.png".
   - returns: The texture; its `id` is 0 when the file couldn't be read.
 - `UnloadTexture`: Frees a texture: one load of its file, the GPU's copy with the last.
@@ -1624,7 +1624,7 @@ static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCol
 - `DrawGrid`: Draws a grid on the XZ plane, centered on the origin: its center lines darker, as raylib's.
   - `slices`: The lines each way.
   - `spacing`: The space between them.
-- `LoadModel`: Loads a model from a glTF or GLB file: its meshes, their materials and its images; in a page from the files loaded before `main`, natively read now. A file loaded again shares its first load's meshes and textures, with materials of its own; meshes go to the GPU when first drawn.
+- `LoadModel`: Loads a model from a glTF or GLB file, read now: its meshes, their materials and its images. A file loaded again shares its first load's meshes and textures, with materials of its own; meshes go to the GPU when first drawn. A page can't wait for a file, so there it doesn't compile: see `LoadModelAsync`.
   - `fileName`: The file, as the program names it, such as "assets/trophy.glb".
   - returns: The model; with no meshes when the file couldn't be read.
 - `LoadModelFromMesh`: Makes a model of one mesh, with the default material.
@@ -1763,7 +1763,7 @@ static function SetMusicPan(music:Music, pan:Float):Void
   - `volume`: 0 (silent) to 1.
 - `GetMasterVolume`: Returns the volume of every sound.
   - returns: 0 (silent) to 1.
-- `LoadSound`: Loads a sound file whole. It decodes in the background; played before then, it starts once decoded. A file loaded again shares its first load's decoded sound.
+- `LoadSound`: Loads a sound file whole. It decodes in the background; played before then, it starts once decoded. A file loaded again shares its first load's decoded sound. A page can't wait for a file, so there it doesn't compile: see `LoadSoundAsync`.
   - `fileName`: The file, as the program names it, such as "assets/coin.wav".
   - returns: The sound.
 - `UnloadSound`: Frees a sound, stopping it: one load of its file, the decoded sound with the last.
@@ -1787,7 +1787,7 @@ static function SetMusicPan(music:Music, pan:Float):Void
 - `SetSoundPan`: Sets where a sound is heard, for its next play and the one playing.
   - `sound`: The sound.
   - `pan`: 0 for left, 0.5 the middle, 1 for right, as raylib's.
-- `LoadMusicStream`: Opens a music file, to be played as it is read (helix-services' `Audio.stream`): natively from its file, in a page from the download as it arrives, so it is never loaded before `main`. It may be played at once; it starts once it opens.
+- `LoadMusicStream`: Opens a music file, to be played as it is read (helix-services' `Audio.stream`): natively from its file, in a page from the download as it arrives, never loaded whole. It may be played at once; it starts once it opens.
   - `fileName`: The file, as the program names it, such as "assets/theme.ogg".
   - returns: The music.
 - `IsMusicValid`: Returns whether music was opened, or is still opening.
@@ -2072,7 +2072,7 @@ static function LoadFileTextAsync(fileName:String, loaded:String -> Void, ?faile
 static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):Void
 ```
 
-- `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-ray's own, for a page, where `LoadTexture` answers only for a file already loaded (one the program names, so it was loaded before `main`, or one loaded this way). Natively the file is read at once. Either way the answer comes at a later frame, never during the call, and `LoadTexture` of the file answers at once after.
+- `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-ray's own, as a page can't wait for a file (`LoadTexture` doesn't compile there). Natively the file is read at once. Either way the answer comes at a later frame, never during the call.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the texture.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.

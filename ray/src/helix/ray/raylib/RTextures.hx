@@ -24,8 +24,8 @@ class RTextures {
 	#if !macro
 	// ---- Textures ----
 
-	/** Loads an image file as a texture: in a page from the files loaded before `main`, natively read now. A file loaded again shares
-		its first load's texture, and the image goes to the GPU when first drawn.
+	/** Loads an image file as a texture, read now. A file loaded again shares its first load's texture, and the image goes to the GPU
+		when first drawn. A page can't wait for a file, so there it doesn't compile: see `LoadTextureAsync`.
 
 		@param fileName  The file, as the program names it, such as "assets/player.png".
 		@return  The texture; its `id` is 0 when the file couldn't be read. */
