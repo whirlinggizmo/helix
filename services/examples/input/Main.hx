@@ -1,12 +1,13 @@
 import helix.services.input.Actions;
-import helix.services.input.Input;
+import helix.services.input.Gamepads;
+import helix.services.input.Keyboard;
 import helix.platform.IEvents;
 import helix.platform.IGraphics;
 import helix.platform.IPollable;
 import helix.platform.ISystem;
 import helix.platform.IWindow;
 
-/** Shows Input and Actions: one action, "jump", bound to Space and the first gamepad's bottom button, read each frame.
+/** Shows Keyboard, Gamepads and Actions: one action, "jump", bound to Space and the first gamepad's bottom button, read each frame.
 
 	The screen is grey until that happens, then green. The window, its events and the loop are the platform's, written out by hand, as a
 	program does them until the layer above the services does. The `frames` option (`HELIX_FRAMES=60` natively, `?frames=60` in a page)
@@ -22,7 +23,8 @@ class Main {
 	static final polled:Array<IPollable> = [];
 	static var color = WAITING;
 	static var framesLeft = -1;
-	static var input:Input;
+	static var keyboard:Keyboard;
+	static var pads:Gamepads;
 	static var actions:Actions;
 
 	static function main():Void {
@@ -53,11 +55,13 @@ class Main {
 		#end
 	}
 
-	/** Makes the input over the events, and binds the action. */
+	/** Makes the keyboard and the gamepads over the events, and the action over them. */
 	static function setup():Void {
-		input = new Input(events);
-		polled.push(input);
-		actions = new Actions(input);
+		keyboard = new Keyboard(events);
+		pads = new Gamepads(events);
+		polled.push(keyboard);
+		polled.push(pads);
+		actions = new Actions([keyboard, pads]);
 		actions.bind("jump", Keyboard(Space), Pad(0, South));
 		trace("hold Space or the pad's bottom button");
 	}

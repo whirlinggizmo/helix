@@ -1,6 +1,6 @@
 package helix.platform.adapters.events.dom;
 
-import helix.platform.adapters.shared.Activation;
+import helix.platform.adapters.shared.FirstPress;
 import helix.platform.Event;
 import helix.platform.IEvents;
 import helix.platform.PadAxis;
@@ -180,10 +180,19 @@ class DomEventsAdapter implements IEvents {
 				held[i] = down;
 			}
 		}
-		activated = Activation.mark(delivered, activated);
+		firstPress = FirstPress.mark(delivered, firstPress);
+		var answers = tiltAnswers;
+		tiltAnswers = [];
+		for (answer in answers)
+			answer();
 	}
 
-	var activated = false;
+	var firstPress = false;
+
+	public var unlocked(get, never):Bool;
+
+	function get_unlocked():Bool
+		return firstPress;
 
 	public var events(get, never):Array<Event>;
 
@@ -222,30 +231,36 @@ class DomEventsAdapter implements IEvents {
 	var tiltListener:Null<Dynamic->Void>;
 	var tiltAsking:Null<Dynamic->Void>;
 
-	/** Listens to the device's orientation while on.
-
-		Where the browser asks for leave (iOS), it is asked at the player's next tap, which shows its prompt. A page that isn't secure gets no
-		readings (NeedsHttps). No reading within a second and a half of the page having its focus is reported unavailable,
-		though it goes on listening: a phone's sensor may start late. */
-	public function setTiltWanted(on:Bool):Void {
+	/** Stops the readings and any ask still waiting for a tap. */
+	public function releaseTiltAccess():Void {
 		var window:Dynamic = Browser.window;
-		if (!on) {
-			var wasWanted = tiltListener != null || tiltAsking != null;
-			if (tiltListener != null)
-				window.removeEventListener("deviceorientation", tiltListener);
-			tiltListener = null;
-			stopAsking();
-			if (wasWanted)
-				recorded.push(TiltState(Off));
-			return;
-		}
+		tiltDone = null;
+		tiltFailed = null;
+		var wasWanted = tiltListener != null || tiltAsking != null;
+		if (tiltListener != null)
+			window.removeEventListener("deviceorientation", tiltListener);
+		tiltListener = null;
+		stopAsking();
+		if (wasWanted)
+			recorded.push(TiltState(Off));
+	}
+
+	/** Asks for the device's orientation.
+
+		Where the browser asks for permission (iOS, and Chrome on Android), it is asked at the player's next tap, which shows its prompt. A
+		page that isn't secure gets no readings (NeedsHttps). No reading within a second and a half of the page having its focus is reported
+		unavailable without calling `failed`, and it goes on listening, as a phone's sensor may start late. */
+	public function requestTiltAccess(?done:Void->Void, ?failed:String->Void):Bool {
+		var window:Dynamic = Browser.window;
+		tiltDone = done;
+		tiltFailed = failed;
 		if (window.isSecureContext == false) {
-			recorded.push(TiltState(NeedsHttps));
-			return;
+			tiltOutcome(NeedsHttps, "the page isn't secure (not HTTPS), so the browser reads no orientation");
+			return true;
 		}
 		if (window.DeviceOrientationEvent == null) {
-			recorded.push(TiltState(Unavailable));
-			return;
+			tiltOutcome(Unavailable, "this browser reads no orientation");
+			return true;
 		}
 		var listen = () -> {
 			if (tiltListener != null)
@@ -256,7 +271,7 @@ class DomEventsAdapter implements IEvents {
 				if (e.beta == null || e.gamma == null)
 					return;
 				if (!read)
-					recorded.push(TiltState(On));
+					tiltOutcome(On, null);
 				read = true;
 				var angle:Float = js.Syntax.code("(screen.orientation && screen.orientation.angle) || window.orientation || 0");
 				recorded.push(Tilt(e.beta, e.gamma, angle));
@@ -278,9 +293,27 @@ class DomEventsAdapter implements IEvents {
 		};
 		if (!Std.isOfType(window.DeviceOrientationEvent.requestPermission, js.lib.Function)) {
 			listen();
-			return;
+			return true;
 		}
 		askTiltAtNextTap(listen);
+		return true;
+	}
+
+	// The request's answers, called at the poll that delivers its outcome, once: done for the first reading, failed for a refusal.
+	var tiltDone:Null<Void->Void>;
+	var tiltFailed:Null<String->Void>;
+	var tiltAnswers:Array<Void->Void> = [];
+
+	// Reports a status the request ends in, and queues its answer for the next poll; a status after the answer only reports.
+	function tiltOutcome(status:TiltStatus, why:Null<String>):Void {
+		recorded.push(TiltState(status));
+		var done = tiltDone, failed = tiltFailed;
+		tiltDone = null;
+		tiltFailed = null;
+		if (status == On && done != null)
+			tiltAnswers.push(done);
+		else if (status != On && failed != null)
+			tiltAnswers.push(() -> failed(why));
 	}
 
 	// Asks for the tilt inside the next tap's own event, the only place the browser lets it be asked. An event whose press is already spent
@@ -299,7 +332,7 @@ class DomEventsAdapter implements IEvents {
 				if (answer == "granted")
 					listen();
 				else
-					recorded.push(TiltState(Refused));
+					tiltOutcome(Refused, "the player refused the orientation's permission");
 				return null;
 			}, _ -> {
 				askTiltAtNextTap(listen);

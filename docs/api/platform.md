@@ -175,9 +175,10 @@ Positions are in framebuffer pixels from the window's top-left corner. A key is 
 - `TouchDown(id:Int, x:Float, y:Float)`: A finger touched the screen. id stays the same for that finger until it lifts.
 - `TouchMove(id:Int, x:Float, y:Float)`: A finger moved.
 - `TouchUp(id:Int, x:Float, y:Float)`: A finger lifted, or the OS took the touch away.
-- `Tilt(beta:Float, gamma:Float, screenAngle:Float)`: Reports the device's orientation while `IEvents.setTiltWanted` is on. beta and gamma are in degrees, and screenAngle is the screen's angle.
+- `Tilt(beta:Float, gamma:Float, screenAngle:Float)`: Reports the device's orientation while tilt access is held (`IEvents.requestTiltAccess`). beta and gamma are in degrees, and screenAngle is the screen's angle.
 - `TiltState(status:TiltStatus)`: The tilt's status changed.
-- `Activated`: The player pressed a key or a mouse button, or lifted a finger, for the first time, which lets a page start audio, ask for tilt and go fullscreen. It arrives once, before that event, on every target, so a game's start flows the same everywhere. A finger counts as it lifts because a browser counts a tap then, not as it lands. A gamepad's press doesn't count, as a browser doesn't take one as the player's.
+- `Unlocked`: The player's first press: a key or a mouse button pressed, or a finger lifted, for the first time.
+  In a browser that press unlocks the page, which may then play sound, ask for tilt and go fullscreen. It arrives once, before that press's own event, on every target, so a game's "press any key" start flows the same everywhere (`IEvents.unlocked`). A finger counts as it lifts because a browser counts a tap then. A gamepad's press doesn't count, as a browser doesn't take one as the player's.
 - `PadConnected(slot:Int)`: A gamepad was connected in a slot, 0 to 3.
 - `PadDisconnected(slot:Int)`: The gamepad in a slot was disconnected. Its buttons count as up.
 - `PadButtonDown(slot:Int, button:PadButton)`: A gamepad's button went down. A trigger is also a button, down when pulled past half way.
@@ -410,7 +411,9 @@ function poll():Void
 var events(get, never):Array<Event>
 function wait(timeout:Float):Void
 function setTextInput(on:Bool):Void
-function setTiltWanted(on:Bool):Void
+function requestTiltAccess(?done:() -> Void, ?failed:String -> Void):Bool
+function releaseTiltAccess():Void
+var unlocked(get, never):Bool
 function isPadConnected(slot:Int):Bool
 function getPadName(slot:Int):String
 function isPadButtonDown(slot:Int, button:PadButton):Bool
@@ -429,10 +432,14 @@ function dispose():Void
   - `on`: True to start.
 
   `Text` events arrive only while it is on, and a phone shows its keyboard then.
-- `setTiltWanted`: Starts or stops reading the device's orientation as `Tilt` events.
-  - `on`: True to start.
+- `requestTiltAccess`: Asks for the device's motion sensor, whose readings then arrive as `Tilt` events.
+  - `done`: Optional. Called once readings arrive.
+  - `failed`: Optional. Receives why there will be none: the player refused, the page isn't secure (not HTTPS), or the browser reads no orientation.
+  - returns: False, calling neither, where the tilt can't be read at all: natively.
 
-  A page may need the player's permission, which is asked at the player's next tap. `TiltState` events report each change: waiting for that tap, on, refused, unavailable, and off again when it's turned off.
+  A page may need the player's permission, which is asked at the player's next tap. `TiltState` events report each change, for a game that shows "tap to start tilt" while it waits. A reading that arrives after the tilt was reported unavailable turns it on, as a phone's sensor may start late.
+- `releaseTiltAccess`: Stops the tilt's readings. A permission the player granted stays granted, so a later `requestTiltAccess` usually starts without asking again.
+- `unlocked`: Gets a value indicating whether the player has made the first press (`Event.Unlocked`): a key or a mouse button pressed, or a finger lifted. In a browser that press unlocks the page, which may then play sound, ask for tilt and go fullscreen. It follows the same rule natively and stays true once set.
 - `isPadConnected`: Returns whether a gamepad is in a slot, as of the last `poll`.
   - `slot`: The slot, 0 to 3.
   - returns: True when one is connected there.
@@ -1272,7 +1279,7 @@ function toString():String
 
 *enum* in [`platform/src/helix/platform/TiltStatus.hx`](../../platform/src/helix/platform/TiltStatus.hx), `import helix.platform.TiltStatus;`
 
-Specifies where the device's tilt is (`Event.TiltState`, after `IEvents.setTiltWanted`).
+Specifies where the device's tilt is (`Event.TiltState`, after `IEvents.requestTiltAccess`).
 
 - `Off`: Not read: it was never asked for, or it was turned off.
 - `WaitingForTap`: Waiting for the player's next tap, where a page asks for permission.

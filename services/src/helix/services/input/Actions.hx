@@ -2,12 +2,14 @@ package helix.services.input;
 
 import helix.math.Point2D;
 
-/** Provides actions, which are names the game reads, such as "jump" or "left", each bound to keys, mouse buttons and gamepads.
+/** Provides actions, which are names the game reads, such as "jump" or "left", each bound to keys, mouse buttons, gamepads and tilt.
 
-	Any of an action's bindings works it. Actions reads the `Input` it was created over, so it is current once that `Input` is polled.
-	It has no `poll` of its own. A name with no bindings reads as not held, with a value of 0.
+	Any of an action's bindings works it. Actions reads the devices it was created over, so it is current once they are polled. It has no
+	`poll` of its own. A binding to a device it wasn't given, or a name with no bindings, reads as not held, with a value of 0.
 
 	```haxe
+	var keyboard = new Keyboard(events), pads = new Gamepads(events);
+	var actions = new Actions([keyboard, pads]);
 	actions.bind("jump", Keyboard(Space), Pad(0, South));
 	actions.bind("left", Keyboard(Left), Keyboard(A), Axis(0, LeftX, Negative));
 	actions.bind("right", Keyboard(Right), Keyboard(D), Axis(0, LeftX, Positive));
@@ -21,14 +23,14 @@ import helix.math.Point2D;
 	y += speed * move.y * time.delta;
 	``` */
 class Actions {
-	final input:Input;
+	final devices:Array<IActionDevice>;
 	final bindings = new Map<String, Array<Binding>>();
 
-	/** Creates actions with nothing bound.
+	/** Creates actions with nothing bound, over the devices the game made.
 
-		@param input  The input state the actions read. */
-	public function new(input:Input) {
-		this.input = input;
+		@param devices  The devices its bindings are read from: any of `Keyboard`, `Mouse`, `Gamepads` and `Tilt`. */
+	public function new(devices:Array<IActionDevice>) {
+		this.devices = devices.copy();
 	}
 
 	/** Binds a name to keys, buttons or sticks, in addition to its existing bindings.
@@ -149,10 +151,8 @@ class Actions {
 		var most = 0.;
 		if (bound != null)
 			for (binding in bound) {
-				var value = switch binding {
-					case Axis(slot, axis, direction): side(input.getPadAxis(slot, axis), direction);
-					case _: isBindingDown(binding) ? 1 : 0;
-				}
+				var device = deviceOf(binding);
+				var value = device == null ? 0 : device.getValue(binding);
 				if (value > most)
 					most = value;
 			}
@@ -190,46 +190,33 @@ class Actions {
 		return out == null ? new Point2D(x, y) : out.set(x, y);
 	}
 
-	function isBindingDown(binding:Binding):Bool {
-		return switch binding {
-			case Keyboard(key): input.isKeyDown(key);
-			case Mouse(button): input.isMouseDown(button);
-			case Pad(slot, button): input.isPadButtonDown(slot, button);
-			case Axis(slot, axis, direction): side(input.getPadAxis(slot, axis), direction) > 0;
-		}
+	// The device that reads a binding of its kind, or null when the game gave none.
+	function deviceOf(binding:Binding):Null<IActionDevice> {
+		for (device in devices)
+			if (device.reads(binding))
+				return device;
+		return null;
 	}
 
-	// Whether it was down before this frame: held and not pressed now, or let go now after being held.
+	function isBindingDown(binding:Binding):Bool {
+		var device = deviceOf(binding);
+		return device != null && device.getValue(binding) > 0;
+	}
+
+	// Whether it was down before this frame.
 	function wasBindingDown(binding:Binding):Bool {
-		return switch binding {
-			case Keyboard(key): (input.isKeyDown(key) || input.isKeyReleased(key)) && !input.isKeyPressed(key);
-			case Mouse(button): (input.isMouseDown(button) || input.isMouseReleased(button)) && !input.isMousePressed(button);
-			case Pad(slot, button): (input.isPadButtonDown(slot, button) || input.isPadButtonReleased(slot, button)) && !input.isPadButtonPressed(slot, button);
-			case Axis(slot, axis, direction): side(input.getLastPadAxis(slot, axis), direction) > 0;
-		}
+		var device = deviceOf(binding);
+		return device != null && device.wasDown(binding);
 	}
 
 	function isBindingPressed(binding:Binding):Bool {
-		return switch binding {
-			case Keyboard(key): input.isKeyPressed(key);
-			case Mouse(button): input.isMousePressed(button);
-			case Pad(slot, button): input.isPadButtonPressed(slot, button);
-			case Axis(_, _, _): isBindingDown(binding) && !wasBindingDown(binding);
-		}
+		var device = deviceOf(binding);
+		return device != null && device.isPressed(binding);
 	}
 
 	function isBindingReleased(binding:Binding):Bool {
-		return switch binding {
-			case Keyboard(key): input.isKeyReleased(key);
-			case Mouse(button): input.isMouseReleased(button);
-			case Pad(slot, button): input.isPadButtonReleased(slot, button);
-			case Axis(_, _, _): wasBindingDown(binding) && !isBindingDown(binding);
-		}
-	}
-
-	static function side(value:Float, direction:AxisDirection):Float {
-		var toward = direction == Negative ? -value : value;
-		return toward > 0 ? toward : 0;
+		var device = deviceOf(binding);
+		return device != null && device.isReleased(binding);
 	}
 
 	static function contains(bound:Array<Binding>, binding:Binding):Bool {

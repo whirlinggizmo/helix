@@ -107,6 +107,7 @@ It alone listens to the page: keys and typed text from the window; mouse buttons
 ```haxe
 function new(options:DomEventsAdapterOptions)
 function poll():Void
+var unlocked(get, never):Bool
 var events(get, never):Array<Event>
 function wait(timeout:Float):Void
 function setTextInput(on:Bool):Void
@@ -114,7 +115,8 @@ function isPadConnected(slot:Int):Bool
 function getPadName(slot:Int):String
 function isPadButtonDown(slot:Int, button:PadButton):Bool
 function getPadAxis(slot:Int, axis:PadAxis):Float
-function setTiltWanted(on:Bool):Void
+function releaseTiltAccess():Void
+function requestTiltAccess(?done:() -> Void, ?failed:String -> Void):Bool
 function dispose():Void
 ```
 
@@ -122,8 +124,9 @@ function dispose():Void
   - `options`: The canvas's id.
   - throws `String`: No canvas has that id.
 - `setTextInput`: Does nothing: the window's keys type on a computer either way, and a phone's keyboard needs a focused input element.
-- `setTiltWanted`: Listens to the device's orientation while on.
-  Where the browser asks for leave (iOS), it is asked at the player's next tap, which shows its prompt. A page that isn't secure gets no readings (NeedsHttps). No reading within a second and a half of the page having its focus is reported unavailable, though it goes on listening: a phone's sensor may start late.
+- `releaseTiltAccess`: Stops the readings and any ask still waiting for a tap.
+- `requestTiltAccess`: Asks for the device's orientation.
+  Where the browser asks for permission (iOS, and Chrome on Android), it is asked at the player's next tap, which shows its prompt. A page that isn't secure gets no readings (NeedsHttps). No reading within a second and a half of the page having its focus is reported unavailable without calling `failed`, and it goes on listening, as a phone's sensor may start late.
 - `dispose`: Does nothing: the page's listeners go with it.
 
 ## DomEventsAdapterOptions
@@ -154,11 +157,13 @@ The window must be open (`Sdl3WindowAdapter`) before the first poll. No motion s
 
 ```haxe
 function new()
+var unlocked(get, never):Bool
 function poll():Void
 var events(get, never):Array<Event>
 function wait(timeout:Float):Void
 function setTextInput(on:Bool):Void
-function setTiltWanted(on:Bool):Void
+function requestTiltAccess(?done:() -> Void, ?failed:String -> Void):Bool
+function releaseTiltAccess():Void
 function isPadConnected(slot:Int):Bool
 function getPadName(slot:Int):String
 function isPadButtonDown(slot:Int, button:PadButton):Bool
@@ -167,7 +172,8 @@ function dispose():Void
 ```
 
 - `new`: Sets up SDL's gamepads and touch.
-- `setTiltWanted`: Reports the tilt unavailable: no motion sensor is read natively.
+- `requestTiltAccess`: Returns false, calling neither callback, and reports the tilt unavailable: no motion sensor is read natively.
+- `releaseTiltAccess`: Does nothing: nothing is read natively.
 
 ## DownloadExportAdapter
 

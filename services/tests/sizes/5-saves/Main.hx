@@ -6,7 +6,8 @@ import helix.platform.adapters.system.dom.DomSystemAdapter;
 import helix.platform.adapters.window.dom.DomWindowAdapter;
 import helix.services.config.Config;
 import helix.services.input.Actions;
-import helix.services.input.Input;
+import helix.services.input.Gamepads;
+import helix.services.input.Keyboard;
 import helix.services.saves.Saves;
 import helix.services.time.Time;
 
@@ -17,7 +18,8 @@ class Main {
 	static var graphics:WebGl2GraphicsAdapter;
 	static var system:DomSystemAdapter;
 	static var time:Time;
-	static var input:Input;
+	static var keyboard:Keyboard;
+	static var pads:Gamepads;
 	static var actions:Actions;
 	static var saveFiles:BrowserFileSystemAdapter;
 	static var saves:Saves;
@@ -30,8 +32,9 @@ class Main {
 		time = new Time(system);
 		time.every(1, () -> trace(time.elapsed));
 		time.scale = new Config(system).getFloat("speed", 1);
-		input = new Input(events);
-		actions = new Actions(input);
+		keyboard = new Keyboard(events);
+		pads = new Gamepads(events);
+		actions = new Actions([keyboard, pads]);
 		actions.bind("jump", Keyboard(Space), Pad(0, South));
 		saveFiles = new BrowserFileSystemAdapter({name: "saves"});
 		saves = new Saves(saveFiles);
@@ -40,7 +43,8 @@ class Main {
 		frame = _ -> {
 			events.poll();
 			time.poll();
-			input.poll();
+			keyboard.poll();
+			pads.poll();
 			if (actions.isPressed("jump"))
 				trace("jump");
 			saveFiles.poll();

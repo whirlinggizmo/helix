@@ -82,7 +82,9 @@ interface IEvents {
 	var events(get, never):Array<Event>;          // valid until the next poll; the array is reused
 	function wait(timeout:Float):Void;            // sleeps in the OS until an event or timeout seconds; does nothing in a page
 	function setTextInput(on:Bool):Void;          // typed text only while on; a phone shows its keyboard then
-	function setTiltWanted(on:Bool):Void;         // device motion only while wanted (a page asks the user)
+	function requestTiltAccess(?done:Void->Void, ?failed:String->Void):Bool;   // device motion, asked of a page's player at a tap
+	function releaseTiltAccess():Void;
+	var unlocked(get, never):Bool;                // the player's first press has happened, on every target
 	function isPadConnected(slot:Int):Bool;       // slots 0..3
 	function getPadName(slot:Int):String;
 	function isPadButtonDown(slot:Int, button:PadButton):Bool;   // the W3C standard gamepad's buttons
@@ -104,7 +106,7 @@ enum Event {
 	TouchUp(id:Int, x:Float, y:Float);
 	Tilt(beta:Float, gamma:Float, screenAngle:Float);
 	TiltState(status:TiltStatus);        // the tilt's status: Off, WaitingForTap, On, Refused, Unavailable, NeedsHttps
-	Activated;                           // the player's first key or mouse press, or finger lift, before that event, on every target
+	Unlocked;                            // the player's first press (a key or mouse press, or a finger lift), before that event, on every target
 	PadConnected(slot:Int);
 	PadDisconnected(slot:Int);
 	PadButtonDown(slot:Int, button:PadButton);   // a trigger is a button too, down past half way

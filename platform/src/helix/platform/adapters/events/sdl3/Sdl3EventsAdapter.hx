@@ -1,6 +1,6 @@
 package helix.platform.adapters.events.sdl3;
 
-import helix.platform.adapters.shared.Activation;
+import helix.platform.adapters.shared.FirstPress;
 import helix.platform.Event;
 import helix.platform.IEvents;
 import helix.platform.PadAxis;
@@ -23,7 +23,12 @@ class Sdl3EventsAdapter implements IEvents {
 		EventsBridge.setup();
 	}
 
-	var activated = false;
+	var firstPress = false;
+
+	public var unlocked(get, never):Bool;
+
+	function get_unlocked():Bool
+		return firstPress;
 
 	public function poll():Void {
 		delivered.resize(0);
@@ -78,7 +83,7 @@ class Sdl3EventsAdapter implements IEvents {
 		}
 		if (text != null)
 			delivered.push(Text(text.toString()));
-		activated = Activation.mark(delivered, activated);
+		firstPress = FirstPress.mark(delivered, firstPress);
 	}
 
 	public var events(get, never):Array<Event>;
@@ -92,10 +97,14 @@ class Sdl3EventsAdapter implements IEvents {
 	public function setTextInput(on:Bool):Void
 		EventsBridge.setText(on ? 1 : 0);
 
-	/** Reports the tilt unavailable: no motion sensor is read natively. */
-	public function setTiltWanted(on:Bool):Void
-		if (on)
-			pending.push(TiltState(Unavailable));
+	/** Returns false, calling neither callback, and reports the tilt unavailable: no motion sensor is read natively. */
+	public function requestTiltAccess(?done:Void->Void, ?failed:String->Void):Bool {
+		pending.push(TiltState(Unavailable));
+		return false;
+	}
+
+	/** Does nothing: nothing is read natively. */
+	public function releaseTiltAccess():Void {}
 
 	public function isPadConnected(slot:Int):Bool
 		return EventsBridge.padConnected(slot) != 0;

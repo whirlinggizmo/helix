@@ -33,7 +33,22 @@ class FakeEvents implements IEvents {
 
 	public function setTextInput(on:Bool):Void {}
 
-	public function setTiltWanted(on:Bool):Void {}
+	/** Gets a value indicating whether tilt access was asked for and not released. */
+	public var tiltRequested(default, null) = false;
+
+	public function requestTiltAccess(?done:Void->Void, ?failed:String->Void):Bool {
+		tiltRequested = true;
+		return true;
+	}
+
+	public function releaseTiltAccess():Void
+		tiltRequested = false;
+
+	/** Gets false: the tests deliver `Unlocked` themselves. */
+	public var unlocked(get, never):Bool;
+
+	function get_unlocked():Bool
+		return false;
 
 	public function isPadConnected(slot:Int):Bool
 		return slot == 0;

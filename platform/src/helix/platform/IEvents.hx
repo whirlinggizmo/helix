@@ -45,12 +45,25 @@ interface IEvents extends IPollable {
 		@param on  True to start. */
 	function setTextInput(on:Bool):Void;
 
-	/** Starts or stops reading the device's orientation as `Tilt` events.
+	/** Asks for the device's motion sensor, whose readings then arrive as `Tilt` events.
 
-		A page may need the player's permission, which is asked at the player's next tap. `TiltState` events report each change: waiting for
-		that tap, on, refused, unavailable, and off again when it's turned off.
-		@param on  True to start. */
-	function setTiltWanted(on:Bool):Void;
+		A page may need the player's permission, which is asked at the player's next tap. `TiltState` events report each change, for a game
+		that shows "tap to start tilt" while it waits. A reading that arrives after the tilt was reported unavailable turns it on, as a
+		phone's sensor may start late.
+		@param done  Optional. Called once readings arrive.
+		@param failed  Optional. Receives why there will be none: the player refused, the page isn't secure (not HTTPS), or the browser
+			reads no orientation.
+		@return  False, calling neither, where the tilt can't be read at all: natively. */
+	function requestTiltAccess(?done:Void->Void, ?failed:String->Void):Bool;
+
+	/** Stops the tilt's readings. A permission the player granted stays granted, so a later `requestTiltAccess` usually starts without
+		asking again. */
+	function releaseTiltAccess():Void;
+
+	/** Gets a value indicating whether the player has made the first press (`Event.Unlocked`): a key or a mouse button pressed, or a
+		finger lifted. In a browser that press unlocks the page, which may then play sound, ask for tilt and go fullscreen. It follows the
+		same rule natively and stays true once set. */
+	var unlocked(get, never):Bool;
 
 	/** Returns whether a gamepad is in a slot, as of the last `poll`.
 

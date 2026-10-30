@@ -38,18 +38,19 @@ enum Event {
 	/** A finger lifted, or the OS took the touch away. */
 	TouchUp(id:Int, x:Float, y:Float);
 
-	/** Reports the device's orientation while `IEvents.setTiltWanted` is on. beta and gamma are in degrees, and screenAngle is the screen's
+	/** Reports the device's orientation while tilt access is held (`IEvents.requestTiltAccess`). beta and gamma are in degrees, and screenAngle is the screen's
 		angle. */
 	Tilt(beta:Float, gamma:Float, screenAngle:Float);
 
 	/** The tilt's status changed. */
 	TiltState(status:TiltStatus);
 
-	/** The player pressed a key or a mouse button, or lifted a finger, for the first time, which lets a page start audio, ask for tilt
-		and go fullscreen. It arrives once, before that event, on every target, so a game's start flows the same everywhere. A finger counts
-		as it lifts because a browser counts a tap then, not as it lands. A gamepad's press doesn't count, as a browser doesn't take one as
-		the player's. */
-	Activated;
+	/** The player's first press: a key or a mouse button pressed, or a finger lifted, for the first time.
+
+		In a browser that press unlocks the page, which may then play sound, ask for tilt and go fullscreen. It arrives once, before that
+		press's own event, on every target, so a game's "press any key" start flows the same everywhere (`IEvents.unlocked`). A finger counts
+		as it lifts because a browser counts a tap then. A gamepad's press doesn't count, as a browser doesn't take one as the player's. */
+	Unlocked;
 
 	/** A gamepad was connected in a slot, 0 to 3. */
 	PadConnected(slot:Int);

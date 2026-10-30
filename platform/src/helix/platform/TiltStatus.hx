@@ -1,6 +1,6 @@
 package helix.platform;
 
-/** Specifies where the device's tilt is (`Event.TiltState`, after `IEvents.setTiltWanted`). */
+/** Specifies where the device's tilt is (`Event.TiltState`, after `IEvents.requestTiltAccess`). */
 enum TiltStatus {
 	/** Not read: it was never asked for, or it was turned off. */
 	Off;

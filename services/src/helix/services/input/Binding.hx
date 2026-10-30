@@ -20,4 +20,7 @@ enum Binding {
 
 		The binding is down while the axis is past the dead zone on that side, and its value is how far past. */
 	Axis(slot:Int, axis:PadAxis, direction:AxisDirection);
+
+	/** One side of the device's tilt (`Tilt.getAxis`): down while it's tilted that way, its value how far. */
+	Tilt(axis:TiltAxis, direction:AxisDirection);
 }
