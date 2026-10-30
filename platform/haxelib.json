@@ -1,7 +1,7 @@
 {
 	"name": "helix-platform",
 	"url": "https://github.com/whirlinggizmo/helix-2.0",
-	"license": "MIT",
+	"license": "BSD",
 	"tags": ["game", "js", "cpp", "sdl3", "webgl2", "hal"],
 	"description": "The hardware and the OS as plain Haxe calls: one contract per device and one adapter per API behind it (the browser's, SDL3, WebGL2, sokol_gfx, SDL_GPU, SDL3_mixer), with no policy of its own.",
 	"version": "0.1.0",

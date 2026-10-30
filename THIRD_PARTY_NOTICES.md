@@ -15,4 +15,4 @@ What the libraries include or link that they didn't write, with each one's licen
 
 Tools that run while building, and whose code isn't in builds: glslang (BSD-3-Clause and others, its `LICENSE.txt`) and SPIRV-Cross (Apache-2.0). Their output, the shaders, is the program's.
 
-The zlib licenses ask for their notices to go with what includes them: a program built with the native adapters ships this file and the license texts it names.
+None of these asks anything of a program built with the libraries: zlib's notices go with copies of the source, and stb, dr_libs and the rest are public domain or need no attribution. An acknowledgment is welcome.

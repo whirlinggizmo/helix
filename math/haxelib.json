@@ -1,7 +1,7 @@
 {
 	"name": "helix-math",
 	"url": "https://github.com/whirlinggizmo/helix-2.0",
-	"license": "MIT",
+	"license": "BSD",
 	"tags": ["math", "random", "trig", "curve", "js", "cpp"],
 	"description": "Math for games: trigonometry and seeded random numbers that give the same bits on every target, interpolation, curves, points and bounds. Pure Haxe; depends on nothing.",
 	"version": "0.1.0",

@@ -34,4 +34,5 @@ haxelib dev helix-services <checkout>/services
 
 ## License
 
-MIT: [LICENSE](LICENSE). Third-party code keeps its own license: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+zlib: [LICENSE](LICENSE), a copy in each library's directory (haxelib.json says BSD, as haxelib has no zlib). A program built with the
+libraries owes no notice; a copy of their source keeps it. Third-party code keeps its own license: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
