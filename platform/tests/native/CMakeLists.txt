@@ -42,9 +42,9 @@ function(native_test name)
   endforeach()
 endfunction()
 
-native_test(native-sdl3-events-test ${HELIX_ROOT}/platform/tests/native/native_sdl3_events.c ${ADAPTERS}/events/sdl3/internal/events_sdl3.c
+native_test(native-sdl3-events-test ${HELIX_ROOT}/platform/tests/native/native_sdl3_events.c ${ADAPTERS}/shared/sdl3/events_sdl3.c
   ${ADAPTERS}/shared/sdl3/sdl3.c)
-target_include_directories(native-sdl3-events-test PRIVATE ${ADAPTERS}/shared/sdl3 ${ADAPTERS}/events/sdl3/internal)
+target_include_directories(native-sdl3-events-test PRIVATE ${ADAPTERS}/shared/sdl3)
 
 foreach(name IN ITEMS native-sdl3mixer-audio-test native-sdl3mixer-device-probe)
   if(name STREQUAL native-sdl3mixer-audio-test)

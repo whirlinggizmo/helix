@@ -7,7 +7,12 @@ The hardware and the OS as plain Haxe calls, in the browser and natively. Each d
 |---|---|---|---|
 | `IGraphics` | The GPU | `graphics.webgl2.WebGl2GraphicsAdapter` | `graphics.sokol.SokolGraphicsAdapter` (GL 4.1), `graphics.sdl3gpu.Sdl3GpuGraphicsAdapter` (Vulkan, Direct3D 12, Metal) |
 | `IWindow` | The window | `window.dom.DomWindowAdapter` | `window.sdl3.Sdl3WindowAdapter` |
-| `IEvents` | Input and the window's events | `events.dom.DomEventsAdapter` | `events.sdl3.Sdl3EventsAdapter` |
+| `IEvents` | The window's events, and the stream the devices add to | `events.dom.DomEventsAdapter` | `events.sdl3.Sdl3EventsAdapter` |
+| `IKeyboard` | Keys and typed text | `keyboard.dom.DomKeyboardAdapter` | `keyboard.sdl3.Sdl3KeyboardAdapter` |
+| `IMouse` | The mouse | `mouse.dom.DomMouseAdapter` | `mouse.sdl3.Sdl3MouseAdapter` |
+| `ITouch` | Fingers | `touch.dom.DomTouchAdapter` | `touch.sdl3.Sdl3TouchAdapter` |
+| `IGamepads` | Gamepads | `gamepads.dom.DomGamepadsAdapter` | `gamepads.sdl3.Sdl3GamepadsAdapter` |
+| `ITilt` | The device's tilt | `tilt.dom.DomTiltAdapter` | `tilt.sdl3.Sdl3TiltAdapter` (unavailable) |
 | `ISystem` | The device, the clock and the program's directories | `system.dom.DomSystemAdapter` | `system.sdl3.Sdl3SystemAdapter` |
 | `IAudio` | Sound | `audio.webaudio.WebAudioAdapter` | `audio.sdl3mixer.Sdl3MixerAudioAdapter` |
 | `IAudioDecoder` | Audio files to samples | `audiodecoder.webaudio.WebAudioDecoderAdapter` | `audiodecoder.sdl3mixer.Sdl3MixerAudioDecoderAdapter` |

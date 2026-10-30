@@ -27,7 +27,7 @@ The API uses what Haxe gives: properties for values, classes for kinds, methods 
 | A value | a property, read and assigned | `window.title = "Asteroids"`, `time.scale = 2`, `voice.volume = 0.5` |
 | Several values set at once | `setX(...)` | `node.setPosition(x, y, z)` |
 | A state now (a bool) | an adjective property | `time.paused`, `audio.running`, `files.canWrite` |
-| A state asked with an argument | `isX(...)` | `events.isPadButtonDown(0, South)`, `input.isDown(Key.A)` |
+| A state asked with an argument | `isX(...)` | `gamepads.isButtonDown(0, South)`, `input.isDown(Key.A)` |
 | Whether something is there | `hasX(...)`, naming what it looks for; never a bare `has` | `saves.hasKey("level")`, `config.hasOption("speed")` |
 | Whether an action is possible here, so whether to offer it | `canX()` | `window.canMove()`, `window.canClose()` |
 | Ask for what the platform may refuse or grant later | `requestX(...)` | `window.requestFullscreen(true)`, `window.requestSize(800, 600)` |

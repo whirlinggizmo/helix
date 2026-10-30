@@ -1,17 +1,18 @@
 package helix.services.input;
 
 import helix.platform.IEvents;
+import helix.platform.ITilt;
 import helix.platform.IPollable;
 import helix.platform.TiltStatus;
 
 /** Provides the device's tilt, from level and turned with the screen, for a game steered by tilting a phone or a tablet.
 
-	The program constructs one over its `IEvents`, calls `requestAccess`, and calls `poll` once a frame, as `Keyboard` is. A page may need
+	The program constructs one over its `IEvents` and its `ITilt`, calls `requestAccess`, and calls `poll` once a frame, as `Keyboard` is. A page may need
 	the player's permission, asked at the player's next tap, so a game asks before the tap that starts play. Level is taken once the
-	device is held steady, and the tilt reads 0 until then (`calibrating`). Natively there is no tilt.
+	device is held steady, and the tilt reads 0 until then (`calibrating`). Natively it is unavailable.
 
 	```haxe
-	var tilt = new Tilt(events);
+	var tilt = new Tilt(events, tiltAdapter);
 	tilt.requestAccess(() -> trace("tilt on"), why -> trace(why));
 	// each frame:
 	tilt.poll();
@@ -24,6 +25,7 @@ class Tilt implements IPollable implements IActionDevice {
 	static inline final STEADY_SECONDS = .5;
 
 	final events:IEvents;
+	final device:ITilt;
 	// The tilt read this poll and the one before, x then y; the reading taken as level, and the screen's quarter turn when it was taken;
 	// while level is being taken, the reading the device is held near, and since when (seconds, NaN before a reading).
 	final tilt = [0., 0.];
@@ -36,29 +38,31 @@ class Tilt implements IPollable implements IActionDevice {
 	var steadyGamma = 0.;
 	var steadySince = Math.NaN;
 
-	/** Creates the tilt over the platform's events, off until `requestAccess`.
+	/** Creates the tilt over the platform's events and tilt, off until `requestAccess`.
 
-		@param events  The platform's events, whose last `poll` this one reads. */
-	public function new(events:IEvents) {
+		@param events  The platform's events, whose last `poll` this one reads.
+		@param tilt  The platform's tilt, whose readings those events carry. */
+	public function new(events:IEvents, tilt:ITilt) {
 		this.events = events;
+		device = tilt;
 	}
 
-	/** Asks for the device's motion sensor, as `IEvents.requestTiltAccess` does.
+	/** Asks for the device's motion sensor, as `ITilt.requestAccess` does.
 
 		A page may need the player's permission, which is asked at the player's next tap. `status` follows each change, for a game that shows
 		"tap to start tilt" while it waits.
 		@param done  Optional. Called once readings arrive.
 		@param failed  Optional. Receives why there will be none: the player refused, the page isn't secure, or the browser reads no
 			orientation.
-		@return  False, calling neither, where the tilt can't be read at all: natively. */
+		@return  False, calling neither, where the tilt can't be read at all, as natively. */
 	public function requestAccess(?done:Void->Void, ?failed:String->Void):Bool {
-		return events.requestTiltAccess(done, failed);
+		return device.requestAccess(done, failed);
 	}
 
 	/** Stops the readings, and reads 0 from then. A permission the player granted stays granted, so a later `requestAccess` usually starts
 		without asking again. */
 	public function releaseAccess():Void {
-		events.releaseTiltAccess();
+		device.releaseAccess();
 		tilt[0] = tilt[1] = 0;
 		level = false;
 	}

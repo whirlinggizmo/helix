@@ -4,10 +4,11 @@ import helix.services.input.Gamepads;
 import helix.services.input.Keyboard;
 import helix.services.input.Mouse;
 import helix.services.input.Tilt;
+import helix.services.input.Touch;
 
-/** Checks the keyboard, the mouse, the gamepads, the tilt and Actions over fake events: held, pressed and released by frame; repeats
-	ignored; focus lost letting go; sticks past a round dead zone; tilt from level; actions over the devices given, pressed once however
-	many bindings are held, axes as buttons, and movement capped at 1; and the first press unlocking. */
+/** Checks the keyboard, the mouse, touch, the gamepads, the tilt and Actions over fake events: held, pressed and released by frame;
+	repeats ignored; typed text; fingers by id; focus lost letting go; sticks past a round dead zone; tilt from level; and actions over
+	the devices given, pressed once however many bindings are held, axes as buttons, and movement capped at 1. */
 class InputTests {
 	static var checks = 0;
 
@@ -18,11 +19,12 @@ class InputTests {
 	}
 
 	static function main():Void {
-		var events = new FakeEvents();
-		var keyboard = new Keyboard(events),
-			mouse = new Mouse(events),
-			pads = new Gamepads(events),
-			tilt = new Tilt(events);
+		var events = new FakeEvents(), devices = new FakeDevices();
+		var keyboard = new Keyboard(events, devices),
+			mouse = new Mouse(events, devices),
+			pads = new Gamepads(events, devices),
+			tilt = new Tilt(events, devices),
+			touch = new Touch(events, devices);
 		function frame(?list:Array<helix.platform.Event>) {
 			if (list != null)
 				for (e in list)
@@ -32,14 +34,9 @@ class InputTests {
 			mouse.poll();
 			pads.poll();
 			tilt.poll();
+			touch.poll();
 		}
 
-		var pressed:Array<helix.platform.Event> = [PadButtonDown(0, South), KeyDown(Space, false)];
-		check(helix.platform.adapters.shared.FirstPress.mark(pressed, false) && Type.enumEq(pressed[1], Unlocked),
-			"a pad's press doesn't unlock; a key's does, before it");
-		var marked:Array<helix.platform.Event> = [TouchDown(1, 0, 0), TouchUp(1, 0, 0)];
-		check(helix.platform.adapters.shared.FirstPress.mark(marked, false) && Type.enumEq(marked[1], Unlocked),
-			"a finger activates as it lifts, not as it lands");
 		frame([KeyDown(Space, false)]);
 		check(keyboard.isKeyDown(Space) && keyboard.isKeyPressed(Space) && !keyboard.isKeyReleased(Space), "a key down: held and pressed");
 		frame([KeyDown(Space, true)]);
@@ -48,6 +45,12 @@ class InputTests {
 		check(!keyboard.isKeyDown(Space) && keyboard.isKeyReleased(Space), "up: released");
 		frame();
 		check(!keyboard.isKeyReleased(Space), "released for one frame alone");
+		frame([Text("h"), KeyDown(I, false), Text("i!")]);
+		check(keyboard.text == "hi!", "the text typed this frame, in order");
+		frame();
+		check(keyboard.text == "", "no text the next frame");
+		keyboard.textInput = true;
+		check(devices.textInput && keyboard.textInput, "textInput is the platform keyboard's");
 		frame([KeyDown(A, false), KeyUp(A)]);
 		check(keyboard.isKeyPressed(A) && keyboard.isKeyReleased(A) && !keyboard.isKeyDown(A), "a tap within a frame: pressed and released");
 
@@ -65,28 +68,28 @@ class InputTests {
 		frame([PadDisconnected(0)]);
 		check(!pads.isButtonDown(0, South) && pads.isButtonReleased(0, South), "a pad gone lets go of its buttons");
 
-		events.axes[0] = .1;
+		devices.axes[0] = .1;
 		frame();
 		check(pads.getAxis(0, LeftX) == 0, "inside the dead zone: 0");
-		events.axes[0] = 1;
+		devices.axes[0] = 1;
 		frame();
 		check(pads.getAxis(0, LeftX) == 1, "pushed all the way: 1");
-		events.axes[0] = .15;
-		events.axes[1] = .15;
+		devices.axes[0] = .15;
+		devices.axes[1] = .15;
 		frame();
 		check(pads.getAxis(0, LeftX) > 0, "a diagonal past the round dead zone counts on each axis");
-		events.axes[0] = 0;
-		events.axes[1] = 0;
-		events.axes[4] = .6;
+		devices.axes[0] = 0;
+		devices.axes[1] = 0;
+		devices.axes[4] = .6;
 		frame();
 		check(Math.abs(pads.getAxis(0, LeftTrigger) - .5) < 1e-9, "a trigger past the dead zone, scaled to reach 1");
-		events.axes[4] = 0;
+		devices.axes[4] = 0;
 		pads.deadZone = 2;
 		check(pads.deadZone == 1, "the dead zone is clamped to 1, and reads back so");
-		events.axes[0] = 1;
+		devices.axes[0] = 1;
 		frame();
 		check(pads.getAxis(0, LeftX) == 1, "a dead zone of 1 still lets a full push through");
-		events.axes[0] = 0;
+		devices.axes[0] = 0;
 		frame();
 		pads.deadZone = .2;
 		check(pads.getAxis(9, LeftX) == 0, "a slot past 3 reads 0");
@@ -109,12 +112,12 @@ class InputTests {
 		actions.bind("right", Keyboard(Right), Axis(0, LeftX, Positive));
 		actions.bind("up", Keyboard(Up));
 		actions.bind("down", Keyboard(Down));
-		events.axes[0] = -1;
+		devices.axes[0] = -1;
 		frame();
 		check(actions.isPressed("left") && actions.getValue("left") == 1 && actions.getAxis("left", "right") == -1, "an axis as a button");
 		frame();
 		check(actions.isDown("left") && !actions.isPressed("left"), "held on the next frame: not pressed again");
-		events.axes[0] = 0;
+		devices.axes[0] = 0;
 		frame();
 		check(actions.isReleased("left"), "an axis let go: released");
 
@@ -129,8 +132,8 @@ class InputTests {
 		check(!actions.unbind("left", Keyboard(Left)), "unbind what isn't bound: false");
 		actions.unbindAll();
 		check(actions.getBindings("jump").length == 0, "unbindAll: none left");
-		// Tilt: asked through the events, level taken once held steady for half a second, then read turned with the screen.
-		check(tilt.requestAccess() && events.tiltRequested && tilt.status == Off, "tilt asked for through the events");
+		// Tilt: asked through the platform's tilt, level taken once held steady for half a second, then read turned with the screen.
+		check(tilt.requestAccess() && devices.tiltRequested && tilt.status == Off, "tilt asked for through the platform's tilt");
 		frame([TiltState(On), Tilt(10, 5, 0)]);
 		check(tilt.status == On && tilt.calibrating && tilt.getAxis(X) == 0, "the first reading: level being taken, reading 0");
 		var started = haxe.Timer.stamp();
@@ -150,7 +153,19 @@ class InputTests {
 		tilt.range = 0;
 		check(tilt.range == 1, "tiltRange clamped to at least 1");
 		tilt.releaseAccess();
-		check(!events.tiltRequested && tilt.getAxis(X) == 0, "tilt released: no readings, reads 0");
+		check(!devices.tiltRequested && tilt.getAxis(X) == 0, "tilt released: no readings, reads 0");
+		// Touch: fingers by id, landed and lifted by frame, where they are.
+		frame([TouchDown(7, 10, 20), TouchDown(8, 30, 40)]);
+		check(touch.fingers.join(",") == "7,8" && touch.pressed.length == 2 && touch.isFingerDown(7) && touch.getX(8) == 30, "two fingers landed, in order");
+		frame([TouchMove(7, 15, 25), TouchUp(8, 31, 41)]);
+		check(touch.getX(7) == 15 && touch.isFingerReleased(8) && touch.getY(8) == 41 && touch.fingers.join(",") == "7",
+			"one moved, one lifted where it lifted");
+		frame();
+		check(touch.getX(8) == 0 && touch.released.length == 0, "a lifted finger is gone the frame after");
+		frame([TouchDown(9, 1, 1), TouchUp(9, 1, 1)]);
+		check(touch.isFingerPressed(9) && touch.isFingerReleased(9) && !touch.isFingerDown(9), "a tap within a frame");
+		frame([FocusLost]);
+		check(touch.fingers.length == 0 && touch.isFingerReleased(7), "focus lost lifts every finger");
 		var keysOnly = new Actions([keyboard]);
 		keysOnly.bind("jump", Pad(0, South));
 		frame([PadButtonDown(0, South)]);

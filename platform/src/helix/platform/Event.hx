@@ -1,6 +1,6 @@
 package helix.platform;
 
-/** Represents one input or window event, as `IEvents.poll` delivers it.
+/** Represents one window or device event, as `IEvents.poll` delivers it.
 
 	Positions are in framebuffer pixels from the window's top-left corner. A key is its physical position on a US layout (`Key`).
 	Right-hand modifiers are reported as the left-hand ones. */
@@ -11,7 +11,7 @@ enum Event {
 	/** A key went up. */
 	KeyUp(key:Key);
 
-	/** Characters were typed. It arrives only while `IEvents.setTextInput` is on. */
+	/** Characters were typed. It arrives only while `IKeyboard.textInput` is on. */
 	Text(text:String);
 
 	/** The mouse moved over the window. */
@@ -38,8 +38,8 @@ enum Event {
 	/** A finger lifted, or the OS took the touch away. */
 	TouchUp(id:Int, x:Float, y:Float);
 
-	/** Reports the device's orientation while tilt access is held (`IEvents.requestTiltAccess`). beta and gamma are in degrees, and screenAngle is the screen's
-		angle. */
+	/** Reports the device's orientation while tilt access is held (`ITilt.requestAccess`). beta and gamma are in degrees, and screenAngle
+		is the screen's angle. */
 	Tilt(beta:Float, gamma:Float, screenAngle:Float);
 
 	/** The tilt's status changed. */

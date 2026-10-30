@@ -1,6 +1,7 @@
 package helix.services.input;
 
 import helix.platform.IEvents;
+import helix.platform.IGamepads;
 import helix.platform.IPollable;
 import helix.platform.PadAxis;
 import helix.platform.PadButton;
@@ -8,11 +9,11 @@ import helix.platform.PadButton;
 /** Provides the gamepads as state, in slots 0 to 3: which buttons are held or went down or up this frame, and where each stick and trigger
 	is, past a dead zone.
 
-	The program constructs one over its `IEvents` and calls `poll` once a frame, as `Keyboard` is. A pad's axes are read once a poll, so
+	The program constructs one over its `IEvents` and its `IGamepads`, and calls `poll` once a frame, as `Keyboard` is. A pad's axes are read once a poll, so
 	they hold still for the frame. A pad that disconnects lets go of its buttons.
 
 	```haxe
-	var pads = new Gamepads(events);
+	var pads = new Gamepads(events, gamepadsAdapter);
 	// each frame:
 	pads.poll();
 	if (pads.isButtonPressed(0, South)) jump();
@@ -26,6 +27,7 @@ class Gamepads implements IPollable implements IActionDevice {
 	static inline final SLOTS = 4;
 
 	final events:IEvents;
+	final gamepads:IGamepads;
 	// Buttons held, and went down and up this frame, by slot * 32 + button.
 	final held = new Map<Int, Bool>();
 	final pressed = new Map<Int, Bool>();
@@ -34,11 +36,13 @@ class Gamepads implements IPollable implements IActionDevice {
 	var axes = [for (_ in 0...SLOTS * PadAxis.COUNT) 0.];
 	var lastAxes = [for (_ in 0...SLOTS * PadAxis.COUNT) 0.];
 
-	/** Creates the gamepads over the platform's events, with nothing held.
+	/** Creates the gamepads over the platform's events and gamepads, with nothing held.
 
-		@param events  The platform's events, whose last `poll` this one reads. */
-	public function new(events:IEvents) {
+		@param events  The platform's events, whose last `poll` this one reads.
+		@param gamepads  The platform's gamepads, whose buttons those events carry and whose sticks and triggers are read. */
+	public function new(events:IEvents, gamepads:IGamepads) {
 		this.events = events;
+		this.gamepads = gamepads;
 	}
 
 	/** Reads the events the last `IEvents.poll` delivered, and every pad's axes. Call it once a frame. */
@@ -50,7 +54,7 @@ class Gamepads implements IPollable implements IActionDevice {
 		axes = swap;
 		for (slot in 0...SLOTS)
 			for (axis in PadAxis.all)
-				axes[slot * PadAxis.COUNT + axis] = events.getPadAxis(slot, axis);
+				axes[slot * PadAxis.COUNT + axis] = gamepads.getAxis(slot, axis);
 		for (event in events.events)
 			switch event {
 				case PadButtonDown(slot, button):
@@ -78,7 +82,7 @@ class Gamepads implements IPollable implements IActionDevice {
 		@param slot  The slot, 0 to 3.
 		@return  True when one is connected there. */
 	public function isConnected(slot:Int):Bool {
-		return events.isPadConnected(slot);
+		return gamepads.isConnected(slot);
 	}
 
 	/** Returns a gamepad's name, as its maker gives it.
@@ -86,7 +90,7 @@ class Gamepads implements IPollable implements IActionDevice {
 		@param slot  The slot, 0 to 3.
 		@return  The name, or "" for an empty slot. */
 	public function getName(slot:Int):String {
-		return events.getPadName(slot);
+		return gamepads.getName(slot);
 	}
 
 	/** Returns whether a button is held.

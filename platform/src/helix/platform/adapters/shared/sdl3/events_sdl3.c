@@ -2,9 +2,11 @@
 #include "sdl3.h"
 #include <SDL3/SDL.h>
 
-/* SDL3's events, drained from SDL's one queue at each poll into records the Haxe adapter reads (events_sdl3.h's kinds): keys by physical
-   position as Key numbers them, framebuffer pixels, the window's focus, visibility, size and close, gamepads connecting. Gamepads' buttons
-   and axes are read as state, in the W3C standard layout. */
+/* SDL3's events, drained from SDL's one queue at each poll into records the Haxe adapters read (events_sdl3.h's kinds): the window's
+   focus, visibility, size and close, and the player's first press, always; keys by physical position as Key numbers them, the mouse and
+   fingers in framebuffer pixels, and gamepads connecting, only while their device is wanted. A device not wanted has its events turned off
+   in SDL, and the gamepads' subsystem starts only when they are wanted. Gamepads' buttons and axes are read as state, in the W3C standard
+   layout. */
 
 /* Key's number for each SDL scancode (a key's physical position on a US layout, as Key's are), 0 for one Key doesn't name. Right-hand
    modifiers (344-347) are reported as the left-hand ones. SDL's non-US backslash, the key beside left shift, is World1, as on X11. */
@@ -37,6 +39,9 @@ static const short keys[SDL_SCANCODE_COUNT]={
 typedef struct {int kind,code,value;float x,y;} record;
 static record records[1024],current;
 static int count,read_at,text_started,text_wanted;
+/* The devices wanted (events_sdl3.h), whether the first press has come, and the devices whose events SDL was last told to deliver (-1:
+   never told). */
+static int wanted,unlocked,applied=-1;
 
 /* A full frame drops its newest events: a frame that long is already lost. */
 static void add(int kind,int code,int value,float x,float y){if(count<1024)records[count++]=(record){kind,code,value,x,y};}
@@ -81,6 +86,22 @@ static void apply_text(void){
  else{SDL_StopTextInput(w);text_started=0;}
 }
 
+/* The first press, a key or a mouse button going down or a finger lifting, comes before that press's own record, once. */
+static void press(void){if(!unlocked){unlocked=1;add(HELIX_EVENTS_UNLOCKED,0,0,0,0);}}
+
+/* Turns SDL's events on for the devices wanted, and keeps the first press's on until it has come. */
+static void apply_events(void){
+ const int state=wanted|(unlocked?0:16);
+ if(state==applied)return;
+ applied=state;
+ const int keys=wanted&HELIX_EVENTS_KEYBOARD,mouse=wanted&HELIX_EVENTS_MOUSE,touch=wanted&HELIX_EVENTS_TOUCH,locked=!unlocked;
+ SDL_SetEventEnabled(SDL_EVENT_KEY_DOWN,keys||locked);SDL_SetEventEnabled(SDL_EVENT_KEY_UP,keys);SDL_SetEventEnabled(SDL_EVENT_TEXT_INPUT,keys);
+ SDL_SetEventEnabled(SDL_EVENT_MOUSE_BUTTON_DOWN,mouse||locked);SDL_SetEventEnabled(SDL_EVENT_MOUSE_BUTTON_UP,mouse);
+ SDL_SetEventEnabled(SDL_EVENT_MOUSE_MOTION,mouse);SDL_SetEventEnabled(SDL_EVENT_MOUSE_WHEEL,mouse);
+ SDL_SetEventEnabled(SDL_EVENT_FINGER_UP,touch||locked);SDL_SetEventEnabled(SDL_EVENT_FINGER_DOWN,touch);
+ SDL_SetEventEnabled(SDL_EVENT_FINGER_MOTION,touch);SDL_SetEventEnabled(SDL_EVENT_FINGER_CANCELED,touch);
+}
+
 static void text(const char *s){
  while(*s){
   Uint32 c=SDL_StepUTF8(&s,NULL);
@@ -91,28 +112,34 @@ static void text(const char *s){
 static void translate(SDL_Event *e){
  switch(e->type){
   case SDL_EVENT_KEY_DOWN:case SDL_EVENT_KEY_UP:{
+   if(e->type==SDL_EVENT_KEY_DOWN&&!e->key.repeat)press();
+   if(!(wanted&HELIX_EVENTS_KEYBOARD))break;
    int key=e->key.scancode<SDL_SCANCODE_COUNT?keys[e->key.scancode]:0;
    if(key>=344&&key<=347)key-=4;
    if(key)add(e->type==SDL_EVENT_KEY_DOWN?HELIX_EVENTS_KEY_DOWN:HELIX_EVENTS_KEY_UP,key,e->key.repeat,0,0);
    break;}
-  case SDL_EVENT_TEXT_INPUT:text(e->text.text);break;
+  case SDL_EVENT_TEXT_INPUT:if(wanted&HELIX_EVENTS_KEYBOARD)text(e->text.text);break;
   /* Touch makes its own events (the hint at setup keeps SDL from making mouse events of it); a pen's mouse events are kept. */
   case SDL_EVENT_MOUSE_BUTTON_DOWN:case SDL_EVENT_MOUSE_BUTTON_UP:{
    if(e->button.which==SDL_TOUCH_MOUSEID)break;
+   if(e->type==SDL_EVENT_MOUSE_BUTTON_DOWN)press();
+   if(!(wanted&HELIX_EVENTS_MOUSE))break;
    int b=e->button.button==SDL_BUTTON_LEFT?0:e->button.button==SDL_BUTTON_RIGHT?1:e->button.button==SDL_BUTTON_MIDDLE?2:-1;
    float d=density(e->button.windowID);
    if(b>=0)add(e->type==SDL_EVENT_MOUSE_BUTTON_DOWN?HELIX_EVENTS_MOUSE_DOWN:HELIX_EVENTS_MOUSE_UP,b,0,e->button.x*d,e->button.y*d);
    break;}
   case SDL_EVENT_MOUSE_MOTION:{
-   if(e->motion.which==SDL_TOUCH_MOUSEID)break;
+   if(e->motion.which==SDL_TOUCH_MOUSEID||!(wanted&HELIX_EVENTS_MOUSE))break;
    float d=density(e->motion.windowID);add(HELIX_EVENTS_MOUSE_MOVE,0,0,e->motion.x*d,e->motion.y*d);
    break;}
   /* SDL's wheel has right and away positive; natural scrolling is already applied. */
-  case SDL_EVENT_MOUSE_WHEEL:if(e->wheel.which!=SDL_TOUCH_MOUSEID)add(HELIX_EVENTS_WHEEL,0,0,e->wheel.x,e->wheel.y);break;
-  case SDL_EVENT_WINDOW_MOUSE_LEAVE:add(HELIX_EVENTS_MOUSE_LEAVE,0,0,0,0);break;
+  case SDL_EVENT_MOUSE_WHEEL:if(e->wheel.which!=SDL_TOUCH_MOUSEID&&(wanted&HELIX_EVENTS_MOUSE))add(HELIX_EVENTS_WHEEL,0,0,e->wheel.x,e->wheel.y);break;
+  case SDL_EVENT_WINDOW_MOUSE_LEAVE:if(wanted&HELIX_EVENTS_MOUSE)add(HELIX_EVENTS_MOUSE_LEAVE,0,0,0,0);break;
   case SDL_EVENT_FINGER_DOWN:case SDL_EVENT_FINGER_MOTION:case SDL_EVENT_FINGER_UP:case SDL_EVENT_FINGER_CANCELED:{
    /* Fingers are in 0..1 of the window: framebuffer pixels by its size in pixels. */
    const int down=e->type==SDL_EVENT_FINGER_DOWN||e->type==SDL_EVENT_FINGER_MOTION;
+   if(e->type==SDL_EVENT_FINGER_UP)press();
+   if(!(wanted&HELIX_EVENTS_TOUCH))break;
    SDL_Window *w=SDL_GetWindowFromID(e->tfinger.windowID);int pw=0,ph=0;if(w)SDL_GetWindowSizeInPixels(w,&pw,&ph);
    int known=0;for(int i=0;i<16;i++)if(fingers[i]==e->tfinger.fingerID)known=1;
    int id=finger(e->tfinger.fingerID,down);
@@ -145,17 +172,28 @@ void helix_events_setup(void){
  SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS,"0");
  /* Gamepads are read whether the window has the keyboard or not; what focus loss releases is the caller's. */
  SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS,"1");
- SDL_InitSubSystem(SDL_INIT_GAMEPAD);
+ wanted=0;applied=-1;
 }
 void helix_events_dispose(void){
- for(int i=0;i<4;i++)if(pads[i]){SDL_CloseGamepad(pads[i]);pads[i]=NULL;}
- SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
+ helix_events_want(HELIX_EVENTS_KEYBOARD|HELIX_EVENTS_MOUSE|HELIX_EVENTS_TOUCH|HELIX_EVENTS_GAMEPADS,0);
+}
+void helix_events_want(int device,int on){
+ const int had=wanted&HELIX_EVENTS_GAMEPADS;
+ wanted=on?wanted|device:wanted&~device;
+ if((wanted&HELIX_EVENTS_GAMEPADS)&&!had)SDL_InitSubSystem(SDL_INIT_GAMEPAD);
+ else if(!(wanted&HELIX_EVENTS_GAMEPADS)&&had){
+  for(int i=0;i<4;i++)if(pads[i]){SDL_CloseGamepad(pads[i]);pads[i]=NULL;}
+  SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
+ }
+ if(!(wanted&HELIX_EVENTS_KEYBOARD))helix_events_set_text(0);
 }
 void helix_events_poll(void){
  count=0;read_at=0;
  apply_text();
+ apply_events();
  SDL_Event e;
  while(SDL_PollEvent(&e))translate(&e);
+ apply_events();
 }
 void helix_events_wait(int milliseconds){SDL_WaitEventTimeout(NULL,milliseconds);}
 void helix_events_set_text(int on){text_wanted=on!=0;apply_text();}

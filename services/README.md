@@ -5,7 +5,7 @@ What a game program needs over [helix-platform](../platform/README.md) that isn'
 | Package | What |
 |---|---|
 | `helix.services.time` | `Time`: the game's time, scaled and paused, its timers, and real time beside it |
-| `helix.services.input` | `Keyboard`, `Mouse`, `Gamepads` and `Tilt`: each device held or pressed this frame; `Actions`: names bound to several of them |
+| `helix.services.input` | `Keyboard`, `Mouse`, `Touch`, `Gamepads` and `Tilt`: each device held or pressed this frame; `Actions`: names bound to several of them |
 | `helix.services.assets` | `Assets`: files by path, from a file system or downloaded from an HTTP server and kept |
 | `helix.services.audio` | `Audio`: sounds loaded whole or streamed, played in groups, with fades |
 | `helix.services.saves` | `Saves`: small values kept between runs |
@@ -29,6 +29,7 @@ Each example in `examples/` shows one thing, and builds from the hxml files besi
 
 - `time`: one timer.
 - `input`: one action, bound to a key and a gamepad button, over the keyboard and the gamepads.
+- `touch`: every finger, by its id, as it lands and lifts.
 - `config`: one option read.
 - `saves`: one value loaded, set and written.
 - `assets`: one file loaded.

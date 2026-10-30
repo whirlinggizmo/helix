@@ -8,7 +8,8 @@
   3. In helix-platform, contracts don't know each other (docs/PLATFORM.md): a contract's files are its interface, the types in
      helix.platform it reaches, and its adapters (adapters/<contract>/); none names another contract's. Anything else (adapters/shared/, a
      type no contract reaches) is common, and may name at most one contract, whose it then is. A base (BASES) is an interface any
-     contract may extend: no contract's, and naming no other type in helix.platform.
+     contract may extend: no contract's, and naming no other type in helix.platform. A device (DEVICES) is built over another contract,
+     the events: it and its adapters may name that contract's types and adapters too, and nothing else of another's.
 
 LAYERS lists the libraries bottom to top, each with its directory, the package roots it owns and the libraries it's built on; a helix
 package no library owns is a violation wherever it's named. Exits 1 on any violation. Standard library only.
@@ -32,6 +33,8 @@ TESTS = {'helix-math': ['math/tests'], 'helix-log': ['log/tests'], 'helix-platfo
          'helix-services': ['services/tests']}
 # The interfaces in helix.platform that contracts extend (rule 3): IPollable, the poll a program calls each frame.
 BASES = {'IPollable'}
+# The contracts built over another (rule 3): each device's adapters add their events to the events adapter of their API.
+DEVICES = {'keyboard': 'events', 'mouse': 'events', 'touch': 'events', 'gamepads': 'events', 'tilt': 'events'}
 
 PACKAGE = re.compile(r'^package\s+([\w.]+)\s*;', re.M)
 REFERENCE = re.compile(r'\bhelix(?:\.[a-z_]\w*)+')
@@ -67,8 +70,8 @@ def contracts():
         found = {top[n] for n in re.findall(r'\bhelix\.platform\.([A-Z]\w*)', text) if n in top}
         if path.parent == base:
             found |= {top[n] for n in top if re.search(r'\b' + n + r'\b', text)}
-        found |= {c for c in re.findall(r'\bhelix\.platform\.adapter\.(\w+)\.', text) if c != 'shared'}
-        for sub, name in re.findall(r'\bhelix\.platform\.adapter\.shared\.((?:[a-z]\w*\.)*)([A-Z]\w*)', text):
+        found |= {c for c in re.findall(r'\bhelix\.platform\.adapters\.(\w+)\.', text) if c != 'shared'}
+        for sub, name in re.findall(r'\bhelix\.platform\.adapters\.shared\.((?:[a-z]\w*\.)*)([A-Z]\w*)', text):
             shared = base / 'adapters/shared' / sub.replace('.', '/') / (name + '.hx')
             if shared.exists():
                 found.add(shared)
@@ -110,7 +113,7 @@ def contracts():
                 violations.append(f'{where}: a base, but names {", ".join(sorted(t if isinstance(t, str) else t.stem for t in named(path)))}')
         elif path in owner:
             for t in sorted(named(path), key=str):
-                others = knows(t) - {owner[path]}
+                others = knows(t) - {owner[path], DEVICES.get(owner[path])}
                 if others:
                     violations.append(f'{where}: {owner[path]} names {'adapters/' + t if isinstance(t, str) else t.stem}, {", ".join(sorted(others))}\'s')
         elif len(knows(path)) > 1:

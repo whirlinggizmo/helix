@@ -43,3 +43,16 @@ Why things are the way they are, numbered, in order.
     (manifests with Off). A `Manifest` server without one is warned about and treated as Revalidate. The tree is HeliX's, wgrender-c's
     and libwgt's, where an unchanged directory is known from its parent alone. None of them seeded from
     shipped files; each read local files in place and never checked them.
+12. **Each input device is a contract of its own,** built over the events: `IKeyboard`, `IMouse`, `ITouch`, `IGamepads` and `ITilt`,
+    each adapter constructed over the events adapter of its API and adding to its one stream, so the order between devices is kept.
+    A device a program doesn't construct isn't listened to, read or linked: tilt inside the one events contract had cost every page
+    its code, and every page polled its gamepads. The services' devices take the stream and their platform device (`new
+    Keyboard(events, keyboard)`), so the stream isn't offered under a device's name and a missing device fails at compile time. The
+    first press stays the events' own, heard without any device. Natively the tilt is an SDL adapter that reports `Unavailable`: SDL
+    reads motion sensors on Android, iOS and Windows, which a mobile build would take up.
+13. **On-screen controls belong with drawing, not the services.** `Touch` is the fingers as state, by id, as Flixel's `FlxTouch` is.
+    A touch region (an on-screen button) and a floating touch stick, which HeliX bound in its actions, are placed in the game's units
+    on its visible area, drawn, and kept clear of its buttons: presentation's and the UI's, which the services don't have. Flixel keeps
+    them in `flixel.ui` as sprites (`FlxVirtualPad`, `FlxVirtualStick`), and Lime and OpenFL have none. They come with the UI layer,
+    reading `Touch` and implementing `IActionDevice` so `Actions` reads them as it reads the devices. Taps, flicks and two-finger
+    gestures interpret the fingers and come as their own service.

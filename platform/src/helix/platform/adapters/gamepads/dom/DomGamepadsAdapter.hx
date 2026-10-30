@@ -1,0 +1,78 @@
+package helix.platform.adapters.gamepads.dom;
+
+import helix.platform.IGamepads;
+import helix.platform.PadAxis;
+import helix.platform.PadButton;
+import helix.platform.adapters.shared.EventStream;
+import js.Browser;
+
+/** Provides `IGamepads` in a browser page, read at each `IEvents.poll` in the W3C standard layout.
+
+	A page sees a pad only after a button press on it. The Gamepad API has no button events, so a change between two polls is one. */
+class DomGamepadsAdapter implements IGamepads {
+	final stream:EventStream;
+	// The pads in slots 0 to 3 as of the last poll: the browser's gamepad, or null.
+	final pads:Array<Dynamic> = [null, null, null, null];
+	// Each slot's buttons as the last poll read them.
+	final held:Array<Array<Bool>> = [for (_ in 0...4) [for (_ in 0...PadButton.COUNT) false]];
+	final reading:Void->Void;
+
+	/** Starts reading the gamepads at each poll.
+
+		@param options  The events adapter whose poll reads them. */
+	public function new(options:DomGamepadsAdapterOptions) {
+		stream = options.events.stream;
+		reading = read;
+		stream.polls.push(reading);
+	}
+
+	function read():Void {
+		var list:Dynamic = Browser.navigator.getGamepads();
+		for (slot in 0...4) {
+			var pad:Dynamic = list != null && slot < list.length ? list[slot] : null;
+			if (pad != null && !pad.connected)
+				pad = null;
+			if (pad != null && pads[slot] == null)
+				stream.deliver(PadConnected(slot));
+			else if (pad == null && pads[slot] != null)
+				stream.deliver(PadDisconnected(slot));
+			pads[slot] = pad;
+			var was = held[slot];
+			for (i in 0...PadButton.COUNT) {
+				var down = pad != null && isButtonDown(slot, cast i);
+				if (down != was[i] && pad != null)
+					stream.deliver(down ? PadButtonDown(slot, cast i) : PadButtonUp(slot, cast i));
+				was[i] = down;
+			}
+		}
+	}
+
+	public function isConnected(slot:Int):Bool
+		return slot >= 0 && slot < 4 && pads[slot] != null;
+
+	public function getName(slot:Int):String
+		return isConnected(slot) ? pads[slot].id : "";
+
+	public function isButtonDown(slot:Int, button:PadButton):Bool {
+		if (!isConnected(slot))
+			return false;
+		var buttons:Dynamic = pads[slot].buttons, i:Int = button;
+		return i < buttons.length && buttons[i].pressed;
+	}
+
+	public function getAxis(slot:Int, axis:PadAxis):Float {
+		if (!isConnected(slot))
+			return 0;
+		var pad:Dynamic = pads[slot], i:Int = axis;
+		// The triggers are the standard layout's buttons 6 and 7, read by their value.
+		if (i >= 4)
+			return pad.buttons.length > i + 2 ? pad.buttons[i + 2].value : 0;
+		return pad.axes.length > i ? pad.axes[i] : 0;
+	}
+
+	public function dispose():Void {
+		stream.polls.remove(reading);
+		for (slot in 0...4)
+			pads[slot] = null;
+	}
+}

@@ -30,11 +30,12 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
   page does the same: each still gets its own adapter in `adapters/<contract>/<api>/` (`adapters/window/sdl3/Sdl3WindowAdapter`,
   `adapters/events/sdl3/Sdl3EventsAdapter`), so a program chooses each contract's adapter on its own. What two adapters of one library
   share (the SDL window, the page's canvas, state seen by one and answered by another) lives in `adapters/shared/<api>/`, which both
-  reach; no adapter reaches into another's directory.
+  reach; no adapter reaches into another's directory, but a device's adapter is given the events adapter it is built over (Events).
 - **Contracts don't know each other.** No contract or its adapters imports another contract's (http never names graphics, the file
   system never names audio); only `adapters/shared/` is common to them. `check_layers` enforces it: a contract's files are its
   interface, the types it reaches and its adapters; anything else may name at most one contract. A base any contract may extend
-  (`IPollable`) is no contract's and names no other type.
+  (`IPollable`) is no contract's and names no other type. A device (`IKeyboard`, `IMouse`, `ITouch`, `IGamepads`, `ITilt`) is built
+  over the events, and may name theirs.
 - **Both targets, one interface.** Every contract has the same members on js and cpp; an adapter is for one API on one target.
 - **Units** as CONVENTIONS: seconds, radians, framebuffer pixels for the pointer, logical pixels for the window, `0xAARRGGBB` colors.
 
@@ -70,44 +71,65 @@ actually swaps; the window only provides the surface.
 
 ## Events
 
-`IEvents`: the input and the window's events, and the gamepads' state. What happens (keys, text, the mouse, touches, a pad connecting,
-a pad's buttons, the window resized or closed) arrives as events from one `poll`; what is held (a stick, a trigger, a pad's buttons) can
-also be read directly after it. One contract, because the OS has one queue: one pump drains it and one consumer walks it. The platform
-keeps no listeners; a state model (arrays of what's held) or a dispatch model (listeners) is a short walk over what a poll delivers,
-built above.
+`IEvents`: the window's events and the player's first press, and the one stream every device adds to. What happens (the window
+resized, focused, shown, hidden or closed, its graphics lost, the first press) arrives as events from one `poll`. One stream, because
+the OS has one queue: one pump drains it and one consumer walks it, and the order between devices (a key before a click) is kept. The
+platform keeps no listeners; a state model (arrays of what's held) or a dispatch model (listeners) is a short walk over what a poll
+delivers, built above.
+
+Each device is a contract of its own, built over the events: `IKeyboard`, `IMouse`, `ITouch`, `IGamepads` and `ITilt`. Its adapter is
+constructed over the events adapter of its API (`new DomKeyboardAdapter({events: events})`) and adds its events to the same stream,
+delivered by the events' `poll`. A device that isn't constructed isn't listened to: a page installs none of its listeners and doesn't
+read its pads; natively SDL's events for it are turned off, and SDL's gamepads aren't started, so a program links and runs only the
+devices it makes. A device's contract may name the events' types and adapters, and nothing else of another contract's.
 
 ```haxe
 interface IEvents {
-	function poll():Void;                         // drains the OS queue into events: this frame's, in order
+	function poll():Void;                         // drains the OS queue into events: this frame's, in order, every device's
 	var events(get, never):Array<Event>;          // valid until the next poll; the array is reused
 	function wait(timeout:Float):Void;            // sleeps in the OS until an event or timeout seconds; does nothing in a page
-	function setTextInput(on:Bool):Void;          // typed text only while on; a phone shows its keyboard then
-	function requestTiltAccess(?done:Void->Void, ?failed:String->Void):Bool;   // device motion, asked of a page's player at a tap
-	function releaseTiltAccess():Void;
-	var unlocked(get, never):Bool;                // the player's first press has happened, on every target
-	function isPadConnected(slot:Int):Bool;       // slots 0..3
-	function getPadName(slot:Int):String;
-	function isPadButtonDown(slot:Int, button:PadButton):Bool;   // the W3C standard gamepad's buttons
-	function getPadAxis(slot:Int, axis:PadAxis):Float;           // sticks -1..1, down and right positive; triggers 0..1
+	var unlocked(get, never):Bool;                // the player's first press has happened, on every target, with or without devices
+	function dispose():Void;                      // after the devices built over it
+}
+
+interface IKeyboard {
+	var textInput(get, set):Bool;                 // typed text only while on; a phone shows its keyboard then
+	function dispose():Void;
+}
+
+interface IMouse { function dispose():Void; }    // a pen counts as the mouse
+interface ITouch { function dispose():Void; }    // a finger is never the mouse
+
+interface IGamepads {
+	function isConnected(slot:Int):Bool;          // slots 0..3
+	function getName(slot:Int):String;
+	function isButtonDown(slot:Int, button:PadButton):Bool;   // the W3C standard gamepad's buttons
+	function getAxis(slot:Int, axis:PadAxis):Float;           // sticks -1..1, down and right positive; triggers 0..1
+	function dispose():Void;
+}
+
+interface ITilt {
+	function requestAccess(?done:Void->Void, ?failed:String->Void):Bool;   // device motion, asked of a page's player at a tap
+	function releaseAccess():Void;
 	function dispose():Void;
 }
 
 enum Event {
-	KeyDown(key:Key, repeat:Bool);       // by physical position
+	KeyDown(key:Key, repeat:Bool);       // IKeyboard; by physical position
 	KeyUp(key:Key);
-	Text(text:String);                   // while setTextInput(true)
-	MouseMove(x:Float, y:Float);         // framebuffer pixels from the top-left
+	Text(text:String);                   // while IKeyboard.textInput
+	MouseMove(x:Float, y:Float);         // IMouse; framebuffer pixels from the top-left
 	MouseDown(button:MouseButton, x:Float, y:Float);
 	MouseUp(button:MouseButton, x:Float, y:Float);
 	MouseLeave;
 	Wheel(dx:Float, dy:Float);
-	TouchDown(id:Int, x:Float, y:Float);
+	TouchDown(id:Int, x:Float, y:Float); // ITouch
 	TouchMove(id:Int, x:Float, y:Float);
 	TouchUp(id:Int, x:Float, y:Float);
-	Tilt(beta:Float, gamma:Float, screenAngle:Float);
+	Tilt(beta:Float, gamma:Float, screenAngle:Float);   // ITilt
 	TiltState(status:TiltStatus);        // the tilt's status: Off, WaitingForTap, On, Refused, Unavailable, NeedsHttps
 	Unlocked;                            // the player's first press (a key or mouse press, or a finger lift), before that event, on every target
-	PadConnected(slot:Int);
+	PadConnected(slot:Int);              // IGamepads
 	PadDisconnected(slot:Int);
 	PadButtonDown(slot:Int, button:PadButton);   // a trigger is a button too, down past half way
 	PadButtonUp(slot:Int, button:PadButton);
@@ -123,13 +145,16 @@ enum Event {
 
 - `poll` is the only pump for input and window state; `IWindow`'s getters and the pad reads answer as of it. `events` holds enum
   records in the order the OS gave them, cleared and reused each poll; the owner walks it with a `switch`. In a page the DOM pushes
-  events into listeners between frames, which only append to that buffer; natively `poll` drains `SDL_PollEvent` into it.
+  events into the adapters' listeners between frames, which only append to that buffer, and the poll then reads the pads; natively
+  `poll` drains `SDL_PollEvent` into it, and the device adapters only say which of SDL's events are wanted.
+- The first press is heard without a keyboard, mouse or touch adapter: in a page a listener on the window, ahead of the page's elements,
+  until it comes; natively SDL's key, mouse button and finger-lift events stay on until it comes.
 - What the adapters number, they name: `Key` (physical keys), `MouseButton`, `PadButton` (the W3C standard gamepad's buttons: the face
   buttons by position, the shoulders, the triggers as 6 and 7, back and start, the stick clicks, the pad, guide), `PadAxis`.
 - Pad buttons: natively a button pressed and let go between two polls arrives as both events, in order, though its state reads up; a
   page reads its pads only at each poll (the Gamepad API has no events), so it sees a press only if the button is down then. Natively
   the Guide button's release arrives no sooner than a quarter second after its press: SDL holds it back that long. A trigger's analog
-  value is `getPadAxis`; its button events come as it crosses half way.
+  value is `getAxis`; its button events come as it crosses half way.
 - Focus and visibility are tracked once, by the events adapter: in a page it alone installs the blur, focus and visibility listeners;
   natively it alone sees SDL's focus and window events. They arrive as `FocusGained`, `FocusLost`, `Shown` and `Hidden`, and
   `IWindow.focused` answers from what the last poll saw. `Hidden` fires when the player stops being able to see the window: natively

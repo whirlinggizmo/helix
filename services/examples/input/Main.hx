@@ -2,6 +2,8 @@ import helix.services.input.Actions;
 import helix.services.input.Gamepads;
 import helix.services.input.Keyboard;
 import helix.platform.IEvents;
+import helix.platform.IGamepads;
+import helix.platform.IKeyboard;
 import helix.platform.IGraphics;
 import helix.platform.IPollable;
 import helix.platform.ISystem;
@@ -18,6 +20,8 @@ class Main {
 
 	static var window:IWindow;
 	static var events:IEvents;
+	static var keyboardAdapter:IKeyboard;
+	static var gamepadsAdapter:IGamepads;
 	static var graphics:IGraphics;
 	static var system:ISystem;
 	static final polled:Array<IPollable> = [];
@@ -30,13 +34,19 @@ class Main {
 	static function main():Void {
 		#if js
 		window = new helix.platform.adapters.window.dom.DomWindowAdapter({canvasId: "canvas"});
-		events = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
+		var domEvents = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
+		events = domEvents;
+		keyboardAdapter = new helix.platform.adapters.keyboard.dom.DomKeyboardAdapter({events: domEvents});
+		gamepadsAdapter = new helix.platform.adapters.gamepads.dom.DomGamepadsAdapter({events: domEvents});
 		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvasId: "canvas"});
 		system = new helix.platform.adapters.system.dom.DomSystemAdapter();
 		#else
 		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gl});
 		graphics = new helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter();
-		events = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();
+		var sdlEvents = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();
+		events = sdlEvents;
+		keyboardAdapter = new helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapter({events: sdlEvents});
+		gamepadsAdapter = new helix.platform.adapters.gamepads.sdl3.Sdl3GamepadsAdapter({events: sdlEvents});
 		system = new helix.platform.adapters.system.sdl3.Sdl3SystemAdapter();
 		#end
 		window.title = "helix-services: input";
@@ -55,10 +65,10 @@ class Main {
 		#end
 	}
 
-	/** Makes the keyboard and the gamepads over the events, and the action over them. */
+	/** Makes the keyboard and the gamepads over the events and the platform's devices, and the action over them. */
 	static function setup():Void {
-		keyboard = new Keyboard(events);
-		pads = new Gamepads(events);
+		keyboard = new Keyboard(events, keyboardAdapter);
+		pads = new Gamepads(events, gamepadsAdapter);
 		polled.push(keyboard);
 		polled.push(pads);
 		actions = new Actions([keyboard, pads]);
@@ -86,6 +96,8 @@ class Main {
 	/** Frees what was made, in the reverse order, and closes the window where the program owns one. */
 	static function dispose():Void {
 		graphics.dispose();
+		gamepadsAdapter.dispose();
+		keyboardAdapter.dispose();
 		events.dispose();
 		if (window.canClose())
 			window.close();

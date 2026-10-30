@@ -1,15 +1,10 @@
 import helix.platform.Event;
 import helix.platform.IEvents;
-import helix.platform.PadAxis;
-import helix.platform.PadButton;
 
-/** Stands in for the platform's events in the services' tests: a frame's events and the pads' axes, set by the test. */
+/** Stands in for the platform's events in the services' tests: a frame's events, set by the test. */
 class FakeEvents implements IEvents {
 	/** Gets the events the next `poll` delivers. */
 	public final next:Array<Event> = [];
-
-	/** Gets the pads' axes, slot * PadAxis.COUNT + axis. */
-	public final axes = [for (_ in 0...4 * PadAxis.COUNT) 0.];
 
 	final delivered:Array<Event> = [];
 
@@ -31,36 +26,11 @@ class FakeEvents implements IEvents {
 
 	public function wait(timeout:Float):Void {}
 
-	public function setTextInput(on:Bool):Void {}
-
-	/** Gets a value indicating whether tilt access was asked for and not released. */
-	public var tiltRequested(default, null) = false;
-
-	public function requestTiltAccess(?done:Void->Void, ?failed:String->Void):Bool {
-		tiltRequested = true;
-		return true;
-	}
-
-	public function releaseTiltAccess():Void
-		tiltRequested = false;
-
 	/** Gets false: the tests deliver `Unlocked` themselves. */
 	public var unlocked(get, never):Bool;
 
 	function get_unlocked():Bool
 		return false;
-
-	public function isPadConnected(slot:Int):Bool
-		return slot == 0;
-
-	public function getPadName(slot:Int):String
-		return slot == 0 ? "Fake" : "";
-
-	public function isPadButtonDown(slot:Int, button:PadButton):Bool
-		return false;
-
-	public function getPadAxis(slot:Int, axis:PadAxis):Float
-		return axes[slot * PadAxis.COUNT + axis];
 
 	public function dispose():Void {}
 }

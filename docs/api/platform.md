@@ -160,13 +160,13 @@ var mobile(get, never):Bool
 
 *enum* in [`platform/src/helix/platform/Event.hx`](../../platform/src/helix/platform/Event.hx), `import helix.platform.Event;`
 
-Represents one input or window event, as `IEvents.poll` delivers it.
+Represents one window or device event, as `IEvents.poll` delivers it.
 
 Positions are in framebuffer pixels from the window's top-left corner. A key is its physical position on a US layout (`Key`). Right-hand modifiers are reported as the left-hand ones.
 
 - `KeyDown(key:Key, repeat:Bool)`: A key went down. repeat is true when the OS repeats a held key.
 - `KeyUp(key:Key)`: A key went up.
-- `Text(text:String)`: Characters were typed. It arrives only while `IEvents.setTextInput` is on.
+- `Text(text:String)`: Characters were typed. It arrives only while `IKeyboard.textInput` is on.
 - `MouseMove(x:Float, y:Float)`: The mouse moved over the window.
 - `MouseDown(button:MouseButton, x:Float, y:Float)`: A mouse button went down.
 - `MouseUp(button:MouseButton, x:Float, y:Float)`: A mouse button went up.
@@ -175,7 +175,7 @@ Positions are in framebuffer pixels from the window's top-left corner. A key is 
 - `TouchDown(id:Int, x:Float, y:Float)`: A finger touched the screen. id stays the same for that finger until it lifts.
 - `TouchMove(id:Int, x:Float, y:Float)`: A finger moved.
 - `TouchUp(id:Int, x:Float, y:Float)`: A finger lifted, or the OS took the touch away.
-- `Tilt(beta:Float, gamma:Float, screenAngle:Float)`: Reports the device's orientation while tilt access is held (`IEvents.requestTiltAccess`). beta and gamma are in degrees, and screenAngle is the screen's angle.
+- `Tilt(beta:Float, gamma:Float, screenAngle:Float)`: Reports the device's orientation while tilt access is held (`ITilt.requestAccess`). beta and gamma are in degrees, and screenAngle is the screen's angle.
 - `TiltState(status:TiltStatus)`: The tilt's status changed.
 - `Unlocked`: The player's first press: a key or a mouse button pressed, or a finger lifted, for the first time.
   In a browser that press unlocks the page, which may then play sound, ask for tilt and go fullscreen. It arrives once, before that press's own event, on every target, so a game's "press any key" start flows the same everywhere (`IEvents.unlocked`). A finger counts as it lifts because a browser counts a tap then. A gamepad's press doesn't count, as a browser doesn't take one as the player's.
@@ -387,13 +387,9 @@ function dispose():Void
 
 *interface* in [`platform/src/helix/platform/IEvents.hx`](../../platform/src/helix/platform/IEvents.hx), `import helix.platform.IEvents;`, extends `IPollable`
 
-Defines the input and window events, polled once a frame, and the gamepads' state.
+Defines the events, polled once a frame: what happens to the window, the player's first press, and what the devices built over it add.
 
-Each `poll` delivers what happened as `Event` records, in the order the OS reported them. That covers keys, text, the mouse, touches, a pad connecting, a pad's buttons, and the window being resized, focused or closed. Nothing is delivered between polls, and nothing calls the program. The program walks `events` itself.
-
-What is held, such as a stick, a trigger or a pad's buttons, can also be read directly after a poll.
-
-Natively, a button pressed and released between two polls arrives as both events. A page reads its pads only at each poll, so it sees a press only if the button is down then.
+Each `poll` delivers what happened as `Event` records, in the order the OS reported them. Without a device, that is the window being resized, focused, shown, hidden or closed, its graphics lost, and `Unlocked`. A device's adapter, constructed over the events adapter, adds its own events to the same records: `IKeyboard` keys and text, `IMouse` the mouse, `ITouch` fingers, `IGamepads` pads and `ITilt` the tilt. A device that isn't constructed isn't listened to. Nothing is delivered between polls, and nothing calls the program. The program walks `events` itself.
 
 ```haxe
 events.poll();
@@ -403,58 +399,25 @@ case KeyDown(key, _): pressed(key);
 case CloseRequested: window.close();
 case _:
 }
-var stick = events.getPadAxis(0, 0);
 ```
 
 ```haxe
 function poll():Void
 var events(get, never):Array<Event>
 function wait(timeout:Float):Void
-function setTextInput(on:Bool):Void
-function requestTiltAccess(?done:() -> Void, ?failed:String -> Void):Bool
-function releaseTiltAccess():Void
 var unlocked(get, never):Bool
-function isPadConnected(slot:Int):Bool
-function getPadName(slot:Int):String
-function isPadButtonDown(slot:Int, button:PadButton):Bool
-function getPadAxis(slot:Int, axis:PadAxis):Float
 function dispose():Void
 ```
 
-- `poll`: Drains the OS's queue into `events`.
+- `poll`: Drains the OS's queue into `events`, with the devices' events among them.
   `events` then holds this frame's events, in order. Last frame's events are cleared.
 - `events`: Gets the events the last `poll` delivered. The array is reused by the next poll.
 - `wait`: Sleeps in the OS until an event arrives or the timeout passes, using no CPU.
   - `timeout`: The longest wait, in seconds.
 
   It does nothing in a page. A native loop calls it while the window can't be seen (after `Hidden`), so the loop doesn't spin. The loop wakes at the timeout to service what must not starve. Events that arrive stay for the next `poll`.
-- `setTextInput`: Starts or stops typed text input.
-  - `on`: True to start.
-
-  `Text` events arrive only while it is on, and a phone shows its keyboard then.
-- `requestTiltAccess`: Asks for the device's motion sensor, whose readings then arrive as `Tilt` events.
-  - `done`: Optional. Called once readings arrive.
-  - `failed`: Optional. Receives why there will be none: the player refused, the page isn't secure (not HTTPS), or the browser reads no orientation.
-  - returns: False, calling neither, where the tilt can't be read at all: natively.
-
-  A page may need the player's permission, which is asked at the player's next tap. `TiltState` events report each change, for a game that shows "tap to start tilt" while it waits. A reading that arrives after the tilt was reported unavailable turns it on, as a phone's sensor may start late.
-- `releaseTiltAccess`: Stops the tilt's readings. A permission the player granted stays granted, so a later `requestTiltAccess` usually starts without asking again.
-- `unlocked`: Gets a value indicating whether the player has made the first press (`Event.Unlocked`): a key or a mouse button pressed, or a finger lifted. In a browser that press unlocks the page, which may then play sound, ask for tilt and go fullscreen. It follows the same rule natively and stays true once set.
-- `isPadConnected`: Returns whether a gamepad is in a slot, as of the last `poll`.
-  - `slot`: The slot, 0 to 3.
-  - returns: True when one is connected there.
-- `getPadName`: Returns the name of the gamepad in a slot.
-  - `slot`: The slot, 0 to 3.
-  - returns: The name, or "" when the slot is empty.
-- `isPadButtonDown`: Returns whether a gamepad's button is down, as of the last `poll`.
-  - `slot`: The slot, 0 to 3.
-  - `button`: The button.
-  - returns: True when it is down; false for an empty slot.
-- `getPadAxis`: Returns a gamepad's axis, as of the last `poll`.
-  - `slot`: The slot, 0 to 3.
-  - `axis`: The axis.
-  - returns: The axis's value. A stick runs from -1 to 1, with down and right positive. A trigger runs from 0 to 1. An empty slot gives 0.
-- `dispose`: Releases the events' resources, which are its listeners and the gamepads.
+- `unlocked`: Gets a value indicating whether the player has made the first press (`Event.Unlocked`): a key or a mouse button pressed, or a finger lifted. In a browser that press unlocks the page, which may then play sound, ask for tilt and go fullscreen. It is heard without a keyboard, mouse or touch adapter, follows the same rule natively, and stays true once set.
+- `dispose`: Stops listening to the window and the first press. A program disposes of the devices built over it before it.
 
 ## IExport
 
@@ -543,6 +506,42 @@ function dispose():Void
   Natively the location is the file's path. In a page it is a URL the audio output plays, kept until `release` is called.
 - `poll`: Delivers what finished on the platform's threads since the last poll. The program calls it once a frame.
 - `dispose`: Closes the file system. What is still running finishes without calling back.
+
+## IGamepads
+
+*interface* in [`platform/src/helix/platform/IGamepads.hx`](../../platform/src/helix/platform/IGamepads.hx), `import helix.platform.IGamepads;`
+
+Defines the gamepads, in slots 0 to 3: `PadConnected`, `PadDisconnected`, `PadButtonDown` and `PadButtonUp` in `IEvents.events` while it exists, and each pad's state as of the last `IEvents.poll`.
+
+Its adapter is constructed over the events adapter, whose `poll` delivers its events and reads the pads. Natively, a button pressed and released between two polls arrives as both events. A page reads its pads only at each poll, so it sees a press only if the button is down then.
+
+```haxe
+var stick = gamepads.getAxis(0, LeftX);
+```
+
+```haxe
+function isConnected(slot:Int):Bool
+function getName(slot:Int):String
+function isButtonDown(slot:Int, button:PadButton):Bool
+function getAxis(slot:Int, axis:PadAxis):Float
+function dispose():Void
+```
+
+- `isConnected`: Returns whether a gamepad is in a slot.
+  - `slot`: The slot, 0 to 3.
+  - returns: True when one is connected there.
+- `getName`: Returns the name of the gamepad in a slot.
+  - `slot`: The slot, 0 to 3.
+  - returns: The name, or "" when the slot is empty.
+- `isButtonDown`: Returns whether a gamepad's button is down.
+  - `slot`: The slot, 0 to 3.
+  - `button`: The button.
+  - returns: True when it is down; false for an empty slot.
+- `getAxis`: Returns a gamepad's axis.
+  - `slot`: The slot, 0 to 3.
+  - `axis`: The axis.
+  - returns: The axis's value. A stick runs from -1 to 1, with down and right positive. A trigger runs from 0 to 1. An empty slot gives 0.
+- `dispose`: Stops reading the gamepads and lets them go.
 
 ## IGraphics
 
@@ -810,6 +809,36 @@ function dispose():Void
 - `poll`: Delivers what finished on the platform's threads since the last poll. The program calls it once a frame.
 - `dispose`: Closes the decoder. A decode still running finishes without calling back.
 
+## IKeyboard
+
+*interface* in [`platform/src/helix/platform/IKeyboard.hx`](../../platform/src/helix/platform/IKeyboard.hx), `import helix.platform.IKeyboard;`
+
+Defines the keyboard: `KeyDown`, `KeyUp` and `Text` in `IEvents.events` while it exists.
+
+Its adapter is constructed over the events adapter, whose `poll` delivers its events.
+
+```haxe
+var textInput(get, set):Bool
+function dispose():Void
+```
+
+- `textInput`: Gets or sets whether typed text arrives, as `Text` events. A phone shows its keyboard while it is on. Defaults to false.
+- `dispose`: Stops listening to the keyboard.
+
+## IMouse
+
+*interface* in [`platform/src/helix/platform/IMouse.hx`](../../platform/src/helix/platform/IMouse.hx), `import helix.platform.IMouse;`
+
+Defines the mouse: `MouseMove`, `MouseDown`, `MouseUp`, `MouseLeave` and `Wheel` in `IEvents.events` while it exists.
+
+Its adapter is constructed over the events adapter, whose `poll` delivers its events. A pen counts as the mouse.
+
+```haxe
+function dispose():Void
+```
+
+- `dispose`: Stops listening to the mouse.
+
 ## IPollable
 
 *interface* in [`platform/src/helix/platform/IPollable.hx`](../../platform/src/helix/platform/IPollable.hx), `import helix.platform.IPollable;`
@@ -875,6 +904,43 @@ function getCacheDirectory():String
   Natively it is the user's cache directory, then the company and the product (the `helix-company` and `helix-product` defines). The user's cache directory is `$XDG_CACHE_HOME` or `~/.cache` on Linux, and `~/Library/Caches` on macOS. On Windows it is `%LOCALAPPDATA%`, then the company, the product and `cache`. The directory may not exist yet.
 
   In a page it is the name of the database where the browser keeps the program's files, "company/product/cache".
+
+## ITilt
+
+*interface* in [`platform/src/helix/platform/ITilt.hx`](../../platform/src/helix/platform/ITilt.hx), `import helix.platform.ITilt;`
+
+Defines the device's tilt: `Tilt` and `TiltState` in `IEvents.events` once access is requested.
+
+Its adapter is constructed over the events adapter, whose `poll` delivers its events and runs the request's callbacks.
+
+```haxe
+function requestAccess(?done:() -> Void, ?failed:String -> Void):Bool
+function releaseAccess():Void
+function dispose():Void
+```
+
+- `requestAccess`: Asks for the device's motion sensor, whose readings then arrive as `Tilt` events.
+  - `done`: Optional. Called once readings arrive.
+  - `failed`: Optional. Receives why there will be none: the player refused, the page isn't secure (not HTTPS), or the browser reads no orientation.
+  - returns: False, calling neither and reporting `Unavailable`, where the tilt can't be read at all.
+
+  A page may need the player's permission, which is asked at the player's next tap. `TiltState` events report each change, for a game that shows "tap to start tilt" while it waits. A reading that arrives after the tilt was reported unavailable turns it on, as a phone's sensor may start late.
+- `releaseAccess`: Stops the readings. A permission the player granted stays granted, so a later `requestAccess` usually starts without asking again.
+- `dispose`: Stops the readings and any request still waiting.
+
+## ITouch
+
+*interface* in [`platform/src/helix/platform/ITouch.hx`](../../platform/src/helix/platform/ITouch.hx), `import helix.platform.ITouch;`
+
+Defines touch: `TouchDown`, `TouchMove` and `TouchUp` in `IEvents.events` while it exists.
+
+Its adapter is constructed over the events adapter, whose `poll` delivers its events. A finger is never reported as the mouse.
+
+```haxe
+function dispose():Void
+```
+
+- `dispose`: Stops listening to touch.
 
 ## IWindow
 
@@ -1279,13 +1345,13 @@ function toString():String
 
 *enum* in [`platform/src/helix/platform/TiltStatus.hx`](../../platform/src/helix/platform/TiltStatus.hx), `import helix.platform.TiltStatus;`
 
-Specifies where the device's tilt is (`Event.TiltState`, after `IEvents.requestTiltAccess`).
+Specifies where the device's tilt is (`Event.TiltState`, after `ITilt.requestAccess`).
 
 - `Off`: Not read: it was never asked for, or it was turned off.
 - `WaitingForTap`: Waiting for the player's next tap, where a page asks for permission.
 - `On`: Read: `Tilt` events arrive.
 - `Refused`: The player refused permission.
-- `Unavailable`: The device gives no readings: there is no sensor, or none answered, or the program runs natively.
+- `Unavailable`: The device gives no readings: there is no sensor, or none answered, or none is read on this target.
 - `NeedsHttps`: The page isn't secure (not HTTPS), so the browser gives no readings.
 
 ## VertexAttribute

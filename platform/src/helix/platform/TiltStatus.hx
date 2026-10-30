@@ -1,6 +1,6 @@
 package helix.platform;
 
-/** Specifies where the device's tilt is (`Event.TiltState`, after `IEvents.requestTiltAccess`). */
+/** Specifies where the device's tilt is (`Event.TiltState`, after `ITilt.requestAccess`). */
 enum TiltStatus {
 	/** Not read: it was never asked for, or it was turned off. */
 	Off;
@@ -14,7 +14,7 @@ enum TiltStatus {
 	/** The player refused permission. */
 	Refused;
 
-	/** The device gives no readings: there is no sensor, or none answered, or the program runs natively. */
+	/** The device gives no readings: there is no sensor, or none answered, or none is read on this target. */
 	Unavailable;
 
 	/** The page isn't secure (not HTTPS), so the browser gives no readings. */

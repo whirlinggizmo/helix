@@ -8,7 +8,7 @@ import helix.math.Point2D;
 	`poll` of its own. A binding to a device it wasn't given, or a name with no bindings, reads as not held, with a value of 0.
 
 	```haxe
-	var keyboard = new Keyboard(events), pads = new Gamepads(events);
+	var keyboard = new Keyboard(events, keyboardAdapter), pads = new Gamepads(events, gamepadsAdapter);
 	var actions = new Actions([keyboard, pads]);
 	actions.bind("jump", Keyboard(Space), Pad(0, South));
 	actions.bind("left", Keyboard(Left), Keyboard(A), Axis(0, LeftX, Negative));

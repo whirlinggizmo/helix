@@ -1,16 +1,17 @@
 package helix.services.input;
 
 import helix.platform.IEvents;
+import helix.platform.IMouse;
 import helix.platform.IPollable;
 import helix.platform.MouseButton;
 
 /** Provides the mouse as state: where it is, its wheel, and which buttons are held or went down or up this frame.
 
-	The program constructs one over its `IEvents` and calls `poll` once a frame, as `Keyboard` is. "Pressed" is true for the frame a
+	The program constructs one over its `IEvents` and its `IMouse`, and calls `poll` once a frame, as `Keyboard` is. "Pressed" is true for the frame a
 	button went down.
 
 	```haxe
-	var mouse = new Mouse(events);
+	var mouse = new Mouse(events, mouseAdapter);
 	// each frame:
 	mouse.poll();
 	if (mouse.isButtonPressed(Left)) fire(mouse.x, mouse.y);
@@ -21,10 +22,11 @@ class Mouse implements IPollable implements IActionDevice {
 	final pressed = new Map<Int, Bool>();
 	final released = new Map<Int, Bool>();
 
-	/** Creates the mouse over the platform's events, with nothing held.
+	/** Creates the mouse over the platform's events and mouse, with nothing held.
 
-		@param events  The platform's events, whose last `poll` this one reads. */
-	public function new(events:IEvents) {
+		@param events  The platform's events, whose last `poll` this one reads.
+		@param mouse  The platform's mouse, whose buttons and moves those events carry. */
+	public function new(events:IEvents, mouse:IMouse) {
 		this.events = events;
 	}
 

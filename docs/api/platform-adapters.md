@@ -102,7 +102,7 @@ function dispose():Void
 
 Provides `IEvents` in a browser page.
 
-It alone listens to the page: keys and typed text from the window; mouse buttons, moves, fingers and the wheel from the canvas, in its framebuffer pixels; focus and the page's visibility; the viewport's size, which the canvas follows; a lost WebGL context; the device's orientation while wanted. Each listener only records; `poll` hands over what was recorded since the last one. Gamepads are read at `poll`, in the W3C standard layout: a page sees a pad only after a button press on it.
+It listens to the page's focus and visibility, the viewport's size, which the canvas follows, and a lost WebGL context, and for the player's first press anywhere in the page, until it comes. Each listener only records; `poll` hands over what was recorded since the last one. The device adapters built over it (`DomKeyboardAdapter`, `DomMouseAdapter`, `DomTouchAdapter`, `DomGamepadsAdapter`, `DomTiltAdapter`) add their events to the same records.
 
 ```haxe
 function new(options:DomEventsAdapterOptions)
@@ -110,24 +110,12 @@ function poll():Void
 var unlocked(get, never):Bool
 var events(get, never):Array<Event>
 function wait(timeout:Float):Void
-function setTextInput(on:Bool):Void
-function isPadConnected(slot:Int):Bool
-function getPadName(slot:Int):String
-function isPadButtonDown(slot:Int, button:PadButton):Bool
-function getPadAxis(slot:Int, axis:PadAxis):Float
-function releaseTiltAccess():Void
-function requestTiltAccess(?done:() -> Void, ?failed:String -> Void):Bool
 function dispose():Void
 ```
 
 - `new`: Starts listening to the page and the canvas the program draws in.
   - `options`: The canvas's id.
   - throws `String`: No canvas has that id.
-- `setTextInput`: Does nothing: the window's keys type on a computer either way, and a phone's keyboard needs a focused input element.
-- `releaseTiltAccess`: Stops the readings and any ask still waiting for a tap.
-- `requestTiltAccess`: Asks for the device's orientation.
-  Where the browser asks for permission (iOS, and Chrome on Android), it is asked at the player's next tap, which shows its prompt. A page that isn't secure gets no readings (NeedsHttps). No reading within a second and a half of the page having its focus is reported unavailable without calling `failed`, and it goes on listening, as a phone's sensor may start late.
-- `dispose`: Does nothing: the page's listeners go with it.
 
 ## DomEventsAdapterOptions
 
@@ -151,9 +139,9 @@ final canvasId:String
 
 *class*, native (cpp) in [`platform/src/helix/platform/adapters/events/sdl3/Sdl3EventsAdapter.hx`](../../platform/src/helix/platform/adapters/events/sdl3/Sdl3EventsAdapter.hx), `import helix.platform.adapters.events.sdl3.Sdl3EventsAdapter;`, implements `IEvents`
 
-Provides `IEvents` on SDL3, natively: its one queue drained at each poll, and its gamepads through its controller database.
+Provides `IEvents` on SDL3, natively: its one queue drained at each poll.
 
-The window must be open (`Sdl3WindowAdapter`) before the first poll. No motion sensor is read natively: tilt asked for is unavailable.
+The window must be open (`Sdl3WindowAdapter`) before the first poll. SDL's events for a device are turned off until its adapter is constructed over this one (`Sdl3KeyboardAdapter`, `Sdl3MouseAdapter`, `Sdl3TouchAdapter`, `Sdl3GamepadsAdapter`), except a key, a mouse button and a finger lifting, which stay on until the first press has come.
 
 ```haxe
 function new()
@@ -161,19 +149,10 @@ var unlocked(get, never):Bool
 function poll():Void
 var events(get, never):Array<Event>
 function wait(timeout:Float):Void
-function setTextInput(on:Bool):Void
-function requestTiltAccess(?done:() -> Void, ?failed:String -> Void):Bool
-function releaseTiltAccess():Void
-function isPadConnected(slot:Int):Bool
-function getPadName(slot:Int):String
-function isPadButtonDown(slot:Int, button:PadButton):Bool
-function getPadAxis(slot:Int, axis:PadAxis):Float
 function dispose():Void
 ```
 
-- `new`: Sets up SDL's gamepads and touch.
-- `requestTiltAccess`: Returns false, calling neither callback, and reports the tilt unavailable: no motion sensor is read natively.
-- `releaseTiltAccess`: Does nothing: nothing is read natively.
+- `new`: Sets up SDL's events, with no device's wanted yet.
 
 ## DownloadExportAdapter
 
@@ -309,6 +288,82 @@ final readOnly:Bool = false
 
 - `directory`: Gets the directory, made when first written.
 - `readOnly`: Gets a value indicating whether writing, removing and clearing are refused, as for the files a program ships with; false by default.
+
+## DomGamepadsAdapter
+
+*class*, for the browser (js) in [`platform/src/helix/platform/adapters/gamepads/dom/DomGamepadsAdapter.hx`](../../platform/src/helix/platform/adapters/gamepads/dom/DomGamepadsAdapter.hx), `import helix.platform.adapters.gamepads.dom.DomGamepadsAdapter;`, implements `IGamepads`
+
+Provides `IGamepads` in a browser page, read at each `IEvents.poll` in the W3C standard layout.
+
+A page sees a pad only after a button press on it. The Gamepad API has no button events, so a change between two polls is one.
+
+```haxe
+function new(options:DomGamepadsAdapterOptions)
+function isConnected(slot:Int):Bool
+function getName(slot:Int):String
+function isButtonDown(slot:Int, button:PadButton):Bool
+function getAxis(slot:Int, axis:PadAxis):Float
+function dispose():Void
+```
+
+- `new`: Starts reading the gamepads at each poll.
+  - `options`: The events adapter whose poll reads them.
+
+## DomGamepadsAdapterOptions
+
+*class*, for the browser (js) in [`platform/src/helix/platform/adapters/gamepads/dom/DomGamepadsAdapterOptions.hx`](../../platform/src/helix/platform/adapters/gamepads/dom/DomGamepadsAdapterOptions.hx), `import helix.platform.adapters.gamepads.dom.DomGamepadsAdapterOptions;`
+
+Represents what `DomGamepadsAdapter` is built over.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{events:DomEventsAdapter}
+```
+
+```haxe
+final events:DomEventsAdapter
+```
+
+- `events`: Gets the events adapter whose `poll` delivers its events.
+
+## Sdl3GamepadsAdapter
+
+*class*, native (cpp) in [`platform/src/helix/platform/adapters/gamepads/sdl3/Sdl3GamepadsAdapter.hx`](../../platform/src/helix/platform/adapters/gamepads/sdl3/Sdl3GamepadsAdapter.hx), `import helix.platform.adapters.gamepads.sdl3.Sdl3GamepadsAdapter;`, implements `IGamepads`
+
+Provides `IGamepads` on SDL3, natively, through SDL's controller database, in the W3C standard layout.
+
+SDL's gamepad subsystem starts with it and stops at `dispose`. Pads are read whether the window has the keyboard or not.
+
+```haxe
+function new(options:Sdl3GamepadsAdapterOptions)
+function isConnected(slot:Int):Bool
+function getName(slot:Int):String
+function isButtonDown(slot:Int, button:PadButton):Bool
+function getAxis(slot:Int, axis:PadAxis):Float
+function dispose():Void
+```
+
+- `new`: Starts SDL's gamepads.
+  - `options`: The events adapter its events are delivered by.
+
+## Sdl3GamepadsAdapterOptions
+
+*class*, native (cpp) in [`platform/src/helix/platform/adapters/gamepads/sdl3/Sdl3GamepadsAdapterOptions.hx`](../../platform/src/helix/platform/adapters/gamepads/sdl3/Sdl3GamepadsAdapterOptions.hx), `import helix.platform.adapters.gamepads.sdl3.Sdl3GamepadsAdapterOptions;`
+
+Represents what `Sdl3GamepadsAdapter` is built over.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{events:Sdl3EventsAdapter}
+```
+
+```haxe
+final events:Sdl3EventsAdapter
+```
+
+- `events`: Gets the events adapter whose `poll` delivers its events.
 
 ## Sdl3GpuGraphicsAdapter
 
@@ -484,6 +539,144 @@ function dispose():Void
 - `new`: Creates the decoder.
 - `dispose`: Closes the decoder: a decode still running on its worker finishes, and its answer is dropped.
 
+## DomKeyboardAdapter
+
+*class*, for the browser (js) in [`platform/src/helix/platform/adapters/keyboard/dom/DomKeyboardAdapter.hx`](../../platform/src/helix/platform/adapters/keyboard/dom/DomKeyboardAdapter.hx), `import helix.platform.adapters.keyboard.dom.DomKeyboardAdapter;`, implements `IKeyboard`
+
+Provides `IKeyboard` in a browser page: keys and typed text from the window.
+
+A key still down when the page loses the keyboard arrives as a `KeyUp` just before `FocusLost`, as a page gets no keyup for a key let go while it hasn't the keyboard. The page keeps its own shortcuts (with Ctrl, Meta or Alt) and the function keys; the program gets the rest.
+
+```haxe
+function new(options:DomKeyboardAdapterOptions)
+var textInput(get, set):Bool
+function dispose():Void
+```
+
+- `new`: Starts listening to the keyboard.
+  - `options`: The events adapter its events are delivered by.
+- `textInput`: Gets or sets whether typed text arrives. A computer's keys type while it is on; a phone shows no keyboard, which needs a focused input element.
+
+## DomKeyboardAdapterOptions
+
+*class*, for the browser (js) in [`platform/src/helix/platform/adapters/keyboard/dom/DomKeyboardAdapterOptions.hx`](../../platform/src/helix/platform/adapters/keyboard/dom/DomKeyboardAdapterOptions.hx), `import helix.platform.adapters.keyboard.dom.DomKeyboardAdapterOptions;`
+
+Represents what `DomKeyboardAdapter` is built over.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{events:DomEventsAdapter}
+```
+
+```haxe
+final events:DomEventsAdapter
+```
+
+- `events`: Gets the events adapter whose `poll` delivers its events.
+
+## Sdl3KeyboardAdapter
+
+*class*, native (cpp) in [`platform/src/helix/platform/adapters/keyboard/sdl3/Sdl3KeyboardAdapter.hx`](../../platform/src/helix/platform/adapters/keyboard/sdl3/Sdl3KeyboardAdapter.hx), `import helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapter;`, implements `IKeyboard`
+
+Provides `IKeyboard` on SDL3, natively: keys by their physical position, and typed text through SDL's text input.
+
+SDL lets go of each key still down as the window loses the keyboard, so its `KeyUp` arrives.
+
+```haxe
+function new(options:Sdl3KeyboardAdapterOptions)
+var textInput(get, set):Bool
+function dispose():Void
+```
+
+- `new`: Turns SDL's keyboard events on.
+  - `options`: The events adapter its events are delivered by.
+- `textInput`: Gets or sets whether typed text arrives. While it is on, SDL's text input is started on the window: a phone shows its keyboard, and Windows with a gamepad plugged in may show its touch keyboard.
+
+## Sdl3KeyboardAdapterOptions
+
+*class*, native (cpp) in [`platform/src/helix/platform/adapters/keyboard/sdl3/Sdl3KeyboardAdapterOptions.hx`](../../platform/src/helix/platform/adapters/keyboard/sdl3/Sdl3KeyboardAdapterOptions.hx), `import helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapterOptions;`
+
+Represents what `Sdl3KeyboardAdapter` is built over.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{events:Sdl3EventsAdapter}
+```
+
+```haxe
+final events:Sdl3EventsAdapter
+```
+
+- `events`: Gets the events adapter whose `poll` delivers its events.
+
+## DomMouseAdapter
+
+*class*, for the browser (js) in [`platform/src/helix/platform/adapters/mouse/dom/DomMouseAdapter.hx`](../../platform/src/helix/platform/adapters/mouse/dom/DomMouseAdapter.hx), `import helix.platform.adapters.mouse.dom.DomMouseAdapter;`, implements `IMouse`
+
+Provides `IMouse` in a browser page: the mouse's and a pen's buttons, moves and wheel over the canvas, in its framebuffer pixels.
+
+The canvas keeps a pressed mouse until it is let go, so a drag out of it still arrives. Its context menu is kept from showing.
+
+```haxe
+function new(options:DomMouseAdapterOptions)
+function dispose():Void
+```
+
+- `new`: Starts listening to the mouse over the canvas.
+  - `options`: The events adapter its events are delivered by.
+
+## DomMouseAdapterOptions
+
+*class*, for the browser (js) in [`platform/src/helix/platform/adapters/mouse/dom/DomMouseAdapterOptions.hx`](../../platform/src/helix/platform/adapters/mouse/dom/DomMouseAdapterOptions.hx), `import helix.platform.adapters.mouse.dom.DomMouseAdapterOptions;`
+
+Represents what `DomMouseAdapter` is built over.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{events:DomEventsAdapter}
+```
+
+```haxe
+final events:DomEventsAdapter
+```
+
+- `events`: Gets the events adapter whose `poll` delivers its events.
+
+## Sdl3MouseAdapter
+
+*class*, native (cpp) in [`platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapter.hx`](../../platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapter.hx), `import helix.platform.adapters.mouse.sdl3.Sdl3MouseAdapter;`, implements `IMouse`
+
+Provides `IMouse` on SDL3, natively: the mouse's and a pen's buttons, moves and wheel over the window, in framebuffer pixels. SDL's mouse made of a touch is passed over.
+
+```haxe
+function new(options:Sdl3MouseAdapterOptions)
+function dispose():Void
+```
+
+- `new`: Turns SDL's mouse events on.
+  - `options`: The events adapter its events are delivered by.
+
+## Sdl3MouseAdapterOptions
+
+*class*, native (cpp) in [`platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapterOptions.hx`](../../platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapterOptions.hx), `import helix.platform.adapters.mouse.sdl3.Sdl3MouseAdapterOptions;`
+
+Represents what `Sdl3MouseAdapter` is built over.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{events:Sdl3EventsAdapter}
+```
+
+```haxe
+final events:Sdl3EventsAdapter
+```
+
+- `events`: Gets the events adapter whose `poll` delivers its events.
+
 ## DomSystemAdapter
 
 *class*, for the browser (js) in [`platform/src/helix/platform/adapters/system/dom/DomSystemAdapter.hx`](../../platform/src/helix/platform/adapters/system/dom/DomSystemAdapter.hx), `import helix.platform.adapters.system.dom.DomSystemAdapter;`, implements `ISystem`
@@ -528,6 +721,146 @@ function getCacheDirectory():String
 
 - `new`: Creates the system's facts for the program the `helix-company` and `helix-product` defines name.
   - throws `String`: For an executable whose name can't be one directory's name, when `helix-product` is unset.
+
+## DomTiltAdapter
+
+*class*, for the browser (js) in [`platform/src/helix/platform/adapters/tilt/dom/DomTiltAdapter.hx`](../../platform/src/helix/platform/adapters/tilt/dom/DomTiltAdapter.hx), `import helix.platform.adapters.tilt.dom.DomTiltAdapter;`, implements `ITilt`
+
+Provides `ITilt` in a browser page: the device's orientation (deviceorientation), asked for at the player's next tap where the browser wants permission (iOS, and Chrome on Android).
+
+```haxe
+function new(options:DomTiltAdapterOptions)
+function requestAccess(?done:() -> Void, ?failed:String -> Void):Bool
+function releaseAccess():Void
+function dispose():Void
+```
+
+- `new`: Creates the tilt, off until `requestAccess`.
+  - `options`: The events adapter its events are delivered by.
+- `requestAccess`: Asks for the device's orientation.
+  Where the browser asks for permission (iOS, and Chrome on Android), it is asked at the player's next tap, which shows its prompt. A page that isn't secure gets no readings (NeedsHttps). No reading within a second and a half of the page having its focus is reported unavailable without calling `failed`, and it goes on listening, as a phone's sensor may start late.
+- `releaseAccess`: Stops the readings and any ask still waiting for a tap.
+
+## DomTiltAdapterOptions
+
+*class*, for the browser (js) in [`platform/src/helix/platform/adapters/tilt/dom/DomTiltAdapterOptions.hx`](../../platform/src/helix/platform/adapters/tilt/dom/DomTiltAdapterOptions.hx), `import helix.platform.adapters.tilt.dom.DomTiltAdapterOptions;`
+
+Represents what `DomTiltAdapter` is built over.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{events:DomEventsAdapter}
+```
+
+```haxe
+final events:DomEventsAdapter
+```
+
+- `events`: Gets the events adapter whose `poll` delivers its events.
+
+## Sdl3TiltAdapter
+
+*class*, native (cpp) in [`platform/src/helix/platform/adapters/tilt/sdl3/Sdl3TiltAdapter.hx`](../../platform/src/helix/platform/adapters/tilt/sdl3/Sdl3TiltAdapter.hx), `import helix.platform.adapters.tilt.sdl3.Sdl3TiltAdapter;`, implements `ITilt`
+
+Provides `ITilt` on SDL3, natively. No motion sensor is read yet, so the tilt is unavailable on every target.
+
+```haxe
+function new(options:Sdl3TiltAdapterOptions)
+function requestAccess(?done:() -> Void, ?failed:String -> Void):Bool
+function releaseAccess():Void
+function dispose():Void
+```
+
+- `new`: Creates the tilt.
+  - `options`: The events adapter its events are delivered by.
+- `requestAccess`: Returns false, calling neither callback, and reports `Unavailable` at the next poll: no motion sensor is read.
+- `releaseAccess`: Does nothing: nothing is read.
+- `dispose`: Does nothing: nothing is read.
+
+## Sdl3TiltAdapterOptions
+
+*class*, native (cpp) in [`platform/src/helix/platform/adapters/tilt/sdl3/Sdl3TiltAdapterOptions.hx`](../../platform/src/helix/platform/adapters/tilt/sdl3/Sdl3TiltAdapterOptions.hx), `import helix.platform.adapters.tilt.sdl3.Sdl3TiltAdapterOptions;`
+
+Represents what `Sdl3TiltAdapter` is built over.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{events:Sdl3EventsAdapter}
+```
+
+```haxe
+final events:Sdl3EventsAdapter
+```
+
+- `events`: Gets the events adapter whose `poll` delivers its events.
+
+## DomTouchAdapter
+
+*class*, for the browser (js) in [`platform/src/helix/platform/adapters/touch/dom/DomTouchAdapter.hx`](../../platform/src/helix/platform/adapters/touch/dom/DomTouchAdapter.hx), `import helix.platform.adapters.touch.dom.DomTouchAdapter;`, implements `ITouch`
+
+Provides `ITouch` in a browser page: fingers on the canvas, in its framebuffer pixels.
+
+The canvas keeps a finger until it lifts, so one sliding off it still arrives. While it exists the canvas's `touch-action` is `none`, so the browser doesn't take a moving finger to scroll or zoom the page, which would cancel it; one the browser takes anyway arrives as its `TouchUp`.
+
+```haxe
+function new(options:DomTouchAdapterOptions)
+function dispose():Void
+```
+
+- `new`: Starts listening to fingers on the canvas.
+  - `options`: The events adapter its events are delivered by.
+
+## DomTouchAdapterOptions
+
+*class*, for the browser (js) in [`platform/src/helix/platform/adapters/touch/dom/DomTouchAdapterOptions.hx`](../../platform/src/helix/platform/adapters/touch/dom/DomTouchAdapterOptions.hx), `import helix.platform.adapters.touch.dom.DomTouchAdapterOptions;`
+
+Represents what `DomTouchAdapter` is built over.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{events:DomEventsAdapter}
+```
+
+```haxe
+final events:DomEventsAdapter
+```
+
+- `events`: Gets the events adapter whose `poll` delivers its events.
+
+## Sdl3TouchAdapter
+
+*class*, native (cpp) in [`platform/src/helix/platform/adapters/touch/sdl3/Sdl3TouchAdapter.hx`](../../platform/src/helix/platform/adapters/touch/sdl3/Sdl3TouchAdapter.hx), `import helix.platform.adapters.touch.sdl3.Sdl3TouchAdapter;`, implements `ITouch`
+
+Provides `ITouch` on SDL3, natively: fingers on the window, in framebuffer pixels, each numbered by its place among the fingers down. A touch SDL cancels arrives as its `TouchUp`.
+
+```haxe
+function new(options:Sdl3TouchAdapterOptions)
+function dispose():Void
+```
+
+- `new`: Turns SDL's finger events on.
+  - `options`: The events adapter its events are delivered by.
+
+## Sdl3TouchAdapterOptions
+
+*class*, native (cpp) in [`platform/src/helix/platform/adapters/touch/sdl3/Sdl3TouchAdapterOptions.hx`](../../platform/src/helix/platform/adapters/touch/sdl3/Sdl3TouchAdapterOptions.hx), `import helix.platform.adapters.touch.sdl3.Sdl3TouchAdapterOptions;`
+
+Represents what `Sdl3TouchAdapter` is built over.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{events:Sdl3EventsAdapter}
+```
+
+```haxe
+final events:Sdl3EventsAdapter
+```
+
+- `events`: Gets the events adapter whose `poll` delivers its events.
 
 ## DomWindowAdapter
 

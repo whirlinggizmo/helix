@@ -2,8 +2,10 @@
 import helix.platform.adapters.audio.webaudio.WebAudioAdapter;
 import helix.platform.adapters.audiodecoder.webaudio.WebAudioDecoderAdapter;
 import helix.platform.adapters.events.dom.DomEventsAdapter;
+import helix.platform.adapters.gamepads.dom.DomGamepadsAdapter;
 import helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter;
 import helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter;
+import helix.platform.adapters.keyboard.dom.DomKeyboardAdapter;
 import helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter;
 import helix.platform.adapters.system.dom.DomSystemAdapter;
 import helix.platform.adapters.window.dom.DomWindowAdapter;
@@ -43,8 +45,8 @@ class Main {
 		time = new Time(system);
 		time.every(1, () -> trace(time.elapsed));
 		time.scale = new Config(system).getFloat("speed", 1);
-		keyboard = new Keyboard(events);
-		pads = new Gamepads(events);
+		keyboard = new Keyboard(events, new DomKeyboardAdapter({events: events}));
+		pads = new Gamepads(events, new DomGamepadsAdapter({events: events}));
 		actions = new Actions([keyboard, pads]);
 		actions.bind("jump", Keyboard(Space), Pad(0, South));
 		saveFiles = new BrowserFileSystemAdapter({name: "saves"});

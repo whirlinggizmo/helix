@@ -1,6 +1,7 @@
-/* SDL3's events adapter's C (platform: events/sdl3/internal/events_sdl3.c) against SDL's own events, with SDL's dummy video driver: events
-   pushed through SDL come out of a poll as records in order, with the platform's codes; the window's focus, visibility and close arrive as events;
-   and an SDL virtual gamepad, attached and detached while running, connects in a slot and reads as the W3C standard layout. A virtual
+/* SDL3's events adapters' C (platform: shared/sdl3/events_sdl3.c) against SDL's own events, with SDL's dummy video driver: with no device
+   wanted, the first press alone arrives, then SDL drops the devices' events; with them wanted, events pushed through SDL come out of a poll
+   as records in order, with the platform's codes; the window's focus, visibility and close arrive as events; and an SDL virtual gamepad,
+   attached and detached while running, connects in a slot and reads as the W3C standard layout. A virtual
    gamepad uses SDL's identity mapping, so this checks the adapter's translation, not SDL's controller database or a real pad. */
 #include "events_sdl3.h"
 #include "sdl3.h"
@@ -34,6 +35,22 @@ int main(void) {
     helix_events_poll();
     while (helix_events_next()) {}
 
+    /* No device wanted: SDL delivers only what the first press needs, a key's or a mouse button's press or a finger's lift; a key's press
+       is the first press, alone, once, and then SDL delivers none of them. */
+    CHECK(SDL_EventEnabled(SDL_EVENT_KEY_DOWN) && SDL_EventEnabled(SDL_EVENT_MOUSE_BUTTON_DOWN) && SDL_EventEnabled(SDL_EVENT_FINGER_UP));
+    CHECK(!SDL_EventEnabled(SDL_EVENT_KEY_UP) && !SDL_EventEnabled(SDL_EVENT_MOUSE_MOTION) && !SDL_EventEnabled(SDL_EVENT_FINGER_DOWN));
+    key(SDL_SCANCODE_A, 1, 0); key(SDL_SCANCODE_A, 0, 0);
+    helix_events_poll();
+    CHECK(next(HELIX_EVENTS_UNLOCKED, 0, 0)); CHECK(!helix_events_next());
+    CHECK(!SDL_EventEnabled(SDL_EVENT_KEY_DOWN) && !SDL_EventEnabled(SDL_EVENT_MOUSE_BUTTON_DOWN) && !SDL_EventEnabled(SDL_EVENT_FINGER_UP));
+    key(SDL_SCANCODE_B, 1, 0);
+    helix_events_poll(); CHECK(!helix_events_next());
+
+    helix_events_want(HELIX_EVENTS_KEYBOARD | HELIX_EVENTS_MOUSE | HELIX_EVENTS_TOUCH, 1);
+    helix_events_poll(); CHECK(!helix_events_next());
+    CHECK(SDL_EventEnabled(SDL_EVENT_KEY_UP) && SDL_EventEnabled(SDL_EVENT_MOUSE_MOTION) && SDL_EventEnabled(SDL_EVENT_FINGER_DOWN));
+    SDL_Event e = {0};
+
     /* Keys by physical position, as Key's numbers; right-hand modifiers as the left-hand ones; a repeat says so; a key `Key` doesn't name
        isn't reported. */
     key(SDL_SCANCODE_A, 1, 0); key(SDL_SCANCODE_A, 1, 1); key(SDL_SCANCODE_A, 0, 0); key(SDL_SCANCODE_RCTRL, 1, 0); key(SDL_SCANCODE_MUTE, 1, 0);
@@ -44,7 +61,7 @@ int main(void) {
     CHECK(next(HELIX_EVENTS_KEY_DOWN, 348, 0)); CHECK(!helix_events_next());
 
     /* Text as code points, control characters dropped. */
-    SDL_Event e = {0};
+    e = (SDL_Event){0};
     e.type = SDL_EVENT_TEXT_INPUT; e.text.text = "a\xc3\xa9\x01\xe2\x82\xac"; SDL_PushEvent(&e);
     helix_events_poll();
     CHECK(next(HELIX_EVENTS_TEXT, 'a', 0)); CHECK(next(HELIX_EVENTS_TEXT, 0xe9, 0)); CHECK(next(HELIX_EVENTS_TEXT, 0x20ac, 0));
@@ -86,7 +103,8 @@ int main(void) {
     e = (SDL_Event){0}; e.type = SDL_EVENT_WINDOW_FOCUS_GAINED; SDL_PushEvent(&e);
     helix_events_poll(); CHECK(next(HELIX_EVENTS_FOCUS_GAINED, 0, 0) && helix_sdl3_focused());
 
-    /* A virtual gamepad, attached while running: it connects in a free slot at the next poll. */
+    /* A virtual gamepad, attached while running: it connects in a free slot at the next poll, once the gamepads are wanted. */
+    helix_events_want(HELIX_EVENTS_GAMEPADS, 1);
     helix_events_poll(); CHECK(virtual_slot() < 0);
     SDL_VirtualJoystickDesc desc; SDL_INIT_INTERFACE(&desc);
     desc.type = SDL_JOYSTICK_TYPE_GAMEPAD; desc.naxes = SDL_GAMEPAD_AXIS_COUNT; desc.nbuttons = SDL_GAMEPAD_BUTTON_COUNT; desc.name = "HeliX virtual pad";
@@ -141,6 +159,9 @@ int main(void) {
     helix_events_set_text(1); CHECK(SDL_TextInputActive(window));
     helix_events_set_text(0); CHECK(!SDL_TextInputActive(window));
     helix_events_set_text(1); CHECK(SDL_TextInputActive(window));
+    /* The keyboard no longer wanted stops text input; its keys are dropped again. */
+    helix_events_want(HELIX_EVENTS_KEYBOARD, 0); CHECK(!SDL_TextInputActive(window));
+    helix_events_poll(); CHECK(!SDL_EventEnabled(SDL_EVENT_KEY_DOWN) && SDL_EventEnabled(SDL_EVENT_MOUSE_BUTTON_DOWN));
 
     helix_events_dispose();
     helix_sdl3_close();

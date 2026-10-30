@@ -8,3 +8,7 @@
   Whether it wears a known API or an engine's is GOALS' open path.
 - **SDL3 with the platform:** a native build needs only Haxe and hxcpp (goal 6), so the platform haxelib ships the pinned SDL3 per
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.
+- **Gestures:** taps, double taps, drags and flicks (the mouse and fingers alike), and two fingers' pan, pinch and twist, over `Touch`
+  and `Mouse`, as HeliX's `PointerGestures` and touch gesture had them.
+- **On-screen controls, with the UI layer:** touch regions and floating touch sticks (one, two halves, regions; dead zone, takeover,
+  blocked by buttons) read by `Actions` through `IActionDevice`, placed in the game's units and drawn (DECISIONS 13).

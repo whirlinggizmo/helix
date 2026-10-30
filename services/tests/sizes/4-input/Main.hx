@@ -1,6 +1,8 @@
 // The services' size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one an action bound to a key and a pad button, read each frame.
 import helix.platform.adapters.events.dom.DomEventsAdapter;
+import helix.platform.adapters.gamepads.dom.DomGamepadsAdapter;
 import helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter;
+import helix.platform.adapters.keyboard.dom.DomKeyboardAdapter;
 import helix.platform.adapters.system.dom.DomSystemAdapter;
 import helix.platform.adapters.window.dom.DomWindowAdapter;
 import helix.services.config.Config;
@@ -28,8 +30,8 @@ class Main {
 		time = new Time(system);
 		time.every(1, () -> trace(time.elapsed));
 		time.scale = new Config(system).getFloat("speed", 1);
-		keyboard = new Keyboard(events);
-		pads = new Gamepads(events);
+		keyboard = new Keyboard(events, new DomKeyboardAdapter({events: events}));
+		pads = new Gamepads(events, new DomGamepadsAdapter({events: events}));
 		actions = new Actions([keyboard, pads]);
 		actions.bind("jump", Keyboard(Space), Pad(0, South));
 		var frame:Float->Void = null;

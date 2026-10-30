@@ -11,7 +11,7 @@ Provides actions, which are names the game reads, such as "jump" or "left", each
 Any of an action's bindings works it. Actions reads the devices it was created over, so it is current once they are polled. It has no `poll` of its own. A binding to a device it wasn't given, or a name with no bindings, reads as not held, with a value of 0.
 
 ```haxe
-var keyboard = new Keyboard(events), pads = new Gamepads(events);
+var keyboard = new Keyboard(events, keyboardAdapter), pads = new Gamepads(events, gamepadsAdapter);
 var actions = new Actions([keyboard, pads]);
 actions.bind("jump", Keyboard(Space), Pad(0, South));
 actions.bind("left", Keyboard(Left), Keyboard(A), Axis(0, LeftX, Negative));
@@ -116,10 +116,10 @@ Specifies what an action is bound to (`Actions.bind`).
 
 Provides the gamepads as state, in slots 0 to 3: which buttons are held or went down or up this frame, and where each stick and trigger is, past a dead zone.
 
-The program constructs one over its `IEvents` and calls `poll` once a frame, as `Keyboard` is. A pad's axes are read once a poll, so they hold still for the frame. A pad that disconnects lets go of its buttons.
+The program constructs one over its `IEvents` and its `IGamepads`, and calls `poll` once a frame, as `Keyboard` is. A pad's axes are read once a poll, so they hold still for the frame. A pad that disconnects lets go of its buttons.
 
 ```haxe
-var pads = new Gamepads(events);
+var pads = new Gamepads(events, gamepadsAdapter);
 // each frame:
 pads.poll();
 if (pads.isButtonPressed(0, South)) jump();
@@ -127,7 +127,7 @@ var x = pads.getAxis(0, LeftX);
 ```
 
 ```haxe
-function new(events:IEvents)
+function new(events:IEvents, gamepads:IGamepads)
 function poll():Void
 function isConnected(slot:Int):Bool
 function getName(slot:Int):String
@@ -138,8 +138,9 @@ function getAxis(slot:Int, axis:PadAxis):Float
 var deadZone(default, set):Float
 ```
 
-- `new`: Creates the gamepads over the platform's events, with nothing held.
+- `new`: Creates the gamepads over the platform's events and gamepads, with nothing held.
   - `events`: The platform's events, whose last `poll` this one reads.
+  - `gamepads`: The platform's gamepads, whose buttons those events carry and whose sticks and triggers are read.
 - `poll`: Reads the events the last `IEvents.poll` delivered, and every pad's axes. Call it once a frame.
 - `isConnected`: Returns whether a gamepad is in a slot.
   - `slot`: The slot, 0 to 3.
@@ -182,25 +183,30 @@ A game passes its devices to `Actions` and never calls these itself.
 
 Provides the keyboard as state: what is held, and what went down or up this frame.
 
-The program constructs one over its `IEvents` and calls `poll` once a frame. The state then holds until the next poll. `poll` reads the events the last `IEvents.poll` delivered, so the two may be polled in either order. When the keyboard is polled first, it is a frame behind. "Pressed" is true for the frame a key went down, once per press however long it is held.
+The program constructs one over its `IEvents` and its `IKeyboard`, and calls `poll` once a frame. The state then holds until the next poll. `poll` reads the events the last `IEvents.poll` delivered, so the two may be polled in either order. When the keyboard is polled first, it is a frame behind. "Pressed" is true for the frame a key went down, once per press however long it is held.
 
 ```haxe
-var keyboard = new Keyboard(events);
+var keyboard = new Keyboard(events, keyboardAdapter);
 // each frame:
 keyboard.poll();
 if (keyboard.isKeyPressed(Space)) jump();
 ```
 
 ```haxe
-function new(events:IEvents)
+function new(events:IEvents, keyboard:IKeyboard)
+var textInput(get, set):Bool
+var text(default, null):String
 function poll():Void
 function isKeyDown(key:Key):Bool
 function isKeyPressed(key:Key):Bool
 function isKeyReleased(key:Key):Bool
 ```
 
-- `new`: Creates the keyboard over the platform's events, with nothing held.
+- `new`: Creates the keyboard over the platform's events and keyboard, with nothing held.
   - `events`: The platform's events, whose last `poll` this one reads.
+  - `keyboard`: The platform's keyboard, whose keys those events carry.
+- `textInput`: Gets or sets whether typed text arrives, as `IKeyboard.textInput`. A phone shows its keyboard while it is on. Defaults to false.
+- `text`: Gets the text typed this frame, in order, or "" when none was. Text is typed only while `textInput` is on.
 - `poll`: Reads the events the last `IEvents.poll` delivered. Call it once a frame. When the window loses focus, every held key is released.
 - `isKeyDown`: Returns whether a key is held.
   - `key`: The key.
@@ -218,17 +224,17 @@ function isKeyReleased(key:Key):Bool
 
 Provides the mouse as state: where it is, its wheel, and which buttons are held or went down or up this frame.
 
-The program constructs one over its `IEvents` and calls `poll` once a frame, as `Keyboard` is. "Pressed" is true for the frame a button went down.
+The program constructs one over its `IEvents` and its `IMouse`, and calls `poll` once a frame, as `Keyboard` is. "Pressed" is true for the frame a button went down.
 
 ```haxe
-var mouse = new Mouse(events);
+var mouse = new Mouse(events, mouseAdapter);
 // each frame:
 mouse.poll();
 if (mouse.isButtonPressed(Left)) fire(mouse.x, mouse.y);
 ```
 
 ```haxe
-function new(events:IEvents)
+function new(events:IEvents, mouse:IMouse)
 var x(default, null):Float
 var y(default, null):Float
 var wheelX(default, null):Float
@@ -239,8 +245,9 @@ function isButtonPressed(button:MouseButton):Bool
 function isButtonReleased(button:MouseButton):Bool
 ```
 
-- `new`: Creates the mouse over the platform's events, with nothing held.
+- `new`: Creates the mouse over the platform's events and mouse, with nothing held.
   - `events`: The platform's events, whose last `poll` this one reads.
+  - `mouse`: The platform's mouse, whose buttons and moves those events carry.
 - `x`: Gets the mouse's distance from the window's left edge, in framebuffer pixels, where it last was over the window.
 - `y`: Gets the mouse's distance from the window's top edge, in framebuffer pixels, where it last was over the window.
 - `wheelX`: Gets how far the wheel turned this frame, in notches, right positive.
@@ -262,10 +269,10 @@ function isButtonReleased(button:MouseButton):Bool
 
 Provides the device's tilt, from level and turned with the screen, for a game steered by tilting a phone or a tablet.
 
-The program constructs one over its `IEvents`, calls `requestAccess`, and calls `poll` once a frame, as `Keyboard` is. A page may need the player's permission, asked at the player's next tap, so a game asks before the tap that starts play. Level is taken once the device is held steady, and the tilt reads 0 until then (`calibrating`). Natively there is no tilt.
+The program constructs one over its `IEvents` and its `ITilt`, calls `requestAccess`, and calls `poll` once a frame, as `Keyboard` is. A page may need the player's permission, asked at the player's next tap, so a game asks before the tap that starts play. Level is taken once the device is held steady, and the tilt reads 0 until then (`calibrating`). Natively it is unavailable.
 
 ```haxe
-var tilt = new Tilt(events);
+var tilt = new Tilt(events, tiltAdapter);
 tilt.requestAccess(() -> trace("tilt on"), why -> trace(why));
 // each frame:
 tilt.poll();
@@ -273,7 +280,7 @@ x += speed * tilt.getAxis(X) * time.delta;
 ```
 
 ```haxe
-function new(events:IEvents)
+function new(events:IEvents, tilt:ITilt)
 function requestAccess(?done:() -> Void, ?failed:String -> Void):Bool
 function releaseAccess():Void
 var status(default, null):TiltStatus
@@ -284,12 +291,13 @@ var range(default, set):Float
 function poll():Void
 ```
 
-- `new`: Creates the tilt over the platform's events, off until `requestAccess`.
+- `new`: Creates the tilt over the platform's events and tilt, off until `requestAccess`.
   - `events`: The platform's events, whose last `poll` this one reads.
-- `requestAccess`: Asks for the device's motion sensor, as `IEvents.requestTiltAccess` does.
+  - `tilt`: The platform's tilt, whose readings those events carry.
+- `requestAccess`: Asks for the device's motion sensor, as `ITilt.requestAccess` does.
   - `done`: Optional. Called once readings arrive.
   - `failed`: Optional. Receives why there will be none: the player refused, the page isn't secure, or the browser reads no orientation.
-  - returns: False, calling neither, where the tilt can't be read at all: natively.
+  - returns: False, calling neither, where the tilt can't be read at all, as natively.
 
   A page may need the player's permission, which is asked at the player's next tap. `status` follows each change, for a game that shows "tap to start tilt" while it waits.
 - `releaseAccess`: Stops the readings, and reads 0 from then. A permission the player granted stays granted, so a later `requestAccess` usually starts without asking again.
@@ -311,3 +319,54 @@ Specifies an axis of the device's tilt, turned with the screen (`Tilt.getAxis`).
 
 - `X`: Across the screen, right positive.
 - `Y`: Along the screen, toward the player positive.
+
+## Touch
+
+*class* in [`services/src/helix/services/input/Touch.hx`](../../services/src/helix/services/input/Touch.hx), `import helix.services.input.Touch;`, implements `IPollable`
+
+Provides the fingers on the screen as state: which are down, where each is, and which landed or lifted this frame.
+
+The program constructs one over its `IEvents` and its `ITouch`, and calls `poll` once a frame, as `Keyboard` is. A finger is known by its id from the frame it lands until the frame it lifts. Positions are in framebuffer pixels. When the window loses focus, every finger counts as lifted.
+
+```haxe
+var touch = new Touch(events, touchAdapter);
+// each frame:
+touch.poll();
+for (id in touch.pressed) tapAt(touch.getX(id), touch.getY(id));
+```
+
+```haxe
+function new(events:IEvents, touch:ITouch)
+var fingers(get, never):Array<Int>
+var pressed(get, never):Array<Int>
+var released(get, never):Array<Int>
+function poll():Void
+function isFingerDown(id:Int):Bool
+function isFingerPressed(id:Int):Bool
+function isFingerReleased(id:Int):Bool
+function getX(id:Int):Float
+function getY(id:Int):Float
+```
+
+- `new`: Creates the touch over the platform's events and touch, with no finger down.
+  - `events`: The platform's events, whose last `poll` this one reads.
+  - `touch`: The platform's touch, whose fingers those events carry.
+- `fingers`: Gets the fingers down, by id, in the order they landed. The array is reused by the next poll.
+- `pressed`: Gets the fingers that landed this frame, by id. The array is reused by the next poll.
+- `released`: Gets the fingers that lifted this frame, by id. The array is reused by the next poll.
+- `poll`: Reads the events the last `IEvents.poll` delivered. Call it once a frame.
+- `isFingerDown`: Returns whether a finger is down.
+  - `id`: The finger.
+  - returns: True from the frame it landed until the frame it lifted.
+- `isFingerPressed`: Returns whether a finger landed this frame.
+  - `id`: The finger.
+  - returns: True for that frame alone.
+- `isFingerReleased`: Returns whether a finger lifted this frame.
+  - `id`: The finger.
+  - returns: True for that frame alone.
+- `getX`: Returns a finger's distance from the window's left edge.
+  - `id`: The finger.
+  - returns: Where it is in framebuffer pixels, or where it lifted this frame; 0 for one that isn't down or lifting.
+- `getY`: Returns a finger's distance from the window's top edge.
+  - `id`: The finger.
+  - returns: Where it is in framebuffer pixels, or where it lifted this frame; 0 for one that isn't down or lifting.
