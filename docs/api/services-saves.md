@@ -8,21 +8,21 @@
 
 Provides small values a game keeps between runs, by key, in one file.
 
-`load` reads the file once. After that, values are read and set in memory, without waiting. A change is kept at the next `poll`. Everything set in a frame is written as one file, one write at a time, so a program that ends between frames loses at most that frame's changes.
+`load` reads the file once. After that, values are read and set in memory, without waiting. A change is written at the next `poll`: everything set in a frame as one file, one write at a time.
 
-A write never blocks, and it finishes in the file system's `poll`, so a program that is ending keeps polling until the write is done. Natively, the program flushes at `CloseRequested` and leaves its loop when the flush answers. A page ends without a last frame, so it flushes in `IWindow.onClose`, where a write that has started may not finish.
+Set a value when it changes, not as the program ends. A page's end gives a write no time to finish, so what is set there is lost. A native program leaving its loop flushes first, and leaves when the flush answers.
 
 ```haxe
 saves.load(() -> {
 x = saves.getFloat("x", 0);
 y = saves.getFloat("y", 0);
 });
+// as the position changes
 saves.setFloat("x", x);
+saves.setFloat("y", y);
 
 // natively, ending: the loop runs on until running is false
 case CloseRequested: saves.flush(() -> running = false, error -> running = false);
-// in a page
-window.onClose = () -> saves.flush();
 ```
 
 ```haxe
@@ -106,7 +106,7 @@ function dispose():Void
   - `written`: Optional. Called once the values are kept, or at the next `poll` when nothing was pending.
   - `failed`: Optional. Receives why the values can't be written. When omitted, the failure is logged.
 
-  Before `load`, nothing is pending. A write that has started still finishes when the saves or their file system are disposed straight after, as in a page's `IWindow.onClose`, but then nothing is called.
+  Before `load`, nothing is pending. A write that has started still finishes when the saves or their file system are disposed straight after, but then nothing is called.
 - `poll`: Starts writing what was set since the last write, unless a write is still in flight.
   Call it once a frame. After a failed write, it waits for another change before trying again.
 - `dispose`: Releases the values. A write in flight still finishes.

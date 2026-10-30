@@ -87,7 +87,7 @@ class Tilt implements IPollable implements IActionDevice {
 
 	/** Returns how far the device is tilted from level along an axis, turned with the screen.
 
-		@param axis  The axis: X across the screen, right positive; Y along it, toward the player positive.
+		@param axis  The axis: X across the screen, right positive; Y up and down it, down positive.
 		@return  -1 to 1, where `range` degrees reads 1; 0 while level is being taken, or when the tilt isn't on. */
 	public function getAxis(axis:TiltAxis):Float {
 		return tilt[axis == X ? 0 : 1];

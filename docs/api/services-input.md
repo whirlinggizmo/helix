@@ -302,7 +302,7 @@ function poll():Void
   Level is taken once the device is held within 3 degrees for half a second: when the tilt starts, after the screen turns, and after `calibrate`. The tilt reads 0 meanwhile.
 - `calibrate`: Takes level again from how the device is held next, as a game's "Level" button does.
 - `getAxis`: Returns how far the device is tilted from level along an axis, turned with the screen.
-  - `axis`: The axis: X across the screen, right positive; Y along it, toward the player positive.
+  - `axis`: The axis: X across the screen, right positive; Y up and down it, down positive.
   - returns: -1 to 1, where `range` degrees reads 1; 0 while level is being taken, or when the tilt isn't on.
 - `range`: Gets or sets how many degrees of tilt read 1. Clamped to at least 1. Defaults to 30.
 - `poll`: Reads the events the last `IEvents.poll` delivered: the tilt's status and its readings. Call it once a frame.
@@ -314,7 +314,7 @@ function poll():Void
 Specifies an axis of the device's tilt, turned with the screen (`Tilt.getAxis`).
 
 - `X`: Across the screen, right positive.
-- `Y`: Along the screen, toward the player positive.
+- `Y`: Up and down the screen, down positive.
 
 ## Touch
 

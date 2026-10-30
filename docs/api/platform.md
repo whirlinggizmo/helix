@@ -1064,7 +1064,7 @@ var onClose:Null<() -> Void>
 - `close`: Closes the window natively, and does nothing in a page.
   `onClose` runs before the window closes. The program disposes the graphics drawing in the window before calling it, and ends its loop after it.
 - `onClose`: Gets or sets the function called once, as the window goes for good. It defaults to null, for none.
-  Natively it is called in `close`. In a page it is called at pagehide. Nothing of the program runs after it, so it is the last place to save. In a page no frame follows, and an asynchronous write started in it may not finish. A page receives no `CloseRequested`, so this is a page's only end.
+  Natively it is called in `close`. In a page it is called at pagehide, with no frame after it, so a file written there isn't kept: a browser drops a write that starts as its page goes. A page receives no `CloseRequested`, so this is a page's only end.
 
 ## Key
 

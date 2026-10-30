@@ -5,6 +5,6 @@ enum TiltAxis {
 	/** Across the screen, right positive. */
 	X;
 
-	/** Along the screen, toward the player positive. */
+	/** Up and down the screen, down positive. */
 	Y;
 }

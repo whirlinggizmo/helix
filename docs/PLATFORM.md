@@ -49,8 +49,8 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
   `requestFullscreen(enabled, ?done, ?failed)`; `requestOrientation(orientation, ?done, ?failed)`.
 - The monitors: `monitorCount`, `monitorIndex`, `requestMonitorIndex`, `getMonitorName`, `getMonitorX`, `getMonitorY`,
   `getMonitorWidth`, `getMonitorHeight`.
-- `onClose`, a property: the call made once, the last before the window is gone (natively in `close`, in a page at pagehide); the place
-  to save.
+- `onClose`, a property: the call made once, the last before the window is gone (natively in `close`, in a page at pagehide). Not a
+  place to save: a page's write started there isn't kept.
 - `close()` natively destroys the window and in a page does nothing (a script can't close its tab); `canClose()` says whether `close`
   removes the window: true natively, false in a page, so a menu asks it before offering Quit.
 
@@ -62,7 +62,8 @@ actually swaps; the window only provides the surface.
   without saving?" first).
 - A page never gets `CloseRequested`: a tab closing or navigating away gives no frame to decide in. Its end is `onClose`, at
   pagehide, the one call the platform makes upward; nothing of the program runs after it, so work started there must not need a later
-  frame, and an asynchronous write started there may not finish.
+  frame. A browser drops a write that starts as its page goes (IndexedDB's, in Chromium every time), so a program keeps what it must
+  as it changes.
 - Quitting is the owner's loop ending, the same on both targets: natively the owner closes the window and ends its loop; in a page a
   program doesn't offer Quit, since `canClose()` is false and a stopped program would leave the page frozen.
 - `visible` and `requestVisible` are the program's own choice to show or hide its window (in a page, the canvas). Whether the player
