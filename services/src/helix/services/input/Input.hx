@@ -113,6 +113,8 @@ class Input implements IPollable {
 							pads.remove(id);
 							padsReleased.set(id, true);
 						}
+				case Activated:
+					activated = true;
 				case FocusLost:
 					// What's held when the window loses the keyboard never sends its up, so it's let go here.
 					release(keys, keysReleased);
@@ -144,6 +146,12 @@ class Input implements IPollable {
 	public function isKeyReleased(key:Key):Bool {
 		return keysReleased.exists(key);
 	}
+
+	/** Gets a value indicating whether the player has pressed a key or a mouse button, or lifted a finger, yet, on any target.
+
+		A page can start audio, ask for tilt and go fullscreen only after that, so a game's "press any key" start waits for it the same way
+		everywhere. A gamepad's press doesn't count, as a browser doesn't take one as the player's. It stays true once set. */
+	public var activated(default, null):Bool = false;
 
 	/** Gets the mouse's distance from the window's left edge, in framebuffer pixels, where it was last over the window. */
 	public var mouseX(default, null):Float = 0;

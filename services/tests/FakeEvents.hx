@@ -35,12 +35,6 @@ class FakeEvents implements IEvents {
 
 	public function setTiltWanted(on:Bool):Void {}
 
-	/** Gets true. */
-	public var activated(get, never):Bool;
-
-	function get_activated():Bool
-		return true;
-
 	public function isPadConnected(slot:Int):Bool
 		return slot == 0;
 

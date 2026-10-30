@@ -47,14 +47,10 @@ interface IEvents extends IPollable {
 
 	/** Starts or stops reading the device's orientation as `Tilt` events.
 
-		A page may need the player's permission, which is asked at the player's next tap. `TiltState` events report how it went.
+		A page may need the player's permission, which is asked at the player's next tap. `TiltState` events report each change: waiting for
+		that tap, on, refused, unavailable, and off again when it's turned off.
 		@param on  True to start. */
 	function setTiltWanted(on:Bool):Void;
-
-	/** Gets a value indicating whether the player has pressed a key, a button or a finger yet.
-
-		A browser allows audio and fullscreen only after that. It is always true natively. */
-	var activated(get, never):Bool;
 
 	/** Returns whether a gamepad is in a slot, as of the last `poll`.
 

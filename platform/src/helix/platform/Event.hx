@@ -42,11 +42,14 @@ enum Event {
 		angle. */
 	Tilt(beta:Float, gamma:Float, screenAngle:Float);
 
-	/** The tilt's state changed.
+	/** The tilt's status changed. */
+	TiltState(status:TiltStatus);
 
-		The state is 0 for off, 1 for waiting for the player's permission, 2 for calibrating, 3 for on, 4 for refused, 5 for unavailable,
-		and 6 for unavailable because the page isn't secure (not HTTPS). */
-	TiltState(state:Int);
+	/** The player pressed a key or a mouse button, or lifted a finger, for the first time, which lets a page start audio, ask for tilt
+		and go fullscreen. It arrives once, before that event, on every target, so a game's start flows the same everywhere. A finger counts
+		as it lifts because a browser counts a tap then, not as it lands. A gamepad's press doesn't count, as a browser doesn't take one as
+		the player's. */
+	Activated;
 
 	/** A gamepad was connected in a slot, 0 to 3. */
 	PadConnected(slot:Int);

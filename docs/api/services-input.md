@@ -130,6 +130,7 @@ function poll():Void
 function isKeyDown(key:Key):Bool
 function isKeyPressed(key:Key):Bool
 function isKeyReleased(key:Key):Bool
+var activated(default, null):Bool
 var mouseX(default, null):Float
 var mouseY(default, null):Float
 var wheelX(default, null):Float
@@ -157,6 +158,8 @@ var padDeadZone(default, set):Float
 - `isKeyReleased`: Returns whether a key went up this frame.
   - `key`: The key.
   - returns: True for that frame alone.
+- `activated`: Gets a value indicating whether the player has pressed a key or a mouse button, or lifted a finger, yet, on any target.
+  A page can start audio, ask for tilt and go fullscreen only after that, so a game's "press any key" start waits for it the same way everywhere. A gamepad's press doesn't count, as a browser doesn't take one as the player's. It stays true once set.
 - `mouseX`: Gets the mouse's distance from the window's left edge, in framebuffer pixels, where it was last over the window.
 - `mouseY`: Gets the mouse's distance from the window's top edge, in framebuffer pixels, where it was last over the window.
 - `wheelX`: Gets the wheel's horizontal turn this frame, in notches, positive to the right.

@@ -1,5 +1,6 @@
 package helix.platform.adapters.events.dom;
 
+import helix.platform.adapters.shared.Activation;
 import helix.platform.Event;
 import helix.platform.IEvents;
 import helix.platform.PadAxis;
@@ -179,7 +180,10 @@ class DomEventsAdapter implements IEvents {
 				held[i] = down;
 			}
 		}
+		activated = Activation.mark(delivered, activated);
 	}
+
+	var activated = false;
 
 	public var events(get, never):Array<Event>;
 
@@ -190,13 +194,6 @@ class DomEventsAdapter implements IEvents {
 
 	/** Does nothing: the window's keys type on a computer either way, and a phone's keyboard needs a focused input element. */
 	public function setTextInput(on:Bool):Void {}
-
-	public var activated(get, never):Bool;
-
-	function get_activated():Bool {
-		var activation:Dynamic = js.Syntax.code("navigator.userActivation");
-		return activation == null || activation.hasBeenActive;
-	}
 
 	public function isPadConnected(slot:Int):Bool
 		return slot >= 0 && slot < 4 && pads[slot] != null;
@@ -228,23 +225,26 @@ class DomEventsAdapter implements IEvents {
 	/** Listens to the device's orientation while on.
 
 		Where the browser asks for leave (iOS), it is asked at the player's next tap, which shows its prompt. A page that isn't secure gets no
-		readings (TiltState 6). No reading within a second and a half of the page having its focus is reported unavailable (TiltState 5),
+		readings (NeedsHttps). No reading within a second and a half of the page having its focus is reported unavailable,
 		though it goes on listening: a phone's sensor may start late. */
 	public function setTiltWanted(on:Bool):Void {
 		var window:Dynamic = Browser.window;
 		if (!on) {
+			var wasWanted = tiltListener != null || tiltAsking != null;
 			if (tiltListener != null)
 				window.removeEventListener("deviceorientation", tiltListener);
 			tiltListener = null;
 			stopAsking();
+			if (wasWanted)
+				recorded.push(TiltState(Off));
 			return;
 		}
 		if (window.isSecureContext == false) {
-			recorded.push(TiltState(6));
+			recorded.push(TiltState(NeedsHttps));
 			return;
 		}
 		if (window.DeviceOrientationEvent == null) {
-			recorded.push(TiltState(5));
+			recorded.push(TiltState(Unavailable));
 			return;
 		}
 		var listen = () -> {
@@ -255,6 +255,8 @@ class DomEventsAdapter implements IEvents {
 				// A reading without numbers (a sensor starting, or none) is passed over.
 				if (e.beta == null || e.gamma == null)
 					return;
+				if (!read)
+					recorded.push(TiltState(On));
 				read = true;
 				var angle:Float = js.Syntax.code("(screen.orientation && screen.orientation.angle) || window.orientation || 0");
 				recorded.push(Tilt(e.beta, e.gamma, angle));
@@ -262,7 +264,7 @@ class DomEventsAdapter implements IEvents {
 			window.addEventListener("deviceorientation", tiltListener);
 			// Chrome gives no readings while the page hasn't its focus, and its prompt takes it until the player's next tap: the time is
 			// counted from then.
-			var count = () -> haxe.Timer.delay(() -> if (!read && tiltListener != null) recorded.push(TiltState(5)), 1500);
+			var count = () -> haxe.Timer.delay(() -> if (!read && tiltListener != null) recorded.push(TiltState(Unavailable)), 1500);
 			if (Browser.document.hasFocus())
 				count();
 			else {
@@ -287,6 +289,7 @@ class DomEventsAdapter implements IEvents {
 	function askTiltAtNextTap(listen:Void->Void):Void {
 		var window:Dynamic = Browser.window;
 		stopAsking();
+		recorded.push(TiltState(WaitingForTap));
 		tiltAsking = _ -> {
 			var activation:Dynamic = js.Syntax.code("navigator.userActivation");
 			if (activation != null && !activation.isActive)
@@ -296,7 +299,7 @@ class DomEventsAdapter implements IEvents {
 				if (answer == "granted")
 					listen();
 				else
-					recorded.push(TiltState(4));
+					recorded.push(TiltState(Refused));
 				return null;
 			}, _ -> {
 				askTiltAtNextTap(listen);

@@ -110,7 +110,6 @@ function poll():Void
 var events(get, never):Array<Event>
 function wait(timeout:Float):Void
 function setTextInput(on:Bool):Void
-var activated(get, never):Bool
 function isPadConnected(slot:Int):Bool
 function getPadName(slot:Int):String
 function isPadButtonDown(slot:Int, button:PadButton):Bool
@@ -124,7 +123,7 @@ function dispose():Void
   - throws `String`: No canvas has that id.
 - `setTextInput`: Does nothing: the window's keys type on a computer either way, and a phone's keyboard needs a focused input element.
 - `setTiltWanted`: Listens to the device's orientation while on.
-  Where the browser asks for leave (iOS), it is asked at the player's next tap, which shows its prompt. A page that isn't secure gets no readings (TiltState 6). No reading within a second and a half of the page having its focus is reported unavailable (TiltState 5), though it goes on listening: a phone's sensor may start late.
+  Where the browser asks for leave (iOS), it is asked at the player's next tap, which shows its prompt. A page that isn't secure gets no readings (NeedsHttps). No reading within a second and a half of the page having its focus is reported unavailable, though it goes on listening: a phone's sensor may start late.
 - `dispose`: Does nothing: the page's listeners go with it.
 
 ## DomEventsAdapterOptions
@@ -160,7 +159,6 @@ var events(get, never):Array<Event>
 function wait(timeout:Float):Void
 function setTextInput(on:Bool):Void
 function setTiltWanted(on:Bool):Void
-var activated(get, never):Bool
 function isPadConnected(slot:Int):Bool
 function getPadName(slot:Int):String
 function isPadButtonDown(slot:Int, button:PadButton):Bool
@@ -169,6 +167,7 @@ function dispose():Void
 ```
 
 - `new`: Sets up SDL's gamepads and touch.
+- `setTiltWanted`: Reports the tilt unavailable: no motion sensor is read natively.
 
 ## DownloadExportAdapter
 

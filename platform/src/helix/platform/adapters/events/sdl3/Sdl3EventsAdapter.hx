@@ -1,5 +1,6 @@
 package helix.platform.adapters.events.sdl3;
 
+import helix.platform.adapters.shared.Activation;
 import helix.platform.Event;
 import helix.platform.IEvents;
 import helix.platform.PadAxis;
@@ -21,6 +22,8 @@ class Sdl3EventsAdapter implements IEvents {
 		Sdl3Bridge.nameApp(ProgramName.product());
 		EventsBridge.setup();
 	}
+
+	var activated = false;
 
 	public function poll():Void {
 		delivered.resize(0);
@@ -75,6 +78,7 @@ class Sdl3EventsAdapter implements IEvents {
 		}
 		if (text != null)
 			delivered.push(Text(text.toString()));
+		activated = Activation.mark(delivered, activated);
 	}
 
 	public var events(get, never):Array<Event>;
@@ -88,14 +92,10 @@ class Sdl3EventsAdapter implements IEvents {
 	public function setTextInput(on:Bool):Void
 		EventsBridge.setText(on ? 1 : 0);
 
+	/** Reports the tilt unavailable: no motion sensor is read natively. */
 	public function setTiltWanted(on:Bool):Void
 		if (on)
-			pending.push(TiltState(5));
-
-	public var activated(get, never):Bool;
-
-	function get_activated():Bool
-		return true;
+			pending.push(TiltState(Unavailable));
 
 	public function isPadConnected(slot:Int):Bool
 		return EventsBridge.padConnected(slot) != 0;

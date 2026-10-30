@@ -25,7 +25,14 @@ class InputTests {
 			input.poll();
 		}
 
-		frame([KeyDown(Space, false)]);
+		check(!input.activated, "not activated before a press");
+		frame([PadButtonDown(0, South), PadButtonUp(0, South)]);
+		check(!input.activated, "a pad's press doesn't activate");
+		var marked:Array<helix.platform.Event> = [TouchDown(1, 0, 0), TouchUp(1, 0, 0)];
+		check(helix.platform.adapters.shared.Activation.mark(marked, false) && Type.enumEq(marked[1], Activated),
+			"a finger activates as it lifts, not as it lands");
+		frame([Activated, KeyDown(Space, false)]);
+		check(input.activated, "activated by the first press");
 		check(input.isKeyDown(Space) && input.isKeyPressed(Space) && !input.isKeyReleased(Space), "a key down: held and pressed");
 		frame([KeyDown(Space, true)]);
 		check(input.isKeyDown(Space) && !input.isKeyPressed(Space), "held: a repeat isn't pressed again");
