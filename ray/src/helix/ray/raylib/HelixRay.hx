@@ -69,14 +69,19 @@ class HelixRay {
 			entry.answers.push(error -> error == null ? loaded(sound) : refuse("LoadSoundAsync", path, error, failed));
 	}
 
-	/** Reads a text file, answering when it is read: helix-ray's own, as `LoadTextureAsync` is for textures. A file `SaveFileText`
-		wrote is answered from the saves.
+	/** Reads a text file, answering when it is read: helix-ray's own, in place of raylib's `LoadFileText`. The program's
+		`SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
 
 		@param fileName  The file.
 		@param loaded  Receives its text.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	static function LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
+		var given = RCore.loadText == null ? null : RCore.loadText(path);
+		if (given != null) {
+			Runtime.later(() -> loaded(given));
+			return;
+		}
 		if (Runtime.saves != null && Runtime.saves.hasKey(SAVED + path)) {
 			var text = Runtime.saves.getString(SAVED + path, "");
 			Runtime.later(() -> loaded(text));

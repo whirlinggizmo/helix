@@ -40,7 +40,7 @@ class Loop {
 		var sources = Path.directory(Context.getPosInfos(Context.getLocalClass().get().pos).file);
 		var text = sourceText(sources == "" ? "." : sources);
 		var preloads = [];
-		if (~/\b(SaveFileText|LoadFileText|LoadFileTextAsync|FileExists|SaveFileData|LoadFileDataAsync)\b/.match(text))
+		if (~/\b(SaveFileText|LoadFileTextAsync|FileExists|SaveFileData|LoadFileDataAsync)\b/.match(text))
 			preloads.push(macro helix.ray.internal.Runtime.preloadSaves());
 		for (field in fields)
 			if (field.name == "main")

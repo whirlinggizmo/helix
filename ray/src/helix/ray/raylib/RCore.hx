@@ -510,29 +510,17 @@ class RCore {
 			|| Runtime.images.exists(path);
 	}
 
-	/** Reads a text file: through the program's `SetLoadFileTextCallback` when it has one, else one `SaveFileText` wrote, else one of
-		the program's: natively read now; in a page, one an earlier `LoadFileTextAsync` brought in.
+	/** raylib's text file read, which waits for the file. A page can't wait, so a call doesn't compile on any target:
+		`LoadFileTextAsync` reads it.
 
 		@param fileName  The file.
-		@return  Its text, or null when it can't be read. */
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("LoadFileText: Synchronous loading is not supported. See LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void)")
 	static function LoadFileText(fileName:String):Null<String> {
-		var path = normalize(fileName);
-		if (loadText != null) {
-			var given = loadText(path);
-			if (given != null)
-				return given;
-		}
-		if (saved(path))
-			return Runtime.saves.getString(SAVED + path, "");
-		var bytes = Runtime.fileNow(path);
-		if (bytes == null) {
-			Runtime.log(4, Runtime.notLoaded("LoadFileText", path));
-			return null;
-		}
-		return bytes.toString();
+		throw "LoadFileText is unimplemented";
 	}
 
-	/** Frees text `LoadFileText` returned. There is nothing to free here.
+	/** Frees text `LoadFileTextAsync` gave. There is nothing to free here.
 
 		@param text  The text. */
 	static function UnloadFileText(text:Null<String>):Void {}
@@ -601,7 +589,7 @@ class RCore {
 		saveData = callback;
 	}
 
-	/** Reads text files through the program from now on (`LoadFileText`).
+	/** Reads text files through the program from now on (`LoadFileTextAsync`).
 
 		@param callback  Returns a file's text, or null; null for none. */
 	static function SetLoadFileTextCallback(callback:Null<(fileName:String) -> Null<String>>):Void {
@@ -657,7 +645,7 @@ class RCore {
 		}
 		if (Runtime.saves != null && Runtime.saves.hasKey(SAVED_DATA + path))
 			return haxe.crypto.Base64.decode(Runtime.saves.getString(SAVED_DATA + path, ""));
-		return Runtime.fileNow(path);
+		return Runtime.file(path);
 	}
 
 	// Whether a text file was written to the saves.

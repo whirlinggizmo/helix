@@ -320,7 +320,7 @@ var normal:Vector3
 
 Provides raylib 5.5's API, as `raylib.h` names it, over helix-platform and helix-services: a program writes raylib, and it runs in a page and natively.
 
-A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a frame. A page can't wait for a file, so on every target files are loaded by helix-ray's own `...Async` loads; raylib's `LoadTexture`, `LoadModel`, `LoadSound` and `LoadFileData` don't compile, naming the load to use. A file loaded twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here by module; what raylib has and helix-ray doesn't refuses to compile, naming itself.
+A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a frame. A page can't wait for a file, so on every target files are loaded by helix-ray's own `...Async` loads; raylib's `LoadTexture`, `LoadModel`, `LoadSound`, `LoadFileData` and `LoadFileText` don't compile, naming the load to use. A file loaded twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here by module; what raylib has and helix-ray doesn't refuses to compile, naming itself.
 
 ### Keys (KeyboardKey)
 
@@ -1185,10 +1185,10 @@ static function EndShaderMode():Void
 - `FileExists`: Returns whether a file exists: one the program's save callback or `SaveFileText`/`SaveFileData` wrote, or one of the program's loaded in memory.
   - `fileName`: The file.
   - returns: True when it exists.
-- `LoadFileText`: Reads a text file: through the program's `SetLoadFileTextCallback` when it has one, else one `SaveFileText` wrote, else one of the program's: natively read now; in a page, one an earlier `LoadFileTextAsync` brought in.
+- `LoadFileText`: raylib's text file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileTextAsync` reads it.
   - `fileName`: The file.
-  - returns: Its text, or null when it can't be read.
-- `UnloadFileText`: Frees text `LoadFileText` returned. There is nothing to free here.
+  - returns: Never returns: a call doesn't compile.
+- `UnloadFileText`: Frees text `LoadFileTextAsync` gave. There is nothing to free here.
   - `text`: The text.
 - `SaveFileText`: Writes a text file: through the program's `SetSaveFileTextCallback` when it has one, else kept across runs (in a page, in its storage; natively, in the program's data directory), kept at the end of the frame.
   - `fileName`: The file.
@@ -1208,7 +1208,7 @@ static function EndShaderMode():Void
   - `callback`: Returns a file's bytes, or null; null for none.
 - `SetSaveFileDataCallback`: Writes files through the program from now on (`SaveFileData`).
   - `callback`: Writes a file's bytes, returning whether it did; null for none.
-- `SetLoadFileTextCallback`: Reads text files through the program from now on (`LoadFileText`).
+- `SetLoadFileTextCallback`: Reads text files through the program from now on (`LoadFileTextAsync`).
   - `callback`: Returns a file's text, or null; null for none.
 - `SetSaveFileTextCallback`: Writes text files through the program from now on (`SaveFileText`).
   - `callback`: Writes a file's text, returning whether it did; null for none.
@@ -1840,7 +1840,7 @@ static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void,
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the sound.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadFileTextAsync`: Reads a text file, answering when it is read: helix-ray's own, as `LoadTextureAsync` is for textures. A file `SaveFileText` wrote is answered from the saves.
+- `LoadFileTextAsync`: Reads a text file, answering when it is read: helix-ray's own, in place of raylib's `LoadFileText`. The program's `SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
   - `fileName`: The file.
   - `loaded`: Receives its text.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.

@@ -114,13 +114,15 @@ Why things are the way they are, numbered, in order.
     trial of how agents take to the async loads (ROADMAP).
 
 21. **raylib's synchronous loads don't compile on any target.** DECISIONS 20 refused them in a page alone, so a program that built
-    natively failed when built for a page: one program, two codes. Now `LoadTexture`, `LoadModel`, `LoadSound` and `LoadFileData`
-    refuse everywhere, with the signature of the load to use, "LoadTexture: Synchronous loading is not supported. See
+    natively failed when built for a page: one program, two codes. Now `LoadTexture`, `LoadModel`, `LoadSound`, `LoadFileData` and
+    `LoadFileText` refuse everywhere, with the signature of the load to use, "LoadTexture: Synchronous loading is not supported. See
     LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)", so an agent needn't look it up. The refusal is
     `@:unimplemented("message")` on the declaration, helix-ray's own meta, which `Unimplemented` turns into Haxe's `@:require` of a
     define no program sets: the compiler stops at each call, all of them in one build, and the message is in the source an agent
     reads. Haxe's `#error` fires wherever the file is read, called or not, and `@:deprecated` only warns. `gen_raylib` checks each
-    message's signature against the load's own. Faking synchronous loads in a page, still on the roadmap, would bring them back on
+    message's signature against the load's own. `LoadFileTextAsync` asks the program's text callback, then the saves, then fetches,
+    so reading back what `SaveFileText` wrote still works, a frame later. `FileExists` stays: it answers from the saves and what is in
+    memory, the same on both targets. Faking synchronous loads in a page, still on the roadmap, would bring them back on
     both targets at once.
 
 22. **raymath is apart from `Raylib`, as in raylib.** raylib.h declares none of raymath's functions; a C program that calls

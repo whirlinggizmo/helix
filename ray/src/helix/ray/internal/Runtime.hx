@@ -237,102 +237,26 @@ class Runtime {
 
 	static var waiting:Array<Void->Void> = [];
 
-	/** Returns why a load found nothing: in a page, which load brings the file in.
-
-		@param function  The raylib function.
-		@param path  The file.
-		@return  The message. */
-	public static function notLoaded(name:String, path:String):String {
-		#if js
-		return '$name: $path isn\'t loaded. See ${name}Async()';
-		#else
-		return '$name: $path couldn\'t be read';
-		#end
-	}
-
-	/** Returns a file's bytes: in a page as loaded before main; natively read now, polling until it answers.
+	/** Returns a file's bytes, as the program's load callback gives them or an async load brought them in.
 
 		@param path  The file.
-		@return  Its bytes, or null when it can't be read. */
-	public static function fileNow(path:String):Null<Bytes> {
+		@return  Its bytes, or null when it isn't in memory. */
+	public static function file(path:String):Null<Bytes> {
 		if (CallbackFiles.load != null) {
 			var given = CallbackFiles.load(path);
 			if (given != null)
 				return given;
 		}
-		#if !js
-		loading();
-		if (!files.exists(path)) {
-			var answered = false;
-			assets.load(path, bytes -> {
-				files.set(path, bytes);
-				answered = true;
-			}, error -> {
-				log(4, error);
-				answered = true;
-			});
-			wait(() -> answered);
-		}
-		#end
 		return files.get(path);
 	}
 
-	/** Returns an image file's image: in a page as decoded before main; natively read and decoded now.
+	/** Returns an image an async load decoded: an image file's, or one a model holds, by its key (`Models.imageKey`).
 
-		@param path  The file.
-		@return  The image, or null when it can't be read or decoded. */
-	public static function imageNow(path:String):Null<helix.services.images.Image> {
-		#if !js
-		loading();
-		if (!images.exists(path)) {
-			var answered = false;
-			decoding.load(path, image -> {
-				images.set(path, image);
-				answered = true;
-			}, error -> {
-				log(4, error);
-				answered = true;
-			});
-			wait(() -> answered);
-		}
-		#end
-		return images.get(path);
-	}
-
-	/** Returns an image held in other bytes, kept under a key: in a page as decoded before main; natively decoded now.
-
-		@param key  The key it is kept under.
-		@param bytes  The image file's bytes, or null for one in a file of its own (the key its path).
-		@return  The image, or null when it can't be decoded. */
-	public static function decodedNow(key:String, bytes:Null<Bytes>):Null<helix.services.images.Image> {
-		#if !js
-		if (bytes == null)
-			return imageNow(key);
-		loading();
-		if (!images.exists(key)) {
-			var answered = false;
-			decoding.decode(bytes, image -> {
-				images.set(key, image);
-				answered = true;
-			}, error -> {
-				log(4, '$key: $error');
-				answered = true;
-			});
-			wait(() -> answered);
-		}
-		#end
+		@param key  The file's path, or the model image's key.
+		@return  The image, or null when it isn't in memory. */
+	public static function image(key:String):Null<helix.services.images.Image> {
 		return images.get(key);
 	}
-
-	#if !js
-	// Polls what answers later until it has: natively a load answers within its call, as raylib's do.
-	static function wait(answered:Void->Bool):Void {
-		while (!answered()) {
-			pollAll();
-			Sys.sleep(.0005);
-		}
-	}
-	#end
 
 	/** Returns the preload of the saves, which hold what `SaveFileText` writes.
 

@@ -70,7 +70,7 @@ class Models {
 		var file = Gltf.read(bytes);
 		var directory = haxe.io.Path.directory(path);
 		for (missing in file.missingBuffers) {
-			var other = Runtime.fileNow(directory == "" ? missing.uri : directory + "/" + missing.uri);
+			var other = Runtime.file(directory == "" ? missing.uri : directory + "/" + missing.uri);
 			if (other != null)
 				file.setBuffer(missing.index, other);
 		}
@@ -80,7 +80,7 @@ class Models {
 				return textures.get(index);
 			var t = Gltf.field(file.list("textures")[index], "source");
 			var key = imageKey(path, file, t);
-			var image = Runtime.decodedNow(key, imageBytes(file, t));
+			var image = Runtime.image(key);
 			var made = image == null ? new Texture2D() : new Texture2D(Textures.fromImage(key, image), image.width, image.height);
 			textures.set(index, made);
 			return made;

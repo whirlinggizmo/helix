@@ -39,7 +39,7 @@ class RTextures {
 
 	static function loadTexture(fileName:String):Texture2D {
 		var path = normalize(fileName);
-		var image = Runtime.imageNow(path);
+		var image = Runtime.image(path);
 		if (image == null) {
 			Runtime.log(4, 'LoadTextureAsync: $path couldn\'t be read');
 			return new Texture2D();

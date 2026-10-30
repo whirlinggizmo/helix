@@ -25,11 +25,11 @@ import helix.ray.raylib.RTextures;
 
 	A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a
 	frame. A page can't wait for a file, so on every target files are loaded by helix-ray's own `...Async` loads; raylib's
-	`LoadTexture`, `LoadModel`, `LoadSound` and `LoadFileData` don't compile, naming the load to use. A file loaded twice is shared,
-	and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the
-	program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported apart as raylib
-	includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here by module; what
-	raylib has and helix-ray doesn't refuses to compile, naming itself. */
+	`LoadTexture`, `LoadModel`, `LoadSound`, `LoadFileData` and `LoadFileText` don't compile, naming the load to use. A file loaded
+	twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL,
+	compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported
+	apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here
+	by module; what raylib has and helix-ray doesn't refuses to compile, naming itself. */
 class Raylib {
 	// ---- Keys (KeyboardKey) ----
 
@@ -1236,15 +1236,16 @@ class Raylib {
 	public static inline function FileExists(fileName:String):Bool
 		return RCore.FileExists(fileName);
 
-	/** Reads a text file: through the program's `SetLoadFileTextCallback` when it has one, else one `SaveFileText` wrote, else one of
-		the program's: natively read now; in a page, one an earlier `LoadFileTextAsync` brought in.
+	/** raylib's text file read, which waits for the file. A page can't wait, so a call doesn't compile on any target:
+		`LoadFileTextAsync` reads it.
 
 		@param fileName  The file.
-		@return  Its text, or null when it can't be read. */
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("LoadFileText: Synchronous loading is not supported. See LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void)")
 	public static inline function LoadFileText(fileName:String):Null<String>
-		return RCore.LoadFileText(fileName);
+		throw "LoadFileText is unimplemented";
 
-	/** Frees text `LoadFileText` returned. There is nothing to free here.
+	/** Frees text `LoadFileTextAsync` gave. There is nothing to free here.
 
 		@param text  The text. */
 	public static inline function UnloadFileText(text:Null<String>):Void
@@ -1297,7 +1298,7 @@ class Raylib {
 	public static inline function SetSaveFileDataCallback(callback:Null<(fileName:String, data:haxe.io.Bytes, dataSize:Int) -> Bool>):Void
 		RCore.SetSaveFileDataCallback(callback);
 
-	/** Reads text files through the program from now on (`LoadFileText`).
+	/** Reads text files through the program from now on (`LoadFileTextAsync`).
 
 		@param callback  Returns a file's text, or null; null for none. */
 	public static inline function SetLoadFileTextCallback(callback:Null<(fileName:String) -> Null<String>>):Void
@@ -2349,8 +2350,8 @@ class Raylib {
 	public static inline function LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void):Void
 		HelixRay.LoadSoundAsync(fileName, loaded, failed);
 
-	/** Reads a text file, answering when it is read: helix-ray's own, as `LoadTextureAsync` is for textures. A file `SaveFileText`
-		wrote is answered from the saves.
+	/** Reads a text file, answering when it is read: helix-ray's own, in place of raylib's `LoadFileText`. The program's
+		`SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
 
 		@param fileName  The file.
 		@param loaded  Receives its text.

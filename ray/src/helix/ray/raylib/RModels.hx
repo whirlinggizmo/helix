@@ -226,7 +226,7 @@ class RModels {
 			return new Model([], [Models.defaultMaterial(defaultShader())], []);
 		}
 		try {
-			var model = Models.load(path, () -> Runtime.fileNow(path), defaultShader());
+			var model = Models.load(path, () -> Runtime.file(path), defaultShader());
 			if (model != null)
 				return model;
 			Runtime.log(4, 'LoadModelAsync: $path couldn\'t be read');
