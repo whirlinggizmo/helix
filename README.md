@@ -35,4 +35,6 @@ haxelib dev helix-services <checkout>/services
 ## License
 
 zlib: [LICENSE](LICENSE), a copy in each library's directory (haxelib.json says BSD, as haxelib has no zlib). A program built with the
-libraries owes no notice; a copy of their source keeps it. Third-party code keeps its own license: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+libraries owes no notice; a copy of their source keeps it. What a library includes of others' work, each with its license, is in its
+README's Credit section ([helix-platform](platform/README.md#credit), [helix-math](math/README.md#credit),
+[helix-ray](ray/README.md#credit)); none of it asks anything of a built program either.

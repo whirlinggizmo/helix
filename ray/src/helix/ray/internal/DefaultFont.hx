@@ -1,6 +1,6 @@
 package helix.ray.internal;
 
-/** Holds raylib's default font, from raylib 5.5's `rtext.c` (zlib license, THIRD_PARTY_NOTICES.md): a 128 x 128 sheet of 224 glyphs, code
+/** Holds raylib's default font, from raylib 5.5's `rtext.c` (zlib, `vendor/raylib-LICENSE`): a 128 x 128 sheet of 224 glyphs, code
 	points 32 to 255, each 10 pixels high and one pixel apart. */
 @:noCompletion
 class DefaultFont {

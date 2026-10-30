@@ -70,12 +70,14 @@ Its tests are in `tests/`.
 
 ## Credit
 
-helix-platform's native side stands on others' work, each under its own license, kept beside it:
+helix-platform's native side stands on others' work, each under its own license, kept beside it; their versions and hashes are pinned
+in the repository's `dependencies.json`:
 
-- [Sokol](https://github.com/floooh/sokol), by Andre Weissflog (floooh), through the Whirling Gizmo fork: native graphics on GL. zlib,
-  `vendor/LICENSE`.
+- [Sokol](https://github.com/floooh/sokol), by Andre Weissflog (floooh), through the Whirling Gizmo fork, whose altered headers say so
+  at their tops: native graphics on GL. zlib, `vendor/LICENSE`.
 - [SDL 3](https://github.com/libsdl-org/SDL), by Sam Lantinga and its contributors: the native window, input, gamepads, audio and
-  SDL_GPU's graphics. zlib, `vendor/sdl3/LICENSE.txt`.
+  SDL_GPU's graphics. Its headers are kept here; the library is the system's, or built or fetched. zlib,
+  `vendor/sdl3/LICENSE.txt`.
 - [SDL3_mixer](https://github.com/libsdl-org/SDL_mixer), by Sam Lantinga and its contributors: native audio mixing and decoding. zlib,
   `vendor/sdl3_mixer/LICENSE.txt`.
 - [stb_image and stb_vorbis](https://github.com/nothings/stb), by Sean Barrett: image and Ogg Vorbis decoding. Public domain, or MIT,
@@ -83,4 +85,5 @@ helix-platform's native side stands on others' work, each under its own license,
 - [dr_mp3 and dr_flac](https://github.com/mackron/dr_libs), by David Reid: MP3 and FLAC decoding. Public domain, or MIT No
   Attribution, `vendor/sdl3_mixer/src/dr_libs/LICENSE`.
 - [glslang](https://github.com/KhronosGroup/glslang), by the Khronos Group, and [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross),
-  by Arm: the shader compiler's tools, run as a program builds; their code isn't in builds.
+  by Arm: the shader compiler's tools, run as a program builds; their code isn't in builds, and the shaders they make are the
+  program's. BSD-3-Clause and others, and Apache-2.0, in their own repositories.
