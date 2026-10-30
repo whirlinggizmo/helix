@@ -67,3 +67,20 @@ Its tests are in `tests/`.
 - [docs/ARCHITECTURE.md](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/ARCHITECTURE.md): contracts, adapters and what belongs in each.
 - [docs/CONVENTIONS.md](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/CONVENTIONS.md): names, units, layout and doc comments.
 - [GOALS.md](https://github.com/whirlinggizmo/helix-2.0/blob/main/GOALS.md): what the libraries are for.
+
+## Credit
+
+helix-platform's native side stands on others' work, each under its own license, kept beside it:
+
+- [Sokol](https://github.com/floooh/sokol), by Andre Weissflog (floooh), through the Whirling Gizmo fork: native graphics on GL. zlib,
+  `vendor/LICENSE`.
+- [SDL 3](https://github.com/libsdl-org/SDL), by Sam Lantinga and its contributors: the native window, input, gamepads, audio and
+  SDL_GPU's graphics. zlib, `vendor/sdl3/LICENSE.txt`.
+- [SDL3_mixer](https://github.com/libsdl-org/SDL_mixer), by Sam Lantinga and its contributors: native audio mixing and decoding. zlib,
+  `vendor/sdl3_mixer/LICENSE.txt`.
+- [stb_image and stb_vorbis](https://github.com/nothings/stb), by Sean Barrett: image and Ogg Vorbis decoding. Public domain, or MIT,
+  at the end of each header.
+- [dr_mp3 and dr_flac](https://github.com/mackron/dr_libs), by David Reid: MP3 and FLAC decoding. Public domain, or MIT No
+  Attribution, `vendor/sdl3_mixer/src/dr_libs/LICENSE`.
+- [glslang](https://github.com/KhronosGroup/glslang), by the Khronos Group, and [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross),
+  by Arm: the shader compiler's tools, run as a program builds; their code isn't in builds.
