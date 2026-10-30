@@ -1,0 +1,12 @@
+{
+	"name": "helix-ray",
+	"url": "https://github.com/whirlinggizmo/helix-2.0",
+	"license": "MIT",
+	"tags": ["game", "raylib", "2d", "js", "cpp"],
+	"description": "raylib's API over helix-platform and helix-services: a program written in raylib runs in a page and natively.",
+	"version": "0.1.0",
+	"classPath": "src/",
+	"releasenote": "First release.",
+	"contributors": ["whirlinggizmo"],
+	"dependencies": {"helix-services": "", "helix-platform": ""}
+}

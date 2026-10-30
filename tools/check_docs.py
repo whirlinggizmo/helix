@@ -12,8 +12,8 @@ ROOT=Path(__file__).resolve().parents[1]
 EARLIER=re.compile(r'wgrender|libwgf|libwgt',re.I)
 # Where the earlier frameworks' names don't belong: everything a reader reads but the record (DECISIONS.md) and the agents' instructions
 # (AGENTS.md, which says where to read them).
-SOURCES=['platform/src/helix','log/src/helix','math/src/helix','services/src/helix']
-NAMED=['platform','log','math','services','tools','helix.py','README.md','BUILDING.md','GOALS.md','docs/ARCHITECTURE.md','docs/CONVENTIONS.md','docs/PLATFORM.md','docs/PLAN.md','docs/ROADMAP.md','docs/benchmarks.md','docs/api']
+SOURCES=['platform/src/helix','log/src/helix','math/src/helix','services/src/helix','ray/src/helix']
+NAMED=['platform','log','math','services','ray','tools','helix.py','README.md','BUILDING.md','GOALS.md','docs/ARCHITECTURE.md','docs/CONVENTIONS.md','docs/PLATFORM.md','docs/PLAN.md','docs/ROADMAP.md','docs/benchmarks.md','docs/api']
 TYPE=re.compile(r'^\s*(?:@:[^\n]*\s)*(?:extern\s+|final\s+|private\s+)*(class|interface|typedef|enum abstract|enum|abstract)\s+(\w+)')
 MEMBER=re.compile(r'^\s*(?:@:[\w.]+(?:\([^)]*\))?\s*)*((?:public\s+|static\s+|inline\s+|override\s+|final\s+|extern\s+|dynamic\s+)*)(function|var|final)\s+(\w+)')
 
