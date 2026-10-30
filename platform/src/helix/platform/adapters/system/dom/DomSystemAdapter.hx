@@ -11,8 +11,9 @@ import js.Browser;
 class DomSystemAdapter implements ISystem {
 	var params = new js.html.URLSearchParams(Browser.window.location.search);
 
-	final company:String = ProgramName.company();
-	final product:String = ProgramName.product();
+	public var company(default, null):String = ProgramName.company();
+
+	public var product(default, null):String = ProgramName.product();
 
 	/** Creates the system's facts for the program the `helix-company` and `helix-product` defines name. */
 	public function new() {}

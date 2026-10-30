@@ -489,6 +489,8 @@ The system comes from the user agent, a touch screen from its touch points, a fi
 
 ```haxe
 function new()
+var company(default, null):String
+var product(default, null):String
 var device(get, never):Device
 function getOption(name:String):Null<String>
 function getTime():Float
@@ -509,6 +511,8 @@ A mouse is assumed and no touch screen reported. The directories follow the rule
 
 ```haxe
 function new()
+var company(default, null):String
+var product(default, null):String
 var device(get, never):Device
 function getOption(name:String):Null<String>
 function getTime():Float

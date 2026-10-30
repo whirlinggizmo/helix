@@ -13,6 +13,12 @@ class FakeSystem implements ISystem {
 	public function new() {}
 
 	/** Gets null: no test reads the device. */
+	/** Gets "Company". */
+	public var company(default, null):String = "Company";
+
+	/** Gets "Game". */
+	public var product(default, null):String = "Game";
+
 	public var device(get, never):Device;
 
 	function get_device():Device
@@ -28,8 +34,8 @@ class FakeSystem implements ISystem {
 		return "program";
 
 	public function getDataDirectory():String
-		return 'Company/Game/data';
+		return '$company/$product/data';
 
 	public function getCacheDirectory():String
-		return 'Company/Game/cache';
+		return '$company/$product/cache';
 }

@@ -826,9 +826,11 @@ function poll():Void
 
 Defines the facts about where the program runs.
 
-They are the device, the options the program was started with, the time, where the program's own files are, and where the OS keeps a program's files.
+They are the program's company and product, the device, the options the program was started with, the time, where the program's own files are, and where the OS keeps a program's files.
 
 ```haxe
+var company(default, null):String
+var product(default, null):String
 var device(get, never):Device
 function getOption(name:String):Null<String>
 function getTime():Float
@@ -837,6 +839,8 @@ function getDataDirectory():String
 function getCacheDirectory():String
 ```
 
+- `company`: Gets the company that makes the program: the `helix-company` define, or "DefaultCompany".
+- `product`: Gets the program's name: the `helix-product` define, or natively the executable's name and in a page "Game". It names the program wherever one is shown, such as a window's title or a log.
 - `device`: Gets what the program runs on, as far as the platform reports it.
 - `getOption`: Returns an option the program was started with.
   - `name`: The option's name.

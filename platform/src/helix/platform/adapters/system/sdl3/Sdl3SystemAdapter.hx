@@ -15,8 +15,9 @@ import helix.platform.adapters.shared.sdl3.Sdl3Bridge;
 	unset. A variable set to a path that isn't absolute throws, naming it, where the XDG specification would ignore it: someone set it, and
 	quietly writing elsewhere would hide the mistake. */
 class Sdl3SystemAdapter implements ISystem {
-	final company:String;
-	final product:String;
+	public var company(default, null):String;
+
+	public var product(default, null):String;
 
 	/** Creates the system's facts for the program the `helix-company` and `helix-product` defines name.
 
