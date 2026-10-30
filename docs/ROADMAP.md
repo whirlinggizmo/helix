@@ -2,7 +2,10 @@
 
 - **helix-ray, on trial (DECISIONS 16, 19):** raylib's API over the services; to decide whether it merges. Next: raylib's music
   streaming (over `Audio.stream`), its load and save hooks with `LoadFileData`, then a managed layer beside it (assets, instances,
-  placeholders, as librl has them), designed as an API first. Not there yet: skinned models and animations, fonts from files, images
+  placeholders, as librl has them), designed as an API first. To weigh: a page awaiting raylib's plain loads, the build macro rewriting a
+  load in `main`'s setup into its `...Async` and the code after it into the callback (as `tink_await` does), so a raylib program needs
+  no preload there (loads inside the frame loop or a helper would need the loop made resumable, a far larger rewrite); and a `Future`
+  of our own over the callbacks, cross-target, for the managed layer, as Haxe has none (`js.lib.Promise` is the browser's alone). Not there yet: skinned models and animations, fonts from files, images
   on the CPU, `SetTextureFilter`, `UpdateMeshBuffer`, `DrawMeshInstanced`; each refuses to compile, naming itself. Platform changes it would like,
   for review: a render-target pass that keeps what the target holds (raylib's render textures keep it; ours start cleared each
   frame), a uniform block both shader stages share (worked around: a block a stage), `ShaderCompiler.compileText` as a supported
