@@ -154,7 +154,7 @@ class Runtime {
 			}
 			// A model's images are decoded now too, and the files it points to brought in, so the model is made at once.
 			var file = try Gltf.read(bytes) catch (e:Dynamic) {
-				done(Std.string(e));
+				done('$path: $e');
 				return;
 			}
 			var left = 1;

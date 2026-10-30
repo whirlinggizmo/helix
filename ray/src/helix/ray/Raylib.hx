@@ -1860,6 +1860,17 @@ class Raylib {
 	public static inline function DrawFPS(posX:Int, posY:Int):Void
 		RText.DrawFPS(posX, posY);
 
+	/** Formats text as C's `printf` does. It takes `%d` and `%i`, `%u`, `%f` and `%F` (6 places unless a precision is given, as in
+		`%.2f`), `%e`, `%g`, `%x`, `%X`, `%o`, `%c` (a character code), `%s` and `%%`. It also takes C's flags (`-`, `0`, `+`, space,
+		`#`), widths and precisions, as in `%5d`, `%-8s`, `%03i` and `%*d`. C's length modifiers (`l`, `ll`, `h`, `z`) are read and
+		ignored.
+
+		@param text  The format.
+		@param args  The values, one for each conversion.
+		@return  The text. */
+	public static inline function TextFormat(text:String, args:haxe.extern.Rest<Dynamic>):String
+		return RText.TextFormat(text, ...args);
+
 	// ---- rmodels: 3D shapes, models, meshes and rays (raylib/RModels.hx) ----
 
 	/** Draws a line in 3D.
@@ -3836,11 +3847,6 @@ class Raylib {
 	@:unimplemented("TextLength: Not implemented")
 	public static inline function TextLength(text:String):Int
 		throw "TextLength is unimplemented";
-
-	/** raylib's `TextFormat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Text formatting with variables (sprintf() style). */
-	@:unimplemented("TextFormat: Not implemented")
-	public static inline function TextFormat(text:String, args:haxe.extern.Rest<Dynamic>):String
-		throw "TextFormat is unimplemented";
 
 	/** raylib's `TextSubtext` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get a piece of a text string. */
 	@:unimplemented("TextSubtext: Not implemented")

@@ -153,7 +153,9 @@ def generated(sections, api, header, written):
         out += ['', f'\t// ---- {title} (raylib/{name}.hx) ----', '']
         for m in FUNCTION.finditer(source):
             doc, meta, function, params, result = m.group(1), m.group(2), m.group(3), ' '.join(m.group(4).split()), m.group(5).strip()
-            call = f'{name}.{function}({", ".join(parameters(params))})'
+            # A rest parameter is spread into the call, as its values, not passed as one.
+            rest = set(re.findall(r'(\w+):(?:haxe\.extern\.)?Rest<', params))
+            call = f'{name}.{function}({", ".join("..." + n if n in rest else n for n in parameters(params))})'
             # A function that doesn't compile is declared here as it is in its section, so the build stops at the program's call.
             body = f'throw "{function} is unimplemented"' if '@:unimplemented' in meta else call if result == 'Void' else f'return {call}'
             out += [doc.rstrip('\n'), *meta.splitlines(), f'\tpublic static inline function {function}({params}):{result}', f'\t\t{body};', '']

@@ -125,7 +125,7 @@ class RAudio {
 			}, error -> {
 				made.cancel = null;
 				if (made.answers.length == 0)
-					Runtime.log(4, 'LoadSoundAsync: $fileName: $error');
+					Runtime.log(4, 'LoadSoundAsync: $error');
 				for (answer in made.answers)
 					answer(error);
 				made.answers = [];
