@@ -11,9 +11,10 @@ next is in [docs/ROADMAP.md](docs/ROADMAP.md).
   from "the engine does it this way", ask instead what a program using them directly would construct. The layers above (the runner, an
   engine wearing a known API) may own the loop, and build a feature when its API is first touched where the API they match requires it
   (DECISIONS 15).
-- **HeliX is prior art, not a source.** [HeliX](https://github.com/whirlinggizmo/helix), and the earlier C frameworks (`../wgrender-c`,
-  `../libwgf`), are read for how they did a thing and the platform quirks they found. Then write this library's own code. Don't name
-  libwgf in code or docs.
+- **HeliX is prior art.** [HeliX](https://github.com/whirlinggizmo/helix), and the earlier C frameworks (`../wgrender-c`, `../libwgf`),
+  are read for how they did a thing and the platform quirks they found. Useful code may be cribbed, refactored to this library's
+  conventions and needs, or this library's own written instead; HeliX's design (its runner, statics, profiles) is never a reason for
+  this library's shape. Don't name libwgf in code or docs.
 - **The spec is the authority.** docs/PLATFORM.md for the platform. A library above starts as its API: its types and members with
   their doc comments and no implementation, agreed with the user and tried by fresh agents before any of it is written; those doc
   comments are its spec. A library changes when it doesn't do what its spec says, or when the spec changes first.
