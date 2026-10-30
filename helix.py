@@ -12,8 +12,8 @@ sys.path.insert(0,str(ROOT/'tools'))
 import pins  # noqa: E402
 pins.use_haxelib()
 # Each library's tests, run with that library alone on the interpreter and Node, and with --native in hxcpp.
-TESTS=(('helix-platform','PlatformTests'),('helix-log','LogTests'),*(('helix-math',m) for m in ('TrigTests','RandomTests','CurveTests','BoundsTests')),
-      *(('helix-services',m) for m in ('ConfigTests','TimeTests','InputTests','SavesTests','AssetsTests','AudioTests')))
+TESTS=(('helix-platform','PlatformTests'),('helix-log','LogTests'),*(('helix-math',m) for m in ('TrigTests','RandomTests','CurveTests','BoundsTests','MatrixTests')),
+      *(('helix-services',m) for m in ('ConfigTests','TimeTests','InputTests','SavesTests','AssetsTests','AudioTests','ImagesTests')))
 
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 

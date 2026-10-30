@@ -7,6 +7,7 @@ Math for games: pure Haxe, depending on nothing.
 - `Interpolate`: interpolating, clamping, smoothing and easing numbers and angles.
 - `Curve`: curves through points or by control points, in 2D and 3D, and moving along them.
 - `Point2D`, `Point3D`, `Bounds2D`, `Bounds3D`: points and axis-aligned boxes.
+- `Matrix3D`: 4 x 4 transforms, moving, turning, scaling and projecting points, the same on every target.
 
 ```haxe
 import helix.math.Random;

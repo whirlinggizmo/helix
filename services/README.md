@@ -8,6 +8,7 @@ What a game program needs over [helix-platform](../platform/README.md) that isn'
 | `helix.services.input` | `Keyboard`, `Mouse`, `Touch`, `Gamepads` and `Tilt`: each device held or pressed this frame; `Actions`: names bound to several of them |
 | `helix.services.assets` | `Assets`: files by path, from a file system or downloaded from an HTTP server and kept |
 | `helix.services.audio` | `Audio`: sounds loaded whole or streamed, played in groups, with fades |
+| `helix.services.images` | `Images`: image files by path, or images inside other bytes, decoded into pixels |
 | `helix.services.saves` | `Saves`: small values kept between runs |
 | `helix.services.config` | `Config`: the options the program was started with |
 

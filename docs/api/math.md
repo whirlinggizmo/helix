@@ -321,6 +321,140 @@ static function dampAngle(value:Float, target:Float, rate:Float, dt:Float):Float
   - `dt`: The time step, in seconds.
   - returns: The eased angle, in radians, not wrapped.
 
+## Matrix3D
+
+*class* in [`math/src/helix/math/Matrix3D.hx`](../../math/src/helix/math/Matrix3D.hx), `import helix.math.Matrix3D;`
+
+Represents a 4 x 4 matrix transforming points in 3 dimensions: moving, turning, scaling and projecting them.
+
+It acts on column vectors and is stored by columns, as GPUs take it, so `values` can be sent to a shader as they are. A method that makes or changes a matrix changes this one and returns it, so a caller can reuse one every frame; one that computes a point writes it into the point given. Rotations use `Trig`, so a matrix comes out the same on every target. The formulas are raymath's (raylib 5.5, zlib).
+
+```haxe
+var model = new Matrix3D().makeScale(2, 2, 2).appendRotation(0, 1, 0, angle).appendTranslation(x, 0, z);
+var mvp = new Matrix3D().copyFrom(model).append(view).append(projection);
+```
+
+```haxe
+function new()
+final values:Array<Float>
+function makeIdentity():Matrix3D
+function copyFrom(other:Matrix3D):Matrix3D
+function makeTranslation(x:Float, y:Float, z:Float):Matrix3D
+function makeScale(x:Float, y:Float, z:Float):Matrix3D
+function makeRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float):Matrix3D
+function makeQuaternionRotation(x:Float, y:Float, z:Float, w:Float):Matrix3D
+function makeLookAt(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX:Float, upY:Float, upZ:Float):Matrix3D
+function makePerspective(fovY:Float, aspect:Float, near:Float, far:Float):Matrix3D
+function makeOrthographic(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float):Matrix3D
+function compose(first:Matrix3D, second:Matrix3D):Matrix3D
+function append(other:Matrix3D):Matrix3D
+function prepend(other:Matrix3D):Matrix3D
+function appendTranslation(x:Float, y:Float, z:Float):Matrix3D
+function appendScale(x:Float, y:Float, z:Float):Matrix3D
+function appendRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float):Matrix3D
+function invert():Bool
+function transpose():Matrix3D
+function transformPoint(x:Float, y:Float, z:Float, ?out:Point3D):Point3D
+function transformDirection(x:Float, y:Float, z:Float, ?out:Point3D):Point3D
+```
+
+- `new`: Creates the identity matrix.
+- `values`: Gets the 16 numbers, by columns: row r of column c at `values[c * 4 + r]`; the translation at 12, 13 and 14.
+- `makeIdentity`: Makes this the identity.
+  - returns: This matrix.
+- `copyFrom`: Sets this to another matrix's values.
+  - `other`: The matrix to copy.
+  - returns: This matrix.
+- `makeTranslation`: Makes this a translation.
+  - `x`: Along x.
+  - `y`: Along y.
+  - `z`: Along z.
+  - returns: This matrix.
+- `makeScale`: Makes this a scale.
+  - `x`: Along x.
+  - `y`: Along y.
+  - `z`: Along z.
+  - returns: This matrix.
+- `makeRotation`: Makes this a rotation about an axis, which needn't be of length 1.
+  - `axisX`: The axis's x.
+  - `axisY`: Its y.
+  - `axisZ`: Its z.
+  - `radians`: The angle, counterclockwise looking down the axis toward its origin.
+  - returns: This matrix.
+- `makeQuaternionRotation`: Makes this the rotation a quaternion (x, y, z, w) gives.
+  - `x`: The quaternion's x.
+  - `y`: Its y.
+  - `z`: Its z.
+  - `w`: Its w.
+  - returns: This matrix.
+- `makeLookAt`: Makes this a view from an eye looking at a target.
+  - `eyeX`: Where it looks from.
+  - `eyeY`: Where it looks from.
+  - `eyeZ`: Where it looks from.
+  - `targetX`: What it looks at.
+  - `targetY`: What it looks at.
+  - `targetZ`: What it looks at.
+  - `upX`: Up.
+  - `upY`: Up.
+  - `upZ`: Up.
+  - returns: This matrix.
+- `makePerspective`: Makes this a perspective projection into GL's clip space (depth -1 to 1), which every helix-platform adapter takes.
+  - `fovY`: The field of view, top to bottom, in radians.
+  - `aspect`: Width over height.
+  - `near`: The near plane's distance.
+  - `far`: The far plane's distance.
+  - returns: This matrix.
+- `makeOrthographic`: Makes this an orthographic projection into GL's clip space (depth -1 to 1), which every helix-platform adapter takes.
+  - `left`: The left edge.
+  - `right`: The right edge.
+  - `bottom`: The bottom edge.
+  - `top`: The top edge.
+  - `near`: The near plane's distance.
+  - `far`: The far plane's distance.
+  - returns: This matrix.
+- `compose`: Makes this first's transform followed by second's. Either may be this matrix.
+  - `first`: The transform applied first.
+  - `second`: The transform applied after it.
+  - returns: This matrix.
+- `append`: Follows this transform with another's.
+  - `other`: The transform applied after this one.
+  - returns: This matrix.
+- `prepend`: Puts another transform before this one.
+  - `other`: The transform applied before this one.
+  - returns: This matrix.
+- `appendTranslation`: Follows this transform with a translation.
+  - `x`: Along x.
+  - `y`: Along y.
+  - `z`: Along z.
+  - returns: This matrix.
+- `appendScale`: Follows this transform with a scale.
+  - `x`: Along x.
+  - `y`: Along y.
+  - `z`: Along z.
+  - returns: This matrix.
+- `appendRotation`: Follows this transform with a rotation about an axis.
+  - `axisX`: The axis's x.
+  - `axisY`: Its y.
+  - `axisZ`: Its z.
+  - `radians`: The angle, counterclockwise looking down the axis toward its origin.
+  - returns: This matrix.
+- `invert`: Inverts this matrix.
+  - returns: False, leaving it as it was, when it has no inverse.
+- `transpose`: Transposes this matrix: rows become columns.
+  - returns: This matrix.
+- `transformPoint`: Computes where a point goes, translation included.
+  - `x`: The point's x.
+  - `y`: Its y.
+  - `z`: Its z.
+  - `out`: Optional. The point to fill; a new one when omitted.
+  - returns: The point.
+- `transformDirection`: Computes where a direction goes, translation left out.
+  - `x`: The direction's x.
+  - `y`: Its y.
+  - `z`: Its z.
+  - `out`: Optional. The point to fill; a new one when omitted.
+  - returns: The direction.
+
 ## Point2D
 
 *class* in [`math/src/helix/math/Point2D.hx`](../../math/src/helix/math/Point2D.hx), `import helix.math.Point2D;`
