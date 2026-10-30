@@ -39,7 +39,7 @@ Downloads and copies finish in the polls of the HTTP client and file systems it 
 ```haxe
 var httpClient:IHttp = new HaxeHttpAdapter();
 var shipped:IFileSystem = new NativeFileSystemAdapter({directory: system.getProgramDirectory(), readOnly: true});
-var downloads:IFileSystem = new NativeFileSystemAdapter({directory: system.getCacheDirectory("Company", "Game")});
+var downloads:IFileSystem = new NativeFileSystemAdapter({directory: system.getCacheDirectory()});
 
 // The shipped files alone, never checked:
 var assets = new Assets({sources: [FileSystem(shipped)]});
@@ -48,7 +48,7 @@ var assets = new Assets({sources: [FileSystem(shipped), HttpServer("https://exam
 // A server first, patching what shipped by its manifests:
 var assets = new Assets({sources: [HttpServer("https://example.com/game/", Manifest), FileSystem(shipped)], httpClient: httpClient, cacheFileSystem: downloads});
 // In a page, the files beside the page:
-var assets = new Assets({sources: [HttpServer("")], httpClient: new FetchApiHttpAdapter(), cacheFileSystem: new BrowserFileSystemAdapter({name: system.getCacheDirectory("Company", "Game")})});
+var assets = new Assets({sources: [HttpServer("")], httpClient: new FetchApiHttpAdapter(), cacheFileSystem: new BrowserFileSystemAdapter({name: system.getCacheDirectory()})});
 
 assets.load("levels/1.json", bytes -> start(bytes));
 // each frame, with the platform's other polls:

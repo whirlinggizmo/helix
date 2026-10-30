@@ -62,7 +62,8 @@ The API uses what Haxe gives: properties for values, classes for kinds, methods 
   `NativeFileSystemAdapter`), since that is what a reader picks it by.
 - **An adapter's constructor takes nothing, or one `<Adapter>Options`:** a `@:structInit` class beside it, so every value is named at
   the call (`new NativeFileSystemAdapter({directory: path, readOnly: true})`). A value it must have is a field without a default; one it
-  may have declares its default in the field. A choice is an enum (`{graphics: Gl}`), never a `Bool` whose `false` means the other one.
+  may have declares its default in the field, and when every field has one the options themselves are optional
+  (`new Sdl3SystemAdapter()`). A choice is an enum (`{graphics: Gl}`), never a `Bool` whose `false` means the other one.
   The compiler refuses a field the class doesn't have, so a guessed setting fails to build rather than doing nothing; for the same
   reason, every field takes effect whatever the others are set to. `tools/check_adapters.py` checks the shape and the name.
 - **An argument or option is named for what it's used for** when that's more than its type says: `Assets`' `cacheFileSystem` is the

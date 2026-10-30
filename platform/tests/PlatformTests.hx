@@ -18,6 +18,13 @@ class PlatformTests {
 	}
 
 	static function main():Void {
+		// A program's company and product, each one directory's name on every OS.
+		var name = helix.platform.adapters.shared.FilePath.isDirectoryName;
+		check(name("Whirling Gizmo") && name("asteroids-2") && name("Ünïcode"), "directory names: spaces, digits and letters of any script");
+		check(!name("") && !name(".") && !name("..") && !name("a/b") && !name("a\\b") && !name("a:b") && !name("what?"),
+			"directory names: not empty, . or .., no separator or reserved character");
+		check(!name("trailing ") && !name("trailing.") && !name([for (_ in 0...65) "x"].join("")),
+			"directory names: no space or . at the end, 64 characters at most");
 		// Colors: 0xAARRGGBB, channels in and out, alpha replaced, and the CSS order both ways.
 		var orange = Color.fromChannels(255, 128, 0);
 		check(orange == 0xffff8000, "fromChannels: opaque unless told, alpha in the top byte");

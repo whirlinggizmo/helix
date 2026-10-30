@@ -300,8 +300,8 @@ interface ISystem {
 	function getOption(name:String):Null<String>;   // natively the environment variable HELIX_<NAME>; in a page the URL's query parameter
 	function getTime():Float;                       // seconds on a monotonic clock: performance.now in a page, SDL's natively
 	function getProgramDirectory():String;    // the files shipped with the program; "./" in a page, a URL
-	function getDataDirectory(company:String, product:String):String;    // where lasting files go; a database's name in a page
-	function getCacheDirectory(company:String, product:String):String;   // where what can be fetched again goes; a database's name in a page
+	function getDataDirectory():String;     // where lasting files go; a database's name in a page
+	function getCacheDirectory():String;    // where what can be fetched again goes; a database's name in a page
 }
 ```
 
@@ -310,7 +310,8 @@ interface ISystem {
 - `getProgramDirectory` is the executable's directory natively (in a macOS app bundle, its `Contents/Resources`); in a page `"./"`,
   the page's own directory on its server, a URL `IHttp` fetches from.
 - `getDataDirectory` is the user's data directory (`$XDG_DATA_HOME` or `~/.local/share` on Linux, `~/Library/Application Support` on
-  macOS, `%APPDATA%` on Windows), then `<company>/<product>`; `getCacheDirectory` the cache's (`$XDG_CACHE_HOME` or `~/.cache`,
+  macOS, `%APPDATA%` on Windows), then `<company>/<product>`, the names the system adapter was made with (its options:
+  "DefaultCompany", and the executable's name natively or "Game" in a page, by default); `getCacheDirectory` the cache's (`$XDG_CACHE_HOME` or `~/.cache`,
   `~/Library/Caches`, `%LOCALAPPDATA%\<company>\<product>\cache`). Each comes from its environment variable when that's set (empty
   counts as unset) and from the OS when it isn't (the user database's home directory, Windows' shell folders); a variable set to a path
   that isn't absolute throws, naming it, where XDG would ignore it, since writing elsewhere would hide the mistake. In a page each is the

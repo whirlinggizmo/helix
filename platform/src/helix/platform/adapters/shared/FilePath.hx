@@ -24,4 +24,23 @@ class FilePath {
 
 	/** The failure for a path `isValid` refuses. */
 	public static inline var INVALID = "Invalid file path";
+
+	/** Returns whether a name can be one directory's on every OS, as a program's company and product are: 1 to 64 characters, not `.` or
+		`..`, no `/ \\ : * ? " < > |` or control characters, and no space or `.` at its end, which Windows drops.
+
+		@param name  The name.
+		@return  True when it can. */
+	public static function isDirectoryName(name:String):Bool {
+		if (name == null || name.length == 0 || name.length > 64 || name == "." || name == "..")
+			return false;
+		var last = name.charAt(name.length - 1);
+		if (last == " " || last == ".")
+			return false;
+		for (i in 0...name.length) {
+			var c = name.charCodeAt(i);
+			if (c < 32 || '/\\:*?"<>|'.indexOf(name.charAt(i)) >= 0)
+				return false;
+		}
+		return true;
+	}
 }

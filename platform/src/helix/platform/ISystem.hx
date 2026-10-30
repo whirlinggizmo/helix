@@ -32,28 +32,24 @@ interface ISystem {
 
 	/** Returns where the OS keeps a program's files that must last, such as its saves.
 
-		Natively it is the user's data directory, then the company and the product. The user's data directory is `$XDG_DATA_HOME` or
+		Natively it is the user's data directory, then the company and the product the system adapter was made with. The user's data directory is `$XDG_DATA_HOME` or
 		`~/.local/share` on Linux, `~/Library/Application Support` on macOS, and `%APPDATA%` on Windows. The directory may not exist yet.
 
 		In a page it is the name of the database where the browser keeps the program's files, "company/product/data".
-		@param company  The company's name, a plain directory name.
-		@param product  The product's name, a plain directory name.
 		@return  The directory natively, or the database's name in a page.
 		@throws String  Natively, when the environment variable the directory comes from is set to a path that isn't absolute, or is unset
 			and the OS has no such directory. */
-	function getDataDirectory(company:String, product:String):String;
+	function getDataDirectory():String;
 
 	/** Returns where the OS keeps a program's files that can be made or fetched again, such as downloaded assets.
 
-		Natively it is the user's cache directory, then the company and the product. The user's cache directory is `$XDG_CACHE_HOME` or
+		Natively it is the user's cache directory, then the company and the product the system adapter was made with. The user's cache directory is `$XDG_CACHE_HOME` or
 		`~/.cache` on Linux, and `~/Library/Caches` on macOS. On Windows it is `%LOCALAPPDATA%`, then the company, the product and `cache`.
 		The directory may not exist yet.
 
 		In a page it is the name of the database where the browser keeps the program's files, "company/product/cache".
-		@param company  The company's name, a plain directory name.
-		@param product  The product's name, a plain directory name.
 		@return  The directory natively, or the database's name in a page.
 		@throws String  Natively, when the environment variable the directory comes from is set to a path that isn't absolute, or is unset
 			and the OS has no such directory. */
-	function getCacheDirectory(company:String, product:String):String;
+	function getCacheDirectory():String;
 }

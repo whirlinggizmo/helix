@@ -27,9 +27,9 @@ class FakeSystem implements ISystem {
 	public function getProgramDirectory():String
 		return "program";
 
-	public function getDataDirectory(company:String, product:String):String
-		return '$company/$product/data';
+	public function getDataDirectory():String
+		return 'Company/Game/data';
 
-	public function getCacheDirectory(company:String, product:String):String
-		return '$company/$product/cache';
+	public function getCacheDirectory():String
+		return 'Company/Game/cache';
 }

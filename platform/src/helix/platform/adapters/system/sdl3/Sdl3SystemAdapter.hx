@@ -3,6 +3,7 @@ package helix.platform.adapters.system.sdl3;
 import haxe.io.Path;
 import helix.platform.Device;
 import helix.platform.ISystem;
+import helix.platform.adapters.shared.FilePath;
 import helix.platform.adapters.shared.sdl3.Sdl3Bridge;
 
 /** Provides `ISystem` on SDL3, natively: the platform SDL names, options from HELIX_ environment variables, SDL's monotonic clock, the
@@ -14,8 +15,21 @@ import helix.platform.adapters.shared.sdl3.Sdl3Bridge;
 	unset. A variable set to a path that isn't absolute throws, naming it, where the XDG specification would ignore it: someone set it, and
 	quietly writing elsewhere would hide the mistake. */
 class Sdl3SystemAdapter implements ISystem {
-	/** Creates the system's facts. */
-	public function new() {}
+	final company:String;
+	final product:String;
+
+	/** Creates the system's facts for a program.
+
+		@param options  Optional. Who the program is: its company, "DefaultCompany" by default, and its product, the executable's name by
+			default.
+		@throws String  For a company or product that can't be one directory's name. */
+	public function new(?options:Sdl3SystemAdapterOptions) {
+		company = options == null ? "DefaultCompany" : options.company;
+		product = options == null
+			|| options.product == null ? Path.withoutExtension(Path.withoutDirectory(Sys.programPath())) : options.product;
+		if (!FilePath.isDirectoryName(company) || !FilePath.isDirectoryName(product))
+			throw 'company "$company" and product "$product" must each be one directory\'s name';
+	}
 
 	public var device(get, never):Device;
 
@@ -45,7 +59,7 @@ class Sdl3SystemAdapter implements ISystem {
 		return base != null && (base : String) != "" ? Path.removeTrailingSlashes(base) : Path.directory(Sys.programPath());
 	}
 
-	public function getDataDirectory(company:String, product:String):String {
+	public function getDataDirectory():String {
 		var system = Sys.systemName();
 		if (system == "Windows")
 			return Path.join([directory("APPDATA", APP_DATA), company, product]);
@@ -54,7 +68,7 @@ class Sdl3SystemAdapter implements ISystem {
 		return Path.join([xdg("XDG_DATA_HOME", ".local/share"), company, product]);
 	}
 
-	public function getCacheDirectory(company:String, product:String):String {
+	public function getCacheDirectory():String {
 		var system = Sys.systemName();
 		if (system == "Windows")
 			// LOCALAPPDATA\<company>\<product> is the program's own, not only its cache.

@@ -2,6 +2,7 @@ package helix.platform.adapters.system.dom;
 
 import helix.platform.Device;
 import helix.platform.ISystem;
+import helix.platform.adapters.shared.FilePath;
 import js.Browser;
 
 /** Provides `ISystem` in a browser page: the device as the browser describes it, and options from the URL's query.
@@ -10,8 +11,19 @@ import js.Browser;
 class DomSystemAdapter implements ISystem {
 	var params = new js.html.URLSearchParams(Browser.window.location.search);
 
-	/** Creates the system's facts. */
-	public function new() {}
+	final company:String;
+	final product:String;
+
+	/** Creates the system's facts for a program.
+
+		@param options  Optional. Who the program is: its company, "DefaultCompany" by default, and its product, "Game" by default.
+		@throws String  For a company or product that can't be one directory's name. */
+	public function new(?options:DomSystemAdapterOptions) {
+		company = options == null ? "DefaultCompany" : options.company;
+		product = options == null || options.product == null ? "Game" : options.product;
+		if (!FilePath.isDirectoryName(company) || !FilePath.isDirectoryName(product))
+			throw 'company "$company" and product "$product" must each be one directory\'s name';
+	}
 
 	public var device(get, never):Device;
 
@@ -60,9 +72,9 @@ class DomSystemAdapter implements ISystem {
 	public function getProgramDirectory():String
 		return "./";
 
-	public function getDataDirectory(company:String, product:String):String
+	public function getDataDirectory():String
 		return '$company/$product/data';
 
-	public function getCacheDirectory(company:String, product:String):String
+	public function getCacheDirectory():String
 		return '$company/$product/cache';
 }
