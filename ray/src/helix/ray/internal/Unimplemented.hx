@@ -8,8 +8,8 @@ import haxe.macro.Expr;
 	at each call.
 
 	The function stays declared, with raylib's name and signature, so a program that guessed it is told what to use instead. The
-	compiler does the refusing: the meta becomes `@:require` of a define no program sets. Only `Raylib` is built so: the sections
-	import each other's functions, which a build macro on them would break, and a program calls `Raylib`. */
+	compiler does the refusing: the meta becomes `@:require` of a define no program sets. Only `Raylib` is built so: a program can't
+	reach the sections, whose functions are private to helix-ray, and they import each other's, which a build macro would break. */
 class Unimplemented {
 	/** Adds `build` to `Raylib`. Run by `Loop.install`. */
 	public static function install():Void {

@@ -21,6 +21,7 @@ import helix.ray.raylib.HelixRay.*;
 
 /** Holds raylib's rcore (the window and the frame, the keyboard, mouse, touch and gamepads, files, the 2D and 3D cameras and shaders), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
+@:allow(helix.ray)
 class RCore {
 	#if !macro
 	// ---- Window and frame ----
@@ -30,7 +31,7 @@ class RCore {
 		@param width  The window's width, in pixels.
 		@param height  The window's height, in pixels.
 		@param title  The window's title. */
-	public static function InitWindow(width:Int, height:Int, title:String):Void {
+	static function InitWindow(width:Int, height:Int, title:String):Void {
 		Runtime.open(width, height, title);
 		start = Runtime.system.getTime();
 		// raylib seeds its random numbers from the time, unless SetRandomSeed says otherwise.
@@ -39,7 +40,7 @@ class RCore {
 	}
 
 	/** Closes the window, after keeping what `SaveFileText` wrote. */
-	public static function CloseWindow():Void {
+	static function CloseWindow():Void {
 		Runtime.close();
 	}
 
@@ -47,28 +48,28 @@ class RCore {
 		In a page it is always false; the loop that reads it runs once a frame there.
 
 		@return  True once the window should close. */
-	public static function WindowShouldClose():Bool {
+	static function WindowShouldClose():Bool {
 		return Runtime.shouldClose;
 	}
 
 	/** Returns whether the window is open.
 
 		@return  True after `InitWindow`. */
-	public static function IsWindowReady():Bool {
+	static function IsWindowReady():Bool {
 		return Runtime.window != null;
 	}
 
 	/** Returns whether the window changed size since the last frame.
 
 		@return  True for the frame after a resize. */
-	public static function IsWindowResized():Bool {
+	static function IsWindowResized():Bool {
 		return Runtime.resized;
 	}
 
 	/** Sets the window's title.
 
 		@param title  The title. */
-	public static function SetWindowTitle(title:String):Void {
+	static function SetWindowTitle(title:String):Void {
 		Runtime.window.title = title;
 	}
 
@@ -76,56 +77,56 @@ class RCore {
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels. */
-	public static function SetWindowSize(width:Int, height:Int):Void {
+	static function SetWindowSize(width:Int, height:Int):Void {
 		Runtime.window.requestSize(width, height);
 	}
 
 	/** Returns the screen's width, in the pixels drawing is in.
 
 		@return  The width. */
-	public static function GetScreenWidth():Int {
+	static function GetScreenWidth():Int {
 		return Std.int(Runtime.window.framebufferWidth / Runtime.window.pixelRatio);
 	}
 
 	/** Returns the screen's height, in the pixels drawing is in.
 
 		@return  The height. */
-	public static function GetScreenHeight():Int {
+	static function GetScreenHeight():Int {
 		return Std.int(Runtime.window.framebufferHeight / Runtime.window.pixelRatio);
 	}
 
 	/** Returns the framebuffer's width, in the display's pixels.
 
 		@return  The width. */
-	public static function GetRenderWidth():Int {
+	static function GetRenderWidth():Int {
 		return Runtime.window.framebufferWidth;
 	}
 
 	/** Returns the framebuffer's height, in the display's pixels.
 
 		@return  The height. */
-	public static function GetRenderHeight():Int {
+	static function GetRenderHeight():Int {
 		return Runtime.window.framebufferHeight;
 	}
 
 	/** Sets flags for the window before `InitWindow` (`FLAG_*`). The window is resizable here whatever they say.
 
 		@param flags  The flags, or'd together. */
-	public static function SetConfigFlags(flags:Int):Void {
+	static function SetConfigFlags(flags:Int):Void {
 		configFlags = flags;
 	}
 
 	/** Sets flags on the open window (`FLAG_*`). A window here is resizable whatever they say, and the others aren't read.
 
 		@param flags  The flags, or'd together. */
-	public static function SetWindowState(flags:Int):Void {
+	static function SetWindowState(flags:Int):Void {
 		configFlags |= flags;
 	}
 
 	/** Clears flags on the open window (`FLAG_*`).
 
 		@param flags  The flags, or'd together. */
-	public static function ClearWindowState(flags:Int):Void {
+	static function ClearWindowState(flags:Int):Void {
 		configFlags &= ~flags;
 	}
 
@@ -133,21 +134,21 @@ class RCore {
 
 		@param flag  The flags, or'd together.
 		@return  True when all of them are. */
-	public static function IsWindowState(flag:Int):Bool {
+	static function IsWindowState(flag:Int):Bool {
 		return configFlags & flag == flag;
 	}
 
 	/** Sets the frame rate aimed for. Frames here follow the display's refresh, whatever it is set to.
 
 		@param fps  The frames a second. */
-	public static function SetTargetFPS(fps:Int):Void {
+	static function SetTargetFPS(fps:Int):Void {
 		targetFps = fps;
 	}
 
 	/** Returns the frames a second, averaged over the last half second or so.
 
 		@return  The frames a second. */
-	public static function GetFPS():Int {
+	static function GetFPS():Int {
 		var delta = Runtime.time == null ? 0. : Runtime.time.realDelta;
 		if (delta > 0)
 			fps += (1 / delta - fps) * .1;
@@ -157,38 +158,38 @@ class RCore {
 	/** Returns the seconds the last frame took.
 
 		@return  The seconds. */
-	public static function GetFrameTime():Float {
+	static function GetFrameTime():Float {
 		return Runtime.time == null ? 0 : Runtime.time.realDelta;
 	}
 
 	/** Returns the seconds since `InitWindow`.
 
 		@return  The seconds. */
-	public static function GetTime():Float {
+	static function GetTime():Float {
 		return Runtime.system.getTime() - start;
 	}
 
 	/** Sets the key that closes the window natively, or `KEY_NULL` for none. It is Escape until set.
 
 		@param key  The key. */
-	public static function SetExitKey(key:Int):Void {
+	static function SetExitKey(key:Int):Void {
 		Runtime.exitKey = key;
 	}
 
 	/** Begins a frame's drawing. */
-	public static function BeginDrawing():Void {
+	static function BeginDrawing():Void {
 		Runtime.frame.begin(GetScreenWidth(), GetScreenHeight());
 	}
 
 	/** Ends a frame's drawing: shows it, then reads the next frame's input. */
-	public static function EndDrawing():Void {
+	static function EndDrawing():Void {
 		Runtime.endFrame();
 	}
 
 	/** Clears the frame to a color, dropping what was drawn before it.
 
 		@param color  The color. */
-	public static function ClearBackground(color:Color):Void {
+	static function ClearBackground(color:Color):Void {
 		Runtime.frame.clear((color.a << 24) | (color.r << 16) | (color.g << 8) | color.b);
 	}
 
@@ -197,7 +198,7 @@ class RCore {
 		@param min  The least.
 		@param max  The most.
 		@return  The number. */
-	public static function GetRandomValue(min:Int, max:Int):Int {
+	static function GetRandomValue(min:Int, max:Int):Int {
 		if (min > max) {
 			var t = min;
 			min = max;
@@ -214,7 +215,7 @@ class RCore {
 	/** Seeds `GetRandomValue`, so its numbers repeat from the same seed.
 
 		@param seed  The seed. */
-	public static function SetRandomSeed(seed:Int):Void {
+	static function SetRandomSeed(seed:Int):Void {
 		RCore.seed = seed == 0 ? 1 : seed;
 		seeded = true;
 	}
@@ -225,7 +226,7 @@ class RCore {
 
 		@param key  The key (`KEY_*`).
 		@return  True for that frame alone. */
-	public static function IsKeyPressed(key:Int):Bool {
+	static function IsKeyPressed(key:Int):Bool {
 		var k = toKey(key);
 		return k >= 0 && Runtime.keyboard().isKeyPressed(cast k);
 	}
@@ -234,7 +235,7 @@ class RCore {
 
 		@param key  The key (`KEY_*`).
 		@return  True while it is down. */
-	public static function IsKeyDown(key:Int):Bool {
+	static function IsKeyDown(key:Int):Bool {
 		var k = toKey(key);
 		return k >= 0 && Runtime.keyboard().isKeyDown(cast k);
 	}
@@ -243,7 +244,7 @@ class RCore {
 
 		@param key  The key (`KEY_*`).
 		@return  True for that frame alone. */
-	public static function IsKeyReleased(key:Int):Bool {
+	static function IsKeyReleased(key:Int):Bool {
 		var k = toKey(key);
 		return k >= 0 && Runtime.keyboard().isKeyReleased(cast k);
 	}
@@ -252,14 +253,14 @@ class RCore {
 
 		@param key  The key (`KEY_*`).
 		@return  True while it is up. */
-	public static function IsKeyUp(key:Int):Bool {
+	static function IsKeyUp(key:Int):Bool {
 		return !IsKeyDown(key);
 	}
 
 	/** Returns the next key pressed this frame, each once; call it until it returns `KEY_NULL`.
 
 		@return  The key (`KEY_*`), or `KEY_NULL` when no more were pressed. */
-	public static function GetKeyPressed():Int {
+	static function GetKeyPressed():Int {
 		Runtime.keyboard();
 		return Runtime.keysPressed.length == 0 ? KEY_NULL : Runtime.keysPressed.shift();
 	}
@@ -270,7 +271,7 @@ class RCore {
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
-	public static function IsMouseButtonPressed(button:Int):Bool {
+	static function IsMouseButtonPressed(button:Int):Bool {
 		var mouse = Runtime.mouse();
 		if (button == MOUSE_BUTTON_LEFT
 			&& Runtime.touch().pressed.length > 0
@@ -283,7 +284,7 @@ class RCore {
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True while it is down. */
-	public static function IsMouseButtonDown(button:Int):Bool {
+	static function IsMouseButtonDown(button:Int):Bool {
 		var mouse = Runtime.mouse();
 		if (button == MOUSE_BUTTON_LEFT && Runtime.touch().fingers.length > 0)
 			return true;
@@ -294,7 +295,7 @@ class RCore {
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
-	public static function IsMouseButtonReleased(button:Int):Bool {
+	static function IsMouseButtonReleased(button:Int):Bool {
 		var mouse = Runtime.mouse();
 		if (button == MOUSE_BUTTON_LEFT && Runtime.touch().released.length > 0 && Runtime.touch().fingers.length == 0)
 			return true;
@@ -305,28 +306,28 @@ class RCore {
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True while it is up. */
-	public static function IsMouseButtonUp(button:Int):Bool {
+	static function IsMouseButtonUp(button:Int):Bool {
 		return !IsMouseButtonDown(button);
 	}
 
 	/** Returns the mouse's x, in the screen's pixels; the first finger's while one is down.
 
 		@return  The x. */
-	public static function GetMouseX():Int {
+	static function GetMouseX():Int {
 		return Std.int(GetMousePosition().x);
 	}
 
 	/** Returns the mouse's y, in the screen's pixels; the first finger's while one is down.
 
 		@return  The y. */
-	public static function GetMouseY():Int {
+	static function GetMouseY():Int {
 		return Std.int(GetMousePosition().y);
 	}
 
 	/** Returns the mouse's position, in the screen's pixels; the first finger's while one is down.
 
 		@return  The position. */
-	public static function GetMousePosition():Vector2 {
+	static function GetMousePosition():Vector2 {
 		var mouse = Runtime.mouse(),
 			touch = Runtime.touch(),
 			ratio = Runtime.window.pixelRatio;
@@ -346,7 +347,7 @@ class RCore {
 	/** Returns how far the wheel turned this frame, the larger of its two directions; away from the player is positive.
 
 		@return  The notches. */
-	public static function GetMouseWheelMove():Float {
+	static function GetMouseWheelMove():Float {
 		var mouse = Runtime.mouse();
 		return Math.abs(mouse.wheelX) > Math.abs(mouse.wheelY) ? mouse.wheelX : mouse.wheelY;
 	}
@@ -354,7 +355,7 @@ class RCore {
 	/** Returns the number of fingers down.
 
 		@return  The count. */
-	public static function GetTouchPointCount():Int {
+	static function GetTouchPointCount():Int {
 		return Runtime.touch().fingers.length;
 	}
 
@@ -362,7 +363,7 @@ class RCore {
 
 		@param index  Which finger, 0 for the first down.
 		@return  The position, or (0, 0) when fewer are down. */
-	public static function GetTouchPosition(index:Int):Vector2 {
+	static function GetTouchPosition(index:Int):Vector2 {
 		var touch = Runtime.touch(), ratio = Runtime.window.pixelRatio;
 		if (index < 0 || index >= touch.fingers.length)
 			return new Vector2();
@@ -373,14 +374,14 @@ class RCore {
 	/** Returns the first finger's x, in the screen's pixels.
 
 		@return  The x. */
-	public static function GetTouchX():Int {
+	static function GetTouchX():Int {
 		return Std.int(GetTouchPosition(0).x);
 	}
 
 	/** Returns the first finger's y, in the screen's pixels.
 
 		@return  The y. */
-	public static function GetTouchY():Int {
+	static function GetTouchY():Int {
 		return Std.int(GetTouchPosition(0).y);
 	}
 
@@ -389,7 +390,7 @@ class RCore {
 
 		@param gesture  The gesture (`GESTURE_*`).
 		@return  True for the frame it happened. */
-	public static function IsGestureDetected(gesture:Int):Bool {
+	static function IsGestureDetected(gesture:Int):Bool {
 		if (gesture != GESTURE_TAP)
 			return false;
 		return Runtime.touch().pressed.length > 0 || Runtime.mouse().isButtonPressed(Left);
@@ -399,7 +400,7 @@ class RCore {
 		taps are read here.
 
 		@return  The gesture (`GESTURE_*`). */
-	public static function GetGestureDetected():Int {
+	static function GetGestureDetected():Int {
 		return IsGestureDetected(GESTURE_TAP) ? GESTURE_TAP : GESTURE_NONE;
 	}
 
@@ -409,7 +410,7 @@ class RCore {
 
 		@param gamepad  The gamepad, 0 to 3.
 		@return  True while one is connected there. */
-	public static function IsGamepadAvailable(gamepad:Int):Bool {
+	static function IsGamepadAvailable(gamepad:Int):Bool {
 		return gamepad >= 0 && gamepad < 4 && Runtime.gamepads().isConnected(gamepad);
 	}
 
@@ -417,7 +418,7 @@ class RCore {
 
 		@param gamepad  The gamepad, 0 to 3.
 		@return  Its name, or "" when none is connected. */
-	public static function GetGamepadName(gamepad:Int):String {
+	static function GetGamepadName(gamepad:Int):String {
 		return IsGamepadAvailable(gamepad) ? Runtime.gamepads().getName(gamepad) : "";
 	}
 
@@ -426,7 +427,7 @@ class RCore {
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).
 		@return  True for that frame alone. */
-	public static function IsGamepadButtonPressed(gamepad:Int, button:Int):Bool {
+	static function IsGamepadButtonPressed(gamepad:Int, button:Int):Bool {
 		var b = toPadButton(button);
 		return b >= 0 && IsGamepadAvailable(gamepad) && Runtime.gamepads().isButtonPressed(gamepad, cast b);
 	}
@@ -436,7 +437,7 @@ class RCore {
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).
 		@return  True while it is down. */
-	public static function IsGamepadButtonDown(gamepad:Int, button:Int):Bool {
+	static function IsGamepadButtonDown(gamepad:Int, button:Int):Bool {
 		var b = toPadButton(button);
 		return b >= 0 && IsGamepadAvailable(gamepad) && Runtime.gamepads().isButtonDown(gamepad, cast b);
 	}
@@ -446,7 +447,7 @@ class RCore {
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).
 		@return  True for that frame alone. */
-	public static function IsGamepadButtonReleased(gamepad:Int, button:Int):Bool {
+	static function IsGamepadButtonReleased(gamepad:Int, button:Int):Bool {
 		var b = toPadButton(button);
 		return b >= 0 && IsGamepadAvailable(gamepad) && Runtime.gamepads().isButtonReleased(gamepad, cast b);
 	}
@@ -456,14 +457,14 @@ class RCore {
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).
 		@return  True while it is up. */
-	public static function IsGamepadButtonUp(gamepad:Int, button:Int):Bool {
+	static function IsGamepadButtonUp(gamepad:Int, button:Int):Bool {
 		return !IsGamepadButtonDown(gamepad, button);
 	}
 
 	/** Returns a button held on any gamepad, as raylib's last button pressed is: set while it is held, not only as it goes down.
 
 		@return  The button (`GAMEPAD_BUTTON_*`), or `GAMEPAD_BUTTON_UNKNOWN` when none is held. */
-	public static function GetGamepadButtonPressed():Int {
+	static function GetGamepadButtonPressed():Int {
 		for (pad in 0...4)
 			if (IsGamepadAvailable(pad))
 				for (button in 1...18)
@@ -476,7 +477,7 @@ class RCore {
 
 		@param gamepad  The gamepad, 0 to 3.
 		@return  6 while one is connected, else 0. */
-	public static function GetGamepadAxisCount(gamepad:Int):Int {
+	static function GetGamepadAxisCount(gamepad:Int):Int {
 		return IsGamepadAvailable(gamepad) ? 6 : 0;
 	}
 
@@ -486,7 +487,7 @@ class RCore {
 		@param gamepad  The gamepad, 0 to 3.
 		@param axis  The axis (`GAMEPAD_AXIS_*`).
 		@return  The value. */
-	public static function GetGamepadAxisMovement(gamepad:Int, axis:Int):Float {
+	static function GetGamepadAxisMovement(gamepad:Int, axis:Int):Float {
 		if (axis < 0 || axis > 5 || !IsGamepadAvailable(gamepad))
 			return 0;
 		var value = Runtime.gamepads().getAxis(gamepad, cast axis);
@@ -500,7 +501,7 @@ class RCore {
 
 		@param fileName  The file.
 		@return  True when it exists. */
-	public static function FileExists(fileName:String):Bool {
+	static function FileExists(fileName:String):Bool {
 		var path = normalize(fileName);
 		return saved(path)
 			|| Runtime.saves != null
@@ -514,7 +515,7 @@ class RCore {
 
 		@param fileName  The file.
 		@return  Its text, or null when it can't be read. */
-	public static function LoadFileText(fileName:String):Null<String> {
+	static function LoadFileText(fileName:String):Null<String> {
 		var path = normalize(fileName);
 		if (loadText != null) {
 			var given = loadText(path);
@@ -534,7 +535,7 @@ class RCore {
 	/** Frees text `LoadFileText` returned. There is nothing to free here.
 
 		@param text  The text. */
-	public static function UnloadFileText(text:Null<String>):Void {}
+	static function UnloadFileText(text:Null<String>):Void {}
 
 	/** Writes a text file: through the program's `SetSaveFileTextCallback` when it has one, else kept across runs (in a page, in its
 		storage; natively, in the program's data directory), kept at the end of the frame.
@@ -542,7 +543,7 @@ class RCore {
 		@param fileName  The file.
 		@param text  Its text.
 		@return  True when it was written, or will be. */
-	public static function SaveFileText(fileName:String, text:String):Bool {
+	static function SaveFileText(fileName:String, text:String):Bool {
 		if (saveText != null)
 			return saveText(normalize(fileName), text);
 		if (Runtime.saves == null)
@@ -556,14 +557,14 @@ class RCore {
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
 	@:unimplemented("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)")
-	public static function LoadFileData(fileName:String):Null<haxe.io.Bytes> {
+	static function LoadFileData(fileName:String):Null<haxe.io.Bytes> {
 		throw "LoadFileData is unimplemented";
 	}
 
 	/** Frees bytes `LoadFileDataAsync` gave. There is nothing to free here.
 
 		@param data  The bytes. */
-	public static function UnloadFileData(data:Null<haxe.io.Bytes>):Void {}
+	static function UnloadFileData(data:Null<haxe.io.Bytes>):Void {}
 
 	/** Writes a file's bytes: through the program's `SetSaveFileDataCallback` when it has one, else kept across runs as
 		`SaveFileText`'s are.
@@ -572,7 +573,7 @@ class RCore {
 		@param data  The bytes.
 		@param dataSize  How many of them.
 		@return  True when it was written, or will be. */
-	public static function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool {
+	static function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool {
 		var path = normalize(fileName);
 		if (saveData != null)
 			return saveData(path, data, dataSize);
@@ -589,28 +590,28 @@ class RCore {
 		asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load those it gives.
 
 		@param callback  Returns a file's bytes, or null; null for none. */
-	public static function SetLoadFileDataCallback(callback:Null<(fileName:String) -> Null<haxe.io.Bytes>>):Void {
+	static function SetLoadFileDataCallback(callback:Null<(fileName:String) -> Null<haxe.io.Bytes>>):Void {
 		CallbackFiles.load = callback;
 	}
 
 	/** Writes files through the program from now on (`SaveFileData`).
 
 		@param callback  Writes a file's bytes, returning whether it did; null for none. */
-	public static function SetSaveFileDataCallback(callback:Null<(fileName:String, data:haxe.io.Bytes, dataSize:Int) -> Bool>):Void {
+	static function SetSaveFileDataCallback(callback:Null<(fileName:String, data:haxe.io.Bytes, dataSize:Int) -> Bool>):Void {
 		saveData = callback;
 	}
 
 	/** Reads text files through the program from now on (`LoadFileText`).
 
 		@param callback  Returns a file's text, or null; null for none. */
-	public static function SetLoadFileTextCallback(callback:Null<(fileName:String) -> Null<String>>):Void {
+	static function SetLoadFileTextCallback(callback:Null<(fileName:String) -> Null<String>>):Void {
 		loadText = callback;
 	}
 
 	/** Writes text files through the program from now on (`SaveFileText`).
 
 		@param callback  Writes a file's text, returning whether it did; null for none. */
-	public static function SetSaveFileTextCallback(callback:Null<(fileName:String, text:String) -> Bool>):Void {
+	static function SetSaveFileTextCallback(callback:Null<(fileName:String, text:String) -> Bool>):Void {
 		saveText = callback;
 	}
 
@@ -621,38 +622,33 @@ class RCore {
 
 		@param logLevel  The level (`LOG_*`).
 		@param text  The message. */
-	public static function TraceLog(logLevel:Int, text:String):Void {
+	static function TraceLog(logLevel:Int, text:String):Void {
 		Runtime.log(logLevel, text);
 	}
 
 	/** Sets the least level the log writes; `LOG_INFO` until set.
 
 		@param logLevel  The level (`LOG_*`). */
-	public static function SetTraceLogLevel(logLevel:Int):Void {
+	static function SetTraceLogLevel(logLevel:Int):Void {
 		Runtime.logLevel = logLevel;
 	}
 
 	/** Writes the log through the program from now on, helix-ray's own messages among it.
 
 		@param callback  Receives each message's level and text; null for helix-ray's own log. */
-	public static function SetTraceLogCallback(callback:Null<(logLevel:Int, text:String) -> Void>):Void {
+	static function SetTraceLogCallback(callback:Null<(logLevel:Int, text:String) -> Void>):Void {
 		Runtime.logCallback = callback;
 	}
 
 	// ---- What the functions share ----
-	@:allow(helix.ray)
 	static inline final SAVED_DATA = "data:";
-	@:allow(helix.ray)
 	static var loadText:Null<String->Null<String>> = null;
-	@:allow(helix.ray)
 	static var saveText:Null<(String, String) -> Bool> = null;
-	@:allow(helix.ray)
 	static var saveData:Null<(String, haxe.io.Bytes, Int) -> Bool> = null;
 
 	// A file's bytes as they are at hand, without logging: the program's load callback's, then the saves', then the program's own (in
 	// a page only as an async load brought them in).
 
-	@:allow(helix.ray)
 	static function dataNow(path:String):Null<haxe.io.Bytes> {
 		if (CallbackFiles.load != null) {
 			var given = CallbackFiles.load(path);
@@ -666,38 +662,23 @@ class RCore {
 
 	// Whether a text file was written to the saves.
 
-	@:allow(helix.ray)
 	static function saved(path:String):Bool
 		return Runtime.saves != null && Runtime.saves.hasKey(SAVED + path);
 
-	@:allow(helix.ray)
 	static inline final SAVED = "file:";
-	@:allow(helix.ray)
 	static var start = 0.;
-	@:allow(helix.ray)
 	static var configFlags = 0;
-	@:allow(helix.ray)
 	static var targetFps = 0;
-	@:allow(helix.ray)
 	static var fps = 60.;
-	@:allow(helix.ray)
 	static var seed = 0x2545f491;
-	@:allow(helix.ray)
 	static var seeded = false;
-	@:allow(helix.ray)
 	static var lastMouseX = 0.;
-	@:allow(helix.ray)
 	static var lastMouseY = 0.;
-	@:allow(helix.ray)
 	static var lastPointerX = 0.;
-	@:allow(helix.ray)
 	static var lastPointerY = 0.;
-	@:allow(helix.ray)
 	static var font:Null<Texture2D> = null;
-	@:allow(helix.ray)
 	static var fontRecs:Array<Int> = [];
 
-	@:allow(helix.ray)
 	static function normalize(path:String):String {
 		while (StringTools.startsWith(path, "./"))
 			path = path.substr(2);
@@ -706,7 +687,6 @@ class RCore {
 
 	// raylib's KEY_* as the platform's keys: the same numbers, a right-hand modifier as the left-hand one.
 
-	@:allow(helix.ray)
 	static function toKey(key:Int):Int {
 		return switch key {
 			case 344 | 345 | 346 | 347: key - 4;
@@ -717,7 +697,6 @@ class RCore {
 
 	// raylib's GAMEPAD_BUTTON_* as the platform's buttons, by position.
 
-	@:allow(helix.ray)
 	static function toPadButton(button:Int):Int {
 		return switch button {
 			case 1: 12;
@@ -741,14 +720,12 @@ class RCore {
 		}
 	}
 
-	@:allow(helix.ray)
 	static function glyph(code:Int):Int {
 		return code >= 32 && code < 256 ? code - 32 : "?".code - 32;
 	}
 
 	// The default font's texture, made at its first use, and each glyph's place on it, as raylib lays them out.
 
-	@:allow(helix.ray)
 	static function defaultFont():Texture2D {
 		if (font != null)
 			return font;
@@ -785,12 +762,10 @@ class RCore {
 
 	// An immediate vertex in 2D, at z 0.
 
-	@:allow(helix.ray)
 	static inline function flat(texture:Int, x:Float, y:Float, u:Float, v:Float, color:Color):Void {
 		Runtime.frame.vertex(texture, false, x, y, 0, u, v, color);
 	}
 
-	@:allow(helix.ray)
 	static function quad(x:Float, y:Float, w:Float, h:Float, color:Color):Void {
 		var t = Runtime.frame.white;
 		flat(t, x, y, 0, 0, color);
@@ -801,7 +776,6 @@ class RCore {
 		flat(t, x + w, y, 0, 0, color);
 	}
 
-	@:allow(helix.ray)
 	static function line(x1:Float, y1:Float, x2:Float, y2:Float, thick:Float, color:Color):Void {
 		var dx = x2 - x1, dy = y2 - y1, length = Math.sqrt(dx * dx + dy * dy);
 		if (length == 0)
@@ -816,7 +790,6 @@ class RCore {
 		flat(t, x2 + nx, y2 + ny, 0, 0, color);
 	}
 
-	@:allow(helix.ray)
 	static function frame(x:Float, y:Float, w:Float, h:Float, thick:Float, color:Color):Void {
 		quad(x, y, w, thick, color);
 		quad(x, y + h - thick, w, thick, color);
@@ -824,13 +797,11 @@ class RCore {
 		quad(x + w - thick, y + thick, thick, h - thick * 2, color);
 	}
 
-	@:allow(helix.ray)
 	static function segments(radius:Float):Int {
 		var n = Math.ceil(radius * Math.PI / 2);
 		return n < 12 ? 12 : n > 96 ? 96 : n;
 	}
 
-	@:allow(helix.ray)
 	static function circle(cx:Float, cy:Float, radius:Float, color:Color):Void {
 		var n = segments(radius), t = Runtime.frame.white;
 		for (i in 0...n) {
@@ -841,7 +812,6 @@ class RCore {
 		}
 	}
 
-	@:allow(helix.ray)
 	static function ring(cx:Float, cy:Float, radius:Float, color:Color):Void {
 		var n = segments(radius);
 		for (i in 0...n) {
@@ -855,13 +825,13 @@ class RCore {
 	/** Draws through a 2D camera until `EndMode2D`.
 
 		@param camera  The camera. */
-	public static function BeginMode2D(camera:Camera2D):Void {
+	static function BeginMode2D(camera:Camera2D):Void {
 		Runtime.frame.cut();
 		Runtime.frame.view = toMatrix3D(GetCameraMatrix2D(camera));
 	}
 
 	/** Goes back to drawing in the screen's pixels. */
-	public static function EndMode2D():Void {
+	static function EndMode2D():Void {
 		Runtime.frame.screen2D();
 	}
 
@@ -869,7 +839,7 @@ class RCore {
 
 		@param camera  The camera.
 		@return  The matrix. */
-	public static function GetCameraMatrix2D(camera:Camera2D):Matrix {
+	static function GetCameraMatrix2D(camera:Camera2D):Matrix {
 		var m = new Matrix3D().makeTranslation(-camera.target.x, -camera.target.y, 0);
 		m = new Matrix3D().compose(m, new Matrix3D().makeRotation(0, 0, 1, camera.rotation * DEG2RAD));
 		m = new Matrix3D().compose(m, new Matrix3D().makeScale(camera.zoom, camera.zoom, 1));
@@ -882,7 +852,7 @@ class RCore {
 		@param position  The point.
 		@param camera  The camera.
 		@return  The screen position. */
-	public static function GetWorldToScreen2D(position:Vector2, camera:Camera2D):Vector2 {
+	static function GetWorldToScreen2D(position:Vector2, camera:Camera2D):Vector2 {
 		var p = toMatrix3D(GetCameraMatrix2D(camera)).transformPoint(position.x, position.y, 0);
 		return new Vector2(p.x, p.y);
 	}
@@ -892,7 +862,7 @@ class RCore {
 		@param position  The screen position.
 		@param camera  The camera.
 		@return  The point. */
-	public static function GetScreenToWorld2D(position:Vector2, camera:Camera2D):Vector2 {
+	static function GetScreenToWorld2D(position:Vector2, camera:Camera2D):Vector2 {
 		var inverse = toMatrix3D(GetCameraMatrix2D(camera));
 		inverse.invert();
 		var p = inverse.transformPoint(position.x, position.y, 0);
@@ -904,7 +874,7 @@ class RCore {
 	/** Draws in 3D through a camera until `EndMode3D`, with depth.
 
 		@param camera  The camera. */
-	public static function BeginMode3D(camera:Camera3D):Void {
+	static function BeginMode3D(camera:Camera3D):Void {
 		var f = Runtime.frame;
 		f.cut();
 		f.in3D = true;
@@ -913,7 +883,7 @@ class RCore {
 	}
 
 	/** Goes back to drawing in 2D, in the screen's pixels. */
-	public static function EndMode3D():Void {
+	static function EndMode3D():Void {
 		Runtime.frame.screen2D();
 		Runtime.frame.in3D = false;
 	}
@@ -924,7 +894,7 @@ class RCore {
 
 		@param camera  The camera, changed.
 		@param mode  The mode (`CAMERA_*`). */
-	public static function UpdateCamera(camera:Camera3D, mode:Int):Void {
+	static function UpdateCamera(camera:Camera3D, mode:Int):Void {
 		var dt = GetFrameTime();
 		switch mode {
 			case CAMERA_ORBITAL:
@@ -967,7 +937,7 @@ class RCore {
 
 		@param camera  The camera.
 		@return  The matrix. */
-	public static function GetCameraMatrix(camera:Camera3D):Matrix {
+	static function GetCameraMatrix(camera:Camera3D):Matrix {
 		return toMatrix(cameraView(camera));
 	}
 
@@ -976,7 +946,7 @@ class RCore {
 		@param position  The screen position.
 		@param camera  The camera.
 		@return  The ray. */
-	public static function GetScreenToWorldRay(position:Vector2, camera:Camera3D):Ray {
+	static function GetScreenToWorldRay(position:Vector2, camera:Camera3D):Ray {
 		return GetScreenToWorldRayEx(position, camera, GetScreenWidth(), GetScreenHeight());
 	}
 
@@ -987,7 +957,7 @@ class RCore {
 		@param width  The view's width.
 		@param height  The view's height.
 		@return  The ray. */
-	public static function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int):Ray {
+	static function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int):Ray {
 		var x = 2 * position.x / width - 1, y = 1 - 2 * position.y / height;
 		var inverse = new Matrix3D().compose(cameraView(camera), cameraProjection(camera, width / height));
 		inverse.invert();
@@ -1010,7 +980,7 @@ class RCore {
 		@param position  The screen position.
 		@param camera  The camera.
 		@return  The ray. */
-	public static function GetMouseRay(position:Vector2, camera:Camera3D):Ray {
+	static function GetMouseRay(position:Vector2, camera:Camera3D):Ray {
 		return GetScreenToWorldRay(position, camera);
 	}
 
@@ -1019,7 +989,7 @@ class RCore {
 		@param position  The point.
 		@param camera  The camera.
 		@return  The screen position. */
-	public static function GetWorldToScreen(position:Vector3, camera:Camera3D):Vector2 {
+	static function GetWorldToScreen(position:Vector3, camera:Camera3D):Vector2 {
 		return GetWorldToScreenEx(position, camera, GetScreenWidth(), GetScreenHeight());
 	}
 
@@ -1030,7 +1000,7 @@ class RCore {
 		@param width  The view's width.
 		@param height  The view's height.
 		@return  The position in the view. */
-	public static function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int):Vector2 {
+	static function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int):Vector2 {
 		var m = new Matrix3D().compose(cameraView(camera), cameraProjection(camera, width / height)).values;
 		var x = m[0] * position.x + m[4] * position.y + m[8] * position.z + m[12];
 		var y = m[1] * position.x + m[5] * position.y + m[9] * position.z + m[13];
@@ -1043,7 +1013,7 @@ class RCore {
 	/** Returns how far the mouse moved since the last frame, in the screen's pixels.
 
 		@return  The movement. */
-	public static function GetMouseDelta():Vector2 {
+	static function GetMouseDelta():Vector2 {
 		var now = GetMousePosition();
 		var frame = Runtime.frames;
 		if (frame != deltaFrame) {
@@ -1061,7 +1031,7 @@ class RCore {
 	/** Returns raylib's default shader.
 
 		@return  The shader. */
-	public static function LoadShaderDefault():Shader {
+	static function LoadShaderDefault():Shader {
 		return defaultShader();
 	}
 
@@ -1069,14 +1039,14 @@ class RCore {
 
 		@param shader  The shader.
 		@return  True when it was. */
-	public static function IsShaderValid(shader:Shader):Bool {
+	static function IsShaderValid(shader:Shader):Bool {
 		return shader.id != 0;
 	}
 
 	/** Frees a shader; the default one stays.
 
 		@param shader  The shader. */
-	public static function UnloadShader(shader:Shader):Void {
+	static function UnloadShader(shader:Shader):Void {
 		if (shader.program != null && shader.program != Runtime.frame.defaultProgram) {
 			shader.program.dispose();
 			shader.program = null;
@@ -1089,7 +1059,7 @@ class RCore {
 		@param shader  The shader.
 		@param uniformName  The name.
 		@return  Its location, or -1 when the shader doesn't declare it. */
-	public static function GetShaderLocation(shader:Shader, uniformName:String):Int {
+	static function GetShaderLocation(shader:Shader, uniformName:String):Int {
 		return shader.program == null ? -1 : shader.program.locate(uniformName);
 	}
 
@@ -1098,7 +1068,7 @@ class RCore {
 		@param shader  The shader.
 		@param attribName  The name.
 		@return  Its location, or -1 when the shader doesn't declare it. */
-	public static function GetShaderLocationAttrib(shader:Shader, attribName:String):Int {
+	static function GetShaderLocationAttrib(shader:Shader, attribName:String):Int {
 		return shader.program == null ? -1 : shader.program.attributes.indexOf(attribName);
 	}
 
@@ -1108,7 +1078,7 @@ class RCore {
 		@param locIndex  The uniform's location.
 		@param value  The value: a number, an array of numbers, or a `Vector2`, `Vector3`, `Vector4` or `Color`.
 		@param uniformType  Its type (`SHADER_UNIFORM_*`). */
-	public static function SetShaderValue(shader:Shader, locIndex:Int, value:Dynamic, uniformType:Int):Void {
+	static function SetShaderValue(shader:Shader, locIndex:Int, value:Dynamic, uniformType:Int):Void {
 		SetShaderValueV(shader, locIndex, value, uniformType, 1);
 	}
 
@@ -1119,7 +1089,7 @@ class RCore {
 		@param value  The values, in order.
 		@param uniformType  Each element's type (`SHADER_UNIFORM_*`).
 		@param count  The elements set. */
-	public static function SetShaderValueV(shader:Shader, locIndex:Int, value:Dynamic, uniformType:Int, count:Int):Void {
+	static function SetShaderValueV(shader:Shader, locIndex:Int, value:Dynamic, uniformType:Int, count:Int):Void {
 		if (shader.program == null)
 			return;
 		var slot = shader.program.textureSlot(locIndex);
@@ -1134,7 +1104,7 @@ class RCore {
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
 		@param mat  The matrix. */
-	public static function SetShaderValueMatrix(shader:Shader, locIndex:Int, mat:Matrix):Void {
+	static function SetShaderValueMatrix(shader:Shader, locIndex:Int, mat:Matrix):Void {
 		if (shader.program == null)
 			return;
 		Runtime.frame.cut();
@@ -1146,7 +1116,7 @@ class RCore {
 		@param shader  The shader.
 		@param locIndex  The texture's location.
 		@param texture  The texture. */
-	public static function SetShaderValueTexture(shader:Shader, locIndex:Int, texture:Texture2D):Void {
+	static function SetShaderValueTexture(shader:Shader, locIndex:Int, texture:Texture2D):Void {
 		if (shader.program == null)
 			return;
 		var slot = shader.program.textureSlot(locIndex);
@@ -1159,7 +1129,7 @@ class RCore {
 	/** Draws shapes, text and textures with a shader until `EndShaderMode`.
 
 		@param shader  The shader. */
-	public static function BeginShaderMode(shader:Shader):Void {
+	static function BeginShaderMode(shader:Shader):Void {
 		if (shader.program == null)
 			return;
 		Runtime.frame.cut();
@@ -1167,7 +1137,7 @@ class RCore {
 	}
 
 	/** Goes back to the default shader. */
-	public static function EndShaderMode():Void {
+	static function EndShaderMode():Void {
 		Runtime.frame.cut();
 		Runtime.frame.program = Runtime.frame.defaultProgram;
 	}

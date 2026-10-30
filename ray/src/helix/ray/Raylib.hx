@@ -2151,14 +2151,6 @@ class Raylib {
 	public static inline function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision
 		return RModels.GetRayCollisionMesh(ray, mesh, transform);
 
-	/** Makes a shader from a program compiled as the program built (`LoadShader`).
-
-		@param source  The compiled program.
-		@return  The shader. */
-	@:noCompletion
-	public static inline function makeShader(source:helix.ray.internal.ProgramSource):Shader
-		return RModels.makeShader(source);
-
 	// ---- raudio: sound (raylib/RAudio.hx) ----
 
 	/** Opens the audio output, with helix-services' `Audio` over it. In a page it plays once the player's first press lets it. */
@@ -2778,7 +2770,7 @@ class Raylib {
 			fs = helix.ray.internal.ShaderMacro.text(fsFileName, true);
 		var program = helix.ray.internal.ShaderMacro.program(vs == null ? "default vertex" : vs.name, vs == null ? null : vs.text,
 			fs == null ? "default fragment" : fs.name, fs == null ? null : fs.text, haxe.macro.Context.currentPos());
-		return macro helix.ray.raylib.RModels.makeShader($program);
+		return macro @:privateAccess helix.ray.raylib.RModels.makeShader($program);
 	}
 
 	/** Loads a shader from raylib GLSL text, either null for raylib's default stage. It is compiled as the program builds, so the text is
@@ -2792,7 +2784,7 @@ class Raylib {
 			fs = helix.ray.internal.ShaderMacro.text(fsCode, false);
 		var program = helix.ray.internal.ShaderMacro.program("vertex text", vs == null ? null : vs.text, "fragment text", fs == null ? null : fs.text,
 			haxe.macro.Context.currentPos());
-		return macro helix.ray.raylib.RModels.makeShader($program);
+		return macro @:privateAccess helix.ray.raylib.RModels.makeShader($program);
 	}
 
 	// ---- raylib's functions helix-ray doesn't have yet: each refuses to compile, saying so ----

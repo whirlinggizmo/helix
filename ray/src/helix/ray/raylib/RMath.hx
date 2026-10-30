@@ -20,6 +20,7 @@ import helix.ray.raylib.HelixRay.*;
 
 /** Holds raylib's raymath (vectors, matrices and quaternions), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
+@:allow(helix.ray)
 class RMath {
 	#if !macro
 	// ---- raymath ----
@@ -30,7 +31,7 @@ class RMath {
 		@param min  The least.
 		@param max  The most.
 		@return  The value, at least min and at most max. */
-	public static function Clamp(value:Float, min:Float, max:Float):Float {
+	static function Clamp(value:Float, min:Float, max:Float):Float {
 		var r = value < min ? min : value;
 		return r > max ? max : r;
 	}
@@ -41,7 +42,7 @@ class RMath {
 		@param end  The end.
 		@param amount  0 for the start, 1 for the end.
 		@return  The value. */
-	public static function Lerp(start:Float, end:Float, amount:Float):Float {
+	static function Lerp(start:Float, end:Float, amount:Float):Float {
 		return start + amount * (end - start);
 	}
 
@@ -53,21 +54,21 @@ class RMath {
 		@param outputStart  The second range's start.
 		@param outputEnd  Its end.
 		@return  The value in the second range. */
-	public static function Remap(value:Float, inputStart:Float, inputEnd:Float, outputStart:Float, outputEnd:Float):Float {
+	static function Remap(value:Float, inputStart:Float, inputEnd:Float, outputStart:Float, outputEnd:Float):Float {
 		return (value - inputStart) / (inputEnd - inputStart) * (outputEnd - outputStart) + outputStart;
 	}
 
 	/** Returns (0, 0).
 
 		@return  The vector. */
-	public static function Vector2Zero():Vector2 {
+	static function Vector2Zero():Vector2 {
 		return new Vector2(0, 0);
 	}
 
 	/** Returns (1, 1).
 
 		@return  The vector. */
-	public static function Vector2One():Vector2 {
+	static function Vector2One():Vector2 {
 		return new Vector2(1, 1);
 	}
 
@@ -76,7 +77,7 @@ class RMath {
 		@param v1  One.
 		@param v2  The other.
 		@return  The sum. */
-	public static function Vector2Add(v1:Vector2, v2:Vector2):Vector2 {
+	static function Vector2Add(v1:Vector2, v2:Vector2):Vector2 {
 		return new Vector2(v1.x + v2.x, v1.y + v2.y);
 	}
 
@@ -85,7 +86,7 @@ class RMath {
 		@param v1  The first.
 		@param v2  The one taken from it.
 		@return  The difference. */
-	public static function Vector2Subtract(v1:Vector2, v2:Vector2):Vector2 {
+	static function Vector2Subtract(v1:Vector2, v2:Vector2):Vector2 {
 		return new Vector2(v1.x - v2.x, v1.y - v2.y);
 	}
 
@@ -94,7 +95,7 @@ class RMath {
 		@param v  The vector.
 		@param scale  The scale.
 		@return  The scaled vector. */
-	public static function Vector2Scale(v:Vector2, scale:Float):Vector2 {
+	static function Vector2Scale(v:Vector2, scale:Float):Vector2 {
 		return new Vector2(v.x * scale, v.y * scale);
 	}
 
@@ -103,7 +104,7 @@ class RMath {
 		@param v1  One.
 		@param v2  The other.
 		@return  The product. */
-	public static function Vector2Multiply(v1:Vector2, v2:Vector2):Vector2 {
+	static function Vector2Multiply(v1:Vector2, v2:Vector2):Vector2 {
 		return new Vector2(v1.x * v2.x, v1.y * v2.y);
 	}
 
@@ -111,7 +112,7 @@ class RMath {
 
 		@param v  The vector.
 		@return  The length. */
-	public static function Vector2Length(v:Vector2):Float {
+	static function Vector2Length(v:Vector2):Float {
 		return Math.sqrt(v.x * v.x + v.y * v.y);
 	}
 
@@ -119,7 +120,7 @@ class RMath {
 
 		@param v  The vector.
 		@return  The length squared. */
-	public static function Vector2LengthSqr(v:Vector2):Float {
+	static function Vector2LengthSqr(v:Vector2):Float {
 		return v.x * v.x + v.y * v.y;
 	}
 
@@ -128,7 +129,7 @@ class RMath {
 		@param v1  One.
 		@param v2  The other.
 		@return  The distance. */
-	public static function Vector2Distance(v1:Vector2, v2:Vector2):Float {
+	static function Vector2Distance(v1:Vector2, v2:Vector2):Float {
 		var dx = v2.x - v1.x, dy = v2.y - v1.y;
 		return Math.sqrt(dx * dx + dy * dy);
 	}
@@ -137,7 +138,7 @@ class RMath {
 
 		@param v  The vector.
 		@return  The direction. */
-	public static function Vector2Normalize(v:Vector2):Vector2 {
+	static function Vector2Normalize(v:Vector2):Vector2 {
 		var length = Vector2Length(v);
 		return length > 0 ? new Vector2(v.x / length, v.y / length) : new Vector2(0, 0);
 	}
@@ -148,7 +149,7 @@ class RMath {
 		@param v2  The end.
 		@param amount  0 for the start, 1 for the end.
 		@return  The point. */
-	public static function Vector2Lerp(v1:Vector2, v2:Vector2, amount:Float):Vector2 {
+	static function Vector2Lerp(v1:Vector2, v2:Vector2, amount:Float):Vector2 {
 		return new Vector2(v1.x + amount * (v2.x - v1.x), v1.y + amount * (v2.y - v1.y));
 	}
 
@@ -158,7 +159,7 @@ class RMath {
 		@param min  The least length.
 		@param max  The most length.
 		@return  The vector. */
-	public static function Vector2ClampValue(v:Vector2, min:Float, max:Float):Vector2 {
+	static function Vector2ClampValue(v:Vector2, min:Float, max:Float):Vector2 {
 		var length = Vector2Length(v);
 		if (length == 0)
 			return new Vector2(0, 0);
@@ -171,14 +172,14 @@ class RMath {
 	/** Returns (0, 0, 0).
 
 		@return  The vector. */
-	public static function Vector3Zero():Vector3 {
+	static function Vector3Zero():Vector3 {
 		return new Vector3(0, 0, 0);
 	}
 
 	/** Returns (1, 1, 1).
 
 		@return  The vector. */
-	public static function Vector3One():Vector3 {
+	static function Vector3One():Vector3 {
 		return new Vector3(1, 1, 1);
 	}
 
@@ -187,7 +188,7 @@ class RMath {
 		@param v1  One.
 		@param v2  The other.
 		@return  The sum. */
-	public static function Vector3Add(v1:Vector3, v2:Vector3):Vector3 {
+	static function Vector3Add(v1:Vector3, v2:Vector3):Vector3 {
 		return new Vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
 	}
 
@@ -196,7 +197,7 @@ class RMath {
 		@param v1  The first.
 		@param v2  The one taken from it.
 		@return  The difference. */
-	public static function Vector3Subtract(v1:Vector3, v2:Vector3):Vector3 {
+	static function Vector3Subtract(v1:Vector3, v2:Vector3):Vector3 {
 		return new Vector3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
 	}
 
@@ -205,7 +206,7 @@ class RMath {
 		@param v  The vector.
 		@param scalar  The scale.
 		@return  The scaled vector. */
-	public static function Vector3Scale(v:Vector3, scalar:Float):Vector3 {
+	static function Vector3Scale(v:Vector3, scalar:Float):Vector3 {
 		return new Vector3(v.x * scalar, v.y * scalar, v.z * scalar);
 	}
 
@@ -214,7 +215,7 @@ class RMath {
 		@param v1  One.
 		@param v2  The other.
 		@return  The product. */
-	public static function Vector3Multiply(v1:Vector3, v2:Vector3):Vector3 {
+	static function Vector3Multiply(v1:Vector3, v2:Vector3):Vector3 {
 		return new Vector3(v1.x * v2.x, v1.y * v2.y, v1.z * v2.z);
 	}
 
@@ -223,7 +224,7 @@ class RMath {
 		@param v1  One.
 		@param v2  The other.
 		@return  The product. */
-	public static function Vector3CrossProduct(v1:Vector3, v2:Vector3):Vector3 {
+	static function Vector3CrossProduct(v1:Vector3, v2:Vector3):Vector3 {
 		return new Vector3(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x);
 	}
 
@@ -232,7 +233,7 @@ class RMath {
 		@param v1  One.
 		@param v2  The other.
 		@return  The product. */
-	public static function Vector3DotProduct(v1:Vector3, v2:Vector3):Float {
+	static function Vector3DotProduct(v1:Vector3, v2:Vector3):Float {
 		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 	}
 
@@ -240,7 +241,7 @@ class RMath {
 
 		@param v  The vector.
 		@return  The length. */
-	public static function Vector3Length(v:Vector3):Float {
+	static function Vector3Length(v:Vector3):Float {
 		return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 	}
 
@@ -248,7 +249,7 @@ class RMath {
 
 		@param v  The vector.
 		@return  The length squared. */
-	public static function Vector3LengthSqr(v:Vector3):Float {
+	static function Vector3LengthSqr(v:Vector3):Float {
 		return v.x * v.x + v.y * v.y + v.z * v.z;
 	}
 
@@ -257,7 +258,7 @@ class RMath {
 		@param v1  One.
 		@param v2  The other.
 		@return  The distance. */
-	public static function Vector3Distance(v1:Vector3, v2:Vector3):Float {
+	static function Vector3Distance(v1:Vector3, v2:Vector3):Float {
 		return Vector3Length(Vector3Subtract(v1, v2));
 	}
 
@@ -265,7 +266,7 @@ class RMath {
 
 		@param v  The vector.
 		@return  The direction. */
-	public static function Vector3Normalize(v:Vector3):Vector3 {
+	static function Vector3Normalize(v:Vector3):Vector3 {
 		var l = Vector3Length(v);
 		return l == 0 ? new Vector3(v.x, v.y, v.z) : new Vector3(v.x / l, v.y / l, v.z / l);
 	}
@@ -274,7 +275,7 @@ class RMath {
 
 		@param v  The vector.
 		@return  The negated vector. */
-	public static function Vector3Negate(v:Vector3):Vector3 {
+	static function Vector3Negate(v:Vector3):Vector3 {
 		return new Vector3(-v.x, -v.y, -v.z);
 	}
 
@@ -284,7 +285,7 @@ class RMath {
 		@param v2  The end.
 		@param amount  0 for the start, 1 for the end.
 		@return  The point. */
-	public static function Vector3Lerp(v1:Vector3, v2:Vector3, amount:Float):Vector3 {
+	static function Vector3Lerp(v1:Vector3, v2:Vector3, amount:Float):Vector3 {
 		return new Vector3(v1.x + amount * (v2.x - v1.x), v1.y + amount * (v2.y - v1.y), v1.z + amount * (v2.z - v1.z));
 	}
 
@@ -293,7 +294,7 @@ class RMath {
 		@param v  The point.
 		@param mat  The matrix.
 		@return  The transformed point. */
-	public static function Vector3Transform(v:Vector3, mat:Matrix):Vector3 {
+	static function Vector3Transform(v:Vector3, mat:Matrix):Vector3 {
 		var p = toMatrix3D(mat).transformPoint(v.x, v.y, v.z);
 		return new Vector3(p.x, p.y, p.z);
 	}
@@ -304,7 +305,7 @@ class RMath {
 		@param axis  The axis.
 		@param angle  The angle, in radians.
 		@return  The turned vector. */
-	public static function Vector3RotateByAxisAngle(v:Vector3, axis:Vector3, angle:Float):Vector3 {
+	static function Vector3RotateByAxisAngle(v:Vector3, axis:Vector3, angle:Float):Vector3 {
 		var m = new Matrix3D().makeRotation(axis.x, axis.y, axis.z, angle);
 		var p = m.transformPoint(v.x, v.y, v.z);
 		return new Vector3(p.x, p.y, p.z);
@@ -315,7 +316,7 @@ class RMath {
 	/** Returns the identity matrix.
 
 		@return  The matrix. */
-	public static function MatrixIdentity():Matrix {
+	static function MatrixIdentity():Matrix {
 		return toMatrix(new Matrix3D());
 	}
 
@@ -324,7 +325,7 @@ class RMath {
 		@param left  The first.
 		@param right  The second.
 		@return  The product. */
-	public static function MatrixMultiply(left:Matrix, right:Matrix):Matrix {
+	static function MatrixMultiply(left:Matrix, right:Matrix):Matrix {
 		return toMatrix(new Matrix3D().compose(toMatrix3D(left), toMatrix3D(right)));
 	}
 
@@ -334,7 +335,7 @@ class RMath {
 		@param y  Along y.
 		@param z  Along z.
 		@return  The matrix. */
-	public static function MatrixTranslate(x:Float, y:Float, z:Float):Matrix {
+	static function MatrixTranslate(x:Float, y:Float, z:Float):Matrix {
 		return toMatrix(new Matrix3D().makeTranslation(x, y, z));
 	}
 
@@ -344,7 +345,7 @@ class RMath {
 		@param y  Along y.
 		@param z  Along z.
 		@return  The matrix. */
-	public static function MatrixScale(x:Float, y:Float, z:Float):Matrix {
+	static function MatrixScale(x:Float, y:Float, z:Float):Matrix {
 		return toMatrix(new Matrix3D().makeScale(x, y, z));
 	}
 
@@ -353,7 +354,7 @@ class RMath {
 		@param axis  The axis.
 		@param angle  The angle, in radians.
 		@return  The matrix. */
-	public static function MatrixRotate(axis:Vector3, angle:Float):Matrix {
+	static function MatrixRotate(axis:Vector3, angle:Float):Matrix {
 		return toMatrix(new Matrix3D().makeRotation(axis.x, axis.y, axis.z, angle));
 	}
 
@@ -361,7 +362,7 @@ class RMath {
 
 		@param angle  The angle, in radians.
 		@return  The matrix. */
-	public static function MatrixRotateX(angle:Float):Matrix {
+	static function MatrixRotateX(angle:Float):Matrix {
 		return toMatrix(new Matrix3D().makeRotation(1, 0, 0, angle));
 	}
 
@@ -369,7 +370,7 @@ class RMath {
 
 		@param angle  The angle, in radians.
 		@return  The matrix. */
-	public static function MatrixRotateY(angle:Float):Matrix {
+	static function MatrixRotateY(angle:Float):Matrix {
 		return toMatrix(new Matrix3D().makeRotation(0, 1, 0, angle));
 	}
 
@@ -377,7 +378,7 @@ class RMath {
 
 		@param angle  The angle, in radians.
 		@return  The matrix. */
-	public static function MatrixRotateZ(angle:Float):Matrix {
+	static function MatrixRotateZ(angle:Float):Matrix {
 		return toMatrix(new Matrix3D().makeRotation(0, 0, 1, angle));
 	}
 
@@ -385,7 +386,7 @@ class RMath {
 
 		@param angle  The angles, in radians.
 		@return  The matrix. */
-	public static function MatrixRotateXYZ(angle:Vector3):Matrix {
+	static function MatrixRotateXYZ(angle:Vector3):Matrix {
 		var m = new Matrix3D().compose(new Matrix3D().makeRotation(1, 0, 0, angle.x), new Matrix3D().makeRotation(0, 1, 0, angle.y));
 		return toMatrix(new Matrix3D().compose(m, new Matrix3D().makeRotation(0, 0, 1, angle.z)));
 	}
@@ -394,7 +395,7 @@ class RMath {
 
 		@param mat  The matrix.
 		@return  Its inverse. */
-	public static function MatrixInvert(mat:Matrix):Matrix {
+	static function MatrixInvert(mat:Matrix):Matrix {
 		var inverse = toMatrix3D(mat);
 		inverse.invert();
 		return toMatrix(inverse);
@@ -404,7 +405,7 @@ class RMath {
 
 		@param mat  The matrix.
 		@return  Its transpose. */
-	public static function MatrixTranspose(mat:Matrix):Matrix {
+	static function MatrixTranspose(mat:Matrix):Matrix {
 		return toMatrix(new Matrix3D().copyFrom(toMatrix3D(mat)).transpose());
 	}
 
@@ -414,7 +415,7 @@ class RMath {
 		@param target  What at.
 		@param up  Up.
 		@return  The matrix. */
-	public static function MatrixLookAt(eye:Vector3, target:Vector3, up:Vector3):Matrix {
+	static function MatrixLookAt(eye:Vector3, target:Vector3, up:Vector3):Matrix {
 		return toMatrix(new Matrix3D().makeLookAt(eye.x, eye.y, eye.z, target.x, target.y, target.z, up.x, up.y, up.z));
 	}
 
@@ -425,7 +426,7 @@ class RMath {
 		@param nearPlane  The near plane.
 		@param farPlane  The far plane.
 		@return  The matrix. */
-	public static function MatrixPerspective(fovY:Float, aspect:Float, nearPlane:Float, farPlane:Float):Matrix {
+	static function MatrixPerspective(fovY:Float, aspect:Float, nearPlane:Float, farPlane:Float):Matrix {
 		return toMatrix(new Matrix3D().makePerspective(fovY, aspect, nearPlane, farPlane));
 	}
 
@@ -438,14 +439,14 @@ class RMath {
 		@param nearPlane  The near plane.
 		@param farPlane  The far plane.
 		@return  The matrix. */
-	public static function MatrixOrtho(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix {
+	static function MatrixOrtho(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix {
 		return toMatrix(new Matrix3D().makeOrthographic(left, right, bottom, top, nearPlane, farPlane));
 	}
 
 	/** Returns the identity quaternion.
 
 		@return  The quaternion. */
-	public static function QuaternionIdentity():Quaternion {
+	static function QuaternionIdentity():Quaternion {
 		return new Vector4(0, 0, 0, 1);
 	}
 
@@ -454,7 +455,7 @@ class RMath {
 		@param axis  The axis.
 		@param angle  The angle, in radians.
 		@return  The quaternion. */
-	public static function QuaternionFromAxisAngle(axis:Vector3, angle:Float):Quaternion {
+	static function QuaternionFromAxisAngle(axis:Vector3, angle:Float):Quaternion {
 		var a = Vector3Normalize(axis), s = Math.sin(angle / 2);
 		return new Vector4(a.x * s, a.y * s, a.z * s, Math.cos(angle / 2));
 	}
@@ -465,7 +466,7 @@ class RMath {
 		@param yaw  About y.
 		@param roll  About z.
 		@return  The quaternion. */
-	public static function QuaternionFromEuler(pitch:Float, yaw:Float, roll:Float):Quaternion {
+	static function QuaternionFromEuler(pitch:Float, yaw:Float, roll:Float):Quaternion {
 		var x0 = Math.cos(pitch * .5),
 			x1 = Math.sin(pitch * .5),
 			y0 = Math.cos(yaw * .5),
@@ -479,7 +480,7 @@ class RMath {
 
 		@param q  The quaternion.
 		@return  The matrix. */
-	public static function QuaternionToMatrix(q:Quaternion):Matrix {
+	static function QuaternionToMatrix(q:Quaternion):Matrix {
 		return toMatrix(new Matrix3D().makeQuaternionRotation(q.x, q.y, q.z, q.w));
 	}
 	#end

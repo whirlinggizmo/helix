@@ -20,6 +20,7 @@ import helix.ray.raylib.HelixRay.*;
 
 /** Holds raylib's rshapes (2D shapes and their collisions), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
+@:allow(helix.ray)
 class RShapes {
 	#if !macro
 	// ---- Shapes ----
@@ -29,7 +30,7 @@ class RShapes {
 		@param posX  The x.
 		@param posY  The y.
 		@param color  The color. */
-	public static function DrawPixel(posX:Int, posY:Int, color:Color):Void {
+	static function DrawPixel(posX:Int, posY:Int, color:Color):Void {
 		quad(posX, posY, 1, 1, color);
 	}
 
@@ -37,7 +38,7 @@ class RShapes {
 
 		@param position  The position.
 		@param color  The color. */
-	public static function DrawPixelV(position:Vector2, color:Color):Void {
+	static function DrawPixelV(position:Vector2, color:Color):Void {
 		quad(position.x, position.y, 1, 1, color);
 	}
 
@@ -48,7 +49,7 @@ class RShapes {
 		@param endPosX  The end's x.
 		@param endPosY  The end's y.
 		@param color  The color. */
-	public static function DrawLine(startPosX:Int, startPosY:Int, endPosX:Int, endPosY:Int, color:Color):Void {
+	static function DrawLine(startPosX:Int, startPosY:Int, endPosX:Int, endPosY:Int, color:Color):Void {
 		line(startPosX + .5, startPosY + .5, endPosX + .5, endPosY + .5, 1, color);
 	}
 
@@ -57,7 +58,7 @@ class RShapes {
 		@param startPos  The start.
 		@param endPos  The end.
 		@param color  The color. */
-	public static function DrawLineV(startPos:Vector2, endPos:Vector2, color:Color):Void {
+	static function DrawLineV(startPos:Vector2, endPos:Vector2, color:Color):Void {
 		line(startPos.x, startPos.y, endPos.x, endPos.y, 1, color);
 	}
 
@@ -67,7 +68,7 @@ class RShapes {
 		@param endPos  The end.
 		@param thick  The thickness, in pixels.
 		@param color  The color. */
-	public static function DrawLineEx(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void {
+	static function DrawLineEx(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void {
 		line(startPos.x, startPos.y, endPos.x, endPos.y, thick, color);
 	}
 
@@ -77,7 +78,7 @@ class RShapes {
 		@param centerY  The center's y.
 		@param radius  The radius.
 		@param color  The color. */
-	public static function DrawCircle(centerX:Int, centerY:Int, radius:Float, color:Color):Void {
+	static function DrawCircle(centerX:Int, centerY:Int, radius:Float, color:Color):Void {
 		circle(centerX, centerY, radius, color);
 	}
 
@@ -86,7 +87,7 @@ class RShapes {
 		@param center  The center.
 		@param radius  The radius.
 		@param color  The color. */
-	public static function DrawCircleV(center:Vector2, radius:Float, color:Color):Void {
+	static function DrawCircleV(center:Vector2, radius:Float, color:Color):Void {
 		circle(center.x, center.y, radius, color);
 	}
 
@@ -96,7 +97,7 @@ class RShapes {
 		@param centerY  The center's y.
 		@param radius  The radius.
 		@param color  The color. */
-	public static function DrawCircleLines(centerX:Int, centerY:Int, radius:Float, color:Color):Void {
+	static function DrawCircleLines(centerX:Int, centerY:Int, radius:Float, color:Color):Void {
 		ring(centerX, centerY, radius, color);
 	}
 
@@ -105,7 +106,7 @@ class RShapes {
 		@param center  The center.
 		@param radius  The radius.
 		@param color  The color. */
-	public static function DrawCircleLinesV(center:Vector2, radius:Float, color:Color):Void {
+	static function DrawCircleLinesV(center:Vector2, radius:Float, color:Color):Void {
 		ring(center.x, center.y, radius, color);
 	}
 
@@ -116,7 +117,7 @@ class RShapes {
 		@param width  The width.
 		@param height  The height.
 		@param color  The color. */
-	public static function DrawRectangle(posX:Int, posY:Int, width:Int, height:Int, color:Color):Void {
+	static function DrawRectangle(posX:Int, posY:Int, width:Int, height:Int, color:Color):Void {
 		quad(posX, posY, width, height, color);
 	}
 
@@ -125,7 +126,7 @@ class RShapes {
 		@param position  The top-left corner.
 		@param size  The width and height.
 		@param color  The color. */
-	public static function DrawRectangleV(position:Vector2, size:Vector2, color:Color):Void {
+	static function DrawRectangleV(position:Vector2, size:Vector2, color:Color):Void {
 		quad(position.x, position.y, size.x, size.y, color);
 	}
 
@@ -133,7 +134,7 @@ class RShapes {
 
 		@param rec  The rectangle.
 		@param color  The color. */
-	public static function DrawRectangleRec(rec:Rectangle, color:Color):Void {
+	static function DrawRectangleRec(rec:Rectangle, color:Color):Void {
 		quad(rec.x, rec.y, rec.width, rec.height, color);
 	}
 
@@ -144,7 +145,7 @@ class RShapes {
 		@param width  The width.
 		@param height  The height.
 		@param color  The color. */
-	public static function DrawRectangleLines(posX:Int, posY:Int, width:Int, height:Int, color:Color):Void {
+	static function DrawRectangleLines(posX:Int, posY:Int, width:Int, height:Int, color:Color):Void {
 		frame(posX, posY, width, height, 1, color);
 	}
 
@@ -153,7 +154,7 @@ class RShapes {
 		@param rec  The rectangle.
 		@param lineThick  The lines' thickness.
 		@param color  The color. */
-	public static function DrawRectangleLinesEx(rec:Rectangle, lineThick:Float, color:Color):Void {
+	static function DrawRectangleLinesEx(rec:Rectangle, lineThick:Float, color:Color):Void {
 		frame(rec.x, rec.y, rec.width, rec.height, lineThick, color);
 	}
 
@@ -163,7 +164,7 @@ class RShapes {
 		@param v2  The second point.
 		@param v3  The third point.
 		@param color  The color. */
-	public static function DrawTriangle(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void {
+	static function DrawTriangle(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void {
 		var w = Runtime.frame.white;
 		flat(w, v1.x, v1.y, 0, 0, color);
 		flat(w, v2.x, v2.y, 0, 0, color);
@@ -175,7 +176,7 @@ class RShapes {
 		@param rec1  One rectangle.
 		@param rec2  The other.
 		@return  True when they overlap. */
-	public static function CheckCollisionRecs(rec1:Rectangle, rec2:Rectangle):Bool {
+	static function CheckCollisionRecs(rec1:Rectangle, rec2:Rectangle):Bool {
 		return rec1.x < rec2.x + rec2.width && rec1.x + rec1.width > rec2.x && rec1.y < rec2.y + rec2.height && rec1.y + rec1.height > rec2.y;
 	}
 
@@ -186,7 +187,7 @@ class RShapes {
 		@param center2  The other's center.
 		@param radius2  Its radius.
 		@return  True when they overlap. */
-	public static function CheckCollisionCircles(center1:Vector2, radius1:Float, center2:Vector2, radius2:Float):Bool {
+	static function CheckCollisionCircles(center1:Vector2, radius1:Float, center2:Vector2, radius2:Float):Bool {
 		var dx = center2.x - center1.x, dy = center2.y - center1.y;
 		return dx * dx + dy * dy <= (radius1 + radius2) * (radius1 + radius2);
 	}
@@ -197,7 +198,7 @@ class RShapes {
 		@param radius  Its radius.
 		@param rec  The rectangle.
 		@return  True when they overlap. */
-	public static function CheckCollisionCircleRec(center:Vector2, radius:Float, rec:Rectangle):Bool {
+	static function CheckCollisionCircleRec(center:Vector2, radius:Float, rec:Rectangle):Bool {
 		var x = Math.max(rec.x, Math.min(center.x, rec.x + rec.width)),
 			y = Math.max(rec.y, Math.min(center.y, rec.y + rec.height));
 		var dx = center.x - x, dy = center.y - y;
@@ -209,7 +210,7 @@ class RShapes {
 		@param point  The point.
 		@param rec  The rectangle.
 		@return  True when it is inside. */
-	public static function CheckCollisionPointRec(point:Vector2, rec:Rectangle):Bool {
+	static function CheckCollisionPointRec(point:Vector2, rec:Rectangle):Bool {
 		return point.x >= rec.x && point.x < rec.x + rec.width && point.y >= rec.y && point.y < rec.y + rec.height;
 	}
 
@@ -219,7 +220,7 @@ class RShapes {
 		@param center  The circle's center.
 		@param radius  Its radius.
 		@return  True when it is inside. */
-	public static function CheckCollisionPointCircle(point:Vector2, center:Vector2, radius:Float):Bool {
+	static function CheckCollisionPointCircle(point:Vector2, center:Vector2, radius:Float):Bool {
 		return CheckCollisionCircles(point, 0, center, radius);
 	}
 	#end

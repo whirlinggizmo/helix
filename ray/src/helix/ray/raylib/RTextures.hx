@@ -20,6 +20,7 @@ import helix.ray.raylib.HelixRay.*;
 
 /** Holds raylib's rtextures (textures, render textures and colors), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
+@:allow(helix.ray)
 class RTextures {
 	#if !macro
 	// ---- Textures ----
@@ -29,14 +30,13 @@ class RTextures {
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
 	@:unimplemented("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)")
-	public static function LoadTexture(fileName:String):Texture2D {
+	static function LoadTexture(fileName:String):Texture2D {
 		throw "LoadTexture is unimplemented";
 	}
 
 	// The texture of an image file `LoadTextureAsync` brought in. A file loaded again shares its first load's texture, and the image goes
 	// to the GPU when first drawn.
 
-	@:allow(helix.ray.raylib)
 	static function loadTexture(fileName:String):Texture2D {
 		var path = normalize(fileName);
 		var image = Runtime.imageNow(path);
@@ -50,7 +50,7 @@ class RTextures {
 	/** Frees a texture: one load of its file, the GPU's copy with the last.
 
 		@param texture  The texture. */
-	public static function UnloadTexture(texture:Texture2D):Void {
+	static function UnloadTexture(texture:Texture2D):Void {
 		if (texture.id != 0)
 			Textures.release(texture.id);
 		texture.id = 0;
@@ -60,7 +60,7 @@ class RTextures {
 
 		@param texture  The texture.
 		@return  True when it holds an image. */
-	public static function IsTextureValid(texture:Texture2D):Bool {
+	static function IsTextureValid(texture:Texture2D):Bool {
 		return texture.id != 0;
 	}
 
@@ -70,7 +70,7 @@ class RTextures {
 		@param posX  The x.
 		@param posY  The y.
 		@param tint  The color it is multiplied by; `WHITE` keeps it as it is. */
-	public static function DrawTexture(texture:Texture2D, posX:Int, posY:Int, tint:Color):Void {
+	static function DrawTexture(texture:Texture2D, posX:Int, posY:Int, tint:Color):Void {
 		DrawTexturePro(texture, new Rectangle(0, 0, texture.width, texture.height), new Rectangle(posX, posY, texture.width, texture.height), new Vector2(),
 			0, tint);
 	}
@@ -80,7 +80,7 @@ class RTextures {
 		@param texture  The texture.
 		@param position  The point.
 		@param tint  The color it is multiplied by. */
-	public static function DrawTextureV(texture:Texture2D, position:Vector2, tint:Color):Void {
+	static function DrawTextureV(texture:Texture2D, position:Vector2, tint:Color):Void {
 		DrawTexturePro(texture, new Rectangle(0, 0, texture.width, texture.height), new Rectangle(position.x, position.y, texture.width, texture.height),
 			new Vector2(), 0, tint);
 	}
@@ -92,7 +92,7 @@ class RTextures {
 		@param rotation  Clockwise, in degrees.
 		@param scale  The scale.
 		@param tint  The color it is multiplied by. */
-	public static function DrawTextureEx(texture:Texture2D, position:Vector2, rotation:Float, scale:Float, tint:Color):Void {
+	static function DrawTextureEx(texture:Texture2D, position:Vector2, rotation:Float, scale:Float, tint:Color):Void {
 		DrawTexturePro(texture, new Rectangle(0, 0, texture.width, texture.height),
 			new Rectangle(position.x, position.y, texture.width * scale, texture.height * scale), new Vector2(), rotation, tint);
 	}
@@ -103,7 +103,7 @@ class RTextures {
 		@param source  The part, in the texture's pixels.
 		@param position  Where its top-left corner goes.
 		@param tint  The color it is multiplied by. */
-	public static function DrawTextureRec(texture:Texture2D, source:Rectangle, position:Vector2, tint:Color):Void {
+	static function DrawTextureRec(texture:Texture2D, source:Rectangle, position:Vector2, tint:Color):Void {
 		DrawTexturePro(texture, source, new Rectangle(position.x, position.y, Math.abs(source.width), Math.abs(source.height)), new Vector2(), 0, tint);
 	}
 
@@ -115,7 +115,7 @@ class RTextures {
 		@param origin  The point it turns about, from dest's top-left corner.
 		@param rotation  Clockwise, in degrees.
 		@param tint  The color it is multiplied by. */
-	public static function DrawTexturePro(texture:Texture2D, source:Rectangle, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void {
+	static function DrawTexturePro(texture:Texture2D, source:Rectangle, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void {
 		if (texture.id == 0 || texture.width == 0 || texture.height == 0)
 			return;
 		var u0 = source.x / texture.width, v0 = source.y / texture.height;
@@ -156,7 +156,7 @@ class RTextures {
 
 		@param color  The color.
 		@return  Red, green, blue and alpha as x, y, z and w. */
-	public static function ColorNormalize(color:Color):Vector4 {
+	static function ColorNormalize(color:Color):Vector4 {
 		return new Vector4(color.r / 255, color.g / 255, color.b / 255, color.a / 255);
 	}
 
@@ -164,7 +164,7 @@ class RTextures {
 
 		@param normalized  Red, green, blue and alpha as x, y, z and w.
 		@return  The color. */
-	public static function ColorFromNormalized(normalized:Vector4):Color {
+	static function ColorFromNormalized(normalized:Vector4):Color {
 		return new Color(Std.int(normalized.x * 255), Std.int(normalized.y * 255), Std.int(normalized.z * 255), Std.int(normalized.w * 255));
 	}
 
@@ -173,7 +173,7 @@ class RTextures {
 		@param color  The color.
 		@param alpha  0 (clear) to 1 (as it is).
 		@return  The new color. */
-	public static function Fade(color:Color, alpha:Float):Color {
+	static function Fade(color:Color, alpha:Float):Color {
 		return ColorAlpha(color, alpha);
 	}
 
@@ -182,7 +182,7 @@ class RTextures {
 		@param color  The color.
 		@param alpha  0 (clear) to 1 (opaque).
 		@return  The new color. */
-	public static function ColorAlpha(color:Color, alpha:Float):Color {
+	static function ColorAlpha(color:Color, alpha:Float):Color {
 		var a = alpha < 0 ? 0. : alpha > 1 ? 1. : alpha;
 		return new Color(color.r, color.g, color.b, Std.int(255 * a));
 	}
@@ -194,7 +194,7 @@ class RTextures {
 		@param width  Its width, in pixels.
 		@param height  Its height.
 		@return  The render texture. */
-	public static function LoadRenderTexture(width:Int, height:Int):RenderTexture2D {
+	static function LoadRenderTexture(width:Int, height:Int):RenderTexture2D {
 		var target = Runtime.graphics.createRenderTarget(width, height);
 		var texture = new Texture2D(Textures.fromHandle(target), width, height);
 		texture.flipped = true;
@@ -205,14 +205,14 @@ class RTextures {
 
 		@param target  The render texture.
 		@return  True when it was. */
-	public static function IsRenderTextureValid(target:RenderTexture2D):Bool {
+	static function IsRenderTextureValid(target:RenderTexture2D):Bool {
 		return target.id != 0;
 	}
 
 	/** Frees a render texture.
 
 		@param target  The render texture. */
-	public static function UnloadRenderTexture(target:RenderTexture2D):Void {
+	static function UnloadRenderTexture(target:RenderTexture2D):Void {
 		if (target.texture.id != 0)
 			Textures.release(target.texture.id);
 		target.id = 0;
@@ -223,12 +223,12 @@ class RTextures {
 		frame's drawing into it starts cleared, to clear black unless `ClearBackground` gives a color.
 
 		@param target  The render texture. */
-	public static function BeginTextureMode(target:RenderTexture2D):Void {
+	static function BeginTextureMode(target:RenderTexture2D):Void {
 		Runtime.frame.toTarget(target.id, target.texture.width, target.texture.height);
 	}
 
 	/** Goes back to drawing on the screen. */
-	public static function EndTextureMode():Void {
+	static function EndTextureMode():Void {
 		Runtime.frame.toScreen();
 	}
 
@@ -236,6 +236,6 @@ class RTextures {
 
 		@param texture  The texture.
 		@param filter  The filter (`TEXTURE_FILTER_*`). */
-	public static function SetTextureFilter(texture:Texture2D, filter:Int):Void {}
+	static function SetTextureFilter(texture:Texture2D, filter:Int):Void {}
 	#end
 }

@@ -27,8 +27,8 @@ SECTIONS = [
     ('RMath', 'raymath: vectors, matrices and quaternions'),
     ('HelixRay', "helix-ray's own: loading in a page"),
 ]
-# A function, its doc comment and any metadata before it: group 2 is the metadata, 3 the name, 4 the parameters, 5 the result.
-FUNCTION = re.compile(r'(\t/\*\*(?:(?!\*/).)*?\*/\n)((?:\t@:[^\n]*\n)*)\tpublic static function (\w+)\((.*?)\):\s*([^{\n]+?)\s*\{', re.S)
+# A function of raylib's (capitalized, as raylib's names are), its doc comment and any metadata before it: group 2 is the metadata, 3 the name, 4 the parameters, 5 the result.
+FUNCTION = re.compile(r'(\t/\*\*(?:(?!\*/).)*?\*/\n)((?:\t@:[^\n]*\n)*)\tstatic function ([A-Z]\w*)\((.*?)\):\s*([^{\n]+?)\s*\{', re.S)
 # A function that refuses to compile (helix.ray.internal.Unimplemented), and the one its message says to use instead, with its parameters.
 UNIMPLEMENTED = re.compile(r'@:unimplemented\("[^"]*?See (\w+)\((.*?)\)"\)')
 

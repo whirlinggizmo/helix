@@ -20,6 +20,7 @@ import helix.ray.raylib.HelixRay.*;
 
 /** Holds raylib's rtext (text in the default font), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
+@:allow(helix.ray)
 class RText {
 	#if !macro
 	// ---- Text ----
@@ -31,7 +32,7 @@ class RText {
 		@param posY  The top edge.
 		@param fontSize  The height of a line, in pixels.
 		@param color  The color. */
-	public static function DrawText(text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void {
+	static function DrawText(text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void {
 		if (fontSize < DefaultFont.HEIGHT)
 			fontSize = DefaultFont.HEIGHT;
 		var spacing = Std.int(fontSize / DefaultFont.HEIGHT),
@@ -60,7 +61,7 @@ class RText {
 		@param text  The text.
 		@param fontSize  The height of a line, in pixels.
 		@return  The width, in pixels. */
-	public static function MeasureText(text:String, fontSize:Int):Int {
+	static function MeasureText(text:String, fontSize:Int):Int {
 		if (text.length == 0)
 			return 0;
 		if (fontSize < DefaultFont.HEIGHT)
@@ -89,7 +90,7 @@ class RText {
 
 		@param posX  The left edge.
 		@param posY  The top edge. */
-	public static function DrawFPS(posX:Int, posY:Int):Void {
+	static function DrawFPS(posX:Int, posY:Int):Void {
 		var fps = GetFPS();
 		var color = fps < 15 ? RED : fps < 30 ? ORANGE : LIME;
 		DrawText('${fps < 10 ? " " : ""}$fps FPS', posX, posY, 20, color);

@@ -21,6 +21,7 @@ import helix.ray.raylib.HelixRay.*;
 
 /** Holds helix-ray's own, not raylib's (loading in a page), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
+@:allow(helix.ray)
 class HelixRay {
 	#if !macro
 	// ---- Loading in a page: helix-ray's own, not raylib's ----
@@ -32,7 +33,7 @@ class HelixRay {
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the texture.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
-	public static function LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void {
+	static function LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
 		Runtime.fetch(path, error -> error == null ? loaded(RTextures.loadTexture(path)) : refuse("LoadTextureAsync", path, error, failed));
 	}
@@ -43,7 +44,7 @@ class HelixRay {
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the model.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
-	public static function LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void):Void {
+	static function LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
 		Runtime.fetch(path, error -> error == null ? loaded(RModels.loadModel(path)) : refuse("LoadModelAsync", path, error, failed));
 	}
@@ -54,7 +55,7 @@ class HelixRay {
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the sound.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
-	public static function LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void):Void {
+	static function LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
 		if (Runtime.audio == null) {
 			Runtime.later(() -> refuse("LoadSoundAsync", path, "InitAudioDevice first", failed));
@@ -74,7 +75,7 @@ class HelixRay {
 		@param fileName  The file.
 		@param loaded  Receives its text.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
-	public static function LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void):Void {
+	static function LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
 		if (Runtime.saves != null && Runtime.saves.hasKey(SAVED + path)) {
 			var text = Runtime.saves.getString(SAVED + path, "");
@@ -90,7 +91,7 @@ class HelixRay {
 		@param fileName  The file.
 		@param loaded  Receives its bytes.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
-	public static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):Void {
+	static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
 		var bytes = RCore.dataNow(path);
 		if (bytes != null) {
@@ -100,7 +101,6 @@ class HelixRay {
 		Runtime.fetch(path, error -> error == null ? loaded(Runtime.files.get(path)) : refuse("LoadFileDataAsync", path, error, failed));
 	}
 
-	@:allow(helix.ray)
 	static function refuse(name:String, path:String, error:String, failed:Null<String->Void>):Void {
 		if (failed != null)
 			failed(error);

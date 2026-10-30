@@ -20,6 +20,7 @@ import helix.ray.raylib.HelixRay.*;
 
 /** Holds raylib's rmodels (3D shapes, models, meshes, materials and rays), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
+@:allow(helix.ray)
 class RModels {
 	#if !macro
 	// ---- 3D shapes ----
@@ -29,7 +30,7 @@ class RModels {
 		@param startPos  The start.
 		@param endPos  The end.
 		@param color  The color. */
-	public static function DrawLine3D(startPos:Vector3, endPos:Vector3, color:Color):Void {
+	static function DrawLine3D(startPos:Vector3, endPos:Vector3, color:Color):Void {
 		var t = Runtime.frame.white;
 		Runtime.frame.vertex(t, true, startPos.x, startPos.y, startPos.z, 0, 0, color);
 		Runtime.frame.vertex(t, true, endPos.x, endPos.y, endPos.z, 0, 0, color);
@@ -42,7 +43,7 @@ class RModels {
 		@param height  Along y.
 		@param length  Along z.
 		@param color  The color. */
-	public static function DrawCube(position:Vector3, width:Float, height:Float, length:Float, color:Color):Void {
+	static function DrawCube(position:Vector3, width:Float, height:Float, length:Float, color:Color):Void {
 		var x = position.x, y = position.y, z = position.z, w = width / 2, h = height / 2, l = length / 2;
 		var f = Runtime.frame, t = f.white;
 		function face(nx:Float, ny:Float, nz:Float, corners:Array<Float>):Void {
@@ -68,7 +69,7 @@ class RModels {
 		@param position  Its center.
 		@param size  Its size.
 		@param color  The color. */
-	public static function DrawCubeV(position:Vector3, size:Vector3, color:Color):Void {
+	static function DrawCubeV(position:Vector3, size:Vector3, color:Color):Void {
 		DrawCube(position, size.x, size.y, size.z, color);
 	}
 
@@ -79,7 +80,7 @@ class RModels {
 		@param height  Along y.
 		@param length  Along z.
 		@param color  The color. */
-	public static function DrawCubeWires(position:Vector3, width:Float, height:Float, length:Float, color:Color):Void {
+	static function DrawCubeWires(position:Vector3, width:Float, height:Float, length:Float, color:Color):Void {
 		var w = width / 2, h = height / 2, l = length / 2;
 		var min = new Vector3(position.x - w, position.y - h, position.z - l),
 			max = new Vector3(position.x + w, position.y + h, position.z + l);
@@ -91,7 +92,7 @@ class RModels {
 		@param position  Its center.
 		@param size  Its size.
 		@param color  The color. */
-	public static function DrawCubeWiresV(position:Vector3, size:Vector3, color:Color):Void {
+	static function DrawCubeWiresV(position:Vector3, size:Vector3, color:Color):Void {
 		DrawCubeWires(position, size.x, size.y, size.z, color);
 	}
 
@@ -99,7 +100,7 @@ class RModels {
 
 		@param box  The box.
 		@param color  The color. */
-	public static function DrawBoundingBox(box:BoundingBox, color:Color):Void {
+	static function DrawBoundingBox(box:BoundingBox, color:Color):Void {
 		var a = box.min, b = box.max;
 		var c = [
 			[a.x, a.y, a.z], [b.x, a.y, a.z], [b.x, b.y, a.z], [a.x, b.y, a.z],
@@ -115,7 +116,7 @@ class RModels {
 		@param centerPos  Its center.
 		@param radius  Its radius.
 		@param color  The color. */
-	public static function DrawSphere(centerPos:Vector3, radius:Float, color:Color):Void {
+	static function DrawSphere(centerPos:Vector3, radius:Float, color:Color):Void {
 		DrawSphereEx(centerPos, radius, 16, 16, color);
 	}
 
@@ -126,7 +127,7 @@ class RModels {
 		@param rings  Rings top to bottom.
 		@param slices  Slices around.
 		@param color  The color. */
-	public static function DrawSphereEx(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void {
+	static function DrawSphereEx(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void {
 		var f = Runtime.frame, t = f.white;
 		function at(r:Int, s:Int):Array<Float> {
 			var phi = Math.PI * r / rings, theta = Math.PI * 2 * s / slices;
@@ -156,7 +157,7 @@ class RModels {
 		@param rings  Rings top to bottom.
 		@param slices  Slices around.
 		@param color  The color. */
-	public static function DrawSphereWires(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void {
+	static function DrawSphereWires(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void {
 		function at(r:Int, s:Int):Vector3 {
 			var phi = Math.PI * r / rings, theta = Math.PI * 2 * s / slices;
 			return new Vector3(centerPos.x
@@ -177,7 +178,7 @@ class RModels {
 		@param centerPos  Its center.
 		@param size  Its size along x and z.
 		@param color  The color. */
-	public static function DrawPlane(centerPos:Vector3, size:Vector2, color:Color):Void {
+	static function DrawPlane(centerPos:Vector3, size:Vector2, color:Color):Void {
 		var f = Runtime.frame, t = f.white, x = size.x / 2, z = size.y / 2;
 		f.nx = 0;
 		f.ny = 1;
@@ -193,7 +194,7 @@ class RModels {
 
 		@param slices  The lines each way.
 		@param spacing  The space between them. */
-	public static function DrawGrid(slices:Int, spacing:Float):Void {
+	static function DrawGrid(slices:Int, spacing:Float):Void {
 		var half = slices / 2;
 		for (i in 0...slices + 1) {
 			var p = (i - half) * spacing, e = half * spacing;
@@ -210,14 +211,13 @@ class RModels {
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
 	@:unimplemented("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)")
-	public static function LoadModel(fileName:String):Model {
+	static function LoadModel(fileName:String):Model {
 		throw "LoadModel is unimplemented";
 	}
 
 	// The model of a glTF or GLB file `LoadModelAsync` brought in: its meshes, their materials and its images. A file loaded again shares
 	// its first load's meshes and textures, with materials of its own; meshes go to the GPU when first drawn.
 
-	@:allow(helix.ray.raylib)
 	static function loadModel(fileName:String):Model {
 		var path = normalize(fileName);
 		var lower = path.toLowerCase();
@@ -240,7 +240,7 @@ class RModels {
 
 		@param mesh  The mesh.
 		@return  The model. */
-	public static function LoadModelFromMesh(mesh:Mesh):Model {
+	static function LoadModelFromMesh(mesh:Mesh):Model {
 		return new Model([mesh], [Models.defaultMaterial(defaultShader())], [0]);
 	}
 
@@ -248,7 +248,7 @@ class RModels {
 
 		@param model  The model.
 		@return  True when it has. */
-	public static function IsModelValid(model:Model):Bool {
+	static function IsModelValid(model:Model):Bool {
 		return model.meshCount > 0;
 	}
 
@@ -256,7 +256,7 @@ class RModels {
 		textures at once.
 
 		@param model  The model. */
-	public static function UnloadModel(model:Model):Void {
+	static function UnloadModel(model:Model):Void {
 		if (model.path != "") {
 			Models.release(model);
 			model.path = "";
@@ -278,7 +278,7 @@ class RModels {
 		@param position  Where.
 		@param scale  The scale, the same on each axis.
 		@param tint  The tint. */
-	public static function DrawModel(model:Model, position:Vector3, scale:Float, tint:Color):Void {
+	static function DrawModel(model:Model, position:Vector3, scale:Float, tint:Color):Void {
 		DrawModelEx(model, position, new Vector3(0, 1, 0), 0, new Vector3(scale, scale, scale), tint);
 	}
 
@@ -290,7 +290,7 @@ class RModels {
 		@param rotationAngle  The angle, in degrees.
 		@param scale  The scale on each axis.
 		@param tint  The tint. */
-	public static function DrawModelEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void {
+	static function DrawModelEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void {
 		var m = new Matrix3D().makeScale(scale.x, scale.y, scale.z);
 		m = new Matrix3D().compose(m, new Matrix3D().makeRotation(rotationAxis.x, rotationAxis.y, rotationAxis.z, rotationAngle * DEG2RAD));
 		m = new Matrix3D().compose(m, new Matrix3D().makeTranslation(position.x, position.y, position.z));
@@ -308,7 +308,7 @@ class RModels {
 		@param mesh  The mesh.
 		@param material  The material.
 		@param transform  The transform. */
-	public static function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void {
+	static function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void {
 		drawMesh(mesh, material, toMatrix3D(transform), WHITE);
 	}
 
@@ -316,14 +316,14 @@ class RModels {
 
 		@param mesh  The mesh.
 		@param isDynamic  Whether it will change (raylib names it `dynamic`, a Haxe keyword); meshes here can't, so it is ignored. */
-	public static function UploadMesh(mesh:Mesh, isDynamic:Bool):Void {
+	static function UploadMesh(mesh:Mesh, isDynamic:Bool):Void {
 		Models.upload(mesh);
 	}
 
 	/** Frees a mesh's GPU buffers.
 
 		@param mesh  The mesh. */
-	public static function UnloadMesh(mesh:Mesh):Void {
+	static function UnloadMesh(mesh:Mesh):Void {
 		Models.unload(mesh);
 	}
 
@@ -333,7 +333,7 @@ class RModels {
 		@param height  Along y.
 		@param length  Along z.
 		@return  The mesh. */
-	public static function GenMeshCube(width:Float, height:Float, length:Float):Mesh {
+	static function GenMeshCube(width:Float, height:Float, length:Float):Mesh {
 		return Models.cube(width, height, length);
 	}
 
@@ -344,7 +344,7 @@ class RModels {
 		@param resX  Divisions along x.
 		@param resZ  Divisions along z.
 		@return  The mesh. */
-	public static function GenMeshPlane(width:Float, length:Float, resX:Int, resZ:Int):Mesh {
+	static function GenMeshPlane(width:Float, length:Float, resX:Int, resZ:Int):Mesh {
 		return Models.plane(width, length, resX, resZ);
 	}
 
@@ -354,14 +354,14 @@ class RModels {
 		@param rings  Rings top to bottom.
 		@param slices  Slices around.
 		@return  The mesh. */
-	public static function GenMeshSphere(radius:Float, rings:Int, slices:Int):Mesh {
+	static function GenMeshSphere(radius:Float, rings:Int, slices:Int):Mesh {
 		return Models.sphere(radius, rings, slices);
 	}
 
 	/** Returns raylib's default material: the default shader, white.
 
 		@return  The material. */
-	public static function LoadMaterialDefault():Material {
+	static function LoadMaterialDefault():Material {
 		return Models.defaultMaterial(defaultShader());
 	}
 
@@ -370,7 +370,7 @@ class RModels {
 		@param material  The material.
 		@param mapType  The map (`MATERIAL_MAP_*`).
 		@param texture  The texture. */
-	public static function SetMaterialTexture(material:Material, mapType:Int, texture:Texture2D):Void {
+	static function SetMaterialTexture(material:Material, mapType:Int, texture:Texture2D):Void {
 		material.maps[mapType].texture = texture;
 	}
 
@@ -379,7 +379,7 @@ class RModels {
 		@param model  The model.
 		@param meshId  The mesh.
 		@param materialId  The material. */
-	public static function SetModelMeshMaterial(model:Model, meshId:Int, materialId:Int):Void {
+	static function SetModelMeshMaterial(model:Model, meshId:Int, materialId:Int):Void {
 		model.meshMaterial[meshId] = materialId;
 	}
 
@@ -387,7 +387,7 @@ class RModels {
 
 		@param mesh  The mesh.
 		@return  The box. */
-	public static function GetMeshBoundingBox(mesh:Mesh):BoundingBox {
+	static function GetMeshBoundingBox(mesh:Mesh):BoundingBox {
 		return Models.bounds(mesh);
 	}
 
@@ -395,7 +395,7 @@ class RModels {
 
 		@param model  The model.
 		@return  The box. */
-	public static function GetModelBoundingBox(model:Model):BoundingBox {
+	static function GetModelBoundingBox(model:Model):BoundingBox {
 		var t = toMatrix3D(model.transform);
 		var min = [Math.POSITIVE_INFINITY, Math.POSITIVE_INFINITY, Math.POSITIVE_INFINITY];
 		var max = [Math.NEGATIVE_INFINITY, Math.NEGATIVE_INFINITY, Math.NEGATIVE_INFINITY];
@@ -425,7 +425,7 @@ class RModels {
 		@param box1  One.
 		@param box2  The other.
 		@return  True when they overlap. */
-	public static function CheckCollisionBoxes(box1:BoundingBox, box2:BoundingBox):Bool {
+	static function CheckCollisionBoxes(box1:BoundingBox, box2:BoundingBox):Bool {
 		return box1.max.x >= box2.min.x && box1.min.x <= box2.max.x && box1.max.y >= box2.min.y && box1.min.y <= box2.max.y && box1.max.z >= box2.min.z
 			&& box1.min.z <= box2.max.z;
 	}
@@ -437,7 +437,7 @@ class RModels {
 		@param center2  The other's center.
 		@param radius2  Its radius.
 		@return  True when they overlap. */
-	public static function CheckCollisionSpheres(center1:Vector3, radius1:Float, center2:Vector3, radius2:Float):Bool {
+	static function CheckCollisionSpheres(center1:Vector3, radius1:Float, center2:Vector3, radius2:Float):Bool {
 		return Vector3Distance(center1, center2) <= radius1 + radius2;
 	}
 
@@ -447,7 +447,7 @@ class RModels {
 		@param center  The sphere's center.
 		@param radius  Its radius.
 		@return  True when they overlap. */
-	public static function CheckCollisionBoxSphere(box:BoundingBox, center:Vector3, radius:Float):Bool {
+	static function CheckCollisionBoxSphere(box:BoundingBox, center:Vector3, radius:Float):Bool {
 		var x = Clamp(center.x, box.min.x, box.max.x),
 			y = Clamp(center.y, box.min.y, box.max.y),
 			z = Clamp(center.z, box.min.z, box.max.z);
@@ -460,7 +460,7 @@ class RModels {
 		@param center  The sphere's center.
 		@param radius  Its radius.
 		@return  The hit. */
-	public static function GetRayCollisionSphere(ray:Ray, center:Vector3, radius:Float):RayCollision {
+	static function GetRayCollisionSphere(ray:Ray, center:Vector3, radius:Float):RayCollision {
 		var result = new RayCollision(false, 0, new Vector3(), new Vector3());
 		var oc = Vector3Subtract(ray.position, center);
 		var b = Vector3DotProduct(oc, ray.direction),
@@ -485,7 +485,7 @@ class RModels {
 		@param ray  The ray.
 		@param box  The box.
 		@return  The hit. */
-	public static function GetRayCollisionBox(ray:Ray, box:BoundingBox):RayCollision {
+	static function GetRayCollisionBox(ray:Ray, box:BoundingBox):RayCollision {
 		var result = new RayCollision(false, 0, new Vector3(), new Vector3());
 		var o = [ray.position.x, ray.position.y, ray.position.z],
 			d = [ray.direction.x, ray.direction.y, ray.direction.z];
@@ -527,7 +527,7 @@ class RModels {
 		@param p2  A corner.
 		@param p3  A corner.
 		@return  The hit. */
-	public static function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3):RayCollision {
+	static function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3):RayCollision {
 		var result = new RayCollision(false, 0, new Vector3(), new Vector3());
 		var e1 = Vector3Subtract(p2, p1), e2 = Vector3Subtract(p3, p1);
 		var p = Vector3CrossProduct(ray.direction, e2),
@@ -558,7 +558,7 @@ class RModels {
 		@param mesh  The mesh.
 		@param transform  The transform.
 		@return  The hit. */
-	public static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision {
+	static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision {
 		var best = new RayCollision(false, 0, new Vector3(), new Vector3());
 		var v = mesh.vertices;
 		if (v == null)
@@ -580,9 +580,7 @@ class RModels {
 	}
 
 	// ---- What the 3D functions share ----
-	@:allow(helix.ray)
 	static var shaderDefault:Null<Shader> = null;
-	@:allow(helix.ray)
 	static final sounds = new Map<String, {
 		loaded:Null<helix.services.audio.Sound>,
 		refs:Int,
@@ -590,18 +588,12 @@ class RModels {
 		cancel:Null<Void->Void>,
 		answers:Array<Null<String>->Void>
 	}>();
-	@:allow(helix.ray)
 	static var deltaFrame = -1;
-	@:allow(helix.ray)
 	static var deltaX = 0.;
-	@:allow(helix.ray)
 	static var deltaY = 0.;
-	@:allow(helix.ray)
 	static var previousX = 0.;
-	@:allow(helix.ray)
 	static var previousY = 0.;
 
-	@:allow(helix.ray)
 	static function defaultShader():Shader {
 		if (shaderDefault == null) {
 			var p = Runtime.frame.defaultProgram;
@@ -615,14 +607,13 @@ class RModels {
 		@param source  The compiled program.
 		@return  The shader. */
 	@:noCompletion
-	public static function makeShader(source:helix.ray.internal.ProgramSource):Shader {
+	static function makeShader(source:helix.ray.internal.ProgramSource):Shader {
 		var p = new helix.ray.internal.Program(Runtime.graphics, source);
 		return new Shader(p.handle, locations(p), p);
 	}
 
 	// raylib's SHADER_LOC_* locations of a program.
 
-	@:allow(helix.ray)
 	static function locations(p:helix.ray.internal.Program):Array<Int> {
 		var locs = [for (_ in 0...32) -1];
 		locs[SHADER_LOC_VERTEX_POSITION] = p.attributes.indexOf("vertexPosition");
@@ -644,7 +635,6 @@ class RModels {
 
 	// The numbers of a shader value as a program writes them.
 
-	@:allow(helix.ray)
 	static function numbers(value:Dynamic):Array<Float> {
 		if (Std.isOfType(value, Array))
 			return [for (x in (value : Array<Dynamic>)) (x : Float)];
@@ -663,7 +653,6 @@ class RModels {
 
 	// raylib's Matrix, named by rows, and helix-math's, stored by columns: m0 to m3 the first column in both.
 
-	@:allow(helix.ray)
 	static function toMatrix3D(m:Matrix):Matrix3D {
 		var out = new Matrix3D(), v = out.values;
 		var all = [
@@ -674,13 +663,11 @@ class RModels {
 		return out;
 	}
 
-	@:allow(helix.ray)
 	static function toMatrix(m:Matrix3D):Matrix {
 		var a = m.values;
 		return new Matrix(a[0], a[4], a[8], a[12], a[1], a[5], a[9], a[13], a[2], a[6], a[10], a[14], a[3], a[7], a[11], a[15]);
 	}
 
-	@:allow(helix.ray)
 	static function cameraView(camera:Camera3D):Matrix3D {
 		var p = camera.position, t = camera.target, u = camera.up;
 		return new Matrix3D().makeLookAt(p.x, p.y, p.z, t.x, t.y, t.z, u.x, u.y, u.z);
@@ -688,7 +675,6 @@ class RModels {
 
 	// raylib's near and far planes, 0.01 and 1000.
 
-	@:allow(helix.ray)
 	static function cameraProjection(camera:Camera3D, aspect:Float):Matrix3D {
 		if (camera.projection == CAMERA_ORTHOGRAPHIC) {
 			var top = camera.fovy / 2, right = top * aspect;
@@ -697,7 +683,6 @@ class RModels {
 		return new Matrix3D().makePerspective(camera.fovy * DEG2RAD, aspect, .01, 1000);
 	}
 
-	@:allow(helix.ray)
 	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix3D, tint:Color):Void {
 		if (mesh.gpu.buffers == null)
 			Models.upload(mesh);

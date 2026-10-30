@@ -20,12 +20,13 @@ import helix.ray.raylib.HelixRay.*;
 
 /** Holds raylib's raudio (sounds), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
+@:allow(helix.ray)
 class RAudio {
 	#if !macro
 	// ---- Audio ----
 
 	/** Opens the audio output, with helix-services' `Audio` over it. In a page it plays once the player's first press lets it. */
-	public static function InitAudioDevice():Void {
+	static function InitAudioDevice():Void {
 		if (Runtime.audio != null)
 			return;
 		#if js
@@ -46,7 +47,7 @@ class RAudio {
 	}
 
 	/** Closes the audio output, stopping and unloading every sound. */
-	public static function CloseAudioDevice():Void {
+	static function CloseAudioDevice():Void {
 		if (Runtime.audio == null)
 			return;
 		for (p in ([Runtime.audio, Runtime.audioDecoder, Runtime.output] : Array<helix.platform.IPollable>))
@@ -62,14 +63,14 @@ class RAudio {
 	/** Returns whether the audio output is open.
 
 		@return  True after `InitAudioDevice`, where the platform has an output. */
-	public static function IsAudioDeviceReady():Bool {
+	static function IsAudioDeviceReady():Bool {
 		return Runtime.audio != null && Runtime.output.available;
 	}
 
 	/** Sets the volume of every sound.
 
 		@param volume  0 (silent) to 1. */
-	public static function SetMasterVolume(volume:Float):Void {
+	static function SetMasterVolume(volume:Float):Void {
 		if (Runtime.audio != null)
 			Runtime.audio.master.volume = volume;
 	}
@@ -77,7 +78,7 @@ class RAudio {
 	/** Returns the volume of every sound.
 
 		@return  0 (silent) to 1. */
-	public static function GetMasterVolume():Float {
+	static function GetMasterVolume():Float {
 		return Runtime.audio == null ? 1 : Runtime.audio.master.volume;
 	}
 
@@ -86,14 +87,13 @@ class RAudio {
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
 	@:unimplemented("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void)")
-	public static function LoadSound(fileName:String):Sound {
+	static function LoadSound(fileName:String):Sound {
 		throw "LoadSound is unimplemented";
 	}
 
 	// A sound file, loaded whole for `LoadSoundAsync`: it decodes in the background, and played before then, it starts once decoded. A
 	// file loaded again shares its first load's decoded sound.
 
-	@:allow(helix.ray.raylib)
 	static function loadSound(fileName:String):Sound {
 		var sound = new Sound();
 		if (Runtime.audio == null) {
@@ -142,7 +142,7 @@ class RAudio {
 	/** Frees a sound, stopping it: one load of its file, the decoded sound with the last.
 
 		@param sound  The sound. */
-	public static function UnloadSound(sound:Sound):Void {
+	static function UnloadSound(sound:Sound):Void {
 		StopSound(sound);
 		sound.unloaded = true;
 		var entry = sounds.get(sound.path);
@@ -161,7 +161,6 @@ class RAudio {
 
 	// A sound's file decoded: it plays as often as it was asked to meanwhile.
 
-	@:allow(helix.ray)
 	static function arrived(sound:Sound, loaded:helix.services.audio.Sound):Void {
 		if (sound.unloaded)
 			return;
@@ -175,14 +174,14 @@ class RAudio {
 
 		@param sound  The sound.
 		@return  True once it is decoded. */
-	public static function IsSoundValid(sound:Sound):Bool {
+	static function IsSoundValid(sound:Sound):Bool {
 		return sound.sound != null;
 	}
 
 	/** Plays a sound from its start, restarting it when it is already playing.
 
 		@param sound  The sound. */
-	public static function PlaySound(sound:Sound):Void {
+	static function PlaySound(sound:Sound):Void {
 		if (Runtime.audio == null || sound.unloaded)
 			return;
 		if (sound.sound == null) {
@@ -198,7 +197,7 @@ class RAudio {
 	/** Stops a sound.
 
 		@param sound  The sound. */
-	public static function StopSound(sound:Sound):Void {
+	static function StopSound(sound:Sound):Void {
 		if (sound.voice != null)
 			sound.voice.stop();
 		sound.voice = null;
@@ -208,7 +207,7 @@ class RAudio {
 
 		@param sound  The sound.
 		@return  True while it plays. */
-	public static function IsSoundPlaying(sound:Sound):Bool {
+	static function IsSoundPlaying(sound:Sound):Bool {
 		return sound.voice != null && sound.voice.playing;
 	}
 
@@ -216,7 +215,7 @@ class RAudio {
 
 		@param sound  The sound.
 		@param volume  0 (silent) to 1. */
-	public static function SetSoundVolume(sound:Sound, volume:Float):Void {
+	static function SetSoundVolume(sound:Sound, volume:Float):Void {
 		sound.volume = volume;
 		if (sound.voice != null)
 			sound.voice.volume = volume;
@@ -226,7 +225,7 @@ class RAudio {
 
 		@param sound  The sound.
 		@param pitch  1 for as recorded, 2 an octave up. */
-	public static function SetSoundPitch(sound:Sound, pitch:Float):Void {
+	static function SetSoundPitch(sound:Sound, pitch:Float):Void {
 		sound.pitch = pitch;
 		if (sound.voice != null)
 			sound.voice.pitch = pitch;
@@ -236,7 +235,7 @@ class RAudio {
 
 		@param sound  The sound.
 		@param pan  0 for left, 0.5 the middle, 1 for right, as raylib's. */
-	public static function SetSoundPan(sound:Sound, pan:Float):Void {
+	static function SetSoundPan(sound:Sound, pan:Float):Void {
 		sound.pan = pan;
 		if (sound.voice != null)
 			sound.voice.pan = pan * 2 - 1;
@@ -249,7 +248,7 @@ class RAudio {
 
 		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
 		@return  The music. */
-	public static function LoadMusicStream(fileName:String):Music {
+	static function LoadMusicStream(fileName:String):Music {
 		var music = new Music();
 		if (Runtime.audio == null) {
 			Runtime.log(4, 'LoadMusicStream: InitAudioDevice first');
@@ -276,14 +275,14 @@ class RAudio {
 
 		@param music  The music.
 		@return  False once its file couldn't be opened. */
-	public static function IsMusicValid(music:Music):Bool {
+	static function IsMusicValid(music:Music):Bool {
 		return !music.failed;
 	}
 
 	/** Stops music and closes it.
 
 		@param music  The music. */
-	public static function UnloadMusicStream(music:Music):Void {
+	static function UnloadMusicStream(music:Music):Void {
 		StopMusicStream(music);
 		if (music.cancel != null)
 			music.cancel();
@@ -297,7 +296,7 @@ class RAudio {
 	/** Plays music from its start, looping while its `looping` is true.
 
 		@param music  The music. */
-	public static function PlayMusicStream(music:Music):Void {
+	static function PlayMusicStream(music:Music):Void {
 		if (Runtime.audio == null || music.failed)
 			return;
 		if (music.sound == null) {
@@ -315,19 +314,19 @@ class RAudio {
 
 		@param music  The music.
 		@return  True while it plays, paused or not. */
-	public static function IsMusicStreamPlaying(music:Music):Bool {
+	static function IsMusicStreamPlaying(music:Music):Bool {
 		return music.waiting || music.voice != null && music.voice.playing;
 	}
 
 	/** Keeps music playing. raylib's programs call it each frame; here the stream feeds itself, so it does nothing.
 
 		@param music  The music. */
-	public static function UpdateMusicStream(music:Music):Void {}
+	static function UpdateMusicStream(music:Music):Void {}
 
 	/** Stops music.
 
 		@param music  The music. */
-	public static function StopMusicStream(music:Music):Void {
+	static function StopMusicStream(music:Music):Void {
 		music.waiting = false;
 		if (music.voice != null)
 			music.voice.stop();
@@ -337,7 +336,7 @@ class RAudio {
 	/** Pauses music where it is.
 
 		@param music  The music. */
-	public static function PauseMusicStream(music:Music):Void {
+	static function PauseMusicStream(music:Music):Void {
 		if (music.voice != null)
 			music.voice.paused = true;
 	}
@@ -345,7 +344,7 @@ class RAudio {
 	/** Resumes paused music.
 
 		@param music  The music. */
-	public static function ResumeMusicStream(music:Music):Void {
+	static function ResumeMusicStream(music:Music):Void {
 		if (music.voice != null)
 			music.voice.paused = false;
 	}
@@ -354,7 +353,7 @@ class RAudio {
 
 		@param music  The music.
 		@param volume  0 (silent) to 1. */
-	public static function SetMusicVolume(music:Music, volume:Float):Void {
+	static function SetMusicVolume(music:Music, volume:Float):Void {
 		music.volume = volume;
 		if (music.voice != null)
 			music.voice.volume = volume;
@@ -364,7 +363,7 @@ class RAudio {
 
 		@param music  The music.
 		@param pitch  1 for as recorded. */
-	public static function SetMusicPitch(music:Music, pitch:Float):Void {
+	static function SetMusicPitch(music:Music, pitch:Float):Void {
 		music.pitch = pitch;
 		if (music.voice != null)
 			music.voice.pitch = pitch;
@@ -374,7 +373,7 @@ class RAudio {
 
 		@param music  The music.
 		@param pan  0 for left, 0.5 the middle, 1 for right, as raylib's. */
-	public static function SetMusicPan(music:Music, pan:Float):Void {
+	static function SetMusicPan(music:Music, pan:Float):Void {
 		music.pan = pan;
 		if (music.voice != null)
 			music.voice.pan = pan * 2 - 1;
