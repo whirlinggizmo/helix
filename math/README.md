@@ -24,4 +24,4 @@ build with `-lib helix-math` alone.
 ## Credit
 
 Portions of `Matrix3D` are from [raylib](https://www.raylib.com) 5.5's raymath, by Ramon Santamaria (@raysan5) and its contributors,
-altered; zlib license, `vendor/raylib-LICENSE`.
+altered; zlib license, `vendor/raylib/LICENSE`.
