@@ -7,7 +7,7 @@ What helix-2.0 is for. When a choice is unclear, these decide it.
    before it can be used, the API hasn't met this goal: the fix is in the API, not the explanation. The test is a fresh agent, given
    the API and nothing else, building a working game on the libraries.
 2. **The smallest footprint on the web,** balanced against features, performance and clarity. Size is weighed on every feature, and a
-   program carries only what it constructs. Native size isn't a concern.
+   program carries only what it uses. Native size isn't a concern.
 3. **The same codebase built for a native target, ahead of time:** for performance, and for platforms that require native code.
 4. **Rapid iteration during development,** without paying for it in a release build.
 5. **Existing libraries through the C ABI:** compiled to WebAssembly in the browser, linked as `.a`/`.so` natively.

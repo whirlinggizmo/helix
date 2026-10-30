@@ -20,7 +20,10 @@ it without what it sits on: assets, input, audio and time need each other, so th
 - A haxelib with a README beside its `haxelib.json`: what it is, what it depends on and how to add it to a build.
 - Self-sufficient: its tests, examples and size ladder (`<library>/tests/sizes/`) build with it and the libraries below, its C
   vendored in it. Its examples build from hxml files beside them with Haxe alone, each showing one thing.
-- A program constructs what it uses from it, and calls each thing's `poll` from its own loop. The library runs no loop.
+- Platform and services: a program constructs what it uses from them, and calls each thing's `poll` from its own loop. They run no
+  loop.
+- The layers above: they may own the loop, and build a feature when its API is first touched where the API they match requires it. A
+  game on them carries what it uses (DECISIONS 15).
 
 ## platform versus services
 

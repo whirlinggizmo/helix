@@ -61,3 +61,11 @@ Why things are the way they are, numbered, in order.
     `onTextInput` and `textInputEnabled` are. Typing a name in trial 8 needed more than a frame's characters: Backspace with its
     repeats, Enter to end, the game's keys left out meanwhile, which is a text field, a UI control (Flixel's `FlxInputText`). The
     services' `Keyboard` reads keys alone.
+
+15. **Platform and services are constructed; the layers above may wear a known engine's API.** The libraries were split so an engine
+    above gains their small size, and so a game on it needs no knowledge of them: it is written against an API agents were already
+    trained on (GOALS 1), mirrored exactly where it is provided and missing, not altered, where it isn't, so a gap is a compile error. A
+    mirrored API may need what platform and services refuse: owning the loop (a page calls its program each frame), or a hub every
+    program touches (Flash's `stage`, Godot's `Input`) building a feature when first asked for it. So the rule that a program constructs
+    what it uses binds platform and services, and the layers above carry what a game uses, through what it references. What the
+    familiar API costs is measured by a size ladder against the same programs written on the services.

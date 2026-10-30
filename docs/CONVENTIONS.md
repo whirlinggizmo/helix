@@ -9,12 +9,15 @@ There are no users to protect. When an API changes, every caller changes with it
 Nothing keeps an old name, an old signature or an old behavior alive beside the new one: no aliases, deprecated wrappers,
 compatibility flags or shims.
 
-## A program constructs what it uses
+## Platform and services are constructed
 
-A library offers classes a program makes: adapters, services, caches, timers. Nothing in a library is a static that builds a service
-when first touched, installs itself into a loop, or is bundled with everything else, so a program carries only what it constructs,
-and `-dce full` drops the rest. A thing a program makes for itself is an ordinary class with instances; what
-several of them share is passed in, not reached for.
+Platform and services offer classes a program makes: adapters, services, caches, timers. Nothing in them is a static that builds a
+service when first touched, installs itself into a loop, or is bundled with everything else, so a program carries only what it
+constructs, and `-dce full` drops the rest. A thing a program makes for itself is an ordinary class with instances; what several of
+them share is passed in, not reached for.
+
+The layers above (the runner, an engine wearing a known API) may own the loop, and build a feature when its API is first touched where
+the API they match requires it. A game on them carries what it uses (DECISIONS 15).
 
 ## Names
 

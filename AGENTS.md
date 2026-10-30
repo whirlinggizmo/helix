@@ -6,9 +6,11 @@ next is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Rules
 
-- **A program constructs what it uses.** Nothing in a library installs itself, runs a loop, is reached through a static that builds it,
-  or is bundled with everything else. When a design answer starts from "the engine does it this way", ask instead what a program using
-  the library directly would construct.
+- **Platform and services are constructed.** A program constructs the adapters and services it uses; nothing in them installs itself,
+  runs a loop, is reached through a static that builds it, or is bundled with everything else. When a design answer for them starts
+  from "the engine does it this way", ask instead what a program using them directly would construct. The layers above (the runner, an
+  engine wearing a known API) may own the loop, and build a feature when its API is first touched where the API they match requires it
+  (DECISIONS 15).
 - **HeliX is prior art, not a source.** [HeliX](https://github.com/whirlinggizmo/helix), and the earlier C frameworks (`../wgrender-c`,
   `../libwgf`), are read for how they did a thing and the platform quirks they found. Then write this library's own code. Don't name
   libwgf in code or docs.
