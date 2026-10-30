@@ -242,7 +242,7 @@ def member_block(members):
             lines+=doc_lines(node_,'  ')
     return lines+['']
 
-# A member that only refuses to compile, naming a raylib function helix-ray doesn't have (helix-ray's Missing.refuse).
+# A member that only refuses to compile, naming a raylib function helix-ray doesn't have (helix.platform.macros.Build).
 REFUSAL=re.compile(r"^raylib's `(\w+)` \(([\w.]+)\): not in helix-ray yet")
 # A heading comment in a class's source, `// ---- Title ----`, naming the members after it (helix-ray's Raylib); the generator's markers
 # aren't headings.

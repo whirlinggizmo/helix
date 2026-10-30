@@ -1214,11 +1214,8 @@ static function IsGamepadButtonUp(gamepad:Int, button:Int):Bool
 static function GetGamepadButtonPressed():Int
 static function GetGamepadAxisCount(gamepad:Int):Int
 static function GetGamepadAxisMovement(gamepad:Int, axis:Int):Float
-static function FileExists(fileName:String):Bool
-static function LoadFileText(fileName:String):Null<String>
 static function UnloadFileText(text:Null<String>):Void
 static function SaveFileText(fileName:String, text:String):Bool
-static function LoadFileData(fileName:String):Null<haxe.io.Bytes>
 static function UnloadFileData(data:Null<haxe.io.Bytes>):Void
 static function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool
 static function SetLoadFileDataCallback(callback:Null<(fileName:String) -> Null<haxe.io.Bytes>>):Void
@@ -1388,21 +1385,12 @@ static function EndShaderMode():Void
   - `gamepad`: The gamepad, 0 to 3.
   - `axis`: The axis (`GAMEPAD_AXIS_*`).
   - returns: The value.
-- `FileExists`: raylib's check for a file, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `FileExistsAsync` answers it.
-  - `fileName`: The file.
-  - returns: Never returns: a call doesn't compile.
-- `LoadFileText`: raylib's text file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileTextAsync` reads it.
-  - `fileName`: The file.
-  - returns: Never returns: a call doesn't compile.
 - `UnloadFileText`: Frees text `LoadFileTextAsync` gave. There is nothing to free here.
   - `text`: The text.
 - `SaveFileText`: Writes a text file: through the program's `SetSaveFileTextCallback` when it has one, else kept across runs (in a page, in its storage; natively, in the program's data directory), kept at the end of the frame.
   - `fileName`: The file.
   - `text`: Its text.
   - returns: True when it was written, or will be.
-- `LoadFileData`: raylib's file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileDataAsync` reads it.
-  - `fileName`: The file.
-  - returns: Never returns: a call doesn't compile.
 - `UnloadFileData`: Frees bytes `LoadFileDataAsync` gave. There is nothing to free here.
   - `data`: The bytes.
 - `SaveFileData`: Writes a file's bytes: through the program's `SetSaveFileDataCallback` when it has one, else kept across runs as `SaveFileText`'s are.
@@ -1633,7 +1621,6 @@ static function CheckCollisionPointCircle(point:Vector2, center:Vector2, radius:
 ### rtextures: textures, render textures and colors (raylib/RTextures.hx)
 
 ```haxe
-static function LoadTexture(fileName:String):Texture2D
 static function UnloadTexture(texture:Texture2D):Void
 static function IsTextureValid(texture:Texture2D):Bool
 static function DrawTexture(texture:Texture2D, posX:Int, posY:Int, tint:Color):Void
@@ -1653,9 +1640,6 @@ static function EndTextureMode():Void
 static function SetTextureFilter(texture:Texture2D, filter:Int):Void
 ```
 
-- `LoadTexture`: raylib's texture load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadTextureAsync` loads it.
-  - `fileName`: The file.
-  - returns: Never returns: a call doesn't compile.
 - `UnloadTexture`: Frees a texture: one load of its file, the GPU's copy with the last.
   - `texture`: The texture.
 - `IsTextureValid`: Returns whether a texture was loaded.
@@ -1759,7 +1743,6 @@ static function DrawSphereEx(centerPos:Vector3, radius:Float, rings:Int, slices:
 static function DrawSphereWires(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void
 static function DrawPlane(centerPos:Vector3, size:Vector2, color:Color):Void
 static function DrawGrid(slices:Int, spacing:Float):Void
-static function LoadModel(fileName:String):Model
 static function LoadModelFromMesh(mesh:Mesh):Model
 static function IsModelValid(model:Model):Bool
 static function UnloadModel(model:Model):Void
@@ -1835,9 +1818,6 @@ static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCol
 - `DrawGrid`: Draws a grid on the XZ plane, centered on the origin: its center lines darker, as raylib's.
   - `slices`: The lines each way.
   - `spacing`: The space between them.
-- `LoadModel`: raylib's model load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAsync` loads it.
-  - `fileName`: The file.
-  - returns: Never returns: a call doesn't compile.
 - `LoadModelFromMesh`: Makes a model of one mesh, with the default material.
   - `mesh`: The mesh.
   - returns: The model.
@@ -1943,7 +1923,6 @@ static function CloseAudioDevice():Void
 static function IsAudioDeviceReady():Bool
 static function SetMasterVolume(volume:Float):Void
 static function GetMasterVolume():Float
-static function LoadSound(fileName:String):Sound
 static function UnloadSound(sound:Sound):Void
 static function IsSoundValid(sound:Sound):Bool
 static function PlaySound(sound:Sound):Void
@@ -1974,9 +1953,6 @@ static function SetMusicPan(music:Music, pan:Float):Void
   - `volume`: 0 (silent) to 1.
 - `GetMasterVolume`: Returns the volume of every sound.
   - returns: 0 (silent) to 1.
-- `LoadSound`: raylib's sound load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadSoundAsync` loads it.
-  - `fileName`: The file.
-  - returns: Never returns: a call doesn't compile.
 - `UnloadSound`: Frees a sound, stopping it: one load of its file, the decoded sound with the last.
   - `sound`: The sound.
 - `IsSoundValid`: Returns whether a sound was loaded.
@@ -2063,6 +2039,24 @@ static function FileExistsAsync(fileName:String, answer:Bool -> Void):Void
 - `FileExistsAsync`: Answers whether a file exists: helix-ray's own, in place of raylib's `FileExists`. One `SaveFileText` or `SaveFileData` wrote exists, as does one of the program's; finding one of the program's reads it, so a load of it after answers at once. The answer comes at a later frame, never during the call.
   - `fileName`: The file.
   - `answer`: Receives true when it exists.
+
+### raylib's loads, which wait for a file: each refuses to compile, naming the load to use
+
+```haxe
+static macro function FileExists(fileName:String):Bool
+static macro function LoadFileText(fileName:String):ExprOf<Null<String>>
+static macro function LoadFileData(fileName:String):ExprOf<Null<haxe.io.Bytes>>
+static macro function LoadTexture(fileName:String):Texture2D
+static macro function LoadModel(fileName:String):Model
+static macro function LoadSound(fileName:String):Sound
+```
+
+- `FileExists`: raylib's check for a file, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `FileExistsAsync` answers it.
+- `LoadFileText`: raylib's text file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileTextAsync` reads it.
+- `LoadFileData`: raylib's file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileDataAsync` reads it.
+- `LoadTexture`: raylib's texture load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadTextureAsync` loads it.
+- `LoadModel`: raylib's model load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAsync` loads it.
+- `LoadSound`: raylib's sound load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadSoundAsync` loads it.
 
 ### Shaders, compiled as the program builds
 

@@ -4,7 +4,8 @@
 Raylib.hx has RCore, RShapes, RTextures, RText, RModels, RAudio and HelixRay, in raylib's module order, and Raymath.hx has RMath: every
 raylib function of those sections in ray/src/helix/ray/raylib/, as an inline forward with its doc comment, under a heading naming its
 module and file. Then every function of raylib's (ray/vendor/raylib/raylib_api.json and raymath_api.json, raylib's own description of
-its API) that isn't written, with raylib's signature and `@:unimplemented`, so a call doesn't compile, saying so. So each file reads like
+its API) that isn't written, and the sections' functions marked `@:unimplemented`, each as a macro with raylib's signature whose call
+reports its message where it is (helix.platform.macros.Build), so the build stops there and the call still has raylib's type. So each file reads like
 its header, raylib.h or raymath.h, and a call costs nothing more. A struct of raylib's that helix-ray has no type for is written as a
 type of its own, with raylib's fields, in a file that says it is generated; a type written by hand in its place is left alone.
 
@@ -53,8 +54,8 @@ OPAQUE = {'float3': 'Array<Float>', 'float16': 'Array<Float>', 'rAudioBuffer *':
 KEYWORDS = {'dynamic': 'isDynamic'}
 
 
-def parameters(text):
-    """The names of a parameter list, in order: its `?` and types and defaults left out."""
+def parameters(text, typed=False):
+    """The names of a parameter list, in order: its `?` and types and defaults left out; or, typed, each as `name:type`."""
     names, depth, current = [], 0, ''
     # A function type's arrow isn't a closing angle bracket.
     for c in text.replace('->', '~~'):
@@ -69,6 +70,8 @@ def parameters(text):
             current += c
     if current.strip():
         names.append(current)
+    if typed:
+        return [n.strip().split('=')[0].strip() for n in names]
     return [n.strip().lstrip('?').split(':')[0].split('=')[0].strip() for n in names]
 
 
@@ -121,10 +124,38 @@ def wrapped(line):
     in."""
     if len(line.expandtabs(4)) <= 160:
         return [line]
-    cut = line.rindex(', ', 0, 160 - 3)
-    while len(line[:cut + 1].expandtabs(4)) > 160:
-        cut = line.rindex(', ', 0, cut)
+    # Broken only between parameters, never inside a parameter's type.
+    commas, depth = [], 0
+    for i, c in enumerate(line):
+        depth += c in '(<[' 
+        depth -= c in ')>]'
+        if c == ',' and depth == 1 and len(line[:i + 1].expandtabs(4)) < 160:
+            commas.append(i)
+    cut = commas[-1]
     return [line[:cut + 1], '\t\t\t' + line[cut + 2:]]
+
+
+def qualified(haxe):
+    """A Haxe type with helix-ray's types given their package, as an expression typed in the program's own scope needs them."""
+    names = {p.stem for p in RAY.glob('*.hx')}
+    return re.sub(r'\b([A-Z]\w*)\b', lambda m: f'helix.ray.{m.group(1)}' if m.group(1) in names else m.group(1), haxe)
+
+
+def refusal(name, params, result, message, doc):
+    """A function helix-ray declares but doesn't have, as a macro: a call reports message where it is and has raylib's result type."""
+    rest = {n for n, t in params if re.match(r'(haxe\.extern\.)?Rest<', t)}
+    signature = ', '.join(f'{n}:Array<Expr>' if n in rest else f'{n}:ExprOf<{t}>' for n, t in params)
+    becomes = {'Void': '{}', 'Int': '(0 : Int)', 'Float': '(0.0 : Float)', 'Bool': '(false : Bool)'}.get(result, f'(null : {qualified(result)})')
+    return [f'\t/** {doc} */', *wrapped(f'\tpublic static macro function {name}({signature}):ExprOf<{result}>'),
+            *body(f'\t\treturn helix.platform.macros.Build.unimplemented("{message}", macro{becomes if becomes.startswith("(") else " " + becomes});'), '']
+
+
+def body(line):
+    """A refusal's body as the formatter lays it out: past 160 columns, broken after the message, the result three tabs in."""
+    if len(line.expandtabs(4)) <= 160:
+        return [line]
+    head, tail = line.rsplit(', macro', 1)
+    return [head + ',', '\t\t\tmacro' + tail]
 
 
 def stub(f, header, callbacks):
@@ -132,40 +163,48 @@ def stub(f, header, callbacks):
     params, given = [], f.get('params', [])
     for i, p in enumerate(given):
         if p['type'] == '...':
-            params.append('args:haxe.extern.Rest<Dynamic>')
+            params.append(('args', 'haxe.extern.Rest<Dynamic>'))
             continue
         following = given[i + 1]['name'].lower() if i + 1 < len(given) else ''
         many = 'parameter' if p['name'].endswith('s') or 'count' in following or following == 'instances' else False
-        params.append(f"{KEYWORDS.get(p['name'], p['name'])}:{haxe_type(p['type'], callbacks, many)}")
+        params.append((KEYWORDS.get(p['name'], p['name']), haxe_type(p['type'], callbacks, many)))
     name = f['name']
-    doc = f"raylib's `{name}` ({header}): not in helix-ray yet, so a call to it doesn't compile. {sentence(f.get('description', ''))}"
-    return [f'\t/** {doc.strip()} */', f'\t@:unimplemented("{name}: Not implemented")',
-            *wrapped(f'\tpublic static inline function {name}({", ".join(params)}):{haxe_type(f["returnType"], callbacks, True)}'),
-            f'\t\tthrow "{name} is unimplemented";', '']
+    doc = f"raylib's `{name}` ({header}): not in helix-ray yet, so a call to it doesn't compile. {sentence(f.get('description', ''))}".strip()
+    return refusal(name, params, haxe_type(f['returnType'], callbacks, True), f'{name}: Not implemented', doc)
 
 
 def generated(sections, api, header, written):
-    """A file's generated part, between and including its markers: forwards to its sections, then raylib's functions not written."""
+    """A file's generated part, between and including its markers: forwards to its sections, then the functions a program can't call:
+    the sections' marked `@:unimplemented`, and raylib's not written."""
     out = [BEGIN, '\t// Each function here forwards to its section, where it is written; edit it there, then run python3 tools/gen_raylib.py.',
            '\t#if !macro']
+    refused = []
     for name, title in sections:
         source = (RAY / 'raylib' / f'{name}.hx').read_text(encoding='utf-8')
         out += ['', f'\t// ---- {title} (raylib/{name}.hx) ----', '']
         for m in FUNCTION.finditer(source):
             doc, meta, function, params, result = m.group(1), m.group(2), m.group(3), ' '.join(m.group(4).split()), m.group(5).strip()
+            marked = re.search(r'@:unimplemented\("((?:[^"\\]|\\.)*)"\)', meta)
+            if marked:
+                # Declared here as a macro, so the build stops at the program's call, with the section's message.
+                typed = [(n.lstrip('?'), t) for n, t in (p.split(':', 1) for p in parameters(params, True))]
+                refused += refusal(function, typed, result, marked.group(1), ' '.join(doc.strip()[3:-2].split('@param')[0].split()))
+                continue
             # A rest parameter is spread into the call, as its values, not passed as one.
             rest = set(re.findall(r'(\w+):(?:haxe\.extern\.)?Rest<', params))
             call = f'{name}.{function}({", ".join("..." + n if n in rest else n for n in parameters(params))})'
-            # A function that doesn't compile is declared here as it is in its section, so the build stops at the program's call.
-            body = f'throw "{function} is unimplemented"' if '@:unimplemented' in meta else call if result == 'Void' else f'return {call}'
+            body = call if result == 'Void' else f'return {call}'
             out += [doc.rstrip('\n'), *meta.splitlines(), f'\tpublic static inline function {function}({params}):{result}', f'\t\t{body};', '']
+    out += ['\t#end', '']
+    if refused:
+        out += ["\t// ---- raylib's loads, which wait for a file: each refuses to compile, naming the load to use ----", ''] + refused
     missing = [f for f in api['functions'] if f['name'] not in written]
     if missing:
-        out += ['', f"\t// ---- {header}'s functions helix-ray doesn't have yet: each refuses to compile, saying so ----", '']
+        out += [f"\t// ---- {header}'s functions helix-ray doesn't have yet: each refuses to compile, saying so ----", '']
         callbacks = callback_types(api)
         for f in missing:
             out += stub(f, header, callbacks)
-    out += ['\t#end', '', END]
+    out += [END]
     # As the formatter lays it out, so formatting leaves it as it is: no blank line just inside the #if or before its #end, and never two.
     lines = []
     for line in out:

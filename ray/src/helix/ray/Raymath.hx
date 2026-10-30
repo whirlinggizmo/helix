@@ -3,7 +3,9 @@
 // of this file (the constants and the refusals of what isn't here) is written by hand.
 package helix.ray;
 
-#if !macro
+#if macro
+import haxe.macro.Expr;
+#else
 import helix.ray.raylib.RMath;
 #end
 
@@ -420,479 +422,389 @@ class Raymath {
 		@return  The matrix. */
 	public static inline function QuaternionToMatrix(q:Quaternion):Matrix
 		return RMath.QuaternionToMatrix(q);
+	#end
 
 	// ---- raymath.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
 
 	/** raylib's `Normalize` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Normalize: Not implemented")
-	public static inline function Normalize(value:Float, start:Float, end:Float):Float
-		throw "Normalize is unimplemented";
+	public static macro function Normalize(value:ExprOf<Float>, start:ExprOf<Float>, end:ExprOf<Float>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("Normalize: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `Wrap` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Wrap: Not implemented")
-	public static inline function Wrap(value:Float, min:Float, max:Float):Float
-		throw "Wrap is unimplemented";
+	public static macro function Wrap(value:ExprOf<Float>, min:ExprOf<Float>, max:ExprOf<Float>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("Wrap: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `FloatEquals` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("FloatEquals: Not implemented")
-	public static inline function FloatEquals(x:Float, y:Float):Int
-		throw "FloatEquals is unimplemented";
+	public static macro function FloatEquals(x:ExprOf<Float>, y:ExprOf<Float>):ExprOf<Int>
+		return helix.platform.macros.Build.unimplemented("FloatEquals: Not implemented", macro(0 : Int));
 
 	/** raylib's `Vector2AddValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2AddValue: Not implemented")
-	public static inline function Vector2AddValue(v:Vector2, add:Float):Vector2
-		throw "Vector2AddValue is unimplemented";
+	public static macro function Vector2AddValue(v:ExprOf<Vector2>, add:ExprOf<Float>):ExprOf<Vector2>
+		return helix.platform.macros.Build.unimplemented("Vector2AddValue: Not implemented", macro(null : helix.ray.Vector2));
 
 	/** raylib's `Vector2SubtractValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2SubtractValue: Not implemented")
-	public static inline function Vector2SubtractValue(v:Vector2, sub:Float):Vector2
-		throw "Vector2SubtractValue is unimplemented";
+	public static macro function Vector2SubtractValue(v:ExprOf<Vector2>, sub:ExprOf<Float>):ExprOf<Vector2>
+		return helix.platform.macros.Build.unimplemented("Vector2SubtractValue: Not implemented", macro(null : helix.ray.Vector2));
 
 	/** raylib's `Vector2DotProduct` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2DotProduct: Not implemented")
-	public static inline function Vector2DotProduct(v1:Vector2, v2:Vector2):Float
-		throw "Vector2DotProduct is unimplemented";
+	public static macro function Vector2DotProduct(v1:ExprOf<Vector2>, v2:ExprOf<Vector2>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("Vector2DotProduct: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `Vector2DistanceSqr` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2DistanceSqr: Not implemented")
-	public static inline function Vector2DistanceSqr(v1:Vector2, v2:Vector2):Float
-		throw "Vector2DistanceSqr is unimplemented";
+	public static macro function Vector2DistanceSqr(v1:ExprOf<Vector2>, v2:ExprOf<Vector2>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("Vector2DistanceSqr: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `Vector2Angle` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2Angle: Not implemented")
-	public static inline function Vector2Angle(v1:Vector2, v2:Vector2):Float
-		throw "Vector2Angle is unimplemented";
+	public static macro function Vector2Angle(v1:ExprOf<Vector2>, v2:ExprOf<Vector2>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("Vector2Angle: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `Vector2LineAngle` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2LineAngle: Not implemented")
-	public static inline function Vector2LineAngle(start:Vector2, end:Vector2):Float
-		throw "Vector2LineAngle is unimplemented";
+	public static macro function Vector2LineAngle(start:ExprOf<Vector2>, end:ExprOf<Vector2>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("Vector2LineAngle: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `Vector2Negate` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2Negate: Not implemented")
-	public static inline function Vector2Negate(v:Vector2):Vector2
-		throw "Vector2Negate is unimplemented";
+	public static macro function Vector2Negate(v:ExprOf<Vector2>):ExprOf<Vector2>
+		return helix.platform.macros.Build.unimplemented("Vector2Negate: Not implemented", macro(null : helix.ray.Vector2));
 
 	/** raylib's `Vector2Divide` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2Divide: Not implemented")
-	public static inline function Vector2Divide(v1:Vector2, v2:Vector2):Vector2
-		throw "Vector2Divide is unimplemented";
+	public static macro function Vector2Divide(v1:ExprOf<Vector2>, v2:ExprOf<Vector2>):ExprOf<Vector2>
+		return helix.platform.macros.Build.unimplemented("Vector2Divide: Not implemented", macro(null : helix.ray.Vector2));
 
 	/** raylib's `Vector2Transform` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2Transform: Not implemented")
-	public static inline function Vector2Transform(v:Vector2, mat:Matrix):Vector2
-		throw "Vector2Transform is unimplemented";
+	public static macro function Vector2Transform(v:ExprOf<Vector2>, mat:ExprOf<Matrix>):ExprOf<Vector2>
+		return helix.platform.macros.Build.unimplemented("Vector2Transform: Not implemented", macro(null : helix.ray.Vector2));
 
 	/** raylib's `Vector2Reflect` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2Reflect: Not implemented")
-	public static inline function Vector2Reflect(v:Vector2, normal:Vector2):Vector2
-		throw "Vector2Reflect is unimplemented";
+	public static macro function Vector2Reflect(v:ExprOf<Vector2>, normal:ExprOf<Vector2>):ExprOf<Vector2>
+		return helix.platform.macros.Build.unimplemented("Vector2Reflect: Not implemented", macro(null : helix.ray.Vector2));
 
 	/** raylib's `Vector2Min` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2Min: Not implemented")
-	public static inline function Vector2Min(v1:Vector2, v2:Vector2):Vector2
-		throw "Vector2Min is unimplemented";
+	public static macro function Vector2Min(v1:ExprOf<Vector2>, v2:ExprOf<Vector2>):ExprOf<Vector2>
+		return helix.platform.macros.Build.unimplemented("Vector2Min: Not implemented", macro(null : helix.ray.Vector2));
 
 	/** raylib's `Vector2Max` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2Max: Not implemented")
-	public static inline function Vector2Max(v1:Vector2, v2:Vector2):Vector2
-		throw "Vector2Max is unimplemented";
+	public static macro function Vector2Max(v1:ExprOf<Vector2>, v2:ExprOf<Vector2>):ExprOf<Vector2>
+		return helix.platform.macros.Build.unimplemented("Vector2Max: Not implemented", macro(null : helix.ray.Vector2));
 
 	/** raylib's `Vector2Rotate` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2Rotate: Not implemented")
-	public static inline function Vector2Rotate(v:Vector2, angle:Float):Vector2
-		throw "Vector2Rotate is unimplemented";
+	public static macro function Vector2Rotate(v:ExprOf<Vector2>, angle:ExprOf<Float>):ExprOf<Vector2>
+		return helix.platform.macros.Build.unimplemented("Vector2Rotate: Not implemented", macro(null : helix.ray.Vector2));
 
 	/** raylib's `Vector2MoveTowards` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2MoveTowards: Not implemented")
-	public static inline function Vector2MoveTowards(v:Vector2, target:Vector2, maxDistance:Float):Vector2
-		throw "Vector2MoveTowards is unimplemented";
+	public static macro function Vector2MoveTowards(v:ExprOf<Vector2>, target:ExprOf<Vector2>, maxDistance:ExprOf<Float>):ExprOf<Vector2>
+		return helix.platform.macros.Build.unimplemented("Vector2MoveTowards: Not implemented", macro(null : helix.ray.Vector2));
 
 	/** raylib's `Vector2Invert` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2Invert: Not implemented")
-	public static inline function Vector2Invert(v:Vector2):Vector2
-		throw "Vector2Invert is unimplemented";
+	public static macro function Vector2Invert(v:ExprOf<Vector2>):ExprOf<Vector2>
+		return helix.platform.macros.Build.unimplemented("Vector2Invert: Not implemented", macro(null : helix.ray.Vector2));
 
 	/** raylib's `Vector2Clamp` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2Clamp: Not implemented")
-	public static inline function Vector2Clamp(v:Vector2, min:Vector2, max:Vector2):Vector2
-		throw "Vector2Clamp is unimplemented";
+	public static macro function Vector2Clamp(v:ExprOf<Vector2>, min:ExprOf<Vector2>, max:ExprOf<Vector2>):ExprOf<Vector2>
+		return helix.platform.macros.Build.unimplemented("Vector2Clamp: Not implemented", macro(null : helix.ray.Vector2));
 
 	/** raylib's `Vector2Equals` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2Equals: Not implemented")
-	public static inline function Vector2Equals(p:Vector2, q:Vector2):Int
-		throw "Vector2Equals is unimplemented";
+	public static macro function Vector2Equals(p:ExprOf<Vector2>, q:ExprOf<Vector2>):ExprOf<Int>
+		return helix.platform.macros.Build.unimplemented("Vector2Equals: Not implemented", macro(0 : Int));
 
 	/** raylib's `Vector2Refract` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector2Refract: Not implemented")
-	public static inline function Vector2Refract(v:Vector2, n:Vector2, r:Float):Vector2
-		throw "Vector2Refract is unimplemented";
+	public static macro function Vector2Refract(v:ExprOf<Vector2>, n:ExprOf<Vector2>, r:ExprOf<Float>):ExprOf<Vector2>
+		return helix.platform.macros.Build.unimplemented("Vector2Refract: Not implemented", macro(null : helix.ray.Vector2));
 
 	/** raylib's `Vector3AddValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3AddValue: Not implemented")
-	public static inline function Vector3AddValue(v:Vector3, add:Float):Vector3
-		throw "Vector3AddValue is unimplemented";
+	public static macro function Vector3AddValue(v:ExprOf<Vector3>, add:ExprOf<Float>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3AddValue: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3SubtractValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3SubtractValue: Not implemented")
-	public static inline function Vector3SubtractValue(v:Vector3, sub:Float):Vector3
-		throw "Vector3SubtractValue is unimplemented";
+	public static macro function Vector3SubtractValue(v:ExprOf<Vector3>, sub:ExprOf<Float>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3SubtractValue: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3Perpendicular` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3Perpendicular: Not implemented")
-	public static inline function Vector3Perpendicular(v:Vector3):Vector3
-		throw "Vector3Perpendicular is unimplemented";
+	public static macro function Vector3Perpendicular(v:ExprOf<Vector3>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3Perpendicular: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3DistanceSqr` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3DistanceSqr: Not implemented")
-	public static inline function Vector3DistanceSqr(v1:Vector3, v2:Vector3):Float
-		throw "Vector3DistanceSqr is unimplemented";
+	public static macro function Vector3DistanceSqr(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("Vector3DistanceSqr: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `Vector3Angle` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3Angle: Not implemented")
-	public static inline function Vector3Angle(v1:Vector3, v2:Vector3):Float
-		throw "Vector3Angle is unimplemented";
+	public static macro function Vector3Angle(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("Vector3Angle: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `Vector3Divide` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3Divide: Not implemented")
-	public static inline function Vector3Divide(v1:Vector3, v2:Vector3):Vector3
-		throw "Vector3Divide is unimplemented";
+	public static macro function Vector3Divide(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3Divide: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3Project` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3Project: Not implemented")
-	public static inline function Vector3Project(v1:Vector3, v2:Vector3):Vector3
-		throw "Vector3Project is unimplemented";
+	public static macro function Vector3Project(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3Project: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3Reject` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3Reject: Not implemented")
-	public static inline function Vector3Reject(v1:Vector3, v2:Vector3):Vector3
-		throw "Vector3Reject is unimplemented";
+	public static macro function Vector3Reject(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3Reject: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3OrthoNormalize` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3OrthoNormalize: Not implemented")
-	public static inline function Vector3OrthoNormalize(v1:Vector3, v2:Vector3):Void
-		throw "Vector3OrthoNormalize is unimplemented";
+	public static macro function Vector3OrthoNormalize(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Void>
+		return helix.platform.macros.Build.unimplemented("Vector3OrthoNormalize: Not implemented", macro {});
 
 	/** raylib's `Vector3RotateByQuaternion` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3RotateByQuaternion: Not implemented")
-	public static inline function Vector3RotateByQuaternion(v:Vector3, q:Quaternion):Vector3
-		throw "Vector3RotateByQuaternion is unimplemented";
+	public static macro function Vector3RotateByQuaternion(v:ExprOf<Vector3>, q:ExprOf<Quaternion>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3RotateByQuaternion: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3MoveTowards` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3MoveTowards: Not implemented")
-	public static inline function Vector3MoveTowards(v:Vector3, target:Vector3, maxDistance:Float):Vector3
-		throw "Vector3MoveTowards is unimplemented";
+	public static macro function Vector3MoveTowards(v:ExprOf<Vector3>, target:ExprOf<Vector3>, maxDistance:ExprOf<Float>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3MoveTowards: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3CubicHermite` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3CubicHermite: Not implemented")
-	public static inline function Vector3CubicHermite(v1:Vector3, tangent1:Vector3, v2:Vector3, tangent2:Vector3, amount:Float):Vector3
-		throw "Vector3CubicHermite is unimplemented";
+	public static macro function Vector3CubicHermite(v1:ExprOf<Vector3>, tangent1:ExprOf<Vector3>, v2:ExprOf<Vector3>, tangent2:ExprOf<Vector3>,
+			amount:ExprOf<Float>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3CubicHermite: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3Reflect` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3Reflect: Not implemented")
-	public static inline function Vector3Reflect(v:Vector3, normal:Vector3):Vector3
-		throw "Vector3Reflect is unimplemented";
+	public static macro function Vector3Reflect(v:ExprOf<Vector3>, normal:ExprOf<Vector3>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3Reflect: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3Min` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3Min: Not implemented")
-	public static inline function Vector3Min(v1:Vector3, v2:Vector3):Vector3
-		throw "Vector3Min is unimplemented";
+	public static macro function Vector3Min(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3Min: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3Max` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3Max: Not implemented")
-	public static inline function Vector3Max(v1:Vector3, v2:Vector3):Vector3
-		throw "Vector3Max is unimplemented";
+	public static macro function Vector3Max(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3Max: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3Barycenter` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3Barycenter: Not implemented")
-	public static inline function Vector3Barycenter(p:Vector3, a:Vector3, b:Vector3, c:Vector3):Vector3
-		throw "Vector3Barycenter is unimplemented";
+	public static macro function Vector3Barycenter(p:ExprOf<Vector3>, a:ExprOf<Vector3>, b:ExprOf<Vector3>, c:ExprOf<Vector3>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3Barycenter: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3Unproject` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3Unproject: Not implemented")
-	public static inline function Vector3Unproject(source:Vector3, projection:Matrix, view:Matrix):Vector3
-		throw "Vector3Unproject is unimplemented";
+	public static macro function Vector3Unproject(source:ExprOf<Vector3>, projection:ExprOf<Matrix>, view:ExprOf<Matrix>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3Unproject: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3ToFloatV` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3ToFloatV: Not implemented")
-	public static inline function Vector3ToFloatV(v:Vector3):Array<Float>
-		throw "Vector3ToFloatV is unimplemented";
+	public static macro function Vector3ToFloatV(v:ExprOf<Vector3>):ExprOf<Array<Float>>
+		return helix.platform.macros.Build.unimplemented("Vector3ToFloatV: Not implemented", macro(null : Array<Float>));
 
 	/** raylib's `Vector3Invert` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3Invert: Not implemented")
-	public static inline function Vector3Invert(v:Vector3):Vector3
-		throw "Vector3Invert is unimplemented";
+	public static macro function Vector3Invert(v:ExprOf<Vector3>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3Invert: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3Clamp` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3Clamp: Not implemented")
-	public static inline function Vector3Clamp(v:Vector3, min:Vector3, max:Vector3):Vector3
-		throw "Vector3Clamp is unimplemented";
+	public static macro function Vector3Clamp(v:ExprOf<Vector3>, min:ExprOf<Vector3>, max:ExprOf<Vector3>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3Clamp: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3ClampValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3ClampValue: Not implemented")
-	public static inline function Vector3ClampValue(v:Vector3, min:Float, max:Float):Vector3
-		throw "Vector3ClampValue is unimplemented";
+	public static macro function Vector3ClampValue(v:ExprOf<Vector3>, min:ExprOf<Float>, max:ExprOf<Float>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3ClampValue: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector3Equals` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3Equals: Not implemented")
-	public static inline function Vector3Equals(p:Vector3, q:Vector3):Int
-		throw "Vector3Equals is unimplemented";
+	public static macro function Vector3Equals(p:ExprOf<Vector3>, q:ExprOf<Vector3>):ExprOf<Int>
+		return helix.platform.macros.Build.unimplemented("Vector3Equals: Not implemented", macro(0 : Int));
 
 	/** raylib's `Vector3Refract` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector3Refract: Not implemented")
-	public static inline function Vector3Refract(v:Vector3, n:Vector3, r:Float):Vector3
-		throw "Vector3Refract is unimplemented";
+	public static macro function Vector3Refract(v:ExprOf<Vector3>, n:ExprOf<Vector3>, r:ExprOf<Float>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("Vector3Refract: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `Vector4Zero` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Zero: Not implemented")
-	public static inline function Vector4Zero():Vector4
-		throw "Vector4Zero is unimplemented";
+	public static macro function Vector4Zero():ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4Zero: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4One` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4One: Not implemented")
-	public static inline function Vector4One():Vector4
-		throw "Vector4One is unimplemented";
+	public static macro function Vector4One():ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4One: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4Add` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Add: Not implemented")
-	public static inline function Vector4Add(v1:Vector4, v2:Vector4):Vector4
-		throw "Vector4Add is unimplemented";
+	public static macro function Vector4Add(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4Add: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4AddValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4AddValue: Not implemented")
-	public static inline function Vector4AddValue(v:Vector4, add:Float):Vector4
-		throw "Vector4AddValue is unimplemented";
+	public static macro function Vector4AddValue(v:ExprOf<Vector4>, add:ExprOf<Float>):ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4AddValue: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4Subtract` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Subtract: Not implemented")
-	public static inline function Vector4Subtract(v1:Vector4, v2:Vector4):Vector4
-		throw "Vector4Subtract is unimplemented";
+	public static macro function Vector4Subtract(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4Subtract: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4SubtractValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4SubtractValue: Not implemented")
-	public static inline function Vector4SubtractValue(v:Vector4, add:Float):Vector4
-		throw "Vector4SubtractValue is unimplemented";
+	public static macro function Vector4SubtractValue(v:ExprOf<Vector4>, add:ExprOf<Float>):ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4SubtractValue: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4Length` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Length: Not implemented")
-	public static inline function Vector4Length(v:Vector4):Float
-		throw "Vector4Length is unimplemented";
+	public static macro function Vector4Length(v:ExprOf<Vector4>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("Vector4Length: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `Vector4LengthSqr` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4LengthSqr: Not implemented")
-	public static inline function Vector4LengthSqr(v:Vector4):Float
-		throw "Vector4LengthSqr is unimplemented";
+	public static macro function Vector4LengthSqr(v:ExprOf<Vector4>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("Vector4LengthSqr: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `Vector4DotProduct` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4DotProduct: Not implemented")
-	public static inline function Vector4DotProduct(v1:Vector4, v2:Vector4):Float
-		throw "Vector4DotProduct is unimplemented";
+	public static macro function Vector4DotProduct(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("Vector4DotProduct: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `Vector4Distance` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Distance: Not implemented")
-	public static inline function Vector4Distance(v1:Vector4, v2:Vector4):Float
-		throw "Vector4Distance is unimplemented";
+	public static macro function Vector4Distance(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("Vector4Distance: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `Vector4DistanceSqr` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4DistanceSqr: Not implemented")
-	public static inline function Vector4DistanceSqr(v1:Vector4, v2:Vector4):Float
-		throw "Vector4DistanceSqr is unimplemented";
+	public static macro function Vector4DistanceSqr(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("Vector4DistanceSqr: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `Vector4Scale` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Scale: Not implemented")
-	public static inline function Vector4Scale(v:Vector4, scale:Float):Vector4
-		throw "Vector4Scale is unimplemented";
+	public static macro function Vector4Scale(v:ExprOf<Vector4>, scale:ExprOf<Float>):ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4Scale: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4Multiply` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Multiply: Not implemented")
-	public static inline function Vector4Multiply(v1:Vector4, v2:Vector4):Vector4
-		throw "Vector4Multiply is unimplemented";
+	public static macro function Vector4Multiply(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4Multiply: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4Negate` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Negate: Not implemented")
-	public static inline function Vector4Negate(v:Vector4):Vector4
-		throw "Vector4Negate is unimplemented";
+	public static macro function Vector4Negate(v:ExprOf<Vector4>):ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4Negate: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4Divide` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Divide: Not implemented")
-	public static inline function Vector4Divide(v1:Vector4, v2:Vector4):Vector4
-		throw "Vector4Divide is unimplemented";
+	public static macro function Vector4Divide(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4Divide: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4Normalize` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Normalize: Not implemented")
-	public static inline function Vector4Normalize(v:Vector4):Vector4
-		throw "Vector4Normalize is unimplemented";
+	public static macro function Vector4Normalize(v:ExprOf<Vector4>):ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4Normalize: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4Min` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Min: Not implemented")
-	public static inline function Vector4Min(v1:Vector4, v2:Vector4):Vector4
-		throw "Vector4Min is unimplemented";
+	public static macro function Vector4Min(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4Min: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4Max` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Max: Not implemented")
-	public static inline function Vector4Max(v1:Vector4, v2:Vector4):Vector4
-		throw "Vector4Max is unimplemented";
+	public static macro function Vector4Max(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4Max: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4Lerp` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Lerp: Not implemented")
-	public static inline function Vector4Lerp(v1:Vector4, v2:Vector4, amount:Float):Vector4
-		throw "Vector4Lerp is unimplemented";
+	public static macro function Vector4Lerp(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>, amount:ExprOf<Float>):ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4Lerp: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4MoveTowards` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4MoveTowards: Not implemented")
-	public static inline function Vector4MoveTowards(v:Vector4, target:Vector4, maxDistance:Float):Vector4
-		throw "Vector4MoveTowards is unimplemented";
+	public static macro function Vector4MoveTowards(v:ExprOf<Vector4>, target:ExprOf<Vector4>, maxDistance:ExprOf<Float>):ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4MoveTowards: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4Invert` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Invert: Not implemented")
-	public static inline function Vector4Invert(v:Vector4):Vector4
-		throw "Vector4Invert is unimplemented";
+	public static macro function Vector4Invert(v:ExprOf<Vector4>):ExprOf<Vector4>
+		return helix.platform.macros.Build.unimplemented("Vector4Invert: Not implemented", macro(null : helix.ray.Vector4));
 
 	/** raylib's `Vector4Equals` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("Vector4Equals: Not implemented")
-	public static inline function Vector4Equals(p:Vector4, q:Vector4):Int
-		throw "Vector4Equals is unimplemented";
+	public static macro function Vector4Equals(p:ExprOf<Vector4>, q:ExprOf<Vector4>):ExprOf<Int>
+		return helix.platform.macros.Build.unimplemented("Vector4Equals: Not implemented", macro(0 : Int));
 
 	/** raylib's `MatrixDeterminant` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("MatrixDeterminant: Not implemented")
-	public static inline function MatrixDeterminant(mat:Matrix):Float
-		throw "MatrixDeterminant is unimplemented";
+	public static macro function MatrixDeterminant(mat:ExprOf<Matrix>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("MatrixDeterminant: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `MatrixTrace` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("MatrixTrace: Not implemented")
-	public static inline function MatrixTrace(mat:Matrix):Float
-		throw "MatrixTrace is unimplemented";
+	public static macro function MatrixTrace(mat:ExprOf<Matrix>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("MatrixTrace: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `MatrixAdd` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("MatrixAdd: Not implemented")
-	public static inline function MatrixAdd(left:Matrix, right:Matrix):Matrix
-		throw "MatrixAdd is unimplemented";
+	public static macro function MatrixAdd(left:ExprOf<Matrix>, right:ExprOf<Matrix>):ExprOf<Matrix>
+		return helix.platform.macros.Build.unimplemented("MatrixAdd: Not implemented", macro(null : helix.ray.Matrix));
 
 	/** raylib's `MatrixSubtract` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("MatrixSubtract: Not implemented")
-	public static inline function MatrixSubtract(left:Matrix, right:Matrix):Matrix
-		throw "MatrixSubtract is unimplemented";
+	public static macro function MatrixSubtract(left:ExprOf<Matrix>, right:ExprOf<Matrix>):ExprOf<Matrix>
+		return helix.platform.macros.Build.unimplemented("MatrixSubtract: Not implemented", macro(null : helix.ray.Matrix));
 
 	/** raylib's `MatrixRotateZYX` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("MatrixRotateZYX: Not implemented")
-	public static inline function MatrixRotateZYX(angle:Vector3):Matrix
-		throw "MatrixRotateZYX is unimplemented";
+	public static macro function MatrixRotateZYX(angle:ExprOf<Vector3>):ExprOf<Matrix>
+		return helix.platform.macros.Build.unimplemented("MatrixRotateZYX: Not implemented", macro(null : helix.ray.Matrix));
 
 	/** raylib's `MatrixFrustum` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("MatrixFrustum: Not implemented")
-	public static inline function MatrixFrustum(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix
-		throw "MatrixFrustum is unimplemented";
+	public static macro function MatrixFrustum(left:ExprOf<Float>, right:ExprOf<Float>, bottom:ExprOf<Float>, top:ExprOf<Float>, nearPlane:ExprOf<Float>,
+			farPlane:ExprOf<Float>):ExprOf<Matrix>
+		return helix.platform.macros.Build.unimplemented("MatrixFrustum: Not implemented", macro(null : helix.ray.Matrix));
 
 	/** raylib's `MatrixToFloatV` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("MatrixToFloatV: Not implemented")
-	public static inline function MatrixToFloatV(mat:Matrix):Array<Float>
-		throw "MatrixToFloatV is unimplemented";
+	public static macro function MatrixToFloatV(mat:ExprOf<Matrix>):ExprOf<Array<Float>>
+		return helix.platform.macros.Build.unimplemented("MatrixToFloatV: Not implemented", macro(null : Array<Float>));
 
 	/** raylib's `QuaternionAdd` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionAdd: Not implemented")
-	public static inline function QuaternionAdd(q1:Quaternion, q2:Quaternion):Quaternion
-		throw "QuaternionAdd is unimplemented";
+	public static macro function QuaternionAdd(q1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionAdd: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionAddValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionAddValue: Not implemented")
-	public static inline function QuaternionAddValue(q:Quaternion, add:Float):Quaternion
-		throw "QuaternionAddValue is unimplemented";
+	public static macro function QuaternionAddValue(q:ExprOf<Quaternion>, add:ExprOf<Float>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionAddValue: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionSubtract` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionSubtract: Not implemented")
-	public static inline function QuaternionSubtract(q1:Quaternion, q2:Quaternion):Quaternion
-		throw "QuaternionSubtract is unimplemented";
+	public static macro function QuaternionSubtract(q1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionSubtract: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionSubtractValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionSubtractValue: Not implemented")
-	public static inline function QuaternionSubtractValue(q:Quaternion, sub:Float):Quaternion
-		throw "QuaternionSubtractValue is unimplemented";
+	public static macro function QuaternionSubtractValue(q:ExprOf<Quaternion>, sub:ExprOf<Float>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionSubtractValue: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionLength` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionLength: Not implemented")
-	public static inline function QuaternionLength(q:Quaternion):Float
-		throw "QuaternionLength is unimplemented";
+	public static macro function QuaternionLength(q:ExprOf<Quaternion>):ExprOf<Float>
+		return helix.platform.macros.Build.unimplemented("QuaternionLength: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `QuaternionNormalize` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionNormalize: Not implemented")
-	public static inline function QuaternionNormalize(q:Quaternion):Quaternion
-		throw "QuaternionNormalize is unimplemented";
+	public static macro function QuaternionNormalize(q:ExprOf<Quaternion>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionNormalize: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionInvert` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionInvert: Not implemented")
-	public static inline function QuaternionInvert(q:Quaternion):Quaternion
-		throw "QuaternionInvert is unimplemented";
+	public static macro function QuaternionInvert(q:ExprOf<Quaternion>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionInvert: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionMultiply` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionMultiply: Not implemented")
-	public static inline function QuaternionMultiply(q1:Quaternion, q2:Quaternion):Quaternion
-		throw "QuaternionMultiply is unimplemented";
+	public static macro function QuaternionMultiply(q1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionMultiply: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionScale` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionScale: Not implemented")
-	public static inline function QuaternionScale(q:Quaternion, mul:Float):Quaternion
-		throw "QuaternionScale is unimplemented";
+	public static macro function QuaternionScale(q:ExprOf<Quaternion>, mul:ExprOf<Float>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionScale: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionDivide` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionDivide: Not implemented")
-	public static inline function QuaternionDivide(q1:Quaternion, q2:Quaternion):Quaternion
-		throw "QuaternionDivide is unimplemented";
+	public static macro function QuaternionDivide(q1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionDivide: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionLerp` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionLerp: Not implemented")
-	public static inline function QuaternionLerp(q1:Quaternion, q2:Quaternion, amount:Float):Quaternion
-		throw "QuaternionLerp is unimplemented";
+	public static macro function QuaternionLerp(q1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>, amount:ExprOf<Float>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionLerp: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionNlerp` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionNlerp: Not implemented")
-	public static inline function QuaternionNlerp(q1:Quaternion, q2:Quaternion, amount:Float):Quaternion
-		throw "QuaternionNlerp is unimplemented";
+	public static macro function QuaternionNlerp(q1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>, amount:ExprOf<Float>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionNlerp: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionSlerp` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionSlerp: Not implemented")
-	public static inline function QuaternionSlerp(q1:Quaternion, q2:Quaternion, amount:Float):Quaternion
-		throw "QuaternionSlerp is unimplemented";
+	public static macro function QuaternionSlerp(q1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>, amount:ExprOf<Float>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionSlerp: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionCubicHermiteSpline` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionCubicHermiteSpline: Not implemented")
-	public static inline function QuaternionCubicHermiteSpline(q1:Quaternion, outTangent1:Quaternion, q2:Quaternion, inTangent2:Quaternion, t:Float):Quaternion
-		throw "QuaternionCubicHermiteSpline is unimplemented";
+	public static macro function QuaternionCubicHermiteSpline(q1:ExprOf<Quaternion>, outTangent1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>,
+			inTangent2:ExprOf<Quaternion>, t:ExprOf<Float>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionCubicHermiteSpline: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionFromVector3ToVector3` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionFromVector3ToVector3: Not implemented")
-	public static inline function QuaternionFromVector3ToVector3(from:Vector3, to:Vector3):Quaternion
-		throw "QuaternionFromVector3ToVector3 is unimplemented";
+	public static macro function QuaternionFromVector3ToVector3(from:ExprOf<Vector3>, to:ExprOf<Vector3>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionFromVector3ToVector3: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionFromMatrix` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionFromMatrix: Not implemented")
-	public static inline function QuaternionFromMatrix(mat:Matrix):Quaternion
-		throw "QuaternionFromMatrix is unimplemented";
+	public static macro function QuaternionFromMatrix(mat:ExprOf<Matrix>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionFromMatrix: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionToAxisAngle` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionToAxisAngle: Not implemented")
-	public static inline function QuaternionToAxisAngle(q:Quaternion, outAxis:Array<Vector3>, outAngle:Array<Float>):Void
-		throw "QuaternionToAxisAngle is unimplemented";
+	public static macro function QuaternionToAxisAngle(q:ExprOf<Quaternion>, outAxis:ExprOf<Array<Vector3>>, outAngle:ExprOf<Array<Float>>):ExprOf<Void>
+		return helix.platform.macros.Build.unimplemented("QuaternionToAxisAngle: Not implemented", macro {});
 
 	/** raylib's `QuaternionToEuler` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionToEuler: Not implemented")
-	public static inline function QuaternionToEuler(q:Quaternion):Vector3
-		throw "QuaternionToEuler is unimplemented";
+	public static macro function QuaternionToEuler(q:ExprOf<Quaternion>):ExprOf<Vector3>
+		return helix.platform.macros.Build.unimplemented("QuaternionToEuler: Not implemented", macro(null : helix.ray.Vector3));
 
 	/** raylib's `QuaternionTransform` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionTransform: Not implemented")
-	public static inline function QuaternionTransform(q:Quaternion, mat:Matrix):Quaternion
-		throw "QuaternionTransform is unimplemented";
+	public static macro function QuaternionTransform(q:ExprOf<Quaternion>, mat:ExprOf<Matrix>):ExprOf<Quaternion>
+		return helix.platform.macros.Build.unimplemented("QuaternionTransform: Not implemented", macro(null : helix.ray.Quaternion));
 
 	/** raylib's `QuaternionEquals` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("QuaternionEquals: Not implemented")
-	public static inline function QuaternionEquals(p:Quaternion, q:Quaternion):Int
-		throw "QuaternionEquals is unimplemented";
+	public static macro function QuaternionEquals(p:ExprOf<Quaternion>, q:ExprOf<Quaternion>):ExprOf<Int>
+		return helix.platform.macros.Build.unimplemented("QuaternionEquals: Not implemented", macro(0 : Int));
 
 	/** raylib's `MatrixDecompose` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	@:unimplemented("MatrixDecompose: Not implemented")
-	public static inline function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quaternion, scale:Vector3):Void
-		throw "MatrixDecompose is unimplemented";
-	#end
+	public static macro function MatrixDecompose(mat:ExprOf<Matrix>, translation:ExprOf<Vector3>, rotation:ExprOf<Quaternion>,
+			scale:ExprOf<Vector3>):ExprOf<Void>
+		return helix.platform.macros.Build.unimplemented("MatrixDecompose: Not implemented", macro {});
 
 	// ---- generated by tools/gen_raylib.py: end ----
 }

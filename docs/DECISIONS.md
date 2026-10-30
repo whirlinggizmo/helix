@@ -117,10 +117,12 @@ Why things are the way they are, numbered, in order.
     natively failed when built for a page: one program, two codes. Now `LoadTexture`, `LoadModel`, `LoadSound`, `LoadFileData`,
     `LoadFileText` and `FileExists` refuse everywhere, with the signature of the call to use, "LoadTexture: Synchronous loading is not
     supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)", so an agent needn't look it up.
-    The refusal is `@:unimplemented("message")` on the declaration, helix-ray's own meta, which `Unimplemented` turns into Haxe's
-    `@:require` of a define no program sets: the compiler stops at each call, all of them in one build, and the message is in the
-    source an agent reads. Haxe's `#error` fires wherever the file is read, called or not, and `@:deprecated` only warns. `gen_raylib`
-    checks each message's signature against the call's own. Nothing is read before `main`, and no scan of the program's sources
+    Each is a macro in `Raylib` whose body returns `helix.platform.macros.Build.unimplemented(message, macro (null : T))`: the
+    message is reported where the program calls it, all such calls in one build, and the call keeps raylib's result type, so nothing
+    after it is typed wrong because of it; the message is in the source an agent reads. Haxe's `#error` fires wherever the file is
+    read, called or not, `@:deprecated` only warns, and `@:require` refuses but leaves the call `Dynamic`, which errors again at its
+    first use. In a section the function is marked `@:unimplemented("message")`, which `gen_raylib` writes as the macro, checking the
+    signature the message names against the call's own. Nothing is read before `main`, and no scan of the program's sources
     decides what: the saves are read when first used. `SaveFileText` and `SaveFileData` need no answer, so they stay raylib's; a write
     made before the saves are read is held and made after, so it wins over what was kept. `LoadFileTextAsync` asks the program's text
     callback, then the saves, then fetches, so what `SaveFileText` wrote reads back a frame later. Faking synchronous loads in a page,

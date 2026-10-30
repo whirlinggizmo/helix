@@ -11,14 +11,13 @@ import haxe.macro.Expr;
 	program's `main` runs once the system is made (`Runtime.boot`). Natively the program finds its files at
 	`-D helix-ray-native-root=<directory>` (default `../web`), relative to its own; a program reads them through the `...Async` loads. */
 class Loop {
-	/** Adds `build` to the program's main class, and `Unimplemented`'s to `Raylib`. Run by the library's `extraParams.hxml`. */
+	/** Adds `build` to the program's main class. Run by the library's `extraParams.hxml`. */
 	public static function install():Void {
 		var main = Compiler.getConfiguration().mainClass;
 		if (main == null)
 			return;
 		var name = main.pack.concat([main.name]).join(".");
 		Compiler.addMetadata("@:build(helix.ray.internal.Loop.build())", name);
-		Unimplemented.install();
 	}
 
 	/** Rewrites the main class: the loop in whichever static function holds it, and `main` to run once the system is made. */
