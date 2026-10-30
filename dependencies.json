@@ -8,8 +8,8 @@
     "fork": "https://github.com/whirlinggizmo/sokol (the Whirling Gizmo fork)",
     "upstream": "https://github.com/floooh/sokol 5e94d129",
     "headers": {
-      "platform/vendor/sokol_gfx.h": "478679b767f811cb9208e334225f23c8adc65556f2e1b757a68a8f9c79b94e47",
-      "platform/vendor/sokol_log.h": "a8d55de21694410740e752ea8e57c4103d5951d20339ba9712e24232adef9a42"
+      "platform/vendor/sokol/sokol_gfx.h": "478679b767f811cb9208e334225f23c8adc65556f2e1b757a68a8f9c79b94e47",
+      "platform/vendor/sokol/sokol_log.h": "a8d55de21694410740e752ea8e57c4103d5951d20339ba9712e24232adef9a42"
     }
   },
   "nodePackages": {

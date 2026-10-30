@@ -74,7 +74,7 @@ helix-platform's native side stands on others' work, each under its own license,
 in the repository's `dependencies.json`:
 
 - [Sokol](https://github.com/floooh/sokol), by Andre Weissflog (floooh), through the Whirling Gizmo fork, whose altered headers say so
-  at their tops: native graphics on GL. zlib, `vendor/LICENSE`.
+  at their tops: native graphics on GL. zlib, `vendor/sokol/LICENSE`.
 - [SDL 3](https://github.com/libsdl-org/SDL), by Sam Lantinga and its contributors: the native window, input, gamepads, audio and
   SDL_GPU's graphics. Its headers are kept here; the library is the system's, or built or fetched. zlib,
   `vendor/sdl3/LICENSE.txt`.

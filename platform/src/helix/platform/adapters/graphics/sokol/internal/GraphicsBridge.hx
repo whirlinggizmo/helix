@@ -9,7 +9,7 @@ package helix.platform.adapters.graphics.sokol.internal;
  <compilerflag value='-I${HELIX_PLATFORM}/vendor'/><compilerflag value='-I${HELIX_PLATFORM}/src/helix/platform/adapters/shared'/><compilerflag value='-I${HELIX_PLATFORM}/src/helix/platform/adapters/graphics/sokol/internal'/>
  <compilerflag value='-DNDEBUG' unless='debug'/><compilerflag value='-O2' if='windows' unless='debug'/><compilerflag value='-O3' unless='windows||debug'/><compilerflag value='-D_POSIX_C_SOURCE=200809L' if='linux'/>
  <!-- hxcpp rebuilds an object when its source changes; these make a changed header rebuild it too. -->
- <depend name='${HELIX_PLATFORM}/vendor/sokol_gfx.h'/><depend name='${HELIX_PLATFORM}/vendor/sokol_log.h'/><depend name='${HELIX_PLATFORM}/src/helix/platform/adapters/shared/surface.h'/><depend name='${HELIX_PLATFORM}/src/helix/platform/adapters/shared/graphics.h'/><depend name='${HELIX_PLATFORM}/src/helix/platform/adapters/graphics/sokol/internal/graphics_sokol.h'/>
+ <depend name='${HELIX_PLATFORM}/vendor/sokol/sokol_gfx.h'/><depend name='${HELIX_PLATFORM}/vendor/sokol/sokol_log.h'/><depend name='${HELIX_PLATFORM}/src/helix/platform/adapters/shared/surface.h'/><depend name='${HELIX_PLATFORM}/src/helix/platform/adapters/shared/graphics.h'/><depend name='${HELIX_PLATFORM}/src/helix/platform/adapters/graphics/sokol/internal/graphics_sokol.h'/>
  <file name='graphics/sokol/internal/graphics_sokol.c'/>
 </files>
 <files id='haxe'><compilerflag value='-I${HELIX_PLATFORM}/vendor'/><compilerflag value='-I${HELIX_PLATFORM}/src/helix/platform/adapters/shared'/><compilerflag value='-I${HELIX_PLATFORM}/src/helix/platform/adapters/graphics/sokol/internal'/></files>

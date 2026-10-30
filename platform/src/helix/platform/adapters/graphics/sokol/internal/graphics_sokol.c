@@ -6,11 +6,11 @@
 #include "surface.h"
 #define SOKOL_GFX_IMPL
 #define SOKOL_GLCORE
-#include "sokol_gfx.h"
+#include "sokol/sokol_gfx.h"
 /* sokol_log, private to this file: each sokol piece keeps its own copy, as a build may link any of them without the others. */
 #define SOKOL_LOG_IMPL
 #define SOKOL_LOG_API_DECL static
-#include "sokol_log.h"
+#include "sokol/sokol_log.h"
 
 #if defined(_WIN32)
 /* sokol's Win32 GL loader declares only what sokol calls; these are the rest this file uses. glReadPixels is GL 1.1's, which opengl32
