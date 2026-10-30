@@ -1,5 +1,6 @@
 package helix.ray.internal;
 
+import helix.math.Matrix3D;
 import haxe.io.Bytes;
 import helix.ray.*;
 
@@ -98,9 +99,9 @@ class Models {
 		}
 		var meshes = [], meshMaterial = [];
 		var nodes = file.list("nodes");
-		function visit(index:Int, parent:Array<Float>):Void {
+		function visit(index:Int, parent:Matrix3D):Void {
 			var node = nodes[index];
-			var world = Matrices.multiply(local(node), parent);
+			var world = new Matrix3D().compose(local(node), parent);
 			var m:Null<Int> = Gltf.field(node, "mesh");
 			if (m != null)
 				for (primitive in (Gltf.field(file.list("meshes")[m], "primitives") : Array<Dynamic>)) {
@@ -130,7 +131,7 @@ class Models {
 			roots = [for (i in 0...nodes.length) if (!children.exists(i)) i];
 		}
 		for (r in roots)
-			visit(r, Matrices.identity());
+			visit(r, new Matrix3D());
 		for (mesh in meshes)
 			upload(mesh);
 		return new Model(meshes, materials, meshMaterial);
@@ -167,43 +168,52 @@ class Models {
 	}
 
 	// A node's own transform: its matrix, or its scale, then rotation, then translation.
-	static function local(node:Dynamic):Array<Float> {
+	static function local(node:Dynamic):Matrix3D {
 		var matrix:Array<Float> = Gltf.field(node, "matrix");
-		if (matrix != null)
-			return matrix.copy();
+		if (matrix != null) {
+			var m = new Matrix3D();
+			for (i in 0...16)
+				m.values[i] = matrix[i];
+			return m;
+		}
 		var s:Array<Float> = Gltf.field(node, "scale"),
 			r:Array<Float> = Gltf.field(node, "rotation"),
 			t:Array<Float> = Gltf.field(node, "translation");
-		var m = s == null ? Matrices.identity() : Matrices.scale(s[0], s[1], s[2]);
+		var m = s == null ? new Matrix3D() : new Matrix3D().makeScale(s[0], s[1], s[2]);
 		if (r != null)
-			m = Matrices.multiply(m, Matrices.quaternion(r[0], r[1], r[2], r[3]));
+			m = new Matrix3D().compose(m, new Matrix3D().makeQuaternionRotation(r[0], r[1], r[2], r[3]));
 		if (t != null)
-			m = Matrices.multiply(m, Matrices.translate(t[0], t[1], t[2]));
+			m = new Matrix3D().compose(m, new Matrix3D().makeTranslation(t[0], t[1], t[2]));
 		return m;
 	}
 
 	// One primitive as a mesh, its node's transform put into its positions and normals.
-	static function primitiveMesh(file:Gltf, primitive:Dynamic, world:Array<Float>):Mesh {
+	static function primitiveMesh(file:Gltf, primitive:Dynamic, world:Matrix3D):Mesh {
 		var attributes = Gltf.field(primitive, "attributes");
 		var mesh = new Mesh();
 		var positions = file.floats(Gltf.field(attributes, "POSITION"));
 		mesh.vertexCount = Std.int(positions.length / 3);
 		mesh.vertices = [];
-		for (i in 0...mesh.vertexCount)
-			for (v in Matrices.point(world, positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]))
-				mesh.vertices.push(v);
+		for (i in 0...mesh.vertexCount) {
+			var p = world.transformPoint(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
+			mesh.vertices.push(p.x);
+			mesh.vertices.push(p.y);
+			mesh.vertices.push(p.z);
+		}
 		var normal:Null<Int> = Gltf.field(attributes, "NORMAL");
 		if (normal != null) {
 			var normals = file.floats(normal),
-				turn = Matrices.transpose(Matrices.invert(world));
+				turn = new Matrix3D().copyFrom(world);
+			turn.invert();
+			turn.transpose();
 			mesh.normals = [];
 			for (i in 0...mesh.vertexCount) {
 				var x = normals[i * 3],
 					y = normals[i * 3 + 1],
 					z = normals[i * 3 + 2];
-				var nx = turn[0] * x + turn[4] * y + turn[8] * z,
-					ny = turn[1] * x + turn[5] * y + turn[9] * z,
-					nz = turn[2] * x + turn[6] * y + turn[10] * z;
+				var nx = turn.values[0] * x + turn.values[4] * y + turn.values[8] * z,
+					ny = turn.values[1] * x + turn.values[5] * y + turn.values[9] * z,
+					nz = turn.values[2] * x + turn.values[6] * y + turn.values[10] * z;
 				var l = Math.sqrt(nx * nx + ny * ny + nz * nz);
 				if (l == 0)
 					l = 1;

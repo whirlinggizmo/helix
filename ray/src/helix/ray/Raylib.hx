@@ -4,7 +4,7 @@ package helix.ray;
 import haxe.macro.Expr;
 #else
 import helix.ray.internal.DefaultFont;
-import helix.ray.internal.Matrices;
+import helix.math.Matrix3D;
 import helix.ray.internal.Models;
 import helix.ray.internal.Runtime;
 #end
@@ -2256,7 +2256,7 @@ class Raylib {
 		@param camera  The camera. */
 	public static function BeginMode2D(camera:Camera2D):Void {
 		Runtime.frame.cut();
-		Runtime.frame.view = Matrices.of(GetCameraMatrix2D(camera));
+		Runtime.frame.view = toMatrix3D(GetCameraMatrix2D(camera));
 	}
 
 	/** Goes back to drawing in the screen's pixels. */
@@ -2269,11 +2269,11 @@ class Raylib {
 		@param camera  The camera.
 		@return  The matrix. */
 	public static function GetCameraMatrix2D(camera:Camera2D):Matrix {
-		var m = Matrices.translate(-camera.target.x, -camera.target.y, 0);
-		m = Matrices.multiply(m, Matrices.rotate(0, 0, 1, camera.rotation * DEG2RAD));
-		m = Matrices.multiply(m, Matrices.scale(camera.zoom, camera.zoom, 1));
-		m = Matrices.multiply(m, Matrices.translate(camera.offset.x, camera.offset.y, 0));
-		return Matrices.to(m);
+		var m = new Matrix3D().makeTranslation(-camera.target.x, -camera.target.y, 0);
+		m = new Matrix3D().compose(m, new Matrix3D().makeRotation(0, 0, 1, camera.rotation * DEG2RAD));
+		m = new Matrix3D().compose(m, new Matrix3D().makeScale(camera.zoom, camera.zoom, 1));
+		m = new Matrix3D().compose(m, new Matrix3D().makeTranslation(camera.offset.x, camera.offset.y, 0));
+		return toMatrix(m);
 	}
 
 	/** Returns where a point in a 2D camera's world is on the screen.
@@ -2282,8 +2282,8 @@ class Raylib {
 		@param camera  The camera.
 		@return  The screen position. */
 	public static function GetWorldToScreen2D(position:Vector2, camera:Camera2D):Vector2 {
-		var p = Matrices.point(Matrices.of(GetCameraMatrix2D(camera)), position.x, position.y, 0);
-		return new Vector2(p[0], p[1]);
+		var p = toMatrix3D(GetCameraMatrix2D(camera)).transformPoint(position.x, position.y, 0);
+		return new Vector2(p.x, p.y);
 	}
 
 	/** Returns where a screen position is in a 2D camera's world.
@@ -2292,8 +2292,10 @@ class Raylib {
 		@param camera  The camera.
 		@return  The point. */
 	public static function GetScreenToWorld2D(position:Vector2, camera:Camera2D):Vector2 {
-		var p = Matrices.point(Matrices.invert(Matrices.of(GetCameraMatrix2D(camera))), position.x, position.y, 0);
-		return new Vector2(p[0], p[1]);
+		var inverse = toMatrix3D(GetCameraMatrix2D(camera));
+		inverse.invert();
+		var p = inverse.transformPoint(position.x, position.y, 0);
+		return new Vector2(p.x, p.y);
 	}
 
 	// ---- 3D camera ----
@@ -2365,7 +2367,7 @@ class Raylib {
 		@param camera  The camera.
 		@return  The matrix. */
 	public static function GetCameraMatrix(camera:Camera3D):Matrix {
-		return Matrices.to(cameraView(camera));
+		return toMatrix(cameraView(camera));
 	}
 
 	/** Returns the ray from a camera through a screen position, as raylib's picking uses it.
@@ -2386,13 +2388,14 @@ class Raylib {
 		@return  The ray. */
 	public static function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int):Ray {
 		var x = 2 * position.x / width - 1, y = 1 - 2 * position.y / height;
-		var inverse = Matrices.invert(Matrices.multiply(cameraView(camera), cameraProjection(camera, width / height)));
+		var inverse = new Matrix3D().compose(cameraView(camera), cameraProjection(camera, width / height));
+		inverse.invert();
 		function unproject(z:Float):Array<Float> {
 			var p = [
-				inverse[0] * x + inverse[4] * y + inverse[8] * z + inverse[12],
-				inverse[1] * x + inverse[5] * y + inverse[9] * z + inverse[13],
-				inverse[2] * x + inverse[6] * y + inverse[10] * z + inverse[14],
-				inverse[3] * x + inverse[7] * y + inverse[11] * z + inverse[15]
+				inverse.values[0] * x + inverse.values[4] * y + inverse.values[8] * z + inverse.values[12],
+				inverse.values[1] * x + inverse.values[5] * y + inverse.values[9] * z + inverse.values[13],
+				inverse.values[2] * x + inverse.values[6] * y + inverse.values[10] * z + inverse.values[14],
+				inverse.values[3] * x + inverse.values[7] * y + inverse.values[11] * z + inverse.values[15]
 			];
 			return [p[0] / p[3], p[1] / p[3], p[2] / p[3]];
 		}
@@ -2427,7 +2430,7 @@ class Raylib {
 		@param height  The view's height.
 		@return  The position in the view. */
 	public static function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int):Vector2 {
-		var m = Matrices.multiply(cameraView(camera), cameraProjection(camera, width / height));
+		var m = new Matrix3D().compose(cameraView(camera), cameraProjection(camera, width / height)).values;
 		var x = m[0] * position.x + m[4] * position.y + m[8] * position.z + m[12];
 		var y = m[1] * position.x + m[5] * position.y + m[9] * position.z + m[13];
 		var w = m[3] * position.x + m[7] * position.y + m[11] * position.z + m[15];
@@ -2706,10 +2709,10 @@ class Raylib {
 		@param scale  The scale on each axis.
 		@param tint  The tint. */
 	public static function DrawModelEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void {
-		var m = Matrices.scale(scale.x, scale.y, scale.z);
-		m = Matrices.multiply(m, Matrices.rotate(rotationAxis.x, rotationAxis.y, rotationAxis.z, rotationAngle * DEG2RAD));
-		m = Matrices.multiply(m, Matrices.translate(position.x, position.y, position.z));
-		var transform = Matrices.multiply(Matrices.of(model.transform), m);
+		var m = new Matrix3D().makeScale(scale.x, scale.y, scale.z);
+		m = new Matrix3D().compose(m, new Matrix3D().makeRotation(rotationAxis.x, rotationAxis.y, rotationAxis.z, rotationAngle * DEG2RAD));
+		m = new Matrix3D().compose(m, new Matrix3D().makeTranslation(position.x, position.y, position.z));
+		var transform = new Matrix3D().compose(toMatrix3D(model.transform), m);
 		for (i in 0...model.meshCount) {
 			var material = model.materials[model.meshMaterial[i]];
 			if (material == null)
@@ -2724,7 +2727,7 @@ class Raylib {
 		@param material  The material.
 		@param transform  The transform. */
 	public static function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void {
-		drawMesh(mesh, material, Matrices.of(transform), WHITE);
+		drawMesh(mesh, material, toMatrix3D(transform), WHITE);
 	}
 
 	/** Sends a mesh's vertices to the GPU, so it can be drawn. The `GenMesh*` functions and `LoadModel` do it themselves.
@@ -2811,7 +2814,7 @@ class Raylib {
 		@param model  The model.
 		@return  The box. */
 	public static function GetModelBoundingBox(model:Model):BoundingBox {
-		var t = Matrices.of(model.transform);
+		var t = toMatrix3D(model.transform);
 		var min = [Math.POSITIVE_INFINITY, Math.POSITIVE_INFINITY, Math.POSITIVE_INFINITY];
 		var max = [Math.NEGATIVE_INFINITY, Math.NEGATIVE_INFINITY, Math.NEGATIVE_INFINITY];
 		for (mesh in model.meshes) {
@@ -2819,12 +2822,12 @@ class Raylib {
 			for (x in [b.min.x, b.max.x])
 				for (y in [b.min.y, b.max.y])
 					for (z in [b.min.z, b.max.z]) {
-						var p = Matrices.point(t, x, y, z);
+						var p = t.transformPoint(x, y, z), q = [p.x, p.y, p.z];
 						for (c in 0...3) {
-							if (p[c] < min[c])
-								min[c] = p[c];
-							if (p[c] > max[c])
-								max[c] = p[c];
+							if (q[c] < min[c])
+								min[c] = q[c];
+							if (q[c] > max[c])
+								max[c] = q[c];
 						}
 					}
 		}
@@ -2978,10 +2981,10 @@ class Raylib {
 		var v = mesh.vertices;
 		if (v == null)
 			return best;
-		var t = Matrices.of(transform);
+		var t = toMatrix3D(transform);
 		function corner(i:Int):Vector3 {
-			var p = Matrices.point(t, v[i * 3], v[i * 3 + 1], v[i * 3 + 2]);
-			return new Vector3(p[0], p[1], p[2]);
+			var p = t.transformPoint(v[i * 3], v[i * 3 + 1], v[i * 3 + 2]);
+			return new Vector3(p.x, p.y, p.z);
 		}
 		for (k in 0...mesh.triangleCount) {
 			var a = mesh.indices == null ? k * 3 : mesh.indices[k * 3],
@@ -3127,7 +3130,7 @@ class Raylib {
 		if (shader.program == null)
 			return;
 		Runtime.frame.cut();
-		shader.program.write(locIndex, Matrices.of(mat));
+		shader.program.write(locIndex, toMatrix3D(mat).values);
 	}
 
 	/** Sets a shader's texture, for the draws after it.
@@ -3289,8 +3292,8 @@ class Raylib {
 		@param mat  The matrix.
 		@return  The transformed point. */
 	public static function Vector3Transform(v:Vector3, mat:Matrix):Vector3 {
-		var p = Matrices.point(Matrices.of(mat), v.x, v.y, v.z);
-		return new Vector3(p[0], p[1], p[2]);
+		var p = toMatrix3D(mat).transformPoint(v.x, v.y, v.z);
+		return new Vector3(p.x, p.y, p.z);
 	}
 
 	/** Returns a vector turned about an axis.
@@ -3300,9 +3303,9 @@ class Raylib {
 		@param angle  The angle, in radians.
 		@return  The turned vector. */
 	public static function Vector3RotateByAxisAngle(v:Vector3, axis:Vector3, angle:Float):Vector3 {
-		var m = Matrices.rotate(axis.x, axis.y, axis.z, angle);
-		var p = Matrices.point(m, v.x, v.y, v.z);
-		return new Vector3(p[0], p[1], p[2]);
+		var m = new Matrix3D().makeRotation(axis.x, axis.y, axis.z, angle);
+		var p = m.transformPoint(v.x, v.y, v.z);
+		return new Vector3(p.x, p.y, p.z);
 	}
 
 	// ---- raymath: Matrix and Quaternion ----
@@ -3311,7 +3314,7 @@ class Raylib {
 
 		@return  The matrix. */
 	public static function MatrixIdentity():Matrix {
-		return Matrices.to(Matrices.identity());
+		return toMatrix(new Matrix3D());
 	}
 
 	/** Returns two matrices multiplied: left, then right.
@@ -3320,7 +3323,7 @@ class Raylib {
 		@param right  The second.
 		@return  The product. */
 	public static function MatrixMultiply(left:Matrix, right:Matrix):Matrix {
-		return Matrices.to(Matrices.multiply(Matrices.of(left), Matrices.of(right)));
+		return toMatrix(new Matrix3D().compose(toMatrix3D(left), toMatrix3D(right)));
 	}
 
 	/** Returns a translation.
@@ -3330,7 +3333,7 @@ class Raylib {
 		@param z  Along z.
 		@return  The matrix. */
 	public static function MatrixTranslate(x:Float, y:Float, z:Float):Matrix {
-		return Matrices.to(Matrices.translate(x, y, z));
+		return toMatrix(new Matrix3D().makeTranslation(x, y, z));
 	}
 
 	/** Returns a scale.
@@ -3340,7 +3343,7 @@ class Raylib {
 		@param z  Along z.
 		@return  The matrix. */
 	public static function MatrixScale(x:Float, y:Float, z:Float):Matrix {
-		return Matrices.to(Matrices.scale(x, y, z));
+		return toMatrix(new Matrix3D().makeScale(x, y, z));
 	}
 
 	/** Returns a rotation about an axis.
@@ -3349,7 +3352,7 @@ class Raylib {
 		@param angle  The angle, in radians.
 		@return  The matrix. */
 	public static function MatrixRotate(axis:Vector3, angle:Float):Matrix {
-		return Matrices.to(Matrices.rotate(axis.x, axis.y, axis.z, angle));
+		return toMatrix(new Matrix3D().makeRotation(axis.x, axis.y, axis.z, angle));
 	}
 
 	/** Returns a rotation about x.
@@ -3357,7 +3360,7 @@ class Raylib {
 		@param angle  The angle, in radians.
 		@return  The matrix. */
 	public static function MatrixRotateX(angle:Float):Matrix {
-		return Matrices.to(Matrices.rotate(1, 0, 0, angle));
+		return toMatrix(new Matrix3D().makeRotation(1, 0, 0, angle));
 	}
 
 	/** Returns a rotation about y.
@@ -3365,7 +3368,7 @@ class Raylib {
 		@param angle  The angle, in radians.
 		@return  The matrix. */
 	public static function MatrixRotateY(angle:Float):Matrix {
-		return Matrices.to(Matrices.rotate(0, 1, 0, angle));
+		return toMatrix(new Matrix3D().makeRotation(0, 1, 0, angle));
 	}
 
 	/** Returns a rotation about z.
@@ -3373,7 +3376,7 @@ class Raylib {
 		@param angle  The angle, in radians.
 		@return  The matrix. */
 	public static function MatrixRotateZ(angle:Float):Matrix {
-		return Matrices.to(Matrices.rotate(0, 0, 1, angle));
+		return toMatrix(new Matrix3D().makeRotation(0, 0, 1, angle));
 	}
 
 	/** Returns rotations about x, then y, then z.
@@ -3381,8 +3384,8 @@ class Raylib {
 		@param angle  The angles, in radians.
 		@return  The matrix. */
 	public static function MatrixRotateXYZ(angle:Vector3):Matrix {
-		var m = Matrices.multiply(Matrices.rotate(1, 0, 0, angle.x), Matrices.rotate(0, 1, 0, angle.y));
-		return Matrices.to(Matrices.multiply(m, Matrices.rotate(0, 0, 1, angle.z)));
+		var m = new Matrix3D().compose(new Matrix3D().makeRotation(1, 0, 0, angle.x), new Matrix3D().makeRotation(0, 1, 0, angle.y));
+		return toMatrix(new Matrix3D().compose(m, new Matrix3D().makeRotation(0, 0, 1, angle.z)));
 	}
 
 	/** Returns a matrix inverted.
@@ -3390,7 +3393,9 @@ class Raylib {
 		@param mat  The matrix.
 		@return  Its inverse. */
 	public static function MatrixInvert(mat:Matrix):Matrix {
-		return Matrices.to(Matrices.invert(Matrices.of(mat)));
+		var inverse = toMatrix3D(mat);
+		inverse.invert();
+		return toMatrix(inverse);
 	}
 
 	/** Returns a matrix transposed.
@@ -3398,7 +3403,7 @@ class Raylib {
 		@param mat  The matrix.
 		@return  Its transpose. */
 	public static function MatrixTranspose(mat:Matrix):Matrix {
-		return Matrices.to(Matrices.transpose(Matrices.of(mat)));
+		return toMatrix(new Matrix3D().copyFrom(toMatrix3D(mat)).transpose());
 	}
 
 	/** Returns a view looking from eye at target.
@@ -3408,7 +3413,7 @@ class Raylib {
 		@param up  Up.
 		@return  The matrix. */
 	public static function MatrixLookAt(eye:Vector3, target:Vector3, up:Vector3):Matrix {
-		return Matrices.to(Matrices.lookAt(eye.x, eye.y, eye.z, target.x, target.y, target.z, up.x, up.y, up.z));
+		return toMatrix(new Matrix3D().makeLookAt(eye.x, eye.y, eye.z, target.x, target.y, target.z, up.x, up.y, up.z));
 	}
 
 	/** Returns a perspective projection.
@@ -3419,7 +3424,7 @@ class Raylib {
 		@param farPlane  The far plane.
 		@return  The matrix. */
 	public static function MatrixPerspective(fovY:Float, aspect:Float, nearPlane:Float, farPlane:Float):Matrix {
-		return Matrices.to(Matrices.perspective(fovY, aspect, nearPlane, farPlane));
+		return toMatrix(new Matrix3D().makePerspective(fovY, aspect, nearPlane, farPlane));
 	}
 
 	/** Returns an orthographic projection.
@@ -3432,7 +3437,7 @@ class Raylib {
 		@param farPlane  The far plane.
 		@return  The matrix. */
 	public static function MatrixOrtho(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix {
-		return Matrices.to(Matrices.ortho(left, right, bottom, top, nearPlane, farPlane));
+		return toMatrix(new Matrix3D().makeOrthographic(left, right, bottom, top, nearPlane, farPlane));
 	}
 
 	/** Returns the identity quaternion.
@@ -3473,7 +3478,7 @@ class Raylib {
 		@param q  The quaternion.
 		@return  The matrix. */
 	public static function QuaternionToMatrix(q:Quaternion):Matrix {
-		return Matrices.to(Matrices.quaternion(q.x, q.y, q.z, q.w));
+		return toMatrix(new Matrix3D().makeQuaternionRotation(q.x, q.y, q.z, q.w));
 	}
 
 	// ---- What the 3D functions share ----
@@ -3535,25 +3540,41 @@ class Raylib {
 		if (Std.isOfType(value, Color))
 			return [value.r / 255, value.g / 255, value.b / 255, value.a / 255];
 		if (Std.isOfType(value, Matrix))
-			return Matrices.of(value);
+			return toMatrix3D(value).values;
 		return [(value : Float)];
 	}
 
-	static function cameraView(camera:Camera3D):Array<Float> {
+	// raylib's Matrix, named by rows, and helix-math's, stored by columns: m0 to m3 the first column in both.
+	static function toMatrix3D(m:Matrix):Matrix3D {
+		var out = new Matrix3D(), v = out.values;
+		var all = [
+			m.m0, m.m1, m.m2, m.m3, m.m4, m.m5, m.m6, m.m7, m.m8, m.m9, m.m10, m.m11, m.m12, m.m13, m.m14, m.m15
+		];
+		for (i in 0...16)
+			v[i] = all[i];
+		return out;
+	}
+
+	static function toMatrix(m:Matrix3D):Matrix {
+		var a = m.values;
+		return new Matrix(a[0], a[4], a[8], a[12], a[1], a[5], a[9], a[13], a[2], a[6], a[10], a[14], a[3], a[7], a[11], a[15]);
+	}
+
+	static function cameraView(camera:Camera3D):Matrix3D {
 		var p = camera.position, t = camera.target, u = camera.up;
-		return Matrices.lookAt(p.x, p.y, p.z, t.x, t.y, t.z, u.x, u.y, u.z);
+		return new Matrix3D().makeLookAt(p.x, p.y, p.z, t.x, t.y, t.z, u.x, u.y, u.z);
 	}
 
 	// raylib's near and far planes, 0.01 and 1000.
-	static function cameraProjection(camera:Camera3D, aspect:Float):Array<Float> {
+	static function cameraProjection(camera:Camera3D, aspect:Float):Matrix3D {
 		if (camera.projection == CAMERA_ORTHOGRAPHIC) {
 			var top = camera.fovy / 2, right = top * aspect;
-			return Matrices.ortho(-right, right, -top, top, .01, 1000);
+			return new Matrix3D().makeOrthographic(-right, right, -top, top, .01, 1000);
 		}
-		return Matrices.perspective(camera.fovy * DEG2RAD, aspect, .01, 1000);
+		return new Matrix3D().makePerspective(camera.fovy * DEG2RAD, aspect, .01, 1000);
 	}
 
-	static function drawMesh(mesh:Mesh, material:Material, transform:Array<Float>, tint:Color):Void {
+	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix3D, tint:Color):Void {
 		if (mesh.buffers == null)
 			Models.upload(mesh);
 		if (mesh.buffers == null)

@@ -48,7 +48,7 @@ class Runtime {
 	public static final closing:Array<Void->Void> = [];
 
 	/** The files loaded before `main`, by path: images decoded, the rest as bytes. */
-	public static final images = new Map<String, {pixels:Bytes, width:Int, height:Int}>();
+	public static final images = new Map<String, helix.services.images.Image>();
 
 	public static final files = new Map<String, Bytes>();
 
@@ -132,13 +132,25 @@ class Runtime {
 			#end
 			polled.push(cache);
 			polled.push(imageDecoder);
+			var decoded = new helix.services.images.Images(imageDecoder, assets);
+			polled.push(decoded);
 			var left = paths.length;
 			var one = () -> if (--left == 0) done();
 			if (left == 0)
 				done();
-			for (path in paths)
+			for (path in paths) {
+				var lower = path.toLowerCase();
+				if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".tga")) {
+					decoded.load(path, image -> {
+						images.set(path, image);
+						one();
+					}, error -> {
+						trace(error);
+						one();
+					});
+					continue;
+				}
 				assets.load(path, bytes -> {
-					var lower = path.toLowerCase();
 					if (lower.endsWith(".glb") || lower.endsWith(".gltf")) {
 						files.set(path, bytes);
 						// A model's images are decoded now too, as LoadModel answers at once.
@@ -155,23 +167,15 @@ class Runtime {
 						}
 						left += embedded.length;
 						for (image in embedded)
-							imageDecoder.decode(image.bytes, (pixels, width, height) -> {
-								images.set(image.key, {pixels: pixels, width: width, height: height});
+							decoded.decode(image.bytes, decodedImage -> {
+								images.set(image.key, decodedImage);
 								one();
 							}, error -> {
 								trace('${image.key}: $error');
 								one();
 							});
 						one();
-					} else if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".tga"))
-						imageDecoder.decode(bytes, (pixels, width, height) -> {
-							images.set(path, {pixels: pixels, width: width, height: height});
-							one();
-						}, error -> {
-							trace('$path: $error');
-							one();
-						});
-					else {
+					} else {
 						files.set(path, bytes);
 						one();
 					}
@@ -179,6 +183,7 @@ class Runtime {
 					trace('$path: $error');
 					one();
 				});
+			}
 		};
 	}
 

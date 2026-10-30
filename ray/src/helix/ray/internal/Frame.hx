@@ -1,5 +1,6 @@
 package helix.ray.internal;
 
+import helix.math.Matrix3D;
 import haxe.io.Bytes;
 import helix.platform.IGraphics;
 import helix.platform.Sampling;
@@ -48,9 +49,9 @@ class Frame {
 	public var program:Program;
 
 	/** The matrices drawn with: in 2D the screen's (or `BeginMode2D`'s camera's), in 3D the camera's. */
-	public var view:Array<Float>;
+	public var view:Matrix3D;
 
-	public var projection:Array<Float>;
+	public var projection:Matrix3D;
 
 	/** Whether drawing is in `BeginMode3D`. */
 	public var in3D = false;
@@ -71,8 +72,8 @@ class Frame {
 		var texel = Bytes.alloc(4);
 		texel.fill(0, 4, 255);
 		white = graphics.createTexture(1, 1, [texel]);
-		view = Matrices.identity();
-		projection = Matrices.identity();
+		view = new Matrix3D();
+		projection = new Matrix3D();
 		pass = {
 			target: 0,
 			clear: 0xff000000,
@@ -129,8 +130,8 @@ class Frame {
 
 	/** Sets the matrices to 2D over the current pass: pixels from its top left. */
 	public function screen2D():Void {
-		view = Matrices.identity();
-		projection = Matrices.ortho(0, pass.width, pass.height, 0, 0, 1);
+		view = new Matrix3D();
+		projection = new Matrix3D().makeOrthographic(0, pass.width, pass.height, 0, 0, 1);
 		open = null;
 	}
 
@@ -239,7 +240,7 @@ class Frame {
 		var textures = p.textures.copy();
 		if (p.texture0 >= 0)
 			textures[p.texture0] = texture;
-		var model = Matrices.identity();
+		var model = new Matrix3D();
 		return {
 			pipeline: pipeline,
 			buffers: null,
@@ -260,7 +261,7 @@ class Frame {
 		@param model  Its transform.
 		@param diffuse  The diffuse color, 0 to 1 each.
 		@param textures  The textures for raylib's slots 0 to 2 (0 for white). */
-	public function mesh(mesh:helix.ray.Mesh, p:Program, model:Array<Float>, diffuse:Array<Float>, textures:Array<Int>):Void {
+	public function mesh(mesh:helix.ray.Mesh, p:Program, model:Matrix3D, diffuse:Array<Float>, textures:Array<Int>):Void {
 		open = null;
 		var indexed = mesh.indexBuffer != 0, depth = in3D;
 		var key = 'm${indexed ? "x" : ""}${depth ? "d" : ""}';
@@ -311,14 +312,17 @@ class Frame {
 	}
 
 	// The program's blocks as they are now, with raylib's own values set: the matrices and the diffuse color.
-	function values(p:Program, model:Array<Float>, diffuse:Array<Float>):Array<Null<Bytes>> {
-		var modelView = Matrices.multiply(model, view);
-		p.writeNamed("mvp", Matrices.multiply(modelView, projection));
-		p.writeNamed("matModel", model);
-		p.writeNamed("matView", view);
-		p.writeNamed("matProjection", projection);
-		if (p.declares("matNormal"))
-			p.writeNamed("matNormal", Matrices.transpose(Matrices.invert(model)));
+	function values(p:Program, model:Matrix3D, diffuse:Array<Float>):Array<Null<Bytes>> {
+		var modelView = new Matrix3D().compose(model, view);
+		p.writeNamed("mvp", new Matrix3D().compose(modelView, projection).values);
+		p.writeNamed("matModel", model.values);
+		p.writeNamed("matView", view.values);
+		p.writeNamed("matProjection", projection.values);
+		if (p.declares("matNormal")) {
+			var normal = new Matrix3D().copyFrom(model);
+			normal.invert();
+			p.writeNamed("matNormal", normal.transpose().values);
+		}
 		p.writeNamed("colDiffuse", diffuse);
 		return [for (b in p.blocks) b == null ? null : b.sub(0, b.length)];
 	}
