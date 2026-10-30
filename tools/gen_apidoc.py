@@ -307,6 +307,8 @@ def markdown(xml,native=frozenset()):
             for c in node:
                 if c.tag in ('haxe_doc','meta'):continue
                 args=c.get('a','');lines.append(f'- `{c.tag}'+(f'({", ".join(a+":"+type_text(k,known) for a,k in zip(args.split(":"),c))})' if args else '')+'`'+(f': {doc_text(c)}' if doc_text(c) else ''))
+                # Its remarks and tags too: a value's default or its limits are often in them.
+                lines+=doc_lines(c,'  ')
             lines.append('')
         elif node.tag=='typedef':
             inner=[c for c in node if c.tag not in ('haxe_doc','meta')]

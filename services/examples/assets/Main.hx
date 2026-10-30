@@ -68,9 +68,11 @@ class Main {
 		downloads = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory()});
 		polled.push(httpClient);
 		polled.push(downloads);
-		assets = new Assets({sources: [HttpServer("assets/")], httpClient: httpClient, cacheFileSystem: downloads});
+		assets = new Assets({sources: [HttpServer(system.getProgramDirectory() + "assets/")], httpClient: httpClient, cacheFileSystem: downloads});
 		#else
-		shipped = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: "web/assets", readOnly: true});
+		// The example keeps one copy of its files for both builds, beside its page: a directory up from the program, then web/assets.
+		var files = haxe.io.Path.join([system.getProgramDirectory(), "../web/assets"]);
+		shipped = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: files, readOnly: true});
 		polled.push(shipped);
 		assets = new Assets({sources: [FileSystem(shipped)]});
 		#end

@@ -105,6 +105,7 @@ Specifies what an action is bound to (`Actions.bind`).
 - `Mouse(button:MouseButton)`: A mouse button.
 - `Pad(slot:Int, button:PadButton)`: A gamepad's button, by the gamepad's slot, 0 to 3.
 - `Axis(slot:Int, axis:PadAxis, direction:AxisDirection)`: One side of a gamepad's stick axis or trigger, by the gamepad's slot, 0 to 3.
+  The binding is down while the axis is past the dead zone on that side, and its value is how far past.
 
 ## Input
 

@@ -11,9 +11,13 @@ Specifies how an `HttpServer` source decides whether its kept copy of a file is 
 The copy can be checked with the server, trusted, not kept at all, or checked against the server's manifests.
 
 - `Revalidate`: Uses a copy without asking while the server's Cache-Control says it is fresh, and asks the server about any other copy.
+  An unchanged file keeps its copy. A changed file replaces the copy. A file that is gone removes the copy, and the file is looked for in the next source. When the server doesn't answer, because the machine is offline or the server fails, the copy is used. This is the default.
 - `Trust`: Uses a copy without asking, however old it is.
+  It suits files that never change, or a game that plays offline.
 - `Off`: Keeps nothing between runs and ignores what earlier runs kept.
+  Each file is downloaded once a run and held in memory. It is meant for development.
 - `Manifest`: Uses the server's manifests to tell whether a copy is current.
+  The manifests are named by `AssetsOptions.manifestName`, and `AssetManifests` writes them. A copy with the hash its manifest lists is used without asking. Otherwise, a file system source after this one that has a file with that hash reads it in place; failing that, the file is downloaded, and the download must have that hash. A file that its directory's manifest omits is asked about, however fresh its copy. A server with no manifest is warned about once a run, and its files are treated as `Revalidate` treats them.
 
 ## AssetSource
 
@@ -22,7 +26,11 @@ The copy can be checked with the server, trusted, not kept at all, or checked ag
 Specifies a place `Assets` finds files: a file system on this machine, or an HTTP server.
 
 - `FileSystem(fileSystem:IFileSystem)`: Reads files as they are from a file system.
+  Natively this is usually the files the program ships with: a read-only `NativeFileSystemAdapter` over `ISystem.getProgramDirectory()`. In a page a file system starts empty, so the page's files come from an `HttpServer` instead.
 - `HttpServer(url:String, ?cacheMode:AssetCacheMode)`: Downloads files from an HTTP server, under a URL.
+  Files are downloaded through `AssetsOptions.httpClient` and kept in `AssetsOptions.cacheFileSystem`. A later run downloads a file again only when its copy is missing or changed.
+
+  The URL is the directory the paths are under. In a page it may be relative to the page, and "" is the page's own directory. The optional cache mode decides how a kept copy is known to be current, and defaults to `Revalidate`.
 
 ## Assets
 

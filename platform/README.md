@@ -1,20 +1,20 @@
 # helix-platform
 
 The hardware and the OS as plain Haxe calls, in the browser and natively. Each device is a contract, an interface in
-`helix.platform`, and each API behind it is an adapter in `helix.platform.adapters.<contract>.<api>`. It has no policy of its own.
+`helix.platform`, and each API behind it is an adapter in `helix.platform.adapters.<contract>.<api>`, as the table names them. It has no policy of its own.
 
 | Contract | What | Browser | Native |
 |---|---|---|---|
-| `IGraphics` | The GPU | `WebGl2GraphicsAdapter` | `SokolGraphicsAdapter` (GL 4.1), `Sdl3GpuGraphicsAdapter` (Vulkan, Direct3D 12, Metal) |
-| `IWindow` | The window | `DomWindowAdapter` | `Sdl3WindowAdapter` |
-| `IEvents` | Input and the window's events | `DomEventsAdapter` | `Sdl3EventsAdapter` |
-| `ISystem` | The device, the clock and the program's directories | `DomSystemAdapter` | `Sdl3SystemAdapter` |
-| `IAudio` | Sound | `WebAudioAdapter` | `Sdl3MixerAudioAdapter` |
-| `IAudioDecoder` | Audio files to samples | `WebAudioDecoderAdapter` | `Sdl3MixerAudioDecoderAdapter` |
-| `IImageDecoder` | Image files to pixels | `CanvasImageDecoderAdapter` | `StbImageDecoderAdapter` |
-| `IHttp` | HTTP GET | `FetchApiHttpAdapter` | `HaxeHttpAdapter` |
-| `IFileSystem` | Files on this machine | `BrowserFileSystemAdapter` | `NativeFileSystemAdapter` |
-| `IExport` | A file handed to the user | `DownloadExportAdapter` | `FileSystemExportAdapter` |
+| `IGraphics` | The GPU | `graphics.webgl2.WebGl2GraphicsAdapter` | `graphics.sokol.SokolGraphicsAdapter` (GL 4.1), `graphics.sdl3gpu.Sdl3GpuGraphicsAdapter` (Vulkan, Direct3D 12, Metal) |
+| `IWindow` | The window | `window.dom.DomWindowAdapter` | `window.sdl3.Sdl3WindowAdapter` |
+| `IEvents` | Input and the window's events | `events.dom.DomEventsAdapter` | `events.sdl3.Sdl3EventsAdapter` |
+| `ISystem` | The device, the clock and the program's directories | `system.dom.DomSystemAdapter` | `system.sdl3.Sdl3SystemAdapter` |
+| `IAudio` | Sound | `audio.webaudio.WebAudioAdapter` | `audio.sdl3mixer.Sdl3MixerAudioAdapter` |
+| `IAudioDecoder` | Audio files to samples | `audiodecoder.webaudio.WebAudioDecoderAdapter` | `audiodecoder.sdl3mixer.Sdl3MixerAudioDecoderAdapter` |
+| `IImageDecoder` | Image files to pixels | `imagedecoder.canvas.CanvasImageDecoderAdapter` | `imagedecoder.stb.StbImageDecoderAdapter` |
+| `IHttp` | HTTP GET | `http.fetchapi.FetchApiHttpAdapter` | `http.haxehttp.HaxeHttpAdapter` |
+| `IFileSystem` | Files on this machine | `filesystem.browser.BrowserFileSystemAdapter` | `filesystem.native.NativeFileSystemAdapter` |
+| `IExport` | A file handed to the user | `export.download.DownloadExportAdapter` | `export.filesystem.FileSystemExportAdapter` |
 
 ## Using it
 

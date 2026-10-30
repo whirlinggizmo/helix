@@ -70,10 +70,12 @@ class Main {
 		httpClient = new helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter();
 		downloads = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory()});
 		#else
-		cdn = new LocalServer("web/cdn");
+		// The example keeps its files beside its page, a directory up from the program.
+		var example = haxe.io.Path.join([system.getProgramDirectory(), ".."]);
+		cdn = new LocalServer(haxe.io.Path.join([example, "web/cdn"]));
 		httpClient = new helix.platform.adapters.http.haxehttp.HaxeHttpAdapter();
 		downloads = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: system.getCacheDirectory()});
-		shipped = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: "shipped", readOnly: true});
+		shipped = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: haxe.io.Path.join([example, "shipped"]), readOnly: true});
 		polled.push(shipped);
 		#end
 		polled.push(httpClient);
@@ -85,7 +87,7 @@ class Main {
 				#if js
 				color = DONE;
 				#else
-				cdn.directory = "web/cdn-updated";
+				cdn.directory = haxe.io.Path.join([system.getProgramDirectory(), "../web/cdn-updated"]);
 				load("server updated", () -> color = DONE);
 				#end
 			}));
@@ -95,7 +97,7 @@ class Main {
 	/** Makes the assets as a run would: the server first, in Manifest mode, and natively the shipped files after it. */
 	static function makeAssets():Assets {
 		#if js
-		return new Assets({sources: [HttpServer("cdn/", Manifest)], httpClient: httpClient, cacheFileSystem: downloads});
+		return new Assets({sources: [HttpServer(system.getProgramDirectory() + "cdn/", Manifest)], httpClient: httpClient, cacheFileSystem: downloads});
 		#else
 		return new Assets({sources: [HttpServer(cdn.url, Manifest), FileSystem(shipped)], httpClient: httpClient, cacheFileSystem: downloads});
 		#end

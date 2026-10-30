@@ -177,6 +177,7 @@ Positions are in framebuffer pixels from the window's top-left corner. A key is 
 - `TouchUp(id:Int, x:Float, y:Float)`: A finger lifted, or the OS took the touch away.
 - `Tilt(beta:Float, gamma:Float, screenAngle:Float)`: Reports the device's orientation while `IEvents.setTiltWanted` is on. beta and gamma are in degrees, and screenAngle is the screen's angle.
 - `TiltState(state:Int)`: The tilt's state changed.
+  The state is 0 for off, 1 for waiting for the player's permission, 2 for calibrating, 3 for on, 4 for refused, 5 for unavailable, and 6 for unavailable because the page isn't secure (not HTTPS).
 - `PadConnected(slot:Int)`: A gamepad was connected in a slot, 0 to 3.
 - `PadDisconnected(slot:Int)`: The gamepad in a slot was disconnected. Its buttons count as up.
 - `PadButtonDown(slot:Int, button:PadButton)`: A gamepad's button went down. A trigger is also a button, down when pulled past half way.
@@ -187,6 +188,7 @@ Positions are in framebuffer pixels from the window's top-left corner. A key is 
 - `Shown`: The player can see the window again, because it was restored or its page came to the front.
 - `Hidden`: The player can't see the window, because it is minimized or hidden, or its page is in the background.
 - `CloseRequested`: The player or the OS asked to close the window. The program decides whether to close it.
+  It arrives only natively. A page never receives it, because a closing tab gives no frame to decide in. A page's end is `IWindow.onClose`.
 - `GraphicsLost`: The GPU's context is gone. In a page, the WebGL context was lost to a GPU reset or an evicted tab.
 
 ## Filter
