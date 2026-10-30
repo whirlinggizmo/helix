@@ -5,7 +5,8 @@ program written as raylib is written runs in a page and natively.
 
 | Type | What |
 |---|---|
-| `helix.ray.Raylib` | raylib's functions, constants and colors, as `raylib.h` names them, with raymath's |
+| `helix.ray.Raylib` | raylib's functions, constants and colors, as `raylib.h` names them |
+| `helix.ray.Raymath` | raymath's vectors, matrices and quaternions, as `raymath.h` names them, imported apart as raylib includes it |
 | `helix.ray.Vector2`, `Vector3`, `Color`, `Texture2D`, `Camera3D`, `Model`, `Shader`, `RenderTexture2D` and the rest | raylib's structs, with their fields |
 
 The window and frame, the keyboard, mouse, touch and gamepads, shapes, textures, the default font, sounds, text files; in 3D the

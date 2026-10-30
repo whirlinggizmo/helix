@@ -320,7 +320,7 @@ var normal:Vector3
 
 Provides raylib 5.5's API, as `raylib.h` names it, over helix-platform and helix-services: a program writes raylib, and it runs in a page and natively.
 
-A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a frame. A page can't wait for a file, so on every target files are loaded by helix-ray's own `...Async` loads; raylib's `LoadTexture`, `LoadModel`, `LoadSound` and `LoadFileData` don't compile, naming the load to use. A file loaded twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its files with constants. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here by module; what raylib has and helix-ray doesn't refuses to compile, naming itself.
+A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a frame. A page can't wait for a file, so on every target files are loaded by helix-ray's own `...Async` loads; raylib's `LoadTexture`, `LoadModel`, `LoadSound` and `LoadFileData` don't compile, naming the load to use. A file loaded twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here by module; what raylib has and helix-ray doesn't refuses to compile, naming itself.
 
 ### Keys (KeyboardKey)
 
@@ -1818,6 +1818,86 @@ static function SetMusicPan(music:Music, pan:Float):Void
   - `music`: The music.
   - `pan`: 0 for left, 0.5 the middle, 1 for right, as raylib's.
 
+### helix-ray's own: loading in a page (raylib/HelixRay.hx)
+
+```haxe
+static function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void, ?failed:String -> Void):Void
+static function LoadModelAsync(fileName:String, loaded:Model -> Void, ?failed:String -> Void):Void
+static function LoadSoundAsync(fileName:String, loaded:Sound -> Void, ?failed:String -> Void):Void
+static function LoadFileTextAsync(fileName:String, loaded:String -> Void, ?failed:String -> Void):Void
+static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):Void
+```
+
+- `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page can't wait for a file. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the texture.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+- `LoadModelAsync`: Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own, in place of raylib's `LoadModel`. A file loaded again shares its first load's meshes and textures, with materials of its own.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the model.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+- `LoadSoundAsync`: Loads a sound file and decodes it, answering when it is ready to play at once: helix-ray's own, in place of raylib's `LoadSound`. A file loaded again shares its first load's decoded sound. `InitAudioDevice` comes first.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the sound.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+- `LoadFileTextAsync`: Reads a text file, answering when it is read: helix-ray's own, as `LoadTextureAsync` is for textures. A file `SaveFileText` wrote is answered from the saves.
+  - `fileName`: The file.
+  - `loaded`: Receives its text.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+- `LoadFileDataAsync`: Reads a file's bytes, answering when they are read: helix-ray's own, in place of raylib's `LoadFileData`. The program's `SetLoadFileDataCallback` answers first, then what `SaveFileData` wrote, then the program's files.
+  - `fileName`: The file.
+  - `loaded`: Receives its bytes.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+### Shaders, compiled as the program builds
+
+```haxe
+static macro function LoadShader(vsFileName:Null<String>, fsFileName:Null<String>):Shader
+static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<String>):Shader
+```
+
+- `LoadShader`: Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the program builds, for every target, so their names are constants; the files are found under `-D helix-ray-files` (default `web`), as the program's other files are.
+  - `vsFileName`: The vertex stage's file, or null.
+  - `fsFileName`: The fragment stage's file, or null.
+  - returns: The shader.
+- `LoadShaderFromMemory`: Loads a shader from raylib GLSL text, either null for raylib's default stage. It is compiled as the program builds, so the text is a constant.
+  - `vsCode`: The vertex stage's text, or null.
+  - `fsCode`: The fragment stage's text, or null.
+  - returns: The shader.
+
+### Not in helix-ray yet
+
+Each of these is raylib's name, and a call to it doesn't compile, saying so.
+
+From `raylib.h`: `IsWindowFullscreen`, `IsWindowHidden`, `IsWindowMinimized`, `IsWindowMaximized`, `IsWindowFocused`, `ToggleFullscreen`, `ToggleBorderlessWindowed`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowIcon`, `SetWindowIcons`, `SetWindowPosition`, `SetWindowMonitor`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetWindowOpacity`, `SetWindowFocused`, `GetWindowHandle`, `GetMonitorCount`, `GetCurrentMonitor`, `GetMonitorPosition`, `GetMonitorWidth`, `GetMonitorHeight`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `GetMonitorRefreshRate`, `GetWindowPosition`, `GetWindowScaleDPI`, `GetMonitorName`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `EnableEventWaiting`, `DisableEventWaiting`, `ShowCursor`, `HideCursor`, `IsCursorHidden`, `EnableCursor`, `DisableCursor`, `IsCursorOnScreen`, `BeginBlendMode`, `EndBlendMode`, `BeginScissorMode`, `EndScissorMode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `WaitTime`, `LoadRandomSequence`, `UnloadRandomSequence`, `TakeScreenshot`, `OpenURL`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `IsFileExtension`, `GetFileLength`, `GetFileExtension`, `GetFileName`, `GetFileNameWithoutExt`, `GetDirectoryPath`, `GetPrevDirectoryPath`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `IsFileNameValid`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `CompressData`, `DecompressData`, `EncodeDataBase64`, `DecodeDataBase64`, `ComputeCRC32`, `ComputeMD5`, `ComputeSHA1`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `IsKeyPressedRepeat`, `GetCharPressed`, `SetGamepadMappings`, `SetGamepadVibration`, `SetMousePosition`, `SetMouseOffset`, `SetMouseScale`, `GetMouseWheelMoveV`, `SetMouseCursor`, `GetTouchPointId`, `SetGesturesEnabled`, `GetGestureHoldDuration`, `GetGestureDragVector`, `GetGestureDragAngle`, `GetGesturePinchVector`, `GetGesturePinchAngle`, `UpdateCameraPro`, `SetShapesTexture`, `GetShapesTexture`, `GetShapesTextureRectangle`, `DrawLineStrip`, `DrawLineBezier`, `DrawCircleSector`, `DrawCircleSectorLines`, `DrawCircleGradient`, `DrawEllipse`, `DrawEllipseLines`, `DrawRing`, `DrawRingLines`, `DrawRectanglePro`, `DrawRectangleGradientV`, `DrawRectangleGradientH`, `DrawRectangleGradientEx`, `DrawRectangleRounded`, `DrawRectangleRoundedLines`, `DrawRectangleRoundedLinesEx`, `DrawTriangleLines`, `DrawTriangleFan`, `DrawTriangleStrip`, `DrawPoly`, `DrawPolyLines`, `DrawPolyLinesEx`, `DrawSplineLinear`, `DrawSplineBasis`, `DrawSplineCatmullRom`, `DrawSplineBezierQuadratic`, `DrawSplineBezierCubic`, `DrawSplineSegmentLinear`, `DrawSplineSegmentBasis`, `DrawSplineSegmentCatmullRom`, `DrawSplineSegmentBezierQuadratic`, `DrawSplineSegmentBezierCubic`, `GetSplinePointLinear`, `GetSplinePointBasis`, `GetSplinePointCatmullRom`, `GetSplinePointBezierQuad`, `GetSplinePointBezierCubic`, `CheckCollisionCircleLine`, `CheckCollisionPointTriangle`, `CheckCollisionPointLine`, `CheckCollisionPointPoly`, `CheckCollisionLines`, `GetCollisionRec`, `LoadImage`, `LoadImageRaw`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `IsImageValid`, `UnloadImage`, `ExportImage`, `ExportImageToMemory`, `ExportImageAsCode`, `GenImageColor`, `GenImageGradientLinear`, `GenImageGradientRadial`, `GenImageGradientSquare`, `GenImageChecked`, `GenImageWhiteNoise`, `GenImagePerlinNoise`, `GenImageCellular`, `GenImageText`, `ImageCopy`, `ImageFromImage`, `ImageFromChannel`, `ImageText`, `ImageTextEx`, `ImageFormat`, `ImageToPOT`, `ImageCrop`, `ImageAlphaCrop`, `ImageAlphaClear`, `ImageAlphaMask`, `ImageAlphaPremultiply`, `ImageBlurGaussian`, `ImageKernelConvolution`, `ImageResize`, `ImageResizeNN`, `ImageResizeCanvas`, `ImageMipmaps`, `ImageDither`, `ImageFlipVertical`, `ImageFlipHorizontal`, `ImageRotate`, `ImageRotateCW`, `ImageRotateCCW`, `ImageColorTint`, `ImageColorInvert`, `ImageColorGrayscale`, `ImageColorContrast`, `ImageColorBrightness`, `ImageColorReplace`, `LoadImageColors`, `LoadImagePalette`, `UnloadImageColors`, `UnloadImagePalette`, `GetImageAlphaBorder`, `GetImageColor`, `ImageClearBackground`, `ImageDrawPixel`, `ImageDrawPixelV`, `ImageDrawLine`, `ImageDrawLineV`, `ImageDrawLineEx`, `ImageDrawCircle`, `ImageDrawCircleV`, `ImageDrawCircleLines`, `ImageDrawCircleLinesV`, `ImageDrawRectangle`, `ImageDrawRectangleV`, `ImageDrawRectangleRec`, `ImageDrawRectangleLines`, `ImageDrawTriangle`, `ImageDrawTriangleEx`, `ImageDrawTriangleLines`, `ImageDrawTriangleFan`, `ImageDrawTriangleStrip`, `ImageDraw`, `ImageDrawText`, `ImageDrawTextEx`, `LoadTextureFromImage`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `SetTextureWrap`, `DrawTextureNPatch`, `ColorIsEqual`, `ColorToInt`, `ColorToHSV`, `ColorFromHSV`, `ColorTint`, `ColorBrightness`, `ColorContrast`, `ColorAlphaBlend`, `ColorLerp`, `GetColor`, `GetPixelColor`, `SetPixelColor`, `GetPixelDataSize`, `GetFontDefault`, `LoadFont`, `LoadFontEx`, `LoadFontFromImage`, `LoadFontFromMemory`, `IsFontValid`, `LoadFontData`, `GenImageFontAtlas`, `UnloadFontData`, `UnloadFont`, `ExportFontAsCode`, `DrawTextEx`, `DrawTextPro`, `DrawTextCodepoint`, `DrawTextCodepoints`, `SetTextLineSpacing`, `MeasureTextEx`, `GetGlyphIndex`, `GetGlyphInfo`, `GetGlyphAtlasRec`, `LoadUTF8`, `UnloadUTF8`, `LoadCodepoints`, `UnloadCodepoints`, `GetCodepointCount`, `GetCodepoint`, `GetCodepointNext`, `GetCodepointPrevious`, `CodepointToUTF8`, `TextCopy`, `TextIsEqual`, `TextLength`, `TextFormat`, `TextSubtext`, `TextReplace`, `TextInsert`, `TextJoin`, `TextSplit`, `TextAppend`, `TextFindIndex`, `TextToUpper`, `TextToLower`, `TextToPascal`, `TextToSnake`, `TextToCamel`, `TextToInteger`, `TextToFloat`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`, `LoadWave`, `LoadWaveFromMemory`, `IsWaveValid`, `LoadSoundFromWave`, `LoadSoundAlias`, `UpdateSound`, `UnloadWave`, `UnloadSoundAlias`, `ExportWave`, `ExportWaveAsCode`, `PauseSound`, `ResumeSound`, `WaveCopy`, `WaveCrop`, `WaveFormat`, `LoadWaveSamples`, `UnloadWaveSamples`, `LoadMusicStreamFromMemory`, `SeekMusicStream`, `GetMusicTimeLength`, `GetMusicTimePlayed`, `LoadAudioStream`, `IsAudioStreamValid`, `UnloadAudioStream`, `UpdateAudioStream`, `IsAudioStreamProcessed`, `PlayAudioStream`, `PauseAudioStream`, `ResumeAudioStream`, `IsAudioStreamPlaying`, `StopAudioStream`, `SetAudioStreamVolume`, `SetAudioStreamPitch`, `SetAudioStreamPan`, `SetAudioStreamBufferSizeDefault`, `SetAudioStreamCallback`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+
+## Raymath
+
+*class* in [`ray/src/helix/ray/Raymath.hx`](../../ray/src/helix/ray/Raymath.hx), `import helix.ray.Raymath;`
+
+Provides raymath's API, as raylib 5.5's `raymath.h` names it: vectors, matrices and quaternions, and `Clamp`, `Lerp` and the like. As in raylib, it is apart from `Raylib`, so a program that uses it imports it too:
+
+```haxe
+import helix.ray.Raylib.*;
+import helix.ray.Raymath.*;
+```
+
+What raymath has and helix-ray doesn't refuses to compile, naming itself.
+
+### Constants
+
+```haxe
+static inline var PI:Float
+static inline var DEG2RAD:Float
+static inline var RAD2DEG:Float
+static inline var EPSILON:Float
+```
+
+- `PI`: Pi, as raymath defines it when raylib hasn't.
+- `DEG2RAD`: Degrees to radians: multiply by it.
+- `RAD2DEG`: Radians to degrees: multiply by it.
+- `EPSILON`: The difference under which raymath's `...Equals` functions take two values as equal.
+
 ### raymath: vectors, matrices and quaternions (raylib/RMath.hx)
 
 ```haxe
@@ -2062,58 +2142,9 @@ static function QuaternionToMatrix(q:Quaternion):Matrix
   - `q`: The quaternion.
   - returns: The matrix.
 
-### helix-ray's own: loading in a page (raylib/HelixRay.hx)
-
-```haxe
-static function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void, ?failed:String -> Void):Void
-static function LoadModelAsync(fileName:String, loaded:Model -> Void, ?failed:String -> Void):Void
-static function LoadSoundAsync(fileName:String, loaded:Sound -> Void, ?failed:String -> Void):Void
-static function LoadFileTextAsync(fileName:String, loaded:String -> Void, ?failed:String -> Void):Void
-static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):Void
-```
-
-- `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page can't wait for a file. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
-  - `fileName`: The file, as the program names it.
-  - `loaded`: Receives the texture.
-  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadModelAsync`: Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own, in place of raylib's `LoadModel`. A file loaded again shares its first load's meshes and textures, with materials of its own.
-  - `fileName`: The file, as the program names it.
-  - `loaded`: Receives the model.
-  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadSoundAsync`: Loads a sound file and decodes it, answering when it is ready to play at once: helix-ray's own, in place of raylib's `LoadSound`. A file loaded again shares its first load's decoded sound. `InitAudioDevice` comes first.
-  - `fileName`: The file, as the program names it.
-  - `loaded`: Receives the sound.
-  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadFileTextAsync`: Reads a text file, answering when it is read: helix-ray's own, as `LoadTextureAsync` is for textures. A file `SaveFileText` wrote is answered from the saves.
-  - `fileName`: The file.
-  - `loaded`: Receives its text.
-  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
-- `LoadFileDataAsync`: Reads a file's bytes, answering when they are read: helix-ray's own, in place of raylib's `LoadFileData`. The program's `SetLoadFileDataCallback` answers first, then what `SaveFileData` wrote, then the program's files.
-  - `fileName`: The file.
-  - `loaded`: Receives its bytes.
-  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
-
-### Shaders, compiled as the program builds
-
-```haxe
-static macro function LoadShader(vsFileName:Null<String>, fsFileName:Null<String>):Shader
-static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<String>):Shader
-```
-
-- `LoadShader`: Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the program builds, for every target, so their names are constants; the files are found under `-D helix-ray-files` (default `web`), as the program's other files are.
-  - `vsFileName`: The vertex stage's file, or null.
-  - `fsFileName`: The fragment stage's file, or null.
-  - returns: The shader.
-- `LoadShaderFromMemory`: Loads a shader from raylib GLSL text, either null for raylib's default stage. It is compiled as the program builds, so the text is a constant.
-  - `vsCode`: The vertex stage's text, or null.
-  - `fsCode`: The fragment stage's text, or null.
-  - returns: The shader.
-
 ### Not in helix-ray yet
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
-
-From `raylib.h`: `IsWindowFullscreen`, `IsWindowHidden`, `IsWindowMinimized`, `IsWindowMaximized`, `IsWindowFocused`, `ToggleFullscreen`, `ToggleBorderlessWindowed`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowIcon`, `SetWindowIcons`, `SetWindowPosition`, `SetWindowMonitor`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetWindowOpacity`, `SetWindowFocused`, `GetWindowHandle`, `GetMonitorCount`, `GetCurrentMonitor`, `GetMonitorPosition`, `GetMonitorWidth`, `GetMonitorHeight`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `GetMonitorRefreshRate`, `GetWindowPosition`, `GetWindowScaleDPI`, `GetMonitorName`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `EnableEventWaiting`, `DisableEventWaiting`, `ShowCursor`, `HideCursor`, `IsCursorHidden`, `EnableCursor`, `DisableCursor`, `IsCursorOnScreen`, `BeginBlendMode`, `EndBlendMode`, `BeginScissorMode`, `EndScissorMode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `WaitTime`, `LoadRandomSequence`, `UnloadRandomSequence`, `TakeScreenshot`, `OpenURL`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `IsFileExtension`, `GetFileLength`, `GetFileExtension`, `GetFileName`, `GetFileNameWithoutExt`, `GetDirectoryPath`, `GetPrevDirectoryPath`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `IsFileNameValid`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `CompressData`, `DecompressData`, `EncodeDataBase64`, `DecodeDataBase64`, `ComputeCRC32`, `ComputeMD5`, `ComputeSHA1`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `IsKeyPressedRepeat`, `GetCharPressed`, `SetGamepadMappings`, `SetGamepadVibration`, `SetMousePosition`, `SetMouseOffset`, `SetMouseScale`, `GetMouseWheelMoveV`, `SetMouseCursor`, `GetTouchPointId`, `SetGesturesEnabled`, `GetGestureHoldDuration`, `GetGestureDragVector`, `GetGestureDragAngle`, `GetGesturePinchVector`, `GetGesturePinchAngle`, `UpdateCameraPro`, `SetShapesTexture`, `GetShapesTexture`, `GetShapesTextureRectangle`, `DrawLineStrip`, `DrawLineBezier`, `DrawCircleSector`, `DrawCircleSectorLines`, `DrawCircleGradient`, `DrawEllipse`, `DrawEllipseLines`, `DrawRing`, `DrawRingLines`, `DrawRectanglePro`, `DrawRectangleGradientV`, `DrawRectangleGradientH`, `DrawRectangleGradientEx`, `DrawRectangleRounded`, `DrawRectangleRoundedLines`, `DrawRectangleRoundedLinesEx`, `DrawTriangleLines`, `DrawTriangleFan`, `DrawTriangleStrip`, `DrawPoly`, `DrawPolyLines`, `DrawPolyLinesEx`, `DrawSplineLinear`, `DrawSplineBasis`, `DrawSplineCatmullRom`, `DrawSplineBezierQuadratic`, `DrawSplineBezierCubic`, `DrawSplineSegmentLinear`, `DrawSplineSegmentBasis`, `DrawSplineSegmentCatmullRom`, `DrawSplineSegmentBezierQuadratic`, `DrawSplineSegmentBezierCubic`, `GetSplinePointLinear`, `GetSplinePointBasis`, `GetSplinePointCatmullRom`, `GetSplinePointBezierQuad`, `GetSplinePointBezierCubic`, `CheckCollisionCircleLine`, `CheckCollisionPointTriangle`, `CheckCollisionPointLine`, `CheckCollisionPointPoly`, `CheckCollisionLines`, `GetCollisionRec`, `LoadImage`, `LoadImageRaw`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `IsImageValid`, `UnloadImage`, `ExportImage`, `ExportImageToMemory`, `ExportImageAsCode`, `GenImageColor`, `GenImageGradientLinear`, `GenImageGradientRadial`, `GenImageGradientSquare`, `GenImageChecked`, `GenImageWhiteNoise`, `GenImagePerlinNoise`, `GenImageCellular`, `GenImageText`, `ImageCopy`, `ImageFromImage`, `ImageFromChannel`, `ImageText`, `ImageTextEx`, `ImageFormat`, `ImageToPOT`, `ImageCrop`, `ImageAlphaCrop`, `ImageAlphaClear`, `ImageAlphaMask`, `ImageAlphaPremultiply`, `ImageBlurGaussian`, `ImageKernelConvolution`, `ImageResize`, `ImageResizeNN`, `ImageResizeCanvas`, `ImageMipmaps`, `ImageDither`, `ImageFlipVertical`, `ImageFlipHorizontal`, `ImageRotate`, `ImageRotateCW`, `ImageRotateCCW`, `ImageColorTint`, `ImageColorInvert`, `ImageColorGrayscale`, `ImageColorContrast`, `ImageColorBrightness`, `ImageColorReplace`, `LoadImageColors`, `LoadImagePalette`, `UnloadImageColors`, `UnloadImagePalette`, `GetImageAlphaBorder`, `GetImageColor`, `ImageClearBackground`, `ImageDrawPixel`, `ImageDrawPixelV`, `ImageDrawLine`, `ImageDrawLineV`, `ImageDrawLineEx`, `ImageDrawCircle`, `ImageDrawCircleV`, `ImageDrawCircleLines`, `ImageDrawCircleLinesV`, `ImageDrawRectangle`, `ImageDrawRectangleV`, `ImageDrawRectangleRec`, `ImageDrawRectangleLines`, `ImageDrawTriangle`, `ImageDrawTriangleEx`, `ImageDrawTriangleLines`, `ImageDrawTriangleFan`, `ImageDrawTriangleStrip`, `ImageDraw`, `ImageDrawText`, `ImageDrawTextEx`, `LoadTextureFromImage`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `SetTextureWrap`, `DrawTextureNPatch`, `ColorIsEqual`, `ColorToInt`, `ColorToHSV`, `ColorFromHSV`, `ColorTint`, `ColorBrightness`, `ColorContrast`, `ColorAlphaBlend`, `ColorLerp`, `GetColor`, `GetPixelColor`, `SetPixelColor`, `GetPixelDataSize`, `GetFontDefault`, `LoadFont`, `LoadFontEx`, `LoadFontFromImage`, `LoadFontFromMemory`, `IsFontValid`, `LoadFontData`, `GenImageFontAtlas`, `UnloadFontData`, `UnloadFont`, `ExportFontAsCode`, `DrawTextEx`, `DrawTextPro`, `DrawTextCodepoint`, `DrawTextCodepoints`, `SetTextLineSpacing`, `MeasureTextEx`, `GetGlyphIndex`, `GetGlyphInfo`, `GetGlyphAtlasRec`, `LoadUTF8`, `UnloadUTF8`, `LoadCodepoints`, `UnloadCodepoints`, `GetCodepointCount`, `GetCodepoint`, `GetCodepointNext`, `GetCodepointPrevious`, `CodepointToUTF8`, `TextCopy`, `TextIsEqual`, `TextLength`, `TextFormat`, `TextSubtext`, `TextReplace`, `TextInsert`, `TextJoin`, `TextSplit`, `TextAppend`, `TextFindIndex`, `TextToUpper`, `TextToLower`, `TextToPascal`, `TextToSnake`, `TextToCamel`, `TextToInteger`, `TextToFloat`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`, `LoadWave`, `LoadWaveFromMemory`, `IsWaveValid`, `LoadSoundFromWave`, `LoadSoundAlias`, `UpdateSound`, `UnloadWave`, `UnloadSoundAlias`, `ExportWave`, `ExportWaveAsCode`, `PauseSound`, `ResumeSound`, `WaveCopy`, `WaveCrop`, `WaveFormat`, `LoadWaveSamples`, `UnloadWaveSamples`, `LoadMusicStreamFromMemory`, `SeekMusicStream`, `GetMusicTimeLength`, `GetMusicTimePlayed`, `LoadAudioStream`, `IsAudioStreamValid`, `UnloadAudioStream`, `UpdateAudioStream`, `IsAudioStreamProcessed`, `PlayAudioStream`, `PauseAudioStream`, `ResumeAudioStream`, `IsAudioStreamPlaying`, `StopAudioStream`, `SetAudioStreamVolume`, `SetAudioStreamPitch`, `SetAudioStreamPan`, `SetAudioStreamBufferSizeDefault`, `SetAudioStreamCallback`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 From `raymath.h`: `Normalize`, `Wrap`, `FloatEquals`, `Vector2AddValue`, `Vector2SubtractValue`, `Vector2DotProduct`, `Vector2DistanceSqr`, `Vector2Angle`, `Vector2LineAngle`, `Vector2Negate`, `Vector2Divide`, `Vector2Transform`, `Vector2Reflect`, `Vector2Min`, `Vector2Max`, `Vector2Rotate`, `Vector2MoveTowards`, `Vector2Invert`, `Vector2Clamp`, `Vector2Equals`, `Vector2Refract`, `Vector3AddValue`, `Vector3SubtractValue`, `Vector3Perpendicular`, `Vector3DistanceSqr`, `Vector3Angle`, `Vector3Divide`, `Vector3Project`, `Vector3Reject`, `Vector3OrthoNormalize`, `Vector3RotateByQuaternion`, `Vector3MoveTowards`, `Vector3CubicHermite`, `Vector3Reflect`, `Vector3Min`, `Vector3Max`, `Vector3Barycenter`, `Vector3Unproject`, `Vector3ToFloatV`, `Vector3Invert`, `Vector3Clamp`, `Vector3ClampValue`, `Vector3Equals`, `Vector3Refract`, `Vector4Zero`, `Vector4One`, `Vector4Add`, `Vector4AddValue`, `Vector4Subtract`, `Vector4SubtractValue`, `Vector4Length`, `Vector4LengthSqr`, `Vector4DotProduct`, `Vector4Distance`, `Vector4DistanceSqr`, `Vector4Scale`, `Vector4Multiply`, `Vector4Negate`, `Vector4Divide`, `Vector4Normalize`, `Vector4Min`, `Vector4Max`, `Vector4Lerp`, `Vector4MoveTowards`, `Vector4Invert`, `Vector4Equals`, `MatrixDeterminant`, `MatrixTrace`, `MatrixAdd`, `MatrixSubtract`, `MatrixRotateZYX`, `MatrixFrustum`, `MatrixToFloatV`, `QuaternionAdd`, `QuaternionAddValue`, `QuaternionSubtract`, `QuaternionSubtractValue`, `QuaternionLength`, `QuaternionNormalize`, `QuaternionInvert`, `QuaternionMultiply`, `QuaternionScale`, `QuaternionDivide`, `QuaternionLerp`, `QuaternionNlerp`, `QuaternionSlerp`, `QuaternionCubicHermiteSpline`, `QuaternionFromVector3ToVector3`, `QuaternionFromMatrix`, `QuaternionToAxisAngle`, `QuaternionToEuler`, `QuaternionTransform`, `QuaternionEquals`, `MatrixDecompose`.
 

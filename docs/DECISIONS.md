@@ -122,3 +122,9 @@ Why things are the way they are, numbered, in order.
     reads. Haxe's `#error` fires wherever the file is read, called or not, and `@:deprecated` only warns. `gen_raylib` checks each
     message's signature against the load's own. Faking synchronous loads in a page, still on the roadmap, would bring them back on
     both targets at once.
+
+22. **raymath is apart from `Raylib`, as in raylib.** raylib.h declares none of raymath's functions; a C program that calls
+    `Vector2Add` includes `raymath.h`, and raylib's own examples do, so an agent trained on raylib knows to. helix-ray's `Raymath`,
+    generated from the `RMath` section as `Raylib` is from the others, is that header: `import helix.ray.Raymath.*;` beside
+    `Raylib`'s. The trial agents used raymath through `Raylib` alone, as the README then told them; the async trial shows whether
+    they import `Raymath` unprompted. The sections are private to helix-ray, as raylib's `.c` modules sit behind its headers.
