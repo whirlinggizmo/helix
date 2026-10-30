@@ -10,6 +10,10 @@ class Sound {
 	@:allow(helix.ray)
 	var volume = 1.;
 	@:allow(helix.ray)
+	var pitch = 1.;
+	@:allow(helix.ray)
+	var pan = .5;
+	@:allow(helix.ray)
 	var waiting = 0;
 	@:allow(helix.ray)
 	var unloaded = false;

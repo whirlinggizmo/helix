@@ -10,7 +10,8 @@
   on the CPU, `SetTextureFilter`, `UpdateMeshBuffer`, `DrawMeshInstanced`; each refuses to compile, naming itself. Platform changes it would like,
   for review: a render-target pass that keeps what the target holds (raylib's render textures keep it; ours start cleared each
   frame), a uniform block both shader stages share (worked around: a block a stage), `ShaderCompiler.compileText` as a supported
-  entry point, and a page's cache in OPFS readable at once from the main thread (a worker holding OPFS's sync handles, the page
+  entry point, a sound's length and the position it plays at in services' `Audio` (raylib's `GetMusicTimeLength`,
+  `GetMusicTimePlayed` and `SeekMusicStream` refuse until then), and a page's cache in OPFS readable at once from the main thread (a worker holding OPFS's sync handles, the page
   spinning on a SharedArrayBuffer for the reply, as emscripten does), which needs the page cross-origin isolated (COOP and COEP), so
   only ever an option a program chooses, never the default.
 - **A drawing library,** between the services and a mirror, when a second mirror needs what helix-ray draws with (its frame recording,

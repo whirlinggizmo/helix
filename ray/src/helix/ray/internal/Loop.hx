@@ -58,6 +58,23 @@ class Loop {
 			named.set(value, true);
 			scan = literal.matchedRight();
 		}
+		// Music is streamed (LoadMusicStream), so a file named only there isn't read before main.
+		var streamed = ~/LoadMusicStream\s*\(\s*["']([^"'\n]+)["']/;
+		var rest = text, music = new Map<String, Bool>();
+		while (streamed.match(rest)) {
+			music.set(streamed.matched(1), true);
+			rest = streamed.matchedRight();
+		}
+		for (path in music.keys()) {
+			var others = new EReg('"' + EReg.escape(path) + '"|\'' + EReg.escape(path) + '\'', "g");
+			var count = 0, scanText = text;
+			while (others.match(scanText)) {
+				count++;
+				scanText = others.matchedRight();
+			}
+			if (count <= 1)
+				named.remove(path);
+		}
 		var folders = Context.definedValue("helix-ray-preload");
 		var paths = [];
 		for (path in all) {

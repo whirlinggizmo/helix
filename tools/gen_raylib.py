@@ -85,6 +85,12 @@ def main():
         return 1
     before, rest = text.split(BEGIN, 1)
     after = rest.split(END, 1)[1]
+    # A function written in a section has no refusal left in the hand-written part.
+    clash = [m.group(2) for m in FUNCTION.finditer(''.join((RAY / 'raylib' / f'{n}.hx').read_text(encoding='utf-8') for n, _ in SECTIONS))
+             if f'Missing.refuse("{m.group(2)}"' in before + after]
+    if clash:
+        print('gen_raylib: written in a section and still refused in Raylib.hx (remove the refusal): ' + ', '.join(clash))
+        return 1
     updated = before + generated() + after
     if check:
         if updated != text:

@@ -2129,6 +2129,99 @@ class Raylib {
 	public static inline function SetSoundVolume(sound:Sound, volume:Float):Void
 		RAudio.SetSoundVolume(sound, volume);
 
+	/** Sets a sound's pitch, for its next play and the one playing.
+
+		@param sound  The sound.
+		@param pitch  1 for as recorded, 2 an octave up. */
+	public static inline function SetSoundPitch(sound:Sound, pitch:Float):Void
+		RAudio.SetSoundPitch(sound, pitch);
+
+	/** Sets where a sound is heard, for its next play and the one playing.
+
+		@param sound  The sound.
+		@param pan  0 for left, 0.5 the middle, 1 for right, as raylib's. */
+	public static inline function SetSoundPan(sound:Sound, pan:Float):Void
+		RAudio.SetSoundPan(sound, pan);
+
+	/** Opens a music file, to be played as it is read (helix-services' `Audio.stream`): natively from its file, in a page from the
+		download as it arrives, so it is never loaded before `main`. It may be played at once; it starts once it opens.
+
+		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
+		@return  The music. */
+	public static inline function LoadMusicStream(fileName:String):Music
+		return RAudio.LoadMusicStream(fileName);
+
+	/** Returns whether music was opened, or is still opening.
+
+		@param music  The music.
+		@return  False once its file couldn't be opened. */
+	public static inline function IsMusicValid(music:Music):Bool
+		return RAudio.IsMusicValid(music);
+
+	/** Stops music and closes it.
+
+		@param music  The music. */
+	public static inline function UnloadMusicStream(music:Music):Void
+		RAudio.UnloadMusicStream(music);
+
+	/** Plays music from its start, looping while its `looping` is true.
+
+		@param music  The music. */
+	public static inline function PlayMusicStream(music:Music):Void
+		RAudio.PlayMusicStream(music);
+
+	/** Returns whether music is playing, or will once it opens.
+
+		@param music  The music.
+		@return  True while it plays, paused or not. */
+	public static inline function IsMusicStreamPlaying(music:Music):Bool
+		return RAudio.IsMusicStreamPlaying(music);
+
+	/** Keeps music playing. raylib's programs call it each frame; here the stream feeds itself, so it does nothing.
+
+		@param music  The music. */
+	public static inline function UpdateMusicStream(music:Music):Void
+		RAudio.UpdateMusicStream(music);
+
+	/** Stops music.
+
+		@param music  The music. */
+	public static inline function StopMusicStream(music:Music):Void
+		RAudio.StopMusicStream(music);
+
+	/** Pauses music where it is.
+
+		@param music  The music. */
+	public static inline function PauseMusicStream(music:Music):Void
+		RAudio.PauseMusicStream(music);
+
+	/** Resumes paused music.
+
+		@param music  The music. */
+	public static inline function ResumeMusicStream(music:Music):Void
+		RAudio.ResumeMusicStream(music);
+
+	/** Sets music's volume.
+
+		@param music  The music.
+		@param volume  0 (silent) to 1. */
+	public static inline function SetMusicVolume(music:Music, volume:Float):Void
+		RAudio.SetMusicVolume(music, volume);
+
+	/** Sets music's pitch.
+
+		@param music  The music.
+		@param pitch  1 for as recorded. */
+	public static inline function SetMusicPitch(music:Music, pitch:Float):Void
+		RAudio.SetMusicPitch(music, pitch);
+
+	/** Sets where music is heard.
+
+		@param music  The music.
+		@param pan  0 for left, 0.5 the middle, 1 for right, as raylib's. */
+	public static inline function SetMusicPan(music:Music, pan:Float):Void
+		RAudio.SetMusicPan(music, pan);
+
 	// ---- raymath: vectors, matrices and quaternions (raylib/RMath.hx) ----
 
 	/** Returns a value kept between two others.
@@ -4062,14 +4155,6 @@ class Raylib {
 	public static macro function ResumeSound(args:Array<Expr>):Expr
 		return helix.ray.internal.Missing.refuse("ResumeSound", "raylib.h");
 
-	/** raylib's `SetSoundPitch` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetSoundPitch(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetSoundPitch", "raylib.h");
-
-	/** raylib's `SetSoundPan` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetSoundPan(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetSoundPan", "raylib.h");
-
 	/** raylib's `WaveCopy` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
 	public static macro function WaveCopy(args:Array<Expr>):Expr
 		return helix.ray.internal.Missing.refuse("WaveCopy", "raylib.h");
@@ -4090,61 +4175,13 @@ class Raylib {
 	public static macro function UnloadWaveSamples(args:Array<Expr>):Expr
 		return helix.ray.internal.Missing.refuse("UnloadWaveSamples", "raylib.h");
 
-	/** raylib's `LoadMusicStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadMusicStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadMusicStream", "raylib.h");
-
 	/** raylib's `LoadMusicStreamFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
 	public static macro function LoadMusicStreamFromMemory(args:Array<Expr>):Expr
 		return helix.ray.internal.Missing.refuse("LoadMusicStreamFromMemory", "raylib.h");
 
-	/** raylib's `IsMusicValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsMusicValid(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsMusicValid", "raylib.h");
-
-	/** raylib's `UnloadMusicStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadMusicStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadMusicStream", "raylib.h");
-
-	/** raylib's `PlayMusicStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function PlayMusicStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("PlayMusicStream", "raylib.h");
-
-	/** raylib's `IsMusicStreamPlaying` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsMusicStreamPlaying(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsMusicStreamPlaying", "raylib.h");
-
-	/** raylib's `UpdateMusicStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UpdateMusicStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UpdateMusicStream", "raylib.h");
-
-	/** raylib's `StopMusicStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function StopMusicStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("StopMusicStream", "raylib.h");
-
-	/** raylib's `PauseMusicStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function PauseMusicStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("PauseMusicStream", "raylib.h");
-
-	/** raylib's `ResumeMusicStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ResumeMusicStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ResumeMusicStream", "raylib.h");
-
 	/** raylib's `SeekMusicStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
 	public static macro function SeekMusicStream(args:Array<Expr>):Expr
 		return helix.ray.internal.Missing.refuse("SeekMusicStream", "raylib.h");
-
-	/** raylib's `SetMusicVolume` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetMusicVolume(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetMusicVolume", "raylib.h");
-
-	/** raylib's `SetMusicPitch` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetMusicPitch(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetMusicPitch", "raylib.h");
-
-	/** raylib's `SetMusicPan` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetMusicPan(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetMusicPan", "raylib.h");
 
 	/** raylib's `GetMusicTimeLength` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
 	public static macro function GetMusicTimeLength(args:Array<Expr>):Expr
