@@ -2,7 +2,7 @@ package helix.platform.adapters.system.dom;
 
 import helix.platform.Device;
 import helix.platform.ISystem;
-import helix.platform.adapters.shared.FilePath;
+import helix.platform.adapters.shared.ProgramName;
 import js.Browser;
 
 /** Provides `ISystem` in a browser page: the device as the browser describes it, and options from the URL's query.
@@ -11,19 +11,11 @@ import js.Browser;
 class DomSystemAdapter implements ISystem {
 	var params = new js.html.URLSearchParams(Browser.window.location.search);
 
-	final company:String;
-	final product:String;
+	final company:String = ProgramName.company();
+	final product:String = ProgramName.product();
 
-	/** Creates the system's facts for a program.
-
-		@param options  Optional. Who the program is: its company, "DefaultCompany" by default, and its product, "Game" by default.
-		@throws String  For a company or product that can't be one directory's name. */
-	public function new(?options:DomSystemAdapterOptions) {
-		company = options == null ? "DefaultCompany" : options.company;
-		product = options == null || options.product == null ? "Game" : options.product;
-		if (!FilePath.isDirectoryName(company) || !FilePath.isDirectoryName(product))
-			throw 'company "$company" and product "$product" must each be one directory\'s name';
-	}
+	/** Creates the system's facts for the program the `helix-company` and `helix-product` defines name. */
+	public function new() {}
 
 	public var device(get, never):Device;
 

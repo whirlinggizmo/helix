@@ -855,14 +855,14 @@ function getCacheDirectory():String
   - returns: The directory natively, or the database's name in a page.
   - throws `String`: Natively, when the environment variable the directory comes from is set to a path that isn't absolute, or is unset and the OS has no such directory.
 
-  Natively it is the user's data directory, then the company and the product the system adapter was made with. The user's data directory is `$XDG_DATA_HOME` or `~/.local/share` on Linux, `~/Library/Application Support` on macOS, and `%APPDATA%` on Windows. The directory may not exist yet.
+  Natively it is the user's data directory, then the company and the product (the `helix-company` and `helix-product` defines). The user's data directory is `$XDG_DATA_HOME` or `~/.local/share` on Linux, `~/Library/Application Support` on macOS, and `%APPDATA%` on Windows. The directory may not exist yet.
 
   In a page it is the name of the database where the browser keeps the program's files, "company/product/data".
 - `getCacheDirectory`: Returns where the OS keeps a program's files that can be made or fetched again, such as downloaded assets.
   - returns: The directory natively, or the database's name in a page.
   - throws `String`: Natively, when the environment variable the directory comes from is set to a path that isn't absolute, or is unset and the OS has no such directory.
 
-  Natively it is the user's cache directory, then the company and the product the system adapter was made with. The user's cache directory is `$XDG_CACHE_HOME` or `~/.cache` on Linux, and `~/Library/Caches` on macOS. On Windows it is `%LOCALAPPDATA%`, then the company, the product and `cache`. The directory may not exist yet.
+  Natively it is the user's cache directory, then the company and the product (the `helix-company` and `helix-product` defines). The user's cache directory is `$XDG_CACHE_HOME` or `~/.cache` on Linux, and `~/Library/Caches` on macOS. On Windows it is `%LOCALAPPDATA%`, then the company, the product and `cache`. The directory may not exist yet.
 
   In a page it is the name of the database where the browser keeps the program's files, "company/product/cache".
 
@@ -1302,3 +1302,10 @@ function toString():String
 ```
 
 - `toString`: Returns the value's name as written (Clamp, Repeat): what Std.string, interpolation and trace show.
+
+## Defines
+
+Set in a build's hxml, as `-D helix-product=Asteroids` (quoted when the value has a space: `-D "helix-company=Whirling Gizmo"`). `haxe --help-user-defines` lists them too, and an editor completes them in an hxml file.
+
+- `helix-company=<name>`: The company that makes the program, one directory's name. ISystem's data and cache directories are under it, and natively SDL names the program by its product. Defaults to DefaultCompany.
+- `helix-product=<name>`: The program's name, one directory's name. ISystem's data and cache directories are under the company and it, and natively SDL names the program by it, in the OS's audio mixer for one. Defaults to the executable's name natively and Game in a page.

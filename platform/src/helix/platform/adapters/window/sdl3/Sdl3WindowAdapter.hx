@@ -2,6 +2,7 @@ package helix.platform.adapters.window.sdl3;
 
 import helix.platform.IWindow;
 import helix.platform.Orientation;
+import helix.platform.adapters.shared.ProgramName;
 import helix.platform.adapters.shared.sdl3.Sdl3Bridge;
 import helix.platform.adapters.window.sdl3.internal.WindowBridge;
 
@@ -15,6 +16,7 @@ class Sdl3WindowAdapter implements IWindow {
 		@param options  The graphics adapter it is for, and its samples.
 		@throws String  SDL or the window can't be had. */
 	public function new(options:Sdl3WindowAdapterOptions) {
+		Sdl3Bridge.nameApp(ProgramName.product());
 		if (Sdl3Bridge.open(options.msaaSamples, options.graphics == Gl ? 1 : 0) != 1)
 			throw "SDL3 can't open a window here (see the log)";
 		title = "HeliX";

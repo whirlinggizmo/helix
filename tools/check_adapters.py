@@ -21,8 +21,8 @@
   8. An adapter class makes public only its constructor and the members of the contract it implements: anything else a caller needs
      belongs in the contract. Extern bridges (internal/) are the C's and exempt, as is an override, which the base class it extends made
      public.
-  9. An adapter's constructor takes nothing, or one <Adapter>Options, optional when every field has a default: a @:structInit class in
-     its own file beside the adapter (docs/CONVENTIONS.md), so every value is named at the call.
+  9. An adapter's constructor takes nothing, or one <Adapter>Options: a @:structInit class in its own file beside the adapter
+     (docs/CONVENTIONS.md), so every value is named at the call.
 
 Known violations, each with what removes it, would be listed in KNOWN; one that has gone must be taken off, so the list only shrinks.
 Exits 1 on any other violation.
@@ -199,7 +199,7 @@ def main():
                 body = re.search(r'^class\s+' + name + r'\b.*?(?=^(?:private\s+)?(?:class|enum|typedef|abstract)\b|\Z)', f.read_text(encoding='utf-8'), re.S | re.M)
                 found = re.search(r'\bpublic\s+function\s+new\s*\(([^)]*)\)', body.group(0)) if body else None
                 params = found.group(1).strip() if found else ''
-                if params and not re.fullmatch(r'\??options\s*:\s*' + name + r'Options', params):
+                if params and not re.fullmatch(r'options\s*:\s*' + name + r'Options', params):
                     violations.append(('options', f, 0, f'{name}({params}): take nothing, or one options:{name}Options'))
                 options = api / (name + 'Options.hx')
                 if params and options.exists():

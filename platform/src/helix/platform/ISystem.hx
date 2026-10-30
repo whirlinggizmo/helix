@@ -32,7 +32,7 @@ interface ISystem {
 
 	/** Returns where the OS keeps a program's files that must last, such as its saves.
 
-		Natively it is the user's data directory, then the company and the product the system adapter was made with. The user's data directory is `$XDG_DATA_HOME` or
+		Natively it is the user's data directory, then the company and the product (the `helix-company` and `helix-product` defines). The user's data directory is `$XDG_DATA_HOME` or
 		`~/.local/share` on Linux, `~/Library/Application Support` on macOS, and `%APPDATA%` on Windows. The directory may not exist yet.
 
 		In a page it is the name of the database where the browser keeps the program's files, "company/product/data".
@@ -43,7 +43,7 @@ interface ISystem {
 
 	/** Returns where the OS keeps a program's files that can be made or fetched again, such as downloaded assets.
 
-		Natively it is the user's cache directory, then the company and the product the system adapter was made with. The user's cache directory is `$XDG_CACHE_HOME` or
+		Natively it is the user's cache directory, then the company and the product (the `helix-company` and `helix-product` defines). The user's cache directory is `$XDG_CACHE_HOME` or
 		`~/.cache` on Linux, and `~/Library/Caches` on macOS. On Windows it is `%LOCALAPPDATA%`, then the company, the product and `cache`.
 		The directory may not exist yet.
 

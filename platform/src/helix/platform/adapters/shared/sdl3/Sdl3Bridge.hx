@@ -36,4 +36,5 @@ extern class Sdl3Bridge {
 	@:native("helix_sdl3_base_path") static function basePath():cpp.ConstCharStar;
 	@:native("helix_sdl3_time") static function time():Float;
 	@:native("helix_sdl3_os_directory") static function osDirectory(which:Int):cpp.ConstCharStar;
+	@:native("helix_sdl3_name_app") static function nameApp(name:cpp.ConstCharStar):Void;
 }

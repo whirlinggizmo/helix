@@ -5,6 +5,8 @@ import helix.platform.GrowingSource;
 import helix.platform.IAudio;
 import helix.platform.StreamSource;
 import helix.platform.adapters.audio.sdl3mixer.internal.AudioBridge;
+import helix.platform.adapters.shared.ProgramName;
+import helix.platform.adapters.shared.sdl3.Sdl3Bridge;
 import helix.platform.adapters.shared.sdl3mixer.Sdl3MixerBridge;
 
 /** A download's copy in C (`id`), kept up with its source at each poll: how much of it has been copied, and whether its end was told. */
@@ -56,6 +58,7 @@ class Sdl3MixerAudioAdapter implements IAudio {
 	/** Creates the output, opening the default playback device; with none, clips are still made, nothing plays and `available` is
 		false. */
 	public function new() {
+		Sdl3Bridge.nameApp(ProgramName.product());
 		Sdl3MixerBridge.version();
 		output = AudioBridge.open(1) != 0;
 	}

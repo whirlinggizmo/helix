@@ -5,6 +5,7 @@ import helix.platform.IEvents;
 import helix.platform.PadAxis;
 import helix.platform.PadButton;
 import helix.platform.adapters.events.sdl3.internal.EventsBridge;
+import helix.platform.adapters.shared.ProgramName;
 import helix.platform.adapters.shared.sdl3.Sdl3Bridge;
 
 /** Provides `IEvents` on SDL3, natively: its one queue drained at each poll, and its gamepads through its controller database.
@@ -16,8 +17,10 @@ class Sdl3EventsAdapter implements IEvents {
 	var pending:Array<Event> = [];
 
 	/** Sets up SDL's gamepads and touch. */
-	public function new()
+	public function new() {
+		Sdl3Bridge.nameApp(ProgramName.product());
 		EventsBridge.setup();
+	}
 
 	public function poll():Void {
 		delivered.resize(0);

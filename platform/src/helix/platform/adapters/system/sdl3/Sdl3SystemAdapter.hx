@@ -3,7 +3,7 @@ package helix.platform.adapters.system.sdl3;
 import haxe.io.Path;
 import helix.platform.Device;
 import helix.platform.ISystem;
-import helix.platform.adapters.shared.FilePath;
+import helix.platform.adapters.shared.ProgramName;
 import helix.platform.adapters.shared.sdl3.Sdl3Bridge;
 
 /** Provides `ISystem` on SDL3, natively: the platform SDL names, options from HELIX_ environment variables, SDL's monotonic clock, the
@@ -18,17 +18,12 @@ class Sdl3SystemAdapter implements ISystem {
 	final company:String;
 	final product:String;
 
-	/** Creates the system's facts for a program.
+	/** Creates the system's facts for the program the `helix-company` and `helix-product` defines name.
 
-		@param options  Optional. Who the program is: its company, "DefaultCompany" by default, and its product, the executable's name by
-			default.
-		@throws String  For a company or product that can't be one directory's name. */
-	public function new(?options:Sdl3SystemAdapterOptions) {
-		company = options == null ? "DefaultCompany" : options.company;
-		product = options == null
-			|| options.product == null ? Path.withoutExtension(Path.withoutDirectory(Sys.programPath())) : options.product;
-		if (!FilePath.isDirectoryName(company) || !FilePath.isDirectoryName(product))
-			throw 'company "$company" and product "$product" must each be one directory\'s name';
+		@throws String  For an executable whose name can't be one directory's name, when `helix-product` is unset. */
+	public function new() {
+		company = ProgramName.company();
+		product = ProgramName.product();
 	}
 
 	public var device(get, never):Device;

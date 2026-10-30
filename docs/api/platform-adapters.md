@@ -488,7 +488,7 @@ Provides `ISystem` in a browser page: the device as the browser describes it, an
 The system comes from the user agent, a touch screen from its touch points, a fine pointer from the any-pointer media query.
 
 ```haxe
-function new(?options:DomSystemAdapterOptions)
+function new()
 var device(get, never):Device
 function getOption(name:String):Null<String>
 function getTime():Float
@@ -497,29 +497,7 @@ function getDataDirectory():String
 function getCacheDirectory():String
 ```
 
-- `new`: Creates the system's facts for a program.
-  - `options`: Optional. Who the program is: its company, "DefaultCompany" by default, and its product, "Game" by default.
-  - throws `String`: For a company or product that can't be one directory's name.
-
-## DomSystemAdapterOptions
-
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/system/dom/DomSystemAdapterOptions.hx`](../../platform/src/helix/platform/adapters/system/dom/DomSystemAdapterOptions.hx), `import helix.platform.adapters.system.dom.DomSystemAdapterOptions;`
-
-Specifies who the program is, for the directories `DomSystemAdapter` gives it.
-
-Written as an object where one is expected; a field marked `?` may be left out, for its default:
-
-```haxe
-{?company:String, ?product:String}
-```
-
-```haxe
-final company:String = "DefaultCompany"
-final product:String = null
-```
-
-- `company`: Gets the company's name, one directory's name. Defaults to "DefaultCompany".
-- `product`: Gets the product's name, one directory's name. Defaults to "Game".
+- `new`: Creates the system's facts for the program the `helix-company` and `helix-product` defines name.
 
 ## Sdl3SystemAdapter
 
@@ -530,7 +508,7 @@ Provides `ISystem` on SDL3, natively: the platform SDL names, options from HELIX
 A mouse is assumed and no touch screen reported. The directories follow the rules SDL's `SDL_GetPrefPath` does for data, without its making the directory, and the same OS conventions for the cache, which SDL has no call for. Each comes from its environment variable when that's set, and from the OS when it isn't (the user database's home directory, Windows' shell folders); an empty one counts as unset. A variable set to a path that isn't absolute throws, naming it, where the XDG specification would ignore it: someone set it, and quietly writing elsewhere would hide the mistake.
 
 ```haxe
-function new(?options:Sdl3SystemAdapterOptions)
+function new()
 var device(get, never):Device
 function getOption(name:String):Null<String>
 function getTime():Float
@@ -539,29 +517,8 @@ function getDataDirectory():String
 function getCacheDirectory():String
 ```
 
-- `new`: Creates the system's facts for a program.
-  - `options`: Optional. Who the program is: its company, "DefaultCompany" by default, and its product, the executable's name by default.
-  - throws `String`: For a company or product that can't be one directory's name.
-
-## Sdl3SystemAdapterOptions
-
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/system/sdl3/Sdl3SystemAdapterOptions.hx`](../../platform/src/helix/platform/adapters/system/sdl3/Sdl3SystemAdapterOptions.hx), `import helix.platform.adapters.system.sdl3.Sdl3SystemAdapterOptions;`
-
-Specifies who the program is, for the directories `Sdl3SystemAdapter` gives it.
-
-Written as an object where one is expected; a field marked `?` may be left out, for its default:
-
-```haxe
-{?company:String, ?product:String}
-```
-
-```haxe
-final company:String = "DefaultCompany"
-final product:String = null
-```
-
-- `company`: Gets the company's name, one directory's name. Defaults to "DefaultCompany".
-- `product`: Gets the product's name, one directory's name. Defaults to the executable's name, without its extension.
+- `new`: Creates the system's facts for the program the `helix-company` and `helix-product` defines name.
+  - throws `String`: For an executable whose name can't be one directory's name, when `helix-product` is unset.
 
 ## DomWindowAdapter
 

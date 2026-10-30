@@ -78,6 +78,15 @@ const char *helix_sdl3_getenv(const char *name){return SDL_getenv(name);}
 const char *helix_sdl3_base_path(void){return SDL_GetBasePath();}
 double helix_sdl3_time(void){return (double)SDL_GetTicksNS()/1e9;}
 
+/* Names the program for SDL, which uses the name where the OS shows one (its audio mixer, a Wayland compositor): once, before any of
+   SDL's subsystems starts, by whichever adapter starts one first. */
+void helix_sdl3_name_app(const char *name){
+ static int named;
+ if(named)return;
+ named=1;
+ SDL_SetAppMetadata(name,NULL,NULL);
+}
+
 /* A directory the OS keeps for the user, asked of the OS when its environment variable is unset: 0 the home directory, 1 the roaming
    application data, 2 the local application data. On Windows its shell folders (SHGetFolderPathW, as SDL_GetPrefPath asks); elsewhere the
    home directory from the user database, and none for 1 and 2. UTF-8, valid until the next call; NULL when the OS has none. */

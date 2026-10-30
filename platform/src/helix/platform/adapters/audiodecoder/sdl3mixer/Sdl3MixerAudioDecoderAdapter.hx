@@ -4,6 +4,8 @@ import haxe.io.Bytes;
 import helix.platform.IAudioDecoder;
 import helix.platform.adapters.audiodecoder.sdl3mixer.internal.AudioDecoderBridge;
 import helix.platform.adapters.shared.Mailbox;
+import helix.platform.adapters.shared.ProgramName;
+import helix.platform.adapters.shared.sdl3.Sdl3Bridge;
 import helix.platform.adapters.shared.sdl3mixer.Sdl3MixerBridge;
 import sys.thread.Thread;
 
@@ -15,6 +17,7 @@ class Sdl3MixerAudioDecoderAdapter implements IAudioDecoder {
 
 	/** Creates the decoder. */
 	public function new() {
+		Sdl3Bridge.nameApp(ProgramName.product());
 		Sdl3MixerBridge.version();
 		AudioDecoderBridge.init();
 	}

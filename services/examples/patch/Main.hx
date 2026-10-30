@@ -41,12 +41,12 @@ class Main {
 		window = new helix.platform.adapters.window.dom.DomWindowAdapter({canvasId: "canvas"});
 		events = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
 		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvasId: "canvas"});
-		system = new helix.platform.adapters.system.dom.DomSystemAdapter({company: "helix", product: "patch-example"});
+		system = new helix.platform.adapters.system.dom.DomSystemAdapter();
 		#else
 		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gl});
 		graphics = new helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter();
 		events = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();
-		system = new helix.platform.adapters.system.sdl3.Sdl3SystemAdapter({company: "helix", product: "patch-example"});
+		system = new helix.platform.adapters.system.sdl3.Sdl3SystemAdapter();
 		#end
 		window.title = "helix-services: patch";
 		var frames = system.getOption("frames");
