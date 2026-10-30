@@ -5,7 +5,7 @@ package helix.math;
 	It acts on column vectors and is stored by columns, as GPUs take it, so `values` can be sent to a shader as they are. A method that
 	makes or changes a matrix changes this one and returns it, so a caller can reuse one every frame; one that computes a point writes it
 	into the point given. Rotations use `Trig`, so a matrix comes out the same on every target. The formulas are raymath's (raylib 5.5,
-	zlib).
+	zlib, `vendor/raylib-LICENSE`).
 
 	```haxe
 	var model = new Matrix3D().makeScale(2, 2, 2).appendRotation(0, 1, 0, angle).appendTranslation(x, 0, z);
