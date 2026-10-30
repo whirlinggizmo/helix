@@ -82,12 +82,14 @@ class HelixRay {
 			Runtime.later(() -> loaded(given));
 			return;
 		}
-		if (Runtime.saves != null && Runtime.saves.hasKey(SAVED + path)) {
-			var text = Runtime.saves.getString(SAVED + path, "");
-			Runtime.later(() -> loaded(text));
-			return;
-		}
-		Runtime.fetch(path, error -> error == null ? loaded(Runtime.files.get(path).toString()) : refuse("LoadFileTextAsync", path, error, failed));
+		Runtime.withSaves(saves -> {
+			if (saves.hasKey(SAVED + path)) {
+				var text = saves.getString(SAVED + path, "");
+				Runtime.later(() -> loaded(text));
+				return;
+			}
+			Runtime.fetch(path, error -> error == null ? loaded(Runtime.files.get(path).toString()) : refuse("LoadFileTextAsync", path, error, failed));
+		});
 	}
 
 	/** Reads a file's bytes, answering when they are read: helix-ray's own, in place of raylib's `LoadFileData`. The program's
@@ -98,12 +100,33 @@ class HelixRay {
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
-		var bytes = RCore.dataNow(path);
-		if (bytes != null) {
-			Runtime.later(() -> loaded(bytes));
-			return;
-		}
-		Runtime.fetch(path, error -> error == null ? loaded(Runtime.files.get(path)) : refuse("LoadFileDataAsync", path, error, failed));
+		Runtime.withSaves(_ -> {
+			var bytes = RCore.dataNow(path);
+			if (bytes != null) {
+				Runtime.later(() -> loaded(bytes));
+				return;
+			}
+			Runtime.fetch(path, error -> error == null ? loaded(Runtime.files.get(path)) : refuse("LoadFileDataAsync", path, error, failed));
+		});
+	}
+
+	/** Answers whether a file exists: helix-ray's own, in place of raylib's `FileExists`. One `SaveFileText` or `SaveFileData` wrote
+		exists, as does one of the program's; finding one of the program's reads it, so a load of it after answers at once. The answer
+		comes at a later frame, never during the call.
+
+		@param fileName  The file.
+		@param answer  Receives true when it exists. */
+	static function FileExistsAsync(fileName:String, answer:Bool->Void):Void {
+		var path = normalize(fileName);
+		Runtime.withSaves(saves -> {
+			if (saves.hasKey(SAVED + path)
+				|| saves.hasKey(SAVED_DATA + path)
+				|| Runtime.files.exists(path)
+				|| Runtime.images.exists(path))
+				Runtime.later(() -> answer(true));
+			else
+				Runtime.fetch(path, error -> answer(error == null));
+		});
 	}
 
 	static function refuse(name:String, path:String, error:String, failed:Null<String->Void>):Void {

@@ -496,18 +496,14 @@ class RCore {
 
 	// ---- Files ----
 
-	/** Returns whether a file exists: one the program's save callback or `SaveFileText`/`SaveFileData` wrote, or one of the program's
-		loaded in memory.
+	/** raylib's check for a file, which waits for the answer. A page can't wait, so a call doesn't compile on any target:
+		`FileExistsAsync` answers it.
 
 		@param fileName  The file.
-		@return  True when it exists. */
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("FileExists: Synchronous file access is not supported. See FileExistsAsync(fileName:String, answer:Bool->Void)")
 	static function FileExists(fileName:String):Bool {
-		var path = normalize(fileName);
-		return saved(path)
-			|| Runtime.saves != null
-			&& Runtime.saves.hasKey(SAVED_DATA + path)
-			|| Runtime.files.exists(path)
-			|| Runtime.images.exists(path);
+		throw "FileExists is unimplemented";
 	}
 
 	/** raylib's text file read, which waits for the file. A page can't wait, so a call doesn't compile on any target:
@@ -534,9 +530,8 @@ class RCore {
 	static function SaveFileText(fileName:String, text:String):Bool {
 		if (saveText != null)
 			return saveText(normalize(fileName), text);
-		if (Runtime.saves == null)
-			return false;
-		Runtime.saves.setString(SAVED + normalize(fileName), text);
+		var path = normalize(fileName);
+		Runtime.withSaves(saves -> saves.setString(SAVED + path, text));
 		return true;
 	}
 
@@ -565,9 +560,8 @@ class RCore {
 		var path = normalize(fileName);
 		if (saveData != null)
 			return saveData(path, data, dataSize);
-		if (Runtime.saves == null)
-			return false;
-		Runtime.saves.setString(SAVED_DATA + path, haxe.crypto.Base64.encode(data.sub(0, dataSize)));
+		var encoded = haxe.crypto.Base64.encode(data.sub(0, dataSize));
+		Runtime.withSaves(saves -> saves.setString(SAVED_DATA + path, encoded));
 		return true;
 	}
 
@@ -634,8 +628,8 @@ class RCore {
 	static var saveText:Null<(String, String) -> Bool> = null;
 	static var saveData:Null<(String, haxe.io.Bytes, Int) -> Bool> = null;
 
-	// A file's bytes as they are at hand, without logging: the program's load callback's, then the saves', then the program's own (in
-	// a page only as an async load brought them in).
+	// A file's bytes as they are at hand, without logging: the program's load callback's, then the saves' (once read), then the
+	// program's own an async load brought in.
 
 	static function dataNow(path:String):Null<haxe.io.Bytes> {
 		if (CallbackFiles.load != null) {
@@ -647,11 +641,6 @@ class RCore {
 			return haxe.crypto.Base64.decode(Runtime.saves.getString(SAVED_DATA + path, ""));
 		return Runtime.file(path);
 	}
-
-	// Whether a text file was written to the saves.
-
-	static function saved(path:String):Bool
-		return Runtime.saves != null && Runtime.saves.hasKey(SAVED + path);
 
 	static inline final SAVED = "file:";
 	static var start = 0.;

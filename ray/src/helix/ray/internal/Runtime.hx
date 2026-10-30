@@ -25,8 +25,7 @@ using StringTools;
 	memory, and the frame.
 
 	raylib answers a load at once. A page can't wait for a file, so on every target helix-ray loads through the `...Async` functions,
-	which bring files into memory here. The saves, which hold what `SaveFileText` writes, are read before
-	`main` when the program uses them. */
+	which bring files into memory here. The saves, which hold what `SaveFileText` writes, are read when first used (`withSaves`). */
 @:noCompletion
 class Runtime {
 	public static var system:ISystem;
@@ -74,11 +73,10 @@ class Runtime {
 	// The devices made so far, polled each frame; through IPollable, so a device never asked for isn't linked.
 	static final devices:Array<IPollable> = [];
 
-	/** Makes the system, then runs each preload and calls the program's `main` once all have answered.
+	/** Makes the system, then calls the program's `main`.
 
-		@param preloads  What must be read before `main`: the saves (`preloadSaves`), when the program uses them.
 		@param main  The program's `main`. */
-	public static function boot(preloads:Array<(done:Void->Void)->Void>, main:Void->Void):Void {
+	public static function boot(main:Void->Void):Void {
 		#if js
 		system = new helix.platform.adapters.system.dom.DomSystemAdapter();
 		#else
@@ -87,29 +85,7 @@ class Runtime {
 		var frames = system.getOption("frames");
 		if (frames != null)
 			framesLeft = Std.parseInt(frames);
-		var left = preloads.length;
-		for (preload in preloads)
-			preload(() -> left--);
-		#if js
-		var wait:Float->Void = null;
-		wait = _ -> {
-			pollAll();
-			if (left > 0)
-				js.Browser.window.requestAnimationFrame(wait);
-			else
-				main();
-		};
-		if (left > 0)
-			js.Browser.window.requestAnimationFrame(wait);
-		else
-			main();
-		#else
-		while (left > 0) {
-			pollAll();
-			Sys.sleep(.001);
-		}
 		main();
-		#end
 	}
 
 	/** Natively, where the program's files are, relative to the program's directory (`-D helix-ray-native-root`). */
@@ -258,41 +234,56 @@ class Runtime {
 		return images.get(key);
 	}
 
-	/** Returns the preload of the saves, which hold what `SaveFileText` writes.
+	/** Calls a function with the saves once they are read: at once when they are, else when the read answers, in the order asked. The
+		first call starts the read, so a program that never saves never reads them. A write asked for during the read is made after it,
+		so it wins over what was kept.
 
-		@return  The preload. */
-	public static function preloadSaves():(done:Void->Void)->Void {
-		return done -> {
+		@param ready  Receives the saves. */
+	public static function withSaves(ready:Saves->Void):Void {
+		if (saves != null && saves.loaded) {
+			ready(saves);
+			return;
+		}
+		savesWaiting.push(ready);
+		if (saves != null)
+			return;
+		#if js
+		var data = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getDataDirectory()});
+		#else
+		var data = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: system.getDataDirectory()});
+		#end
+		polled.push(data);
+		var kept = new Saves(data);
+		saves = kept;
+		polled.push(kept);
+		closing.push(() -> {
 			#if js
-			var data = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getDataDirectory()});
+			kept.flush();
 			#else
-			var data = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: system.getDataDirectory()});
-			#end
-			polled.push(data);
-			var kept = new Saves(data);
-			saves = kept;
-			polled.push(kept);
-			closing.push(() -> {
-				#if js
-				kept.flush();
-				#else
-				var written = false;
-				kept.flush(() -> written = true, error -> {
-					log(4, 'saves: $error');
-					written = true;
-				});
-				while (!written) {
-					pollAll();
-					Sys.sleep(.001);
-				}
-				#end
-			});
-			kept.load(done, error -> {
+			var written = false;
+			kept.flush(() -> written = true, error -> {
 				log(4, 'saves: $error');
-				done();
+				written = true;
 			});
-		};
+			while (!written) {
+				pollAll();
+				Sys.sleep(.001);
+			}
+			#end
+		});
+		function answer() {
+			var waiting = savesWaiting;
+			savesWaiting = [];
+			for (f in waiting)
+				f(kept);
+		}
+		kept.load(answer, error -> {
+			log(4, 'saves: $error');
+			answer();
+		});
 	}
+
+	static var savesWaiting:Array<Saves->Void> = [];
 
 	/** Runs the program's loop body once a frame, in a page, then what follows the loop when it stops.
 

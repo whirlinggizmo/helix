@@ -1,16 +1,14 @@
 package helix.ray.internal;
 
 #if macro
-import haxe.io.Path;
 import haxe.macro.Compiler;
 import haxe.macro.Context;
 import haxe.macro.Expr;
-import sys.FileSystem;
 
 /** Lets a program keep raylib's own shape, `while (!WindowShouldClose()) { ... }`, on every target.
 
 	A page can't block, so the loop's body becomes a function called once a frame, and what follows the loop runs when it stops. The
-	program's `main` runs once its saves are read, when it uses them (`Runtime.boot`). Natively the program finds its files at
+	program's `main` runs once the system is made (`Runtime.boot`). Natively the program finds its files at
 	`-D helix-ray-native-root=<directory>` (default `../web`), relative to its own; a program reads them through the `...Async` loads. */
 class Loop {
 	/** Adds `build` to the program's main class, and `Unimplemented`'s to `Raylib`. Run by the library's `extraParams.hxml`. */
@@ -23,10 +21,9 @@ class Loop {
 		Unimplemented.install();
 	}
 
-	/** Rewrites the main class: the loop in whichever static function holds it, and `main` to run once the saves are read. */
+	/** Rewrites the main class: the loop in whichever static function holds it, and `main` to run once the system is made. */
 	public static function build():Array<Field> {
 		var fields = Context.getBuildFields();
-		var pos = Context.currentPos();
 		for (field in fields)
 			switch field.kind {
 				case FFun(f) if (f.expr != null):
@@ -36,12 +33,6 @@ class Loop {
 		var root = Context.definedValue("helix-ray-native-root");
 		if (root == null)
 			root = "../web";
-		// The saves are read before main when the program names a function that reads or writes them, so a saved file answers at once.
-		var sources = Path.directory(Context.getPosInfos(Context.getLocalClass().get().pos).file);
-		var text = sourceText(sources == "" ? "." : sources);
-		var preloads = [];
-		if (~/\b(SaveFileText|LoadFileTextAsync|FileExists|SaveFileData|LoadFileDataAsync)\b/.match(text))
-			preloads.push(macro helix.ray.internal.Runtime.preloadSaves());
 		for (field in fields)
 			if (field.name == "main")
 				switch field.kind {
@@ -49,24 +40,11 @@ class Loop {
 						var body = f.expr;
 						f.expr = macro {
 							helix.ray.internal.Runtime.root = $v{root};
-							helix.ray.internal.Runtime.boot([$a{preloads}], () -> $body);
+							helix.ray.internal.Runtime.boot(() -> $body);
 						};
 					case _:
 				}
 		return fields;
-	}
-
-	// The program's sources, under the main class's directory, as one text.
-	static function sourceText(dir:String):String {
-		var out = new StringBuf();
-		for (entry in FileSystem.readDirectory(dir)) {
-			var path = Path.join([dir, entry]);
-			if (FileSystem.isDirectory(path))
-				out.add(sourceText(path));
-			else if (StringTools.endsWith(entry, ".hx"))
-				out.add(sys.io.File.getContent(path));
-		}
-		return out.toString();
 	}
 
 	// Finds `while (!WindowShouldClose()) body` among a block's statements, and hands the body and the statements after it to Runtime.run.

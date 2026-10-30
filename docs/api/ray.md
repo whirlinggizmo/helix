@@ -1182,9 +1182,9 @@ static function EndShaderMode():Void
   - `gamepad`: The gamepad, 0 to 3.
   - `axis`: The axis (`GAMEPAD_AXIS_*`).
   - returns: The value.
-- `FileExists`: Returns whether a file exists: one the program's save callback or `SaveFileText`/`SaveFileData` wrote, or one of the program's loaded in memory.
+- `FileExists`: raylib's check for a file, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `FileExistsAsync` answers it.
   - `fileName`: The file.
-  - returns: True when it exists.
+  - returns: Never returns: a call doesn't compile.
 - `LoadFileText`: raylib's text file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileTextAsync` reads it.
   - `fileName`: The file.
   - returns: Never returns: a call doesn't compile.
@@ -1826,6 +1826,7 @@ static function LoadModelAsync(fileName:String, loaded:Model -> Void, ?failed:St
 static function LoadSoundAsync(fileName:String, loaded:Sound -> Void, ?failed:String -> Void):Void
 static function LoadFileTextAsync(fileName:String, loaded:String -> Void, ?failed:String -> Void):Void
 static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):Void
+static function FileExistsAsync(fileName:String, answer:Bool -> Void):Void
 ```
 
 - `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page can't wait for a file. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
@@ -1848,6 +1849,9 @@ static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void,
   - `fileName`: The file.
   - `loaded`: Receives its bytes.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+- `FileExistsAsync`: Answers whether a file exists: helix-ray's own, in place of raylib's `FileExists`. One `SaveFileText` or `SaveFileData` wrote exists, as does one of the program's; finding one of the program's reads it, so a load of it after answers at once. The answer comes at a later frame, never during the call.
+  - `fileName`: The file.
+  - `answer`: Receives true when it exists.
 
 ### Shaders, compiled as the program builds
 
