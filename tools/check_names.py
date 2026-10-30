@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Checks the naming rules a tool can (docs/CONVENTIONS.md): that 2D and 3D are named apart, so no one has to guess whether a type is
-one kind's (1 to 3), that a call made on its own is a property (4), and that emptying names what it empties (5):
+one kind's (1 to 3), that a call made on its own is a property (4), and that removing (5) and looking for (6) name what they're about:
 
   1. Every public type in a package of one kind (a package whose name ends in 2d or 3d: helix.render2d, helix.render3d) ends in that
      kind, a counterpart of the other kind or not, but for those holding both kinds or neither (NEUTRAL, each with its reason).
@@ -10,6 +10,7 @@ one kind's (1 to 3), that a call made on its own is a property (4), and that emp
      one, living outside the kinds, and a 2D program never reaches 3D through a name.
   4. No method is named onX: a call made on its own is an `onX` property (`window.onClose = save`), assigned, not passed to a method.
   5. No method is named clear: removing one or all names what goes (`files.deleteFile`, `deleteFiles`; `assets.clearCache()`).
+  6. No method is named has: whether something is there names what it looks for (`saves.hasKey`, `config.hasOption`).
 
 Run by helix.py test. Exits 1, listing each type, when one breaks a rule. Standard library only."""
 import re
@@ -40,6 +41,8 @@ THREE_D = re.compile(r'\b[A-Z]\w*3D\b')
 ON_METHOD = re.compile(r'\bfunction\s+(on[A-Z]\w*)')
 # A method named clear alone, declared in code.
 CLEAR_METHOD = re.compile(r'\bfunction\s+clear\s*\(')
+# A method named has alone, declared in code.
+HAS_METHOD = re.compile(r'\bfunction\s+has\s*\(')
 
 
 def problems():
@@ -55,6 +58,8 @@ def problems():
             found.append(f'{relative}: {name} is a method: a call made on its own is a property, var {name}:Null<...->Void>')
         if CLEAR_METHOD.search(code):
             found.append(f'{relative}: a method is named clear: name what it empties, clearX()')
+        if HAS_METHOD.search(code):
+            found.append(f'{relative}: a method is named has: name what it looks for, hasX()')
         package = path.parent.name
         module = path.stem
         for name in declared(path):

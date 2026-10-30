@@ -29,7 +29,7 @@ class Config {
 
 		@param name  The option's name.
 		@return  True when it was provided, even with an empty value. */
-	public function has(name:String):Bool {
+	public function hasOption(name:String):Bool {
 		return system.getOption(name) != null;
 	}
 

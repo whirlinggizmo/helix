@@ -44,7 +44,7 @@ class Actions {
 			this.bindings.set(name, bound = []);
 		var added = false;
 		for (binding in bindings)
-			if (!has(bound, binding)) {
+			if (!contains(bound, binding)) {
 				bound.push(binding);
 				added = true;
 			}
@@ -232,7 +232,7 @@ class Actions {
 		return toward > 0 ? toward : 0;
 	}
 
-	static function has(bound:Array<Binding>, binding:Binding):Bool {
+	static function contains(bound:Array<Binding>, binding:Binding):Bool {
 		for (b in bound)
 			if (Type.enumEq(b, binding))
 				return true;

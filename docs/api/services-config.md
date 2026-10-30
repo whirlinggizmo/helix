@@ -17,7 +17,7 @@ time.scale = config.getFloat("speed", 1);
 
 ```haxe
 function new(system:ISystem)
-function has(name:String):Bool
+function hasOption(name:String):Bool
 function getString(name:String, fallback:String):String
 function getBool(name:String, fallback:Bool):Bool
 function getInt(name:String, fallback:Int):Int
@@ -26,7 +26,7 @@ function getFloat(name:String, fallback:Float):Float
 
 - `new`: Creates the options over the platform's system.
   - `system`: The platform's system, whose `getOption` it reads.
-- `has`: Returns whether an option was provided.
+- `hasOption`: Returns whether an option was provided.
   - `name`: The option's name.
   - returns: True when it was provided, even with an empty value.
 - `getString`: Returns an option's text, unchanged.

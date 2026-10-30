@@ -29,7 +29,7 @@ window.onClose = () -> saves.flush();
 function new(fileSystem:IFileSystem, ?name:String = "saves.json")
 function load(loaded:() -> Void, ?failed:String -> Void):Void
 var loaded(default, null):Bool
-function has(key:String):Bool
+function hasKey(key:String):Bool
 function getString(key:String, fallback:String):String
 function getInt(key:String, fallback:Int):Int
 function getFloat(key:String, fallback:Float):Float
@@ -55,7 +55,7 @@ function dispose():Void
 
   Calling it again answers too: with the first load's outcome while that is in flight, and at the next `poll` once it has finished.
 - `loaded`: Gets a value indicating whether `load` has finished, so values can be read and set.
-- `has`: Returns whether a key has a value.
+- `hasKey`: Returns whether a key has a value.
   - `key`: The key.
   - returns: True when a value was set or loaded, and not deleted since.
 - `getString`: Returns a key's value as a string.

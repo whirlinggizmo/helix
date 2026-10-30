@@ -107,7 +107,7 @@ class Saves implements IPollable {
 
 		@param key  The key.
 		@return  True when a value was set or loaded, and not deleted since. */
-	public function has(key:String):Bool {
+	public function hasKey(key:String):Bool {
 		return values.exists(key);
 	}
 

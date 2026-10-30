@@ -27,7 +27,7 @@ class SavesTests {
 		var loads = 0;
 		saves.load(() -> loads++);
 		files.poll();
-		check(loads == 1 && saves.loaded && !saves.has("a"), "no file: loaded, no values");
+		check(loads == 1 && saves.loaded && !saves.hasKey("a"), "no file: loaded, no values");
 		saves.load(() -> loads++);
 		check(loads == 1, "a second load isn't answered during the call");
 		saves.poll();
@@ -98,7 +98,7 @@ class SavesTests {
 		var cleared = new Saves(files);
 		cleared.load(() -> {});
 		files.poll();
-		check(!cleared.has("level") && !cleared.has("sound"), "deleteKeys: none kept");
+		check(!cleared.hasKey("level") && !cleared.hasKey("sound"), "deleteKeys: none kept");
 
 		files.files.set("bad.json", Bytes.ofString("not json"));
 		var bad = new Saves(files, "bad.json");
