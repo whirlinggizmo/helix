@@ -215,16 +215,16 @@ class RModels {
 		var path = normalize(fileName);
 		var lower = path.toLowerCase();
 		if (!(StringTools.endsWith(lower, ".glb") || StringTools.endsWith(lower, ".gltf"))) {
-			trace('LoadModel: $fileName: only glTF and GLB are read here');
+			Runtime.log(4, 'LoadModel: $fileName: only glTF and GLB are read here');
 			return new Model([], [Models.defaultMaterial(defaultShader())], []);
 		}
 		try {
 			var model = Models.load(path, () -> Runtime.fileNow(path), defaultShader());
 			if (model != null)
 				return model;
-			trace(Runtime.notLoaded("LoadModel", path));
+			Runtime.log(4, Runtime.notLoaded("LoadModel", path));
 		} catch (e:Dynamic) {
-			trace('LoadModel: $fileName: $e');
+			Runtime.log(4, 'LoadModel: $fileName: $e');
 		}
 		return new Model([], [Models.defaultMaterial(defaultShader())], []);
 	}

@@ -1,7 +1,6 @@
 # Roadmap
 
-- **helix-ray, on trial (DECISIONS 16, 19):** raylib's API over the services; to decide whether it merges. Next: raylib's music
-  streaming (over `Audio.stream`), its load and save hooks with `LoadFileData`, then a managed layer beside it (assets, instances,
+- **helix-ray, on trial (DECISIONS 16, 19):** raylib's API over the services; to decide whether it merges. Next: a managed layer beside it (assets, instances,
   placeholders, as librl has them), designed as an API first. Then a trial of how agents take to
   the `...Async` loads, and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
   (Atomics.wait, which a worker may; cross-origin isolation, OffscreenCanvas, input and audio relayed; raylib's loop run as written)

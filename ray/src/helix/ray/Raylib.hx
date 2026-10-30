@@ -745,6 +745,32 @@ class Raylib {
 	/** Anisotropic filtering 16x. */
 	public static inline final TEXTURE_FILTER_ANISOTROPIC_16X = 5;
 
+	// ---- Log levels (TraceLogLevel) ----
+
+	/** Display all logs. */
+	public static inline final LOG_ALL = 0;
+
+	/** Trace logging, intended for internal use only. */
+	public static inline final LOG_TRACE = 1;
+
+	/** Debug logging, used for internal debugging. */
+	public static inline final LOG_DEBUG = 2;
+
+	/** Info logging, used for program execution info. */
+	public static inline final LOG_INFO = 3;
+
+	/** Warning logging, used on recoverable failures. */
+	public static inline final LOG_WARNING = 4;
+
+	/** Error logging, used on unrecoverable failures. */
+	public static inline final LOG_ERROR = 5;
+
+	/** Fatal logging, used to abort the program. */
+	public static inline final LOG_FATAL = 6;
+
+	/** Disable logging. */
+	public static inline final LOG_NONE = 7;
+
 	// ---- Colors ----
 
 	/** Light Gray. */
@@ -1202,17 +1228,19 @@ class Raylib {
 	public static inline function GetGamepadAxisMovement(gamepad:Int, axis:Int):Float
 		return RCore.GetGamepadAxisMovement(gamepad, axis);
 
-	/** Returns whether a file exists: one `SaveFileText` wrote, or one of the program's.
+	/** Returns whether a file exists: one the program's save callback or `SaveFileText`/`SaveFileData` wrote, or one of the program's
+		loaded in memory.
 
 		@param fileName  The file.
 		@return  True when it exists. */
 	public static inline function FileExists(fileName:String):Bool
 		return RCore.FileExists(fileName);
 
-	/** Reads a text file: one `SaveFileText` wrote, or one of the program's.
+	/** Reads a text file: through the program's `SetLoadFileTextCallback` when it has one, else one `SaveFileText` wrote, else one of
+		the program's (in a page, as loaded before `main`; natively, read now).
 
 		@param fileName  The file.
-		@return  Its text, or null when it doesn't exist. */
+		@return  Its text, or null when it can't be read. */
 	public static inline function LoadFileText(fileName:String):Null<String>
 		return RCore.LoadFileText(fileName);
 
@@ -1222,14 +1250,85 @@ class Raylib {
 	public static inline function UnloadFileText(text:Null<String>):Void
 		RCore.UnloadFileText(text);
 
-	/** Writes a text file, kept across runs: in a page, in the page's storage; natively, in the program's data directory. It is kept at
-		the end of the frame.
+	/** Writes a text file: through the program's `SetSaveFileTextCallback` when it has one, else kept across runs (in a page, in its
+		storage; natively, in the program's data directory), kept at the end of the frame.
 
 		@param fileName  The file.
 		@param text  Its text.
-		@return  True. */
+		@return  True when it was written, or will be. */
 	public static inline function SaveFileText(fileName:String, text:String):Bool
 		return RCore.SaveFileText(fileName, text);
+
+	/** Reads a file's bytes: through the program's `SetLoadFileDataCallback` when it has one, else one `SaveFileData` wrote, else one
+		of the program's (in a page, as loaded before `main`; natively, read now). raylib also gives the size through a pointer; here it
+		is the bytes' `length`.
+
+		@param fileName  The file.
+		@return  Its bytes, or null when it can't be read. */
+	public static inline function LoadFileData(fileName:String):Null<haxe.io.Bytes>
+		return RCore.LoadFileData(fileName);
+
+	/** Frees bytes `LoadFileData` returned. There is nothing to free here.
+
+		@param data  The bytes. */
+	public static inline function UnloadFileData(data:Null<haxe.io.Bytes>):Void
+		RCore.UnloadFileData(data);
+
+	/** Writes a file's bytes: through the program's `SetSaveFileDataCallback` when it has one, else kept across runs as
+		`SaveFileText`'s are.
+
+		@param fileName  The file.
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@return  True when it was written, or will be. */
+	public static inline function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool
+		return RCore.SaveFileData(fileName, data, dataSize);
+
+	/** Reads files through the program from now on: every load raylib makes of a file (textures, models, sounds, music, data) asks it
+		first, and a file it doesn't have (null) is read as it would be. In a page, a texture's or model's images still decode only
+		asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load those it gives.
+
+		@param callback  Returns a file's bytes, or null; null for none. */
+	public static inline function SetLoadFileDataCallback(callback:Null<(fileName:String) -> Null<haxe.io.Bytes>>):Void
+		RCore.SetLoadFileDataCallback(callback);
+
+	/** Writes files through the program from now on (`SaveFileData`).
+
+		@param callback  Writes a file's bytes, returning whether it did; null for none. */
+	public static inline function SetSaveFileDataCallback(callback:Null<(fileName:String, data:haxe.io.Bytes, dataSize:Int) -> Bool>):Void
+		RCore.SetSaveFileDataCallback(callback);
+
+	/** Reads text files through the program from now on (`LoadFileText`).
+
+		@param callback  Returns a file's text, or null; null for none. */
+	public static inline function SetLoadFileTextCallback(callback:Null<(fileName:String) -> Null<String>>):Void
+		RCore.SetLoadFileTextCallback(callback);
+
+	/** Writes text files through the program from now on (`SaveFileText`).
+
+		@param callback  Writes a file's text, returning whether it did; null for none. */
+	public static inline function SetSaveFileTextCallback(callback:Null<(fileName:String, text:String) -> Bool>):Void
+		RCore.SetSaveFileTextCallback(callback);
+
+	/** Writes a message to the log, when its level is at least `SetTraceLogLevel`'s. raylib formats its arguments as printf does;
+		here the text is written as it is (Haxe's string interpolation builds it).
+
+		@param logLevel  The level (`LOG_*`).
+		@param text  The message. */
+	public static inline function TraceLog(logLevel:Int, text:String):Void
+		RCore.TraceLog(logLevel, text);
+
+	/** Sets the least level the log writes; `LOG_INFO` until set.
+
+		@param logLevel  The level (`LOG_*`). */
+	public static inline function SetTraceLogLevel(logLevel:Int):Void
+		RCore.SetTraceLogLevel(logLevel);
+
+	/** Writes the log through the program from now on, helix-ray's own messages among it.
+
+		@param callback  Receives each message's level and text; null for helix-ray's own log. */
+	public static inline function SetTraceLogCallback(callback:Null<(logLevel:Int, text:String) -> Void>):Void
+		RCore.SetTraceLogCallback(callback);
 
 	/** Draws through a 2D camera until `EndMode2D`.
 
@@ -2647,6 +2746,15 @@ class Raylib {
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	public static inline function LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void):Void
 		HelixRay.LoadFileTextAsync(fileName, loaded, failed);
+
+	/** Reads a file's bytes, answering when they are read: helix-ray's own, as `LoadTextureAsync` is for textures. One
+		`SaveFileData` wrote, or the program's `SetLoadFileDataCallback`, answers too.
+
+		@param fileName  The file.
+		@param loaded  Receives its bytes.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	public static inline function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):Void
+		HelixRay.LoadFileDataAsync(fileName, loaded, failed);
 	#end
 
 	// ---- generated by tools/gen_raylib.py: end ----
@@ -2907,14 +3015,6 @@ class Raylib {
 	public static macro function OpenURL(args:Array<Expr>):Expr
 		return helix.ray.internal.Missing.refuse("OpenURL", "raylib.h");
 
-	/** raylib's `TraceLog` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TraceLog(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TraceLog", "raylib.h");
-
-	/** raylib's `SetTraceLogLevel` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetTraceLogLevel(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetTraceLogLevel", "raylib.h");
-
 	/** raylib's `MemAlloc` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
 	public static macro function MemAlloc(args:Array<Expr>):Expr
 		return helix.ray.internal.Missing.refuse("MemAlloc", "raylib.h");
@@ -2926,38 +3026,6 @@ class Raylib {
 	/** raylib's `MemFree` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
 	public static macro function MemFree(args:Array<Expr>):Expr
 		return helix.ray.internal.Missing.refuse("MemFree", "raylib.h");
-
-	/** raylib's `SetTraceLogCallback` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetTraceLogCallback(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetTraceLogCallback", "raylib.h");
-
-	/** raylib's `SetLoadFileDataCallback` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetLoadFileDataCallback(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetLoadFileDataCallback", "raylib.h");
-
-	/** raylib's `SetSaveFileDataCallback` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetSaveFileDataCallback(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetSaveFileDataCallback", "raylib.h");
-
-	/** raylib's `SetLoadFileTextCallback` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetLoadFileTextCallback(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetLoadFileTextCallback", "raylib.h");
-
-	/** raylib's `SetSaveFileTextCallback` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetSaveFileTextCallback(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetSaveFileTextCallback", "raylib.h");
-
-	/** raylib's `LoadFileData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadFileData(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadFileData", "raylib.h");
-
-	/** raylib's `UnloadFileData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadFileData(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadFileData", "raylib.h");
-
-	/** raylib's `SaveFileData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SaveFileData(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SaveFileData", "raylib.h");
 
 	/** raylib's `ExportDataAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
 	public static macro function ExportDataAsCode(args:Array<Expr>):Expr

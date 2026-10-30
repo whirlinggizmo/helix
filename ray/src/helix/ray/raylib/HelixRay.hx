@@ -8,6 +8,7 @@ import helix.ray.internal.DefaultFont;
 import helix.ray.internal.Models;
 import helix.ray.internal.Runtime;
 import helix.ray.internal.Textures;
+import helix.ray.internal.CallbackFiles;
 import helix.ray.raylib.RCore.*;
 import helix.ray.raylib.RShapes.*;
 import helix.ray.raylib.RTextures.*;
@@ -83,12 +84,30 @@ class HelixRay {
 		Runtime.fetch(path, error -> error == null ? loaded(Runtime.files.get(path).toString()) : refuse("LoadFileTextAsync", path, error, failed));
 	}
 
+	/** Reads a file's bytes, answering when they are read: helix-ray's own, as `LoadTextureAsync` is for textures. One
+		`SaveFileData` wrote, or the program's `SetLoadFileDataCallback`, answers too.
+
+		@param fileName  The file.
+		@param loaded  Receives its bytes.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	public static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):Void {
+		var path = normalize(fileName);
+		if (CallbackFiles.load != null || Runtime.saves != null && Runtime.saves.hasKey(RCore.SAVED_DATA + path)) {
+			var bytes = LoadFileData(path);
+			if (bytes != null) {
+				Runtime.later(() -> loaded(bytes));
+				return;
+			}
+		}
+		Runtime.fetch(path, error -> error == null ? loaded(Runtime.files.get(path)) : refuse("LoadFileDataAsync", path, error, failed));
+	}
+
 	@:allow(helix.ray)
 	static function refuse(name:String, path:String, error:String, failed:Null<String->Void>):Void {
 		if (failed != null)
 			failed(error);
 		else
-			trace('$name: $path: $error');
+			Runtime.log(4, '$name: $path: $error');
 	}
 	#end
 }

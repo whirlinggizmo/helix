@@ -89,7 +89,7 @@ class RAudio {
 	public static function LoadSound(fileName:String):Sound {
 		var sound = new Sound();
 		if (Runtime.audio == null) {
-			trace('LoadSound: InitAudioDevice first');
+			Runtime.log(4, 'LoadSound: InitAudioDevice first');
 			return sound;
 		}
 		var path = normalize(fileName);
@@ -117,7 +117,7 @@ class RAudio {
 			}, error -> {
 				made.cancel = null;
 				if (made.answers.length == 0)
-					trace('LoadSound: $fileName: $error');
+					Runtime.log(4, 'LoadSound: $fileName: $error');
 				for (answer in made.answers)
 					answer(error);
 				made.answers = [];
@@ -244,7 +244,7 @@ class RAudio {
 	public static function LoadMusicStream(fileName:String):Music {
 		var music = new Music();
 		if (Runtime.audio == null) {
-			trace('LoadMusicStream: InitAudioDevice first');
+			Runtime.log(4, 'LoadMusicStream: InitAudioDevice first');
 			music.failed = true;
 			return music;
 		}
@@ -259,7 +259,7 @@ class RAudio {
 		}, error -> {
 			music.cancel = null;
 			music.failed = true;
-			trace('LoadMusicStream: $fileName: $error');
+			Runtime.log(4, 'LoadMusicStream: $fileName: $error');
 		});
 		return music;
 	}

@@ -8,6 +8,7 @@ import helix.ray.internal.DefaultFont;
 import helix.ray.internal.Models;
 import helix.ray.internal.Runtime;
 import helix.ray.internal.Textures;
+import helix.ray.internal.CallbackFiles;
 import helix.ray.raylib.RCore.*;
 import helix.ray.raylib.RShapes.*;
 import helix.ray.raylib.RTextures.*;
@@ -494,26 +495,37 @@ class RCore {
 
 	// ---- Files ----
 
-	/** Returns whether a file exists: one `SaveFileText` wrote, or one of the program's.
+	/** Returns whether a file exists: one the program's save callback or `SaveFileText`/`SaveFileData` wrote, or one of the program's
+		loaded in memory.
 
 		@param fileName  The file.
 		@return  True when it exists. */
 	public static function FileExists(fileName:String):Bool {
 		var path = normalize(fileName);
-		return Runtime.saves.hasKey(SAVED + path) || Runtime.files.exists(path) || Runtime.images.exists(path);
+		return saved(path)
+			|| Runtime.saves != null
+			&& Runtime.saves.hasKey(SAVED_DATA + path)
+			|| Runtime.files.exists(path)
+			|| Runtime.images.exists(path);
 	}
 
-	/** Reads a text file: one `SaveFileText` wrote, or one of the program's.
+	/** Reads a text file: through the program's `SetLoadFileTextCallback` when it has one, else one `SaveFileText` wrote, else one of
+		the program's (in a page, as loaded before `main`; natively, read now).
 
 		@param fileName  The file.
-		@return  Its text, or null when it doesn't exist. */
+		@return  Its text, or null when it can't be read. */
 	public static function LoadFileText(fileName:String):Null<String> {
 		var path = normalize(fileName);
-		if (Runtime.saves.hasKey(SAVED + path))
+		if (loadText != null) {
+			var given = loadText(path);
+			if (given != null)
+				return given;
+		}
+		if (saved(path))
 			return Runtime.saves.getString(SAVED + path, "");
 		var bytes = Runtime.fileNow(path);
 		if (bytes == null) {
-			trace(Runtime.notLoaded("LoadFileText", path));
+			Runtime.log(4, Runtime.notLoaded("LoadFileText", path));
 			return null;
 		}
 		return bytes.toString();
@@ -524,18 +536,132 @@ class RCore {
 		@param text  The text. */
 	public static function UnloadFileText(text:Null<String>):Void {}
 
-	/** Writes a text file, kept across runs: in a page, in the page's storage; natively, in the program's data directory. It is kept at
-		the end of the frame.
+	/** Writes a text file: through the program's `SetSaveFileTextCallback` when it has one, else kept across runs (in a page, in its
+		storage; natively, in the program's data directory), kept at the end of the frame.
 
 		@param fileName  The file.
 		@param text  Its text.
-		@return  True. */
+		@return  True when it was written, or will be. */
 	public static function SaveFileText(fileName:String, text:String):Bool {
+		if (saveText != null)
+			return saveText(normalize(fileName), text);
+		if (Runtime.saves == null)
+			return false;
 		Runtime.saves.setString(SAVED + normalize(fileName), text);
 		return true;
 	}
 
+	/** Reads a file's bytes: through the program's `SetLoadFileDataCallback` when it has one, else one `SaveFileData` wrote, else one
+		of the program's (in a page, as loaded before `main`; natively, read now). raylib also gives the size through a pointer; here it
+		is the bytes' `length`.
+
+		@param fileName  The file.
+		@return  Its bytes, or null when it can't be read. */
+	public static function LoadFileData(fileName:String):Null<haxe.io.Bytes> {
+		var path = normalize(fileName);
+		if (Runtime.saves != null && Runtime.saves.hasKey(SAVED_DATA + path) && CallbackFiles.load == null)
+			return haxe.crypto.Base64.decode(Runtime.saves.getString(SAVED_DATA + path, ""));
+		var bytes = Runtime.fileNow(path);
+		if (bytes == null)
+			Runtime.log(4, Runtime.notLoaded("LoadFileData", path));
+		return bytes;
+	}
+
+	/** Frees bytes `LoadFileData` returned. There is nothing to free here.
+
+		@param data  The bytes. */
+	public static function UnloadFileData(data:Null<haxe.io.Bytes>):Void {}
+
+	/** Writes a file's bytes: through the program's `SetSaveFileDataCallback` when it has one, else kept across runs as
+		`SaveFileText`'s are.
+
+		@param fileName  The file.
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@return  True when it was written, or will be. */
+	public static function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool {
+		var path = normalize(fileName);
+		if (saveData != null)
+			return saveData(path, data, dataSize);
+		if (Runtime.saves == null)
+			return false;
+		Runtime.saves.setString(SAVED_DATA + path, haxe.crypto.Base64.encode(data.sub(0, dataSize)));
+		return true;
+	}
+
+	// ---- Hooks ----
+
+	/** Reads files through the program from now on: every load raylib makes of a file (textures, models, sounds, music, data) asks it
+		first, and a file it doesn't have (null) is read as it would be. In a page, a texture's or model's images still decode only
+		asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load those it gives.
+
+		@param callback  Returns a file's bytes, or null; null for none. */
+	public static function SetLoadFileDataCallback(callback:Null<(fileName:String) -> Null<haxe.io.Bytes>>):Void {
+		CallbackFiles.load = callback;
+	}
+
+	/** Writes files through the program from now on (`SaveFileData`).
+
+		@param callback  Writes a file's bytes, returning whether it did; null for none. */
+	public static function SetSaveFileDataCallback(callback:Null<(fileName:String, data:haxe.io.Bytes, dataSize:Int) -> Bool>):Void {
+		saveData = callback;
+	}
+
+	/** Reads text files through the program from now on (`LoadFileText`).
+
+		@param callback  Returns a file's text, or null; null for none. */
+	public static function SetLoadFileTextCallback(callback:Null<(fileName:String) -> Null<String>>):Void {
+		loadText = callback;
+	}
+
+	/** Writes text files through the program from now on (`SaveFileText`).
+
+		@param callback  Writes a file's text, returning whether it did; null for none. */
+	public static function SetSaveFileTextCallback(callback:Null<(fileName:String, text:String) -> Bool>):Void {
+		saveText = callback;
+	}
+
+	// ---- Log ----
+
+	/** Writes a message to the log, when its level is at least `SetTraceLogLevel`'s. raylib formats its arguments as printf does;
+		here the text is written as it is (Haxe's string interpolation builds it).
+
+		@param logLevel  The level (`LOG_*`).
+		@param text  The message. */
+	public static function TraceLog(logLevel:Int, text:String):Void {
+		Runtime.log(logLevel, text);
+	}
+
+	/** Sets the least level the log writes; `LOG_INFO` until set.
+
+		@param logLevel  The level (`LOG_*`). */
+	public static function SetTraceLogLevel(logLevel:Int):Void {
+		Runtime.logLevel = logLevel;
+	}
+
+	/** Writes the log through the program from now on, helix-ray's own messages among it.
+
+		@param callback  Receives each message's level and text; null for helix-ray's own log. */
+	public static function SetTraceLogCallback(callback:Null<(logLevel:Int, text:String) -> Void>):Void {
+		Runtime.logCallback = callback;
+	}
+
 	// ---- What the functions share ----
+	@:allow(helix.ray)
+	static inline final SAVED_DATA = "data:";
+	@:allow(helix.ray)
+	static var loadText:Null<String->Null<String>> = null;
+	@:allow(helix.ray)
+	static var saveText:Null<(String, String) -> Bool> = null;
+	@:allow(helix.ray)
+	static var saveData:Null<(String, haxe.io.Bytes, Int) -> Bool> = null;
+
+	// Whether a text file was written to the saves.
+
+	@:allow(helix.ray)
+	static function saved(path:String):Bool
+		return Runtime.saves != null && Runtime.saves.hasKey(SAVED + path);
+
 	@:allow(helix.ray)
 	static inline final SAVED = "file:";
 	@:allow(helix.ray)

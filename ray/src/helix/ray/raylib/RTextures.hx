@@ -33,7 +33,7 @@ class RTextures {
 		var path = normalize(fileName);
 		var image = Runtime.imageNow(path);
 		if (image == null) {
-			trace(Runtime.notLoaded("LoadTexture", path));
+			Runtime.log(4, Runtime.notLoaded("LoadTexture", path));
 			return new Texture2D();
 		}
 		return new Texture2D(Textures.fromImage(path, image), image.width, image.height);

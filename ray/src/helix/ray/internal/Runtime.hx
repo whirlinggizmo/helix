@@ -125,12 +125,16 @@ class Runtime {
 		var cache = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory()});
 		var imageDecoder = new helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter();
 		polled.push(http);
-		assets = new Assets({sources: [HttpServer(system.getProgramDirectory())], httpClient: http, cacheFileSystem: cache});
+		var callback = new CallbackFiles();
+		polled.push(callback);
+		assets = new Assets({sources: [FileSystem(callback), HttpServer(system.getProgramDirectory())], httpClient: http, cacheFileSystem: cache});
 		#else
 		var directory = haxe.io.Path.join([system.getProgramDirectory(), root]);
 		var cache = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory, readOnly: true});
 		var imageDecoder = new helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter();
-		assets = new Assets({sources: [FileSystem(cache)]});
+		var callback = new CallbackFiles();
+		polled.push(callback);
+		assets = new Assets({sources: [FileSystem(callback), FileSystem(cache)]});
 		#end
 		polled.push(cache);
 		polled.push(imageDecoder);
@@ -166,19 +170,28 @@ class Runtime {
 	public static function fetch(path:String, done:Null<String>->Void):Void {
 		loading();
 		var lower = path.toLowerCase();
-		if (images.exists(path) || files.exists(path)) {
+		var image = lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".tga");
+		if (image ? images.exists(path) : files.exists(path)) {
 			later(() -> done(null));
 			return;
 		}
-		if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".tga")) {
-			decoding.load(path, image -> {
-				images.set(path, image);
+		if (image && files.exists(path)) {
+			decoding.decode(files.get(path), decoded -> {
+				images.set(path, decoded);
 				done(null);
-			}, error -> done(error));
+			}, error -> done('$path: $error'));
 			return;
 		}
 		assets.load(path, bytes -> {
+			// The file's bytes are kept too, for LoadFileData; an image's are small beside its pixels.
 			files.set(path, bytes);
+			if (image) {
+				decoding.decode(bytes, decoded -> {
+					images.set(path, decoded);
+					done(null);
+				}, error -> done('$path: $error'));
+				return;
+			}
 			if (!(lower.endsWith(".glb") || lower.endsWith(".gltf"))) {
 				done(null);
 				return;
@@ -206,12 +219,33 @@ class Runtime {
 						images.set(key, image);
 						one();
 					}, error -> {
-						trace('$key: $error');
+						log(4, '$key: $error');
 						one();
 					});
 			}
 			one();
 		}, error -> done(error));
+	}
+
+	/** The least level `log` writes, as `SetTraceLogLevel` sets it: raylib's LOG_INFO (3) until set. */
+	public static var logLevel = 3;
+
+	/** The program's log, as `SetTraceLogCallback` sets it, or null for helix-ray's. */
+	public static var logCallback:Null<(level:Int, text:String) -> Void> = null;
+
+	/** Writes a message at one of raylib's levels (LOG_*): through the program's callback, or as raylib labels them.
+
+		@param level  The level.
+		@param text  The message. */
+	public static function log(level:Int, text:String):Void {
+		if (level < logLevel)
+			return;
+		if (logCallback != null) {
+			logCallback(level, text);
+			return;
+		}
+		var label = ["", "TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"][level < 7 ? level : 4];
+		haxe.Log.trace('$label: $text', null);
 	}
 
 	/** Calls a function at the next poll: an answer that is ready now, given later, as every answer is.
@@ -242,6 +276,11 @@ class Runtime {
 		@param path  The file.
 		@return  Its bytes, or null when it can't be read. */
 	public static function fileNow(path:String):Null<Bytes> {
+		if (CallbackFiles.load != null) {
+			var given = CallbackFiles.load(path);
+			if (given != null)
+				return given;
+		}
 		#if !js
 		loading();
 		if (!files.exists(path)) {
@@ -250,7 +289,7 @@ class Runtime {
 				files.set(path, bytes);
 				answered = true;
 			}, error -> {
-				trace(error);
+				log(4, error);
 				answered = true;
 			});
 			wait(() -> answered);
@@ -272,7 +311,7 @@ class Runtime {
 				images.set(path, image);
 				answered = true;
 			}, error -> {
-				trace(error);
+				log(4, error);
 				answered = true;
 			});
 			wait(() -> answered);
@@ -297,7 +336,7 @@ class Runtime {
 				images.set(key, image);
 				answered = true;
 			}, error -> {
-				trace('$key: $error');
+				log(4, '$key: $error');
 				answered = true;
 			});
 			wait(() -> answered);
@@ -336,7 +375,7 @@ class Runtime {
 				#else
 				var written = false;
 				kept.flush(() -> written = true, error -> {
-					trace('saves: $error');
+					log(4, 'saves: $error');
 					written = true;
 				});
 				while (!written) {
@@ -346,7 +385,7 @@ class Runtime {
 				#end
 			});
 			kept.load(done, error -> {
-				trace('saves: $error');
+				log(4, 'saves: $error');
 				done();
 			});
 		};
