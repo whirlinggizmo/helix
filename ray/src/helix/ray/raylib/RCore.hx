@@ -163,6 +163,14 @@ class RCore {
 		return Runtime.time == null ? 0 : Runtime.time.realDelta;
 	}
 
+	/** Stops the program for a time, drawing nothing and reading no input until it ends. In a page it spins, as raylib's web build does,
+		so the page doesn't respond meanwhile.
+
+		@param seconds  How long. */
+	static function WaitTime(seconds:Float):Void {
+		Runtime.sleep(seconds);
+	}
+
 	/** Returns the seconds since `InitWindow`.
 
 		@return  The seconds. */

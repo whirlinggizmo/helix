@@ -348,6 +348,8 @@ class Runtime {
 		window.title = title;
 		frame = new Frame(graphics);
 		time = new Time(system);
+		// raylib's frame time isn't capped: a frame that took a second says so.
+		time.maxDelta = Math.POSITIVE_INFINITY;
 		poll();
 	}
 
@@ -427,16 +429,25 @@ class Runtime {
 		poll();
 	}
 
+	/** Waits, as raylib's `WaitTime` does: natively a sleep for most of the time, then a spin for the last twentieth, as a sleep can
+		overshoot; in a page a spin alone, as emscripten's is, so nothing else runs until it ends.
+
+		@param seconds  How long. */
+	public static function sleep(seconds:Float):Void {
+		if (seconds <= 0)
+			return;
+		var until = system.getTime() + seconds;
+		#if !js
+		Sys.sleep(seconds * .95);
+		#end
+		while (system.getTime() < until) {}
+	}
+
 	#if !js
-	// raylib's wait: a sleep for most of what is left of the frame, then a spin for the last twentieth, as a sleep can overshoot.
+	// raylib's frame wait: what is left of the frame's target.
 	static function wait():Void {
-		var now = system.getTime();
-		var left = frameTarget - (now - frameEnd);
-		if (frameTarget > 0 && left > 0) {
-			var until = now + left;
-			Sys.sleep(left * .95);
-			while (system.getTime() < until) {}
-		}
+		if (frameTarget > 0)
+			sleep(frameTarget - (system.getTime() - frameEnd));
 		frameEnd = system.getTime();
 	}
 	#end

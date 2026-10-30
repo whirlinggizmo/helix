@@ -995,6 +995,13 @@ class Raylib {
 	public static inline function GetFrameTime():Float
 		return RCore.GetFrameTime();
 
+	/** Stops the program for a time, drawing nothing and reading no input until it ends. In a page it spins, as raylib's web build does,
+		so the page doesn't respond meanwhile.
+
+		@param seconds  How long. */
+	public static inline function WaitTime(seconds:Float):Void
+		RCore.WaitTime(seconds);
+
 	/** Returns the seconds since `InitWindow`.
 
 		@return  The seconds. */
@@ -2614,10 +2621,6 @@ class Raylib {
 	/** raylib's `PollInputEvents` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Register all input events. */
 	public static macro function PollInputEvents():ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("PollInputEvents: Not implemented", macro {});
-
-	/** raylib's `WaitTime` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Wait for some time (halt program execution). */
-	public static macro function WaitTime(seconds:ExprOf<Float>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("WaitTime: Not implemented", macro {});
 
 	/** raylib's `LoadRandomSequence` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load random values sequence, no values repeated. */
 	public static macro function LoadRandomSequence(count:ExprOf<Int>, min:ExprOf<Int>, max:ExprOf<Int>):ExprOf<Array<Int>>
