@@ -69,3 +69,24 @@ Why things are the way they are, numbered, in order.
     program touches (Flash's `stage`, Godot's `Input`) building a feature when first asked for it. So the rule that a program constructs
     what it uses binds platform and services, and the layers above carry what a game uses, through what it references. What the
     familiar API costs is measured by a size ladder against the same programs written on the services.
+
+16. **raylib is the API to mirror first, as helix-ray.** A trial asked fresh agents to write one small game from memory against five
+    engines' APIs (Godot 4, OpenFL with Away3D, Heaps, Pixi with three.js, raylib), each use checked against the real reference: all
+    were 94% right or better, so memory didn't separate them; raylib (99.1%, 16 of 20 jobs written alike) combined the best memory
+    with high agreement and a shape nearest ours (no stage or hubs, the program's own loop). helix-ray mirrors raylib 5.5 exactly, by
+    raylib's names: a build macro runs raylib's `while (!WindowShouldClose())` as a frame in a page; the program's files are loaded
+    before `main` so loads answer at once; raylib's GLSL is compiled as the program builds, for every backend. Three fresh agents wrote
+    the game in 2D, then with a 3D view, from raylib knowledge alone: 0 to 2 compile errors each, every one a raylib function missing
+    here (since added); all six played in a page and natively. It uses the services (input, time, saves, assets, audio, images) and
+    helix-math (`Matrix3D`), and the platform for drawing. On trial on the branch `raylib-slice`, not merged.
+
+17. **Images and Matrix3D go below the mirror.** What any engine would take as it is moved out of helix-ray: image files decoded into
+    pixels became the services' `Images` (no GPU, so services still doesn't draw), and raymath's matrices became helix-math's
+    `Matrix3D` (helix-math's style, rotations through `Trig`), both agreed as APIs and tried by fresh agents first. Drawing stays in
+    helix-ray until a second consumer makes a drawing library worth its own place.
+
+18. **The libraries are zlib, crediting what they stand on.** As raylib, SDL and sokol are: a built program owes no notice, a copy of
+    the source keeps it, the disclaimer as MIT's. Each library carries its LICENSE, and others' licenses beside their code in a folder
+    per project (`vendor/<project>/`), as each is published from its own directory; haxelib.json says BSD, as haxelib has no zlib. Each
+    library's README credits what it includes (helix-platform: Sokol, SDL, SDL3_mixer, stb, dr_libs, the shader tools; helix-ray and
+    helix-math: raylib, whose small guessable API is the work helix-ray is built on), in place of a repository-wide notices file.

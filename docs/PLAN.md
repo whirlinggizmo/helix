@@ -8,7 +8,8 @@ helix-2.0 is several haxelibs in one repository, built from the bottom up.
 platform/   the hardware and the OS as contracts and adapters        depends on nothing
 math/       points, bounds, curves, deterministic trig, random       depends on nothing
 log/        levels and tags, to the console or stdio                 depends on nothing
-services/   what a program needs over the platform that isn't drawing   next
+services/   what a program needs over the platform that isn't drawing
+ray/        raylib's API over the services, on trial (DECISIONS 16)
 ...         the layers above, as the path chosen asks for them
 ```
 

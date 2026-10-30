@@ -1,8 +1,12 @@
 # Roadmap
 
-- **The services' API:** time, input, assets, audio, saves and config as types and members with doc comments, no implementation,
-  agreed with the user, then a trial on its reference.
-- **services,** built to it.
+- **helix-ray, on trial (DECISIONS 16):** raylib's API over the services; to decide whether it merges. Not there yet: skinned models
+  and animations, fonts from files, images on the CPU, `SetTextureFilter`, sightblinder (Windows). Platform changes it would like,
+  for review: a render-target pass that keeps what the target holds (raylib's render textures keep it; ours start cleared each
+  frame), a uniform block both shader stages share (worked around: a block a stage), `ShaderCompiler.compileText` as a supported
+  entry point.
+- **A drawing library,** between the services and a mirror, when a second mirror needs what helix-ray draws with (its frame recording,
+  shader programs, meshes, default font); and glTF's reading as a services package beside `images`.
 - **The layer above the services:** constructs the platform and the services for a target, runs the frame in order and ends with the
   saves written, so a program knows none of that; its spec is the `Main.hx` the services trial's three agents each wrote the same way.
   Whether it wears a known API or an engine's is GOALS' open path.
