@@ -2,6 +2,80 @@
 
 [Back to the index](README.md)
 
+## AudioStream
+
+*class* in [`ray/src/helix/ray/AudioStream.hx`](../../ray/src/helix/ray/AudioStream.hx), `import helix.ray.AudioStream;`
+
+raylib's `AudioStream` (raylib.h): not in helix-ray yet; its fields are raylib's. AudioStream, custom audio stream.
+
+```haxe
+function new()
+var buffer:Dynamic
+var processor:Dynamic
+var sampleRate:Int
+var sampleSize:Int
+var channels:Int
+```
+
+- `new`: Creates one, its fields zero, empty or null.
+- `buffer`: Pointer to internal data used by the audio system.
+- `processor`: Pointer to internal data processor, useful for audio effects.
+- `sampleRate`: Frequency (samples per second).
+- `sampleSize`: Bit depth (bits per sample): 8, 16, 32 (24 not supported).
+- `channels`: Number of channels (1-mono, 2-stereo, ...).
+
+## AutomationEvent
+
+*class* in [`ray/src/helix/ray/AutomationEvent.hx`](../../ray/src/helix/ray/AutomationEvent.hx), `import helix.ray.AutomationEvent;`
+
+raylib's `AutomationEvent` (raylib.h): not in helix-ray yet; its fields are raylib's. Automation event.
+
+```haxe
+function new()
+var frame:Int
+var type:Int
+var params:Array<Int>
+```
+
+- `new`: Creates one, its fields zero, empty or null.
+- `frame`: Event frame.
+- `type`: Event type (AutomationEventType).
+- `params`: Event parameters (if required).
+
+## AutomationEventList
+
+*class* in [`ray/src/helix/ray/AutomationEventList.hx`](../../ray/src/helix/ray/AutomationEventList.hx), `import helix.ray.AutomationEventList;`
+
+raylib's `AutomationEventList` (raylib.h): not in helix-ray yet; its fields are raylib's. Automation event list.
+
+```haxe
+function new()
+var capacity:Int
+var count:Int
+var events:Array<AutomationEvent>
+```
+
+- `new`: Creates one, its fields zero, empty or null.
+- `capacity`: Events max entries (MAX_AUTOMATION_EVENTS).
+- `count`: Events entries count.
+- `events`: Events entries.
+
+## BoneInfo
+
+*class* in [`ray/src/helix/ray/BoneInfo.hx`](../../ray/src/helix/ray/BoneInfo.hx), `import helix.ray.BoneInfo;`
+
+raylib's `BoneInfo` (raylib.h): not in helix-ray yet; its fields are raylib's. Bone, skeletal animation bone.
+
+```haxe
+function new()
+var name:String
+var parent:Int
+```
+
+- `new`: Creates one, its fields zero, empty or null.
+- `name`: Bone name.
+- `parent`: Bone parent.
+
 ## BoundingBox
 
 *class* in [`ray/src/helix/ray/BoundingBox.hx`](../../ray/src/helix/ray/BoundingBox.hx), `import helix.ray.BoundingBox;`
@@ -103,6 +177,92 @@ var a:Int
 - `g`: Gets or sets the green, 0 to 255.
 - `b`: Gets or sets the blue, 0 to 255.
 - `a`: Gets or sets the alpha, 0 (clear) to 255 (opaque).
+
+## FilePathList
+
+*class* in [`ray/src/helix/ray/FilePathList.hx`](../../ray/src/helix/ray/FilePathList.hx), `import helix.ray.FilePathList;`
+
+raylib's `FilePathList` (raylib.h): not in helix-ray yet; its fields are raylib's. File path list.
+
+```haxe
+function new()
+var capacity:Int
+var count:Int
+var paths:Array<String>
+```
+
+- `new`: Creates one, its fields zero, empty or null.
+- `capacity`: Filepaths max entries.
+- `count`: Filepaths entries count.
+- `paths`: Filepaths entries.
+
+## Font
+
+*class* in [`ray/src/helix/ray/Font.hx`](../../ray/src/helix/ray/Font.hx), `import helix.ray.Font;`
+
+raylib's `Font` (raylib.h): not in helix-ray yet; its fields are raylib's. Font, font texture and GlyphInfo array data.
+
+```haxe
+function new()
+var baseSize:Int
+var glyphCount:Int
+var glyphPadding:Int
+var texture:Texture2D
+var recs:Array<Rectangle>
+var glyphs:Array<GlyphInfo>
+```
+
+- `new`: Creates one, its fields zero, empty or null.
+- `baseSize`: Base size (default chars height).
+- `glyphCount`: Number of glyph characters.
+- `glyphPadding`: Padding around the glyph characters.
+- `texture`: Texture atlas containing the glyphs.
+- `recs`: Rectangles in texture for the glyphs.
+- `glyphs`: Glyphs info data.
+
+## GlyphInfo
+
+*class* in [`ray/src/helix/ray/GlyphInfo.hx`](../../ray/src/helix/ray/GlyphInfo.hx), `import helix.ray.GlyphInfo;`
+
+raylib's `GlyphInfo` (raylib.h): not in helix-ray yet; its fields are raylib's. GlyphInfo, font characters glyphs info.
+
+```haxe
+function new()
+var value:Int
+var offsetX:Int
+var offsetY:Int
+var advanceX:Int
+var image:Image
+```
+
+- `new`: Creates one, its fields zero, empty or null.
+- `value`: Character value (Unicode).
+- `offsetX`: Character offset X when drawing.
+- `offsetY`: Character offset Y when drawing.
+- `advanceX`: Character advance position X.
+- `image`: Character image data.
+
+## Image
+
+*class* in [`ray/src/helix/ray/Image.hx`](../../ray/src/helix/ray/Image.hx), `import helix.ray.Image;`
+
+raylib's `Image` (raylib.h): not in helix-ray yet; its fields are raylib's. Image, pixel data stored in CPU memory (RAM).
+
+```haxe
+function new()
+var data:Dynamic
+var width:Int
+var height:Int
+var mipmaps:Int
+var format:Int
+```
+
+- `new`: Creates one, its fields zero, empty or null.
+- `data`: Image raw data.
+- `width`: Image base width.
+- `height`: Image base height.
+- `mipmaps`: Mipmap levels, 1 by default.
+- `format`: Data format (PixelFormat type).
 
 ## Material
 
@@ -248,6 +408,28 @@ var meshMaterial:Array<Int>
 - `materials`: Gets the materials.
 - `meshMaterial`: Gets the material of each mesh, by its index in `materials`.
 
+## ModelAnimation
+
+*class* in [`ray/src/helix/ray/ModelAnimation.hx`](../../ray/src/helix/ray/ModelAnimation.hx), `import helix.ray.ModelAnimation;`
+
+raylib's `ModelAnimation` (raylib.h): not in helix-ray yet; its fields are raylib's. ModelAnimation.
+
+```haxe
+function new()
+var boneCount:Int
+var frameCount:Int
+var bones:Array<BoneInfo>
+var framePoses:Array<Array<Transform>>
+var name:String
+```
+
+- `new`: Creates one, its fields zero, empty or null.
+- `boneCount`: Number of bones.
+- `frameCount`: Number of animation frames.
+- `bones`: Bones information (skeleton).
+- `framePoses`: Poses array by frame.
+- `name`: Animation name.
+
 ## Music
 
 *class* in [`ray/src/helix/ray/Music.hx`](../../ray/src/helix/ray/Music.hx), `import helix.ray.Music;`
@@ -261,6 +443,30 @@ var frameCount(default, null):Int
 
 - `looping`: Gets or sets whether it starts again from its beginning when it ends; true until set, as raylib's.
 - `frameCount`: Gets the number of frames: 0 here, as the stream doesn't tell its length.
+
+## NPatchInfo
+
+*class* in [`ray/src/helix/ray/NPatchInfo.hx`](../../ray/src/helix/ray/NPatchInfo.hx), `import helix.ray.NPatchInfo;`
+
+raylib's `NPatchInfo` (raylib.h): not in helix-ray yet; its fields are raylib's. NPatchInfo, n-patch layout info.
+
+```haxe
+function new()
+var source:Rectangle
+var left:Int
+var top:Int
+var right:Int
+var bottom:Int
+var layout:Int
+```
+
+- `new`: Creates one, its fields zero, empty or null.
+- `source`: Texture source rectangle.
+- `left`: Left border offset.
+- `top`: Top border offset.
+- `right`: Right border offset.
+- `bottom`: Bottom border offset.
+- `layout`: Layout of the n-patch: 3x3, 1x3 or 3x1.
 
 ## Quaternion
 
@@ -2260,6 +2466,32 @@ var format:Int
 - `mipmaps`: Gets the number of mipmap levels, 1 for none.
 - `format`: Gets the pixel format, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` for every texture loaded here.
 
+## TextureCubemap
+
+*typedef* in [`ray/src/helix/ray/TextureCubemap.hx`](../../ray/src/helix/ray/TextureCubemap.hx), `import helix.ray.TextureCubemap;`
+
+raylib's `TextureCubemap` (raylib.h): TextureCubemap, same as Texture.
+
+An alias of `Texture`.
+
+## Transform
+
+*class* in [`ray/src/helix/ray/Transform.hx`](../../ray/src/helix/ray/Transform.hx), `import helix.ray.Transform;`
+
+raylib's `Transform` (raylib.h): not in helix-ray yet; its fields are raylib's. Transform, vertex transformation data.
+
+```haxe
+function new()
+var translation:Vector3
+var rotation:Quaternion
+var scale:Vector3
+```
+
+- `new`: Creates one, its fields zero, empty or null.
+- `translation`: Translation.
+- `rotation`: Rotation.
+- `scale`: Scale.
+
 ## Vector2
 
 *class* in [`ray/src/helix/ray/Vector2.hx`](../../ray/src/helix/ray/Vector2.hx), `import helix.ray.Vector2;`
@@ -2325,3 +2557,83 @@ var w:Float
 - `y`: Gets or sets the y component.
 - `z`: Gets or sets the z component.
 - `w`: Gets or sets the w component.
+
+## VrDeviceInfo
+
+*class* in [`ray/src/helix/ray/VrDeviceInfo.hx`](../../ray/src/helix/ray/VrDeviceInfo.hx), `import helix.ray.VrDeviceInfo;`
+
+raylib's `VrDeviceInfo` (raylib.h): not in helix-ray yet; its fields are raylib's. VrDeviceInfo, Head-Mounted-Display device parameters.
+
+```haxe
+function new()
+var hResolution:Int
+var vResolution:Int
+var hScreenSize:Float
+var vScreenSize:Float
+var eyeToScreenDistance:Float
+var lensSeparationDistance:Float
+var interpupillaryDistance:Float
+var lensDistortionValues:Array<Float>
+var chromaAbCorrection:Array<Float>
+```
+
+- `new`: Creates one, its fields zero, empty or null.
+- `hResolution`: Horizontal resolution in pixels.
+- `vResolution`: Vertical resolution in pixels.
+- `hScreenSize`: Horizontal size in meters.
+- `vScreenSize`: Vertical size in meters.
+- `eyeToScreenDistance`: Distance between eye and display in meters.
+- `lensSeparationDistance`: Lens separation distance in meters.
+- `interpupillaryDistance`: IPD (distance between pupils) in meters.
+- `lensDistortionValues`: Lens distortion constant parameters.
+- `chromaAbCorrection`: Chromatic aberration correction parameters.
+
+## VrStereoConfig
+
+*class* in [`ray/src/helix/ray/VrStereoConfig.hx`](../../ray/src/helix/ray/VrStereoConfig.hx), `import helix.ray.VrStereoConfig;`
+
+raylib's `VrStereoConfig` (raylib.h): not in helix-ray yet; its fields are raylib's. VrStereoConfig, VR stereo rendering configuration for simulator.
+
+```haxe
+function new()
+var projection:Array<Matrix>
+var viewOffset:Array<Matrix>
+var leftLensCenter:Array<Float>
+var rightLensCenter:Array<Float>
+var leftScreenCenter:Array<Float>
+var rightScreenCenter:Array<Float>
+var scale:Array<Float>
+var scaleIn:Array<Float>
+```
+
+- `new`: Creates one, its fields zero, empty or null.
+- `projection`: VR projection matrices (per eye).
+- `viewOffset`: VR view offset matrices (per eye).
+- `leftLensCenter`: VR left lens center.
+- `rightLensCenter`: VR right lens center.
+- `leftScreenCenter`: VR left screen center.
+- `rightScreenCenter`: VR right screen center.
+- `scale`: VR distortion scale.
+- `scaleIn`: VR distortion scale in.
+
+## Wave
+
+*class* in [`ray/src/helix/ray/Wave.hx`](../../ray/src/helix/ray/Wave.hx), `import helix.ray.Wave;`
+
+raylib's `Wave` (raylib.h): not in helix-ray yet; its fields are raylib's. Wave, audio wave data.
+
+```haxe
+function new()
+var frameCount:Int
+var sampleRate:Int
+var sampleSize:Int
+var channels:Int
+var data:Dynamic
+```
+
+- `new`: Creates one, its fields zero, empty or null.
+- `frameCount`: Total number of frames (considering channels).
+- `sampleRate`: Frequency (samples per second).
+- `sampleSize`: Bit depth (bits per sample): 8, 16, 32 (24 not supported).
+- `channels`: Number of channels (1-mono, 2-stereo, ...).
+- `data`: Buffer data pointer.

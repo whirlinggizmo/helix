@@ -2377,6 +2377,1946 @@ class Raylib {
 		@param answer  Receives true when it exists. */
 	public static inline function FileExistsAsync(fileName:String, answer:Bool->Void):Void
 		HelixRay.FileExistsAsync(fileName, answer);
+
+	// ---- raylib.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
+
+	/** raylib's `IsWindowFullscreen` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if window is currently fullscreen. */
+	@:unimplemented("IsWindowFullscreen: Not implemented")
+	public static inline function IsWindowFullscreen():Bool
+		throw "IsWindowFullscreen is unimplemented";
+
+	/** raylib's `IsWindowHidden` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if window is currently hidden. */
+	@:unimplemented("IsWindowHidden: Not implemented")
+	public static inline function IsWindowHidden():Bool
+		throw "IsWindowHidden is unimplemented";
+
+	/** raylib's `IsWindowMinimized` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if window is currently minimized. */
+	@:unimplemented("IsWindowMinimized: Not implemented")
+	public static inline function IsWindowMinimized():Bool
+		throw "IsWindowMinimized is unimplemented";
+
+	/** raylib's `IsWindowMaximized` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if window is currently maximized. */
+	@:unimplemented("IsWindowMaximized: Not implemented")
+	public static inline function IsWindowMaximized():Bool
+		throw "IsWindowMaximized is unimplemented";
+
+	/** raylib's `IsWindowFocused` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if window is currently focused. */
+	@:unimplemented("IsWindowFocused: Not implemented")
+	public static inline function IsWindowFocused():Bool
+		throw "IsWindowFocused is unimplemented";
+
+	/** raylib's `ToggleFullscreen` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Toggle window state: fullscreen/windowed, resizes monitor to match window resolution. */
+	@:unimplemented("ToggleFullscreen: Not implemented")
+	public static inline function ToggleFullscreen():Void
+		throw "ToggleFullscreen is unimplemented";
+
+	/** raylib's `ToggleBorderlessWindowed` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Toggle window state: borderless windowed, resizes window to match monitor resolution. */
+	@:unimplemented("ToggleBorderlessWindowed: Not implemented")
+	public static inline function ToggleBorderlessWindowed():Void
+		throw "ToggleBorderlessWindowed is unimplemented";
+
+	/** raylib's `MaximizeWindow` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window state: maximized, if resizable. */
+	@:unimplemented("MaximizeWindow: Not implemented")
+	public static inline function MaximizeWindow():Void
+		throw "MaximizeWindow is unimplemented";
+
+	/** raylib's `MinimizeWindow` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window state: minimized, if resizable. */
+	@:unimplemented("MinimizeWindow: Not implemented")
+	public static inline function MinimizeWindow():Void
+		throw "MinimizeWindow is unimplemented";
+
+	/** raylib's `RestoreWindow` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window state: not minimized/maximized. */
+	@:unimplemented("RestoreWindow: Not implemented")
+	public static inline function RestoreWindow():Void
+		throw "RestoreWindow is unimplemented";
+
+	/** raylib's `SetWindowIcon` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set icon for window (single image, RGBA 32bit). */
+	@:unimplemented("SetWindowIcon: Not implemented")
+	public static inline function SetWindowIcon(image:Image):Void
+		throw "SetWindowIcon is unimplemented";
+
+	/** raylib's `SetWindowIcons` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set icon for window (multiple images, RGBA 32bit). */
+	@:unimplemented("SetWindowIcons: Not implemented")
+	public static inline function SetWindowIcons(images:Array<Image>, count:Int):Void
+		throw "SetWindowIcons is unimplemented";
+
+	/** raylib's `SetWindowPosition` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window position on screen. */
+	@:unimplemented("SetWindowPosition: Not implemented")
+	public static inline function SetWindowPosition(x:Int, y:Int):Void
+		throw "SetWindowPosition is unimplemented";
+
+	/** raylib's `SetWindowMonitor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set monitor for the current window. */
+	@:unimplemented("SetWindowMonitor: Not implemented")
+	public static inline function SetWindowMonitor(monitor:Int):Void
+		throw "SetWindowMonitor is unimplemented";
+
+	/** raylib's `SetWindowMinSize` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window minimum dimensions (for FLAG_WINDOW_RESIZABLE). */
+	@:unimplemented("SetWindowMinSize: Not implemented")
+	public static inline function SetWindowMinSize(width:Int, height:Int):Void
+		throw "SetWindowMinSize is unimplemented";
+
+	/** raylib's `SetWindowMaxSize` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window maximum dimensions (for FLAG_WINDOW_RESIZABLE). */
+	@:unimplemented("SetWindowMaxSize: Not implemented")
+	public static inline function SetWindowMaxSize(width:Int, height:Int):Void
+		throw "SetWindowMaxSize is unimplemented";
+
+	/** raylib's `SetWindowOpacity` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window opacity [0.0f..1.0f]. */
+	@:unimplemented("SetWindowOpacity: Not implemented")
+	public static inline function SetWindowOpacity(opacity:Float):Void
+		throw "SetWindowOpacity is unimplemented";
+
+	/** raylib's `SetWindowFocused` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window focused. */
+	@:unimplemented("SetWindowFocused: Not implemented")
+	public static inline function SetWindowFocused():Void
+		throw "SetWindowFocused is unimplemented";
+
+	/** raylib's `GetWindowHandle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get native window handle. */
+	@:unimplemented("GetWindowHandle: Not implemented")
+	public static inline function GetWindowHandle():Dynamic
+		throw "GetWindowHandle is unimplemented";
+
+	/** raylib's `GetMonitorCount` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get number of connected monitors. */
+	@:unimplemented("GetMonitorCount: Not implemented")
+	public static inline function GetMonitorCount():Int
+		throw "GetMonitorCount is unimplemented";
+
+	/** raylib's `GetCurrentMonitor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get current monitor where window is placed. */
+	@:unimplemented("GetCurrentMonitor: Not implemented")
+	public static inline function GetCurrentMonitor():Int
+		throw "GetCurrentMonitor is unimplemented";
+
+	/** raylib's `GetMonitorPosition` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get specified monitor position. */
+	@:unimplemented("GetMonitorPosition: Not implemented")
+	public static inline function GetMonitorPosition(monitor:Int):Vector2
+		throw "GetMonitorPosition is unimplemented";
+
+	/** raylib's `GetMonitorWidth` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get specified monitor width (current video mode used by monitor). */
+	@:unimplemented("GetMonitorWidth: Not implemented")
+	public static inline function GetMonitorWidth(monitor:Int):Int
+		throw "GetMonitorWidth is unimplemented";
+
+	/** raylib's `GetMonitorHeight` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get specified monitor height (current video mode used by monitor). */
+	@:unimplemented("GetMonitorHeight: Not implemented")
+	public static inline function GetMonitorHeight(monitor:Int):Int
+		throw "GetMonitorHeight is unimplemented";
+
+	/** raylib's `GetMonitorPhysicalWidth` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get specified monitor physical width in millimetres. */
+	@:unimplemented("GetMonitorPhysicalWidth: Not implemented")
+	public static inline function GetMonitorPhysicalWidth(monitor:Int):Int
+		throw "GetMonitorPhysicalWidth is unimplemented";
+
+	/** raylib's `GetMonitorPhysicalHeight` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get specified monitor physical height in millimetres. */
+	@:unimplemented("GetMonitorPhysicalHeight: Not implemented")
+	public static inline function GetMonitorPhysicalHeight(monitor:Int):Int
+		throw "GetMonitorPhysicalHeight is unimplemented";
+
+	/** raylib's `GetMonitorRefreshRate` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get specified monitor refresh rate. */
+	@:unimplemented("GetMonitorRefreshRate: Not implemented")
+	public static inline function GetMonitorRefreshRate(monitor:Int):Int
+		throw "GetMonitorRefreshRate is unimplemented";
+
+	/** raylib's `GetWindowPosition` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get window position XY on monitor. */
+	@:unimplemented("GetWindowPosition: Not implemented")
+	public static inline function GetWindowPosition():Vector2
+		throw "GetWindowPosition is unimplemented";
+
+	/** raylib's `GetWindowScaleDPI` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get window scale DPI factor. */
+	@:unimplemented("GetWindowScaleDPI: Not implemented")
+	public static inline function GetWindowScaleDPI():Vector2
+		throw "GetWindowScaleDPI is unimplemented";
+
+	/** raylib's `GetMonitorName` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get the human-readable, UTF-8 encoded name of the specified monitor. */
+	@:unimplemented("GetMonitorName: Not implemented")
+	public static inline function GetMonitorName(monitor:Int):String
+		throw "GetMonitorName is unimplemented";
+
+	/** raylib's `SetClipboardText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set clipboard text content. */
+	@:unimplemented("SetClipboardText: Not implemented")
+	public static inline function SetClipboardText(text:String):Void
+		throw "SetClipboardText is unimplemented";
+
+	/** raylib's `GetClipboardText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get clipboard text content. */
+	@:unimplemented("GetClipboardText: Not implemented")
+	public static inline function GetClipboardText():String
+		throw "GetClipboardText is unimplemented";
+
+	/** raylib's `GetClipboardImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get clipboard image content. */
+	@:unimplemented("GetClipboardImage: Not implemented")
+	public static inline function GetClipboardImage():Image
+		throw "GetClipboardImage is unimplemented";
+
+	/** raylib's `EnableEventWaiting` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Enable waiting for events on EndDrawing(), no automatic event polling. */
+	@:unimplemented("EnableEventWaiting: Not implemented")
+	public static inline function EnableEventWaiting():Void
+		throw "EnableEventWaiting is unimplemented";
+
+	/** raylib's `DisableEventWaiting` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Disable waiting for events on EndDrawing(), automatic events polling. */
+	@:unimplemented("DisableEventWaiting: Not implemented")
+	public static inline function DisableEventWaiting():Void
+		throw "DisableEventWaiting is unimplemented";
+
+	/** raylib's `ShowCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Shows cursor. */
+	@:unimplemented("ShowCursor: Not implemented")
+	public static inline function ShowCursor():Void
+		throw "ShowCursor is unimplemented";
+
+	/** raylib's `HideCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Hides cursor. */
+	@:unimplemented("HideCursor: Not implemented")
+	public static inline function HideCursor():Void
+		throw "HideCursor is unimplemented";
+
+	/** raylib's `IsCursorHidden` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if cursor is not visible. */
+	@:unimplemented("IsCursorHidden: Not implemented")
+	public static inline function IsCursorHidden():Bool
+		throw "IsCursorHidden is unimplemented";
+
+	/** raylib's `EnableCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Enables cursor (unlock cursor). */
+	@:unimplemented("EnableCursor: Not implemented")
+	public static inline function EnableCursor():Void
+		throw "EnableCursor is unimplemented";
+
+	/** raylib's `DisableCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Disables cursor (lock cursor). */
+	@:unimplemented("DisableCursor: Not implemented")
+	public static inline function DisableCursor():Void
+		throw "DisableCursor is unimplemented";
+
+	/** raylib's `IsCursorOnScreen` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if cursor is on the screen. */
+	@:unimplemented("IsCursorOnScreen: Not implemented")
+	public static inline function IsCursorOnScreen():Bool
+		throw "IsCursorOnScreen is unimplemented";
+
+	/** raylib's `BeginBlendMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Begin blending mode (alpha, additive, multiplied, subtract, custom). */
+	@:unimplemented("BeginBlendMode: Not implemented")
+	public static inline function BeginBlendMode(mode:Int):Void
+		throw "BeginBlendMode is unimplemented";
+
+	/** raylib's `EndBlendMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. End blending mode (reset to default: alpha blending). */
+	@:unimplemented("EndBlendMode: Not implemented")
+	public static inline function EndBlendMode():Void
+		throw "EndBlendMode is unimplemented";
+
+	/** raylib's `BeginScissorMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Begin scissor mode (define screen area for following drawing). */
+	@:unimplemented("BeginScissorMode: Not implemented")
+	public static inline function BeginScissorMode(x:Int, y:Int, width:Int, height:Int):Void
+		throw "BeginScissorMode is unimplemented";
+
+	/** raylib's `EndScissorMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. End scissor mode. */
+	@:unimplemented("EndScissorMode: Not implemented")
+	public static inline function EndScissorMode():Void
+		throw "EndScissorMode is unimplemented";
+
+	/** raylib's `BeginVrStereoMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Begin stereo rendering (requires VR simulator). */
+	@:unimplemented("BeginVrStereoMode: Not implemented")
+	public static inline function BeginVrStereoMode(config:VrStereoConfig):Void
+		throw "BeginVrStereoMode is unimplemented";
+
+	/** raylib's `EndVrStereoMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. End stereo rendering (requires VR simulator). */
+	@:unimplemented("EndVrStereoMode: Not implemented")
+	public static inline function EndVrStereoMode():Void
+		throw "EndVrStereoMode is unimplemented";
+
+	/** raylib's `LoadVrStereoConfig` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load VR stereo config for VR simulator device parameters. */
+	@:unimplemented("LoadVrStereoConfig: Not implemented")
+	public static inline function LoadVrStereoConfig(device:VrDeviceInfo):VrStereoConfig
+		throw "LoadVrStereoConfig is unimplemented";
+
+	/** raylib's `UnloadVrStereoConfig` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload VR stereo config. */
+	@:unimplemented("UnloadVrStereoConfig: Not implemented")
+	public static inline function UnloadVrStereoConfig(config:VrStereoConfig):Void
+		throw "UnloadVrStereoConfig is unimplemented";
+
+	/** raylib's `SwapScreenBuffer` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Swap back buffer with front buffer (screen drawing). */
+	@:unimplemented("SwapScreenBuffer: Not implemented")
+	public static inline function SwapScreenBuffer():Void
+		throw "SwapScreenBuffer is unimplemented";
+
+	/** raylib's `PollInputEvents` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Register all input events. */
+	@:unimplemented("PollInputEvents: Not implemented")
+	public static inline function PollInputEvents():Void
+		throw "PollInputEvents is unimplemented";
+
+	/** raylib's `WaitTime` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Wait for some time (halt program execution). */
+	@:unimplemented("WaitTime: Not implemented")
+	public static inline function WaitTime(seconds:Float):Void
+		throw "WaitTime is unimplemented";
+
+	/** raylib's `LoadRandomSequence` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load random values sequence, no values repeated. */
+	@:unimplemented("LoadRandomSequence: Not implemented")
+	public static inline function LoadRandomSequence(count:Int, min:Int, max:Int):Array<Int>
+		throw "LoadRandomSequence is unimplemented";
+
+	/** raylib's `UnloadRandomSequence` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload random values sequence. */
+	@:unimplemented("UnloadRandomSequence: Not implemented")
+	public static inline function UnloadRandomSequence(sequence:Array<Int>):Void
+		throw "UnloadRandomSequence is unimplemented";
+
+	/** raylib's `TakeScreenshot` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Takes a screenshot of current screen (filename extension defines format). */
+	@:unimplemented("TakeScreenshot: Not implemented")
+	public static inline function TakeScreenshot(fileName:String):Void
+		throw "TakeScreenshot is unimplemented";
+
+	/** raylib's `OpenURL` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Open URL with default system browser (if available). */
+	@:unimplemented("OpenURL: Not implemented")
+	public static inline function OpenURL(url:String):Void
+		throw "OpenURL is unimplemented";
+
+	/** raylib's `MemAlloc` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Internal memory allocator. */
+	@:unimplemented("MemAlloc: Not implemented")
+	public static inline function MemAlloc(size:Int):Dynamic
+		throw "MemAlloc is unimplemented";
+
+	/** raylib's `MemRealloc` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Internal memory reallocator. */
+	@:unimplemented("MemRealloc: Not implemented")
+	public static inline function MemRealloc(ptr:Dynamic, size:Int):Dynamic
+		throw "MemRealloc is unimplemented";
+
+	/** raylib's `MemFree` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Internal memory free. */
+	@:unimplemented("MemFree: Not implemented")
+	public static inline function MemFree(ptr:Dynamic):Void
+		throw "MemFree is unimplemented";
+
+	/** raylib's `ExportDataAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export data to code (.h), returns true on success. */
+	@:unimplemented("ExportDataAsCode: Not implemented")
+	public static inline function ExportDataAsCode(data:haxe.io.Bytes, dataSize:Int, fileName:String):Bool
+		throw "ExportDataAsCode is unimplemented";
+
+	/** raylib's `DirectoryExists` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if a directory path exists. */
+	@:unimplemented("DirectoryExists: Not implemented")
+	public static inline function DirectoryExists(dirPath:String):Bool
+		throw "DirectoryExists is unimplemented";
+
+	/** raylib's `IsFileExtension` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check file extension (including point: .png, .wav). */
+	@:unimplemented("IsFileExtension: Not implemented")
+	public static inline function IsFileExtension(fileName:String, ext:String):Bool
+		throw "IsFileExtension is unimplemented";
+
+	/** raylib's `GetFileLength` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get file length in bytes (NOTE: GetFileSize() conflicts with windows.h). */
+	@:unimplemented("GetFileLength: Not implemented")
+	public static inline function GetFileLength(fileName:String):Int
+		throw "GetFileLength is unimplemented";
+
+	/** raylib's `GetFileExtension` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get pointer to extension for a filename string (includes dot: '.png'). */
+	@:unimplemented("GetFileExtension: Not implemented")
+	public static inline function GetFileExtension(fileName:String):String
+		throw "GetFileExtension is unimplemented";
+
+	/** raylib's `GetFileName` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get pointer to filename for a path string. */
+	@:unimplemented("GetFileName: Not implemented")
+	public static inline function GetFileName(filePath:String):String
+		throw "GetFileName is unimplemented";
+
+	/** raylib's `GetFileNameWithoutExt` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get filename string without extension (uses static string). */
+	@:unimplemented("GetFileNameWithoutExt: Not implemented")
+	public static inline function GetFileNameWithoutExt(filePath:String):String
+		throw "GetFileNameWithoutExt is unimplemented";
+
+	/** raylib's `GetDirectoryPath` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get full path for a given fileName with path (uses static string). */
+	@:unimplemented("GetDirectoryPath: Not implemented")
+	public static inline function GetDirectoryPath(filePath:String):String
+		throw "GetDirectoryPath is unimplemented";
+
+	/** raylib's `GetPrevDirectoryPath` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get previous directory path for a given path (uses static string). */
+	@:unimplemented("GetPrevDirectoryPath: Not implemented")
+	public static inline function GetPrevDirectoryPath(dirPath:String):String
+		throw "GetPrevDirectoryPath is unimplemented";
+
+	/** raylib's `GetWorkingDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get current working directory (uses static string). */
+	@:unimplemented("GetWorkingDirectory: Not implemented")
+	public static inline function GetWorkingDirectory():String
+		throw "GetWorkingDirectory is unimplemented";
+
+	/** raylib's `GetApplicationDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get the directory of the running application (uses static string). */
+	@:unimplemented("GetApplicationDirectory: Not implemented")
+	public static inline function GetApplicationDirectory():String
+		throw "GetApplicationDirectory is unimplemented";
+
+	/** raylib's `MakeDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Create directories (including full path requested), returns 0 on success. */
+	@:unimplemented("MakeDirectory: Not implemented")
+	public static inline function MakeDirectory(dirPath:String):Int
+		throw "MakeDirectory is unimplemented";
+
+	/** raylib's `ChangeDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Change working directory, return true on success. */
+	@:unimplemented("ChangeDirectory: Not implemented")
+	public static inline function ChangeDirectory(dir:String):Bool
+		throw "ChangeDirectory is unimplemented";
+
+	/** raylib's `IsPathFile` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if a given path is a file or a directory. */
+	@:unimplemented("IsPathFile: Not implemented")
+	public static inline function IsPathFile(path:String):Bool
+		throw "IsPathFile is unimplemented";
+
+	/** raylib's `IsFileNameValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if fileName is valid for the platform/OS. */
+	@:unimplemented("IsFileNameValid: Not implemented")
+	public static inline function IsFileNameValid(fileName:String):Bool
+		throw "IsFileNameValid is unimplemented";
+
+	/** raylib's `LoadDirectoryFiles` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load directory filepaths. */
+	@:unimplemented("LoadDirectoryFiles: Not implemented")
+	public static inline function LoadDirectoryFiles(dirPath:String):FilePathList
+		throw "LoadDirectoryFiles is unimplemented";
+
+	/** raylib's `LoadDirectoryFilesEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load directory filepaths with extension filtering and recursive directory scan. Use 'DIR' in the filter string to include directories in the result. */
+	@:unimplemented("LoadDirectoryFilesEx: Not implemented")
+	public static inline function LoadDirectoryFilesEx(basePath:String, filter:String, scanSubdirs:Bool):FilePathList
+		throw "LoadDirectoryFilesEx is unimplemented";
+
+	/** raylib's `UnloadDirectoryFiles` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload filepaths. */
+	@:unimplemented("UnloadDirectoryFiles: Not implemented")
+	public static inline function UnloadDirectoryFiles(files:FilePathList):Void
+		throw "UnloadDirectoryFiles is unimplemented";
+
+	/** raylib's `IsFileDropped` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if a file has been dropped into window. */
+	@:unimplemented("IsFileDropped: Not implemented")
+	public static inline function IsFileDropped():Bool
+		throw "IsFileDropped is unimplemented";
+
+	/** raylib's `LoadDroppedFiles` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load dropped filepaths. */
+	@:unimplemented("LoadDroppedFiles: Not implemented")
+	public static inline function LoadDroppedFiles():FilePathList
+		throw "LoadDroppedFiles is unimplemented";
+
+	/** raylib's `UnloadDroppedFiles` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload dropped filepaths. */
+	@:unimplemented("UnloadDroppedFiles: Not implemented")
+	public static inline function UnloadDroppedFiles(files:FilePathList):Void
+		throw "UnloadDroppedFiles is unimplemented";
+
+	/** raylib's `GetFileModTime` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get file modification time (last write time). */
+	@:unimplemented("GetFileModTime: Not implemented")
+	public static inline function GetFileModTime(fileName:String):Int
+		throw "GetFileModTime is unimplemented";
+
+	/** raylib's `CompressData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Compress data (DEFLATE algorithm), memory must be MemFree(). */
+	@:unimplemented("CompressData: Not implemented")
+	public static inline function CompressData(data:haxe.io.Bytes, dataSize:Int, compDataSize:Array<Int>):haxe.io.Bytes
+		throw "CompressData is unimplemented";
+
+	/** raylib's `DecompressData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Decompress data (DEFLATE algorithm), memory must be MemFree(). */
+	@:unimplemented("DecompressData: Not implemented")
+	public static inline function DecompressData(compData:haxe.io.Bytes, compDataSize:Int, dataSize:Array<Int>):haxe.io.Bytes
+		throw "DecompressData is unimplemented";
+
+	/** raylib's `EncodeDataBase64` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Encode data to Base64 string, memory must be MemFree(). */
+	@:unimplemented("EncodeDataBase64: Not implemented")
+	public static inline function EncodeDataBase64(data:haxe.io.Bytes, dataSize:Int, outputSize:Array<Int>):String
+		throw "EncodeDataBase64 is unimplemented";
+
+	/** raylib's `DecodeDataBase64` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Decode Base64 string data, memory must be MemFree(). */
+	@:unimplemented("DecodeDataBase64: Not implemented")
+	public static inline function DecodeDataBase64(data:haxe.io.Bytes, outputSize:Array<Int>):haxe.io.Bytes
+		throw "DecodeDataBase64 is unimplemented";
+
+	/** raylib's `ComputeCRC32` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Compute CRC32 hash code. */
+	@:unimplemented("ComputeCRC32: Not implemented")
+	public static inline function ComputeCRC32(data:haxe.io.Bytes, dataSize:Int):Int
+		throw "ComputeCRC32 is unimplemented";
+
+	/** raylib's `ComputeMD5` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Compute MD5 hash code, returns static int[4] (16 bytes). */
+	@:unimplemented("ComputeMD5: Not implemented")
+	public static inline function ComputeMD5(data:haxe.io.Bytes, dataSize:Int):Array<Int>
+		throw "ComputeMD5 is unimplemented";
+
+	/** raylib's `ComputeSHA1` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Compute SHA1 hash code, returns static int[5] (20 bytes). */
+	@:unimplemented("ComputeSHA1: Not implemented")
+	public static inline function ComputeSHA1(data:haxe.io.Bytes, dataSize:Int):Array<Int>
+		throw "ComputeSHA1 is unimplemented";
+
+	/** raylib's `LoadAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load automation events list from file, NULL for empty list, capacity = MAX_AUTOMATION_EVENTS. */
+	@:unimplemented("LoadAutomationEventList: Not implemented")
+	public static inline function LoadAutomationEventList(fileName:String):AutomationEventList
+		throw "LoadAutomationEventList is unimplemented";
+
+	/** raylib's `UnloadAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload automation events list from file. */
+	@:unimplemented("UnloadAutomationEventList: Not implemented")
+	public static inline function UnloadAutomationEventList(list:AutomationEventList):Void
+		throw "UnloadAutomationEventList is unimplemented";
+
+	/** raylib's `ExportAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export automation events list as text file. */
+	@:unimplemented("ExportAutomationEventList: Not implemented")
+	public static inline function ExportAutomationEventList(list:AutomationEventList, fileName:String):Bool
+		throw "ExportAutomationEventList is unimplemented";
+
+	/** raylib's `SetAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set automation event list to record to. */
+	@:unimplemented("SetAutomationEventList: Not implemented")
+	public static inline function SetAutomationEventList(list:AutomationEventList):Void
+		throw "SetAutomationEventList is unimplemented";
+
+	/** raylib's `SetAutomationEventBaseFrame` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set automation event internal base frame to start recording. */
+	@:unimplemented("SetAutomationEventBaseFrame: Not implemented")
+	public static inline function SetAutomationEventBaseFrame(frame:Int):Void
+		throw "SetAutomationEventBaseFrame is unimplemented";
+
+	/** raylib's `StartAutomationEventRecording` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Start recording automation events (AutomationEventList must be set). */
+	@:unimplemented("StartAutomationEventRecording: Not implemented")
+	public static inline function StartAutomationEventRecording():Void
+		throw "StartAutomationEventRecording is unimplemented";
+
+	/** raylib's `StopAutomationEventRecording` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Stop recording automation events. */
+	@:unimplemented("StopAutomationEventRecording: Not implemented")
+	public static inline function StopAutomationEventRecording():Void
+		throw "StopAutomationEventRecording is unimplemented";
+
+	/** raylib's `PlayAutomationEvent` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Play a recorded automation event. */
+	@:unimplemented("PlayAutomationEvent: Not implemented")
+	public static inline function PlayAutomationEvent(event:AutomationEvent):Void
+		throw "PlayAutomationEvent is unimplemented";
+
+	/** raylib's `IsKeyPressedRepeat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if a key has been pressed again. */
+	@:unimplemented("IsKeyPressedRepeat: Not implemented")
+	public static inline function IsKeyPressedRepeat(key:Int):Bool
+		throw "IsKeyPressedRepeat is unimplemented";
+
+	/** raylib's `GetCharPressed` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get char pressed (unicode), call it multiple times for chars queued, returns 0 when the queue is empty. */
+	@:unimplemented("GetCharPressed: Not implemented")
+	public static inline function GetCharPressed():Int
+		throw "GetCharPressed is unimplemented";
+
+	/** raylib's `SetGamepadMappings` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set internal gamepad mappings (SDL_GameControllerDB). */
+	@:unimplemented("SetGamepadMappings: Not implemented")
+	public static inline function SetGamepadMappings(mappings:String):Int
+		throw "SetGamepadMappings is unimplemented";
+
+	/** raylib's `SetGamepadVibration` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set gamepad vibration for both motors (duration in seconds). */
+	@:unimplemented("SetGamepadVibration: Not implemented")
+	public static inline function SetGamepadVibration(gamepad:Int, leftMotor:Float, rightMotor:Float, duration:Float):Void
+		throw "SetGamepadVibration is unimplemented";
+
+	/** raylib's `SetMousePosition` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set mouse position XY. */
+	@:unimplemented("SetMousePosition: Not implemented")
+	public static inline function SetMousePosition(x:Int, y:Int):Void
+		throw "SetMousePosition is unimplemented";
+
+	/** raylib's `SetMouseOffset` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set mouse offset. */
+	@:unimplemented("SetMouseOffset: Not implemented")
+	public static inline function SetMouseOffset(offsetX:Int, offsetY:Int):Void
+		throw "SetMouseOffset is unimplemented";
+
+	/** raylib's `SetMouseScale` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set mouse scaling. */
+	@:unimplemented("SetMouseScale: Not implemented")
+	public static inline function SetMouseScale(scaleX:Float, scaleY:Float):Void
+		throw "SetMouseScale is unimplemented";
+
+	/** raylib's `GetMouseWheelMoveV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get mouse wheel movement for both X and Y. */
+	@:unimplemented("GetMouseWheelMoveV: Not implemented")
+	public static inline function GetMouseWheelMoveV():Vector2
+		throw "GetMouseWheelMoveV is unimplemented";
+
+	/** raylib's `SetMouseCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set mouse cursor. */
+	@:unimplemented("SetMouseCursor: Not implemented")
+	public static inline function SetMouseCursor(cursor:Int):Void
+		throw "SetMouseCursor is unimplemented";
+
+	/** raylib's `GetTouchPointId` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get touch point identifier for given index. */
+	@:unimplemented("GetTouchPointId: Not implemented")
+	public static inline function GetTouchPointId(index:Int):Int
+		throw "GetTouchPointId is unimplemented";
+
+	/** raylib's `SetGesturesEnabled` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Enable a set of gestures using flags. */
+	@:unimplemented("SetGesturesEnabled: Not implemented")
+	public static inline function SetGesturesEnabled(flags:Int):Void
+		throw "SetGesturesEnabled is unimplemented";
+
+	/** raylib's `GetGestureHoldDuration` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get gesture hold time in seconds. */
+	@:unimplemented("GetGestureHoldDuration: Not implemented")
+	public static inline function GetGestureHoldDuration():Float
+		throw "GetGestureHoldDuration is unimplemented";
+
+	/** raylib's `GetGestureDragVector` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get gesture drag vector. */
+	@:unimplemented("GetGestureDragVector: Not implemented")
+	public static inline function GetGestureDragVector():Vector2
+		throw "GetGestureDragVector is unimplemented";
+
+	/** raylib's `GetGestureDragAngle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get gesture drag angle. */
+	@:unimplemented("GetGestureDragAngle: Not implemented")
+	public static inline function GetGestureDragAngle():Float
+		throw "GetGestureDragAngle is unimplemented";
+
+	/** raylib's `GetGesturePinchVector` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get gesture pinch delta. */
+	@:unimplemented("GetGesturePinchVector: Not implemented")
+	public static inline function GetGesturePinchVector():Vector2
+		throw "GetGesturePinchVector is unimplemented";
+
+	/** raylib's `GetGesturePinchAngle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get gesture pinch angle. */
+	@:unimplemented("GetGesturePinchAngle: Not implemented")
+	public static inline function GetGesturePinchAngle():Float
+		throw "GetGesturePinchAngle is unimplemented";
+
+	/** raylib's `UpdateCameraPro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update camera movement/rotation. */
+	@:unimplemented("UpdateCameraPro: Not implemented")
+	public static inline function UpdateCameraPro(camera:Camera, movement:Vector3, rotation:Vector3, zoom:Float):Void
+		throw "UpdateCameraPro is unimplemented";
+
+	/** raylib's `SetShapesTexture` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set texture and rectangle to be used on shapes drawing. */
+	@:unimplemented("SetShapesTexture: Not implemented")
+	public static inline function SetShapesTexture(texture:Texture2D, source:Rectangle):Void
+		throw "SetShapesTexture is unimplemented";
+
+	/** raylib's `GetShapesTexture` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get texture that is used for shapes drawing. */
+	@:unimplemented("GetShapesTexture: Not implemented")
+	public static inline function GetShapesTexture():Texture2D
+		throw "GetShapesTexture is unimplemented";
+
+	/** raylib's `GetShapesTextureRectangle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get texture source rectangle that is used for shapes drawing. */
+	@:unimplemented("GetShapesTextureRectangle: Not implemented")
+	public static inline function GetShapesTextureRectangle():Rectangle
+		throw "GetShapesTextureRectangle is unimplemented";
+
+	/** raylib's `DrawLineStrip` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw lines sequence (using gl lines). */
+	@:unimplemented("DrawLineStrip: Not implemented")
+	public static inline function DrawLineStrip(points:Array<Vector2>, pointCount:Int, color:Color):Void
+		throw "DrawLineStrip is unimplemented";
+
+	/** raylib's `DrawLineBezier` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw line segment cubic-bezier in-out interpolation. */
+	@:unimplemented("DrawLineBezier: Not implemented")
+	public static inline function DrawLineBezier(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void
+		throw "DrawLineBezier is unimplemented";
+
+	/** raylib's `DrawCircleSector` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a piece of a circle. */
+	@:unimplemented("DrawCircleSector: Not implemented")
+	public static inline function DrawCircleSector(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
+		throw "DrawCircleSector is unimplemented";
+
+	/** raylib's `DrawCircleSectorLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw circle sector outline. */
+	@:unimplemented("DrawCircleSectorLines: Not implemented")
+	public static inline function DrawCircleSectorLines(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
+		throw "DrawCircleSectorLines is unimplemented";
+
+	/** raylib's `DrawCircleGradient` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a gradient-filled circle. */
+	@:unimplemented("DrawCircleGradient: Not implemented")
+	public static inline function DrawCircleGradient(centerX:Int, centerY:Int, radius:Float, inner:Color, outer:Color):Void
+		throw "DrawCircleGradient is unimplemented";
+
+	/** raylib's `DrawEllipse` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw ellipse. */
+	@:unimplemented("DrawEllipse: Not implemented")
+	public static inline function DrawEllipse(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void
+		throw "DrawEllipse is unimplemented";
+
+	/** raylib's `DrawEllipseLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw ellipse outline. */
+	@:unimplemented("DrawEllipseLines: Not implemented")
+	public static inline function DrawEllipseLines(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void
+		throw "DrawEllipseLines is unimplemented";
+
+	/** raylib's `DrawRing` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw ring. */
+	@:unimplemented("DrawRing: Not implemented")
+	public static inline function DrawRing(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int,
+			color:Color):Void
+		throw "DrawRing is unimplemented";
+
+	/** raylib's `DrawRingLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw ring outline. */
+	@:unimplemented("DrawRingLines: Not implemented")
+	public static inline function DrawRingLines(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int,
+			color:Color):Void
+		throw "DrawRingLines is unimplemented";
+
+	/** raylib's `DrawRectanglePro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a color-filled rectangle with pro parameters. */
+	@:unimplemented("DrawRectanglePro: Not implemented")
+	public static inline function DrawRectanglePro(rec:Rectangle, origin:Vector2, rotation:Float, color:Color):Void
+		throw "DrawRectanglePro is unimplemented";
+
+	/** raylib's `DrawRectangleGradientV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a vertical-gradient-filled rectangle. */
+	@:unimplemented("DrawRectangleGradientV: Not implemented")
+	public static inline function DrawRectangleGradientV(posX:Int, posY:Int, width:Int, height:Int, top:Color, bottom:Color):Void
+		throw "DrawRectangleGradientV is unimplemented";
+
+	/** raylib's `DrawRectangleGradientH` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a horizontal-gradient-filled rectangle. */
+	@:unimplemented("DrawRectangleGradientH: Not implemented")
+	public static inline function DrawRectangleGradientH(posX:Int, posY:Int, width:Int, height:Int, left:Color, right:Color):Void
+		throw "DrawRectangleGradientH is unimplemented";
+
+	/** raylib's `DrawRectangleGradientEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a gradient-filled rectangle with custom vertex colors. */
+	@:unimplemented("DrawRectangleGradientEx: Not implemented")
+	public static inline function DrawRectangleGradientEx(rec:Rectangle, topLeft:Color, bottomLeft:Color, topRight:Color, bottomRight:Color):Void
+		throw "DrawRectangleGradientEx is unimplemented";
+
+	/** raylib's `DrawRectangleRounded` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw rectangle with rounded edges. */
+	@:unimplemented("DrawRectangleRounded: Not implemented")
+	public static inline function DrawRectangleRounded(rec:Rectangle, roundness:Float, segments:Int, color:Color):Void
+		throw "DrawRectangleRounded is unimplemented";
+
+	/** raylib's `DrawRectangleRoundedLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw rectangle lines with rounded edges. */
+	@:unimplemented("DrawRectangleRoundedLines: Not implemented")
+	public static inline function DrawRectangleRoundedLines(rec:Rectangle, roundness:Float, segments:Int, color:Color):Void
+		throw "DrawRectangleRoundedLines is unimplemented";
+
+	/** raylib's `DrawRectangleRoundedLinesEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw rectangle with rounded edges outline. */
+	@:unimplemented("DrawRectangleRoundedLinesEx: Not implemented")
+	public static inline function DrawRectangleRoundedLinesEx(rec:Rectangle, roundness:Float, segments:Int, lineThick:Float, color:Color):Void
+		throw "DrawRectangleRoundedLinesEx is unimplemented";
+
+	/** raylib's `DrawTriangleLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw triangle outline (vertex in counter-clockwise order!). */
+	@:unimplemented("DrawTriangleLines: Not implemented")
+	public static inline function DrawTriangleLines(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
+		throw "DrawTriangleLines is unimplemented";
+
+	/** raylib's `DrawTriangleFan` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a triangle fan defined by points (first vertex is the center). */
+	@:unimplemented("DrawTriangleFan: Not implemented")
+	public static inline function DrawTriangleFan(points:Array<Vector2>, pointCount:Int, color:Color):Void
+		throw "DrawTriangleFan is unimplemented";
+
+	/** raylib's `DrawTriangleStrip` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a triangle strip defined by points. */
+	@:unimplemented("DrawTriangleStrip: Not implemented")
+	public static inline function DrawTriangleStrip(points:Array<Vector2>, pointCount:Int, color:Color):Void
+		throw "DrawTriangleStrip is unimplemented";
+
+	/** raylib's `DrawPoly` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a regular polygon (Vector version). */
+	@:unimplemented("DrawPoly: Not implemented")
+	public static inline function DrawPoly(center:Vector2, sides:Int, radius:Float, rotation:Float, color:Color):Void
+		throw "DrawPoly is unimplemented";
+
+	/** raylib's `DrawPolyLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a polygon outline of n sides. */
+	@:unimplemented("DrawPolyLines: Not implemented")
+	public static inline function DrawPolyLines(center:Vector2, sides:Int, radius:Float, rotation:Float, color:Color):Void
+		throw "DrawPolyLines is unimplemented";
+
+	/** raylib's `DrawPolyLinesEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a polygon outline of n sides with extended parameters. */
+	@:unimplemented("DrawPolyLinesEx: Not implemented")
+	public static inline function DrawPolyLinesEx(center:Vector2, sides:Int, radius:Float, rotation:Float, lineThick:Float, color:Color):Void
+		throw "DrawPolyLinesEx is unimplemented";
+
+	/** raylib's `DrawSplineLinear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline: Linear, minimum 2 points. */
+	@:unimplemented("DrawSplineLinear: Not implemented")
+	public static inline function DrawSplineLinear(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+		throw "DrawSplineLinear is unimplemented";
+
+	/** raylib's `DrawSplineBasis` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline: B-Spline, minimum 4 points. */
+	@:unimplemented("DrawSplineBasis: Not implemented")
+	public static inline function DrawSplineBasis(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+		throw "DrawSplineBasis is unimplemented";
+
+	/** raylib's `DrawSplineCatmullRom` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline: Catmull-Rom, minimum 4 points. */
+	@:unimplemented("DrawSplineCatmullRom: Not implemented")
+	public static inline function DrawSplineCatmullRom(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+		throw "DrawSplineCatmullRom is unimplemented";
+
+	/** raylib's `DrawSplineBezierQuadratic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline: Quadratic Bezier, minimum 3 points (1 control point): [p1, c2, p3, c4...]. */
+	@:unimplemented("DrawSplineBezierQuadratic: Not implemented")
+	public static inline function DrawSplineBezierQuadratic(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+		throw "DrawSplineBezierQuadratic is unimplemented";
+
+	/** raylib's `DrawSplineBezierCubic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline: Cubic Bezier, minimum 4 points (2 control points): [p1, c2, c3, p4, c5, c6...]. */
+	@:unimplemented("DrawSplineBezierCubic: Not implemented")
+	public static inline function DrawSplineBezierCubic(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+		throw "DrawSplineBezierCubic is unimplemented";
+
+	/** raylib's `DrawSplineSegmentLinear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline segment: Linear, 2 points. */
+	@:unimplemented("DrawSplineSegmentLinear: Not implemented")
+	public static inline function DrawSplineSegmentLinear(p1:Vector2, p2:Vector2, thick:Float, color:Color):Void
+		throw "DrawSplineSegmentLinear is unimplemented";
+
+	/** raylib's `DrawSplineSegmentBasis` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline segment: B-Spline, 4 points. */
+	@:unimplemented("DrawSplineSegmentBasis: Not implemented")
+	public static inline function DrawSplineSegmentBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, thick:Float, color:Color):Void
+		throw "DrawSplineSegmentBasis is unimplemented";
+
+	/** raylib's `DrawSplineSegmentCatmullRom` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline segment: Catmull-Rom, 4 points. */
+	@:unimplemented("DrawSplineSegmentCatmullRom: Not implemented")
+	public static inline function DrawSplineSegmentCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, thick:Float, color:Color):Void
+		throw "DrawSplineSegmentCatmullRom is unimplemented";
+
+	/** raylib's `DrawSplineSegmentBezierQuadratic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline segment: Quadratic Bezier, 2 points, 1 control point. */
+	@:unimplemented("DrawSplineSegmentBezierQuadratic: Not implemented")
+	public static inline function DrawSplineSegmentBezierQuadratic(p1:Vector2, c2:Vector2, p3:Vector2, thick:Float, color:Color):Void
+		throw "DrawSplineSegmentBezierQuadratic is unimplemented";
+
+	/** raylib's `DrawSplineSegmentBezierCubic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline segment: Cubic Bezier, 2 points, 2 control points. */
+	@:unimplemented("DrawSplineSegmentBezierCubic: Not implemented")
+	public static inline function DrawSplineSegmentBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, thick:Float, color:Color):Void
+		throw "DrawSplineSegmentBezierCubic is unimplemented";
+
+	/** raylib's `GetSplinePointLinear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get (evaluate) spline point: Linear. */
+	@:unimplemented("GetSplinePointLinear: Not implemented")
+	public static inline function GetSplinePointLinear(startPos:Vector2, endPos:Vector2, t:Float):Vector2
+		throw "GetSplinePointLinear is unimplemented";
+
+	/** raylib's `GetSplinePointBasis` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get (evaluate) spline point: B-Spline. */
+	@:unimplemented("GetSplinePointBasis: Not implemented")
+	public static inline function GetSplinePointBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2
+		throw "GetSplinePointBasis is unimplemented";
+
+	/** raylib's `GetSplinePointCatmullRom` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get (evaluate) spline point: Catmull-Rom. */
+	@:unimplemented("GetSplinePointCatmullRom: Not implemented")
+	public static inline function GetSplinePointCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2
+		throw "GetSplinePointCatmullRom is unimplemented";
+
+	/** raylib's `GetSplinePointBezierQuad` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get (evaluate) spline point: Quadratic Bezier. */
+	@:unimplemented("GetSplinePointBezierQuad: Not implemented")
+	public static inline function GetSplinePointBezierQuad(p1:Vector2, c2:Vector2, p3:Vector2, t:Float):Vector2
+		throw "GetSplinePointBezierQuad is unimplemented";
+
+	/** raylib's `GetSplinePointBezierCubic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get (evaluate) spline point: Cubic Bezier. */
+	@:unimplemented("GetSplinePointBezierCubic: Not implemented")
+	public static inline function GetSplinePointBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, t:Float):Vector2
+		throw "GetSplinePointBezierCubic is unimplemented";
+
+	/** raylib's `CheckCollisionCircleLine` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if circle collides with a line created betweeen two points [p1] and [p2]. */
+	@:unimplemented("CheckCollisionCircleLine: Not implemented")
+	public static inline function CheckCollisionCircleLine(center:Vector2, radius:Float, p1:Vector2, p2:Vector2):Bool
+		throw "CheckCollisionCircleLine is unimplemented";
+
+	/** raylib's `CheckCollisionPointTriangle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if point is inside a triangle. */
+	@:unimplemented("CheckCollisionPointTriangle: Not implemented")
+	public static inline function CheckCollisionPointTriangle(point:Vector2, p1:Vector2, p2:Vector2, p3:Vector2):Bool
+		throw "CheckCollisionPointTriangle is unimplemented";
+
+	/** raylib's `CheckCollisionPointLine` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if point belongs to line created between two points [p1] and [p2] with defined margin in pixels [threshold]. */
+	@:unimplemented("CheckCollisionPointLine: Not implemented")
+	public static inline function CheckCollisionPointLine(point:Vector2, p1:Vector2, p2:Vector2, threshold:Int):Bool
+		throw "CheckCollisionPointLine is unimplemented";
+
+	/** raylib's `CheckCollisionPointPoly` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if point is within a polygon described by array of vertices. */
+	@:unimplemented("CheckCollisionPointPoly: Not implemented")
+	public static inline function CheckCollisionPointPoly(point:Vector2, points:Array<Vector2>, pointCount:Int):Bool
+		throw "CheckCollisionPointPoly is unimplemented";
+
+	/** raylib's `CheckCollisionLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check the collision between two lines defined by two points each, returns collision point by reference. */
+	@:unimplemented("CheckCollisionLines: Not implemented")
+	public static inline function CheckCollisionLines(startPos1:Vector2, endPos1:Vector2, startPos2:Vector2, endPos2:Vector2, collisionPoint:Vector2):Bool
+		throw "CheckCollisionLines is unimplemented";
+
+	/** raylib's `GetCollisionRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get collision rectangle for two rectangles collision. */
+	@:unimplemented("GetCollisionRec: Not implemented")
+	public static inline function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
+		throw "GetCollisionRec is unimplemented";
+
+	/** raylib's `LoadImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image from file into CPU memory (RAM). */
+	@:unimplemented("LoadImage: Not implemented")
+	public static inline function LoadImage(fileName:String):Image
+		throw "LoadImage is unimplemented";
+
+	/** raylib's `LoadImageRaw` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image from RAW file data. */
+	@:unimplemented("LoadImageRaw: Not implemented")
+	public static inline function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int):Image
+		throw "LoadImageRaw is unimplemented";
+
+	/** raylib's `LoadImageAnim` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image sequence from file (frames appended to image.data). */
+	@:unimplemented("LoadImageAnim: Not implemented")
+	public static inline function LoadImageAnim(fileName:String, frames:Array<Int>):Image
+		throw "LoadImageAnim is unimplemented";
+
+	/** raylib's `LoadImageAnimFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image sequence from memory buffer. */
+	@:unimplemented("LoadImageAnimFromMemory: Not implemented")
+	public static inline function LoadImageAnimFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>):Image
+		throw "LoadImageAnimFromMemory is unimplemented";
+
+	/** raylib's `LoadImageFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image from memory buffer, fileType refers to extension: i.e. '.png'. */
+	@:unimplemented("LoadImageFromMemory: Not implemented")
+	public static inline function LoadImageFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Image
+		throw "LoadImageFromMemory is unimplemented";
+
+	/** raylib's `LoadImageFromTexture` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image from GPU texture data. */
+	@:unimplemented("LoadImageFromTexture: Not implemented")
+	public static inline function LoadImageFromTexture(texture:Texture2D):Image
+		throw "LoadImageFromTexture is unimplemented";
+
+	/** raylib's `LoadImageFromScreen` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image from screen buffer and (screenshot). */
+	@:unimplemented("LoadImageFromScreen: Not implemented")
+	public static inline function LoadImageFromScreen():Image
+		throw "LoadImageFromScreen is unimplemented";
+
+	/** raylib's `IsImageValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if an image is valid (data and parameters). */
+	@:unimplemented("IsImageValid: Not implemented")
+	public static inline function IsImageValid(image:Image):Bool
+		throw "IsImageValid is unimplemented";
+
+	/** raylib's `UnloadImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload image from CPU memory (RAM). */
+	@:unimplemented("UnloadImage: Not implemented")
+	public static inline function UnloadImage(image:Image):Void
+		throw "UnloadImage is unimplemented";
+
+	/** raylib's `ExportImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export image data to file, returns true on success. */
+	@:unimplemented("ExportImage: Not implemented")
+	public static inline function ExportImage(image:Image, fileName:String):Bool
+		throw "ExportImage is unimplemented";
+
+	/** raylib's `ExportImageToMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export image to memory buffer. */
+	@:unimplemented("ExportImageToMemory: Not implemented")
+	public static inline function ExportImageToMemory(image:Image, fileType:String, fileSize:Array<Int>):haxe.io.Bytes
+		throw "ExportImageToMemory is unimplemented";
+
+	/** raylib's `ExportImageAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export image as code file defining an array of bytes, returns true on success. */
+	@:unimplemented("ExportImageAsCode: Not implemented")
+	public static inline function ExportImageAsCode(image:Image, fileName:String):Bool
+		throw "ExportImageAsCode is unimplemented";
+
+	/** raylib's `GenImageColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: plain color. */
+	@:unimplemented("GenImageColor: Not implemented")
+	public static inline function GenImageColor(width:Int, height:Int, color:Color):Image
+		throw "GenImageColor is unimplemented";
+
+	/** raylib's `GenImageGradientLinear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: linear gradient, direction in degrees [0..360], 0=Vertical gradient. */
+	@:unimplemented("GenImageGradientLinear: Not implemented")
+	public static inline function GenImageGradientLinear(width:Int, height:Int, direction:Int, start:Color, end:Color):Image
+		throw "GenImageGradientLinear is unimplemented";
+
+	/** raylib's `GenImageGradientRadial` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: radial gradient. */
+	@:unimplemented("GenImageGradientRadial: Not implemented")
+	public static inline function GenImageGradientRadial(width:Int, height:Int, density:Float, inner:Color, outer:Color):Image
+		throw "GenImageGradientRadial is unimplemented";
+
+	/** raylib's `GenImageGradientSquare` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: square gradient. */
+	@:unimplemented("GenImageGradientSquare: Not implemented")
+	public static inline function GenImageGradientSquare(width:Int, height:Int, density:Float, inner:Color, outer:Color):Image
+		throw "GenImageGradientSquare is unimplemented";
+
+	/** raylib's `GenImageChecked` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: checked. */
+	@:unimplemented("GenImageChecked: Not implemented")
+	public static inline function GenImageChecked(width:Int, height:Int, checksX:Int, checksY:Int, col1:Color, col2:Color):Image
+		throw "GenImageChecked is unimplemented";
+
+	/** raylib's `GenImageWhiteNoise` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: white noise. */
+	@:unimplemented("GenImageWhiteNoise: Not implemented")
+	public static inline function GenImageWhiteNoise(width:Int, height:Int, factor:Float):Image
+		throw "GenImageWhiteNoise is unimplemented";
+
+	/** raylib's `GenImagePerlinNoise` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: perlin noise. */
+	@:unimplemented("GenImagePerlinNoise: Not implemented")
+	public static inline function GenImagePerlinNoise(width:Int, height:Int, offsetX:Int, offsetY:Int, scale:Float):Image
+		throw "GenImagePerlinNoise is unimplemented";
+
+	/** raylib's `GenImageCellular` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: cellular algorithm, bigger tileSize means bigger cells. */
+	@:unimplemented("GenImageCellular: Not implemented")
+	public static inline function GenImageCellular(width:Int, height:Int, tileSize:Int):Image
+		throw "GenImageCellular is unimplemented";
+
+	/** raylib's `GenImageText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: grayscale image from text data. */
+	@:unimplemented("GenImageText: Not implemented")
+	public static inline function GenImageText(width:Int, height:Int, text:String):Image
+		throw "GenImageText is unimplemented";
+
+	/** raylib's `ImageCopy` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Create an image duplicate (useful for transformations). */
+	@:unimplemented("ImageCopy: Not implemented")
+	public static inline function ImageCopy(image:Image):Image
+		throw "ImageCopy is unimplemented";
+
+	/** raylib's `ImageFromImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Create an image from another image piece. */
+	@:unimplemented("ImageFromImage: Not implemented")
+	public static inline function ImageFromImage(image:Image, rec:Rectangle):Image
+		throw "ImageFromImage is unimplemented";
+
+	/** raylib's `ImageFromChannel` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Create an image from a selected channel of another image (GRAYSCALE). */
+	@:unimplemented("ImageFromChannel: Not implemented")
+	public static inline function ImageFromChannel(image:Image, selectedChannel:Int):Image
+		throw "ImageFromChannel is unimplemented";
+
+	/** raylib's `ImageText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Create an image from text (default font). */
+	@:unimplemented("ImageText: Not implemented")
+	public static inline function ImageText(text:String, fontSize:Int, color:Color):Image
+		throw "ImageText is unimplemented";
+
+	/** raylib's `ImageTextEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Create an image from text (custom sprite font). */
+	@:unimplemented("ImageTextEx: Not implemented")
+	public static inline function ImageTextEx(font:Font, text:String, fontSize:Float, spacing:Float, tint:Color):Image
+		throw "ImageTextEx is unimplemented";
+
+	/** raylib's `ImageFormat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Convert image data to desired format. */
+	@:unimplemented("ImageFormat: Not implemented")
+	public static inline function ImageFormat(image:Image, newFormat:Int):Void
+		throw "ImageFormat is unimplemented";
+
+	/** raylib's `ImageToPOT` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Convert image to POT (power-of-two). */
+	@:unimplemented("ImageToPOT: Not implemented")
+	public static inline function ImageToPOT(image:Image, fill:Color):Void
+		throw "ImageToPOT is unimplemented";
+
+	/** raylib's `ImageCrop` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Crop an image to a defined rectangle. */
+	@:unimplemented("ImageCrop: Not implemented")
+	public static inline function ImageCrop(image:Image, crop:Rectangle):Void
+		throw "ImageCrop is unimplemented";
+
+	/** raylib's `ImageAlphaCrop` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Crop image depending on alpha value. */
+	@:unimplemented("ImageAlphaCrop: Not implemented")
+	public static inline function ImageAlphaCrop(image:Image, threshold:Float):Void
+		throw "ImageAlphaCrop is unimplemented";
+
+	/** raylib's `ImageAlphaClear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Clear alpha channel to desired color. */
+	@:unimplemented("ImageAlphaClear: Not implemented")
+	public static inline function ImageAlphaClear(image:Image, color:Color, threshold:Float):Void
+		throw "ImageAlphaClear is unimplemented";
+
+	/** raylib's `ImageAlphaMask` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Apply alpha mask to image. */
+	@:unimplemented("ImageAlphaMask: Not implemented")
+	public static inline function ImageAlphaMask(image:Image, alphaMask:Image):Void
+		throw "ImageAlphaMask is unimplemented";
+
+	/** raylib's `ImageAlphaPremultiply` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Premultiply alpha channel. */
+	@:unimplemented("ImageAlphaPremultiply: Not implemented")
+	public static inline function ImageAlphaPremultiply(image:Image):Void
+		throw "ImageAlphaPremultiply is unimplemented";
+
+	/** raylib's `ImageBlurGaussian` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Apply Gaussian blur using a box blur approximation. */
+	@:unimplemented("ImageBlurGaussian: Not implemented")
+	public static inline function ImageBlurGaussian(image:Image, blurSize:Int):Void
+		throw "ImageBlurGaussian is unimplemented";
+
+	/** raylib's `ImageKernelConvolution` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Apply custom square convolution kernel to image. */
+	@:unimplemented("ImageKernelConvolution: Not implemented")
+	public static inline function ImageKernelConvolution(image:Image, kernel:Array<Float>, kernelSize:Int):Void
+		throw "ImageKernelConvolution is unimplemented";
+
+	/** raylib's `ImageResize` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Resize image (Bicubic scaling algorithm). */
+	@:unimplemented("ImageResize: Not implemented")
+	public static inline function ImageResize(image:Image, newWidth:Int, newHeight:Int):Void
+		throw "ImageResize is unimplemented";
+
+	/** raylib's `ImageResizeNN` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Resize image (Nearest-Neighbor scaling algorithm). */
+	@:unimplemented("ImageResizeNN: Not implemented")
+	public static inline function ImageResizeNN(image:Image, newWidth:Int, newHeight:Int):Void
+		throw "ImageResizeNN is unimplemented";
+
+	/** raylib's `ImageResizeCanvas` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Resize canvas and fill with color. */
+	@:unimplemented("ImageResizeCanvas: Not implemented")
+	public static inline function ImageResizeCanvas(image:Image, newWidth:Int, newHeight:Int, offsetX:Int, offsetY:Int, fill:Color):Void
+		throw "ImageResizeCanvas is unimplemented";
+
+	/** raylib's `ImageMipmaps` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Compute all mipmap levels for a provided image. */
+	@:unimplemented("ImageMipmaps: Not implemented")
+	public static inline function ImageMipmaps(image:Image):Void
+		throw "ImageMipmaps is unimplemented";
+
+	/** raylib's `ImageDither` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Dither image data to 16bpp or lower (Floyd-Steinberg dithering). */
+	@:unimplemented("ImageDither: Not implemented")
+	public static inline function ImageDither(image:Image, rBpp:Int, gBpp:Int, bBpp:Int, aBpp:Int):Void
+		throw "ImageDither is unimplemented";
+
+	/** raylib's `ImageFlipVertical` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Flip image vertically. */
+	@:unimplemented("ImageFlipVertical: Not implemented")
+	public static inline function ImageFlipVertical(image:Image):Void
+		throw "ImageFlipVertical is unimplemented";
+
+	/** raylib's `ImageFlipHorizontal` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Flip image horizontally. */
+	@:unimplemented("ImageFlipHorizontal: Not implemented")
+	public static inline function ImageFlipHorizontal(image:Image):Void
+		throw "ImageFlipHorizontal is unimplemented";
+
+	/** raylib's `ImageRotate` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Rotate image by input angle in degrees (-359 to 359). */
+	@:unimplemented("ImageRotate: Not implemented")
+	public static inline function ImageRotate(image:Image, degrees:Int):Void
+		throw "ImageRotate is unimplemented";
+
+	/** raylib's `ImageRotateCW` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Rotate image clockwise 90deg. */
+	@:unimplemented("ImageRotateCW: Not implemented")
+	public static inline function ImageRotateCW(image:Image):Void
+		throw "ImageRotateCW is unimplemented";
+
+	/** raylib's `ImageRotateCCW` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Rotate image counter-clockwise 90deg. */
+	@:unimplemented("ImageRotateCCW: Not implemented")
+	public static inline function ImageRotateCCW(image:Image):Void
+		throw "ImageRotateCCW is unimplemented";
+
+	/** raylib's `ImageColorTint` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Modify image color: tint. */
+	@:unimplemented("ImageColorTint: Not implemented")
+	public static inline function ImageColorTint(image:Image, color:Color):Void
+		throw "ImageColorTint is unimplemented";
+
+	/** raylib's `ImageColorInvert` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Modify image color: invert. */
+	@:unimplemented("ImageColorInvert: Not implemented")
+	public static inline function ImageColorInvert(image:Image):Void
+		throw "ImageColorInvert is unimplemented";
+
+	/** raylib's `ImageColorGrayscale` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Modify image color: grayscale. */
+	@:unimplemented("ImageColorGrayscale: Not implemented")
+	public static inline function ImageColorGrayscale(image:Image):Void
+		throw "ImageColorGrayscale is unimplemented";
+
+	/** raylib's `ImageColorContrast` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Modify image color: contrast (-100 to 100). */
+	@:unimplemented("ImageColorContrast: Not implemented")
+	public static inline function ImageColorContrast(image:Image, contrast:Float):Void
+		throw "ImageColorContrast is unimplemented";
+
+	/** raylib's `ImageColorBrightness` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Modify image color: brightness (-255 to 255). */
+	@:unimplemented("ImageColorBrightness: Not implemented")
+	public static inline function ImageColorBrightness(image:Image, brightness:Int):Void
+		throw "ImageColorBrightness is unimplemented";
+
+	/** raylib's `ImageColorReplace` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Modify image color: replace color. */
+	@:unimplemented("ImageColorReplace: Not implemented")
+	public static inline function ImageColorReplace(image:Image, color:Color, replace:Color):Void
+		throw "ImageColorReplace is unimplemented";
+
+	/** raylib's `LoadImageColors` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load color data from image as a Color array (RGBA - 32bit). */
+	@:unimplemented("LoadImageColors: Not implemented")
+	public static inline function LoadImageColors(image:Image):Array<Color>
+		throw "LoadImageColors is unimplemented";
+
+	/** raylib's `LoadImagePalette` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load colors palette from image as a Color array (RGBA - 32bit). */
+	@:unimplemented("LoadImagePalette: Not implemented")
+	public static inline function LoadImagePalette(image:Image, maxPaletteSize:Int, colorCount:Array<Int>):Array<Color>
+		throw "LoadImagePalette is unimplemented";
+
+	/** raylib's `UnloadImageColors` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload color data loaded with LoadImageColors(). */
+	@:unimplemented("UnloadImageColors: Not implemented")
+	public static inline function UnloadImageColors(colors:Array<Color>):Void
+		throw "UnloadImageColors is unimplemented";
+
+	/** raylib's `UnloadImagePalette` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload colors palette loaded with LoadImagePalette(). */
+	@:unimplemented("UnloadImagePalette: Not implemented")
+	public static inline function UnloadImagePalette(colors:Array<Color>):Void
+		throw "UnloadImagePalette is unimplemented";
+
+	/** raylib's `GetImageAlphaBorder` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get image alpha border rectangle. */
+	@:unimplemented("GetImageAlphaBorder: Not implemented")
+	public static inline function GetImageAlphaBorder(image:Image, threshold:Float):Rectangle
+		throw "GetImageAlphaBorder is unimplemented";
+
+	/** raylib's `GetImageColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get image pixel color at (x, y) position. */
+	@:unimplemented("GetImageColor: Not implemented")
+	public static inline function GetImageColor(image:Image, x:Int, y:Int):Color
+		throw "GetImageColor is unimplemented";
+
+	/** raylib's `ImageClearBackground` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Clear image background with given color. */
+	@:unimplemented("ImageClearBackground: Not implemented")
+	public static inline function ImageClearBackground(dst:Image, color:Color):Void
+		throw "ImageClearBackground is unimplemented";
+
+	/** raylib's `ImageDrawPixel` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw pixel within an image. */
+	@:unimplemented("ImageDrawPixel: Not implemented")
+	public static inline function ImageDrawPixel(dst:Image, posX:Int, posY:Int, color:Color):Void
+		throw "ImageDrawPixel is unimplemented";
+
+	/** raylib's `ImageDrawPixelV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw pixel within an image (Vector version). */
+	@:unimplemented("ImageDrawPixelV: Not implemented")
+	public static inline function ImageDrawPixelV(dst:Image, position:Vector2, color:Color):Void
+		throw "ImageDrawPixelV is unimplemented";
+
+	/** raylib's `ImageDrawLine` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw line within an image. */
+	@:unimplemented("ImageDrawLine: Not implemented")
+	public static inline function ImageDrawLine(dst:Image, startPosX:Int, startPosY:Int, endPosX:Int, endPosY:Int, color:Color):Void
+		throw "ImageDrawLine is unimplemented";
+
+	/** raylib's `ImageDrawLineV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw line within an image (Vector version). */
+	@:unimplemented("ImageDrawLineV: Not implemented")
+	public static inline function ImageDrawLineV(dst:Image, start:Vector2, end:Vector2, color:Color):Void
+		throw "ImageDrawLineV is unimplemented";
+
+	/** raylib's `ImageDrawLineEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a line defining thickness within an image. */
+	@:unimplemented("ImageDrawLineEx: Not implemented")
+	public static inline function ImageDrawLineEx(dst:Image, start:Vector2, end:Vector2, thick:Int, color:Color):Void
+		throw "ImageDrawLineEx is unimplemented";
+
+	/** raylib's `ImageDrawCircle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a filled circle within an image. */
+	@:unimplemented("ImageDrawCircle: Not implemented")
+	public static inline function ImageDrawCircle(dst:Image, centerX:Int, centerY:Int, radius:Int, color:Color):Void
+		throw "ImageDrawCircle is unimplemented";
+
+	/** raylib's `ImageDrawCircleV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a filled circle within an image (Vector version). */
+	@:unimplemented("ImageDrawCircleV: Not implemented")
+	public static inline function ImageDrawCircleV(dst:Image, center:Vector2, radius:Int, color:Color):Void
+		throw "ImageDrawCircleV is unimplemented";
+
+	/** raylib's `ImageDrawCircleLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw circle outline within an image. */
+	@:unimplemented("ImageDrawCircleLines: Not implemented")
+	public static inline function ImageDrawCircleLines(dst:Image, centerX:Int, centerY:Int, radius:Int, color:Color):Void
+		throw "ImageDrawCircleLines is unimplemented";
+
+	/** raylib's `ImageDrawCircleLinesV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw circle outline within an image (Vector version). */
+	@:unimplemented("ImageDrawCircleLinesV: Not implemented")
+	public static inline function ImageDrawCircleLinesV(dst:Image, center:Vector2, radius:Int, color:Color):Void
+		throw "ImageDrawCircleLinesV is unimplemented";
+
+	/** raylib's `ImageDrawRectangle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw rectangle within an image. */
+	@:unimplemented("ImageDrawRectangle: Not implemented")
+	public static inline function ImageDrawRectangle(dst:Image, posX:Int, posY:Int, width:Int, height:Int, color:Color):Void
+		throw "ImageDrawRectangle is unimplemented";
+
+	/** raylib's `ImageDrawRectangleV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw rectangle within an image (Vector version). */
+	@:unimplemented("ImageDrawRectangleV: Not implemented")
+	public static inline function ImageDrawRectangleV(dst:Image, position:Vector2, size:Vector2, color:Color):Void
+		throw "ImageDrawRectangleV is unimplemented";
+
+	/** raylib's `ImageDrawRectangleRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw rectangle within an image. */
+	@:unimplemented("ImageDrawRectangleRec: Not implemented")
+	public static inline function ImageDrawRectangleRec(dst:Image, rec:Rectangle, color:Color):Void
+		throw "ImageDrawRectangleRec is unimplemented";
+
+	/** raylib's `ImageDrawRectangleLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw rectangle lines within an image. */
+	@:unimplemented("ImageDrawRectangleLines: Not implemented")
+	public static inline function ImageDrawRectangleLines(dst:Image, rec:Rectangle, thick:Int, color:Color):Void
+		throw "ImageDrawRectangleLines is unimplemented";
+
+	/** raylib's `ImageDrawTriangle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw triangle within an image. */
+	@:unimplemented("ImageDrawTriangle: Not implemented")
+	public static inline function ImageDrawTriangle(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
+		throw "ImageDrawTriangle is unimplemented";
+
+	/** raylib's `ImageDrawTriangleEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw triangle with interpolated colors within an image. */
+	@:unimplemented("ImageDrawTriangleEx: Not implemented")
+	public static inline function ImageDrawTriangleEx(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
+		throw "ImageDrawTriangleEx is unimplemented";
+
+	/** raylib's `ImageDrawTriangleLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw triangle outline within an image. */
+	@:unimplemented("ImageDrawTriangleLines: Not implemented")
+	public static inline function ImageDrawTriangleLines(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
+		throw "ImageDrawTriangleLines is unimplemented";
+
+	/** raylib's `ImageDrawTriangleFan` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a triangle fan defined by points within an image (first vertex is the center). */
+	@:unimplemented("ImageDrawTriangleFan: Not implemented")
+	public static inline function ImageDrawTriangleFan(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
+		throw "ImageDrawTriangleFan is unimplemented";
+
+	/** raylib's `ImageDrawTriangleStrip` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a triangle strip defined by points within an image. */
+	@:unimplemented("ImageDrawTriangleStrip: Not implemented")
+	public static inline function ImageDrawTriangleStrip(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
+		throw "ImageDrawTriangleStrip is unimplemented";
+
+	/** raylib's `ImageDraw` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a source image within a destination image (tint applied to source). */
+	@:unimplemented("ImageDraw: Not implemented")
+	public static inline function ImageDraw(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectangle, tint:Color):Void
+		throw "ImageDraw is unimplemented";
+
+	/** raylib's `ImageDrawText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw text (using default font) within an image (destination). */
+	@:unimplemented("ImageDrawText: Not implemented")
+	public static inline function ImageDrawText(dst:Image, text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void
+		throw "ImageDrawText is unimplemented";
+
+	/** raylib's `ImageDrawTextEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw text (custom sprite font) within an image (destination). */
+	@:unimplemented("ImageDrawTextEx: Not implemented")
+	public static inline function ImageDrawTextEx(dst:Image, font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
+		throw "ImageDrawTextEx is unimplemented";
+
+	/** raylib's `LoadTextureFromImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load texture from image data. */
+	@:unimplemented("LoadTextureFromImage: Not implemented")
+	public static inline function LoadTextureFromImage(image:Image):Texture2D
+		throw "LoadTextureFromImage is unimplemented";
+
+	/** raylib's `LoadTextureCubemap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load cubemap from image, multiple image cubemap layouts supported. */
+	@:unimplemented("LoadTextureCubemap: Not implemented")
+	public static inline function LoadTextureCubemap(image:Image, layout:Int):TextureCubemap
+		throw "LoadTextureCubemap is unimplemented";
+
+	/** raylib's `UpdateTexture` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update GPU texture with new data. */
+	@:unimplemented("UpdateTexture: Not implemented")
+	public static inline function UpdateTexture(texture:Texture2D, pixels:Dynamic):Void
+		throw "UpdateTexture is unimplemented";
+
+	/** raylib's `UpdateTextureRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update GPU texture rectangle with new data. */
+	@:unimplemented("UpdateTextureRec: Not implemented")
+	public static inline function UpdateTextureRec(texture:Texture2D, rec:Rectangle, pixels:Dynamic):Void
+		throw "UpdateTextureRec is unimplemented";
+
+	/** raylib's `GenTextureMipmaps` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate GPU mipmaps for a texture. */
+	@:unimplemented("GenTextureMipmaps: Not implemented")
+	public static inline function GenTextureMipmaps(texture:Texture2D):Void
+		throw "GenTextureMipmaps is unimplemented";
+
+	/** raylib's `SetTextureWrap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set texture wrapping mode. */
+	@:unimplemented("SetTextureWrap: Not implemented")
+	public static inline function SetTextureWrap(texture:Texture2D, wrap:Int):Void
+		throw "SetTextureWrap is unimplemented";
+
+	/** raylib's `DrawTextureNPatch` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draws a texture (or part of it) that stretches or shrinks nicely. */
+	@:unimplemented("DrawTextureNPatch: Not implemented")
+	public static inline function DrawTextureNPatch(texture:Texture2D, nPatchInfo:NPatchInfo, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void
+		throw "DrawTextureNPatch is unimplemented";
+
+	/** raylib's `ColorIsEqual` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if two colors are equal. */
+	@:unimplemented("ColorIsEqual: Not implemented")
+	public static inline function ColorIsEqual(col1:Color, col2:Color):Bool
+		throw "ColorIsEqual is unimplemented";
+
+	/** raylib's `ColorToInt` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get hexadecimal value for a Color (0xRRGGBBAA). */
+	@:unimplemented("ColorToInt: Not implemented")
+	public static inline function ColorToInt(color:Color):Int
+		throw "ColorToInt is unimplemented";
+
+	/** raylib's `ColorToHSV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get HSV values for a Color, hue [0..360], saturation/value [0..1]. */
+	@:unimplemented("ColorToHSV: Not implemented")
+	public static inline function ColorToHSV(color:Color):Vector3
+		throw "ColorToHSV is unimplemented";
+
+	/** raylib's `ColorFromHSV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get a Color from HSV values, hue [0..360], saturation/value [0..1]. */
+	@:unimplemented("ColorFromHSV: Not implemented")
+	public static inline function ColorFromHSV(hue:Float, saturation:Float, value:Float):Color
+		throw "ColorFromHSV is unimplemented";
+
+	/** raylib's `ColorTint` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get color multiplied with another color. */
+	@:unimplemented("ColorTint: Not implemented")
+	public static inline function ColorTint(color:Color, tint:Color):Color
+		throw "ColorTint is unimplemented";
+
+	/** raylib's `ColorBrightness` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get color with brightness correction, brightness factor goes from -1.0f to 1.0f. */
+	@:unimplemented("ColorBrightness: Not implemented")
+	public static inline function ColorBrightness(color:Color, factor:Float):Color
+		throw "ColorBrightness is unimplemented";
+
+	/** raylib's `ColorContrast` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get color with contrast correction, contrast values between -1.0f and 1.0f. */
+	@:unimplemented("ColorContrast: Not implemented")
+	public static inline function ColorContrast(color:Color, contrast:Float):Color
+		throw "ColorContrast is unimplemented";
+
+	/** raylib's `ColorAlphaBlend` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get src alpha-blended into dst color with tint. */
+	@:unimplemented("ColorAlphaBlend: Not implemented")
+	public static inline function ColorAlphaBlend(dst:Color, src:Color, tint:Color):Color
+		throw "ColorAlphaBlend is unimplemented";
+
+	/** raylib's `ColorLerp` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get color lerp interpolation between two colors, factor [0.0f..1.0f]. */
+	@:unimplemented("ColorLerp: Not implemented")
+	public static inline function ColorLerp(color1:Color, color2:Color, factor:Float):Color
+		throw "ColorLerp is unimplemented";
+
+	/** raylib's `GetColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get Color structure from hexadecimal value. */
+	@:unimplemented("GetColor: Not implemented")
+	public static inline function GetColor(hexValue:Int):Color
+		throw "GetColor is unimplemented";
+
+	/** raylib's `GetPixelColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get Color from a source pixel pointer of certain format. */
+	@:unimplemented("GetPixelColor: Not implemented")
+	public static inline function GetPixelColor(srcPtr:Dynamic, format:Int):Color
+		throw "GetPixelColor is unimplemented";
+
+	/** raylib's `SetPixelColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set color formatted into destination pixel pointer. */
+	@:unimplemented("SetPixelColor: Not implemented")
+	public static inline function SetPixelColor(dstPtr:Dynamic, color:Color, format:Int):Void
+		throw "SetPixelColor is unimplemented";
+
+	/** raylib's `GetPixelDataSize` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get pixel data size in bytes for certain format. */
+	@:unimplemented("GetPixelDataSize: Not implemented")
+	public static inline function GetPixelDataSize(width:Int, height:Int, format:Int):Int
+		throw "GetPixelDataSize is unimplemented";
+
+	/** raylib's `GetFontDefault` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get the default Font. */
+	@:unimplemented("GetFontDefault: Not implemented")
+	public static inline function GetFontDefault():Font
+		throw "GetFontDefault is unimplemented";
+
+	/** raylib's `LoadFont` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load font from file into GPU memory (VRAM). */
+	@:unimplemented("LoadFont: Not implemented")
+	public static inline function LoadFont(fileName:String):Font
+		throw "LoadFont is unimplemented";
+
+	/** raylib's `LoadFontEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load font from file with extended parameters, use NULL for codepoints and 0 for codepointCount to load the default character set, font size is provided in pixels height. */
+	@:unimplemented("LoadFontEx: Not implemented")
+	public static inline function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font
+		throw "LoadFontEx is unimplemented";
+
+	/** raylib's `LoadFontFromImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load font from Image (XNA style). */
+	@:unimplemented("LoadFontFromImage: Not implemented")
+	public static inline function LoadFontFromImage(image:Image, key:Color, firstChar:Int):Font
+		throw "LoadFontFromImage is unimplemented";
+
+	/** raylib's `LoadFontFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load font from memory buffer, fileType refers to extension: i.e. '.ttf'. */
+	@:unimplemented("LoadFontFromMemory: Not implemented")
+	public static inline function LoadFontFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>,
+			codepointCount:Int):Font
+		throw "LoadFontFromMemory is unimplemented";
+
+	/** raylib's `IsFontValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if a font is valid (font data loaded, WARNING: GPU texture not checked). */
+	@:unimplemented("IsFontValid: Not implemented")
+	public static inline function IsFontValid(font:Font):Bool
+		throw "IsFontValid is unimplemented";
+
+	/** raylib's `LoadFontData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load font data for further use. */
+	@:unimplemented("LoadFontData: Not implemented")
+	public static inline function LoadFontData(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int,
+			type:Int):Array<GlyphInfo>
+		throw "LoadFontData is unimplemented";
+
+	/** raylib's `GenImageFontAtlas` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image font atlas using chars info. */
+	@:unimplemented("GenImageFontAtlas: Not implemented")
+	public static inline function GenImageFontAtlas(glyphs:Array<GlyphInfo>, glyphRecs:Array<Rectangle>, glyphCount:Int, fontSize:Int, padding:Int,
+			packMethod:Int):Image
+		throw "GenImageFontAtlas is unimplemented";
+
+	/** raylib's `UnloadFontData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload font chars info data (RAM). */
+	@:unimplemented("UnloadFontData: Not implemented")
+	public static inline function UnloadFontData(glyphs:Array<GlyphInfo>, glyphCount:Int):Void
+		throw "UnloadFontData is unimplemented";
+
+	/** raylib's `UnloadFont` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload font from GPU memory (VRAM). */
+	@:unimplemented("UnloadFont: Not implemented")
+	public static inline function UnloadFont(font:Font):Void
+		throw "UnloadFont is unimplemented";
+
+	/** raylib's `ExportFontAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export font as code file, returns true on success. */
+	@:unimplemented("ExportFontAsCode: Not implemented")
+	public static inline function ExportFontAsCode(font:Font, fileName:String):Bool
+		throw "ExportFontAsCode is unimplemented";
+
+	/** raylib's `DrawTextEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw text using font and additional parameters. */
+	@:unimplemented("DrawTextEx: Not implemented")
+	public static inline function DrawTextEx(font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
+		throw "DrawTextEx is unimplemented";
+
+	/** raylib's `DrawTextPro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw text using Font and pro parameters (rotation). */
+	@:unimplemented("DrawTextPro: Not implemented")
+	public static inline function DrawTextPro(font:Font, text:String, position:Vector2, origin:Vector2, rotation:Float, fontSize:Float, spacing:Float,
+			tint:Color):Void
+		throw "DrawTextPro is unimplemented";
+
+	/** raylib's `DrawTextCodepoint` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw one character (codepoint). */
+	@:unimplemented("DrawTextCodepoint: Not implemented")
+	public static inline function DrawTextCodepoint(font:Font, codepoint:Int, position:Vector2, fontSize:Float, tint:Color):Void
+		throw "DrawTextCodepoint is unimplemented";
+
+	/** raylib's `DrawTextCodepoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw multiple character (codepoint). */
+	@:unimplemented("DrawTextCodepoints: Not implemented")
+	public static inline function DrawTextCodepoints(font:Font, codepoints:Array<Int>, codepointCount:Int, position:Vector2, fontSize:Float, spacing:Float,
+			tint:Color):Void
+		throw "DrawTextCodepoints is unimplemented";
+
+	/** raylib's `SetTextLineSpacing` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set vertical line spacing when drawing with line-breaks. */
+	@:unimplemented("SetTextLineSpacing: Not implemented")
+	public static inline function SetTextLineSpacing(spacing:Int):Void
+		throw "SetTextLineSpacing is unimplemented";
+
+	/** raylib's `MeasureTextEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Measure string size for Font. */
+	@:unimplemented("MeasureTextEx: Not implemented")
+	public static inline function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2
+		throw "MeasureTextEx is unimplemented";
+
+	/** raylib's `GetGlyphIndex` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get glyph index position in font for a codepoint (unicode character), fallback to '?' if not found. */
+	@:unimplemented("GetGlyphIndex: Not implemented")
+	public static inline function GetGlyphIndex(font:Font, codepoint:Int):Int
+		throw "GetGlyphIndex is unimplemented";
+
+	/** raylib's `GetGlyphInfo` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get glyph font info data for a codepoint (unicode character), fallback to '?' if not found. */
+	@:unimplemented("GetGlyphInfo: Not implemented")
+	public static inline function GetGlyphInfo(font:Font, codepoint:Int):GlyphInfo
+		throw "GetGlyphInfo is unimplemented";
+
+	/** raylib's `GetGlyphAtlasRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get glyph rectangle in font atlas for a codepoint (unicode character), fallback to '?' if not found. */
+	@:unimplemented("GetGlyphAtlasRec: Not implemented")
+	public static inline function GetGlyphAtlasRec(font:Font, codepoint:Int):Rectangle
+		throw "GetGlyphAtlasRec is unimplemented";
+
+	/** raylib's `LoadUTF8` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load UTF-8 text encoded from codepoints array. */
+	@:unimplemented("LoadUTF8: Not implemented")
+	public static inline function LoadUTF8(codepoints:Array<Int>, length:Int):String
+		throw "LoadUTF8 is unimplemented";
+
+	/** raylib's `UnloadUTF8` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload UTF-8 text encoded from codepoints array. */
+	@:unimplemented("UnloadUTF8: Not implemented")
+	public static inline function UnloadUTF8(text:String):Void
+		throw "UnloadUTF8 is unimplemented";
+
+	/** raylib's `LoadCodepoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load all codepoints from a UTF-8 text string, codepoints count returned by parameter. */
+	@:unimplemented("LoadCodepoints: Not implemented")
+	public static inline function LoadCodepoints(text:String, count:Array<Int>):Array<Int>
+		throw "LoadCodepoints is unimplemented";
+
+	/** raylib's `UnloadCodepoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload codepoints data from memory. */
+	@:unimplemented("UnloadCodepoints: Not implemented")
+	public static inline function UnloadCodepoints(codepoints:Array<Int>):Void
+		throw "UnloadCodepoints is unimplemented";
+
+	/** raylib's `GetCodepointCount` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get total number of codepoints in a UTF-8 encoded string. */
+	@:unimplemented("GetCodepointCount: Not implemented")
+	public static inline function GetCodepointCount(text:String):Int
+		throw "GetCodepointCount is unimplemented";
+
+	/** raylib's `GetCodepoint` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get next codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure. */
+	@:unimplemented("GetCodepoint: Not implemented")
+	public static inline function GetCodepoint(text:String, codepointSize:Array<Int>):Int
+		throw "GetCodepoint is unimplemented";
+
+	/** raylib's `GetCodepointNext` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get next codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure. */
+	@:unimplemented("GetCodepointNext: Not implemented")
+	public static inline function GetCodepointNext(text:String, codepointSize:Array<Int>):Int
+		throw "GetCodepointNext is unimplemented";
+
+	/** raylib's `GetCodepointPrevious` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get previous codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure. */
+	@:unimplemented("GetCodepointPrevious: Not implemented")
+	public static inline function GetCodepointPrevious(text:String, codepointSize:Array<Int>):Int
+		throw "GetCodepointPrevious is unimplemented";
+
+	/** raylib's `CodepointToUTF8` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Encode one codepoint into UTF-8 byte array (array length returned as parameter). */
+	@:unimplemented("CodepointToUTF8: Not implemented")
+	public static inline function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
+		throw "CodepointToUTF8 is unimplemented";
+
+	/** raylib's `TextCopy` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Copy one string to another, returns bytes copied. */
+	@:unimplemented("TextCopy: Not implemented")
+	public static inline function TextCopy(dst:String, src:String):Int
+		throw "TextCopy is unimplemented";
+
+	/** raylib's `TextIsEqual` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if two text string are equal. */
+	@:unimplemented("TextIsEqual: Not implemented")
+	public static inline function TextIsEqual(text1:String, text2:String):Bool
+		throw "TextIsEqual is unimplemented";
+
+	/** raylib's `TextLength` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get text length, checks for '\0' ending. */
+	@:unimplemented("TextLength: Not implemented")
+	public static inline function TextLength(text:String):Int
+		throw "TextLength is unimplemented";
+
+	/** raylib's `TextFormat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Text formatting with variables (sprintf() style). */
+	@:unimplemented("TextFormat: Not implemented")
+	public static inline function TextFormat(text:String, args:haxe.extern.Rest<Dynamic>):String
+		throw "TextFormat is unimplemented";
+
+	/** raylib's `TextSubtext` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get a piece of a text string. */
+	@:unimplemented("TextSubtext: Not implemented")
+	public static inline function TextSubtext(text:String, position:Int, length:Int):String
+		throw "TextSubtext is unimplemented";
+
+	/** raylib's `TextReplace` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Replace text string (WARNING: memory must be freed!). */
+	@:unimplemented("TextReplace: Not implemented")
+	public static inline function TextReplace(text:String, replace:String, by:String):String
+		throw "TextReplace is unimplemented";
+
+	/** raylib's `TextInsert` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Insert text in a position (WARNING: memory must be freed!). */
+	@:unimplemented("TextInsert: Not implemented")
+	public static inline function TextInsert(text:String, insert:String, position:Int):String
+		throw "TextInsert is unimplemented";
+
+	/** raylib's `TextJoin` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Join text strings with delimiter. */
+	@:unimplemented("TextJoin: Not implemented")
+	public static inline function TextJoin(textList:Array<String>, count:Int, delimiter:String):String
+		throw "TextJoin is unimplemented";
+
+	/** raylib's `TextSplit` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Split text into multiple strings. */
+	@:unimplemented("TextSplit: Not implemented")
+	public static inline function TextSplit(text:String, delimiter:Int, count:Array<Int>):Array<String>
+		throw "TextSplit is unimplemented";
+
+	/** raylib's `TextAppend` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Append text at specific position and move cursor!. */
+	@:unimplemented("TextAppend: Not implemented")
+	public static inline function TextAppend(text:String, append:String, position:Array<Int>):Void
+		throw "TextAppend is unimplemented";
+
+	/** raylib's `TextFindIndex` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Find first text occurrence within a string. */
+	@:unimplemented("TextFindIndex: Not implemented")
+	public static inline function TextFindIndex(text:String, find:String):Int
+		throw "TextFindIndex is unimplemented";
+
+	/** raylib's `TextToUpper` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get upper case version of provided string. */
+	@:unimplemented("TextToUpper: Not implemented")
+	public static inline function TextToUpper(text:String):String
+		throw "TextToUpper is unimplemented";
+
+	/** raylib's `TextToLower` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get lower case version of provided string. */
+	@:unimplemented("TextToLower: Not implemented")
+	public static inline function TextToLower(text:String):String
+		throw "TextToLower is unimplemented";
+
+	/** raylib's `TextToPascal` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get Pascal case notation version of provided string. */
+	@:unimplemented("TextToPascal: Not implemented")
+	public static inline function TextToPascal(text:String):String
+		throw "TextToPascal is unimplemented";
+
+	/** raylib's `TextToSnake` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get Snake case notation version of provided string. */
+	@:unimplemented("TextToSnake: Not implemented")
+	public static inline function TextToSnake(text:String):String
+		throw "TextToSnake is unimplemented";
+
+	/** raylib's `TextToCamel` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get Camel case notation version of provided string. */
+	@:unimplemented("TextToCamel: Not implemented")
+	public static inline function TextToCamel(text:String):String
+		throw "TextToCamel is unimplemented";
+
+	/** raylib's `TextToInteger` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get integer value from text (negative values not supported). */
+	@:unimplemented("TextToInteger: Not implemented")
+	public static inline function TextToInteger(text:String):Int
+		throw "TextToInteger is unimplemented";
+
+	/** raylib's `TextToFloat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get float value from text (negative values not supported). */
+	@:unimplemented("TextToFloat: Not implemented")
+	public static inline function TextToFloat(text:String):Float
+		throw "TextToFloat is unimplemented";
+
+	/** raylib's `DrawPoint3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a point in 3D space, actually a small line. */
+	@:unimplemented("DrawPoint3D: Not implemented")
+	public static inline function DrawPoint3D(position:Vector3, color:Color):Void
+		throw "DrawPoint3D is unimplemented";
+
+	/** raylib's `DrawCircle3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a circle in 3D world space. */
+	@:unimplemented("DrawCircle3D: Not implemented")
+	public static inline function DrawCircle3D(center:Vector3, radius:Float, rotationAxis:Vector3, rotationAngle:Float, color:Color):Void
+		throw "DrawCircle3D is unimplemented";
+
+	/** raylib's `DrawTriangle3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a color-filled triangle (vertex in counter-clockwise order!). */
+	@:unimplemented("DrawTriangle3D: Not implemented")
+	public static inline function DrawTriangle3D(v1:Vector3, v2:Vector3, v3:Vector3, color:Color):Void
+		throw "DrawTriangle3D is unimplemented";
+
+	/** raylib's `DrawTriangleStrip3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a triangle strip defined by points. */
+	@:unimplemented("DrawTriangleStrip3D: Not implemented")
+	public static inline function DrawTriangleStrip3D(points:Array<Vector3>, pointCount:Int, color:Color):Void
+		throw "DrawTriangleStrip3D is unimplemented";
+
+	/** raylib's `DrawCylinder` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a cylinder/cone. */
+	@:unimplemented("DrawCylinder: Not implemented")
+	public static inline function DrawCylinder(position:Vector3, radiusTop:Float, radiusBottom:Float, height:Float, slices:Int, color:Color):Void
+		throw "DrawCylinder is unimplemented";
+
+	/** raylib's `DrawCylinderEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a cylinder with base at startPos and top at endPos. */
+	@:unimplemented("DrawCylinderEx: Not implemented")
+	public static inline function DrawCylinderEx(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int, color:Color):Void
+		throw "DrawCylinderEx is unimplemented";
+
+	/** raylib's `DrawCylinderWires` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a cylinder/cone wires. */
+	@:unimplemented("DrawCylinderWires: Not implemented")
+	public static inline function DrawCylinderWires(position:Vector3, radiusTop:Float, radiusBottom:Float, height:Float, slices:Int, color:Color):Void
+		throw "DrawCylinderWires is unimplemented";
+
+	/** raylib's `DrawCylinderWiresEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a cylinder wires with base at startPos and top at endPos. */
+	@:unimplemented("DrawCylinderWiresEx: Not implemented")
+	public static inline function DrawCylinderWiresEx(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int, color:Color):Void
+		throw "DrawCylinderWiresEx is unimplemented";
+
+	/** raylib's `DrawCapsule` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a capsule with the center of its sphere caps at startPos and endPos. */
+	@:unimplemented("DrawCapsule: Not implemented")
+	public static inline function DrawCapsule(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void
+		throw "DrawCapsule is unimplemented";
+
+	/** raylib's `DrawCapsuleWires` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw capsule wireframe with the center of its sphere caps at startPos and endPos. */
+	@:unimplemented("DrawCapsuleWires: Not implemented")
+	public static inline function DrawCapsuleWires(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void
+		throw "DrawCapsuleWires is unimplemented";
+
+	/** raylib's `DrawRay` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a ray line. */
+	@:unimplemented("DrawRay: Not implemented")
+	public static inline function DrawRay(ray:Ray, color:Color):Void
+		throw "DrawRay is unimplemented";
+
+	/** raylib's `DrawModelWires` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model wires (with texture if set). */
+	@:unimplemented("DrawModelWires: Not implemented")
+	public static inline function DrawModelWires(model:Model, position:Vector3, scale:Float, tint:Color):Void
+		throw "DrawModelWires is unimplemented";
+
+	/** raylib's `DrawModelWiresEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model wires (with texture if set) with extended parameters. */
+	@:unimplemented("DrawModelWiresEx: Not implemented")
+	public static inline function DrawModelWiresEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
+		throw "DrawModelWiresEx is unimplemented";
+
+	/** raylib's `DrawModelPoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model as points. */
+	@:unimplemented("DrawModelPoints: Not implemented")
+	public static inline function DrawModelPoints(model:Model, position:Vector3, scale:Float, tint:Color):Void
+		throw "DrawModelPoints is unimplemented";
+
+	/** raylib's `DrawModelPointsEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model as points with extended parameters. */
+	@:unimplemented("DrawModelPointsEx: Not implemented")
+	public static inline function DrawModelPointsEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
+		throw "DrawModelPointsEx is unimplemented";
+
+	/** raylib's `DrawBillboard` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a billboard texture. */
+	@:unimplemented("DrawBillboard: Not implemented")
+	public static inline function DrawBillboard(camera:Camera, texture:Texture2D, position:Vector3, scale:Float, tint:Color):Void
+		throw "DrawBillboard is unimplemented";
+
+	/** raylib's `DrawBillboardRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a billboard texture defined by source. */
+	@:unimplemented("DrawBillboardRec: Not implemented")
+	public static inline function DrawBillboardRec(camera:Camera, texture:Texture2D, source:Rectangle, position:Vector3, size:Vector2, tint:Color):Void
+		throw "DrawBillboardRec is unimplemented";
+
+	/** raylib's `DrawBillboardPro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a billboard texture defined by source and rotation. */
+	@:unimplemented("DrawBillboardPro: Not implemented")
+	public static inline function DrawBillboardPro(camera:Camera, texture:Texture2D, source:Rectangle, position:Vector3, up:Vector3, size:Vector2,
+			origin:Vector2, rotation:Float, tint:Color):Void
+		throw "DrawBillboardPro is unimplemented";
+
+	/** raylib's `UpdateMeshBuffer` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update mesh vertex data in GPU for a specific buffer index. */
+	@:unimplemented("UpdateMeshBuffer: Not implemented")
+	public static inline function UpdateMeshBuffer(mesh:Mesh, index:Int, data:Dynamic, dataSize:Int, offset:Int):Void
+		throw "UpdateMeshBuffer is unimplemented";
+
+	/** raylib's `DrawMeshInstanced` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw multiple mesh instances with material and different transforms. */
+	@:unimplemented("DrawMeshInstanced: Not implemented")
+	public static inline function DrawMeshInstanced(mesh:Mesh, material:Material, transforms:Array<Matrix>, instances:Int):Void
+		throw "DrawMeshInstanced is unimplemented";
+
+	/** raylib's `GenMeshTangents` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Compute mesh tangents. */
+	@:unimplemented("GenMeshTangents: Not implemented")
+	public static inline function GenMeshTangents(mesh:Mesh):Void
+		throw "GenMeshTangents is unimplemented";
+
+	/** raylib's `ExportMesh` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export mesh data to file, returns true on success. */
+	@:unimplemented("ExportMesh: Not implemented")
+	public static inline function ExportMesh(mesh:Mesh, fileName:String):Bool
+		throw "ExportMesh is unimplemented";
+
+	/** raylib's `ExportMeshAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export mesh as code file (.h) defining multiple arrays of vertex attributes. */
+	@:unimplemented("ExportMeshAsCode: Not implemented")
+	public static inline function ExportMeshAsCode(mesh:Mesh, fileName:String):Bool
+		throw "ExportMeshAsCode is unimplemented";
+
+	/** raylib's `GenMeshPoly` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate polygonal mesh. */
+	@:unimplemented("GenMeshPoly: Not implemented")
+	public static inline function GenMeshPoly(sides:Int, radius:Float):Mesh
+		throw "GenMeshPoly is unimplemented";
+
+	/** raylib's `GenMeshHemiSphere` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate half-sphere mesh (no bottom cap). */
+	@:unimplemented("GenMeshHemiSphere: Not implemented")
+	public static inline function GenMeshHemiSphere(radius:Float, rings:Int, slices:Int):Mesh
+		throw "GenMeshHemiSphere is unimplemented";
+
+	/** raylib's `GenMeshCylinder` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate cylinder mesh. */
+	@:unimplemented("GenMeshCylinder: Not implemented")
+	public static inline function GenMeshCylinder(radius:Float, height:Float, slices:Int):Mesh
+		throw "GenMeshCylinder is unimplemented";
+
+	/** raylib's `GenMeshCone` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate cone/pyramid mesh. */
+	@:unimplemented("GenMeshCone: Not implemented")
+	public static inline function GenMeshCone(radius:Float, height:Float, slices:Int):Mesh
+		throw "GenMeshCone is unimplemented";
+
+	/** raylib's `GenMeshTorus` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate torus mesh. */
+	@:unimplemented("GenMeshTorus: Not implemented")
+	public static inline function GenMeshTorus(radius:Float, size:Float, radSeg:Int, sides:Int):Mesh
+		throw "GenMeshTorus is unimplemented";
+
+	/** raylib's `GenMeshKnot` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate trefoil knot mesh. */
+	@:unimplemented("GenMeshKnot: Not implemented")
+	public static inline function GenMeshKnot(radius:Float, size:Float, radSeg:Int, sides:Int):Mesh
+		throw "GenMeshKnot is unimplemented";
+
+	/** raylib's `GenMeshHeightmap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate heightmap mesh from image data. */
+	@:unimplemented("GenMeshHeightmap: Not implemented")
+	public static inline function GenMeshHeightmap(heightmap:Image, size:Vector3):Mesh
+		throw "GenMeshHeightmap is unimplemented";
+
+	/** raylib's `GenMeshCubicmap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate cubes-based map mesh from image data. */
+	@:unimplemented("GenMeshCubicmap: Not implemented")
+	public static inline function GenMeshCubicmap(cubicmap:Image, cubeSize:Vector3):Mesh
+		throw "GenMeshCubicmap is unimplemented";
+
+	/** raylib's `LoadMaterials` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load materials from model file. */
+	@:unimplemented("LoadMaterials: Not implemented")
+	public static inline function LoadMaterials(fileName:String, materialCount:Array<Int>):Array<Material>
+		throw "LoadMaterials is unimplemented";
+
+	/** raylib's `IsMaterialValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if a material is valid (shader assigned, map textures loaded in GPU). */
+	@:unimplemented("IsMaterialValid: Not implemented")
+	public static inline function IsMaterialValid(material:Material):Bool
+		throw "IsMaterialValid is unimplemented";
+
+	/** raylib's `UnloadMaterial` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload material from GPU memory (VRAM). */
+	@:unimplemented("UnloadMaterial: Not implemented")
+	public static inline function UnloadMaterial(material:Material):Void
+		throw "UnloadMaterial is unimplemented";
+
+	/** raylib's `LoadModelAnimations` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load model animations from file. */
+	@:unimplemented("LoadModelAnimations: Not implemented")
+	public static inline function LoadModelAnimations(fileName:String, animCount:Array<Int>):Array<ModelAnimation>
+		throw "LoadModelAnimations is unimplemented";
+
+	/** raylib's `UpdateModelAnimation` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update model animation pose (CPU). */
+	@:unimplemented("UpdateModelAnimation: Not implemented")
+	public static inline function UpdateModelAnimation(model:Model, anim:ModelAnimation, frame:Int):Void
+		throw "UpdateModelAnimation is unimplemented";
+
+	/** raylib's `UpdateModelAnimationBones` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update model animation mesh bone matrices (GPU skinning). */
+	@:unimplemented("UpdateModelAnimationBones: Not implemented")
+	public static inline function UpdateModelAnimationBones(model:Model, anim:ModelAnimation, frame:Int):Void
+		throw "UpdateModelAnimationBones is unimplemented";
+
+	/** raylib's `UnloadModelAnimation` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload animation data. */
+	@:unimplemented("UnloadModelAnimation: Not implemented")
+	public static inline function UnloadModelAnimation(anim:ModelAnimation):Void
+		throw "UnloadModelAnimation is unimplemented";
+
+	/** raylib's `UnloadModelAnimations` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload animation array data. */
+	@:unimplemented("UnloadModelAnimations: Not implemented")
+	public static inline function UnloadModelAnimations(animations:Array<ModelAnimation>, animCount:Int):Void
+		throw "UnloadModelAnimations is unimplemented";
+
+	/** raylib's `IsModelAnimationValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check model animation skeleton match. */
+	@:unimplemented("IsModelAnimationValid: Not implemented")
+	public static inline function IsModelAnimationValid(model:Model, anim:ModelAnimation):Bool
+		throw "IsModelAnimationValid is unimplemented";
+
+	/** raylib's `GetRayCollisionQuad` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get collision info between ray and quad. */
+	@:unimplemented("GetRayCollisionQuad: Not implemented")
+	public static inline function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, p4:Vector3):RayCollision
+		throw "GetRayCollisionQuad is unimplemented";
+
+	/** raylib's `LoadWave` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load wave data from file. */
+	@:unimplemented("LoadWave: Not implemented")
+	public static inline function LoadWave(fileName:String):Wave
+		throw "LoadWave is unimplemented";
+
+	/** raylib's `LoadWaveFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load wave from memory buffer, fileType refers to extension: i.e. '.wav'. */
+	@:unimplemented("LoadWaveFromMemory: Not implemented")
+	public static inline function LoadWaveFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Wave
+		throw "LoadWaveFromMemory is unimplemented";
+
+	/** raylib's `IsWaveValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Checks if wave data is valid (data loaded and parameters). */
+	@:unimplemented("IsWaveValid: Not implemented")
+	public static inline function IsWaveValid(wave:Wave):Bool
+		throw "IsWaveValid is unimplemented";
+
+	/** raylib's `LoadSoundFromWave` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load sound from wave data. */
+	@:unimplemented("LoadSoundFromWave: Not implemented")
+	public static inline function LoadSoundFromWave(wave:Wave):Sound
+		throw "LoadSoundFromWave is unimplemented";
+
+	/** raylib's `LoadSoundAlias` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Create a new sound that shares the same sample data as the source sound, does not own the sound data. */
+	@:unimplemented("LoadSoundAlias: Not implemented")
+	public static inline function LoadSoundAlias(source:Sound):Sound
+		throw "LoadSoundAlias is unimplemented";
+
+	/** raylib's `UpdateSound` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update sound buffer with new data. */
+	@:unimplemented("UpdateSound: Not implemented")
+	public static inline function UpdateSound(sound:Sound, data:Dynamic, sampleCount:Int):Void
+		throw "UpdateSound is unimplemented";
+
+	/** raylib's `UnloadWave` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload wave data. */
+	@:unimplemented("UnloadWave: Not implemented")
+	public static inline function UnloadWave(wave:Wave):Void
+		throw "UnloadWave is unimplemented";
+
+	/** raylib's `UnloadSoundAlias` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload a sound alias (does not deallocate sample data). */
+	@:unimplemented("UnloadSoundAlias: Not implemented")
+	public static inline function UnloadSoundAlias(alias:Sound):Void
+		throw "UnloadSoundAlias is unimplemented";
+
+	/** raylib's `ExportWave` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export wave data to file, returns true on success. */
+	@:unimplemented("ExportWave: Not implemented")
+	public static inline function ExportWave(wave:Wave, fileName:String):Bool
+		throw "ExportWave is unimplemented";
+
+	/** raylib's `ExportWaveAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export wave sample data to code (.h), returns true on success. */
+	@:unimplemented("ExportWaveAsCode: Not implemented")
+	public static inline function ExportWaveAsCode(wave:Wave, fileName:String):Bool
+		throw "ExportWaveAsCode is unimplemented";
+
+	/** raylib's `PauseSound` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Pause a sound. */
+	@:unimplemented("PauseSound: Not implemented")
+	public static inline function PauseSound(sound:Sound):Void
+		throw "PauseSound is unimplemented";
+
+	/** raylib's `ResumeSound` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Resume a paused sound. */
+	@:unimplemented("ResumeSound: Not implemented")
+	public static inline function ResumeSound(sound:Sound):Void
+		throw "ResumeSound is unimplemented";
+
+	/** raylib's `WaveCopy` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Copy a wave to a new wave. */
+	@:unimplemented("WaveCopy: Not implemented")
+	public static inline function WaveCopy(wave:Wave):Wave
+		throw "WaveCopy is unimplemented";
+
+	/** raylib's `WaveCrop` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Crop a wave to defined frames range. */
+	@:unimplemented("WaveCrop: Not implemented")
+	public static inline function WaveCrop(wave:Wave, initFrame:Int, finalFrame:Int):Void
+		throw "WaveCrop is unimplemented";
+
+	/** raylib's `WaveFormat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Convert wave data to desired format. */
+	@:unimplemented("WaveFormat: Not implemented")
+	public static inline function WaveFormat(wave:Wave, sampleRate:Int, sampleSize:Int, channels:Int):Void
+		throw "WaveFormat is unimplemented";
+
+	/** raylib's `LoadWaveSamples` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load samples data from wave as a 32bit float data array. */
+	@:unimplemented("LoadWaveSamples: Not implemented")
+	public static inline function LoadWaveSamples(wave:Wave):Array<Float>
+		throw "LoadWaveSamples is unimplemented";
+
+	/** raylib's `UnloadWaveSamples` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload samples data loaded with LoadWaveSamples(). */
+	@:unimplemented("UnloadWaveSamples: Not implemented")
+	public static inline function UnloadWaveSamples(samples:Array<Float>):Void
+		throw "UnloadWaveSamples is unimplemented";
+
+	/** raylib's `LoadMusicStreamFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load music stream from data. */
+	@:unimplemented("LoadMusicStreamFromMemory: Not implemented")
+	public static inline function LoadMusicStreamFromMemory(fileType:String, data:haxe.io.Bytes, dataSize:Int):Music
+		throw "LoadMusicStreamFromMemory is unimplemented";
+
+	/** raylib's `SeekMusicStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Seek music to a position (in seconds). */
+	@:unimplemented("SeekMusicStream: Not implemented")
+	public static inline function SeekMusicStream(music:Music, position:Float):Void
+		throw "SeekMusicStream is unimplemented";
+
+	/** raylib's `GetMusicTimeLength` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get music time length (in seconds). */
+	@:unimplemented("GetMusicTimeLength: Not implemented")
+	public static inline function GetMusicTimeLength(music:Music):Float
+		throw "GetMusicTimeLength is unimplemented";
+
+	/** raylib's `GetMusicTimePlayed` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get current music time played (in seconds). */
+	@:unimplemented("GetMusicTimePlayed: Not implemented")
+	public static inline function GetMusicTimePlayed(music:Music):Float
+		throw "GetMusicTimePlayed is unimplemented";
+
+	/** raylib's `LoadAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load audio stream (to stream raw audio pcm data). */
+	@:unimplemented("LoadAudioStream: Not implemented")
+	public static inline function LoadAudioStream(sampleRate:Int, sampleSize:Int, channels:Int):AudioStream
+		throw "LoadAudioStream is unimplemented";
+
+	/** raylib's `IsAudioStreamValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Checks if an audio stream is valid (buffers initialized). */
+	@:unimplemented("IsAudioStreamValid: Not implemented")
+	public static inline function IsAudioStreamValid(stream:AudioStream):Bool
+		throw "IsAudioStreamValid is unimplemented";
+
+	/** raylib's `UnloadAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload audio stream and free memory. */
+	@:unimplemented("UnloadAudioStream: Not implemented")
+	public static inline function UnloadAudioStream(stream:AudioStream):Void
+		throw "UnloadAudioStream is unimplemented";
+
+	/** raylib's `UpdateAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update audio stream buffers with data. */
+	@:unimplemented("UpdateAudioStream: Not implemented")
+	public static inline function UpdateAudioStream(stream:AudioStream, data:Dynamic, frameCount:Int):Void
+		throw "UpdateAudioStream is unimplemented";
+
+	/** raylib's `IsAudioStreamProcessed` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if any audio stream buffers requires refill. */
+	@:unimplemented("IsAudioStreamProcessed: Not implemented")
+	public static inline function IsAudioStreamProcessed(stream:AudioStream):Bool
+		throw "IsAudioStreamProcessed is unimplemented";
+
+	/** raylib's `PlayAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Play audio stream. */
+	@:unimplemented("PlayAudioStream: Not implemented")
+	public static inline function PlayAudioStream(stream:AudioStream):Void
+		throw "PlayAudioStream is unimplemented";
+
+	/** raylib's `PauseAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Pause audio stream. */
+	@:unimplemented("PauseAudioStream: Not implemented")
+	public static inline function PauseAudioStream(stream:AudioStream):Void
+		throw "PauseAudioStream is unimplemented";
+
+	/** raylib's `ResumeAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Resume audio stream. */
+	@:unimplemented("ResumeAudioStream: Not implemented")
+	public static inline function ResumeAudioStream(stream:AudioStream):Void
+		throw "ResumeAudioStream is unimplemented";
+
+	/** raylib's `IsAudioStreamPlaying` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if audio stream is playing. */
+	@:unimplemented("IsAudioStreamPlaying: Not implemented")
+	public static inline function IsAudioStreamPlaying(stream:AudioStream):Bool
+		throw "IsAudioStreamPlaying is unimplemented";
+
+	/** raylib's `StopAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Stop audio stream. */
+	@:unimplemented("StopAudioStream: Not implemented")
+	public static inline function StopAudioStream(stream:AudioStream):Void
+		throw "StopAudioStream is unimplemented";
+
+	/** raylib's `SetAudioStreamVolume` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set volume for audio stream (1.0 is max level). */
+	@:unimplemented("SetAudioStreamVolume: Not implemented")
+	public static inline function SetAudioStreamVolume(stream:AudioStream, volume:Float):Void
+		throw "SetAudioStreamVolume is unimplemented";
+
+	/** raylib's `SetAudioStreamPitch` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set pitch for audio stream (1.0 is base level). */
+	@:unimplemented("SetAudioStreamPitch: Not implemented")
+	public static inline function SetAudioStreamPitch(stream:AudioStream, pitch:Float):Void
+		throw "SetAudioStreamPitch is unimplemented";
+
+	/** raylib's `SetAudioStreamPan` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set pan for audio stream (0.5 is centered). */
+	@:unimplemented("SetAudioStreamPan: Not implemented")
+	public static inline function SetAudioStreamPan(stream:AudioStream, pan:Float):Void
+		throw "SetAudioStreamPan is unimplemented";
+
+	/** raylib's `SetAudioStreamBufferSizeDefault` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Default size for new audio streams. */
+	@:unimplemented("SetAudioStreamBufferSizeDefault: Not implemented")
+	public static inline function SetAudioStreamBufferSizeDefault(size:Int):Void
+		throw "SetAudioStreamBufferSizeDefault is unimplemented";
+
+	/** raylib's `SetAudioStreamCallback` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Audio thread callback to request new data. */
+	@:unimplemented("SetAudioStreamCallback: Not implemented")
+	public static inline function SetAudioStreamCallback(stream:AudioStream, callback:Null<(bufferData:Dynamic, frames:Int) -> Void>):Void
+		throw "SetAudioStreamCallback is unimplemented";
+
+	/** raylib's `AttachAudioStreamProcessor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Attach audio stream processor to stream, receives the samples as 'float'. */
+	@:unimplemented("AttachAudioStreamProcessor: Not implemented")
+	public static inline function AttachAudioStreamProcessor(stream:AudioStream, processor:Null<(bufferData:Dynamic, frames:Int) -> Void>):Void
+		throw "AttachAudioStreamProcessor is unimplemented";
+
+	/** raylib's `DetachAudioStreamProcessor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Detach audio stream processor from stream. */
+	@:unimplemented("DetachAudioStreamProcessor: Not implemented")
+	public static inline function DetachAudioStreamProcessor(stream:AudioStream, processor:Null<(bufferData:Dynamic, frames:Int) -> Void>):Void
+		throw "DetachAudioStreamProcessor is unimplemented";
+
+	/** raylib's `AttachAudioMixedProcessor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Attach audio stream processor to the entire audio pipeline, receives the samples as 'float'. */
+	@:unimplemented("AttachAudioMixedProcessor: Not implemented")
+	public static inline function AttachAudioMixedProcessor(processor:Null<(bufferData:Dynamic, frames:Int) -> Void>):Void
+		throw "AttachAudioMixedProcessor is unimplemented";
+
+	/** raylib's `DetachAudioMixedProcessor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Detach audio stream processor from the entire audio pipeline. */
+	@:unimplemented("DetachAudioMixedProcessor: Not implemented")
+	public static inline function DetachAudioMixedProcessor(processor:Null<(bufferData:Dynamic, frames:Int) -> Void>):Void
+		throw "DetachAudioMixedProcessor is unimplemented";
 	#end
 
 	// ---- generated by tools/gen_raylib.py: end ----
@@ -2410,1550 +4350,4 @@ class Raylib {
 			haxe.macro.Context.currentPos());
 		return macro @:privateAccess helix.ray.raylib.RModels.makeShader($program);
 	}
-
-	// ---- raylib's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
-
-	/** raylib's `IsWindowFullscreen` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsWindowFullscreen(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsWindowFullscreen", "raylib.h");
-
-	/** raylib's `IsWindowHidden` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsWindowHidden(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsWindowHidden", "raylib.h");
-
-	/** raylib's `IsWindowMinimized` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsWindowMinimized(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsWindowMinimized", "raylib.h");
-
-	/** raylib's `IsWindowMaximized` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsWindowMaximized(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsWindowMaximized", "raylib.h");
-
-	/** raylib's `IsWindowFocused` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsWindowFocused(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsWindowFocused", "raylib.h");
-
-	/** raylib's `ToggleFullscreen` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ToggleFullscreen(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ToggleFullscreen", "raylib.h");
-
-	/** raylib's `ToggleBorderlessWindowed` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ToggleBorderlessWindowed(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ToggleBorderlessWindowed", "raylib.h");
-
-	/** raylib's `MaximizeWindow` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MaximizeWindow(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("MaximizeWindow", "raylib.h");
-
-	/** raylib's `MinimizeWindow` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MinimizeWindow(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("MinimizeWindow", "raylib.h");
-
-	/** raylib's `RestoreWindow` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function RestoreWindow(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("RestoreWindow", "raylib.h");
-
-	/** raylib's `SetWindowIcon` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetWindowIcon(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetWindowIcon", "raylib.h");
-
-	/** raylib's `SetWindowIcons` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetWindowIcons(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetWindowIcons", "raylib.h");
-
-	/** raylib's `SetWindowPosition` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetWindowPosition(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetWindowPosition", "raylib.h");
-
-	/** raylib's `SetWindowMonitor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetWindowMonitor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetWindowMonitor", "raylib.h");
-
-	/** raylib's `SetWindowMinSize` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetWindowMinSize(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetWindowMinSize", "raylib.h");
-
-	/** raylib's `SetWindowMaxSize` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetWindowMaxSize(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetWindowMaxSize", "raylib.h");
-
-	/** raylib's `SetWindowOpacity` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetWindowOpacity(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetWindowOpacity", "raylib.h");
-
-	/** raylib's `SetWindowFocused` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetWindowFocused(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetWindowFocused", "raylib.h");
-
-	/** raylib's `GetWindowHandle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetWindowHandle(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetWindowHandle", "raylib.h");
-
-	/** raylib's `GetMonitorCount` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetMonitorCount(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetMonitorCount", "raylib.h");
-
-	/** raylib's `GetCurrentMonitor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetCurrentMonitor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetCurrentMonitor", "raylib.h");
-
-	/** raylib's `GetMonitorPosition` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetMonitorPosition(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetMonitorPosition", "raylib.h");
-
-	/** raylib's `GetMonitorWidth` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetMonitorWidth(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetMonitorWidth", "raylib.h");
-
-	/** raylib's `GetMonitorHeight` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetMonitorHeight(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetMonitorHeight", "raylib.h");
-
-	/** raylib's `GetMonitorPhysicalWidth` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetMonitorPhysicalWidth(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetMonitorPhysicalWidth", "raylib.h");
-
-	/** raylib's `GetMonitorPhysicalHeight` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetMonitorPhysicalHeight(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetMonitorPhysicalHeight", "raylib.h");
-
-	/** raylib's `GetMonitorRefreshRate` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetMonitorRefreshRate(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetMonitorRefreshRate", "raylib.h");
-
-	/** raylib's `GetWindowPosition` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetWindowPosition(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetWindowPosition", "raylib.h");
-
-	/** raylib's `GetWindowScaleDPI` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetWindowScaleDPI(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetWindowScaleDPI", "raylib.h");
-
-	/** raylib's `GetMonitorName` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetMonitorName(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetMonitorName", "raylib.h");
-
-	/** raylib's `SetClipboardText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetClipboardText(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetClipboardText", "raylib.h");
-
-	/** raylib's `GetClipboardText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetClipboardText(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetClipboardText", "raylib.h");
-
-	/** raylib's `GetClipboardImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetClipboardImage(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetClipboardImage", "raylib.h");
-
-	/** raylib's `EnableEventWaiting` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function EnableEventWaiting(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("EnableEventWaiting", "raylib.h");
-
-	/** raylib's `DisableEventWaiting` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DisableEventWaiting(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DisableEventWaiting", "raylib.h");
-
-	/** raylib's `ShowCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ShowCursor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ShowCursor", "raylib.h");
-
-	/** raylib's `HideCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function HideCursor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("HideCursor", "raylib.h");
-
-	/** raylib's `IsCursorHidden` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsCursorHidden(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsCursorHidden", "raylib.h");
-
-	/** raylib's `EnableCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function EnableCursor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("EnableCursor", "raylib.h");
-
-	/** raylib's `DisableCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DisableCursor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DisableCursor", "raylib.h");
-
-	/** raylib's `IsCursorOnScreen` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsCursorOnScreen(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsCursorOnScreen", "raylib.h");
-
-	/** raylib's `BeginBlendMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function BeginBlendMode(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("BeginBlendMode", "raylib.h");
-
-	/** raylib's `EndBlendMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function EndBlendMode(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("EndBlendMode", "raylib.h");
-
-	/** raylib's `BeginScissorMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function BeginScissorMode(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("BeginScissorMode", "raylib.h");
-
-	/** raylib's `EndScissorMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function EndScissorMode(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("EndScissorMode", "raylib.h");
-
-	/** raylib's `BeginVrStereoMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function BeginVrStereoMode(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("BeginVrStereoMode", "raylib.h");
-
-	/** raylib's `EndVrStereoMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function EndVrStereoMode(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("EndVrStereoMode", "raylib.h");
-
-	/** raylib's `LoadVrStereoConfig` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadVrStereoConfig(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadVrStereoConfig", "raylib.h");
-
-	/** raylib's `UnloadVrStereoConfig` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadVrStereoConfig(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadVrStereoConfig", "raylib.h");
-
-	/** raylib's `SwapScreenBuffer` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SwapScreenBuffer(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SwapScreenBuffer", "raylib.h");
-
-	/** raylib's `PollInputEvents` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function PollInputEvents(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("PollInputEvents", "raylib.h");
-
-	/** raylib's `WaitTime` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function WaitTime(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("WaitTime", "raylib.h");
-
-	/** raylib's `LoadRandomSequence` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadRandomSequence(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadRandomSequence", "raylib.h");
-
-	/** raylib's `UnloadRandomSequence` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadRandomSequence(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadRandomSequence", "raylib.h");
-
-	/** raylib's `TakeScreenshot` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TakeScreenshot(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TakeScreenshot", "raylib.h");
-
-	/** raylib's `OpenURL` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function OpenURL(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("OpenURL", "raylib.h");
-
-	/** raylib's `MemAlloc` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MemAlloc(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("MemAlloc", "raylib.h");
-
-	/** raylib's `MemRealloc` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MemRealloc(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("MemRealloc", "raylib.h");
-
-	/** raylib's `MemFree` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MemFree(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("MemFree", "raylib.h");
-
-	/** raylib's `ExportDataAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ExportDataAsCode(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ExportDataAsCode", "raylib.h");
-
-	/** raylib's `DirectoryExists` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DirectoryExists(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DirectoryExists", "raylib.h");
-
-	/** raylib's `IsFileExtension` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsFileExtension(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsFileExtension", "raylib.h");
-
-	/** raylib's `GetFileLength` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetFileLength(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetFileLength", "raylib.h");
-
-	/** raylib's `GetFileExtension` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetFileExtension(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetFileExtension", "raylib.h");
-
-	/** raylib's `GetFileName` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetFileName(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetFileName", "raylib.h");
-
-	/** raylib's `GetFileNameWithoutExt` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetFileNameWithoutExt(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetFileNameWithoutExt", "raylib.h");
-
-	/** raylib's `GetDirectoryPath` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetDirectoryPath(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetDirectoryPath", "raylib.h");
-
-	/** raylib's `GetPrevDirectoryPath` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetPrevDirectoryPath(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetPrevDirectoryPath", "raylib.h");
-
-	/** raylib's `GetWorkingDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetWorkingDirectory(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetWorkingDirectory", "raylib.h");
-
-	/** raylib's `GetApplicationDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetApplicationDirectory(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetApplicationDirectory", "raylib.h");
-
-	/** raylib's `MakeDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MakeDirectory(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("MakeDirectory", "raylib.h");
-
-	/** raylib's `ChangeDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ChangeDirectory(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ChangeDirectory", "raylib.h");
-
-	/** raylib's `IsPathFile` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsPathFile(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsPathFile", "raylib.h");
-
-	/** raylib's `IsFileNameValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsFileNameValid(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsFileNameValid", "raylib.h");
-
-	/** raylib's `LoadDirectoryFiles` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadDirectoryFiles(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadDirectoryFiles", "raylib.h");
-
-	/** raylib's `LoadDirectoryFilesEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadDirectoryFilesEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadDirectoryFilesEx", "raylib.h");
-
-	/** raylib's `UnloadDirectoryFiles` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadDirectoryFiles(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadDirectoryFiles", "raylib.h");
-
-	/** raylib's `IsFileDropped` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsFileDropped(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsFileDropped", "raylib.h");
-
-	/** raylib's `LoadDroppedFiles` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadDroppedFiles(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadDroppedFiles", "raylib.h");
-
-	/** raylib's `UnloadDroppedFiles` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadDroppedFiles(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadDroppedFiles", "raylib.h");
-
-	/** raylib's `GetFileModTime` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetFileModTime(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetFileModTime", "raylib.h");
-
-	/** raylib's `CompressData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function CompressData(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("CompressData", "raylib.h");
-
-	/** raylib's `DecompressData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DecompressData(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DecompressData", "raylib.h");
-
-	/** raylib's `EncodeDataBase64` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function EncodeDataBase64(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("EncodeDataBase64", "raylib.h");
-
-	/** raylib's `DecodeDataBase64` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DecodeDataBase64(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DecodeDataBase64", "raylib.h");
-
-	/** raylib's `ComputeCRC32` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ComputeCRC32(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ComputeCRC32", "raylib.h");
-
-	/** raylib's `ComputeMD5` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ComputeMD5(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ComputeMD5", "raylib.h");
-
-	/** raylib's `ComputeSHA1` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ComputeSHA1(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ComputeSHA1", "raylib.h");
-
-	/** raylib's `LoadAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadAutomationEventList(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadAutomationEventList", "raylib.h");
-
-	/** raylib's `UnloadAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadAutomationEventList(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadAutomationEventList", "raylib.h");
-
-	/** raylib's `ExportAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ExportAutomationEventList(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ExportAutomationEventList", "raylib.h");
-
-	/** raylib's `SetAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetAutomationEventList(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetAutomationEventList", "raylib.h");
-
-	/** raylib's `SetAutomationEventBaseFrame` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetAutomationEventBaseFrame(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetAutomationEventBaseFrame", "raylib.h");
-
-	/** raylib's `StartAutomationEventRecording` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function StartAutomationEventRecording(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("StartAutomationEventRecording", "raylib.h");
-
-	/** raylib's `StopAutomationEventRecording` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function StopAutomationEventRecording(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("StopAutomationEventRecording", "raylib.h");
-
-	/** raylib's `PlayAutomationEvent` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function PlayAutomationEvent(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("PlayAutomationEvent", "raylib.h");
-
-	/** raylib's `IsKeyPressedRepeat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsKeyPressedRepeat(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsKeyPressedRepeat", "raylib.h");
-
-	/** raylib's `GetCharPressed` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetCharPressed(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetCharPressed", "raylib.h");
-
-	/** raylib's `SetGamepadMappings` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetGamepadMappings(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetGamepadMappings", "raylib.h");
-
-	/** raylib's `SetGamepadVibration` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetGamepadVibration(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetGamepadVibration", "raylib.h");
-
-	/** raylib's `SetMousePosition` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetMousePosition(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetMousePosition", "raylib.h");
-
-	/** raylib's `SetMouseOffset` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetMouseOffset(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetMouseOffset", "raylib.h");
-
-	/** raylib's `SetMouseScale` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetMouseScale(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetMouseScale", "raylib.h");
-
-	/** raylib's `GetMouseWheelMoveV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetMouseWheelMoveV(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetMouseWheelMoveV", "raylib.h");
-
-	/** raylib's `SetMouseCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetMouseCursor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetMouseCursor", "raylib.h");
-
-	/** raylib's `GetTouchPointId` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetTouchPointId(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetTouchPointId", "raylib.h");
-
-	/** raylib's `SetGesturesEnabled` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetGesturesEnabled(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetGesturesEnabled", "raylib.h");
-
-	/** raylib's `GetGestureHoldDuration` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetGestureHoldDuration(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetGestureHoldDuration", "raylib.h");
-
-	/** raylib's `GetGestureDragVector` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetGestureDragVector(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetGestureDragVector", "raylib.h");
-
-	/** raylib's `GetGestureDragAngle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetGestureDragAngle(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetGestureDragAngle", "raylib.h");
-
-	/** raylib's `GetGesturePinchVector` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetGesturePinchVector(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetGesturePinchVector", "raylib.h");
-
-	/** raylib's `GetGesturePinchAngle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetGesturePinchAngle(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetGesturePinchAngle", "raylib.h");
-
-	/** raylib's `UpdateCameraPro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UpdateCameraPro(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UpdateCameraPro", "raylib.h");
-
-	/** raylib's `SetShapesTexture` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetShapesTexture(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetShapesTexture", "raylib.h");
-
-	/** raylib's `GetShapesTexture` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetShapesTexture(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetShapesTexture", "raylib.h");
-
-	/** raylib's `GetShapesTextureRectangle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetShapesTextureRectangle(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetShapesTextureRectangle", "raylib.h");
-
-	/** raylib's `DrawLineStrip` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawLineStrip(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawLineStrip", "raylib.h");
-
-	/** raylib's `DrawLineBezier` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawLineBezier(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawLineBezier", "raylib.h");
-
-	/** raylib's `DrawCircleSector` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawCircleSector(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawCircleSector", "raylib.h");
-
-	/** raylib's `DrawCircleSectorLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawCircleSectorLines(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawCircleSectorLines", "raylib.h");
-
-	/** raylib's `DrawCircleGradient` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawCircleGradient(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawCircleGradient", "raylib.h");
-
-	/** raylib's `DrawEllipse` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawEllipse(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawEllipse", "raylib.h");
-
-	/** raylib's `DrawEllipseLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawEllipseLines(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawEllipseLines", "raylib.h");
-
-	/** raylib's `DrawRing` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawRing(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawRing", "raylib.h");
-
-	/** raylib's `DrawRingLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawRingLines(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawRingLines", "raylib.h");
-
-	/** raylib's `DrawRectanglePro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawRectanglePro(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawRectanglePro", "raylib.h");
-
-	/** raylib's `DrawRectangleGradientV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawRectangleGradientV(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawRectangleGradientV", "raylib.h");
-
-	/** raylib's `DrawRectangleGradientH` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawRectangleGradientH(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawRectangleGradientH", "raylib.h");
-
-	/** raylib's `DrawRectangleGradientEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawRectangleGradientEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawRectangleGradientEx", "raylib.h");
-
-	/** raylib's `DrawRectangleRounded` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawRectangleRounded(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawRectangleRounded", "raylib.h");
-
-	/** raylib's `DrawRectangleRoundedLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawRectangleRoundedLines(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawRectangleRoundedLines", "raylib.h");
-
-	/** raylib's `DrawRectangleRoundedLinesEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawRectangleRoundedLinesEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawRectangleRoundedLinesEx", "raylib.h");
-
-	/** raylib's `DrawTriangleLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawTriangleLines(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawTriangleLines", "raylib.h");
-
-	/** raylib's `DrawTriangleFan` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawTriangleFan(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawTriangleFan", "raylib.h");
-
-	/** raylib's `DrawTriangleStrip` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawTriangleStrip(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawTriangleStrip", "raylib.h");
-
-	/** raylib's `DrawPoly` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawPoly(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawPoly", "raylib.h");
-
-	/** raylib's `DrawPolyLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawPolyLines(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawPolyLines", "raylib.h");
-
-	/** raylib's `DrawPolyLinesEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawPolyLinesEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawPolyLinesEx", "raylib.h");
-
-	/** raylib's `DrawSplineLinear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawSplineLinear(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawSplineLinear", "raylib.h");
-
-	/** raylib's `DrawSplineBasis` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawSplineBasis(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawSplineBasis", "raylib.h");
-
-	/** raylib's `DrawSplineCatmullRom` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawSplineCatmullRom(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawSplineCatmullRom", "raylib.h");
-
-	/** raylib's `DrawSplineBezierQuadratic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawSplineBezierQuadratic(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawSplineBezierQuadratic", "raylib.h");
-
-	/** raylib's `DrawSplineBezierCubic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawSplineBezierCubic(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawSplineBezierCubic", "raylib.h");
-
-	/** raylib's `DrawSplineSegmentLinear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawSplineSegmentLinear(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawSplineSegmentLinear", "raylib.h");
-
-	/** raylib's `DrawSplineSegmentBasis` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawSplineSegmentBasis(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawSplineSegmentBasis", "raylib.h");
-
-	/** raylib's `DrawSplineSegmentCatmullRom` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawSplineSegmentCatmullRom(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawSplineSegmentCatmullRom", "raylib.h");
-
-	/** raylib's `DrawSplineSegmentBezierQuadratic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawSplineSegmentBezierQuadratic(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawSplineSegmentBezierQuadratic", "raylib.h");
-
-	/** raylib's `DrawSplineSegmentBezierCubic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawSplineSegmentBezierCubic(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawSplineSegmentBezierCubic", "raylib.h");
-
-	/** raylib's `GetSplinePointLinear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetSplinePointLinear(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetSplinePointLinear", "raylib.h");
-
-	/** raylib's `GetSplinePointBasis` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetSplinePointBasis(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetSplinePointBasis", "raylib.h");
-
-	/** raylib's `GetSplinePointCatmullRom` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetSplinePointCatmullRom(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetSplinePointCatmullRom", "raylib.h");
-
-	/** raylib's `GetSplinePointBezierQuad` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetSplinePointBezierQuad(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetSplinePointBezierQuad", "raylib.h");
-
-	/** raylib's `GetSplinePointBezierCubic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetSplinePointBezierCubic(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetSplinePointBezierCubic", "raylib.h");
-
-	/** raylib's `CheckCollisionCircleLine` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function CheckCollisionCircleLine(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("CheckCollisionCircleLine", "raylib.h");
-
-	/** raylib's `CheckCollisionPointTriangle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function CheckCollisionPointTriangle(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("CheckCollisionPointTriangle", "raylib.h");
-
-	/** raylib's `CheckCollisionPointLine` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function CheckCollisionPointLine(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("CheckCollisionPointLine", "raylib.h");
-
-	/** raylib's `CheckCollisionPointPoly` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function CheckCollisionPointPoly(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("CheckCollisionPointPoly", "raylib.h");
-
-	/** raylib's `CheckCollisionLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function CheckCollisionLines(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("CheckCollisionLines", "raylib.h");
-
-	/** raylib's `GetCollisionRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetCollisionRec(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetCollisionRec", "raylib.h");
-
-	/** raylib's `LoadImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadImage(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadImage", "raylib.h");
-
-	/** raylib's `LoadImageRaw` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadImageRaw(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadImageRaw", "raylib.h");
-
-	/** raylib's `LoadImageAnim` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadImageAnim(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadImageAnim", "raylib.h");
-
-	/** raylib's `LoadImageAnimFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadImageAnimFromMemory(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadImageAnimFromMemory", "raylib.h");
-
-	/** raylib's `LoadImageFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadImageFromMemory(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadImageFromMemory", "raylib.h");
-
-	/** raylib's `LoadImageFromTexture` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadImageFromTexture(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadImageFromTexture", "raylib.h");
-
-	/** raylib's `LoadImageFromScreen` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadImageFromScreen(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadImageFromScreen", "raylib.h");
-
-	/** raylib's `IsImageValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsImageValid(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsImageValid", "raylib.h");
-
-	/** raylib's `UnloadImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadImage(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadImage", "raylib.h");
-
-	/** raylib's `ExportImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ExportImage(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ExportImage", "raylib.h");
-
-	/** raylib's `ExportImageToMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ExportImageToMemory(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ExportImageToMemory", "raylib.h");
-
-	/** raylib's `ExportImageAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ExportImageAsCode(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ExportImageAsCode", "raylib.h");
-
-	/** raylib's `GenImageColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenImageColor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenImageColor", "raylib.h");
-
-	/** raylib's `GenImageGradientLinear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenImageGradientLinear(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenImageGradientLinear", "raylib.h");
-
-	/** raylib's `GenImageGradientRadial` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenImageGradientRadial(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenImageGradientRadial", "raylib.h");
-
-	/** raylib's `GenImageGradientSquare` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenImageGradientSquare(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenImageGradientSquare", "raylib.h");
-
-	/** raylib's `GenImageChecked` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenImageChecked(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenImageChecked", "raylib.h");
-
-	/** raylib's `GenImageWhiteNoise` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenImageWhiteNoise(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenImageWhiteNoise", "raylib.h");
-
-	/** raylib's `GenImagePerlinNoise` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenImagePerlinNoise(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenImagePerlinNoise", "raylib.h");
-
-	/** raylib's `GenImageCellular` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenImageCellular(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenImageCellular", "raylib.h");
-
-	/** raylib's `GenImageText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenImageText(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenImageText", "raylib.h");
-
-	/** raylib's `ImageCopy` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageCopy(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageCopy", "raylib.h");
-
-	/** raylib's `ImageFromImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageFromImage(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageFromImage", "raylib.h");
-
-	/** raylib's `ImageFromChannel` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageFromChannel(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageFromChannel", "raylib.h");
-
-	/** raylib's `ImageText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageText(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageText", "raylib.h");
-
-	/** raylib's `ImageTextEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageTextEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageTextEx", "raylib.h");
-
-	/** raylib's `ImageFormat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageFormat(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageFormat", "raylib.h");
-
-	/** raylib's `ImageToPOT` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageToPOT(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageToPOT", "raylib.h");
-
-	/** raylib's `ImageCrop` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageCrop(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageCrop", "raylib.h");
-
-	/** raylib's `ImageAlphaCrop` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageAlphaCrop(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageAlphaCrop", "raylib.h");
-
-	/** raylib's `ImageAlphaClear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageAlphaClear(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageAlphaClear", "raylib.h");
-
-	/** raylib's `ImageAlphaMask` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageAlphaMask(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageAlphaMask", "raylib.h");
-
-	/** raylib's `ImageAlphaPremultiply` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageAlphaPremultiply(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageAlphaPremultiply", "raylib.h");
-
-	/** raylib's `ImageBlurGaussian` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageBlurGaussian(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageBlurGaussian", "raylib.h");
-
-	/** raylib's `ImageKernelConvolution` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageKernelConvolution(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageKernelConvolution", "raylib.h");
-
-	/** raylib's `ImageResize` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageResize(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageResize", "raylib.h");
-
-	/** raylib's `ImageResizeNN` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageResizeNN(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageResizeNN", "raylib.h");
-
-	/** raylib's `ImageResizeCanvas` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageResizeCanvas(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageResizeCanvas", "raylib.h");
-
-	/** raylib's `ImageMipmaps` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageMipmaps(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageMipmaps", "raylib.h");
-
-	/** raylib's `ImageDither` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDither(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDither", "raylib.h");
-
-	/** raylib's `ImageFlipVertical` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageFlipVertical(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageFlipVertical", "raylib.h");
-
-	/** raylib's `ImageFlipHorizontal` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageFlipHorizontal(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageFlipHorizontal", "raylib.h");
-
-	/** raylib's `ImageRotate` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageRotate(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageRotate", "raylib.h");
-
-	/** raylib's `ImageRotateCW` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageRotateCW(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageRotateCW", "raylib.h");
-
-	/** raylib's `ImageRotateCCW` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageRotateCCW(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageRotateCCW", "raylib.h");
-
-	/** raylib's `ImageColorTint` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageColorTint(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageColorTint", "raylib.h");
-
-	/** raylib's `ImageColorInvert` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageColorInvert(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageColorInvert", "raylib.h");
-
-	/** raylib's `ImageColorGrayscale` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageColorGrayscale(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageColorGrayscale", "raylib.h");
-
-	/** raylib's `ImageColorContrast` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageColorContrast(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageColorContrast", "raylib.h");
-
-	/** raylib's `ImageColorBrightness` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageColorBrightness(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageColorBrightness", "raylib.h");
-
-	/** raylib's `ImageColorReplace` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageColorReplace(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageColorReplace", "raylib.h");
-
-	/** raylib's `LoadImageColors` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadImageColors(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadImageColors", "raylib.h");
-
-	/** raylib's `LoadImagePalette` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadImagePalette(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadImagePalette", "raylib.h");
-
-	/** raylib's `UnloadImageColors` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadImageColors(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadImageColors", "raylib.h");
-
-	/** raylib's `UnloadImagePalette` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadImagePalette(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadImagePalette", "raylib.h");
-
-	/** raylib's `GetImageAlphaBorder` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetImageAlphaBorder(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetImageAlphaBorder", "raylib.h");
-
-	/** raylib's `GetImageColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetImageColor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetImageColor", "raylib.h");
-
-	/** raylib's `ImageClearBackground` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageClearBackground(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageClearBackground", "raylib.h");
-
-	/** raylib's `ImageDrawPixel` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawPixel(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawPixel", "raylib.h");
-
-	/** raylib's `ImageDrawPixelV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawPixelV(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawPixelV", "raylib.h");
-
-	/** raylib's `ImageDrawLine` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawLine(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawLine", "raylib.h");
-
-	/** raylib's `ImageDrawLineV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawLineV(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawLineV", "raylib.h");
-
-	/** raylib's `ImageDrawLineEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawLineEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawLineEx", "raylib.h");
-
-	/** raylib's `ImageDrawCircle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawCircle(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawCircle", "raylib.h");
-
-	/** raylib's `ImageDrawCircleV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawCircleV(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawCircleV", "raylib.h");
-
-	/** raylib's `ImageDrawCircleLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawCircleLines(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawCircleLines", "raylib.h");
-
-	/** raylib's `ImageDrawCircleLinesV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawCircleLinesV(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawCircleLinesV", "raylib.h");
-
-	/** raylib's `ImageDrawRectangle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawRectangle(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawRectangle", "raylib.h");
-
-	/** raylib's `ImageDrawRectangleV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawRectangleV(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawRectangleV", "raylib.h");
-
-	/** raylib's `ImageDrawRectangleRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawRectangleRec(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawRectangleRec", "raylib.h");
-
-	/** raylib's `ImageDrawRectangleLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawRectangleLines(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawRectangleLines", "raylib.h");
-
-	/** raylib's `ImageDrawTriangle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawTriangle(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawTriangle", "raylib.h");
-
-	/** raylib's `ImageDrawTriangleEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawTriangleEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawTriangleEx", "raylib.h");
-
-	/** raylib's `ImageDrawTriangleLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawTriangleLines(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawTriangleLines", "raylib.h");
-
-	/** raylib's `ImageDrawTriangleFan` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawTriangleFan(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawTriangleFan", "raylib.h");
-
-	/** raylib's `ImageDrawTriangleStrip` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawTriangleStrip(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawTriangleStrip", "raylib.h");
-
-	/** raylib's `ImageDraw` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDraw(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDraw", "raylib.h");
-
-	/** raylib's `ImageDrawText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawText(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawText", "raylib.h");
-
-	/** raylib's `ImageDrawTextEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ImageDrawTextEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ImageDrawTextEx", "raylib.h");
-
-	/** raylib's `LoadTextureFromImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadTextureFromImage(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadTextureFromImage", "raylib.h");
-
-	/** raylib's `LoadTextureCubemap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadTextureCubemap(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadTextureCubemap", "raylib.h");
-
-	/** raylib's `UpdateTexture` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UpdateTexture(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UpdateTexture", "raylib.h");
-
-	/** raylib's `UpdateTextureRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UpdateTextureRec(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UpdateTextureRec", "raylib.h");
-
-	/** raylib's `GenTextureMipmaps` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenTextureMipmaps(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenTextureMipmaps", "raylib.h");
-
-	/** raylib's `SetTextureWrap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetTextureWrap(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetTextureWrap", "raylib.h");
-
-	/** raylib's `DrawTextureNPatch` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawTextureNPatch(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawTextureNPatch", "raylib.h");
-
-	/** raylib's `ColorIsEqual` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ColorIsEqual(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ColorIsEqual", "raylib.h");
-
-	/** raylib's `ColorToInt` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ColorToInt(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ColorToInt", "raylib.h");
-
-	/** raylib's `ColorToHSV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ColorToHSV(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ColorToHSV", "raylib.h");
-
-	/** raylib's `ColorFromHSV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ColorFromHSV(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ColorFromHSV", "raylib.h");
-
-	/** raylib's `ColorTint` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ColorTint(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ColorTint", "raylib.h");
-
-	/** raylib's `ColorBrightness` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ColorBrightness(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ColorBrightness", "raylib.h");
-
-	/** raylib's `ColorContrast` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ColorContrast(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ColorContrast", "raylib.h");
-
-	/** raylib's `ColorAlphaBlend` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ColorAlphaBlend(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ColorAlphaBlend", "raylib.h");
-
-	/** raylib's `ColorLerp` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ColorLerp(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ColorLerp", "raylib.h");
-
-	/** raylib's `GetColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetColor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetColor", "raylib.h");
-
-	/** raylib's `GetPixelColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetPixelColor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetPixelColor", "raylib.h");
-
-	/** raylib's `SetPixelColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetPixelColor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetPixelColor", "raylib.h");
-
-	/** raylib's `GetPixelDataSize` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetPixelDataSize(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetPixelDataSize", "raylib.h");
-
-	/** raylib's `GetFontDefault` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetFontDefault(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetFontDefault", "raylib.h");
-
-	/** raylib's `LoadFont` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadFont(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadFont", "raylib.h");
-
-	/** raylib's `LoadFontEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadFontEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadFontEx", "raylib.h");
-
-	/** raylib's `LoadFontFromImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadFontFromImage(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadFontFromImage", "raylib.h");
-
-	/** raylib's `LoadFontFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadFontFromMemory(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadFontFromMemory", "raylib.h");
-
-	/** raylib's `IsFontValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsFontValid(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsFontValid", "raylib.h");
-
-	/** raylib's `LoadFontData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadFontData(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadFontData", "raylib.h");
-
-	/** raylib's `GenImageFontAtlas` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenImageFontAtlas(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenImageFontAtlas", "raylib.h");
-
-	/** raylib's `UnloadFontData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadFontData(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadFontData", "raylib.h");
-
-	/** raylib's `UnloadFont` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadFont(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadFont", "raylib.h");
-
-	/** raylib's `ExportFontAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ExportFontAsCode(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ExportFontAsCode", "raylib.h");
-
-	/** raylib's `DrawTextEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawTextEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawTextEx", "raylib.h");
-
-	/** raylib's `DrawTextPro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawTextPro(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawTextPro", "raylib.h");
-
-	/** raylib's `DrawTextCodepoint` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawTextCodepoint(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawTextCodepoint", "raylib.h");
-
-	/** raylib's `DrawTextCodepoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawTextCodepoints(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawTextCodepoints", "raylib.h");
-
-	/** raylib's `SetTextLineSpacing` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetTextLineSpacing(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetTextLineSpacing", "raylib.h");
-
-	/** raylib's `MeasureTextEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MeasureTextEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("MeasureTextEx", "raylib.h");
-
-	/** raylib's `GetGlyphIndex` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetGlyphIndex(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetGlyphIndex", "raylib.h");
-
-	/** raylib's `GetGlyphInfo` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetGlyphInfo(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetGlyphInfo", "raylib.h");
-
-	/** raylib's `GetGlyphAtlasRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetGlyphAtlasRec(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetGlyphAtlasRec", "raylib.h");
-
-	/** raylib's `LoadUTF8` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadUTF8(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadUTF8", "raylib.h");
-
-	/** raylib's `UnloadUTF8` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadUTF8(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadUTF8", "raylib.h");
-
-	/** raylib's `LoadCodepoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadCodepoints(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadCodepoints", "raylib.h");
-
-	/** raylib's `UnloadCodepoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadCodepoints(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadCodepoints", "raylib.h");
-
-	/** raylib's `GetCodepointCount` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetCodepointCount(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetCodepointCount", "raylib.h");
-
-	/** raylib's `GetCodepoint` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetCodepoint(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetCodepoint", "raylib.h");
-
-	/** raylib's `GetCodepointNext` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetCodepointNext(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetCodepointNext", "raylib.h");
-
-	/** raylib's `GetCodepointPrevious` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetCodepointPrevious(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetCodepointPrevious", "raylib.h");
-
-	/** raylib's `CodepointToUTF8` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function CodepointToUTF8(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("CodepointToUTF8", "raylib.h");
-
-	/** raylib's `TextCopy` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextCopy(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextCopy", "raylib.h");
-
-	/** raylib's `TextIsEqual` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextIsEqual(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextIsEqual", "raylib.h");
-
-	/** raylib's `TextLength` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextLength(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextLength", "raylib.h");
-
-	/** raylib's `TextFormat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextFormat(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextFormat", "raylib.h");
-
-	/** raylib's `TextSubtext` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextSubtext(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextSubtext", "raylib.h");
-
-	/** raylib's `TextReplace` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextReplace(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextReplace", "raylib.h");
-
-	/** raylib's `TextInsert` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextInsert(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextInsert", "raylib.h");
-
-	/** raylib's `TextJoin` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextJoin(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextJoin", "raylib.h");
-
-	/** raylib's `TextSplit` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextSplit(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextSplit", "raylib.h");
-
-	/** raylib's `TextAppend` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextAppend(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextAppend", "raylib.h");
-
-	/** raylib's `TextFindIndex` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextFindIndex(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextFindIndex", "raylib.h");
-
-	/** raylib's `TextToUpper` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextToUpper(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextToUpper", "raylib.h");
-
-	/** raylib's `TextToLower` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextToLower(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextToLower", "raylib.h");
-
-	/** raylib's `TextToPascal` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextToPascal(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextToPascal", "raylib.h");
-
-	/** raylib's `TextToSnake` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextToSnake(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextToSnake", "raylib.h");
-
-	/** raylib's `TextToCamel` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextToCamel(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextToCamel", "raylib.h");
-
-	/** raylib's `TextToInteger` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextToInteger(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextToInteger", "raylib.h");
-
-	/** raylib's `TextToFloat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function TextToFloat(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("TextToFloat", "raylib.h");
-
-	/** raylib's `DrawPoint3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawPoint3D(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawPoint3D", "raylib.h");
-
-	/** raylib's `DrawCircle3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawCircle3D(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawCircle3D", "raylib.h");
-
-	/** raylib's `DrawTriangle3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawTriangle3D(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawTriangle3D", "raylib.h");
-
-	/** raylib's `DrawTriangleStrip3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawTriangleStrip3D(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawTriangleStrip3D", "raylib.h");
-
-	/** raylib's `DrawCylinder` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawCylinder(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawCylinder", "raylib.h");
-
-	/** raylib's `DrawCylinderEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawCylinderEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawCylinderEx", "raylib.h");
-
-	/** raylib's `DrawCylinderWires` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawCylinderWires(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawCylinderWires", "raylib.h");
-
-	/** raylib's `DrawCylinderWiresEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawCylinderWiresEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawCylinderWiresEx", "raylib.h");
-
-	/** raylib's `DrawCapsule` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawCapsule(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawCapsule", "raylib.h");
-
-	/** raylib's `DrawCapsuleWires` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawCapsuleWires(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawCapsuleWires", "raylib.h");
-
-	/** raylib's `DrawRay` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawRay(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawRay", "raylib.h");
-
-	/** raylib's `DrawModelWires` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawModelWires(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawModelWires", "raylib.h");
-
-	/** raylib's `DrawModelWiresEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawModelWiresEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawModelWiresEx", "raylib.h");
-
-	/** raylib's `DrawModelPoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawModelPoints(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawModelPoints", "raylib.h");
-
-	/** raylib's `DrawModelPointsEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawModelPointsEx(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawModelPointsEx", "raylib.h");
-
-	/** raylib's `DrawBillboard` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawBillboard(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawBillboard", "raylib.h");
-
-	/** raylib's `DrawBillboardRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawBillboardRec(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawBillboardRec", "raylib.h");
-
-	/** raylib's `DrawBillboardPro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawBillboardPro(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawBillboardPro", "raylib.h");
-
-	/** raylib's `UpdateMeshBuffer` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UpdateMeshBuffer(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UpdateMeshBuffer", "raylib.h");
-
-	/** raylib's `DrawMeshInstanced` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DrawMeshInstanced(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DrawMeshInstanced", "raylib.h");
-
-	/** raylib's `GenMeshTangents` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenMeshTangents(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenMeshTangents", "raylib.h");
-
-	/** raylib's `ExportMesh` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ExportMesh(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ExportMesh", "raylib.h");
-
-	/** raylib's `ExportMeshAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ExportMeshAsCode(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ExportMeshAsCode", "raylib.h");
-
-	/** raylib's `GenMeshPoly` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenMeshPoly(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenMeshPoly", "raylib.h");
-
-	/** raylib's `GenMeshHemiSphere` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenMeshHemiSphere(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenMeshHemiSphere", "raylib.h");
-
-	/** raylib's `GenMeshCylinder` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenMeshCylinder(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenMeshCylinder", "raylib.h");
-
-	/** raylib's `GenMeshCone` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenMeshCone(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenMeshCone", "raylib.h");
-
-	/** raylib's `GenMeshTorus` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenMeshTorus(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenMeshTorus", "raylib.h");
-
-	/** raylib's `GenMeshKnot` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenMeshKnot(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenMeshKnot", "raylib.h");
-
-	/** raylib's `GenMeshHeightmap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenMeshHeightmap(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenMeshHeightmap", "raylib.h");
-
-	/** raylib's `GenMeshCubicmap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GenMeshCubicmap(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GenMeshCubicmap", "raylib.h");
-
-	/** raylib's `LoadMaterials` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadMaterials(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadMaterials", "raylib.h");
-
-	/** raylib's `IsMaterialValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsMaterialValid(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsMaterialValid", "raylib.h");
-
-	/** raylib's `UnloadMaterial` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadMaterial(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadMaterial", "raylib.h");
-
-	/** raylib's `LoadModelAnimations` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadModelAnimations(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadModelAnimations", "raylib.h");
-
-	/** raylib's `UpdateModelAnimation` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UpdateModelAnimation(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UpdateModelAnimation", "raylib.h");
-
-	/** raylib's `UpdateModelAnimationBones` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UpdateModelAnimationBones(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UpdateModelAnimationBones", "raylib.h");
-
-	/** raylib's `UnloadModelAnimation` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadModelAnimation(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadModelAnimation", "raylib.h");
-
-	/** raylib's `UnloadModelAnimations` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadModelAnimations(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadModelAnimations", "raylib.h");
-
-	/** raylib's `IsModelAnimationValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsModelAnimationValid(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsModelAnimationValid", "raylib.h");
-
-	/** raylib's `GetRayCollisionQuad` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetRayCollisionQuad(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetRayCollisionQuad", "raylib.h");
-
-	/** raylib's `LoadWave` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadWave(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadWave", "raylib.h");
-
-	/** raylib's `LoadWaveFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadWaveFromMemory(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadWaveFromMemory", "raylib.h");
-
-	/** raylib's `IsWaveValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsWaveValid(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsWaveValid", "raylib.h");
-
-	/** raylib's `LoadSoundFromWave` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadSoundFromWave(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadSoundFromWave", "raylib.h");
-
-	/** raylib's `LoadSoundAlias` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadSoundAlias(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadSoundAlias", "raylib.h");
-
-	/** raylib's `UpdateSound` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UpdateSound(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UpdateSound", "raylib.h");
-
-	/** raylib's `UnloadWave` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadWave(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadWave", "raylib.h");
-
-	/** raylib's `UnloadSoundAlias` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadSoundAlias(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadSoundAlias", "raylib.h");
-
-	/** raylib's `ExportWave` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ExportWave(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ExportWave", "raylib.h");
-
-	/** raylib's `ExportWaveAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ExportWaveAsCode(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ExportWaveAsCode", "raylib.h");
-
-	/** raylib's `PauseSound` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function PauseSound(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("PauseSound", "raylib.h");
-
-	/** raylib's `ResumeSound` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ResumeSound(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ResumeSound", "raylib.h");
-
-	/** raylib's `WaveCopy` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function WaveCopy(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("WaveCopy", "raylib.h");
-
-	/** raylib's `WaveCrop` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function WaveCrop(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("WaveCrop", "raylib.h");
-
-	/** raylib's `WaveFormat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function WaveFormat(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("WaveFormat", "raylib.h");
-
-	/** raylib's `LoadWaveSamples` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadWaveSamples(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadWaveSamples", "raylib.h");
-
-	/** raylib's `UnloadWaveSamples` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadWaveSamples(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadWaveSamples", "raylib.h");
-
-	/** raylib's `LoadMusicStreamFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadMusicStreamFromMemory(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadMusicStreamFromMemory", "raylib.h");
-
-	/** raylib's `SeekMusicStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SeekMusicStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SeekMusicStream", "raylib.h");
-
-	/** raylib's `GetMusicTimeLength` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetMusicTimeLength(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetMusicTimeLength", "raylib.h");
-
-	/** raylib's `GetMusicTimePlayed` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function GetMusicTimePlayed(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("GetMusicTimePlayed", "raylib.h");
-
-	/** raylib's `LoadAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function LoadAudioStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("LoadAudioStream", "raylib.h");
-
-	/** raylib's `IsAudioStreamValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsAudioStreamValid(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsAudioStreamValid", "raylib.h");
-
-	/** raylib's `UnloadAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UnloadAudioStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UnloadAudioStream", "raylib.h");
-
-	/** raylib's `UpdateAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function UpdateAudioStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("UpdateAudioStream", "raylib.h");
-
-	/** raylib's `IsAudioStreamProcessed` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsAudioStreamProcessed(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsAudioStreamProcessed", "raylib.h");
-
-	/** raylib's `PlayAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function PlayAudioStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("PlayAudioStream", "raylib.h");
-
-	/** raylib's `PauseAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function PauseAudioStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("PauseAudioStream", "raylib.h");
-
-	/** raylib's `ResumeAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function ResumeAudioStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("ResumeAudioStream", "raylib.h");
-
-	/** raylib's `IsAudioStreamPlaying` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function IsAudioStreamPlaying(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("IsAudioStreamPlaying", "raylib.h");
-
-	/** raylib's `StopAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function StopAudioStream(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("StopAudioStream", "raylib.h");
-
-	/** raylib's `SetAudioStreamVolume` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetAudioStreamVolume(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetAudioStreamVolume", "raylib.h");
-
-	/** raylib's `SetAudioStreamPitch` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetAudioStreamPitch(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetAudioStreamPitch", "raylib.h");
-
-	/** raylib's `SetAudioStreamPan` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetAudioStreamPan(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetAudioStreamPan", "raylib.h");
-
-	/** raylib's `SetAudioStreamBufferSizeDefault` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetAudioStreamBufferSizeDefault(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetAudioStreamBufferSizeDefault", "raylib.h");
-
-	/** raylib's `SetAudioStreamCallback` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function SetAudioStreamCallback(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("SetAudioStreamCallback", "raylib.h");
-
-	/** raylib's `AttachAudioStreamProcessor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function AttachAudioStreamProcessor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("AttachAudioStreamProcessor", "raylib.h");
-
-	/** raylib's `DetachAudioStreamProcessor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DetachAudioStreamProcessor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DetachAudioStreamProcessor", "raylib.h");
-
-	/** raylib's `AttachAudioMixedProcessor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function AttachAudioMixedProcessor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("AttachAudioMixedProcessor", "raylib.h");
-
-	/** raylib's `DetachAudioMixedProcessor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function DetachAudioMixedProcessor(args:Array<Expr>):Expr
-		return helix.ray.internal.Missing.refuse("DetachAudioMixedProcessor", "raylib.h");
 }

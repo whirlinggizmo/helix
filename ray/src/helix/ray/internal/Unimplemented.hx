@@ -4,16 +4,18 @@ package helix.ray.internal;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 
-/** Makes `@:unimplemented("message")` on one of `Raylib`'s functions stop every build that calls it, on every target, with the message
-	at each call.
+/** Makes `@:unimplemented("message")` on one of `Raylib`'s or `Raymath`'s functions stop every build that calls it, on every target,
+	with the message at each call.
 
-	The function stays declared, with raylib's name and signature, so a program that guessed it is told what to use instead. The
-	compiler does the refusing: the meta becomes `@:require` of a define no program sets. Only `Raylib` is built so: a program can't
-	reach the sections, whose functions are private to helix-ray, and they import each other's, which a build macro would break. */
+	The function stays declared, with raylib's name and signature, so a program that guessed it is told so: what to use instead, or
+	that helix-ray doesn't have it yet. The compiler does the refusing: the meta becomes `@:require` of a define no program sets. Only
+	`Raylib` and `Raymath` are built so: a program can't reach the sections, whose functions are private to helix-ray, and they import
+	each other's, which a build macro would break. */
 class Unimplemented {
-	/** Adds `build` to `Raylib`. Run by `Loop.install`. */
+	/** Adds `build` to `Raylib` and `Raymath`. Run by `Loop.install`. */
 	public static function install():Void {
-		haxe.macro.Compiler.addMetadata("@:build(helix.ray.internal.Unimplemented.build())", "helix.ray.Raylib");
+		for (name in ["helix.ray.Raylib", "helix.ray.Raymath"])
+			haxe.macro.Compiler.addMetadata("@:build(helix.ray.internal.Unimplemented.build())", name);
 	}
 
 	/** Gives each function marked `@:unimplemented` the `@:require` that refuses its calls. */

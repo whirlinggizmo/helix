@@ -41,5 +41,6 @@ helix-services and helix-platform (and helix-math and helix-log under them).
 
 helix-ray's API and the flow of a program on it are [raylib](https://www.raylib.com)'s, by Ramon Santamaria (@raysan5) and its
 contributors, mirrored in Haxe. A small API that a programmer can hold in their head and guess right is hard to make; raylib's is, and
-this library is built on that work. Portions are from raylib 5.5 (its default font, its default shader and its header's comments),
-altered; zlib license, `vendor/raylib/LICENSE`.
+this library is built on that work. Portions are from raylib 5.5 (its default font, its default shader, its header's comments, and its
+API description, `vendor/raylib/raylib_api.json`, with `raymath_api.json` made from `raymath.h` by raylib's parser), altered; zlib
+license, `vendor/raylib/LICENSE`.

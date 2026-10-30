@@ -124,7 +124,10 @@ Why things are the way they are, numbered, in order.
     decides what: the saves are read when first used. `SaveFileText` and `SaveFileData` need no answer, so they stay raylib's; a write
     made before the saves are read is held and made after, so it wins over what was kept. `LoadFileTextAsync` asks the program's text
     callback, then the saves, then fetches, so what `SaveFileText` wrote reads back a frame later. Faking synchronous loads in a page,
-    still on the roadmap, would bring them back on both targets at once.
+    still on the roadmap, would bring them back on both targets at once. What helix-ray doesn't have yet is declared from raylib's own
+    description of its API (`ray/vendor/raylib/raylib_api.json`, and `raymath_api.json` made by raylib's parser), with raylib's
+    signatures and `@:unimplemented("LoadImage: Not implemented")`, so an agent reading the source sees what raylib has; a struct
+    helix-ray has no type for (`Image`, `Font`, `Wave` and the rest) is generated with raylib's fields until it is written by hand.
 
 22. **raymath is apart from `Raylib`, as in raylib.** raylib.h declares none of raymath's functions; a C program that calls
     `Vector2Add` includes `raymath.h`, and raylib's own examples do, so an agent trained on raylib knows to. helix-ray's `Raymath`,
