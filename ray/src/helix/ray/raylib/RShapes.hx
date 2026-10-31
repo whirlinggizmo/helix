@@ -139,7 +139,8 @@ class RShapes {
 		var px = startPos.x, py = startPos.y;
 		var points = [for (i in 0...2 * SPLINE_SEGMENT_DIVISIONS + 2) new Vector2()];
 		for (i in 1...SPLINE_SEGMENT_DIVISIONS + 1) {
-			var cy = easeCubicInOut(i, startPos.y, endPos.y - startPos.y, SPLINE_SEGMENT_DIVISIONS);
+			// raylib eases the line's y in and out, cubically.
+			var cy = startPos.y + (endPos.y - startPos.y) * Interpolate.easeInOutCubic(i / SPLINE_SEGMENT_DIVISIONS);
 			var cx = px + (endPos.x - startPos.x) / SPLINE_SEGMENT_DIVISIONS;
 			var dy = cy - py, dx = cx - px, size = .5 * thick / Math.sqrt(dx * dx + dy * dy);
 			if (i == 1) {
@@ -1284,16 +1285,5 @@ class RShapes {
 		}
 		DrawTriangleStrip(points, points.length, color);
 	}
-
-	// raylib's cubic easing in and out, which DrawLineBezier eases its line's y by.
-	static function easeCubicInOut(t:Float, b:Float, c:Float, d:Float):Float {
-		t /= .5 * d;
-		if (t < 1)
-			return .5 * c * t * t * t + b;
-		t -= 2;
-		return .5 * c * (t * t * t + 2) + b;
-	}
-
-	// Whether a crossing is off a line along one axis, as raylib's CheckCollisionLines tests it: a line flat along that axis is never.
 	#end
 }

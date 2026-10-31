@@ -1,6 +1,11 @@
 package helix.math;
 
-/** Provides interpolation: between numbers and angles, along spline pieces, clamping, smoothing, stepping and easing toward a target.
+/** Provides interpolation: between numbers and angles, along spline pieces, easing curves, clamping, smoothing, stepping and easing toward
+	a target.
+
+	The easing curves are Robert Penner's, each family in three: `easeIn...` starts slow, `easeOut...` ends slow, `easeInOut...` does both.
+	Each takes a fraction from 0 to 1 and returns 0 at 0 and 1 at 1; back and elastic go past 0 and 1 on their way. The sine family uses
+	`Trig`, so it is the same on every target; the expo and elastic families use `Math.pow`, whose last bit can differ between targets.
 
 	`damp` and `dampAngle` use `Math.exp`, whose last bit can differ between targets, so a simulation that must replay alike on every
 	target uses `moveToward` or its own integer math instead. Angles are in radians. */
@@ -171,5 +176,261 @@ class Interpolate {
 	public static function cubicBezier(p0:Float, p1:Float, p2:Float, p3:Float, t:Float):Float {
 		var u = 1 - t;
 		return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
+	}
+
+	static inline final BACK_C1 = 1.70158;
+	static inline final BACK_C2 = BACK_C1 * 1.525;
+	static inline final BACK_C3 = BACK_C1 + 1;
+	static final ELASTIC_C4 = 2 * Math.PI / 3;
+	static final ELASTIC_C5 = 2 * Math.PI / 4.5;
+
+	/** Returns a fraction eased slow at the start: a quarter sine wave.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInSine(t:Float):Float {
+		return 1 - Trig.cos(t * Math.PI / 2);
+	}
+
+	/** Returns a fraction eased slow at the end: a quarter sine wave.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeOutSine(t:Float):Float {
+		return Trig.sin(t * Math.PI / 2);
+	}
+
+	/** Returns a fraction eased slow at both ends: a quarter sine wave.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInOutSine(t:Float):Float {
+		return -(Trig.cos(Math.PI * t) - 1) / 2;
+	}
+
+	/** Returns a fraction eased slow at the start: t squared.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInQuad(t:Float):Float {
+		return t * t;
+	}
+
+	/** Returns a fraction eased slow at the end: t squared.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeOutQuad(t:Float):Float {
+		return 1 - (1 - t) * (1 - t);
+	}
+
+	/** Returns a fraction eased slow at both ends: t squared.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInOutQuad(t:Float):Float {
+		return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+	}
+
+	/** Returns a fraction eased slow at the start: t cubed.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInCubic(t:Float):Float {
+		return t * t * t;
+	}
+
+	/** Returns a fraction eased slow at the end: t cubed.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeOutCubic(t:Float):Float {
+		return 1 - Math.pow(1 - t, 3);
+	}
+
+	/** Returns a fraction eased slow at both ends: t cubed.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInOutCubic(t:Float):Float {
+		return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+	}
+
+	/** Returns a fraction eased slow at the start: t to the fourth.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInQuart(t:Float):Float {
+		return t * t * t * t;
+	}
+
+	/** Returns a fraction eased slow at the end: t to the fourth.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeOutQuart(t:Float):Float {
+		return 1 - Math.pow(1 - t, 4);
+	}
+
+	/** Returns a fraction eased slow at both ends: t to the fourth.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInOutQuart(t:Float):Float {
+		return t < .5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+	}
+
+	/** Returns a fraction eased slow at the start: t to the fifth.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInQuint(t:Float):Float {
+		return t * t * t * t * t;
+	}
+
+	/** Returns a fraction eased slow at the end: t to the fifth.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeOutQuint(t:Float):Float {
+		return 1 - Math.pow(1 - t, 5);
+	}
+
+	/** Returns a fraction eased slow at both ends: t to the fifth.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInOutQuint(t:Float):Float {
+		return t < .5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
+	}
+
+	/** Returns a fraction eased slow at the start: two to the power of t.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInExpo(t:Float):Float {
+		return t == 0 ? 0 : Math.pow(2, 10 * t - 10);
+	}
+
+	/** Returns a fraction eased slow at the end: two to the power of t.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeOutExpo(t:Float):Float {
+		return t == 1 ? 1 : 1 - Math.pow(2, -10 * t);
+	}
+
+	/** Returns a fraction eased slow at both ends: two to the power of t.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInOutExpo(t:Float):Float {
+		return t == 0 ? 0 : t == 1 ? 1 : t < .5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2;
+	}
+
+	/** Returns a fraction eased slow at the start: a quarter circle.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInCirc(t:Float):Float {
+		return 1 - Math.sqrt(1 - t * t);
+	}
+
+	/** Returns a fraction eased slow at the end: a quarter circle.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeOutCirc(t:Float):Float {
+		return Math.sqrt(1 - (t - 1) * (t - 1));
+	}
+
+	/** Returns a fraction eased slow at both ends: a quarter circle.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInOutCirc(t:Float):Float {
+		return t < .5 ? (1 - Math.sqrt(1 - 4 * t * t)) / 2 : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2;
+	}
+
+	/** Returns a fraction eased slow at the start: pulling back a tenth before it goes.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInBack(t:Float):Float {
+		return BACK_C3 * t * t * t - BACK_C1 * t * t;
+	}
+
+	/** Returns a fraction eased slow at the end: pulling back a tenth before it goes.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeOutBack(t:Float):Float {
+		return 1 + BACK_C3 * Math.pow(t - 1, 3) + BACK_C1 * Math.pow(t - 1, 2);
+	}
+
+	/** Returns a fraction eased slow at both ends: pulling back a tenth before it goes.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInOutBack(t:Float):Float {
+		return t < .5 ? Math.pow(2 * t, 2) * ((BACK_C2 + 1) * 2 * t - BACK_C2) / 2 : (Math.pow(2 * t - 2, 2) * ((BACK_C2 + 1) * (t * 2 - 2) + BACK_C2)
+			+ 2) / 2;
+	}
+
+	/** Returns a fraction eased slow at the start: springing past its end and back.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInElastic(t:Float):Float {
+		return t == 0 ? 0 : t == 1 ? 1 : -Math.pow(2, 10 * t - 10) * Trig.sin((t * 10 - 10.75) * ELASTIC_C4);
+	}
+
+	/** Returns a fraction eased slow at the end: springing past its end and back.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeOutElastic(t:Float):Float {
+		return t == 0 ? 0 : t == 1 ? 1 : Math.pow(2, -10 * t) * Trig.sin((t * 10 - .75) * ELASTIC_C4) + 1;
+	}
+
+	/** Returns a fraction eased slow at both ends: springing past its end and back.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInOutElastic(t:Float):Float {
+		return t == 0 ? 0 : t == 1 ? 1 : t < .5 ?
+			-(Math.pow(2,
+				20 * t - 10) * Trig.sin((20 * t - 11.125) * ELASTIC_C5)) / 2 : Math.pow(2, -20 * t + 10) * Trig.sin((20 * t - 11.125) * ELASTIC_C5) / 2
+			+ 1;
+	}
+
+	/** Returns a fraction eased slow at the start: bouncing to rest.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInBounce(t:Float):Float {
+		return 1 - easeOutBounce(1 - t);
+	}
+
+	/** Returns a fraction eased slow at the end: bouncing to rest.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeOutBounce(t:Float):Float {
+		if (t < 1 / 2.75)
+			return 7.5625 * t * t;
+		if (t < 2 / 2.75)
+			return 7.5625 * (t -= 1.5 / 2.75) * t + .75;
+		if (t < 2.5 / 2.75)
+			return 7.5625 * (t -= 2.25 / 2.75) * t + .9375;
+		return 7.5625 * (t -= 2.625 / 2.75) * t + .984375;
+	}
+
+	/** Returns a fraction eased slow at both ends: bouncing to rest.
+
+		@param t  The fraction, 0 to 1.
+		@return  The eased fraction, 0 at 0 and 1 at 1. */
+	public static function easeInOutBounce(t:Float):Float {
+		return t < .5 ? (1 - easeOutBounce(1 - 2 * t)) / 2 : (1 + easeOutBounce(2 * t - 1)) / 2;
 	}
 }

@@ -2,7 +2,7 @@
 """Checks the layers: each library names only itself and the libraries it's built on, and owns its package roots alone.
 
   1. A Haxe file in a library refers to no package of a library it isn't built on (its USES), by import or by a qualified name in its code
-     (comments and strings aside): not one above it, nor one beside it (math, log and platform know nothing of each other).
+     (comments and strings aside): not one above it, nor one beside it (math and log know nothing of each other, nor log and platform).
   2. A library's files declare only packages under the roots it owns; no other library declares a package under them.
   A library's tests and examples (TESTS) are held to rule 1 too, as they build with that library alone.
   3. In helix-platform, contracts don't know each other (docs/PLATFORM.md): a contract's files are its interface, the types in
@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LAYERS = [
     ('helix-math', 'math/src', ['helix.math'], []),
     ('helix-log', 'log/src', ['helix.log'], []),
-    ('helix-platform', 'platform/src', ['helix.platform'], []),
+    ('helix-platform', 'platform/src', ['helix.platform'], ['helix-math']),
     ('helix-services', 'services/src', ['helix.services'], ['helix-platform', 'helix-math', 'helix-log']),
     ('helix-ray', 'ray/src', ['helix.ray'], ['helix-services', 'helix-platform', 'helix-math', 'helix-log']),
 ]

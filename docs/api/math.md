@@ -327,7 +327,9 @@ static function intersectsCircleSegment(cx:Float, cy:Float, radius:Float, ax:Flo
 
 *class* in [`math/src/helix/math/Interpolate.hx`](../../math/src/helix/math/Interpolate.hx), `import helix.math.Interpolate;`
 
-Provides interpolation: between numbers and angles, along spline pieces, clamping, smoothing, stepping and easing toward a target.
+Provides interpolation: between numbers and angles, along spline pieces, easing curves, clamping, smoothing, stepping and easing toward a target.
+
+The easing curves are Robert Penner's, each family in three: `easeIn...` starts slow, `easeOut...` ends slow, `easeInOut...` does both. Each takes a fraction from 0 to 1 and returns 0 at 0 and 1 at 1; back and elastic go past 0 and 1 on their way. The sine family uses `Trig`, so it is the same on every target; the expo and elastic families use `Math.pow`, whose last bit can differ between targets.
 
 `damp` and `dampAngle` use `Math.exp`, whose last bit can differ between targets, so a simulation that must replay alike on every target uses `moveToward` or its own integer math instead. Angles are in radians.
 
@@ -346,6 +348,36 @@ static function catmullRom(p0:Float, p1:Float, p2:Float, p3:Float, t:Float):Floa
 static function bSpline(p0:Float, p1:Float, p2:Float, p3:Float, t:Float):Float
 static function quadraticBezier(p0:Float, p1:Float, p2:Float, t:Float):Float
 static function cubicBezier(p0:Float, p1:Float, p2:Float, p3:Float, t:Float):Float
+static function easeInSine(t:Float):Float
+static function easeOutSine(t:Float):Float
+static function easeInOutSine(t:Float):Float
+static function easeInQuad(t:Float):Float
+static function easeOutQuad(t:Float):Float
+static function easeInOutQuad(t:Float):Float
+static function easeInCubic(t:Float):Float
+static function easeOutCubic(t:Float):Float
+static function easeInOutCubic(t:Float):Float
+static function easeInQuart(t:Float):Float
+static function easeOutQuart(t:Float):Float
+static function easeInOutQuart(t:Float):Float
+static function easeInQuint(t:Float):Float
+static function easeOutQuint(t:Float):Float
+static function easeInOutQuint(t:Float):Float
+static function easeInExpo(t:Float):Float
+static function easeOutExpo(t:Float):Float
+static function easeInOutExpo(t:Float):Float
+static function easeInCirc(t:Float):Float
+static function easeOutCirc(t:Float):Float
+static function easeInOutCirc(t:Float):Float
+static function easeInBack(t:Float):Float
+static function easeOutBack(t:Float):Float
+static function easeInOutBack(t:Float):Float
+static function easeInElastic(t:Float):Float
+static function easeOutElastic(t:Float):Float
+static function easeInOutElastic(t:Float):Float
+static function easeInBounce(t:Float):Float
+static function easeOutBounce(t:Float):Float
+static function easeInOutBounce(t:Float):Float
 ```
 
 - `lerp`: Returns the value a fraction of the way from one number to another.
@@ -435,6 +467,96 @@ static function cubicBezier(p0:Float, p1:Float, p2:Float, p3:Float, t:Float):Flo
   - `p3`: The end.
   - `t`: How far along, 0 at the start to 1 at the end.
   - returns: The point.
+- `easeInSine`: Returns a fraction eased slow at the start: a quarter sine wave.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeOutSine`: Returns a fraction eased slow at the end: a quarter sine wave.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInOutSine`: Returns a fraction eased slow at both ends: a quarter sine wave.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInQuad`: Returns a fraction eased slow at the start: t squared.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeOutQuad`: Returns a fraction eased slow at the end: t squared.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInOutQuad`: Returns a fraction eased slow at both ends: t squared.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInCubic`: Returns a fraction eased slow at the start: t cubed.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeOutCubic`: Returns a fraction eased slow at the end: t cubed.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInOutCubic`: Returns a fraction eased slow at both ends: t cubed.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInQuart`: Returns a fraction eased slow at the start: t to the fourth.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeOutQuart`: Returns a fraction eased slow at the end: t to the fourth.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInOutQuart`: Returns a fraction eased slow at both ends: t to the fourth.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInQuint`: Returns a fraction eased slow at the start: t to the fifth.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeOutQuint`: Returns a fraction eased slow at the end: t to the fifth.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInOutQuint`: Returns a fraction eased slow at both ends: t to the fifth.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInExpo`: Returns a fraction eased slow at the start: two to the power of t.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeOutExpo`: Returns a fraction eased slow at the end: two to the power of t.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInOutExpo`: Returns a fraction eased slow at both ends: two to the power of t.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInCirc`: Returns a fraction eased slow at the start: a quarter circle.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeOutCirc`: Returns a fraction eased slow at the end: a quarter circle.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInOutCirc`: Returns a fraction eased slow at both ends: a quarter circle.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInBack`: Returns a fraction eased slow at the start: pulling back a tenth before it goes.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeOutBack`: Returns a fraction eased slow at the end: pulling back a tenth before it goes.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInOutBack`: Returns a fraction eased slow at both ends: pulling back a tenth before it goes.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInElastic`: Returns a fraction eased slow at the start: springing past its end and back.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeOutElastic`: Returns a fraction eased slow at the end: springing past its end and back.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInOutElastic`: Returns a fraction eased slow at both ends: springing past its end and back.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInBounce`: Returns a fraction eased slow at the start: bouncing to rest.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeOutBounce`: Returns a fraction eased slow at the end: bouncing to rest.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+- `easeInOutBounce`: Returns a fraction eased slow at both ends: bouncing to rest.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
 
 ## Matrix3D
 

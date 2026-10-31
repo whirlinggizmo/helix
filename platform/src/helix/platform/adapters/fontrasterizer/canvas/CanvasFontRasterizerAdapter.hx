@@ -1,6 +1,7 @@
 package helix.platform.adapters.fontrasterizer.canvas;
 
 import haxe.io.Bytes;
+import helix.math.DistanceField2D;
 import helix.platform.IFontRasterizer;
 import helix.platform.RasterGlyph;
 import helix.platform.adapters.fontrasterizer.canvas.internal.FontTables;
@@ -129,15 +130,10 @@ class CanvasFontRasterizerAdapter implements IFontRasterizer {
 	static function distances(family:String, em:Float, text:String, x:Float, y:Float, width:Int, height:Int):Bytes {
 		var k = OVERSAMPLE, w = width * k, h = height * k;
 		var alpha = draw(family, em * k, text, x * k, y * k, w, h);
-		var toOutside = new js.lib.Float64Array(w * h),
-			toInside = new js.lib.Float64Array(w * h);
-		for (i in 0...w * h) {
-			var inside = alpha[i * 4 + 3] >= 128;
-			toOutside[i] = inside ? 1e20 : 0;
-			toInside[i] = inside ? 0 : 1e20;
-		}
-		transform(toOutside, w, h);
-		transform(toInside, w, h);
+		var toOutside = [for (i in 0...w * h) alpha[i * 4 + 3] >= 128 ? 1e20 : 0.],
+			toInside = [for (i in 0...w * h) alpha[i * 4 + 3] >= 128 ? 0. : 1e20];
+		DistanceField2D.transform(toOutside, w, h);
+		DistanceField2D.transform(toInside, w, h);
 		var pixels = Bytes.alloc(width * height);
 		for (py in 0...height)
 			for (px in 0...width) {
@@ -147,53 +143,6 @@ class CanvasFontRasterizerAdapter implements IFontRasterizer {
 				pixels.set(py * width + px, value < 0 ? 0 : value > 255 ? 255 : Std.int(value));
 			}
 		return pixels;
-	}
-
-	// Squared distances to the nearest zero, in place: Felzenszwalb and Huttenlocher's transform, by columns then rows.
-	static function transform(grid:js.lib.Float64Array, w:Int, h:Int):Void {
-		var n = w > h ? w : h;
-		var f = new js.lib.Float64Array(n),
-			d = new js.lib.Float64Array(n),
-			z = new js.lib.Float64Array(n + 1);
-		var v = new js.lib.Int32Array(n);
-		for (x in 0...w) {
-			for (y in 0...h)
-				f[y] = grid[y * w + x];
-			line(f, d, v, z, h);
-			for (y in 0...h)
-				grid[y * w + x] = d[y];
-		}
-		for (y in 0...h) {
-			for (x in 0...w)
-				f[x] = grid[y * w + x];
-			line(f, d, v, z, w);
-			for (x in 0...w)
-				grid[y * w + x] = d[x];
-		}
-	}
-
-	static function line(f:js.lib.Float64Array, d:js.lib.Float64Array, v:js.lib.Int32Array, z:js.lib.Float64Array, n:Int):Void {
-		var k = 0;
-		v[0] = 0;
-		z[0] = -1e20;
-		z[1] = 1e20;
-		for (q in 1...n) {
-			var s = ((f[q] + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
-			while (s <= z[k]) {
-				k--;
-				s = ((f[q] + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
-			}
-			k++;
-			v[k] = q;
-			z[k] = s;
-			z[k + 1] = 1e20;
-		}
-		k = 0;
-		for (q in 0...n) {
-			while (z[k + 1] < q)
-				k++;
-			d[q] = (q - v[k]) * (q - v[k]) + f[v[k]];
-		}
 	}
 
 	static var shared:Dynamic = null;
