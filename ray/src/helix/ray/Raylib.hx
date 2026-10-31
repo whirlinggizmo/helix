@@ -2325,12 +2325,27 @@ class Raylib {
 	public static inline function EndTextureMode():Void
 		RTextures.EndTextureMode();
 
-	/** Sets how a texture is sampled when drawn larger or smaller. Textures here are sampled as `TEXTURE_FILTER_POINT`, whatever is set.
+	/** Sets how a texture is sampled when drawn larger or smaller: `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel,
+		and the others blend the nearest four, as `TEXTURE_FILTER_BILINEAR` does (there are no mipmaps here).
 
 		@param texture  The texture.
 		@param filter  The filter (`TEXTURE_FILTER_*`). */
 	public static inline function SetTextureFilter(texture:Texture2D, filter:Int):Void
 		RTextures.SetTextureFilter(texture, filter);
+
+	/** Makes a texture of an image. Its pixels are 8-bit grayscale, grayscale and alpha, RGB or RGBA (`PIXELFORMAT_UNCOMPRESSED_*`);
+		another format gives no texture, and says so.
+
+		@param image  The image.
+		@return  The texture. */
+	public static inline function LoadTextureFromImage(image:Image):Texture2D
+		return RTextures.LoadTextureFromImage(image);
+
+	/** Frees an image's pixels.
+
+		@param image  The image. */
+	public static inline function UnloadImage(image:Image):Void
+		RTextures.UnloadImage(image);
 
 	// ---- rtext: text (raylib/RText.hx) ----
 
@@ -2351,6 +2366,135 @@ class Raylib {
 		@return  The width, in pixels. */
 	public static inline function MeasureText(text:String, fontSize:Int):Int
 		return RText.MeasureText(text, fontSize);
+
+	/** Draws text in a font.
+
+		@param font  The font; one with no texture draws as the default font.
+		@param text  The text; "\n" starts a line.
+		@param position  The top-left corner.
+		@param fontSize  The height of a line, in pixels; the font is scaled from its size to it.
+		@param spacing  The space between letters, in pixels.
+		@param tint  The color. */
+	public static inline function DrawTextEx(font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
+		RText.DrawTextEx(font, text, position, fontSize, spacing, tint);
+
+	/** Draws text in a font, turned about a point.
+
+		@param font  The font.
+		@param text  The text.
+		@param position  Where the point goes.
+		@param origin  The point turned about, from the text's top-left corner.
+		@param rotation  The turn, in degrees, clockwise on the screen.
+		@param fontSize  The height of a line, in pixels.
+		@param spacing  The space between letters, in pixels.
+		@param tint  The color. */
+	public static inline function DrawTextPro(font:Font, text:String, position:Vector2, origin:Vector2, rotation:Float, fontSize:Float, spacing:Float,
+			tint:Color):Void
+		RText.DrawTextPro(font, text, position, origin, rotation, fontSize, spacing, tint);
+
+	/** Draws one character in a font.
+
+		@param font  The font.
+		@param codepoint  The character.
+		@param position  The top-left corner of its line.
+		@param fontSize  The height of a line, in pixels.
+		@param tint  The color. */
+	public static inline function DrawTextCodepoint(font:Font, codepoint:Int, position:Vector2, fontSize:Float, tint:Color):Void
+		RText.DrawTextCodepoint(font, codepoint, position, fontSize, tint);
+
+	/** Draws characters in a font, as `DrawTextEx` draws text.
+
+		@param font  The font.
+		@param codepoints  The characters.
+		@param codepointCount  How many of them.
+		@param position  The top-left corner.
+		@param fontSize  The height of a line, in pixels.
+		@param spacing  The space between letters, in pixels.
+		@param tint  The color. */
+	public static inline function DrawTextCodepoints(font:Font, codepoints:Array<Int>, codepointCount:Int, position:Vector2, fontSize:Float, spacing:Float,
+			tint:Color):Void
+		RText.DrawTextCodepoints(font, codepoints, codepointCount, position, fontSize, spacing, tint);
+
+	/** Sets the space between lines that "\n" adds to the size, 2 pixels until set.
+
+		@param spacing  The space, in pixels. */
+	public static inline function SetTextLineSpacing(spacing:Int):Void
+		RText.SetTextLineSpacing(spacing);
+
+	/** Returns the size text is drawn at by `DrawTextEx`: its widest line's width, and its lines' height.
+
+		@param font  The font.
+		@param text  The text.
+		@param fontSize  The height of a line, in pixels.
+		@param spacing  The space between letters, in pixels.
+		@return  The size, in pixels; 0 by 0 for no text or a font with no texture. */
+	public static inline function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2
+		return RText.MeasureTextEx(font, text, fontSize, spacing);
+
+	/** Returns where a character is in a font's glyphs: its own, else the question mark's, else the first.
+
+		@param font  The font.
+		@param codepoint  The character.
+		@return  The index. */
+	public static inline function GetGlyphIndex(font:Font, codepoint:Int):Int
+		return RText.GetGlyphIndex(font, codepoint);
+
+	/** Returns a character's glyph in a font, as `GetGlyphIndex` finds it.
+
+		@param font  The font.
+		@param codepoint  The character.
+		@return  The glyph. */
+	public static inline function GetGlyphInfo(font:Font, codepoint:Int):GlyphInfo
+		return RText.GetGlyphInfo(font, codepoint);
+
+	/** Returns where a character's glyph is on its font's texture, as `GetGlyphIndex` finds it.
+
+		@param font  The font.
+		@param codepoint  The character.
+		@return  The rectangle, in texels. */
+	public static inline function GetGlyphAtlasRec(font:Font, codepoint:Int):Rectangle
+		return RText.GetGlyphAtlasRec(font, codepoint);
+
+	/** Returns raylib's default font: 224 glyphs, Latin-1 from the space, 10 pixels high, on a texture made at its first use.
+
+		@return  The font. */
+	public static inline function GetFontDefault():Font
+		return RText.GetFontDefault();
+
+	/** Returns whether a font holds glyphs: a size, glyphs, and their places on its texture.
+
+		@param font  The font.
+		@return  True when it does. */
+	public static inline function IsFontValid(font:Font):Bool
+		return RText.IsFontValid(font);
+
+	/** Frees a font: its texture and its glyphs' images. The default font is never freed.
+
+		@param font  The font. */
+	public static inline function UnloadFont(font:Font):Void
+		RText.UnloadFont(font);
+
+	/** Frees glyphs' images.
+
+		@param glyphs  The glyphs.
+		@param glyphCount  How many of them. */
+	public static inline function UnloadFontData(glyphs:Array<GlyphInfo>, glyphCount:Int):Void
+		RText.UnloadFontData(glyphs, glyphCount);
+
+	/** Packs glyphs' images into one image, a font's texture once loaded, as raylib does: its glyphs' places go into `glyphRecs`, the
+		image is white with the glyphs' coverage as alpha (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`), and its bottom-right 3 by 3 texels are
+		opaque white.
+
+		@param glyphs  The glyphs, their images 8-bit grayscale.
+		@param glyphRecs  Receives each glyph's place, replacing what it held.
+		@param glyphCount  How many glyphs; 0 for 95.
+		@param fontSize  The font's size, a row's height.
+		@param padding  The empty texels around each glyph.
+		@param packMethod  0 packs rows in order; 1 packs by height, as raylib's skyline packer.
+		@return  The image. */
+	public static inline function GenImageFontAtlas(glyphs:Array<GlyphInfo>, glyphRecs:Array<Rectangle>, glyphCount:Int, fontSize:Int, padding:Int,
+			packMethod:Int):Image
+		return RText.GenImageFontAtlas(glyphs, glyphRecs, glyphCount, fontSize, padding, packMethod);
 
 	/** Draws the frames a second, as "60 FPS", in green.
 
@@ -2871,6 +3015,59 @@ class Raylib {
 		@param answer  Receives true when it exists. */
 	public static inline function FileExistsAsync(fileName:String, answer:Bool->Void):Void
 		HelixRay.FileExistsAsync(fileName, answer);
+
+	/** Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType
+		file gives its printable ASCII at 32 pixels, drawn with `TEXTURE_FILTER_POINT`; BMFont and image fonts aren't in helix-ray yet.
+
+		@param fileName  The file, as the program names it.
+		@param loaded  Receives the font.
+		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
+	public static inline function LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void):Void
+		HelixRay.LoadFontAsync(fileName, loaded, failed);
+
+	/** Loads a TrueType or OpenType font file at a size, answering when its glyphs are ready: helix-ray's own, in place of raylib's
+		`LoadFontEx`.
+
+		@param fileName  The file, as the program names it.
+		@param fontSize  The glyphs' size: the height of a line, in pixels.
+		@param codepoints  The characters, or null for those from the space on.
+		@param codepointCount  How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
+		@param loaded  Receives the font.
+		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
+	public static inline function LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void,
+			?failed:String->Void):Void
+		HelixRay.LoadFontExAsync(fileName, fontSize, codepoints, codepointCount, loaded, failed);
+
+	/** Makes a font from a TrueType or OpenType file's bytes, answering when its glyphs are ready: helix-ray's own, in place of raylib's
+		`LoadFontFromMemory`, as the glyphs are rasterized off the main thread.
+
+		@param fileType  The file's extension, ".ttf" or ".otf".
+		@param fileData  The file's bytes.
+		@param dataSize  How many of them.
+		@param fontSize  The glyphs' size: the height of a line, in pixels.
+		@param codepoints  The characters, or null for those from the space on.
+		@param codepointCount  How many characters; 0 for 95.
+		@param loaded  Receives the font.
+		@param failed  Optional. Receives why it couldn't be made; when omitted, it is logged. */
+	public static inline function LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>,
+			codepointCount:Int, loaded:Font->Void, ?failed:String->Void):Void
+		HelixRay.LoadFontFromMemoryAsync(fileType, fileData, dataSize, fontSize, codepoints, codepointCount, loaded, failed);
+
+	/** Rasterizes a TrueType or OpenType font's glyphs, answering when they are ready: helix-ray's own, in place of raylib's
+		`LoadFontData`. Each glyph has its own image, 8-bit grayscale, for `GenImageFontAtlas`; `FONT_SDF` makes them signed distances, with
+		4 texels of padding, 128 on the outline and 64 a texel.
+
+		@param fileData  The font file's bytes.
+		@param dataSize  How many of them.
+		@param fontSize  The glyphs' size: the height of a line, in pixels.
+		@param codepoints  The characters, or null for those from the space on.
+		@param codepointCount  How many characters; 0 for 95.
+		@param type  `FONT_DEFAULT` for antialiased glyphs, `FONT_BITMAP` for glyphs with no gray, `FONT_SDF` for signed distances.
+		@param loaded  Receives the glyphs.
+		@param failed  Optional. Receives why the font couldn't be read; when omitted, it is logged. */
+	public static inline function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int,
+			loaded:Array<GlyphInfo>->Void, ?failed:String->Void):Void
+		HelixRay.LoadFontDataAsync(fileData, dataSize, fontSize, codepoints, codepointCount, type, loaded, failed);
 	#end
 
 	// ---- raylib's loads, which wait for a file: each refuses to compile, naming the load to use ----
@@ -2894,6 +3091,29 @@ class Raylib {
 	public static macro function LoadTexture(fileName:ExprOf<String>):ExprOf<Texture2D>
 		return helix.platform.macros.Build.unimplemented("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)",
 			macro(null : helix.ray.Texture2D));
+
+	/** raylib's font load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontAsync` loads it. */
+	public static macro function LoadFont(fileName:ExprOf<String>):ExprOf<Font>
+		return helix.platform.macros.Build.unimplemented("LoadFont: Synchronous loading is not supported. See LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void)",
+			macro(null : helix.ray.Font));
+
+	/** raylib's font load at a size, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontExAsync` loads it. */
+	public static macro function LoadFontEx(fileName:ExprOf<String>, fontSize:ExprOf<Int>, codepoints:ExprOf<Array<Int>>,
+			codepointCount:ExprOf<Int>):ExprOf<Font>
+		return helix.platform.macros.Build.unimplemented("LoadFontEx: Synchronous loading is not supported. See LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)",
+			macro(null : helix.ray.Font));
+
+	/** raylib's font load from a file's bytes, which rasterizes the glyphs before it returns. They are rasterized off the main thread here, so a call doesn't compile on any target: `LoadFontFromMemoryAsync` loads it. */
+	public static macro function LoadFontFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fontSize:ExprOf<Int>,
+			codepoints:ExprOf<Array<Int>>, codepointCount:ExprOf<Int>):ExprOf<Font>
+		return helix.platform.macros.Build.unimplemented("LoadFontFromMemory: Fonts are rasterized asynchronously. See LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)",
+			macro(null : helix.ray.Font));
+
+	/** raylib's glyph rasterizing, which returns the glyphs. They are rasterized off the main thread here, so a call doesn't compile on any target: `LoadFontDataAsync` rasterizes them. */
+	public static macro function LoadFontData(fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fontSize:ExprOf<Int>, codepoints:ExprOf<Array<Int>>,
+			codepointCount:ExprOf<Int>, type:ExprOf<Int>):ExprOf<Array<GlyphInfo>>
+		return helix.platform.macros.Build.unimplemented("LoadFontData: Fonts are rasterized asynchronously. See LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void)",
+			macro(null : Array<helix.ray.GlyphInfo>));
 
 	/** raylib's model load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAsync` loads it. */
 	public static macro function LoadModel(fileName:ExprOf<String>):ExprOf<Model>
@@ -3541,10 +3761,6 @@ class Raylib {
 	public static macro function IsImageValid(image:ExprOf<Image>):ExprOf<Bool>
 		return helix.platform.macros.Build.unimplemented("IsImageValid: Not implemented", macro(false : Bool));
 
-	/** raylib's `UnloadImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload image from CPU memory (RAM). */
-	public static macro function UnloadImage(image:ExprOf<Image>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadImage: Not implemented", macro {});
-
 	/** raylib's `ExportImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export image data to file, returns true on success. */
 	public static macro function ExportImage(image:ExprOf<Image>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unimplemented("ExportImage: Not implemented", macro(false : Bool));
@@ -3845,10 +4061,6 @@ class Raylib {
 			spacing:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("ImageDrawTextEx: Not implemented", macro {});
 
-	/** raylib's `LoadTextureFromImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load texture from image data. */
-	public static macro function LoadTextureFromImage(image:ExprOf<Image>):ExprOf<Texture2D>
-		return helix.platform.macros.Build.unimplemented("LoadTextureFromImage: Not implemented", macro(null : helix.ray.Texture2D));
-
 	/** raylib's `LoadTextureCubemap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load cubemap from image, multiple image cubemap layouts supported. */
 	public static macro function LoadTextureCubemap(image:ExprOf<Image>, layout:ExprOf<Int>):ExprOf<TextureCubemap>
 		return helix.platform.macros.Build.unimplemented("LoadTextureCubemap: Not implemented", macro(null : helix.ray.TextureCubemap));
@@ -3926,93 +4138,13 @@ class Raylib {
 	public static macro function GetPixelDataSize(width:ExprOf<Int>, height:ExprOf<Int>, format:ExprOf<Int>):ExprOf<Int>
 		return helix.platform.macros.Build.unimplemented("GetPixelDataSize: Not implemented", macro(0 : Int));
 
-	/** raylib's `GetFontDefault` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get the default Font. */
-	public static macro function GetFontDefault():ExprOf<Font>
-		return helix.platform.macros.Build.unimplemented("GetFontDefault: Not implemented", macro(null : helix.ray.Font));
-
-	/** raylib's `LoadFont` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load font from file into GPU memory (VRAM). */
-	public static macro function LoadFont(fileName:ExprOf<String>):ExprOf<Font>
-		return helix.platform.macros.Build.unimplemented("LoadFont: Not implemented", macro(null : helix.ray.Font));
-
-	/** raylib's `LoadFontEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load font from file with extended parameters, use NULL for codepoints and 0 for codepointCount to load the default character set, font size is provided in pixels height. */
-	public static macro function LoadFontEx(fileName:ExprOf<String>, fontSize:ExprOf<Int>, codepoints:ExprOf<Array<Int>>,
-			codepointCount:ExprOf<Int>):ExprOf<Font>
-		return helix.platform.macros.Build.unimplemented("LoadFontEx: Not implemented", macro(null : helix.ray.Font));
-
 	/** raylib's `LoadFontFromImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load font from Image (XNA style). */
 	public static macro function LoadFontFromImage(image:ExprOf<Image>, key:ExprOf<Color>, firstChar:ExprOf<Int>):ExprOf<Font>
 		return helix.platform.macros.Build.unimplemented("LoadFontFromImage: Not implemented", macro(null : helix.ray.Font));
 
-	/** raylib's `LoadFontFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load font from memory buffer, fileType refers to extension: i.e. '.ttf'. */
-	public static macro function LoadFontFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fontSize:ExprOf<Int>,
-			codepoints:ExprOf<Array<Int>>, codepointCount:ExprOf<Int>):ExprOf<Font>
-		return helix.platform.macros.Build.unimplemented("LoadFontFromMemory: Not implemented", macro(null : helix.ray.Font));
-
-	/** raylib's `IsFontValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if a font is valid (font data loaded, WARNING: GPU texture not checked). */
-	public static macro function IsFontValid(font:ExprOf<Font>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsFontValid: Not implemented", macro(false : Bool));
-
-	/** raylib's `LoadFontData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load font data for further use. */
-	public static macro function LoadFontData(fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fontSize:ExprOf<Int>, codepoints:ExprOf<Array<Int>>,
-			codepointCount:ExprOf<Int>, type:ExprOf<Int>):ExprOf<Array<GlyphInfo>>
-		return helix.platform.macros.Build.unimplemented("LoadFontData: Not implemented", macro(null : Array<helix.ray.GlyphInfo>));
-
-	/** raylib's `GenImageFontAtlas` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image font atlas using chars info. */
-	public static macro function GenImageFontAtlas(glyphs:ExprOf<Array<GlyphInfo>>, glyphRecs:ExprOf<Array<Rectangle>>, glyphCount:ExprOf<Int>,
-			fontSize:ExprOf<Int>, padding:ExprOf<Int>, packMethod:ExprOf<Int>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("GenImageFontAtlas: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `UnloadFontData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload font chars info data (RAM). */
-	public static macro function UnloadFontData(glyphs:ExprOf<Array<GlyphInfo>>, glyphCount:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadFontData: Not implemented", macro {});
-
-	/** raylib's `UnloadFont` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload font from GPU memory (VRAM). */
-	public static macro function UnloadFont(font:ExprOf<Font>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadFont: Not implemented", macro {});
-
 	/** raylib's `ExportFontAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export font as code file, returns true on success. */
 	public static macro function ExportFontAsCode(font:ExprOf<Font>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unimplemented("ExportFontAsCode: Not implemented", macro(false : Bool));
-
-	/** raylib's `DrawTextEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw text using font and additional parameters. */
-	public static macro function DrawTextEx(font:ExprOf<Font>, text:ExprOf<String>, position:ExprOf<Vector2>, fontSize:ExprOf<Float>, spacing:ExprOf<Float>,
-			tint:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawTextEx: Not implemented", macro {});
-
-	/** raylib's `DrawTextPro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw text using Font and pro parameters (rotation). */
-	public static macro function DrawTextPro(font:ExprOf<Font>, text:ExprOf<String>, position:ExprOf<Vector2>, origin:ExprOf<Vector2>, rotation:ExprOf<Float>,
-			fontSize:ExprOf<Float>, spacing:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawTextPro: Not implemented", macro {});
-
-	/** raylib's `DrawTextCodepoint` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw one character (codepoint). */
-	public static macro function DrawTextCodepoint(font:ExprOf<Font>, codepoint:ExprOf<Int>, position:ExprOf<Vector2>, fontSize:ExprOf<Float>,
-			tint:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawTextCodepoint: Not implemented", macro {});
-
-	/** raylib's `DrawTextCodepoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw multiple character (codepoint). */
-	public static macro function DrawTextCodepoints(font:ExprOf<Font>, codepoints:ExprOf<Array<Int>>, codepointCount:ExprOf<Int>, position:ExprOf<Vector2>,
-			fontSize:ExprOf<Float>, spacing:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawTextCodepoints: Not implemented", macro {});
-
-	/** raylib's `SetTextLineSpacing` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set vertical line spacing when drawing with line-breaks. */
-	public static macro function SetTextLineSpacing(spacing:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetTextLineSpacing: Not implemented", macro {});
-
-	/** raylib's `MeasureTextEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Measure string size for Font. */
-	public static macro function MeasureTextEx(font:ExprOf<Font>, text:ExprOf<String>, fontSize:ExprOf<Float>, spacing:ExprOf<Float>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("MeasureTextEx: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `GetGlyphIndex` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get glyph index position in font for a codepoint (unicode character), fallback to '?' if not found. */
-	public static macro function GetGlyphIndex(font:ExprOf<Font>, codepoint:ExprOf<Int>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetGlyphIndex: Not implemented", macro(0 : Int));
-
-	/** raylib's `GetGlyphInfo` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get glyph font info data for a codepoint (unicode character), fallback to '?' if not found. */
-	public static macro function GetGlyphInfo(font:ExprOf<Font>, codepoint:ExprOf<Int>):ExprOf<GlyphInfo>
-		return helix.platform.macros.Build.unimplemented("GetGlyphInfo: Not implemented", macro(null : helix.ray.GlyphInfo));
-
-	/** raylib's `GetGlyphAtlasRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get glyph rectangle in font atlas for a codepoint (unicode character), fallback to '?' if not found. */
-	public static macro function GetGlyphAtlasRec(font:ExprOf<Font>, codepoint:ExprOf<Int>):ExprOf<Rectangle>
-		return helix.platform.macros.Build.unimplemented("GetGlyphAtlasRec: Not implemented", macro(null : helix.ray.Rectangle));
 
 	/** raylib's `LoadUTF8` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load UTF-8 text encoded from codepoints array. */
 	public static macro function LoadUTF8(codepoints:ExprOf<Array<Int>>, length:ExprOf<Int>):ExprOf<String>

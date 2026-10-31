@@ -232,10 +232,67 @@ class RTextures {
 		Runtime.frame.toScreen();
 	}
 
-	/** Sets how a texture is sampled when drawn larger or smaller. Textures here are sampled as `TEXTURE_FILTER_POINT`, whatever is set.
+	/** Sets how a texture is sampled when drawn larger or smaller: `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel,
+		and the others blend the nearest four, as `TEXTURE_FILTER_BILINEAR` does (there are no mipmaps here).
 
 		@param texture  The texture.
 		@param filter  The filter (`TEXTURE_FILTER_*`). */
-	static function SetTextureFilter(texture:Texture2D, filter:Int):Void {}
+	static function SetTextureFilter(texture:Texture2D, filter:Int):Void {
+		Textures.setSampling(texture.id, new helix.platform.Sampling(filter == TEXTURE_FILTER_POINT ? Nearest : Linear));
+	}
+
+	// ---- Images, as far as fonts need them ----
+
+	/** Makes a texture of an image. Its pixels are 8-bit grayscale, grayscale and alpha, RGB or RGBA (`PIXELFORMAT_UNCOMPRESSED_*`);
+		another format gives no texture, and says so.
+
+		@param image  The image.
+		@return  The texture. */
+	static function LoadTextureFromImage(image:Image):Texture2D {
+		var pixels = rgba(image);
+		if (pixels == null) {
+			Runtime.log(LOG_WARNING, 'LoadTextureFromImage: pixel format ${image.format} isn\'t in helix-ray yet');
+			return new Texture2D();
+		}
+		var texture = new Texture2D(Textures.fromImage("", new helix.services.images.Image("", image.width, image.height, pixels)), image.width, image.height);
+		return texture;
+	}
+
+	/** Frees an image's pixels.
+
+		@param image  The image. */
+	static function UnloadImage(image:Image):Void {
+		image.data = null;
+	}
+
+	// An image's pixels as 8-bit RGBA, or null for a format not read here.
+	static function rgba(image:Image):Null<haxe.io.Bytes> {
+		var data:Null<haxe.io.Bytes> = image.data,
+			count = image.width * image.height;
+		if (data == null)
+			return null;
+		var channels = switch image.format {
+			case PIXELFORMAT_UNCOMPRESSED_GRAYSCALE: 1;
+			case PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA: 2;
+			case PIXELFORMAT_UNCOMPRESSED_R8G8B8: 3;
+			case PIXELFORMAT_UNCOMPRESSED_R8G8B8A8: 4;
+			case _: 0;
+		}
+		if (channels == 0 || data.length < count * channels)
+			return null;
+		var pixels = haxe.io.Bytes.alloc(count * 4);
+		for (i in 0...count) {
+			var at = i * channels;
+			var r = data.get(at),
+				g = channels >= 3 ? data.get(at + 1) : r,
+				b = channels >= 3 ? data.get(at + 2) : r;
+			var a = channels == 2 ? data.get(at + 1) : channels == 4 ? data.get(at + 3) : 255;
+			pixels.set(i * 4, r);
+			pixels.set(i * 4 + 1, g);
+			pixels.set(i * 4 + 2, b);
+			pixels.set(i * 4 + 3, a);
+		}
+		return pixels;
+	}
 	#end
 }

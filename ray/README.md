@@ -9,9 +9,10 @@ program written as raylib is written runs in a page and natively.
 | `helix.ray.Raymath` | raymath's vectors, matrices and quaternions, as `raymath.h` names them, imported apart as raylib includes it |
 | `helix.ray.Vector2`, `Vector3`, `Color`, `Texture2D`, `Camera3D`, `Model`, `Shader`, `RenderTexture2D` and the rest | raylib's structs, with their fields |
 
-The window and frame, the keyboard, mouse, touch and gamepads, shapes, textures, the default font, sounds, text files; in 3D the
-camera, glTF and GLB models, meshes, shapes, render textures, rays; raylib's shaders, compiled as the program builds for every target.
-Not here yet: skinned models and animations, fonts from files, and images on the CPU.
+The window and frame, the keyboard, mouse, touch and gamepads, text input, shapes, textures, blend and scissor modes, the default
+font and TrueType and OpenType fonts (signed distance fields too), sounds, text files; in 3D the camera, glTF and GLB models, meshes,
+shapes, render textures, rays; raylib's shaders, compiled as the program builds for every target. Not here yet: skinned models and
+animations, BMFont and image fonts, and images on the CPU beyond a font's atlas.
 
 ## Using it
 
@@ -32,6 +33,7 @@ where a native program finds its files, relative to itself (default `../web`).
 
 - `basic`: raylib's basic window, with a circle at the mouse.
 - `model`: a glTF model on a grid, the camera turning about it.
+- `text`: a TrueType font loaded and drawn beside the default font.
 
 ## Depends on
 
@@ -43,4 +45,6 @@ helix-ray's API and the flow of a program on it are [raylib](https://www.raylib.
 contributors, mirrored in Haxe. A small API that a programmer can hold in their head and guess right is hard to make; raylib's is, and
 this library is built on that work. Portions are from raylib 5.5 (its default font, its default shader, its header's comments, and its
 API description, `vendor/raylib/raylib_api.json`, with `raymath_api.json` made from `raymath.h` by raylib's parser), altered; zlib
-license, `vendor/raylib/LICENSE`.
+license, `vendor/raylib/LICENSE`. `GenImageFontAtlas`'s skyline packing is stb_rect_pack 1.01's (Sean Barrett, public domain), ported.
+The `text` example's font is [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) Regular, Copyright 2020 The JetBrains Mono
+Project Authors, under the SIL Open Font License 1.1 (`examples/text/web/assets/OFL.txt`).

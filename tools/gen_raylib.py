@@ -128,7 +128,7 @@ def wrapped(line):
     commas, depth = [], 0
     for i, c in enumerate(line):
         depth += c in '(<[' 
-        depth -= c in ')>]'
+        depth -= c in ')]' or c == '>' and line[i - 1] != '-'  # a function type's arrow closes nothing
         if c == ',' and depth == 1 and len(line[:i + 1].expandtabs(4)) < 160:
             commas.append(i)
     cut = commas[-1]

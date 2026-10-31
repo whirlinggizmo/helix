@@ -17,6 +17,7 @@ The hardware and the OS as plain Haxe calls, in the browser and natively. Each d
 | `IAudio` | Sound | `audio.webaudio.WebAudioAdapter` | `audio.sdl3mixer.Sdl3MixerAudioAdapter` |
 | `IAudioDecoder` | Audio files to samples | `audiodecoder.webaudio.WebAudioDecoderAdapter` | `audiodecoder.sdl3mixer.Sdl3MixerAudioDecoderAdapter` |
 | `IImageDecoder` | Image files to pixels | `imagedecoder.canvas.CanvasImageDecoderAdapter` | `imagedecoder.stb.StbImageDecoderAdapter` |
+| `IFontRasterizer` | TrueType and OpenType glyphs to bitmaps | `fontrasterizer.canvas.CanvasFontRasterizerAdapter` | `fontrasterizer.stb.StbFontRasterizerAdapter` |
 | `IHttp` | HTTP GET | `http.fetchapi.FetchApiHttpAdapter` | `http.haxehttp.HaxeHttpAdapter` |
 | `IFileSystem` | Files on this machine | `filesystem.browser.BrowserFileSystemAdapter` | `filesystem.native.NativeFileSystemAdapter` |
 | `IExport` | A file handed to the user | `export.download.DownloadExportAdapter` | `export.filesystem.FileSystemExportAdapter` |
@@ -80,8 +81,8 @@ in the repository's `dependencies.json`:
   `vendor/sdl3/LICENSE.txt`.
 - [SDL3_mixer](https://github.com/libsdl-org/SDL_mixer), by Sam Lantinga and its contributors: native audio mixing and decoding. zlib,
   `vendor/sdl3_mixer/LICENSE.txt`.
-- [stb_image and stb_vorbis](https://github.com/nothings/stb), by Sean Barrett: image and Ogg Vorbis decoding. Public domain, or MIT,
-  at the end of each header.
+- [stb_image, stb_truetype and stb_vorbis](https://github.com/nothings/stb), by Sean Barrett: image decoding, font rasterizing and Ogg
+  Vorbis decoding. Public domain, or MIT, at the end of each header.
 - [dr_mp3 and dr_flac](https://github.com/mackron/dr_libs), by David Reid: MP3 and FLAC decoding. Public domain, or MIT No
   Attribution, `vendor/sdl3_mixer/src/dr_libs/LICENSE`.
 - [glslang](https://github.com/KhronosGroup/glslang), by the Khronos Group, and [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross),

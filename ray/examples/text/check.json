@@ -1,0 +1,7 @@
+{
+  "what": "the loaded font's capital I, drawn 256 pixels high in raylib's DARKBLUE: a point in its top bar and one in its stem.",
+  "points": [
+    {"x": 430, "y": 176, "color": [0, 82, 172], "tolerance": 3},
+    {"x": 420, "y": 240, "color": [0, 82, 172], "tolerance": 3}
+  ]
+}

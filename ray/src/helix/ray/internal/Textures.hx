@@ -48,6 +48,30 @@ class Textures {
 		return id;
 	}
 
+	/** Sets how a texture is sampled, by its GPU handle when it has one, or once it is sent.
+
+		@param id  The texture's id.
+		@param sampling  The sampling. */
+	public static function setSampling(id:Int, sampling:helix.platform.Sampling):Void {
+		var e = entries.get(id);
+		if (e == null)
+			return;
+		e.sampling = sampling;
+		if (e.gpu != 0)
+			samplings.set(e.gpu, sampling);
+	}
+
+	/** Returns how a texture is drawn, by its GPU handle: as `setSampling` set, else nearest, raylib's point filter.
+
+		@param gpu  The GPU handle.
+		@return  The sampling. */
+	public static function samplingOf(gpu:Int):helix.platform.Sampling {
+		var s = samplings.get(gpu);
+		return s == null ? helix.platform.Sampling.NEAREST : s;
+	}
+
+	static final samplings = new Map<Int, helix.platform.Sampling>();
+
 	/** Returns a texture's GPU handle, sending it to the GPU if this is its first use.
 
 		@param id  The texture's id.
@@ -58,6 +82,8 @@ class Textures {
 			return 0;
 		if (e.gpu == 0 && e.image != null) {
 			e.gpu = Runtime.graphics.createTexture(e.image.width, e.image.height, [e.image.pixels]);
+			if (e.sampling != null)
+				samplings.set(e.gpu, e.sampling);
 			// Its pixels are on the GPU now; the copy here isn't needed again.
 			e.image = null;
 		}
@@ -71,8 +97,10 @@ class Textures {
 		var e = entries.get(id);
 		if (e == null || --e.refs > 0)
 			return;
-		if (e.gpu != 0)
+		if (e.gpu != 0) {
 			Runtime.graphics.disposeTexture(e.gpu);
+			samplings.remove(e.gpu);
+		}
 		entries.remove(id);
 		if (e.path != "" && byPath.get(e.path) == id)
 			byPath.remove(e.path);
@@ -93,4 +121,5 @@ private typedef Entry = {
 	var image:Null<Image>;
 	var gpu:Int;
 	var refs:Int;
+	var ?sampling:helix.platform.Sampling;
 }

@@ -129,6 +129,89 @@ class HelixRay {
 		});
 	}
 
+	/** Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType
+		file gives its printable ASCII at 32 pixels, drawn with `TEXTURE_FILTER_POINT`; BMFont and image fonts aren't in helix-ray yet.
+
+		@param fileName  The file, as the program names it.
+		@param loaded  Receives the font.
+		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
+	static function LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void):Void {
+		var path = normalize(fileName),
+			type = haxe.io.Path.extension(path).toLowerCase();
+		if (type != "ttf" && type != "otf") {
+			Runtime.later(() -> refuse("LoadFontAsync", '$path: .$type fonts aren\'t in helix-ray yet', failed));
+			return;
+		}
+		LoadFontExAsync(path, 32, null, 95, font -> {
+			SetTextureFilter(font.texture, TEXTURE_FILTER_POINT);
+			loaded(font);
+		}, failed);
+	}
+
+	/** Loads a TrueType or OpenType font file at a size, answering when its glyphs are ready: helix-ray's own, in place of raylib's
+		`LoadFontEx`.
+
+		@param fileName  The file, as the program names it.
+		@param fontSize  The glyphs' size: the height of a line, in pixels.
+		@param codepoints  The characters, or null for those from the space on.
+		@param codepointCount  How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
+		@param loaded  Receives the font.
+		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
+	static function LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void):Void {
+		var path = normalize(fileName);
+		Runtime.fetch(path, error -> {
+			if (error != null)
+				refuse("LoadFontExAsync", error, failed);
+			else
+				LoadFontFromMemoryAsync("." + haxe.io.Path.extension(path), Runtime.files.get(path), Runtime.files.get(path).length, fontSize, codepoints,
+					codepointCount, loaded, message -> refuse("LoadFontExAsync", '$path: $message', failed));
+		});
+	}
+
+	/** Makes a font from a TrueType or OpenType file's bytes, answering when its glyphs are ready: helix-ray's own, in place of raylib's
+		`LoadFontFromMemory`, as the glyphs are rasterized off the main thread.
+
+		@param fileType  The file's extension, ".ttf" or ".otf".
+		@param fileData  The file's bytes.
+		@param dataSize  How many of them.
+		@param fontSize  The glyphs' size: the height of a line, in pixels.
+		@param codepoints  The characters, or null for those from the space on.
+		@param codepointCount  How many characters; 0 for 95.
+		@param loaded  Receives the font.
+		@param failed  Optional. Receives why it couldn't be made; when omitted, it is logged. */
+	static function LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int,
+			loaded:Font->Void, ?failed:String->Void):Void {
+		var type = fileType.toLowerCase();
+		if (type != ".ttf" && type != ".otf") {
+			Runtime.later(() -> refuse("LoadFontFromMemoryAsync", '$fileType fonts aren\'t in helix-ray yet', failed));
+			return;
+		}
+		LoadFontDataAsync(fileData, dataSize, fontSize, codepoints, codepointCount, FONT_DEFAULT, glyphs -> loaded(RText.fontOf(glyphs, fontSize)),
+			message -> refuse("LoadFontFromMemoryAsync", message, failed));
+	}
+
+	/** Rasterizes a TrueType or OpenType font's glyphs, answering when they are ready: helix-ray's own, in place of raylib's
+		`LoadFontData`. Each glyph has its own image, 8-bit grayscale, for `GenImageFontAtlas`; `FONT_SDF` makes them signed distances, with
+		4 texels of padding, 128 on the outline and 64 a texel.
+
+		@param fileData  The font file's bytes.
+		@param dataSize  How many of them.
+		@param fontSize  The glyphs' size: the height of a line, in pixels.
+		@param codepoints  The characters, or null for those from the space on.
+		@param codepointCount  How many characters; 0 for 95.
+		@param type  `FONT_DEFAULT` for antialiased glyphs, `FONT_BITMAP` for glyphs with no gray, `FONT_SDF` for signed distances.
+		@param loaded  Receives the glyphs.
+		@param failed  Optional. Receives why the font couldn't be read; when omitted, it is logged. */
+	static function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int,
+			loaded:Array<GlyphInfo>->Void, ?failed:String->Void):Void {
+		var count = codepointCount > 0 ? codepointCount : 95;
+		var wanted = codepoints == null ? [for (i in 0...count) 32 + i] : codepoints.slice(0, count);
+		var data = dataSize < fileData.length ? fileData.sub(0, dataSize) : fileData;
+		Runtime.fonts()
+			.rasterize(data, fontSize, wanted, type == FONT_SDF, (glyphs, ascent, _, _) -> loaded(RText.fontData(glyphs, ascent, fontSize, type)),
+				message -> refuse("LoadFontDataAsync", message, failed));
+	}
+
 	// Answers a load that failed: to the program's failed callback, or logged. Every error names the file, as the services' do.
 	static function refuse(name:String, error:String, failed:Null<String->Void>):Void {
 		if (failed != null)

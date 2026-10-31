@@ -1985,6 +1985,8 @@ static function UnloadRenderTexture(target:RenderTexture2D):Void
 static function BeginTextureMode(target:RenderTexture2D):Void
 static function EndTextureMode():Void
 static function SetTextureFilter(texture:Texture2D, filter:Int):Void
+static function LoadTextureFromImage(image:Image):Texture2D
+static function UnloadImage(image:Image):Void
 ```
 
 - `UnloadTexture`: Frees a texture: one load of its file, the GPU's copy with the last.
@@ -2045,15 +2047,34 @@ static function SetTextureFilter(texture:Texture2D, filter:Int):Void
 - `BeginTextureMode`: Draws into a render texture until `EndTextureMode`. Unlike raylib's, what was drawn into it in an earlier frame isn't kept: each frame's drawing into it starts cleared, to clear black unless `ClearBackground` gives a color.
   - `target`: The render texture.
 - `EndTextureMode`: Goes back to drawing on the screen.
-- `SetTextureFilter`: Sets how a texture is sampled when drawn larger or smaller. Textures here are sampled as `TEXTURE_FILTER_POINT`, whatever is set.
+- `SetTextureFilter`: Sets how a texture is sampled when drawn larger or smaller: `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel, and the others blend the nearest four, as `TEXTURE_FILTER_BILINEAR` does (there are no mipmaps here).
   - `texture`: The texture.
   - `filter`: The filter (`TEXTURE_FILTER_*`).
+- `LoadTextureFromImage`: Makes a texture of an image. Its pixels are 8-bit grayscale, grayscale and alpha, RGB or RGBA (`PIXELFORMAT_UNCOMPRESSED_*`); another format gives no texture, and says so.
+  - `image`: The image.
+  - returns: The texture.
+- `UnloadImage`: Frees an image's pixels.
+  - `image`: The image.
 
 ### rtext: text (raylib/RText.hx)
 
 ```haxe
 static function DrawText(text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void
 static function MeasureText(text:String, fontSize:Int):Int
+static function DrawTextEx(font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
+static function DrawTextPro(font:Font, text:String, position:Vector2, origin:Vector2, rotation:Float, fontSize:Float, spacing:Float, tint:Color):Void
+static function DrawTextCodepoint(font:Font, codepoint:Int, position:Vector2, fontSize:Float, tint:Color):Void
+static function DrawTextCodepoints(font:Font, codepoints:Array<Int>, codepointCount:Int, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
+static function SetTextLineSpacing(spacing:Int):Void
+static function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2
+static function GetGlyphIndex(font:Font, codepoint:Int):Int
+static function GetGlyphInfo(font:Font, codepoint:Int):GlyphInfo
+static function GetGlyphAtlasRec(font:Font, codepoint:Int):Rectangle
+static function GetFontDefault():Font
+static function IsFontValid(font:Font):Bool
+static function UnloadFont(font:Font):Void
+static function UnloadFontData(glyphs:Array<GlyphInfo>, glyphCount:Int):Void
+static function GenImageFontAtlas(glyphs:Array<GlyphInfo>, glyphRecs:Array<Rectangle>, glyphCount:Int, fontSize:Int, padding:Int, packMethod:Int):Image
 static function DrawFPS(posX:Int, posY:Int):Void
 static function TextFormat(text:String, args:haxe.extern.Rest<Dynamic>):String
 ```
@@ -2068,6 +2089,74 @@ static function TextFormat(text:String, args:haxe.extern.Rest<Dynamic>):String
   - `text`: The text.
   - `fontSize`: The height of a line, in pixels.
   - returns: The width, in pixels.
+- `DrawTextEx`: Draws text in a font.
+  - `font`: The font; one with no texture draws as the default font.
+  - `text`: The text; "\n" starts a line.
+  - `position`: The top-left corner.
+  - `fontSize`: The height of a line, in pixels; the font is scaled from its size to it.
+  - `spacing`: The space between letters, in pixels.
+  - `tint`: The color.
+- `DrawTextPro`: Draws text in a font, turned about a point.
+  - `font`: The font.
+  - `text`: The text.
+  - `position`: Where the point goes.
+  - `origin`: The point turned about, from the text's top-left corner.
+  - `rotation`: The turn, in degrees, clockwise on the screen.
+  - `fontSize`: The height of a line, in pixels.
+  - `spacing`: The space between letters, in pixels.
+  - `tint`: The color.
+- `DrawTextCodepoint`: Draws one character in a font.
+  - `font`: The font.
+  - `codepoint`: The character.
+  - `position`: The top-left corner of its line.
+  - `fontSize`: The height of a line, in pixels.
+  - `tint`: The color.
+- `DrawTextCodepoints`: Draws characters in a font, as `DrawTextEx` draws text.
+  - `font`: The font.
+  - `codepoints`: The characters.
+  - `codepointCount`: How many of them.
+  - `position`: The top-left corner.
+  - `fontSize`: The height of a line, in pixels.
+  - `spacing`: The space between letters, in pixels.
+  - `tint`: The color.
+- `SetTextLineSpacing`: Sets the space between lines that "\n" adds to the size, 2 pixels until set.
+  - `spacing`: The space, in pixels.
+- `MeasureTextEx`: Returns the size text is drawn at by `DrawTextEx`: its widest line's width, and its lines' height.
+  - `font`: The font.
+  - `text`: The text.
+  - `fontSize`: The height of a line, in pixels.
+  - `spacing`: The space between letters, in pixels.
+  - returns: The size, in pixels; 0 by 0 for no text or a font with no texture.
+- `GetGlyphIndex`: Returns where a character is in a font's glyphs: its own, else the question mark's, else the first.
+  - `font`: The font.
+  - `codepoint`: The character.
+  - returns: The index.
+- `GetGlyphInfo`: Returns a character's glyph in a font, as `GetGlyphIndex` finds it.
+  - `font`: The font.
+  - `codepoint`: The character.
+  - returns: The glyph.
+- `GetGlyphAtlasRec`: Returns where a character's glyph is on its font's texture, as `GetGlyphIndex` finds it.
+  - `font`: The font.
+  - `codepoint`: The character.
+  - returns: The rectangle, in texels.
+- `GetFontDefault`: Returns raylib's default font: 224 glyphs, Latin-1 from the space, 10 pixels high, on a texture made at its first use.
+  - returns: The font.
+- `IsFontValid`: Returns whether a font holds glyphs: a size, glyphs, and their places on its texture.
+  - `font`: The font.
+  - returns: True when it does.
+- `UnloadFont`: Frees a font: its texture and its glyphs' images. The default font is never freed.
+  - `font`: The font.
+- `UnloadFontData`: Frees glyphs' images.
+  - `glyphs`: The glyphs.
+  - `glyphCount`: How many of them.
+- `GenImageFontAtlas`: Packs glyphs' images into one image, a font's texture once loaded, as raylib does: its glyphs' places go into `glyphRecs`, the image is white with the glyphs' coverage as alpha (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`), and its bottom-right 3 by 3 texels are opaque white.
+  - `glyphs`: The glyphs, their images 8-bit grayscale.
+  - `glyphRecs`: Receives each glyph's place, replacing what it held.
+  - `glyphCount`: How many glyphs; 0 for 95.
+  - `fontSize`: The font's size, a row's height.
+  - `padding`: The empty texels around each glyph.
+  - `packMethod`: 0 packs rows in order; 1 packs by height, as raylib's skyline packer.
+  - returns: The image.
 - `DrawFPS`: Draws the frames a second, as "60 FPS", in green.
   - `posX`: The left edge.
   - `posY`: The top edge.
@@ -2361,6 +2450,10 @@ static function LoadSoundAsync(fileName:String, loaded:Sound -> Void, ?failed:St
 static function LoadFileTextAsync(fileName:String, loaded:String -> Void, ?failed:String -> Void):Void
 static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):Void
 static function FileExistsAsync(fileName:String, answer:Bool -> Void):Void
+static function LoadFontAsync(fileName:String, loaded:Font -> Void, ?failed:String -> Void):Void
+static function LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
+static function LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
+static function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo> -> Void, ?failed:String -> Void):Void
 ```
 
 - `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page can't wait for a file. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
@@ -2386,6 +2479,35 @@ static function FileExistsAsync(fileName:String, answer:Bool -> Void):Void
 - `FileExistsAsync`: Answers whether a file exists: helix-ray's own, in place of raylib's `FileExists`. One `SaveFileText` or `SaveFileData` wrote exists, as does one of the program's; finding one of the program's reads it, so a load of it after answers at once. The answer comes at a later frame, never during the call.
   - `fileName`: The file.
   - `answer`: Receives true when it exists.
+- `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels, drawn with `TEXTURE_FILTER_POINT`; BMFont and image fonts aren't in helix-ray yet.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the font.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+- `LoadFontExAsync`: Loads a TrueType or OpenType font file at a size, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFontEx`.
+  - `fileName`: The file, as the program names it.
+  - `fontSize`: The glyphs' size: the height of a line, in pixels.
+  - `codepoints`: The characters, or null for those from the space on.
+  - `codepointCount`: How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
+  - `loaded`: Receives the font.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+- `LoadFontFromMemoryAsync`: Makes a font from a TrueType or OpenType file's bytes, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFontFromMemory`, as the glyphs are rasterized off the main thread.
+  - `fileType`: The file's extension, ".ttf" or ".otf".
+  - `fileData`: The file's bytes.
+  - `dataSize`: How many of them.
+  - `fontSize`: The glyphs' size: the height of a line, in pixels.
+  - `codepoints`: The characters, or null for those from the space on.
+  - `codepointCount`: How many characters; 0 for 95.
+  - `loaded`: Receives the font.
+  - `failed`: Optional. Receives why it couldn't be made; when omitted, it is logged.
+- `LoadFontDataAsync`: Rasterizes a TrueType or OpenType font's glyphs, answering when they are ready: helix-ray's own, in place of raylib's `LoadFontData`. Each glyph has its own image, 8-bit grayscale, for `GenImageFontAtlas`; `FONT_SDF` makes them signed distances, with 4 texels of padding, 128 on the outline and 64 a texel.
+  - `fileData`: The font file's bytes.
+  - `dataSize`: How many of them.
+  - `fontSize`: The glyphs' size: the height of a line, in pixels.
+  - `codepoints`: The characters, or null for those from the space on.
+  - `codepointCount`: How many characters; 0 for 95.
+  - `type`: `FONT_DEFAULT` for antialiased glyphs, `FONT_BITMAP` for glyphs with no gray, `FONT_SDF` for signed distances.
+  - `loaded`: Receives the glyphs.
+  - `failed`: Optional. Receives why the font couldn't be read; when omitted, it is logged.
 
 ### raylib's loads, which wait for a file: each refuses to compile, naming the load to use
 
@@ -2394,6 +2516,10 @@ static macro function FileExists(fileName:String):Bool
 static macro function LoadFileText(fileName:String):ExprOf<Null<String>>
 static macro function LoadFileData(fileName:String):ExprOf<Null<haxe.io.Bytes>>
 static macro function LoadTexture(fileName:String):Texture2D
+static macro function LoadFont(fileName:String):Font
+static macro function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font
+static macro function LoadFontFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font
+static macro function LoadFontData(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int):ExprOf<Array<GlyphInfo>>
 static macro function LoadModel(fileName:String):Model
 static macro function LoadSound(fileName:String):Sound
 ```
@@ -2402,6 +2528,10 @@ static macro function LoadSound(fileName:String):Sound
 - `LoadFileText`: raylib's text file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileTextAsync` reads it.
 - `LoadFileData`: raylib's file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileDataAsync` reads it.
 - `LoadTexture`: raylib's texture load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadTextureAsync` loads it.
+- `LoadFont`: raylib's font load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontAsync` loads it.
+- `LoadFontEx`: raylib's font load at a size, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontExAsync` loads it.
+- `LoadFontFromMemory`: raylib's font load from a file's bytes, which rasterizes the glyphs before it returns. They are rasterized off the main thread here, so a call doesn't compile on any target: `LoadFontFromMemoryAsync` loads it.
+- `LoadFontData`: raylib's glyph rasterizing, which returns the glyphs. They are rasterized off the main thread here, so a call doesn't compile on any target: `LoadFontDataAsync` rasterizes them.
 - `LoadModel`: raylib's model load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAsync` loads it.
 - `LoadSound`: raylib's sound load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadSoundAsync` loads it.
 
@@ -2595,7 +2725,7 @@ static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<Stri
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-From `raylib.h`: `IsWindowFullscreen`, `IsWindowHidden`, `IsWindowMinimized`, `IsWindowMaximized`, `IsWindowFocused`, `ToggleFullscreen`, `ToggleBorderlessWindowed`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowIcon`, `SetWindowIcons`, `SetWindowPosition`, `SetWindowMonitor`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetWindowOpacity`, `SetWindowFocused`, `GetWindowHandle`, `GetMonitorCount`, `GetCurrentMonitor`, `GetMonitorPosition`, `GetMonitorWidth`, `GetMonitorHeight`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `GetMonitorRefreshRate`, `GetWindowPosition`, `GetWindowScaleDPI`, `GetMonitorName`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `EnableEventWaiting`, `DisableEventWaiting`, `ShowCursor`, `HideCursor`, `IsCursorHidden`, `EnableCursor`, `DisableCursor`, `IsCursorOnScreen`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `TakeScreenshot`, `OpenURL`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `IsFileExtension`, `GetFileLength`, `GetFileExtension`, `GetFileName`, `GetFileNameWithoutExt`, `GetDirectoryPath`, `GetPrevDirectoryPath`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `IsFileNameValid`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `CompressData`, `DecompressData`, `EncodeDataBase64`, `DecodeDataBase64`, `ComputeCRC32`, `ComputeMD5`, `ComputeSHA1`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `SetGamepadMappings`, `SetGamepadVibration`, `SetMousePosition`, `SetMouseOffset`, `SetMouseScale`, `GetMouseWheelMoveV`, `SetMouseCursor`, `GetTouchPointId`, `UpdateCameraPro`, `LoadImage`, `LoadImageRaw`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `IsImageValid`, `UnloadImage`, `ExportImage`, `ExportImageToMemory`, `ExportImageAsCode`, `GenImageColor`, `GenImageGradientLinear`, `GenImageGradientRadial`, `GenImageGradientSquare`, `GenImageChecked`, `GenImageWhiteNoise`, `GenImagePerlinNoise`, `GenImageCellular`, `GenImageText`, `ImageCopy`, `ImageFromImage`, `ImageFromChannel`, `ImageText`, `ImageTextEx`, `ImageFormat`, `ImageToPOT`, `ImageCrop`, `ImageAlphaCrop`, `ImageAlphaClear`, `ImageAlphaMask`, `ImageAlphaPremultiply`, `ImageBlurGaussian`, `ImageKernelConvolution`, `ImageResize`, `ImageResizeNN`, `ImageResizeCanvas`, `ImageMipmaps`, `ImageDither`, `ImageFlipVertical`, `ImageFlipHorizontal`, `ImageRotate`, `ImageRotateCW`, `ImageRotateCCW`, `ImageColorTint`, `ImageColorInvert`, `ImageColorGrayscale`, `ImageColorContrast`, `ImageColorBrightness`, `ImageColorReplace`, `LoadImageColors`, `LoadImagePalette`, `UnloadImageColors`, `UnloadImagePalette`, `GetImageAlphaBorder`, `GetImageColor`, `ImageClearBackground`, `ImageDrawPixel`, `ImageDrawPixelV`, `ImageDrawLine`, `ImageDrawLineV`, `ImageDrawLineEx`, `ImageDrawCircle`, `ImageDrawCircleV`, `ImageDrawCircleLines`, `ImageDrawCircleLinesV`, `ImageDrawRectangle`, `ImageDrawRectangleV`, `ImageDrawRectangleRec`, `ImageDrawRectangleLines`, `ImageDrawTriangle`, `ImageDrawTriangleEx`, `ImageDrawTriangleLines`, `ImageDrawTriangleFan`, `ImageDrawTriangleStrip`, `ImageDraw`, `ImageDrawText`, `ImageDrawTextEx`, `LoadTextureFromImage`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `SetTextureWrap`, `DrawTextureNPatch`, `ColorIsEqual`, `ColorToInt`, `ColorToHSV`, `ColorFromHSV`, `ColorTint`, `ColorBrightness`, `ColorContrast`, `ColorAlphaBlend`, `ColorLerp`, `GetColor`, `GetPixelColor`, `SetPixelColor`, `GetPixelDataSize`, `GetFontDefault`, `LoadFont`, `LoadFontEx`, `LoadFontFromImage`, `LoadFontFromMemory`, `IsFontValid`, `LoadFontData`, `GenImageFontAtlas`, `UnloadFontData`, `UnloadFont`, `ExportFontAsCode`, `DrawTextEx`, `DrawTextPro`, `DrawTextCodepoint`, `DrawTextCodepoints`, `SetTextLineSpacing`, `MeasureTextEx`, `GetGlyphIndex`, `GetGlyphInfo`, `GetGlyphAtlasRec`, `LoadUTF8`, `UnloadUTF8`, `LoadCodepoints`, `UnloadCodepoints`, `GetCodepointCount`, `GetCodepoint`, `GetCodepointNext`, `GetCodepointPrevious`, `CodepointToUTF8`, `TextCopy`, `TextIsEqual`, `TextLength`, `TextSubtext`, `TextReplace`, `TextInsert`, `TextJoin`, `TextSplit`, `TextAppend`, `TextFindIndex`, `TextToUpper`, `TextToLower`, `TextToPascal`, `TextToSnake`, `TextToCamel`, `TextToInteger`, `TextToFloat`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`, `LoadWave`, `LoadWaveFromMemory`, `IsWaveValid`, `LoadSoundFromWave`, `LoadSoundAlias`, `UpdateSound`, `UnloadWave`, `UnloadSoundAlias`, `ExportWave`, `ExportWaveAsCode`, `PauseSound`, `ResumeSound`, `WaveCopy`, `WaveCrop`, `WaveFormat`, `LoadWaveSamples`, `UnloadWaveSamples`, `LoadMusicStreamFromMemory`, `SeekMusicStream`, `GetMusicTimeLength`, `GetMusicTimePlayed`, `LoadAudioStream`, `IsAudioStreamValid`, `UnloadAudioStream`, `UpdateAudioStream`, `IsAudioStreamProcessed`, `PlayAudioStream`, `PauseAudioStream`, `ResumeAudioStream`, `IsAudioStreamPlaying`, `StopAudioStream`, `SetAudioStreamVolume`, `SetAudioStreamPitch`, `SetAudioStreamPan`, `SetAudioStreamBufferSizeDefault`, `SetAudioStreamCallback`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+From `raylib.h`: `IsWindowFullscreen`, `IsWindowHidden`, `IsWindowMinimized`, `IsWindowMaximized`, `IsWindowFocused`, `ToggleFullscreen`, `ToggleBorderlessWindowed`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowIcon`, `SetWindowIcons`, `SetWindowPosition`, `SetWindowMonitor`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetWindowOpacity`, `SetWindowFocused`, `GetWindowHandle`, `GetMonitorCount`, `GetCurrentMonitor`, `GetMonitorPosition`, `GetMonitorWidth`, `GetMonitorHeight`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `GetMonitorRefreshRate`, `GetWindowPosition`, `GetWindowScaleDPI`, `GetMonitorName`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `EnableEventWaiting`, `DisableEventWaiting`, `ShowCursor`, `HideCursor`, `IsCursorHidden`, `EnableCursor`, `DisableCursor`, `IsCursorOnScreen`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `TakeScreenshot`, `OpenURL`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `IsFileExtension`, `GetFileLength`, `GetFileExtension`, `GetFileName`, `GetFileNameWithoutExt`, `GetDirectoryPath`, `GetPrevDirectoryPath`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `IsFileNameValid`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `CompressData`, `DecompressData`, `EncodeDataBase64`, `DecodeDataBase64`, `ComputeCRC32`, `ComputeMD5`, `ComputeSHA1`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `SetGamepadMappings`, `SetGamepadVibration`, `SetMousePosition`, `SetMouseOffset`, `SetMouseScale`, `GetMouseWheelMoveV`, `SetMouseCursor`, `GetTouchPointId`, `UpdateCameraPro`, `LoadImage`, `LoadImageRaw`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `IsImageValid`, `ExportImage`, `ExportImageToMemory`, `ExportImageAsCode`, `GenImageColor`, `GenImageGradientLinear`, `GenImageGradientRadial`, `GenImageGradientSquare`, `GenImageChecked`, `GenImageWhiteNoise`, `GenImagePerlinNoise`, `GenImageCellular`, `GenImageText`, `ImageCopy`, `ImageFromImage`, `ImageFromChannel`, `ImageText`, `ImageTextEx`, `ImageFormat`, `ImageToPOT`, `ImageCrop`, `ImageAlphaCrop`, `ImageAlphaClear`, `ImageAlphaMask`, `ImageAlphaPremultiply`, `ImageBlurGaussian`, `ImageKernelConvolution`, `ImageResize`, `ImageResizeNN`, `ImageResizeCanvas`, `ImageMipmaps`, `ImageDither`, `ImageFlipVertical`, `ImageFlipHorizontal`, `ImageRotate`, `ImageRotateCW`, `ImageRotateCCW`, `ImageColorTint`, `ImageColorInvert`, `ImageColorGrayscale`, `ImageColorContrast`, `ImageColorBrightness`, `ImageColorReplace`, `LoadImageColors`, `LoadImagePalette`, `UnloadImageColors`, `UnloadImagePalette`, `GetImageAlphaBorder`, `GetImageColor`, `ImageClearBackground`, `ImageDrawPixel`, `ImageDrawPixelV`, `ImageDrawLine`, `ImageDrawLineV`, `ImageDrawLineEx`, `ImageDrawCircle`, `ImageDrawCircleV`, `ImageDrawCircleLines`, `ImageDrawCircleLinesV`, `ImageDrawRectangle`, `ImageDrawRectangleV`, `ImageDrawRectangleRec`, `ImageDrawRectangleLines`, `ImageDrawTriangle`, `ImageDrawTriangleEx`, `ImageDrawTriangleLines`, `ImageDrawTriangleFan`, `ImageDrawTriangleStrip`, `ImageDraw`, `ImageDrawText`, `ImageDrawTextEx`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `SetTextureWrap`, `DrawTextureNPatch`, `ColorIsEqual`, `ColorToInt`, `ColorToHSV`, `ColorFromHSV`, `ColorTint`, `ColorBrightness`, `ColorContrast`, `ColorAlphaBlend`, `ColorLerp`, `GetColor`, `GetPixelColor`, `SetPixelColor`, `GetPixelDataSize`, `LoadFontFromImage`, `ExportFontAsCode`, `LoadUTF8`, `UnloadUTF8`, `LoadCodepoints`, `UnloadCodepoints`, `GetCodepointCount`, `GetCodepoint`, `GetCodepointNext`, `GetCodepointPrevious`, `CodepointToUTF8`, `TextCopy`, `TextIsEqual`, `TextLength`, `TextSubtext`, `TextReplace`, `TextInsert`, `TextJoin`, `TextSplit`, `TextAppend`, `TextFindIndex`, `TextToUpper`, `TextToLower`, `TextToPascal`, `TextToSnake`, `TextToCamel`, `TextToInteger`, `TextToFloat`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`, `LoadWave`, `LoadWaveFromMemory`, `IsWaveValid`, `LoadSoundFromWave`, `LoadSoundAlias`, `UpdateSound`, `UnloadWave`, `UnloadSoundAlias`, `ExportWave`, `ExportWaveAsCode`, `PauseSound`, `ResumeSound`, `WaveCopy`, `WaveCrop`, `WaveFormat`, `LoadWaveSamples`, `UnloadWaveSamples`, `LoadMusicStreamFromMemory`, `SeekMusicStream`, `GetMusicTimeLength`, `GetMusicTimePlayed`, `LoadAudioStream`, `IsAudioStreamValid`, `UnloadAudioStream`, `UpdateAudioStream`, `IsAudioStreamProcessed`, `PlayAudioStream`, `PauseAudioStream`, `ResumeAudioStream`, `IsAudioStreamPlaying`, `StopAudioStream`, `SetAudioStreamVolume`, `SetAudioStreamPitch`, `SetAudioStreamPan`, `SetAudioStreamBufferSizeDefault`, `SetAudioStreamCallback`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ## Raymath
 

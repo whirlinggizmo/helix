@@ -289,6 +289,40 @@ final readOnly:Bool = false
 - `directory`: Gets the directory, made when first written.
 - `readOnly`: Gets a value indicating whether writing, removing and clearing are refused, as for the files a program ships with; false by default.
 
+## CanvasFontRasterizerAdapter
+
+*class*, for the browser (js) in [`platform/src/helix/platform/adapters/fontrasterizer/canvas/CanvasFontRasterizerAdapter.hx`](../../platform/src/helix/platform/adapters/fontrasterizer/canvas/CanvasFontRasterizerAdapter.hx), `import helix.platform.adapters.fontrasterizer.canvas.CanvasFontRasterizerAdapter;`, implements `IFontRasterizer`
+
+Provides `IFontRasterizer` in a page: the font loaded as a `FontFace` and its glyphs drawn with `fillText` on an `OffscreenCanvas`.
+
+What stb_truetype reads from the font's tables is read here the same way (`FontTables`): the metrics, which glyphs it has, the advances, and a TrueType glyph's box, so glyphs are placed and sized as natively. The pixels are the browser's: coverage may differ by a level or so at a glyph's edges, and an OpenType glyph with CFF outlines is boxed by what the canvas measures. Signed distances come from the glyph drawn 8 times larger, by a distance transform, within about a sixteenth of a pixel of stb_truetype's.
+
+```haxe
+function new()
+function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, sdf:Bool, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
+function poll():Void
+function dispose():Void
+```
+
+- `new`: Creates the rasterizer.
+- `poll`: Does nothing: the page's promises already resolve on the main thread.
+
+## StbFontRasterizerAdapter
+
+*class*, native (cpp) in [`platform/src/helix/platform/adapters/fontrasterizer/stb/StbFontRasterizerAdapter.hx`](../../platform/src/helix/platform/adapters/fontrasterizer/stb/StbFontRasterizerAdapter.hx), `import helix.platform.adapters.fontrasterizer.stb.StbFontRasterizerAdapter;`, implements `IFontRasterizer`
+
+Provides `IFontRasterizer` natively over stb_truetype, each rasterize on a worker thread.
+
+```haxe
+function new()
+function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, sdf:Bool, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
+function poll():Void
+function dispose():Void
+```
+
+- `new`: Creates the rasterizer.
+- `dispose`: Closes the rasterizer: a rasterize still running on its worker finishes, and its answer is dropped.
+
 ## DomGamepadsAdapter
 
 *class*, for the browser (js) in [`platform/src/helix/platform/adapters/gamepads/dom/DomGamepadsAdapter.hx`](../../platform/src/helix/platform/adapters/gamepads/dom/DomGamepadsAdapter.hx), `import helix.platform.adapters.gamepads.dom.DomGamepadsAdapter;`, implements `IGamepads`

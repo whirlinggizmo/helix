@@ -427,6 +427,21 @@ class Runtime {
 		return gesturesService;
 	}
 
+	/** Gets the font rasterizer, made when first asked for. */
+	public static function fonts():helix.platform.IFontRasterizer {
+		if (fontRasterizer == null) {
+			#if js
+			fontRasterizer = new helix.platform.adapters.fontrasterizer.canvas.CanvasFontRasterizerAdapter();
+			#else
+			fontRasterizer = new helix.platform.adapters.fontrasterizer.stb.StbFontRasterizerAdapter();
+			#end
+			polled.push(fontRasterizer);
+		}
+		return fontRasterizer;
+	}
+
+	static var fontRasterizer:Null<helix.platform.IFontRasterizer> = null;
+
 	/** Gets the gamepads, made when first asked for, without a dead zone, as raylib's axes have none. */
 	public static function gamepads():Gamepads {
 		if (gamepadsService == null) {

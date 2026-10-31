@@ -275,6 +275,16 @@ premultiplied; `poll`; `dispose`. It reads **PNG, JPEG, BMP, TGA and GIF** (the 
 which stores pixels premultiplied, so a partly transparent pixel may come back a level or two from the file's value. Natively,
 `imagedecoder/stb` (`StbImageDecoderAdapter`): stb_image 2.30 (`platform/vendor/stb`) on a worker thread, exact, delivered at `poll`.
 
+`IFontRasterizer`: `rasterize(encoded, size, codepoints, sdf, rasterized(glyphs, ascent, descent, lineGap), failed(message))`; `poll`;
+`dispose`. It reads **TrueType and OpenType** fonts (not a collection's) and gives each codepoint's glyph (`RasterGlyph`): whether the font
+has it, its bitmap (8-bit coverage, or signed distances: 4 pixels of padding, 128 on the outline, 64 a pixel), its offset from the pen and
+the baseline, and its advance, with the font's ascent, descent and line gap. Sizes and lengths are stb_truetype's: the size is the pixel
+height, ascent minus descent. Natively, `fontrasterizer/stb` (`StbFontRasterizerAdapter`): stb_truetype 1.26 (`platform/vendor/stb`) on
+a worker thread. In a page, `fontrasterizer/canvas` (`CanvasFontRasterizerAdapter`): the font's tables read as stb_truetype reads them
+(which glyphs it has, the metrics, the advances, and a TrueType glyph's box), so glyphs are found, sized and placed the same, and the
+glyphs drawn by the browser with `fillText`, whose coverage may differ by a level or so at the edges; a CFF glyph's box is what the canvas
+measures, and signed distances come from a distance transform of the glyph drawn 8 times larger, within about a sixteenth of a pixel.
+
 SDL3_mixer 3.2.4 is vendored in `platform/vendor/sdl3_mixer` (its sources, pinned by a tree hash in `dependencies.json` that
 `tools/sdl3.py` checks) and compiled with the program by hxcpp, with its built-in decoders only (WAV, stb_vorbis, dr_mp3, dr_flac). A
 native program links no audio library but SDL3.

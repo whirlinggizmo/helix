@@ -61,6 +61,13 @@
     "sha256": "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3",
     "license": "public domain or MIT, at the end of the header"
   },
+  "stbTruetype": {
+    "version": "1.26",
+    "source": "https://github.com/nothings/stb (master, identical to the v1.26 header, which raylib 5.5 vendors too)",
+    "file": "platform/vendor/stb/stb_truetype.h",
+    "sha256": "ecd30b05e0dd4fea3a13c26810dd9e1992dc379049482c393d5a19e6b5090aab",
+    "license": "public domain or MIT, at the end of the header"
+  },
   "gpuShaders": {
     "purpose": "glslang and SPIRV-Cross, which helix-platform's shader compiler runs (glslang compiles GLSL to SPIR-V; SPIRV-Cross translates it to every other dialect and reflects it)",
     "pinned": "in platform/src/helix/platform/tools/ShaderTools.hx, so the compiler finds them wherever helix-platform is installed: glslang 16.6.0's official releases, SPIRV-Cross's vulkan-sdk-1.4.363.0 source"

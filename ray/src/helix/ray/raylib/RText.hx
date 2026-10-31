@@ -35,25 +35,7 @@ class RText {
 	static function DrawText(text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void {
 		if (fontSize < DefaultFont.HEIGHT)
 			fontSize = DefaultFont.HEIGHT;
-		var spacing = Std.int(fontSize / DefaultFont.HEIGHT),
-			scale = fontSize / DefaultFont.HEIGHT;
-		var font = defaultFont();
-		var x = 0., y = 0.;
-		for (code in new haxe.iterators.StringIteratorUnicode(text)) {
-			if (code == "\n".code) {
-				y += fontSize + 2;
-				x = 0;
-				continue;
-			}
-			var index = glyph(code);
-			var w = DefaultFont.WIDTHS[index];
-			if (code != " ".code && code != "\t".code) {
-				var gx = fontRecs[index * 2], gy = fontRecs[index * 2 + 1];
-				DrawTexturePro(font, new Rectangle(gx, gy, w, DefaultFont.HEIGHT), new Rectangle(posX + x, posY + y, w * scale, fontSize), new Vector2(), 0,
-					color);
-			}
-			x += w * scale + spacing;
-		}
+		DrawTextEx(GetFontDefault(), text, new Vector2(posX, posY), fontSize, Std.int(fontSize / DefaultFont.HEIGHT), color);
 	}
 
 	/** Returns the width text is drawn at by `DrawText`, its widest line's.
@@ -62,29 +44,423 @@ class RText {
 		@param fontSize  The height of a line, in pixels.
 		@return  The width, in pixels. */
 	static function MeasureText(text:String, fontSize:Int):Int {
-		if (text.length == 0)
-			return 0;
 		if (fontSize < DefaultFont.HEIGHT)
 			fontSize = DefaultFont.HEIGHT;
-		var spacing = Std.int(fontSize / DefaultFont.HEIGHT),
-			scale = fontSize / DefaultFont.HEIGHT;
-		var width = 0., widest = 0., count = 0, most = 0;
-		for (code in new haxe.iterators.StringIteratorUnicode(text)) {
+		return Std.int(MeasureTextEx(GetFontDefault(), text, fontSize, Std.int(fontSize / DefaultFont.HEIGHT)).x);
+	}
+
+	/** Draws text in a font.
+
+		@param font  The font; one with no texture draws as the default font.
+		@param text  The text; "\n" starts a line.
+		@param position  The top-left corner.
+		@param fontSize  The height of a line, in pixels; the font is scaled from its size to it.
+		@param spacing  The space between letters, in pixels.
+		@param tint  The color. */
+	static function DrawTextEx(font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void {
+		if (font.texture == null || font.texture.id == 0)
+			font = GetFontDefault();
+		var x = 0., y = 0., scale = fontSize / font.baseSize;
+		for (codepoint in new haxe.iterators.StringIteratorUnicode(text)) {
+			var index = GetGlyphIndex(font, codepoint);
+			if (codepoint == "\n".code) {
+				y += fontSize + textLineSpacing;
+				x = 0;
+				continue;
+			}
+			if (codepoint != " ".code && codepoint != "\t".code)
+				DrawTextCodepoint(font, codepoint, new Vector2(position.x + x, position.y + y), fontSize, tint);
+			var advance = font.glyphs[index].advanceX;
+			x += (advance == 0 ? font.recs[index].width : advance) * scale + spacing;
+		}
+	}
+
+	/** Draws text in a font, turned about a point.
+
+		@param font  The font.
+		@param text  The text.
+		@param position  Where the point goes.
+		@param origin  The point turned about, from the text's top-left corner.
+		@param rotation  The turn, in degrees, clockwise on the screen.
+		@param fontSize  The height of a line, in pixels.
+		@param spacing  The space between letters, in pixels.
+		@param tint  The color. */
+	static function DrawTextPro(font:Font, text:String, position:Vector2, origin:Vector2, rotation:Float, fontSize:Float, spacing:Float, tint:Color):Void {
+		var frame = Runtime.frame, view = frame.view;
+		var m = new Matrix3D().makeTranslation(-origin.x, -origin.y, 0);
+		m = new Matrix3D().compose(m, new Matrix3D().makeRotation(0, 0, 1, rotation * DEG2RAD));
+		m = new Matrix3D().compose(m, new Matrix3D().makeTranslation(position.x, position.y, 0));
+		frame.cut();
+		frame.view = new Matrix3D().compose(m, view);
+		DrawTextEx(font, text, new Vector2(), fontSize, spacing, tint);
+		frame.cut();
+		frame.view = view;
+	}
+
+	/** Draws one character in a font.
+
+		@param font  The font.
+		@param codepoint  The character.
+		@param position  The top-left corner of its line.
+		@param fontSize  The height of a line, in pixels.
+		@param tint  The color. */
+	static function DrawTextCodepoint(font:Font, codepoint:Int, position:Vector2, fontSize:Float, tint:Color):Void {
+		var index = GetGlyphIndex(font, codepoint);
+		var scale = fontSize / font.baseSize,
+			padding = font.glyphPadding,
+			glyph = font.glyphs[index],
+			rec = font.recs[index];
+		var dest = new Rectangle(position.x + glyph.offsetX * scale - padding * scale, position.y + glyph.offsetY * scale - padding * scale,
+			(rec.width + 2 * padding) * scale, (rec.height + 2 * padding) * scale);
+		var source = new Rectangle(rec.x - padding, rec.y - padding, rec.width + 2 * padding, rec.height + 2 * padding);
+		DrawTexturePro(font.texture, source, dest, new Vector2(), 0, tint);
+	}
+
+	/** Draws characters in a font, as `DrawTextEx` draws text.
+
+		@param font  The font.
+		@param codepoints  The characters.
+		@param codepointCount  How many of them.
+		@param position  The top-left corner.
+		@param fontSize  The height of a line, in pixels.
+		@param spacing  The space between letters, in pixels.
+		@param tint  The color. */
+	static function DrawTextCodepoints(font:Font, codepoints:Array<Int>, codepointCount:Int, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void {
+		var x = 0., y = 0., scale = fontSize / font.baseSize;
+		for (i in 0...codepointCount) {
+			var codepoint = codepoints[i],
+				index = GetGlyphIndex(font, codepoint);
+			if (codepoint == "\n".code) {
+				y += fontSize + textLineSpacing;
+				x = 0;
+				continue;
+			}
+			if (codepoint != " ".code && codepoint != "\t".code)
+				DrawTextCodepoint(font, codepoint, new Vector2(position.x + x, position.y + y), fontSize, tint);
+			var advance = font.glyphs[index].advanceX;
+			x += (advance == 0 ? font.recs[index].width : advance) * scale + spacing;
+		}
+	}
+
+	/** Sets the space between lines that "\n" adds to the size, 2 pixels until set.
+
+		@param spacing  The space, in pixels. */
+	static function SetTextLineSpacing(spacing:Int):Void {
+		textLineSpacing = spacing;
+	}
+
+	/** Returns the size text is drawn at by `DrawTextEx`: its widest line's width, and its lines' height.
+
+		@param font  The font.
+		@param text  The text.
+		@param fontSize  The height of a line, in pixels.
+		@param spacing  The space between letters, in pixels.
+		@return  The size, in pixels; 0 by 0 for no text or a font with no texture. */
+	static function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2 {
+		if (font.texture == null || font.texture.id == 0 || text == null || text.length == 0)
+			return new Vector2();
+		var width = 0., widest = 0., height = fontSize, count = 0, most = 0;
+		for (codepoint in new haxe.iterators.StringIteratorUnicode(text)) {
 			count++;
-			if (code == "\n".code) {
-				if (width > widest)
+			var index = GetGlyphIndex(font, codepoint);
+			if (codepoint != "\n".code) {
+				var glyph = font.glyphs[index];
+				width += glyph.advanceX > 0 ? glyph.advanceX : font.recs[index].width + glyph.offsetX;
+			} else {
+				if (widest < width)
 					widest = width;
-				width = 0;
 				count = 0;
-			} else
-				width += DefaultFont.WIDTHS[glyph(code)];
-			if (count > most)
+				width = 0;
+				height += fontSize + textLineSpacing;
+			}
+			if (most < count)
 				most = count;
 		}
-		if (width > widest)
+		if (widest < width)
 			widest = width;
-		return Std.int(widest * scale + (most - 1) * spacing);
+		return new Vector2(widest * fontSize / font.baseSize + (most - 1) * spacing, height);
 	}
+
+	/** Returns where a character is in a font's glyphs: its own, else the question mark's, else the first.
+
+		@param font  The font.
+		@param codepoint  The character.
+		@return  The index. */
+	static function GetGlyphIndex(font:Font, codepoint:Int):Int {
+		var fallback = 0;
+		for (i in 0...font.glyphCount) {
+			if (font.glyphs[i].value == "?".code)
+				fallback = i;
+			if (font.glyphs[i].value == codepoint)
+				return i;
+		}
+		return fallback;
+	}
+
+	/** Returns a character's glyph in a font, as `GetGlyphIndex` finds it.
+
+		@param font  The font.
+		@param codepoint  The character.
+		@return  The glyph. */
+	static function GetGlyphInfo(font:Font, codepoint:Int):GlyphInfo {
+		return font.glyphs[GetGlyphIndex(font, codepoint)];
+	}
+
+	/** Returns where a character's glyph is on its font's texture, as `GetGlyphIndex` finds it.
+
+		@param font  The font.
+		@param codepoint  The character.
+		@return  The rectangle, in texels. */
+	static function GetGlyphAtlasRec(font:Font, codepoint:Int):Rectangle {
+		return font.recs[GetGlyphIndex(font, codepoint)];
+	}
+
+	/** Returns raylib's default font: 224 glyphs, Latin-1 from the space, 10 pixels high, on a texture made at its first use.
+
+		@return  The font. */
+	static function GetFontDefault():Font {
+		if (fontDefault != null)
+			return fontDefault;
+		var font = new Font();
+		font.texture = defaultFont();
+		font.baseSize = DefaultFont.HEIGHT;
+		font.glyphCount = DefaultFont.WIDTHS.length;
+		for (i in 0...font.glyphCount) {
+			font.recs.push(new Rectangle(fontRecs[i * 2], fontRecs[i * 2 + 1], DefaultFont.WIDTHS[i], DefaultFont.HEIGHT));
+			var glyph = new GlyphInfo();
+			glyph.value = 32 + i;
+			glyph.image = new Image();
+			font.glyphs.push(glyph);
+		}
+		return fontDefault = font;
+	}
+
+	/** Returns whether a font holds glyphs: a size, glyphs, and their places on its texture.
+
+		@param font  The font.
+		@return  True when it does. */
+	static function IsFontValid(font:Font):Bool {
+		return font.baseSize > 0 && font.glyphCount > 0 && font.recs != null && font.glyphs != null;
+	}
+
+	/** Frees a font: its texture and its glyphs' images. The default font is never freed.
+
+		@param font  The font. */
+	static function UnloadFont(font:Font):Void {
+		if (font == fontDefault || font.texture == GetFontDefault().texture)
+			return;
+		UnloadFontData(font.glyphs, font.glyphCount);
+		UnloadTexture(font.texture);
+	}
+
+	/** Frees glyphs' images.
+
+		@param glyphs  The glyphs.
+		@param glyphCount  How many of them. */
+	static function UnloadFontData(glyphs:Array<GlyphInfo>, glyphCount:Int):Void {
+		for (i in 0...glyphCount)
+			if (glyphs[i].image != null)
+				UnloadImage(glyphs[i].image);
+	}
+
+	/** Packs glyphs' images into one image, a font's texture once loaded, as raylib does: its glyphs' places go into `glyphRecs`, the
+		image is white with the glyphs' coverage as alpha (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`), and its bottom-right 3 by 3 texels are
+		opaque white.
+
+		@param glyphs  The glyphs, their images 8-bit grayscale.
+		@param glyphRecs  Receives each glyph's place, replacing what it held.
+		@param glyphCount  How many glyphs; 0 for 95.
+		@param fontSize  The font's size, a row's height.
+		@param padding  The empty texels around each glyph.
+		@param packMethod  0 packs rows in order; 1 packs by height, as raylib's skyline packer.
+		@return  The image. */
+	static function GenImageFontAtlas(glyphs:Array<GlyphInfo>, glyphRecs:Array<Rectangle>, glyphCount:Int, fontSize:Int, padding:Int, packMethod:Int):Image {
+		var atlas = new Image();
+		if (glyphs == null) {
+			Runtime.log(LOG_WARNING, "FONT: Provided chars info not valid, returning empty image atlas");
+			return atlas;
+		}
+		glyphCount = glyphCount > 0 ? glyphCount : 95;
+		var total = 0;
+		for (i in 0...glyphCount)
+			total += glyphs[i].image.width + 2 * padding;
+		var padded = fontSize + 2 * padding;
+		var area = total * padded * 1.2,
+			size = Std.int(Math.pow(2, Math.ceil(Math.log(Math.sqrt(area)) / Math.log(2))));
+		atlas.width = size;
+		atlas.height = area < size * size / 2 ? Std.int(size / 2) : size;
+		var gray = haxe.io.Bytes.alloc(atlas.width * atlas.height);
+		var recs = [for (_ in 0...glyphCount) new Rectangle()];
+		inline function blit(glyph:GlyphInfo, left:Int, top:Int)
+			for (y in 0...glyph.image.height)
+				for (x in 0...glyph.image.width)
+					gray.set((top + y) * atlas.width + left + x, (glyph.image.data : haxe.io.Bytes).get(y * glyph.image.width + x));
+		if (packMethod == 0) {
+			var x = padding, y = padding;
+			for (i in 0...glyphCount) {
+				var glyph = glyphs[i];
+				if (x >= atlas.width - glyph.image.width - 2 * padding) {
+					x = padding;
+					y += fontSize + 2 * padding;
+					if (y > atlas.height - fontSize - padding) {
+						for (j in i + 1...glyphCount)
+							Runtime.log(LOG_WARNING, 'FONT: Failed to package character ($j)');
+						break;
+					}
+				}
+				blit(glyph, x, y);
+				recs[i] = new Rectangle(x, y, glyph.image.width, glyph.image.height);
+				x += glyph.image.width + 2 * padding;
+			}
+		} else if (packMethod == 1) {
+			var places = helix.ray.internal.RectPack.pack(atlas.width, atlas.height, [
+				for (i in 0...glyphCount) [glyphs[i].image.width + 2 * padding, glyphs[i].image.height + 2 * padding]
+			]);
+			for (i in 0...glyphCount) {
+				var glyph = glyphs[i], place = places[i];
+				recs[i] = new Rectangle(place[0] + padding, place[1] + padding, glyph.image.width, glyph.image.height);
+				if (place[2] == 1)
+					blit(glyph, place[0] + padding, place[1] + padding);
+				else
+					Runtime.log(LOG_WARNING, 'FONT: Failed to package character ($i)');
+			}
+		}
+		// raylib's white texels, for shapes drawn from the font's texture.
+		for (i in 0...3)
+			for (j in 0...3)
+				gray.set((atlas.height - 1 - i) * atlas.width + atlas.width - 1 - j, 255);
+		var pixels = haxe.io.Bytes.alloc(atlas.width * atlas.height * 2);
+		for (i in 0...atlas.width * atlas.height) {
+			pixels.set(i * 2, 255);
+			pixels.set(i * 2 + 1, gray.get(i));
+		}
+		atlas.data = pixels;
+		atlas.format = PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA;
+		atlas.mipmaps = 1;
+		glyphRecs.resize(0);
+		for (r in recs)
+			glyphRecs.push(r);
+		return atlas;
+	}
+
+	/** raylib's font load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontAsync` loads
+		it.
+
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("LoadFont: Synchronous loading is not supported. See LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void)")
+	static function LoadFont(fileName:String):Font {
+		throw "LoadFont is unimplemented";
+	}
+
+	/** raylib's font load at a size, which waits for the file. A page can't wait, so a call doesn't compile on any target:
+		`LoadFontExAsync` loads it.
+
+		@param fileName  The file.
+		@param fontSize  The size.
+		@param codepoints  The characters.
+		@param codepointCount  How many of them.
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("LoadFontEx: Synchronous loading is not supported. See LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)")
+	static function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font {
+		throw "LoadFontEx is unimplemented";
+	}
+
+	/** raylib's font load from a file's bytes, which rasterizes the glyphs before it returns. They are rasterized off the main thread
+		here, so a call doesn't compile on any target: `LoadFontFromMemoryAsync` loads it.
+
+		@param fileType  The file's extension.
+		@param fileData  The file's bytes.
+		@param dataSize  How many.
+		@param fontSize  The size.
+		@param codepoints  The characters.
+		@param codepointCount  How many of them.
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("LoadFontFromMemory: Fonts are rasterized asynchronously. See LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)")
+	static function LoadFontFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font {
+		throw "LoadFontFromMemory is unimplemented";
+	}
+
+	/** raylib's glyph rasterizing, which returns the glyphs. They are rasterized off the main thread here, so a call doesn't compile on
+		any target: `LoadFontDataAsync` rasterizes them.
+
+		@param fileData  The font file's bytes.
+		@param dataSize  How many.
+		@param fontSize  The size.
+		@param codepoints  The characters.
+		@param codepointCount  How many of them.
+		@param type  The glyphs' kind (`FONT_*`).
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("LoadFontData: Fonts are rasterized asynchronously. See LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void)")
+	static function LoadFontData(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int):Array<GlyphInfo> {
+		throw "LoadFontData is unimplemented";
+	}
+
+	// raylib's LoadFontData, from the platform's glyphs: a glyph the font lacks is empty, a space is a blank image as wide as its advance,
+	// and offsets are from the line's top.
+	static function fontData(raster:Array<helix.platform.RasterGlyph>, ascent:Float, fontSize:Int, type:Int):Array<GlyphInfo> {
+		return [
+			for (r in raster) {
+				var glyph = new GlyphInfo();
+				glyph.value = r.codepoint;
+				glyph.image = new Image();
+				if (r.found) {
+					glyph.offsetX = r.offsetX;
+					glyph.offsetY = r.offsetY;
+					if (r.width > 0 && r.height > 0 && !(type == FONT_SDF && r.codepoint == " ".code)) {
+						glyph.advanceX = Std.int(r.advance);
+						glyph.offsetY += Std.int(ascent);
+						glyph.image.data = r.pixels;
+						glyph.image.width = r.width;
+						glyph.image.height = r.height;
+						glyph.image.mipmaps = 1;
+						glyph.image.format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE;
+						if (type == FONT_BITMAP)
+							for (i in 0...r.pixels.length)
+								r.pixels.set(i, r.pixels.get(i) < 80 ? 0 : 255);
+					}
+					if (r.codepoint == " ".code) {
+						glyph.advanceX = Std.int(r.advance);
+						glyph.image.data = haxe.io.Bytes.alloc(glyph.advanceX * fontSize);
+						glyph.image.width = glyph.advanceX;
+						glyph.image.height = fontSize;
+						glyph.image.mipmaps = 1;
+						glyph.image.format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE;
+					}
+				}
+				glyph;
+			}
+		];
+	}
+
+	// raylib's LoadFontFromMemory, from the glyphs: packed with 4 texels of padding into the texture, each glyph's image its part of it.
+	static function fontOf(glyphs:Array<GlyphInfo>, fontSize:Int):Font {
+		var font = new Font();
+		font.baseSize = fontSize;
+		font.glyphCount = glyphs.length;
+		font.glyphs = glyphs;
+		font.glyphPadding = 4;
+		var atlas = GenImageFontAtlas(glyphs, font.recs, font.glyphCount, font.baseSize, font.glyphPadding, 0);
+		font.texture = LoadTextureFromImage(atlas);
+		for (i in 0...font.glyphCount) {
+			var rec = font.recs[i],
+				image = new Image(),
+				part = haxe.io.Bytes.alloc(Std.int(rec.width * rec.height) * 2);
+			for (y in 0...Std.int(rec.height))
+				part.blit(y * Std.int(rec.width) * 2, atlas.data, ((Std.int(rec.y) + y) * atlas.width + Std.int(rec.x)) * 2, Std.int(rec.width) * 2);
+			image.data = part;
+			image.width = Std.int(rec.width);
+			image.height = Std.int(rec.height);
+			image.mipmaps = 1;
+			image.format = PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA;
+			font.glyphs[i].image = image;
+		}
+		Runtime.log(LOG_INFO, 'FONT: Data loaded successfully (${font.baseSize} pixel size | ${font.glyphCount} glyphs)');
+		return font;
+	}
+
+	static var textLineSpacing = 2;
+	static var fontDefault:Null<Font> = null;
 
 	/** Draws the frames a second, as "60 FPS", in green.
 

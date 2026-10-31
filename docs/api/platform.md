@@ -507,6 +507,34 @@ function dispose():Void
 - `poll`: Delivers what finished on the platform's threads since the last poll. The program calls it once a frame.
 - `dispose`: Closes the file system. What is still running finishes without calling back.
 
+## IFontRasterizer
+
+*interface* in [`platform/src/helix/platform/IFontRasterizer.hx`](../../platform/src/helix/platform/IFontRasterizer.hx), `import helix.platform.IFontRasterizer;`, extends `IPollable`
+
+Defines rasterizing a TrueType or OpenType font's glyphs at a size, as 8-bit coverage or signed distances.
+
+Sizes and metrics are stb_truetype's: the size is the font's pixel height (its ascent minus its descent), and every length is in pixels at that size.
+
+```haxe
+function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, sdf:Bool, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
+function poll():Void
+function dispose():Void
+```
+
+- `rasterize`: Rasterizes glyphs, off the main thread where the platform can.
+  - `encoded`: The font file's bytes, TTF or OTF; the first font of a collection is not read.
+  - `size`: The pixel height.
+  - `codepoints`: The glyphs wanted.
+  - `sdf`: True for signed distances, false for coverage.
+  - `rasterized`: Receives a glyph for each codepoint, in their order, and the font's ascent, descent (below the baseline, negative) and line gap.
+  - `failed`: Receives why the font can't be read.
+
+  A signed distance glyph has 4 pixels of padding around its outline; a pixel on the outline is 128, and each pixel inside is 64 more, each outside 64 less, clamped to 0 and 255.
+
+  One of `rasterized` or `failed` is called once, on the main thread, never during this call.
+- `poll`: Delivers what finished on the platform's threads since the last poll. The program calls it once a frame.
+- `dispose`: Closes the rasterizer. A rasterize still running finishes without calling back.
+
 ## IGamepads
 
 *interface* in [`platform/src/helix/platform/IGamepads.hx`](../../platform/src/helix/platform/IGamepads.hx), `import helix.platform.IGamepads;`
@@ -1205,6 +1233,21 @@ function toString():String
 ```
 
 - `toString`: Returns the value's name as written (Triangles, Lines): what Std.string, interpolation and trace show.
+
+## RasterGlyph
+
+*typedef* in [`platform/src/helix/platform/RasterGlyph.hx`](../../platform/src/helix/platform/RasterGlyph.hx), `import helix.platform.RasterGlyph;`
+
+Represents one glyph from `IFontRasterizer.rasterize`: its bitmap, where it sits, and how far it moves the pen.
+
+- `width:Int`: The bitmap's width, in pixels; 0 for a glyph with no outline, such as a space.
+- `pixels:haxe.io.Bytes`: The bitmap, `width * height` bytes, rows top to bottom: coverage, 0 to 255, or signed distances.
+- `offsetY:Int`: The bitmap's top edge from the baseline, in pixels, down positive: above the baseline it is negative.
+- `offsetX:Int`: The bitmap's left edge from the pen, in pixels.
+- `height:Int`: The bitmap's height, in pixels.
+- `found:Bool`: Whether the font has a glyph for it. When it doesn't, the bitmap is empty and the advance 0.
+- `codepoint:Int`: The codepoint asked for.
+- `advance:Float`: How far the pen moves after the glyph, in pixels.
 
 ## Sampling
 

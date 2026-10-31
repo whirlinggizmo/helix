@@ -4,7 +4,6 @@ import helix.math.Matrix3D;
 import haxe.io.Bytes;
 import helix.platform.BlendMode;
 import helix.platform.IGraphics;
-import helix.platform.Sampling;
 
 /** Records a frame's drawing in the order it is asked for, and draws it at the frame's end: each render texture's pass, then the
 	screen's.
@@ -342,7 +341,6 @@ class Frame {
 		@param framebufferWidth  The screen's framebuffer width.
 		@param framebufferHeight  Its height. */
 	public function draw(framebufferWidth:Int, framebufferHeight:Int):Void {
-		var sampling = new Sampling(Nearest);
 		for (p in passes) {
 			if (p.target == 0)
 				graphics.beginFrame(framebufferWidth, framebufferHeight, p.clear);
@@ -363,7 +361,7 @@ class Frame {
 						clip(clipped, width / p.width, height / p.height, width, height);
 				}
 				var count = d.lines ? d.count - d.count % 2 : d.count - d.count % 3;
-				var samplings = [for (_ in d.textures) sampling];
+				var samplings = [for (t in d.textures) Textures.samplingOf(t)];
 				graphics.draw(d.pipeline, d.buffers == null ? [buffer] : d.buffers, d.indices, d.first, count, 0, 1, d.textures, samplings, d.uniforms);
 			}
 			if (p.target == 0) {
