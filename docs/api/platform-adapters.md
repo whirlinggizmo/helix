@@ -796,6 +796,7 @@ function getOption(name:String):Null<String>
 function getTime():Float
 function getProgramDirectory():String
 function getDataDirectory():String
+function openUrl(url:String):Bool
 function getCacheDirectory():String
 ```
 
@@ -818,6 +819,7 @@ function getOption(name:String):Null<String>
 function getTime():Float
 function getProgramDirectory():String
 function getDataDirectory():String
+function openUrl(url:String):Bool
 function getCacheDirectory():String
 ```
 

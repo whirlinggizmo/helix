@@ -3,6 +3,8 @@ package helix.platform.adapters.system.dom;
 import helix.platform.Device;
 import helix.platform.ISystem;
 import helix.platform.adapters.shared.ProgramName;
+import helix.platform.adapters.shared.SystemUrl;
+import helix.platform.adapters.shared.dom.DomActivation;
 import js.Browser;
 
 /** Provides `ISystem` in a browser page: the device as the browser describes it, and options from the URL's query.
@@ -67,6 +69,16 @@ class DomSystemAdapter implements ISystem {
 
 	public function getDataDirectory():String
 		return '$company/$product/data';
+
+	public function openUrl(url:String):Bool {
+		if (!SystemUrl.isOpenable(url))
+			return false;
+		// A new tab wants a fresh press, as fullscreen does.
+		DomActivation.ask(() -> {
+			Browser.window.open(url, "_blank", "noopener");
+		});
+		return true;
+	}
 
 	public function getCacheDirectory():String
 		return '$company/$product/cache';

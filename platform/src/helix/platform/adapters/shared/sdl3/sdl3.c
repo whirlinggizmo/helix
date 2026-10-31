@@ -76,6 +76,7 @@ int helix_sdl3_focused(void){return focused;}
 void helix_sdl3_set_focused(int value){focused=value!=0;}
 const char *helix_sdl3_platform(void){return SDL_GetPlatform();}
 const char *helix_sdl3_getenv(const char *name){return SDL_getenv(name);}
+int helix_sdl3_open_url(const char *url){return SDL_OpenURL(url);}
 const char *helix_sdl3_base_path(void){return SDL_GetBasePath();}
 double helix_sdl3_time(void){return (double)SDL_GetTicksNS()/1e9;}
 

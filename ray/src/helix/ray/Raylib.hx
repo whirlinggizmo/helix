@@ -1221,6 +1221,13 @@ class Raylib {
 	public static inline function GetMonitorRefreshRate(monitor:Int):Int
 		return RCore.GetMonitorRefreshRate(monitor);
 
+	/** Opens a URL in the system's browser; in a page, a new tab, at the next press when there is no fresh one. As raylib's, a URL with
+		`'` is refused as possibly malicious; helix-ray also opens only http, https and mailto URLs.
+
+		@param url  The URL. */
+	public static inline function OpenURL(url:String):Void
+		RCore.OpenURL(url);
+
 	/** Puts text on the system's clipboard. A page writes it only while it has the keyboard, soon after a press; a refusal is logged.
 
 		@param text  The text. */
@@ -4867,10 +4874,6 @@ class Raylib {
 	/** raylib's `UnloadRandomSequence` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload random values sequence. */
 	public static macro function UnloadRandomSequence(sequence:ExprOf<Array<Int>>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("UnloadRandomSequence: Not implemented", macro {});
-
-	/** raylib's `OpenURL` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Open URL with default system browser (if available). */
-	public static macro function OpenURL(url:ExprOf<String>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("OpenURL: Not implemented", macro {});
 
 	/** raylib's `MemAlloc` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Internal memory allocator. */
 	public static macro function MemAlloc(size:ExprOf<Int>):ExprOf<Dynamic>

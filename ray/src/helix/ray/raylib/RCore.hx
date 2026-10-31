@@ -197,6 +197,17 @@ class RCore {
 		return Math.round(Runtime.window.getMonitorRefreshRate(monitor));
 	}
 
+	/** Opens a URL in the system's browser; in a page, a new tab, at the next press when there is no fresh one. As raylib's, a URL with
+		`'` is refused as possibly malicious; helix-ray also opens only http, https and mailto URLs.
+
+		@param url  The URL. */
+	static function OpenURL(url:String):Void {
+		if (url.indexOf("'") >= 0)
+			Runtime.log(LOG_WARNING, "SYSTEM: Provided URL could be potentially malicious, avoid [\'] character");
+		else if (!Runtime.system.openUrl(url))
+			Runtime.log(LOG_WARNING, 'SYSTEM: Failed to open URL: $url');
+	}
+
 	/** Puts text on the system's clipboard. A page writes it only while it has the keyboard, soon after a press; a refusal is logged.
 
 		@param text  The text. */

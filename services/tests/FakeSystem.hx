@@ -38,4 +38,13 @@ class FakeSystem implements ISystem {
 
 	public function getCacheDirectory():String
 		return '$company/$product/cache';
+
+	/** Gets the URLs `openUrl` was asked to open, in order. */
+	public final opened:Array<String> = [];
+
+	/** Records the URL as opened. */
+	public function openUrl(url:String):Bool {
+		opened.push(url);
+		return true;
+	}
 }

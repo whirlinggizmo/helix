@@ -26,6 +26,7 @@ package helix.platform.adapters.shared.sdl3;
 extern class Sdl3Bridge {
 	@:native("helix_sdl3_open") static function open(sampleCount:Int, withGl:Int, vsync:Int):Int;
 	@:native("helix_sdl3_close") static function close():Void;
+	@:native("helix_sdl3_open_url") static function openUrl(url:cpp.ConstCharStar):Int;
 	@:native("helix_sdl3_is_open") static function isOpen():Int;
 	@:native("helix_sdl3_focused") static function focused():Int;
 	@:native("helix_sdl3_set_focused") static function setFocused(focused:Int):Void;

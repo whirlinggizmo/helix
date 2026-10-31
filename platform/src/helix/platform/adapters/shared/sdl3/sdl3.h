@@ -13,6 +13,7 @@ int helix_sdl3_focused(void);
 void helix_sdl3_set_focused(int focused);
 const char *helix_sdl3_platform(void);
 const char *helix_sdl3_getenv(const char *name);
+int helix_sdl3_open_url(const char *url);
 const char *helix_sdl3_base_path(void);
 double helix_sdl3_time(void);
 const char *helix_sdl3_os_directory(int which);

@@ -390,6 +390,7 @@ interface ISystem {
 	function getProgramDirectory():String;    // the files shipped with the program; "./" in a page, a URL
 	function getDataDirectory():String;     // where lasting files go; a database's name in a page
 	function getCacheDirectory():String;    // where what can be fetched again goes; a database's name in a page
+	function openUrl(url:String):Bool;      // http, https or mailto in the system's browser; a page's new tab at a fresh press
 }
 ```
 

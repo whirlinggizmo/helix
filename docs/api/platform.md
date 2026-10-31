@@ -1010,6 +1010,7 @@ function getTime():Float
 function getProgramDirectory():String
 function getDataDirectory():String
 function getCacheDirectory():String
+function openUrl(url:String):Bool
 ```
 
 - `company`: Gets the company that makes the program: the `helix-company` define, or "DefaultCompany".
@@ -1042,6 +1043,9 @@ function getCacheDirectory():String
   Natively it is the user's cache directory, then the company and the product (the `helix-company` and `helix-product` defines). The user's cache directory is `$XDG_CACHE_HOME` or `~/.cache` on Linux, and `~/Library/Caches` on macOS. On Windows it is `%LOCALAPPDATA%`, then the company, the product and `cache`. The directory may not exist yet.
 
   In a page it is the name of the database where the browser keeps the program's files, "company/product/cache".
+- `openUrl`: Opens a URL in the system's browser. In a page it opens in a new tab, which the browser allows only soon after a key press, click or tap; without one, it opens at the player's next.
+  - `url`: The URL: http, https or mailto.
+  - returns: False, opening nothing, for a URL of another scheme.
 
 ## ITilt
 

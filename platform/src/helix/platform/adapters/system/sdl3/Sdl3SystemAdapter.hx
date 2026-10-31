@@ -4,6 +4,7 @@ import haxe.io.Path;
 import helix.platform.Device;
 import helix.platform.ISystem;
 import helix.platform.adapters.shared.ProgramName;
+import helix.platform.adapters.shared.SystemUrl;
 import helix.platform.adapters.shared.sdl3.Sdl3Bridge;
 
 /** Provides `ISystem` on SDL3, natively: the platform SDL names, options from HELIX_ environment variables, SDL's monotonic clock, the
@@ -63,6 +64,9 @@ class Sdl3SystemAdapter implements ISystem {
 			return Path.join([directory("HOME", HOME), "Library/Application Support", company, product]);
 		return Path.join([xdg("XDG_DATA_HOME", ".local/share"), company, product]);
 	}
+
+	public function openUrl(url:String):Bool
+		return SystemUrl.isOpenable(url) && Sdl3Bridge.openUrl(url) != 0;
 
 	public function getCacheDirectory():String {
 		var system = Sys.systemName();

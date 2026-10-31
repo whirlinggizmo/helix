@@ -59,4 +59,11 @@ interface ISystem {
 		@throws String  Natively, when the environment variable the directory comes from is set to a path that isn't absolute, or is unset
 			and the OS has no such directory. */
 	function getCacheDirectory():String;
+
+	/** Opens a URL in the system's browser. In a page it opens in a new tab, which the browser allows only soon after a key press, click
+		or tap; without one, it opens at the player's next.
+
+		@param url  The URL: http, https or mailto.
+		@return  False, opening nothing, for a URL of another scheme. */
+	function openUrl(url:String):Bool;
 }
