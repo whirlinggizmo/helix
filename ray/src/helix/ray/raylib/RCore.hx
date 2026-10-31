@@ -99,7 +99,128 @@ class RCore {
 
 		@return  True while it is. */
 	static function IsWindowMinimized():Bool {
-		return Runtime.hidden;
+		return Runtime.window.minimized || Runtime.hidden;
+	}
+
+	/** Returns whether the window is maximized. It is false in a page.
+
+		@return  True while it is. */
+	static function IsWindowMaximized():Bool {
+		return Runtime.window.maximized;
+	}
+
+	/** Asks for the window maximized. A page's canvas is the page's size, so nothing changes there. */
+	static function MaximizeWindow():Void {
+		Runtime.window.requestMaximized(true);
+	}
+
+	/** Asks for the window minimized. Nothing changes in a page. */
+	static function MinimizeWindow():Void {
+		Runtime.window.requestMinimized(true);
+	}
+
+	/** Asks for the window back to its size from maximized or minimized. */
+	static function RestoreWindow():Void {
+		if (Runtime.window.minimized)
+			Runtime.window.requestMinimized(false);
+		else
+			Runtime.window.requestMaximized(false);
+	}
+
+	/** Asks for the window brought to the front with the keyboard. A window manager may only flash it; in a page the canvas takes the
+		keyboard. */
+	static function SetWindowFocused():Void {
+		Runtime.window.requestFocus();
+	}
+
+	/** Sets the window's icon; in a page, the page's icon. As raylib's, the image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+
+		@param image  The icon. */
+	static function SetWindowIcon(image:Image):Void {
+		if (image.data == null)
+			return;
+		if (image.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8A8) {
+			Runtime.log(LOG_WARNING, "GLFW: Window icon image must be in R8G8B8A8 pixel format");
+			return;
+		}
+		Runtime.window.setIcon(image.width, image.height, image.data);
+	}
+
+	/** Sets the window's icon from several sizes: the largest is used, as the desktop scales it. Each must be
+		`PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+
+		@param images  The icons.
+		@param count  How many of them. */
+	static function SetWindowIcons(images:Array<Image>, count:Int):Void {
+		var largest:Null<Image> = null;
+		for (i in 0...count) {
+			var image = images[i];
+			if (image.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8A8) {
+				Runtime.log(LOG_WARNING, "GLFW: Window icon image must be in R8G8B8A8 pixel format");
+				return;
+			}
+			if (image.data != null && (largest == null || image.width * image.height > largest.width * largest.height))
+				largest = image;
+		}
+		if (largest != null)
+			Runtime.window.setIcon(largest.width, largest.height, largest.data);
+	}
+
+	/** Asks for the window see-through; in a page the canvas fades. A desktop without a compositor leaves it opaque.
+
+		@param opacity  From 0 (clear) to 1 (opaque). */
+	static function SetWindowOpacity(opacity:Float):Void {
+		Runtime.window.requestOpacity(opacity);
+	}
+
+	/** Sets the smallest size the player can make the window. A page's canvas is the page's size, so nothing changes there.
+
+		@param width  The width, in the screen's pixels.
+		@param height  The height. */
+	static function SetWindowMinSize(width:Int, height:Int):Void {
+		Runtime.window.requestMinimumSize(width, height);
+	}
+
+	/** Sets the largest size the player can make the window. Nothing changes in a page.
+
+		@param width  The width, in the screen's pixels.
+		@param height  The height. */
+	static function SetWindowMaxSize(width:Int, height:Int):Void {
+		Runtime.window.requestMaximumSize(width, height);
+	}
+
+	/** Returns how many times a second a monitor shows a new picture.
+
+		@param monitor  The monitor.
+		@return  The refresh rate in hertz, or 0 in a page, which can't tell. */
+	static function GetMonitorRefreshRate(monitor:Int):Int {
+		return Math.round(Runtime.window.getMonitorRefreshRate(monitor));
+	}
+
+	/** raylib's handle of the native window. helix-ray's window has none to give, so a call doesn't compile.
+
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("GetWindowHandle: The native window's handle is the platform's own and is not given out.")
+	static function GetWindowHandle():Dynamic {
+		throw "GetWindowHandle is unimplemented";
+	}
+
+	/** raylib's physical width of a monitor. SDL3 doesn't tell it, so a call doesn't compile.
+
+		@param monitor  The monitor.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("GetMonitorPhysicalWidth: A monitor's physical size is not known to helix-ray's platform.")
+	static function GetMonitorPhysicalWidth(monitor:Int):Int {
+		throw "GetMonitorPhysicalWidth is unimplemented";
+	}
+
+	/** raylib's physical height of a monitor. SDL3 doesn't tell it, so a call doesn't compile.
+
+		@param monitor  The monitor.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("GetMonitorPhysicalHeight: A monitor's physical size is not known to helix-ray's platform.")
+	static function GetMonitorPhysicalHeight(monitor:Int):Int {
+		throw "GetMonitorPhysicalHeight is unimplemented";
 	}
 
 	/** Returns whether the window has the keyboard.

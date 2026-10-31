@@ -1,5 +1,7 @@
 package helix.platform;
 
+import haxe.io.Bytes;
+
 /** Defines the window a program draws in, with its title, size, position, fullscreen, visibility and monitors.
 
 	In a page the window is the page. Its title is the document's and its size is the viewport's, while fullscreen and visibility apply to
@@ -109,6 +111,65 @@ interface IWindow {
 		@return  True, because it always asks. */
 	function requestVisible(visible:Bool):Bool;
 
+	/** Gets a value indicating whether the window fills the desktop as the window manager maximizes it. It is false in a page. */
+	var maximized(get, never):Bool;
+
+	/** Asks for the window maximized, or back to its size from maximized or minimized.
+
+		`maximized` reflects the result once the request completes.
+		@param maximized  True to maximize it, false to restore it.
+		@return  False, asking nothing, in a page, whose canvas the page sizes. */
+	function requestMaximized(maximized:Bool):Bool;
+
+	/** Gets a value indicating whether the window is minimized. It is false in a page; a tab in the background is `Hidden`. */
+	var minimized(get, never):Bool;
+
+	/** Asks for the window minimized, or back from minimized.
+
+		`minimized` reflects the result once the request completes.
+		@param minimized  True to minimize it, false to restore it.
+		@return  False, asking nothing, in a page. */
+	function requestMinimized(minimized:Bool):Bool;
+
+	/** Asks for the window brought to the front with the keyboard. A window manager may only flash it. In a page the canvas takes the
+		keyboard.
+
+		`focused` reflects the result once the request completes.
+		@return  True, because it always asks. */
+	function requestFocus():Bool;
+
+	/** Sets the window's icon, which the desktop shows in its title bar and task bar. In a page it is the page's icon.
+
+		@param width  The icon's width, in pixels.
+		@param height  The icon's height.
+		@param pixels  The icon's pixels: `width * height * 4` bytes of RGBA8, rows top first.
+		@throws String  When the size isn't positive or the pixels are fewer than it needs. */
+	function setIcon(width:Int, height:Int, pixels:Bytes):Void;
+
+	/** Gets how opaque the window is, from 0 (clear) to 1. */
+	var opacity(get, never):Float;
+
+	/** Asks for the window to be see-through. In a page it fades the canvas.
+
+		`opacity` reflects the result once the request completes.
+		@param opacity  From 0 (clear) to 1 (opaque).
+		@return  False, asking nothing, where the desktop can't (a desktop without a compositor). */
+	function requestOpacity(opacity:Float):Bool;
+
+	/** Asks for the smallest size the player can make the window; 0 by 0 for none.
+
+		@param width  The width, in logical pixels.
+		@param height  The height.
+		@return  False, asking nothing, in a page. */
+	function requestMinimumSize(width:Int, height:Int):Bool;
+
+	/** Asks for the largest size the player can make the window; 0 by 0 for none.
+
+		@param width  The width, in logical pixels.
+		@param height  The height.
+		@return  False, asking nothing, in a page. */
+	function requestMaximumSize(width:Int, height:Int):Bool;
+
 	/** Gets the number of monitors, at least 1. A page sees one screen. */
 	var monitorCount(get, never):Int;
 
@@ -151,6 +212,12 @@ interface IWindow {
 		@param index  The monitor.
 		@return  The height, in logical pixels, or 0 for an index out of range. */
 	function getMonitorHeight(index:Int):Int;
+
+	/** Returns how many times a second a monitor shows a new picture.
+
+		@param index  The monitor, 0 to `monitorCount` - 1.
+		@return  The refresh rate in hertz, or 0 where it isn't known, as in a page. */
+	function getMonitorRefreshRate(index:Int):Float;
 
 	/** Returns whether `close` removes the window.
 

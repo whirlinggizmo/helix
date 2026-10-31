@@ -1059,6 +1059,16 @@ var orientation(get, never):Orientation
 function requestOrientation(orientation:Orientation, ?done:() -> Void, ?failed:String -> Void):Bool
 var visible(get, never):Bool
 function requestVisible(visible:Bool):Bool
+var maximized(get, never):Bool
+function requestMaximized(maximized:Bool):Bool
+var minimized(get, never):Bool
+function requestMinimized(minimized:Bool):Bool
+function requestFocus():Bool
+function setIcon(width:Int, height:Int, pixels:haxe.io.Bytes):Void
+var opacity(get, never):Float
+function requestOpacity(opacity:Float):Bool
+function requestMinimumSize(width:Int, height:Int):Bool
+function requestMaximumSize(width:Int, height:Int):Bool
 var monitorCount(get, never):Int
 var monitorIndex(get, never):Int
 function requestMonitorIndex(index:Int):Bool
@@ -1067,6 +1077,7 @@ function getMonitorX(index:Int):Int
 function getMonitorY(index:Int):Int
 function getMonitorWidth(index:Int):Int
 function getMonitorHeight(index:Int):Int
+function getMonitorRefreshRate(index:Int):Float
 function canClose():Bool
 function close():Void
 var onClose:Null<() -> Void>
@@ -1122,6 +1133,41 @@ var onClose:Null<() -> Void>
   - returns: True, because it always asks.
 
   `visible` reflects the result once the request completes: natively, once the window manager has shown it.
+- `maximized`: Gets a value indicating whether the window fills the desktop as the window manager maximizes it. It is false in a page.
+- `requestMaximized`: Asks for the window maximized, or back to its size from maximized or minimized.
+  - `maximized`: True to maximize it, false to restore it.
+  - returns: False, asking nothing, in a page, whose canvas the page sizes.
+
+  `maximized` reflects the result once the request completes.
+- `minimized`: Gets a value indicating whether the window is minimized. It is false in a page; a tab in the background is `Hidden`.
+- `requestMinimized`: Asks for the window minimized, or back from minimized.
+  - `minimized`: True to minimize it, false to restore it.
+  - returns: False, asking nothing, in a page.
+
+  `minimized` reflects the result once the request completes.
+- `requestFocus`: Asks for the window brought to the front with the keyboard. A window manager may only flash it. In a page the canvas takes the keyboard.
+  - returns: True, because it always asks.
+
+  `focused` reflects the result once the request completes.
+- `setIcon`: Sets the window's icon, which the desktop shows in its title bar and task bar. In a page it is the page's icon.
+  - `width`: The icon's width, in pixels.
+  - `height`: The icon's height.
+  - `pixels`: The icon's pixels: `width * height * 4` bytes of RGBA8, rows top first.
+  - throws `String`: When the size isn't positive or the pixels are fewer than it needs.
+- `opacity`: Gets how opaque the window is, from 0 (clear) to 1.
+- `requestOpacity`: Asks for the window to be see-through. In a page it fades the canvas.
+  - `opacity`: From 0 (clear) to 1 (opaque).
+  - returns: False, asking nothing, where the desktop can't (a desktop without a compositor).
+
+  `opacity` reflects the result once the request completes.
+- `requestMinimumSize`: Asks for the smallest size the player can make the window; 0 by 0 for none.
+  - `width`: The width, in logical pixels.
+  - `height`: The height.
+  - returns: False, asking nothing, in a page.
+- `requestMaximumSize`: Asks for the largest size the player can make the window; 0 by 0 for none.
+  - `width`: The width, in logical pixels.
+  - `height`: The height.
+  - returns: False, asking nothing, in a page.
 - `monitorCount`: Gets the number of monitors, at least 1. A page sees one screen.
 - `monitorIndex`: Gets the index of the monitor holding the window.
 - `requestMonitorIndex`: Asks for the window on another monitor.
@@ -1144,6 +1190,9 @@ var onClose:Null<() -> Void>
 - `getMonitorHeight`: Returns a monitor's height.
   - `index`: The monitor.
   - returns: The height, in logical pixels, or 0 for an index out of range.
+- `getMonitorRefreshRate`: Returns how many times a second a monitor shows a new picture.
+  - `index`: The monitor, 0 to `monitorCount` - 1.
+  - returns: The refresh rate in hertz, or 0 where it isn't known, as in a page.
 - `canClose`: Returns whether `close` removes the window.
   - returns: True natively. False in a page, which a script can't close.
 

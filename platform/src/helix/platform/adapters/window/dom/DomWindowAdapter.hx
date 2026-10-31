@@ -1,5 +1,6 @@
 package helix.platform.adapters.window.dom;
 
+import haxe.io.Bytes;
 import helix.platform.IWindow;
 import helix.platform.Orientation;
 import helix.platform.adapters.shared.dom.DomActivation;
@@ -169,6 +170,69 @@ class DomWindowAdapter implements IWindow {
 			ask();
 		return true;
 	}
+
+	public var maximized(get, never):Bool;
+
+	function get_maximized():Bool
+		return false;
+
+	public function requestMaximized(maximized:Bool):Bool
+		return false;
+
+	public var minimized(get, never):Bool;
+
+	function get_minimized():Bool
+		return false;
+
+	public function requestMinimized(minimized:Bool):Bool
+		return false;
+
+	public function requestFocus():Bool {
+		Browser.window.focus();
+		canvas.focus();
+		return true;
+	}
+
+	// The page's icon: a link the adapter adds, its picture drawn on a canvas of the icon's size.
+	var iconLink:Null<js.html.LinkElement> = null;
+
+	public function setIcon(width:Int, height:Int, pixels:Bytes):Void {
+		if (width <= 0 || height <= 0 || pixels.length < width * height * 4)
+			throw "The icon's size isn't positive or its pixels are fewer than it needs";
+		var picture = Browser.document.createCanvasElement();
+		picture.width = width;
+		picture.height = height;
+		var context = picture.getContext2d();
+		var data = context.createImageData(width, height);
+		data.data.set(new js.lib.Uint8ClampedArray(pixels.getData(), 0, width * height * 4));
+		context.putImageData(data, 0, 0);
+		// The page's own icons give way to it, as the page's newest icon is the one shown.
+		if (iconLink == null) {
+			iconLink = Browser.document.createLinkElement();
+			iconLink.rel = "icon";
+			Browser.document.head.appendChild(iconLink);
+		}
+		iconLink.href = picture.toDataURL("image/png");
+	}
+
+	public var opacity(get, never):Float;
+
+	function get_opacity():Float
+		return canvas.style.opacity == "" ? 1 : Std.parseFloat(canvas.style.opacity);
+
+	public function requestOpacity(opacity:Float):Bool {
+		canvas.style.opacity = Std.string(opacity < 0 ? 0 : opacity > 1 ? 1 : opacity);
+		return true;
+	}
+
+	public function requestMinimumSize(width:Int, height:Int):Bool
+		return false;
+
+	public function requestMaximumSize(width:Int, height:Int):Bool
+		return false;
+
+	public function getMonitorRefreshRate(index:Int):Float
+		return 0;
 
 	public var visible(get, never):Bool;
 

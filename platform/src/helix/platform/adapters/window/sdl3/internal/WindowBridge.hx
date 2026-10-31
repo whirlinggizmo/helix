@@ -30,6 +30,17 @@ extern class WindowBridge {
 	@:native("helix_window_set_position") static function setPosition(x:Int, y:Int):Void;
 	@:native("helix_window_fullscreen") static function fullscreen():Int;
 	@:native("helix_window_set_fullscreen") static function setFullscreen(on:Int):Void;
+	@:native("helix_window_maximized") static function maximized():Int;
+	@:native("helix_window_minimized") static function minimized():Int;
+	@:native("helix_window_set_maximized") static function setMaximized(on:Int):Void;
+	@:native("helix_window_set_minimized") static function setMinimized(on:Int):Void;
+	@:native("helix_window_raise") static function raise():Void;
+	@:native("helix_window_set_icon") static function setIcon(width:Int, height:Int, rgba:cpp.RawConstPointer<cpp.Void>):Void;
+	@:native("helix_window_opacity") static function opacity():cpp.Float32;
+	@:native("helix_window_set_opacity") static function setOpacity(opacity:cpp.Float32):Int;
+	@:native("helix_window_set_minimum_size") static function setMinimumSize(width:Int, height:Int):Int;
+	@:native("helix_window_set_maximum_size") static function setMaximumSize(width:Int, height:Int):Int;
+	@:native("helix_display_refresh_rate") static function displayRefreshRate(index:Int):cpp.Float32;
 	@:native("helix_window_visible") static function visible():Int;
 	@:native("helix_window_set_visible") static function setVisible(on:Int):Void;
 	@:native("helix_display_count") static function displayCount():Int;

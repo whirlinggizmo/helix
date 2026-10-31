@@ -1157,6 +1157,70 @@ class Raylib {
 	public static inline function IsWindowMinimized():Bool
 		return RCore.IsWindowMinimized();
 
+	/** Returns whether the window is maximized. It is false in a page.
+
+		@return  True while it is. */
+	public static inline function IsWindowMaximized():Bool
+		return RCore.IsWindowMaximized();
+
+	/** Asks for the window maximized. A page's canvas is the page's size, so nothing changes there. */
+	public static inline function MaximizeWindow():Void
+		RCore.MaximizeWindow();
+
+	/** Asks for the window minimized. Nothing changes in a page. */
+	public static inline function MinimizeWindow():Void
+		RCore.MinimizeWindow();
+
+	/** Asks for the window back to its size from maximized or minimized. */
+	public static inline function RestoreWindow():Void
+		RCore.RestoreWindow();
+
+	/** Asks for the window brought to the front with the keyboard. A window manager may only flash it; in a page the canvas takes the
+		keyboard. */
+	public static inline function SetWindowFocused():Void
+		RCore.SetWindowFocused();
+
+	/** Sets the window's icon; in a page, the page's icon. As raylib's, the image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+
+		@param image  The icon. */
+	public static inline function SetWindowIcon(image:Image):Void
+		RCore.SetWindowIcon(image);
+
+	/** Sets the window's icon from several sizes: the largest is used, as the desktop scales it. Each must be
+		`PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+
+		@param images  The icons.
+		@param count  How many of them. */
+	public static inline function SetWindowIcons(images:Array<Image>, count:Int):Void
+		RCore.SetWindowIcons(images, count);
+
+	/** Asks for the window see-through; in a page the canvas fades. A desktop without a compositor leaves it opaque.
+
+		@param opacity  From 0 (clear) to 1 (opaque). */
+	public static inline function SetWindowOpacity(opacity:Float):Void
+		RCore.SetWindowOpacity(opacity);
+
+	/** Sets the smallest size the player can make the window. A page's canvas is the page's size, so nothing changes there.
+
+		@param width  The width, in the screen's pixels.
+		@param height  The height. */
+	public static inline function SetWindowMinSize(width:Int, height:Int):Void
+		RCore.SetWindowMinSize(width, height);
+
+	/** Sets the largest size the player can make the window. Nothing changes in a page.
+
+		@param width  The width, in the screen's pixels.
+		@param height  The height. */
+	public static inline function SetWindowMaxSize(width:Int, height:Int):Void
+		RCore.SetWindowMaxSize(width, height);
+
+	/** Returns how many times a second a monitor shows a new picture.
+
+		@param monitor  The monitor.
+		@return  The refresh rate in hertz, or 0 in a page, which can't tell. */
+	public static inline function GetMonitorRefreshRate(monitor:Int):Int
+		return RCore.GetMonitorRefreshRate(monitor);
+
 	/** Returns whether the window has the keyboard.
 
 		@return  True while it has. */
@@ -4611,6 +4675,21 @@ class Raylib {
 
 	// ---- raylib.h's functions helix-ray won't have: each refuses to compile, saying why and what to use ----
 
+	/** raylib's handle of the native window. helix-ray's window has none to give, so a call doesn't compile. */
+	public static macro function GetWindowHandle():ExprOf<Dynamic>
+		return helix.platform.macros.Build.unsupported("GetWindowHandle: The native window's handle is the platform's own and is not given out.",
+			macro(null : Dynamic));
+
+	/** raylib's physical width of a monitor. SDL3 doesn't tell it, so a call doesn't compile. */
+	public static macro function GetMonitorPhysicalWidth(monitor:ExprOf<Int>):ExprOf<Int>
+		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalWidth: A monitor's physical size is not known to helix-ray's platform.",
+			macro(0 : Int));
+
+	/** raylib's physical height of a monitor. SDL3 doesn't tell it, so a call doesn't compile. */
+	public static macro function GetMonitorPhysicalHeight(monitor:ExprOf<Int>):ExprOf<Int>
+		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalHeight: A monitor's physical size is not known to helix-ray's platform.",
+			macro(0 : Int));
+
 	/** raylib's check for a file, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `FileExistsAsync` answers it. */
 	public static macro function FileExists(fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("FileExists: Synchronous file access is not supported. See FileExistsAsync(fileName:String, answer:Bool->Void)",
@@ -4699,62 +4778,6 @@ class Raylib {
 			macro(null : helix.ray.Sound));
 
 	// ---- raylib.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
-
-	/** raylib's `IsWindowMaximized` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if window is currently maximized. */
-	public static macro function IsWindowMaximized():ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsWindowMaximized: Not implemented", macro(false : Bool));
-
-	/** raylib's `MaximizeWindow` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window state: maximized, if resizable. */
-	public static macro function MaximizeWindow():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("MaximizeWindow: Not implemented", macro {});
-
-	/** raylib's `MinimizeWindow` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window state: minimized, if resizable. */
-	public static macro function MinimizeWindow():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("MinimizeWindow: Not implemented", macro {});
-
-	/** raylib's `RestoreWindow` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window state: not minimized/maximized. */
-	public static macro function RestoreWindow():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("RestoreWindow: Not implemented", macro {});
-
-	/** raylib's `SetWindowIcon` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set icon for window (single image, RGBA 32bit). */
-	public static macro function SetWindowIcon(image:ExprOf<Image>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetWindowIcon: Not implemented", macro {});
-
-	/** raylib's `SetWindowIcons` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set icon for window (multiple images, RGBA 32bit). */
-	public static macro function SetWindowIcons(images:ExprOf<Array<Image>>, count:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetWindowIcons: Not implemented", macro {});
-
-	/** raylib's `SetWindowMinSize` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window minimum dimensions (for FLAG_WINDOW_RESIZABLE). */
-	public static macro function SetWindowMinSize(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetWindowMinSize: Not implemented", macro {});
-
-	/** raylib's `SetWindowMaxSize` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window maximum dimensions (for FLAG_WINDOW_RESIZABLE). */
-	public static macro function SetWindowMaxSize(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetWindowMaxSize: Not implemented", macro {});
-
-	/** raylib's `SetWindowOpacity` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window opacity [0.0f..1.0f]. */
-	public static macro function SetWindowOpacity(opacity:ExprOf<Float>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetWindowOpacity: Not implemented", macro {});
-
-	/** raylib's `SetWindowFocused` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window focused. */
-	public static macro function SetWindowFocused():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetWindowFocused: Not implemented", macro {});
-
-	/** raylib's `GetWindowHandle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get native window handle. */
-	public static macro function GetWindowHandle():ExprOf<Dynamic>
-		return helix.platform.macros.Build.unimplemented("GetWindowHandle: Not implemented", macro(null : Dynamic));
-
-	/** raylib's `GetMonitorPhysicalWidth` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get specified monitor physical width in millimetres. */
-	public static macro function GetMonitorPhysicalWidth(monitor:ExprOf<Int>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetMonitorPhysicalWidth: Not implemented", macro(0 : Int));
-
-	/** raylib's `GetMonitorPhysicalHeight` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get specified monitor physical height in millimetres. */
-	public static macro function GetMonitorPhysicalHeight(monitor:ExprOf<Int>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetMonitorPhysicalHeight: Not implemented", macro(0 : Int));
-
-	/** raylib's `GetMonitorRefreshRate` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get specified monitor refresh rate. */
-	public static macro function GetMonitorRefreshRate(monitor:ExprOf<Int>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetMonitorRefreshRate: Not implemented", macro(0 : Int));
 
 	/** raylib's `SetClipboardText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set clipboard text content. */
 	public static macro function SetClipboardText(text:ExprOf<String>):ExprOf<Void>

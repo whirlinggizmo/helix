@@ -951,6 +951,17 @@ function requestOrientation(orientation:Orientation, ?done:() -> Void, ?failed:S
 function canFullscreen():Bool
 var fullscreen(get, never):Bool
 function requestFullscreen(enabled:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
+var maximized(get, never):Bool
+function requestMaximized(maximized:Bool):Bool
+var minimized(get, never):Bool
+function requestMinimized(minimized:Bool):Bool
+function requestFocus():Bool
+function setIcon(width:Int, height:Int, pixels:haxe.io.Bytes):Void
+var opacity(get, never):Float
+function requestOpacity(opacity:Float):Bool
+function requestMinimumSize(width:Int, height:Int):Bool
+function requestMaximumSize(width:Int, height:Int):Bool
+function getMonitorRefreshRate(index:Int):Float
 var visible(get, never):Bool
 function requestVisible(visible:Bool):Bool
 var monitorCount(get, never):Int
@@ -1017,6 +1028,17 @@ var orientation(get, never):Orientation
 function requestOrientation(orientation:Orientation, ?done:() -> Void, ?failed:String -> Void):Bool
 var visible(get, never):Bool
 function requestVisible(visible:Bool):Bool
+var maximized(get, never):Bool
+function requestMaximized(maximized:Bool):Bool
+var minimized(get, never):Bool
+function requestMinimized(minimized:Bool):Bool
+function requestFocus():Bool
+function setIcon(width:Int, height:Int, pixels:haxe.io.Bytes):Void
+var opacity(get, never):Float
+function requestOpacity(opacity:Float):Bool
+function requestMinimumSize(width:Int, height:Int):Bool
+function requestMaximumSize(width:Int, height:Int):Bool
+function getMonitorRefreshRate(index:Int):Float
 var monitorCount(get, never):Int
 var monitorIndex(get, never):Int
 function requestMonitorIndex(index:Int):Bool

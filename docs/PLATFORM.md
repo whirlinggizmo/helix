@@ -47,8 +47,11 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
 - `title`; `width`, `height` (logical pixels) and `framebufferWidth`, `framebufferHeight`, `pixelRatio`; `focused`.
 - `visible`, `requestVisible`; `requestSize`, `canMove`, `x`, `y`, `requestPosition`; `canFullscreen`, `fullscreen`,
   `requestFullscreen(enabled, ?done, ?failed)`; `orientation`, `requestOrientation(orientation, ?done, ?failed)`.
+- `maximized`, `requestMaximized`, `minimized`, `requestMinimized` (false and asking nothing in a page); `requestFocus` (natively
+  raised, in a page the canvas taking the keyboard); `setIcon(width, height, pixels)` (in a page, the page's icon); `opacity`,
+  `requestOpacity` (natively the compositor's, in a page the canvas's); `requestMinimumSize`, `requestMaximumSize` (false in a page).
 - The monitors: `monitorCount`, `monitorIndex`, `requestMonitorIndex`, `getMonitorName`, `getMonitorX`, `getMonitorY`,
-  `getMonitorWidth`, `getMonitorHeight`.
+  `getMonitorWidth`, `getMonitorHeight`, `getMonitorRefreshRate` (0 in a page).
 - `onClose`, a property: the call made once, the last before the window is gone (natively in `close`, in a page at pagehide). Not a
   place to save: a page's write started there isn't kept.
 - `close()` natively destroys the window and in a page does nothing (a script can't close its tab); `canClose()` says whether `close`

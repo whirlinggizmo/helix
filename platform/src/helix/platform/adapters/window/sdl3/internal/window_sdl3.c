@@ -55,4 +55,21 @@ int helix_display_x(int i){return bounds(i).x;}
 int helix_display_y(int i){return bounds(i).y;}
 int helix_display_width(int i){return bounds(i).w;}
 int helix_display_height(int i){return bounds(i).h;}
+int helix_window_maximized(void){return (SDL_GetWindowFlags(WINDOW)&SDL_WINDOW_MAXIMIZED)!=0;}
+int helix_window_minimized(void){return (SDL_GetWindowFlags(WINDOW)&SDL_WINDOW_MINIMIZED)!=0;}
+void helix_window_set_maximized(int on){if(on)SDL_MaximizeWindow(WINDOW);else SDL_RestoreWindow(WINDOW);}
+void helix_window_set_minimized(int on){if(on)SDL_MinimizeWindow(WINDOW);else SDL_RestoreWindow(WINDOW);}
+void helix_window_raise(void){SDL_RaiseWindow(WINDOW);}
+/* The icon from RGBA8, rows top first: SDL copies the surface's pixels, so it is freed at once. */
+void helix_window_set_icon(int w,int h,const void *rgba){
+ SDL_Surface *s=SDL_CreateSurfaceFrom(w,h,SDL_PIXELFORMAT_RGBA32,(void*)rgba,w*4);
+ if(s){SDL_SetWindowIcon(WINDOW,s);SDL_DestroySurface(s);}
+}
+float helix_window_opacity(void){float o=SDL_GetWindowOpacity(WINDOW);return o<0?1:o;}
+int helix_window_set_opacity(float o){return SDL_SetWindowOpacity(WINDOW,o<0?0:o>1?1:o);}
+int helix_window_set_minimum_size(int w,int h){return SDL_SetWindowMinimumSize(WINDOW,w,h);}
+int helix_window_set_maximum_size(int w,int h){return SDL_SetWindowMaximumSize(WINDOW,w,h);}
+float helix_display_refresh_rate(int i){
+ SDL_DisplayID id=display_id(i);const SDL_DisplayMode *m=id?SDL_GetCurrentDisplayMode(id):NULL;return m?m->refresh_rate:0;
+}
 const char*helix_display_name(int i){SDL_DisplayID id=display_id(i);const char*n=id?SDL_GetDisplayName(id):NULL;return n?n:"";}

@@ -1,3 +1,4 @@
+import haxe.io.Bytes;
 import helix.platform.IWindow;
 import helix.platform.Orientation;
 
@@ -152,6 +153,44 @@ class FakeWindow implements IWindow {
 
 	public function getMonitorHeight(index:Int):Int
 		return 1080;
+
+	public function getMonitorRefreshRate(index:Int):Float
+		return 60;
+
+	public var maximized(get, never):Bool;
+
+	function get_maximized():Bool
+		return false;
+
+	public function requestMaximized(maximized:Bool):Bool
+		return false;
+
+	public var minimized(get, never):Bool;
+
+	function get_minimized():Bool
+		return false;
+
+	public function requestMinimized(minimized:Bool):Bool
+		return false;
+
+	public function requestFocus():Bool
+		return true;
+
+	public function setIcon(width:Int, height:Int, pixels:Bytes):Void {}
+
+	public var opacity(get, never):Float;
+
+	function get_opacity():Float
+		return 1;
+
+	public function requestOpacity(opacity:Float):Bool
+		return false;
+
+	public function requestMinimumSize(width:Int, height:Int):Bool
+		return false;
+
+	public function requestMaximumSize(width:Int, height:Int):Bool
+		return false;
 
 	public function canClose():Bool
 		return false;

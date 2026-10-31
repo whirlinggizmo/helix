@@ -1,5 +1,6 @@
 package helix.platform.adapters.window.sdl3;
 
+import haxe.io.Bytes;
 import helix.platform.IWindow;
 import helix.platform.Orientation;
 import helix.platform.adapters.shared.ProgramName;
@@ -122,6 +123,54 @@ class Sdl3WindowAdapter implements IWindow {
 		WindowBridge.setVisible(visible ? 1 : 0);
 		return true;
 	}
+
+	public var maximized(get, never):Bool;
+
+	function get_maximized():Bool
+		return WindowBridge.maximized() != 0;
+
+	public function requestMaximized(maximized:Bool):Bool {
+		WindowBridge.setMaximized(maximized ? 1 : 0);
+		return true;
+	}
+
+	public var minimized(get, never):Bool;
+
+	function get_minimized():Bool
+		return WindowBridge.minimized() != 0;
+
+	public function requestMinimized(minimized:Bool):Bool {
+		WindowBridge.setMinimized(minimized ? 1 : 0);
+		return true;
+	}
+
+	public function requestFocus():Bool {
+		WindowBridge.raise();
+		return true;
+	}
+
+	public function setIcon(width:Int, height:Int, pixels:Bytes):Void {
+		if (width <= 0 || height <= 0 || pixels.length < width * height * 4)
+			throw "The icon's size isn't positive or its pixels are fewer than it needs";
+		WindowBridge.setIcon(width, height, cast cpp.Pointer.arrayElem(pixels.getData(), 0).raw);
+	}
+
+	public var opacity(get, never):Float;
+
+	function get_opacity():Float
+		return WindowBridge.opacity();
+
+	public function requestOpacity(opacity:Float):Bool
+		return WindowBridge.setOpacity(opacity) != 0;
+
+	public function requestMinimumSize(width:Int, height:Int):Bool
+		return WindowBridge.setMinimumSize(width, height) != 0;
+
+	public function requestMaximumSize(width:Int, height:Int):Bool
+		return WindowBridge.setMaximumSize(width, height) != 0;
+
+	public function getMonitorRefreshRate(index:Int):Float
+		return index >= 0 && index < monitorCount ? WindowBridge.displayRefreshRate(index) : 0;
 
 	public var monitorCount(get, never):Int;
 
