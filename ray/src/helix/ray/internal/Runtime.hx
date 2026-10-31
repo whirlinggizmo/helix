@@ -366,7 +366,8 @@ class Runtime {
 		time = new Time(system);
 		// raylib's frame time isn't capped: a frame that took a second says so.
 		time.maxDelta = Math.POSITIVE_INFINITY;
-		poll();
+		pollEvents();
+		time.poll();
 	}
 
 	/** Gets the keyboard, made when first asked for. */
@@ -476,6 +477,13 @@ class Runtime {
 
 	static var exportAdapter:Null<helix.platform.IExport> = null;
 
+	/** Makes what hands files to the user natively write to the working directory as it is now, after `ChangeDirectory`. */
+	public static function workingDirectoryChanged():Void {
+		#if !js
+		exportAdapter = null;
+		#end
+	}
+
 	/** Gets the system's clipboard, made when first asked for. */
 	public static function clipboard():helix.platform.IClipboard {
 		if (clipboardAdapter == null) {
@@ -505,17 +513,39 @@ class Runtime {
 		return gamepadsService;
 	}
 
-	/** Draws the frame, shows it, waits out the rest of the frame natively, as raylib does, and reads the next frame's input. */
+	/** Draws the frame, shows it, waits out the rest of the frame natively, as raylib does, and reads the next frame's input. With
+		`-D helix-ray-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, it only draws the frame: `SwapScreenBuffer` shows it
+		and `PollInputEvents` reads the input. The input recorded for automation is recorded first, as raylib's is. */
 	public static function endFrame():Void {
-		frame.draw(window.framebufferWidth, window.framebufferHeight);
+		if (recording != null)
+			recording();
+		#if helix_ray_custom_frame_control
+		frame.draw(window.framebufferWidth, window.framebufferHeight, false);
+		#else
+		frame.draw(window.framebufferWidth, window.framebufferHeight, true);
 		#if !js
 		wait();
+		#end
 		#end
 		frames++;
 		if (framesLeft > 0 && --framesLeft == 0)
 			shouldClose = true;
+		#if !helix_ray_custom_frame_control
 		poll();
+		#end
 	}
+
+	/** What records the frame's input for automation as each frame ends, or null while nothing records. */
+	public static var recording:Null<Void->Void> = null;
+
+	/** What brings the input that automation plays into up to date after each poll, or null while automation isn't used. */
+	public static var mirroring:Null<Void->Void> = null;
+
+	/** Whether a native poll waits for an event, as `EnableEventWaiting` sets. */
+	public static var eventWaiting = false;
+
+	// How long a native poll waiting for an event sleeps at most before it polls the platform and the services again.
+	static inline final EVENT_WAIT_SLICE = .05;
 
 	/** Waits, as raylib's `WaitTime` does: natively a sleep for most of the time, then a spin for the last twentieth, as a sleep can
 		overshoot; in a page a spin alone, as emscripten's is, so nothing else runs until it ends.
@@ -538,8 +568,24 @@ class Runtime {
 	}
 	#end
 
-	/** Polls the platform and the services, then reads the frame's events. */
-	static function poll():Void {
+	/** Polls the platform and the services, reads the frame's events, then the time. Natively, while `eventWaiting`, it waits for an
+		event first, polling the platform and the services meanwhile, as raylib's waits; a page can't wait, so it never does there, as
+		raylib's web build doesn't. */
+	public static function poll():Void {
+		pollEvents();
+		#if !js
+		while (eventWaiting && events.events.length == 0 && !shouldClose) {
+			events.wait(EVENT_WAIT_SLICE);
+			pollEvents();
+		}
+		#end
+		if (mirroring != null)
+			mirroring();
+		time.poll();
+	}
+
+	// Polls the platform and the services, then reads the frame's events.
+	static function pollEvents():Void {
 		pollAll();
 		if (waiting.length > 0) {
 			var now = waiting;
@@ -578,7 +624,6 @@ class Runtime {
 		if (exitKey != 0 && keyboardService.isKeyPressed(cast exitKey))
 			shouldClose = true;
 		#end
-		time.poll();
 	}
 
 	// Reads the files of a drop into memory, then holds their paths in place of the last drop's, as raylib's do.

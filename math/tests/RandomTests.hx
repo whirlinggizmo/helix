@@ -1,7 +1,7 @@
 import helix.math.Random;
 
-/** Seeded random numbers (helix.math.Random): the sequence pinned to values computed outside Haxe (xorshift32 in Python, 32-bit), so every
-	target's bits match them; seeds, states, ranges, picks, weights and shuffles. */
+/** Seeded random numbers (helix.math.Random): the sequence pinned to values raylib 5.5's rprand gives in C (xoshiro128**, seeded by
+	SplitMix64), so every target's bits match them; seeds, states, ranges, picks, weights and shuffles. */
 class RandomTests {
 	static var checks = 0;
 
@@ -12,18 +12,23 @@ class RandomTests {
 	}
 
 	static function main():Void {
-		// Pinned: seed 12345's first values, computed apart from Haxe.
+		// Pinned: each seed's state and first values, from rprand in C.
 		var r = new Random(12345);
-		check(r.next() == 1189442682 && r.next() == 1697253807 && r.next() == 669028256, "The sequence from 12345 is the pinned one");
+		check(r.state.join(",") == "-1445916256,879680741,-2132381155,756420222", "Seed 12345's state is rprand's");
+		check(r.nextBits() == -1100341093 && r.nextBits() == 1666268817 && r.nextBits() == -1513355689 && r.nextBits() == 1922866133,
+			"The sequence from 12345 is rprand's");
 		r.seed = 12345;
-		var third = 0;
-		for (_ in 0...3)
-			third = r.nextInt(100);
-		check(third == 56, "nextInt is next() % max");
+		check([for (_ in 0...5) r.nextInt(100)].join(",") == "3,17,7,33,30", "nextInt is the 32 bits, unsigned, modulo max, as GetRandomValue");
 		r.seed = 12345;
-		check(Math.abs(r.nextFloat() - 0.7769386768341064) < 1e-15 && Math.abs(r.nextFloat() - 0.395172655582428) < 1e-15,
-			"nextFloat is the state's top 24 bits over 2^24");
-		check(new Random(0).next() == 270369 && new Random(0).seed == 1, "A seed of 0 is taken as 1");
+		check(r.next() == 1597313101, "next is the 32 bits' top 31");
+		r.seed = 12345;
+		check(r.nextFloat() == (0xBE6A209B >>> 8) / 16777216, "nextFloat is the 32 bits' top 24 over 2^24");
+		var zero = new Random(0);
+		check(zero.seed == 0 && zero.nextBits() == -1712565836 && zero.nextBits() == -318179, "A seed of 0 is a seed of its own, rprand's");
+		var seven = new Random(7);
+		check(seven.nextBits() == -1286019622 && seven.nextBits() == -1277186213, "Seed 7's sequence is rprand's");
+		var top = new Random(-1);
+		check(top.nextBits() == 1441002626 && top.nextBits() == 751174168, "A seed is read as unsigned: -1 is 4294967295's");
 		check(new Random().seed == 12345, "The default seed is 12345");
 
 		// Two generators from one seed agree; a state resumes a sequence.
@@ -33,9 +38,14 @@ class RandomTests {
 		var kept = a.state;
 		var ahead = [for (_ in 0...5) a.next()];
 		b.state = kept;
-		check([for (_ in 0...5) b.next()].join(",") == ahead.join(","), "setState goes on from where getState was");
-		a.state = 0;
-		check(a.state == 1, "A state of 0 is taken as 1");
+		check([for (_ in 0...5) b.next()].join(",") == ahead.join(","), "Setting a state goes on from where it was read");
+		var refused = 0;
+		for (bad in [[0, 0, 0, 0], [1, 2, 3]])
+			try
+				a.state = bad
+			catch (_:String)
+				refused++;
+		check(refused == 2, "A state of four zeros, or not four words, is refused");
 
 		// Ranges.
 		r = new Random(99);

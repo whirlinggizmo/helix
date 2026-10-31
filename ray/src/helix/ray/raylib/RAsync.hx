@@ -178,6 +178,97 @@ class RAsync {
 		});
 	}
 
+	/** Loads an automation events list from a text file, answering when it is read: helix-ray's own, in place of raylib's
+		`LoadAutomationEventList` given a file. It reads the file as `LoadFileTextAsync` does, then as raylib's does: each line starting
+		`c` sets the count, each starting `e` is an event, its frame, type and four parameters; other lines are skipped, and so is a last
+		line with no newline at its end, as raylib's reading skips it. A count that isn't the events read warns, and the events read are
+		the count.
+
+		@param fileName  The file, as `ExportAutomationEventList` writes it.
+		@param loaded  Receives the list, its capacity 16384.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	static function LoadAutomationEventListAsync(fileName:String, loaded:AutomationEventList->Void, ?failed:String->Void):Void {
+		LoadFileTextAsync(fileName, text -> {
+			var list = new AutomationEventList();
+			list.capacity = helix.ray.internal.Automation.CAPACITY;
+			var counter = 0, at = 0;
+			// raylib's fgets, 255 characters at most, and feof: a line is read when it ended in a newline or filled the buffer.
+			while (at < text.length) {
+				var end = text.indexOf("\n", at);
+				var length = end < 0 ? text.length - at : end + 1 - at;
+				if (length > 255)
+					length = 255;
+				var line = text.substr(at, length);
+				at += length;
+				if (!StringTools.endsWith(line, "\n") && length < 255)
+					break;
+				switch line.charAt(0) {
+					case "c":
+						var count = scanInts(line, 1, 1, true);
+						if (count.length == 1) list.count = count[0];
+					case "e":
+						var event = new AutomationEvent();
+						var values = scanInts(line, 1, 6, false);
+						for (i in 0...values.length)
+							if (i == 0)
+								event.frame = values[0];
+							else if (i == 1)
+								event.type = values[1];
+							else
+								event.params[i - 2] = values[i];
+						list.events.push(event);
+						counter++;
+					case _:
+				}
+			}
+			if (counter != list.count) {
+				Runtime.log(LOG_WARNING, 'AUTOMATION: Events read from file [$counter] do not mach event count specified [${list.count}]');
+				list.count = counter;
+			}
+			Runtime.log(LOG_INFO, "AUTOMATION: Events file loaded successfully");
+			Runtime.log(LOG_INFO, 'AUTOMATION: Events loaded from file: ${list.count}');
+			loaded(list);
+		}, error -> refuse("LoadAutomationEventListAsync", error, failed));
+	}
+
+	// sscanf's " %d" (or " %i", which reads 0x as hexadecimal and a leading 0 as octal) up to count times from a place in a line:
+	// the numbers read before the first that isn't one.
+	static function scanInts(line:String, from:Int, count:Int, prefixed:Bool):Array<Int> {
+		var out:Array<Int> = [], i = from;
+		inline function code(at:Int):Int
+			return at < line.length ? StringTools.fastCodeAt(line, at) : 0;
+		inline function digit(c:Int, base:Int):Int {
+			var d = c >= "0".code
+				&& c <= "9".code ? c - "0".code : c >= "a".code
+					&& c <= "f".code ? c - "a".code + 10 : c >= "A".code && c <= "F".code ? c - "A".code + 10 : 99;
+			return d < base ? d : -1;
+		}
+		while (out.length < count) {
+			while (i < line.length && StringTools.isSpace(line, i))
+				i++;
+			var negative = false;
+			if (code(i) == "+".code || code(i) == "-".code) {
+				negative = code(i) == "-".code;
+				i++;
+			}
+			var base = 10;
+			if (prefixed && code(i) == "0".code) {
+				if ((code(i + 1) == "x".code || code(i + 1) == "X".code) && digit(code(i + 2), 16) >= 0) {
+					base = 16;
+					i += 2;
+				} else
+					base = 8;
+			}
+			if (digit(code(i), base) < 0)
+				break;
+			var value = 0;
+			while (digit(code(i), base) >= 0)
+				value = (value * base + digit(code(i++), base)) | 0;
+			out.push(negative ? -value | 0 : value);
+		}
+		return out;
+	}
+
 	/** Answers whether a file exists: helix-ray's own, in place of raylib's `FileExists`. One `SaveFileText` or `SaveFileData` wrote
 		exists, as does one of the program's; finding one of the program's reads it, so a load of it after answers at once. The answer
 		comes at a later frame, never during the call.

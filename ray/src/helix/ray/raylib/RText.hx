@@ -281,6 +281,17 @@ class RText {
 		UnloadTexture(font.texture);
 	}
 
+	/** raylib's export of a font as C code, which reads its atlas back from the GPU and waits. Here the atlas is read back only
+		asynchronously, and it is RGBA where raylib's is gray and alpha, so a call doesn't compile yet.
+
+		@param font  The font.
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("ExportFontAsCode: A font's atlas is on the GPU, read back asynchronously, and in RGBA where raylib's is gray and alpha; not implemented yet.")
+	static function ExportFontAsCode(font:Font, fileName:String):Bool {
+		throw "ExportFontAsCode is unimplemented";
+	}
+
 	/** Frees glyphs' images.
 
 		@param glyphs  The glyphs.

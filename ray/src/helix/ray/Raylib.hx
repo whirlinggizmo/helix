@@ -1408,9 +1408,36 @@ class Raylib {
 	public static inline function BeginDrawing():Void
 		RCore.BeginDrawing();
 
-	/** Ends a frame's drawing: shows it, then reads the next frame's input. */
+	/** Ends a frame's drawing: shows it, waits out the rest of the frame natively (`SetTargetFPS`), then reads the next frame's input.
+		Built with `-D helix-ray-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, it only ends the drawing:
+		`SwapScreenBuffer` shows the frame, `WaitTime` waits and `PollInputEvents` reads the input, as the program calls them. */
 	public static inline function EndDrawing():Void
 		RCore.EndDrawing();
+
+	/** Shows the frame `EndDrawing` ended, for a program built with `-D helix-ray-custom-frame-control`, raylib's
+		`SUPPORT_CUSTOM_FRAME_CONTROL`. Without it, `EndDrawing` has shown the frame already and this does nothing. A frame not shown by
+		the next `EndDrawing` is shown then. In a page the browser shows a frame when the loop's body returns, as raylib's web build has it,
+		so the frame shows then however this is called. */
+	public static inline function SwapScreenBuffer():Void
+		RCore.SwapScreenBuffer();
+
+	/** Reads the input that came since the last read: each key's, button's and finger's state, and the window's events. `EndDrawing`
+		reads it already unless the program is built with `-D helix-ray-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`; a
+		second read, as raylib's, starts a new frame of input, so what was pressed before it reads as held. With `EnableEventWaiting`, it
+		waits for an event natively first. */
+	public static inline function PollInputEvents():Void
+		RCore.PollInputEvents();
+
+	/** Makes each frame natively wait for an event before the next is read, as raylib's: a key, a mouse button, the mouse moved, the
+		window changed, from a device the program reads. The program draws nothing meanwhile and uses little time; the platform and
+		helix-ray's async loads are still served, so a load answers while it waits and is drawn after the next event. In a page it changes nothing,
+		as raylib's web build doesn't wait: the browser runs each frame. */
+	public static inline function EnableEventWaiting():Void
+		RCore.EnableEventWaiting();
+
+	/** Makes each frame read the events there are and go on, as it does until `EnableEventWaiting`. */
+	public static inline function DisableEventWaiting():Void
+		RCore.DisableEventWaiting();
 
 	/** Clears the frame to a color, dropping what was drawn before it.
 
@@ -1418,7 +1445,8 @@ class Raylib {
 	public static inline function ClearBackground(color:Color):Void
 		RCore.ClearBackground(color);
 
-	/** Returns a random whole number from min to max, both included.
+	/** Returns a random whole number from min to max, both included, from raylib's generator (xoshiro128**, helix-math's `Random`), so a seed gives the
+		numbers raylib's gives.
 
 		@param min  The least.
 		@param max  The most.
@@ -1426,11 +1454,29 @@ class Raylib {
 	public static inline function GetRandomValue(min:Int, max:Int):Int
 		return RCore.GetRandomValue(min, max);
 
-	/** Seeds `GetRandomValue`, so its numbers repeat from the same seed.
+	/** Seeds `GetRandomValue` and `LoadRandomSequence`, as raylib's: helix-math's `Random` is raylib's generator, so the numbers repeat
+		from the same seed and are raylib's.
 
-		@param seed  The seed. */
+		@param seed  The seed, read as unsigned. */
 	public static inline function SetRandomSeed(seed:Int):Void
 		RCore.SetRandomSeed(seed);
+
+	/** Returns numbers from min to max, both included, none twice, from `GetRandomValue`'s generator, as raylib's: the same numbers
+		raylib's gives for a seed. As raylib's, min and max aren't swapped: when min is more, the numbers run from min up by the range's
+		size.
+
+		@param count  How many.
+		@param min  The least.
+		@param max  The most.
+		@return  The numbers, or null when there are fewer than count in the range. */
+	public static inline function LoadRandomSequence(count:Int, min:Int, max:Int):Null<Array<Int>>
+		return RCore.LoadRandomSequence(count, min, max);
+
+	/** Frees numbers `LoadRandomSequence` gave. There is nothing to free here.
+
+		@param sequence  The numbers. */
+	public static inline function UnloadRandomSequence(sequence:Null<Array<Int>>):Void
+		RCore.UnloadRandomSequence(sequence);
 
 	/** Returns whether a key went down this frame.
 
@@ -1795,6 +1841,40 @@ class Raylib {
 	public static inline function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool
 		return RCore.SaveFileData(fileName, data, dataSize);
 
+	/** Writes bytes as a C header through `SaveFileText`, as raylib's does, byte for byte: their count as a define, and the bytes as an
+		array, in hexadecimal, 20 a line.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@param fileName  The file; its name, upper case, names the define and the array, with `_` for `.`, `-`, `?`, `!` and `+`.
+		@return  True when it was written. */
+	public static inline function ExportDataAsCode(data:haxe.io.Bytes, dataSize:Int, fileName:String):Bool
+		return RCore.ExportDataAsCode(data, dataSize, fileName);
+
+	/** Returns the working directory: natively the process's, where `TakeScreenshot` writes; in a page ".", the page's own directory.
+		helix-ray's loads don't read from it: a file's name is under the program's files wherever it is (`GetApplicationDirectory`).
+
+		@return  The directory, without a slash at its end. */
+	public static inline function GetWorkingDirectory():String
+		return RCore.GetWorkingDirectory();
+
+	/** Returns the directory the program's files are read from, as raylib programs name a file from their application's directory:
+		natively `-D helix-ray-native-root` from the executable's directory (`../web` unless set), in a page "./", the page's own. A load
+		given a path in it reads the file it names, so `GetApplicationDirectory() + "resources/a.png"` loads "resources/a.png".
+
+		@return  The directory, with a slash at its end. */
+	public static inline function GetApplicationDirectory():String
+		return RCore.GetApplicationDirectory();
+
+	/** Changes the working directory, natively the process's, as raylib's: `TakeScreenshot` writes to it from then on. helix-ray's loads
+		are unchanged, reading the program's files wherever it is. A page has no working directory of its own: there, only "." or the
+		page's directory (`GetApplicationDirectory`) succeeds, changing nothing. A failure is logged, as raylib's is.
+
+		@param dir  The directory.
+		@return  True when the working directory is it now. */
+	public static inline function ChangeDirectory(dir:String):Bool
+		return RCore.ChangeDirectory(dir);
+
 	/** Returns whether a file name ends in one of some extensions, ignoring the case of A to Z.
 
 		@param fileName  The file name.
@@ -1971,6 +2051,54 @@ class Raylib {
 	public static inline function SetSaveFileTextCallback(callback:Null<(fileName:String, text:String) -> Bool>):Void
 		RCore.SetSaveFileTextCallback(callback);
 
+	/** Frees a list's events. There is nothing to free here, and the list is unchanged.
+
+		@param list  The list. */
+	public static inline function UnloadAutomationEventList(list:AutomationEventList):Void
+		RCore.UnloadAutomationEventList(list);
+
+	/** Writes a list's events as text through `SaveFileText`, as raylib's does, byte for byte: a header of comments, `c` and the count,
+		then a line for each event, `e`, its frame, type and four parameters, and its type's name.
+
+		@param list  The list.
+		@param fileName  The file.
+		@return  True when it was written. */
+	public static inline function ExportAutomationEventList(list:AutomationEventList, fileName:String):Bool
+		return RCore.ExportAutomationEventList(list, fileName);
+
+	/** Sets the list `StartAutomationEventRecording` records into. From the first call, the input functions read the input as
+		automation keeps it, so an event `PlayAutomationEvent` plays reads as real input.
+
+		@param list  The list, made by `LoadAutomationEventList(null)` or `LoadAutomationEventListAsync`. */
+	public static inline function SetAutomationEventList(list:AutomationEventList):Void
+		RCore.SetAutomationEventList(list);
+
+	/** Sets the frame the next event recorded is stamped with; each frame after counts up from it. Until set, it is the frames since
+		`InitWindow`.
+
+		@param frame  The frame. */
+	public static inline function SetAutomationEventBaseFrame(frame:Int):Void
+		RCore.SetAutomationEventBaseFrame(frame);
+
+	/** Starts recording into the list `SetAutomationEventList` set: as each frame ends, before the next frame's input is read, every
+		key, mouse button and finger held, the mouse's moves and the wheel's, gamepads' buttons held and axes off rest, and the gesture,
+		as raylib records them, each logged. A full list (16384 events) records no more. */
+	public static inline function StartAutomationEventRecording():Void
+		RCore.StartAutomationEventRecording();
+
+	/** Stops recording. */
+	public static inline function StopAutomationEventRecording():Void
+		RCore.StopAutomationEventRecording();
+
+	/** Plays an event, as raylib's: input becomes the input the functions read now, as it would from the devices, and stays until they
+		change it or another event does; a window event or an action is done (`WINDOW_CLOSE` makes `WindowShouldClose` true). Nothing is
+		played while recording. As raylib's, the program plays each event in its frame, after the frame's input is read: a key held is
+		an event every frame, so a frame's events are played together.
+
+		@param event  The event. */
+	public static inline function PlayAutomationEvent(event:AutomationEvent):Void
+		RCore.PlayAutomationEvent(event);
+
 	/** Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImage` writes it by the name's extension
 		(".png", ".qoi" or ".raw"): in a page it is downloaded, as raylib's web build does; natively it is written to the working
 		directory, as raylib writes it there, under the name's file name. raylib's is taken from the frame drawn last, before it is
@@ -2051,6 +2179,17 @@ class Raylib {
 		@param mode  The mode (`CAMERA_*`). */
 	public static inline function UpdateCamera(camera:Camera3D, mode:Int):Void
 		RCore.UpdateCamera(camera, mode);
+
+	/** Moves and turns a camera by amounts, as raylib's rcamera does: it pitches (looking no further up or down than straight), yaws and
+		rolls about its own position, then moves forward and right along the ground and up along its up direction, then toward its
+		target, the distance kept above 0.
+
+		@param camera  The camera, changed.
+		@param movement  The distances it moves: forward (x), right (y) and up (z), in world units.
+		@param rotation  The angles it turns: yaw to the right (x), pitch down (y) and roll (z), in degrees.
+		@param zoom  How much further from its target it moves, in world units; a negative zoom moves it closer. */
+	public static inline function UpdateCameraPro(camera:Camera, movement:Vector3, rotation:Vector3, zoom:Float):Void
+		RCore.UpdateCameraPro(camera, movement, rotation, zoom);
 
 	/** Returns a camera's view, as `BeginMode3D` uses it.
 
@@ -4903,6 +5042,18 @@ class Raylib {
 	public static inline function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):Void
 		RAsync.LoadFileDataAsync(fileName, loaded, failed);
 
+	/** Loads an automation events list from a text file, answering when it is read: helix-ray's own, in place of raylib's
+		`LoadAutomationEventList` given a file. It reads the file as `LoadFileTextAsync` does, then as raylib's does: each line starting
+		`c` sets the count, each starting `e` is an event, its frame, type and four parameters; other lines are skipped, and so is a last
+		line with no newline at its end, as raylib's reading skips it. A count that isn't the events read warns, and the events read are
+		the count.
+
+		@param fileName  The file, as `ExportAutomationEventList` writes it.
+		@param loaded  Receives the list, its capacity 16384.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	public static inline function LoadAutomationEventListAsync(fileName:String, loaded:AutomationEventList->Void, ?failed:String->Void):Void
+		RAsync.LoadAutomationEventListAsync(fileName, loaded, failed);
+
 	/** Answers whether a file exists: helix-ray's own, in place of raylib's `FileExists`. One `SaveFileText` or `SaveFileData` wrote
 		exists, as does one of the program's; finding one of the program's reads it, so a load of it after answers at once. The answer
 		comes at a later frame, never during the call.
@@ -5174,6 +5325,20 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("GetFileModTime: Synchronous file access is not supported. See GetFileModTimeAsync(fileName:String, answer:Int->Void)",
 			macro(0 : Int));
 
+	/** raylib's allocator. Haxe has no raw memory to allocate, so a call doesn't compile. */
+	public static macro function MemAlloc(size:ExprOf<Int>):ExprOf<Dynamic>
+		return helix.platform.macros.Build.unsupported("MemAlloc: Haxe has no raw memory to allocate. Make bytes instead: haxe.io.Bytes.alloc(size)",
+			macro(null : Dynamic));
+
+	/** raylib's reallocator. Haxe has no raw memory, so a call doesn't compile. */
+	public static macro function MemRealloc(ptr:ExprOf<Dynamic>, size:ExprOf<Int>):ExprOf<Dynamic>
+		return helix.platform.macros.Build.unsupported("MemRealloc: Haxe has no raw memory to reallocate. Make new bytes and copy into them instead: haxe.io.Bytes.alloc(size), then blit",
+			macro(null : Dynamic));
+
+	/** raylib's free. Haxe frees memory once nothing holds it, so a call doesn't compile. */
+	public static macro function MemFree(ptr:ExprOf<Dynamic>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("MemFree: Haxe frees memory once nothing holds it. Drop the reference instead.", macro {});
+
 	/** raylib's texture load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadTextureAsync` loads it. */
 	public static macro function LoadTexture(fileName:ExprOf<String>):ExprOf<Texture2D>
 		return helix.platform.macros.Build.unsupported("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)",
@@ -5279,13 +5444,10 @@ class Raylib {
 
 	// ---- raylib.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
 
-	/** raylib's `EnableEventWaiting` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Enable waiting for events on EndDrawing(), no automatic event polling. */
-	public static macro function EnableEventWaiting():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("EnableEventWaiting: Not implemented", macro {});
-
-	/** raylib's `DisableEventWaiting` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Disable waiting for events on EndDrawing(), automatic events polling. */
-	public static macro function DisableEventWaiting():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DisableEventWaiting: Not implemented", macro {});
+	/** raylib's export of a font as C code, which reads its atlas back from the GPU and waits. Here the atlas is read back only asynchronously, and it is RGBA where raylib's is gray and alpha, so a call doesn't compile yet. */
+	public static macro function ExportFontAsCode(font:ExprOf<Font>, fileName:ExprOf<String>):ExprOf<Bool>
+		return helix.platform.macros.Build.unimplemented("ExportFontAsCode: A font's atlas is on the GPU, read back asynchronously, and in RGBA where raylib's is gray and alpha; not implemented yet.",
+			macro(false : Bool));
 
 	/** raylib's `BeginVrStereoMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Begin stereo rendering (requires VR simulator). */
 	public static macro function BeginVrStereoMode(config:ExprOf<VrStereoConfig>):ExprOf<Void>
@@ -5302,86 +5464,6 @@ class Raylib {
 	/** raylib's `UnloadVrStereoConfig` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload VR stereo config. */
 	public static macro function UnloadVrStereoConfig(config:ExprOf<VrStereoConfig>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("UnloadVrStereoConfig: Not implemented", macro {});
-
-	/** raylib's `SwapScreenBuffer` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Swap back buffer with front buffer (screen drawing). */
-	public static macro function SwapScreenBuffer():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SwapScreenBuffer: Not implemented", macro {});
-
-	/** raylib's `PollInputEvents` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Register all input events. */
-	public static macro function PollInputEvents():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("PollInputEvents: Not implemented", macro {});
-
-	/** raylib's `LoadRandomSequence` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load random values sequence, no values repeated. */
-	public static macro function LoadRandomSequence(count:ExprOf<Int>, min:ExprOf<Int>, max:ExprOf<Int>):ExprOf<Array<Int>>
-		return helix.platform.macros.Build.unimplemented("LoadRandomSequence: Not implemented", macro(null : Array<Int>));
-
-	/** raylib's `UnloadRandomSequence` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload random values sequence. */
-	public static macro function UnloadRandomSequence(sequence:ExprOf<Array<Int>>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadRandomSequence: Not implemented", macro {});
-
-	/** raylib's `MemAlloc` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Internal memory allocator. */
-	public static macro function MemAlloc(size:ExprOf<Int>):ExprOf<Dynamic>
-		return helix.platform.macros.Build.unimplemented("MemAlloc: Not implemented", macro(null : Dynamic));
-
-	/** raylib's `MemRealloc` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Internal memory reallocator. */
-	public static macro function MemRealloc(ptr:ExprOf<Dynamic>, size:ExprOf<Int>):ExprOf<Dynamic>
-		return helix.platform.macros.Build.unimplemented("MemRealloc: Not implemented", macro(null : Dynamic));
-
-	/** raylib's `MemFree` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Internal memory free. */
-	public static macro function MemFree(ptr:ExprOf<Dynamic>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("MemFree: Not implemented", macro {});
-
-	/** raylib's `ExportDataAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export data to code (.h), returns true on success. */
-	public static macro function ExportDataAsCode(data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("ExportDataAsCode: Not implemented", macro(false : Bool));
-
-	/** raylib's `GetWorkingDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get current working directory (uses static string). */
-	public static macro function GetWorkingDirectory():ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("GetWorkingDirectory: Not implemented", macro(null : String));
-
-	/** raylib's `GetApplicationDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get the directory of the running application (uses static string). */
-	public static macro function GetApplicationDirectory():ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("GetApplicationDirectory: Not implemented", macro(null : String));
-
-	/** raylib's `ChangeDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Change working directory, return true on success. */
-	public static macro function ChangeDirectory(dir:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("ChangeDirectory: Not implemented", macro(false : Bool));
-
-	/** raylib's `LoadAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load automation events list from file, NULL for empty list, capacity = MAX_AUTOMATION_EVENTS. */
-	public static macro function LoadAutomationEventList(fileName:ExprOf<String>):ExprOf<AutomationEventList>
-		return helix.platform.macros.Build.unimplemented("LoadAutomationEventList: Not implemented", macro(null : helix.ray.AutomationEventList));
-
-	/** raylib's `UnloadAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload automation events list from file. */
-	public static macro function UnloadAutomationEventList(list:ExprOf<AutomationEventList>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadAutomationEventList: Not implemented", macro {});
-
-	/** raylib's `ExportAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export automation events list as text file. */
-	public static macro function ExportAutomationEventList(list:ExprOf<AutomationEventList>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("ExportAutomationEventList: Not implemented", macro(false : Bool));
-
-	/** raylib's `SetAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set automation event list to record to. */
-	public static macro function SetAutomationEventList(list:ExprOf<AutomationEventList>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetAutomationEventList: Not implemented", macro {});
-
-	/** raylib's `SetAutomationEventBaseFrame` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set automation event internal base frame to start recording. */
-	public static macro function SetAutomationEventBaseFrame(frame:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetAutomationEventBaseFrame: Not implemented", macro {});
-
-	/** raylib's `StartAutomationEventRecording` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Start recording automation events (AutomationEventList must be set). */
-	public static macro function StartAutomationEventRecording():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("StartAutomationEventRecording: Not implemented", macro {});
-
-	/** raylib's `StopAutomationEventRecording` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Stop recording automation events. */
-	public static macro function StopAutomationEventRecording():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("StopAutomationEventRecording: Not implemented", macro {});
-
-	/** raylib's `PlayAutomationEvent` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Play a recorded automation event. */
-	public static macro function PlayAutomationEvent(event:ExprOf<AutomationEvent>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("PlayAutomationEvent: Not implemented", macro {});
-
-	/** raylib's `UpdateCameraPro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update camera movement/rotation. */
-	public static macro function UpdateCameraPro(camera:ExprOf<Camera>, movement:ExprOf<Vector3>, rotation:ExprOf<Vector3>, zoom:ExprOf<Float>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UpdateCameraPro: Not implemented", macro {});
 
 	/** raylib's `LoadImageAnim` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image sequence from file (frames appended to image.data). */
 	public static macro function LoadImageAnim(fileName:ExprOf<String>, frames:ExprOf<Array<Int>>):ExprOf<Image>
@@ -5407,10 +5489,6 @@ class Raylib {
 	/** raylib's `GenTextureMipmaps` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate GPU mipmaps for a texture. */
 	public static macro function GenTextureMipmaps(texture:ExprOf<Texture2D>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("GenTextureMipmaps: Not implemented", macro {});
-
-	/** raylib's `ExportFontAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export font as code file, returns true on success. */
-	public static macro function ExportFontAsCode(font:ExprOf<Font>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("ExportFontAsCode: Not implemented", macro(false : Bool));
 
 	/** raylib's `DrawPoint3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a point in 3D space, actually a small line. */
 	public static macro function DrawPoint3D(position:ExprOf<Vector3>, color:ExprOf<Color>):ExprOf<Void>
@@ -5621,5 +5699,30 @@ class Raylib {
 		var program = helix.ray.internal.ShaderMacro.program("vertex text", vs == null ? null : vs.text, "fragment text", fs == null ? null : fs.text,
 			haxe.macro.Context.currentPos());
 		return macro @:privateAccess helix.ray.raylib.RModels.makeShader($program);
+	}
+
+	// ---- Automation events ----
+
+	/** Returns an empty automation events list to record into, its capacity raylib's 16384, as raylib's `LoadAutomationEventList(NULL)`.
+		Given a file instead, a call doesn't compile: a page can't wait for a file, so `LoadAutomationEventListAsync` reads one.
+
+		@param fileName  Null (or 0, as raylib's examples write it).
+		@return  The list. */
+	public static macro function LoadAutomationEventList(fileName:ExprOf<Null<String>>):ExprOf<AutomationEventList> {
+		var e = fileName;
+		while (true)
+			switch e.expr {
+				case EParenthesis(inner):
+					e = inner;
+				case _:
+					break;
+			}
+		return switch e.expr {
+			case EConst(CIdent("null")) | EConst(CInt("0")):
+				macro @:privateAccess helix.ray.raylib.RCore.newAutomationEventList();
+			case _:
+				helix.platform.macros.Build.unsupported("LoadAutomationEventList: Synchronous loading is not supported. See LoadAutomationEventListAsync(fileName:String, loaded:AutomationEventList->Void, ?failed:String->Void)",
+					macro(null : helix.ray.AutomationEventList));
+		}
 	}
 }

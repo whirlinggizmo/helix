@@ -871,7 +871,7 @@ function copyFrom(other:Point3D):Point3D
 
 Represents a seeded random number generator that gives the same sequence on every target.
 
-It is xorshift32 in integer arithmetic, so the interpreter, JS and hxcpp agree bit for bit. A simulation that must replay alike, such as a recorded run or a lockstep game, draws from one. A program keeps one generator per stream (play, and a title screen's decoration), so that drawing from one doesn't change another's sequence.
+It is xoshiro128**, its state made from the seed by SplitMix64, as raylib's rprand is, so a seed gives raylib's numbers. It is written in 32-bit integer arithmetic, so the interpreter, JS and hxcpp agree bit for bit. A simulation that must replay alike, such as a recorded run or a lockstep game, draws from one. A program keeps one generator per stream (play, and a title screen's decoration), so that drawing from one doesn't change another's sequence.
 
 ```haxe
 var random = new Random(42);
@@ -882,7 +882,8 @@ var card = random.pick(deck);
 ```haxe
 function new(?seed:Int = 12345)
 var seed(default, set):Int
-var state(default, set):Int
+var state(get, set):Array<Int>
+function nextBits():Int
 function next():Int
 function nextInt(max:Int):Int
 function nextFloat():Float
@@ -894,18 +895,22 @@ function shuffle(items:Array<T>):Array<T>
 ```
 
 - `new`: Creates a generator.
-  - `seed`: Optional. The seed; defaults to 12345. A seed of 0 is taken as 1.
+  - `seed`: Optional. The seed, read as unsigned; defaults to 12345.
 - `seed`: Gets or sets the seed the sequence last started from.
-  Setting it starts the sequence again from that seed. A seed of 0 is taken as 1.
-- `state`: Gets or sets where the sequence is now.
-  Reading it and setting it back later continues the sequence from that point, so one generator can serve two streams in turn. A state of 0 is taken as 1.
+  Setting it starts the sequence again from that seed. Every seed, 0 among them, gives a sequence of its own.
+- `state`: Gets or sets where the sequence is now, as xoshiro128**'s four 32-bit words.
+  - throws `String`: When set to anything but four words, or to four zeros, from which the sequence would be zeros alone.
+
+  Reading it and setting it back later continues the sequence from that point, so one generator can serve two streams in turn. The words are copied both ways.
+- `nextBits`: Returns the next 32 bits.
+  - returns: Any whole number a 32-bit Int holds, read as unsigned where a range is made from it.
 - `next`: Returns the next whole number.
-  - returns: A number from 0 to 2147483647.
+  - returns: A number from 0 to 2147483647: the next 32 bits' top 31.
 - `nextInt`: Returns the next whole number below a maximum.
   - `max`: The maximum, excluded.
   - returns: A number from 0 to max - 1.
 
-  A maximum of 1 or less returns 0.
+  It is the next 32 bits, unsigned, modulo max, as raylib's `GetRandomValue(0, max - 1)` is. A maximum of 1 or less returns 0, a number drawn all the same.
 - `nextFloat`: Returns the next number from 0 up to 1.
   - returns: A number from 0, included, to 1, excluded.
 

@@ -24,7 +24,7 @@ var channels(default, null):Int
 
 *class* in [`ray/src/helix/ray/AutomationEvent.hx`](../../ray/src/helix/ray/AutomationEvent.hx), `import helix.ray.AutomationEvent;`
 
-raylib's `AutomationEvent` (raylib.h): not in helix-ray yet; its fields are raylib's. Automation event.
+Represents raylib's `AutomationEvent`: an input or window event, recorded in a frame, to be played later.
 
 ```haxe
 function new()
@@ -33,16 +33,16 @@ var type:Int
 var params:Array<Int>
 ```
 
-- `new`: Creates one, its fields zero, empty or null.
-- `frame`: Event frame.
-- `type`: Event type (AutomationEventType).
-- `params`: Event parameters (if required).
+- `new`: Creates one, its fields zero.
+- `frame`: Gets or sets the frame it happened in.
+- `type`: Gets or sets what happened, as raylib's AutomationEventType numbers it: 1 a key up, 2 a key down, 5 and 6 a mouse button up and down, 7 the mouse moved, 8 the wheel, 11 and 12 a gamepad button up and down, 13 a gamepad axis, 14 and 15 a finger up and down, 16 a finger moved, 17 a gesture, 18 to 21 the window closed, maximized, minimized and resized, 22 a screenshot, 23 the target frames a second.
+- `params`: Gets or sets its four parameters, by its type: a key, a button, a position, a gamepad and its button or axis and value (times 32768), a size.
 
 ## AutomationEventList
 
 *class* in [`ray/src/helix/ray/AutomationEventList.hx`](../../ray/src/helix/ray/AutomationEventList.hx), `import helix.ray.AutomationEventList;`
 
-raylib's `AutomationEventList` (raylib.h): not in helix-ray yet; its fields are raylib's. Automation event list.
+Represents raylib's `AutomationEventList`: the events recorded, or loaded from a file, to be played.
 
 ```haxe
 function new()
@@ -51,10 +51,10 @@ var count:Int
 var events:Array<AutomationEvent>
 ```
 
-- `new`: Creates one, its fields zero, empty or null.
-- `capacity`: Events max entries (MAX_AUTOMATION_EVENTS).
-- `count`: Events entries count.
-- `events`: Events entries.
+- `new`: Creates an empty list, of no capacity.
+- `capacity`: Gets or sets the most events it holds: 16384, raylib's MAX_AUTOMATION_EVENTS, for one `LoadAutomationEventList` or `LoadAutomationEventListAsync` made.
+- `count`: Gets or sets how many events it holds.
+- `events`: Gets or sets the events, `count` of them.
 
 ## BoneInfo
 
@@ -1406,9 +1406,15 @@ static function GetTime():Float
 static function SetExitKey(key:Int):Void
 static function BeginDrawing():Void
 static function EndDrawing():Void
+static function SwapScreenBuffer():Void
+static function PollInputEvents():Void
+static function EnableEventWaiting():Void
+static function DisableEventWaiting():Void
 static function ClearBackground(color:Color):Void
 static function GetRandomValue(min:Int, max:Int):Int
 static function SetRandomSeed(seed:Int):Void
+static function LoadRandomSequence(count:Int, min:Int, max:Int):Null<Array<Int>>
+static function UnloadRandomSequence(sequence:Null<Array<Int>>):Void
 static function IsKeyPressed(key:Int):Bool
 static function IsKeyDown(key:Int):Bool
 static function IsKeyReleased(key:Int):Bool
@@ -1463,6 +1469,10 @@ static function UnloadFileText(text:Null<String>):Void
 static function SaveFileText(fileName:String, text:String):Bool
 static function UnloadFileData(data:Null<haxe.io.Bytes>):Void
 static function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool
+static function ExportDataAsCode(data:haxe.io.Bytes, dataSize:Int, fileName:String):Bool
+static function GetWorkingDirectory():String
+static function GetApplicationDirectory():String
+static function ChangeDirectory(dir:String):Bool
 static function IsFileExtension(fileName:String, ext:String):Bool
 static function GetFileExtension(fileName:String):String
 static function GetFileName(filePath:String):String
@@ -1486,6 +1496,13 @@ static function SetLoadFileDataCallback(callback:Null<(fileName:String) -> Null<
 static function SetSaveFileDataCallback(callback:Null<(fileName:String, data:haxe.io.Bytes, dataSize:Int) -> Bool>):Void
 static function SetLoadFileTextCallback(callback:Null<(fileName:String) -> Null<String>>):Void
 static function SetSaveFileTextCallback(callback:Null<(fileName:String, text:String) -> Bool>):Void
+static function UnloadAutomationEventList(list:AutomationEventList):Void
+static function ExportAutomationEventList(list:AutomationEventList, fileName:String):Bool
+static function SetAutomationEventList(list:AutomationEventList):Void
+static function SetAutomationEventBaseFrame(frame:Int):Void
+static function StartAutomationEventRecording():Void
+static function StopAutomationEventRecording():Void
+static function PlayAutomationEvent(event:AutomationEvent):Void
 static function TakeScreenshot(fileName:String):Void
 static function TraceLog(logLevel:Int, text:String):Void
 static function SetTraceLogLevel(logLevel:Int):Void
@@ -1498,6 +1515,7 @@ static function GetScreenToWorld2D(position:Vector2, camera:Camera2D):Vector2
 static function BeginMode3D(camera:Camera3D):Void
 static function EndMode3D():Void
 static function UpdateCamera(camera:Camera3D, mode:Int):Void
+static function UpdateCameraPro(camera:Camera, movement:Vector3, rotation:Vector3, zoom:Float):Void
 static function GetCameraMatrix(camera:Camera3D):Matrix
 static function GetScreenToWorldRay(position:Vector2, camera:Camera3D):Ray
 static function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int):Ray
@@ -1628,15 +1646,26 @@ static function EndScissorMode():Void
 - `SetExitKey`: Sets the key that closes the window natively, or `KEY_NULL` for none. It is Escape until set.
   - `key`: The key.
 - `BeginDrawing`: Begins a frame's drawing.
-- `EndDrawing`: Ends a frame's drawing: shows it, then reads the next frame's input.
+- `EndDrawing`: Ends a frame's drawing: shows it, waits out the rest of the frame natively (`SetTargetFPS`), then reads the next frame's input. Built with `-D helix-ray-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, it only ends the drawing: `SwapScreenBuffer` shows the frame, `WaitTime` waits and `PollInputEvents` reads the input, as the program calls them.
+- `SwapScreenBuffer`: Shows the frame `EndDrawing` ended, for a program built with `-D helix-ray-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`. Without it, `EndDrawing` has shown the frame already and this does nothing. A frame not shown by the next `EndDrawing` is shown then. In a page the browser shows a frame when the loop's body returns, as raylib's web build has it, so the frame shows then however this is called.
+- `PollInputEvents`: Reads the input that came since the last read: each key's, button's and finger's state, and the window's events. `EndDrawing` reads it already unless the program is built with `-D helix-ray-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`; a second read, as raylib's, starts a new frame of input, so what was pressed before it reads as held. With `EnableEventWaiting`, it waits for an event natively first.
+- `EnableEventWaiting`: Makes each frame natively wait for an event before the next is read, as raylib's: a key, a mouse button, the mouse moved, the window changed, from a device the program reads. The program draws nothing meanwhile and uses little time; the platform and helix-ray's async loads are still served, so a load answers while it waits and is drawn after the next event. In a page it changes nothing, as raylib's web build doesn't wait: the browser runs each frame.
+- `DisableEventWaiting`: Makes each frame read the events there are and go on, as it does until `EnableEventWaiting`.
 - `ClearBackground`: Clears the frame to a color, dropping what was drawn before it.
   - `color`: The color.
-- `GetRandomValue`: Returns a random whole number from min to max, both included.
+- `GetRandomValue`: Returns a random whole number from min to max, both included, from raylib's generator (xoshiro128**, helix-math's `Random`), so a seed gives the numbers raylib's gives.
   - `min`: The least.
   - `max`: The most.
   - returns: The number.
-- `SetRandomSeed`: Seeds `GetRandomValue`, so its numbers repeat from the same seed.
-  - `seed`: The seed.
+- `SetRandomSeed`: Seeds `GetRandomValue` and `LoadRandomSequence`, as raylib's: helix-math's `Random` is raylib's generator, so the numbers repeat from the same seed and are raylib's.
+  - `seed`: The seed, read as unsigned.
+- `LoadRandomSequence`: Returns numbers from min to max, both included, none twice, from `GetRandomValue`'s generator, as raylib's: the same numbers raylib's gives for a seed. As raylib's, min and max aren't swapped: when min is more, the numbers run from min up by the range's size.
+  - `count`: How many.
+  - `min`: The least.
+  - `max`: The most.
+  - returns: The numbers, or null when there are fewer than count in the range.
+- `UnloadRandomSequence`: Frees numbers `LoadRandomSequence` gave. There is nothing to free here.
+  - `sequence`: The numbers.
 - `IsKeyPressed`: Returns whether a key went down this frame.
   - `key`: The key (`KEY_*`).
   - returns: True for that frame alone.
@@ -1778,6 +1807,18 @@ static function EndScissorMode():Void
   - `data`: The bytes.
   - `dataSize`: How many of them.
   - returns: True when it was written, or will be.
+- `ExportDataAsCode`: Writes bytes as a C header through `SaveFileText`, as raylib's does, byte for byte: their count as a define, and the bytes as an array, in hexadecimal, 20 a line.
+  - `data`: The bytes.
+  - `dataSize`: How many of them.
+  - `fileName`: The file; its name, upper case, names the define and the array, with `_` for `.`, `-`, `?`, `!` and `+`.
+  - returns: True when it was written.
+- `GetWorkingDirectory`: Returns the working directory: natively the process's, where `TakeScreenshot` writes; in a page ".", the page's own directory. helix-ray's loads don't read from it: a file's name is under the program's files wherever it is (`GetApplicationDirectory`).
+  - returns: The directory, without a slash at its end.
+- `GetApplicationDirectory`: Returns the directory the program's files are read from, as raylib programs name a file from their application's directory: natively `-D helix-ray-native-root` from the executable's directory (`../web` unless set), in a page "./", the page's own. A load given a path in it reads the file it names, so `GetApplicationDirectory() + "resources/a.png"` loads "resources/a.png".
+  - returns: The directory, with a slash at its end.
+- `ChangeDirectory`: Changes the working directory, natively the process's, as raylib's: `TakeScreenshot` writes to it from then on. helix-ray's loads are unchanged, reading the program's files wherever it is. A page has no working directory of its own: there, only "." or the page's directory (`GetApplicationDirectory`) succeeds, changing nothing. A failure is logged, as raylib's is.
+  - `dir`: The directory.
+  - returns: True when the working directory is it now.
 - `IsFileExtension`: Returns whether a file name ends in one of some extensions, ignoring the case of A to Z.
   - `fileName`: The file name.
   - `ext`: The extensions with their dots, `;` between them: ".png;.jpg".
@@ -1850,6 +1891,20 @@ static function EndScissorMode():Void
   - `callback`: Returns a file's text, or null; null for none.
 - `SetSaveFileTextCallback`: Writes text files through the program from now on (`SaveFileText`).
   - `callback`: Writes a file's text, returning whether it did; null for none.
+- `UnloadAutomationEventList`: Frees a list's events. There is nothing to free here, and the list is unchanged.
+  - `list`: The list.
+- `ExportAutomationEventList`: Writes a list's events as text through `SaveFileText`, as raylib's does, byte for byte: a header of comments, `c` and the count, then a line for each event, `e`, its frame, type and four parameters, and its type's name.
+  - `list`: The list.
+  - `fileName`: The file.
+  - returns: True when it was written.
+- `SetAutomationEventList`: Sets the list `StartAutomationEventRecording` records into. From the first call, the input functions read the input as automation keeps it, so an event `PlayAutomationEvent` plays reads as real input.
+  - `list`: The list, made by `LoadAutomationEventList(null)` or `LoadAutomationEventListAsync`.
+- `SetAutomationEventBaseFrame`: Sets the frame the next event recorded is stamped with; each frame after counts up from it. Until set, it is the frames since `InitWindow`.
+  - `frame`: The frame.
+- `StartAutomationEventRecording`: Starts recording into the list `SetAutomationEventList` set: as each frame ends, before the next frame's input is read, every key, mouse button and finger held, the mouse's moves and the wheel's, gamepads' buttons held and axes off rest, and the gesture, as raylib records them, each logged. A full list (16384 events) records no more.
+- `StopAutomationEventRecording`: Stops recording.
+- `PlayAutomationEvent`: Plays an event, as raylib's: input becomes the input the functions read now, as it would from the devices, and stays until they change it or another event does; a window event or an action is done (`WINDOW_CLOSE` makes `WindowShouldClose` true). Nothing is played while recording. As raylib's, the program plays each event in its frame, after the frame's input is read: a key held is an event every frame, so a frame's events are played together.
+  - `event`: The event.
 - `TakeScreenshot`: Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImage` writes it by the name's extension (".png", ".qoi" or ".raw"): in a page it is downloaded, as raylib's web build does; natively it is written to the working directory, as raylib writes it there, under the name's file name. raylib's is taken from the frame drawn last, before it is shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as raylib's is.
   - `fileName`: The file name; a directory before it is dropped, and a name with `'` is refused, as raylib's is.
 - `TraceLog`: Writes a message to the log, when its level is at least `SetTraceLogLevel`'s. raylib formats its arguments as printf does; here the text is written as it is (Haxe's string interpolation builds it).
@@ -1879,6 +1934,11 @@ static function EndScissorMode():Void
 - `UpdateCamera`: Moves a camera as one of raylib's modes does: `CAMERA_ORBITAL` turns it about its target, half a radian a second, and the wheel moves it closer; `CAMERA_FREE`, `CAMERA_FIRST_PERSON` and `CAMERA_THIRD_PERSON` move it by WASD, and turn it by the mouse; `CAMERA_CUSTOM` leaves it.
   - `camera`: The camera, changed.
   - `mode`: The mode (`CAMERA_*`).
+- `UpdateCameraPro`: Moves and turns a camera by amounts, as raylib's rcamera does: it pitches (looking no further up or down than straight), yaws and rolls about its own position, then moves forward and right along the ground and up along its up direction, then toward its target, the distance kept above 0.
+  - `camera`: The camera, changed.
+  - `movement`: The distances it moves: forward (x), right (y) and up (z), in world units.
+  - `rotation`: The angles it turns: yaw to the right (x), pitch down (y) and roll (z), in degrees.
+  - `zoom`: How much further from its target it moves, in world units; a negative zoom moves it closer.
 - `GetCameraMatrix`: Returns a camera's view, as `BeginMode3D` uses it.
   - `camera`: The camera.
   - returns: The matrix.
@@ -3595,6 +3655,7 @@ static function LoadWaveAsync(fileName:String, loaded:Wave -> Void, ?failed:Stri
 static function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave -> Void, ?failed:String -> Void):Void
 static function LoadFileTextAsync(fileName:String, loaded:String -> Void, ?failed:String -> Void):Void
 static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):Void
+static function LoadAutomationEventListAsync(fileName:String, loaded:AutomationEventList -> Void, ?failed:String -> Void):Void
 static function FileExistsAsync(fileName:String, answer:Bool -> Void):Void
 static function GetFileLengthAsync(fileName:String, answer:Int -> Void):Void
 static function GetFileModTimeAsync(fileName:String, answer:Int -> Void):Void
@@ -3646,6 +3707,10 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
 - `LoadFileDataAsync`: Reads a file's bytes, answering when they are read: helix-ray's own, in place of raylib's `LoadFileData`. The program's `SetLoadFileDataCallback` answers first, then what `SaveFileData` wrote, then the program's files.
   - `fileName`: The file.
   - `loaded`: Receives its bytes.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+- `LoadAutomationEventListAsync`: Loads an automation events list from a text file, answering when it is read: helix-ray's own, in place of raylib's `LoadAutomationEventList` given a file. It reads the file as `LoadFileTextAsync` does, then as raylib's does: each line starting `c` sets the count, each starting `e` is an event, its frame, type and four parameters; other lines are skipped, and so is a last line with no newline at its end, as raylib's reading skips it. A count that isn't the events read warns, and the events read are the count.
+  - `fileName`: The file, as `ExportAutomationEventList` writes it.
+  - `loaded`: Receives the list, its capacity 16384.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 - `FileExistsAsync`: Answers whether a file exists: helix-ray's own, in place of raylib's `FileExists`. One `SaveFileText` or `SaveFileData` wrote exists, as does one of the program's; finding one of the program's reads it, so a load of it after answers at once. The answer comes at a later frame, never during the call.
   - `fileName`: The file.
@@ -3736,6 +3801,7 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
 ```haxe
 static macro function LoadShader(vsFileName:Null<String>, fsFileName:Null<String>):Shader
 static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<String>):Shader
+static macro function LoadAutomationEventList(fileName:Null<String>):AutomationEventList
 ```
 
 - `LoadShader`: Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the program builds, for every target, so their names are constants; the files are found under `-D helix-ray-files` (default `web`), as the program's other files are.
@@ -3746,18 +3812,21 @@ static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<Stri
   - `vsCode`: The vertex stage's text, or null.
   - `fsCode`: The fragment stage's text, or null.
   - returns: The shader.
+- `LoadAutomationEventList`: Returns an empty automation events list to record into, its capacity raylib's 16384, as raylib's `LoadAutomationEventList(NULL)`. Given a file instead, a call doesn't compile: a page can't wait for a file, so `LoadAutomationEventListAsync` reads one.
+  - `fileName`: Null (or 0, as raylib's examples write it).
+  - returns: The list.
 
 ### Not supported in helix-ray
 
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
-`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `MemAlloc`, `MemRealloc`, `MemFree`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ### Not in helix-ray yet
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`EnableEventWaiting`, `DisableEventWaiting`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `GetWorkingDirectory`, `GetApplicationDirectory`, `ChangeDirectory`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `UpdateCameraPro`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `ExportFontAsCode`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`.
+`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`.
 
 ## Raymath
 

@@ -351,11 +351,14 @@ class Frame {
 		return [for (b in p.blocks) b == null ? null : b.sub(0, b.length)];
 	}
 
-	/** Draws the frame: each render texture's pass, then the screen's, then shows it.
+	/** Draws the frame: each render texture's pass, then the screen's, then shows it unless told to wait for `present`. A frame ended
+		and not shown yet is shown first.
 
 		@param framebufferWidth  The screen's framebuffer width.
-		@param framebufferHeight  Its height. */
-	public function draw(framebufferWidth:Int, framebufferHeight:Int):Void {
+		@param framebufferHeight  Its height.
+		@param show  Whether the screen's pass is shown as it ends; when false, `present` shows it. */
+	public function draw(framebufferWidth:Int, framebufferHeight:Int, show:Bool):Void {
+		present();
 		for (p in passes) {
 			if (p.target == 0)
 				graphics.beginFrame(framebufferWidth, framebufferHeight, p.clear);
@@ -383,12 +386,26 @@ class Frame {
 				graphics.endFrame();
 				if (screenshots != null)
 					screenshots.frameEnded();
-				graphics.present();
+				if (show)
+					graphics.present();
+				else
+					unshown = true;
 			} else
 				graphics.endTargetPass();
 		}
 		reset();
 	}
+
+	/** Shows the frame `draw` ended and didn't show; nothing when there is none. */
+	public function present():Void {
+		if (!unshown)
+			return;
+		unshown = false;
+		graphics.present();
+	}
+
+	// Whether the screen's pass ended without being shown.
+	var unshown = false;
 
 	// A scissor in the pass's pixels from its top left, as the framebuffer's from its bottom left, within it.
 	function clip(r:Array<Float>, scaleX:Float, scaleY:Float, width:Int, height:Int):Void {

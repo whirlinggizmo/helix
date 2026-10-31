@@ -94,9 +94,9 @@ class ImageTests {
 		pin("gradientRadial", Image.gradientRadial(33, 33, 0.3, A, B), 33, 33, 0x637859bf);
 		pin("gradientSquare", Image.gradientSquare(7, 13, 0.5, A, B), 7, 13, 0x69b2658a);
 		pin("checked", Image.checked(17, 9, 3, 2, A, B), 17, 9, 0x62a34b45);
-		pin("whiteNoise", Image.whiteNoise(64, 48, 0.5, new Random(7)), 64, 48, 0x2f6251b0);
+		pin("whiteNoise", Image.whiteNoise(64, 48, 0.5, new Random(7)), 64, 48, 0x69c49ecf);
 		pin("perlinNoise", Image.perlinNoise(48, 64, 10, -5, 4.5), 48, 64, 0x5e15e7ba);
-		pin("cellular", Image.cellular(50, 30, 7, new Random(12)), 50, 30, 0x47e7cd3d);
+		pin("cellular", Image.cellular(50, 30, 7, new Random(12)), 50, 30, 0xffe57f42);
 		pin("copy", noise(7, 13).copy(), 7, 13, 0xf65e7300);
 		pin("getChannel", noise(7, 13).getChannel(2), 7, 13, 0xa4d06a40);
 		var solid = Image.filled(3, 2, 0x80102030);

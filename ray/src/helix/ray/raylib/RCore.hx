@@ -9,6 +9,7 @@ import helix.ray.internal.Models;
 import helix.ray.internal.Runtime;
 import helix.ray.internal.Textures;
 import helix.ray.internal.CallbackFiles;
+import helix.ray.internal.Automation;
 import helix.ray.raylib.RCore.*;
 import helix.ray.raylib.RShapes.*;
 import helix.ray.raylib.RTextures.*;
@@ -460,9 +461,42 @@ class RCore {
 		Runtime.frame.begin(GetScreenWidth(), GetScreenHeight());
 	}
 
-	/** Ends a frame's drawing: shows it, then reads the next frame's input. */
+	/** Ends a frame's drawing: shows it, waits out the rest of the frame natively (`SetTargetFPS`), then reads the next frame's input.
+		Built with `-D helix-ray-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, it only ends the drawing:
+		`SwapScreenBuffer` shows the frame, `WaitTime` waits and `PollInputEvents` reads the input, as the program calls them. */
 	static function EndDrawing():Void {
 		Runtime.endFrame();
+	}
+
+	/** Shows the frame `EndDrawing` ended, for a program built with `-D helix-ray-custom-frame-control`, raylib's
+		`SUPPORT_CUSTOM_FRAME_CONTROL`. Without it, `EndDrawing` has shown the frame already and this does nothing. A frame not shown by
+		the next `EndDrawing` is shown then. In a page the browser shows a frame when the loop's body returns, as raylib's web build has it,
+		so the frame shows then however this is called. */
+	static function SwapScreenBuffer():Void {
+		if (Runtime.frame != null)
+			Runtime.frame.present();
+	}
+
+	/** Reads the input that came since the last read: each key's, button's and finger's state, and the window's events. `EndDrawing`
+		reads it already unless the program is built with `-D helix-ray-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`; a
+		second read, as raylib's, starts a new frame of input, so what was pressed before it reads as held. With `EnableEventWaiting`, it
+		waits for an event natively first. */
+	static function PollInputEvents():Void {
+		if (Runtime.events != null)
+			Runtime.poll();
+	}
+
+	/** Makes each frame natively wait for an event before the next is read, as raylib's: a key, a mouse button, the mouse moved, the
+		window changed, from a device the program reads. The program draws nothing meanwhile and uses little time; the platform and
+		helix-ray's async loads are still served, so a load answers while it waits and is drawn after the next event. In a page it changes nothing,
+		as raylib's web build doesn't wait: the browser runs each frame. */
+	static function EnableEventWaiting():Void {
+		Runtime.eventWaiting = true;
+	}
+
+	/** Makes each frame read the events there are and go on, as it does until `EnableEventWaiting`. */
+	static function DisableEventWaiting():Void {
+		Runtime.eventWaiting = false;
 	}
 
 	/** Clears the frame to a color, dropping what was drawn before it.
@@ -472,7 +506,8 @@ class RCore {
 		Runtime.frame.clear((color.a << 24) | (color.r << 16) | (color.g << 8) | color.b);
 	}
 
-	/** Returns a random whole number from min to max, both included.
+	/** Returns a random whole number from min to max, both included, from raylib's generator (xoshiro128**, helix-math's `Random`), so a seed gives the
+		numbers raylib's gives.
 
 		@param min  The least.
 		@param max  The most.
@@ -483,20 +518,71 @@ class RCore {
 			min = max;
 			max = t;
 		}
-		seed ^= seed << 13;
-		seed ^= seed >>> 17;
-		seed ^= seed << 5;
-		var span = max - min + 1;
-		var r = (seed >>> 1) % span;
-		return min + r;
+		return randomIn(min, max);
 	}
 
-	/** Seeds `GetRandomValue`, so its numbers repeat from the same seed.
+	/** Seeds `GetRandomValue` and `LoadRandomSequence`, as raylib's: helix-math's `Random` is raylib's generator, so the numbers repeat
+		from the same seed and are raylib's.
 
-		@param seed  The seed. */
+		@param seed  The seed, read as unsigned. */
 	static function SetRandomSeed(seed:Int):Void {
-		RCore.seed = seed == 0 ? 1 : seed;
+		random.seed = seed;
 		seeded = true;
+	}
+
+	// A whole number below 2^53 as its low 32 bits.
+	static function word(value:Float):Int {
+		var low = value % 4294967296.0;
+		return low >= 2147483648.0 ? Std.int(low - 4294967296.0) : Std.int(low);
+	}
+
+	/** Returns numbers from min to max, both included, none twice, from `GetRandomValue`'s generator, as raylib's: the same numbers
+		raylib's gives for a seed. As raylib's, min and max aren't swapped: when min is more, the numbers run from min up by the range's
+		size.
+
+		@param count  How many.
+		@param min  The least.
+		@param max  The most.
+		@return  The numbers, or null when there are fewer than count in the range. */
+	static function LoadRandomSequence(count:Int, min:Int, max:Int):Null<Array<Int>> {
+		var span = unsigned(rangeSpan(min, max));
+		if (unsigned(count) > span)
+			return null;
+		var sequence:Array<Int> = [];
+		while (sequence.length < count) {
+			var value = randomIn(min, max);
+			if (sequence.indexOf(value) < 0)
+				sequence.push(value);
+		}
+		return sequence;
+	}
+
+	/** Frees numbers `LoadRandomSequence` gave. There is nothing to free here.
+
+		@param sequence  The numbers. */
+	static function UnloadRandomSequence(sequence:Null<Array<Int>>):Void {}
+
+	// raylib's rprand, helix-math's generator, in the state raylib's starts in until seeded.
+	static final random = {
+		var generator = new helix.math.Random();
+		generator.state = [0x96ea83c1, 0x218b21e5, 0xaa91febd, 0x976414d4];
+		generator;
+	};
+
+	// abs(max - min) + 1 as C's ints compute it, wrapping.
+	static function rangeSpan(min:Int, max:Int):Int {
+		var d = (max - min) | 0;
+		return ((d < 0 ? -d : d) + 1) | 0;
+	}
+
+	// A number from the generator in min's range, as rprand's: its 32 bits modulo the range's size, both unsigned, plus min, wrapping.
+	static function randomIn(min:Int, max:Int):Int {
+		return word(unsigned(random.nextBits()) % unsigned(rangeSpan(min, max)) + unsigned(min));
+	}
+
+	// A 32-bit number read as unsigned.
+	static inline function unsigned(value:Int):Float {
+		return value < 0 ? value + 4294967296.0 : value;
 	}
 
 	// ---- Keyboard ----
@@ -506,7 +592,9 @@ class RCore {
 		@param key  The key (`KEY_*`).
 		@return  True for that frame alone. */
 	static function IsKeyPressed(key:Int):Bool {
-		var k = toKey(key);
+		var k = toKey(key), played = Automation.active;
+		if (played != null)
+			return k >= 0 && !played.previousKeys[k] && played.keys[k];
 		return k >= 0 && Runtime.keyboard().isKeyPressed(cast k);
 	}
 
@@ -515,7 +603,9 @@ class RCore {
 		@param key  The key (`KEY_*`).
 		@return  True while it is down. */
 	static function IsKeyDown(key:Int):Bool {
-		var k = toKey(key);
+		var k = toKey(key), played = Automation.active;
+		if (played != null)
+			return k >= 0 && played.keys[k];
 		return k >= 0 && Runtime.keyboard().isKeyDown(cast k);
 	}
 
@@ -524,7 +614,9 @@ class RCore {
 		@param key  The key (`KEY_*`).
 		@return  True for that frame alone. */
 	static function IsKeyReleased(key:Int):Bool {
-		var k = toKey(key);
+		var k = toKey(key), played = Automation.active;
+		if (played != null)
+			return k >= 0 && played.previousKeys[k] && !played.keys[k];
 		return k >= 0 && Runtime.keyboard().isKeyReleased(cast k);
 	}
 
@@ -570,6 +662,14 @@ class RCore {
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
 	static function IsMouseButtonPressed(button:Int):Bool {
+		var played = Automation.active;
+		if (played != null)
+			return button >= 0 && button < 8 && !played.previousButtons[button] && played.buttons[button];
+		return realButtonPressed(button);
+	}
+
+	// Whether a mouse button went down this frame, as the devices have it.
+	static function realButtonPressed(button:Int):Bool {
 		var mouse = Runtime.mouse();
 		if (button == MOUSE_BUTTON_LEFT
 			&& Runtime.touch().pressed.length > 0
@@ -583,6 +683,14 @@ class RCore {
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True while it is down. */
 	static function IsMouseButtonDown(button:Int):Bool {
+		var played = Automation.active;
+		if (played != null)
+			return button >= 0 && button < 8 && played.buttons[button];
+		return realButtonDown(button);
+	}
+
+	// Whether a mouse button is held, as the devices have it.
+	static function realButtonDown(button:Int):Bool {
 		var mouse = Runtime.mouse();
 		if (button == MOUSE_BUTTON_LEFT && Runtime.touch().fingers.length > 0)
 			return true;
@@ -594,6 +702,14 @@ class RCore {
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
 	static function IsMouseButtonReleased(button:Int):Bool {
+		var played = Automation.active;
+		if (played != null)
+			return button >= 0 && button < 8 && played.previousButtons[button] && !played.buttons[button];
+		return realButtonReleased(button);
+	}
+
+	// Whether a mouse button went up this frame, as the devices have it.
+	static function realButtonReleased(button:Int):Bool {
 		var mouse = Runtime.mouse();
 		if (button == MOUSE_BUTTON_LEFT && Runtime.touch().released.length > 0 && Runtime.touch().fingers.length == 0)
 			return true;
@@ -627,8 +743,17 @@ class RCore {
 
 		@return  The position. */
 	static function GetMousePosition():Vector2 {
+		var played = Automation.active;
+		if (played != null)
+			return new Vector2((played.mouseX + mouseOffsetX) * mouseScaleX, (played.mouseY + mouseOffsetY) * mouseScaleY);
 		pointer();
 		return new Vector2((lastPointerX + mouseOffsetX) * mouseScaleX, (lastPointerY + mouseOffsetY) * mouseScaleY);
+	}
+
+	// The pointer's position, as the devices have it, in the screen's pixels.
+	static function realPointer():Vector2 {
+		pointer();
+		return new Vector2(lastPointerX, lastPointerY);
 	}
 
 	// Brings the pointer's position up to date: the first finger's while one is down, else the mouse's once it moves, in the screen's pixels.
@@ -659,6 +784,11 @@ class RCore {
 		lastMouseY = mouse.y;
 		lastPointerX = x;
 		lastPointerY = y;
+		var played = Automation.active;
+		if (played != null) {
+			played.mouseX = played.previousMouseX = x;
+			played.mouseY = played.previousMouseY = y;
+		}
 	}
 
 	/** Sets what `GetMousePosition` adds to the mouse's position, before its scale.
@@ -683,6 +813,14 @@ class RCore {
 
 		@return  The notches. */
 	static function GetMouseWheelMoveV():Vector2 {
+		var played = Automation.active;
+		if (played != null)
+			return new Vector2(played.wheelX, played.wheelY);
+		return realWheel();
+	}
+
+	// How far the wheel turned this frame, as the mouse has it.
+	static function realWheel():Vector2 {
 		var mouse = Runtime.mouse();
 		return new Vector2(mouse.wheelX, mouse.wheelY);
 	}
@@ -756,15 +894,32 @@ class RCore {
 
 		@return  The notches. */
 	static function GetMouseWheelMove():Float {
-		var mouse = Runtime.mouse();
-		return Math.abs(mouse.wheelX) > Math.abs(mouse.wheelY) ? mouse.wheelX : mouse.wheelY;
+		var wheel = GetMouseWheelMoveV();
+		return Math.abs(wheel.x) > Math.abs(wheel.y) ? wheel.x : wheel.y;
 	}
 
 	/** Returns the number of fingers down.
 
 		@return  The count. */
 	static function GetTouchPointCount():Int {
+		var played = Automation.active;
+		if (played != null)
+			return [for (down in played.touches) if (down) down].length;
 		return Runtime.touch().fingers.length;
+	}
+
+	// Whether a finger is down, by its place, 0 for the first down, as the touch has it.
+	static function realTouchDown(index:Int):Bool {
+		return index < Runtime.touch().fingers.length;
+	}
+
+	// Where a finger is, by its place, as the touch has it, in the screen's pixels.
+	static function realTouchPosition(index:Int):Vector2 {
+		var touch = Runtime.touch(), ratio = Runtime.window.pixelRatio;
+		if (index < 0 || index >= touch.fingers.length)
+			return new Vector2();
+		var id = touch.fingers[index];
+		return new Vector2(touch.getX(id) / ratio, touch.getY(id) / ratio);
 	}
 
 	/** Returns a finger's position, in the screen's pixels.
@@ -772,11 +927,10 @@ class RCore {
 		@param index  Which finger, 0 for the first down.
 		@return  The position, or (0, 0) when fewer are down. */
 	static function GetTouchPosition(index:Int):Vector2 {
-		var touch = Runtime.touch(), ratio = Runtime.window.pixelRatio;
-		if (index < 0 || index >= touch.fingers.length)
-			return new Vector2();
-		var id = touch.fingers[index];
-		return new Vector2(touch.getX(id) / ratio, touch.getY(id) / ratio);
+		var played = Automation.active;
+		if (played != null)
+			return index >= 0 && index < 8 ? new Vector2(played.touchX[index], played.touchY[index]) : new Vector2();
+		return realTouchPosition(index);
 	}
 
 	/** Returns a finger's id, which stays the same while it is down.
@@ -815,13 +969,21 @@ class RCore {
 		@param gesture  The gesture (`GESTURE_*`).
 		@return  True while it is the gesture, and enabled. */
 	static function IsGestureDetected(gesture:Int):Bool {
-		return Runtime.gestures().isDetected(gesture);
+		return GetGestureDetected() == gesture;
 	}
 
 	/** Returns the gesture detected now.
 
 		@return  The gesture (`GESTURE_*`), or `GESTURE_NONE` when it isn't enabled. */
 	static function GetGestureDetected():Int {
+		var played = Automation.active;
+		if (played != null)
+			return Runtime.gestures().enabled & played.gesture;
+		return Runtime.gestures().current;
+	}
+
+	// The gesture detected now, as the gestures have it.
+	static function realGesture():Int {
 		return Runtime.gestures().current;
 	}
 
@@ -890,7 +1052,39 @@ class RCore {
 		@param gamepad  The gamepad, 0 to 3.
 		@return  True while one is connected there. */
 	static function IsGamepadAvailable(gamepad:Int):Bool {
+		var played = Automation.active;
+		if (played != null)
+			return gamepad >= 0 && gamepad < 4 && played.pads[gamepad];
+		return realPadReady(gamepad);
+	}
+
+	// Whether a gamepad is connected, as the gamepads have it.
+	static function realPadReady(gamepad:Int):Bool {
 		return gamepad >= 0 && gamepad < 4 && Runtime.gamepads().isConnected(gamepad);
+	}
+
+	// Whether a gamepad's button is held, as the gamepads have it.
+	static function realPadButtonDown(gamepad:Int, button:Int):Bool {
+		var b = toPadButton(button);
+		return b >= 0 && realPadReady(gamepad) && Runtime.gamepads().isButtonDown(gamepad, cast b);
+	}
+
+	// A gamepad's axis, as the gamepads have it.
+	static function realPadAxis(gamepad:Int, axis:Int):Float {
+		if (axis < 0 || axis > 5 || !realPadReady(gamepad))
+			return 0;
+		var value = Runtime.gamepads().getAxis(gamepad, cast axis);
+		return axis >= GAMEPAD_AXIS_LEFT_TRIGGER ? value * 2 - 1 : value;
+	}
+
+	// A played gamepad button's state, now or the last frame, or null while nothing is played.
+	static function playedPadButton(gamepad:Int, button:Int, previous:Bool):Null<Bool> {
+		var played = Automation.active;
+		if (played == null)
+			return null;
+		if (gamepad < 0 || gamepad >= 4 || button < 0 || button >= 32 || !played.pads[gamepad])
+			return false;
+		return (previous ? played.previousPadButtons : played.padButtons)[gamepad * 32 + button];
 	}
 
 	/** Returns a gamepad's name.
@@ -907,6 +1101,9 @@ class RCore {
 		@param button  The button (`GAMEPAD_BUTTON_*`).
 		@return  True for that frame alone. */
 	static function IsGamepadButtonPressed(gamepad:Int, button:Int):Bool {
+		var now = playedPadButton(gamepad, button, false);
+		if (now != null)
+			return now && !playedPadButton(gamepad, button, true);
 		var b = toPadButton(button);
 		return b >= 0 && IsGamepadAvailable(gamepad) && Runtime.gamepads().isButtonPressed(gamepad, cast b);
 	}
@@ -917,6 +1114,9 @@ class RCore {
 		@param button  The button (`GAMEPAD_BUTTON_*`).
 		@return  True while it is down. */
 	static function IsGamepadButtonDown(gamepad:Int, button:Int):Bool {
+		var now = playedPadButton(gamepad, button, false);
+		if (now != null)
+			return now;
 		var b = toPadButton(button);
 		return b >= 0 && IsGamepadAvailable(gamepad) && Runtime.gamepads().isButtonDown(gamepad, cast b);
 	}
@@ -927,6 +1127,9 @@ class RCore {
 		@param button  The button (`GAMEPAD_BUTTON_*`).
 		@return  True for that frame alone. */
 	static function IsGamepadButtonReleased(gamepad:Int, button:Int):Bool {
+		var now = playedPadButton(gamepad, button, false);
+		if (now != null)
+			return !now && playedPadButton(gamepad, button, true);
 		var b = toPadButton(button);
 		return b >= 0 && IsGamepadAvailable(gamepad) && Runtime.gamepads().isButtonReleased(gamepad, cast b);
 	}
@@ -972,10 +1175,10 @@ class RCore {
 		@param axis  The axis (`GAMEPAD_AXIS_*`).
 		@return  The value. */
 	static function GetGamepadAxisMovement(gamepad:Int, axis:Int):Float {
-		if (axis < 0 || axis > 5 || !IsGamepadAvailable(gamepad))
-			return 0;
-		var value = Runtime.gamepads().getAxis(gamepad, cast axis);
-		return axis >= GAMEPAD_AXIS_LEFT_TRIGGER ? value * 2 - 1 : value;
+		var played = Automation.active;
+		if (played != null)
+			return gamepad >= 0 && gamepad < 4 && axis >= 0 && axis < 8 && played.pads[gamepad] ? played.padAxes[gamepad * 8 + axis] : 0;
+		return realPadAxis(gamepad, axis);
 	}
 
 	// ---- Files ----
@@ -1049,6 +1252,100 @@ class RCore {
 		Runtime.keptSaves().setString(SAVED_DATA + path, encoded);
 		Runtime.keptSaves().setFloat(SAVED_TIME + path, Math.ffloor(Date.now().getTime() / 1000));
 		return true;
+	}
+
+	/** Writes bytes as a C header through `SaveFileText`, as raylib's does, byte for byte: their count as a define, and the bytes as an
+		array, in hexadecimal, 20 a line.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@param fileName  The file; its name, upper case, names the define and the array, with `_` for `.`, `-`, `?`, `!` and `+`.
+		@return  True when it was written. */
+	static function ExportDataAsCode(data:haxe.io.Bytes, dataSize:Int, fileName:String):Bool {
+		var text = new StringBuf();
+		text.add("////////////////////////////////////////////////////////////////////////////////////////\n");
+		text.add("//                                                                                    //\n");
+		text.add("// DataAsCode exporter v1.0 - Raw data exported as an array of bytes                  //\n");
+		text.add("//                                                                                    //\n");
+		text.add("// more info and bugs-report:  github.com/raysan5/raylib                              //\n");
+		text.add("// feedback and support:       ray[at]raylib.com                                      //\n");
+		text.add("//                                                                                    //\n");
+		text.add("// Copyright (c) 2022-2024 Ramon Santamaria (@raysan5)                                //\n");
+		text.add("//                                                                                    //\n");
+		text.add("////////////////////////////////////////////////////////////////////////////////////////\n\n");
+		var name = new StringBuf(), base = GetFileNameWithoutExt(fileName);
+		for (i in 0...base.length) {
+			var c = StringTools.fastCodeAt(base, i);
+			name.addChar(c >= "a".code
+				&& c <= "z".code ? c - 32 : c == ".".code || c == "-".code || c == "?".code || c == "!".code || c == "+".code ? "_".code : c);
+		}
+		var varName = name.toString();
+		text.add('#define ${varName}_DATA_SIZE     $dataSize\n\n');
+		text.add('static unsigned char ${varName}_DATA[${varName}_DATA_SIZE] = { ');
+		inline function at(i:Int):String
+			return StringTools.hex(data != null && i >= 0 && i < data.length ? data.get(i) : 0).toLowerCase();
+		for (i in 0...dataSize - 1)
+			text.add(i % 20 == 0 ? '0x${at(i)},\n' : '0x${at(i)}, ');
+		text.add('0x${at(dataSize - 1)} };\n');
+		var success = SaveFileText(fileName, text.toString());
+		if (success)
+			Runtime.log(LOG_INFO, 'FILEIO: [$fileName] Data as code exported successfully');
+		else
+			Runtime.log(LOG_WARNING, 'FILEIO: [$fileName] Failed to export data as code');
+		return success;
+	}
+
+	// ---- Directories ----
+
+	/** Returns the working directory: natively the process's, where `TakeScreenshot` writes; in a page ".", the page's own directory.
+		helix-ray's loads don't read from it: a file's name is under the program's files wherever it is (`GetApplicationDirectory`).
+
+		@return  The directory, without a slash at its end. */
+	static function GetWorkingDirectory():String {
+		#if js
+		return ".";
+		#else
+		return haxe.io.Path.removeTrailingSlashes(Sys.getCwd());
+		#end
+	}
+
+	/** Returns the directory the program's files are read from, as raylib programs name a file from their application's directory:
+		natively `-D helix-ray-native-root` from the executable's directory (`../web` unless set), in a page "./", the page's own. A load
+		given a path in it reads the file it names, so `GetApplicationDirectory() + "resources/a.png"` loads "resources/a.png".
+
+		@return  The directory, with a slash at its end. */
+	static function GetApplicationDirectory():String {
+		#if js
+		return "./";
+		#else
+		return haxe.io.Path.addTrailingSlash(haxe.io.Path.normalize(haxe.io.Path.join([Runtime.system.getProgramDirectory(), Runtime.root])));
+		#end
+	}
+
+	/** Changes the working directory, natively the process's, as raylib's: `TakeScreenshot` writes to it from then on. helix-ray's loads
+		are unchanged, reading the program's files wherever it is. A page has no working directory of its own: there, only "." or the
+		page's directory (`GetApplicationDirectory`) succeeds, changing nothing. A failure is logged, as raylib's is.
+
+		@param dir  The directory.
+		@return  True when the working directory is it now. */
+	static function ChangeDirectory(dir:String):Bool {
+		#if js
+		var changed = dir == "." || dir == "./";
+		#else
+		// Sys.setCwd doesn't fail everywhere for a directory that isn't there, so it is looked for first.
+		var changed = false;
+		try {
+			if (sys.FileSystem.exists(dir) && sys.FileSystem.isDirectory(dir)) {
+				Sys.setCwd(dir);
+				changed = true;
+			}
+		} catch (_:Dynamic) {}
+		if (changed)
+			Runtime.workingDirectoryChanged();
+		#end
+		if (!changed)
+			Runtime.log(LOG_WARNING, 'SYSTEM: Failed to change to directory: $dir');
+		return changed;
 	}
 
 	// ---- File names ----
@@ -1531,6 +1828,117 @@ class RCore {
 		saveText = callback;
 	}
 
+	// ---- Automation events ----
+	// raylib's LoadAutomationEventList(NULL): an empty list to record into, its capacity raylib's. Raylib.LoadAutomationEventList, a
+	// macro, calls it; a file is read by LoadAutomationEventListAsync.
+	static function newAutomationEventList():AutomationEventList {
+		var list = new AutomationEventList();
+		list.capacity = Automation.CAPACITY;
+		Runtime.log(LOG_INFO, "AUTOMATION: New empty events list loaded successfully");
+		return list;
+	}
+
+	/** Frees a list's events. There is nothing to free here, and the list is unchanged.
+
+		@param list  The list. */
+	static function UnloadAutomationEventList(list:AutomationEventList):Void {}
+
+	/** Writes a list's events as text through `SaveFileText`, as raylib's does, byte for byte: a header of comments, `c` and the count,
+		then a line for each event, `e`, its frame, type and four parameters, and its type's name.
+
+		@param list  The list.
+		@param fileName  The file.
+		@return  True when it was written. */
+	static function ExportAutomationEventList(list:AutomationEventList, fileName:String):Bool {
+		var text = new StringBuf();
+		text.add("#\n");
+		text.add("# Automation events exporter v1.0 - raylib automation events list\n");
+		text.add("#\n");
+		text.add("#    c <events_count>\n");
+		text.add("#    e <frame> <event_type> <param0> <param1> <param2> <param3> // <event_type_name>\n");
+		text.add("#\n");
+		text.add("# more info and bugs-report:  github.com/raysan5/raylib\n");
+		text.add("# feedback and support:       ray[at]raylib.com\n");
+		text.add("#\n");
+		text.add("# Copyright (c) 2023-2024 Ramon Santamaria (@raysan5)\n");
+		text.add("#\n\n");
+		text.add('c ${list.count}\n');
+		for (i in 0...list.count) {
+			var event = list.events[i];
+			var p = [for (j in 0...4) j < event.params.length ? event.params[j] : 0];
+			var name = event.type >= 0 && event.type < Automation.TYPE_NAMES.length ? Automation.TYPE_NAMES[event.type] : "";
+			text.add('e ${event.frame} ${event.type} ${p[0]} ${p[1]} ${p[2]} ${p[3]} // Event: $name\n');
+		}
+		return SaveFileText(fileName, text.toString());
+	}
+
+	/** Sets the list `StartAutomationEventRecording` records into. From the first call, the input functions read the input as
+		automation keeps it, so an event `PlayAutomationEvent` plays reads as real input.
+
+		@param list  The list, made by `LoadAutomationEventList(null)` or `LoadAutomationEventListAsync`. */
+	static function SetAutomationEventList(list:AutomationEventList):Void {
+		Automation.use().list = list;
+	}
+
+	/** Sets the frame the next event recorded is stamped with; each frame after counts up from it. Until set, it is the frames since
+		`InitWindow`.
+
+		@param frame  The frame. */
+	static function SetAutomationEventBaseFrame(frame:Int):Void {
+		Automation.use().frameOffset = frame - Runtime.frames;
+	}
+
+	/** Starts recording into the list `SetAutomationEventList` set: as each frame ends, before the next frame's input is read, every
+		key, mouse button and finger held, the mouse's moves and the wheel's, gamepads' buttons held and axes off rest, and the gesture,
+		as raylib records them, each logged. A full list (16384 events) records no more. */
+	static function StartAutomationEventRecording():Void {
+		Automation.use().recording = true;
+	}
+
+	/** Stops recording. */
+	static function StopAutomationEventRecording():Void {
+		Automation.use().recording = false;
+	}
+
+	/** Plays an event, as raylib's: input becomes the input the functions read now, as it would from the devices, and stays until they
+		change it or another event does; a window event or an action is done (`WINDOW_CLOSE` makes `WindowShouldClose` true). Nothing is
+		played while recording. As raylib's, the program plays each event in its frame, after the frame's input is read: a key held is
+		an event every frame, so a frame's events are played together.
+
+		@param event  The event. */
+	static function PlayAutomationEvent(event:AutomationEvent):Void {
+		Automation.use().play(event);
+	}
+
+	// ---- Memory ----
+
+	/** raylib's allocator. Haxe has no raw memory to allocate, so a call doesn't compile.
+
+		@param size  The bytes.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("MemAlloc: Haxe has no raw memory to allocate. Make bytes instead: haxe.io.Bytes.alloc(size)")
+	static function MemAlloc(size:Int):Dynamic {
+		throw "MemAlloc is unimplemented";
+	}
+
+	/** raylib's reallocator. Haxe has no raw memory, so a call doesn't compile.
+
+		@param ptr  The memory.
+		@param size  The bytes.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("MemRealloc: Haxe has no raw memory to reallocate. Make new bytes and copy into them instead: haxe.io.Bytes.alloc(size), then blit")
+	static function MemRealloc(ptr:Dynamic, size:Int):Dynamic {
+		throw "MemRealloc is unimplemented";
+	}
+
+	/** raylib's free. Haxe frees memory once nothing holds it, so a call doesn't compile.
+
+		@param ptr  The memory. */
+	@:unsupported("MemFree: Haxe frees memory once nothing holds it. Drop the reference instead.")
+	static function MemFree(ptr:Dynamic):Void {
+		throw "MemFree is unimplemented";
+	}
+
 	// ---- Screenshots ----
 
 	/** Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImage` writes it by the name's extension
@@ -1656,7 +2064,6 @@ class RCore {
 
 	static var start = 0.;
 	static var configFlags = 0;
-	static var seed = 0x2545f491;
 	static var seeded = false;
 	static var lastMouseX = 0.;
 	static var lastMouseY = 0.;
@@ -1668,10 +2075,34 @@ class RCore {
 	static var mouseScaleY = 1.;
 	static var cursorHidden = false;
 
+	// A file's name as the loads and saves read it: relative to the program's files, a leading `GetApplicationDirectory()` and "./"
+	// taken off.
 	static function normalize(path:String):String {
+		#if !js
+		if (Runtime.system != null) {
+			var application = GetApplicationDirectory();
+			if (StringTools.startsWith(path, application))
+				path = path.substr(application.length);
+		}
+		#end
 		while (StringTools.startsWith(path, "./"))
 			path = path.substr(2);
 		return path;
+	}
+
+	// Whether a key is held, as the keyboard has it: false for a key that isn't the platform's own number (a right-hand modifier).
+	static function realKeyDown(key:Int):Bool {
+		return toKey(key) == key && Runtime.keyboard().isKeyDown(cast key);
+	}
+
+	// Whether a key went down this frame, as the keyboard has it.
+	static function realKeyPressed(key:Int):Bool {
+		return toKey(key) == key && Runtime.keyboard().isKeyPressed(cast key);
+	}
+
+	// Whether a key went up this frame, as the keyboard has it.
+	static function realKeyReleased(key:Int):Bool {
+		return toKey(key) == key && Runtime.keyboard().isKeyReleased(cast key);
 	}
 
 	// raylib's KEY_* as the platform's keys: the same numbers, a right-hand modifier as the left-hand one.
@@ -1874,6 +2305,101 @@ class RCore {
 		}
 	}
 
+	/** Moves and turns a camera by amounts, as raylib's rcamera does: it pitches (looking no further up or down than straight), yaws and
+		rolls about its own position, then moves forward and right along the ground and up along its up direction, then toward its
+		target, the distance kept above 0.
+
+		@param camera  The camera, changed.
+		@param movement  The distances it moves: forward (x), right (y) and up (z), in world units.
+		@param rotation  The angles it turns: yaw to the right (x), pitch down (y) and roll (z), in degrees.
+		@param zoom  How much further from its target it moves, in world units; a negative zoom moves it closer. */
+	static function UpdateCameraPro(camera:Camera, movement:Vector3, rotation:Vector3, zoom:Float):Void {
+		cameraPitch(camera, -rotation.y * DEG2RAD, true, false, false);
+		cameraYaw(camera, -rotation.x * DEG2RAD, false);
+		cameraRoll(camera, rotation.z * DEG2RAD);
+		cameraMoveForward(camera, movement.x, true);
+		cameraMoveRight(camera, movement.y, true);
+		cameraMoveUp(camera, movement.z);
+		cameraMoveToTarget(camera, zoom);
+	}
+
+	// ---- rcamera's moves, as raylib's ----
+
+	static function cameraForward(camera:Camera):Vector3 {
+		return Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+	}
+
+	static function cameraRight(camera:Camera):Vector3 {
+		return Vector3Normalize(Vector3CrossProduct(cameraForward(camera), Vector3Normalize(camera.up)));
+	}
+
+	// Moves the position and the target forward, along the ground in the world's plane.
+	static function cameraMoveForward(camera:Camera, distance:Float, moveInWorldPlane:Bool):Void {
+		var forward = cameraForward(camera);
+		if (moveInWorldPlane)
+			forward = Vector3Normalize(new Vector3(forward.x, 0, forward.z));
+		forward = Vector3Scale(forward, distance);
+		camera.position = Vector3Add(camera.position, forward);
+		camera.target = Vector3Add(camera.target, forward);
+	}
+
+	static function cameraMoveUp(camera:Camera, distance:Float):Void {
+		var up = Vector3Scale(Vector3Normalize(camera.up), distance);
+		camera.position = Vector3Add(camera.position, up);
+		camera.target = Vector3Add(camera.target, up);
+	}
+
+	static function cameraMoveRight(camera:Camera, distance:Float, moveInWorldPlane:Bool):Void {
+		var right = cameraRight(camera);
+		if (moveInWorldPlane)
+			right = Vector3Normalize(new Vector3(right.x, 0, right.z));
+		right = Vector3Scale(right, distance);
+		camera.position = Vector3Add(camera.position, right);
+		camera.target = Vector3Add(camera.target, right);
+	}
+
+	// Moves the position along the line to the target, at least 0.001 from it.
+	static function cameraMoveToTarget(camera:Camera, delta:Float):Void {
+		var distance = Vector3Distance(camera.position, camera.target) + delta;
+		if (distance <= 0)
+			distance = .001;
+		camera.position = Vector3Add(camera.target, Vector3Scale(cameraForward(camera), -distance));
+	}
+
+	static function cameraYaw(camera:Camera, angle:Float, rotateAroundTarget:Bool):Void {
+		var targetPosition = Vector3RotateByAxisAngle(Vector3Subtract(camera.target, camera.position), Vector3Normalize(camera.up), angle);
+		if (rotateAroundTarget)
+			camera.position = Vector3Subtract(camera.target, targetPosition);
+		else
+			camera.target = Vector3Add(camera.position, targetPosition);
+	}
+
+	// Pitches the camera; locked, no further than 0.001 radians short of straight up or down.
+	static function cameraPitch(camera:Camera, angle:Float, lockView:Bool, rotateAroundTarget:Bool, rotateUp:Bool):Void {
+		var up = Vector3Normalize(camera.up);
+		var targetPosition = Vector3Subtract(camera.target, camera.position);
+		if (lockView) {
+			var maxAngleUp = Vector3Angle(up, targetPosition) - .001;
+			if (angle > maxAngleUp)
+				angle = maxAngleUp;
+			var maxAngleDown = -Vector3Angle(Vector3Negate(up), targetPosition) + .001;
+			if (angle < maxAngleDown)
+				angle = maxAngleDown;
+		}
+		var right = cameraRight(camera);
+		targetPosition = Vector3RotateByAxisAngle(targetPosition, right, angle);
+		if (rotateAroundTarget)
+			camera.position = Vector3Subtract(camera.target, targetPosition);
+		else
+			camera.target = Vector3Add(camera.position, targetPosition);
+		if (rotateUp)
+			camera.up = Vector3RotateByAxisAngle(camera.up, right, angle);
+	}
+
+	static function cameraRoll(camera:Camera, angle:Float):Void {
+		camera.up = Vector3RotateByAxisAngle(camera.up, cameraForward(camera), angle);
+	}
+
 	/** Returns a camera's view, as `BeginMode3D` uses it.
 
 		@param camera  The camera.
@@ -1955,6 +2481,9 @@ class RCore {
 
 		@return  The movement. */
 	static function GetMouseDelta():Vector2 {
+		var played = Automation.active;
+		if (played != null)
+			return new Vector2(played.mouseX - played.previousMouseX, played.mouseY - played.previousMouseY);
 		// raylib's delta is the mouse's own, before SetMouseOffset and SetMouseScale.
 		pointer();
 		var frame = Runtime.frames;

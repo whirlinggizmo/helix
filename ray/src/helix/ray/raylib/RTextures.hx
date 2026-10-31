@@ -728,7 +728,7 @@ class RTextures {
 		@param factor  The chance of white, 0 to 1.
 		@return  The image. */
 	static function GenImageWhiteNoise(width:Int, height:Int, factor:Float):Image {
-		return rgbaImage(helix.services.images.Image.whiteNoise(width, height, factor, new RaylibRandom()));
+		return rgbaImage(helix.services.images.Image.whiteNoise(width, height, factor, RCore.random));
 	}
 
 	/** Returns Perlin noise in gray, RGBA: stb_perlin's fractal noise, 6 octaves.
@@ -751,7 +751,7 @@ class RTextures {
 		@param tileSize  The tiles' size, in pixels: bigger is bigger cells.
 		@return  The image. */
 	static function GenImageCellular(width:Int, height:Int, tileSize:Int):Image {
-		return rgbaImage(helix.services.images.Image.cellular(width, height, tileSize, new RaylibRandom()));
+		return rgbaImage(helix.services.images.Image.cellular(width, height, tileSize, RCore.random));
 	}
 
 	/** Returns an image of text's bytes, grayscale: its UTF-8, a byte a pixel, rows top first, the rest black.
@@ -2477,21 +2477,3 @@ class RTextures {
 	}
 	#end
 }
-
-#if !macro
-/** Provides `GetRandomValue`'s numbers as helix-math's generator gives them, so helix-services' noise draws what raylib's draws. */
-private class RaylibRandom extends helix.math.Random {
-	/** Creates the generator, drawing from `GetRandomValue`. */
-	public function new() {
-		super();
-	}
-
-	/** Returns `GetRandomValue(0, max - 1)`, one number from raylib's sequence.
-
-		@param max  The maximum, excluded.
-		@return  The number. */
-	override public function nextInt(max:Int):Int {
-		return RCore.GetRandomValue(0, max - 1);
-	}
-}
-#end

@@ -15,7 +15,8 @@ font and TrueType and OpenType fonts (signed distance fields too), sounds and th
 exported as raylib's are), music with its length, position and seeking, audio streams fed by the program or its callback, text files; images on the CPU in raylib's uncompressed pixel
 formats (made, changed and drawn into as raylib's are, byte for byte, but for resizing), exported as PNG or QOI, and screenshots; in 3D
 the camera, glTF and GLB models, meshes, shapes, render textures, rays; raylib's shaders, compiled as the program builds for every
-target. Not here yet: skinned models and animations, animated (GIF) and compressed images, and updating a texture's pixels.
+target; automation events, recorded and played as raylib's, and raylib's random numbers for a seed. Not here yet: skinned models and
+animations, animated (GIF) and compressed images, and updating a texture's pixels.
 
 ## Using it
 
@@ -30,7 +31,8 @@ haxelib dev helix-ray <checkout>/ray
 ```
 
 `-D helix-ray-files=<directory>` names where the program's shaders are as it builds (default `web`), and `-D helix-ray-native-root=<directory>`
-where a native program finds its files, relative to itself (default `../web`).
+where a native program finds its files, relative to itself (default `../web`). `-D helix-ray-custom-frame-control` is raylib's
+`SUPPORT_CUSTOM_FRAME_CONTROL`: `EndDrawing` only draws, and the program calls `SwapScreenBuffer`, `WaitTime` and `PollInputEvents`.
 
 ## Examples
 
