@@ -18,6 +18,12 @@
 - **The layer above the services:** constructs the platform and the services for a target, runs the frame in order and ends with the
   saves written, so a program knows none of that; its spec is the `Main.hx` the services trial's three agents each wrote the same way.
   Whether it wears a known API or an engine's is GOALS' open path.
+- **Libraries apart from engines:** helix the umbrella; the libraries (math, log, formats, platform, services, later UI) know no
+  consumer, and the engines over them (helix-ray, to be renamed, perhaps helix-raylib; an OpenFL mirror; what HeliX's engine
+  becomes, its name to be chosen, as raylib names raylib's) may own the loop and keep statics. First one repository, `libs/` and
+  `engines/`, `check_layers` refusing a library that reaches an engine and the engines' checks run on every library change, as no
+  backward compatibility means every caller changes in the same commit; separate repositories, each engine pinning a library
+  version, once the platform has held through a second consumer and is versioned.
 - **SDL3 with the platform:** a native build needs only Haxe and hxcpp (goal 6), so the platform haxelib ships the pinned SDL3 per
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.
 - **Gestures:** taps, double taps, drags and flicks (the mouse and fingers alike), and two fingers' pan, pinch and twist, over `Touch`
