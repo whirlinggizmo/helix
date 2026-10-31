@@ -450,6 +450,20 @@ class Runtime {
 
 	static var exportAdapter:Null<helix.platform.IExport> = null;
 
+	/** Gets the system's clipboard, made when first asked for. */
+	public static function clipboard():helix.platform.IClipboard {
+		if (clipboardAdapter == null) {
+			#if js
+			clipboardAdapter = new helix.platform.adapters.clipboard.dom.DomClipboardAdapter();
+			#else
+			clipboardAdapter = new helix.platform.adapters.clipboard.sdl3.Sdl3ClipboardAdapter();
+			#end
+		}
+		return clipboardAdapter;
+	}
+
+	static var clipboardAdapter:Null<helix.platform.IClipboard> = null;
+
 	/** Gets the gamepads, made when first asked for, without a dead zone, as raylib's axes have none. */
 	public static function gamepads():Gamepads {
 		if (gamepadsService == null) {

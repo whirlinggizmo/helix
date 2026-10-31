@@ -1221,6 +1221,12 @@ class Raylib {
 	public static inline function GetMonitorRefreshRate(monitor:Int):Int
 		return RCore.GetMonitorRefreshRate(monitor);
 
+	/** Puts text on the system's clipboard. A page writes it only while it has the keyboard, soon after a press; a refusal is logged.
+
+		@param text  The text. */
+	public static inline function SetClipboardText(text:String):Void
+		RCore.SetClipboardText(text);
+
 	/** Returns whether the window has the keyboard.
 
 		@return  True while it has. */
@@ -4671,9 +4677,35 @@ class Raylib {
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	public static inline function LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void):Void
 		RAsync.LoadImageFromScreenAsync(loaded, failed);
+
+	/** Reads the clipboard's text, answering at a later poll: helix-ray's own, in place of raylib's `GetClipboardText`, as a page's
+		clipboard answers later. A page reads it only with the player's permission, which the browser may ask for.
+
+		@param read  Receives the text; "" when the clipboard holds none.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	public static inline function GetClipboardTextAsync(read:String->Void, ?failed:String->Void):Void
+		RAsync.GetClipboardTextAsync(read, failed);
+
+	/** Reads the clipboard's image, answering at a later poll once it is decoded: helix-ray's own, in place of raylib's
+		`GetClipboardImage`. A page reads it only with the player's permission.
+
+		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+		@param failed  Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged. */
+	public static inline function GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void):Void
+		RAsync.GetClipboardImageAsync(loaded, failed);
 	#end
 
 	// ---- raylib.h's functions helix-ray won't have: each refuses to compile, saying why and what to use ----
+
+	/** raylib's clipboard text, which waits for the answer. A page's clipboard answers later, so a call doesn't compile on any target: `GetClipboardTextAsync` answers it. */
+	public static macro function GetClipboardText():ExprOf<String>
+		return helix.platform.macros.Build.unsupported("GetClipboardText: Synchronous clipboard access is not supported. See GetClipboardTextAsync(read:String->Void, ?failed:String->Void)",
+			macro(null : String));
+
+	/** raylib's clipboard image, which waits for the answer. A call doesn't compile on any target: `GetClipboardImageAsync` answers it. */
+	public static macro function GetClipboardImage():ExprOf<Image>
+		return helix.platform.macros.Build.unsupported("GetClipboardImage: Synchronous clipboard access is not supported. See GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void)",
+			macro(null : helix.ray.Image));
 
 	/** raylib's handle of the native window. helix-ray's window has none to give, so a call doesn't compile. */
 	public static macro function GetWindowHandle():ExprOf<Dynamic>
@@ -4778,18 +4810,6 @@ class Raylib {
 			macro(null : helix.ray.Sound));
 
 	// ---- raylib.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
-
-	/** raylib's `SetClipboardText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set clipboard text content. */
-	public static macro function SetClipboardText(text:ExprOf<String>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetClipboardText: Not implemented", macro {});
-
-	/** raylib's `GetClipboardText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get clipboard text content. */
-	public static macro function GetClipboardText():ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("GetClipboardText: Not implemented", macro(null : String));
-
-	/** raylib's `GetClipboardImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get clipboard image content. */
-	public static macro function GetClipboardImage():ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("GetClipboardImage: Not implemented", macro(null : helix.ray.Image));
 
 	/** raylib's `EnableEventWaiting` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Enable waiting for events on EndDrawing(), no automatic event polling. */
 	public static macro function EnableEventWaiting():ExprOf<Void>

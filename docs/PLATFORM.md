@@ -356,6 +356,17 @@ at all; opened read-only over `ISystem.getProgramDirectory()` for the files a pr
 (`BrowserFileSystemAdapter({name: ...})`, IndexedDB). A file system holds only what is on this machine: fetching from a server is `IHttp`, and
 bringing a file in when it isn't there or is out of date is above.
 
+## Clipboard
+
+`IClipboard`: the system's clipboard, its text and an image as PNG. `requestText(read, ?failed)` and `requestImage(read, ?failed)`
+answer once, during the call or later; `setText(text, ?done, ?failed)` and `setImage(png, ?done, ?failed)`; `dispose`.
+
+- **In a page, `clipboard/dom` (`DomClipboardAdapter`):** the Clipboard API. A read needs the player's permission, which the browser
+  may ask for; a write needs the keyboard, soon after a press; a page served without HTTPS (but localhost) has no clipboard. Chromium
+  re-encodes an image put on it, so one read back is the same picture in another PNG.
+- **Natively, `clipboard/sdl3` (`Sdl3ClipboardAdapter`):** SDL3's clipboard, made after the window; an image is offered as
+  `image/png` and handed over when another program pastes. Each answer comes during the call.
+
 ## Export
 
 `IExport`: `export(name, mimeType, bytes, exported(where), failed(message))` hands a finished file to the user: in a page a download

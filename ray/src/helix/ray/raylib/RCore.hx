@@ -197,6 +197,30 @@ class RCore {
 		return Math.round(Runtime.window.getMonitorRefreshRate(monitor));
 	}
 
+	/** Puts text on the system's clipboard. A page writes it only while it has the keyboard, soon after a press; a refusal is logged.
+
+		@param text  The text. */
+	static function SetClipboardText(text:String):Void {
+		Runtime.clipboard().setText(text, null, error -> Runtime.log(LOG_WARNING, 'SYSTEM: Failed to set clipboard text: $error'));
+	}
+
+	/** raylib's clipboard text, which waits for the answer. A page's clipboard answers later, so a call doesn't compile on any target:
+		`GetClipboardTextAsync` answers it.
+
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("GetClipboardText: Synchronous clipboard access is not supported. See GetClipboardTextAsync(read:String->Void, ?failed:String->Void)")
+	static function GetClipboardText():String {
+		throw "GetClipboardText is unimplemented";
+	}
+
+	/** raylib's clipboard image, which waits for the answer. A call doesn't compile on any target: `GetClipboardImageAsync` answers it.
+
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("GetClipboardImage: Synchronous clipboard access is not supported. See GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void)")
+	static function GetClipboardImage():Image {
+		throw "GetClipboardImage is unimplemented";
+	}
+
 	/** raylib's handle of the native window. helix-ray's window has none to give, so a call doesn't compile.
 
 		@return  Never returns: a call doesn't compile. */

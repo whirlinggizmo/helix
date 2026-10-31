@@ -419,6 +419,48 @@ function dispose():Void
 - `poll`: Delivers what finished on the platform's threads since the last poll. The program calls it once a frame.
 - `dispose`: Closes the decoder. A decode still running finishes without calling back.
 
+## IClipboard
+
+*interface* in [`platform/src/helix/platform/IClipboard.hx`](../../platform/src/helix/platform/IClipboard.hx), `import helix.platform.IClipboard;`
+
+Defines the system's clipboard: text, and an image as PNG.
+
+Reading answers later everywhere, as a page's clipboard does. A page reads only with the player's permission, which the browser may ask for, and writes only while it has the keyboard, soon after a key press, click or tap.
+
+```haxe
+function requestText(read:String -> Void, ?failed:String -> Void):Bool
+function setText(text:String, ?done:() -> Void, ?failed:String -> Void):Void
+function requestImage(read:haxe.io.Bytes -> Void, ?failed:String -> Void):Bool
+function setImage(png:haxe.io.Bytes, ?done:() -> Void, ?failed:String -> Void):Void
+function dispose():Void
+```
+
+- `requestText`: Asks for the clipboard's text.
+  - `read`: Receives the text; "" when the clipboard holds none.
+  - `failed`: Optional. Receives why it couldn't be read, such as a page's permission refused.
+  - returns: True, because it always asks.
+
+  One of `read` or `failed` is called once, during this call or later.
+- `setText`: Puts text on the clipboard.
+  - `text`: The text.
+  - `done`: Optional. Called once the text is on the clipboard.
+  - `failed`: Optional. Receives why it couldn't be, such as a page without the keyboard.
+
+  One of `done` or `failed` is called once, during this call or later.
+- `requestImage`: Asks for the clipboard's image, as PNG.
+  - `read`: Receives the PNG's bytes. A page's browser may give the same picture encoded anew.
+  - `failed`: Optional. Receives why there is none: no image on the clipboard, or a page's permission refused.
+  - returns: True, because it always asks.
+
+  One of `read` or `failed` is called once, during this call or later.
+- `setImage`: Puts an image on the clipboard.
+  - `png`: The image, as a PNG file's bytes.
+  - `done`: Optional. Called once the image is on the clipboard.
+  - `failed`: Optional. Receives why it couldn't be.
+
+  One of `done` or `failed` is called once, during this call or later.
+- `dispose`: Releases the adapter; the clipboard keeps what was put on it, where the system does.
+
 ## IEvents
 
 *interface* in [`platform/src/helix/platform/IEvents.hx`](../../platform/src/helix/platform/IEvents.hx), `import helix.platform.IEvents;`, extends `IPollable`

@@ -112,6 +112,42 @@ function dispose():Void
 
 - `new`: Creates the decoder; the page's decoding context is made at the first decode.
 
+## DomClipboardAdapter
+
+*class*, for the browser (js) in [`platform/src/helix/platform/adapters/clipboard/dom/DomClipboardAdapter.hx`](../../platform/src/helix/platform/adapters/clipboard/dom/DomClipboardAdapter.hx), `import helix.platform.adapters.clipboard.dom.DomClipboardAdapter;`, implements `IClipboard`
+
+Provides `IClipboard` in a browser page, over the Clipboard API (`navigator.clipboard`): text, and an image as `image/png`.
+
+The browser may ask the player before a read, and lets the page write only while it has the keyboard, soon after a press. A page served without HTTPS (other than from localhost) has no clipboard, so every call fails. Chromium re-encodes an image it puts on the clipboard, so one read back is the same picture in another PNG.
+
+```haxe
+function new()
+function requestText(read:String -> Void, ?failed:String -> Void):Bool
+function setText(text:String, ?done:() -> Void, ?failed:String -> Void):Void
+function requestImage(read:haxe.io.Bytes -> Void, ?failed:String -> Void):Bool
+function setImage(png:haxe.io.Bytes, ?done:() -> Void, ?failed:String -> Void):Void
+function dispose():Void
+```
+
+- `new`: Uses the page's clipboard.
+
+## Sdl3ClipboardAdapter
+
+*class*, native (cpp) in [`platform/src/helix/platform/adapters/clipboard/sdl3/Sdl3ClipboardAdapter.hx`](../../platform/src/helix/platform/adapters/clipboard/sdl3/Sdl3ClipboardAdapter.hx), `import helix.platform.adapters.clipboard.sdl3.Sdl3ClipboardAdapter;`, implements `IClipboard`
+
+Provides `IClipboard` on SDL3, natively: the system's clipboard, its text and an image as `image/png`. SDL answers at once, so each call's lambda is called during it. It is made after the window, as SDL's clipboard needs its video.
+
+```haxe
+function new()
+function requestText(read:String -> Void, ?failed:String -> Void):Bool
+function setText(text:String, ?done:() -> Void, ?failed:String -> Void):Void
+function requestImage(read:haxe.io.Bytes -> Void, ?failed:String -> Void):Bool
+function setImage(png:haxe.io.Bytes, ?done:() -> Void, ?failed:String -> Void):Void
+function dispose():Void
+```
+
+- `new`: Uses SDL's clipboard.
+
 ## DomEventsAdapter
 
 *class*, for the browser (js) in [`platform/src/helix/platform/adapters/events/dom/DomEventsAdapter.hx`](../../platform/src/helix/platform/adapters/events/dom/DomEventsAdapter.hx), `import helix.platform.adapters.events.dom.DomEventsAdapter;`, implements `IEvents`

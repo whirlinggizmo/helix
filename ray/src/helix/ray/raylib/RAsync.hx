@@ -362,6 +362,27 @@ class RAsync {
 		}, error -> refuse("LoadImageFromScreenAsync", error, failed));
 	}
 
+	/** Reads the clipboard's text, answering at a later poll: helix-ray's own, in place of raylib's `GetClipboardText`, as a page's
+		clipboard answers later. A page reads it only with the player's permission, which the browser may ask for.
+
+		@param read  Receives the text; "" when the clipboard holds none.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	static function GetClipboardTextAsync(read:String->Void, ?failed:String->Void):Void {
+		Runtime.clipboard().requestText(text -> Runtime.later(() -> read(text)), error -> Runtime.later(() -> refuse("GetClipboardTextAsync", error, failed)));
+	}
+
+	/** Reads the clipboard's image, answering at a later poll once it is decoded: helix-ray's own, in place of raylib's
+		`GetClipboardImage`. A page reads it only with the player's permission.
+
+		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+		@param failed  Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged. */
+	static function GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void):Void {
+		Runtime.loading();
+		Runtime.clipboard()
+			.requestImage(png -> Runtime.later(() -> decoded("GetClipboardImageAsync", ".png", png, loaded, failed)),
+				error -> Runtime.later(() -> refuse("GetClipboardImageAsync", error, failed)));
+	}
+
 	// Whether an image file's extension is one the platform decodes.
 	static function isDecoded(type:String):Bool {
 		return type == "png" || type == "jpg" || type == "jpeg" || type == "bmp" || type == "tga";
