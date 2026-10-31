@@ -1927,7 +1927,7 @@ static function EndScissorMode():Void
 - `GetScreenToWorld2D`: Returns where a screen position is in a 2D camera's world.
   - `position`: The screen position.
   - `camera`: The camera.
-  - returns: The point.
+  - returns: The point; NaN at zoom 0, as raylib's inverse of a matrix with none gives.
 - `BeginMode3D`: Draws in 3D through a camera until `EndMode3D`, with depth.
   - `camera`: The camera.
 - `EndMode3D`: Goes back to drawing in 2D, in the screen's pixels.

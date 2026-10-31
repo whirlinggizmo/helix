@@ -2199,7 +2199,7 @@ class RCore {
 		@param camera  The camera. */
 	static function BeginMode2D(camera:Camera2D):Void {
 		Runtime.frame.cut();
-		Runtime.frame.view = toMatrix3D(GetCameraMatrix2D(camera));
+		Runtime.frame.view = camera2D(camera).computeViewMatrix(viewMatrix2D).toMatrix3D();
 	}
 
 	/** Goes back to drawing in the screen's pixels. */
@@ -2212,11 +2212,7 @@ class RCore {
 		@param camera  The camera.
 		@return  The matrix. */
 	static function GetCameraMatrix2D(camera:Camera2D):Matrix {
-		var m = Matrix3D.fromTranslation(-camera.target.x, -camera.target.y, 0);
-		m = Matrix3D.compose(m, Matrix3D.fromRotation(0, 0, 1, camera.rotation * DEG2RAD));
-		m = Matrix3D.compose(m, Matrix3D.fromScale(camera.zoom, camera.zoom, 1));
-		m = Matrix3D.compose(m, Matrix3D.fromTranslation(camera.offset.x, camera.offset.y, 0));
-		return toMatrix(m);
+		return toMatrix(camera2D(camera).computeViewMatrix(viewMatrix2D).toMatrix3D());
 	}
 
 	/** Returns where a point in a 2D camera's world is on the screen.
@@ -2225,7 +2221,7 @@ class RCore {
 		@param camera  The camera.
 		@return  The screen position. */
 	static function GetWorldToScreen2D(position:Vector2, camera:Camera2D):Vector2 {
-		var p = toMatrix3D(GetCameraMatrix2D(camera)).transformPoint(position.x, position.y, 0);
+		var p = camera2D(camera).worldToView(position.x, position.y, point2D);
 		return new Vector2(p.x, p.y);
 	}
 
@@ -2233,12 +2229,26 @@ class RCore {
 
 		@param position  The screen position.
 		@param camera  The camera.
-		@return  The point. */
+		@return  The point; NaN at zoom 0, as raylib's inverse of a matrix with none gives. */
 	static function GetScreenToWorld2D(position:Vector2, camera:Camera2D):Vector2 {
-		var inverse = toMatrix3D(GetCameraMatrix2D(camera));
-		inverse.invert(inverse);
-		var p = inverse.transformPoint(position.x, position.y, 0);
-		return new Vector2(p.x, p.y);
+		var p = camera2D(camera).viewToWorld(position.x, position.y, point2D);
+		return p == null ? new Vector2(Math.NaN, Math.NaN) : new Vector2(p.x, p.y);
+	}
+
+	// raylib's Camera2D as helix-math's, reused: its target the position, its rotation in radians and negated (raylib's turns the world,
+	// helix-math's the camera), its zoom and its offset.
+	static final view2D = new helix.math.Camera2D();
+
+	static final viewMatrix2D = new helix.math.Matrix2D();
+
+	static final point2D = new helix.math.Vector2D();
+
+	static function camera2D(camera:Camera2D):helix.math.Camera2D {
+		view2D.transform.position.set(camera.target.x, camera.target.y);
+		view2D.transform.rotation = -(camera.rotation * DEG2RAD);
+		view2D.zoom = camera.zoom;
+		view2D.offset.set(camera.offset.x, camera.offset.y);
+		return view2D;
 	}
 
 	// ---- 3D camera ----

@@ -2157,7 +2157,7 @@ class Raylib {
 
 		@param position  The screen position.
 		@param camera  The camera.
-		@return  The point. */
+		@return  The point; NaN at zoom 0, as raylib's inverse of a matrix with none gives. */
 	public static inline function GetScreenToWorld2D(position:Vector2, camera:Camera2D):Vector2
 		return RCore.GetScreenToWorld2D(position, camera);
 

@@ -153,6 +153,66 @@ function intersects(other:Bounds3D):Bool
   - `other`: The other box.
   - returns: True when they overlap; false when either is empty.
 
+## Camera2D
+
+*class* in [`math/src/helix/math/Camera2D.hx`](../../math/src/helix/math/Camera2D.hx), `import helix.math.Camera2D;`
+
+Represents a view of a 2D world: where it looks and how it is turned (a `Transform2D`), how near it is, and where in the view the point it looks at shows.
+
+It is steered by its transform as any object is: `transform.moveForward`, `rotate`, `lookAt`. Turning it turns the world the other way in the view. Its transform's scale is ignored; `zoom` sizes what it shows. A view is measured in view units from its top left, y downward: the screen's pixels when it is drawn to the screen. The view matrix and the conversions use `Trig`, so they come out the same on every target, and `worldToView` and `viewToWorld` go through the view matrix, so a point picked is where it was drawn.
+
+raylib's `Camera2D` is one whose position is raylib's target, whose rotation is raylib's in radians and negated (raylib's turns the world, this one turns itself), and whose zoom and offset are raylib's.
+
+```haxe
+var camera = new Camera2D();
+camera.offset.set(width / 2, height / 2);
+camera.transform.position.copyFrom(player.position);
+camera.zoom = 2;
+var view = camera.computeViewMatrix(viewScratch);
+var shown = camera.computeBounds(width, height, boundsScratch);
+var pointed = camera.viewToWorld(mouseX, mouseY, pointerScratch);
+```
+
+```haxe
+function new()
+final transform:Transform2D
+var zoom:Float
+final offset:Vector2D
+function copyFrom(other:Camera2D):Camera2D
+function computeViewMatrix(?out:Matrix2D):Matrix2D
+function worldToView(x:Float, y:Float, ?out:Vector2D):Vector2D
+function viewToWorld(x:Float, y:Float, ?out:Vector2D):Null<Vector2D>
+function computeBounds(viewWidth:Float, viewHeight:Float, ?out:Bounds2D):Bounds2D
+```
+
+- `new`: Creates a camera at the origin, unturned, at zoom 1, its position showing at the view's top left.
+- `transform`: Gets where it looks, in world units, and how it is turned, in radians; its scale is ignored.
+- `zoom`: Gets or sets how near it is: 1 until set. More than 1 shows less of the world, larger; less than 0 shows it turned half round. At 0 it shows nothing, and a point in the view has no place in the world (`viewToWorld`).
+- `offset`: Gets where in the view its position shows, in view units from the view's top left; the top left until changed. Half the view's size centers it.
+- `copyFrom`: Sets this camera to another's transform, zoom and offset.
+  - `other`: The camera to copy.
+  - returns: This camera.
+- `computeViewMatrix`: Returns the matrix that puts the world into the view: it moves the position to the origin, turns the world back by the rotation, scales it by the zoom, and moves it to the offset.
+  - `out`: Optional. The matrix to write into; a new one when omitted.
+  - returns: The view matrix, from world units to view units.
+- `worldToView`: Returns where a point in the world shows in the view.
+  - `x`: The point's x, in world units.
+  - `y`: The point's y.
+  - `out`: Optional. The vector to write into; a new one when omitted.
+  - returns: The point, in view units.
+- `viewToWorld`: Returns where in the world a point in the view is, as a pointer picks.
+  - `x`: The point's x, in view units.
+  - `y`: The point's y.
+  - `out`: Optional. The vector to write into; a new one when omitted.
+  - returns: The point, in world units; null at zoom 0, where it has none, the out unchanged.
+- `computeBounds`: Returns the part of the world in a view of a size, to skip what is outside it before drawing.
+  - `viewWidth`: The view's width, in view units.
+  - `viewHeight`: The view's height.
+  - `out`: Optional. The box to write into; a new one when omitted.
+  - returns: The box, in world units; empty at zoom 0, where nothing shows.
+
+  When the camera is turned, the box is the axis-aligned one that holds the turned view, so it holds a little more than is shown.
+
 ## Camera3D
 
 *class* in [`math/src/helix/math/Camera3D.hx`](../../math/src/helix/math/Camera3D.hx), `import helix.math.Camera3D;`
@@ -1341,7 +1401,7 @@ function toMatrix(?out:Matrix2D):Matrix2D
   - `out`: Optional. The transform to write into; a new one when omitted.
   - returns: The transform.
 
-  A matrix that shears gives the nearest rotation and scale, the shear lost.
+  Its rotation and x scale are the matrix's x axis's, and its y scale what the y axis reaches across it, so a matrix that shears loses the shear, and one that mirrors gives a y scale less than 0.
 - `position`: Gets the position, in its parent's units; the origin until changed.
 - `rotation`: Gets or sets the rotation in radians; 0, facing +x, until set.
 - `scale`: Gets the scale along its own axes; 1 on each until changed.

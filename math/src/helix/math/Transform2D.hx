@@ -1,7 +1,5 @@
 package helix.math;
 
-import haxe.exceptions.NotImplementedException;
-
 /** Represents where an object is in 2 dimensions, which way it faces, and how large it is: a position, a rotation and a scale.
 
 	It faces along its own +x, so a rotation of 0 faces +x and a positive one turns toward +y, clockwise on screen where y grows downward.
@@ -27,33 +25,50 @@ class Transform2D {
 	public final scale = new Vector2D(1, 1);
 
 	/** Creates a transform at the origin, facing +x, at scale 1. */
-	public function new() {
-		throw new NotImplementedException();
-	}
+	public function new() {}
 
 	/** Sets this transform to another's position, rotation and scale.
 
 		@param other  The transform to copy.
 		@return  This transform. */
 	public function copyFrom(other:Transform2D):Transform2D {
-		throw new NotImplementedException();
+		position.copyFrom(other.position);
+		rotation = other.rotation;
+		scale.copyFrom(other.scale);
+		return this;
 	}
 
 	/** Puts it back at the origin, facing +x, at scale 1.
 
 		@return  This transform. */
 	public function makeIdentity():Transform2D {
-		throw new NotImplementedException();
+		position.set(0, 0);
+		rotation = 0.;
+		scale.set(1, 1);
+		return this;
 	}
 
 	/** Returns the transform a matrix places, scales and turns by.
 
-		A matrix that shears gives the nearest rotation and scale, the shear lost.
+		Its rotation and x scale are the matrix's x axis's, and its y scale what the y axis reaches across it, so a matrix that shears
+		loses the shear, and one that mirrors gives a y scale less than 0.
 		@param matrix  The matrix.
 		@param out  Optional. The transform to write into; a new one when omitted.
 		@return  The transform. */
 	public static function fromMatrix(matrix:Matrix2D, ?out:Transform2D):Transform2D {
-		throw new NotImplementedException();
+		var a = matrix.a, b = matrix.b, c = matrix.c, d = matrix.d;
+		var scaleX = Math.sqrt(a * a + b * b);
+		if (out == null)
+			out = new Transform2D();
+		out.position.set(matrix.tx, matrix.ty);
+		if (scaleX == 0) {
+			out.rotation = Trig.atan2(-c, d);
+			out.scale.set(0, Math.sqrt(c * c + d * d));
+		} else {
+			out.rotation = Trig.atan2(b, a);
+			out.scale.set(scaleX, (a * d - b * c) / scaleX);
+		}
+		return out;
 	}
 
 	/** Returns the direction it faces, of length 1.
@@ -61,7 +76,7 @@ class Transform2D {
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The direction. */
 	public function computeForward(?out:Vector2D):Vector2D {
-		throw new NotImplementedException();
+		return Vector2D.fromAngle(rotation, 1, out);
 	}
 
 	/** Returns its right, a quarter turn from forward toward +y, of length 1.
@@ -69,7 +84,8 @@ class Transform2D {
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The direction. */
 	public function computeRight(?out:Vector2D):Vector2D {
-		throw new NotImplementedException();
+		var cos = Trig.cos(rotation), sin = Trig.sin(rotation);
+		return out == null ? new Vector2D(-sin, cos) : out.set(-sin, cos);
 	}
 
 	/** Moves it along the way it faces.
@@ -77,7 +93,8 @@ class Transform2D {
 		@param distance  How far, in its parent's units; less than 0 moves it back.
 		@return  This transform. */
 	public function moveForward(distance:Float):Transform2D {
-		throw new NotImplementedException();
+		position.set(position.x + Trig.cos(rotation) * distance, position.y + Trig.sin(rotation) * distance);
+		return this;
 	}
 
 	/** Moves it to its right.
@@ -85,7 +102,8 @@ class Transform2D {
 		@param distance  How far, in its parent's units; less than 0 moves it left.
 		@return  This transform. */
 	public function moveRight(distance:Float):Transform2D {
-		throw new NotImplementedException();
+		position.set(position.x - Trig.sin(rotation) * distance, position.y + Trig.cos(rotation) * distance);
+		return this;
 	}
 
 	/** Moves it toward a point or away from it, along the line between them.
@@ -97,7 +115,19 @@ class Transform2D {
 		@param nearest  Optional. The least distance it keeps from the point; defaults to 0.001.
 		@return  This transform. */
 	public function moveToward(x:Float, y:Float, distance:Float, nearest = .001):Transform2D {
-		throw new NotImplementedException();
+		var dx = x - position.x, dy = y - position.y;
+		var length = Math.sqrt(dx * dx + dy * dy);
+		if (length == 0)
+			return this;
+		var step = distance;
+		if (distance > 0) {
+			if (step > length - nearest)
+				step = length - nearest;
+			if (step <= 0)
+				return this;
+		}
+		position.set(position.x + dx / length * step, position.y + dy / length * step);
+		return this;
 	}
 
 	/** Turns it.
@@ -105,7 +135,8 @@ class Transform2D {
 		@param radians  The angle; more than 0 turns from +x toward +y.
 		@return  This transform. */
 	public function rotate(radians:Float):Transform2D {
-		throw new NotImplementedException();
+		rotation += radians;
+		return this;
 	}
 
 	/** Turns it to face a point.
@@ -115,7 +146,10 @@ class Transform2D {
 		@param y  The point's y.
 		@return  This transform. */
 	public function lookAt(x:Float, y:Float):Transform2D {
-		throw new NotImplementedException();
+		var dx = x - position.x, dy = y - position.y;
+		if (dx != 0 || dy != 0)
+			rotation = Trig.atan2(dy, dx);
+		return this;
 	}
 
 	/** Swings it around a point: its position and its rotation both, so whatever faced the point still does.
@@ -125,7 +159,11 @@ class Transform2D {
 		@param radians  The swing; more than 0 swings it from +x toward +y.
 		@return  This transform. */
 	public function orbit(x:Float, y:Float, radians:Float):Transform2D {
-		throw new NotImplementedException();
+		var cos = Trig.cos(radians), sin = Trig.sin(radians);
+		var dx = position.x - x, dy = position.y - y;
+		position.set(x + dx * cos - dy * sin, y + dx * sin + dy * cos);
+		rotation += radians;
+		return this;
 	}
 
 	/** Returns a point in its own space put into its parent's: scaled, rotated, then moved.
@@ -135,7 +173,7 @@ class Transform2D {
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The point, in its parent's units. */
 	public function transformPoint(x:Float, y:Float, ?out:Vector2D):Vector2D {
-		throw new NotImplementedException();
+		return toMatrix(shared()).transformPoint(x, y, out);
 	}
 
 	/** Returns the matrix that scales, rotates and then moves, to draw it with.
@@ -143,6 +181,21 @@ class Transform2D {
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The matrix. */
 	public function toMatrix(?out:Matrix2D):Matrix2D {
-		throw new NotImplementedException();
+		var cos = Trig.cos(rotation),
+			sin = Trig.sin(rotation),
+			scaleX = scale.x,
+			scaleY = scale.y;
+		if (out == null)
+			out = new Matrix2D();
+		return out.set(cos * scaleX, sin * scaleX, -sin * scaleY, cos * scaleY, position.x, position.y);
+	}
+
+	// A matrix transformPoint goes through, reused.
+	static var matrix:Null<Matrix2D> = null;
+
+	static function shared():Matrix2D {
+		if (matrix == null)
+			matrix = new Matrix2D();
+		return matrix;
 	}
 }
