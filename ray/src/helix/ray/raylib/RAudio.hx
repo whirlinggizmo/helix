@@ -86,7 +86,7 @@ class RAudio {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unimplemented("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void)")
+	@:unsupported("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void)")
 	static function LoadSound(fileName:String):Sound {
 		throw "LoadSound is unimplemented";
 	}

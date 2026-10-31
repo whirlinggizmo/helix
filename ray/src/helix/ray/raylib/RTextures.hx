@@ -29,7 +29,7 @@ class RTextures {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unimplemented("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)")
+	@:unsupported("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)")
 	static function LoadTexture(fileName:String):Texture2D {
 		throw "LoadTexture is unimplemented";
 	}

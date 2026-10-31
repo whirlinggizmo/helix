@@ -1158,6 +1158,188 @@ static inline var RAD2DEG:Float
 - `DEG2RAD`: Degrees to radians.
 - `RAD2DEG`: Radians to degrees.
 
+### Mouse cursor (MouseCursor), not written by hand
+
+```haxe
+static inline var MOUSE_CURSOR_DEFAULT:Int
+static inline var MOUSE_CURSOR_ARROW:Int
+static inline var MOUSE_CURSOR_IBEAM:Int
+static inline var MOUSE_CURSOR_CROSSHAIR:Int
+static inline var MOUSE_CURSOR_POINTING_HAND:Int
+static inline var MOUSE_CURSOR_RESIZE_EW:Int
+static inline var MOUSE_CURSOR_RESIZE_NS:Int
+static inline var MOUSE_CURSOR_RESIZE_NWSE:Int
+static inline var MOUSE_CURSOR_RESIZE_NESW:Int
+static inline var MOUSE_CURSOR_RESIZE_ALL:Int
+static inline var MOUSE_CURSOR_NOT_ALLOWED:Int
+```
+
+- `MOUSE_CURSOR_DEFAULT`: Default pointer shape.
+- `MOUSE_CURSOR_ARROW`: Arrow shape.
+- `MOUSE_CURSOR_IBEAM`: Text writing cursor shape.
+- `MOUSE_CURSOR_CROSSHAIR`: Cross shape.
+- `MOUSE_CURSOR_POINTING_HAND`: Pointing hand cursor.
+- `MOUSE_CURSOR_RESIZE_EW`: Horizontal resize/move arrow shape.
+- `MOUSE_CURSOR_RESIZE_NS`: Vertical resize/move arrow shape.
+- `MOUSE_CURSOR_RESIZE_NWSE`: Top-left to bottom-right diagonal resize/move arrow shape.
+- `MOUSE_CURSOR_RESIZE_NESW`: The top-right to bottom-left diagonal resize/move arrow shape.
+- `MOUSE_CURSOR_RESIZE_ALL`: The omnidirectional resize/move cursor shape.
+- `MOUSE_CURSOR_NOT_ALLOWED`: The operation-not-allowed shape.
+
+### Shader attribute data types (ShaderAttributeDataType), not written by hand
+
+```haxe
+static inline var SHADER_ATTRIB_FLOAT:Int
+static inline var SHADER_ATTRIB_VEC2:Int
+static inline var SHADER_ATTRIB_VEC3:Int
+static inline var SHADER_ATTRIB_VEC4:Int
+```
+
+- `SHADER_ATTRIB_FLOAT`: Shader attribute type: float.
+- `SHADER_ATTRIB_VEC2`: Shader attribute type: vec2 (2 float).
+- `SHADER_ATTRIB_VEC3`: Shader attribute type: vec3 (3 float).
+- `SHADER_ATTRIB_VEC4`: Shader attribute type: vec4 (4 float).
+
+### Pixel formats (PixelFormat), not written by hand
+
+```haxe
+static inline var PIXELFORMAT_UNCOMPRESSED_GRAYSCALE:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R5G6B5:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R8G8B8:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R5G5B5A1:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R4G4B4A4:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R32:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R32G32B32:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R32G32B32A32:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R16:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R16G16B16:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R16G16B16A16:Int
+static inline var PIXELFORMAT_COMPRESSED_DXT1_RGB:Int
+static inline var PIXELFORMAT_COMPRESSED_DXT1_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_DXT3_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_DXT5_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_ETC1_RGB:Int
+static inline var PIXELFORMAT_COMPRESSED_ETC2_RGB:Int
+static inline var PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_PVRT_RGB:Int
+static inline var PIXELFORMAT_COMPRESSED_PVRT_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA:Int
+```
+
+- `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`: 8 bit per pixel (no alpha).
+- `PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`: 8*2 bpp (2 channels).
+- `PIXELFORMAT_UNCOMPRESSED_R5G6B5`: 16 bpp.
+- `PIXELFORMAT_UNCOMPRESSED_R8G8B8`: 24 bpp.
+- `PIXELFORMAT_UNCOMPRESSED_R5G5B5A1`: 16 bpp (1 bit alpha).
+- `PIXELFORMAT_UNCOMPRESSED_R4G4B4A4`: 16 bpp (4 bit alpha).
+- `PIXELFORMAT_UNCOMPRESSED_R32`: 32 bpp (1 channel - float).
+- `PIXELFORMAT_UNCOMPRESSED_R32G32B32`: 32*3 bpp (3 channels - float).
+- `PIXELFORMAT_UNCOMPRESSED_R32G32B32A32`: 32*4 bpp (4 channels - float).
+- `PIXELFORMAT_UNCOMPRESSED_R16`: 16 bpp (1 channel - half float).
+- `PIXELFORMAT_UNCOMPRESSED_R16G16B16`: 16*3 bpp (3 channels - half float).
+- `PIXELFORMAT_UNCOMPRESSED_R16G16B16A16`: 16*4 bpp (4 channels - half float).
+- `PIXELFORMAT_COMPRESSED_DXT1_RGB`: 4 bpp (no alpha).
+- `PIXELFORMAT_COMPRESSED_DXT1_RGBA`: 4 bpp (1 bit alpha).
+- `PIXELFORMAT_COMPRESSED_DXT3_RGBA`: 8 bpp.
+- `PIXELFORMAT_COMPRESSED_DXT5_RGBA`: 8 bpp.
+- `PIXELFORMAT_COMPRESSED_ETC1_RGB`: 4 bpp.
+- `PIXELFORMAT_COMPRESSED_ETC2_RGB`: 4 bpp.
+- `PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA`: 8 bpp.
+- `PIXELFORMAT_COMPRESSED_PVRT_RGB`: 4 bpp.
+- `PIXELFORMAT_COMPRESSED_PVRT_RGBA`: 4 bpp.
+- `PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA`: 8 bpp.
+- `PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA`: 2 bpp.
+
+### Texture parameters: wrap mode (TextureWrap), not written by hand
+
+```haxe
+static inline var TEXTURE_WRAP_REPEAT:Int
+static inline var TEXTURE_WRAP_CLAMP:Int
+static inline var TEXTURE_WRAP_MIRROR_REPEAT:Int
+static inline var TEXTURE_WRAP_MIRROR_CLAMP:Int
+```
+
+- `TEXTURE_WRAP_REPEAT`: Repeats texture in tiled mode.
+- `TEXTURE_WRAP_CLAMP`: Clamps texture to edge pixel in tiled mode.
+- `TEXTURE_WRAP_MIRROR_REPEAT`: Mirrors and repeats the texture in tiled mode.
+- `TEXTURE_WRAP_MIRROR_CLAMP`: Mirrors and clamps to border the texture in tiled mode.
+
+### Cubemap layouts (CubemapLayout), not written by hand
+
+```haxe
+static inline var CUBEMAP_LAYOUT_AUTO_DETECT:Int
+static inline var CUBEMAP_LAYOUT_LINE_VERTICAL:Int
+static inline var CUBEMAP_LAYOUT_LINE_HORIZONTAL:Int
+static inline var CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR:Int
+static inline var CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE:Int
+```
+
+- `CUBEMAP_LAYOUT_AUTO_DETECT`: Automatically detect layout type.
+- `CUBEMAP_LAYOUT_LINE_VERTICAL`: Layout is defined by a vertical line with faces.
+- `CUBEMAP_LAYOUT_LINE_HORIZONTAL`: Layout is defined by a horizontal line with faces.
+- `CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR`: Layout is defined by a 3x4 cross with cubemap faces.
+- `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE`: Layout is defined by a 4x3 cross with cubemap faces.
+
+### Font type, defines generation method (FontType), not written by hand
+
+```haxe
+static inline var FONT_DEFAULT:Int
+static inline var FONT_BITMAP:Int
+static inline var FONT_SDF:Int
+```
+
+- `FONT_DEFAULT`: Default font generation, anti-aliased.
+- `FONT_BITMAP`: Bitmap font generation, no anti-aliasing.
+- `FONT_SDF`: SDF font generation, requires external shader.
+
+### Color blending modes (pre-defined) (BlendMode), not written by hand
+
+```haxe
+static inline var BLEND_ALPHA:Int
+static inline var BLEND_ADDITIVE:Int
+static inline var BLEND_MULTIPLIED:Int
+static inline var BLEND_ADD_COLORS:Int
+static inline var BLEND_SUBTRACT_COLORS:Int
+static inline var BLEND_ALPHA_PREMULTIPLY:Int
+static inline var BLEND_CUSTOM:Int
+static inline var BLEND_CUSTOM_SEPARATE:Int
+```
+
+- `BLEND_ALPHA`: Blend textures considering alpha (default).
+- `BLEND_ADDITIVE`: Blend textures adding colors.
+- `BLEND_MULTIPLIED`: Blend textures multiplying colors.
+- `BLEND_ADD_COLORS`: Blend textures adding colors (alternative).
+- `BLEND_SUBTRACT_COLORS`: Blend textures subtracting colors (alternative).
+- `BLEND_ALPHA_PREMULTIPLY`: Blend premultiplied textures considering alpha.
+- `BLEND_CUSTOM`: Blend textures using custom src/dst factors (use rlSetBlendFactors()).
+- `BLEND_CUSTOM_SEPARATE`: Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate()).
+
+### N-patch layout (NPatchLayout), not written by hand
+
+```haxe
+static inline var NPATCH_NINE_PATCH:Int
+static inline var NPATCH_THREE_PATCH_VERTICAL:Int
+static inline var NPATCH_THREE_PATCH_HORIZONTAL:Int
+```
+
+- `NPATCH_NINE_PATCH`: Npatch layout: 3x3 tiles.
+- `NPATCH_THREE_PATCH_VERTICAL`: Npatch layout: 1x3 tiles.
+- `NPATCH_THREE_PATCH_HORIZONTAL`: Npatch layout: 3x1 tiles.
+
+### raylib.h's number defines, not written by hand
+
+```haxe
+static inline var RAYLIB_VERSION_MAJOR:Int
+static inline var RAYLIB_VERSION_MINOR:Int
+static inline var RAYLIB_VERSION_PATCH:Int
+```
+
+- `RAYLIB_VERSION_MAJOR`: raylib.h's `RAYLIB_VERSION_MAJOR`.
+- `RAYLIB_VERSION_MINOR`: raylib.h's `RAYLIB_VERSION_MINOR`.
+- `RAYLIB_VERSION_PATCH`: raylib.h's `RAYLIB_VERSION_PATCH`.
+
 ### rcore: the window and frame, input, files, cameras and shaders (raylib/RCore.hx)
 
 ```haxe
@@ -2506,7 +2688,7 @@ static function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize
   - `loaded`: Receives the glyphs.
   - `failed`: Optional. Receives why the font couldn't be read; when omitted, it is logged.
 
-### raylib's loads, which wait for a file: each refuses to compile, naming the load to use
+### raylib.h's functions helix-ray won't have: each refuses to compile, saying why and what to use
 
 ```haxe
 static macro function FileExists(fileName:String):Bool
@@ -2531,188 +2713,6 @@ static macro function LoadSound(fileName:String):Sound
 - `LoadFontData`: raylib's glyph rasterizing, which returns the glyphs. They are rasterized off the main thread here, so a call doesn't compile on any target: `LoadFontDataAsync` rasterizes them.
 - `LoadModel`: raylib's model load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAsync` loads it.
 - `LoadSound`: raylib's sound load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadSoundAsync` loads it.
-
-### Mouse cursor (MouseCursor), not written by hand
-
-```haxe
-static inline var MOUSE_CURSOR_DEFAULT:Int
-static inline var MOUSE_CURSOR_ARROW:Int
-static inline var MOUSE_CURSOR_IBEAM:Int
-static inline var MOUSE_CURSOR_CROSSHAIR:Int
-static inline var MOUSE_CURSOR_POINTING_HAND:Int
-static inline var MOUSE_CURSOR_RESIZE_EW:Int
-static inline var MOUSE_CURSOR_RESIZE_NS:Int
-static inline var MOUSE_CURSOR_RESIZE_NWSE:Int
-static inline var MOUSE_CURSOR_RESIZE_NESW:Int
-static inline var MOUSE_CURSOR_RESIZE_ALL:Int
-static inline var MOUSE_CURSOR_NOT_ALLOWED:Int
-```
-
-- `MOUSE_CURSOR_DEFAULT`: Default pointer shape.
-- `MOUSE_CURSOR_ARROW`: Arrow shape.
-- `MOUSE_CURSOR_IBEAM`: Text writing cursor shape.
-- `MOUSE_CURSOR_CROSSHAIR`: Cross shape.
-- `MOUSE_CURSOR_POINTING_HAND`: Pointing hand cursor.
-- `MOUSE_CURSOR_RESIZE_EW`: Horizontal resize/move arrow shape.
-- `MOUSE_CURSOR_RESIZE_NS`: Vertical resize/move arrow shape.
-- `MOUSE_CURSOR_RESIZE_NWSE`: Top-left to bottom-right diagonal resize/move arrow shape.
-- `MOUSE_CURSOR_RESIZE_NESW`: The top-right to bottom-left diagonal resize/move arrow shape.
-- `MOUSE_CURSOR_RESIZE_ALL`: The omnidirectional resize/move cursor shape.
-- `MOUSE_CURSOR_NOT_ALLOWED`: The operation-not-allowed shape.
-
-### Shader attribute data types (ShaderAttributeDataType), not written by hand
-
-```haxe
-static inline var SHADER_ATTRIB_FLOAT:Int
-static inline var SHADER_ATTRIB_VEC2:Int
-static inline var SHADER_ATTRIB_VEC3:Int
-static inline var SHADER_ATTRIB_VEC4:Int
-```
-
-- `SHADER_ATTRIB_FLOAT`: Shader attribute type: float.
-- `SHADER_ATTRIB_VEC2`: Shader attribute type: vec2 (2 float).
-- `SHADER_ATTRIB_VEC3`: Shader attribute type: vec3 (3 float).
-- `SHADER_ATTRIB_VEC4`: Shader attribute type: vec4 (4 float).
-
-### Pixel formats (PixelFormat), not written by hand
-
-```haxe
-static inline var PIXELFORMAT_UNCOMPRESSED_GRAYSCALE:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R5G6B5:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R8G8B8:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R5G5B5A1:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R4G4B4A4:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R32:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R32G32B32:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R32G32B32A32:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R16:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R16G16B16:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R16G16B16A16:Int
-static inline var PIXELFORMAT_COMPRESSED_DXT1_RGB:Int
-static inline var PIXELFORMAT_COMPRESSED_DXT1_RGBA:Int
-static inline var PIXELFORMAT_COMPRESSED_DXT3_RGBA:Int
-static inline var PIXELFORMAT_COMPRESSED_DXT5_RGBA:Int
-static inline var PIXELFORMAT_COMPRESSED_ETC1_RGB:Int
-static inline var PIXELFORMAT_COMPRESSED_ETC2_RGB:Int
-static inline var PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA:Int
-static inline var PIXELFORMAT_COMPRESSED_PVRT_RGB:Int
-static inline var PIXELFORMAT_COMPRESSED_PVRT_RGBA:Int
-static inline var PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA:Int
-static inline var PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA:Int
-```
-
-- `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`: 8 bit per pixel (no alpha).
-- `PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`: 8*2 bpp (2 channels).
-- `PIXELFORMAT_UNCOMPRESSED_R5G6B5`: 16 bpp.
-- `PIXELFORMAT_UNCOMPRESSED_R8G8B8`: 24 bpp.
-- `PIXELFORMAT_UNCOMPRESSED_R5G5B5A1`: 16 bpp (1 bit alpha).
-- `PIXELFORMAT_UNCOMPRESSED_R4G4B4A4`: 16 bpp (4 bit alpha).
-- `PIXELFORMAT_UNCOMPRESSED_R32`: 32 bpp (1 channel - float).
-- `PIXELFORMAT_UNCOMPRESSED_R32G32B32`: 32*3 bpp (3 channels - float).
-- `PIXELFORMAT_UNCOMPRESSED_R32G32B32A32`: 32*4 bpp (4 channels - float).
-- `PIXELFORMAT_UNCOMPRESSED_R16`: 16 bpp (1 channel - half float).
-- `PIXELFORMAT_UNCOMPRESSED_R16G16B16`: 16*3 bpp (3 channels - half float).
-- `PIXELFORMAT_UNCOMPRESSED_R16G16B16A16`: 16*4 bpp (4 channels - half float).
-- `PIXELFORMAT_COMPRESSED_DXT1_RGB`: 4 bpp (no alpha).
-- `PIXELFORMAT_COMPRESSED_DXT1_RGBA`: 4 bpp (1 bit alpha).
-- `PIXELFORMAT_COMPRESSED_DXT3_RGBA`: 8 bpp.
-- `PIXELFORMAT_COMPRESSED_DXT5_RGBA`: 8 bpp.
-- `PIXELFORMAT_COMPRESSED_ETC1_RGB`: 4 bpp.
-- `PIXELFORMAT_COMPRESSED_ETC2_RGB`: 4 bpp.
-- `PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA`: 8 bpp.
-- `PIXELFORMAT_COMPRESSED_PVRT_RGB`: 4 bpp.
-- `PIXELFORMAT_COMPRESSED_PVRT_RGBA`: 4 bpp.
-- `PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA`: 8 bpp.
-- `PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA`: 2 bpp.
-
-### Texture parameters: wrap mode (TextureWrap), not written by hand
-
-```haxe
-static inline var TEXTURE_WRAP_REPEAT:Int
-static inline var TEXTURE_WRAP_CLAMP:Int
-static inline var TEXTURE_WRAP_MIRROR_REPEAT:Int
-static inline var TEXTURE_WRAP_MIRROR_CLAMP:Int
-```
-
-- `TEXTURE_WRAP_REPEAT`: Repeats texture in tiled mode.
-- `TEXTURE_WRAP_CLAMP`: Clamps texture to edge pixel in tiled mode.
-- `TEXTURE_WRAP_MIRROR_REPEAT`: Mirrors and repeats the texture in tiled mode.
-- `TEXTURE_WRAP_MIRROR_CLAMP`: Mirrors and clamps to border the texture in tiled mode.
-
-### Cubemap layouts (CubemapLayout), not written by hand
-
-```haxe
-static inline var CUBEMAP_LAYOUT_AUTO_DETECT:Int
-static inline var CUBEMAP_LAYOUT_LINE_VERTICAL:Int
-static inline var CUBEMAP_LAYOUT_LINE_HORIZONTAL:Int
-static inline var CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR:Int
-static inline var CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE:Int
-```
-
-- `CUBEMAP_LAYOUT_AUTO_DETECT`: Automatically detect layout type.
-- `CUBEMAP_LAYOUT_LINE_VERTICAL`: Layout is defined by a vertical line with faces.
-- `CUBEMAP_LAYOUT_LINE_HORIZONTAL`: Layout is defined by a horizontal line with faces.
-- `CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR`: Layout is defined by a 3x4 cross with cubemap faces.
-- `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE`: Layout is defined by a 4x3 cross with cubemap faces.
-
-### Font type, defines generation method (FontType), not written by hand
-
-```haxe
-static inline var FONT_DEFAULT:Int
-static inline var FONT_BITMAP:Int
-static inline var FONT_SDF:Int
-```
-
-- `FONT_DEFAULT`: Default font generation, anti-aliased.
-- `FONT_BITMAP`: Bitmap font generation, no anti-aliasing.
-- `FONT_SDF`: SDF font generation, requires external shader.
-
-### Color blending modes (pre-defined) (BlendMode), not written by hand
-
-```haxe
-static inline var BLEND_ALPHA:Int
-static inline var BLEND_ADDITIVE:Int
-static inline var BLEND_MULTIPLIED:Int
-static inline var BLEND_ADD_COLORS:Int
-static inline var BLEND_SUBTRACT_COLORS:Int
-static inline var BLEND_ALPHA_PREMULTIPLY:Int
-static inline var BLEND_CUSTOM:Int
-static inline var BLEND_CUSTOM_SEPARATE:Int
-```
-
-- `BLEND_ALPHA`: Blend textures considering alpha (default).
-- `BLEND_ADDITIVE`: Blend textures adding colors.
-- `BLEND_MULTIPLIED`: Blend textures multiplying colors.
-- `BLEND_ADD_COLORS`: Blend textures adding colors (alternative).
-- `BLEND_SUBTRACT_COLORS`: Blend textures subtracting colors (alternative).
-- `BLEND_ALPHA_PREMULTIPLY`: Blend premultiplied textures considering alpha.
-- `BLEND_CUSTOM`: Blend textures using custom src/dst factors (use rlSetBlendFactors()).
-- `BLEND_CUSTOM_SEPARATE`: Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate()).
-
-### N-patch layout (NPatchLayout), not written by hand
-
-```haxe
-static inline var NPATCH_NINE_PATCH:Int
-static inline var NPATCH_THREE_PATCH_VERTICAL:Int
-static inline var NPATCH_THREE_PATCH_HORIZONTAL:Int
-```
-
-- `NPATCH_NINE_PATCH`: Npatch layout: 3x3 tiles.
-- `NPATCH_THREE_PATCH_VERTICAL`: Npatch layout: 1x3 tiles.
-- `NPATCH_THREE_PATCH_HORIZONTAL`: Npatch layout: 3x1 tiles.
-
-### raylib.h's number defines, not written by hand
-
-```haxe
-static inline var RAYLIB_VERSION_MAJOR:Int
-static inline var RAYLIB_VERSION_MINOR:Int
-static inline var RAYLIB_VERSION_PATCH:Int
-```
-
-- `RAYLIB_VERSION_MAJOR`: raylib.h's `RAYLIB_VERSION_MAJOR`.
-- `RAYLIB_VERSION_MINOR`: raylib.h's `RAYLIB_VERSION_MINOR`.
-- `RAYLIB_VERSION_PATCH`: raylib.h's `RAYLIB_VERSION_PATCH`.
 
 ### Shaders, compiled as the program builds
 
@@ -3079,134 +3079,6 @@ import helix.ray.Rlgl.*;
 ```
 
 rlgl's GPU objects (vertex arrays and buffers, framebuffers, GL ids) aren't here: helix-ray draws through helix-platform, which has no GL. What rlgl has and helix-ray doesn't refuses to compile, naming itself.
-
-### rlgl: the matrix stack, immediate drawing and render state (raylib/RRlgl.hx)
-
-```haxe
-static function rlMatrixMode(mode:Int):Void
-static function rlPushMatrix():Void
-static function rlPopMatrix():Void
-static function rlLoadIdentity():Void
-static function rlTranslatef(x:Float, y:Float, z:Float):Void
-static function rlRotatef(angle:Float, x:Float, y:Float, z:Float):Void
-static function rlScalef(x:Float, y:Float, z:Float):Void
-static function rlMultMatrixf(matf:Array<Float>):Void
-static function rlOrtho(left:Float, right:Float, bottom:Float, top:Float, znear:Float, zfar:Float):Void
-static function rlFrustum(left:Float, right:Float, bottom:Float, top:Float, znear:Float, zfar:Float):Void
-static function rlGetMatrixModelview():Matrix
-static function rlGetMatrixProjection():Matrix
-static function rlGetMatrixTransform():Matrix
-static function rlSetMatrixModelview(view:Matrix):Void
-static function rlSetMatrixProjection(proj:Matrix):Void
-static function rlGetCullDistanceNear():Float
-static function rlGetCullDistanceFar():Float
-static function rlBegin(mode:Int):Void
-static function rlEnd():Void
-static function rlVertex2i(x:Int, y:Int):Void
-static function rlVertex2f(x:Float, y:Float):Void
-static function rlVertex3f(x:Float, y:Float, z:Float):Void
-static function rlTexCoord2f(x:Float, y:Float):Void
-static function rlNormal3f(x:Float, y:Float, z:Float):Void
-static function rlColor4ub(r:Int, g:Int, b:Int, a:Int):Void
-static function rlColor3f(x:Float, y:Float, z:Float):Void
-static function rlColor4f(x:Float, y:Float, z:Float, w:Float):Void
-static function rlSetTexture(id:Int):Void
-static function rlSetBlendMode(mode:Int):Void
-static function rlDrawRenderBatchActive():Void
-static function rlCheckRenderBatchLimit(vCount:Int):Bool
-```
-
-- `rlMatrixMode`: Chooses the matrix the next matrix calls change: `RL_MODELVIEW`, the view (or, between `rlPushMatrix` and `rlPopMatrix`, the transform the next vertices are moved by), or `RL_PROJECTION`.
-  - `mode`: The matrix (`RL_MODELVIEW` or `RL_PROJECTION`; `RL_TEXTURE` changes nothing).
-- `rlPushMatrix`: Saves the current matrix, to go back to with `rlPopMatrix`. In `RL_MODELVIEW`, the matrix calls until then move the vertices drawn after them.
-  - throws `String`: More than 32 saved at once, as rlgl allows.
-- `rlPopMatrix`: Goes back to the matrix last saved by `rlPushMatrix`.
-- `rlLoadIdentity`: Makes the current matrix the identity.
-- `rlTranslatef`: Moves by an offset before the current matrix.
-  - `x`: The x offset.
-  - `y`: The y offset.
-  - `z`: The z offset.
-- `rlRotatef`: Turns about an axis before the current matrix.
-  - `angle`: The angle, in degrees.
-  - `x`: The axis's x.
-  - `y`: Its y.
-  - `z`: Its z.
-- `rlScalef`: Scales before the current matrix.
-  - `x`: The x scale.
-  - `y`: The y scale.
-  - `z`: The z scale.
-- `rlMultMatrixf`: Applies a matrix before the current one.
-  - `matf`: The matrix's 16 numbers, by columns, as raylib's `MatrixToFloat` gives them.
-- `rlOrtho`: Applies an orthographic projection before the current matrix.
-  - `left`: The left plane.
-  - `right`: The right plane.
-  - `bottom`: The bottom plane.
-  - `top`: The top plane.
-  - `znear`: The near plane.
-  - `zfar`: The far plane.
-- `rlFrustum`: Applies a perspective projection before the current matrix, by its near plane's edges.
-  - `left`: The near plane's left edge.
-  - `right`: Its right edge.
-  - `bottom`: Its bottom edge.
-  - `top`: Its top edge.
-  - `znear`: The near plane.
-  - `zfar`: The far plane.
-- `rlGetMatrixModelview`: Returns the view: the screen's, `BeginMode2D`'s or `BeginMode3D`'s.
-  - returns: The matrix.
-- `rlGetMatrixProjection`: Returns the projection.
-  - returns: The matrix.
-- `rlGetMatrixTransform`: Returns the transform `rlPushMatrix` started: the identity when none is pushed.
-  - returns: The matrix.
-- `rlSetMatrixModelview`: Sets the view.
-  - `view`: The matrix.
-- `rlSetMatrixProjection`: Sets the projection.
-  - `proj`: The matrix.
-- `rlGetCullDistanceNear`: Returns the near plane rlgl's cameras use, 0.01.
-  - returns: The distance.
-- `rlGetCullDistanceFar`: Returns the far plane rlgl's cameras use, 1000.
-  - returns: The distance.
-- `rlBegin`: Starts vertices: each 2 a line, 3 a triangle or 4 a quad, until `rlEnd`.
-  - `mode`: `RL_LINES`, `RL_TRIANGLES` or `RL_QUADS`.
-- `rlEnd`: Ends the vertices `rlBegin` started; a shape left short of its vertices isn't drawn.
-- `rlVertex2i`: Adds a vertex, with the color, texture coordinate and normal set last.
-  - `x`: The x.
-  - `y`: The y.
-- `rlVertex2f`: Adds a vertex, with the color, texture coordinate and normal set last.
-  - `x`: The x.
-  - `y`: The y.
-- `rlVertex3f`: Adds a vertex, with the color, texture coordinate and normal set last.
-  - `x`: The x.
-  - `y`: The y.
-  - `z`: The z.
-- `rlTexCoord2f`: Sets the next vertices' texture coordinate.
-  - `x`: The u.
-  - `y`: The v.
-- `rlNormal3f`: Sets the next vertices' normal.
-  - `x`: The x.
-  - `y`: The y.
-  - `z`: The z.
-- `rlColor4ub`: Sets the next vertices' color.
-  - `r`: The red, 0 to 255.
-  - `g`: The green.
-  - `b`: The blue.
-  - `a`: The alpha.
-- `rlColor3f`: Sets the next vertices' color, opaque.
-  - `x`: The red, 0 to 1.
-  - `y`: The green.
-  - `z`: The blue.
-- `rlColor4f`: Sets the next vertices' color.
-  - `x`: The red, 0 to 1.
-  - `y`: The green.
-  - `z`: The blue.
-  - `w`: The alpha.
-- `rlSetTexture`: Sets the texture the next vertices draw with.
-  - `id`: The texture's id (`Texture2D.id`), or 0 for none.
-- `rlSetBlendMode`: Sets how the next draws blend, as `BeginBlendMode` does.
-  - `mode`: The mode (`RL_BLEND_*`, the same as `BLEND_*`).
-- `rlDrawRenderBatchActive`: Draws what is drawn so far before what comes next. Draws here are kept in the order they are asked for, so it changes nothing that is seen.
-- `rlCheckRenderBatchLimit`: Returns whether the next vertices would overflow rlgl's batch, which it then draws first. Draws here have no such limit.
-  - `vCount`: The vertices.
-  - returns: False.
 
 ### OpenGL version (rlGlVersion), not written by hand
 
@@ -3676,11 +3548,315 @@ static inline var PI:Float
 - `RL_DEFAULT_SHADER_ATTRIB_LOCATION_BONEWEIGHTS`: rlgl.h's `RL_DEFAULT_SHADER_ATTRIB_LOCATION_BONEWEIGHTS`.
 - `PI`: rlgl.h's `PI`.
 
+### rlgl: the matrix stack, immediate drawing and render state (raylib/RRlgl.hx)
+
+```haxe
+static function rlMatrixMode(mode:Int):Void
+static function rlPushMatrix():Void
+static function rlPopMatrix():Void
+static function rlLoadIdentity():Void
+static function rlTranslatef(x:Float, y:Float, z:Float):Void
+static function rlRotatef(angle:Float, x:Float, y:Float, z:Float):Void
+static function rlScalef(x:Float, y:Float, z:Float):Void
+static function rlMultMatrixf(matf:Array<Float>):Void
+static function rlOrtho(left:Float, right:Float, bottom:Float, top:Float, znear:Float, zfar:Float):Void
+static function rlFrustum(left:Float, right:Float, bottom:Float, top:Float, znear:Float, zfar:Float):Void
+static function rlGetMatrixModelview():Matrix
+static function rlGetMatrixProjection():Matrix
+static function rlGetMatrixTransform():Matrix
+static function rlSetMatrixModelview(view:Matrix):Void
+static function rlSetMatrixProjection(proj:Matrix):Void
+static function rlGetCullDistanceNear():Float
+static function rlGetCullDistanceFar():Float
+static function rlBegin(mode:Int):Void
+static function rlEnd():Void
+static function rlVertex2i(x:Int, y:Int):Void
+static function rlVertex2f(x:Float, y:Float):Void
+static function rlVertex3f(x:Float, y:Float, z:Float):Void
+static function rlTexCoord2f(x:Float, y:Float):Void
+static function rlNormal3f(x:Float, y:Float, z:Float):Void
+static function rlColor4ub(r:Int, g:Int, b:Int, a:Int):Void
+static function rlColor3f(x:Float, y:Float, z:Float):Void
+static function rlColor4f(x:Float, y:Float, z:Float, w:Float):Void
+static function rlSetTexture(id:Int):Void
+static function rlSetBlendMode(mode:Int):Void
+static function rlDrawRenderBatchActive():Void
+static function rlCheckRenderBatchLimit(vCount:Int):Bool
+```
+
+- `rlMatrixMode`: Chooses the matrix the next matrix calls change: `RL_MODELVIEW`, the view (or, between `rlPushMatrix` and `rlPopMatrix`, the transform the next vertices are moved by), or `RL_PROJECTION`.
+  - `mode`: The matrix (`RL_MODELVIEW` or `RL_PROJECTION`; `RL_TEXTURE` changes nothing).
+- `rlPushMatrix`: Saves the current matrix, to go back to with `rlPopMatrix`. In `RL_MODELVIEW`, the matrix calls until then move the vertices drawn after them.
+  - throws `String`: More than 32 saved at once, as rlgl allows.
+- `rlPopMatrix`: Goes back to the matrix last saved by `rlPushMatrix`.
+- `rlLoadIdentity`: Makes the current matrix the identity.
+- `rlTranslatef`: Moves by an offset before the current matrix.
+  - `x`: The x offset.
+  - `y`: The y offset.
+  - `z`: The z offset.
+- `rlRotatef`: Turns about an axis before the current matrix.
+  - `angle`: The angle, in degrees.
+  - `x`: The axis's x.
+  - `y`: Its y.
+  - `z`: Its z.
+- `rlScalef`: Scales before the current matrix.
+  - `x`: The x scale.
+  - `y`: The y scale.
+  - `z`: The z scale.
+- `rlMultMatrixf`: Applies a matrix before the current one.
+  - `matf`: The matrix's 16 numbers, by columns, as raylib's `MatrixToFloat` gives them.
+- `rlOrtho`: Applies an orthographic projection before the current matrix.
+  - `left`: The left plane.
+  - `right`: The right plane.
+  - `bottom`: The bottom plane.
+  - `top`: The top plane.
+  - `znear`: The near plane.
+  - `zfar`: The far plane.
+- `rlFrustum`: Applies a perspective projection before the current matrix, by its near plane's edges.
+  - `left`: The near plane's left edge.
+  - `right`: Its right edge.
+  - `bottom`: Its bottom edge.
+  - `top`: Its top edge.
+  - `znear`: The near plane.
+  - `zfar`: The far plane.
+- `rlGetMatrixModelview`: Returns the view: the screen's, `BeginMode2D`'s or `BeginMode3D`'s.
+  - returns: The matrix.
+- `rlGetMatrixProjection`: Returns the projection.
+  - returns: The matrix.
+- `rlGetMatrixTransform`: Returns the transform `rlPushMatrix` started: the identity when none is pushed.
+  - returns: The matrix.
+- `rlSetMatrixModelview`: Sets the view.
+  - `view`: The matrix.
+- `rlSetMatrixProjection`: Sets the projection.
+  - `proj`: The matrix.
+- `rlGetCullDistanceNear`: Returns the near plane rlgl's cameras use, 0.01.
+  - returns: The distance.
+- `rlGetCullDistanceFar`: Returns the far plane rlgl's cameras use, 1000.
+  - returns: The distance.
+- `rlBegin`: Starts vertices: each 2 a line, 3 a triangle or 4 a quad, until `rlEnd`.
+  - `mode`: `RL_LINES`, `RL_TRIANGLES` or `RL_QUADS`.
+- `rlEnd`: Ends the vertices `rlBegin` started; a shape left short of its vertices isn't drawn.
+- `rlVertex2i`: Adds a vertex, with the color, texture coordinate and normal set last.
+  - `x`: The x.
+  - `y`: The y.
+- `rlVertex2f`: Adds a vertex, with the color, texture coordinate and normal set last.
+  - `x`: The x.
+  - `y`: The y.
+- `rlVertex3f`: Adds a vertex, with the color, texture coordinate and normal set last.
+  - `x`: The x.
+  - `y`: The y.
+  - `z`: The z.
+- `rlTexCoord2f`: Sets the next vertices' texture coordinate.
+  - `x`: The u.
+  - `y`: The v.
+- `rlNormal3f`: Sets the next vertices' normal.
+  - `x`: The x.
+  - `y`: The y.
+  - `z`: The z.
+- `rlColor4ub`: Sets the next vertices' color.
+  - `r`: The red, 0 to 255.
+  - `g`: The green.
+  - `b`: The blue.
+  - `a`: The alpha.
+- `rlColor3f`: Sets the next vertices' color, opaque.
+  - `x`: The red, 0 to 1.
+  - `y`: The green.
+  - `z`: The blue.
+- `rlColor4f`: Sets the next vertices' color.
+  - `x`: The red, 0 to 1.
+  - `y`: The green.
+  - `z`: The blue.
+  - `w`: The alpha.
+- `rlSetTexture`: Sets the texture the next vertices draw with.
+  - `id`: The texture's id (`Texture2D.id`), or 0 for none.
+- `rlSetBlendMode`: Sets how the next draws blend, as `BeginBlendMode` does.
+  - `mode`: The mode (`RL_BLEND_*`, the same as `BLEND_*`).
+- `rlDrawRenderBatchActive`: Draws what is drawn so far before what comes next. Draws here are kept in the order they are asked for, so it changes nothing that is seen.
+- `rlCheckRenderBatchLimit`: Returns whether the next vertices would overflow rlgl's batch, which it then draws first. Draws here have no such limit.
+  - `vCount`: The vertices.
+  - returns: False.
+
+### rlgl.h's functions helix-ray won't have: each refuses to compile, saying why and what to use
+
+```haxe
+static macro function rlEnableVertexArray(vaoId:Int):Bool
+static macro function rlDisableVertexArray():Void
+static macro function rlEnableVertexBuffer(id:Int):Void
+static macro function rlDisableVertexBuffer():Void
+static macro function rlEnableVertexBufferElement(id:Int):Void
+static macro function rlDisableVertexBufferElement():Void
+static macro function rlEnableVertexAttribute(index:Int):Void
+static macro function rlDisableVertexAttribute(index:Int):Void
+static macro function rlEnableStatePointer(vertexAttribType:Int, buffer:Dynamic):Void
+static macro function rlDisableStatePointer(vertexAttribType:Int):Void
+static macro function rlActiveTextureSlot(slot:Int):Void
+static macro function rlEnableTexture(id:Int):Void
+static macro function rlDisableTexture():Void
+static macro function rlEnableTextureCubemap(id:Int):Void
+static macro function rlDisableTextureCubemap():Void
+static macro function rlTextureParameters(id:Int, param:Int, value:Int):Void
+static macro function rlCubemapParameters(id:Int, param:Int, value:Int):Void
+static macro function rlEnableShader(id:Int):Void
+static macro function rlDisableShader():Void
+static macro function rlEnableFramebuffer(id:Int):Void
+static macro function rlDisableFramebuffer():Void
+static macro function rlGetActiveFramebuffer():Int
+static macro function rlActiveDrawBuffers(count:Int):Void
+static macro function rlBlitFramebuffer(srcX:Int, srcY:Int, srcWidth:Int, srcHeight:Int, dstX:Int, dstY:Int, dstWidth:Int, dstHeight:Int, bufferMask:Int):Void
+static macro function rlBindFramebuffer(target:Int, framebuffer:Int):Void
+static macro function rlCheckErrors():Void
+static macro function rlLoadExtensions(loader:Dynamic):Void
+static macro function rlGetVersion():Int
+static macro function rlGetTextureIdDefault():Int
+static macro function rlGetShaderIdDefault():Int
+static macro function rlGetShaderLocsDefault():ExprOf<Array<Int>>
+static macro function rlLoadRenderBatch(numBuffers:Int, bufferElements:Int):Dynamic
+static macro function rlUnloadRenderBatch(batch:Dynamic):Void
+static macro function rlDrawRenderBatch(batch:Dynamic):Void
+static macro function rlSetRenderBatchActive(batch:Dynamic):Void
+static macro function rlLoadVertexArray():Int
+static macro function rlLoadVertexBuffer(buffer:Dynamic, size:Int, isDynamic:Bool):Int
+static macro function rlLoadVertexBufferElement(buffer:Dynamic, size:Int, isDynamic:Bool):Int
+static macro function rlUpdateVertexBuffer(bufferId:Int, data:Dynamic, dataSize:Int, offset:Int):Void
+static macro function rlUpdateVertexBufferElements(id:Int, data:Dynamic, dataSize:Int, offset:Int):Void
+static macro function rlUnloadVertexArray(vaoId:Int):Void
+static macro function rlUnloadVertexBuffer(vboId:Int):Void
+static macro function rlSetVertexAttribute(index:Int, compSize:Int, type:Int, normalized:Bool, stride:Int, offset:Int):Void
+static macro function rlSetVertexAttributeDivisor(index:Int, divisor:Int):Void
+static macro function rlSetVertexAttributeDefault(locIndex:Int, value:Dynamic, attribType:Int, count:Int):Void
+static macro function rlDrawVertexArray(offset:Int, count:Int):Void
+static macro function rlDrawVertexArrayElements(offset:Int, count:Int, buffer:Dynamic):Void
+static macro function rlDrawVertexArrayInstanced(offset:Int, count:Int, instances:Int):Void
+static macro function rlDrawVertexArrayElementsInstanced(offset:Int, count:Int, buffer:Dynamic, instances:Int):Void
+static macro function rlLoadTexture(data:Dynamic, width:Int, height:Int, format:Int, mipmapCount:Int):Int
+static macro function rlLoadTextureDepth(width:Int, height:Int, useRenderBuffer:Bool):Int
+static macro function rlLoadTextureCubemap(data:Dynamic, size:Int, format:Int, mipmapCount:Int):Int
+static macro function rlUpdateTexture(id:Int, offsetX:Int, offsetY:Int, width:Int, height:Int, format:Int, data:Dynamic):Void
+static macro function rlGetGlTextureFormats(format:Int, glInternalFormat:Array<Int>, glFormat:Array<Int>, glType:Array<Int>):Void
+static macro function rlUnloadTexture(id:Int):Void
+static macro function rlGenTextureMipmaps(id:Int, width:Int, height:Int, format:Int, mipmaps:Array<Int>):Void
+static macro function rlReadTexturePixels(id:Int, width:Int, height:Int, format:Int):Dynamic
+static macro function rlReadScreenPixels(width:Int, height:Int):Bytes
+static macro function rlLoadFramebuffer():Int
+static macro function rlFramebufferAttach(fboId:Int, texId:Int, attachType:Int, texType:Int, mipLevel:Int):Void
+static macro function rlFramebufferComplete(id:Int):Bool
+static macro function rlUnloadFramebuffer(id:Int):Void
+static macro function rlLoadShaderCode(vsCode:String, fsCode:String):Int
+static macro function rlCompileShader(shaderCode:String, type:Int):Int
+static macro function rlLoadShaderProgram(vShaderId:Int, fShaderId:Int):Int
+static macro function rlUnloadShaderProgram(id:Int):Void
+static macro function rlGetLocationUniform(shaderId:Int, uniformName:String):Int
+static macro function rlGetLocationAttrib(shaderId:Int, attribName:String):Int
+static macro function rlSetUniform(locIndex:Int, value:Dynamic, uniformType:Int, count:Int):Void
+static macro function rlSetUniformMatrix(locIndex:Int, mat:Matrix):Void
+static macro function rlSetUniformMatrices(locIndex:Int, mat:Array<Matrix>, count:Int):Void
+static macro function rlSetUniformSampler(locIndex:Int, textureId:Int):Void
+static macro function rlSetShader(id:Int, locs:Array<Int>):Void
+static macro function rlLoadComputeShaderProgram(shaderId:Int):Int
+static macro function rlComputeShaderDispatch(groupX:Int, groupY:Int, groupZ:Int):Void
+static macro function rlLoadShaderBuffer(size:Int, data:Dynamic, usageHint:Int):Int
+static macro function rlUnloadShaderBuffer(ssboId:Int):Void
+static macro function rlUpdateShaderBuffer(id:Int, data:Dynamic, dataSize:Int, offset:Int):Void
+static macro function rlBindShaderBuffer(id:Int, index:Int):Void
+static macro function rlReadShaderBuffer(id:Int, dest:Dynamic, count:Int, offset:Int):Void
+static macro function rlCopyShaderBuffer(destId:Int, srcId:Int, destOffset:Int, srcOffset:Int, count:Int):Void
+static macro function rlGetShaderBufferSize(id:Int):Int
+static macro function rlBindImageTexture(id:Int, index:Int, format:Int, readonly:Bool):Void
+static macro function rlLoadDrawCube():Void
+static macro function rlLoadDrawQuad():Void
+```
+
+- `rlEnableVertexArray`: rlgl's `rlEnableVertexArray`: enable vertex array (vao, if supported), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlDisableVertexArray`: rlgl's `rlDisableVertexArray`: disable vertex array (vao, if supported), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlEnableVertexBuffer`: rlgl's `rlEnableVertexBuffer`: enable vertex buffer (vbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlDisableVertexBuffer`: rlgl's `rlDisableVertexBuffer`: disable vertex buffer (vbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlEnableVertexBufferElement`: rlgl's `rlEnableVertexBufferElement`: enable vertex buffer element (vbo element), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlDisableVertexBufferElement`: rlgl's `rlDisableVertexBufferElement`: disable vertex buffer element (vbo element), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlEnableVertexAttribute`: rlgl's `rlEnableVertexAttribute`: enable vertex attribute index, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlDisableVertexAttribute`: rlgl's `rlDisableVertexAttribute`: disable vertex attribute index, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlEnableStatePointer`: rlgl's `rlEnableStatePointer`: enable attribute state pointer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlDisableStatePointer`: rlgl's `rlDisableStatePointer`: disable attribute state pointer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlActiveTextureSlot`: rlgl's `rlActiveTextureSlot`: select and active a texture slot, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlEnableTexture`: rlgl's `rlEnableTexture`: enable texture, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlDisableTexture`: rlgl's `rlDisableTexture`: disable texture, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlEnableTextureCubemap`: rlgl's `rlEnableTextureCubemap`: enable texture cubemap, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlDisableTextureCubemap`: rlgl's `rlDisableTextureCubemap`: disable texture cubemap, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlTextureParameters`: rlgl's `rlTextureParameters`: set texture parameters (filter, wrap), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlCubemapParameters`: rlgl's `rlCubemapParameters`: set cubemap parameters (filter, wrap), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlEnableShader`: rlgl's `rlEnableShader`: enable shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlDisableShader`: rlgl's `rlDisableShader`: disable shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlEnableFramebuffer`: rlgl's `rlEnableFramebuffer`: enable render texture (fbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlDisableFramebuffer`: rlgl's `rlDisableFramebuffer`: disable render texture (fbo), return to default framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlGetActiveFramebuffer`: rlgl's `rlGetActiveFramebuffer`: get the currently active render texture (fbo), 0 for default framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlActiveDrawBuffers`: rlgl's `rlActiveDrawBuffers`: activate multiple draw color buffers, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlBlitFramebuffer`: rlgl's `rlBlitFramebuffer`: blit active framebuffer to main framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlBindFramebuffer`: rlgl's `rlBindFramebuffer`: bind framebuffer (fbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlCheckErrors`: rlgl's `rlCheckErrors`: check and log opengl error codes, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadExtensions`: rlgl's `rlLoadExtensions`: load opengl extensions (loader function required), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlGetVersion`: rlgl's `rlGetVersion`: get current opengl version, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlGetTextureIdDefault`: rlgl's `rlGetTextureIdDefault`: get default texture id, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlGetShaderIdDefault`: rlgl's `rlGetShaderIdDefault`: get default shader id, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlGetShaderLocsDefault`: rlgl's `rlGetShaderLocsDefault`: get default shader locations, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadRenderBatch`: rlgl's `rlLoadRenderBatch`: load a render batch system, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlUnloadRenderBatch`: rlgl's `rlUnloadRenderBatch`: unload render batch system, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlDrawRenderBatch`: rlgl's `rlDrawRenderBatch`: draw render batch data (update->draw->reset), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlSetRenderBatchActive`: rlgl's `rlSetRenderBatchActive`: set the active render batch for rlgl (null for default internal), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadVertexArray`: rlgl's `rlLoadVertexArray`: load vertex array (vao) if supported, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadVertexBuffer`: rlgl's `rlLoadVertexBuffer`: load a vertex buffer object, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadVertexBufferElement`: rlgl's `rlLoadVertexBufferElement`: load vertex buffer elements object, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlUpdateVertexBuffer`: rlgl's `rlUpdateVertexBuffer`: update vertex buffer object data on gpu buffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlUpdateVertexBufferElements`: rlgl's `rlUpdateVertexBufferElements`: update vertex buffer elements data on gpu buffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlUnloadVertexArray`: rlgl's `rlUnloadVertexArray`: unload vertex array (vao), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlUnloadVertexBuffer`: rlgl's `rlUnloadVertexBuffer`: unload vertex buffer object, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlSetVertexAttribute`: rlgl's `rlSetVertexAttribute`: set vertex attribute data configuration, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlSetVertexAttributeDivisor`: rlgl's `rlSetVertexAttributeDivisor`: set vertex attribute data divisor, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlSetVertexAttributeDefault`: rlgl's `rlSetVertexAttributeDefault`: set vertex attribute default value, when attribute to provided, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlDrawVertexArray`: rlgl's `rlDrawVertexArray`: draw vertex array (currently active vao), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlDrawVertexArrayElements`: rlgl's `rlDrawVertexArrayElements`: draw vertex array elements, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlDrawVertexArrayInstanced`: rlgl's `rlDrawVertexArrayInstanced`: draw vertex array (currently active vao) with instancing, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlDrawVertexArrayElementsInstanced`: rlgl's `rlDrawVertexArrayElementsInstanced`: draw vertex array elements with instancing, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadTexture`: rlgl's `rlLoadTexture`: load texture data, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadTextureDepth`: rlgl's `rlLoadTextureDepth`: load depth texture/renderbuffer (to be attached to fbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadTextureCubemap`: rlgl's `rlLoadTextureCubemap`: load texture cubemap data, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlUpdateTexture`: rlgl's `rlUpdateTexture`: update texture with new data on gpu, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlGetGlTextureFormats`: rlgl's `rlGetGlTextureFormats`: get opengl internal formats, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlUnloadTexture`: rlgl's `rlUnloadTexture`: unload texture from gpu memory, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlGenTextureMipmaps`: rlgl's `rlGenTextureMipmaps`: generate mipmap data for selected texture, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlReadTexturePixels`: rlgl's `rlReadTexturePixels`: read texture pixel data, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlReadScreenPixels`: rlgl's `rlReadScreenPixels`: read screen pixel data (color buffer), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadFramebuffer`: rlgl's `rlLoadFramebuffer`: load an empty framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlFramebufferAttach`: rlgl's `rlFramebufferAttach`: attach texture/renderbuffer to a framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlFramebufferComplete`: rlgl's `rlFramebufferComplete`: verify framebuffer is complete, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlUnloadFramebuffer`: rlgl's `rlUnloadFramebuffer`: delete framebuffer from gpu, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadShaderCode`: rlgl's `rlLoadShaderCode`: load shader from code strings, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlCompileShader`: rlgl's `rlCompileShader`: compile custom shader and return shader id (type: rl_vertex_shader, rl_fragment_shader, rl_compute_shader), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadShaderProgram`: rlgl's `rlLoadShaderProgram`: load custom shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlUnloadShaderProgram`: rlgl's `rlUnloadShaderProgram`: unload shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlGetLocationUniform`: rlgl's `rlGetLocationUniform`: get shader location uniform, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlGetLocationAttrib`: rlgl's `rlGetLocationAttrib`: get shader location attribute, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlSetUniform`: rlgl's `rlSetUniform`: set shader value uniform, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlSetUniformMatrix`: rlgl's `rlSetUniformMatrix`: set shader value matrix, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlSetUniformMatrices`: rlgl's `rlSetUniformMatrices`: set shader value matrices, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlSetUniformSampler`: rlgl's `rlSetUniformSampler`: set shader value sampler, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlSetShader`: rlgl's `rlSetShader`: set shader currently active (id and locations), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadComputeShaderProgram`: rlgl's `rlLoadComputeShaderProgram`: load compute shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlComputeShaderDispatch`: rlgl's `rlComputeShaderDispatch`: dispatch compute shader (equivalent to *draw* for graphics pipeline), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadShaderBuffer`: rlgl's `rlLoadShaderBuffer`: load shader storage buffer object (ssbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlUnloadShaderBuffer`: rlgl's `rlUnloadShaderBuffer`: unload shader storage buffer object (ssbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlUpdateShaderBuffer`: rlgl's `rlUpdateShaderBuffer`: update ssbo buffer data, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlBindShaderBuffer`: rlgl's `rlBindShaderBuffer`: bind ssbo buffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlReadShaderBuffer`: rlgl's `rlReadShaderBuffer`: read ssbo buffer data (gpu->cpu), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlCopyShaderBuffer`: rlgl's `rlCopyShaderBuffer`: copy ssbo data between buffers, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlGetShaderBufferSize`: rlgl's `rlGetShaderBufferSize`: get ssbo buffer size, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlBindImageTexture`: rlgl's `rlBindImageTexture`: bind image texture, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadDrawCube`: rlgl's `rlLoadDrawCube`: load and draw a cube, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+- `rlLoadDrawQuad`: rlgl's `rlLoadDrawQuad`: load and draw a quad, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+
 ### Not in helix-ray yet
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-From `rlgl.h`: `rlViewport`, `rlSetClipPlanes`, `rlEnableVertexArray`, `rlDisableVertexArray`, `rlEnableVertexBuffer`, `rlDisableVertexBuffer`, `rlEnableVertexBufferElement`, `rlDisableVertexBufferElement`, `rlEnableVertexAttribute`, `rlDisableVertexAttribute`, `rlEnableStatePointer`, `rlDisableStatePointer`, `rlActiveTextureSlot`, `rlEnableTexture`, `rlDisableTexture`, `rlEnableTextureCubemap`, `rlDisableTextureCubemap`, `rlTextureParameters`, `rlCubemapParameters`, `rlEnableShader`, `rlDisableShader`, `rlEnableFramebuffer`, `rlDisableFramebuffer`, `rlGetActiveFramebuffer`, `rlActiveDrawBuffers`, `rlBlitFramebuffer`, `rlBindFramebuffer`, `rlEnableColorBlend`, `rlDisableColorBlend`, `rlEnableDepthTest`, `rlDisableDepthTest`, `rlEnableDepthMask`, `rlDisableDepthMask`, `rlEnableBackfaceCulling`, `rlDisableBackfaceCulling`, `rlColorMask`, `rlSetCullFace`, `rlEnableScissorTest`, `rlDisableScissorTest`, `rlScissor`, `rlEnableWireMode`, `rlEnablePointMode`, `rlDisableWireMode`, `rlSetLineWidth`, `rlGetLineWidth`, `rlEnableSmoothLines`, `rlDisableSmoothLines`, `rlEnableStereoRender`, `rlDisableStereoRender`, `rlIsStereoRenderEnabled`, `rlClearColor`, `rlClearScreenBuffers`, `rlCheckErrors`, `rlSetBlendFactors`, `rlSetBlendFactorsSeparate`, `rlglInit`, `rlglClose`, `rlLoadExtensions`, `rlGetVersion`, `rlSetFramebufferWidth`, `rlGetFramebufferWidth`, `rlSetFramebufferHeight`, `rlGetFramebufferHeight`, `rlGetTextureIdDefault`, `rlGetShaderIdDefault`, `rlGetShaderLocsDefault`, `rlLoadRenderBatch`, `rlUnloadRenderBatch`, `rlDrawRenderBatch`, `rlSetRenderBatchActive`, `rlLoadVertexArray`, `rlLoadVertexBuffer`, `rlLoadVertexBufferElement`, `rlUpdateVertexBuffer`, `rlUpdateVertexBufferElements`, `rlUnloadVertexArray`, `rlUnloadVertexBuffer`, `rlSetVertexAttribute`, `rlSetVertexAttributeDivisor`, `rlSetVertexAttributeDefault`, `rlDrawVertexArray`, `rlDrawVertexArrayElements`, `rlDrawVertexArrayInstanced`, `rlDrawVertexArrayElementsInstanced`, `rlLoadTexture`, `rlLoadTextureDepth`, `rlLoadTextureCubemap`, `rlUpdateTexture`, `rlGetGlTextureFormats`, `rlGetPixelFormatName`, `rlUnloadTexture`, `rlGenTextureMipmaps`, `rlReadTexturePixels`, `rlReadScreenPixels`, `rlLoadFramebuffer`, `rlFramebufferAttach`, `rlFramebufferComplete`, `rlUnloadFramebuffer`, `rlLoadShaderCode`, `rlCompileShader`, `rlLoadShaderProgram`, `rlUnloadShaderProgram`, `rlGetLocationUniform`, `rlGetLocationAttrib`, `rlSetUniform`, `rlSetUniformMatrix`, `rlSetUniformMatrices`, `rlSetUniformSampler`, `rlSetShader`, `rlLoadComputeShaderProgram`, `rlComputeShaderDispatch`, `rlLoadShaderBuffer`, `rlUnloadShaderBuffer`, `rlUpdateShaderBuffer`, `rlBindShaderBuffer`, `rlReadShaderBuffer`, `rlCopyShaderBuffer`, `rlGetShaderBufferSize`, `rlBindImageTexture`, `rlGetMatrixProjectionStereo`, `rlGetMatrixViewOffsetStereo`, `rlSetMatrixProjectionStereo`, `rlSetMatrixViewOffsetStereo`, `rlLoadDrawCube`, `rlLoadDrawQuad`.
+From `rlgl.h`: `rlViewport`, `rlSetClipPlanes`, `rlEnableColorBlend`, `rlDisableColorBlend`, `rlEnableDepthTest`, `rlDisableDepthTest`, `rlEnableDepthMask`, `rlDisableDepthMask`, `rlEnableBackfaceCulling`, `rlDisableBackfaceCulling`, `rlColorMask`, `rlSetCullFace`, `rlEnableScissorTest`, `rlDisableScissorTest`, `rlScissor`, `rlEnableWireMode`, `rlEnablePointMode`, `rlDisableWireMode`, `rlSetLineWidth`, `rlGetLineWidth`, `rlEnableSmoothLines`, `rlDisableSmoothLines`, `rlEnableStereoRender`, `rlDisableStereoRender`, `rlIsStereoRenderEnabled`, `rlClearColor`, `rlClearScreenBuffers`, `rlSetBlendFactors`, `rlSetBlendFactorsSeparate`, `rlglInit`, `rlglClose`, `rlSetFramebufferWidth`, `rlGetFramebufferWidth`, `rlSetFramebufferHeight`, `rlGetFramebufferHeight`, `rlGetPixelFormatName`, `rlGetMatrixProjectionStereo`, `rlGetMatrixViewOffsetStereo`, `rlSetMatrixProjectionStereo`, `rlSetMatrixViewOffsetStereo`.
 
 ## Shader
 

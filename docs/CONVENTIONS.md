@@ -231,6 +231,14 @@ was built and where it is (`tools/variants.py` holds the lists).
   platform's examples). A `headless` backend (no window or GPU, for tests) is to come; none exists yet.
 - **options**, then a **sanitizer**, in that order: a name only adds, never `-noX`. None exists yet.
 
+## Tools
+
+A tool that reads Haxe code (a generator, a check, the API reference) reads it as the compiler describes it, `haxe -xml` or a macro run
+in the compile, never by matching its text: the compiler resolves types, parameters, metadata and doc comments as the code means them,
+where a pattern breaks on the next arrow or generic it didn't foresee. `tools/gen_raylib.py` reads helix-ray's sections so, with a
+macro (`tools/haxe/FacadeFields.hx`) for the macro functions `-xml` leaves out. A tool still matching text is changed when it is next
+touched.
+
 ## Examples
 
 - An example shows one thing with its library alone, on both targets, from hxml files beside it. Work that a program would otherwise

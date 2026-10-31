@@ -579,7 +579,7 @@ class RCore {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unimplemented("FileExists: Synchronous file access is not supported. See FileExistsAsync(fileName:String, answer:Bool->Void)")
+	@:unsupported("FileExists: Synchronous file access is not supported. See FileExistsAsync(fileName:String, answer:Bool->Void)")
 	static function FileExists(fileName:String):Bool {
 		throw "FileExists is unimplemented";
 	}
@@ -589,7 +589,7 @@ class RCore {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unimplemented("LoadFileText: Synchronous loading is not supported. See LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void)")
+	@:unsupported("LoadFileText: Synchronous loading is not supported. See LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void)")
 	static function LoadFileText(fileName:String):Null<String> {
 		throw "LoadFileText is unimplemented";
 	}
@@ -617,7 +617,7 @@ class RCore {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unimplemented("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)")
+	@:unsupported("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)")
 	static function LoadFileData(fileName:String):Null<haxe.io.Bytes> {
 		throw "LoadFileData is unimplemented";
 	}

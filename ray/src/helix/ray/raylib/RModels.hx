@@ -210,7 +210,7 @@ class RModels {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unimplemented("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)")
+	@:unsupported("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)")
 	static function LoadModel(fileName:String):Model {
 		throw "LoadModel is unimplemented";
 	}

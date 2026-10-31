@@ -117,12 +117,15 @@ Why things are the way they are, numbered, in order.
     natively failed when built for a page: one program, two codes. Now `LoadTexture`, `LoadModel`, `LoadSound`, `LoadFileData`,
     `LoadFileText` and `FileExists` refuse everywhere, with the signature of the call to use, "LoadTexture: Synchronous loading is not
     supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)", so an agent needn't look it up.
-    Each is a macro in `Raylib` whose body returns `helix.platform.macros.Build.unimplemented(message, macro (null : T))`: the
+    Each is a macro in `Raylib` whose body returns `helix.platform.macros.Build.unsupported(message, macro (null : T))`: the
     message is reported where the program calls it, all such calls in one build, and the call keeps raylib's result type, so nothing
     after it is typed wrong because of it; the message is in the source an agent reads. Haxe's `#error` fires wherever the file is
     read, called or not, `@:deprecated` only warns, and `@:require` refuses but leaves the call `Dynamic`, which errors again at its
-    first use. In a section the function is marked `@:unimplemented("message")`, which `gen_raylib` writes as the macro, checking the
-    signature the message names against the call's own. Nothing is read before `main`, and no scan of the program's sources
+    first use. In a section the function is marked `@:unsupported("message")`, which `gen_raylib` writes as the macro, checking the
+    signature the message names against the call's own. `@:unsupported` is for what helix-ray won't have, by design (these loads,
+    rlgl's GL objects), and `@:unimplemented` for what it doesn't have yet (`Build.unimplemented`), so an agent can tell a dead end from
+    a gap. `gen_raylib` reads the sections as the compiler describes them (`haxe -xml`, and a macro for the facades' own macro
+    functions), not by matching their text. Nothing is read before `main`, and no scan of the program's sources
     decides what: the saves are read when first used. `SaveFileText` and `SaveFileData` need no answer, so they stay raylib's; a write
     made before the saves are read is held and made after, so it wins over what was kept. `LoadFileTextAsync` asks the program's text
     callback, then the saves, then fetches, so what `SaveFileText` wrote reads back a frame later. Faking synchronous loads in a page,
