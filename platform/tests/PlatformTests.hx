@@ -1,12 +1,10 @@
 import helix.platform.BlendMode;
-import helix.platform.Color;
 import helix.platform.Filter;
 import helix.platform.Sampling;
 import helix.platform.TextureFormat;
 import helix.platform.Wrap;
 
-/** Checks helix-platform's own values, built with -lib helix-platform alone so nothing above it is visible: colors' channels and their
-	CSS order, a sampling's parts, texture formats' level sizes, and the enum abstracts read as their names. Run by helix.py test on the
+/** Checks helix-platform's own values, built with -lib helix-platform alone so nothing above it is visible: a sampling's parts, texture formats' level sizes, and the enum abstracts read as their names. Run by helix.py test on the
 	interpreter and Node. */
 class PlatformTests {
 	static var checks = 0;
@@ -25,19 +23,6 @@ class PlatformTests {
 			"directory names: not empty, . or .., no separator or reserved character");
 		check(!name("trailing ") && !name("trailing.") && !name([for (_ in 0...65) "x"].join("")),
 			"directory names: no space or . at the end, 64 characters at most");
-		// Colors: 0xAARRGGBB, channels in and out, alpha replaced, and the CSS order both ways.
-		var orange = Color.fromChannels(255, 128, 0);
-		check(orange == 0xffff8000, "fromChannels: opaque unless told, alpha in the top byte");
-		check(Color.getRed(orange) == 255
-			&& Color.getGreen(orange) == 128
-			&& Color.getBlue(orange) == 0
-			&& Color.getAlpha(orange) == 255,
-			"Each channel read back");
-		check(Color.fromChannels(300, -1, 0, 128) == 0x802cff00, "Only each channel's low 8 bits are used");
-		check(Color.withAlpha(orange, 64) == 0x40ff8000
-			&& Color.withAlpha(orange, 64 + 256) == 0x40ff8000, "withAlpha replaces the alpha alone");
-		check(Color.toRgba(0x80112233) == 0x11223380 && Color.fromRgba(0x11223380) == 0x80112233, "The CSS order, both ways");
-		check(Color.fromRgba(Color.toRgba(0xdeadbeef)) == 0xdeadbeef, "The CSS order round-trips");
 
 		// A sampling keeps its filter and wraps in a small value, and with* change one part.
 		var sampling = new Sampling(Linear, Repeat, Mirror);

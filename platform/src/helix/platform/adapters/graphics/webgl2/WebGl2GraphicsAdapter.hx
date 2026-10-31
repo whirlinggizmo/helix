@@ -2,7 +2,7 @@ package helix.platform.adapters.graphics.webgl2;
 
 import haxe.io.Bytes;
 import helix.platform.BlendMode;
-import helix.platform.Color;
+import helix.math.Color;
 import helix.platform.IGraphics;
 import helix.platform.PipelineDesc;
 import helix.platform.DepthTest;

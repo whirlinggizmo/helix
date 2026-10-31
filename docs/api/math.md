@@ -151,6 +151,108 @@ function intersects(other:Bounds3D):Bool
   - `other`: The other box.
   - returns: True when they overlap; false when either is empty.
 
+## Color
+
+*class* in [`math/src/helix/math/Color.hx`](../../math/src/helix/math/Color.hx), `import helix.math.Color;`
+
+Provides functions for colors held as 0xAARRGGBB integers, with alpha in the top byte: their channels, hue, saturation and value, blending one over another, and mixing, tinting, brightening and contrasting them.
+
+Each channel is 0 to 255. Text writes a color in CSS order, as #RRGGBB or #RRGGBBAA. `fromRgba` and `toRgba` convert between that order and this one.
+
+```haxe
+var orange = Color.fromChannels(255, 128, 0);
+var faded = Color.withAlpha(orange, 128);
+```
+
+```haxe
+static function fromChannels(red:Int, green:Int, blue:Int, ?alpha:Int = 255):Int
+static function getRed(color:Int):Int
+static function getGreen(color:Int):Int
+static function getBlue(color:Int):Int
+static function getAlpha(color:Int):Int
+static function withAlpha(color:Int, alpha:Int):Int
+static function fromRgba(rgba:Int):Int
+static function toRgba(color:Int):Int
+static function fromHsv(hue:Float, saturation:Float, value:Float, ?alpha:Int = 255):Int
+static function getHue(color:Int):Float
+static function getSaturation(color:Int):Float
+static function getValue(color:Int):Float
+static function lerp(from:Int, to:Int, t:Float):Int
+static function blend(under:Int, over:Int):Int
+static function tint(color:Int, tint:Int):Int
+static function brighten(color:Int, factor:Float):Int
+static function contrast(color:Int, factor:Float):Int
+```
+
+- `fromChannels`: Returns the color with the provided channels.
+  - `red`: The red channel, 0 to 255.
+  - `green`: The green channel, 0 to 255.
+  - `blue`: The blue channel, 0 to 255.
+  - `alpha`: Optional. The alpha channel, 0 (clear) to 255 (opaque); defaults to 255.
+  - returns: The color, as 0xAARRGGBB.
+
+  Only the low 8 bits of each channel are used.
+- `getRed`: Returns a color's red channel.
+  - `color`: The color, as 0xAARRGGBB.
+  - returns: The red channel, 0 to 255.
+- `getGreen`: Returns a color's green channel.
+  - `color`: The color, as 0xAARRGGBB.
+  - returns: The green channel, 0 to 255.
+- `getBlue`: Returns a color's blue channel.
+  - `color`: The color, as 0xAARRGGBB.
+  - returns: The blue channel, 0 to 255.
+- `getAlpha`: Returns a color's alpha channel.
+  - `color`: The color, as 0xAARRGGBB.
+  - returns: The alpha channel, 0 (clear) to 255 (opaque).
+- `withAlpha`: Returns a color with its alpha channel replaced.
+  - `color`: The color, as 0xAARRGGBB.
+  - `alpha`: The new alpha channel, 0 (clear) to 255 (opaque).
+  - returns: The color with the new alpha.
+
+  Only the low 8 bits of alpha are used.
+- `fromRgba`: Returns the color that an integer in CSS order names.
+  - `rgba`: The color, as 0xRRGGBBAA.
+  - returns: The color, as 0xAARRGGBB.
+- `toRgba`: Returns a color as an integer in CSS order.
+  - `color`: The color, as 0xAARRGGBB.
+  - returns: The color, as 0xRRGGBBAA.
+- `fromHsv`: Returns the color of a hue, saturation and value, opaque or with an alpha.
+  - `hue`: The hue, in degrees: 0 red, 120 green, 240 blue; any angle, wrapped.
+  - `saturation`: The saturation, 0 (gray) to 1, clamped.
+  - `value`: The value, 0 (black) to 1, clamped.
+  - `alpha`: Optional. The alpha channel, 0 to 255; defaults to 255.
+  - returns: The color, its channels rounded.
+- `getHue`: Returns a color's hue.
+  - `color`: The color, as 0xAARRGGBB.
+  - returns: The hue, in degrees, 0 up to 360: 0 for a gray.
+- `getSaturation`: Returns a color's saturation: how far it is from gray.
+  - `color`: The color, as 0xAARRGGBB.
+  - returns: The saturation, 0 to 1: 0 for a gray or black.
+- `getValue`: Returns a color's value: its brightest channel.
+  - `color`: The color, as 0xAARRGGBB.
+  - returns: The value, 0 (black) to 1.
+- `lerp`: Returns the color a fraction of the way from one color to another, each channel alpha included.
+  - `from`: The color at 0, as 0xAARRGGBB.
+  - `to`: The color at 1.
+  - `t`: The fraction, clamped to 0 to 1.
+  - returns: The mix, its channels rounded.
+- `blend`: Returns one color laid over another by its alpha, as a translucent paint covers what is under it ("source over").
+  - `under`: The color beneath, as 0xAARRGGBB.
+  - `over`: The color laid over it.
+  - returns: What is seen, its channels rounded: the color beneath where the one over is clear, the one over where it is opaque.
+- `tint`: Returns a color multiplied by another, channel by channel, alpha included: white leaves it as it is, black makes it black.
+  - `color`: The color, as 0xAARRGGBB.
+  - `tint`: The color it is multiplied by.
+  - returns: The tinted color, its channels rounded.
+- `brighten`: Returns a color brightened toward white or darkened toward black, its alpha kept.
+  - `color`: The color, as 0xAARRGGBB.
+  - `factor`: How far: 1 white, -1 black, 0 unchanged; clamped to -1 to 1.
+  - returns: The color, its channels rounded.
+- `contrast`: Returns a color with its contrast changed: its channels pushed away from mid-gray, or pulled toward it, its alpha kept.
+  - `color`: The color, as 0xAARRGGBB.
+  - `factor`: How far: 1 the most contrast (each channel to 0 or 255), -1 none (mid-gray), 0 unchanged; clamped to -1 to 1.
+  - returns: The color, its channels rounded and kept to 0 to 255.
+
 ## Curve
 
 *class* in [`math/src/helix/math/Curve.hx`](../../math/src/helix/math/Curve.hx), `import helix.math.Curve;`

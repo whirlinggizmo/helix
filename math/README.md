@@ -10,6 +10,8 @@ Math for games: pure Haxe, depending on nothing.
 - `Point2D`, `Point3D`, `Bounds2D`, `Bounds3D`: points and axis-aligned boxes, and where boxes overlap.
 - `Geometry2D`: segments crossing, points in triangles and polygons, distances to segments, circles touching them.
 - `DistanceField2D`: a grid's distance transform, for distance fields.
+- `Color`: colors as 0xAARRGGBB integers: their channels, the CSS order, hue, saturation and value, mixing, laying one over another,
+  tinting, brightening and contrasting.
 - `RectPacker2D`: rectangles packed into an area, as stb_rect_pack packs them (an atlas's images, say).
 - `Matrix3D`: 4 x 4 transforms, moving, turning, scaling and projecting points, the same on every target.
 

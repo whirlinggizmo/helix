@@ -112,7 +112,7 @@ One unit per kind of value across the API, so nothing has to be converted at a c
 - **Time is seconds**, as a `Float`, from the platform's monotonic clock (`ISystem.getTime`). A value in another unit says so in its
   name (`budgetMs`) or, where the name can't, in its doc comment.
 - **Colors are `0xAARRGGBB`** integers, alpha in the top byte, as Haxe's libraries write them and as an editor's color picker reads a
-  literal; `helix.platform.Color` gets and sets their channels. Text writes a color the CSS way, `#RRGGBB` or `#RRGGBBAA`, converted
+  literal; `helix.math.Color` gets and sets their channels, and mixes, blends and converts them. Text writes a color the CSS way, `#RRGGBB` or `#RRGGBBAA`, converted
   by `Color.fromRgba` and `toRgba`.
 - **A simulation that must play alike on every target** (a replay, lockstep, physics) takes its trigonometry from `helix.math.Trig`,
   never `Math`'s `sin`, `cos`, `tan`, `atan2`, `asin`, `acos`, `exp` or `log`, which differ in the last bit between the browser and
