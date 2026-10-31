@@ -233,41 +233,61 @@ for Linux on ARM64. On a system without a build, SPIRV-Cross is built from its s
 
 - `available` (a device opened), `running` (producing sound now; in a page, after the user's first gesture), `playsUrls` (whether a
   stream can be a URL the platform plays itself).
-- `createClip(samples)` from mono float32 PCM at 44100 Hz, `disposeClip`; `openStream(source, opened, failed)` returning an abort,
-  `disposeStream`.
-- `playClip(clip, loop, volume)` and `playStream(stream, loop, volume)` giving a voice; `stop`, `pause`, `setVolume`, `setPitch`,
-  `setPan`, `isPlaying`.
+- `createClip(samples, channels)` from float32 PCM at 44100 Hz, mono or stereo interleaved, `disposeClip`; `openStream(source, opened,
+  failed)` returning an abort, `getStreamDuration` (seconds, 0 while unknown), `disposeStream`; `createQueue(channels, sampleRate)`,
+  `queueSamples`, `getQueuedFrames` (not yet heard), `disposeQueue`.
+- `playClip(clip, loop, volume)`, `playStream(stream, loop, volume)` and `playQueue(queue, volume)` giving a voice; `stop`, `pause`,
+  `setVolume`, `setPitch`, `setPan` (equal power for a mono voice, a balance for a stereo one, as Web Audio's `StereoPannerNode`),
+  `getPosition` and `setPosition` (seconds; a queue's voice isn't moved), `isPlaying`.
 - `poll` (feeds the streams, delivers what the platform's threads finished, and in a page starts waiting voices); `dispose`.
 
 A voice played in a page before audio runs waits, and starts when it does, in the order played: `play` returns its voice at once,
 `stop`, `pause` and the setters work on it while it waits, and `isPlaying` is true. Buses, fades, ducking and what a player hears are
 above.
 
+A queue plays samples as they are added (raylib's `AudioStream`): back to back while they are added ahead, at the queue's own rate, which
+the platform resamples. One that runs dry stays playing, silent, and goes on when fed; it has one voice, and stopping it drops what was
+queued. A stream plays its file's channels.
+
 A stream plays a `StreamSource`: `Local(location)` (a path natively, a Blob's URL in a page, as `IFileSystem.locate` gives it),
 `Remote(url)` (only where `playsUrls`), or `Downloading(source)`, a `GrowingSource`: the file's room taken at the start, each part
 appended as it arrives, `done` or `failure` at the end, written by whoever downloads it and read by the native output.
 
 - **In a page, `audio/webaudio` (`WebAudioAdapter`):** clips are buffer sources, streams an `HTMLAudioElement` (which plays a URL itself,
-  so `playsUrls` is true), each voice through a gain and a `StereoPannerNode`, a change approached by `setTargetAtTime`.
+  so `playsUrls` is true), each voice through a gain and a `StereoPannerNode`, a change approached by `setTargetAtTime`. A clip's
+  position is counted from the context's clock; a stream's is the element's `currentTime`, its length the element's `duration`, and it
+  moves only within the element's `seekable` ranges. A queue's blocks (one `queueSamples` each) are buffer sources scheduled back to back
+  on the context's clock; its queued frames are counted from the scheduled end. Pitch is each source's playback rate, so a pitch change
+  reschedules the blocks not yet started and the one playing finishes at its old rate.
 - **Natively, `audio/sdl3mixer` (`Sdl3MixerAudioAdapter`):** SDL3_mixer on SDL3's default playback device. A voice is a track; a clip
   is audio loaded from its PCM; pitch is the track's frequency ratio. A stream is decoded by the adapter in `poll`, for up to 2 ms a
-  frame and a second ahead, into an audio stream the track plays, the track told to wait rather than stop when it runs dry. A download
+  frame and a second ahead, in its file's channels, into an audio stream the track plays, the track told to wait rather than stop when it
+  runs dry. A clip's position is its track's; a stream's is counted from what was decoded less what the track hasn't taken, and it is
+  moved by SDL3_mixer's own decoder seek (its internal header, as its API seeks only a track that decodes for itself); its length is the
+  codec's, a download's once it has all arrived. A queue is an SDL audio stream bound to a track, SDL resampling it and locking it as
+  the device's thread reads it. A download
   is copied into C as it arrives and read through an I/O stream whose size is what has arrived; it opens once 16 KiB have arrived,
   again each time that doubles while the codec can't yet, is decoded only while 16 KiB ahead of the decoder's reads (or complete), and
   its voice sounds once a second is decoded (a file's, a tenth). Volume and pan are equal power and ramped across each block, since SDL
-  applies a gain at once. `playsUrls` is false: a remote stream is downloaded above and handed over as `Downloading`. With no
+  applies a gain at once; a stereo voice's pan is the same balance as a page's. `playsUrls` is false: a remote stream is downloaded above and handed over as `Downloading`. With no
   device, clips are still made, nothing plays, and `available` is false.
 
 `platform/tests/native/native_sdl3mixer_audio.c` renders the native adapter's C with no device (`MIX_CreateMixer`, `MIX_Generate`):
-clips, pan, pitch, the ramps, pause, streams from a file and from a download arriving slowly or stopping, looping, and a render thread
-racing the main one; `native_sdl3mixer_device.c` plays silence on the real device (`helix.py test --native --audio-device`).
+clips, pan, pitch, the ramps, pause, stereo balance, positions read and moved, streams' lengths, streams from a file and from a download
+arriving slowly or stopping, looping, queues fed, run dry and fed again, and a render thread racing the main one;
+`native_sdl3mixer_device.c` plays silence on the real device (`helix.py test --native --audio-device`). `platform/tests/audio`
+(`AudioTests`, run by `tools/platform_checks.py`) checks both adapters against the clock: natively on SDL3's dummy driver, which mixes in
+time, and in a headless Chromium let start audio without a gesture: decoded channels, a stereo clip's position advancing and moved, a
+stream's length and position, and a queue's frames falling, running dry and resuming.
 
 ## Decoders
 
-`IAudioDecoder`: `decode(encoded, decoded(samples), failed(message))`, mono float32 at 44100 Hz; `poll`; `dispose`. It reads **WAV, Ogg
+`IAudioDecoder`: `decode(encoded, decoded(samples, channels), failed(message))`, float32 at 44100 Hz in the file's channels (mono or
+stereo interleaved; more mixed down to stereo, by SDL's channel conversion natively and Web Audio's speaker down-mix in a page); `poll`;
+`dispose`. It reads **WAV, Ogg
 Vorbis, MP3 and FLAC**. In a page, `audiodecoder/webaudio` (`WebAudioDecoderAdapter`, `decodeAudioData` on a 44100 Hz
 `OfflineAudioContext`, which may read more). Natively, `audiodecoder/sdl3mixer` (`Sdl3MixerAudioDecoderAdapter`): SDL3_mixer's decoder
-on a worker thread, mixed down and resampled to mono 44100 Hz, delivered at `poll`.
+on a worker thread, resampled to 44100 Hz, delivered at `poll`.
 
 `IImageDecoder`: `decode(encoded, decoded(pixels, width, height), failed(message))`, the pixels 8-bit RGBA with rows top to bottom, not
 premultiplied; `poll`; `dispose`. It reads **PNG, JPEG, BMP, TGA and GIF** (the first frame). In a page, `imagedecoder/canvas`

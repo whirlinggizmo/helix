@@ -1,0 +1,9 @@
+# The audio tests natively, over SDL3_mixer: haxe build-native.hxml -> native/AudioTests; hxcpp compiles the adapters' C with it and links
+# the SDL3 library HELIX_SDL3_LIBRARY names (BUILDING.md). It prints {passed, checks, failures} and exits 1 on a failure. Run it with
+# SDL_AUDIO_DRIVER=dummy to make no sound: the dummy driver still mixes in time.
+-lib helix-platform
+-cp .
+-main AudioTests
+-dce full
+-D HXCPP_COMPILE_THREADS=4
+-cpp native

@@ -1,7 +1,7 @@
 """Type-check every Haxe entry point of every library on the targets it supports, without building anything (haxe --no-output).
 
 For refactors: an API change is done when this passes, then the checks that run code. Takes seconds, no C++ compile. Each library's
-tests on the interpreter; the platform's examples, graphics tests and size ladder for the browser and (unless --web) native, with the
+tests on the interpreter; the platform's examples, graphics and audio tests and size ladder for the browser and (unless --web) native, with the
 library alone, as their own hxml files build them. The adapter rule and the layers are checked first."""
 import os
 from pathlib import Path
@@ -20,10 +20,10 @@ def targets(web=False):
     found.append(('log LogTests',['-lib','helix-log','-cp','log/tests','-main','LogTests','--interp']))
     for main in ('TrigTests','RandomTests','CurveTests','BoundsTests','TrigBits'):found.append((f'math {main}',['-lib','helix-math','-cp','math/tests','-main',main,'--interp']))
     for main in ('GltfTests','BmFontTests','TrueTypeTests'):found.append((f'formats {main}',['-lib','helix-formats','-cp','formats/tests','-main',main,'--interp']))
-    # Each platform example and the graphics tests, with the library alone, on both targets (their own hxml files build them:
+    # Each platform example and the graphics and audio tests, with the library alone, on both targets (their own hxml files build them:
     # tools/platform_checks.py).
-    for directory,main in [(p.parent,'Main') for p in sorted((ROOT/'platform/examples').glob('*/Main.hx'))]+[(ROOT/'platform/tests/graphics','GraphicsTests')]:
-        name=f'platform example {directory.name}' if main=='Main' else 'platform graphics tests'
+    for directory,main in [(p.parent,'Main') for p in sorted((ROOT/'platform/examples').glob('*/Main.hx'))]+[(ROOT/'platform/tests/graphics','GraphicsTests'),(ROOT/'platform/tests/audio','AudioTests')]:
+        name=f'platform example {directory.name}' if main=='Main' else f'platform {directory.name} tests'
         found.append((f'{name} js',['-lib','helix-platform','-cp',str(directory.relative_to(ROOT)),'-main',main,'-js','build/check_types.js']))
         if not web:found.append((f'{name} cpp',['-lib','helix-platform','-cp',str(directory.relative_to(ROOT)),'-main',main,'-cpp','build/check_types-cpp']))
     # The size ladder's rungs, the browser's (tools/measure_sizes.py builds them so).

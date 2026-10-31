@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Checks helix-platform on the GPU with the library alone: its examples (platform/examples/<name>) and its graphics tests
-(platform/tests/graphics). Each is built from its own hxml files, as a reader builds it, and run natively on a private display (Linux),
+"""Checks helix-platform on the GPU and its audio with the library alone: its examples (platform/examples/<name>), its graphics tests
+(platform/tests/graphics) and its audio tests (platform/tests/audio, natively on SDL3's dummy audio driver, which mixes in time, and in a
+page Chromium lets start audio without a gesture, muted). Each is built from its own hxml files, as a reader builds it, and run natively on a private display (Linux),
 each native build it has (GL, and SDL_GPU where it has build-native-gpu.hxml), and in a headless Chromium. An example runs 60 frames and
 the page's screenshot is checked against what it says it draws (its check.json: points and the colors expected there, each within a
-tolerance per channel); the graphics tests check their own pixels, read back on each backend, and say how it went. Exits 1 on any
-failure.
+tolerance per channel); the graphics and audio tests check their own results, and say how it went. Exits 1 on any failure.
 
     python3 tools/platform_checks.py --browser BROWSER [--desktop] [NAME ...]
 
-BROWSER is a Chromium to run (Edge on Windows), or "" for Playwright's own. The names are examples' and "graphics"; they default to all
-of them. --desktop runs the native programs on this machine's own desktop instead of a private display, for a machine kept for checks
+BROWSER is a Chromium to run (Edge on Windows), or "" for Playwright's own. The names are examples', "graphics" and "audio"; they default
+to all of them. --desktop runs the native programs on this machine's own desktop instead of a private display, for a machine kept for checks
 (Windows over tools/remote_windows.py --desktop): never on a desktop someone is using."""
 import json
 import os
@@ -23,6 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / 'platform/examples'
 GRAPHICS = ROOT / 'platform/tests/graphics'
+AUDIO = ROOT / 'platform/tests/audio'
 FRAMES = 60
 # Run natively on this machine's own desktop rather than a private display (--desktop): for a machine kept for checks, such as Windows
 # over tools/remote_windows.py --desktop. A real display paces its frames, so a native run lasts at most PACED_FRAMES.
@@ -153,25 +154,36 @@ def example(name, browser):
     return run(name, directory, 'Main', browser, native_run, page_run)
 
 
-def graphics(browser):
-    """Builds and runs the graphics tests both ways; the problems found."""
+def tests(name, directory, main, page, browser, backends=True):
+    """Builds and runs a test program both ways (one that ends with {passed, checks, failures}), the page's run on page, natively on
+    each graphics backend it builds for (backends) or none; the problems found."""
 
     def outcome(where, result):
         if result is None:
             return ['no result']
         if not result['passed']:
             return result['failures']
-        print(f'graphics: {result["checks"]} checks passed {where}', flush=True)
+        print(f'{name}: {result["checks"]} checks passed {where}', flush=True)
         return []
 
     def native_run(label, ran):
         lines = [l for l in ran.stdout.splitlines() if l.startswith('{')]
         if not lines:
             return [f'exited {ran.returncode} with no result\n{ran.stdout}{ran.stderr}']
-        found = outcome(f'natively on {label}', json.loads(lines[-1]))
+        found = outcome(f'natively on {label}' if backends else 'natively', json.loads(lines[-1]))
         return found or ([f'exited {ran.returncode}\n{ran.stderr}'] if ran.returncode else [])
 
-    return run('graphics', GRAPHICS, 'GraphicsTests', browser, native_run, lambda printed, _: outcome('in the page (WebGL2)', printed['result']))
+    return run(name, directory, main, browser, native_run, lambda printed, _: outcome(f'in the page ({page})', printed['result']))
+
+
+def graphics(browser):
+    """Builds and runs the graphics tests both ways; the problems found."""
+    return tests('graphics', GRAPHICS, 'GraphicsTests', 'WebGL2', browser)
+
+
+def audio(browser):
+    """Builds and runs the audio tests both ways; the problems found."""
+    return tests('audio', AUDIO, 'AudioTests', 'Web Audio', browser, backends=False)
 
 
 def main():
@@ -183,10 +195,11 @@ def main():
     a = parser.parse_args()
     global DESKTOP
     DESKTOP = a.desktop
-    names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx')) + ['graphics']
+    names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx')) + ['graphics', 'audio']
     failed = False
     for name in names:
-        for problem in (graphics(a.browser) if name == 'graphics' else example(name, a.browser)):
+        check = {'graphics': graphics, 'audio': audio}.get(name, lambda browser: example(name, browser))
+        for problem in check(a.browser):
             failed = True
             print(f'{name}: {problem}', flush=True)
     print(f'platform checks: {"FAILED" if failed else "ok"} ({", ".join(names)})')

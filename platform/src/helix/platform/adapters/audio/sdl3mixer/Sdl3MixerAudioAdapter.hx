@@ -19,12 +19,14 @@ private class Copy {
 	var ended:Bool;
 }
 
-/** A stream's file: a path, or a download's copy. */
+/** A stream's file: a path, or a download's copy; and its length in seconds once asked for and known (`duration`, `measured`). */
 @:structInit
 @:allow(helix.platform.adapters.audio.sdl3mixer.Sdl3MixerAudioAdapter)
 private class StreamFile {
 	final path:Null<String>;
 	final copy:Null<Copy>;
+	var duration = 0.;
+	var measured = false;
 }
 
 /** A download waiting to open: its copy, how much had arrived at the last try, and its callbacks, unless aborted. */
@@ -41,7 +43,8 @@ private class Opening {
 /** Provides `IAudio` natively over SDL3_mixer on SDL3's default playback device.
 
 	Voices are SDL3_mixer's tracks; a stream is decoded on the main thread at each poll, up to a second ahead, from a file or from a download
-	as it arrives. A download opens once 16 KiB have arrived (or the whole, when smaller), tried again each time what has arrived doubles while
+	as it arrives, in its file's channels. A queue is an SDL audio stream its track plays, SDL resampling it. A stream's position is counted
+	from what was decoded and what its track hasn't taken yet, and it is moved by SDL3_mixer's own decoder seek. A download opens once 16 KiB have arrived (or the whole, when smaller), tried again each time what has arrived doubles while
 	its codec can't open it yet; it is decoded only while 16 KiB ahead of the decoder's reads, or complete, and its voice sounds once a second
 	is decoded. A download that fails plays to where it stopped, then ends. A `Remote` source fails: the caller downloads it, `playsUrls`
 	being false. */
@@ -78,8 +81,11 @@ class Sdl3MixerAudioAdapter implements IAudio {
 	function get_playsUrls():Bool
 		return false;
 
-	public function createClip(samples:Bytes):Int {
-		var id = samples.length < 4 ? 0 : AudioBridge.clip(cpp.Pointer.arrayElem(samples.getData(), 0).raw, Std.int(samples.length / 4));
+	public function createClip(samples:Bytes, channels:Int):Int {
+		if (channels != 1 && channels != 2)
+			throw "Audio clip channels must be 1 or 2";
+		var frames = Std.int(samples.length / (4 * channels));
+		var id = frames == 0 ? 0 : AudioBridge.clip(cpp.Pointer.arrayElem(samples.getData(), 0).raw, frames, channels);
 		if (id == 0)
 			throw "Audio clip creation failed";
 		return id;
@@ -139,6 +145,56 @@ class Sdl3MixerAudioAdapter implements IAudio {
 		streams.remove(stream);
 	}
 
+	public function getStreamDuration(stream:Int):Float {
+		var file = streams[stream];
+		if (file == null)
+			throw "Invalid audio stream";
+		if (!file.measured) {
+			// A file's length is asked for once; a download's once it has all arrived and been copied.
+			if (file.copy == null)
+				file.duration = AudioBridge.fileDuration(cpp.ConstCharStar.fromString(file.path));
+			else if (file.copy.copied == file.copy.source.total && file.copy.ended)
+				file.duration = AudioBridge.downloadDuration(file.copy.id);
+			else
+				return 0;
+			file.measured = true;
+		}
+		return file.duration;
+	}
+
+	public function createQueue(channels:Int, sampleRate:Int):Int {
+		if (channels != 1 && channels != 2)
+			throw "Audio queue channels must be 1 or 2";
+		if (sampleRate < 8000 || sampleRate > 96000)
+			throw "Audio queue sample rate must be 8000 to 96000";
+		var id = AudioBridge.queue(channels, sampleRate);
+		if (id == 0)
+			throw "Audio queue creation failed";
+		return id;
+	}
+
+	public function queueSamples(queue:Int, samples:Bytes):Void
+		if (AudioBridge.queueSamples(queue, samples.length == 0 ? null : cpp.Pointer.arrayElem(samples.getData(), 0).raw, samples.length) == 0)
+			throw "Invalid audio queue";
+
+	public function getQueuedFrames(queue:Int):Int {
+		var frames = AudioBridge.queuedFrames(queue);
+		if (frames < 0)
+			throw "Invalid audio queue";
+		return frames;
+	}
+
+	public function disposeQueue(queue:Int):Void
+		if (AudioBridge.disposeQueue(queue) != 1)
+			throw "Invalid audio queue";
+
+	public function playQueue(queue:Int, volume:Float):Int {
+		var voice = AudioBridge.playQueue(queue, volume);
+		if (voice < 0)
+			throw "Invalid audio queue";
+		return voice;
+	}
+
 	public function playClip(clip:Int, loop:Bool, volume:Float):Int {
 		var voice = AudioBridge.playClip(clip, loop ? 1 : 0, volume);
 		if (voice < 0)
@@ -176,6 +232,12 @@ class Sdl3MixerAudioAdapter implements IAudio {
 
 	public function isPlaying(voice:Int):Bool
 		return AudioBridge.isPlaying(voice) != 0;
+
+	public function getPosition(voice:Int):Float
+		return AudioBridge.position(voice);
+
+	public function setPosition(voice:Int, seconds:Float):Bool
+		return Math.isFinite(seconds) && seconds >= 0 && AudioBridge.setPosition(voice, seconds) != 0;
 
 	// Copies what has arrived of a download since the last poll into its C copy, and tells it when nothing more will come.
 	static function update(copy:Copy):Void {

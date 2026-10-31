@@ -7,7 +7,7 @@
 int main(void) {
     if (!helix_audio_open(1)) { printf("{\"passed\":false,\"reason\":\"no audio device\"}\n"); return 2; }
     static float silence[4410];
-    const int clip = helix_audio_clip(silence, 4410), voice = clip ? helix_audio_play_clip(clip, 0, 1) : 0;
+    const int clip = helix_audio_clip(silence, 4410, 1), voice = clip ? helix_audio_play_clip(clip, 0, 1) : 0;
     const Uint64 start = SDL_GetTicks();
     while (voice > 0 && helix_audio_is_playing(voice) && SDL_GetTicks() - start < 2000) SDL_Delay(10);
     const int ended = voice > 0 && !helix_audio_is_playing(voice);

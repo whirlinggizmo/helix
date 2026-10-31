@@ -227,9 +227,9 @@ function fail(message:String):Void
 
 *interface* in [`platform/src/helix/platform/IAudio.hx`](../../platform/src/helix/platform/IAudio.hx), `import helix.platform.IAudio;`, extends `IPollable`
 
-Defines the sound output, which plays clips held whole and streams played as they are read.
+Defines the sound output, which plays clips held whole, streams played as they are read, and queues of samples fed as they play.
 
-Each playing of a clip or a stream is a voice. Clip, stream and voice ids are the adapter's. Samples are mono 32-bit float PCM at 44100 Hz, -1 to 1.
+Each playing of a clip, a stream or a queue is a voice. Clip, stream, queue and voice ids are the adapter's. Samples are 32-bit float PCM, -1 to 1, mono or stereo; stereo samples are interleaved, left first. A clip's rate is 44100 Hz. A stream plays its file's channels.
 
 A browser starts its audio on the page's first key or pointer press, and suspends it while the page is hidden or blurred. Natively, audio runs once the device opens.
 
@@ -237,17 +237,25 @@ A browser starts its audio on the page's first key or pointer press, and suspend
 var available(get, never):Bool
 var running(get, never):Bool
 var playsUrls(get, never):Bool
-function createClip(samples:haxe.io.Bytes):Int
+function createClip(samples:haxe.io.Bytes, channels:Int):Int
 function disposeClip(clip:Int):Void
 function openStream(source:StreamSource, opened:Int -> Void, failed:String -> Void):() -> Void
 function disposeStream(stream:Int):Void
+function getStreamDuration(stream:Int):Float
+function createQueue(channels:Int, sampleRate:Int):Int
+function queueSamples(queue:Int, samples:haxe.io.Bytes):Void
+function getQueuedFrames(queue:Int):Int
+function disposeQueue(queue:Int):Void
 function playClip(clip:Int, loop:Bool, volume:Float):Int
 function playStream(stream:Int, loop:Bool, volume:Float):Int
+function playQueue(queue:Int, volume:Float):Int
 function stop(voice:Int):Void
 function pause(voice:Int, paused:Bool):Void
 function setVolume(voice:Int, volume:Float):Bool
 function setPitch(voice:Int, pitch:Float):Bool
 function setPan(voice:Int, pan:Float):Bool
+function getPosition(voice:Int):Float
+function setPosition(voice:Int, seconds:Float):Bool
 function isPlaying(voice:Int):Bool
 function poll():Void
 function dispose():Void
@@ -259,9 +267,12 @@ function dispose():Void
 - `playsUrls`: Gets a value indicating whether `openStream` plays a `Remote` source's URL itself.
   It is true in a browser, whose media element streams the URL. It is false natively, where the caller downloads the file and opens the download as a `Downloading` source.
 - `createClip`: Copies samples into a new clip.
-  - `samples`: Mono 32-bit float PCM at 44100 Hz, -1 to 1.
+  - `samples`: 32-bit float PCM at 44100 Hz, -1 to 1, interleaved when stereo.
+  - `channels`: The channels, 1 (mono) or 2 (stereo).
   - returns: The clip's id.
-  - throws `String`: When there is no room for the clip.
+  - throws `String`: When channels isn't 1 or 2, the samples hold no whole frame, or there is no room for the clip.
+
+  A partial frame at the end is ignored.
 - `disposeClip`: Disposes a clip and stops its voices.
   - `clip`: The clip.
   - throws `String`: For an unknown clip.
@@ -275,6 +286,32 @@ function dispose():Void
 - `disposeStream`: Disposes a stream and stops its voices.
   - `stream`: The stream.
   - throws `String`: For an unknown stream.
+- `getStreamDuration`: Returns a stream's length.
+  - `stream`: The stream.
+  - returns: The length in seconds, or 0 while it is unknown.
+  - throws `String`: For an unknown stream.
+
+  The length may be unknown at first and known later. Natively, a `Downloading` source's length is unknown until all of it has arrived. In a page, it is unknown for a live stream.
+- `createQueue`: Creates a queue, which plays samples given to it as it goes.
+  - `channels`: The channels, 1 (mono) or 2 (stereo).
+  - `sampleRate`: The samples' rate in frames a second, 8000 to 96000.
+  - returns: The queue's id.
+  - throws `String`: When channels or sampleRate is out of range.
+
+  Samples are added with `queueSamples` and played by `playQueue`, back to back without a gap while they are added ahead of what is heard. The platform resamples them to the output's rate.
+- `queueSamples`: Adds samples to the end of a queue.
+  - `queue`: The queue.
+  - `samples`: 32-bit float PCM at the queue's rate, -1 to 1, interleaved when stereo.
+  - throws `String`: For an unknown queue.
+
+  They are copied. Samples added while the queue has no voice wait for `playQueue`. A partial frame at the end is ignored.
+- `getQueuedFrames`: Returns how many frames a queue holds that haven't been heard yet.
+  - `queue`: The queue.
+  - returns: The frames queued and not yet played.
+  - throws `String`: For an unknown queue.
+- `disposeQueue`: Disposes a queue and stops its voice.
+  - `queue`: The queue.
+  - throws `String`: For an unknown queue.
 - `playClip`: Starts a clip playing.
   - `clip`: The clip.
   - `loop`: True to play it again from the start each time it ends.
@@ -291,10 +328,17 @@ function dispose():Void
   - throws `String`: For an unknown stream.
 
   A voice requested before audio runs waits and starts once audio runs, as `playClip`'s does.
+- `playQueue`: Starts a queue playing what it holds and what is added to it.
+  - `queue`: The queue.
+  - `volume`: The volume, 0 to 1.
+  - returns: The voice's id, or 0 when there is no output (`available`).
+  - throws `String`: For an unknown queue.
+
+  A queue has one voice at a time: playing it again stops its earlier voice and keeps its samples. A queue that runs out of samples keeps playing, silent, and goes on as soon as more are added; its voice ends only when stopped. A voice requested before audio runs waits and starts once audio runs, as `playClip`'s does.
 - `stop`: Stops a voice.
   - `voice`: The voice.
 
-  It does nothing for an unknown or ended voice.
+  Stopping a queue's voice drops the samples it hadn't played yet. It does nothing for an unknown or ended voice.
 - `pause`: Pauses or resumes a voice.
   - `voice`: The voice.
   - `paused`: True to pause it, false to resume it.
@@ -310,36 +354,49 @@ function dispose():Void
   - `voice`: The voice.
   - `pitch`: The rate, 0.25 to 4, where 1 plays as recorded.
   - returns: False, changing nothing, when the voice isn't playing (unknown, stopped or ended).
-- `setPan`: Sets a voice's pan, using equal-power panning.
+
+  On a queue's voice in a page, the block playing (what one `queueSamples` call added) finishes at the rate it had, and the blocks after it play at the new rate. Natively the change is immediate.
+- `setPan`: Sets a voice's pan.
   - `voice`: The voice.
   - `pan`: The pan, -1 (left) to 1 (right), where 0 is the middle.
   - returns: False, changing nothing, when the voice isn't playing (unknown, stopped or ended).
 
-  The change is ramped as a volume change is.
+  A mono voice is panned by equal power: at 0 each side hears it at about 0.71. A stereo voice is balanced: at 0 each side hears its own channel unchanged, and toward one side the far channel fades by equal power and is mixed into the near one, as Web Audio's `StereoPannerNode` does. The change is ramped as a volume change is.
+- `getPosition`: Returns how far a voice has played.
+  - `voice`: The voice.
+  - returns: The position in seconds from the start of its clip, stream or queue; 0 for an unknown or ended voice.
+
+  A looping voice goes back to 0 at each loop. A queue's voice counts the frames it has played since `playQueue`. Natively a stream's voice counts what the output has taken from it, a few milliseconds ahead of what is heard.
+- `setPosition`: Moves a playing or paused voice to a position.
+  - `voice`: The voice.
+  - `seconds`: The position in seconds from the start, 0 or more.
+  - returns: False, changing nothing, when the voice isn't playing (unknown, stopped or ended), is a queue's, or can't be moved there.
+
+  A position past the end is clamped to the end, where a voice that doesn't loop ends. A queue's voice can't be moved. In a page, a stream moves only within what its media element can seek (`HTMLMediaElement.seekable`), which a server that doesn't take range requests prevents.
 - `isPlaying`: Returns whether a voice is still playing or paused.
   - `voice`: The voice.
   - returns: False once the voice has ended or been stopped, and for an unknown voice.
 - `poll`: Feeds streamed voices, opens downloads that have arrived far enough, and delivers what the platform's threads finished.
   The program calls it once a frame.
-- `dispose`: Stops every voice, disposes every stream and clip, and closes the output.
+- `dispose`: Stops every voice, disposes every stream, queue and clip, and closes the output.
 
 ## IAudioDecoder
 
 *interface* in [`platform/src/helix/platform/IAudioDecoder.hx`](../../platform/src/helix/platform/IAudioDecoder.hx), `import helix.platform.IAudioDecoder;`, extends `IPollable`
 
-Defines audio decoding from a whole file into mono 32-bit float PCM at 44100 Hz.
+Defines audio decoding from a whole file into 32-bit float PCM at 44100 Hz.
 
-It reads WAV (PCM or float, at any rate), Ogg Vorbis, MP3 and FLAC files, mono or stereo. Stereo is mixed down and other rates are resampled. Samples are -1 to 1.
+It reads WAV (PCM or float, at any rate), Ogg Vorbis, MP3 and FLAC files. Other rates are resampled. A mono file decodes to mono and a stereo file to stereo, interleaved, left first. A file of more channels is mixed down to stereo by the platform's speaker mix: SDL's channel conversion natively, Web Audio's down-mix in a page, which may differ slightly. Samples are -1 to 1.
 
 ```haxe
-function decode(encoded:haxe.io.Bytes, decoded:haxe.io.Bytes -> Void, failed:String -> Void):Void
+function decode(encoded:haxe.io.Bytes, decoded:(samples:haxe.io.Bytes, channels:Int) -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
 ```
 
 - `decode`: Decodes a file, off the main thread where the platform can.
   - `encoded`: The file's bytes.
-  - `decoded`: Receives the samples.
+  - `decoded`: Receives the samples and their channels, 1 or 2.
   - `failed`: Receives why the file can't be read.
 
   One of `decoded` or `failed` is called once, on the main thread, never during this call.

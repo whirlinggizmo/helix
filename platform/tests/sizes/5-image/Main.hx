@@ -50,7 +50,8 @@ class Main {
 		http = new FetchApiHttpAdapter();
 		audio = new WebAudioAdapter();
 		sounds = new WebAudioDecoderAdapter();
-		download("jump.wav", bytes -> sounds.decode(bytes, samples -> audio.playClip(audio.createClip(samples), false, 1), why -> trace(why)));
+		download("jump.wav",
+			bytes -> sounds.decode(bytes, (samples, channels) -> audio.playClip(audio.createClip(samples, channels), false, 1), why -> trace(why)));
 		images = new CanvasImageDecoderAdapter();
 		download("logo.png",
 			bytes -> images.decode(bytes, (pixels, width, height) -> texture = graphics.createTexture(width, height, [pixels]), why -> trace(why)));

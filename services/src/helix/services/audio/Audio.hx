@@ -72,10 +72,10 @@ class Audio implements IPollable {
 		@return  The abort: nothing is called after it. */
 	public function load(path:String, loaded:Sound->Void, ?failed:String->Void):Void->Void {
 		var aborted = false;
-		var abortLoad = assets.load(path, bytes -> decoder.decode(bytes, samples -> {
+		var abortLoad = assets.load(path, bytes -> decoder.decode(bytes, (samples, channels) -> {
 			if (aborted || disposed)
 				return;
-			var clip = try output.createClip(samples) catch (e:Dynamic) {
+			var clip = try output.createClip(samples, channels) catch (e:Dynamic) {
 				fail(failed, path, Std.string(e));
 				return;
 			}

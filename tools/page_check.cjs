@@ -3,7 +3,8 @@
 // leaves in window.helixResult (null for a page that has none). A page that sets window.helixResult to null is waited on, up to 30
 // seconds, until it holds the result. Run by tools/platform_checks.py, which checks an example's screenshot and a test's result.
 // BROWSER is a Chromium to run, or "" for Playwright's own (the repository's, build/tools, or the one HELIX_PLAYWRIGHT names). The page
-// runs on the GPU (Vulkan on Linux, Metal on macOS); where the page says it can't draw it runs again on SwiftShader.
+// runs on the GPU (Vulkan on Linux, Metal on macOS); where the page says it can't draw it runs again on SwiftShader. Audio is muted, and
+// allowed to start without a gesture so a test page can check it.
 const [browserPath,site,query,output]=require('./cli.cjs').args(__filename,['browser','site','query','output']);
 const path=require('path');
 const {chromium}=require(process.env.HELIX_PLAYWRIGHT||path.join(__dirname,'../build/tools/node_modules/playwright'));
@@ -23,7 +24,7 @@ function serve(directory){
 }
 
 async function run(address,args){
- const browser=await chromium.launch({executablePath:browserPath||undefined,headless:true,args:['--no-sandbox','--mute-audio',...args]});const errors=[];
+ const browser=await chromium.launch({executablePath:browserPath||undefined,headless:true,args:['--no-sandbox','--mute-audio','--autoplay-policy=no-user-gesture-required',...args]});const errors=[];
  try{const page=await browser.newPage({viewport:{width:800,height:600}});
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
   await page.goto(address);

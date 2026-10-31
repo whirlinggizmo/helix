@@ -8,17 +8,23 @@
 
 Provides `IAudio` natively over SDL3_mixer on SDL3's default playback device.
 
-Voices are SDL3_mixer's tracks; a stream is decoded on the main thread at each poll, up to a second ahead, from a file or from a download as it arrives. A download opens once 16 KiB have arrived (or the whole, when smaller), tried again each time what has arrived doubles while its codec can't open it yet; it is decoded only while 16 KiB ahead of the decoder's reads, or complete, and its voice sounds once a second is decoded. A download that fails plays to where it stopped, then ends. A `Remote` source fails: the caller downloads it, `playsUrls` being false.
+Voices are SDL3_mixer's tracks; a stream is decoded on the main thread at each poll, up to a second ahead, from a file or from a download as it arrives, in its file's channels. A queue is an SDL audio stream its track plays, SDL resampling it. A stream's position is counted from what was decoded and what its track hasn't taken yet, and it is moved by SDL3_mixer's own decoder seek. A download opens once 16 KiB have arrived (or the whole, when smaller), tried again each time what has arrived doubles while its codec can't open it yet; it is decoded only while 16 KiB ahead of the decoder's reads, or complete, and its voice sounds once a second is decoded. A download that fails plays to where it stopped, then ends. A `Remote` source fails: the caller downloads it, `playsUrls` being false.
 
 ```haxe
 function new()
 var available(get, never):Bool
 var running(get, never):Bool
 var playsUrls(get, never):Bool
-function createClip(samples:haxe.io.Bytes):Int
+function createClip(samples:haxe.io.Bytes, channels:Int):Int
 function disposeClip(clip:Int):Void
 function openStream(source:StreamSource, opened:Int -> Void, failed:String -> Void):() -> Void
 function disposeStream(stream:Int):Void
+function getStreamDuration(stream:Int):Float
+function createQueue(channels:Int, sampleRate:Int):Int
+function queueSamples(queue:Int, samples:haxe.io.Bytes):Void
+function getQueuedFrames(queue:Int):Int
+function disposeQueue(queue:Int):Void
+function playQueue(queue:Int, volume:Float):Int
 function playClip(clip:Int, loop:Bool, volume:Float):Int
 function playStream(stream:Int, loop:Bool, volume:Float):Int
 function stop(voice:Int):Void
@@ -27,6 +33,8 @@ function setVolume(voice:Int, volume:Float):Bool
 function setPitch(voice:Int, pitch:Float):Bool
 function setPan(voice:Int, pan:Float):Bool
 function isPlaying(voice:Int):Bool
+function getPosition(voice:Int):Float
+function setPosition(voice:Int, seconds:Float):Bool
 function poll():Void
 function dispose():Void
 ```
@@ -39,23 +47,31 @@ function dispose():Void
 
 Provides `IAudio` in a browser page, over Web Audio.
 
-Clips are AudioBuffers and streams media elements routed through the audio graph, each voice a source through a gain and a stereo panner, its volume and pan changes approached by setTargetAtTime and its pitch the source's playback rate. The page's first key, click or tap unlocks audio, as browsers let it start only in a user gesture; the page losing focus or being hidden suspends it. A voice asked for before then waits, its volume, pitch, pan and pause kept, and starts at the first poll once audio runs.
+Clips are AudioBuffers and streams media elements routed through the audio graph, each voice a source through a gain and a stereo panner, its volume and pan changes approached by setTargetAtTime and its pitch the source's playback rate. A queue's blocks are AudioBuffers scheduled back to back on the context's clock, the browser resampling them; a pitch change reschedules the blocks not yet started. The page's first key, click or tap unlocks audio, as browsers let it start only in a user gesture; the page losing focus or being hidden suspends it. A voice asked for before then waits, its volume, pitch, pan and pause kept, and starts at the first poll once audio runs.
 
 ```haxe
 function new()
 var available(get, never):Bool
 var playsUrls(get, never):Bool
 var running(get, never):Bool
-function createClip(samples:haxe.io.Bytes):Int
+function createClip(samples:haxe.io.Bytes, channels:Int):Int
+function getStreamDuration(stream:Int):Float
 function openStream(source:StreamSource, opened:Int -> Void, failed:String -> Void):() -> Void
 function playClip(clip:Int, loop:Bool, volume:Float):Int
 function playStream(stream:Int, loop:Bool, volume:Float):Int
+function createQueue(channels:Int, sampleRate:Int):Int
+function queueSamples(queue:Int, samples:haxe.io.Bytes):Void
+function getQueuedFrames(queue:Int):Int
+function disposeQueue(queue:Int):Void
+function playQueue(queue:Int, volume:Float):Int
 function stop(id:Int):Void
 function pause(id:Int, paused:Bool):Void
 function setVolume(id:Int, volume:Float):Bool
 function setPitch(id:Int, pitch:Float):Bool
 function setPan(id:Int, pan:Float):Bool
 function isPlaying(id:Int):Bool
+function getPosition(id:Int):Float
+function setPosition(id:Int, seconds:Float):Bool
 function disposeClip(id:Int):Void
 function disposeStream(id:Int):Void
 function poll():Void
@@ -63,17 +79,17 @@ function dispose():Void
 ```
 
 - `new`: Creates the output, listening for the page's gestures (as they reach the window, before the page's own handlers) and its visibility; no AudioContext exists until a gesture unlocks audio.
-- `poll`: Starts the voices that waited, in the order asked, once audio runs; media elements and the audio graph run on their own.
+- `poll`: Starts the voices that waited, in the order asked, once audio runs, and lets go of queue blocks played; media elements and the audio graph run on their own.
 
 ## Sdl3MixerAudioDecoderAdapter
 
 *class*, native (cpp) in [`platform/src/helix/platform/adapters/audiodecoder/sdl3mixer/Sdl3MixerAudioDecoderAdapter.hx`](../../platform/src/helix/platform/adapters/audiodecoder/sdl3mixer/Sdl3MixerAudioDecoderAdapter.hx), `import helix.platform.adapters.audiodecoder.sdl3mixer.Sdl3MixerAudioDecoderAdapter;`, implements `IAudioDecoder`
 
-Provides `IAudioDecoder` natively over SDL3_mixer's decoder: WAV, Ogg Vorbis, MP3 and FLAC, mixed down and resampled to mono 44100 Hz by it, each decode on a worker thread.
+Provides `IAudioDecoder` natively over SDL3_mixer's decoder: WAV, Ogg Vorbis, MP3 and FLAC, resampled to 44100 Hz by it, in the file's channels (more than 2 mixed down to stereo by SDL), each decode on a worker thread.
 
 ```haxe
 function new()
-function decode(encoded:haxe.io.Bytes, decoded:haxe.io.Bytes -> Void, failed:String -> Void):Void
+function decode(encoded:haxe.io.Bytes, decoded:(samples:haxe.io.Bytes, channels:Int) -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
 ```
@@ -85,11 +101,11 @@ function dispose():Void
 
 *class*, for the browser (js) in [`platform/src/helix/platform/adapters/audiodecoder/webaudio/WebAudioDecoderAdapter.hx`](../../platform/src/helix/platform/adapters/audiodecoder/webaudio/WebAudioDecoderAdapter.hx), `import helix.platform.adapters.audiodecoder.webaudio.WebAudioDecoderAdapter;`, implements `IAudioDecoder`
 
-Provides `IAudioDecoder` in a browser page: decodeAudioData on an OfflineAudioContext at 44100 Hz, which needs no user gesture and resamples, its channels mixed down to mono.
+Provides `IAudioDecoder` in a browser page: decodeAudioData on an OfflineAudioContext at 44100 Hz, which needs no user gesture and resamples, in the file's channels; a file of more than 2 is rendered through a stereo OfflineAudioContext, which mixes it down by Web Audio's speaker rules.
 
 ```haxe
 function new()
-function decode(encoded:haxe.io.Bytes, decoded:haxe.io.Bytes -> Void, failed:String -> Void):Void
+function decode(encoded:haxe.io.Bytes, decoded:(samples:haxe.io.Bytes, channels:Int) -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
 ```

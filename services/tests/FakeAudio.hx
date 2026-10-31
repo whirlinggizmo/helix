@@ -47,10 +47,10 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 	function get_playsUrls():Bool
 		return false;
 
-	public function decode(encoded:Bytes, decoded:Bytes->Void, failed:String->Void):Void
-		queued.push(() -> encoded.toString() == "bad" ? failed("not audio") : decoded(encoded));
+	public function decode(encoded:Bytes, decoded:(samples:Bytes, channels:Int) -> Void, failed:String->Void):Void
+		queued.push(() -> encoded.toString() == "bad" ? failed("not audio") : decoded(encoded, 1));
 
-	public function createClip(samples:Bytes):Int {
+	public function createClip(samples:Bytes, channels:Int):Int {
 		sounds.set(next, "clip");
 		return next++;
 	}
@@ -68,6 +68,28 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 
 	public function disposeStream(stream:Int):Void
 		sounds.remove(stream);
+
+	/** Returns 0: a stream's length is unknown. */
+	public function getStreamDuration(stream:Int):Float
+		return 0;
+
+	public function createQueue(channels:Int, sampleRate:Int):Int {
+		sounds.set(next, "queue");
+		return next++;
+	}
+
+	/** Does nothing: no samples are kept. */
+	public function queueSamples(queue:Int, samples:Bytes):Void {}
+
+	/** Returns 0: no samples are kept. */
+	public function getQueuedFrames(queue:Int):Int
+		return 0;
+
+	public function disposeQueue(queue:Int):Void
+		sounds.remove(queue);
+
+	public function playQueue(queue:Int, volume:Float):Int
+		return start(queue, false, volume);
 
 	public function playClip(clip:Int, loop:Bool, volume:Float):Int
 		return start(clip, loop, volume);
@@ -109,6 +131,14 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 
 	public function isPlaying(voice:Int):Bool
 		return voices.exists(voice) && voices.get(voice).playing;
+
+	/** Returns 0: voices don't advance. */
+	public function getPosition(voice:Int):Float
+		return 0;
+
+	/** Returns whether the voice is playing; it doesn't move. */
+	public function setPosition(voice:Int, seconds:Float):Bool
+		return isPlaying(voice);
 
 	public function poll():Void {
 		var due = queued.splice(0, queued.length);
