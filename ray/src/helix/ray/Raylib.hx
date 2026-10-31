@@ -1078,6 +1078,20 @@ class Raylib {
 	public static inline function GetKeyPressed():Int
 		return RCore.GetKeyPressed();
 
+	/** Returns whether the OS repeated a held key this frame, as it does after a moment, at its own rate.
+
+		@param key  The key (`KEY_*`).
+		@return  True for the frames it repeated. */
+	public static inline function IsKeyPressedRepeat(key:Int):Bool
+		return RCore.IsKeyPressedRepeat(key);
+
+	/** Returns the next character typed this frame, each once; call it until it returns 0. Typed text is read from the first call on, so
+		on a phone its keyboard shows from then.
+
+		@return  The character's codepoint, or 0 when no more were typed. */
+	public static inline function GetCharPressed():Int
+		return RCore.GetCharPressed();
+
 	/** Returns whether a mouse button went down this frame. A finger touching counts as the left button, as in raylib.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
@@ -1540,7 +1554,51 @@ class Raylib {
 	public static inline function EndShaderMode():Void
 		RCore.EndShaderMode();
 
+	/** Blends what is drawn until `EndBlendMode` another way. `BLEND_ALPHA` and `BLEND_ADDITIVE` are here; the others draw as
+		`BLEND_ALPHA` does, and say so once in the log.
+
+		@param mode  The mode (`BLEND_*`). */
+	public static inline function BeginBlendMode(mode:Int):Void
+		RCore.BeginBlendMode(mode);
+
+	/** Goes back to blending by alpha. */
+	public static inline function EndBlendMode():Void
+		RCore.EndBlendMode();
+
+	/** Draws only within a rectangle of the screen, or of the render texture drawn into, until `EndScissorMode`.
+
+		@param x  The left edge, in pixels.
+		@param y  The top edge, in pixels.
+		@param width  The width.
+		@param height  The height. */
+	public static inline function BeginScissorMode(x:Int, y:Int, width:Int, height:Int):Void
+		RCore.BeginScissorMode(x, y, width, height);
+
+	/** Draws everywhere again. */
+	public static inline function EndScissorMode():Void
+		RCore.EndScissorMode();
+
 	// ---- rshapes: 2D shapes and collisions (raylib/RShapes.hx) ----
+
+	/** Sets the texture and the part of it the filled shapes draw with, as one white pixel of a font's texture lets shapes and text
+		share a draw. A texture with no id, or an empty rectangle, goes back to the white pixel shapes draw with at first.
+
+		@param texture  The texture.
+		@param source  The part of it, in pixels. */
+	public static inline function SetShapesTexture(texture:Texture2D, source:Rectangle):Void
+		RShapes.SetShapesTexture(texture, source);
+
+	/** Returns the texture the filled shapes draw with: a white pixel unless `SetShapesTexture` set another.
+
+		@return  The texture. */
+	public static inline function GetShapesTexture():Texture2D
+		return RShapes.GetShapesTexture();
+
+	/** Returns the part of the shapes texture the filled shapes draw with.
+
+		@return  The rectangle, in pixels. */
+	public static inline function GetShapesTextureRectangle():Rectangle
+		return RShapes.GetShapesTextureRectangle();
 
 	/** Draws one pixel.
 
@@ -1584,6 +1642,23 @@ class Raylib {
 	public static inline function DrawLineEx(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void
 		RShapes.DrawLineEx(startPos, endPos, thick, color);
 
+	/** Draws lines one pixel wide from each point to the next.
+
+		@param points  The points.
+		@param pointCount  How many of them to draw through, 2 or more.
+		@param color  The color. */
+	public static inline function DrawLineStrip(points:Array<Vector2>, pointCount:Int, color:Color):Void
+		RShapes.DrawLineStrip(points, pointCount, color);
+
+	/** Draws a line of a thickness that eases in and out from start to end, as an S.
+
+		@param startPos  The start.
+		@param endPos  The end.
+		@param thick  The thickness, in pixels.
+		@param color  The color. */
+	public static inline function DrawLineBezier(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void
+		RShapes.DrawLineBezier(startPos, endPos, thick, color);
+
 	/** Draws a filled circle.
 
 		@param centerX  The center's x.
@@ -1601,6 +1676,38 @@ class Raylib {
 	public static inline function DrawCircleV(center:Vector2, radius:Float, color:Color):Void
 		RShapes.DrawCircleV(center, radius, color);
 
+	/** Draws a filled slice of a circle, clockwise from one angle to another.
+
+		@param center  The center.
+		@param radius  The radius.
+		@param startAngle  The angle it starts at, in degrees from the right.
+		@param endAngle  The angle it ends at.
+		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+		@param color  The color. */
+	public static inline function DrawCircleSector(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
+		RShapes.DrawCircleSector(center, radius, startAngle, endAngle, segments, color);
+
+	/** Draws a slice of a circle's outline, one pixel wide, with lines from the center to its ends.
+
+		@param center  The center.
+		@param radius  The radius.
+		@param startAngle  The angle it starts at, in degrees from the right.
+		@param endAngle  The angle it ends at.
+		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+		@param color  The color. */
+	public static inline function DrawCircleSectorLines(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
+		RShapes.DrawCircleSectorLines(center, radius, startAngle, endAngle, segments, color);
+
+	/** Draws a filled circle that blends from one color at its center to another at its edge.
+
+		@param centerX  The center's x.
+		@param centerY  The center's y.
+		@param radius  The radius.
+		@param inner  The color at the center.
+		@param outer  The color at the edge. */
+	public static inline function DrawCircleGradient(centerX:Int, centerY:Int, radius:Float, inner:Color, outer:Color):Void
+		RShapes.DrawCircleGradient(centerX, centerY, radius, inner, outer);
+
 	/** Draws a circle's outline, one pixel wide.
 
 		@param centerX  The center's x.
@@ -1617,6 +1724,52 @@ class Raylib {
 		@param color  The color. */
 	public static inline function DrawCircleLinesV(center:Vector2, radius:Float, color:Color):Void
 		RShapes.DrawCircleLinesV(center, radius, color);
+
+	/** Draws a filled ellipse.
+
+		@param centerX  The center's x.
+		@param centerY  The center's y.
+		@param radiusH  The radius across.
+		@param radiusV  The radius up and down.
+		@param color  The color. */
+	public static inline function DrawEllipse(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void
+		RShapes.DrawEllipse(centerX, centerY, radiusH, radiusV, color);
+
+	/** Draws an ellipse's outline, one pixel wide.
+
+		@param centerX  The center's x.
+		@param centerY  The center's y.
+		@param radiusH  The radius across.
+		@param radiusV  The radius up and down.
+		@param color  The color. */
+	public static inline function DrawEllipseLines(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void
+		RShapes.DrawEllipseLines(centerX, centerY, radiusH, radiusV, color);
+
+	/** Draws a filled ring, or a slice of one, clockwise from one angle to another.
+
+		@param center  The center.
+		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle.
+		@param outerRadius  The radius of its edge.
+		@param startAngle  The angle it starts at, in degrees from the right.
+		@param endAngle  The angle it ends at; the same as the start draws nothing.
+		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+		@param color  The color. */
+	public static inline function DrawRing(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int,
+			color:Color):Void
+		RShapes.DrawRing(center, innerRadius, outerRadius, startAngle, endAngle, segments, color);
+
+	/** Draws a ring's outline, or a slice of one, one pixel wide.
+
+		@param center  The center.
+		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle.
+		@param outerRadius  The radius of its edge.
+		@param startAngle  The angle it starts at, in degrees from the right.
+		@param endAngle  The angle it ends at; the same as the start draws nothing.
+		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+		@param color  The color. */
+	public static inline function DrawRingLines(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int,
+			color:Color):Void
+		RShapes.DrawRingLines(center, innerRadius, outerRadius, startAngle, endAngle, segments, color);
 
 	/** Draws a filled rectangle.
 
@@ -1643,6 +1796,48 @@ class Raylib {
 	public static inline function DrawRectangleRec(rec:Rectangle, color:Color):Void
 		RShapes.DrawRectangleRec(rec, color);
 
+	/** Draws a filled rectangle turned about a point of it.
+
+		@param rec  The rectangle; its x and y are where the point is drawn.
+		@param origin  The point it turns about, from its top-left corner.
+		@param rotation  The turn, in degrees clockwise.
+		@param color  The color. */
+	public static inline function DrawRectanglePro(rec:Rectangle, origin:Vector2, rotation:Float, color:Color):Void
+		RShapes.DrawRectanglePro(rec, origin, rotation, color);
+
+	/** Draws a filled rectangle that blends from one color at its top to another at its bottom.
+
+		@param posX  The left edge.
+		@param posY  The top edge.
+		@param width  The width.
+		@param height  The height.
+		@param top  The color at the top.
+		@param bottom  The color at the bottom. */
+	public static inline function DrawRectangleGradientV(posX:Int, posY:Int, width:Int, height:Int, top:Color, bottom:Color):Void
+		RShapes.DrawRectangleGradientV(posX, posY, width, height, top, bottom);
+
+	/** Draws a filled rectangle that blends from one color at its left to another at its right.
+
+		@param posX  The left edge.
+		@param posY  The top edge.
+		@param width  The width.
+		@param height  The height.
+		@param left  The color at the left.
+		@param right  The color at the right. */
+	public static inline function DrawRectangleGradientH(posX:Int, posY:Int, width:Int, height:Int, left:Color, right:Color):Void
+		RShapes.DrawRectangleGradientH(posX, posY, width, height, left, right);
+
+	/** Draws a filled rectangle that blends between a color at each corner. As in raylib 5.5, `topRight` colors the bottom-right corner
+		and `bottomRight` the top-right one.
+
+		@param rec  The rectangle.
+		@param topLeft  The top-left corner's color.
+		@param bottomLeft  The bottom-left corner's color.
+		@param topRight  The bottom-right corner's color.
+		@param bottomRight  The top-right corner's color. */
+	public static inline function DrawRectangleGradientEx(rec:Rectangle, topLeft:Color, bottomLeft:Color, topRight:Color, bottomRight:Color):Void
+		RShapes.DrawRectangleGradientEx(rec, topLeft, bottomLeft, topRight, bottomRight);
+
 	/** Draws a rectangle's outline, one pixel wide.
 
 		@param posX  The left edge.
@@ -1661,6 +1856,34 @@ class Raylib {
 	public static inline function DrawRectangleLinesEx(rec:Rectangle, lineThick:Float, color:Color):Void
 		RShapes.DrawRectangleLinesEx(rec, lineThick, color);
 
+	/** Draws a filled rectangle with rounded corners.
+
+		@param rec  The rectangle.
+		@param roundness  How round its corners are: 0 for square, 1 for a radius of half its shorter side.
+		@param segments  How many straight edges make each corner's curve; fewer than 4 picks enough for a smooth curve.
+		@param color  The color. */
+	public static inline function DrawRectangleRounded(rec:Rectangle, roundness:Float, segments:Int, color:Color):Void
+		RShapes.DrawRectangleRounded(rec, roundness, segments, color);
+
+	/** Draws a rounded rectangle's outline, one pixel wide.
+
+		@param rec  The rectangle.
+		@param roundness  How round its corners are: 0 for square, 1 for a radius of half its shorter side.
+		@param segments  How many straight edges make each corner's curve; fewer than 4 picks enough for a smooth curve.
+		@param color  The color. */
+	public static inline function DrawRectangleRoundedLines(rec:Rectangle, roundness:Float, segments:Int, color:Color):Void
+		RShapes.DrawRectangleRoundedLines(rec, roundness, segments, color);
+
+	/** Draws a rounded rectangle's outline, its lines outside it.
+
+		@param rec  The rectangle.
+		@param roundness  How round its corners are: 0 for square, 1 for a radius of half its shorter side.
+		@param segments  How many straight edges make each corner's curve; fewer than 4 picks enough for a smooth curve.
+		@param lineThick  The lines' thickness; 1 or less draws them one pixel wide.
+		@param color  The color. */
+	public static inline function DrawRectangleRoundedLinesEx(rec:Rectangle, roundness:Float, segments:Int, lineThick:Float, color:Color):Void
+		RShapes.DrawRectangleRoundedLinesEx(rec, roundness, segments, lineThick, color);
+
 	/** Draws a filled triangle; its points go counterclockwise, as raylib's do.
 
 		@param v1  The first point.
@@ -1669,6 +1892,212 @@ class Raylib {
 		@param color  The color. */
 	public static inline function DrawTriangle(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
 		RShapes.DrawTriangle(v1, v2, v3, color);
+
+	/** Draws a triangle's outline, one pixel wide.
+
+		@param v1  The first point.
+		@param v2  The second point.
+		@param v3  The third point.
+		@param color  The color. */
+	public static inline function DrawTriangleLines(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
+		RShapes.DrawTriangleLines(v1, v2, v3, color);
+
+	/** Draws filled triangles that all share the first point, each from it to the next two points; they go counterclockwise.
+
+		@param points  The points, the shared one first.
+		@param pointCount  How many of them to draw, 3 or more.
+		@param color  The color. */
+	public static inline function DrawTriangleFan(points:Array<Vector2>, pointCount:Int, color:Color):Void
+		RShapes.DrawTriangleFan(points, pointCount, color);
+
+	/** Draws filled triangles, each from a point to the two before it.
+
+		@param points  The points.
+		@param pointCount  How many of them to draw, 3 or more.
+		@param color  The color. */
+	public static inline function DrawTriangleStrip(points:Array<Vector2>, pointCount:Int, color:Color):Void
+		RShapes.DrawTriangleStrip(points, pointCount, color);
+
+	/** Draws a filled regular polygon.
+
+		@param center  The center.
+		@param sides  How many sides it has, 3 or more.
+		@param radius  The distance from the center to each corner.
+		@param rotation  The turn of its first corner from the right, in degrees clockwise.
+		@param color  The color. */
+	public static inline function DrawPoly(center:Vector2, sides:Int, radius:Float, rotation:Float, color:Color):Void
+		RShapes.DrawPoly(center, sides, radius, rotation, color);
+
+	/** Draws a regular polygon's outline, one pixel wide.
+
+		@param center  The center.
+		@param sides  How many sides it has, 3 or more.
+		@param radius  The distance from the center to each corner.
+		@param rotation  The turn of its first corner from the right, in degrees clockwise.
+		@param color  The color. */
+	public static inline function DrawPolyLines(center:Vector2, sides:Int, radius:Float, rotation:Float, color:Color):Void
+		RShapes.DrawPolyLines(center, sides, radius, rotation, color);
+
+	/** Draws a regular polygon's outline, its lines inside it.
+
+		@param center  The center.
+		@param sides  How many sides it has, 3 or more.
+		@param radius  The distance from the center to each corner.
+		@param rotation  The turn of its first corner from the right, in degrees clockwise.
+		@param lineThick  The lines' thickness.
+		@param color  The color. */
+	public static inline function DrawPolyLinesEx(center:Vector2, sides:Int, radius:Float, rotation:Float, lineThick:Float, color:Color):Void
+		RShapes.DrawPolyLinesEx(center, sides, radius, rotation, lineThick, color);
+
+	/** Draws straight lines of a thickness from each point to the next.
+
+		@param points  The points.
+		@param pointCount  How many of them to draw through, 2 or more.
+		@param thick  The thickness, in pixels.
+		@param color  The color. */
+	public static inline function DrawSplineLinear(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+		RShapes.DrawSplineLinear(points, pointCount, thick, color);
+
+	/** Draws a B-spline of a thickness through points, with round ends; it passes near the points rather than through them.
+
+		@param points  The points.
+		@param pointCount  How many of them to draw through, 4 or more.
+		@param thick  The thickness, in pixels.
+		@param color  The color. */
+	public static inline function DrawSplineBasis(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+		RShapes.DrawSplineBasis(points, pointCount, thick, color);
+
+	/** Draws a Catmull-Rom spline of a thickness through points, with round ends; it passes through all but the first and last, which
+		only steer it.
+
+		@param points  The points.
+		@param pointCount  How many of them to draw through, 4 or more.
+		@param thick  The thickness, in pixels.
+		@param color  The color. */
+	public static inline function DrawSplineCatmullRom(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+		RShapes.DrawSplineCatmullRom(points, pointCount, thick, color);
+
+	/** Draws quadratic Bezier curves of a thickness, one after another: points, then a control point between each two.
+
+		@param points  The points: start, control, end, then a control and an end for each further curve.
+		@param pointCount  How many of them to draw through, 3 or more.
+		@param thick  The thickness, in pixels.
+		@param color  The color. */
+	public static inline function DrawSplineBezierQuadratic(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+		RShapes.DrawSplineBezierQuadratic(points, pointCount, thick, color);
+
+	/** Draws cubic Bezier curves of a thickness, one after another: points, then two control points between each two.
+
+		@param points  The points: start, two controls, end, then two controls and an end for each further curve.
+		@param pointCount  How many of them to draw through, 4 or more.
+		@param thick  The thickness, in pixels.
+		@param color  The color. */
+	public static inline function DrawSplineBezierCubic(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+		RShapes.DrawSplineBezierCubic(points, pointCount, thick, color);
+
+	/** Draws a straight line of a thickness.
+
+		@param p1  The start.
+		@param p2  The end.
+		@param thick  The thickness, in pixels.
+		@param color  The color. */
+	public static inline function DrawSplineSegmentLinear(p1:Vector2, p2:Vector2, thick:Float, color:Color):Void
+		RShapes.DrawSplineSegmentLinear(p1, p2, thick, color);
+
+	/** Draws one piece of a B-spline of a thickness, between the middle two of four points.
+
+		@param p1  The first point.
+		@param p2  The second.
+		@param p3  The third.
+		@param p4  The fourth.
+		@param thick  The thickness, in pixels.
+		@param color  The color. */
+	public static inline function DrawSplineSegmentBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, thick:Float, color:Color):Void
+		RShapes.DrawSplineSegmentBasis(p1, p2, p3, p4, thick, color);
+
+	/** Draws one piece of a Catmull-Rom spline of a thickness, through the middle two of four points.
+
+		@param p1  The first point, which steers it.
+		@param p2  The start.
+		@param p3  The end.
+		@param p4  The fourth point, which steers it.
+		@param thick  The thickness, in pixels.
+		@param color  The color. */
+	public static inline function DrawSplineSegmentCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, thick:Float, color:Color):Void
+		RShapes.DrawSplineSegmentCatmullRom(p1, p2, p3, p4, thick, color);
+
+	/** Draws a quadratic Bezier curve of a thickness.
+
+		@param p1  The start.
+		@param c2  The control point.
+		@param p3  The end.
+		@param thick  The thickness, in pixels.
+		@param color  The color. */
+	public static inline function DrawSplineSegmentBezierQuadratic(p1:Vector2, c2:Vector2, p3:Vector2, thick:Float, color:Color):Void
+		RShapes.DrawSplineSegmentBezierQuadratic(p1, c2, p3, thick, color);
+
+	/** Draws a cubic Bezier curve of a thickness.
+
+		@param p1  The start.
+		@param c2  The start's control point.
+		@param c3  The end's control point.
+		@param p4  The end.
+		@param thick  The thickness, in pixels.
+		@param color  The color. */
+	public static inline function DrawSplineSegmentBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, thick:Float, color:Color):Void
+		RShapes.DrawSplineSegmentBezierCubic(p1, c2, c3, p4, thick, color);
+
+	/** Returns a point on a straight line.
+
+		@param startPos  The start.
+		@param endPos  The end.
+		@param t  How far along, 0 at the start to 1 at the end.
+		@return  The point. */
+	public static inline function GetSplinePointLinear(startPos:Vector2, endPos:Vector2, t:Float):Vector2
+		return RShapes.GetSplinePointLinear(startPos, endPos, t);
+
+	/** Returns a point on one piece of a B-spline, between the middle two of four points.
+
+		@param p1  The first point.
+		@param p2  The second.
+		@param p3  The third.
+		@param p4  The fourth.
+		@param t  How far along, 0 at the start to 1 at the end.
+		@return  The point. */
+	public static inline function GetSplinePointBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2
+		return RShapes.GetSplinePointBasis(p1, p2, p3, p4, t);
+
+	/** Returns a point on one piece of a Catmull-Rom spline, through the middle two of four points.
+
+		@param p1  The first point, which steers it.
+		@param p2  The start.
+		@param p3  The end.
+		@param p4  The fourth point, which steers it.
+		@param t  How far along, 0 at the start to 1 at the end.
+		@return  The point. */
+	public static inline function GetSplinePointCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2
+		return RShapes.GetSplinePointCatmullRom(p1, p2, p3, p4, t);
+
+	/** Returns a point on a quadratic Bezier curve.
+
+		@param p1  The start.
+		@param c2  The control point.
+		@param p3  The end.
+		@param t  How far along, 0 at the start to 1 at the end.
+		@return  The point. */
+	public static inline function GetSplinePointBezierQuad(p1:Vector2, c2:Vector2, p3:Vector2, t:Float):Vector2
+		return RShapes.GetSplinePointBezierQuad(p1, c2, p3, t);
+
+	/** Returns a point on a cubic Bezier curve.
+
+		@param p1  The start.
+		@param c2  The start's control point.
+		@param c3  The end's control point.
+		@param p4  The end.
+		@param t  How far along, 0 at the start to 1 at the end.
+		@return  The point. */
+	public static inline function GetSplinePointBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, t:Float):Vector2
+		return RShapes.GetSplinePointBezierCubic(p1, c2, c3, p4, t);
 
 	/** Returns whether two rectangles overlap.
 
@@ -1697,6 +2126,16 @@ class Raylib {
 	public static inline function CheckCollisionCircleRec(center:Vector2, radius:Float, rec:Rectangle):Bool
 		return RShapes.CheckCollisionCircleRec(center, radius, rec);
 
+	/** Returns whether a circle and a line between two points touch.
+
+		@param center  The circle's center.
+		@param radius  Its radius.
+		@param p1  The line's start.
+		@param p2  Its end.
+		@return  True when they touch. */
+	public static inline function CheckCollisionCircleLine(center:Vector2, radius:Float, p1:Vector2, p2:Vector2):Bool
+		return RShapes.CheckCollisionCircleLine(center, radius, p1, p2);
+
 	/** Returns whether a point is inside a rectangle.
 
 		@param point  The point.
@@ -1713,6 +2152,54 @@ class Raylib {
 		@return  True when it is inside. */
 	public static inline function CheckCollisionPointCircle(point:Vector2, center:Vector2, radius:Float):Bool
 		return RShapes.CheckCollisionPointCircle(point, center, radius);
+
+	/** Returns whether a point is inside a triangle; a point on its edge isn't.
+
+		@param point  The point.
+		@param p1  The triangle's first point.
+		@param p2  Its second.
+		@param p3  Its third.
+		@return  True when it is inside. */
+	public static inline function CheckCollisionPointTriangle(point:Vector2, p1:Vector2, p2:Vector2, p3:Vector2):Bool
+		return RShapes.CheckCollisionPointTriangle(point, p1, p2, p3);
+
+	/** Returns whether a point is on a line between two points, within a margin.
+
+		@param point  The point.
+		@param p1  The line's start.
+		@param p2  Its end.
+		@param threshold  How far from the line the point may be, in pixels.
+		@return  True when it is on it. */
+	public static inline function CheckCollisionPointLine(point:Vector2, p1:Vector2, p2:Vector2, threshold:Int):Bool
+		return RShapes.CheckCollisionPointLine(point, p1, p2, threshold);
+
+	/** Returns whether a point is inside a polygon.
+
+		@param point  The point.
+		@param points  The polygon's corners, in order.
+		@param pointCount  How many of them it has, 3 or more.
+		@return  True when it is inside. */
+	public static inline function CheckCollisionPointPoly(point:Vector2, points:Array<Vector2>, pointCount:Int):Bool
+		return RShapes.CheckCollisionPointPoly(point, points, pointCount);
+
+	/** Returns whether two lines, each between two points, cross, and where.
+
+		@param startPos1  One line's start.
+		@param endPos1  Its end.
+		@param startPos2  The other's start.
+		@param endPos2  Its end.
+		@param collisionPoint  Set to where they cross, when they do; null leaves it out.
+		@return  True when they cross. */
+	public static inline function CheckCollisionLines(startPos1:Vector2, endPos1:Vector2, startPos2:Vector2, endPos2:Vector2, collisionPoint:Vector2):Bool
+		return RShapes.CheckCollisionLines(startPos1, endPos1, startPos2, endPos2, collisionPoint);
+
+	/** Returns where two rectangles overlap.
+
+		@param rec1  One rectangle.
+		@param rec2  The other.
+		@return  The overlap, or an empty rectangle at 0, 0 when they don't. */
+	public static inline function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
+		return RShapes.GetCollisionRec(rec1, rec2);
 
 	// ---- rtextures: textures, render textures and colors (raylib/RTextures.hx) ----
 
@@ -2418,6 +2905,205 @@ class Raylib {
 		return helix.platform.macros.Build.unimplemented("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void)",
 			macro(null : helix.ray.Sound));
 
+	// ---- Mouse cursor (MouseCursor), not written by hand ----
+
+	/** Default pointer shape. */
+	public static inline final MOUSE_CURSOR_DEFAULT = 0;
+
+	/** Arrow shape. */
+	public static inline final MOUSE_CURSOR_ARROW = 1;
+
+	/** Text writing cursor shape. */
+	public static inline final MOUSE_CURSOR_IBEAM = 2;
+
+	/** Cross shape. */
+	public static inline final MOUSE_CURSOR_CROSSHAIR = 3;
+
+	/** Pointing hand cursor. */
+	public static inline final MOUSE_CURSOR_POINTING_HAND = 4;
+
+	/** Horizontal resize/move arrow shape. */
+	public static inline final MOUSE_CURSOR_RESIZE_EW = 5;
+
+	/** Vertical resize/move arrow shape. */
+	public static inline final MOUSE_CURSOR_RESIZE_NS = 6;
+
+	/** Top-left to bottom-right diagonal resize/move arrow shape. */
+	public static inline final MOUSE_CURSOR_RESIZE_NWSE = 7;
+
+	/** The top-right to bottom-left diagonal resize/move arrow shape. */
+	public static inline final MOUSE_CURSOR_RESIZE_NESW = 8;
+
+	/** The omnidirectional resize/move cursor shape. */
+	public static inline final MOUSE_CURSOR_RESIZE_ALL = 9;
+
+	/** The operation-not-allowed shape. */
+	public static inline final MOUSE_CURSOR_NOT_ALLOWED = 10;
+
+	// ---- Shader attribute data types (ShaderAttributeDataType), not written by hand ----
+
+	/** Shader attribute type: float. */
+	public static inline final SHADER_ATTRIB_FLOAT = 0;
+
+	/** Shader attribute type: vec2 (2 float). */
+	public static inline final SHADER_ATTRIB_VEC2 = 1;
+
+	/** Shader attribute type: vec3 (3 float). */
+	public static inline final SHADER_ATTRIB_VEC3 = 2;
+
+	/** Shader attribute type: vec4 (4 float). */
+	public static inline final SHADER_ATTRIB_VEC4 = 3;
+
+	// ---- Pixel formats (PixelFormat), not written by hand ----
+
+	/** 8 bit per pixel (no alpha). */
+	public static inline final PIXELFORMAT_UNCOMPRESSED_GRAYSCALE = 1;
+
+	/** 8*2 bpp (2 channels). */
+	public static inline final PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA = 2;
+
+	/** 16 bpp. */
+	public static inline final PIXELFORMAT_UNCOMPRESSED_R5G6B5 = 3;
+
+	/** 24 bpp. */
+	public static inline final PIXELFORMAT_UNCOMPRESSED_R8G8B8 = 4;
+
+	/** 16 bpp (1 bit alpha). */
+	public static inline final PIXELFORMAT_UNCOMPRESSED_R5G5B5A1 = 5;
+
+	/** 16 bpp (4 bit alpha). */
+	public static inline final PIXELFORMAT_UNCOMPRESSED_R4G4B4A4 = 6;
+
+	/** 32 bpp (1 channel - float). */
+	public static inline final PIXELFORMAT_UNCOMPRESSED_R32 = 8;
+
+	/** 32*3 bpp (3 channels - float). */
+	public static inline final PIXELFORMAT_UNCOMPRESSED_R32G32B32 = 9;
+
+	/** 32*4 bpp (4 channels - float). */
+	public static inline final PIXELFORMAT_UNCOMPRESSED_R32G32B32A32 = 10;
+
+	/** 16 bpp (1 channel - half float). */
+	public static inline final PIXELFORMAT_UNCOMPRESSED_R16 = 11;
+
+	/** 16*3 bpp (3 channels - half float). */
+	public static inline final PIXELFORMAT_UNCOMPRESSED_R16G16B16 = 12;
+
+	/** 16*4 bpp (4 channels - half float). */
+	public static inline final PIXELFORMAT_UNCOMPRESSED_R16G16B16A16 = 13;
+
+	/** 4 bpp (no alpha). */
+	public static inline final PIXELFORMAT_COMPRESSED_DXT1_RGB = 14;
+
+	/** 4 bpp (1 bit alpha). */
+	public static inline final PIXELFORMAT_COMPRESSED_DXT1_RGBA = 15;
+
+	/** 8 bpp. */
+	public static inline final PIXELFORMAT_COMPRESSED_DXT3_RGBA = 16;
+
+	/** 8 bpp. */
+	public static inline final PIXELFORMAT_COMPRESSED_DXT5_RGBA = 17;
+
+	/** 4 bpp. */
+	public static inline final PIXELFORMAT_COMPRESSED_ETC1_RGB = 18;
+
+	/** 4 bpp. */
+	public static inline final PIXELFORMAT_COMPRESSED_ETC2_RGB = 19;
+
+	/** 8 bpp. */
+	public static inline final PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA = 20;
+
+	/** 4 bpp. */
+	public static inline final PIXELFORMAT_COMPRESSED_PVRT_RGB = 21;
+
+	/** 4 bpp. */
+	public static inline final PIXELFORMAT_COMPRESSED_PVRT_RGBA = 22;
+
+	/** 8 bpp. */
+	public static inline final PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA = 23;
+
+	/** 2 bpp. */
+	public static inline final PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA = 24;
+
+	// ---- Texture parameters: wrap mode (TextureWrap), not written by hand ----
+
+	/** Repeats texture in tiled mode. */
+	public static inline final TEXTURE_WRAP_REPEAT = 0;
+
+	/** Clamps texture to edge pixel in tiled mode. */
+	public static inline final TEXTURE_WRAP_CLAMP = 1;
+
+	/** Mirrors and repeats the texture in tiled mode. */
+	public static inline final TEXTURE_WRAP_MIRROR_REPEAT = 2;
+
+	/** Mirrors and clamps to border the texture in tiled mode. */
+	public static inline final TEXTURE_WRAP_MIRROR_CLAMP = 3;
+
+	// ---- Cubemap layouts (CubemapLayout), not written by hand ----
+
+	/** Automatically detect layout type. */
+	public static inline final CUBEMAP_LAYOUT_AUTO_DETECT = 0;
+
+	/** Layout is defined by a vertical line with faces. */
+	public static inline final CUBEMAP_LAYOUT_LINE_VERTICAL = 1;
+
+	/** Layout is defined by a horizontal line with faces. */
+	public static inline final CUBEMAP_LAYOUT_LINE_HORIZONTAL = 2;
+
+	/** Layout is defined by a 3x4 cross with cubemap faces. */
+	public static inline final CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR = 3;
+
+	/** Layout is defined by a 4x3 cross with cubemap faces. */
+	public static inline final CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE = 4;
+
+	// ---- Font type, defines generation method (FontType), not written by hand ----
+
+	/** Default font generation, anti-aliased. */
+	public static inline final FONT_DEFAULT = 0;
+
+	/** Bitmap font generation, no anti-aliasing. */
+	public static inline final FONT_BITMAP = 1;
+
+	/** SDF font generation, requires external shader. */
+	public static inline final FONT_SDF = 2;
+
+	// ---- Color blending modes (pre-defined) (BlendMode), not written by hand ----
+
+	/** Blend textures considering alpha (default). */
+	public static inline final BLEND_ALPHA = 0;
+
+	/** Blend textures adding colors. */
+	public static inline final BLEND_ADDITIVE = 1;
+
+	/** Blend textures multiplying colors. */
+	public static inline final BLEND_MULTIPLIED = 2;
+
+	/** Blend textures adding colors (alternative). */
+	public static inline final BLEND_ADD_COLORS = 3;
+
+	/** Blend textures subtracting colors (alternative). */
+	public static inline final BLEND_SUBTRACT_COLORS = 4;
+
+	/** Blend premultiplied textures considering alpha. */
+	public static inline final BLEND_ALPHA_PREMULTIPLY = 5;
+
+	/** Blend textures using custom src/dst factors (use rlSetBlendFactors()). */
+	public static inline final BLEND_CUSTOM = 6;
+
+	/** Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate()). */
+	public static inline final BLEND_CUSTOM_SEPARATE = 7;
+
+	// ---- N-patch layout (NPatchLayout), not written by hand ----
+
+	/** Npatch layout: 3x3 tiles. */
+	public static inline final NPATCH_NINE_PATCH = 0;
+
+	/** Npatch layout: 1x3 tiles. */
+	public static inline final NPATCH_THREE_PATCH_VERTICAL = 1;
+
+	/** Npatch layout: 3x1 tiles. */
+	public static inline final NPATCH_THREE_PATCH_HORIZONTAL = 2;
+
 	// ---- raylib.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
 
 	/** raylib's `IsWindowFullscreen` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if window is currently fullscreen. */
@@ -2583,22 +3269,6 @@ class Raylib {
 	/** raylib's `IsCursorOnScreen` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if cursor is on the screen. */
 	public static macro function IsCursorOnScreen():ExprOf<Bool>
 		return helix.platform.macros.Build.unimplemented("IsCursorOnScreen: Not implemented", macro(false : Bool));
-
-	/** raylib's `BeginBlendMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Begin blending mode (alpha, additive, multiplied, subtract, custom). */
-	public static macro function BeginBlendMode(mode:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("BeginBlendMode: Not implemented", macro {});
-
-	/** raylib's `EndBlendMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. End blending mode (reset to default: alpha blending). */
-	public static macro function EndBlendMode():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("EndBlendMode: Not implemented", macro {});
-
-	/** raylib's `BeginScissorMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Begin scissor mode (define screen area for following drawing). */
-	public static macro function BeginScissorMode(x:ExprOf<Int>, y:ExprOf<Int>, width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("BeginScissorMode: Not implemented", macro {});
-
-	/** raylib's `EndScissorMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. End scissor mode. */
-	public static macro function EndScissorMode():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("EndScissorMode: Not implemented", macro {});
 
 	/** raylib's `BeginVrStereoMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Begin stereo rendering (requires VR simulator). */
 	public static macro function BeginVrStereoMode(config:ExprOf<VrStereoConfig>):ExprOf<Void>
@@ -2800,14 +3470,6 @@ class Raylib {
 	public static macro function PlayAutomationEvent(event:ExprOf<AutomationEvent>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("PlayAutomationEvent: Not implemented", macro {});
 
-	/** raylib's `IsKeyPressedRepeat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if a key has been pressed again. */
-	public static macro function IsKeyPressedRepeat(key:ExprOf<Int>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsKeyPressedRepeat: Not implemented", macro(false : Bool));
-
-	/** raylib's `GetCharPressed` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get char pressed (unicode), call it multiple times for chars queued, returns 0 when the queue is empty. */
-	public static macro function GetCharPressed():ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetCharPressed: Not implemented", macro(0 : Int));
-
 	/** raylib's `SetGamepadMappings` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set internal gamepad mappings (SDL_GameControllerDB). */
 	public static macro function SetGamepadMappings(mappings:ExprOf<String>):ExprOf<Int>
 		return helix.platform.macros.Build.unimplemented("SetGamepadMappings: Not implemented", macro(0 : Int));
@@ -2844,216 +3506,6 @@ class Raylib {
 	/** raylib's `UpdateCameraPro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update camera movement/rotation. */
 	public static macro function UpdateCameraPro(camera:ExprOf<Camera>, movement:ExprOf<Vector3>, rotation:ExprOf<Vector3>, zoom:ExprOf<Float>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("UpdateCameraPro: Not implemented", macro {});
-
-	/** raylib's `SetShapesTexture` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set texture and rectangle to be used on shapes drawing. */
-	public static macro function SetShapesTexture(texture:ExprOf<Texture2D>, source:ExprOf<Rectangle>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetShapesTexture: Not implemented", macro {});
-
-	/** raylib's `GetShapesTexture` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get texture that is used for shapes drawing. */
-	public static macro function GetShapesTexture():ExprOf<Texture2D>
-		return helix.platform.macros.Build.unimplemented("GetShapesTexture: Not implemented", macro(null : helix.ray.Texture2D));
-
-	/** raylib's `GetShapesTextureRectangle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get texture source rectangle that is used for shapes drawing. */
-	public static macro function GetShapesTextureRectangle():ExprOf<Rectangle>
-		return helix.platform.macros.Build.unimplemented("GetShapesTextureRectangle: Not implemented", macro(null : helix.ray.Rectangle));
-
-	/** raylib's `DrawLineStrip` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw lines sequence (using gl lines). */
-	public static macro function DrawLineStrip(points:ExprOf<Array<Vector2>>, pointCount:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawLineStrip: Not implemented", macro {});
-
-	/** raylib's `DrawLineBezier` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw line segment cubic-bezier in-out interpolation. */
-	public static macro function DrawLineBezier(startPos:ExprOf<Vector2>, endPos:ExprOf<Vector2>, thick:ExprOf<Float>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawLineBezier: Not implemented", macro {});
-
-	/** raylib's `DrawCircleSector` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a piece of a circle. */
-	public static macro function DrawCircleSector(center:ExprOf<Vector2>, radius:ExprOf<Float>, startAngle:ExprOf<Float>, endAngle:ExprOf<Float>,
-			segments:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawCircleSector: Not implemented", macro {});
-
-	/** raylib's `DrawCircleSectorLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw circle sector outline. */
-	public static macro function DrawCircleSectorLines(center:ExprOf<Vector2>, radius:ExprOf<Float>, startAngle:ExprOf<Float>, endAngle:ExprOf<Float>,
-			segments:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawCircleSectorLines: Not implemented", macro {});
-
-	/** raylib's `DrawCircleGradient` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a gradient-filled circle. */
-	public static macro function DrawCircleGradient(centerX:ExprOf<Int>, centerY:ExprOf<Int>, radius:ExprOf<Float>, inner:ExprOf<Color>,
-			outer:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawCircleGradient: Not implemented", macro {});
-
-	/** raylib's `DrawEllipse` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw ellipse. */
-	public static macro function DrawEllipse(centerX:ExprOf<Int>, centerY:ExprOf<Int>, radiusH:ExprOf<Float>, radiusV:ExprOf<Float>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawEllipse: Not implemented", macro {});
-
-	/** raylib's `DrawEllipseLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw ellipse outline. */
-	public static macro function DrawEllipseLines(centerX:ExprOf<Int>, centerY:ExprOf<Int>, radiusH:ExprOf<Float>, radiusV:ExprOf<Float>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawEllipseLines: Not implemented", macro {});
-
-	/** raylib's `DrawRing` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw ring. */
-	public static macro function DrawRing(center:ExprOf<Vector2>, innerRadius:ExprOf<Float>, outerRadius:ExprOf<Float>, startAngle:ExprOf<Float>,
-			endAngle:ExprOf<Float>, segments:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawRing: Not implemented", macro {});
-
-	/** raylib's `DrawRingLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw ring outline. */
-	public static macro function DrawRingLines(center:ExprOf<Vector2>, innerRadius:ExprOf<Float>, outerRadius:ExprOf<Float>, startAngle:ExprOf<Float>,
-			endAngle:ExprOf<Float>, segments:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawRingLines: Not implemented", macro {});
-
-	/** raylib's `DrawRectanglePro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a color-filled rectangle with pro parameters. */
-	public static macro function DrawRectanglePro(rec:ExprOf<Rectangle>, origin:ExprOf<Vector2>, rotation:ExprOf<Float>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawRectanglePro: Not implemented", macro {});
-
-	/** raylib's `DrawRectangleGradientV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a vertical-gradient-filled rectangle. */
-	public static macro function DrawRectangleGradientV(posX:ExprOf<Int>, posY:ExprOf<Int>, width:ExprOf<Int>, height:ExprOf<Int>, top:ExprOf<Color>,
-			bottom:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawRectangleGradientV: Not implemented", macro {});
-
-	/** raylib's `DrawRectangleGradientH` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a horizontal-gradient-filled rectangle. */
-	public static macro function DrawRectangleGradientH(posX:ExprOf<Int>, posY:ExprOf<Int>, width:ExprOf<Int>, height:ExprOf<Int>, left:ExprOf<Color>,
-			right:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawRectangleGradientH: Not implemented", macro {});
-
-	/** raylib's `DrawRectangleGradientEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a gradient-filled rectangle with custom vertex colors. */
-	public static macro function DrawRectangleGradientEx(rec:ExprOf<Rectangle>, topLeft:ExprOf<Color>, bottomLeft:ExprOf<Color>, topRight:ExprOf<Color>,
-			bottomRight:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawRectangleGradientEx: Not implemented", macro {});
-
-	/** raylib's `DrawRectangleRounded` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw rectangle with rounded edges. */
-	public static macro function DrawRectangleRounded(rec:ExprOf<Rectangle>, roundness:ExprOf<Float>, segments:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawRectangleRounded: Not implemented", macro {});
-
-	/** raylib's `DrawRectangleRoundedLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw rectangle lines with rounded edges. */
-	public static macro function DrawRectangleRoundedLines(rec:ExprOf<Rectangle>, roundness:ExprOf<Float>, segments:ExprOf<Int>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawRectangleRoundedLines: Not implemented", macro {});
-
-	/** raylib's `DrawRectangleRoundedLinesEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw rectangle with rounded edges outline. */
-	public static macro function DrawRectangleRoundedLinesEx(rec:ExprOf<Rectangle>, roundness:ExprOf<Float>, segments:ExprOf<Int>, lineThick:ExprOf<Float>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawRectangleRoundedLinesEx: Not implemented", macro {});
-
-	/** raylib's `DrawTriangleLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw triangle outline (vertex in counter-clockwise order!). */
-	public static macro function DrawTriangleLines(v1:ExprOf<Vector2>, v2:ExprOf<Vector2>, v3:ExprOf<Vector2>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawTriangleLines: Not implemented", macro {});
-
-	/** raylib's `DrawTriangleFan` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a triangle fan defined by points (first vertex is the center). */
-	public static macro function DrawTriangleFan(points:ExprOf<Array<Vector2>>, pointCount:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawTriangleFan: Not implemented", macro {});
-
-	/** raylib's `DrawTriangleStrip` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a triangle strip defined by points. */
-	public static macro function DrawTriangleStrip(points:ExprOf<Array<Vector2>>, pointCount:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawTriangleStrip: Not implemented", macro {});
-
-	/** raylib's `DrawPoly` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a regular polygon (Vector version). */
-	public static macro function DrawPoly(center:ExprOf<Vector2>, sides:ExprOf<Int>, radius:ExprOf<Float>, rotation:ExprOf<Float>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawPoly: Not implemented", macro {});
-
-	/** raylib's `DrawPolyLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a polygon outline of n sides. */
-	public static macro function DrawPolyLines(center:ExprOf<Vector2>, sides:ExprOf<Int>, radius:ExprOf<Float>, rotation:ExprOf<Float>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawPolyLines: Not implemented", macro {});
-
-	/** raylib's `DrawPolyLinesEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a polygon outline of n sides with extended parameters. */
-	public static macro function DrawPolyLinesEx(center:ExprOf<Vector2>, sides:ExprOf<Int>, radius:ExprOf<Float>, rotation:ExprOf<Float>,
-			lineThick:ExprOf<Float>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawPolyLinesEx: Not implemented", macro {});
-
-	/** raylib's `DrawSplineLinear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline: Linear, minimum 2 points. */
-	public static macro function DrawSplineLinear(points:ExprOf<Array<Vector2>>, pointCount:ExprOf<Int>, thick:ExprOf<Float>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawSplineLinear: Not implemented", macro {});
-
-	/** raylib's `DrawSplineBasis` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline: B-Spline, minimum 4 points. */
-	public static macro function DrawSplineBasis(points:ExprOf<Array<Vector2>>, pointCount:ExprOf<Int>, thick:ExprOf<Float>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawSplineBasis: Not implemented", macro {});
-
-	/** raylib's `DrawSplineCatmullRom` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline: Catmull-Rom, minimum 4 points. */
-	public static macro function DrawSplineCatmullRom(points:ExprOf<Array<Vector2>>, pointCount:ExprOf<Int>, thick:ExprOf<Float>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawSplineCatmullRom: Not implemented", macro {});
-
-	/** raylib's `DrawSplineBezierQuadratic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline: Quadratic Bezier, minimum 3 points (1 control point): [p1, c2, p3, c4...]. */
-	public static macro function DrawSplineBezierQuadratic(points:ExprOf<Array<Vector2>>, pointCount:ExprOf<Int>, thick:ExprOf<Float>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawSplineBezierQuadratic: Not implemented", macro {});
-
-	/** raylib's `DrawSplineBezierCubic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline: Cubic Bezier, minimum 4 points (2 control points): [p1, c2, c3, p4, c5, c6...]. */
-	public static macro function DrawSplineBezierCubic(points:ExprOf<Array<Vector2>>, pointCount:ExprOf<Int>, thick:ExprOf<Float>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawSplineBezierCubic: Not implemented", macro {});
-
-	/** raylib's `DrawSplineSegmentLinear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline segment: Linear, 2 points. */
-	public static macro function DrawSplineSegmentLinear(p1:ExprOf<Vector2>, p2:ExprOf<Vector2>, thick:ExprOf<Float>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawSplineSegmentLinear: Not implemented", macro {});
-
-	/** raylib's `DrawSplineSegmentBasis` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline segment: B-Spline, 4 points. */
-	public static macro function DrawSplineSegmentBasis(p1:ExprOf<Vector2>, p2:ExprOf<Vector2>, p3:ExprOf<Vector2>, p4:ExprOf<Vector2>, thick:ExprOf<Float>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawSplineSegmentBasis: Not implemented", macro {});
-
-	/** raylib's `DrawSplineSegmentCatmullRom` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline segment: Catmull-Rom, 4 points. */
-	public static macro function DrawSplineSegmentCatmullRom(p1:ExprOf<Vector2>, p2:ExprOf<Vector2>, p3:ExprOf<Vector2>, p4:ExprOf<Vector2>,
-			thick:ExprOf<Float>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawSplineSegmentCatmullRom: Not implemented", macro {});
-
-	/** raylib's `DrawSplineSegmentBezierQuadratic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline segment: Quadratic Bezier, 2 points, 1 control point. */
-	public static macro function DrawSplineSegmentBezierQuadratic(p1:ExprOf<Vector2>, c2:ExprOf<Vector2>, p3:ExprOf<Vector2>, thick:ExprOf<Float>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawSplineSegmentBezierQuadratic: Not implemented", macro {});
-
-	/** raylib's `DrawSplineSegmentBezierCubic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw spline segment: Cubic Bezier, 2 points, 2 control points. */
-	public static macro function DrawSplineSegmentBezierCubic(p1:ExprOf<Vector2>, c2:ExprOf<Vector2>, c3:ExprOf<Vector2>, p4:ExprOf<Vector2>,
-			thick:ExprOf<Float>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawSplineSegmentBezierCubic: Not implemented", macro {});
-
-	/** raylib's `GetSplinePointLinear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get (evaluate) spline point: Linear. */
-	public static macro function GetSplinePointLinear(startPos:ExprOf<Vector2>, endPos:ExprOf<Vector2>, t:ExprOf<Float>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("GetSplinePointLinear: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `GetSplinePointBasis` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get (evaluate) spline point: B-Spline. */
-	public static macro function GetSplinePointBasis(p1:ExprOf<Vector2>, p2:ExprOf<Vector2>, p3:ExprOf<Vector2>, p4:ExprOf<Vector2>,
-			t:ExprOf<Float>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("GetSplinePointBasis: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `GetSplinePointCatmullRom` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get (evaluate) spline point: Catmull-Rom. */
-	public static macro function GetSplinePointCatmullRom(p1:ExprOf<Vector2>, p2:ExprOf<Vector2>, p3:ExprOf<Vector2>, p4:ExprOf<Vector2>,
-			t:ExprOf<Float>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("GetSplinePointCatmullRom: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `GetSplinePointBezierQuad` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get (evaluate) spline point: Quadratic Bezier. */
-	public static macro function GetSplinePointBezierQuad(p1:ExprOf<Vector2>, c2:ExprOf<Vector2>, p3:ExprOf<Vector2>, t:ExprOf<Float>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("GetSplinePointBezierQuad: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `GetSplinePointBezierCubic` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get (evaluate) spline point: Cubic Bezier. */
-	public static macro function GetSplinePointBezierCubic(p1:ExprOf<Vector2>, c2:ExprOf<Vector2>, c3:ExprOf<Vector2>, p4:ExprOf<Vector2>,
-			t:ExprOf<Float>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("GetSplinePointBezierCubic: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `CheckCollisionCircleLine` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if circle collides with a line created betweeen two points [p1] and [p2]. */
-	public static macro function CheckCollisionCircleLine(center:ExprOf<Vector2>, radius:ExprOf<Float>, p1:ExprOf<Vector2>, p2:ExprOf<Vector2>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("CheckCollisionCircleLine: Not implemented", macro(false : Bool));
-
-	/** raylib's `CheckCollisionPointTriangle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if point is inside a triangle. */
-	public static macro function CheckCollisionPointTriangle(point:ExprOf<Vector2>, p1:ExprOf<Vector2>, p2:ExprOf<Vector2>, p3:ExprOf<Vector2>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("CheckCollisionPointTriangle: Not implemented", macro(false : Bool));
-
-	/** raylib's `CheckCollisionPointLine` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if point belongs to line created between two points [p1] and [p2] with defined margin in pixels [threshold]. */
-	public static macro function CheckCollisionPointLine(point:ExprOf<Vector2>, p1:ExprOf<Vector2>, p2:ExprOf<Vector2>, threshold:ExprOf<Int>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("CheckCollisionPointLine: Not implemented", macro(false : Bool));
-
-	/** raylib's `CheckCollisionPointPoly` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if point is within a polygon described by array of vertices. */
-	public static macro function CheckCollisionPointPoly(point:ExprOf<Vector2>, points:ExprOf<Array<Vector2>>, pointCount:ExprOf<Int>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("CheckCollisionPointPoly: Not implemented", macro(false : Bool));
-
-	/** raylib's `CheckCollisionLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check the collision between two lines defined by two points each, returns collision point by reference. */
-	public static macro function CheckCollisionLines(startPos1:ExprOf<Vector2>, endPos1:ExprOf<Vector2>, startPos2:ExprOf<Vector2>, endPos2:ExprOf<Vector2>,
-			collisionPoint:ExprOf<Vector2>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("CheckCollisionLines: Not implemented", macro(false : Bool));
-
-	/** raylib's `GetCollisionRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get collision rectangle for two rectangles collision. */
-	public static macro function GetCollisionRec(rec1:ExprOf<Rectangle>, rec2:ExprOf<Rectangle>):ExprOf<Rectangle>
-		return helix.platform.macros.Build.unimplemented("GetCollisionRec: Not implemented", macro(null : helix.ray.Rectangle));
 
 	/** raylib's `LoadImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image from file into CPU memory (RAM). */
 	public static macro function LoadImage(fileName:ExprOf<String>):ExprOf<Image>

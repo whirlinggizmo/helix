@@ -194,10 +194,18 @@ def generated(sections, api, header, written):
             rest = set(re.findall(r'(\w+):(?:haxe\.extern\.)?Rest<', params))
             call = f'{name}.{function}({", ".join("..." + n if n in rest else n for n in parameters(params))})'
             body = call if result == 'Void' else f'return {call}'
-            out += [doc.rstrip('\n'), *meta.splitlines(), f'\tpublic static inline function {function}({params}):{result}', f'\t\t{body};', '']
+            out += [doc.rstrip('\n'), *meta.splitlines(), *wrapped(f'\tpublic static inline function {function}({params}):{result}'), f'\t\t{body};', '']
     out += ['\t#end', '']
     if refused:
         out += ["\t// ---- raylib's loads, which wait for a file: each refuses to compile, naming the load to use ----", ''] + refused
+    # raylib's enum values not written by hand: plain constants, as raylib's are, so a program's BLEND_ADDITIVE names the value even where
+    # the function taking it doesn't compile yet.
+    for e in api.get('enums', []):
+        values = [v for v in e['values'] if v['name'] not in written]
+        if values:
+            out += [f"\t// ---- {sentence(e['description']).rstrip('.')} ({e['name']}), not written by hand ----", '']
+            for v in values:
+                out += [f"\t/** {sentence(v['description'])} */", f"\tpublic static inline final {v['name']} = {v['value']};", '']
     missing = [f for f in api['functions'] if f['name'] not in written]
     if missing:
         out += [f"\t// ---- {header}'s functions helix-ray doesn't have yet: each refuses to compile, saying so ----", '']
@@ -262,6 +270,7 @@ def main():
         after = rest.split(END, 1)[1]
         # Written: in a section, or by hand in the file itself (its macro functions).
         written = set(signatures) | set(re.findall(r'function (\w+)\(', before + after))
+        written |= set(re.findall(r'final (\w+) =', before + after))
         files[RAY / name] = before + generated(target_sections, api, header, written) + after
         callbacks = callback_types(api)
         for s in api['structs']:

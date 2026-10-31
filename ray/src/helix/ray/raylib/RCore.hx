@@ -276,6 +276,25 @@ class RCore {
 		return Runtime.keysPressed.length == 0 ? KEY_NULL : Runtime.keysPressed.shift();
 	}
 
+	/** Returns whether the OS repeated a held key this frame, as it does after a moment, at its own rate.
+
+		@param key  The key (`KEY_*`).
+		@return  True for the frames it repeated. */
+	static function IsKeyPressedRepeat(key:Int):Bool {
+		Runtime.keyboard();
+		var k = toKey(key);
+		return k >= 0 && Runtime.keysRepeated.indexOf(k) >= 0;
+	}
+
+	/** Returns the next character typed this frame, each once; call it until it returns 0. Typed text is read from the first call on, so
+		on a phone its keyboard shows from then.
+
+		@return  The character's codepoint, or 0 when no more were typed. */
+	static function GetCharPressed():Int {
+		Runtime.typing();
+		return Runtime.charsPressed.length == 0 ? 0 : Runtime.charsPressed.shift();
+	}
+
 	// ---- Mouse and touch ----
 
 	/** Returns whether a mouse button went down this frame. A finger touching counts as the left button, as in raylib.
@@ -801,14 +820,12 @@ class RCore {
 		Runtime.frame.vertex(texture, false, x, y, 0, u, v, color);
 	}
 
+	// A filled rectangle, with the shapes texture.
 	static function quad(x:Float, y:Float, w:Float, h:Float, color:Color):Void {
-		var t = Runtime.frame.white;
-		flat(t, x, y, 0, 0, color);
-		flat(t, x, y + h, 0, 0, color);
-		flat(t, x + w, y + h, 0, 0, color);
-		flat(t, x, y, 0, 0, color);
-		flat(t, x + w, y + h, 0, 0, color);
-		flat(t, x + w, y, 0, 0, color);
+		corner(x, y, 0, color);
+		corner(x, y + h, 1, color);
+		corner(x + w, y + h, 2, color);
+		corner(x + w, y, 3, color);
 	}
 
 	static function line(x1:Float, y1:Float, x2:Float, y2:Float, thick:Float, color:Color):Void {
@@ -832,25 +849,15 @@ class RCore {
 		quad(x + w - thick, y + thick, thick, h - thick * 2, color);
 	}
 
-	static function segments(radius:Float):Int {
-		var n = Math.ceil(radius * Math.PI / 2);
-		return n < 12 ? 12 : n > 96 ? 96 : n;
-	}
-
+	// A filled circle as raylib draws one: a sector of 36 segments, or more where the radius needs them.
 	static function circle(cx:Float, cy:Float, radius:Float, color:Color):Void {
-		var n = segments(radius), t = Runtime.frame.white;
-		for (i in 0...n) {
-			var a0 = i / n * Math.PI * 2, a1 = (i + 1) / n * Math.PI * 2;
-			flat(t, cx, cy, 0, 0, color);
-			flat(t, cx + Math.cos(a0) * radius, cy + Math.sin(a0) * radius, 0, 0, color);
-			flat(t, cx + Math.cos(a1) * radius, cy + Math.sin(a1) * radius, 0, 0, color);
-		}
+		DrawCircleSector(new Vector2(cx, cy), radius, 0, 360, 36, color);
 	}
 
+	// A circle's outline as raylib draws one: 36 lines, one every 10 degrees.
 	static function ring(cx:Float, cy:Float, radius:Float, color:Color):Void {
-		var n = segments(radius);
-		for (i in 0...n) {
-			var a0 = i / n * Math.PI * 2, a1 = (i + 1) / n * Math.PI * 2;
+		for (i in 0...36) {
+			var a0 = i * 10 * DEG2RAD, a1 = (i + 1) * 10 * DEG2RAD;
 			line(cx + Math.cos(a0) * radius, cy + Math.sin(a0) * radius, cx + Math.cos(a1) * radius, cy + Math.sin(a1) * radius, 1, color);
 		}
 	}
@@ -1176,5 +1183,49 @@ class RCore {
 		Runtime.frame.cut();
 		Runtime.frame.program = Runtime.frame.defaultProgram;
 	}
+
+	/** Blends what is drawn until `EndBlendMode` another way. `BLEND_ALPHA` and `BLEND_ADDITIVE` are here; the others draw as
+		`BLEND_ALPHA` does, and say so once in the log.
+
+		@param mode  The mode (`BLEND_*`). */
+	static function BeginBlendMode(mode:Int):Void {
+		var blend:helix.platform.BlendMode = switch mode {
+			case BLEND_ADDITIVE: Additive;
+			case BLEND_ALPHA: Alpha;
+			case _:
+				if (!blendsWarned.exists(mode)) {
+					blendsWarned.set(mode, true);
+					Runtime.log(LOG_WARNING, 'BeginBlendMode: blend mode $mode isn\'t in helix-ray yet; drawing with BLEND_ALPHA');
+				}
+				Alpha;
+		}
+		Runtime.frame.cut();
+		Runtime.frame.blend = blend;
+	}
+
+	/** Goes back to blending by alpha. */
+	static function EndBlendMode():Void {
+		Runtime.frame.cut();
+		Runtime.frame.blend = Alpha;
+	}
+
+	/** Draws only within a rectangle of the screen, or of the render texture drawn into, until `EndScissorMode`.
+
+		@param x  The left edge, in pixels.
+		@param y  The top edge, in pixels.
+		@param width  The width.
+		@param height  The height. */
+	static function BeginScissorMode(x:Int, y:Int, width:Int, height:Int):Void {
+		Runtime.frame.cut();
+		Runtime.frame.scissor = [x, y, width, height];
+	}
+
+	/** Draws everywhere again. */
+	static function EndScissorMode():Void {
+		Runtime.frame.cut();
+		Runtime.frame.scissor = null;
+	}
+
+	static final blendsWarned = new Map<Int, Bool>();
 	#end
 }

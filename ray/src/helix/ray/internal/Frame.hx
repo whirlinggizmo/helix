@@ -2,6 +2,7 @@ package helix.ray.internal;
 
 import helix.math.Matrix3D;
 import haxe.io.Bytes;
+import helix.platform.BlendMode;
 import helix.platform.IGraphics;
 import helix.platform.Sampling;
 
@@ -61,6 +62,13 @@ class Frame {
 
 	public var ny = 0.;
 	public var nz = 1.;
+
+	/** How the next draws blend, `BeginBlendMode`'s. */
+	public var blend:BlendMode = Alpha;
+
+	/** The rectangle the next draws are clipped to, `BeginScissorMode`'s: x, y, width and height in the pass's pixels from its top left;
+		null for none. */
+	public var scissor:Null<Array<Float>> = null;
 
 	/** Creates the frame, with raylib's default shader and the white texture.
 
@@ -214,7 +222,7 @@ class Frame {
 	// A run of immediate vertices, through the current program and matrices.
 	function immediate(texture:Int, lines:Bool):Draw {
 		var p = program, depth = in3D;
-		var key = 'i${lines ? "l" : "t"}${depth ? "d" : ""}';
+		var key = 'i${lines ? "l" : "t"}${depth ? "d" : ""}${(blend : Int)}';
 		var pipeline = p.pipeline(key, () -> graphics.createPipeline({
 			shader: p.handle,
 			buffers: [
@@ -229,7 +237,7 @@ class Frame {
 			],
 			primitive: lines ? Lines : Triangles,
 			indexed: false,
-			blend: Alpha,
+			blend: blend,
 			depthTest: depth ? LessEqual : Off,
 			depthWrite: depth,
 			cull: None,
@@ -249,6 +257,7 @@ class Frame {
 			count: 0,
 			texture: texture,
 			lines: lines,
+			scissor: scissor,
 			textures: textures,
 			uniforms: values(p, model, [1, 1, 1, 1])
 		};
@@ -264,7 +273,7 @@ class Frame {
 	public function mesh(mesh:helix.ray.Mesh, p:Program, model:Matrix3D, diffuse:Array<Float>, textures:Array<Int>):Void {
 		open = null;
 		var indexed = mesh.gpu.indexBuffer != 0, depth = in3D;
-		var key = 'm${indexed ? "x" : ""}${depth ? "d" : ""}';
+		var key = 'm${indexed ? "x" : ""}${depth ? "d" : ""}${(blend : Int)}';
 		var pipeline = p.pipeline(key, () -> graphics.createPipeline({
 			shader: p.handle,
 			buffers: [
@@ -277,7 +286,7 @@ class Frame {
 			],
 			primitive: Triangles,
 			indexed: indexed,
-			blend: Alpha,
+			blend: blend,
 			depthTest: depth ? LessEqual : Off,
 			depthWrite: depth,
 			cull: depth ? Back : None,
@@ -306,6 +315,7 @@ class Frame {
 			count: indexed ? mesh.triangleCount * 3 : mesh.vertexCount,
 			texture: 0,
 			lines: false,
+			scissor: scissor,
 			textures: bound,
 			uniforms: values(p, model, diffuse)
 		});
@@ -339,9 +349,19 @@ class Frame {
 			else
 				graphics.beginTargetPass(p.target, (p.clear >> 16 & 255) / 255, (p.clear >> 8 & 255) / 255, (p.clear & 255) / 255, (p.clear >>> 24) / 255);
 			upload();
+			var width = p.target == 0 ? framebufferWidth : Std.int(p.width),
+				height = p.target == 0 ? framebufferHeight : Std.int(p.height);
+			var clipped:Null<Array<Float>> = null;
 			for (d in p.draws) {
 				if (d.count == 0)
 					continue;
+				if (d.scissor != clipped) {
+					clipped = d.scissor;
+					if (clipped == null)
+						graphics.resetScissor();
+					else
+						clip(clipped, width / p.width, height / p.height, width, height);
+				}
 				var count = d.lines ? d.count - d.count % 2 : d.count - d.count % 3;
 				var samplings = [for (_ in d.textures) sampling];
 				graphics.draw(d.pipeline, d.buffers == null ? [buffer] : d.buffers, d.indices, d.first, count, 0, 1, d.textures, samplings, d.uniforms);
@@ -353,6 +373,19 @@ class Frame {
 				graphics.endTargetPass();
 		}
 		reset();
+	}
+
+	// A scissor in the pass's pixels from its top left, as the framebuffer's from its bottom left, within it.
+	function clip(r:Array<Float>, scaleX:Float, scaleY:Float, width:Int, height:Int):Void {
+		var left = Math.round(r[0] * scaleX),
+			right = Math.round((r[0] + r[2]) * scaleX);
+		var bottom = height - Math.round((r[1] + r[3]) * scaleY),
+			top = height - Math.round(r[1] * scaleY);
+		left = left < 0 ? 0 : left > width ? width : left;
+		right = right < left ? left : right > width ? width : right;
+		bottom = bottom < 0 ? 0 : bottom > height ? height : bottom;
+		top = top < bottom ? bottom : top > height ? height : top;
+		graphics.applyScissor(left, bottom, right - left, top - bottom);
 	}
 
 	function upload():Void {
@@ -393,6 +426,7 @@ private typedef Draw = {
 	var count:Int;
 	final texture:Int;
 	final lines:Bool;
+	final scissor:Null<Array<Float>>;
 	final textures:Array<Int>;
 	final uniforms:Array<Null<Bytes>>;
 }

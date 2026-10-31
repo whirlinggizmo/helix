@@ -1192,6 +1192,8 @@ static function IsKeyDown(key:Int):Bool
 static function IsKeyReleased(key:Int):Bool
 static function IsKeyUp(key:Int):Bool
 static function GetKeyPressed():Int
+static function IsKeyPressedRepeat(key:Int):Bool
+static function GetCharPressed():Int
 static function IsMouseButtonPressed(button:Int):Bool
 static function IsMouseButtonDown(button:Int):Bool
 static function IsMouseButtonReleased(button:Int):Bool
@@ -1258,6 +1260,10 @@ static function SetShaderValueMatrix(shader:Shader, locIndex:Int, mat:Matrix):Vo
 static function SetShaderValueTexture(shader:Shader, locIndex:Int, texture:Texture2D):Void
 static function BeginShaderMode(shader:Shader):Void
 static function EndShaderMode():Void
+static function BeginBlendMode(mode:Int):Void
+static function EndBlendMode():Void
+static function BeginScissorMode(x:Int, y:Int, width:Int, height:Int):Void
+static function EndScissorMode():Void
 ```
 
 - `InitWindow`: Opens the window and its graphics. In a page the canvas fills the page, and width and height are ignored.
@@ -1329,6 +1335,11 @@ static function EndShaderMode():Void
   - returns: True while it is up.
 - `GetKeyPressed`: Returns the next key pressed this frame, each once; call it until it returns `KEY_NULL`.
   - returns: The key (`KEY_*`), or `KEY_NULL` when no more were pressed.
+- `IsKeyPressedRepeat`: Returns whether the OS repeated a held key this frame, as it does after a moment, at its own rate.
+  - `key`: The key (`KEY_*`).
+  - returns: True for the frames it repeated.
+- `GetCharPressed`: Returns the next character typed this frame, each once; call it until it returns 0. Typed text is read from the first call on, so on a phone its keyboard shows from then.
+  - returns: The character's codepoint, or 0 when no more were typed.
 - `IsMouseButtonPressed`: Returns whether a mouse button went down this frame. A finger touching counts as the left button, as in raylib.
   - `button`: The button (`MOUSE_BUTTON_*`).
   - returns: True for that frame alone.
@@ -1520,32 +1531,94 @@ static function EndShaderMode():Void
 - `BeginShaderMode`: Draws shapes, text and textures with a shader until `EndShaderMode`.
   - `shader`: The shader.
 - `EndShaderMode`: Goes back to the default shader.
+- `BeginBlendMode`: Blends what is drawn until `EndBlendMode` another way. `BLEND_ALPHA` and `BLEND_ADDITIVE` are here; the others draw as `BLEND_ALPHA` does, and say so once in the log.
+  - `mode`: The mode (`BLEND_*`).
+- `EndBlendMode`: Goes back to blending by alpha.
+- `BeginScissorMode`: Draws only within a rectangle of the screen, or of the render texture drawn into, until `EndScissorMode`.
+  - `x`: The left edge, in pixels.
+  - `y`: The top edge, in pixels.
+  - `width`: The width.
+  - `height`: The height.
+- `EndScissorMode`: Draws everywhere again.
 
 ### rshapes: 2D shapes and collisions (raylib/RShapes.hx)
 
 ```haxe
+static function SetShapesTexture(texture:Texture2D, source:Rectangle):Void
+static function GetShapesTexture():Texture2D
+static function GetShapesTextureRectangle():Rectangle
 static function DrawPixel(posX:Int, posY:Int, color:Color):Void
 static function DrawPixelV(position:Vector2, color:Color):Void
 static function DrawLine(startPosX:Int, startPosY:Int, endPosX:Int, endPosY:Int, color:Color):Void
 static function DrawLineV(startPos:Vector2, endPos:Vector2, color:Color):Void
 static function DrawLineEx(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void
+static function DrawLineStrip(points:Array<Vector2>, pointCount:Int, color:Color):Void
+static function DrawLineBezier(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void
 static function DrawCircle(centerX:Int, centerY:Int, radius:Float, color:Color):Void
 static function DrawCircleV(center:Vector2, radius:Float, color:Color):Void
+static function DrawCircleSector(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
+static function DrawCircleSectorLines(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
+static function DrawCircleGradient(centerX:Int, centerY:Int, radius:Float, inner:Color, outer:Color):Void
 static function DrawCircleLines(centerX:Int, centerY:Int, radius:Float, color:Color):Void
 static function DrawCircleLinesV(center:Vector2, radius:Float, color:Color):Void
+static function DrawEllipse(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void
+static function DrawEllipseLines(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void
+static function DrawRing(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
+static function DrawRingLines(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
 static function DrawRectangle(posX:Int, posY:Int, width:Int, height:Int, color:Color):Void
 static function DrawRectangleV(position:Vector2, size:Vector2, color:Color):Void
 static function DrawRectangleRec(rec:Rectangle, color:Color):Void
+static function DrawRectanglePro(rec:Rectangle, origin:Vector2, rotation:Float, color:Color):Void
+static function DrawRectangleGradientV(posX:Int, posY:Int, width:Int, height:Int, top:Color, bottom:Color):Void
+static function DrawRectangleGradientH(posX:Int, posY:Int, width:Int, height:Int, left:Color, right:Color):Void
+static function DrawRectangleGradientEx(rec:Rectangle, topLeft:Color, bottomLeft:Color, topRight:Color, bottomRight:Color):Void
 static function DrawRectangleLines(posX:Int, posY:Int, width:Int, height:Int, color:Color):Void
 static function DrawRectangleLinesEx(rec:Rectangle, lineThick:Float, color:Color):Void
+static function DrawRectangleRounded(rec:Rectangle, roundness:Float, segments:Int, color:Color):Void
+static function DrawRectangleRoundedLines(rec:Rectangle, roundness:Float, segments:Int, color:Color):Void
+static function DrawRectangleRoundedLinesEx(rec:Rectangle, roundness:Float, segments:Int, lineThick:Float, color:Color):Void
 static function DrawTriangle(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
+static function DrawTriangleLines(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
+static function DrawTriangleFan(points:Array<Vector2>, pointCount:Int, color:Color):Void
+static function DrawTriangleStrip(points:Array<Vector2>, pointCount:Int, color:Color):Void
+static function DrawPoly(center:Vector2, sides:Int, radius:Float, rotation:Float, color:Color):Void
+static function DrawPolyLines(center:Vector2, sides:Int, radius:Float, rotation:Float, color:Color):Void
+static function DrawPolyLinesEx(center:Vector2, sides:Int, radius:Float, rotation:Float, lineThick:Float, color:Color):Void
+static function DrawSplineLinear(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+static function DrawSplineBasis(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+static function DrawSplineCatmullRom(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+static function DrawSplineBezierQuadratic(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+static function DrawSplineBezierCubic(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
+static function DrawSplineSegmentLinear(p1:Vector2, p2:Vector2, thick:Float, color:Color):Void
+static function DrawSplineSegmentBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, thick:Float, color:Color):Void
+static function DrawSplineSegmentCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, thick:Float, color:Color):Void
+static function DrawSplineSegmentBezierQuadratic(p1:Vector2, c2:Vector2, p3:Vector2, thick:Float, color:Color):Void
+static function DrawSplineSegmentBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, thick:Float, color:Color):Void
+static function GetSplinePointLinear(startPos:Vector2, endPos:Vector2, t:Float):Vector2
+static function GetSplinePointBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2
+static function GetSplinePointCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2
+static function GetSplinePointBezierQuad(p1:Vector2, c2:Vector2, p3:Vector2, t:Float):Vector2
+static function GetSplinePointBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, t:Float):Vector2
 static function CheckCollisionRecs(rec1:Rectangle, rec2:Rectangle):Bool
 static function CheckCollisionCircles(center1:Vector2, radius1:Float, center2:Vector2, radius2:Float):Bool
 static function CheckCollisionCircleRec(center:Vector2, radius:Float, rec:Rectangle):Bool
+static function CheckCollisionCircleLine(center:Vector2, radius:Float, p1:Vector2, p2:Vector2):Bool
 static function CheckCollisionPointRec(point:Vector2, rec:Rectangle):Bool
 static function CheckCollisionPointCircle(point:Vector2, center:Vector2, radius:Float):Bool
+static function CheckCollisionPointTriangle(point:Vector2, p1:Vector2, p2:Vector2, p3:Vector2):Bool
+static function CheckCollisionPointLine(point:Vector2, p1:Vector2, p2:Vector2, threshold:Int):Bool
+static function CheckCollisionPointPoly(point:Vector2, points:Array<Vector2>, pointCount:Int):Bool
+static function CheckCollisionLines(startPos1:Vector2, endPos1:Vector2, startPos2:Vector2, endPos2:Vector2, collisionPoint:Vector2):Bool
+static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
 ```
 
+- `SetShapesTexture`: Sets the texture and the part of it the filled shapes draw with, as one white pixel of a font's texture lets shapes and text share a draw. A texture with no id, or an empty rectangle, goes back to the white pixel shapes draw with at first.
+  - `texture`: The texture.
+  - `source`: The part of it, in pixels.
+- `GetShapesTexture`: Returns the texture the filled shapes draw with: a white pixel unless `SetShapesTexture` set another.
+  - returns: The texture.
+- `GetShapesTextureRectangle`: Returns the part of the shapes texture the filled shapes draw with.
+  - returns: The rectangle, in pixels.
 - `DrawPixel`: Draws one pixel.
   - `posX`: The x.
   - `posY`: The y.
@@ -1568,6 +1641,15 @@ static function CheckCollisionPointCircle(point:Vector2, center:Vector2, radius:
   - `endPos`: The end.
   - `thick`: The thickness, in pixels.
   - `color`: The color.
+- `DrawLineStrip`: Draws lines one pixel wide from each point to the next.
+  - `points`: The points.
+  - `pointCount`: How many of them to draw through, 2 or more.
+  - `color`: The color.
+- `DrawLineBezier`: Draws a line of a thickness that eases in and out from start to end, as an S.
+  - `startPos`: The start.
+  - `endPos`: The end.
+  - `thick`: The thickness, in pixels.
+  - `color`: The color.
 - `DrawCircle`: Draws a filled circle.
   - `centerX`: The center's x.
   - `centerY`: The center's y.
@@ -1577,6 +1659,26 @@ static function CheckCollisionPointCircle(point:Vector2, center:Vector2, radius:
   - `center`: The center.
   - `radius`: The radius.
   - `color`: The color.
+- `DrawCircleSector`: Draws a filled slice of a circle, clockwise from one angle to another.
+  - `center`: The center.
+  - `radius`: The radius.
+  - `startAngle`: The angle it starts at, in degrees from the right.
+  - `endAngle`: The angle it ends at.
+  - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+  - `color`: The color.
+- `DrawCircleSectorLines`: Draws a slice of a circle's outline, one pixel wide, with lines from the center to its ends.
+  - `center`: The center.
+  - `radius`: The radius.
+  - `startAngle`: The angle it starts at, in degrees from the right.
+  - `endAngle`: The angle it ends at.
+  - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+  - `color`: The color.
+- `DrawCircleGradient`: Draws a filled circle that blends from one color at its center to another at its edge.
+  - `centerX`: The center's x.
+  - `centerY`: The center's y.
+  - `radius`: The radius.
+  - `inner`: The color at the center.
+  - `outer`: The color at the edge.
 - `DrawCircleLines`: Draws a circle's outline, one pixel wide.
   - `centerX`: The center's x.
   - `centerY`: The center's y.
@@ -1585,6 +1687,34 @@ static function CheckCollisionPointCircle(point:Vector2, center:Vector2, radius:
 - `DrawCircleLinesV`: Draws a circle's outline, one pixel wide.
   - `center`: The center.
   - `radius`: The radius.
+  - `color`: The color.
+- `DrawEllipse`: Draws a filled ellipse.
+  - `centerX`: The center's x.
+  - `centerY`: The center's y.
+  - `radiusH`: The radius across.
+  - `radiusV`: The radius up and down.
+  - `color`: The color.
+- `DrawEllipseLines`: Draws an ellipse's outline, one pixel wide.
+  - `centerX`: The center's x.
+  - `centerY`: The center's y.
+  - `radiusH`: The radius across.
+  - `radiusV`: The radius up and down.
+  - `color`: The color.
+- `DrawRing`: Draws a filled ring, or a slice of one, clockwise from one angle to another.
+  - `center`: The center.
+  - `innerRadius`: The radius of its hole; 0 or less draws a slice of a circle.
+  - `outerRadius`: The radius of its edge.
+  - `startAngle`: The angle it starts at, in degrees from the right.
+  - `endAngle`: The angle it ends at; the same as the start draws nothing.
+  - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+  - `color`: The color.
+- `DrawRingLines`: Draws a ring's outline, or a slice of one, one pixel wide.
+  - `center`: The center.
+  - `innerRadius`: The radius of its hole; 0 or less draws a slice of a circle.
+  - `outerRadius`: The radius of its edge.
+  - `startAngle`: The angle it starts at, in degrees from the right.
+  - `endAngle`: The angle it ends at; the same as the start draws nothing.
+  - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
   - `color`: The color.
 - `DrawRectangle`: Draws a filled rectangle.
   - `posX`: The left edge.
@@ -1599,6 +1729,31 @@ static function CheckCollisionPointCircle(point:Vector2, center:Vector2, radius:
 - `DrawRectangleRec`: Draws a filled rectangle.
   - `rec`: The rectangle.
   - `color`: The color.
+- `DrawRectanglePro`: Draws a filled rectangle turned about a point of it.
+  - `rec`: The rectangle; its x and y are where the point is drawn.
+  - `origin`: The point it turns about, from its top-left corner.
+  - `rotation`: The turn, in degrees clockwise.
+  - `color`: The color.
+- `DrawRectangleGradientV`: Draws a filled rectangle that blends from one color at its top to another at its bottom.
+  - `posX`: The left edge.
+  - `posY`: The top edge.
+  - `width`: The width.
+  - `height`: The height.
+  - `top`: The color at the top.
+  - `bottom`: The color at the bottom.
+- `DrawRectangleGradientH`: Draws a filled rectangle that blends from one color at its left to another at its right.
+  - `posX`: The left edge.
+  - `posY`: The top edge.
+  - `width`: The width.
+  - `height`: The height.
+  - `left`: The color at the left.
+  - `right`: The color at the right.
+- `DrawRectangleGradientEx`: Draws a filled rectangle that blends between a color at each corner. As in raylib 5.5, `topRight` colors the bottom-right corner and `bottomRight` the top-right one.
+  - `rec`: The rectangle.
+  - `topLeft`: The top-left corner's color.
+  - `bottomLeft`: The bottom-left corner's color.
+  - `topRight`: The bottom-right corner's color.
+  - `bottomRight`: The top-right corner's color.
 - `DrawRectangleLines`: Draws a rectangle's outline, one pixel wide.
   - `posX`: The left edge.
   - `posY`: The top edge.
@@ -1609,11 +1764,148 @@ static function CheckCollisionPointCircle(point:Vector2, center:Vector2, radius:
   - `rec`: The rectangle.
   - `lineThick`: The lines' thickness.
   - `color`: The color.
+- `DrawRectangleRounded`: Draws a filled rectangle with rounded corners.
+  - `rec`: The rectangle.
+  - `roundness`: How round its corners are: 0 for square, 1 for a radius of half its shorter side.
+  - `segments`: How many straight edges make each corner's curve; fewer than 4 picks enough for a smooth curve.
+  - `color`: The color.
+- `DrawRectangleRoundedLines`: Draws a rounded rectangle's outline, one pixel wide.
+  - `rec`: The rectangle.
+  - `roundness`: How round its corners are: 0 for square, 1 for a radius of half its shorter side.
+  - `segments`: How many straight edges make each corner's curve; fewer than 4 picks enough for a smooth curve.
+  - `color`: The color.
+- `DrawRectangleRoundedLinesEx`: Draws a rounded rectangle's outline, its lines outside it.
+  - `rec`: The rectangle.
+  - `roundness`: How round its corners are: 0 for square, 1 for a radius of half its shorter side.
+  - `segments`: How many straight edges make each corner's curve; fewer than 4 picks enough for a smooth curve.
+  - `lineThick`: The lines' thickness; 1 or less draws them one pixel wide.
+  - `color`: The color.
 - `DrawTriangle`: Draws a filled triangle; its points go counterclockwise, as raylib's do.
   - `v1`: The first point.
   - `v2`: The second point.
   - `v3`: The third point.
   - `color`: The color.
+- `DrawTriangleLines`: Draws a triangle's outline, one pixel wide.
+  - `v1`: The first point.
+  - `v2`: The second point.
+  - `v3`: The third point.
+  - `color`: The color.
+- `DrawTriangleFan`: Draws filled triangles that all share the first point, each from it to the next two points; they go counterclockwise.
+  - `points`: The points, the shared one first.
+  - `pointCount`: How many of them to draw, 3 or more.
+  - `color`: The color.
+- `DrawTriangleStrip`: Draws filled triangles, each from a point to the two before it.
+  - `points`: The points.
+  - `pointCount`: How many of them to draw, 3 or more.
+  - `color`: The color.
+- `DrawPoly`: Draws a filled regular polygon.
+  - `center`: The center.
+  - `sides`: How many sides it has, 3 or more.
+  - `radius`: The distance from the center to each corner.
+  - `rotation`: The turn of its first corner from the right, in degrees clockwise.
+  - `color`: The color.
+- `DrawPolyLines`: Draws a regular polygon's outline, one pixel wide.
+  - `center`: The center.
+  - `sides`: How many sides it has, 3 or more.
+  - `radius`: The distance from the center to each corner.
+  - `rotation`: The turn of its first corner from the right, in degrees clockwise.
+  - `color`: The color.
+- `DrawPolyLinesEx`: Draws a regular polygon's outline, its lines inside it.
+  - `center`: The center.
+  - `sides`: How many sides it has, 3 or more.
+  - `radius`: The distance from the center to each corner.
+  - `rotation`: The turn of its first corner from the right, in degrees clockwise.
+  - `lineThick`: The lines' thickness.
+  - `color`: The color.
+- `DrawSplineLinear`: Draws straight lines of a thickness from each point to the next.
+  - `points`: The points.
+  - `pointCount`: How many of them to draw through, 2 or more.
+  - `thick`: The thickness, in pixels.
+  - `color`: The color.
+- `DrawSplineBasis`: Draws a B-spline of a thickness through points, with round ends; it passes near the points rather than through them.
+  - `points`: The points.
+  - `pointCount`: How many of them to draw through, 4 or more.
+  - `thick`: The thickness, in pixels.
+  - `color`: The color.
+- `DrawSplineCatmullRom`: Draws a Catmull-Rom spline of a thickness through points, with round ends; it passes through all but the first and last, which only steer it.
+  - `points`: The points.
+  - `pointCount`: How many of them to draw through, 4 or more.
+  - `thick`: The thickness, in pixels.
+  - `color`: The color.
+- `DrawSplineBezierQuadratic`: Draws quadratic Bezier curves of a thickness, one after another: points, then a control point between each two.
+  - `points`: The points: start, control, end, then a control and an end for each further curve.
+  - `pointCount`: How many of them to draw through, 3 or more.
+  - `thick`: The thickness, in pixels.
+  - `color`: The color.
+- `DrawSplineBezierCubic`: Draws cubic Bezier curves of a thickness, one after another: points, then two control points between each two.
+  - `points`: The points: start, two controls, end, then two controls and an end for each further curve.
+  - `pointCount`: How many of them to draw through, 4 or more.
+  - `thick`: The thickness, in pixels.
+  - `color`: The color.
+- `DrawSplineSegmentLinear`: Draws a straight line of a thickness.
+  - `p1`: The start.
+  - `p2`: The end.
+  - `thick`: The thickness, in pixels.
+  - `color`: The color.
+- `DrawSplineSegmentBasis`: Draws one piece of a B-spline of a thickness, between the middle two of four points.
+  - `p1`: The first point.
+  - `p2`: The second.
+  - `p3`: The third.
+  - `p4`: The fourth.
+  - `thick`: The thickness, in pixels.
+  - `color`: The color.
+- `DrawSplineSegmentCatmullRom`: Draws one piece of a Catmull-Rom spline of a thickness, through the middle two of four points.
+  - `p1`: The first point, which steers it.
+  - `p2`: The start.
+  - `p3`: The end.
+  - `p4`: The fourth point, which steers it.
+  - `thick`: The thickness, in pixels.
+  - `color`: The color.
+- `DrawSplineSegmentBezierQuadratic`: Draws a quadratic Bezier curve of a thickness.
+  - `p1`: The start.
+  - `c2`: The control point.
+  - `p3`: The end.
+  - `thick`: The thickness, in pixels.
+  - `color`: The color.
+- `DrawSplineSegmentBezierCubic`: Draws a cubic Bezier curve of a thickness.
+  - `p1`: The start.
+  - `c2`: The start's control point.
+  - `c3`: The end's control point.
+  - `p4`: The end.
+  - `thick`: The thickness, in pixels.
+  - `color`: The color.
+- `GetSplinePointLinear`: Returns a point on a straight line.
+  - `startPos`: The start.
+  - `endPos`: The end.
+  - `t`: How far along, 0 at the start to 1 at the end.
+  - returns: The point.
+- `GetSplinePointBasis`: Returns a point on one piece of a B-spline, between the middle two of four points.
+  - `p1`: The first point.
+  - `p2`: The second.
+  - `p3`: The third.
+  - `p4`: The fourth.
+  - `t`: How far along, 0 at the start to 1 at the end.
+  - returns: The point.
+- `GetSplinePointCatmullRom`: Returns a point on one piece of a Catmull-Rom spline, through the middle two of four points.
+  - `p1`: The first point, which steers it.
+  - `p2`: The start.
+  - `p3`: The end.
+  - `p4`: The fourth point, which steers it.
+  - `t`: How far along, 0 at the start to 1 at the end.
+  - returns: The point.
+- `GetSplinePointBezierQuad`: Returns a point on a quadratic Bezier curve.
+  - `p1`: The start.
+  - `c2`: The control point.
+  - `p3`: The end.
+  - `t`: How far along, 0 at the start to 1 at the end.
+  - returns: The point.
+- `GetSplinePointBezierCubic`: Returns a point on a cubic Bezier curve.
+  - `p1`: The start.
+  - `c2`: The start's control point.
+  - `c3`: The end's control point.
+  - `p4`: The end.
+  - `t`: How far along, 0 at the start to 1 at the end.
+  - returns: The point.
 - `CheckCollisionRecs`: Returns whether two rectangles overlap.
   - `rec1`: One rectangle.
   - `rec2`: The other.
@@ -1629,6 +1921,12 @@ static function CheckCollisionPointCircle(point:Vector2, center:Vector2, radius:
   - `radius`: Its radius.
   - `rec`: The rectangle.
   - returns: True when they overlap.
+- `CheckCollisionCircleLine`: Returns whether a circle and a line between two points touch.
+  - `center`: The circle's center.
+  - `radius`: Its radius.
+  - `p1`: The line's start.
+  - `p2`: Its end.
+  - returns: True when they touch.
 - `CheckCollisionPointRec`: Returns whether a point is inside a rectangle.
   - `point`: The point.
   - `rec`: The rectangle.
@@ -1638,6 +1936,34 @@ static function CheckCollisionPointCircle(point:Vector2, center:Vector2, radius:
   - `center`: The circle's center.
   - `radius`: Its radius.
   - returns: True when it is inside.
+- `CheckCollisionPointTriangle`: Returns whether a point is inside a triangle; a point on its edge isn't.
+  - `point`: The point.
+  - `p1`: The triangle's first point.
+  - `p2`: Its second.
+  - `p3`: Its third.
+  - returns: True when it is inside.
+- `CheckCollisionPointLine`: Returns whether a point is on a line between two points, within a margin.
+  - `point`: The point.
+  - `p1`: The line's start.
+  - `p2`: Its end.
+  - `threshold`: How far from the line the point may be, in pixels.
+  - returns: True when it is on it.
+- `CheckCollisionPointPoly`: Returns whether a point is inside a polygon.
+  - `point`: The point.
+  - `points`: The polygon's corners, in order.
+  - `pointCount`: How many of them it has, 3 or more.
+  - returns: True when it is inside.
+- `CheckCollisionLines`: Returns whether two lines, each between two points, cross, and where.
+  - `startPos1`: One line's start.
+  - `endPos1`: Its end.
+  - `startPos2`: The other's start.
+  - `endPos2`: Its end.
+  - `collisionPoint`: Set to where they cross, when they do; null leaves it out.
+  - returns: True when they cross.
+- `GetCollisionRec`: Returns where two rectangles overlap.
+  - `rec1`: One rectangle.
+  - `rec2`: The other.
+  - returns: The overlap, or an empty rectangle at 0, 0 when they don't.
 
 ### rtextures: textures, render textures and colors (raylib/RTextures.hx)
 
@@ -2079,6 +2405,176 @@ static macro function LoadSound(fileName:String):Sound
 - `LoadModel`: raylib's model load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAsync` loads it.
 - `LoadSound`: raylib's sound load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadSoundAsync` loads it.
 
+### Mouse cursor (MouseCursor), not written by hand
+
+```haxe
+static inline var MOUSE_CURSOR_DEFAULT:Int
+static inline var MOUSE_CURSOR_ARROW:Int
+static inline var MOUSE_CURSOR_IBEAM:Int
+static inline var MOUSE_CURSOR_CROSSHAIR:Int
+static inline var MOUSE_CURSOR_POINTING_HAND:Int
+static inline var MOUSE_CURSOR_RESIZE_EW:Int
+static inline var MOUSE_CURSOR_RESIZE_NS:Int
+static inline var MOUSE_CURSOR_RESIZE_NWSE:Int
+static inline var MOUSE_CURSOR_RESIZE_NESW:Int
+static inline var MOUSE_CURSOR_RESIZE_ALL:Int
+static inline var MOUSE_CURSOR_NOT_ALLOWED:Int
+```
+
+- `MOUSE_CURSOR_DEFAULT`: Default pointer shape.
+- `MOUSE_CURSOR_ARROW`: Arrow shape.
+- `MOUSE_CURSOR_IBEAM`: Text writing cursor shape.
+- `MOUSE_CURSOR_CROSSHAIR`: Cross shape.
+- `MOUSE_CURSOR_POINTING_HAND`: Pointing hand cursor.
+- `MOUSE_CURSOR_RESIZE_EW`: Horizontal resize/move arrow shape.
+- `MOUSE_CURSOR_RESIZE_NS`: Vertical resize/move arrow shape.
+- `MOUSE_CURSOR_RESIZE_NWSE`: Top-left to bottom-right diagonal resize/move arrow shape.
+- `MOUSE_CURSOR_RESIZE_NESW`: The top-right to bottom-left diagonal resize/move arrow shape.
+- `MOUSE_CURSOR_RESIZE_ALL`: The omnidirectional resize/move cursor shape.
+- `MOUSE_CURSOR_NOT_ALLOWED`: The operation-not-allowed shape.
+
+### Shader attribute data types (ShaderAttributeDataType), not written by hand
+
+```haxe
+static inline var SHADER_ATTRIB_FLOAT:Int
+static inline var SHADER_ATTRIB_VEC2:Int
+static inline var SHADER_ATTRIB_VEC3:Int
+static inline var SHADER_ATTRIB_VEC4:Int
+```
+
+- `SHADER_ATTRIB_FLOAT`: Shader attribute type: float.
+- `SHADER_ATTRIB_VEC2`: Shader attribute type: vec2 (2 float).
+- `SHADER_ATTRIB_VEC3`: Shader attribute type: vec3 (3 float).
+- `SHADER_ATTRIB_VEC4`: Shader attribute type: vec4 (4 float).
+
+### Pixel formats (PixelFormat), not written by hand
+
+```haxe
+static inline var PIXELFORMAT_UNCOMPRESSED_GRAYSCALE:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R5G6B5:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R8G8B8:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R5G5B5A1:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R4G4B4A4:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R32:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R32G32B32:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R32G32B32A32:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R16:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R16G16B16:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R16G16B16A16:Int
+static inline var PIXELFORMAT_COMPRESSED_DXT1_RGB:Int
+static inline var PIXELFORMAT_COMPRESSED_DXT1_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_DXT3_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_DXT5_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_ETC1_RGB:Int
+static inline var PIXELFORMAT_COMPRESSED_ETC2_RGB:Int
+static inline var PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_PVRT_RGB:Int
+static inline var PIXELFORMAT_COMPRESSED_PVRT_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA:Int
+```
+
+- `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`: 8 bit per pixel (no alpha).
+- `PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`: 8*2 bpp (2 channels).
+- `PIXELFORMAT_UNCOMPRESSED_R5G6B5`: 16 bpp.
+- `PIXELFORMAT_UNCOMPRESSED_R8G8B8`: 24 bpp.
+- `PIXELFORMAT_UNCOMPRESSED_R5G5B5A1`: 16 bpp (1 bit alpha).
+- `PIXELFORMAT_UNCOMPRESSED_R4G4B4A4`: 16 bpp (4 bit alpha).
+- `PIXELFORMAT_UNCOMPRESSED_R32`: 32 bpp (1 channel - float).
+- `PIXELFORMAT_UNCOMPRESSED_R32G32B32`: 32*3 bpp (3 channels - float).
+- `PIXELFORMAT_UNCOMPRESSED_R32G32B32A32`: 32*4 bpp (4 channels - float).
+- `PIXELFORMAT_UNCOMPRESSED_R16`: 16 bpp (1 channel - half float).
+- `PIXELFORMAT_UNCOMPRESSED_R16G16B16`: 16*3 bpp (3 channels - half float).
+- `PIXELFORMAT_UNCOMPRESSED_R16G16B16A16`: 16*4 bpp (4 channels - half float).
+- `PIXELFORMAT_COMPRESSED_DXT1_RGB`: 4 bpp (no alpha).
+- `PIXELFORMAT_COMPRESSED_DXT1_RGBA`: 4 bpp (1 bit alpha).
+- `PIXELFORMAT_COMPRESSED_DXT3_RGBA`: 8 bpp.
+- `PIXELFORMAT_COMPRESSED_DXT5_RGBA`: 8 bpp.
+- `PIXELFORMAT_COMPRESSED_ETC1_RGB`: 4 bpp.
+- `PIXELFORMAT_COMPRESSED_ETC2_RGB`: 4 bpp.
+- `PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA`: 8 bpp.
+- `PIXELFORMAT_COMPRESSED_PVRT_RGB`: 4 bpp.
+- `PIXELFORMAT_COMPRESSED_PVRT_RGBA`: 4 bpp.
+- `PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA`: 8 bpp.
+- `PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA`: 2 bpp.
+
+### Texture parameters: wrap mode (TextureWrap), not written by hand
+
+```haxe
+static inline var TEXTURE_WRAP_REPEAT:Int
+static inline var TEXTURE_WRAP_CLAMP:Int
+static inline var TEXTURE_WRAP_MIRROR_REPEAT:Int
+static inline var TEXTURE_WRAP_MIRROR_CLAMP:Int
+```
+
+- `TEXTURE_WRAP_REPEAT`: Repeats texture in tiled mode.
+- `TEXTURE_WRAP_CLAMP`: Clamps texture to edge pixel in tiled mode.
+- `TEXTURE_WRAP_MIRROR_REPEAT`: Mirrors and repeats the texture in tiled mode.
+- `TEXTURE_WRAP_MIRROR_CLAMP`: Mirrors and clamps to border the texture in tiled mode.
+
+### Cubemap layouts (CubemapLayout), not written by hand
+
+```haxe
+static inline var CUBEMAP_LAYOUT_AUTO_DETECT:Int
+static inline var CUBEMAP_LAYOUT_LINE_VERTICAL:Int
+static inline var CUBEMAP_LAYOUT_LINE_HORIZONTAL:Int
+static inline var CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR:Int
+static inline var CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE:Int
+```
+
+- `CUBEMAP_LAYOUT_AUTO_DETECT`: Automatically detect layout type.
+- `CUBEMAP_LAYOUT_LINE_VERTICAL`: Layout is defined by a vertical line with faces.
+- `CUBEMAP_LAYOUT_LINE_HORIZONTAL`: Layout is defined by a horizontal line with faces.
+- `CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR`: Layout is defined by a 3x4 cross with cubemap faces.
+- `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE`: Layout is defined by a 4x3 cross with cubemap faces.
+
+### Font type, defines generation method (FontType), not written by hand
+
+```haxe
+static inline var FONT_DEFAULT:Int
+static inline var FONT_BITMAP:Int
+static inline var FONT_SDF:Int
+```
+
+- `FONT_DEFAULT`: Default font generation, anti-aliased.
+- `FONT_BITMAP`: Bitmap font generation, no anti-aliasing.
+- `FONT_SDF`: SDF font generation, requires external shader.
+
+### Color blending modes (pre-defined) (BlendMode), not written by hand
+
+```haxe
+static inline var BLEND_ALPHA:Int
+static inline var BLEND_ADDITIVE:Int
+static inline var BLEND_MULTIPLIED:Int
+static inline var BLEND_ADD_COLORS:Int
+static inline var BLEND_SUBTRACT_COLORS:Int
+static inline var BLEND_ALPHA_PREMULTIPLY:Int
+static inline var BLEND_CUSTOM:Int
+static inline var BLEND_CUSTOM_SEPARATE:Int
+```
+
+- `BLEND_ALPHA`: Blend textures considering alpha (default).
+- `BLEND_ADDITIVE`: Blend textures adding colors.
+- `BLEND_MULTIPLIED`: Blend textures multiplying colors.
+- `BLEND_ADD_COLORS`: Blend textures adding colors (alternative).
+- `BLEND_SUBTRACT_COLORS`: Blend textures subtracting colors (alternative).
+- `BLEND_ALPHA_PREMULTIPLY`: Blend premultiplied textures considering alpha.
+- `BLEND_CUSTOM`: Blend textures using custom src/dst factors (use rlSetBlendFactors()).
+- `BLEND_CUSTOM_SEPARATE`: Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate()).
+
+### N-patch layout (NPatchLayout), not written by hand
+
+```haxe
+static inline var NPATCH_NINE_PATCH:Int
+static inline var NPATCH_THREE_PATCH_VERTICAL:Int
+static inline var NPATCH_THREE_PATCH_HORIZONTAL:Int
+```
+
+- `NPATCH_NINE_PATCH`: Npatch layout: 3x3 tiles.
+- `NPATCH_THREE_PATCH_VERTICAL`: Npatch layout: 1x3 tiles.
+- `NPATCH_THREE_PATCH_HORIZONTAL`: Npatch layout: 3x1 tiles.
+
 ### Shaders, compiled as the program builds
 
 ```haxe
@@ -2099,7 +2595,7 @@ static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<Stri
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-From `raylib.h`: `IsWindowFullscreen`, `IsWindowHidden`, `IsWindowMinimized`, `IsWindowMaximized`, `IsWindowFocused`, `ToggleFullscreen`, `ToggleBorderlessWindowed`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowIcon`, `SetWindowIcons`, `SetWindowPosition`, `SetWindowMonitor`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetWindowOpacity`, `SetWindowFocused`, `GetWindowHandle`, `GetMonitorCount`, `GetCurrentMonitor`, `GetMonitorPosition`, `GetMonitorWidth`, `GetMonitorHeight`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `GetMonitorRefreshRate`, `GetWindowPosition`, `GetWindowScaleDPI`, `GetMonitorName`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `EnableEventWaiting`, `DisableEventWaiting`, `ShowCursor`, `HideCursor`, `IsCursorHidden`, `EnableCursor`, `DisableCursor`, `IsCursorOnScreen`, `BeginBlendMode`, `EndBlendMode`, `BeginScissorMode`, `EndScissorMode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `TakeScreenshot`, `OpenURL`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `IsFileExtension`, `GetFileLength`, `GetFileExtension`, `GetFileName`, `GetFileNameWithoutExt`, `GetDirectoryPath`, `GetPrevDirectoryPath`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `IsFileNameValid`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `CompressData`, `DecompressData`, `EncodeDataBase64`, `DecodeDataBase64`, `ComputeCRC32`, `ComputeMD5`, `ComputeSHA1`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `IsKeyPressedRepeat`, `GetCharPressed`, `SetGamepadMappings`, `SetGamepadVibration`, `SetMousePosition`, `SetMouseOffset`, `SetMouseScale`, `GetMouseWheelMoveV`, `SetMouseCursor`, `GetTouchPointId`, `UpdateCameraPro`, `SetShapesTexture`, `GetShapesTexture`, `GetShapesTextureRectangle`, `DrawLineStrip`, `DrawLineBezier`, `DrawCircleSector`, `DrawCircleSectorLines`, `DrawCircleGradient`, `DrawEllipse`, `DrawEllipseLines`, `DrawRing`, `DrawRingLines`, `DrawRectanglePro`, `DrawRectangleGradientV`, `DrawRectangleGradientH`, `DrawRectangleGradientEx`, `DrawRectangleRounded`, `DrawRectangleRoundedLines`, `DrawRectangleRoundedLinesEx`, `DrawTriangleLines`, `DrawTriangleFan`, `DrawTriangleStrip`, `DrawPoly`, `DrawPolyLines`, `DrawPolyLinesEx`, `DrawSplineLinear`, `DrawSplineBasis`, `DrawSplineCatmullRom`, `DrawSplineBezierQuadratic`, `DrawSplineBezierCubic`, `DrawSplineSegmentLinear`, `DrawSplineSegmentBasis`, `DrawSplineSegmentCatmullRom`, `DrawSplineSegmentBezierQuadratic`, `DrawSplineSegmentBezierCubic`, `GetSplinePointLinear`, `GetSplinePointBasis`, `GetSplinePointCatmullRom`, `GetSplinePointBezierQuad`, `GetSplinePointBezierCubic`, `CheckCollisionCircleLine`, `CheckCollisionPointTriangle`, `CheckCollisionPointLine`, `CheckCollisionPointPoly`, `CheckCollisionLines`, `GetCollisionRec`, `LoadImage`, `LoadImageRaw`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `IsImageValid`, `UnloadImage`, `ExportImage`, `ExportImageToMemory`, `ExportImageAsCode`, `GenImageColor`, `GenImageGradientLinear`, `GenImageGradientRadial`, `GenImageGradientSquare`, `GenImageChecked`, `GenImageWhiteNoise`, `GenImagePerlinNoise`, `GenImageCellular`, `GenImageText`, `ImageCopy`, `ImageFromImage`, `ImageFromChannel`, `ImageText`, `ImageTextEx`, `ImageFormat`, `ImageToPOT`, `ImageCrop`, `ImageAlphaCrop`, `ImageAlphaClear`, `ImageAlphaMask`, `ImageAlphaPremultiply`, `ImageBlurGaussian`, `ImageKernelConvolution`, `ImageResize`, `ImageResizeNN`, `ImageResizeCanvas`, `ImageMipmaps`, `ImageDither`, `ImageFlipVertical`, `ImageFlipHorizontal`, `ImageRotate`, `ImageRotateCW`, `ImageRotateCCW`, `ImageColorTint`, `ImageColorInvert`, `ImageColorGrayscale`, `ImageColorContrast`, `ImageColorBrightness`, `ImageColorReplace`, `LoadImageColors`, `LoadImagePalette`, `UnloadImageColors`, `UnloadImagePalette`, `GetImageAlphaBorder`, `GetImageColor`, `ImageClearBackground`, `ImageDrawPixel`, `ImageDrawPixelV`, `ImageDrawLine`, `ImageDrawLineV`, `ImageDrawLineEx`, `ImageDrawCircle`, `ImageDrawCircleV`, `ImageDrawCircleLines`, `ImageDrawCircleLinesV`, `ImageDrawRectangle`, `ImageDrawRectangleV`, `ImageDrawRectangleRec`, `ImageDrawRectangleLines`, `ImageDrawTriangle`, `ImageDrawTriangleEx`, `ImageDrawTriangleLines`, `ImageDrawTriangleFan`, `ImageDrawTriangleStrip`, `ImageDraw`, `ImageDrawText`, `ImageDrawTextEx`, `LoadTextureFromImage`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `SetTextureWrap`, `DrawTextureNPatch`, `ColorIsEqual`, `ColorToInt`, `ColorToHSV`, `ColorFromHSV`, `ColorTint`, `ColorBrightness`, `ColorContrast`, `ColorAlphaBlend`, `ColorLerp`, `GetColor`, `GetPixelColor`, `SetPixelColor`, `GetPixelDataSize`, `GetFontDefault`, `LoadFont`, `LoadFontEx`, `LoadFontFromImage`, `LoadFontFromMemory`, `IsFontValid`, `LoadFontData`, `GenImageFontAtlas`, `UnloadFontData`, `UnloadFont`, `ExportFontAsCode`, `DrawTextEx`, `DrawTextPro`, `DrawTextCodepoint`, `DrawTextCodepoints`, `SetTextLineSpacing`, `MeasureTextEx`, `GetGlyphIndex`, `GetGlyphInfo`, `GetGlyphAtlasRec`, `LoadUTF8`, `UnloadUTF8`, `LoadCodepoints`, `UnloadCodepoints`, `GetCodepointCount`, `GetCodepoint`, `GetCodepointNext`, `GetCodepointPrevious`, `CodepointToUTF8`, `TextCopy`, `TextIsEqual`, `TextLength`, `TextSubtext`, `TextReplace`, `TextInsert`, `TextJoin`, `TextSplit`, `TextAppend`, `TextFindIndex`, `TextToUpper`, `TextToLower`, `TextToPascal`, `TextToSnake`, `TextToCamel`, `TextToInteger`, `TextToFloat`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`, `LoadWave`, `LoadWaveFromMemory`, `IsWaveValid`, `LoadSoundFromWave`, `LoadSoundAlias`, `UpdateSound`, `UnloadWave`, `UnloadSoundAlias`, `ExportWave`, `ExportWaveAsCode`, `PauseSound`, `ResumeSound`, `WaveCopy`, `WaveCrop`, `WaveFormat`, `LoadWaveSamples`, `UnloadWaveSamples`, `LoadMusicStreamFromMemory`, `SeekMusicStream`, `GetMusicTimeLength`, `GetMusicTimePlayed`, `LoadAudioStream`, `IsAudioStreamValid`, `UnloadAudioStream`, `UpdateAudioStream`, `IsAudioStreamProcessed`, `PlayAudioStream`, `PauseAudioStream`, `ResumeAudioStream`, `IsAudioStreamPlaying`, `StopAudioStream`, `SetAudioStreamVolume`, `SetAudioStreamPitch`, `SetAudioStreamPan`, `SetAudioStreamBufferSizeDefault`, `SetAudioStreamCallback`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+From `raylib.h`: `IsWindowFullscreen`, `IsWindowHidden`, `IsWindowMinimized`, `IsWindowMaximized`, `IsWindowFocused`, `ToggleFullscreen`, `ToggleBorderlessWindowed`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowIcon`, `SetWindowIcons`, `SetWindowPosition`, `SetWindowMonitor`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetWindowOpacity`, `SetWindowFocused`, `GetWindowHandle`, `GetMonitorCount`, `GetCurrentMonitor`, `GetMonitorPosition`, `GetMonitorWidth`, `GetMonitorHeight`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `GetMonitorRefreshRate`, `GetWindowPosition`, `GetWindowScaleDPI`, `GetMonitorName`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `EnableEventWaiting`, `DisableEventWaiting`, `ShowCursor`, `HideCursor`, `IsCursorHidden`, `EnableCursor`, `DisableCursor`, `IsCursorOnScreen`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `TakeScreenshot`, `OpenURL`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `IsFileExtension`, `GetFileLength`, `GetFileExtension`, `GetFileName`, `GetFileNameWithoutExt`, `GetDirectoryPath`, `GetPrevDirectoryPath`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `IsFileNameValid`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `CompressData`, `DecompressData`, `EncodeDataBase64`, `DecodeDataBase64`, `ComputeCRC32`, `ComputeMD5`, `ComputeSHA1`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `SetGamepadMappings`, `SetGamepadVibration`, `SetMousePosition`, `SetMouseOffset`, `SetMouseScale`, `GetMouseWheelMoveV`, `SetMouseCursor`, `GetTouchPointId`, `UpdateCameraPro`, `LoadImage`, `LoadImageRaw`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `IsImageValid`, `UnloadImage`, `ExportImage`, `ExportImageToMemory`, `ExportImageAsCode`, `GenImageColor`, `GenImageGradientLinear`, `GenImageGradientRadial`, `GenImageGradientSquare`, `GenImageChecked`, `GenImageWhiteNoise`, `GenImagePerlinNoise`, `GenImageCellular`, `GenImageText`, `ImageCopy`, `ImageFromImage`, `ImageFromChannel`, `ImageText`, `ImageTextEx`, `ImageFormat`, `ImageToPOT`, `ImageCrop`, `ImageAlphaCrop`, `ImageAlphaClear`, `ImageAlphaMask`, `ImageAlphaPremultiply`, `ImageBlurGaussian`, `ImageKernelConvolution`, `ImageResize`, `ImageResizeNN`, `ImageResizeCanvas`, `ImageMipmaps`, `ImageDither`, `ImageFlipVertical`, `ImageFlipHorizontal`, `ImageRotate`, `ImageRotateCW`, `ImageRotateCCW`, `ImageColorTint`, `ImageColorInvert`, `ImageColorGrayscale`, `ImageColorContrast`, `ImageColorBrightness`, `ImageColorReplace`, `LoadImageColors`, `LoadImagePalette`, `UnloadImageColors`, `UnloadImagePalette`, `GetImageAlphaBorder`, `GetImageColor`, `ImageClearBackground`, `ImageDrawPixel`, `ImageDrawPixelV`, `ImageDrawLine`, `ImageDrawLineV`, `ImageDrawLineEx`, `ImageDrawCircle`, `ImageDrawCircleV`, `ImageDrawCircleLines`, `ImageDrawCircleLinesV`, `ImageDrawRectangle`, `ImageDrawRectangleV`, `ImageDrawRectangleRec`, `ImageDrawRectangleLines`, `ImageDrawTriangle`, `ImageDrawTriangleEx`, `ImageDrawTriangleLines`, `ImageDrawTriangleFan`, `ImageDrawTriangleStrip`, `ImageDraw`, `ImageDrawText`, `ImageDrawTextEx`, `LoadTextureFromImage`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `SetTextureWrap`, `DrawTextureNPatch`, `ColorIsEqual`, `ColorToInt`, `ColorToHSV`, `ColorFromHSV`, `ColorTint`, `ColorBrightness`, `ColorContrast`, `ColorAlphaBlend`, `ColorLerp`, `GetColor`, `GetPixelColor`, `SetPixelColor`, `GetPixelDataSize`, `GetFontDefault`, `LoadFont`, `LoadFontEx`, `LoadFontFromImage`, `LoadFontFromMemory`, `IsFontValid`, `LoadFontData`, `GenImageFontAtlas`, `UnloadFontData`, `UnloadFont`, `ExportFontAsCode`, `DrawTextEx`, `DrawTextPro`, `DrawTextCodepoint`, `DrawTextCodepoints`, `SetTextLineSpacing`, `MeasureTextEx`, `GetGlyphIndex`, `GetGlyphInfo`, `GetGlyphAtlasRec`, `LoadUTF8`, `UnloadUTF8`, `LoadCodepoints`, `UnloadCodepoints`, `GetCodepointCount`, `GetCodepoint`, `GetCodepointNext`, `GetCodepointPrevious`, `CodepointToUTF8`, `TextCopy`, `TextIsEqual`, `TextLength`, `TextSubtext`, `TextReplace`, `TextInsert`, `TextJoin`, `TextSplit`, `TextAppend`, `TextFindIndex`, `TextToUpper`, `TextToLower`, `TextToPascal`, `TextToSnake`, `TextToCamel`, `TextToInteger`, `TextToFloat`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`, `LoadWave`, `LoadWaveFromMemory`, `IsWaveValid`, `LoadSoundFromWave`, `LoadSoundAlias`, `UpdateSound`, `UnloadWave`, `UnloadSoundAlias`, `ExportWave`, `ExportWaveAsCode`, `PauseSound`, `ResumeSound`, `WaveCopy`, `WaveCrop`, `WaveFormat`, `LoadWaveSamples`, `UnloadWaveSamples`, `LoadMusicStreamFromMemory`, `SeekMusicStream`, `GetMusicTimeLength`, `GetMusicTimePlayed`, `LoadAudioStream`, `IsAudioStreamValid`, `UnloadAudioStream`, `UpdateAudioStream`, `IsAudioStreamProcessed`, `PlayAudioStream`, `PauseAudioStream`, `ResumeAudioStream`, `IsAudioStreamPlaying`, `StopAudioStream`, `SetAudioStreamVolume`, `SetAudioStreamPitch`, `SetAudioStreamPan`, `SetAudioStreamBufferSizeDefault`, `SetAudioStreamCallback`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ## Raymath
 

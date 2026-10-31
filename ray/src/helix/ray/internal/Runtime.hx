@@ -72,7 +72,14 @@ class Runtime {
 	/** The keys pressed this frame, oldest first, read by `GetKeyPressed`. */
 	public static final keysPressed:Array<Int> = [];
 
+	/** The keys the OS repeated this frame, read by `IsKeyPressedRepeat`. */
+	public static final keysRepeated:Array<Int> = [];
+
+	/** The characters typed this frame, as codepoints, oldest first, read by `GetCharPressed`. */
+	public static final charsPressed:Array<Int> = [];
+
 	static var keyboardService:Null<Keyboard> = null;
+	static var keyboardAdapter:Null<helix.platform.IKeyboard> = null;
 	static var mouseService:Null<Mouse> = null;
 	static var touchService:Null<Touch> = null;
 	static var gamepadsService:Null<Gamepads> = null;
@@ -208,7 +215,12 @@ class Runtime {
 			return;
 		}
 		var label = ["", "TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"][level < 7 ? level : 4];
-		haxe.Log.trace('$label: $text', null);
+		// The line alone, as raylib prints it: a trace without a position starts "??" natively.
+		#if js
+		js.Browser.console.log('$label: $text');
+		#else
+		Sys.println('$label: $text');
+		#end
 	}
 
 	/** Calls a function at the next poll: an answer that is ready now, given later, as every answer is.
@@ -361,13 +373,21 @@ class Runtime {
 	public static function keyboard():Keyboard {
 		if (keyboardService == null) {
 			#if js
-			keyboardService = new Keyboard(events, new helix.platform.adapters.keyboard.dom.DomKeyboardAdapter({events: cast events}));
+			keyboardAdapter = new helix.platform.adapters.keyboard.dom.DomKeyboardAdapter({events: cast events});
 			#else
-			keyboardService = new Keyboard(events, new helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapter({events: cast events}));
+			keyboardAdapter = new helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapter({events: cast events});
 			#end
+			keyboardService = new Keyboard(events, keyboardAdapter);
 			devices.push(keyboardService);
 		}
 		return keyboardService;
+	}
+
+	/** Turns typed text on, so the characters typed arrive in `charsPressed`; raylib reads them always, helix-ray once asked for, as a
+		phone shows its keyboard while text is on. */
+	public static function typing():Void {
+		keyboard();
+		keyboardAdapter.textInput = true;
 	}
 
 	/** Gets the mouse, made when first asked for, with the touch, as raylib takes the first finger for the mouse. */
@@ -467,6 +487,8 @@ class Runtime {
 		}
 		events.poll();
 		keysPressed.resize(0);
+		keysRepeated.resize(0);
+		charsPressed.resize(0);
 		resized = false;
 		for (event in events.events)
 			switch event {
@@ -476,6 +498,11 @@ class Runtime {
 					resized = true;
 				case KeyDown(key, false):
 					keysPressed.push(key);
+				case KeyDown(key, true):
+					keysRepeated.push(key);
+				case Text(text):
+					for (c in new haxe.iterators.StringIteratorUnicode(text))
+						charsPressed.push(c);
 				case _:
 			}
 		for (device in devices)
