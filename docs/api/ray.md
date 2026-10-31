@@ -246,23 +246,30 @@ var image:Image
 
 *class* in [`ray/src/helix/ray/Image.hx`](../../ray/src/helix/ray/Image.hx), `import helix.ray.Image;`
 
-raylib's `Image` (raylib.h): not in helix-ray yet; its fields are raylib's. Image, pixel data stored in CPU memory (RAM).
+Represents raylib's `Image`: pixels in memory, in one of raylib's pixel formats.
+
+The bytes are laid out as raylib's are: rows top first, each pixel `GetPixelDataSize(1, 1, format)` bytes; 16-bit values (the packed formats, the half floats) and 32-bit floats little-endian. An image with mipmaps holds its smaller levels after it, each half the size of the last. The `Image*` functions change an image in place, as raylib's do through its pointer: its fields are replaced.
 
 ```haxe
-function new()
-var data:Dynamic
+function new(?data:haxe.io.Bytes, ?width:Int = 0, ?height:Int = 0, ?mipmaps:Int = 0, ?format:Int = 0)
+var data:Null<haxe.io.Bytes>
 var width:Int
 var height:Int
 var mipmaps:Int
 var format:Int
 ```
 
-- `new`: Creates one, its fields zero, empty or null.
-- `data`: Image raw data.
-- `width`: Image base width.
-- `height`: Image base height.
-- `mipmaps`: Mipmap levels, 1 by default.
-- `format`: Data format (PixelFormat type).
+- `new`: Creates an image's record. Its fields are zero and its data null unless given, as raylib's `Image image = { 0 }` is; images are made by the `GenImage*` functions and loaded by `LoadImageAsync`.
+  - `data`: Optional. The pixels.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `mipmaps`: The number of mipmap levels.
+  - `format`: The pixel format (`PIXELFORMAT_*`).
+- `data`: Gets or sets the pixels, or null for none.
+- `width`: Gets or sets the width, in pixels.
+- `height`: Gets or sets the height, in pixels.
+- `mipmaps`: Gets or sets the number of mipmap levels, 1 for the image alone.
+- `format`: Gets or sets the pixel format (`PIXELFORMAT_*`).
 
 ## Material
 
@@ -448,10 +455,15 @@ var frameCount(default, null):Int
 
 *class* in [`ray/src/helix/ray/NPatchInfo.hx`](../../ray/src/helix/ray/NPatchInfo.hx), `import helix.ray.NPatchInfo;`
 
-raylib's `NPatchInfo` (raylib.h): not in helix-ray yet; its fields are raylib's. NPatchInfo, n-patch layout info.
+Represents raylib's `NPatchInfo`: how `DrawTextureNPatch` cuts a texture into a nine-patch or a three-patch.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-function new()
+{?source:Rectangle, ?left:Int, ?top:Int, ?right:Int, ?bottom:Int, ?layout:Int}
+```
+
+```haxe
 var source:Rectangle
 var left:Int
 var top:Int
@@ -460,13 +472,12 @@ var bottom:Int
 var layout:Int
 ```
 
-- `new`: Creates one, its fields zero, empty or null.
-- `source`: Texture source rectangle.
-- `left`: Left border offset.
-- `top`: Top border offset.
-- `right`: Right border offset.
-- `bottom`: Bottom border offset.
-- `layout`: Layout of the n-patch: 3x3, 1x3 or 3x1.
+- `source`: Gets or sets the patch's rectangle on the texture, in texels.
+- `left`: Gets or sets the left border's width, in texels.
+- `top`: Gets or sets the top border's height, in texels.
+- `right`: Gets or sets the right border's width, in texels.
+- `bottom`: Gets or sets the bottom border's height, in texels.
+- `layout`: Gets or sets the layout (`NPATCH_*`): nine patches, or three across or down.
 
 ## Quaternion
 
@@ -526,7 +537,7 @@ var normal:Vector3
 
 Provides raylib 5.5's API, as `raylib.h` names it, over helix-platform and helix-services: a program writes raylib, and it runs in a page and natively.
 
-A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a frame. A page can't wait for a file, so on every target files are loaded by helix-ray's own `...Async` loads; raylib's `LoadTexture`, `LoadModel`, `LoadSound`, `LoadFileData` and `LoadFileText` don't compile, naming the load to use. A file loaded twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here by module; what raylib has and helix-ray doesn't refuses to compile, naming itself.
+A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a frame. A page can't wait for a file, so on every target files are loaded by helix-ray's own `...Async` loads; raylib's `LoadTexture`, `LoadImage`, `LoadModel`, `LoadSound`, `LoadFileData` and `LoadFileText` don't compile, naming the load to use. A file loaded twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here by module; what raylib has and helix-ray doesn't refuses to compile, naming itself.
 
 ### Keyboard keys (US keyboard layout) (KeyboardKey)
 
@@ -1436,6 +1447,7 @@ static function GetFileNameWithoutExt(filePath:String):String
 static function GetDirectoryPath(filePath:String):String
 static function GetPrevDirectoryPath(dirPath:String):String
 static function IsFileNameValid(fileName:String):Bool
+static function CompressData(data:haxe.io.Bytes, dataSize:Int, compDataSize:Array<Int>):haxe.io.Bytes
 static function DecompressData(compData:haxe.io.Bytes, compDataSize:Int, dataSize:Array<Int>):haxe.io.Bytes
 static function EncodeDataBase64(data:haxe.io.Bytes, dataSize:Int, outputSize:Array<Int>):String
 static function DecodeDataBase64(data:haxe.io.Bytes, outputSize:Array<Int>):haxe.io.Bytes
@@ -1446,6 +1458,7 @@ static function SetLoadFileDataCallback(callback:Null<(fileName:String) -> Null<
 static function SetSaveFileDataCallback(callback:Null<(fileName:String, data:haxe.io.Bytes, dataSize:Int) -> Bool>):Void
 static function SetLoadFileTextCallback(callback:Null<(fileName:String) -> Null<String>>):Void
 static function SetSaveFileTextCallback(callback:Null<(fileName:String, text:String) -> Bool>):Void
+static function TakeScreenshot(fileName:String):Void
 static function TraceLog(logLevel:Int, text:String):Void
 static function SetTraceLogLevel(logLevel:Int):Void
 static function SetTraceLogCallback(callback:Null<(logLevel:Int, text:String) -> Void>):Void
@@ -1701,6 +1714,11 @@ static function EndScissorMode():Void
 - `IsFileNameValid`: Returns whether a file name could name a file on any system: none of `< > : " / \ | ? *` or a control character, and not only dots.
   - `fileName`: The file name, without a directory.
   - returns: True when it could; true for null or "", as raylib's is.
+- `CompressData`: Compresses bytes as raylib's `CompressData` does, byte for byte: raw DEFLATE (no zlib header), sdefl's level 8.
+  - `data`: The bytes.
+  - `dataSize`: How many of them.
+  - `compDataSize`: Its first element is set to the compressed size.
+  - returns: The compressed bytes.
 - `DecompressData`: Returns DEFLATE data decompressed: a raw stream with no zlib header, as raylib's `CompressData` makes. Like raylib's, it gives at most 64 MB.
   - `compData`: The compressed bytes.
   - `compDataSize`: How many of them.
@@ -1735,6 +1753,8 @@ static function EndScissorMode():Void
   - `callback`: Returns a file's text, or null; null for none.
 - `SetSaveFileTextCallback`: Writes text files through the program from now on (`SaveFileText`).
   - `callback`: Writes a file's text, returning whether it did; null for none.
+- `TakeScreenshot`: Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImage` writes it by the name's extension (".png", ".qoi" or ".raw"): in a page it is downloaded, as raylib's web build does; natively it is written to the working directory, as raylib writes it there, under the name's file name. raylib's is taken from the frame drawn last, before it is shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as raylib's is.
+  - `fileName`: The file name; a directory before it is dropped, and a name with `'` is refused, as raylib's is.
 - `TraceLog`: Writes a message to the log, when its level is at least `SetTraceLogLevel`'s. raylib formats its arguments as printf does; here the text is written as it is (Haxe's string interpolation builds it).
   - `logLevel`: The level (`LOG_*`).
   - `text`: The message.
@@ -2291,8 +2311,83 @@ static function UnloadRenderTexture(target:RenderTexture2D):Void
 static function BeginTextureMode(target:RenderTexture2D):Void
 static function EndTextureMode():Void
 static function SetTextureFilter(texture:Texture2D, filter:Int):Void
-static function LoadTextureFromImage(image:Image):Texture2D
+static function IsImageValid(image:Image):Bool
 static function UnloadImage(image:Image):Void
+static function ExportImage(image:Image, fileName:String):Bool
+static function ExportImageToMemory(image:Image, fileType:String, fileSize:Array<Int>):haxe.io.Bytes
+static function ExportImageAsCode(image:Image, fileName:String):Bool
+static function GenImageColor(width:Int, height:Int, color:Color):Image
+static function GenImageGradientLinear(width:Int, height:Int, direction:Int, start:Color, end:Color):Image
+static function GenImageGradientRadial(width:Int, height:Int, density:Float, inner:Color, outer:Color):Image
+static function GenImageGradientSquare(width:Int, height:Int, density:Float, inner:Color, outer:Color):Image
+static function GenImageChecked(width:Int, height:Int, checksX:Int, checksY:Int, col1:Color, col2:Color):Image
+static function GenImageWhiteNoise(width:Int, height:Int, factor:Float):Image
+static function GenImagePerlinNoise(width:Int, height:Int, offsetX:Int, offsetY:Int, scale:Float):Image
+static function GenImageCellular(width:Int, height:Int, tileSize:Int):Image
+static function GenImageText(width:Int, height:Int, text:String):Image
+static function ImageCopy(image:Image):Image
+static function ImageFromImage(image:Image, rec:Rectangle):Image
+static function ImageFromChannel(image:Image, selectedChannel:Int):Image
+static function ImageText(text:String, fontSize:Int, color:Color):Image
+static function ImageTextEx(font:Font, text:String, fontSize:Float, spacing:Float, tint:Color):Image
+static function ImageFormat(image:Image, newFormat:Int):Void
+static function ImageToPOT(image:Image, fill:Color):Void
+static function ImageCrop(image:Image, crop:Rectangle):Void
+static function ImageAlphaCrop(image:Image, threshold:Float):Void
+static function ImageAlphaClear(image:Image, color:Color, threshold:Float):Void
+static function ImageAlphaMask(image:Image, alphaMask:Image):Void
+static function ImageAlphaPremultiply(image:Image):Void
+static function ImageBlurGaussian(image:Image, blurSize:Int):Void
+static function ImageKernelConvolution(image:Image, kernel:Array<Float>, kernelSize:Int):Void
+static function ImageResize(image:Image, newWidth:Int, newHeight:Int):Void
+static function ImageResizeNN(image:Image, newWidth:Int, newHeight:Int):Void
+static function ImageResizeCanvas(image:Image, newWidth:Int, newHeight:Int, offsetX:Int, offsetY:Int, fill:Color):Void
+static function ImageMipmaps(image:Image):Void
+static function ImageDither(image:Image, rBpp:Int, gBpp:Int, bBpp:Int, aBpp:Int):Void
+static function ImageFlipVertical(image:Image):Void
+static function ImageFlipHorizontal(image:Image):Void
+static function ImageRotate(image:Image, degrees:Int):Void
+static function ImageRotateCW(image:Image):Void
+static function ImageRotateCCW(image:Image):Void
+static function ImageColorTint(image:Image, color:Color):Void
+static function ImageColorInvert(image:Image):Void
+static function ImageColorGrayscale(image:Image):Void
+static function ImageColorContrast(image:Image, contrast:Float):Void
+static function ImageColorBrightness(image:Image, brightness:Int):Void
+static function ImageColorReplace(image:Image, color:Color, replace:Color):Void
+static function LoadImageColors(image:Image):Array<Color>
+static function LoadImagePalette(image:Image, maxPaletteSize:Int, colorCount:Array<Int>):Array<Color>
+static function UnloadImageColors(colors:Array<Color>):Void
+static function UnloadImagePalette(colors:Array<Color>):Void
+static function GetImageAlphaBorder(image:Image, threshold:Float):Rectangle
+static function GetImageColor(image:Image, x:Int, y:Int):Color
+static function ImageClearBackground(dst:Image, color:Color):Void
+static function ImageDrawPixel(dst:Image, posX:Int, posY:Int, color:Color):Void
+static function ImageDrawPixelV(dst:Image, position:Vector2, color:Color):Void
+static function ImageDrawLine(dst:Image, startPosX:Int, startPosY:Int, endPosX:Int, endPosY:Int, color:Color):Void
+static function ImageDrawLineV(dst:Image, start:Vector2, end:Vector2, color:Color):Void
+static function ImageDrawLineEx(dst:Image, start:Vector2, end:Vector2, thick:Int, color:Color):Void
+static function ImageDrawCircle(dst:Image, centerX:Int, centerY:Int, radius:Int, color:Color):Void
+static function ImageDrawCircleV(dst:Image, center:Vector2, radius:Int, color:Color):Void
+static function ImageDrawCircleLines(dst:Image, centerX:Int, centerY:Int, radius:Int, color:Color):Void
+static function ImageDrawCircleLinesV(dst:Image, center:Vector2, radius:Int, color:Color):Void
+static function ImageDrawRectangle(dst:Image, posX:Int, posY:Int, width:Int, height:Int, color:Color):Void
+static function ImageDrawRectangleV(dst:Image, position:Vector2, size:Vector2, color:Color):Void
+static function ImageDrawRectangleRec(dst:Image, rec:Rectangle, color:Color):Void
+static function ImageDrawRectangleLines(dst:Image, rec:Rectangle, thick:Int, color:Color):Void
+static function ImageDrawTriangle(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
+static function ImageDrawTriangleEx(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
+static function ImageDrawTriangleLines(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
+static function ImageDrawTriangleFan(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
+static function ImageDrawTriangleStrip(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
+static function ImageDraw(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectangle, tint:Color):Void
+static function ImageDrawText(dst:Image, text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void
+static function ImageDrawTextEx(dst:Image, font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
+static function LoadTextureFromImage(image:Image):Texture2D
+static function SetTextureWrap(texture:Texture2D, wrap:Int):Void
+static function DrawTextureNPatch(texture:Texture2D, nPatchInfo:NPatchInfo, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void
+static function GetPixelColor(srcPtr:haxe.io.Bytes, format:Int, ?offset:Int = 0):Color
+static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?offset:Int = 0):Void
 ```
 
 - `UnloadTexture`: Frees a texture: one load of its file, the GPU's copy with the last.
@@ -2401,11 +2496,350 @@ static function UnloadImage(image:Image):Void
 - `SetTextureFilter`: Sets how a texture is sampled when drawn larger or smaller: `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel, and the others blend the nearest four, as `TEXTURE_FILTER_BILINEAR` does (there are no mipmaps here).
   - `texture`: The texture.
   - `filter`: The filter (`TEXTURE_FILTER_*`).
-- `LoadTextureFromImage`: Makes a texture of an image. Its pixels are 8-bit grayscale, grayscale and alpha, RGB or RGBA (`PIXELFORMAT_UNCOMPRESSED_*`); another format gives no texture, and says so.
+- `IsImageValid`: Returns whether an image holds pixels: data, a size, a format and a mipmap level.
   - `image`: The image.
-  - returns: The texture.
+  - returns: True when it does.
 - `UnloadImage`: Frees an image's pixels.
   - `image`: The image.
+- `ExportImage`: Writes an image to a file through `SaveFileData`, as raylib's default build writes it: ".png" (any uncompressed format; a format other than 8-bit grayscale, grayscale and alpha, RGB or RGBA is written as RGBA), ".qoi" (RGB or RGBA alone) or ".raw" (the pixels as they are). The file is kept as `SaveFileData` keeps it; `TakeScreenshot` writes a real file.
+  - `image`: The image.
+  - `fileName`: The file; its extension chooses the format.
+  - returns: True when it was written.
+- `ExportImageToMemory`: Returns an image encoded as a file in memory: ".png" alone, as raylib's. Like raylib's, an image's bytes are read as 8-bit gray, gray and alpha, RGB or RGBA by its format, and as RGBA for any other format, which a 16-bit format has too few of: those it lacks read as 0.
+  - `image`: The image.
+  - `fileType`: ".png" or ".PNG".
+  - `fileSize`: Its first element is set to the file's size, 0 for none.
+  - returns: The file, or null for another type or an empty image.
+- `ExportImageAsCode`: Writes an image as a C header through `SaveFileText`, as raylib's does: its size and format as defines, and its pixels (the first level's) as an array of bytes, 20 a line.
+  - `image`: The image.
+  - `fileName`: The file; its name, upper case, names the defines and the array.
+  - returns: True when it was written.
+- `GenImageColor`: Returns an image of one color, RGBA.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `color`: The color.
+  - returns: The image.
+- `GenImageGradientLinear`: Returns a gradient from one color to another, RGBA.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `direction`: The direction, in degrees: 0 top to bottom, 90 left to right.
+  - `start`: The color it starts from.
+  - `end`: The color it ends at.
+  - returns: The image.
+- `GenImageGradientRadial`: Returns a round gradient out from the middle, RGBA.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `density`: How far the inner color holds, 0 (the middle alone) to 1 (out to the nearer edge).
+  - `inner`: The color in the middle.
+  - `outer`: The color at the edge and beyond.
+  - returns: The image.
+- `GenImageGradientSquare`: Returns a square gradient out from the middle, RGBA.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `density`: How far the inner color holds, 0 (the middle alone) to 1 (out to the edges).
+  - `inner`: The color in the middle.
+  - `outer`: The color at the edges.
+  - returns: The image.
+- `GenImageChecked`: Returns a checkerboard of two colors, RGBA. A square size under 1 is taken as 1, where raylib's divides by zero.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `checksX`: Each square's width, in pixels.
+  - `checksY`: Each square's height, in pixels.
+  - `col1`: The top-left square's color.
+  - `col2`: The color of the squares beside it.
+  - returns: The image.
+- `GenImageWhiteNoise`: Returns white noise, RGBA: each pixel white or black, drawn from `GetRandomValue`, one number a pixel, so `SetRandomSeed` repeats it.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `factor`: The chance of white, 0 to 1.
+  - returns: The image.
+- `GenImagePerlinNoise`: Returns Perlin noise in gray, RGBA: stb_perlin's fractal noise, 6 octaves.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `offsetX`: How far it is moved left, in pixels.
+  - `offsetY`: How far it is moved up, in pixels.
+  - `scale`: How much of the noise it shows: larger is finer.
+  - returns: The image.
+- `GenImageCellular`: Returns cellular noise in gray, RGBA: each pixel's distance to the nearest of points scattered one a tile, drawn from `GetRandomValue`, so `SetRandomSeed` repeats it. A tile size under 1 is taken as 1, where raylib's divides by zero.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `tileSize`: The tiles' size, in pixels: bigger is bigger cells.
+  - returns: The image.
+- `GenImageText`: Returns an image of text's bytes, grayscale: its UTF-8, a byte a pixel, rows top first, the rest black.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `text`: The text.
+  - returns: The image.
+- `ImageCopy`: Returns a copy of an image, its mipmaps too.
+  - `image`: The image.
+  - returns: The copy.
+- `ImageFromImage`: Returns a rectangle of an image, in its format. A row reaching past the image's right edge reads on into the next row, as raylib's does; what lies past the image's pixels reads as zeros, where raylib's reads past them.
+  - `image`: The image.
+  - `rec`: The rectangle, in pixels, cut to whole pixels.
+  - returns: The image.
+- `ImageFromChannel`: Returns one channel of an image as grayscale: 0 red, 1 green, 2 blue, 3 alpha. A channel the format lacks is taken as raylib takes it, with its warning: a one-channel format's only channel, gray and alpha's alpha, an RGB format's red.
+  - `image`: The image.
+  - `selectedChannel`: The channel.
+  - returns: The image.
+- `ImageText`: Returns text in raylib's default font, as an image, RGBA. A size under 10 is drawn at 10, letters a tenth of the size apart.
+  - `text`: The text.
+  - `fontSize`: The height of a line, in pixels.
+  - `color`: The color.
+  - returns: The image.
+- `ImageTextEx`: Returns text in a font, as an image, RGBA, laid out as raylib's: at the font's size, each glyph's image drawn tinted, then scaled to the size, nearest for the default font. A newline starts a line one and a half of the font's size down, though the image's height counts each line as the size and `SetTextLineSpacing`'s spacing, as raylib's does. Another font is scaled by `ImageResize`, which isn't raylib's.
+  - `font`: The font, its glyphs' images drawn.
+  - `text`: The text.
+  - `fontSize`: The height of a line, in pixels.
+  - `spacing`: The space between letters, at the font's size.
+  - `tint`: The color the glyphs are multiplied by.
+  - returns: The image.
+- `ImageFormat`: Converts an image to another pixel format, through floats as raylib's does: to grayscale by luminance (0.299 red, 0.587 green, 0.114 blue), R32 and R16 to their luminance, 16-bit channels rounded. An image with mipmaps has them made again.
+  - `image`: The image.
+  - `newFormat`: The format (`PIXELFORMAT_UNCOMPRESSED_*`); a compressed one is refused, with a warning.
+- `ImageToPOT`: Puts an image on the smallest canvas whose sides are powers of two, at its top-left.
+  - `image`: The image.
+  - `fill`: The color of the canvas around it.
+- `ImageCrop`: Crops an image to a rectangle, cut to the image; one whose corner is past the image's right or bottom edge leaves it unchanged, with a warning. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+  - `image`: The image.
+  - `crop`: The rectangle, in pixels.
+- `ImageAlphaCrop`: Crops an image to the pixels whose alpha is over a threshold, when any is.
+  - `image`: The image.
+  - `threshold`: The threshold, 0 to 1.
+- `ImageAlphaClear`: Sets every pixel whose alpha is at or under a threshold to a color, as raylib's does for its formats with alpha: gray and alpha, R5G5B5A1 (the alpha bit against a threshold of 0.5; the color's channels, unscaled, are cut to 5 bits), R4G4B4A4 (likewise to 4 bits), RGBA and its 32-bit and 16-bit float forms. Another format is unchanged.
+  - `image`: The image.
+  - `color`: The color.
+  - `threshold`: The threshold, 0 to 1.
+- `ImageAlphaMask`: Sets an image's alpha from another image of the same size, its grayscale: a grayscale image becomes gray and alpha, any other RGBA. A mask of another size changes nothing, with a warning.
+  - `image`: The image.
+  - `alphaMask`: The mask.
+- `ImageAlphaPremultiply`: Multiplies each pixel's red, green and blue by its alpha, rounding down; the image keeps its format.
+  - `image`: The image.
+- `ImageBlurGaussian`: Blurs an image, as raylib's does: an approximate Gaussian, four passes of a box blur across and down, over premultiplied alpha. A box reaching past the image's last pixel reads 0 there, where raylib's reads past its pixels.
+  - `image`: The image.
+  - `blurSize`: How far each box reaches either side of a pixel, in pixels.
+- `ImageKernelConvolution`: Applies a square kernel to an image, as raylib's does: each channel, alpha too, the sum of the pixels around it as fractions times the weights; red, green and blue clamped to 0 to 1, alpha not. A pixel past the left or right edge is taken from the row beside, one past the top or bottom is 0. A count that isn't square changes nothing, with a warning.
+  - `image`: The image.
+  - `kernel`: The weights, rows top first.
+  - `kernelSize`: How many: 9 for 3 by 3, 25 for 5 by 5.
+- `ImageResize`: Resizes an image. Unlike raylib's, whose `stb_image_resize2` this library doesn't have, it is helix-services' `Bicubic` (Catmull-Rom, alpha-weighted), so the pixels aren't raylib's; an 8-bit format is resized in its channels, any other through RGBA, as raylib's.
+  - `image`: The image.
+  - `newWidth`: The width, in pixels.
+  - `newHeight`: The height, in pixels.
+- `ImageResizeNN`: Resizes an image to the nearest pixels, as raylib's does, through RGBA; it keeps its format.
+  - `image`: The image.
+  - `newWidth`: The width, in pixels.
+  - `newHeight`: The height, in pixels.
+- `ImageResizeCanvas`: Puts an image on a canvas of another size, in its format: the canvas filled with a color as `SetPixelColor` writes it (a float format's canvas stays zero), the image at an offset, what falls outside cropped. A canvas the image's size leaves it unchanged.
+  - `image`: The image.
+  - `newWidth`: The canvas's width, in pixels.
+  - `newHeight`: The canvas's height, in pixels.
+  - `offsetX`: Where the image's left edge goes; negative crops its left.
+  - `offsetY`: Where its top edge goes.
+  - `fill`: The canvas's color.
+- `ImageMipmaps`: Makes an image's mipmaps, down to 1 by 1, after its pixels, in its format; levels it has are kept. Each is made by `ImageResize` from the last, so they aren't raylib's.
+  - `image`: The image.
+- `ImageDither`: Dithers an image to 16 bits a pixel or fewer (Floyd-Steinberg), as raylib's does: R5G6B5, R5G5B5A1 or R4G4B4A4 when the bits are one of those, else format 0 with the bits packed in 16, and a warning. More than 16 bits changes nothing, with a warning.
+  - `image`: The image.
+  - `rBpp`: Red's bits.
+  - `gBpp`: Green's bits.
+  - `bBpp`: Blue's bits.
+  - `aBpp`: Alpha's bits.
+- `ImageFlipVertical`: Turns an image upside down, in its format. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+  - `image`: The image.
+- `ImageFlipHorizontal`: Mirrors an image left to right, in its format. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+  - `image`: The image.
+- `ImageRotate`: Turns an image by an angle, on a canvas big enough to hold it, clear around it: each byte of a pixel blends the four it falls between, as raylib's does in every format.
+  - `image`: The image.
+  - `degrees`: The angle, in degrees clockwise.
+- `ImageRotateCW`: Turns an image a quarter turn clockwise, in its format.
+  - `image`: The image.
+- `ImageRotateCCW`: Turns an image a quarter turn counterclockwise, in its format.
+  - `image`: The image.
+- `ImageColorTint`: Multiplies each pixel by a color, channel by channel, alpha too; the image keeps its format.
+  - `image`: The image.
+  - `color`: The color; `WHITE` keeps it unchanged.
+- `ImageColorInvert`: Inverts each pixel's red, green and blue; the image keeps its format.
+  - `image`: The image.
+- `ImageColorGrayscale`: Makes an image grayscale, as raylib's does: it becomes `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`, its alpha dropped.
+  - `image`: The image.
+- `ImageColorContrast`: Changes an image's contrast; the image keeps its format.
+  - `image`: The image.
+  - `contrast`: -100 (all mid-gray) to 100; 0 leaves it unchanged.
+- `ImageColorBrightness`: Changes an image's brightness, adding to red, green and blue; the image keeps its format. A channel taken below 0 becomes 1, as raylib's does.
+  - `image`: The image.
+  - `brightness`: -255 to 255.
+- `ImageColorReplace`: Changes every pixel of one color to another; the image keeps its format.
+  - `image`: The image.
+  - `color`: The color changed, alpha too.
+  - `replace`: The color it becomes.
+- `LoadImageColors`: Returns an image's pixels as colors, as raylib's reads each format: a 5-bit channel times 8, a 6-bit times 4, a 4-bit times 17; R32 and R16 as red alone.
+  - `image`: The image.
+  - returns: The colors, rows top first, or null for an image 0 wide or high.
+- `LoadImagePalette`: Returns an image's colors, each once, in the order first met; clear pixels are skipped.
+  - `image`: The image.
+  - `maxPaletteSize`: The most colors.
+  - `colorCount`: Its first element is set to how many colors were found.
+  - returns: `maxPaletteSize` colors, those found first, the rest `BLANK`; null for an image 0 wide or high.
+- `UnloadImageColors`: Frees colors `LoadImageColors` gave. There is nothing to free here.
+  - `colors`: The colors.
+- `UnloadImagePalette`: Frees colors `LoadImagePalette` gave. There is nothing to free here.
+  - `colors`: The colors.
+- `GetImageAlphaBorder`: Returns the smallest rectangle holding every pixel whose alpha is over a threshold.
+  - `image`: The image.
+  - `threshold`: The threshold, 0 to 1.
+  - returns: The rectangle, in pixels; all zero when no pixel is over it.
+- `GetImageColor`: Returns a pixel's color, as `LoadImageColors` reads it but for raylib's R32G32B32A32 and R16G16B16A16, whose channels are each read from red. A pixel outside the image is clear black, with a warning.
+  - `image`: The image.
+  - `x`: The pixel's column.
+  - `y`: Its row.
+  - returns: The color.
+- `ImageClearBackground`: Fills an image with a color, in its format, as `ImageDrawPixel` writes it.
+  - `dst`: The image.
+  - `color`: The color.
+- `ImageDrawPixel`: Sets a pixel, in the image's format: grayscale by luminance, a 16-bit format's channels rounded, R5G5B5A1's alpha bit set over an alpha of 50. One outside the image is skipped.
+  - `dst`: The image.
+  - `posX`: The pixel's column.
+  - `posY`: Its row.
+  - `color`: The color.
+- `ImageDrawPixelV`: Sets a pixel, as `ImageDrawPixel` does, its position cut to whole pixels.
+  - `dst`: The image.
+  - `position`: The pixel.
+  - `color`: The color.
+- `ImageDrawLine`: Draws a line one pixel wide, from its start up to its end; the end pixel isn't drawn.
+  - `dst`: The image.
+  - `startPosX`: The start's column.
+  - `startPosY`: The start's row.
+  - `endPosX`: The end's column.
+  - `endPosY`: The end's row.
+  - `color`: The color.
+- `ImageDrawLineV`: Draws a line one pixel wide, its ends rounded to whole pixels.
+  - `dst`: The image.
+  - `start`: The start.
+  - `end`: The end.
+  - `color`: The color.
+- `ImageDrawLineEx`: Draws a line of a thickness: the line, and copies of it above and below for a line more across than down, left and right otherwise. Its ends are rounded to whole pixels.
+  - `dst`: The image.
+  - `start`: The start.
+  - `end`: The end.
+  - `thick`: The thickness, in pixels.
+  - `color`: The color.
+- `ImageDrawCircle`: Fills a circle.
+  - `dst`: The image.
+  - `centerX`: The middle's column.
+  - `centerY`: The middle's row.
+  - `radius`: The radius, in pixels.
+  - `color`: The color.
+- `ImageDrawCircleV`: Fills a circle, its middle cut to whole pixels.
+  - `dst`: The image.
+  - `center`: The middle.
+  - `radius`: The radius, in pixels.
+  - `color`: The color.
+- `ImageDrawCircleLines`: Outlines a circle, one pixel wide.
+  - `dst`: The image.
+  - `centerX`: The middle's column.
+  - `centerY`: The middle's row.
+  - `radius`: The radius, in pixels.
+  - `color`: The color.
+- `ImageDrawCircleLinesV`: Outlines a circle, one pixel wide, its middle cut to whole pixels.
+  - `dst`: The image.
+  - `center`: The middle.
+  - `radius`: The radius, in pixels.
+  - `color`: The color.
+- `ImageDrawRectangle`: Fills a rectangle; what falls outside the image is skipped.
+  - `dst`: The image.
+  - `posX`: The left edge.
+  - `posY`: The top edge.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `color`: The color.
+- `ImageDrawRectangleV`: Fills a rectangle, its corner and size cut to whole pixels.
+  - `dst`: The image.
+  - `position`: The top-left corner.
+  - `size`: The width and height.
+  - `color`: The color.
+- `ImageDrawRectangleRec`: Fills a rectangle, as raylib's does: cut to the image, then to whole pixels; one 0 wide still sets its top-left pixel.
+  - `dst`: The image.
+  - `rec`: The rectangle, in pixels.
+  - `color`: The color.
+- `ImageDrawRectangleLines`: Outlines a rectangle, the outline inside it.
+  - `dst`: The image.
+  - `rec`: The rectangle, in pixels.
+  - `thick`: The outline's thickness, in pixels.
+  - `color`: The color.
+- `ImageDrawTriangle`: Fills a triangle; its corners may go either way round.
+  - `dst`: The image.
+  - `v1`: The first corner.
+  - `v2`: The second corner.
+  - `v3`: The third corner.
+  - `color`: The color.
+- `ImageDrawTriangleEx`: Fills a triangle, each corner its own color, blended across it as raylib's does: each channel by the pixel's weights, each rounded down, so three corners of one color may not give it exactly.
+  - `dst`: The image.
+  - `v1`: The first corner.
+  - `v2`: The second corner.
+  - `v3`: The third corner.
+  - `c1`: The first corner's color.
+  - `c2`: The second corner's color.
+  - `c3`: The third corner's color.
+- `ImageDrawTriangleLines`: Outlines a triangle with three `ImageDrawLine`s, its corners cut to whole pixels.
+  - `dst`: The image.
+  - `v1`: The first corner.
+  - `v2`: The second corner.
+  - `v3`: The third corner.
+  - `color`: The color.
+- `ImageDrawTriangleFan`: Fills a fan of triangles, each from the first point to the next two.
+  - `dst`: The image.
+  - `points`: The points, the first the fan's middle.
+  - `pointCount`: How many; under 3 draws nothing.
+  - `color`: The color.
+- `ImageDrawTriangleStrip`: Fills a strip of triangles, each of three points in a row.
+  - `dst`: The image.
+  - `points`: The points.
+  - `pointCount`: How many; under 3 draws nothing.
+  - `color`: The color.
+- `ImageDraw`: Draws a rectangle of one image into a rectangle of another, tinted, blended over (raylib's `ColorAlphaBlend`), in their formats. A source with no alpha under an opaque tint is copied, the tint's color ignored, as raylib's is; a float destination is unchanged, as `SetPixelColor` writes none. A source rectangle of another whole-pixel size than the destination's is first resized by `ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them.
+  - `dst`: The image drawn into.
+  - `src`: The image drawn from.
+  - `srcRec`: The source rectangle, in its pixels, cut to it.
+  - `dstRec`: The destination rectangle.
+  - `tint`: The color the source is multiplied by; `WHITE` keeps it unchanged.
+- `ImageDrawText`: Draws text in raylib's default font into an image, letters 1 pixel apart, as `ImageDrawTextEx` draws it.
+  - `dst`: The image.
+  - `text`: The text.
+  - `posX`: The left edge.
+  - `posY`: The top edge.
+  - `fontSize`: The height of a line, in pixels.
+  - `color`: The color.
+- `ImageDrawTextEx`: Draws text in a font into an image: `ImageTextEx`'s image, drawn at a point.
+  - `dst`: The image.
+  - `font`: The font.
+  - `text`: The text.
+  - `position`: The top-left corner.
+  - `fontSize`: The height of a line, in pixels.
+  - `spacing`: The space between letters, at the font's size.
+  - `tint`: The color.
+- `LoadTextureFromImage`: Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, so the texture's format is `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and it has one level. A compressed format gives no texture, with a warning.
+  - `image`: The image.
+  - returns: The texture.
+- `SetTextureWrap`: Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT`, `TEXTURE_WRAP_CLAMP` (raylib's default) or `TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning.
+  - `texture`: The texture.
+  - `wrap`: The wrap (`TEXTURE_WRAP_*`).
+- `DrawTextureNPatch`: Draws a texture as a nine-patch (or a three-patch) into a rectangle, turned about an origin, as raylib's does: its corners kept, its edges and middle stretched; a rectangle smaller than the borders shrinks them and drops the middle.
+  - `texture`: The texture.
+  - `nPatchInfo`: The patch: its rectangle on the texture, its borders and its layout (`NPATCH_*`).
+  - `dest`: Where it goes; its x and y are where the origin lands.
+  - `origin`: The point it turns about, from dest's top-left corner.
+  - `rotation`: Clockwise, in degrees.
+  - `tint`: The color it is multiplied by.
+- `GetPixelColor`: Returns one pixel's color from pixels in a format, as raylib's does: 16-bit channels widened by integers, floats times 255. raylib's R5G5B5A1 blue takes in the alpha bit, as it does here. raylib takes a pointer to the pixel; here it is the pixels and the pixel's first byte.
+  - `srcPtr`: The pixels.
+  - `format`: Their format (`PIXELFORMAT_UNCOMPRESSED_*`).
+  - `offset`: Optional. The pixel's first byte; 0 when omitted.
+  - returns: The color; clear black for a compressed format.
+- `SetPixelColor`: Writes one pixel's color into pixels in a format, as raylib's does: grayscale by luminance, 16-bit channels rounded; a float format is left unchanged. raylib takes a pointer to the pixel; here it is the pixels and the pixel's first byte.
+  - `dstPtr`: The pixels.
+  - `color`: The color.
+  - `format`: Their format (`PIXELFORMAT_UNCOMPRESSED_*`).
+  - `offset`: Optional. The pixel's first byte; 0 when omitted.
 
 ### rtext: text
 
@@ -2426,6 +2860,7 @@ static function IsFontValid(font:Font):Bool
 static function UnloadFont(font:Font):Void
 static function UnloadFontData(glyphs:Array<GlyphInfo>, glyphCount:Int):Void
 static function GenImageFontAtlas(glyphs:Array<GlyphInfo>, glyphRecs:Array<Rectangle>, glyphCount:Int, fontSize:Int, padding:Int, packMethod:Int):Image
+static function LoadFontFromImage(image:Image, key:Color, firstChar:Int):Font
 static function DrawFPS(posX:Int, posY:Int):Void
 static function TextFormat(text:String, args:haxe.extern.Rest<Dynamic>):String
 static function TextIsEqual(text1:String, text2:String):Bool
@@ -2514,7 +2949,7 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
   - `font`: The font.
   - `codepoint`: The character.
   - returns: The rectangle, in texels.
-- `GetFontDefault`: Returns raylib's default font: 224 glyphs, Latin-1 from the space, 10 pixels high, on a texture made at its first use.
+- `GetFontDefault`: Returns raylib's default font: 224 glyphs, Latin-1 from the space, 10 pixels high, made at its first use as raylib makes it, each glyph's image its part of the font's image (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`, white), so `ImageText` draws with it. Its texture goes to the GPU when first drawn.
   - returns: The font.
 - `IsFontValid`: Returns whether a font holds glyphs: a size, glyphs, and their places on its texture.
   - `font`: The font.
@@ -2532,6 +2967,11 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
   - `padding`: The empty texels around each glyph.
   - `packMethod`: 0 packs rows in order; 1 packs by height, as raylib's skyline packer.
   - returns: The image.
+- `LoadFontFromImage`: Makes a font from an image of glyphs, as raylib's does: the glyphs in rows on a key color, the key's border before the first glyph giving the space between glyphs and between rows; each glyph a run of pixels that aren't the key, numbered from a first character. The key becomes clear on the font's texture. An image with no such border gives the default font. At most 256 glyphs are read, and a pixel past the image reads as the key, where raylib's reads past its pixels.
+  - `image`: The image, in any uncompressed format.
+  - `key`: The color around the glyphs.
+  - `firstChar`: The first glyph's character.
+  - returns: The font.
 - `DrawFPS`: Draws the frames a second, as "60 FPS", in green.
   - `posX`: The left edge.
   - `posY`: The top edge.
@@ -2925,6 +3365,11 @@ static function LoadFontAsync(fileName:String, loaded:Font -> Void, ?failed:Stri
 static function LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
 static function LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
 static function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo> -> Void, ?failed:String -> Void):Void
+static function LoadImageAsync(fileName:String, loaded:Image -> Void, ?failed:String -> Void):Void
+static function LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image -> Void, ?failed:String -> Void):Void
+static function LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image -> Void, ?failed:String -> Void):Void
+static function LoadImageFromTextureAsync(texture:Texture2D, loaded:Image -> Void, ?failed:String -> Void):Void
+static function LoadImageFromScreenAsync(loaded:Image -> Void, ?failed:String -> Void):Void
 ```
 
 - `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page can't wait for a file. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
@@ -2950,7 +3395,7 @@ static function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize
 - `FileExistsAsync`: Answers whether a file exists: helix-ray's own, in place of raylib's `FileExists`. One `SaveFileText` or `SaveFileData` wrote exists, as does one of the program's; finding one of the program's reads it, so a load of it after answers at once. The answer comes at a later frame, never during the call.
   - `fileName`: The file.
   - `answer`: Receives true when it exists.
-- `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto one texture, as raylib's; each drawn with `TEXTURE_FILTER_POINT`. Image fonts aren't in helix-ray yet.
+- `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto one texture, as raylib's; an image (PNG, JPEG, BMP, TGA or QOI) its glyphs on a `MAGENTA` key from the space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the font.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
@@ -2979,6 +3424,31 @@ static function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize
   - `type`: `FONT_DEFAULT` for antialiased glyphs, `FONT_BITMAP` for glyphs with no gray, `FONT_SDF` for signed distances.
   - `loaded`: Receives the glyphs.
   - `failed`: Optional. Receives why the font couldn't be read; when omitted, it is logged.
+- `LoadImageAsync`: Loads an image file, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImage`, as a page can't wait for a file. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. The answer comes at a later frame, never during the call.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the image, its pixels its own.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+- `LoadImageRawAsync`: Loads an image's raw pixels from a file, answering when they are read: helix-ray's own, in place of raylib's `LoadImageRaw`. The file holds the pixels in a format, after a header of some bytes; a file too small for them fails.
+  - `fileName`: The file.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `format`: The pixel format (`PIXELFORMAT_*`).
+  - `headerSize`: The bytes before the pixels, skipped when the file holds them and the pixels.
+  - `loaded`: Receives the image.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+- `LoadImageFromMemoryAsync`: Decodes an image file's bytes, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImageFromMemory`, as images are decoded asynchronously. The formats and channels are `LoadImageAsync`'s.
+  - `fileType`: The file's extension: ".png", ".jpg", ".jpeg", ".bmp", ".tga" or ".qoi".
+  - `fileData`: The file's bytes.
+  - `dataSize`: How many of them.
+  - `loaded`: Receives the image.
+  - `failed`: Optional. Receives why it couldn't be decoded; when omitted, it is logged.
+- `LoadImageFromTextureAsync`: Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU answers later. A render texture's are read back from the GPU after the frame it was drawn in, rows bottom first as raylib's are, so it reads upside down as raylib's does. Another texture's pixels are what went to the GPU, while they are in memory: before it is first drawn, or when it was loaded from a file; once only on the GPU they can't be read here, and it fails.
+  - `texture`: The texture.
+  - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+- `LoadImageFromScreenAsync`: Reads the screen, answering as the next frame ends: helix-ray's own, in place of raylib's `LoadImageFromScreen`, as the GPU answers later. The image is the framebuffer's size, rows top first, its alpha opaque, as raylib's.
+  - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 
 ### Macros, run as the program builds
 
@@ -3000,13 +3470,13 @@ static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<Stri
 
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
-`FileExists`, `LoadFileText`, `LoadFileData`, `LoadTexture`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadSound`.
+`FileExists`, `LoadFileText`, `LoadFileData`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadSound`.
 
 ### Not in helix-ray yet
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`IsWindowMaximized`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowIcon`, `SetWindowIcons`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetWindowOpacity`, `SetWindowFocused`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `GetMonitorRefreshRate`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `EnableEventWaiting`, `DisableEventWaiting`, `ShowCursor`, `HideCursor`, `IsCursorHidden`, `EnableCursor`, `DisableCursor`, `IsCursorOnScreen`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `TakeScreenshot`, `OpenURL`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `GetFileLength`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `CompressData`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `SetGamepadMappings`, `SetGamepadVibration`, `SetMousePosition`, `SetMouseOffset`, `SetMouseScale`, `GetMouseWheelMoveV`, `SetMouseCursor`, `GetTouchPointId`, `UpdateCameraPro`, `LoadImage`, `LoadImageRaw`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `IsImageValid`, `ExportImage`, `ExportImageToMemory`, `ExportImageAsCode`, `GenImageColor`, `GenImageGradientLinear`, `GenImageGradientRadial`, `GenImageGradientSquare`, `GenImageChecked`, `GenImageWhiteNoise`, `GenImagePerlinNoise`, `GenImageCellular`, `GenImageText`, `ImageCopy`, `ImageFromImage`, `ImageFromChannel`, `ImageText`, `ImageTextEx`, `ImageFormat`, `ImageToPOT`, `ImageCrop`, `ImageAlphaCrop`, `ImageAlphaClear`, `ImageAlphaMask`, `ImageAlphaPremultiply`, `ImageBlurGaussian`, `ImageKernelConvolution`, `ImageResize`, `ImageResizeNN`, `ImageResizeCanvas`, `ImageMipmaps`, `ImageDither`, `ImageFlipVertical`, `ImageFlipHorizontal`, `ImageRotate`, `ImageRotateCW`, `ImageRotateCCW`, `ImageColorTint`, `ImageColorInvert`, `ImageColorGrayscale`, `ImageColorContrast`, `ImageColorBrightness`, `ImageColorReplace`, `LoadImageColors`, `LoadImagePalette`, `UnloadImageColors`, `UnloadImagePalette`, `GetImageAlphaBorder`, `GetImageColor`, `ImageClearBackground`, `ImageDrawPixel`, `ImageDrawPixelV`, `ImageDrawLine`, `ImageDrawLineV`, `ImageDrawLineEx`, `ImageDrawCircle`, `ImageDrawCircleV`, `ImageDrawCircleLines`, `ImageDrawCircleLinesV`, `ImageDrawRectangle`, `ImageDrawRectangleV`, `ImageDrawRectangleRec`, `ImageDrawRectangleLines`, `ImageDrawTriangle`, `ImageDrawTriangleEx`, `ImageDrawTriangleLines`, `ImageDrawTriangleFan`, `ImageDrawTriangleStrip`, `ImageDraw`, `ImageDrawText`, `ImageDrawTextEx`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `SetTextureWrap`, `DrawTextureNPatch`, `GetPixelColor`, `SetPixelColor`, `LoadFontFromImage`, `ExportFontAsCode`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`, `LoadWave`, `LoadWaveFromMemory`, `IsWaveValid`, `LoadSoundFromWave`, `LoadSoundAlias`, `UpdateSound`, `UnloadWave`, `UnloadSoundAlias`, `ExportWave`, `ExportWaveAsCode`, `PauseSound`, `ResumeSound`, `WaveCopy`, `WaveCrop`, `WaveFormat`, `LoadWaveSamples`, `UnloadWaveSamples`, `LoadMusicStreamFromMemory`, `SeekMusicStream`, `GetMusicTimeLength`, `GetMusicTimePlayed`, `LoadAudioStream`, `IsAudioStreamValid`, `UnloadAudioStream`, `UpdateAudioStream`, `IsAudioStreamProcessed`, `PlayAudioStream`, `PauseAudioStream`, `ResumeAudioStream`, `IsAudioStreamPlaying`, `StopAudioStream`, `SetAudioStreamVolume`, `SetAudioStreamPitch`, `SetAudioStreamPan`, `SetAudioStreamBufferSizeDefault`, `SetAudioStreamCallback`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`IsWindowMaximized`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowIcon`, `SetWindowIcons`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetWindowOpacity`, `SetWindowFocused`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `GetMonitorRefreshRate`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `EnableEventWaiting`, `DisableEventWaiting`, `ShowCursor`, `HideCursor`, `IsCursorHidden`, `EnableCursor`, `DisableCursor`, `IsCursorOnScreen`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `OpenURL`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `GetFileLength`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `SetGamepadMappings`, `SetGamepadVibration`, `SetMousePosition`, `SetMouseOffset`, `SetMouseScale`, `GetMouseWheelMoveV`, `SetMouseCursor`, `GetTouchPointId`, `UpdateCameraPro`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `ExportFontAsCode`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`, `LoadWave`, `LoadWaveFromMemory`, `IsWaveValid`, `LoadSoundFromWave`, `LoadSoundAlias`, `UpdateSound`, `UnloadWave`, `UnloadSoundAlias`, `ExportWave`, `ExportWaveAsCode`, `PauseSound`, `ResumeSound`, `WaveCopy`, `WaveCrop`, `WaveFormat`, `LoadWaveSamples`, `UnloadWaveSamples`, `LoadMusicStreamFromMemory`, `SeekMusicStream`, `GetMusicTimeLength`, `GetMusicTimePlayed`, `LoadAudioStream`, `IsAudioStreamValid`, `UnloadAudioStream`, `UpdateAudioStream`, `IsAudioStreamProcessed`, `PlayAudioStream`, `PauseAudioStream`, `ResumeAudioStream`, `IsAudioStreamPlaying`, `StopAudioStream`, `SetAudioStreamVolume`, `SetAudioStreamPitch`, `SetAudioStreamPan`, `SetAudioStreamBufferSizeDefault`, `SetAudioStreamCallback`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ## Raymath
 

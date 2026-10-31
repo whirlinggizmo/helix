@@ -864,6 +864,20 @@ class RCore {
 
 	// ---- Encoding and hashes ----
 
+	/** Compresses bytes as raylib's `CompressData` does, byte for byte: raw DEFLATE (no zlib header), sdefl's level 8.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@param compDataSize  Its first element is set to the compressed size.
+		@return  The compressed bytes. */
+	static function CompressData(data:haxe.io.Bytes, dataSize:Int, compDataSize:Array<Int>):haxe.io.Bytes {
+		var compressed = helix.formats.deflate.Deflate.compress(dataSize < data.length ? data.sub(0, dataSize) : data, 8);
+		if (compDataSize != null)
+			compDataSize[0] = compressed.length;
+		Runtime.log(LOG_INFO, 'SYSTEM: Compress data: Original size: $dataSize -> Comp. size: ${compressed.length}');
+		return compressed;
+	}
+
 	/** Returns DEFLATE data decompressed: a raw stream with no zlib header, as raylib's `CompressData` makes. Like raylib's, it gives
 		at most 64 MB.
 
@@ -1110,6 +1124,44 @@ class RCore {
 		saveText = callback;
 	}
 
+	// ---- Screenshots ----
+
+	/** Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImage` writes it by the name's extension
+		(".png", ".qoi" or ".raw"): in a page it is downloaded, as raylib's web build does; natively it is written to the working
+		directory, as raylib writes it there, under the name's file name. raylib's is taken from the frame drawn last, before it is
+		shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as raylib's is.
+
+		@param fileName  The file name; a directory before it is dropped, and a name with `'` is refused, as raylib's is. */
+	static function TakeScreenshot(fileName:String):Void {
+		if (fileName.indexOf("'") >= 0) {
+			Runtime.log(LOG_WARNING, "SYSTEM: Provided fileName could be potentially malicious, avoid ['] character");
+			return;
+		}
+		var name = GetFileName(fileName);
+		if (Runtime.frame == null) {
+			Runtime.log(LOG_WARNING, 'SYSTEM: [$name] Screenshot could not be saved: InitWindow first');
+			return;
+		}
+		Runtime.screenshots().captureFrame(captured -> {
+			var pixels = captured.pixels;
+			for (i in 0...captured.width * captured.height)
+				pixels.set(i * 4 + 3, 255);
+			var file = RTextures.encodeImage(new Image(pixels, captured.width, captured.height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8), name);
+			if (file == null) {
+				Runtime.log(LOG_WARNING, 'FILEIO: [$name] Failed to export image');
+				Runtime.log(LOG_WARNING, 'SYSTEM: [$name] Screenshot could not be saved');
+				return;
+			}
+			var type = IsFileExtension(name, ".png") ? "image/png" : IsFileExtension(name, ".qoi") ? "image/qoi" : "application/octet-stream";
+			Runtime.exporter().export(name, type, file, where -> {
+				Runtime.log(LOG_INFO, 'FILEIO: [$where] Image exported successfully');
+				Runtime.log(LOG_INFO, 'SYSTEM: [$where] Screenshot taken successfully');
+			},
+				error -> Runtime.log(LOG_WARNING, 'SYSTEM: [$name] Screenshot could not be saved: $error'));
+		},
+			error -> Runtime.log(LOG_WARNING, 'SYSTEM: [$name] Screenshot could not be saved: $error'));
+	}
+
 	// ---- Log ----
 
 	/** Writes a message to the log, when its level is at least `SetTraceLogLevel`'s. raylib formats its arguments as printf does;
@@ -1201,8 +1253,6 @@ class RCore {
 	static var lastMouseY = 0.;
 	static var lastPointerX = 0.;
 	static var lastPointerY = 0.;
-	static var font:Null<Texture2D> = null;
-	static var fontRecs:Array<Int> = [];
 
 	static function normalize(path:String):String {
 		while (StringTools.startsWith(path, "./"))
@@ -1247,42 +1297,6 @@ class RCore {
 
 	static function glyph(code:Int):Int {
 		return code >= 32 && code < 256 ? code - 32 : "?".code - 32;
-	}
-
-	// The default font's texture, made at its first use, and each glyph's place on it, as raylib lays them out.
-
-	static function defaultFont():Texture2D {
-		if (font != null)
-			return font;
-		var size = 128, pixels = haxe.io.Bytes.alloc(size * size * 4);
-		for (i in 0...size * size >> 5) {
-			var word = DefaultFont.BITS[i];
-			for (j in 0...32) {
-				var at = (i * 32 + j) * 4;
-				pixels.set(at, 255);
-				pixels.set(at + 1, 255);
-				pixels.set(at + 2, 255);
-				pixels.set(at + 3, (word >>> j) & 1 == 1 ? 255 : 0);
-			}
-		}
-		font = new Texture2D(Textures.fromHandle(Runtime.graphics.createTexture(size, size, [pixels])), size, size);
-		var line = 0, x = 1, test = 1;
-		for (i in 0...DefaultFont.WIDTHS.length) {
-			var w = DefaultFont.WIDTHS[i];
-			var gx = x, gy = 1 + line * (DefaultFont.HEIGHT + 1);
-			test += w + 1;
-			if (test >= size) {
-				line++;
-				x = 2 + w;
-				test = x;
-				gx = 1;
-				gy = 1 + line * (DefaultFont.HEIGHT + 1);
-			} else
-				x = test;
-			fontRecs.push(gx);
-			fontRecs.push(gy);
-		}
-		return font;
 	}
 
 	// An immediate vertex in 2D, at z 0.

@@ -6,6 +6,7 @@ import helix.ray.Raylib.*;
 import helix.math.Matrix3D;
 import helix.ray.internal.DefaultFont;
 import helix.ray.internal.Models;
+import helix.ray.internal.Pixels;
 import helix.ray.internal.Runtime;
 import helix.ray.internal.Textures;
 import helix.ray.raylib.RCore.*;
@@ -392,7 +393,7 @@ class RTextures {
 
 	// raylib's color math is in single precision: a number rounded to the nearest float, as each of its operations rounds.
 	static inline function f32(x:Float):Float {
-		return haxe.io.FPHelper.i32ToFloat(haxe.io.FPHelper.floatToI32(x));
+		return Pixels.f32(x);
 	}
 
 	// A number as raylib's (unsigned char) cast makes it: truncated, its low 8 bits.
@@ -451,24 +452,71 @@ class RTextures {
 		@param texture  The texture.
 		@param filter  The filter (`TEXTURE_FILTER_*`). */
 	static function SetTextureFilter(texture:Texture2D, filter:Int):Void {
-		Textures.setSampling(texture.id, new helix.platform.Sampling(filter == TEXTURE_FILTER_POINT ? Nearest : Linear));
+		Textures.setSampling(texture.id, Textures.samplingOfId(texture.id).withFilter(filter == TEXTURE_FILTER_POINT ? Nearest : Linear));
 	}
 
-	// ---- Images, as far as fonts need them ----
+	// ---- Images: loading and exporting ----
 
-	/** Makes a texture of an image. Its pixels are 8-bit grayscale, grayscale and alpha, RGB or RGBA (`PIXELFORMAT_UNCOMPRESSED_*`);
-		another format gives no texture, and says so.
+	/** raylib's image load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadImageAsync` loads it.
+
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadImage: Synchronous loading is not supported. See LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void)")
+	static function LoadImage(fileName:String):Image {
+		throw "LoadImage is unimplemented";
+	}
+
+	/** raylib's load of an image's raw pixels, which waits for the file. A page can't wait, so a call doesn't compile on any target:
+		`LoadImageRawAsync` loads it.
+
+		@param fileName  The file.
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param format  The pixel format (`PIXELFORMAT_*`).
+		@param headerSize  The bytes before the pixels.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadImageRaw: Synchronous loading is not supported. See LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void, ?failed:String->Void)")
+	static function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int):Image {
+		throw "LoadImageRaw is unimplemented";
+	}
+
+	/** raylib's decode of an image file's bytes, which returns the image. Images are decoded asynchronously here, so a call doesn't
+		compile on any target: `LoadImageFromMemoryAsync` decodes it.
+
+		@param fileType  The file's extension, ".png".
+		@param fileData  The file's bytes.
+		@param dataSize  How many.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadImageFromMemory: Images are decoded asynchronously. See LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void)")
+	static function LoadImageFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Image {
+		throw "LoadImageFromMemory is unimplemented";
+	}
+
+	/** raylib's read of a texture back from the GPU, which waits for it. A texture is read back asynchronously here, so a call doesn't
+		compile on any target: `LoadImageFromTextureAsync` reads it.
+
+		@param texture  The texture.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadImageFromTexture: A texture is read back asynchronously. See LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void)")
+	static function LoadImageFromTexture(texture:Texture2D):Image {
+		throw "LoadImageFromTexture is unimplemented";
+	}
+
+	/** raylib's read of the screen, which waits for the GPU. The screen is read back asynchronously here, as a frame ends, so a call
+		doesn't compile on any target: `LoadImageFromScreenAsync` reads it.
+
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadImageFromScreen: The screen is read back asynchronously. See LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void)")
+	static function LoadImageFromScreen():Image {
+		throw "LoadImageFromScreen is unimplemented";
+	}
+
+	/** Returns whether an image holds pixels: data, a size, a format and a mipmap level.
 
 		@param image  The image.
-		@return  The texture. */
-	static function LoadTextureFromImage(image:Image):Texture2D {
-		var pixels = rgba(image);
-		if (pixels == null) {
-			Runtime.log(LOG_WARNING, 'LoadTextureFromImage: pixel format ${image.format} isn\'t in helix-ray yet');
-			return new Texture2D();
-		}
-		var texture = new Texture2D(Textures.fromImage("", new helix.services.images.Image("", image.width, image.height, pixels)), image.width, image.height);
-		return texture;
+		@return  True when it does. */
+	static function IsImageValid(image:Image):Bool {
+		return image.data != null && image.width > 0 && image.height > 0 && image.format > 0 && image.mipmaps > 0;
 	}
 
 	/** Frees an image's pixels.
@@ -478,34 +526,1972 @@ class RTextures {
 		image.data = null;
 	}
 
-	// An image's pixels as 8-bit RGBA, or null for a format not read here.
-	static function rgba(image:Image):Null<haxe.io.Bytes> {
-		var data:Null<haxe.io.Bytes> = image.data,
-			count = image.width * image.height;
-		if (data == null)
+	/** Writes an image to a file through `SaveFileData`, as raylib's default build writes it: ".png" (any uncompressed format; a format
+		other than 8-bit grayscale, grayscale and alpha, RGB or RGBA is written as RGBA), ".qoi" (RGB or RGBA alone) or ".raw" (the pixels
+		as they are). The file is kept as `SaveFileData` keeps it; `TakeScreenshot` writes a real file.
+
+		@param image  The image.
+		@param fileName  The file; its extension chooses the format.
+		@return  True when it was written. */
+	static function ExportImage(image:Image, fileName:String):Bool {
+		var result = false;
+		if (image.width == 0 || image.height == 0 || image.data == null)
+			return false;
+		var file = encodeImage(image, fileName);
+		if (file != null)
+			result = SaveFileData(fileName, file, file.length);
+		if (result)
+			Runtime.log(LOG_INFO, 'FILEIO: [$fileName] Image exported successfully');
+		else
+			Runtime.log(LOG_WARNING, 'FILEIO: [$fileName] Failed to export image');
+		return result;
+	}
+
+	/** Returns an image encoded as a file in memory: ".png" alone, as raylib's. Like raylib's, an image's bytes are read as 8-bit gray,
+		gray and alpha, RGB or RGBA by its format, and as RGBA for any other format, which a 16-bit format has too few of: those it lacks
+		read as 0.
+
+		@param image  The image.
+		@param fileType  ".png" or ".PNG".
+		@param fileSize  Its first element is set to the file's size, 0 for none.
+		@return  The file, or null for another type or an empty image. */
+	static function ExportImageToMemory(image:Image, fileType:String, fileSize:Array<Int>):haxe.io.Bytes {
+		if (fileSize != null)
+			fileSize[0] = 0;
+		if (image.width == 0 || image.height == 0 || image.data == null)
 			return null;
-		var channels = switch image.format {
+		if (fileType != ".png" && fileType != ".PNG")
+			return null;
+		var channels = channelsOf(image.format);
+		var file = helix.formats.png.PngFile.write(image.width, image.height, channels, padded(image.data, image.width * image.height * channels));
+		if (fileSize != null)
+			fileSize[0] = file.length;
+		return file;
+	}
+
+	/** Writes an image as a C header through `SaveFileText`, as raylib's does: its size and format as defines, and its pixels (the first
+		level's) as an array of bytes, 20 a line.
+
+		@param image  The image.
+		@param fileName  The file; its name, upper case, names the defines and the array.
+		@return  True when it was written. */
+	static function ExportImageAsCode(image:Image, fileName:String):Bool {
+		var dataSize = GetPixelDataSize(image.width, image.height, image.format);
+		var text = new StringBuf();
+		text.add("////////////////////////////////////////////////////////////////////////////////////////\n");
+		text.add("//                                                                                    //\n");
+		text.add("// ImageAsCode exporter v1.0 - Image pixel data exported as an array of bytes         //\n");
+		text.add("//                                                                                    //\n");
+		text.add("// more info and bugs-report:  github.com/raysan5/raylib                              //\n");
+		text.add("// feedback and support:       ray[at]raylib.com                                      //\n");
+		text.add("//                                                                                    //\n");
+		text.add("// Copyright (c) 2018-2024 Ramon Santamaria (@raysan5)                                //\n");
+		text.add("//                                                                                    //\n");
+		text.add("////////////////////////////////////////////////////////////////////////////////////////\n\n");
+		var name = new StringBuf(), base = GetFileNameWithoutExt(fileName);
+		for (i in 0...base.length) {
+			var c = StringTools.fastCodeAt(base, i);
+			name.addChar(c >= "a".code && c <= "z".code ? c - 32 : c);
+		}
+		var varName = name.toString();
+		text.add("// Image data information\n");
+		text.add('#define ${varName}_WIDTH    ${image.width}\n');
+		text.add('#define ${varName}_HEIGHT   ${image.height}\n');
+		text.add('#define ${varName}_FORMAT   ${image.format}          // raylib internal pixel format\n\n');
+		text.add('static unsigned char ${varName}_DATA[$dataSize] = { ');
+		var data = image.data;
+		inline function at(i:Int):String
+			return StringTools.hex(data != null && i >= 0 && i < data.length ? data.get(i) : 0).toLowerCase();
+		for (i in 0...dataSize - 1)
+			text.add(i % 20 == 0 ? '0x${at(i)},\n' : '0x${at(i)}, ');
+		text.add('0x${at(dataSize - 1)} };\n');
+		var success = SaveFileText(fileName, text.toString());
+		if (success)
+			Runtime.log(LOG_INFO, 'FILEIO: [$fileName] Image as code exported successfully');
+		else
+			Runtime.log(LOG_WARNING, 'FILEIO: [$fileName] Failed to export image as code');
+		return success;
+	}
+
+	// ExportImage's file: PNG, QOI or the raw pixels, by the name's extension; null, with raylib's warning for QOI's formats, for none.
+	static function encodeImage(image:Image, fileName:String):Null<haxe.io.Bytes> {
+		var count = image.width * image.height;
+		if (IsFileExtension(fileName, ".png")) {
+			var channels = channelsOf(image.format);
+			var pixels = channels == 4
+				&& image.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 ? Pixels.colors(image.data, image.width, image.height, image.format) : image.data;
+			return helix.formats.png.PngFile.write(image.width, image.height, channels, padded(pixels, count * channels));
+		}
+		if (IsFileExtension(fileName, ".qoi")) {
+			var channels = image.format == PIXELFORMAT_UNCOMPRESSED_R8G8B8 ? 3 : image.format == PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 ? 4 : 0;
+			if (channels == 0) {
+				Runtime.log(LOG_WARNING, "IMAGE: Image pixel format must be R8G8B8 or R8G8B8A8");
+				return null;
+			}
+			return helix.formats.qoi.QoiFile.write(image.width, image.height, channels, padded(image.data, count * channels));
+		}
+		if (IsFileExtension(fileName, ".raw"))
+			return padded(image.data, GetPixelDataSize(image.width, image.height, image.format));
+		return null;
+	}
+
+	// The channels raylib's PNG export writes a format with: its own for the 8-bit formats, else 4.
+	static function channelsOf(format:Int):Int {
+		return switch format {
+			case PIXELFORMAT_UNCOMPRESSED_GRAYSCALE: 1;
+			case PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA: 2;
+			case PIXELFORMAT_UNCOMPRESSED_R8G8B8: 3;
+			case _: 4;
+		}
+	}
+
+	// Bytes of a size: these, cut or followed by zeros.
+	static function padded(bytes:haxe.io.Bytes, size:Int):haxe.io.Bytes {
+		if (bytes.length == size)
+			return bytes;
+		var out = haxe.io.Bytes.alloc(size);
+		out.fill(0, size, 0);
+		out.blit(0, bytes, 0, bytes.length < size ? bytes.length : size);
+		return out;
+	}
+
+	// ---- Images: made ----
+
+	/** Returns an image of one color, RGBA.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param color  The color.
+		@return  The image. */
+	static function GenImageColor(width:Int, height:Int, color:Color):Image {
+		return rgbaImage(helix.services.images.Image.filled(width, height, Pixels.argb(Pixels.ofColor(color))));
+	}
+
+	/** Returns a gradient from one color to another, RGBA.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param direction  The direction, in degrees: 0 top to bottom, 90 left to right.
+		@param start  The color it starts from.
+		@param end  The color it ends at.
+		@return  The image. */
+	static function GenImageGradientLinear(width:Int, height:Int, direction:Int, start:Color, end:Color):Image {
+		var radians = f32(f32((90 - direction) / 180) * f32(3.14159));
+		return rgbaImage(helix.services.images.Image.gradientLinear(width, height, radians, Pixels.argb(Pixels.ofColor(start)),
+			Pixels.argb(Pixels.ofColor(end))));
+	}
+
+	/** Returns a round gradient out from the middle, RGBA.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param density  How far the inner color holds, 0 (the middle alone) to 1 (out to the nearer edge).
+		@param inner  The color in the middle.
+		@param outer  The color at the edge and beyond.
+		@return  The image. */
+	static function GenImageGradientRadial(width:Int, height:Int, density:Float, inner:Color, outer:Color):Image {
+		return rgbaImage(helix.services.images.Image.gradientRadial(width, height, density, Pixels.argb(Pixels.ofColor(inner)),
+			Pixels.argb(Pixels.ofColor(outer))));
+	}
+
+	/** Returns a square gradient out from the middle, RGBA.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param density  How far the inner color holds, 0 (the middle alone) to 1 (out to the edges).
+		@param inner  The color in the middle.
+		@param outer  The color at the edges.
+		@return  The image. */
+	static function GenImageGradientSquare(width:Int, height:Int, density:Float, inner:Color, outer:Color):Image {
+		return rgbaImage(helix.services.images.Image.gradientSquare(width, height, density, Pixels.argb(Pixels.ofColor(inner)),
+			Pixels.argb(Pixels.ofColor(outer))));
+	}
+
+	/** Returns a checkerboard of two colors, RGBA. A square size under 1 is taken as 1, where raylib's divides by zero.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param checksX  Each square's width, in pixels.
+		@param checksY  Each square's height, in pixels.
+		@param col1  The top-left square's color.
+		@param col2  The color of the squares beside it.
+		@return  The image. */
+	static function GenImageChecked(width:Int, height:Int, checksX:Int, checksY:Int, col1:Color, col2:Color):Image {
+		return rgbaImage(helix.services.images.Image.checked(width, height, checksX, checksY, Pixels.argb(Pixels.ofColor(col1)),
+			Pixels.argb(Pixels.ofColor(col2))));
+	}
+
+	/** Returns white noise, RGBA: each pixel white or black, drawn from `GetRandomValue`, one number a pixel, so `SetRandomSeed` repeats it.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param factor  The chance of white, 0 to 1.
+		@return  The image. */
+	static function GenImageWhiteNoise(width:Int, height:Int, factor:Float):Image {
+		return rgbaImage(helix.services.images.Image.whiteNoise(width, height, factor, new RaylibRandom()));
+	}
+
+	/** Returns Perlin noise in gray, RGBA: stb_perlin's fractal noise, 6 octaves.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param offsetX  How far it is moved left, in pixels.
+		@param offsetY  How far it is moved up, in pixels.
+		@param scale  How much of the noise it shows: larger is finer.
+		@return  The image. */
+	static function GenImagePerlinNoise(width:Int, height:Int, offsetX:Int, offsetY:Int, scale:Float):Image {
+		return rgbaImage(helix.services.images.Image.perlinNoise(width, height, offsetX, offsetY, scale));
+	}
+
+	/** Returns cellular noise in gray, RGBA: each pixel's distance to the nearest of points scattered one a tile, drawn from
+		`GetRandomValue`, so `SetRandomSeed` repeats it. A tile size under 1 is taken as 1, where raylib's divides by zero.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param tileSize  The tiles' size, in pixels: bigger is bigger cells.
+		@return  The image. */
+	static function GenImageCellular(width:Int, height:Int, tileSize:Int):Image {
+		return rgbaImage(helix.services.images.Image.cellular(width, height, tileSize, new RaylibRandom()));
+	}
+
+	/** Returns an image of text's bytes, grayscale: its UTF-8, a byte a pixel, rows top first, the rest black.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param text  The text.
+		@return  The image. */
+	static function GenImageText(width:Int, height:Int, text:String):Image {
+		var size = width * height,
+			bytes = haxe.io.Bytes.ofString(text),
+			data = haxe.io.Bytes.alloc(size);
+		data.fill(0, size, 0);
+		data.blit(0, bytes, 0, bytes.length > size ? size : bytes.length);
+		return new Image(data, width, height, 1, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+	}
+
+	// An image of helix-services' pixels, RGBA, which it keeps.
+	static function rgbaImage(image:helix.services.images.Image):Image {
+		return new Image(image.pixels, image.width, image.height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+	}
+
+	// ---- Images: changed ----
+
+	/** Returns a copy of an image, its mipmaps too.
+
+		@param image  The image.
+		@return  The copy. */
+	static function ImageCopy(image:Image):Image {
+		var width = image.width, height = image.height, size = 0;
+		for (_ in 0...image.mipmaps) {
+			size += GetPixelDataSize(width, height, image.format);
+			width = Std.int(width / 2);
+			height = Std.int(height / 2);
+			if (width < 1)
+				width = 1;
+			if (height < 1)
+				height = 1;
+		}
+		var data = haxe.io.Bytes.alloc(size > 0 ? size : 0);
+		data.fill(0, data.length, 0);
+		copyBytes(data, 0, image.data, 0, data.length);
+		return new Image(data, image.width, image.height, image.mipmaps, image.format);
+	}
+
+	/** Returns a rectangle of an image, in its format. A row reaching past the image's right edge reads on into the next row, as
+		raylib's does; what lies past the image's pixels reads as zeros, where raylib's reads past them.
+
+		@param image  The image.
+		@param rec  The rectangle, in pixels, cut to whole pixels.
+		@return  The image. */
+	static function ImageFromImage(image:Image, rec:Rectangle):Image {
+		var bytesPerPixel = GetPixelDataSize(1, 1, image.format);
+		var x = Std.int(f32(rec.x)),
+			y = Std.int(f32(rec.y)),
+			width = Std.int(f32(rec.width)),
+			height = Std.int(f32(rec.height));
+		var size = width * height * bytesPerPixel,
+			data = haxe.io.Bytes.alloc(width > 0 && height > 0 ? size : 0);
+		data.fill(0, data.length, 0);
+		for (row in 0...height)
+			copyBytes(data, row * width * bytesPerPixel, image.data, ((row + y) * image.width + x) * bytesPerPixel, width * bytesPerPixel);
+		return new Image(data, width, height, 1, image.format);
+	}
+
+	/** Returns one channel of an image as grayscale: 0 red, 1 green, 2 blue, 3 alpha. A channel the format lacks is taken as raylib takes
+		it, with its warning: a one-channel format's only channel, gray and alpha's alpha, an RGB format's red.
+
+		@param image  The image.
+		@param selectedChannel  The channel.
+		@return  The image. */
+	static function ImageFromChannel(image:Image, selectedChannel:Int):Image {
+		var result = new Image();
+		if (image.data == null || image.width == 0 || image.height == 0)
+			return result;
+		var format = image.format;
+		if (selectedChannel < 0) {
+			Runtime.log(LOG_WARNING, "Channel cannot be negative. Setting channel to 0.");
+			selectedChannel = 0;
+		}
+		if (format == PIXELFORMAT_UNCOMPRESSED_GRAYSCALE
+			|| format == PIXELFORMAT_UNCOMPRESSED_R32
+			|| format == PIXELFORMAT_UNCOMPRESSED_R16) {
+			if (selectedChannel > 0) {
+				Runtime.log(LOG_WARNING, "This image has only 1 channel. Setting channel to it.");
+				selectedChannel = 0;
+			}
+		} else if (format == PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA) {
+			if (selectedChannel > 1) {
+				Runtime.log(LOG_WARNING, "This image has only 2 channels. Setting channel to alpha.");
+				selectedChannel = 1;
+			}
+		} else if (format == PIXELFORMAT_UNCOMPRESSED_R5G6B5
+			|| format == PIXELFORMAT_UNCOMPRESSED_R8G8B8
+			|| format == PIXELFORMAT_UNCOMPRESSED_R32G32B32
+			|| format == PIXELFORMAT_UNCOMPRESSED_R16G16B16) {
+			if (selectedChannel > 2) {
+				Runtime.log(LOG_WARNING, "This image has only 3 channels. Setting channel to red.");
+				selectedChannel = 0;
+			}
+		}
+		if (selectedChannel > 3) {
+			Runtime.log(LOG_WARNING, "ImageFromChannel supports channels 0 to 3 (rgba). Setting channel to alpha.");
+			selectedChannel = 3;
+		}
+		var count = image.width * image.height,
+			pixels = haxe.io.Bytes.alloc(count),
+			data = image.data,
+			c = selectedChannel;
+		pixels.fill(0, count, 0);
+		if (format >= Pixels.COMPRESSED)
+			Runtime.log(LOG_WARNING, "IMAGE: Pixel data retrieval not supported for compressed image formats");
+		else
+			for (i in 0...count) {
+				var value:Float = switch format {
+					case PIXELFORMAT_UNCOMPRESSED_GRAYSCALE: f32(data.get(i + c) / 255);
+					case PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA: f32(data.get(i * 2 + c) / 255);
+					case PIXELFORMAT_UNCOMPRESSED_R5G5B5A1:
+						var p = data.getUInt16(i * 2);
+						c == 0 ? f32((p >> 11) * ONE_31) : c == 1 ? f32(((p >> 6) & 31) * ONE_31) : c == 2 ? f32(((p >> 1) & 31) * ONE_31) : (p & 1) == 0 ? 0 : 1;
+					case PIXELFORMAT_UNCOMPRESSED_R5G6B5:
+						var p = data.getUInt16(i * 2);
+						c == 0 ? f32((p >> 11) * ONE_31) : c == 1 ? f32(((p >> 5) & 63) * ONE_63) : c == 2 ? f32((p & 31) * ONE_31) : -1;
+					case PIXELFORMAT_UNCOMPRESSED_R4G4B4A4:
+						var p = data.getUInt16(i * 2);
+						f32(((p >> (12 - 4 * c)) & 15) * ONE_15);
+					case PIXELFORMAT_UNCOMPRESSED_R8G8B8A8: f32(data.get(i * 4 + c) / 255);
+					case PIXELFORMAT_UNCOMPRESSED_R8G8B8: f32(data.get(i * 3 + c) / 255);
+					case PIXELFORMAT_UNCOMPRESSED_R32: data.getFloat(i * 4);
+					case PIXELFORMAT_UNCOMPRESSED_R32G32B32: data.getFloat((i * 3 + c) * 4);
+					case PIXELFORMAT_UNCOMPRESSED_R32G32B32A32: data.getFloat((i * 4 + c) * 4);
+					case PIXELFORMAT_UNCOMPRESSED_R16: Pixels.halfToFloat(data.getUInt16(i * 2));
+					case PIXELFORMAT_UNCOMPRESSED_R16G16B16: Pixels.halfToFloat(data.getUInt16((i * 3 + c) * 2));
+					case PIXELFORMAT_UNCOMPRESSED_R16G16B16A16: Pixels.halfToFloat(data.getUInt16((i * 4 + c) * 2));
+					case _: -1;
+				}
+				pixels.set(i, byte(f32(value * 255)));
+			}
+		result.data = pixels;
+		result.width = image.width;
+		result.height = image.height;
+		result.mipmaps = 1;
+		result.format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE;
+		return result;
+	}
+
+	/** Returns text in raylib's default font, as an image, RGBA. A size under 10 is drawn at 10, letters a tenth of the size apart.
+
+		@param text  The text.
+		@param fontSize  The height of a line, in pixels.
+		@param color  The color.
+		@return  The image. */
+	static function ImageText(text:String, fontSize:Int, color:Color):Image {
+		if (fontSize < DefaultFont.HEIGHT)
+			fontSize = DefaultFont.HEIGHT;
+		return ImageTextEx(GetFontDefault(), text, fontSize, Std.int(fontSize / DefaultFont.HEIGHT), color);
+	}
+
+	/** Returns text in a font, as an image, RGBA, laid out as raylib's: at the font's size, each glyph's image drawn tinted, then scaled
+		to the size, nearest for the default font. A newline starts a line one and a half of the font's size down, though the image's
+		height counts each line as the size and `SetTextLineSpacing`'s spacing, as raylib's does. Another font is scaled by
+		`ImageResize`, which isn't raylib's.
+
+		@param font  The font, its glyphs' images drawn.
+		@param text  The text.
+		@param fontSize  The height of a line, in pixels.
+		@param spacing  The space between letters, at the font's size.
+		@param tint  The color the glyphs are multiplied by.
+		@return  The image. */
+	static function ImageTextEx(font:Font, text:String, fontSize:Float, spacing:Float, tint:Color):Image {
+		spacing = f32(spacing);
+		var imSize = MeasureTextEx(font, text, font.baseSize, spacing);
+		var textSize = MeasureTextEx(font, text, fontSize, spacing);
+		var imText = GenImageColor(Std.int(imSize.x), Std.int(imSize.y), BLANK);
+		var x = 0, y = 0;
+		for (codepoint in new haxe.iterators.StringIteratorUnicode(text)) {
+			var index = GetGlyphIndex(font, codepoint);
+			if (codepoint == "\n".code) {
+				y += font.baseSize + Std.int(font.baseSize / 2);
+				x = 0;
+				continue;
+			}
+			var glyph = font.glyphs[index], rec = font.recs[index];
+			if (codepoint != " ".code && codepoint != "\t".code && glyph.image != null)
+				ImageDraw(imText, glyph.image, new Rectangle(0, 0, glyph.image.width, glyph.image.height),
+					new Rectangle(x + glyph.offsetX, y + glyph.offsetY, rec.width, rec.height), tint);
+			if (glyph.advanceX == 0)
+				x += Std.int(f32(f32(rec.width) + spacing));
+			else
+				x += glyph.advanceX + Std.int(spacing);
+		}
+		if (textSize.y != imSize.y) {
+			var scaleFactor = f32(textSize.y / imSize.y);
+			Runtime.log(LOG_INFO, TextFormat("IMAGE: Text scaled by factor: %f", scaleFactor));
+			var width = Std.int(f32(imSize.x * scaleFactor)),
+				height = Std.int(f32(imSize.y * scaleFactor));
+			if (font.texture.id == GetFontDefault().texture.id)
+				ImageResizeNN(imText, width, height);
+			else
+				ImageResize(imText, width, height);
+		}
+		return imText;
+	}
+
+	/** Converts an image to another pixel format, through floats as raylib's does: to grayscale by luminance (0.299 red, 0.587 green,
+		0.114 blue), R32 and R16 to their luminance, 16-bit channels rounded. An image with mipmaps has them made again.
+
+		@param image  The image.
+		@param newFormat  The format (`PIXELFORMAT_UNCOMPRESSED_*`); a compressed one is refused, with a warning. */
+	static function ImageFormat(image:Image, newFormat:Int):Void {
+		if (image.data == null || image.width == 0 || image.height == 0)
+			return;
+		if (newFormat == 0 || image.format == newFormat)
+			return;
+		if (image.format >= Pixels.COMPRESSED || newFormat >= Pixels.COMPRESSED) {
+			Runtime.log(LOG_WARNING, "IMAGE: Data format is compressed, can not be converted");
+			return;
+		}
+		var count = image.width * image.height;
+		var pixels = Pixels.normalized(image.data, count, image.format);
+		image.format = newFormat;
+		image.data = Pixels.formatted(pixels, count, newFormat);
+		if (image.mipmaps > 1) {
+			image.mipmaps = 1;
+			if (image.data != null)
+				ImageMipmaps(image);
+		}
+	}
+
+	/** Puts an image on the smallest canvas whose sides are powers of two, at its top-left.
+
+		@param image  The image.
+		@param fill  The color of the canvas around it. */
+	static function ImageToPOT(image:Image, fill:Color):Void {
+		if (image.data == null || image.width == 0 || image.height == 0)
+			return;
+		var width = 1, height = 1;
+		while (width < image.width)
+			width <<= 1;
+		while (height < image.height)
+			height <<= 1;
+		if (width != image.width || height != image.height)
+			ImageResizeCanvas(image, width, height, 0, 0, fill);
+	}
+
+	/** Crops an image to a rectangle, cut to the image; one whose corner is past the image's right or bottom edge leaves it unchanged,
+		with a warning. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+
+		@param image  The image.
+		@param crop  The rectangle, in pixels. */
+	static function ImageCrop(image:Image, crop:Rectangle):Void {
+		if (image.data == null || image.width == 0 || image.height == 0)
+			return;
+		var x = f32(crop.x),
+			y = f32(crop.y),
+			width = f32(crop.width),
+			height = f32(crop.height);
+		if (x < 0) {
+			width = f32(width + x);
+			x = 0;
+		}
+		if (y < 0) {
+			height = f32(height + y);
+			y = 0;
+		}
+		if (f32(x + width) > image.width)
+			width = f32(image.width - x);
+		if (f32(y + height) > image.height)
+			height = f32(image.height - y);
+		if (x > image.width || y > image.height) {
+			Runtime.log(LOG_WARNING, "IMAGE: Failed to crop, rectangle out of bounds");
+			return;
+		}
+		if (image.mipmaps > 1)
+			Runtime.log(LOG_WARNING, "Image manipulation only applied to base mipmap level");
+		if (image.format >= Pixels.COMPRESSED) {
+			Runtime.log(LOG_WARNING, "Image manipulation not supported for compressed formats");
+			return;
+		}
+		var bytesPerPixel = GetPixelDataSize(1, 1, image.format);
+		var w = Std.int(width), h = Std.int(height), row = w * bytesPerPixel;
+		var cropped = haxe.io.Bytes.alloc(w > 0 && h > 0 ? w * h * bytesPerPixel : 0), offset = 0;
+		cropped.fill(0, cropped.length, 0);
+		// raylib's rows run from the top's whole pixel to the bottom's; those past the cropped size are dropped.
+		for (r in Std.int(y)...Std.int(f32(y + height))) {
+			if (offset + row > cropped.length)
+				break;
+			copyBytes(cropped, offset, image.data, (r * image.width + Std.int(x)) * bytesPerPixel, row);
+			offset += row;
+		}
+		image.data = cropped;
+		image.width = w;
+		image.height = h;
+	}
+
+	/** Crops an image to the pixels whose alpha is over a threshold, when any is.
+
+		@param image  The image.
+		@param threshold  The threshold, 0 to 1. */
+	static function ImageAlphaCrop(image:Image, threshold:Float):Void {
+		if (image.data == null || image.width == 0 || image.height == 0)
+			return;
+		var crop = GetImageAlphaBorder(image, threshold);
+		if (Std.int(crop.width) != 0 && Std.int(crop.height) != 0)
+			ImageCrop(image, crop);
+	}
+
+	/** Sets every pixel whose alpha is at or under a threshold to a color, as raylib's does for its formats with alpha: gray and alpha,
+		R5G5B5A1 (the alpha bit against a threshold of 0.5; the color's channels, unscaled, are cut to 5 bits), R4G4B4A4 (likewise to 4
+		bits), RGBA and its 32-bit and 16-bit float forms. Another format is unchanged.
+
+		@param image  The image.
+		@param color  The color.
+		@param threshold  The threshold, 0 to 1. */
+	static function ImageAlphaClear(image:Image, color:Color, threshold:Float):Void {
+		if (image.data == null || image.width == 0 || image.height == 0)
+			return;
+		if (image.mipmaps > 1)
+			Runtime.log(LOG_WARNING, "Image manipulation only applied to base mipmap level");
+		if (image.format >= Pixels.COMPRESSED) {
+			Runtime.log(LOG_WARNING, "Image manipulation not supported for compressed formats");
+			return;
+		}
+		threshold = f32(threshold);
+		var data = image.data, count = image.width * image.height;
+		var r = color.r & 255,
+			g = color.g & 255,
+			b = color.b & 255,
+			a = color.a & 255;
+		switch image.format {
+			case PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA:
+				var limit = byte(f32(threshold * 255));
+				for (i in 0...count)
+					if (data.get(i * 2 + 1) <= limit) {
+						data.set(i * 2, r);
+						data.set(i * 2 + 1, a);
+					}
+			case PIXELFORMAT_UNCOMPRESSED_R5G5B5A1:
+				var limit = threshold < 0.5 ? 0 : 1;
+				var value = (byte(Pixels.round(f32(r * 31))) << 11 | byte(Pixels.round(f32(g * 31))) << 6 | byte(Pixels.round(f32(b * 31))) << 1 | (a < 128 ? 0 : 1)) & 0xFFFF;
+				for (i in 0...count)
+					if ((data.getUInt16(i * 2) & 1) <= limit)
+						data.setUInt16(i * 2, value);
+			case PIXELFORMAT_UNCOMPRESSED_R4G4B4A4:
+				var limit = byte(f32(threshold * 15));
+				var value = (byte(Pixels.round(f32(r * 15))) << 12 | byte(Pixels.round(f32(g * 15))) << 8 | byte(Pixels.round(f32(b * 15))) << 4 | byte(Pixels.round(f32(a * 15)))) & 0xFFFF;
+				for (i in 0...count)
+					if ((data.getUInt16(i * 2) & 15) <= limit)
+						data.setUInt16(i * 2, value);
+			case PIXELFORMAT_UNCOMPRESSED_R8G8B8A8:
+				new helix.services.images.Image("", image.width, image.height, data).clearAlpha(Pixels.argb(Pixels.ofColor(color)), threshold);
+			case PIXELFORMAT_UNCOMPRESSED_R32G32B32A32:
+				for (i in 0...count)
+					if (data.getFloat(i * 16 + 12) <= threshold) {
+						data.setFloat(i * 16, f32(r / 255));
+						data.setFloat(i * 16 + 4, f32(g / 255));
+						data.setFloat(i * 16 + 8, f32(b / 255));
+						data.setFloat(i * 16 + 12, f32(a / 255));
+					}
+			case PIXELFORMAT_UNCOMPRESSED_R16G16B16A16:
+				for (i in 0...count)
+					if (Pixels.halfToFloat(data.getUInt16(i * 8 + 6)) <= threshold) {
+						data.setUInt16(i * 8, Pixels.floatToHalf(f32(r / 255)));
+						data.setUInt16(i * 8 + 2, Pixels.floatToHalf(f32(g / 255)));
+						data.setUInt16(i * 8 + 4, Pixels.floatToHalf(f32(b / 255)));
+						data.setUInt16(i * 8 + 6, Pixels.floatToHalf(f32(a / 255)));
+					}
+			case _:
+		}
+	}
+
+	/** Sets an image's alpha from another image of the same size, its grayscale: a grayscale image becomes gray and alpha, any other
+		RGBA. A mask of another size changes nothing, with a warning.
+
+		@param image  The image.
+		@param alphaMask  The mask. */
+	static function ImageAlphaMask(image:Image, alphaMask:Image):Void {
+		if (image.width != alphaMask.width || image.height != alphaMask.height) {
+			Runtime.log(LOG_WARNING, "IMAGE: Alpha mask must be same size as image");
+			return;
+		}
+		if (image.format >= Pixels.COMPRESSED) {
+			Runtime.log(LOG_WARNING, "IMAGE: Alpha mask can not be applied to compressed data formats");
+			return;
+		}
+		var mask = ImageCopy(alphaMask);
+		if (mask.format != PIXELFORMAT_UNCOMPRESSED_GRAYSCALE)
+			ImageFormat(mask, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+		if (image.data == null || mask.data == null)
+			return;
+		var count = image.width * image.height;
+		if (image.format == PIXELFORMAT_UNCOMPRESSED_GRAYSCALE) {
+			var data = haxe.io.Bytes.alloc(count * 2);
+			for (i in 0...count) {
+				data.set(i * 2, image.data.get(i));
+				data.set(i * 2 + 1, mask.data.get(i));
+			}
+			image.data = data;
+			image.format = PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA;
+		} else {
+			if (image.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8A8)
+				ImageFormat(image, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+			for (i in 0...count)
+				image.data.set(i * 4 + 3, mask.data.get(i));
+		}
+	}
+
+	/** Multiplies each pixel's red, green and blue by its alpha, rounding down; the image keeps its format.
+
+		@param image  The image. */
+	static function ImageAlphaPremultiply(image:Image):Void {
+		throughColors(image, pixels -> pixels.premultiplyAlpha());
+	}
+
+	/** Blurs an image, as raylib's does: an approximate Gaussian, four passes of a box blur across and down, over premultiplied alpha.
+		A box reaching past the image's last pixel reads 0 there, where raylib's reads past its pixels.
+
+		@param image  The image.
+		@param blurSize  How far each box reaches either side of a pixel, in pixels. */
+	static function ImageBlurGaussian(image:Image, blurSize:Int):Void {
+		if (image.data == null || image.width == 0 || image.height == 0)
+			return;
+		ImageAlphaPremultiply(image);
+		var width = image.width, height = image.height, count = width * height;
+		var pixels = Pixels.colors(image.data, width, height, image.format);
+		var a = new haxe.ds.Vector<Float>(count * 4),
+			b = new haxe.ds.Vector<Float>(count * 4),
+			sums = new haxe.ds.Vector<Float>(4);
+		for (i in 0...count * 4)
+			a[i] = pixels.get(i);
+		inline function read(v:haxe.ds.Vector<Float>, pixel:Int, k:Int):Float
+			return pixel >= 0 && pixel < count ? v[pixel * 4 + k] : 0;
+		for (_ in 0...4) {
+			for (row in 0...height) {
+				var size = blurSize;
+				for (k in 0...4) {
+					var s = 0.;
+					for (i in 0...blurSize)
+						s = f32(s + read(a, row * width + i, k));
+					sums[k] = s;
+				}
+				for (x in 0...width) {
+					if (x - blurSize - 1 >= 0) {
+						for (k in 0...4)
+							sums[k] = f32(sums[k] - a[(row * width + x - blurSize - 1) * 4 + k]);
+						size--;
+					}
+					if (x + blurSize < width) {
+						for (k in 0...4)
+							sums[k] = f32(sums[k] + a[(row * width + x + blurSize) * 4 + k]);
+						size++;
+					}
+					for (k in 0...4)
+						b[(row * width + x) * 4 + k] = f32(sums[k] / size);
+				}
+			}
+			for (col in 0...width) {
+				var size = blurSize;
+				for (k in 0...4) {
+					var s = 0.;
+					for (i in 0...blurSize)
+						s = f32(s + read(b, i * width + col, k));
+					sums[k] = s;
+				}
+				for (y in 0...height) {
+					if (y - blurSize - 1 >= 0) {
+						for (k in 0...4)
+							sums[k] = f32(sums[k] - b[((y - blurSize - 1) * width + col) * 4 + k]);
+						size--;
+					}
+					if (y + blurSize < height) {
+						for (k in 0...4)
+							sums[k] = f32(sums[k] + b[((y + blurSize) * width + col) * 4 + k]);
+						size++;
+					}
+					for (k in 0...4)
+						a[(y * width + col) * 4 + k] = byte(f32(sums[k] / size));
+				}
+			}
+		}
+		for (i in 0...count) {
+			var w = a[i * 4 + 3];
+			if (w == 0)
+				pixels.setInt32(i * 4, 0);
+			else if (w <= 255) {
+				var alpha = f32(w / 255);
+				pixels.set(i * 4, byte(f32(a[i * 4] / alpha)));
+				pixels.set(i * 4 + 1, byte(f32(a[i * 4 + 1] / alpha)));
+				pixels.set(i * 4 + 2, byte(f32(a[i * 4 + 2] / alpha)));
+				pixels.set(i * 4 + 3, byte(w));
+			}
+		}
+		backToFormat(image, pixels);
+	}
+
+	/** Applies a square kernel to an image, as raylib's does: each channel, alpha too, the sum of the pixels around it as fractions times
+		the weights; red, green and blue clamped to 0 to 1, alpha not. A pixel past the left or right edge is taken from the row beside,
+		one past the top or bottom is 0. A count that isn't square changes nothing, with a warning.
+
+		@param image  The image.
+		@param kernel  The weights, rows top first.
+		@param kernelSize  How many: 9 for 3 by 3, 25 for 5 by 5. */
+	static function ImageKernelConvolution(image:Image, kernel:Array<Float>, kernelSize:Int):Void {
+		if (image.data == null || image.width == 0 || image.height == 0 || kernel == null)
+			return;
+		var kernelWidth = Std.int(f32(Math.sqrt(f32(kernelSize))));
+		if (kernelWidth * kernelWidth != kernelSize) {
+			Runtime.log(LOG_WARNING, "IMAGE: Convolution kernel must be square to be applied");
+			return;
+		}
+		var width = image.width, height = image.height, count = width * height;
+		var pixels = Pixels.colors(image.data, width, height, image.format);
+		var weights = new haxe.ds.Vector<Float>(kernelSize),
+			temp = new haxe.ds.Vector<Float>(kernelSize * 4),
+			out = new haxe.ds.Vector<Float>(count * 4);
+		for (i in 0...kernelSize) {
+			weights[i] = f32(kernel[i]);
+			for (k in 0...4)
+				temp[i * 4 + k] = 0;
+		}
+		var half = Std.int(kernelWidth / 2), start = -half, end = kernelWidth % 2 == 0 ? half : half + 1;
+		// raylib's x walks the rows and y the columns.
+		for (x in 0...height)
+			for (y in 0...width) {
+				for (xk in start...end)
+					for (yk in start...end) {
+						var t = kernelWidth * (xk + half) + yk + half,
+							index = width * (x + xk) + (y + yk);
+						for (k in 0...4)
+							temp[t * 4 + k] = index < 0 || index >= count ? 0 : f32(f32(pixels.get(index * 4 + k) / 255) * weights[t]);
+					}
+				for (k in 0...4) {
+					var s = 0.;
+					for (i in 0...kernelSize)
+						s = f32(s + temp[i * 4 + k]);
+					out[(width * x + y) * 4 + k] = k == 3 ? s : s < 0 ? 0 : s > 1 ? 1 : s;
+				}
+				for (i in 0...kernelSize * 4)
+					temp[i] = 0;
+			}
+		for (i in 0...count * 4)
+			pixels.set(i, byte(f32(out[i] * 255)));
+		backToFormat(image, pixels);
+	}
+
+	/** Resizes an image. Unlike raylib's, whose `stb_image_resize2` this library doesn't have, it is helix-services' `Bicubic` (Catmull-Rom,
+		alpha-weighted), so the pixels aren't raylib's; an 8-bit format is resized in its channels, any other through RGBA, as raylib's.
+
+		@param image  The image.
+		@param newWidth  The width, in pixels.
+		@param newHeight  The height, in pixels. */
+	static function ImageResize(image:Image, newWidth:Int, newHeight:Int):Void {
+		if (image.data == null || image.width == 0 || image.height == 0)
+			return;
+		var format = image.format,
+			count = image.width * image.height,
+			data = image.data;
+		var channels = switch format {
 			case PIXELFORMAT_UNCOMPRESSED_GRAYSCALE: 1;
 			case PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA: 2;
 			case PIXELFORMAT_UNCOMPRESSED_R8G8B8: 3;
 			case PIXELFORMAT_UNCOMPRESSED_R8G8B8A8: 4;
 			case _: 0;
 		}
-		if (channels == 0 || data.length < count * channels)
-			return null;
-		var pixels = haxe.io.Bytes.alloc(count * 4);
-		for (i in 0...count) {
-			var at = i * channels;
-			var r = data.get(at),
-				g = channels >= 3 ? data.get(at + 1) : r,
-				b = channels >= 3 ? data.get(at + 2) : r;
-			var a = channels == 2 ? data.get(at + 1) : channels == 4 ? data.get(at + 3) : 255;
-			pixels.set(i * 4, r);
-			pixels.set(i * 4 + 1, g);
-			pixels.set(i * 4 + 2, b);
-			pixels.set(i * 4 + 3, a);
+		if (channels == 0) {
+			var resized = new helix.services.images.Image("", image.width, image.height,
+				Pixels.colors(data, image.width, image.height, format)).resize(newWidth, newHeight, Bicubic);
+			image.data = resized.pixels;
+			image.width = newWidth;
+			image.height = newHeight;
+			image.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+			ImageFormat(image, format);
+			return;
 		}
-		return pixels;
+		// An 8-bit format's channels as RGBA, resized, and taken back.
+		var rgba = haxe.io.Bytes.alloc(count * 4);
+		for (i in 0...count)
+			rgba.setInt32(i * 4, switch channels {
+				case 1: Pixels.pack(data.get(i), data.get(i), data.get(i), 255);
+				case 2: Pixels.pack(data.get(i * 2), data.get(i * 2), data.get(i * 2), data.get(i * 2 + 1));
+				case 3: Pixels.pack(data.get(i * 3), data.get(i * 3 + 1), data.get(i * 3 + 2), 255);
+				case _: data.getInt32(i * 4);
+			});
+		var resized = new helix.services.images.Image("", image.width, image.height, rgba).resize(newWidth, newHeight, Bicubic).pixels;
+		var size = resized.length >> 2,
+			output = channels == 4 ? resized : haxe.io.Bytes.alloc(size * channels);
+		if (channels != 4)
+			for (i in 0...size)
+				for (k in 0...channels)
+					output.set(i * channels + k, resized.get(i * 4 + (channels == 2 && k == 1 ? 3 : k)));
+		image.data = output;
+		image.width = newWidth;
+		image.height = newHeight;
+	}
+
+	/** Resizes an image to the nearest pixels, as raylib's does, through RGBA; it keeps its format.
+
+		@param image  The image.
+		@param newWidth  The width, in pixels.
+		@param newHeight  The height, in pixels. */
+	static function ImageResizeNN(image:Image, newWidth:Int, newHeight:Int):Void {
+		if (image.data == null || image.width == 0 || image.height == 0)
+			return;
+		var format = image.format;
+		var resized = new helix.services.images.Image("", image.width, image.height,
+			Pixels.colors(image.data, image.width, image.height, format)).resize(newWidth, newHeight, Nearest);
+		image.data = resized.pixels;
+		image.width = newWidth;
+		image.height = newHeight;
+		image.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+		ImageFormat(image, format);
+	}
+
+	/** Puts an image on a canvas of another size, in its format: the canvas filled with a color as `SetPixelColor` writes it (a float
+		format's canvas stays zero), the image at an offset, what falls outside cropped. A canvas the image's size leaves it unchanged.
+
+		@param image  The image.
+		@param newWidth  The canvas's width, in pixels.
+		@param newHeight  The canvas's height, in pixels.
+		@param offsetX  Where the image's left edge goes; negative crops its left.
+		@param offsetY  Where its top edge goes.
+		@param fill  The canvas's color. */
+	static function ImageResizeCanvas(image:Image, newWidth:Int, newHeight:Int, offsetX:Int, offsetY:Int, fill:Color):Void {
+		if (image.data == null || image.width == 0 || image.height == 0)
+			return;
+		if (image.mipmaps > 1)
+			Runtime.log(LOG_WARNING, "Image manipulation only applied to base mipmap level");
+		if (image.format >= Pixels.COMPRESSED) {
+			Runtime.log(LOG_WARNING, "Image manipulation not supported for compressed formats");
+			return;
+		}
+		if (newWidth == image.width && newHeight == image.height)
+			return;
+		var srcX = 0, srcY = 0, srcWidth = image.width, srcHeight = image.height, dstX = offsetX, dstY = offsetY;
+		if (offsetX < 0) {
+			srcX = -offsetX;
+			srcWidth += offsetX;
+			dstX = 0;
+		} else if (offsetX + image.width > newWidth)
+			srcWidth = newWidth - offsetX;
+		if (offsetY < 0) {
+			srcY = -offsetY;
+			srcHeight += offsetY;
+			dstY = 0;
+		} else if (offsetY + image.height > newHeight)
+			srcHeight = newHeight - offsetY;
+		if (newWidth < srcWidth)
+			srcWidth = newWidth;
+		if (newHeight < srcHeight)
+			srcHeight = newHeight;
+		var bytesPerPixel = GetPixelDataSize(1, 1, image.format),
+			size = newWidth * newHeight * bytesPerPixel;
+		var resized = haxe.io.Bytes.alloc(size > 0 ? size : 0);
+		resized.fill(0, resized.length, 0);
+		if (resized.length >= bytesPerPixel && bytesPerPixel > 0) {
+			Pixels.setColor(resized, 0, Pixels.ofColor(fill), image.format, false);
+			for (x in 1...newWidth)
+				resized.blit(x * bytesPerPixel, resized, 0, bytesPerPixel);
+			for (y in 1...newHeight)
+				resized.blit(y * newWidth * bytesPerPixel, resized, 0, newWidth * bytesPerPixel);
+		}
+		var offset = (dstY * newWidth + dstX) * bytesPerPixel;
+		if (srcWidth > 0)
+			for (y in 0...srcHeight) {
+				copyBytes(resized, offset, image.data, ((y + srcY) * image.width + srcX) * bytesPerPixel, srcWidth * bytesPerPixel);
+				offset += newWidth * bytesPerPixel;
+			}
+		image.data = resized;
+		image.width = newWidth;
+		image.height = newHeight;
+	}
+
+	/** Makes an image's mipmaps, down to 1 by 1, after its pixels, in its format; levels it has are kept. Each is made by `ImageResize`
+		from the last, so they aren't raylib's.
+
+		@param image  The image. */
+	static function ImageMipmaps(image:Image):Void {
+		if (image.data == null || image.width == 0 || image.height == 0)
+			return;
+		var mipCount = 1, mipWidth = image.width, mipHeight = image.height;
+		var mipSize = GetPixelDataSize(mipWidth, mipHeight, image.format);
+		while (mipWidth != 1 || mipHeight != 1) {
+			if (mipWidth != 1)
+				mipWidth = Std.int(mipWidth / 2);
+			if (mipHeight != 1)
+				mipHeight = Std.int(mipHeight / 2);
+			if (mipWidth < 1)
+				mipWidth = 1;
+			if (mipHeight < 1)
+				mipHeight = 1;
+			mipCount++;
+			mipSize += GetPixelDataSize(mipWidth, mipHeight, image.format);
+		}
+		if (image.mipmaps >= mipCount) {
+			Runtime.log(LOG_WARNING, "IMAGE: Mipmaps already available");
+			return;
+		}
+		var all = haxe.io.Bytes.alloc(mipSize);
+		all.fill(0, mipSize, 0);
+		copyBytes(all, 0, image.data, 0, mipSize);
+		image.data = all;
+		mipWidth = image.width;
+		mipHeight = image.height;
+		mipSize = GetPixelDataSize(mipWidth, mipHeight, image.format);
+		var next = 0, copy = ImageCopy(image);
+		for (i in 1...mipCount) {
+			next += mipSize;
+			mipWidth = Std.int(mipWidth / 2);
+			mipHeight = Std.int(mipHeight / 2);
+			if (mipWidth < 1)
+				mipWidth = 1;
+			if (mipHeight < 1)
+				mipHeight = 1;
+			mipSize = GetPixelDataSize(mipWidth, mipHeight, image.format);
+			if (i < image.mipmaps)
+				continue;
+			ImageResize(copy, mipWidth, mipHeight);
+			copyBytes(all, next, copy.data, 0, mipSize);
+		}
+		image.mipmaps = mipCount;
+	}
+
+	/** Dithers an image to 16 bits a pixel or fewer (Floyd-Steinberg), as raylib's does: R5G6B5, R5G5B5A1 or R4G4B4A4 when the bits
+		are one of those, else format 0 with the bits packed in 16, and a warning. More than 16 bits changes nothing, with a warning.
+
+		@param image  The image.
+		@param rBpp  Red's bits.
+		@param gBpp  Green's bits.
+		@param bBpp  Blue's bits.
+		@param aBpp  Alpha's bits. */
+	static function ImageDither(image:Image, rBpp:Int, gBpp:Int, bBpp:Int, aBpp:Int):Void {
+		if (image.data == null || image.width == 0 || image.height == 0)
+			return;
+		if (image.format >= Pixels.COMPRESSED) {
+			Runtime.log(LOG_WARNING, "IMAGE: Compressed data formats can not be dithered");
+			return;
+		}
+		var total = rBpp + gBpp + bBpp + aBpp;
+		if (total > 16) {
+			Runtime.log(LOG_WARNING, 'IMAGE: Unsupported dithering bpps (${total}bpp), only 16bpp or lower modes supported');
+			return;
+		}
+		var width = image.width, height = image.height;
+		var pixels = Pixels.colors(image.data, width, height, image.format);
+		if (image.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8 && image.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8A8)
+			Runtime.log(LOG_WARNING, "IMAGE: Format is already 16bpp or lower, dithering could have no effect");
+		if (rBpp == 5 && gBpp == 6 && bBpp == 5 && aBpp == 0)
+			image.format = PIXELFORMAT_UNCOMPRESSED_R5G6B5;
+		else if (rBpp == 5 && gBpp == 5 && bBpp == 5 && aBpp == 1)
+			image.format = PIXELFORMAT_UNCOMPRESSED_R5G5B5A1;
+		else if (rBpp == 4 && gBpp == 4 && bBpp == 4 && aBpp == 4)
+			image.format = PIXELFORMAT_UNCOMPRESSED_R4G4B4A4;
+		else {
+			image.format = 0;
+			Runtime.log(LOG_WARNING, 'IMAGE: Unsupported dithered OpenGL internal format: ${total}bpp (R${rBpp}G${gBpp}B${bBpp}A${aBpp})');
+		}
+		var data = haxe.io.Bytes.alloc(width * height * 2);
+		inline function spread(at:Int, error:Int, weight:Float) {
+			var v = pixels.get(at) + Std.int(f32(f32(error * weight) / 16));
+			pixels.set(at, v < 255 ? v : 255);
+		}
+		for (y in 0...height)
+			for (x in 0...width) {
+				var at = (y * width + x) * 4;
+				var r = pixels.get(at) >> (8 - rBpp),
+					g = pixels.get(at + 1) >> (8 - gBpp),
+					b = pixels.get(at + 2) >> (8 - bBpp),
+					a = pixels.get(at + 3) >> (8 - aBpp);
+				var errors = [
+					pixels.get(at) - (r << (8 - rBpp)),
+					pixels.get(at + 1) - (g << (8 - gBpp)),
+					pixels.get(at + 2) - (b << (8 - bBpp))
+				];
+				pixels.setInt32(at, Pixels.pack(r, g, b, a));
+				for (k in 0...3) {
+					if (x < width - 1)
+						spread(at + 4 + k, errors[k], 7);
+					if (x > 0 && y < height - 1)
+						spread(at + (width - 1) * 4 + k, errors[k], 3);
+					if (y < height - 1)
+						spread(at + width * 4 + k, errors[k], 5);
+					if (x < width - 1 && y < height - 1)
+						spread(at + (width + 1) * 4 + k, errors[k], 1);
+				}
+				data.setUInt16((y * width + x) * 2, ((r & 255) << (gBpp + bBpp + aBpp) | (g & 255) << (bBpp + aBpp) | (b & 255) << aBpp | (a & 255)) & 0xFFFF);
+			}
+		image.data = data;
+	}
+
+	/** Turns an image upside down, in its format. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+
+		@param image  The image. */
+	static function ImageFlipVertical(image:Image):Void {
+		if (!manipulable(image))
+			return;
+		var bytesPerPixel = GetPixelDataSize(1, 1, image.format),
+			row = image.width * bytesPerPixel;
+		var flipped = haxe.io.Bytes.alloc(row * image.height);
+		for (i in 0...image.height)
+			copyBytes(flipped, i * row, image.data, (image.height - 1 - i) * row, row);
+		image.data = flipped;
+	}
+
+	/** Mirrors an image left to right, in its format. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+
+		@param image  The image. */
+	static function ImageFlipHorizontal(image:Image):Void {
+		if (!manipulable(image))
+			return;
+		var bytesPerPixel = GetPixelDataSize(1, 1, image.format),
+			width = image.width;
+		var flipped = haxe.io.Bytes.alloc(width * image.height * bytesPerPixel);
+		for (y in 0...image.height)
+			for (x in 0...width)
+				flipped.blit((y * width + x) * bytesPerPixel, image.data, (y * width + width - 1 - x) * bytesPerPixel, bytesPerPixel);
+		image.data = flipped;
+	}
+
+	/** Turns an image by an angle, on a canvas big enough to hold it, clear around it: each byte of a pixel blends the four it falls
+		between, as raylib's does in every format.
+
+		@param image  The image.
+		@param degrees  The angle, in degrees clockwise. */
+	static function ImageRotate(image:Image, degrees:Int):Void {
+		if (!manipulable(image))
+			return;
+		var rad = f32(f32(degrees * f32(PI)) / 180);
+		var sinRadius = f32(Math.sin(rad)), cosRadius = f32(Math.cos(rad));
+		var oldWidth = image.width, oldHeight = image.height;
+		var width = Std.int(f32(Math.abs(f32(oldWidth * cosRadius)) + Math.abs(f32(oldHeight * sinRadius))));
+		var height = Std.int(f32(Math.abs(f32(oldHeight * cosRadius)) + Math.abs(f32(oldWidth * sinRadius))));
+		var bytesPerPixel = GetPixelDataSize(1, 1, image.format),
+			data = image.data;
+		var rotated = haxe.io.Bytes.alloc(width * height * bytesPerPixel);
+		rotated.fill(0, rotated.length, 0);
+		var halfW = f32(width / 2),
+			halfH = f32(height / 2),
+			oldHalfW = f32(oldWidth / 2),
+			oldHalfH = f32(oldHeight / 2);
+		for (y in 0...height) {
+			var dy = f32(y - halfH);
+			for (x in 0...width) {
+				var dx = f32(x - halfW);
+				var oldX = f32(f32(f32(dx * cosRadius) + f32(dy * sinRadius)) + oldHalfW);
+				var oldY = f32(f32(f32(dy * cosRadius) - f32(dx * sinRadius)) + oldHalfH);
+				if (oldX >= 0 && oldX < oldWidth && oldY >= 0 && oldY < oldHeight) {
+					var x1 = Std.int(Math.floor(oldX)),
+						y1 = Std.int(Math.floor(oldY));
+					var x2 = x1 + 1 < oldWidth - 1 ? x1 + 1 : oldWidth - 1,
+						y2 = y1 + 1 < oldHeight - 1 ? y1 + 1 : oldHeight - 1;
+					var px = f32(oldX - x1),
+						py = f32(oldY - y1),
+						qx = f32(1 - px),
+						qy = f32(1 - py);
+					var a1 = (y1 * oldWidth + x1) * bytesPerPixel,
+						a2 = (y1 * oldWidth + x2) * bytesPerPixel,
+						a3 = (y2 * oldWidth + x1) * bytesPerPixel,
+						a4 = (y2 * oldWidth + x2) * bytesPerPixel,
+						at = (y * width + x) * bytesPerPixel;
+					for (i in 0...bytesPerPixel) {
+						var v = f32(f32(f32(f32(data.get(a1 + i) * qx) * qy) + f32(f32(data.get(a2 + i) * px) * qy)) + f32(f32(data.get(a3 + i) * qx) * py));
+						rotated.set(at + i, byte(f32(v + f32(f32(data.get(a4 + i) * px) * py))));
+					}
+				}
+			}
+		}
+		image.data = rotated;
+		image.width = width;
+		image.height = height;
+	}
+
+	/** Turns an image a quarter turn clockwise, in its format.
+
+		@param image  The image. */
+	static function ImageRotateCW(image:Image):Void {
+		if (!manipulable(image))
+			return;
+		var bytesPerPixel = GetPixelDataSize(1, 1, image.format),
+			width = image.width,
+			height = image.height;
+		var rotated = haxe.io.Bytes.alloc(width * height * bytesPerPixel);
+		for (y in 0...height)
+			for (x in 0...width)
+				rotated.blit((x * height + (height - y - 1)) * bytesPerPixel, image.data, (y * width + x) * bytesPerPixel, bytesPerPixel);
+		image.data = rotated;
+		image.width = height;
+		image.height = width;
+	}
+
+	/** Turns an image a quarter turn counterclockwise, in its format.
+
+		@param image  The image. */
+	static function ImageRotateCCW(image:Image):Void {
+		if (!manipulable(image))
+			return;
+		var bytesPerPixel = GetPixelDataSize(1, 1, image.format),
+			width = image.width,
+			height = image.height;
+		var rotated = haxe.io.Bytes.alloc(width * height * bytesPerPixel);
+		for (y in 0...height)
+			for (x in 0...width)
+				rotated.blit((x * height + y) * bytesPerPixel, image.data, (y * width + (width - x - 1)) * bytesPerPixel, bytesPerPixel);
+		image.data = rotated;
+		image.width = height;
+		image.height = width;
+	}
+
+	/** Multiplies each pixel by a color, channel by channel, alpha too; the image keeps its format.
+
+		@param image  The image.
+		@param color  The color; `WHITE` keeps it unchanged. */
+	static function ImageColorTint(image:Image, color:Color):Void {
+		throughColors(image, pixels -> pixels.tint(Pixels.argb(Pixels.ofColor(color))));
+	}
+
+	/** Inverts each pixel's red, green and blue; the image keeps its format.
+
+		@param image  The image. */
+	static function ImageColorInvert(image:Image):Void {
+		throughColors(image, pixels -> pixels.invert());
+	}
+
+	/** Makes an image grayscale, as raylib's does: it becomes `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`, its alpha dropped.
+
+		@param image  The image. */
+	static function ImageColorGrayscale(image:Image):Void {
+		ImageFormat(image, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+	}
+
+	/** Changes an image's contrast; the image keeps its format.
+
+		@param image  The image.
+		@param contrast  -100 (all mid-gray) to 100; 0 leaves it unchanged. */
+	static function ImageColorContrast(image:Image, contrast:Float):Void {
+		throughColors(image, pixels -> pixels.contrast(contrast));
+	}
+
+	/** Changes an image's brightness, adding to red, green and blue; the image keeps its format. A channel taken below 0 becomes 1, as
+		raylib's does.
+
+		@param image  The image.
+		@param brightness  -255 to 255. */
+	static function ImageColorBrightness(image:Image, brightness:Int):Void {
+		throughColors(image, pixels -> pixels.brighten(brightness));
+	}
+
+	/** Changes every pixel of one color to another; the image keeps its format.
+
+		@param image  The image.
+		@param color  The color changed, alpha too.
+		@param replace  The color it becomes. */
+	static function ImageColorReplace(image:Image, color:Color, replace:Color):Void {
+		throughColors(image, pixels -> pixels.replaceColor(Pixels.argb(Pixels.ofColor(color)), Pixels.argb(Pixels.ofColor(replace))));
+	}
+
+	/** Returns an image's pixels as colors, as raylib's reads each format: a 5-bit channel times 8, a 6-bit times 4, a 4-bit times 17; R32
+		and R16 as red alone.
+
+		@param image  The image.
+		@return  The colors, rows top first, or null for an image 0 wide or high. */
+	static function LoadImageColors(image:Image):Array<Color> {
+		if (image.width == 0 || image.height == 0)
+			return null;
+		var pixels = Pixels.colors(image.data, image.width, image.height, image.format);
+		return [for (i in 0...image.width * image.height) Pixels.toColor(pixels.getInt32(i * 4))];
+	}
+
+	/** Returns an image's colors, each once, in the order first met; clear pixels are skipped.
+
+		@param image  The image.
+		@param maxPaletteSize  The most colors.
+		@param colorCount  Its first element is set to how many colors were found.
+		@return  `maxPaletteSize` colors, those found first, the rest `BLANK`; null for an image 0 wide or high. */
+	static function LoadImagePalette(image:Image, maxPaletteSize:Int, colorCount:Array<Int>):Array<Color> {
+		var palette:Array<Color> = null, count = 0;
+		if (image.width != 0 && image.height != 0) {
+			var pixels = Pixels.colors(image.data, image.width, image.height, image.format);
+			var found = new helix.services.images.Image("", image.width, image.height, pixels).getPalette(maxPaletteSize);
+			count = found.length;
+			palette = [
+				for (i in 0...maxPaletteSize)
+					i < count ? new Color((found[i] >> 16) & 255, (found[i] >> 8) & 255, found[i] & 255, (found[i] >>> 24) & 255) : new Color(0, 0, 0, 0)
+			];
+			if (count >= maxPaletteSize)
+				Runtime.log(LOG_WARNING, 'IMAGE: Palette is greater than $maxPaletteSize colors');
+		}
+		if (colorCount != null)
+			colorCount[0] = count;
+		return palette;
+	}
+
+	/** Frees colors `LoadImageColors` gave. There is nothing to free here.
+
+		@param colors  The colors. */
+	static function UnloadImageColors(colors:Array<Color>):Void {}
+
+	/** Frees colors `LoadImagePalette` gave. There is nothing to free here.
+
+		@param colors  The colors. */
+	static function UnloadImagePalette(colors:Array<Color>):Void {}
+
+	/** Returns the smallest rectangle holding every pixel whose alpha is over a threshold.
+
+		@param image  The image.
+		@param threshold  The threshold, 0 to 1.
+		@return  The rectangle, in pixels; all zero when no pixel is over it. */
+	static function GetImageAlphaBorder(image:Image, threshold:Float):Rectangle {
+		if (image.width == 0 || image.height == 0)
+			return new Rectangle();
+		var pixels = Pixels.colors(image.data, image.width, image.height, image.format);
+		var border = new helix.services.images.Image("", image.width, image.height, pixels).getAlphaBorder(threshold);
+		return border.isEmpty ? new Rectangle() : new Rectangle(border.minX, border.minY, border.width, border.height);
+	}
+
+	/** Returns a pixel's color, as `LoadImageColors` reads it but for raylib's R32G32B32A32 and R16G16B16A16, whose channels are each
+		read from red. A pixel outside the image is clear black, with a warning.
+
+		@param image  The image.
+		@param x  The pixel's column.
+		@param y  Its row.
+		@return  The color. */
+	static function GetImageColor(image:Image, x:Int, y:Int):Color {
+		if (x < 0 || x >= image.width || y < 0 || y >= image.height) {
+			Runtime.log(LOG_WARNING, 'Requested image pixel ($x, $y) out of bounds');
+			return new Color(0, 0, 0, 0);
+		}
+		var i = y * image.width + x;
+		return switch image.format {
+			case PIXELFORMAT_UNCOMPRESSED_R32G32B32A32:
+				var v = byte(f32(image.data.getFloat(i * 16) * 255));
+				new Color(v, v, v, v);
+			case PIXELFORMAT_UNCOMPRESSED_R16G16B16A16:
+				var v = byte(f32(Pixels.halfToFloat(image.data.getUInt16(i * 8)) * 255));
+				new Color(v, v, v, v);
+			case f if (f >= PIXELFORMAT_UNCOMPRESSED_GRAYSCALE && f < Pixels.COMPRESSED):
+				Pixels.toColor(Pixels.loadColor(image.data, i, f));
+			case _:
+				Runtime.log(LOG_WARNING, "Compressed image format does not support color reading");
+				new Color(0, 0, 0, 0);
+		}
+	}
+
+	// ---- Images: drawn into ----
+
+	/** Fills an image with a color, in its format, as `ImageDrawPixel` writes it.
+
+		@param dst  The image.
+		@param color  The color. */
+	static function ImageClearBackground(dst:Image, color:Color):Void {
+		if (dst.data == null || dst.width == 0 || dst.height == 0)
+			return;
+		ImageDrawPixel(dst, 0, 0, color);
+		var bytesPerPixel = GetPixelDataSize(1, 1, dst.format);
+		for (i in 1...dst.width * dst.height)
+			dst.data.blit(i * bytesPerPixel, dst.data, 0, bytesPerPixel);
+	}
+
+	/** Sets a pixel, in the image's format: grayscale by luminance, a 16-bit format's channels rounded, R5G5B5A1's alpha bit set over an
+		alpha of 50. One outside the image is skipped.
+
+		@param dst  The image.
+		@param posX  The pixel's column.
+		@param posY  Its row.
+		@param color  The color. */
+	static function ImageDrawPixel(dst:Image, posX:Int, posY:Int, color:Color):Void {
+		if (dst.data == null || posX < 0 || posX >= dst.width || posY < 0 || posY >= dst.height)
+			return;
+		Pixels.setColor(dst.data, (posY * dst.width + posX) * GetPixelDataSize(1, 1, dst.format), Pixels.ofColor(color), dst.format, true);
+	}
+
+	/** Sets a pixel, as `ImageDrawPixel` does, its position cut to whole pixels.
+
+		@param dst  The image.
+		@param position  The pixel.
+		@param color  The color. */
+	static function ImageDrawPixelV(dst:Image, position:Vector2, color:Color):Void {
+		ImageDrawPixel(dst, Std.int(f32(position.x)), Std.int(f32(position.y)), color);
+	}
+
+	/** Draws a line one pixel wide, from its start up to its end; the end pixel isn't drawn.
+
+		@param dst  The image.
+		@param startPosX  The start's column.
+		@param startPosY  The start's row.
+		@param endPosX  The end's column.
+		@param endPosY  The end's row.
+		@param color  The color. */
+	static function ImageDrawLine(dst:Image, startPosX:Int, startPosY:Int, endPosX:Int, endPosY:Int, color:Color):Void {
+		shape(dst, color, (pixels, c) -> pixels.drawLine(startPosX, startPosY, endPosX, endPosY, c));
+	}
+
+	/** Draws a line one pixel wide, its ends rounded to whole pixels.
+
+		@param dst  The image.
+		@param start  The start.
+		@param end  The end.
+		@param color  The color. */
+	static function ImageDrawLineV(dst:Image, start:Vector2, end:Vector2, color:Color):Void {
+		ImageDrawLine(dst, Std.int(f32(f32(start.x) + 0.5)), Std.int(f32(f32(start.y) + 0.5)), Std.int(f32(f32(end.x) + 0.5)), Std.int(f32(f32(end.y) + 0.5)),
+			color);
+	}
+
+	/** Draws a line of a thickness: the line, and copies of it above and below for a line more across than down, left and right
+		otherwise. Its ends are rounded to whole pixels.
+
+		@param dst  The image.
+		@param start  The start.
+		@param end  The end.
+		@param thick  The thickness, in pixels.
+		@param color  The color. */
+	static function ImageDrawLineEx(dst:Image, start:Vector2, end:Vector2, thick:Int, color:Color):Void {
+		shape(dst, color, (pixels, c) -> pixels.drawThickLine(start.x, start.y, end.x, end.y, thick, c));
+	}
+
+	/** Fills a circle.
+
+		@param dst  The image.
+		@param centerX  The middle's column.
+		@param centerY  The middle's row.
+		@param radius  The radius, in pixels.
+		@param color  The color. */
+	static function ImageDrawCircle(dst:Image, centerX:Int, centerY:Int, radius:Int, color:Color):Void {
+		shape(dst, color, (pixels, c) -> pixels.drawCircle(centerX, centerY, radius, c));
+	}
+
+	/** Fills a circle, its middle cut to whole pixels.
+
+		@param dst  The image.
+		@param center  The middle.
+		@param radius  The radius, in pixels.
+		@param color  The color. */
+	static function ImageDrawCircleV(dst:Image, center:Vector2, radius:Int, color:Color):Void {
+		ImageDrawCircle(dst, Std.int(f32(center.x)), Std.int(f32(center.y)), radius, color);
+	}
+
+	/** Outlines a circle, one pixel wide.
+
+		@param dst  The image.
+		@param centerX  The middle's column.
+		@param centerY  The middle's row.
+		@param radius  The radius, in pixels.
+		@param color  The color. */
+	static function ImageDrawCircleLines(dst:Image, centerX:Int, centerY:Int, radius:Int, color:Color):Void {
+		shape(dst, color, (pixels, c) -> pixels.drawCircleLines(centerX, centerY, radius, c));
+	}
+
+	/** Outlines a circle, one pixel wide, its middle cut to whole pixels.
+
+		@param dst  The image.
+		@param center  The middle.
+		@param radius  The radius, in pixels.
+		@param color  The color. */
+	static function ImageDrawCircleLinesV(dst:Image, center:Vector2, radius:Int, color:Color):Void {
+		ImageDrawCircleLines(dst, Std.int(f32(center.x)), Std.int(f32(center.y)), radius, color);
+	}
+
+	/** Fills a rectangle; what falls outside the image is skipped.
+
+		@param dst  The image.
+		@param posX  The left edge.
+		@param posY  The top edge.
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param color  The color. */
+	static function ImageDrawRectangle(dst:Image, posX:Int, posY:Int, width:Int, height:Int, color:Color):Void {
+		ImageDrawRectangleRec(dst, new Rectangle(posX, posY, width, height), color);
+	}
+
+	/** Fills a rectangle, its corner and size cut to whole pixels.
+
+		@param dst  The image.
+		@param position  The top-left corner.
+		@param size  The width and height.
+		@param color  The color. */
+	static function ImageDrawRectangleV(dst:Image, position:Vector2, size:Vector2, color:Color):Void {
+		ImageDrawRectangle(dst, Std.int(f32(position.x)), Std.int(f32(position.y)), Std.int(f32(size.x)), Std.int(f32(size.y)), color);
+	}
+
+	/** Fills a rectangle, as raylib's does: cut to the image, then to whole pixels; one 0 wide still sets its top-left pixel.
+
+		@param dst  The image.
+		@param rec  The rectangle, in pixels.
+		@param color  The color. */
+	static function ImageDrawRectangleRec(dst:Image, rec:Rectangle, color:Color):Void {
+		if (dst.data == null || dst.width == 0 || dst.height == 0)
+			return;
+		var x = f32(rec.x),
+			y = f32(rec.y),
+			width = f32(rec.width),
+			height = f32(rec.height);
+		if (x < 0) {
+			width = f32(width + x);
+			x = 0;
+		}
+		if (y < 0) {
+			height = f32(height + y);
+			y = 0;
+		}
+		if (width < 0)
+			width = 0;
+		if (height < 0)
+			height = 0;
+		if (f32(x + width) >= dst.width)
+			width = f32(dst.width - x);
+		if (f32(y + height) >= dst.height)
+			height = f32(dst.height - y);
+		if (x >= dst.width || y >= dst.height)
+			return;
+		if (f32(x + width) <= 0 || f32(y + height) <= 0)
+			return;
+		var sx = Std.int(x),
+			sy = Std.int(y),
+			bytesPerPixel = GetPixelDataSize(1, 1, dst.format);
+		ImageDrawPixel(dst, sx, sy, color);
+		var first = (sy * dst.width + sx) * bytesPerPixel, w = Std.int(width);
+		for (i in 1...w)
+			dst.data.blit(first + i * bytesPerPixel, dst.data, first, bytesPerPixel);
+		for (j in 1...Std.int(height))
+			dst.data.blit(first + j * dst.width * bytesPerPixel, dst.data, first, bytesPerPixel * w);
+	}
+
+	/** Outlines a rectangle, the outline inside it.
+
+		@param dst  The image.
+		@param rec  The rectangle, in pixels.
+		@param thick  The outline's thickness, in pixels.
+		@param color  The color. */
+	static function ImageDrawRectangleLines(dst:Image, rec:Rectangle, thick:Int, color:Color):Void {
+		var x = f32(rec.x),
+			y = f32(rec.y),
+			width = f32(rec.width),
+			height = f32(rec.height);
+		ImageDrawRectangle(dst, Std.int(x), Std.int(y), Std.int(width), thick, color);
+		ImageDrawRectangle(dst, Std.int(x), Std.int(f32(y + thick)), thick, Std.int(f32(height - thick * 2)), color);
+		ImageDrawRectangle(dst, Std.int(f32(f32(x + width) - thick)), Std.int(f32(y + thick)), thick, Std.int(f32(height - thick * 2)), color);
+		ImageDrawRectangle(dst, Std.int(x), Std.int(f32(f32(y + height) - thick)), Std.int(width), thick, color);
+	}
+
+	/** Fills a triangle; its corners may go either way round.
+
+		@param dst  The image.
+		@param v1  The first corner.
+		@param v2  The second corner.
+		@param v3  The third corner.
+		@param color  The color. */
+	static function ImageDrawTriangle(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void {
+		shape(dst, color, (pixels, c) -> pixels.drawTriangle(v1.x, v1.y, v2.x, v2.y, v3.x, v3.y, c, c, c));
+	}
+
+	/** Fills a triangle, each corner its own color, blended across it as raylib's does: each channel by the pixel's weights, each
+		rounded down, so three corners of one color may not give it exactly.
+
+		@param dst  The image.
+		@param v1  The first corner.
+		@param v2  The second corner.
+		@param v3  The third corner.
+		@param c1  The first corner's color.
+		@param c2  The second corner's color.
+		@param c3  The third corner's color. */
+	static function ImageDrawTriangleEx(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void {
+		var ax = f32(v1.x), ay = f32(v1.y), bx = f32(v2.x), by = f32(v2.y), cx = f32(v3.x), cy = f32(v3.y);
+		var xMin = Std.int(ax < bx ? (ax < cx ? ax : cx) : (bx < cx ? bx : cx)),
+			yMin = Std.int(ay < by ? (ay < cy ? ay : cy) : (by < cy ? by : cy));
+		var xMax = Std.int(ax > bx ? (ax > cx ? ax : cx) : (bx > cx ? bx : cx)),
+			yMax = Std.int(ay > by ? (ay > cy ? ay : cy) : (by > cy ? by : cy));
+		if (xMin < 0)
+			xMin = 0;
+		if (yMin < 0)
+			yMin = 0;
+		if (xMax > dst.width)
+			xMax = dst.width;
+		if (yMax > dst.height)
+			yMax = dst.height;
+		var flip = f32(f32(f32(bx - ax) * f32(cy - ay)) - f32(f32(cx - ax) * f32(by - ay))) > 0 ? -1 : 1;
+		var w1XStep = Std.int(f32(cy - by)) * flip,
+			w1YStep = Std.int(f32(bx - cx)) * flip;
+		var w2XStep = Std.int(f32(ay - cy)) * flip,
+			w2YStep = Std.int(f32(cx - ax)) * flip;
+		var w3XStep = Std.int(f32(by - ay)) * flip,
+			w3YStep = Std.int(f32(ax - bx)) * flip;
+		var w1Row = Std.int(f32(f32(f32(xMin - bx) * w1XStep) + f32(w1YStep * f32(yMin - by))));
+		var w2Row = Std.int(f32(f32(f32(xMin - cx) * w2XStep) + f32(w2YStep * f32(yMin - cy))));
+		var w3Row = Std.int(f32(f32(f32(xMin - ax) * w3XStep) + f32(w3YStep * f32(yMin - ay))));
+		var wInvSum = f32(255 / f32(w1Row + w2Row + w3Row));
+		var a = Pixels.ofColor(c1),
+			b = Pixels.ofColor(c2),
+			c = Pixels.ofColor(c3);
+		var bytesPerPixel = GetPixelDataSize(1, 1, dst.format);
+		for (y in yMin...yMax + 1) {
+			var w1 = w1Row, w2 = w2Row, w3 = w3Row;
+			for (x in xMin...xMax + 1) {
+				if ((w1 | w2 | w3) >= 0 && dst.data != null && x < dst.width && y < dst.height) {
+					var k1 = byte(f32(f32(w1) * wInvSum)),
+						k2 = byte(f32(f32(w2) * wInvSum)),
+						k3 = byte(f32(f32(w3) * wInvSum));
+					inline function channel(shift:Int):Int
+						return Std.int((((a >>> shift) & 255) * k1 + ((b >>> shift) & 255) * k2 + ((c >>> shift) & 255) * k3) / 255) & 255;
+					Pixels.setColor(dst.data, (y * dst.width + x) * bytesPerPixel, Pixels.pack(channel(0), channel(8), channel(16), channel(24)), dst.format,
+						true);
+				}
+				w1 += w1XStep;
+				w2 += w2XStep;
+				w3 += w3XStep;
+			}
+			w1Row += w1YStep;
+			w2Row += w2YStep;
+			w3Row += w3YStep;
+		}
+	}
+
+	/** Outlines a triangle with three `ImageDrawLine`s, its corners cut to whole pixels.
+
+		@param dst  The image.
+		@param v1  The first corner.
+		@param v2  The second corner.
+		@param v3  The third corner.
+		@param color  The color. */
+	static function ImageDrawTriangleLines(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void {
+		shape(dst, color, (pixels, c) -> pixels.drawTriangleLines(v1.x, v1.y, v2.x, v2.y, v3.x, v3.y, c));
+	}
+
+	/** Fills a fan of triangles, each from the first point to the next two.
+
+		@param dst  The image.
+		@param points  The points, the first the fan's middle.
+		@param pointCount  How many; under 3 draws nothing.
+		@param color  The color. */
+	static function ImageDrawTriangleFan(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void {
+		if (pointCount >= 3)
+			for (i in 1...pointCount - 1)
+				ImageDrawTriangle(dst, points[0], points[i], points[i + 1], color);
+	}
+
+	/** Fills a strip of triangles, each of three points in a row.
+
+		@param dst  The image.
+		@param points  The points.
+		@param pointCount  How many; under 3 draws nothing.
+		@param color  The color. */
+	static function ImageDrawTriangleStrip(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void {
+		if (pointCount >= 3)
+			for (i in 2...pointCount)
+				if (i % 2 == 0)
+					ImageDrawTriangle(dst, points[i], points[i - 2], points[i - 1], color);
+				else
+					ImageDrawTriangle(dst, points[i], points[i - 1], points[i - 2], color);
+	}
+
+	/** Draws a rectangle of one image into a rectangle of another, tinted, blended over (raylib's `ColorAlphaBlend`), in their formats.
+		A source with no alpha under an opaque tint is copied, the tint's color ignored, as raylib's is; a float destination is unchanged,
+		as `SetPixelColor` writes none. A source rectangle of another whole-pixel size than the destination's is first resized by
+		`ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them.
+
+		@param dst  The image drawn into.
+		@param src  The image drawn from.
+		@param srcRec  The source rectangle, in its pixels, cut to it.
+		@param dstRec  The destination rectangle.
+		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
+	static function ImageDraw(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectangle, tint:Color):Void {
+		drawImage(dst, 0, src, srcRec, dstRec, tint);
+	}
+
+	// ImageDraw into the level of dst whose pixels start at a byte: raylib's pointer into a mipmapped image.
+	static function drawImage(dst:Image, dstStart:Int, src:Image, srcRec:Rectangle, dstRec:Rectangle, tint:Color):Void {
+		if (dst.data == null || dst.width == 0 || dst.height == 0 || src.data == null || src.width == 0 || src.height == 0)
+			return;
+		if (dst.format >= Pixels.COMPRESSED) {
+			Runtime.log(LOG_WARNING, "Image drawing not supported for compressed formats");
+			return;
+		}
+		var sx = f32(srcRec.x),
+			sy = f32(srcRec.y),
+			sw = f32(srcRec.width),
+			sh = f32(srcRec.height);
+		var dx = f32(dstRec.x),
+			dy = f32(dstRec.y),
+			dw = f32(dstRec.width),
+			dh = f32(dstRec.height);
+		if (sx < 0) {
+			sw = f32(sw + sx);
+			sx = 0;
+		}
+		if (sy < 0) {
+			sh = f32(sh + sy);
+			sy = 0;
+		}
+		if (f32(sx + sw) > src.width)
+			sw = f32(src.width - sx);
+		if (f32(sy + sh) > src.height)
+			sh = f32(src.height - sy);
+		var from = src;
+		if (Std.int(sw) != Std.int(dw) || Std.int(sh) != Std.int(dh)) {
+			from = ImageFromImage(src, new Rectangle(sx, sy, sw, sh));
+			ImageResize(from, Std.int(dw), Std.int(dh));
+			sx = 0;
+			sy = 0;
+			sw = from.width;
+			sh = from.height;
+		}
+		if (dx < 0) {
+			sx = f32(sx - dx);
+			sw = f32(sw + dx);
+			dx = 0;
+		} else if (f32(dx + sw) > dst.width)
+			sw = f32(dst.width - dx);
+		if (dy < 0) {
+			sy = f32(sy - dy);
+			sh = f32(sh + dy);
+			dy = 0;
+		} else if (f32(dy + sh) > dst.height)
+			sh = f32(dst.height - dy);
+		if (dst.width < sw)
+			sw = dst.width;
+		if (dst.height < sh)
+			sh = dst.height;
+		var t = Pixels.ofColor(tint);
+		var opaque = from.format == PIXELFORMAT_UNCOMPRESSED_GRAYSCALE
+			|| from.format == PIXELFORMAT_UNCOMPRESSED_R5G6B5
+			|| from.format == PIXELFORMAT_UNCOMPRESSED_R8G8B8
+			|| from.format == PIXELFORMAT_UNCOMPRESSED_R32
+			|| from.format == PIXELFORMAT_UNCOMPRESSED_R32G32B32
+			|| from.format == PIXELFORMAT_UNCOMPRESSED_R16
+			|| from.format == PIXELFORMAT_UNCOMPRESSED_R16G16B16;
+		var blendRequired = !((tint.a & 255) == 255 && opaque);
+		var strideDst = GetPixelDataSize(dst.width, 1, dst.format),
+			bytesPerPixelDst = Std.int(strideDst / dst.width);
+		var strideSrc = GetPixelDataSize(from.width, 1, from.format),
+			bytesPerPixelSrc = Std.int(strideSrc / from.width);
+		var srcBase = (Std.int(sy) * from.width + Std.int(sx)) * bytesPerPixelSrc,
+			dstBase = dstStart + (Std.int(dy) * dst.width + Std.int(dx)) * bytesPerPixelDst;
+		var rows = Std.int(sh),
+			columns = Std.int(sw),
+			source = from.data,
+			target = dst.data;
+		for (_ in 0...rows) {
+			if (!blendRequired && from.format == dst.format)
+				copyBytes(target, dstBase, source, srcBase, columns * bytesPerPixelSrc);
+			else {
+				var s = srcBase, d = dstBase;
+				for (_ in 0...columns) {
+					var colSrc = Pixels.getColor(source, s, from.format);
+					var color = blendRequired ? Pixels.blend(Pixels.getColor(target, d, dst.format), colSrc, t) : colSrc;
+					Pixels.setColor(target, d, color, dst.format, false);
+					d += bytesPerPixelDst;
+					s += bytesPerPixelSrc;
+				}
+			}
+			srcBase += strideSrc;
+			dstBase += strideDst;
+		}
+		if (dst.mipmaps > 1 && src.mipmaps > 1) {
+			var level = new Image(dst.data, Std.int(dst.width / 2), Std.int(dst.height / 2), dst.mipmaps - 1, dst.format);
+			var skip = GetPixelDataSize(src.width, src.height, src.format);
+			if (skip >= src.data.length)
+				return;
+			var srcLevel = new Image(src.data.sub(skip, src.data.length - skip), Std.int(src.width / 2), Std.int(src.height / 2), src.mipmaps - 1, src.format);
+			drawImage(level, dstStart + GetPixelDataSize(dst.width, dst.height, dst.format), srcLevel,
+				new Rectangle(f32(sx / 2), f32(sy / 2), f32(sw / 2), f32(sh / 2)), new Rectangle(f32(dx / 2), f32(dy / 2), f32(dw / 2), f32(dh / 2)), tint);
+		}
+	}
+
+	/** Draws text in raylib's default font into an image, letters 1 pixel apart, as `ImageDrawTextEx` draws it.
+
+		@param dst  The image.
+		@param text  The text.
+		@param posX  The left edge.
+		@param posY  The top edge.
+		@param fontSize  The height of a line, in pixels.
+		@param color  The color. */
+	static function ImageDrawText(dst:Image, text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void {
+		ImageDrawTextEx(dst, GetFontDefault(), text, new Vector2(posX, posY), fontSize, 1, color);
+	}
+
+	/** Draws text in a font into an image: `ImageTextEx`'s image, drawn at a point.
+
+		@param dst  The image.
+		@param font  The font.
+		@param text  The text.
+		@param position  The top-left corner.
+		@param fontSize  The height of a line, in pixels.
+		@param spacing  The space between letters, at the font's size.
+		@param tint  The color. */
+	static function ImageDrawTextEx(dst:Image, font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void {
+		var imText = ImageTextEx(font, text, fontSize, spacing, tint);
+		ImageDraw(dst, imText, new Rectangle(0, 0, imText.width, imText.height), new Rectangle(position.x, position.y, imText.width, imText.height), WHITE);
+	}
+
+	// ---- Images: what the functions share ----
+	static final ONE_31 = f32(1 / 31);
+	static final ONE_63 = f32(1 / 63);
+	static final ONE_15 = f32(1 / 15);
+
+	// Copies bytes, as much of them as both have; what the source lacks is left as it is.
+	static function copyBytes(dst:haxe.io.Bytes, dstAt:Int, src:Null<haxe.io.Bytes>, srcAt:Int, length:Int):Void {
+		if (src == null || length <= 0)
+			return;
+		if (srcAt < 0) {
+			dstAt -= srcAt;
+			length += srcAt;
+			srcAt = 0;
+		}
+		if (dstAt < 0) {
+			srcAt -= dstAt;
+			length += dstAt;
+			dstAt = 0;
+		}
+		if (srcAt + length > src.length)
+			length = src.length - srcAt;
+		if (dstAt + length > dst.length)
+			length = dst.length - dstAt;
+		if (length > 0)
+			dst.blit(dstAt, src, srcAt, length);
+	}
+
+	// Whether raylib's byte-moving functions act on an image: it has pixels and isn't compressed, which is refused with a warning.
+	static function manipulable(image:Image):Bool {
+		if (image.data == null || image.width == 0 || image.height == 0)
+			return false;
+		if (image.mipmaps > 1)
+			Runtime.log(LOG_WARNING, "Image manipulation only applied to base mipmap level");
+		if (image.format >= Pixels.COMPRESSED) {
+			Runtime.log(LOG_WARNING, "Image manipulation not supported for compressed formats");
+			return false;
+		}
+		return true;
+	}
+
+	// raylib's change through colors: the image read as RGBA, changed by helix-services, and written back in its format.
+	static function throughColors(image:Image, change:helix.services.images.Image->Void):Void {
+		if (image.data == null || image.width == 0 || image.height == 0)
+			return;
+		var pixels = Pixels.colors(image.data, image.width, image.height, image.format);
+		change(new helix.services.images.Image("", image.width, image.height, pixels));
+		backToFormat(image, pixels);
+	}
+
+	// An image's pixels replaced by RGBA ones, then converted back to its format.
+	static function backToFormat(image:Image, pixels:haxe.io.Bytes):Void {
+		var format = image.format;
+		image.data = pixels;
+		image.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+		ImageFormat(image, format);
+	}
+
+	// A shape drawn by helix-services: into an RGBA image's pixels; another format's pixels the shape covers, found on an RGBA mask, are
+	// each written as ImageDrawPixel writes them, as raylib's shapes are drawn pixel by pixel in one color.
+	static function shape(dst:Image, color:Color, draw:(helix.services.images.Image, Int) -> Void):Void {
+		if (dst.data == null || dst.width <= 0 || dst.height <= 0)
+			return;
+		var count = dst.width * dst.height;
+		if (dst.format == PIXELFORMAT_UNCOMPRESSED_R8G8B8A8) {
+			draw(new helix.services.images.Image("", dst.width, dst.height, dst.data), Pixels.argb(Pixels.ofColor(color)));
+			return;
+		}
+		var mask = haxe.io.Bytes.alloc(count * 4);
+		mask.fill(0, mask.length, 0);
+		draw(new helix.services.images.Image("", dst.width, dst.height, mask), 0xffffffff);
+		var rgba = Pixels.ofColor(color),
+			bytesPerPixel = GetPixelDataSize(1, 1, dst.format);
+		for (i in 0...count)
+			if (mask.get(i * 4 + 3) != 0)
+				Pixels.setColor(dst.data, i * bytesPerPixel, rgba, dst.format, true);
+	}
+
+	// ---- Images as textures ----
+
+	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, so the texture's
+		format is `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and it has one level. A compressed format gives no texture, with a warning.
+
+		@param image  The image.
+		@return  The texture. */
+	static function LoadTextureFromImage(image:Image):Texture2D {
+		if (image.width == 0 || image.height == 0 || image.data == null) {
+			Runtime.log(LOG_WARNING, "IMAGE: Data is not valid to load texture");
+			return new Texture2D();
+		}
+		if (image.format >= Pixels.COMPRESSED || image.format < PIXELFORMAT_UNCOMPRESSED_GRAYSCALE) {
+			Runtime.log(LOG_WARNING, 'TEXTURE: Pixel format ${image.format} can\'t be loaded here');
+			return new Texture2D();
+		}
+		var pixels = Pixels.colors(image.data, image.width, image.height, image.format);
+		return new Texture2D(Textures.fromImage("", new helix.services.images.Image("", image.width, image.height, pixels)), image.width, image.height);
+	}
+
+	/** Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT`, `TEXTURE_WRAP_CLAMP` (raylib's default) or
+		`TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning.
+
+		@param texture  The texture.
+		@param wrap  The wrap (`TEXTURE_WRAP_*`). */
+	static function SetTextureWrap(texture:Texture2D, wrap:Int):Void {
+		var mode:helix.platform.Wrap = switch wrap {
+			case TEXTURE_WRAP_REPEAT: Repeat;
+			case TEXTURE_WRAP_CLAMP: Clamp;
+			case TEXTURE_WRAP_MIRROR_REPEAT: Mirror;
+			case TEXTURE_WRAP_MIRROR_CLAMP:
+				Runtime.log(LOG_WARNING, 'TEXTURE: [ID ${texture.id}] TEXTURE_WRAP_MIRROR_CLAMP isn\'t supported here');
+				return;
+			case _: return;
+		}
+		Textures.setSampling(texture.id, Textures.samplingOfId(texture.id).withWrap(mode, mode));
+	}
+
+	/** Draws a texture as a nine-patch (or a three-patch) into a rectangle, turned about an origin, as raylib's does: its corners kept,
+		its edges and middle stretched; a rectangle smaller than the borders shrinks them and drops the middle.
+
+		@param texture  The texture.
+		@param nPatchInfo  The patch: its rectangle on the texture, its borders and its layout (`NPATCH_*`).
+		@param dest  Where it goes; its x and y are where the origin lands.
+		@param origin  The point it turns about, from dest's top-left corner.
+		@param rotation  Clockwise, in degrees.
+		@param tint  The color it is multiplied by. */
+	static function DrawTextureNPatch(texture:Texture2D, nPatchInfo:NPatchInfo, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void {
+		if (texture.id <= 0)
+			return;
+		var width:Float = texture.width, height:Float = texture.height;
+		var patchWidth = Std.int(dest.width) <= 0 ? 0. : dest.width,
+			patchHeight = Std.int(dest.height) <= 0 ? 0. : dest.height;
+		var source = nPatchInfo.source, sourceX = source.x, sourceY = source.y;
+		if (source.width < 0)
+			sourceX -= source.width;
+		if (source.height < 0)
+			sourceY -= source.height;
+		if (nPatchInfo.layout == NPATCH_THREE_PATCH_HORIZONTAL)
+			patchHeight = source.height;
+		if (nPatchInfo.layout == NPATCH_THREE_PATCH_VERTICAL)
+			patchWidth = source.width;
+		var drawCenter = true, drawMiddle = true;
+		var leftBorder:Float = nPatchInfo.left,
+			topBorder:Float = nPatchInfo.top,
+			rightBorder:Float = nPatchInfo.right,
+			bottomBorder:Float = nPatchInfo.bottom;
+		if (patchWidth <= leftBorder + rightBorder && nPatchInfo.layout != NPATCH_THREE_PATCH_VERTICAL) {
+			drawCenter = false;
+			leftBorder = leftBorder / (leftBorder + rightBorder) * patchWidth;
+			rightBorder = patchWidth - leftBorder;
+		}
+		if (patchHeight <= topBorder + bottomBorder && nPatchInfo.layout != NPATCH_THREE_PATCH_HORIZONTAL) {
+			drawMiddle = false;
+			topBorder = topBorder / (topBorder + bottomBorder) * patchHeight;
+			bottomBorder = patchHeight - topBorder;
+		}
+		// The patch's columns and rows: its outer and inner edges, where they are drawn and where they are on the texture.
+		var xs = [0, leftBorder, patchWidth - rightBorder, patchWidth],
+			ys = [0, topBorder, patchHeight - bottomBorder, patchHeight];
+		var us = [
+			sourceX / width,
+			(sourceX + leftBorder) / width,
+			(sourceX + source.width - rightBorder) / width,
+			(sourceX + source.width) / width
+		];
+		var vs = [
+			sourceY / height,
+			(sourceY + topBorder) / height,
+			(sourceY + source.height - bottomBorder) / height,
+			(sourceY + source.height) / height
+		];
+		if (texture.flipped)
+			vs = [for (v in vs) 1 - v];
+		var angle = rotation * Math.PI / 180,
+			c = Math.cos(angle),
+			s = Math.sin(angle);
+		var handle = Textures.handle(texture.id);
+		inline function corner(i:Int, j:Int) {
+			var px = xs[i] - origin.x, py = ys[j] - origin.y;
+			flat(handle, dest.x + px * c - py * s, dest.y + px * s + py * c, us[i], vs[j], tint);
+		}
+		// A quad from column i0 to i1 and row j0 to j1, as rlgl's two triangles.
+		inline function quad(i0:Int, j0:Int, i1:Int, j1:Int) {
+			corner(i0, j1);
+			corner(i1, j1);
+			corner(i1, j0);
+			corner(i0, j1);
+			corner(i1, j0);
+			corner(i0, j0);
+		}
+		switch nPatchInfo.layout {
+			case NPATCH_NINE_PATCH:
+				for (row in 0...3) {
+					if (row == 1 && !drawMiddle)
+						continue;
+					quad(0, row, 1, row + 1);
+					if (drawCenter)
+						quad(1, row, 2, row + 1);
+					quad(2, row, 3, row + 1);
+				}
+			case NPATCH_THREE_PATCH_VERTICAL:
+				quad(0, 0, 3, 1);
+				if (drawCenter)
+					quad(0, 1, 3, 2);
+				quad(0, 2, 3, 3);
+			case NPATCH_THREE_PATCH_HORIZONTAL:
+				quad(0, 0, 1, 3);
+				if (drawCenter)
+					quad(1, 0, 2, 3);
+				quad(2, 0, 3, 3);
+			case _:
+		}
+	}
+
+	// ---- Pixels ----
+
+	/** Returns one pixel's color from pixels in a format, as raylib's does: 16-bit channels widened by integers, floats times 255.
+		raylib's R5G5B5A1 blue takes in the alpha bit, as it does here. raylib takes a pointer to the pixel; here it is the pixels and the
+		pixel's first byte.
+
+		@param srcPtr  The pixels.
+		@param format  Their format (`PIXELFORMAT_UNCOMPRESSED_*`).
+		@param offset  Optional. The pixel's first byte; 0 when omitted.
+		@return  The color; clear black for a compressed format. */
+	static function GetPixelColor(srcPtr:haxe.io.Bytes, format:Int, offset:Int = 0):Color {
+		return Pixels.toColor(Pixels.getColor(srcPtr, offset, format));
+	}
+
+	/** Writes one pixel's color into pixels in a format, as raylib's does: grayscale by luminance, 16-bit channels rounded; a float
+		format is left unchanged. raylib takes a pointer to the pixel; here it is the pixels and the pixel's first byte.
+
+		@param dstPtr  The pixels.
+		@param color  The color.
+		@param format  Their format (`PIXELFORMAT_UNCOMPRESSED_*`).
+		@param offset  Optional. The pixel's first byte; 0 when omitted. */
+	static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, offset:Int = 0):Void {
+		Pixels.setColor(dstPtr, offset, Pixels.ofColor(color), format, false);
 	}
 	#end
 }
+
+#if !macro
+/** Provides `GetRandomValue`'s numbers as helix-math's generator gives them, so helix-services' noise draws what raylib's draws. */
+private class RaylibRandom extends helix.math.Random {
+	/** Creates the generator, drawing from `GetRandomValue`. */
+	public function new() {
+		super();
+	}
+
+	/** Returns `GetRandomValue(0, max - 1)`, one number from raylib's sequence.
+
+		@param max  The maximum, excluded.
+		@return  The number. */
+	override public function nextInt(max:Int):Int {
+		return RCore.GetRandomValue(0, max - 1);
+	}
+}
+#end

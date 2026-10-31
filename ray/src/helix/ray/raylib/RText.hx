@@ -159,26 +159,30 @@ class RText {
 	static function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2 {
 		if (font.texture == null || font.texture.id == 0 || text == null || text.length == 0)
 			return new Vector2();
-		var width = 0., widest = 0., height = fontSize, count = 0, most = 0;
+		// raylib's float arithmetic, each step rounded to single precision.
+		inline function f32(x:Float):Float
+			return helix.ray.internal.Pixels.f32(x);
+		fontSize = f32(fontSize);
+		var width = 0., widest = 0., height = fontSize, count = 0, most = 0, scale = f32(fontSize / font.baseSize);
 		for (codepoint in new haxe.iterators.StringIteratorUnicode(text)) {
 			count++;
 			var index = GetGlyphIndex(font, codepoint);
 			if (codepoint != "\n".code) {
 				var glyph = font.glyphs[index];
-				width += glyph.advanceX > 0 ? glyph.advanceX : font.recs[index].width + glyph.offsetX;
+				width = f32(width + (glyph.advanceX > 0 ? glyph.advanceX : f32(f32(font.recs[index].width) + glyph.offsetX)));
 			} else {
 				if (widest < width)
 					widest = width;
 				count = 0;
 				width = 0;
-				height += fontSize + textLineSpacing;
+				height = f32(height + f32(fontSize + textLineSpacing));
 			}
 			if (most < count)
 				most = count;
 		}
 		if (widest < width)
 			widest = width;
-		return new Vector2(widest * fontSize / font.baseSize + (most - 1) * spacing, height);
+		return new Vector2(f32(f32(widest * scale) + f32((most - 1) * f32(spacing))), height);
 	}
 
 	/** Returns where a character is in a font's glyphs: its own, else the question mark's, else the first.
@@ -215,23 +219,47 @@ class RText {
 		return font.recs[GetGlyphIndex(font, codepoint)];
 	}
 
-	/** Returns raylib's default font: 224 glyphs, Latin-1 from the space, 10 pixels high, on a texture made at its first use.
+	/** Returns raylib's default font: 224 glyphs, Latin-1 from the space, 10 pixels high, made at its first use as raylib makes it, each
+		glyph's image its part of the font's image (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`, white), so `ImageText` draws with it. Its
+		texture goes to the GPU when first drawn.
 
 		@return  The font. */
 	static function GetFontDefault():Font {
 		if (fontDefault != null)
 			return fontDefault;
+		var size = 128, pixels = haxe.io.Bytes.alloc(size * size * 2);
+		// White, opaque where a glyph's bit is set, clear elsewhere.
+		for (i in 0...size * size >> 5) {
+			var word = DefaultFont.BITS[i];
+			for (j in 0...32)
+				pixels.setUInt16((i * 32 + j) * 2, (word >>> j) & 1 == 1 ? 0xffff : 0x00ff);
+		}
+		var image = new Image(pixels, size, size, 1, PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA);
 		var font = new Font();
-		font.texture = defaultFont();
-		font.baseSize = DefaultFont.HEIGHT;
 		font.glyphCount = DefaultFont.WIDTHS.length;
+		font.glyphPadding = 0;
+		font.texture = LoadTextureFromImage(image);
+		// raylib's layout: rows of glyphs a pixel apart, a row ending where the next glyph would reach the texture's edge.
+		var line = 0, x = 1, test = 1;
 		for (i in 0...font.glyphCount) {
-			font.recs.push(new Rectangle(fontRecs[i * 2], fontRecs[i * 2 + 1], DefaultFont.WIDTHS[i], DefaultFont.HEIGHT));
+			var w = DefaultFont.WIDTHS[i];
+			var rec = new Rectangle(x, 1 + line * (DefaultFont.HEIGHT + 1), w, DefaultFont.HEIGHT);
+			test += w + 1;
+			if (test >= font.texture.width) {
+				line++;
+				x = 2 + w;
+				test = x;
+				rec.x = 1;
+				rec.y = 1 + line * (DefaultFont.HEIGHT + 1);
+			} else
+				x = test;
+			font.recs.push(rec);
 			var glyph = new GlyphInfo();
 			glyph.value = 32 + i;
-			glyph.image = new Image();
+			glyph.image = ImageFromImage(image, rec);
 			font.glyphs.push(glyph);
 		}
+		font.baseSize = DefaultFont.HEIGHT;
 		return fontDefault = font;
 	}
 
@@ -346,6 +374,78 @@ class RText {
 		for (r in recs)
 			glyphRecs.push(r);
 		return atlas;
+	}
+
+	/** Makes a font from an image of glyphs, as raylib's does: the glyphs in rows on a key color, the key's border before the first
+		glyph giving the space between glyphs and between rows; each glyph a run of pixels that aren't the key, numbered from a first
+		character. The key becomes clear on the font's texture. An image with no such border gives the default font. At most 256 glyphs
+		are read, and a pixel past the image reads as the key, where raylib's reads past its pixels.
+
+		@param image  The image, in any uncompressed format.
+		@param key  The color around the glyphs.
+		@param firstChar  The first glyph's character.
+		@return  The font. */
+	static function LoadFontFromImage(image:Image, key:Color, firstChar:Int):Font {
+		var defaults = GetFontDefault();
+		var font = new Font();
+		font.baseSize = defaults.baseSize;
+		font.glyphCount = defaults.glyphCount;
+		font.glyphPadding = defaults.glyphPadding;
+		font.texture = defaults.texture;
+		font.recs = defaults.recs;
+		font.glyphs = defaults.glyphs;
+		var width = image.width, height = image.height, count = width * height;
+		var pixels = helix.ray.internal.Pixels.colors(image.data, width, height, image.format);
+		var k = helix.ray.internal.Pixels.ofColor(key);
+		// A pixel past the image reads as the key, where raylib's reads past its pixels.
+		inline function isKey(i:Int):Bool
+			return i < 0 || i >= count || pixels.getInt32(i * 4) == k;
+		var x = 0, y = 0;
+		while (y < height) {
+			x = 0;
+			while (x < width && isKey(y * width + x))
+				x++;
+			if (!isKey(y * width + x))
+				break;
+			y++;
+		}
+		if (x == 0 || y == 0)
+			return font;
+		var charSpacing = x, lineSpacing = y, charHeight = 0;
+		while (!isKey((lineSpacing + charHeight) * width + charSpacing))
+			charHeight++;
+		var values:Array<Int> = [], recs:Array<Rectangle> = [];
+		var lineToRead = 0, xPosToRead = charSpacing;
+		while (lineSpacing + lineToRead * (charHeight + lineSpacing) < height) {
+			var row = (lineSpacing + (charHeight + lineSpacing) * lineToRead) * width;
+			while (xPosToRead < width && !isKey(row + xPosToRead) && values.length < 256) {
+				var charWidth = 0;
+				while (!isKey(row + xPosToRead + charWidth))
+					charWidth++;
+				values.push(firstChar + values.length);
+				recs.push(new Rectangle(xPosToRead, lineSpacing + lineToRead * (charHeight + lineSpacing), charWidth, charHeight));
+				xPosToRead += charWidth + charSpacing;
+			}
+			lineToRead++;
+			xPosToRead = charSpacing;
+		}
+		for (i in 0...count)
+			if (pixels.getInt32(i * 4) == k)
+				pixels.setInt32(i * 4, 0);
+		var fontClear = new Image(pixels, width, height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+		font.texture = LoadTextureFromImage(fontClear);
+		font.glyphCount = values.length;
+		font.glyphPadding = 0;
+		font.recs = recs;
+		font.glyphs = [];
+		for (i in 0...values.length) {
+			var glyph = new GlyphInfo();
+			glyph.value = values[i];
+			glyph.image = ImageFromImage(fontClear, recs[i]);
+			font.glyphs.push(glyph);
+		}
+		font.baseSize = recs.length > 0 ? Std.int(recs[0].height) : 0;
+		return font;
 	}
 
 	/** raylib's font load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontAsync` loads

@@ -11,9 +11,10 @@ program written as raylib is written runs in a page and natively.
 | `helix.ray.Vector2`, `Vector3`, `Color`, `Texture2D`, `Camera3D`, `Model`, `Shader`, `RenderTexture2D` and the rest | raylib's structs, with their fields |
 
 The window and frame, the keyboard, mouse, touch and gamepads, text input, shapes, textures, blend and scissor modes, the default
-font and TrueType and OpenType fonts (signed distance fields too), sounds, text files; in 3D the camera, glTF and GLB models, meshes,
-shapes, render textures, rays; raylib's shaders, compiled as the program builds for every target. Not here yet: skinned models and
-animations, BMFont and image fonts, and images on the CPU beyond a font's atlas.
+font and TrueType and OpenType fonts (signed distance fields too), sounds, text files; images on the CPU in raylib's uncompressed pixel
+formats (made, changed and drawn into as raylib's are, byte for byte, but for resizing), exported as PNG or QOI, and screenshots; in 3D
+the camera, glTF and GLB models, meshes, shapes, render textures, rays; raylib's shaders, compiled as the program builds for every
+target. Not here yet: skinned models and animations, animated (GIF) and compressed images, and updating a texture's pixels.
 
 ## Using it
 
@@ -35,6 +36,7 @@ where a native program finds its files, relative to itself (default `../web`).
 - `basic`: raylib's basic window, with a circle at the mouse.
 - `model`: a glTF model on a grid, the camera turning about it.
 - `text`: a TrueType font loaded and drawn beside the default font.
+- `images`: an image made on the CPU, a circle and text drawn into it, drawn as a texture.
 
 ## Depends on
 

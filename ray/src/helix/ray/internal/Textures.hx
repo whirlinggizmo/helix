@@ -72,6 +72,26 @@ class Textures {
 
 	static final samplings = new Map<Int, helix.platform.Sampling>();
 
+	/** Returns how a texture is sampled, by its id: as `setSampling` set, else nearest.
+
+		@param id  The texture's id.
+		@return  The sampling. */
+	public static function samplingOfId(id:Int):helix.platform.Sampling {
+		var e = entries.get(id);
+		return e == null || e.sampling == null ? helix.platform.Sampling.NEAREST : e.sampling;
+	}
+
+	/** Returns a texture's pixels while they are in memory: those not yet sent to the GPU, or the image file it was loaded from.
+
+		@param id  The texture's id.
+		@return  The image, or null when its pixels are only on the GPU. */
+	public static function imageOf(id:Int):Null<Image> {
+		var e = entries.get(id);
+		if (e == null)
+			return null;
+		return e.image != null ? e.image : e.path != "" ? Runtime.image(e.path) : null;
+	}
+
 	/** Returns a texture's GPU handle, sending it to the GPU if this is its first use.
 
 		@param id  The texture's id.

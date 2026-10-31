@@ -75,6 +75,9 @@ class Frame {
 		null for none. */
 	public var scissor:Null<Array<Float>> = null;
 
+	/** The screenshots read back as the screen's pass ends, once a program asks for one; null until then. */
+	public var screenshots:Null<helix.services.screenshots.Screenshots> = null;
+
 	/** Creates the frame, with raylib's default shader and the white texture.
 
 		@param graphics  The graphics. */
@@ -378,6 +381,8 @@ class Frame {
 			}
 			if (p.target == 0) {
 				graphics.endFrame();
+				if (screenshots != null)
+					screenshots.frameEnded();
 				graphics.present();
 			} else
 				graphics.endTargetPass();

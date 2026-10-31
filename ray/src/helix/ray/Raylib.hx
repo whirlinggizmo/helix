@@ -25,7 +25,7 @@ import helix.ray.raylib.RTextures;
 
 	A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a
 	frame. A page can't wait for a file, so on every target files are loaded by helix-ray's own `...Async` loads; raylib's
-	`LoadTexture`, `LoadModel`, `LoadSound`, `LoadFileData` and `LoadFileText` don't compile, naming the load to use. A file loaded
+	`LoadTexture`, `LoadImage`, `LoadModel`, `LoadSound`, `LoadFileData` and `LoadFileText` don't compile, naming the load to use. A file loaded
 	twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL,
 	compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported
 	apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here
@@ -1682,6 +1682,15 @@ class Raylib {
 	public static inline function IsFileNameValid(fileName:String):Bool
 		return RCore.IsFileNameValid(fileName);
 
+	/** Compresses bytes as raylib's `CompressData` does, byte for byte: raw DEFLATE (no zlib header), sdefl's level 8.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@param compDataSize  Its first element is set to the compressed size.
+		@return  The compressed bytes. */
+	public static inline function CompressData(data:haxe.io.Bytes, dataSize:Int, compDataSize:Array<Int>):haxe.io.Bytes
+		return RCore.CompressData(data, dataSize, compDataSize);
+
 	/** Returns DEFLATE data decompressed: a raw stream with no zlib header, as raylib's `CompressData` makes. Like raylib's, it gives
 		at most 64 MB.
 
@@ -1761,6 +1770,15 @@ class Raylib {
 		@param callback  Writes a file's text, returning whether it did; null for none. */
 	public static inline function SetSaveFileTextCallback(callback:Null<(fileName:String, text:String) -> Bool>):Void
 		RCore.SetSaveFileTextCallback(callback);
+
+	/** Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImage` writes it by the name's extension
+		(".png", ".qoi" or ".raw"): in a page it is downloaded, as raylib's web build does; natively it is written to the working
+		directory, as raylib writes it there, under the name's file name. raylib's is taken from the frame drawn last, before it is
+		shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as raylib's is.
+
+		@param fileName  The file name; a directory before it is dropped, and a name with `'` is refused, as raylib's is. */
+	public static inline function TakeScreenshot(fileName:String):Void
+		RCore.TakeScreenshot(fileName);
 
 	/** Writes a message to the log, when its level is at least `SetTraceLogLevel`'s. raylib formats its arguments as printf does;
 		here the text is written as it is (Haxe's string interpolation builds it).
@@ -2833,19 +2851,696 @@ class Raylib {
 	public static inline function SetTextureFilter(texture:Texture2D, filter:Int):Void
 		RTextures.SetTextureFilter(texture, filter);
 
-	/** Makes a texture of an image. Its pixels are 8-bit grayscale, grayscale and alpha, RGB or RGBA (`PIXELFORMAT_UNCOMPRESSED_*`);
-		another format gives no texture, and says so.
+	/** Returns whether an image holds pixels: data, a size, a format and a mipmap level.
 
 		@param image  The image.
-		@return  The texture. */
-	public static inline function LoadTextureFromImage(image:Image):Texture2D
-		return RTextures.LoadTextureFromImage(image);
+		@return  True when it does. */
+	public static inline function IsImageValid(image:Image):Bool
+		return RTextures.IsImageValid(image);
 
 	/** Frees an image's pixels.
 
 		@param image  The image. */
 	public static inline function UnloadImage(image:Image):Void
 		RTextures.UnloadImage(image);
+
+	/** Writes an image to a file through `SaveFileData`, as raylib's default build writes it: ".png" (any uncompressed format; a format
+		other than 8-bit grayscale, grayscale and alpha, RGB or RGBA is written as RGBA), ".qoi" (RGB or RGBA alone) or ".raw" (the pixels
+		as they are). The file is kept as `SaveFileData` keeps it; `TakeScreenshot` writes a real file.
+
+		@param image  The image.
+		@param fileName  The file; its extension chooses the format.
+		@return  True when it was written. */
+	public static inline function ExportImage(image:Image, fileName:String):Bool
+		return RTextures.ExportImage(image, fileName);
+
+	/** Returns an image encoded as a file in memory: ".png" alone, as raylib's. Like raylib's, an image's bytes are read as 8-bit gray,
+		gray and alpha, RGB or RGBA by its format, and as RGBA for any other format, which a 16-bit format has too few of: those it lacks
+		read as 0.
+
+		@param image  The image.
+		@param fileType  ".png" or ".PNG".
+		@param fileSize  Its first element is set to the file's size, 0 for none.
+		@return  The file, or null for another type or an empty image. */
+	public static inline function ExportImageToMemory(image:Image, fileType:String, fileSize:Array<Int>):haxe.io.Bytes
+		return RTextures.ExportImageToMemory(image, fileType, fileSize);
+
+	/** Writes an image as a C header through `SaveFileText`, as raylib's does: its size and format as defines, and its pixels (the first
+		level's) as an array of bytes, 20 a line.
+
+		@param image  The image.
+		@param fileName  The file; its name, upper case, names the defines and the array.
+		@return  True when it was written. */
+	public static inline function ExportImageAsCode(image:Image, fileName:String):Bool
+		return RTextures.ExportImageAsCode(image, fileName);
+
+	/** Returns an image of one color, RGBA.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param color  The color.
+		@return  The image. */
+	public static inline function GenImageColor(width:Int, height:Int, color:Color):Image
+		return RTextures.GenImageColor(width, height, color);
+
+	/** Returns a gradient from one color to another, RGBA.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param direction  The direction, in degrees: 0 top to bottom, 90 left to right.
+		@param start  The color it starts from.
+		@param end  The color it ends at.
+		@return  The image. */
+	public static inline function GenImageGradientLinear(width:Int, height:Int, direction:Int, start:Color, end:Color):Image
+		return RTextures.GenImageGradientLinear(width, height, direction, start, end);
+
+	/** Returns a round gradient out from the middle, RGBA.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param density  How far the inner color holds, 0 (the middle alone) to 1 (out to the nearer edge).
+		@param inner  The color in the middle.
+		@param outer  The color at the edge and beyond.
+		@return  The image. */
+	public static inline function GenImageGradientRadial(width:Int, height:Int, density:Float, inner:Color, outer:Color):Image
+		return RTextures.GenImageGradientRadial(width, height, density, inner, outer);
+
+	/** Returns a square gradient out from the middle, RGBA.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param density  How far the inner color holds, 0 (the middle alone) to 1 (out to the edges).
+		@param inner  The color in the middle.
+		@param outer  The color at the edges.
+		@return  The image. */
+	public static inline function GenImageGradientSquare(width:Int, height:Int, density:Float, inner:Color, outer:Color):Image
+		return RTextures.GenImageGradientSquare(width, height, density, inner, outer);
+
+	/** Returns a checkerboard of two colors, RGBA. A square size under 1 is taken as 1, where raylib's divides by zero.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param checksX  Each square's width, in pixels.
+		@param checksY  Each square's height, in pixels.
+		@param col1  The top-left square's color.
+		@param col2  The color of the squares beside it.
+		@return  The image. */
+	public static inline function GenImageChecked(width:Int, height:Int, checksX:Int, checksY:Int, col1:Color, col2:Color):Image
+		return RTextures.GenImageChecked(width, height, checksX, checksY, col1, col2);
+
+	/** Returns white noise, RGBA: each pixel white or black, drawn from `GetRandomValue`, one number a pixel, so `SetRandomSeed` repeats it.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param factor  The chance of white, 0 to 1.
+		@return  The image. */
+	public static inline function GenImageWhiteNoise(width:Int, height:Int, factor:Float):Image
+		return RTextures.GenImageWhiteNoise(width, height, factor);
+
+	/** Returns Perlin noise in gray, RGBA: stb_perlin's fractal noise, 6 octaves.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param offsetX  How far it is moved left, in pixels.
+		@param offsetY  How far it is moved up, in pixels.
+		@param scale  How much of the noise it shows: larger is finer.
+		@return  The image. */
+	public static inline function GenImagePerlinNoise(width:Int, height:Int, offsetX:Int, offsetY:Int, scale:Float):Image
+		return RTextures.GenImagePerlinNoise(width, height, offsetX, offsetY, scale);
+
+	/** Returns cellular noise in gray, RGBA: each pixel's distance to the nearest of points scattered one a tile, drawn from
+		`GetRandomValue`, so `SetRandomSeed` repeats it. A tile size under 1 is taken as 1, where raylib's divides by zero.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param tileSize  The tiles' size, in pixels: bigger is bigger cells.
+		@return  The image. */
+	public static inline function GenImageCellular(width:Int, height:Int, tileSize:Int):Image
+		return RTextures.GenImageCellular(width, height, tileSize);
+
+	/** Returns an image of text's bytes, grayscale: its UTF-8, a byte a pixel, rows top first, the rest black.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param text  The text.
+		@return  The image. */
+	public static inline function GenImageText(width:Int, height:Int, text:String):Image
+		return RTextures.GenImageText(width, height, text);
+
+	/** Returns a copy of an image, its mipmaps too.
+
+		@param image  The image.
+		@return  The copy. */
+	public static inline function ImageCopy(image:Image):Image
+		return RTextures.ImageCopy(image);
+
+	/** Returns a rectangle of an image, in its format. A row reaching past the image's right edge reads on into the next row, as
+		raylib's does; what lies past the image's pixels reads as zeros, where raylib's reads past them.
+
+		@param image  The image.
+		@param rec  The rectangle, in pixels, cut to whole pixels.
+		@return  The image. */
+	public static inline function ImageFromImage(image:Image, rec:Rectangle):Image
+		return RTextures.ImageFromImage(image, rec);
+
+	/** Returns one channel of an image as grayscale: 0 red, 1 green, 2 blue, 3 alpha. A channel the format lacks is taken as raylib takes
+		it, with its warning: a one-channel format's only channel, gray and alpha's alpha, an RGB format's red.
+
+		@param image  The image.
+		@param selectedChannel  The channel.
+		@return  The image. */
+	public static inline function ImageFromChannel(image:Image, selectedChannel:Int):Image
+		return RTextures.ImageFromChannel(image, selectedChannel);
+
+	/** Returns text in raylib's default font, as an image, RGBA. A size under 10 is drawn at 10, letters a tenth of the size apart.
+
+		@param text  The text.
+		@param fontSize  The height of a line, in pixels.
+		@param color  The color.
+		@return  The image. */
+	public static inline function ImageText(text:String, fontSize:Int, color:Color):Image
+		return RTextures.ImageText(text, fontSize, color);
+
+	/** Returns text in a font, as an image, RGBA, laid out as raylib's: at the font's size, each glyph's image drawn tinted, then scaled
+		to the size, nearest for the default font. A newline starts a line one and a half of the font's size down, though the image's
+		height counts each line as the size and `SetTextLineSpacing`'s spacing, as raylib's does. Another font is scaled by
+		`ImageResize`, which isn't raylib's.
+
+		@param font  The font, its glyphs' images drawn.
+		@param text  The text.
+		@param fontSize  The height of a line, in pixels.
+		@param spacing  The space between letters, at the font's size.
+		@param tint  The color the glyphs are multiplied by.
+		@return  The image. */
+	public static inline function ImageTextEx(font:Font, text:String, fontSize:Float, spacing:Float, tint:Color):Image
+		return RTextures.ImageTextEx(font, text, fontSize, spacing, tint);
+
+	/** Converts an image to another pixel format, through floats as raylib's does: to grayscale by luminance (0.299 red, 0.587 green,
+		0.114 blue), R32 and R16 to their luminance, 16-bit channels rounded. An image with mipmaps has them made again.
+
+		@param image  The image.
+		@param newFormat  The format (`PIXELFORMAT_UNCOMPRESSED_*`); a compressed one is refused, with a warning. */
+	public static inline function ImageFormat(image:Image, newFormat:Int):Void
+		RTextures.ImageFormat(image, newFormat);
+
+	/** Puts an image on the smallest canvas whose sides are powers of two, at its top-left.
+
+		@param image  The image.
+		@param fill  The color of the canvas around it. */
+	public static inline function ImageToPOT(image:Image, fill:Color):Void
+		RTextures.ImageToPOT(image, fill);
+
+	/** Crops an image to a rectangle, cut to the image; one whose corner is past the image's right or bottom edge leaves it unchanged,
+		with a warning. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+
+		@param image  The image.
+		@param crop  The rectangle, in pixels. */
+	public static inline function ImageCrop(image:Image, crop:Rectangle):Void
+		RTextures.ImageCrop(image, crop);
+
+	/** Crops an image to the pixels whose alpha is over a threshold, when any is.
+
+		@param image  The image.
+		@param threshold  The threshold, 0 to 1. */
+	public static inline function ImageAlphaCrop(image:Image, threshold:Float):Void
+		RTextures.ImageAlphaCrop(image, threshold);
+
+	/** Sets every pixel whose alpha is at or under a threshold to a color, as raylib's does for its formats with alpha: gray and alpha,
+		R5G5B5A1 (the alpha bit against a threshold of 0.5; the color's channels, unscaled, are cut to 5 bits), R4G4B4A4 (likewise to 4
+		bits), RGBA and its 32-bit and 16-bit float forms. Another format is unchanged.
+
+		@param image  The image.
+		@param color  The color.
+		@param threshold  The threshold, 0 to 1. */
+	public static inline function ImageAlphaClear(image:Image, color:Color, threshold:Float):Void
+		RTextures.ImageAlphaClear(image, color, threshold);
+
+	/** Sets an image's alpha from another image of the same size, its grayscale: a grayscale image becomes gray and alpha, any other
+		RGBA. A mask of another size changes nothing, with a warning.
+
+		@param image  The image.
+		@param alphaMask  The mask. */
+	public static inline function ImageAlphaMask(image:Image, alphaMask:Image):Void
+		RTextures.ImageAlphaMask(image, alphaMask);
+
+	/** Multiplies each pixel's red, green and blue by its alpha, rounding down; the image keeps its format.
+
+		@param image  The image. */
+	public static inline function ImageAlphaPremultiply(image:Image):Void
+		RTextures.ImageAlphaPremultiply(image);
+
+	/** Blurs an image, as raylib's does: an approximate Gaussian, four passes of a box blur across and down, over premultiplied alpha.
+		A box reaching past the image's last pixel reads 0 there, where raylib's reads past its pixels.
+
+		@param image  The image.
+		@param blurSize  How far each box reaches either side of a pixel, in pixels. */
+	public static inline function ImageBlurGaussian(image:Image, blurSize:Int):Void
+		RTextures.ImageBlurGaussian(image, blurSize);
+
+	/** Applies a square kernel to an image, as raylib's does: each channel, alpha too, the sum of the pixels around it as fractions times
+		the weights; red, green and blue clamped to 0 to 1, alpha not. A pixel past the left or right edge is taken from the row beside,
+		one past the top or bottom is 0. A count that isn't square changes nothing, with a warning.
+
+		@param image  The image.
+		@param kernel  The weights, rows top first.
+		@param kernelSize  How many: 9 for 3 by 3, 25 for 5 by 5. */
+	public static inline function ImageKernelConvolution(image:Image, kernel:Array<Float>, kernelSize:Int):Void
+		RTextures.ImageKernelConvolution(image, kernel, kernelSize);
+
+	/** Resizes an image. Unlike raylib's, whose `stb_image_resize2` this library doesn't have, it is helix-services' `Bicubic` (Catmull-Rom,
+		alpha-weighted), so the pixels aren't raylib's; an 8-bit format is resized in its channels, any other through RGBA, as raylib's.
+
+		@param image  The image.
+		@param newWidth  The width, in pixels.
+		@param newHeight  The height, in pixels. */
+	public static inline function ImageResize(image:Image, newWidth:Int, newHeight:Int):Void
+		RTextures.ImageResize(image, newWidth, newHeight);
+
+	/** Resizes an image to the nearest pixels, as raylib's does, through RGBA; it keeps its format.
+
+		@param image  The image.
+		@param newWidth  The width, in pixels.
+		@param newHeight  The height, in pixels. */
+	public static inline function ImageResizeNN(image:Image, newWidth:Int, newHeight:Int):Void
+		RTextures.ImageResizeNN(image, newWidth, newHeight);
+
+	/** Puts an image on a canvas of another size, in its format: the canvas filled with a color as `SetPixelColor` writes it (a float
+		format's canvas stays zero), the image at an offset, what falls outside cropped. A canvas the image's size leaves it unchanged.
+
+		@param image  The image.
+		@param newWidth  The canvas's width, in pixels.
+		@param newHeight  The canvas's height, in pixels.
+		@param offsetX  Where the image's left edge goes; negative crops its left.
+		@param offsetY  Where its top edge goes.
+		@param fill  The canvas's color. */
+	public static inline function ImageResizeCanvas(image:Image, newWidth:Int, newHeight:Int, offsetX:Int, offsetY:Int, fill:Color):Void
+		RTextures.ImageResizeCanvas(image, newWidth, newHeight, offsetX, offsetY, fill);
+
+	/** Makes an image's mipmaps, down to 1 by 1, after its pixels, in its format; levels it has are kept. Each is made by `ImageResize`
+		from the last, so they aren't raylib's.
+
+		@param image  The image. */
+	public static inline function ImageMipmaps(image:Image):Void
+		RTextures.ImageMipmaps(image);
+
+	/** Dithers an image to 16 bits a pixel or fewer (Floyd-Steinberg), as raylib's does: R5G6B5, R5G5B5A1 or R4G4B4A4 when the bits
+		are one of those, else format 0 with the bits packed in 16, and a warning. More than 16 bits changes nothing, with a warning.
+
+		@param image  The image.
+		@param rBpp  Red's bits.
+		@param gBpp  Green's bits.
+		@param bBpp  Blue's bits.
+		@param aBpp  Alpha's bits. */
+	public static inline function ImageDither(image:Image, rBpp:Int, gBpp:Int, bBpp:Int, aBpp:Int):Void
+		RTextures.ImageDither(image, rBpp, gBpp, bBpp, aBpp);
+
+	/** Turns an image upside down, in its format. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+
+		@param image  The image. */
+	public static inline function ImageFlipVertical(image:Image):Void
+		RTextures.ImageFlipVertical(image);
+
+	/** Mirrors an image left to right, in its format. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+
+		@param image  The image. */
+	public static inline function ImageFlipHorizontal(image:Image):Void
+		RTextures.ImageFlipHorizontal(image);
+
+	/** Turns an image by an angle, on a canvas big enough to hold it, clear around it: each byte of a pixel blends the four it falls
+		between, as raylib's does in every format.
+
+		@param image  The image.
+		@param degrees  The angle, in degrees clockwise. */
+	public static inline function ImageRotate(image:Image, degrees:Int):Void
+		RTextures.ImageRotate(image, degrees);
+
+	/** Turns an image a quarter turn clockwise, in its format.
+
+		@param image  The image. */
+	public static inline function ImageRotateCW(image:Image):Void
+		RTextures.ImageRotateCW(image);
+
+	/** Turns an image a quarter turn counterclockwise, in its format.
+
+		@param image  The image. */
+	public static inline function ImageRotateCCW(image:Image):Void
+		RTextures.ImageRotateCCW(image);
+
+	/** Multiplies each pixel by a color, channel by channel, alpha too; the image keeps its format.
+
+		@param image  The image.
+		@param color  The color; `WHITE` keeps it unchanged. */
+	public static inline function ImageColorTint(image:Image, color:Color):Void
+		RTextures.ImageColorTint(image, color);
+
+	/** Inverts each pixel's red, green and blue; the image keeps its format.
+
+		@param image  The image. */
+	public static inline function ImageColorInvert(image:Image):Void
+		RTextures.ImageColorInvert(image);
+
+	/** Makes an image grayscale, as raylib's does: it becomes `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`, its alpha dropped.
+
+		@param image  The image. */
+	public static inline function ImageColorGrayscale(image:Image):Void
+		RTextures.ImageColorGrayscale(image);
+
+	/** Changes an image's contrast; the image keeps its format.
+
+		@param image  The image.
+		@param contrast  -100 (all mid-gray) to 100; 0 leaves it unchanged. */
+	public static inline function ImageColorContrast(image:Image, contrast:Float):Void
+		RTextures.ImageColorContrast(image, contrast);
+
+	/** Changes an image's brightness, adding to red, green and blue; the image keeps its format. A channel taken below 0 becomes 1, as
+		raylib's does.
+
+		@param image  The image.
+		@param brightness  -255 to 255. */
+	public static inline function ImageColorBrightness(image:Image, brightness:Int):Void
+		RTextures.ImageColorBrightness(image, brightness);
+
+	/** Changes every pixel of one color to another; the image keeps its format.
+
+		@param image  The image.
+		@param color  The color changed, alpha too.
+		@param replace  The color it becomes. */
+	public static inline function ImageColorReplace(image:Image, color:Color, replace:Color):Void
+		RTextures.ImageColorReplace(image, color, replace);
+
+	/** Returns an image's pixels as colors, as raylib's reads each format: a 5-bit channel times 8, a 6-bit times 4, a 4-bit times 17; R32
+		and R16 as red alone.
+
+		@param image  The image.
+		@return  The colors, rows top first, or null for an image 0 wide or high. */
+	public static inline function LoadImageColors(image:Image):Array<Color>
+		return RTextures.LoadImageColors(image);
+
+	/** Returns an image's colors, each once, in the order first met; clear pixels are skipped.
+
+		@param image  The image.
+		@param maxPaletteSize  The most colors.
+		@param colorCount  Its first element is set to how many colors were found.
+		@return  `maxPaletteSize` colors, those found first, the rest `BLANK`; null for an image 0 wide or high. */
+	public static inline function LoadImagePalette(image:Image, maxPaletteSize:Int, colorCount:Array<Int>):Array<Color>
+		return RTextures.LoadImagePalette(image, maxPaletteSize, colorCount);
+
+	/** Frees colors `LoadImageColors` gave. There is nothing to free here.
+
+		@param colors  The colors. */
+	public static inline function UnloadImageColors(colors:Array<Color>):Void
+		RTextures.UnloadImageColors(colors);
+
+	/** Frees colors `LoadImagePalette` gave. There is nothing to free here.
+
+		@param colors  The colors. */
+	public static inline function UnloadImagePalette(colors:Array<Color>):Void
+		RTextures.UnloadImagePalette(colors);
+
+	/** Returns the smallest rectangle holding every pixel whose alpha is over a threshold.
+
+		@param image  The image.
+		@param threshold  The threshold, 0 to 1.
+		@return  The rectangle, in pixels; all zero when no pixel is over it. */
+	public static inline function GetImageAlphaBorder(image:Image, threshold:Float):Rectangle
+		return RTextures.GetImageAlphaBorder(image, threshold);
+
+	/** Returns a pixel's color, as `LoadImageColors` reads it but for raylib's R32G32B32A32 and R16G16B16A16, whose channels are each
+		read from red. A pixel outside the image is clear black, with a warning.
+
+		@param image  The image.
+		@param x  The pixel's column.
+		@param y  Its row.
+		@return  The color. */
+	public static inline function GetImageColor(image:Image, x:Int, y:Int):Color
+		return RTextures.GetImageColor(image, x, y);
+
+	/** Fills an image with a color, in its format, as `ImageDrawPixel` writes it.
+
+		@param dst  The image.
+		@param color  The color. */
+	public static inline function ImageClearBackground(dst:Image, color:Color):Void
+		RTextures.ImageClearBackground(dst, color);
+
+	/** Sets a pixel, in the image's format: grayscale by luminance, a 16-bit format's channels rounded, R5G5B5A1's alpha bit set over an
+		alpha of 50. One outside the image is skipped.
+
+		@param dst  The image.
+		@param posX  The pixel's column.
+		@param posY  Its row.
+		@param color  The color. */
+	public static inline function ImageDrawPixel(dst:Image, posX:Int, posY:Int, color:Color):Void
+		RTextures.ImageDrawPixel(dst, posX, posY, color);
+
+	/** Sets a pixel, as `ImageDrawPixel` does, its position cut to whole pixels.
+
+		@param dst  The image.
+		@param position  The pixel.
+		@param color  The color. */
+	public static inline function ImageDrawPixelV(dst:Image, position:Vector2, color:Color):Void
+		RTextures.ImageDrawPixelV(dst, position, color);
+
+	/** Draws a line one pixel wide, from its start up to its end; the end pixel isn't drawn.
+
+		@param dst  The image.
+		@param startPosX  The start's column.
+		@param startPosY  The start's row.
+		@param endPosX  The end's column.
+		@param endPosY  The end's row.
+		@param color  The color. */
+	public static inline function ImageDrawLine(dst:Image, startPosX:Int, startPosY:Int, endPosX:Int, endPosY:Int, color:Color):Void
+		RTextures.ImageDrawLine(dst, startPosX, startPosY, endPosX, endPosY, color);
+
+	/** Draws a line one pixel wide, its ends rounded to whole pixels.
+
+		@param dst  The image.
+		@param start  The start.
+		@param end  The end.
+		@param color  The color. */
+	public static inline function ImageDrawLineV(dst:Image, start:Vector2, end:Vector2, color:Color):Void
+		RTextures.ImageDrawLineV(dst, start, end, color);
+
+	/** Draws a line of a thickness: the line, and copies of it above and below for a line more across than down, left and right
+		otherwise. Its ends are rounded to whole pixels.
+
+		@param dst  The image.
+		@param start  The start.
+		@param end  The end.
+		@param thick  The thickness, in pixels.
+		@param color  The color. */
+	public static inline function ImageDrawLineEx(dst:Image, start:Vector2, end:Vector2, thick:Int, color:Color):Void
+		RTextures.ImageDrawLineEx(dst, start, end, thick, color);
+
+	/** Fills a circle.
+
+		@param dst  The image.
+		@param centerX  The middle's column.
+		@param centerY  The middle's row.
+		@param radius  The radius, in pixels.
+		@param color  The color. */
+	public static inline function ImageDrawCircle(dst:Image, centerX:Int, centerY:Int, radius:Int, color:Color):Void
+		RTextures.ImageDrawCircle(dst, centerX, centerY, radius, color);
+
+	/** Fills a circle, its middle cut to whole pixels.
+
+		@param dst  The image.
+		@param center  The middle.
+		@param radius  The radius, in pixels.
+		@param color  The color. */
+	public static inline function ImageDrawCircleV(dst:Image, center:Vector2, radius:Int, color:Color):Void
+		RTextures.ImageDrawCircleV(dst, center, radius, color);
+
+	/** Outlines a circle, one pixel wide.
+
+		@param dst  The image.
+		@param centerX  The middle's column.
+		@param centerY  The middle's row.
+		@param radius  The radius, in pixels.
+		@param color  The color. */
+	public static inline function ImageDrawCircleLines(dst:Image, centerX:Int, centerY:Int, radius:Int, color:Color):Void
+		RTextures.ImageDrawCircleLines(dst, centerX, centerY, radius, color);
+
+	/** Outlines a circle, one pixel wide, its middle cut to whole pixels.
+
+		@param dst  The image.
+		@param center  The middle.
+		@param radius  The radius, in pixels.
+		@param color  The color. */
+	public static inline function ImageDrawCircleLinesV(dst:Image, center:Vector2, radius:Int, color:Color):Void
+		RTextures.ImageDrawCircleLinesV(dst, center, radius, color);
+
+	/** Fills a rectangle; what falls outside the image is skipped.
+
+		@param dst  The image.
+		@param posX  The left edge.
+		@param posY  The top edge.
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param color  The color. */
+	public static inline function ImageDrawRectangle(dst:Image, posX:Int, posY:Int, width:Int, height:Int, color:Color):Void
+		RTextures.ImageDrawRectangle(dst, posX, posY, width, height, color);
+
+	/** Fills a rectangle, its corner and size cut to whole pixels.
+
+		@param dst  The image.
+		@param position  The top-left corner.
+		@param size  The width and height.
+		@param color  The color. */
+	public static inline function ImageDrawRectangleV(dst:Image, position:Vector2, size:Vector2, color:Color):Void
+		RTextures.ImageDrawRectangleV(dst, position, size, color);
+
+	/** Fills a rectangle, as raylib's does: cut to the image, then to whole pixels; one 0 wide still sets its top-left pixel.
+
+		@param dst  The image.
+		@param rec  The rectangle, in pixels.
+		@param color  The color. */
+	public static inline function ImageDrawRectangleRec(dst:Image, rec:Rectangle, color:Color):Void
+		RTextures.ImageDrawRectangleRec(dst, rec, color);
+
+	/** Outlines a rectangle, the outline inside it.
+
+		@param dst  The image.
+		@param rec  The rectangle, in pixels.
+		@param thick  The outline's thickness, in pixels.
+		@param color  The color. */
+	public static inline function ImageDrawRectangleLines(dst:Image, rec:Rectangle, thick:Int, color:Color):Void
+		RTextures.ImageDrawRectangleLines(dst, rec, thick, color);
+
+	/** Fills a triangle; its corners may go either way round.
+
+		@param dst  The image.
+		@param v1  The first corner.
+		@param v2  The second corner.
+		@param v3  The third corner.
+		@param color  The color. */
+	public static inline function ImageDrawTriangle(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
+		RTextures.ImageDrawTriangle(dst, v1, v2, v3, color);
+
+	/** Fills a triangle, each corner its own color, blended across it as raylib's does: each channel by the pixel's weights, each
+		rounded down, so three corners of one color may not give it exactly.
+
+		@param dst  The image.
+		@param v1  The first corner.
+		@param v2  The second corner.
+		@param v3  The third corner.
+		@param c1  The first corner's color.
+		@param c2  The second corner's color.
+		@param c3  The third corner's color. */
+	public static inline function ImageDrawTriangleEx(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
+		RTextures.ImageDrawTriangleEx(dst, v1, v2, v3, c1, c2, c3);
+
+	/** Outlines a triangle with three `ImageDrawLine`s, its corners cut to whole pixels.
+
+		@param dst  The image.
+		@param v1  The first corner.
+		@param v2  The second corner.
+		@param v3  The third corner.
+		@param color  The color. */
+	public static inline function ImageDrawTriangleLines(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
+		RTextures.ImageDrawTriangleLines(dst, v1, v2, v3, color);
+
+	/** Fills a fan of triangles, each from the first point to the next two.
+
+		@param dst  The image.
+		@param points  The points, the first the fan's middle.
+		@param pointCount  How many; under 3 draws nothing.
+		@param color  The color. */
+	public static inline function ImageDrawTriangleFan(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
+		RTextures.ImageDrawTriangleFan(dst, points, pointCount, color);
+
+	/** Fills a strip of triangles, each of three points in a row.
+
+		@param dst  The image.
+		@param points  The points.
+		@param pointCount  How many; under 3 draws nothing.
+		@param color  The color. */
+	public static inline function ImageDrawTriangleStrip(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
+		RTextures.ImageDrawTriangleStrip(dst, points, pointCount, color);
+
+	/** Draws a rectangle of one image into a rectangle of another, tinted, blended over (raylib's `ColorAlphaBlend`), in their formats.
+		A source with no alpha under an opaque tint is copied, the tint's color ignored, as raylib's is; a float destination is unchanged,
+		as `SetPixelColor` writes none. A source rectangle of another whole-pixel size than the destination's is first resized by
+		`ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them.
+
+		@param dst  The image drawn into.
+		@param src  The image drawn from.
+		@param srcRec  The source rectangle, in its pixels, cut to it.
+		@param dstRec  The destination rectangle.
+		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
+	public static inline function ImageDraw(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectangle, tint:Color):Void
+		RTextures.ImageDraw(dst, src, srcRec, dstRec, tint);
+
+	/** Draws text in raylib's default font into an image, letters 1 pixel apart, as `ImageDrawTextEx` draws it.
+
+		@param dst  The image.
+		@param text  The text.
+		@param posX  The left edge.
+		@param posY  The top edge.
+		@param fontSize  The height of a line, in pixels.
+		@param color  The color. */
+	public static inline function ImageDrawText(dst:Image, text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void
+		RTextures.ImageDrawText(dst, text, posX, posY, fontSize, color);
+
+	/** Draws text in a font into an image: `ImageTextEx`'s image, drawn at a point.
+
+		@param dst  The image.
+		@param font  The font.
+		@param text  The text.
+		@param position  The top-left corner.
+		@param fontSize  The height of a line, in pixels.
+		@param spacing  The space between letters, at the font's size.
+		@param tint  The color. */
+	public static inline function ImageDrawTextEx(dst:Image, font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
+		RTextures.ImageDrawTextEx(dst, font, text, position, fontSize, spacing, tint);
+
+	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, so the texture's
+		format is `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and it has one level. A compressed format gives no texture, with a warning.
+
+		@param image  The image.
+		@return  The texture. */
+	public static inline function LoadTextureFromImage(image:Image):Texture2D
+		return RTextures.LoadTextureFromImage(image);
+
+	/** Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT`, `TEXTURE_WRAP_CLAMP` (raylib's default) or
+		`TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning.
+
+		@param texture  The texture.
+		@param wrap  The wrap (`TEXTURE_WRAP_*`). */
+	public static inline function SetTextureWrap(texture:Texture2D, wrap:Int):Void
+		RTextures.SetTextureWrap(texture, wrap);
+
+	/** Draws a texture as a nine-patch (or a three-patch) into a rectangle, turned about an origin, as raylib's does: its corners kept,
+		its edges and middle stretched; a rectangle smaller than the borders shrinks them and drops the middle.
+
+		@param texture  The texture.
+		@param nPatchInfo  The patch: its rectangle on the texture, its borders and its layout (`NPATCH_*`).
+		@param dest  Where it goes; its x and y are where the origin lands.
+		@param origin  The point it turns about, from dest's top-left corner.
+		@param rotation  Clockwise, in degrees.
+		@param tint  The color it is multiplied by. */
+	public static inline function DrawTextureNPatch(texture:Texture2D, nPatchInfo:NPatchInfo, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void
+		RTextures.DrawTextureNPatch(texture, nPatchInfo, dest, origin, rotation, tint);
+
+	/** Returns one pixel's color from pixels in a format, as raylib's does: 16-bit channels widened by integers, floats times 255.
+		raylib's R5G5B5A1 blue takes in the alpha bit, as it does here. raylib takes a pointer to the pixel; here it is the pixels and the
+		pixel's first byte.
+
+		@param srcPtr  The pixels.
+		@param format  Their format (`PIXELFORMAT_UNCOMPRESSED_*`).
+		@param offset  Optional. The pixel's first byte; 0 when omitted.
+		@return  The color; clear black for a compressed format. */
+	public static inline function GetPixelColor(srcPtr:haxe.io.Bytes, format:Int, offset:Int = 0):Color
+		return RTextures.GetPixelColor(srcPtr, format, offset);
+
+	/** Writes one pixel's color into pixels in a format, as raylib's does: grayscale by luminance, 16-bit channels rounded; a float
+		format is left unchanged. raylib takes a pointer to the pixel; here it is the pixels and the pixel's first byte.
+
+		@param dstPtr  The pixels.
+		@param color  The color.
+		@param format  Their format (`PIXELFORMAT_UNCOMPRESSED_*`).
+		@param offset  Optional. The pixel's first byte; 0 when omitted. */
+	public static inline function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, offset:Int = 0):Void
+		RTextures.SetPixelColor(dstPtr, color, format, offset);
 
 	// ---- rtext: text (raylib/RText.hx) ----
 
@@ -2955,7 +3650,9 @@ class Raylib {
 	public static inline function GetGlyphAtlasRec(font:Font, codepoint:Int):Rectangle
 		return RText.GetGlyphAtlasRec(font, codepoint);
 
-	/** Returns raylib's default font: 224 glyphs, Latin-1 from the space, 10 pixels high, on a texture made at its first use.
+	/** Returns raylib's default font: 224 glyphs, Latin-1 from the space, 10 pixels high, made at its first use as raylib makes it, each
+		glyph's image its part of the font's image (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`, white), so `ImageText` draws with it. Its
+		texture goes to the GPU when first drawn.
 
 		@return  The font. */
 	public static inline function GetFontDefault():Font
@@ -2995,6 +3692,18 @@ class Raylib {
 	public static inline function GenImageFontAtlas(glyphs:Array<GlyphInfo>, glyphRecs:Array<Rectangle>, glyphCount:Int, fontSize:Int, padding:Int,
 			packMethod:Int):Image
 		return RText.GenImageFontAtlas(glyphs, glyphRecs, glyphCount, fontSize, padding, packMethod);
+
+	/** Makes a font from an image of glyphs, as raylib's does: the glyphs in rows on a key color, the key's border before the first
+		glyph giving the space between glyphs and between rows; each glyph a run of pixels that aren't the key, numbered from a first
+		character. The key becomes clear on the font's texture. An image with no such border gives the default font. At most 256 glyphs
+		are read, and a pixel past the image reads as the key, where raylib's reads past its pixels.
+
+		@param image  The image, in any uncompressed format.
+		@param key  The color around the glyphs.
+		@param firstChar  The first glyph's character.
+		@return  The font. */
+	public static inline function LoadFontFromImage(image:Image, key:Color, firstChar:Int):Font
+		return RText.LoadFontFromImage(image, key, firstChar);
 
 	/** Draws the frames a second, as "60 FPS", in green.
 
@@ -3720,7 +4429,8 @@ class Raylib {
 
 	/** Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType
 		file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto
-		one texture, as raylib's; each drawn with `TEXTURE_FILTER_POINT`. Image fonts aren't in helix-ray yet.
+		one texture, as raylib's; an image (PNG, JPEG, BMP, TGA or QOI) its glyphs on a `MAGENTA` key from the space on, as
+		`LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the font.
@@ -3771,6 +4481,61 @@ class Raylib {
 	public static inline function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int,
 			loaded:Array<GlyphInfo>->Void, ?failed:String->Void):Void
 		RAsync.LoadFontDataAsync(fileData, dataSize, fontSize, codepoints, codepointCount, type, loaded, failed);
+
+	/** Loads an image file, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImage`, as a page can't wait for a
+		file. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its
+		channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. The answer
+		comes at a later frame, never during the call.
+
+		@param fileName  The file, as the program names it.
+		@param loaded  Receives the image, its pixels its own.
+		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
+	public static inline function LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void):Void
+		RAsync.LoadImageAsync(fileName, loaded, failed);
+
+	/** Loads an image's raw pixels from a file, answering when they are read: helix-ray's own, in place of raylib's `LoadImageRaw`. The
+		file holds the pixels in a format, after a header of some bytes; a file too small for them fails.
+
+		@param fileName  The file.
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param format  The pixel format (`PIXELFORMAT_*`).
+		@param headerSize  The bytes before the pixels, skipped when the file holds them and the pixels.
+		@param loaded  Receives the image.
+		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
+	public static inline function LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void,
+			?failed:String->Void):Void
+		RAsync.LoadImageRawAsync(fileName, width, height, format, headerSize, loaded, failed);
+
+	/** Decodes an image file's bytes, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImageFromMemory`, as
+		images are decoded asynchronously. The formats and channels are `LoadImageAsync`'s.
+
+		@param fileType  The file's extension: ".png", ".jpg", ".jpeg", ".bmp", ".tga" or ".qoi".
+		@param fileData  The file's bytes.
+		@param dataSize  How many of them.
+		@param loaded  Receives the image.
+		@param failed  Optional. Receives why it couldn't be decoded; when omitted, it is logged. */
+	public static inline function LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void):Void
+		RAsync.LoadImageFromMemoryAsync(fileType, fileData, dataSize, loaded, failed);
+
+	/** Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU
+		answers later. A render texture's are read back from the GPU after the frame it was drawn in, rows bottom first as raylib's are,
+		so it reads upside down as raylib's does. Another texture's pixels are what went to the GPU, while they are in memory: before it
+		is first drawn, or when it was loaded from a file; once only on the GPU they can't be read here, and it fails.
+
+		@param texture  The texture.
+		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	public static inline function LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void):Void
+		RAsync.LoadImageFromTextureAsync(texture, loaded, failed);
+
+	/** Reads the screen, answering as the next frame ends: helix-ray's own, in place of raylib's `LoadImageFromScreen`, as the GPU
+		answers later. The image is the framebuffer's size, rows top first, its alpha opaque, as raylib's.
+
+		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	public static inline function LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void):Void
+		RAsync.LoadImageFromScreenAsync(loaded, failed);
 	#end
 
 	// ---- raylib.h's functions helix-ray won't have: each refuses to compile, saying why and what to use ----
@@ -3794,6 +4559,32 @@ class Raylib {
 	public static macro function LoadTexture(fileName:ExprOf<String>):ExprOf<Texture2D>
 		return helix.platform.macros.Build.unsupported("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)",
 			macro(null : helix.ray.Texture2D));
+
+	/** raylib's image load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadImageAsync` loads it. */
+	public static macro function LoadImage(fileName:ExprOf<String>):ExprOf<Image>
+		return helix.platform.macros.Build.unsupported("LoadImage: Synchronous loading is not supported. See LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void)",
+			macro(null : helix.ray.Image));
+
+	/** raylib's load of an image's raw pixels, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadImageRawAsync` loads it. */
+	public static macro function LoadImageRaw(fileName:ExprOf<String>, width:ExprOf<Int>, height:ExprOf<Int>, format:ExprOf<Int>,
+			headerSize:ExprOf<Int>):ExprOf<Image>
+		return helix.platform.macros.Build.unsupported("LoadImageRaw: Synchronous loading is not supported. See LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void, ?failed:String->Void)",
+			macro(null : helix.ray.Image));
+
+	/** raylib's decode of an image file's bytes, which returns the image. Images are decoded asynchronously here, so a call doesn't compile on any target: `LoadImageFromMemoryAsync` decodes it. */
+	public static macro function LoadImageFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Image>
+		return helix.platform.macros.Build.unsupported("LoadImageFromMemory: Images are decoded asynchronously. See LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void)",
+			macro(null : helix.ray.Image));
+
+	/** raylib's read of a texture back from the GPU, which waits for it. A texture is read back asynchronously here, so a call doesn't compile on any target: `LoadImageFromTextureAsync` reads it. */
+	public static macro function LoadImageFromTexture(texture:ExprOf<Texture2D>):ExprOf<Image>
+		return helix.platform.macros.Build.unsupported("LoadImageFromTexture: A texture is read back asynchronously. See LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void)",
+			macro(null : helix.ray.Image));
+
+	/** raylib's read of the screen, which waits for the GPU. The screen is read back asynchronously here, as a frame ends, so a call doesn't compile on any target: `LoadImageFromScreenAsync` reads it. */
+	public static macro function LoadImageFromScreen():ExprOf<Image>
+		return helix.platform.macros.Build.unsupported("LoadImageFromScreen: The screen is read back asynchronously. See LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void)",
+			macro(null : helix.ray.Image));
 
 	/** raylib's font load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontAsync` loads it. */
 	public static macro function LoadFont(fileName:ExprOf<String>):ExprOf<Font>
@@ -3970,10 +4761,6 @@ class Raylib {
 	public static macro function UnloadRandomSequence(sequence:ExprOf<Array<Int>>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("UnloadRandomSequence: Not implemented", macro {});
 
-	/** raylib's `TakeScreenshot` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Takes a screenshot of current screen (filename extension defines format). */
-	public static macro function TakeScreenshot(fileName:ExprOf<String>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("TakeScreenshot: Not implemented", macro {});
-
 	/** raylib's `OpenURL` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Open URL with default system browser (if available). */
 	public static macro function OpenURL(url:ExprOf<String>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("OpenURL: Not implemented", macro {});
@@ -4050,10 +4837,6 @@ class Raylib {
 	public static macro function GetFileModTime(fileName:ExprOf<String>):ExprOf<Int>
 		return helix.platform.macros.Build.unimplemented("GetFileModTime: Not implemented", macro(0 : Int));
 
-	/** raylib's `CompressData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Compress data (DEFLATE algorithm), memory must be MemFree(). */
-	public static macro function CompressData(data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, compDataSize:ExprOf<Array<Int>>):ExprOf<haxe.io.Bytes>
-		return helix.platform.macros.Build.unimplemented("CompressData: Not implemented", macro(null : haxe.io.Bytes));
-
 	/** raylib's `LoadAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load automation events list from file, NULL for empty list, capacity = MAX_AUTOMATION_EVENTS. */
 	public static macro function LoadAutomationEventList(fileName:ExprOf<String>):ExprOf<AutomationEventList>
 		return helix.platform.macros.Build.unimplemented("LoadAutomationEventList: Not implemented", macro(null : helix.ray.AutomationEventList));
@@ -4123,15 +4906,6 @@ class Raylib {
 	public static macro function UpdateCameraPro(camera:ExprOf<Camera>, movement:ExprOf<Vector3>, rotation:ExprOf<Vector3>, zoom:ExprOf<Float>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("UpdateCameraPro: Not implemented", macro {});
 
-	/** raylib's `LoadImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image from file into CPU memory (RAM). */
-	public static macro function LoadImage(fileName:ExprOf<String>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("LoadImage: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `LoadImageRaw` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image from RAW file data. */
-	public static macro function LoadImageRaw(fileName:ExprOf<String>, width:ExprOf<Int>, height:ExprOf<Int>, format:ExprOf<Int>,
-			headerSize:ExprOf<Int>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("LoadImageRaw: Not implemented", macro(null : helix.ray.Image));
-
 	/** raylib's `LoadImageAnim` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image sequence from file (frames appended to image.data). */
 	public static macro function LoadImageAnim(fileName:ExprOf<String>, frames:ExprOf<Array<Int>>):ExprOf<Image>
 		return helix.platform.macros.Build.unimplemented("LoadImageAnim: Not implemented", macro(null : helix.ray.Image));
@@ -4140,322 +4914,6 @@ class Raylib {
 	public static macro function LoadImageAnimFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>,
 			frames:ExprOf<Array<Int>>):ExprOf<Image>
 		return helix.platform.macros.Build.unimplemented("LoadImageAnimFromMemory: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `LoadImageFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image from memory buffer, fileType refers to extension: i.e. '.png'. */
-	public static macro function LoadImageFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("LoadImageFromMemory: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `LoadImageFromTexture` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image from GPU texture data. */
-	public static macro function LoadImageFromTexture(texture:ExprOf<Texture2D>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("LoadImageFromTexture: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `LoadImageFromScreen` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image from screen buffer and (screenshot). */
-	public static macro function LoadImageFromScreen():ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("LoadImageFromScreen: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `IsImageValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if an image is valid (data and parameters). */
-	public static macro function IsImageValid(image:ExprOf<Image>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsImageValid: Not implemented", macro(false : Bool));
-
-	/** raylib's `ExportImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export image data to file, returns true on success. */
-	public static macro function ExportImage(image:ExprOf<Image>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("ExportImage: Not implemented", macro(false : Bool));
-
-	/** raylib's `ExportImageToMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export image to memory buffer. */
-	public static macro function ExportImageToMemory(image:ExprOf<Image>, fileType:ExprOf<String>, fileSize:ExprOf<Array<Int>>):ExprOf<haxe.io.Bytes>
-		return helix.platform.macros.Build.unimplemented("ExportImageToMemory: Not implemented", macro(null : haxe.io.Bytes));
-
-	/** raylib's `ExportImageAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export image as code file defining an array of bytes, returns true on success. */
-	public static macro function ExportImageAsCode(image:ExprOf<Image>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("ExportImageAsCode: Not implemented", macro(false : Bool));
-
-	/** raylib's `GenImageColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: plain color. */
-	public static macro function GenImageColor(width:ExprOf<Int>, height:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("GenImageColor: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `GenImageGradientLinear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: linear gradient, direction in degrees [0..360], 0=Vertical gradient. */
-	public static macro function GenImageGradientLinear(width:ExprOf<Int>, height:ExprOf<Int>, direction:ExprOf<Int>, start:ExprOf<Color>,
-			end:ExprOf<Color>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("GenImageGradientLinear: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `GenImageGradientRadial` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: radial gradient. */
-	public static macro function GenImageGradientRadial(width:ExprOf<Int>, height:ExprOf<Int>, density:ExprOf<Float>, inner:ExprOf<Color>,
-			outer:ExprOf<Color>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("GenImageGradientRadial: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `GenImageGradientSquare` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: square gradient. */
-	public static macro function GenImageGradientSquare(width:ExprOf<Int>, height:ExprOf<Int>, density:ExprOf<Float>, inner:ExprOf<Color>,
-			outer:ExprOf<Color>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("GenImageGradientSquare: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `GenImageChecked` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: checked. */
-	public static macro function GenImageChecked(width:ExprOf<Int>, height:ExprOf<Int>, checksX:ExprOf<Int>, checksY:ExprOf<Int>, col1:ExprOf<Color>,
-			col2:ExprOf<Color>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("GenImageChecked: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `GenImageWhiteNoise` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: white noise. */
-	public static macro function GenImageWhiteNoise(width:ExprOf<Int>, height:ExprOf<Int>, factor:ExprOf<Float>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("GenImageWhiteNoise: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `GenImagePerlinNoise` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: perlin noise. */
-	public static macro function GenImagePerlinNoise(width:ExprOf<Int>, height:ExprOf<Int>, offsetX:ExprOf<Int>, offsetY:ExprOf<Int>,
-			scale:ExprOf<Float>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("GenImagePerlinNoise: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `GenImageCellular` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: cellular algorithm, bigger tileSize means bigger cells. */
-	public static macro function GenImageCellular(width:ExprOf<Int>, height:ExprOf<Int>, tileSize:ExprOf<Int>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("GenImageCellular: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `GenImageText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate image: grayscale image from text data. */
-	public static macro function GenImageText(width:ExprOf<Int>, height:ExprOf<Int>, text:ExprOf<String>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("GenImageText: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `ImageCopy` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Create an image duplicate (useful for transformations). */
-	public static macro function ImageCopy(image:ExprOf<Image>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("ImageCopy: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `ImageFromImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Create an image from another image piece. */
-	public static macro function ImageFromImage(image:ExprOf<Image>, rec:ExprOf<Rectangle>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("ImageFromImage: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `ImageFromChannel` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Create an image from a selected channel of another image (GRAYSCALE). */
-	public static macro function ImageFromChannel(image:ExprOf<Image>, selectedChannel:ExprOf<Int>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("ImageFromChannel: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `ImageText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Create an image from text (default font). */
-	public static macro function ImageText(text:ExprOf<String>, fontSize:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("ImageText: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `ImageTextEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Create an image from text (custom sprite font). */
-	public static macro function ImageTextEx(font:ExprOf<Font>, text:ExprOf<String>, fontSize:ExprOf<Float>, spacing:ExprOf<Float>,
-			tint:ExprOf<Color>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("ImageTextEx: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `ImageFormat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Convert image data to desired format. */
-	public static macro function ImageFormat(image:ExprOf<Image>, newFormat:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageFormat: Not implemented", macro {});
-
-	/** raylib's `ImageToPOT` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Convert image to POT (power-of-two). */
-	public static macro function ImageToPOT(image:ExprOf<Image>, fill:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageToPOT: Not implemented", macro {});
-
-	/** raylib's `ImageCrop` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Crop an image to a defined rectangle. */
-	public static macro function ImageCrop(image:ExprOf<Image>, crop:ExprOf<Rectangle>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageCrop: Not implemented", macro {});
-
-	/** raylib's `ImageAlphaCrop` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Crop image depending on alpha value. */
-	public static macro function ImageAlphaCrop(image:ExprOf<Image>, threshold:ExprOf<Float>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageAlphaCrop: Not implemented", macro {});
-
-	/** raylib's `ImageAlphaClear` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Clear alpha channel to desired color. */
-	public static macro function ImageAlphaClear(image:ExprOf<Image>, color:ExprOf<Color>, threshold:ExprOf<Float>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageAlphaClear: Not implemented", macro {});
-
-	/** raylib's `ImageAlphaMask` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Apply alpha mask to image. */
-	public static macro function ImageAlphaMask(image:ExprOf<Image>, alphaMask:ExprOf<Image>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageAlphaMask: Not implemented", macro {});
-
-	/** raylib's `ImageAlphaPremultiply` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Premultiply alpha channel. */
-	public static macro function ImageAlphaPremultiply(image:ExprOf<Image>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageAlphaPremultiply: Not implemented", macro {});
-
-	/** raylib's `ImageBlurGaussian` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Apply Gaussian blur using a box blur approximation. */
-	public static macro function ImageBlurGaussian(image:ExprOf<Image>, blurSize:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageBlurGaussian: Not implemented", macro {});
-
-	/** raylib's `ImageKernelConvolution` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Apply custom square convolution kernel to image. */
-	public static macro function ImageKernelConvolution(image:ExprOf<Image>, kernel:ExprOf<Array<Float>>, kernelSize:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageKernelConvolution: Not implemented", macro {});
-
-	/** raylib's `ImageResize` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Resize image (Bicubic scaling algorithm). */
-	public static macro function ImageResize(image:ExprOf<Image>, newWidth:ExprOf<Int>, newHeight:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageResize: Not implemented", macro {});
-
-	/** raylib's `ImageResizeNN` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Resize image (Nearest-Neighbor scaling algorithm). */
-	public static macro function ImageResizeNN(image:ExprOf<Image>, newWidth:ExprOf<Int>, newHeight:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageResizeNN: Not implemented", macro {});
-
-	/** raylib's `ImageResizeCanvas` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Resize canvas and fill with color. */
-	public static macro function ImageResizeCanvas(image:ExprOf<Image>, newWidth:ExprOf<Int>, newHeight:ExprOf<Int>, offsetX:ExprOf<Int>, offsetY:ExprOf<Int>,
-			fill:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageResizeCanvas: Not implemented", macro {});
-
-	/** raylib's `ImageMipmaps` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Compute all mipmap levels for a provided image. */
-	public static macro function ImageMipmaps(image:ExprOf<Image>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageMipmaps: Not implemented", macro {});
-
-	/** raylib's `ImageDither` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Dither image data to 16bpp or lower (Floyd-Steinberg dithering). */
-	public static macro function ImageDither(image:ExprOf<Image>, rBpp:ExprOf<Int>, gBpp:ExprOf<Int>, bBpp:ExprOf<Int>, aBpp:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDither: Not implemented", macro {});
-
-	/** raylib's `ImageFlipVertical` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Flip image vertically. */
-	public static macro function ImageFlipVertical(image:ExprOf<Image>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageFlipVertical: Not implemented", macro {});
-
-	/** raylib's `ImageFlipHorizontal` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Flip image horizontally. */
-	public static macro function ImageFlipHorizontal(image:ExprOf<Image>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageFlipHorizontal: Not implemented", macro {});
-
-	/** raylib's `ImageRotate` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Rotate image by input angle in degrees (-359 to 359). */
-	public static macro function ImageRotate(image:ExprOf<Image>, degrees:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageRotate: Not implemented", macro {});
-
-	/** raylib's `ImageRotateCW` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Rotate image clockwise 90deg. */
-	public static macro function ImageRotateCW(image:ExprOf<Image>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageRotateCW: Not implemented", macro {});
-
-	/** raylib's `ImageRotateCCW` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Rotate image counter-clockwise 90deg. */
-	public static macro function ImageRotateCCW(image:ExprOf<Image>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageRotateCCW: Not implemented", macro {});
-
-	/** raylib's `ImageColorTint` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Modify image color: tint. */
-	public static macro function ImageColorTint(image:ExprOf<Image>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageColorTint: Not implemented", macro {});
-
-	/** raylib's `ImageColorInvert` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Modify image color: invert. */
-	public static macro function ImageColorInvert(image:ExprOf<Image>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageColorInvert: Not implemented", macro {});
-
-	/** raylib's `ImageColorGrayscale` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Modify image color: grayscale. */
-	public static macro function ImageColorGrayscale(image:ExprOf<Image>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageColorGrayscale: Not implemented", macro {});
-
-	/** raylib's `ImageColorContrast` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Modify image color: contrast (-100 to 100). */
-	public static macro function ImageColorContrast(image:ExprOf<Image>, contrast:ExprOf<Float>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageColorContrast: Not implemented", macro {});
-
-	/** raylib's `ImageColorBrightness` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Modify image color: brightness (-255 to 255). */
-	public static macro function ImageColorBrightness(image:ExprOf<Image>, brightness:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageColorBrightness: Not implemented", macro {});
-
-	/** raylib's `ImageColorReplace` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Modify image color: replace color. */
-	public static macro function ImageColorReplace(image:ExprOf<Image>, color:ExprOf<Color>, replace:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageColorReplace: Not implemented", macro {});
-
-	/** raylib's `LoadImageColors` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load color data from image as a Color array (RGBA - 32bit). */
-	public static macro function LoadImageColors(image:ExprOf<Image>):ExprOf<Array<Color>>
-		return helix.platform.macros.Build.unimplemented("LoadImageColors: Not implemented", macro(null : Array<helix.ray.Color>));
-
-	/** raylib's `LoadImagePalette` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load colors palette from image as a Color array (RGBA - 32bit). */
-	public static macro function LoadImagePalette(image:ExprOf<Image>, maxPaletteSize:ExprOf<Int>, colorCount:ExprOf<Array<Int>>):ExprOf<Array<Color>>
-		return helix.platform.macros.Build.unimplemented("LoadImagePalette: Not implemented", macro(null : Array<helix.ray.Color>));
-
-	/** raylib's `UnloadImageColors` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload color data loaded with LoadImageColors(). */
-	public static macro function UnloadImageColors(colors:ExprOf<Array<Color>>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadImageColors: Not implemented", macro {});
-
-	/** raylib's `UnloadImagePalette` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload colors palette loaded with LoadImagePalette(). */
-	public static macro function UnloadImagePalette(colors:ExprOf<Array<Color>>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadImagePalette: Not implemented", macro {});
-
-	/** raylib's `GetImageAlphaBorder` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get image alpha border rectangle. */
-	public static macro function GetImageAlphaBorder(image:ExprOf<Image>, threshold:ExprOf<Float>):ExprOf<Rectangle>
-		return helix.platform.macros.Build.unimplemented("GetImageAlphaBorder: Not implemented", macro(null : helix.ray.Rectangle));
-
-	/** raylib's `GetImageColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get image pixel color at (x, y) position. */
-	public static macro function GetImageColor(image:ExprOf<Image>, x:ExprOf<Int>, y:ExprOf<Int>):ExprOf<Color>
-		return helix.platform.macros.Build.unimplemented("GetImageColor: Not implemented", macro(null : helix.ray.Color));
-
-	/** raylib's `ImageClearBackground` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Clear image background with given color. */
-	public static macro function ImageClearBackground(dst:ExprOf<Image>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageClearBackground: Not implemented", macro {});
-
-	/** raylib's `ImageDrawPixel` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw pixel within an image. */
-	public static macro function ImageDrawPixel(dst:ExprOf<Image>, posX:ExprOf<Int>, posY:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawPixel: Not implemented", macro {});
-
-	/** raylib's `ImageDrawPixelV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw pixel within an image (Vector version). */
-	public static macro function ImageDrawPixelV(dst:ExprOf<Image>, position:ExprOf<Vector2>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawPixelV: Not implemented", macro {});
-
-	/** raylib's `ImageDrawLine` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw line within an image. */
-	public static macro function ImageDrawLine(dst:ExprOf<Image>, startPosX:ExprOf<Int>, startPosY:ExprOf<Int>, endPosX:ExprOf<Int>, endPosY:ExprOf<Int>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawLine: Not implemented", macro {});
-
-	/** raylib's `ImageDrawLineV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw line within an image (Vector version). */
-	public static macro function ImageDrawLineV(dst:ExprOf<Image>, start:ExprOf<Vector2>, end:ExprOf<Vector2>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawLineV: Not implemented", macro {});
-
-	/** raylib's `ImageDrawLineEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a line defining thickness within an image. */
-	public static macro function ImageDrawLineEx(dst:ExprOf<Image>, start:ExprOf<Vector2>, end:ExprOf<Vector2>, thick:ExprOf<Int>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawLineEx: Not implemented", macro {});
-
-	/** raylib's `ImageDrawCircle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a filled circle within an image. */
-	public static macro function ImageDrawCircle(dst:ExprOf<Image>, centerX:ExprOf<Int>, centerY:ExprOf<Int>, radius:ExprOf<Int>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawCircle: Not implemented", macro {});
-
-	/** raylib's `ImageDrawCircleV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a filled circle within an image (Vector version). */
-	public static macro function ImageDrawCircleV(dst:ExprOf<Image>, center:ExprOf<Vector2>, radius:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawCircleV: Not implemented", macro {});
-
-	/** raylib's `ImageDrawCircleLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw circle outline within an image. */
-	public static macro function ImageDrawCircleLines(dst:ExprOf<Image>, centerX:ExprOf<Int>, centerY:ExprOf<Int>, radius:ExprOf<Int>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawCircleLines: Not implemented", macro {});
-
-	/** raylib's `ImageDrawCircleLinesV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw circle outline within an image (Vector version). */
-	public static macro function ImageDrawCircleLinesV(dst:ExprOf<Image>, center:ExprOf<Vector2>, radius:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawCircleLinesV: Not implemented", macro {});
-
-	/** raylib's `ImageDrawRectangle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw rectangle within an image. */
-	public static macro function ImageDrawRectangle(dst:ExprOf<Image>, posX:ExprOf<Int>, posY:ExprOf<Int>, width:ExprOf<Int>, height:ExprOf<Int>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawRectangle: Not implemented", macro {});
-
-	/** raylib's `ImageDrawRectangleV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw rectangle within an image (Vector version). */
-	public static macro function ImageDrawRectangleV(dst:ExprOf<Image>, position:ExprOf<Vector2>, size:ExprOf<Vector2>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawRectangleV: Not implemented", macro {});
-
-	/** raylib's `ImageDrawRectangleRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw rectangle within an image. */
-	public static macro function ImageDrawRectangleRec(dst:ExprOf<Image>, rec:ExprOf<Rectangle>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawRectangleRec: Not implemented", macro {});
-
-	/** raylib's `ImageDrawRectangleLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw rectangle lines within an image. */
-	public static macro function ImageDrawRectangleLines(dst:ExprOf<Image>, rec:ExprOf<Rectangle>, thick:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawRectangleLines: Not implemented", macro {});
-
-	/** raylib's `ImageDrawTriangle` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw triangle within an image. */
-	public static macro function ImageDrawTriangle(dst:ExprOf<Image>, v1:ExprOf<Vector2>, v2:ExprOf<Vector2>, v3:ExprOf<Vector2>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawTriangle: Not implemented", macro {});
-
-	/** raylib's `ImageDrawTriangleEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw triangle with interpolated colors within an image. */
-	public static macro function ImageDrawTriangleEx(dst:ExprOf<Image>, v1:ExprOf<Vector2>, v2:ExprOf<Vector2>, v3:ExprOf<Vector2>, c1:ExprOf<Color>,
-			c2:ExprOf<Color>, c3:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawTriangleEx: Not implemented", macro {});
-
-	/** raylib's `ImageDrawTriangleLines` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw triangle outline within an image. */
-	public static macro function ImageDrawTriangleLines(dst:ExprOf<Image>, v1:ExprOf<Vector2>, v2:ExprOf<Vector2>, v3:ExprOf<Vector2>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawTriangleLines: Not implemented", macro {});
-
-	/** raylib's `ImageDrawTriangleFan` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a triangle fan defined by points within an image (first vertex is the center). */
-	public static macro function ImageDrawTriangleFan(dst:ExprOf<Image>, points:ExprOf<Array<Vector2>>, pointCount:ExprOf<Int>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawTriangleFan: Not implemented", macro {});
-
-	/** raylib's `ImageDrawTriangleStrip` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a triangle strip defined by points within an image. */
-	public static macro function ImageDrawTriangleStrip(dst:ExprOf<Image>, points:ExprOf<Array<Vector2>>, pointCount:ExprOf<Int>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawTriangleStrip: Not implemented", macro {});
-
-	/** raylib's `ImageDraw` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a source image within a destination image (tint applied to source). */
-	public static macro function ImageDraw(dst:ExprOf<Image>, src:ExprOf<Image>, srcRec:ExprOf<Rectangle>, dstRec:ExprOf<Rectangle>,
-			tint:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDraw: Not implemented", macro {});
-
-	/** raylib's `ImageDrawText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw text (using default font) within an image (destination). */
-	public static macro function ImageDrawText(dst:ExprOf<Image>, text:ExprOf<String>, posX:ExprOf<Int>, posY:ExprOf<Int>, fontSize:ExprOf<Int>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawText: Not implemented", macro {});
-
-	/** raylib's `ImageDrawTextEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw text (custom sprite font) within an image (destination). */
-	public static macro function ImageDrawTextEx(dst:ExprOf<Image>, font:ExprOf<Font>, text:ExprOf<String>, position:ExprOf<Vector2>, fontSize:ExprOf<Float>,
-			spacing:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ImageDrawTextEx: Not implemented", macro {});
 
 	/** raylib's `LoadTextureCubemap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load cubemap from image, multiple image cubemap layouts supported. */
 	public static macro function LoadTextureCubemap(image:ExprOf<Image>, layout:ExprOf<Int>):ExprOf<TextureCubemap>
@@ -4472,27 +4930,6 @@ class Raylib {
 	/** raylib's `GenTextureMipmaps` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate GPU mipmaps for a texture. */
 	public static macro function GenTextureMipmaps(texture:ExprOf<Texture2D>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("GenTextureMipmaps: Not implemented", macro {});
-
-	/** raylib's `SetTextureWrap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set texture wrapping mode. */
-	public static macro function SetTextureWrap(texture:ExprOf<Texture2D>, wrap:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetTextureWrap: Not implemented", macro {});
-
-	/** raylib's `DrawTextureNPatch` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draws a texture (or part of it) that stretches or shrinks nicely. */
-	public static macro function DrawTextureNPatch(texture:ExprOf<Texture2D>, nPatchInfo:ExprOf<NPatchInfo>, dest:ExprOf<Rectangle>, origin:ExprOf<Vector2>,
-			rotation:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawTextureNPatch: Not implemented", macro {});
-
-	/** raylib's `GetPixelColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get Color from a source pixel pointer of certain format. */
-	public static macro function GetPixelColor(srcPtr:ExprOf<Dynamic>, format:ExprOf<Int>):ExprOf<Color>
-		return helix.platform.macros.Build.unimplemented("GetPixelColor: Not implemented", macro(null : helix.ray.Color));
-
-	/** raylib's `SetPixelColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set color formatted into destination pixel pointer. */
-	public static macro function SetPixelColor(dstPtr:ExprOf<Dynamic>, color:ExprOf<Color>, format:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetPixelColor: Not implemented", macro {});
-
-	/** raylib's `LoadFontFromImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load font from Image (XNA style). */
-	public static macro function LoadFontFromImage(image:ExprOf<Image>, key:ExprOf<Color>, firstChar:ExprOf<Int>):ExprOf<Font>
-		return helix.platform.macros.Build.unimplemented("LoadFontFromImage: Not implemented", macro(null : helix.ray.Font));
 
 	/** raylib's `ExportFontAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export font as code file, returns true on success. */
 	public static macro function ExportFontAsCode(font:ExprOf<Font>, fileName:ExprOf<String>):ExprOf<Bool>

@@ -417,6 +417,31 @@ class Runtime {
 
 	static var fontRasterizer:Null<helix.platform.IFontRasterizer> = null;
 
+	/** Gets the screenshots, made over the graphics when first asked for: the frame reads them back as each frame ends. */
+	public static function screenshots():helix.services.screenshots.Screenshots {
+		if (screenshotsService == null) {
+			screenshotsService = new helix.services.screenshots.Screenshots(graphics);
+			frame.screenshots = screenshotsService;
+		}
+		return screenshotsService;
+	}
+
+	static var screenshotsService:Null<helix.services.screenshots.Screenshots> = null;
+
+	/** Gets where files are handed to the user, made when first asked for: in a page a download, natively the working directory. */
+	public static function exporter():helix.platform.IExport {
+		if (exportAdapter == null) {
+			#if js
+			exportAdapter = new helix.platform.adapters.export.download.DownloadExportAdapter();
+			#else
+			exportAdapter = new helix.platform.adapters.export.filesystem.FileSystemExportAdapter({directory: Sys.getCwd()});
+			#end
+		}
+		return exportAdapter;
+	}
+
+	static var exportAdapter:Null<helix.platform.IExport> = null;
+
 	/** Gets the gamepads, made when first asked for, without a dead zone, as raylib's axes have none. */
 	public static function gamepads():Gamepads {
 		if (gamepadsService == null) {
