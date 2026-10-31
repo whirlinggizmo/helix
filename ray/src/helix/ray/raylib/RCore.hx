@@ -16,7 +16,7 @@ import helix.ray.raylib.RText.*;
 import helix.ray.raylib.RModels.*;
 import helix.ray.raylib.RAudio.*;
 import helix.ray.raylib.RMath.*;
-import helix.ray.raylib.HelixRay.*;
+import helix.ray.raylib.RAsync.*;
 #end
 
 /** Holds raylib's rcore (the window and the frame, the keyboard, mouse, touch and gamepads, files, the 2D and 3D cameras and shaders), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */

@@ -15,7 +15,7 @@ import helix.ray.raylib.RText.*;
 import helix.ray.raylib.RModels.*;
 import helix.ray.raylib.RAudio.*;
 import helix.ray.raylib.RMath.*;
-import helix.ray.raylib.HelixRay.*;
+import helix.ray.raylib.RAsync.*;
 #end
 
 /** Holds raylib's rmodels (3D shapes, models, meshes, materials and rays), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */

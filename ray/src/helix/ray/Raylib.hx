@@ -11,7 +11,7 @@ import helix.math.Matrix3D;
 import helix.ray.internal.Models;
 import helix.ray.internal.Runtime;
 import helix.ray.internal.Textures;
-import helix.ray.raylib.HelixRay;
+import helix.ray.raylib.RAsync;
 import helix.ray.raylib.RAudio;
 import helix.ray.raylib.RCore;
 import helix.ray.raylib.RModels;
@@ -2959,7 +2959,7 @@ class Raylib {
 	public static inline function SetMusicPan(music:Music, pan:Float):Void
 		RAudio.SetMusicPan(music, pan);
 
-	// ---- helix-ray's own: loading in a page (raylib/HelixRay.hx) ----
+	// ---- the async loads, helix-ray's own in place of raylib's that wait for a file (raylib/RAsync.hx) ----
 
 	/** Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page
 		can't wait for a file. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The
@@ -2969,7 +2969,7 @@ class Raylib {
 		@param loaded  Receives the texture.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	public static inline function LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void
-		HelixRay.LoadTextureAsync(fileName, loaded, failed);
+		RAsync.LoadTextureAsync(fileName, loaded, failed);
 
 	/** Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own,
 		in place of raylib's `LoadModel`. A file loaded again shares its first load's meshes and textures, with materials of its own.
@@ -2978,7 +2978,7 @@ class Raylib {
 		@param loaded  Receives the model.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	public static inline function LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void):Void
-		HelixRay.LoadModelAsync(fileName, loaded, failed);
+		RAsync.LoadModelAsync(fileName, loaded, failed);
 
 	/** Loads a sound file and decodes it, answering when it is ready to play at once: helix-ray's own, in place of raylib's `LoadSound`.
 		A file loaded again shares its first load's decoded sound. `InitAudioDevice` comes first.
@@ -2987,7 +2987,7 @@ class Raylib {
 		@param loaded  Receives the sound.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	public static inline function LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void):Void
-		HelixRay.LoadSoundAsync(fileName, loaded, failed);
+		RAsync.LoadSoundAsync(fileName, loaded, failed);
 
 	/** Reads a text file, answering when it is read: helix-ray's own, in place of raylib's `LoadFileText`. The program's
 		`SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
@@ -2996,7 +2996,7 @@ class Raylib {
 		@param loaded  Receives its text.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	public static inline function LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void):Void
-		HelixRay.LoadFileTextAsync(fileName, loaded, failed);
+		RAsync.LoadFileTextAsync(fileName, loaded, failed);
 
 	/** Reads a file's bytes, answering when they are read: helix-ray's own, in place of raylib's `LoadFileData`. The program's
 		`SetLoadFileDataCallback` answers first, then what `SaveFileData` wrote, then the program's files.
@@ -3005,7 +3005,7 @@ class Raylib {
 		@param loaded  Receives its bytes.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	public static inline function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):Void
-		HelixRay.LoadFileDataAsync(fileName, loaded, failed);
+		RAsync.LoadFileDataAsync(fileName, loaded, failed);
 
 	/** Answers whether a file exists: helix-ray's own, in place of raylib's `FileExists`. One `SaveFileText` or `SaveFileData` wrote
 		exists, as does one of the program's; finding one of the program's reads it, so a load of it after answers at once. The answer
@@ -3014,7 +3014,7 @@ class Raylib {
 		@param fileName  The file.
 		@param answer  Receives true when it exists. */
 	public static inline function FileExistsAsync(fileName:String, answer:Bool->Void):Void
-		HelixRay.FileExistsAsync(fileName, answer);
+		RAsync.FileExistsAsync(fileName, answer);
 
 	/** Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType
 		file gives its printable ASCII at 32 pixels, drawn with `TEXTURE_FILTER_POINT`; BMFont and image fonts aren't in helix-ray yet.
@@ -3023,7 +3023,7 @@ class Raylib {
 		@param loaded  Receives the font.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	public static inline function LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void):Void
-		HelixRay.LoadFontAsync(fileName, loaded, failed);
+		RAsync.LoadFontAsync(fileName, loaded, failed);
 
 	/** Loads a TrueType or OpenType font file at a size, answering when its glyphs are ready: helix-ray's own, in place of raylib's
 		`LoadFontEx`.
@@ -3036,7 +3036,7 @@ class Raylib {
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	public static inline function LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void,
 			?failed:String->Void):Void
-		HelixRay.LoadFontExAsync(fileName, fontSize, codepoints, codepointCount, loaded, failed);
+		RAsync.LoadFontExAsync(fileName, fontSize, codepoints, codepointCount, loaded, failed);
 
 	/** Makes a font from a TrueType or OpenType file's bytes, answering when its glyphs are ready: helix-ray's own, in place of raylib's
 		`LoadFontFromMemory`, as the glyphs are rasterized off the main thread.
@@ -3051,7 +3051,7 @@ class Raylib {
 		@param failed  Optional. Receives why it couldn't be made; when omitted, it is logged. */
 	public static inline function LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>,
 			codepointCount:Int, loaded:Font->Void, ?failed:String->Void):Void
-		HelixRay.LoadFontFromMemoryAsync(fileType, fileData, dataSize, fontSize, codepoints, codepointCount, loaded, failed);
+		RAsync.LoadFontFromMemoryAsync(fileType, fileData, dataSize, fontSize, codepoints, codepointCount, loaded, failed);
 
 	/** Rasterizes a TrueType or OpenType font's glyphs, answering when they are ready: helix-ray's own, in place of raylib's
 		`LoadFontData`. Each glyph has its own image, 8-bit grayscale, for `GenImageFontAtlas`; `FONT_SDF` makes them signed distances, with
@@ -3067,7 +3067,7 @@ class Raylib {
 		@param failed  Optional. Receives why the font couldn't be read; when omitted, it is logged. */
 	public static inline function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int,
 			loaded:Array<GlyphInfo>->Void, ?failed:String->Void):Void
-		HelixRay.LoadFontDataAsync(fileData, dataSize, fontSize, codepoints, codepointCount, type, loaded, failed);
+		RAsync.LoadFontDataAsync(fileData, dataSize, fontSize, codepoints, codepointCount, type, loaded, failed);
 	#end
 
 	// ---- raylib's loads, which wait for a file: each refuses to compile, naming the load to use ----

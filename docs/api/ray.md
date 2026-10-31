@@ -2441,7 +2441,7 @@ static function SetMusicPan(music:Music, pan:Float):Void
   - `music`: The music.
   - `pan`: 0 for left, 0.5 the middle, 1 for right, as raylib's.
 
-### helix-ray's own: loading in a page (raylib/HelixRay.hx)
+### the async loads, helix-ray's own in place of raylib's that wait for a file (raylib/RAsync.hx)
 
 ```haxe
 static function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void, ?failed:String -> Void):Void

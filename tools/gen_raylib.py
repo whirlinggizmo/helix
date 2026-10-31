@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Writes the generated parts of helix-ray's Raylib.hx and Raymath.hx, and the types helix-ray doesn't have yet.
 
-Raylib.hx has RCore, RShapes, RTextures, RText, RModels, RAudio and HelixRay, in raylib's module order, and Raymath.hx has RMath: every
+Raylib.hx has RCore, RShapes, RTextures, RText, RModels, RAudio and RAsync, in raylib's module order, and Raymath.hx has RMath: every
 raylib function of those sections in ray/src/helix/ray/raylib/, as an inline forward with its doc comment, under a heading naming its
 module and file. Then every function of raylib's (ray/vendor/raylib/raylib_api.json and raymath_api.json, raylib's own description of
 its API) that isn't written, and the sections' functions marked `@:unimplemented`, each as a macro with raylib's signature whose call
@@ -35,7 +35,7 @@ TARGETS = {
         ('RText', 'rtext: text'),
         ('RModels', 'rmodels: 3D shapes, models, meshes and rays'),
         ('RAudio', 'raudio: sound'),
-        ('HelixRay', "helix-ray's own: loading in a page"),
+        ('RAsync', "the async loads, helix-ray's own in place of raylib's that wait for a file"),
     ], 'raylib_api.json', 'raylib.h'),
     'Raymath.hx': ([('RMath', 'raymath: vectors, matrices and quaternions')], 'raymath_api.json', 'raymath.h'),
 }

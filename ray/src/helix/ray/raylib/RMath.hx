@@ -15,7 +15,7 @@ import helix.ray.raylib.RText.*;
 import helix.ray.raylib.RModels.*;
 import helix.ray.raylib.RAudio.*;
 import helix.ray.raylib.RMath.*;
-import helix.ray.raylib.HelixRay.*;
+import helix.ray.raylib.RAsync.*;
 #end
 
 /** Holds raylib's raymath (vectors, matrices and quaternions), written here; `Raymath` forwards to each (`tools/gen_raylib.py`). */

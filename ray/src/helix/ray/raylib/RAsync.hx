@@ -16,15 +16,16 @@ import helix.ray.raylib.RText.*;
 import helix.ray.raylib.RModels.*;
 import helix.ray.raylib.RAudio.*;
 import helix.ray.raylib.RMath.*;
-import helix.ray.raylib.HelixRay.*;
+import helix.ray.raylib.RAsync.*;
 #end
 
-/** Holds helix-ray's own, not raylib's (loading in a page), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
+/** Holds the async loads, helix-ray's own in place of raylib's loads that wait for a file, written here; `Raylib` forwards to each
+	(`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.ray)
-class HelixRay {
+class RAsync {
 	#if !macro
-	// ---- Loading in a page: helix-ray's own, not raylib's ----
+	// ---- The async loads: helix-ray's own, not raylib's ----
 
 	/** Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page
 		can't wait for a file. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The
