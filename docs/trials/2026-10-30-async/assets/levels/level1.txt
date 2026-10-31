@@ -1,0 +1,4 @@
+coins=5
+seconds=20
+target=8
+background=200,230,200
