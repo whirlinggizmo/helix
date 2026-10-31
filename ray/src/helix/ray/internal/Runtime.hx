@@ -83,6 +83,13 @@ class Runtime {
 
 	static var keyboardService:Null<Keyboard> = null;
 	static var mouseService:Null<Mouse> = null;
+
+	/** The platform's mouse, made with the mouse: its cursor and lock. */
+	public static var mouseAdapter:Null<helix.platform.IMouse> = null;
+
+	/** Whether the mouse is over the window, from its moves and its leaving. */
+	public static var cursorOnScreen = false;
+
 	static var touchService:Null<Touch> = null;
 	static var gamepadsService:Null<Gamepads> = null;
 	static var gesturesService:Null<Gestures> = null;
@@ -359,10 +366,11 @@ class Runtime {
 	public static function mouse():Mouse {
 		if (mouseService == null) {
 			#if js
-			mouseService = new Mouse(events, new helix.platform.adapters.mouse.dom.DomMouseAdapter({events: cast events}));
+			mouseAdapter = new helix.platform.adapters.mouse.dom.DomMouseAdapter({events: cast events});
 			#else
-			mouseService = new Mouse(events, new helix.platform.adapters.mouse.sdl3.Sdl3MouseAdapter({events: cast events}));
+			mouseAdapter = new helix.platform.adapters.mouse.sdl3.Sdl3MouseAdapter({events: cast events});
 			#end
+			mouseService = new Mouse(events, mouseAdapter);
 			devices.push(mouseService);
 			touch();
 			// raylib's gestures read the mouse and the fingers from the start, so they are made with them.
@@ -509,6 +517,10 @@ class Runtime {
 					hidden = true;
 				case Shown:
 					hidden = false;
+				case MouseMove(_, _):
+					cursorOnScreen = true;
+				case MouseLeave:
+					cursorOnScreen = false;
 				case _:
 			}
 		for (device in devices)

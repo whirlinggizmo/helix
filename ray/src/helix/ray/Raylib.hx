@@ -1443,11 +1443,75 @@ class Raylib {
 	public static inline function GetMouseY():Int
 		return RCore.GetMouseY();
 
-	/** Returns the mouse's position, in the screen's pixels; the first finger's while one is down.
+	/** Returns the mouse's position, in the screen's pixels, `SetMouseOffset`'s offset added and `SetMouseScale`'s scale applied; the
+		first finger's while one is down.
 
 		@return  The position. */
 	public static inline function GetMousePosition():Vector2
 		return RCore.GetMousePosition();
+
+	/** Moves the mouse to a place on the screen. In a page the cursor can't be moved, so the position reads there until the mouse moves.
+
+		@param x  The place across, in the screen's pixels.
+		@param y  The place down. */
+	public static inline function SetMousePosition(x:Int, y:Int):Void
+		RCore.SetMousePosition(x, y);
+
+	/** Sets what `GetMousePosition` adds to the mouse's position, before its scale.
+
+		@param offsetX  Added across.
+		@param offsetY  Added down. */
+	public static inline function SetMouseOffset(offsetX:Int, offsetY:Int):Void
+		RCore.SetMouseOffset(offsetX, offsetY);
+
+	/** Sets what `GetMousePosition` multiplies the mouse's position by, after its offset.
+
+		@param scaleX  The scale across.
+		@param scaleY  The scale down. */
+	public static inline function SetMouseScale(scaleX:Float, scaleY:Float):Void
+		RCore.SetMouseScale(scaleX, scaleY);
+
+	/** Returns how far the wheel turned this frame, in both directions: right and away from the player are positive.
+
+		@return  The notches. */
+	public static inline function GetMouseWheelMoveV():Vector2
+		return RCore.GetMouseWheelMoveV();
+
+	/** Shows the cursor. */
+	public static inline function ShowCursor():Void
+		RCore.ShowCursor();
+
+	/** Hides the cursor over the window. */
+	public static inline function HideCursor():Void
+		RCore.HideCursor();
+
+	/** Returns whether the cursor is hidden, by `HideCursor` or `DisableCursor`.
+
+		@return  True while it is. */
+	public static inline function IsCursorHidden():Bool
+		return RCore.IsCursorHidden();
+
+	/** Lets go of the mouse that `DisableCursor` locked, and shows the cursor. */
+	public static inline function EnableCursor():Void
+		RCore.EnableCursor();
+
+	/** Locks the mouse to the window and hides the cursor, for looking around: `GetMouseDelta` keeps coming while the position goes on past
+		the window's edges. In a page the browser locks it only soon after a click or key press, so without one it locks at the player's
+		next, and Escape lets it go. */
+	public static inline function DisableCursor():Void
+		RCore.DisableCursor();
+
+	/** Returns whether the mouse is over the window.
+
+		@return  True from its first move over the window until it leaves. */
+	public static inline function IsCursorOnScreen():Bool
+		return RCore.IsCursorOnScreen();
+
+	/** Sets the cursor's shape: the system's own cursor of each kind.
+
+		@param cursor  The shape (`MOUSE_CURSOR_*`); `MOUSE_CURSOR_DEFAULT` and `MOUSE_CURSOR_ARROW` are both the arrow. */
+	public static inline function SetMouseCursor(cursor:Int):Void
+		RCore.SetMouseCursor(cursor);
 
 	/** Returns how far the wheel turned this frame, the larger of its two directions; away from the player is positive.
 
@@ -1467,6 +1531,13 @@ class Raylib {
 		@return  The position, or (0, 0) when fewer are down. */
 	public static inline function GetTouchPosition(index:Int):Vector2
 		return RCore.GetTouchPosition(index);
+
+	/** Returns a finger's id, which stays the same while it is down.
+
+		@param index  Which finger, 0 for the first down.
+		@return  The id, or -1 when fewer are down. */
+	public static inline function GetTouchPointId(index:Int):Int
+		return RCore.GetTouchPointId(index);
 
 	/** Returns the first finger's x, in the screen's pixels.
 
@@ -4705,30 +4776,6 @@ class Raylib {
 	public static macro function DisableEventWaiting():ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("DisableEventWaiting: Not implemented", macro {});
 
-	/** raylib's `ShowCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Shows cursor. */
-	public static macro function ShowCursor():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ShowCursor: Not implemented", macro {});
-
-	/** raylib's `HideCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Hides cursor. */
-	public static macro function HideCursor():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("HideCursor: Not implemented", macro {});
-
-	/** raylib's `IsCursorHidden` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if cursor is not visible. */
-	public static macro function IsCursorHidden():ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsCursorHidden: Not implemented", macro(false : Bool));
-
-	/** raylib's `EnableCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Enables cursor (unlock cursor). */
-	public static macro function EnableCursor():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("EnableCursor: Not implemented", macro {});
-
-	/** raylib's `DisableCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Disables cursor (lock cursor). */
-	public static macro function DisableCursor():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DisableCursor: Not implemented", macro {});
-
-	/** raylib's `IsCursorOnScreen` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if cursor is on the screen. */
-	public static macro function IsCursorOnScreen():ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsCursorOnScreen: Not implemented", macro(false : Bool));
-
 	/** raylib's `BeginVrStereoMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Begin stereo rendering (requires VR simulator). */
 	public static macro function BeginVrStereoMode(config:ExprOf<VrStereoConfig>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("BeginVrStereoMode: Not implemented", macro {});
@@ -4877,30 +4924,6 @@ class Raylib {
 	public static macro function SetGamepadVibration(gamepad:ExprOf<Int>, leftMotor:ExprOf<Float>, rightMotor:ExprOf<Float>,
 			duration:ExprOf<Float>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("SetGamepadVibration: Not implemented", macro {});
-
-	/** raylib's `SetMousePosition` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set mouse position XY. */
-	public static macro function SetMousePosition(x:ExprOf<Int>, y:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetMousePosition: Not implemented", macro {});
-
-	/** raylib's `SetMouseOffset` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set mouse offset. */
-	public static macro function SetMouseOffset(offsetX:ExprOf<Int>, offsetY:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetMouseOffset: Not implemented", macro {});
-
-	/** raylib's `SetMouseScale` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set mouse scaling. */
-	public static macro function SetMouseScale(scaleX:ExprOf<Float>, scaleY:ExprOf<Float>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetMouseScale: Not implemented", macro {});
-
-	/** raylib's `GetMouseWheelMoveV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get mouse wheel movement for both X and Y. */
-	public static macro function GetMouseWheelMoveV():ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("GetMouseWheelMoveV: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `SetMouseCursor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set mouse cursor. */
-	public static macro function SetMouseCursor(cursor:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetMouseCursor: Not implemented", macro {});
-
-	/** raylib's `GetTouchPointId` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get touch point identifier for given index. */
-	public static macro function GetTouchPointId(index:ExprOf<Int>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetTouchPointId: Not implemented", macro(0 : Int));
 
 	/** raylib's `UpdateCameraPro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update camera movement/rotation. */
 	public static macro function UpdateCameraPro(camera:ExprOf<Camera>, movement:ExprOf<Vector3>, rotation:ExprOf<Vector3>, zoom:ExprOf<Float>):ExprOf<Void>

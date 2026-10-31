@@ -466,10 +466,17 @@ class RCore {
 		return Std.int(GetMousePosition().y);
 	}
 
-	/** Returns the mouse's position, in the screen's pixels; the first finger's while one is down.
+	/** Returns the mouse's position, in the screen's pixels, `SetMouseOffset`'s offset added and `SetMouseScale`'s scale applied; the
+		first finger's while one is down.
 
 		@return  The position. */
 	static function GetMousePosition():Vector2 {
+		pointer();
+		return new Vector2((lastPointerX + mouseOffsetX) * mouseScaleX, (lastPointerY + mouseOffsetY) * mouseScaleY);
+	}
+
+	// Brings the pointer's position up to date: the first finger's while one is down, else the mouse's once it moves, in the screen's pixels.
+	static function pointer():Void {
 		var mouse = Runtime.mouse(),
 			touch = Runtime.touch(),
 			ratio = Runtime.window.pixelRatio;
@@ -483,7 +490,110 @@ class RCore {
 			lastPointerX = mouse.x / ratio;
 			lastPointerY = mouse.y / ratio;
 		}
-		return new Vector2(lastPointerX, lastPointerY);
+	}
+
+	/** Moves the mouse to a place on the screen. In a page the cursor can't be moved, so the position reads there until the mouse moves.
+
+		@param x  The place across, in the screen's pixels.
+		@param y  The place down. */
+	static function SetMousePosition(x:Int, y:Int):Void {
+		var mouse = Runtime.mouse(), ratio = Runtime.window.pixelRatio;
+		Runtime.mouseAdapter.setPosition(x * ratio, y * ratio);
+		lastMouseX = mouse.x;
+		lastMouseY = mouse.y;
+		lastPointerX = x;
+		lastPointerY = y;
+	}
+
+	/** Sets what `GetMousePosition` adds to the mouse's position, before its scale.
+
+		@param offsetX  Added across.
+		@param offsetY  Added down. */
+	static function SetMouseOffset(offsetX:Int, offsetY:Int):Void {
+		mouseOffsetX = offsetX;
+		mouseOffsetY = offsetY;
+	}
+
+	/** Sets what `GetMousePosition` multiplies the mouse's position by, after its offset.
+
+		@param scaleX  The scale across.
+		@param scaleY  The scale down. */
+	static function SetMouseScale(scaleX:Float, scaleY:Float):Void {
+		mouseScaleX = scaleX;
+		mouseScaleY = scaleY;
+	}
+
+	/** Returns how far the wheel turned this frame, in both directions: right and away from the player are positive.
+
+		@return  The notches. */
+	static function GetMouseWheelMoveV():Vector2 {
+		var mouse = Runtime.mouse();
+		return new Vector2(mouse.wheelX, mouse.wheelY);
+	}
+
+	/** Shows the cursor. */
+	static function ShowCursor():Void {
+		Runtime.mouse();
+		Runtime.mouseAdapter.cursorVisible = true;
+		cursorHidden = false;
+	}
+
+	/** Hides the cursor over the window. */
+	static function HideCursor():Void {
+		Runtime.mouse();
+		Runtime.mouseAdapter.cursorVisible = false;
+		cursorHidden = true;
+	}
+
+	/** Returns whether the cursor is hidden, by `HideCursor` or `DisableCursor`.
+
+		@return  True while it is. */
+	static function IsCursorHidden():Bool {
+		return cursorHidden;
+	}
+
+	/** Lets go of the mouse that `DisableCursor` locked, and shows the cursor. */
+	static function EnableCursor():Void {
+		Runtime.mouse();
+		Runtime.mouseAdapter.requestLock(false);
+		Runtime.mouseAdapter.cursorVisible = true;
+		cursorHidden = false;
+	}
+
+	/** Locks the mouse to the window and hides the cursor, for looking around: `GetMouseDelta` keeps coming while the position goes on past
+		the window's edges. In a page the browser locks it only soon after a click or key press, so without one it locks at the player's
+		next, and Escape lets it go. */
+	static function DisableCursor():Void {
+		Runtime.mouse();
+		Runtime.mouseAdapter.requestLock(true);
+		cursorHidden = true;
+	}
+
+	/** Returns whether the mouse is over the window.
+
+		@return  True from its first move over the window until it leaves. */
+	static function IsCursorOnScreen():Bool {
+		Runtime.mouse();
+		return Runtime.cursorOnScreen;
+	}
+
+	/** Sets the cursor's shape: the system's own cursor of each kind.
+
+		@param cursor  The shape (`MOUSE_CURSOR_*`); `MOUSE_CURSOR_DEFAULT` and `MOUSE_CURSOR_ARROW` are both the arrow. */
+	static function SetMouseCursor(cursor:Int):Void {
+		Runtime.mouse();
+		Runtime.mouseAdapter.cursorShape = switch cursor {
+			case MOUSE_CURSOR_IBEAM: Text;
+			case MOUSE_CURSOR_CROSSHAIR: Crosshair;
+			case MOUSE_CURSOR_POINTING_HAND: Pointer;
+			case MOUSE_CURSOR_RESIZE_EW: ResizeHorizontal;
+			case MOUSE_CURSOR_RESIZE_NS: ResizeVertical;
+			case MOUSE_CURSOR_RESIZE_NWSE: ResizeDiagonalDown;
+			case MOUSE_CURSOR_RESIZE_NESW: ResizeDiagonalUp;
+			case MOUSE_CURSOR_RESIZE_ALL: Move;
+			case MOUSE_CURSOR_NOT_ALLOWED: NotAllowed;
+			case _: Arrow;
+		}
 	}
 
 	/** Returns how far the wheel turned this frame, the larger of its two directions; away from the player is positive.
@@ -511,6 +621,15 @@ class RCore {
 			return new Vector2();
 		var id = touch.fingers[index];
 		return new Vector2(touch.getX(id) / ratio, touch.getY(id) / ratio);
+	}
+
+	/** Returns a finger's id, which stays the same while it is down.
+
+		@param index  Which finger, 0 for the first down.
+		@return  The id, or -1 when fewer are down. */
+	static function GetTouchPointId(index:Int):Int {
+		var touch = Runtime.touch();
+		return index >= 0 && index < touch.fingers.length ? touch.fingers[index] : -1;
 	}
 
 	/** Returns the first finger's x, in the screen's pixels.
@@ -1253,6 +1372,11 @@ class RCore {
 	static var lastMouseY = 0.;
 	static var lastPointerX = 0.;
 	static var lastPointerY = 0.;
+	static var mouseOffsetX = 0.;
+	static var mouseOffsetY = 0.;
+	static var mouseScaleX = 1.;
+	static var mouseScaleY = 1.;
+	static var cursorHidden = false;
 
 	static function normalize(path:String):String {
 		while (StringTools.startsWith(path, "./"))
@@ -1541,14 +1665,15 @@ class RCore {
 
 		@return  The movement. */
 	static function GetMouseDelta():Vector2 {
-		var now = GetMousePosition();
+		// raylib's delta is the mouse's own, before SetMouseOffset and SetMouseScale.
+		pointer();
 		var frame = Runtime.frames;
 		if (frame != deltaFrame) {
 			deltaFrame = frame;
-			deltaX = now.x - previousX;
-			deltaY = now.y - previousY;
-			previousX = now.x;
-			previousY = now.y;
+			deltaX = lastPointerX - previousX;
+			deltaY = lastPointerY - previousY;
+			previousX = lastPointerX;
+			previousY = lastPointerY;
 		}
 		return new Vector2(deltaX, deltaY);
 	}

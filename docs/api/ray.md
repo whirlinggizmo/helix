@@ -1414,9 +1414,21 @@ static function IsMouseButtonUp(button:Int):Bool
 static function GetMouseX():Int
 static function GetMouseY():Int
 static function GetMousePosition():Vector2
+static function SetMousePosition(x:Int, y:Int):Void
+static function SetMouseOffset(offsetX:Int, offsetY:Int):Void
+static function SetMouseScale(scaleX:Float, scaleY:Float):Void
+static function GetMouseWheelMoveV():Vector2
+static function ShowCursor():Void
+static function HideCursor():Void
+static function IsCursorHidden():Bool
+static function EnableCursor():Void
+static function DisableCursor():Void
+static function IsCursorOnScreen():Bool
+static function SetMouseCursor(cursor:Int):Void
 static function GetMouseWheelMove():Float
 static function GetTouchPointCount():Int
 static function GetTouchPosition(index:Int):Vector2
+static function GetTouchPointId(index:Int):Int
 static function GetTouchX():Int
 static function GetTouchY():Int
 static function SetGesturesEnabled(flags:Int):Void
@@ -1618,8 +1630,29 @@ static function EndScissorMode():Void
   - returns: The x.
 - `GetMouseY`: Returns the mouse's y, in the screen's pixels; the first finger's while one is down.
   - returns: The y.
-- `GetMousePosition`: Returns the mouse's position, in the screen's pixels; the first finger's while one is down.
+- `GetMousePosition`: Returns the mouse's position, in the screen's pixels, `SetMouseOffset`'s offset added and `SetMouseScale`'s scale applied; the first finger's while one is down.
   - returns: The position.
+- `SetMousePosition`: Moves the mouse to a place on the screen. In a page the cursor can't be moved, so the position reads there until the mouse moves.
+  - `x`: The place across, in the screen's pixels.
+  - `y`: The place down.
+- `SetMouseOffset`: Sets what `GetMousePosition` adds to the mouse's position, before its scale.
+  - `offsetX`: Added across.
+  - `offsetY`: Added down.
+- `SetMouseScale`: Sets what `GetMousePosition` multiplies the mouse's position by, after its offset.
+  - `scaleX`: The scale across.
+  - `scaleY`: The scale down.
+- `GetMouseWheelMoveV`: Returns how far the wheel turned this frame, in both directions: right and away from the player are positive.
+  - returns: The notches.
+- `ShowCursor`: Shows the cursor.
+- `HideCursor`: Hides the cursor over the window.
+- `IsCursorHidden`: Returns whether the cursor is hidden, by `HideCursor` or `DisableCursor`.
+  - returns: True while it is.
+- `EnableCursor`: Lets go of the mouse that `DisableCursor` locked, and shows the cursor.
+- `DisableCursor`: Locks the mouse to the window and hides the cursor, for looking around: `GetMouseDelta` keeps coming while the position goes on past the window's edges. In a page the browser locks it only soon after a click or key press, so without one it locks at the player's next, and Escape lets it go.
+- `IsCursorOnScreen`: Returns whether the mouse is over the window.
+  - returns: True from its first move over the window until it leaves.
+- `SetMouseCursor`: Sets the cursor's shape: the system's own cursor of each kind.
+  - `cursor`: The shape (`MOUSE_CURSOR_*`); `MOUSE_CURSOR_DEFAULT` and `MOUSE_CURSOR_ARROW` are both the arrow.
 - `GetMouseWheelMove`: Returns how far the wheel turned this frame, the larger of its two directions; away from the player is positive.
   - returns: The notches.
 - `GetTouchPointCount`: Returns the number of fingers down.
@@ -1627,6 +1660,9 @@ static function EndScissorMode():Void
 - `GetTouchPosition`: Returns a finger's position, in the screen's pixels.
   - `index`: Which finger, 0 for the first down.
   - returns: The position, or (0, 0) when fewer are down.
+- `GetTouchPointId`: Returns a finger's id, which stays the same while it is down.
+  - `index`: Which finger, 0 for the first down.
+  - returns: The id, or -1 when fewer are down.
 - `GetTouchX`: Returns the first finger's x, in the screen's pixels.
   - returns: The x.
 - `GetTouchY`: Returns the first finger's y, in the screen's pixels.
@@ -3476,7 +3512,7 @@ Each of these is raylib's name, and a call to it doesn't compile, saying why and
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`IsWindowMaximized`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowIcon`, `SetWindowIcons`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetWindowOpacity`, `SetWindowFocused`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `GetMonitorRefreshRate`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `EnableEventWaiting`, `DisableEventWaiting`, `ShowCursor`, `HideCursor`, `IsCursorHidden`, `EnableCursor`, `DisableCursor`, `IsCursorOnScreen`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `OpenURL`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `GetFileLength`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `SetGamepadMappings`, `SetGamepadVibration`, `SetMousePosition`, `SetMouseOffset`, `SetMouseScale`, `GetMouseWheelMoveV`, `SetMouseCursor`, `GetTouchPointId`, `UpdateCameraPro`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `ExportFontAsCode`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`, `LoadWave`, `LoadWaveFromMemory`, `IsWaveValid`, `LoadSoundFromWave`, `LoadSoundAlias`, `UpdateSound`, `UnloadWave`, `UnloadSoundAlias`, `ExportWave`, `ExportWaveAsCode`, `PauseSound`, `ResumeSound`, `WaveCopy`, `WaveCrop`, `WaveFormat`, `LoadWaveSamples`, `UnloadWaveSamples`, `LoadMusicStreamFromMemory`, `SeekMusicStream`, `GetMusicTimeLength`, `GetMusicTimePlayed`, `LoadAudioStream`, `IsAudioStreamValid`, `UnloadAudioStream`, `UpdateAudioStream`, `IsAudioStreamProcessed`, `PlayAudioStream`, `PauseAudioStream`, `ResumeAudioStream`, `IsAudioStreamPlaying`, `StopAudioStream`, `SetAudioStreamVolume`, `SetAudioStreamPitch`, `SetAudioStreamPan`, `SetAudioStreamBufferSizeDefault`, `SetAudioStreamCallback`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`IsWindowMaximized`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowIcon`, `SetWindowIcons`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetWindowOpacity`, `SetWindowFocused`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `GetMonitorRefreshRate`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `EnableEventWaiting`, `DisableEventWaiting`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `OpenURL`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `GetFileLength`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `SetGamepadMappings`, `SetGamepadVibration`, `UpdateCameraPro`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `ExportFontAsCode`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`, `LoadWave`, `LoadWaveFromMemory`, `IsWaveValid`, `LoadSoundFromWave`, `LoadSoundAlias`, `UpdateSound`, `UnloadWave`, `UnloadSoundAlias`, `ExportWave`, `ExportWaveAsCode`, `PauseSound`, `ResumeSound`, `WaveCopy`, `WaveCrop`, `WaveFormat`, `LoadWaveSamples`, `UnloadWaveSamples`, `LoadMusicStreamFromMemory`, `SeekMusicStream`, `GetMusicTimeLength`, `GetMusicTimePlayed`, `LoadAudioStream`, `IsAudioStreamValid`, `UnloadAudioStream`, `UpdateAudioStream`, `IsAudioStreamProcessed`, `PlayAudioStream`, `PauseAudioStream`, `ResumeAudioStream`, `IsAudioStreamPlaying`, `StopAudioStream`, `SetAudioStreamVolume`, `SetAudioStreamPitch`, `SetAudioStreamPan`, `SetAudioStreamBufferSizeDefault`, `SetAudioStreamCallback`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ## Raymath
 
