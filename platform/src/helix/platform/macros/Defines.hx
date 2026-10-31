@@ -3,7 +3,7 @@ package helix.platform.macros;
 #if macro
 import haxe.macro.Compiler;
 import haxe.macro.Context;
-import helix.platform.adapters.shared.FilePath;
+import helix.platform.FilePath;
 #end
 
 /** Provides the init macro the platform's haxelib runs for every build on it (its extraParams.hxml).

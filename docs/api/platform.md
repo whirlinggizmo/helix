@@ -192,6 +192,26 @@ Positions are in framebuffer pixels from the window's top-left corner. A key is 
   It arrives only natively. A page never receives it, because a closing tab gives no frame to decide in. A page's end is `IWindow.onClose`.
 - `GraphicsLost`: The GPU's context is gone. In a page, the WebGL context was lost to a GPU reset or an evicted tab.
 
+## FilePath
+
+*class* in [`platform/src/helix/platform/FilePath.hx`](../../platform/src/helix/platform/FilePath.hx), `import helix.platform.FilePath;`
+
+Provides the rule for the paths `IFileSystem` takes, which every file system adapter checks, and which helix-services' `Assets` holds every source to, so a name is refused the same way in a page and natively.
+
+```haxe
+static function isValid(path:String):Bool
+static inline var INVALID:String
+static function isDirectoryName(name:String):Bool
+```
+
+- `isValid`: Returns whether a path is one `IFileSystem` takes: plain names of letters, digits, `_`, `-` and `.` joined by `/`, at most 256 characters, none empty, `.` or `..`.
+  - `path`: The path.
+  - returns: True when it is.
+- `INVALID`: The failure for a path `isValid` refuses.
+- `isDirectoryName`: Returns whether a name can be one directory's on every OS, as a program's company and product are: 1 to 64 characters, not `.` or `..`, no `/ \\ : * ? " < > |` or control characters, and no space or `.` at its end, which Windows drops.
+  - `name`: The name.
+  - returns: True when it can.
+
 ## Filter
 
 *abstract* in [`platform/src/helix/platform/Filter.hx`](../../platform/src/helix/platform/Filter.hx), `import helix.platform.Filter;`

@@ -307,7 +307,8 @@ a transfer at its next part of the body, not while it connects. Native HTTPS com
 
 `IFileSystem`: files that reside on this machine, under one root given at construction (natively a directory, in a page an IndexedDB
 database), read and written whole by path. A path is plain names joined by `/` (`audio/music.ogg`): letters, digits, `_`, `-` and `.`,
-at most 256 characters, none empty, `.` or `..`; every adapter checks it. There is no listing, no directories to make and no seeking.
+at most 256 characters, none empty, `.` or `..`; every adapter checks it, by `FilePath.isValid`, which a layer above may hold its other
+sources to as well (helix-services' `Assets` does). There is no listing, no directories to make and no seeking.
 
 - `root`, the root as given; `canWrite`, whether it can be written.
 - `read(path, maxBytes, loaded(bytes), missing(), failed(message))`, a file over `maxBytes` failing, returning an abort;

@@ -1,5 +1,7 @@
 package helix.platform.adapters.shared;
 
+import helix.platform.FilePath;
+
 /** Gives the program's company and product, from the `helix-company` and `helix-product` defines, for the system adapters' directories
 	and SDL's name for the program. */
 @:noCompletion

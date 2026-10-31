@@ -6,6 +6,7 @@ import haxe.crypto.Sha256;
 import haxe.io.Bytes;
 import haxe.io.BytesBuffer;
 import helix.log.Log;
+import helix.platform.FilePath;
 import helix.platform.GrowingSource;
 import helix.platform.IFileSystem;
 import helix.platform.IHttp;
@@ -18,7 +19,8 @@ import helix.platform.StreamSource;
 	mode, and its shipped files after it. A shipped file that the server's manifest lists at the same hash is then read in place, and
 	only what changed is downloaded. A page, whose files are on the server that served it, lists `HttpServer("")`.
 
-	A path is plain names joined by `/`, as in `IFileSystem`. Each call answers once, on the main thread, in the platform `poll` that
+	A path is plain names joined by `/`, as in `IFileSystem` (`FilePath`), from every source: a server is never asked for one the file
+	systems would refuse, so a name fails alike in a page and natively. Each call answers once, on the main thread, in the platform `poll` that
 	finished it, and never during the call. The failure callback is optional; when it is omitted, the failure is logged with the path.
 
 	Downloads and copies finish in the polls of the HTTP client and file systems it was given, which the program polls each frame.
@@ -325,6 +327,10 @@ private class ServerSource {
 
 	/** Loads a file whole, from the kept copy or a download, as the manifests and the cache mode decide. */
 	public function load(path:String, request:Request, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void {
+		if (!FilePath.isValid(path)) {
+			refuse(request, failed);
+			return;
+		}
 		if (mode == Off) {
 			var bytes = held.get(path);
 			if (bytes != null)
@@ -348,6 +354,10 @@ private class ServerSource {
 
 	/** Locates a file to play as it is read, from the kept copy or from a download as it arrives. */
 	public function locate(path:String, request:Request, located:(StreamSource, Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void {
+		if (!FilePath.isValid(path)) {
+			refuse(request, failed);
+			return;
+		}
 		if (mode == Off) {
 			#if js
 			later(request, () -> located(Remote(url + path), () -> {}));
@@ -586,6 +596,10 @@ private class ServerSource {
 	}
 
 	// Answers at the cache's next poll, never during the call: a read of a path no file has.
+	// A path the file systems refuse is refused by a server too, at a later poll, so a name fails alike in a page and natively.
+	function refuse(request:Request, failed:String->Void):Void
+		later(request, () -> failed(FilePath.INVALID));
+
 	function later(request:Request, f:Void->Void):Void
 		cache.read('$directory/later', 0, _ -> if (!request.aborted) f(), () -> if (!request.aborted) f(), _ -> if (!request.aborted) f());
 

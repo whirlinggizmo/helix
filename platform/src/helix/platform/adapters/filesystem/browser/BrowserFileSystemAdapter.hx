@@ -2,7 +2,7 @@ package helix.platform.adapters.filesystem.browser;
 
 import haxe.io.Bytes;
 import helix.platform.IFileSystem;
-import helix.platform.adapters.shared.FilePath;
+import helix.platform.FilePath;
 
 /** Provides `IFileSystem` in a page: Blobs in an IndexedDB database, a located file a Blob's URL, released by revoking it.
 

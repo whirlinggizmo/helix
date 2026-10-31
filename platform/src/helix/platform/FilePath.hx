@@ -1,7 +1,7 @@
-package helix.platform.adapters.shared;
+package helix.platform;
 
-/** The paths `IFileSystem` takes, checked the same way by every adapter. */
-@:noCompletion
+/** Provides the rule for the paths `IFileSystem` takes, which every file system adapter checks, and which helix-services' `Assets`
+	holds every source to, so a name is refused the same way in a page and natively. */
 class FilePath {
 	/** Returns whether a path is one `IFileSystem` takes: plain names of letters, digits, `_`, `-` and `.` joined by `/`, at most 256
 		characters, none empty, `.` or `..`.

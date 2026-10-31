@@ -4,7 +4,7 @@ import haxe.io.Bytes;
 import haxe.io.Path;
 import helix.platform.IFileSystem;
 import helix.platform.adapters.shared.AtomicFile;
-import helix.platform.adapters.shared.FilePath;
+import helix.platform.FilePath;
 import helix.platform.adapters.shared.Mailbox;
 import sys.thread.Thread;
 

@@ -108,6 +108,14 @@ class AssetsTests {
 		before = http.requests.length;
 		check(load(off, "dev.txt").bytes == "dev" && http.requests.length == before, "Off: fetched once a run");
 		check(!cache.files.exists('${dir(other)}/files/dev.txt'), "Off: nothing kept");
+		http.routes.set(other + "my file.txt", {status: 200, body: text("spaced")});
+		before = http.requests.length;
+		var spaced = null;
+		off.load("my file.txt", _ -> throw "a server was asked for a path the file systems refuse", m -> spaced = m);
+		check(spaced == null, "a refused path: not answered during the call");
+		pump();
+		check(spaced != null && spaced.indexOf("Invalid file path") >= 0 && http.requests.length == before,
+			"a path the file systems refuse: a server isn't asked for it either, and it fails as they do");
 
 		var site = "https://site.example/";
 		var level = text("level one"),

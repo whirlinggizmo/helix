@@ -19,7 +19,7 @@ class PlatformTests {
 
 	static function main():Void {
 		// A program's company and product, each one directory's name on every OS.
-		var name = helix.platform.adapters.shared.FilePath.isDirectoryName;
+		var name = helix.platform.FilePath.isDirectoryName;
 		check(name("Whirling Gizmo") && name("asteroids-2") && name("Ünïcode"), "directory names: spaces, digits and letters of any script");
 		check(!name("") && !name(".") && !name("..") && !name("a/b") && !name("a\\b") && !name("a:b") && !name("what?"),
 			"directory names: not empty, . or .., no separator or reserved character");
