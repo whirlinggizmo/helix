@@ -122,17 +122,7 @@ class RRlgl {
 		@param znear  The near plane.
 		@param zfar  The far plane. */
 	static function rlFrustum(left:Float, right:Float, bottom:Float, top:Float, znear:Float, zfar:Float):Void {
-		var m = new Matrix3D(), v = m.values, w = right - left, h = top - bottom, d = zfar - znear;
-		for (i in 0...16)
-			v[i] = 0;
-		v[0] = 2 * znear / w;
-		v[5] = 2 * znear / h;
-		v[8] = (right + left) / w;
-		v[9] = (top + bottom) / h;
-		v[10] = -(zfar + znear) / d;
-		v[11] = -1;
-		v[14] = -2 * zfar * znear / d;
-		apply(m);
+		apply(new Matrix3D().makeFrustum(left, right, bottom, top, znear, zfar));
 	}
 
 	/** Returns the view: the screen's, `BeginMode2D`'s or `BeginMode3D`'s.

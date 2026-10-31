@@ -25,6 +25,12 @@ class BoundsTests {
 		check(b.intersects(other) && !b.intersects(new Bounds2D()) && !new Bounds2D().intersects(b), "2D: overlaps another; never an empty one");
 		check(b.intersects(new Bounds2D().set(2, 7, 3, 8)) && !b.intersects(new Bounds2D().set(2.5, 7.5, 3, 8)), "2D: touching counts");
 		check(b.union(other) == b && b.maxX == 9 && b.union(new Bounds2D()).maxX == 9, "2D: a union grows to hold both; an empty one changes nothing");
+		var overlap = new Bounds2D().set(0, 0, 4, 4).intersection(new Bounds2D().set(2, 1, 6, 3));
+		check(overlap.minX == 2 && overlap.minY == 1 && overlap.maxX == 4 && overlap.maxY == 3, "2D: the overlap of two");
+		var edge = new Bounds2D().set(0, 0, 4, 4).intersection(new Bounds2D().set(4, 1, 6, 3));
+		check(!edge.isEmpty && edge.width == 0 && edge.height == 2, "2D: touching edges overlap with no width");
+		var into = new Bounds2D().set(0, 0, 4, 4);
+		check(into.intersection(new Bounds2D().set(5, 5, 6, 6), into) == into && into.isEmpty, "2D: apart, empty; into itself");
 		var copy = new Bounds2D().copyFrom(b);
 		check(copy.minX == -1 && copy.maxX == 9 && copy.minY == 3 && copy.maxY == 9, "2D: copied");
 		check(copy.makeEmpty() == copy && copy.isEmpty && !b.isEmpty, "2D: made empty, the original unchanged");

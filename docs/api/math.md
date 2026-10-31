@@ -27,6 +27,7 @@ var centerY(get, never):Float
 function expand(x:Float, y:Float):Bounds2D
 function union(other:Bounds2D):Bounds2D
 function contains(x:Float, y:Float):Bool
+function intersection(other:Bounds2D, ?out:Bounds2D):Bounds2D
 function intersects(other:Bounds2D):Bool
 ```
 
@@ -64,6 +65,10 @@ function intersects(other:Bounds2D):Bool
   - `x`: The point's x coordinate.
   - `y`: The point's y coordinate.
   - returns: True when the point is in the box; false for an empty box.
+- `intersection`: Returns where the box and another overlap: a box with no width or height where they only touch, an empty one where they don't.
+  - `other`: The other box.
+  - `out`: Optional. The box to fill; a new one when omitted. It may be this box or the other.
+  - returns: The overlap.
 - `intersects`: Returns whether the box and another overlap, touching edges included.
   - `other`: The other box.
   - returns: True when they overlap; false when either is empty.
@@ -241,11 +246,88 @@ Specifies how a `Curve` passes its points.
 - `Bezier`: Near its control points: cubic Bézier pieces.
 - `Polyline`: Straight from point to point.
 
+## DistanceField2D
+
+*class* in [`math/src/helix/math/DistanceField2D.hx`](../../math/src/helix/math/DistanceField2D.hx), `import helix.math.DistanceField2D;`
+
+Provides the distance transform of a grid: for each cell, the squared distance to the nearest cell that is 0, by Felzenszwalb and Huttenlocher's method, in time proportional to the cells. Two transforms, one from inside a shape and one from outside it, make a signed distance field.
+
+```haxe
+static function transform(grid:Array<Float>, width:Int, height:Int):Void
+```
+
+- `transform`: Transforms a grid in place: each cell becomes its squared distance, in cells, to the nearest cell that was 0.
+  - `grid`: The cells, row by row, `width * height` of them.
+  - `width`: The cells in a row.
+  - `height`: The rows.
+
+  Cells start at 0 where distances are measured from, and large (1e20) everywhere else.
+
+## Geometry2D
+
+*class* in [`math/src/helix/math/Geometry2D.hx`](../../math/src/helix/math/Geometry2D.hx), `import helix.math.Geometry2D;`
+
+Provides tests on points, segments, triangles, polygons and circles in a plane, their points given as plain numbers.
+
+Lines that are parallel within a ten-millionth (by the cross product of their directions) don't cross.
+
+```haxe
+static function intersectSegments(ax:Float, ay:Float, bx:Float, by:Float, cx:Float, cy:Float, dx:Float, dy:Float, ?out:Point2D):Bool
+static function isPointInTriangle(x:Float, y:Float, ax:Float, ay:Float, bx:Float, by:Float, cx:Float, cy:Float):Bool
+static function isPointInPolygon(x:Float, y:Float, points:Array<Float>):Bool
+static function getDistanceToSegment(x:Float, y:Float, ax:Float, ay:Float, bx:Float, by:Float):Float
+static function intersectsCircleSegment(cx:Float, cy:Float, radius:Float, ax:Float, ay:Float, bx:Float, by:Float):Bool
+```
+
+- `intersectSegments`: Returns whether two segments cross, and where. Parallel segments, overlapping ones too, don't.
+  - `ax`: The first segment's start x.
+  - `ay`: Its start y.
+  - `bx`: Its end x.
+  - `by`: Its end y.
+  - `cx`: The second segment's start x.
+  - `cy`: Its start y.
+  - `dx`: Its end x.
+  - `dy`: Its end y.
+  - `out`: Optional. Set to where they cross, when they do.
+  - returns: True when they cross, their ends included.
+- `isPointInTriangle`: Returns whether a point is inside a triangle, its edges not included.
+  - `x`: The point's x.
+  - `y`: Its y.
+  - `ax`: The triangle's first corner's x.
+  - `ay`: Its y.
+  - `bx`: The second corner's x.
+  - `by`: Its y.
+  - `cx`: The third corner's x.
+  - `cy`: Its y.
+  - returns: True when it is inside; false for a triangle with no area.
+- `isPointInPolygon`: Returns whether a point is inside a polygon, by how many of its edges a ray from the point crosses. A point on an edge may count either way.
+  - `x`: The point's x.
+  - `y`: Its y.
+  - `points`: The polygon's corners in order, flat: x, y, x, y.
+  - returns: True when it is inside; false for fewer than 3 corners.
+- `getDistanceToSegment`: Returns how far a point is from the nearest point of a segment.
+  - `x`: The point's x.
+  - `y`: Its y.
+  - `ax`: The segment's start x.
+  - `ay`: Its start y.
+  - `bx`: Its end x.
+  - `by`: Its end y.
+  - returns: The distance.
+- `intersectsCircleSegment`: Returns whether a circle and a segment touch.
+  - `cx`: The circle's center x.
+  - `cy`: Its center y.
+  - `radius`: Its radius.
+  - `ax`: The segment's start x.
+  - `ay`: Its start y.
+  - `bx`: Its end x.
+  - `by`: Its end y.
+  - returns: True when they touch, the circle's edge included.
+
 ## Interpolate
 
 *class* in [`math/src/helix/math/Interpolate.hx`](../../math/src/helix/math/Interpolate.hx), `import helix.math.Interpolate;`
 
-Provides interpolation: between numbers and angles, clamping, smoothing, stepping and easing toward a target.
+Provides interpolation: between numbers and angles, along spline pieces, clamping, smoothing, stepping and easing toward a target.
 
 `damp` and `dampAngle` use `Math.exp`, whose last bit can differ between targets, so a simulation that must replay alike on every target uses `moveToward` or its own integer math instead. Angles are in radians.
 
@@ -260,6 +342,10 @@ static function lerpAngle(a:Float, b:Float, t:Float):Float
 static function moveToward(value:Float, target:Float, step:Float):Float
 static function damp(value:Float, target:Float, rate:Float, dt:Float):Float
 static function dampAngle(value:Float, target:Float, rate:Float, dt:Float):Float
+static function catmullRom(p0:Float, p1:Float, p2:Float, p3:Float, t:Float):Float
+static function bSpline(p0:Float, p1:Float, p2:Float, p3:Float, t:Float):Float
+static function quadraticBezier(p0:Float, p1:Float, p2:Float, t:Float):Float
+static function cubicBezier(p0:Float, p1:Float, p2:Float, p3:Float, t:Float):Float
 ```
 
 - `lerp`: Returns the value a fraction of the way from one number to another.
@@ -320,6 +406,35 @@ static function dampAngle(value:Float, target:Float, rate:Float, dt:Float):Float
   - `rate`: How fast it closes the gap, per second.
   - `dt`: The time step, in seconds.
   - returns: The eased angle, in radians, not wrapped.
+- `catmullRom`: Returns a point on a piece of a uniform Catmull-Rom spline, which passes through the middle two of four points, on one axis.
+  - `p0`: The first point, which steers the piece.
+  - `p1`: The piece's start.
+  - `p2`: Its end.
+  - `p3`: The fourth point, which steers it.
+  - `t`: How far along, 0 at the start to 1 at the end.
+  - returns: The point.
+
+  Each axis of a 2D or 3D point is asked for in turn.
+- `bSpline`: Returns a point on a piece of a uniform cubic B-spline, which passes near the middle two of four points, on one axis.
+  - `p0`: The first point.
+  - `p1`: The second, near the piece's start.
+  - `p2`: The third, near its end.
+  - `p3`: The fourth.
+  - `t`: How far along, 0 at the start to 1 at the end.
+  - returns: The point.
+- `quadraticBezier`: Returns a point on a quadratic Bezier curve, on one axis.
+  - `p0`: The start.
+  - `p1`: The control point.
+  - `p2`: The end.
+  - `t`: How far along, 0 at the start to 1 at the end.
+  - returns: The point.
+- `cubicBezier`: Returns a point on a cubic Bezier curve, on one axis.
+  - `p0`: The start.
+  - `p1`: The start's control point.
+  - `p2`: The end's control point.
+  - `p3`: The end.
+  - `t`: How far along, 0 at the start to 1 at the end.
+  - returns: The point.
 
 ## Matrix3D
 
@@ -346,6 +461,7 @@ function makeQuaternionRotation(x:Float, y:Float, z:Float, w:Float):Matrix3D
 function makeLookAt(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX:Float, upY:Float, upZ:Float):Matrix3D
 function makePerspective(fovY:Float, aspect:Float, near:Float, far:Float):Matrix3D
 function makeOrthographic(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float):Matrix3D
+function makeFrustum(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float):Matrix3D
 function compose(first:Matrix3D, second:Matrix3D):Matrix3D
 function append(other:Matrix3D):Matrix3D
 function prepend(other:Matrix3D):Matrix3D
@@ -409,6 +525,14 @@ function transformDirection(x:Float, y:Float, z:Float, ?out:Point3D):Point3D
   - `right`: The right edge.
   - `bottom`: The bottom edge.
   - `top`: The top edge.
+  - `near`: The near plane's distance.
+  - `far`: The far plane's distance.
+  - returns: This matrix.
+- `makeFrustum`: Makes this a perspective projection into GL's clip space (depth -1 to 1) by its near plane's edges, which may be off center.
+  - `left`: The near plane's left edge.
+  - `right`: Its right edge.
+  - `bottom`: Its bottom edge.
+  - `top`: Its top edge.
   - `near`: The near plane's distance.
   - `far`: The far plane's distance.
   - returns: This matrix.
@@ -582,6 +706,22 @@ function shuffle(items:Array<T>):Array<T>
 - `shuffle`: Shuffles items in place, every order equally likely.
   - `items`: The items.
   - returns: The same array, shuffled.
+
+## RectPacker2D
+
+*class* in [`math/src/helix/math/RectPacker2D.hx`](../../math/src/helix/math/RectPacker2D.hx), `import helix.math.RectPacker2D;`
+
+Provides packing rectangles into an area, as stb_rect_pack 1.01 does (public domain, Sean Barrett), which raylib packs its font atlases with: a skyline, each rectangle placed as low as it goes and then as far left, the tallest first.
+
+```haxe
+static function pack(width:Int, height:Int, sizes:Array<Int>):Array<Int>
+```
+
+- `pack`: Places rectangles in an area.
+  - `width`: The area's width.
+  - `height`: The area's height.
+  - `sizes`: Each rectangle's width and height, flat: width, height, width, height.
+  - returns: Each rectangle's place, flat, in the same order: x, y, and 1 when it was placed or 0 when it didn't fit. A rectangle with no width or height is placed at 0, 0.
 
 ## Trig
 

@@ -46,6 +46,6 @@ helix-ray's API and the flow of a program on it are [raylib](https://www.raylib.
 contributors, mirrored in Haxe. A small API that a programmer can hold in their head and guess right is hard to make; raylib's is, and
 this library is built on that work. Portions are from raylib 5.5 (its default font, its default shader, its header's comments, and its
 API description, `vendor/raylib/raylib_api.json`, with `raymath_api.json` and `rlgl_api.json` made from `raymath.h` and `rlgl.h` by raylib's parser), altered; zlib
-license, `vendor/raylib/LICENSE`. `GenImageFontAtlas`'s skyline packing is stb_rect_pack 1.01's (Sean Barrett, public domain), ported.
+license, `vendor/raylib/LICENSE`.
 The `text` example's font is [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) Regular, Copyright 2020 The JetBrains Mono
 Project Authors, under the SIL Open Font License 1.1 (`examples/text/web/assets/OFL.txt`).

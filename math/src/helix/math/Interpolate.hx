@@ -1,6 +1,6 @@
 package helix.math;
 
-/** Provides interpolation: between numbers and angles, clamping, smoothing, stepping and easing toward a target.
+/** Provides interpolation: between numbers and angles, along spline pieces, clamping, smoothing, stepping and easing toward a target.
 
 	`damp` and `dampAngle` use `Math.exp`, whose last bit can differ between targets, so a simulation that must replay alike on every
 	target uses `moveToward` or its own integer math instead. Angles are in radians. */
@@ -117,4 +117,59 @@ class Interpolate {
 		@return  The eased angle, in radians, not wrapped. */
 	public static function dampAngle(value:Float, target:Float, rate:Float, dt:Float):Float
 		return !(rate > 0) || !(dt > 0) ? value : value + wrapAngle(target - value) * (1 - Math.exp(-rate * dt));
+
+	/** Returns a point on a piece of a uniform Catmull-Rom spline, which passes through the middle two of four points, on one axis.
+
+		Each axis of a 2D or 3D point is asked for in turn.
+		@param p0  The first point, which steers the piece.
+		@param p1  The piece's start.
+		@param p2  Its end.
+		@param p3  The fourth point, which steers it.
+		@param t  How far along, 0 at the start to 1 at the end.
+		@return  The point. */
+	public static function catmullRom(p0:Float, p1:Float, p2:Float, p3:Float, t:Float):Float {
+		var t2 = t * t, t3 = t2 * t;
+		return .5 * (p0 * (-t3 + 2 * t2 - t) + p1 * (3 * t3 - 5 * t2 + 2) + p2 * (-3 * t3 + 4 * t2 + t) + p3 * (t3 - t2));
+	}
+
+	/** Returns a point on a piece of a uniform cubic B-spline, which passes near the middle two of four points, on one axis.
+
+		@param p0  The first point.
+		@param p1  The second, near the piece's start.
+		@param p2  The third, near its end.
+		@param p3  The fourth.
+		@param t  How far along, 0 at the start to 1 at the end.
+		@return  The point. */
+	public static function bSpline(p0:Float, p1:Float, p2:Float, p3:Float, t:Float):Float {
+		var a = (-p0 + 3 * p1 - 3 * p2 + p3) / 6,
+			b = (3 * p0 - 6 * p1 + 3 * p2) / 6,
+			c = (-3 * p0 + 3 * p2) / 6,
+			d = (p0 + 4 * p1 + p2) / 6;
+		return d + t * (c + t * (b + t * a));
+	}
+
+	/** Returns a point on a quadratic Bezier curve, on one axis.
+
+		@param p0  The start.
+		@param p1  The control point.
+		@param p2  The end.
+		@param t  How far along, 0 at the start to 1 at the end.
+		@return  The point. */
+	public static function quadraticBezier(p0:Float, p1:Float, p2:Float, t:Float):Float {
+		var u = 1 - t;
+		return u * u * p0 + 2 * u * t * p1 + t * t * p2;
+	}
+
+	/** Returns a point on a cubic Bezier curve, on one axis.
+
+		@param p0  The start.
+		@param p1  The start's control point.
+		@param p2  The end's control point.
+		@param p3  The end.
+		@param t  How far along, 0 at the start to 1 at the end.
+		@return  The point. */
+	public static function cubicBezier(p0:Float, p1:Float, p2:Float, p3:Float, t:Float):Float {
+		var u = 1 - t;
+		return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
+	}
 }

@@ -79,6 +79,13 @@ class MatrixTests {
 		m.makeOrthographic(-2, 2, -1, 1, 0, 10);
 		check(at(m.transformPoint(-2, -1, 0, p), -1, -1, -1)
 			&& at(m.transformPoint(2, 1, -10, p), 1, 1, 1), "an orthographic: its box to clip space");
+		var frustum = new Matrix3D().makeFrustum(-.1 * Math.tan(fov / 2) * aspect, .1 * Math.tan(fov / 2) * aspect, -.1 * Math.tan(fov / 2),
+			.1 * Math.tan(fov / 2), .1, 100);
+		check(same(frustum, m.makePerspective(fov, aspect, .1, 100)), "a centered frustum: the perspective of its field of view");
+		m.makeFrustum(0, 2, 0, 1, 1, 10);
+		var corner = new Matrix3D().makeFrustum(0, 2, 0, 1, 1, 10).transformPoint(2, 1, -1, p);
+		check(near(m.values[8], 1) && near(m.values[9], 1) && near(corner.x / 1, 1) && near(corner.y / 1, 1),
+			"an off-center frustum: its near plane's corner to clip space's (w 1 at the near plane)");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

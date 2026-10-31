@@ -313,14 +313,19 @@ class RText {
 				x += glyph.image.width + 2 * padding;
 			}
 		} else if (packMethod == 1) {
-			var places = helix.ray.internal.RectPack.pack(atlas.width, atlas.height, [
-				for (i in 0...glyphCount) [glyphs[i].image.width + 2 * padding, glyphs[i].image.height + 2 * padding]
-			]);
+			var sizes = [];
 			for (i in 0...glyphCount) {
-				var glyph = glyphs[i], place = places[i];
-				recs[i] = new Rectangle(place[0] + padding, place[1] + padding, glyph.image.width, glyph.image.height);
-				if (place[2] == 1)
-					blit(glyph, place[0] + padding, place[1] + padding);
+				sizes.push(glyphs[i].image.width + 2 * padding);
+				sizes.push(glyphs[i].image.height + 2 * padding);
+			}
+			var places = helix.math.RectPacker2D.pack(atlas.width, atlas.height, sizes);
+			for (i in 0...glyphCount) {
+				var glyph = glyphs[i],
+					x = places[i * 3] + padding,
+					y = places[i * 3 + 1] + padding;
+				recs[i] = new Rectangle(x, y, glyph.image.width, glyph.image.height);
+				if (places[i * 3 + 2] == 1)
+					blit(glyph, x, y);
 				else
 					Runtime.log(LOG_WARNING, 'FONT: Failed to package character ($i)');
 			}

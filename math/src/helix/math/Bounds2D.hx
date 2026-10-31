@@ -132,6 +132,20 @@ class Bounds2D {
 	public function contains(x:Float, y:Float):Bool
 		return x >= minX && x <= maxX && y >= minY && y <= maxY;
 
+	/** Returns where the box and another overlap: a box with no width or height where they only touch, an empty one where they don't.
+
+		@param other  The other box.
+		@param out  Optional. The box to fill; a new one when omitted. It may be this box or the other.
+		@return  The overlap. */
+	public function intersection(other:Bounds2D, ?out:Bounds2D):Bounds2D {
+		if (out == null)
+			out = new Bounds2D();
+		if (!intersects(other))
+			return out.makeEmpty();
+		return out.set(minX > other.minX ? minX : other.minX, minY > other.minY ? minY : other.minY, maxX < other.maxX ? maxX : other.maxX,
+			maxY < other.maxY ? maxY : other.maxY);
+	}
+
 	/** Returns whether the box and another overlap, touching edges included.
 
 		@param other  The other box.

@@ -4,6 +4,10 @@ package helix.ray.raylib;
 import helix.ray.*;
 import helix.ray.Raylib.*;
 import helix.math.Matrix3D;
+import helix.math.Bounds2D;
+import helix.math.Geometry2D;
+import helix.math.Interpolate;
+import helix.math.Point2D;
 import helix.ray.internal.DefaultFont;
 import helix.ray.internal.Models;
 import helix.ray.internal.Runtime;
@@ -806,15 +810,7 @@ class RShapes {
 				p2 = points[i + 1],
 				p3 = points[i + 2],
 				p4 = points[i + 3];
-			var a0 = (-p1.x + 3 * p2.x - 3 * p3.x + p4.x) / 6,
-				a1 = (3 * p1.x - 6 * p2.x + 3 * p3.x) / 6,
-				a2 = (-3 * p1.x + 3 * p3.x) / 6,
-				a3 = (p1.x + 4 * p2.x + p3.x) / 6;
-			var b0 = (-p1.y + 3 * p2.y - 3 * p3.y + p4.y) / 6,
-				b1 = (3 * p1.y - 6 * p2.y + 3 * p3.y) / 6,
-				b2 = (-3 * p1.y + 3 * p3.y) / 6,
-				b3 = (p1.y + 4 * p2.y + p3.y) / 6;
-			current = new Vector2(a3, b3);
+			current = GetSplinePointBasis(p1, p2, p3, p4, 0);
 			if (i == 0)
 				DrawCircleV(current, thick / 2, color);
 			if (i > 0) {
@@ -825,7 +821,7 @@ class RShapes {
 			}
 			for (j in 1...SPLINE_SEGMENT_DIVISIONS + 1) {
 				var t = j / SPLINE_SEGMENT_DIVISIONS;
-				var next = new Vector2(a3 + t * (a2 + t * (a1 + t * a0)), b3 + t * (b2 + t * (b1 + t * b0)));
+				var next = GetSplinePointBasis(p1, p2, p3, p4, t);
 				dy = next.y - current.y;
 				dx = next.x - current.x;
 				size = .5 * thick / Math.sqrt(dx * dx + dy * dy);
@@ -1007,15 +1003,7 @@ class RShapes {
 		@param t  How far along, 0 at the start to 1 at the end.
 		@return  The point. */
 	static function GetSplinePointBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2 {
-		var a0 = (-p1.x + 3 * p2.x - 3 * p3.x + p4.x) / 6,
-			a1 = (3 * p1.x - 6 * p2.x + 3 * p3.x) / 6,
-			a2 = (-3 * p1.x + 3 * p3.x) / 6,
-			a3 = (p1.x + 4 * p2.x + p3.x) / 6;
-		var b0 = (-p1.y + 3 * p2.y - 3 * p3.y + p4.y) / 6,
-			b1 = (3 * p1.y - 6 * p2.y + 3 * p3.y) / 6,
-			b2 = (-3 * p1.y + 3 * p3.y) / 6,
-			b3 = (p1.y + 4 * p2.y + p3.y) / 6;
-		return new Vector2(a3 + t * (a2 + t * (a1 + t * a0)), b3 + t * (b2 + t * (b1 + t * b0)));
+		return new Vector2(Interpolate.bSpline(p1.x, p2.x, p3.x, p4.x, t), Interpolate.bSpline(p1.y, p2.y, p3.y, p4.y, t));
 	}
 
 	/** Returns a point on one piece of a Catmull-Rom spline, through the middle two of four points.
@@ -1027,11 +1015,7 @@ class RShapes {
 		@param t  How far along, 0 at the start to 1 at the end.
 		@return  The point. */
 	static function GetSplinePointCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2 {
-		var q0 = -t * t * t + 2 * t * t - t,
-			q1 = 3 * t * t * t - 5 * t * t + 2,
-			q2 = -3 * t * t * t + 4 * t * t + t,
-			q3 = t * t * t - t * t;
-		return new Vector2(.5 * (p1.x * q0 + p2.x * q1 + p3.x * q2 + p4.x * q3), .5 * (p1.y * q0 + p2.y * q1 + p3.y * q2 + p4.y * q3));
+		return new Vector2(Interpolate.catmullRom(p1.x, p2.x, p3.x, p4.x, t), Interpolate.catmullRom(p1.y, p2.y, p3.y, p4.y, t));
 	}
 
 	/** Returns a point on a quadratic Bezier curve.
@@ -1042,8 +1026,7 @@ class RShapes {
 		@param t  How far along, 0 at the start to 1 at the end.
 		@return  The point. */
 	static function GetSplinePointBezierQuad(p1:Vector2, c2:Vector2, p3:Vector2, t:Float):Vector2 {
-		var a = Math.pow(1 - t, 2), b = 2 * (1 - t) * t, c = Math.pow(t, 2);
-		return new Vector2(a * p1.x + b * c2.x + c * p3.x, a * p1.y + b * c2.y + c * p3.y);
+		return new Vector2(Interpolate.quadraticBezier(p1.x, c2.x, p3.x, t), Interpolate.quadraticBezier(p1.y, c2.y, p3.y, t));
 	}
 
 	/** Returns a point on a cubic Bezier curve.
@@ -1055,11 +1038,7 @@ class RShapes {
 		@param t  How far along, 0 at the start to 1 at the end.
 		@return  The point. */
 	static function GetSplinePointBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, t:Float):Vector2 {
-		var a = Math.pow(1 - t, 3),
-			b = 3 * Math.pow(1 - t, 2) * t,
-			c = 3 * (1 - t) * Math.pow(t, 2),
-			d = Math.pow(t, 3);
-		return new Vector2(a * p1.x + b * c2.x + c * c3.x + d * p4.x, a * p1.y + b * c2.y + c * c3.y + d * p4.y);
+		return new Vector2(Interpolate.cubicBezier(p1.x, c2.x, c3.x, p4.x, t), Interpolate.cubicBezier(p1.y, c2.y, c3.y, p4.y, t));
 	}
 
 	// ---- Collisions ----
@@ -1106,17 +1085,7 @@ class RShapes {
 		@param p2  Its end.
 		@return  True when they touch. */
 	static function CheckCollisionCircleLine(center:Vector2, radius:Float, p1:Vector2, p2:Vector2):Bool {
-		var dx = p1.x - p2.x, dy = p1.y - p2.y;
-		if (Math.abs(dx) + Math.abs(dy) <= FLT_EPSILON)
-			return CheckCollisionCircles(p1, 0, center, radius);
-		var along = ((center.x - p1.x) * (p2.x - p1.x) + (center.y - p1.y) * (p2.y - p1.y)) / (dx * dx + dy * dy);
-		if (along > 1)
-			along = 1;
-		else if (along < 0)
-			along = 0;
-		var dx2 = p1.x - along * dx - center.x,
-			dy2 = p1.y - along * dy - center.y;
-		return dx2 * dx2 + dy2 * dy2 <= radius * radius;
+		return Geometry2D.intersectsCircleSegment(center.x, center.y, radius, p1.x, p1.y, p2.x, p2.y);
 	}
 
 	/** Returns whether a point is inside a rectangle.
@@ -1146,11 +1115,7 @@ class RShapes {
 		@param p3  Its third.
 		@return  True when it is inside. */
 	static function CheckCollisionPointTriangle(point:Vector2, p1:Vector2, p2:Vector2, p3:Vector2):Bool {
-		var d = (p2.y - p3.y) * (p1.x - p3.x) + (p3.x - p2.x) * (p1.y - p3.y);
-		var alpha = ((p2.y - p3.y) * (point.x - p3.x) + (p3.x - p2.x) * (point.y - p3.y)) / d;
-		var beta = ((p3.y - p1.y) * (point.x - p3.x) + (p1.x - p3.x) * (point.y - p3.y)) / d;
-		var gamma = 1 - alpha - beta;
-		return alpha > 0 && beta > 0 && gamma > 0;
+		return Geometry2D.isPointInTriangle(point.x, point.y, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
 	}
 
 	/** Returns whether a point is on a line between two points, within a margin.
@@ -1180,17 +1145,7 @@ class RShapes {
 		@param pointCount  How many of them it has, 3 or more.
 		@return  True when it is inside. */
 	static function CheckCollisionPointPoly(point:Vector2, points:Array<Vector2>, pointCount:Int):Bool {
-		var inside = false;
-		if (pointCount > 2) {
-			var j = pointCount - 1;
-			for (i in 0...pointCount) {
-				var a = points[i], b = points[j];
-				if ((a.y > point.y) != (b.y > point.y) && point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x)
-					inside = !inside;
-				j = i;
-			}
-		}
-		return inside;
+		return Geometry2D.isPointInPolygon(point.x, point.y, [for (i in 0...pointCount) for (axis in [points[i].x, points[i].y]) axis]);
 	}
 
 	/** Returns whether two lines, each between two points, cross, and where.
@@ -1202,19 +1157,12 @@ class RShapes {
 		@param collisionPoint  Set to where they cross, when they do; null leaves it out.
 		@return  True when they cross. */
 	static function CheckCollisionLines(startPos1:Vector2, endPos1:Vector2, startPos2:Vector2, endPos2:Vector2, collisionPoint:Vector2):Bool {
-		var div = (endPos2.y - startPos2.y) * (endPos1.x - startPos1.x) - (endPos2.x - startPos2.x) * (endPos1.y - startPos1.y);
-		if (Math.abs(div) < FLT_EPSILON)
-			return false;
-		var c1 = startPos1.x * endPos1.y - startPos1.y * endPos1.x,
-			c2 = startPos2.x * endPos2.y - startPos2.y * endPos2.x;
-		var xi = ((startPos2.x - endPos2.x) * c1 - (startPos1.x - endPos1.x) * c2) / div;
-		var yi = ((startPos2.y - endPos2.y) * c1 - (startPos1.y - endPos1.y) * c2) / div;
-		if (outside(xi, startPos1.x, endPos1.x) || outside(xi, startPos2.x, endPos2.x) || outside(yi, startPos1.y, endPos1.y)
-			|| outside(yi, startPos2.y, endPos2.y))
+		var at = new Point2D();
+		if (!Geometry2D.intersectSegments(startPos1.x, startPos1.y, endPos1.x, endPos1.y, startPos2.x, startPos2.y, endPos2.x, endPos2.y, at))
 			return false;
 		if (collisionPoint != null) {
-			collisionPoint.x = xi;
-			collisionPoint.y = yi;
+			collisionPoint.x = at.x;
+			collisionPoint.y = at.y;
 		}
 		return true;
 	}
@@ -1225,11 +1173,11 @@ class RShapes {
 		@param rec2  The other.
 		@return  The overlap, or an empty rectangle at 0, 0 when they don't. */
 	static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle {
-		var left = Math.max(rec1.x, rec2.x),
-			right = Math.min(rec1.x + rec1.width, rec2.x + rec2.width);
-		var top = Math.max(rec1.y, rec2.y),
-			bottom = Math.min(rec1.y + rec1.height, rec2.y + rec2.height);
-		return left < right && top < bottom ? new Rectangle(left, top, right - left, bottom - top) : new Rectangle();
+		var overlap = new Bounds2D().set(rec1.x, rec1.y, rec1.x + rec1.width, rec1.y + rec1.height)
+			.intersection(new Bounds2D().set(rec2.x, rec2.y, rec2.x + rec2.width, rec2.y + rec2.height));
+		// raylib's: rectangles that only touch don't overlap.
+		return overlap.width > 0
+			&& overlap.height > 0 ? new Rectangle(overlap.minX, overlap.minY, overlap.width, overlap.height) : new Rectangle();
 	}
 
 	// ---- What the shapes share ----
@@ -1242,9 +1190,8 @@ class RShapes {
 	static var shapeV0 = 0.;
 	static var shapeU1 = 1.;
 	static var shapeV1 = 1.;
-	// raylib's SPLINE_SEGMENT_DIVISIONS, FLT_EPSILON and the angles its rounded rectangles' corners start at.
+	// raylib's SPLINE_SEGMENT_DIVISIONS and the angles its rounded rectangles' corners start at.
 	static inline final SPLINE_SEGMENT_DIVISIONS = 24;
-	static inline final FLT_EPSILON = 1.1920929e-7;
 	static final CORNER_ANGLES = [180., 270., 0., 90.];
 	// raylib's RL_QUADS: each corner is held until its quad's fourth comes, and the quad is drawn as two triangles, 0 1 2 and 0 2 3.
 	static final quadX = [0., 0., 0., 0.];
@@ -1348,8 +1295,5 @@ class RShapes {
 	}
 
 	// Whether a crossing is off a line along one axis, as raylib's CheckCollisionLines tests it: a line flat along that axis is never.
-	static function outside(v:Float, a:Float, b:Float):Bool {
-		return Math.abs(a - b) > FLT_EPSILON && (v < Math.min(a, b) || v > Math.max(a, b));
-	}
 	#end
 }

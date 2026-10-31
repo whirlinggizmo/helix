@@ -169,6 +169,21 @@ class Matrix3D {
 			-(far + near) / depth, 1);
 	}
 
+	/** Makes this a perspective projection into GL's clip space (depth -1 to 1) by its near plane's edges, which may be off center.
+
+		@param left  The near plane's left edge.
+		@param right  Its right edge.
+		@param bottom  Its bottom edge.
+		@param top  Its top edge.
+		@param near  The near plane's distance.
+		@param far  The far plane's distance.
+		@return  This matrix. */
+	public function makeFrustum(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float):Matrix3D {
+		var width = right - left, height = top - bottom, depth = far - near;
+		return set(near * 2 / width, 0, 0, 0, 0, near * 2 / height, 0, 0, (right + left) / width, (top + bottom) / height, -(far + near) / depth, -1, 0, 0,
+			-(far * near * 2) / depth, 0);
+	}
+
 	/** Makes this first's transform followed by second's. Either may be this matrix.
 
 		@param first  The transform applied first.
