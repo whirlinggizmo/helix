@@ -1,1 +1,2 @@
 --macro helix.ray.internal.Loop.install()
+--macro helix.ray.internal.Metadata.register()

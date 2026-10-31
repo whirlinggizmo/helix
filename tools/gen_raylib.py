@@ -247,27 +247,29 @@ def described(texts):
             spans[name] = (first, first + (BEGIN + constants).count('\n'))
             (src / 'helix/ray' / name).write_text(kept, encoding='utf-8')
         out = Path(tmp) / 'ray.xml'
-        fields = Path(tmp) / 'fields.txt'
+        fields = Path(tmp) / 'fields.json'
         args = ['haxe', '-cp', str(src), '-lib', 'helix-services', '-lib', 'helix-platform', '-lib', 'helix-math', '-lib', 'helix-log',
                 '--macro', "include('helix.ray.raylib')", '--macro', "include('helix.ray', false)", '-xml', str(out), '-D', 'doc-gen', '--no-output', '-js', str(Path(tmp) / 'unused.js'),
                 # The facades' macro functions are in the macro context alone, which -xml doesn't describe.
-                '-cp', str(ROOT / 'tools/haxe'), '--macro', f'FacadeFields.write("{fields.as_posix()}", {json.dumps(["helix.ray." + n[:-3] for n in texts])})']
+                '-cp', str(ROOT / 'tools/haxe'), '--macro', f'Fields.write("{fields.as_posix()}", {json.dumps(["helix.ray." + n[:-3] for n in texts])})']
         ran = subprocess.run(args, env=env, capture_output=True, text=True)
         if ran.returncode:
             raise SystemExit('gen_raylib: the sections don\'t compile:\n' + ran.stdout + ran.stderr)
         classes = {c.get('path'): c for c in ET.parse(out).getroot()}
-        facade_fields = [line.split() for line in fields.read_text(encoding='utf-8').splitlines() if line]
+        facades = {f'helix.ray.{n[:-3]}' for n in texts}
+        facade_fields = [(f['owner'], f['name'], f['line'], f['isMacro']) for f in json.loads(fields.read_text(encoding='utf-8'))
+                         if f['isStatic'] and f['owner'] in facades]
     sections = {}
     for name, _ in SECTIONS:
         functions = [Function(n) for n in classes[f'helix.ray.raylib.{name}']
                      if n.get('set') == 'method' and n.get('static') == '1' and FUNCTION.fullmatch(n.tag)]
         sections[name] = sorted(functions, key=lambda f: f.line)
-    own = {name: set() for name in texts}
-    for path, field, line in facade_fields:
+    own = {name: {} for name in texts}
+    for path, field, line, is_macro in facade_fields:
         name = path.rsplit('.', 1)[1] + '.hx'
         first, last = spans[name]
         if not first <= int(line) <= last:
-            own[name].add(field)
+            own[name][field] = is_macro
     return sections, own
 
 
@@ -331,6 +333,41 @@ def generated(file_sections, functions, api, header, written):
     return '\n'.join(lines)
 
 
+def layout():
+    """What the API reference (tools/gen_apidoc.py) groups each file's members by, from what this generator reads: {class: (headings,
+    refused)}. headings names each member's heading: its section's for a function, its enum's or its header's defines' for a constant,
+    and the macros the file writes by hand under one of their own. refused holds the functions a call to which doesn't compile, by kind
+    ('unsupported', 'unimplemented'), each a list of names in the header's order."""
+    texts = {name: (RAY / name).read_text(encoding='utf-8') for name in TARGETS}
+    functions, own = described(texts)
+    every = {f.name for fs in functions.values() for f in fs}
+    out = {}
+    for name, (target_sections, api_file, header) in TARGETS.items():
+        api = json.loads((VENDOR / api_file).read_text(encoding='utf-8'))
+        headings, refused = {}, {'unsupported': [], 'unimplemented': []}
+        for section, title in target_sections:
+            for f in functions[section]:
+                if f.refusal:
+                    refused[f.refusal[0]].append(f.name)
+                else:
+                    headings[f.name] = title
+        for e in api.get('enums', []):
+            for v in e['values']:
+                headings.setdefault(v['name'], f"{sentence(e['description']).rstrip('.')} ({e['name']})")
+        for d in api.get('defines', []):
+            if d['type'] == 'COLOR':
+                headings.setdefault(d['name'], 'Colors')
+            elif d['type'] in ('INT', 'FLOAT', 'DOUBLE', 'FLOAT_MATH'):
+                headings.setdefault(d['name'], f"{header}'s defines")
+        for field, is_macro in own[name].items():
+            if is_macro:
+                headings.setdefault(field, 'Macros, run as the program builds')
+        written = every | set(own[name])
+        refused['unimplemented'] += [f['name'] for f in api['functions'] if f['name'] not in written]
+        out[f'helix.ray.{name[:-3]}'] = (headings, refused)
+    return out
+
+
 def struct_type(s, header, callbacks):
     """A struct of raylib's helix-ray has no type for, as a class with raylib's fields."""
     lines = [GENERATED_TYPE, 'package helix.ray;', '',
@@ -377,7 +414,7 @@ def main():
         before, rest = text.split(BEGIN, 1)
         after = rest.split(END, 1)[1]
         # Written: in a section, or by hand in the file itself (its constants and macro functions).
-        written = set(every) | own[name]
+        written = set(every) | set(own[name])
         files[RAY / name] = before + generated(target_sections, functions, api, header, written) + after
         callbacks = callback_types(api)
         for s in api['structs']:

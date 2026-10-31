@@ -528,7 +528,7 @@ Provides raylib 5.5's API, as `raylib.h` names it, over helix-platform and helix
 
 A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a frame. A page can't wait for a file, so on every target files are loaded by helix-ray's own `...Async` loads; raylib's `LoadTexture`, `LoadModel`, `LoadSound`, `LoadFileData` and `LoadFileText` don't compile, naming the load to use. A file loaded twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here by module; what raylib has and helix-ray doesn't refuses to compile, naming itself.
 
-### Keys (KeyboardKey)
+### Keyboard keys (US keyboard layout) (KeyboardKey)
 
 ```haxe
 static inline var KEY_NULL:Int
@@ -816,7 +816,7 @@ static inline var GAMEPAD_BUTTON_RIGHT_THUMB:Int
 - `GAMEPAD_BUTTON_LEFT_THUMB`: Gamepad joystick pressed button left.
 - `GAMEPAD_BUTTON_RIGHT_THUMB`: Gamepad joystick pressed button right.
 
-### Gamepad axes (GamepadAxis)
+### Gamepad axis (GamepadAxis)
 
 ```haxe
 static inline var GAMEPAD_AXIS_LEFT_X:Int
@@ -834,7 +834,7 @@ static inline var GAMEPAD_AXIS_RIGHT_TRIGGER:Int
 - `GAMEPAD_AXIS_LEFT_TRIGGER`: Gamepad back trigger left, pressure level: [1..-1].
 - `GAMEPAD_AXIS_RIGHT_TRIGGER`: Gamepad back trigger right, pressure level: [1..-1].
 
-### Window flags (ConfigFlags)
+### System/Window config flags (ConfigFlags)
 
 ```haxe
 static inline var FLAG_VSYNC_HINT:Int
@@ -872,7 +872,7 @@ static inline var FLAG_INTERLACED_HINT:Int
 - `FLAG_MSAA_4X_HINT`: Set to try enabling MSAA 4X.
 - `FLAG_INTERLACED_HINT`: Set to try enabling interlaced video format (for V3D).
 
-### Gestures (Gesture)
+### Gesture (Gesture)
 
 ```haxe
 static inline var GESTURE_NONE:Int
@@ -900,7 +900,7 @@ static inline var GESTURE_PINCH_OUT:Int
 - `GESTURE_PINCH_IN`: Pinch in gesture.
 - `GESTURE_PINCH_OUT`: Pinch out gesture.
 
-### Material maps (MaterialMapIndex)
+### Material map index (MaterialMapIndex)
 
 ```haxe
 static inline var MATERIAL_MAP_ALBEDO:Int
@@ -928,7 +928,7 @@ static inline var MATERIAL_MAP_BRDF:Int
 - `MATERIAL_MAP_PREFILTER`: Prefilter material (NOTE: Uses GL_TEXTURE_CUBE_MAP).
 - `MATERIAL_MAP_BRDF`: Brdf material.
 
-### Shader locations (ShaderLocationIndex)
+### Shader location index (ShaderLocationIndex)
 
 ```haxe
 static inline var SHADER_LOC_VERTEX_POSITION:Int
@@ -992,7 +992,7 @@ static inline var SHADER_LOC_BONE_MATRICES:Int
 - `SHADER_LOC_VERTEX_BONEWEIGHTS`: Shader location: vertex attribute: boneWeights.
 - `SHADER_LOC_BONE_MATRICES`: Shader location: array of matrices uniform: boneMatrices.
 
-### Shader value types (ShaderUniformDataType)
+### Shader uniform data type (ShaderUniformDataType)
 
 ```haxe
 static inline var SHADER_UNIFORM_FLOAT:Int
@@ -1016,7 +1016,7 @@ static inline var SHADER_UNIFORM_SAMPLER2D:Int
 - `SHADER_UNIFORM_IVEC4`: Shader uniform type: ivec4 (4 int).
 - `SHADER_UNIFORM_SAMPLER2D`: Shader uniform type: sampler2d.
 
-### Camera modes (CameraMode)
+### Camera system modes (CameraMode)
 
 ```haxe
 static inline var CAMERA_CUSTOM:Int
@@ -1032,7 +1032,7 @@ static inline var CAMERA_THIRD_PERSON:Int
 - `CAMERA_FIRST_PERSON`: Camera first person.
 - `CAMERA_THIRD_PERSON`: Camera third person.
 
-### Camera projections (CameraProjection)
+### Camera projection (CameraProjection)
 
 ```haxe
 static inline var CAMERA_PERSPECTIVE:Int
@@ -1042,7 +1042,7 @@ static inline var CAMERA_ORTHOGRAPHIC:Int
 - `CAMERA_PERSPECTIVE`: Perspective projection.
 - `CAMERA_ORTHOGRAPHIC`: Orthographic projection.
 
-### Texture filters (TextureFilter)
+### Texture parameters: filter mode (TextureFilter)
 
 ```haxe
 static inline var TEXTURE_FILTER_POINT:Int
@@ -1060,7 +1060,7 @@ static inline var TEXTURE_FILTER_ANISOTROPIC_16X:Int
 - `TEXTURE_FILTER_ANISOTROPIC_8X`: Anisotropic filtering 8x.
 - `TEXTURE_FILTER_ANISOTROPIC_16X`: Anisotropic filtering 16x.
 
-### Log levels (TraceLogLevel)
+### Trace log level (TraceLogLevel)
 
 ```haxe
 static inline var LOG_ALL:Int
@@ -1111,15 +1111,6 @@ static final BLACK(default, null):Color
 static final BLANK(default, null):Color
 static final MAGENTA(default, null):Color
 static final RAYWHITE(default, null):Color
-static inline var MATERIAL_MAP_DIFFUSE:Int
-static inline var MATERIAL_MAP_SPECULAR:Int
-static inline var SHADER_LOC_MAP_DIFFUSE:Int
-static inline var SHADER_LOC_MAP_SPECULAR:Int
-static inline var MAX_MATERIAL_MAPS:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R8G8B8A8:Int
-static inline var PI:Float
-static inline var DEG2RAD:Float
-static inline var RAD2DEG:Float
 ```
 
 - `LIGHTGRAY`: Light Gray.
@@ -1148,17 +1139,94 @@ static inline var RAD2DEG:Float
 - `BLANK`: Blank (Transparent).
 - `MAGENTA`: Magenta.
 - `RAYWHITE`: My own White (raylib logo).
+
+```haxe
+static inline var MATERIAL_MAP_DIFFUSE:Int
+static inline var MATERIAL_MAP_SPECULAR:Int
+static inline var SHADER_LOC_MAP_DIFFUSE:Int
+static inline var SHADER_LOC_MAP_SPECULAR:Int
+static inline var MAX_MATERIAL_MAPS:Int
+```
+
 - `MATERIAL_MAP_DIFFUSE`: The diffuse map, the same as `MATERIAL_MAP_ALBEDO`.
 - `MATERIAL_MAP_SPECULAR`: The specular map, the same as `MATERIAL_MAP_METALNESS`.
 - `SHADER_LOC_MAP_DIFFUSE`: The diffuse texture's location, the same as `SHADER_LOC_MAP_ALBEDO`.
 - `SHADER_LOC_MAP_SPECULAR`: The specular texture's location, the same as `SHADER_LOC_MAP_METALNESS`.
 - `MAX_MATERIAL_MAPS`: The number of a material's maps.
+
+### Pixel formats (PixelFormat)
+
+```haxe
+static inline var PIXELFORMAT_UNCOMPRESSED_R8G8B8A8:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_GRAYSCALE:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R5G6B5:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R8G8B8:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R5G5B5A1:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R4G4B4A4:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R32:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R32G32B32:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R32G32B32A32:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R16:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R16G16B16:Int
+static inline var PIXELFORMAT_UNCOMPRESSED_R16G16B16A16:Int
+static inline var PIXELFORMAT_COMPRESSED_DXT1_RGB:Int
+static inline var PIXELFORMAT_COMPRESSED_DXT1_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_DXT3_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_DXT5_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_ETC1_RGB:Int
+static inline var PIXELFORMAT_COMPRESSED_ETC2_RGB:Int
+static inline var PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_PVRT_RGB:Int
+static inline var PIXELFORMAT_COMPRESSED_PVRT_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA:Int
+static inline var PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA:Int
+```
+
 - `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`: The pixel format of every texture loaded here: 8-bit red, green, blue and alpha.
+- `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`: 8 bit per pixel (no alpha).
+- `PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`: 8*2 bpp (2 channels).
+- `PIXELFORMAT_UNCOMPRESSED_R5G6B5`: 16 bpp.
+- `PIXELFORMAT_UNCOMPRESSED_R8G8B8`: 24 bpp.
+- `PIXELFORMAT_UNCOMPRESSED_R5G5B5A1`: 16 bpp (1 bit alpha).
+- `PIXELFORMAT_UNCOMPRESSED_R4G4B4A4`: 16 bpp (4 bit alpha).
+- `PIXELFORMAT_UNCOMPRESSED_R32`: 32 bpp (1 channel - float).
+- `PIXELFORMAT_UNCOMPRESSED_R32G32B32`: 32*3 bpp (3 channels - float).
+- `PIXELFORMAT_UNCOMPRESSED_R32G32B32A32`: 32*4 bpp (4 channels - float).
+- `PIXELFORMAT_UNCOMPRESSED_R16`: 16 bpp (1 channel - half float).
+- `PIXELFORMAT_UNCOMPRESSED_R16G16B16`: 16*3 bpp (3 channels - half float).
+- `PIXELFORMAT_UNCOMPRESSED_R16G16B16A16`: 16*4 bpp (4 channels - half float).
+- `PIXELFORMAT_COMPRESSED_DXT1_RGB`: 4 bpp (no alpha).
+- `PIXELFORMAT_COMPRESSED_DXT1_RGBA`: 4 bpp (1 bit alpha).
+- `PIXELFORMAT_COMPRESSED_DXT3_RGBA`: 8 bpp.
+- `PIXELFORMAT_COMPRESSED_DXT5_RGBA`: 8 bpp.
+- `PIXELFORMAT_COMPRESSED_ETC1_RGB`: 4 bpp.
+- `PIXELFORMAT_COMPRESSED_ETC2_RGB`: 4 bpp.
+- `PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA`: 8 bpp.
+- `PIXELFORMAT_COMPRESSED_PVRT_RGB`: 4 bpp.
+- `PIXELFORMAT_COMPRESSED_PVRT_RGBA`: 4 bpp.
+- `PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA`: 8 bpp.
+- `PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA`: 2 bpp.
+
+### raylib.h's defines
+
+```haxe
+static inline var PI:Float
+static inline var DEG2RAD:Float
+static inline var RAD2DEG:Float
+static inline var RAYLIB_VERSION_MAJOR:Int
+static inline var RAYLIB_VERSION_MINOR:Int
+static inline var RAYLIB_VERSION_PATCH:Int
+```
+
 - `PI`: Pi.
 - `DEG2RAD`: Degrees to radians.
 - `RAD2DEG`: Radians to degrees.
+- `RAYLIB_VERSION_MAJOR`: raylib.h's `RAYLIB_VERSION_MAJOR`.
+- `RAYLIB_VERSION_MINOR`: raylib.h's `RAYLIB_VERSION_MINOR`.
+- `RAYLIB_VERSION_PATCH`: raylib.h's `RAYLIB_VERSION_PATCH`.
 
-### Mouse cursor (MouseCursor), not written by hand
+### Mouse cursor (MouseCursor)
 
 ```haxe
 static inline var MOUSE_CURSOR_DEFAULT:Int
@@ -1186,7 +1254,7 @@ static inline var MOUSE_CURSOR_NOT_ALLOWED:Int
 - `MOUSE_CURSOR_RESIZE_ALL`: The omnidirectional resize/move cursor shape.
 - `MOUSE_CURSOR_NOT_ALLOWED`: The operation-not-allowed shape.
 
-### Shader attribute data types (ShaderAttributeDataType), not written by hand
+### Shader attribute data types (ShaderAttributeDataType)
 
 ```haxe
 static inline var SHADER_ATTRIB_FLOAT:Int
@@ -1200,59 +1268,7 @@ static inline var SHADER_ATTRIB_VEC4:Int
 - `SHADER_ATTRIB_VEC3`: Shader attribute type: vec3 (3 float).
 - `SHADER_ATTRIB_VEC4`: Shader attribute type: vec4 (4 float).
 
-### Pixel formats (PixelFormat), not written by hand
-
-```haxe
-static inline var PIXELFORMAT_UNCOMPRESSED_GRAYSCALE:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R5G6B5:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R8G8B8:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R5G5B5A1:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R4G4B4A4:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R32:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R32G32B32:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R32G32B32A32:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R16:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R16G16B16:Int
-static inline var PIXELFORMAT_UNCOMPRESSED_R16G16B16A16:Int
-static inline var PIXELFORMAT_COMPRESSED_DXT1_RGB:Int
-static inline var PIXELFORMAT_COMPRESSED_DXT1_RGBA:Int
-static inline var PIXELFORMAT_COMPRESSED_DXT3_RGBA:Int
-static inline var PIXELFORMAT_COMPRESSED_DXT5_RGBA:Int
-static inline var PIXELFORMAT_COMPRESSED_ETC1_RGB:Int
-static inline var PIXELFORMAT_COMPRESSED_ETC2_RGB:Int
-static inline var PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA:Int
-static inline var PIXELFORMAT_COMPRESSED_PVRT_RGB:Int
-static inline var PIXELFORMAT_COMPRESSED_PVRT_RGBA:Int
-static inline var PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA:Int
-static inline var PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA:Int
-```
-
-- `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`: 8 bit per pixel (no alpha).
-- `PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`: 8*2 bpp (2 channels).
-- `PIXELFORMAT_UNCOMPRESSED_R5G6B5`: 16 bpp.
-- `PIXELFORMAT_UNCOMPRESSED_R8G8B8`: 24 bpp.
-- `PIXELFORMAT_UNCOMPRESSED_R5G5B5A1`: 16 bpp (1 bit alpha).
-- `PIXELFORMAT_UNCOMPRESSED_R4G4B4A4`: 16 bpp (4 bit alpha).
-- `PIXELFORMAT_UNCOMPRESSED_R32`: 32 bpp (1 channel - float).
-- `PIXELFORMAT_UNCOMPRESSED_R32G32B32`: 32*3 bpp (3 channels - float).
-- `PIXELFORMAT_UNCOMPRESSED_R32G32B32A32`: 32*4 bpp (4 channels - float).
-- `PIXELFORMAT_UNCOMPRESSED_R16`: 16 bpp (1 channel - half float).
-- `PIXELFORMAT_UNCOMPRESSED_R16G16B16`: 16*3 bpp (3 channels - half float).
-- `PIXELFORMAT_UNCOMPRESSED_R16G16B16A16`: 16*4 bpp (4 channels - half float).
-- `PIXELFORMAT_COMPRESSED_DXT1_RGB`: 4 bpp (no alpha).
-- `PIXELFORMAT_COMPRESSED_DXT1_RGBA`: 4 bpp (1 bit alpha).
-- `PIXELFORMAT_COMPRESSED_DXT3_RGBA`: 8 bpp.
-- `PIXELFORMAT_COMPRESSED_DXT5_RGBA`: 8 bpp.
-- `PIXELFORMAT_COMPRESSED_ETC1_RGB`: 4 bpp.
-- `PIXELFORMAT_COMPRESSED_ETC2_RGB`: 4 bpp.
-- `PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA`: 8 bpp.
-- `PIXELFORMAT_COMPRESSED_PVRT_RGB`: 4 bpp.
-- `PIXELFORMAT_COMPRESSED_PVRT_RGBA`: 4 bpp.
-- `PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA`: 8 bpp.
-- `PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA`: 2 bpp.
-
-### Texture parameters: wrap mode (TextureWrap), not written by hand
+### Texture parameters: wrap mode (TextureWrap)
 
 ```haxe
 static inline var TEXTURE_WRAP_REPEAT:Int
@@ -1266,7 +1282,7 @@ static inline var TEXTURE_WRAP_MIRROR_CLAMP:Int
 - `TEXTURE_WRAP_MIRROR_REPEAT`: Mirrors and repeats the texture in tiled mode.
 - `TEXTURE_WRAP_MIRROR_CLAMP`: Mirrors and clamps to border the texture in tiled mode.
 
-### Cubemap layouts (CubemapLayout), not written by hand
+### Cubemap layouts (CubemapLayout)
 
 ```haxe
 static inline var CUBEMAP_LAYOUT_AUTO_DETECT:Int
@@ -1282,7 +1298,7 @@ static inline var CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE:Int
 - `CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR`: Layout is defined by a 3x4 cross with cubemap faces.
 - `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE`: Layout is defined by a 4x3 cross with cubemap faces.
 
-### Font type, defines generation method (FontType), not written by hand
+### Font type, defines generation method (FontType)
 
 ```haxe
 static inline var FONT_DEFAULT:Int
@@ -1294,7 +1310,7 @@ static inline var FONT_SDF:Int
 - `FONT_BITMAP`: Bitmap font generation, no anti-aliasing.
 - `FONT_SDF`: SDF font generation, requires external shader.
 
-### Color blending modes (pre-defined) (BlendMode), not written by hand
+### Color blending modes (pre-defined) (BlendMode)
 
 ```haxe
 static inline var BLEND_ALPHA:Int
@@ -1316,7 +1332,7 @@ static inline var BLEND_CUSTOM_SEPARATE:Int
 - `BLEND_CUSTOM`: Blend textures using custom src/dst factors (use rlSetBlendFactors()).
 - `BLEND_CUSTOM_SEPARATE`: Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate()).
 
-### N-patch layout (NPatchLayout), not written by hand
+### N-patch layout (NPatchLayout)
 
 ```haxe
 static inline var NPATCH_NINE_PATCH:Int
@@ -1328,19 +1344,7 @@ static inline var NPATCH_THREE_PATCH_HORIZONTAL:Int
 - `NPATCH_THREE_PATCH_VERTICAL`: Npatch layout: 1x3 tiles.
 - `NPATCH_THREE_PATCH_HORIZONTAL`: Npatch layout: 3x1 tiles.
 
-### raylib.h's number defines, not written by hand
-
-```haxe
-static inline var RAYLIB_VERSION_MAJOR:Int
-static inline var RAYLIB_VERSION_MINOR:Int
-static inline var RAYLIB_VERSION_PATCH:Int
-```
-
-- `RAYLIB_VERSION_MAJOR`: raylib.h's `RAYLIB_VERSION_MAJOR`.
-- `RAYLIB_VERSION_MINOR`: raylib.h's `RAYLIB_VERSION_MINOR`.
-- `RAYLIB_VERSION_PATCH`: raylib.h's `RAYLIB_VERSION_PATCH`.
-
-### rcore: the window and frame, input, files, cameras and shaders (raylib/RCore.hx)
+### rcore: the window and frame, input, files, cameras and shaders
 
 ```haxe
 static function InitWindow(width:Int, height:Int, title:String):Void
@@ -1720,7 +1724,7 @@ static function EndScissorMode():Void
   - `height`: The height.
 - `EndScissorMode`: Draws everywhere again.
 
-### rshapes: 2D shapes and collisions (raylib/RShapes.hx)
+### rshapes: 2D shapes and collisions
 
 ```haxe
 static function SetShapesTexture(texture:Texture2D, source:Rectangle):Void
@@ -2144,7 +2148,7 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `rec2`: The other.
   - returns: The overlap, or an empty rectangle at 0, 0 when they don't.
 
-### rtextures: textures, render textures and colors (raylib/RTextures.hx)
+### rtextures: textures, render textures and colors
 
 ```haxe
 static function UnloadTexture(texture:Texture2D):Void
@@ -2235,7 +2239,7 @@ static function UnloadImage(image:Image):Void
 - `UnloadImage`: Frees an image's pixels.
   - `image`: The image.
 
-### rtext: text (raylib/RText.hx)
+### rtext: text
 
 ```haxe
 static function DrawText(text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void
@@ -2344,7 +2348,7 @@ static function TextFormat(text:String, args:haxe.extern.Rest<Dynamic>):String
   - `args`: The values, one for each conversion.
   - returns: The text.
 
-### rmodels: 3D shapes, models, meshes and rays (raylib/RModels.hx)
+### rmodels: 3D shapes, models, meshes and rays
 
 ```haxe
 static function DrawLine3D(startPos:Vector3, endPos:Vector3, color:Color):Void
@@ -2530,7 +2534,7 @@ static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCol
   - `transform`: The transform.
   - returns: The hit.
 
-### raudio: sound (raylib/RAudio.hx)
+### raudio: sound
 
 ```haxe
 static function InitAudioDevice():Void
@@ -2620,7 +2624,7 @@ static function SetMusicPan(music:Music, pan:Float):Void
   - `music`: The music.
   - `pan`: 0 for left, 0.5 the middle, 1 for right, as raylib's.
 
-### the async loads, helix-ray's own in place of raylib's that wait for a file (raylib/RAsync.hx)
+### the async loads, helix-ray's own in place of raylib's that wait for a file
 
 ```haxe
 static function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void, ?failed:String -> Void):Void
@@ -2688,33 +2692,7 @@ static function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize
   - `loaded`: Receives the glyphs.
   - `failed`: Optional. Receives why the font couldn't be read; when omitted, it is logged.
 
-### raylib.h's functions helix-ray won't have: each refuses to compile, saying why and what to use
-
-```haxe
-static macro function FileExists(fileName:String):Bool
-static macro function LoadFileText(fileName:String):ExprOf<Null<String>>
-static macro function LoadFileData(fileName:String):ExprOf<Null<haxe.io.Bytes>>
-static macro function LoadTexture(fileName:String):Texture2D
-static macro function LoadFont(fileName:String):Font
-static macro function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font
-static macro function LoadFontFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font
-static macro function LoadFontData(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int):ExprOf<Array<GlyphInfo>>
-static macro function LoadModel(fileName:String):Model
-static macro function LoadSound(fileName:String):Sound
-```
-
-- `FileExists`: raylib's check for a file, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `FileExistsAsync` answers it.
-- `LoadFileText`: raylib's text file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileTextAsync` reads it.
-- `LoadFileData`: raylib's file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileDataAsync` reads it.
-- `LoadTexture`: raylib's texture load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadTextureAsync` loads it.
-- `LoadFont`: raylib's font load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontAsync` loads it.
-- `LoadFontEx`: raylib's font load at a size, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontExAsync` loads it.
-- `LoadFontFromMemory`: raylib's font load from a file's bytes, which rasterizes the glyphs before it returns. They are rasterized off the main thread here, so a call doesn't compile on any target: `LoadFontFromMemoryAsync` loads it.
-- `LoadFontData`: raylib's glyph rasterizing, which returns the glyphs. They are rasterized off the main thread here, so a call doesn't compile on any target: `LoadFontDataAsync` rasterizes them.
-- `LoadModel`: raylib's model load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAsync` loads it.
-- `LoadSound`: raylib's sound load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadSoundAsync` loads it.
-
-### Shaders, compiled as the program builds
+### Macros, run as the program builds
 
 ```haxe
 static macro function LoadShader(vsFileName:Null<String>, fsFileName:Null<String>):Shader
@@ -2730,11 +2708,17 @@ static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<Stri
   - `fsCode`: The fragment stage's text, or null.
   - returns: The shader.
 
+### Not supported in helix-ray
+
+Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
+
+`FileExists`, `LoadFileText`, `LoadFileData`, `LoadTexture`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `LoadModel`, `LoadSound`.
+
 ### Not in helix-ray yet
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-From `raylib.h`: `IsWindowFullscreen`, `IsWindowHidden`, `IsWindowMinimized`, `IsWindowMaximized`, `IsWindowFocused`, `ToggleFullscreen`, `ToggleBorderlessWindowed`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowIcon`, `SetWindowIcons`, `SetWindowPosition`, `SetWindowMonitor`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetWindowOpacity`, `SetWindowFocused`, `GetWindowHandle`, `GetMonitorCount`, `GetCurrentMonitor`, `GetMonitorPosition`, `GetMonitorWidth`, `GetMonitorHeight`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `GetMonitorRefreshRate`, `GetWindowPosition`, `GetWindowScaleDPI`, `GetMonitorName`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `EnableEventWaiting`, `DisableEventWaiting`, `ShowCursor`, `HideCursor`, `IsCursorHidden`, `EnableCursor`, `DisableCursor`, `IsCursorOnScreen`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `TakeScreenshot`, `OpenURL`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `IsFileExtension`, `GetFileLength`, `GetFileExtension`, `GetFileName`, `GetFileNameWithoutExt`, `GetDirectoryPath`, `GetPrevDirectoryPath`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `IsFileNameValid`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `CompressData`, `DecompressData`, `EncodeDataBase64`, `DecodeDataBase64`, `ComputeCRC32`, `ComputeMD5`, `ComputeSHA1`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `SetGamepadMappings`, `SetGamepadVibration`, `SetMousePosition`, `SetMouseOffset`, `SetMouseScale`, `GetMouseWheelMoveV`, `SetMouseCursor`, `GetTouchPointId`, `UpdateCameraPro`, `LoadImage`, `LoadImageRaw`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `IsImageValid`, `ExportImage`, `ExportImageToMemory`, `ExportImageAsCode`, `GenImageColor`, `GenImageGradientLinear`, `GenImageGradientRadial`, `GenImageGradientSquare`, `GenImageChecked`, `GenImageWhiteNoise`, `GenImagePerlinNoise`, `GenImageCellular`, `GenImageText`, `ImageCopy`, `ImageFromImage`, `ImageFromChannel`, `ImageText`, `ImageTextEx`, `ImageFormat`, `ImageToPOT`, `ImageCrop`, `ImageAlphaCrop`, `ImageAlphaClear`, `ImageAlphaMask`, `ImageAlphaPremultiply`, `ImageBlurGaussian`, `ImageKernelConvolution`, `ImageResize`, `ImageResizeNN`, `ImageResizeCanvas`, `ImageMipmaps`, `ImageDither`, `ImageFlipVertical`, `ImageFlipHorizontal`, `ImageRotate`, `ImageRotateCW`, `ImageRotateCCW`, `ImageColorTint`, `ImageColorInvert`, `ImageColorGrayscale`, `ImageColorContrast`, `ImageColorBrightness`, `ImageColorReplace`, `LoadImageColors`, `LoadImagePalette`, `UnloadImageColors`, `UnloadImagePalette`, `GetImageAlphaBorder`, `GetImageColor`, `ImageClearBackground`, `ImageDrawPixel`, `ImageDrawPixelV`, `ImageDrawLine`, `ImageDrawLineV`, `ImageDrawLineEx`, `ImageDrawCircle`, `ImageDrawCircleV`, `ImageDrawCircleLines`, `ImageDrawCircleLinesV`, `ImageDrawRectangle`, `ImageDrawRectangleV`, `ImageDrawRectangleRec`, `ImageDrawRectangleLines`, `ImageDrawTriangle`, `ImageDrawTriangleEx`, `ImageDrawTriangleLines`, `ImageDrawTriangleFan`, `ImageDrawTriangleStrip`, `ImageDraw`, `ImageDrawText`, `ImageDrawTextEx`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `SetTextureWrap`, `DrawTextureNPatch`, `ColorIsEqual`, `ColorToInt`, `ColorToHSV`, `ColorFromHSV`, `ColorTint`, `ColorBrightness`, `ColorContrast`, `ColorAlphaBlend`, `ColorLerp`, `GetColor`, `GetPixelColor`, `SetPixelColor`, `GetPixelDataSize`, `LoadFontFromImage`, `ExportFontAsCode`, `LoadUTF8`, `UnloadUTF8`, `LoadCodepoints`, `UnloadCodepoints`, `GetCodepointCount`, `GetCodepoint`, `GetCodepointNext`, `GetCodepointPrevious`, `CodepointToUTF8`, `TextCopy`, `TextIsEqual`, `TextLength`, `TextSubtext`, `TextReplace`, `TextInsert`, `TextJoin`, `TextSplit`, `TextAppend`, `TextFindIndex`, `TextToUpper`, `TextToLower`, `TextToPascal`, `TextToSnake`, `TextToCamel`, `TextToInteger`, `TextToFloat`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`, `LoadWave`, `LoadWaveFromMemory`, `IsWaveValid`, `LoadSoundFromWave`, `LoadSoundAlias`, `UpdateSound`, `UnloadWave`, `UnloadSoundAlias`, `ExportWave`, `ExportWaveAsCode`, `PauseSound`, `ResumeSound`, `WaveCopy`, `WaveCrop`, `WaveFormat`, `LoadWaveSamples`, `UnloadWaveSamples`, `LoadMusicStreamFromMemory`, `SeekMusicStream`, `GetMusicTimeLength`, `GetMusicTimePlayed`, `LoadAudioStream`, `IsAudioStreamValid`, `UnloadAudioStream`, `UpdateAudioStream`, `IsAudioStreamProcessed`, `PlayAudioStream`, `PauseAudioStream`, `ResumeAudioStream`, `IsAudioStreamPlaying`, `StopAudioStream`, `SetAudioStreamVolume`, `SetAudioStreamPitch`, `SetAudioStreamPan`, `SetAudioStreamBufferSizeDefault`, `SetAudioStreamCallback`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`IsWindowFullscreen`, `IsWindowHidden`, `IsWindowMinimized`, `IsWindowMaximized`, `IsWindowFocused`, `ToggleFullscreen`, `ToggleBorderlessWindowed`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowIcon`, `SetWindowIcons`, `SetWindowPosition`, `SetWindowMonitor`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetWindowOpacity`, `SetWindowFocused`, `GetWindowHandle`, `GetMonitorCount`, `GetCurrentMonitor`, `GetMonitorPosition`, `GetMonitorWidth`, `GetMonitorHeight`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `GetMonitorRefreshRate`, `GetWindowPosition`, `GetWindowScaleDPI`, `GetMonitorName`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `EnableEventWaiting`, `DisableEventWaiting`, `ShowCursor`, `HideCursor`, `IsCursorHidden`, `EnableCursor`, `DisableCursor`, `IsCursorOnScreen`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `TakeScreenshot`, `OpenURL`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `IsFileExtension`, `GetFileLength`, `GetFileExtension`, `GetFileName`, `GetFileNameWithoutExt`, `GetDirectoryPath`, `GetPrevDirectoryPath`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `IsFileNameValid`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `CompressData`, `DecompressData`, `EncodeDataBase64`, `DecodeDataBase64`, `ComputeCRC32`, `ComputeMD5`, `ComputeSHA1`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `SetGamepadMappings`, `SetGamepadVibration`, `SetMousePosition`, `SetMouseOffset`, `SetMouseScale`, `GetMouseWheelMoveV`, `SetMouseCursor`, `GetTouchPointId`, `UpdateCameraPro`, `LoadImage`, `LoadImageRaw`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `IsImageValid`, `ExportImage`, `ExportImageToMemory`, `ExportImageAsCode`, `GenImageColor`, `GenImageGradientLinear`, `GenImageGradientRadial`, `GenImageGradientSquare`, `GenImageChecked`, `GenImageWhiteNoise`, `GenImagePerlinNoise`, `GenImageCellular`, `GenImageText`, `ImageCopy`, `ImageFromImage`, `ImageFromChannel`, `ImageText`, `ImageTextEx`, `ImageFormat`, `ImageToPOT`, `ImageCrop`, `ImageAlphaCrop`, `ImageAlphaClear`, `ImageAlphaMask`, `ImageAlphaPremultiply`, `ImageBlurGaussian`, `ImageKernelConvolution`, `ImageResize`, `ImageResizeNN`, `ImageResizeCanvas`, `ImageMipmaps`, `ImageDither`, `ImageFlipVertical`, `ImageFlipHorizontal`, `ImageRotate`, `ImageRotateCW`, `ImageRotateCCW`, `ImageColorTint`, `ImageColorInvert`, `ImageColorGrayscale`, `ImageColorContrast`, `ImageColorBrightness`, `ImageColorReplace`, `LoadImageColors`, `LoadImagePalette`, `UnloadImageColors`, `UnloadImagePalette`, `GetImageAlphaBorder`, `GetImageColor`, `ImageClearBackground`, `ImageDrawPixel`, `ImageDrawPixelV`, `ImageDrawLine`, `ImageDrawLineV`, `ImageDrawLineEx`, `ImageDrawCircle`, `ImageDrawCircleV`, `ImageDrawCircleLines`, `ImageDrawCircleLinesV`, `ImageDrawRectangle`, `ImageDrawRectangleV`, `ImageDrawRectangleRec`, `ImageDrawRectangleLines`, `ImageDrawTriangle`, `ImageDrawTriangleEx`, `ImageDrawTriangleLines`, `ImageDrawTriangleFan`, `ImageDrawTriangleStrip`, `ImageDraw`, `ImageDrawText`, `ImageDrawTextEx`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `SetTextureWrap`, `DrawTextureNPatch`, `ColorIsEqual`, `ColorToInt`, `ColorToHSV`, `ColorFromHSV`, `ColorTint`, `ColorBrightness`, `ColorContrast`, `ColorAlphaBlend`, `ColorLerp`, `GetColor`, `GetPixelColor`, `SetPixelColor`, `GetPixelDataSize`, `LoadFontFromImage`, `ExportFontAsCode`, `LoadUTF8`, `UnloadUTF8`, `LoadCodepoints`, `UnloadCodepoints`, `GetCodepointCount`, `GetCodepoint`, `GetCodepointNext`, `GetCodepointPrevious`, `CodepointToUTF8`, `TextCopy`, `TextIsEqual`, `TextLength`, `TextSubtext`, `TextReplace`, `TextInsert`, `TextJoin`, `TextSplit`, `TextAppend`, `TextFindIndex`, `TextToUpper`, `TextToLower`, `TextToPascal`, `TextToSnake`, `TextToCamel`, `TextToInteger`, `TextToFloat`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`, `LoadWave`, `LoadWaveFromMemory`, `IsWaveValid`, `LoadSoundFromWave`, `LoadSoundAlias`, `UpdateSound`, `UnloadWave`, `UnloadSoundAlias`, `ExportWave`, `ExportWaveAsCode`, `PauseSound`, `ResumeSound`, `WaveCopy`, `WaveCrop`, `WaveFormat`, `LoadWaveSamples`, `UnloadWaveSamples`, `LoadMusicStreamFromMemory`, `SeekMusicStream`, `GetMusicTimeLength`, `GetMusicTimePlayed`, `LoadAudioStream`, `IsAudioStreamValid`, `UnloadAudioStream`, `UpdateAudioStream`, `IsAudioStreamProcessed`, `PlayAudioStream`, `PauseAudioStream`, `ResumeAudioStream`, `IsAudioStreamPlaying`, `StopAudioStream`, `SetAudioStreamVolume`, `SetAudioStreamPitch`, `SetAudioStreamPan`, `SetAudioStreamBufferSizeDefault`, `SetAudioStreamCallback`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ## Raymath
 
@@ -2749,7 +2733,7 @@ import helix.ray.Raymath.*;
 
 What raymath has and helix-ray doesn't refuses to compile, naming itself.
 
-### Constants
+### raymath.h's defines
 
 ```haxe
 static inline var PI:Float
@@ -2763,7 +2747,7 @@ static inline var EPSILON:Float
 - `RAD2DEG`: Radians to degrees: multiply by it.
 - `EPSILON`: The difference under which raymath's `...Equals` functions take two values as equal.
 
-### raymath: vectors, matrices and quaternions (raylib/RMath.hx)
+### raymath: vectors, matrices and quaternions
 
 ```haxe
 static function Clamp(value:Float, min:Float, max:Float):Float
@@ -3011,7 +2995,7 @@ static function QuaternionToMatrix(q:Quaternion):Matrix
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-From `raymath.h`: `Normalize`, `Wrap`, `FloatEquals`, `Vector2AddValue`, `Vector2SubtractValue`, `Vector2DotProduct`, `Vector2DistanceSqr`, `Vector2Angle`, `Vector2LineAngle`, `Vector2Negate`, `Vector2Divide`, `Vector2Transform`, `Vector2Reflect`, `Vector2Min`, `Vector2Max`, `Vector2Rotate`, `Vector2MoveTowards`, `Vector2Invert`, `Vector2Clamp`, `Vector2Equals`, `Vector2Refract`, `Vector3AddValue`, `Vector3SubtractValue`, `Vector3Perpendicular`, `Vector3DistanceSqr`, `Vector3Angle`, `Vector3Divide`, `Vector3Project`, `Vector3Reject`, `Vector3OrthoNormalize`, `Vector3RotateByQuaternion`, `Vector3MoveTowards`, `Vector3CubicHermite`, `Vector3Reflect`, `Vector3Min`, `Vector3Max`, `Vector3Barycenter`, `Vector3Unproject`, `Vector3ToFloatV`, `Vector3Invert`, `Vector3Clamp`, `Vector3ClampValue`, `Vector3Equals`, `Vector3Refract`, `Vector4Zero`, `Vector4One`, `Vector4Add`, `Vector4AddValue`, `Vector4Subtract`, `Vector4SubtractValue`, `Vector4Length`, `Vector4LengthSqr`, `Vector4DotProduct`, `Vector4Distance`, `Vector4DistanceSqr`, `Vector4Scale`, `Vector4Multiply`, `Vector4Negate`, `Vector4Divide`, `Vector4Normalize`, `Vector4Min`, `Vector4Max`, `Vector4Lerp`, `Vector4MoveTowards`, `Vector4Invert`, `Vector4Equals`, `MatrixDeterminant`, `MatrixTrace`, `MatrixAdd`, `MatrixSubtract`, `MatrixRotateZYX`, `MatrixFrustum`, `MatrixToFloatV`, `QuaternionAdd`, `QuaternionAddValue`, `QuaternionSubtract`, `QuaternionSubtractValue`, `QuaternionLength`, `QuaternionNormalize`, `QuaternionInvert`, `QuaternionMultiply`, `QuaternionScale`, `QuaternionDivide`, `QuaternionLerp`, `QuaternionNlerp`, `QuaternionSlerp`, `QuaternionCubicHermiteSpline`, `QuaternionFromVector3ToVector3`, `QuaternionFromMatrix`, `QuaternionToAxisAngle`, `QuaternionToEuler`, `QuaternionTransform`, `QuaternionEquals`, `MatrixDecompose`.
+`Normalize`, `Wrap`, `FloatEquals`, `Vector2AddValue`, `Vector2SubtractValue`, `Vector2DotProduct`, `Vector2DistanceSqr`, `Vector2Angle`, `Vector2LineAngle`, `Vector2Negate`, `Vector2Divide`, `Vector2Transform`, `Vector2Reflect`, `Vector2Min`, `Vector2Max`, `Vector2Rotate`, `Vector2MoveTowards`, `Vector2Invert`, `Vector2Clamp`, `Vector2Equals`, `Vector2Refract`, `Vector3AddValue`, `Vector3SubtractValue`, `Vector3Perpendicular`, `Vector3DistanceSqr`, `Vector3Angle`, `Vector3Divide`, `Vector3Project`, `Vector3Reject`, `Vector3OrthoNormalize`, `Vector3RotateByQuaternion`, `Vector3MoveTowards`, `Vector3CubicHermite`, `Vector3Reflect`, `Vector3Min`, `Vector3Max`, `Vector3Barycenter`, `Vector3Unproject`, `Vector3ToFloatV`, `Vector3Invert`, `Vector3Clamp`, `Vector3ClampValue`, `Vector3Equals`, `Vector3Refract`, `Vector4Zero`, `Vector4One`, `Vector4Add`, `Vector4AddValue`, `Vector4Subtract`, `Vector4SubtractValue`, `Vector4Length`, `Vector4LengthSqr`, `Vector4DotProduct`, `Vector4Distance`, `Vector4DistanceSqr`, `Vector4Scale`, `Vector4Multiply`, `Vector4Negate`, `Vector4Divide`, `Vector4Normalize`, `Vector4Min`, `Vector4Max`, `Vector4Lerp`, `Vector4MoveTowards`, `Vector4Invert`, `Vector4Equals`, `MatrixDeterminant`, `MatrixTrace`, `MatrixAdd`, `MatrixSubtract`, `MatrixRotateZYX`, `MatrixFrustum`, `MatrixToFloatV`, `QuaternionAdd`, `QuaternionAddValue`, `QuaternionSubtract`, `QuaternionSubtractValue`, `QuaternionLength`, `QuaternionNormalize`, `QuaternionInvert`, `QuaternionMultiply`, `QuaternionScale`, `QuaternionDivide`, `QuaternionLerp`, `QuaternionNlerp`, `QuaternionSlerp`, `QuaternionCubicHermiteSpline`, `QuaternionFromVector3ToVector3`, `QuaternionFromMatrix`, `QuaternionToAxisAngle`, `QuaternionToEuler`, `QuaternionTransform`, `QuaternionEquals`, `MatrixDecompose`.
 
 ## Rectangle
 
@@ -3080,7 +3064,7 @@ import helix.ray.Rlgl.*;
 
 rlgl's GPU objects (vertex arrays and buffers, framebuffers, GL ids) aren't here: helix-ray draws through helix-platform, which has no GL. What rlgl has and helix-ray doesn't refuses to compile, naming itself.
 
-### OpenGL version (rlGlVersion), not written by hand
+### OpenGL version (rlGlVersion)
 
 ```haxe
 static inline var RL_OPENGL_11:Int
@@ -3098,7 +3082,7 @@ static inline var RL_OPENGL_ES_30:Int
 - `RL_OPENGL_ES_20`: OpenGL ES 2.0 (GLSL 100).
 - `RL_OPENGL_ES_30`: OpenGL ES 3.0 (GLSL 300 es).
 
-### Trace log level (rlTraceLogLevel), not written by hand
+### Trace log level (rlTraceLogLevel)
 
 ```haxe
 static inline var RL_LOG_ALL:Int
@@ -3120,7 +3104,7 @@ static inline var RL_LOG_NONE:Int
 - `RL_LOG_FATAL`: Fatal logging, used to abort program: exit(EXIT_FAILURE).
 - `RL_LOG_NONE`: Disable logging.
 
-### Texture pixel formats (rlPixelFormat), not written by hand
+### Texture pixel formats (rlPixelFormat)
 
 ```haxe
 static inline var RL_PIXELFORMAT_UNCOMPRESSED_GRAYSCALE:Int
@@ -3174,7 +3158,7 @@ static inline var RL_PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA:Int
 - `RL_PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA`: 8 bpp.
 - `RL_PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA`: 2 bpp.
 
-### Texture parameters: filter mode (rlTextureFilter), not written by hand
+### Texture parameters: filter mode (rlTextureFilter)
 
 ```haxe
 static inline var RL_TEXTURE_FILTER_POINT:Int
@@ -3192,7 +3176,7 @@ static inline var RL_TEXTURE_FILTER_ANISOTROPIC_16X:Int
 - `RL_TEXTURE_FILTER_ANISOTROPIC_8X`: Anisotropic filtering 8x.
 - `RL_TEXTURE_FILTER_ANISOTROPIC_16X`: Anisotropic filtering 16x.
 
-### Color blending modes (pre-defined) (rlBlendMode), not written by hand
+### Color blending modes (pre-defined) (rlBlendMode)
 
 ```haxe
 static inline var RL_BLEND_ALPHA:Int
@@ -3214,7 +3198,7 @@ static inline var RL_BLEND_CUSTOM_SEPARATE:Int
 - `RL_BLEND_CUSTOM`: Blend textures using custom src/dst factors (use rlSetBlendFactors()).
 - `RL_BLEND_CUSTOM_SEPARATE`: Blend textures using custom src/dst factors (use rlSetBlendFactorsSeparate()).
 
-### Shader location point type (rlShaderLocationIndex), not written by hand
+### Shader location point type (rlShaderLocationIndex)
 
 ```haxe
 static inline var RL_SHADER_LOC_VERTEX_POSITION:Int
@@ -3272,7 +3256,7 @@ static inline var RL_SHADER_LOC_MAP_BRDF:Int
 - `RL_SHADER_LOC_MAP_PREFILTER`: Shader location: samplerCube texture: prefilter.
 - `RL_SHADER_LOC_MAP_BRDF`: Shader location: sampler2d texture: brdf.
 
-### Shader uniform data type (rlShaderUniformDataType), not written by hand
+### Shader uniform data type (rlShaderUniformDataType)
 
 ```haxe
 static inline var RL_SHADER_UNIFORM_FLOAT:Int
@@ -3304,7 +3288,7 @@ static inline var RL_SHADER_UNIFORM_SAMPLER2D:Int
 - `RL_SHADER_UNIFORM_UIVEC4`: Shader uniform type: uivec4 (4 unsigned int).
 - `RL_SHADER_UNIFORM_SAMPLER2D`: Shader uniform type: sampler2d.
 
-### Shader attribute data types (rlShaderAttributeDataType), not written by hand
+### Shader attribute data types (rlShaderAttributeDataType)
 
 ```haxe
 static inline var RL_SHADER_ATTRIB_FLOAT:Int
@@ -3318,7 +3302,7 @@ static inline var RL_SHADER_ATTRIB_VEC4:Int
 - `RL_SHADER_ATTRIB_VEC3`: Shader attribute type: vec3 (3 float).
 - `RL_SHADER_ATTRIB_VEC4`: Shader attribute type: vec4 (4 float).
 
-### Framebuffer attachment type (rlFramebufferAttachType), not written by hand
+### Framebuffer attachment type (rlFramebufferAttachType)
 
 ```haxe
 static inline var RL_ATTACHMENT_COLOR_CHANNEL0:Int
@@ -3344,7 +3328,7 @@ static inline var RL_ATTACHMENT_STENCIL:Int
 - `RL_ATTACHMENT_DEPTH`: Framebuffer attachment type: depth.
 - `RL_ATTACHMENT_STENCIL`: Framebuffer attachment type: stencil.
 
-### Framebuffer texture attachment type (rlFramebufferAttachTextureType), not written by hand
+### Framebuffer texture attachment type (rlFramebufferAttachTextureType)
 
 ```haxe
 static inline var RL_ATTACHMENT_CUBEMAP_POSITIVE_X:Int
@@ -3366,7 +3350,7 @@ static inline var RL_ATTACHMENT_RENDERBUFFER:Int
 - `RL_ATTACHMENT_TEXTURE2D`: Framebuffer texture attachment type: texture2d.
 - `RL_ATTACHMENT_RENDERBUFFER`: Framebuffer texture attachment type: renderbuffer.
 
-### Face culling mode (rlCullMode), not written by hand
+### Face culling mode (rlCullMode)
 
 ```haxe
 static inline var RL_CULL_FACE_FRONT:Int
@@ -3374,7 +3358,7 @@ static inline var RL_CULL_FACE_BACK:Int
 ```
 
 
-### rlgl.h's number defines, not written by hand
+### rlgl.h's defines
 
 ```haxe
 static inline var RL_DEFAULT_BATCH_BUFFER_ELEMENTS:Int
@@ -3548,7 +3532,7 @@ static inline var PI:Float
 - `RL_DEFAULT_SHADER_ATTRIB_LOCATION_BONEWEIGHTS`: rlgl.h's `RL_DEFAULT_SHADER_ATTRIB_LOCATION_BONEWEIGHTS`.
 - `PI`: rlgl.h's `PI`.
 
-### rlgl: the matrix stack, immediate drawing and render state (raylib/RRlgl.hx)
+### rlgl: the matrix stack, immediate drawing and render state
 
 ```haxe
 static function rlMatrixMode(mode:Int):Void
@@ -3676,187 +3660,17 @@ static function rlCheckRenderBatchLimit(vCount:Int):Bool
   - `vCount`: The vertices.
   - returns: False.
 
-### rlgl.h's functions helix-ray won't have: each refuses to compile, saying why and what to use
+### Not supported in helix-ray
 
-```haxe
-static macro function rlEnableVertexArray(vaoId:Int):Bool
-static macro function rlDisableVertexArray():Void
-static macro function rlEnableVertexBuffer(id:Int):Void
-static macro function rlDisableVertexBuffer():Void
-static macro function rlEnableVertexBufferElement(id:Int):Void
-static macro function rlDisableVertexBufferElement():Void
-static macro function rlEnableVertexAttribute(index:Int):Void
-static macro function rlDisableVertexAttribute(index:Int):Void
-static macro function rlEnableStatePointer(vertexAttribType:Int, buffer:Dynamic):Void
-static macro function rlDisableStatePointer(vertexAttribType:Int):Void
-static macro function rlActiveTextureSlot(slot:Int):Void
-static macro function rlEnableTexture(id:Int):Void
-static macro function rlDisableTexture():Void
-static macro function rlEnableTextureCubemap(id:Int):Void
-static macro function rlDisableTextureCubemap():Void
-static macro function rlTextureParameters(id:Int, param:Int, value:Int):Void
-static macro function rlCubemapParameters(id:Int, param:Int, value:Int):Void
-static macro function rlEnableShader(id:Int):Void
-static macro function rlDisableShader():Void
-static macro function rlEnableFramebuffer(id:Int):Void
-static macro function rlDisableFramebuffer():Void
-static macro function rlGetActiveFramebuffer():Int
-static macro function rlActiveDrawBuffers(count:Int):Void
-static macro function rlBlitFramebuffer(srcX:Int, srcY:Int, srcWidth:Int, srcHeight:Int, dstX:Int, dstY:Int, dstWidth:Int, dstHeight:Int, bufferMask:Int):Void
-static macro function rlBindFramebuffer(target:Int, framebuffer:Int):Void
-static macro function rlCheckErrors():Void
-static macro function rlLoadExtensions(loader:Dynamic):Void
-static macro function rlGetVersion():Int
-static macro function rlGetTextureIdDefault():Int
-static macro function rlGetShaderIdDefault():Int
-static macro function rlGetShaderLocsDefault():ExprOf<Array<Int>>
-static macro function rlLoadRenderBatch(numBuffers:Int, bufferElements:Int):Dynamic
-static macro function rlUnloadRenderBatch(batch:Dynamic):Void
-static macro function rlDrawRenderBatch(batch:Dynamic):Void
-static macro function rlSetRenderBatchActive(batch:Dynamic):Void
-static macro function rlLoadVertexArray():Int
-static macro function rlLoadVertexBuffer(buffer:Dynamic, size:Int, isDynamic:Bool):Int
-static macro function rlLoadVertexBufferElement(buffer:Dynamic, size:Int, isDynamic:Bool):Int
-static macro function rlUpdateVertexBuffer(bufferId:Int, data:Dynamic, dataSize:Int, offset:Int):Void
-static macro function rlUpdateVertexBufferElements(id:Int, data:Dynamic, dataSize:Int, offset:Int):Void
-static macro function rlUnloadVertexArray(vaoId:Int):Void
-static macro function rlUnloadVertexBuffer(vboId:Int):Void
-static macro function rlSetVertexAttribute(index:Int, compSize:Int, type:Int, normalized:Bool, stride:Int, offset:Int):Void
-static macro function rlSetVertexAttributeDivisor(index:Int, divisor:Int):Void
-static macro function rlSetVertexAttributeDefault(locIndex:Int, value:Dynamic, attribType:Int, count:Int):Void
-static macro function rlDrawVertexArray(offset:Int, count:Int):Void
-static macro function rlDrawVertexArrayElements(offset:Int, count:Int, buffer:Dynamic):Void
-static macro function rlDrawVertexArrayInstanced(offset:Int, count:Int, instances:Int):Void
-static macro function rlDrawVertexArrayElementsInstanced(offset:Int, count:Int, buffer:Dynamic, instances:Int):Void
-static macro function rlLoadTexture(data:Dynamic, width:Int, height:Int, format:Int, mipmapCount:Int):Int
-static macro function rlLoadTextureDepth(width:Int, height:Int, useRenderBuffer:Bool):Int
-static macro function rlLoadTextureCubemap(data:Dynamic, size:Int, format:Int, mipmapCount:Int):Int
-static macro function rlUpdateTexture(id:Int, offsetX:Int, offsetY:Int, width:Int, height:Int, format:Int, data:Dynamic):Void
-static macro function rlGetGlTextureFormats(format:Int, glInternalFormat:Array<Int>, glFormat:Array<Int>, glType:Array<Int>):Void
-static macro function rlUnloadTexture(id:Int):Void
-static macro function rlGenTextureMipmaps(id:Int, width:Int, height:Int, format:Int, mipmaps:Array<Int>):Void
-static macro function rlReadTexturePixels(id:Int, width:Int, height:Int, format:Int):Dynamic
-static macro function rlReadScreenPixels(width:Int, height:Int):Bytes
-static macro function rlLoadFramebuffer():Int
-static macro function rlFramebufferAttach(fboId:Int, texId:Int, attachType:Int, texType:Int, mipLevel:Int):Void
-static macro function rlFramebufferComplete(id:Int):Bool
-static macro function rlUnloadFramebuffer(id:Int):Void
-static macro function rlLoadShaderCode(vsCode:String, fsCode:String):Int
-static macro function rlCompileShader(shaderCode:String, type:Int):Int
-static macro function rlLoadShaderProgram(vShaderId:Int, fShaderId:Int):Int
-static macro function rlUnloadShaderProgram(id:Int):Void
-static macro function rlGetLocationUniform(shaderId:Int, uniformName:String):Int
-static macro function rlGetLocationAttrib(shaderId:Int, attribName:String):Int
-static macro function rlSetUniform(locIndex:Int, value:Dynamic, uniformType:Int, count:Int):Void
-static macro function rlSetUniformMatrix(locIndex:Int, mat:Matrix):Void
-static macro function rlSetUniformMatrices(locIndex:Int, mat:Array<Matrix>, count:Int):Void
-static macro function rlSetUniformSampler(locIndex:Int, textureId:Int):Void
-static macro function rlSetShader(id:Int, locs:Array<Int>):Void
-static macro function rlLoadComputeShaderProgram(shaderId:Int):Int
-static macro function rlComputeShaderDispatch(groupX:Int, groupY:Int, groupZ:Int):Void
-static macro function rlLoadShaderBuffer(size:Int, data:Dynamic, usageHint:Int):Int
-static macro function rlUnloadShaderBuffer(ssboId:Int):Void
-static macro function rlUpdateShaderBuffer(id:Int, data:Dynamic, dataSize:Int, offset:Int):Void
-static macro function rlBindShaderBuffer(id:Int, index:Int):Void
-static macro function rlReadShaderBuffer(id:Int, dest:Dynamic, count:Int, offset:Int):Void
-static macro function rlCopyShaderBuffer(destId:Int, srcId:Int, destOffset:Int, srcOffset:Int, count:Int):Void
-static macro function rlGetShaderBufferSize(id:Int):Int
-static macro function rlBindImageTexture(id:Int, index:Int, format:Int, readonly:Bool):Void
-static macro function rlLoadDrawCube():Void
-static macro function rlLoadDrawQuad():Void
-```
+Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
-- `rlEnableVertexArray`: rlgl's `rlEnableVertexArray`: enable vertex array (vao, if supported), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlDisableVertexArray`: rlgl's `rlDisableVertexArray`: disable vertex array (vao, if supported), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlEnableVertexBuffer`: rlgl's `rlEnableVertexBuffer`: enable vertex buffer (vbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlDisableVertexBuffer`: rlgl's `rlDisableVertexBuffer`: disable vertex buffer (vbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlEnableVertexBufferElement`: rlgl's `rlEnableVertexBufferElement`: enable vertex buffer element (vbo element), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlDisableVertexBufferElement`: rlgl's `rlDisableVertexBufferElement`: disable vertex buffer element (vbo element), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlEnableVertexAttribute`: rlgl's `rlEnableVertexAttribute`: enable vertex attribute index, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlDisableVertexAttribute`: rlgl's `rlDisableVertexAttribute`: disable vertex attribute index, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlEnableStatePointer`: rlgl's `rlEnableStatePointer`: enable attribute state pointer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlDisableStatePointer`: rlgl's `rlDisableStatePointer`: disable attribute state pointer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlActiveTextureSlot`: rlgl's `rlActiveTextureSlot`: select and active a texture slot, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlEnableTexture`: rlgl's `rlEnableTexture`: enable texture, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlDisableTexture`: rlgl's `rlDisableTexture`: disable texture, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlEnableTextureCubemap`: rlgl's `rlEnableTextureCubemap`: enable texture cubemap, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlDisableTextureCubemap`: rlgl's `rlDisableTextureCubemap`: disable texture cubemap, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlTextureParameters`: rlgl's `rlTextureParameters`: set texture parameters (filter, wrap), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlCubemapParameters`: rlgl's `rlCubemapParameters`: set cubemap parameters (filter, wrap), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlEnableShader`: rlgl's `rlEnableShader`: enable shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlDisableShader`: rlgl's `rlDisableShader`: disable shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlEnableFramebuffer`: rlgl's `rlEnableFramebuffer`: enable render texture (fbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlDisableFramebuffer`: rlgl's `rlDisableFramebuffer`: disable render texture (fbo), return to default framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlGetActiveFramebuffer`: rlgl's `rlGetActiveFramebuffer`: get the currently active render texture (fbo), 0 for default framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlActiveDrawBuffers`: rlgl's `rlActiveDrawBuffers`: activate multiple draw color buffers, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlBlitFramebuffer`: rlgl's `rlBlitFramebuffer`: blit active framebuffer to main framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlBindFramebuffer`: rlgl's `rlBindFramebuffer`: bind framebuffer (fbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlCheckErrors`: rlgl's `rlCheckErrors`: check and log opengl error codes, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadExtensions`: rlgl's `rlLoadExtensions`: load opengl extensions (loader function required), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlGetVersion`: rlgl's `rlGetVersion`: get current opengl version, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlGetTextureIdDefault`: rlgl's `rlGetTextureIdDefault`: get default texture id, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlGetShaderIdDefault`: rlgl's `rlGetShaderIdDefault`: get default shader id, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlGetShaderLocsDefault`: rlgl's `rlGetShaderLocsDefault`: get default shader locations, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadRenderBatch`: rlgl's `rlLoadRenderBatch`: load a render batch system, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlUnloadRenderBatch`: rlgl's `rlUnloadRenderBatch`: unload render batch system, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlDrawRenderBatch`: rlgl's `rlDrawRenderBatch`: draw render batch data (update->draw->reset), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlSetRenderBatchActive`: rlgl's `rlSetRenderBatchActive`: set the active render batch for rlgl (null for default internal), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadVertexArray`: rlgl's `rlLoadVertexArray`: load vertex array (vao) if supported, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadVertexBuffer`: rlgl's `rlLoadVertexBuffer`: load a vertex buffer object, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadVertexBufferElement`: rlgl's `rlLoadVertexBufferElement`: load vertex buffer elements object, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlUpdateVertexBuffer`: rlgl's `rlUpdateVertexBuffer`: update vertex buffer object data on gpu buffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlUpdateVertexBufferElements`: rlgl's `rlUpdateVertexBufferElements`: update vertex buffer elements data on gpu buffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlUnloadVertexArray`: rlgl's `rlUnloadVertexArray`: unload vertex array (vao), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlUnloadVertexBuffer`: rlgl's `rlUnloadVertexBuffer`: unload vertex buffer object, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlSetVertexAttribute`: rlgl's `rlSetVertexAttribute`: set vertex attribute data configuration, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlSetVertexAttributeDivisor`: rlgl's `rlSetVertexAttributeDivisor`: set vertex attribute data divisor, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlSetVertexAttributeDefault`: rlgl's `rlSetVertexAttributeDefault`: set vertex attribute default value, when attribute to provided, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlDrawVertexArray`: rlgl's `rlDrawVertexArray`: draw vertex array (currently active vao), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlDrawVertexArrayElements`: rlgl's `rlDrawVertexArrayElements`: draw vertex array elements, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlDrawVertexArrayInstanced`: rlgl's `rlDrawVertexArrayInstanced`: draw vertex array (currently active vao) with instancing, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlDrawVertexArrayElementsInstanced`: rlgl's `rlDrawVertexArrayElementsInstanced`: draw vertex array elements with instancing, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadTexture`: rlgl's `rlLoadTexture`: load texture data, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadTextureDepth`: rlgl's `rlLoadTextureDepth`: load depth texture/renderbuffer (to be attached to fbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadTextureCubemap`: rlgl's `rlLoadTextureCubemap`: load texture cubemap data, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlUpdateTexture`: rlgl's `rlUpdateTexture`: update texture with new data on gpu, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlGetGlTextureFormats`: rlgl's `rlGetGlTextureFormats`: get opengl internal formats, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlUnloadTexture`: rlgl's `rlUnloadTexture`: unload texture from gpu memory, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlGenTextureMipmaps`: rlgl's `rlGenTextureMipmaps`: generate mipmap data for selected texture, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlReadTexturePixels`: rlgl's `rlReadTexturePixels`: read texture pixel data, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlReadScreenPixels`: rlgl's `rlReadScreenPixels`: read screen pixel data (color buffer), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadFramebuffer`: rlgl's `rlLoadFramebuffer`: load an empty framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlFramebufferAttach`: rlgl's `rlFramebufferAttach`: attach texture/renderbuffer to a framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlFramebufferComplete`: rlgl's `rlFramebufferComplete`: verify framebuffer is complete, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlUnloadFramebuffer`: rlgl's `rlUnloadFramebuffer`: delete framebuffer from gpu, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadShaderCode`: rlgl's `rlLoadShaderCode`: load shader from code strings, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlCompileShader`: rlgl's `rlCompileShader`: compile custom shader and return shader id (type: rl_vertex_shader, rl_fragment_shader, rl_compute_shader), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadShaderProgram`: rlgl's `rlLoadShaderProgram`: load custom shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlUnloadShaderProgram`: rlgl's `rlUnloadShaderProgram`: unload shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlGetLocationUniform`: rlgl's `rlGetLocationUniform`: get shader location uniform, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlGetLocationAttrib`: rlgl's `rlGetLocationAttrib`: get shader location attribute, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlSetUniform`: rlgl's `rlSetUniform`: set shader value uniform, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlSetUniformMatrix`: rlgl's `rlSetUniformMatrix`: set shader value matrix, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlSetUniformMatrices`: rlgl's `rlSetUniformMatrices`: set shader value matrices, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlSetUniformSampler`: rlgl's `rlSetUniformSampler`: set shader value sampler, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlSetShader`: rlgl's `rlSetShader`: set shader currently active (id and locations), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadComputeShaderProgram`: rlgl's `rlLoadComputeShaderProgram`: load compute shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlComputeShaderDispatch`: rlgl's `rlComputeShaderDispatch`: dispatch compute shader (equivalent to *draw* for graphics pipeline), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadShaderBuffer`: rlgl's `rlLoadShaderBuffer`: load shader storage buffer object (ssbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlUnloadShaderBuffer`: rlgl's `rlUnloadShaderBuffer`: unload shader storage buffer object (ssbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlUpdateShaderBuffer`: rlgl's `rlUpdateShaderBuffer`: update ssbo buffer data, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlBindShaderBuffer`: rlgl's `rlBindShaderBuffer`: bind ssbo buffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlReadShaderBuffer`: rlgl's `rlReadShaderBuffer`: read ssbo buffer data (gpu->cpu), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlCopyShaderBuffer`: rlgl's `rlCopyShaderBuffer`: copy ssbo data between buffers, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlGetShaderBufferSize`: rlgl's `rlGetShaderBufferSize`: get ssbo buffer size, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlBindImageTexture`: rlgl's `rlBindImageTexture`: bind image texture, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadDrawCube`: rlgl's `rlLoadDrawCube`: load and draw a cube, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
-- `rlLoadDrawQuad`: rlgl's `rlLoadDrawQuad`: load and draw a quad, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile.
+`rlEnableVertexArray`, `rlDisableVertexArray`, `rlEnableVertexBuffer`, `rlDisableVertexBuffer`, `rlEnableVertexBufferElement`, `rlDisableVertexBufferElement`, `rlEnableVertexAttribute`, `rlDisableVertexAttribute`, `rlEnableStatePointer`, `rlDisableStatePointer`, `rlActiveTextureSlot`, `rlEnableTexture`, `rlDisableTexture`, `rlEnableTextureCubemap`, `rlDisableTextureCubemap`, `rlTextureParameters`, `rlCubemapParameters`, `rlEnableShader`, `rlDisableShader`, `rlEnableFramebuffer`, `rlDisableFramebuffer`, `rlGetActiveFramebuffer`, `rlActiveDrawBuffers`, `rlBlitFramebuffer`, `rlBindFramebuffer`, `rlCheckErrors`, `rlLoadExtensions`, `rlGetVersion`, `rlGetTextureIdDefault`, `rlGetShaderIdDefault`, `rlGetShaderLocsDefault`, `rlLoadRenderBatch`, `rlUnloadRenderBatch`, `rlDrawRenderBatch`, `rlSetRenderBatchActive`, `rlLoadVertexArray`, `rlLoadVertexBuffer`, `rlLoadVertexBufferElement`, `rlUpdateVertexBuffer`, `rlUpdateVertexBufferElements`, `rlUnloadVertexArray`, `rlUnloadVertexBuffer`, `rlSetVertexAttribute`, `rlSetVertexAttributeDivisor`, `rlSetVertexAttributeDefault`, `rlDrawVertexArray`, `rlDrawVertexArrayElements`, `rlDrawVertexArrayInstanced`, `rlDrawVertexArrayElementsInstanced`, `rlLoadTexture`, `rlLoadTextureDepth`, `rlLoadTextureCubemap`, `rlUpdateTexture`, `rlGetGlTextureFormats`, `rlUnloadTexture`, `rlGenTextureMipmaps`, `rlReadTexturePixels`, `rlReadScreenPixels`, `rlLoadFramebuffer`, `rlFramebufferAttach`, `rlFramebufferComplete`, `rlUnloadFramebuffer`, `rlLoadShaderCode`, `rlCompileShader`, `rlLoadShaderProgram`, `rlUnloadShaderProgram`, `rlGetLocationUniform`, `rlGetLocationAttrib`, `rlSetUniform`, `rlSetUniformMatrix`, `rlSetUniformMatrices`, `rlSetUniformSampler`, `rlSetShader`, `rlLoadComputeShaderProgram`, `rlComputeShaderDispatch`, `rlLoadShaderBuffer`, `rlUnloadShaderBuffer`, `rlUpdateShaderBuffer`, `rlBindShaderBuffer`, `rlReadShaderBuffer`, `rlCopyShaderBuffer`, `rlGetShaderBufferSize`, `rlBindImageTexture`, `rlLoadDrawCube`, `rlLoadDrawQuad`.
 
 ### Not in helix-ray yet
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-From `rlgl.h`: `rlViewport`, `rlSetClipPlanes`, `rlEnableColorBlend`, `rlDisableColorBlend`, `rlEnableDepthTest`, `rlDisableDepthTest`, `rlEnableDepthMask`, `rlDisableDepthMask`, `rlEnableBackfaceCulling`, `rlDisableBackfaceCulling`, `rlColorMask`, `rlSetCullFace`, `rlEnableScissorTest`, `rlDisableScissorTest`, `rlScissor`, `rlEnableWireMode`, `rlEnablePointMode`, `rlDisableWireMode`, `rlSetLineWidth`, `rlGetLineWidth`, `rlEnableSmoothLines`, `rlDisableSmoothLines`, `rlEnableStereoRender`, `rlDisableStereoRender`, `rlIsStereoRenderEnabled`, `rlClearColor`, `rlClearScreenBuffers`, `rlSetBlendFactors`, `rlSetBlendFactorsSeparate`, `rlglInit`, `rlglClose`, `rlSetFramebufferWidth`, `rlGetFramebufferWidth`, `rlSetFramebufferHeight`, `rlGetFramebufferHeight`, `rlGetPixelFormatName`, `rlGetMatrixProjectionStereo`, `rlGetMatrixViewOffsetStereo`, `rlSetMatrixProjectionStereo`, `rlSetMatrixViewOffsetStereo`.
+`rlViewport`, `rlSetClipPlanes`, `rlEnableColorBlend`, `rlDisableColorBlend`, `rlEnableDepthTest`, `rlDisableDepthTest`, `rlEnableDepthMask`, `rlDisableDepthMask`, `rlEnableBackfaceCulling`, `rlDisableBackfaceCulling`, `rlColorMask`, `rlSetCullFace`, `rlEnableScissorTest`, `rlDisableScissorTest`, `rlScissor`, `rlEnableWireMode`, `rlEnablePointMode`, `rlDisableWireMode`, `rlSetLineWidth`, `rlGetLineWidth`, `rlEnableSmoothLines`, `rlDisableSmoothLines`, `rlEnableStereoRender`, `rlDisableStereoRender`, `rlIsStereoRenderEnabled`, `rlClearColor`, `rlClearScreenBuffers`, `rlSetBlendFactors`, `rlSetBlendFactorsSeparate`, `rlglInit`, `rlglClose`, `rlSetFramebufferWidth`, `rlGetFramebufferWidth`, `rlSetFramebufferHeight`, `rlGetFramebufferHeight`, `rlGetPixelFormatName`, `rlGetMatrixProjectionStereo`, `rlGetMatrixViewOffsetStereo`, `rlSetMatrixProjectionStereo`, `rlSetMatrixViewOffsetStereo`.
 
 ## Shader
 

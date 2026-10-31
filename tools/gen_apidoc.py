@@ -6,10 +6,12 @@ The reference is what a program writes against: a type or member marked @:noComp
 checked by tools/check_adapters.py), hidden from the language server and left out here as dox leaves it out. Haxe describes the code
 once per target (XML), js and cpp; a library's code has no target conditional, so both must describe the same types with the same
 public members, and the tool fails when they differ. The adapters are each one target's: each description holds its own target's (the
-browser's name js. in their code), and the reference shows both, each marked with its target. The HTML is made from one description,
+compiler says which, by the target each package types for), and the reference shows both, each marked with its target. The HTML is made from one description,
 js's with cpp's adapters added, so dox has nothing to mark as one target's. Of the tools (helix.platform.tools), which run in the compiler,
-it shows ShaderCompiler, whose compile a program calls: a macro, its signature read from its source, as Haxe describes a macro's types as
-Dynamic. A @:structInit class is shown as the object a program writes, each field with its default. --check regenerates the Markdown in memory and fails when docs/api differs, so a change to a doc comment is committed with
+it shows ShaderCompiler, whose compile a program calls: a macro, its signature from the compiler's macro context (tools/haxe/Fields.hx), as
+Haxe's description types a macro's arguments as Dynamic. helix-ray's facades (Raylib, Raymath, Rlgl) are laid out as tools/gen_raylib.py
+says: their members under headings, and what refuses to compile listed apart. Code is read through the compiler, never as text
+(docs/CONVENTIONS.md, Tools). A @:structInit class is shown as the object a program writes, each field with its default. --check regenerates the Markdown in memory and fails when docs/api differs, so a change to a doc comment is committed with
 its reference (helix.py test runs it)."""
 import json
 import re
@@ -19,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
@@ -31,15 +34,29 @@ ADAPTERS='helix.platform.adapters'
 # What the reference says of its targets, once.
 TARGETS='Every type here is on both Haxe targets, js (the browser) and cpp (native), but the adapters, each for one target, which a program constructs by name; a library\'s own types beneath (@:noCompletion) are left out.'
 
+def types_for(package,target):
+    """Whether a package types for a target, as the compiler says."""
+    out=['-js',str(OUT/'probe.js')] if target=='js' else ['-cpp',str(OUT/'probe-cpp')]
+    ran=subprocess.run(['haxe',*sum((['-lib',name] for name in pins.LIBRARIES),[]),'--macro',f"include('{package}')",'--no-output',*out],cwd=ROOT,capture_output=True,text=True)
+    return ran.returncode==0
+
+ADAPTER_TARGETS={}
+# Every macro function's signature, and helix-ray's facades' layout (tools/gen_raylib.py), read as the reference is made.
+MACROS={}
+LAYOUT={}
+
 def adapter_packages(target):
-    """The adapters' packages for one target: the browser's (js) name js. in their code, the native ones (cpp) don't. Compiling
-    each target's description checks it."""
-    found=[]
-    for d in sorted((ROOT/'platform/src/helix/platform/adapters').glob('*/*/')):
-        if d.parent.name=='shared':continue
-        browser=any(re.search(r'\bjs\.[A-Za-z]',p.read_text(encoding='utf-8')) for p in d.rglob('*.hx'))
-        if browser==(target=='js'):found.append(f'{ADAPTERS}.{d.parent.name}.{d.name}')
-    return found
+    """The adapters' packages for one target: those the compiler types for it. Each types for one target alone, the browser's (js) or
+    native (cpp); one that types for both or neither stops the reference."""
+    if not ADAPTER_TARGETS:
+        packages=[f'{ADAPTERS}.{d.parent.name}.{d.name}' for d in sorted((ROOT/'platform/src/helix/platform/adapters').glob('*/*/')) if d.parent.name!='shared']
+        OUT.mkdir(parents=True,exist_ok=True)
+        with ThreadPoolExecutor(8) as pool:
+            found=list(pool.map(lambda p:(p,types_for(p,'js'),types_for(p,'cpp')),packages))
+        for package,js,cpp in found:
+            if js==cpp:sys.exit(f'gen_apidoc: {package} types for {"both targets" if js else "neither target"}; an adapter is for one')
+            ADAPTER_TARGETS[package]='js' if js else 'cpp'
+    return [p for p,t in ADAPTER_TARGETS.items() if t==target]
 
 def describe(target):
     """Haxe's XML description of package helix for one target, with that target's adapters."""
@@ -182,18 +199,30 @@ def doc_lines(node,indent=''):
     if remarks:lines+=(['']+remarks.split('\n') if lines else remarks.split('\n'))
     return [indent+l if l else '' for l in lines]
 
-def macro_signature(source,sig):
-    """A macro function's signature as its source declares it, or sig for any other member: Haxe's description types a macro's arguments
-    and result as Dynamic on a target. Its ExprOf<T> is shown as the T the program gets, and a bare Expr, which gives the program nothing,
-    as Void."""
-    name=sig.split('(')[0].split()[-1]
-    m=re.search(r'^\s*(?:public\s+)?(static\s+)?macro\s+function\s+'+re.escape(name)+r'\s*(\(.*?\))\s*:\s*([\w.<>]+)',source,re.M|re.S)
-    if not m:return sig
-    result=re.fullmatch(r'ExprOf<(?:[\w]+\.)*(\w+)>',m.group(3))
-    shown=result.group(1) if result else 'Void' if m.group(3)=='Expr' else m.group(3)
-    # An argument's ExprOf<T> is the T the program passes.
-    args=re.sub(r'ExprOf<((?:[^<>]|<[^<>]*>)*)>',lambda a:a.group(1),' '.join(m.group(2).split()))
-    return f'{m.group(1) or ""}macro function {name}{args}:{shown}'
+def macro_signatures():
+    """Every macro function's signature, {(class, name): signature}, as declared: the description gives a macro function no line and types
+    its arguments as Dynamic, so the classes with a static of no line are compiled once more with tools/haxe/Fields.hx's build macro,
+    which reads their fields as the compiler parsed them. Its ExprOf<T> arguments are shown as the T the program passes and its result
+    as the T the program gets, a bare Expr, which gives the program nothing, as Void."""
+    root=ET.parse(OUT/'xml/js.xml').getroot()
+    classes=sorted(c.get('path') for c in root if c.tag=='class' and c.get('interface')!='1' and (c.get('path') or '').startswith('helix.')
+                   and any(f.get('static')=='1' and f.get('set')=='method' and f.get('line') is None for f in c))
+    if not classes:return {}
+    fields=OUT/'xml/macro-fields.json'
+    subprocess.run(['haxe',*sum((['-lib',name] for name in pins.LIBRARIES),[]),*classes,'-cp',str(ROOT/'tools/haxe'),
+                    '--macro',f'Fields.write("{fields.as_posix()}", {json.dumps(classes)})','-D','doc-gen','--no-output','-js',str(OUT/'unused.js')],cwd=ROOT,check=True)
+    shown=lambda t:short_types(re.sub(r'^ExprOf<(.*)>$',r'\1',t or 'Dynamic'))
+    out={}
+    for f in json.loads(fields.read_text(encoding='utf-8')):
+        if not f['isMacro']:continue
+        args=', '.join(('?' if a['optional'] and not a['value'] else '')+a['name']+':'+shown(a['type'])+(f' = {a["value"]}' if a['value'] else '') for a in f['args'])
+        result='Void' if f['result'] in ('Expr',None) else shown(f['result'])
+        out[(f['owner'],f['name'])]=f'{"static " if f["isStatic"] else ""}macro function {f["name"]}({args}):{result}'
+    return out
+
+def short_types(text):
+    """A type's text with helix's types by their short names, as the reference writes them."""
+    return re.sub(r'\bhelix(?:\.\w+)*\.([A-Z]\w*)',r'\1',text)
 
 def member_lines(member,known,instance=()):
     """A public member as a Haxe signature and its doc, or None for a private one or the meta; instance names an abstract's properties,
@@ -242,42 +271,26 @@ def member_block(members):
             lines+=doc_lines(node_,'  ')
     return lines+['']
 
-# A member that only refuses to compile, naming a raylib function helix-ray doesn't have (helix.platform.macros.Build).
-REFUSAL=re.compile(r"^raylib's `(\w+)` \(([\w.]+)\): not in helix-ray yet")
-# A heading comment in a class's source, `// ---- Title ----`, naming the members after it (helix-ray's Raylib); the generator's markers
-# aren't headings.
-HEADING=re.compile(r'^\s*// ---- (.+?) ----\s*$')
-
-def headings(source):
-    """Each member's heading in a class's source: {name: heading}, for a member declared after a heading comment."""
-    found,current={},None
-    for line in source.splitlines():
-        h=HEADING.match(line)
-        if h:
-            current=None if h.group(1).startswith('generated by') else h.group(1)
-            continue
-        m=re.match(r'\s*(?:@:[\w.]+(?:\([^)]*\))?\s*)*(?:public\s+|static\s+|inline\s+|macro\s+|final\s+)*(?:function|var|final)\s+(\w+)',line)
-        if m and current and m.group(1) not in found:found[m.group(1)]=current
-    return found
-
-def sectioned(members,source=''):
-    """A class's members: in one block, or, when its source heads them by section (helix-ray's Raylib), a block under each heading, and the
-    members that only refuse to compile as a list of names by header."""
-    named=headings(source)
-    if not named:return member_block(members)
-    groups={};order=[];refused={}
+def sectioned(members,layout=None):
+    """A class's members: in one block, or, when helix-ray's generator lays the class out (tools/gen_raylib.py, a facade), a block under
+    each heading, and the members that refuse to compile as lists of names, those helix-ray won't have apart from those it hasn't yet."""
+    if not layout:return member_block(members)
+    named,refused=layout
+    skipped={n for kind in refused.values() for n in kind}
+    groups={};order=[]
     for sig,d,n in members:
-        m=REFUSAL.match(d or '')
-        if m:
-            refused.setdefault(m.group(2),[]).append(m.group(1));continue
+        if n.tag in skipped:continue
         key=named.get(n.tag,'')
         if key not in groups:groups[key]=[];order.append(key)
         groups[key].append((sig,d,n))
     lines=[]
     for key in order:lines+=([f'### {key}',''] if key else [])+member_block(groups[key])
-    if refused:
-        lines+=['### Not in helix-ray yet','','Each of these is raylib\'s name, and a call to it doesn\'t compile, saying so.','']
-        for header in sorted(refused):lines+=[f'From `{header}`: '+', '.join(f'`{n}`' for n in refused[header])+'.','']
+    if refused['unsupported']:
+        lines+=['### Not supported in helix-ray','','Each of these is raylib\'s name, and a call to it doesn\'t compile, saying why and what to use instead.','',
+                ', '.join(f'`{n}`' for n in refused['unsupported'])+'.','']
+    if refused['unimplemented']:
+        lines+=['### Not in helix-ray yet','','Each of these is raylib\'s name, and a call to it doesn\'t compile, saying so.','',
+                ', '.join(f'`{n}`' for n in refused['unimplemented'])+'.','']
     return lines
 
 def merged(js,cpp,output):
@@ -333,8 +346,7 @@ def markdown(xml,native=frozenset()):
             # An abstract's property is the value's when its accessor takes the value (this).
             instance={c.tag for c in body if c.tag in properties and any((a.tag==f'get_{c.tag}' or a.tag==f'set_{c.tag}') and len(a) and (a[0].get('a') or '').split(':')[0]=='this' for a in body)} if node.tag=='abstract' else set()
             members=[m for m in (member_lines(c,known,instance) for c in body if c.tag not in enum and not (c.tag[:4] in ('get_','set_') and c.tag[4:] in properties)) if m]
-            text=(ROOT/source).read_text(encoding='utf-8') if (ROOT/source).is_file() else ''
-            members=[(macro_signature(text,sig) if 'macro' in text else sig,d,n) for sig,d,n in members]
+            members=[(MACROS.get((path,n.tag),sig),d,n) for sig,d,n in members]
             members.sort(key=lambda m:0 if m[0].split('(')[0].endswith(' new') else 1)
             # A @:structInit class is written as an object where one is expected, not constructed: shown as that object, each field with
             # its default.
@@ -343,7 +355,7 @@ def markdown(xml,native=frozenset()):
                 fields=[n+':'+type_text(k[0] if n.startswith('?') and k.get('path')=='Null' and len(k) else k,known) for n,k in zip(names,list(f)[:-1])]
                 lines+=['Written as an object where one is expected; a field marked `?` may be left out, for its default:','','```haxe','{'+', '.join(fields)+'}','```','']
                 members=[(sig+''.join(f' = {v[0].text}' for meta in n.findall('meta') for v in meta if v.get('n')==':value' and len(v)),d,n) for sig,d,n in members if not sig.split('(')[0].endswith(' new')]
-            if members:lines+=sectioned(members,text)
+            if members:lines+=sectioned(members,LAYOUT.get(path))
         elif node.tag=='enum':
             for c in node:
                 if c.tag in ('haxe_doc','meta'):continue
@@ -395,6 +407,10 @@ def generate(check=False):
     if not check and not (ROOT/'build/haxelib/dox'/version.replace('.',',')).is_dir():subprocess.run(['haxelib','--always','install','dox',version],env=env,check=True,stdout=subprocess.DEVNULL)
     if OUT.exists() and not check:shutil.rmtree(OUT)
     describe('js');describe('cpp')
+    global MACROS,LAYOUT
+    MACROS=macro_signatures()
+    import gen_raylib
+    LAYOUT=gen_raylib.layout()
     same_on_both(OUT/'xml/js.xml',OUT/'xml/cpp.xml')
     merged(OUT/'xml/js.xml',OUT/'xml/cpp.xml',OUT/'xml/api.xml')
     native={p for p in public_types(OUT/'xml/cpp.xml') if adapter(p)}
