@@ -2,6 +2,7 @@ package helix.platform.adapters.window.dom;
 
 import helix.platform.IWindow;
 import helix.platform.Orientation;
+import helix.platform.adapters.shared.dom.DomActivation;
 import helix.platform.adapters.shared.dom.DomPage;
 import js.Browser;
 import js.html.CanvasElement;
@@ -161,37 +162,12 @@ class DomWindowAdapter implements IWindow {
 			else
 				granted(null);
 		};
-		// Going fullscreen wants a fresh press, and a phone's tap counts only as its finger lifts: asked from a frame (a game's update) as
-		// the finger lands, it would be refused. With no fresh press now, it's asked inside the player's next lift, click or key.
-		var activation:Dynamic = js.Syntax.code("navigator.userActivation");
-		if (enabled && activation != null && !activation.isActive)
-			askAtNextPress(ask);
+		// Going fullscreen wants a fresh press; leaving it doesn't.
+		if (enabled)
+			DomActivation.ask(ask);
 		else
 			ask();
 		return true;
-	}
-
-	// What's waiting to be asked at the next press (askAtNextPress), and the listener that asks it.
-	var waitingAsk:Null<Void->Void>;
-	var pressListener:Null<Dynamic->Void>;
-
-	// Asks once, inside the next lift, click or key: the events a browser counts as a press. A later ask replaces one still waiting.
-	function askAtNextPress(ask:Void->Void):Void {
-		waitingAsk = ask;
-		if (pressListener != null)
-			return;
-		var window:Dynamic = Browser.window;
-		pressListener = _ -> {
-			for (name in ["pointerup", "touchend", "click", "keydown"])
-				window.removeEventListener(name, pressListener, true);
-			pressListener = null;
-			var then = waitingAsk;
-			waitingAsk = null;
-			if (then != null)
-				then();
-		};
-		for (name in ["pointerup", "touchend", "click", "keydown"])
-			window.addEventListener(name, pressListener, true);
 	}
 
 	public var visible(get, never):Bool;

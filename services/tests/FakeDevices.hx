@@ -1,5 +1,6 @@
 import helix.platform.IGamepads;
 import helix.platform.IKeyboard;
+import helix.platform.CursorShape;
 import helix.platform.IMouse;
 import helix.platform.ITilt;
 import helix.platform.ITouch;
@@ -9,6 +10,52 @@ import helix.platform.PadButton;
 /** Stands in for the platform's keyboard, mouse, touch, gamepads and tilt in the services' tests: the pads' axes set by the test, and whether
 	tilt access is held. */
 class FakeDevices implements IKeyboard implements IMouse implements ITouch implements IGamepads implements ITilt {
+	/** Gets or sets whether the cursor shows. */
+	public var cursorVisible(get, set):Bool;
+
+	var visible = true;
+
+	function get_cursorVisible():Bool
+		return visible;
+
+	function set_cursorVisible(on:Bool):Bool
+		return visible = on;
+
+	/** Gets or sets the cursor's shape. */
+	public var cursorShape(get, set):CursorShape;
+
+	var shape = Arrow;
+
+	function get_cursorShape():CursorShape
+		return shape;
+
+	function set_cursorShape(to:CursorShape):CursorShape
+		return shape = to;
+
+	/** Gets whether the mouse is locked: as last asked, granted at once. */
+	public var locked(get, never):Bool;
+
+	var held = false;
+
+	function get_locked():Bool
+		return held;
+
+	/** Locks or lets go of the mouse at once. */
+	public function requestLock(locked:Bool, ?done:Void->Void, ?failed:String->Void):Bool {
+		held = locked;
+		if (done != null)
+			done();
+		return true;
+	}
+
+	/** Returns true: the fake's cursor moves. */
+	public function canSetPosition():Bool
+		return true;
+
+	/** Records nothing and says it moved. */
+	public function setPosition(x:Float, y:Float):Bool
+		return true;
+
 	/** Gets the pads' axes, slot * PadAxis.COUNT + axis. */
 	public final axes = [for (_ in 0...4 * PadAxis.COUNT) 0.];
 

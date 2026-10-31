@@ -667,10 +667,16 @@ final events:Sdl3EventsAdapter
 
 Provides `IMouse` in a browser page: the mouse's and a pen's buttons, moves and wheel over the canvas, in its framebuffer pixels.
 
-The canvas keeps a pressed mouse until it is let go, so a drag out of it still arrives. Its context menu is kept from showing.
+The canvas keeps a pressed mouse until it is let go, so a drag out of it still arrives. Its context menu is kept from showing. The cursor is the canvas's CSS cursor, and the lock is the browser's pointer lock on the canvas.
 
 ```haxe
 function new(options:DomMouseAdapterOptions)
+var cursorVisible(get, set):Bool
+var cursorShape(get, set):CursorShape
+var locked(get, never):Bool
+function requestLock(locked:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
+function canSetPosition():Bool
+function setPosition(x:Float, y:Float):Bool
 function dispose():Void
 ```
 
@@ -699,10 +705,16 @@ final events:DomEventsAdapter
 
 *class*, native (cpp) in [`platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapter.hx`](../../platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapter.hx), `import helix.platform.adapters.mouse.sdl3.Sdl3MouseAdapter;`, implements `IMouse`
 
-Provides `IMouse` on SDL3, natively: the mouse's and a pen's buttons, moves and wheel over the window, in framebuffer pixels. SDL's mouse made of a touch is passed over.
+Provides `IMouse` on SDL3, natively: the mouse's and a pen's buttons, moves and wheel over the window, in framebuffer pixels. SDL's mouse made of a touch is passed over. The cursor is SDL's system cursor of each shape, and the lock is SDL's relative mouse mode.
 
 ```haxe
 function new(options:Sdl3MouseAdapterOptions)
+var cursorVisible(get, set):Bool
+var cursorShape(get, set):CursorShape
+var locked(get, never):Bool
+function requestLock(locked:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
+function canSetPosition():Bool
+function setPosition(x:Float, y:Float):Bool
 function dispose():Void
 ```
 

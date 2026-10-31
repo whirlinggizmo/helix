@@ -98,7 +98,15 @@ interface IKeyboard {
 	function dispose():Void;
 }
 
-interface IMouse { function dispose():Void; }    // a pen counts as the mouse
+interface IMouse {                             // a pen counts as the mouse
+	var cursorVisible(get, set):Bool;             // hidden either way while locked
+	var cursorShape(get, set):CursorShape;        // the system's cursor of each shape
+	var locked(get, never):Bool;                  // cursor hidden and held; moves go on from where it was, past the edges
+	function requestLock(locked:Bool, ?done:Void->Void, ?failed:String->Void):Bool; // a page: soon after a press, else at the next; Escape lets go
+	function canSetPosition():Bool;               // false in a page
+	function setPosition(x:Float, y:Float):Bool;  // framebuffer pixels; a MouseMove there at the next poll
+	function dispose():Void;
+}
 interface ITouch { function dispose():Void; }    // a finger is never the mouse
 
 interface IGamepads {
@@ -150,8 +158,9 @@ enum Event {
   `poll` drains `SDL_PollEvent` into it, and the device adapters only say which of SDL's events are wanted.
 - The first press is heard without a keyboard, mouse or touch adapter: in a page a listener on the window, ahead of the page's elements,
   until it comes; natively SDL's key, mouse button and finger-lift events stay on until it comes.
-- What the adapters number, they name: `Key` (physical keys), `MouseButton`, `PadButton` (the W3C standard gamepad's buttons: the face
-  buttons by position, the shoulders, the triggers as 6 and 7, back and start, the stick clicks, the pad, guide), `PadAxis`.
+- What the adapters number, they name: `Key` (physical keys), `MouseButton`, `CursorShape` (the system cursors of each kind),
+  `PadButton` (the W3C standard gamepad's buttons: the face buttons by position, the shoulders, the triggers as 6 and 7, back and start,
+  the stick clicks, the pad, guide), `PadAxis`.
 - Pad buttons: natively a button pressed and let go between two polls arrives as both events, in order, though its state reads up; a
   page reads its pads only at each poll (the Gamepad API has no events), so it sees a press only if the button is down then. Natively
   the Guide button's release arrives no sooner than a quarter second after its press: SDL holds it back that long. A trigger's analog

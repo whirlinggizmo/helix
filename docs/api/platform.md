@@ -54,6 +54,22 @@ function toString():String
 
 - `toString`: Returns the value's name as written (None, Back): what Std.string, interpolation and trace show.
 
+## CursorShape
+
+*abstract* in [`platform/src/helix/platform/CursorShape.hx`](../../platform/src/helix/platform/CursorShape.hx), `import helix.platform.CursorShape;`
+
+Specifies the cursor's shape over the canvas or window (`IMouse.cursorShape`): the system's own cursor of each kind.
+
+Values: `Arrow`, `Text`, `Crosshair`, `Pointer`, `ResizeHorizontal`, `ResizeVertical`, `ResizeDiagonalDown`, `ResizeDiagonalUp`, `Move`, `NotAllowed`, `Wait`, `Progress`.
+
+```haxe
+static final all(default, null):Array<CursorShape>
+function toString():String
+```
+
+- `all`: Every shape.
+- `toString`: Returns the value's name as written (Arrow, Text): what Std.string, interpolation and trace show.
+
 ## DepthTest
 
 *abstract* in [`platform/src/helix/platform/DepthTest.hx`](../../platform/src/helix/platform/DepthTest.hx), `import helix.platform.DepthTest;`
@@ -877,15 +893,36 @@ function dispose():Void
 
 *interface* in [`platform/src/helix/platform/IMouse.hx`](../../platform/src/helix/platform/IMouse.hx), `import helix.platform.IMouse;`
 
-Defines the mouse: `MouseMove`, `MouseDown`, `MouseUp`, `MouseLeave` and `Wheel` in `IEvents.events` while it exists.
+Defines the mouse: `MouseMove`, `MouseDown`, `MouseUp`, `MouseLeave` and `Wheel` in `IEvents.events` while it exists, and the cursor over the canvas or window.
 
 Its adapter is constructed over the events adapter, whose `poll` delivers its events. A pen counts as the mouse.
 
 ```haxe
+var cursorVisible(get, set):Bool
+var cursorShape(get, set):CursorShape
+var locked(get, never):Bool
+function requestLock(locked:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
+function canSetPosition():Bool
+function setPosition(x:Float, y:Float):Bool
 function dispose():Void
 ```
 
-- `dispose`: Stops listening to the mouse.
+- `cursorVisible`: Gets or sets whether the cursor shows over the canvas or window. Defaults to true. A locked mouse's cursor is hidden either way.
+- `cursorShape`: Gets or sets the cursor's shape while it shows. Defaults to `Arrow`.
+- `locked`: Gets whether the mouse is locked: its cursor hidden and held still, while its moves keep arriving. A locked mouse's `MouseMove` positions go on from where it was locked, by each move, past the canvas's or window's edges.
+- `requestLock`: Asks for the mouse locked, for looking around with it, or let go.
+  - `locked`: True to lock it, false to let it go.
+  - `done`: Optional. Called once it is granted.
+  - `failed`: Optional. Receives the reason when it is refused.
+  - returns: Whether it asked: false where the mouse can't be locked.
+
+  `locked` reflects the result once the request completes. Natively the answer comes during the call. A page locks only soon after a key press, click or tap; without one, it asks at the player's next. In a page, the player can let it go too, with Escape.
+- `canSetPosition`: Returns whether `setPosition` can move the cursor. It is false in a page, where the browser doesn't let a program move it.
+- `setPosition`: Moves the cursor to a place over the canvas or window, and a `MouseMove` there arrives at the next poll.
+  - `x`: The place across, in framebuffer pixels from the left.
+  - `y`: The place down, in framebuffer pixels from the top.
+  - returns: Whether it moved: false where it can't (`canSetPosition`).
+- `dispose`: Stops listening to the mouse, and shows the cursor as the system has it.
 
 ## IPollable
 

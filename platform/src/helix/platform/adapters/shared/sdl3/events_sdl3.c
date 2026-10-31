@@ -43,6 +43,35 @@ static int count,read_at,text_started,text_wanted;
    never told). */
 static int wanted,unlocked,applied=-1;
 
+/* Where the mouse last was, in framebuffer pixels; while locked, where its moves have taken it. */
+static float mouse_x,mouse_y;
+static int locked_mouse(void){SDL_Window *w=(SDL_Window*)helix_sdl3_window();return w&&SDL_GetWindowRelativeMouseMode(w);}
+
+/* The cursor's shapes, made by SDL as first shown: CursorShape's order. */
+static SDL_Cursor *cursors[12];
+static const SDL_SystemCursor shapes[12]={SDL_SYSTEM_CURSOR_DEFAULT,SDL_SYSTEM_CURSOR_TEXT,SDL_SYSTEM_CURSOR_CROSSHAIR,SDL_SYSTEM_CURSOR_POINTER,
+ SDL_SYSTEM_CURSOR_EW_RESIZE,SDL_SYSTEM_CURSOR_NS_RESIZE,SDL_SYSTEM_CURSOR_NWSE_RESIZE,SDL_SYSTEM_CURSOR_NESW_RESIZE,SDL_SYSTEM_CURSOR_MOVE,
+ SDL_SYSTEM_CURSOR_NOT_ALLOWED,SDL_SYSTEM_CURSOR_WAIT,SDL_SYSTEM_CURSOR_PROGRESS};
+void helix_mouse_set_cursor_visible(int on){if(on)SDL_ShowCursor();else SDL_HideCursor();}
+int helix_mouse_cursor_visible(void){return SDL_CursorVisible();}
+void helix_mouse_set_cursor_shape(int shape){
+ if(shape<0||shape>=12)return;
+ if(!cursors[shape])cursors[shape]=SDL_CreateSystemCursor(shapes[shape]);
+ if(cursors[shape])SDL_SetCursor(cursors[shape]);
+}
+int helix_mouse_set_locked(int on){SDL_Window *w=(SDL_Window*)helix_sdl3_window();return w&&SDL_SetWindowRelativeMouseMode(w,on!=0);}
+int helix_mouse_locked(void){return locked_mouse();}
+int helix_mouse_warp(float x,float y){
+ SDL_Window *w=(SDL_Window*)helix_sdl3_window();if(!w)return 0;
+ float d=SDL_GetWindowPixelDensity(w);if(d<=0)d=1;
+ SDL_WarpMouseInWindow(w,x/d,y/d);return 1;
+}
+void helix_mouse_dispose(void){
+ SDL_Window *w=(SDL_Window*)helix_sdl3_window();if(w)SDL_SetWindowRelativeMouseMode(w,false);
+ SDL_SetCursor(SDL_GetDefaultCursor());SDL_ShowCursor();
+ for(int i=0;i<12;i++)if(cursors[i]){SDL_DestroyCursor(cursors[i]);cursors[i]=NULL;}
+}
+
 /* A full frame drops its newest events: a frame that long is already lost. */
 static void add(int kind,int code,int value,float x,float y){if(count<1024)records[count++]=(record){kind,code,value,x,y};}
 
@@ -126,11 +155,16 @@ static void translate(SDL_Event *e){
    if(!(wanted&HELIX_EVENTS_MOUSE))break;
    int b=e->button.button==SDL_BUTTON_LEFT?0:e->button.button==SDL_BUTTON_RIGHT?1:e->button.button==SDL_BUTTON_MIDDLE?2:-1;
    float d=density(e->button.windowID);
-   if(b>=0)add(e->type==SDL_EVENT_MOUSE_BUTTON_DOWN?HELIX_EVENTS_MOUSE_DOWN:HELIX_EVENTS_MOUSE_UP,b,0,e->button.x*d,e->button.y*d);
+   /* A locked mouse's button is where its moves have taken it, the cursor being held still. */
+   if(!locked_mouse()){mouse_x=e->button.x*d;mouse_y=e->button.y*d;}
+   if(b>=0)add(e->type==SDL_EVENT_MOUSE_BUTTON_DOWN?HELIX_EVENTS_MOUSE_DOWN:HELIX_EVENTS_MOUSE_UP,b,0,mouse_x,mouse_y);
    break;}
   case SDL_EVENT_MOUSE_MOTION:{
    if(e->motion.which==SDL_TOUCH_MOUSEID||!(wanted&HELIX_EVENTS_MOUSE))break;
-   float d=density(e->motion.windowID);add(HELIX_EVENTS_MOUSE_MOVE,0,0,e->motion.x*d,e->motion.y*d);
+   float d=density(e->motion.windowID);
+   /* A locked mouse moves on from where it was by each move's own distance, past the window's edges. */
+   if(locked_mouse()){mouse_x+=e->motion.xrel*d;mouse_y+=e->motion.yrel*d;}else{mouse_x=e->motion.x*d;mouse_y=e->motion.y*d;}
+   add(HELIX_EVENTS_MOUSE_MOVE,0,0,mouse_x,mouse_y);
    break;}
   /* SDL's wheel has right and away positive; natural scrolling is already applied. */
   case SDL_EVENT_MOUSE_WHEEL:if(e->wheel.which!=SDL_TOUCH_MOUSEID&&(wanted&HELIX_EVENTS_MOUSE))add(HELIX_EVENTS_WHEEL,0,0,e->wheel.x,e->wheel.y);break;

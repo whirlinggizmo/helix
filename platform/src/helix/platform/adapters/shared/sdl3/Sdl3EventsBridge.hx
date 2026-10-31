@@ -37,6 +37,13 @@ extern class Sdl3EventsBridge {
 	@:native("helix_events_value") static function value():Int;
 	@:native("helix_events_x") static function x():cpp.Float32;
 	@:native("helix_events_y") static function y():cpp.Float32;
+	@:native("helix_mouse_set_cursor_visible") static function setCursorVisible(on:Int):Void;
+	@:native("helix_mouse_cursor_visible") static function cursorVisible():Int;
+	@:native("helix_mouse_set_cursor_shape") static function setCursorShape(shape:Int):Void;
+	@:native("helix_mouse_set_locked") static function setLocked(on:Int):Int;
+	@:native("helix_mouse_locked") static function locked():Int;
+	@:native("helix_mouse_warp") static function warp(x:cpp.Float32, y:cpp.Float32):Int;
+	@:native("helix_mouse_dispose") static function disposeMouse():Void;
 	@:native("helix_pad_connected") static function padConnected(slot:Int):Int;
 	@:native("helix_pad_name") static function padName(slot:Int):cpp.ConstCharStar;
 	@:native("helix_pad_button") static function padButton(slot:Int, button:Int):Int;
