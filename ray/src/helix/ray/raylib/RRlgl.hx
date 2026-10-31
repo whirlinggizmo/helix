@@ -69,7 +69,7 @@ class RRlgl {
 		@param y  The y offset.
 		@param z  The z offset. */
 	static function rlTranslatef(x:Float, y:Float, z:Float):Void {
-		apply(new Matrix3D().makeTranslation(x, y, z));
+		apply(Matrix3D.fromTranslation(x, y, z));
 	}
 
 	/** Turns about an axis before the current matrix.
@@ -79,7 +79,7 @@ class RRlgl {
 		@param y  Its y.
 		@param z  Its z. */
 	static function rlRotatef(angle:Float, x:Float, y:Float, z:Float):Void {
-		apply(new Matrix3D().makeRotation(x, y, z, angle * DEG2RAD));
+		apply(Matrix3D.fromRotation(x, y, z, angle * DEG2RAD));
 	}
 
 	/** Scales before the current matrix.
@@ -88,7 +88,7 @@ class RRlgl {
 		@param y  The y scale.
 		@param z  The z scale. */
 	static function rlScalef(x:Float, y:Float, z:Float):Void {
-		apply(new Matrix3D().makeScale(x, y, z));
+		apply(Matrix3D.fromScale(x, y, z));
 	}
 
 	/** Applies a matrix before the current one.
@@ -110,7 +110,7 @@ class RRlgl {
 		@param znear  The near plane.
 		@param zfar  The far plane. */
 	static function rlOrtho(left:Float, right:Float, bottom:Float, top:Float, znear:Float, zfar:Float):Void {
-		apply(new Matrix3D().makeOrthographic(left, right, bottom, top, znear, zfar));
+		apply(Matrix3D.fromOrthographic(left, right, bottom, top, znear, zfar));
 	}
 
 	/** Applies a perspective projection before the current matrix, by its near plane's edges.
@@ -122,7 +122,7 @@ class RRlgl {
 		@param znear  The near plane.
 		@param zfar  The far plane. */
 	static function rlFrustum(left:Float, right:Float, bottom:Float, top:Float, znear:Float, zfar:Float):Void {
-		apply(new Matrix3D().makeFrustum(left, right, bottom, top, znear, zfar));
+		apply(Matrix3D.fromFrustum(left, right, bottom, top, znear, zfar));
 	}
 
 	/** Returns the view: the screen's, `BeginMode2D`'s or `BeginMode3D`'s.
@@ -1235,7 +1235,7 @@ class RRlgl {
 
 	// Applies a matrix before the current one, as rlgl multiplies them.
 	static function apply(m:Matrix3D):Void {
-		set(new Matrix3D().compose(m, current()));
+		set(Matrix3D.compose(m, current()));
 	}
 
 	static function texture():Int {

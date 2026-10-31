@@ -87,11 +87,11 @@ class RText {
 		@param tint  The color. */
 	static function DrawTextPro(font:Font, text:String, position:Vector2, origin:Vector2, rotation:Float, fontSize:Float, spacing:Float, tint:Color):Void {
 		var frame = Runtime.frame, view = frame.view;
-		var m = new Matrix3D().makeTranslation(-origin.x, -origin.y, 0);
-		m = new Matrix3D().compose(m, new Matrix3D().makeRotation(0, 0, 1, rotation * DEG2RAD));
-		m = new Matrix3D().compose(m, new Matrix3D().makeTranslation(position.x, position.y, 0));
+		var m = Matrix3D.fromTranslation(-origin.x, -origin.y, 0);
+		m = Matrix3D.compose(m, Matrix3D.fromRotation(0, 0, 1, rotation * DEG2RAD));
+		m = Matrix3D.compose(m, Matrix3D.fromTranslation(position.x, position.y, 0));
 		frame.cut();
-		frame.view = new Matrix3D().compose(m, view);
+		frame.view = Matrix3D.compose(m, view);
 		DrawTextEx(font, text, new Vector2(), fontSize, spacing, tint);
 		frame.cut();
 		frame.view = view;

@@ -18,7 +18,7 @@ class Geometry2D {
 		@param dy  Its end y.
 		@param out  Optional. Set to where they cross, when they do.
 		@return  True when they cross, their ends included. */
-	public static function intersectSegments(ax:Float, ay:Float, bx:Float, by:Float, cx:Float, cy:Float, dx:Float, dy:Float, ?out:Point2D):Bool {
+	public static function intersectSegments(ax:Float, ay:Float, bx:Float, by:Float, cx:Float, cy:Float, dx:Float, dy:Float, ?out:Vector2D):Bool {
 		var div = (dy - cy) * (bx - ax) - (dx - cx) * (by - ay);
 		if (Math.abs(div) < EPSILON)
 			return false;

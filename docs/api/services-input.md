@@ -18,7 +18,7 @@ actions.bind("left", Keyboard(Left), Keyboard(A), Axis(0, LeftX, Negative));
 actions.bind("right", Keyboard(Right), Keyboard(D), Axis(0, LeftX, Positive));
 actions.bind("up", Keyboard(Up), Keyboard(W), Axis(0, LeftY, Negative));
 actions.bind("down", Keyboard(Down), Keyboard(S), Axis(0, LeftY, Positive));
-var move = new Point2D();
+var move = new Vector2D();
 // each frame:
 if (actions.isPressed("jump")) jump();
 actions.computeVector("left", "right", "up", "down", move);
@@ -37,7 +37,7 @@ function isPressed(name:String):Bool
 function isReleased(name:String):Bool
 function getValue(name:String):Float
 function getAxis(negative:String, positive:String):Float
-function computeVector(left:String, right:String, up:String, down:String, ?out:Point2D):Point2D
+function computeVector(left:String, right:String, up:String, down:String, ?out:Vector2D):Vector2D
 ```
 
 - `new`: Creates actions with nothing bound, over the devices the game made.
@@ -83,7 +83,7 @@ function computeVector(left:String, right:String, up:String, down:String, ?out:P
   - `right`: The action toward +x.
   - `up`: The action toward -y.
   - `down`: The action toward +y.
-  - `out`: Optional. The point to fill. A new point is created when omitted.
+  - `out`: Optional. The vector to fill. A new vector is created when omitted.
   - returns: The direction. Its x is `getAxis(left, right)` and its y is `getAxis(up, down)`, scaled down when longer than 1.
 
   A diagonal is no faster than a straight line, and a stick pushed partway stays partway.

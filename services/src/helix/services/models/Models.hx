@@ -122,7 +122,7 @@ class Models {
 		var out = [], all = file.meshes;
 		function visit(index:Int, parent:Matrix3D):Void {
 			var node = file.nodes[index];
-			var world = new Matrix3D().compose(node.transform, parent);
+			var world = Matrix3D.compose(node.transform, parent);
 			if (node.mesh >= 0)
 				for (primitive in all[node.mesh].primitives)
 					if (primitive.mode == 4)
@@ -149,8 +149,8 @@ class Models {
 		var turned:Null<Array<Float>> = null;
 		if (normals != null) {
 			var turn = new Matrix3D().copyFrom(world);
-			turn.invert();
-			turn.transpose();
+			turn.invert(turn);
+			turn.transpose(turn);
 			var v = turn.values;
 			turned = [];
 			for (i in 0...count) {

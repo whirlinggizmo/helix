@@ -8,7 +8,7 @@
 
 Represents an axis-aligned box in 2 dimensions: its least and greatest coordinate on each axis.
 
-A new box is empty (its least coordinates past its greatest), so expanding it by a first point makes it that point. Its space is its maker's.
+A new box is empty (its least coordinates past its greatest), so expanding it by a first point makes it that point. `set`, `copyFrom`, `makeEmpty` and `expand` change this box and return it. `union` and `intersection` write their result into an optional out, the last argument, and return it: a new box when it is omitted, this one left unchanged; the out may be this box or the other. Its space is its maker's.
 
 ```haxe
 function new()
@@ -25,7 +25,7 @@ var height(get, never):Float
 var centerX(get, never):Float
 var centerY(get, never):Float
 function expand(x:Float, y:Float):Bounds2D
-function union(other:Bounds2D):Bounds2D
+function union(other:Bounds2D, ?out:Bounds2D):Bounds2D
 function contains(x:Float, y:Float):Bool
 function intersection(other:Bounds2D, ?out:Bounds2D):Bounds2D
 function intersects(other:Bounds2D):Bool
@@ -56,16 +56,17 @@ function intersects(other:Bounds2D):Bool
   - `x`: The point's x coordinate.
   - `y`: The point's y coordinate.
   - returns: This box.
-- `union`: Grows the box to hold another box too.
+- `union`: Returns the smallest box holding this box and another.
   - `other`: The other box.
-  - returns: This box.
+  - `out`: Optional. The box to fill; a new one when omitted. It may be this box or the other.
+  - returns: The union.
 
-  An empty box leaves it unchanged.
+  An empty box adds nothing: the union with one is the other box.
 - `contains`: Returns whether a point is in the box, its edges included.
   - `x`: The point's x coordinate.
   - `y`: The point's y coordinate.
   - returns: True when the point is in the box; false for an empty box.
-- `intersection`: Returns where the box and another overlap: a box with no width or height where they only touch, an empty one where they don't.
+- `intersection`: Returns where this box and another overlap: a box with no width or height where they only touch, an empty one where they don't.
   - `other`: The other box.
   - `out`: Optional. The box to fill; a new one when omitted. It may be this box or the other.
   - returns: The overlap.
@@ -79,7 +80,7 @@ function intersects(other:Bounds2D):Bool
 
 Represents an axis-aligned box in 3 dimensions: its least and greatest coordinate on each axis.
 
-A new box is empty (its least coordinates past its greatest), so expanding it by a first point makes it that point. Its space is its maker's.
+A new box is empty (its least coordinates past its greatest), so expanding it by a first point makes it that point. `set`, `copyFrom`, `makeEmpty` and `expand` change this box and return it. `union` writes its result into an optional out, the last argument, and returns it: a new box when it is omitted, this one left unchanged; the out may be this box or the other. Its space is its maker's.
 
 ```haxe
 function new()
@@ -100,7 +101,7 @@ var centerX(get, never):Float
 var centerY(get, never):Float
 var centerZ(get, never):Float
 function expand(x:Float, y:Float, z:Float):Bounds3D
-function union(other:Bounds3D):Bounds3D
+function union(other:Bounds3D, ?out:Bounds3D):Bounds3D
 function contains(x:Float, y:Float, z:Float):Bool
 function intersects(other:Bounds3D):Bool
 ```
@@ -137,11 +138,12 @@ function intersects(other:Bounds3D):Bool
   - `y`: The point's y coordinate.
   - `z`: The point's z coordinate.
   - returns: This box.
-- `union`: Grows the box to hold another box too.
+- `union`: Returns the smallest box holding this box and another.
   - `other`: The other box.
-  - returns: This box.
+  - `out`: Optional. The box to fill; a new one when omitted. It may be this box or the other.
+  - returns: The union.
 
-  An empty box leaves it unchanged.
+  An empty box adds nothing: the union with one is the other box.
 - `contains`: Returns whether a point is in the box, its faces included.
   - `x`: The point's x coordinate.
   - `y`: The point's y coordinate.
@@ -150,6 +152,80 @@ function intersects(other:Bounds3D):Bool
 - `intersects`: Returns whether the box and another overlap, touching faces included.
   - `other`: The other box.
   - returns: True when they overlap; false when either is empty.
+
+## Camera3D
+
+*class* in [`math/src/helix/math/Camera3D.hx`](../../math/src/helix/math/Camera3D.hx), `import helix.math.Camera3D;`
+
+Represents a view of a 3D world: where it is and which way it looks (a `Transform3D`), and how it projects what it sees.
+
+It is steered by its transform as any object is: `transform.moveForward`, `yaw`, `pitch`, `orbit`, `lookAt`. Its scale is ignored, as a scaled view would stretch what it shows. The projection is perspective unless `orthographic` is set. The aspect, width over height, is passed to each call that projects rather than kept, since it changes with the window.
+
+```haxe
+var camera = new Camera3D();
+camera.transform.position.set(0, 2, 8);
+camera.transform.lookAt(0, 0, 0);
+var view = camera.computeViewMatrix(viewScratch);
+var projection = camera.computeProjectionMatrix(width / height, projectionScratch);
+```
+
+```haxe
+function new()
+final transform:Transform3D
+var orthographic:Bool
+var fieldOfView:Float
+var orthographicHeight:Float
+var near:Float
+var far:Float
+function copyFrom(other:Camera3D):Camera3D
+function computeViewMatrix(?out:Matrix3D):Matrix3D
+function computeProjectionMatrix(aspect:Float, ?out:Matrix3D):Matrix3D
+function computeFrustum(aspect:Float, ?out:Frustum3D):Frustum3D
+function project(x:Float, y:Float, z:Float, aspect:Float, ?out:Vector3D):Vector3D
+function unprojectDirection(viewX:Float, viewY:Float, aspect:Float, ?out:Vector3D):Vector3D
+function unprojectOrigin(viewX:Float, viewY:Float, aspect:Float, ?out:Vector3D):Vector3D
+```
+
+- `new`: Creates a camera at the origin looking down -z.
+- `transform`: Gets where it is and which way it looks: down its -z, its +y up.
+- `orthographic`: Gets or sets a value indicating whether it projects without perspective, things the same size however far; false until set.
+- `fieldOfView`: Gets or sets the field of view, top to bottom, in radians, for a perspective projection; pi / 4 until set.
+- `orthographicHeight`: Gets or sets how much it shows top to bottom, in world units, for an orthographic projection; 10 until set.
+- `near`: Gets or sets the nearest distance it shows, in world units; 0.1 until set.
+- `far`: Gets or sets the farthest distance it shows, in world units; 1000 until set.
+- `copyFrom`: Sets this camera to another's transform and projection.
+  - `other`: The camera to copy.
+  - returns: This camera.
+- `computeViewMatrix`: Returns the matrix that puts the world into the camera's space, its transform undone, its scale ignored.
+  - `out`: Optional. The matrix to write into; a new one when omitted.
+  - returns: The view matrix.
+- `computeProjectionMatrix`: Returns the matrix that projects the camera's space into GL's clip space (depth -1 to 1), which every helix-platform adapter takes.
+  - `aspect`: The view's width over its height.
+  - `out`: Optional. The matrix to write into; a new one when omitted.
+  - returns: The projection matrix.
+- `computeFrustum`: Returns what the camera sees, to test what is in view before drawing it.
+  - `aspect`: The view's width over its height.
+  - `out`: Optional. The frustum to write into; a new one when omitted.
+  - returns: The frustum, in world units.
+- `project`: Returns where a point in the world lands in the view, from -1 to 1 across and up, with its depth.
+  - `x`: The point's x, in world units.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - `aspect`: The view's width over its height.
+  - `out`: Optional. The vector to write into: x and y from -1 (left, bottom) to 1, z the depth from -1 (near) to 1 (far); a new one when omitted.
+  - returns: The point; outside -1 to 1 when it isn't in view.
+- `unprojectDirection`: Returns the direction from the camera through a point in the view, as a pointer's ray to pick with.
+  - `viewX`: The point across the view, from -1 (left) to 1 (right).
+  - `viewY`: The point up the view, from -1 (bottom) to 1 (top).
+  - `aspect`: The view's width over its height.
+  - `out`: Optional. The vector to write into: the direction, of length 1, in world units; a new one when omitted.
+  - returns: The direction. For a perspective camera the ray starts at its position; for an orthographic one at that point on its near plane (`unprojectOrigin`).
+- `unprojectOrigin`: Returns where the ray through a point in the view starts: the camera's position for a perspective camera, the point on its near plane for an orthographic one.
+  - `viewX`: The point across the view, from -1 (left) to 1 (right).
+  - `viewY`: The point up the view, from -1 (bottom) to 1 (top).
+  - `aspect`: The view's width over its height.
+  - `out`: Optional. The vector to write into, in world units; a new one when omitted.
+  - returns: The ray's start.
 
 ## Color
 
@@ -279,8 +355,8 @@ function getPoint(index:Int, axis:Int):Float
 function getX(t:Float):Float
 function getY(t:Float):Float
 function getZ(t:Float):Float
-function evaluate(t:Float, out:Array<Float>):Array<Float>
-function tangent(t:Float, out:Array<Float>):Array<Float>
+function computePosition(t:Float, ?out:Array<Float>):Array<Float>
+function computeTangent(t:Float, ?out:Array<Float>):Array<Float>
 var length(get, never):Float
 function getParameterAtDistance(distance:Float):Float
 ```
@@ -323,14 +399,14 @@ function getParameterAtDistance(distance:Float):Float
 - `getZ`: Returns the z coordinate at a parameter, as `getX` does.
   - `t`: The parameter: 0 at the start, 1 at the end.
   - returns: The z coordinate, or 0 in 2 dimensions.
-- `evaluate`: Finds the point at a parameter, every coordinate at once.
+- `computePosition`: Returns the position at a parameter, every coordinate at once.
   - `t`: The parameter: 0 at the start, 1 at the end.
-  - `out`: Receives x and y, and z in 3 dimensions.
-  - returns: out.
-- `tangent`: Finds the direction the curve heads at a parameter.
+  - `out`: Optional. The array to fill with x and y, and z in 3 dimensions; a new one when omitted.
+  - returns: The position.
+- `computeTangent`: Returns the direction the curve heads at a parameter.
   - `t`: The parameter: 0 at the start, 1 at the end.
-  - `out`: Receives the direction as a unit vector, x and y, and z in 3 dimensions; zeros where the curve doesn't move.
-  - returns: out.
+  - `out`: Optional. The array to fill with the direction as a unit vector, x and y, and z in 3 dimensions; zeros where the curve doesn't move. A new one when omitted.
+  - returns: The direction.
 - `length`: Gets the curve's length, measured along it in 16 straight pieces between each two points.
 - `getParameterAtDistance`: Returns the parameter at a distance along the curve from its start.
   - `distance`: The distance from the start.
@@ -365,6 +441,57 @@ static function transform(grid:Array<Float>, width:Int, height:Int):Void
 
   Cells start at 0 where distances are measured from, and large (1e20) everywhere else.
 
+## Frustum3D
+
+*class* in [`math/src/helix/math/Frustum3D.hx`](../../math/src/helix/math/Frustum3D.hx), `import helix.math.Frustum3D;`
+
+Represents what a view sees: six planes bounding a volume, from any view-projection matrix.
+
+It answers whether something is in view, so what isn't can be skipped before it is drawn: a camera's (`Camera3D.computeFrustum`), a light's that casts shadows, or a box dragged out to pick with. Each test errs toward "in view": something near a corner outside it may be counted in, but nothing in it is counted out.
+
+```haxe
+camera.computeFrustum(aspect, frustum);
+for (thing in things)
+if (frustum.intersectsBounds(thing.bounds))
+draw(thing);
+```
+
+```haxe
+function new()
+static function fromMatrix(viewProjection:Matrix3D, ?out:Frustum3D):Frustum3D
+final planes:Array<Float>
+function copyFrom(other:Frustum3D):Frustum3D
+function contains(x:Float, y:Float, z:Float):Bool
+function intersectsSphere(x:Float, y:Float, z:Float, radius:Float):Bool
+function intersectsBounds(bounds:Bounds3D):Bool
+```
+
+- `new`: Creates a frustum that holds everything until it is set from a matrix (`fromMatrix`).
+- `fromMatrix`: Returns the volume a view-projection matrix shows: what lands inside GL's clip space, -1 to 1 on each axis.
+  - `viewProjection`: The view matrix composed with the projection (`Matrix3D.compose(view, projection)`).
+  - `out`: Optional. The frustum to fill; a new one when omitted.
+  - returns: The frustum.
+- `planes`: Gets the planes' 24 numbers: left, right, bottom, top, near and far, each a, b, c and d, where a point (x, y, z) is on the inside when a x + b y + c z + d is 0 or more. Each plane's (a, b, c) is of length 1, so that sum is the distance from it.
+- `copyFrom`: Sets this frustum to another's planes.
+  - `other`: The frustum to copy.
+  - returns: This frustum.
+- `contains`: Returns whether a point is inside.
+  - `x`: The point's x, in the matrix's world units.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - returns: True when it is inside or on a plane.
+- `intersectsSphere`: Returns whether a sphere is at least partly inside.
+  - `x`: The center's x, in the matrix's world units.
+  - `y`: The center's y.
+  - `z`: The center's z.
+  - `radius`: The radius.
+  - returns: True when some of it may be inside.
+- `intersectsBounds`: Returns whether a box is at least partly inside.
+  - `bounds`: The box, in the matrix's world units.
+  - returns: True when some of it may be inside.
+
+  An empty box is never inside.
+
 ## Geometry2D
 
 *class* in [`math/src/helix/math/Geometry2D.hx`](../../math/src/helix/math/Geometry2D.hx), `import helix.math.Geometry2D;`
@@ -374,7 +501,7 @@ Provides tests on points, segments, triangles, polygons and circles in a plane, 
 Lines that are parallel within a ten-millionth (by the cross product of their directions) don't cross.
 
 ```haxe
-static function intersectSegments(ax:Float, ay:Float, bx:Float, by:Float, cx:Float, cy:Float, dx:Float, dy:Float, ?out:Point2D):Bool
+static function intersectSegments(ax:Float, ay:Float, bx:Float, by:Float, cx:Float, cy:Float, dx:Float, dy:Float, ?out:Vector2D):Bool
 static function isPointInTriangle(x:Float, y:Float, ax:Float, ay:Float, bx:Float, by:Float, cx:Float, cy:Float):Bool
 static function isPointInPolygon(x:Float, y:Float, points:Array<Float>):Bool
 static function getDistanceToSegment(x:Float, y:Float, ax:Float, ay:Float, bx:Float, by:Float):Float
@@ -660,74 +787,193 @@ static function easeInOutBounce(t:Float):Float
   - `t`: The fraction, 0 to 1.
   - returns: The eased fraction, 0 at 0 and 1 at 1.
 
+## Matrix2D
+
+*class* in [`math/src/helix/math/Matrix2D.hx`](../../math/src/helix/math/Matrix2D.hx), `import helix.math.Matrix2D;`
+
+Represents a 2D affine matrix: moving, turning, scaling and shearing points in 2 dimensions.
+
+It is the 3 x 3 matrix whose last row is 0, 0, 1, kept as its six other numbers as a canvas's `setTransform` and Flash's `Matrix` keep them: a point (x, y) goes to (a x + c y + tx, b x + d y + ty). Its operations follow helix-math's out rule: each writes into an optional out, last, and returns it; omitted, it makes a new matrix; given the matrix itself, it works in place. Rotations use `Trig`, so a matrix comes out the same on every target. Angles are radians, a positive one turning from +x toward +y, clockwise on screen where y grows downward.
+
+```haxe
+var model = Matrix2D.fromScale(2, 2);
+model.appendRotation(angle, model).appendTranslation(x, y, model);
+var onScreen = model.transformPoint(0, 0);
+```
+
+```haxe
+function new()
+static function fromTranslation(x:Float, y:Float, ?out:Matrix2D):Matrix2D
+static function fromScale(x:Float, y:Float, ?out:Matrix2D):Matrix2D
+static function fromRotation(radians:Float, ?out:Matrix2D):Matrix2D
+static function compose(first:Matrix2D, second:Matrix2D, ?out:Matrix2D):Matrix2D
+var a:Float
+var b:Float
+var c:Float
+var d:Float
+var tx:Float
+var ty:Float
+function set(a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Matrix2D
+function copyFrom(other:Matrix2D):Matrix2D
+function makeIdentity():Matrix2D
+function append(other:Matrix2D, ?out:Matrix2D):Matrix2D
+function prepend(other:Matrix2D, ?out:Matrix2D):Matrix2D
+function appendTranslation(x:Float, y:Float, ?out:Matrix2D):Matrix2D
+function appendScale(x:Float, y:Float, ?out:Matrix2D):Matrix2D
+function appendRotation(radians:Float, ?out:Matrix2D):Matrix2D
+function invert(?out:Matrix2D):Null<Matrix2D>
+function transformPoint(x:Float, y:Float, ?out:Vector2D):Vector2D
+function transformDirection(x:Float, y:Float, ?out:Vector2D):Vector2D
+function toMatrix3D(?out:Matrix3D):Matrix3D
+```
+
+- `new`: Creates the identity matrix.
+- `fromTranslation`: Returns a matrix that moves points.
+  - `x`: How far along x.
+  - `y`: How far along y.
+  - `out`: Optional. The matrix to write into; a new one when omitted.
+  - returns: The matrix.
+- `fromScale`: Returns a matrix that scales points from the origin.
+  - `x`: The scale along x.
+  - `y`: The scale along y.
+  - `out`: Optional. The matrix to write into; a new one when omitted.
+  - returns: The matrix.
+- `fromRotation`: Returns a matrix that turns points around the origin.
+  - `radians`: The angle; more than 0 turns from +x toward +y.
+  - `out`: Optional. The matrix to write into; a new one when omitted.
+  - returns: The matrix.
+- `compose`: Returns one matrix followed by another.
+  - `first`: The matrix applied first.
+  - `second`: The matrix applied after it.
+  - `out`: Optional. The matrix to write into; a new one when omitted.
+  - returns: The matrix.
+
+  Either may be the out.
+- `a`: Gets or sets how x scales x: the top left.
+- `b`: Gets or sets how x moves y.
+- `c`: Gets or sets how y moves x.
+- `d`: Gets or sets how y scales y.
+- `tx`: Gets or sets the translation's x.
+- `ty`: Gets or sets the translation's y.
+- `set`: Sets the six numbers.
+  - `a`: How x scales x.
+  - `b`: How x moves y.
+  - `c`: How y moves x.
+  - `d`: How y scales y.
+  - `tx`: The translation's x.
+  - `ty`: The translation's y.
+  - returns: This matrix.
+- `copyFrom`: Sets this matrix to another's numbers.
+  - `other`: The matrix to copy.
+  - returns: This matrix.
+- `makeIdentity`: Makes this the identity.
+  - returns: This matrix.
+- `append`: Returns this matrix followed by another.
+  - `other`: The matrix applied after this one.
+  - `out`: Optional. The matrix to write into, which may be this one or other; a new one when omitted.
+  - returns: The matrix.
+- `prepend`: Returns another matrix followed by this one.
+  - `other`: The matrix applied before this one.
+  - `out`: Optional. The matrix to write into, which may be this one or other; a new one when omitted.
+  - returns: The matrix.
+- `appendTranslation`: Returns this matrix followed by a move.
+  - `x`: How far along x.
+  - `y`: How far along y.
+  - `out`: Optional. The matrix to write into, which may be this one; a new one when omitted.
+  - returns: The matrix.
+- `appendScale`: Returns this matrix followed by a scale from the origin.
+  - `x`: The scale along x.
+  - `y`: The scale along y.
+  - `out`: Optional. The matrix to write into, which may be this one; a new one when omitted.
+  - returns: The matrix.
+- `appendRotation`: Returns this matrix followed by a turn around the origin.
+  - `radians`: The angle; more than 0 turns from +x toward +y.
+  - `out`: Optional. The matrix to write into, which may be this one; a new one when omitted.
+  - returns: The matrix.
+- `invert`: Returns the matrix that undoes this one.
+  - `out`: Optional. The matrix to write into, which may be this one; a new one when omitted.
+  - returns: The inverse, or null when there is none (a matrix that flattens points onto a line), the out unchanged.
+- `transformPoint`: Returns a point moved by this matrix.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `out`: Optional. The vector to write into; a new one when omitted.
+  - returns: The point.
+- `transformDirection`: Returns a direction turned and scaled by this matrix, its translation ignored.
+  - `x`: The direction's x.
+  - `y`: The direction's y.
+  - `out`: Optional. The vector to write into; a new one when omitted.
+  - returns: The direction.
+- `toMatrix3D`: Returns the matrix as a 4 x 4 one acting on x and y alone, as a shader takes a 2D view.
+  - `out`: Optional. The matrix to write into; a new one when omitted.
+  - returns: The matrix.
+
 ## Matrix3D
 
 *class* in [`math/src/helix/math/Matrix3D.hx`](../../math/src/helix/math/Matrix3D.hx), `import helix.math.Matrix3D;`
 
 Represents a 4 x 4 matrix transforming points in 3 dimensions: moving, turning, scaling and projecting them.
 
-It acts on column vectors and is stored by columns, as GPUs take it, so `values` can be sent to a shader as they are. A method that makes or changes a matrix changes this one and returns it, so a caller can reuse one every frame; one that computes a point writes it into the point given. Rotations use `Trig`, so a matrix comes out the same on every target. The formulas are raymath's (raylib 5.5, zlib, `vendor/raylib/LICENSE`).
+It acts on column vectors and is stored by columns, as GPUs take it, so `values` can be sent to a shader as they are. A static `fromX` makes a matrix of one kind, and `compose` one transform followed by another. Each of those, and each operation on a matrix (`append`, `invert`, `transpose`, `transformPoint`), writes its result into an optional out, the last argument, and returns it. Without one it makes a new result and leaves this matrix unchanged; given this matrix, it changes it in place (`m.transpose(m)`). The out may be this matrix or any other argument, and none of them allocates when given one, so a caller can reuse one matrix every frame and chain calls through what each returns. `makeIdentity` and `copyFrom` change this matrix and return it. Rotations use `Trig`, so a matrix comes out the same on every target. The formulas are raymath's (raylib 5.5, zlib, `vendor/raylib/LICENSE`).
 
 ```haxe
-var model = new Matrix3D().makeScale(2, 2, 2).appendRotation(0, 1, 0, angle).appendTranslation(x, 0, z);
-var mvp = new Matrix3D().copyFrom(model).append(view).append(projection);
+var model = Matrix3D.fromScale(2, 2, 2);
+model.appendRotation(0, 1, 0, angle, model).appendTranslation(x, 0, z, model);
+var mvp = Matrix3D.compose(model, view).append(projection);
 ```
 
 ```haxe
 function new()
+static function fromTranslation(x:Float, y:Float, z:Float, ?out:Matrix3D):Matrix3D
+static function fromScale(x:Float, y:Float, z:Float, ?out:Matrix3D):Matrix3D
+static function fromRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Matrix3D):Matrix3D
+static function fromQuaternion(x:Float, y:Float, z:Float, w:Float, ?out:Matrix3D):Matrix3D
+static function fromLookAt(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX:Float, upY:Float, upZ:Float, ?out:Matrix3D):Matrix3D
+static function fromPerspective(fovY:Float, aspect:Float, near:Float, far:Float, ?out:Matrix3D):Matrix3D
+static function fromOrthographic(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float, ?out:Matrix3D):Matrix3D
+static function fromFrustum(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float, ?out:Matrix3D):Matrix3D
+static function compose(first:Matrix3D, second:Matrix3D, ?out:Matrix3D):Matrix3D
 final values:Array<Float>
 function makeIdentity():Matrix3D
 function copyFrom(other:Matrix3D):Matrix3D
-function makeTranslation(x:Float, y:Float, z:Float):Matrix3D
-function makeScale(x:Float, y:Float, z:Float):Matrix3D
-function makeRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float):Matrix3D
-function makeQuaternionRotation(x:Float, y:Float, z:Float, w:Float):Matrix3D
-function makeLookAt(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX:Float, upY:Float, upZ:Float):Matrix3D
-function makePerspective(fovY:Float, aspect:Float, near:Float, far:Float):Matrix3D
-function makeOrthographic(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float):Matrix3D
-function makeFrustum(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float):Matrix3D
-function compose(first:Matrix3D, second:Matrix3D):Matrix3D
-function append(other:Matrix3D):Matrix3D
-function prepend(other:Matrix3D):Matrix3D
-function appendTranslation(x:Float, y:Float, z:Float):Matrix3D
-function appendScale(x:Float, y:Float, z:Float):Matrix3D
-function appendRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float):Matrix3D
-function invert():Bool
-function transpose():Matrix3D
-function transformPoint(x:Float, y:Float, z:Float, ?out:Point3D):Point3D
-function transformDirection(x:Float, y:Float, z:Float, ?out:Point3D):Point3D
+function append(other:Matrix3D, ?out:Matrix3D):Matrix3D
+function prepend(other:Matrix3D, ?out:Matrix3D):Matrix3D
+function appendTranslation(x:Float, y:Float, z:Float, ?out:Matrix3D):Matrix3D
+function appendScale(x:Float, y:Float, z:Float, ?out:Matrix3D):Matrix3D
+function appendRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Matrix3D):Matrix3D
+function invert(?out:Matrix3D):Null<Matrix3D>
+function transpose(?out:Matrix3D):Matrix3D
+function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3D):Vector3D
+function transformDirection(x:Float, y:Float, z:Float, ?out:Vector3D):Vector3D
 ```
 
 - `new`: Creates the identity matrix.
-- `values`: Gets the 16 numbers, by columns: row r of column c at `values[c * 4 + r]`; the translation at 12, 13 and 14.
-- `makeIdentity`: Makes this the identity.
-  - returns: This matrix.
-- `copyFrom`: Sets this to another matrix's values.
-  - `other`: The matrix to copy.
-  - returns: This matrix.
-- `makeTranslation`: Makes this a translation.
+- `fromTranslation`: Returns a translation.
   - `x`: Along x.
   - `y`: Along y.
   - `z`: Along z.
-  - returns: This matrix.
-- `makeScale`: Makes this a scale.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
+  - returns: The matrix.
+- `fromScale`: Returns a scale.
   - `x`: Along x.
   - `y`: Along y.
   - `z`: Along z.
-  - returns: This matrix.
-- `makeRotation`: Makes this a rotation about an axis, which needn't be of length 1.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
+  - returns: The matrix.
+- `fromRotation`: Returns a rotation about an axis, which needn't be of length 1.
   - `axisX`: The axis's x.
   - `axisY`: Its y.
   - `axisZ`: Its z.
   - `radians`: The angle, counterclockwise looking down the axis toward its origin.
-  - returns: This matrix.
-- `makeQuaternionRotation`: Makes this the rotation a quaternion (x, y, z, w) gives.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
+  - returns: The matrix.
+- `fromQuaternion`: Returns the rotation a quaternion (x, y, z, w) gives.
   - `x`: The quaternion's x.
   - `y`: Its y.
   - `z`: Its z.
   - `w`: Its w.
-  - returns: This matrix.
-- `makeLookAt`: Makes this a view from an eye looking at a target.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
+  - returns: The matrix.
+- `fromLookAt`: Returns a view from an eye looking at a target.
   - `eyeX`: Where it looks from.
   - `eyeY`: Where it looks from.
   - `eyeZ`: Where it looks from.
@@ -737,133 +983,234 @@ function transformDirection(x:Float, y:Float, z:Float, ?out:Point3D):Point3D
   - `upX`: Up.
   - `upY`: Up.
   - `upZ`: Up.
-  - returns: This matrix.
-- `makePerspective`: Makes this a perspective projection into GL's clip space (depth -1 to 1), which every helix-platform adapter takes.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
+  - returns: The matrix.
+- `fromPerspective`: Returns a perspective projection into GL's clip space (depth -1 to 1), which every helix-platform adapter takes.
   - `fovY`: The field of view, top to bottom, in radians.
   - `aspect`: Width over height.
   - `near`: The near plane's distance.
   - `far`: The far plane's distance.
-  - returns: This matrix.
-- `makeOrthographic`: Makes this an orthographic projection into GL's clip space (depth -1 to 1), which every helix-platform adapter takes.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
+  - returns: The matrix.
+- `fromOrthographic`: Returns an orthographic projection into GL's clip space (depth -1 to 1), which every helix-platform adapter takes.
   - `left`: The left edge.
   - `right`: The right edge.
   - `bottom`: The bottom edge.
   - `top`: The top edge.
   - `near`: The near plane's distance.
   - `far`: The far plane's distance.
-  - returns: This matrix.
-- `makeFrustum`: Makes this a perspective projection into GL's clip space (depth -1 to 1) by its near plane's edges, which may be off center.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
+  - returns: The matrix.
+- `fromFrustum`: Returns a perspective projection into GL's clip space (depth -1 to 1) by its near plane's edges, which may be off center.
   - `left`: The near plane's left edge.
   - `right`: Its right edge.
   - `bottom`: Its bottom edge.
   - `top`: Its top edge.
   - `near`: The near plane's distance.
   - `far`: The far plane's distance.
-  - returns: This matrix.
-- `compose`: Makes this first's transform followed by second's. Either may be this matrix.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
+  - returns: The matrix.
+- `compose`: Returns one transform followed by another.
   - `first`: The transform applied first.
   - `second`: The transform applied after it.
+  - `out`: Optional. The matrix to fill; a new one when omitted. It may be first or second.
+  - returns: The matrix.
+- `values`: Gets the 16 numbers, by columns: row r of column c at `values[c * 4 + r]`; the translation at 12, 13 and 14.
+- `makeIdentity`: Makes this matrix the identity.
   - returns: This matrix.
-- `append`: Follows this transform with another's.
+- `copyFrom`: Sets this to another matrix's values.
+  - `other`: The matrix to copy.
+  - returns: This matrix.
+- `append`: Returns this transform followed by another.
   - `other`: The transform applied after this one.
-  - returns: This matrix.
-- `prepend`: Puts another transform before this one.
+  - `out`: Optional. The matrix to fill; a new one when omitted. It may be this matrix or the other.
+  - returns: The matrix.
+- `prepend`: Returns another transform followed by this one.
   - `other`: The transform applied before this one.
-  - returns: This matrix.
-- `appendTranslation`: Follows this transform with a translation.
+  - `out`: Optional. The matrix to fill; a new one when omitted. It may be this matrix or the other.
+  - returns: The matrix.
+- `appendTranslation`: Returns this transform followed by a translation.
   - `x`: Along x.
   - `y`: Along y.
   - `z`: Along z.
-  - returns: This matrix.
-- `appendScale`: Follows this transform with a scale.
+  - `out`: Optional. The matrix to fill; a new one when omitted. It may be this matrix.
+  - returns: The matrix.
+- `appendScale`: Returns this transform followed by a scale.
   - `x`: Along x.
   - `y`: Along y.
   - `z`: Along z.
-  - returns: This matrix.
-- `appendRotation`: Follows this transform with a rotation about an axis.
+  - `out`: Optional. The matrix to fill; a new one when omitted. It may be this matrix.
+  - returns: The matrix.
+- `appendRotation`: Returns this transform followed by a rotation about an axis.
   - `axisX`: The axis's x.
   - `axisY`: Its y.
   - `axisZ`: Its z.
   - `radians`: The angle, counterclockwise looking down the axis toward its origin.
-  - returns: This matrix.
-- `invert`: Inverts this matrix.
-  - returns: False, leaving it as it was, when it has no inverse.
-- `transpose`: Transposes this matrix: rows become columns.
-  - returns: This matrix.
+  - `out`: Optional. The matrix to fill; a new one when omitted. It may be this matrix.
+  - returns: The matrix.
+- `invert`: Returns the inverse of this matrix: the transform that undoes it.
+  - `out`: Optional. The matrix to fill; a new one when omitted. It may be this matrix.
+  - returns: The inverse, or null, leaving out unchanged and making nothing, when this matrix has no inverse.
+- `transpose`: Returns this matrix transposed: its rows made columns.
+  - `out`: Optional. The matrix to fill; a new one when omitted. It may be this matrix.
+  - returns: The transpose.
 - `transformPoint`: Computes where a point goes, translation included.
   - `x`: The point's x.
   - `y`: Its y.
   - `z`: Its z.
-  - `out`: Optional. The point to fill; a new one when omitted.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The point.
 - `transformDirection`: Computes where a direction goes, translation left out.
   - `x`: The direction's x.
   - `y`: Its y.
   - `z`: Its z.
-  - `out`: Optional. The point to fill; a new one when omitted.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The direction.
 
-## Point2D
+## Quaternion3D
 
-*class* in [`math/src/helix/math/Point2D.hx`](../../math/src/helix/math/Point2D.hx), `import helix.math.Point2D;`
+*class* in [`math/src/helix/math/Quaternion3D.hx`](../../math/src/helix/math/Quaternion3D.hx), `import helix.math.Quaternion3D;`
 
-Represents a point in 2 dimensions.
+Represents a rotation in 3 dimensions, as a unit quaternion.
 
-A method that computes a point writes it into one given to it, so a caller can reuse the same point every frame. Its space is the method's.
+Two rotations blend along the shortest arc (`slerp`), which matrices can't do, so an animation's rotations are kept as these and turned into a matrix to draw. A static `fromX` makes a rotation, and `slerp`, `nlerp` and `compose` make one from others. Each of those, and each operation on a rotation (`append`, `invert`, `normalize`, `transformPoint`, `toMatrix`), writes its result into an optional out, the last argument, and returns it. Without one it makes a new result and leaves this rotation unchanged; given this rotation, it changes it in place (`q.normalize(q)`). The out may be this rotation or any other argument, and calls chain through what each returns. `set`, `copyFrom` and `makeIdentity` change this rotation and return it. It uses `Trig`, so a rotation comes out the same on every target. Space is right-handed with +y up, as every 3D type here.
 
 ```haxe
-function new(?x:Float = 0., ?y:Float = 0.)
-var x:Float
-var y:Float
-function set(x:Float, y:Float):Point2D
-function copyFrom(other:Point2D):Point2D
+var turn = Quaternion3D.fromAxisAngle(0, 1, 0, Math.PI / 2);
+var halfway = Quaternion3D.slerp(from, turn, .5);
+var facing = turn.transformPoint(0, 0, -1);
 ```
 
-- `new`: Creates a point.
-  - `x`: Optional. The x coordinate; defaults to 0.
-  - `y`: Optional. The y coordinate; defaults to 0.
-- `x`: Gets or sets the x coordinate.
-- `y`: Gets or sets the y coordinate.
-- `set`: Sets the point's coordinates.
-  - `x`: The x coordinate.
-  - `y`: The y coordinate.
-  - returns: This point.
-- `copyFrom`: Sets the point's coordinates to another point's.
-  - `other`: The point to copy.
-  - returns: This point.
-
-## Point3D
-
-*class* in [`math/src/helix/math/Point3D.hx`](../../math/src/helix/math/Point3D.hx), `import helix.math.Point3D;`
-
-Represents a point in 3 dimensions.
-
-A method that computes a point writes it into one given to it, so a caller can reuse the same point every frame. Its space is the method's.
-
 ```haxe
-function new(?x:Float = 0., ?y:Float = 0., ?z:Float = 0.)
+function new(?x:Float = 0., ?y:Float = 0., ?z:Float = 0., ?w:Float = 1.)
+static function fromAxisAngle(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Quaternion3D):Quaternion3D
+static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?out:Quaternion3D):Quaternion3D
+static function fromLookRotation(forwardX:Float, forwardY:Float, forwardZ:Float, ?upX:Float = 0., ?upY:Float = 1., ?upZ:Float = 0., ?out:Quaternion3D):Quaternion3D
+static function fromBetween(from:Vector3D, to:Vector3D, ?out:Quaternion3D):Quaternion3D
+static function fromMatrix(matrix:Matrix3D, ?out:Quaternion3D):Quaternion3D
+static function slerp(from:Quaternion3D, to:Quaternion3D, amount:Float, ?out:Quaternion3D):Quaternion3D
+static function nlerp(from:Quaternion3D, to:Quaternion3D, amount:Float, ?out:Quaternion3D):Quaternion3D
+static function compose(first:Quaternion3D, second:Quaternion3D, ?out:Quaternion3D):Quaternion3D
 var x:Float
 var y:Float
 var z:Float
-function set(x:Float, y:Float, z:Float):Point3D
-function copyFrom(other:Point3D):Point3D
+var w:Float
+function set(x:Float, y:Float, z:Float, w:Float):Quaternion3D
+function copyFrom(other:Quaternion3D):Quaternion3D
+function makeIdentity():Quaternion3D
+function append(other:Quaternion3D, ?out:Quaternion3D):Quaternion3D
+function prepend(other:Quaternion3D, ?out:Quaternion3D):Quaternion3D
+function invert(?out:Quaternion3D):Quaternion3D
+function normalize(?out:Quaternion3D):Quaternion3D
+function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3D):Vector3D
+function toEuler(?out:Vector3D):Vector3D
+var angle(get, never):Float
+function toMatrix(?out:Matrix3D):Matrix3D
 ```
 
-- `new`: Creates a point.
-  - `x`: Optional. The x coordinate; defaults to 0.
-  - `y`: Optional. The y coordinate; defaults to 0.
-  - `z`: Optional. The z coordinate; defaults to 0.
-- `x`: Gets or sets the x coordinate.
-- `y`: Gets or sets the y coordinate.
-- `z`: Gets or sets the z coordinate.
-- `set`: Sets the point's coordinates.
-  - `x`: The x coordinate.
-  - `y`: The y coordinate.
-  - `z`: The z coordinate.
-  - returns: This point.
-- `copyFrom`: Sets the point's coordinates to another point's.
-  - `other`: The point to copy.
-  - returns: This point.
+- `new`: Creates a rotation, the identity unless the quaternion is provided.
+  - `x`: Optional. The quaternion's x; defaults to 0.
+  - `y`: Optional. The quaternion's y; defaults to 0.
+  - `z`: Optional. The quaternion's z; defaults to 0.
+  - `w`: Optional. The quaternion's w; defaults to 1.
+- `fromAxisAngle`: Returns a turn around an axis.
+  - `axisX`: The axis's x; it needn't be of length 1.
+  - `axisY`: The axis's y.
+  - `axisZ`: The axis's z.
+  - `radians`: The angle, counterclockwise looking down the axis toward the origin.
+  - `out`: Optional. The rotation to fill; a new one when omitted.
+  - returns: The rotation.
+
+  An axis of length 0 makes the identity.
+- `fromEuler`: Returns the rotation of three turns, around x, then y, then z, each around the world's axes.
+  - `pitch`: The turn around x, in radians.
+  - `yaw`: The turn around y, in radians.
+  - `roll`: The turn around z, in radians.
+  - `out`: Optional. The rotation to fill; a new one when omitted.
+  - returns: The rotation.
+- `fromLookRotation`: Returns the rotation that turns -z to face a direction, +y kept as near to up as it can be.
+  - `forwardX`: The direction to face's x; it needn't be of length 1.
+  - `forwardY`: The direction's y.
+  - `forwardZ`: The direction's z.
+  - `upX`: Optional. Up's x; defaults to 0.
+  - `upY`: Optional. Up's y; defaults to 1.
+  - `upZ`: Optional. Up's z; defaults to 0.
+  - `out`: Optional. The rotation to fill; a new one when omitted.
+  - returns: The rotation.
+
+  A direction of length 0 makes the identity; an up along the direction is replaced by another axis.
+- `fromBetween`: Returns the shortest turn from one direction to another.
+  - `from`: The first direction; it needn't be of length 1.
+  - `to`: The second direction.
+  - `out`: Optional. The rotation to fill; a new one when omitted.
+  - returns: The rotation.
+- `fromMatrix`: Returns the rotation of a matrix, its scale ignored.
+  - `matrix`: The matrix: a rotation, scale and translation.
+  - `out`: Optional. The rotation to fill; a new one when omitted.
+  - returns: The rotation.
+- `slerp`: Returns the rotation part way from one rotation to another along the shortest arc, at an even speed (slerp).
+  - `from`: The rotation at 0.
+  - `to`: The rotation at 1.
+  - `amount`: How far, 0 to 1; outside it the turn goes on past either end.
+  - `out`: Optional. The rotation to fill; a new one when omitted. It may be from or to.
+  - returns: The rotation.
+- `nlerp`: Returns the rotation part way from one rotation to another along the shortest arc, faster than `slerp` but at an uneven speed (nlerp).
+  - `from`: The rotation at 0.
+  - `to`: The rotation at 1.
+  - `amount`: How far, 0 to 1.
+  - `out`: Optional. The rotation to fill; a new one when omitted. It may be from or to.
+  - returns: The rotation.
+- `compose`: Returns one rotation followed by another.
+  - `first`: The rotation applied first.
+  - `second`: The rotation applied after it.
+  - `out`: Optional. The rotation to fill; a new one when omitted. It may be first or second.
+  - returns: The rotation.
+- `x`: Gets or sets the quaternion's x, the axis's x scaled by the sine of half the angle.
+- `y`: Gets or sets the quaternion's y.
+- `z`: Gets or sets the quaternion's z.
+- `w`: Gets or sets the quaternion's w, the cosine of half the angle.
+- `set`: Sets the quaternion's four numbers, as they are; `normalize` makes them a rotation if they aren't one.
+  - `x`: The x.
+  - `y`: The y.
+  - `z`: The z.
+  - `w`: The w.
+  - returns: This rotation.
+- `copyFrom`: Sets this rotation to another's.
+  - `other`: The rotation to copy.
+  - returns: This rotation.
+- `makeIdentity`: Makes this the rotation that turns nothing.
+  - returns: This rotation.
+- `append`: Returns this rotation followed by another.
+  - `other`: The rotation applied after this one.
+  - `out`: Optional. The rotation to fill; a new one when omitted. It may be this rotation or the other.
+  - returns: The rotation.
+- `prepend`: Returns another rotation followed by this one.
+  - `other`: The rotation applied before this one.
+  - `out`: Optional. The rotation to fill; a new one when omitted. It may be this rotation or the other.
+  - returns: The rotation.
+- `invert`: Returns the rotation that undoes this one.
+  - `out`: Optional. The rotation to fill; a new one when omitted. It may be this rotation.
+  - returns: The inverse.
+- `normalize`: Returns the quaternion scaled to length 1, so it is a rotation again after numbers set by hand or many compositions.
+  - `out`: Optional. The rotation to fill; a new one when omitted. It may be this rotation.
+  - returns: The rotation.
+
+  A quaternion of length 0 gives the identity.
+- `transformPoint`: Returns a point turned by this rotation.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The turned point.
+- `toEuler`: Returns the turns around x, y and z that `fromEuler` would make this from.
+  - `out`: Optional. The vector to write into: pitch in x, yaw in y, roll in z, in radians; a new one when omitted.
+  - returns: The angles.
+
+  Near straight up or down, where two turns do the same thing, the roll is 0.
+- `angle`: Gets the angle this rotation turns by, around whatever axis, in radians, 0 to pi.
+- `toMatrix`: Returns the rotation as a matrix.
+  - `out`: Optional. The matrix to write into; a new one when omitted.
+  - returns: The matrix.
 
 ## Random
 
@@ -952,6 +1299,225 @@ static function pack(width:Int, height:Int, sizes:Array<Int>):Array<Int>
   - `sizes`: Each rectangle's width and height, flat: width, height, width, height.
   - returns: Each rectangle's place, flat, in the same order: x, y, and 1 when it was placed or 0 when it didn't fit. A rectangle with no width or height is placed at 0, 0.
 
+## Transform2D
+
+*class* in [`math/src/helix/math/Transform2D.hx`](../../math/src/helix/math/Transform2D.hx), `import helix.math.Transform2D;`
+
+Represents where an object is in 2 dimensions, which way it faces, and how large it is: a position, a rotation and a scale.
+
+It faces along its own +x, so a rotation of 0 faces +x and a positive one turns toward +y, clockwise on screen where y grows downward. Moving and turning are along and around its own axes unless a method says otherwise, so a sprite, a turret or a 2D camera is steered the same way. The matrix that draws it scales, then rotates, then moves (`toMatrix`); a child's is its own composed with its parent's (`Matrix2D.compose`). It uses `Trig`, so a transform comes out the same on every target.
+
+```haxe
+var ship = new Transform2D();
+ship.position.set(100, 50);
+ship.lookAt(mouseX, mouseY);
+ship.moveForward(speed * dt);
+var model = ship.toMatrix(scratch);
+```
+
+```haxe
+function new()
+static function fromMatrix(matrix:Matrix2D, ?out:Transform2D):Transform2D
+final position:Vector2D
+var rotation:Float
+final scale:Vector2D
+function copyFrom(other:Transform2D):Transform2D
+function makeIdentity():Transform2D
+function computeForward(?out:Vector2D):Vector2D
+function computeRight(?out:Vector2D):Vector2D
+function moveForward(distance:Float):Transform2D
+function moveRight(distance:Float):Transform2D
+function moveToward(x:Float, y:Float, distance:Float, ?nearest:Float = .001):Transform2D
+function rotate(radians:Float):Transform2D
+function lookAt(x:Float, y:Float):Transform2D
+function orbit(x:Float, y:Float, radians:Float):Transform2D
+function transformPoint(x:Float, y:Float, ?out:Vector2D):Vector2D
+function toMatrix(?out:Matrix2D):Matrix2D
+```
+
+- `new`: Creates a transform at the origin, facing +x, at scale 1.
+- `fromMatrix`: Returns the transform a matrix places, scales and turns by.
+  - `matrix`: The matrix.
+  - `out`: Optional. The transform to write into; a new one when omitted.
+  - returns: The transform.
+
+  A matrix that shears gives the nearest rotation and scale, the shear lost.
+- `position`: Gets the position, in its parent's units; the origin until changed.
+- `rotation`: Gets or sets the rotation in radians; 0, facing +x, until set.
+- `scale`: Gets the scale along its own axes; 1 on each until changed.
+- `copyFrom`: Sets this transform to another's position, rotation and scale.
+  - `other`: The transform to copy.
+  - returns: This transform.
+- `makeIdentity`: Puts it back at the origin, facing +x, at scale 1.
+  - returns: This transform.
+- `computeForward`: Returns the direction it faces, of length 1.
+  - `out`: Optional. The vector to write into; a new one when omitted.
+  - returns: The direction.
+- `computeRight`: Returns its right, a quarter turn from forward toward +y, of length 1.
+  - `out`: Optional. The vector to write into; a new one when omitted.
+  - returns: The direction.
+- `moveForward`: Moves it along the way it faces.
+  - `distance`: How far, in its parent's units; less than 0 moves it back.
+  - returns: This transform.
+- `moveRight`: Moves it to its right.
+  - `distance`: How far, in its parent's units; less than 0 moves it left.
+  - returns: This transform.
+- `moveToward`: Moves it toward a point or away from it, along the line between them.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `distance`: How far nearer, in its parent's units; less than 0 moves it away.
+  - `nearest`: Optional. The least distance it keeps from the point; defaults to 0.001.
+  - returns: This transform.
+
+  It stops short of the point rather than passing through it.
+- `rotate`: Turns it.
+  - `radians`: The angle; more than 0 turns from +x toward +y.
+  - returns: This transform.
+- `lookAt`: Turns it to face a point.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - returns: This transform.
+
+  A point at its position leaves it as it is.
+- `orbit`: Swings it around a point: its position and its rotation both, so whatever faced the point still does.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `radians`: The swing; more than 0 swings it from +x toward +y.
+  - returns: This transform.
+- `transformPoint`: Returns a point in its own space put into its parent's: scaled, rotated, then moved.
+  - `x`: The point's x, in its own units.
+  - `y`: The point's y.
+  - `out`: Optional. The vector to write into; a new one when omitted.
+  - returns: The point, in its parent's units.
+- `toMatrix`: Returns the matrix that scales, rotates and then moves, to draw it with.
+  - `out`: Optional. The matrix to write into; a new one when omitted.
+  - returns: The matrix.
+
+## Transform3D
+
+*class* in [`math/src/helix/math/Transform3D.hx`](../../math/src/helix/math/Transform3D.hx), `import helix.math.Transform3D;`
+
+Represents where an object is in 3 dimensions, which way it faces, and how large it is: a position, a rotation and a scale.
+
+Its own axes are its rotation's: -z is forward, +x right and +y up, as a camera looks down -z. Moving and turning are along and around those axes unless a method says otherwise, so a ship, a turret or a camera is steered the same way. The matrix that draws it scales, then rotates, then moves (`toMatrix`); a child's is its own composed with its parent's (`Matrix3D.compose`). It uses `Trig`, so a transform comes out the same on every target.
+
+```haxe
+var ship = new Transform3D();
+ship.position.set(0, 0, 10);
+ship.lookAt(0, 0, 0);
+ship.yaw(turnSpeed * dt);
+ship.moveForward(speed * dt);
+var model = ship.toMatrix(scratch);
+```
+
+```haxe
+function new()
+static function fromMatrix(matrix:Matrix3D, ?out:Transform3D):Transform3D
+final position:Vector3D
+final rotation:Quaternion3D
+final scale:Vector3D
+function copyFrom(other:Transform3D):Transform3D
+function makeIdentity():Transform3D
+function computeForward(?out:Vector3D):Vector3D
+function computeRight(?out:Vector3D):Vector3D
+function computeUp(?out:Vector3D):Vector3D
+function moveForward(distance:Float, ?inWorldPlane:Bool = false):Transform3D
+function moveRight(distance:Float, ?inWorldPlane:Bool = false):Transform3D
+function moveUp(distance:Float):Transform3D
+function moveToward(x:Float, y:Float, z:Float, distance:Float, ?nearest:Float = .001):Transform3D
+function yaw(radians:Float):Transform3D
+function pitch(radians:Float, ?lock:Bool = false):Transform3D
+function roll(radians:Float):Transform3D
+function lookAt(x:Float, y:Float, z:Float, ?upX:Float = 0., ?upY:Float = 1., ?upZ:Float = 0.):Transform3D
+function orbit(x:Float, y:Float, z:Float, yaw:Float, pitch:Float, ?lock:Bool = false):Transform3D
+function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3D):Vector3D
+function toMatrix(?out:Matrix3D):Matrix3D
+```
+
+- `new`: Creates a transform at the origin, facing -z, at scale 1.
+- `fromMatrix`: Returns the transform of a matrix: its position, rotation and scale.
+  - `matrix`: The matrix.
+  - `out`: Optional. The transform to fill; a new one when omitted.
+  - returns: The transform.
+
+  A matrix that shears gives the nearest rotation and scale, the shear lost.
+- `position`: Gets the position, in its parent's units; the origin until changed.
+- `rotation`: Gets the rotation; the identity until changed.
+- `scale`: Gets the scale along its own axes; 1 on each until changed.
+- `copyFrom`: Sets this transform to another's position, rotation and scale.
+  - `other`: The transform to copy.
+  - returns: This transform.
+- `makeIdentity`: Puts it back at the origin, facing -z, at scale 1.
+  - returns: This transform.
+- `computeForward`: Returns the direction it faces, its -z, of length 1.
+  - `out`: Optional. The vector to write into; a new one when omitted.
+  - returns: The direction.
+- `computeRight`: Returns its right, its +x, of length 1.
+  - `out`: Optional. The vector to write into; a new one when omitted.
+  - returns: The direction.
+- `computeUp`: Returns its up, its +y, of length 1.
+  - `out`: Optional. The vector to write into; a new one when omitted.
+  - returns: The direction.
+- `moveForward`: Moves it along the way it faces.
+  - `distance`: How far, in its parent's units; less than 0 moves it back.
+  - `inWorldPlane`: Optional. True to move along the ground, its forward with the height taken out, as a walking camera does; defaults to false.
+  - returns: This transform.
+- `moveRight`: Moves it to its right.
+  - `distance`: How far, in its parent's units; less than 0 moves it left.
+  - `inWorldPlane`: Optional. True to move along the ground, its right with the height taken out; defaults to false.
+  - returns: This transform.
+- `moveUp`: Moves it along its up.
+  - `distance`: How far, in its parent's units; less than 0 moves it down.
+  - returns: This transform.
+- `moveToward`: Moves it toward a point or away from it, along the line between them, as a camera zooms on what it orbits.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - `distance`: How far nearer, in its parent's units; less than 0 moves it away.
+  - `nearest`: Optional. The least distance it keeps from the point; defaults to 0.001.
+  - returns: This transform.
+
+  It stops short of the point rather than passing through it.
+- `yaw`: Turns it left or right, around its own up.
+  - `radians`: The angle; more than 0 turns it left.
+  - returns: This transform.
+- `pitch`: Turns it to face higher or lower, around its own right.
+  - `radians`: The angle; more than 0 faces it higher.
+  - `lock`: Optional. True to stop short of straight up and down, as a camera's look stops, so it never turns over; defaults to false.
+  - returns: This transform.
+- `roll`: Tilts it around the way it faces.
+  - `radians`: The angle; more than 0 tilts it to the right.
+  - returns: This transform.
+- `lookAt`: Turns it to face a point.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - `upX`: Optional. Which way up it is kept, x; defaults to 0.
+  - `upY`: Optional. Up's y; defaults to 1.
+  - `upZ`: Optional. Up's z; defaults to 0.
+  - returns: This transform.
+
+  A point at its position leaves it as it is.
+- `orbit`: Swings it around a point: its position and its rotation both, so whatever faced the point still does, as an orbiting camera moves.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - `yaw`: The swing left or right, in radians; more than 0 swings it to the left.
+  - `pitch`: The swing up or down, in radians; more than 0 swings it upward.
+  - `lock`: Optional. True to stop short of straight above and below the point, so it never turns over; defaults to false.
+  - returns: This transform.
+
+  The yaw is around the world's up; the pitch around its own right.
+- `transformPoint`: Returns a point in its own space put into its parent's: scaled, rotated, then moved.
+  - `x`: The point's x, in its own units.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - `out`: Optional. The vector to write into; a new one when omitted.
+  - returns: The point, in its parent's units.
+- `toMatrix`: Returns the matrix that scales, rotates and then moves, to draw it with.
+  - `out`: Optional. The matrix to write into; a new one when omitted.
+  - returns: The matrix.
+
 ## Trig
 
 *class* in [`math/src/helix/math/Trig.hx`](../../math/src/helix/math/Trig.hx), `import helix.math.Trig;`
@@ -990,3 +1556,225 @@ static function acos(x:Float):Float
 - `acos`: Returns the angle whose cosine is a value.
   - `x`: The cosine, from -1 to 1.
   - returns: The angle, in radians, from 0 to π, or NaN if x is outside -1 to 1.
+
+## Vector2D
+
+*class* in [`math/src/helix/math/Vector2D.hx`](../../math/src/helix/math/Vector2D.hx), `import helix.math.Vector2D;`
+
+Represents a vector in 2 dimensions: a position or a direction, as its user means it.
+
+Each operation writes its result into an optional out, the last argument, and returns it. Without one it makes a new vector and leaves this one unchanged; given this vector, it changes it in place (`v.normalize(v)`). The out may be this vector or any other argument, as every input is read before anything is written, and calls chain through what each returns (`a.add(b, a).scale(2, a)`). `set` and `copyFrom` change this vector and return it. A number made from vectors (`dot`, `cross`, `distance`) is a method, a number of one (`length`, `angle`) a property.
+
+It uses only addition, subtraction, multiplication, division and square roots, which agree on every target, and `Trig` for angles, so a vector comes out the same everywhere. Angles are radians, turning from +x toward +y. Its space is its user's.
+
+```haxe
+var velocity = Vector2D.fromAngle(heading, speed);
+position.addScaled(velocity, dt, position);
+var toward = target.subtract(position).normalize();
+```
+
+```haxe
+function new(?x:Float = 0., ?y:Float = 0.)
+static function fromAngle(radians:Float, ?length:Float = 1., ?out:Vector2D):Vector2D
+static function lerp(from:Vector2D, to:Vector2D, amount:Float, ?out:Vector2D):Vector2D
+var x:Float
+var y:Float
+function set(x:Float, y:Float):Vector2D
+function copyFrom(other:Vector2D):Vector2D
+function add(other:Vector2D, ?out:Vector2D):Vector2D
+function subtract(other:Vector2D, ?out:Vector2D):Vector2D
+function scale(factor:Float, ?out:Vector2D):Vector2D
+function addScaled(other:Vector2D, factor:Float, ?out:Vector2D):Vector2D
+function negate(?out:Vector2D):Vector2D
+function normalize(?out:Vector2D):Vector2D
+function rotate(radians:Float, ?out:Vector2D):Vector2D
+var length(get, never):Float
+var lengthSquared(get, never):Float
+var angle(get, never):Float
+function dot(other:Vector2D):Float
+function cross(other:Vector2D):Float
+function distance(other:Vector2D):Float
+function distanceSquared(other:Vector2D):Float
+function equals(other:Vector2D, ?tolerance:Float = 0.):Bool
+```
+
+- `new`: Creates a vector.
+  - `x`: Optional. The x coordinate; defaults to 0.
+  - `y`: Optional. The y coordinate; defaults to 0.
+- `fromAngle`: Returns the vector of an angle and a length.
+  - `radians`: The angle from +x toward +y.
+  - `length`: Optional. The length; defaults to 1.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The vector.
+- `lerp`: Returns the vector a fraction of the way from one vector to another.
+  - `from`: The vector at 0.
+  - `to`: The vector at 1.
+  - `amount`: The fraction.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be from or to.
+  - returns: The vector.
+
+  A fraction outside 0 to 1 goes past the ends.
+- `x`: Gets or sets the x coordinate.
+- `y`: Gets or sets the y coordinate.
+- `set`: Sets the coordinates.
+  - `x`: The x coordinate.
+  - `y`: The y coordinate.
+  - returns: This vector.
+- `copyFrom`: Sets the coordinates to another vector's.
+  - `other`: The vector to copy.
+  - returns: This vector.
+- `add`: Returns this vector plus another.
+  - `other`: The vector to add.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The sum.
+- `subtract`: Returns this vector minus another.
+  - `other`: The vector to subtract.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The difference.
+- `scale`: Returns this vector with both coordinates multiplied by a number.
+  - `factor`: The number.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The scaled vector.
+- `addScaled`: Returns this vector plus another times a number, as a position moves by a velocity over a time step.
+  - `other`: The vector to add.
+  - `factor`: The number it is multiplied by first.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The sum.
+- `negate`: Returns this vector turned the other way: both coordinates negated.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The negated vector.
+- `normalize`: Returns this vector scaled to length 1, its direction kept.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The vector of length 1, or of length 0.
+
+  A vector of length 0 stays 0.
+- `rotate`: Returns this vector turned around the origin.
+  - `radians`: The angle; more than 0 turns from +x toward +y.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The turned vector.
+- `length`: Gets the length.
+- `lengthSquared`: Gets the length squared, which is quicker to find than the length and orders vectors alike.
+- `angle`: Gets the angle from +x toward +y, in radians, -pi to pi; 0 for a vector of length 0.
+- `dot`: Returns the dot product with another vector: the product of their lengths and the cosine of the angle between them.
+  - `other`: The other vector.
+  - returns: The dot product; 0 when they are at right angles.
+- `cross`: Returns the cross product with another vector, as a number: the product of their lengths and the sine of the angle from this one to the other.
+  - `other`: The other vector.
+  - returns: The cross product: more than 0 when the other is turned from this one toward +y, 0 when they are parallel.
+- `distance`: Returns the distance to another vector, each taken as a position.
+  - `other`: The other vector.
+  - returns: The distance.
+- `distanceSquared`: Returns the distance to another vector squared, which is quicker to find than the distance and orders distances alike.
+  - `other`: The other vector.
+  - returns: The distance squared.
+- `equals`: Returns whether another vector is the same, within a tolerance on each coordinate.
+  - `other`: The other vector.
+  - `tolerance`: Optional. The most each coordinate may differ by; defaults to 0, exactly equal.
+  - returns: True when every coordinate is within the tolerance.
+
+## Vector3D
+
+*class* in [`math/src/helix/math/Vector3D.hx`](../../math/src/helix/math/Vector3D.hx), `import helix.math.Vector3D;`
+
+Represents a vector in 3 dimensions: a position or a direction, as its user means it.
+
+Each operation writes its result into an optional out, the last argument, and returns it. Without one it makes a new vector and leaves this one unchanged; given this vector, it changes it in place (`v.normalize(v)`). The out may be this vector or any other argument, as every input is read before anything is written, and calls chain through what each returns (`a.add(b, a).scale(2, a)`). `set` and `copyFrom` change this vector and return it. A number made from vectors (`dot`, `distance`) is a method, a number of one (`length`) a property. `Matrix3D` keeps positions and directions apart by its methods: `transformPoint` moves a position, `transformDirection` only turns and scales a direction.
+
+It uses only addition, subtraction, multiplication, division and square roots, which agree on every target, so a vector comes out the same everywhere. Space is right-handed with +y up, as every 3D type here.
+
+```haxe
+position.addScaled(velocity, dt, position);
+var toward = target.subtract(position).normalize();
+var right = forward.cross(up);
+```
+
+```haxe
+function new(?x:Float = 0., ?y:Float = 0., ?z:Float = 0.)
+static function lerp(from:Vector3D, to:Vector3D, amount:Float, ?out:Vector3D):Vector3D
+var x:Float
+var y:Float
+var z:Float
+function set(x:Float, y:Float, z:Float):Vector3D
+function copyFrom(other:Vector3D):Vector3D
+function add(other:Vector3D, ?out:Vector3D):Vector3D
+function subtract(other:Vector3D, ?out:Vector3D):Vector3D
+function scale(factor:Float, ?out:Vector3D):Vector3D
+function addScaled(other:Vector3D, factor:Float, ?out:Vector3D):Vector3D
+function negate(?out:Vector3D):Vector3D
+function normalize(?out:Vector3D):Vector3D
+function cross(other:Vector3D, ?out:Vector3D):Vector3D
+var length(get, never):Float
+var lengthSquared(get, never):Float
+function dot(other:Vector3D):Float
+function distance(other:Vector3D):Float
+function distanceSquared(other:Vector3D):Float
+function equals(other:Vector3D, ?tolerance:Float = 0.):Bool
+```
+
+- `new`: Creates a vector.
+  - `x`: Optional. The x coordinate; defaults to 0.
+  - `y`: Optional. The y coordinate; defaults to 0.
+  - `z`: Optional. The z coordinate; defaults to 0.
+- `lerp`: Returns the vector a fraction of the way from one vector to another.
+  - `from`: The vector at 0.
+  - `to`: The vector at 1.
+  - `amount`: The fraction.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be from or to.
+  - returns: The vector.
+
+  A fraction outside 0 to 1 goes past the ends.
+- `x`: Gets or sets the x coordinate.
+- `y`: Gets or sets the y coordinate.
+- `z`: Gets or sets the z coordinate.
+- `set`: Sets the coordinates.
+  - `x`: The x coordinate.
+  - `y`: The y coordinate.
+  - `z`: The z coordinate.
+  - returns: This vector.
+- `copyFrom`: Sets the coordinates to another vector's.
+  - `other`: The vector to copy.
+  - returns: This vector.
+- `add`: Returns this vector plus another.
+  - `other`: The vector to add.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The sum.
+- `subtract`: Returns this vector minus another.
+  - `other`: The vector to subtract.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The difference.
+- `scale`: Returns this vector with every coordinate multiplied by a number.
+  - `factor`: The number.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The scaled vector.
+- `addScaled`: Returns this vector plus another times a number, as a position moves by a velocity over a time step.
+  - `other`: The vector to add.
+  - `factor`: The number it is multiplied by first.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The sum.
+- `negate`: Returns this vector turned the other way: every coordinate negated.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The negated vector.
+- `normalize`: Returns this vector scaled to length 1, its direction kept.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The vector of length 1, or of length 0.
+
+  A vector of length 0 stays 0.
+- `cross`: Returns the cross product with another vector: at right angles to both, as long as the area they span, by the right-hand rule (x cross y is z).
+  - `other`: The other vector.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The cross product; of length 0 when they are parallel.
+- `length`: Gets the length.
+- `lengthSquared`: Gets the length squared, which is quicker to find than the length and orders vectors alike.
+- `dot`: Returns the dot product with another vector: the product of their lengths and the cosine of the angle between them.
+  - `other`: The other vector.
+  - returns: The dot product; 0 when they are at right angles.
+- `distance`: Returns the distance to another vector, each taken as a position.
+  - `other`: The other vector.
+  - returns: The distance.
+- `distanceSquared`: Returns the distance to another vector squared, which is quicker to find than the distance and orders distances alike.
+  - `other`: The other vector.
+  - returns: The distance squared.
+- `equals`: Returns whether another vector is the same, within a tolerance on each coordinate.
+  - `other`: The other vector.
+  - `tolerance`: Optional. The most each coordinate may differ by; defaults to 0, exactly equal.
+  - returns: True when every coordinate is within the tolerance.

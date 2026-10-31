@@ -1,6 +1,6 @@
 package helix.services.input;
 
-import helix.math.Point2D;
+import helix.math.Vector2D;
 
 /** Provides actions, which are names the game reads, such as "jump" or "left", each bound to keys, mouse buttons, gamepads and tilt.
 
@@ -15,7 +15,7 @@ import helix.math.Point2D;
 	actions.bind("right", Keyboard(Right), Keyboard(D), Axis(0, LeftX, Positive));
 	actions.bind("up", Keyboard(Up), Keyboard(W), Axis(0, LeftY, Negative));
 	actions.bind("down", Keyboard(Down), Keyboard(S), Axis(0, LeftY, Positive));
-	var move = new Point2D();
+	var move = new Vector2D();
 	// each frame:
 	if (actions.isPressed("jump")) jump();
 	actions.computeVector("left", "right", "up", "down", move);
@@ -178,16 +178,16 @@ class Actions {
 		@param right  The action toward +x.
 		@param up  The action toward -y.
 		@param down  The action toward +y.
-		@param out  Optional. The point to fill. A new point is created when omitted.
+		@param out  Optional. The vector to fill. A new vector is created when omitted.
 		@return  The direction. Its x is `getAxis(left, right)` and its y is `getAxis(up, down)`, scaled down when longer than 1. */
-	public function computeVector(left:String, right:String, up:String, down:String, ?out:Point2D):Point2D {
+	public function computeVector(left:String, right:String, up:String, down:String, ?out:Vector2D):Vector2D {
 		var x = getAxis(left, right), y = getAxis(up, down);
 		var length = Math.sqrt(x * x + y * y);
 		if (length > 1) {
 			x /= length;
 			y /= length;
 		}
-		return out == null ? new Point2D(x, y) : out.set(x, y);
+		return out == null ? new Vector2D(x, y) : out.set(x, y);
 	}
 
 	// The device that reads a binding of its kind, or null when the game gave none.

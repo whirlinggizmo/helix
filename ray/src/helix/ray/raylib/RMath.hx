@@ -645,7 +645,7 @@ class RMath {
 		@param angle  The angle, in radians.
 		@return  The turned vector. */
 	static function Vector3RotateByAxisAngle(v:Vector3, axis:Vector3, angle:Float):Vector3 {
-		var m = new Matrix3D().makeRotation(axis.x, axis.y, axis.z, angle);
+		var m = Matrix3D.fromRotation(axis.x, axis.y, axis.z, angle);
 		var p = m.transformPoint(v.x, v.y, v.z);
 		return new Vector3(p.x, p.y, p.z);
 	}
@@ -1183,7 +1183,7 @@ class RMath {
 		@param mat  The matrix.
 		@return  Its transpose. */
 	static function MatrixTranspose(mat:Matrix):Matrix {
-		return toMatrix(new Matrix3D().copyFrom(toMatrix3D(mat)).transpose());
+		return toMatrix(toMatrix3D(mat).transpose());
 	}
 
 	/** Returns a matrix inverted.
@@ -1192,7 +1192,7 @@ class RMath {
 		@return  Its inverse. */
 	static function MatrixInvert(mat:Matrix):Matrix {
 		var inverse = toMatrix3D(mat);
-		inverse.invert();
+		inverse.invert(inverse);
 		return toMatrix(inverse);
 	}
 
@@ -1263,7 +1263,7 @@ class RMath {
 		@param right  The second.
 		@return  The product. */
 	static function MatrixMultiply(left:Matrix, right:Matrix):Matrix {
-		return toMatrix(new Matrix3D().compose(toMatrix3D(left), toMatrix3D(right)));
+		return toMatrix(Matrix3D.compose(toMatrix3D(left), toMatrix3D(right)));
 	}
 
 	/** Returns a translation.
@@ -1273,7 +1273,7 @@ class RMath {
 		@param z  Along z.
 		@return  The matrix. */
 	static function MatrixTranslate(x:Float, y:Float, z:Float):Matrix {
-		return toMatrix(new Matrix3D().makeTranslation(x, y, z));
+		return toMatrix(Matrix3D.fromTranslation(x, y, z));
 	}
 
 	/** Returns a rotation about an axis.
@@ -1282,7 +1282,7 @@ class RMath {
 		@param angle  The angle, in radians.
 		@return  The matrix. */
 	static function MatrixRotate(axis:Vector3, angle:Float):Matrix {
-		return toMatrix(new Matrix3D().makeRotation(axis.x, axis.y, axis.z, angle));
+		return toMatrix(Matrix3D.fromRotation(axis.x, axis.y, axis.z, angle));
 	}
 
 	/** Returns a rotation about x.
@@ -1290,7 +1290,7 @@ class RMath {
 		@param angle  The angle, in radians.
 		@return  The matrix. */
 	static function MatrixRotateX(angle:Float):Matrix {
-		return toMatrix(new Matrix3D().makeRotation(1, 0, 0, angle));
+		return toMatrix(Matrix3D.fromRotation(1, 0, 0, angle));
 	}
 
 	/** Returns a rotation about y.
@@ -1298,7 +1298,7 @@ class RMath {
 		@param angle  The angle, in radians.
 		@return  The matrix. */
 	static function MatrixRotateY(angle:Float):Matrix {
-		return toMatrix(new Matrix3D().makeRotation(0, 1, 0, angle));
+		return toMatrix(Matrix3D.fromRotation(0, 1, 0, angle));
 	}
 
 	/** Returns a rotation about z.
@@ -1306,7 +1306,7 @@ class RMath {
 		@param angle  The angle, in radians.
 		@return  The matrix. */
 	static function MatrixRotateZ(angle:Float):Matrix {
-		return toMatrix(new Matrix3D().makeRotation(0, 0, 1, angle));
+		return toMatrix(Matrix3D.fromRotation(0, 0, 1, angle));
 	}
 
 	/** Returns rotations about x, then y, then z.
@@ -1314,8 +1314,8 @@ class RMath {
 		@param angle  The angles, in radians.
 		@return  The matrix. */
 	static function MatrixRotateXYZ(angle:Vector3):Matrix {
-		var m = new Matrix3D().compose(new Matrix3D().makeRotation(1, 0, 0, angle.x), new Matrix3D().makeRotation(0, 1, 0, angle.y));
-		return toMatrix(new Matrix3D().compose(m, new Matrix3D().makeRotation(0, 0, 1, angle.z)));
+		var m = Matrix3D.compose(Matrix3D.fromRotation(1, 0, 0, angle.x), Matrix3D.fromRotation(0, 1, 0, angle.y));
+		return toMatrix(Matrix3D.compose(m, Matrix3D.fromRotation(0, 0, 1, angle.z)));
 	}
 
 	/** Returns rotations about z, then y, then x.
@@ -1342,7 +1342,7 @@ class RMath {
 		@param z  Along z.
 		@return  The matrix. */
 	static function MatrixScale(x:Float, y:Float, z:Float):Matrix {
-		return toMatrix(new Matrix3D().makeScale(x, y, z));
+		return toMatrix(Matrix3D.fromScale(x, y, z));
 	}
 
 	/** Returns a perspective projection by its near plane's edges.
@@ -1368,7 +1368,7 @@ class RMath {
 		@param farPlane  The far plane.
 		@return  The matrix. */
 	static function MatrixPerspective(fovY:Float, aspect:Float, nearPlane:Float, farPlane:Float):Matrix {
-		return toMatrix(new Matrix3D().makePerspective(fovY, aspect, nearPlane, farPlane));
+		return toMatrix(Matrix3D.fromPerspective(fovY, aspect, nearPlane, farPlane));
 	}
 
 	/** Returns an orthographic projection.
@@ -1381,7 +1381,7 @@ class RMath {
 		@param farPlane  The far plane.
 		@return  The matrix. */
 	static function MatrixOrtho(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix {
-		return toMatrix(new Matrix3D().makeOrthographic(left, right, bottom, top, nearPlane, farPlane));
+		return toMatrix(Matrix3D.fromOrthographic(left, right, bottom, top, nearPlane, farPlane));
 	}
 
 	/** Returns a view looking from eye at target.
@@ -1391,7 +1391,7 @@ class RMath {
 		@param up  Up.
 		@return  The matrix. */
 	static function MatrixLookAt(eye:Vector3, target:Vector3, up:Vector3):Matrix {
-		return toMatrix(new Matrix3D().makeLookAt(eye.x, eye.y, eye.z, target.x, target.y, target.z, up.x, up.y, up.z));
+		return toMatrix(Matrix3D.fromLookAt(eye.x, eye.y, eye.z, target.x, target.y, target.z, up.x, up.y, up.z));
 	}
 
 	/** Returns a matrix's values as an array, by columns: m0 to m15, as a shader takes them.
@@ -1648,7 +1648,7 @@ class RMath {
 		@param q  The quaternion.
 		@return  The matrix. */
 	static function QuaternionToMatrix(q:Quaternion):Matrix {
-		return toMatrix(new Matrix3D().makeQuaternionRotation(q.x, q.y, q.z, q.w));
+		return toMatrix(Matrix3D.fromQuaternion(q.x, q.y, q.z, q.w));
 	}
 
 	/** Returns the rotation about an axis as a quaternion, normalized; the identity for an axis of no length.

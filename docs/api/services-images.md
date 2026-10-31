@@ -8,7 +8,7 @@
 
 Represents an image in memory: its size and its pixels, 8-bit RGBA.
 
-An image is made here, loaded by `Images.load`, or decoded by `Images.decode`; then changed, drawn into and copied, and made a texture. What changes the size (cropping, resizing, rotating) returns a new image; everything else changes the pixels in place. Positions are in pixels from the top-left, and what falls outside the image is skipped. Colors are 0xAARRGGBB, as `helix.math.Color` reads them.
+An image is made here, loaded by `Images.load`, or decoded by `Images.decode`; then changed, drawn into and copied, and made a texture. What changes the size (cropping, resizing, rotating) returns a new image; everything else changes the pixels in place and returns the image, so calls chain (`image.grayscale().contrast(20)`). Positions are in pixels from the top-left, and what falls outside the image is skipped. Colors are 0xAARRGGBB, as `helix.math.Color` reads them.
 
 The operations are raylib 5.5's, in its arithmetic: each gives the pixels raylib's function of the same name gives an R8G8B8A8 image, byte for byte, on every target. Shapes overwrite the pixels they cover, as raylib's do; images and text blend over them.
 
@@ -44,35 +44,35 @@ function rotate(radians:Float):Image
 function rotateClockwise():Image
 function rotateCounterclockwise():Image
 function getMipmaps():Array<Image>
-function flipVertical():Void
-function flipHorizontal():Void
-function tint(color:Int):Void
-function invert():Void
-function grayscale():Void
-function contrast(amount:Float):Void
-function brighten(amount:Int):Void
-function replaceColor(from:Int, to:Int):Void
-function clearAlpha(color:Int, threshold:Float):Void
-function maskAlpha(mask:Image):Void
-function premultiplyAlpha():Void
-function blur(radius:Int):Void
-function convolve(kernel:Array<Float>):Void
-function dither(redBits:Int, greenBits:Int, blueBits:Int, alphaBits:Int):Void
+function flipVertical():Image
+function flipHorizontal():Image
+function tint(color:Int):Image
+function invert():Image
+function grayscale():Image
+function contrast(amount:Float):Image
+function brighten(amount:Int):Image
+function replaceColor(from:Int, to:Int):Image
+function clearAlpha(color:Int, threshold:Float):Image
+function maskAlpha(mask:Image):Image
+function premultiplyAlpha():Image
+function blur(radius:Int):Image
+function convolve(kernel:Array<Float>):Image
+function dither(redBits:Int, greenBits:Int, blueBits:Int, alphaBits:Int):Image
 function getPixel(x:Int, y:Int):Int
 function getPalette(max:Int):Array<Int>
 function getAlphaBorder(threshold:Float, ?out:Bounds2D):Bounds2D
-function fill(color:Int):Void
-function setPixel(x:Int, y:Int, color:Int):Void
-function drawLine(x0:Int, y0:Int, x1:Int, y1:Int, color:Int):Void
-function drawThickLine(x0:Float, y0:Float, x1:Float, y1:Float, thickness:Int, color:Int):Void
-function drawCircle(x:Int, y:Int, radius:Int, color:Int):Void
-function drawCircleLines(x:Int, y:Int, radius:Int, color:Int):Void
-function drawRectangle(x:Int, y:Int, width:Int, height:Int, color:Int):Void
-function drawRectangleLines(x:Int, y:Int, width:Int, height:Int, thickness:Int, color:Int):Void
-function drawTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color0:Int, color1:Int, color2:Int):Void
-function drawTriangleLines(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color:Int):Void
-function drawImage(source:Image, sourceX:Float, sourceY:Float, sourceWidth:Float, sourceHeight:Float, x:Float, y:Float, width:Float, height:Float, tint:Int):Void
-function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacing:Float, color:Int):Void
+function fill(color:Int):Image
+function setPixel(x:Int, y:Int, color:Int):Image
+function drawLine(x0:Int, y0:Int, x1:Int, y1:Int, color:Int):Image
+function drawThickLine(x0:Float, y0:Float, x1:Float, y1:Float, thickness:Int, color:Int):Image
+function drawCircle(x:Int, y:Int, radius:Int, color:Int):Image
+function drawCircleLines(x:Int, y:Int, radius:Int, color:Int):Image
+function drawRectangle(x:Int, y:Int, width:Int, height:Int, color:Int):Image
+function drawRectangleLines(x:Int, y:Int, width:Int, height:Int, thickness:Int, color:Int):Image
+function drawTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color0:Int, color1:Int, color2:Int):Image
+function drawTriangleLines(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color:Int):Image
+function drawImage(source:Image, sourceX:Float, sourceY:Float, sourceWidth:Float, sourceHeight:Float, x:Float, y:Float, width:Float, height:Float, tint:Int):Image
+function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacing:Float, color:Int):Image
 ```
 
 - `new`: Creates an image over its pixels, which it keeps rather than copies.
@@ -196,32 +196,45 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
 
   Each level is the last one resized `Bilinear`, which at exactly half the size is the average of each 2 by 2 square, weighted by alpha. (raylib's `ImageMipmaps` resizes with stb_image_resize2.)
 - `flipVertical`: Turns it upside down.
+  - returns: This image.
 - `flipHorizontal`: Mirrors it left to right.
+  - returns: This image.
 - `tint`: Multiplies each pixel by a color, channel by channel, alpha included: white leaves it unchanged.
   - `color`: The color, as 0xAARRGGBB.
+  - returns: This image.
 - `invert`: Inverts each pixel's red, green and blue; alpha is unchanged.
+  - returns: This image.
 - `grayscale`: Makes it gray, by luminance (0.299 red, 0.587 green, 0.114 blue); alpha is unchanged.
+  - returns: This image.
 - `contrast`: Changes its contrast: red, green and blue pushed away from mid-gray, or pulled toward it; alpha is unchanged.
   - `amount`: How far, -100 (all mid-gray) to 100 (the most); 0 leaves it unchanged. Clamped to -100 to 100.
+  - returns: This image.
 - `brighten`: Changes its brightness: the same amount added to red, green and blue; alpha is unchanged.
   - `amount`: The amount, -255 to 255; clamped to that.
+  - returns: This image.
 
   A channel taken below 0 becomes 1, not 0, as raylib's does; one taken over 255 becomes 255.
 - `replaceColor`: Changes every pixel of one color to another.
   - `from`: The color changed, as 0xAARRGGBB, alpha included.
   - `to`: The color it becomes.
+  - returns: This image.
 - `clearAlpha`: Changes every pixel whose alpha is at or under a threshold to a color.
   - `color`: The color, as 0xAARRGGBB.
   - `threshold`: The threshold, 0 to 1, in 255ths: the rest of it is dropped.
+  - returns: This image.
 - `maskAlpha`: Takes its alpha from another image of the same size: the mask's luminance (0.299 red, 0.587 green, 0.114 blue).
   - `mask`: The mask.
+  - returns: This image.
 
   A white mask leaves it opaque, a black one clear; the mask's own alpha is ignored. A mask of another size changes nothing.
 - `premultiplyAlpha`: Multiplies each pixel's red, green and blue by its alpha, rounding down.
+  - returns: This image.
 - `blur`: Blurs it: an approximate Gaussian, four passes of a box blur across and down, over premultiplied alpha.
   - `radius`: How far each box reaches either side of a pixel, in pixels; 0 or less changes nothing.
+  - returns: This image.
 - `convolve`: Applies a square kernel to red, green and blue; alpha is unchanged.
   - `kernel`: The weights, rows top first: 9 for 3 by 3, 25 for 5 by 5, any square count. Another count changes nothing.
+  - returns: This image.
 
   Each channel is the sum of the pixels around it times the kernel's weights, as fractions of 255, clamped to 0 to 1. A pixel past the left or right edge is taken from the row beside, and one past the top or bottom counts as black, as raylib's does. A kernel of even width reaches one pixel further up and left.
 - `dither`: Dithers it to fewer bits a channel (Floyd-Steinberg), its pixels left 8-bit at the levels those bits hold.
@@ -229,6 +242,7 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `greenBits`: Green's bits.
   - `blueBits`: Blue's bits.
   - `alphaBits`: Alpha's bits.
+  - returns: This image.
 
   Each channel is cut to its top bits, and what was cut is spread to the pixels right and below. A level is widened back as raylib's `ImageFormat` widens a 16-bit format to 8 bits: 5 bits' 31 becomes 255, 4 bits' 15 becomes 254. Alpha is cut and not spread; with 0 alpha bits it is opaque.
 - `getPixel`: Returns a pixel's color.
@@ -244,16 +258,19 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - returns: The bounds, in pixels, from the first pixel's top-left to past the last's bottom-right; empty when no pixel is over it.
 - `fill`: Fills it with a color.
   - `color`: The color, as 0xAARRGGBB.
+  - returns: This image.
 - `setPixel`: Sets a pixel; one outside the image is skipped.
   - `x`: The pixel's column, from the left.
   - `y`: Its row, from the top.
   - `color`: The color, as 0xAARRGGBB.
+  - returns: This image.
 - `drawLine`: Draws a line one pixel wide, from its start up to its end; the end pixel itself is not drawn.
   - `x0`: The start's column, in pixels from the left.
   - `y0`: The start's row, from the top.
   - `x1`: The end's column.
   - `y1`: The end's row.
   - `color`: The color, as 0xAARRGGBB.
+  - returns: This image.
 - `drawThickLine`: Draws a line of a thickness: the line, and copies of it beside it, above and below for a line more across than down, left and right otherwise.
   - `x0`: The start's x, in pixels from the left.
   - `y0`: The start's y, from the top.
@@ -261,6 +278,7 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `y1`: The end's y.
   - `thickness`: The thickness, in pixels.
   - `color`: The color, as 0xAARRGGBB.
+  - returns: This image.
 
   The ends are rounded to whole pixels.
 - `drawCircle`: Fills a circle (midpoint algorithm).
@@ -268,17 +286,20 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `y`: The middle's row, from the top.
   - `radius`: The radius, in pixels.
   - `color`: The color, as 0xAARRGGBB.
+  - returns: This image.
 - `drawCircleLines`: Outlines a circle, one pixel wide (midpoint algorithm).
   - `x`: The middle's column, in pixels from the left.
   - `y`: The middle's row, from the top.
   - `radius`: The radius, in pixels.
   - `color`: The color, as 0xAARRGGBB.
+  - returns: This image.
 - `drawRectangle`: Fills a rectangle; what falls outside the image is skipped.
   - `x`: The left edge, in pixels.
   - `y`: The top edge.
   - `width`: The width, in pixels.
   - `height`: The height.
   - `color`: The color, as 0xAARRGGBB.
+  - returns: This image.
 
   A rectangle 0 wide still sets its top-left pixel, and one 0 high its top row, as raylib's does (its circles rely on it).
 - `drawRectangleLines`: Outlines a rectangle, the outline inside it.
@@ -288,6 +309,7 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `height`: The height.
   - `thickness`: The outline's thickness, in pixels.
   - `color`: The color, as 0xAARRGGBB.
+  - returns: This image.
 - `drawTriangle`: Fills a triangle, each corner its own color, blended across it.
   - `x0`: The first corner's x, in pixels from the left.
   - `y0`: The first corner's y, from the top.
@@ -298,6 +320,7 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `color0`: The first corner's color, as 0xAARRGGBB.
   - `color1`: The second corner's color.
   - `color2`: The third corner's color.
+  - returns: This image.
 
   The corners may go either way round. When the three colors are the same the triangle is that color (raylib's `ImageDrawTriangle`); otherwise each channel is blended by the pixel's weights, each rounded down (raylib's `ImageDrawTriangleEx`).
 - `drawTriangleLines`: Outlines a triangle with three `drawLine`s, its corners cut to whole pixels.
@@ -308,6 +331,7 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `x2`: The third corner's x.
   - `y2`: The third corner's y.
   - `color`: The color, as 0xAARRGGBB.
+  - returns: This image.
 - `drawImage`: Draws a rectangle of another image into a rectangle of this one, tinted, blended over.
   - `source`: The image drawn from; it may be this one only when the rectangles don't overlap.
   - `sourceX`: The source rectangle's left edge, in the source's pixels.
@@ -319,6 +343,7 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `width`: Its width.
   - `height`: Its height.
   - `tint`: The color the source is multiplied by, as 0xAARRGGBB: white leaves it unchanged.
+  - returns: This image.
 
   The source rectangle is clamped to the source. When its whole-pixel size differs from the destination's it is resized `Bilinear` first (raylib's `ImageDraw` resizes with stb_image_resize2). Positions are cut to whole pixels.
 - `drawText`: Draws text in a font, tinted, blended over.
@@ -329,6 +354,7 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `size`: The height of a line, in pixels; the font's own size draws it unscaled.
   - `spacing`: The pixels added after each character, at the font's size.
   - `color`: The color, as 0xAARRGGBB.
+  - returns: This image.
 
   The text is laid out at the font's size, as raylib's `ImageDrawTextEx` lays it, then scaled to `size` (`Bilinear`) and drawn: each glyph at the pen and its offsets, the pen moved by its advance (or its width, for a glyph advancing 0) and `spacing`. A newline starts the next line, the font's size and line gap below. A character the font lacks is drawn as its "?", or as its first glyph; spaces and tabs only move the pen.
 

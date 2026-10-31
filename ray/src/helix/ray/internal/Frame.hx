@@ -66,7 +66,7 @@ class Frame {
 	public var transform:Null<Matrix3D> = null;
 
 	// Where a vertex goes under the transform.
-	final moved = new helix.math.Point3D();
+	final moved = new helix.math.Vector3D();
 
 	/** How the next draws blend, `BeginBlendMode`'s. */
 	public var blend:BlendMode = Alpha;
@@ -147,7 +147,7 @@ class Frame {
 	/** Sets the matrices to 2D over the current pass: pixels from its top left. */
 	public function screen2D():Void {
 		view = new Matrix3D();
-		projection = new Matrix3D().makeOrthographic(0, pass.width, pass.height, 0, 0, 1);
+		projection = Matrix3D.fromOrthographic(0, pass.width, pass.height, 0, 0, 1);
 		open = null;
 	}
 
@@ -337,15 +337,15 @@ class Frame {
 
 	// The program's blocks as they are now, with raylib's own values set: the matrices and the diffuse color.
 	function values(p:Program, model:Matrix3D, diffuse:Array<Float>):Array<Null<Bytes>> {
-		var modelView = new Matrix3D().compose(model, view);
-		p.writeNamed("mvp", new Matrix3D().compose(modelView, projection).values);
+		var modelView = Matrix3D.compose(model, view);
+		p.writeNamed("mvp", Matrix3D.compose(modelView, projection).values);
 		p.writeNamed("matModel", model.values);
 		p.writeNamed("matView", view.values);
 		p.writeNamed("matProjection", projection.values);
 		if (p.declares("matNormal")) {
 			var normal = new Matrix3D().copyFrom(model);
-			normal.invert();
-			p.writeNamed("matNormal", normal.transpose().values);
+			normal.invert(normal);
+			p.writeNamed("matNormal", normal.transpose(normal).values);
 		}
 		p.writeNamed("colDiffuse", diffuse);
 		return [for (b in p.blocks) b == null ? null : b.sub(0, b.length)];

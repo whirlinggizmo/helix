@@ -256,11 +256,11 @@ class GltfFile {
 		var s = optionalNumbers(field(node, "scale")),
 			r = optionalNumbers(field(node, "rotation")),
 			t = optionalNumbers(field(node, "translation"));
-		var m = s == null ? new Matrix3D() : new Matrix3D().makeScale(s[0], s[1], s[2]);
+		var m = s == null ? new Matrix3D() : Matrix3D.fromScale(s[0], s[1], s[2]);
 		if (r != null)
-			m = new Matrix3D().compose(m, new Matrix3D().makeQuaternionRotation(r[0], r[1], r[2], r[3]));
+			m = Matrix3D.compose(m, Matrix3D.fromQuaternion(r[0], r[1], r[2], r[3]));
 		if (t != null)
-			m = new Matrix3D().compose(m, new Matrix3D().makeTranslation(t[0], t[1], t[2]));
+			m = Matrix3D.compose(m, Matrix3D.fromTranslation(t[0], t[1], t[2]));
 		return m;
 	}
 

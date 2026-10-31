@@ -2212,10 +2212,10 @@ class RCore {
 		@param camera  The camera.
 		@return  The matrix. */
 	static function GetCameraMatrix2D(camera:Camera2D):Matrix {
-		var m = new Matrix3D().makeTranslation(-camera.target.x, -camera.target.y, 0);
-		m = new Matrix3D().compose(m, new Matrix3D().makeRotation(0, 0, 1, camera.rotation * DEG2RAD));
-		m = new Matrix3D().compose(m, new Matrix3D().makeScale(camera.zoom, camera.zoom, 1));
-		m = new Matrix3D().compose(m, new Matrix3D().makeTranslation(camera.offset.x, camera.offset.y, 0));
+		var m = Matrix3D.fromTranslation(-camera.target.x, -camera.target.y, 0);
+		m = Matrix3D.compose(m, Matrix3D.fromRotation(0, 0, 1, camera.rotation * DEG2RAD));
+		m = Matrix3D.compose(m, Matrix3D.fromScale(camera.zoom, camera.zoom, 1));
+		m = Matrix3D.compose(m, Matrix3D.fromTranslation(camera.offset.x, camera.offset.y, 0));
 		return toMatrix(m);
 	}
 
@@ -2236,7 +2236,7 @@ class RCore {
 		@return  The point. */
 	static function GetScreenToWorld2D(position:Vector2, camera:Camera2D):Vector2 {
 		var inverse = toMatrix3D(GetCameraMatrix2D(camera));
-		inverse.invert();
+		inverse.invert(inverse);
 		var p = inverse.transformPoint(position.x, position.y, 0);
 		return new Vector2(p.x, p.y);
 	}
@@ -2426,8 +2426,8 @@ class RCore {
 		@return  The ray. */
 	static function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int):Ray {
 		var x = 2 * position.x / width - 1, y = 1 - 2 * position.y / height;
-		var inverse = new Matrix3D().compose(cameraView(camera), cameraProjection(camera, width / height));
-		inverse.invert();
+		var inverse = Matrix3D.compose(cameraView(camera), cameraProjection(camera, width / height));
+		inverse.invert(inverse);
 		function unproject(z:Float):Array<Float> {
 			var p = [
 				inverse.values[0] * x + inverse.values[4] * y + inverse.values[8] * z + inverse.values[12],
@@ -2468,7 +2468,7 @@ class RCore {
 		@param height  The view's height.
 		@return  The position in the view. */
 	static function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int):Vector2 {
-		var m = new Matrix3D().compose(cameraView(camera), cameraProjection(camera, width / height)).values;
+		var m = Matrix3D.compose(cameraView(camera), cameraProjection(camera, width / height)).values;
 		var x = m[0] * position.x + m[4] * position.y + m[8] * position.z + m[12];
 		var y = m[1] * position.x + m[5] * position.y + m[9] * position.z + m[13];
 		var w = m[3] * position.x + m[7] * position.y + m[11] * position.z + m[15];

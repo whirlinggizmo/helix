@@ -10,8 +10,9 @@ import helix.services.fonts.Glyph2D;
 /** Represents an image in memory: its size and its pixels, 8-bit RGBA.
 
 	An image is made here, loaded by `Images.load`, or decoded by `Images.decode`; then changed, drawn into and copied, and made a texture.
-	What changes the size (cropping, resizing, rotating) returns a new image; everything else changes the pixels in place. Positions are
-	in pixels from the top-left, and what falls outside the image is skipped. Colors are 0xAARRGGBB, as `helix.math.Color` reads them.
+	What changes the size (cropping, resizing, rotating) returns a new image; everything else changes the pixels in place and returns the
+	image, so calls chain (`image.grayscale().contrast(20)`). Positions are in pixels from the top-left, and what falls outside the image
+	is skipped. Colors are 0xAARRGGBB, as `helix.math.Color` reads them.
 
 	The operations are raylib 5.5's, in its arithmetic: each gives the pixels raylib's function of the same name gives an R8G8B8A8 image,
 	byte for byte, on every target. Shapes overwrite the pixels they cover, as raylib's do; images and text blend over them.
@@ -496,8 +497,10 @@ class Image {
 
 	// ---- Changed in place ----
 
-	/** Turns it upside down. */
-	public function flipVertical():Void {
+	/** Turns it upside down.
+
+		@return  This image. */
+	public function flipVertical():Image {
 		var row = Bytes.alloc(width * 4), stride = width * 4;
 		for (y in 0...height >> 1) {
 			var top = y * stride, bottom = (height - 1 - y) * stride;
@@ -505,10 +508,13 @@ class Image {
 			pixels.blit(top, pixels, bottom, stride);
 			pixels.blit(bottom, row, 0, stride);
 		}
+		return this;
 	}
 
-	/** Mirrors it left to right. */
-	public function flipHorizontal():Void {
+	/** Mirrors it left to right.
+
+		@return  This image. */
+	public function flipHorizontal():Image {
 		for (y in 0...height) {
 			var left = y * width * 4, right = left + (width - 1) * 4;
 			while (left < right) {
@@ -519,38 +525,48 @@ class Image {
 				right -= 4;
 			}
 		}
+		return this;
 	}
 
 	/** Multiplies each pixel by a color, channel by channel, alpha included: white leaves it unchanged.
 
-		@param color  The color, as 0xAARRGGBB. */
-	public function tint(color:Int):Void {
+		@param color  The color, as 0xAARRGGBB.
+		@return  This image. */
+	public function tint(color:Int):Image {
 		var t = [red(color), green(color), blue(color), alpha(color)];
 		for (i in 0...width * height * 4)
 			pixels.set(i, Std.int(pixels.get(i) * t[i & 3] / 255));
+		return this;
 	}
 
-	/** Inverts each pixel's red, green and blue; alpha is unchanged. */
-	public function invert():Void {
+	/** Inverts each pixel's red, green and blue; alpha is unchanged.
+
+		@return  This image. */
+	public function invert():Image {
 		for (i in 0...width * height)
 			for (c in 0...3)
 				pixels.set(i * 4 + c, 255 - pixels.get(i * 4 + c));
+		return this;
 	}
 
-	/** Makes it gray, by luminance (0.299 red, 0.587 green, 0.114 blue); alpha is unchanged. */
-	public function grayscale():Void {
+	/** Makes it gray, by luminance (0.299 red, 0.587 green, 0.114 blue); alpha is unchanged.
+
+		@return  This image. */
+	public function grayscale():Image {
 		for (i in 0...width * height) {
 			var v = luminance(pixels, i * 4);
 			pixels.set(i * 4, v);
 			pixels.set(i * 4 + 1, v);
 			pixels.set(i * 4 + 2, v);
 		}
+		return this;
 	}
 
 	/** Changes its contrast: red, green and blue pushed away from mid-gray, or pulled toward it; alpha is unchanged.
 
-		@param amount  How far, -100 (all mid-gray) to 100 (the most); 0 leaves it unchanged. Clamped to -100 to 100. */
-	public function contrast(amount:Float):Void {
+		@param amount  How far, -100 (all mid-gray) to 100 (the most); 0 leaves it unchanged. Clamped to -100 to 100.
+		@return  This image. */
+	public function contrast(amount:Float):Image {
 		amount = f32(amount);
 		amount = amount < -100 ? -100 : amount > 100 ? 100 : amount;
 		var c = f32(f32(100 + amount) / 100);
@@ -560,56 +576,67 @@ class Image {
 				var v = f32(f32(f32(f32(f32(pixels.get(i * 4 + k) / 255) - 0.5) * c) + 0.5) * 255);
 				pixels.set(i * 4 + k, Std.int(v < 0 ? 0 : v > 255 ? 255 : v));
 			}
+		return this;
 	}
 
 	/** Changes its brightness: the same amount added to red, green and blue; alpha is unchanged.
 
 		A channel taken below 0 becomes 1, not 0, as raylib's does; one taken over 255 becomes 255.
-		@param amount  The amount, -255 to 255; clamped to that. */
-	public function brighten(amount:Int):Void {
+		@param amount  The amount, -255 to 255; clamped to that.
+		@return  This image. */
+	public function brighten(amount:Int):Image {
 		amount = amount < -255 ? -255 : amount > 255 ? 255 : amount;
 		for (i in 0...width * height)
 			for (k in 0...3) {
 				var v = pixels.get(i * 4 + k) + amount;
 				pixels.set(i * 4 + k, v < 0 ? 1 : v > 255 ? 255 : v);
 			}
+		return this;
 	}
 
 	/** Changes every pixel of one color to another.
 
 		@param from  The color changed, as 0xAARRGGBB, alpha included.
-		@param to  The color it becomes. */
-	public function replaceColor(from:Int, to:Int):Void {
+		@param to  The color it becomes.
+		@return  This image. */
+	public function replaceColor(from:Int, to:Int):Image {
 		var f = rgba(from), t = rgba(to);
 		for (i in 0...width * height)
 			if (pixels.getInt32(i * 4) == f)
 				pixels.setInt32(i * 4, t);
+		return this;
 	}
 
 	/** Changes every pixel whose alpha is at or under a threshold to a color.
 
 		@param color  The color, as 0xAARRGGBB.
-		@param threshold  The threshold, 0 to 1, in 255ths: the rest of it is dropped. */
-	public function clearAlpha(color:Int, threshold:Float):Void {
+		@param threshold  The threshold, 0 to 1, in 255ths: the rest of it is dropped.
+		@return  This image. */
+	public function clearAlpha(color:Int, threshold:Float):Image {
 		var limit = byte(f32(f32(threshold) * 255)), c = rgba(color);
 		for (i in 0...width * height)
 			if (pixels.get(i * 4 + 3) <= limit)
 				pixels.setInt32(i * 4, c);
+		return this;
 	}
 
 	/** Takes its alpha from another image of the same size: the mask's luminance (0.299 red, 0.587 green, 0.114 blue).
 
 		A white mask leaves it opaque, a black one clear; the mask's own alpha is ignored. A mask of another size changes nothing.
-		@param mask  The mask. */
-	public function maskAlpha(mask:Image):Void {
+		@param mask  The mask.
+		@return  This image. */
+	public function maskAlpha(mask:Image):Image {
 		if (mask.width != width || mask.height != height)
-			return;
+			return this;
 		for (i in 0...width * height)
 			pixels.set(i * 4 + 3, luminance(mask.pixels, i * 4));
+		return this;
 	}
 
-	/** Multiplies each pixel's red, green and blue by its alpha, rounding down. */
-	public function premultiplyAlpha():Void {
+	/** Multiplies each pixel's red, green and blue by its alpha, rounding down.
+
+		@return  This image. */
+	public function premultiplyAlpha():Image {
 		for (i in 0...width * height) {
 			var a = pixels.get(i * 4 + 3);
 			if (a == 0)
@@ -621,14 +648,16 @@ class Image {
 					pixels.set(i * 4 + k, byte(f32(pixels.get(i * 4 + k) * f)));
 			}
 		}
+		return this;
 	}
 
 	/** Blurs it: an approximate Gaussian, four passes of a box blur across and down, over premultiplied alpha.
 
-		@param radius  How far each box reaches either side of a pixel, in pixels; 0 or less changes nothing. */
-	public function blur(radius:Int):Void {
+		@param radius  How far each box reaches either side of a pixel, in pixels; 0 or less changes nothing.
+		@return  This image. */
+	public function blur(radius:Int):Image {
 		if (width == 0 || height == 0 || radius <= 0)
-			return;
+			return this;
 		premultiplyAlpha();
 		var count = width * height * 4,
 			a = new Vector<Float>(count),
@@ -704,6 +733,7 @@ class Image {
 				pixels.set(at + 3, byte(w));
 			}
 		}
+		return this;
 	}
 
 	/** Applies a square kernel to red, green and blue; alpha is unchanged.
@@ -711,11 +741,12 @@ class Image {
 		Each channel is the sum of the pixels around it times the kernel's weights, as fractions of 255, clamped to 0 to 1. A pixel past the
 		left or right edge is taken from the row beside, and one past the top or bottom counts as black, as raylib's does. A kernel of even
 		width reaches one pixel further up and left.
-		@param kernel  The weights, rows top first: 9 for 3 by 3, 25 for 5 by 5, any square count. Another count changes nothing. */
-	public function convolve(kernel:Array<Float>):Void {
+		@param kernel  The weights, rows top first: 9 for 3 by 3, 25 for 5 by 5, any square count. Another count changes nothing.
+		@return  This image. */
+	public function convolve(kernel:Array<Float>):Image {
 		var size = kernel.length, kw = Std.int(f32(Math.sqrt(f32(size))));
 		if (width == 0 || height == 0 || size == 0 || kw * kw != size)
-			return;
+			return this;
 		var weights = new Vector<Float>(size),
 			temp = new Vector<Float>(size * 3),
 			out = new Vector<Float>(width * height * 3);
@@ -748,6 +779,7 @@ class Image {
 		for (i in 0...total)
 			for (k in 0...3)
 				pixels.set(i * 4 + k, byte(f32(out[i * 3 + k] * 255)));
+		return this;
 	}
 
 	/** Dithers it to fewer bits a channel (Floyd-Steinberg), its pixels left 8-bit at the levels those bits hold.
@@ -758,8 +790,9 @@ class Image {
 		@param redBits  Red's bits, 0 to 8; clamped to that. 8 keeps its levels.
 		@param greenBits  Green's bits.
 		@param blueBits  Blue's bits.
-		@param alphaBits  Alpha's bits. */
-	public function dither(redBits:Int, greenBits:Int, blueBits:Int, alphaBits:Int):Void {
+		@param alphaBits  Alpha's bits.
+		@return  This image. */
+	public function dither(redBits:Int, greenBits:Int, blueBits:Int, alphaBits:Int):Image {
 		inline function clampBits(b:Int):Int
 			return b < 0 ? 0 : b > 8 ? 8 : b;
 		var bits = [
@@ -792,6 +825,7 @@ class Image {
 						spread(at + (width + 1) * 4, error, k, 1);
 				}
 			}
+		return this;
 	}
 
 	// ---- Read ----
@@ -856,21 +890,25 @@ class Image {
 
 	/** Fills it with a color.
 
-		@param color  The color, as 0xAARRGGBB. */
-	public function fill(color:Int):Void {
+		@param color  The color, as 0xAARRGGBB.
+		@return  This image. */
+	public function fill(color:Int):Image {
 		var c = rgba(color);
 		for (i in 0...width * height)
 			pixels.setInt32(i * 4, c);
+		return this;
 	}
 
 	/** Sets a pixel; one outside the image is skipped.
 
 		@param x  The pixel's column, from the left.
 		@param y  Its row, from the top.
-		@param color  The color, as 0xAARRGGBB. */
-	public function setPixel(x:Int, y:Int, color:Int):Void {
+		@param color  The color, as 0xAARRGGBB.
+		@return  This image. */
+	public function setPixel(x:Int, y:Int, color:Int):Image {
 		if (x >= 0 && x < width && y >= 0 && y < height)
 			pixels.setInt32((y * width + x) * 4, rgba(color));
+		return this;
 	}
 
 	/** Draws a line one pixel wide, from its start up to its end; the end pixel itself is not drawn.
@@ -879,8 +917,9 @@ class Image {
 		@param y0  The start's row, from the top.
 		@param x1  The end's column.
 		@param y1  The end's row.
-		@param color  The color, as 0xAARRGGBB. */
-	public function drawLine(x0:Int, y0:Int, x1:Int, y1:Int, color:Int):Void {
+		@param color  The color, as 0xAARRGGBB.
+		@return  This image. */
+	public function drawLine(x0:Int, y0:Int, x1:Int, y1:Int, color:Int):Image {
 		var c = rgba(color),
 			shortLen = y1 - y0,
 			longLen = x1 - x0,
@@ -905,6 +944,7 @@ class Image {
 			i += sgnInc;
 			j += decInc;
 		}
+		return this;
 	}
 
 	/** Draws a line of a thickness: the line, and copies of it beside it, above and below for a line more across than down, left and
@@ -916,8 +956,9 @@ class Image {
 		@param x1  The end's x.
 		@param y1  The end's y.
 		@param thickness  The thickness, in pixels.
-		@param color  The color, as 0xAARRGGBB. */
-	public function drawThickLine(x0:Float, y0:Float, x1:Float, y1:Float, thickness:Int, color:Int):Void {
+		@param color  The color, as 0xAARRGGBB.
+		@return  This image. */
+	public function drawThickLine(x0:Float, y0:Float, x1:Float, y1:Float, thickness:Int, color:Int):Image {
 		var ax = Std.int(f32(f32(x0) + 0.5)),
 			ay = Std.int(f32(f32(y0) + 0.5)),
 			bx = Std.int(f32(f32(x1) + 0.5)),
@@ -938,6 +979,7 @@ class Image {
 				drawLine(ax + i, ay, bx + i, by, color);
 			}
 		}
+		return this;
 	}
 
 	/** Fills a circle (midpoint algorithm).
@@ -945,8 +987,9 @@ class Image {
 		@param x  The middle's column, in pixels from the left.
 		@param y  The middle's row, from the top.
 		@param radius  The radius, in pixels.
-		@param color  The color, as 0xAARRGGBB. */
-	public function drawCircle(x:Int, y:Int, radius:Int, color:Int):Void {
+		@param color  The color, as 0xAARRGGBB.
+		@return  This image. */
+	public function drawCircle(x:Int, y:Int, radius:Int, color:Int):Image {
 		var cx = 0, cy = radius, decision = 3 - 2 * radius;
 		while (cy >= cx) {
 			drawRectangle(x - cx, y + cy, cx * 2, 1, color);
@@ -960,6 +1003,7 @@ class Image {
 			} else
 				decision = decision + 4 * cx + 6;
 		}
+		return this;
 	}
 
 	/** Outlines a circle, one pixel wide (midpoint algorithm).
@@ -967,8 +1011,9 @@ class Image {
 		@param x  The middle's column, in pixels from the left.
 		@param y  The middle's row, from the top.
 		@param radius  The radius, in pixels.
-		@param color  The color, as 0xAARRGGBB. */
-	public function drawCircleLines(x:Int, y:Int, radius:Int, color:Int):Void {
+		@param color  The color, as 0xAARRGGBB.
+		@return  This image. */
+	public function drawCircleLines(x:Int, y:Int, radius:Int, color:Int):Image {
 		var c = rgba(color), cx = 0, cy = radius, decision = 3 - 2 * radius;
 		while (cy >= cx) {
 			plot(x + cx, y + cy, c);
@@ -986,6 +1031,7 @@ class Image {
 			} else
 				decision = decision + 4 * cx + 6;
 		}
+		return this;
 	}
 
 	/** Fills a rectangle; what falls outside the image is skipped.
@@ -995,10 +1041,11 @@ class Image {
 		@param y  The top edge.
 		@param width  The width, in pixels.
 		@param height  The height.
-		@param color  The color, as 0xAARRGGBB. */
-	public function drawRectangle(x:Int, y:Int, width:Int, height:Int, color:Int):Void {
+		@param color  The color, as 0xAARRGGBB.
+		@return  This image. */
+	public function drawRectangle(x:Int, y:Int, width:Int, height:Int, color:Int):Image {
 		if (this.width == 0 || this.height == 0)
-			return;
+			return this;
 		if (x < 0) {
 			width += x;
 			x = 0;
@@ -1016,13 +1063,14 @@ class Image {
 		if (y + height >= this.height)
 			height = this.height - y;
 		if (x >= this.width || y >= this.height || x + width <= 0 || y + height <= 0)
-			return;
+			return this;
 		var c = rgba(color), first = (y * this.width + x) * 4;
 		pixels.setInt32(first, c);
 		for (i in 1...width)
 			pixels.setInt32(first + i * 4, c);
 		for (row in 1...height)
 			pixels.blit(first + row * this.width * 4, pixels, first, width * 4);
+		return this;
 	}
 
 	/** Outlines a rectangle, the outline inside it.
@@ -1032,12 +1080,14 @@ class Image {
 		@param width  The width, in pixels.
 		@param height  The height.
 		@param thickness  The outline's thickness, in pixels.
-		@param color  The color, as 0xAARRGGBB. */
-	public function drawRectangleLines(x:Int, y:Int, width:Int, height:Int, thickness:Int, color:Int):Void {
+		@param color  The color, as 0xAARRGGBB.
+		@return  This image. */
+	public function drawRectangleLines(x:Int, y:Int, width:Int, height:Int, thickness:Int, color:Int):Image {
 		drawRectangle(x, y, width, thickness, color);
 		drawRectangle(x, y + thickness, thickness, height - thickness * 2, color);
 		drawRectangle(x + width - thickness, y + thickness, thickness, height - thickness * 2, color);
 		drawRectangle(x, y + height - thickness, width, thickness, color);
+		return this;
 	}
 
 	/** Fills a triangle, each corner its own color, blended across it.
@@ -1052,8 +1102,9 @@ class Image {
 		@param y2  The third corner's y.
 		@param color0  The first corner's color, as 0xAARRGGBB.
 		@param color1  The second corner's color.
-		@param color2  The third corner's color. */
-	public function drawTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color0:Int, color1:Int, color2:Int):Void {
+		@param color2  The third corner's color.
+		@return  This image. */
+	public function drawTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color0:Int, color1:Int, color2:Int):Image {
 		var ax = f32(x0), ay = f32(y0), bx = f32(x1), by = f32(y1), cx = f32(x2), cy = f32(y2);
 		var xMin = Std.int(ax < bx ? (ax < cx ? ax : cx) : (bx < cx ? bx : cx));
 		var yMin = Std.int(ay < by ? (ay < cy ? ay : cy) : (by < cy ? by : cy));
@@ -1117,6 +1168,7 @@ class Image {
 			w2Row += w2YStep;
 			w3Row += w3YStep;
 		}
+		return this;
 	}
 
 	/** Outlines a triangle with three `drawLine`s, its corners cut to whole pixels.
@@ -1127,8 +1179,9 @@ class Image {
 		@param y1  The second corner's y.
 		@param x2  The third corner's x.
 		@param y2  The third corner's y.
-		@param color  The color, as 0xAARRGGBB. */
-	public function drawTriangleLines(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color:Int):Void {
+		@param color  The color, as 0xAARRGGBB.
+		@return  This image. */
+	public function drawTriangleLines(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color:Int):Image {
 		var ax = Std.int(f32(x0)),
 			ay = Std.int(f32(y0)),
 			bx = Std.int(f32(x1)),
@@ -1138,6 +1191,7 @@ class Image {
 		drawLine(ax, ay, bx, by, color);
 		drawLine(bx, by, cx, cy, color);
 		drawLine(cx, cy, ax, ay, color);
+		return this;
 	}
 
 	/** Draws a rectangle of another image into a rectangle of this one, tinted, blended over.
@@ -1153,11 +1207,12 @@ class Image {
 		@param y  Its top edge.
 		@param width  Its width.
 		@param height  Its height.
-		@param tint  The color the source is multiplied by, as 0xAARRGGBB: white leaves it unchanged. */
+		@param tint  The color the source is multiplied by, as 0xAARRGGBB: white leaves it unchanged.
+		@return  This image. */
 	public function drawImage(source:Image, sourceX:Float, sourceY:Float, sourceWidth:Float, sourceHeight:Float, x:Float, y:Float, width:Float, height:Float,
-			tint:Int):Void {
+			tint:Int):Image {
 		if (this.width == 0 || this.height == 0 || source.width == 0 || source.height == 0)
-			return;
+			return this;
 		var sx = f32(sourceX),
 			sy = f32(sourceY),
 			sw = f32(sourceWidth),
@@ -1178,7 +1233,7 @@ class Image {
 		var from = source;
 		if (Std.int(sw) != Std.int(dw) || Std.int(sh) != Std.int(dh)) {
 			if (Std.int(sw) <= 0 || Std.int(sh) <= 0 || Std.int(dw) <= 0 || Std.int(dh) <= 0)
-				return;
+				return this;
 			from = source.crop(Std.int(sx), Std.int(sy), Std.int(sw), Std.int(sh)).resize(Std.int(dw), Std.int(dh), Bilinear);
 			sx = 0;
 			sy = 0;
@@ -1237,6 +1292,7 @@ class Image {
 				d += 4;
 			}
 		}
+		return this;
 	}
 
 	/** Draws text in a font, tinted, blended over.
@@ -1251,10 +1307,11 @@ class Image {
 		@param y  The top of its first line, in pixels: its ascent above the baseline.
 		@param size  The height of a line, in pixels; the font's own size draws it unscaled.
 		@param spacing  The pixels added after each character, at the font's size.
-		@param color  The color, as 0xAARRGGBB. */
-	public function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacing:Float, color:Int):Void {
+		@param color  The color, as 0xAARRGGBB.
+		@return  This image. */
+	public function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacing:Float, color:Int):Image {
 		if (text.length == 0 || font.glyphs.length == 0)
-			return;
+			return this;
 		spacing = f32(spacing);
 		function glyphOf(codepoint:Int):Glyph2D {
 			var glyph = font.getGlyph(codepoint);
@@ -1285,7 +1342,7 @@ class Image {
 		var canvasWidth = Std.int(Math.ceil(f32(widest + f32((most - 1) * spacing))));
 		var canvasHeight = Std.int(Math.ceil(f32(f32((lines - 1) * lineHeight) + f32(font.size))));
 		if (canvasWidth <= 0 || canvasHeight <= 0)
-			return;
+			return this;
 		var canvas = blank(canvasWidth, canvasHeight), penX = 0., penY = 0.;
 		for (codepoint in new haxe.iterators.StringIteratorUnicode(text)) {
 			if (codepoint == "\n".code) {
@@ -1306,6 +1363,7 @@ class Image {
 			canvas = canvas.resize(Std.int(f32(canvasWidth * scale)), Std.int(f32(canvasHeight * scale)), Bilinear);
 		}
 		drawImage(canvas, 0, 0, canvas.width, canvas.height, x, y, canvas.width, canvas.height, 0xffffffff);
+		return this;
 	}
 
 	// ---- Helpers ----

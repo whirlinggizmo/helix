@@ -121,23 +121,28 @@ class Curve {
 	public function getZ(t:Float):Float
 		return dimensions < 3 ? 0 : at(t, 2);
 
-	/** Finds the point at a parameter, every coordinate at once.
+	/** Returns the position at a parameter, every coordinate at once.
 
 		@param t  The parameter: 0 at the start, 1 at the end.
-		@param out  Receives x and y, and z in 3 dimensions.
-		@return  out. */
-	public function evaluate(t:Float, out:Array<Float>):Array<Float> {
+		@param out  Optional. The array to fill with x and y, and z in 3 dimensions; a new one when omitted.
+		@return  The position. */
+	public function computePosition(t:Float, ?out:Array<Float>):Array<Float> {
+		if (out == null)
+			out = [for (_ in 0...dimensions) 0.];
 		for (axis in 0...dimensions)
 			out[axis] = at(t, axis);
 		return out;
 	}
 
-	/** Finds the direction the curve heads at a parameter.
+	/** Returns the direction the curve heads at a parameter.
 
 		@param t  The parameter: 0 at the start, 1 at the end.
-		@param out  Receives the direction as a unit vector, x and y, and z in 3 dimensions; zeros where the curve doesn't move.
-		@return  out. */
-	public function tangent(t:Float, out:Array<Float>):Array<Float> {
+		@param out  Optional. The array to fill with the direction as a unit vector, x and y, and z in 3 dimensions; zeros where the curve
+			doesn't move. A new one when omitted.
+		@return  The direction. */
+	public function computeTangent(t:Float, ?out:Array<Float>):Array<Float> {
+		if (out == null)
+			out = [for (_ in 0...dimensions) 0.];
 		var h = 1e-4, length = 0.;
 		var before = closed ? t - h : Math.max(0, t - h),
 			after = closed ? t + h : Math.min(1, t + h);
@@ -263,10 +268,10 @@ class Curve {
 		if (lengths != null)
 			return;
 		var n = segments * SAMPLES, sum = 0., previous = [], current = [];
-		evaluate(0, previous);
+		computePosition(0, previous);
 		lengths = [0];
 		for (i in 1...n + 1) {
-			evaluate(i / n, current);
+			computePosition(i / n, current);
 			var d = 0.;
 			for (axis in 0...dimensions) {
 				var e = current[axis] - previous[axis];

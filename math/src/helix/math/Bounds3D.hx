@@ -2,8 +2,10 @@ package helix.math;
 
 /** Represents an axis-aligned box in 3 dimensions: its least and greatest coordinate on each axis.
 
-	A new box is empty (its least coordinates past its greatest), so expanding it by a first point makes it that point. Its space is its
-	maker's. */
+	A new box is empty (its least coordinates past its greatest), so expanding it by a first point makes it that point. `set`,
+	`copyFrom`, `makeEmpty` and `expand` change this box and return it. `union` writes its result into an optional out, the last
+	argument, and returns it: a new box when it is omitted, this one left unchanged; the out may be this box or the other. Its space is
+	its maker's. */
 class Bounds3D {
 	/** Gets or sets the least x coordinate; infinity while empty. */
 	public var minX:Float = Math.POSITIVE_INFINITY;
@@ -136,27 +138,19 @@ class Bounds3D {
 		return this;
 	}
 
-	/** Grows the box to hold another box too.
+	/** Returns the smallest box holding this box and another.
 
-		An empty box leaves it unchanged.
+		An empty box adds nothing: the union with one is the other box.
 		@param other  The other box.
-		@return  This box. */
-	public function union(other:Bounds3D):Bounds3D {
+		@param out  Optional. The box to fill; a new one when omitted. It may be this box or the other.
+		@return  The union. */
+	public function union(other:Bounds3D, ?out:Bounds3D):Bounds3D {
+		if (out == null)
+			out = new Bounds3D();
 		if (other.isEmpty)
-			return this;
-		if (other.minX < minX)
-			minX = other.minX;
-		if (other.maxX > maxX)
-			maxX = other.maxX;
-		if (other.minY < minY)
-			minY = other.minY;
-		if (other.maxY > maxY)
-			maxY = other.maxY;
-		if (other.minZ < minZ)
-			minZ = other.minZ;
-		if (other.maxZ > maxZ)
-			maxZ = other.maxZ;
-		return this;
+			return out.copyFrom(this);
+		return out.set(minX < other.minX ? minX : other.minX, minY < other.minY ? minY : other.minY, minZ < other.minZ ? minZ : other.minZ,
+			maxX > other.maxX ? maxX : other.maxX, maxY > other.maxY ? maxY : other.maxY, maxZ > other.maxZ ? maxZ : other.maxZ);
 	}
 
 	/** Returns whether a point is in the box, its faces included.

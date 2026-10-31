@@ -278,10 +278,10 @@ class RModels {
 		@param scale  The scale on each axis.
 		@param tint  The tint. */
 	static function DrawModelEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void {
-		var m = new Matrix3D().makeScale(scale.x, scale.y, scale.z);
-		m = new Matrix3D().compose(m, new Matrix3D().makeRotation(rotationAxis.x, rotationAxis.y, rotationAxis.z, rotationAngle * DEG2RAD));
-		m = new Matrix3D().compose(m, new Matrix3D().makeTranslation(position.x, position.y, position.z));
-		var transform = new Matrix3D().compose(toMatrix3D(model.transform), m);
+		var m = Matrix3D.fromScale(scale.x, scale.y, scale.z);
+		m = Matrix3D.compose(m, Matrix3D.fromRotation(rotationAxis.x, rotationAxis.y, rotationAxis.z, rotationAngle * DEG2RAD));
+		m = Matrix3D.compose(m, Matrix3D.fromTranslation(position.x, position.y, position.z));
+		var transform = Matrix3D.compose(toMatrix3D(model.transform), m);
 		for (i in 0...model.meshCount) {
 			var material = model.materials[model.meshMaterial[i]];
 			if (material == null)
@@ -657,7 +657,7 @@ class RModels {
 
 	static function cameraView(camera:Camera3D):Matrix3D {
 		var p = camera.position, t = camera.target, u = camera.up;
-		return new Matrix3D().makeLookAt(p.x, p.y, p.z, t.x, t.y, t.z, u.x, u.y, u.z);
+		return Matrix3D.fromLookAt(p.x, p.y, p.z, t.x, t.y, t.z, u.x, u.y, u.z);
 	}
 
 	// raylib's near and far planes, 0.01 and 1000.
@@ -665,9 +665,9 @@ class RModels {
 	static function cameraProjection(camera:Camera3D, aspect:Float):Matrix3D {
 		if (camera.projection == CAMERA_ORTHOGRAPHIC) {
 			var top = camera.fovy / 2, right = top * aspect;
-			return new Matrix3D().makeOrthographic(-right, right, -top, top, .01, 1000);
+			return Matrix3D.fromOrthographic(-right, right, -top, top, .01, 1000);
 		}
-		return new Matrix3D().makePerspective(camera.fovy * DEG2RAD, aspect, .01, 1000);
+		return Matrix3D.fromPerspective(camera.fovy * DEG2RAD, aspect, .01, 1000);
 	}
 
 	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix3D, tint:Color):Void {

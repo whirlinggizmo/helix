@@ -54,8 +54,8 @@ class CurveTests {
 			&& near(line.getY(line.getParameterAtDistance(12.5)), 2.5, 1e-3),
 			"A distance along it is where it says, though t isn't even");
 		check(line.getParameterAtDistance(-1) == 0 && line.getParameterAtDistance(99) == 1, "Distance held to the length when open");
-		var tan = line.tangent(.25, []);
-		check(near(tan[0], 1) && near(tan[1], 0) && near(line.tangent(.75, [])[1], 1), "The tangent heads along each piece");
+		var tan = line.computeTangent(.25, []);
+		check(near(tan[0], 1) && near(tan[1], 0) && near(line.computeTangent(.75)[1], 1), "The tangent heads along each piece");
 
 		// Closed: around a square, 40 long, back to the start.
 		var square = Curve.polyline([0, 0, 10, 0, 10, 10, 0, 10], 2, true);
@@ -85,9 +85,10 @@ class CurveTests {
 
 		// 3D.
 		var rise = Curve.polyline([0, 0, 0, 0, 0, 10], 3);
-		check(rise.dimensions == 3 && near(rise.getZ(.5), 5) && near(rise.length, 10) && rise.tangent(.5, [])[2] == 1, "A 3D curve has z");
-		var out = rise.evaluate(.3, []);
-		check(out.length == 3 && near(out[2], 3), "evaluate fills every axis");
+		check(rise.dimensions == 3 && near(rise.getZ(.5), 5) && near(rise.length, 10) && rise.computeTangent(.5)[2] == 1, "A 3D curve has z");
+		var given = [], out = rise.computePosition(.3, given);
+		check(out == given && out.length == 3 && near(out[2], 3) && rise.computePosition(.3).length == 3,
+			"a position fills every axis, into the array given or a new one");
 		check(rise.getPoint(1, 2) == 10 && rise.getPoint(5, 0) == 0, "Points read back");
 
 		// Refusals.

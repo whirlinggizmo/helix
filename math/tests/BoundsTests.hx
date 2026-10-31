@@ -24,13 +24,24 @@ class BoundsTests {
 		var other = new Bounds2D().set(1, 6, 9, 9);
 		check(b.intersects(other) && !b.intersects(new Bounds2D()) && !new Bounds2D().intersects(b), "2D: overlaps another; never an empty one");
 		check(b.intersects(new Bounds2D().set(2, 7, 3, 8)) && !b.intersects(new Bounds2D().set(2.5, 7.5, 3, 8)), "2D: touching counts");
-		check(b.union(other) == b && b.maxX == 9 && b.union(new Bounds2D()).maxX == 9, "2D: a union grows to hold both; an empty one changes nothing");
+		var joined = b.union(other);
+		check(joined != b && b.maxX == 2 && joined.minX == -1 && joined.maxX == 9 && joined.minY == 3 && joined.maxY == 9,
+			"2D: a union holds both, into a new box, the box unchanged");
+		check(b.union(other, b) == b && b.maxX == 9 && b.union(new Bounds2D(), b).maxX == 9 && new Bounds2D().union(b).minX == -1,
+			"2D: a union into the box itself; an empty one adds nothing");
+		var into2 = new Bounds2D().set(0, 0, 1, 1);
+		check(new Bounds2D().set(5, 5, 6, 6).union(into2, into2) == into2
+			&& into2.minX == 0
+			&& into2.maxX == 6, "2D: a union into the other box");
 		var overlap = new Bounds2D().set(0, 0, 4, 4).intersection(new Bounds2D().set(2, 1, 6, 3));
 		check(overlap.minX == 2 && overlap.minY == 1 && overlap.maxX == 4 && overlap.maxY == 3, "2D: the overlap of two");
 		var edge = new Bounds2D().set(0, 0, 4, 4).intersection(new Bounds2D().set(4, 1, 6, 3));
 		check(!edge.isEmpty && edge.width == 0 && edge.height == 2, "2D: touching edges overlap with no width");
 		var into = new Bounds2D().set(0, 0, 4, 4);
 		check(into.intersection(new Bounds2D().set(5, 5, 6, 6), into) == into && into.isEmpty, "2D: apart, empty; into itself");
+		var argument = new Bounds2D().set(2, 1, 6, 3);
+		check(new Bounds2D().set(0, 0, 4, 4).intersection(argument, argument) == argument && argument.minX == 2 && argument.maxX == 4,
+			"2D: an overlap into the other box");
 		var copy = new Bounds2D().copyFrom(b);
 		check(copy.minX == -1 && copy.maxX == 9 && copy.minY == 3 && copy.maxY == 9, "2D: copied");
 		check(copy.makeEmpty() == copy && copy.isEmpty && !b.isEmpty, "2D: made empty, the original unchanged");
@@ -45,8 +56,12 @@ class BoundsTests {
 		var far = new Bounds3D().set(0, 0, 8, 1, 1, 9);
 		check(!c.intersects(far) && c.intersects(new Bounds3D().set(0, 0, 7, 1, 1, 9)) && !c.intersects(new Bounds3D()),
 			"3D: overlaps by every axis; faces count; never an empty one");
-		check(c.union(far) == c && c.maxZ == 9 && c.minX == -1 && c.union(new Bounds3D()).maxZ == 9,
-			"3D: a union grows to hold both; an empty one changes nothing");
+		var joined3 = c.union(far);
+		check(joined3 != c && c.maxZ == 7 && joined3.maxZ == 9 && joined3.minX == -1, "3D: a union holds both, into a new box, the box unchanged");
+		check(c.union(far, c) == c && c.maxZ == 9 && c.minX == -1 && c.union(new Bounds3D(), c).maxZ == 9,
+			"3D: a union into the box itself; an empty one adds nothing");
+		var into3 = new Bounds3D().set(0, 0, 0, 1, 1, 1);
+		check(far.union(into3, into3) == into3 && into3.minZ == 0 && into3.maxZ == 9, "3D: a union into the other box");
 		var copy3 = new Bounds3D().copyFrom(c);
 		check(copy3.minZ == 3 && copy3.maxZ == 9 && copy3.makeEmpty().isEmpty && !c.isEmpty, "3D: copied, made empty, the original unchanged");
 		var report = haxe.Json.stringify({passed: true, checks: checks});

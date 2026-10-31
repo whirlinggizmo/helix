@@ -7,7 +7,7 @@ import helix.math.Matrix3D;
 import helix.math.Bounds2D;
 import helix.math.Geometry2D;
 import helix.math.Interpolate;
-import helix.math.Point2D;
+import helix.math.Vector2D;
 import helix.ray.internal.DefaultFont;
 import helix.ray.internal.Models;
 import helix.ray.internal.Runtime;
@@ -1158,7 +1158,7 @@ class RShapes {
 		@param collisionPoint  Set to where they cross, when they do; null leaves it out.
 		@return  True when they cross. */
 	static function CheckCollisionLines(startPos1:Vector2, endPos1:Vector2, startPos2:Vector2, endPos2:Vector2, collisionPoint:Vector2):Bool {
-		var at = new Point2D();
+		var at = new Vector2D();
 		if (!Geometry2D.intersectSegments(startPos1.x, startPos1.y, endPos1.x, endPos1.y, startPos2.x, startPos2.y, endPos2.x, endPos2.y, at))
 			return false;
 		if (collisionPoint != null) {

@@ -50,8 +50,21 @@ The API uses what Haxe gives: properties for values, classes for kinds, methods 
 - **`request` returns whether it asked, not whether it was granted.** The result comes later, to its lambdas: `done` when granted,
   `failed` with the reason when refused. They are optional; a caller that doesn't need the result passes neither. `can` says whether
   to offer the request at all.
-- **No chaining.** A method that changes something returns `Void`, or `Bool` when it can refuse; none returns its object. Building
-  something takes one statement a line.
+- **A value-like type's method that changes it returns it,** so calls chain: the math types and `Image`
+  (`bounds.makeEmpty().expand(x, y)`, `transform.yaw(turn).moveForward(step)`, `image.grayscale().contrast(20)`). One that can refuse
+  at once returns `Bool` instead, and doesn't chain. A command on a service or a device (a platform contract, `Audio`, a `Voice`,
+  `graphics.applyViewport`) returns `Void`, or `Bool` when it can refuse: chaining side effects gains nothing.
+- **A value type's operations write into an optional out, last, and return it:** `a.add(b, ?out)`, `v.normalize(?out)`,
+  `m.append(other, ?out)`. Omitted, it makes a new value and leaves its own unchanged; given the object itself, it works in place
+  (`v.normalize(v)`), so an operation has one name and no in-place twin, and calls chain through the out (`a.add(b, a).scale(2, a)`).
+  The out may be any of the inputs: each is read before anything is written. Only what changes the object's state rather than making
+  a value is a plain verb on it (`set`, `copyFrom`, `makeEmpty`, `transform.yaw`). A value an operation may not have returns null,
+  out unchanged (`m.invert(?out)` for a matrix with no inverse).
+- **A value type's other methods are named for what they return.** A static `fromX(..., ?out)` builds one from what it's given
+  (`Matrix3D.fromPerspective`, `Quaternion3D.fromAxisAngle`); a blend or a composition of others is a static named for it
+  (`Vector3D.lerp(a, b, amount, ?out)`, `Matrix3D.compose(first, second, ?out)`). `toX(?out)` converts one into another kind
+  (`rotation.toMatrix()`) and `computeX(?out)` derives a value from it (`transform.computeForward()`). A number it has is a property
+  (`vector.length`).
 - **A completion takes a lambda per outcome, success first,** and on a platform contract none is optional (`read(path, maxBytes,
   loaded, missing, failed)`): one of them is called once, on the main thread, never during the call; a cancelled request calls
   nothing. A service above may make the failure's lambda optional, logging what it was given with the path, so nothing fails
@@ -76,9 +89,9 @@ The API uses what Haxe gives: properties for values, classes for kinds, methods 
   APIs generally do: in names, doc comments and docs, never "folder" (the desktop's word) or "dir" (an abbreviation):
   `getProgramDirectory`, `assetDirectory`. Only a third party's own name keeps its word.
 - **2D and 3D are named apart, always:** a type of one kind ends in its kind, whether or not the other kind has a counterpart yet
-  (`Point2D` and `Point3D`, `Bounds2D` and `Bounds3D`, and as much `Mesh3D`, `Camera2D`), so no one guesses which kind a name means,
+  (`Vector2D` and `Vector3D`, `Bounds2D` and `Bounds3D`, and as much `Mesh3D`, `Camera2D`), so no one guesses which kind a name means,
   and a counterpart arriving later renames nothing. That holds for a type that belongs to one of a kind, and for a family named by a
-  file of one kind. Only what holds both kinds or neither keeps a plain name: a file format, `Mat4`, a type both kinds use, which is
+  file of one kind. Only what holds both kinds or neither keeps a plain name: a file format, a type both kinds use, which is
   neutral and lives outside them in the package of its own domain. The kind ends the name (`LayoutDirection2D`, not
   `Layout2DDirection`). `tools/check_names.py` checks it, its lists of the plain ones each giving the reason.
 - **A method computing a value object takes an optional out last and returns the result:** `node.computeBounds()` makes new bounds,

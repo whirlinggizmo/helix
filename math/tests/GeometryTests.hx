@@ -1,7 +1,7 @@
 import helix.math.DistanceField2D;
 import helix.math.Geometry2D;
 import helix.math.Interpolate;
-import helix.math.Point2D;
+import helix.math.Vector2D;
 import helix.math.RectPacker2D;
 
 /** Checks Geometry2D, Interpolate's spline pieces, DistanceField2D and RectPacker2D with the library alone: segments crossing (parallel
@@ -20,7 +20,7 @@ class GeometryTests {
 		return Math.abs(a - b) < 1e-9;
 
 	static function main():Void {
-		var p = new Point2D();
+		var p = new Vector2D();
 		check(Geometry2D.intersectSegments(0, 0, 10, 10, 0, 10, 10, 0, p) && near(p.x, 5) && near(p.y, 5), "segments crossing, and where");
 		check(!Geometry2D.intersectSegments(0, 0, 4, 4, 0, 10, 10, 0), "short of each other: no crossing");
 		check(!Geometry2D.intersectSegments(0, 0, 10, 0, 0, 1, 10, 1) && !Geometry2D.intersectSegments(0, 0, 10, 0, 5, 0, 15, 0),
