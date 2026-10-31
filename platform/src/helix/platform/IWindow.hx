@@ -34,7 +34,7 @@ interface IWindow {
 
 	/** Asks for an inner size.
 
-		The window manager may give another size, or none; `width` and `height` answer on a later frame.
+		The window manager may give another size, or none; `width` and `height` reflect the result once the request completes.
 		@param width  The width, in logical pixels.
 		@param height  The height, in logical pixels.
 		@return  False, asking nothing, in a page or for a size under 1. */
@@ -57,7 +57,7 @@ interface IWindow {
 
 	/** Asks for the window's left and top edges on the desktop.
 
-		`x` and `y` answer on a later frame, with what the window manager gave.
+		`x` and `y` reflect the result once the request completes: what the window manager gave.
 		@param x  The left edge, in logical pixels.
 		@param y  The top edge, in logical pixels.
 		@return  False, asking nothing, where the window can't move (`canMove`). */
@@ -73,7 +73,7 @@ interface IWindow {
 
 	/** Asks for fullscreen or a window.
 
-		`fullscreen` answers on a later frame. Natively the request is granted. A browser grants fullscreen only soon after a key press,
+		`fullscreen` reflects the result once the request completes. Natively the request is granted. A browser grants fullscreen only soon after a key press,
 		click or tap. Without a recent one, the request waits for the player's next one.
 		@param enabled  True for fullscreen, false for a window.
 		@param done  Optional. Called once the change is granted.
@@ -99,7 +99,7 @@ interface IWindow {
 
 	/** Asks to show or hide the window. In a page it shows or hides the canvas.
 
-		`visible` answers on a later frame, natively once the window manager has shown it.
+		`visible` reflects the result once the request completes: natively, once the window manager has shown it.
 		@param visible  True to show it.
 		@return  True, because it always asks. */
 	function requestVisible(visible:Bool):Bool;
@@ -112,7 +112,7 @@ interface IWindow {
 
 	/** Asks for the window on another monitor.
 
-		`monitorIndex` answers on a later frame.
+		`monitorIndex` reflects the result once the request completes.
 		@param index  The monitor, 0 to `monitorCount` - 1.
 		@return  False, asking nothing, for an index out of range or where the window can't move (`canMove`). */
 	function requestMonitorIndex(index:Int):Bool;

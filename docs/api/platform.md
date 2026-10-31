@@ -989,7 +989,7 @@ var onClose:Null<() -> Void>
   - `height`: The height, in logical pixels.
   - returns: False, asking nothing, in a page or for a size under 1.
 
-  The window manager may give another size, or none; `width` and `height` answer on a later frame.
+  The window manager may give another size, or none; `width` and `height` reflect the result once the request completes.
 - `canMove`: Returns whether `requestPosition` and `requestMonitorIndex` can ask.
   - returns: False in a page, and where the compositor places windows (Wayland, XWayland).
 - `x`: Gets the window's left edge on the desktop, in logical pixels.
@@ -1001,7 +1001,7 @@ var onClose:Null<() -> Void>
   - `y`: The top edge, in logical pixels.
   - returns: False, asking nothing, where the window can't move (`canMove`).
 
-  `x` and `y` answer on a later frame, with what the window manager gave.
+  `x` and `y` reflect the result once the request completes: what the window manager gave.
 - `canFullscreen`: Returns whether `requestFullscreen` can ask.
   - returns: True natively. In a page, whether the page may go fullscreen.
 - `fullscreen`: Gets a value indicating whether the window is fullscreen now. In a page it tells whether the canvas is.
@@ -1011,7 +1011,7 @@ var onClose:Null<() -> Void>
   - `failed`: Optional. Receives the browser's reason when it refuses. The page is unchanged.
   - returns: False, calling neither, where it can't ask (`canFullscreen`).
 
-  `fullscreen` answers on a later frame. Natively the request is granted. A browser grants fullscreen only soon after a key press, click or tap. Without a recent one, the request waits for the player's next one.
+  `fullscreen` reflects the result once the request completes. Natively the request is granted. A browser grants fullscreen only soon after a key press, click or tap. Without a recent one, the request waits for the player's next one.
 - `requestOrientation`: Asks for the screen to be held one way up, or as the player holds it.
   - `orientation`: Landscape, Portrait, or Any to release a lock.
   - `done`: Optional. Called once the screen is locked.
@@ -1025,14 +1025,14 @@ var onClose:Null<() -> Void>
   - `visible`: True to show it.
   - returns: True, because it always asks.
 
-  `visible` answers on a later frame, natively once the window manager has shown it.
+  `visible` reflects the result once the request completes: natively, once the window manager has shown it.
 - `monitorCount`: Gets the number of monitors, at least 1. A page sees one screen.
 - `monitorIndex`: Gets the index of the monitor holding the window.
 - `requestMonitorIndex`: Asks for the window on another monitor.
   - `index`: The monitor, 0 to `monitorCount` - 1.
   - returns: False, asking nothing, for an index out of range or where the window can't move (`canMove`).
 
-  `monitorIndex` answers on a later frame.
+  `monitorIndex` reflects the result once the request completes.
 - `getMonitorName`: Returns a monitor's name.
   - `index`: The monitor.
   - returns: Its name, or "" for an index out of range.
