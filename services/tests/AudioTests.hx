@@ -4,7 +4,10 @@ import helix.services.audio.Audio;
 import helix.services.audio.Sound;
 
 /** Checks Audio over fakes: sounds loaded whole and streamed through Assets, voices played in groups at their volumes times their
-	groups', muted, faded on real time along a decibel curve, paused, pitched and panned, ended voices let go, and sounds unloaded. */
+	groups', muted, faded on real time along a decibel curve, paused, pitched and panned, ended voices let go, and sounds unloaded; sounds'
+	lengths and channels, voices' positions, sounds made from samples, queues played in groups; and natively a server's stream knowing its
+	length from its last bytes, fetched first. */
+@:access(helix.services.audio)
 class AudioTests {
 	static var checks = 0;
 
@@ -22,6 +25,7 @@ class AudioTests {
 		files.files.set("jump.wav", Bytes.ofString("jump"));
 		files.files.set("music.ogg", Bytes.ofString("music"));
 		files.files.set("bad.wav", Bytes.ofString("bad"));
+		files.files.set("both.wav", Bytes.ofString("stereo!!"));
 		var output = new FakeAudio();
 		var system = new FakeSystem();
 		var assets = new Assets({sources: [FileSystem(files)]});
@@ -33,8 +37,9 @@ class AudioTests {
 				audio.poll();
 			}
 
-		var jump:Sound = null, music:Sound = null, why = [];
+		var jump:Sound = null, music:Sound = null, both:Sound = null, why = [];
 		audio.load("jump.wav", sound -> jump = sound);
+		audio.load("both.wav", sound -> both = sound);
 		audio.stream("music.ogg", sound -> music = sound);
 		audio.load("bad.wav", _ -> {}, message -> why.push(message));
 		audio.load("none.wav", _ -> {}, message -> why.push(message));
@@ -43,6 +48,26 @@ class AudioTests {
 		check(music != null && music.streamed && files.held == 1, "streamed, its file located and held");
 		check(why.length == 2 && why.join("|").indexOf("bad.wav") >= 0 && why.join("|").indexOf("none.wav") >= 0,
 			"a file that won't decode, and one not found, fail");
+
+		check(jump.channels == 1 && near(jump.duration, 1 / 44100), "a sound loaded whole: its channels, and its frames over 44100 its length");
+		check(both.channels == 2 && near(both.duration, 1 / 44100), "a stereo file: 2 channels, its frames counted in pairs");
+		check(music.channels == 2 && music.duration == 0, "a stream: the platform's channels, its length 0 while the platform doesn't know it");
+		output.streamDuration = 12.5;
+		check(music.duration == 12.5, "and the platform's once it does");
+		output.streamDuration = 0;
+		check(music.duration == 12.5, "kept once known");
+
+		var made = audio.createSound(Bytes.alloc(44100 * 8), 2);
+		check(made.path == ""
+			&& !made.streamed
+			&& made.channels == 2
+			&& near(made.duration, 1)
+			&& output.sounds.get(made.id) == "clip",
+			"a sound made from samples: a clip, a second of stereo");
+		check(try {
+			audio.createSound(Bytes.alloc(8), 3);
+			false;
+		} catch (_:String) true, "a sound of 3 channels: refused");
 
 		var effects = audio.createGroup();
 		effects.volume = .5;
@@ -56,6 +81,10 @@ class AudioTests {
 		check(output.voices.get(lastVoice(output)).volume == 0 && voice.volume == .8, "muted: silent, its volume kept");
 		audio.master.muted = false;
 		audio.master.volume = 1;
+
+		output.voices.get(lastVoice(output)).position = 0.25;
+		check(voice.position == .25, "a voice's position, the platform's");
+		check(voice.setPosition(.5) && output.voices.get(lastVoice(output)).position == .5, "moved");
 
 		voice.pitch = 9;
 		voice.pan = -3;
@@ -85,6 +114,7 @@ class AudioTests {
 		output.voices.get(songId).playing = false;
 		audio.poll();
 		check(!song.playing, "a voice that ended: not playing");
+		check(song.position == 0 && !song.setPosition(1), "an ended voice: at 0, not moved");
 		song.volume = .9;
 		check(output.voices.get(songId).volume != .9, "an ended voice changes nothing");
 
@@ -101,8 +131,48 @@ class AudioTests {
 			false;
 		} catch (_:String) true, "playing null throws");
 
+		var queue = audio.createSampleQueue(2, 22050);
+		check(output.sounds.get(queue.id) == "queue" && queue.queuedFrames == 0, "a queue, holding nothing");
+		queue.queueSamples(Bytes.alloc(800));
+		check(queue.queuedFrames == 100, "samples queued: 100 stereo frames");
+		var tones = audio.createGroup();
+		tones.volume = .5;
+		var tone = queue.play(tones, .5);
+		var toneId = lastVoice(output);
+		check(tone.playing
+			&& tone.sound == null
+			&& near(output.voices.get(toneId).volume, .25), "played in a group, heard at its volume times the group's");
+		tones.muted = true;
+		audio.poll();
+		check(output.voices.get(toneId).volume == 0, "its group muted: silent");
+		tones.muted = false;
+		tones.fadeTo(0, 1);
+		system.now += 2;
+		audio.poll();
+		check(output.voices.get(toneId).volume == 0, "its group faded out");
+		tones.volume = 1;
+		check(!tone.setPosition(1), "a queue's voice can't be moved");
+		var again = queue.play();
+		check(!tone.playing && again.playing && queue.queuedFrames == 100, "played again: the earlier voice ended, the samples kept");
+		again.stop();
+		check(queue.queuedFrames == 0, "its voice stopped: what it held dropped");
+		queue.dispose();
+		check(!output.sounds.exists(queue.id) && queue.queuedFrames == 0, "disposed: the platform's queue let go");
+		check(try {
+			queue.queueSamples(Bytes.alloc(8));
+			false;
+		} catch (_:String) true, "a disposed queue takes no samples");
+		check(try {
+			queue.play();
+			false;
+		} catch (_:String) true, "nor plays");
+		audio.createSampleQueue(1, 8000);
+
 		audio.dispose();
-		check([for (k in output.sounds.keys()) k].length == 0, "dispose lets go of every sound");
+		check([for (k in output.sounds.keys()) k].length == 0, "dispose lets go of every sound and queue");
+		#if !js
+		served();
+		#end
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);
@@ -110,6 +180,58 @@ class AudioTests {
 		Sys.println(report);
 		#end
 	}
+
+	#if !js
+	// A server's stream natively: its last 64 KiB fetched first, so its length is known once its start has arrived too; a server that
+	// ignores the range sends it whole, its length the platform's.
+	static function served():Void {
+		var http = new FakeHttp(),
+			cache = new FakeFileSystem(),
+			output = new FakeAudio(),
+			system = new FakeSystem();
+		var base = "https://example.com/";
+		var rate = 44100, frames = 2 * rate;
+		var wav = helix.formats.wav.WavFile.write(rate, 1, 16, frames, Bytes.alloc(frames * 2));
+		http.routes.set(base + "song.wav", {status: 200, headers: ["etag" => '"s1"'], body: wav});
+		http.routes.set(base + "plain.wav", {status: 200, body: wav, ignoresRange: true});
+		var assets = new Assets({sources: [HttpServer(base)], httpClient: http, cacheFileSystem: cache});
+		var audio = new Audio(output, output, assets, system);
+		function pump()
+			for (_ in 0...10) {
+				http.poll();
+				cache.poll();
+				output.poll();
+				audio.poll();
+			}
+		var song:Sound = null;
+		audio.stream("song.wav", sound -> song = sound);
+		cache.poll();
+		http.poll();
+		check(http.requests.length == 2 && http.requests[0].headers.get("Range") == "bytes=-65536", "its last 64 KiB asked for first");
+		output.poll();
+		check(song != null && song.duration == 0, "opened as its start downloads, its length not yet known");
+		http.poll();
+		check(near(song.duration, 2), "its start arrived: its length read from it and its end");
+		check(http.requests[1].headers.get("Range") == 'bytes=0-${wav.length - 65537}'
+			&& http.requests[1].headers.get("If-Range") == '"s1"',
+			"the rest asked for, while it's the same file");
+		check(http.bytesSent == wav.length, "no byte downloaded twice");
+		pump();
+		check([
+			for (path => bytes in cache.files)
+				if (StringTools.endsWith(path, "/files/song.wav")) bytes.compare(wav)
+		].join(",") == "0", "kept whole");
+
+		var plain:Sound = null;
+		var before = http.requests.length;
+		audio.stream("plain.wav", sound -> plain = sound);
+		pump();
+		check(http.requests.length == before + 1 && plain.duration == 0, "a server ignoring the range: downloaded once, its length the platform's");
+		output.streamDuration = 2;
+		check(plain.duration == 2, "which it knows once the file has arrived");
+		audio.dispose();
+	}
+	#end
 
 	static function lastVoice(output:FakeAudio):Int {
 		var most = 0;

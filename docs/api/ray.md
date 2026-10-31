@@ -6,23 +6,19 @@
 
 *class* in [`ray/src/helix/ray/AudioStream.hx`](../../ray/src/helix/ray/AudioStream.hx), `import helix.ray.AudioStream;`
 
-raylib's `AudioStream` (raylib.h): not in helix-ray yet; its fields are raylib's. AudioStream, custom audio stream.
+Represents raylib's `AudioStream`: samples a program makes as it goes, played as they are given (`UpdateAudioStream`), over helix-services' `SampleQueue`.
+
+It holds raylib's double buffer: two buffers of `SetAudioStreamBufferSizeDefault` frames each (1470, a 30th of a second at 44100 Hz, until set), one filled by each update while the other plays.
 
 ```haxe
-function new()
-var buffer:Dynamic
-var processor:Dynamic
-var sampleRate:Int
-var sampleSize:Int
-var channels:Int
+var sampleRate(default, null):Int
+var sampleSize(default, null):Int
+var channels(default, null):Int
 ```
 
-- `new`: Creates one, its fields zero, empty or null.
-- `buffer`: Pointer to internal data used by the audio system.
-- `processor`: Pointer to internal data processor, useful for audio effects.
-- `sampleRate`: Frequency (samples per second).
-- `sampleSize`: Bit depth (bits per sample): 8, 16, 32 (24 not supported).
-- `channels`: Number of channels (1-mono, 2-stereo, ...).
+- `sampleRate`: Gets the frames a second.
+- `sampleSize`: Gets the bits a sample takes: 8 (unsigned), 16 (signed) or 32 (float).
+- `channels`: Gets the number of channels: 1 is mono, 2 stereo.
 
 ## AutomationEvent
 
@@ -445,11 +441,11 @@ Represents raylib's `Music`: a sound played as it is read, never held whole, thr
 
 ```haxe
 var looping:Bool
-var frameCount(default, null):Int
+var frameCount(get, never):Int
 ```
 
 - `looping`: Gets or sets whether it starts again from its beginning when it ends; true until set, as raylib's.
-- `frameCount`: Gets the number of frames: 0 here, as the stream doesn't tell its length.
+- `frameCount`: Gets the number of frames, at 44100 a second; 0 until its length is known (`GetMusicTimeLength`).
 
 ## NPatchInfo
 
@@ -537,7 +533,7 @@ var normal:Vector3
 
 Provides raylib 5.5's API, as `raylib.h` names it, over helix-platform and helix-services: a program writes raylib, and it runs in a page and natively.
 
-A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a frame. A page can't wait for a file, so on every target files are loaded by helix-ray's own `...Async` loads; raylib's `LoadTexture`, `LoadImage`, `LoadModel`, `LoadSound`, `LoadFileData` and `LoadFileText` don't compile, naming the load to use. A file loaded twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here by module; what raylib has and helix-ray doesn't refuses to compile, naming itself.
+A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a frame. A page can't wait for a file, so on every target files are loaded by helix-ray's own `...Async` loads; raylib's `LoadTexture`, `LoadImage`, `LoadModel`, `LoadSound`, `LoadWave`, `LoadFileData` and `LoadFileText` don't compile, naming the load to use. A file loaded twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here by module; what raylib has and helix-ray doesn't refuses to compile, naming itself.
 
 ### Keyboard keys (US keyboard layout) (KeyboardKey)
 
@@ -3355,15 +3351,31 @@ static function CloseAudioDevice():Void
 static function IsAudioDeviceReady():Bool
 static function SetMasterVolume(volume:Float):Void
 static function GetMasterVolume():Float
+static function IsWaveValid(wave:Wave):Bool
+static function UnloadWave(wave:Wave):Void
+static function ExportWave(wave:Wave, fileName:String):Bool
+static function ExportWaveAsCode(wave:Wave, fileName:String):Bool
+static function WaveCopy(wave:Wave):Wave
+static function WaveCrop(wave:Wave, initFrame:Int, finalFrame:Int):Void
+static function WaveFormat(wave:Wave, sampleRate:Int, sampleSize:Int, channels:Int):Void
+static function LoadWaveSamples(wave:Wave):Array<Float>
+static function UnloadWaveSamples(samples:Array<Float>):Void
+static function LoadSoundFromWave(wave:Wave):Sound
+static function LoadSoundAlias(source:Sound):Sound
 static function UnloadSound(sound:Sound):Void
+static function UnloadSoundAlias(alias:Sound):Void
 static function IsSoundValid(sound:Sound):Bool
+static function UpdateSound(sound:Sound, data:haxe.io.Bytes, sampleCount:Int):Void
 static function PlaySound(sound:Sound):Void
 static function StopSound(sound:Sound):Void
+static function PauseSound(sound:Sound):Void
+static function ResumeSound(sound:Sound):Void
 static function IsSoundPlaying(sound:Sound):Bool
 static function SetSoundVolume(sound:Sound, volume:Float):Void
 static function SetSoundPitch(sound:Sound, pitch:Float):Void
 static function SetSoundPan(sound:Sound, pan:Float):Void
 static function LoadMusicStream(fileName:String):Music
+static function LoadMusicStreamFromMemory(fileType:String, data:haxe.io.Bytes, dataSize:Int):Music
 static function IsMusicValid(music:Music):Bool
 static function UnloadMusicStream(music:Music):Void
 static function PlayMusicStream(music:Music):Void
@@ -3372,9 +3384,27 @@ static function UpdateMusicStream(music:Music):Void
 static function StopMusicStream(music:Music):Void
 static function PauseMusicStream(music:Music):Void
 static function ResumeMusicStream(music:Music):Void
+static function SeekMusicStream(music:Music, position:Float):Void
 static function SetMusicVolume(music:Music, volume:Float):Void
 static function SetMusicPitch(music:Music, pitch:Float):Void
 static function SetMusicPan(music:Music, pan:Float):Void
+static function GetMusicTimeLength(music:Music):Float
+static function GetMusicTimePlayed(music:Music):Float
+static function LoadAudioStream(sampleRate:Int, sampleSize:Int, channels:Int):AudioStream
+static function IsAudioStreamValid(stream:AudioStream):Bool
+static function UnloadAudioStream(stream:AudioStream):Void
+static function UpdateAudioStream(stream:AudioStream, data:haxe.io.Bytes, frameCount:Int):Void
+static function IsAudioStreamProcessed(stream:AudioStream):Bool
+static function PlayAudioStream(stream:AudioStream):Void
+static function PauseAudioStream(stream:AudioStream):Void
+static function ResumeAudioStream(stream:AudioStream):Void
+static function IsAudioStreamPlaying(stream:AudioStream):Bool
+static function StopAudioStream(stream:AudioStream):Void
+static function SetAudioStreamVolume(stream:AudioStream, volume:Float):Void
+static function SetAudioStreamPitch(stream:AudioStream, pitch:Float):Void
+static function SetAudioStreamPan(stream:AudioStream, pan:Float):Void
+static function SetAudioStreamBufferSizeDefault(size:Int):Void
+static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void
 ```
 
 - `InitAudioDevice`: Opens the audio output, with helix-services' `Audio` over it. In a page it plays once the player's first press lets it.
@@ -3385,18 +3415,64 @@ static function SetMusicPan(music:Music, pan:Float):Void
   - `volume`: 0 (silent) to 1.
 - `GetMasterVolume`: Returns the volume of every sound.
   - returns: 0 (silent) to 1.
-- `UnloadSound`: Frees a sound, stopping it: one load of its file, the decoded sound with the last.
+- `IsWaveValid`: Returns whether a wave holds samples.
+  - `wave`: The wave.
+  - returns: True when it has data, frames, a rate, a sample size and channels.
+- `UnloadWave`: Frees a wave's samples: its data is null after.
+  - `wave`: The wave.
+- `ExportWave`: Writes a wave to a file through `SaveFileData`: ".wav" (8, 16 and 24 bits as integers, 32 as floats, as raylib's dr_wav writes them) or ".raw" (the samples as they are). raylib's ".qoa" isn't written here. The file is kept as `SaveFileData` keeps it.
+  - `wave`: The wave.
+  - `fileName`: The file; its extension chooses the format.
+  - returns: True when it was written.
+- `ExportWaveAsCode`: Writes a wave as a C header through `SaveFileText`, as raylib's does: its frames, rate, sample size and channels as defines, and its samples as an array: floats with 4 places for 32-bit samples, else bytes, 20 a line.
+  - `wave`: The wave.
+  - `fileName`: The file; its name, upper case, names the defines and the array.
+  - returns: True when it was written.
+- `WaveCopy`: Returns a copy of a wave, its samples its own.
+  - `wave`: The wave.
+  - returns: The copy.
+- `WaveCrop`: Crops a wave to a range of its frames, as raylib's: from `initFrame` up to `finalFrame`, not including it. A range outside the wave, or empty, changes nothing and warns.
+  - `wave`: The wave, changed in place.
+  - `initFrame`: The first frame kept.
+  - `finalFrame`: The frame after the last one kept, at most `frameCount`.
+- `WaveFormat`: Converts a wave's samples to another rate, sample size and channels, as raylib's does through miniaudio: integers to floats and back without dithering, channels mixed by miniaudio's standard speaker layouts, and the rate changed by its linear resampler, low-pass filtered. A wave it can't convert is unchanged, with a warning.
+  - `wave`: The wave, changed in place.
+  - `sampleRate`: The frames a second.
+  - `sampleSize`: The bits a sample takes: 8, 16 or 32.
+  - `channels`: The number of channels.
+- `LoadWaveSamples`: Returns a wave's samples as numbers from -1 to 1, as raylib's: 8-bit ones less 128 over 128, 16-bit ones over 32768, 32-bit ones as they are; other sizes give 0.
+  - `wave`: The wave.
+  - returns: `frameCount * channels` samples, interleaved.
+- `UnloadWaveSamples`: Frees samples `LoadWaveSamples` gave. There is nothing to free here.
+  - `samples`: The samples.
+- `LoadSoundFromWave`: Makes a sound from a wave, to play at once: its samples converted to 32-bit floats at 44100 Hz, as raylib converts them to the output's format, its channels kept when 1 or 2 and more mixed to 2 (raylib makes every sound stereo). `InitAudioDevice` comes first.
+  - `wave`: The wave; it is unchanged, and may be unloaded after.
+  - returns: The sound, or one that isn't valid (`IsSoundValid`) when the wave has no samples or can't be converted.
+- `LoadSoundAlias`: Makes a sound that plays another's samples with its own volume, pitch, pan and voice, as raylib's alias does. It needs none of its own memory; once its source is unloaded, it plays nothing.
+  - `source`: The sound whose samples it plays.
+  - returns: The alias, or one that isn't valid when the source isn't loaded.
+- `UnloadSound`: Frees a sound, stopping it: one load of its file, the decoded sound with the last; a sound made from a wave, its samples. Its aliases play nothing after. An alias is freed as `UnloadSoundAlias` frees it.
   - `sound`: The sound.
+- `UnloadSoundAlias`: Frees an alias, stopping it; its source's samples are kept.
+  - `alias`: The alias.
 - `IsSoundValid`: Returns whether a sound was loaded.
   - `sound`: The sound.
-  - returns: True once it is decoded.
+  - returns: True once it is decoded or made, until it is unloaded.
+- `UpdateSound`: Writes new samples over the start of a sound, stopping it, as raylib's does; its length is unchanged. Its aliases play the new samples.
+  - `sound`: The sound, or one of its aliases.
+  - `data`: 32-bit float samples at 44100 Hz in the sound's channels (a wave's channels, when 1 or 2), interleaved.
+  - `sampleCount`: How many frames to write, at most the sound's `frameCount`. The frames after them keep their samples; for a sound loaded from a file, whose samples aren't held, they are silent.
 - `PlaySound`: Plays a sound from its start, restarting it when it is already playing.
   - `sound`: The sound.
 - `StopSound`: Stops a sound.
   - `sound`: The sound.
+- `PauseSound`: Pauses a sound where it is.
+  - `sound`: The sound.
+- `ResumeSound`: Resumes a paused sound.
+  - `sound`: The sound.
 - `IsSoundPlaying`: Returns whether a sound is playing.
   - `sound`: The sound.
-  - returns: True while it plays.
+  - returns: True while it plays; false while it is paused, as raylib's.
 - `SetSoundVolume`: Sets a sound's volume, for its next play and the one playing.
   - `sound`: The sound.
   - `volume`: 0 (silent) to 1.
@@ -3409,24 +3485,32 @@ static function SetMusicPan(music:Music, pan:Float):Void
 - `LoadMusicStream`: Opens a music file, to be played as it is read (helix-services' `Audio.stream`): natively from its file, in a page from the download as it arrives, never loaded whole. It may be played at once; it starts once it opens.
   - `fileName`: The file, as the program names it, such as "assets/theme.ogg".
   - returns: The music.
+- `LoadMusicStreamFromMemory`: Opens music from a file's bytes, to be played as it is read, as `LoadMusicStream` plays a file: in a page from a Blob's URL, natively from a copy written to the program's cache directory, deleted when the music is unloaded. `InitAudioDevice` comes first.
+  - `fileType`: The file's extension, such as ".ogg": Ogg Vorbis, MP3, WAV or FLAC.
+  - `data`: The file's bytes; they are kept until the music is unloaded.
+  - `dataSize`: How many of them.
+  - returns: The music.
 - `IsMusicValid`: Returns whether music was opened, or is still opening.
   - `music`: The music.
   - returns: False once its file couldn't be opened.
 - `UnloadMusicStream`: Stops music and closes it.
   - `music`: The music.
-- `PlayMusicStream`: Plays music from its start, looping while its `looping` is true.
+- `PlayMusicStream`: Plays music from its start, looping while its `looping` is true; from where `SeekMusicStream` put it, when it was moved before.
   - `music`: The music.
 - `IsMusicStreamPlaying`: Returns whether music is playing, or will once it opens.
   - `music`: The music.
-  - returns: True while it plays, paused or not.
+  - returns: True while it plays; false while it is paused, as raylib's.
 - `UpdateMusicStream`: Keeps music playing. raylib's programs call it each frame; here the stream feeds itself, so it does nothing.
   - `music`: The music.
-- `StopMusicStream`: Stops music.
+- `StopMusicStream`: Stops music, so its next play starts from its beginning.
   - `music`: The music.
 - `PauseMusicStream`: Pauses music where it is.
   - `music`: The music.
 - `ResumeMusicStream`: Resumes paused music.
   - `music`: The music.
+- `SeekMusicStream`: Moves music to a position. Music not playing starts there when next played. In a page, a server's file moves only within what its server lets the media element ask for (range requests).
+  - `music`: The music.
+  - `position`: The position, in seconds from its start.
 - `SetMusicVolume`: Sets music's volume.
   - `music`: The music.
   - `volume`: 0 (silent) to 1.
@@ -3436,6 +3520,54 @@ static function SetMusicPan(music:Music, pan:Float):Void
 - `SetMusicPan`: Sets where music is heard.
   - `music`: The music.
   - `pan`: 0 for left, 0.5 the middle, 1 for right, as raylib's.
+- `GetMusicTimeLength`: Returns music's length (helix-services' `Sound.duration`): known once it opens from a file natively or in a page; a server's file natively once its start and its last 64 KiB have arrived. 0 while it isn't known.
+  - `music`: The music.
+  - returns: The length, in seconds.
+- `GetMusicTimePlayed`: Returns how far music has played, back to 0 at each loop, as raylib's. Paused, it holds; stopped, it is 0.
+  - `music`: The music.
+  - returns: The position, in seconds from its start.
+- `LoadAudioStream`: Opens a stream for samples the program makes as it goes, played as they are given (`UpdateAudioStream`) through helix-services' `SampleQueue`, which the platform resamples. `InitAudioDevice` comes first.
+  - `sampleRate`: The frames a second, 8000 to 96000.
+  - `sampleSize`: The bits a sample takes: 8 (unsigned), 16 (signed) or 32 (float).
+  - `channels`: The number of channels, 1 or 2.
+  - returns: The stream, or one that isn't valid (`IsAudioStreamValid`) when it can't be made.
+- `IsAudioStreamValid`: Returns whether a stream was opened.
+  - `stream`: The stream.
+  - returns: True when it has its queue, a rate, a sample size and channels.
+- `UnloadAudioStream`: Closes a stream, stopping it.
+  - `stream`: The stream.
+- `UpdateAudioStream`: Gives a stream its next buffer of samples, as raylib's: once a buffer has been heard (`IsAudioStreamProcessed`), and at most a buffer's frames (`SetAudioStreamBufferSizeDefault`), the rest of the buffer silent. Otherwise nothing is taken, with a warning.
+  - `stream`: The stream.
+  - `data`: The samples in the stream's sample size and channels, interleaved.
+  - `frameCount`: How many frames.
+- `IsAudioStreamProcessed`: Returns whether a stream has room for another buffer: true while it holds no more than one buffer not yet heard, as raylib's double buffer has one free.
+  - `stream`: The stream.
+  - returns: True when `UpdateAudioStream` would take samples.
+- `PlayAudioStream`: Plays a stream: what it holds, and what it is given after. A stream with a callback is filled by it at once.
+  - `stream`: The stream.
+- `PauseAudioStream`: Pauses a stream where it is.
+  - `stream`: The stream.
+- `ResumeAudioStream`: Resumes a paused stream.
+  - `stream`: The stream.
+- `IsAudioStreamPlaying`: Returns whether a stream is playing.
+  - `stream`: The stream.
+  - returns: True while it plays, even when it has run out of samples; false while it is paused, as raylib's.
+- `StopAudioStream`: Stops a stream, dropping the samples it hadn't played.
+  - `stream`: The stream.
+- `SetAudioStreamVolume`: Sets a stream's volume.
+  - `stream`: The stream.
+  - `volume`: 0 (silent) to 1.
+- `SetAudioStreamPitch`: Sets a stream's pitch.
+  - `stream`: The stream.
+  - `pitch`: 1 for as given.
+- `SetAudioStreamPan`: Sets where a stream is heard.
+  - `stream`: The stream.
+  - `pan`: 0 for left, 0.5 the middle, 1 for right, as raylib's.
+- `SetAudioStreamBufferSizeDefault`: Sets the frames in each of a stream's two buffers, for the streams opened after; 0 for raylib's default, a 30th of a second at 44100 Hz (1470 frames).
+  - `size`: The frames.
+- `SetAudioStreamCallback`: Has a stream ask the program for its samples: while it plays, the callback is called with a buffer's frames to fill until the stream holds two buffers ahead of what is heard. raylib calls it on its audio thread as the mixer needs frames; a page can't run Haxe there, so here it is called on the main thread as each frame ends (`EndDrawing`'s poll), and once as the stream starts to play. A frame long enough to empty both buffers is heard as a gap.
+  - `stream`: The stream.
+  - `callback`: Receives a buffer to fill, in the stream's sample size and channels, and its frames; null for none.
 
 ### the async loads, helix-ray's own in place of raylib's that wait for a file
 
@@ -3443,6 +3575,8 @@ static function SetMusicPan(music:Music, pan:Float):Void
 static function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void, ?failed:String -> Void):Void
 static function LoadModelAsync(fileName:String, loaded:Model -> Void, ?failed:String -> Void):Void
 static function LoadSoundAsync(fileName:String, loaded:Sound -> Void, ?failed:String -> Void):Void
+static function LoadWaveAsync(fileName:String, loaded:Wave -> Void, ?failed:String -> Void):Void
+static function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave -> Void, ?failed:String -> Void):Void
 static function LoadFileTextAsync(fileName:String, loaded:String -> Void, ?failed:String -> Void):Void
 static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):Void
 static function FileExistsAsync(fileName:String, answer:Bool -> Void):Void
@@ -3471,6 +3605,18 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the sound.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+- `LoadWaveAsync`: Loads a sound file's samples, answering when they are read: helix-ray's own, in place of raylib's `LoadWave`. The formats are `LoadWaveFromMemoryAsync`'s, by the file's extension.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the wave, its samples its own.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+- `LoadWaveFromMemoryAsync`: Reads a sound file's samples from its bytes, answering when they are read: helix-ray's own, in place of raylib's `LoadWaveFromMemory`, as files other than WAV are decoded off the main thread.
+  - `fileType`: The file's extension with its dot: ".wav", ".ogg", ".mp3" or ".flac", or the same in upper case.
+  - `fileData`: The file's bytes.
+  - `dataSize`: How many of them.
+  - `loaded`: Receives the wave, its samples its own.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+  A ".wav" file is read as raylib's dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed WAV encodings aren't read). An ".ogg", ".mp3" or ".flac" file is decoded by the platform, as 32-bit float samples at 44100 Hz in the file's channels, where raylib keeps the file's rate (and gives Ogg 16-bit samples); a file of more than 2 channels is mixed to stereo. FLAC is read here, which raylib's default build leaves out; QOA isn't. As raylib's, the extension is lower or upper case. The answer comes at a later frame.
 - `LoadFileTextAsync`: Reads a text file, answering when it is read: helix-ray's own, in place of raylib's `LoadFileText`. The program's `SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
   - `fileName`: The file.
   - `loaded`: Receives its text.
@@ -3563,13 +3709,13 @@ static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<Stri
 
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
-`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadSound`.
+`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ### Not in helix-ray yet
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`EnableEventWaiting`, `DisableEventWaiting`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `GetFileLength`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `UpdateCameraPro`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `ExportFontAsCode`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`, `LoadWave`, `LoadWaveFromMemory`, `IsWaveValid`, `LoadSoundFromWave`, `LoadSoundAlias`, `UpdateSound`, `UnloadWave`, `UnloadSoundAlias`, `ExportWave`, `ExportWaveAsCode`, `PauseSound`, `ResumeSound`, `WaveCopy`, `WaveCrop`, `WaveFormat`, `LoadWaveSamples`, `UnloadWaveSamples`, `LoadMusicStreamFromMemory`, `SeekMusicStream`, `GetMusicTimeLength`, `GetMusicTimePlayed`, `LoadAudioStream`, `IsAudioStreamValid`, `UnloadAudioStream`, `UpdateAudioStream`, `IsAudioStreamProcessed`, `PlayAudioStream`, `PauseAudioStream`, `ResumeAudioStream`, `IsAudioStreamPlaying`, `StopAudioStream`, `SetAudioStreamVolume`, `SetAudioStreamPitch`, `SetAudioStreamPan`, `SetAudioStreamBufferSizeDefault`, `SetAudioStreamCallback`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`EnableEventWaiting`, `DisableEventWaiting`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `GetFileLength`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `UpdateCameraPro`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `ExportFontAsCode`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`.
 
 ## Raymath
 
@@ -5011,6 +5157,12 @@ var locs(default, null):Array<Int>
 
 Represents raylib's `Sound`: a sound held whole, played by `Raylib.PlaySound`, over helix-services' `Audio`.
 
+```haxe
+var frameCount(default, null):Int
+```
+
+- `frameCount`: Gets the number of frames, at 44100 a second; 0 until the sound is loaded.
+
 ## Texture
 
 *typedef* in [`ray/src/helix/ray/Texture.hx`](../../ray/src/helix/ray/Texture.hx), `import helix.ray.Texture;`
@@ -5199,20 +5351,27 @@ var scaleIn:Array<Float>
 
 *class* in [`ray/src/helix/ray/Wave.hx`](../../ray/src/helix/ray/Wave.hx), `import helix.ray.Wave;`
 
-raylib's `Wave` (raylib.h): not in helix-ray yet; its fields are raylib's. Wave, audio wave data.
+Represents raylib's `Wave`: sound samples in memory, as `LoadWaveAsync` reads them and `LoadSoundFromWave` plays them.
+
+The samples are interleaved, a frame a sample for each channel, left first: 8-bit unsigned, 16-bit signed or 32-bit float, little-endian. The `Wave*` functions change a wave in place, as raylib's do through its pointer: its fields are replaced.
 
 ```haxe
-function new()
+function new(?frameCount:Int = 0, ?sampleRate:Int = 0, ?sampleSize:Int = 0, ?channels:Int = 0, ?data:haxe.io.Bytes)
 var frameCount:Int
 var sampleRate:Int
 var sampleSize:Int
 var channels:Int
-var data:Dynamic
+var data:Null<haxe.io.Bytes>
 ```
 
-- `new`: Creates one, its fields zero, empty or null.
-- `frameCount`: Total number of frames (considering channels).
-- `sampleRate`: Frequency (samples per second).
-- `sampleSize`: Bit depth (bits per sample): 8, 16, 32 (24 not supported).
-- `channels`: Number of channels (1-mono, 2-stereo, ...).
-- `data`: Buffer data pointer.
+- `new`: Creates a wave's record. Its fields are zero and its data null unless given, as raylib's `Wave wave = { 0 }` is.
+  - `frameCount`: The number of frames.
+  - `sampleRate`: The frames a second.
+  - `sampleSize`: The bits a sample takes.
+  - `channels`: The number of channels.
+  - `data`: Optional. The samples.
+- `frameCount`: Gets or sets the number of frames, a sample for each channel.
+- `sampleRate`: Gets or sets the frames a second.
+- `sampleSize`: Gets or sets the bits a sample takes: 8, 16 or 32.
+- `channels`: Gets or sets the number of channels: 1 is mono, 2 stereo.
+- `data`: Gets or sets the samples, or null for none.

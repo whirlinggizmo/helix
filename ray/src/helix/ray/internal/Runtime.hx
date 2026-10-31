@@ -43,6 +43,9 @@ class Runtime {
 	/** The program's files, as the preload found them, for what loads from them later (`Audio`, and the `...Async` loads). */
 	public static var assets:Null<Assets> = null;
 
+	/** The files `LoadMusicStreamFromMemory` plays, read before the program's own, made with the assets. */
+	public static var memory:Null<MemoryFiles> = null;
+
 	/** The models, reading glTF files with what they name, made with the assets. */
 	public static var models:Null<helix.services.models.Models> = null;
 
@@ -130,14 +133,26 @@ class Runtime {
 		polled.push(http);
 		var callback = new CallbackFiles();
 		polled.push(callback);
-		assets = new Assets({sources: [FileSystem(callback), HttpServer(system.getProgramDirectory())], httpClient: http, cacheFileSystem: cache});
+		memory = new MemoryFiles();
+		polled.push(memory);
+		assets = new Assets({
+			sources: [
+				FileSystem(memory),
+				FileSystem(callback),
+				HttpServer(system.getProgramDirectory())
+			],
+			httpClient: http,
+			cacheFileSystem: cache
+		});
 		#else
 		var directory = haxe.io.Path.join([system.getProgramDirectory(), root]);
 		var cache = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory, readOnly: true});
 		var imageDecoder = new helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter();
 		var callback = new CallbackFiles();
 		polled.push(callback);
-		assets = new Assets({sources: [FileSystem(callback), FileSystem(cache)]});
+		memory = new MemoryFiles();
+		polled.push(memory);
+		assets = new Assets({sources: [FileSystem(memory), FileSystem(callback), FileSystem(cache)]});
 		#end
 		polled.push(cache);
 		polled.push(imageDecoder);

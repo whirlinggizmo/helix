@@ -53,6 +53,8 @@ class Assets {
 	final sources:Array<Source> = [];
 	final requests:Array<Request> = [];
 	final cacheFileSystem:Null<IFileSystem>;
+	// The last bytes of each stream downloading in two parts, until its source is released.
+	final tails = new Map<GrowingSource, Bytes>();
 
 	/** Creates the assets over their sources.
 
@@ -63,12 +65,12 @@ class Assets {
 		for (i in 0...options.sources.length)
 			sources.push(switch options.sources[i] {
 				case FileSystem(fileSystem): Files(fileSystem);
-				case HttpServer(url, cacheMode): Server(server(options, i, url, cacheMode == null ? Revalidate : cacheMode));
+				case HttpServer(url, cacheMode): Server(server(options, i, url, cacheMode == null ? Revalidate : cacheMode, tails));
 			});
 	}
 
 	// A server source; in Manifest mode with the file systems after it, whose manifests may show a file is already here.
-	static function server(options:AssetsOptions, i:Int, url:String, mode:AssetCacheMode):ServerSource {
+	static function server(options:AssetsOptions, i:Int, url:String, mode:AssetCacheMode, tails:Map<GrowingSource, Bytes>):ServerSource {
 		if (options.httpClient == null || options.cacheFileSystem == null)
 			throw 'an HttpServer source needs httpClient and cacheFileSystem';
 		var shipped:Array<ShippedTree> = [];
@@ -79,7 +81,7 @@ class Assets {
 						shipped.push(new ShippedTree(fileSystem, options.manifestName));
 					case _:
 				}
-		return new ServerSource(url, mode, mode == Manifest ? options.manifestName : null, shipped, options.httpClient, options.cacheFileSystem);
+		return new ServerSource(url, mode, mode == Manifest ? options.manifestName : null, shipped, options.httpClient, options.cacheFileSystem, tails);
 	}
 
 	/** Loads a whole file.
@@ -111,8 +113,10 @@ class Assets {
 
 	/** Finds a file to be played as it is read, without loading it whole, in the form `IAudio.openStream` takes.
 
-		A file system's file is located where it is. A server's file is its kept copy when there is one. Otherwise it plays as it
-		downloads, and the copy is kept.
+		A file system's file is located where it is. A server's file is its kept copy when there is one. Otherwise, natively, it plays as
+		it downloads, and the copy is kept; in a page it is located once it is kept. A native download asks for the file's last 64 KiB
+		first and then the rest, so the stream's length can be read before it has all arrived, as a browser's media element does. A
+		server that doesn't take range requests sends the whole file at the first request.
 
 		@param path  The file's path.
 		@param located  Receives the source, and a release function to call once when the source is no longer read.
@@ -174,6 +178,16 @@ class Assets {
 	public function dispose():Void {
 		for (request in requests.copy())
 			request.abort();
+	}
+
+	/** Returns the last bytes of a stream downloading in two parts (`locate`), until its source is released.
+
+		@param source  The download, as `locate` gave it.
+		@return  Its last 64 KiB or fewer, or null when it was downloaded whole from its start. */
+	@:noCompletion
+	@:allow(helix.services.audio)
+	function tailOf(source:GrowingSource):Null<Bytes> {
+		return tails.get(source);
 	}
 
 	function start(path:String, failed:Null<String->Void>):Request {
@@ -292,6 +306,9 @@ private enum Decision {
 	Its files are downloaded through the HTTP client. Each file is kept with a record in the cache file system, under a directory of the
 	source's own. */
 private class ServerSource {
+	/** The bytes from a file's end a stream's download asks for first. */
+	static inline final TAIL = 65536;
+
 	/** Seconds a response marked immutable stays fresh. */
 	static inline final YEAR = 365 * 24 * 3600;
 
@@ -302,6 +319,7 @@ private class ServerSource {
 	final http:IHttp;
 	final cache:IFileSystem;
 	final directory:String;
+	final tails:Map<GrowingSource, Bytes>;
 	// Off: this run's files, by path.
 	var held = new Map<String, Bytes>();
 	// Each directory's manifest this run, by directory ("" the root, then "levels/"): null for none; waiting while it's fetched.
@@ -309,8 +327,10 @@ private class ServerSource {
 	var manifestsWaiting = new Map<String, Array<Null<Manifest>->Void>>();
 
 	/** Creates the source for a server's URL. */
-	public function new(url:String, mode:AssetCacheMode, manifestPath:Null<String>, shipped:Array<ShippedTree>, http:IHttp, cache:IFileSystem) {
+	public function new(url:String, mode:AssetCacheMode, manifestPath:Null<String>, shipped:Array<ShippedTree>, http:IHttp, cache:IFileSystem,
+			tails:Map<GrowingSource, Bytes>) {
 		this.shipped = shipped;
+		this.tails = tails;
 		this.url = url == "" || StringTools.endsWith(url, "/") ? url : url + "/";
 		this.mode = mode;
 		this.manifestPath = manifestPath;
@@ -382,12 +402,18 @@ private class ServerSource {
 						missing, failed),
 					message -> if (!request.aborted) failed(message));
 			case Download(record, expected):
-				download(path, request, record, expected, false, (_, growing) -> {
-					// Natively a download of known length plays as it arrives; otherwise once it's kept.
+				// Natively a download of known length plays as it arrives; otherwise once it's kept.
+				function got(_:Bytes, growing:Null<GrowingSource>)
 					if (growing == null)
 						locateCopy(path, request, located, missing, failed);
-				}, missing, failed,
-					#if js null #else growing -> located(Downloading(growing), () -> {}) #end);
+				#if js
+				download(path, request, record, expected, false, got, missing, failed);
+				#else
+				if (record == null && expected == null)
+					downloadTailFirst(path, request, got, missing, failed, growing -> located(Downloading(growing), () -> tails.remove(growing)));
+				else
+					download(path, request, record, expected, false, got, missing, failed, growing -> located(Downloading(growing), () -> {}));
+				#end
 		});
 	}
 
@@ -580,6 +606,102 @@ private class ServerSource {
 			if (!request.aborted)
 				fallBack(message);
 		});
+	}
+
+	/** Downloads a file not kept yet, to play as it arrives: its last 64 KiB first, then the rest, and keeps it whole.
+
+		The rest is appended to the source growing receives, and the last bytes after it, so it reads as one download; meanwhile the
+		last bytes are in `tails`, for the stream's length. No byte is downloaded twice. A server that answers the first request with the
+		whole file (200, ignoring the range) is read as one download. The rest is asked for only while the file is unchanged (`If-Range`);
+		a server that sends it otherwise fails the source. got, missing and failed are download's. */
+	function downloadTailFirst(path:String, request:Request, got:(Bytes, Null<GrowingSource>) -> Void, missing:Void->Void, failed:String->Void,
+			growing:GrowingSource->Void):Void {
+		var status = 0, responseHeaders:Map<String, String> = null, buffer = new BytesBuffer(), whole:GrowingSource = null;
+		request.cancel = http.get(url + path, false, ["Range" => 'bytes=-$TAIL'], (code, received) -> {
+			status = code;
+			responseHeaders = received;
+			if (code == 200) {
+				var length = Std.parseInt(received.get("content-length"));
+				if (length != null && length >= 0) {
+					whole = new GrowingSource(length);
+					growing(whole);
+				}
+			}
+		}, part -> {
+			if (whole != null)
+				whole.append(part);
+			buffer.add(part);
+		}, () -> {
+			if (request.aborted)
+				return;
+			var bytes = buffer.getBytes();
+			if (status == 200) {
+				keep(path, bytes, recordOf(responseHeaders, hashOf(bytes)));
+				got(bytes, whole);
+			} else if (status == 206) {
+				var total = totalOf(responseHeaders.get("content-range"));
+				if (total == null || bytes.length > total)
+					// A range answer that doesn't give the file's size: the file is downloaded again, whole.
+					download(path, request, null, null, false, got, missing, failed, growing);
+				else if (bytes.length == total) {
+					var source = GrowingSource.of(bytes);
+					growing(source);
+					keep(path, bytes, recordOf(responseHeaders, hashOf(bytes)));
+					got(bytes, source);
+				} else
+					downloadRest(path, request, bytes, total, responseHeaders, got, growing);
+			} else if (status == 416)
+				download(path, request, null, null, false, got, missing, failed, growing);
+			else if (status >= 400 && status < 500)
+				missing();
+			else
+				failed('the server answered $status');
+		}, message -> {
+			if (whole != null)
+				whole.fail(message);
+			if (!request.aborted)
+				failed(message);
+		});
+	}
+
+	// The file's start, up to its tail, appended to a source of the whole file's size; the tail after it; then the whole kept.
+	function downloadRest(path:String, request:Request, tail:Bytes, total:Int, tailHeaders:Map<String, String>, got:(Bytes, Null<GrowingSource>) -> Void,
+			growing:GrowingSource->Void):Void {
+		var source = new GrowingSource(total);
+		tails.set(source, tail);
+		growing(source);
+		var headers = ["Range" => 'bytes=0-${total - tail.length - 1}'];
+		var etag = tailHeaders.get("etag"),
+			modified = tailHeaders.get("last-modified");
+		if (etag != null && !StringTools.startsWith(etag, "W/"))
+			headers["If-Range"] = etag;
+		else if (modified != null)
+			headers["If-Range"] = modified;
+		var status = 0;
+		request.cancel = http.get(url + path, false, headers, (code, _) -> {
+			status = code;
+			if (code != 206)
+				source.fail(code == 200 ? 'the file changed on the server as it downloaded' : 'the server answered $code');
+		}, part -> if (status == 206) source.append(part), () -> {
+			if (status != 206 || request.aborted)
+				return;
+			if (source.received != total - tail.length) {
+				source.fail('the server sent ${source.received} of ${total - tail.length} bytes');
+				return;
+			}
+			source.append(tail);
+			var bytes = source.bytes;
+			keep(path, bytes, recordOf(tailHeaders, hashOf(bytes)));
+			got(bytes, source);
+		}, message -> source.fail(message));
+	}
+
+	/** Returns a file's size from a range answer's `Content-Range` ("bytes 100-199/1000"), or null when it doesn't give it. */
+	static function totalOf(range:Null<String>):Null<Int> {
+		if (range == null)
+			return null;
+		var slash = range.lastIndexOf("/");
+		return slash < 0 ? null : Std.parseInt(StringTools.trim(range.substr(slash + 1)));
 	}
 
 	// Keeps a downloaded file and then its record, so a record is never there without its copy.

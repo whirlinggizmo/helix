@@ -1,6 +1,7 @@
 package helix.platform.adapters.audio.webaudio;
 
 import haxe.io.Bytes;
+import helix.formats.audio.AudioHeader;
 import helix.platform.IAudio;
 import helix.platform.StreamSource;
 
@@ -46,7 +47,12 @@ class WebAudioAdapter implements IAudio {
 	var context:Dynamic;
 	var clips:Map<Int, {samples:Bytes, channels:Int}> = [];
 	var buffers:Map<Int, Dynamic> = [];
-	var streams:Map<Int, {url:String, element:Null<js.html.AudioElement>, duration:Float}> = [];
+	var streams:Map<Int, {
+		url:String,
+		element:Null<js.html.AudioElement>,
+		duration:Float,
+		channels:Int
+	}> = [];
 	var queues:Map<Int, Queue> = [];
 	var playbacks:Map<Int, Dynamic> = [];
 	// Voices asked for before audio ran, by id, started in order at the first poll once it runs.
@@ -129,6 +135,13 @@ class WebAudioAdapter implements IAudio {
 		return entry.element != null ? durationOf(entry.element) : entry.duration;
 	}
 
+	public function getStreamChannels(stream:Int):Int {
+		var entry = streams[stream];
+		if (entry == null)
+			throw "Invalid audio stream";
+		return entry.channels;
+	}
+
 	public function openStream(source:StreamSource, opened:Int->Void, failed:String->Void):Void->Void {
 		var url = switch source {
 			case Local(location): location;
@@ -142,7 +155,11 @@ class WebAudioAdapter implements IAudio {
 			return () -> aborted = true;
 		}
 		var element = js.Browser.document.createAudioElement(), settled = false, timer = 0, id = 0;
+		// The file's channels from its header, which a second fetch of its first bytes reads (-1 until it has); the element doesn't say.
+		var channels = -1, metadata = false;
+		var fetching = new js.html.AbortController();
 		function dispose():Void {
+			fetching.abort();
 			element.onloadedmetadata = null;
 			element.onerror = null;
 			element.pause();
@@ -157,23 +174,44 @@ class WebAudioAdapter implements IAudio {
 			js.Browser.window.clearTimeout(timer);
 			element.onloadedmetadata = null;
 			element.onerror = null;
-			if (message == null)
-				opened(id);
-			else
+			if (message != null) {
 				failed(message);
+				return;
+			}
+			fetching.abort();
+			id = nextClip++;
+			streams[id] = {
+				url: url,
+				element: element,
+				duration: durationOf(element),
+				channels: channels < 0 ? 0 : channels
+			};
+			opened(id);
 		}
+		// Opens once both the element's metadata and the header have arrived.
+		function ready():Void
+			if (metadata && channels >= 0)
+				finish();
+		readChannels(url, fetching, read -> {
+			channels = read;
+			ready();
+		});
 		element.preload = "metadata";
 		element.crossOrigin = "anonymous";
 		element.onloadedmetadata = _ -> {
-			id = nextClip++;
-			streams[id] = {url: url, element: element, duration: durationOf(element)};
-			finish();
+			metadata = true;
+			ready();
 		};
 		element.onerror = _ -> {
 			dispose();
 			finish("Streamed audio failed: " + url);
 		};
 		timer = js.Browser.window.setTimeout(() -> {
+			// Metadata without the header opens with the channels unknown.
+			if (metadata) {
+				finish();
+				return;
+			}
 			dispose();
 			finish("Streamed audio metadata timeout");
 		}, 15000);
@@ -187,6 +225,41 @@ class WebAudioAdapter implements IAudio {
 			} else if (id != 0 && streams.exists(id))
 				disposeStream(id);
 		};
+	}
+
+	// Reads a file's channels from its first 64 KiB, fetched as a range and cut off there should the server send it all; 0 when the
+	// fetch fails or the header doesn't tell. Nothing is called once aborted.
+	static function readChannels(url:String, fetching:js.html.AbortController, read:Int->Void):Void {
+		var limit = 65536, buffer = new js.lib.Uint8Array(limit), got = 0;
+		function done():Void
+			if (!fetching.signal.aborted)
+				read(AudioHeader.readChannels(Bytes.ofData(buffer.buffer).sub(0, got)));
+		var init:Dynamic = {headers: {"Range": 'bytes=0-${limit - 1}'}, signal: fetching.signal};
+		js.Browser.window.fetch(url, init).then((response:Dynamic) -> {
+			if (!response.ok || response.body == null) {
+				done();
+				return;
+			}
+			var reader:Dynamic = response.body.getReader();
+			function next():Void
+				reader.read().then((chunk:Dynamic) -> {
+					if (chunk.done) {
+						done();
+						return;
+					}
+					var bytes:js.lib.Uint8Array = chunk.value;
+					var count = Std.int(Math.min(bytes.length, limit - got));
+					buffer.set(bytes.subarray(0, count), got);
+					got += count;
+					if (got < limit)
+						next();
+					else {
+						reader.cancel();
+						done();
+					}
+				}, _ -> done());
+			next();
+		}, _ -> done());
 	}
 
 	function clipSource(id:Int, v:Dynamic):Void {

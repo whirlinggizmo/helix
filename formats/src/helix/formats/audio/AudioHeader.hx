@@ -2,16 +2,17 @@ package helix.formats.audio;
 
 import haxe.io.Bytes;
 
-/** Provides reading a sound file's length in seconds from its first bytes, and for some kinds its last, without decoding it.
+/** Provides reading a sound file's length and channels from its first bytes, and for some kinds its last, without decoding it.
 
 	It reads WAV, Ogg (Vorbis, Opus, FLAC and Speex), FLAC and MP3 (MPEG audio layers I to III). Given the whole file, it reads the
-	start alone; given part of it, the first 64 KiB is enough for all but an MP3 whose tags are larger, and Ogg needs the last bytes too,
-	where the last page is.
+	start alone; given part of it, the first 64 KiB is enough for all but an MP3 whose tags are larger, and Ogg's length needs the last
+	bytes too, where the last page is.
 
 	```haxe
-	var seconds = AudioLength.read(first64k, last64k, fileSize);
+	var seconds = AudioHeader.readDuration(first64k, last64k, fileSize);
+	var channels = AudioHeader.readChannels(first64k);
 	``` */
-class AudioLength {
+class AudioHeader {
 	/** Returns a sound file's length in seconds.
 
 		WAV: the data chunk's frames over the rate; for a compressed encoding, the `fact` chunk's frames, or the data's size over its
@@ -26,23 +27,69 @@ class AudioLength {
 			`start` is the whole file, `start` is read for both.
 		@param size  The file's size, in bytes.
 		@return  The length, in seconds, or 0 when it can't tell: an unknown kind, too few bytes, or a file that doesn't record it. */
-	public static function read(start:Bytes, ?end:Bytes, size:Int):Float {
+	public static function readDuration(start:Bytes, ?end:Bytes, size:Int):Float {
 		if (end == null && size <= start.length)
 			end = start;
 		if (start.length >= 12 && matches(start, 0, "RIFF") && matches(start, 8, "WAVE"))
 			return wav(start, size);
 		if (start.length >= 4 && matches(start, 0, "OggS"))
 			return ogg(start, end);
-		var p = 0;
-		var tagged = false;
-		while (p + 10 <= start.length && matches(start, p, "ID3")) {
-			var tagSize = (start.get(p + 6) << 21) | (start.get(p + 7) << 14) | (start.get(p + 8) << 7) | start.get(p + 9);
-			p += 10 + tagSize + ((start.get(p + 5) & 0x10) != 0 ? 10 : 0);
-			tagged = true;
-		}
+		var p = tagsEnd(start);
+		var tagged = p > 0;
 		if (p + 4 <= start.length && matches(start, p, "fLaC"))
 			return flac(start, p);
 		return mp3(start, p, tagged, end, size);
+	}
+
+	/** Returns how many channels a sound file has.
+
+		WAV: its `fmt ` chunk's. Ogg: the first stream's header's. FLAC: STREAMINFO's. MP3: the first frame's mode, 1 for mono and 2
+		otherwise.
+
+		@param start  The file's first bytes, as many as there are or as are read; 64 KiB is enough for most files.
+		@return  The channels, or 0 when it can't tell: an unknown kind or too few bytes. */
+	public static function readChannels(start:Bytes):Int {
+		if (start.length >= 12 && matches(start, 0, "RIFF") && matches(start, 8, "WAVE")) {
+			var p = 12;
+			while (p + 8 <= start.length) {
+				var chunkSize = unsigned(start.getInt32(p + 4));
+				if (matches(start, p, "fmt "))
+					return p + 12 <= start.length ? start.getUInt16(p + 10) : 0;
+				p = Std.int(p + 8 + chunkSize + (chunkSize % 2));
+			}
+			return 0;
+		}
+		if (start.length >= 4 && matches(start, 0, "OggS")) {
+			if (start.length < 28 || start.get(4) != 0)
+				return 0;
+			var packet = 27 + start.get(26);
+			if (packet + 12 <= start.length && start.get(packet) == 1 && matches(start, packet + 1, "vorbis"))
+				return start.get(packet + 11);
+			if (packet + 10 <= start.length && matches(start, packet, "OpusHead"))
+				return start.get(packet + 9);
+			if (packet + 30 <= start.length && start.get(packet) == 0x7F && matches(start, packet + 1, "FLAC"))
+				return ((start.get(packet + 29) >> 1) & 7) + 1;
+			if (packet + 52 <= start.length && matches(start, packet, "Speex   "))
+				return start.getInt32(packet + 48);
+			return 0;
+		}
+		var p = tagsEnd(start);
+		if (p + 4 <= start.length && matches(start, p, "fLaC")) {
+			var info = p + 8;
+			return info + 13 <= start.length && (start.get(p + 4) & 0x7F) == 0 ? ((start.get(info + 12) >> 1) & 7) + 1 : 0;
+		}
+		var frame = firstFrame(start, p, p > 0);
+		return frame < 0 ? 0 : start.get(frame + 3) >> 6 == 3 ? 1 : 2;
+	}
+
+	// Where a file's ID3v2 tags end: 0 when it has none.
+	static function tagsEnd(start:Bytes):Int {
+		var p = 0;
+		while (p + 10 <= start.length && matches(start, p, "ID3")) {
+			var tagSize = (start.get(p + 6) << 21) | (start.get(p + 7) << 14) | (start.get(p + 8) << 7) | start.get(p + 9);
+			p += 10 + tagSize + ((start.get(p + 5) & 0x10) != 0 ? 10 : 0);
+		}
+		return p;
 	}
 
 	static function wav(start:Bytes, size:Int):Float {
@@ -157,18 +204,7 @@ class AudioLength {
 	}
 
 	static function mp3(start:Bytes, p:Int, tagged:Bool, end:Null<Bytes>, size:Int):Float {
-		// The first frame: at the start or right after the tags, or for a tagged file the first after them that the next follows.
-		var frame = -1;
-		var last = tagged ? start.length - 4 : p;
-		var i = p;
-		while (i <= last && i + 4 <= start.length) {
-			var length = frameLength(start, i);
-			if (length > 0 && (i + length + 4 > start.length || frameLength(start, i + length) > 0)) {
-				frame = i;
-				break;
-			}
-			i++;
-		}
+		var frame = firstFrame(start, p, tagged);
 		if (frame < 0)
 			return 0;
 		var b1 = start.get(frame + 1),
@@ -193,6 +229,19 @@ class AudioLength {
 		if (end != null && end.length >= 128 && matches(end, end.length - 128, "TAG"))
 			audio -= 128;
 		return audio * 8 / (bitrate(b1, b2) * 1000);
+	}
+
+	// The first MPEG audio frame: at p, after the tags, or for a tagged file the first after them that the next follows; -1 when none.
+	static function firstFrame(start:Bytes, p:Int, tagged:Bool):Int {
+		var last = tagged ? start.length - 4 : p;
+		var i = p;
+		while (i <= last && i + 4 <= start.length) {
+			var length = frameLength(start, i);
+			if (length > 0 && (i + length + 4 > start.length || frameLength(start, i + length) > 0))
+				return i;
+			i++;
+		}
+		return -1;
 	}
 
 	// The length in bytes of the MPEG audio frame whose header is at p, or 0 when there is no valid header there.

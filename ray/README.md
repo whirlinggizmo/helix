@@ -11,7 +11,8 @@ program written as raylib is written runs in a page and natively.
 | `helix.ray.Vector2`, `Vector3`, `Color`, `Texture2D`, `Camera3D`, `Model`, `Shader`, `RenderTexture2D` and the rest | raylib's structs, with their fields |
 
 The window and frame, the keyboard, mouse, touch and gamepads, text input, shapes, textures, blend and scissor modes, the default
-font and TrueType and OpenType fonts (signed distance fields too), sounds, text files; images on the CPU in raylib's uncompressed pixel
+font and TrueType and OpenType fonts (signed distance fields too), sounds and their aliases, waves (loaded, converted, cropped and
+exported as raylib's are), music with its length, position and seeking, audio streams fed by the program or its callback, text files; images on the CPU in raylib's uncompressed pixel
 formats (made, changed and drawn into as raylib's are, byte for byte, but for resizing), exported as PNG or QOI, and screenshots; in 3D
 the camera, glTF and GLB models, meshes, shapes, render textures, rays; raylib's shaders, compiled as the program builds for every
 target. Not here yet: skinned models and animations, animated (GIF) and compressed images, and updating a texture's pixels.

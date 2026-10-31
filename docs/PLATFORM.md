@@ -248,7 +248,7 @@ for Linux on ARM64. On a system without a build, SPIRV-Cross is built from its s
 - `available` (a device opened), `running` (producing sound now; in a page, after the user's first gesture), `playsUrls` (whether a
   stream can be a URL the platform plays itself).
 - `createClip(samples, channels)` from float32 PCM at 44100 Hz, mono or stereo interleaved, `disposeClip`; `openStream(source, opened,
-  failed)` returning an abort, `getStreamDuration` (seconds, 0 while unknown), `disposeStream`; `createQueue(channels, sampleRate)`,
+  failed)` returning an abort, `getStreamDuration` (seconds, 0 while unknown), `getStreamChannels`, `disposeStream`; `createQueue(channels, sampleRate)`,
   `queueSamples`, `getQueuedFrames` (not yet heard), `disposeQueue`.
 - `playClip(clip, loop, volume)`, `playStream(stream, loop, volume)` and `playQueue(queue, volume)` giving a voice; `stop`, `pause`,
   `setVolume`, `setPitch`, `setPan` (equal power for a mono voice, a balance for a stereo one, as Web Audio's `StereoPannerNode`),

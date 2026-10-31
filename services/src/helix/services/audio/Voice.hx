@@ -2,7 +2,7 @@ package helix.services.audio;
 
 import helix.platform.IAudio;
 
-/** Represents a sound playing (`Audio.play`), until it ends or is stopped.
+/** Represents a sound or a queue playing (`Audio.play`, `SampleQueue.play`), until it ends or is stopped.
 
 	Once it has ended, its members change nothing and `playing` is false. */
 @:allow(helix.services.audio)
@@ -17,7 +17,7 @@ class Voice {
 	var sent = -1.;
 
 	@:allow(helix.services.audio)
-	function new(audio:Audio, output:IAudio, id:Int, sound:Sound, group:Group, volume:Float) {
+	function new(audio:Audio, output:IAudio, id:Int, sound:Null<Sound>, group:Group, volume:Float) {
 		this.audio = audio;
 		this.output = output;
 		this.id = id;
@@ -27,8 +27,8 @@ class Voice {
 		ended = id == 0;
 	}
 
-	/** Gets the sound it plays. */
-	public var sound(default, null):Sound;
+	/** Gets the sound it plays, or null for a queue's voice (`SampleQueue.play`). */
+	public var sound(default, null):Null<Sound>;
 
 	/** Gets the group it plays in. */
 	public var group(default, null):Group;
@@ -77,6 +77,27 @@ class Voice {
 		if (!ended)
 			output.pause(id, value);
 		return paused = value;
+	}
+
+	/** Gets how far the voice has played, in seconds from the start of its sound.
+
+		A looping voice goes back to 0 at each loop. A queue's voice counts what it has played since it started. It is 0 once the voice has
+		ended. */
+	public var position(get, never):Float;
+
+	function get_position():Float {
+		return ended ? 0 : output.getPosition(id);
+	}
+
+	/** Moves the voice to a position in its sound, playing or paused.
+
+		A position past the end is clamped to the end, where a voice that doesn't loop ends. A queue's voice can't be moved, nor, in a page,
+		a stream from a server that doesn't take range requests.
+
+		@param seconds  The position in seconds from the start, 0 or more.
+		@return  False, changing nothing, when the voice has ended, is a queue's, or can't be moved there. */
+	public function setPosition(seconds:Float):Bool {
+		return !ended && output.setPosition(id, seconds);
 	}
 
 	/** Fades the voice's own volume to another over some real time, on a curve the ear hears as even (in decibels).

@@ -11,19 +11,36 @@ typedef FakeVoice = {
 	pitch:Float,
 	pan:Float,
 	paused:Bool,
-	playing:Bool
+	playing:Bool,
+	position:Float
 }
 
-/** Stands in for the platform's sound output and decoder in the services' tests: clips, streams and voices kept for the test to read,
-	streams opened and files decoded at the next `poll`, and voices the test ends. */
+/** Stands in for the platform's sound output and decoder in the services' tests: clips, streams, queues and voices kept for the test to
+	read, streams opened and files decoded at the next `poll`, and voices the test ends and moves. A file decodes to itself, mono, unless
+	it starts "stereo". */
 class FakeAudio implements IAudio implements IAudioDecoder {
 	/** Gets the voices, by id. */
 	public final voices = new Map<Int, FakeVoice>();
 
-	/** Gets the clips and streams not disposed, by id. */
+	/** Gets the clips, streams and queues not disposed, by id. */
 	public final sounds = new Map<Int, String>();
 
-	final queued:Array<Void->Void> = [];
+	/** Gets the sources streams were opened from, by stream. */
+	public final sources = new Map<Int, StreamSource>();
+
+	/** Gets the frames each queue holds, by queue: what was queued, less what the test has taken as heard. */
+	public final queued = new Map<Int, Int>();
+
+	/** Gets or sets what `getStreamDuration` answers for every stream. Defaults to 0, unknown. */
+	public var streamDuration = 0.;
+
+	/** Gets or sets what `getStreamChannels` answers for every stream. Defaults to 2. */
+	public var streamChannels = 2;
+
+	final queueChannels = new Map<Int, Int>();
+	final queueVoices = new Map<Int, Int>();
+
+	final waiting:Array<Void->Void> = [];
 	var next = 1;
 
 	/** Creates one with nothing in it. */
@@ -48,9 +65,11 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 		return false;
 
 	public function decode(encoded:Bytes, decoded:(samples:Bytes, channels:Int) -> Void, failed:String->Void):Void
-		queued.push(() -> encoded.toString() == "bad" ? failed("not audio") : decoded(encoded, 1));
+		waiting.push(() -> encoded.toString() == "bad" ? failed("not audio") : decoded(encoded, StringTools.startsWith(encoded.toString(), "stereo") ? 2 : 1));
 
 	public function createClip(samples:Bytes, channels:Int):Int {
+		if (channels != 1 && channels != 2)
+			throw 'createClip takes 1 or 2 channels, not $channels';
 		sounds.set(next, "clip");
 		return next++;
 	}
@@ -59,7 +78,8 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 		sounds.remove(clip);
 
 	public function openStream(source:StreamSource, opened:Int->Void, failed:String->Void):Void->Void {
-		queued.push(() -> {
+		waiting.push(() -> {
+			sources.set(next, source);
 			sounds.set(next, "stream");
 			opened(next++);
 		});
@@ -69,27 +89,51 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 	public function disposeStream(stream:Int):Void
 		sounds.remove(stream);
 
-	/** Returns 0: a stream's length is unknown. */
+	/** Returns `streamDuration`. */
 	public function getStreamDuration(stream:Int):Float
-		return 0;
+		return streamDuration;
+
+	/** Returns `streamChannels`. */
+	public function getStreamChannels(stream:Int):Int
+		return streamChannels;
 
 	public function createQueue(channels:Int, sampleRate:Int):Int {
+		if (channels != 1 && channels != 2 || sampleRate < 8000 || sampleRate > 96000)
+			throw 'createQueue: $channels channels at $sampleRate';
 		sounds.set(next, "queue");
+		queued.set(next, 0);
+		queueChannels.set(next, channels);
 		return next++;
 	}
 
-	/** Does nothing: no samples are kept. */
-	public function queueSamples(queue:Int, samples:Bytes):Void {}
+	/** Counts the frames added. */
+	public function queueSamples(queue:Int, samples:Bytes):Void {
+		if (!queued.exists(queue))
+			throw 'unknown queue $queue';
+		queued.set(queue, queued.get(queue) + Std.int(samples.length / (4 * queueChannels.get(queue))));
+	}
 
-	/** Returns 0: no samples are kept. */
-	public function getQueuedFrames(queue:Int):Int
-		return 0;
+	public function getQueuedFrames(queue:Int):Int {
+		if (!queued.exists(queue))
+			throw 'unknown queue $queue';
+		return queued.get(queue);
+	}
 
-	public function disposeQueue(queue:Int):Void
+	public function disposeQueue(queue:Int):Void {
+		if (queueVoices.exists(queue))
+			stop(queueVoices.get(queue));
 		sounds.remove(queue);
+		queued.remove(queue);
+	}
 
-	public function playQueue(queue:Int, volume:Float):Int
-		return start(queue, false, volume);
+	/** Ends the queue's earlier voice, keeping its samples. */
+	public function playQueue(queue:Int, volume:Float):Int {
+		if (queueVoices.exists(queue) && voices.exists(queueVoices.get(queue)))
+			voices.get(queueVoices.get(queue)).playing = false;
+		var voice = start(queue, false, volume);
+		queueVoices.set(queue, voice);
+		return voice;
+	}
 
 	public function playClip(clip:Int, loop:Bool, volume:Float):Int
 		return start(clip, loop, volume);
@@ -97,9 +141,15 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 	public function playStream(stream:Int, loop:Bool, volume:Float):Int
 		return start(stream, loop, volume);
 
-	public function stop(voice:Int):Void
-		if (voices.exists(voice))
-			voices.get(voice).playing = false;
+	/** Stops a voice; a queue's drops what it held. */
+	public function stop(voice:Int):Void {
+		if (!voices.exists(voice))
+			return;
+		var v = voices.get(voice);
+		if (v.playing && sounds.get(v.sound) == "queue")
+			queued.set(v.sound, 0);
+		v.playing = false;
+	}
 
 	public function pause(voice:Int, paused:Bool):Void
 		if (voices.exists(voice))
@@ -132,16 +182,20 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 	public function isPlaying(voice:Int):Bool
 		return voices.exists(voice) && voices.get(voice).playing;
 
-	/** Returns 0: voices don't advance. */
+	/** Returns the voice's position, which the test or `setPosition` sets; 0 for an unknown or ended voice. */
 	public function getPosition(voice:Int):Float
-		return 0;
+		return isPlaying(voice) ? voices.get(voice).position : 0;
 
-	/** Returns whether the voice is playing; it doesn't move. */
-	public function setPosition(voice:Int, seconds:Float):Bool
-		return isPlaying(voice);
+	/** Moves a playing voice that isn't a queue's. */
+	public function setPosition(voice:Int, seconds:Float):Bool {
+		if (!isPlaying(voice) || sounds.get(voices.get(voice).sound) == "queue")
+			return false;
+		voices.get(voice).position = seconds;
+		return true;
+	}
 
 	public function poll():Void {
-		var due = queued.splice(0, queued.length);
+		var due = waiting.splice(0, waiting.length);
 		for (f in due)
 			f();
 	}
@@ -156,7 +210,8 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 			pitch: 1,
 			pan: 0,
 			paused: false,
-			playing: true
+			playing: true,
+			position: 0
 		});
 		return next++;
 	}

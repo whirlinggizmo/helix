@@ -218,10 +218,13 @@ class AudioTests {
 				}
 			},
 			{
-				name: "a stream opens, its length known",
+				name: "a stream opens, its length and channels known",
 				enter: () -> audio.openStream(place(streamFile), id -> stream = id, why -> fail('not opened: $why')),
 				ready: () -> stream != 0 || failures.length > 0,
-				check: () -> near(audio.getStreamDuration(stream), 1.5, 1 / 60, "duration")
+				check: () -> {
+					near(audio.getStreamDuration(stream), 1.5, 1 / 60, "duration");
+					check(audio.getStreamChannels(stream) == 2, 'channels: ${audio.getStreamChannels(stream)}');
+				}
 			},
 			{
 				name: "a stream plays, its position advancing",

@@ -25,7 +25,7 @@ import helix.ray.raylib.RTextures;
 
 	A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`; in a page its body runs once a
 	frame. A page can't wait for a file, so on every target files are loaded by helix-ray's own `...Async` loads; raylib's
-	`LoadTexture`, `LoadImage`, `LoadModel`, `LoadSound`, `LoadFileData` and `LoadFileText` don't compile, naming the load to use. A file loaded
+	`LoadTexture`, `LoadImage`, `LoadModel`, `LoadSound`, `LoadWave`, `LoadFileData` and `LoadFileText` don't compile, naming the load to use. A file loaded
 	twice is shared, and goes to the GPU when first drawn. `SaveFileText` writes are kept across runs. Shaders are raylib's GLSL,
 	compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported
 	apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.ray.raylib`) and listed here
@@ -4403,18 +4403,123 @@ class Raylib {
 	public static inline function GetMasterVolume():Float
 		return RAudio.GetMasterVolume();
 
-	/** Frees a sound, stopping it: one load of its file, the decoded sound with the last.
+	/** Returns whether a wave holds samples.
+
+		@param wave  The wave.
+		@return  True when it has data, frames, a rate, a sample size and channels. */
+	public static inline function IsWaveValid(wave:Wave):Bool
+		return RAudio.IsWaveValid(wave);
+
+	/** Frees a wave's samples: its data is null after.
+
+		@param wave  The wave. */
+	public static inline function UnloadWave(wave:Wave):Void
+		RAudio.UnloadWave(wave);
+
+	/** Writes a wave to a file through `SaveFileData`: ".wav" (8, 16 and 24 bits as integers, 32 as floats, as raylib's dr_wav writes
+		them) or ".raw" (the samples as they are). raylib's ".qoa" isn't written here. The file is kept as `SaveFileData` keeps it.
+
+		@param wave  The wave.
+		@param fileName  The file; its extension chooses the format.
+		@return  True when it was written. */
+	public static inline function ExportWave(wave:Wave, fileName:String):Bool
+		return RAudio.ExportWave(wave, fileName);
+
+	/** Writes a wave as a C header through `SaveFileText`, as raylib's does: its frames, rate, sample size and channels as defines, and
+		its samples as an array: floats with 4 places for 32-bit samples, else bytes, 20 a line.
+
+		@param wave  The wave.
+		@param fileName  The file; its name, upper case, names the defines and the array.
+		@return  True when it was written. */
+	public static inline function ExportWaveAsCode(wave:Wave, fileName:String):Bool
+		return RAudio.ExportWaveAsCode(wave, fileName);
+
+	/** Returns a copy of a wave, its samples its own.
+
+		@param wave  The wave.
+		@return  The copy. */
+	public static inline function WaveCopy(wave:Wave):Wave
+		return RAudio.WaveCopy(wave);
+
+	/** Crops a wave to a range of its frames, as raylib's: from `initFrame` up to `finalFrame`, not including it. A range outside the
+		wave, or empty, changes nothing and warns.
+
+		@param wave  The wave, changed in place.
+		@param initFrame  The first frame kept.
+		@param finalFrame  The frame after the last one kept, at most `frameCount`. */
+	public static inline function WaveCrop(wave:Wave, initFrame:Int, finalFrame:Int):Void
+		RAudio.WaveCrop(wave, initFrame, finalFrame);
+
+	/** Converts a wave's samples to another rate, sample size and channels, as raylib's does through miniaudio: integers to floats and
+		back without dithering, channels mixed by miniaudio's standard speaker layouts, and the rate changed by its linear resampler,
+		low-pass filtered. A wave it can't convert is unchanged, with a warning.
+
+		@param wave  The wave, changed in place.
+		@param sampleRate  The frames a second.
+		@param sampleSize  The bits a sample takes: 8, 16 or 32.
+		@param channels  The number of channels. */
+	public static inline function WaveFormat(wave:Wave, sampleRate:Int, sampleSize:Int, channels:Int):Void
+		RAudio.WaveFormat(wave, sampleRate, sampleSize, channels);
+
+	/** Returns a wave's samples as numbers from -1 to 1, as raylib's: 8-bit ones less 128 over 128, 16-bit ones over 32768, 32-bit ones
+		as they are; other sizes give 0.
+
+		@param wave  The wave.
+		@return  `frameCount * channels` samples, interleaved. */
+	public static inline function LoadWaveSamples(wave:Wave):Array<Float>
+		return RAudio.LoadWaveSamples(wave);
+
+	/** Frees samples `LoadWaveSamples` gave. There is nothing to free here.
+
+		@param samples  The samples. */
+	public static inline function UnloadWaveSamples(samples:Array<Float>):Void
+		RAudio.UnloadWaveSamples(samples);
+
+	/** Makes a sound from a wave, to play at once: its samples converted to 32-bit floats at 44100 Hz, as raylib converts them to the
+		output's format, its channels kept when 1 or 2 and more mixed to 2 (raylib makes every sound stereo). `InitAudioDevice` comes first.
+
+		@param wave  The wave; it is unchanged, and may be unloaded after.
+		@return  The sound, or one that isn't valid (`IsSoundValid`) when the wave has no samples or can't be converted. */
+	public static inline function LoadSoundFromWave(wave:Wave):Sound
+		return RAudio.LoadSoundFromWave(wave);
+
+	/** Makes a sound that plays another's samples with its own volume, pitch, pan and voice, as raylib's alias does. It needs none of
+		its own memory; once its source is unloaded, it plays nothing.
+
+		@param source  The sound whose samples it plays.
+		@return  The alias, or one that isn't valid when the source isn't loaded. */
+	public static inline function LoadSoundAlias(source:Sound):Sound
+		return RAudio.LoadSoundAlias(source);
+
+	/** Frees a sound, stopping it: one load of its file, the decoded sound with the last; a sound made from a wave, its samples. Its
+		aliases play nothing after. An alias is freed as `UnloadSoundAlias` frees it.
 
 		@param sound  The sound. */
 	public static inline function UnloadSound(sound:Sound):Void
 		RAudio.UnloadSound(sound);
 
+	/** Frees an alias, stopping it; its source's samples are kept.
+
+		@param alias  The alias. */
+	public static inline function UnloadSoundAlias(alias:Sound):Void
+		RAudio.UnloadSoundAlias(alias);
+
 	/** Returns whether a sound was loaded.
 
 		@param sound  The sound.
-		@return  True once it is decoded. */
+		@return  True once it is decoded or made, until it is unloaded. */
 	public static inline function IsSoundValid(sound:Sound):Bool
 		return RAudio.IsSoundValid(sound);
+
+	/** Writes new samples over the start of a sound, stopping it, as raylib's does; its length is unchanged. Its aliases play the new
+		samples.
+
+		@param sound  The sound, or one of its aliases.
+		@param data  32-bit float samples at 44100 Hz in the sound's channels (a wave's channels, when 1 or 2), interleaved.
+		@param sampleCount  How many frames to write, at most the sound's `frameCount`. The frames after them keep their samples; for a
+			sound loaded from a file, whose samples aren't held, they are silent. */
+	public static inline function UpdateSound(sound:Sound, data:haxe.io.Bytes, sampleCount:Int):Void
+		RAudio.UpdateSound(sound, data, sampleCount);
 
 	/** Plays a sound from its start, restarting it when it is already playing.
 
@@ -4428,10 +4533,22 @@ class Raylib {
 	public static inline function StopSound(sound:Sound):Void
 		RAudio.StopSound(sound);
 
+	/** Pauses a sound where it is.
+
+		@param sound  The sound. */
+	public static inline function PauseSound(sound:Sound):Void
+		RAudio.PauseSound(sound);
+
+	/** Resumes a paused sound.
+
+		@param sound  The sound. */
+	public static inline function ResumeSound(sound:Sound):Void
+		RAudio.ResumeSound(sound);
+
 	/** Returns whether a sound is playing.
 
 		@param sound  The sound.
-		@return  True while it plays. */
+		@return  True while it plays; false while it is paused, as raylib's. */
 	public static inline function IsSoundPlaying(sound:Sound):Bool
 		return RAudio.IsSoundPlaying(sound);
 
@@ -4464,6 +4581,16 @@ class Raylib {
 	public static inline function LoadMusicStream(fileName:String):Music
 		return RAudio.LoadMusicStream(fileName);
 
+	/** Opens music from a file's bytes, to be played as it is read, as `LoadMusicStream` plays a file: in a page from a Blob's URL, natively
+		from a copy written to the program's cache directory, deleted when the music is unloaded. `InitAudioDevice` comes first.
+
+		@param fileType  The file's extension, such as ".ogg": Ogg Vorbis, MP3, WAV or FLAC.
+		@param data  The file's bytes; they are kept until the music is unloaded.
+		@param dataSize  How many of them.
+		@return  The music. */
+	public static inline function LoadMusicStreamFromMemory(fileType:String, data:haxe.io.Bytes, dataSize:Int):Music
+		return RAudio.LoadMusicStreamFromMemory(fileType, data, dataSize);
+
 	/** Returns whether music was opened, or is still opening.
 
 		@param music  The music.
@@ -4477,7 +4604,7 @@ class Raylib {
 	public static inline function UnloadMusicStream(music:Music):Void
 		RAudio.UnloadMusicStream(music);
 
-	/** Plays music from its start, looping while its `looping` is true.
+	/** Plays music from its start, looping while its `looping` is true; from where `SeekMusicStream` put it, when it was moved before.
 
 		@param music  The music. */
 	public static inline function PlayMusicStream(music:Music):Void
@@ -4486,7 +4613,7 @@ class Raylib {
 	/** Returns whether music is playing, or will once it opens.
 
 		@param music  The music.
-		@return  True while it plays, paused or not. */
+		@return  True while it plays; false while it is paused, as raylib's. */
 	public static inline function IsMusicStreamPlaying(music:Music):Bool
 		return RAudio.IsMusicStreamPlaying(music);
 
@@ -4496,7 +4623,7 @@ class Raylib {
 	public static inline function UpdateMusicStream(music:Music):Void
 		RAudio.UpdateMusicStream(music);
 
-	/** Stops music.
+	/** Stops music, so its next play starts from its beginning.
 
 		@param music  The music. */
 	public static inline function StopMusicStream(music:Music):Void
@@ -4513,6 +4640,14 @@ class Raylib {
 		@param music  The music. */
 	public static inline function ResumeMusicStream(music:Music):Void
 		RAudio.ResumeMusicStream(music);
+
+	/** Moves music to a position. Music not playing starts there when next played. In a page, a server's file moves only within what
+		its server lets the media element ask for (range requests).
+
+		@param music  The music.
+		@param position  The position, in seconds from its start. */
+	public static inline function SeekMusicStream(music:Music, position:Float):Void
+		RAudio.SeekMusicStream(music, position);
 
 	/** Sets music's volume.
 
@@ -4534,6 +4669,130 @@ class Raylib {
 		@param pan  0 for left, 0.5 the middle, 1 for right, as raylib's. */
 	public static inline function SetMusicPan(music:Music, pan:Float):Void
 		RAudio.SetMusicPan(music, pan);
+
+	/** Returns music's length (helix-services' `Sound.duration`): known once it opens from a file natively or in a page; a server's file
+		natively once its start and its last 64 KiB have arrived. 0 while it isn't known.
+
+		@param music  The music.
+		@return  The length, in seconds. */
+	public static inline function GetMusicTimeLength(music:Music):Float
+		return RAudio.GetMusicTimeLength(music);
+
+	/** Returns how far music has played, back to 0 at each loop, as raylib's. Paused, it holds; stopped, it is 0.
+
+		@param music  The music.
+		@return  The position, in seconds from its start. */
+	public static inline function GetMusicTimePlayed(music:Music):Float
+		return RAudio.GetMusicTimePlayed(music);
+
+	/** Opens a stream for samples the program makes as it goes, played as they are given (`UpdateAudioStream`) through helix-services'
+		`SampleQueue`, which the platform resamples. `InitAudioDevice` comes first.
+
+		@param sampleRate  The frames a second, 8000 to 96000.
+		@param sampleSize  The bits a sample takes: 8 (unsigned), 16 (signed) or 32 (float).
+		@param channels  The number of channels, 1 or 2.
+		@return  The stream, or one that isn't valid (`IsAudioStreamValid`) when it can't be made. */
+	public static inline function LoadAudioStream(sampleRate:Int, sampleSize:Int, channels:Int):AudioStream
+		return RAudio.LoadAudioStream(sampleRate, sampleSize, channels);
+
+	/** Returns whether a stream was opened.
+
+		@param stream  The stream.
+		@return  True when it has its queue, a rate, a sample size and channels. */
+	public static inline function IsAudioStreamValid(stream:AudioStream):Bool
+		return RAudio.IsAudioStreamValid(stream);
+
+	/** Closes a stream, stopping it.
+
+		@param stream  The stream. */
+	public static inline function UnloadAudioStream(stream:AudioStream):Void
+		RAudio.UnloadAudioStream(stream);
+
+	/** Gives a stream its next buffer of samples, as raylib's: once a buffer has been heard (`IsAudioStreamProcessed`), and at most a
+		buffer's frames (`SetAudioStreamBufferSizeDefault`), the rest of the buffer silent. Otherwise nothing is taken, with a warning.
+
+		@param stream  The stream.
+		@param data  The samples in the stream's sample size and channels, interleaved.
+		@param frameCount  How many frames. */
+	public static inline function UpdateAudioStream(stream:AudioStream, data:haxe.io.Bytes, frameCount:Int):Void
+		RAudio.UpdateAudioStream(stream, data, frameCount);
+
+	/** Returns whether a stream has room for another buffer: true while it holds no more than one buffer not yet heard, as raylib's double
+		buffer has one free.
+
+		@param stream  The stream.
+		@return  True when `UpdateAudioStream` would take samples. */
+	public static inline function IsAudioStreamProcessed(stream:AudioStream):Bool
+		return RAudio.IsAudioStreamProcessed(stream);
+
+	/** Plays a stream: what it holds, and what it is given after. A stream with a callback is filled by it at once.
+
+		@param stream  The stream. */
+	public static inline function PlayAudioStream(stream:AudioStream):Void
+		RAudio.PlayAudioStream(stream);
+
+	/** Pauses a stream where it is.
+
+		@param stream  The stream. */
+	public static inline function PauseAudioStream(stream:AudioStream):Void
+		RAudio.PauseAudioStream(stream);
+
+	/** Resumes a paused stream.
+
+		@param stream  The stream. */
+	public static inline function ResumeAudioStream(stream:AudioStream):Void
+		RAudio.ResumeAudioStream(stream);
+
+	/** Returns whether a stream is playing.
+
+		@param stream  The stream.
+		@return  True while it plays, even when it has run out of samples; false while it is paused, as raylib's. */
+	public static inline function IsAudioStreamPlaying(stream:AudioStream):Bool
+		return RAudio.IsAudioStreamPlaying(stream);
+
+	/** Stops a stream, dropping the samples it hadn't played.
+
+		@param stream  The stream. */
+	public static inline function StopAudioStream(stream:AudioStream):Void
+		RAudio.StopAudioStream(stream);
+
+	/** Sets a stream's volume.
+
+		@param stream  The stream.
+		@param volume  0 (silent) to 1. */
+	public static inline function SetAudioStreamVolume(stream:AudioStream, volume:Float):Void
+		RAudio.SetAudioStreamVolume(stream, volume);
+
+	/** Sets a stream's pitch.
+
+		@param stream  The stream.
+		@param pitch  1 for as given. */
+	public static inline function SetAudioStreamPitch(stream:AudioStream, pitch:Float):Void
+		RAudio.SetAudioStreamPitch(stream, pitch);
+
+	/** Sets where a stream is heard.
+
+		@param stream  The stream.
+		@param pan  0 for left, 0.5 the middle, 1 for right, as raylib's. */
+	public static inline function SetAudioStreamPan(stream:AudioStream, pan:Float):Void
+		RAudio.SetAudioStreamPan(stream, pan);
+
+	/** Sets the frames in each of a stream's two buffers, for the streams opened after; 0 for raylib's default, a 30th of a second at
+		44100 Hz (1470 frames).
+
+		@param size  The frames. */
+	public static inline function SetAudioStreamBufferSizeDefault(size:Int):Void
+		RAudio.SetAudioStreamBufferSizeDefault(size);
+
+	/** Has a stream ask the program for its samples: while it plays, the callback is called with a buffer's frames to fill until the
+		stream holds two buffers ahead of what is heard. raylib calls it on its audio thread as the mixer needs frames; a page can't run
+		Haxe there, so here it is called on the main thread as each frame ends (`EndDrawing`'s poll), and once as the stream starts to
+		play. A frame long enough to empty both buffers is heard as a gap.
+
+		@param stream  The stream.
+		@param callback  Receives a buffer to fill, in the stream's sample size and channels, and its frames; null for none. */
+	public static inline function SetAudioStreamCallback(stream:AudioStream, callback:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void
+		RAudio.SetAudioStreamCallback(stream, callback);
 
 	// ---- the async loads, helix-ray's own in place of raylib's that wait for a file (raylib/RAsync.hx) ----
 
@@ -4564,6 +4823,32 @@ class Raylib {
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	public static inline function LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void):Void
 		RAsync.LoadSoundAsync(fileName, loaded, failed);
+
+	/** Loads a sound file's samples, answering when they are read: helix-ray's own, in place of raylib's `LoadWave`. The formats are
+		`LoadWaveFromMemoryAsync`'s, by the file's extension.
+
+		@param fileName  The file, as the program names it.
+		@param loaded  Receives the wave, its samples its own.
+		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
+	public static inline function LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void):Void
+		RAsync.LoadWaveAsync(fileName, loaded, failed);
+
+	/** Reads a sound file's samples from its bytes, answering when they are read: helix-ray's own, in place of raylib's
+		`LoadWaveFromMemory`, as files other than WAV are decoded off the main thread.
+
+		A ".wav" file is read as raylib's dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed
+		WAV encodings aren't read). An ".ogg", ".mp3" or ".flac" file is decoded by the platform, as 32-bit float samples at 44100 Hz in
+		the file's channels, where raylib keeps the file's rate (and gives Ogg 16-bit samples); a file of more than 2 channels is mixed to
+		stereo. FLAC is read here, which raylib's default build leaves out; QOA isn't. As raylib's, the extension is lower or upper case.
+		The answer comes at a later frame.
+
+		@param fileType  The file's extension with its dot: ".wav", ".ogg", ".mp3" or ".flac", or the same in upper case.
+		@param fileData  The file's bytes.
+		@param dataSize  How many of them.
+		@param loaded  Receives the wave, its samples its own.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	public static inline function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void):Void
+		RAsync.LoadWaveFromMemoryAsync(fileType, fileData, dataSize, loaded, failed);
 
 	/** Reads a text file, answering when it is read: helix-ray's own, in place of raylib's `LoadFileText`. The program's
 		`SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
@@ -4828,10 +5113,41 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)",
 			macro(null : helix.ray.Model));
 
+	/** raylib's wave load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadWaveAsync` loads it. */
+	public static macro function LoadWave(fileName:ExprOf<String>):ExprOf<Wave>
+		return helix.platform.macros.Build.unsupported("LoadWave: Synchronous loading is not supported. See LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void)",
+			macro(null : helix.ray.Wave));
+
+	/** raylib's wave load from a file's bytes, which answers at once. A file other than WAV is decoded off the main thread here, so a call doesn't compile on any target: `LoadWaveFromMemoryAsync` loads it. */
+	public static macro function LoadWaveFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Wave>
+		return helix.platform.macros.Build.unsupported("LoadWaveFromMemory: Decoding is asynchronous. See LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void)",
+			macro(null : helix.ray.Wave));
+
 	/** raylib's sound load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadSoundAsync` loads it. */
 	public static macro function LoadSound(fileName:ExprOf<String>):ExprOf<Sound>
 		return helix.platform.macros.Build.unsupported("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void)",
 			macro(null : helix.ray.Sound));
+
+	/** raylib's processor on a stream's samples, which it calls on its audio thread. A page can't run Haxe there, so a call doesn't compile on any target. */
+	public static macro function AttachAudioStreamProcessor(stream:ExprOf<AudioStream>,
+			processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("AttachAudioStreamProcessor: raylib calls it on the audio thread, where a page can't run Haxe",
+			macro {});
+
+	/** raylib's removal of a stream's processor, which helix-ray can't attach. A call doesn't compile on any target. */
+	public static macro function DetachAudioStreamProcessor(stream:ExprOf<AudioStream>,
+			processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("DetachAudioStreamProcessor: raylib calls processors on the audio thread, where a page can't run Haxe",
+			macro {});
+
+	/** raylib's processor on every sound mixed, which it calls on its audio thread. A page can't run Haxe there, so a call doesn't compile on any target. */
+	public static macro function AttachAudioMixedProcessor(processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("AttachAudioMixedProcessor: raylib calls it on the audio thread, where a page can't run Haxe", macro {});
+
+	/** raylib's removal of the mix's processor, which helix-ray can't attach. A call doesn't compile on any target. */
+	public static macro function DetachAudioMixedProcessor(processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("DetachAudioMixedProcessor: raylib calls processors on the audio thread, where a page can't run Haxe",
+			macro {});
 
 	// ---- raylib.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
 
@@ -5190,169 +5506,6 @@ class Raylib {
 	public static macro function GetRayCollisionQuad(ray:ExprOf<Ray>, p1:ExprOf<Vector3>, p2:ExprOf<Vector3>, p3:ExprOf<Vector3>,
 			p4:ExprOf<Vector3>):ExprOf<RayCollision>
 		return helix.platform.macros.Build.unimplemented("GetRayCollisionQuad: Not implemented", macro(null : helix.ray.RayCollision));
-
-	/** raylib's `LoadWave` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load wave data from file. */
-	public static macro function LoadWave(fileName:ExprOf<String>):ExprOf<Wave>
-		return helix.platform.macros.Build.unimplemented("LoadWave: Not implemented", macro(null : helix.ray.Wave));
-
-	/** raylib's `LoadWaveFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load wave from memory buffer, fileType refers to extension: i.e. '.wav'. */
-	public static macro function LoadWaveFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Wave>
-		return helix.platform.macros.Build.unimplemented("LoadWaveFromMemory: Not implemented", macro(null : helix.ray.Wave));
-
-	/** raylib's `IsWaveValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Checks if wave data is valid (data loaded and parameters). */
-	public static macro function IsWaveValid(wave:ExprOf<Wave>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsWaveValid: Not implemented", macro(false : Bool));
-
-	/** raylib's `LoadSoundFromWave` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load sound from wave data. */
-	public static macro function LoadSoundFromWave(wave:ExprOf<Wave>):ExprOf<Sound>
-		return helix.platform.macros.Build.unimplemented("LoadSoundFromWave: Not implemented", macro(null : helix.ray.Sound));
-
-	/** raylib's `LoadSoundAlias` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Create a new sound that shares the same sample data as the source sound, does not own the sound data. */
-	public static macro function LoadSoundAlias(source:ExprOf<Sound>):ExprOf<Sound>
-		return helix.platform.macros.Build.unimplemented("LoadSoundAlias: Not implemented", macro(null : helix.ray.Sound));
-
-	/** raylib's `UpdateSound` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update sound buffer with new data. */
-	public static macro function UpdateSound(sound:ExprOf<Sound>, data:ExprOf<Dynamic>, sampleCount:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UpdateSound: Not implemented", macro {});
-
-	/** raylib's `UnloadWave` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload wave data. */
-	public static macro function UnloadWave(wave:ExprOf<Wave>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadWave: Not implemented", macro {});
-
-	/** raylib's `UnloadSoundAlias` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload a sound alias (does not deallocate sample data). */
-	public static macro function UnloadSoundAlias(alias:ExprOf<Sound>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadSoundAlias: Not implemented", macro {});
-
-	/** raylib's `ExportWave` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export wave data to file, returns true on success. */
-	public static macro function ExportWave(wave:ExprOf<Wave>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("ExportWave: Not implemented", macro(false : Bool));
-
-	/** raylib's `ExportWaveAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export wave sample data to code (.h), returns true on success. */
-	public static macro function ExportWaveAsCode(wave:ExprOf<Wave>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("ExportWaveAsCode: Not implemented", macro(false : Bool));
-
-	/** raylib's `PauseSound` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Pause a sound. */
-	public static macro function PauseSound(sound:ExprOf<Sound>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("PauseSound: Not implemented", macro {});
-
-	/** raylib's `ResumeSound` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Resume a paused sound. */
-	public static macro function ResumeSound(sound:ExprOf<Sound>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ResumeSound: Not implemented", macro {});
-
-	/** raylib's `WaveCopy` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Copy a wave to a new wave. */
-	public static macro function WaveCopy(wave:ExprOf<Wave>):ExprOf<Wave>
-		return helix.platform.macros.Build.unimplemented("WaveCopy: Not implemented", macro(null : helix.ray.Wave));
-
-	/** raylib's `WaveCrop` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Crop a wave to defined frames range. */
-	public static macro function WaveCrop(wave:ExprOf<Wave>, initFrame:ExprOf<Int>, finalFrame:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("WaveCrop: Not implemented", macro {});
-
-	/** raylib's `WaveFormat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Convert wave data to desired format. */
-	public static macro function WaveFormat(wave:ExprOf<Wave>, sampleRate:ExprOf<Int>, sampleSize:ExprOf<Int>, channels:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("WaveFormat: Not implemented", macro {});
-
-	/** raylib's `LoadWaveSamples` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load samples data from wave as a 32bit float data array. */
-	public static macro function LoadWaveSamples(wave:ExprOf<Wave>):ExprOf<Array<Float>>
-		return helix.platform.macros.Build.unimplemented("LoadWaveSamples: Not implemented", macro(null : Array<Float>));
-
-	/** raylib's `UnloadWaveSamples` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload samples data loaded with LoadWaveSamples(). */
-	public static macro function UnloadWaveSamples(samples:ExprOf<Array<Float>>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadWaveSamples: Not implemented", macro {});
-
-	/** raylib's `LoadMusicStreamFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load music stream from data. */
-	public static macro function LoadMusicStreamFromMemory(fileType:ExprOf<String>, data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Music>
-		return helix.platform.macros.Build.unimplemented("LoadMusicStreamFromMemory: Not implemented", macro(null : helix.ray.Music));
-
-	/** raylib's `SeekMusicStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Seek music to a position (in seconds). */
-	public static macro function SeekMusicStream(music:ExprOf<Music>, position:ExprOf<Float>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SeekMusicStream: Not implemented", macro {});
-
-	/** raylib's `GetMusicTimeLength` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get music time length (in seconds). */
-	public static macro function GetMusicTimeLength(music:ExprOf<Music>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("GetMusicTimeLength: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `GetMusicTimePlayed` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get current music time played (in seconds). */
-	public static macro function GetMusicTimePlayed(music:ExprOf<Music>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("GetMusicTimePlayed: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `LoadAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load audio stream (to stream raw audio pcm data). */
-	public static macro function LoadAudioStream(sampleRate:ExprOf<Int>, sampleSize:ExprOf<Int>, channels:ExprOf<Int>):ExprOf<AudioStream>
-		return helix.platform.macros.Build.unimplemented("LoadAudioStream: Not implemented", macro(null : helix.ray.AudioStream));
-
-	/** raylib's `IsAudioStreamValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Checks if an audio stream is valid (buffers initialized). */
-	public static macro function IsAudioStreamValid(stream:ExprOf<AudioStream>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsAudioStreamValid: Not implemented", macro(false : Bool));
-
-	/** raylib's `UnloadAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload audio stream and free memory. */
-	public static macro function UnloadAudioStream(stream:ExprOf<AudioStream>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadAudioStream: Not implemented", macro {});
-
-	/** raylib's `UpdateAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update audio stream buffers with data. */
-	public static macro function UpdateAudioStream(stream:ExprOf<AudioStream>, data:ExprOf<Dynamic>, frameCount:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UpdateAudioStream: Not implemented", macro {});
-
-	/** raylib's `IsAudioStreamProcessed` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if any audio stream buffers requires refill. */
-	public static macro function IsAudioStreamProcessed(stream:ExprOf<AudioStream>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsAudioStreamProcessed: Not implemented", macro(false : Bool));
-
-	/** raylib's `PlayAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Play audio stream. */
-	public static macro function PlayAudioStream(stream:ExprOf<AudioStream>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("PlayAudioStream: Not implemented", macro {});
-
-	/** raylib's `PauseAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Pause audio stream. */
-	public static macro function PauseAudioStream(stream:ExprOf<AudioStream>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("PauseAudioStream: Not implemented", macro {});
-
-	/** raylib's `ResumeAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Resume audio stream. */
-	public static macro function ResumeAudioStream(stream:ExprOf<AudioStream>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ResumeAudioStream: Not implemented", macro {});
-
-	/** raylib's `IsAudioStreamPlaying` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if audio stream is playing. */
-	public static macro function IsAudioStreamPlaying(stream:ExprOf<AudioStream>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsAudioStreamPlaying: Not implemented", macro(false : Bool));
-
-	/** raylib's `StopAudioStream` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Stop audio stream. */
-	public static macro function StopAudioStream(stream:ExprOf<AudioStream>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("StopAudioStream: Not implemented", macro {});
-
-	/** raylib's `SetAudioStreamVolume` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set volume for audio stream (1.0 is max level). */
-	public static macro function SetAudioStreamVolume(stream:ExprOf<AudioStream>, volume:ExprOf<Float>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetAudioStreamVolume: Not implemented", macro {});
-
-	/** raylib's `SetAudioStreamPitch` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set pitch for audio stream (1.0 is base level). */
-	public static macro function SetAudioStreamPitch(stream:ExprOf<AudioStream>, pitch:ExprOf<Float>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetAudioStreamPitch: Not implemented", macro {});
-
-	/** raylib's `SetAudioStreamPan` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set pan for audio stream (0.5 is centered). */
-	public static macro function SetAudioStreamPan(stream:ExprOf<AudioStream>, pan:ExprOf<Float>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetAudioStreamPan: Not implemented", macro {});
-
-	/** raylib's `SetAudioStreamBufferSizeDefault` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Default size for new audio streams. */
-	public static macro function SetAudioStreamBufferSizeDefault(size:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetAudioStreamBufferSizeDefault: Not implemented", macro {});
-
-	/** raylib's `SetAudioStreamCallback` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Audio thread callback to request new data. */
-	public static macro function SetAudioStreamCallback(stream:ExprOf<AudioStream>,
-			callback:ExprOf<Null<(bufferData:Dynamic, frames:Int) -> Void>>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetAudioStreamCallback: Not implemented", macro {});
-
-	/** raylib's `AttachAudioStreamProcessor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Attach audio stream processor to stream, receives the samples as 'float'. */
-	public static macro function AttachAudioStreamProcessor(stream:ExprOf<AudioStream>,
-			processor:ExprOf<Null<(bufferData:Dynamic, frames:Int) -> Void>>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("AttachAudioStreamProcessor: Not implemented", macro {});
-
-	/** raylib's `DetachAudioStreamProcessor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Detach audio stream processor from stream. */
-	public static macro function DetachAudioStreamProcessor(stream:ExprOf<AudioStream>,
-			processor:ExprOf<Null<(bufferData:Dynamic, frames:Int) -> Void>>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DetachAudioStreamProcessor: Not implemented", macro {});
-
-	/** raylib's `AttachAudioMixedProcessor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Attach audio stream processor to the entire audio pipeline, receives the samples as 'float'. */
-	public static macro function AttachAudioMixedProcessor(processor:ExprOf<Null<(bufferData:Dynamic, frames:Int) -> Void>>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("AttachAudioMixedProcessor: Not implemented", macro {});
-
-	/** raylib's `DetachAudioMixedProcessor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Detach audio stream processor from the entire audio pipeline. */
-	public static macro function DetachAudioMixedProcessor(processor:ExprOf<Null<(bufferData:Dynamic, frames:Int) -> Void>>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DetachAudioMixedProcessor: Not implemented", macro {});
 
 	// ---- generated by tools/gen_raylib.py: end ----
 	// ---- Shaders, compiled as the program builds ----

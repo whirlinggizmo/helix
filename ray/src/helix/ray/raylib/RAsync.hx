@@ -82,6 +82,61 @@ class RAsync {
 			entry.answers.push(error -> error == null ? loaded(sound) : refuse("LoadSoundAsync", error, failed));
 	}
 
+	/** Loads a sound file's samples, answering when they are read: helix-ray's own, in place of raylib's `LoadWave`. The formats are
+		`LoadWaveFromMemoryAsync`'s, by the file's extension.
+
+		@param fileName  The file, as the program names it.
+		@param loaded  Receives the wave, its samples its own.
+		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
+	static function LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void):Void {
+		var path = normalize(fileName);
+		Runtime.fetch(path, error -> {
+			if (error != null) {
+				refuse("LoadWaveAsync", error, failed);
+				return;
+			}
+			var bytes = Runtime.files.get(path);
+			var type = GetFileExtension(fileName);
+			LoadWaveFromMemoryAsync(type == null ? "" : type, bytes, bytes.length, loaded, message -> refuse("LoadWaveAsync", '$path: $message', failed));
+		});
+	}
+
+	/** Reads a sound file's samples from its bytes, answering when they are read: helix-ray's own, in place of raylib's
+		`LoadWaveFromMemory`, as files other than WAV are decoded off the main thread.
+
+		A ".wav" file is read as raylib's dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed
+		WAV encodings aren't read). An ".ogg", ".mp3" or ".flac" file is decoded by the platform, as 32-bit float samples at 44100 Hz in
+		the file's channels, where raylib keeps the file's rate (and gives Ogg 16-bit samples); a file of more than 2 channels is mixed to
+		stereo. FLAC is read here, which raylib's default build leaves out; QOA isn't. As raylib's, the extension is lower or upper case.
+		The answer comes at a later frame.
+
+		@param fileType  The file's extension with its dot: ".wav", ".ogg", ".mp3" or ".flac", or the same in upper case.
+		@param fileData  The file's bytes.
+		@param dataSize  How many of them.
+		@param loaded  Receives the wave, its samples its own.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	static function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void):Void {
+		var data = fileData == null ? haxe.io.Bytes.alloc(0) : dataSize < fileData.length ? fileData.sub(0, Std.int(Math.max(0, dataSize))) : fileData;
+		function done(wave:Wave):Void {
+			Runtime.log(LOG_INFO, 'WAVE: Data loaded successfully (${wave.sampleRate} Hz, ${wave.sampleSize} bit, ${wave.channels} channels)');
+			loaded(wave);
+		}
+		if (fileType == ".wav" || fileType == ".WAV") {
+			var wav = try helix.formats.wav.WavFile.read(data) catch (_:Dynamic) null;
+			Runtime.later(() -> wav == null ? refuse("LoadWaveFromMemoryAsync", "WAVE: Failed to load WAV data",
+				failed) : done(new Wave(wav.frameCount, wav.sampleRate, 16, wav.channels, wav.toInt16())));
+			return;
+		}
+		var decoded = ["ogg", "mp3", "flac"].indexOf(fileType == null ? "" : fileType.substr(1).toLowerCase()) >= 0;
+		if (!decoded || fileType.substr(1) != fileType.substr(1).toLowerCase() && fileType.substr(1) != fileType.substr(1).toUpperCase()) {
+			Runtime.later(() -> refuse("LoadWaveFromMemoryAsync", "WAVE: Data format not supported", failed));
+			return;
+		}
+		RAudio.audioDecoder()
+			.decode(data, (samples, channels) -> done(new Wave(Std.int(samples.length / (4 * channels)), 44100, 32, channels, samples)),
+				message -> refuse("LoadWaveFromMemoryAsync", 'WAVE: Failed to load ${fileType.substr(1).toUpperCase()} data: $message', failed));
+	}
+
 	/** Reads a text file, answering when it is read: helix-ray's own, in place of raylib's `LoadFileText`. The program's
 		`SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
 

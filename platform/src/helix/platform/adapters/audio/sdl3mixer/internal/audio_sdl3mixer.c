@@ -258,18 +258,19 @@ void helix_audio_download_release(int download) {
     if (d && !d->released) { d->released = 1; unref(d); }
 }
 
-int helix_audio_check_file(const char *path) {
-    if (!initialized || !path) return 0;
-    MIX_AudioDecoder *decoder = MIX_CreateAudioDecoder(path, 0);
+/* The channels a decoder plays: 1 or 2, more mixed down to 2 (voice_decoder); 0 when there is no decoder or format. */
+static int decoder_channels(MIX_AudioDecoder *decoder) {
+    SDL_AudioSpec spec;
+    const int channels = decoder && MIX_GetAudioDecoderFormat(decoder, &spec) ? (spec.channels > 1 ? 2 : spec.channels) : 0;
     if (decoder) MIX_DestroyAudioDecoder(decoder);
-    return decoder != NULL;
+    return channels;
+}
+int helix_audio_check_file(const char *path) {
+    return initialized && path ? decoder_channels(MIX_CreateAudioDecoder(path, 0)) : 0;
 }
 int helix_audio_check_download(int download) {
     download_t *d = find_download(download);
-    if (!d || !initialized) return 0;
-    MIX_AudioDecoder *decoder = download_decoder(d, NULL);
-    if (decoder) MIX_DestroyAudioDecoder(decoder);
-    return decoder != NULL;
+    return d && initialized ? decoder_channels(download_decoder(d, NULL)) : 0;
 }
 
 double helix_audio_file_duration(const char *path) {

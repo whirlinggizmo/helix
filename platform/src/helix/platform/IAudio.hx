@@ -68,6 +68,14 @@ interface IAudio extends IPollable {
 		@throws String  For an unknown stream. */
 	function getStreamDuration(stream:Int):Float;
 
+	/** Returns how many channels a stream plays.
+
+		@param stream  The stream.
+		@return  1 (mono) or 2 (stereo); a file of more plays as stereo. 0 when it can't tell: in a page, where a stream's channels are
+			read from its file's first bytes (helix-formats' `AudioHeader`), a kind it doesn't read or a fetch that failed.
+		@throws String  For an unknown stream. */
+	function getStreamChannels(stream:Int):Int;
+
 	/** Creates a queue, which plays samples given to it as it goes.
 
 		Samples are added with `queueSamples` and played by `playQueue`, back to back without a gap while they are added ahead of what is

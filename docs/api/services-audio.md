@@ -8,7 +8,7 @@
 
 Provides sounds by path, played as voices in groups whose volumes and fades apply to every voice in them.
 
-A sound is loaded in one of two ways. `load` decodes it whole, for short sounds played often. `stream` plays it as it is read, for music and other long sounds. Every group is under `master`.
+A sound is loaded in one of two ways. `load` decodes it whole, for short sounds played often. `stream` plays it as it is read, for music and other long sounds. `createSound` makes one from samples, and `createSampleQueue` a queue that plays samples as they are added. Every group is under `master`.
 
 The program calls `poll` once a frame, which steps the fades and releases voices that ended. A fade runs on real time from when it starts, whether or not anything is heard yet. In a page, sound starts with the player's first key, click or tap (`IAudio.running`), so a fade started before then may already have ended.
 
@@ -27,6 +27,8 @@ var master(default, null):Group
 function createGroup(?parent:Group):Group
 function load(path:String, loaded:Sound -> Void, ?failed:String -> Void):() -> Void
 function stream(path:String, opened:Sound -> Void, ?failed:String -> Void):() -> Void
+function createSound(samples:haxe.io.Bytes, channels:Int):Sound
+function createSampleQueue(channels:Int, sampleRate:Int):SampleQueue
 function play(sound:Sound, ?group:Group, ?loop:Bool = false, ?volume:Float = 1.):Voice
 function unload(sound:Sound):Void
 function poll():Void
@@ -56,6 +58,18 @@ function dispose():Void
   - returns: The abort: nothing is called after it.
 
   The file is found through `Assets.locate`. A file system's file is read where it is. A server's file is read from its kept copy, or played as it downloads while the copy is kept.
+- `createSound`: Makes a sound from samples, held whole as a loaded sound is.
+  - `samples`: 32-bit float PCM at 44100 Hz, -1 to 1, interleaved when stereo: the platform's clip format (`IAudio.createClip`).
+  - `channels`: The channels, 1 (mono) or 2 (stereo).
+  - returns: The sound, its path "".
+  - throws `String`: When channels isn't 1 or 2, or the samples hold no whole frame.
+
+  The samples are copied. A partial frame at the end is ignored.
+- `createSampleQueue`: Creates a queue, which plays samples as they are added to it, at its own rate.
+  - `channels`: The channels, 1 (mono) or 2 (stereo).
+  - `sampleRate`: The samples' rate in frames a second, 8000 to 96000; the platform resamples them.
+  - returns: The queue, holding nothing.
+  - throws `String`: When channels or sampleRate is out of range.
 - `play`: Starts a sound playing.
   - `sound`: The sound, from `load` or `stream`.
   - `group`: Optional. The group it plays in. Defaults to `master`.
@@ -69,7 +83,7 @@ function dispose():Void
   Does nothing for a sound already unloaded.
 - `poll`: Steps the fades to the current time and releases the voices that ended.
   Call it once a frame.
-- `dispose`: Stops every voice and unloads every sound.
+- `dispose`: Stops every voice, unloads every sound and disposes every queue.
   Call it before disposing the output, decoder and `Assets` it was given.
 
 ## Group
@@ -95,47 +109,100 @@ function fadeTo(volume:Float, seconds:Float, ?done:() -> Void):Void
   - `seconds`: The fade's length, in real seconds. 0 or less sets the volume at once.
   - `done`: Optional. Called once the volume is reached, unless another fade or a set volume ends the fade first.
 
+## SampleQueue
+
+*class* in [`services/src/helix/services/audio/SampleQueue.hx`](../../services/src/helix/services/audio/SampleQueue.hx), `import helix.services.audio.SampleQueue;`
+
+Represents samples played as they are added (`Audio.createSampleQueue`), for sound a program makes as it goes.
+
+Samples added ahead of what is heard play back to back without a gap. A queue that runs out keeps playing, silent, and goes on when more are added. It has one voice at a time, which plays in a group like any other: its group's volume, mute and fades apply.
+
+```haxe
+var queue = audio.createSampleQueue(1, 22050);
+queue.queueSamples(tone);
+var voice = queue.play(effects);
+// each frame, while fewer than a buffer's frames wait:
+if (queue.queuedFrames < 4096)
+queue.queueSamples(more());
+```
+
+```haxe
+function queueSamples(samples:haxe.io.Bytes):Void
+var queuedFrames(get, never):Int
+function play(?group:Group, ?volume:Float = 1.):Voice
+function dispose():Void
+```
+
+- `queueSamples`: Adds samples to the end of the queue.
+  - `samples`: 32-bit float PCM at the queue's rate, -1 to 1, interleaved when stereo.
+  - throws `String`: When the queue is disposed.
+
+  They are copied. Samples added while the queue has no voice wait for `play`. A partial frame at the end is ignored.
+- `queuedFrames`: Gets how many frames the queue holds that haven't been heard yet; 0 once it is disposed.
+- `play`: Starts the queue playing what it holds and what is added to it.
+  - `group`: Optional. The group it plays in. Defaults to `Audio.master`.
+  - `volume`: Optional. The voice's own volume, 0 to 1, before its groups' volumes apply. Defaults to 1.
+  - returns: The voice.
+  - throws `String`: When the queue is disposed.
+
+  Playing it again stops its earlier voice and keeps its samples. Its voice ends only when stopped, which drops the samples not yet heard. It can't be moved (`Voice.setPosition`).
+- `dispose`: Stops its voice and lets go of the queue and its samples. Does nothing once disposed.
+
 ## Sound
 
 *class* in [`services/src/helix/services/audio/Sound.hx`](../../services/src/helix/services/audio/Sound.hx), `import helix.services.audio.Sound;`
 
-Represents a sound ready to play, either decoded whole (`Audio.load`) or opened to be read as it plays (`Audio.stream`).
+Represents a sound ready to play: decoded whole (`Audio.load`), made from samples (`Audio.createSound`), or opened to be read as it plays (`Audio.stream`).
 
 ```haxe
 var path(default, null):String
 var streamed(default, null):Bool
+var channels(default, null):Int
+var duration(get, never):Float
 ```
 
-- `path`: Gets the path it was loaded from.
+- `path`: Gets the path it was loaded from, or "" for a sound made from samples (`Audio.createSound`).
 - `streamed`: Gets a value indicating whether the sound is read as it plays (`Audio.stream`) rather than held whole.
+- `channels`: Gets the channels it plays, 1 (mono) or 2 (stereo); 0 for a streamed sound whose channels the platform can't tell (`IAudio.getStreamChannels`).
+- `duration`: Gets the sound's length in seconds, or 0 while it isn't known.
+  A sound held whole knows its length at once. A streamed sound's is the platform's (`IAudio.getStreamDuration`), which may come later. A streamed sound downloading from a server knows its length once the file's start and its last 64 KiB have arrived, which `Assets` fetches first.
 
 ## Voice
 
 *class* in [`services/src/helix/services/audio/Voice.hx`](../../services/src/helix/services/audio/Voice.hx), `import helix.services.audio.Voice;`
 
-Represents a sound playing (`Audio.play`), until it ends or is stopped.
+Represents a sound or a queue playing (`Audio.play`, `SampleQueue.play`), until it ends or is stopped.
 
 Once it has ended, its members change nothing and `playing` is false.
 
 ```haxe
-var sound(default, null):Sound
+var sound(default, null):Null<Sound>
 var group(default, null):Group
 var playing(get, never):Bool
 var volume(default, set):Float
 var pitch(default, set):Float
 var pan(default, set):Float
 var paused(default, set):Bool
+var position(get, never):Float
+function setPosition(seconds:Float):Bool
 function fadeTo(volume:Float, seconds:Float, ?done:() -> Void):Void
 function stop():Void
 ```
 
-- `sound`: Gets the sound it plays.
+- `sound`: Gets the sound it plays, or null for a queue's voice (`SampleQueue.play`).
 - `group`: Gets the group it plays in.
 - `playing`: Gets a value indicating whether the voice is playing or paused. It is false once the voice ended or was stopped.
 - `volume`: Gets or sets the voice's own volume, 0 to 1, before its groups' volumes apply. Setting it ends a fade.
 - `pitch`: Gets or sets the playback rate, which changes pitch and length together. Clamped to 0.25 to 4. Defaults to 1, as recorded.
 - `pan`: Gets or sets where the voice is heard, from -1 for left to 1 for right. Clamped to -1 to 1. Defaults to 0, the middle.
 - `paused`: Gets or sets a value indicating whether the voice is paused, holding its place. Defaults to false.
+- `position`: Gets how far the voice has played, in seconds from the start of its sound.
+  A looping voice goes back to 0 at each loop. A queue's voice counts what it has played since it started. It is 0 once the voice has ended.
+- `setPosition`: Moves the voice to a position in its sound, playing or paused.
+  - `seconds`: The position in seconds from the start, 0 or more.
+  - returns: False, changing nothing, when the voice has ended, is a queue's, or can't be moved there.
+
+  A position past the end is clamped to the end, where a voice that doesn't loop ends. A queue's voice can't be moved, nor, in a page, a stream from a server that doesn't take range requests.
 - `fadeTo`: Fades the voice's own volume to another over some real time, on a curve the ear hears as even (in decibels).
   - `volume`: The volume to end at, 0 to 1.
   - `seconds`: The fade's length, in real seconds. 0 or less sets the volume at once.

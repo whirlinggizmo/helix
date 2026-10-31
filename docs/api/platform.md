@@ -258,6 +258,7 @@ function disposeClip(clip:Int):Void
 function openStream(source:StreamSource, opened:Int -> Void, failed:String -> Void):() -> Void
 function disposeStream(stream:Int):Void
 function getStreamDuration(stream:Int):Float
+function getStreamChannels(stream:Int):Int
 function createQueue(channels:Int, sampleRate:Int):Int
 function queueSamples(queue:Int, samples:haxe.io.Bytes):Void
 function getQueuedFrames(queue:Int):Int
@@ -308,6 +309,10 @@ function dispose():Void
   - throws `String`: For an unknown stream.
 
   The length may be unknown at first and known later. Natively, a `Downloading` source's length is unknown until all of it has arrived. In a page, it is unknown for a live stream.
+- `getStreamChannels`: Returns how many channels a stream plays.
+  - `stream`: The stream.
+  - returns: 1 (mono) or 2 (stereo); a file of more plays as stereo. 0 when it can't tell: in a page, where a stream's channels are read from its file's first bytes (helix-formats' `AudioHeader`), a kind it doesn't read or a fetch that failed.
+  - throws `String`: For an unknown stream.
 - `createQueue`: Creates a queue, which plays samples given to it as it goes.
   - `channels`: The channels, 1 (mono) or 2 (stereo).
   - `sampleRate`: The samples' rate in frames a second, 8000 to 96000.

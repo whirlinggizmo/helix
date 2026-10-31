@@ -19,12 +19,14 @@ private class Copy {
 	var ended:Bool;
 }
 
-/** A stream's file: a path, or a download's copy; and its length in seconds once asked for and known (`duration`, `measured`). */
+/** A stream's file: a path, or a download's copy; its channels; and its length in seconds once asked for and known (`duration`,
+	`measured`). */
 @:structInit
 @:allow(helix.platform.adapters.audio.sdl3mixer.Sdl3MixerAudioAdapter)
 private class StreamFile {
 	final path:Null<String>;
 	final copy:Null<Copy>;
+	final channels:Int;
 	var duration = 0.;
 	var measured = false;
 }
@@ -104,10 +106,11 @@ class Sdl3MixerAudioAdapter implements IAudio {
 				deliveries.push(() -> {
 					if (aborted)
 						return;
-					if (AudioBridge.checkFile(cpp.ConstCharStar.fromString(path)) == 0)
+					var channels = AudioBridge.checkFile(cpp.ConstCharStar.fromString(path));
+					if (channels == 0)
 						failed("Unsupported audio stream: " + path);
 					else
-						opened(add({path: path, copy: null}));
+						opened(add({path: path, copy: null, channels: channels}));
 				});
 			case Downloading(download):
 				var opening:Opening = {
@@ -160,6 +163,13 @@ class Sdl3MixerAudioAdapter implements IAudio {
 			file.measured = true;
 		}
 		return file.duration;
+	}
+
+	public function getStreamChannels(stream:Int):Int {
+		var file = streams[stream];
+		if (file == null)
+			throw "Invalid audio stream";
+		return file.channels;
 	}
 
 	public function createQueue(channels:Int, sampleRate:Int):Int {
@@ -272,15 +282,15 @@ class Sdl3MixerAudioAdapter implements IAudio {
 			if (!source.done && (source.received < MARGIN || source.received < opening.tried * 2))
 				continue;
 			opening.tried = source.received;
-			var readable = AudioBridge.checkDownload(copy.id) != 0;
-			if (!readable && !source.done)
+			var channels = AudioBridge.checkDownload(copy.id);
+			if (channels == 0 && !source.done)
 				continue;
 			openings.remove(opening);
-			if (!readable) {
+			if (channels == 0) {
 				AudioBridge.downloadRelease(copy.id);
 				opening.failed("Unsupported audio stream download");
 			} else
-				opening.opened(add({path: null, copy: copy}));
+				opening.opened(add({path: null, copy: copy, channels: channels}));
 		}
 
 	public function poll():Void {

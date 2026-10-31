@@ -20,6 +20,7 @@ function disposeClip(clip:Int):Void
 function openStream(source:StreamSource, opened:Int -> Void, failed:String -> Void):() -> Void
 function disposeStream(stream:Int):Void
 function getStreamDuration(stream:Int):Float
+function getStreamChannels(stream:Int):Int
 function createQueue(channels:Int, sampleRate:Int):Int
 function queueSamples(queue:Int, samples:haxe.io.Bytes):Void
 function getQueuedFrames(queue:Int):Int
@@ -56,6 +57,7 @@ var playsUrls(get, never):Bool
 var running(get, never):Bool
 function createClip(samples:haxe.io.Bytes, channels:Int):Int
 function getStreamDuration(stream:Int):Float
+function getStreamChannels(stream:Int):Int
 function openStream(source:StreamSource, opened:Int -> Void, failed:String -> Void):() -> Void
 function playClip(clip:Int, loop:Bool, volume:Float):Int
 function playStream(stream:Int, loop:Bool, volume:Float):Int

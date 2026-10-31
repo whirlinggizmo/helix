@@ -87,7 +87,7 @@ function dispose():Void
   - `failed`: Optional. Receives why the file can't be found.
   - returns: The abort: nothing is called after it.
 
-  A file system's file is located where it is. A server's file is its kept copy when there is one. Otherwise it plays as it downloads, and the copy is kept.
+  A file system's file is located where it is. A server's file is its kept copy when there is one. Otherwise, natively, it plays as it downloads, and the copy is kept; in a page it is located once it is kept. A native download asks for the file's last 64 KiB first and then the rest, so the stream's length can be read before it has all arrived, as a browser's media element does. A server that doesn't take range requests sends the whole file at the first request.
 - `clearCache`: Empties `cacheFileSystem`, so each server's files are downloaded again.
   - `cleared`: Optional. Called once the cache is empty.
   - `failed`: Optional. Receives why the cache can't be emptied. When omitted, the failure is logged.

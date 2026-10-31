@@ -34,9 +34,9 @@ void helix_audio_download_end(int download);
 /* Lets the download go; it's freed once no voice reads it. */
 void helix_audio_download_release(int download);
 
-/* Whether the codec opens the file at path. */
+/* The channels the codec opens the file at path with, 1 or 2 (more played as 2); 0 when it can't open it. */
 int helix_audio_check_file(const char *path);
-/* Whether the codec opens what has arrived of a download. */
+/* The channels the codec opens what has arrived of a download with, 1 or 2 (more played as 2); 0 when it can't open it. */
 int helix_audio_check_download(int download);
 /* The file's length at path in seconds, or 0 when its codec doesn't know it. */
 double helix_audio_file_duration(const char *path);

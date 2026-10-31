@@ -1,13 +1,13 @@
 import haxe.io.Bytes;
 import haxe.io.BytesBuffer;
-import helix.formats.audio.AudioLength;
+import helix.formats.audio.AudioHeader;
 
-/** Checks AudioLength with the library alone, on headers made by hand: WAV (integer samples, data sizes of 0 and 0xFFFFFFFF, a fact
+/** Checks AudioHeader with the library alone, on headers made by hand. Lengths: WAV (integer samples, data sizes of 0 and 0xFFFFFFFF, a fact
 	chunk, a byte rate, extensible), Ogg (Vorbis, Opus with its pre-skip, FLAC and Speex; another stream's page, a broken page and an
 	unknown position skipped; no last bytes), FLAC (with an ID3v2 tag before it; an unknown length), MP3 (a Xing frame count, MPEG-2's,
 	VBRI's, a constant bitrate's estimate with ID3v2 and ID3v1 tags, layer II) and what it can't tell. Each length was checked against
-	ffprobe on files ffmpeg made. */
-class AudioLengthTests {
+	ffprobe on files ffmpeg made. Channels: each kind's, mono and stereo, and what it can't tell. */
+class AudioHeaderTests {
 	static var checks = 0;
 
 	static function check(value:Bool, message:String):Void {
@@ -190,19 +190,19 @@ class AudioLengthTests {
 	static function main():Void {
 		// WAV.
 		var head = wav(1, 2, 44100, 16, 176400);
-		check(near(AudioLength.read(head, head.length + 176400), 1), "WAV: 16-bit stereo, a second");
-		check(near(AudioLength.read(head, head.length + 1000), 250 / 44100), "WAV: a data size past the end stops at it");
+		check(near(AudioHeader.readDuration(head, head.length + 176400), 1), "WAV: 16-bit stereo, a second");
+		check(near(AudioHeader.readDuration(head, head.length + 1000), 250 / 44100), "WAV: a data size past the end stops at it");
 		var streamed = wav(1, 1, 8000, 8, -1);
-		check(near(AudioLength.read(streamed, streamed.length + 4000), 0.5), "WAV: a data size of 0xFFFFFFFF runs to the end");
+		check(near(AudioHeader.readDuration(streamed, streamed.length + 4000), 0.5), "WAV: a data size of 0xFFFFFFFF runs to the end");
 		var unsized = wav(1, 1, 8000, 8, 0);
-		check(near(AudioLength.read(unsized, unsized.length + 2000), 0.25), "WAV: a data size of 0 runs to the end");
+		check(near(AudioHeader.readDuration(unsized, unsized.length + 2000), 0.25), "WAV: a data size of 0 runs to the end");
 		var adpcm = wav(2, 1, 22050, 4, 11500, 33075);
-		check(near(AudioLength.read(adpcm, adpcm.length + 11500), 1.5), "WAV: MS ADPCM, by its fact chunk");
+		check(near(AudioHeader.readDuration(adpcm, adpcm.length + 11500), 1.5), "WAV: MS ADPCM, by its fact chunk");
 		var mp3InWav = wav(0x55, 1, 22050, 0, 8000);
 		mp3InWav.setInt32(28, 4000);
-		check(near(AudioLength.read(mp3InWav, mp3InWav.length + 8000), 2), "WAV: MP3 in WAV, by its byte rate");
+		check(near(AudioHeader.readDuration(mp3InWav, mp3InWav.length + 8000), 2), "WAV: MP3 in WAV, by its byte rate");
 		var extensible = wav(3, 2, 48000, 32, 384000, true);
-		check(near(AudioLength.read(extensible, extensible.length + 384000), 1), "WAV: extensible, floating point");
+		check(near(AudioHeader.readDuration(extensible, extensible.length + 384000), 1), "WAV: extensible, floating point");
 
 		// Ogg: Vorbis, then Opus, FLAC and Speex.
 		var first = page(7, 0, 0, vorbisHead(44100));
@@ -210,17 +210,19 @@ class AudioLengthTests {
 		var other = page(9, 0, 999999, Bytes.alloc(20));
 		var last = page(7, 0, 66150, Bytes.alloc(500));
 		var vorbis = join([first, middle, last, other]);
-		check(near(AudioLength.read(vorbis, vorbis.length), 1.5), "Ogg Vorbis: the last page's position, another stream's skipped");
+		check(near(AudioHeader.readDuration(vorbis, vorbis.length), 1.5), "Ogg Vorbis: the last page's position, another stream's skipped");
 		var tail = vorbis.sub(first.length + 100, vorbis.length - first.length - 100);
-		check(near(AudioLength.read(first, tail, vorbis.length), 1.5), "Ogg Vorbis: from its first and last bytes");
-		check(AudioLength.read(first, vorbis.length) == 0, "Ogg: 0 without its last bytes");
+		check(near(AudioHeader.readDuration(first, tail, vorbis.length), 1.5), "Ogg Vorbis: from its first and last bytes");
+		check(AudioHeader.readDuration(first, vorbis.length) == 0, "Ogg: 0 without its last bytes");
 		var broken = last.sub(0, last.length);
 		broken.set(broken.length - 1, 1);
-		check(near(AudioLength.read(join([first, middle, broken]), first.length + middle.length + broken.length), 1), "Ogg: a page whose CRC is wrong skipped");
+		check(near(AudioHeader.readDuration(join([first, middle, broken]), first.length + middle.length + broken.length), 1),
+			"Ogg: a page whose CRC is wrong skipped");
 		var unknown = page(7, -1, -1, Bytes.alloc(10));
-		check(near(AudioLength.read(join([first, middle, unknown]), first.length + middle.length + unknown.length), 1), "Ogg: a page of no position skipped");
+		check(near(AudioHeader.readDuration(join([first, middle, unknown]), first.length + middle.length + unknown.length), 1),
+			"Ogg: a page of no position skipped");
 		var long = page(7, 1, 0, Bytes.alloc(10));
-		check(near(AudioLength.read(join([first, long]), first.length + long.length), 4294967296 / 44100), "Ogg: a 64-bit position");
+		check(near(AudioHeader.readDuration(join([first, long]), first.length + long.length), 4294967296 / 44100), "Ogg: a 64-bit position");
 
 		var opusHead = bytes(b -> {
 			b.addString("OpusHead");
@@ -232,7 +234,7 @@ class AudioLengthTests {
 			b.addByte(0);
 		});
 		var opus = join([page(3, 0, 0, opusHead), page(3, 0, 96312, Bytes.alloc(50))]);
-		check(near(AudioLength.read(opus, opus.length), 2), "Ogg Opus: at 48 kHz, less its pre-skip");
+		check(near(AudioHeader.readDuration(opus, opus.length), 2), "Ogg Opus: at 48 kHz, less its pre-skip");
 
 		var flacHead = bytes(b -> {
 			b.addByte(0x7F);
@@ -245,57 +247,76 @@ class AudioLengthTests {
 			b.add(streamInfo(96000, 0));
 		});
 		var oggFlac = join([page(5, 0, 0, flacHead), page(5, 0, 240000, Bytes.alloc(50))]);
-		check(near(AudioLength.read(oggFlac, oggFlac.length), 2.5), "Ogg FLAC");
+		check(near(AudioHeader.readDuration(oggFlac, oggFlac.length), 2.5), "Ogg FLAC");
 
 		var speexHead = bytes(b -> {
 			b.addString("Speex   ");
 			for (_ in 0...28)
 				b.addByte(0);
 			b.addInt32(16000);
-			for (_ in 0...40)
+			for (_ in 0...8)
+				b.addByte(0);
+			b.addInt32(1);
+			for (_ in 0...28)
 				b.addByte(0);
 		});
 		var speex = join([page(4, 0, 0, speexHead), page(4, 0, 8000, Bytes.alloc(50))]);
-		check(near(AudioLength.read(speex, speex.length), 0.5), "Ogg Speex");
+		check(near(AudioHeader.readDuration(speex, speex.length), 0.5), "Ogg Speex");
 
 		// FLAC.
 		var flac = join([Bytes.ofString("fLaC"), streamInfo(44100, 88200), Bytes.alloc(100)]);
-		check(near(AudioLength.read(flac, 100000), 2), "FLAC: STREAMINFO's frames over its rate");
+		check(near(AudioHeader.readDuration(flac, 100000), 2), "FLAC: STREAMINFO's frames over its rate");
 		var tagged = join([id3(300), flac]);
-		check(near(AudioLength.read(tagged, 100000), 2), "FLAC: after an ID3v2 tag");
-		check(AudioLength.read(join([Bytes.ofString("fLaC"), streamInfo(44100, 0)]), 100000) == 0, "FLAC: 0 when it doesn't record its frames");
+		check(near(AudioHeader.readDuration(tagged, 100000), 2), "FLAC: after an ID3v2 tag");
+		check(AudioHeader.readDuration(join([Bytes.ofString("fLaC"), streamInfo(44100, 0)]), 100000) == 0, "FLAC: 0 when it doesn't record its frames");
 
 		// MP3: MPEG-1 layer III, 128 kbps at 44.1 kHz, stereo: 417 bytes a frame.
 		var header = 0xFFFB9000;
 		var xing = join([id3(500), frame(header, 417, "Xing", 36, 1000)].concat(frames(header, 417, 5)));
-		check(near(AudioLength.read(xing, 400000), 1000 * 1152 / 44100), "MP3: Xing's frames");
+		check(near(AudioHeader.readDuration(xing, 400000), 1000 * 1152 / 44100), "MP3: Xing's frames");
 		var info = join([frame(0xFFFB90C0, 417, "Info", 21, 300)].concat(frames(0xFFFB90C0, 417, 3)));
-		check(near(AudioLength.read(info, 125100), 300 * 1152 / 44100), "MP3: a mono Info frame's frames");
+		check(near(AudioHeader.readDuration(info, 125100), 300 * 1152 / 44100), "MP3: a mono Info frame's frames");
 		// MPEG-2 layer III, 32 kbps at 22.05 kHz: 104 bytes a frame, 576 samples.
 		var mpeg2 = join([frame(0xFFF34000, 104, "Xing", 21, 400)].concat(frames(0xFFF34000, 104, 3)));
-		check(near(AudioLength.read(mpeg2, 41600), 400 * 576 / 22050), "MP3: MPEG-2's Xing frames");
+		check(near(AudioHeader.readDuration(mpeg2, 41600), 400 * 576 / 22050), "MP3: MPEG-2's Xing frames");
 		var vbri = join([frame(header, 417, "VBRI", 36, 500)].concat(frames(header, 417, 3)));
-		check(near(AudioLength.read(vbri, 200000), 500 * 1152 / 44100), "MP3: VBRI's frames");
+		check(near(AudioHeader.readDuration(vbri, 200000), 500 * 1152 / 44100), "MP3: VBRI's frames");
 		var cbr = join([id3(1000)].concat(frames(header, 417, 20)));
 		var size = 1010 + 417 * 300 + 128;
 		var id3v1 = Bytes.alloc(128);
 		id3v1.blit(0, Bytes.ofString("TAG"), 0, 3);
-		check(near(AudioLength.read(cbr, id3v1, size), 417 * 300 * 8 / 128000), "MP3: a constant bitrate's estimate, less its tags");
-		check(near(AudioLength.read(cbr, size), (417 * 300 + 128) * 8 / 128000), "MP3: an ID3v1 tag counted when the end is omitted");
+		check(near(AudioHeader.readDuration(cbr, id3v1, size), 417 * 300 * 8 / 128000), "MP3: a constant bitrate's estimate, less its tags");
+		check(near(AudioHeader.readDuration(cbr, size), (417 * 300 + 128) * 8 / 128000), "MP3: an ID3v1 tag counted when the end is omitted");
 		var junk = join([id3(10), Bytes.ofString("junk")].concat(frames(header, 417, 3)));
-		check(near(AudioLength.read(junk, 20 + 4 + 417 * 3), 417 * 3 * 8 / 128000), "MP3: bytes between the tag and the first frame skipped");
+		check(near(AudioHeader.readDuration(junk, 20 + 4 + 417 * 3), 417 * 3 * 8 / 128000), "MP3: bytes between the tag and the first frame skipped");
 		// MPEG-1 layer II, 192 kbps at 44.1 kHz: 626 bytes a frame.
 		var layer2 = join(frames(0xFFFDA000, 626, 4));
-		check(near(AudioLength.read(layer2, 626 * 100), 626 * 100 * 8 / 192000), "MP2: a constant bitrate's estimate");
+		check(near(AudioHeader.readDuration(layer2, 626 * 100), 626 * 100 * 8 / 192000), "MP2: a constant bitrate's estimate");
+
+		// Channels.
+		check(AudioHeader.readChannels(head) == 2, "channels: WAV stereo");
+		check(AudioHeader.readChannels(streamed) == 1, "channels: WAV mono");
+		check(AudioHeader.readChannels(extensible) == 2, "channels: WAV extensible");
+		check(AudioHeader.readChannels(first) == 2, "channels: Ogg Vorbis");
+		check(AudioHeader.readChannels(opus) == 2, "channels: Ogg Opus");
+		check(AudioHeader.readChannels(oggFlac) == 2, "channels: Ogg FLAC");
+		check(AudioHeader.readChannels(speex) == 1, "channels: Ogg Speex");
+		check(AudioHeader.readChannels(tagged) == 2, "channels: FLAC after an ID3v2 tag");
+		check(AudioHeader.readChannels(xing) == 2, "channels: MP3 stereo after an ID3v2 tag");
+		check(AudioHeader.readChannels(info) == 1, "channels: MP3 mono");
+		check(AudioHeader.readChannels(layer2) == 2, "channels: MP2");
+		check(AudioHeader.readChannels(Bytes.ofString("not a sound file")) == 0, "channels: an unknown kind is 0");
+		check(AudioHeader.readChannels(Bytes.alloc(0)) == 0, "channels: no bytes is 0");
+		check(AudioHeader.readChannels(Bytes.ofString("RIFF\x00\x00\x00\x00WAVE")) == 0, "channels: a WAV file cut before its fmt chunk is 0");
 
 		// What it can't tell.
-		check(AudioLength.read(Bytes.ofString("not a sound file"), 16) == 0, "an unknown kind is 0");
-		check(AudioLength.read(Bytes.alloc(0), 0) == 0, "no bytes is 0");
-		check(AudioLength.read(Bytes.ofString("RIFF\x00\x00\x00\x00WAVEfmt "), 1000) == 0, "a WAV file cut before its data chunk is 0");
+		check(AudioHeader.readDuration(Bytes.ofString("not a sound file"), 16) == 0, "an unknown kind is 0");
+		check(AudioHeader.readDuration(Bytes.alloc(0), 0) == 0, "no bytes is 0");
+		check(AudioHeader.readDuration(Bytes.ofString("RIFF\x00\x00\x00\x00WAVEfmt "), 1000) == 0, "a WAV file cut before its data chunk is 0");
 		var adts = Bytes.alloc(64);
 		adts.set(0, 0xFF);
 		adts.set(1, 0xF1);
-		check(AudioLength.read(adts, 64) == 0, "AAC's ADTS frames are 0");
+		check(AudioHeader.readDuration(adts, 64) == 0, "AAC's ADTS frames are 0");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

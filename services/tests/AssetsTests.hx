@@ -1,10 +1,13 @@
 import haxe.crypto.Sha256;
 import haxe.io.Bytes;
+import helix.platform.GrowingSource;
 import helix.services.assets.Assets;
 
 /** Checks Assets over fake file systems and HTTP: sources asked in order; a server's file kept with its record, used fresh, asked about
 	stale (a 304 using the copy), trusted, used offline, removed when gone; Off fetching once a run and keeping nothing; the manifests'
-	tree deciding without asking; a file a manifest leaves out always asked about; located files; aborts and dispose. */
+	tree deciding without asking; a file a manifest leaves out always asked about; located files; natively a server's stream downloaded
+	in two parts, its last 64 KiB first; aborts and dispose. */
+@:access(helix.services.assets.Assets)
 class AssetsTests {
 	static var checks = 0;
 
@@ -227,6 +230,10 @@ class AssetsTests {
 		pump();
 		check(source != null && cache.files.exists('${dir(base)}/files/song.ogg'), "a server's file located as it downloads, and kept");
 
+		#if !js
+		ranged(base);
+		#end
+
 		var answered = false;
 		var abort = assets.load("jump.wav", _ -> answered = true);
 		abort();
@@ -248,6 +255,88 @@ class AssetsTests {
 		Sys.println(report);
 		#end
 	}
+
+	#if !js
+	// A stream not kept yet, natively: its last 64 KiB downloaded first, then the rest, no byte twice, kept whole; a server that ignores
+	// the range sends it whole; a small file comes whole in the first answer; a file changed between the two fails the download.
+	static function ranged(base:String):Void {
+		var assets = new Assets({sources: [HttpServer(base)], httpClient: http, cacheFileSystem: cache});
+		var body = Bytes.alloc(100000);
+		for (i in 0...body.length)
+			body.set(i, i * 7 & 255);
+		http.routes.set(base + "long.ogg", {status: 200, headers: ["last-modified" => "Fri, 30 Oct 2026 10:00:00 GMT"], body: body});
+		var source:GrowingSource = null, released:Void->Void = null;
+		var before = http.requests.length, sent = http.bytesSent;
+		assets.locate("long.ogg", (s, release) -> {
+			source = growing(s);
+			released = release;
+		});
+		for (_ in 0...3)
+			cache.poll();
+		http.poll();
+		check(source != null && source.total == body.length && source.received == 0, "located once its end has arrived, the whole file's size");
+		var tail = assets.tailOf(source);
+		check(tail != null
+			&& tail.length == 65536
+			&& tail.compare(body.sub(body.length - 65536, 65536)) == 0, "its last 64 KiB held for its length");
+		http.poll();
+		check(source.done && source.bytes.compare(body) == 0, "the rest appended, and its end after it: one download");
+		var asked = http.requests.slice(before);
+		check(asked.length == 2
+			&& asked[0].headers.get("Range") == "bytes=-65536"
+			&& asked[1].headers.get("Range") == 'bytes=0-${body.length - 65537}'
+			&& asked[1].headers.get("If-Range") == "Fri, 30 Oct 2026 10:00:00 GMT",
+			"two ranges asked for, the second while the file is unchanged");
+		check(http.bytesSent - sent == body.length, "no byte downloaded twice");
+		pump();
+		check(cache.files.get('${dir(base)}/files/long.ogg').compare(body) == 0 && cache.files.exists('${dir(base)}/records/long.ogg'),
+			"kept whole, with its record");
+		released();
+		check(assets.tailOf(source) == null, "released: its end let go");
+
+		http.routes.set(base + "whole.ogg", {status: 200, body: body, ignoresRange: true});
+		before = http.requests.length;
+		source = null;
+		assets.locate("whole.ogg", (s, _) -> source = growing(s));
+		pump();
+		check(http.requests.length == before + 1 && source.done && source.bytes.compare(body) == 0 && assets.tailOf(source) == null,
+			"a server ignoring the range: the whole file at once, as one download");
+		check(cache.files.get('${dir(base)}/files/whole.ogg').compare(body) == 0, "and kept");
+
+		http.routes.set(base + "short.ogg", {status: 200, body: text("short")});
+		before = http.requests.length;
+		source = null;
+		assets.locate("short.ogg", (s, _) -> source = growing(s));
+		pump();
+		check(http.requests.length == before + 1 && source.done && source.bytes.toString() == "short", "a file under 64 KiB: whole in the first answer");
+
+		var version = 1;
+		http.routes.set(base + "moving.ogg", {
+			status: 0,
+			respond: _ -> {
+				var r:FakeHttp.FakeResponse = {status: 200, headers: ["etag" => '"v$version"'], body: body};
+				version++;
+				r;
+			}
+		});
+		source = null;
+		assets.locate("moving.ogg", (s, _) -> source = growing(s));
+		pump();
+		check(source != null && source.failure != null && !cache.files.exists('${dir(base)}/files/moving.ogg'),
+			"a file changed between its two parts: the download fails, nothing kept");
+
+		var missing = null;
+		assets.locate("absent.ogg", (_, _) -> {}, m -> missing = m);
+		pump();
+		check(missing != null && missing.indexOf("no source has it") >= 0, "a file the server doesn't have: missing");
+	}
+
+	static function growing(source:helix.platform.StreamSource):Null<GrowingSource>
+		return switch source {
+			case Downloading(s): s;
+			case _: null;
+		}
+	#end
 
 	static function local(source:Null<helix.platform.StreamSource>):Null<String>
 		return switch source {

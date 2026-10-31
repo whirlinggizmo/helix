@@ -7,7 +7,7 @@ What a game program needs over [helix-platform](../platform/README.md) that isn'
 | `helix.services.time` | `Time`: the game's time, scaled and paused, its timers, real time beside it, frames a second, and a frame rate aimed for |
 | `helix.services.input` | `Keyboard` (with typed text and repeats), `Mouse`, `Touch`, `Gamepads` and `Tilt`: each device held or pressed this frame; `Gestures`: taps, holds, drags, swipes and pinches; `Actions`: names bound to several of them |
 | `helix.services.assets` | `Assets`: files by path, from a file system or downloaded from an HTTP server and kept |
-| `helix.services.audio` | `Audio`: sounds loaded whole or streamed, played in groups, with fades |
+| `helix.services.audio` | `Audio`: sounds loaded whole, streamed or made from samples, their lengths, queues of samples played as they are added, voices played in groups with fades, their positions moved |
 | `helix.services.images` | `Images`: image files by path, or images inside other bytes, decoded into pixels |
 | `helix.services.models` | `Models`: glTF and GLB models by path, with the files they name and their images, as meshes and materials |
 | `helix.services.fonts` | `Fonts`: TrueType and OpenType fonts rasterized onto an atlas at a size, and BMFont files |

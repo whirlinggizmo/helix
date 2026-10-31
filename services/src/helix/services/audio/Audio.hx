@@ -1,5 +1,6 @@
 package helix.services.audio;
 
+import haxe.io.Bytes;
 import helix.log.Log;
 import helix.platform.IAudio;
 import helix.platform.IAudioDecoder;
@@ -10,7 +11,8 @@ import helix.services.assets.Assets;
 /** Provides sounds by path, played as voices in groups whose volumes and fades apply to every voice in them.
 
 	A sound is loaded in one of two ways. `load` decodes it whole, for short sounds played often. `stream` plays it as it is read, for
-	music and other long sounds. Every group is under `master`.
+	music and other long sounds. `createSound` makes one from samples, and `createSampleQueue` a queue that plays samples as they are added.
+	Every group is under `master`.
 
 	The program calls `poll` once a frame, which steps the fades and releases voices that ended. A fade runs on real time from when it
 	starts, whether or not anything is heard yet. In a page, sound starts with the player's first key, click or tap (`IAudio.running`),
@@ -31,6 +33,7 @@ class Audio implements IPollable {
 	final system:ISystem;
 	final groups:Array<Group> = [];
 	final sounds:Array<Sound> = [];
+	final queues:Array<SampleQueue> = [];
 	var voices:Array<Voice> = [];
 	var disposed = false;
 
@@ -75,12 +78,10 @@ class Audio implements IPollable {
 		var abortLoad = assets.load(path, bytes -> decoder.decode(bytes, (samples, channels) -> {
 			if (aborted || disposed)
 				return;
-			var clip = try output.createClip(samples, channels) catch (e:Dynamic) {
+			var sound = try clipOf(path, samples, channels) catch (e:Dynamic) {
 				fail(failed, path, Std.string(e));
 				return;
 			}
-			var sound = new Sound(path, false, clip, null);
-			sounds.push(sound);
 			loaded(sound);
 		},
 			message -> if (!aborted) fail(failed, path, message)), message -> if (!aborted) report(failed, message));
@@ -107,7 +108,13 @@ class Audio implements IPollable {
 				return;
 			}
 			abortOpen = output.openStream(source, stream -> {
-				var sound = new Sound(path, true, stream, release);
+				var sound = new Sound(output, path, true, stream, output.getStreamChannels(stream), 0, release);
+				switch source {
+					case Downloading(growing):
+						sound.growing = growing;
+						sound.tail = assets.tailOf(growing);
+					case _:
+				}
 				sounds.push(sound);
 				opened(sound);
 			}, message -> {
@@ -123,6 +130,30 @@ class Audio implements IPollable {
 		};
 	}
 
+	/** Makes a sound from samples, held whole as a loaded sound is.
+
+		The samples are copied. A partial frame at the end is ignored.
+
+		@param samples  32-bit float PCM at 44100 Hz, -1 to 1, interleaved when stereo: the platform's clip format (`IAudio.createClip`).
+		@param channels  The channels, 1 (mono) or 2 (stereo).
+		@return  The sound, its path "".
+		@throws String  When channels isn't 1 or 2, or the samples hold no whole frame. */
+	public function createSound(samples:Bytes, channels:Int):Sound {
+		return clipOf("", samples, channels);
+	}
+
+	/** Creates a queue, which plays samples as they are added to it, at its own rate.
+
+		@param channels  The channels, 1 (mono) or 2 (stereo).
+		@param sampleRate  The samples' rate in frames a second, 8000 to 96000; the platform resamples them.
+		@return  The queue, holding nothing.
+		@throws String  When channels or sampleRate is out of range. */
+	public function createSampleQueue(channels:Int, sampleRate:Int):SampleQueue {
+		var queue = new SampleQueue(this, output, output.createQueue(channels, sampleRate));
+		queues.push(queue);
+		return queue;
+	}
+
 	/** Starts a sound playing.
 
 		@param sound  The sound, from `load` or `stream`.
@@ -136,14 +167,48 @@ class Audio implements IPollable {
 			throw sound == null ? 'play needs a sound' : '${sound.path} is unloaded';
 		if (group == null)
 			group = master;
-		var heard = volume * group.heard();
-		heard = heard > 0 ? (heard < 1 ? heard : 1) : 0;
+		var heard = heardIn(group, volume);
 		var id = sound.streamed ? output.playStream(sound.id, loop, heard) : output.playClip(sound.id, loop, heard);
+		return voiceOf(id, sound, group, volume, heard);
+	}
+
+	// A queue's voice, in its group (SampleQueue.play).
+
+	@:allow(helix.services.audio)
+	function start(queue:SampleQueue, group:Null<Group>, volume:Float):Voice {
+		if (group == null)
+			group = master;
+		var heard = heardIn(group, volume);
+		return voiceOf(output.playQueue(queue.id, heard), null, group, volume, heard);
+	}
+
+	// A queue disposed (SampleQueue.dispose).
+
+	@:allow(helix.services.audio)
+	function forget(queue:SampleQueue):Void {
+		queues.remove(queue);
+	}
+
+	function voiceOf(id:Int, sound:Null<Sound>, group:Group, volume:Float, heard:Float):Voice {
 		var voice = new Voice(this, output, id, sound, group, volume);
 		voice.sent = heard;
 		if (id != 0)
 			voices.push(voice);
 		return voice;
+	}
+
+	static function heardIn(group:Group, volume:Float):Float {
+		var heard = volume * group.heard();
+		return heard > 0 ? (heard < 1 ? heard : 1) : 0;
+	}
+
+	// A clip from samples, its length counted from them.
+	function clipOf(path:String, samples:Bytes, channels:Int):Sound {
+		var clip = output.createClip(samples, channels);
+		var frames = Std.int(samples.length / (4 * channels));
+		var sound = new Sound(output, path, false, clip, channels, frames / 44100, null);
+		sounds.push(sound);
+		return sound;
 	}
 
 	/** Unloads a sound. Its voices stop, and the memory or file that holds it is released.
@@ -177,7 +242,7 @@ class Audio implements IPollable {
 		voices = [for (voice in voices) if (voice.step(time)) voice];
 	}
 
-	/** Stops every voice and unloads every sound.
+	/** Stops every voice, unloads every sound and disposes every queue.
 
 		Call it before disposing the output, decoder and `Assets` it was given. */
 	public function dispose():Void {
@@ -186,6 +251,8 @@ class Audio implements IPollable {
 		voices = [];
 		for (sound in sounds.copy())
 			unload(sound);
+		for (queue in queues.copy())
+			queue.dispose();
 		disposed = true;
 	}
 
