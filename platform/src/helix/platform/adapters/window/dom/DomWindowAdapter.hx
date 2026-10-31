@@ -89,6 +89,14 @@ class DomWindowAdapter implements IWindow {
 	public function requestPosition(x:Int, y:Int):Bool
 		return false;
 
+	public var orientation(get, never):Orientation;
+
+	// The lock last granted; a browser releases it as the page leaves fullscreen.
+	var locked:Orientation = Any;
+
+	function get_orientation():Orientation
+		return Browser.document.fullscreenElement == null ? Any : locked;
+
 	public function requestOrientation(orientation:Orientation, ?done:Void->Void, ?failed:String->Void):Bool {
 		var lock:Dynamic = js.Syntax.code("(screen.orientation && screen.orientation.lock) ? screen.orientation : null");
 		if (lock == null)
@@ -103,6 +111,7 @@ class DomWindowAdapter implements IWindow {
 			try
 				lock.unlock()
 			catch (_:Dynamic) {}
+			locked = Any;
 			if (done != null)
 				done();
 			return true;
@@ -112,6 +121,7 @@ class DomWindowAdapter implements IWindow {
 			return true;
 		};
 		asked.then(_ -> {
+			locked = orientation;
 			if (done != null)
 				done();
 			return null;

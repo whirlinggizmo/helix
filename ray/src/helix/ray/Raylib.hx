@@ -1139,6 +1139,105 @@ class Raylib {
 	public static inline function SetWindowSize(width:Int, height:Int):Void
 		RCore.SetWindowSize(width, height);
 
+	/** Returns whether the window is fullscreen. In a page it tells whether the canvas is.
+
+		@return  True while it is. */
+	public static inline function IsWindowFullscreen():Bool
+		return RCore.IsWindowFullscreen();
+
+	/** Returns whether the program hid the window (`FLAG_WINDOW_HIDDEN`). In a page it tells whether the canvas is hidden.
+
+		@return  True while it is. */
+	public static inline function IsWindowHidden():Bool
+		return RCore.IsWindowHidden();
+
+	/** Returns whether the player can't see the window: minimized, or in a page its tab in the background.
+
+		@return  True while it is. */
+	public static inline function IsWindowMinimized():Bool
+		return RCore.IsWindowMinimized();
+
+	/** Returns whether the window has the keyboard.
+
+		@return  True while it has. */
+	public static inline function IsWindowFocused():Bool
+		return RCore.IsWindowFocused();
+
+	/** Asks for fullscreen, or back to the window, the size and place it had. In a page the browser grants it only soon after a key
+		press, click or tap; without one, it waits for the player's next. */
+	public static inline function ToggleFullscreen():Void
+		RCore.ToggleFullscreen();
+
+	/** Asks for the window to fill the screen without borders, or back to the window: here the same as `ToggleFullscreen`, as a
+		fullscreen window natively is borderless and the size of the desktop. */
+	public static inline function ToggleBorderlessWindowed():Void
+		RCore.ToggleBorderlessWindowed();
+
+	/** Asks for the window's place on the desktop. Where the window can't be moved (in a page, or under Wayland), nothing changes.
+
+		@param x  The left edge, in pixels.
+		@param y  The top edge, in pixels. */
+	public static inline function SetWindowPosition(x:Int, y:Int):Void
+		RCore.SetWindowPosition(x, y);
+
+	/** Asks for the window on another monitor.
+
+		@param monitor  The monitor, 0 to `GetMonitorCount() - 1`. */
+	public static inline function SetWindowMonitor(monitor:Int):Void
+		RCore.SetWindowMonitor(monitor);
+
+	/** Returns the window's place on the desktop.
+
+		@return  Its left and top edges, in pixels. */
+	public static inline function GetWindowPosition():Vector2
+		return RCore.GetWindowPosition();
+
+	/** Returns how many of the display's pixels a pixel drawn takes, across and down: 2 on most phones and high-density displays.
+
+		@return  The scale. */
+	public static inline function GetWindowScaleDPI():Vector2
+		return RCore.GetWindowScaleDPI();
+
+	/** Returns the number of monitors. A page sees one.
+
+		@return  The count, at least 1. */
+	public static inline function GetMonitorCount():Int
+		return RCore.GetMonitorCount();
+
+	/** Returns the monitor holding the window.
+
+		@return  Its index. */
+	public static inline function GetCurrentMonitor():Int
+		return RCore.GetCurrentMonitor();
+
+	/** Returns a monitor's top-left corner on the desktop.
+
+		@param monitor  The monitor.
+		@return  The corner, in pixels. */
+	public static inline function GetMonitorPosition(monitor:Int):Vector2
+		return RCore.GetMonitorPosition(monitor);
+
+	/** Returns a monitor's width.
+
+		@param monitor  The monitor.
+		@return  The width, in pixels. */
+	public static inline function GetMonitorWidth(monitor:Int):Int
+		return RCore.GetMonitorWidth(monitor);
+
+	/** Returns a monitor's height.
+
+		@param monitor  The monitor.
+		@return  The height, in pixels. */
+	public static inline function GetMonitorHeight(monitor:Int):Int
+		return RCore.GetMonitorHeight(monitor);
+
+	/** Returns a monitor's name.
+
+		@param monitor  The monitor.
+		@return  The name. */
+	public static inline function GetMonitorName(monitor:Int):String
+		return RCore.GetMonitorName(monitor);
+
 	/** Returns the screen's width, in the pixels drawing is in.
 
 		@return  The width. */
@@ -3739,33 +3838,9 @@ class Raylib {
 
 	// ---- raylib.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
 
-	/** raylib's `IsWindowFullscreen` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if window is currently fullscreen. */
-	public static macro function IsWindowFullscreen():ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsWindowFullscreen: Not implemented", macro(false : Bool));
-
-	/** raylib's `IsWindowHidden` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if window is currently hidden. */
-	public static macro function IsWindowHidden():ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsWindowHidden: Not implemented", macro(false : Bool));
-
-	/** raylib's `IsWindowMinimized` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if window is currently minimized. */
-	public static macro function IsWindowMinimized():ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsWindowMinimized: Not implemented", macro(false : Bool));
-
 	/** raylib's `IsWindowMaximized` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if window is currently maximized. */
 	public static macro function IsWindowMaximized():ExprOf<Bool>
 		return helix.platform.macros.Build.unimplemented("IsWindowMaximized: Not implemented", macro(false : Bool));
-
-	/** raylib's `IsWindowFocused` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if window is currently focused. */
-	public static macro function IsWindowFocused():ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsWindowFocused: Not implemented", macro(false : Bool));
-
-	/** raylib's `ToggleFullscreen` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Toggle window state: fullscreen/windowed, resizes monitor to match window resolution. */
-	public static macro function ToggleFullscreen():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ToggleFullscreen: Not implemented", macro {});
-
-	/** raylib's `ToggleBorderlessWindowed` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Toggle window state: borderless windowed, resizes window to match monitor resolution. */
-	public static macro function ToggleBorderlessWindowed():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("ToggleBorderlessWindowed: Not implemented", macro {});
 
 	/** raylib's `MaximizeWindow` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window state: maximized, if resizable. */
 	public static macro function MaximizeWindow():ExprOf<Void>
@@ -3787,14 +3862,6 @@ class Raylib {
 	public static macro function SetWindowIcons(images:ExprOf<Array<Image>>, count:ExprOf<Int>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("SetWindowIcons: Not implemented", macro {});
 
-	/** raylib's `SetWindowPosition` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window position on screen. */
-	public static macro function SetWindowPosition(x:ExprOf<Int>, y:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetWindowPosition: Not implemented", macro {});
-
-	/** raylib's `SetWindowMonitor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set monitor for the current window. */
-	public static macro function SetWindowMonitor(monitor:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetWindowMonitor: Not implemented", macro {});
-
 	/** raylib's `SetWindowMinSize` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set window minimum dimensions (for FLAG_WINDOW_RESIZABLE). */
 	public static macro function SetWindowMinSize(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("SetWindowMinSize: Not implemented", macro {});
@@ -3815,26 +3882,6 @@ class Raylib {
 	public static macro function GetWindowHandle():ExprOf<Dynamic>
 		return helix.platform.macros.Build.unimplemented("GetWindowHandle: Not implemented", macro(null : Dynamic));
 
-	/** raylib's `GetMonitorCount` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get number of connected monitors. */
-	public static macro function GetMonitorCount():ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetMonitorCount: Not implemented", macro(0 : Int));
-
-	/** raylib's `GetCurrentMonitor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get current monitor where window is placed. */
-	public static macro function GetCurrentMonitor():ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetCurrentMonitor: Not implemented", macro(0 : Int));
-
-	/** raylib's `GetMonitorPosition` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get specified monitor position. */
-	public static macro function GetMonitorPosition(monitor:ExprOf<Int>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("GetMonitorPosition: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `GetMonitorWidth` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get specified monitor width (current video mode used by monitor). */
-	public static macro function GetMonitorWidth(monitor:ExprOf<Int>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetMonitorWidth: Not implemented", macro(0 : Int));
-
-	/** raylib's `GetMonitorHeight` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get specified monitor height (current video mode used by monitor). */
-	public static macro function GetMonitorHeight(monitor:ExprOf<Int>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetMonitorHeight: Not implemented", macro(0 : Int));
-
 	/** raylib's `GetMonitorPhysicalWidth` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get specified monitor physical width in millimetres. */
 	public static macro function GetMonitorPhysicalWidth(monitor:ExprOf<Int>):ExprOf<Int>
 		return helix.platform.macros.Build.unimplemented("GetMonitorPhysicalWidth: Not implemented", macro(0 : Int));
@@ -3846,18 +3893,6 @@ class Raylib {
 	/** raylib's `GetMonitorRefreshRate` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get specified monitor refresh rate. */
 	public static macro function GetMonitorRefreshRate(monitor:ExprOf<Int>):ExprOf<Int>
 		return helix.platform.macros.Build.unimplemented("GetMonitorRefreshRate: Not implemented", macro(0 : Int));
-
-	/** raylib's `GetWindowPosition` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get window position XY on monitor. */
-	public static macro function GetWindowPosition():ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("GetWindowPosition: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `GetWindowScaleDPI` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get window scale DPI factor. */
-	public static macro function GetWindowScaleDPI():ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("GetWindowScaleDPI: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `GetMonitorName` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get the human-readable, UTF-8 encoded name of the specified monitor. */
-	public static macro function GetMonitorName(monitor:ExprOf<Int>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("GetMonitorName: Not implemented", macro(null : String));
 
 	/** raylib's `SetClipboardText` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set clipboard text content. */
 	public static macro function SetClipboardText(text:ExprOf<String>):ExprOf<Void>

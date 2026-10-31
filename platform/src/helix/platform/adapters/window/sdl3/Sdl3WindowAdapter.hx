@@ -105,6 +105,11 @@ class Sdl3WindowAdapter implements IWindow {
 		return true;
 	}
 
+	public var orientation(get, never):Orientation;
+
+	function get_orientation():Orientation
+		return Any;
+
 	public function requestOrientation(orientation:Orientation, ?done:Void->Void, ?failed:String->Void):Bool
 		return false;
 

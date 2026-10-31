@@ -961,6 +961,7 @@ function requestPosition(x:Int, y:Int):Bool
 function canFullscreen():Bool
 var fullscreen(get, never):Bool
 function requestFullscreen(enabled:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
+var orientation(get, never):Orientation
 function requestOrientation(orientation:Orientation, ?done:() -> Void, ?failed:String -> Void):Bool
 var visible(get, never):Bool
 function requestVisible(visible:Bool):Bool
@@ -1012,13 +1013,14 @@ var onClose:Null<() -> Void>
   - returns: False, calling neither, where it can't ask (`canFullscreen`).
 
   `fullscreen` reflects the result once the request completes. Natively the request is granted. A browser grants fullscreen only soon after a key press, click or tap. Without a recent one, the request waits for the player's next one.
+- `orientation`: Gets the way up the screen is held for the program, as `requestOrientation` asked: `Any` when it isn't held. A page loses it as it leaves fullscreen, as browsers release the lock then; natively it is always `Any`.
 - `requestOrientation`: Asks for the screen to be held one way up, or as the player holds it.
   - `orientation`: Landscape, Portrait, or Any to release a lock.
   - `done`: Optional. Called once the screen is locked.
   - `failed`: Optional. Receives the browser's reason when it refuses.
   - returns: False, calling neither, where it can't ask, which is natively.
 
-  Only some browsers lock the screen. Chrome on Android does, but only in fullscreen, so the request belongs in `requestFullscreen`'s done. iOS Safari and desktops don't lock it. A game also shows "turn your device" when the shape is wrong.
+  Only some browsers lock the screen. Chrome on Android does, but only in fullscreen, so the request belongs in `requestFullscreen`'s done. iOS Safari and desktops don't lock it. A game also shows "turn your device" when the shape is wrong. `orientation` reflects the result once the request completes.
 - `visible`: Gets a value indicating whether the program shows the window. In a page it tells whether the canvas is shown.
   Whether the player can see the window, because it isn't minimized and its tab isn't in the background, is reported by the `Shown` and `Hidden` events.
 - `requestVisible`: Asks to show or hide the window. In a page it shows or hides the canvas.

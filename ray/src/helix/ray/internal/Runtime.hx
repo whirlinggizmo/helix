@@ -59,10 +59,15 @@ class Runtime {
 
 	public static final files = new Map<String, Bytes>();
 
-	/** The frame: whether the window should close, whether it was resized this frame, frames left of the `frames` option. */
+	/** The frame: whether the window should close, whether the player can't see it (minimized, or its tab in the background), frames
+		left of the `frames` option. */
 	public static var shouldClose = false;
 
-	public static var resized = false;
+	public static var hidden = false;
+
+	/** The screen: the window's resizes and its fullscreen, made with the window. */
+	public static var screen:Null<helix.services.screen.Screen> = null;
+
 	public static var framesLeft = -1;
 	public static var exitKey = 256;
 	public static var frames = 0;
@@ -323,6 +328,8 @@ class Runtime {
 		#end
 		window.title = title;
 		frame = new Frame(graphics);
+		screen = new helix.services.screen.Screen(window, events);
+		devices.push(screen);
 		time = new Time(system);
 		// raylib's frame time isn't capped: a frame that took a second says so.
 		time.maxDelta = Math.POSITIVE_INFINITY;
@@ -469,13 +476,14 @@ class Runtime {
 		events.poll();
 		keysPressed.resize(0);
 		charsPressed.resize(0);
-		resized = false;
 		for (event in events.events)
 			switch event {
 				case CloseRequested:
 					shouldClose = true;
-				case Resized(_, _):
-					resized = true;
+				case Hidden:
+					hidden = true;
+				case Shown:
+					hidden = false;
 				case _:
 			}
 		for (device in devices)

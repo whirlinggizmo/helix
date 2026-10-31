@@ -46,7 +46,7 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
 
 - `title`; `width`, `height` (logical pixels) and `framebufferWidth`, `framebufferHeight`, `pixelRatio`; `focused`.
 - `visible`, `requestVisible`; `requestSize`, `canMove`, `x`, `y`, `requestPosition`; `canFullscreen`, `fullscreen`,
-  `requestFullscreen(enabled, ?done, ?failed)`; `requestOrientation(orientation, ?done, ?failed)`.
+  `requestFullscreen(enabled, ?done, ?failed)`; `orientation`, `requestOrientation(orientation, ?done, ?failed)`.
 - The monitors: `monitorCount`, `monitorIndex`, `requestMonitorIndex`, `getMonitorName`, `getMonitorX`, `getMonitorY`,
   `getMonitorWidth`, `getMonitorHeight`.
 - `onClose`, a property: the call made once, the last before the window is gone (natively in `close`, in a page at pagehide). Not a

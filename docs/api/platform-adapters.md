@@ -918,6 +918,7 @@ function canMove():Bool
 var x(get, never):Int
 var y(get, never):Int
 function requestPosition(x:Int, y:Int):Bool
+var orientation(get, never):Orientation
 function requestOrientation(orientation:Orientation, ?done:() -> Void, ?failed:String -> Void):Bool
 function canFullscreen():Bool
 var fullscreen(get, never):Bool
@@ -984,6 +985,7 @@ function requestPosition(x:Int, y:Int):Bool
 function canFullscreen():Bool
 var fullscreen(get, never):Bool
 function requestFullscreen(enabled:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
+var orientation(get, never):Orientation
 function requestOrientation(orientation:Orientation, ?done:() -> Void, ?failed:String -> Void):Bool
 var visible(get, never):Bool
 function requestVisible(visible:Bool):Bool

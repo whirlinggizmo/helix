@@ -81,10 +81,15 @@ interface IWindow {
 		@return  False, calling neither, where it can't ask (`canFullscreen`). */
 	function requestFullscreen(enabled:Bool, ?done:Void->Void, ?failed:String->Void):Bool;
 
+	/** Gets the way up the screen is held for the program, as `requestOrientation` asked: `Any` when it isn't held. A page loses it as
+		it leaves fullscreen, as browsers release the lock then; natively it is always `Any`. */
+	var orientation(get, never):Orientation;
+
 	/** Asks for the screen to be held one way up, or as the player holds it.
 
 		Only some browsers lock the screen. Chrome on Android does, but only in fullscreen, so the request belongs in `requestFullscreen`'s
-		done. iOS Safari and desktops don't lock it. A game also shows "turn your device" when the shape is wrong.
+		done. iOS Safari and desktops don't lock it. A game also shows "turn your device" when the shape is wrong. `orientation` reflects
+		the result once the request completes.
 		@param orientation  Landscape, Portrait, or Any to release a lock.
 		@param done  Optional. Called once the screen is locked.
 		@param failed  Optional. Receives the browser's reason when it refuses.

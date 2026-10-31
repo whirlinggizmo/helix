@@ -63,7 +63,7 @@ class RCore {
 
 		@return  True for the frame after a resize. */
 	static function IsWindowResized():Bool {
-		return Runtime.resized;
+		return Runtime.screen.resized;
 	}
 
 	/** Sets the window's title.
@@ -79,6 +79,121 @@ class RCore {
 		@param height  The height, in pixels. */
 	static function SetWindowSize(width:Int, height:Int):Void {
 		Runtime.window.requestSize(width, height);
+	}
+
+	/** Returns whether the window is fullscreen. In a page it tells whether the canvas is.
+
+		@return  True while it is. */
+	static function IsWindowFullscreen():Bool {
+		return Runtime.window.fullscreen;
+	}
+
+	/** Returns whether the program hid the window (`FLAG_WINDOW_HIDDEN`). In a page it tells whether the canvas is hidden.
+
+		@return  True while it is. */
+	static function IsWindowHidden():Bool {
+		return !Runtime.window.visible;
+	}
+
+	/** Returns whether the player can't see the window: minimized, or in a page its tab in the background.
+
+		@return  True while it is. */
+	static function IsWindowMinimized():Bool {
+		return Runtime.hidden;
+	}
+
+	/** Returns whether the window has the keyboard.
+
+		@return  True while it has. */
+	static function IsWindowFocused():Bool {
+		return Runtime.window.focused;
+	}
+
+	/** Asks for fullscreen, or back to the window, the size and place it had. In a page the browser grants it only soon after a key
+		press, click or tap; without one, it waits for the player's next. */
+	static function ToggleFullscreen():Void {
+		Runtime.screen.requestFullscreen(!Runtime.screen.fullscreen);
+	}
+
+	/** Asks for the window to fill the screen without borders, or back to the window: here the same as `ToggleFullscreen`, as a
+		fullscreen window natively is borderless and the size of the desktop. */
+	static function ToggleBorderlessWindowed():Void {
+		ToggleFullscreen();
+	}
+
+	/** Asks for the window's place on the desktop. Where the window can't be moved (in a page, or under Wayland), nothing changes.
+
+		@param x  The left edge, in pixels.
+		@param y  The top edge, in pixels. */
+	static function SetWindowPosition(x:Int, y:Int):Void {
+		Runtime.window.requestPosition(x, y);
+	}
+
+	/** Asks for the window on another monitor.
+
+		@param monitor  The monitor, 0 to `GetMonitorCount() - 1`. */
+	static function SetWindowMonitor(monitor:Int):Void {
+		Runtime.window.requestMonitorIndex(monitor);
+	}
+
+	/** Returns the window's place on the desktop.
+
+		@return  Its left and top edges, in pixels. */
+	static function GetWindowPosition():Vector2 {
+		return new Vector2(Runtime.window.x, Runtime.window.y);
+	}
+
+	/** Returns how many of the display's pixels a pixel drawn takes, across and down: 2 on most phones and high-density displays.
+
+		@return  The scale. */
+	static function GetWindowScaleDPI():Vector2 {
+		return new Vector2(Runtime.window.pixelRatio, Runtime.window.pixelRatio);
+	}
+
+	/** Returns the number of monitors. A page sees one.
+
+		@return  The count, at least 1. */
+	static function GetMonitorCount():Int {
+		return Runtime.window.monitorCount;
+	}
+
+	/** Returns the monitor holding the window.
+
+		@return  Its index. */
+	static function GetCurrentMonitor():Int {
+		return Runtime.window.monitorIndex;
+	}
+
+	/** Returns a monitor's top-left corner on the desktop.
+
+		@param monitor  The monitor.
+		@return  The corner, in pixels. */
+	static function GetMonitorPosition(monitor:Int):Vector2 {
+		return new Vector2(Runtime.window.getMonitorX(monitor), Runtime.window.getMonitorY(monitor));
+	}
+
+	/** Returns a monitor's width.
+
+		@param monitor  The monitor.
+		@return  The width, in pixels. */
+	static function GetMonitorWidth(monitor:Int):Int {
+		return Runtime.window.getMonitorWidth(monitor);
+	}
+
+	/** Returns a monitor's height.
+
+		@param monitor  The monitor.
+		@return  The height, in pixels. */
+	static function GetMonitorHeight(monitor:Int):Int {
+		return Runtime.window.getMonitorHeight(monitor);
+	}
+
+	/** Returns a monitor's name.
+
+		@param monitor  The monitor.
+		@return  The name. */
+	static function GetMonitorName(monitor:Int):String {
+		return Runtime.window.getMonitorName(monitor);
 	}
 
 	/** Returns the screen's width, in the pixels drawing is in.

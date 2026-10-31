@@ -1,25 +1,45 @@
 import helix.platform.IWindow;
 import helix.platform.Orientation;
 
-/** A window that is only its size: 800 by 600 framebuffer pixels, which nothing changes. */
+/** A window whose state a test sets: 800 by 600 logical pixels at a pixel ratio of 1 until changed. Requests for size, place and
+	fullscreen are counted and granted at once, as a window manager would on a later frame. */
 class FakeWindow implements IWindow {
+	/** Gets or sets the logical size. */
+	public var logicalWidth = 800;
+
+	public var logicalHeight = 600;
+
+	/** Gets or sets the framebuffer pixels per logical pixel. */
+	public var ratio = 1.;
+
+	/** Gets or sets the place on the desktop. */
+	public var left = 0;
+
+	public var top = 0;
+
+	/** Gets or sets whether it is fullscreen. */
+	public var full = false;
+
+	/** Gets the requests made: size, position and fullscreen, as text. */
+	public final requests:Array<String> = [];
+
 	/** Creates one. */
 	public function new() {}
 
 	public var framebufferWidth(get, never):Int;
 
 	function get_framebufferWidth():Int
-		return 800;
+		return Math.round(logicalWidth * ratio);
 
 	public var framebufferHeight(get, never):Int;
 
 	function get_framebufferHeight():Int
-		return 600;
+		return Math.round(logicalHeight * ratio);
 
 	public var pixelRatio(get, never):Float;
 
 	function get_pixelRatio():Float
-		return 1;
+		return ratio;
 
 	public var focused(get, never):Bool;
 
@@ -39,42 +59,60 @@ class FakeWindow implements IWindow {
 	public var width(get, never):Int;
 
 	function get_width():Int
-		return 800;
+		return logicalWidth;
 
 	public var height(get, never):Int;
 
 	function get_height():Int
-		return 600;
+		return logicalHeight;
 
-	public function requestSize(width:Int, height:Int):Bool
-		return false;
+	public function requestSize(width:Int, height:Int):Bool {
+		requests.push('size $width $height');
+		logicalWidth = width;
+		logicalHeight = height;
+		return true;
+	}
 
 	public function canMove():Bool
-		return false;
+		return true;
 
 	public var x(get, never):Int;
 
 	function get_x():Int
-		return 0;
+		return left;
 
 	public var y(get, never):Int;
 
 	function get_y():Int
-		return 0;
+		return top;
 
-	public function requestPosition(x:Int, y:Int):Bool
-		return false;
+	public function requestPosition(x:Int, y:Int):Bool {
+		requests.push('position $x $y');
+		left = x;
+		top = y;
+		return true;
+	}
 
 	public function canFullscreen():Bool
-		return false;
+		return true;
 
 	public var fullscreen(get, never):Bool;
 
 	function get_fullscreen():Bool
-		return false;
+		return full;
 
-	public function requestFullscreen(enabled:Bool, ?done:Void->Void, ?failed:String->Void):Bool
-		return false;
+	public function requestFullscreen(enabled:Bool, ?done:Void->Void, ?failed:String->Void):Bool {
+		requests.push('fullscreen $enabled');
+		full = enabled;
+		if (done != null)
+			done();
+		return true;
+	}
+
+	public var orientation(get, never):Orientation;
+
+	function get_orientation():Orientation
+		return Any;
 
 	public function requestOrientation(orientation:Orientation, ?done:Void->Void, ?failed:String->Void):Bool
 		return false;
@@ -110,10 +148,10 @@ class FakeWindow implements IWindow {
 		return 0;
 
 	public function getMonitorWidth(index:Int):Int
-		return 800;
+		return 1920;
 
 	public function getMonitorHeight(index:Int):Int
-		return 600;
+		return 1080;
 
 	public function canClose():Bool
 		return false;

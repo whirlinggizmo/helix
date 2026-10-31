@@ -11,6 +11,7 @@ What a game program needs over [helix-platform](../platform/README.md) that isn'
 | `helix.services.images` | `Images`: image files by path, or images inside other bytes, decoded into pixels |
 | `helix.services.models` | `Models`: glTF and GLB models by path, with the files they name and their images, as meshes and materials |
 | `helix.services.fonts` | `Fonts`: TrueType and OpenType fonts rasterized onto an atlas at a size, and BMFont files |
+| `helix.services.screen` | `Screen`: a design size fitted to the window (letterboxed, pixel-perfect, stretched or expanded), fullscreen with the windowed size and place to go back to, resizes, and the window kept between runs |
 | `helix.services.saves` | `Saves`: small values kept between runs, set before they are read if need be |
 | `helix.services.config` | `Config`: the options the program was started with |
 
