@@ -638,6 +638,331 @@ class RCore {
 		return true;
 	}
 
+	// ---- File names ----
+
+	/** Returns whether a file name ends in one of some extensions, ignoring the case of A to Z.
+
+		@param fileName  The file name.
+		@param ext  The extensions with their dots, `;` between them: ".png;.jpg".
+		@return  True when its extension, from its last dot, is one of them. */
+	static function IsFileExtension(fileName:String, ext:String):Bool {
+		var fileExt = GetFileExtension(fileName);
+		if (fileExt == null)
+			return false;
+		// raylib keeps 16 characters of the file's extension, and splits the list into at most 128.
+		var lower = asciiLower(fileExt).substr(0, 16);
+		var checks = ext.split(";");
+		if (checks.length >= 128)
+			checks = checks.slice(0, 127).concat([""]);
+		for (check in checks)
+			if (asciiLower(check) == lower)
+				return true;
+		return false;
+	}
+
+	/** Returns a file name's extension, from its last dot: "file.tar.gz" gives ".gz".
+
+		@param fileName  The file name, or a path.
+		@return  The extension with its dot, or null when there is no dot or the name starts with its only one. */
+	static function GetFileExtension(fileName:String):String {
+		var dot = fileName.lastIndexOf(".");
+		return dot <= 0 ? null : fileName.substr(dot);
+	}
+
+	/** Returns a path's file name: what follows its last `/` or `\`.
+
+		@param filePath  The path.
+		@return  The file name with its extension; the path itself when it has no slash. */
+	static function GetFileName(filePath:String):String {
+		if (filePath == null)
+			return null;
+		return filePath.substr(lastSlash(filePath) + 1);
+	}
+
+	/** Returns a path's file name without its extension: up to its last dot, unless that dot is its first character.
+
+		@param filePath  The path.
+		@return  The file name; "" for null. */
+	static function GetFileNameWithoutExt(filePath:String):String {
+		if (filePath == null)
+			return "";
+		var name = GetFileName(filePath);
+		var dot = name.lastIndexOf(".");
+		return dot > 0 ? name.substr(0, dot) : name;
+	}
+
+	/** Returns the directory of a path: up to its last `/` or `\`. A relative path's starts "./", as raylib's does: "dir/file.png"
+		gives "./dir", "file.png" gives "./", and "/file.png" gives "/".
+
+		@param filePath  The path.
+		@return  The directory, without a slash at its end. */
+	static function GetDirectoryPath(filePath:String):String {
+		var first = filePath.charAt(0), second = filePath.charAt(1);
+		// A path is relative unless it starts with a slash or a drive letter ("C:").
+		var relative = second != ":" && first != "\\" && first != "/";
+		var slash = lastSlash(filePath);
+		if (slash < 0)
+			return relative ? "./" : "";
+		if (slash == 0)
+			return first;
+		return (relative ? "./" : "") + filePath.substr(0, slash);
+	}
+
+	/** Returns the directory a path is in: up to its last `/` or `\`, keeping a root's ("/", "C:\").
+
+		@param dirPath  The path.
+		@return  The directory above it; the path itself when it has 3 characters or fewer, and "" when a longer one has no slash. */
+	static function GetPrevDirectoryPath(dirPath:String):String {
+		if (dirPath.length <= 3)
+			return dirPath;
+		var i = lastSlash(dirPath);
+		if (i < 0)
+			return "";
+		if ((i == 2 && dirPath.charAt(1) == ":") || i == 0)
+			i++;
+		return dirPath.substr(0, i);
+	}
+
+	/** Returns whether a file name could name a file on any system: none of `< > : " / \ | ? *` or a control character, and not
+		only dots.
+
+		@param fileName  The file name, without a directory.
+		@return  True when it could; true for null or "", as raylib's is. */
+	static function IsFileNameValid(fileName:String):Bool {
+		if (fileName == null || fileName.length == 0)
+			return true;
+		var allPeriods = true;
+		for (i in 0...fileName.length) {
+			var c = StringTools.fastCodeAt(fileName, i);
+			switch c {
+				case "<".code | ">".code | ":".code | "\"".code | "/".code | "\\".code | "|".code | "?".code | "*".code:
+					return false;
+				case _ if (c < 32):
+					return false;
+				case _:
+			}
+			if (c != ".".code)
+				allPeriods = false;
+		}
+		return !allPeriods;
+	}
+
+	// ---- Encoding and hashes ----
+
+	/** Returns DEFLATE data decompressed: a raw stream with no zlib header, as raylib's `CompressData` makes. Like raylib's, it gives
+		at most 64 MB.
+
+		@param compData  The compressed bytes.
+		@param compDataSize  How many of them.
+		@param dataSize  Its first element is set to how many bytes it gives.
+		@return  The bytes. Data that isn't DEFLATE, or stops short, gives what was read before it, perhaps nothing, and a warning. */
+	static function DecompressData(compData:haxe.io.Bytes, compDataSize:Int, dataSize:Array<Int>):haxe.io.Bytes {
+		var limit = 64 * 1024 * 1024;
+		var output = new haxe.io.BytesBuffer(),
+			chunk = haxe.io.Bytes.alloc(65536);
+		try {
+			var inflate = new haxe.zip.InflateImpl(new haxe.io.BytesInput(compData, 0, compDataSize), false, false);
+			while (output.length < limit) {
+				var wanted = limit - output.length < chunk.length ? limit - output.length : chunk.length;
+				var read = inflate.readBytes(chunk, 0, wanted);
+				output.addBytes(chunk, 0, read);
+				if (read < wanted)
+					break;
+			}
+		} catch (e:haxe.Exception) {
+			Runtime.log(LOG_WARNING, "SYSTEM: Failed to decompress data: " + e.message);
+		}
+		var data = output.getBytes();
+		if (dataSize != null)
+			dataSize[0] = data.length;
+		Runtime.log(LOG_INFO, 'SYSTEM: Decompress data: Comp. size: $compDataSize -> Original size: ${data.length}');
+		return data;
+	}
+
+	/** Returns some bytes as Base64 text, padded with `=` to a multiple of 4 characters.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@param outputSize  Its first element is set to the text's length.
+		@return  The text. */
+	static function EncodeDataBase64(data:haxe.io.Bytes, dataSize:Int, outputSize:Array<Int>):String {
+		var size = 4 * Std.int((dataSize + 2) / 3);
+		if (outputSize != null)
+			outputSize[0] = size;
+		var text = new StringBuf(), i = 0;
+		while (i < dataSize) {
+			var a = data.get(i++);
+			var b = i < dataSize ? data.get(i++) : 0;
+			var c = i < dataSize ? data.get(i++) : 0;
+			var triple = (a << 16) | (b << 8) | c;
+			text.addChar(StringTools.fastCodeAt(BASE64, (triple >> 18) & 0x3F));
+			text.addChar(StringTools.fastCodeAt(BASE64, (triple >> 12) & 0x3F));
+			text.addChar(StringTools.fastCodeAt(BASE64, (triple >> 6) & 0x3F));
+			text.addChar(StringTools.fastCodeAt(BASE64, triple & 0x3F));
+		}
+		var padding = [0, 2, 1][dataSize % 3];
+		return text.toString().substr(0, size - padding) + "==".substr(0, padding);
+	}
+
+	/** Returns the bytes of Base64 text. It reads 4 characters at a time up to a zero byte or the end, and a character that isn't
+		Base64's reads as 0, as raylib's does.
+
+		@param data  The text's bytes.
+		@param outputSize  Its first element is set to how many bytes it gives.
+		@return  The bytes. */
+	static function DecodeDataBase64(data:haxe.io.Bytes, outputSize:Array<Int>):haxe.io.Bytes {
+		var at = (i:Int) -> i < data.length ? data.get(i) : 0;
+		var value = (i:Int) -> {
+			var c = at(i);
+			return if (c >= "A".code && c <= "Z".code) c - "A".code; else if (c >= "a".code && c <= "z".code) c - "a".code + 26; else if (c >= "0".code
+				&& c <= "9".code) c
+				- "0".code + 52; else if (c == "+".code) 62; else if (c == "/".code) 63; else 0;
+		}
+		var size = 0, i = 0;
+		while (at(4 * i) != 0) {
+			size += at(4 * i + 3) != "=".code ? 3 : at(4 * i + 2) == "=".code ? 1 : 2;
+			i++;
+		}
+		var decoded = haxe.io.Bytes.alloc(size);
+		for (i in 0...Std.int((size + 2) / 3)) {
+			var a = value(4 * i),
+				b = value(4 * i + 1),
+				c = value(4 * i + 2),
+				d = value(4 * i + 3);
+			var bytes = [(a << 2) | (b >> 4), (b << 4) | (c >> 2), (c << 6) | d];
+			for (j in 0...3)
+				if (3 * i + j < size)
+					decoded.set(3 * i + j, bytes[j] & 255);
+		}
+		if (outputSize != null)
+			outputSize[0] = size;
+		return decoded;
+	}
+
+	/** Returns the CRC-32 of some bytes, as zlib and PNG compute it.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@return  Its 32 bits; one above 0x7fffffff is negative. */
+	static function ComputeCRC32(data:haxe.io.Bytes, dataSize:Int):Int {
+		if (crcTable == null) {
+			crcTable = [];
+			for (n in 0...256) {
+				var c = n;
+				for (k in 0...8)
+					c = (c & 1) != 0 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+				crcTable.push(c | 0);
+			}
+		}
+		var crc = ~0;
+		for (i in 0...dataSize)
+			crc = (crc >>> 8) ^ crcTable[(data.get(i) ^ crc) & 0xff];
+		return ~crc;
+	}
+
+	/** Returns the MD5 hash of some bytes.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@return  Its 4 words, as raylib gives them: each read from 4 bytes of the hash, the first the lowest, and one above 0x7fffffff
+			is negative. */
+	static function ComputeMD5(data:haxe.io.Bytes, dataSize:Int):Array<Int> {
+		var hash = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476];
+		var newDataSize = (Std.int((dataSize + 8) / 64) + 1) * 64 - 8;
+		var msg = haxe.io.Bytes.alloc(newDataSize + 64);
+		msg.fill(0, msg.length, 0);
+		msg.blit(0, data, 0, dataSize);
+		msg.set(dataSize, 128);
+		msg.setInt32(newDataSize, 8 * dataSize);
+		var offset = 0;
+		while (offset < newDataSize) {
+			var a = hash[0], b = hash[1], c = hash[2], d = hash[3];
+			for (i in 0...64) {
+				var f, g;
+				if (i < 16) {
+					f = (b & c) | (~b & d);
+					g = i;
+				} else if (i < 32) {
+					f = (d & b) | (~d & c);
+					g = (5 * i + 1) % 16;
+				} else if (i < 48) {
+					f = b ^ c ^ d;
+					g = (3 * i + 5) % 16;
+				} else {
+					f = c ^ (b | ~d);
+					g = (7 * i) % 16;
+				}
+				var temp = d;
+				d = c;
+				c = b;
+				b = (b + rotateLeft((((a + f) | 0) + ((MD5_K[i] + msg.getInt32(offset + 4 * g)) | 0)) | 0, MD5_R[i])) | 0;
+				a = temp;
+			}
+			hash[0] = (hash[0] + a) | 0;
+			hash[1] = (hash[1] + b) | 0;
+			hash[2] = (hash[2] + c) | 0;
+			hash[3] = (hash[3] + d) | 0;
+			offset += 64;
+		}
+		return hash;
+	}
+
+	/** Returns the SHA-1 hash of some bytes, as raylib 5.5 computes it: its padding holds only the lowest byte of the length in bits,
+		so from 32 bytes on it differs from standard SHA-1.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@return  Its 5 words, the first the hash's first 4 bytes, the highest first; one above 0x7fffffff is negative. */
+	static function ComputeSHA1(data:haxe.io.Bytes, dataSize:Int):Array<Int> {
+		var hash = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0];
+		var newDataSize = (Std.int((dataSize + 8) / 64) + 1) * 64;
+		var msg = haxe.io.Bytes.alloc(newDataSize);
+		msg.fill(0, msg.length, 0);
+		msg.blit(0, data, 0, dataSize);
+		msg.set(dataSize, 128);
+		msg.set(newDataSize - 1, (8 * dataSize) & 255);
+		var w = [for (i in 0...80) 0];
+		var offset = 0;
+		while (offset < newDataSize) {
+			for (i in 0...16) {
+				var at = offset + i * 4;
+				w[i] = (msg.get(at) << 24) | (msg.get(at + 1) << 16) | (msg.get(at + 2) << 8) | msg.get(at + 3);
+			}
+			for (i in 16...80)
+				w[i] = rotateLeft(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
+			var a = hash[0], b = hash[1], c = hash[2], d = hash[3], e = hash[4];
+			for (i in 0...80) {
+				var f, k;
+				if (i < 20) {
+					f = (b & c) | (~b & d);
+					k = 0x5A827999;
+				} else if (i < 40) {
+					f = b ^ c ^ d;
+					k = 0x6ED9EBA1;
+				} else if (i < 60) {
+					f = (b & c) | (b & d) | (c & d);
+					k = 0x8F1BBCDC;
+				} else {
+					f = b ^ c ^ d;
+					k = 0xCA62C1D6;
+				}
+				var temp = (((((rotateLeft(a, 5) + f) | 0) + e) | 0) + ((k + w[i]) | 0)) | 0;
+				e = d;
+				d = c;
+				c = rotateLeft(b, 30);
+				b = a;
+				a = temp;
+			}
+			hash[0] = (hash[0] + a) | 0;
+			hash[1] = (hash[1] + b) | 0;
+			hash[2] = (hash[2] + c) | 0;
+			hash[3] = (hash[3] + d) | 0;
+			hash[4] = (hash[4] + e) | 0;
+			offset += 64;
+		}
+		return hash;
+	}
+
 	// ---- Hooks ----
 
 	/** Reads files through the program from now on: every load raylib makes of a file (textures, models, sounds, music, data) asks it
@@ -716,6 +1041,43 @@ class RCore {
 	}
 
 	static inline final SAVED = "file:";
+	static inline final BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	static var crcTable:Null<Array<Int>> = null;
+	// MD5's shift for each step, and its constants, the binary integer parts of the sines of 1 to 64.
+	static final MD5_R = [
+		7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4,
+		11, 16, 23, 4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21
+	];
+	static final MD5_K = [
+		0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501, 0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
+		0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821, 0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa, 0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
+		0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed, 0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a, 0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c,
+		0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70, 0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05, 0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
+		0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039, 0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1, 0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
+		0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391
+	];
+
+	// A 32-bit word turned left by some bits.
+	static inline function rotateLeft(x:Int, bits:Int):Int {
+		return (x << bits) | (x >>> (32 - bits));
+	}
+
+	// The index of a path's last `/` or `\`, or -1.
+	static function lastSlash(path:String):Int {
+		var slash = path.lastIndexOf("/"), back = path.lastIndexOf("\\");
+		return slash > back ? slash : back;
+	}
+
+	// Text with A to Z made lower case, as raylib's TextToLower does, and nothing else.
+	static function asciiLower(text:String):String {
+		var lower = new StringBuf();
+		for (i in 0...text.length) {
+			var c = StringTools.fastCodeAt(text, i);
+			lower.addChar(c >= "A".code && c <= "Z".code ? c + 32 : c);
+		}
+		return lower.toString();
+	}
+
 	static var start = 0.;
 	static var configFlags = 0;
 	static var seed = 0x2545f491;

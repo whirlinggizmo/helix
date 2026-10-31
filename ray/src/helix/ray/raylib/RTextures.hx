@@ -187,6 +187,219 @@ class RTextures {
 		return new Color(color.r, color.g, color.b, Std.int(255 * a));
 	}
 
+	/** Returns whether two colors are the same, alpha too.
+
+		@param col1  One color.
+		@param col2  The other.
+		@return  True when red, green, blue and alpha are each equal. */
+	static function ColorIsEqual(col1:Color, col2:Color):Bool {
+		return col1.r == col2.r && col1.g == col2.g && col1.b == col2.b && col1.a == col2.a;
+	}
+
+	/** Returns a color as one number, 0xRRGGBBAA.
+
+		@param color  The color.
+		@return  Red in the top byte, alpha in the bottom; a red of 128 or more makes it negative. */
+	static function ColorToInt(color:Color):Int {
+		return ((color.r & 255) << 24) | ((color.g & 255) << 16) | ((color.b & 255) << 8) | (color.a & 255);
+	}
+
+	/** Returns a color's hue, saturation and value.
+
+		@param color  The color; its alpha is ignored.
+		@return  The hue in degrees, 0 to 360, as x; the saturation and value, 0 to 1 each, as y and z. A gray's hue and saturation are 0. */
+	static function ColorToHSV(color:Color):Vector3 {
+		var hsv = new Vector3();
+		var r = f32(color.r / 255),
+			g = f32(color.g / 255),
+			b = f32(color.b / 255);
+		var min = r < g ? r : g;
+		min = min < b ? min : b;
+		var max = r > g ? r : g;
+		max = max > b ? max : b;
+		hsv.z = max;
+		var delta = f32(max - min);
+		if (delta < f32(0.00001))
+			return hsv;
+		if (max > 0)
+			hsv.y = f32(delta / max);
+		else {
+			hsv.x = Math.NaN;
+			return hsv;
+		}
+		if (r >= max)
+			hsv.x = f32(f32(g - b) / delta);
+		else if (g >= max)
+			hsv.x = f32(2 + f32(f32(b - r) / delta));
+		else
+			hsv.x = f32(4 + f32(f32(r - g) / delta));
+		hsv.x = f32(hsv.x * 60);
+		if (hsv.x < 0)
+			hsv.x = f32(hsv.x + 360);
+		return hsv;
+	}
+
+	/** Returns the color of a hue, saturation and value; its alpha is 255.
+
+		@param hue  The hue, in degrees, 0 to 360.
+		@param saturation  0 (gray) to 1.
+		@param value  0 (black) to 1.
+		@return  The color. */
+	static function ColorFromHSV(hue:Float, saturation:Float, value:Float):Color {
+		hue = f32(hue);
+		saturation = f32(saturation);
+		value = f32(value);
+		var channel = (offset:Float) -> {
+			var k = f32(offset + f32(hue / 60)) % 6;
+			var t = f32(4 - k);
+			k = t < k ? t : k;
+			k = k < 1 ? k : 1;
+			k = k > 0 ? k : 0;
+			return byte(f32(f32(value - f32(f32(value * saturation) * k)) * 255));
+		}
+		return new Color(channel(5), channel(3), channel(1), 255);
+	}
+
+	/** Returns a color multiplied by another, channel by channel.
+
+		@param color  The color.
+		@param tint  The color it is multiplied by; `WHITE` keeps it as it is.
+		@return  The new color. */
+	static function ColorTint(color:Color, tint:Color):Color {
+		var times = (a:Int, b:Int) -> Std.int(a * b / 255) & 255;
+		return new Color(times(color.r, tint.r), times(color.g, tint.g), times(color.b, tint.b), times(color.a, tint.a));
+	}
+
+	/** Returns a color made darker or lighter; its alpha is kept.
+
+		@param color  The color.
+		@param factor  -1 (black) to 1 (white); 0 keeps it as it is.
+		@return  The new color. */
+	static function ColorBrightness(color:Color, factor:Float):Color {
+		factor = f32(factor);
+		if (factor > 1)
+			factor = 1;
+		else if (factor < -1)
+			factor = -1;
+		var channel = if (factor < 0) {
+			var scale = f32(1 + factor);
+			(c:Int) -> byte(f32(c * scale));
+		} else(c:Int) -> byte(f32(f32((255 - c) * factor) + c));
+		return new Color(channel(color.r), channel(color.g), channel(color.b), color.a);
+	}
+
+	/** Returns a color with more or less contrast about the middle gray; its alpha is kept.
+
+		@param color  The color.
+		@param contrast  -1 (all middle gray) to 1; 0 keeps it as it is.
+		@return  The new color. */
+	static function ColorContrast(color:Color, contrast:Float):Color {
+		contrast = f32(contrast);
+		if (contrast < -1)
+			contrast = -1;
+		else if (contrast > 1)
+			contrast = 1;
+		contrast = f32(1 + contrast);
+		contrast = f32(contrast * contrast);
+		var channel = (c:Int) -> {
+			var p = f32(f32(f32(f32(f32(c / 255) - 0.5) * contrast) + 0.5) * 255);
+			return byte(p < 0 ? 0 : p > 255 ? 255 : p);
+		}
+		return new Color(channel(color.r), channel(color.g), channel(color.b), color.a);
+	}
+
+	/** Returns a color drawn over another: the source, multiplied by a tint, blended into the destination by its alpha.
+
+		@param dst  The color underneath.
+		@param src  The color drawn over it.
+		@param tint  The color the source is multiplied by; `WHITE` keeps it as it is.
+		@return  The blend. */
+	static function ColorAlphaBlend(dst:Color, src:Color, tint:Color):Color {
+		var tinted = (s:Int, t:Int) -> ((s * (t + 1)) >> 8) & 255;
+		var sr = tinted(src.r, tint.r),
+			sg = tinted(src.g, tint.g),
+			sb = tinted(src.b, tint.b),
+			sa = tinted(src.a, tint.a);
+		if (sa == 0)
+			return new Color(dst.r, dst.g, dst.b, dst.a);
+		if (sa == 255)
+			return new Color(sr, sg, sb, sa);
+		var alpha = sa + 1;
+		var outA = ((alpha * 256 + dst.a * (256 - alpha)) >> 8) & 255;
+		var channel = (s:Int, d:Int) -> (Std.int((s * alpha * 256 + d * dst.a * (256 - alpha)) / outA) >> 8) & 255;
+		return new Color(channel(sr, dst.r), channel(sg, dst.g), channel(sb, dst.b), outA);
+	}
+
+	/** Returns a color part way from one color to another.
+
+		@param color1  The color at 0.
+		@param color2  The color at 1.
+		@param factor  How far, 0 to 1.
+		@return  The color between them. */
+	static function ColorLerp(color1:Color, color2:Color, factor:Float):Color {
+		factor = f32(factor);
+		if (factor < 0)
+			factor = 0;
+		else if (factor > 1)
+			factor = 1;
+		var rest = f32(1 - factor);
+		var channel = (a:Int, b:Int) -> byte(f32(f32(rest * a) + f32(factor * b)));
+		return new Color(channel(color1.r, color2.r), channel(color1.g, color2.g), channel(color1.b, color2.b), channel(color1.a, color2.a));
+	}
+
+	/** Returns the color of one number, 0xRRGGBBAA.
+
+		@param hexValue  Red in the top byte, alpha in the bottom.
+		@return  The color. */
+	static function GetColor(hexValue:Int):Color {
+		return new Color((hexValue >>> 24) & 255, (hexValue >> 16) & 255, (hexValue >> 8) & 255, hexValue & 255);
+	}
+
+	/** Returns how many bytes an image's pixels take in a format.
+
+		@param width  The width, in pixels.
+		@param height  The height.
+		@param format  The format (`PIXELFORMAT_*`).
+		@return  The bytes; a compressed format smaller than 4 by 4 pixels takes a whole block, 8 or 16 bytes, and an unknown format 0. */
+	static function GetPixelDataSize(width:Int, height:Int, format:Int):Int {
+		var bits = switch format {
+			case PIXELFORMAT_UNCOMPRESSED_GRAYSCALE: 8;
+			case PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA | PIXELFORMAT_UNCOMPRESSED_R5G6B5 | PIXELFORMAT_UNCOMPRESSED_R5G5B5A1 | PIXELFORMAT_UNCOMPRESSED_R4G4B4A4: 16;
+			case PIXELFORMAT_UNCOMPRESSED_R8G8B8A8: 32;
+			case PIXELFORMAT_UNCOMPRESSED_R8G8B8: 24;
+			case PIXELFORMAT_UNCOMPRESSED_R32: 32;
+			case PIXELFORMAT_UNCOMPRESSED_R32G32B32: 32 * 3;
+			case PIXELFORMAT_UNCOMPRESSED_R32G32B32A32: 32 * 4;
+			case PIXELFORMAT_UNCOMPRESSED_R16: 16;
+			case PIXELFORMAT_UNCOMPRESSED_R16G16B16: 16 * 3;
+			case PIXELFORMAT_UNCOMPRESSED_R16G16B16A16: 16 * 4;
+			case PIXELFORMAT_COMPRESSED_DXT1_RGB | PIXELFORMAT_COMPRESSED_DXT1_RGBA | PIXELFORMAT_COMPRESSED_ETC1_RGB | PIXELFORMAT_COMPRESSED_ETC2_RGB |
+				PIXELFORMAT_COMPRESSED_PVRT_RGB | PIXELFORMAT_COMPRESSED_PVRT_RGBA: 4;
+			case PIXELFORMAT_COMPRESSED_DXT3_RGBA | PIXELFORMAT_COMPRESSED_DXT5_RGBA | PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA |
+				PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA: 8;
+			case PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA: 2;
+			case _: 0;
+		}
+		var size = Std.int(bits / 8 * width * height);
+		if (width < 4 && height < 4) {
+			if (format >= PIXELFORMAT_COMPRESSED_DXT1_RGB && format < PIXELFORMAT_COMPRESSED_DXT3_RGBA)
+				size = 8;
+			else if (format >= PIXELFORMAT_COMPRESSED_DXT3_RGBA && format < PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA)
+				size = 16;
+		}
+		return size;
+	}
+
+	// raylib's color math is in single precision: a number rounded to the nearest float, as each of its operations rounds.
+	static inline function f32(x:Float):Float {
+		return haxe.io.FPHelper.i32ToFloat(haxe.io.FPHelper.floatToI32(x));
+	}
+
+	// A number as raylib's (unsigned char) cast makes it: truncated, its low 8 bits.
+	static inline function byte(x:Float):Int {
+		return Std.int(x) & 255;
+	}
+
 	// ---- Render textures ----
 
 	/** Makes a texture to draw into, with depth.

@@ -58,6 +58,15 @@ class Raymath {
 	public static inline function Lerp(start:Float, end:Float, amount:Float):Float
 		return RMath.Lerp(start, end, amount);
 
+	/** Returns where a value falls from one to another: 0 at the start, 1 at the end.
+
+		@param value  The value.
+		@param start  The start.
+		@param end  The end.
+		@return  The fraction. */
+	public static inline function Normalize(value:Float, start:Float, end:Float):Float
+		return RMath.Normalize(value, start, end);
+
 	/** Returns a value moved from one range to another.
 
 		@param value  The value.
@@ -68,6 +77,23 @@ class Raymath {
 		@return  The value in the second range. */
 	public static inline function Remap(value:Float, inputStart:Float, inputEnd:Float, outputStart:Float, outputEnd:Float):Float
 		return RMath.Remap(value, inputStart, inputEnd, outputStart, outputEnd);
+
+	/** Returns a value wrapped around into a range, as an angle wraps around a turn.
+
+		@param value  The value.
+		@param min  The range's start.
+		@param max  Its end.
+		@return  The value in the range. */
+	public static inline function Wrap(value:Float, min:Float, max:Float):Float
+		return RMath.Wrap(value, min, max);
+
+	/** Returns whether two values are equal but for rounding: no further apart than `EPSILON`, times the larger when it is over 1.
+
+		@param x  One.
+		@param y  The other.
+		@return  1 if they are, 0 if not. */
+	public static inline function FloatEquals(x:Float, y:Float):Int
+		return RMath.FloatEquals(x, y);
 
 	/** Returns (0, 0).
 
@@ -89,6 +115,14 @@ class Raymath {
 	public static inline function Vector2Add(v1:Vector2, v2:Vector2):Vector2
 		return RMath.Vector2Add(v1, v2);
 
+	/** Returns a vector with a value added to each component.
+
+		@param v  The vector.
+		@param add  The value.
+		@return  The sum. */
+	public static inline function Vector2AddValue(v:Vector2, add:Float):Vector2
+		return RMath.Vector2AddValue(v, add);
+
 	/** Returns one vector less another.
 
 		@param v1  The first.
@@ -96,6 +130,68 @@ class Raymath {
 		@return  The difference. */
 	public static inline function Vector2Subtract(v1:Vector2, v2:Vector2):Vector2
 		return RMath.Vector2Subtract(v1, v2);
+
+	/** Returns a vector with a value taken from each component.
+
+		@param v  The vector.
+		@param sub  The value.
+		@return  The difference. */
+	public static inline function Vector2SubtractValue(v:Vector2, sub:Float):Vector2
+		return RMath.Vector2SubtractValue(v, sub);
+
+	/** Returns a vector's length.
+
+		@param v  The vector.
+		@return  The length. */
+	public static inline function Vector2Length(v:Vector2):Float
+		return RMath.Vector2Length(v);
+
+	/** Returns a vector's length squared.
+
+		@param v  The vector.
+		@return  The length squared. */
+	public static inline function Vector2LengthSqr(v:Vector2):Float
+		return RMath.Vector2LengthSqr(v);
+
+	/** Returns the dot product.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The product. */
+	public static inline function Vector2DotProduct(v1:Vector2, v2:Vector2):Float
+		return RMath.Vector2DotProduct(v1, v2);
+
+	/** Returns the distance between two points.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The distance. */
+	public static inline function Vector2Distance(v1:Vector2, v2:Vector2):Float
+		return RMath.Vector2Distance(v1, v2);
+
+	/** Returns the distance between two points, squared.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The distance squared. */
+	public static inline function Vector2DistanceSqr(v1:Vector2, v2:Vector2):Float
+		return RMath.Vector2DistanceSqr(v1, v2);
+
+	/** Returns the angle from one vector to another, from -pi to pi: positive turning from x toward y.
+
+		@param v1  The first.
+		@param v2  The second.
+		@return  The angle, in radians. */
+	public static inline function Vector2Angle(v1:Vector2, v2:Vector2):Float
+		return RMath.Vector2Angle(v1, v2);
+
+	/** Returns the angle of the line from one point to another, from the x axis: positive turning from x toward -y.
+
+		@param start  The line's start.
+		@param end  Its end.
+		@return  The angle, in radians. */
+	public static inline function Vector2LineAngle(start:Vector2, end:Vector2):Float
+		return RMath.Vector2LineAngle(start, end);
 
 	/** Returns a vector scaled.
 
@@ -113,27 +209,20 @@ class Raymath {
 	public static inline function Vector2Multiply(v1:Vector2, v2:Vector2):Vector2
 		return RMath.Vector2Multiply(v1, v2);
 
-	/** Returns a vector's length.
+	/** Returns a vector pointing the other way.
 
 		@param v  The vector.
-		@return  The length. */
-	public static inline function Vector2Length(v:Vector2):Float
-		return RMath.Vector2Length(v);
+		@return  The negated vector. */
+	public static inline function Vector2Negate(v:Vector2):Vector2
+		return RMath.Vector2Negate(v);
 
-	/** Returns a vector's length squared.
+	/** Returns one vector divided by another, component by component.
 
-		@param v  The vector.
-		@return  The length squared. */
-	public static inline function Vector2LengthSqr(v:Vector2):Float
-		return RMath.Vector2LengthSqr(v);
-
-	/** Returns the distance between two points.
-
-		@param v1  One.
-		@param v2  The other.
-		@return  The distance. */
-	public static inline function Vector2Distance(v1:Vector2, v2:Vector2):Float
-		return RMath.Vector2Distance(v1, v2);
+		@param v1  The one divided.
+		@param v2  The one dividing it.
+		@return  The quotient. */
+	public static inline function Vector2Divide(v1:Vector2, v2:Vector2):Vector2
+		return RMath.Vector2Divide(v1, v2);
 
 	/** Returns a vector of length 1 in the same direction, or (0, 0) for (0, 0).
 
@@ -141,6 +230,14 @@ class Raymath {
 		@return  The direction. */
 	public static inline function Vector2Normalize(v:Vector2):Vector2
 		return RMath.Vector2Normalize(v);
+
+	/** Returns a point transformed by a matrix, the point at z 0.
+
+		@param v  The point.
+		@param mat  The matrix.
+		@return  The transformed point's x and y. */
+	public static inline function Vector2Transform(v:Vector2, mat:Matrix):Vector2
+		return RMath.Vector2Transform(v, mat);
 
 	/** Returns a point part of the way from one to another.
 
@@ -151,6 +248,63 @@ class Raymath {
 	public static inline function Vector2Lerp(v1:Vector2, v2:Vector2, amount:Float):Vector2
 		return RMath.Vector2Lerp(v1, v2, amount);
 
+	/** Returns a direction reflected off a surface.
+
+		@param v  The direction.
+		@param normal  The surface's normal, of length 1.
+		@return  The reflected direction. */
+	public static inline function Vector2Reflect(v:Vector2, normal:Vector2):Vector2
+		return RMath.Vector2Reflect(v, normal);
+
+	/** Returns the least of two vectors' components, each on its own.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The vector of the least. */
+	public static inline function Vector2Min(v1:Vector2, v2:Vector2):Vector2
+		return RMath.Vector2Min(v1, v2);
+
+	/** Returns the most of two vectors' components, each on its own.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The vector of the most. */
+	public static inline function Vector2Max(v1:Vector2, v2:Vector2):Vector2
+		return RMath.Vector2Max(v1, v2);
+
+	/** Returns a vector turned by an angle, from x toward y.
+
+		@param v  The vector.
+		@param angle  The angle, in radians.
+		@return  The turned vector. */
+	public static inline function Vector2Rotate(v:Vector2, angle:Float):Vector2
+		return RMath.Vector2Rotate(v, angle);
+
+	/** Returns a point moved toward a target by at most a distance; the target when it is that near.
+
+		@param v  The point.
+		@param target  The target.
+		@param maxDistance  The most it moves.
+		@return  The moved point. */
+	public static inline function Vector2MoveTowards(v:Vector2, target:Vector2, maxDistance:Float):Vector2
+		return RMath.Vector2MoveTowards(v, target, maxDistance);
+
+	/** Returns 1 divided by each of a vector's components.
+
+		@param v  The vector.
+		@return  The inverted vector. */
+	public static inline function Vector2Invert(v:Vector2):Vector2
+		return RMath.Vector2Invert(v);
+
+	/** Returns a vector with each component kept between two others'.
+
+		@param v  The vector.
+		@param min  The least components.
+		@param max  The most.
+		@return  The vector. */
+	public static inline function Vector2Clamp(v:Vector2, min:Vector2, max:Vector2):Vector2
+		return RMath.Vector2Clamp(v, min, max);
+
 	/** Returns a vector with its length kept between two values.
 
 		@param v  The vector.
@@ -159,6 +313,23 @@ class Raymath {
 		@return  The vector. */
 	public static inline function Vector2ClampValue(v:Vector2, min:Float, max:Float):Vector2
 		return RMath.Vector2ClampValue(v, min, max);
+
+	/** Returns whether two vectors are equal but for rounding, each component as `FloatEquals` compares it.
+
+		@param p  One.
+		@param q  The other.
+		@return  1 if they are, 0 if not. */
+	public static inline function Vector2Equals(p:Vector2, q:Vector2):Int
+		return RMath.Vector2Equals(p, q);
+
+	/** Returns a direction bent passing into a surface, or (0, 0) when it is wholly reflected instead.
+
+		@param v  The direction, of length 1.
+		@param n  The surface's normal, of length 1.
+		@param r  The ratio of the refractive indices, the one it leaves over the one it enters.
+		@return  The bent direction. */
+	public static inline function Vector2Refract(v:Vector2, n:Vector2, r:Float):Vector2
+		return RMath.Vector2Refract(v, n, r);
 
 	/** Returns (0, 0, 0).
 
@@ -180,6 +351,14 @@ class Raymath {
 	public static inline function Vector3Add(v1:Vector3, v2:Vector3):Vector3
 		return RMath.Vector3Add(v1, v2);
 
+	/** Returns a vector with a value added to each component.
+
+		@param v  The vector.
+		@param add  The value.
+		@return  The sum. */
+	public static inline function Vector3AddValue(v:Vector3, add:Float):Vector3
+		return RMath.Vector3AddValue(v, add);
+
 	/** Returns one vector less another.
 
 		@param v1  The first.
@@ -187,6 +366,14 @@ class Raymath {
 		@return  The difference. */
 	public static inline function Vector3Subtract(v1:Vector3, v2:Vector3):Vector3
 		return RMath.Vector3Subtract(v1, v2);
+
+	/** Returns a vector with a value taken from each component.
+
+		@param v  The vector.
+		@param sub  The value.
+		@return  The difference. */
+	public static inline function Vector3SubtractValue(v:Vector3, sub:Float):Vector3
+		return RMath.Vector3SubtractValue(v, sub);
 
 	/** Returns a vector scaled.
 
@@ -212,13 +399,12 @@ class Raymath {
 	public static inline function Vector3CrossProduct(v1:Vector3, v2:Vector3):Vector3
 		return RMath.Vector3CrossProduct(v1, v2);
 
-	/** Returns the dot product.
+	/** Returns a vector perpendicular to another: its cross product with the axis the vector is least along.
 
-		@param v1  One.
-		@param v2  The other.
-		@return  The product. */
-	public static inline function Vector3DotProduct(v1:Vector3, v2:Vector3):Float
-		return RMath.Vector3DotProduct(v1, v2);
+		@param v  The vector.
+		@return  The perpendicular vector. */
+	public static inline function Vector3Perpendicular(v:Vector3):Vector3
+		return RMath.Vector3Perpendicular(v);
 
 	/** Returns a vector's length.
 
@@ -234,6 +420,14 @@ class Raymath {
 	public static inline function Vector3LengthSqr(v:Vector3):Float
 		return RMath.Vector3LengthSqr(v);
 
+	/** Returns the dot product.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The product. */
+	public static inline function Vector3DotProduct(v1:Vector3, v2:Vector3):Float
+		return RMath.Vector3DotProduct(v1, v2);
+
 	/** Returns the distance between two points.
 
 		@param v1  One.
@@ -242,12 +436,21 @@ class Raymath {
 	public static inline function Vector3Distance(v1:Vector3, v2:Vector3):Float
 		return RMath.Vector3Distance(v1, v2);
 
-	/** Returns a vector of length 1 in the same direction, or the vector itself when its length is 0.
+	/** Returns the distance between two points, squared.
 
-		@param v  The vector.
-		@return  The direction. */
-	public static inline function Vector3Normalize(v:Vector3):Vector3
-		return RMath.Vector3Normalize(v);
+		@param v1  One.
+		@param v2  The other.
+		@return  The distance squared. */
+	public static inline function Vector3DistanceSqr(v1:Vector3, v2:Vector3):Float
+		return RMath.Vector3DistanceSqr(v1, v2);
+
+	/** Returns the angle between two vectors, from 0 to pi.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The angle, in radians. */
+	public static inline function Vector3Angle(v1:Vector3, v2:Vector3):Float
+		return RMath.Vector3Angle(v1, v2);
 
 	/** Returns a vector pointing the other way.
 
@@ -256,14 +459,43 @@ class Raymath {
 	public static inline function Vector3Negate(v:Vector3):Vector3
 		return RMath.Vector3Negate(v);
 
-	/** Returns a point part of the way from one to another.
+	/** Returns one vector divided by another, component by component.
 
-		@param v1  The start.
-		@param v2  The end.
-		@param amount  0 for the start, 1 for the end.
-		@return  The point. */
-	public static inline function Vector3Lerp(v1:Vector3, v2:Vector3, amount:Float):Vector3
-		return RMath.Vector3Lerp(v1, v2, amount);
+		@param v1  The one divided.
+		@param v2  The one dividing it.
+		@return  The quotient. */
+	public static inline function Vector3Divide(v1:Vector3, v2:Vector3):Vector3
+		return RMath.Vector3Divide(v1, v2);
+
+	/** Returns a vector of length 1 in the same direction, or the vector itself when its length is 0.
+
+		@param v  The vector.
+		@return  The direction. */
+	public static inline function Vector3Normalize(v:Vector3):Vector3
+		return RMath.Vector3Normalize(v);
+
+	/** Returns the part of one vector along another.
+
+		@param v1  The vector.
+		@param v2  The direction it is projected onto.
+		@return  The projection. */
+	public static inline function Vector3Project(v1:Vector3, v2:Vector3):Vector3
+		return RMath.Vector3Project(v1, v2);
+
+	/** Returns the part of one vector across another: the vector less its projection.
+
+		@param v1  The vector.
+		@param v2  The direction taken out of it.
+		@return  The rejection. */
+	public static inline function Vector3Reject(v1:Vector3, v2:Vector3):Vector3
+		return RMath.Vector3Reject(v1, v2);
+
+	/** Makes two vectors of length 1 and at right angles to each other, the first keeping its direction (Gram-Schmidt).
+
+		@param v1  The first, set to its direction.
+		@param v2  The second, set at right angles to the first, in the plane the two were in and on its own side. */
+	public static inline function Vector3OrthoNormalize(v1:Vector3, v2:Vector3):Void
+		RMath.Vector3OrthoNormalize(v1, v2);
 
 	/** Returns a point transformed by a matrix.
 
@@ -272,6 +504,14 @@ class Raymath {
 		@return  The transformed point. */
 	public static inline function Vector3Transform(v:Vector3, mat:Matrix):Vector3
 		return RMath.Vector3Transform(v, mat);
+
+	/** Returns a vector turned by a quaternion.
+
+		@param v  The vector.
+		@param q  The quaternion.
+		@return  The turned vector. */
+	public static inline function Vector3RotateByQuaternion(v:Vector3, q:Quaternion):Vector3
+		return RMath.Vector3RotateByQuaternion(v, q);
 
 	/** Returns a vector turned about an axis.
 
@@ -282,11 +522,345 @@ class Raymath {
 	public static inline function Vector3RotateByAxisAngle(v:Vector3, axis:Vector3, angle:Float):Vector3
 		return RMath.Vector3RotateByAxisAngle(v, axis, angle);
 
+	/** Returns a point moved toward a target by at most a distance; the target when it is that near.
+
+		@param v  The point.
+		@param target  The target.
+		@param maxDistance  The most it moves.
+		@return  The moved point. */
+	public static inline function Vector3MoveTowards(v:Vector3, target:Vector3, maxDistance:Float):Vector3
+		return RMath.Vector3MoveTowards(v, target, maxDistance);
+
+	/** Returns a point part of the way from one to another.
+
+		@param v1  The start.
+		@param v2  The end.
+		@param amount  0 for the start, 1 for the end.
+		@return  The point. */
+	public static inline function Vector3Lerp(v1:Vector3, v2:Vector3, amount:Float):Vector3
+		return RMath.Vector3Lerp(v1, v2, amount);
+
+	/** Returns a point part of the way along a cubic Hermite curve, from one point to another, leaving and arriving along tangents.
+
+		@param v1  The start.
+		@param tangent1  The tangent leaving it.
+		@param v2  The end.
+		@param tangent2  The tangent arriving at it.
+		@param amount  0 for the start, 1 for the end.
+		@return  The point. */
+	public static inline function Vector3CubicHermite(v1:Vector3, tangent1:Vector3, v2:Vector3, tangent2:Vector3, amount:Float):Vector3
+		return RMath.Vector3CubicHermite(v1, tangent1, v2, tangent2, amount);
+
+	/** Returns a direction reflected off a surface.
+
+		@param v  The direction.
+		@param normal  The surface's normal, of length 1.
+		@return  The reflected direction. */
+	public static inline function Vector3Reflect(v:Vector3, normal:Vector3):Vector3
+		return RMath.Vector3Reflect(v, normal);
+
+	/** Returns the least of two vectors' components, each on its own.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The vector of the least. */
+	public static inline function Vector3Min(v1:Vector3, v2:Vector3):Vector3
+		return RMath.Vector3Min(v1, v2);
+
+	/** Returns the most of two vectors' components, each on its own.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The vector of the most. */
+	public static inline function Vector3Max(v1:Vector3, v2:Vector3):Vector3
+		return RMath.Vector3Max(v1, v2);
+
+	/** Returns a point's barycentric coordinates in a triangle: how much of each corner it is made of.
+
+		@param p  The point.
+		@param a  The first corner.
+		@param b  The second.
+		@param c  The third.
+		@return  How much of a (x), b (y) and c (z). */
+	public static inline function Vector3Barycenter(p:Vector3, a:Vector3, b:Vector3, c:Vector3):Vector3
+		return RMath.Vector3Barycenter(p, a, b, c);
+
+	/** Returns a point in normalized device coordinates (each from -1 to 1) taken back into the world, through a view and a projection.
+
+		@param source  The point.
+		@param projection  The projection.
+		@param view  The view.
+		@return  The point in the world. */
+	public static inline function Vector3Unproject(source:Vector3, projection:Matrix, view:Matrix):Vector3
+		return RMath.Vector3Unproject(source, projection, view);
+
+	/** Returns a vector's components as an array: x, y, z.
+
+		@param v  The vector.
+		@return  The array. */
+	public static inline function Vector3ToFloatV(v:Vector3):Array<Float>
+		return RMath.Vector3ToFloatV(v);
+
+	/** Returns 1 divided by each of a vector's components.
+
+		@param v  The vector.
+		@return  The inverted vector. */
+	public static inline function Vector3Invert(v:Vector3):Vector3
+		return RMath.Vector3Invert(v);
+
+	/** Returns a vector with each component kept between two others'.
+
+		@param v  The vector.
+		@param min  The least components.
+		@param max  The most.
+		@return  The vector. */
+	public static inline function Vector3Clamp(v:Vector3, min:Vector3, max:Vector3):Vector3
+		return RMath.Vector3Clamp(v, min, max);
+
+	/** Returns a vector with its length kept between two values.
+
+		@param v  The vector.
+		@param min  The least length.
+		@param max  The most length.
+		@return  The vector. */
+	public static inline function Vector3ClampValue(v:Vector3, min:Float, max:Float):Vector3
+		return RMath.Vector3ClampValue(v, min, max);
+
+	/** Returns whether two vectors are equal but for rounding, each component as `FloatEquals` compares it.
+
+		@param p  One.
+		@param q  The other.
+		@return  1 if they are, 0 if not. */
+	public static inline function Vector3Equals(p:Vector3, q:Vector3):Int
+		return RMath.Vector3Equals(p, q);
+
+	/** Returns a direction bent passing into a surface, or (0, 0, 0) when it is wholly reflected instead.
+
+		@param v  The direction, of length 1.
+		@param n  The surface's normal, of length 1.
+		@param r  The ratio of the refractive indices, the one it leaves over the one it enters.
+		@return  The bent direction. */
+	public static inline function Vector3Refract(v:Vector3, n:Vector3, r:Float):Vector3
+		return RMath.Vector3Refract(v, n, r);
+
+	/** Returns (0, 0, 0, 0).
+
+		@return  The vector. */
+	public static inline function Vector4Zero():Vector4
+		return RMath.Vector4Zero();
+
+	/** Returns (1, 1, 1, 1).
+
+		@return  The vector. */
+	public static inline function Vector4One():Vector4
+		return RMath.Vector4One();
+
+	/** Returns the sum of two vectors.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The sum. */
+	public static inline function Vector4Add(v1:Vector4, v2:Vector4):Vector4
+		return RMath.Vector4Add(v1, v2);
+
+	/** Returns a vector with a value added to each component.
+
+		@param v  The vector.
+		@param add  The value.
+		@return  The sum. */
+	public static inline function Vector4AddValue(v:Vector4, add:Float):Vector4
+		return RMath.Vector4AddValue(v, add);
+
+	/** Returns one vector less another.
+
+		@param v1  The first.
+		@param v2  The one taken from it.
+		@return  The difference. */
+	public static inline function Vector4Subtract(v1:Vector4, v2:Vector4):Vector4
+		return RMath.Vector4Subtract(v1, v2);
+
+	/** Returns a vector with a value taken from each component.
+
+		@param v  The vector.
+		@param add  The value.
+		@return  The difference. */
+	public static inline function Vector4SubtractValue(v:Vector4, add:Float):Vector4
+		return RMath.Vector4SubtractValue(v, add);
+
+	/** Returns a vector's length.
+
+		@param v  The vector.
+		@return  The length. */
+	public static inline function Vector4Length(v:Vector4):Float
+		return RMath.Vector4Length(v);
+
+	/** Returns a vector's length squared.
+
+		@param v  The vector.
+		@return  The length squared. */
+	public static inline function Vector4LengthSqr(v:Vector4):Float
+		return RMath.Vector4LengthSqr(v);
+
+	/** Returns the dot product.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The product. */
+	public static inline function Vector4DotProduct(v1:Vector4, v2:Vector4):Float
+		return RMath.Vector4DotProduct(v1, v2);
+
+	/** Returns the distance between two points.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The distance. */
+	public static inline function Vector4Distance(v1:Vector4, v2:Vector4):Float
+		return RMath.Vector4Distance(v1, v2);
+
+	/** Returns the distance between two points, squared.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The distance squared. */
+	public static inline function Vector4DistanceSqr(v1:Vector4, v2:Vector4):Float
+		return RMath.Vector4DistanceSqr(v1, v2);
+
+	/** Returns a vector scaled.
+
+		@param v  The vector.
+		@param scale  The scale.
+		@return  The scaled vector. */
+	public static inline function Vector4Scale(v:Vector4, scale:Float):Vector4
+		return RMath.Vector4Scale(v, scale);
+
+	/** Returns two vectors multiplied component by component.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The product. */
+	public static inline function Vector4Multiply(v1:Vector4, v2:Vector4):Vector4
+		return RMath.Vector4Multiply(v1, v2);
+
+	/** Returns a vector pointing the other way.
+
+		@param v  The vector.
+		@return  The negated vector. */
+	public static inline function Vector4Negate(v:Vector4):Vector4
+		return RMath.Vector4Negate(v);
+
+	/** Returns one vector divided by another, component by component.
+
+		@param v1  The one divided.
+		@param v2  The one dividing it.
+		@return  The quotient. */
+	public static inline function Vector4Divide(v1:Vector4, v2:Vector4):Vector4
+		return RMath.Vector4Divide(v1, v2);
+
+	/** Returns a vector of length 1 in the same direction, or (0, 0, 0, 0) for (0, 0, 0, 0).
+
+		@param v  The vector.
+		@return  The direction. */
+	public static inline function Vector4Normalize(v:Vector4):Vector4
+		return RMath.Vector4Normalize(v);
+
+	/** Returns the least of two vectors' components, each on its own.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The vector of the least. */
+	public static inline function Vector4Min(v1:Vector4, v2:Vector4):Vector4
+		return RMath.Vector4Min(v1, v2);
+
+	/** Returns the most of two vectors' components, each on its own.
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The vector of the most. */
+	public static inline function Vector4Max(v1:Vector4, v2:Vector4):Vector4
+		return RMath.Vector4Max(v1, v2);
+
+	/** Returns a point part of the way from one to another.
+
+		@param v1  The start.
+		@param v2  The end.
+		@param amount  0 for the start, 1 for the end.
+		@return  The point. */
+	public static inline function Vector4Lerp(v1:Vector4, v2:Vector4, amount:Float):Vector4
+		return RMath.Vector4Lerp(v1, v2, amount);
+
+	/** Returns a point moved toward a target by at most a distance; the target when it is that near.
+
+		@param v  The point.
+		@param target  The target.
+		@param maxDistance  The most it moves.
+		@return  The moved point. */
+	public static inline function Vector4MoveTowards(v:Vector4, target:Vector4, maxDistance:Float):Vector4
+		return RMath.Vector4MoveTowards(v, target, maxDistance);
+
+	/** Returns 1 divided by each of a vector's components.
+
+		@param v  The vector.
+		@return  The inverted vector. */
+	public static inline function Vector4Invert(v:Vector4):Vector4
+		return RMath.Vector4Invert(v);
+
+	/** Returns whether two vectors are equal but for rounding, each component as `FloatEquals` compares it.
+
+		@param p  One.
+		@param q  The other.
+		@return  1 if they are, 0 if not. */
+	public static inline function Vector4Equals(p:Vector4, q:Vector4):Int
+		return RMath.Vector4Equals(p, q);
+
+	/** Returns a matrix's determinant.
+
+		@param mat  The matrix.
+		@return  The determinant. */
+	public static inline function MatrixDeterminant(mat:Matrix):Float
+		return RMath.MatrixDeterminant(mat);
+
+	/** Returns a matrix's trace: the sum of its diagonal.
+
+		@param mat  The matrix.
+		@return  The trace. */
+	public static inline function MatrixTrace(mat:Matrix):Float
+		return RMath.MatrixTrace(mat);
+
+	/** Returns a matrix transposed.
+
+		@param mat  The matrix.
+		@return  Its transpose. */
+	public static inline function MatrixTranspose(mat:Matrix):Matrix
+		return RMath.MatrixTranspose(mat);
+
+	/** Returns a matrix inverted.
+
+		@param mat  The matrix.
+		@return  Its inverse. */
+	public static inline function MatrixInvert(mat:Matrix):Matrix
+		return RMath.MatrixInvert(mat);
+
 	/** Returns the identity matrix.
 
 		@return  The matrix. */
 	public static inline function MatrixIdentity():Matrix
 		return RMath.MatrixIdentity();
+
+	/** Returns the sum of two matrices.
+
+		@param left  One.
+		@param right  The other.
+		@return  The sum. */
+	public static inline function MatrixAdd(left:Matrix, right:Matrix):Matrix
+		return RMath.MatrixAdd(left, right);
+
+	/** Returns one matrix less another.
+
+		@param left  The first.
+		@param right  The one taken from it.
+		@return  The difference. */
+	public static inline function MatrixSubtract(left:Matrix, right:Matrix):Matrix
+		return RMath.MatrixSubtract(left, right);
 
 	/** Returns two matrices multiplied: left, then right.
 
@@ -304,15 +878,6 @@ class Raymath {
 		@return  The matrix. */
 	public static inline function MatrixTranslate(x:Float, y:Float, z:Float):Matrix
 		return RMath.MatrixTranslate(x, y, z);
-
-	/** Returns a scale.
-
-		@param x  Along x.
-		@param y  Along y.
-		@param z  Along z.
-		@return  The matrix. */
-	public static inline function MatrixScale(x:Float, y:Float, z:Float):Matrix
-		return RMath.MatrixScale(x, y, z);
 
 	/** Returns a rotation about an axis.
 
@@ -350,28 +915,33 @@ class Raymath {
 	public static inline function MatrixRotateXYZ(angle:Vector3):Matrix
 		return RMath.MatrixRotateXYZ(angle);
 
-	/** Returns a matrix inverted.
+	/** Returns rotations about z, then y, then x.
 
-		@param mat  The matrix.
-		@return  Its inverse. */
-	public static inline function MatrixInvert(mat:Matrix):Matrix
-		return RMath.MatrixInvert(mat);
-
-	/** Returns a matrix transposed.
-
-		@param mat  The matrix.
-		@return  Its transpose. */
-	public static inline function MatrixTranspose(mat:Matrix):Matrix
-		return RMath.MatrixTranspose(mat);
-
-	/** Returns a view looking from eye at target.
-
-		@param eye  Where from.
-		@param target  What at.
-		@param up  Up.
+		@param angle  The angles, in radians.
 		@return  The matrix. */
-	public static inline function MatrixLookAt(eye:Vector3, target:Vector3, up:Vector3):Matrix
-		return RMath.MatrixLookAt(eye, target, up);
+	public static inline function MatrixRotateZYX(angle:Vector3):Matrix
+		return RMath.MatrixRotateZYX(angle);
+
+	/** Returns a scale.
+
+		@param x  Along x.
+		@param y  Along y.
+		@param z  Along z.
+		@return  The matrix. */
+	public static inline function MatrixScale(x:Float, y:Float, z:Float):Matrix
+		return RMath.MatrixScale(x, y, z);
+
+	/** Returns a perspective projection by its near plane's edges.
+
+		@param left  The near plane's left.
+		@param right  Its right.
+		@param bottom  Its bottom.
+		@param top  Its top.
+		@param nearPlane  The near plane.
+		@param farPlane  The far plane.
+		@return  The matrix. */
+	public static inline function MatrixFrustum(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix
+		return RMath.MatrixFrustum(left, right, bottom, top, nearPlane, farPlane);
 
 	/** Returns a perspective projection.
 
@@ -395,19 +965,181 @@ class Raymath {
 	public static inline function MatrixOrtho(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix
 		return RMath.MatrixOrtho(left, right, bottom, top, nearPlane, farPlane);
 
+	/** Returns a view looking from eye at target.
+
+		@param eye  Where from.
+		@param target  What at.
+		@param up  Up.
+		@return  The matrix. */
+	public static inline function MatrixLookAt(eye:Vector3, target:Vector3, up:Vector3):Matrix
+		return RMath.MatrixLookAt(eye, target, up);
+
+	/** Returns a matrix's values as an array, by columns: m0 to m15, as a shader takes them.
+
+		@param mat  The matrix.
+		@return  The array. */
+	public static inline function MatrixToFloatV(mat:Matrix):Array<Float>
+		return RMath.MatrixToFloatV(mat);
+
+	/** Returns the sum of two quaternions.
+
+		@param q1  One.
+		@param q2  The other.
+		@return  The sum. */
+	public static inline function QuaternionAdd(q1:Quaternion, q2:Quaternion):Quaternion
+		return RMath.QuaternionAdd(q1, q2);
+
+	/** Returns a quaternion with a value added to each component.
+
+		@param q  The quaternion.
+		@param add  The value.
+		@return  The sum. */
+	public static inline function QuaternionAddValue(q:Quaternion, add:Float):Quaternion
+		return RMath.QuaternionAddValue(q, add);
+
+	/** Returns one quaternion less another.
+
+		@param q1  The first.
+		@param q2  The one taken from it.
+		@return  The difference. */
+	public static inline function QuaternionSubtract(q1:Quaternion, q2:Quaternion):Quaternion
+		return RMath.QuaternionSubtract(q1, q2);
+
+	/** Returns a quaternion with a value taken from each component.
+
+		@param q  The quaternion.
+		@param sub  The value.
+		@return  The difference. */
+	public static inline function QuaternionSubtractValue(q:Quaternion, sub:Float):Quaternion
+		return RMath.QuaternionSubtractValue(q, sub);
+
 	/** Returns the identity quaternion.
 
 		@return  The quaternion. */
 	public static inline function QuaternionIdentity():Quaternion
 		return RMath.QuaternionIdentity();
 
-	/** Returns the rotation about an axis as a quaternion.
+	/** Returns a quaternion's length.
+
+		@param q  The quaternion.
+		@return  The length. */
+	public static inline function QuaternionLength(q:Quaternion):Float
+		return RMath.QuaternionLength(q);
+
+	/** Returns a quaternion of length 1 in the same direction, or the quaternion itself when its length is 0.
+
+		@param q  The quaternion.
+		@return  The normalized quaternion. */
+	public static inline function QuaternionNormalize(q:Quaternion):Quaternion
+		return RMath.QuaternionNormalize(q);
+
+	/** Returns a quaternion's inverse: the rotation back, for one of length 1; the quaternion itself when its length is 0.
+
+		@param q  The quaternion.
+		@return  Its inverse. */
+	public static inline function QuaternionInvert(q:Quaternion):Quaternion
+		return RMath.QuaternionInvert(q);
+
+	/** Returns two quaternions multiplied: the rotation q2, then q1.
+
+		@param q1  The first.
+		@param q2  The second.
+		@return  The product. */
+	public static inline function QuaternionMultiply(q1:Quaternion, q2:Quaternion):Quaternion
+		return RMath.QuaternionMultiply(q1, q2);
+
+	/** Returns a quaternion scaled.
+
+		@param q  The quaternion.
+		@param mul  The scale.
+		@return  The scaled quaternion. */
+	public static inline function QuaternionScale(q:Quaternion, mul:Float):Quaternion
+		return RMath.QuaternionScale(q, mul);
+
+	/** Returns one quaternion divided by another, component by component.
+
+		@param q1  The one divided.
+		@param q2  The one dividing it.
+		@return  The quotient. */
+	public static inline function QuaternionDivide(q1:Quaternion, q2:Quaternion):Quaternion
+		return RMath.QuaternionDivide(q1, q2);
+
+	/** Returns a quaternion part of the way from one to another, component by component.
+
+		@param q1  The start.
+		@param q2  The end.
+		@param amount  0 for the start, 1 for the end.
+		@return  The quaternion. */
+	public static inline function QuaternionLerp(q1:Quaternion, q2:Quaternion, amount:Float):Quaternion
+		return RMath.QuaternionLerp(q1, q2, amount);
+
+	/** Returns a quaternion part of the way from one to another, component by component, then normalized.
+
+		@param q1  The start.
+		@param q2  The end.
+		@param amount  0 for the start, 1 for the end.
+		@return  The quaternion. */
+	public static inline function QuaternionNlerp(q1:Quaternion, q2:Quaternion, amount:Float):Quaternion
+		return RMath.QuaternionNlerp(q1, q2, amount);
+
+	/** Returns a rotation part of the way from one to another at a steady turn, the short way round (spherical linear interpolation).
+
+		@param q1  The start.
+		@param q2  The end.
+		@param amount  0 for the start, 1 for the end.
+		@return  The quaternion. */
+	public static inline function QuaternionSlerp(q1:Quaternion, q2:Quaternion, amount:Float):Quaternion
+		return RMath.QuaternionSlerp(q1, q2, amount);
+
+	/** Returns a rotation part of the way along a cubic Hermite curve, from one quaternion to another, leaving and arriving along tangents,
+		normalized.
+
+		@param q1  The start.
+		@param outTangent1  The tangent leaving it.
+		@param q2  The end.
+		@param inTangent2  The tangent arriving at it.
+		@param t  0 for the start, 1 for the end.
+		@return  The quaternion. */
+	public static inline function QuaternionCubicHermiteSpline(q1:Quaternion, outTangent1:Quaternion, q2:Quaternion, inTangent2:Quaternion, t:Float):Quaternion
+		return RMath.QuaternionCubicHermiteSpline(q1, outTangent1, q2, inTangent2, t);
+
+	/** Returns the rotation turning one direction to another.
+
+		@param from  The direction turned from, of length 1.
+		@param to  The direction turned to, of length 1.
+		@return  The quaternion. */
+	public static inline function QuaternionFromVector3ToVector3(from:Vector3, to:Vector3):Quaternion
+		return RMath.QuaternionFromVector3ToVector3(from, to);
+
+	/** Returns a rotation matrix's rotation as a quaternion.
+
+		@param mat  The matrix.
+		@return  The quaternion. */
+	public static inline function QuaternionFromMatrix(mat:Matrix):Quaternion
+		return RMath.QuaternionFromMatrix(mat);
+
+	/** Returns a quaternion's rotation as a matrix.
+
+		@param q  The quaternion.
+		@return  The matrix. */
+	public static inline function QuaternionToMatrix(q:Quaternion):Matrix
+		return RMath.QuaternionToMatrix(q);
+
+	/** Returns the rotation about an axis as a quaternion, normalized; the identity for an axis of no length.
 
 		@param axis  The axis.
 		@param angle  The angle, in radians.
 		@return  The quaternion. */
 	public static inline function QuaternionFromAxisAngle(axis:Vector3, angle:Float):Quaternion
 		return RMath.QuaternionFromAxisAngle(axis, angle);
+
+	/** Gives a quaternion's rotation as an axis and an angle about it; the axis is x when the angle is 0.
+
+		@param q  The quaternion, normalized first when its w is over 1 either way.
+		@param outAxis  Its first element is set to the axis, of length 1.
+		@param outAngle  Its first element is set to the angle, in radians. */
+	public static inline function QuaternionToAxisAngle(q:Quaternion, outAxis:Array<Vector3>, outAngle:Array<Float>):Void
+		RMath.QuaternionToAxisAngle(q, outAxis, outAngle);
 
 	/** Returns a rotation by Euler angles as a quaternion.
 
@@ -418,395 +1150,40 @@ class Raymath {
 	public static inline function QuaternionFromEuler(pitch:Float, yaw:Float, roll:Float):Quaternion
 		return RMath.QuaternionFromEuler(pitch, yaw, roll);
 
-	/** Returns a quaternion's rotation as a matrix.
+	/** Returns a quaternion's rotation as Euler angles: about x (pitch), y (yaw) and z (roll), as `QuaternionFromEuler` takes them.
 
 		@param q  The quaternion.
-		@return  The matrix. */
-	public static inline function QuaternionToMatrix(q:Quaternion):Matrix
-		return RMath.QuaternionToMatrix(q);
+		@return  The angles, in radians. */
+	public static inline function QuaternionToEuler(q:Quaternion):Vector3
+		return RMath.QuaternionToEuler(q);
+
+	/** Returns a quaternion's four components transformed by a matrix, as a point with w.
+
+		@param q  The quaternion.
+		@param mat  The matrix.
+		@return  The transformed quaternion. */
+	public static inline function QuaternionTransform(q:Quaternion, mat:Matrix):Quaternion
+		return RMath.QuaternionTransform(q, mat);
+
+	/** Returns whether two quaternions are the same rotation but for rounding: equal as `FloatEquals` compares each component, or one
+		the other negated.
+
+		@param p  One.
+		@param q  The other.
+		@return  1 if they are, 0 if not. */
+	public static inline function QuaternionEquals(p:Quaternion, q:Quaternion):Int
+		return RMath.QuaternionEquals(p, q);
+
+	/** Splits a transform matrix into its translation, rotation and scale; the scale negated when the matrix mirrors, the rotation the
+		identity when it flattens.
+
+		@param mat  The matrix.
+		@param translation  Set to its translation.
+		@param rotation  Set to its rotation.
+		@param scale  Set to its scale. */
+	public static inline function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quaternion, scale:Vector3):Void
+		RMath.MatrixDecompose(mat, translation, rotation, scale);
 	#end
-
-	// ---- raymath.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
-
-	/** raylib's `Normalize` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Normalize(value:ExprOf<Float>, start:ExprOf<Float>, end:ExprOf<Float>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("Normalize: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `Wrap` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Wrap(value:ExprOf<Float>, min:ExprOf<Float>, max:ExprOf<Float>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("Wrap: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `FloatEquals` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function FloatEquals(x:ExprOf<Float>, y:ExprOf<Float>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("FloatEquals: Not implemented", macro(0 : Int));
-
-	/** raylib's `Vector2AddValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2AddValue(v:ExprOf<Vector2>, add:ExprOf<Float>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("Vector2AddValue: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `Vector2SubtractValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2SubtractValue(v:ExprOf<Vector2>, sub:ExprOf<Float>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("Vector2SubtractValue: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `Vector2DotProduct` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2DotProduct(v1:ExprOf<Vector2>, v2:ExprOf<Vector2>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("Vector2DotProduct: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `Vector2DistanceSqr` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2DistanceSqr(v1:ExprOf<Vector2>, v2:ExprOf<Vector2>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("Vector2DistanceSqr: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `Vector2Angle` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2Angle(v1:ExprOf<Vector2>, v2:ExprOf<Vector2>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("Vector2Angle: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `Vector2LineAngle` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2LineAngle(start:ExprOf<Vector2>, end:ExprOf<Vector2>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("Vector2LineAngle: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `Vector2Negate` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2Negate(v:ExprOf<Vector2>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("Vector2Negate: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `Vector2Divide` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2Divide(v1:ExprOf<Vector2>, v2:ExprOf<Vector2>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("Vector2Divide: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `Vector2Transform` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2Transform(v:ExprOf<Vector2>, mat:ExprOf<Matrix>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("Vector2Transform: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `Vector2Reflect` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2Reflect(v:ExprOf<Vector2>, normal:ExprOf<Vector2>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("Vector2Reflect: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `Vector2Min` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2Min(v1:ExprOf<Vector2>, v2:ExprOf<Vector2>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("Vector2Min: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `Vector2Max` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2Max(v1:ExprOf<Vector2>, v2:ExprOf<Vector2>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("Vector2Max: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `Vector2Rotate` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2Rotate(v:ExprOf<Vector2>, angle:ExprOf<Float>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("Vector2Rotate: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `Vector2MoveTowards` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2MoveTowards(v:ExprOf<Vector2>, target:ExprOf<Vector2>, maxDistance:ExprOf<Float>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("Vector2MoveTowards: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `Vector2Invert` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2Invert(v:ExprOf<Vector2>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("Vector2Invert: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `Vector2Clamp` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2Clamp(v:ExprOf<Vector2>, min:ExprOf<Vector2>, max:ExprOf<Vector2>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("Vector2Clamp: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `Vector2Equals` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2Equals(p:ExprOf<Vector2>, q:ExprOf<Vector2>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("Vector2Equals: Not implemented", macro(0 : Int));
-
-	/** raylib's `Vector2Refract` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector2Refract(v:ExprOf<Vector2>, n:ExprOf<Vector2>, r:ExprOf<Float>):ExprOf<Vector2>
-		return helix.platform.macros.Build.unimplemented("Vector2Refract: Not implemented", macro(null : helix.ray.Vector2));
-
-	/** raylib's `Vector3AddValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3AddValue(v:ExprOf<Vector3>, add:ExprOf<Float>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3AddValue: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3SubtractValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3SubtractValue(v:ExprOf<Vector3>, sub:ExprOf<Float>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3SubtractValue: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3Perpendicular` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3Perpendicular(v:ExprOf<Vector3>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3Perpendicular: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3DistanceSqr` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3DistanceSqr(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("Vector3DistanceSqr: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `Vector3Angle` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3Angle(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("Vector3Angle: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `Vector3Divide` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3Divide(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3Divide: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3Project` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3Project(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3Project: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3Reject` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3Reject(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3Reject: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3OrthoNormalize` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3OrthoNormalize(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("Vector3OrthoNormalize: Not implemented", macro {});
-
-	/** raylib's `Vector3RotateByQuaternion` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3RotateByQuaternion(v:ExprOf<Vector3>, q:ExprOf<Quaternion>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3RotateByQuaternion: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3MoveTowards` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3MoveTowards(v:ExprOf<Vector3>, target:ExprOf<Vector3>, maxDistance:ExprOf<Float>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3MoveTowards: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3CubicHermite` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3CubicHermite(v1:ExprOf<Vector3>, tangent1:ExprOf<Vector3>, v2:ExprOf<Vector3>, tangent2:ExprOf<Vector3>,
-			amount:ExprOf<Float>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3CubicHermite: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3Reflect` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3Reflect(v:ExprOf<Vector3>, normal:ExprOf<Vector3>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3Reflect: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3Min` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3Min(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3Min: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3Max` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3Max(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3Max: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3Barycenter` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3Barycenter(p:ExprOf<Vector3>, a:ExprOf<Vector3>, b:ExprOf<Vector3>, c:ExprOf<Vector3>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3Barycenter: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3Unproject` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3Unproject(source:ExprOf<Vector3>, projection:ExprOf<Matrix>, view:ExprOf<Matrix>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3Unproject: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3ToFloatV` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3ToFloatV(v:ExprOf<Vector3>):ExprOf<Array<Float>>
-		return helix.platform.macros.Build.unimplemented("Vector3ToFloatV: Not implemented", macro(null : Array<Float>));
-
-	/** raylib's `Vector3Invert` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3Invert(v:ExprOf<Vector3>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3Invert: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3Clamp` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3Clamp(v:ExprOf<Vector3>, min:ExprOf<Vector3>, max:ExprOf<Vector3>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3Clamp: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3ClampValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3ClampValue(v:ExprOf<Vector3>, min:ExprOf<Float>, max:ExprOf<Float>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3ClampValue: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector3Equals` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3Equals(p:ExprOf<Vector3>, q:ExprOf<Vector3>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("Vector3Equals: Not implemented", macro(0 : Int));
-
-	/** raylib's `Vector3Refract` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector3Refract(v:ExprOf<Vector3>, n:ExprOf<Vector3>, r:ExprOf<Float>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("Vector3Refract: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `Vector4Zero` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Zero():ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4Zero: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4One` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4One():ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4One: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4Add` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Add(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4Add: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4AddValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4AddValue(v:ExprOf<Vector4>, add:ExprOf<Float>):ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4AddValue: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4Subtract` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Subtract(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4Subtract: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4SubtractValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4SubtractValue(v:ExprOf<Vector4>, add:ExprOf<Float>):ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4SubtractValue: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4Length` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Length(v:ExprOf<Vector4>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("Vector4Length: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `Vector4LengthSqr` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4LengthSqr(v:ExprOf<Vector4>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("Vector4LengthSqr: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `Vector4DotProduct` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4DotProduct(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("Vector4DotProduct: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `Vector4Distance` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Distance(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("Vector4Distance: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `Vector4DistanceSqr` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4DistanceSqr(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("Vector4DistanceSqr: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `Vector4Scale` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Scale(v:ExprOf<Vector4>, scale:ExprOf<Float>):ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4Scale: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4Multiply` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Multiply(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4Multiply: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4Negate` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Negate(v:ExprOf<Vector4>):ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4Negate: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4Divide` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Divide(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4Divide: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4Normalize` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Normalize(v:ExprOf<Vector4>):ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4Normalize: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4Min` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Min(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4Min: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4Max` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Max(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>):ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4Max: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4Lerp` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Lerp(v1:ExprOf<Vector4>, v2:ExprOf<Vector4>, amount:ExprOf<Float>):ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4Lerp: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4MoveTowards` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4MoveTowards(v:ExprOf<Vector4>, target:ExprOf<Vector4>, maxDistance:ExprOf<Float>):ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4MoveTowards: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4Invert` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Invert(v:ExprOf<Vector4>):ExprOf<Vector4>
-		return helix.platform.macros.Build.unimplemented("Vector4Invert: Not implemented", macro(null : helix.ray.Vector4));
-
-	/** raylib's `Vector4Equals` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function Vector4Equals(p:ExprOf<Vector4>, q:ExprOf<Vector4>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("Vector4Equals: Not implemented", macro(0 : Int));
-
-	/** raylib's `MatrixDeterminant` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MatrixDeterminant(mat:ExprOf<Matrix>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("MatrixDeterminant: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `MatrixTrace` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MatrixTrace(mat:ExprOf<Matrix>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("MatrixTrace: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `MatrixAdd` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MatrixAdd(left:ExprOf<Matrix>, right:ExprOf<Matrix>):ExprOf<Matrix>
-		return helix.platform.macros.Build.unimplemented("MatrixAdd: Not implemented", macro(null : helix.ray.Matrix));
-
-	/** raylib's `MatrixSubtract` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MatrixSubtract(left:ExprOf<Matrix>, right:ExprOf<Matrix>):ExprOf<Matrix>
-		return helix.platform.macros.Build.unimplemented("MatrixSubtract: Not implemented", macro(null : helix.ray.Matrix));
-
-	/** raylib's `MatrixRotateZYX` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MatrixRotateZYX(angle:ExprOf<Vector3>):ExprOf<Matrix>
-		return helix.platform.macros.Build.unimplemented("MatrixRotateZYX: Not implemented", macro(null : helix.ray.Matrix));
-
-	/** raylib's `MatrixFrustum` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MatrixFrustum(left:ExprOf<Float>, right:ExprOf<Float>, bottom:ExprOf<Float>, top:ExprOf<Float>, nearPlane:ExprOf<Float>,
-			farPlane:ExprOf<Float>):ExprOf<Matrix>
-		return helix.platform.macros.Build.unimplemented("MatrixFrustum: Not implemented", macro(null : helix.ray.Matrix));
-
-	/** raylib's `MatrixToFloatV` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MatrixToFloatV(mat:ExprOf<Matrix>):ExprOf<Array<Float>>
-		return helix.platform.macros.Build.unimplemented("MatrixToFloatV: Not implemented", macro(null : Array<Float>));
-
-	/** raylib's `QuaternionAdd` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionAdd(q1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionAdd: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionAddValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionAddValue(q:ExprOf<Quaternion>, add:ExprOf<Float>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionAddValue: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionSubtract` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionSubtract(q1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionSubtract: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionSubtractValue` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionSubtractValue(q:ExprOf<Quaternion>, sub:ExprOf<Float>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionSubtractValue: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionLength` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionLength(q:ExprOf<Quaternion>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("QuaternionLength: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `QuaternionNormalize` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionNormalize(q:ExprOf<Quaternion>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionNormalize: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionInvert` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionInvert(q:ExprOf<Quaternion>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionInvert: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionMultiply` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionMultiply(q1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionMultiply: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionScale` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionScale(q:ExprOf<Quaternion>, mul:ExprOf<Float>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionScale: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionDivide` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionDivide(q1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionDivide: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionLerp` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionLerp(q1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>, amount:ExprOf<Float>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionLerp: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionNlerp` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionNlerp(q1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>, amount:ExprOf<Float>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionNlerp: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionSlerp` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionSlerp(q1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>, amount:ExprOf<Float>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionSlerp: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionCubicHermiteSpline` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionCubicHermiteSpline(q1:ExprOf<Quaternion>, outTangent1:ExprOf<Quaternion>, q2:ExprOf<Quaternion>,
-			inTangent2:ExprOf<Quaternion>, t:ExprOf<Float>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionCubicHermiteSpline: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionFromVector3ToVector3` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionFromVector3ToVector3(from:ExprOf<Vector3>, to:ExprOf<Vector3>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionFromVector3ToVector3: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionFromMatrix` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionFromMatrix(mat:ExprOf<Matrix>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionFromMatrix: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionToAxisAngle` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionToAxisAngle(q:ExprOf<Quaternion>, outAxis:ExprOf<Array<Vector3>>, outAngle:ExprOf<Array<Float>>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("QuaternionToAxisAngle: Not implemented", macro {});
-
-	/** raylib's `QuaternionToEuler` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionToEuler(q:ExprOf<Quaternion>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("QuaternionToEuler: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `QuaternionTransform` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionTransform(q:ExprOf<Quaternion>, mat:ExprOf<Matrix>):ExprOf<Quaternion>
-		return helix.platform.macros.Build.unimplemented("QuaternionTransform: Not implemented", macro(null : helix.ray.Quaternion));
-
-	/** raylib's `QuaternionEquals` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function QuaternionEquals(p:ExprOf<Quaternion>, q:ExprOf<Quaternion>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("QuaternionEquals: Not implemented", macro(0 : Int));
-
-	/** raylib's `MatrixDecompose` (raymath.h): not in helix-ray yet, so a call to it doesn't compile. */
-	public static macro function MatrixDecompose(mat:ExprOf<Matrix>, translation:ExprOf<Vector3>, rotation:ExprOf<Quaternion>,
-			scale:ExprOf<Vector3>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("MatrixDecompose: Not implemented", macro {});
 
 	// ---- generated by tools/gen_raylib.py: end ----
 }

@@ -1531,6 +1531,112 @@ class Raylib {
 	public static inline function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool
 		return RCore.SaveFileData(fileName, data, dataSize);
 
+	/** Returns whether a file name ends in one of some extensions, ignoring the case of A to Z.
+
+		@param fileName  The file name.
+		@param ext  The extensions with their dots, `;` between them: ".png;.jpg".
+		@return  True when its extension, from its last dot, is one of them. */
+	public static inline function IsFileExtension(fileName:String, ext:String):Bool
+		return RCore.IsFileExtension(fileName, ext);
+
+	/** Returns a file name's extension, from its last dot: "file.tar.gz" gives ".gz".
+
+		@param fileName  The file name, or a path.
+		@return  The extension with its dot, or null when there is no dot or the name starts with its only one. */
+	public static inline function GetFileExtension(fileName:String):String
+		return RCore.GetFileExtension(fileName);
+
+	/** Returns a path's file name: what follows its last `/` or `\`.
+
+		@param filePath  The path.
+		@return  The file name with its extension; the path itself when it has no slash. */
+	public static inline function GetFileName(filePath:String):String
+		return RCore.GetFileName(filePath);
+
+	/** Returns a path's file name without its extension: up to its last dot, unless that dot is its first character.
+
+		@param filePath  The path.
+		@return  The file name; "" for null. */
+	public static inline function GetFileNameWithoutExt(filePath:String):String
+		return RCore.GetFileNameWithoutExt(filePath);
+
+	/** Returns the directory of a path: up to its last `/` or `\`. A relative path's starts "./", as raylib's does: "dir/file.png"
+		gives "./dir", "file.png" gives "./", and "/file.png" gives "/".
+
+		@param filePath  The path.
+		@return  The directory, without a slash at its end. */
+	public static inline function GetDirectoryPath(filePath:String):String
+		return RCore.GetDirectoryPath(filePath);
+
+	/** Returns the directory a path is in: up to its last `/` or `\`, keeping a root's ("/", "C:\").
+
+		@param dirPath  The path.
+		@return  The directory above it; the path itself when it has 3 characters or fewer, and "" when a longer one has no slash. */
+	public static inline function GetPrevDirectoryPath(dirPath:String):String
+		return RCore.GetPrevDirectoryPath(dirPath);
+
+	/** Returns whether a file name could name a file on any system: none of `< > : " / \ | ? *` or a control character, and not
+		only dots.
+
+		@param fileName  The file name, without a directory.
+		@return  True when it could; true for null or "", as raylib's is. */
+	public static inline function IsFileNameValid(fileName:String):Bool
+		return RCore.IsFileNameValid(fileName);
+
+	/** Returns DEFLATE data decompressed: a raw stream with no zlib header, as raylib's `CompressData` makes. Like raylib's, it gives
+		at most 64 MB.
+
+		@param compData  The compressed bytes.
+		@param compDataSize  How many of them.
+		@param dataSize  Its first element is set to how many bytes it gives.
+		@return  The bytes. Data that isn't DEFLATE, or stops short, gives what was read before it, perhaps nothing, and a warning. */
+	public static inline function DecompressData(compData:haxe.io.Bytes, compDataSize:Int, dataSize:Array<Int>):haxe.io.Bytes
+		return RCore.DecompressData(compData, compDataSize, dataSize);
+
+	/** Returns some bytes as Base64 text, padded with `=` to a multiple of 4 characters.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@param outputSize  Its first element is set to the text's length.
+		@return  The text. */
+	public static inline function EncodeDataBase64(data:haxe.io.Bytes, dataSize:Int, outputSize:Array<Int>):String
+		return RCore.EncodeDataBase64(data, dataSize, outputSize);
+
+	/** Returns the bytes of Base64 text. It reads 4 characters at a time up to a zero byte or the end, and a character that isn't
+		Base64's reads as 0, as raylib's does.
+
+		@param data  The text's bytes.
+		@param outputSize  Its first element is set to how many bytes it gives.
+		@return  The bytes. */
+	public static inline function DecodeDataBase64(data:haxe.io.Bytes, outputSize:Array<Int>):haxe.io.Bytes
+		return RCore.DecodeDataBase64(data, outputSize);
+
+	/** Returns the CRC-32 of some bytes, as zlib and PNG compute it.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@return  Its 32 bits; one above 0x7fffffff is negative. */
+	public static inline function ComputeCRC32(data:haxe.io.Bytes, dataSize:Int):Int
+		return RCore.ComputeCRC32(data, dataSize);
+
+	/** Returns the MD5 hash of some bytes.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@return  Its 4 words, as raylib gives them: each read from 4 bytes of the hash, the first the lowest, and one above 0x7fffffff
+			is negative. */
+	public static inline function ComputeMD5(data:haxe.io.Bytes, dataSize:Int):Array<Int>
+		return RCore.ComputeMD5(data, dataSize);
+
+	/** Returns the SHA-1 hash of some bytes, as raylib 5.5 computes it: its padding holds only the lowest byte of the length in bits,
+		so from 32 bytes on it differs from standard SHA-1.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@return  Its 5 words, the first the hash's first 4 bytes, the highest first; one above 0x7fffffff is negative. */
+	public static inline function ComputeSHA1(data:haxe.io.Bytes, dataSize:Int):Array<Int>
+		return RCore.ComputeSHA1(data, dataSize);
+
 	/** Reads files through the program from now on: every load raylib makes of a file (textures, models, sounds, music, data) asks it
 		first, and a file it doesn't have (null) is read as it would be. In a page, a texture's or model's images still decode only
 		asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load those it gives.
@@ -2499,6 +2605,95 @@ class Raylib {
 	public static inline function ColorAlpha(color:Color, alpha:Float):Color
 		return RTextures.ColorAlpha(color, alpha);
 
+	/** Returns whether two colors are the same, alpha too.
+
+		@param col1  One color.
+		@param col2  The other.
+		@return  True when red, green, blue and alpha are each equal. */
+	public static inline function ColorIsEqual(col1:Color, col2:Color):Bool
+		return RTextures.ColorIsEqual(col1, col2);
+
+	/** Returns a color as one number, 0xRRGGBBAA.
+
+		@param color  The color.
+		@return  Red in the top byte, alpha in the bottom; a red of 128 or more makes it negative. */
+	public static inline function ColorToInt(color:Color):Int
+		return RTextures.ColorToInt(color);
+
+	/** Returns a color's hue, saturation and value.
+
+		@param color  The color; its alpha is ignored.
+		@return  The hue in degrees, 0 to 360, as x; the saturation and value, 0 to 1 each, as y and z. A gray's hue and saturation are 0. */
+	public static inline function ColorToHSV(color:Color):Vector3
+		return RTextures.ColorToHSV(color);
+
+	/** Returns the color of a hue, saturation and value; its alpha is 255.
+
+		@param hue  The hue, in degrees, 0 to 360.
+		@param saturation  0 (gray) to 1.
+		@param value  0 (black) to 1.
+		@return  The color. */
+	public static inline function ColorFromHSV(hue:Float, saturation:Float, value:Float):Color
+		return RTextures.ColorFromHSV(hue, saturation, value);
+
+	/** Returns a color multiplied by another, channel by channel.
+
+		@param color  The color.
+		@param tint  The color it is multiplied by; `WHITE` keeps it as it is.
+		@return  The new color. */
+	public static inline function ColorTint(color:Color, tint:Color):Color
+		return RTextures.ColorTint(color, tint);
+
+	/** Returns a color made darker or lighter; its alpha is kept.
+
+		@param color  The color.
+		@param factor  -1 (black) to 1 (white); 0 keeps it as it is.
+		@return  The new color. */
+	public static inline function ColorBrightness(color:Color, factor:Float):Color
+		return RTextures.ColorBrightness(color, factor);
+
+	/** Returns a color with more or less contrast about the middle gray; its alpha is kept.
+
+		@param color  The color.
+		@param contrast  -1 (all middle gray) to 1; 0 keeps it as it is.
+		@return  The new color. */
+	public static inline function ColorContrast(color:Color, contrast:Float):Color
+		return RTextures.ColorContrast(color, contrast);
+
+	/** Returns a color drawn over another: the source, multiplied by a tint, blended into the destination by its alpha.
+
+		@param dst  The color underneath.
+		@param src  The color drawn over it.
+		@param tint  The color the source is multiplied by; `WHITE` keeps it as it is.
+		@return  The blend. */
+	public static inline function ColorAlphaBlend(dst:Color, src:Color, tint:Color):Color
+		return RTextures.ColorAlphaBlend(dst, src, tint);
+
+	/** Returns a color part way from one color to another.
+
+		@param color1  The color at 0.
+		@param color2  The color at 1.
+		@param factor  How far, 0 to 1.
+		@return  The color between them. */
+	public static inline function ColorLerp(color1:Color, color2:Color, factor:Float):Color
+		return RTextures.ColorLerp(color1, color2, factor);
+
+	/** Returns the color of one number, 0xRRGGBBAA.
+
+		@param hexValue  Red in the top byte, alpha in the bottom.
+		@return  The color. */
+	public static inline function GetColor(hexValue:Int):Color
+		return RTextures.GetColor(hexValue);
+
+	/** Returns how many bytes an image's pixels take in a format.
+
+		@param width  The width, in pixels.
+		@param height  The height.
+		@param format  The format (`PIXELFORMAT_*`).
+		@return  The bytes; a compressed format smaller than 4 by 4 pixels takes a whole block, 8 or 16 bytes, and an unknown format 0. */
+	public static inline function GetPixelDataSize(width:Int, height:Int, format:Int):Int
+		return RTextures.GetPixelDataSize(width, height, format);
+
 	/** Makes a texture to draw into, with depth.
 
 		@param width  Its width, in pixels.
@@ -2719,6 +2914,208 @@ class Raylib {
 		@return  The text. */
 	public static inline function TextFormat(text:String, args:haxe.extern.Rest<Dynamic>):String
 		return RText.TextFormat(text, ...args);
+
+	/** Returns whether two texts are the same.
+
+		@param text1  The first text.
+		@param text2  The second text.
+		@return  True when they are; false when either is null. */
+	public static inline function TextIsEqual(text1:String, text2:String):Bool
+		return RText.TextIsEqual(text1, text2);
+
+	/** Returns the length of text in UTF-8 bytes, as raylib counts it: "héllo" is 6. The text functions' positions and lengths are all
+		in these bytes, where `String.length` counts otherwise, and not alike on every target.
+
+		@param text  The text.
+		@return  The length, in bytes; 0 for null text. */
+	public static inline function TextLength(text:String):Int
+		return RText.TextLength(text);
+
+	/** Returns a piece of text, by its place in UTF-8 bytes. A position at or past the end gives no text, and the piece ends with the
+		text.
+
+		A character the piece cuts through is a "?" for each of its bytes taken, as raylib draws it.
+
+		@param text  The text.
+		@param position  Where the piece starts, in bytes from the start.
+		@param length  How long it is, in bytes.
+		@return  The piece. */
+	public static inline function TextSubtext(text:String, position:Int, length:Int):String
+		return RText.TextSubtext(text, position, length);
+
+	/** Returns text with every piece of it that matches replaced, from the start, each match after the one before.
+
+		@param text  The text.
+		@param replace  The text replaced.
+		@param by  The text put in its place.
+		@return  The new text; null when any is null or `replace` is empty. */
+	public static inline function TextReplace(text:String, replace:String, by:String):String
+		return RText.TextReplace(text, replace, by);
+
+	/** Returns text with other text put in at a place in UTF-8 bytes.
+
+		A character the place cuts through is a "?" for each of its bytes, as raylib draws it.
+
+		@param text  The text.
+		@param insert  The text put in.
+		@param position  Where, in bytes from the start, clamped to the end.
+		@return  The new text; empty when either is null or the position is below 0. */
+	public static inline function TextInsert(text:String, insert:String, position:Int):String
+		return RText.TextInsert(text, insert, position);
+
+	/** Returns texts joined into one, a delimiter between each two.
+
+		@param textList  The texts; a null one is empty.
+		@param count  How many of them.
+		@param delimiter  The text between them; null for none.
+		@return  The joined text. */
+	public static inline function TextJoin(textList:Array<String>, count:Int, delimiter:String):String
+		return RText.TextJoin(textList, count, delimiter);
+
+	/** Returns the pieces of text between a delimiter: one more than the delimiters it holds, an empty one between two together.
+
+		The delimiter is a character, so a character outside ASCII splits text as an ASCII one does; raylib's is one byte. There is no
+		limit to the pieces, where raylib's stops at 128.
+
+		@param text  The text.
+		@param delimiter  The character between pieces.
+		@param count  Receives how many pieces there are, at its index 0; 0 for null text.
+		@return  The pieces; none for null text. */
+	public static inline function TextSplit(text:String, delimiter:Int, count:Array<Int>):Array<String>
+		return RText.TextSplit(text, delimiter, count);
+
+	/** Returns where text is first found in other text, in UTF-8 bytes from the start, as `TextSubtext` takes it.
+
+		@param text  The text searched.
+		@param find  The text found; empty text is found at 0.
+		@return  The position, in bytes; -1 when it isn't there or either is null. */
+	public static inline function TextFindIndex(text:String, find:String):Int
+		return RText.TextFindIndex(text, find);
+
+	/** Returns text with its letters a to z made capitals, as raylib makes them. Other letters, as "é", are unchanged.
+
+		@param text  The text.
+		@return  The new text; empty for null text. */
+	public static inline function TextToUpper(text:String):String
+		return RText.TextToUpper(text);
+
+	/** Returns text with its capitals A to Z made lower case, as raylib makes them. Other letters, as "É", are unchanged.
+
+		@param text  The text.
+		@return  The new text; empty for null text. */
+	public static inline function TextToLower(text:String):String
+		return RText.TextToLower(text);
+
+	/** Returns snake-case text in Pascal case: "hello_world" is "HelloWorld". Each run of underscores is dropped, and the first letter
+		and the one after each run are made capitals if they are a to z.
+
+		@param text  The text.
+		@return  The new text; empty for null text. */
+	public static inline function TextToPascal(text:String):String
+		return RText.TextToPascal(text);
+
+	/** Returns Pascal- or camel-case text in snake case: "helloWorld" is "hello_world". Each capital A to Z is made lower case, an
+		underscore before it unless it starts the text.
+
+		@param text  The text.
+		@return  The new text; empty for null text. */
+	public static inline function TextToSnake(text:String):String
+		return RText.TextToSnake(text);
+
+	/** Returns snake-case text in camel case: "hello_world" is "helloWorld". Each run of underscores is dropped, the letter after it
+		made a capital if it is a to z, and the first letter made lower case if it is A to Z.
+
+		@param text  The text.
+		@return  The new text; empty for null text. */
+	public static inline function TextToCamel(text:String):String
+		return RText.TextToCamel(text);
+
+	/** Returns the whole number text starts with, as raylib reads it: an optional "+" or "-", then the digits up to the first that
+		isn't one. Nothing else is skipped, spaces neither; a number past 32 bits wraps.
+
+		@param text  The text.
+		@return  The number; 0 when it starts with none, or for null text. */
+	public static inline function TextToInteger(text:String):Int
+		return RText.TextToInteger(text);
+
+	/** Returns the number text starts with, as raylib reads it: an optional "+" or "-", digits, then a "." and more digits. An exponent,
+		as in "1e3", isn't read, and nothing is skipped.
+
+		It is worked out in 32-bit floats, digit by digit, as raylib works it, so the result is the float raylib returns: "0.1" is
+		0.100000001490116.
+
+		@param text  The text.
+		@return  The number; 0 when it starts with none, or for null text. */
+	public static inline function TextToFloat(text:String):Float
+		return RText.TextToFloat(text);
+
+	/** Returns the text of characters.
+
+		@param codepoints  The characters' codes.
+		@param length  How many of them.
+		@return  The text; a code past 0x10FFFF adds nothing. */
+	public static inline function LoadUTF8(codepoints:Array<Int>, length:Int):String
+		return RText.LoadUTF8(codepoints, length);
+
+	/** Does nothing: text from `LoadUTF8` is freed by the garbage collector.
+
+		@param text  The text. */
+	public static inline function UnloadUTF8(text:String):Void
+		RText.UnloadUTF8(text);
+
+	/** Returns the codes of text's characters.
+
+		@param text  The text.
+		@param count  Receives how many there are, at its index 0.
+		@return  The codes; none for null text. */
+	public static inline function LoadCodepoints(text:String, count:Array<Int>):Array<Int>
+		return RText.LoadCodepoints(text, count);
+
+	/** Does nothing: codes from `LoadCodepoints` are freed by the garbage collector.
+
+		@param codepoints  The codes. */
+	public static inline function UnloadCodepoints(codepoints:Array<Int>):Void
+		RText.UnloadCodepoints(codepoints);
+
+	/** Returns how many characters text holds: "héllo→" holds 6, in 9 bytes.
+
+		@param text  The text.
+		@return  The count; 0 for null text. */
+	public static inline function GetCodepointCount(text:String):Int
+		return RText.GetCodepointCount(text);
+
+	/** Returns the code of text's first character, checked as RFC 3629 has UTF-8, as raylib checks it.
+
+		@param text  The text.
+		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by.
+		@return  The code; 0 for empty text. */
+	public static inline function GetCodepoint(text:String, codepointSize:Array<Int>):Int
+		return RText.GetCodepoint(text, codepointSize);
+
+	/** Returns the code of text's first character.
+
+		@param text  The text.
+		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by, as in
+			`TextSubtext(text, codepointSize[0], TextLength(text))`.
+		@return  The code; 0 for empty text. */
+	public static inline function GetCodepointNext(text:String, codepointSize:Array<Int>):Int
+		return RText.GetCodepointNext(text, codepointSize);
+
+	/** Returns the code of text's last character: the one before where it ends, as raylib's finds the one before a place in text.
+
+		@param text  The text; `TextSubtext(text, 0, position)` gives the character before a position.
+		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move back by; 0 for empty text.
+		@return  The code; '?' (0x3F) for empty text. */
+	public static inline function GetCodepointPrevious(text:String, codepointSize:Array<Int>):Int
+		return RText.GetCodepointPrevious(text, codepointSize);
+
+	/** Returns a character as text.
+
+		@param codepoint  The character's code.
+		@param utf8Size  Receives its length in UTF-8 bytes, at its index 0; 0 for a code past 0x10FFFF.
+		@return  The text; empty for a code past 0x10FFFF. */
+	public static inline function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
+		return RText.CodepointToUTF8(codepoint, utf8Size);
 
 	// ---- rmodels: 3D shapes, models, meshes and rays (raylib/RModels.hx) ----
 
@@ -3322,6 +3719,14 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadFontData: Fonts are rasterized asynchronously. See LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void)",
 			macro(null : Array<helix.ray.GlyphInfo>));
 
+	/** raylib's copy into a C buffer. A Haxe string can't be written into, so a call doesn't compile on any target: assign it instead. */
+	public static macro function TextCopy(dst:ExprOf<String>, src:ExprOf<String>):ExprOf<Int>
+		return helix.platform.macros.Build.unsupported("TextCopy: A String can't be written into. Assign it instead: dst = src", macro(0 : Int));
+
+	/** raylib's append into a C buffer at a cursor. A Haxe string can't be written into, so a call doesn't compile on any target: join the text instead. */
+	public static macro function TextAppend(text:ExprOf<String>, append:ExprOf<String>, position:ExprOf<Array<Int>>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("TextAppend: A String can't be written into. Join the text instead: text += append", macro {});
+
 	/** raylib's model load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAsync` loads it. */
 	public static macro function LoadModel(fileName:ExprOf<String>):ExprOf<Model>
 		return helix.platform.macros.Build.unsupported("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)",
@@ -3558,33 +3963,9 @@ class Raylib {
 	public static macro function DirectoryExists(dirPath:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unimplemented("DirectoryExists: Not implemented", macro(false : Bool));
 
-	/** raylib's `IsFileExtension` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check file extension (including point: .png, .wav). */
-	public static macro function IsFileExtension(fileName:ExprOf<String>, ext:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsFileExtension: Not implemented", macro(false : Bool));
-
 	/** raylib's `GetFileLength` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get file length in bytes (NOTE: GetFileSize() conflicts with windows.h). */
 	public static macro function GetFileLength(fileName:ExprOf<String>):ExprOf<Int>
 		return helix.platform.macros.Build.unimplemented("GetFileLength: Not implemented", macro(0 : Int));
-
-	/** raylib's `GetFileExtension` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get pointer to extension for a filename string (includes dot: '.png'). */
-	public static macro function GetFileExtension(fileName:ExprOf<String>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("GetFileExtension: Not implemented", macro(null : String));
-
-	/** raylib's `GetFileName` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get pointer to filename for a path string. */
-	public static macro function GetFileName(filePath:ExprOf<String>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("GetFileName: Not implemented", macro(null : String));
-
-	/** raylib's `GetFileNameWithoutExt` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get filename string without extension (uses static string). */
-	public static macro function GetFileNameWithoutExt(filePath:ExprOf<String>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("GetFileNameWithoutExt: Not implemented", macro(null : String));
-
-	/** raylib's `GetDirectoryPath` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get full path for a given fileName with path (uses static string). */
-	public static macro function GetDirectoryPath(filePath:ExprOf<String>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("GetDirectoryPath: Not implemented", macro(null : String));
-
-	/** raylib's `GetPrevDirectoryPath` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get previous directory path for a given path (uses static string). */
-	public static macro function GetPrevDirectoryPath(dirPath:ExprOf<String>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("GetPrevDirectoryPath: Not implemented", macro(null : String));
 
 	/** raylib's `GetWorkingDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get current working directory (uses static string). */
 	public static macro function GetWorkingDirectory():ExprOf<String>
@@ -3605,10 +3986,6 @@ class Raylib {
 	/** raylib's `IsPathFile` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if a given path is a file or a directory. */
 	public static macro function IsPathFile(path:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unimplemented("IsPathFile: Not implemented", macro(false : Bool));
-
-	/** raylib's `IsFileNameValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if fileName is valid for the platform/OS. */
-	public static macro function IsFileNameValid(fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsFileNameValid: Not implemented", macro(false : Bool));
 
 	/** raylib's `LoadDirectoryFiles` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load directory filepaths. */
 	public static macro function LoadDirectoryFiles(dirPath:ExprOf<String>):ExprOf<FilePathList>
@@ -3641,30 +4018,6 @@ class Raylib {
 	/** raylib's `CompressData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Compress data (DEFLATE algorithm), memory must be MemFree(). */
 	public static macro function CompressData(data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, compDataSize:ExprOf<Array<Int>>):ExprOf<haxe.io.Bytes>
 		return helix.platform.macros.Build.unimplemented("CompressData: Not implemented", macro(null : haxe.io.Bytes));
-
-	/** raylib's `DecompressData` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Decompress data (DEFLATE algorithm), memory must be MemFree(). */
-	public static macro function DecompressData(compData:ExprOf<haxe.io.Bytes>, compDataSize:ExprOf<Int>, dataSize:ExprOf<Array<Int>>):ExprOf<haxe.io.Bytes>
-		return helix.platform.macros.Build.unimplemented("DecompressData: Not implemented", macro(null : haxe.io.Bytes));
-
-	/** raylib's `EncodeDataBase64` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Encode data to Base64 string, memory must be MemFree(). */
-	public static macro function EncodeDataBase64(data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, outputSize:ExprOf<Array<Int>>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("EncodeDataBase64: Not implemented", macro(null : String));
-
-	/** raylib's `DecodeDataBase64` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Decode Base64 string data, memory must be MemFree(). */
-	public static macro function DecodeDataBase64(data:ExprOf<haxe.io.Bytes>, outputSize:ExprOf<Array<Int>>):ExprOf<haxe.io.Bytes>
-		return helix.platform.macros.Build.unimplemented("DecodeDataBase64: Not implemented", macro(null : haxe.io.Bytes));
-
-	/** raylib's `ComputeCRC32` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Compute CRC32 hash code. */
-	public static macro function ComputeCRC32(data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("ComputeCRC32: Not implemented", macro(0 : Int));
-
-	/** raylib's `ComputeMD5` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Compute MD5 hash code, returns static int[4] (16 bytes). */
-	public static macro function ComputeMD5(data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Array<Int>>
-		return helix.platform.macros.Build.unimplemented("ComputeMD5: Not implemented", macro(null : Array<Int>));
-
-	/** raylib's `ComputeSHA1` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Compute SHA1 hash code, returns static int[5] (20 bytes). */
-	public static macro function ComputeSHA1(data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Array<Int>>
-		return helix.platform.macros.Build.unimplemented("ComputeSHA1: Not implemented", macro(null : Array<Int>));
 
 	/** raylib's `LoadAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load automation events list from file, NULL for empty list, capacity = MAX_AUTOMATION_EVENTS. */
 	public static macro function LoadAutomationEventList(fileName:ExprOf<String>):ExprOf<AutomationEventList>
@@ -4094,46 +4447,6 @@ class Raylib {
 			rotation:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("DrawTextureNPatch: Not implemented", macro {});
 
-	/** raylib's `ColorIsEqual` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if two colors are equal. */
-	public static macro function ColorIsEqual(col1:ExprOf<Color>, col2:ExprOf<Color>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("ColorIsEqual: Not implemented", macro(false : Bool));
-
-	/** raylib's `ColorToInt` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get hexadecimal value for a Color (0xRRGGBBAA). */
-	public static macro function ColorToInt(color:ExprOf<Color>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("ColorToInt: Not implemented", macro(0 : Int));
-
-	/** raylib's `ColorToHSV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get HSV values for a Color, hue [0..360], saturation/value [0..1]. */
-	public static macro function ColorToHSV(color:ExprOf<Color>):ExprOf<Vector3>
-		return helix.platform.macros.Build.unimplemented("ColorToHSV: Not implemented", macro(null : helix.ray.Vector3));
-
-	/** raylib's `ColorFromHSV` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get a Color from HSV values, hue [0..360], saturation/value [0..1]. */
-	public static macro function ColorFromHSV(hue:ExprOf<Float>, saturation:ExprOf<Float>, value:ExprOf<Float>):ExprOf<Color>
-		return helix.platform.macros.Build.unimplemented("ColorFromHSV: Not implemented", macro(null : helix.ray.Color));
-
-	/** raylib's `ColorTint` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get color multiplied with another color. */
-	public static macro function ColorTint(color:ExprOf<Color>, tint:ExprOf<Color>):ExprOf<Color>
-		return helix.platform.macros.Build.unimplemented("ColorTint: Not implemented", macro(null : helix.ray.Color));
-
-	/** raylib's `ColorBrightness` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get color with brightness correction, brightness factor goes from -1.0f to 1.0f. */
-	public static macro function ColorBrightness(color:ExprOf<Color>, factor:ExprOf<Float>):ExprOf<Color>
-		return helix.platform.macros.Build.unimplemented("ColorBrightness: Not implemented", macro(null : helix.ray.Color));
-
-	/** raylib's `ColorContrast` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get color with contrast correction, contrast values between -1.0f and 1.0f. */
-	public static macro function ColorContrast(color:ExprOf<Color>, contrast:ExprOf<Float>):ExprOf<Color>
-		return helix.platform.macros.Build.unimplemented("ColorContrast: Not implemented", macro(null : helix.ray.Color));
-
-	/** raylib's `ColorAlphaBlend` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get src alpha-blended into dst color with tint. */
-	public static macro function ColorAlphaBlend(dst:ExprOf<Color>, src:ExprOf<Color>, tint:ExprOf<Color>):ExprOf<Color>
-		return helix.platform.macros.Build.unimplemented("ColorAlphaBlend: Not implemented", macro(null : helix.ray.Color));
-
-	/** raylib's `ColorLerp` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get color lerp interpolation between two colors, factor [0.0f..1.0f]. */
-	public static macro function ColorLerp(color1:ExprOf<Color>, color2:ExprOf<Color>, factor:ExprOf<Float>):ExprOf<Color>
-		return helix.platform.macros.Build.unimplemented("ColorLerp: Not implemented", macro(null : helix.ray.Color));
-
-	/** raylib's `GetColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get Color structure from hexadecimal value. */
-	public static macro function GetColor(hexValue:ExprOf<Int>):ExprOf<Color>
-		return helix.platform.macros.Build.unimplemented("GetColor: Not implemented", macro(null : helix.ray.Color));
-
 	/** raylib's `GetPixelColor` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get Color from a source pixel pointer of certain format. */
 	public static macro function GetPixelColor(srcPtr:ExprOf<Dynamic>, format:ExprOf<Int>):ExprOf<Color>
 		return helix.platform.macros.Build.unimplemented("GetPixelColor: Not implemented", macro(null : helix.ray.Color));
@@ -4142,10 +4455,6 @@ class Raylib {
 	public static macro function SetPixelColor(dstPtr:ExprOf<Dynamic>, color:ExprOf<Color>, format:ExprOf<Int>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("SetPixelColor: Not implemented", macro {});
 
-	/** raylib's `GetPixelDataSize` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get pixel data size in bytes for certain format. */
-	public static macro function GetPixelDataSize(width:ExprOf<Int>, height:ExprOf<Int>, format:ExprOf<Int>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetPixelDataSize: Not implemented", macro(0 : Int));
-
 	/** raylib's `LoadFontFromImage` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load font from Image (XNA style). */
 	public static macro function LoadFontFromImage(image:ExprOf<Image>, key:ExprOf<Color>, firstChar:ExprOf<Int>):ExprOf<Font>
 		return helix.platform.macros.Build.unimplemented("LoadFontFromImage: Not implemented", macro(null : helix.ray.Font));
@@ -4153,110 +4462,6 @@ class Raylib {
 	/** raylib's `ExportFontAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export font as code file, returns true on success. */
 	public static macro function ExportFontAsCode(font:ExprOf<Font>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unimplemented("ExportFontAsCode: Not implemented", macro(false : Bool));
-
-	/** raylib's `LoadUTF8` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load UTF-8 text encoded from codepoints array. */
-	public static macro function LoadUTF8(codepoints:ExprOf<Array<Int>>, length:ExprOf<Int>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("LoadUTF8: Not implemented", macro(null : String));
-
-	/** raylib's `UnloadUTF8` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload UTF-8 text encoded from codepoints array. */
-	public static macro function UnloadUTF8(text:ExprOf<String>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadUTF8: Not implemented", macro {});
-
-	/** raylib's `LoadCodepoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load all codepoints from a UTF-8 text string, codepoints count returned by parameter. */
-	public static macro function LoadCodepoints(text:ExprOf<String>, count:ExprOf<Array<Int>>):ExprOf<Array<Int>>
-		return helix.platform.macros.Build.unimplemented("LoadCodepoints: Not implemented", macro(null : Array<Int>));
-
-	/** raylib's `UnloadCodepoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload codepoints data from memory. */
-	public static macro function UnloadCodepoints(codepoints:ExprOf<Array<Int>>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadCodepoints: Not implemented", macro {});
-
-	/** raylib's `GetCodepointCount` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get total number of codepoints in a UTF-8 encoded string. */
-	public static macro function GetCodepointCount(text:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetCodepointCount: Not implemented", macro(0 : Int));
-
-	/** raylib's `GetCodepoint` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get next codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure. */
-	public static macro function GetCodepoint(text:ExprOf<String>, codepointSize:ExprOf<Array<Int>>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetCodepoint: Not implemented", macro(0 : Int));
-
-	/** raylib's `GetCodepointNext` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get next codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure. */
-	public static macro function GetCodepointNext(text:ExprOf<String>, codepointSize:ExprOf<Array<Int>>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetCodepointNext: Not implemented", macro(0 : Int));
-
-	/** raylib's `GetCodepointPrevious` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get previous codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure. */
-	public static macro function GetCodepointPrevious(text:ExprOf<String>, codepointSize:ExprOf<Array<Int>>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetCodepointPrevious: Not implemented", macro(0 : Int));
-
-	/** raylib's `CodepointToUTF8` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Encode one codepoint into UTF-8 byte array (array length returned as parameter). */
-	public static macro function CodepointToUTF8(codepoint:ExprOf<Int>, utf8Size:ExprOf<Array<Int>>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("CodepointToUTF8: Not implemented", macro(null : String));
-
-	/** raylib's `TextCopy` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Copy one string to another, returns bytes copied. */
-	public static macro function TextCopy(dst:ExprOf<String>, src:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("TextCopy: Not implemented", macro(0 : Int));
-
-	/** raylib's `TextIsEqual` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if two text string are equal. */
-	public static macro function TextIsEqual(text1:ExprOf<String>, text2:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("TextIsEqual: Not implemented", macro(false : Bool));
-
-	/** raylib's `TextLength` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get text length, checks for '\0' ending. */
-	public static macro function TextLength(text:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("TextLength: Not implemented", macro(0 : Int));
-
-	/** raylib's `TextSubtext` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get a piece of a text string. */
-	public static macro function TextSubtext(text:ExprOf<String>, position:ExprOf<Int>, length:ExprOf<Int>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("TextSubtext: Not implemented", macro(null : String));
-
-	/** raylib's `TextReplace` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Replace text string (WARNING: memory must be freed!). */
-	public static macro function TextReplace(text:ExprOf<String>, replace:ExprOf<String>, by:ExprOf<String>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("TextReplace: Not implemented", macro(null : String));
-
-	/** raylib's `TextInsert` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Insert text in a position (WARNING: memory must be freed!). */
-	public static macro function TextInsert(text:ExprOf<String>, insert:ExprOf<String>, position:ExprOf<Int>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("TextInsert: Not implemented", macro(null : String));
-
-	/** raylib's `TextJoin` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Join text strings with delimiter. */
-	public static macro function TextJoin(textList:ExprOf<Array<String>>, count:ExprOf<Int>, delimiter:ExprOf<String>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("TextJoin: Not implemented", macro(null : String));
-
-	/** raylib's `TextSplit` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Split text into multiple strings. */
-	public static macro function TextSplit(text:ExprOf<String>, delimiter:ExprOf<Int>, count:ExprOf<Array<Int>>):ExprOf<Array<String>>
-		return helix.platform.macros.Build.unimplemented("TextSplit: Not implemented", macro(null : Array<String>));
-
-	/** raylib's `TextAppend` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Append text at specific position and move cursor!. */
-	public static macro function TextAppend(text:ExprOf<String>, append:ExprOf<String>, position:ExprOf<Array<Int>>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("TextAppend: Not implemented", macro {});
-
-	/** raylib's `TextFindIndex` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Find first text occurrence within a string. */
-	public static macro function TextFindIndex(text:ExprOf<String>, find:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("TextFindIndex: Not implemented", macro(0 : Int));
-
-	/** raylib's `TextToUpper` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get upper case version of provided string. */
-	public static macro function TextToUpper(text:ExprOf<String>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("TextToUpper: Not implemented", macro(null : String));
-
-	/** raylib's `TextToLower` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get lower case version of provided string. */
-	public static macro function TextToLower(text:ExprOf<String>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("TextToLower: Not implemented", macro(null : String));
-
-	/** raylib's `TextToPascal` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get Pascal case notation version of provided string. */
-	public static macro function TextToPascal(text:ExprOf<String>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("TextToPascal: Not implemented", macro(null : String));
-
-	/** raylib's `TextToSnake` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get Snake case notation version of provided string. */
-	public static macro function TextToSnake(text:ExprOf<String>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("TextToSnake: Not implemented", macro(null : String));
-
-	/** raylib's `TextToCamel` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get Camel case notation version of provided string. */
-	public static macro function TextToCamel(text:ExprOf<String>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("TextToCamel: Not implemented", macro(null : String));
-
-	/** raylib's `TextToInteger` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get integer value from text (negative values not supported). */
-	public static macro function TextToInteger(text:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("TextToInteger: Not implemented", macro(0 : Int));
-
-	/** raylib's `TextToFloat` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get float value from text (negative values not supported). */
-	public static macro function TextToFloat(text:ExprOf<String>):ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("TextToFloat: Not implemented", macro(0.0 : Float));
 
 	/** raylib's `DrawPoint3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a point in 3D space, actually a small line. */
 	public static macro function DrawPoint3D(position:ExprOf<Vector3>, color:ExprOf<Color>):ExprOf<Void>

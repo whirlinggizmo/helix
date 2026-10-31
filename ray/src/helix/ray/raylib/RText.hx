@@ -736,5 +736,542 @@ class RText {
 		}
 		return parts.length > 1 ? number + (text.indexOf("E") >= 0 ? "E" : "e") + parts[1] : number;
 	}
+
+	/** raylib's copy into a C buffer. A Haxe string can't be written into, so a call doesn't compile on any target: assign it instead.
+
+		@param dst  The text written into.
+		@param src  The text copied.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("TextCopy: A String can't be written into. Assign it instead: dst = src")
+	static function TextCopy(dst:String, src:String):Int {
+		throw "TextCopy is unimplemented";
+	}
+
+	/** raylib's append into a C buffer at a cursor. A Haxe string can't be written into, so a call doesn't compile on any target: join
+		the text instead.
+
+		@param text  The text written into.
+		@param append  The text appended.
+		@param position  The cursor, in bytes.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("TextAppend: A String can't be written into. Join the text instead: text += append")
+	static function TextAppend(text:String, append:String, position:Array<Int>):Void {
+		throw "TextAppend is unimplemented";
+	}
+
+	/** Returns whether two texts are the same.
+
+		@param text1  The first text.
+		@param text2  The second text.
+		@return  True when they are; false when either is null. */
+	static function TextIsEqual(text1:String, text2:String):Bool {
+		return text1 != null && text2 != null && text1 == text2;
+	}
+
+	/** Returns the length of text in UTF-8 bytes, as raylib counts it: "héllo" is 6. The text functions' positions and lengths are all
+		in these bytes, where `String.length` counts otherwise, and not alike on every target.
+
+		@param text  The text.
+		@return  The length, in bytes; 0 for null text. */
+	static function TextLength(text:String):Int {
+		if (text == null)
+			return 0;
+		var length = 0;
+		for (codepoint in new haxe.iterators.StringIteratorUnicode(text))
+			length += codepoint < 0x80 ? 1 : codepoint < 0x800 ? 2 : codepoint < 0x10000 ? 3 : 4;
+		return length;
+	}
+
+	/** Returns a piece of text, by its place in UTF-8 bytes. A position at or past the end gives no text, and the piece ends with the
+		text.
+
+		A character the piece cuts through is a "?" for each of its bytes taken, as raylib draws it.
+
+		@param text  The text.
+		@param position  Where the piece starts, in bytes from the start.
+		@param length  How long it is, in bytes.
+		@return  The piece. */
+	static function TextSubtext(text:String, position:Int, length:Int):String {
+		var bytes = utf8(text), total = bytes.length;
+		if (position >= total)
+			return "";
+		if (position < 0)
+			position = 0;
+		var end = length > total - position ? total : position + length;
+		return decoded(bytes, position, end);
+	}
+
+	/** Returns text with every piece of it that matches replaced, from the start, each match after the one before.
+
+		@param text  The text.
+		@param replace  The text replaced.
+		@param by  The text put in its place.
+		@return  The new text; null when any is null or `replace` is empty. */
+	static function TextReplace(text:String, replace:String, by:String):String {
+		if (text == null || replace == null || by == null || replace.length == 0)
+			return null;
+		return text.split(replace).join(by);
+	}
+
+	/** Returns text with other text put in at a place in UTF-8 bytes.
+
+		A character the place cuts through is a "?" for each of its bytes, as raylib draws it.
+
+		@param text  The text.
+		@param insert  The text put in.
+		@param position  Where, in bytes from the start, clamped to the end.
+		@return  The new text; empty when either is null or the position is below 0. */
+	static function TextInsert(text:String, insert:String, position:Int):String {
+		if (text == null || insert == null || position < 0)
+			return "";
+		var bytes = utf8(text);
+		if (position > bytes.length)
+			position = bytes.length;
+		var joined = bytes.slice(0, position).concat(utf8(insert)).concat(bytes.slice(position));
+		return decoded(joined, 0, joined.length);
+	}
+
+	/** Returns texts joined into one, a delimiter between each two.
+
+		@param textList  The texts; a null one is empty.
+		@param count  How many of them.
+		@param delimiter  The text between them; null for none.
+		@return  The joined text. */
+	static function TextJoin(textList:Array<String>, count:Int, delimiter:String):String {
+		var out = new StringBuf();
+		for (i in 0...count) {
+			if (textList[i] != null)
+				out.add(textList[i]);
+			if (delimiter != null && i < count - 1)
+				out.add(delimiter);
+		}
+		return out.toString();
+	}
+
+	/** Returns the pieces of text between a delimiter: one more than the delimiters it holds, an empty one between two together.
+
+		The delimiter is a character, so a character outside ASCII splits text as an ASCII one does; raylib's is one byte. There is no
+		limit to the pieces, where raylib's stops at 128.
+
+		@param text  The text.
+		@param delimiter  The character between pieces.
+		@param count  Receives how many pieces there are, at its index 0; 0 for null text.
+		@return  The pieces; none for null text. */
+	static function TextSplit(text:String, delimiter:Int, count:Array<Int>):Array<String> {
+		var pieces = [];
+		if (text != null) {
+			var piece = new StringBuf();
+			for (codepoint in new haxe.iterators.StringIteratorUnicode(text)) {
+				if (codepoint == delimiter && delimiter != 0) {
+					pieces.push(piece.toString());
+					piece = new StringBuf();
+				} else
+					piece.addChar(codepoint);
+			}
+			pieces.push(piece.toString());
+		}
+		if (count != null)
+			count[0] = pieces.length;
+		return pieces;
+	}
+
+	/** Returns where text is first found in other text, in UTF-8 bytes from the start, as `TextSubtext` takes it.
+
+		@param text  The text searched.
+		@param find  The text found; empty text is found at 0.
+		@return  The position, in bytes; -1 when it isn't there or either is null. */
+	static function TextFindIndex(text:String, find:String):Int {
+		if (text == null || find == null)
+			return -1;
+		var index = text.indexOf(find);
+		return index < 0 ? -1 : TextLength(text.substr(0, index));
+	}
+
+	/** Returns text with its letters a to z made capitals, as raylib makes them. Other letters, as "é", are unchanged.
+
+		@param text  The text.
+		@return  The new text; empty for null text. */
+	static function TextToUpper(text:String):String {
+		var out = new StringBuf();
+		if (text != null)
+			for (codepoint in new haxe.iterators.StringIteratorUnicode(text))
+				out.addChar(upper(codepoint));
+		return out.toString();
+	}
+
+	/** Returns text with its capitals A to Z made lower case, as raylib makes them. Other letters, as "É", are unchanged.
+
+		@param text  The text.
+		@return  The new text; empty for null text. */
+	static function TextToLower(text:String):String {
+		var out = new StringBuf();
+		if (text != null)
+			for (codepoint in new haxe.iterators.StringIteratorUnicode(text))
+				out.addChar(lower(codepoint));
+		return out.toString();
+	}
+
+	/** Returns snake-case text in Pascal case: "hello_world" is "HelloWorld". Each run of underscores is dropped, and the first letter
+		and the one after each run are made capitals if they are a to z.
+
+		@param text  The text.
+		@return  The new text; empty for null text. */
+	static function TextToPascal(text:String):String {
+		return joinedWords(text, true);
+	}
+
+	/** Returns Pascal- or camel-case text in snake case: "helloWorld" is "hello_world". Each capital A to Z is made lower case, an
+		underscore before it unless it starts the text.
+
+		@param text  The text.
+		@return  The new text; empty for null text. */
+	static function TextToSnake(text:String):String {
+		var out = new StringBuf(), first = true;
+		if (text != null)
+			for (codepoint in new haxe.iterators.StringIteratorUnicode(text)) {
+				if (codepoint >= "A".code && codepoint <= "Z".code && !first)
+					out.addChar("_".code);
+				out.addChar(lower(codepoint));
+				first = false;
+			}
+		return out.toString();
+	}
+
+	/** Returns snake-case text in camel case: "hello_world" is "helloWorld". Each run of underscores is dropped, the letter after it
+		made a capital if it is a to z, and the first letter made lower case if it is A to Z.
+
+		@param text  The text.
+		@return  The new text; empty for null text. */
+	static function TextToCamel(text:String):String {
+		return joinedWords(text, false);
+	}
+
+	/** Returns the whole number text starts with, as raylib reads it: an optional "+" or "-", then the digits up to the first that
+		isn't one. Nothing else is skipped, spaces neither; a number past 32 bits wraps.
+
+		@param text  The text.
+		@return  The number; 0 when it starts with none, or for null text. */
+	static function TextToInteger(text:String):Int {
+		if (text == null)
+			return 0;
+		var value = 0, sign = 1, i = 0;
+		var codepoints = [for (c in new haxe.iterators.StringIteratorUnicode(text)) c];
+		if (codepoints.length > 0 && (codepoints[0] == "+".code || codepoints[0] == "-".code)) {
+			if (codepoints[0] == "-".code)
+				sign = -1;
+			i++;
+		}
+		while (i < codepoints.length && codepoints[i] >= "0".code && codepoints[i] <= "9".code)
+			value = (value * 10 + codepoints[i++] - "0".code) | 0;
+		return (value * sign) | 0;
+	}
+
+	/** Returns the number text starts with, as raylib reads it: an optional "+" or "-", digits, then a "." and more digits. An exponent,
+		as in "1e3", isn't read, and nothing is skipped.
+
+		It is worked out in 32-bit floats, digit by digit, as raylib works it, so the result is the float raylib returns: "0.1" is
+		0.100000001490116.
+
+		@param text  The text.
+		@return  The number; 0 when it starts with none, or for null text. */
+	static function TextToFloat(text:String):Float {
+		if (text == null)
+			return 0;
+		inline function f32(x:Float):Float
+			return haxe.io.FPHelper.i32ToFloat(haxe.io.FPHelper.floatToI32(x));
+		var value = 0., sign = 1., i = 0;
+		var codepoints = [for (c in new haxe.iterators.StringIteratorUnicode(text)) c];
+		inline function digit(at:Int)
+			return at < codepoints.length && codepoints[at] >= "0".code && codepoints[at] <= "9".code;
+		if (codepoints.length > 0 && (codepoints[0] == "+".code || codepoints[0] == "-".code)) {
+			if (codepoints[0] == "-".code)
+				sign = -1;
+			i++;
+		}
+		while (digit(i))
+			value = f32(f32(value * 10) + (codepoints[i++] - "0".code));
+		if (i < codepoints.length && codepoints[i++] == ".".code) {
+			var divisor = 10.;
+			while (digit(i)) {
+				value = f32(value + f32((codepoints[i++] - "0".code) / divisor));
+				divisor = f32(divisor * 10);
+			}
+		}
+		return value * sign;
+	}
+
+	// ---- Codepoints ----
+
+	/** Returns the text of characters.
+
+		@param codepoints  The characters' codes.
+		@param length  How many of them.
+		@return  The text; a code past 0x10FFFF adds nothing. */
+	static function LoadUTF8(codepoints:Array<Int>, length:Int):String {
+		var bytes = [];
+		for (i in 0...length)
+			encode(codepoints[i], bytes);
+		return decoded(bytes, 0, bytes.length);
+	}
+
+	/** Does nothing: text from `LoadUTF8` is freed by the garbage collector.
+
+		@param text  The text. */
+	static function UnloadUTF8(text:String):Void {}
+
+	/** Returns the codes of text's characters.
+
+		@param text  The text.
+		@param count  Receives how many there are, at its index 0.
+		@return  The codes; none for null text. */
+	static function LoadCodepoints(text:String, count:Array<Int>):Array<Int> {
+		var bytes = utf8(text), codepoints = [], size = [0], i = 0;
+		while (i < bytes.length) {
+			codepoints.push(next(bytes, i, size));
+			i += size[0];
+		}
+		if (count != null)
+			count[0] = codepoints.length;
+		return codepoints;
+	}
+
+	/** Does nothing: codes from `LoadCodepoints` are freed by the garbage collector.
+
+		@param codepoints  The codes. */
+	static function UnloadCodepoints(codepoints:Array<Int>):Void {}
+
+	/** Returns how many characters text holds: "héllo→" holds 6, in 9 bytes.
+
+		@param text  The text.
+		@return  The count; 0 for null text. */
+	static function GetCodepointCount(text:String):Int {
+		var bytes = utf8(text), size = [0], i = 0, count = 0;
+		while (i < bytes.length) {
+			next(bytes, i, size);
+			i += size[0];
+			count++;
+		}
+		return count;
+	}
+
+	/** Returns the code of text's first character, checked as RFC 3629 has UTF-8, as raylib checks it.
+
+		@param text  The text.
+		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by.
+		@return  The code; 0 for empty text. */
+	static function GetCodepoint(text:String, codepointSize:Array<Int>):Int {
+		var bytes = utf8(text, 4), size = [1];
+		var codepoint = checked(bytes, size);
+		if (codepointSize != null)
+			codepointSize[0] = size[0];
+		return codepoint;
+	}
+
+	/** Returns the code of text's first character.
+
+		@param text  The text.
+		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by, as in
+			`TextSubtext(text, codepointSize[0], TextLength(text))`.
+		@return  The code; 0 for empty text. */
+	static function GetCodepointNext(text:String, codepointSize:Array<Int>):Int {
+		var bytes = utf8(text, 4), size = [1];
+		var codepoint = next(bytes, 0, size);
+		if (codepointSize != null)
+			codepointSize[0] = size[0];
+		return codepoint;
+	}
+
+	/** Returns the code of text's last character: the one before where it ends, as raylib's finds the one before a place in text.
+
+		@param text  The text; `TextSubtext(text, 0, position)` gives the character before a position.
+		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move back by; 0 for empty text.
+		@return  The code; '?' (0x3F) for empty text. */
+	static function GetCodepointPrevious(text:String, codepointSize:Array<Int>):Int {
+		var bytes = utf8(text), i = bytes.length, size = [0];
+		do
+			i-- while (i >= 0 && bytes[i] & 0xC0 == 0x80);
+		var codepoint = "?".code;
+		if (i >= 0) {
+			codepoint = next(bytes, i, size);
+			if (codepoint == 0)
+				size[0] = 0;
+		}
+		if (codepointSize != null)
+			codepointSize[0] = size[0];
+		return codepoint;
+	}
+
+	/** Returns a character as text.
+
+		@param codepoint  The character's code.
+		@param utf8Size  Receives its length in UTF-8 bytes, at its index 0; 0 for a code past 0x10FFFF.
+		@return  The text; empty for a code past 0x10FFFF. */
+	static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String {
+		var bytes = [];
+		encode(codepoint, bytes);
+		if (utf8Size != null)
+			utf8Size[0] = bytes.length;
+		return decoded(bytes, 0, bytes.length);
+	}
+
+	// Text's UTF-8 bytes, as raylib holds it; with most, only as many characters as reach it.
+	static function utf8(text:String, most = 0x7FFFFFFF):Array<Int> {
+		var bytes = [];
+		if (text != null)
+			for (codepoint in new haxe.iterators.StringIteratorUnicode(text)) {
+				if (bytes.length >= most)
+					break;
+				encode(codepoint, bytes);
+			}
+		return bytes;
+	}
+
+	// raylib's CodepointToUTF8: a code's UTF-8 bytes added to bytes, a negative one's low byte, none for one past 0x10FFFF.
+	static function encode(codepoint:Int, bytes:Array<Int>):Void {
+		if (codepoint <= 0x7F)
+			bytes.push(codepoint & 0xFF);
+		else if (codepoint <= 0x7FF) {
+			bytes.push(((codepoint >> 6) & 0x1F) | 0xC0);
+			bytes.push((codepoint & 0x3F) | 0x80);
+		} else if (codepoint <= 0xFFFF) {
+			bytes.push(((codepoint >> 12) & 0x0F) | 0xE0);
+			bytes.push(((codepoint >> 6) & 0x3F) | 0x80);
+			bytes.push((codepoint & 0x3F) | 0x80);
+		} else if (codepoint <= 0x10FFFF) {
+			bytes.push(((codepoint >> 18) & 0x07) | 0xF0);
+			bytes.push(((codepoint >> 12) & 0x3F) | 0x80);
+			bytes.push(((codepoint >> 6) & 0x3F) | 0x80);
+			bytes.push((codepoint & 0x3F) | 0x80);
+		}
+	}
+
+	// raylib's GetCodepointNext on bytes from i, a byte past their end read as C's terminating 0; size receives the bytes it took, 1 for
+	// a malformed one, read as '?'.
+	static function next(bytes:Array<Int>, i:Int, size:Array<Int>):Int {
+		inline function at(k:Int)
+			return i + k < bytes.length ? bytes[i + k] : 0;
+		inline function tail(k:Int)
+			return at(k) & 0xC0 == 0x80;
+		var b = at(0);
+		size[0] = 1;
+		if (b & 0xF8 == 0xF0) {
+			if (!tail(1) || !tail(2) || !tail(3))
+				return "?".code;
+			size[0] = 4;
+			return ((b & 0x07) << 18) | ((at(1) & 0x3F) << 12) | ((at(2) & 0x3F) << 6) | (at(3) & 0x3F);
+		}
+		if (b & 0xF0 == 0xE0) {
+			if (!tail(1) || !tail(2))
+				return "?".code;
+			size[0] = 3;
+			return ((b & 0x0F) << 12) | ((at(1) & 0x3F) << 6) | (at(2) & 0x3F);
+		}
+		if (b & 0xE0 == 0xC0) {
+			if (!tail(1))
+				return "?".code;
+			size[0] = 2;
+			return ((b & 0x1F) << 6) | (at(1) & 0x3F);
+		}
+		return b & 0x80 == 0 ? b : "?".code;
+	}
+
+	// raylib's GetCodepoint on bytes from 0, which checks each sequence as RFC 3629 has it; size receives the bytes it took.
+	static function checked(bytes:Array<Int>, size:Array<Int>):Int {
+		inline function at(k:Int)
+			return k < bytes.length ? bytes[k] : 0;
+		inline function bad(k:Int)
+			return at(k) == 0 || at(k) >> 6 != 2;
+		var octet = at(0), codepoint = "?".code;
+		size[0] = 1;
+		if (octet <= 0x7F)
+			return octet;
+		if (octet & 0xE0 == 0xC0) {
+			if (bad(1)) {
+				size[0] = 2;
+				return codepoint;
+			}
+			if (octet >= 0xC2 && octet <= 0xDF) {
+				codepoint = ((octet & 0x1F) << 6) | (at(1) & 0x3F);
+				size[0] = 2;
+			}
+		} else if (octet & 0xF0 == 0xE0) {
+			for (k in 1...3)
+				if (bad(k)) {
+					size[0] = k + 1;
+					return "?".code;
+				}
+			if ((octet == 0xE0 && !(at(1) >= 0xA0 && at(1) <= 0xBF)) || (octet == 0xED && !(at(1) >= 0x80 && at(1) <= 0x9F))) {
+				size[0] = 2;
+				return codepoint;
+			}
+			codepoint = ((octet & 0xF) << 12) | ((at(1) & 0x3F) << 6) | (at(2) & 0x3F);
+			size[0] = 3;
+		} else if (octet & 0xF8 == 0xF0) {
+			if (octet > 0xF4)
+				return codepoint;
+			for (k in 1...4)
+				if (bad(k)) {
+					size[0] = k + 1;
+					return "?".code;
+				}
+			if ((octet == 0xF0 && !(at(1) >= 0x90 && at(1) <= 0xBF)) || (octet == 0xF4 && !(at(1) >= 0x80 && at(1) <= 0x8F))) {
+				size[0] = 2;
+				return codepoint;
+			}
+			codepoint = ((octet & 0x7) << 18) | ((at(1) & 0x3F) << 12) | ((at(2) & 0x3F) << 6) | (at(3) & 0x3F);
+			size[0] = 4;
+		}
+		return codepoint > 0x10FFFF ? "?".code : codepoint;
+	}
+
+	// Text from bytes start to end, read as raylib reads them to draw: a malformed byte, or one of a character cut at end, is a '?', and
+	// so is a code no String can hold (a surrogate, one past 0x10FFFF).
+	static function decoded(bytes:Array<Int>, start:Int, end:Int):String {
+		var out = new StringBuf(), size = [0], i = 0;
+		var piece = start == 0 && end == bytes.length ? bytes : bytes.slice(start, end);
+		while (i < piece.length) {
+			var codepoint = next(piece, i, size);
+			out.addChar(codepoint > 0x10FFFF || (codepoint >= 0xD800 && codepoint <= 0xDFFF) ? "?".code : codepoint);
+			i += size[0];
+		}
+		return out.toString();
+	}
+
+	// A letter a to z as a capital, anything else unchanged.
+	static inline function upper(codepoint:Int):Int {
+		return codepoint >= "a".code && codepoint <= "z".code ? codepoint - 32 : codepoint;
+	}
+
+	// A capital A to Z in lower case, anything else unchanged.
+	static inline function lower(codepoint:Int):Int {
+		return codepoint >= "A".code && codepoint <= "Z".code ? codepoint + 32 : codepoint;
+	}
+
+	// TextToPascal (capital) and TextToCamel: the first character made a capital or lower case, each run of underscores after it dropped
+	// and the character after the run made a capital, as raylib's after 5.5 has it (5.5's ended the text at an underscore not followed
+	// by a to z).
+	static function joinedWords(text:String, capital:Bool):String {
+		var out = new StringBuf();
+		if (text == null)
+			return "";
+		var codepoints = [for (c in new haxe.iterators.StringIteratorUnicode(text)) c];
+		if (codepoints.length == 0)
+			return "";
+		out.addChar(capital ? upper(codepoints[0]) : lower(codepoints[0]));
+		var j = 1;
+		while (j < codepoints.length) {
+			if (codepoints[j] != "_".code)
+				out.addChar(codepoints[j]);
+			else {
+				while (j < codepoints.length && codepoints[j] == "_".code)
+					j++;
+				if (j == codepoints.length)
+					break;
+				out.addChar(upper(codepoints[j]));
+			}
+			j++;
+		}
+		return out.toString();
+	}
 	#end
 }
