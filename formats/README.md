@@ -14,6 +14,10 @@ images, a font's pages) itself; it saves what a writer returns. Depends on helix
   (stb_image_write's writer).
 - `qoi.QoiFile`: a QOI image ("Quite OK Image"), read and written byte for byte as raylib 5.5 does (qoi.h's).
 - `deflate.Deflate`: DEFLATE compression, byte for byte as raylib 5.5's `CompressData` compresses (sdefl's).
+- `wav.WavFile`: a WAV file's sound, read as raylib 5.5's `LoadWave` reads it (dr_wav's: integer, floating-point, A-law and mu-law
+  samples, its 16-bit samples identical) and written byte for byte as its `ExportWave` writes one.
+- `audio.AudioLength`: a sound file's length in seconds from its first and last bytes, without decoding it: WAV, Ogg (Vorbis, Opus,
+  FLAC, Speex), FLAC and MP3.
 
 ```haxe
 import helix.formats.gltf.GltfFile;
@@ -50,7 +54,8 @@ domain); no code of it is included. `BmFontFile` reads [AngelCode BMFont](https:
 documented, and the fields raylib 5.5's `LoadBMFont` reads.
 `PngFile` is [stb_image_write](https://github.com/nothings/stb) 1.16's PNG writer, by Sean Barrett, ported; `QoiFile` is
 [qoi.h](https://github.com/phoboslab/qoi), Copyright (c) 2021 Dominic Szablewski, ported; `Deflate` is
-[sdefl](https://github.com/vurtun/lib) 1.0, Copyright (c) 2020-2023 Micha Mettke, ported; each from raylib 5.5's copy. stb_image_write
-and sdefl are public domain or MIT, qoi.h MIT; their notices are in the files ported from them.
+[sdefl](https://github.com/vurtun/lib) 1.0, Copyright (c) 2020-2023 Micha Mettke, ported; `WavFile` is
+[dr_wav](https://github.com/mackron/dr_libs) 0.13.16, by David Reid, ported; each from raylib 5.5's copy. stb_image_write and sdefl
+are public domain or MIT, qoi.h MIT, dr_wav public domain or MIT No Attribution; their notices are in the files ported from them.
 The tests' font is [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) Regular, Copyright 2020 The JetBrains Mono Project
 Authors, under the SIL Open Font License 1.1 (`tests/assets/OFL.txt`).
