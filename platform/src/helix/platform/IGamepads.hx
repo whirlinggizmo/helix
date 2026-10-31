@@ -38,6 +38,22 @@ interface IGamepads {
 			0. */
 	function getAxis(slot:Int, axis:PadAxis):Float;
 
+	/** Shakes a gamepad: its low-frequency (heavy) and high-frequency (light) motors for a while, replacing any shaking it was doing.
+
+		@param slot  The slot, 0 to 3.
+		@param low  The heavy motor's strength, 0 to 1.
+		@param high  The light motor's strength, 0 to 1.
+		@param seconds  How long; 0 stops it.
+		@return  Whether the pad shakes: false for an empty slot or a pad without motors, and in a browser without vibration (Firefox). */
+	function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool;
+
+	/** Adds mappings that say how pads the system doesn't know lay out their buttons and axes, in SDL's controller database format
+		(one per line, as `gamecontrollerdb.txt` has them).
+
+		@param mappings  The mappings.
+		@return  How many were added or updated; 0 in a page, whose browser maps pads itself. */
+	function addMappings(mappings:String):Int;
+
 	/** Stops reading the gamepads and lets them go. */
 	function dispose():Void;
 }

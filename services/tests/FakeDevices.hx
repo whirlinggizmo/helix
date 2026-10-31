@@ -48,6 +48,14 @@ class FakeDevices implements IKeyboard implements IMouse implements ITouch imple
 		return true;
 	}
 
+	/** Says the pad shakes when one is connected. */
+	public function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool
+		return isConnected(slot);
+
+	/** Adds none. */
+	public function addMappings(mappings:String):Int
+		return 0;
+
 	/** Returns true: the fake's cursor moves. */
 	public function canSetPosition():Bool
 		return true;

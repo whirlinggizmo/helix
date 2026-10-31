@@ -1671,6 +1671,23 @@ class Raylib {
 	public static inline function GetGesturePinchAngle():Float
 		return RCore.GetGesturePinchAngle();
 
+	/** Shakes a gamepad: its left motor is the heavy one, its right the light one, as raylib's. Shaking lasts at most 2 seconds, as
+		raylib's; a browser without vibration (Firefox) doesn't shake.
+
+		@param gamepad  The gamepad, 0 to 3.
+		@param leftMotor  The heavy motor's strength, 0 to 1.
+		@param rightMotor  The light motor's strength, 0 to 1.
+		@param duration  How long, in seconds. */
+	public static inline function SetGamepadVibration(gamepad:Int, leftMotor:Float, rightMotor:Float, duration:Float):Void
+		RCore.SetGamepadVibration(gamepad, leftMotor, rightMotor, duration);
+
+	/** Adds mappings for pads the system doesn't know, in SDL's controller database format, as raylib's.
+
+		@param mappings  The mappings, one a line.
+		@return  How many were added or updated; 0 in a page, whose browser maps pads itself. */
+	public static inline function SetGamepadMappings(mappings:String):Int
+		return RCore.SetGamepadMappings(mappings);
+
 	/** Returns whether a gamepad is connected.
 
 		@param gamepad  The gamepad, 0 to 3.
@@ -4958,15 +4975,6 @@ class Raylib {
 	/** raylib's `PlayAutomationEvent` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Play a recorded automation event. */
 	public static macro function PlayAutomationEvent(event:ExprOf<AutomationEvent>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("PlayAutomationEvent: Not implemented", macro {});
-
-	/** raylib's `SetGamepadMappings` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set internal gamepad mappings (SDL_GameControllerDB). */
-	public static macro function SetGamepadMappings(mappings:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("SetGamepadMappings: Not implemented", macro(0 : Int));
-
-	/** raylib's `SetGamepadVibration` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Set gamepad vibration for both motors (duration in seconds). */
-	public static macro function SetGamepadVibration(gamepad:ExprOf<Int>, leftMotor:ExprOf<Float>, rightMotor:ExprOf<Float>,
-			duration:ExprOf<Float>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("SetGamepadVibration: Not implemented", macro {});
 
 	/** raylib's `UpdateCameraPro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update camera movement/rotation. */
 	public static macro function UpdateCameraPro(camera:ExprOf<Camera>, movement:ExprOf<Vector3>, rotation:ExprOf<Vector3>, zoom:ExprOf<Float>):ExprOf<Void>

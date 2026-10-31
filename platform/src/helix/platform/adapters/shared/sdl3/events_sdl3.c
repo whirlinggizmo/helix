@@ -1,6 +1,7 @@
 #include "events_sdl3.h"
 #include "sdl3.h"
 #include <SDL3/SDL.h>
+#include <string.h>
 
 /* SDL3's events, drained from SDL's one queue at each poll into records the Haxe adapters read (events_sdl3.h's kinds): the window's
    focus, visibility, size and close, and the player's first press, always; keys by physical position as Key numbers them, the mouse and
@@ -238,6 +239,25 @@ int helix_events_value(void){return current.value;}
 float helix_events_x(void){return current.x;}
 float helix_events_y(void){return current.y;}
 
+int helix_pad_rumble(int pad,float low,float high,int milliseconds){
+ if(!helix_pad_connected(pad))return 0;
+ float l=low<0?0:low>1?1:low,h=high<0?0:high>1?1:high;
+ return SDL_RumbleGamepad(pads[pad],(Uint16)(l*65535),(Uint16)(h*65535),(Uint32)(milliseconds<0?0:milliseconds));
+}
+/* Each line SDL takes counts, whether it added a mapping or updated one. */
+int helix_pad_add_mappings(const char *mappings){
+ if(!mappings)return 0;
+ int added=0;const char *line=mappings;
+ while(*line){
+  const char *end=strchr(line,'\n');size_t n=end?(size_t)(end-line):strlen(line);
+  if(n>0&&line[0]!='#'){
+   char *copy=SDL_malloc(n+1);
+   if(copy){memcpy(copy,line,n);copy[n]=0;if(n&&copy[n-1]=='\r')copy[n-1]=0;if(copy[0]&&SDL_AddGamepadMapping(copy)>=0)added++;SDL_free(copy);}
+  }
+  line=end?end+1:line+n;
+ }
+ return added;
+}
 int helix_pad_connected(int pad){return pad>=0&&pad<4&&pads[pad]!=NULL;}
 const char *helix_pad_name(int pad){const char *n=helix_pad_connected(pad)?SDL_GetGamepadName(pads[pad]):NULL;return n?n:"";}
 

@@ -389,6 +389,8 @@ function isConnected(slot:Int):Bool
 function getName(slot:Int):String
 function isButtonDown(slot:Int, button:PadButton):Bool
 function getAxis(slot:Int, axis:PadAxis):Float
+function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool
+function addMappings(mappings:String):Int
 function dispose():Void
 ```
 
@@ -427,6 +429,8 @@ function isConnected(slot:Int):Bool
 function getName(slot:Int):String
 function isButtonDown(slot:Int, button:PadButton):Bool
 function getAxis(slot:Int, axis:PadAxis):Float
+function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool
+function addMappings(mappings:String):Int
 function dispose():Void
 ```
 

@@ -70,6 +70,23 @@ class DomGamepadsAdapter implements IGamepads {
 		return pad.axes.length > i ? pad.axes[i] : 0;
 	}
 
+	// The Gamepad API's vibration actuator ("dual-rumble"), where the browser has one.
+	public function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool {
+		var pad:Dynamic = slot >= 0 && slot < 4 ? pads[slot] : null;
+		var actuator:Dynamic = pad != null ? pad.vibrationActuator : null;
+		if (actuator == null || actuator.playEffect == null)
+			return false;
+		var clamp = (v:Float) -> v < 0 ? 0. : v > 1 ? 1. : v;
+		if (seconds <= 0)
+			actuator.reset != null ? actuator.reset() : actuator.playEffect("dual-rumble", {duration: 0, strongMagnitude: 0, weakMagnitude: 0});
+		else
+			actuator.playEffect("dual-rumble", {duration: seconds * 1000, strongMagnitude: clamp(low), weakMagnitude: clamp(high)});
+		return true;
+	}
+
+	public function addMappings(mappings:String):Int
+		return 0;
+
 	public function dispose():Void {
 		stream.polls.remove(reading);
 		for (slot in 0...4)

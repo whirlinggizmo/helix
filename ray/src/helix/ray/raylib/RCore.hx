@@ -853,6 +853,27 @@ class RCore {
 
 	// ---- Gamepads ----
 
+	/** Shakes a gamepad: its left motor is the heavy one, its right the light one, as raylib's. Shaking lasts at most 2 seconds, as
+		raylib's; a browser without vibration (Firefox) doesn't shake.
+
+		@param gamepad  The gamepad, 0 to 3.
+		@param leftMotor  The heavy motor's strength, 0 to 1.
+		@param rightMotor  The light motor's strength, 0 to 1.
+		@param duration  How long, in seconds. */
+	static function SetGamepadVibration(gamepad:Int, leftMotor:Float, rightMotor:Float, duration:Float):Void {
+		Runtime.gamepads();
+		Runtime.gamepadsAdapter.setVibration(gamepad, leftMotor, rightMotor, Math.min(duration, 2));
+	}
+
+	/** Adds mappings for pads the system doesn't know, in SDL's controller database format, as raylib's.
+
+		@param mappings  The mappings, one a line.
+		@return  How many were added or updated; 0 in a page, whose browser maps pads itself. */
+	static function SetGamepadMappings(mappings:String):Int {
+		Runtime.gamepads();
+		return Runtime.gamepadsAdapter.addMappings(mappings);
+	}
+
 	/** Returns whether a gamepad is connected.
 
 		@param gamepad  The gamepad, 0 to 3.

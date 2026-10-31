@@ -28,6 +28,12 @@ class Sdl3GamepadsAdapter implements IGamepads {
 	public function getAxis(slot:Int, axis:PadAxis):Float
 		return Sdl3EventsBridge.padAxis(slot, axis);
 
+	public function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool
+		return Sdl3EventsBridge.padRumble(slot, low, high, Math.round(seconds * 1000)) != 0;
+
+	public function addMappings(mappings:String):Int
+		return Sdl3EventsBridge.padAddMappings(mappings);
+
 	public function dispose():Void
 		Sdl3EventsBridge.want(Sdl3EventsBridge.GAMEPADS, 0);
 }

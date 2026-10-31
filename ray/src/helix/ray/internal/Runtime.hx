@@ -92,6 +92,10 @@ class Runtime {
 
 	static var touchService:Null<Touch> = null;
 	static var gamepadsService:Null<Gamepads> = null;
+
+	/** The platform's gamepads, made with the gamepads: their vibration and mappings. */
+	public static var gamepadsAdapter:Null<helix.platform.IGamepads> = null;
+
 	static var gesturesService:Null<Gestures> = null;
 	// The devices made so far, polled each frame; through IPollable, so a device never asked for isn't linked.
 	static final devices:Array<IPollable> = [];
@@ -468,10 +472,11 @@ class Runtime {
 	public static function gamepads():Gamepads {
 		if (gamepadsService == null) {
 			#if js
-			gamepadsService = new Gamepads(events, new helix.platform.adapters.gamepads.dom.DomGamepadsAdapter({events: cast events}));
+			gamepadsAdapter = new helix.platform.adapters.gamepads.dom.DomGamepadsAdapter({events: cast events});
 			#else
-			gamepadsService = new Gamepads(events, new helix.platform.adapters.gamepads.sdl3.Sdl3GamepadsAdapter({events: cast events}));
+			gamepadsAdapter = new helix.platform.adapters.gamepads.sdl3.Sdl3GamepadsAdapter({events: cast events});
 			#end
+			gamepadsService = new Gamepads(events, gamepadsAdapter);
 			gamepadsService.deadZone = 0;
 			devices.push(gamepadsService);
 		}

@@ -117,6 +117,8 @@ interface IGamepads {
 	function getName(slot:Int):String;
 	function isButtonDown(slot:Int, button:PadButton):Bool;   // the W3C standard gamepad's buttons
 	function getAxis(slot:Int, axis:PadAxis):Float;           // sticks -1..1, down and right positive; triggers 0..1
+	function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool; // natively SDL's rumble; a page's vibrationActuator, none in Firefox
+	function addMappings(mappings:String):Int;    // SDL's controller database lines; 0 in a page, whose browser maps pads
 	function dispose():Void;
 }
 

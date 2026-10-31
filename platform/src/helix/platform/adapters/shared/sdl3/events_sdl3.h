@@ -17,6 +17,7 @@ int helix_events_next(void);int helix_events_kind(void);int helix_events_code(vo
 /* The mouse's cursor and lock (Sdl3MouseAdapter): its shape is CursorShape's number; the lock is SDL's relative mouse mode. */
 void helix_mouse_set_cursor_visible(int on);int helix_mouse_cursor_visible(void);void helix_mouse_set_cursor_shape(int shape);
 int helix_mouse_set_locked(int on);int helix_mouse_locked(void);int helix_mouse_warp(float x,float y);void helix_mouse_dispose(void);
+int helix_pad_rumble(int pad,float low,float high,int milliseconds);int helix_pad_add_mappings(const char *mappings);
 int helix_pad_connected(int pad);const char*helix_pad_name(int pad);int helix_pad_button(int pad,int button);float helix_pad_axis(int pad,int axis);
 #ifdef __cplusplus
 }

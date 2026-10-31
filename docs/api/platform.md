@@ -630,6 +630,8 @@ function isConnected(slot:Int):Bool
 function getName(slot:Int):String
 function isButtonDown(slot:Int, button:PadButton):Bool
 function getAxis(slot:Int, axis:PadAxis):Float
+function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool
+function addMappings(mappings:String):Int
 function dispose():Void
 ```
 
@@ -647,6 +649,15 @@ function dispose():Void
   - `slot`: The slot, 0 to 3.
   - `axis`: The axis.
   - returns: The axis's value. A stick runs from -1 to 1, with down and right positive. A trigger runs from 0 to 1. An empty slot gives 0.
+- `setVibration`: Shakes a gamepad: its low-frequency (heavy) and high-frequency (light) motors for a while, replacing any shaking it was doing.
+  - `slot`: The slot, 0 to 3.
+  - `low`: The heavy motor's strength, 0 to 1.
+  - `high`: The light motor's strength, 0 to 1.
+  - `seconds`: How long; 0 stops it.
+  - returns: Whether the pad shakes: false for an empty slot or a pad without motors, and in a browser without vibration (Firefox).
+- `addMappings`: Adds mappings that say how pads the system doesn't know lay out their buttons and axes, in SDL's controller database format (one per line, as `gamecontrollerdb.txt` has them).
+  - `mappings`: The mappings.
+  - returns: How many were added or updated; 0 in a page, whose browser maps pads itself.
 - `dispose`: Stops reading the gamepads and lets them go.
 
 ## IGraphics
