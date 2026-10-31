@@ -11,7 +11,7 @@ import sys.thread.Thread;
 /** Provides `IFileSystem` natively: files under a directory on disk, each operation on a worker thread.
 
 	A write is whole or not at all (`AtomicFile`), so a reader never sees half a file. A located file is its path, with nothing to
-	release. */
+	release. A file's information is its stat: its size, and its modification time to the second or finer, as the OS keeps it. */
 class NativeFileSystemAdapter implements IFileSystem {
 	var directory:String;
 	var writable:Bool;
@@ -129,6 +129,51 @@ class NativeFileSystemAdapter implements IFileSystem {
 			} else
 				sys.FileSystem.deleteFile(path);
 		}
+
+	public function getInfo(path:String, found:(size:Int, modified:Float) -> Void, missing:Void->Void, failed:String->Void):Void {
+		if (!FilePath.isValid(path)) {
+			refuse(failed);
+			return;
+		}
+		var file = Path.join([directory, path]);
+		run(() -> try {
+			if (!sys.FileSystem.exists(file) || sys.FileSystem.isDirectory(file))
+				missing;
+			else {
+				var stat = sys.FileSystem.stat(file);
+				var size = stat.size, modified = stat.mtime.getTime() / 1000;
+				() -> found(size, modified);
+			}
+		} catch (error:Dynamic) {
+			var message = Std.string(error);
+			() -> failed(message);
+		});
+	}
+
+	public function list(path:String, listed:Array<String>->Void, missing:Void->Void, failed:String->Void):Void {
+		if (path != "" && !FilePath.isValid(path)) {
+			refuse(failed);
+			return;
+		}
+		var dir = path == "" ? directory : Path.join([directory, path]);
+		run(() -> try {
+			if (!sys.FileSystem.exists(dir))
+				path == "" ? () -> listed([]) : missing;
+			else if (!sys.FileSystem.isDirectory(dir))
+				missing;
+			else {
+				var names = [
+					for (entry in sys.FileSystem.readDirectory(dir))
+						sys.FileSystem.isDirectory(Path.join([dir, entry])) ? entry + "/" : entry
+				];
+				names.sort(Reflect.compare);
+				() -> listed(names);
+			}
+		} catch (error:Dynamic) {
+			var message = Std.string(error);
+			() -> failed(message);
+		});
+	}
 
 	public function locate(path:String, located:(location:String, release:Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void {
 		if (!FilePath.isValid(path)) {

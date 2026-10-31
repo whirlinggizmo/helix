@@ -11,7 +11,8 @@ import js.html.CanvasElement;
 /** Provides `IWindow` in a browser page: the page is the window.
 
 	Its title is the document's, its size the viewport's, and fullscreen and visibility are the canvas's, whose drawing size follows the
-	viewport and the pixel ratio. A page can't move or size its window, choose a monitor, or close; it sees one screen. */
+	viewport and the pixel ratio. A page can't move or size its window, choose a monitor, or close; it sees one screen. A dropped file is the
+	File the canvas's drop gave, read later. */
 class DomWindowAdapter implements IWindow {
 	var canvas:CanvasElement;
 	var closed = false;
@@ -271,6 +272,25 @@ class DomWindowAdapter implements IWindow {
 
 	public function getMonitorHeight(index:Int):Int
 		return index == 0 ? Browser.window.screen.height : 0;
+
+	public function readDroppedFile(index:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void {
+		var file = DomPage.dropped[index];
+		if (index < 0 || file == null) {
+			js.Browser.window.setTimeout(() -> failed('No dropped file $index'), 0);
+			return;
+		}
+		if (file.size > maxBytes) {
+			js.Browser.window.setTimeout(() -> failed("File exceeds byte limit"), 0);
+			return;
+		}
+		(cast file : Dynamic).arrayBuffer().then(data -> {
+			read(file.name, Bytes.ofData(data));
+			return null;
+		}, error -> {
+			failed(Std.string(error));
+			return null;
+		});
+	}
 
 	public function canClose():Bool
 		return false;

@@ -51,6 +51,16 @@ class CallbackFiles implements IFileSystem {
 	public function deleteFiles(deleted:Void->Void, failed:String->Void):Void
 		waiting.push(() -> failed('raylib\'s load callback can\'t be written'));
 
+	public function getInfo(path:String, found:(size:Int, modified:Float) -> Void, missing:Void->Void, failed:String->Void):Void
+		waiting.push(() -> {
+			var bytes = load == null ? null : load(path);
+			bytes == null ? missing() : found(bytes.length, 0);
+		});
+
+	// The callback answers files by name; it has no directories.
+	public function list(directory:String, listed:Array<String>->Void, missing:Void->Void, failed:String->Void):Void
+		waiting.push(missing);
+
 	// Its files are in memory, not where a stream could read them, so each is missing here and a stream reads the program's own.
 	public function locate(path:String, located:(location:String, release:Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void
 		waiting.push(missing);

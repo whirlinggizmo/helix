@@ -156,7 +156,7 @@ function dispose():Void
 
 Provides `IEvents` in a browser page.
 
-It listens to the page's focus and visibility, the viewport's size, which the canvas follows, and a lost WebGL context, and for the player's first press anywhere in the page, until it comes. Each listener only records; `poll` hands over what was recorded since the last one. The device adapters built over it (`DomKeyboardAdapter`, `DomMouseAdapter`, `DomTouchAdapter`, `DomGamepadsAdapter`, `DomTiltAdapter`) add their events to the same records.
+It listens to the page's focus and visibility, the viewport's size, which the canvas follows, a lost WebGL context and files dropped on the canvas, and for the player's first press anywhere in the page, until it comes. Each listener only records; `poll` hands over what was recorded since the last one. The device adapters built over it (`DomKeyboardAdapter`, `DomMouseAdapter`, `DomTouchAdapter`, `DomGamepadsAdapter`, `DomTiltAdapter`) add their events to the same records.
 
 ```haxe
 function new(options:DomEventsAdapterOptions)
@@ -259,9 +259,9 @@ final directory:String
 
 *class*, for the browser (js) in [`platform/src/helix/platform/adapters/filesystem/browser/BrowserFileSystemAdapter.hx`](../../platform/src/helix/platform/adapters/filesystem/browser/BrowserFileSystemAdapter.hx), `import helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter;`, implements `IFileSystem`
 
-Provides `IFileSystem` in a page: Blobs in an IndexedDB database, a located file a Blob's URL, released by revoking it.
+Provides `IFileSystem` in a page: Files in an IndexedDB database, each a Blob keyed by its path that keeps when it was written, and a located file a Blob's URL, released by revoking it.
 
-Operations asked before the database opens wait for it.
+A directory is the paths that start with its name and a `/`. Operations asked before the database opens wait for it.
 
 ```haxe
 function new(options:BrowserFileSystemAdapterOptions)
@@ -271,6 +271,8 @@ function read(path:String, maxBytes:Int, loaded:haxe.io.Bytes -> Void, missing:(
 function write(path:String, bytes:haxe.io.Bytes, written:() -> Void, failed:String -> Void):Void
 function deleteFile(path:String, deleted:() -> Void, failed:String -> Void):Void
 function deleteFiles(deleted:() -> Void, failed:String -> Void):Void
+function getInfo(path:String, found:(size:Int, modified:Float) -> Void, missing:() -> Void, failed:String -> Void):Void
+function list(directory:String, listed:Array<String> -> Void, missing:() -> Void, failed:String -> Void):Void
 function locate(path:String, located:(location:String, release:() -> Void) -> Void, missing:() -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
@@ -304,7 +306,7 @@ final name:String
 
 Provides `IFileSystem` natively: files under a directory on disk, each operation on a worker thread.
 
-A write is whole or not at all (`AtomicFile`), so a reader never sees half a file. A located file is its path, with nothing to release.
+A write is whole or not at all (`AtomicFile`), so a reader never sees half a file. A located file is its path, with nothing to release. A file's information is its stat: its size, and its modification time to the second or finer, as the OS keeps it.
 
 ```haxe
 function new(options:NativeFileSystemAdapterOptions)
@@ -314,6 +316,8 @@ function read(path:String, maxBytes:Int, loaded:haxe.io.Bytes -> Void, missing:(
 function write(path:String, bytes:haxe.io.Bytes, written:() -> Void, failed:String -> Void):Void
 function deleteFile(path:String, deleted:() -> Void, failed:String -> Void):Void
 function deleteFiles(deleted:() -> Void, failed:String -> Void):Void
+function getInfo(path:String, found:(size:Int, modified:Float) -> Void, missing:() -> Void, failed:String -> Void):Void
+function list(path:String, listed:Array<String> -> Void, missing:() -> Void, failed:String -> Void):Void
 function locate(path:String, located:(location:String, release:() -> Void) -> Void, missing:() -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
@@ -974,7 +978,7 @@ final events:Sdl3EventsAdapter
 
 Provides `IWindow` in a browser page: the page is the window.
 
-Its title is the document's, its size the viewport's, and fullscreen and visibility are the canvas's, whose drawing size follows the viewport and the pixel ratio. A page can't move or size its window, choose a monitor, or close; it sees one screen.
+Its title is the document's, its size the viewport's, and fullscreen and visibility are the canvas's, whose drawing size follows the viewport and the pixel ratio. A page can't move or size its window, choose a monitor, or close; it sees one screen. A dropped file is the File the canvas's drop gave, read later.
 
 ```haxe
 function new(options:DomWindowAdapterOptions)
@@ -1016,6 +1020,7 @@ function getMonitorX(index:Int):Int
 function getMonitorY(index:Int):Int
 function getMonitorWidth(index:Int):Int
 function getMonitorHeight(index:Int):Int
+function readDroppedFile(index:Int, maxBytes:Int, read:(name:String, bytes:haxe.io.Bytes) -> Void, failed:String -> Void):Void
 function canClose():Bool
 function close():Void
 var onClose:Null<() -> Void>
@@ -1049,7 +1054,7 @@ final canvasId:String
 
 Provides `IWindow` on an SDL3 window, natively.
 
-The window opens with the adapter, before the graphics adapter that draws in it. Moves are refused where the compositor places windows (Wayland, XWayland); orientation is a page's alone.
+The window opens with the adapter, before the graphics adapter that draws in it. Moves are refused where the compositor places windows (Wayland, XWayland); orientation is a page's alone. A dropped file is read from its path, during the call.
 
 ```haxe
 function new(options:Sdl3WindowAdapterOptions)
@@ -1091,6 +1096,7 @@ function getMonitorX(index:Int):Int
 function getMonitorY(index:Int):Int
 function getMonitorWidth(index:Int):Int
 function getMonitorHeight(index:Int):Int
+function readDroppedFile(index:Int, maxBytes:Int, read:(name:String, bytes:haxe.io.Bytes) -> Void, failed:String -> Void):Void
 function canClose():Bool
 function close():Void
 var onClose:Null<() -> Void>

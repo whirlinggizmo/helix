@@ -13,6 +13,12 @@ class FakeFileSystem implements IFileSystem {
 	/** Gets or sets whether writes fail. */
 	public var failWrites = false;
 
+	/** Gets when each file was last written, by path: the fake's clock, `time`, at its write. */
+	public final modified = new Map<String, Float>();
+
+	/** Gets or sets the fake's clock, in seconds, given to each file written. */
+	public var time = 0.;
+
 	/** Gets how many writes were made. */
 	public var writes(default, null) = 0;
 
@@ -58,6 +64,7 @@ class FakeFileSystem implements IFileSystem {
 		writes++;
 		later(() -> if (failWrites) failed("write failed") else {
 			files.set(path, copy);
+			modified.set(path, time);
 			written();
 		});
 	}
@@ -65,13 +72,39 @@ class FakeFileSystem implements IFileSystem {
 	public function deleteFile(path:String, deleted:Void->Void, failed:String->Void):Void
 		later(() -> {
 			files.remove(path);
+			modified.remove(path);
 			deleted();
 		});
 
 	public function deleteFiles(deleted:Void->Void, failed:String->Void):Void
 		later(() -> {
 			files.clear();
+			modified.clear();
 			deleted();
+		});
+
+	public function getInfo(path:String, found:(size:Int, modified:Float) -> Void, missing:Void->Void, failed:String->Void):Void
+		later(() -> if (failReads) failed("read failed") else if (files.exists(path)) found(files.get(path).length,
+			modified.exists(path) ? modified.get(path) : 0) else missing());
+
+	public function list(directory:String, listed:Array<String>->Void, missing:Void->Void, failed:String->Void):Void
+		later(() -> {
+			if (failReads) {
+				failed("read failed");
+				return;
+			}
+			var prefix = directory == "" ? "" : directory + "/", names = [];
+			for (path in files.keys())
+				if (StringTools.startsWith(path, prefix)) {
+					var rest = path.substr(prefix.length),
+						slash = rest.indexOf("/");
+					var name = slash < 0 ? rest : rest.substr(0, slash + 1);
+					if (names.indexOf(name) < 0)
+						names.push(name);
+				}
+			names.sort(Reflect.compare);
+			names.length == 0
+			&& directory != "" ? missing() : listed(names);
 		});
 
 	public function locate(path:String, located:(location:String, release:Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void

@@ -1016,6 +1016,7 @@ class RCore {
 			return saveText(normalize(fileName), text);
 		var path = normalize(fileName);
 		Runtime.keptSaves().setString(SAVED + path, text);
+		Runtime.keptSaves().setFloat(SAVED_TIME + path, Math.ffloor(Date.now().getTime() / 1000));
 		return true;
 	}
 
@@ -1046,6 +1047,7 @@ class RCore {
 			return saveData(path, data, dataSize);
 		var encoded = haxe.crypto.Base64.encode(data.sub(0, dataSize));
 		Runtime.keptSaves().setString(SAVED_DATA + path, encoded);
+		Runtime.keptSaves().setFloat(SAVED_TIME + path, Math.ffloor(Date.now().getTime() / 1000));
 		return true;
 	}
 
@@ -1156,6 +1158,115 @@ class RCore {
 				allPeriods = false;
 		}
 		return !allPeriods;
+	}
+
+	// ---- Directories and dropped files ----
+
+	/** raylib's check for a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target:
+		`DirectoryExistsAsync` answers it.
+
+		@param dirPath  The directory.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("DirectoryExists: Synchronous file access is not supported. See DirectoryExistsAsync(dirPath:String, answer:Bool->Void)")
+	static function DirectoryExists(dirPath:String):Bool {
+		throw "DirectoryExists is unimplemented";
+	}
+
+	/** raylib's file size, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `GetFileLengthAsync`
+		answers it.
+
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("GetFileLength: Synchronous file access is not supported. See GetFileLengthAsync(fileName:String, answer:Int->Void)")
+	static function GetFileLength(fileName:String):Int {
+		throw "GetFileLength is unimplemented";
+	}
+
+	/** Makes a directory. There is nothing to make: a directory is there once a file is written under it, so this succeeds.
+
+		@param dirPath  The directory.
+		@return  0, success; 1 for null or "", as raylib's. */
+	static function MakeDirectory(dirPath:String):Int {
+		return dirPath == null || dirPath == "" ? 1 : 0;
+	}
+
+	/** raylib's check for a file, as against a directory, which waits for the answer. A page can't wait, so a call doesn't compile on
+		any target: `IsPathFileAsync` answers it.
+
+		@param path  The path.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("IsPathFile: Synchronous file access is not supported. See IsPathFileAsync(path:String, answer:Bool->Void)")
+	static function IsPathFile(path:String):Bool {
+		throw "IsPathFile is unimplemented";
+	}
+
+	/** raylib's directory listing, which waits for it. A page can't wait, so a call doesn't compile on any target:
+		`LoadDirectoryFilesAsync` lists it.
+
+		@param dirPath  The directory.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadDirectoryFiles: Synchronous file access is not supported. See LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList->Void)")
+	static function LoadDirectoryFiles(dirPath:String):FilePathList {
+		throw "LoadDirectoryFiles is unimplemented";
+	}
+
+	/** raylib's filtered and recursive directory listing, which waits for it. A page can't wait, so a call doesn't compile on any
+		target: `LoadDirectoryFilesExAsync` lists it.
+
+		@param basePath  The directory.
+		@param filter  The extensions kept.
+		@param scanSubdirs  Whether subdirectories are listed too.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadDirectoryFilesEx: Synchronous file access is not supported. See LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void)")
+	static function LoadDirectoryFilesEx(basePath:String, filter:String, scanSubdirs:Bool):FilePathList {
+		throw "LoadDirectoryFilesEx is unimplemented";
+	}
+
+	/** Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave. There is nothing to free here, and the list is
+		unchanged.
+
+		@param files  The listing. */
+	static function UnloadDirectoryFiles(files:FilePathList):Void {}
+
+	/** Returns whether files were dropped on the window, natively from the desktop and in a page on the canvas. It stays true until
+		`UnloadDroppedFiles`, and a new drop's files replace the last one's, as raylib's do. A dropped file counts once its bytes are read,
+		natively in the frame it is dropped, in a page a frame or so after.
+
+		@return  True while dropped files are held. */
+	static function IsFileDropped():Bool {
+		return Runtime.dropped.length > 0;
+	}
+
+	/** Returns the paths of the files last dropped. Each is helix-ray's own, `helix-ray-dropped/<n>/<name>`, which every load reads, as
+		`LoadTextureAsync(path)`: the file's name is its last part, a character a path can't hold made `_`. A directory dropped isn't listed.
+
+		@return  The paths, `count` of them; `capacity` is 0, as raylib's. */
+	static function LoadDroppedFiles():FilePathList {
+		var list = new FilePathList();
+		list.paths = Runtime.dropped.copy();
+		list.count = list.paths.length;
+		return list;
+	}
+
+	/** Lets go of the files last dropped, so `IsFileDropped` is false until the next drop. A file loaded from one keeps what it loaded.
+
+		@param files  The list `LoadDroppedFiles` gave; one of no files does nothing, as raylib's. */
+	static function UnloadDroppedFiles(files:FilePathList):Void {
+		if (files == null || files.count <= 0)
+			return;
+		for (path in Runtime.dropped)
+			Runtime.memory.remove(path);
+		Runtime.dropped = [];
+	}
+
+	/** raylib's file modification time, which waits for the answer. A page can't wait, so a call doesn't compile on any target:
+		`GetFileModTimeAsync` answers it.
+
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("GetFileModTime: Synchronous file access is not supported. See GetFileModTimeAsync(fileName:String, answer:Int->Void)")
+	static function GetFileModTime(fileName:String):Int {
+		throw "GetFileModTime is unimplemented";
 	}
 
 	// ---- Encoding and hashes ----
@@ -1485,6 +1596,8 @@ class RCore {
 
 	// ---- What the functions share ----
 	static inline final SAVED_DATA = "data:";
+	// When a file SaveFileText or SaveFileData wrote was saved, in seconds since the Unix epoch.
+	static inline final SAVED_TIME = "time:";
 	static var loadText:Null<String->Null<String>> = null;
 	static var saveText:Null<(String, String) -> Bool> = null;
 	static var saveData:Null<(String, haxe.io.Bytes, Int) -> Bool> = null;

@@ -74,6 +74,26 @@ void *helix_sdl3_window(void){return window;}
 int helix_sdl3_is_open(void){return window!=NULL;}
 int helix_sdl3_focused(void){return focused;}
 void helix_sdl3_set_focused(int value){focused=value!=0;}
+/* The paths of the files last dropped, each SDL's copy, kept until the next drop's are cleared for it. */
+static char **dropped;
+static int dropped_count,dropped_capacity;
+void helix_sdl3_drop_clear(void){
+ for(int i=0;i<dropped_count;i++)SDL_free(dropped[i]);
+ dropped_count=0;
+}
+void helix_sdl3_drop_add(const char *path){
+ if(!path)return;
+ if(dropped_count==dropped_capacity){
+  int capacity=dropped_capacity?dropped_capacity*2:16;
+  char **grown=(char**)SDL_realloc(dropped,(size_t)capacity*sizeof *grown);
+  if(!grown)return;
+  dropped=grown;dropped_capacity=capacity;
+ }
+ char *copy=SDL_strdup(path);
+ if(copy)dropped[dropped_count++]=copy;
+}
+int helix_sdl3_dropped_count(void){return dropped_count;}
+const char *helix_sdl3_dropped_path(int index){return index>=0&&index<dropped_count?dropped[index]:NULL;}
 const char *helix_sdl3_platform(void){return SDL_GetPlatform();}
 const char *helix_sdl3_getenv(const char *name){return SDL_getenv(name);}
 int helix_sdl3_open_url(const char *url){return SDL_OpenURL(url);}

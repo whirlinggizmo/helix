@@ -149,6 +149,8 @@ Positions are in framebuffer pixels from the window's top-left corner. A key is 
 - `Hidden`: The player can't see the window, because it is minimized or hidden, or its page is in the background.
 - `CloseRequested`: The player or the OS asked to close the window. The program decides whether to close it.
   It arrives only natively. A page never receives it, because a closing tab gives no frame to decide in. A page's end is `IWindow.onClose`.
+- `FilesDropped(count:Int)`: Files were dropped on the window, count of them. `IWindow.readDroppedFile` reads each, 0 to count - 1, until the next `FilesDropped`.
+  Every file dropped since the last poll is in the one event: natively from the desktop's drag and drop, in a page dropped on the canvas. A dropped directory is no file and isn't counted.
 - `GraphicsLost`: The GPU's context is gone. In a page, the WebGL context was lost to a GPU reset or an evicted tab.
 
 ## FilePath
@@ -532,7 +534,7 @@ Defines files on this machine under one root, read and written whole by path.
 
 Natively the root is a directory on disk. In a page it is an IndexedDB database. A file on a server is read through `IHttp` instead.
 
-There is no listing, no making directories, no seeking and no metadata. A file is reached by its path. It is read whole or located for streaming, and written whole or not at all. These are a page's limits, kept natively so a program works the same on both.
+A file is reached by its path. It is read whole or located for streaming, and written whole or not at all, with no seeking. Its size and when it was last written are found with `getInfo`, and what a directory holds with `list`. A directory is made by writing a file under it, as a page has none of its own; there is no call that makes or deletes one. These are a page's limits, kept natively so a program works the same on both.
 
 A path is plain names joined by `/`, such as `audio/music.ogg`. Names use letters, digits, `_`, `-` and `.`, and the path is at most 256 characters. An absolute path, an empty name, `.` or `..` is refused through `failed`.
 
@@ -549,6 +551,8 @@ function read(path:String, maxBytes:Int, loaded:haxe.io.Bytes -> Void, missing:(
 function write(path:String, bytes:haxe.io.Bytes, written:() -> Void, failed:String -> Void):Void
 function deleteFile(path:String, deleted:() -> Void, failed:String -> Void):Void
 function deleteFiles(deleted:() -> Void, failed:String -> Void):Void
+function getInfo(path:String, found:(size:Int, modified:Float) -> Void, missing:() -> Void, failed:String -> Void):Void
+function list(directory:String, listed:Array<String> -> Void, missing:() -> Void, failed:String -> Void):Void
 function locate(path:String, located:(location:String, release:() -> Void) -> Void, missing:() -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
@@ -580,6 +584,20 @@ function dispose():Void
 - `deleteFiles`: Deletes every file under the root, as when clearing a cache.
   - `deleted`: Called once the files are gone.
   - `failed`: Receives why the files can't be deleted.
+- `getInfo`: Finds a file's size and when it was last written.
+  - `path`: The file's path under the root.
+  - `found`: Receives the file's size, in bytes, and when it was last written, in seconds since the Unix epoch.
+  - `missing`: Called when there is no file at the path.
+  - `failed`: Receives why it can't be found.
+
+  A directory isn't a file, so its path is missing here. In a page, a file written before the adapter kept write times was last written at 0.
+- `list`: Lists what a directory holds: its files' names, and its subdirectories' names ending in `/`.
+  - `directory`: The directory's path under the root, or "" for the root.
+  - `listed`: Receives the names, such as `["1.json", "bonus/"]`; none for an empty directory or a root not yet written.
+  - `missing`: Called when there is no directory at the path, including when a file is there.
+  - `failed`: Receives why it can't be listed.
+
+  Only the directory's own entries are listed, sorted, not what its subdirectories hold. Natively a name the paths can't hold (one with a space, say) is listed too, though no call reaches it. In a page a directory is there while a file is under it.
 - `locate`: Finds where a file is, so it can be played as it is read without loading it whole.
   - `path`: The file's path under the root.
   - `located`: Receives the location and a function that releases it. That function is called once, when the location is no longer read.
@@ -1140,6 +1158,7 @@ function getMonitorY(index:Int):Int
 function getMonitorWidth(index:Int):Int
 function getMonitorHeight(index:Int):Int
 function getMonitorRefreshRate(index:Int):Float
+function readDroppedFile(index:Int, maxBytes:Int, read:(name:String, bytes:haxe.io.Bytes) -> Void, failed:String -> Void):Void
 function canClose():Bool
 function close():Void
 var onClose:Null<() -> Void>
@@ -1255,6 +1274,13 @@ var onClose:Null<() -> Void>
 - `getMonitorRefreshRate`: Returns how many times a second a monitor shows a new picture.
   - `index`: The monitor, 0 to `monitorCount` - 1.
   - returns: The refresh rate in hertz, or 0 where it isn't known, as in a page.
+- `readDroppedFile`: Reads a file dropped on the window, one the last `FilesDropped` event counted.
+  - `index`: The file, 0 to the event's count - 1.
+  - `maxBytes`: The largest file to read; a larger one fails.
+  - `read`: Receives the file's name, without its directory, and its bytes.
+  - `failed`: Receives why it can't be read: an index no drop gave, a file over `maxBytes`, or the platform's reason.
+
+  One of `read` or `failed` is called once, during this call or later: natively during it, in a page later. Natively the file is read from where it is on disk, so one moved or changed since the drop reads as it is now. In a page it is the File the browser gave, kept until the next drop.
 - `canClose`: Returns whether `close` removes the window.
   - returns: True natively. False in a page, which a script can't close.
 

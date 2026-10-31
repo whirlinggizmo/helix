@@ -85,6 +85,13 @@ enum Event {
 		`IWindow.onClose`. */
 	CloseRequested;
 
+	/** Files were dropped on the window, count of them. `IWindow.readDroppedFile` reads each, 0 to count - 1, until the next
+		`FilesDropped`.
+
+		Every file dropped since the last poll is in the one event: natively from the desktop's drag and drop, in a page dropped on the
+		canvas. A dropped directory is no file and isn't counted. */
+	FilesDropped(count:Int);
+
 	/** The GPU's context is gone. In a page, the WebGL context was lost to a GPU reset or an evicted tab. */
 	GraphicsLost;
 }

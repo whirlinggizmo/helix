@@ -3,11 +3,12 @@ package helix.ray.internal;
 import haxe.io.Bytes;
 import helix.platform.IFileSystem;
 
-/** Holds the files `LoadMusicStreamFromMemory` plays, as a file system read first, so `Audio.stream` finds them by path as any file.
+/** Holds the files `LoadMusicStreamFromMemory` plays and the files dropped on the window, as a file system read first, so `Assets` and
+	`Audio.stream` find them by path as any file.
 
 	A file located for a stream is a Blob's URL in a page, which the media element reads; natively it is written to the program's cache
 	directory (`ISystem.getCacheDirectory`) and read from there, as a native stream reads a file. Releasing it lets go of the URL or
-	deletes the file, and forgets the bytes. It answers at the next poll, as every file system does, and can't be written. */
+	deletes the file, and forgets a stream's bytes; a dropped file's are kept until `remove`. It answers at the next poll, as every file system does, and can't be written. */
 @:noCompletion
 class MemoryFiles implements IFileSystem {
 	final files = new Map<String, Bytes>();
@@ -32,10 +33,33 @@ class MemoryFiles implements IFileSystem {
 		return path;
 	}
 
+	/** Holds a dropped file's bytes under a path of its own, until removed.
+
+		@param name  The file's name, its characters a path can't hold made `_`.
+		@param bytes  The file.
+		@return  The path, `helix-ray-dropped/<n>/<name>`. */
+	public function addDropped(name:String, bytes:Bytes):String {
+		var safe = ~/[^A-Za-z0-9_.-]/g.replace(name, "_");
+		if (safe == "" || ~/^\.+$/.match(safe))
+			safe = "file";
+		var path = '$DROPPED${++count}/${safe.substr(-200)}';
+		files.set(path, bytes);
+		return path;
+	}
+
+	/** Forgets a file it holds.
+
+		@param path  The file's path. */
+	public function remove(path:String):Void
+		files.remove(path);
+
+	/** The directory the dropped files are under. */
+	public static inline final DROPPED = "helix-ray-dropped/";
+
 	public var root(get, never):String;
 
 	function get_root():String
-		return "the files given LoadMusicStreamFromMemory";
+		return "the files given LoadMusicStreamFromMemory and the files dropped";
 
 	public var canWrite(get, never):Bool;
 
@@ -67,6 +91,28 @@ class MemoryFiles implements IFileSystem {
 	public function deleteFiles(deleted:Void->Void, failed:String->Void):Void
 		waiting.push(() -> failed('the files in memory can\'t be written'));
 
+	public function getInfo(path:String, found:(size:Int, modified:Float) -> Void, missing:Void->Void, failed:String->Void):Void
+		waiting.push(() -> {
+			var bytes = files.get(path);
+			bytes == null ? missing() : found(bytes.length, 0);
+		});
+
+	public function list(directory:String, listed:Array<String>->Void, missing:Void->Void, failed:String->Void):Void
+		waiting.push(() -> {
+			var prefix = directory == "" ? "" : directory + "/", names = [];
+			for (path in files.keys())
+				if (StringTools.startsWith(path, prefix)) {
+					var rest = path.substr(prefix.length),
+						slash = rest.indexOf("/");
+					var name = slash < 0 ? rest : rest.substr(0, slash + 1);
+					if (names.indexOf(name) < 0)
+						names.push(name);
+				}
+			names.sort(Reflect.compare);
+			names.length == 0
+			&& directory != "" ? missing() : listed(names);
+		});
+
 	public function locate(path:String, located:(location:String, release:Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void {
 		waiting.push(() -> {
 			var bytes = files.get(path);
@@ -79,7 +125,7 @@ class MemoryFiles implements IFileSystem {
 			var url = js.html.URL.createObjectURL(blob);
 			located(url, () -> {
 				js.html.URL.revokeObjectURL(url);
-				files.remove(path);
+				forget(path);
 			});
 			#else
 			if (cache == null) {
@@ -90,11 +136,16 @@ class MemoryFiles implements IFileSystem {
 			kept.write(path, bytes, () -> kept.locate(path, (location, release) -> located(location, () -> {
 				release();
 				kept.deleteFile(path, () -> {}, _ -> {});
-				files.remove(path);
+				forget(path);
 			}), missing, failed), failed);
 			#end
 		});
 	}
+
+	// Forgets a stream's bytes once it is released; a dropped file stays until removed.
+	function forget(path:String):Void
+		if (!StringTools.startsWith(path, DROPPED))
+			files.remove(path);
 
 	public function poll():Void {
 		var now = waiting.copy();

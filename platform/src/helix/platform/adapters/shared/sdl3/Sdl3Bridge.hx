@@ -16,7 +16,8 @@ package helix.platform.adapters.shared.sdl3;
  <section if='linux'><lib name='-lm'/><lib name='-ldl'/><lib name='-lpthread'/></section>
  <flag value='-Wl,-rpath,@executable_path' if='macos'/>
 </target>")
-/** Provides the C that SDL3's adapters share: the window and its GL context, the shared focus, the clock and the program's facts.
+/** Provides the C that SDL3's adapters share: the window and its GL context, the shared focus and dropped files, the clock and the
+	program's facts.
 
 	hxcpp builds the C with the program, against the SDL3 headers in `vendor/`, and links the SDL3 library that HELIX_SDL3_LIBRARY names;
 	on Windows, DWM too, to wait on the compositor, and the shell, for its folders. */
@@ -30,6 +31,8 @@ extern class Sdl3Bridge {
 	@:native("helix_sdl3_is_open") static function isOpen():Int;
 	@:native("helix_sdl3_focused") static function focused():Int;
 	@:native("helix_sdl3_set_focused") static function setFocused(focused:Int):Void;
+	@:native("helix_sdl3_dropped_count") static function droppedCount():Int;
+	@:native("helix_sdl3_dropped_path") static function droppedPath(index:Int):cpp.ConstCharStar;
 	@:native("helix_surface_width") static function framebufferWidth():Int;
 	@:native("helix_surface_height") static function framebufferHeight():Int;
 	@:native("helix_sdl3_platform") static function platform():cpp.ConstCharStar;

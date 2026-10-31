@@ -43,8 +43,14 @@ class Runtime {
 	/** The program's files, as the preload found them, for what loads from them later (`Audio`, and the `...Async` loads). */
 	public static var assets:Null<Assets> = null;
 
-	/** The files `LoadMusicStreamFromMemory` plays, read before the program's own, made with the assets. */
+	/** The files `LoadMusicStreamFromMemory` plays and the files dropped, read before the program's own, made with the assets. */
 	public static var memory:Null<MemoryFiles> = null;
+
+	/** Natively, the program's own files, read-only, made with the assets; null in a page, whose files are on its server. */
+	public static var shipped:Null<IFileSystem> = null;
+
+	/** The paths of the files last dropped, held in `memory`, once each was read; empty when none were or after `UnloadDroppedFiles`. */
+	public static var dropped:Array<String> = [];
 
 	/** The models, reading glTF files with what they name, made with the assets. */
 	public static var models:Null<helix.services.models.Models> = null;
@@ -147,6 +153,7 @@ class Runtime {
 		#else
 		var directory = haxe.io.Path.join([system.getProgramDirectory(), root]);
 		var cache = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory, readOnly: true});
+		shipped = cache;
 		var imageDecoder = new helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter();
 		var callback = new CallbackFiles();
 		polled.push(callback);
@@ -555,6 +562,8 @@ class Runtime {
 					cursorOnScreen = true;
 				case MouseLeave:
 					cursorOnScreen = false;
+				case FilesDropped(count):
+					drop(count);
 				case _:
 			}
 		for (device in devices)
@@ -570,6 +579,27 @@ class Runtime {
 			shouldClose = true;
 		#end
 		time.poll();
+	}
+
+	// Reads the files of a drop into memory, then holds their paths in place of the last drop's, as raylib's do.
+	static function drop(count:Int):Void {
+		loading();
+		var paths:Array<Null<String>> = [for (_ in 0...count) null], left = count;
+		function answered():Void {
+			if (--left > 0)
+				return;
+			for (path in dropped)
+				memory.remove(path);
+			dropped = [for (path in paths) if (path != null) path];
+		}
+		for (i in 0...count)
+			window.readDroppedFile(i, 1 << 30, (name, bytes) -> {
+				paths[i] = memory.addDropped(name, bytes);
+				answered();
+			}, error -> {
+				log(4, 'FILEIO: Failed to read a dropped file: $error');
+				answered();
+			});
 	}
 
 	static function pollAll():Void {

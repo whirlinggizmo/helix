@@ -219,6 +219,17 @@ interface IWindow {
 		@return  The refresh rate in hertz, or 0 where it isn't known, as in a page. */
 	function getMonitorRefreshRate(index:Int):Float;
 
+	/** Reads a file dropped on the window, one the last `FilesDropped` event counted.
+
+		One of `read` or `failed` is called once, during this call or later: natively during it, in a page later. Natively the file is
+		read from where it is on disk, so one moved or changed since the drop reads as it is now. In a page it is the File the browser
+		gave, kept until the next drop.
+		@param index  The file, 0 to the event's count - 1.
+		@param maxBytes  The largest file to read; a larger one fails.
+		@param read  Receives the file's name, without its directory, and its bytes.
+		@param failed  Receives why it can't be read: an index no drop gave, a file over `maxBytes`, or the platform's reason. */
+	function readDroppedFile(index:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void;
+
 	/** Returns whether `close` removes the window.
 
 		A menu checks it before offering Quit.

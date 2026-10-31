@@ -4,9 +4,10 @@ import haxe.io.Bytes;
 import helix.platform.IFileSystem;
 import helix.platform.FilePath;
 
-/** Provides `IFileSystem` in a page: Blobs in an IndexedDB database, a located file a Blob's URL, released by revoking it.
+/** Provides `IFileSystem` in a page: Files in an IndexedDB database, each a Blob keyed by its path that keeps when it was written, and a
+	located file a Blob's URL, released by revoking it.
 
-	Operations asked before the database opens wait for it. */
+	A directory is the paths that start with its name and a `/`. Operations asked before the database opens wait for it. */
 class BrowserFileSystemAdapter implements IFileSystem {
 	var name:String;
 	var db:Dynamic;
@@ -115,8 +116,9 @@ class BrowserFileSystemAdapter implements IFileSystem {
 	}
 
 	public function write(path:String, bytes:Bytes, written:Void->Void, failed:String->Void):Void {
-		var blob = new js.html.Blob([new js.lib.Uint8Array(bytes.getData(), 0, bytes.length)]);
-		transact(path, "readwrite", files -> files.put(blob, path), _ -> written(), failed);
+		// A File keeps its write time (lastModified, now by default) beside its bytes.
+		var file = new js.html.File([new js.lib.Uint8Array(bytes.getData(), 0, bytes.length)], haxe.io.Path.withoutDirectory(path));
+		transact(path, "readwrite", files -> files.put(file, path), _ -> written(), failed);
 	}
 
 	public function deleteFile(path:String, deleted:Void->Void, failed:String->Void):Void
@@ -124,6 +126,37 @@ class BrowserFileSystemAdapter implements IFileSystem {
 
 	public function deleteFiles(deleted:Void->Void, failed:String->Void):Void
 		transact(null, "readwrite", files -> files.clear(), _ -> deleted(), failed);
+
+	public function getInfo(path:String, found:(size:Int, modified:Float) -> Void, missing:Void->Void, failed:String->Void):Void
+		transact(path, "readonly", files -> files.get(path), value -> {
+			if (value == null)
+				missing();
+			else {
+				// A Blob kept before Files were has no write time.
+				var modified:Null<Float> = value.lastModified;
+				found(value.size, modified == null ? 0 : modified / 1000);
+			}
+		}, failed);
+
+	public function list(directory:String, listed:Array<String>->Void, missing:Void->Void, failed:String->Void):Void {
+		// Every key under the directory: from its prefix to that prefix followed by the highest character.
+		var prefix = directory == "" ? "" : directory + "/";
+		var range:Dynamic = directory == "" ? js.Lib.undefined : js.Syntax.code("IDBKeyRange.bound({0}, {1})", prefix, prefix + "\u{FFFF}");
+		transact(directory == "" ? null : directory, "readonly", files -> files.getAllKeys(range), keys -> {
+			var names:Array<String> = [];
+			for (key in (keys : Array<String>)) {
+				var rest = key.substr(prefix.length),
+					slash = rest.indexOf("/");
+				var name = slash < 0 ? rest : rest.substr(0, slash + 1);
+				if (names.length == 0 || names[names.length - 1] != name)
+					names.push(name);
+			}
+			if (names.length == 0 && directory != "")
+				missing();
+			else
+				listed(names);
+		}, failed);
+	}
 
 	public function locate(path:String, located:(location:String, release:Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void
 		transact(path, "readonly", files -> files.get(path), value -> {

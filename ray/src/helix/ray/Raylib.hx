@@ -1847,6 +1847,41 @@ class Raylib {
 	public static inline function IsFileNameValid(fileName:String):Bool
 		return RCore.IsFileNameValid(fileName);
 
+	/** Makes a directory. There is nothing to make: a directory is there once a file is written under it, so this succeeds.
+
+		@param dirPath  The directory.
+		@return  0, success; 1 for null or "", as raylib's. */
+	public static inline function MakeDirectory(dirPath:String):Int
+		return RCore.MakeDirectory(dirPath);
+
+	/** Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave. There is nothing to free here, and the list is
+		unchanged.
+
+		@param files  The listing. */
+	public static inline function UnloadDirectoryFiles(files:FilePathList):Void
+		RCore.UnloadDirectoryFiles(files);
+
+	/** Returns whether files were dropped on the window, natively from the desktop and in a page on the canvas. It stays true until
+		`UnloadDroppedFiles`, and a new drop's files replace the last one's, as raylib's do. A dropped file counts once its bytes are read,
+		natively in the frame it is dropped, in a page a frame or so after.
+
+		@return  True while dropped files are held. */
+	public static inline function IsFileDropped():Bool
+		return RCore.IsFileDropped();
+
+	/** Returns the paths of the files last dropped. Each is helix-ray's own, `helix-ray-dropped/<n>/<name>`, which every load reads, as
+		`LoadTextureAsync(path)`: the file's name is its last part, a character a path can't hold made `_`. A directory dropped isn't listed.
+
+		@return  The paths, `count` of them; `capacity` is 0, as raylib's. */
+	public static inline function LoadDroppedFiles():FilePathList
+		return RCore.LoadDroppedFiles();
+
+	/** Lets go of the files last dropped, so `IsFileDropped` is false until the next drop. A file loaded from one keeps what it loaded.
+
+		@param files  The list `LoadDroppedFiles` gave; one of no files does nothing, as raylib's. */
+	public static inline function UnloadDroppedFiles(files:FilePathList):Void
+		RCore.UnloadDroppedFiles(files);
+
 	/** Compresses bytes as raylib's `CompressData` does, byte for byte: raw DEFLATE (no zlib header), sdefl's level 8.
 
 		@param data  The bytes.
@@ -4877,6 +4912,69 @@ class Raylib {
 	public static inline function FileExistsAsync(fileName:String, answer:Bool->Void):Void
 		RAsync.FileExistsAsync(fileName, answer);
 
+	/** Answers a file's size: helix-ray's own, in place of raylib's `GetFileLength`. A file `SaveFileText` or `SaveFileData` wrote, or
+		the program's `SetLoadFileDataCallback` gives, is its bytes' size; a dropped file's is its own. Natively a file of the program's is
+		its size on disk; in a page it is read from the server to be measured, so a load of it after answers at once. The answer comes at
+		a later frame, never during the call.
+
+		@param fileName  The file.
+		@param answer  Receives its size in bytes; 0 when there is no file, as raylib's. */
+	public static inline function GetFileLengthAsync(fileName:String, answer:Int->Void):Void
+		RAsync.GetFileLengthAsync(fileName, answer);
+
+	/** Answers when a file was last written: helix-ray's own, in place of raylib's `GetFileModTime`. Natively a file of the program's
+		answers its time on disk; a file `SaveFileText` or `SaveFileData` wrote, when it was saved. A page's own files are on its server,
+		and a dropped file or one the program's load callback gives has no time kept, so each answers 0. The answer comes at a later frame,
+		never during the call.
+
+		@param fileName  The file.
+		@param answer  Receives the time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's. */
+	public static inline function GetFileModTimeAsync(fileName:String, answer:Int->Void):Void
+		RAsync.GetFileModTimeAsync(fileName, answer);
+
+	/** Answers whether a path is a file, not a directory: helix-ray's own, in place of raylib's `IsPathFile`. A file `SaveFileText` or
+		`SaveFileData` wrote, a dropped file, and a file the program has, as `FileExistsAsync` finds them, are files. The answer comes at a
+		later frame, never during the call.
+
+		@param path  The path.
+		@param answer  Receives true for a file; false for a directory or nothing there. */
+	public static inline function IsPathFileAsync(path:String, answer:Bool->Void):Void
+		RAsync.IsPathFileAsync(path, answer);
+
+	/** Answers whether a directory exists: helix-ray's own, in place of raylib's `DirectoryExists`. Natively it is a directory of the
+		program's files; `helix-ray-dropped` and the directories under it hold the dropped files. A page's own files are on its server,
+		which can't be listed, so there only its root ("", "." or "./") and the dropped files' directories exist. The answer comes at a later
+		frame, never during the call.
+
+		@param dirPath  The directory.
+		@param answer  Receives true when it exists. */
+	public static inline function DirectoryExistsAsync(dirPath:String, answer:Bool->Void):Void
+		RAsync.DirectoryExistsAsync(dirPath, answer);
+
+	/** Lists a directory's files and subdirectories: helix-ray's own, in place of raylib's `LoadDirectoryFiles`. Each path is the
+		directory's followed by `/` and the name (`dirPath` "levels" gives "levels/1.json"), sorted by name, a subdirectory's without a
+		slash at its end. The directories are `DirectoryExistsAsync`'s; a page lists only the dropped files. Files `SaveFileText` and
+		`SaveFileData` wrote aren't listed. The answer comes at a later frame, never during the call.
+
+		@param dirPath  The directory.
+		@param loaded  Receives the list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as
+			raylib's. */
+	public static inline function LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList->Void):Void
+		RAsync.LoadDirectoryFilesAsync(dirPath, loaded);
+
+	/** Lists a directory's files, those with some extensions, and with `scanSubdirs` its subdirectories' too: helix-ray's own, in place
+		of raylib's `LoadDirectoryFilesEx`. The paths are `LoadDirectoryFilesAsync`'s, a subdirectory's files right after it. As raylib's:
+		a null filter keeps every file, and without `scanSubdirs` every subdirectory too; a filter is `IsFileExtension`'s list, and
+		"DIR" in it keeps the subdirectories; at most 8192 paths are listed (`MAX_FILEPATH_CAPACITY`), with a warning when there are
+		more. The answer comes at a later frame, never during the call.
+
+		@param basePath  The directory.
+		@param filter  The extensions kept, such as ".png;.jpg;DIR", or null for every file.
+		@param scanSubdirs  Whether the subdirectories' files are listed too.
+		@param loaded  Receives the list, its `capacity` 8192; a directory that can't be listed adds nothing, with a warning. */
+	public static inline function LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void):Void
+		RAsync.LoadDirectoryFilesExAsync(basePath, filter, scanSubdirs, loaded);
+
 	/** Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType
 		file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto
 		one texture, as raylib's; an image (PNG, JPEG, BMP, TGA or QOI) its glyphs on a `MAGENTA` key from the space on, as
@@ -5046,6 +5144,36 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)",
 			macro(null : Null<haxe.io.Bytes>));
 
+	/** raylib's check for a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `DirectoryExistsAsync` answers it. */
+	public static macro function DirectoryExists(dirPath:ExprOf<String>):ExprOf<Bool>
+		return helix.platform.macros.Build.unsupported("DirectoryExists: Synchronous file access is not supported. See DirectoryExistsAsync(dirPath:String, answer:Bool->Void)",
+			macro(false : Bool));
+
+	/** raylib's file size, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `GetFileLengthAsync` answers it. */
+	public static macro function GetFileLength(fileName:ExprOf<String>):ExprOf<Int>
+		return helix.platform.macros.Build.unsupported("GetFileLength: Synchronous file access is not supported. See GetFileLengthAsync(fileName:String, answer:Int->Void)",
+			macro(0 : Int));
+
+	/** raylib's check for a file, as against a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `IsPathFileAsync` answers it. */
+	public static macro function IsPathFile(path:ExprOf<String>):ExprOf<Bool>
+		return helix.platform.macros.Build.unsupported("IsPathFile: Synchronous file access is not supported. See IsPathFileAsync(path:String, answer:Bool->Void)",
+			macro(false : Bool));
+
+	/** raylib's directory listing, which waits for it. A page can't wait, so a call doesn't compile on any target: `LoadDirectoryFilesAsync` lists it. */
+	public static macro function LoadDirectoryFiles(dirPath:ExprOf<String>):ExprOf<FilePathList>
+		return helix.platform.macros.Build.unsupported("LoadDirectoryFiles: Synchronous file access is not supported. See LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList->Void)",
+			macro(null : helix.ray.FilePathList));
+
+	/** raylib's filtered and recursive directory listing, which waits for it. A page can't wait, so a call doesn't compile on any target: `LoadDirectoryFilesExAsync` lists it. */
+	public static macro function LoadDirectoryFilesEx(basePath:ExprOf<String>, filter:ExprOf<String>, scanSubdirs:ExprOf<Bool>):ExprOf<FilePathList>
+		return helix.platform.macros.Build.unsupported("LoadDirectoryFilesEx: Synchronous file access is not supported. See LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void)",
+			macro(null : helix.ray.FilePathList));
+
+	/** raylib's file modification time, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `GetFileModTimeAsync` answers it. */
+	public static macro function GetFileModTime(fileName:ExprOf<String>):ExprOf<Int>
+		return helix.platform.macros.Build.unsupported("GetFileModTime: Synchronous file access is not supported. See GetFileModTimeAsync(fileName:String, answer:Int->Void)",
+			macro(0 : Int));
+
 	/** raylib's texture load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadTextureAsync` loads it. */
 	public static macro function LoadTexture(fileName:ExprOf<String>):ExprOf<Texture2D>
 		return helix.platform.macros.Build.unsupported("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)",
@@ -5207,14 +5335,6 @@ class Raylib {
 	public static macro function ExportDataAsCode(data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unimplemented("ExportDataAsCode: Not implemented", macro(false : Bool));
 
-	/** raylib's `DirectoryExists` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if a directory path exists. */
-	public static macro function DirectoryExists(dirPath:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("DirectoryExists: Not implemented", macro(false : Bool));
-
-	/** raylib's `GetFileLength` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get file length in bytes (NOTE: GetFileSize() conflicts with windows.h). */
-	public static macro function GetFileLength(fileName:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetFileLength: Not implemented", macro(0 : Int));
-
 	/** raylib's `GetWorkingDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get current working directory (uses static string). */
 	public static macro function GetWorkingDirectory():ExprOf<String>
 		return helix.platform.macros.Build.unimplemented("GetWorkingDirectory: Not implemented", macro(null : String));
@@ -5223,45 +5343,9 @@ class Raylib {
 	public static macro function GetApplicationDirectory():ExprOf<String>
 		return helix.platform.macros.Build.unimplemented("GetApplicationDirectory: Not implemented", macro(null : String));
 
-	/** raylib's `MakeDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Create directories (including full path requested), returns 0 on success. */
-	public static macro function MakeDirectory(dirPath:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("MakeDirectory: Not implemented", macro(0 : Int));
-
 	/** raylib's `ChangeDirectory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Change working directory, return true on success. */
 	public static macro function ChangeDirectory(dir:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unimplemented("ChangeDirectory: Not implemented", macro(false : Bool));
-
-	/** raylib's `IsPathFile` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if a given path is a file or a directory. */
-	public static macro function IsPathFile(path:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsPathFile: Not implemented", macro(false : Bool));
-
-	/** raylib's `LoadDirectoryFiles` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load directory filepaths. */
-	public static macro function LoadDirectoryFiles(dirPath:ExprOf<String>):ExprOf<FilePathList>
-		return helix.platform.macros.Build.unimplemented("LoadDirectoryFiles: Not implemented", macro(null : helix.ray.FilePathList));
-
-	/** raylib's `LoadDirectoryFilesEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load directory filepaths with extension filtering and recursive directory scan. Use 'DIR' in the filter string to include directories in the result. */
-	public static macro function LoadDirectoryFilesEx(basePath:ExprOf<String>, filter:ExprOf<String>, scanSubdirs:ExprOf<Bool>):ExprOf<FilePathList>
-		return helix.platform.macros.Build.unimplemented("LoadDirectoryFilesEx: Not implemented", macro(null : helix.ray.FilePathList));
-
-	/** raylib's `UnloadDirectoryFiles` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload filepaths. */
-	public static macro function UnloadDirectoryFiles(files:ExprOf<FilePathList>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadDirectoryFiles: Not implemented", macro {});
-
-	/** raylib's `IsFileDropped` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if a file has been dropped into window. */
-	public static macro function IsFileDropped():ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsFileDropped: Not implemented", macro(false : Bool));
-
-	/** raylib's `LoadDroppedFiles` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load dropped filepaths. */
-	public static macro function LoadDroppedFiles():ExprOf<FilePathList>
-		return helix.platform.macros.Build.unimplemented("LoadDroppedFiles: Not implemented", macro(null : helix.ray.FilePathList));
-
-	/** raylib's `UnloadDroppedFiles` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload dropped filepaths. */
-	public static macro function UnloadDroppedFiles(files:ExprOf<FilePathList>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadDroppedFiles: Not implemented", macro {});
-
-	/** raylib's `GetFileModTime` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get file modification time (last write time). */
-	public static macro function GetFileModTime(fileName:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("GetFileModTime: Not implemented", macro(0 : Int));
 
 	/** raylib's `LoadAutomationEventList` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load automation events list from file, NULL for empty list, capacity = MAX_AUTOMATION_EVENTS. */
 	public static macro function LoadAutomationEventList(fileName:ExprOf<String>):ExprOf<AutomationEventList>

@@ -4,7 +4,7 @@
 #include <string.h>
 
 /* SDL3's events, drained from SDL's one queue at each poll into records the Haxe adapters read (events_sdl3.h's kinds): the window's
-   focus, visibility, size and close, and the player's first press, always; keys by physical position as Key numbers them, the mouse and
+   focus, visibility, size, close and dropped files, and the player's first press, always; keys by physical position as Key numbers them, the mouse and
    fingers in framebuffer pixels, and gamepads connecting, only while their device is wanted. A device not wanted has its events turned off
    in SDL, and the gamepads' subsystem starts only when they are wanted. Gamepads' buttons and axes are read as state, in the W3C standard
    layout. */
@@ -76,6 +76,22 @@ void helix_mouse_dispose(void){
 /* A full frame drops its newest events: a frame that long is already lost. */
 static void add(int kind,int code,int value,float x,float y){if(count<1024)records[count++]=(record){kind,code,value,x,y};}
 
+/* The files dropped this poll, in one record, made at the first drop's end (-1 before it): the drops before are cleared for it, and a
+   later drop in the same poll adds to it. Files SDL gave before a drop's end wait in drop_pending. */
+static int drop_record=-1,drop_pending;
+static void drop_file(const char *path){
+ if(!path)return;
+ if(drop_record<0&&drop_pending==0)helix_sdl3_drop_clear();
+ helix_sdl3_drop_add(path);
+ drop_pending++;
+}
+static void drop_complete(void){
+ if(drop_pending==0)return;
+ if(drop_record>=0)records[drop_record].code+=drop_pending;
+ else if(count<1024){drop_record=count;add(HELIX_EVENTS_FILES_DROPPED,drop_pending,0,0,0);}
+ drop_pending=0;
+}
+
 /* The event's window's framebuffer pixels per window unit (1 unless the window has a high pixel density). */
 static float density(SDL_WindowID id){
  SDL_Window *w=SDL_GetWindowFromID(id);float d=w?SDL_GetWindowPixelDensity(w):1;return d>0?d:1;
@@ -139,6 +155,12 @@ static void text(const char *s){
  }
 }
 
+/* Whether a dropped path is a directory, which isn't a file to read. */
+static int is_directory(const char *path){
+ SDL_PathInfo info;
+ return SDL_GetPathInfo(path,&info)&&info.type==SDL_PATHTYPE_DIRECTORY;
+}
+
 static void translate(SDL_Event *e){
  switch(e->type){
   case SDL_EVENT_KEY_DOWN:case SDL_EVENT_KEY_UP:{
@@ -186,6 +208,9 @@ static void translate(SDL_Event *e){
   case SDL_EVENT_WINDOW_RESTORED:case SDL_EVENT_WINDOW_SHOWN:add(HELIX_EVENTS_SHOWN,0,0,0,0);break;
   case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:add(HELIX_EVENTS_RESIZED,e->window.data1,e->window.data2,0,0);break;
   case SDL_EVENT_QUIT:case SDL_EVENT_WINDOW_CLOSE_REQUESTED:add(HELIX_EVENTS_CLOSE_REQUESTED,0,0,0,0);break;
+  /* A drop's files come one event each, then its end; a dropped directory comes as a path too, and isn't kept as a file. */
+  case SDL_EVENT_DROP_FILE:if(e->drop.data&&!is_directory(e->drop.data))drop_file(e->drop.data);break;
+  case SDL_EVENT_DROP_COMPLETE:drop_complete();break;
   case SDL_EVENT_GAMEPAD_ADDED:pad_added(e->gdevice.which);break;
   case SDL_EVENT_GAMEPAD_REMOVED:pad_removed(e->gdevice.which);break;
   case SDL_EVENT_GAMEPAD_BUTTON_DOWN:case SDL_EVENT_GAMEPAD_BUTTON_UP:{
@@ -223,11 +248,13 @@ void helix_events_want(int device,int on){
  if(!(wanted&HELIX_EVENTS_KEYBOARD))helix_events_set_text(0);
 }
 void helix_events_poll(void){
- count=0;read_at=0;
+ count=0;read_at=0;drop_record=-1;
  apply_text();
  apply_events();
  SDL_Event e;
  while(SDL_PollEvent(&e))translate(&e);
+ /* A drop whose end hasn't come by the end of the poll (one pushed without it) counts as ended. */
+ drop_complete();
  apply_events();
 }
 void helix_events_wait(int milliseconds){SDL_WaitEventTimeout(NULL,milliseconds);}

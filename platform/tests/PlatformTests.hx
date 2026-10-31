@@ -4,7 +4,8 @@ import helix.platform.Sampling;
 import helix.platform.TextureFormat;
 import helix.platform.Wrap;
 
-/** Checks helix-platform's own values, built with -lib helix-platform alone so nothing above it is visible: a sampling's parts, texture formats' level sizes, and the enum abstracts read as their names. Run by helix.py test on the
+/** Checks helix-platform's own values, built with -lib helix-platform alone so nothing above it is visible: a sampling's parts, texture formats' level sizes, and the enum abstracts read as their names; and, where there is a
+	file system (the interpreter and hxcpp), `NativeFileSystemAdapter`'s file information and listing. Run by helix.py test on the
 	interpreter and Node. */
 class PlatformTests {
 	static var checks = 0;
@@ -14,6 +15,62 @@ class PlatformTests {
 			throw message;
 		checks++;
 	}
+
+	#if sys
+	// Waits for a file system's answer, polling it: the native adapter answers at a later poll, from its worker thread.
+	static function await(files:helix.platform.IFileSystem, ask:(Dynamic->Void)->Void):Dynamic {
+		var answer:Dynamic = null, answered = false;
+		ask(value -> {
+			answer = value;
+			answered = true;
+		});
+		var until = Sys.time() + 10;
+		while (!answered && Sys.time() < until) {
+			files.poll();
+			Sys.sleep(.001);
+		}
+		check(answered, "the file system answered within 10 seconds");
+		return answer;
+	}
+
+	// A file's size and time, its directory's listing, and what is missing, on a directory of the tests' own.
+	static function fileSystem():Void {
+		var directory = "build/tests/platform-files";
+		function remove(path:String):Void {
+			if (!sys.FileSystem.exists(path))
+				return;
+			if (sys.FileSystem.isDirectory(path)) {
+				for (entry in sys.FileSystem.readDirectory(path))
+					remove('$path/$entry');
+				sys.FileSystem.deleteDirectory(path);
+			} else
+				sys.FileSystem.deleteFile(path);
+		}
+		remove(directory);
+		var files:helix.platform.IFileSystem = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory});
+		function info(path:String):Dynamic
+			return await(files,
+				done -> files.getInfo(path, (size, modified) -> done({size: size, modified: modified}), () -> done("missing"), why -> done('failed: $why')));
+		function list(path:String):Dynamic
+			return await(files, done -> files.list(path, names -> done(names.join(",")), () -> done("missing"), why -> done('failed: $why')));
+		check(list("") == "", "a root not yet written lists nothing");
+		var before = Date.now().getTime() / 1000;
+		for (path in ["a.txt", "sub/b.bin", "sub/deep/c.txt", "sub-x.txt"])
+			check(await(files, done -> files.write(path, haxe.io.Bytes.ofString('of $path'), () -> done(true), why -> done(why))) == true, 'write $path');
+		var a:Dynamic = info("a.txt");
+		check(a.size == 8, "a file's size: " + '${a.size}');
+		check(a.modified > before - 2
+			&& a.modified < Date.now().getTime() / 1000 + 2, "a file's time, seconds since the epoch: " + '${a.modified}');
+		check(info("sub") == "missing", "a directory has no file information");
+		check(info("nope.txt") == "missing", "a missing file has none");
+		check(info("bad path") == 'failed: ${helix.platform.FilePath.INVALID}', "an invalid path fails");
+		check(list("") == "a.txt,sub-x.txt,sub/", 'the root: files, and directories ending in a slash, sorted: ${list("")}');
+		check(list("sub") == "b.bin,deep/" && list("sub/deep") == "c.txt", "a directory's own entries");
+		check(list("a.txt") == "missing" && list("nope") == "missing", "a file or nothing is no directory");
+		check(list("../x") == 'failed: ${helix.platform.FilePath.INVALID}', "an invalid directory fails");
+		remove(directory);
+	}
+	#end
 
 	static function main():Void {
 		// A program's company and product, each one directory's name on every OS.
@@ -53,6 +110,10 @@ class PlatformTests {
 			wrap = Wrap.Mirror;
 		check(Std.string(blend) == "Additive" && '$format' == "Etc2Rgba8" && "" + wrap == "Mirror" && (blend : Int) == 2,
 			"BlendMode, TextureFormat, Wrap by name, still their numbers");
+
+		#if sys
+		fileSystem();
+		#end
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

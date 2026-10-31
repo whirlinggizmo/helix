@@ -192,6 +192,19 @@ class FakeWindow implements IWindow {
 	public function requestMaximumSize(width:Int, height:Int):Bool
 		return false;
 
+	/** Gets the files dropped, as name and bytes, which `readDroppedFile` reads by index. */
+	public final dropped:Array<{name:String, bytes:Bytes}> = [];
+
+	public function readDroppedFile(index:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void {
+		var file = dropped[index];
+		if (index < 0 || file == null)
+			failed('No dropped file $index');
+		else if (file.bytes.length > maxBytes)
+			failed("too large");
+		else
+			read(file.name, file.bytes);
+	}
+
 	public function canClose():Bool
 		return false;
 

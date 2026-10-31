@@ -178,7 +178,7 @@ var a:Int
 
 *class* in [`ray/src/helix/ray/FilePathList.hx`](../../ray/src/helix/ray/FilePathList.hx), `import helix.ray.FilePathList;`
 
-raylib's `FilePathList` (raylib.h): not in helix-ray yet; its fields are raylib's. File path list.
+Represents raylib's `FilePathList`: paths, as a directory listing or a drop gives them.
 
 ```haxe
 function new()
@@ -187,10 +187,10 @@ var count:Int
 var paths:Array<String>
 ```
 
-- `new`: Creates one, its fields zero, empty or null.
-- `capacity`: Filepaths max entries.
-- `count`: Filepaths entries count.
-- `paths`: Filepaths entries.
+- `new`: Creates an empty list.
+- `capacity`: Gets or sets how many paths the list was made for: 8192 for `LoadDirectoryFilesExAsync`'s, the count for `LoadDirectoryFilesAsync`'s, and 0 for `LoadDroppedFiles`'s, as raylib's.
+- `count`: Gets or sets how many paths there are.
+- `paths`: Gets or sets the paths.
 
 ## Font
 
@@ -1470,6 +1470,11 @@ static function GetFileNameWithoutExt(filePath:String):String
 static function GetDirectoryPath(filePath:String):String
 static function GetPrevDirectoryPath(dirPath:String):String
 static function IsFileNameValid(fileName:String):Bool
+static function MakeDirectory(dirPath:String):Int
+static function UnloadDirectoryFiles(files:FilePathList):Void
+static function IsFileDropped():Bool
+static function LoadDroppedFiles():FilePathList
+static function UnloadDroppedFiles(files:FilePathList):Void
 static function CompressData(data:haxe.io.Bytes, dataSize:Int, compDataSize:Array<Int>):haxe.io.Bytes
 static function DecompressData(compData:haxe.io.Bytes, compDataSize:Int, dataSize:Array<Int>):haxe.io.Bytes
 static function EncodeDataBase64(data:haxe.io.Bytes, dataSize:Int, outputSize:Array<Int>):String
@@ -1795,6 +1800,17 @@ static function EndScissorMode():Void
 - `IsFileNameValid`: Returns whether a file name could name a file on any system: none of `< > : " / \ | ? *` or a control character, and not only dots.
   - `fileName`: The file name, without a directory.
   - returns: True when it could; true for null or "", as raylib's is.
+- `MakeDirectory`: Makes a directory. There is nothing to make: a directory is there once a file is written under it, so this succeeds.
+  - `dirPath`: The directory.
+  - returns: 0, success; 1 for null or "", as raylib's.
+- `UnloadDirectoryFiles`: Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave. There is nothing to free here, and the list is unchanged.
+  - `files`: The listing.
+- `IsFileDropped`: Returns whether files were dropped on the window, natively from the desktop and in a page on the canvas. It stays true until `UnloadDroppedFiles`, and a new drop's files replace the last one's, as raylib's do. A dropped file counts once its bytes are read, natively in the frame it is dropped, in a page a frame or so after.
+  - returns: True while dropped files are held.
+- `LoadDroppedFiles`: Returns the paths of the files last dropped. Each is helix-ray's own, `helix-ray-dropped/<n>/<name>`, which every load reads, as `LoadTextureAsync(path)`: the file's name is its last part, a character a path can't hold made `_`. A directory dropped isn't listed.
+  - returns: The paths, `count` of them; `capacity` is 0, as raylib's.
+- `UnloadDroppedFiles`: Lets go of the files last dropped, so `IsFileDropped` is false until the next drop. A file loaded from one keeps what it loaded.
+  - `files`: The list `LoadDroppedFiles` gave; one of no files does nothing, as raylib's.
 - `CompressData`: Compresses bytes as raylib's `CompressData` does, byte for byte: raw DEFLATE (no zlib header), sdefl's level 8.
   - `data`: The bytes.
   - `dataSize`: How many of them.
@@ -3580,6 +3596,12 @@ static function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes,
 static function LoadFileTextAsync(fileName:String, loaded:String -> Void, ?failed:String -> Void):Void
 static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):Void
 static function FileExistsAsync(fileName:String, answer:Bool -> Void):Void
+static function GetFileLengthAsync(fileName:String, answer:Int -> Void):Void
+static function GetFileModTimeAsync(fileName:String, answer:Int -> Void):Void
+static function IsPathFileAsync(path:String, answer:Bool -> Void):Void
+static function DirectoryExistsAsync(dirPath:String, answer:Bool -> Void):Void
+static function LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList -> Void):Void
+static function LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList -> Void):Void
 static function LoadFontAsync(fileName:String, loaded:Font -> Void, ?failed:String -> Void):Void
 static function LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
 static function LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
@@ -3628,6 +3650,26 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
 - `FileExistsAsync`: Answers whether a file exists: helix-ray's own, in place of raylib's `FileExists`. One `SaveFileText` or `SaveFileData` wrote exists, as does one of the program's; finding one of the program's reads it, so a load of it after answers at once. The answer comes at a later frame, never during the call.
   - `fileName`: The file.
   - `answer`: Receives true when it exists.
+- `GetFileLengthAsync`: Answers a file's size: helix-ray's own, in place of raylib's `GetFileLength`. A file `SaveFileText` or `SaveFileData` wrote, or the program's `SetLoadFileDataCallback` gives, is its bytes' size; a dropped file's is its own. Natively a file of the program's is its size on disk; in a page it is read from the server to be measured, so a load of it after answers at once. The answer comes at a later frame, never during the call.
+  - `fileName`: The file.
+  - `answer`: Receives its size in bytes; 0 when there is no file, as raylib's.
+- `GetFileModTimeAsync`: Answers when a file was last written: helix-ray's own, in place of raylib's `GetFileModTime`. Natively a file of the program's answers its time on disk; a file `SaveFileText` or `SaveFileData` wrote, when it was saved. A page's own files are on its server, and a dropped file or one the program's load callback gives has no time kept, so each answers 0. The answer comes at a later frame, never during the call.
+  - `fileName`: The file.
+  - `answer`: Receives the time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's.
+- `IsPathFileAsync`: Answers whether a path is a file, not a directory: helix-ray's own, in place of raylib's `IsPathFile`. A file `SaveFileText` or `SaveFileData` wrote, a dropped file, and a file the program has, as `FileExistsAsync` finds them, are files. The answer comes at a later frame, never during the call.
+  - `path`: The path.
+  - `answer`: Receives true for a file; false for a directory or nothing there.
+- `DirectoryExistsAsync`: Answers whether a directory exists: helix-ray's own, in place of raylib's `DirectoryExists`. Natively it is a directory of the program's files; `helix-ray-dropped` and the directories under it hold the dropped files. A page's own files are on its server, which can't be listed, so there only its root ("", "." or "./") and the dropped files' directories exist. The answer comes at a later frame, never during the call.
+  - `dirPath`: The directory.
+  - `answer`: Receives true when it exists.
+- `LoadDirectoryFilesAsync`: Lists a directory's files and subdirectories: helix-ray's own, in place of raylib's `LoadDirectoryFiles`. Each path is the directory's followed by `/` and the name (`dirPath` "levels" gives "levels/1.json"), sorted by name, a subdirectory's without a slash at its end. The directories are `DirectoryExistsAsync`'s; a page lists only the dropped files. Files `SaveFileText` and `SaveFileData` wrote aren't listed. The answer comes at a later frame, never during the call.
+  - `dirPath`: The directory.
+  - `loaded`: Receives the list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as raylib's.
+- `LoadDirectoryFilesExAsync`: Lists a directory's files, those with some extensions, and with `scanSubdirs` its subdirectories' too: helix-ray's own, in place of raylib's `LoadDirectoryFilesEx`. The paths are `LoadDirectoryFilesAsync`'s, a subdirectory's files right after it. As raylib's: a null filter keeps every file, and without `scanSubdirs` every subdirectory too; a filter is `IsFileExtension`'s list, and "DIR" in it keeps the subdirectories; at most 8192 paths are listed (`MAX_FILEPATH_CAPACITY`), with a warning when there are more. The answer comes at a later frame, never during the call.
+  - `basePath`: The directory.
+  - `filter`: The extensions kept, such as ".png;.jpg;DIR", or null for every file.
+  - `scanSubdirs`: Whether the subdirectories' files are listed too.
+  - `loaded`: Receives the list, its `capacity` 8192; a directory that can't be listed adds nothing, with a warning.
 - `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto one texture, as raylib's; an image (PNG, JPEG, BMP, TGA or QOI) its glyphs on a `MAGENTA` key from the space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the font.
@@ -3709,13 +3751,13 @@ static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<Stri
 
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
-`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ### Not in helix-ray yet
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`EnableEventWaiting`, `DisableEventWaiting`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `DirectoryExists`, `GetFileLength`, `GetWorkingDirectory`, `GetApplicationDirectory`, `MakeDirectory`, `ChangeDirectory`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `UnloadDirectoryFiles`, `IsFileDropped`, `LoadDroppedFiles`, `UnloadDroppedFiles`, `GetFileModTime`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `UpdateCameraPro`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `ExportFontAsCode`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`.
+`EnableEventWaiting`, `DisableEventWaiting`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `SwapScreenBuffer`, `PollInputEvents`, `LoadRandomSequence`, `UnloadRandomSequence`, `MemAlloc`, `MemRealloc`, `MemFree`, `ExportDataAsCode`, `GetWorkingDirectory`, `GetApplicationDirectory`, `ChangeDirectory`, `LoadAutomationEventList`, `UnloadAutomationEventList`, `ExportAutomationEventList`, `SetAutomationEventList`, `SetAutomationEventBaseFrame`, `StartAutomationEventRecording`, `StopAutomationEventRecording`, `PlayAutomationEvent`, `UpdateCameraPro`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `ExportFontAsCode`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`.
 
 ## Raymath
 

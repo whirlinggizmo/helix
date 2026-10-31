@@ -4,13 +4,18 @@
 extern "C" {
 #endif
 /* What SDL3's adapters share: the one window (with a GL context for the GL graphics adapter, or none for SDL_GPU's), whether it has the
-   keyboard (seen by the events adapter, answered by the window adapter), the clock and the program's facts. */
+   keyboard and the files last dropped on it (seen by the events adapter, answered by the window adapter), the clock and the program's
+   facts. */
 int helix_sdl3_open(int sample_count,int with_gl,int vsync);
 void helix_sdl3_close(void);
 void *helix_sdl3_window(void);
 int helix_sdl3_is_open(void);
 int helix_sdl3_focused(void);
 void helix_sdl3_set_focused(int focused);
+void helix_sdl3_drop_clear(void);
+void helix_sdl3_drop_add(const char *path);
+int helix_sdl3_dropped_count(void);
+const char *helix_sdl3_dropped_path(int index);
 const char *helix_sdl3_platform(void);
 const char *helix_sdl3_getenv(const char *name);
 int helix_sdl3_open_url(const char *url);

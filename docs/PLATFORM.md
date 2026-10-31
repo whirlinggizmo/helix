@@ -52,6 +52,8 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
   `requestOpacity` (natively the compositor's, in a page the canvas's); `requestMinimumSize`, `requestMaximumSize` (false in a page).
 - The monitors: `monitorCount`, `monitorIndex`, `requestMonitorIndex`, `getMonitorName`, `getMonitorX`, `getMonitorY`,
   `getMonitorWidth`, `getMonitorHeight`, `getMonitorRefreshRate` (0 in a page).
+- `readDroppedFile(index, maxBytes, read(name, bytes), failed(message))`: a file the last `FilesDropped` counted, its name without
+  its directory; natively read from its path during the call, in a page the File the canvas's drop gave, later.
 - `onClose`, a property: the call made once, the last before the window is gone (natively in `close`, in a page at pagehide). Not a
   place to save: a page's write started there isn't kept.
 - `close()` natively destroys the window and in a page does nothing (a script can't close its tab); `canClose()` says whether `close`
@@ -153,6 +155,7 @@ enum Event {
 	Shown;
 	Hidden;
 	CloseRequested;                      // natively; a page's end is IWindow.onClose
+	FilesDropped(count:Int);             // files dropped since the last poll (SDL3's drop events; a page's canvas drop), read by IWindow.readDroppedFile
 	GraphicsLost;                        // the GPU's context is gone (a page's WebGL context lost: a GPU reset, an evicted tab)
 }
 ```
@@ -175,6 +178,10 @@ enum Event {
   `IWindow.focused` answers from what the last poll saw. `Hidden` fires when the player stops being able to see the window: natively
   minimized or hidden (by the OS or by `requestVisible(false)`), in a page `visibilitychange` to hidden (a background tab, a minimized
   browser, a phone switched away or locked); `Shown` on the reverse. Another window covering it, or losing focus, fires neither.
+- Dropped files arrive as one `FilesDropped(count)` a poll, counting every file dropped since the last; `IWindow.readDroppedFile`
+  reads each by index until the next. Natively they are SDL3's drop events, a dropped directory skipped; in a page the events adapter
+  listens for the canvas's dragover and drop, so the canvas takes a drop rather than the browser opening the file, and keeps the File
+  objects of its files, not of directories, for the window adapter (`adapters/shared/dom/DomPage`).
 - `wait` is how a native loop idles while the window can't be seen: the thread sleeps in the OS's event wait (`SDL_WaitEventTimeout`),
   using no CPU, and wakes for an event or at the timeout, so the owner can still pump what must not starve (a music stream, a
   download's completion) at an interval of its choosing: `if (hidden) events.wait(0.25); events.poll(); ...`. In a page the browser
@@ -342,20 +349,27 @@ a transfer at its next part of the body, not while it connects. Native HTTPS com
 `IFileSystem`: files that reside on this machine, under one root given at construction (natively a directory, in a page an IndexedDB
 database), read and written whole by path. A path is plain names joined by `/` (`audio/music.ogg`): letters, digits, `_`, `-` and `.`,
 at most 256 characters, none empty, `.` or `..`; every adapter checks it, by `FilePath.isValid`, which a layer above may hold its other
-sources to as well (helix-services' `Assets` does). There is no listing, no directories to make and no seeking.
+sources to as well (helix-services' `Assets` does). A directory is there while a file is under it, as a page's are: there is no call
+that makes or deletes one, and no seeking.
 
 - `root`, the root as given; `canWrite`, whether it can be written.
 - `read(path, maxBytes, loaded(bytes), missing(), failed(message))`, a file over `maxBytes` failing, returning an abort;
 - `write(path, bytes, written(), failed(message))`, replacing what is there, never leaving half a file;
 - `deleteFile(path, deleted(), failed(message))`, deleted also when there was none;
 - `deleteFiles(deleted(), failed(message))`;
+- `getInfo(path, found(size, modified), missing(), failed(message))`: a file's size in bytes and when it was last written, in seconds
+  since the Unix epoch (natively its stat; in a page the File it is kept as, a Blob kept before write times were giving 0); a
+  directory is missing;
+- `list(directory, listed(names), missing(), failed(message))`: a directory's own entries, sorted, its files' names and its
+  subdirectories' ending in `/` (`["1.json", "bonus/"]`); "" is the root, which lists nothing before it is written; a path that is a
+  file, or nothing, is missing (in a page, the keys under `directory/`);
 - `locate(path, located(location, release), missing(), failed(message))`: the file for reading as a stream without reading it whole
   (a path natively, a Blob's URL in a page), held until `release` is called, once;
 - `poll`, delivering what finished on the platform's threads; `dispose`.
 
 Natively `filesystem/native` (`NativeFileSystemAdapter({directory: ..., readOnly: ...})`: each operation on a worker thread, each write whole or not
 at all; opened read-only over `ISystem.getProgramDirectory()` for the files a program ships with); in a page `filesystem/browser`
-(`BrowserFileSystemAdapter({name: ...})`, IndexedDB). A file system holds only what is on this machine: fetching from a server is `IHttp`, and
+(`BrowserFileSystemAdapter({name: ...})`, IndexedDB, each file a File keyed by its path). A file system holds only what is on this machine: fetching from a server is `IHttp`, and
 bringing a file in when it isn't there or is out of date is above.
 
 ## Clipboard

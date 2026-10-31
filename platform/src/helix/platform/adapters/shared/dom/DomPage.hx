@@ -3,12 +3,15 @@ package helix.platform.adapters.shared.dom;
 import js.Browser;
 import js.html.CanvasElement;
 
-/** Provides what a page's adapters share: whether the page has the keyboard, which the events adapter sees and the window adapter answers,
-	and the canvas's drawing size, which follows the viewport and the pixel ratio. */
+/** Provides what a page's adapters share: whether the page has the keyboard and the files last dropped on the canvas, which the events
+	adapter sees and the window adapter answers, and the canvas's drawing size, which follows the viewport and the pixel ratio. */
 @:noCompletion
 class DomPage {
 	/** Gets or sets whether the page has the keyboard and is in front; the events adapter sets it from the page's listeners. */
 	public static var focused = true;
+
+	/** Gets or sets the files the last `FilesDropped` counted; the events adapter sets it at the poll delivering it. */
+	public static var dropped:Array<js.html.File> = [];
 
 	/** Finds the canvas the program draws in.
 

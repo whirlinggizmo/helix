@@ -10,8 +10,8 @@ import js.html.CanvasElement;
 
 /** Provides `IEvents` in a browser page.
 
-	It listens to the page's focus and visibility, the viewport's size, which the canvas follows, and a lost WebGL context, and for the
-	player's first press anywhere in the page, until it comes. Each listener only records; `poll` hands over what was recorded since the
+	It listens to the page's focus and visibility, the viewport's size, which the canvas follows, a lost WebGL context and files dropped on
+	the canvas, and for the player's first press anywhere in the page, until it comes. Each listener only records; `poll` hands over what was recorded since the
 	last one. The device adapters built over it (`DomKeyboardAdapter`, `DomMouseAdapter`, `DomTouchAdapter`, `DomGamepadsAdapter`,
 	`DomTiltAdapter`) add their events to the same records. */
 class DomEventsAdapter implements IEvents {
@@ -22,6 +22,8 @@ class DomEventsAdapter implements IEvents {
 	final listeners = new DomListeners();
 	final pressListeners = new DomListeners();
 	var hidden = false;
+	// The files dropped since the last poll.
+	var dropping:Array<js.html.File> = [];
 
 	/** Starts listening to the page and the canvas the program draws in.
 
@@ -48,6 +50,34 @@ class DomEventsAdapter implements IEvents {
 		listeners.add(canvas, "webglcontextlost", e -> {
 			e.preventDefault();
 			stream.record(GraphicsLost);
+		});
+		// A drop's files, which the canvas takes rather than the page opening them; a dragged directory is no file. Every drop since the
+		// last poll is one FilesDropped, delivered at the poll's end.
+		listeners.add(canvas, "dragover", e -> e.preventDefault());
+		listeners.add(canvas, "drop", e -> {
+			e.preventDefault();
+			var transfer:js.html.DataTransfer = e.dataTransfer;
+			if (transfer == null)
+				return;
+			if (transfer.items == null) {
+				for (i in 0...transfer.files.length)
+					dropping.push(transfer.files[i]);
+				return;
+			}
+			for (i in 0...transfer.items.length) {
+				var item:Dynamic = transfer.items[i];
+				if (item.kind != "file")
+					continue;
+				var entry:Dynamic = item.webkitGetAsEntry == null ? null : item.webkitGetAsEntry();
+				var file:js.html.File = item.getAsFile();
+				if (file != null && (entry == null || !entry.isDirectory))
+					dropping.push(file);
+			}
+		});
+		stream.polls.push(() -> if (dropping.length > 0) {
+			DomPage.dropped = dropping;
+			dropping = [];
+			stream.deliver(FilesDropped(DomPage.dropped.length));
 		});
 		// The first press, heard before the page's elements and the device adapters, so Unlocked comes before that press's own event: a
 		// key or a mouse button going down, or a finger lifting, as a browser counts them.

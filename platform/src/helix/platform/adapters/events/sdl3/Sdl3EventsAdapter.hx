@@ -75,6 +75,7 @@ class Sdl3EventsAdapter implements IEvents {
 				case 20: PadButtonDown(code, cast Sdl3EventsBridge.value());
 				case 21: PadButtonUp(code, cast Sdl3EventsBridge.value());
 				case 22: Unlocked;
+				case 23: FilesDropped(code);
 				case _: null;
 			}
 			if (event != null)

@@ -10,7 +10,7 @@ import helix.platform.adapters.window.sdl3.internal.WindowBridge;
 /** Provides `IWindow` on an SDL3 window, natively.
 
 	The window opens with the adapter, before the graphics adapter that draws in it. Moves are refused where the compositor places windows
-	(Wayland, XWayland); orientation is a page's alone. */
+	(Wayland, XWayland); orientation is a page's alone. A dropped file is read from its path, during the call. */
 class Sdl3WindowAdapter implements IWindow {
 	/** Opens the program's window.
 
@@ -206,6 +206,25 @@ class Sdl3WindowAdapter implements IWindow {
 
 	public function getMonitorHeight(index:Int):Int
 		return isMonitor(index) ? WindowBridge.displayHeight(index) : 0;
+
+	public function readDroppedFile(index:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void {
+		if (index < 0 || index >= Sdl3Bridge.droppedCount()) {
+			failed('No dropped file $index');
+			return;
+		}
+		var path = (Sdl3Bridge.droppedPath(index) : String);
+		var bytes = try {
+			if (sys.FileSystem.stat(path).size > maxBytes) {
+				failed("File exceeds byte limit");
+				return;
+			}
+			sys.io.File.getBytes(path);
+		} catch (error:Dynamic) {
+			failed(Std.string(error));
+			return;
+		}
+		read(haxe.io.Path.withoutDirectory(path), bytes);
+	}
 
 	public function canClose():Bool
 		return true;
