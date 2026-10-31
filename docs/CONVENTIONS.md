@@ -47,9 +47,9 @@ The API uses what Haxe gives: properties for values, classes for kinds, methods 
 - **A property clamps; a method may refuse.** Assigning can't answer, so a property takes what it's given, held to its range, and its
   doc comment says the range. Whatever can be refused or decided later is a method returning `Bool`: `requestSize`, `add`, `load`'s
   result.
-- **`request` returns whether it asked, never whether it was granted.** The answer is read back later from a property:
-  `requestFullscreen` returns whether the request was made; `fullscreen` says, on a later frame, whether it was granted. `can` says
-  whether to offer the request at all.
+- **`request` returns whether it asked, not whether it was granted.** The result comes later, to its lambdas: `done` when granted,
+  `failed` with the reason when refused. They are optional; a caller that doesn't need the result passes neither. `can` says whether
+  to offer the request at all.
 - **No chaining.** A method that changes something returns `Void`, or `Bool` when it can refuse; none returns its object. Building
   something takes one statement a line.
 - **A completion takes a lambda per outcome, success first,** and on a platform contract none is optional (`read(path, maxBytes,
