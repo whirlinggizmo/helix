@@ -169,6 +169,73 @@ var deadZone(default, set):Float
 - `deadZone`: Gets or sets how far a stick or trigger moves before it counts, 0 to 1. Clamped to that range. Defaults to 0.2.
   The default is large enough that a worn stick resting off center stays inside it. A dead zone past 0.95 acts as 0.95, so the stick keeps some travel.
 
+## Gesture
+
+*abstract* in [`services/src/helix/services/input/Gesture.hx`](../../services/src/helix/services/input/Gesture.hx), `import helix.services.input.Gesture;`
+
+Specifies a gesture `Gestures` detects, as a flag: flags are or'd together to say which gestures are detected (`Gestures.enabled`).
+
+- `Gesture.None`: No gesture.
+- `Gesture.Tap`: A finger, or a mouse button, went down. It lasts a frame, then is a hold.
+- `Gesture.DoubleTap`: A second tap soon after the first and near it. It lasts a frame, then is a hold.
+- `Gesture.Hold`: A finger or button kept down.
+- `Gesture.Drag`: A finger or button held a moment and then moved.
+- `Gesture.SwipeRight`: A quick move to the right as the finger lifted. It lasts a frame.
+- `Gesture.SwipeLeft`: A quick move to the left as the finger lifted. It lasts a frame.
+- `Gesture.SwipeUp`: A quick move up as the finger lifted. It lasts a frame.
+- `Gesture.SwipeDown`: A quick move down as the finger lifted. It lasts a frame.
+- `Gesture.PinchIn`: Two fingers moving together.
+- `Gesture.PinchOut`: Two fingers moving apart.
+- `Gesture.All`: Every gesture.
+
+## Gestures
+
+*class* in [`services/src/helix/services/input/Gestures.hx`](../../services/src/helix/services/input/Gestures.hx), `import helix.services.input.Gestures;`, implements `IPollable`
+
+Provides gestures from the mouse and the fingers on the screen: a tap, a double tap, a hold, a drag, a swipe each way and a pinch in or out, as raylib's gestures (rgestures.h) detect them, from the frame's events in the order they came. Every mouse button counts as one finger. Positions and distances are fractions of the window, 0 to 1 across it.
+
+The program constructs one over its `IEvents`, `IWindow` and `ISystem`, and calls `poll` once a frame. The mouse's and touch's events arrive only while their adapters exist, so the program constructs those too.
+
+```haxe
+var gestures = new Gestures(events, window, system);
+// each frame:
+gestures.poll();
+if (gestures.isDetected(Tap)) select();
+```
+
+```haxe
+function new(events:IEvents, window:IWindow, system:ISystem)
+var enabled:Gesture
+var current(get, never):Gesture
+function isDetected(gesture:Gesture):Bool
+var holdDuration(get, never):Float
+var dragX(default, null):Float
+var dragY(default, null):Float
+var dragAngle(default, null):Float
+var pinchX(default, null):Float
+var pinchY(default, null):Float
+var pinchAngle(default, null):Float
+function poll():Void
+```
+
+- `new`: Creates the gestures, none detected yet.
+  - `events`: The platform's events, whose last `poll` this one reads.
+  - `window`: The window, whose framebuffer's size positions are fractions of.
+  - `system`: The system, whose clock times holds, double taps and swipes.
+- `enabled`: Gets or sets the gestures detected, as flags or'd together. Defaults to `All`.
+- `current`: Gets the gesture detected now, or `None`: one that isn't enabled isn't.
+- `isDetected`: Returns whether a gesture is the one detected now.
+  - `gesture`: The gesture.
+  - returns: True while it is, and it is enabled.
+- `holdDuration`: Gets how long the hold has lasted, in seconds: 0 when the gesture isn't a hold.
+- `dragX`: Gets the drag across, from where the finger landed to where it is, in fractions of the window's width.
+- `dragY`: Gets the drag down, in fractions of the window's height.
+- `dragAngle`: Gets the last swipe's angle, in degrees counterclockwise from right.
+- `pinchX`: Gets the pinch across, from the first finger to the second, in fractions of the window's width.
+- `pinchY`: Gets the pinch down, in fractions of the window's height.
+- `pinchAngle`: Gets the pinch's angle, in degrees counterclockwise from right.
+- `poll`: Steps the gestures to the new frame, then reads the events the last `IEvents.poll` delivered. Call it once a frame.
+
 ## IActionDevice
 
 *interface* in [`services/src/helix/services/input/IActionDevice.hx`](../../services/src/helix/services/input/IActionDevice.hx), `import helix.services.input.IActionDevice;`
@@ -181,7 +248,7 @@ A game passes its devices to `Actions` and never calls these itself.
 
 *class* in [`services/src/helix/services/input/Keyboard.hx`](../../services/src/helix/services/input/Keyboard.hx), `import helix.services.input.Keyboard;`, implements `IActionDevice`, `IPollable`
 
-Provides the keyboard as state: what is held, and what went down or up this frame.
+Provides the keyboard as state: what is held, what went down or up this frame, which keys the OS repeated, and the text typed.
 
 The program constructs one over its `IEvents` and its `IKeyboard`, and calls `poll` once a frame. The state then holds until the next poll. `poll` reads the events the last `IEvents.poll` delivered, so the two may be polled in either order. When the keyboard is polled first, it is a frame behind. "Pressed" is true for the frame a key went down, once per press however long it is held.
 
@@ -194,15 +261,22 @@ if (keyboard.isKeyPressed(Space)) jump();
 
 ```haxe
 function new(events:IEvents, keyboard:IKeyboard)
+final pressedKeys:Array<Key>
+var text(default, null):String
+var textInput(get, set):Bool
 function poll():Void
 function isKeyDown(key:Key):Bool
 function isKeyPressed(key:Key):Bool
 function isKeyReleased(key:Key):Bool
+function isKeyRepeated(key:Key):Bool
 ```
 
 - `new`: Creates the keyboard over the platform's events and keyboard, with nothing held.
   - `events`: The platform's events, whose last `poll` this one reads.
   - `keyboard`: The platform's keyboard, whose keys those events carry.
+- `pressedKeys`: Gets the keys that went down this frame, in the order they did; a key the OS repeats isn't among them again. The array is reused by the next poll.
+- `text`: Gets the text typed this frame, in the order it was, while `textInput` is on; "" otherwise.
+- `textInput`: Gets or sets whether typed text arrives in `text`. A phone shows its keyboard while it is on. Defaults to false.
 - `poll`: Reads the events the last `IEvents.poll` delivered. Call it once a frame. When the window loses focus, every held key is released.
 - `isKeyDown`: Returns whether a key is held.
   - `key`: The key.
@@ -213,6 +287,9 @@ function isKeyReleased(key:Key):Bool
 - `isKeyReleased`: Returns whether a key went up this frame.
   - `key`: The key.
   - returns: True for that frame alone.
+- `isKeyRepeated`: Returns whether the OS repeated a held key this frame, as it does after a moment, at its own rate.
+  - `key`: The key.
+  - returns: True for the frames it repeated.
 
 ## Mouse
 

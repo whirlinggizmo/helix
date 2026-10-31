@@ -1,17 +1,18 @@
 package helix.platform.adapters.fontrasterizer.canvas;
 
 import haxe.io.Bytes;
+import helix.formats.truetype.TrueTypeTables;
 import helix.math.DistanceField2D;
 import helix.platform.IFontRasterizer;
 import helix.platform.RasterGlyph;
-import helix.platform.adapters.fontrasterizer.canvas.internal.FontTables;
 
 /** Provides `IFontRasterizer` in a page: the font loaded as a `FontFace` and its glyphs drawn with `fillText` on an `OffscreenCanvas`.
 
-	What stb_truetype reads from the font's tables is read here the same way (`FontTables`): the metrics, which glyphs it has, the
-	advances, and a TrueType glyph's box, so glyphs are placed and sized as natively. The pixels are the browser's: coverage may differ by
-	a level or so at a glyph's edges, and an OpenType glyph with CFF outlines is boxed by what the canvas measures. Signed distances come
-	from the glyph drawn 8 times larger, by a distance transform, within about a sixteenth of a pixel of stb_truetype's. */
+	What stb_truetype reads from the font's tables is read here the same way (helix-formats' `TrueTypeTables`): the metrics, which
+	glyphs it has, the advances, and a TrueType glyph's box, so glyphs are placed and sized as natively. The pixels are the browser's:
+	coverage may differ by a level or so at a glyph's edges, and an OpenType glyph with CFF outlines is boxed by what the canvas measures.
+	Signed distances come from the glyph drawn 8 times larger, by a distance transform, within about a sixteenth of a pixel of
+	stb_truetype's. */
 class CanvasFontRasterizerAdapter implements IFontRasterizer {
 	static inline final SDF_PADDING = 4;
 	static inline final SDF_EDGE = 128;
@@ -27,7 +28,7 @@ class CanvasFontRasterizerAdapter implements IFontRasterizer {
 
 	public function rasterize(encoded:Bytes, size:Float, codepoints:Array<Int>, sdf:Bool,
 			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String->Void):Void {
-		var tables = try new FontTables(encoded) catch (e:String) {
+		var tables = try new TrueTypeTables(encoded) catch (e:String) {
 			js.Browser.window.setTimeout(() -> if (!closed) failed('Font rasterize failed: $e'), 0);
 			return;
 		}
@@ -46,7 +47,7 @@ class CanvasFontRasterizerAdapter implements IFontRasterizer {
 			(error:Dynamic) -> if (!closed) failed("Font rasterize failed: " + Std.string(error)));
 	}
 
-	function glyph(tables:FontTables, family:String, size:Float, codepoint:Int, sdf:Bool):RasterGlyph {
+	function glyph(tables:TrueTypeTables, family:String, size:Float, codepoint:Int, sdf:Bool):RasterGlyph {
 		var index = tables.glyphIndex(codepoint);
 		if (index == 0)
 			return empty(codepoint, false, 0, 0, 0);

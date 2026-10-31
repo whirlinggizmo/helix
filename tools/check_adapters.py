@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Checks the adapter rule (docs/ARCHITECTURE.md) where it can be checked mechanically:
 
-  1. An adapter (platform/src/helix/platform/adapters/) names nothing above the platform: no helix package but helix.platform and
-     helix.math, which the platform is built on. It implements a platform contract and nothing else.
+  1. An adapter (platform/src/helix/platform/adapters/) names nothing above the platform: no helix package but helix.platform, and
+     helix.math and helix.formats, which the platform is built on. It implements a platform contract and nothing else.
   2. The platform's own code (platform/src/helix/platform/ outside adapters/, macros/ and tools/) uses no platform API (js.html,
      js.Browser, js.Syntax, js.lib, sys., cpp.) and no target conditional (#if js, cpp, sys, hl). The macros (macros/) run in the
      compiler, not on a target, and the tools (tools/: the shader compiler) in the compiler or Haxe's interpreter, never in a program.
@@ -39,7 +39,7 @@ ADAPTER_ROOTS = [root / 'adapters' for root in SOURCES]
 DUPLICATE_LINES = 6
 
 # What an adapter must not name: any helix package above the platform.
-ENGINE = re.compile(r'\bhelix\.(?!platform\b|math\b)\w+')
+ENGINE = re.compile(r'\bhelix\.(?!platform\b|math\b|formats\b)\w+')
 PLATFORM = re.compile(r'\bjs\.(html|Browser|Syntax|lib)\b|\bsys\.[a-z]|\bcpp\.[A-Za-z]|#if\s+!?(js|cpp|sys|hl)\b')
 # A type's declaration at a line's start (a module's private types begin with private, and are hidden already).
 DECLARATION = re.compile(r'^(?:(?:extern|final|abstract|enum)\s+)*(?:class|interface|enum|typedef|abstract)\s+(\w+)')

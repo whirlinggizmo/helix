@@ -47,6 +47,20 @@ class InputTests {
 		check(!keyboard.isKeyReleased(Space), "released for one frame alone");
 		frame([KeyDown(A, false), KeyUp(A)]);
 		check(keyboard.isKeyPressed(A) && keyboard.isKeyReleased(A) && !keyboard.isKeyDown(A), "a tap within a frame: pressed and released");
+		frame([KeyDown(B, false), KeyDown(C, false), KeyDown(B, true)]);
+		check(keyboard.pressedKeys.join(",") == [helix.platform.Key.B, helix.platform.Key.C].join(",")
+			&& keyboard.isKeyRepeated(B)
+			&& !keyboard.isKeyRepeated(C),
+			"keys pressed in order; a repeat is a repeat, not a press");
+		frame([KeyUp(B), KeyUp(C)]);
+		check(keyboard.pressedKeys.length == 0 && !keyboard.isKeyRepeated(B), "the next frame: none pressed or repeated");
+		keyboard.textInput = true;
+		check(devices.textInput, "text input passed to the adapter");
+		frame([Text("Hé"), Text("!")]);
+		check(keyboard.text == "Hé!", "the text typed this frame, in order");
+		frame();
+		check(keyboard.text == "", "and only this frame");
+		keyboard.textInput = false;
 
 		frame([MouseDown(Left, 10, 20), Wheel(0, 2), Wheel(1, -1)]);
 		check(mouse.isButtonDown(Left) && mouse.isButtonPressed(Left) && mouse.x == 10 && mouse.y == 20, "a mouse button, where");

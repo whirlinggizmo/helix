@@ -19,6 +19,7 @@ def targets(web=False):
     for main in ('PlatformTests','ShaderCompilerTests'):found.append((f'platform {main}',['-lib','helix-platform','-cp','platform/tests','-main',main,'--interp']))
     found.append(('log LogTests',['-lib','helix-log','-cp','log/tests','-main','LogTests','--interp']))
     for main in ('TrigTests','RandomTests','CurveTests','BoundsTests','TrigBits'):found.append((f'math {main}',['-lib','helix-math','-cp','math/tests','-main',main,'--interp']))
+    for main in ('GltfTests','BmFontTests','TrueTypeTests'):found.append((f'formats {main}',['-lib','helix-formats','-cp','formats/tests','-main',main,'--interp']))
     # Each platform example and the graphics tests, with the library alone, on both targets (their own hxml files build them:
     # tools/platform_checks.py).
     for directory,main in [(p.parent,'Main') for p in sorted((ROOT/'platform/examples').glob('*/Main.hx'))]+[(ROOT/'platform/tests/graphics','GraphicsTests')]:

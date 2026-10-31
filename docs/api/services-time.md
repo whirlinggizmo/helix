@@ -6,7 +6,7 @@
 
 *class* in [`services/src/helix/services/time/Time.hx`](../../services/src/helix/services/time/Time.hx), `import helix.services.time.Time;`, implements `IPollable`
 
-Provides a frame's time, in the game's seconds and in real seconds.
+Provides a frame's time, in the game's seconds and in real seconds, the frames a second, and how much of a frame aimed for is left.
 
 The game's seconds can be scaled and paused, and timers run on them. The program constructs one `Time` and calls `poll` once a frame. Game code then moves by `delta`. Something that must keep time while the game is paused, such as a menu's animation, moves by `realDelta`, or by a second `Time` of its own.
 
@@ -26,6 +26,9 @@ var elapsed(default, null):Float
 var scale(default, set):Float
 var paused:Bool
 var maxDelta(default, set):Float
+var fps(get, never):Float
+var targetDelta(default, set):Float
+function getRemaining():Float
 function after(seconds:Float, f:() -> Void):Timer
 function every(seconds:Float, f:() -> Void):Timer
 function poll():Void
@@ -43,6 +46,10 @@ function dispose():Void
   While paused, `delta` is 0 and the timers wait.
 - `maxDelta`: Gets or sets the most real seconds one frame counts. Defaults to 0.25, and is clamped to at least 0.001.
   It keeps a frame after a stall, such as a page in the background or a debugger, from jumping ahead.
+- `fps`: Gets the frames a second, averaged over about the last half second: 30 frames' real times, one taken each sixtieth of a second at most, as raylib's `GetFPS` averages them. 0 before the first frame.
+- `targetDelta`: Gets or sets the real seconds a frame is aimed to take, as a frame rate's limit: 0, the default, for none. The loop's owner waits out what `getRemaining` gives, as only it can (a page can't wait, and skips a frame of the display's instead).
+- `getRemaining`: Returns how much of the frame aimed for is left: `targetDelta` less the real seconds since the last `poll`.
+  - returns: The seconds, 0 when the frame has taken that long or `targetDelta` is 0.
 - `after`: Calls a function once, after some of the game's time.
   - `seconds`: The game's seconds from now. 0 or less calls it at the next `poll`.
   - `f`: The function.

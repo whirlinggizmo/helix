@@ -3,7 +3,7 @@ import helix.services.saves.Saves;
 
 /** Checks Saves over a fake file system: a missing file loading as no values, values read and set by kind, a frame's changes written once
 	at the poll, flush answered by the write that keeps what's set, a failed write retried only after a change, a file that isn't saves
-	failing, and reads and sets before load throwing. */
+	failing, reads before load throwing, and what is set or deleted before load held and made after the read, winning over the file. */
 class SavesTests {
 	static var checks = 0;
 
@@ -23,7 +23,7 @@ class SavesTests {
 	static function main():Void {
 		var files = new FakeFileSystem();
 		var saves = new Saves(files);
-		check(throws(() -> saves.setInt("a", 1)) && throws(() -> saves.getInt("a", 0)), "before load: reads and sets throw");
+		check(throws(() -> saves.getInt("a", 0)), "before load: reads throw");
 		var loads = 0;
 		saves.load(() -> loads++);
 		files.poll();
@@ -58,6 +58,7 @@ class SavesTests {
 			&& again.getFloat("x", 0) == 1.5
 			&& !again.getBool("sound", true),
 			"loaded back by kind");
+
 		check(again.getInt("name", -1) == -1 && again.getBool("level", true) && again.getFloat("name", 2) == 2, "the wrong kind: the fallback");
 		check(again.getFloat("level", 0) == 3, "a whole number reads as a number");
 		check(throws(() -> again.setFloat("x", Math.NaN)), "a value that isn't finite is refused");
@@ -124,6 +125,42 @@ class SavesTests {
 		gone.dispose();
 		files.poll();
 		check(!answered && files.files.exists("saves.json"), "disposed after a flush: the write finishes, nothing is called");
+		// Set and deleted before the read: held, made after it, over what the file kept, and written.
+		files = new FakeFileSystem();
+		var first = new Saves(files);
+		first.load(() -> {});
+		files.poll();
+		first.setString("name", "Ada");
+		first.setInt("level", 3);
+		first.setBool("sound", false);
+		first.poll();
+		files.poll();
+		var early = new Saves(files), writes = files.writes;
+		early.setInt("level", 9);
+		early.deleteKey("sound");
+		early.setString("fresh", "yes");
+		check(!early.pending && files.writes == writes, "before load: held, nothing pending");
+		early.load(() -> {});
+		files.poll();
+		check(early.getInt("level", 0) == 9
+			&& !early.hasKey("sound")
+			&& early.getString("name", "") == "Ada"
+			&& early.getString("fresh", "") == "yes",
+			"held changes made after the read, over the file's values, the rest kept");
+		check(early.pending, "the held changes are pending, to be written");
+		early.poll();
+		files.poll();
+		var after = new Saves(files);
+		after.load(() -> {});
+		files.poll();
+		check(after.getInt("level", 0) == 9 && !after.hasKey("sound"), "and written");
+		var cleared = new Saves(files);
+		cleared.setInt("kept", 1);
+		cleared.deleteKeys();
+		cleared.setInt("after", 2);
+		cleared.load(() -> {});
+		files.poll();
+		check(!cleared.hasKey("kept") && !cleared.hasKey("name") && cleared.getInt("after", 0) == 2, "held in order: a reset, then a set");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

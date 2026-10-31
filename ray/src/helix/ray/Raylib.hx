@@ -3223,7 +3223,8 @@ class Raylib {
 		RAsync.FileExistsAsync(fileName, answer);
 
 	/** Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType
-		file gives its printable ASCII at 32 pixels, drawn with `TEXTURE_FILTER_POINT`; BMFont and image fonts aren't in helix-ray yet.
+		file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto
+		one texture, as raylib's; each drawn with `TEXTURE_FILTER_POINT`. Image fonts aren't in helix-ray yet.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the font.

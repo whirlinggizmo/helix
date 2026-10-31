@@ -1,0 +1,12 @@
+{
+	"name": "helix-formats",
+	"url": "https://github.com/whirlinggizmo/helix-2.0",
+	"license": "BSD",
+	"tags": ["gltf", "glb", "bmfont", "truetype", "parser", "js", "cpp"],
+	"description": "File formats read into plain data: glTF 2.0 and GLB models, AngelCode BMFont text fonts, and the tables of TrueType and OpenType fonts. Pure Haxe: bytes or text in, data out; no I/O. Depends on helix-math.",
+	"version": "0.1.0",
+	"classPath": "src/",
+	"releasenote": "First release.",
+	"contributors": ["whirlinggizmo"],
+	"dependencies": {"helix-math": ""}
+}

@@ -38,7 +38,7 @@ where a native program finds its files, relative to itself (default `../web`).
 
 ## Depends on
 
-helix-services and helix-platform (and helix-math and helix-log under them).
+helix-services and helix-platform (and helix-formats, helix-math and helix-log under them).
 
 ## Credit
 

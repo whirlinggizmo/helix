@@ -4,12 +4,14 @@ What a game program needs over [helix-platform](../platform/README.md) that isn'
 
 | Package | What |
 |---|---|
-| `helix.services.time` | `Time`: the game's time, scaled and paused, its timers, and real time beside it |
-| `helix.services.input` | `Keyboard`, `Mouse`, `Touch`, `Gamepads` and `Tilt`: each device held or pressed this frame; `Actions`: names bound to several of them |
+| `helix.services.time` | `Time`: the game's time, scaled and paused, its timers, real time beside it, frames a second, and a frame rate aimed for |
+| `helix.services.input` | `Keyboard` (with typed text and repeats), `Mouse`, `Touch`, `Gamepads` and `Tilt`: each device held or pressed this frame; `Gestures`: taps, holds, drags, swipes and pinches; `Actions`: names bound to several of them |
 | `helix.services.assets` | `Assets`: files by path, from a file system or downloaded from an HTTP server and kept |
 | `helix.services.audio` | `Audio`: sounds loaded whole or streamed, played in groups, with fades |
 | `helix.services.images` | `Images`: image files by path, or images inside other bytes, decoded into pixels |
-| `helix.services.saves` | `Saves`: small values kept between runs |
+| `helix.services.models` | `Models`: glTF and GLB models by path, with the files they name and their images, as meshes and materials |
+| `helix.services.fonts` | `Fonts`: TrueType and OpenType fonts rasterized onto an atlas at a size, and BMFont files |
+| `helix.services.saves` | `Saves`: small values kept between runs, set before they are read if need be |
 | `helix.services.config` | `Config`: the options the program was started with |
 
 ## Using it
@@ -18,7 +20,7 @@ What a game program needs over [helix-platform](../platform/README.md) that isn'
 -lib helix-services
 ```
 
-Until it is published, link it, and the libraries it's built on (helix-platform, helix-math and helix-log), from a checkout:
+Until it is published, link it, and the libraries it's built on (helix-platform, helix-formats, helix-math and helix-log), from a checkout:
 
 ```
 haxelib dev helix-services <checkout>/services

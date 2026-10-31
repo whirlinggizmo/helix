@@ -219,21 +219,8 @@ class RModels {
 	// its first load's meshes and textures, with materials of its own; meshes go to the GPU when first drawn.
 
 	static function loadModel(fileName:String):Model {
-		var path = normalize(fileName);
-		var lower = path.toLowerCase();
-		if (!(StringTools.endsWith(lower, ".glb") || StringTools.endsWith(lower, ".gltf"))) {
-			Runtime.log(4, 'LoadModelAsync: $fileName: only glTF and GLB are read here');
-			return new Model([], [Models.defaultMaterial(defaultShader())], []);
-		}
-		try {
-			var model = Models.load(path, () -> Runtime.file(path), defaultShader());
-			if (model != null)
-				return model;
-			Runtime.log(4, 'LoadModelAsync: $path couldn\'t be read');
-		} catch (e:Dynamic) {
-			Runtime.log(4, 'LoadModelAsync: $fileName: $e');
-		}
-		return new Model([], [Models.defaultMaterial(defaultShader())], []);
+		var model = Models.load(normalize(fileName));
+		return model != null ? model : new Model([], [Models.defaultMaterial(defaultShader())], []);
 	}
 
 	/** Makes a model of one mesh, with the default material.

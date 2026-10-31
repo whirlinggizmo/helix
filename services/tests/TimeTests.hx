@@ -90,6 +90,20 @@ class TimeTests {
 		time.dispose();
 		check(left.done, "dispose cancels every timer");
 		check(time.elapsed > start, "elapsed sums the deltas");
+		var paced = new Time(system);
+		check(paced.fps == 0 && paced.getRemaining() == 0, "fps 0 before a frame; no target, nothing left");
+		for (_ in 0...40) {
+			system.now += .02;
+			paced.poll();
+		}
+		check(Math.abs(paced.fps - 50) < 1e-6, "fps: 50 from frames of a fiftieth of a second");
+		paced.targetDelta = 1 / 30;
+		system.now += .01;
+		check(Math.abs(paced.getRemaining() - (1 / 30 - .01)) < 1e-9, "what's left of the frame aimed for");
+		system.now += .05;
+		check(paced.getRemaining() == 0, "none past it");
+		paced.targetDelta = -1;
+		check(paced.targetDelta == 0, "a negative target is none");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

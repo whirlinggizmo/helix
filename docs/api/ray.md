@@ -2662,7 +2662,7 @@ static function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize
 - `FileExistsAsync`: Answers whether a file exists: helix-ray's own, in place of raylib's `FileExists`. One `SaveFileText` or `SaveFileData` wrote exists, as does one of the program's; finding one of the program's reads it, so a load of it after answers at once. The answer comes at a later frame, never during the call.
   - `fileName`: The file.
   - `answer`: Receives true when it exists.
-- `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels, drawn with `TEXTURE_FILTER_POINT`; BMFont and image fonts aren't in helix-ray yet.
+- `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto one texture, as raylib's; each drawn with `TEXTURE_FILTER_POINT`. Image fonts aren't in helix-ray yet.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the font.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.

@@ -10,7 +10,8 @@ import helix.platform.IPollable;
 /** Provides small values a game keeps between runs, by key, in one file.
 
 	`load` reads the file once. After that, values are read and set in memory, without waiting. A change is written at the next `poll`:
-	everything set in a frame as one file, one write at a time.
+	everything set in a frame as one file, one write at a time. A value set, or deleted, before the read has finished is held and made
+	once it has, so it wins over what the file kept: a program can save as it starts, before it has asked for anything back.
 
 	Set a value when it changes, not as the program ends. A page's end gives a write no time to finish, so what is set there is lost. A
 	native program leaving its loop flushes first, and leaves when the flush answers.
@@ -47,6 +48,8 @@ class Saves implements IPollable {
 	var answered:Array<Flush> = [];
 	// The loads asked for while the first is in flight, answered together.
 	var loads:Array<Flush> = [];
+	// What was set or deleted before the read finished, made after it, in order.
+	var held:Array<Void->Void> = [];
 
 	/** Creates the saves over a file system, holding nothing until `load`.
 
@@ -81,6 +84,12 @@ class Saves implements IPollable {
 			if (disposed)
 				return;
 			this.loaded = failure == null;
+			if (this.loaded && held.length > 0) {
+				for (make in held)
+					make();
+				held = [];
+				change();
+			}
 			for (load in asked)
 				if (failure == null)
 					load.written();
@@ -157,8 +166,7 @@ class Saves implements IPollable {
 	/** Sets a key to a string, kept at the next `poll`.
 
 		@param key  The key.
-		@param value  The value.
-		@throws String  Before `load` has finished. */
+		@param value  The value. */
 	public function setString(key:String, value:String):Void {
 		write(key, value);
 	}
@@ -166,8 +174,7 @@ class Saves implements IPollable {
 	/** Sets a key to a whole number, kept at the next `poll`.
 
 		@param key  The key.
-		@param value  The value.
-		@throws String  Before `load` has finished. */
+		@param value  The value. */
 	public function setInt(key:String, value:Int):Void {
 		write(key, value);
 	}
@@ -176,7 +183,7 @@ class Saves implements IPollable {
 
 		@param key  The key.
 		@param value  The value. Must be finite.
-		@throws String  Before `load` has finished, or when the value isn't finite. */
+		@throws String  When the value isn't finite. */
 	public function setFloat(key:String, value:Float):Void {
 		if (!Math.isFinite(value))
 			throw '$key can\'t be saved as $value: a value is finite';
@@ -186,29 +193,31 @@ class Saves implements IPollable {
 	/** Sets a key to true or false, kept at the next `poll`.
 
 		@param key  The key.
-		@param value  The value.
-		@throws String  Before `load` has finished. */
+		@param value  The value. */
 	public function setBool(key:String, value:Bool):Void {
 		write(key, value);
 	}
 
 	/** Deletes a key and its value, kept at the next `poll`. Does nothing for a key with no value.
 
-		@param key  The key.
-		@throws String  Before `load` has finished. */
+		@param key  The key. */
 	public function deleteKey(key:String):Void {
-		ready();
+		if (!loaded) {
+			held.push(() -> values.remove(key));
+			return;
+		}
 		if (values.remove(key))
 			change();
 	}
 
 	/** Deletes every key, kept at the next `poll`, resetting the saves.
 
-		Only the saves file changes. Nothing else in the file system belongs to the saves.
-
-		@throws String  Before `load` has finished. */
+		Only the saves file changes. Nothing else in the file system belongs to the saves. */
 	public function deleteKeys():Void {
-		ready();
+		if (!loaded) {
+			held.push(() -> values = {});
+			return;
+		}
 		values = {};
 		change();
 	}
@@ -287,7 +296,10 @@ class Saves implements IPollable {
 	}
 
 	function write(key:String, value:Dynamic):Void {
-		ready();
+		if (!loaded) {
+			held.push(() -> values.set(key, value));
+			return;
+		}
 		values.set(key, value);
 		change();
 	}

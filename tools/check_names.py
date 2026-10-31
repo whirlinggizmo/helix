@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCES = [ROOT / 'platform/src/helix', ROOT / 'log/src/helix', ROOT / 'math/src/helix', ROOT / 'services/src/helix']
+SOURCES = [ROOT / 'platform/src/helix', ROOT / 'log/src/helix', ROOT / 'math/src/helix', ROOT / 'formats/src/helix', ROOT / 'services/src/helix']
 
 # The types of a kind's package that are neither kind's alone, each with its reason (none yet: no library draws).
 NEUTRAL = {}

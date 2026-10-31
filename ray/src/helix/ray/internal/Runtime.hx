@@ -13,6 +13,7 @@ import helix.platform.ISystem;
 import helix.platform.IWindow;
 import helix.services.assets.Assets;
 import helix.services.input.Gamepads;
+import helix.services.input.Gestures;
 import helix.services.input.Keyboard;
 import helix.services.input.Mouse;
 import helix.services.input.Touch;
@@ -25,7 +26,7 @@ using StringTools;
 	memory, and the frame.
 
 	raylib answers a load at once. A page can't wait for a file, so on every target helix-ray loads through the `...Async` functions,
-	which bring files into memory here. The saves, which hold what `SaveFileText` writes, are read when first used (`withSaves`). */
+	which bring files into memory here. The saves, which hold what `SaveFileText` writes, are read when first used (`keptSaves`). */
 @:noCompletion
 class Runtime {
 	public static var system:ISystem;
@@ -41,6 +42,9 @@ class Runtime {
 
 	/** The program's files, as the preload found them, for what loads from them later (`Audio`, and the `...Async` loads). */
 	public static var assets:Null<Assets> = null;
+
+	/** The models, reading glTF files with what they name, made with the assets. */
+	public static var models:Null<helix.services.models.Models> = null;
 
 	/** The images, decoding the program's image files and a model's. */
 	public static var decoding:Null<helix.services.images.Images> = null;
@@ -63,23 +67,16 @@ class Runtime {
 	public static var exitKey = 256;
 	public static var frames = 0;
 
-	/** The seconds a frame is to take at least, from `SetTargetFPS`; 0 for no limit. */
-	public static var frameTarget = 0.;
+	// In a page, when the next frame is due by the time's target (`SetTargetFPS`).
+	static var frameDue = 0.;
 
-	// When the last frame ended, after its wait; in a page, when the next frame is due.
-	static var frameEnd = 0.;
-
-	/** The keys pressed this frame, oldest first, read by `GetKeyPressed`. */
+	/** The keys pressed this frame, oldest first, as the keyboard has them, read one at a time by `GetKeyPressed`. */
 	public static final keysPressed:Array<Int> = [];
 
-	/** The keys the OS repeated this frame, read by `IsKeyPressedRepeat`. */
-	public static final keysRepeated:Array<Int> = [];
-
-	/** The characters typed this frame, as codepoints, oldest first, read by `GetCharPressed`. */
+	/** The characters typed this frame, as codepoints, oldest first, as the keyboard has them, read one at a time by `GetCharPressed`. */
 	public static final charsPressed:Array<Int> = [];
 
 	static var keyboardService:Null<Keyboard> = null;
-	static var keyboardAdapter:Null<helix.platform.IKeyboard> = null;
 	static var mouseService:Null<Mouse> = null;
 	static var touchService:Null<Touch> = null;
 	static var gamepadsService:Null<Gamepads> = null;
@@ -130,6 +127,7 @@ class Runtime {
 		polled.push(imageDecoder);
 		decoding = new helix.services.images.Images(imageDecoder, assets);
 		polled.push(decoding);
+		models = new helix.services.models.Models(assets, decoding);
 	}
 
 	/** Brings a file into memory: an image decoded, a glTF file with its images decoded and the files it points to, anything else as
@@ -162,38 +160,7 @@ class Runtime {
 				}, error -> done('$path: $error'));
 				return;
 			}
-			if (!(lower.endsWith(".glb") || lower.endsWith(".gltf"))) {
-				done(null);
-				return;
-			}
-			// A model's images are decoded now too, and the files it points to brought in, so the model is made at once.
-			var file = try Gltf.read(bytes) catch (e:Dynamic) {
-				done('$path: $e');
-				return;
-			}
-			var left = 1;
-			var one = () -> if (--left == 0) done(null);
-			var directory = haxe.io.Path.directory(path);
-			for (missing in file.missingBuffers) {
-				left++;
-				fetch(directory == "" ? missing.uri : directory + "/" + missing.uri, _ -> one());
-			}
-			for (i in 0...file.list("images").length) {
-				var key = Models.imageKey(path, file, i),
-					encoded = Models.imageBytes(file, i);
-				left++;
-				if (encoded == null)
-					fetch(key, _ -> one());
-				else
-					decoding.decode(encoded, image -> {
-						images.set(key, image);
-						one();
-					}, error -> {
-						log(4, '$key: $error');
-						one();
-					});
-			}
-			one();
+			done(null);
 		}, error -> done(error));
 	}
 
@@ -245,27 +212,21 @@ class Runtime {
 		return files.get(path);
 	}
 
-	/** Returns an image an async load decoded: an image file's, or one a model holds, by its key (`Models.imageKey`).
+	/** Returns an image file an async load decoded.
 
-		@param key  The file's path, or the model image's key.
+		@param key  The file's path.
 		@return  The image, or null when it isn't in memory. */
 	public static function image(key:String):Null<helix.services.images.Image> {
 		return images.get(key);
 	}
 
-	/** Calls a function with the saves once they are read: at once when they are, else when the read answers, in the order asked. The
-		first call starts the read, so a program that never saves never reads them. A write asked for during the read is made after it,
-		so it wins over what was kept.
+	/** Gets the saves, made and read when first asked for, so a program that never saves never reads them. A value set before the read
+		has finished is held by the saves and made after it, so it wins over what was kept.
 
-		@param ready  Receives the saves. */
-	public static function withSaves(ready:Saves->Void):Void {
-		if (saves != null && saves.loaded) {
-			ready(saves);
-			return;
-		}
-		savesWaiting.push(ready);
+		@return  The saves. */
+	public static function keptSaves():Saves {
 		if (saves != null)
-			return;
+			return saves;
 		#if js
 		var data = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getDataDirectory()});
 		#else
@@ -290,19 +251,17 @@ class Runtime {
 			}
 			#end
 		});
-		function answer() {
-			var waiting = savesWaiting;
-			savesWaiting = [];
-			for (f in waiting)
-				f(kept);
-		}
-		kept.load(answer, error -> {
-			log(4, 'saves: $error');
-			answer();
-		});
+		kept.load(() -> {}, error -> log(4, 'saves: $error'));
+		return kept;
 	}
 
-	static var savesWaiting:Array<Saves->Void> = [];
+	/** Calls a function with the saves once they are read, at a later poll, in the order asked; the first call starts the read.
+
+		@param ready  Receives the saves. */
+	public static function withSaves(ready:Saves->Void):Void {
+		var kept = keptSaves();
+		kept.load(() -> ready(kept), _ -> ready(kept));
+	}
 
 	/** Runs the program's loop body once a frame, in a page, then what follows the loop when it stops.
 
@@ -314,12 +273,13 @@ class Runtime {
 		frame = _ -> {
 			// A frame the target rate has no room for is skipped, with a millisecond's slack for the display's jitter.
 			var now = system.getTime();
-			if (frameTarget > 0 && now < frameEnd - .001) {
+			var frameTarget = time.targetDelta;
+			if (frameTarget > 0 && now < frameDue - .001) {
 				js.Browser.window.requestAnimationFrame(frame);
 				return;
 			}
 			// The next is due a target after this one was: from now when it came early or far behind, so neither adds up.
-			frameEnd = (now < frameEnd || now - frameEnd > frameTarget ? now : frameEnd) + frameTarget;
+			frameDue = (now < frameDue || now - frameDue > frameTarget ? now : frameDue) + frameTarget;
 			body();
 			if (shouldClose)
 				after();
@@ -373,11 +333,10 @@ class Runtime {
 	public static function keyboard():Keyboard {
 		if (keyboardService == null) {
 			#if js
-			keyboardAdapter = new helix.platform.adapters.keyboard.dom.DomKeyboardAdapter({events: cast events});
+			keyboardService = new Keyboard(events, new helix.platform.adapters.keyboard.dom.DomKeyboardAdapter({events: cast events}));
 			#else
-			keyboardAdapter = new helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapter({events: cast events});
+			keyboardService = new Keyboard(events, new helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapter({events: cast events}));
 			#end
-			keyboardService = new Keyboard(events, keyboardAdapter);
 			devices.push(keyboardService);
 		}
 		return keyboardService;
@@ -386,8 +345,7 @@ class Runtime {
 	/** Turns typed text on, so the characters typed arrive in `charsPressed`; raylib reads them always, helix-ray once asked for, as a
 		phone shows its keyboard while text is on. */
 	public static function typing():Void {
-		keyboard();
-		keyboardAdapter.textInput = true;
+		keyboard().textInput = true;
 	}
 
 	/** Gets the mouse, made when first asked for, with the touch, as raylib takes the first finger for the mouse. */
@@ -400,6 +358,9 @@ class Runtime {
 			#end
 			devices.push(mouseService);
 			touch();
+			// raylib's gestures read the mouse and the fingers from the start, so they are made with them.
+			gesturesService = new Gestures(events, window, system);
+			devices.push(gesturesService);
 		}
 		return mouseService;
 	}
@@ -417,18 +378,25 @@ class Runtime {
 		return touchService;
 	}
 
-	/** Gets the gestures, made when first asked for, with the mouse and touch whose events they read. */
+	/** Gets the gestures, made with the mouse and touch whose events they read. */
 	public static function gestures():Gestures {
-		if (gesturesService == null) {
-			mouse();
-			gesturesService = new Gestures();
-			devices.push(gesturesService);
-		}
+		mouse();
 		return gesturesService;
 	}
 
+	/** Gets the fonts service, made when first asked for, over the font rasterizer, the assets and the images. */
+	public static function fonts():helix.services.fonts.Fonts {
+		if (fontsService == null) {
+			loading();
+			fontsService = new helix.services.fonts.Fonts(rasterizer(), assets, decoding);
+		}
+		return fontsService;
+	}
+
+	static var fontsService:Null<helix.services.fonts.Fonts> = null;
+
 	/** Gets the font rasterizer, made when first asked for. */
-	public static function fonts():helix.platform.IFontRasterizer {
+	public static function rasterizer():helix.platform.IFontRasterizer {
 		if (fontRasterizer == null) {
 			#if js
 			fontRasterizer = new helix.platform.adapters.fontrasterizer.canvas.CanvasFontRasterizerAdapter();
@@ -483,11 +451,9 @@ class Runtime {
 	}
 
 	#if !js
-	// raylib's frame wait: what is left of the frame's target.
+	// raylib's frame wait: what is left of the frame the time aims for.
 	static function wait():Void {
-		if (frameTarget > 0)
-			sleep(frameTarget - (system.getTime() - frameEnd));
-		frameEnd = system.getTime();
+		sleep(time.getRemaining());
 	}
 	#end
 
@@ -502,7 +468,6 @@ class Runtime {
 		}
 		events.poll();
 		keysPressed.resize(0);
-		keysRepeated.resize(0);
 		charsPressed.resize(0);
 		resized = false;
 		for (event in events.events)
@@ -511,17 +476,16 @@ class Runtime {
 					shouldClose = true;
 				case Resized(_, _):
 					resized = true;
-				case KeyDown(key, false):
-					keysPressed.push(key);
-				case KeyDown(key, true):
-					keysRepeated.push(key);
-				case Text(text):
-					for (c in new haxe.iterators.StringIteratorUnicode(text))
-						charsPressed.push(c);
 				case _:
 			}
 		for (device in devices)
 			device.poll();
+		if (keyboardService != null) {
+			for (key in keyboardService.pressedKeys)
+				keysPressed.push(key);
+			for (c in new haxe.iterators.StringIteratorUnicode(keyboardService.text))
+				charsPressed.push(c);
+		}
 		#if !js
 		if (exitKey != 0 && keyboardService.isKeyPressed(cast exitKey))
 			shouldClose = true;

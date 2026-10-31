@@ -28,10 +28,12 @@ The hardware and the OS as plain Haxe calls, in the browser and natively. Each d
 -lib helix-platform
 ```
 
-Until it is published, link it from a checkout:
+Until it is published, link it, and the libraries it's built on (helix-math and helix-formats), from a checkout:
 
 ```
 haxelib dev helix-platform <checkout>/platform
+haxelib dev helix-math <checkout>/math
+haxelib dev helix-formats <checkout>/formats
 ```
 
 A program constructs one adapter for each contract it uses, for its target, and after that uses the contract alone. Native builds link

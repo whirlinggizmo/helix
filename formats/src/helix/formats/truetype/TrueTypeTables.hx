@@ -1,12 +1,20 @@
-package helix.platform.adapters.fontrasterizer.canvas.internal;
+package helix.formats.truetype;
 
 import haxe.io.Bytes;
 
-/** Reads what stb_truetype reads from a font's tables, so a page's glyphs are found, measured and placed as natively: the vertical
-	metrics (`hhea`), the units per em (`head`), each codepoint's glyph (`cmap`, the subtable stb_truetype picks), its advance (`hmtx`)
-	and, for TrueType outlines, its box (`glyf`). An OpenType font with CFF outlines has no `glyf`, and its boxes are measured instead. */
-@:noCompletion
-class FontTables {
+/** Represents the tables of a TrueType or OpenType font, read as stb_truetype reads them.
+
+	It reads the vertical metrics (`hhea`), the units per em (`head`), each codepoint's glyph (`cmap`, the subtable stb_truetype picks),
+	its advance (`hmtx`) and, for TrueType outlines, its box (`glyf`), so glyphs are found, measured and placed as a native build places
+	them. An OpenType font with CFF outlines has no `glyf`: `hasGlyf` is false, and its boxes are not read. Nothing is drawn: outlines,
+	kerning and font collections are not read.
+
+	```haxe
+	var tables = new TrueTypeTables(bytes);
+	var scale = tables.scaleFor(32);
+	var advance = tables.advance(tables.glyphIndex("A".code)) * scale;
+	``` */
+class TrueTypeTables {
 	final data:Bytes;
 	final head:Int;
 	final hhea:Int;
@@ -15,16 +23,21 @@ class FontTables {
 	final glyf:Int;
 	final indexMap:Int;
 
-	/** The units per em. */
+	/** Gets the font's units per em, from `head`. */
 	public final unitsPerEm:Int;
 
-	/** The ascent, descent and line gap, in font units. */
+	/** Gets the font's ascent, from `hhea`: in font units above the baseline, y up. */
 	public final ascent:Int;
 
+	/** Gets the font's descent, from `hhea`: in font units, y up, so below the baseline it is negative. */
 	public final descent:Int;
+
+	/** Gets the font's line gap, from `hhea`: in font units, the space between one line's descent and the next line's ascent. */
 	public final lineGap:Int;
 
 	/** Reads a font's tables.
+
+		The bytes are kept, not copied: the glyph lookups read them.
 
 		@param data  The font file.
 		@throws String  It isn't a TrueType or OpenType font, or lacks a table stb_truetype needs. */
@@ -68,7 +81,7 @@ class FontTables {
 	public function scaleFor(size:Float):Float
 		return size / (ascent - descent);
 
-	/** Returns whether the font has outlines in `glyf`, whose boxes this reads. */
+	/** Gets a value indicating whether the font has TrueType outlines in `glyf`, whose boxes `box` reads. */
 	public var hasGlyf(get, never):Bool;
 
 	function get_hasGlyf():Bool
@@ -133,6 +146,8 @@ class FontTables {
 	}
 
 	/** Returns a TrueType glyph's box, in font units: x0, y0, x1, y1, y up; null for one with no outline.
+
+		Only a font with `hasGlyf` has boxes to read.
 
 		@param glyph  The glyph index.
 		@return  The box. */

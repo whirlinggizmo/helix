@@ -1,11 +1,24 @@
-package helix.ray.internal;
+package helix.services.input;
 
 import helix.platform.Event;
+import helix.platform.IEvents;
 import helix.platform.IPollable;
+import helix.platform.ISystem;
+import helix.platform.IWindow;
 
-/** Holds raylib's gestures (rgestures.h), fed the frame's mouse and touch events in the order they came, as raylib's callbacks feed
-	it: every mouse button as one finger, and the fingers on the screen. Positions are normalized to the screen, 0 to 1. */
-@:noCompletion
+/** Provides gestures from the mouse and the fingers on the screen: a tap, a double tap, a hold, a drag, a swipe each way and a pinch in
+	or out, as raylib's gestures (rgestures.h) detect them, from the frame's events in the order they came. Every mouse button counts as
+	one finger. Positions and distances are fractions of the window, 0 to 1 across it.
+
+	The program constructs one over its `IEvents`, `IWindow` and `ISystem`, and calls `poll` once a frame. The mouse's and touch's events
+	arrive only while their adapters exist, so the program constructs those too.
+
+	```haxe
+	var gestures = new Gestures(events, window, system);
+	// each frame:
+	gestures.poll();
+	if (gestures.isDetected(Tap)) select();
+	``` */
 class Gestures implements IPollable {
 	static inline final FORCE_TO_SWIPE = 0.2;
 	static inline final DRAG_TIMEOUT = 0.3;
@@ -13,39 +26,62 @@ class Gestures implements IPollable {
 	static inline final TAP_TIMEOUT = 0.3;
 	static inline final DOUBLETAP_RANGE = 0.03;
 
-	static inline final NONE = 0;
-	static inline final TAP = 1;
-	static inline final DOUBLETAP = 2;
-	static inline final HOLD = 4;
-	static inline final DRAG = 8;
-	static inline final SWIPE_RIGHT = 16;
-	static inline final SWIPE_LEFT = 32;
-	static inline final SWIPE_UP = 64;
-	static inline final SWIPE_DOWN = 128;
-	static inline final PINCH_IN = 256;
-	static inline final PINCH_OUT = 512;
+	final events:IEvents;
+	final window:IWindow;
+	final system:ISystem;
+	// The gesture now, before `enabled` applies.
+	var gesture:Gesture = None;
 
-	/** The gesture now, before the enabled flags apply. */
-	public var current = NONE;
+	/** Creates the gestures, none detected yet.
 
-	/** The gestures `SetGesturesEnabled` allows; all of them until it is called. */
-	public var enabledFlags = 0x3ff;
+		@param events  The platform's events, whose last `poll` this one reads.
+		@param window  The window, whose framebuffer's size positions are fractions of.
+		@param system  The system, whose clock times holds, double taps and swipes. */
+	public function new(events:IEvents, window:IWindow, system:ISystem) {
+		this.events = events;
+		this.window = window;
+		this.system = system;
+	}
 
-	/** The drag: from where the finger landed to where it is, normalized. */
-	public var dragX = 0.;
+	/** Gets or sets the gestures detected, as flags or'd together. Defaults to `All`. */
+	public var enabled:Gesture = All;
 
-	public var dragY = 0.;
+	/** Gets the gesture detected now, or `None`: one that isn't enabled isn't. */
+	public var current(get, never):Gesture;
 
-	/** The swipe's angle, in degrees counterclockwise from right, as the finger lifted. */
-	public var dragAngle = 0.;
+	function get_current():Gesture
+		return enabled & gesture;
 
-	/** The pinch: from the first finger to the second, normalized. */
-	public var pinchX = 0.;
+	/** Returns whether a gesture is the one detected now.
 
-	public var pinchY = 0.;
+		@param gesture  The gesture.
+		@return  True while it is, and it is enabled. */
+	public function isDetected(gesture:Gesture):Bool
+		return current == gesture;
 
-	/** The pinch's angle, in degrees counterclockwise from right. */
-	public var pinchAngle = 0.;
+	/** Gets how long the hold has lasted, in seconds: 0 when the gesture isn't a hold. */
+	public var holdDuration(get, never):Float;
+
+	function get_holdDuration():Float
+		return gesture == Hold ? now() - holdTime : 0;
+
+	/** Gets the drag across, from where the finger landed to where it is, in fractions of the window's width. */
+	public var dragX(default, null) = 0.;
+
+	/** Gets the drag down, in fractions of the window's height. */
+	public var dragY(default, null) = 0.;
+
+	/** Gets the last swipe's angle, in degrees counterclockwise from right. */
+	public var dragAngle(default, null) = 0.;
+
+	/** Gets the pinch across, from the first finger to the second, in fractions of the window's width. */
+	public var pinchX(default, null) = 0.;
+
+	/** Gets the pinch down, in fractions of the window's height. */
+	public var pinchY(default, null) = 0.;
+
+	/** Gets the pinch's angle, in degrees counterclockwise from right. */
+	public var pinchAngle(default, null) = 0.;
 
 	var holdTime = 0.;
 
@@ -78,30 +114,20 @@ class Gestures implements IPollable {
 	final xs:Array<Float> = [];
 	final ys:Array<Float> = [];
 
-	/** Creates the gestures, fed the events of the frame they are made in. */
-	public function new() {
-		read();
-	}
-
-	/** Steps the gestures to the new frame, as raylib's `UpdateGestures` does, then reads its events. */
+	/** Steps the gestures to the new frame, then reads the events the last `IEvents.poll` delivered. Call it once a frame. */
 	public function poll():Void {
-		if ((current == TAP || current == DOUBLETAP) && pointCount < 2) {
-			current = HOLD;
+		if ((gesture == Tap || gesture == DoubleTap) && pointCount < 2) {
+			gesture = Hold;
 			holdTime = now();
 		}
-		if (current == SWIPE_RIGHT || current == SWIPE_UP || current == SWIPE_LEFT || current == SWIPE_DOWN)
-			current = NONE;
+		if (gesture == SwipeRight || gesture == SwipeUp || gesture == SwipeLeft || gesture == SwipeDown)
+			gesture = None;
 		read();
 	}
 
-	/** Returns how long the hold has lasted, in seconds, or 0 when the gesture isn't a hold. */
-	public function holdDuration():Float
-		return current == HOLD ? now() - holdTime : 0;
-
 	function read():Void {
-		var width = Runtime.window.framebufferWidth,
-			height = Runtime.window.framebufferHeight;
-		for (event in Runtime.events.events)
+		var width = window.framebufferWidth, height = window.framebufferHeight;
+		for (event in events.events)
 			switch event {
 				case MouseDown(_, x, y):
 					one(1, x / width, y / height);
@@ -161,15 +187,15 @@ class Gestures implements IPollable {
 		if (count == 1) {
 			if (action == 1) {
 				tapCounter++;
-				if (current == NONE
+				if (gesture == None
 					&& tapCounter >= 2
 					&& now() - eventTime < TAP_TIMEOUT
 					&& distance(downAX, downAY, xs[0], ys[0]) < DOUBLETAP_RANGE) {
-					current = DOUBLETAP;
+					gesture = DoubleTap;
 					tapCounter = 0;
 				} else {
 					tapCounter = 1;
-					current = TAP;
+					gesture = Tap;
 				}
 				downAX = downDragX = upX = xs[0];
 				downAY = downDragY = upY = ys[0];
@@ -177,26 +203,26 @@ class Gestures implements IPollable {
 				dragX = dragY = 0;
 			} else if (action == 0) {
 				// A swipe can end a drag or, in a page especially, a hold.
-				if (current == DRAG || current == HOLD) {
+				if (gesture == Drag || gesture == Hold) {
 					upX = xs[0];
 					upY = ys[0];
 				}
 				var intensity = distance(downAX, downAY, upX, upY) / (now() - swipeStart);
-				if (intensity > FORCE_TO_SWIPE && current != DRAG) {
+				if (intensity > FORCE_TO_SWIPE && gesture != Drag) {
 					// The angle is inverted in y.
 					dragAngle = 360 - angle(downAX, downAY, upX, upY);
-					current = if (dragAngle < 30 || dragAngle > 330) SWIPE_RIGHT else if (dragAngle <= 150) SWIPE_UP else if (dragAngle < 210) SWIPE_LEFT else
-						SWIPE_DOWN;
+					gesture = if (dragAngle < 30 || dragAngle > 330) SwipeRight else if (dragAngle <= 150) SwipeUp else if (dragAngle < 210) SwipeLeft else
+						SwipeDown;
 				} else {
 					dragAngle = 0;
-					current = NONE;
+					gesture = None;
 				}
 				downDragX = downDragY = 0;
 				pointCount = 0;
 			} else {
 				moveAX = xs[0];
 				moveAY = ys[0];
-				if (current == HOLD) {
+				if (gesture == Hold) {
 					if (holdResetRequired) {
 						downAX = xs[0];
 						downAY = ys[0];
@@ -204,7 +230,7 @@ class Gestures implements IPollable {
 					holdResetRequired = false;
 					if (now() - eventTime > DRAG_TIMEOUT) {
 						eventTime = now();
-						current = DRAG;
+						gesture = Drag;
 					}
 				}
 				dragX = moveAX - downDragX;
@@ -218,7 +244,7 @@ class Gestures implements IPollable {
 				downBY = previousBY = ys[1];
 				pinchX = downBX - downAX;
 				pinchY = downBY - downAY;
-				current = HOLD;
+				gesture = Hold;
 				holdTime = now();
 			} else if (action == 2) {
 				moveAX = xs[0];
@@ -229,22 +255,22 @@ class Gestures implements IPollable {
 				pinchY = moveBY - moveAY;
 				if (distance(previousAX, previousAY, moveAX, moveAY) >= MINIMUM_PINCH
 					|| distance(previousBX, previousBY, moveBX, moveBY) >= MINIMUM_PINCH) {
-					current = distance(previousAX, previousAY, previousBX, previousBY) > distance(moveAX, moveAY, moveBX, moveBY) ? PINCH_IN : PINCH_OUT;
+					gesture = distance(previousAX, previousAY, previousBX, previousBY) > distance(moveAX, moveAY, moveBX, moveBY) ? PinchIn : PinchOut;
 				} else {
-					current = HOLD;
+					gesture = Hold;
 					holdTime = now();
 				}
 				pinchAngle = 360 - angle(moveAX, moveAY, moveBX, moveBY);
 			} else {
 				pinchX = pinchY = pinchAngle = 0;
 				pointCount = 0;
-				current = NONE;
+				gesture = None;
 			}
 		}
 	}
 
-	static function now():Float
-		return Runtime.system.getTime();
+	function now():Float
+		return system.getTime();
 
 	static function distance(x1:Float, y1:Float, x2:Float, y2:Float):Float {
 		var dx = x2 - x1, dy = y2 - y1;

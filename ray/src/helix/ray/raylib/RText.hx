@@ -464,6 +464,38 @@ class RText {
 		return font;
 	}
 
+	// raylib's LoadBMFont, from what the fonts service read: its size the line height, no padding, each glyph's offset from the line's
+	// top and its image its part of the atlas.
+	static function fromBmFont(read:helix.services.fonts.Font2D):Font {
+		var font = new Font(), atlas = read.atlas;
+		font.baseSize = Std.int(read.size);
+		font.glyphCount = read.glyphs.length;
+		font.glyphPadding = 0;
+		font.texture = new Texture2D(Textures.fromImage(atlas.path, atlas), atlas.width, atlas.height);
+		for (g in read.glyphs) {
+			font.recs.push(new Rectangle(g.x, g.y, g.width, g.height));
+			var glyph = new GlyphInfo();
+			glyph.value = g.codepoint;
+			glyph.offsetX = Std.int(g.offsetX);
+			glyph.offsetY = Std.int(g.offsetY + read.ascent);
+			glyph.advanceX = Std.int(g.advance);
+			glyph.image = new Image();
+			// A character placed past its page's edge, which a .fnt may claim, reads as empty there.
+			var part = haxe.io.Bytes.alloc(g.width * g.height * 4),
+				inside = g.x + g.width <= atlas.width ? g.width : atlas.width - g.x;
+			for (row in 0...g.height)
+				if (g.y + row < atlas.height && inside > 0)
+					part.blit(row * g.width * 4, atlas.pixels, ((g.y + row) * atlas.width + g.x) * 4, inside * 4);
+			glyph.image.data = part;
+			glyph.image.width = g.width;
+			glyph.image.height = g.height;
+			glyph.image.mipmaps = 1;
+			glyph.image.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+			font.glyphs.push(glyph);
+		}
+		return font;
+	}
+
 	static var textLineSpacing = 2;
 	static var fontDefault:Null<Font> = null;
 

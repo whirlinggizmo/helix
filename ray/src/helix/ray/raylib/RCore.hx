@@ -145,17 +145,14 @@ class RCore {
 
 		@param fps  The frames a second, or 0 for no limit. */
 	static function SetTargetFPS(fps:Int):Void {
-		Runtime.frameTarget = fps < 1 ? 0 : 1 / fps;
+		Runtime.time.targetDelta = fps < 1 ? 0 : 1 / fps;
 	}
 
 	/** Returns the frames a second, averaged over the last half second or so.
 
 		@return  The frames a second. */
 	static function GetFPS():Int {
-		var delta = Runtime.time == null ? 0. : Runtime.time.realDelta;
-		if (delta > 0)
-			fps += (1 / delta - fps) * .1;
-		return Math.round(fps);
+		return Runtime.time == null ? 0 : Math.round(Runtime.time.fps);
 	}
 
 	/** Returns the seconds the last frame took.
@@ -283,7 +280,7 @@ class RCore {
 	static function IsKeyPressedRepeat(key:Int):Bool {
 		Runtime.keyboard();
 		var k = toKey(key);
-		return k >= 0 && Runtime.keysRepeated.indexOf(k) >= 0;
+		return k >= 0 && Runtime.keyboard().isKeyRepeated(cast k);
 	}
 
 	/** Returns the next character typed this frame, each once; call it until it returns 0. Typed text is read from the first call on, so
@@ -419,7 +416,7 @@ class RCore {
 
 		@param flags  The gestures (`GESTURE_*`), or'd together. */
 	static function SetGesturesEnabled(flags:Int):Void {
-		Runtime.gestures().enabledFlags = flags;
+		Runtime.gestures().enabled = flags;
 	}
 
 	/** Returns whether a gesture is the one detected now. A mouse button counts as a finger, as in raylib. A tap or double tap lasts a
@@ -428,23 +425,21 @@ class RCore {
 		@param gesture  The gesture (`GESTURE_*`).
 		@return  True while it is the gesture, and enabled. */
 	static function IsGestureDetected(gesture:Int):Bool {
-		var gestures = Runtime.gestures();
-		return (gestures.enabledFlags & gestures.current) == gesture;
+		return Runtime.gestures().isDetected(gesture);
 	}
 
 	/** Returns the gesture detected now.
 
 		@return  The gesture (`GESTURE_*`), or `GESTURE_NONE` when it isn't enabled. */
 	static function GetGestureDetected():Int {
-		var gestures = Runtime.gestures();
-		return gestures.enabledFlags & gestures.current;
+		return Runtime.gestures().current;
 	}
 
 	/** Returns how long the hold has lasted.
 
 		@return  The seconds, or 0 when the gesture isn't `GESTURE_HOLD`. */
 	static function GetGestureHoldDuration():Float {
-		return Runtime.gestures().holdDuration();
+		return Runtime.gestures().holdDuration;
 	}
 
 	/** Returns the drag, from where the finger landed to where it is, in fractions of the screen.
@@ -609,7 +604,7 @@ class RCore {
 		if (saveText != null)
 			return saveText(normalize(fileName), text);
 		var path = normalize(fileName);
-		Runtime.withSaves(saves -> saves.setString(SAVED + path, text));
+		Runtime.keptSaves().setString(SAVED + path, text);
 		return true;
 	}
 
@@ -639,7 +634,7 @@ class RCore {
 		if (saveData != null)
 			return saveData(path, data, dataSize);
 		var encoded = haxe.crypto.Base64.encode(data.sub(0, dataSize));
-		Runtime.withSaves(saves -> saves.setString(SAVED_DATA + path, encoded));
+		Runtime.keptSaves().setString(SAVED_DATA + path, encoded);
 		return true;
 	}
 
@@ -723,7 +718,6 @@ class RCore {
 	static inline final SAVED = "file:";
 	static var start = 0.;
 	static var configFlags = 0;
-	static var fps = 60.;
 	static var seed = 0x2545f491;
 	static var seeded = false;
 	static var lastMouseX = 0.;

@@ -8,7 +8,7 @@
 
 Provides small values a game keeps between runs, by key, in one file.
 
-`load` reads the file once. After that, values are read and set in memory, without waiting. A change is written at the next `poll`: everything set in a frame as one file, one write at a time.
+`load` reads the file once. After that, values are read and set in memory, without waiting. A change is written at the next `poll`: everything set in a frame as one file, one write at a time. A value set, or deleted, before the read has finished is held and made once it has, so it wins over what the file kept: a program can save as it starts, before it has asked for anything back.
 
 Set a value when it changes, not as the program ends. A page's end gives a write no time to finish, so what is set there is lost. A native program leaving its loop flushes first, and leaves when the flush answers.
 
@@ -81,25 +81,19 @@ function dispose():Void
 - `setString`: Sets a key to a string, kept at the next `poll`.
   - `key`: The key.
   - `value`: The value.
-  - throws `String`: Before `load` has finished.
 - `setInt`: Sets a key to a whole number, kept at the next `poll`.
   - `key`: The key.
   - `value`: The value.
-  - throws `String`: Before `load` has finished.
 - `setFloat`: Sets a key to a number, kept at the next `poll`.
   - `key`: The key.
   - `value`: The value. Must be finite.
-  - throws `String`: Before `load` has finished, or when the value isn't finite.
+  - throws `String`: When the value isn't finite.
 - `setBool`: Sets a key to true or false, kept at the next `poll`.
   - `key`: The key.
   - `value`: The value.
-  - throws `String`: Before `load` has finished.
 - `deleteKey`: Deletes a key and its value, kept at the next `poll`. Does nothing for a key with no value.
   - `key`: The key.
-  - throws `String`: Before `load` has finished.
 - `deleteKeys`: Deletes every key, kept at the next `poll`, resetting the saves.
-  - throws `String`: Before `load` has finished.
-
   Only the saves file changes. Nothing else in the file system belongs to the saves.
 - `pending`: Gets a value indicating whether a change isn't kept yet, because it was set since the last write or is being written.
 - `flush`: Starts writing the current values without waiting for the next `poll`. Never blocks.

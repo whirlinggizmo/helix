@@ -3,9 +3,10 @@ package helix.ray.internal;
 import helix.math.Matrix3D;
 import haxe.io.Bytes;
 import helix.ray.*;
+import helix.services.models.Model3D;
 
-/** Makes raylib's meshes and models: a mesh's GPU buffers, a model from a glTF file (its nodes' transforms put into its meshes, as
-	raylib does), and the meshes raylib generates. */
+/** Makes raylib's meshes and models: a mesh's GPU buffers, a model from what the models service read of a glTF file, and the meshes
+	raylib generates. */
 @:noCompletion
 class Models {
 	/** Sends a mesh's vertices to the GPU, those it lacks as raylib's defaults (no texture coordinates, normals facing +z, white).
@@ -60,100 +61,76 @@ class Models {
 		return new Material(shader, maps);
 	}
 
-	/** Reads a glTF or GLB file as a model: material 0 raylib's default, then the file's, as raylib numbers them.
+	/** Makes a raylib model of a model the models service read: material 0 raylib's default, then the file's, as raylib numbers them,
+		each image a texture kept by its file's path, or the model's and the image's index for one the model holds.
 
-		@param path  The file, as the program names it.
-		@param bytes  Its bytes.
+		@param read  The model.
 		@param shader  The default shader.
 		@return  The model. */
-	public static function gltf(path:String, bytes:Bytes, shader:Shader):Model {
-		var file = Gltf.read(bytes);
-		var directory = haxe.io.Path.directory(path);
-		for (missing in file.missingBuffers) {
-			var other = Runtime.file(directory == "" ? missing.uri : directory + "/" + missing.uri);
-			if (other != null)
-				file.setBuffer(missing.index, other);
-		}
+	static function fromModel3D(read:Model3D, shader:Shader):Model {
 		var textures = new Map<Int, Texture2D>();
 		function texture(index:Int):Texture2D {
 			if (textures.exists(index))
 				return textures.get(index);
-			var t = Gltf.field(file.list("textures")[index], "source");
-			var key = imageKey(path, file, t);
-			var image = Runtime.image(key);
-			var made = image == null ? new Texture2D() : new Texture2D(Textures.fromImage(key, image), image.width, image.height);
+			var image = read.images[index];
+			var made = image == null ? new Texture2D() : new Texture2D(Textures.fromImage(image.path != "" ? image.path : '${read.path}#$index', image),
+				image.width, image.height);
 			textures.set(index, made);
 			return made;
 		}
 		var materials = [defaultMaterial(shader)];
-		for (m in file.list("materials")) {
-			var material = defaultMaterial(shader);
-			var pbr = Gltf.field(m, "pbrMetallicRoughness");
-			var factor:Array<Float> = Gltf.field(pbr, "baseColorFactor");
-			if (factor != null)
-				material.maps[0].color = new Color(Std.int(factor[0] * 255), Std.int(factor[1] * 255), Std.int(factor[2] * 255), Std.int(factor[3] * 255));
-			var base = Gltf.field(pbr, "baseColorTexture");
-			if (base != null)
-				material.maps[0].texture = texture(Gltf.field(base, "index"));
+		for (m in read.materials) {
+			var material = defaultMaterial(shader), factor = m.baseColorFactor;
+			material.maps[0].color = new Color(Std.int(factor[0] * 255), Std.int(factor[1] * 255), Std.int(factor[2] * 255), Std.int(factor[3] * 255));
+			if (m.baseColorImage >= 0)
+				material.maps[0].texture = texture(m.baseColorImage);
 			materials.push(material);
 		}
 		var meshes = [], meshMaterial = [];
-		var nodes = file.list("nodes");
-		function visit(index:Int, parent:Matrix3D):Void {
-			var node = nodes[index];
-			var world = new Matrix3D().compose(local(node), parent);
-			var m:Null<Int> = Gltf.field(node, "mesh");
-			if (m != null)
-				for (primitive in (Gltf.field(file.list("meshes")[m], "primitives") : Array<Dynamic>)) {
-					var mode:Null<Int> = Gltf.field(primitive, "mode");
-					if (mode != null && mode != 4)
-						continue;
-					meshes.push(primitiveMesh(file, primitive, world));
-					var material:Null<Int> = Gltf.field(primitive, "material");
-					meshMaterial.push(material == null ? 0 : material + 1);
-				}
-			var children:Array<Int> = Gltf.field(node, "children");
-			if (children != null)
-				for (c in children)
-					visit(c, world);
+		for (m in read.meshes) {
+			var mesh = new Mesh();
+			mesh.vertexCount = Std.int(m.positions.length / 3);
+			mesh.vertices = m.positions;
+			mesh.normals = m.normals;
+			mesh.texcoords = m.texCoords;
+			if (m.colors != null)
+				mesh.colors = [for (c in m.colors) Std.int(c * 255)];
+			mesh.indices = m.indices;
+			mesh.triangleCount = Std.int((mesh.indices != null ? mesh.indices.length : mesh.vertexCount) / 3);
+			meshes.push(mesh);
+			meshMaterial.push(m.material + 1);
 		}
-		var scenes = file.list("scenes");
-		var sceneIndex:Null<Int> = Gltf.field(file.document, "scene");
-		var roots:Array<Int> = scenes.length > 0 ? Gltf.field(scenes[sceneIndex == null ? 0 : sceneIndex], "nodes") : null;
-		if (roots == null) {
-			var children = new Map<Int, Bool>();
-			for (node in nodes) {
-				var c:Array<Int> = Gltf.field(node, "children");
-				if (c != null)
-					for (i in c)
-						children.set(i, true);
-			}
-			roots = [for (i in 0...nodes.length) if (!children.exists(i)) i];
-		}
-		for (r in roots)
-			visit(r, new Matrix3D());
 		// Its meshes go to the GPU when first drawn.
 		return new Model(meshes, materials, meshMaterial);
 	}
 
-	static final loaded = new Map<String, {model:Model, refs:Int}>();
+	/** Keeps a model the models service read, as its file's first load, unless one is kept already.
 
-	/** Returns a model loaded from a file: a copy of its first load, sharing its meshes' GPU buffers and its textures, with materials
-		of its own, so one load's changes don't reach another's.
+		@param read  The model.
+		@param shader  The default shader. */
+	public static function keep(read:Model3D, shader:Shader):Void {
+		if (!loaded.exists(read.path))
+			loaded.set(read.path, {model: fromModel3D(read, shader), refs: 0});
+	}
+
+	/** Returns whether a file's model is kept, so a load of it needs no read.
 
 		@param path  The file.
-		@param bytes  Its bytes, read only the first time.
-		@param shader  The default shader.
-		@return  The model. */
-	public static function load(path:String, bytes:Void->Null<Bytes>, shader:Shader):Null<Model> {
+		@return  True when it is. */
+	public static function isKept(path:String):Bool
+		return loaded.exists(path);
+
+	static final loaded = new Map<String, {model:Model, refs:Int}>();
+
+	/** Returns a model loaded from a file: a copy of its first load (`keep`), sharing its meshes' GPU buffers and its textures, with
+		materials of its own, so one load's changes don't reach another's.
+
+		@param path  The file.
+		@return  The model, or null when none is kept. */
+	public static function load(path:String):Null<Model> {
 		var entry = loaded.get(path);
-		if (entry == null) {
-			var b = bytes();
-			if (b == null)
-				return null;
-			entry = {model: gltf(path, b, shader), refs: 0};
-			loaded.set(path, entry);
-		}
+		if (entry == null)
+			return null;
 		entry.refs++;
 		var original = entry.model;
 		var meshes = [for (m in original.meshes) copyMesh(m)];
@@ -196,110 +173,6 @@ class Models {
 		mesh.colors = m.colors;
 		mesh.indices = m.indices;
 		mesh.gpu = m.gpu;
-		return mesh;
-	}
-
-	/** Returns the key a glTF file's image is kept under in memory: its own file's path, or the file and the image's index.
-
-		@param path  The glTF file.
-		@param file  The file, read.
-		@param image  The image's index.
-		@return  The key. */
-	public static function imageKey(path:String, file:Gltf, image:Int):String {
-		var info = file.list("images")[image];
-		var uri:String = Gltf.field(info, "uri");
-		if (uri != null && !StringTools.startsWith(uri, "data:")) {
-			var directory = haxe.io.Path.directory(path);
-			return directory == "" ? uri : directory + "/" + uri;
-		}
-		return '$path#$image';
-	}
-
-	/** Returns an image of a glTF file held in it (a buffer view or a data: URI), or null for one in a file of its own.
-
-		@param file  The file.
-		@param image  The image's index.
-		@return  Its encoded bytes. */
-	public static function imageBytes(file:Gltf, image:Int):Null<Bytes> {
-		var info = file.list("images")[image];
-		var view:Null<Int> = Gltf.field(info, "bufferView");
-		if (view != null)
-			return file.viewBytes(view);
-		var uri:String = Gltf.field(info, "uri");
-		return uri != null && StringTools.startsWith(uri, "data:") ? Gltf.dataUri(uri) : null;
-	}
-
-	// A node's own transform: its matrix, or its scale, then rotation, then translation.
-	static function local(node:Dynamic):Matrix3D {
-		var matrix:Array<Float> = Gltf.field(node, "matrix");
-		if (matrix != null) {
-			var m = new Matrix3D();
-			for (i in 0...16)
-				m.values[i] = matrix[i];
-			return m;
-		}
-		var s:Array<Float> = Gltf.field(node, "scale"),
-			r:Array<Float> = Gltf.field(node, "rotation"),
-			t:Array<Float> = Gltf.field(node, "translation");
-		var m = s == null ? new Matrix3D() : new Matrix3D().makeScale(s[0], s[1], s[2]);
-		if (r != null)
-			m = new Matrix3D().compose(m, new Matrix3D().makeQuaternionRotation(r[0], r[1], r[2], r[3]));
-		if (t != null)
-			m = new Matrix3D().compose(m, new Matrix3D().makeTranslation(t[0], t[1], t[2]));
-		return m;
-	}
-
-	// One primitive as a mesh, its node's transform put into its positions and normals.
-	static function primitiveMesh(file:Gltf, primitive:Dynamic, world:Matrix3D):Mesh {
-		var attributes = Gltf.field(primitive, "attributes");
-		var mesh = new Mesh();
-		var positions = file.floats(Gltf.field(attributes, "POSITION"));
-		mesh.vertexCount = Std.int(positions.length / 3);
-		mesh.vertices = [];
-		for (i in 0...mesh.vertexCount) {
-			var p = world.transformPoint(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
-			mesh.vertices.push(p.x);
-			mesh.vertices.push(p.y);
-			mesh.vertices.push(p.z);
-		}
-		var normal:Null<Int> = Gltf.field(attributes, "NORMAL");
-		if (normal != null) {
-			var normals = file.floats(normal),
-				turn = new Matrix3D().copyFrom(world);
-			turn.invert();
-			turn.transpose();
-			mesh.normals = [];
-			for (i in 0...mesh.vertexCount) {
-				var x = normals[i * 3],
-					y = normals[i * 3 + 1],
-					z = normals[i * 3 + 2];
-				var nx = turn.values[0] * x + turn.values[4] * y + turn.values[8] * z,
-					ny = turn.values[1] * x + turn.values[5] * y + turn.values[9] * z,
-					nz = turn.values[2] * x + turn.values[6] * y + turn.values[10] * z;
-				var l = Math.sqrt(nx * nx + ny * ny + nz * nz);
-				if (l == 0)
-					l = 1;
-				mesh.normals.push(nx / l);
-				mesh.normals.push(ny / l);
-				mesh.normals.push(nz / l);
-			}
-		}
-		var uv:Null<Int> = Gltf.field(attributes, "TEXCOORD_0");
-		if (uv != null)
-			mesh.texcoords = file.floats(uv);
-		var color:Null<Int> = Gltf.field(attributes, "COLOR_0");
-		if (color != null) {
-			var values = file.floats(color),
-				size = Std.int(values.length / mesh.vertexCount);
-			mesh.colors = [];
-			for (i in 0...mesh.vertexCount)
-				for (c in 0...4)
-					mesh.colors.push(c < size ? Std.int(values[i * size + c] * 255) : 255);
-		}
-		var indices:Null<Int> = Gltf.field(primitive, "indices");
-		if (indices != null)
-			mesh.indices = file.ints(indices);
-		mesh.triangleCount = Std.int((mesh.indices != null ? mesh.indices.length : mesh.vertexCount) / 3);
 		return mesh;
 	}
 

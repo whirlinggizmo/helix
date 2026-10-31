@@ -1,0 +1,229 @@
+package helix.services.fonts;
+
+import haxe.io.Bytes;
+import helix.formats.bmfont.BmFontFile;
+import helix.log.Log;
+import helix.math.RectPacker2D;
+import helix.platform.IFontRasterizer;
+import helix.platform.RasterGlyph;
+import helix.services.assets.Assets;
+import helix.services.images.Image;
+import helix.services.images.Images;
+
+/** Provides fonts by path: a TrueType or OpenType font rasterized at a size (`load`), or a BMFont's .fnt and its images (`loadBmFont`),
+	each as a `Font2D` with its glyphs on one atlas.
+
+	A TrueType font's glyphs are rasterized by the platform (`IFontRasterizer`) and packed onto an atlas as `FontsOptions` says. Its
+	answers come as the assets, images and rasterizer it uses are polled.
+
+	```haxe
+	var fonts = new Fonts(rasterizer, assets, images);
+	fonts.load("ui.ttf", 24, [for (c in 32...127) c], Coverage, font -> ui = font);
+	``` */
+class Fonts {
+	final rasterizer:IFontRasterizer;
+	final assets:Assets;
+	final images:Images;
+	final options:FontsOptions;
+
+	/** Creates the fonts over the platform's rasterizer, the assets fonts are found in, and the images a BMFont's are decoded by.
+
+		@param rasterizer  The platform's font rasterizer.
+		@param assets  The assets the files are read through.
+		@param images  The images a BMFont's pages are decoded by.
+		@param options  Optional. How the atlas is made. Defaults to a texel of padding, packed as a skyline. */
+	public function new(rasterizer:IFontRasterizer, assets:Assets, images:Images, ?options:FontsOptions) {
+		this.rasterizer = rasterizer;
+		this.assets = assets;
+		this.images = images;
+		this.options = options != null ? options : {};
+	}
+
+	/** Loads a TrueType or OpenType font and rasterizes its glyphs at a size onto one atlas.
+
+		One of `loaded` or `failed` is called once, at a later poll, never during this call.
+		@param path  The file, as the assets name it.
+		@param size  The pixel height: the font's ascent to its descent.
+		@param codepoints  The characters wanted; one the font lacks has no glyph.
+		@param kind  What the glyphs hold: coverage, hard-edged coverage, or signed distances.
+		@param loaded  Receives the font.
+		@param failed  Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
+		@return  A function that aborts the load; neither callback is called after it, and once one was, it does nothing. */
+	public function load(path:String, size:Float, codepoints:Array<Int>, kind:FontKind, loaded:Font2D->Void, ?failed:String->Void):Void->Void {
+		var aborted = false;
+		var report = (message:String) -> if (!aborted) fail(failed, message);
+		var abortLoad = assets.load(path, bytes -> {
+			if (aborted)
+				return;
+			rasterizer.rasterize(bytes, size, codepoints, kind == Distance, (glyphs, ascent, descent, lineGap) -> {
+				if (aborted)
+					return;
+				if (kind == Bitmap)
+					for (g in glyphs)
+						for (i in 0...g.pixels.length)
+							g.pixels.set(i, g.pixels.get(i) < 80 ? 0 : 255);
+				loaded(pack(path, size, [for (g in glyphs) if (g.found) g], ascent, descent, lineGap));
+			}, message -> report('$path: $message'));
+		}, report);
+		return () -> {
+			aborted = true;
+			abortLoad();
+		};
+	}
+
+	/** Loads a BMFont: its .fnt (the text format) and its pages, stacked top to bottom onto one atlas. A page with no transparency whose
+		texels are gray is coverage, so it becomes white with the gray as alpha, as raylib takes it.
+
+		One of `loaded` or `failed` is called once, at a later poll, never during this call.
+		@param path  The .fnt file, as the assets name it.
+		@param loaded  Receives the font: its size the .fnt's line height, its ascent its base.
+		@param failed  Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
+		@return  A function that aborts the load; neither callback is called after it, and once one was, it does nothing. */
+	public function loadBmFont(path:String, loaded:Font2D->Void, ?failed:String->Void):Void->Void {
+		var aborted = false, finished = false, aborts:Array<Void->Void> = [];
+		var report = (message:String) -> {
+			if (aborted || finished)
+				return;
+			finished = true;
+			for (abort in aborts)
+				abort();
+			fail(failed, message);
+		};
+		aborts.push(assets.load(path, bytes -> {
+			if (aborted)
+				return;
+			var file = try BmFontFile.read(bytes.toString(), path) catch (e:String) {
+				report('$path: $e');
+				return;
+			}
+			var pages:Array<Null<Image>> = [for (_ in file.pages) null],
+				left = file.pages.length;
+			for (i in 0...file.pages.length)
+				aborts.push(images.load(file.pages[i].path, image -> {
+					pages[i] = image;
+					if (--left == 0 && !aborted && !finished) {
+						finished = true;
+						loaded(stacked(file, pages));
+					}
+				}, report));
+		}, report));
+		return () -> {
+			aborted = true;
+			for (abort in aborts)
+				abort();
+		};
+	}
+
+	// The glyphs placed on the smallest power-of-two atlas they fit, white with their coverage as alpha.
+	function pack(path:String, size:Float, glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float):Font2D {
+		var padding = options.padding,
+			lineHeight = Math.ceil(size) + 2 * padding;
+		var area = 0;
+		for (g in glyphs)
+			area += (g.width + 2 * padding) * (g.height + 2 * padding);
+		var width = 16;
+		while (width * width < area)
+			width *= 2;
+		var places = place(glyphs, width, width, padding, lineHeight);
+		while (places == null) {
+			width *= 2;
+			places = place(glyphs, width, width, padding, lineHeight);
+		}
+		var pixels = Bytes.alloc(width * width * 4);
+		for (i in 0...width * width) {
+			pixels.set(i * 4, 255);
+			pixels.set(i * 4 + 1, 255);
+			pixels.set(i * 4 + 2, 255);
+		}
+		var made = [];
+		for (i in 0...glyphs.length) {
+			var g = glyphs[i], x = places[i * 2], y = places[i * 2 + 1];
+			for (row in 0...g.height)
+				for (column in 0...g.width)
+					pixels.set(((y + row) * width + x + column) * 4 + 3, g.pixels.get(row * g.width + column));
+			made.push(new Glyph2D(g.codepoint, x, y, g.width, g.height, g.offsetX, g.offsetY, g.advance));
+		}
+		return new Font2D(size, ascent, descent, lineGap, new Image(path, width, width, pixels), made);
+	}
+
+	// Each glyph's top-left on a width by height atlas, x then y, or null when they don't all fit.
+	function place(glyphs:Array<RasterGlyph>, width:Int, height:Int, padding:Int, lineHeight:Int):Null<Array<Int>> {
+		var out = [];
+		if (options.packing == Skyline) {
+			var sizes = [];
+			for (g in glyphs) {
+				sizes.push(g.width + 2 * padding);
+				sizes.push(g.height + 2 * padding);
+			}
+			var places = RectPacker2D.pack(width, height, sizes);
+			for (i in 0...glyphs.length) {
+				if (places[i * 3 + 2] == 0)
+					return null;
+				out.push(places[i * 3] + padding);
+				out.push(places[i * 3 + 1] + padding);
+			}
+			return out;
+		}
+		var x = padding, y = padding;
+		for (g in glyphs) {
+			if (x + g.width + padding > width) {
+				x = padding;
+				y += lineHeight;
+			}
+			if (y + g.height + padding > height || g.width + 2 * padding > width)
+				return null;
+			out.push(x);
+			out.push(y);
+			x += g.width + 2 * padding;
+		}
+		return out;
+	}
+
+	// A BMFont's pages stacked onto one atlas, top to bottom, and its characters as glyphs on it.
+	static function stacked(file:BmFontFile, pages:Array<Null<Image>>):Font2D {
+		var width = file.scaleWidth, pageHeight = file.scaleHeight;
+		for (page in pages)
+			if (page.width > width)
+				width = page.width;
+		var height = pageHeight * pages.length,
+			pixels = Bytes.alloc(width * height * 4);
+		for (p in 0...pages.length) {
+			var page = pages[p], gray = isGray(page);
+			for (y in 0...page.height)
+				for (x in 0...page.width) {
+					if (p * pageHeight + y >= height)
+						continue;
+					var from = (y * page.width + x) * 4,
+						to = ((p * pageHeight + y) * width + x) * 4;
+					if (gray) {
+						pixels.set(to, 255);
+						pixels.set(to + 1, 255);
+						pixels.set(to + 2, 255);
+						pixels.set(to + 3, page.pixels.get(from));
+					} else
+						pixels.blit(to, page.pixels, from, 4);
+				}
+		}
+		var glyphs = [
+			for (c in file.chars)
+				new Glyph2D(c.id, c.x, c.y + pageHeight * c.page, c.width, c.height, c.xOffset, c.yOffset - file.base, c.xAdvance)
+		];
+		return new Font2D(file.lineHeight, file.base, file.base - file.lineHeight, 0, new Image(file.pages[0].path, width, height, pixels), glyphs);
+	}
+
+	// Whether an image is coverage drawn in gray: opaque everywhere, and gray everywhere.
+	static function isGray(image:Image):Bool {
+		var p = image.pixels;
+		for (i in 0...image.width * image.height)
+			if (p.get(i * 4 + 3) != 255 || p.get(i * 4) != p.get(i * 4 + 1) || p.get(i * 4) != p.get(i * 4 + 2))
+				return false;
+		return true;
+	}
+
+	static function fail(failed:Null<String->Void>, message:String):Void {
+		if (failed != null)
+			failed(message);
+		else
+			Log.warn(message, "fonts");
+	}
+}

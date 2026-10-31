@@ -46,8 +46,20 @@ class RAsync {
 		@param loaded  Receives the model.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	static function LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
-		Runtime.fetch(path, error -> error == null ? loaded(RModels.loadModel(path)) : refuse("LoadModelAsync", error, failed));
+		var path = normalize(fileName), lower = path.toLowerCase();
+		if (!(StringTools.endsWith(lower, ".glb") || StringTools.endsWith(lower, ".gltf"))) {
+			Runtime.later(() -> refuse("LoadModelAsync", '$path: only glTF and GLB are read here', failed));
+			return;
+		}
+		if (Models.isKept(path)) {
+			Runtime.later(() -> loaded(RModels.loadModel(path)));
+			return;
+		}
+		Runtime.loading();
+		Runtime.models.load(path, read -> {
+			Models.keep(read, defaultShader());
+			loaded(RModels.loadModel(path));
+		}, error -> refuse("LoadModelAsync", error, failed));
 	}
 
 	/** Loads a sound file and decodes it, answering when it is ready to play at once: helix-ray's own, in place of raylib's `LoadSound`.
@@ -131,7 +143,8 @@ class RAsync {
 	}
 
 	/** Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType
-		file gives its printable ASCII at 32 pixels, drawn with `TEXTURE_FILTER_POINT`; BMFont and image fonts aren't in helix-ray yet.
+		file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto
+		one texture, as raylib's; each drawn with `TEXTURE_FILTER_POINT`. Image fonts aren't in helix-ray yet.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the font.
@@ -139,6 +152,14 @@ class RAsync {
 	static function LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName),
 			type = haxe.io.Path.extension(path).toLowerCase();
+		if (type == "fnt") {
+			Runtime.fonts().loadBmFont(path, font -> {
+				var made = RText.fromBmFont(font);
+				SetTextureFilter(made.texture, TEXTURE_FILTER_POINT);
+				loaded(made);
+			}, message -> refuse("LoadFontAsync", message, failed));
+			return;
+		}
 		if (type != "ttf" && type != "otf") {
 			Runtime.later(() -> refuse("LoadFontAsync", '$path: .$type fonts aren\'t in helix-ray yet', failed));
 			return;
@@ -208,7 +229,7 @@ class RAsync {
 		var count = codepointCount > 0 ? codepointCount : 95;
 		var wanted = codepoints == null ? [for (i in 0...count) 32 + i] : codepoints.slice(0, count);
 		var data = dataSize < fileData.length ? fileData.sub(0, dataSize) : fileData;
-		Runtime.fonts()
+		Runtime.rasterizer()
 			.rasterize(data, fontSize, wanted, type == FONT_SDF, (glyphs, ascent, _, _) -> loaded(RText.fontData(glyphs, ascent, fontSize, type)),
 				message -> refuse("LoadFontDataAsync", message, failed));
 	}
