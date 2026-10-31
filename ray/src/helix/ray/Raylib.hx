@@ -1474,12 +1474,6 @@ class Raylib {
 	public static inline function GetMouseDelta():Vector2
 		return RCore.GetMouseDelta();
 
-	/** Returns raylib's default shader.
-
-		@return  The shader. */
-	public static inline function LoadShaderDefault():Shader
-		return RCore.LoadShaderDefault();
-
 	/** Returns whether a shader was made.
 
 		@param shader  The shader.
@@ -3323,6 +3317,17 @@ class Raylib {
 
 	/** Npatch layout: 3x1 tiles. */
 	public static inline final NPATCH_THREE_PATCH_HORIZONTAL = 2;
+
+	// ---- raylib.h's number defines, not written by hand ----
+
+	/** raylib.h's `RAYLIB_VERSION_MAJOR`. */
+	public static inline final RAYLIB_VERSION_MAJOR = 5;
+
+	/** raylib.h's `RAYLIB_VERSION_MINOR`. */
+	public static inline final RAYLIB_VERSION_MINOR = 5;
+
+	/** raylib.h's `RAYLIB_VERSION_PATCH`. */
+	public static inline final RAYLIB_VERSION_PATCH = 0;
 
 	// ---- raylib.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
 

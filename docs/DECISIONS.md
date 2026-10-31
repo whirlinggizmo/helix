@@ -136,3 +136,7 @@ Why things are the way they are, numbered, in order.
     generated from the `RMath` section as `Raylib` is from the others, is that header: `import helix.ray.Raymath.*;` beside
     `Raylib`'s. The trial agents used raymath through `Raylib` alone, as the README then told them; the async trial shows whether
     they import `Raymath` unprompted. The sections are private to helix-ray, as raylib's `.c` modules sit behind its headers.
+    rlgl is apart the same way (`#include "rlgl.h"`): `Rlgl`, from the `RRlgl` section, has its matrix stack, immediate drawing and
+    render state over helix-ray's frame, its constants, and refuses its GPU objects (vertex arrays and buffers, framebuffers, GL ids),
+    which helix-platform has no GL to give. Its API description, `rlgl_api.json`, is made from `rlgl.h` by raylib's parser, as
+    `raymath_api.json` is.

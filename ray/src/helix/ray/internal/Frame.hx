@@ -62,6 +62,9 @@ class Frame {
 	public var ny = 0.;
 	public var nz = 1.;
 
+	/** The matrix the next immediate vertices are moved by, rlgl's pushed one (`rlPushMatrix`); null for none. */
+	public var transform:Null<Matrix3D> = null;
+
 	/** How the next draws blend, `BeginBlendMode`'s. */
 	public var blend:BlendMode = Alpha;
 
@@ -197,6 +200,12 @@ class Frame {
 			pass.draws.push(open);
 		}
 		open.count++;
+		if (transform != null) {
+			var m = transform.values, tx = x, ty = y, tz = z;
+			x = m[0] * tx + m[4] * ty + m[8] * tz + m[12];
+			y = m[1] * tx + m[5] * ty + m[9] * tz + m[13];
+			z = m[2] * tx + m[6] * ty + m[10] * tz + m[14];
+		}
 		var at = vertices * STRIDE;
 		if (at + STRIDE > data.length) {
 			var grown = Bytes.alloc(data.length * 2);

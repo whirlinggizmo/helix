@@ -7,6 +7,7 @@ program written as raylib is written runs in a page and natively.
 |---|---|
 | `helix.ray.Raylib` | raylib's functions, constants and colors, as `raylib.h` names them |
 | `helix.ray.Raymath` | raymath's vectors, matrices and quaternions, as `raymath.h` names them, imported apart as raylib includes it |
+| `helix.ray.Rlgl` | rlgl's matrix stack, immediate drawing and render state, as `rlgl.h` names them, imported apart as raylib includes it |
 | `helix.ray.Vector2`, `Vector3`, `Color`, `Texture2D`, `Camera3D`, `Model`, `Shader`, `RenderTexture2D` and the rest | raylib's structs, with their fields |
 
 The window and frame, the keyboard, mouse, touch and gamepads, text input, shapes, textures, blend and scissor modes, the default
@@ -44,7 +45,7 @@ helix-services and helix-platform (and helix-math and helix-log under them).
 helix-ray's API and the flow of a program on it are [raylib](https://www.raylib.com)'s, by Ramon Santamaria (@raysan5) and its
 contributors, mirrored in Haxe. A small API that a programmer can hold in their head and guess right is hard to make; raylib's is, and
 this library is built on that work. Portions are from raylib 5.5 (its default font, its default shader, its header's comments, and its
-API description, `vendor/raylib/raylib_api.json`, with `raymath_api.json` made from `raymath.h` by raylib's parser), altered; zlib
+API description, `vendor/raylib/raylib_api.json`, with `raymath_api.json` and `rlgl_api.json` made from `raymath.h` and `rlgl.h` by raylib's parser), altered; zlib
 license, `vendor/raylib/LICENSE`. `GenImageFontAtlas`'s skyline packing is stb_rect_pack 1.01's (Sean Barrett, public domain), ported.
 The `text` example's font is [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) Regular, Copyright 2020 The JetBrains Mono
 Project Authors, under the SIL Open Font License 1.1 (`examples/text/web/assets/OFL.txt`).

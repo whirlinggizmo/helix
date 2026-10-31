@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Writes the generated parts of helix-ray's Raylib.hx and Raymath.hx, and the types helix-ray doesn't have yet.
+"""Writes the generated parts of helix-ray's Raylib.hx, Raymath.hx and Rlgl.hx, and the types helix-ray doesn't have yet.
 
 Raylib.hx has RCore, RShapes, RTextures, RText, RModels, RAudio and RAsync, in raylib's module order, and Raymath.hx has RMath: every
-raylib function of those sections in ray/src/helix/ray/raylib/, as an inline forward with its doc comment, under a heading naming its
+raylib function of those sections (and Rlgl.hx has RRlgl) in ray/src/helix/ray/raylib/, as an inline forward with its doc comment, under a heading naming its
 module and file. Then every function of raylib's (ray/vendor/raylib/raylib_api.json and raymath_api.json, raylib's own description of
 its API) that isn't written, and the sections' functions marked `@:unimplemented`, each as a macro with raylib's signature whose call
 reports its message where it is (helix.platform.macros.Build), so the build stops there and the call still has raylib's type. So each file reads like
@@ -38,18 +38,21 @@ TARGETS = {
         ('RAsync', "the async loads, helix-ray's own in place of raylib's that wait for a file"),
     ], 'raylib_api.json', 'raylib.h'),
     'Raymath.hx': ([('RMath', 'raymath: vectors, matrices and quaternions')], 'raymath_api.json', 'raymath.h'),
+    'Rlgl.hx': ([('RRlgl', 'rlgl: the matrix stack, immediate drawing and render state')], 'rlgl_api.json', 'rlgl.h'),
 }
 SECTIONS = [s for sections, _, _ in TARGETS.values() for s in sections]
-# A function of raylib's (capitalized, as raylib's names are), its doc comment and any metadata before it: group 2 is the metadata, 3
+# A function of raylib's (capitalized, as raylib's names are, or rl and a capital, as rlgl's), its doc comment and any metadata before it: group 2 is the metadata, 3
 # the name, 4 the parameters, 5 the result.
-FUNCTION = re.compile(r'(\t/\*\*(?:(?!\*/).)*?\*/\n)((?:\t@:[^\n]*\n)*)\tstatic function ([A-Z]\w*)\((.*?)\):\s*([^{\n]+?)\s*\{', re.S)
+FUNCTION = re.compile(r'(\t/\*\*(?:(?!\*/).)*?\*/\n)((?:\t@:[^\n]*\n)*)\tstatic function ((?:rl)?[A-Z]\w*)\((.*?)\):\s*([^{\n]+?)\s*\{', re.S)
 # A function that refuses to compile (helix.ray.internal.Unimplemented), and the one its message says to use instead, with its parameters.
 UNIMPLEMENTED = re.compile(r'@:unimplemented\("[^"]*?See (\w+)\((.*?)\)"\)')
 # C's number types as Haxe's.
 NUMBERS = {'int': 'Int', 'unsigned int': 'Int', 'long': 'Int', 'char': 'Int', 'unsigned char': 'Int', 'unsigned short': 'Int',
            'float': 'Float', 'double': 'Float', 'bool': 'Bool', 'void': 'Void'}
-# raymath's arrays of floats, and the buffers raudio keeps behind a pointer.
+# raymath's arrays of floats, the buffers raudio keeps behind a pointer, and rlgl's own GPU state.
 OPAQUE = {'float3': 'Array<Float>', 'float16': 'Array<Float>', 'rAudioBuffer *': 'Dynamic', 'rAudioProcessor *': 'Dynamic'}
+OPAQUE.update({f'{name}{pointer}': 'Dynamic' for name in ('rlVertexBuffer', 'rlDrawCall', 'rlRenderBatch', 'rlglData', 'rl_float16')
+               for pointer in ('', ' *')})
 # A parameter name Haxe reserves, and the name helix-ray gives it.
 KEYWORDS = {'dynamic': 'isDynamic'}
 
@@ -206,6 +209,15 @@ def generated(sections, api, header, written):
             out += [f"\t// ---- {sentence(e['description']).rstrip('.')} ({e['name']}), not written by hand ----", '']
             for v in values:
                 out += [f"\t/** {sentence(v['description'])} */", f"\tpublic static inline final {v['name']} = {v['value']};", '']
+                written.add(v['name'])
+    # Its number defines too, as rlgl's RL_QUADS and RL_SRC_ALPHA; not the GL names rlgl keeps for itself.
+    defines = [d for d in api.get('defines', []) if d['type'] in ('INT', 'FLOAT', 'DOUBLE') and d['name'] not in written
+               and re.fullmatch(r'[A-Z][A-Z0-9_]*', d['name']) and not d['name'].startswith(('GL_', 'RLGL_'))]
+    if defines:
+        out += [f"\t// ---- {header}'s number defines, not written by hand ----", '']
+        for d in defines:
+            about = sentence(d['description']) or f"{header}'s `{d['name']}`."
+            out += [f"\t/** {about} */", f"\tpublic static inline final {d['name']} = {d['value']};", '']
     missing = [f for f in api['functions'] if f['name'] not in written]
     if missing:
         out += [f"\t// ---- {header}'s functions helix-ray doesn't have yet: each refuses to compile, saying so ----", '']

@@ -1070,13 +1070,6 @@ class RCore {
 
 	// ---- Shaders ----
 
-	/** Returns raylib's default shader.
-
-		@return  The shader. */
-	static function LoadShaderDefault():Shader {
-		return defaultShader();
-	}
-
 	/** Returns whether a shader was made.
 
 		@param shader  The shader.
