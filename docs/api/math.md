@@ -274,6 +274,8 @@ function unprojectOrigin(viewX:Float, viewY:Float, aspect:Float, ?out:Vector3D):
   - `aspect`: The view's width over its height.
   - `out`: Optional. The vector to write into: x and y from -1 (left, bottom) to 1, z the depth from -1 (near) to 1 (far); a new one when omitted.
   - returns: The point; outside -1 to 1 when it isn't in view.
+
+  A point behind a perspective camera has a depth past 1. One level with its position, which lands nowhere, gives infinities or NaN.
 - `unprojectDirection`: Returns the direction from the camera through a point in the view, as a pointer's ray to pick with.
   - `viewX`: The point across the view, from -1 (left) to 1 (right).
   - `viewY`: The point up the view, from -1 (bottom) to 1 (top).
@@ -1266,7 +1268,7 @@ function toMatrix(?out:Matrix3D):Matrix3D
   - `out`: Optional. The vector to write into: pitch in x, yaw in y, roll in z, in radians; a new one when omitted.
   - returns: The angles.
 
-  Near straight up or down, where two turns do the same thing, the roll is 0.
+  The pitch and the roll are from -pi to pi, the yaw from -pi / 2 to pi / 2. At a yaw of a quarter turn either way, where the pitch and the roll turn around the same axis, the roll is 0 and the pitch carries the whole turn.
 - `angle`: Gets the angle this rotation turns by, around whatever axis, in radians, 0 to pi.
 - `toMatrix`: Returns the rotation as a matrix.
   - `out`: Optional. The matrix to write into; a new one when omitted.
@@ -1500,7 +1502,7 @@ function toMatrix(?out:Matrix3D):Matrix3D
   - `out`: Optional. The transform to fill; a new one when omitted.
   - returns: The transform.
 
-  A matrix that shears gives the nearest rotation and scale, the shear lost.
+  A matrix that shears gives the nearest rotation (its polar decomposition's) and the scale along that rotation's axes, the shear lost. One that mirrors gives an x scale less than 0, so the way it faces and its up are kept.
 - `position`: Gets the position, in its parent's units; the origin until changed.
 - `rotation`: Gets the rotation; the identity until changed.
 - `scale`: Gets the scale along its own axes; 1 on each until changed.
@@ -1543,7 +1545,7 @@ function toMatrix(?out:Matrix3D):Matrix3D
   - returns: This transform.
 - `pitch`: Turns it to face higher or lower, around its own right.
   - `radians`: The angle; more than 0 faces it higher.
-  - `lock`: Optional. True to stop short of straight up and down, as a camera's look stops, so it never turns over; defaults to false.
+  - `lock`: Optional. True to stop 0.001 radians short of facing straight up or down, the world's +y or -y, as a camera's look stops, so it never turns over; defaults to false. Already past that, it turns only back toward level.
   - returns: This transform.
 - `roll`: Tilts it around the way it faces.
   - `radians`: The angle; more than 0 tilts it to the right.
@@ -1562,9 +1564,9 @@ function toMatrix(?out:Matrix3D):Matrix3D
   - `x`: The point's x.
   - `y`: The point's y.
   - `z`: The point's z.
-  - `yaw`: The swing left or right, in radians; more than 0 swings it to the left.
+  - `yaw`: The swing left or right, in radians; more than 0 turns it to the left, as `yaw` does, which carries it to its right around the point: counterclockwise seen from above.
   - `pitch`: The swing up or down, in radians; more than 0 swings it upward.
-  - `lock`: Optional. True to stop short of straight above and below the point, so it never turns over; defaults to false.
+  - `lock`: Optional. True to stop 0.001 radians short of straight above or below the point, along the world's +y or -y, so it never turns over; defaults to false.
   - returns: This transform.
 
   The yaw is around the world's up; the pitch around its own right.

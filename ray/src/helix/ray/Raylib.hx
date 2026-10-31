@@ -2171,9 +2171,14 @@ class Raylib {
 	public static inline function EndMode3D():Void
 		RCore.EndMode3D();
 
-	/** Moves a camera as one of raylib's modes does: `CAMERA_ORBITAL` turns it about its target, half a radian a second, and the
-		wheel moves it closer; `CAMERA_FREE`, `CAMERA_FIRST_PERSON` and `CAMERA_THIRD_PERSON` move it by WASD, and turn it by the mouse;
-		`CAMERA_CUSTOM` leaves it.
+	/** Moves a camera as one of raylib's modes does, by the keyboard, the mouse and the first gamepad, as rcamera's `UpdateCamera`.
+
+		`CAMERA_ORBITAL` turns it about its target, half a radian a second. `CAMERA_FREE`, `CAMERA_FIRST_PERSON` and
+		`CAMERA_THIRD_PERSON` turn it by the mouse, the right stick and the arrow keys (Q and E roll it), its look stopping short of
+		straight up and down, and move it by WASD and the left stick, 5.4 units a second; first and third person along the ground, third
+		person turning about its target. `CAMERA_FREE` also moves up and down by space and left control, and pans while the middle button
+		is held. `CAMERA_FREE`, `CAMERA_ORBITAL` and `CAMERA_THIRD_PERSON` move toward the target by the wheel and the keypad's plus and
+		minus. `CAMERA_CUSTOM` leaves it.
 
 		@param camera  The camera, changed.
 		@param mode  The mode (`CAMERA_*`). */
@@ -2238,7 +2243,7 @@ class Raylib {
 		@param camera  The camera.
 		@param width  The view's width.
 		@param height  The view's height.
-		@return  The position in the view. */
+		@return  The position in the view; infinite or NaN for a point level with a perspective camera's position, as raylib's is. */
 	public static inline function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int):Vector2
 		return RCore.GetWorldToScreenEx(position, camera, width, height);
 

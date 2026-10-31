@@ -4,6 +4,9 @@ package helix.ray.raylib;
 import helix.ray.*;
 import helix.ray.Raylib.*;
 import helix.math.Matrix3D;
+import helix.math.Quaternion3D;
+import helix.math.Trig;
+import helix.math.Vector3D;
 import helix.ray.internal.DefaultFont;
 import helix.ray.internal.Models;
 import helix.ray.internal.Runtime;
@@ -2260,8 +2263,9 @@ class RCore {
 		var f = Runtime.frame;
 		f.cut();
 		f.in3D = true;
-		f.view = cameraView(camera);
-		f.projection = cameraProjection(camera, f.width / f.height);
+		var view = camera3D(camera);
+		f.view = view.computeViewMatrix();
+		f.projection = view.computeProjectionMatrix(f.width / f.height);
 	}
 
 	/** Goes back to drawing in 2D, in the screen's pixels. */
@@ -2270,48 +2274,93 @@ class RCore {
 		Runtime.frame.in3D = false;
 	}
 
-	/** Moves a camera as one of raylib's modes does: `CAMERA_ORBITAL` turns it about its target, half a radian a second, and the
-		wheel moves it closer; `CAMERA_FREE`, `CAMERA_FIRST_PERSON` and `CAMERA_THIRD_PERSON` move it by WASD, and turn it by the mouse;
-		`CAMERA_CUSTOM` leaves it.
+	/** Moves a camera as one of raylib's modes does, by the keyboard, the mouse and the first gamepad, as rcamera's `UpdateCamera`.
+
+		`CAMERA_ORBITAL` turns it about its target, half a radian a second. `CAMERA_FREE`, `CAMERA_FIRST_PERSON` and
+		`CAMERA_THIRD_PERSON` turn it by the mouse, the right stick and the arrow keys (Q and E roll it), its look stopping short of
+		straight up and down, and move it by WASD and the left stick, 5.4 units a second; first and third person along the ground, third
+		person turning about its target. `CAMERA_FREE` also moves up and down by space and left control, and pans while the middle button
+		is held. `CAMERA_FREE`, `CAMERA_ORBITAL` and `CAMERA_THIRD_PERSON` move toward the target by the wheel and the keypad's plus and
+		minus. `CAMERA_CUSTOM` leaves it.
 
 		@param camera  The camera, changed.
 		@param mode  The mode (`CAMERA_*`). */
 	static function UpdateCamera(camera:Camera3D, mode:Int):Void {
+		var mouse = GetMouseDelta();
+		var moveInWorldPlane = mode == CAMERA_FIRST_PERSON || mode == CAMERA_THIRD_PERSON;
+		var rotateAroundTarget = mode == CAMERA_THIRD_PERSON || mode == CAMERA_ORBITAL;
+		var lockView = mode == CAMERA_FREE || mode == CAMERA_FIRST_PERSON || mode == CAMERA_THIRD_PERSON || mode == CAMERA_ORBITAL;
+		var rotateUp = false;
 		var dt = GetFrameTime();
-		switch mode {
-			case CAMERA_ORBITAL:
-				var offset = Vector3Subtract(camera.position, camera.target);
-				offset = Vector3RotateByAxisAngle(offset, camera.up, .5 * dt);
-				var wheel = GetMouseWheelMove();
-				if (wheel != 0) {
-					var d = Vector3Length(offset) - wheel;
-					if (d > .1)
-						offset = Vector3Scale(Vector3Normalize(offset), d);
-				}
-				camera.position = Vector3Add(camera.target, offset);
-			case CAMERA_FREE | CAMERA_FIRST_PERSON | CAMERA_THIRD_PERSON:
-				var forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
-				if (mode != CAMERA_FREE)
-					forward = Vector3Normalize(new Vector3(forward.x, 0, forward.z));
-				var right = Vector3Normalize(Vector3CrossProduct(forward, camera.up));
-				var move = new Vector3();
-				var speed = 5.4 * dt;
-				if (IsKeyDown(KEY_W))
-					move = Vector3Add(move, Vector3Scale(forward, speed));
-				if (IsKeyDown(KEY_S))
-					move = Vector3Subtract(move, Vector3Scale(forward, speed));
-				if (IsKeyDown(KEY_D))
-					move = Vector3Add(move, Vector3Scale(right, speed));
-				if (IsKeyDown(KEY_A))
-					move = Vector3Subtract(move, Vector3Scale(right, speed));
-				camera.position = Vector3Add(camera.position, move);
-				camera.target = Vector3Add(camera.target, move);
-				var delta = GetMouseDelta();
-				var look = Vector3Subtract(camera.target, camera.position);
-				look = Vector3RotateByAxisAngle(look, camera.up, -delta.x * .003);
-				look = Vector3RotateByAxisAngle(look, right, -delta.y * .003);
-				camera.target = Vector3Add(camera.position, look);
-			case _:
+		var moveSpeed = 5.4 * dt,
+			rotationSpeed = .03 * dt,
+			panSpeed = .2 * dt,
+			orbitalSpeed = .5 * dt;
+		if (mode == CAMERA_CUSTOM) {} else if (mode == CAMERA_ORBITAL) {
+			var p = camera.position, t = camera.target;
+			var up = cameraUp(camera);
+			var view = Quaternion3D.fromAxisAngle(up.x, up.y, up.z, orbitalSpeed, turn3D).transformPoint(p.x - t.x, p.y - t.y, p.z - t.z, view3DVector);
+			camera.position = new Vector3(t.x + view.x, t.y + view.y, t.z + view.z);
+		} else {
+			if (IsKeyDown(KEY_DOWN))
+				cameraPitch(camera, -rotationSpeed, lockView, rotateAroundTarget, rotateUp);
+			if (IsKeyDown(KEY_UP))
+				cameraPitch(camera, rotationSpeed, lockView, rotateAroundTarget, rotateUp);
+			if (IsKeyDown(KEY_RIGHT))
+				cameraYaw(camera, -rotationSpeed, rotateAroundTarget);
+			if (IsKeyDown(KEY_LEFT))
+				cameraYaw(camera, rotationSpeed, rotateAroundTarget);
+			if (IsKeyDown(KEY_Q))
+				cameraRoll(camera, -rotationSpeed);
+			if (IsKeyDown(KEY_E))
+				cameraRoll(camera, rotationSpeed);
+			if (mode == CAMERA_FREE && IsMouseButtonDown(MOUSE_BUTTON_MIDDLE)) {
+				var pan = GetMouseDelta();
+				if (pan.x > 0)
+					cameraMoveRight(camera, panSpeed, moveInWorldPlane);
+				if (pan.x < 0)
+					cameraMoveRight(camera, -panSpeed, moveInWorldPlane);
+				if (pan.y > 0)
+					cameraMoveUp(camera, -panSpeed);
+				if (pan.y < 0)
+					cameraMoveUp(camera, panSpeed);
+			} else {
+				cameraYaw(camera, -mouse.x * .003, rotateAroundTarget);
+				cameraPitch(camera, -mouse.y * .003, lockView, rotateAroundTarget, rotateUp);
+			}
+			if (IsKeyDown(KEY_W))
+				cameraMoveForward(camera, moveSpeed, moveInWorldPlane);
+			if (IsKeyDown(KEY_A))
+				cameraMoveRight(camera, -moveSpeed, moveInWorldPlane);
+			if (IsKeyDown(KEY_S))
+				cameraMoveForward(camera, -moveSpeed, moveInWorldPlane);
+			if (IsKeyDown(KEY_D))
+				cameraMoveRight(camera, moveSpeed, moveInWorldPlane);
+			if (IsGamepadAvailable(0)) {
+				cameraYaw(camera, -(GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_X) * 2) * .003, rotateAroundTarget);
+				cameraPitch(camera, -(GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_Y) * 2) * .003, lockView, rotateAroundTarget, rotateUp);
+				if (GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y) <= -.25)
+					cameraMoveForward(camera, moveSpeed, moveInWorldPlane);
+				if (GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X) <= -.25)
+					cameraMoveRight(camera, -moveSpeed, moveInWorldPlane);
+				if (GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y) >= .25)
+					cameraMoveForward(camera, -moveSpeed, moveInWorldPlane);
+				if (GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X) >= .25)
+					cameraMoveRight(camera, moveSpeed, moveInWorldPlane);
+			}
+			if (mode == CAMERA_FREE) {
+				if (IsKeyDown(KEY_SPACE))
+					cameraMoveUp(camera, moveSpeed);
+				if (IsKeyDown(KEY_LEFT_CONTROL))
+					cameraMoveUp(camera, -moveSpeed);
+			}
+		}
+		if (mode == CAMERA_THIRD_PERSON || mode == CAMERA_ORBITAL || mode == CAMERA_FREE) {
+			cameraMoveToTarget(camera, -GetMouseWheelMove());
+			if (IsKeyPressed(KEY_KP_SUBTRACT))
+				cameraMoveToTarget(camera, 2);
+			if (IsKeyPressed(KEY_KP_ADD))
+				cameraMoveToTarget(camera, -2);
 		}
 	}
 
@@ -2333,89 +2382,132 @@ class RCore {
 		cameraMoveToTarget(camera, zoom);
 	}
 
-	// ---- rcamera's moves, as raylib's ----
-
-	static function cameraForward(camera:Camera):Vector3 {
-		return Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+	// ---- rcamera's moves, as raylib's, on helix-math's vectors and rotations ----
+	// They act on raylib's position, target and up as rcamera does, not on a Transform3D: raylib's up needn't be square to the view, and
+	// the yaw, the move up and the pitch's lock use it as it is, where a Transform3D's own up is always square to the way it faces.
+	// The view, from the position to the target, into a vector of its own.
+	static function cameraView(camera:Camera):Vector3D {
+		var p = camera.position, t = camera.target;
+		return viewVector.set(t.x - p.x, t.y - p.y, t.z - p.z);
 	}
 
-	static function cameraRight(camera:Camera):Vector3 {
-		return Vector3Normalize(Vector3CrossProduct(cameraForward(camera), Vector3Normalize(camera.up)));
+	static function cameraForward(camera:Camera):Vector3D {
+		return cameraView(camera).normalize(forwardVector);
+	}
+
+	static function cameraUp(camera:Camera):Vector3D {
+		var u = camera.up;
+		return upVector.set(u.x, u.y, u.z).normalize(upVector);
+	}
+
+	static function cameraRight(camera:Camera):Vector3D {
+		return cameraForward(camera).cross(cameraUp(camera), rightVector).normalize(rightVector);
+	}
+
+	// The camera's position or target, as the other plus or minus the view.
+	static function placeAlong(camera:Camera, view:Vector3D, rotateAroundTarget:Bool):Void {
+		var p = camera.position, t = camera.target;
+		if (rotateAroundTarget)
+			camera.position = new Vector3(t.x - view.x, t.y - view.y, t.z - view.z);
+		else
+			camera.target = new Vector3(p.x + view.x, p.y + view.y, p.z + view.z);
+	}
+
+	// Moves the position and the target alike.
+	static function cameraMove(camera:Camera, by:Vector3D):Void {
+		var p = camera.position, t = camera.target;
+		camera.position = new Vector3(p.x + by.x, p.y + by.y, p.z + by.z);
+		camera.target = new Vector3(t.x + by.x, t.y + by.y, t.z + by.z);
 	}
 
 	// Moves the position and the target forward, along the ground in the world's plane.
 	static function cameraMoveForward(camera:Camera, distance:Float, moveInWorldPlane:Bool):Void {
 		var forward = cameraForward(camera);
 		if (moveInWorldPlane)
-			forward = Vector3Normalize(new Vector3(forward.x, 0, forward.z));
-		forward = Vector3Scale(forward, distance);
-		camera.position = Vector3Add(camera.position, forward);
-		camera.target = Vector3Add(camera.target, forward);
+			forward.set(forward.x, 0, forward.z).normalize(forward);
+		cameraMove(camera, forward.scale(distance, forward));
 	}
 
 	static function cameraMoveUp(camera:Camera, distance:Float):Void {
-		var up = Vector3Scale(Vector3Normalize(camera.up), distance);
-		camera.position = Vector3Add(camera.position, up);
-		camera.target = Vector3Add(camera.target, up);
+		var up = cameraUp(camera);
+		cameraMove(camera, up.scale(distance, up));
 	}
 
 	static function cameraMoveRight(camera:Camera, distance:Float, moveInWorldPlane:Bool):Void {
 		var right = cameraRight(camera);
 		if (moveInWorldPlane)
-			right = Vector3Normalize(new Vector3(right.x, 0, right.z));
-		right = Vector3Scale(right, distance);
-		camera.position = Vector3Add(camera.position, right);
-		camera.target = Vector3Add(camera.target, right);
+			right.set(right.x, 0, right.z).normalize(right);
+		cameraMove(camera, right.scale(distance, right));
 	}
 
 	// Moves the position along the line to the target, at least 0.001 from it.
 	static function cameraMoveToTarget(camera:Camera, delta:Float):Void {
-		var distance = Vector3Distance(camera.position, camera.target) + delta;
+		var p = camera.position, t = camera.target;
+		var distance = Math.sqrt((t.x - p.x) * (t.x - p.x) + (t.y - p.y) * (t.y - p.y) + (t.z - p.z) * (t.z - p.z)) + delta;
 		if (distance <= 0)
 			distance = .001;
-		camera.position = Vector3Add(camera.target, Vector3Scale(cameraForward(camera), -distance));
+		var forward = cameraForward(camera);
+		camera.position = new Vector3(t.x - forward.x * distance, t.y - forward.y * distance, t.z - forward.z * distance);
+	}
+
+	// A vector turned around an axis, which needn't be of length 1 (one of length 0 turns nothing), in place.
+	static function turnAround(vector:Vector3D, axis:Vector3D, angle:Float):Vector3D {
+		return Quaternion3D.fromAxisAngle(axis.x, axis.y, axis.z, angle, turn3D).transformPoint(vector.x, vector.y, vector.z, vector);
 	}
 
 	static function cameraYaw(camera:Camera, angle:Float, rotateAroundTarget:Bool):Void {
-		var targetPosition = Vector3RotateByAxisAngle(Vector3Subtract(camera.target, camera.position), Vector3Normalize(camera.up), angle);
-		if (rotateAroundTarget)
-			camera.position = Vector3Subtract(camera.target, targetPosition);
-		else
-			camera.target = Vector3Add(camera.position, targetPosition);
+		placeAlong(camera, turnAround(cameraView(camera), cameraUp(camera), angle), rotateAroundTarget);
 	}
 
-	// Pitches the camera; locked, no further than 0.001 radians short of straight up or down.
+	// Pitches the camera; locked, no further than 0.001 radians short of straight up or down, its up's way.
 	static function cameraPitch(camera:Camera, angle:Float, lockView:Bool, rotateAroundTarget:Bool, rotateUp:Bool):Void {
-		var up = Vector3Normalize(camera.up);
-		var targetPosition = Vector3Subtract(camera.target, camera.position);
 		if (lockView) {
-			var maxAngleUp = Vector3Angle(up, targetPosition) - .001;
+			var up = cameraUp(camera), view = cameraView(camera);
+			var maxAngleUp = angleBetween(up, view) - .001;
 			if (angle > maxAngleUp)
 				angle = maxAngleUp;
-			var maxAngleDown = -Vector3Angle(Vector3Negate(up), targetPosition) + .001;
+			var maxAngleDown = -angleBetween(up.negate(up), view) + .001;
 			if (angle < maxAngleDown)
 				angle = maxAngleDown;
 		}
 		var right = cameraRight(camera);
-		targetPosition = Vector3RotateByAxisAngle(targetPosition, right, angle);
-		if (rotateAroundTarget)
-			camera.position = Vector3Subtract(camera.target, targetPosition);
-		else
-			camera.target = Vector3Add(camera.position, targetPosition);
-		if (rotateUp)
-			camera.up = Vector3RotateByAxisAngle(camera.up, right, angle);
+		placeAlong(camera, turnAround(cameraView(camera), right, angle), rotateAroundTarget);
+		if (rotateUp) {
+			var u = camera.up;
+			var up = turnAround(upVector.set(u.x, u.y, u.z), right, angle);
+			camera.up = new Vector3(up.x, up.y, up.z);
+		}
 	}
 
 	static function cameraRoll(camera:Camera, angle:Float):Void {
-		camera.up = Vector3RotateByAxisAngle(camera.up, cameraForward(camera), angle);
+		var u = camera.up;
+		var up = turnAround(upVector.set(u.x, u.y, u.z), cameraForward(camera), angle);
+		camera.up = new Vector3(up.x, up.y, up.z);
 	}
+
+	// The angle between two vectors, raymath's Vector3Angle: 0 when either is of length 0.
+	static function angleBetween(a:Vector3D, b:Vector3D):Float {
+		return Trig.atan2(a.cross(b, crossVector).length, a.dot(b));
+	}
+
+	static final viewVector = new Vector3D();
+
+	static final forwardVector = new Vector3D();
+
+	static final upVector = new Vector3D();
+
+	static final rightVector = new Vector3D();
+
+	static final crossVector = new Vector3D();
+
+	static final turn3D = new Quaternion3D();
 
 	/** Returns a camera's view, as `BeginMode3D` uses it.
 
 		@param camera  The camera.
 		@return  The matrix. */
 	static function GetCameraMatrix(camera:Camera3D):Matrix {
-		return toMatrix(cameraView(camera));
+		return toMatrix(camera3D(camera).computeViewMatrix(viewMatrix3D));
 	}
 
 	/** Returns the ray from a camera through a screen position, as raylib's picking uses it.
@@ -2435,21 +2527,15 @@ class RCore {
 		@param height  The view's height.
 		@return  The ray. */
 	static function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int):Ray {
-		var x = 2 * position.x / width - 1, y = 1 - 2 * position.y / height;
-		var inverse = Matrix3D.compose(cameraView(camera), cameraProjection(camera, width / height));
-		inverse.invert(inverse);
-		function unproject(z:Float):Array<Float> {
-			var p = [
-				inverse.values[0] * x + inverse.values[4] * y + inverse.values[8] * z + inverse.values[12],
-				inverse.values[1] * x + inverse.values[5] * y + inverse.values[9] * z + inverse.values[13],
-				inverse.values[2] * x + inverse.values[6] * y + inverse.values[10] * z + inverse.values[14],
-				inverse.values[3] * x + inverse.values[7] * y + inverse.values[11] * z + inverse.values[15]
-			];
-			return [p[0] / p[3], p[1] / p[3], p[2] / p[3]];
-		}
-		var near = unproject(-1), far = unproject(1);
-		var origin = camera.projection == CAMERA_ORTHOGRAPHIC ? new Vector3(near[0], near[1], near[2]) : camera.position;
-		return new Ray(new Vector3(origin.x, origin.y, origin.z), Vector3Normalize(new Vector3(far[0] - near[0], far[1] - near[1], far[2] - near[2])));
+		var x = 2 * position.x / width - 1,
+			y = 1 - 2 * position.y / height,
+			aspect = width / height;
+		var view = camera3D(camera);
+		var origin = view.unprojectOrigin(x, y, aspect, point3D);
+		var ray = new Ray(new Vector3(origin.x, origin.y, origin.z));
+		var direction = view.unprojectDirection(x, y, aspect, point3D);
+		ray.direction = new Vector3(direction.x, direction.y, direction.z);
+		return ray;
 	}
 
 	/** Returns the ray from a camera through a screen position: raylib's old name for `GetScreenToWorldRay`.
@@ -2476,15 +2562,33 @@ class RCore {
 		@param camera  The camera.
 		@param width  The view's width.
 		@param height  The view's height.
-		@return  The position in the view. */
+		@return  The position in the view; infinite or NaN for a point level with a perspective camera's position, as raylib's is. */
 	static function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int):Vector2 {
-		var m = Matrix3D.compose(cameraView(camera), cameraProjection(camera, width / height)).values;
-		var x = m[0] * position.x + m[4] * position.y + m[8] * position.z + m[12];
-		var y = m[1] * position.x + m[5] * position.y + m[9] * position.z + m[13];
-		var w = m[3] * position.x + m[7] * position.y + m[11] * position.z + m[15];
-		if (w == 0)
-			w = 1;
-		return new Vector2((x / w + 1) / 2 * width, (1 - y / w) / 2 * height);
+		var p = camera3D(camera).project(position.x, position.y, position.z, width / height, point3D);
+		return new Vector2((p.x + 1) / 2 * width, (1 - p.y) / 2 * height);
+	}
+
+	// raylib's Camera3D as helix-math's, reused: its position, turned to face its target with its up kept as near as it can be (an up
+	// along the view, or a target at its position, as Quaternion3D.fromLookRotation replaces them), its fovy in radians or, orthographic,
+	// the height it shows, and raylib's near and far planes, 0.01 and 1000.
+	static final view3D = new helix.math.Camera3D();
+
+	static final viewMatrix3D = new Matrix3D();
+
+	static final point3D = new Vector3D();
+
+	static final view3DVector = new Vector3D();
+
+	static function camera3D(camera:Camera3D):helix.math.Camera3D {
+		var p = camera.position, t = camera.target, u = camera.up;
+		view3D.transform.position.set(p.x, p.y, p.z);
+		Quaternion3D.fromLookRotation(t.x - p.x, t.y - p.y, t.z - p.z, u.x, u.y, u.z, view3D.transform.rotation);
+		view3D.orthographic = camera.projection == CAMERA_ORTHOGRAPHIC;
+		view3D.fieldOfView = camera.fovy * DEG2RAD;
+		view3D.orthographicHeight = camera.fovy;
+		view3D.near = .01;
+		view3D.far = 1000;
+		return view3D;
 	}
 
 	/** Returns how far the mouse moved since the last frame, in the screen's pixels.

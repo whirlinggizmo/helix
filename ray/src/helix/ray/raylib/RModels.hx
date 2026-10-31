@@ -655,21 +655,6 @@ class RModels {
 		return new Matrix(a[0], a[4], a[8], a[12], a[1], a[5], a[9], a[13], a[2], a[6], a[10], a[14], a[3], a[7], a[11], a[15]);
 	}
 
-	static function cameraView(camera:Camera3D):Matrix3D {
-		var p = camera.position, t = camera.target, u = camera.up;
-		return Matrix3D.fromLookAt(p.x, p.y, p.z, t.x, t.y, t.z, u.x, u.y, u.z);
-	}
-
-	// raylib's near and far planes, 0.01 and 1000.
-
-	static function cameraProjection(camera:Camera3D, aspect:Float):Matrix3D {
-		if (camera.projection == CAMERA_ORTHOGRAPHIC) {
-			var top = camera.fovy / 2, right = top * aspect;
-			return Matrix3D.fromOrthographic(-right, right, -top, top, .01, 1000);
-		}
-		return Matrix3D.fromPerspective(camera.fovy * DEG2RAD, aspect, .01, 1000);
-	}
-
 	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix3D, tint:Color):Void {
 		if (mesh.gpu.buffers == null)
 			Models.upload(mesh);

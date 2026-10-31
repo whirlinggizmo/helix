@@ -1931,9 +1931,11 @@ static function EndScissorMode():Void
 - `BeginMode3D`: Draws in 3D through a camera until `EndMode3D`, with depth.
   - `camera`: The camera.
 - `EndMode3D`: Goes back to drawing in 2D, in the screen's pixels.
-- `UpdateCamera`: Moves a camera as one of raylib's modes does: `CAMERA_ORBITAL` turns it about its target, half a radian a second, and the wheel moves it closer; `CAMERA_FREE`, `CAMERA_FIRST_PERSON` and `CAMERA_THIRD_PERSON` move it by WASD, and turn it by the mouse; `CAMERA_CUSTOM` leaves it.
+- `UpdateCamera`: Moves a camera as one of raylib's modes does, by the keyboard, the mouse and the first gamepad, as rcamera's `UpdateCamera`.
   - `camera`: The camera, changed.
   - `mode`: The mode (`CAMERA_*`).
+
+  `CAMERA_ORBITAL` turns it about its target, half a radian a second. `CAMERA_FREE`, `CAMERA_FIRST_PERSON` and `CAMERA_THIRD_PERSON` turn it by the mouse, the right stick and the arrow keys (Q and E roll it), its look stopping short of straight up and down, and move it by WASD and the left stick, 5.4 units a second; first and third person along the ground, third person turning about its target. `CAMERA_FREE` also moves up and down by space and left control, and pans while the middle button is held. `CAMERA_FREE`, `CAMERA_ORBITAL` and `CAMERA_THIRD_PERSON` move toward the target by the wheel and the keypad's plus and minus. `CAMERA_CUSTOM` leaves it.
 - `UpdateCameraPro`: Moves and turns a camera by amounts, as raylib's rcamera does: it pitches (looking no further up or down than straight), yaws and rolls about its own position, then moves forward and right along the ground and up along its up direction, then toward its target, the distance kept above 0.
   - `camera`: The camera, changed.
   - `movement`: The distances it moves: forward (x), right (y) and up (z), in world units.
@@ -1965,7 +1967,7 @@ static function EndScissorMode():Void
   - `camera`: The camera.
   - `width`: The view's width.
   - `height`: The view's height.
-  - returns: The position in the view.
+  - returns: The position in the view; infinite or NaN for a point level with a perspective camera's position, as raylib's is.
 - `GetMouseDelta`: Returns how far the mouse moved since the last frame, in the screen's pixels.
   - returns: The movement.
 - `IsShaderValid`: Returns whether a shader was made.
