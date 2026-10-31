@@ -49,8 +49,12 @@ class Runtime {
 	/** Natively, the program's own files, read-only, made with the assets; null in a page, whose files are on its server. */
 	public static var shipped:Null<IFileSystem> = null;
 
-	/** The paths of the files last dropped, held in `memory`, once each was read; empty when none were or after `UnloadDroppedFiles`. */
+	/** The paths of the files last dropped, once each was read; empty when none were or after `UnloadDroppedFiles`. */
 	public static var dropped:Array<String> = [];
+
+	/** The paths of the files last dropped whose bytes `memory` holds: still read after `UnloadDroppedFiles`, as a dropped file stays on
+		raylib's disk, until the next drop's files replace them. */
+	public static var held:Array<String> = [];
 
 	/** The models, reading glTF files with what they name, made with the assets. */
 	public static var models:Null<helix.services.models.Models> = null;
@@ -626,16 +630,17 @@ class Runtime {
 		#end
 	}
 
-	// Reads the files of a drop into memory, then holds their paths in place of the last drop's, as raylib's do.
+	// Reads the files of a drop into memory in place of the last drop's, then lists their paths, as raylib's do.
 	static function drop(count:Int):Void {
 		loading();
 		var paths:Array<Null<String>> = [for (_ in 0...count) null], left = count;
 		function answered():Void {
 			if (--left > 0)
 				return;
-			for (path in dropped)
+			for (path in held)
 				memory.remove(path);
-			dropped = [for (path in paths) if (path != null) path];
+			held = [for (path in paths) if (path != null) path];
+			dropped = held.copy();
 		}
 		for (i in 0...count)
 			window.readDroppedFile(i, 1 << 30, (name, bytes) -> {

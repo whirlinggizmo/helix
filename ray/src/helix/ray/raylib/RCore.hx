@@ -1548,14 +1548,13 @@ class RCore {
 		return list;
 	}
 
-	/** Lets go of the files last dropped, so `IsFileDropped` is false until the next drop. A file loaded from one keeps what it loaded.
+	/** Lets go of the list of files last dropped, so `IsFileDropped` is false until the next drop. The files stay, as a dropped file stays
+		on raylib's disk: a load of one of their paths, started before or after, reads it until the next drop's files replace them.
 
 		@param files  The list `LoadDroppedFiles` gave; one of no files does nothing, as raylib's. */
 	static function UnloadDroppedFiles(files:FilePathList):Void {
 		if (files == null || files.count <= 0)
 			return;
-		for (path in Runtime.dropped)
-			Runtime.memory.remove(path);
 		Runtime.dropped = [];
 	}
 

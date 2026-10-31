@@ -1850,7 +1850,7 @@ static function EndScissorMode():Void
   - returns: True while dropped files are held.
 - `LoadDroppedFiles`: Returns the paths of the files last dropped. Each is helix-ray's own, `helix-ray-dropped/<n>/<name>`, which every load reads, as `LoadTextureAsync(path)`: the file's name is its last part, a character a path can't hold made `_`. A directory dropped isn't listed.
   - returns: The paths, `count` of them; `capacity` is 0, as raylib's.
-- `UnloadDroppedFiles`: Lets go of the files last dropped, so `IsFileDropped` is false until the next drop. A file loaded from one keeps what it loaded.
+- `UnloadDroppedFiles`: Lets go of the list of files last dropped, so `IsFileDropped` is false until the next drop. The files stay, as a dropped file stays on raylib's disk: a load of one of their paths, started before or after, reads it until the next drop's files replace them.
   - `files`: The list `LoadDroppedFiles` gave; one of no files does nothing, as raylib's.
 - `CompressData`: Compresses bytes as raylib's `CompressData` does, byte for byte: raw DEFLATE (no zlib header), sdefl's level 8.
   - `data`: The bytes.
