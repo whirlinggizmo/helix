@@ -64,7 +64,7 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 	function get_playsUrls():Bool
 		return false;
 
-	public function decode(encoded:Bytes, decoded:(samples:Bytes, channels:Int) -> Void, failed:String->Void):Void
+	public function decode(encoded:Bytes, decoded:(samples:Bytes, channelCount:Int) -> Void, failed:String->Void):Void
 		waiting.push(() -> encoded.toString() == "bad" ? failed("not audio") : decoded(encoded, StringTools.startsWith(encoded.toString(), "stereo") ? 2 : 1));
 
 	public function createClip(samples:Bytes, channelCount:Int):Int {

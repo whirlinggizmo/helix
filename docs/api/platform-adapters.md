@@ -91,7 +91,7 @@ Provides `IAudioDecoder` natively over SDL3_mixer's decoder: WAV, Ogg Vorbis, MP
 
 ```haxe
 function new()
-function decode(encoded:haxe.io.Bytes, decoded:(samples:haxe.io.Bytes, channels:Int) -> Void, failed:String -> Void):Void
+function decode(encoded:haxe.io.Bytes, decoded:(samples:haxe.io.Bytes, channelCount:Int) -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
 ```
@@ -107,7 +107,7 @@ Provides `IAudioDecoder` in a browser page: decodeAudioData on an OfflineAudioCo
 
 ```haxe
 function new()
-function decode(encoded:haxe.io.Bytes, decoded:(samples:haxe.io.Bytes, channels:Int) -> Void, failed:String -> Void):Void
+function decode(encoded:haxe.io.Bytes, decoded:(samples:haxe.io.Bytes, channelCount:Int) -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
 ```

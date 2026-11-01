@@ -22,7 +22,7 @@ class Sdl3MixerAudioDecoderAdapter implements IAudioDecoder {
 		AudioDecoderBridge.init();
 	}
 
-	public function decode(encoded:Bytes, decoded:(samples:Bytes, channels:Int) -> Void, failed:String->Void):Void
+	public function decode(encoded:Bytes, decoded:(samples:Bytes, channelCount:Int) -> Void, failed:String->Void):Void
 		Thread.create(() -> {
 			var result = AudioDecoderBridge.decode(cpp.Pointer.arrayElem(encoded.getData(), 0).raw, encoded.length);
 			if (result == null) {

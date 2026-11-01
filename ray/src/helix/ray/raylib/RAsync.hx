@@ -285,7 +285,7 @@ class RAsync {
 			return;
 		}
 		RAudio.audioDecoder()
-			.decode(data, (samples, channels) -> done(new Wave(Std.int(samples.length / (4 * channels)), 44100, 32, channels, samples)),
+			.decode(data, (samples, channelCount) -> done(new Wave(Std.int(samples.length / (4 * channelCount)), 44100, 32, channelCount, samples)),
 				message -> refuse("LoadWaveFromMemoryAsync", 'WAVE: Failed to load ${fileType.substr(1).toUpperCase()} data: $message', failed));
 	}
 

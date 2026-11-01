@@ -303,7 +303,7 @@ stream's length and position, and a queue's frames falling, running dry and resu
 
 ## Decoders
 
-`IAudioDecoder`: `decode(encoded, decoded(samples, channels), failed(message))`, float32 at 44100 Hz in the file's channels (mono or
+`IAudioDecoder`: `decode(encoded, decoded(samples, channelCount), failed(message))`, float32 at 44100 Hz in the file's channels (mono or
 stereo interleaved; more mixed down to stereo, by SDL's channel conversion natively and Web Audio's speaker down-mix in a page); `poll`;
 `dispose`. It reads **WAV, Ogg
 Vorbis, MP3 and FLAC**. In a page, `audiodecoder/webaudio` (`WebAudioDecoderAdapter`, `decodeAudioData` on a 44100 Hz

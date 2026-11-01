@@ -12,9 +12,9 @@ interface IAudioDecoder extends IPollable {
 
 		One of `decoded` or `failed` is called once, on the main thread, never during this call.
 		@param encoded  The file's bytes.
-		@param decoded  Receives the samples and their channels, 1 or 2.
+		@param decoded  Receives the samples and their number of channels, 1 or 2.
 		@param failed  Receives why the file can't be read. */
-	function decode(encoded:Bytes, decoded:(samples:Bytes, channels:Int) -> Void, failed:String->Void):Void;
+	function decode(encoded:Bytes, decoded:(samples:Bytes, channelCount:Int) -> Void, failed:String->Void):Void;
 
 	/** Delivers what finished on the platform's threads since the last poll. The program calls it once a frame. */
 	function poll():Void;

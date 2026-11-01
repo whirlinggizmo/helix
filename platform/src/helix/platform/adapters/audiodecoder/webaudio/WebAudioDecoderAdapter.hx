@@ -13,7 +13,7 @@ class WebAudioDecoderAdapter implements IAudioDecoder {
 	/** Creates the decoder; the page's decoding context is made at the first decode. */
 	public function new() {}
 
-	public function decode(encoded:Bytes, decoded:(samples:Bytes, channels:Int) -> Void, failed:String->Void):Void {
+	public function decode(encoded:Bytes, decoded:(samples:Bytes, channelCount:Int) -> Void, failed:String->Void):Void {
 		if (context == null)
 			context = js.Syntax.code("new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 1, 44100)");
 		// decodeAudioData takes its input over: a copy, as the caller keeps its bytes.
@@ -43,7 +43,7 @@ class WebAudioDecoderAdapter implements IAudioDecoder {
 	}
 
 	// Interleaves a decoded buffer of 1 or 2 channels into samples held to -1 to 1, and hands them over.
-	function deliver(buffer:Dynamic, decoded:(samples:Bytes, channels:Int) -> Void, failed:String->Void):Void {
+	function deliver(buffer:Dynamic, decoded:(samples:Bytes, channelCount:Int) -> Void, failed:String->Void):Void {
 		try {
 			var frames:Int = buffer.length,
 				count:Int = buffer.numberOfChannels;
