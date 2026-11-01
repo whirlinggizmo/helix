@@ -7,6 +7,10 @@ images, a font's pages) itself; it saves what a writer returns. Depends on helix
 - `gltf.GltfFile`: a glTF 2.0 model, from a .gltf or a GLB: its nodes and their transforms, the default scene, meshes (positions,
   normals, texture coordinates, colors, indices), metallic-roughness materials and images. Buffers held in the file are read at once;
   those in files of their own are listed, their paths resolved, for the program to fetch and set. Skins and animations aren't read yet.
+- `obj.ObjFile` and `obj.MtlFile`: a Wavefront OBJ model (.obj) and its material libraries (.mtl): positions (and the six-value
+  positions' colors), texture coordinates and normals, faces as the file writes them, their groups and materials, split into
+  triangles and gathered into parts; each material's colors, factors and texture paths, the PBR extension's too. The libraries a
+  model names are listed, their paths resolved, for the program to fetch and read.
 - `bmfont.BmFontFile`: an AngelCode BMFont text file (.fnt): its size and line metrics, pages, glyphs and kerning pairs.
 - `truetype.TrueTypeTables`: a TrueType or OpenType font's tables as stb_truetype reads them: vertical metrics, each codepoint's
   glyph, advances and boxes. helix-platform's canvas font rasterizer places its glyphs with it.
