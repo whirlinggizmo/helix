@@ -1,6 +1,6 @@
 {
   "oracle": "5.5",
-  "covers": "the 2D Draw functions whose oracle is 5.5 (those 6.2 changed are in scene2d_62), textures (flipped and turned source rectangles, a nine-patch, a render texture) and the default font's text, drawn into an 800 x 600 frame",
+  "covers": "the 2D Draw functions whose oracle is 5.5 (those 6.2 changed are in scene2d_62), textures (flipped and turned source rectangles, rectangles past the edges, repeating as raylib's default wrap does, a nine-patch, a render texture) and the default font's text, drawn into an 800 x 600 frame",
   "kind": "pixels",
   "generated": true,
   "frames": 5,

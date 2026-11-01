@@ -46,4 +46,7 @@ CASES = [
     'DrawTextEx(font, "Ex spaced", V2(10, 410), 30, 4, DARKBLUE);',
     'DrawTextPro(font, "turned", V2(300, 420), V2(0, 0), 20, 25, 2, RED);',
     'DrawTextCodepoint(font, 65, V2(400, 400), 40, MAROON);',
+    # Past the texture's edges: raylib's textures repeat there by default.
+    'DrawTextureRec(checks, R(-24, -16, 96, 80), V2(10, 470), WHITE);',
+    'DrawTexturePro(checks, R(40, 40, 64, 64), R(120, 470, 80, 80), V2(0, 0), 0, WHITE);',
 ]

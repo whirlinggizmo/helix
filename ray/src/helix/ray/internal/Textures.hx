@@ -61,24 +61,28 @@ class Textures {
 			samplings.set(e.gpu, sampling);
 	}
 
-	/** Returns how a texture is drawn, by its GPU handle: as `setSampling` set, else nearest, raylib's point filter.
+	/** How a texture is sampled until `setSampling` says otherwise: raylib's point filter, repeating past its edges as rlLoadTexture sets
+		on desktop GL. */
+	public static final DEFAULT_SAMPLING = new helix.platform.Sampling(Nearest, Repeat, Repeat);
+
+	/** Returns how a texture is drawn, by its GPU handle: as `setSampling` set, else `DEFAULT_SAMPLING`.
 
 		@param gpu  The GPU handle.
 		@return  The sampling. */
 	public static function samplingOf(gpu:Int):helix.platform.Sampling {
 		var s = samplings.get(gpu);
-		return s == null ? helix.platform.Sampling.NEAREST : s;
+		return s == null ? DEFAULT_SAMPLING : s;
 	}
 
 	static final samplings = new Map<Int, helix.platform.Sampling>();
 
-	/** Returns how a texture is sampled, by its id: as `setSampling` set, else nearest.
+	/** Returns how a texture is sampled, by its id: as `setSampling` set, else `DEFAULT_SAMPLING`.
 
 		@param id  The texture's id.
 		@return  The sampling. */
 	public static function samplingOfId(id:Int):helix.platform.Sampling {
 		var e = entries.get(id);
-		return e == null || e.sampling == null ? helix.platform.Sampling.NEAREST : e.sampling;
+		return e == null || e.sampling == null ? DEFAULT_SAMPLING : e.sampling;
 	}
 
 	/** Returns a texture's pixels while they are in memory: those not yet sent to the GPU, or the image file it was loaded from.
