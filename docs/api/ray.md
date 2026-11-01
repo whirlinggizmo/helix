@@ -2121,7 +2121,7 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
 - `SetShapesTexture`: Sets the texture and the part of it the filled shapes draw with, as one white pixel of a font's texture lets shapes and text share a draw. A texture with no id, or an empty rectangle, goes back to the white pixel shapes draw with at first.
   - `texture`: The texture.
   - `source`: The part of it, in pixels.
-- `GetShapesTexture`: Returns the texture the filled shapes draw with: a white pixel unless `SetShapesTexture` set another.
+- `GetShapesTexture`: Returns the texture the filled shapes draw with: raylib's default texture, a white pixel, unless `SetShapesTexture` set another.
   - returns: The texture.
 - `GetShapesTextureRectangle`: Returns the part of the shapes texture the filled shapes draw with.
   - returns: The rectangle, in pixels.
@@ -3014,7 +3014,7 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `fontSize`: The height of a line, in pixels.
   - `spacing`: The space between letters, at the font's size.
   - `tint`: The color.
-- `LoadTextureFromImage`: Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, so the texture's format is `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and it has one level. A compressed format gives no texture, with a warning.
+- `LoadTextureFromImage`: Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, and it has one level. Its format is the image's, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed format gives no texture, with a warning.
   - `image`: The image.
   - returns: The texture.
 - `SetTextureWrap`: Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT` (raylib's default), `TEXTURE_WRAP_CLAMP` or `TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning.
@@ -3341,6 +3341,8 @@ static function UnloadModelAnimation(anim:ModelAnimation):Void
 static function UnloadModelAnimations(animations:Array<ModelAnimation>, animCount:Int):Void
 static function IsModelAnimationValid(model:Model, anim:ModelAnimation):Bool
 static function LoadMaterialDefault():Material
+static function IsMaterialValid(material:Material):Bool
+static function UnloadMaterial(material:Material):Void
 static function SetMaterialTexture(material:Material, mapType:Int, texture:Texture2D):Void
 static function SetModelMeshMaterial(model:Model, meshId:Int, materialId:Int):Void
 static function GetMeshBoundingBox(mesh:Mesh):BoundingBox
@@ -3497,7 +3499,7 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
 - `IsModelValid`: Returns whether a model has meshes.
   - `model`: The model.
   - returns: True when it has.
-- `UnloadModel`: Frees a model: one load of its file, its meshes and textures with the last; a model of a mesh, its meshes and its materials' textures at once.
+- `UnloadModel`: Frees a model: its maps' textures, each map's load of its own (so a texture another load of its file shares stays), and its meshes, a file's with its last load. A texture set on a map is freed with it.
   - `model`: The model.
 - `DrawModel`: Draws a model at a position and a scale, its materials' colors times a tint.
   - `model`: The model.
@@ -3631,8 +3633,13 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `model`: The model.
   - `anim`: The animation.
   - returns: True when their bone counts match.
-- `LoadMaterialDefault`: Returns raylib's default material: the default shader, white.
+- `LoadMaterialDefault`: Returns raylib's default material: the default shader, the diffuse map raylib's default texture (a 1x1 white pixel), the diffuse and specular colors white, and the other maps empty.
   - returns: The material.
+- `IsMaterialValid`: Returns whether a material can draw: whether it has maps and a shader.
+  - `material`: The material.
+  - returns: True when its maps aren't null and its shader's id is above 0.
+- `UnloadMaterial`: Frees a material: its shader unless it is the default one, and each map's texture unless it is the default texture (`UnloadShader`, `UnloadTexture`). A texture a model's other loads share stays theirs: each map holds a load of its texture, freed with the last.
+  - `material`: The material.
 - `SetMaterialTexture`: Sets a texture on a material's map.
   - `material`: The material.
   - `mapType`: The map (`MATERIAL_MAP_*`).
@@ -4066,7 +4073,7 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `dataSize`: How many of them.
   - `loaded`: Receives the image.
   - `failed`: Optional. Receives why it couldn't be decoded; when omitted, it is logged.
-- `LoadImageFromTextureAsync`: Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU answers later. A render texture's are read back from the GPU after the frame it was drawn in, rows bottom first as raylib's are, so it reads upside down as raylib's does. Another texture's pixels are what went to the GPU, while they are in memory: before it is first drawn, or when it was loaded from a file; once only on the GPU they can't be read here, and it fails.
+- `LoadImageFromTextureAsync`: Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU answers later. A render texture's are read back from the GPU after the frame it was drawn in, rows bottom first as raylib's are, so it reads upside down as raylib's does. Another texture's pixels are what went to the GPU, while they are in memory: before it is first drawn, or when it was loaded from a file (raylib's default texture's, its white pixel, always); once only on the GPU they can't be read here, and it fails.
   - `texture`: The texture.
   - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
@@ -4110,7 +4117,7 @@ Each of these is raylib's name, and a call to it doesn't compile, saying why and
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`.
+`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`, `LoadMaterials`.
 
 ## Raymath
 
@@ -5669,7 +5676,7 @@ var format:Int
 - `width`: Gets the width, in pixels.
 - `height`: Gets the height, in pixels.
 - `mipmaps`: Gets the number of mipmap levels, 1 for none.
-- `format`: Gets the pixel format, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` for every texture loaded here.
+- `format`: Gets the pixel format: the image's for a texture made of one (`LoadTextureFromImage`; a glTF model's roughness and metalness maps are `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`), `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` for the rest. Its pixels are RGBA on the GPU either way.
 
 ## TextureCubemap
 

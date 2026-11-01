@@ -6,7 +6,7 @@ import helix.formats.gltf.GltfFile;
 	data: URI, and a .gltf naming a buffer and an image in files of their own under a subdirectory, their names percent-encoded. Its
 	nodes and transforms (and their parts), the default scene, meshes' values (floats, normalized integers, strides, indices, an accessor
 	with no view, tangents, joints and weights), skins and their inverse binds, animations' channels and samplers,
-	materials and their defaults, images held and named, the missing buffers' paths, setBuffer and what it refuses, and what throws. */
+	materials, their defaults and the blocks and textures they lack, images held and named, the missing buffers' paths, setBuffer and what it refuses, and what throws. */
 class GltfTests {
 	static var checks = 0;
 
@@ -138,6 +138,8 @@ class GltfTests {
 		check(material.baseColorImage == 0 && material.metallic == 0 && material.roughness == 1, "GLB: its texture's image, its factors");
 		check(material.normalImage == -1 && material.emissiveImage == -1 && same(material.emissiveFactor, [0, 0, 0]),
 			"GLB: no normal or emissive image, black emission");
+		check(material.hasPbrMetallicRoughness && material.metallicRoughnessImage == -1 && material.occlusionImage == -1,
+			"GLB: a pbrMetallicRoughness block, no metallic-roughness or occlusion image");
 		var image = model.images[0];
 		check(model.images.length == 1 && image.path == null && image.mimeType == "image/png" && image.encoded.compare(png) == 0,
 			"GLB: an image held in a buffer view");
@@ -171,7 +173,8 @@ class GltfTests {
 				"samplers":[{"input":8,"output":9},{"input":8,"output":10,"interpolation":"STEP"}]},{"channels":[],"samplers":[]}],
 			"meshes":[{"primitives":[{"attributes":{"POSITION":0,"NORMAL":1,"TANGENT":4,"TEXCOORD_0":3,"JOINTS_0":5,"WEIGHTS_0":6},"indices":2},
 				{"attributes":{"POSITION":0},"mode":1}]}],
-			"materials":[{"emissiveFactor":[1,1,0],"emissiveTexture":{"index":0},"normalTexture":{"index":1}}],
+			"materials":[{"emissiveFactor":[1,1,0],"emissiveTexture":{"index":0},"normalTexture":{"index":1}},
+				{"pbrMetallicRoughness":{"metallicRoughnessTexture":{"index":0}},"occlusionTexture":{"index":0}}],
 			"textures":[{"source":0},{}],
 			"images":[{"uri":"data:image/png;base64,${haxe.crypto.Base64.encode(png)}"}],
 			"buffers":[{"byteLength":348,"uri":"data:application/octet-stream;base64,$buffer"}],
@@ -244,6 +247,11 @@ class GltfTests {
 			".gltf: a material's defaults");
 		check(material.emissiveImage == 0 && same(material.emissiveFactor, [1, 1, 0]) && material.normalImage == -1,
 			".gltf: emission; a texture with no source is no image");
+		check(!material.hasPbrMetallicRoughness && material.metallicRoughnessImage == -1 && material.occlusionImage == -1,
+			".gltf: no pbrMetallicRoughness block, no metallic-roughness or occlusion image");
+		var pbr = model.materials[1];
+		check(pbr.hasPbrMetallicRoughness && pbr.metallicRoughnessImage == 0 && pbr.occlusionImage == 0 && pbr.baseColorImage == -1 && pbr.roughness == 1,
+			".gltf: a pbrMetallicRoughness block of a metallic-roughness texture alone; an occlusion texture");
 		check(model.images[0].encoded.compare(png) == 0
 			&& model.images[0].path == null
 			&& model.images[0].mimeType == null, ".gltf: an image as a data: URI");

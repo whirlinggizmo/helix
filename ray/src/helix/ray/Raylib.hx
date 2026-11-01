@@ -2383,7 +2383,7 @@ class Raylib {
 	public static inline function SetShapesTexture(texture:Texture2D, source:Rectangle):Void
 		RShapes.SetShapesTexture(texture, source);
 
-	/** Returns the texture the filled shapes draw with: a white pixel unless `SetShapesTexture` set another.
+	/** Returns the texture the filled shapes draw with: raylib's default texture, a white pixel, unless `SetShapesTexture` set another.
 
 		@return  The texture. */
 	public static inline function GetShapesTexture():Texture2D
@@ -3872,8 +3872,9 @@ class Raylib {
 	public static inline function ImageDrawTextEx(dst:Image, font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
 		RTextures.ImageDrawTextEx(dst, font, text, position, fontSize, spacing, tint);
 
-	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, so the texture's
-		format is `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and it has one level. A compressed format gives no texture, with a warning.
+	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, and it has one level.
+		Its format is the image's, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed
+		format gives no texture, with a warning.
 
 		@param image  The image.
 		@return  The texture. */
@@ -4571,8 +4572,8 @@ class Raylib {
 	public static inline function IsModelValid(model:Model):Bool
 		return RModels.IsModelValid(model);
 
-	/** Frees a model: one load of its file, its meshes and textures with the last; a model of a mesh, its meshes and its materials'
-		textures at once.
+	/** Frees a model: its maps' textures, each map's load of its own (so a texture another load of its file shares stays), and its
+		meshes, a file's with its last load. A texture set on a map is freed with it.
 
 		@param model  The model. */
 	public static inline function UnloadModel(model:Model):Void
@@ -4846,11 +4847,27 @@ class Raylib {
 	public static inline function IsModelAnimationValid(model:Model, anim:ModelAnimation):Bool
 		return RModels.IsModelAnimationValid(model, anim);
 
-	/** Returns raylib's default material: the default shader, white.
+	/** Returns raylib's default material: the default shader, the diffuse map raylib's default texture (a 1x1 white pixel), the diffuse
+		and specular colors white, and the other maps empty.
 
 		@return  The material. */
 	public static inline function LoadMaterialDefault():Material
 		return RModels.LoadMaterialDefault();
+
+	/** Returns whether a material can draw: whether it has maps and a shader.
+
+		@param material  The material.
+		@return  True when its maps aren't null and its shader's id is above 0. */
+	public static inline function IsMaterialValid(material:Material):Bool
+		return RModels.IsMaterialValid(material);
+
+	/** Frees a material: its shader unless it is the default one, and each map's texture unless it is the default texture
+		(`UnloadShader`, `UnloadTexture`). A texture a model's other loads share stays theirs: each map holds a load of its texture, freed
+		with the last.
+
+		@param material  The material. */
+	public static inline function UnloadMaterial(material:Material):Void
+		RModels.UnloadMaterial(material);
 
 	/** Sets a texture on a material's map.
 
@@ -5655,7 +5672,8 @@ class Raylib {
 	/** Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU
 		answers later. A render texture's are read back from the GPU after the frame it was drawn in, rows bottom first as raylib's are,
 		so it reads upside down as raylib's does. Another texture's pixels are what went to the GPU, while they are in memory: before it
-		is first drawn, or when it was loaded from a file; once only on the GPU they can't be read here, and it fails.
+		is first drawn, or when it was loaded from a file (raylib's default texture's, its white pixel, always); once only on the GPU they
+		can't be read here, and it fails.
 
 		@param texture  The texture.
 		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
@@ -5948,14 +5966,6 @@ class Raylib {
 	/** raylib's `LoadMaterials` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load materials from model file. */
 	public static macro function LoadMaterials(fileName:ExprOf<String>, materialCount:ExprOf<Array<Int>>):ExprOf<Array<Material>>
 		return helix.platform.macros.Build.unimplemented("LoadMaterials: Not implemented", macro(null : Array<helix.ray.Material>));
-
-	/** raylib's `IsMaterialValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if a material is valid (shader assigned, map textures loaded in GPU). */
-	public static macro function IsMaterialValid(material:ExprOf<Material>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsMaterialValid: Not implemented", macro(false : Bool));
-
-	/** raylib's `UnloadMaterial` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload material from GPU memory (VRAM). */
-	public static macro function UnloadMaterial(material:ExprOf<Material>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadMaterial: Not implemented", macro {});
 
 	// ---- generated by tools/gen_raylib.py: end ----
 	// ---- Shaders, compiled as the program builds ----

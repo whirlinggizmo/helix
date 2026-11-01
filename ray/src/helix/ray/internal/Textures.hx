@@ -6,7 +6,11 @@ import helix.services.images.Image;
 	released when its last load is unloaded, and sent to the GPU when first drawn rather than when loaded. */
 @:noCompletion
 class Textures {
-	static var next = 1;
+	/** The id of raylib's default texture, rlgl's 1x1 white pixel (`rlGetTextureIdDefault`): the frame's white texture, which
+		`LoadMaterialDefault`'s diffuse map and the shapes draw with. It is never freed: `release` and `retain` leave it. */
+	public static inline final DEFAULT = 1;
+
+	static var next = DEFAULT + 1;
 	static final entries = new Map<Int, Entry>();
 	static final byPath = new Map<String, Int>();
 
@@ -88,8 +92,13 @@ class Textures {
 	/** Returns a texture's pixels while they are in memory: those not yet sent to the GPU, or the image file it was loaded from.
 
 		@param id  The texture's id.
-		@return  The image, or null when its pixels are only on the GPU. */
+		@return  The image (`DEFAULT`'s its white pixel), or null when its pixels are only on the GPU. */
 	public static function imageOf(id:Int):Null<Image> {
+		if (id == DEFAULT) {
+			var white = haxe.io.Bytes.alloc(4);
+			white.fill(0, 4, 255);
+			return new Image("", 1, 1, white);
+		}
 		var e = entries.get(id);
 		if (e == null)
 			return null;
@@ -99,8 +108,10 @@ class Textures {
 	/** Returns a texture's GPU handle, sending it to the GPU if this is its first use.
 
 		@param id  The texture's id.
-		@return  The handle, or 0 for an id with no texture. */
+		@return  The handle, the frame's white texture for `DEFAULT`, or 0 for an id with no texture. */
 	public static function handle(id:Int):Int {
+		if (id == DEFAULT)
+			return Runtime.frame.white;
 		var e = entries.get(id);
 		if (e == null)
 			return 0;

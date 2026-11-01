@@ -52,15 +52,11 @@ class RShapes {
 		shapeV1 = (texShapesRec.y + texShapesRec.height) / h;
 	}
 
-	/** Returns the texture the filled shapes draw with: a white pixel unless `SetShapesTexture` set another.
+	/** Returns the texture the filled shapes draw with: raylib's default texture, a white pixel, unless `SetShapesTexture` set another.
 
 		@return  The texture. */
 	static function GetShapesTexture():Texture2D {
-		if (texShapes != null)
-			return texShapes;
-		if (whiteTexture == null || Textures.handle(whiteTexture.id) != Runtime.frame.white)
-			whiteTexture = new Texture2D(Textures.fromHandle(Runtime.frame.white), 1, 1);
-		return whiteTexture;
+		return texShapes != null ? texShapes : new Texture2D(Textures.DEFAULT, 1, 1);
 	}
 
 	/** Returns the part of the shapes texture the filled shapes draw with.
@@ -1534,10 +1530,9 @@ class RShapes {
 
 	// ---- What the shapes share ----
 	// The texture the filled shapes draw with and the part of it, as raylib's texShapes and texShapesRec: null for the frame's white
-	// pixel, which `GetShapesTexture` wraps as a texture when asked. The part's corners are kept as texture coordinates.
+	// pixel, raylib's default texture, which `GetShapesTexture` gives when asked. The part's corners are kept as texture coordinates.
 	static var texShapes:Null<Texture2D> = null;
 	static var texShapesRec = new Rectangle(0, 0, 1, 1);
-	static var whiteTexture:Null<Texture2D> = null;
 	static var shapeU0 = 0.;
 	static var shapeV0 = 0.;
 	static var shapeU1 = 1.;

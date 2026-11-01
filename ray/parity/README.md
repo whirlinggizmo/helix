@@ -47,6 +47,8 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `core_62` | 6.2 | values | file names, Base64, SHA-1, `MakeDirectory`, `QuaternionFromVector3ToVector3` |
 | `images_62` | 6.2 | values | the image functions 6.2 fixed, their images byte for byte |
 | `animation` | 6.2 | values | glTF skeletons and animations, bone matrices, CPU skinning and blending |
+| `materials` | 5.5 | values | `LoadMaterialDefault`'s maps, `IsMaterialValid`, what `UnloadMaterial` frees and keeps |
+| `materials_62` | 6.2 | values | glTF materials: each map's color, value and texture, its pixels; a texture two loads share, one's material unloaded |
 | `modular` | 6.2 | values | real-world models: Quaternius' modular woman, each part its own file, animated from a file of its own |
 | `text_55` | 5.5 | values | the text functions kept from 5.5: `TextReplace`, `LoadUTF8`, and those 6.2 didn't change |
 | `text_62` | 6.2 | values | the text and codepoint functions taken from 6.2, null text and its 1024-byte buffers |
@@ -98,7 +100,8 @@ Within a section the lines are compared word by word. Words and integers must ma
 
 `shared/parity.h` and `shared/Parity.hx` print raylib's batch and helix-ray's frame (`shape`), meshes, images (`image`, their bytes in hex), ray
 hits and values alike.
-`shared/StubGraphics.hx` is graphics that keeps nothing, and `shared/DiskFiles.hx` files from the working directory.
+`shared/StubGraphics.hx` is graphics that keeps nothing, `shared/DiskFiles.hx` files from the working directory, and `shared/PngDecoder.hx`
+PNG files decoded in Haxe, for a harness that reads an image's pixels on every target.
 
 ### Pixel suites
 

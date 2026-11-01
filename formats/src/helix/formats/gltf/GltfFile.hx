@@ -132,9 +132,10 @@ class GltfFile {
 		materials = [
 			for (m in list(document, "materials")) {
 				var pbr = field(m, "pbrMetallicRoughness");
-				new GltfMaterial(text(m, "name"), numbers(field(pbr, "baseColorFactor"), [1, 1, 1, 1]), image(field(pbr, "baseColorTexture")),
-					number(pbr, "metallicFactor", 1), number(pbr, "roughnessFactor", 1), image(field(m, "normalTexture")),
-					numbers(field(m, "emissiveFactor"), [0, 0, 0]), image(field(m, "emissiveTexture")));
+				new GltfMaterial(text(m, "name"), pbr != null, numbers(field(pbr, "baseColorFactor"), [1, 1, 1, 1]), image(field(pbr, "baseColorTexture")),
+					number(pbr, "metallicFactor", 1), number(pbr, "roughnessFactor", 1), image(field(pbr, "metallicRoughnessTexture")),
+					image(field(m, "normalTexture")), image(field(m, "occlusionTexture")), numbers(field(m, "emissiveFactor"), [0, 0, 0]),
+					image(field(m, "emissiveTexture")));
 			}
 		];
 		nodes = [

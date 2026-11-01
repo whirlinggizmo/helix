@@ -115,21 +115,27 @@ Each texture is given as the index of its image in `GltfFile.images`, the image 
 
 ```haxe
 final name:String
+final hasPbrMetallicRoughness:Bool
 final baseColorFactor:Array<Float>
 final baseColorImage:Int
 final metallic:Float
 final roughness:Float
+final metallicRoughnessImage:Int
 final normalImage:Int
+final occlusionImage:Int
 final emissiveFactor:Array<Float>
 final emissiveImage:Int
 ```
 
 - `name`: Gets the material's name: empty when the file gives none.
+- `hasPbrMetallicRoughness`: Gets whether the material has a `pbrMetallicRoughness` block, which holds its base color, metalness and roughness: when it hasn't, those are glTF's defaults.
 - `baseColorFactor`: Gets the base color factor: red, green, blue and alpha, each 0 to 1, multiplying the base color image. Defaults to 1, 1, 1, 1.
 - `baseColorImage`: Gets the index of the base color image in `GltfFile.images`, or -1 when there is none.
 - `metallic`: Gets the metalness factor, 0 to 1. Defaults to 1.
 - `roughness`: Gets the roughness factor, 0 to 1. Defaults to 1.
+- `metallicRoughnessImage`: Gets the index of the metallic-roughness image in `GltfFile.images`, or -1 when there is none: roughness in its green channel, metalness in its blue.
 - `normalImage`: Gets the index of the normal map's image in `GltfFile.images`, or -1 when there is none.
+- `occlusionImage`: Gets the index of the occlusion image in `GltfFile.images`, or -1 when there is none: how much light reaches each point, in its red channel.
 - `emissiveFactor`: Gets the emissive factor: red, green and blue, each 0 to 1, multiplying the emissive image. Defaults to 0, 0, 0.
 - `emissiveImage`: Gets the index of the emissive image in `GltfFile.images`, or -1 when there is none.
 

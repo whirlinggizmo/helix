@@ -674,7 +674,8 @@ class RAsync {
 	/** Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU
 		answers later. A render texture's are read back from the GPU after the frame it was drawn in, rows bottom first as raylib's are,
 		so it reads upside down as raylib's does. Another texture's pixels are what went to the GPU, while they are in memory: before it
-		is first drawn, or when it was loaded from a file; once only on the GPU they can't be read here, and it fails.
+		is first drawn, or when it was loaded from a file (raylib's default texture's, its white pixel, always); once only on the GPU they
+		can't be read here, and it fails.
 
 		@param texture  The texture.
 		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.

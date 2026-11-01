@@ -15,7 +15,9 @@ class Texture2D {
 	/** Gets the number of mipmap levels, 1 for none. */
 	public var mipmaps:Int;
 
-	/** Gets the pixel format, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` for every texture loaded here. */
+	/** Gets the pixel format: the image's for a texture made of one (`LoadTextureFromImage`; a glTF model's roughness and metalness
+		maps are `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`), `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` for the rest. Its pixels are RGBA on the GPU
+		either way. */
 	public var format:Int;
 
 	// A render texture's color, which raylib stores bottom row first, so it draws upside down unless flipped as raylib's programs do.

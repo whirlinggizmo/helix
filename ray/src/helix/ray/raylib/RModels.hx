@@ -712,8 +712,8 @@ class RModels {
 		return model.meshCount > 0;
 	}
 
-	/** Frees a model: one load of its file, its meshes and textures with the last; a model of a mesh, its meshes and its materials'
-		textures at once.
+	/** Frees a model: its maps' textures, each map's load of its own (so a texture another load of its file shares stays), and its
+		meshes, a file's with its last load. A texture set on a map is freed with it.
 
 		@param model  The model. */
 	static function UnloadModel(model:Model):Void {
@@ -724,12 +724,7 @@ class RModels {
 		}
 		for (mesh in model.meshes)
 			Models.unload(mesh);
-		for (m in model.materials)
-			for (map in m.maps)
-				if (map.texture.id != 0) {
-					Textures.release(map.texture.id);
-					map.texture.id = 0;
-				}
+		Models.releaseTextures(model);
 	}
 
 	/** Draws a model at a position and a scale, its materials' colors times a tint.
@@ -1506,11 +1501,34 @@ class RModels {
 		return model.boneCount == anim.boneCount;
 	}
 
-	/** Returns raylib's default material: the default shader, white.
+	/** Returns raylib's default material: the default shader, the diffuse map raylib's default texture (a 1x1 white pixel), the diffuse
+		and specular colors white, and the other maps empty.
 
 		@return  The material. */
 	static function LoadMaterialDefault():Material {
 		return Models.defaultMaterial(defaultShader());
+	}
+
+	/** Returns whether a material can draw: whether it has maps and a shader.
+
+		@param material  The material.
+		@return  True when its maps aren't null and its shader's id is above 0. */
+	static function IsMaterialValid(material:Material):Bool {
+		return material.maps != null && material.shader != null && material.shader.id > 0;
+	}
+
+	/** Frees a material: its shader unless it is the default one, and each map's texture unless it is the default texture
+		(`UnloadShader`, `UnloadTexture`). A texture a model's other loads share stays theirs: each map holds a load of its texture, freed
+		with the last.
+
+		@param material  The material. */
+	static function UnloadMaterial(material:Material):Void {
+		if (material.shader != null)
+			UnloadShader(material.shader);
+		if (material.maps != null)
+			for (map in material.maps)
+				if (map.texture.id != Textures.DEFAULT)
+					UnloadTexture(map.texture);
 	}
 
 	/** Sets a texture on a material's map.

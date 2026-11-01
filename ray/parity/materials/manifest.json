@@ -1,0 +1,12 @@
+{
+  "oracle": "5.5",
+  "covers": "rmodels.c's LoadMaterialDefault (its maps' colors, values and textures, the diffuse map's raylib's default texture, its shader and params), IsMaterialValid on it and on materials without maps, a shader or both, and UnloadMaterial on a material with a texture of its own on two maps: the default shader and texture kept, the texture freed",
+  "notes": "raylib's C sees the unloaded texture freed by GL taking its name again for the next texture made; helix-ray's harness by its pixels being gone. The default texture is read back after the unload on both sides.",
+  "kind": "values",
+  "main": "MaterialDefaultBits",
+  "reference": "ref.c",
+  "harness": [
+    "MaterialDefaultBits.hx"
+  ],
+  "tolerance": 0
+}

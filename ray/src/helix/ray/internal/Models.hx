@@ -3,9 +3,11 @@ package helix.ray.internal;
 import helix.math.Matrix3D;
 import haxe.io.Bytes;
 import helix.ray.*;
+import helix.formats.gltf.GltfMaterial;
 import helix.services.models.Model3D;
 import helix.ray.raylib.RMath;
 import helix.ray.raylib.RModels;
+import helix.ray.raylib.RTextures;
 
 /** Makes raylib's meshes and models: a mesh's GPU buffers, and a model from what the models service read of a glTF file. */
 @:noCompletion
@@ -227,20 +229,22 @@ class Models {
 			mesh.gpu.contents[i] = null;
 	}
 
-	/** Returns raylib's default material: the default shader, a white diffuse map.
+	/** Returns raylib's default material, as raylib 5.5's `LoadMaterialDefault`: the default shader, the diffuse map raylib's default
+		texture (`Textures.DEFAULT`, a 1x1 white pixel), the diffuse and specular colors white, the rest of the maps empty.
 
 		@param shader  The default shader.
 		@return  The material. */
 	public static function defaultMaterial(shader:Shader):Material {
 		var maps = [for (_ in 0...12) new MaterialMap(new Texture2D(), new Color(0, 0, 0, 0), 0)];
+		maps[0].texture = new Texture2D(Textures.DEFAULT, 1, 1, 1, Raylib.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
 		maps[0].color = new Color(255, 255, 255, 255);
 		maps[1].color = new Color(255, 255, 255, 255);
 		return new Material(shader, maps);
 	}
 
-	/** Makes a raylib model of a model the models service read: material 0 raylib's default, then the file's, as raylib numbers them,
-		each image a texture kept by its file's path, or the model's and the image's index for one the model holds; and its bones, as
-		raylib 6.2 reads them (`skeleton`).
+	/** Makes a raylib model of a model the models service read: material 0 raylib's default, then the file's, as raylib numbers them
+		and as raylib 6.2 reads them (`material`), each image a texture kept by its file's path, or the model's and the image's index for
+		one the model holds; and its bones, as raylib 6.2 reads them (`skeleton`).
 
 		@param read  The model.
 		@param shader  The default shader.
@@ -248,23 +252,23 @@ class Models {
 		@return  The model. */
 	static function fromModel3D(read:Model3D, shader:Shader, attached:Null<Array<Int>>):Model {
 		var textures = new Map<Int, Texture2D>();
-		function texture(index:Int):Texture2D {
-			if (textures.exists(index))
-				return textures.get(index);
-			var image = read.images[index];
-			var made = image == null ? new Texture2D() : new Texture2D(Textures.fromImage(image.path != "" ? image.path : '${read.path}#$index', image),
-				image.width, image.height);
-			textures.set(index, made);
-			return made;
+		// An image's texture, made when first asked for and shared by the maps that sample it, each map a load of it; null for an image
+		// that couldn't be read or decoded.
+		function texture(index:Int):Null<Texture2D> {
+			var made = textures.get(index);
+			if (made == null) {
+				var image = read.images[index];
+				if (image == null)
+					return null;
+				made = new Texture2D(Textures.fromImage(image.path != "" ? image.path : '${read.path}#$index', image), image.width, image.height);
+				textures.set(index, made);
+			} else
+				Textures.retain(made.id);
+			return new Texture2D(made.id, made.width, made.height, made.mipmaps, made.format);
 		}
 		var materials = [defaultMaterial(shader)];
-		for (m in read.materials) {
-			var material = defaultMaterial(shader), factor = m.baseColorFactor;
-			material.maps[0].color = new Color(Std.int(factor[0] * 255), Std.int(factor[1] * 255), Std.int(factor[2] * 255), Std.int(factor[3] * 255));
-			if (m.baseColorImage >= 0)
-				material.maps[0].texture = texture(m.baseColorImage);
-			materials.push(material);
-		}
+		for (m in read.materials)
+			materials.push(material(read, m, shader, texture));
 		var meshes = [], meshMaterial = [];
 		for (i => found in read.meshes) {
 			// raylib puts every mesh's node's transform into its vertices, a skinned mesh's too.
@@ -287,6 +291,60 @@ class Models {
 		skeleton(model, read, attached);
 		return model;
 	}
+
+	// raylib 6.2's LoadGLTF's materials part: the default material, and only when the material has a pbrMetallicRoughness block, the
+	// base color image and factor; the metallic-roughness image split into two grayscale textures, roughness from its green, metalness
+	// from its blue (raylib 5.5 put the image whole in the roughness map), and the roughness and metalness factors as those maps' values,
+	// set only when the material has that image; the normal, occlusion and emissive images; the emissive factor, alpha 255, only when it
+	// has an emissive image. A factor's byte is raylib's (unsigned char)(f*255), in floats. An image that couldn't be decoded leaves its
+	// map as it was.
+	static function material(read:Model3D, m:GltfMaterial, shader:Shader, texture:Int->Null<Texture2D>):Material {
+		var material = defaultMaterial(shader), maps = material.maps;
+		if (!m.hasPbrMetallicRoughness)
+			return material;
+		function set(map:Int, index:Int):Void {
+			var t = index >= 0 ? texture(index) : null;
+			if (t != null)
+				maps[map].texture = t;
+		}
+		set(Raylib.MATERIAL_MAP_ALBEDO, m.baseColorImage);
+		maps[Raylib.MATERIAL_MAP_ALBEDO].color = byteColor(m.baseColorFactor, byte(m.baseColorFactor[3]));
+		if (m.metallicRoughnessImage >= 0) {
+			var image = read.images[m.metallicRoughnessImage];
+			if (image != null) {
+				var w = image.width, h = image.height;
+				var roughness = Bytes.alloc(w * h),
+					metallic = Bytes.alloc(w * h);
+				// GetImageColor's green and blue: the decoded image is RGBA.
+				for (x in 0...w)
+					for (y in 0...h) {
+						roughness.set(y * w + x, image.pixels.get((y * w + x) * 4 + 1));
+						metallic.set(y * w + x, image.pixels.get((y * w + x) * 4 + 2));
+					}
+				maps[Raylib.MATERIAL_MAP_ROUGHNESS].texture = RTextures.LoadTextureFromImage(new Image(roughness, w, h, 1,
+					Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE));
+				maps[Raylib.MATERIAL_MAP_METALNESS].texture = RTextures.LoadTextureFromImage(new Image(metallic, w, h, 1,
+					Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE));
+			}
+			maps[Raylib.MATERIAL_MAP_ROUGHNESS].value = Pixels.f32(m.roughness);
+			maps[Raylib.MATERIAL_MAP_METALNESS].value = Pixels.f32(m.metallic);
+		}
+		set(Raylib.MATERIAL_MAP_NORMAL, m.normalImage);
+		set(Raylib.MATERIAL_MAP_OCCLUSION, m.occlusionImage);
+		if (m.emissiveImage >= 0) {
+			set(Raylib.MATERIAL_MAP_EMISSION, m.emissiveImage);
+			maps[Raylib.MATERIAL_MAP_EMISSION].color = byteColor(m.emissiveFactor, 255);
+		}
+		return material;
+	}
+
+	// A color of a factor's red, green and blue as raylib's bytes, and an alpha.
+	static function byteColor(factor:Array<Float>, alpha:Int):Color
+		return new Color(byte(factor[0]), byte(factor[1]), byte(factor[2]), alpha);
+
+	// raylib's (unsigned char)(f*255): f a float, the product a float, cut toward zero.
+	static function byte(f:Float):Int
+		return Std.int(Pixels.f32(Pixels.f32(f) * 255)) & 255;
 
 	// raylib 6.2's LoadGLTF's skin part: the first skin's joints as the bones, each parent the nearest joint above it; the bind pose each
 	// inverse bind matrix inverted, or the joint's world transform at rest when the file gives none (the models service gives identities
@@ -394,7 +452,8 @@ class Models {
 	static final loaded = new Map<String, {model:Model, refs:Int}>();
 
 	/** Returns a model loaded from a file: a copy of its first load (`keep`), sharing its meshes' GPU buffers and its textures, with
-		materials of its own, so one load's changes don't reach another's.
+		materials of its own, so one load's changes don't reach another's. Each of its maps holds a load of its texture (`Textures.retain`),
+		so a texture `UnloadMaterial` frees for one load stays for the others.
 
 		@param path  The file.
 		@return  The model, or null when none is kept. */
@@ -408,9 +467,12 @@ class Models {
 		var materials = [
 			for (m in original.materials)
 				new Material(m.shader, [
-					for (map in m.maps)
-						new MaterialMap(new Texture2D(map.texture.id, map.texture.width, map.texture.height),
-							new Color(map.color.r, map.color.g, map.color.b, map.color.a), map.value)
+					for (map in m.maps) {
+						var t = map.texture;
+						Textures.retain(t.id);
+						new MaterialMap(new Texture2D(t.id, t.width, t.height, t.mipmaps, t.format),
+							new Color(map.color.r, map.color.g, map.color.b, map.color.a), map.value);
+					}
 				], m.params.copy())
 		];
 		var model = new Model(meshes, materials, original.meshMaterial.copy());
@@ -424,7 +486,8 @@ class Models {
 		return model;
 	}
 
-	/** Releases one load of a file's model, freeing its meshes' GPU buffers and its textures with the last.
+	/** Releases one load of a file's model: its maps' loads of their textures, and with the last load its meshes' GPU buffers and the
+		textures.
 
 		@param model  The model. */
 	public static function release(model:Model):Void {
@@ -435,16 +498,26 @@ class Models {
 		for (mesh in model.meshes)
 			if (!mesh.gpu.shared)
 				unload(mesh);
+		releaseTextures(model);
 		if (--entry.refs > 0)
 			return;
 		loaded.remove(model.path);
 		for (mesh in entry.model.meshes)
 			unload(mesh);
-		for (m in entry.model.materials)
-			for (map in m.maps)
-				if (map.texture.id != 0)
-					Textures.release(map.texture.id);
+		releaseTextures(entry.model);
 	}
+
+	/** Releases each of a model's maps' load of its texture, the map left without one.
+
+		@param model  The model. */
+	public static function releaseTextures(model:Model):Void
+		for (m in model.materials)
+			if (m.maps != null)
+				for (map in m.maps)
+					if (map.texture.id != 0) {
+						Textures.release(map.texture.id);
+						map.texture.id = 0;
+					}
 
 	static function copyMesh(m:Mesh):Mesh {
 		var mesh = new Mesh();

@@ -2343,8 +2343,9 @@ class RTextures {
 
 	// ---- Images as textures ----
 
-	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, so the texture's
-		format is `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and it has one level. A compressed format gives no texture, with a warning.
+	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, and it has one level.
+		Its format is the image's, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed
+		format gives no texture, with a warning.
 
 		@param image  The image.
 		@return  The texture. */
@@ -2358,7 +2359,8 @@ class RTextures {
 			return new Texture2D();
 		}
 		var pixels = Pixels.colors(image.data, image.width, image.height, image.format);
-		return new Texture2D(Textures.fromImage("", new helix.services.images.Image("", image.width, image.height, pixels)), image.width, image.height);
+		return new Texture2D(Textures.fromImage("", new helix.services.images.Image("", image.width, image.height, pixels)), image.width, image.height, 1,
+			image.format);
 	}
 
 	/** Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT` (raylib's default), `TEXTURE_WRAP_CLAMP` or
