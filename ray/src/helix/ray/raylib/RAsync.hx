@@ -70,7 +70,7 @@ class RAsync {
 			Runtime.later(() -> loaded(RModels.loadModel(path)));
 			return;
 		}
-		Runtime.imaging();
+		Runtime.modelling();
 		Runtime.models.loadGltf(path, read -> {
 			// raylib gives a mesh without joints whose node is a bone's child to that bone: the nodes are the file's, read again.
 			if (read.skeleton != null && read.skins.length > 0 && Lambda.exists(read.meshes, m -> m.jointIndices == null)) {

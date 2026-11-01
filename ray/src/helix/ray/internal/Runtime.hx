@@ -56,10 +56,10 @@ class Runtime {
 		raylib's disk, until the next drop's files replace them. */
 	public static var held:Array<String> = [];
 
-	/** The models, reading glTF files with what they name, made with the images (`imaging`). */
+	/** The models, reading glTF files with what they name, made when first needed (`modelling`). */
 	public static var models:Null<helix.services.models.Models> = null;
 
-	/** The images, decoding the program's image files and a model's, made when first needed (`imaging`). */
+	/** The images, decoding the program's image files and a model's, made when first needed (`modelling`). */
 	public static var decoding:Null<helix.services.images.Images> = null;
 
 	/** What reads a drop's files into memory: set by `DroppedFiles` when the program names a function that reads a drop
@@ -171,8 +171,8 @@ class Runtime {
 		polled.push(cache);
 	}
 
-	/** Makes what decodes the program's images and reads its models, once, over the assets (`loading`): the platform's image decoder,
-		the images over it and the models over them. */
+	/** Makes what decodes the program's images, once, over the assets (`loading`): the platform's image decoder and the images over it.
+		What reads models is `modelling`'s. */
 	public static function imaging():Void {
 		loading();
 		if (decoding != null)
@@ -185,7 +185,13 @@ class Runtime {
 		polled.push(imageDecoder);
 		decoding = new helix.services.images.Images(imageDecoder, assets);
 		polled.push(decoding);
-		models = new helix.services.models.Models(assets, decoding);
+	}
+
+	/** Makes what reads the program's models, once, over the assets and the images (`modelling`). */
+	public static function modelling():Void {
+		imaging();
+		if (models == null)
+			models = new helix.services.models.Models(assets, decoding);
 	}
 
 	/** Brings a file into memory: an image decoded, a glTF file with its images decoded and the files it points to, anything else as
