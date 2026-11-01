@@ -2,7 +2,7 @@
 
 - **helix-ray, on trial (DECISIONS 16, 19, 20, 21):** raylib's API over the services; to decide whether it merges. Next: a managed layer beside it (assets, instances,
   placeholders, as librl has them), designed as an API first. Then a trial of how agents take to
-  the `...Async` loads, and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
+  the `...Async` loads (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
   (Atomics.wait, which a worker may; cross-origin isolation, OffscreenCanvas, input and audio relayed; raylib's loop run as written)
   against a whole-program rewrite into callbacks. A `Future` of our own over the callbacks, cross-target, may serve the managed layer,
   as Haxe has none (`js.lib.Promise` is the browser's alone). Not there yet: skinned models and animations, fonts from files, images

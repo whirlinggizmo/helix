@@ -159,7 +159,8 @@ Why things are the way they are, numbered, in order.
     since fixed a bug and the 5.5 signature still holds: the glTF bind pose from the inverse bind matrices, skinning under non-joint
     parents, animated normals, a ray not meeting a sphere behind it. A change that is a choice rather than a fix (parameters reordered,
     a range changed) stays 5.5's, as it would break code written for 5.5. helix-ray's API is raylib 5.5's alone: a later release's
-    functions arrive with the version bump, not before. Each behavior taken is checked against that release's own C, as 5.5's were,
+    functions arrive with the version bump, not before. One is kept ahead of it, on trial: `UpdateModelAnimationEx`, 6.2's blend of
+    two animations; the next agent trial asks for a blended animation, to see whether agents reach for it. Each behavior taken is checked against that release's own C, as 5.5's were,
     so each function has one oracle: the later release's C where a fix was taken, 5.5's everywhere else. Taking a later release's API,
     when agents know it as well as 5.5's, is a version bump: the API changes, and every caller with it (rule: no backward
     compatibility).
