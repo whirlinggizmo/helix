@@ -2,6 +2,90 @@
 
 [Back to the index](README.md)
 
+## Animation3D
+
+*class* in [`geometry/src/helix/geometry/Animation3D.hx`](../../geometry/src/helix/geometry/Animation3D.hx), `import helix.geometry.Animation3D;`
+
+Represents an animation of a skeleton: tracks moving its bones over time.
+
+```haxe
+function new(name:String, tracks:Array<AnimationTrack3D>)
+final name:String
+final tracks:Array<AnimationTrack3D>
+var duration(get, never):Float
+function computePose(skeleton:Skeleton3D, time:Float, ?out:Array<Transform3D>):Array<Transform3D>
+```
+
+- `new`: Creates an animation.
+  - `name`: Its name.
+  - `tracks`: Its tracks.
+- `name`: Gets its name: empty for none.
+- `tracks`: Gets its tracks.
+- `duration`: Gets how long it lasts, in seconds: the latest key of all its tracks; 0 without keys.
+- `computePose`: Returns a skeleton's pose at a time: its rest pose, with each track's part of its bone's transform at that time; a bone no track moves keeps its rest. Before a track's first key it holds the first; after its last, the last, so playing it over and over is the caller's (the time modulo `duration`).
+  - `skeleton`: The skeleton.
+  - `time`: The time, in seconds.
+  - `out`: Optional. Set to the pose, its transforms reused, grown or shrunk to fit.
+  - returns: Each bone's transform relative to its parent.
+
+## AnimationProperty3D
+
+*enum* in [`geometry/src/helix/geometry/AnimationProperty3D.hx`](../../geometry/src/helix/geometry/AnimationProperty3D.hx), `import helix.geometry.AnimationProperty3D;`
+
+Specifies which part of a bone's transform an animation's track moves.
+
+- `Translation`: Its position: three numbers a key.
+- `Rotation`: Its rotation, a quaternion: four numbers a key, x, y, z and w.
+- `Scale`: Its scale: three numbers a key.
+
+## AnimationTrack3D
+
+*class* in [`geometry/src/helix/geometry/AnimationTrack3D.hx`](../../geometry/src/helix/geometry/AnimationTrack3D.hx), `import helix.geometry.AnimationTrack3D;`
+
+Represents one track of an animation: keys moving one part of one bone's transform.
+
+```haxe
+function new(bone:Int, property:AnimationProperty3D, interpolation:KeyInterpolation, times:Array<Float>, values:Array<Float>)
+final bone:Int
+final property:AnimationProperty3D
+final interpolation:KeyInterpolation
+final times:Array<Float>
+final values:Array<Float>
+```
+
+- `new`: Creates a track.
+  - `bone`: The bone it moves.
+  - `property`: The part it moves.
+  - `interpolation`: How it goes between keys.
+  - `times`: The keys' times, rising.
+  - `values`: The keys' values.
+- `bone`: Gets the bone it moves, an index into the skeleton's `bones`.
+- `property`: Gets the part it moves.
+- `interpolation`: Gets how it goes between keys.
+- `times`: Gets the keys' times, in seconds, rising.
+- `values`: Gets the keys' values: three numbers a key for a translation or scale, four (x, y, z, w) for a rotation; for `CubicSpline`, each key's in-tangent, value and out-tangent, one after another.
+
+## Bone3D
+
+*class* in [`geometry/src/helix/geometry/Bone3D.hx`](../../geometry/src/helix/geometry/Bone3D.hx), `import helix.geometry.Bone3D;`
+
+Represents a bone of a skeleton: its name, its parent, and where it is at rest.
+
+```haxe
+function new(name:String, parent:Int, rest:Transform3D)
+final name:String
+final parent:Int
+final rest:Transform3D
+```
+
+- `new`: Creates a bone.
+  - `name`: Its name.
+  - `parent`: Its parent's index, before it; -1 for a root.
+  - `rest`: Where it is at rest.
+- `name`: Gets its name: empty for none.
+- `parent`: Gets its parent, an index into its skeleton's `bones`, before it; -1 for a root.
+- `rest`: Gets where it is at rest, relative to its parent; for a root, relative to the model, with whatever placed it there.
+
 ## Camera2D
 
 *class* in [`geometry/src/helix/geometry/Camera2D.hx`](../../geometry/src/helix/geometry/Camera2D.hx), `import helix.geometry.Camera2D;`
@@ -242,6 +326,16 @@ static function intersectsCircleSegment(cx:Float, cy:Float, radius:Float, ax:Flo
   - `by`: Its end y.
   - returns: True when they touch, the circle's edge included.
 
+## KeyInterpolation
+
+*enum* in [`geometry/src/helix/geometry/KeyInterpolation.hx`](../../geometry/src/helix/geometry/KeyInterpolation.hx), `import helix.geometry.KeyInterpolation;`
+
+Specifies how an animation's track goes from one key to the next.
+
+- `Step`: Holds each key until the next.
+- `Linear`: Moves straight between keys; a rotation along the shorter arc (slerp).
+- `CubicSpline`: Along a cubic curve through the keys, by each key's in and out tangents (glTF's CUBICSPLINE); a rotation made length 1 after.
+
 ## Mesh3D
 
 *class* in [`geometry/src/helix/geometry/Mesh3D.hx`](../../geometry/src/helix/geometry/Mesh3D.hx), `import helix.geometry.Mesh3D;`
@@ -270,6 +364,8 @@ var texCoords:Null<Array<Float>>
 var tangents:Null<Array<Float>>
 var colors:Null<Array<Float>>
 var indices:Null<Array<Int>>
+var joints:Null<Array<Int>>
+var weights:Null<Array<Float>>
 var vertexCount(get, never):Int
 var triangleCount(get, never):Int
 function copyFrom(other:Mesh3D):Mesh3D
@@ -277,6 +373,7 @@ function transform(matrix:Matrix3D, ?out:Mesh3D):Mesh3D
 function toUnindexed(?out:Mesh3D):Mesh3D
 function computeNormals(?weldDistance:Float, ?out:Array<Float>):Array<Float>
 function computeTangents(?out:Array<Float>):Null<Array<Float>>
+function computeSkinned(skinning:Array<Matrix3D>, ?out:Mesh3D):Mesh3D
 function computeBounds(?out:Bounds3D):Bounds3D
 ```
 
@@ -343,7 +440,7 @@ function computeBounds(?out:Bounds3D):Bounds3D
   - `q`: Turns through the ring, at least 1.
   - `out`: Optional. Set to the knot.
   - returns: The knot.
-- `merge`: Returns two meshes as one: the second's vertices after the first's. What one has and the other lacks (normals, texture coordinates, tangents, colors) is dropped; the result has indices when either has.
+- `merge`: Returns two meshes as one: the second's vertices after the first's. What one has and the other lacks (normals, texture coordinates, tangents, colors, joints and weights) is dropped; the result has indices when either has.
   - `first`: One.
   - `second`: The other.
   - `out`: Optional. Set to the two; may be either.
@@ -354,12 +451,14 @@ function computeBounds(?out:Bounds3D):Bounds3D
 - `tangents`: Gets or sets the tangents, x, y, z and w a vertex: the way u grows along the surface, square to the normal, w 1 or -1 for the way v grows (the bitangent is the normal crossed with the tangent, times w); null for none.
 - `colors`: Gets or sets the colors, red, green, blue and alpha a vertex, 0 to 1; null for none.
 - `indices`: Gets or sets the indices, three a triangle; null when the vertices are the triangles in order.
+- `joints`: Gets or sets the joints, four a vertex: indices of the bones its position follows in its skin (`Skin3D.bones`); null for none.
+- `weights`: Gets or sets the weights, four a vertex, one for each of its joints, adding up to 1; null for none.
 - `vertexCount`: Gets the number of vertices.
 - `triangleCount`: Gets the number of triangles.
 - `copyFrom`: Copies another mesh into this one, its arrays copied.
   - `other`: The mesh.
   - returns: This mesh.
-- `transform`: Returns the mesh moved by a transform: its positions as points, its normals by the transform's inverse transposed, made length 1 again, and its tangents' directions as directions. A transform that turns it inside out (a negative scale on one axis) turns its triangles round, so their fronts stay outside.
+- `transform`: Returns the mesh moved by a transform: its positions as points, its normals by the transform's inverse transposed, made length 1 again, and its tangents' directions as directions; its joints and weights stay. A transform that turns it inside out (a negative scale on one axis) turns its triangles round, so their fronts stay outside.
   - `matrix`: The transform.
   - `out`: Optional. Set to the moved mesh; may be this one.
   - returns: The moved mesh.
@@ -373,6 +472,11 @@ function computeBounds(?out:Bounds3D):Bounds3D
 - `computeTangents`: Returns tangents from the positions, texture coordinates and normals, for normal mapping: for each vertex, the way u grows across the triangles it is a corner of, made square to its normal, and w the way v grows. It reads the triangles by their indices, or the vertices three at a time when there are none.
   - `out`: Optional. Set to the tangents, x, y, z and w a vertex.
   - returns: The tangents, to assign to `tangents`; null for a mesh without texture coordinates or normals.
+- `computeSkinned`: Returns the mesh moved by its skin: each vertex's position, normal and tangent moved by its joints' matrices (from `Skin3D.computeSkinning`), blended by its weights (linear blend skinning), on the CPU. A vertex whose weights are all 0, or a mesh without joints or weights, is left where it is. Normals and tangents are made length 1 again.
+  - `skinning`: Each of its skin's bones' matrix, as `Skin3D.computeSkinning` gives them.
+  - `out`: Optional. Set to the moved mesh: its positions, normals and tangents its own, reused and grown or shrunk to fit; its other arrays this mesh's own, not copied, so a mesh moved every frame allocates nothing. It may not be this mesh.
+  - returns: The moved mesh.
+  - throws `String`: The out is this mesh.
 - `computeBounds`: Returns the bounds of its positions.
   - `out`: Optional. Set to the bounds.
   - returns: The bounds; empty for a mesh without positions.
@@ -483,3 +587,59 @@ function copyFrom(other:RayHit3D):RayHit3D
 - `copyFrom`: Copies another hit into this one.
   - `other`: The hit.
   - returns: This hit.
+
+## Skeleton3D
+
+*class* in [`geometry/src/helix/geometry/Skeleton3D.hx`](../../geometry/src/helix/geometry/Skeleton3D.hx), `import helix.geometry.Skeleton3D;`
+
+Represents a skeleton: bones, each a parent's child or a root, that skinned meshes' vertices follow, through skins.
+
+A pose is each bone's transform relative to its parent, by its index in `bones`: the rest pose (`computeRestPose`), or an animation's at a time (`Animation3D.computePose`). From a pose comes each bone's place in the model (`computeWorld`), and from that a skin's matrices (`Skin3D.computeSkinning`). Each method's out array is reused, grown or shrunk to fit, its objects reused.
+
+```haxe
+function new(bones:Array<Bone3D>)
+final bones:Array<Bone3D>
+function findBone(name:String):Int
+function computeRestPose(?out:Array<Transform3D>):Array<Transform3D>
+function computeWorld(pose:Array<Transform3D>, ?out:Array<Matrix3D>):Array<Matrix3D>
+```
+
+- `new`: Creates a skeleton.
+  - `bones`: Its bones, each after its parent.
+- `bones`: Gets its bones, each after its parent.
+- `findBone`: Returns the index of the first bone of a name.
+  - `name`: The name.
+  - returns: Its index, or -1 for none.
+- `computeRestPose`: Returns the rest pose: each bone's `rest`, copied.
+  - `out`: Optional. Set to the pose, its transforms reused.
+  - returns: The pose.
+- `computeWorld`: Returns each bone's place in the model for a pose: its transform after its parents'.
+  - `pose`: Each bone's transform relative to its parent.
+  - `out`: Optional. Set to the matrices, reused.
+  - returns: The matrices, by bone.
+
+## Skin3D
+
+*class* in [`geometry/src/helix/geometry/Skin3D.hx`](../../geometry/src/helix/geometry/Skin3D.hx), `import helix.geometry.Skin3D;`
+
+Represents a skin: the bones of a skeleton a mesh's vertices follow, and how each vertex was bound to them. A vertex's `joints` index this skin's `bones`, not the skeleton's.
+
+```haxe
+function new(name:String, bones:Array<Int>, inverseBinds:Array<Matrix3D>)
+final name:String
+final bones:Array<Int>
+final inverseBinds:Array<Matrix3D>
+function computeSkinning(world:Array<Matrix3D>, ?out:Array<Matrix3D>):Array<Matrix3D>
+```
+
+- `new`: Creates a skin.
+  - `name`: Its name.
+  - `bones`: Its bones, as indices into the skeleton's.
+  - `inverseBinds`: Each one's inverse bind matrix.
+- `name`: Gets its name: empty for none.
+- `bones`: Gets its bones, as indices into the skeleton's `bones`.
+- `inverseBinds`: Gets each of its bones' inverse bind matrix, taking a vertex from the mesh's space to the bone's as the mesh was bound.
+- `computeSkinning`: Returns the matrices a mesh of this skin is moved by, from each bone's place in the model (`Skeleton3D.computeWorld`): each of its bones' inverse bind, then its place, so a skinned vertex comes out in the model's space. For a shader's joint matrices, or `Mesh3D.computeSkinned`.
+  - `world`: Each of the skeleton's bones' place in the model.
+  - `out`: Optional. Set to the matrices, reused, grown or shrunk to fit.
+  - returns: The matrices, by this skin's bone.

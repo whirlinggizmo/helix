@@ -1,6 +1,7 @@
 package helix.formats.gltf;
 
 import helix.math.Matrix3D;
+import helix.math.Transform3D;
 
 /** Represents one node of a glTF model: its name, its mesh, its children and its transform relative to its parent.
 
@@ -20,11 +21,20 @@ class GltfNode {
 		order. Identity when the file gives none. */
 	public final transform:Matrix3D;
 
+	/** Gets the node's translation, rotation and scale relative to its parent: as the file gives them, or its matrix taken apart; an
+		animation's channels replace these. */
+	public final local:Transform3D;
+
+	/** Gets the index of the node's skin in `GltfFile.skins`, or -1 when it has none. */
+	public final skin:Int;
+
 	@:allow(helix.formats.gltf)
-	function new(name:String, mesh:Int, children:Array<Int>, transform:Matrix3D) {
+	function new(name:String, mesh:Int, children:Array<Int>, transform:Matrix3D, local:Transform3D, skin:Int) {
 		this.name = name;
 		this.mesh = mesh;
 		this.children = children;
 		this.transform = transform;
+		this.local = local;
+		this.skin = skin;
 	}
 }

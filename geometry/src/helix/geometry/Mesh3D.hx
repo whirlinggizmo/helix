@@ -35,6 +35,12 @@ class Mesh3D {
 	/** Gets or sets the indices, three a triangle; null when the vertices are the triangles in order. */
 	public var indices:Null<Array<Int>> = null;
 
+	/** Gets or sets the joints, four a vertex: indices of the bones its position follows in its skin (`Skin3D.bones`); null for none. */
+	public var joints:Null<Array<Int>> = null;
+
+	/** Gets or sets the weights, four a vertex, one for each of its joints, adding up to 1; null for none. */
+	public var weights:Null<Array<Float>> = null;
+
 	/** Gets the number of vertices. */
 	public var vertexCount(get, never):Int;
 
@@ -314,7 +320,7 @@ class Mesh3D {
 	}
 
 	/** Returns two meshes as one: the second's vertices after the first's. What one has and the other lacks (normals, texture
-		coordinates, tangents, colors) is dropped; the result has indices when either has.
+		coordinates, tangents, colors, joints and weights) is dropped; the result has indices when either has.
 
 		@param first  One.
 		@param second  The other.
@@ -328,7 +334,9 @@ class Mesh3D {
 		var normals = both(first.normals, second.normals),
 			texCoords = both(first.texCoords, second.texCoords),
 			tangents = both(first.tangents, second.tangents),
-			colors = both(first.colors, second.colors);
+			colors = both(first.colors, second.colors),
+			weights = both(first.weights, second.weights);
+		var joints = first.joints == null || second.joints == null ? null : first.joints.concat(second.joints);
 		var indices:Null<Array<Int>> = null;
 		if (first.indices != null || second.indices != null) {
 			indices = first.indices != null ? first.indices.copy() : [for (i in 0...count) i];
@@ -347,6 +355,8 @@ class Mesh3D {
 		out.tangents = tangents;
 		out.colors = colors;
 		out.indices = indices;
+		out.joints = joints;
+		out.weights = weights;
 		return out;
 	}
 
@@ -361,11 +371,13 @@ class Mesh3D {
 		tangents = other.tangents == null ? null : other.tangents.copy();
 		colors = other.colors == null ? null : other.colors.copy();
 		indices = other.indices == null ? null : other.indices.copy();
+		joints = other.joints == null ? null : other.joints.copy();
+		weights = other.weights == null ? null : other.weights.copy();
 		return this;
 	}
 
 	/** Returns the mesh moved by a transform: its positions as points, its normals by the transform's inverse transposed, made length 1
-		again, and its tangents' directions as directions. A transform that turns it inside out (a negative scale on one axis) turns its
+		again, and its tangents' directions as directions; its joints and weights stay. A transform that turns it inside out (a negative scale on one axis) turns its
 		triangles round, so their fronts stay outside.
 
 		@param matrix  The transform.
@@ -428,12 +440,17 @@ class Mesh3D {
 			normals = spread(this.normals, 3),
 			texCoords = spread(this.texCoords, 2),
 			tangents = spread(this.tangents, 4),
-			colors = spread(this.colors, 4);
+			colors = spread(this.colors, 4),
+			weights = spread(this.weights, 4);
+		var source = this.joints;
+		var joints = source == null ? null : order == null ? source.copy() : [for (i in order) for (c in 0...4) source[i * 4 + c]];
 		out.positions = positions;
 		out.normals = normals;
 		out.texCoords = texCoords;
 		out.tangents = tangents;
 		out.colors = colors;
+		out.joints = joints;
+		out.weights = weights;
 		out.indices = null;
 		return out;
 	}
@@ -560,6 +577,82 @@ class Mesh3D {
 		return out;
 	}
 
+	/** Returns the mesh moved by its skin: each vertex's position, normal and tangent moved by its joints' matrices (from
+		`Skin3D.computeSkinning`), blended by its weights (linear blend skinning), on the CPU. A vertex whose weights are all 0, or a mesh
+		without joints or weights, is left where it is. Normals and tangents are made length 1 again.
+
+		@param skinning  Each of its skin's bones' matrix, as `Skin3D.computeSkinning` gives them.
+		@param out  Optional. Set to the moved mesh: its positions, normals and tangents its own, reused and grown or shrunk to fit; its
+			other arrays this mesh's own, not copied, so a mesh moved every frame allocates nothing. It may not be this mesh.
+		@return  The moved mesh.
+		@throws String  The out is this mesh. */
+	public function computeSkinned(skinning:Array<Matrix3D>, ?out:Mesh3D):Mesh3D {
+		if (out == null)
+			out = new Mesh3D();
+		if (out == this)
+			throw "computeSkinned: the out may not be the mesh it moves";
+		out.positions = own(out.positions, positions);
+		out.normals = own(out.normals, normals);
+		out.tangents = own(out.tangents, tangents);
+		out.texCoords = texCoords;
+		out.colors = colors;
+		out.indices = indices;
+		out.joints = joints;
+		out.weights = weights;
+		var j = joints, w = weights, p = positions, n = normals, t = tangents;
+		var op = out.positions, on = out.normals, ot = out.tangents;
+		var m = blended;
+		for (v in 0...vertexCount) {
+			for (i in 0...16)
+				m[i] = 0;
+			var total = 0.;
+			if (j != null && w != null)
+				for (k in 0...4) {
+					var weight = w[v * 4 + k];
+					if (weight == 0)
+						continue;
+					var bone = skinning[j[v * 4 + k]].values;
+					for (i in 0...16)
+						m[i] += bone[i] * weight;
+					total += weight;
+				}
+			if (total == 0)
+				for (i in 0...16)
+					m[i] = i % 5 == 0 ? 1 : 0;
+			var x = p[v * 3], y = p[v * 3 + 1], z = p[v * 3 + 2];
+			op[v * 3] = m[0] * x + m[4] * y + m[8] * z + m[12];
+			op[v * 3 + 1] = m[1] * x + m[5] * y + m[9] * z + m[13];
+			op[v * 3 + 2] = m[2] * x + m[6] * y + m[10] * z + m[14];
+			if (n != null) {
+				x = n[v * 3];
+				y = n[v * 3 + 1];
+				z = n[v * 3 + 2];
+				setUnit(on, v * 3, m[0] * x + m[4] * y + m[8] * z, m[1] * x + m[5] * y + m[9] * z, m[2] * x + m[6] * y + m[10] * z);
+			}
+			if (t != null) {
+				x = t[v * 4];
+				y = t[v * 4 + 1];
+				z = t[v * 4 + 2];
+				setUnit(ot, v * 4, m[0] * x + m[4] * y + m[8] * z, m[1] * x + m[5] * y + m[9] * z, m[2] * x + m[6] * y + m[10] * z);
+				ot[v * 4 + 3] = t[v * 4 + 3];
+			}
+		}
+		return out;
+	}
+
+	// A vertex's blended matrix, reused.
+	static final blended = [for (_ in 0...16) 0.];
+
+	// An out's own array the length of a source's, reused unless it is the source itself; null for no source.
+	static function own(target:Null<Array<Float>>, source:Null<Array<Float>>):Null<Array<Float>> {
+		if (source == null)
+			return null;
+		if (target == null || target == source)
+			target = [];
+		target.resize(source.length);
+		return target;
+	}
+
 	/** Returns the bounds of its positions.
 
 		@param out  Optional. Set to the bounds.
@@ -649,18 +742,22 @@ class Mesh3D {
 			}
 			return;
 		}
-		for (values in [positions, normals, texCoords, tangents, colors]) {
-			if (values == null)
-				continue;
-			var size = Std.int(values.length / vertexCount);
-			for (k in 0...triangleCount)
-				for (c in 0...size) {
-					var b = (k * 3 + 1) * size + c, d = (k * 3 + 2) * size + c;
-					var swap = values[b];
-					values[b] = values[d];
-					values[d] = swap;
-				}
-		}
+		for (values in [positions, normals, texCoords, tangents, colors, weights])
+			if (values != null)
+				swapCorners(values, Std.int(values.length / vertexCount));
+		if (joints != null)
+			swapCorners(joints, 4);
+	}
+
+	// Swaps each triangle's second and third vertices' values, size a vertex.
+	function swapCorners<T>(values:Array<T>, size:Int):Void {
+		for (k in 0...triangleCount)
+			for (c in 0...size) {
+				var b = (k * 3 + 1) * size + c, d = (k * 3 + 2) * size + c;
+				var swap = values[b];
+				values[b] = values[d];
+				values[d] = swap;
+			}
 	}
 
 	// A mesh to make a shape into, its arrays emptied: the one given, or a new one.

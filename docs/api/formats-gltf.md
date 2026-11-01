@@ -2,6 +2,38 @@
 
 [Back to the index](README.md)
 
+## GltfAnimation
+
+*class* in [`formats/src/helix/formats/gltf/GltfAnimation.hx`](../../formats/src/helix/formats/gltf/GltfAnimation.hx), `import helix.formats.gltf.GltfAnimation;`
+
+Represents a glTF animation: channels, each moving one property of one node by a sampler's keys.
+
+```haxe
+final name:String
+final channels:Array<GltfChannel>
+final samplers:Array<GltfSampler>
+```
+
+- `name`: Gets its name: empty when the file gives none.
+- `channels`: Gets its channels.
+- `samplers`: Gets its samplers, which the channels name by index.
+
+## GltfChannel
+
+*class* in [`formats/src/helix/formats/gltf/GltfChannel.hx`](../../formats/src/helix/formats/gltf/GltfChannel.hx), `import helix.formats.gltf.GltfChannel;`
+
+Represents one channel of a glTF animation: which node's property it moves, by which sampler.
+
+```haxe
+final node:Int
+final path:String
+final sampler:Int
+```
+
+- `node`: Gets the node it moves, an index into `GltfFile.nodes`, or -1 when the file names none.
+- `path`: Gets the property: "translation", "rotation" (a quaternion, x, y, z, w), "scale" or "weights" (morph targets).
+- `sampler`: Gets its sampler, an index into its animation's `samplers`.
+
 ## GltfFile
 
 *class* in [`formats/src/helix/formats/gltf/GltfFile.hx`](../../formats/src/helix/formats/gltf/GltfFile.hx), `import helix.formats.gltf.GltfFile;`
@@ -10,7 +42,7 @@ Represents a glTF 2.0 model read from a .gltf or GLB file: its nodes, its scene,
 
 `read` takes the file's bytes and its path. A buffer held in the file (a GLB's BIN chunk, a base64 `data:` URI) is read then; one in a file of its own is listed in `missingBuffers`, its path resolved against the model's, for the caller to fetch and give to `setBuffer`. `nodes`, `scene` and `materials` are read with the file; `meshes` and `images` read the buffers when asked for, and throw while a buffer they need is missing.
 
-Accessors of every component type are read, normalized integers scaled to 0..1 or -1..1; one with no buffer view is zeros, and a sparse accessor throws. Positions and normals are in each mesh's own units: no node's transform is applied. Skins, animations, morph targets, cameras, samplers and extensions are not read yet.
+Accessors of every component type are read, normalized integers scaled to 0..1 or -1..1; one with no buffer view is zeros, and a sparse accessor throws. Positions and normals are in each mesh's own units: no node's transform is applied. Skins and animations are read as the file has them, as `meshes` are; morph targets, cameras, texture samplers and extensions are not read yet.
 
 ```haxe
 var model = GltfFile.read(bytes, "models/ship.gltf");
@@ -24,6 +56,8 @@ final nodes:Array<GltfNode>
 final scene:Array<Int>
 final materials:Array<GltfMaterial>
 var meshes(get, never):Array<GltfMesh>
+var skins(get, never):Array<GltfSkin>
+var animations(get, never):Array<GltfAnimation>
 var images(get, never):Array<GltfImage>
 var missingBuffers(get, never):Array<{path:String, index:Int}>
 function setBuffer(index:Int, bytes:haxe.io.Bytes):Void
@@ -41,6 +75,10 @@ function setBuffer(index:Int, bytes:haxe.io.Bytes):Void
 - `materials`: Gets the model's materials, in the file's order: a primitive names its own by its index here.
 - `meshes`: Gets the model's meshes, in the file's order, read from the buffers when first asked for.
   - throws `String`: A buffer a mesh needs is missing (`missingBuffers`, which the message names), or an accessor can't be read.
+- `skins`: Gets the model's skins, in the file's order: a node names its own by its index here. Read from the buffers when first asked for.
+  - throws `String`: A buffer a skin's inverse bind matrices need is missing, or an accessor can't be read.
+- `animations`: Gets the model's animations, in the file's order, read from the buffers when first asked for.
+  - throws `String`: A buffer a sampler needs is missing, or an accessor can't be read.
 - `images`: Gets the model's images, in the file's order, those held in a buffer read from it when first asked for.
   - throws `String`: A buffer an image needs is missing (`missingBuffers`, which the message names).
 - `missingBuffers`: Gets the buffers in files of their own that are still missing, each its index and its file's path: URI-decoded and resolved against the model's directory. Empty when every buffer is read.
@@ -124,12 +162,16 @@ final name:String
 final mesh:Int
 final children:Array<Int>
 final transform:Matrix3D
+final local:Transform3D
+final skin:Int
 ```
 
 - `name`: Gets the node's name: empty when the file gives none.
 - `mesh`: Gets the index of the node's mesh in `GltfFile.meshes`, or -1 when it has none.
 - `children`: Gets the indices of the node's children in `GltfFile.nodes`: empty when it has none.
 - `transform`: Gets the node's transform relative to its parent: its `matrix`, or its scale, then rotation, then translation, applied in that order. Identity when the file gives none.
+- `local`: Gets the node's translation, rotation and scale relative to its parent: as the file gives them, or its matrix taken apart; an animation's channels replace these.
+- `skin`: Gets the index of the node's skin in `GltfFile.skins`, or -1 when it has none.
 
 ## GltfPrimitive
 
@@ -137,13 +179,15 @@ final transform:Matrix3D
 
 Represents one primitive of a glTF mesh: its vertices, read from their accessors, its indices and its material.
 
-Each attribute is every component of every vertex in order, as floats: a normalized integer is scaled to 0..1 when unsigned and -1..1 when signed, any other value is as the file has it. Positions, normals and tangents are in the mesh's own units: no node's transform is applied. Only the first set of texture coordinates (`TEXCOORD_0`) and of colors (`COLOR_0`) is read.
+Each attribute is every component of every vertex in order, as floats: a normalized integer is scaled to 0..1 when unsigned and -1..1 when signed, any other value is as the file has it. Positions, normals and tangents are in the mesh's own units: no node's transform is applied. Only the first set of texture coordinates (`TEXCOORD_0`), of colors (`COLOR_0`) and of joints and weights (`JOINTS_0`, `WEIGHTS_0`) is read.
 
 ```haxe
 final mode:Int
 final positions:Array<Float>
 final normals:Null<Array<Float>>
 final tangents:Null<Array<Float>>
+final joints:Null<Array<Int>>
+final weights:Null<Array<Float>>
 final texCoords:Null<Array<Float>>
 final colors:Null<Array<Float>>
 final indices:Null<Array<Int>>
@@ -154,7 +198,43 @@ final material:Int
 - `positions`: Gets the vertices' positions, `POSITION`: x, y and z for each vertex. Empty when the primitive has none.
 - `normals`: Gets the vertices' normals, `NORMAL`: x, y and z for each vertex, or null when the primitive has none.
 - `tangents`: Gets the vertices' tangents, `TANGENT`: x, y, z and w for each vertex, w 1 or -1 for the bitangent's side, or null when the primitive has none.
+- `joints`: Gets the vertices' joints, `JOINTS_0`: four indices into its node's skin's `joints` for each vertex, or null when it has none.
+- `weights`: Gets the vertices' weights, `WEIGHTS_0`: four for each vertex, one for each of its joints, or null when it has none.
 - `texCoords`: Gets the vertices' texture coordinates, `TEXCOORD_0`: u and v for each vertex, v down from the image's top, or null when the primitive has none.
 - `colors`: Gets the vertices' colors, `COLOR_0`: red, green, blue and alpha for each vertex, each 0 to 1 (alpha 1 when the file gives three components), or null when the primitive has none.
 - `indices`: Gets the vertices' indices, or null when the primitive has none and its vertices are drawn in order.
 - `material`: Gets the index of the primitive's material in `GltfFile.materials`, or -1 when it has none (glTF's default material).
+
+## GltfSampler
+
+*class* in [`formats/src/helix/formats/gltf/GltfSampler.hx`](../../formats/src/helix/formats/gltf/GltfSampler.hx), `import helix.formats.gltf.GltfSampler;`
+
+Represents a glTF animation sampler: keys at times, and how to go between them.
+
+```haxe
+final input:Array<Float>
+final output:Array<Float>
+final interpolation:String
+```
+
+- `input`: Gets the keys' times, in seconds, rising.
+- `output`: Gets the keys' values, as floats, one value's components after another (for "CUBICSPLINE", each key's in-tangent, value and out-tangent); normalized integers scaled as `GltfPrimitive`'s are.
+- `interpolation`: Gets how to go between keys: "LINEAR", "STEP" or "CUBICSPLINE".
+
+## GltfSkin
+
+*class* in [`formats/src/helix/formats/gltf/GltfSkin.hx`](../../formats/src/helix/formats/gltf/GltfSkin.hx), `import helix.formats.gltf.GltfSkin;`
+
+Represents a glTF skin: the nodes a skinned mesh's vertices follow, and how the mesh was bound to them.
+
+```haxe
+final name:String
+final joints:Array<Int>
+final inverseBindMatrices:Array<Matrix3D>
+final skeleton:Int
+```
+
+- `name`: Gets its name: empty when the file gives none.
+- `joints`: Gets its joints, as indices into `GltfFile.nodes`; a vertex's `GltfPrimitive.joints` index this.
+- `inverseBindMatrices`: Gets each joint's inverse bind matrix, taking a vertex from the mesh's space to the joint's at rest; identities when the file gives none.
+- `skeleton`: Gets the node at the skeleton's root, an index into `GltfFile.nodes`, or -1 when the file names none.

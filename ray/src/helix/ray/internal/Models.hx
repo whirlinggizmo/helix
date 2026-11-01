@@ -194,7 +194,9 @@ class Models {
 			materials.push(material);
 		}
 		var meshes = [], meshMaterial = [];
-		for (i => m in read.meshes) {
+		for (i => found in read.meshes) {
+			// raylib puts every mesh's node's transform into its vertices, a skinned mesh's too.
+			var m = read.meshSkins[i] >= 0 ? found.transform(read.meshTransforms[i]) : found;
 			var mesh = new Mesh();
 			mesh.vertexCount = m.vertexCount;
 			mesh.vertices = m.positions;

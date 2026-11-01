@@ -152,3 +152,11 @@ Why things are the way they are, numbered, in order.
     cameras went with the rays, since a camera makes the ray a pointer picks with. A mesh is helix-geometry's `Mesh3D` everywhere:
     helix-services' models hold their meshes as it, each with its material's index beside it, so a file's mesh and a made shape are one
     type. helix-ray keeps raylib's own meshes and ray tests (par_shapes' vertices, raylib's box normal), which helix-geometry's are not.
+
+24. **helix-ray speaks raylib 5.5 and behaves as raylib's latest release.** Its names and signatures stay raylib 5.5's, the version
+    agents know best: a release takes a year or two to gather the code and examples a model learns from, and 5.5 sits on an API
+    largely unchanged since 4.x. Its behavior is the latest release's (6.2 now, a tag, not the development line) wherever raylib has
+    since fixed a bug and the 5.5 signature still holds: the glTF bind pose from the inverse bind matrices, skinning under non-joint
+    parents, animated normals, a ray not meeting a sphere behind it. A change that is a choice rather than a fix (parameters reordered,
+    a range changed) stays 5.5's, as it would break code written for 5.5; functions raylib has added since, colliding with none of
+    5.5's, are added beside them. Each behavior taken is checked against that release's own C, as 5.5's were.

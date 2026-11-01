@@ -4,7 +4,8 @@ import helix.formats.gltf.GltfFile;
 
 /** Checks GltfFile with the library alone, on models made here: a GLB holding its buffer and an image, a .gltf holding its buffer as a
 	data: URI, and a .gltf naming a buffer and an image in files of their own under a subdirectory, their names percent-encoded. Its
-	nodes and transforms, the default scene, meshes' values (floats, normalized integers, strides, indices, an accessor with no view),
+	nodes and transforms (and their parts), the default scene, meshes' values (floats, normalized integers, strides, indices, an accessor
+	with no view, tangents, joints and weights), skins and their inverse binds, animations' channels and samplers,
 	materials and their defaults, images held and named, the missing buffers' paths, setBuffer and what it refuses, and what throws. */
 class GltfTests {
 	static var checks = 0;
@@ -151,26 +152,47 @@ class GltfTests {
 		for (i in [2, 1, 0]) // 45: indices, unsigned bytes
 			bin.writeByte(i);
 		bin.write(floats([1, 0, 0, 1, 0, 1, 0, -1, 0, 0, 1, 1])); // 48: tangents, 48 bytes
+		for (j in [0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0]) // 96: joints, unsigned bytes, 12
+			bin.writeByte(j);
+		bin.write(floats([.75, .25, 0, 0, 1, 0, 0, 0, .5, .5, 0, 0])); // 108: weights, 48
+		bin.write(floats([
+			1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -2, 0, 1
+		])); // 156: 2 inverse binds, 128
+		bin.write(floats([0, 1.5])); // 284: key times, 8
+		bin.write(floats([0, 0, 0, 1, 0, 0, 0.7071067811865476, 0.7071067811865476])); // 292: rotations, 32
+		bin.write(floats([0, 1, 0, 0, 2, 0])); // 324: translations, 24
 		var buffer = haxe.crypto.Base64.encode(bin.getBytes());
 		var png = Bytes.ofHex("89504e47");
 		var json = '{"asset":{"version":"2.1"},
-			"nodes":[{"mesh":0,"rotation":[0,0,0.7071067811865476,0.7071067811865476]},{"mesh":0}],
-			"meshes":[{"primitives":[{"attributes":{"POSITION":0,"NORMAL":1,"TANGENT":4,"TEXCOORD_0":3},"indices":2},
+			"nodes":[{"mesh":0,"rotation":[0,0,0.7071067811865476,0.7071067811865476]},{"mesh":0,"skin":0},
+				{"name":"hip","translation":[0,1,0],"children":[3]},{"name":"knee","matrix":[2,0,0,0, 0,2,0,0, 0,0,2,0, 0,1,0,1]}],
+			"skins":[{"name":"legs","joints":[2,3],"inverseBindMatrices":7,"skeleton":2},{"joints":[3]}],
+			"animations":[{"name":"Walk","channels":[{"sampler":0,"target":{"node":3,"path":"rotation"}},{"sampler":1,"target":{"node":2,"path":"translation"}}],
+				"samplers":[{"input":8,"output":9},{"input":8,"output":10,"interpolation":"STEP"}]},{"channels":[],"samplers":[]}],
+			"meshes":[{"primitives":[{"attributes":{"POSITION":0,"NORMAL":1,"TANGENT":4,"TEXCOORD_0":3,"JOINTS_0":5,"WEIGHTS_0":6},"indices":2},
 				{"attributes":{"POSITION":0},"mode":1}]}],
 			"materials":[{"emissiveFactor":[1,1,0],"emissiveTexture":{"index":0},"normalTexture":{"index":1}}],
 			"textures":[{"source":0},{}],
 			"images":[{"uri":"data:image/png;base64,${haxe.crypto.Base64.encode(png)}"}],
-			"buffers":[{"byteLength":96,"uri":"data:application/octet-stream;base64,$buffer"}],
+			"buffers":[{"byteLength":348,"uri":"data:application/octet-stream;base64,$buffer"}],
 			"bufferViews":[{"buffer":0,"byteOffset":0,"byteLength":36},{"buffer":0,"byteOffset":36,"byteLength":9},
-				{"buffer":0,"byteOffset":45,"byteLength":3},{"buffer":0,"byteOffset":48,"byteLength":48}],
+				{"buffer":0,"byteOffset":45,"byteLength":3},{"buffer":0,"byteOffset":48,"byteLength":48},
+				{"buffer":0,"byteOffset":96,"byteLength":12},{"buffer":0,"byteOffset":108,"byteLength":48},{"buffer":0,"byteOffset":156,"byteLength":128},
+				{"buffer":0,"byteOffset":284,"byteLength":8},{"buffer":0,"byteOffset":292,"byteLength":32},{"buffer":0,"byteOffset":324,"byteLength":24}],
 			"accessors":[{"bufferView":0,"componentType":5126,"count":3,"type":"VEC3"},
 				{"bufferView":1,"componentType":5120,"normalized":true,"count":3,"type":"VEC3"},
 				{"bufferView":2,"componentType":5121,"count":3,"type":"SCALAR"},
 				{"componentType":5126,"count":3,"type":"VEC2"},
-				{"bufferView":3,"componentType":5126,"count":3,"type":"VEC4"}]}';
+				{"bufferView":3,"componentType":5126,"count":3,"type":"VEC4"},
+				{"bufferView":4,"componentType":5121,"count":3,"type":"VEC4"},
+				{"bufferView":5,"componentType":5126,"count":3,"type":"VEC4"},
+				{"bufferView":6,"componentType":5126,"count":2,"type":"MAT4"},
+				{"bufferView":7,"componentType":5126,"count":2,"type":"SCALAR"},
+				{"bufferView":8,"componentType":5126,"count":2,"type":"VEC4"},
+				{"bufferView":9,"componentType":5126,"count":2,"type":"VEC3"}]}';
 		var model = GltfFile.read(Bytes.ofString(json), "ship.gltf");
 		check(model.missingBuffers.length == 0, ".gltf: a data: URI buffer is read, none missing");
-		check(model.scene.join(",") == "0,1", ".gltf: with no scenes, every node no node's child is a root");
+		check(model.scene.join(",") == "0,1,2", ".gltf: with no scenes, every node no node's child is a root");
 		var p = model.nodes[0].transform.transformPoint(1, 0, 0);
 		check(near(p.x, 0) && near(p.y, 1) && near(p.z, 0), ".gltf: a quaternion turns +x to +y");
 		check(model.nodes[1].name == "" && model.meshes[0].name == "", ".gltf: no name is empty");
@@ -180,6 +202,37 @@ class GltfTests {
 		check(same(primitive.normals, [0, 0, 1, 0, 0, -1, 0, 1, 0]), ".gltf: normalized signed bytes, -128 clamped to -1");
 		check(same(primitive.texCoords, [0, 0, 0, 0, 0, 0]), ".gltf: an accessor with no buffer view is zeros");
 		check(same(primitive.tangents, [1, 0, 0, 1, 0, 1, 0, -1, 0, 0, 1, 1]), ".gltf: tangents, their w");
+		check(primitive.joints.join(",") == "0,1,0,0,1,0,0,0,0,1,0,0"
+			&& same(primitive.weights, [.75, .25, 0, 0, 1, 0, 0, 0, .5, .5, 0, 0]),
+			".gltf: joints and weights, four a vertex");
+		var r = model.nodes[0].local.rotation;
+		check(near(r.z, 0.7071067811865476)
+			&& near(r.w, 0.7071067811865476)
+			&& model.nodes[0].local.position.x == 0
+			&& model.nodes[0].local.scale.y == 1,
+			".gltf: a node's parts as it gives them, the rest their defaults");
+		var knee = model.nodes[3].local;
+		check(near(knee.scale.x, 2) && near(knee.position.y, 1) && near(knee.rotation.w, 1), ".gltf: a node's matrix taken apart");
+		check(model.nodes[1].skin == 0 && model.nodes[0].skin == -1, ".gltf: a node's skin, or none");
+		var skin = model.skins[0];
+		check(model.skins.length == 2 && skin.name == "legs" && skin.joints.join(",") == "2,3" && skin.skeleton == 2,
+			".gltf: a skin's name, joints and skeleton");
+		check(near(skin.inverseBindMatrices[1].values[13], -2)
+			&& near(skin.inverseBindMatrices[0].values[0], 1), ".gltf: its inverse binds");
+		check(model.skins[1].inverseBindMatrices[0].values.join(",") == new helix.math.Matrix3D().values.join(",") && model.skins[1].skeleton == -1
+			&& model.skins[1].name == "",
+			".gltf: none given, identities; no skeleton, no name");
+		var walk = model.animations[0];
+		check(model.animations.length == 2 && walk.name == "Walk" && walk.channels.length == 2 && walk.channels[0].node == 3
+			&& walk.channels[0].path == "rotation" && walk.channels[1].sampler == 1,
+			".gltf: an animation's channels");
+		check(same(walk.samplers[0].input, [0, 1.5])
+			&& same(walk.samplers[0].output, [0, 0, 0, 1, 0, 0, 0.7071067811865476, 0.7071067811865476])
+			&& walk.samplers[0].interpolation == "LINEAR"
+			&& walk.samplers[1].interpolation == "STEP"
+			&& same(walk.samplers[1].output, [0, 1, 0, 0, 2, 0]),
+			".gltf: its samplers' keys, linear unless it says");
+		check(model.animations[1].name == "" && model.animations[1].channels.length == 0, ".gltf: an empty animation");
 		check(primitive.colors == null && primitive.material == -1, ".gltf: no colors, no material");
 		var lines = model.meshes[0].primitives[1];
 		check(lines.mode == 1 && lines.indices == null && lines.positions.length == 9, ".gltf: a primitive of lines, no indices");

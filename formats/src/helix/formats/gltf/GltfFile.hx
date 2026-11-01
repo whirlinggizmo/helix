@@ -2,6 +2,7 @@ package helix.formats.gltf;
 
 import haxe.io.Bytes;
 import helix.math.Matrix3D;
+import helix.math.Transform3D;
 
 /** Represents a glTF 2.0 model read from a .gltf or GLB file: its nodes, its scene, its meshes, materials and images, as plain data.
 
@@ -11,8 +12,8 @@ import helix.math.Matrix3D;
 	buffer they need is missing.
 
 	Accessors of every component type are read, normalized integers scaled to 0..1 or -1..1; one with no buffer view is zeros, and a
-	sparse accessor throws. Positions and normals are in each mesh's own units: no node's transform is applied. Skins, animations, morph
-	targets, cameras, samplers and extensions are not read yet.
+	sparse accessor throws. Positions and normals are in each mesh's own units: no node's transform is applied. Skins and animations are
+	read as the file has them, as `meshes` are; morph targets, cameras, texture samplers and extensions are not read yet.
 
 	```haxe
 	var model = GltfFile.read(bytes, "models/ship.gltf");
@@ -38,6 +39,16 @@ class GltfFile {
 		@throws String  A buffer a mesh needs is missing (`missingBuffers`, which the message names), or an accessor can't be read. */
 	public var meshes(get, never):Array<GltfMesh>;
 
+	/** Gets the model's skins, in the file's order: a node names its own by its index here. Read from the buffers when first asked for.
+
+		@throws String  A buffer a skin's inverse bind matrices need is missing, or an accessor can't be read. */
+	public var skins(get, never):Array<GltfSkin>;
+
+	/** Gets the model's animations, in the file's order, read from the buffers when first asked for.
+
+		@throws String  A buffer a sampler needs is missing, or an accessor can't be read. */
+	public var animations(get, never):Array<GltfAnimation>;
+
 	/** Gets the model's images, in the file's order, those held in a buffer read from it when first asked for.
 
 		@throws String  A buffer an image needs is missing (`missingBuffers`, which the message names). */
@@ -52,6 +63,8 @@ class GltfFile {
 	final buffers:Array<Null<Bytes>> = [];
 	var readMeshes:Null<Array<GltfMesh>>;
 	var readImages:Null<Array<GltfImage>>;
+	var readSkins:Null<Array<GltfSkin>>;
+	var readAnimations:Null<Array<GltfAnimation>>;
 
 	/** Reads a glTF 2.0 model: a .gltf (its JSON, as UTF-8) or a GLB, told apart by its first bytes.
 
@@ -87,6 +100,8 @@ class GltfFile {
 		buffers[index] = bytes;
 		readMeshes = null;
 		readImages = null;
+		readSkins = null;
+		readAnimations = null;
 	}
 
 	function new(document:Dynamic, binary:Null<Bytes>, path:String) {
@@ -125,7 +140,10 @@ class GltfFile {
 		nodes = [
 			for (n in list(document, "nodes")) {
 				var mesh:Null<Int> = field(n, "mesh");
-				new GltfNode(text(n, "name"), mesh == null ? -1 : mesh, integers(field(n, "children")), local(n));
+				var skin:Null<Int> = field(n, "skin");
+				var transform = local(n);
+				new GltfNode(text(n, "name"), mesh == null ? -1 : mesh, integers(field(n, "children")), transform, parts(n, transform),
+					skin == null ? -1 : skin);
 			}
 		];
 		var scenes = list(document, "scenes");
@@ -205,6 +223,50 @@ class GltfFile {
 		return readMeshes;
 	}
 
+	function get_skins():Array<GltfSkin> {
+		if (readSkins == null)
+			readSkins = [
+				for (s in list(document, "skins")) {
+					var joints = integers(field(s, "joints"));
+					var inverse:Null<Int> = field(s, "inverseBindMatrices");
+					var values = inverse == null ? null : floats(inverse);
+					var matrices = [
+						for (j in 0...joints.length) {
+							var m = new Matrix3D();
+							if (values != null) for (i in 0...16)
+								m.values[i] = values[j * 16 + i];
+							m;
+						}
+					];
+					var skeleton:Null<Int> = field(s, "skeleton");
+					new GltfSkin(text(s, "name"), joints, matrices, skeleton == null ? -1 : skeleton);
+				}
+			];
+		return readSkins;
+	}
+
+	function get_animations():Array<GltfAnimation> {
+		if (readAnimations == null)
+			readAnimations = [
+				for (a in list(document, "animations")) {
+					var channels = [
+						for (c in list(a, "channels")) {
+							var target = field(c, "target"), node:Null<Int> = field(target, "node");
+							new GltfChannel(node == null ? -1 : node, text(target, "path"), Std.int(number(c, "sampler", 0)));
+						}
+					];
+					var samplers = [
+						for (s in list(a, "samplers")) {
+							var interpolation:Null<String> = field(s, "interpolation");
+							new GltfSampler(floats(field(s, "input")), floats(field(s, "output")), interpolation == null ? "LINEAR" : interpolation);
+						}
+					];
+					new GltfAnimation(text(a, "name"), channels, samplers);
+				}
+			];
+		return readAnimations;
+	}
+
 	function get_images():Array<GltfImage> {
 		if (readImages == null)
 			readImages = [
@@ -227,6 +289,8 @@ class GltfFile {
 		var position:Null<Int> = field(attributes, "POSITION");
 		var normal:Null<Int> = field(attributes, "NORMAL");
 		var tangent:Null<Int> = field(attributes, "TANGENT");
+		var joint:Null<Int> = field(attributes, "JOINTS_0");
+		var weight:Null<Int> = field(attributes, "WEIGHTS_0");
 		var uv:Null<Int> = field(attributes, "TEXCOORD_0");
 		var color:Null<Int> = field(attributes, "COLOR_0");
 		var colors:Null<Array<Float>> = null;
@@ -242,8 +306,8 @@ class GltfFile {
 		var indices:Null<Int> = field(primitive, "indices");
 		var material:Null<Int> = field(primitive, "material");
 		return new GltfPrimitive(mode == null ? 4 : mode, position == null ? [] : floats(position), normal == null ? null : floats(normal),
-			tangent == null ? null : floats(tangent), uv == null ? null : floats(uv), colors, indices == null ? null : ints(indices),
-			material == null ? -1 : material);
+			tangent == null ? null : floats(tangent), uv == null ? null : floats(uv), colors, joint == null ? null : ints(joint),
+			weight == null ? null : floats(weight), indices == null ? null : ints(indices), material == null ? -1 : material);
 	}
 
 	// A node's own transform: its matrix, or its scale, then rotation, then translation.
@@ -264,6 +328,20 @@ class GltfFile {
 		if (t != null)
 			m = Matrix3D.compose(m, Matrix3D.fromTranslation(t[0], t[1], t[2]));
 		return m;
+	}
+
+	// A node's translation, rotation and scale: as it gives them, or its matrix taken apart.
+	static function parts(node:Dynamic, transform:Matrix3D):Transform3D {
+		if (field(node, "matrix") != null)
+			return Transform3D.fromMatrix(transform);
+		var t = numbers(field(node, "translation"), [0, 0, 0]),
+			r = numbers(field(node, "rotation"), [0, 0, 0, 1]),
+			s = numbers(field(node, "scale"), [1, 1, 1]);
+		var parts = new Transform3D();
+		parts.position.set(t[0], t[1], t[2]);
+		parts.rotation.set(r[0], r[1], r[2], r[3]);
+		parts.scale.set(s[0], s[1], s[2]);
+		return parts;
 	}
 
 	// The bytes of buffer view index: a slice of its buffer.
