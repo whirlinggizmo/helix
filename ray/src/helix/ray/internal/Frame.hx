@@ -27,8 +27,24 @@ class Frame {
 		"vertexPosition" => 3,
 		"vertexTexCoord" => 2,
 		"vertexNormal" => 3,
-		"vertexColor" => 4
+		"vertexColor" => 4,
+		"vertexTangent" => 4,
+		"vertexTexCoord2" => 2
 	];
+
+	/** Each raylib attribute's buffer in a mesh, by raylib's buffer index. */
+	static final MESH_BUFFERS = [
+		"vertexPosition",
+		"vertexTexCoord",
+		"vertexNormal",
+		"vertexColor",
+		"vertexTangent",
+		"vertexTexCoord2"
+	];
+
+	/** The attributes immediate vertices don't carry, and where each is in the one record of `constants`, in floats: raylib's batch has
+		none, so a shader reads raylib's defaults, 0. */
+	static final CONSTANTS = ["vertexTangent" => 0, "vertexTexCoord2" => 4];
 
 	final graphics:IGraphics;
 	var data = Bytes.alloc(STRIDE * 6 * 1024);
@@ -45,6 +61,12 @@ class Frame {
 	/** The white texture shapes draw with, and a texture without an image reads as. */
 	public final white:Int;
 
+	// One record of zeros, for the attributes in CONSTANTS, read as an instance's so every vertex has it.
+	final constants:Int;
+
+	// The buffers replaced while the frame was asked for, freed once it is drawn.
+	final retired:Array<Int> = [];
+
 	/** The program drawn with outside a material, `BeginShaderMode`'s or the default. */
 	public var program:Program;
 
@@ -56,11 +78,11 @@ class Frame {
 	/** Whether drawing is in `BeginMode3D`. */
 	public var in3D = false;
 
-	/** The normal the next immediate vertices carry, as raylib's `rlNormal3f` sets it. */
+	/** The normal the next immediate vertices carry, as raylib's `rlNormal3f` sets it: none, 0, 0, 0, until it is set. */
 	public var nx = 0.;
 
 	public var ny = 0.;
-	public var nz = 1.;
+	public var nz = 0.;
 
 	/** The matrix the next immediate vertices are moved by, rlgl's pushed one (`rlPushMatrix`); null for none. */
 	public var transform:Null<Matrix3D> = null;
@@ -88,6 +110,7 @@ class Frame {
 		var texel = Bytes.alloc(4);
 		texel.fill(0, 4, 255);
 		white = graphics.createTexture(1, 1, [texel]);
+		constants = graphics.createStaticBuffer(Bytes.alloc(24), 24, false);
 		view = new Matrix3D();
 		projection = new Matrix3D();
 		pass = {
@@ -245,7 +268,15 @@ class Frame {
 					instanced: false,
 					attributes: [
 						for (i => name in p.attributes)
-							{slot: i, componentCount: SIZES.get(name), offset: OFFSETS.get(name) * 4}
+							if (OFFSETS.exists(name)) {slot: i, componentCount: SIZES.get(name), offset: OFFSETS.get(name) * 4}
+					]
+				},
+				{
+					stride: 24,
+					instanced: true,
+					attributes: [
+						for (i => name in p.attributes)
+							if (CONSTANTS.exists(name)) {slot: i, componentCount: SIZES.get(name), offset: CONSTANTS.get(name) * 4}
 					]
 				}
 			],
@@ -315,12 +346,7 @@ class Frame {
 		for (i in 0...bound.length)
 			if (bound[i] == 0)
 				bound[i] = white;
-		var buffers = [
-			for (name in p.attributes)
-				mesh.gpu.buffers[
-					["vertexPosition", "vertexTexCoord", "vertexNormal", "vertexColor"].indexOf(name)
-				]
-		];
+		var buffers = [for (name in p.attributes) Models.buffer(mesh, MESH_BUFFERS.indexOf(name))];
 		pass.draws.push({
 			pipeline: pipeline,
 			buffers: buffers,
@@ -380,7 +406,8 @@ class Frame {
 				}
 				var count = d.lines ? d.count - d.count % 2 : d.count - d.count % 3;
 				var samplings = [for (t in d.textures) Textures.samplingOf(t)];
-				graphics.draw(d.pipeline, d.buffers == null ? [buffer] : d.buffers, d.indices, d.first, count, 0, 1, d.textures, samplings, d.uniforms);
+				graphics.draw(d.pipeline, d.buffers == null ? [buffer, constants] : d.buffers, d.indices, d.first, count, 0, 1, d.textures, samplings,
+					d.uniforms);
 			}
 			if (p.target == 0) {
 				graphics.endFrame();
@@ -393,7 +420,17 @@ class Frame {
 			} else
 				graphics.endTargetPass();
 		}
+		for (b in retired)
+			graphics.disposeBuffer(b);
+		retired.resize(0);
 		reset();
+	}
+
+	/** Frees a buffer once the frame is drawn, as draws asked for already may read it.
+
+		@param buffer  The buffer. */
+	public function retire(buffer:Int):Void {
+		retired.push(buffer);
 	}
 
 	/** Shows the frame `draw` ended and didn't show; nothing when there is none. */
@@ -438,6 +475,9 @@ class Frame {
 		if (buffer != 0)
 			graphics.disposeBuffer(buffer);
 		graphics.disposeTexture(white);
+		graphics.disposeBuffer(constants);
+		for (b in retired)
+			graphics.disposeBuffer(b);
 		defaultProgram.dispose();
 	}
 }

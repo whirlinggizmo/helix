@@ -4280,7 +4280,41 @@ class Raylib {
 	public static inline function DrawLine3D(startPos:Vector3, endPos:Vector3, color:Color):Void
 		RModels.DrawLine3D(startPos, endPos, color);
 
-	/** Draws a filled box.
+	/** Draws a point in 3D, as raylib does: a line 0.1 long toward +z.
+
+		@param position  The point.
+		@param color  The color. */
+	public static inline function DrawPoint3D(position:Vector3, color:Color):Void
+		RModels.DrawPoint3D(position, color);
+
+	/** Draws a circle's outline in 3D, 36 lines, on the XY plane turned about an axis.
+
+		@param center  Its center.
+		@param radius  Its radius.
+		@param rotationAxis  The axis it is turned about.
+		@param rotationAngle  The angle, in degrees.
+		@param color  The color. */
+	public static inline function DrawCircle3D(center:Vector3, radius:Float, rotationAxis:Vector3, rotationAngle:Float, color:Color):Void
+		RModels.DrawCircle3D(center, radius, rotationAxis, rotationAngle, color);
+
+	/** Draws a filled triangle in 3D, its corners counterclockwise from the side it faces.
+
+		@param v1  A corner.
+		@param v2  The next.
+		@param v3  The last.
+		@param color  The color. */
+	public static inline function DrawTriangle3D(v1:Vector3, v2:Vector3, v3:Vector3, color:Color):Void
+		RModels.DrawTriangle3D(v1, v2, v3, color);
+
+	/** Draws a strip of triangles in 3D: each point after the second makes a triangle with the two before it.
+
+		@param points  The points.
+		@param pointCount  How many of them; fewer than 3 draws nothing.
+		@param color  The color. */
+	public static inline function DrawTriangleStrip3D(points:Array<Vector3>, pointCount:Int, color:Color):Void
+		RModels.DrawTriangleStrip3D(points, pointCount, color);
+
+	/** Draws a filled box, each face with its normal.
 
 		@param position  Its center.
 		@param width  Its size along x.
@@ -4316,13 +4350,6 @@ class Raylib {
 	public static inline function DrawCubeWiresV(position:Vector3, size:Vector3, color:Color):Void
 		RModels.DrawCubeWiresV(position, size, color);
 
-	/** Draws a bounding box's edges.
-
-		@param box  The box.
-		@param color  The color. */
-	public static inline function DrawBoundingBox(box:BoundingBox, color:Color):Void
-		RModels.DrawBoundingBox(box, color);
-
 	/** Draws a filled sphere, 16 rings and 16 slices.
 
 		@param centerPos  Its center.
@@ -4331,7 +4358,7 @@ class Raylib {
 	public static inline function DrawSphere(centerPos:Vector3, radius:Float, color:Color):Void
 		RModels.DrawSphere(centerPos, radius, color);
 
-	/** Draws a filled sphere.
+	/** Draws a filled sphere, as raylib does: rings + 1 bands of slices, from the top.
 
 		@param centerPos  Its center.
 		@param radius  Its radius.
@@ -4341,7 +4368,7 @@ class Raylib {
 	public static inline function DrawSphereEx(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void
 		RModels.DrawSphereEx(centerPos, radius, rings, slices, color);
 
-	/** Draws a sphere's wires.
+	/** Draws a sphere's wires, as raylib does: rings + 2 bands of slices, each slice's three lines.
 
 		@param centerPos  Its center.
 		@param radius  Its radius.
@@ -4351,6 +4378,72 @@ class Raylib {
 	public static inline function DrawSphereWires(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void
 		RModels.DrawSphereWires(centerPos, radius, rings, slices, color);
 
+	/** Draws a filled cylinder standing on the XZ plane, or a cone when its top's radius is 0.
+
+		@param position  Its base's center.
+		@param radiusTop  Its top's radius.
+		@param radiusBottom  Its base's.
+		@param height  Its height.
+		@param sides  Its sides, at least 3.
+		@param color  The color. */
+	public static inline function DrawCylinder(position:Vector3, radiusTop:Float, radiusBottom:Float, height:Float, sides:Int, color:Color):Void
+		RModels.DrawCylinder(position, radiusTop, radiusBottom, height, sides, color);
+
+	/** Draws a filled cylinder from one point to another, or a cone when a radius is 0.
+
+		@param startPos  Its base's center.
+		@param endPos  Its top's.
+		@param startRadius  Its base's radius.
+		@param endRadius  Its top's.
+		@param sides  Its sides, at least 3.
+		@param color  The color. */
+	public static inline function DrawCylinderEx(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int, color:Color):Void
+		RModels.DrawCylinderEx(startPos, endPos, startRadius, endRadius, sides, color);
+
+	/** Draws a cylinder's wires standing on the XZ plane, or a cone's when its top's radius is 0.
+
+		@param position  Its base's center.
+		@param radiusTop  Its top's radius.
+		@param radiusBottom  Its base's.
+		@param height  Its height.
+		@param sides  Its sides, at least 3.
+		@param color  The color. */
+	public static inline function DrawCylinderWires(position:Vector3, radiusTop:Float, radiusBottom:Float, height:Float, sides:Int, color:Color):Void
+		RModels.DrawCylinderWires(position, radiusTop, radiusBottom, height, sides, color);
+
+	/** Draws a cylinder's wires from one point to another, or a cone's when a radius is 0.
+
+		@param startPos  Its base's center.
+		@param endPos  Its top's.
+		@param startRadius  Its base's radius.
+		@param endRadius  Its top's.
+		@param sides  Its sides, at least 3.
+		@param color  The color. */
+	public static inline function DrawCylinderWiresEx(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int, color:Color):Void
+		RModels.DrawCylinderWiresEx(startPos, endPos, startRadius, endRadius, sides, color);
+
+	/** Draws a filled capsule: a cylinder with half a sphere on each end, their centers the two points.
+
+		@param startPos  One end's center.
+		@param endPos  The other's.
+		@param radius  Its radius.
+		@param slices  Slices around, at least 3.
+		@param rings  Rings in each half sphere.
+		@param color  The color. */
+	public static inline function DrawCapsule(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void
+		RModels.DrawCapsule(startPos, endPos, radius, slices, rings, color);
+
+	/** Draws a capsule's wires: a cylinder with half a sphere on each end, their centers the two points.
+
+		@param startPos  One end's center.
+		@param endPos  The other's.
+		@param radius  Its radius.
+		@param slices  Slices around, at least 3.
+		@param rings  Rings in each half sphere.
+		@param color  The color. */
+	public static inline function DrawCapsuleWires(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void
+		RModels.DrawCapsuleWires(startPos, endPos, radius, slices, rings, color);
+
 	/** Draws a flat rectangle on the XZ plane, facing up.
 
 		@param centerPos  Its center.
@@ -4359,12 +4452,62 @@ class Raylib {
 	public static inline function DrawPlane(centerPos:Vector3, size:Vector2, color:Color):Void
 		RModels.DrawPlane(centerPos, size, color);
 
-	/** Draws a grid on the XZ plane, centered on the origin: its center lines darker, as raylib's.
+	/** Draws a ray as a line 10000 long.
+
+		@param ray  The ray.
+		@param color  The color. */
+	public static inline function DrawRay(ray:Ray, color:Color):Void
+		RModels.DrawRay(ray, color);
+
+	/** Draws a grid on the XZ plane, centered on the origin, its center lines darker, as raylib's.
 
 		@param slices  The lines each way.
 		@param spacing  The space between them. */
 	public static inline function DrawGrid(slices:Int, spacing:Float):Void
 		RModels.DrawGrid(slices, spacing);
+
+	/** Draws a bounding box's edges.
+
+		@param box  The box.
+		@param color  The color. */
+	public static inline function DrawBoundingBox(box:BoundingBox, color:Color):Void
+		RModels.DrawBoundingBox(box, color);
+
+	/** Draws a texture facing the camera, turning about y alone, at a height of scale and its own proportions.
+
+		@param camera  The camera.
+		@param texture  The texture.
+		@param position  Its center.
+		@param scale  Its height.
+		@param tint  The tint. */
+	public static inline function DrawBillboard(camera:Camera, texture:Texture2D, position:Vector3, scale:Float, tint:Color):Void
+		RModels.DrawBillboard(camera, texture, position, scale, tint);
+
+	/** Draws part of a texture facing the camera, turning about y alone.
+
+		@param camera  The camera.
+		@param texture  The texture.
+		@param source  The part, in its pixels.
+		@param position  Its center.
+		@param size  Its size; a negative one flips it.
+		@param tint  The tint. */
+	public static inline function DrawBillboardRec(camera:Camera, texture:Texture2D, source:Rectangle, position:Vector3, size:Vector2, tint:Color):Void
+		RModels.DrawBillboardRec(camera, texture, source, position, size, tint);
+
+	/** Draws part of a texture facing the camera's right and an up of its own, turned about the way it faces.
+
+		@param camera  The camera.
+		@param texture  The texture.
+		@param source  The part, in its pixels.
+		@param position  Where its origin is.
+		@param up  Its up.
+		@param size  Its size; a negative one flips it.
+		@param origin  The point of it at the position, from its bottom left, in the size's units.
+		@param rotation  How far it turns about its origin, in degrees.
+		@param tint  The tint. */
+	public static inline function DrawBillboardPro(camera:Camera, texture:Texture2D, source:Rectangle, position:Vector3, up:Vector3, size:Vector2,
+			origin:Vector2, rotation:Float, tint:Color):Void
+		RModels.DrawBillboardPro(camera, texture, source, position, up, size, origin, rotation, tint);
 
 	/** Makes a model of one mesh, with the default material.
 
@@ -4415,12 +4558,27 @@ class Raylib {
 	public static inline function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void
 		RModels.DrawMesh(mesh, material, transform);
 
-	/** Sends a mesh's vertices to the GPU, so it can be drawn. The `GenMesh*` functions and `LoadModelAsync` do it themselves.
+	/** Sends a mesh's vertices to the GPU, so it can be drawn. A mesh not sent goes when it is first drawn, as `LoadModelAsync`'s and the
+		`GenMesh*` functions' do.
 
 		@param mesh  The mesh.
-		@param isDynamic  Whether it will change (raylib names it `dynamic`, a Haxe keyword); meshes here can't, so it is ignored. */
+		@param isDynamic  Whether it will change (raylib names it `dynamic`, a Haxe keyword); any mesh here can be changed by
+			`UpdateMeshBuffer`, so it is ignored. */
 	public static inline function UploadMesh(mesh:Mesh, isDynamic:Bool):Void
 		RModels.UploadMesh(mesh, isDynamic);
+
+	/** Changes part of one of a mesh's buffers on the GPU, as raylib's: the mesh's own arrays stay as they were. Draws asked for before
+		it keep what was there; those after see the change.
+
+		@param mesh  The mesh, uploaded (`UploadMesh`, or drawn once); one that isn't changes nothing.
+		@param index  The buffer: 0 positions, 1 texture coordinates, 2 normals, 3 colors, 4 tangents, 5 second texture coordinates,
+			6 indices. One the mesh has no array for changes nothing.
+		@param data  The new values: raylib's bytes (`haxe.io.Bytes`: 32-bit floats, colors a byte each, indices 16-bit), or an array of
+			the numbers (colors 0 to 255).
+		@param dataSize  How many bytes they are, as raylib counts them.
+		@param offset  Where they go in the buffer, in raylib's bytes. */
+	public static inline function UpdateMeshBuffer(mesh:Mesh, index:Int, data:Dynamic, dataSize:Int, offset:Int):Void
+		RModels.UpdateMeshBuffer(mesh, index, data, dataSize, offset);
 
 	/** Frees a mesh's GPU buffers.
 
@@ -4428,7 +4586,26 @@ class Raylib {
 	public static inline function UnloadMesh(mesh:Mesh):Void
 		RModels.UnloadMesh(mesh);
 
-	/** Makes a box mesh, centered on the origin.
+	/** Makes a flat regular polygon on the XZ plane, facing up, centered on the origin: a triangle a side, with no indices, its texture
+		coordinates 0.
+
+		@param sides  Its sides; fewer than 3 make an empty mesh.
+		@param radius  Its corners' distance from the center.
+		@return  The mesh. */
+	public static inline function GenMeshPoly(sides:Int, radius:Float):Mesh
+		return RModels.GenMeshPoly(sides, radius);
+
+	/** Makes a flat mesh on the XZ plane, facing up, centered on the origin: a grid of vertices shared by its cells' triangles.
+
+		@param width  Along x.
+		@param length  Along z.
+		@param resX  Cells along x.
+		@param resZ  Cells along z.
+		@return  The mesh. */
+	public static inline function GenMeshPlane(width:Float, length:Float, resX:Int, resZ:Int):Mesh
+		return RModels.GenMeshPlane(width, length, resX, resZ);
+
+	/** Makes a box mesh, centered on the origin: four vertices a face, each face's texture its whole.
 
 		@param width  Along x.
 		@param height  Along y.
@@ -4437,24 +4614,107 @@ class Raylib {
 	public static inline function GenMeshCube(width:Float, height:Float, length:Float):Mesh
 		return RModels.GenMeshCube(width, height, length);
 
-	/** Makes a flat mesh on the XZ plane, facing up.
-
-		@param width  Along x.
-		@param length  Along z.
-		@param resX  Divisions along x.
-		@param resZ  Divisions along z.
-		@return  The mesh. */
-	public static inline function GenMeshPlane(width:Float, length:Float, resX:Int, resZ:Int):Mesh
-		return RModels.GenMeshPlane(width, length, resX, resZ);
-
-	/** Makes a sphere mesh, centered on the origin.
+	/** Makes a sphere mesh, centered on the origin, its poles on z, three vertices a triangle with no indices, as raylib's (par_shapes').
 
 		@param radius  Its radius.
-		@param rings  Rings top to bottom.
-		@param slices  Slices around.
-		@return  The mesh. */
+		@param rings  Rings pole to pole, at least 3.
+		@param slices  Slices around, at least 3.
+		@return  The mesh; empty for fewer rings or slices. */
 	public static inline function GenMeshSphere(radius:Float, rings:Int, slices:Int):Mesh
 		return RModels.GenMeshSphere(radius, rings, slices);
+
+	/** Makes half a sphere, open at its base, on the side of +y from the origin, three vertices a triangle with no indices.
+
+		@param radius  Its radius; a negative one is 0.
+		@param rings  Rings from the pole, at least 3.
+		@param slices  Slices around, at least 3.
+		@return  The mesh; empty for fewer rings or slices. */
+	public static inline function GenMeshHemiSphere(radius:Float, rings:Int, slices:Int):Mesh
+		return RModels.GenMeshHemiSphere(radius, rings, slices);
+
+	/** Makes a closed cylinder standing on the XZ plane from the origin, three vertices a triangle with no indices.
+
+		@param radius  Its radius.
+		@param height  Its height.
+		@param slices  Slices around, at least 3.
+		@return  The mesh; empty for fewer slices. */
+	public static inline function GenMeshCylinder(radius:Float, height:Float, slices:Int):Mesh
+		return RModels.GenMeshCylinder(radius, height, slices);
+
+	/** Makes a closed cone standing on the XZ plane from the origin, three vertices a triangle with no indices.
+
+		@param radius  Its base's radius.
+		@param height  Its height.
+		@param slices  Slices around, at least 3.
+		@return  The mesh; empty for fewer slices. */
+	public static inline function GenMeshCone(radius:Float, height:Float, slices:Int):Mesh
+		return RModels.GenMeshCone(radius, height, slices);
+
+	/** Makes a torus on the XY plane, centered on the origin, three vertices a triangle with no indices.
+
+		@param radius  The tube's radius against the ring's, 0.1 to 1 (others are clamped to it).
+		@param size  The torus's width, out to the ring's middle on each side.
+		@param radSeg  Slices around the ring, at least 3.
+		@param sides  Slices around the tube, at least 3.
+		@return  The mesh; empty for fewer slices. */
+	public static inline function GenMeshTorus(radius:Float, size:Float, radSeg:Int, sides:Int):Mesh
+		return RModels.GenMeshTorus(radius, size, radSeg, sides);
+
+	/** Makes a trefoil knot, centered on the origin, three vertices a triangle with no indices.
+
+		@param radius  The tube's radius, in tenths, 0.5 to 3 (others are clamped to it).
+		@param size  The knot's scale.
+		@param radSeg  Slices along the knot, at least 3.
+		@param sides  Slices around the tube, at least 3.
+		@return  The mesh; empty for fewer slices. */
+	public static inline function GenMeshKnot(radius:Float, size:Float, radSeg:Int, sides:Int):Mesh
+		return RModels.GenMeshKnot(radius, size, radSeg, sides);
+
+	/** Makes terrain from an image: a vertex a pixel, from the origin along +x and +z, each the height of its pixel's gray (red, green and
+		blue averaged), two triangles a cell with a flat normal each, three vertices a triangle with no indices.
+
+		@param heightmap  The image.
+		@param size  The terrain's size: x and z across the image, y the height of white.
+		@return  The mesh. */
+	public static inline function GenMeshHeightmap(heightmap:Image, size:Vector3):Mesh
+		return RModels.GenMeshHeightmap(heightmap, size);
+
+	/** Makes a maze of cubes from an image, a cube a pixel centered on it from the origin: a white pixel a wall, its faces where its
+		neighbors are black or the map ends, and its top and bottom; a black pixel a floor and a ceiling, facing in. The texture is split in
+		four: walls from its top left (right, front) and top right (left, back), tops from its bottom left and bottoms from its bottom right.
+		Three vertices a triangle, with no indices.
+
+		@param cubicmap  The image.
+		@param cubeSize  A cube's size: x along the image's width, z along its height, y the walls' height.
+		@return  The mesh. */
+	public static inline function GenMeshCubicmap(cubicmap:Image, cubeSize:Vector3):Mesh
+		return RModels.GenMeshCubicmap(cubicmap, cubeSize);
+
+	/** Computes a mesh's tangents from its positions, texture coordinates and normals, as raylib's: each triangle's direction of u, made
+		square to each vertex's normal, w the side its direction of v is on. It reads the vertices three at a time, as raylib's does, so it
+		is meant for a mesh without indices.
+
+		@param mesh  The mesh; one without positions or texture coordinates is left as it is. */
+	public static inline function GenMeshTangents(mesh:Mesh):Void
+		RModels.GenMeshTangents(mesh);
+
+	/** Writes a mesh as an OBJ file through `SaveFileText`, as raylib's does: its positions to 2 places, its texture coordinates and
+		normals to 3, and a face a triangle.
+
+		@param mesh  The mesh, with positions, texture coordinates and normals.
+		@param fileName  The file; only ".obj" is written.
+		@return  True when it was written. */
+	public static inline function ExportMesh(mesh:Mesh, fileName:String):Bool
+		return RModels.ExportMesh(mesh, fileName);
+
+	/** Writes a mesh as a C header through `SaveFileText`, as raylib's does: its counts as defines, and each array it has, 20 values a
+		line, floats to 3 places.
+
+		@param mesh  The mesh.
+		@param fileName  The file; its name, upper case, names the defines and the arrays.
+		@return  True when it was written. */
+	public static inline function ExportMeshAsCode(mesh:Mesh, fileName:String):Bool
+		return RModels.ExportMeshAsCode(mesh, fileName);
 
 	/** Returns raylib's default material: the default shader, white.
 
@@ -4478,21 +4738,22 @@ class Raylib {
 	public static inline function SetModelMeshMaterial(model:Model, meshId:Int, materialId:Int):Void
 		RModels.SetModelMeshMaterial(model, meshId, materialId);
 
-	/** Returns a mesh's bounds.
+	/** Returns a mesh's bounds: the least and the most of its positions; 0 for a mesh without them.
 
 		@param mesh  The mesh.
 		@return  The box. */
 	public static inline function GetMeshBoundingBox(mesh:Mesh):BoundingBox
 		return RModels.GetMeshBoundingBox(mesh);
 
-	/** Returns a model's bounds, its transform applied.
+	/** Returns a model's bounds: its meshes' together, its least and most corners then moved by its transform, as raylib's (a turned
+		model's box is not its bounds; transform its eight corners for those).
 
 		@param model  The model.
 		@return  The box. */
 	public static inline function GetModelBoundingBox(model:Model):BoundingBox
 		return RModels.GetModelBoundingBox(model);
 
-	/** Returns whether two boxes overlap.
+	/** Returns whether two boxes overlap, touching included.
 
 		@param box1  One.
 		@param box2  The other.
@@ -4500,7 +4761,7 @@ class Raylib {
 	public static inline function CheckCollisionBoxes(box1:BoundingBox, box2:BoundingBox):Bool
 		return RModels.CheckCollisionBoxes(box1, box2);
 
-	/** Returns whether two spheres overlap.
+	/** Returns whether two spheres overlap, touching included.
 
 		@param center1  One's center.
 		@param radius1  Its radius.
@@ -4510,7 +4771,7 @@ class Raylib {
 	public static inline function CheckCollisionSpheres(center1:Vector3, radius1:Float, center2:Vector3, radius2:Float):Bool
 		return RModels.CheckCollisionSpheres(center1, radius1, center2, radius2);
 
-	/** Returns whether a box and a sphere overlap.
+	/** Returns whether a box and a sphere overlap, touching included.
 
 		@param box  The box.
 		@param center  The sphere's center.
@@ -4519,7 +4780,8 @@ class Raylib {
 	public static inline function CheckCollisionBoxSphere(box:BoundingBox, center:Vector3, radius:Float):Bool
 		return RModels.CheckCollisionBoxSphere(box, center, radius);
 
-	/** Returns where a ray hits a sphere.
+	/** Returns where a ray meets a sphere, as raylib's: the near side from outside, the far side from inside (its normal then pointing in);
+		its point and distance are set even when it misses. The ray's direction should be of length 1.
 
 		@param ray  The ray.
 		@param center  The sphere's center.
@@ -4528,7 +4790,8 @@ class Raylib {
 	public static inline function GetRayCollisionSphere(ray:Ray, center:Vector3, radius:Float):RayCollision
 		return RModels.GetRayCollisionSphere(ray, center, radius);
 
-	/** Returns where a ray hits a box.
+	/** Returns where a ray meets a box, as raylib's: from inside, the way out, its distance negative and its normal pointing in; its point,
+		distance and normal are set even when it misses.
 
 		@param ray  The ray.
 		@param box  The box.
@@ -4536,24 +4799,36 @@ class Raylib {
 	public static inline function GetRayCollisionBox(ray:Ray, box:BoundingBox):RayCollision
 		return RModels.GetRayCollisionBox(ray, box);
 
-	/** Returns where a ray hits a triangle.
+	/** Returns where a ray first meets a mesh moved by a transform: the nearest of its triangles it meets.
 
 		@param ray  The ray.
-		@param p1  A corner.
-		@param p2  A corner.
-		@param p3  A corner.
-		@return  The hit. */
-	public static inline function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3):RayCollision
-		return RModels.GetRayCollisionTriangle(ray, p1, p2, p3);
-
-	/** Returns where a ray hits a mesh drawn with a transform: its nearest triangle.
-
-		@param ray  The ray.
-		@param mesh  The mesh.
+		@param mesh  The mesh, with its positions.
 		@param transform  The transform.
 		@return  The hit. */
 	public static inline function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision
 		return RModels.GetRayCollisionMesh(ray, mesh, transform);
+
+	/** Returns where a ray meets a triangle from either side (Möller and Trumbore's test, as raylib's), its normal that of the corners
+		taken counterclockwise.
+
+		@param ray  The ray.
+		@param p1  A corner.
+		@param p2  The next.
+		@param p3  The last.
+		@return  The hit. */
+	public static inline function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3):RayCollision
+		return RModels.GetRayCollisionTriangle(ray, p1, p2, p3);
+
+	/** Returns where a ray meets a quad, as two triangles: p1, p2 and p4, then p2, p3 and p4.
+
+		@param ray  The ray.
+		@param p1  A corner.
+		@param p2  The next, counterclockwise.
+		@param p3  The next.
+		@param p4  The last.
+		@return  The hit. */
+	public static inline function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, p4:Vector3):RayCollision
+		return RModels.GetRayCollisionQuad(ray, p1, p2, p3, p4);
 
 	// ---- raudio: sound (raylib/RAudio.hx) ----
 
@@ -5496,57 +5771,6 @@ class Raylib {
 	public static macro function GenTextureMipmaps(texture:ExprOf<Texture2D>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("GenTextureMipmaps: Not implemented", macro {});
 
-	/** raylib's `DrawPoint3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a point in 3D space, actually a small line. */
-	public static macro function DrawPoint3D(position:ExprOf<Vector3>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawPoint3D: Not implemented", macro {});
-
-	/** raylib's `DrawCircle3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a circle in 3D world space. */
-	public static macro function DrawCircle3D(center:ExprOf<Vector3>, radius:ExprOf<Float>, rotationAxis:ExprOf<Vector3>, rotationAngle:ExprOf<Float>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawCircle3D: Not implemented", macro {});
-
-	/** raylib's `DrawTriangle3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a color-filled triangle (vertex in counter-clockwise order!). */
-	public static macro function DrawTriangle3D(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>, v3:ExprOf<Vector3>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawTriangle3D: Not implemented", macro {});
-
-	/** raylib's `DrawTriangleStrip3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a triangle strip defined by points. */
-	public static macro function DrawTriangleStrip3D(points:ExprOf<Array<Vector3>>, pointCount:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawTriangleStrip3D: Not implemented", macro {});
-
-	/** raylib's `DrawCylinder` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a cylinder/cone. */
-	public static macro function DrawCylinder(position:ExprOf<Vector3>, radiusTop:ExprOf<Float>, radiusBottom:ExprOf<Float>, height:ExprOf<Float>,
-			slices:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawCylinder: Not implemented", macro {});
-
-	/** raylib's `DrawCylinderEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a cylinder with base at startPos and top at endPos. */
-	public static macro function DrawCylinderEx(startPos:ExprOf<Vector3>, endPos:ExprOf<Vector3>, startRadius:ExprOf<Float>, endRadius:ExprOf<Float>,
-			sides:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawCylinderEx: Not implemented", macro {});
-
-	/** raylib's `DrawCylinderWires` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a cylinder/cone wires. */
-	public static macro function DrawCylinderWires(position:ExprOf<Vector3>, radiusTop:ExprOf<Float>, radiusBottom:ExprOf<Float>, height:ExprOf<Float>,
-			slices:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawCylinderWires: Not implemented", macro {});
-
-	/** raylib's `DrawCylinderWiresEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a cylinder wires with base at startPos and top at endPos. */
-	public static macro function DrawCylinderWiresEx(startPos:ExprOf<Vector3>, endPos:ExprOf<Vector3>, startRadius:ExprOf<Float>, endRadius:ExprOf<Float>,
-			sides:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawCylinderWiresEx: Not implemented", macro {});
-
-	/** raylib's `DrawCapsule` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a capsule with the center of its sphere caps at startPos and endPos. */
-	public static macro function DrawCapsule(startPos:ExprOf<Vector3>, endPos:ExprOf<Vector3>, radius:ExprOf<Float>, slices:ExprOf<Int>, rings:ExprOf<Int>,
-			color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawCapsule: Not implemented", macro {});
-
-	/** raylib's `DrawCapsuleWires` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw capsule wireframe with the center of its sphere caps at startPos and endPos. */
-	public static macro function DrawCapsuleWires(startPos:ExprOf<Vector3>, endPos:ExprOf<Vector3>, radius:ExprOf<Float>, slices:ExprOf<Int>,
-			rings:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawCapsuleWires: Not implemented", macro {});
-
-	/** raylib's `DrawRay` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a ray line. */
-	public static macro function DrawRay(ray:ExprOf<Ray>, color:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawRay: Not implemented", macro {});
-
 	/** raylib's `DrawModelWires` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model wires (with texture if set). */
 	public static macro function DrawModelWires(model:ExprOf<Model>, position:ExprOf<Vector3>, scale:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("DrawModelWires: Not implemented", macro {});
@@ -5565,74 +5789,10 @@ class Raylib {
 			scale:ExprOf<Vector3>, tint:ExprOf<Color>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("DrawModelPointsEx: Not implemented", macro {});
 
-	/** raylib's `DrawBillboard` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a billboard texture. */
-	public static macro function DrawBillboard(camera:ExprOf<Camera>, texture:ExprOf<Texture2D>, position:ExprOf<Vector3>, scale:ExprOf<Float>,
-			tint:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawBillboard: Not implemented", macro {});
-
-	/** raylib's `DrawBillboardRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a billboard texture defined by source. */
-	public static macro function DrawBillboardRec(camera:ExprOf<Camera>, texture:ExprOf<Texture2D>, source:ExprOf<Rectangle>, position:ExprOf<Vector3>,
-			size:ExprOf<Vector2>, tint:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawBillboardRec: Not implemented", macro {});
-
-	/** raylib's `DrawBillboardPro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a billboard texture defined by source and rotation. */
-	public static macro function DrawBillboardPro(camera:ExprOf<Camera>, texture:ExprOf<Texture2D>, source:ExprOf<Rectangle>, position:ExprOf<Vector3>,
-			up:ExprOf<Vector3>, size:ExprOf<Vector2>, origin:ExprOf<Vector2>, rotation:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawBillboardPro: Not implemented", macro {});
-
-	/** raylib's `UpdateMeshBuffer` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update mesh vertex data in GPU for a specific buffer index. */
-	public static macro function UpdateMeshBuffer(mesh:ExprOf<Mesh>, index:ExprOf<Int>, data:ExprOf<Dynamic>, dataSize:ExprOf<Int>,
-			offset:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UpdateMeshBuffer: Not implemented", macro {});
-
 	/** raylib's `DrawMeshInstanced` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw multiple mesh instances with material and different transforms. */
 	public static macro function DrawMeshInstanced(mesh:ExprOf<Mesh>, material:ExprOf<Material>, transforms:ExprOf<Array<Matrix>>,
 			instances:ExprOf<Int>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("DrawMeshInstanced: Not implemented", macro {});
-
-	/** raylib's `GenMeshTangents` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Compute mesh tangents. */
-	public static macro function GenMeshTangents(mesh:ExprOf<Mesh>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("GenMeshTangents: Not implemented", macro {});
-
-	/** raylib's `ExportMesh` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export mesh data to file, returns true on success. */
-	public static macro function ExportMesh(mesh:ExprOf<Mesh>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("ExportMesh: Not implemented", macro(false : Bool));
-
-	/** raylib's `ExportMeshAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export mesh as code file (.h) defining multiple arrays of vertex attributes. */
-	public static macro function ExportMeshAsCode(mesh:ExprOf<Mesh>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("ExportMeshAsCode: Not implemented", macro(false : Bool));
-
-	/** raylib's `GenMeshPoly` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate polygonal mesh. */
-	public static macro function GenMeshPoly(sides:ExprOf<Int>, radius:ExprOf<Float>):ExprOf<Mesh>
-		return helix.platform.macros.Build.unimplemented("GenMeshPoly: Not implemented", macro(null : helix.ray.Mesh));
-
-	/** raylib's `GenMeshHemiSphere` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate half-sphere mesh (no bottom cap). */
-	public static macro function GenMeshHemiSphere(radius:ExprOf<Float>, rings:ExprOf<Int>, slices:ExprOf<Int>):ExprOf<Mesh>
-		return helix.platform.macros.Build.unimplemented("GenMeshHemiSphere: Not implemented", macro(null : helix.ray.Mesh));
-
-	/** raylib's `GenMeshCylinder` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate cylinder mesh. */
-	public static macro function GenMeshCylinder(radius:ExprOf<Float>, height:ExprOf<Float>, slices:ExprOf<Int>):ExprOf<Mesh>
-		return helix.platform.macros.Build.unimplemented("GenMeshCylinder: Not implemented", macro(null : helix.ray.Mesh));
-
-	/** raylib's `GenMeshCone` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate cone/pyramid mesh. */
-	public static macro function GenMeshCone(radius:ExprOf<Float>, height:ExprOf<Float>, slices:ExprOf<Int>):ExprOf<Mesh>
-		return helix.platform.macros.Build.unimplemented("GenMeshCone: Not implemented", macro(null : helix.ray.Mesh));
-
-	/** raylib's `GenMeshTorus` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate torus mesh. */
-	public static macro function GenMeshTorus(radius:ExprOf<Float>, size:ExprOf<Float>, radSeg:ExprOf<Int>, sides:ExprOf<Int>):ExprOf<Mesh>
-		return helix.platform.macros.Build.unimplemented("GenMeshTorus: Not implemented", macro(null : helix.ray.Mesh));
-
-	/** raylib's `GenMeshKnot` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate trefoil knot mesh. */
-	public static macro function GenMeshKnot(radius:ExprOf<Float>, size:ExprOf<Float>, radSeg:ExprOf<Int>, sides:ExprOf<Int>):ExprOf<Mesh>
-		return helix.platform.macros.Build.unimplemented("GenMeshKnot: Not implemented", macro(null : helix.ray.Mesh));
-
-	/** raylib's `GenMeshHeightmap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate heightmap mesh from image data. */
-	public static macro function GenMeshHeightmap(heightmap:ExprOf<Image>, size:ExprOf<Vector3>):ExprOf<Mesh>
-		return helix.platform.macros.Build.unimplemented("GenMeshHeightmap: Not implemented", macro(null : helix.ray.Mesh));
-
-	/** raylib's `GenMeshCubicmap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate cubes-based map mesh from image data. */
-	public static macro function GenMeshCubicmap(cubicmap:ExprOf<Image>, cubeSize:ExprOf<Vector3>):ExprOf<Mesh>
-		return helix.platform.macros.Build.unimplemented("GenMeshCubicmap: Not implemented", macro(null : helix.ray.Mesh));
 
 	/** raylib's `LoadMaterials` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load materials from model file. */
 	public static macro function LoadMaterials(fileName:ExprOf<String>, materialCount:ExprOf<Array<Int>>):ExprOf<Array<Material>>
@@ -5669,11 +5829,6 @@ class Raylib {
 	/** raylib's `IsModelAnimationValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check model animation skeleton match. */
 	public static macro function IsModelAnimationValid(model:ExprOf<Model>, anim:ExprOf<ModelAnimation>):ExprOf<Bool>
 		return helix.platform.macros.Build.unimplemented("IsModelAnimationValid: Not implemented", macro(false : Bool));
-
-	/** raylib's `GetRayCollisionQuad` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get collision info between ray and quad. */
-	public static macro function GetRayCollisionQuad(ray:ExprOf<Ray>, p1:ExprOf<Vector3>, p2:ExprOf<Vector3>, p3:ExprOf<Vector3>,
-			p4:ExprOf<Vector3>):ExprOf<RayCollision>
-		return helix.platform.macros.Build.unimplemented("GetRayCollisionQuad: Not implemented", macro(null : helix.ray.RayCollision));
 
 	// ---- generated by tools/gen_raylib.py: end ----
 	// ---- Shaders, compiled as the program builds ----

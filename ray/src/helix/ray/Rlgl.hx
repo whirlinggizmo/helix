@@ -804,7 +804,7 @@ class Rlgl {
 	public static inline function rlTexCoord2f(x:Float, y:Float):Void
 		RRlgl.rlTexCoord2f(x, y);
 
-	/** Sets the next vertices' normal.
+	/** Sets the next vertices' normal: turned by the transform `rlPushMatrix` started, when there is one, and made length 1, as rlgl does.
 
 		@param x  The x.
 		@param y  The y.

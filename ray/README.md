@@ -14,9 +14,11 @@ The window and frame, the keyboard, mouse, touch and gamepads, text input, shape
 font and TrueType and OpenType fonts (signed distance fields too), sounds and their aliases, waves (loaded, converted, cropped and
 exported as raylib's are), music with its length, position and seeking, audio streams fed by the program or its callback, text files; images on the CPU in raylib's uncompressed pixel
 formats (made, changed and drawn into as raylib's are, byte for byte, but for resizing), exported as PNG or QOI, and screenshots; in 3D
-the camera, glTF and GLB models, meshes, shapes, render textures, rays; raylib's shaders, compiled as the program builds for every
-target; automation events, recorded and played as raylib's, and raylib's random numbers for a seed. Not here yet: skinned models and
-animations, animated (GIF) and compressed images, and updating a texture's pixels.
+the camera, glTF and GLB models, raylib's shapes and billboards (its vertices, in its order), its generated meshes (vertex for vertex,
+the same on every target), tangents, mesh buffers updated and meshes exported, render textures, rays and their collisions; raylib's
+shaders, compiled as the program builds for every target; automation events, recorded and played as raylib's, and raylib's random
+numbers for a seed. Not here yet: materials loaded from files, skinned models and animations, models drawn as wires or points, rlgl's
+render state (culling, depth, wire mode), animated (GIF) and compressed images, and updating a texture's pixels.
 
 ## Using it
 
@@ -51,6 +53,7 @@ helix-ray's API and the flow of a program on it are [raylib](https://www.raylib.
 contributors, mirrored in Haxe. A small API that a programmer can hold in their head and guess right is hard to make; raylib's is, and
 this library is built on that work. Portions are from raylib 5.5 (its default font, its default shader, its header's comments, and its
 API description, `vendor/raylib/raylib_api.json`, with `raymath_api.json` and `rlgl_api.json` made from `raymath.h` and `rlgl.h` by raylib's parser), altered; zlib
-license, `vendor/raylib/LICENSE`.
+license, `vendor/raylib/LICENSE`. The meshes raylib generates with par_shapes are made by a port of its part of it, by Philip Rideout;
+MIT license, `vendor/par_shapes/LICENSE`.
 The `text` example's font is [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) Regular, Copyright 2020 The JetBrains Mono
 Project Authors, under the SIL Open Font License 1.1 (`examples/text/web/assets/OFL.txt`).

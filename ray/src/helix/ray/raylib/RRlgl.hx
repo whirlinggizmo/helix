@@ -237,15 +237,29 @@ class RRlgl {
 		v = y;
 	}
 
-	/** Sets the next vertices' normal.
+	/** Sets the next vertices' normal: turned by the transform `rlPushMatrix` started, when there is one, and made length 1, as rlgl does.
 
 		@param x  The x.
 		@param y  The y.
 		@param z  The z. */
 	static function rlNormal3f(x:Float, y:Float, z:Float):Void {
-		Runtime.frame.nx = x;
-		Runtime.frame.ny = y;
-		Runtime.frame.nz = z;
+		var nx = x, ny = y, nz = z;
+		if (pushed) {
+			var m = transform.values;
+			nx = m[0] * x + m[4] * y + m[8] * z;
+			ny = m[1] * x + m[5] * y + m[9] * z;
+			nz = m[2] * x + m[6] * y + m[10] * z;
+		}
+		var length = Math.sqrt(nx * nx + ny * ny + nz * nz);
+		if (length != 0) {
+			var ilength = 1 / length;
+			nx *= ilength;
+			ny *= ilength;
+			nz *= ilength;
+		}
+		Runtime.frame.nx = nx;
+		Runtime.frame.ny = ny;
+		Runtime.frame.nz = nz;
 	}
 
 	/** Sets the next vertices' color.

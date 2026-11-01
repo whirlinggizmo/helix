@@ -89,7 +89,8 @@ Why things are the way they are, numbered, in order.
     the source keeps it, the disclaimer as MIT's. Each library carries its LICENSE, and others' licenses beside their code in a folder
     per project (`vendor/<project>/`), as each is published from its own directory; haxelib.json says BSD, as haxelib has no zlib. Each
     library's README credits what it includes (helix-platform: Sokol, SDL, SDL3_mixer, stb, dr_libs, the shader tools; helix-ray and
-    helix-math: raylib, whose small guessable API is the work helix-ray is built on), in place of a repository-wide notices file.
+    helix-math: raylib, whose small guessable API is the work helix-ray is built on; helix-ray: par_shapes, for raylib's generated
+    meshes), in place of a repository-wide notices file.
 
 19. **helix-ray loads as raylib does, and says what a page can't.** raylib's loads answer at once and own what they load, with no
     sharing, deferred upload or async. helix-ray keeps the API and changes what it can underneath: a file loaded twice shares its GPU

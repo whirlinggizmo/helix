@@ -4,8 +4,10 @@ package helix.ray.raylib;
 import helix.ray.*;
 import helix.ray.Raylib.*;
 import helix.math.Matrix3D;
+import helix.math.Trig;
 import helix.ray.internal.DefaultFont;
 import helix.ray.internal.Models;
+import helix.ray.internal.ParShapes;
 import helix.ray.internal.Runtime;
 import helix.ray.internal.Textures;
 import helix.ray.raylib.RCore.*;
@@ -16,6 +18,8 @@ import helix.ray.raylib.RModels.*;
 import helix.ray.raylib.RAudio.*;
 import helix.ray.raylib.RMath.*;
 import helix.ray.raylib.RAsync.*;
+import helix.ray.Rlgl.*;
+import helix.ray.raylib.RRlgl.*;
 #end
 
 /** Holds raylib's rmodels (3D shapes, models, meshes, materials and rays), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
@@ -24,6 +28,7 @@ import helix.ray.raylib.RAsync.*;
 class RModels {
 	#if !macro
 	// ---- 3D shapes ----
+	// As rmodels.c draws them, through rlgl: the same vertices, in the same order, with the same color, normal and texture state.
 
 	/** Draws a line in 3D.
 
@@ -31,12 +36,86 @@ class RModels {
 		@param endPos  The end.
 		@param color  The color. */
 	static function DrawLine3D(startPos:Vector3, endPos:Vector3, color:Color):Void {
-		var t = Runtime.frame.white;
-		Runtime.frame.vertex(t, true, startPos.x, startPos.y, startPos.z, 0, 0, color);
-		Runtime.frame.vertex(t, true, endPos.x, endPos.y, endPos.z, 0, 0, color);
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		rlVertex3f(startPos.x, startPos.y, startPos.z);
+		rlVertex3f(endPos.x, endPos.y, endPos.z);
+		rlEnd();
 	}
 
-	/** Draws a filled box.
+	/** Draws a point in 3D, as raylib does: a line 0.1 long toward +z.
+
+		@param position  The point.
+		@param color  The color. */
+	static function DrawPoint3D(position:Vector3, color:Color):Void {
+		rlPushMatrix();
+		rlTranslatef(position.x, position.y, position.z);
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		rlVertex3f(0, 0, 0);
+		rlVertex3f(0, 0, 0.1);
+		rlEnd();
+		rlPopMatrix();
+	}
+
+	/** Draws a circle's outline in 3D, 36 lines, on the XY plane turned about an axis.
+
+		@param center  Its center.
+		@param radius  Its radius.
+		@param rotationAxis  The axis it is turned about.
+		@param rotationAngle  The angle, in degrees.
+		@param color  The color. */
+	static function DrawCircle3D(center:Vector3, radius:Float, rotationAxis:Vector3, rotationAngle:Float, color:Color):Void {
+		rlPushMatrix();
+		rlTranslatef(center.x, center.y, center.z);
+		rlRotatef(rotationAngle, rotationAxis.x, rotationAxis.y, rotationAxis.z);
+		rlBegin(RL_LINES);
+		var i = 0;
+		while (i < 360) {
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			rlVertex3f(Math.sin(DEG2RAD * i) * radius, Math.cos(DEG2RAD * i) * radius, 0);
+			rlVertex3f(Math.sin(DEG2RAD * (i + 10)) * radius, Math.cos(DEG2RAD * (i + 10)) * radius, 0);
+			i += 10;
+		}
+		rlEnd();
+		rlPopMatrix();
+	}
+
+	/** Draws a filled triangle in 3D, its corners counterclockwise from the side it faces.
+
+		@param v1  A corner.
+		@param v2  The next.
+		@param v3  The last.
+		@param color  The color. */
+	static function DrawTriangle3D(v1:Vector3, v2:Vector3, v3:Vector3, color:Color):Void {
+		rlBegin(RL_TRIANGLES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		rlVertex3f(v1.x, v1.y, v1.z);
+		rlVertex3f(v2.x, v2.y, v2.z);
+		rlVertex3f(v3.x, v3.y, v3.z);
+		rlEnd();
+	}
+
+	/** Draws a strip of triangles in 3D: each point after the second makes a triangle with the two before it.
+
+		@param points  The points.
+		@param pointCount  How many of them; fewer than 3 draws nothing.
+		@param color  The color. */
+	static function DrawTriangleStrip3D(points:Array<Vector3>, pointCount:Int, color:Color):Void {
+		if (pointCount < 3)
+			return;
+		rlBegin(RL_TRIANGLES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		for (i in 2...pointCount) {
+			var a = points[i], b = i % 2 == 0 ? points[i - 2] : points[i - 1], c = i % 2 == 0 ? points[i - 1] : points[i - 2];
+			rlVertex3f(a.x, a.y, a.z);
+			rlVertex3f(b.x, b.y, b.z);
+			rlVertex3f(c.x, c.y, c.z);
+		}
+		rlEnd();
+	}
+
+	/** Draws a filled box, each face with its normal.
 
 		@param position  Its center.
 		@param width  Its size along x.
@@ -44,24 +123,26 @@ class RModels {
 		@param length  Along z.
 		@param color  The color. */
 	static function DrawCube(position:Vector3, width:Float, height:Float, length:Float, color:Color):Void {
-		var x = position.x, y = position.y, z = position.z, w = width / 2, h = height / 2, l = length / 2;
-		var f = Runtime.frame, t = f.white;
-		function face(nx:Float, ny:Float, nz:Float, corners:Array<Float>):Void {
-			f.nx = nx;
-			f.ny = ny;
-			f.nz = nz;
-			for (i in [0, 1, 2, 0, 2, 3])
-				f.vertex(t, false, x + corners[i * 3], y + corners[i * 3 + 1], z + corners[i * 3 + 2], 0, 0, color);
+		var w = width / 2, h = height / 2, l = length / 2;
+		rlPushMatrix();
+		rlTranslatef(position.x, position.y, position.z);
+		rlBegin(RL_TRIANGLES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		// Each face: its normal, then its two triangles' corners, as raylib's.
+		for (face in [
+			[0, 0, 1, -w, -h, l, w, -h, l, -w, h, l, w, h, l, -w, h, l, w, -h, l],
+			[0, 0, -1, -w, -h, -l, -w, h, -l, w, -h, -l, w, h, -l, w, -h, -l, -w, h, -l],
+			[0, 1, 0, -w, h, -l, -w, h, l, w, h, l, w, h, -l, -w, h, -l, w, h, l],
+			[0, -1, 0, -w, -h, -l, w, -h, l, -w, -h, l, w, -h, -l, w, -h, l, -w, -h, -l],
+			[1, 0, 0, w, -h, -l, w, h, -l, w, h, l, w, -h, l, w, -h, -l, w, h, l],
+			[-1, 0, 0, -w, -h, -l, -w, h, l, -w, h, -l, -w, -h, l, -w, h, l, -w, -h, -l]
+		]) {
+			rlNormal3f(face[0], face[1], face[2]);
+			for (c in 0...6)
+				rlVertex3f(face[3 + c * 3], face[4 + c * 3], face[5 + c * 3]);
 		}
-		face(0, 0, 1, [-w, -h, l, w, -h, l, w, h, l, -w, h, l]);
-		face(0, 0, -1, [-w, -h, -l, -w, h, -l, w, h, -l, w, -h, -l]);
-		face(0, 1, 0, [-w, h, -l, -w, h, l, w, h, l, w, h, -l]);
-		face(0, -1, 0, [-w, -h, -l, w, -h, -l, w, -h, l, -w, -h, l]);
-		face(1, 0, 0, [w, -h, -l, w, h, -l, w, h, l, w, -h, l]);
-		face(-1, 0, 0, [-w, -h, -l, -w, -h, l, -w, h, l, -w, h, -l]);
-		f.nx = 0;
-		f.ny = 0;
-		f.nz = 1;
+		rlEnd();
+		rlPopMatrix();
 	}
 
 	/** Draws a filled box.
@@ -82,9 +163,21 @@ class RModels {
 		@param color  The color. */
 	static function DrawCubeWires(position:Vector3, width:Float, height:Float, length:Float, color:Color):Void {
 		var w = width / 2, h = height / 2, l = length / 2;
-		var min = new Vector3(position.x - w, position.y - h, position.z - l),
-			max = new Vector3(position.x + w, position.y + h, position.z + l);
-		DrawBoundingBox(new BoundingBox(min, max), color);
+		rlPushMatrix();
+		rlTranslatef(position.x, position.y, position.z);
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		// The front face's four edges, the back's, then the four between them, as raylib's.
+		for (edge in [
+			  [-w, -h, l, w, -h, l],   [w, -h, l, w, h, l],     [w, h, l, -w, h, l],   [-w, h, l, -w, -h, l],
+			[-w, -h, -l, w, -h, -l], [w, -h, -l, w, h, -l],   [w, h, -l, -w, h, -l], [-w, h, -l, -w, -h, -l],
+			  [-w, h, l, -w, h, -l],   [w, h, l, w, h, -l], [-w, -h, l, -w, -h, -l],   [w, -h, l, w, -h, -l]
+		]) {
+			rlVertex3f(edge[0], edge[1], edge[2]);
+			rlVertex3f(edge[3], edge[4], edge[5]);
+		}
+		rlEnd();
+		rlPopMatrix();
 	}
 
 	/** Draws a box's edges.
@@ -96,21 +189,6 @@ class RModels {
 		DrawCubeWires(position, size.x, size.y, size.z, color);
 	}
 
-	/** Draws a bounding box's edges.
-
-		@param box  The box.
-		@param color  The color. */
-	static function DrawBoundingBox(box:BoundingBox, color:Color):Void {
-		var a = box.min, b = box.max;
-		var c = [
-			[a.x, a.y, a.z], [b.x, a.y, a.z], [b.x, b.y, a.z], [a.x, b.y, a.z],
-			[a.x, a.y, b.z], [b.x, a.y, b.z], [b.x, b.y, b.z], [a.x, b.y, b.z]
-		];
-		for (e in [
-			[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]])
-			DrawLine3D(new Vector3(c[e[0]][0], c[e[0]][1], c[e[0]][2]), new Vector3(c[e[1]][0], c[e[1]][1], c[e[1]][2]), color);
-	}
-
 	/** Draws a filled sphere, 16 rings and 16 slices.
 
 		@param centerPos  Its center.
@@ -120,7 +198,7 @@ class RModels {
 		DrawSphereEx(centerPos, radius, 16, 16, color);
 	}
 
-	/** Draws a filled sphere.
+	/** Draws a filled sphere, as raylib does: rings + 1 bands of slices, from the top.
 
 		@param centerPos  Its center.
 		@param radius  Its radius.
@@ -128,29 +206,37 @@ class RModels {
 		@param slices  Slices around.
 		@param color  The color. */
 	static function DrawSphereEx(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void {
-		var f = Runtime.frame, t = f.white;
-		function at(r:Int, s:Int):Array<Float> {
-			var phi = Math.PI * r / rings, theta = Math.PI * 2 * s / slices;
-			return [Math.sin(phi) * Math.cos(theta), Math.cos(phi), Math.sin(phi) * Math.sin(theta)];
-		}
-		function put(p:Array<Float>):Void {
-			f.nx = p[0];
-			f.ny = p[1];
-			f.nz = p[2];
-			f.vertex(t, false, centerPos.x + p[0] * radius, centerPos.y + p[1] * radius, centerPos.z + p[2] * radius, 0, 0, color);
-		}
-		for (r in 0...rings)
-			for (s in 0...slices) {
-				var a = at(r, s), b = at(r, s + 1), c = at(r + 1, s), d = at(r + 1, s + 1);
-				for (p in [a, b, c, c, b, d])
-					put(p);
+		rlPushMatrix();
+		rlTranslatef(centerPos.x, centerPos.y, centerPos.z);
+		rlScalef(radius, radius, radius);
+		rlBegin(RL_TRIANGLES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		var ringangle = DEG2RAD * (180.0 / (rings + 1)),
+			sliceangle = DEG2RAD * (360.0 / slices);
+		var cosring = Math.cos(ringangle), sinring = Math.sin(ringangle);
+		var cosslice = Math.cos(sliceangle), sinslice = Math.sin(sliceangle);
+		// The face's four corners, each turned about y for the next slice, and about z for the next ring.
+		var v0 = [0., 0, 0],
+			v1 = [0., 0, 0],
+			v2 = [0., 1, 0],
+			v3 = [sinring, cosring, 0];
+		for (_ in 0...rings + 1) {
+			for (_ in 0...slices) {
+				v0 = v2;
+				v1 = v3;
+				v2 = [cosslice * v2[0] - sinslice * v2[2], v2[1], sinslice * v2[0] + cosslice * v2[2]];
+				v3 = [cosslice * v3[0] - sinslice * v3[2], v3[1], sinslice * v3[0] + cosslice * v3[2]];
+				for (v in [v0, v3, v1, v0, v2, v3])
+					rlVertex3f(v[0], v[1], v[2]);
 			}
-		f.nx = 0;
-		f.ny = 0;
-		f.nz = 1;
+			v2 = v3;
+			v3 = [cosring * v3[0] + sinring * v3[1], -sinring * v3[0] + cosring * v3[1], v3[2]];
+		}
+		rlEnd();
+		rlPopMatrix();
 	}
 
-	/** Draws a sphere's wires.
+	/** Draws a sphere's wires, as raylib does: rings + 2 bands of slices, each slice's three lines.
 
 		@param centerPos  Its center.
 		@param radius  Its radius.
@@ -158,19 +244,274 @@ class RModels {
 		@param slices  Slices around.
 		@param color  The color. */
 	static function DrawSphereWires(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void {
-		function at(r:Int, s:Int):Vector3 {
-			var phi = Math.PI * r / rings, theta = Math.PI * 2 * s / slices;
-			return new Vector3(centerPos.x
-				+ Math.sin(phi) * Math.cos(theta) * radius, centerPos.y
-				+ Math.cos(phi) * radius,
-				centerPos.z
-				+ Math.sin(phi) * Math.sin(theta) * radius);
+		rlPushMatrix();
+		rlTranslatef(centerPos.x, centerPos.y, centerPos.z);
+		rlScalef(radius, radius, radius);
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		function at(i:Int, j:Int):Void {
+			var ring = DEG2RAD * (270 + (180.0 / (rings + 1)) * i),
+				slice = DEG2RAD * (360.0 * j / slices);
+			rlVertex3f(Math.cos(ring) * Math.sin(slice), Math.sin(ring), Math.cos(ring) * Math.cos(slice));
 		}
-		for (r in 0...rings)
-			for (s in 0...slices) {
-				DrawLine3D(at(r, s), at(r + 1, s), color);
-				DrawLine3D(at(r, s), at(r, s + 1), color);
+		for (i in 0...rings + 2)
+			for (j in 0...slices) {
+				at(i, j);
+				at(i + 1, j + 1);
+				at(i + 1, j + 1);
+				at(i + 1, j);
+				at(i + 1, j);
+				at(i, j);
 			}
+		rlEnd();
+		rlPopMatrix();
+	}
+
+	/** Draws a filled cylinder standing on the XZ plane, or a cone when its top's radius is 0.
+
+		@param position  Its base's center.
+		@param radiusTop  Its top's radius.
+		@param radiusBottom  Its base's.
+		@param height  Its height.
+		@param sides  Its sides, at least 3.
+		@param color  The color. */
+	static function DrawCylinder(position:Vector3, radiusTop:Float, radiusBottom:Float, height:Float, sides:Int, color:Color):Void {
+		if (sides < 3)
+			sides = 3;
+		var angleStep = 360.0 / sides;
+		inline function x(i:Int, r:Float):Float
+			return Math.sin(DEG2RAD * i * angleStep) * r;
+		inline function z(i:Int, r:Float):Float
+			return Math.cos(DEG2RAD * i * angleStep) * r;
+		rlPushMatrix();
+		rlTranslatef(position.x, position.y, position.z);
+		rlBegin(RL_TRIANGLES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		if (radiusTop > 0) {
+			for (i in 0...sides) {
+				rlVertex3f(x(i, radiusBottom), 0, z(i, radiusBottom));
+				rlVertex3f(x(i + 1, radiusBottom), 0, z(i + 1, radiusBottom));
+				rlVertex3f(x(i + 1, radiusTop), height, z(i + 1, radiusTop));
+				rlVertex3f(x(i, radiusTop), height, z(i, radiusTop));
+				rlVertex3f(x(i, radiusBottom), 0, z(i, radiusBottom));
+				rlVertex3f(x(i + 1, radiusTop), height, z(i + 1, radiusTop));
+			}
+			for (i in 0...sides) {
+				rlVertex3f(0, height, 0);
+				rlVertex3f(x(i, radiusTop), height, z(i, radiusTop));
+				rlVertex3f(x(i + 1, radiusTop), height, z(i + 1, radiusTop));
+			}
+		} else
+			for (i in 0...sides) {
+				rlVertex3f(0, height, 0);
+				rlVertex3f(x(i, radiusBottom), 0, z(i, radiusBottom));
+				rlVertex3f(x(i + 1, radiusBottom), 0, z(i + 1, radiusBottom));
+			}
+		for (i in 0...sides) {
+			rlVertex3f(0, 0, 0);
+			rlVertex3f(x(i + 1, radiusBottom), 0, z(i + 1, radiusBottom));
+			rlVertex3f(x(i, radiusBottom), 0, z(i, radiusBottom));
+		}
+		rlEnd();
+		rlPopMatrix();
+	}
+
+	// The corners of a cylinder's side i from start to end: w1 and w2 at the start, w3 and w4 at the end, as raylib's DrawCylinderEx
+	// and DrawCylinderWiresEx make them. Null when start and end are one point.
+	static function cylinderSides(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int):Null<Array<Array<Vector3>>> {
+		var direction = new Vector3(endPos.x - startPos.x, endPos.y - startPos.y, endPos.z - startPos.z);
+		if (direction.x == 0 && direction.y == 0 && direction.z == 0)
+			return null;
+		var b1 = Vector3Normalize(Vector3Perpendicular(direction));
+		var b2 = Vector3Normalize(Vector3CrossProduct(b1, direction));
+		var baseAngle = (2.0 * PI) / sides;
+		function corner(p:Vector3, k:Int, r:Float):Vector3 {
+			var s = Math.sin(baseAngle * k) * r,
+				c = Math.cos(baseAngle * k) * r;
+			return new Vector3(p.x + s * b1.x + c * b2.x, p.y + s * b1.y + c * b2.y, p.z + s * b1.z + c * b2.z);
+		}
+		return [
+			for (i in 0...sides) [
+				corner(startPos, i, startRadius),
+				corner(startPos, i + 1, startRadius),
+				corner(endPos, i, endRadius),
+				corner(endPos, i + 1, endRadius)
+			]
+		];
+	}
+
+	/** Draws a filled cylinder from one point to another, or a cone when a radius is 0.
+
+		@param startPos  Its base's center.
+		@param endPos  Its top's.
+		@param startRadius  Its base's radius.
+		@param endRadius  Its top's.
+		@param sides  Its sides, at least 3.
+		@param color  The color. */
+	static function DrawCylinderEx(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int, color:Color):Void {
+		if (sides < 3)
+			sides = 3;
+		var all = cylinderSides(startPos, endPos, startRadius, endRadius, sides);
+		if (all == null)
+			return;
+		rlBegin(RL_TRIANGLES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		for (w in all) {
+			var points = [];
+			if (startRadius > 0)
+				points = points.concat([startPos, w[1], w[0]]);
+			points = points.concat([w[0], w[1], w[2], w[1], w[3], w[2]]);
+			if (endRadius > 0)
+				points = points.concat([endPos, w[2], w[3]]);
+			for (p in points)
+				rlVertex3f(p.x, p.y, p.z);
+		}
+		rlEnd();
+	}
+
+	/** Draws a cylinder's wires standing on the XZ plane, or a cone's when its top's radius is 0.
+
+		@param position  Its base's center.
+		@param radiusTop  Its top's radius.
+		@param radiusBottom  Its base's.
+		@param height  Its height.
+		@param sides  Its sides, at least 3.
+		@param color  The color. */
+	static function DrawCylinderWires(position:Vector3, radiusTop:Float, radiusBottom:Float, height:Float, sides:Int, color:Color):Void {
+		if (sides < 3)
+			sides = 3;
+		var angleStep = 360.0 / sides;
+		inline function x(i:Int, r:Float):Float
+			return Math.sin(DEG2RAD * i * angleStep) * r;
+		inline function z(i:Int, r:Float):Float
+			return Math.cos(DEG2RAD * i * angleStep) * r;
+		rlPushMatrix();
+		rlTranslatef(position.x, position.y, position.z);
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		for (i in 0...sides) {
+			rlVertex3f(x(i, radiusBottom), 0, z(i, radiusBottom));
+			rlVertex3f(x(i + 1, radiusBottom), 0, z(i + 1, radiusBottom));
+			rlVertex3f(x(i + 1, radiusBottom), 0, z(i + 1, radiusBottom));
+			rlVertex3f(x(i + 1, radiusTop), height, z(i + 1, radiusTop));
+			rlVertex3f(x(i + 1, radiusTop), height, z(i + 1, radiusTop));
+			rlVertex3f(x(i, radiusTop), height, z(i, radiusTop));
+			rlVertex3f(x(i, radiusTop), height, z(i, radiusTop));
+			rlVertex3f(x(i, radiusBottom), 0, z(i, radiusBottom));
+		}
+		rlEnd();
+		rlPopMatrix();
+	}
+
+	/** Draws a cylinder's wires from one point to another, or a cone's when a radius is 0.
+
+		@param startPos  Its base's center.
+		@param endPos  Its top's.
+		@param startRadius  Its base's radius.
+		@param endRadius  Its top's.
+		@param sides  Its sides, at least 3.
+		@param color  The color. */
+	static function DrawCylinderWiresEx(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int, color:Color):Void {
+		if (sides < 3)
+			sides = 3;
+		var all = cylinderSides(startPos, endPos, startRadius, endRadius, sides);
+		if (all == null)
+			return;
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		for (w in all)
+			for (p in [w[0], w[1], w[0], w[2], w[2], w[3]])
+				rlVertex3f(p.x, p.y, p.z);
+		rlEnd();
+	}
+
+	// A capsule's quads, as raylib's DrawCapsule and DrawCapsuleWires make them: each cap's rings and slices, the end's then the start's,
+	// then the middle's slices, each [w1, w2, w3, w4] and whether it is the start's cap.
+	static function capsuleQuads(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int):Array<{w:Array<Vector3>, start:Bool}> {
+		var direction = new Vector3(endPos.x - startPos.x, endPos.y - startPos.y, endPos.z - startPos.z);
+		var sphereCase = direction.x == 0 && direction.y == 0 && direction.z == 0;
+		if (sphereCase)
+			direction = new Vector3(0, 1, 0);
+		var b0 = Vector3Normalize(direction);
+		var b1 = Vector3Normalize(Vector3Perpendicular(direction));
+		var b2 = Vector3Normalize(Vector3CrossProduct(b1, direction));
+		var capCenter = endPos;
+		var baseSliceAngle = (2.0 * PI) / slices,
+			baseRingAngle = PI * 0.5 / rings;
+		var quads = [];
+		for (c in 0...2) {
+			function cap(i:Int, j:Int):Vector3 {
+				var ringSin = Math.sin(baseSliceAngle * j) * Math.cos(baseRingAngle * i),
+					ringCos = Math.cos(baseSliceAngle * j) * Math.cos(baseRingAngle * i),
+					up = Math.sin(baseRingAngle * i);
+				return new Vector3(capCenter.x
+					+ (up * b0.x + ringSin * b1.x + ringCos * b2.x) * radius,
+					capCenter.y
+					+ (up * b0.y + ringSin * b1.y + ringCos * b2.y) * radius, capCenter.z
+					+ (up * b0.z + ringSin * b1.z + ringCos * b2.z) * radius);
+			}
+			for (i in 0...rings)
+				for (j in 0...slices)
+					quads.push({w: [cap(i, j), cap(i, j + 1), cap(i + 1, j), cap(i + 1, j + 1)], start: c == 1});
+			capCenter = startPos;
+			b0 = Vector3Scale(b0, -1.0);
+		}
+		if (!sphereCase) {
+			function side(p:Vector3, j:Int):Vector3 {
+				var ringSin = Math.sin(baseSliceAngle * j) * radius,
+					ringCos = Math.cos(baseSliceAngle * j) * radius;
+				return new Vector3(p.x + ringSin * b1.x + ringCos * b2.x, p.y + ringSin * b1.y + ringCos * b2.y, p.z + ringSin * b1.z + ringCos * b2.z);
+			}
+			for (j in 0...slices)
+				quads.push({w: [side(startPos, j), side(startPos, j + 1), side(endPos, j), side(endPos, j + 1)], start: false});
+		}
+		return quads;
+	}
+
+	/** Draws a filled capsule: a cylinder with half a sphere on each end, their centers the two points.
+
+		@param startPos  One end's center.
+		@param endPos  The other's.
+		@param radius  Its radius.
+		@param slices  Slices around, at least 3.
+		@param rings  Rings in each half sphere.
+		@param color  The color. */
+	static function DrawCapsule(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void {
+		if (slices < 3)
+			slices = 3;
+		rlBegin(RL_TRIANGLES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		for (q in capsuleQuads(startPos, endPos, radius, slices, rings)) {
+			var w = q.w;
+			// The end's cap and the middle wind one way, the start's the other, so each faces out.
+			var order = q.start ? [w[0], w[2], w[1], w[1], w[2], w[3]] : [w[0], w[1], w[2], w[1], w[3], w[2]];
+			for (p in order)
+				rlVertex3f(p.x, p.y, p.z);
+		}
+		rlEnd();
+	}
+
+	/** Draws a capsule's wires: a cylinder with half a sphere on each end, their centers the two points.
+
+		@param startPos  One end's center.
+		@param endPos  The other's.
+		@param radius  Its radius.
+		@param slices  Slices around, at least 3.
+		@param rings  Rings in each half sphere.
+		@param color  The color. */
+	static function DrawCapsuleWires(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void {
+		if (slices < 3)
+			slices = 3;
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		var caps = rings * slices * 2;
+		for (k => q in capsuleQuads(startPos, endPos, radius, slices, rings)) {
+			var w = q.w;
+			var order = k < caps ? [w[0], w[1], w[1], w[2], w[0], w[2], w[1], w[3], w[2], w[3]] : [w[0], w[2], w[1], w[3], w[1], w[2]];
+			for (p in order)
+				rlVertex3f(p.x, p.y, p.z);
+		}
+		rlEnd();
 	}
 
 	/** Draws a flat rectangle on the XZ plane, facing up.
@@ -179,29 +520,146 @@ class RModels {
 		@param size  Its size along x and z.
 		@param color  The color. */
 	static function DrawPlane(centerPos:Vector3, size:Vector2, color:Color):Void {
-		var f = Runtime.frame, t = f.white, x = size.x / 2, z = size.y / 2;
-		f.nx = 0;
-		f.ny = 1;
-		f.nz = 0;
-		var c = [[-x, z], [x, z], [x, -z], [-x, z], [x, -z], [-x, -z]];
-		for (p in c)
-			f.vertex(t, false, centerPos.x + p[0], centerPos.y, centerPos.z + p[1], 0, 0, color);
-		f.nz = 1;
-		f.ny = 0;
+		rlPushMatrix();
+		rlTranslatef(centerPos.x, centerPos.y, centerPos.z);
+		rlScalef(size.x, 1.0, size.y);
+		rlBegin(RL_QUADS);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		rlNormal3f(0, 1, 0);
+		rlVertex3f(-0.5, 0, -0.5);
+		rlVertex3f(-0.5, 0, 0.5);
+		rlVertex3f(0.5, 0, 0.5);
+		rlVertex3f(0.5, 0, -0.5);
+		rlEnd();
+		rlPopMatrix();
 	}
 
-	/** Draws a grid on the XZ plane, centered on the origin: its center lines darker, as raylib's.
+	/** Draws a ray as a line 10000 long.
+
+		@param ray  The ray.
+		@param color  The color. */
+	static function DrawRay(ray:Ray, color:Color):Void {
+		var scale = 10000;
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		rlVertex3f(ray.position.x, ray.position.y, ray.position.z);
+		rlVertex3f(ray.position.x
+			+ ray.direction.x * scale, ray.position.y
+			+ ray.direction.y * scale, ray.position.z
+			+ ray.direction.z * scale);
+		rlEnd();
+	}
+
+	/** Draws a grid on the XZ plane, centered on the origin, its center lines darker, as raylib's.
 
 		@param slices  The lines each way.
 		@param spacing  The space between them. */
 	static function DrawGrid(slices:Int, spacing:Float):Void {
-		var half = slices / 2;
-		for (i in 0...slices + 1) {
-			var p = (i - half) * spacing, e = half * spacing;
-			var color = i == Std.int(half) ? new Color(128, 128, 128, 255) : new Color(191, 191, 191, 255);
-			DrawLine3D(new Vector3(p, 0, -e), new Vector3(p, 0, e), color);
-			DrawLine3D(new Vector3(-e, 0, p), new Vector3(e, 0, p), color);
+		var halfSlices = Std.int(slices / 2);
+		rlBegin(RL_LINES);
+		for (i in -halfSlices...halfSlices + 1) {
+			if (i == 0)
+				rlColor3f(0.5, 0.5, 0.5);
+			else
+				rlColor3f(0.75, 0.75, 0.75);
+			rlVertex3f(i * spacing, 0, -halfSlices * spacing);
+			rlVertex3f(i * spacing, 0, halfSlices * spacing);
+			rlVertex3f(-halfSlices * spacing, 0, i * spacing);
+			rlVertex3f(halfSlices * spacing, 0, i * spacing);
 		}
+		rlEnd();
+	}
+
+	/** Draws a bounding box's edges.
+
+		@param box  The box.
+		@param color  The color. */
+	static function DrawBoundingBox(box:BoundingBox, color:Color):Void {
+		var size = new Vector3(Math.abs(box.max.x - box.min.x), Math.abs(box.max.y - box.min.y), Math.abs(box.max.z - box.min.z));
+		var center = new Vector3(box.min.x + size.x / 2.0, box.min.y + size.y / 2.0, box.min.z + size.z / 2.0);
+		DrawCubeWires(center, size.x, size.y, size.z, color);
+	}
+
+	/** Draws a texture facing the camera, turning about y alone, at a height of scale and its own proportions.
+
+		@param camera  The camera.
+		@param texture  The texture.
+		@param position  Its center.
+		@param scale  Its height.
+		@param tint  The tint. */
+	static function DrawBillboard(camera:Camera, texture:Texture2D, position:Vector3, scale:Float, tint:Color):Void {
+		var source = new Rectangle(0, 0, texture.width, texture.height);
+		DrawBillboardRec(camera, texture, source, position, new Vector2(scale * Math.abs(source.width / source.height), scale), tint);
+	}
+
+	/** Draws part of a texture facing the camera, turning about y alone.
+
+		@param camera  The camera.
+		@param texture  The texture.
+		@param source  The part, in its pixels.
+		@param position  Its center.
+		@param size  Its size; a negative one flips it.
+		@param tint  The tint. */
+	static function DrawBillboardRec(camera:Camera, texture:Texture2D, source:Rectangle, position:Vector3, size:Vector2, tint:Color):Void {
+		var up = new Vector3(0, 1, 0);
+		DrawBillboardPro(camera, texture, source, position, up, size, Vector2Scale(size, 0.5), 0, tint);
+	}
+
+	/** Draws part of a texture facing the camera's right and an up of its own, turned about the way it faces.
+
+		@param camera  The camera.
+		@param texture  The texture.
+		@param source  The part, in its pixels.
+		@param position  Where its origin is.
+		@param up  Its up.
+		@param size  Its size; a negative one flips it.
+		@param origin  The point of it at the position, from its bottom left, in the size's units.
+		@param rotation  How far it turns about its origin, in degrees.
+		@param tint  The tint. */
+	static function DrawBillboardPro(camera:Camera, texture:Texture2D, source:Rectangle, position:Vector3, up:Vector3, size:Vector2, origin:Vector2,
+			rotation:Float, tint:Color):Void {
+		var matView = MatrixLookAt(camera.position, camera.target, camera.up);
+		var right = Vector3Scale(new Vector3(matView.m0, matView.m4, matView.m8), size.x);
+		up = Vector3Scale(up, size.y);
+		var sx = source.x, sy = source.y, sw = source.width, sh = source.height, ox = origin.x, oy = origin.y;
+		// Flipped, its corners still counterclockwise.
+		if (size.x < 0) {
+			sx += size.x;
+			sw *= -1.0;
+			right = Vector3Negate(right);
+			ox *= -1.0;
+		}
+		if (size.y < 0) {
+			sy += size.y;
+			sh *= -1.0;
+			up = Vector3Negate(up);
+			oy *= -1.0;
+		}
+		var forward = rotation != 0 ? Vector3CrossProduct(right, up) : new Vector3();
+		var origin3D = Vector3Add(Vector3Scale(Vector3Normalize(right), ox), Vector3Scale(Vector3Normalize(up), oy));
+		var points = [new Vector3(), right, Vector3Add(up, right), up];
+		for (i in 0...4) {
+			points[i] = Vector3Subtract(points[i], origin3D);
+			if (rotation != 0)
+				points[i] = Vector3RotateByAxisAngle(points[i], forward, rotation * DEG2RAD);
+			points[i] = Vector3Add(points[i], position);
+		}
+		var tw:Float = texture.width, th:Float = texture.height;
+		var texcoords = [
+			[sx / tw, (sy + sh) / th],
+			[(sx + sw) / tw, (sy + sh) / th],
+			[(sx + sw) / tw, sy / th],
+			[sx / tw, sy / th]
+		];
+		rlSetTexture(texture.id);
+		rlBegin(RL_QUADS);
+		rlColor4ub(tint.r, tint.g, tint.b, tint.a);
+		for (i in 0...4) {
+			rlTexCoord2f(texcoords[i][0], texcoords[i][1]);
+			rlVertex3f(points[i].x, points[i].y, points[i].z);
+		}
+		rlEnd();
+		rlSetTexture(0);
 	}
 
 	// ---- Models and meshes ----
@@ -299,12 +757,44 @@ class RModels {
 		drawMesh(mesh, material, toMatrix3D(transform), WHITE);
 	}
 
-	/** Sends a mesh's vertices to the GPU, so it can be drawn. The `GenMesh*` functions and `LoadModelAsync` do it themselves.
+	/** Sends a mesh's vertices to the GPU, so it can be drawn. A mesh not sent goes when it is first drawn, as `LoadModelAsync`'s and the
+		`GenMesh*` functions' do.
 
 		@param mesh  The mesh.
-		@param isDynamic  Whether it will change (raylib names it `dynamic`, a Haxe keyword); meshes here can't, so it is ignored. */
+		@param isDynamic  Whether it will change (raylib names it `dynamic`, a Haxe keyword); any mesh here can be changed by
+			`UpdateMeshBuffer`, so it is ignored. */
 	static function UploadMesh(mesh:Mesh, isDynamic:Bool):Void {
 		Models.upload(mesh);
+	}
+
+	/** Changes part of one of a mesh's buffers on the GPU, as raylib's: the mesh's own arrays stay as they were. Draws asked for before
+		it keep what was there; those after see the change.
+
+		@param mesh  The mesh, uploaded (`UploadMesh`, or drawn once); one that isn't changes nothing.
+		@param index  The buffer: 0 positions, 1 texture coordinates, 2 normals, 3 colors, 4 tangents, 5 second texture coordinates,
+			6 indices. One the mesh has no array for changes nothing.
+		@param data  The new values: raylib's bytes (`haxe.io.Bytes`: 32-bit floats, colors a byte each, indices 16-bit), or an array of
+			the numbers (colors 0 to 255).
+		@param dataSize  How many bytes they are, as raylib counts them.
+		@param offset  Where they go in the buffer, in raylib's bytes. */
+	static function UpdateMeshBuffer(mesh:Mesh, index:Int, data:Dynamic, dataSize:Int, offset:Int):Void {
+		if (index < 0 || index > 6 || data == null)
+			return;
+		var size = [4, 4, 4, 1, 4, 4, 2][index],
+			count = Std.int(dataSize / size);
+		var values:Array<Float> = [];
+		if (Std.isOfType(data, haxe.io.Bytes)) {
+			var bytes:haxe.io.Bytes = data;
+			for (i in 0...count)
+				if ((i + 1) * size <= bytes.length)
+					values.push(index == 3 ? bytes.get(i) : index == 6 ? bytes.getUInt16(i * 2) : bytes.getFloat(i * 4));
+		} else if (Std.isOfType(data, Array)) {
+			var numbers:Array<Dynamic> = data;
+			for (i in 0...count)
+				if (i < numbers.length)
+					values.push((numbers[i] : Float));
+		}
+		Models.update(mesh, index, values, offset);
 	}
 
 	/** Frees a mesh's GPU buffers.
@@ -314,35 +804,550 @@ class RModels {
 		Models.unload(mesh);
 	}
 
-	/** Makes a box mesh, centered on the origin.
+	/** Makes a flat regular polygon on the XZ plane, facing up, centered on the origin: a triangle a side, with no indices, its texture
+		coordinates 0.
+
+		@param sides  Its sides; fewer than 3 make an empty mesh.
+		@param radius  Its corners' distance from the center.
+		@return  The mesh. */
+	static function GenMeshPoly(sides:Int, radius:Float):Mesh {
+		var mesh = new Mesh();
+		if (sides < 3)
+			return mesh;
+		var vertexCount = sides * 3;
+		var vertices = [], d = 0.0, dStep = 360.0 / sides;
+		for (_ in 0...sides) {
+			for (v in [
+				0,
+				0,
+				0,
+				Trig.sin(DEG2RAD * d) * radius,
+				0,
+				Trig.cos(DEG2RAD * d) * radius,
+				Trig.sin(DEG2RAD * (d + dStep)) * radius,
+				0,
+				Trig.cos(DEG2RAD * (d + dStep)) * radius
+			])
+				vertices.push(v);
+			d += dStep;
+		}
+		mesh.vertexCount = vertexCount;
+		mesh.triangleCount = sides;
+		mesh.vertices = vertices;
+		mesh.texcoords = [for (_ in 0...vertexCount * 2) 0.];
+		mesh.normals = [for (_ in 0...vertexCount) for (c in [0., 1, 0]) c];
+		return mesh;
+	}
+
+	/** Makes a flat mesh on the XZ plane, facing up, centered on the origin: a grid of vertices shared by its cells' triangles.
+
+		@param width  Along x.
+		@param length  Along z.
+		@param resX  Cells along x.
+		@param resZ  Cells along z.
+		@return  The mesh. */
+	static function GenMeshPlane(width:Float, length:Float, resX:Int, resZ:Int):Mesh {
+		var mesh = new Mesh();
+		resX++;
+		resZ++;
+		var vertexCount = resX * resZ;
+		var vertices = [], texcoords = [];
+		for (z in 0...resZ) {
+			var zPos = (z / (resZ - 1) - 0.5) * length;
+			for (x in 0...resX) {
+				vertices.push((x / (resX - 1) - 0.5) * width);
+				vertices.push(0);
+				vertices.push(zPos);
+			}
+		}
+		for (v in 0...resZ)
+			for (u in 0...resX) {
+				texcoords.push(u / (resX - 1));
+				texcoords.push(v / (resZ - 1));
+			}
+		var numFaces = (resX - 1) * (resZ - 1), triangles = [];
+		for (face in 0...numFaces) {
+			// The face's lower left corner.
+			var i = face + Std.int(face / (resX - 1));
+			for (t in [i + resX, i + 1, i, i + resX, i + resX + 1, i + 1])
+				triangles.push(t);
+		}
+		mesh.vertexCount = vertexCount;
+		mesh.triangleCount = numFaces * 2;
+		mesh.vertices = vertices;
+		mesh.texcoords = texcoords;
+		mesh.normals = [for (_ in 0...vertexCount) for (c in [0., 1, 0]) c];
+		mesh.indices = triangles;
+		return mesh;
+	}
+
+	/** Makes a box mesh, centered on the origin: four vertices a face, each face's texture its whole.
 
 		@param width  Along x.
 		@param height  Along y.
 		@param length  Along z.
 		@return  The mesh. */
 	static function GenMeshCube(width:Float, height:Float, length:Float):Mesh {
-		return Models.cube(width, height, length);
+		var w = width / 2, h = height / 2, l = length / 2;
+		var mesh = new Mesh();
+		mesh.vertices = [-w,
+			-h, l, w,
+			-h, l, w, h, l,
+			-w, h, l,
+			-w,
+			-h,
+			-l,
+			-w, h,
+			-l, w, h,
+			-l, w,
+			-h,
+			-l,
+			-w, h,
+			-l,
+			-w, h, l, w, h, l, w, h,
+			-l,
+			-w,
+			-h,
+			-l, w,
+			-h,
+			-l,
+			w,
+			-h, l,
+			-w,
+			-h, l, w,
+			-h,
+			-l, w, h,
+			-l, w, h, l, w,
+			-h, l,
+			-w,
+			-h,
+			-l,
+			-w,
+			-h, l,
+			-w, h, l,
+			-w, h,
+			-l];
+		mesh.texcoords = [
+			0., 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1
+		];
+		mesh.normals = [
+			for (n in [[0., 0, 1], [0., 0, -1], [0., 1, 0], [0., -1, 0], [1., 0, 0], [-1., 0, 0]])
+				for (_ in 0...4)
+					for (c in n)
+						c
+		];
+		mesh.indices = [for (k in 0...6) for (i in [0, 1, 2, 0, 2, 3]) 4 * k + i];
+		mesh.vertexCount = 24;
+		mesh.triangleCount = 12;
+		return mesh;
 	}
 
-	/** Makes a flat mesh on the XZ plane, facing up.
-
-		@param width  Along x.
-		@param length  Along z.
-		@param resX  Divisions along x.
-		@param resZ  Divisions along z.
-		@return  The mesh. */
-	static function GenMeshPlane(width:Float, length:Float, resX:Int, resZ:Int):Mesh {
-		return Models.plane(width, length, resX, resZ);
-	}
-
-	/** Makes a sphere mesh, centered on the origin.
+	/** Makes a sphere mesh, centered on the origin, its poles on z, three vertices a triangle with no indices, as raylib's (par_shapes').
 
 		@param radius  Its radius.
-		@param rings  Rings top to bottom.
-		@param slices  Slices around.
-		@return  The mesh. */
+		@param rings  Rings pole to pole, at least 3.
+		@param slices  Slices around, at least 3.
+		@return  The mesh; empty for fewer rings or slices. */
 	static function GenMeshSphere(radius:Float, rings:Int, slices:Int):Mesh {
-		return Models.sphere(radius, rings, slices);
+		if (rings < 3 || slices < 3) {
+			Runtime.log(LOG_WARNING, "MESH: Failed to generate mesh: sphere");
+			return new Mesh();
+		}
+		ParShapes.setEpsilonDegenerateSphere(0.0);
+		var sphere = ParShapes.sphere(slices, rings);
+		ParShapes.scale(sphere, radius, radius, radius);
+		return fromParMesh(sphere);
+	}
+
+	/** Makes half a sphere, open at its base, on the side of +y from the origin, three vertices a triangle with no indices.
+
+		@param radius  Its radius; a negative one is 0.
+		@param rings  Rings from the pole, at least 3.
+		@param slices  Slices around, at least 3.
+		@return  The mesh; empty for fewer rings or slices. */
+	static function GenMeshHemiSphere(radius:Float, rings:Int, slices:Int):Mesh {
+		if (rings < 3 || slices < 3) {
+			Runtime.log(LOG_WARNING, "MESH: Failed to generate mesh: hemisphere");
+			return new Mesh();
+		}
+		if (radius < 0)
+			radius = 0;
+		var sphere = ParShapes.hemisphere(slices, rings);
+		ParShapes.scale(sphere, radius, radius, radius);
+		return fromParMesh(sphere);
+	}
+
+	/** Makes a closed cylinder standing on the XZ plane from the origin, three vertices a triangle with no indices.
+
+		@param radius  Its radius.
+		@param height  Its height.
+		@param slices  Slices around, at least 3.
+		@return  The mesh; empty for fewer slices. */
+	static function GenMeshCylinder(radius:Float, height:Float, slices:Int):Mesh {
+		if (slices < 3) {
+			Runtime.log(LOG_WARNING, "MESH: Failed to generate mesh: cylinder");
+			return new Mesh();
+		}
+		var cylinder = ParShapes.cylinder(slices, 8);
+		ParShapes.scale(cylinder, radius, radius, height);
+		ParShapes.rotate(cylinder, -PI / 2.0, [1, 0, 0]);
+		var capTop = ParShapes.disk(radius, slices, [0, 0, 0], [0, 0, 1]);
+		capTop.tcoords = [for (_ in 0...capTop.npoints * 2) 0.];
+		ParShapes.rotate(capTop, -PI / 2.0, [1, 0, 0]);
+		ParShapes.rotate(capTop, 90 * DEG2RAD, [0, 1, 0]);
+		ParShapes.translate(capTop, 0, height, 0);
+		var capBottom = ParShapes.disk(radius, slices, [0, 0, 0], [0, 0, -1]);
+		capBottom.tcoords = [for (_ in 0...capBottom.npoints * 2) 0.95];
+		ParShapes.rotate(capBottom, PI / 2.0, [1, 0, 0]);
+		ParShapes.rotate(capBottom, -90 * DEG2RAD, [0, 1, 0]);
+		ParShapes.merge(cylinder, capTop);
+		ParShapes.merge(cylinder, capBottom);
+		return fromParMesh(cylinder);
+	}
+
+	/** Makes a closed cone standing on the XZ plane from the origin, three vertices a triangle with no indices.
+
+		@param radius  Its base's radius.
+		@param height  Its height.
+		@param slices  Slices around, at least 3.
+		@return  The mesh; empty for fewer slices. */
+	static function GenMeshCone(radius:Float, height:Float, slices:Int):Mesh {
+		if (slices < 3) {
+			Runtime.log(LOG_WARNING, "MESH: Failed to generate mesh: cone");
+			return new Mesh();
+		}
+		var cone = ParShapes.cone(slices, 8);
+		ParShapes.scale(cone, radius, radius, height);
+		ParShapes.rotate(cone, -PI / 2.0, [1, 0, 0]);
+		ParShapes.rotate(cone, PI / 2.0, [0, 1, 0]);
+		var capBottom = ParShapes.disk(radius, slices, [0, 0, 0], [0, 0, -1]);
+		capBottom.tcoords = [for (_ in 0...capBottom.npoints * 2) 0.95];
+		ParShapes.rotate(capBottom, PI / 2.0, [1, 0, 0]);
+		ParShapes.merge(cone, capBottom);
+		return fromParMesh(cone);
+	}
+
+	/** Makes a torus on the XY plane, centered on the origin, three vertices a triangle with no indices.
+
+		@param radius  The tube's radius against the ring's, 0.1 to 1 (others are clamped to it).
+		@param size  The torus's width, out to the ring's middle on each side.
+		@param radSeg  Slices around the ring, at least 3.
+		@param sides  Slices around the tube, at least 3.
+		@return  The mesh; empty for fewer slices. */
+	static function GenMeshTorus(radius:Float, size:Float, radSeg:Int, sides:Int):Mesh {
+		if (sides < 3 || radSeg < 3) {
+			Runtime.log(LOG_WARNING, "MESH: Failed to generate mesh: torus");
+			return new Mesh();
+		}
+		if (radius > 1.0)
+			radius = 1.0;
+		else if (radius < 0.1)
+			radius = 0.1;
+		var torus = ParShapes.torus(radSeg, sides, radius);
+		ParShapes.scale(torus, size / 2, size / 2, size / 2);
+		return fromParMesh(torus);
+	}
+
+	/** Makes a trefoil knot, centered on the origin, three vertices a triangle with no indices.
+
+		@param radius  The tube's radius, in tenths, 0.5 to 3 (others are clamped to it).
+		@param size  The knot's scale.
+		@param radSeg  Slices along the knot, at least 3.
+		@param sides  Slices around the tube, at least 3.
+		@return  The mesh; empty for fewer slices. */
+	static function GenMeshKnot(radius:Float, size:Float, radSeg:Int, sides:Int):Mesh {
+		if (sides < 3 || radSeg < 3) {
+			Runtime.log(LOG_WARNING, "MESH: Failed to generate mesh: knot");
+			return new Mesh();
+		}
+		if (radius > 3.0)
+			radius = 3.0;
+		else if (radius < 0.5)
+			radius = 0.5;
+		var knot = ParShapes.trefoilKnot(radSeg, sides, radius);
+		ParShapes.scale(knot, size, size, size);
+		return fromParMesh(knot);
+	}
+
+	/** Makes terrain from an image: a vertex a pixel, from the origin along +x and +z, each the height of its pixel's gray (red, green and
+		blue averaged), two triangles a cell with a flat normal each, three vertices a triangle with no indices.
+
+		@param heightmap  The image.
+		@param size  The terrain's size: x and z across the image, y the height of white.
+		@return  The mesh. */
+	static function GenMeshHeightmap(heightmap:Image, size:Vector3):Mesh {
+		var mesh = new Mesh();
+		var mapX = heightmap.width, mapZ = heightmap.height;
+		var pixels = LoadImageColors(heightmap);
+		if (pixels == null || mapX < 2 || mapZ < 2)
+			return mesh;
+		inline function gray(c:Color):Float
+			return (c.r + c.g + c.b) / 3.0;
+		mesh.triangleCount = (mapX - 1) * (mapZ - 1) * 2;
+		mesh.vertexCount = mesh.triangleCount * 3;
+		var vertices = [], texcoords = [], normals = [];
+		var sx = size.x / (mapX - 1),
+			sy = size.y / 255.0,
+			sz = size.z / (mapZ - 1);
+		for (z in 0...mapZ - 1)
+			for (x in 0...mapX - 1) {
+				var a = [x * sx, gray(pixels[x + z * mapX]) * sy, z * sz],
+					b = [x * sx, gray(pixels[x + (z + 1) * mapX]) * sy, (z + 1) * sz],
+					c = [(x + 1) * sx, gray(pixels[(x + 1) + z * mapX]) * sy, z * sz],
+					d = [(x + 1) * sx, gray(pixels[(x + 1) + (z + 1) * mapX]) * sy, (z + 1) * sz];
+				for (p in [a, b, c, c, b, d])
+					for (v in p)
+						vertices.push(v);
+				var u0 = x / (mapX - 1),
+					u1 = (x + 1) / (mapX - 1),
+					v0 = z / (mapZ - 1),
+					v1 = (z + 1) / (mapZ - 1);
+				for (t in [u0, v0, u0, v1, u1, v0, u1, v0, u0, v1, u1, v1])
+					texcoords.push(t);
+				for (tri in [[a, b, c], [c, b, d]]) {
+					var n = Vector3Normalize(Vector3CrossProduct(new Vector3(tri[1][0] - tri[0][0], tri[1][1] - tri[0][1], tri[1][2] - tri[0][2]),
+						new Vector3(tri[2][0] - tri[0][0], tri[2][1] - tri[0][1], tri[2][2] - tri[0][2])));
+					for (_ in 0...3) {
+						normals.push(n.x);
+						normals.push(n.y);
+						normals.push(n.z);
+					}
+				}
+			}
+		mesh.vertices = vertices;
+		mesh.texcoords = texcoords;
+		mesh.normals = normals;
+		return mesh;
+	}
+
+	/** Makes a maze of cubes from an image, a cube a pixel centered on it from the origin: a white pixel a wall, its faces where its
+		neighbors are black or the map ends, and its top and bottom; a black pixel a floor and a ceiling, facing in. The texture is split in
+		four: walls from its top left (right, front) and top right (left, back), tops from its bottom left and bottoms from its bottom right.
+		Three vertices a triangle, with no indices.
+
+		@param cubicmap  The image.
+		@param cubeSize  A cube's size: x along the image's width, z along its height, y the walls' height.
+		@return  The mesh. */
+	static function GenMeshCubicmap(cubicmap:Image, cubeSize:Vector3):Mesh {
+		var mesh = new Mesh();
+		var pixels = LoadImageColors(cubicmap);
+		if (pixels == null)
+			return mesh;
+		inline function equal(a:Color, b:Color):Bool
+			return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
+		var width = cubicmap.width, height = cubicmap.height;
+		var w = cubeSize.x, h = cubeSize.z, h2 = cubeSize.y;
+		var vertices:Array<Float> = [],
+			normals:Array<Float> = [],
+			texcoords:Array<Float> = [];
+		var n1 = [1., 0, 0],
+			n2 = [-1., 0, 0],
+			n3 = [0., 1, 0],
+			n4 = [0., -1, 0],
+			n5 = [0., 0, -1],
+			n6 = [0., 0, 1];
+		// Each part of the texture, x, y, width and height.
+		var rightTexUV = [0., 0, 0.5, 0.5],
+			leftTexUV = [0.5, 0, 0.5, 0.5],
+			frontTexUV = [0., 0, 0.5, 0.5],
+			backTexUV = [0.5, 0, 0.5, 0.5],
+			topTexUV = [0., 0.5, 0.5, 0.5],
+			bottomTexUV = [0.5, 0.5, 0.5, 0.5];
+		// Two triangles: their six corners, the normal, and each corner's texture coordinate as a corner of the part (0 or 1 across, then
+		// down).
+		function quad(corners:Array<Array<Float>>, n:Array<Float>, uv:Array<Float>, at:Array<Int>):Void {
+			for (p in corners)
+				for (v in p)
+					vertices.push(v);
+			for (_ in 0...6)
+				for (v in n)
+					normals.push(v);
+			for (i in 0...6) {
+				texcoords.push(uv[0] + uv[2] * at[i * 2]);
+				texcoords.push(uv[1] + uv[3] * at[i * 2 + 1]);
+			}
+		}
+		for (z in 0...height)
+			for (x in 0...width) {
+				var v1 = [w * (x - 0.5), h2, h * (z - 0.5)],
+					v2 = [w * (x - 0.5), h2, h * (z + 0.5)],
+					v3 = [w * (x + 0.5), h2, h * (z + 0.5)],
+					v4 = [w * (x + 0.5), h2, h * (z - 0.5)],
+					v5 = [w * (x + 0.5), 0, h * (z - 0.5)],
+					v6 = [w * (x - 0.5), 0, h * (z - 0.5)],
+					v7 = [w * (x - 0.5), 0, h * (z + 0.5)],
+					v8 = [w * (x + 0.5), 0, h * (z + 0.5)];
+				var pixel = pixels[z * width + x];
+				if (equal(pixel, WHITE)) {
+					quad([v1, v2, v3, v1, v3, v4], n3, topTexUV, [0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0]);
+					quad([v6, v8, v7, v6, v5, v8], n4, bottomTexUV, [1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1]);
+					if ((z < height - 1 && equal(pixels[(z + 1) * width + x], BLACK)) || z == height - 1)
+						quad([v2, v7, v3, v3, v7, v8], n6, frontTexUV, [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1]);
+					if ((z > 0 && equal(pixels[(z - 1) * width + x], BLACK)) || z == 0)
+						quad([v1, v5, v6, v1, v4, v5], n5, backTexUV, [1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1]);
+					if ((x < width - 1 && equal(pixels[z * width + (x + 1)], BLACK)) || x == width - 1)
+						quad([v3, v8, v4, v4, v8, v5], n1, rightTexUV, [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1]);
+					if ((x > 0 && equal(pixels[z * width + (x - 1)], BLACK)) || x == 0)
+						quad([v1, v7, v2, v1, v6, v7], n2, leftTexUV, [0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1]);
+				} else if (equal(pixel, BLACK)) {
+					quad([v1, v3, v2, v1, v4, v3], n4, topTexUV, [0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1]);
+					quad([v6, v7, v8, v6, v8, v5], n3, bottomTexUV, [1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0]);
+				}
+			}
+		mesh.vertexCount = Std.int(vertices.length / 3);
+		mesh.triangleCount = Std.int(mesh.vertexCount / 3);
+		mesh.vertices = vertices;
+		mesh.normals = normals;
+		mesh.texcoords = texcoords;
+		return mesh;
+	}
+
+	/** Computes a mesh's tangents from its positions, texture coordinates and normals, as raylib's: each triangle's direction of u, made
+		square to each vertex's normal, w the side its direction of v is on. It reads the vertices three at a time, as raylib's does, so it
+		is meant for a mesh without indices.
+
+		@param mesh  The mesh; one without positions or texture coordinates is left as it is. */
+	static function GenMeshTangents(mesh:Mesh):Void {
+		if (mesh.vertices == null || mesh.texcoords == null) {
+			Runtime.log(LOG_WARNING, "MESH: Tangents generation requires texcoord vertex attribute data");
+			return;
+		}
+		if (mesh.vertexCount % 3 != 0)
+			Runtime.log(LOG_WARNING, "MESH: vertexCount expected to be a multiple of 3. Expect uninitialized values.");
+		var vs = mesh.vertices, uvs = mesh.texcoords, n = mesh.vertexCount;
+		var tan1 = [for (_ in 0...n) new Vector3()],
+			tan2 = [for (_ in 0...n) new Vector3()];
+		var i = 0;
+		while (i <= n - 3) {
+			var x1 = vs[(i + 1) * 3] - vs[i * 3],
+				y1 = vs[(i + 1) * 3 + 1] - vs[i * 3 + 1],
+				z1 = vs[(i + 1) * 3 + 2] - vs[i * 3 + 2];
+			var x2 = vs[(i + 2) * 3] - vs[i * 3],
+				y2 = vs[(i + 2) * 3 + 1] - vs[i * 3 + 1],
+				z2 = vs[(i + 2) * 3 + 2] - vs[i * 3 + 2];
+			var s1 = uvs[(i + 1) * 2] - uvs[i * 2],
+				t1 = uvs[(i + 1) * 2 + 1] - uvs[i * 2 + 1];
+			var s2 = uvs[(i + 2) * 2] - uvs[i * 2],
+				t2 = uvs[(i + 2) * 2 + 1] - uvs[i * 2 + 1];
+			var div = s1 * t2 - s2 * t1;
+			var r = div == 0.0 ? 0.0 : 1.0 / div;
+			var sdir = new Vector3((t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r);
+			var tdir = new Vector3((s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r);
+			for (k in 0...3) {
+				tan1[i + k] = sdir;
+				tan2[i + k] = tdir;
+			}
+			i += 3;
+		}
+		var tangents = [];
+		for (v in 0...n) {
+			var normal = mesh.normals == null ? new Vector3() : new Vector3(mesh.normals[v * 3], mesh.normals[v * 3 + 1], mesh.normals[v * 3 + 2]);
+			var tangent = new Vector3(tan1[v].x, tan1[v].y, tan1[v].z);
+			Vector3OrthoNormalize(normal, tangent);
+			tangents.push(tangent.x);
+			tangents.push(tangent.y);
+			tangents.push(tangent.z);
+			tangents.push(Vector3DotProduct(Vector3CrossProduct(normal, tangent), tan2[v]) < 0.0 ? -1.0 : 1.0);
+		}
+		mesh.tangents = tangents;
+		// An uploaded mesh's tangents go to the GPU with the next draw that reads them.
+		mesh.gpu.contents[4] = null;
+		if (mesh.gpu.buffers != null && mesh.gpu.buffers[4] != 0) {
+			Runtime.frame.retire(mesh.gpu.buffers[4]);
+			mesh.gpu.buffers[4] = 0;
+		}
+		Runtime.log(LOG_INFO, "MESH: Tangents data computed and uploaded for provided mesh");
+	}
+
+	/** Writes a mesh as an OBJ file through `SaveFileText`, as raylib's does: its positions to 2 places, its texture coordinates and
+		normals to 3, and a face a triangle.
+
+		@param mesh  The mesh, with positions, texture coordinates and normals.
+		@param fileName  The file; only ".obj" is written.
+		@return  True when it was written. */
+	static function ExportMesh(mesh:Mesh, fileName:String):Bool {
+		if (!IsFileExtension(fileName, ".obj"))
+			return false;
+		var text = new StringBuf();
+		text.add("# //////////////////////////////////////////////////////////////////////////////////\n");
+		text.add("# //                                                                              //\n");
+		text.add("# // rMeshOBJ exporter v1.0 - Mesh exported as triangle faces and not optimized   //\n");
+		text.add("# //                                                                              //\n");
+		text.add("# // more info and bugs-report:  github.com/raysan5/raylib                        //\n");
+		text.add("# // feedback and support:       ray[at]raylib.com                                //\n");
+		text.add("# //                                                                              //\n");
+		text.add("# // Copyright (c) 2018-2024 Ramon Santamaria (@raysan5)                          //\n");
+		text.add("# //                                                                              //\n");
+		text.add("# //////////////////////////////////////////////////////////////////////////////////\n\n");
+		text.add('# Vertex Count:     ${mesh.vertexCount}\n');
+		text.add('# Triangle Count:   ${mesh.triangleCount}\n\n');
+		text.add("g mesh\n");
+		inline function at(a:Null<Array<Float>>, i:Int):Float
+			return a != null && i < a.length ? a[i] : 0;
+		for (i in 0...mesh.vertexCount)
+			text.add(TextFormat("v %.2f %.2f %.2f\n", at(mesh.vertices, i * 3), at(mesh.vertices, i * 3 + 1), at(mesh.vertices, i * 3 + 2)));
+		for (i in 0...mesh.vertexCount)
+			text.add(TextFormat("vt %.3f %.3f\n", at(mesh.texcoords, i * 2), at(mesh.texcoords, i * 2 + 1)));
+		for (i in 0...mesh.vertexCount)
+			text.add(TextFormat("vn %.3f %.3f %.3f\n", at(mesh.normals, i * 3), at(mesh.normals, i * 3 + 1), at(mesh.normals, i * 3 + 2)));
+		for (i in 0...mesh.triangleCount) {
+			var a = mesh.indices != null ? mesh.indices[i * 3] + 1 : i * 3 + 1,
+				b = mesh.indices != null ? mesh.indices[i * 3 + 1] + 1 : i * 3 + 2,
+				c = mesh.indices != null ? mesh.indices[i * 3 + 2] + 1 : i * 3 + 3;
+			text.add('f $a/$a/$a $b/$b/$b $c/$c/$c\n');
+		}
+		text.add("\n");
+		return SaveFileText(fileName, text.toString());
+	}
+
+	/** Writes a mesh as a C header through `SaveFileText`, as raylib's does: its counts as defines, and each array it has, 20 values a
+		line, floats to 3 places.
+
+		@param mesh  The mesh.
+		@param fileName  The file; its name, upper case, names the defines and the arrays.
+		@return  True when it was written. */
+	static function ExportMeshAsCode(mesh:Mesh, fileName:String):Bool {
+		var text = new StringBuf();
+		text.add("////////////////////////////////////////////////////////////////////////////////////////\n");
+		text.add("//                                                                                    //\n");
+		text.add("// MeshAsCode exporter v1.0 - Mesh vertex data exported as arrays                     //\n");
+		text.add("//                                                                                    //\n");
+		text.add("// more info and bugs-report:  github.com/raysan5/raylib                              //\n");
+		text.add("// feedback and support:       ray[at]raylib.com                                      //\n");
+		text.add("//                                                                                    //\n");
+		text.add("// Copyright (c) 2023 Ramon Santamaria (@raysan5)                                     //\n");
+		text.add("//                                                                                    //\n");
+		text.add("////////////////////////////////////////////////////////////////////////////////////////\n\n");
+		var name = new StringBuf(), base = GetFileNameWithoutExt(fileName);
+		for (i in 0...base.length) {
+			var c = StringTools.fastCodeAt(base, i);
+			name.addChar(c >= "a".code && c <= "z".code ? c - 32 : c);
+		}
+		var varName = name.toString();
+		text.add("// Mesh basic information\n");
+		text.add('#define ${varName}_VERTEX_COUNT    ${mesh.vertexCount}\n');
+		text.add('#define ${varName}_TRIANGLE_COUNT   ${mesh.triangleCount}\n\n');
+		function array(type:String, label:String, values:Null<Array<Float>>, count:Int, format:Float->String, last:String):Void {
+			if (values == null)
+				return;
+			inline function at(i:Int):Float
+				return i >= 0 && i < values.length ? values[i] : 0;
+			text.add('static $type ${varName}_${label}[$count] = { ');
+			for (i in 0...count - 1)
+				text.add(format(at(i)) + (i % 20 == 0 ? ",\n" : ", "));
+			text.add(format(at(count - 1)) + last);
+		}
+		var float = (v:Float) -> TextFormat("%.3ff", v);
+		array("float", "VERTEX_DATA", mesh.vertices, mesh.vertexCount * 3, float, " };\n\n");
+		array("float", "TEXCOORD_DATA", mesh.texcoords, mesh.vertexCount * 2, float, " };\n\n");
+		array("float", "TEXCOORD2_DATA", mesh.texcoords2, mesh.vertexCount * 2, float, " };\n\n");
+		array("float", "NORMAL_DATA", mesh.normals, mesh.vertexCount * 3, float, " };\n\n");
+		array("float", "TANGENT_DATA", mesh.tangents, mesh.vertexCount * 4, float, " };\n\n");
+		array("unsigned char", "COLOR_DATA", mesh.colors == null ? null : [for (c in mesh.colors) (c : Float)], mesh.vertexCount * 4,
+			v -> "0x" + StringTools.hex(Std.int(v)).toLowerCase(), " };\n\n");
+		array("unsigned short", "INDEX_DATA", mesh.indices == null ? null : [for (i in mesh.indices) (i : Float)], mesh.triangleCount * 3,
+			v -> Std.string(Std.int(v)), " };\n");
+		return SaveFileText(fileName, text.toString());
 	}
 
 	/** Returns raylib's default material: the default shader, white.
@@ -370,54 +1375,86 @@ class RModels {
 		model.meshMaterial[meshId] = materialId;
 	}
 
-	/** Returns a mesh's bounds.
+	/** Returns a mesh's bounds: the least and the most of its positions; 0 for a mesh without them.
 
 		@param mesh  The mesh.
 		@return  The box. */
 	static function GetMeshBoundingBox(mesh:Mesh):BoundingBox {
-		return Models.bounds(mesh);
+		var v = mesh.vertices;
+		if (v == null)
+			return new BoundingBox(new Vector3(), new Vector3());
+		var minVertex = new Vector3(v[0], v[1], v[2]),
+			maxVertex = new Vector3(v[0], v[1], v[2]);
+		for (i in 1...mesh.vertexCount) {
+			var p = new Vector3(v[i * 3], v[i * 3 + 1], v[i * 3 + 2]);
+			minVertex = Vector3Min(minVertex, p);
+			maxVertex = Vector3Max(maxVertex, p);
+		}
+		return new BoundingBox(minVertex, maxVertex);
 	}
 
-	/** Returns a model's bounds, its transform applied.
+	/** Returns a model's bounds: its meshes' together, its least and most corners then moved by its transform, as raylib's (a turned
+		model's box is not its bounds; transform its eight corners for those).
 
 		@param model  The model.
 		@return  The box. */
 	static function GetModelBoundingBox(model:Model):BoundingBox {
-		var t = toMatrix3D(model.transform);
-		var min = [Math.POSITIVE_INFINITY, Math.POSITIVE_INFINITY, Math.POSITIVE_INFINITY];
-		var max = [Math.NEGATIVE_INFINITY, Math.NEGATIVE_INFINITY, Math.NEGATIVE_INFINITY];
-		for (mesh in model.meshes) {
-			var b = Models.bounds(mesh);
-			for (x in [b.min.x, b.max.x])
-				for (y in [b.min.y, b.max.y])
-					for (z in [b.min.z, b.max.z]) {
-						var p = t.transformPoint(x, y, z), q = [p.x, p.y, p.z];
-						for (c in 0...3) {
-							if (q[c] < min[c])
-								min[c] = q[c];
-							if (q[c] > max[c])
-								max[c] = q[c];
-						}
-					}
+		var bounds = new BoundingBox(new Vector3(), new Vector3());
+		if (model.meshCount > 0) {
+			bounds = GetMeshBoundingBox(model.meshes[0]);
+			for (i in 1...model.meshCount) {
+				var other = GetMeshBoundingBox(model.meshes[i]);
+				bounds.min = new Vector3(bounds.min.x < other.min.x ? bounds.min.x : other.min.x, bounds.min.y < other.min.y ? bounds.min.y : other.min.y,
+					bounds.min.z < other.min.z ? bounds.min.z : other.min.z);
+				bounds.max = new Vector3(bounds.max.x > other.max.x ? bounds.max.x : other.max.x, bounds.max.y > other.max.y ? bounds.max.y : other.max.y,
+					bounds.max.z > other.max.z ? bounds.max.z : other.max.z);
+			}
 		}
-		if (model.meshes.length == 0)
-			return new BoundingBox(new Vector3(), new Vector3());
-		return new BoundingBox(new Vector3(min[0], min[1], min[2]), new Vector3(max[0], max[1], max[2]));
+		bounds.min = Vector3Transform(bounds.min, model.transform);
+		bounds.max = Vector3Transform(bounds.max, model.transform);
+		return bounds;
+	}
+
+	// A par_shapes mesh as raylib takes it: three vertices a triangle, each with its point's position, normal and texture coordinates.
+	static function fromParMesh(m:ParMesh):Mesh {
+		var mesh = new Mesh();
+		mesh.vertexCount = m.ntriangles * 3;
+		mesh.triangleCount = m.ntriangles;
+		var vertices = [], normals = [], texcoords = [];
+		for (t in m.triangles) {
+			for (c in 0...3) {
+				vertices.push(m.points[t * 3 + c]);
+				normals.push(m.normals[t * 3 + c]);
+			}
+			texcoords.push(m.tcoords[t * 2]);
+			texcoords.push(m.tcoords[t * 2 + 1]);
+		}
+		mesh.vertices = vertices;
+		mesh.normals = normals;
+		mesh.texcoords = texcoords;
+		return mesh;
 	}
 
 	// ---- Collisions in 3D ----
 
-	/** Returns whether two boxes overlap.
+	/** Returns whether two boxes overlap, touching included.
 
 		@param box1  One.
 		@param box2  The other.
 		@return  True when they overlap. */
 	static function CheckCollisionBoxes(box1:BoundingBox, box2:BoundingBox):Bool {
-		return box1.max.x >= box2.min.x && box1.min.x <= box2.max.x && box1.max.y >= box2.min.y && box1.min.y <= box2.max.y && box1.max.z >= box2.min.z
-			&& box1.min.z <= box2.max.z;
+		var collision = true;
+		if (box1.max.x >= box2.min.x && box1.min.x <= box2.max.x) {
+			if (box1.max.y < box2.min.y || box1.min.y > box2.max.y)
+				collision = false;
+			if (box1.max.z < box2.min.z || box1.min.z > box2.max.z)
+				collision = false;
+		} else
+			collision = false;
+		return collision;
 	}
 
-	/** Returns whether two spheres overlap.
+	/** Returns whether two spheres overlap, touching included.
 
 		@param center1  One's center.
 		@param radius1  Its radius.
@@ -425,131 +1462,109 @@ class RModels {
 		@param radius2  Its radius.
 		@return  True when they overlap. */
 	static function CheckCollisionSpheres(center1:Vector3, radius1:Float, center2:Vector3, radius2:Float):Bool {
-		return Vector3Distance(center1, center2) <= radius1 + radius2;
+		var d = Vector3Subtract(center2, center1);
+		return Vector3DotProduct(d, d) <= (radius1 + radius2) * (radius1 + radius2);
 	}
 
-	/** Returns whether a box and a sphere overlap.
+	/** Returns whether a box and a sphere overlap, touching included.
 
 		@param box  The box.
 		@param center  The sphere's center.
 		@param radius  Its radius.
 		@return  True when they overlap. */
 	static function CheckCollisionBoxSphere(box:BoundingBox, center:Vector3, radius:Float):Bool {
-		var x = Clamp(center.x, box.min.x, box.max.x),
-			y = Clamp(center.y, box.min.y, box.max.y),
-			z = Clamp(center.z, box.min.z, box.max.z);
-		return Vector3Distance(new Vector3(x, y, z), center) <= radius;
+		var dmin = 0.;
+		for (axis in [
+			[center.x, box.min.x, box.max.x],
+			[center.y, box.min.y, box.max.y],
+			[center.z, box.min.z, box.max.z]
+		]) {
+			if (axis[0] < axis[1])
+				dmin += Math.pow(axis[0] - axis[1], 2);
+			else if (axis[0] > axis[2])
+				dmin += Math.pow(axis[0] - axis[2], 2);
+		}
+		return dmin <= radius * radius;
 	}
 
-	/** Returns where a ray hits a sphere.
+	/** Returns where a ray meets a sphere, as raylib's: the near side from outside, the far side from inside (its normal then pointing in);
+		its point and distance are set even when it misses. The ray's direction should be of length 1.
 
 		@param ray  The ray.
 		@param center  The sphere's center.
 		@param radius  Its radius.
 		@return  The hit. */
 	static function GetRayCollisionSphere(ray:Ray, center:Vector3, radius:Float):RayCollision {
-		var result = new RayCollision(false, 0, new Vector3(), new Vector3());
-		var oc = Vector3Subtract(ray.position, center);
-		var b = Vector3DotProduct(oc, ray.direction),
-			c = Vector3DotProduct(oc, oc) - radius * radius;
-		var d = b * b - c;
-		if (d < 0)
-			return result;
-		var t = -b - Math.sqrt(d);
-		if (t < 0)
-			t = -b + Math.sqrt(d);
-		if (t < 0)
-			return result;
-		result.hit = true;
-		result.distance = t;
-		result.point = Vector3Add(ray.position, Vector3Scale(ray.direction, t));
-		result.normal = Vector3Normalize(Vector3Subtract(result.point, center));
-		return result;
+		var collision = new RayCollision(false, 0, new Vector3(), new Vector3());
+		var raySpherePos = Vector3Subtract(center, ray.position);
+		var vector = Vector3DotProduct(raySpherePos, ray.direction);
+		var distance = Vector3Length(raySpherePos);
+		var d = radius * radius - (distance * distance - vector * vector);
+		collision.hit = d >= 0.0;
+		if (distance < radius) {
+			collision.distance = vector + Math.sqrt(d);
+			collision.point = Vector3Add(ray.position, Vector3Scale(ray.direction, collision.distance));
+			collision.normal = Vector3Negate(Vector3Normalize(Vector3Subtract(collision.point, center)));
+		} else {
+			collision.distance = vector - Math.sqrt(d);
+			collision.point = Vector3Add(ray.position, Vector3Scale(ray.direction, collision.distance));
+			collision.normal = Vector3Normalize(Vector3Subtract(collision.point, center));
+		}
+		return collision;
 	}
 
-	/** Returns where a ray hits a box.
+	/** Returns where a ray meets a box, as raylib's: from inside, the way out, its distance negative and its normal pointing in; its point,
+		distance and normal are set even when it misses.
 
 		@param ray  The ray.
 		@param box  The box.
 		@return  The hit. */
 	static function GetRayCollisionBox(ray:Ray, box:BoundingBox):RayCollision {
-		var result = new RayCollision(false, 0, new Vector3(), new Vector3());
-		var o = [ray.position.x, ray.position.y, ray.position.z],
-			d = [ray.direction.x, ray.direction.y, ray.direction.z];
-		var lo = [box.min.x, box.min.y, box.min.z],
-			hi = [box.max.x, box.max.y, box.max.z];
-		var tmin = Math.NEGATIVE_INFINITY, tmax = Math.POSITIVE_INFINITY, axis = 0, sign = 1.;
-		for (i in 0...3) {
-			if (d[i] == 0) {
-				if (o[i] < lo[i] || o[i] > hi[i])
-					return result;
-				continue;
-			}
-			var t1 = (lo[i] - o[i]) / d[i], t2 = (hi[i] - o[i]) / d[i];
-			var near = Math.min(t1, t2), far = Math.max(t1, t2);
-			if (near > tmin) {
-				tmin = near;
-				axis = i;
-				sign = t1 < t2 ? -1 : 1;
-			}
-			if (far < tmax)
-				tmax = far;
+		var collision = new RayCollision(false, 0, new Vector3(), new Vector3());
+		var position = ray.position, direction = ray.direction;
+		// From inside, the distance is negative, as if the ray were turned round, so it is turned round.
+		var insideBox = position.x > box.min.x && position.x < box.max.x && position.y > box.min.y && position.y < box.max.y && position.z > box.min.z
+			&& position.z < box.max.z;
+		if (insideBox)
+			direction = Vector3Negate(direction);
+		var t = [for (_ in 0...11) 0.];
+		t[8] = 1.0 / direction.x;
+		t[9] = 1.0 / direction.y;
+		t[10] = 1.0 / direction.z;
+		t[0] = (box.min.x - position.x) * t[8];
+		t[1] = (box.max.x - position.x) * t[8];
+		t[2] = (box.min.y - position.y) * t[9];
+		t[3] = (box.max.y - position.y) * t[9];
+		t[4] = (box.min.z - position.z) * t[10];
+		t[5] = (box.max.z - position.z) * t[10];
+		t[6] = fmaxf(fmaxf(fminf(t[0], t[1]), fminf(t[2], t[3])), fminf(t[4], t[5]));
+		t[7] = fminf(fminf(fmaxf(t[0], t[1]), fmaxf(t[2], t[3])), fmaxf(t[4], t[5]));
+		collision.hit = !(t[7] < 0 || t[6] > t[7]);
+		collision.distance = t[6];
+		collision.point = Vector3Add(position, Vector3Scale(direction, collision.distance));
+		// The normal: from the box's center to the point, scaled to a cube a little over 2 across, each part cut to an integer.
+		var normal = Vector3Subtract(collision.point, Vector3Lerp(box.min, box.max, 0.5));
+		normal = Vector3Divide(Vector3Scale(normal, 2.01), Vector3Subtract(box.max, box.min));
+		normal = new Vector3(truncate(normal.x), truncate(normal.y), truncate(normal.z));
+		collision.normal = Vector3Normalize(normal);
+		if (insideBox) {
+			collision.distance *= -1.0;
+			collision.normal = Vector3Negate(collision.normal);
 		}
-		if (tmax < 0 || tmin > tmax)
-			return result;
-		var t = tmin >= 0 ? tmin : tmax;
-		result.hit = true;
-		result.distance = t;
-		result.point = Vector3Add(ray.position, Vector3Scale(ray.direction, t));
-		var n = [0., 0, 0];
-		n[axis] = sign;
-		result.normal = new Vector3(n[0], n[1], n[2]);
-		return result;
+		return collision;
 	}
 
-	/** Returns where a ray hits a triangle.
+	/** Returns where a ray first meets a mesh moved by a transform: the nearest of its triangles it meets.
 
 		@param ray  The ray.
-		@param p1  A corner.
-		@param p2  A corner.
-		@param p3  A corner.
-		@return  The hit. */
-	static function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3):RayCollision {
-		var result = new RayCollision(false, 0, new Vector3(), new Vector3());
-		var e1 = Vector3Subtract(p2, p1), e2 = Vector3Subtract(p3, p1);
-		var p = Vector3CrossProduct(ray.direction, e2),
-			det = Vector3DotProduct(e1, p);
-		if (Math.abs(det) < 1e-6)
-			return result;
-		var inv = 1 / det, t0 = Vector3Subtract(ray.position, p1);
-		var u = Vector3DotProduct(t0, p) * inv;
-		if (u < 0 || u > 1)
-			return result;
-		var q = Vector3CrossProduct(t0, e1),
-			v = Vector3DotProduct(ray.direction, q) * inv;
-		if (v < 0 || u + v > 1)
-			return result;
-		var t = Vector3DotProduct(e2, q) * inv;
-		if (t <= 1e-6)
-			return result;
-		result.hit = true;
-		result.distance = t;
-		result.point = Vector3Add(ray.position, Vector3Scale(ray.direction, t));
-		result.normal = Vector3Normalize(Vector3CrossProduct(e1, e2));
-		return result;
-	}
-
-	/** Returns where a ray hits a mesh drawn with a transform: its nearest triangle.
-
-		@param ray  The ray.
-		@param mesh  The mesh.
+		@param mesh  The mesh, with its positions.
 		@param transform  The transform.
 		@return  The hit. */
 	static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision {
-		var best = new RayCollision(false, 0, new Vector3(), new Vector3());
+		var collision = new RayCollision(false, 0, new Vector3(), new Vector3());
 		var v = mesh.vertices;
 		if (v == null)
-			return best;
+			return collision;
 		var t = toMatrix3D(transform);
 		function corner(i:Int):Vector3 {
 			var p = t.transformPoint(v[i * 3], v[i * 3 + 1], v[i * 3 + 2]);
@@ -560,11 +1575,66 @@ class RModels {
 				b = mesh.indices == null ? k * 3 + 1 : mesh.indices[k * 3 + 1],
 				c = mesh.indices == null ? k * 3 + 2 : mesh.indices[k * 3 + 2];
 			var hit = GetRayCollisionTriangle(ray, corner(a), corner(b), corner(c));
-			if (hit.hit && (!best.hit || hit.distance < best.distance))
-				best = hit;
+			if (hit.hit && (!collision.hit || collision.distance > hit.distance))
+				collision = hit;
 		}
-		return best;
+		return collision;
 	}
+
+	/** Returns where a ray meets a triangle from either side (Möller and Trumbore's test, as raylib's), its normal that of the corners
+		taken counterclockwise.
+
+		@param ray  The ray.
+		@param p1  A corner.
+		@param p2  The next.
+		@param p3  The last.
+		@return  The hit. */
+	static function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3):RayCollision {
+		var EPSILON = 0.000001;
+		var collision = new RayCollision(false, 0, new Vector3(), new Vector3());
+		var edge1 = Vector3Subtract(p2, p1), edge2 = Vector3Subtract(p3, p1);
+		var p = Vector3CrossProduct(ray.direction, edge2);
+		var det = Vector3DotProduct(edge1, p);
+		// Parallel to it, or in its plane.
+		if (det > -EPSILON && det < EPSILON)
+			return collision;
+		var invDet = 1.0 / det;
+		var tv = Vector3Subtract(ray.position, p1);
+		var u = Vector3DotProduct(tv, p) * invDet;
+		if (u < 0.0 || u > 1.0)
+			return collision;
+		var q = Vector3CrossProduct(tv, edge1);
+		var v = Vector3DotProduct(ray.direction, q) * invDet;
+		if (v < 0.0 || (u + v) > 1.0)
+			return collision;
+		var t = Vector3DotProduct(edge2, q) * invDet;
+		if (t > EPSILON) {
+			collision.hit = true;
+			collision.distance = t;
+			collision.normal = Vector3Normalize(Vector3CrossProduct(edge1, edge2));
+			collision.point = Vector3Add(ray.position, Vector3Scale(ray.direction, t));
+		}
+		return collision;
+	}
+
+	/** Returns where a ray meets a quad, as two triangles: p1, p2 and p4, then p2, p3 and p4.
+
+		@param ray  The ray.
+		@param p1  A corner.
+		@param p2  The next, counterclockwise.
+		@param p3  The next.
+		@param p4  The last.
+		@return  The hit. */
+	static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, p4:Vector3):RayCollision {
+		var collision = GetRayCollisionTriangle(ray, p1, p2, p4);
+		if (!collision.hit)
+			collision = GetRayCollisionTriangle(ray, p2, p3, p4);
+		return collision;
+	}
+
+	// C's cast of a float to int, toward 0, kept a float.
+	static function truncate(x:Float):Float
+		return x < 0 ? Math.ceil(x) : Math.floor(x);
 
 	// ---- What the 3D functions share ----
 	static var shaderDefault:Null<Shader> = null;
@@ -607,6 +1677,8 @@ class RModels {
 		locs[SHADER_LOC_VERTEX_TEXCOORD01] = p.attributes.indexOf("vertexTexCoord");
 		locs[SHADER_LOC_VERTEX_NORMAL] = p.attributes.indexOf("vertexNormal");
 		locs[SHADER_LOC_VERTEX_COLOR] = p.attributes.indexOf("vertexColor");
+		locs[SHADER_LOC_VERTEX_TANGENT] = p.attributes.indexOf("vertexTangent");
+		locs[SHADER_LOC_VERTEX_TEXCOORD02] = p.attributes.indexOf("vertexTexCoord2");
 		locs[SHADER_LOC_MATRIX_MVP] = p.locate("mvp");
 		locs[SHADER_LOC_MATRIX_VIEW] = p.locate("matView");
 		locs[SHADER_LOC_MATRIX_PROJECTION] = p.locate("matProjection");

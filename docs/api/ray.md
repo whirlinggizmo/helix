@@ -370,7 +370,9 @@ var vertexCount:Int
 var triangleCount:Int
 var vertices:Null<Array<Float>>
 var texcoords:Null<Array<Float>>
+var texcoords2:Null<Array<Float>>
 var normals:Null<Array<Float>>
+var tangents:Null<Array<Float>>
 var colors:Null<Array<Int>>
 var indices:Null<Array<Int>>
 ```
@@ -380,7 +382,9 @@ var indices:Null<Array<Int>>
 - `triangleCount`: Gets or sets the number of triangles.
 - `vertices`: Gets or sets the positions, x, y and z a vertex.
 - `texcoords`: Gets or sets the texture coordinates, u and v a vertex, or null for none.
+- `texcoords2`: Gets or sets the second texture coordinates, u and v a vertex, or null for none.
 - `normals`: Gets or sets the normals, x, y and z a vertex, or null for none.
+- `tangents`: Gets or sets the tangents, x, y, z and w a vertex (w is 1 or -1, the way the bitangent turns), or null for none. `GenMeshTangents` makes them.
 - `colors`: Gets or sets the colors, r, g, b and a a vertex, 0 to 255, or null for white.
 - `indices`: Gets or sets the indices, three a triangle, or null for vertices taken three at a time.
 
@@ -3239,16 +3243,30 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
 
 ```haxe
 static function DrawLine3D(startPos:Vector3, endPos:Vector3, color:Color):Void
+static function DrawPoint3D(position:Vector3, color:Color):Void
+static function DrawCircle3D(center:Vector3, radius:Float, rotationAxis:Vector3, rotationAngle:Float, color:Color):Void
+static function DrawTriangle3D(v1:Vector3, v2:Vector3, v3:Vector3, color:Color):Void
+static function DrawTriangleStrip3D(points:Array<Vector3>, pointCount:Int, color:Color):Void
 static function DrawCube(position:Vector3, width:Float, height:Float, length:Float, color:Color):Void
 static function DrawCubeV(position:Vector3, size:Vector3, color:Color):Void
 static function DrawCubeWires(position:Vector3, width:Float, height:Float, length:Float, color:Color):Void
 static function DrawCubeWiresV(position:Vector3, size:Vector3, color:Color):Void
-static function DrawBoundingBox(box:BoundingBox, color:Color):Void
 static function DrawSphere(centerPos:Vector3, radius:Float, color:Color):Void
 static function DrawSphereEx(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void
 static function DrawSphereWires(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void
+static function DrawCylinder(position:Vector3, radiusTop:Float, radiusBottom:Float, height:Float, sides:Int, color:Color):Void
+static function DrawCylinderEx(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int, color:Color):Void
+static function DrawCylinderWires(position:Vector3, radiusTop:Float, radiusBottom:Float, height:Float, sides:Int, color:Color):Void
+static function DrawCylinderWiresEx(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int, color:Color):Void
+static function DrawCapsule(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void
+static function DrawCapsuleWires(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void
 static function DrawPlane(centerPos:Vector3, size:Vector2, color:Color):Void
+static function DrawRay(ray:Ray, color:Color):Void
 static function DrawGrid(slices:Int, spacing:Float):Void
+static function DrawBoundingBox(box:BoundingBox, color:Color):Void
+static function DrawBillboard(camera:Camera, texture:Texture2D, position:Vector3, scale:Float, tint:Color):Void
+static function DrawBillboardRec(camera:Camera, texture:Texture2D, source:Rectangle, position:Vector3, size:Vector2, tint:Color):Void
+static function DrawBillboardPro(camera:Camera, texture:Texture2D, source:Rectangle, position:Vector3, up:Vector3, size:Vector2, origin:Vector2, rotation:Float, tint:Color):Void
 static function LoadModelFromMesh(mesh:Mesh):Model
 static function IsModelValid(model:Model):Bool
 static function UnloadModel(model:Model):Void
@@ -3256,10 +3274,22 @@ static function DrawModel(model:Model, position:Vector3, scale:Float, tint:Color
 static function DrawModelEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
 static function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void
 static function UploadMesh(mesh:Mesh, isDynamic:Bool):Void
+static function UpdateMeshBuffer(mesh:Mesh, index:Int, data:Dynamic, dataSize:Int, offset:Int):Void
 static function UnloadMesh(mesh:Mesh):Void
-static function GenMeshCube(width:Float, height:Float, length:Float):Mesh
+static function GenMeshPoly(sides:Int, radius:Float):Mesh
 static function GenMeshPlane(width:Float, length:Float, resX:Int, resZ:Int):Mesh
+static function GenMeshCube(width:Float, height:Float, length:Float):Mesh
 static function GenMeshSphere(radius:Float, rings:Int, slices:Int):Mesh
+static function GenMeshHemiSphere(radius:Float, rings:Int, slices:Int):Mesh
+static function GenMeshCylinder(radius:Float, height:Float, slices:Int):Mesh
+static function GenMeshCone(radius:Float, height:Float, slices:Int):Mesh
+static function GenMeshTorus(radius:Float, size:Float, radSeg:Int, sides:Int):Mesh
+static function GenMeshKnot(radius:Float, size:Float, radSeg:Int, sides:Int):Mesh
+static function GenMeshHeightmap(heightmap:Image, size:Vector3):Mesh
+static function GenMeshCubicmap(cubicmap:Image, cubeSize:Vector3):Mesh
+static function GenMeshTangents(mesh:Mesh):Void
+static function ExportMesh(mesh:Mesh, fileName:String):Bool
+static function ExportMeshAsCode(mesh:Mesh, fileName:String):Bool
 static function LoadMaterialDefault():Material
 static function SetMaterialTexture(material:Material, mapType:Int, texture:Texture2D):Void
 static function SetModelMeshMaterial(model:Model, meshId:Int, materialId:Int):Void
@@ -3270,15 +3300,34 @@ static function CheckCollisionSpheres(center1:Vector3, radius1:Float, center2:Ve
 static function CheckCollisionBoxSphere(box:BoundingBox, center:Vector3, radius:Float):Bool
 static function GetRayCollisionSphere(ray:Ray, center:Vector3, radius:Float):RayCollision
 static function GetRayCollisionBox(ray:Ray, box:BoundingBox):RayCollision
-static function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3):RayCollision
 static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision
+static function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3):RayCollision
+static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, p4:Vector3):RayCollision
 ```
 
 - `DrawLine3D`: Draws a line in 3D.
   - `startPos`: The start.
   - `endPos`: The end.
   - `color`: The color.
-- `DrawCube`: Draws a filled box.
+- `DrawPoint3D`: Draws a point in 3D, as raylib does: a line 0.1 long toward +z.
+  - `position`: The point.
+  - `color`: The color.
+- `DrawCircle3D`: Draws a circle's outline in 3D, 36 lines, on the XY plane turned about an axis.
+  - `center`: Its center.
+  - `radius`: Its radius.
+  - `rotationAxis`: The axis it is turned about.
+  - `rotationAngle`: The angle, in degrees.
+  - `color`: The color.
+- `DrawTriangle3D`: Draws a filled triangle in 3D, its corners counterclockwise from the side it faces.
+  - `v1`: A corner.
+  - `v2`: The next.
+  - `v3`: The last.
+  - `color`: The color.
+- `DrawTriangleStrip3D`: Draws a strip of triangles in 3D: each point after the second makes a triangle with the two before it.
+  - `points`: The points.
+  - `pointCount`: How many of them; fewer than 3 draws nothing.
+  - `color`: The color.
+- `DrawCube`: Draws a filled box, each face with its normal.
   - `position`: Its center.
   - `width`: Its size along x.
   - `height`: Along y.
@@ -3298,32 +3347,100 @@ static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCol
   - `position`: Its center.
   - `size`: Its size.
   - `color`: The color.
-- `DrawBoundingBox`: Draws a bounding box's edges.
-  - `box`: The box.
-  - `color`: The color.
 - `DrawSphere`: Draws a filled sphere, 16 rings and 16 slices.
   - `centerPos`: Its center.
   - `radius`: Its radius.
   - `color`: The color.
-- `DrawSphereEx`: Draws a filled sphere.
+- `DrawSphereEx`: Draws a filled sphere, as raylib does: rings + 1 bands of slices, from the top.
   - `centerPos`: Its center.
   - `radius`: Its radius.
   - `rings`: Rings top to bottom.
   - `slices`: Slices around.
   - `color`: The color.
-- `DrawSphereWires`: Draws a sphere's wires.
+- `DrawSphereWires`: Draws a sphere's wires, as raylib does: rings + 2 bands of slices, each slice's three lines.
   - `centerPos`: Its center.
   - `radius`: Its radius.
   - `rings`: Rings top to bottom.
   - `slices`: Slices around.
+  - `color`: The color.
+- `DrawCylinder`: Draws a filled cylinder standing on the XZ plane, or a cone when its top's radius is 0.
+  - `position`: Its base's center.
+  - `radiusTop`: Its top's radius.
+  - `radiusBottom`: Its base's.
+  - `height`: Its height.
+  - `sides`: Its sides, at least 3.
+  - `color`: The color.
+- `DrawCylinderEx`: Draws a filled cylinder from one point to another, or a cone when a radius is 0.
+  - `startPos`: Its base's center.
+  - `endPos`: Its top's.
+  - `startRadius`: Its base's radius.
+  - `endRadius`: Its top's.
+  - `sides`: Its sides, at least 3.
+  - `color`: The color.
+- `DrawCylinderWires`: Draws a cylinder's wires standing on the XZ plane, or a cone's when its top's radius is 0.
+  - `position`: Its base's center.
+  - `radiusTop`: Its top's radius.
+  - `radiusBottom`: Its base's.
+  - `height`: Its height.
+  - `sides`: Its sides, at least 3.
+  - `color`: The color.
+- `DrawCylinderWiresEx`: Draws a cylinder's wires from one point to another, or a cone's when a radius is 0.
+  - `startPos`: Its base's center.
+  - `endPos`: Its top's.
+  - `startRadius`: Its base's radius.
+  - `endRadius`: Its top's.
+  - `sides`: Its sides, at least 3.
+  - `color`: The color.
+- `DrawCapsule`: Draws a filled capsule: a cylinder with half a sphere on each end, their centers the two points.
+  - `startPos`: One end's center.
+  - `endPos`: The other's.
+  - `radius`: Its radius.
+  - `slices`: Slices around, at least 3.
+  - `rings`: Rings in each half sphere.
+  - `color`: The color.
+- `DrawCapsuleWires`: Draws a capsule's wires: a cylinder with half a sphere on each end, their centers the two points.
+  - `startPos`: One end's center.
+  - `endPos`: The other's.
+  - `radius`: Its radius.
+  - `slices`: Slices around, at least 3.
+  - `rings`: Rings in each half sphere.
   - `color`: The color.
 - `DrawPlane`: Draws a flat rectangle on the XZ plane, facing up.
   - `centerPos`: Its center.
   - `size`: Its size along x and z.
   - `color`: The color.
-- `DrawGrid`: Draws a grid on the XZ plane, centered on the origin: its center lines darker, as raylib's.
+- `DrawRay`: Draws a ray as a line 10000 long.
+  - `ray`: The ray.
+  - `color`: The color.
+- `DrawGrid`: Draws a grid on the XZ plane, centered on the origin, its center lines darker, as raylib's.
   - `slices`: The lines each way.
   - `spacing`: The space between them.
+- `DrawBoundingBox`: Draws a bounding box's edges.
+  - `box`: The box.
+  - `color`: The color.
+- `DrawBillboard`: Draws a texture facing the camera, turning about y alone, at a height of scale and its own proportions.
+  - `camera`: The camera.
+  - `texture`: The texture.
+  - `position`: Its center.
+  - `scale`: Its height.
+  - `tint`: The tint.
+- `DrawBillboardRec`: Draws part of a texture facing the camera, turning about y alone.
+  - `camera`: The camera.
+  - `texture`: The texture.
+  - `source`: The part, in its pixels.
+  - `position`: Its center.
+  - `size`: Its size; a negative one flips it.
+  - `tint`: The tint.
+- `DrawBillboardPro`: Draws part of a texture facing the camera's right and an up of its own, turned about the way it faces.
+  - `camera`: The camera.
+  - `texture`: The texture.
+  - `source`: The part, in its pixels.
+  - `position`: Where its origin is.
+  - `up`: Its up.
+  - `size`: Its size; a negative one flips it.
+  - `origin`: The point of it at the position, from its bottom left, in the size's units.
+  - `rotation`: How far it turns about its origin, in degrees.
+  - `tint`: The tint.
 - `LoadModelFromMesh`: Makes a model of one mesh, with the default material.
   - `mesh`: The mesh.
   - returns: The model.
@@ -3348,27 +3465,82 @@ static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCol
   - `mesh`: The mesh.
   - `material`: The material.
   - `transform`: The transform.
-- `UploadMesh`: Sends a mesh's vertices to the GPU, so it can be drawn. The `GenMesh*` functions and `LoadModelAsync` do it themselves.
+- `UploadMesh`: Sends a mesh's vertices to the GPU, so it can be drawn. A mesh not sent goes when it is first drawn, as `LoadModelAsync`'s and the `GenMesh*` functions' do.
   - `mesh`: The mesh.
-  - `isDynamic`: Whether it will change (raylib names it `dynamic`, a Haxe keyword); meshes here can't, so it is ignored.
+  - `isDynamic`: Whether it will change (raylib names it `dynamic`, a Haxe keyword); any mesh here can be changed by `UpdateMeshBuffer`, so it is ignored.
+- `UpdateMeshBuffer`: Changes part of one of a mesh's buffers on the GPU, as raylib's: the mesh's own arrays stay as they were. Draws asked for before it keep what was there; those after see the change.
+  - `mesh`: The mesh, uploaded (`UploadMesh`, or drawn once); one that isn't changes nothing.
+  - `index`: The buffer: 0 positions, 1 texture coordinates, 2 normals, 3 colors, 4 tangents, 5 second texture coordinates, 6 indices. One the mesh has no array for changes nothing.
+  - `data`: The new values: raylib's bytes (`haxe.io.Bytes`: 32-bit floats, colors a byte each, indices 16-bit), or an array of the numbers (colors 0 to 255).
+  - `dataSize`: How many bytes they are, as raylib counts them.
+  - `offset`: Where they go in the buffer, in raylib's bytes.
 - `UnloadMesh`: Frees a mesh's GPU buffers.
   - `mesh`: The mesh.
-- `GenMeshCube`: Makes a box mesh, centered on the origin.
+- `GenMeshPoly`: Makes a flat regular polygon on the XZ plane, facing up, centered on the origin: a triangle a side, with no indices, its texture coordinates 0.
+  - `sides`: Its sides; fewer than 3 make an empty mesh.
+  - `radius`: Its corners' distance from the center.
+  - returns: The mesh.
+- `GenMeshPlane`: Makes a flat mesh on the XZ plane, facing up, centered on the origin: a grid of vertices shared by its cells' triangles.
+  - `width`: Along x.
+  - `length`: Along z.
+  - `resX`: Cells along x.
+  - `resZ`: Cells along z.
+  - returns: The mesh.
+- `GenMeshCube`: Makes a box mesh, centered on the origin: four vertices a face, each face's texture its whole.
   - `width`: Along x.
   - `height`: Along y.
   - `length`: Along z.
   - returns: The mesh.
-- `GenMeshPlane`: Makes a flat mesh on the XZ plane, facing up.
-  - `width`: Along x.
-  - `length`: Along z.
-  - `resX`: Divisions along x.
-  - `resZ`: Divisions along z.
-  - returns: The mesh.
-- `GenMeshSphere`: Makes a sphere mesh, centered on the origin.
+- `GenMeshSphere`: Makes a sphere mesh, centered on the origin, its poles on z, three vertices a triangle with no indices, as raylib's (par_shapes').
   - `radius`: Its radius.
-  - `rings`: Rings top to bottom.
-  - `slices`: Slices around.
+  - `rings`: Rings pole to pole, at least 3.
+  - `slices`: Slices around, at least 3.
+  - returns: The mesh; empty for fewer rings or slices.
+- `GenMeshHemiSphere`: Makes half a sphere, open at its base, on the side of +y from the origin, three vertices a triangle with no indices.
+  - `radius`: Its radius; a negative one is 0.
+  - `rings`: Rings from the pole, at least 3.
+  - `slices`: Slices around, at least 3.
+  - returns: The mesh; empty for fewer rings or slices.
+- `GenMeshCylinder`: Makes a closed cylinder standing on the XZ plane from the origin, three vertices a triangle with no indices.
+  - `radius`: Its radius.
+  - `height`: Its height.
+  - `slices`: Slices around, at least 3.
+  - returns: The mesh; empty for fewer slices.
+- `GenMeshCone`: Makes a closed cone standing on the XZ plane from the origin, three vertices a triangle with no indices.
+  - `radius`: Its base's radius.
+  - `height`: Its height.
+  - `slices`: Slices around, at least 3.
+  - returns: The mesh; empty for fewer slices.
+- `GenMeshTorus`: Makes a torus on the XY plane, centered on the origin, three vertices a triangle with no indices.
+  - `radius`: The tube's radius against the ring's, 0.1 to 1 (others are clamped to it).
+  - `size`: The torus's width, out to the ring's middle on each side.
+  - `radSeg`: Slices around the ring, at least 3.
+  - `sides`: Slices around the tube, at least 3.
+  - returns: The mesh; empty for fewer slices.
+- `GenMeshKnot`: Makes a trefoil knot, centered on the origin, three vertices a triangle with no indices.
+  - `radius`: The tube's radius, in tenths, 0.5 to 3 (others are clamped to it).
+  - `size`: The knot's scale.
+  - `radSeg`: Slices along the knot, at least 3.
+  - `sides`: Slices around the tube, at least 3.
+  - returns: The mesh; empty for fewer slices.
+- `GenMeshHeightmap`: Makes terrain from an image: a vertex a pixel, from the origin along +x and +z, each the height of its pixel's gray (red, green and blue averaged), two triangles a cell with a flat normal each, three vertices a triangle with no indices.
+  - `heightmap`: The image.
+  - `size`: The terrain's size: x and z across the image, y the height of white.
   - returns: The mesh.
+- `GenMeshCubicmap`: Makes a maze of cubes from an image, a cube a pixel centered on it from the origin: a white pixel a wall, its faces where its neighbors are black or the map ends, and its top and bottom; a black pixel a floor and a ceiling, facing in. The texture is split in four: walls from its top left (right, front) and top right (left, back), tops from its bottom left and bottoms from its bottom right. Three vertices a triangle, with no indices.
+  - `cubicmap`: The image.
+  - `cubeSize`: A cube's size: x along the image's width, z along its height, y the walls' height.
+  - returns: The mesh.
+- `GenMeshTangents`: Computes a mesh's tangents from its positions, texture coordinates and normals, as raylib's: each triangle's direction of u, made square to each vertex's normal, w the side its direction of v is on. It reads the vertices three at a time, as raylib's does, so it is meant for a mesh without indices.
+  - `mesh`: The mesh; one without positions or texture coordinates is left as it is.
+- `ExportMesh`: Writes a mesh as an OBJ file through `SaveFileText`, as raylib's does: its positions to 2 places, its texture coordinates and normals to 3, and a face a triangle.
+  - `mesh`: The mesh, with positions, texture coordinates and normals.
+  - `fileName`: The file; only ".obj" is written.
+  - returns: True when it was written.
+- `ExportMeshAsCode`: Writes a mesh as a C header through `SaveFileText`, as raylib's does: its counts as defines, and each array it has, 20 values a line, floats to 3 places.
+  - `mesh`: The mesh.
+  - `fileName`: The file; its name, upper case, names the defines and the arrays.
+  - returns: True when it was written.
 - `LoadMaterialDefault`: Returns raylib's default material: the default shader, white.
   - returns: The material.
 - `SetMaterialTexture`: Sets a texture on a material's map.
@@ -3379,46 +3551,53 @@ static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCol
   - `model`: The model.
   - `meshId`: The mesh.
   - `materialId`: The material.
-- `GetMeshBoundingBox`: Returns a mesh's bounds.
+- `GetMeshBoundingBox`: Returns a mesh's bounds: the least and the most of its positions; 0 for a mesh without them.
   - `mesh`: The mesh.
   - returns: The box.
-- `GetModelBoundingBox`: Returns a model's bounds, its transform applied.
+- `GetModelBoundingBox`: Returns a model's bounds: its meshes' together, its least and most corners then moved by its transform, as raylib's (a turned model's box is not its bounds; transform its eight corners for those).
   - `model`: The model.
   - returns: The box.
-- `CheckCollisionBoxes`: Returns whether two boxes overlap.
+- `CheckCollisionBoxes`: Returns whether two boxes overlap, touching included.
   - `box1`: One.
   - `box2`: The other.
   - returns: True when they overlap.
-- `CheckCollisionSpheres`: Returns whether two spheres overlap.
+- `CheckCollisionSpheres`: Returns whether two spheres overlap, touching included.
   - `center1`: One's center.
   - `radius1`: Its radius.
   - `center2`: The other's center.
   - `radius2`: Its radius.
   - returns: True when they overlap.
-- `CheckCollisionBoxSphere`: Returns whether a box and a sphere overlap.
+- `CheckCollisionBoxSphere`: Returns whether a box and a sphere overlap, touching included.
   - `box`: The box.
   - `center`: The sphere's center.
   - `radius`: Its radius.
   - returns: True when they overlap.
-- `GetRayCollisionSphere`: Returns where a ray hits a sphere.
+- `GetRayCollisionSphere`: Returns where a ray meets a sphere, as raylib's: the near side from outside, the far side from inside (its normal then pointing in); its point and distance are set even when it misses. The ray's direction should be of length 1.
   - `ray`: The ray.
   - `center`: The sphere's center.
   - `radius`: Its radius.
   - returns: The hit.
-- `GetRayCollisionBox`: Returns where a ray hits a box.
+- `GetRayCollisionBox`: Returns where a ray meets a box, as raylib's: from inside, the way out, its distance negative and its normal pointing in; its point, distance and normal are set even when it misses.
   - `ray`: The ray.
   - `box`: The box.
   - returns: The hit.
-- `GetRayCollisionTriangle`: Returns where a ray hits a triangle.
+- `GetRayCollisionMesh`: Returns where a ray first meets a mesh moved by a transform: the nearest of its triangles it meets.
+  - `ray`: The ray.
+  - `mesh`: The mesh, with its positions.
+  - `transform`: The transform.
+  - returns: The hit.
+- `GetRayCollisionTriangle`: Returns where a ray meets a triangle from either side (Möller and Trumbore's test, as raylib's), its normal that of the corners taken counterclockwise.
   - `ray`: The ray.
   - `p1`: A corner.
-  - `p2`: A corner.
-  - `p3`: A corner.
+  - `p2`: The next.
+  - `p3`: The last.
   - returns: The hit.
-- `GetRayCollisionMesh`: Returns where a ray hits a mesh drawn with a transform: its nearest triangle.
+- `GetRayCollisionQuad`: Returns where a ray meets a quad, as two triangles: p1, p2 and p4, then p2, p3 and p4.
   - `ray`: The ray.
-  - `mesh`: The mesh.
-  - `transform`: The transform.
+  - `p1`: A corner.
+  - `p2`: The next, counterclockwise.
+  - `p3`: The next.
+  - `p4`: The last.
   - returns: The hit.
 
 ### raudio: sound
@@ -3828,7 +4007,7 @@ Each of these is raylib's name, and a call to it doesn't compile, saying why and
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawPoint3D`, `DrawCircle3D`, `DrawTriangle3D`, `DrawTriangleStrip3D`, `DrawCylinder`, `DrawCylinderEx`, `DrawCylinderWires`, `DrawCylinderWiresEx`, `DrawCapsule`, `DrawCapsuleWires`, `DrawRay`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawBillboard`, `DrawBillboardRec`, `DrawBillboardPro`, `UpdateMeshBuffer`, `DrawMeshInstanced`, `GenMeshTangents`, `ExportMesh`, `ExportMeshAsCode`, `GenMeshPoly`, `GenMeshHemiSphere`, `GenMeshCylinder`, `GenMeshCone`, `GenMeshTorus`, `GenMeshKnot`, `GenMeshHeightmap`, `GenMeshCubicmap`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`, `GetRayCollisionQuad`.
+`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`.
 
 ## Raymath
 
@@ -5211,7 +5390,7 @@ static function rlCheckRenderBatchLimit(vCount:Int):Bool
 - `rlTexCoord2f`: Sets the next vertices' texture coordinate.
   - `x`: The u.
   - `y`: The v.
-- `rlNormal3f`: Sets the next vertices' normal.
+- `rlNormal3f`: Sets the next vertices' normal: turned by the transform `rlPushMatrix` started, when there is one, and made length 1, as rlgl does.
   - `x`: The x.
   - `y`: The y.
   - `z`: The z.

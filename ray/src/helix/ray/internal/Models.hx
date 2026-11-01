@@ -5,36 +5,112 @@ import haxe.io.Bytes;
 import helix.ray.*;
 import helix.services.models.Model3D;
 
-/** Makes raylib's meshes and models: a mesh's GPU buffers, a model from what the models service read of a glTF file, and the meshes
-	raylib generates. */
+/** Makes raylib's meshes and models: a mesh's GPU buffers, and a model from what the models service read of a glTF file. */
 @:noCompletion
 class Models {
-	/** Sends a mesh's vertices to the GPU, those it lacks as raylib's defaults (no texture coordinates, normals facing +z, white).
+	/** Each of raylib's vertex buffers, by its index: the size of an element and its default, for a mesh without the attribute. A default
+		is raylib's (normals 1, 1, 1; colors white; tangents and second texture coordinates 0). */
+	static final SIZES = [3, 2, 3, 4, 4, 2];
+
+	static final DEFAULTS:Array<Array<Float>> = [[0, 0, 0], [0, 0], [1, 1, 1], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0]];
+
+	/** Sends a mesh's vertices to the GPU: its positions, texture coordinates, normals and colors, those it lacks as raylib's defaults, and
+		its indices. Its tangents and second texture coordinates go when a shader first reads them (`buffer`).
 
 		@param mesh  The mesh. */
 	public static function upload(mesh:Mesh):Void {
-		var g = Runtime.graphics, n = mesh.vertexCount;
-		if (mesh.gpu.buffers != null || n == 0)
+		if (mesh.gpu.buffers != null || mesh.vertexCount == 0)
 			return;
-		function floats(values:Null<Array<Float>>, size:Int, fallback:Array<Float>):Int {
-			var bytes = Bytes.alloc(n * size * 4);
-			for (i in 0...n * size)
-				bytes.setFloat(i * 4, values != null && i < values.length ? values[i] : fallback[i % size]);
-			return g.createStaticBuffer(bytes, bytes.length, false);
-		}
-		var colors:Null<Array<Float>> = mesh.colors == null ? null : [for (c in mesh.colors) c / 255];
+		var g = Runtime.graphics;
 		mesh.gpu.buffers = [
-			floats(mesh.vertices, 3, [0, 0, 0]),
-			floats(mesh.texcoords, 2, [0, 0]),
-			floats(mesh.normals, 3, [0, 0, 1]),
-			floats(colors, 4, [1, 1, 1, 1])
+			for (i in 0...6)
+				i < 4 ? g.createStaticBuffer(bytesOf(mesh, i), mesh.vertexCount * SIZES[i] * 4, false) : 0
 		];
 		if (mesh.indices != null && mesh.indices.length > 0) {
-			var bytes = Bytes.alloc(mesh.indices.length * 4);
-			for (i => index in mesh.indices)
-				bytes.setInt32(i * 4, index);
+			var bytes = bytesOf(mesh, 6);
 			mesh.gpu.indexBuffer = g.createStaticBuffer(bytes, bytes.length, true);
 		}
+	}
+
+	/** Returns one of an uploaded mesh's vertex buffers, making it first when it isn't yet.
+
+		@param mesh  The mesh, uploaded.
+		@param index  raylib's buffer index, 0 to 5.
+		@return  The buffer. */
+	public static function buffer(mesh:Mesh, index:Int):Int {
+		var buffers = mesh.gpu.buffers;
+		if (buffers[index] == 0)
+			buffers[index] = Runtime.graphics.createStaticBuffer(bytesOf(mesh, index), mesh.vertexCount * SIZES[index] * 4, false);
+		return buffers[index];
+	}
+
+	// A buffer's bytes as the GPU takes them: the bytes UpdateMeshBuffer last left, or the mesh's numbers as 32-bit floats (colors 0 to 1),
+	// those it lacks its default; the indices (6) as 32-bit integers.
+	static function bytesOf(mesh:Mesh, index:Int):Bytes {
+		var kept = mesh.gpu.contents[index];
+		if (kept != null)
+			return kept;
+		if (index == 6) {
+			var bytes = Bytes.alloc(mesh.indices.length * 4);
+			for (i => value in mesh.indices)
+				bytes.setInt32(i * 4, value);
+			return bytes;
+		}
+		var values:Null<Array<Float>> = switch index {
+			case 0: mesh.vertices;
+			case 1: mesh.texcoords;
+			case 2: mesh.normals;
+			case 3: mesh.colors == null ? null : [for (c in mesh.colors) c / 255];
+			case 4: mesh.tangents;
+			case _: mesh.texcoords2;
+		}
+		var size = SIZES[index],
+			fallback = DEFAULTS[index],
+			n = mesh.vertexCount * size;
+		var bytes = Bytes.alloc(n * 4);
+		for (i in 0...n)
+			bytes.setFloat(i * 4, values != null && i < values.length ? values[i] : fallback[i % size]);
+		return bytes;
+	}
+
+	/** Changes part of an uploaded mesh's buffer, as raylib's `UpdateMeshBuffer`: its bytes are counted as raylib lays them out (colors a
+		byte each, indices two), and those of a buffer not made yet, or of a mesh not uploaded, change nothing. The buffer is made again
+		with the change, so the draws asked for before it keep the old one, freed when the frame is drawn.
+
+		@param mesh  The mesh.
+		@param index  raylib's buffer index: 0 positions, 1 texture coordinates, 2 normals, 3 colors, 4 tangents, 5 second texture
+			coordinates, 6 indices.
+		@param values  The numbers written, as raylib's elements (colors 0 to 255).
+		@param offset  Where they go, in raylib's bytes. */
+	public static function update(mesh:Mesh, index:Int, values:Array<Float>, offset:Int):Void {
+		var buffers = mesh.gpu.buffers;
+		if (buffers == null || index < 0 || index > 6)
+			return;
+		if (index == 6 ? mesh.gpu.indexBuffer == 0 : buffers[index] == 0 && (index == 4 ? mesh.tangents : mesh.texcoords2) == null)
+			return;
+		var size = [4, 4, 4, 1, 4, 4, 2][index];
+		var current = bytesOf(mesh, index);
+		var bytes = current.sub(0, current.length);
+		var first = Std.int(offset / size);
+		for (i => value in values) {
+			var at = (first + i) * 4;
+			if (at + 4 > bytes.length)
+				break;
+			if (index == 6)
+				bytes.setInt32(at, Std.int(value));
+			else
+				bytes.setFloat(at, index == 3 ? value / 255 : value);
+		}
+		mesh.gpu.contents[index] = bytes;
+		var g = Runtime.graphics,
+			old = index == 6 ? mesh.gpu.indexBuffer : buffers[index];
+		var made = g.createStaticBuffer(bytes, bytes.length, index == 6);
+		if (index == 6)
+			mesh.gpu.indexBuffer = made;
+		else
+			buffers[index] = made;
+		if (old != 0)
+			Runtime.frame.retire(old);
 	}
 
 	/** Frees a mesh's GPU buffers.
@@ -43,11 +119,14 @@ class Models {
 	public static function unload(mesh:Mesh):Void {
 		if (mesh.gpu.buffers != null)
 			for (b in mesh.gpu.buffers)
-				Runtime.graphics.disposeBuffer(b);
+				if (b != 0)
+					Runtime.graphics.disposeBuffer(b);
 		if (mesh.gpu.indexBuffer != 0)
 			Runtime.graphics.disposeBuffer(mesh.gpu.indexBuffer);
 		mesh.gpu.buffers = null;
 		mesh.gpu.indexBuffer = 0;
+		for (i in 0...mesh.gpu.contents.length)
+			mesh.gpu.contents[i] = null;
 	}
 
 	/** Returns raylib's default material: the default shader, a white diffuse map.
@@ -169,139 +248,12 @@ class Models {
 		mesh.triangleCount = m.triangleCount;
 		mesh.vertices = m.vertices;
 		mesh.texcoords = m.texcoords;
+		mesh.texcoords2 = m.texcoords2;
 		mesh.normals = m.normals;
+		mesh.tangents = m.tangents;
 		mesh.colors = m.colors;
 		mesh.indices = m.indices;
 		mesh.gpu = m.gpu;
 		return mesh;
-	}
-
-	/** Returns raylib's `GenMeshCube`. */
-	public static function cube(width:Float, height:Float, length:Float):Mesh {
-		var x = width / 2, y = height / 2, z = length / 2;
-		// Each face: its normal, then its corners counterclockwise from outside, as raylib's.
-		var faces:Array<Array<Float>> = [
-			[0, 0, 1, -x, -y, z, x, -y, z, x, y, z, -x, y, z],
-			[0, 0, -1, -x, -y, -z, -x, y, -z, x, y, -z, x, -y, -z],
-			[0, 1, 0, -x, y, -z, -x, y, z, x, y, z, x, y, -z],
-			[0, -1, 0, -x, -y, -z, x, -y, -z, x, -y, z, -x, -y, z],
-			[1, 0, 0, x, -y, -z, x, y, -z, x, y, z, x, -y, z],
-			[-1, 0, 0, -x, -y, -z, -x, -y, z, -x, y, z, -x, y, -z]
-		];
-		var mesh = new Mesh();
-		mesh.vertices = [];
-		mesh.normals = [];
-		mesh.texcoords = [];
-		mesh.indices = [];
-		var uvs = [0., 0, 1, 0, 1, 1, 0, 1];
-		for (f => face in faces) {
-			for (c in 0...4) {
-				mesh.vertices.push(face[3 + c * 3]);
-				mesh.vertices.push(face[4 + c * 3]);
-				mesh.vertices.push(face[5 + c * 3]);
-				mesh.normals.push(face[0]);
-				mesh.normals.push(face[1]);
-				mesh.normals.push(face[2]);
-				mesh.texcoords.push(uvs[c * 2]);
-				mesh.texcoords.push(1 - uvs[c * 2 + 1]);
-			}
-			var b = f * 4;
-			for (i in [0, 1, 2, 0, 2, 3])
-				mesh.indices.push(b + i);
-		}
-		mesh.vertexCount = 24;
-		mesh.triangleCount = 12;
-		return mesh;
-	}
-
-	/** Returns raylib's `GenMeshPlane`: on the XZ plane, facing up. */
-	public static function plane(width:Float, length:Float, resX:Int, resZ:Int):Mesh {
-		if (resX < 1)
-			resX = 1;
-		if (resZ < 1)
-			resZ = 1;
-		var mesh = new Mesh();
-		mesh.vertices = [];
-		mesh.normals = [];
-		mesh.texcoords = [];
-		mesh.indices = [];
-		for (j in 0...resZ + 1)
-			for (i in 0...resX + 1) {
-				mesh.vertices.push(i / resX * width - width / 2);
-				mesh.vertices.push(0);
-				mesh.vertices.push(j / resZ * length - length / 2);
-				mesh.normals.push(0);
-				mesh.normals.push(1);
-				mesh.normals.push(0);
-				mesh.texcoords.push(i / resX);
-				mesh.texcoords.push(j / resZ);
-			}
-		for (j in 0...resZ)
-			for (i in 0...resX) {
-				var a = j * (resX + 1) + i, b = a + 1, c = a + resX + 1, d = c + 1;
-				for (k in [a, c, b, b, c, d])
-					mesh.indices.push(k);
-			}
-		mesh.vertexCount = (resX + 1) * (resZ + 1);
-		mesh.triangleCount = resX * resZ * 2;
-		return mesh;
-	}
-
-	/** Returns raylib's `GenMeshSphere`. */
-	public static function sphere(radius:Float, rings:Int, slices:Int):Mesh {
-		if (rings < 3)
-			rings = 3;
-		if (slices < 3)
-			slices = 3;
-		var mesh = new Mesh();
-		mesh.vertices = [];
-		mesh.normals = [];
-		mesh.texcoords = [];
-		mesh.indices = [];
-		for (r in 0...rings + 1) {
-			var phi = Math.PI * r / rings;
-			for (s in 0...slices + 1) {
-				var theta = Math.PI * 2 * s / slices;
-				var x = Math.sin(phi) * Math.cos(theta),
-					y = Math.cos(phi),
-					z = Math.sin(phi) * Math.sin(theta);
-				mesh.vertices.push(x * radius);
-				mesh.vertices.push(y * radius);
-				mesh.vertices.push(z * radius);
-				mesh.normals.push(x);
-				mesh.normals.push(y);
-				mesh.normals.push(z);
-				mesh.texcoords.push(s / slices);
-				mesh.texcoords.push(r / rings);
-			}
-		}
-		for (r in 0...rings)
-			for (s in 0...slices) {
-				var a = r * (slices + 1) + s, b = a + slices + 1;
-				for (k in [a, a + 1, b, b, a + 1, b + 1])
-					mesh.indices.push(k);
-			}
-		mesh.vertexCount = (rings + 1) * (slices + 1);
-		mesh.triangleCount = rings * slices * 2;
-		return mesh;
-	}
-
-	/** Returns a mesh's bounds, as raylib's `GetMeshBoundingBox`. */
-	public static function bounds(mesh:Mesh):BoundingBox {
-		var v = mesh.vertices;
-		if (v == null || v.length < 3)
-			return new BoundingBox(new Vector3(), new Vector3());
-		var min = [v[0], v[1], v[2]], max = [v[0], v[1], v[2]];
-		var i = 3;
-		while (i + 2 < v.length) {
-			for (c in 0...3) {
-				if (v[i + c] < min[c])
-					min[c] = v[i + c];
-				if (v[i + c] > max[c])
-					max[c] = v[i + c];
-			}
-			i += 3;
-		}
-		return new BoundingBox(new Vector3(min[0], min[1], min[2]), new Vector3(max[0], max[1], max[2]));
 	}
 }

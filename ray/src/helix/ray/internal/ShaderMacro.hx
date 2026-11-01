@@ -12,14 +12,21 @@ using StringTools;
 
 /** Compiles raylib's shaders as the program builds, through helix-platform's shader pipeline, so they run on every backend.
 
-	A raylib shader is GLSL 330 (or 100, for the web) with raylib's names: the attributes `vertexPosition`, `vertexTexCoord`, `vertexNormal`
-	and `vertexColor`, loose uniforms such as `mvp` and `colDiffuse`, and the textures `texture0` to `texture2`. Each stage is turned into
-	GLSL 450: the attributes and the values between the stages get locations; each stage's uniforms become one block of its own (an
-	integer or a boolean held as a float, read back through a `#define`); the textures get bindings; the vertex stage scales its
-	`gl_Position.y` by block 0, which the platform turns over in a pass into a render target (`ClipFlip.ClipScale`). */
+	A raylib shader is GLSL 330 (or 100, for the web) with raylib's names: the attributes `vertexPosition`, `vertexTexCoord`, `vertexNormal`,
+	`vertexColor`, `vertexTangent` and `vertexTexCoord2`, loose uniforms such as `mvp` and `colDiffuse`, and the textures `texture0` to
+	`texture2`. Each stage is turned into GLSL 450: the attributes and the values between the stages get locations; each stage's uniforms
+	become one block of its own (an integer or a boolean held as a float, read back through a `#define`); the textures get bindings; the
+	vertex stage scales its `gl_Position.y` by block 0, which the platform turns over in a pass into a render target (`ClipFlip.ClipScale`). */
 class ShaderMacro {
 	/** raylib's attributes, in the order their locations are given. */
-	static final ATTRIBUTES = ["vertexPosition", "vertexTexCoord", "vertexNormal", "vertexColor"];
+	static final ATTRIBUTES = [
+		"vertexPosition",
+		"vertexTexCoord",
+		"vertexNormal",
+		"vertexColor",
+		"vertexTangent",
+		"vertexTexCoord2"
+	];
 
 	/** raylib's default vertex stage, as its rlgl writes it. */
 	public static final DEFAULT_VS = "#version 330

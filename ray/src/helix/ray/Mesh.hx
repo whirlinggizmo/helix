@@ -15,8 +15,15 @@ class Mesh {
 	/** Gets or sets the texture coordinates, u and v a vertex, or null for none. */
 	public var texcoords:Null<Array<Float>> = null;
 
+	/** Gets or sets the second texture coordinates, u and v a vertex, or null for none. */
+	public var texcoords2:Null<Array<Float>> = null;
+
 	/** Gets or sets the normals, x, y and z a vertex, or null for none. */
 	public var normals:Null<Array<Float>> = null;
+
+	/** Gets or sets the tangents, x, y, z and w a vertex (w is 1 or -1, the way the bitangent turns), or null for none. `GenMeshTangents`
+		makes them. */
+	public var tangents:Null<Array<Float>> = null;
 
 	/** Gets or sets the colors, r, g, b and a a vertex, 0 to 255, or null for white. */
 	public var colors:Null<Array<Int>> = null;
