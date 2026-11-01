@@ -24,6 +24,11 @@ class Texture2D {
 	@:allow(helix.ray)
 	var flipped = false;
 
+	// A material map's copy (`MaterialMap.texture`), which holds the map's count: `UnloadTexture` given it releases a count but leaves
+	// its id while the texture lives, as the map still draws it.
+	@:allow(helix.ray)
+	var mapped = false;
+
 	/** Creates a texture's record. Textures are made by `Raylib.LoadTextureAsync`.
 
 		@param id  The handle.

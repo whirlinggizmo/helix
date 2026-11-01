@@ -48,13 +48,17 @@ class RTextures {
 		return new Texture2D(Textures.fromImage(path, image), image.width, image.height);
 	}
 
-	/** Frees a texture: one load of its file, the GPU's copy with the last.
+	/** Lets go of a texture (docs/DECISIONS.md 25): the program's hold from its load, its id set to 0. The texture is freed, the GPU's
+		copy with it, when nothing else holds it: another load of its file, or a material map given it, keeps it until that lets go. Given
+		a map's texture (`map.texture`), as `UnloadTexture(model.materials[0].maps[0].texture)` frees one a program gave a map without
+		keeping it, it lets go of one hold and leaves the map's id: the map draws it while anything holds it, and lets go in turn when its
+		material is freed.
 
 		@param texture  The texture. */
 	static function UnloadTexture(texture:Texture2D):Void {
-		if (texture.id != 0)
-			Textures.release(texture.id);
-		texture.id = 0;
+		Models.releaseTexture(texture);
+		if (!texture.mapped)
+			texture.id = 0;
 	}
 
 	/** Returns whether a texture was loaded.
@@ -436,8 +440,7 @@ class RTextures {
 
 		@param target  The render texture. */
 	static function UnloadRenderTexture(target:RenderTexture2D):Void {
-		if (target.texture.id != 0)
-			Textures.release(target.texture.id);
+		Models.releaseTexture(target.texture);
 		target.id = 0;
 		target.texture.id = 0;
 	}

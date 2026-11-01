@@ -47,7 +47,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `core_62` | 6.2 | values | file names, Base64, SHA-1, `MakeDirectory`, `QuaternionFromVector3ToVector3` |
 | `images_62` | 6.2 | values | the image functions 6.2 fixed, their images byte for byte |
 | `animation` | 6.2 | values | glTF skeletons and animations, bone matrices, CPU skinning and blending |
-| `materials` | 5.5 | values | `LoadMaterialDefault`'s maps, `IsMaterialValid`, what `UnloadMaterial` frees and keeps (a texture another load shares), `UnloadModel` keeping a model's textures |
+| `materials` | 5.5 | values | `LoadMaterialDefault`'s maps, `IsMaterialValid`, what `UnloadMaterial` frees and keeps (a texture another load shares), a texture given to a model freed after `UnloadTexture` and `UnloadModel` |
 | `materials_62` | 6.2 | values | glTF materials: each map's color, value and texture, its pixels |
 | `modular` | 6.2 | values | real-world models: Quaternius' modular woman, each part its own file, animated from a file of its own |
 | `text_55` | 5.5 | values | the text functions kept from 5.5: `TextReplace`, `LoadUTF8`, and those 6.2 didn't change |

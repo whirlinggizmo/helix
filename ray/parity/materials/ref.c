@@ -1,7 +1,7 @@
 // raylib 5.5's materials, printed for tools/ray_parity.py: LoadMaterialDefault's maps, IsMaterialValid on it and on materials without
 // maps or a shader, and what UnloadMaterial leaves: the default texture, a map's own texture freed (GL takes its name again for the next
-// texture made), and the default shader; a texture taken from a model still there after UnloadModel (the next texture made takes another
-// name); and a model's texture read from a second load of its file after UnloadMaterial frees the first load's material.
+// texture made), and the default shader; a texture given to a model, unloaded, then the model, freed after both; and a model's texture
+// read from a second load of its file after UnloadMaterial frees the first load's material.
 #include "raylib.h"
 #include "rlgl.h"
 #include "parity.h"
@@ -51,12 +51,13 @@ int main(void) {
     nomaps.maps = NULL;
     printf("nomaps valid %d\n", IsMaterialValid(nomaps));
 
-    // A material with a texture of its own on two maps, unloaded.
+    // A material given a texture on two maps, the texture unloaded, then the material.
     Image checked = GenImageChecked(4, 4, 1, 1, RED, BLUE);
     Texture2D own = LoadTextureFromImage(checked);
     Material u = LoadMaterialDefault();
     u.maps[MATERIAL_MAP_NORMAL].texture = own;
     u.maps[MATERIAL_MAP_EMISSION].texture = own;
+    UnloadTexture(own);
     UnloadMaterial(u);
     printf("unloaded valid %d\n", IsMaterialValid(u));
     Image white = LoadImageFromTexture((Texture2D){ rlGetTextureIdDefault(), 1, 1, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 });
@@ -64,13 +65,14 @@ int main(void) {
     Texture2D again = LoadTextureFromImage(checked);
     printf("unloaded freed %d\n", again.id == own.id);
 
-    // A texture taken from a model, the model unloaded: its first texture made, so GL would take its name first were it freed.
-    Model taken = LoadModel("web/materials.gltf");
-    Texture2D kept = taken.materials[1].maps[MATERIAL_MAP_ALBEDO].texture;
-    UnloadModel(taken);
-    pixels("taken", kept);
+    // A model given a texture, the texture unloaded, then the model: freed, by UnloadTexture in raylib, by UnloadModel in helix-ray.
+    Texture2D tex = LoadTextureFromImage(checked);
+    Model cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
+    cube.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = tex;
+    UnloadTexture(tex);
+    UnloadModel(cube);
     Texture2D next = LoadTextureFromImage(checked);
-    printf("taken kept %d\n", next.id != kept.id);
+    printf("assigned freed %d\n", next.id == tex.id);
 
     // Two loads of the file: the first's material unloaded, the second's textures read after.
     Model first = LoadModel("web/materials.gltf");

@@ -29,7 +29,8 @@ def test(native,audio_device):
     """The adapter rule's check, the layers' check, the names' check (tools/check_names.py), the tools' check (tools/check_tools.py), the
     API reference's check (tools/gen_apidoc.py --check), the size ladder's check (tools/measure_sizes.py --check), the doc comments' check
     (tools/check_docs.py); each library's tests on the interpreter and Node, the shader compiler's on the interpreter, Trig's bits across
-    targets; and with native each library's tests and Trig's bits in hxcpp, and the platform's C tests (SDL3's dummy audio driver)."""
+    targets, helix-ray's tests on Node; and with native each library's tests, Trig's bits and helix-ray's tests in hxcpp, and the
+    platform's C tests (SDL3's dummy audio driver)."""
     run([sys.executable,'tools/check_adapters.py'])
     run([sys.executable,'tools/check_layers.py'])
     run([sys.executable,'tools/check_names.py'])
@@ -58,11 +59,28 @@ def test(native,audio_device):
     value=result(['haxe','-lib','helix-services','-cp',pins.LIBRARIES['helix-services']/'tests','-main','ManifestTests','--interp'])
     print(f'ManifestTests: {value["checks"]} checks (interpreter)',flush=True)
     trig(native)
+    ray_tests(native)
     if native:
         from native_build import tool
         print(subprocess.check_output([str(tool('native-sdl3mixer-audio-test'))],text=True,encoding='utf-8',env=dict(os.environ,SDL_AUDIO_DRIVER='dummy')),end='')
         print(subprocess.check_output([str(tool('native-sdl3-events-test'))],text=True,encoding='utf-8'),end='')
         if audio_device:print(subprocess.check_output([str(tool('native-sdl3mixer-device-probe'))],text=True,encoding='utf-8'),end='')
+
+# helix-ray's own tests, built as the parity harnesses are: from its source, without its program loop (tools/ray_parity.py).
+RAY_TESTS=('CountTests',)
+
+def ray_tests(native):
+    """helix-ray's tests on Node, and with native in hxcpp: on graphics of their own, without a window."""
+    base=[a for lib in ('helix-log','helix-math','helix-geometry','helix-formats','helix-platform','helix-services') for a in ('-lib',lib)]
+    base+=['-cp','ray/src','--macro','helix.ray.internal.Metadata.register()','-cp','ray/tests']
+    for main in RAY_TESTS:
+        run(['haxe',*base,'-main',main,'-js',f'build/tests/{main}.js','-D','js-es=6'])
+        value=result(['node',f'build/tests/{main}.js'])
+        if native:
+            import native_build,sdl3
+            run(['haxe',*base,'-main',main,'-cpp',f'build/tests/{main}-cpp','-D','analyzer-optimize','-D',native_build.ARCH],env=native_build.env(sdl3.find()))
+            result([str(ROOT/'build/tests'/f'{main}-cpp'/(f'{main}.exe' if sys.platform=='win32' else main))])
+        print(f'{main}: {value["checks"]} checks (Node{" and hxcpp" if native else ""})',flush=True)
 
 def trig(native):
     """helix.math.Trig's bits over fixed inputs: the same hash under the interpreter, in JS (Node) and, with native, in hxcpp. When they

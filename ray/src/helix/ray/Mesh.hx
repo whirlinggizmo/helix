@@ -1,8 +1,15 @@
 package helix.ray;
 
 /** Represents raylib's `Mesh`: vertices, and the indices of its triangles when it has them. `Raylib.UploadMesh` sends them to the GPU;
-	`Raylib.LoadModelAsync` and the `GenMesh*` functions do it themselves. */
+	`Raylib.LoadModelAsync` and the `GenMesh*` functions do it themselves.
+
+	It is counted (docs/DECISIONS.md 25): the program holds it from `new` or a `GenMesh*` function until `UnloadMesh`, and each model
+	whose `meshes` holds it holds it too. When the last lets go, its GPU buffers are freed. */
 class Mesh {
+	// Its holders: the program until UnloadMesh, and each model whose meshes holds it. At 0 its GPU buffers go (`Models.releaseMesh`).
+	@:allow(helix.ray)
+	var refs = 1;
+
 	/** Gets or sets the number of vertices. */
 	public var vertexCount:Int = 0;
 

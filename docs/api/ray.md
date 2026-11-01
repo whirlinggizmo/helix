@@ -277,6 +277,8 @@ var format:Int
 
 Represents raylib's `Material`: a shader and its maps (`MATERIAL_MAP_*`); the diffuse map's texture and color are what a draw shows.
 
+It is counted (docs/DECISIONS.md 25): the program holds it from `LoadMaterialDefault` until `UnloadMaterial`, and each model whose `materials` holds it holds it too. When the last lets go, its maps' textures are released and its shader unloaded, unless it is the default one.
+
 ```haxe
 function new(shader:Shader, maps:Array<MaterialMap>, ?params:Array<Float>)
 var shader:Shader
@@ -298,6 +300,8 @@ var params:Array<Float>
 
 Represents raylib's `MaterialMap`: one of a material's maps (`MATERIAL_MAP_*`), a texture with a color and a value.
 
+The map holds a count on its texture (docs/DECISIONS.md 25): assigning one keeps a copy of its record, retains it and releases the texture it replaces, so a texture the program unloads after giving it to a map lives until the map lets go of it.
+
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
@@ -305,12 +309,12 @@ Written as an object where one is expected; a field marked `?` may be left out, 
 ```
 
 ```haxe
-var texture:Texture2D
+var texture(default, set):Texture2D
 var color:Color
 var value:Float
 ```
 
-- `texture`: Gets or sets the texture; id 0 for none, drawn as white.
+- `texture`: Gets or sets the texture; id 0 for none, drawn as white. Assigning keeps a copy of the record, counted as one of the texture's holders, and releases the texture it replaces; the material releases it when it is freed.
 - `color`: Gets or sets the color.
 - `value`: Gets or sets the value.
 
@@ -368,6 +372,8 @@ var m15:Float
 
 Represents raylib's `Mesh`: vertices, and the indices of its triangles when it has them. `Raylib.UploadMesh` sends them to the GPU; `Raylib.LoadModelAsync` and the `GenMesh*` functions do it themselves.
 
+It is counted (docs/DECISIONS.md 25): the program holds it from `new` or a `GenMesh*` function until `UnloadMesh`, and each model whose `meshes` holds it holds it too. When the last lets go, its GPU buffers are freed.
+
 ```haxe
 function new()
 var vertexCount:Int
@@ -410,28 +416,30 @@ var boneCount:Int
 
 Represents raylib's `Model`: meshes, materials, which material each mesh draws with, and a transform.
 
+A model holds a count on each of its meshes and materials (docs/DECISIONS.md 25): putting one in `meshes` or `materials` retains it, replacing or `UnloadModel` releases it, and what no one holds any more is freed.
+
 ```haxe
 function new(meshes:Array<Mesh>, materials:Array<Material>, meshMaterial:Array<Int>)
 var transform:Matrix
 var meshCount:Int
 var materialCount:Int
-var meshes:Array<Mesh>
-var materials:Array<Material>
+var meshes(default, set):ModelMeshes
+var materials(default, set):ModelMaterials
 var meshMaterial:Array<Int>
 var boneCount:Int
 var bones:Null<Array<BoneInfo>>
 var bindPose:Null<Array<Transform>>
 ```
 
-- `new`: Creates a model. Models are made by `Raylib.LoadModelAsync` and `Raylib.LoadModelFromMesh`.
+- `new`: Creates a model, holding its meshes and materials. Models are made by `Raylib.LoadModelAsync` and `Raylib.LoadModelFromMesh`.
   - `meshes`: The meshes.
   - `materials`: The materials.
   - `meshMaterial`: Each mesh's material.
 - `transform`: Gets or sets the transform applied before `DrawModel`'s position, rotation and scale.
-- `meshCount`: Gets the number of meshes.
-- `materialCount`: Gets the number of materials.
-- `meshes`: Gets the meshes.
-- `materials`: Gets the materials.
+- `meshCount`: Gets the number of meshes, set when `meshes` is.
+- `materialCount`: Gets the number of materials, set when `materials` is.
+- `meshes`: Gets or sets the meshes, each held by the model. Setting copies the array, retains its meshes, releases the ones it replaces and sets `meshCount`.
+- `materials`: Gets or sets the materials, each held by the model. Setting copies the array, retains its materials, releases the ones it replaces and sets `materialCount`.
 - `meshMaterial`: Gets the material of each mesh, by its index in `materials`.
 - `boneCount`: Gets the number of bones: the joints of the file's first skin, 0 for a model without one.
 - `bones`: Gets the bones, the file's first skin's joints in its order, each parent the nearest joint above it; null without a skin.
@@ -458,6 +466,22 @@ var name:String
 - `bones`: Gets or sets the bones, as the model's are.
 - `framePoses`: Gets or sets each frame's pose: for each bone, its transform in the model, not its parent's (a parent's already in it).
 - `name`: Gets or sets the name: the file's, cut to 31 bytes as raylib's holds it, or empty.
+
+## ModelMaterials
+
+*abstract* in [`ray/src/helix/ray/ModelMaterials.hx`](../../ray/src/helix/ray/ModelMaterials.hx), `import helix.ray.ModelMaterials;`
+
+Represents a model's materials, raylib's `model.materials`: read and written by index (`model.materials[0] = material`), iterated, and with a `length`.
+
+The model holds a count on each material here (docs/DECISIONS.md 25): writing one retains the new material and releases the one it replaces, and `UnloadModel` releases them all. An array assigned to `Model.materials` is copied, so changing it afterwards changes nothing here.
+
+## ModelMeshes
+
+*abstract* in [`ray/src/helix/ray/ModelMeshes.hx`](../../ray/src/helix/ray/ModelMeshes.hx), `import helix.ray.ModelMeshes;`
+
+Represents a model's meshes, raylib's `model.meshes`: read and written by index (`model.meshes[0] = mesh`), iterated, and with a `length`.
+
+The model holds a count on each mesh here (docs/DECISIONS.md 25): writing one retains the new mesh and releases the one it replaces, and `UnloadModel` releases them all. An array assigned to `Model.meshes` is copied, so changing it afterwards changes nothing here.
 
 ## Music
 
@@ -2587,7 +2611,7 @@ static function GetPixelColor(srcPtr:haxe.io.Bytes, format:Int, ?offset:Int = 0)
 static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?offset:Int = 0):Void
 ```
 
-- `UnloadTexture`: Frees a texture: one load of its file, the GPU's copy with the last.
+- `UnloadTexture`: Lets go of a texture (docs/DECISIONS.md 25): the program's hold from its load, its id set to 0. The texture is freed, the GPU's copy with it, when nothing else holds it: another load of its file, or a material map given it, keeps it until that lets go. Given a map's texture (`map.texture`), as `UnloadTexture(model.materials[0].maps[0].texture)` frees one a program gave a map without keeping it, it lets go of one hold and leaves the map's id: the map draws it while anything holds it, and lets go in turn when its material is freed.
   - `texture`: The texture.
 - `IsTextureValid`: Returns whether a texture was loaded.
   - `texture`: The texture.
@@ -3493,14 +3517,16 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `origin`: The point of it at the position, from its bottom left, in the size's units.
   - `rotation`: How far it turns about its origin, in degrees.
   - `tint`: The tint.
-- `LoadModelFromMesh`: Makes a model of one mesh, with the default material.
+- `LoadModelFromMesh`: Makes a model of one mesh, with the default material. The model takes over the program's hold on the mesh, as a raylib program doesn't unload a mesh it gave a model: `UnloadModel` frees it, and a later `UnloadMesh` does nothing.
   - `mesh`: The mesh.
   - returns: The model.
 - `IsModelValid`: Returns whether a model has meshes.
   - `model`: The model.
   - returns: True when it has.
-- `UnloadModel`: Frees a model's meshes, as raylib's: a file's with its last load. Its materials' textures and shaders stay, as a program may share them between models: `UnloadMaterial`, `UnloadTexture` and `UnloadShader` free them.
+- `UnloadModel`: Frees a model: it lets go of its meshes and materials, and what no one else holds is freed with it (docs/DECISIONS.md 25): a mesh's GPU buffers, a material's maps' textures and its shader unless it is the default one. A file's textures and GPU buffers, shared by its loads, go with its last load. The model is left empty, so unloading it again does nothing.
   - `model`: The model.
+
+  raylib's frees only the meshes, and leaves the textures and shaders to the program. Where helix-ray's differs: a texture copied out of a map (`var t = map.texture`) and drawn after the model is unloaded is freed and draws as none, where raylib's leaks it; a material or mesh shared between models works, where raylib's C frees it twice; and a shader shared between models is unloaded with the first whose material lets go of it.
 - `DrawModel`: Draws a model at a position and a scale, its materials' colors times a tint.
   - `model`: The model.
   - `position`: Where.
@@ -3540,7 +3566,7 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `data`: The new values: raylib's bytes (`haxe.io.Bytes`: 32-bit floats, colors a byte each, indices 16-bit), or an array of the numbers (colors 0 to 255).
   - `dataSize`: How many bytes they are, as raylib counts them.
   - `offset`: Where they go in the buffer, in raylib's bytes.
-- `UnloadMesh`: Frees a mesh's GPU buffers.
+- `UnloadMesh`: Lets go of the program's hold on a mesh, freeing its GPU buffers unless a model still holds it (docs/DECISIONS.md 25). A mesh given to `LoadModelFromMesh`, or already freed, is left: the model frees it.
   - `mesh`: The mesh.
 - `GenMeshPoly`: Makes a flat regular polygon on the XZ plane, facing up, centered on the origin: a triangle a side, with no indices, its texture coordinates 0.
   - `sides`: Its sides; fewer than 3 make an empty mesh.
@@ -3633,14 +3659,14 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `model`: The model.
   - `anim`: The animation.
   - returns: True when their bone counts match.
-- `LoadMaterialDefault`: Returns raylib's default material: the default shader, the diffuse map raylib's default texture (a 1x1 white pixel), the diffuse and specular colors white, and the other maps empty.
+- `LoadMaterialDefault`: Returns raylib's default material: the default shader, the diffuse map raylib's default texture (a 1x1 white pixel), the diffuse and specular colors white, and the other maps empty. The program holds it until `UnloadMaterial`; a model it is put in holds it too.
   - returns: The material.
 - `IsMaterialValid`: Returns whether a material can draw: whether it has maps and a shader.
   - `material`: The material.
   - returns: True when its maps aren't null and its shader's id is above 0.
-- `UnloadMaterial`: Frees a material: its shader unless it is the default one, and each map's texture unless it is the default texture (`UnloadShader`, `UnloadTexture`). A texture a model's other loads share stays theirs: each map holds a load of its texture, freed with the last.
+- `UnloadMaterial`: Lets go of a material (docs/DECISIONS.md 25): the program's hold from `LoadMaterialDefault`, or, for a model's material, the model's. When no one else holds it, its shader is unloaded unless it is the default one, and its maps let go of their textures: each texture is freed when nothing else holds it (a texture the program still holds, or another load of a file shares, stays). Releasing it again does nothing.
   - `material`: The material.
-- `SetMaterialTexture`: Sets a texture on a material's map.
+- `SetMaterialTexture`: Sets a texture on a material's map, which holds it from then on (`MaterialMap.texture`).
   - `material`: The material.
   - `mapType`: The map (`MATERIAL_MAP_*`).
   - `texture`: The texture.

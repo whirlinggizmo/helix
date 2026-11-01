@@ -70,12 +70,13 @@ class MaterialDefaultBits {
 		line('noshader valid ${valid(new Material(@:privateAccess new Shader(0, [], null), LoadMaterialDefault().maps))}');
 		line('nomaps valid ${valid(new Material(shader, null))}');
 
-		// A material with a texture of its own on two maps, unloaded.
+		// A material given a texture on two maps, the texture unloaded, then the material.
 		var checked = GenImageChecked(4, 4, 1, 1, RED, BLUE);
 		var own = LoadTextureFromImage(checked), id = own.id;
 		var u = LoadMaterialDefault();
 		u.maps[MATERIAL_MAP_NORMAL].texture = own;
 		u.maps[MATERIAL_MAP_EMISSION].texture = own;
+		UnloadTexture(own);
 		UnloadMaterial(u);
 		line('unloaded valid ${valid(u)}');
 		var white:Image = null;
@@ -84,12 +85,13 @@ class MaterialDefaultBits {
 		Parity.image("unloaded default", white);
 		line('unloaded freed ${Textures.imageOf(id) == null ? 1 : 0}');
 
-		// A texture taken from a model, the model unloaded.
-		var taken = load("web/materials.gltf");
-		var kept = taken.materials[1].maps[MATERIAL_MAP_ALBEDO].texture;
-		UnloadModel(taken);
-		pixels("taken", kept);
-		line('taken kept ${Textures.imageOf(kept.id) != null ? 1 : 0}');
+		// A model given a texture, the texture unloaded, then the model.
+		var tex = LoadTextureFromImage(checked), texId = tex.id;
+		var cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
+		cube.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = tex;
+		UnloadTexture(tex);
+		UnloadModel(cube);
+		line('assigned freed ${Textures.imageOf(texId) == null ? 1 : 0}');
 
 		// Two loads of the file: the first's material unloaded, the second's textures read after.
 		var first = load("web/materials.gltf"),

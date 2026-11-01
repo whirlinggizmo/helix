@@ -1,21 +1,26 @@
 package helix.ray;
 
-/** Represents raylib's `Model`: meshes, materials, which material each mesh draws with, and a transform. */
+/** Represents raylib's `Model`: meshes, materials, which material each mesh draws with, and a transform.
+
+	A model holds a count on each of its meshes and materials (docs/DECISIONS.md 25): putting one in `meshes` or `materials` retains it,
+	replacing or `UnloadModel` releases it, and what no one holds any more is freed. */
 class Model {
 	/** Gets or sets the transform applied before `DrawModel`'s position, rotation and scale. */
 	public var transform:Matrix;
 
-	/** Gets the number of meshes. */
+	/** Gets the number of meshes, set when `meshes` is. */
 	public var meshCount:Int;
 
-	/** Gets the number of materials. */
+	/** Gets the number of materials, set when `materials` is. */
 	public var materialCount:Int;
 
-	/** Gets the meshes. */
-	public var meshes:Array<Mesh>;
+	/** Gets or sets the meshes, each held by the model. Setting copies the array, retains its meshes, releases the ones it replaces and
+		sets `meshCount`. */
+	public var meshes(default, set):ModelMeshes;
 
-	/** Gets the materials. */
-	public var materials:Array<Material>;
+	/** Gets or sets the materials, each held by the model. Setting copies the array, retains its materials, releases the ones it
+		replaces and sets `materialCount`. */
+	public var materials(default, set):ModelMaterials;
 
 	/** Gets the material of each mesh, by its index in `materials`. */
 	public var meshMaterial:Array<Int>;
@@ -43,7 +48,7 @@ class Model {
 	@:allow(helix.ray)
 	var path = "";
 
-	/** Creates a model. Models are made by `Raylib.LoadModelAsync` and `Raylib.LoadModelFromMesh`.
+	/** Creates a model, holding its meshes and materials. Models are made by `Raylib.LoadModelAsync` and `Raylib.LoadModelFromMesh`.
 
 		@param meshes  The meshes.
 		@param materials  The materials.
@@ -53,7 +58,31 @@ class Model {
 		this.meshes = meshes;
 		this.materials = materials;
 		this.meshMaterial = meshMaterial;
-		meshCount = meshes.length;
-		materialCount = materials.length;
+	}
+
+	function set_meshes(value:ModelMeshes):ModelMeshes {
+		var next = value == null ? [] : (cast value : Array<Mesh>).copy();
+		for (m in next)
+			helix.ray.internal.Models.retainMesh(m);
+		var old = meshes;
+		meshes = next;
+		if (old != null)
+			for (m in old)
+				helix.ray.internal.Models.releaseMesh(m);
+		meshCount = next.length;
+		return meshes;
+	}
+
+	function set_materials(value:ModelMaterials):ModelMaterials {
+		var next = value == null ? [] : (cast value : Array<Material>).copy();
+		for (m in next)
+			helix.ray.internal.Models.retainMaterial(m);
+		var old = materials;
+		materials = next;
+		if (old != null)
+			for (m in old)
+				helix.ray.internal.Models.releaseMaterial(m);
+		materialCount = next.length;
+		return materials;
 	}
 }

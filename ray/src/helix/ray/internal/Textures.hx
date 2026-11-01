@@ -3,7 +3,8 @@ package helix.ray.internal;
 import helix.services.images.Image;
 
 /** Holds every texture a program has, by the id its `Texture2D` carries: one GPU texture for each file however often it is loaded,
-	released when its last load is unloaded, and sent to the GPU when first drawn rather than when loaded. */
+	counted by its holders (the program's loads of it and the material maps given it, docs/DECISIONS.md 25) and freed when the last lets
+	go, and sent to the GPU when first drawn rather than when loaded. */
 @:noCompletion
 class Textures {
 	/** The id of raylib's default texture, rlgl's 1x1 white pixel (`rlGetTextureIdDefault`): the frame's white texture, which
@@ -125,13 +126,18 @@ class Textures {
 		return e.gpu;
 	}
 
-	/** Releases one load of a texture, freeing it when it was the last.
+	/** Releases one of a texture's holders, freeing it when it was the last.
 
-		@param id  The texture's id. */
-	public static function release(id:Int):Void {
+		@param id  The texture's id.
+		@return  True when the texture is gone: freed now, or already; false while others hold it, and for `DEFAULT` and 0. */
+	public static function release(id:Int):Bool {
+		if (id == DEFAULT || id == 0)
+			return false;
 		var e = entries.get(id);
-		if (e == null || --e.refs > 0)
-			return;
+		if (e == null)
+			return true;
+		if (--e.refs > 0)
+			return false;
 		if (e.gpu != 0) {
 			Runtime.graphics.disposeTexture(e.gpu);
 			samplings.remove(e.gpu);
@@ -139,9 +145,10 @@ class Textures {
 		entries.remove(id);
 		if (e.path != "" && byPath.get(e.path) == id)
 			byPath.remove(e.path);
+		return true;
 	}
 
-	/** Takes one more load of a texture, as a model loaded again shares its textures.
+	/** Takes one more holder of a texture: a load of its file again, or a material map given it.
 
 		@param id  The texture's id. */
 	public static function retain(id:Int):Void {

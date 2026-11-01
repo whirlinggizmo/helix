@@ -3009,7 +3009,11 @@ class Raylib {
 
 	// ---- rtextures: textures, render textures and colors (raylib/RTextures.hx) ----
 
-	/** Frees a texture: one load of its file, the GPU's copy with the last.
+	/** Lets go of a texture (docs/DECISIONS.md 25): the program's hold from its load, its id set to 0. The texture is freed, the GPU's
+		copy with it, when nothing else holds it: another load of its file, or a material map given it, keeps it until that lets go. Given
+		a map's texture (`map.texture`), as `UnloadTexture(model.materials[0].maps[0].texture)` frees one a program gave a map without
+		keeping it, it lets go of one hold and leaves the map's id: the map draws it while anything holds it, and lets go in turn when its
+		material is freed.
 
 		@param texture  The texture. */
 	public static inline function UnloadTexture(texture:Texture2D):Void
@@ -4558,7 +4562,8 @@ class Raylib {
 			origin:Vector2, rotation:Float, tint:Color):Void
 		RModels.DrawBillboardPro(camera, texture, source, position, up, size, origin, rotation, tint);
 
-	/** Makes a model of one mesh, with the default material.
+	/** Makes a model of one mesh, with the default material. The model takes over the program's hold on the mesh, as a raylib program
+		doesn't unload a mesh it gave a model: `UnloadModel` frees it, and a later `UnloadMesh` does nothing.
 
 		@param mesh  The mesh.
 		@return  The model. */
@@ -4572,8 +4577,14 @@ class Raylib {
 	public static inline function IsModelValid(model:Model):Bool
 		return RModels.IsModelValid(model);
 
-	/** Frees a model's meshes, as raylib's: a file's with its last load. Its materials' textures and shaders stay, as a program may share
-		them between models: `UnloadMaterial`, `UnloadTexture` and `UnloadShader` free them.
+	/** Frees a model: it lets go of its meshes and materials, and what no one else holds is freed with it (docs/DECISIONS.md 25): a
+		mesh's GPU buffers, a material's maps' textures and its shader unless it is the default one. A file's textures and GPU buffers,
+		shared by its loads, go with its last load. The model is left empty, so unloading it again does nothing.
+
+		raylib's frees only the meshes, and leaves the textures and shaders to the program. Where helix-ray's differs: a texture copied out
+		of a map (`var t = map.texture`) and drawn after the model is unloaded is freed and draws as none, where raylib's leaks it; a material or mesh shared
+		between models works, where raylib's C frees it twice; and a shader shared between models is unloaded with the first whose material
+		lets go of it.
 
 		@param model  The model. */
 	public static inline function UnloadModel(model:Model):Void
@@ -4652,7 +4663,8 @@ class Raylib {
 	public static inline function UpdateMeshBuffer(mesh:Mesh, index:Int, data:Dynamic, dataSize:Int, offset:Int):Void
 		RModels.UpdateMeshBuffer(mesh, index, data, dataSize, offset);
 
-	/** Frees a mesh's GPU buffers.
+	/** Lets go of the program's hold on a mesh, freeing its GPU buffers unless a model still holds it (docs/DECISIONS.md 25). A mesh given
+		to `LoadModelFromMesh`, or already freed, is left: the model frees it.
 
 		@param mesh  The mesh. */
 	public static inline function UnloadMesh(mesh:Mesh):Void
@@ -4848,7 +4860,7 @@ class Raylib {
 		return RModels.IsModelAnimationValid(model, anim);
 
 	/** Returns raylib's default material: the default shader, the diffuse map raylib's default texture (a 1x1 white pixel), the diffuse
-		and specular colors white, and the other maps empty.
+		and specular colors white, and the other maps empty. The program holds it until `UnloadMaterial`; a model it is put in holds it too.
 
 		@return  The material. */
 	public static inline function LoadMaterialDefault():Material
@@ -4861,15 +4873,16 @@ class Raylib {
 	public static inline function IsMaterialValid(material:Material):Bool
 		return RModels.IsMaterialValid(material);
 
-	/** Frees a material: its shader unless it is the default one, and each map's texture unless it is the default texture
-		(`UnloadShader`, `UnloadTexture`). A texture a model's other loads share stays theirs: each map holds a load of its texture, freed
-		with the last.
+	/** Lets go of a material (docs/DECISIONS.md 25): the program's hold from `LoadMaterialDefault`, or, for a model's material, the
+		model's. When no one else holds it, its shader is unloaded unless it is the default one, and its maps let go of their textures:
+		each texture is freed when nothing else holds it (a texture the program still holds, or another load of a file shares, stays).
+		Releasing it again does nothing.
 
 		@param material  The material. */
 	public static inline function UnloadMaterial(material:Material):Void
 		RModels.UnloadMaterial(material);
 
-	/** Sets a texture on a material's map.
+	/** Sets a texture on a material's map, which holds it from then on (`MaterialMap.texture`).
 
 		@param material  The material.
 		@param mapType  The map (`MATERIAL_MAP_*`).

@@ -168,7 +168,7 @@ class Models {
 	}
 
 	/** Gives a mesh copied from its file's first load (`load`) a holder of GPU buffers of its own, borrowing the shared one's until it
-		replaces them; nothing for a mesh with its own already.
+		replaces them, and keeping the mesh's hold on the shared one (`MeshGpu.source`); nothing for a mesh with its own already.
 
 		@param mesh  The mesh, uploaded. */
 	public static function own(mesh:Mesh):Void {
@@ -184,6 +184,7 @@ class Models {
 		for (b in own.buffers.concat([own.indexBuffer, own.edgeBuffer]))
 			if (b != 0)
 				own.borrowed.push(b);
+		own.source = shared;
 		mesh.gpu = own;
 	}
 
@@ -208,11 +209,28 @@ class Models {
 		return mesh.gpu.edgeBuffer;
 	}
 
-	/** Frees a mesh's GPU buffers.
+	/** Takes one more holder of a mesh: a model it is put in.
 
-		@param mesh  The mesh. */
-	public static function unload(mesh:Mesh):Void {
-		var gpu = mesh.gpu;
+		@param mesh  The mesh, or null for nothing. */
+	public static function retainMesh(mesh:Null<Mesh>):Void
+		if (mesh != null && mesh.refs > 0)
+			mesh.refs++;
+
+	/** Releases one of a mesh's holders (the program's, or a model's), freeing its GPU buffers when it was the last: those it shares with
+		its file's other loads when it was the last mesh using them. A mesh already at 0 stays there.
+
+		@param mesh  The mesh, or null for nothing. */
+	public static function releaseMesh(mesh:Null<Mesh>):Void {
+		if (mesh == null || mesh.refs <= 0 || --mesh.refs > 0)
+			return;
+		freeGpu(mesh.gpu);
+		mesh.gpu = new MeshGpu();
+	}
+
+	// Lets go of a mesh's hold on a holder of GPU buffers, freeing those it hasn't borrowed when it was the last, then its own source's.
+	static function freeGpu(gpu:MeshGpu):Void {
+		if (--gpu.holders > 0)
+			return;
 		function dispose(b:Int):Void
 			if (b != 0 && gpu.borrowed.indexOf(b) < 0)
 				Runtime.graphics.disposeBuffer(b);
@@ -222,11 +240,46 @@ class Models {
 		dispose(gpu.indexBuffer);
 		dispose(gpu.edgeBuffer);
 		gpu.borrowed.resize(0);
-		mesh.gpu.buffers = null;
-		mesh.gpu.indexBuffer = 0;
-		mesh.gpu.edgeBuffer = 0;
-		for (i in 0...mesh.gpu.contents.length)
-			mesh.gpu.contents[i] = null;
+		gpu.buffers = null;
+		gpu.indexBuffer = 0;
+		gpu.edgeBuffer = 0;
+		for (i in 0...gpu.contents.length)
+			gpu.contents[i] = null;
+		if (gpu.source != null)
+			freeGpu(gpu.source);
+		gpu.source = null;
+	}
+
+	/** Takes one more holder of a material: a model it is put in.
+
+		@param material  The material, or null for nothing. */
+	public static function retainMaterial(material:Null<Material>):Void
+		if (material != null && material.refs > 0)
+			material.refs++;
+
+	/** Releases one of a material's holders (the program's, or a model's): when it was the last, its maps' textures are released and its
+		shader unloaded unless it is the default one, as raylib's `UnloadMaterial` does. A material already at 0 stays there.
+
+		@param material  The material, or null for nothing. */
+	public static function releaseMaterial(material:Null<Material>):Void {
+		if (material == null || material.refs <= 0 || --material.refs > 0)
+			return;
+		if (material.shader != null)
+			helix.ray.raylib.RCore.UnloadShader(material.shader);
+		if (material.maps != null)
+			for (map in material.maps)
+				releaseTexture(map.texture);
+	}
+
+	/** Releases one of a texture's holders, its id set to 0 when the texture is gone, or when it isn't a map's copy (`Texture2D.mapped`)
+		and so the holder's own record; the default texture and none are left.
+
+		@param texture  The texture. */
+	public static function releaseTexture(texture:Texture2D):Void {
+		if (texture.id == 0 || texture.id == Textures.DEFAULT)
+			return;
+		if (Textures.release(texture.id) || !texture.mapped)
+			texture.id = 0;
 	}
 
 	/** Returns raylib's default material, as raylib 5.5's `LoadMaterialDefault`: the default shader, the diffuse map raylib's default
@@ -252,8 +305,8 @@ class Models {
 		@return  The model. */
 	static function fromModel3D(read:Model3D, shader:Shader, attached:Null<Array<Int>>):Model {
 		var textures = new Map<Int, Texture2D>();
-		// An image's texture, made when first asked for and shared by the maps that sample it, each map a load of it; null for an image
-		// that couldn't be read or decoded.
+		// An image's texture, made when first asked for and shared by the maps that sample it, each map holding it; null for an image that
+		// couldn't be read or decoded. Its making's own count is let go once the maps hold it.
 		function texture(index:Int):Null<Texture2D> {
 			var made = textures.get(index);
 			if (made == null) {
@@ -262,13 +315,14 @@ class Models {
 					return null;
 				made = new Texture2D(Textures.fromImage(image.path != "" ? image.path : '${read.path}#$index', image), image.width, image.height);
 				textures.set(index, made);
-			} else
-				Textures.retain(made.id);
-			return new Texture2D(made.id, made.width, made.height, made.mipmaps, made.format);
+			}
+			return made;
 		}
 		var materials = [defaultMaterial(shader)];
 		for (m in read.materials)
 			materials.push(material(read, m, shader, texture));
+		for (made in textures)
+			Textures.release(made.id);
 		var meshes = [], meshMaterial = [];
 		for (i => found in read.meshes) {
 			// raylib puts every mesh's node's transform into its vertices, a skinned mesh's too.
@@ -286,10 +340,22 @@ class Models {
 			meshes.push(mesh);
 			meshMaterial.push(read.meshMaterials[i] + 1);
 		}
-		// Its meshes go to the GPU when first drawn.
+		// Its meshes go to the GPU when first drawn. The model holds its meshes and materials; their makings' counts are let go.
 		var model = new Model(meshes, materials, meshMaterial);
+		disown(meshes, materials);
 		skeleton(model, read, attached);
 		return model;
+	}
+
+	/** Lets go of the counts meshes and materials were made with, once a model holds them.
+
+		@param meshes  The meshes.
+		@param materials  The materials. */
+	public static function disown(meshes:Array<Mesh>, materials:Array<Material>):Void {
+		for (m in meshes)
+			releaseMesh(m);
+		for (m in materials)
+			releaseMaterial(m);
 	}
 
 	// raylib 6.2's LoadGLTF's materials part: the default material, and only when the material has a pbrMetallicRoughness block, the
@@ -321,10 +387,15 @@ class Models {
 						roughness.set(y * w + x, image.pixels.get((y * w + x) * 4 + 1));
 						metallic.set(y * w + x, image.pixels.get((y * w + x) * 4 + 2));
 					}
-				maps[Raylib.MATERIAL_MAP_ROUGHNESS].texture = RTextures.LoadTextureFromImage(new Image(roughness, w, h, 1,
-					Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE));
-				maps[Raylib.MATERIAL_MAP_METALNESS].texture = RTextures.LoadTextureFromImage(new Image(metallic, w, h, 1,
-					Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE));
+				// Each made with a count of its own, let go once its map holds it.
+				for (split in [
+					{map: Raylib.MATERIAL_MAP_ROUGHNESS, pixels: roughness},
+					{map: Raylib.MATERIAL_MAP_METALNESS, pixels: metallic}
+				]) {
+					var made = RTextures.LoadTextureFromImage(new Image(split.pixels, w, h, 1, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE));
+					maps[split.map].texture = made;
+					Textures.release(made.id);
+				}
 			}
 			maps[Raylib.MATERIAL_MAP_ROUGHNESS].value = Pixels.f32(m.roughness);
 			maps[Raylib.MATERIAL_MAP_METALNESS].value = Pixels.f32(m.metallic);
@@ -452,8 +523,8 @@ class Models {
 	static final loaded = new Map<String, {model:Model, refs:Int}>();
 
 	/** Returns a model loaded from a file: a copy of its first load (`keep`), sharing its meshes' GPU buffers and its textures, with
-		materials of its own, so one load's changes don't reach another's. Each of its maps holds a load of its texture (`Textures.retain`),
-		so a texture `UnloadMaterial` frees for one load stays for the others.
+		materials of its own, so one load's changes don't reach another's. Each of its maps holds its texture, and the first load holds them
+		all until the file's last load is unloaded (`release`).
 
 		@param path  The file.
 		@return  The model, or null when none is kept. */
@@ -467,15 +538,12 @@ class Models {
 		var materials = [
 			for (m in original.materials)
 				new Material(m.shader, [
-					for (map in m.maps) {
-						var t = map.texture;
-						Textures.retain(t.id);
-						new MaterialMap(new Texture2D(t.id, t.width, t.height, t.mipmaps, t.format),
-							new Color(map.color.r, map.color.g, map.color.b, map.color.a), map.value);
-					}
+					for (map in m.maps)
+						new MaterialMap(map.texture, new Color(map.color.r, map.color.g, map.color.b, map.color.a), map.value)
 				], m.params.copy())
 		];
 		var model = new Model(meshes, materials, original.meshMaterial.copy());
+		disown(meshes, materials);
 		model.path = path;
 		if (original.bones != null) {
 			model.boneCount = original.boneCount;
@@ -486,23 +554,17 @@ class Models {
 		return model;
 	}
 
-	/** Releases one load of a file's model: the GPU buffers its own meshes have, and with the last load the shared meshes' buffers. Its
-		textures stay, as raylib's `UnloadModel` leaves them: `UnloadMaterial` or `UnloadTexture` frees them.
+	/** Lets go of one load of a file's model, its meshes and materials already released (`UnloadModel`): with the last, the first load
+		lets go of its own, so what no one else holds is freed.
 
-		@param model  The model. */
-	public static function release(model:Model):Void {
-		var entry = loaded.get(model.path);
-		if (entry == null)
+		@param path  The file. */
+	public static function release(path:String):Void {
+		var entry = loaded.get(path);
+		if (entry == null || --entry.refs > 0)
 			return;
-		// A mesh an animation moved has buffers of its own.
-		for (mesh in model.meshes)
-			if (!mesh.gpu.shared)
-				unload(mesh);
-		if (--entry.refs > 0)
-			return;
-		loaded.remove(model.path);
-		for (mesh in entry.model.meshes)
-			unload(mesh);
+		loaded.remove(path);
+		entry.model.meshes = [];
+		entry.model.materials = [];
 	}
 
 	static function copyMesh(m:Mesh):Mesh {
@@ -519,6 +581,7 @@ class Models {
 		mesh.boneIds = m.boneIds;
 		mesh.boneWeights = m.boneWeights;
 		m.gpu.shared = true;
+		m.gpu.holders++;
 		mesh.gpu = m.gpu;
 		return mesh;
 	}
