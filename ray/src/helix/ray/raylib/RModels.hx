@@ -748,6 +748,32 @@ class RModels {
 		}
 	}
 
+	/** Draws a model's triangles as their edges, as `DrawModel` places it, through rlgl's wire mode.
+
+		@param model  The model.
+		@param position  Where.
+		@param scale  The scale, the same on each axis.
+		@param tint  The tint. */
+	static function DrawModelWires(model:Model, position:Vector3, scale:Float, tint:Color):Void {
+		rlEnableWireMode();
+		DrawModel(model, position, scale, tint);
+		rlDisableWireMode();
+	}
+
+	/** Draws a model's triangles as their edges, as `DrawModelEx` places it, through rlgl's wire mode.
+
+		@param model  The model.
+		@param position  Where.
+		@param rotationAxis  The axis.
+		@param rotationAngle  The angle, in degrees.
+		@param scale  The scale on each axis.
+		@param tint  The tint. */
+	static function DrawModelWiresEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void {
+		rlEnableWireMode();
+		DrawModelEx(model, position, rotationAxis, rotationAngle, scale, tint);
+		rlDisableWireMode();
+	}
+
 	/** Draws a mesh with a material and a transform.
 
 		@param mesh  The mesh.

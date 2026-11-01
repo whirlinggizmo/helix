@@ -1932,9 +1932,9 @@ static function EndScissorMode():Void
   - `position`: The screen position.
   - `camera`: The camera.
   - returns: The point; NaN at zoom 0, as raylib's inverse of a matrix with none gives.
-- `BeginMode3D`: Draws in 3D through a camera until `EndMode3D`, with depth.
+- `BeginMode3D`: Draws in 3D through a camera until `EndMode3D`, testing depth (rlgl's `rlEnableDepthTest`).
   - `camera`: The camera.
-- `EndMode3D`: Goes back to drawing in 2D, in the screen's pixels.
+- `EndMode3D`: Goes back to drawing in 2D, in the screen's pixels, without testing depth.
 - `UpdateCamera`: Moves a camera as one of raylib's modes does, by the keyboard, the mouse and the first gamepad, as rcamera's `UpdateCamera`.
   - `camera`: The camera, changed.
   - `mode`: The mode (`CAMERA_*`).
@@ -1987,7 +1987,7 @@ static function EndScissorMode():Void
   - `shader`: The shader.
   - `attribName`: The name.
   - returns: Its location, or -1 when the shader doesn't declare it.
-- `SetShaderValue`: Sets a shader's uniform, for the draws after it.
+- `SetShaderValue`: Sets a shader's uniform, for the models drawn after it and the shapes in rlgl's batch when it is next drawn, as raylib's: shapes drawn before it but not yet flushed (`BeginShaderMode`, `EndShaderMode`, a mode changing, `rlDrawRenderBatchActive`) take it too.
   - `shader`: The shader.
   - `locIndex`: The uniform's location.
   - `value`: The value: a number, an array of numbers, or a `Vector2`, `Vector3`, `Vector4` or `Color`.
@@ -2117,7 +2117,7 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
 - `DrawLineEx`: Draws a line of a thickness.
   - `startPos`: The start.
   - `endPos`: The end.
-  - `thick`: The thickness, in pixels.
+  - `thick`: The thickness, in pixels; 0 or less draws nothing.
   - `color`: The color.
 - `DrawLineStrip`: Draws lines one pixel wide from each point to the next.
   - `points`: The points.
@@ -2238,9 +2238,11 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `width`: The width.
   - `height`: The height.
   - `color`: The color.
+
+  Each line reaches half a pixel past its corners, at the 2D camera's zoom, so the corners are filled.
 - `DrawRectangleLinesEx`: Draws a rectangle's outline, its lines inside it.
   - `rec`: The rectangle.
-  - `lineThick`: The lines' thickness.
+  - `lineThick`: The lines' thickness; more than the rectangle's width or height is clamped to half its shorter side.
   - `color`: The color.
 - `DrawRectangleRounded`: Draws a filled rectangle with rounded corners.
   - `rec`: The rectangle.
@@ -2258,20 +2260,24 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `segments`: How many straight edges make each corner's curve; fewer than 4 picks enough for a smooth curve.
   - `lineThick`: The lines' thickness; 1 or less draws them one pixel wide.
   - `color`: The color.
-- `DrawTriangle`: Draws a filled triangle; its points go counterclockwise, as raylib's do.
+- `DrawTriangle`: Draws a filled triangle.
   - `v1`: The first point.
   - `v2`: The second point.
   - `v3`: The third point.
   - `color`: The color.
+
+  Its points must go counterclockwise on the screen, as raylib's must: a triangle whose points go clockwise faces away, and isn't drawn while back faces are culled (`rlEnableBackfaceCulling`, the default).
 - `DrawTriangleLines`: Draws a triangle's outline, one pixel wide.
   - `v1`: The first point.
   - `v2`: The second point.
   - `v3`: The third point.
   - `color`: The color.
-- `DrawTriangleFan`: Draws filled triangles that all share the first point, each from it to the next two points; they go counterclockwise.
+- `DrawTriangleFan`: Draws filled triangles that all share the first point, each from it to the next two points.
   - `points`: The points, the shared one first.
   - `pointCount`: How many of them to draw, 3 or more.
   - `color`: The color.
+
+  The points after the first must go counterclockwise on the screen, as `DrawTriangle`'s must.
 - `DrawTriangleStrip`: Draws filled triangles, each from a point to the two before it.
   - `points`: The points.
   - `pointCount`: How many of them to draw, 3 or more.
@@ -2323,7 +2329,7 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
 - `DrawSplineSegmentLinear`: Draws a straight line of a thickness.
   - `p1`: The start.
   - `p2`: The end.
-  - `thick`: The thickness, in pixels.
+  - `thick`: The thickness, in pixels; 0 or less draws nothing.
   - `color`: The color.
 - `DrawSplineSegmentBasis`: Draws one piece of a B-spline of a thickness, between the middle two of four points.
   - `p1`: The first point.
@@ -3272,6 +3278,8 @@ static function IsModelValid(model:Model):Bool
 static function UnloadModel(model:Model):Void
 static function DrawModel(model:Model, position:Vector3, scale:Float, tint:Color):Void
 static function DrawModelEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
+static function DrawModelWires(model:Model, position:Vector3, scale:Float, tint:Color):Void
+static function DrawModelWiresEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
 static function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void
 static function UploadMesh(mesh:Mesh, isDynamic:Bool):Void
 static function UpdateMeshBuffer(mesh:Mesh, index:Int, data:Dynamic, dataSize:Int, offset:Int):Void
@@ -3455,6 +3463,18 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `scale`: The scale, the same on each axis.
   - `tint`: The tint.
 - `DrawModelEx`: Draws a model scaled, turned about an axis and moved, after its own transform.
+  - `model`: The model.
+  - `position`: Where.
+  - `rotationAxis`: The axis.
+  - `rotationAngle`: The angle, in degrees.
+  - `scale`: The scale on each axis.
+  - `tint`: The tint.
+- `DrawModelWires`: Draws a model's triangles as their edges, as `DrawModel` places it, through rlgl's wire mode.
+  - `model`: The model.
+  - `position`: Where.
+  - `scale`: The scale, the same on each axis.
+  - `tint`: The tint.
+- `DrawModelWiresEx`: Draws a model's triangles as their edges, as `DrawModelEx` places it, through rlgl's wire mode.
   - `model`: The model.
   - `position`: Where.
   - `rotationAxis`: The axis.
@@ -4007,7 +4027,7 @@ Each of these is raylib's name, and a call to it doesn't compile, saying why and
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawModelWires`, `DrawModelWiresEx`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`.
+`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`.
 
 ## Raymath
 
@@ -5323,6 +5343,33 @@ static function rlSetTexture(id:Int):Void
 static function rlSetBlendMode(mode:Int):Void
 static function rlDrawRenderBatchActive():Void
 static function rlCheckRenderBatchLimit(vCount:Int):Bool
+static function rlEnableColorBlend():Void
+static function rlDisableColorBlend():Void
+static function rlEnableDepthTest():Void
+static function rlDisableDepthTest():Void
+static function rlEnableDepthMask():Void
+static function rlDisableDepthMask():Void
+static function rlEnableBackfaceCulling():Void
+static function rlDisableBackfaceCulling():Void
+static function rlSetCullFace(mode:Int):Void
+static function rlEnableWireMode():Void
+static function rlDisableWireMode():Void
+static function rlEnableScissorTest():Void
+static function rlDisableScissorTest():Void
+static function rlScissor(x:Int, y:Int, width:Int, height:Int):Void
+static function rlViewport(x:Int, y:Int, width:Int, height:Int):Void
+static function rlSetClipPlanes(nearPlane:Float, farPlane:Float):Void
+static function rlClearColor(r:Int, g:Int, b:Int, a:Int):Void
+static function rlClearScreenBuffers():Void
+static function rlSetLineWidth(width:Float):Void
+static function rlGetLineWidth():Float
+static function rlEnableSmoothLines():Void
+static function rlDisableSmoothLines():Void
+static function rlSetFramebufferWidth(width:Int):Void
+static function rlGetFramebufferWidth():Int
+static function rlSetFramebufferHeight(height:Int):Void
+static function rlGetFramebufferHeight():Int
+static function rlGetPixelFormatName(format:Int):String
 ```
 
 - `rlMatrixMode`: Chooses the matrix the next matrix calls change: `RL_MODELVIEW`, the view (or, between `rlPushMatrix` and `rlPopMatrix`, the transform the next vertices are moved by), or `RL_PROJECTION`.
@@ -5370,9 +5417,9 @@ static function rlCheckRenderBatchLimit(vCount:Int):Bool
   - `view`: The matrix.
 - `rlSetMatrixProjection`: Sets the projection.
   - `proj`: The matrix.
-- `rlGetCullDistanceNear`: Returns the near plane rlgl's cameras use, 0.01.
+- `rlGetCullDistanceNear`: Returns the near distance cameras see from, 0.01 until `rlSetClipPlanes` sets it.
   - returns: The distance.
-- `rlGetCullDistanceFar`: Returns the far plane rlgl's cameras use, 1000.
+- `rlGetCullDistanceFar`: Returns the far distance cameras see to, 1000 until `rlSetClipPlanes` sets it.
   - returns: The distance.
 - `rlBegin`: Starts vertices: each 2 a line, 3 a triangle or 4 a quad, until `rlEnd`.
   - `mode`: `RL_LINES`, `RL_TRIANGLES` or `RL_QUADS`.
@@ -5412,22 +5459,72 @@ static function rlCheckRenderBatchLimit(vCount:Int):Bool
   - `id`: The texture's id (`Texture2D.id`), or 0 for none.
 - `rlSetBlendMode`: Sets how the next draws blend, as `BeginBlendMode` does.
   - `mode`: The mode (`RL_BLEND_*`, the same as `BLEND_*`).
-- `rlDrawRenderBatchActive`: Draws what is drawn so far before what comes next. Draws here are kept in the order they are asked for, so it changes nothing that is seen.
-- `rlCheckRenderBatchLimit`: Returns whether the next vertices would overflow rlgl's batch, which it then draws first. Draws here have no such limit.
+- `rlDrawRenderBatchActive`: Draws the vertices waiting in rlgl's batch now, with the state as it is (rlgl's state calls don't, so a program calls this before and after changing one for the shapes between); a mode, a shader, blending, scissor or a pass changing does it too.
+- `rlCheckRenderBatchLimit`: Returns whether the next vertices would overflow rlgl's batch, which it then draws first. The batch here has no such limit, so it is drawn only as it is flushed (`rlDrawRenderBatchActive`).
   - `vCount`: The vertices.
   - returns: False.
+- `rlEnableColorBlend`: Blends the next draws as the blend mode says, as raylib starts.
+- `rlDisableColorBlend`: Draws the next draws over what is there, without blending.
+- `rlEnableDepthTest`: Tests the next draws' depth, keeping only what is as near as or nearer than what is drawn there. `BeginMode3D` does it.
+- `rlDisableDepthTest`: Stops testing the next draws' depth, as raylib starts and `EndMode3D` does.
+- `rlEnableDepthMask`: Lets the next draws that test depth write it, as raylib starts.
+- `rlDisableDepthMask`: Stops the next draws writing depth, so what is drawn after isn't hidden by them, as for something see-through.
+- `rlEnableBackfaceCulling`: Leaves out the next triangles' backs (or fronts, by `rlSetCullFace`), as raylib starts: a triangle's front is the side its corners are counterclockwise from.
+- `rlDisableBackfaceCulling`: Draws both sides of the next triangles.
+- `rlSetCullFace`: Chooses which side of triangles culling leaves out.
+  - `mode`: `RL_CULL_FACE_BACK`, as raylib starts, or `RL_CULL_FACE_FRONT`.
+- `rlEnableWireMode`: Draws triangles as their edges from now: a model drawn after it at once, and the shapes in rlgl's batch when it is next drawn (`rlDrawRenderBatchActive`), as GL's line mode does, which a page's WebGL hasn't, done here as lines. Culling still leaves out the triangles it would, by their facing on the screen as GL finds it; a shader that moves the vertices isn't seen in that.
+- `rlDisableWireMode`: Draws the next triangles filled, as raylib starts; it also ends point mode, which helix-ray doesn't have yet.
+- `rlEnableScissorTest`: Clips the next draws to the rectangle `rlScissor` last set: the whole pass until it is set.
+- `rlDisableScissorTest`: Stops clipping the next draws, as `EndScissorMode` does.
+- `rlScissor`: Sets the rectangle the next draws are clipped to while the scissor test is on, as GL takes it: in the framebuffer's pixels, from its bottom left. `BeginScissorMode` takes one from the top left in the screen's pixels.
+  - `x`: Its left edge.
+  - `y`: Its bottom edge, from the bottom.
+  - `width`: Its width.
+  - `height`: Its height.
+- `rlViewport`: Sets the rectangle the next draws fill, as GL takes it, until the next pass begins (`BeginDrawing`, `BeginTextureMode`, `EndTextureMode`), which fills the whole of it again; the projection is unchanged, so what is drawn is squeezed into it.
+  - `x`: Its left edge, in framebuffer pixels.
+  - `y`: Its bottom edge, from the bottom.
+  - `width`: Its width.
+  - `height`: Its height.
+- `rlSetClipPlanes`: Sets the near and far distances `BeginMode3D`'s cameras see between, and the rays and projections of cameras after it use.
+  - `nearPlane`: The near distance, 0.01 until set.
+  - `farPlane`: The far distance, 1000 until set.
+- `rlClearColor`: Sets the color `rlClearScreenBuffers` clears to.
+  - `r`: Red, 0 to 255.
+  - `g`: Green.
+  - `b`: Blue.
+  - `a`: Alpha.
+- `rlClearScreenBuffers`: Clears what is drawn into, its colors to `rlClearColor`'s (black until set) and its depth, as `ClearBackground` does.
+- `rlSetLineWidth`: Sets the width lines are drawn at. GL 3.3's core profile and WebGL draw only 1, as raylib's lines are there, so lines stay 1 pixel wide; the width is kept for `rlGetLineWidth`.
+  - `width`: The width, in pixels.
+- `rlGetLineWidth`: Returns the width `rlSetLineWidth` last set, 1 until then.
+  - returns: The width.
+- `rlEnableSmoothLines`: Asks for smoothed lines. GL 3.3's core profile and WebGL don't smooth them, so this changes nothing; `FLAG_MSAA_4X_HINT` smooths every edge.
+- `rlDisableSmoothLines`: Stops asking for smoothed lines, which changes nothing here (`rlEnableSmoothLines`).
+- `rlSetFramebufferWidth`: Sets the width rlgl takes the framebuffer drawn into to have, until the next pass begins, as `BeginTextureMode` and `EndTextureMode` set it. Drawing here doesn't read it; `rlGetFramebufferWidth` gives it back.
+  - `width`: The width, in pixels.
+- `rlGetFramebufferWidth`: Returns the width of what is drawn into: the render texture's in `BeginTextureMode`, the screen's in framebuffer pixels otherwise, or `rlSetFramebufferWidth`'s since this pass began.
+  - returns: The width.
+- `rlSetFramebufferHeight`: Sets the height rlgl takes the framebuffer drawn into to have, until the next pass begins (`rlSetFramebufferWidth`).
+  - `height`: The height, in pixels.
+- `rlGetFramebufferHeight`: Returns the height of what is drawn into, as `rlGetFramebufferWidth` gives its width.
+  - returns: The height.
+- `rlGetPixelFormatName`: Returns a pixel format's name, as rlgl writes it in its log: "R8G8B8A8" for `RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+  - `format`: The format (`RL_PIXELFORMAT_*`).
+  - returns: Its name; "UNKNOWN" for another number.
 
 ### Not supported in helix-ray
 
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
-`rlEnableVertexArray`, `rlDisableVertexArray`, `rlEnableVertexBuffer`, `rlDisableVertexBuffer`, `rlEnableVertexBufferElement`, `rlDisableVertexBufferElement`, `rlEnableVertexAttribute`, `rlDisableVertexAttribute`, `rlEnableStatePointer`, `rlDisableStatePointer`, `rlActiveTextureSlot`, `rlEnableTexture`, `rlDisableTexture`, `rlEnableTextureCubemap`, `rlDisableTextureCubemap`, `rlTextureParameters`, `rlCubemapParameters`, `rlEnableShader`, `rlDisableShader`, `rlEnableFramebuffer`, `rlDisableFramebuffer`, `rlGetActiveFramebuffer`, `rlActiveDrawBuffers`, `rlBlitFramebuffer`, `rlBindFramebuffer`, `rlCheckErrors`, `rlLoadExtensions`, `rlGetVersion`, `rlGetTextureIdDefault`, `rlGetShaderIdDefault`, `rlGetShaderLocsDefault`, `rlLoadRenderBatch`, `rlUnloadRenderBatch`, `rlDrawRenderBatch`, `rlSetRenderBatchActive`, `rlLoadVertexArray`, `rlLoadVertexBuffer`, `rlLoadVertexBufferElement`, `rlUpdateVertexBuffer`, `rlUpdateVertexBufferElements`, `rlUnloadVertexArray`, `rlUnloadVertexBuffer`, `rlSetVertexAttribute`, `rlSetVertexAttributeDivisor`, `rlSetVertexAttributeDefault`, `rlDrawVertexArray`, `rlDrawVertexArrayElements`, `rlDrawVertexArrayInstanced`, `rlDrawVertexArrayElementsInstanced`, `rlLoadTexture`, `rlLoadTextureDepth`, `rlLoadTextureCubemap`, `rlUpdateTexture`, `rlGetGlTextureFormats`, `rlUnloadTexture`, `rlGenTextureMipmaps`, `rlReadTexturePixels`, `rlReadScreenPixels`, `rlLoadFramebuffer`, `rlFramebufferAttach`, `rlFramebufferComplete`, `rlUnloadFramebuffer`, `rlLoadShaderCode`, `rlCompileShader`, `rlLoadShaderProgram`, `rlUnloadShaderProgram`, `rlGetLocationUniform`, `rlGetLocationAttrib`, `rlSetUniform`, `rlSetUniformMatrix`, `rlSetUniformMatrices`, `rlSetUniformSampler`, `rlSetShader`, `rlLoadComputeShaderProgram`, `rlComputeShaderDispatch`, `rlLoadShaderBuffer`, `rlUnloadShaderBuffer`, `rlUpdateShaderBuffer`, `rlBindShaderBuffer`, `rlReadShaderBuffer`, `rlCopyShaderBuffer`, `rlGetShaderBufferSize`, `rlBindImageTexture`, `rlLoadDrawCube`, `rlLoadDrawQuad`.
+`rlEnableVertexArray`, `rlDisableVertexArray`, `rlEnableVertexBuffer`, `rlDisableVertexBuffer`, `rlEnableVertexBufferElement`, `rlDisableVertexBufferElement`, `rlEnableVertexAttribute`, `rlDisableVertexAttribute`, `rlEnableStatePointer`, `rlDisableStatePointer`, `rlActiveTextureSlot`, `rlEnableTexture`, `rlDisableTexture`, `rlEnableTextureCubemap`, `rlDisableTextureCubemap`, `rlTextureParameters`, `rlCubemapParameters`, `rlEnableShader`, `rlDisableShader`, `rlEnableFramebuffer`, `rlDisableFramebuffer`, `rlGetActiveFramebuffer`, `rlActiveDrawBuffers`, `rlBlitFramebuffer`, `rlBindFramebuffer`, `rlCheckErrors`, `rlglInit`, `rlglClose`, `rlLoadExtensions`, `rlGetVersion`, `rlGetTextureIdDefault`, `rlGetShaderIdDefault`, `rlGetShaderLocsDefault`, `rlLoadRenderBatch`, `rlUnloadRenderBatch`, `rlDrawRenderBatch`, `rlSetRenderBatchActive`, `rlLoadVertexArray`, `rlLoadVertexBuffer`, `rlLoadVertexBufferElement`, `rlUpdateVertexBuffer`, `rlUpdateVertexBufferElements`, `rlUnloadVertexArray`, `rlUnloadVertexBuffer`, `rlSetVertexAttribute`, `rlSetVertexAttributeDivisor`, `rlSetVertexAttributeDefault`, `rlDrawVertexArray`, `rlDrawVertexArrayElements`, `rlDrawVertexArrayInstanced`, `rlDrawVertexArrayElementsInstanced`, `rlLoadTexture`, `rlLoadTextureDepth`, `rlLoadTextureCubemap`, `rlUpdateTexture`, `rlGetGlTextureFormats`, `rlUnloadTexture`, `rlGenTextureMipmaps`, `rlReadTexturePixels`, `rlReadScreenPixels`, `rlLoadFramebuffer`, `rlFramebufferAttach`, `rlFramebufferComplete`, `rlUnloadFramebuffer`, `rlLoadShaderCode`, `rlCompileShader`, `rlLoadShaderProgram`, `rlUnloadShaderProgram`, `rlGetLocationUniform`, `rlGetLocationAttrib`, `rlSetUniform`, `rlSetUniformMatrix`, `rlSetUniformMatrices`, `rlSetUniformSampler`, `rlSetShader`, `rlLoadComputeShaderProgram`, `rlComputeShaderDispatch`, `rlLoadShaderBuffer`, `rlUnloadShaderBuffer`, `rlUpdateShaderBuffer`, `rlBindShaderBuffer`, `rlReadShaderBuffer`, `rlCopyShaderBuffer`, `rlGetShaderBufferSize`, `rlBindImageTexture`, `rlLoadDrawCube`, `rlLoadDrawQuad`.
 
 ### Not in helix-ray yet
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`rlViewport`, `rlSetClipPlanes`, `rlEnableColorBlend`, `rlDisableColorBlend`, `rlEnableDepthTest`, `rlDisableDepthTest`, `rlEnableDepthMask`, `rlDisableDepthMask`, `rlEnableBackfaceCulling`, `rlDisableBackfaceCulling`, `rlColorMask`, `rlSetCullFace`, `rlEnableScissorTest`, `rlDisableScissorTest`, `rlScissor`, `rlEnableWireMode`, `rlEnablePointMode`, `rlDisableWireMode`, `rlSetLineWidth`, `rlGetLineWidth`, `rlEnableSmoothLines`, `rlDisableSmoothLines`, `rlEnableStereoRender`, `rlDisableStereoRender`, `rlIsStereoRenderEnabled`, `rlClearColor`, `rlClearScreenBuffers`, `rlSetBlendFactors`, `rlSetBlendFactorsSeparate`, `rlglInit`, `rlglClose`, `rlSetFramebufferWidth`, `rlGetFramebufferWidth`, `rlSetFramebufferHeight`, `rlGetFramebufferHeight`, `rlGetPixelFormatName`, `rlGetMatrixProjectionStereo`, `rlGetMatrixViewOffsetStereo`, `rlSetMatrixProjectionStereo`, `rlSetMatrixViewOffsetStereo`.
+`rlColorMask`, `rlEnablePointMode`, `rlEnableStereoRender`, `rlDisableStereoRender`, `rlIsStereoRenderEnabled`, `rlSetBlendFactors`, `rlSetBlendFactorsSeparate`, `rlGetMatrixProjectionStereo`, `rlGetMatrixViewOffsetStereo`, `rlSetMatrixProjectionStereo`, `rlSetMatrixViewOffsetStereo`.
 
 ## Shader
 

@@ -162,18 +162,18 @@ class RRlgl {
 		Runtime.frame.projection = toMatrix3D(proj);
 	}
 
-	/** Returns the near plane rlgl's cameras use, 0.01.
+	/** Returns the near distance cameras see from, 0.01 until `rlSetClipPlanes` sets it.
 
 		@return  The distance. */
 	static function rlGetCullDistanceNear():Float {
-		return RL_CULL_DISTANCE_NEAR;
+		return cullNear;
 	}
 
-	/** Returns the far plane rlgl's cameras use, 1000.
+	/** Returns the far distance cameras see to, 1000 until `rlSetClipPlanes` sets it.
 
 		@return  The distance. */
 	static function rlGetCullDistanceFar():Float {
-		return RL_CULL_DISTANCE_FAR;
+		return cullFar;
 	}
 
 	// ---- Immediate drawing ----
@@ -307,18 +307,236 @@ class RRlgl {
 		BeginBlendMode(mode);
 	}
 
-	/** Draws what is drawn so far before what comes next. Draws here are kept in the order they are asked for, so it changes nothing that
-		is seen. */
+	/** Draws the vertices waiting in rlgl's batch now, with the state as it is (rlgl's state calls don't, so a program calls this before
+		and after changing one for the shapes between); a mode, a shader, blending, scissor or a pass changing does it too. */
 	static function rlDrawRenderBatchActive():Void {
 		Runtime.frame.cut();
 	}
 
-	/** Returns whether the next vertices would overflow rlgl's batch, which it then draws first. Draws here have no such limit.
+	/** Returns whether the next vertices would overflow rlgl's batch, which it then draws first. The batch here has no such limit, so it
+		is drawn only as it is flushed (`rlDrawRenderBatchActive`).
 
 		@param vCount  The vertices.
 		@return  False. */
 	static function rlCheckRenderBatchLimit(vCount:Int):Bool {
 		return false;
+	}
+
+	/** Blends the next draws as the blend mode says, as raylib starts. */
+	static function rlEnableColorBlend():Void {
+		state().colorBlend = true;
+	}
+
+	/** Draws the next draws over what is there, without blending. */
+	static function rlDisableColorBlend():Void {
+		state().colorBlend = false;
+	}
+
+	/** Tests the next draws' depth, keeping only what is as near as or nearer than what is drawn there. `BeginMode3D` does it. */
+	static function rlEnableDepthTest():Void {
+		state().depthTest = true;
+	}
+
+	/** Stops testing the next draws' depth, as raylib starts and `EndMode3D` does. */
+	static function rlDisableDepthTest():Void {
+		state().depthTest = false;
+	}
+
+	/** Lets the next draws that test depth write it, as raylib starts. */
+	static function rlEnableDepthMask():Void {
+		state().depthMask = true;
+	}
+
+	/** Stops the next draws writing depth, so what is drawn after isn't hidden by them, as for something see-through. */
+	static function rlDisableDepthMask():Void {
+		state().depthMask = false;
+	}
+
+	/** Leaves out the next triangles' backs (or fronts, by `rlSetCullFace`), as raylib starts: a triangle's front is the side its corners
+		are counterclockwise from. */
+	static function rlEnableBackfaceCulling():Void {
+		state().cull = true;
+	}
+
+	/** Draws both sides of the next triangles. */
+	static function rlDisableBackfaceCulling():Void {
+		state().cull = false;
+	}
+
+	/** Chooses which side of triangles culling leaves out.
+
+		@param mode  `RL_CULL_FACE_BACK`, as raylib starts, or `RL_CULL_FACE_FRONT`. */
+	static function rlSetCullFace(mode:Int):Void {
+		state().cullFront = mode == RL_CULL_FACE_FRONT;
+	}
+
+	/** Draws triangles as their edges from now: a model drawn after it at once, and the shapes in rlgl's batch when it is next drawn
+		(`rlDrawRenderBatchActive`), as GL's line mode does, which a page's WebGL hasn't, done here as lines. Culling still leaves out the
+		triangles it would, by their facing on the screen as GL finds it; a shader that moves the vertices isn't seen in that. */
+	static function rlEnableWireMode():Void {
+		state().wire = true;
+	}
+
+	/** Draws the next triangles filled, as raylib starts; it also ends point mode, which helix-ray doesn't have yet. */
+	static function rlDisableWireMode():Void {
+		state().wire = false;
+	}
+
+	/** Clips the next draws to the rectangle `rlScissor` last set: the whole pass until it is set. */
+	static function rlEnableScissorTest():Void {
+		var f = state();
+		if (scissorBox == null) {
+			f.scissor = [0, 0, f.width, f.height];
+			return;
+		}
+		// rlgl's box is in framebuffer pixels from the bottom left; the frame's in the pass's pixels from its top left.
+		var b = scissorBox,
+			sx = f.inTarget ? 1 : GetRenderWidth() / f.width,
+			sy = f.inTarget ? 1 : GetRenderHeight() / f.height;
+		f.scissor = [b[0] / sx, f.height - (b[1] + b[3]) / sy, b[2] / sx, b[3] / sy];
+	}
+
+	/** Stops clipping the next draws, as `EndScissorMode` does. */
+	static function rlDisableScissorTest():Void {
+		state().scissor = null;
+	}
+
+	/** Sets the rectangle the next draws are clipped to while the scissor test is on, as GL takes it: in the framebuffer's pixels, from
+		its bottom left. `BeginScissorMode` takes one from the top left in the screen's pixels.
+
+		@param x  Its left edge.
+		@param y  Its bottom edge, from the bottom.
+		@param width  Its width.
+		@param height  Its height. */
+	static function rlScissor(x:Int, y:Int, width:Int, height:Int):Void {
+		scissorBox = [x, y, width, height];
+		if (Runtime.frame.scissor != null)
+			rlEnableScissorTest();
+	}
+
+	/** Sets the rectangle the next draws fill, as GL takes it, until the next pass begins (`BeginDrawing`, `BeginTextureMode`,
+		`EndTextureMode`), which fills the whole of it again; the projection is unchanged, so what is drawn is squeezed into it.
+
+		@param x  Its left edge, in framebuffer pixels.
+		@param y  Its bottom edge, from the bottom.
+		@param width  Its width.
+		@param height  Its height. */
+	static function rlViewport(x:Int, y:Int, width:Int, height:Int):Void {
+		state().viewport = [x, y, width, height];
+	}
+
+	/** Sets the near and far distances `BeginMode3D`'s cameras see between, and the rays and projections of cameras after it use.
+
+		@param nearPlane  The near distance, 0.01 until set.
+		@param farPlane  The far distance, 1000 until set. */
+	static function rlSetClipPlanes(nearPlane:Float, farPlane:Float):Void {
+		cullNear = nearPlane;
+		cullFar = farPlane;
+	}
+
+	/** Sets the color `rlClearScreenBuffers` clears to.
+
+		@param r  Red, 0 to 255.
+		@param g  Green.
+		@param b  Blue.
+		@param a  Alpha. */
+	static function rlClearColor(r:Int, g:Int, b:Int, a:Int):Void {
+		clearColor = (a & 255) << 24 | (r & 255) << 16 | (g & 255) << 8 | (b & 255);
+	}
+
+	/** Clears what is drawn into, its colors to `rlClearColor`'s (black until set) and its depth, as `ClearBackground` does. */
+	static function rlClearScreenBuffers():Void {
+		Runtime.frame.clear(clearColor);
+	}
+
+	/** Sets the width lines are drawn at. GL 3.3's core profile and WebGL draw only 1, as raylib's lines are there, so lines stay 1 pixel
+		wide; the width is kept for `rlGetLineWidth`.
+
+		@param width  The width, in pixels. */
+	static function rlSetLineWidth(width:Float):Void {
+		lineWidth = width;
+	}
+
+	/** Returns the width `rlSetLineWidth` last set, 1 until then.
+
+		@return  The width. */
+	static function rlGetLineWidth():Float {
+		return lineWidth;
+	}
+
+	/** Asks for smoothed lines. GL 3.3's core profile and WebGL don't smooth them, so this changes nothing; `FLAG_MSAA_4X_HINT` smooths
+		every edge. */
+	static function rlEnableSmoothLines():Void {}
+
+	/** Stops asking for smoothed lines, which changes nothing here (`rlEnableSmoothLines`). */
+	static function rlDisableSmoothLines():Void {}
+
+	/** Sets the width rlgl takes the framebuffer drawn into to have, until the next pass begins, as `BeginTextureMode` and `EndTextureMode`
+		set it. Drawing here doesn't read it; `rlGetFramebufferWidth` gives it back.
+
+		@param width  The width, in pixels. */
+	static function rlSetFramebufferWidth(width:Int):Void {
+		framebufferWidth = width;
+		framebufferPass = Runtime.frame.passCount;
+	}
+
+	/** Returns the width of what is drawn into: the render texture's in `BeginTextureMode`, the screen's in framebuffer pixels
+		otherwise, or `rlSetFramebufferWidth`'s since this pass began.
+
+		@return  The width. */
+	static function rlGetFramebufferWidth():Int {
+		var f = Runtime.frame;
+		return framebufferPass == f.passCount ? framebufferWidth : f.inTarget ? Std.int(f.width) : GetRenderWidth();
+	}
+
+	/** Sets the height rlgl takes the framebuffer drawn into to have, until the next pass begins (`rlSetFramebufferWidth`).
+
+		@param height  The height, in pixels. */
+	static function rlSetFramebufferHeight(height:Int):Void {
+		framebufferHeight = height;
+		framebufferPass = Runtime.frame.passCount;
+	}
+
+	/** Returns the height of what is drawn into, as `rlGetFramebufferWidth` gives its width.
+
+		@return  The height. */
+	static function rlGetFramebufferHeight():Int {
+		var f = Runtime.frame;
+		return framebufferPass == f.passCount ? framebufferHeight : f.inTarget ? Std.int(f.height) : GetRenderHeight();
+	}
+
+	/** Returns a pixel format's name, as rlgl writes it in its log: "R8G8B8A8" for `RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+
+		@param format  The format (`RL_PIXELFORMAT_*`).
+		@return  Its name; "UNKNOWN" for another number. */
+	static function rlGetPixelFormatName(format:Int):String {
+		var names = [
+			"GRAYSCALE",
+			"GRAY_ALPHA",
+			"R5G6B5",
+			"R8G8B8",
+			"R5G5B5A1",
+			"R4G4B4A4",
+			"R8G8B8A8",
+			"R32",
+			"R32G32B32",
+			"R32G32B32A32",
+			"R16",
+			"R16G16B16",
+			"R16G16B16A16",
+			"DXT1_RGB",
+			"DXT1_RGBA",
+			"DXT3_RGBA",
+			"DXT5_RGBA",
+			"ETC1_RGB",
+			"ETC2_RGB",
+			"ETC2_RGBA",
+			"PVRT_RGB",
+			"PVRT_RGBA",
+			"ASTC_4x4_RGBA",
+			"ASTC_8x8_RGBA"
+		];
+		return format >= 1 && format <= names.length ? names[format - 1] : "UNKNOWN";
 	}
 
 	// ---- rlgl's GL objects and GL itself, which helix-ray draws without: each refuses to compile, saying what to use ----
@@ -633,7 +851,7 @@ class RRlgl {
 		@param numBuffers  As rlgl takes it.
 		@param bufferElements  As rlgl takes it.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.")
+	@:unsupported("rlLoadRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.")
 	static function rlLoadRenderBatch(numBuffers:Int, bufferElements:Int):Dynamic {
 		throw "rlLoadRenderBatch is unsupported";
 	}
@@ -642,7 +860,7 @@ class RRlgl {
 		draws through helix-platform, not GL, so a call doesn't compile.
 
 		@param batch  As rlgl takes it. */
-	@:unsupported("rlUnloadRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.")
+	@:unsupported("rlUnloadRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.")
 	static function rlUnloadRenderBatch(batch:Dynamic):Void {
 		throw "rlUnloadRenderBatch is unsupported";
 	}
@@ -651,7 +869,7 @@ class RRlgl {
 		draws through helix-platform, not GL, so a call doesn't compile.
 
 		@param batch  As rlgl takes it. */
-	@:unsupported("rlDrawRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.")
+	@:unsupported("rlDrawRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.")
 	static function rlDrawRenderBatch(batch:Dynamic):Void {
 		throw "rlDrawRenderBatch is unsupported";
 	}
@@ -660,7 +878,7 @@ class RRlgl {
 		draws through helix-platform, not GL, so a call doesn't compile.
 
 		@param batch  As rlgl takes it. */
-	@:unsupported("rlSetRenderBatchActive: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.")
+	@:unsupported("rlSetRenderBatchActive: Not supported: helix-ray has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.")
 	static function rlSetRenderBatchActive(batch:Dynamic):Void {
 		throw "rlSetRenderBatchActive is unsupported";
 	}
@@ -1218,6 +1436,14 @@ class RRlgl {
 	}
 
 	static var matrixMode = RL_MODELVIEW;
+	static var cullNear:Float = RL_CULL_DISTANCE_NEAR;
+	static var cullFar:Float = RL_CULL_DISTANCE_FAR;
+	static var scissorBox:Null<Array<Int>> = null;
+	static var clearColor = 0xff000000;
+	static var lineWidth = 1.;
+	static var framebufferWidth = 0;
+	static var framebufferHeight = 0;
+	static var framebufferPass = -1;
 	static var pushed = false;
 	static final transform = new Matrix3D();
 	static final stack:Array<Matrix3D> = [];
@@ -1227,6 +1453,12 @@ class RRlgl {
 	static var v = 0.;
 	static var color = new Color(255, 255, 255, 255);
 	static var textureId = 0;
+
+	// The frame whose state rlgl's state calls set: without flushing its batch, as rlgl's don't, so the vertices waiting in it are drawn
+	// with the state as it is when it is flushed.
+	static inline function state():helix.ray.internal.Frame {
+		return Runtime.frame;
+	}
 
 	// The matrix the matrix calls change now.
 	static function current():Matrix3D {

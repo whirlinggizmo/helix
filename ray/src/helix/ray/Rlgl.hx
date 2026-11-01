@@ -753,13 +753,13 @@ class Rlgl {
 	public static inline function rlSetMatrixProjection(proj:Matrix):Void
 		RRlgl.rlSetMatrixProjection(proj);
 
-	/** Returns the near plane rlgl's cameras use, 0.01.
+	/** Returns the near distance cameras see from, 0.01 until `rlSetClipPlanes` sets it.
 
 		@return  The distance. */
 	public static inline function rlGetCullDistanceNear():Float
 		return RRlgl.rlGetCullDistanceNear();
 
-	/** Returns the far plane rlgl's cameras use, 1000.
+	/** Returns the far distance cameras see to, 1000 until `rlSetClipPlanes` sets it.
 
 		@return  The distance. */
 	public static inline function rlGetCullDistanceFar():Float
@@ -850,17 +850,170 @@ class Rlgl {
 	public static inline function rlSetBlendMode(mode:Int):Void
 		RRlgl.rlSetBlendMode(mode);
 
-	/** Draws what is drawn so far before what comes next. Draws here are kept in the order they are asked for, so it changes nothing that
-		is seen. */
+	/** Draws the vertices waiting in rlgl's batch now, with the state as it is (rlgl's state calls don't, so a program calls this before
+		and after changing one for the shapes between); a mode, a shader, blending, scissor or a pass changing does it too. */
 	public static inline function rlDrawRenderBatchActive():Void
 		RRlgl.rlDrawRenderBatchActive();
 
-	/** Returns whether the next vertices would overflow rlgl's batch, which it then draws first. Draws here have no such limit.
+	/** Returns whether the next vertices would overflow rlgl's batch, which it then draws first. The batch here has no such limit, so it
+		is drawn only as it is flushed (`rlDrawRenderBatchActive`).
 
 		@param vCount  The vertices.
 		@return  False. */
 	public static inline function rlCheckRenderBatchLimit(vCount:Int):Bool
 		return RRlgl.rlCheckRenderBatchLimit(vCount);
+
+	/** Blends the next draws as the blend mode says, as raylib starts. */
+	public static inline function rlEnableColorBlend():Void
+		RRlgl.rlEnableColorBlend();
+
+	/** Draws the next draws over what is there, without blending. */
+	public static inline function rlDisableColorBlend():Void
+		RRlgl.rlDisableColorBlend();
+
+	/** Tests the next draws' depth, keeping only what is as near as or nearer than what is drawn there. `BeginMode3D` does it. */
+	public static inline function rlEnableDepthTest():Void
+		RRlgl.rlEnableDepthTest();
+
+	/** Stops testing the next draws' depth, as raylib starts and `EndMode3D` does. */
+	public static inline function rlDisableDepthTest():Void
+		RRlgl.rlDisableDepthTest();
+
+	/** Lets the next draws that test depth write it, as raylib starts. */
+	public static inline function rlEnableDepthMask():Void
+		RRlgl.rlEnableDepthMask();
+
+	/** Stops the next draws writing depth, so what is drawn after isn't hidden by them, as for something see-through. */
+	public static inline function rlDisableDepthMask():Void
+		RRlgl.rlDisableDepthMask();
+
+	/** Leaves out the next triangles' backs (or fronts, by `rlSetCullFace`), as raylib starts: a triangle's front is the side its corners
+		are counterclockwise from. */
+	public static inline function rlEnableBackfaceCulling():Void
+		RRlgl.rlEnableBackfaceCulling();
+
+	/** Draws both sides of the next triangles. */
+	public static inline function rlDisableBackfaceCulling():Void
+		RRlgl.rlDisableBackfaceCulling();
+
+	/** Chooses which side of triangles culling leaves out.
+
+		@param mode  `RL_CULL_FACE_BACK`, as raylib starts, or `RL_CULL_FACE_FRONT`. */
+	public static inline function rlSetCullFace(mode:Int):Void
+		RRlgl.rlSetCullFace(mode);
+
+	/** Draws triangles as their edges from now: a model drawn after it at once, and the shapes in rlgl's batch when it is next drawn
+		(`rlDrawRenderBatchActive`), as GL's line mode does, which a page's WebGL hasn't, done here as lines. Culling still leaves out the
+		triangles it would, by their facing on the screen as GL finds it; a shader that moves the vertices isn't seen in that. */
+	public static inline function rlEnableWireMode():Void
+		RRlgl.rlEnableWireMode();
+
+	/** Draws the next triangles filled, as raylib starts; it also ends point mode, which helix-ray doesn't have yet. */
+	public static inline function rlDisableWireMode():Void
+		RRlgl.rlDisableWireMode();
+
+	/** Clips the next draws to the rectangle `rlScissor` last set: the whole pass until it is set. */
+	public static inline function rlEnableScissorTest():Void
+		RRlgl.rlEnableScissorTest();
+
+	/** Stops clipping the next draws, as `EndScissorMode` does. */
+	public static inline function rlDisableScissorTest():Void
+		RRlgl.rlDisableScissorTest();
+
+	/** Sets the rectangle the next draws are clipped to while the scissor test is on, as GL takes it: in the framebuffer's pixels, from
+		its bottom left. `BeginScissorMode` takes one from the top left in the screen's pixels.
+
+		@param x  Its left edge.
+		@param y  Its bottom edge, from the bottom.
+		@param width  Its width.
+		@param height  Its height. */
+	public static inline function rlScissor(x:Int, y:Int, width:Int, height:Int):Void
+		RRlgl.rlScissor(x, y, width, height);
+
+	/** Sets the rectangle the next draws fill, as GL takes it, until the next pass begins (`BeginDrawing`, `BeginTextureMode`,
+		`EndTextureMode`), which fills the whole of it again; the projection is unchanged, so what is drawn is squeezed into it.
+
+		@param x  Its left edge, in framebuffer pixels.
+		@param y  Its bottom edge, from the bottom.
+		@param width  Its width.
+		@param height  Its height. */
+	public static inline function rlViewport(x:Int, y:Int, width:Int, height:Int):Void
+		RRlgl.rlViewport(x, y, width, height);
+
+	/** Sets the near and far distances `BeginMode3D`'s cameras see between, and the rays and projections of cameras after it use.
+
+		@param nearPlane  The near distance, 0.01 until set.
+		@param farPlane  The far distance, 1000 until set. */
+	public static inline function rlSetClipPlanes(nearPlane:Float, farPlane:Float):Void
+		RRlgl.rlSetClipPlanes(nearPlane, farPlane);
+
+	/** Sets the color `rlClearScreenBuffers` clears to.
+
+		@param r  Red, 0 to 255.
+		@param g  Green.
+		@param b  Blue.
+		@param a  Alpha. */
+	public static inline function rlClearColor(r:Int, g:Int, b:Int, a:Int):Void
+		RRlgl.rlClearColor(r, g, b, a);
+
+	/** Clears what is drawn into, its colors to `rlClearColor`'s (black until set) and its depth, as `ClearBackground` does. */
+	public static inline function rlClearScreenBuffers():Void
+		RRlgl.rlClearScreenBuffers();
+
+	/** Sets the width lines are drawn at. GL 3.3's core profile and WebGL draw only 1, as raylib's lines are there, so lines stay 1 pixel
+		wide; the width is kept for `rlGetLineWidth`.
+
+		@param width  The width, in pixels. */
+	public static inline function rlSetLineWidth(width:Float):Void
+		RRlgl.rlSetLineWidth(width);
+
+	/** Returns the width `rlSetLineWidth` last set, 1 until then.
+
+		@return  The width. */
+	public static inline function rlGetLineWidth():Float
+		return RRlgl.rlGetLineWidth();
+
+	/** Asks for smoothed lines. GL 3.3's core profile and WebGL don't smooth them, so this changes nothing; `FLAG_MSAA_4X_HINT` smooths
+		every edge. */
+	public static inline function rlEnableSmoothLines():Void
+		RRlgl.rlEnableSmoothLines();
+
+	/** Stops asking for smoothed lines, which changes nothing here (`rlEnableSmoothLines`). */
+	public static inline function rlDisableSmoothLines():Void
+		RRlgl.rlDisableSmoothLines();
+
+	/** Sets the width rlgl takes the framebuffer drawn into to have, until the next pass begins, as `BeginTextureMode` and `EndTextureMode`
+		set it. Drawing here doesn't read it; `rlGetFramebufferWidth` gives it back.
+
+		@param width  The width, in pixels. */
+	public static inline function rlSetFramebufferWidth(width:Int):Void
+		RRlgl.rlSetFramebufferWidth(width);
+
+	/** Returns the width of what is drawn into: the render texture's in `BeginTextureMode`, the screen's in framebuffer pixels
+		otherwise, or `rlSetFramebufferWidth`'s since this pass began.
+
+		@return  The width. */
+	public static inline function rlGetFramebufferWidth():Int
+		return RRlgl.rlGetFramebufferWidth();
+
+	/** Sets the height rlgl takes the framebuffer drawn into to have, until the next pass begins (`rlSetFramebufferWidth`).
+
+		@param height  The height, in pixels. */
+	public static inline function rlSetFramebufferHeight(height:Int):Void
+		RRlgl.rlSetFramebufferHeight(height);
+
+	/** Returns the height of what is drawn into, as `rlGetFramebufferWidth` gives its width.
+
+		@return  The height. */
+	public static inline function rlGetFramebufferHeight():Int
+		return RRlgl.rlGetFramebufferHeight();
+
+	/** Returns a pixel format's name, as rlgl writes it in its log: "R8G8B8A8" for `RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+
+		@param format  The format (`RL_PIXELFORMAT_*`).
+		@return  Its name; "UNKNOWN" for another number. */
+	public static inline function rlGetPixelFormatName(format:Int):String
+		return RRlgl.rlGetPixelFormatName(format);
 	#end
 
 	// ---- rlgl.h's functions helix-ray won't have: each refuses to compile, saying why and what to use ----
@@ -996,6 +1149,16 @@ class Rlgl {
 		return helix.platform.macros.Build.unsupported("rlCheckErrors: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
 			macro {});
 
+	/** rlgl's `rlglInit`: initialize rlgl (buffers, shaders, textures, states), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+	public static macro function rlglInit(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("rlglInit: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+			macro {});
+
+	/** rlgl's `rlglClose`: de-initialize rlgl (buffers, shaders, textures), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+	public static macro function rlglClose():ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("rlglClose: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+			macro {});
+
 	/** rlgl's `rlLoadExtensions`: load opengl extensions (loader function required), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
 	public static macro function rlLoadExtensions(loader:ExprOf<Dynamic>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("rlLoadExtensions: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
@@ -1023,22 +1186,22 @@ class Rlgl {
 
 	/** rlgl's `rlLoadRenderBatch`: load a render batch system, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
 	public static macro function rlLoadRenderBatch(numBuffers:ExprOf<Int>, bufferElements:ExprOf<Int>):ExprOf<Dynamic>
-		return helix.platform.macros.Build.unsupported("rlLoadRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.",
+		return helix.platform.macros.Build.unsupported("rlLoadRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.",
 			macro(null : Dynamic));
 
 	/** rlgl's `rlUnloadRenderBatch`: unload render batch system, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
 	public static macro function rlUnloadRenderBatch(batch:ExprOf<Dynamic>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUnloadRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.",
+		return helix.platform.macros.Build.unsupported("rlUnloadRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.",
 			macro {});
 
 	/** rlgl's `rlDrawRenderBatch`: draw render batch data (update->draw->reset), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
 	public static macro function rlDrawRenderBatch(batch:ExprOf<Dynamic>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDrawRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.",
+		return helix.platform.macros.Build.unsupported("rlDrawRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.",
 			macro {});
 
 	/** rlgl's `rlSetRenderBatchActive`: set the active render batch for rlgl (null for default internal), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
 	public static macro function rlSetRenderBatchActive(batch:ExprOf<Dynamic>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetRenderBatchActive: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.",
+		return helix.platform.macros.Build.unsupported("rlSetRenderBatchActive: Not supported: helix-ray has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.",
 			macro {});
 
 	/** rlgl's `rlLoadVertexArray`: load vertex array (vao) if supported, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
@@ -1302,93 +1465,13 @@ class Rlgl {
 
 	// ---- rlgl.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
 
-	/** raylib's `rlViewport` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set the viewport area. */
-	public static macro function rlViewport(x:ExprOf<Int>, y:ExprOf<Int>, width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlViewport: Not implemented", macro {});
-
-	/** raylib's `rlSetClipPlanes` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set clip planes distances. */
-	public static macro function rlSetClipPlanes(nearPlane:ExprOf<Float>, farPlane:ExprOf<Float>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlSetClipPlanes: Not implemented", macro {});
-
-	/** raylib's `rlEnableColorBlend` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable color blending. */
-	public static macro function rlEnableColorBlend():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlEnableColorBlend: Not implemented", macro {});
-
-	/** raylib's `rlDisableColorBlend` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable color blending. */
-	public static macro function rlDisableColorBlend():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlDisableColorBlend: Not implemented", macro {});
-
-	/** raylib's `rlEnableDepthTest` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable depth test. */
-	public static macro function rlEnableDepthTest():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlEnableDepthTest: Not implemented", macro {});
-
-	/** raylib's `rlDisableDepthTest` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable depth test. */
-	public static macro function rlDisableDepthTest():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlDisableDepthTest: Not implemented", macro {});
-
-	/** raylib's `rlEnableDepthMask` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable depth write. */
-	public static macro function rlEnableDepthMask():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlEnableDepthMask: Not implemented", macro {});
-
-	/** raylib's `rlDisableDepthMask` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable depth write. */
-	public static macro function rlDisableDepthMask():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlDisableDepthMask: Not implemented", macro {});
-
-	/** raylib's `rlEnableBackfaceCulling` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable backface culling. */
-	public static macro function rlEnableBackfaceCulling():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlEnableBackfaceCulling: Not implemented", macro {});
-
-	/** raylib's `rlDisableBackfaceCulling` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable backface culling. */
-	public static macro function rlDisableBackfaceCulling():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlDisableBackfaceCulling: Not implemented", macro {});
-
 	/** raylib's `rlColorMask` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Color mask control. */
 	public static macro function rlColorMask(r:ExprOf<Bool>, g:ExprOf<Bool>, b:ExprOf<Bool>, a:ExprOf<Bool>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("rlColorMask: Not implemented", macro {});
 
-	/** raylib's `rlSetCullFace` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set face culling mode. */
-	public static macro function rlSetCullFace(mode:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlSetCullFace: Not implemented", macro {});
-
-	/** raylib's `rlEnableScissorTest` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable scissor test. */
-	public static macro function rlEnableScissorTest():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlEnableScissorTest: Not implemented", macro {});
-
-	/** raylib's `rlDisableScissorTest` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable scissor test. */
-	public static macro function rlDisableScissorTest():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlDisableScissorTest: Not implemented", macro {});
-
-	/** raylib's `rlScissor` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Scissor test. */
-	public static macro function rlScissor(x:ExprOf<Int>, y:ExprOf<Int>, width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlScissor: Not implemented", macro {});
-
-	/** raylib's `rlEnableWireMode` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable wire mode. */
-	public static macro function rlEnableWireMode():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlEnableWireMode: Not implemented", macro {});
-
 	/** raylib's `rlEnablePointMode` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable point mode. */
 	public static macro function rlEnablePointMode():ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("rlEnablePointMode: Not implemented", macro {});
-
-	/** raylib's `rlDisableWireMode` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable wire (and point) mode. */
-	public static macro function rlDisableWireMode():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlDisableWireMode: Not implemented", macro {});
-
-	/** raylib's `rlSetLineWidth` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set the line drawing width. */
-	public static macro function rlSetLineWidth(width:ExprOf<Float>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlSetLineWidth: Not implemented", macro {});
-
-	/** raylib's `rlGetLineWidth` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Get the line drawing width. */
-	public static macro function rlGetLineWidth():ExprOf<Float>
-		return helix.platform.macros.Build.unimplemented("rlGetLineWidth: Not implemented", macro(0.0 : Float));
-
-	/** raylib's `rlEnableSmoothLines` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable line aliasing. */
-	public static macro function rlEnableSmoothLines():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlEnableSmoothLines: Not implemented", macro {});
-
-	/** raylib's `rlDisableSmoothLines` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable line aliasing. */
-	public static macro function rlDisableSmoothLines():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlDisableSmoothLines: Not implemented", macro {});
 
 	/** raylib's `rlEnableStereoRender` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable stereo rendering. */
 	public static macro function rlEnableStereoRender():ExprOf<Void>
@@ -1402,14 +1485,6 @@ class Rlgl {
 	public static macro function rlIsStereoRenderEnabled():ExprOf<Bool>
 		return helix.platform.macros.Build.unimplemented("rlIsStereoRenderEnabled: Not implemented", macro(false : Bool));
 
-	/** raylib's `rlClearColor` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Clear color buffer with color. */
-	public static macro function rlClearColor(r:ExprOf<Int>, g:ExprOf<Int>, b:ExprOf<Int>, a:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlClearColor: Not implemented", macro {});
-
-	/** raylib's `rlClearScreenBuffers` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Clear used screen buffers (color and depth). */
-	public static macro function rlClearScreenBuffers():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlClearScreenBuffers: Not implemented", macro {});
-
 	/** raylib's `rlSetBlendFactors` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set blending mode factor and equation (using OpenGL factors). */
 	public static macro function rlSetBlendFactors(glSrcFactor:ExprOf<Int>, glDstFactor:ExprOf<Int>, glEquation:ExprOf<Int>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("rlSetBlendFactors: Not implemented", macro {});
@@ -1418,34 +1493,6 @@ class Rlgl {
 	public static macro function rlSetBlendFactorsSeparate(glSrcRGB:ExprOf<Int>, glDstRGB:ExprOf<Int>, glSrcAlpha:ExprOf<Int>, glDstAlpha:ExprOf<Int>,
 			glEqRGB:ExprOf<Int>, glEqAlpha:ExprOf<Int>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("rlSetBlendFactorsSeparate: Not implemented", macro {});
-
-	/** raylib's `rlglInit` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Initialize rlgl (buffers, shaders, textures, states). */
-	public static macro function rlglInit(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlglInit: Not implemented", macro {});
-
-	/** raylib's `rlglClose` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. De-initialize rlgl (buffers, shaders, textures). */
-	public static macro function rlglClose():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlglClose: Not implemented", macro {});
-
-	/** raylib's `rlSetFramebufferWidth` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set current framebuffer width. */
-	public static macro function rlSetFramebufferWidth(width:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlSetFramebufferWidth: Not implemented", macro {});
-
-	/** raylib's `rlGetFramebufferWidth` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Get default framebuffer width. */
-	public static macro function rlGetFramebufferWidth():ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("rlGetFramebufferWidth: Not implemented", macro(0 : Int));
-
-	/** raylib's `rlSetFramebufferHeight` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set current framebuffer height. */
-	public static macro function rlSetFramebufferHeight(height:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlSetFramebufferHeight: Not implemented", macro {});
-
-	/** raylib's `rlGetFramebufferHeight` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Get default framebuffer height. */
-	public static macro function rlGetFramebufferHeight():ExprOf<Int>
-		return helix.platform.macros.Build.unimplemented("rlGetFramebufferHeight: Not implemented", macro(0 : Int));
-
-	/** raylib's `rlGetPixelFormatName` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Get name string for pixel format. */
-	public static macro function rlGetPixelFormatName(format:ExprOf<Int>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("rlGetPixelFormatName: Not implemented", macro(null : String));
 
 	/** raylib's `rlGetMatrixProjectionStereo` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Get internal projection matrix for stereo render (selected eye). */
 	public static macro function rlGetMatrixProjectionStereo(eye:ExprOf<Int>):ExprOf<Matrix>

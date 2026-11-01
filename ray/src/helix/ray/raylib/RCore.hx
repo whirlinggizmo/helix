@@ -2152,48 +2152,6 @@ class RCore {
 		Runtime.frame.vertex(texture, false, x, y, 0, u, v, color);
 	}
 
-	// A filled rectangle, with the shapes texture.
-	static function quad(x:Float, y:Float, w:Float, h:Float, color:Color):Void {
-		corner(x, y, 0, color);
-		corner(x, y + h, 1, color);
-		corner(x + w, y + h, 2, color);
-		corner(x + w, y, 3, color);
-	}
-
-	static function line(x1:Float, y1:Float, x2:Float, y2:Float, thick:Float, color:Color):Void {
-		var dx = x2 - x1, dy = y2 - y1, length = Math.sqrt(dx * dx + dy * dy);
-		if (length == 0)
-			return;
-		var nx = -dy / length * thick / 2, ny = dx / length * thick / 2;
-		var t = Runtime.frame.white;
-		flat(t, x1 + nx, y1 + ny, 0, 0, color);
-		flat(t, x1 - nx, y1 - ny, 0, 0, color);
-		flat(t, x2 - nx, y2 - ny, 0, 0, color);
-		flat(t, x1 + nx, y1 + ny, 0, 0, color);
-		flat(t, x2 - nx, y2 - ny, 0, 0, color);
-		flat(t, x2 + nx, y2 + ny, 0, 0, color);
-	}
-
-	static function frame(x:Float, y:Float, w:Float, h:Float, thick:Float, color:Color):Void {
-		quad(x, y, w, thick, color);
-		quad(x, y + h - thick, w, thick, color);
-		quad(x, y + thick, thick, h - thick * 2, color);
-		quad(x + w - thick, y + thick, thick, h - thick * 2, color);
-	}
-
-	// A filled circle as raylib draws one: a sector of 36 segments, or more where the radius needs them.
-	static function circle(cx:Float, cy:Float, radius:Float, color:Color):Void {
-		DrawCircleSector(new Vector2(cx, cy), radius, 0, 360, 36, color);
-	}
-
-	// A circle's outline as raylib draws one: 36 lines, one every 10 degrees.
-	static function ring(cx:Float, cy:Float, radius:Float, color:Color):Void {
-		for (i in 0...36) {
-			var a0 = i * 10 * DEG2RAD, a1 = (i + 1) * 10 * DEG2RAD;
-			line(cx + Math.cos(a0) * radius, cy + Math.sin(a0) * radius, cx + Math.cos(a1) * radius, cy + Math.sin(a1) * radius, 1, color);
-		}
-	}
-
 	// ---- 2D camera ----
 
 	/** Draws through a 2D camera until `EndMode2D`.
@@ -2255,22 +2213,22 @@ class RCore {
 
 	// ---- 3D camera ----
 
-	/** Draws in 3D through a camera until `EndMode3D`, with depth.
+	/** Draws in 3D through a camera until `EndMode3D`, testing depth (rlgl's `rlEnableDepthTest`).
 
 		@param camera  The camera. */
 	static function BeginMode3D(camera:Camera3D):Void {
 		var f = Runtime.frame;
 		f.cut();
-		f.in3D = true;
+		f.depthTest = true;
 		var view = camera3D(camera);
 		f.view = view.computeViewMatrix();
 		f.projection = view.computeProjectionMatrix(f.width / f.height);
 	}
 
-	/** Goes back to drawing in 2D, in the screen's pixels. */
+	/** Goes back to drawing in 2D, in the screen's pixels, without testing depth. */
 	static function EndMode3D():Void {
 		Runtime.frame.screen2D();
-		Runtime.frame.in3D = false;
+		Runtime.frame.depthTest = false;
 	}
 
 	/** Moves a camera as one of raylib's modes does, by the keyboard, the mouse and the first gamepad, as rcamera's `UpdateCamera`.
@@ -2584,8 +2542,8 @@ class RCore {
 		view3D.orthographic = camera.projection == CAMERA_ORTHOGRAPHIC;
 		view3D.fieldOfView = camera.fovy * DEG2RAD;
 		view3D.orthographicHeight = camera.fovy;
-		view3D.near = .01;
-		view3D.far = 1000;
+		view3D.near = helix.ray.raylib.RRlgl.cullNear;
+		view3D.far = helix.ray.raylib.RRlgl.cullFar;
 		return view3D;
 	}
 
@@ -2648,7 +2606,8 @@ class RCore {
 		return shader.program == null ? -1 : shader.program.attributes.indexOf(attribName);
 	}
 
-	/** Sets a shader's uniform, for the draws after it.
+	/** Sets a shader's uniform, for the models drawn after it and the shapes in rlgl's batch when it is next drawn, as raylib's: shapes
+		drawn before it but not yet flushed (`BeginShaderMode`, `EndShaderMode`, a mode changing, `rlDrawRenderBatchActive`) take it too.
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.

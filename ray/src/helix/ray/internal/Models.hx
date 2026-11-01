@@ -105,12 +105,37 @@ class Models {
 		var g = Runtime.graphics,
 			old = index == 6 ? mesh.gpu.indexBuffer : buffers[index];
 		var made = g.createStaticBuffer(bytes, bytes.length, index == 6);
-		if (index == 6)
+		if (index == 6) {
 			mesh.gpu.indexBuffer = made;
-		else
+			// The edges are the old indices'; made again from the mesh's when next drawn in wire mode.
+			if (mesh.gpu.edgeBuffer != 0)
+				Runtime.frame.retire(mesh.gpu.edgeBuffer);
+			mesh.gpu.edgeBuffer = 0;
+		} else
 			buffers[index] = made;
 		if (old != 0)
 			Runtime.frame.retire(old);
+	}
+
+	/** Returns an uploaded mesh's edges, as an index buffer of two indices an edge, three a triangle, made when first asked for.
+
+		@param mesh  The mesh, uploaded.
+		@return  The buffer. */
+	public static function edges(mesh:Mesh):Int {
+		if (mesh.gpu.edgeBuffer == 0) {
+			var bytes = Bytes.alloc(mesh.triangleCount * 6 * 4), at = 0;
+			for (k in 0...mesh.triangleCount) {
+				var a = mesh.indices == null ? k * 3 : mesh.indices[k * 3],
+					b = mesh.indices == null ? k * 3 + 1 : mesh.indices[k * 3 + 1],
+					c = mesh.indices == null ? k * 3 + 2 : mesh.indices[k * 3 + 2];
+				for (i in [a, b, b, c, c, a]) {
+					bytes.setInt32(at, i);
+					at += 4;
+				}
+			}
+			mesh.gpu.edgeBuffer = Runtime.graphics.createStaticBuffer(bytes, bytes.length, true);
+		}
+		return mesh.gpu.edgeBuffer;
 	}
 
 	/** Frees a mesh's GPU buffers.
@@ -123,8 +148,11 @@ class Models {
 					Runtime.graphics.disposeBuffer(b);
 		if (mesh.gpu.indexBuffer != 0)
 			Runtime.graphics.disposeBuffer(mesh.gpu.indexBuffer);
+		if (mesh.gpu.edgeBuffer != 0)
+			Runtime.graphics.disposeBuffer(mesh.gpu.edgeBuffer);
 		mesh.gpu.buffers = null;
 		mesh.gpu.indexBuffer = 0;
+		mesh.gpu.edgeBuffer = 0;
 		for (i in 0...mesh.gpu.contents.length)
 			mesh.gpu.contents[i] = null;
 	}

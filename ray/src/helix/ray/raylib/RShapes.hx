@@ -20,6 +20,8 @@ import helix.ray.raylib.RModels.*;
 import helix.ray.raylib.RAudio.*;
 import helix.ray.raylib.RMath.*;
 import helix.ray.raylib.RAsync.*;
+import helix.ray.Rlgl.*;
+import helix.ray.raylib.RRlgl.*;
 #end
 
 /** Holds raylib's rshapes (2D shapes and their collisions), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
@@ -69,6 +71,8 @@ class RShapes {
 	}
 
 	// ---- Shapes ----
+	// As rshapes.c draws them, through rlgl: the same vertices, in the same order, with the same color, normal and texture state. A
+	// filled shape is drawn with the shapes texture, as raylib's quads; an outline is drawn with lines one pixel wide.
 
 	/** Draws one pixel.
 
@@ -76,7 +80,7 @@ class RShapes {
 		@param posY  The y.
 		@param color  The color. */
 	static function DrawPixel(posX:Int, posY:Int, color:Color):Void {
-		quad(posX, posY, 1, 1, color);
+		DrawPixelV(new Vector2(posX, posY), color);
 	}
 
 	/** Draws one pixel.
@@ -84,7 +88,16 @@ class RShapes {
 		@param position  The position.
 		@param color  The color. */
 	static function DrawPixelV(position:Vector2, color:Color):Void {
-		quad(position.x, position.y, 1, 1, color);
+		rlSetTexture(GetShapesTexture().id);
+		rlBegin(RL_QUADS);
+		rlNormal3f(0, 0, 1);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		shapeVertex(shapeU0, shapeV0, position.x, position.y);
+		shapeVertex(shapeU0, shapeV1, position.x, position.y + 1);
+		shapeVertex(shapeU1, shapeV1, position.x + 1, position.y + 1);
+		shapeVertex(shapeU1, shapeV0, position.x + 1, position.y);
+		rlEnd();
+		rlSetTexture(0);
 	}
 
 	/** Draws a line one pixel wide.
@@ -95,7 +108,11 @@ class RShapes {
 		@param endPosY  The end's y.
 		@param color  The color. */
 	static function DrawLine(startPosX:Int, startPosY:Int, endPosX:Int, endPosY:Int, color:Color):Void {
-		line(startPosX + .5, startPosY + .5, endPosX + .5, endPosY + .5, 1, color);
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		rlVertex2f(startPosX, startPosY);
+		rlVertex2f(endPosX, endPosY);
+		rlEnd();
 	}
 
 	/** Draws a line one pixel wide.
@@ -104,17 +121,26 @@ class RShapes {
 		@param endPos  The end.
 		@param color  The color. */
 	static function DrawLineV(startPos:Vector2, endPos:Vector2, color:Color):Void {
-		line(startPos.x, startPos.y, endPos.x, endPos.y, 1, color);
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		rlVertex2f(startPos.x, startPos.y);
+		rlVertex2f(endPos.x, endPos.y);
+		rlEnd();
 	}
 
 	/** Draws a line of a thickness.
 
 		@param startPos  The start.
 		@param endPos  The end.
-		@param thick  The thickness, in pixels.
+		@param thick  The thickness, in pixels; 0 or less draws nothing.
 		@param color  The color. */
 	static function DrawLineEx(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void {
-		line(startPos.x, startPos.y, endPos.x, endPos.y, thick, color);
+		var dx = endPos.x - startPos.x, dy = endPos.y - startPos.y;
+		var length = Math.sqrt(dx * dx + dy * dy);
+		if (length > 0 && thick > 0) {
+			var scale = thick / (2 * length);
+			strip(startPos, endPos, -scale * dy, scale * dx, color);
+		}
 	}
 
 	/** Draws lines one pixel wide from each point to the next.
@@ -125,8 +151,13 @@ class RShapes {
 	static function DrawLineStrip(points:Array<Vector2>, pointCount:Int, color:Color):Void {
 		if (pointCount < 2)
 			return;
-		for (i in 0...pointCount - 1)
-			line(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y, 1, color);
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		for (i in 0...pointCount - 1) {
+			rlVertex2f(points[i].x, points[i].y);
+			rlVertex2f(points[i + 1].x, points[i + 1].y);
+		}
+		rlEnd();
 	}
 
 	/** Draws a line of a thickness that eases in and out from start to end, as an S.
@@ -136,27 +167,28 @@ class RShapes {
 		@param thick  The thickness, in pixels.
 		@param color  The color. */
 	static function DrawLineBezier(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void {
-		var px = startPos.x, py = startPos.y;
+		var previousX = startPos.x, previousY = startPos.y;
 		var points = [for (i in 0...2 * SPLINE_SEGMENT_DIVISIONS + 2) new Vector2()];
 		for (i in 1...SPLINE_SEGMENT_DIVISIONS + 1) {
-			// raylib eases the line's y in and out, cubically.
-			var cy = startPos.y + (endPos.y - startPos.y) * Interpolate.easeInOutCubic(i / SPLINE_SEGMENT_DIVISIONS);
-			var cx = px + (endPos.x - startPos.x) / SPLINE_SEGMENT_DIVISIONS;
-			var dy = cy - py, dx = cx - px, size = .5 * thick / Math.sqrt(dx * dx + dy * dy);
+			// raylib eases the line's y alone, cubically in and out.
+			var currentY = easeCubicInOut(i, startPos.y, endPos.y - startPos.y, SPLINE_SEGMENT_DIVISIONS);
+			var currentX = previousX + (endPos.x - startPos.x) / SPLINE_SEGMENT_DIVISIONS;
+			var dy = currentY - previousY, dx = currentX - previousX;
+			var size = .5 * thick / Math.sqrt(dx * dx + dy * dy);
 			if (i == 1) {
-				points[0].x = px + dy * size;
-				points[0].y = py - dx * size;
-				points[1].x = px - dy * size;
-				points[1].y = py + dx * size;
+				points[0].x = previousX + dy * size;
+				points[0].y = previousY - dx * size;
+				points[1].x = previousX - dy * size;
+				points[1].y = previousY + dx * size;
 			}
-			points[2 * i + 1].x = cx - dy * size;
-			points[2 * i + 1].y = cy + dx * size;
-			points[2 * i].x = cx + dy * size;
-			points[2 * i].y = cy - dx * size;
-			px = cx;
-			py = cy;
+			points[2 * i + 1].x = currentX - dy * size;
+			points[2 * i + 1].y = currentY + dx * size;
+			points[2 * i].x = currentX + dy * size;
+			points[2 * i].y = currentY - dx * size;
+			previousX = currentX;
+			previousY = currentY;
 		}
-		DrawTriangleStrip(points, points.length, color);
+		DrawTriangleStrip(points, 2 * SPLINE_SEGMENT_DIVISIONS + 2, color);
 	}
 
 	/** Draws a filled circle.
@@ -166,7 +198,7 @@ class RShapes {
 		@param radius  The radius.
 		@param color  The color. */
 	static function DrawCircle(centerX:Int, centerY:Int, radius:Float, color:Color):Void {
-		circle(centerX, centerY, radius, color);
+		DrawCircleV(new Vector2(centerX, centerY), radius, color);
 	}
 
 	/** Draws a filled circle.
@@ -175,7 +207,7 @@ class RShapes {
 		@param radius  The radius.
 		@param color  The color. */
 	static function DrawCircleV(center:Vector2, radius:Float, color:Color):Void {
-		circle(center.x, center.y, radius, color);
+		DrawCircleSector(center, radius, 0, 360, 36, color);
 	}
 
 	/** Draws a filled slice of a circle, clockwise from one angle to another.
@@ -195,21 +227,30 @@ class RShapes {
 			endAngle = t;
 		}
 		segments = arcSegments(radius, startAngle, endAngle, segments);
-		var step = (endAngle - startAngle) / segments, angle = startAngle;
+		var stepLength = (endAngle - startAngle) / segments,
+			angle = startAngle;
 		var cx = center.x, cy = center.y;
+		rlSetTexture(GetShapesTexture().id);
+		rlBegin(RL_QUADS);
+		// Each quad is two segments.
 		for (i in 0...Std.int(segments / 2)) {
-			corner(cx, cy, 0, color);
-			corner(arcX(cx, angle + step * 2, radius), arcY(cy, angle + step * 2, radius), 3, color);
-			corner(arcX(cx, angle + step, radius), arcY(cy, angle + step, radius), 2, color);
-			corner(arcX(cx, angle, radius), arcY(cy, angle, radius), 1, color);
-			angle += step * 2;
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			shapeVertex(shapeU0, shapeV0, cx, cy);
+			shapeVertex(shapeU1, shapeV0, arcX(cx, angle + stepLength * 2, radius), arcY(cy, angle + stepLength * 2, radius));
+			shapeVertex(shapeU1, shapeV1, arcX(cx, angle + stepLength, radius), arcY(cy, angle + stepLength, radius));
+			shapeVertex(shapeU0, shapeV1, arcX(cx, angle, radius), arcY(cy, angle, radius));
+			angle += stepLength * 2;
 		}
+		// An odd segment left over is a quad of its own, its last corner the center again.
 		if (segments % 2 == 1) {
-			corner(cx, cy, 0, color);
-			corner(arcX(cx, angle + step, radius), arcY(cy, angle + step, radius), 2, color);
-			corner(arcX(cx, angle, radius), arcY(cy, angle, radius), 1, color);
-			corner(cx, cy, 3, color);
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			shapeVertex(shapeU0, shapeV0, cx, cy);
+			shapeVertex(shapeU1, shapeV1, arcX(cx, angle + stepLength, radius), arcY(cy, angle + stepLength, radius));
+			shapeVertex(shapeU0, shapeV1, arcX(cx, angle, radius), arcY(cy, angle, radius));
+			shapeVertex(shapeU1, shapeV0, cx, cy);
 		}
+		rlEnd();
+		rlSetTexture(0);
 	}
 
 	/** Draws a slice of a circle's outline, one pixel wide, with lines from the center to its ends.
@@ -229,14 +270,23 @@ class RShapes {
 			endAngle = t;
 		}
 		segments = arcSegments(radius, startAngle, endAngle, segments);
-		var step = (endAngle - startAngle) / segments, angle = startAngle;
+		var stepLength = (endAngle - startAngle) / segments,
+			angle = startAngle;
 		var cx = center.x, cy = center.y;
-		line(cx, cy, arcX(cx, angle, radius), arcY(cy, angle, radius), 1, color);
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		rlVertex2f(cx, cy);
+		rlVertex2f(arcX(cx, angle, radius), arcY(cy, angle, radius));
 		for (i in 0...segments) {
-			line(arcX(cx, angle, radius), arcY(cy, angle, radius), arcX(cx, angle + step, radius), arcY(cy, angle + step, radius), 1, color);
-			angle += step;
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			rlVertex2f(arcX(cx, angle, radius), arcY(cy, angle, radius));
+			rlVertex2f(arcX(cx, angle + stepLength, radius), arcY(cy, angle + stepLength, radius));
+			angle += stepLength;
 		}
-		line(cx, cy, arcX(cx, angle, radius), arcY(cy, angle, radius), 1, color);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		rlVertex2f(cx, cy);
+		rlVertex2f(arcX(cx, angle, radius), arcY(cy, angle, radius));
+		rlEnd();
 	}
 
 	/** Draws a filled circle that blends from one color at its center to another at its edge.
@@ -247,14 +297,18 @@ class RShapes {
 		@param inner  The color at the center.
 		@param outer  The color at the edge. */
 	static function DrawCircleGradient(centerX:Int, centerY:Int, radius:Float, inner:Color, outer:Color):Void {
-		var t = Runtime.frame.white;
+		rlBegin(RL_TRIANGLES);
 		var i = 0;
 		while (i < 360) {
-			flat(t, centerX, centerY, 0, 0, inner);
-			flat(t, arcX(centerX, i + 10, radius), arcY(centerY, i + 10, radius), 0, 0, outer);
-			flat(t, arcX(centerX, i, radius), arcY(centerY, i, radius), 0, 0, outer);
+			rlColor4ub(inner.r, inner.g, inner.b, inner.a);
+			rlVertex2f(centerX, centerY);
+			rlColor4ub(outer.r, outer.g, outer.b, outer.a);
+			rlVertex2f(arcX(centerX, i + 10, radius), arcY(centerY, i + 10, radius));
+			rlColor4ub(outer.r, outer.g, outer.b, outer.a);
+			rlVertex2f(arcX(centerX, i, radius), arcY(centerY, i, radius));
 			i += 10;
 		}
+		rlEnd();
 	}
 
 	/** Draws a circle's outline, one pixel wide.
@@ -264,7 +318,7 @@ class RShapes {
 		@param radius  The radius.
 		@param color  The color. */
 	static function DrawCircleLines(centerX:Int, centerY:Int, radius:Float, color:Color):Void {
-		ring(centerX, centerY, radius, color);
+		DrawCircleLinesV(new Vector2(centerX, centerY), radius, color);
 	}
 
 	/** Draws a circle's outline, one pixel wide.
@@ -273,7 +327,16 @@ class RShapes {
 		@param radius  The radius.
 		@param color  The color. */
 	static function DrawCircleLinesV(center:Vector2, radius:Float, color:Color):Void {
-		ring(center.x, center.y, radius, color);
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		// 36 lines, one every 10 degrees.
+		var i = 0;
+		while (i < 360) {
+			rlVertex2f(arcX(center.x, i, radius), arcY(center.y, i, radius));
+			rlVertex2f(arcX(center.x, i + 10, radius), arcY(center.y, i + 10, radius));
+			i += 10;
+		}
+		rlEnd();
 	}
 
 	/** Draws a filled ellipse.
@@ -284,14 +347,16 @@ class RShapes {
 		@param radiusV  The radius up and down.
 		@param color  The color. */
 	static function DrawEllipse(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void {
-		var t = Runtime.frame.white;
+		rlBegin(RL_TRIANGLES);
 		var i = 0;
 		while (i < 360) {
-			flat(t, centerX, centerY, 0, 0, color);
-			flat(t, arcX(centerX, i + 10, radiusH), arcY(centerY, i + 10, radiusV), 0, 0, color);
-			flat(t, arcX(centerX, i, radiusH), arcY(centerY, i, radiusV), 0, 0, color);
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			rlVertex2f(centerX, centerY);
+			rlVertex2f(arcX(centerX, i + 10, radiusH), arcY(centerY, i + 10, radiusV));
+			rlVertex2f(arcX(centerX, i, radiusH), arcY(centerY, i, radiusV));
 			i += 10;
 		}
+		rlEnd();
 	}
 
 	/** Draws an ellipse's outline, one pixel wide.
@@ -302,11 +367,15 @@ class RShapes {
 		@param radiusV  The radius up and down.
 		@param color  The color. */
 	static function DrawEllipseLines(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void {
+		rlBegin(RL_LINES);
 		var i = 0;
 		while (i < 360) {
-			line(arcX(centerX, i + 10, radiusH), arcY(centerY, i + 10, radiusV), arcX(centerX, i, radiusH), arcY(centerY, i, radiusV), 1, color);
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			rlVertex2f(arcX(centerX, i + 10, radiusH), arcY(centerY, i + 10, radiusV));
+			rlVertex2f(arcX(centerX, i, radiusH), arcY(centerY, i, radiusV));
 			i += 10;
 		}
+		rlEnd();
 	}
 
 	/** Draws a filled ring, or a slice of one, clockwise from one angle to another.
@@ -338,15 +407,21 @@ class RShapes {
 			DrawCircleSector(center, outerRadius, startAngle, endAngle, segments, color);
 			return;
 		}
-		var step = (endAngle - startAngle) / segments, angle = startAngle;
+		var stepLength = (endAngle - startAngle) / segments,
+			angle = startAngle;
 		var cx = center.x, cy = center.y;
+		rlSetTexture(GetShapesTexture().id);
+		rlBegin(RL_QUADS);
 		for (i in 0...segments) {
-			corner(arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius), 1, color);
-			corner(arcX(cx, angle, innerRadius), arcY(cy, angle, innerRadius), 0, color);
-			corner(arcX(cx, angle + step, innerRadius), arcY(cy, angle + step, innerRadius), 3, color);
-			corner(arcX(cx, angle + step, outerRadius), arcY(cy, angle + step, outerRadius), 2, color);
-			angle += step;
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			shapeVertex(shapeU0, shapeV1, arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius));
+			shapeVertex(shapeU0, shapeV0, arcX(cx, angle, innerRadius), arcY(cy, angle, innerRadius));
+			shapeVertex(shapeU1, shapeV0, arcX(cx, angle + stepLength, innerRadius), arcY(cy, angle + stepLength, innerRadius));
+			shapeVertex(shapeU1, shapeV1, arcX(cx, angle + stepLength, outerRadius), arcY(cy, angle + stepLength, outerRadius));
+			angle += stepLength;
 		}
+		rlEnd();
+		rlSetTexture(0);
 	}
 
 	/** Draws a ring's outline, or a slice of one, one pixel wide.
@@ -378,17 +453,25 @@ class RShapes {
 			DrawCircleSectorLines(center, outerRadius, startAngle, endAngle, segments, color);
 			return;
 		}
-		var step = (endAngle - startAngle) / segments, angle = startAngle;
+		var stepLength = (endAngle - startAngle) / segments,
+			angle = startAngle;
 		var cx = center.x, cy = center.y;
-		line(arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius), arcX(cx, angle, innerRadius), arcY(cy, angle, innerRadius), 1, color);
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		rlVertex2f(arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius));
+		rlVertex2f(arcX(cx, angle, innerRadius), arcY(cy, angle, innerRadius));
 		for (i in 0...segments) {
-			line(arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius), arcX(cx, angle + step, outerRadius), arcY(cy, angle + step, outerRadius), 1,
-				color);
-			line(arcX(cx, angle, innerRadius), arcY(cy, angle, innerRadius), arcX(cx, angle + step, innerRadius), arcY(cy, angle + step, innerRadius), 1,
-				color);
-			angle += step;
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			rlVertex2f(arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius));
+			rlVertex2f(arcX(cx, angle + stepLength, outerRadius), arcY(cy, angle + stepLength, outerRadius));
+			rlVertex2f(arcX(cx, angle, innerRadius), arcY(cy, angle, innerRadius));
+			rlVertex2f(arcX(cx, angle + stepLength, innerRadius), arcY(cy, angle + stepLength, innerRadius));
+			angle += stepLength;
 		}
-		line(arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius), arcX(cx, angle, innerRadius), arcY(cy, angle, innerRadius), 1, color);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		rlVertex2f(arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius));
+		rlVertex2f(arcX(cx, angle, innerRadius), arcY(cy, angle, innerRadius));
+		rlEnd();
 	}
 
 	/** Draws a filled rectangle.
@@ -399,7 +482,7 @@ class RShapes {
 		@param height  The height.
 		@param color  The color. */
 	static function DrawRectangle(posX:Int, posY:Int, width:Int, height:Int, color:Color):Void {
-		quad(posX, posY, width, height, color);
+		DrawRectangleV(new Vector2(posX, posY), new Vector2(width, height), color);
 	}
 
 	/** Draws a filled rectangle.
@@ -408,7 +491,7 @@ class RShapes {
 		@param size  The width and height.
 		@param color  The color. */
 	static function DrawRectangleV(position:Vector2, size:Vector2, color:Color):Void {
-		quad(position.x, position.y, size.x, size.y, color);
+		DrawRectanglePro(new Rectangle(position.x, position.y, size.x, size.y), new Vector2(0, 0), 0, color);
 	}
 
 	/** Draws a filled rectangle.
@@ -416,7 +499,7 @@ class RShapes {
 		@param rec  The rectangle.
 		@param color  The color. */
 	static function DrawRectangleRec(rec:Rectangle, color:Color):Void {
-		quad(rec.x, rec.y, rec.width, rec.height, color);
+		DrawRectanglePro(rec, new Vector2(0, 0), 0, color);
 	}
 
 	/** Draws a filled rectangle turned about a point of it.
@@ -426,13 +509,40 @@ class RShapes {
 		@param rotation  The turn, in degrees clockwise.
 		@param color  The color. */
 	static function DrawRectanglePro(rec:Rectangle, origin:Vector2, rotation:Float, color:Color):Void {
-		// The corners from the top-left one counterclockwise, as raylib's quad takes them, before and after turning about the origin.
-		var xs = [-origin.x, -origin.x, rec.width - origin.x, rec.width - origin.x];
-		var ys = [-origin.y, rec.height - origin.y, rec.height - origin.y, -origin.y];
-		var s = rotation == 0 ? 0 : Math.sin(rotation * DEG2RAD),
-			c = rotation == 0 ? 1 : Math.cos(rotation * DEG2RAD);
-		for (k in 0...4)
-			corner(rec.x + xs[k] * c - ys[k] * s, rec.y + xs[k] * s + ys[k] * c, k, color);
+		var topLeftX, topLeftY, topRightX, topRightY, bottomLeftX, bottomLeftY, bottomRightX, bottomRightY;
+		if (rotation == 0) {
+			var x = rec.x - origin.x, y = rec.y - origin.y;
+			topLeftX = x;
+			topLeftY = y;
+			topRightX = x + rec.width;
+			topRightY = y;
+			bottomLeftX = x;
+			bottomLeftY = y + rec.height;
+			bottomRightX = x + rec.width;
+			bottomRightY = y + rec.height;
+		} else {
+			var sinRotation = Math.sin(rotation * DEG2RAD),
+				cosRotation = Math.cos(rotation * DEG2RAD);
+			var x = rec.x, y = rec.y, dx = -origin.x, dy = -origin.y;
+			topLeftX = x + dx * cosRotation - dy * sinRotation;
+			topLeftY = y + dx * sinRotation + dy * cosRotation;
+			topRightX = x + (dx + rec.width) * cosRotation - dy * sinRotation;
+			topRightY = y + (dx + rec.width) * sinRotation + dy * cosRotation;
+			bottomLeftX = x + dx * cosRotation - (dy + rec.height) * sinRotation;
+			bottomLeftY = y + dx * sinRotation + (dy + rec.height) * cosRotation;
+			bottomRightX = x + (dx + rec.width) * cosRotation - (dy + rec.height) * sinRotation;
+			bottomRightY = y + (dx + rec.width) * sinRotation + (dy + rec.height) * cosRotation;
+		}
+		rlSetTexture(GetShapesTexture().id);
+		rlBegin(RL_QUADS);
+		rlNormal3f(0, 0, 1);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		shapeVertex(shapeU0, shapeV0, topLeftX, topLeftY);
+		shapeVertex(shapeU0, shapeV1, bottomLeftX, bottomLeftY);
+		shapeVertex(shapeU1, shapeV1, bottomRightX, bottomRightY);
+		shapeVertex(shapeU1, shapeV0, topRightX, topRightY);
+		rlEnd();
+		rlSetTexture(0);
 	}
 
 	/** Draws a filled rectangle that blends from one color at its top to another at its bottom.
@@ -468,13 +578,24 @@ class RShapes {
 		@param topRight  The bottom-right corner's color.
 		@param bottomRight  The top-right corner's color. */
 	static function DrawRectangleGradientEx(rec:Rectangle, topLeft:Color, bottomLeft:Color, topRight:Color, bottomRight:Color):Void {
-		corner(rec.x, rec.y, 0, topLeft);
-		corner(rec.x, rec.y + rec.height, 1, bottomLeft);
-		corner(rec.x + rec.width, rec.y + rec.height, 2, topRight);
-		corner(rec.x + rec.width, rec.y, 3, bottomRight);
+		rlSetTexture(GetShapesTexture().id);
+		rlBegin(RL_QUADS);
+		rlNormal3f(0, 0, 1);
+		rlColor4ub(topLeft.r, topLeft.g, topLeft.b, topLeft.a);
+		shapeVertex(shapeU0, shapeV0, rec.x, rec.y);
+		rlColor4ub(bottomLeft.r, bottomLeft.g, bottomLeft.b, bottomLeft.a);
+		shapeVertex(shapeU0, shapeV1, rec.x, rec.y + rec.height);
+		rlColor4ub(topRight.r, topRight.g, topRight.b, topRight.a);
+		shapeVertex(shapeU1, shapeV1, rec.x + rec.width, rec.y + rec.height);
+		rlColor4ub(bottomRight.r, bottomRight.g, bottomRight.b, bottomRight.a);
+		shapeVertex(shapeU1, shapeV0, rec.x + rec.width, rec.y);
+		rlEnd();
+		rlSetTexture(0);
 	}
 
 	/** Draws a rectangle's outline, one pixel wide.
+
+		Each line reaches half a pixel past its corners, at the 2D camera's zoom, so the corners are filled.
 
 		@param posX  The left edge.
 		@param posY  The top edge.
@@ -482,16 +603,37 @@ class RShapes {
 		@param height  The height.
 		@param color  The color. */
 	static function DrawRectangleLines(posX:Int, posY:Int, width:Int, height:Int, color:Color):Void {
-		frame(posX, posY, width, height, 1, color);
+		var zoomFactor = .5 / rlGetMatrixModelview().m0;
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		rlVertex2f(posX - zoomFactor, posY);
+		rlVertex2f(posX + width + zoomFactor, posY);
+		rlVertex2f(posX + width, posY - zoomFactor);
+		rlVertex2f(posX + width, posY + height + zoomFactor);
+		rlVertex2f(posX + width + zoomFactor, posY + height);
+		rlVertex2f(posX - zoomFactor, posY + height);
+		rlVertex2f(posX, posY + height + zoomFactor);
+		rlVertex2f(posX, posY - zoomFactor);
+		rlEnd();
 	}
 
 	/** Draws a rectangle's outline, its lines inside it.
 
 		@param rec  The rectangle.
-		@param lineThick  The lines' thickness.
+		@param lineThick  The lines' thickness; more than the rectangle's width or height is clamped to half its shorter side.
 		@param color  The color. */
 	static function DrawRectangleLinesEx(rec:Rectangle, lineThick:Float, color:Color):Void {
-		frame(rec.x, rec.y, rec.width, rec.height, lineThick, color);
+		if (lineThick > rec.width || lineThick > rec.height) {
+			if (rec.width >= rec.height)
+				lineThick = rec.height / 2;
+			else if (rec.width <= rec.height)
+				lineThick = rec.width / 2;
+		}
+		// The top and bottom across the whole width, the left and right between them.
+		DrawRectangleRec(new Rectangle(rec.x, rec.y, rec.width, lineThick), color);
+		DrawRectangleRec(new Rectangle(rec.x, rec.y - lineThick + rec.height, rec.width, lineThick), color);
+		DrawRectangleRec(new Rectangle(rec.x, rec.y + lineThick, lineThick, rec.height - lineThick * 2), color);
+		DrawRectangleRec(new Rectangle(rec.x - lineThick + rec.width, rec.y + lineThick, lineThick, rec.height - lineThick * 2), color);
 	}
 
 	/** Draws a filled rectangle with rounded corners.
@@ -511,11 +653,11 @@ class RShapes {
 		if (radius <= 0)
 			return;
 		if (segments < 4) {
-			segments = Std.int(Math.ceil(2 * Math.PI / smoothAngle(radius)) / 4);
+			segments = Std.int(Math.fceil(2 * Math.PI / smoothAngle(radius)) / 4);
 			if (segments <= 0)
 				segments = 4;
 		}
-		var step = 90 / segments;
+		var stepLength = 90 / segments;
 		var x = rec.x, y = rec.y, r = rec.x + rec.width, b = rec.y + rec.height;
 		// The twelve points of raylib's sketch: P0 to P7 around the edge from the top's left end, P8 to P11 the corners' centers.
 		var px = [
@@ -546,24 +688,37 @@ class RShapes {
 			b - radius,
 			b - radius
 		];
+		rlSetTexture(GetShapesTexture().id);
+		rlBegin(RL_QUADS);
+		// The corners: top-left, top-right, bottom-right, bottom-left, each quad two segments.
 		for (k in 0...4) {
 			var angle = CORNER_ANGLES[k], cx = px[8 + k], cy = py[8 + k];
 			for (i in 0...Std.int(segments / 2)) {
-				corner(cx, cy, 0, color);
-				corner(arcX(cx, angle + step * 2, radius), arcY(cy, angle + step * 2, radius), 3, color);
-				corner(arcX(cx, angle + step, radius), arcY(cy, angle + step, radius), 2, color);
-				corner(arcX(cx, angle, radius), arcY(cy, angle, radius), 1, color);
-				angle += step * 2;
+				rlColor4ub(color.r, color.g, color.b, color.a);
+				shapeVertex(shapeU0, shapeV0, cx, cy);
+				shapeVertex(shapeU1, shapeV0, arcX(cx, angle + stepLength * 2, radius), arcY(cy, angle + stepLength * 2, radius));
+				shapeVertex(shapeU1, shapeV1, arcX(cx, angle + stepLength, radius), arcY(cy, angle + stepLength, radius));
+				shapeVertex(shapeU0, shapeV1, arcX(cx, angle, radius), arcY(cy, angle, radius));
+				angle += stepLength * 2;
 			}
 			if (segments % 2 == 1) {
-				corner(cx, cy, 0, color);
-				corner(arcX(cx, angle + step, radius), arcY(cy, angle + step, radius), 2, color);
-				corner(arcX(cx, angle, radius), arcY(cy, angle, radius), 1, color);
-				corner(cx, cy, 3, color);
+				rlColor4ub(color.r, color.g, color.b, color.a);
+				shapeVertex(shapeU0, shapeV0, cx, cy);
+				shapeVertex(shapeU1, shapeV1, arcX(cx, angle + stepLength, radius), arcY(cy, angle + stepLength, radius));
+				shapeVertex(shapeU0, shapeV1, arcX(cx, angle, radius), arcY(cy, angle, radius));
+				shapeVertex(shapeU1, shapeV0, cx, cy);
 			}
 		}
-		for (i => p in [0, 8, 9, 1, 2, 9, 10, 3, 11, 5, 4, 10, 7, 6, 11, 8, 8, 11, 10, 9])
-			corner(px[p], py[p], i % 4, color);
+		// The top, right, bottom, left and middle rectangles.
+		for (p in [[0, 8, 9, 1], [2, 9, 10, 3], [11, 5, 4, 10], [7, 6, 11, 8], [8, 11, 10, 9]]) {
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			shapeVertex(shapeU0, shapeV0, px[p[0]], py[p[0]]);
+			shapeVertex(shapeU0, shapeV1, px[p[1]], py[p[1]]);
+			shapeVertex(shapeU1, shapeV1, px[p[2]], py[p[2]]);
+			shapeVertex(shapeU1, shapeV0, px[p[3]], py[p[3]]);
+		}
+		rlEnd();
+		rlSetTexture(0);
 	}
 
 	/** Draws a rounded rectangle's outline, one pixel wide.
@@ -596,67 +751,96 @@ class RShapes {
 		if (radius <= 0)
 			return;
 		if (segments < 4) {
-			segments = Std.int(Math.ceil(2 * Math.PI / smoothAngle(radius)) / 2);
+			segments = Std.int(Math.fceil(2 * Math.PI / smoothAngle(radius)) / 2);
 			if (segments <= 0)
 				segments = 4;
 		}
-		var step = 90 / segments, outer = radius + lineThick, inner = radius;
+		var stepLength = 90 / segments,
+			outerRadius = radius + lineThick,
+			innerRadius = radius;
 		var x = rec.x, y = rec.y, r = rec.x + rec.width, b = rec.y + rec.height, t = lineThick;
 		// The sixteen points of raylib's sketch: P0 to P7 around the outer edge from the top's left end, P8 to P15 the inner edge's.
 		var px = [
-			x + inner, r - inner, r + t, r + t, r - inner, x + inner, x - t, x - t,
-			x + inner, r - inner,     r,     r, r - inner, x + inner,     x,     x
+			x + innerRadius, r - innerRadius, r + t, r + t, r - innerRadius, x + innerRadius, x - t, x - t,
+			x + innerRadius, r - innerRadius,     r,     r, r - innerRadius, x + innerRadius,     x,     x
 		];
 		var py = [
-			y - t, y - t, y + inner, b - inner, b + t, b + t, b - inner, y + inner,
-			    y,     y, y + inner, b - inner,     b,     b, b - inner, y + inner
+			y - t, y - t, y + innerRadius, b - innerRadius, b + t, b + t, b - innerRadius, y + innerRadius,
+			    y,     y, y + innerRadius, b - innerRadius,     b,     b, b - innerRadius, y + innerRadius
 		];
-		var centersX = [x + inner, r - inner, r - inner, x + inner],
-			centersY = [y + inner, y + inner, b - inner, b - inner];
+		var centersX = [x + innerRadius, r - innerRadius, r - innerRadius, x + innerRadius],
+			centersY = [y + innerRadius, y + innerRadius, b - innerRadius, b - innerRadius];
 		if (lineThick > 1) {
+			rlSetTexture(GetShapesTexture().id);
+			rlBegin(RL_QUADS);
+			// The corners first: top-left, top-right, bottom-right, bottom-left.
 			for (k in 0...4) {
 				var angle = CORNER_ANGLES[k],
 					cx = centersX[k],
 					cy = centersY[k];
 				for (i in 0...segments) {
-					corner(arcX(cx, angle, inner), arcY(cy, angle, inner), 0, color);
-					corner(arcX(cx, angle + step, inner), arcY(cy, angle + step, inner), 3, color);
-					corner(arcX(cx, angle + step, outer), arcY(cy, angle + step, outer), 2, color);
-					corner(arcX(cx, angle, outer), arcY(cy, angle, outer), 1, color);
-					angle += step;
+					rlColor4ub(color.r, color.g, color.b, color.a);
+					shapeVertex(shapeU0, shapeV0, arcX(cx, angle, innerRadius), arcY(cy, angle, innerRadius));
+					shapeVertex(shapeU1, shapeV0, arcX(cx, angle + stepLength, innerRadius), arcY(cy, angle + stepLength, innerRadius));
+					shapeVertex(shapeU1, shapeV1, arcX(cx, angle + stepLength, outerRadius), arcY(cy, angle + stepLength, outerRadius));
+					shapeVertex(shapeU0, shapeV1, arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius));
+					angle += stepLength;
 				}
 			}
-			for (i => p in [0, 8, 9, 1, 2, 10, 11, 3, 13, 5, 4, 12, 15, 7, 6, 14])
-				corner(px[p], py[p], i % 4, color);
+			// The top, right, bottom and left sides.
+			for (p in [[0, 8, 9, 1], [2, 10, 11, 3], [13, 5, 4, 12], [15, 7, 6, 14]]) {
+				rlColor4ub(color.r, color.g, color.b, color.a);
+				shapeVertex(shapeU0, shapeV0, px[p[0]], py[p[0]]);
+				shapeVertex(shapeU0, shapeV1, px[p[1]], py[p[1]]);
+				shapeVertex(shapeU1, shapeV1, px[p[2]], py[p[2]]);
+				shapeVertex(shapeU1, shapeV0, px[p[3]], py[p[3]]);
+			}
+			rlEnd();
+			rlSetTexture(0);
 		} else {
+			rlBegin(RL_LINES);
+			// The corners' outer curves, then the four sides.
 			for (k in 0...4) {
 				var angle = CORNER_ANGLES[k],
 					cx = centersX[k],
 					cy = centersY[k];
 				for (i in 0...segments) {
-					line(arcX(cx, angle, outer), arcY(cy, angle, outer), arcX(cx, angle + step, outer), arcY(cy, angle + step, outer), 1, color);
-					angle += step;
+					rlColor4ub(color.r, color.g, color.b, color.a);
+					rlVertex2f(arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius));
+					rlVertex2f(arcX(cx, angle + stepLength, outerRadius), arcY(cy, angle + stepLength, outerRadius));
+					angle += stepLength;
 				}
 			}
 			var i = 0;
 			while (i < 8) {
-				line(px[i], py[i], px[i + 1], py[i + 1], 1, color);
+				rlColor4ub(color.r, color.g, color.b, color.a);
+				rlVertex2f(px[i], py[i]);
+				rlVertex2f(px[i + 1], py[i + 1]);
 				i += 2;
 			}
+			rlEnd();
 		}
 	}
 
-	/** Draws a filled triangle; its points go counterclockwise, as raylib's do.
+	/** Draws a filled triangle.
+
+		Its points must go counterclockwise on the screen, as raylib's must: a triangle whose points go clockwise faces away, and isn't
+		drawn while back faces are culled (`rlEnableBackfaceCulling`, the default).
 
 		@param v1  The first point.
 		@param v2  The second point.
 		@param v3  The third point.
 		@param color  The color. */
 	static function DrawTriangle(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void {
-		corner(v1.x, v1.y, 0, color);
-		corner(v2.x, v2.y, 1, color);
-		corner(v2.x, v2.y, 2, color);
-		corner(v3.x, v3.y, 3, color);
+		rlSetTexture(GetShapesTexture().id);
+		rlBegin(RL_QUADS);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		shapeVertex(shapeU0, shapeV0, v1.x, v1.y);
+		shapeVertex(shapeU0, shapeV1, v2.x, v2.y);
+		shapeVertex(shapeU1, shapeV1, v2.x, v2.y);
+		shapeVertex(shapeU1, shapeV0, v3.x, v3.y);
+		rlEnd();
+		rlSetTexture(0);
 	}
 
 	/** Draws a triangle's outline, one pixel wide.
@@ -666,12 +850,20 @@ class RShapes {
 		@param v3  The third point.
 		@param color  The color. */
 	static function DrawTriangleLines(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void {
-		line(v1.x, v1.y, v2.x, v2.y, 1, color);
-		line(v2.x, v2.y, v3.x, v3.y, 1, color);
-		line(v3.x, v3.y, v1.x, v1.y, 1, color);
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		rlVertex2f(v1.x, v1.y);
+		rlVertex2f(v2.x, v2.y);
+		rlVertex2f(v2.x, v2.y);
+		rlVertex2f(v3.x, v3.y);
+		rlVertex2f(v3.x, v3.y);
+		rlVertex2f(v1.x, v1.y);
+		rlEnd();
 	}
 
-	/** Draws filled triangles that all share the first point, each from it to the next two points; they go counterclockwise.
+	/** Draws filled triangles that all share the first point, each from it to the next two points.
+
+		The points after the first must go counterclockwise on the screen, as `DrawTriangle`'s must.
 
 		@param points  The points, the shared one first.
 		@param pointCount  How many of them to draw, 3 or more.
@@ -679,12 +871,17 @@ class RShapes {
 	static function DrawTriangleFan(points:Array<Vector2>, pointCount:Int, color:Color):Void {
 		if (pointCount < 3)
 			return;
+		rlSetTexture(GetShapesTexture().id);
+		rlBegin(RL_QUADS);
+		rlColor4ub(color.r, color.g, color.b, color.a);
 		for (i in 1...pointCount - 1) {
-			corner(points[0].x, points[0].y, 0, color);
-			corner(points[i].x, points[i].y, 1, color);
-			corner(points[i + 1].x, points[i + 1].y, 2, color);
-			corner(points[i + 1].x, points[i + 1].y, 3, color);
+			shapeVertex(shapeU0, shapeV0, points[0].x, points[0].y);
+			shapeVertex(shapeU0, shapeV1, points[i].x, points[i].y);
+			shapeVertex(shapeU1, shapeV1, points[i + 1].x, points[i + 1].y);
+			shapeVertex(shapeU1, shapeV0, points[i + 1].x, points[i + 1].y);
 		}
+		rlEnd();
+		rlSetTexture(0);
 	}
 
 	/** Draws filled triangles, each from a point to the two before it.
@@ -695,13 +892,20 @@ class RShapes {
 	static function DrawTriangleStrip(points:Array<Vector2>, pointCount:Int, color:Color):Void {
 		if (pointCount < 3)
 			return;
-		var t = Runtime.frame.white;
+		rlBegin(RL_TRIANGLES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
 		for (i in 2...pointCount) {
-			var a = points[i], b = points[i % 2 == 0 ? i - 2 : i - 1], c = points[i % 2 == 0 ? i - 1 : i - 2];
-			flat(t, a.x, a.y, 0, 0, color);
-			flat(t, b.x, b.y, 0, 0, color);
-			flat(t, c.x, c.y, 0, 0, color);
+			if (i % 2 == 0) {
+				rlVertex2f(points[i].x, points[i].y);
+				rlVertex2f(points[i - 2].x, points[i - 2].y);
+				rlVertex2f(points[i - 1].x, points[i - 1].y);
+			} else {
+				rlVertex2f(points[i].x, points[i].y);
+				rlVertex2f(points[i - 1].x, points[i - 1].y);
+				rlVertex2f(points[i - 2].x, points[i - 2].y);
+			}
 		}
+		rlEnd();
 	}
 
 	/** Draws a filled regular polygon.
@@ -714,15 +918,21 @@ class RShapes {
 	static function DrawPoly(center:Vector2, sides:Int, radius:Float, rotation:Float, color:Color):Void {
 		if (sides < 3)
 			sides = 3;
-		var angle = rotation * DEG2RAD, step = 360 / sides * DEG2RAD;
+		var centralAngle = rotation * DEG2RAD,
+			angleStep = 360 / sides * DEG2RAD;
+		rlSetTexture(GetShapesTexture().id);
+		rlBegin(RL_QUADS);
 		for (i in 0...sides) {
-			var next = angle + step;
-			corner(center.x, center.y, 0, color);
-			corner(center.x + Math.cos(angle) * radius, center.y + Math.sin(angle) * radius, 1, color);
-			corner(center.x + Math.cos(next) * radius, center.y + Math.sin(next) * radius, 3, color);
-			corner(center.x + Math.cos(angle) * radius, center.y + Math.sin(angle) * radius, 2, color);
-			angle = next;
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			var nextAngle = centralAngle + angleStep;
+			shapeVertex(shapeU0, shapeV0, center.x, center.y);
+			shapeVertex(shapeU0, shapeV1, center.x + Math.cos(centralAngle) * radius, center.y + Math.sin(centralAngle) * radius);
+			shapeVertex(shapeU1, shapeV0, center.x + Math.cos(nextAngle) * radius, center.y + Math.sin(nextAngle) * radius);
+			shapeVertex(shapeU1, shapeV1, center.x + Math.cos(centralAngle) * radius, center.y + Math.sin(centralAngle) * radius);
+			centralAngle = nextAngle;
 		}
+		rlEnd();
+		rlSetTexture(0);
 	}
 
 	/** Draws a regular polygon's outline, one pixel wide.
@@ -735,16 +945,16 @@ class RShapes {
 	static function DrawPolyLines(center:Vector2, sides:Int, radius:Float, rotation:Float, color:Color):Void {
 		if (sides < 3)
 			sides = 3;
-		var angle = rotation * DEG2RAD, step = 360 / sides * DEG2RAD;
+		var centralAngle = rotation * DEG2RAD,
+			angleStep = 360 / sides * DEG2RAD;
+		rlBegin(RL_LINES);
 		for (i in 0...sides) {
-			line(center.x
-				+ Math.cos(angle) * radius, center.y
-				+ Math.sin(angle) * radius, center.x
-				+ Math.cos(angle + step) * radius,
-				center.y
-				+ Math.sin(angle + step) * radius, 1, color);
-			angle += step;
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			rlVertex2f(center.x + Math.cos(centralAngle) * radius, center.y + Math.sin(centralAngle) * radius);
+			rlVertex2f(center.x + Math.cos(centralAngle + angleStep) * radius, center.y + Math.sin(centralAngle + angleStep) * radius);
+			centralAngle += angleStep;
 		}
+		rlEnd();
 	}
 
 	/** Draws a regular polygon's outline, its lines inside it.
@@ -758,18 +968,24 @@ class RShapes {
 	static function DrawPolyLinesEx(center:Vector2, sides:Int, radius:Float, rotation:Float, lineThick:Float, color:Color):Void {
 		if (sides < 3)
 			sides = 3;
-		var angle = rotation * DEG2RAD, step = 360 / sides * DEG2RAD;
-		// As raylib's: the step is already in radians, and is turned into radians again.
-		var inner = radius - lineThick * Math.cos(DEG2RAD * step / 2);
+		var centralAngle = rotation * DEG2RAD,
+			exteriorAngle = 360 / sides * DEG2RAD;
+		// As raylib's: the angle is already in radians, and is turned into radians again.
+		var innerRadius = radius - lineThick * Math.cos(DEG2RAD * exteriorAngle / 2);
 		var cx = center.x, cy = center.y;
+		rlSetTexture(GetShapesTexture().id);
+		rlBegin(RL_QUADS);
 		for (i in 0...sides) {
-			var next = angle + step;
-			corner(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius, 1, color);
-			corner(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner, 0, color);
-			corner(cx + Math.cos(next) * inner, cy + Math.sin(next) * inner, 2, color);
-			corner(cx + Math.cos(next) * radius, cy + Math.sin(next) * radius, 3, color);
-			angle = next;
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			var nextAngle = centralAngle + exteriorAngle;
+			shapeVertex(shapeU0, shapeV1, cx + Math.cos(centralAngle) * radius, cy + Math.sin(centralAngle) * radius);
+			shapeVertex(shapeU0, shapeV0, cx + Math.cos(centralAngle) * innerRadius, cy + Math.sin(centralAngle) * innerRadius);
+			shapeVertex(shapeU1, shapeV1, cx + Math.cos(nextAngle) * innerRadius, cy + Math.sin(nextAngle) * innerRadius);
+			shapeVertex(shapeU1, shapeV0, cx + Math.cos(nextAngle) * radius, cy + Math.sin(nextAngle) * radius);
+			centralAngle = nextAngle;
 		}
+		rlEnd();
+		rlSetTexture(0);
 	}
 
 	// ---- Splines ----
@@ -783,14 +999,15 @@ class RShapes {
 	static function DrawSplineLinear(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void {
 		if (pointCount < 2)
 			return;
+		// A piece of no length keeps the scale of the piece before it, as raylib's does.
 		var scale = 0.;
 		for (i in 0...pointCount - 1) {
 			var dx = points[i + 1].x - points[i].x,
-				dy = points[i + 1].y - points[i].y,
-				length = Math.sqrt(dx * dx + dy * dy);
+				dy = points[i + 1].y - points[i].y;
+			var length = Math.sqrt(dx * dx + dy * dy);
 			if (length > 0)
 				scale = thick / (2 * length);
-			band(points[i], points[i + 1], -scale * dy, scale * dx, color);
+			strip(points[i], points[i + 1], -scale * dy, scale * dx, color);
 		}
 	}
 
@@ -803,44 +1020,55 @@ class RShapes {
 	static function DrawSplineBasis(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void {
 		if (pointCount < 4)
 			return;
-		var dx = 0., dy = 0., size = 0.;
-		var current = new Vector2();
+		var dy = 0., dx = 0., size = 0.;
+		var currentX = 0., currentY = 0.;
 		var vertices = [for (i in 0...2 * SPLINE_SEGMENT_DIVISIONS + 2) new Vector2()];
 		for (i in 0...pointCount - 3) {
 			var p1 = points[i],
 				p2 = points[i + 1],
 				p3 = points[i + 2],
 				p4 = points[i + 3];
-			current = GetSplinePointBasis(p1, p2, p3, p4, 0);
+			var a0 = (-p1.x + 3 * p2.x - 3 * p3.x + p4.x) / 6,
+				a1 = (3 * p1.x - 6 * p2.x + 3 * p3.x) / 6,
+				a2 = (-3 * p1.x + 3 * p3.x) / 6,
+				a3 = (p1.x + 4 * p2.x + p3.x) / 6;
+			var b0 = (-p1.y + 3 * p2.y - 3 * p3.y + p4.y) / 6,
+				b1 = (3 * p1.y - 6 * p2.y + 3 * p3.y) / 6,
+				b2 = (-3 * p1.y + 3 * p3.y) / 6,
+				b3 = (p1.y + 4 * p2.y + p3.y) / 6;
+			currentX = a3;
+			currentY = b3;
 			if (i == 0)
-				DrawCircleV(current, thick / 2, color);
+				DrawCircleV(new Vector2(currentX, currentY), thick / 2, color);
 			if (i > 0) {
-				vertices[0].x = current.x + dy * size;
-				vertices[0].y = current.y - dx * size;
-				vertices[1].x = current.x - dy * size;
-				vertices[1].y = current.y + dx * size;
+				vertices[0].x = currentX + dy * size;
+				vertices[0].y = currentY - dx * size;
+				vertices[1].x = currentX - dy * size;
+				vertices[1].y = currentY + dx * size;
 			}
 			for (j in 1...SPLINE_SEGMENT_DIVISIONS + 1) {
 				var t = j / SPLINE_SEGMENT_DIVISIONS;
-				var next = GetSplinePointBasis(p1, p2, p3, p4, t);
-				dy = next.y - current.y;
-				dx = next.x - current.x;
+				var nextX = a3 + t * (a2 + t * (a1 + t * a0)),
+					nextY = b3 + t * (b2 + t * (b1 + t * b0));
+				dy = nextY - currentY;
+				dx = nextX - currentX;
 				size = .5 * thick / Math.sqrt(dx * dx + dy * dy);
 				if (i == 0 && j == 1) {
-					vertices[0].x = current.x + dy * size;
-					vertices[0].y = current.y - dx * size;
-					vertices[1].x = current.x - dy * size;
-					vertices[1].y = current.y + dx * size;
+					vertices[0].x = currentX + dy * size;
+					vertices[0].y = currentY - dx * size;
+					vertices[1].x = currentX - dy * size;
+					vertices[1].y = currentY + dx * size;
 				}
-				vertices[2 * j + 1].x = next.x - dy * size;
-				vertices[2 * j + 1].y = next.y + dx * size;
-				vertices[2 * j].x = next.x + dy * size;
-				vertices[2 * j].y = next.y - dx * size;
-				current = next;
+				vertices[2 * j + 1].x = nextX - dy * size;
+				vertices[2 * j + 1].y = nextY + dx * size;
+				vertices[2 * j].x = nextX + dy * size;
+				vertices[2 * j].y = nextY - dx * size;
+				currentX = nextX;
+				currentY = nextY;
 			}
-			DrawTriangleStrip(vertices, vertices.length, color);
+			DrawTriangleStrip(vertices, 2 * SPLINE_SEGMENT_DIVISIONS + 2, color);
 		}
-		DrawCircleV(current, thick / 2, color);
+		DrawCircleV(new Vector2(currentX, currentY), thick / 2, color);
 	}
 
 	/** Draws a Catmull-Rom spline of a thickness through points, with round ends; it passes through all but the first and last, which
@@ -853,41 +1081,48 @@ class RShapes {
 	static function DrawSplineCatmullRom(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void {
 		if (pointCount < 4)
 			return;
-		var dx = 0., dy = 0., size = 0.;
-		var current = points[1];
+		var dy = 0., dx = 0., size = 0.;
+		var currentX = points[1].x, currentY = points[1].y;
 		var vertices = [for (i in 0...2 * SPLINE_SEGMENT_DIVISIONS + 2) new Vector2()];
-		DrawCircleV(current, thick / 2, color);
+		DrawCircleV(new Vector2(currentX, currentY), thick / 2, color);
 		for (i in 0...pointCount - 3) {
 			var p1 = points[i],
 				p2 = points[i + 1],
 				p3 = points[i + 2],
 				p4 = points[i + 3];
 			if (i > 0) {
-				vertices[0].x = current.x + dy * size;
-				vertices[0].y = current.y - dx * size;
-				vertices[1].x = current.x - dy * size;
-				vertices[1].y = current.y + dx * size;
+				vertices[0].x = currentX + dy * size;
+				vertices[0].y = currentY - dx * size;
+				vertices[1].x = currentX - dy * size;
+				vertices[1].y = currentY + dx * size;
 			}
 			for (j in 1...SPLINE_SEGMENT_DIVISIONS + 1) {
-				var next = GetSplinePointCatmullRom(p1, p2, p3, p4, j / SPLINE_SEGMENT_DIVISIONS);
-				dy = next.y - current.y;
-				dx = next.x - current.x;
-				size = .5 * thick / Math.sqrt(dx * dx + dy * dy);
+				var t = j / SPLINE_SEGMENT_DIVISIONS;
+				var q0 = (-1 * t * t * t) + (2 * t * t) + (-1 * t),
+					q1 = (3 * t * t * t) + (-5 * t * t) + 2,
+					q2 = (-3 * t * t * t) + (4 * t * t) + t,
+					q3 = t * t * t - t * t;
+				var nextX = .5 * ((p1.x * q0) + (p2.x * q1) + (p3.x * q2) + (p4.x * q3)),
+					nextY = .5 * ((p1.y * q0) + (p2.y * q1) + (p3.y * q2) + (p4.y * q3));
+				dy = nextY - currentY;
+				dx = nextX - currentX;
+				size = (.5 * thick) / Math.sqrt(dx * dx + dy * dy);
 				if (i == 0 && j == 1) {
-					vertices[0].x = current.x + dy * size;
-					vertices[0].y = current.y - dx * size;
-					vertices[1].x = current.x - dy * size;
-					vertices[1].y = current.y + dx * size;
+					vertices[0].x = currentX + dy * size;
+					vertices[0].y = currentY - dx * size;
+					vertices[1].x = currentX - dy * size;
+					vertices[1].y = currentY + dx * size;
 				}
-				vertices[2 * j + 1].x = next.x - dy * size;
-				vertices[2 * j + 1].y = next.y + dx * size;
-				vertices[2 * j].x = next.x + dy * size;
-				vertices[2 * j].y = next.y - dx * size;
-				current = next;
+				vertices[2 * j + 1].x = nextX - dy * size;
+				vertices[2 * j + 1].y = nextY + dx * size;
+				vertices[2 * j].x = nextX + dy * size;
+				vertices[2 * j].y = nextY - dx * size;
+				currentX = nextX;
+				currentY = nextY;
 			}
-			DrawTriangleStrip(vertices, vertices.length, color);
+			DrawTriangleStrip(vertices, 2 * SPLINE_SEGMENT_DIVISIONS + 2, color);
 		}
-		DrawCircleV(current, thick / 2, color);
+		DrawCircleV(new Vector2(currentX, currentY), thick / 2, color);
 	}
 
 	/** Draws quadratic Bezier curves of a thickness, one after another: points, then a control point between each two.
@@ -926,15 +1161,14 @@ class RShapes {
 
 		@param p1  The start.
 		@param p2  The end.
-		@param thick  The thickness, in pixels.
+		@param thick  The thickness, in pixels; 0 or less draws nothing.
 		@param color  The color. */
 	static function DrawSplineSegmentLinear(p1:Vector2, p2:Vector2, thick:Float, color:Color):Void {
-		var dx = p2.x - p1.x,
-			dy = p2.y - p1.y,
-			length = Math.sqrt(dx * dx + dy * dy);
+		var dx = p2.x - p1.x, dy = p2.y - p1.y;
+		var length = Math.sqrt(dx * dx + dy * dy);
 		if (length > 0 && thick > 0) {
 			var scale = thick / (2 * length);
-			band(p1, p2, -scale * dy, scale * dx, color);
+			strip(p1, p2, -scale * dy, scale * dx, color);
 		}
 	}
 
@@ -947,7 +1181,15 @@ class RShapes {
 		@param thick  The thickness, in pixels.
 		@param color  The color. */
 	static function DrawSplineSegmentBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, thick:Float, color:Color):Void {
-		segment(GetSplinePointBasis(p1, p2, p3, p4, 0), t -> GetSplinePointBasis(p1, p2, p3, p4, t), 0, thick, color);
+		var a0 = (-p1.x + 3 * p2.x - 3 * p3.x + p4.x) / 6,
+			a1 = (3 * p1.x - 6 * p2.x + 3 * p3.x) / 6,
+			a2 = (-3 * p1.x + 3 * p3.x) / 6,
+			a3 = (p1.x + 4 * p2.x + p3.x) / 6;
+		var b0 = (-p1.y + 3 * p2.y - 3 * p3.y + p4.y) / 6,
+			b1 = (3 * p1.y - 6 * p2.y + 3 * p3.y) / 6,
+			b2 = (-3 * p1.y + 3 * p3.y) / 6,
+			b3 = (p1.y + 4 * p2.y + p3.y) / 6;
+		curve(a3, b3, 0, t -> a3 + t * (a2 + t * (a1 + t * a0)), t -> b3 + t * (b2 + t * (b1 + t * b0)), thick, color);
 	}
 
 	/** Draws one piece of a Catmull-Rom spline of a thickness, through the middle two of four points.
@@ -959,7 +1201,17 @@ class RShapes {
 		@param thick  The thickness, in pixels.
 		@param color  The color. */
 	static function DrawSplineSegmentCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, thick:Float, color:Color):Void {
-		segment(p1, t -> GetSplinePointCatmullRom(p1, p2, p3, p4, t), 0, thick, color);
+		inline function q0(t:Float)
+			return (-1 * t * t * t) + (2 * t * t) + (-1 * t);
+		inline function q1(t:Float)
+			return (3 * t * t * t) + (-5 * t * t) + 2;
+		inline function q2(t:Float)
+			return (-3 * t * t * t) + (4 * t * t) + t;
+		inline function q3(t:Float)
+			return t * t * t - t * t;
+		// raylib's starts from the first point, which steers it, not from the second, where it starts.
+		curve(p1.x, p1.y, 0, t -> .5 * ((p1.x * q0(t)) + (p2.x * q1(t)) + (p3.x * q2(t)) + (p4.x * q3(t))),
+			t -> .5 * ((p1.y * q0(t)) + (p2.y * q1(t)) + (p3.y * q2(t)) + (p4.y * q3(t))), thick, color);
 	}
 
 	/** Draws a quadratic Bezier curve of a thickness.
@@ -970,7 +1222,8 @@ class RShapes {
 		@param thick  The thickness, in pixels.
 		@param color  The color. */
 	static function DrawSplineSegmentBezierQuadratic(p1:Vector2, c2:Vector2, p3:Vector2, thick:Float, color:Color):Void {
-		segment(p1, t -> GetSplinePointBezierQuad(p1, c2, p3, t), 1, thick, color);
+		curve(p1.x, p1.y, 1, t -> Math.pow(1 - t, 2) * p1.x + 2 * (1 - t) * t * c2.x + Math.pow(t, 2) * p3.x,
+			t -> Math.pow(1 - t, 2) * p1.y + 2 * (1 - t) * t * c2.y + Math.pow(t, 2) * p3.y, thick, color);
 	}
 
 	/** Draws a cubic Bezier curve of a thickness.
@@ -982,7 +1235,14 @@ class RShapes {
 		@param thick  The thickness, in pixels.
 		@param color  The color. */
 	static function DrawSplineSegmentBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, thick:Float, color:Color):Void {
-		segment(p1, t -> GetSplinePointBezierCubic(p1, c2, c3, p4, t), 1, thick, color);
+		curve(p1.x, p1.y, 1, t -> Math.pow(1 - t, 3) * p1.x
+			+ 3 * Math.pow(1 - t, 2) * t * c2.x
+			+ 3 * (1 - t) * Math.pow(t, 2) * c3.x
+			+ Math.pow(t, 3) * p4.x,
+			t -> Math.pow(1 - t, 3) * p1.y
+				+ 3 * Math.pow(1 - t, 2) * t * c2.y
+				+ 3 * (1 - t) * Math.pow(t, 2) * c3.y
+				+ Math.pow(t, 3) * p4.y, thick, color);
 	}
 
 	/** Returns a point on a straight line.
@@ -1191,40 +1451,15 @@ class RShapes {
 	static var shapeV0 = 0.;
 	static var shapeU1 = 1.;
 	static var shapeV1 = 1.;
-	// raylib's SPLINE_SEGMENT_DIVISIONS and the angles its rounded rectangles' corners start at.
+	// raylib's SMOOTH_CIRCLE_ERROR_RATE and SPLINE_SEGMENT_DIVISIONS, and the angles its rounded rectangles' corners start at.
+	static inline final SMOOTH_CIRCLE_ERROR_RATE = .5;
 	static inline final SPLINE_SEGMENT_DIVISIONS = 24;
 	static final CORNER_ANGLES = [180., 270., 0., 90.];
-	// raylib's RL_QUADS: each corner is held until its quad's fourth comes, and the quad is drawn as two triangles, 0 1 2 and 0 2 3.
-	static final quadX = [0., 0., 0., 0.];
-	static final quadY = [0., 0., 0., 0.];
-	static final quadK = [0, 0, 0, 0];
-	static final quadColors:Array<Color> = [null, null, null, null];
-	static var quadCorners = 0;
 
-	static function shapesTexture():Int {
-		return texShapes == null ? Runtime.frame.white : Textures.handle(texShapes.id);
-	}
-
-	// A vertex of a filled shape, at one of its part of the shapes texture's corners: 0 top-left, 1 bottom-left, 2 bottom-right, 3 top-right.
-	static function shapeVertex(texture:Int, x:Float, y:Float, k:Int, color:Color):Void {
-		flat(texture, x, y, k == 2 || k == 3 ? shapeU1 : shapeU0, k == 1 || k == 2 ? shapeV1 : shapeV0, color);
-	}
-
-	// A corner of one of raylib's quads, k the shapes texture's corner it is given.
-	static function corner(x:Float, y:Float, k:Int, color:Color):Void {
-		var n = quadCorners;
-		quadX[n] = x;
-		quadY[n] = y;
-		quadK[n] = k;
-		quadColors[n] = color;
-		if (n < 3) {
-			quadCorners = n + 1;
-			return;
-		}
-		quadCorners = 0;
-		var t = shapesTexture();
-		for (i in [0, 1, 2, 0, 2, 3])
-			shapeVertex(t, quadX[i], quadY[i], quadK[i], quadColors[i]);
+	// A vertex at a texture coordinate, as raylib's rlTexCoord2f and rlVertex2f pairs.
+	static inline function shapeVertex(u:Float, v:Float, x:Float, y:Float):Void {
+		rlTexCoord2f(u, v);
+		rlVertex2f(x, y);
 	}
 
 	// A point on a circle about a center, at an angle in degrees.
@@ -1236,23 +1471,32 @@ class RShapes {
 		return cy + Math.sin(DEG2RAD * angle) * radius;
 	}
 
-	// The widest angle between an arc's segments that keeps it within raylib's SMOOTH_CIRCLE_ERROR_RATE (half a pixel) of the circle.
+	// The widest angle between an arc's segments that keeps it within SMOOTH_CIRCLE_ERROR_RATE of the circle.
 	static function smoothAngle(radius:Float):Float {
-		return Math.acos(2 * Math.pow(1 - .5 / radius, 2) - 1);
+		return Math.acos(2 * Math.pow(1 - SMOOTH_CIRCLE_ERROR_RATE / radius, 2) - 1);
 	}
 
 	// How many segments raylib gives an arc: those asked for, unless that is fewer than one for each 90 degrees, when it picks enough
 	// to keep within its error rate.
 	static function arcSegments(radius:Float, startAngle:Float, endAngle:Float, segments:Int):Int {
-		var least = Math.ceil((endAngle - startAngle) / 90);
-		if (segments >= least)
+		var minSegments = Std.int(Math.fceil((endAngle - startAngle) / 90));
+		if (segments >= minSegments)
 			return segments;
-		var n = Std.int((endAngle - startAngle) * Math.ceil(2 * Math.PI / smoothAngle(radius)) / 360);
-		return n <= 0 ? least : n;
+		segments = Std.int((endAngle - startAngle) * Math.fceil(2 * Math.PI / smoothAngle(radius)) / 360);
+		return segments <= 0 ? minSegments : segments;
 	}
 
-	// A straight piece of a line, as raylib's four-point triangle strips: from a to b, r its half-thickness across.
-	static function band(a:Vector2, b:Vector2, rx:Float, ry:Float, color:Color):Void {
+	// raylib's EaseCubicInOut, for DrawLineBezier: from b at t 0 to b + c at t d.
+	static function easeCubicInOut(t:Float, b:Float, c:Float, d:Float):Float {
+		t /= .5 * d;
+		if (t < 1)
+			return .5 * c * t * t * t + b;
+		t -= 2;
+		return .5 * c * (t * t * t + 2) + b;
+	}
+
+	// A straight piece of a line, as raylib's four-point triangle strips: from a to b, rx and ry its half-thickness across.
+	static function strip(a:Vector2, b:Vector2, rx:Float, ry:Float, color:Color):Void {
 		DrawTriangleStrip([
 			new Vector2(a.x - rx, a.y - ry),
 			new Vector2(a.x + rx, a.y + ry),
@@ -1261,29 +1505,31 @@ class RShapes {
 		], 4, color);
 	}
 
-	// A curved piece of a spline of a thickness, as raylib draws each: a strip along the curve from where it starts, through the point
-	// at each twenty-fourth of the way. The Bezier curves start at the first division, the B-spline and Catmull-Rom at the start itself.
-	static function segment(start:Vector2, at:Float->Vector2, first:Int, thick:Float, color:Color):Void {
+	// A curved spline segment of a thickness, as raylib draws each: a strip along the curve from a start, through the point at each
+	// twenty-fourth of the way. The Bezier curves start at the first division, from their start; the B-spline and Catmull-Rom at the
+	// start of the curve itself, whose first step, of no length, raylib's next step writes over.
+	static function curve(startX:Float, startY:Float, first:Int, atX:Float->Float, atY:Float->Float, thick:Float, color:Color):Void {
 		var points = [for (i in 0...2 * SPLINE_SEGMENT_DIVISIONS + 2) new Vector2()];
-		var current = start;
+		var currentX = startX, currentY = startY;
 		for (i in first...SPLINE_SEGMENT_DIVISIONS + 1) {
-			var next = at(i / SPLINE_SEGMENT_DIVISIONS);
-			var dy = next.y - current.y,
-				dx = next.x - current.x,
-				size = .5 * thick / Math.sqrt(dx * dx + dy * dy);
+			var t = i / SPLINE_SEGMENT_DIVISIONS;
+			var nextX = atX(t), nextY = atY(t);
+			var dy = nextY - currentY, dx = nextX - currentX;
+			var size = .5 * thick / Math.sqrt(dx * dx + dy * dy);
 			if (i == 1) {
-				points[0].x = current.x + dy * size;
-				points[0].y = current.y - dx * size;
-				points[1].x = current.x - dy * size;
-				points[1].y = current.y + dx * size;
+				points[0].x = currentX + dy * size;
+				points[0].y = currentY - dx * size;
+				points[1].x = currentX - dy * size;
+				points[1].y = currentY + dx * size;
 			}
-			points[2 * i + 1].x = next.x - dy * size;
-			points[2 * i + 1].y = next.y + dx * size;
-			points[2 * i].x = next.x + dy * size;
-			points[2 * i].y = next.y - dx * size;
-			current = next;
+			points[2 * i + 1].x = nextX - dy * size;
+			points[2 * i + 1].y = nextY + dx * size;
+			points[2 * i].x = nextX + dy * size;
+			points[2 * i].y = nextY - dx * size;
+			currentX = nextX;
+			currentY = nextY;
 		}
-		DrawTriangleStrip(points, points.length, color);
+		DrawTriangleStrip(points, 2 * SPLINE_SEGMENT_DIVISIONS + 2, color);
 	}
 	#end
 }

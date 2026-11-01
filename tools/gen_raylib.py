@@ -55,8 +55,8 @@ TARGETS = {
     'Rlgl.hx': ([('RRlgl', 'rlgl: the matrix stack, immediate drawing and render state')], 'rlgl_api.json', 'rlgl.h'),
 }
 SECTIONS = [s for sections, _, _ in TARGETS.values() for s in sections]
-# A function of raylib's: capitalized, as raylib's names are, or rl and a capital, as rlgl's.
-FUNCTION = re.compile(r'(?:rl)?[A-Z]\w*')
+# A function of raylib's: capitalized, as raylib's names are, or rl (or rlgl) and a capital, as rlgl's.
+FUNCTION = re.compile(r'(?:rlgl|rl)?[A-Z]\w*')
 # The section metas that make a function a refusal, and the helper (helix.platform.macros.Build) each calls.
 REFUSALS = {':unsupported': 'unsupported', ':unimplemented': 'unimplemented'}
 # A refusal's message naming what to use instead: "See Name(its parameters)".

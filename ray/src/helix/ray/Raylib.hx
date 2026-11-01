@@ -2162,13 +2162,13 @@ class Raylib {
 	public static inline function GetScreenToWorld2D(position:Vector2, camera:Camera2D):Vector2
 		return RCore.GetScreenToWorld2D(position, camera);
 
-	/** Draws in 3D through a camera until `EndMode3D`, with depth.
+	/** Draws in 3D through a camera until `EndMode3D`, testing depth (rlgl's `rlEnableDepthTest`).
 
 		@param camera  The camera. */
 	public static inline function BeginMode3D(camera:Camera3D):Void
 		RCore.BeginMode3D(camera);
 
-	/** Goes back to drawing in 2D, in the screen's pixels. */
+	/** Goes back to drawing in 2D, in the screen's pixels, without testing depth. */
 	public static inline function EndMode3D():Void
 		RCore.EndMode3D();
 
@@ -2283,7 +2283,8 @@ class Raylib {
 	public static inline function GetShaderLocationAttrib(shader:Shader, attribName:String):Int
 		return RCore.GetShaderLocationAttrib(shader, attribName);
 
-	/** Sets a shader's uniform, for the draws after it.
+	/** Sets a shader's uniform, for the models drawn after it and the shapes in rlgl's batch when it is next drawn, as raylib's: shapes
+		drawn before it but not yet flushed (`BeginShaderMode`, `EndShaderMode`, a mode changing, `rlDrawRenderBatchActive`) take it too.
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
@@ -2411,7 +2412,7 @@ class Raylib {
 
 		@param startPos  The start.
 		@param endPos  The end.
-		@param thick  The thickness, in pixels.
+		@param thick  The thickness, in pixels; 0 or less draws nothing.
 		@param color  The color. */
 	public static inline function DrawLineEx(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void
 		RShapes.DrawLineEx(startPos, endPos, thick, color);
@@ -2614,6 +2615,8 @@ class Raylib {
 
 	/** Draws a rectangle's outline, one pixel wide.
 
+		Each line reaches half a pixel past its corners, at the 2D camera's zoom, so the corners are filled.
+
 		@param posX  The left edge.
 		@param posY  The top edge.
 		@param width  The width.
@@ -2625,7 +2628,7 @@ class Raylib {
 	/** Draws a rectangle's outline, its lines inside it.
 
 		@param rec  The rectangle.
-		@param lineThick  The lines' thickness.
+		@param lineThick  The lines' thickness; more than the rectangle's width or height is clamped to half its shorter side.
 		@param color  The color. */
 	public static inline function DrawRectangleLinesEx(rec:Rectangle, lineThick:Float, color:Color):Void
 		RShapes.DrawRectangleLinesEx(rec, lineThick, color);
@@ -2658,7 +2661,10 @@ class Raylib {
 	public static inline function DrawRectangleRoundedLinesEx(rec:Rectangle, roundness:Float, segments:Int, lineThick:Float, color:Color):Void
 		RShapes.DrawRectangleRoundedLinesEx(rec, roundness, segments, lineThick, color);
 
-	/** Draws a filled triangle; its points go counterclockwise, as raylib's do.
+	/** Draws a filled triangle.
+
+		Its points must go counterclockwise on the screen, as raylib's must: a triangle whose points go clockwise faces away, and isn't
+		drawn while back faces are culled (`rlEnableBackfaceCulling`, the default).
 
 		@param v1  The first point.
 		@param v2  The second point.
@@ -2676,7 +2682,9 @@ class Raylib {
 	public static inline function DrawTriangleLines(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
 		RShapes.DrawTriangleLines(v1, v2, v3, color);
 
-	/** Draws filled triangles that all share the first point, each from it to the next two points; they go counterclockwise.
+	/** Draws filled triangles that all share the first point, each from it to the next two points.
+
+		The points after the first must go counterclockwise on the screen, as `DrawTriangle`'s must.
 
 		@param points  The points, the shared one first.
 		@param pointCount  How many of them to draw, 3 or more.
@@ -2773,7 +2781,7 @@ class Raylib {
 
 		@param p1  The start.
 		@param p2  The end.
-		@param thick  The thickness, in pixels.
+		@param thick  The thickness, in pixels; 0 or less draws nothing.
 		@param color  The color. */
 	public static inline function DrawSplineSegmentLinear(p1:Vector2, p2:Vector2, thick:Float, color:Color):Void
 		RShapes.DrawSplineSegmentLinear(p1, p2, thick, color);
@@ -4550,6 +4558,26 @@ class Raylib {
 	public static inline function DrawModelEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
 		RModels.DrawModelEx(model, position, rotationAxis, rotationAngle, scale, tint);
 
+	/** Draws a model's triangles as their edges, as `DrawModel` places it, through rlgl's wire mode.
+
+		@param model  The model.
+		@param position  Where.
+		@param scale  The scale, the same on each axis.
+		@param tint  The tint. */
+	public static inline function DrawModelWires(model:Model, position:Vector3, scale:Float, tint:Color):Void
+		RModels.DrawModelWires(model, position, scale, tint);
+
+	/** Draws a model's triangles as their edges, as `DrawModelEx` places it, through rlgl's wire mode.
+
+		@param model  The model.
+		@param position  Where.
+		@param rotationAxis  The axis.
+		@param rotationAngle  The angle, in degrees.
+		@param scale  The scale on each axis.
+		@param tint  The tint. */
+	public static inline function DrawModelWiresEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
+		RModels.DrawModelWiresEx(model, position, rotationAxis, rotationAngle, scale, tint);
+
 	/** Draws a mesh with a material and a transform.
 
 		@param mesh  The mesh.
@@ -5770,15 +5798,6 @@ class Raylib {
 	/** raylib's `GenTextureMipmaps` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate GPU mipmaps for a texture. */
 	public static macro function GenTextureMipmaps(texture:ExprOf<Texture2D>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("GenTextureMipmaps: Not implemented", macro {});
-
-	/** raylib's `DrawModelWires` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model wires (with texture if set). */
-	public static macro function DrawModelWires(model:ExprOf<Model>, position:ExprOf<Vector3>, scale:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawModelWires: Not implemented", macro {});
-
-	/** raylib's `DrawModelWiresEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model wires (with texture if set) with extended parameters. */
-	public static macro function DrawModelWiresEx(model:ExprOf<Model>, position:ExprOf<Vector3>, rotationAxis:ExprOf<Vector3>, rotationAngle:ExprOf<Float>,
-			scale:ExprOf<Vector3>, tint:ExprOf<Color>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("DrawModelWiresEx: Not implemented", macro {});
 
 	/** raylib's `DrawModelPoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model as points. */
 	public static macro function DrawModelPoints(model:ExprOf<Model>, position:ExprOf<Vector3>, scale:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>

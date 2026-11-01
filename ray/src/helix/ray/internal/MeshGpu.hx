@@ -11,6 +11,9 @@ class MeshGpu {
 	/** The index buffer, or 0 for none. */
 	public var indexBuffer = 0;
 
+	/** The edges of its triangles, two indices each, for wire mode; 0 until first drawn so. */
+	public var edgeBuffer = 0;
+
 	/** The bytes of each buffer `UpdateMeshBuffer` has changed, by raylib's buffer index (6 for the indices), so the next change starts
 		from them; null for one not changed. */
 	public final contents:Array<Null<haxe.io.Bytes>> = [for (_ in 0...7) null];
