@@ -63,7 +63,7 @@ Nothing crashed.
 - **raylib's generator carried over; a hand-rolled one didn't.** Agents 1 and 2 seeded raylib's, and their fields match over runs and
   between the page and natively, and differ by seed. Agent 3 wrote an LCG whose product passes 2^53: in the page its field crowds the
   top-left, natively every rock is one rectangle and the seed changes nothing. That is the agent's fault, not helix-ray's.
-- **A refused synchronous call, named but not called, says nothing useful.** Agents 1 and 2 learned signatures with `$type(...)`;
+- **A refused synchronous call, named but not called, says nothing useful** (a second run, below, tried a fix and dropped it). Agents 1 and 2 learned signatures with `$type(...)`;
   `$type(LoadTexture)` gives "Macro functions must be called immediately / Invalid macro access" rather than the refusal, which needs a
   call. Both then called it.
 - **The one line was enough.** Two agents met "Type not found" or "Unknown identifier : Camera2D" and added `import helix.ray.*;` at
@@ -72,6 +72,25 @@ Nothing crashed.
 - The games' own faults, by grade: agent 3 saves the best score only at a level's end, never null-checks its texture and sound, and
   takes "12abc" for a number; agent 2 never clamps the frame time; agents 1 and 3 draw crystals `SKYBLUE` for cyan; agent 2's map
   frame is 4 px over.
+
+## A second run: refusals named in `$type`
+
+To make `$type(LoadTexture)` give the refusal, each refused function was made a plain function with raylib's signature, also
+`@:deprecated` with its message, and a hook at `onGenerate` turned those warnings into errors ([the change](refusals-trial/refusals.patch)).
+A walk of the typed program at `onAfterTyping` did the same but more than doubled a 193k-line build; the deprecation one cost 0.5%
+([timing](refusals-trial/timing.md)). Three fresh agents (two Opus, one Sonnet) were given the same brief and spec against 5d8708d with
+the change applied, their games and compiles in [refusals-trial](refusals-trial).
+
+| | First refusal seen, at compile | Compiles to a clean build |
+|---|---|---|
+| The first run, macros (agents 1 to 3) | 1, 2, 4 | 6, 3, 5 |
+| The second run, deprecation (agents 1 to 3) | never, 5, 5 | 6, 6, 6 |
+
+It was worse. The deprecation check runs only once the program types, and every probe the agents compiled had some other error
+(`Unknown identifier : SetMainLoop`, a deliberate mismatch), so `$type(LoadTexture)` showed `(fileName : String) -> Texture2D` and no
+refusal. Two agents took the loads for working, wrote their games with them and met the refusals only at compile 5; the third guessed
+the Async names and never met one. A macro refuses in the first compile that names it, beside any other error, and naming it uncalled,
+though its message says nothing useful, sends the agent to call it, which does. The change was dropped; the refusals stay macros.
 
 ## How far it goes
 

@@ -1,0 +1,2176 @@
+diff --git a/docs/DECISIONS.md b/docs/DECISIONS.md
+index ad62a78..9935373 100644
+--- a/docs/DECISIONS.md
++++ b/docs/DECISIONS.md
+@@ -100,7 +100,7 @@ Why things are the way they are, numbered, in order.
+     `LoadSoundAsync` and `LoadFileTextAsync`, helix-ray's own, answer when ready on both targets, after which the plain load answers
+     at once. Swapping a placeholder in under the plain loads was weighed and left out: sizes and bounds read at load would be the
+     placeholder's (all three 3D trial agents fitted the camera to the model's bounds); placeholders belong to a managed layer, as
+-    librl has them. Every raylib and raymath function helix-ray lacks is a macro that refuses to compile, naming itself, so a program
++    librl has them. Every raylib and raymath function helix-ray lacks is declared to refuse to compile, naming itself, so a program
+     knows it remembered raylib right. The defines are helix-ray's: `helix-ray-files`, `helix-ray-native-root`, `helix-ray-preload`.
+ 
+ 20. **A page's loads are asynchronous, said by the compiler.** DECISIONS 19's preload, files found by scanning the program's sources for
+@@ -117,13 +117,25 @@ Why things are the way they are, numbered, in order.
+     natively failed when built for a page: one program, two codes. Now `LoadTexture`, `LoadModel`, `LoadSound`, `LoadFileData`,
+     `LoadFileText` and `FileExists` refuse everywhere, with the signature of the call to use, "LoadTexture: Synchronous loading is not
+     supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)", so an agent needn't look it up.
+-    Each is a macro in `Raylib` whose body returns `helix.platform.macros.Build.unsupported(message, macro (null : T))`: the
+-    message is reported where the program calls it, all such calls in one build, and the call keeps raylib's result type, so nothing
+-    after it is typed wrong because of it; the message is in the source an agent reads. Haxe's `#error` fires wherever the file is
+-    read, called or not, `@:deprecated` only warns, and `@:require` refuses but leaves the call `Dynamic`, which errors again at its
+-    first use. In a section the function is marked `@:unsupported("message")`, which `gen_raylib` writes as the macro, checking the
+-    signature the message names against the call's own. `@:unsupported` is for what helix-ray won't have, by design (these loads,
+-    rlgl's GL objects), and `@:unimplemented` for what it doesn't have yet (`Build.unimplemented`), so an agent can tell a dead end from
++    Each is an ordinary function in `Raylib` with raylib's signature, its kind's meta and `@:deprecated("message")`, its body a throw
++    that never runs. The compiler warns at every naming of a deprecated field, in a check it runs on every build anyway, and
++    `helix.ray.internal.Refusals` (an init macro in `extraParams.hxml`) reports each warning that is a refusal's message as an error
++    in `onGenerate`, at the same place: called, passed as a value, or in `$type(LoadTexture)`, the way agents probe signatures.
++    Every such naming in one build is reported, the call keeps raylib's result type, so nothing after it is typed wrong because of
++    it, and the message is in the source an agent reads. They were macros whose body returned `Build.unsupported(message, macro
++    (null : T))`; a macro can't be named without being called, so `$type(LoadTexture)` and `var f = LoadTexture` gave Haxe's
++    "Macro functions must be called immediately", never the message. Walking the typed program in `onAfterTyping` instead names
++    each one too, but the macro API's encoding of typed expressions doubled the build (+125% on a 193k-line program; 0.2 s cached
++    server builds became 2 s), where the deprecation check costs nothing measurable (+0.5%). What it gives up: the refusals are
++    reported once the program types, so another error hides them until it is fixed; an editor's diagnostics show them as
++    deprecation warnings, not errors; and code where deprecation warnings are off (its own `@:deprecated` field or class, or
++    `@:haxe.warning("-WDeprecated")`) isn't refused, the function throwing if called. A build with `-D no-deprecation-warnings` or
++    `-w -WDeprecated` is refused. A macro function refusing one form of its call (`LoadAutomationEventList` given a file) does it
++    through `Refusals.refuse`, reported the same way. Haxe's `#error` fires wherever the file is read, called or not, and
++    `@:require` refuses but leaves the call `Dynamic`, which errors again at its first use. In a section the function is marked
++    `@:unsupported("message")`, which `gen_raylib` writes into the facade, checking the signature the message names against the
++    call's own. `@:unsupported` is for what helix-ray won't have, by design (these loads,
++    rlgl's GL objects), and `@:unimplemented` for what it doesn't have yet, so an agent can tell a dead end from
+     a gap. `gen_raylib` reads the sections as the compiler describes them (`haxe -xml`, and a macro for the facades' own macro
+     functions), not by matching their text. Nothing is read before `main`, and no scan of the program's sources
+     decides what: the saves are read when first used. `SaveFileText` and `SaveFileData` need no answer, so they stay raylib's; a write
+diff --git a/platform/src/helix/platform/macros/Build.hx b/platform/src/helix/platform/macros/Build.hx
+deleted file mode 100644
+index cfd4daa..0000000
+--- a/platform/src/helix/platform/macros/Build.hx
++++ /dev/null
+@@ -1,42 +0,0 @@
+-package helix.platform.macros;
+-
+-#if macro
+-import haxe.macro.Context;
+-import haxe.macro.Expr;
+-
+-/** Helps a library's macros say what a build can't have.
+-
+-	Each refuses a call to a function the library declares but doesn't have: `unimplemented` one it will have, `unsupported` one it won't,
+-	by design. The library writes the function as a macro whose body returns it: the message is reported where the program calls it,
+-	every such call in one build, and the call keeps the function's result type, so nothing after it is typed wrong because of it.
+-	helix-ray declares raylib's functions it doesn't have so (`tools/gen_raylib.py`).
+-
+-	```haxe
+-	public static macro function LoadImage(fileName:ExprOf<String>):ExprOf<Image>
+-		return helix.platform.macros.Build.unimplemented("LoadImage: Not implemented", macro (null : helix.ray.Image));
+-	``` */
+-class Build {
+-	/** Refuses a call to a function the library doesn't have yet: reports a message at the call being typed and returns what the call
+-		becomes.
+-
+-		@param message  The message, naming the function and saying it isn't there yet.
+-		@param result  The expression the call becomes, typed as the function's result, with its types' full paths, as it is typed in
+-			the program's scope; nothing runs, as the build stops.
+-		@return  The result. */
+-	public static function unimplemented(message:String, result:Expr):Expr {
+-		Context.reportError(message, Context.currentPos());
+-		return result;
+-	}
+-
+-	/** Refuses a call to a function the library won't have, by design: reports a message at the call being typed and returns what the
+-		call becomes.
+-
+-		@param message  The message, naming the function, why it isn't there, and what to use instead.
+-		@param result  The expression the call becomes, as `unimplemented` takes it.
+-		@return  The result. */
+-	public static function unsupported(message:String, result:Expr):Expr {
+-		Context.reportError(message, Context.currentPos());
+-		return result;
+-	}
+-}
+-#end
+diff --git a/ray/extraParams.hxml b/ray/extraParams.hxml
+index db773e4..90fa055 100644
+--- a/ray/extraParams.hxml
++++ b/ray/extraParams.hxml
+@@ -1,2 +1,3 @@
+ --macro helix.ray.internal.Loop.install()
+ --macro helix.ray.internal.Metadata.register()
++--macro helix.ray.internal.Refusals.install()
+diff --git a/ray/src/helix/ray/Raylib.hx b/ray/src/helix/ray/Raylib.hx
+index 7579218..404d66c 100644
+--- a/ray/src/helix/ray/Raylib.hx
++++ b/ray/src/helix/ray/Raylib.hx
+@@ -1,6 +1,6 @@
+ // Partly generated by tools/gen_raylib.py: the functions between its "generated" markers forward to the sections in raylib/, where
+ // each is written, so don't edit them here; edit the section, then run python3 tools/gen_raylib.py (helix.py test fails when it's
+-// stale). The rest of this file (the constants, the macro functions and the refusals of what isn't here) is written by hand.
++// stale). The rest of this file (the constants and the macro functions) is written by hand.
+ package helix.ray;
+ 
+ #if macro
+@@ -5257,423 +5257,548 @@ class Raylib {
+ 		@param failed  Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged. */
+ 	public static inline function GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void):Void
+ 		RAsync.GetClipboardImageAsync(loaded, failed);
+-	#end
+ 
+ 	// ---- raylib.h's functions helix-ray won't have: each refuses to compile, saying why and what to use ----
+ 
+ 	/** raylib's clipboard text, which waits for the answer. A page's clipboard answers later, so a call doesn't compile on any target: `GetClipboardTextAsync` answers it. */
+-	public static macro function GetClipboardText():ExprOf<String>
+-		return helix.platform.macros.Build.unsupported("GetClipboardText: Synchronous clipboard access is not supported. See GetClipboardTextAsync(read:String->Void, ?failed:String->Void)",
+-			macro(null : String));
++	@:unsupported("GetClipboardText: Synchronous clipboard access is not supported. See GetClipboardTextAsync(read:String->Void, ?failed:String->Void)")
++	@:deprecated("GetClipboardText: Synchronous clipboard access is not supported. See GetClipboardTextAsync(read:String->Void, ?failed:String->Void)")
++	public static function GetClipboardText():String
++		throw "GetClipboardText: refused";
+ 
+ 	/** raylib's clipboard image, which waits for the answer. A call doesn't compile on any target: `GetClipboardImageAsync` answers it. */
+-	public static macro function GetClipboardImage():ExprOf<Image>
+-		return helix.platform.macros.Build.unsupported("GetClipboardImage: Synchronous clipboard access is not supported. See GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void)",
+-			macro(null : helix.ray.Image));
++	@:unsupported("GetClipboardImage: Synchronous clipboard access is not supported. See GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void)")
++	@:deprecated("GetClipboardImage: Synchronous clipboard access is not supported. See GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void)")
++	public static function GetClipboardImage():Image
++		throw "GetClipboardImage: refused";
+ 
+ 	/** raylib's handle of the native window. helix-ray's window has none to give, so a call doesn't compile. */
+-	public static macro function GetWindowHandle():ExprOf<Dynamic>
+-		return helix.platform.macros.Build.unsupported("GetWindowHandle: The native window's handle is the platform's own and is not given out.",
+-			macro(null : Dynamic));
++	@:unsupported("GetWindowHandle: The native window's handle is the platform's own and is not given out.")
++	@:deprecated("GetWindowHandle: The native window's handle is the platform's own and is not given out.")
++	public static function GetWindowHandle():Dynamic
++		throw "GetWindowHandle: refused";
+ 
+ 	/** raylib's physical width of a monitor. SDL3 doesn't tell it, so a call doesn't compile. */
+-	public static macro function GetMonitorPhysicalWidth(monitor:ExprOf<Int>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalWidth: A monitor's physical size is not known to helix-ray's platform.",
+-			macro(0 : Int));
++	@:unsupported("GetMonitorPhysicalWidth: A monitor's physical size is not known to helix-ray's platform.")
++	@:deprecated("GetMonitorPhysicalWidth: A monitor's physical size is not known to helix-ray's platform.")
++	public static function GetMonitorPhysicalWidth(monitor:Int):Int
++		throw "GetMonitorPhysicalWidth: refused";
+ 
+ 	/** raylib's physical height of a monitor. SDL3 doesn't tell it, so a call doesn't compile. */
+-	public static macro function GetMonitorPhysicalHeight(monitor:ExprOf<Int>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalHeight: A monitor's physical size is not known to helix-ray's platform.",
+-			macro(0 : Int));
++	@:unsupported("GetMonitorPhysicalHeight: A monitor's physical size is not known to helix-ray's platform.")
++	@:deprecated("GetMonitorPhysicalHeight: A monitor's physical size is not known to helix-ray's platform.")
++	public static function GetMonitorPhysicalHeight(monitor:Int):Int
++		throw "GetMonitorPhysicalHeight: refused";
+ 
+ 	/** raylib's check for a file, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `FileExistsAsync` answers it. */
+-	public static macro function FileExists(fileName:ExprOf<String>):ExprOf<Bool>
+-		return helix.platform.macros.Build.unsupported("FileExists: Synchronous file access is not supported. See FileExistsAsync(fileName:String, answer:Bool->Void)",
+-			macro(false : Bool));
++	@:unsupported("FileExists: Synchronous file access is not supported. See FileExistsAsync(fileName:String, answer:Bool->Void)")
++	@:deprecated("FileExists: Synchronous file access is not supported. See FileExistsAsync(fileName:String, answer:Bool->Void)")
++	public static function FileExists(fileName:String):Bool
++		throw "FileExists: refused";
+ 
+ 	/** raylib's text file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileTextAsync` reads it. */
+-	public static macro function LoadFileText(fileName:ExprOf<String>):ExprOf<Null<String>>
+-		return helix.platform.macros.Build.unsupported("LoadFileText: Synchronous loading is not supported. See LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void)",
+-			macro(null : Null<String>));
++	@:unsupported("LoadFileText: Synchronous loading is not supported. See LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void)")
++	@:deprecated("LoadFileText: Synchronous loading is not supported. See LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void)")
++	public static function LoadFileText(fileName:String):Null<String>
++		throw "LoadFileText: refused";
+ 
+ 	/** raylib's file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileDataAsync` reads it. */
+-	public static macro function LoadFileData(fileName:ExprOf<String>):ExprOf<Null<haxe.io.Bytes>>
+-		return helix.platform.macros.Build.unsupported("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)",
+-			macro(null : Null<haxe.io.Bytes>));
++	@:unsupported("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)")
++	@:deprecated("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)")
++	public static function LoadFileData(fileName:String):Null<haxe.io.Bytes>
++		throw "LoadFileData: refused";
+ 
+ 	/** raylib's check for a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `DirectoryExistsAsync` answers it. */
+-	public static macro function DirectoryExists(dirPath:ExprOf<String>):ExprOf<Bool>
+-		return helix.platform.macros.Build.unsupported("DirectoryExists: Synchronous file access is not supported. See DirectoryExistsAsync(dirPath:String, answer:Bool->Void)",
+-			macro(false : Bool));
++	@:unsupported("DirectoryExists: Synchronous file access is not supported. See DirectoryExistsAsync(dirPath:String, answer:Bool->Void)")
++	@:deprecated("DirectoryExists: Synchronous file access is not supported. See DirectoryExistsAsync(dirPath:String, answer:Bool->Void)")
++	public static function DirectoryExists(dirPath:String):Bool
++		throw "DirectoryExists: refused";
+ 
+ 	/** raylib's file size, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `GetFileLengthAsync` answers it. */
+-	public static macro function GetFileLength(fileName:ExprOf<String>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("GetFileLength: Synchronous file access is not supported. See GetFileLengthAsync(fileName:String, answer:Int->Void)",
+-			macro(0 : Int));
++	@:unsupported("GetFileLength: Synchronous file access is not supported. See GetFileLengthAsync(fileName:String, answer:Int->Void)")
++	@:deprecated("GetFileLength: Synchronous file access is not supported. See GetFileLengthAsync(fileName:String, answer:Int->Void)")
++	public static function GetFileLength(fileName:String):Int
++		throw "GetFileLength: refused";
+ 
+ 	/** raylib's check for a file, as against a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `IsPathFileAsync` answers it. */
+-	public static macro function IsPathFile(path:ExprOf<String>):ExprOf<Bool>
+-		return helix.platform.macros.Build.unsupported("IsPathFile: Synchronous file access is not supported. See IsPathFileAsync(path:String, answer:Bool->Void)",
+-			macro(false : Bool));
++	@:unsupported("IsPathFile: Synchronous file access is not supported. See IsPathFileAsync(path:String, answer:Bool->Void)")
++	@:deprecated("IsPathFile: Synchronous file access is not supported. See IsPathFileAsync(path:String, answer:Bool->Void)")
++	public static function IsPathFile(path:String):Bool
++		throw "IsPathFile: refused";
+ 
+ 	/** raylib's directory listing, which waits for it. A page can't wait, so a call doesn't compile on any target: `LoadDirectoryFilesAsync` lists it. */
+-	public static macro function LoadDirectoryFiles(dirPath:ExprOf<String>):ExprOf<FilePathList>
+-		return helix.platform.macros.Build.unsupported("LoadDirectoryFiles: Synchronous file access is not supported. See LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList->Void)",
+-			macro(null : helix.ray.FilePathList));
++	@:unsupported("LoadDirectoryFiles: Synchronous file access is not supported. See LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList->Void)")
++	@:deprecated("LoadDirectoryFiles: Synchronous file access is not supported. See LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList->Void)")
++	public static function LoadDirectoryFiles(dirPath:String):FilePathList
++		throw "LoadDirectoryFiles: refused";
+ 
+ 	/** raylib's filtered and recursive directory listing, which waits for it. A page can't wait, so a call doesn't compile on any target: `LoadDirectoryFilesExAsync` lists it. */
+-	public static macro function LoadDirectoryFilesEx(basePath:ExprOf<String>, filter:ExprOf<String>, scanSubdirs:ExprOf<Bool>):ExprOf<FilePathList>
+-		return helix.platform.macros.Build.unsupported("LoadDirectoryFilesEx: Synchronous file access is not supported. See LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void)",
+-			macro(null : helix.ray.FilePathList));
++	@:unsupported("LoadDirectoryFilesEx: Synchronous file access is not supported. See LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void)")
++	@:deprecated("LoadDirectoryFilesEx: Synchronous file access is not supported. See LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void)")
++	public static function LoadDirectoryFilesEx(basePath:String, filter:String, scanSubdirs:Bool):FilePathList
++		throw "LoadDirectoryFilesEx: refused";
+ 
+ 	/** raylib's file modification time, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `GetFileModTimeAsync` answers it. */
+-	public static macro function GetFileModTime(fileName:ExprOf<String>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("GetFileModTime: Synchronous file access is not supported. See GetFileModTimeAsync(fileName:String, answer:Int->Void)",
+-			macro(0 : Int));
++	@:unsupported("GetFileModTime: Synchronous file access is not supported. See GetFileModTimeAsync(fileName:String, answer:Int->Void)")
++	@:deprecated("GetFileModTime: Synchronous file access is not supported. See GetFileModTimeAsync(fileName:String, answer:Int->Void)")
++	public static function GetFileModTime(fileName:String):Int
++		throw "GetFileModTime: refused";
+ 
+ 	/** raylib's allocator. Haxe has no raw memory to allocate, so a call doesn't compile. */
+-	public static macro function MemAlloc(size:ExprOf<Int>):ExprOf<Dynamic>
+-		return helix.platform.macros.Build.unsupported("MemAlloc: Haxe has no raw memory to allocate. Make bytes instead: haxe.io.Bytes.alloc(size)",
+-			macro(null : Dynamic));
++	@:unsupported("MemAlloc: Haxe has no raw memory to allocate. Make bytes instead: haxe.io.Bytes.alloc(size)")
++	@:deprecated("MemAlloc: Haxe has no raw memory to allocate. Make bytes instead: haxe.io.Bytes.alloc(size)")
++	public static function MemAlloc(size:Int):Dynamic
++		throw "MemAlloc: refused";
+ 
+ 	/** raylib's reallocator. Haxe has no raw memory, so a call doesn't compile. */
+-	public static macro function MemRealloc(ptr:ExprOf<Dynamic>, size:ExprOf<Int>):ExprOf<Dynamic>
+-		return helix.platform.macros.Build.unsupported("MemRealloc: Haxe has no raw memory to reallocate. Make new bytes and copy into them instead: haxe.io.Bytes.alloc(size), then blit",
+-			macro(null : Dynamic));
++	@:unsupported("MemRealloc: Haxe has no raw memory to reallocate. Make new bytes and copy into them instead: haxe.io.Bytes.alloc(size), then blit")
++	@:deprecated("MemRealloc: Haxe has no raw memory to reallocate. Make new bytes and copy into them instead: haxe.io.Bytes.alloc(size), then blit")
++	public static function MemRealloc(ptr:Dynamic, size:Int):Dynamic
++		throw "MemRealloc: refused";
+ 
+ 	/** raylib's free. Haxe frees memory once nothing holds it, so a call doesn't compile. */
+-	public static macro function MemFree(ptr:ExprOf<Dynamic>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("MemFree: Haxe frees memory once nothing holds it. Drop the reference instead.", macro {});
++	@:unsupported("MemFree: Haxe frees memory once nothing holds it. Drop the reference instead.")
++	@:deprecated("MemFree: Haxe frees memory once nothing holds it. Drop the reference instead.")
++	public static function MemFree(ptr:Dynamic):Void
++		throw "MemFree: refused";
+ 
+ 	/** raylib's texture load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadTextureAsync` loads it. */
+-	public static macro function LoadTexture(fileName:ExprOf<String>):ExprOf<Texture2D>
+-		return helix.platform.macros.Build.unsupported("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)",
+-			macro(null : helix.ray.Texture2D));
++	@:unsupported("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)")
++	@:deprecated("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)")
++	public static function LoadTexture(fileName:String):Texture2D
++		throw "LoadTexture: refused";
+ 
+ 	/** raylib's image load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadImageAsync` loads it. */
+-	public static macro function LoadImage(fileName:ExprOf<String>):ExprOf<Image>
+-		return helix.platform.macros.Build.unsupported("LoadImage: Synchronous loading is not supported. See LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void)",
+-			macro(null : helix.ray.Image));
++	@:unsupported("LoadImage: Synchronous loading is not supported. See LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void)")
++	@:deprecated("LoadImage: Synchronous loading is not supported. See LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void)")
++	public static function LoadImage(fileName:String):Image
++		throw "LoadImage: refused";
+ 
+ 	/** raylib's load of an image's raw pixels, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadImageRawAsync` loads it. */
+-	public static macro function LoadImageRaw(fileName:ExprOf<String>, width:ExprOf<Int>, height:ExprOf<Int>, format:ExprOf<Int>,
+-			headerSize:ExprOf<Int>):ExprOf<Image>
+-		return helix.platform.macros.Build.unsupported("LoadImageRaw: Synchronous loading is not supported. See LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void, ?failed:String->Void)",
+-			macro(null : helix.ray.Image));
++	@:unsupported("LoadImageRaw: Synchronous loading is not supported. See LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void, ?failed:String->Void)")
++	@:deprecated("LoadImageRaw: Synchronous loading is not supported. See LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void, ?failed:String->Void)")
++	public static function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int):Image
++		throw "LoadImageRaw: refused";
+ 
+ 	/** raylib's decode of an image file's bytes, which returns the image. Images are decoded asynchronously here, so a call doesn't compile on any target: `LoadImageFromMemoryAsync` decodes it. */
+-	public static macro function LoadImageFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Image>
+-		return helix.platform.macros.Build.unsupported("LoadImageFromMemory: Images are decoded asynchronously. See LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void)",
+-			macro(null : helix.ray.Image));
++	@:unsupported("LoadImageFromMemory: Images are decoded asynchronously. See LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void)")
++	@:deprecated("LoadImageFromMemory: Images are decoded asynchronously. See LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void)")
++	public static function LoadImageFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Image
++		throw "LoadImageFromMemory: refused";
+ 
+ 	/** raylib's read of a texture back from the GPU, which waits for it. A texture is read back asynchronously here, so a call doesn't compile on any target: `LoadImageFromTextureAsync` reads it. */
+-	public static macro function LoadImageFromTexture(texture:ExprOf<Texture2D>):ExprOf<Image>
+-		return helix.platform.macros.Build.unsupported("LoadImageFromTexture: A texture is read back asynchronously. See LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void)",
+-			macro(null : helix.ray.Image));
++	@:unsupported("LoadImageFromTexture: A texture is read back asynchronously. See LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void)")
++	@:deprecated("LoadImageFromTexture: A texture is read back asynchronously. See LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void)")
++	public static function LoadImageFromTexture(texture:Texture2D):Image
++		throw "LoadImageFromTexture: refused";
+ 
+ 	/** raylib's read of the screen, which waits for the GPU. The screen is read back asynchronously here, as a frame ends, so a call doesn't compile on any target: `LoadImageFromScreenAsync` reads it. */
+-	public static macro function LoadImageFromScreen():ExprOf<Image>
+-		return helix.platform.macros.Build.unsupported("LoadImageFromScreen: The screen is read back asynchronously. See LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void)",
+-			macro(null : helix.ray.Image));
++	@:unsupported("LoadImageFromScreen: The screen is read back asynchronously. See LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void)")
++	@:deprecated("LoadImageFromScreen: The screen is read back asynchronously. See LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void)")
++	public static function LoadImageFromScreen():Image
++		throw "LoadImageFromScreen: refused";
+ 
+ 	/** raylib's font load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontAsync` loads it. */
+-	public static macro function LoadFont(fileName:ExprOf<String>):ExprOf<Font>
+-		return helix.platform.macros.Build.unsupported("LoadFont: Synchronous loading is not supported. See LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void)",
+-			macro(null : helix.ray.Font));
++	@:unsupported("LoadFont: Synchronous loading is not supported. See LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void)")
++	@:deprecated("LoadFont: Synchronous loading is not supported. See LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void)")
++	public static function LoadFont(fileName:String):Font
++		throw "LoadFont: refused";
+ 
+ 	/** raylib's font load at a size, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontExAsync` loads it. */
+-	public static macro function LoadFontEx(fileName:ExprOf<String>, fontSize:ExprOf<Int>, codepoints:ExprOf<Array<Int>>,
+-			codepointCount:ExprOf<Int>):ExprOf<Font>
+-		return helix.platform.macros.Build.unsupported("LoadFontEx: Synchronous loading is not supported. See LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)",
+-			macro(null : helix.ray.Font));
++	@:unsupported("LoadFontEx: Synchronous loading is not supported. See LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)")
++	@:deprecated("LoadFontEx: Synchronous loading is not supported. See LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)")
++	public static function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font
++		throw "LoadFontEx: refused";
+ 
+ 	/** raylib's font load from a file's bytes, which rasterizes the glyphs before it returns. They are rasterized off the main thread here, so a call doesn't compile on any target: `LoadFontFromMemoryAsync` loads it. */
+-	public static macro function LoadFontFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fontSize:ExprOf<Int>,
+-			codepoints:ExprOf<Array<Int>>, codepointCount:ExprOf<Int>):ExprOf<Font>
+-		return helix.platform.macros.Build.unsupported("LoadFontFromMemory: Fonts are rasterized asynchronously. See LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)",
+-			macro(null : helix.ray.Font));
++	@:unsupported("LoadFontFromMemory: Fonts are rasterized asynchronously. See LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)")
++	@:deprecated("LoadFontFromMemory: Fonts are rasterized asynchronously. See LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)")
++	public static function LoadFontFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>,
++			codepointCount:Int):Font
++		throw "LoadFontFromMemory: refused";
+ 
+ 	/** raylib's glyph rasterizing, which returns the glyphs. They are rasterized off the main thread here, so a call doesn't compile on any target: `LoadFontDataAsync` rasterizes them. */
+-	public static macro function LoadFontData(fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fontSize:ExprOf<Int>, codepoints:ExprOf<Array<Int>>,
+-			codepointCount:ExprOf<Int>, type:ExprOf<Int>):ExprOf<Array<GlyphInfo>>
+-		return helix.platform.macros.Build.unsupported("LoadFontData: Fonts are rasterized asynchronously. See LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void)",
+-			macro(null : Array<helix.ray.GlyphInfo>));
++	@:unsupported("LoadFontData: Fonts are rasterized asynchronously. See LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void)")
++	@:deprecated("LoadFontData: Fonts are rasterized asynchronously. See LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void)")
++	public static function LoadFontData(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int,
++			type:Int):Array<GlyphInfo>
++		throw "LoadFontData: refused";
+ 
+ 	/** raylib's copy into a C buffer. A Haxe string can't be written into, so a call doesn't compile on any target: assign it instead. */
+-	public static macro function TextCopy(dst:ExprOf<String>, src:ExprOf<String>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("TextCopy: A String can't be written into. Assign it instead: dst = src", macro(0 : Int));
++	@:unsupported("TextCopy: A String can't be written into. Assign it instead: dst = src")
++	@:deprecated("TextCopy: A String can't be written into. Assign it instead: dst = src")
++	public static function TextCopy(dst:String, src:String):Int
++		throw "TextCopy: refused";
+ 
+ 	/** raylib's append into a C buffer at a cursor. A Haxe string can't be written into, so a call doesn't compile on any target: join the text instead. */
+-	public static macro function TextAppend(text:ExprOf<String>, append:ExprOf<String>, position:ExprOf<Array<Int>>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("TextAppend: A String can't be written into. Join the text instead: text += append", macro {});
++	@:unsupported("TextAppend: A String can't be written into. Join the text instead: text += append")
++	@:deprecated("TextAppend: A String can't be written into. Join the text instead: text += append")
++	public static function TextAppend(text:String, append:String, position:Array<Int>):Void
++		throw "TextAppend: refused";
+ 
+ 	/** raylib's model load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAsync` loads it. */
+-	public static macro function LoadModel(fileName:ExprOf<String>):ExprOf<Model>
+-		return helix.platform.macros.Build.unsupported("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)",
+-			macro(null : helix.ray.Model));
++	@:unsupported("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)")
++	@:deprecated("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)")
++	public static function LoadModel(fileName:String):Model
++		throw "LoadModel: refused";
+ 
+ 	/** raylib's wave load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadWaveAsync` loads it. */
+-	public static macro function LoadWave(fileName:ExprOf<String>):ExprOf<Wave>
+-		return helix.platform.macros.Build.unsupported("LoadWave: Synchronous loading is not supported. See LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void)",
+-			macro(null : helix.ray.Wave));
++	@:unsupported("LoadWave: Synchronous loading is not supported. See LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void)")
++	@:deprecated("LoadWave: Synchronous loading is not supported. See LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void)")
++	public static function LoadWave(fileName:String):Wave
++		throw "LoadWave: refused";
+ 
+ 	/** raylib's wave load from a file's bytes, which answers at once. A file other than WAV is decoded off the main thread here, so a call doesn't compile on any target: `LoadWaveFromMemoryAsync` loads it. */
+-	public static macro function LoadWaveFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Wave>
+-		return helix.platform.macros.Build.unsupported("LoadWaveFromMemory: Decoding is asynchronous. See LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void)",
+-			macro(null : helix.ray.Wave));
++	@:unsupported("LoadWaveFromMemory: Decoding is asynchronous. See LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void)")
++	@:deprecated("LoadWaveFromMemory: Decoding is asynchronous. See LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void)")
++	public static function LoadWaveFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Wave
++		throw "LoadWaveFromMemory: refused";
+ 
+ 	/** raylib's sound load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadSoundAsync` loads it. */
+-	public static macro function LoadSound(fileName:ExprOf<String>):ExprOf<Sound>
+-		return helix.platform.macros.Build.unsupported("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void)",
+-			macro(null : helix.ray.Sound));
++	@:unsupported("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void)")
++	@:deprecated("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void)")
++	public static function LoadSound(fileName:String):Sound
++		throw "LoadSound: refused";
+ 
+ 	/** raylib's processor on a stream's samples, which it calls on its audio thread. A page can't run Haxe there, so a call doesn't compile on any target. */
+-	public static macro function AttachAudioStreamProcessor(stream:ExprOf<AudioStream>,
+-			processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("AttachAudioStreamProcessor: raylib calls it on the audio thread, where a page can't run Haxe",
+-			macro {});
++	@:unsupported("AttachAudioStreamProcessor: raylib calls it on the audio thread, where a page can't run Haxe")
++	@:deprecated("AttachAudioStreamProcessor: raylib calls it on the audio thread, where a page can't run Haxe")
++	public static function AttachAudioStreamProcessor(stream:AudioStream, processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void
++		throw "AttachAudioStreamProcessor: refused";
+ 
+ 	/** raylib's removal of a stream's processor, which helix-ray can't attach. A call doesn't compile on any target. */
+-	public static macro function DetachAudioStreamProcessor(stream:ExprOf<AudioStream>,
+-			processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("DetachAudioStreamProcessor: raylib calls processors on the audio thread, where a page can't run Haxe",
+-			macro {});
++	@:unsupported("DetachAudioStreamProcessor: raylib calls processors on the audio thread, where a page can't run Haxe")
++	@:deprecated("DetachAudioStreamProcessor: raylib calls processors on the audio thread, where a page can't run Haxe")
++	public static function DetachAudioStreamProcessor(stream:AudioStream, processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void
++		throw "DetachAudioStreamProcessor: refused";
+ 
+ 	/** raylib's processor on every sound mixed, which it calls on its audio thread. A page can't run Haxe there, so a call doesn't compile on any target. */
+-	public static macro function AttachAudioMixedProcessor(processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("AttachAudioMixedProcessor: raylib calls it on the audio thread, where a page can't run Haxe", macro {});
++	@:unsupported("AttachAudioMixedProcessor: raylib calls it on the audio thread, where a page can't run Haxe")
++	@:deprecated("AttachAudioMixedProcessor: raylib calls it on the audio thread, where a page can't run Haxe")
++	public static function AttachAudioMixedProcessor(processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void
++		throw "AttachAudioMixedProcessor: refused";
+ 
+ 	/** raylib's removal of the mix's processor, which helix-ray can't attach. A call doesn't compile on any target. */
+-	public static macro function DetachAudioMixedProcessor(processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("DetachAudioMixedProcessor: raylib calls processors on the audio thread, where a page can't run Haxe",
+-			macro {});
++	@:unsupported("DetachAudioMixedProcessor: raylib calls processors on the audio thread, where a page can't run Haxe")
++	@:deprecated("DetachAudioMixedProcessor: raylib calls processors on the audio thread, where a page can't run Haxe")
++	public static function DetachAudioMixedProcessor(processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void
++		throw "DetachAudioMixedProcessor: refused";
+ 
+ 	// ---- raylib.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
+ 
+ 	/** raylib's export of a font as C code, which reads its atlas back from the GPU and waits. Here the atlas is read back only asynchronously, and it is RGBA where raylib's is gray and alpha, so a call doesn't compile yet. */
+-	public static macro function ExportFontAsCode(font:ExprOf<Font>, fileName:ExprOf<String>):ExprOf<Bool>
+-		return helix.platform.macros.Build.unimplemented("ExportFontAsCode: A font's atlas is on the GPU, read back asynchronously, and in RGBA where raylib's is gray and alpha; not implemented yet.",
+-			macro(false : Bool));
++	@:unimplemented("ExportFontAsCode: A font's atlas is on the GPU, read back asynchronously, and in RGBA where raylib's is gray and alpha; not implemented yet.")
++	@:deprecated("ExportFontAsCode: A font's atlas is on the GPU, read back asynchronously, and in RGBA where raylib's is gray and alpha; not implemented yet.")
++	public static function ExportFontAsCode(font:Font, fileName:String):Bool
++		throw "ExportFontAsCode: refused";
+ 
+ 	/** raylib's `BeginVrStereoMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Begin stereo rendering (requires VR simulator). */
+-	public static macro function BeginVrStereoMode(config:ExprOf<VrStereoConfig>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("BeginVrStereoMode: Not implemented", macro {});
++	@:unimplemented("BeginVrStereoMode: Not implemented")
++	@:deprecated("BeginVrStereoMode: Not implemented")
++	public static function BeginVrStereoMode(config:VrStereoConfig):Void
++		throw "BeginVrStereoMode: refused";
+ 
+ 	/** raylib's `EndVrStereoMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. End stereo rendering (requires VR simulator). */
+-	public static macro function EndVrStereoMode():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("EndVrStereoMode: Not implemented", macro {});
++	@:unimplemented("EndVrStereoMode: Not implemented")
++	@:deprecated("EndVrStereoMode: Not implemented")
++	public static function EndVrStereoMode():Void
++		throw "EndVrStereoMode: refused";
+ 
+ 	/** raylib's `LoadVrStereoConfig` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load VR stereo config for VR simulator device parameters. */
+-	public static macro function LoadVrStereoConfig(device:ExprOf<VrDeviceInfo>):ExprOf<VrStereoConfig>
+-		return helix.platform.macros.Build.unimplemented("LoadVrStereoConfig: Not implemented", macro(null : helix.ray.VrStereoConfig));
++	@:unimplemented("LoadVrStereoConfig: Not implemented")
++	@:deprecated("LoadVrStereoConfig: Not implemented")
++	public static function LoadVrStereoConfig(device:VrDeviceInfo):VrStereoConfig
++		throw "LoadVrStereoConfig: refused";
+ 
+ 	/** raylib's `UnloadVrStereoConfig` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload VR stereo config. */
+-	public static macro function UnloadVrStereoConfig(config:ExprOf<VrStereoConfig>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("UnloadVrStereoConfig: Not implemented", macro {});
++	@:unimplemented("UnloadVrStereoConfig: Not implemented")
++	@:deprecated("UnloadVrStereoConfig: Not implemented")
++	public static function UnloadVrStereoConfig(config:VrStereoConfig):Void
++		throw "UnloadVrStereoConfig: refused";
+ 
+ 	/** raylib's `LoadImageAnim` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image sequence from file (frames appended to image.data). */
+-	public static macro function LoadImageAnim(fileName:ExprOf<String>, frames:ExprOf<Array<Int>>):ExprOf<Image>
+-		return helix.platform.macros.Build.unimplemented("LoadImageAnim: Not implemented", macro(null : helix.ray.Image));
++	@:unimplemented("LoadImageAnim: Not implemented")
++	@:deprecated("LoadImageAnim: Not implemented")
++	public static function LoadImageAnim(fileName:String, frames:Array<Int>):Image
++		throw "LoadImageAnim: refused";
+ 
+ 	/** raylib's `LoadImageAnimFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image sequence from memory buffer. */
+-	public static macro function LoadImageAnimFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>,
+-			frames:ExprOf<Array<Int>>):ExprOf<Image>
+-		return helix.platform.macros.Build.unimplemented("LoadImageAnimFromMemory: Not implemented", macro(null : helix.ray.Image));
++	@:unimplemented("LoadImageAnimFromMemory: Not implemented")
++	@:deprecated("LoadImageAnimFromMemory: Not implemented")
++	public static function LoadImageAnimFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>):Image
++		throw "LoadImageAnimFromMemory: refused";
+ 
+ 	/** raylib's `LoadTextureCubemap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load cubemap from image, multiple image cubemap layouts supported. */
+-	public static macro function LoadTextureCubemap(image:ExprOf<Image>, layout:ExprOf<Int>):ExprOf<TextureCubemap>
+-		return helix.platform.macros.Build.unimplemented("LoadTextureCubemap: Not implemented", macro(null : helix.ray.TextureCubemap));
++	@:unimplemented("LoadTextureCubemap: Not implemented")
++	@:deprecated("LoadTextureCubemap: Not implemented")
++	public static function LoadTextureCubemap(image:Image, layout:Int):TextureCubemap
++		throw "LoadTextureCubemap: refused";
+ 
+ 	/** raylib's `UpdateTexture` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update GPU texture with new data. */
+-	public static macro function UpdateTexture(texture:ExprOf<Texture2D>, pixels:ExprOf<Dynamic>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("UpdateTexture: Not implemented", macro {});
++	@:unimplemented("UpdateTexture: Not implemented")
++	@:deprecated("UpdateTexture: Not implemented")
++	public static function UpdateTexture(texture:Texture2D, pixels:Dynamic):Void
++		throw "UpdateTexture: refused";
+ 
+ 	/** raylib's `UpdateTextureRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update GPU texture rectangle with new data. */
+-	public static macro function UpdateTextureRec(texture:ExprOf<Texture2D>, rec:ExprOf<Rectangle>, pixels:ExprOf<Dynamic>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("UpdateTextureRec: Not implemented", macro {});
++	@:unimplemented("UpdateTextureRec: Not implemented")
++	@:deprecated("UpdateTextureRec: Not implemented")
++	public static function UpdateTextureRec(texture:Texture2D, rec:Rectangle, pixels:Dynamic):Void
++		throw "UpdateTextureRec: refused";
+ 
+ 	/** raylib's `GenTextureMipmaps` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate GPU mipmaps for a texture. */
+-	public static macro function GenTextureMipmaps(texture:ExprOf<Texture2D>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("GenTextureMipmaps: Not implemented", macro {});
++	@:unimplemented("GenTextureMipmaps: Not implemented")
++	@:deprecated("GenTextureMipmaps: Not implemented")
++	public static function GenTextureMipmaps(texture:Texture2D):Void
++		throw "GenTextureMipmaps: refused";
+ 
+ 	/** raylib's `DrawPoint3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a point in 3D space, actually a small line. */
+-	public static macro function DrawPoint3D(position:ExprOf<Vector3>, color:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawPoint3D: Not implemented", macro {});
++	@:unimplemented("DrawPoint3D: Not implemented")
++	@:deprecated("DrawPoint3D: Not implemented")
++	public static function DrawPoint3D(position:Vector3, color:Color):Void
++		throw "DrawPoint3D: refused";
+ 
+ 	/** raylib's `DrawCircle3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a circle in 3D world space. */
+-	public static macro function DrawCircle3D(center:ExprOf<Vector3>, radius:ExprOf<Float>, rotationAxis:ExprOf<Vector3>, rotationAngle:ExprOf<Float>,
+-			color:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawCircle3D: Not implemented", macro {});
++	@:unimplemented("DrawCircle3D: Not implemented")
++	@:deprecated("DrawCircle3D: Not implemented")
++	public static function DrawCircle3D(center:Vector3, radius:Float, rotationAxis:Vector3, rotationAngle:Float, color:Color):Void
++		throw "DrawCircle3D: refused";
+ 
+ 	/** raylib's `DrawTriangle3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a color-filled triangle (vertex in counter-clockwise order!). */
+-	public static macro function DrawTriangle3D(v1:ExprOf<Vector3>, v2:ExprOf<Vector3>, v3:ExprOf<Vector3>, color:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawTriangle3D: Not implemented", macro {});
++	@:unimplemented("DrawTriangle3D: Not implemented")
++	@:deprecated("DrawTriangle3D: Not implemented")
++	public static function DrawTriangle3D(v1:Vector3, v2:Vector3, v3:Vector3, color:Color):Void
++		throw "DrawTriangle3D: refused";
+ 
+ 	/** raylib's `DrawTriangleStrip3D` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a triangle strip defined by points. */
+-	public static macro function DrawTriangleStrip3D(points:ExprOf<Array<Vector3>>, pointCount:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawTriangleStrip3D: Not implemented", macro {});
++	@:unimplemented("DrawTriangleStrip3D: Not implemented")
++	@:deprecated("DrawTriangleStrip3D: Not implemented")
++	public static function DrawTriangleStrip3D(points:Array<Vector3>, pointCount:Int, color:Color):Void
++		throw "DrawTriangleStrip3D: refused";
+ 
+ 	/** raylib's `DrawCylinder` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a cylinder/cone. */
+-	public static macro function DrawCylinder(position:ExprOf<Vector3>, radiusTop:ExprOf<Float>, radiusBottom:ExprOf<Float>, height:ExprOf<Float>,
+-			slices:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawCylinder: Not implemented", macro {});
++	@:unimplemented("DrawCylinder: Not implemented")
++	@:deprecated("DrawCylinder: Not implemented")
++	public static function DrawCylinder(position:Vector3, radiusTop:Float, radiusBottom:Float, height:Float, slices:Int, color:Color):Void
++		throw "DrawCylinder: refused";
+ 
+ 	/** raylib's `DrawCylinderEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a cylinder with base at startPos and top at endPos. */
+-	public static macro function DrawCylinderEx(startPos:ExprOf<Vector3>, endPos:ExprOf<Vector3>, startRadius:ExprOf<Float>, endRadius:ExprOf<Float>,
+-			sides:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawCylinderEx: Not implemented", macro {});
++	@:unimplemented("DrawCylinderEx: Not implemented")
++	@:deprecated("DrawCylinderEx: Not implemented")
++	public static function DrawCylinderEx(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int, color:Color):Void
++		throw "DrawCylinderEx: refused";
+ 
+ 	/** raylib's `DrawCylinderWires` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a cylinder/cone wires. */
+-	public static macro function DrawCylinderWires(position:ExprOf<Vector3>, radiusTop:ExprOf<Float>, radiusBottom:ExprOf<Float>, height:ExprOf<Float>,
+-			slices:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawCylinderWires: Not implemented", macro {});
++	@:unimplemented("DrawCylinderWires: Not implemented")
++	@:deprecated("DrawCylinderWires: Not implemented")
++	public static function DrawCylinderWires(position:Vector3, radiusTop:Float, radiusBottom:Float, height:Float, slices:Int, color:Color):Void
++		throw "DrawCylinderWires: refused";
+ 
+ 	/** raylib's `DrawCylinderWiresEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a cylinder wires with base at startPos and top at endPos. */
+-	public static macro function DrawCylinderWiresEx(startPos:ExprOf<Vector3>, endPos:ExprOf<Vector3>, startRadius:ExprOf<Float>, endRadius:ExprOf<Float>,
+-			sides:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawCylinderWiresEx: Not implemented", macro {});
++	@:unimplemented("DrawCylinderWiresEx: Not implemented")
++	@:deprecated("DrawCylinderWiresEx: Not implemented")
++	public static function DrawCylinderWiresEx(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int, color:Color):Void
++		throw "DrawCylinderWiresEx: refused";
+ 
+ 	/** raylib's `DrawCapsule` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a capsule with the center of its sphere caps at startPos and endPos. */
+-	public static macro function DrawCapsule(startPos:ExprOf<Vector3>, endPos:ExprOf<Vector3>, radius:ExprOf<Float>, slices:ExprOf<Int>, rings:ExprOf<Int>,
+-			color:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawCapsule: Not implemented", macro {});
++	@:unimplemented("DrawCapsule: Not implemented")
++	@:deprecated("DrawCapsule: Not implemented")
++	public static function DrawCapsule(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void
++		throw "DrawCapsule: refused";
+ 
+ 	/** raylib's `DrawCapsuleWires` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw capsule wireframe with the center of its sphere caps at startPos and endPos. */
+-	public static macro function DrawCapsuleWires(startPos:ExprOf<Vector3>, endPos:ExprOf<Vector3>, radius:ExprOf<Float>, slices:ExprOf<Int>,
+-			rings:ExprOf<Int>, color:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawCapsuleWires: Not implemented", macro {});
++	@:unimplemented("DrawCapsuleWires: Not implemented")
++	@:deprecated("DrawCapsuleWires: Not implemented")
++	public static function DrawCapsuleWires(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void
++		throw "DrawCapsuleWires: refused";
+ 
+ 	/** raylib's `DrawRay` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a ray line. */
+-	public static macro function DrawRay(ray:ExprOf<Ray>, color:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawRay: Not implemented", macro {});
++	@:unimplemented("DrawRay: Not implemented")
++	@:deprecated("DrawRay: Not implemented")
++	public static function DrawRay(ray:Ray, color:Color):Void
++		throw "DrawRay: refused";
+ 
+ 	/** raylib's `DrawModelWires` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model wires (with texture if set). */
+-	public static macro function DrawModelWires(model:ExprOf<Model>, position:ExprOf<Vector3>, scale:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawModelWires: Not implemented", macro {});
++	@:unimplemented("DrawModelWires: Not implemented")
++	@:deprecated("DrawModelWires: Not implemented")
++	public static function DrawModelWires(model:Model, position:Vector3, scale:Float, tint:Color):Void
++		throw "DrawModelWires: refused";
+ 
+ 	/** raylib's `DrawModelWiresEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model wires (with texture if set) with extended parameters. */
+-	public static macro function DrawModelWiresEx(model:ExprOf<Model>, position:ExprOf<Vector3>, rotationAxis:ExprOf<Vector3>, rotationAngle:ExprOf<Float>,
+-			scale:ExprOf<Vector3>, tint:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawModelWiresEx: Not implemented", macro {});
++	@:unimplemented("DrawModelWiresEx: Not implemented")
++	@:deprecated("DrawModelWiresEx: Not implemented")
++	public static function DrawModelWiresEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
++		throw "DrawModelWiresEx: refused";
+ 
+ 	/** raylib's `DrawModelPoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model as points. */
+-	public static macro function DrawModelPoints(model:ExprOf<Model>, position:ExprOf<Vector3>, scale:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawModelPoints: Not implemented", macro {});
++	@:unimplemented("DrawModelPoints: Not implemented")
++	@:deprecated("DrawModelPoints: Not implemented")
++	public static function DrawModelPoints(model:Model, position:Vector3, scale:Float, tint:Color):Void
++		throw "DrawModelPoints: refused";
+ 
+ 	/** raylib's `DrawModelPointsEx` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model as points with extended parameters. */
+-	public static macro function DrawModelPointsEx(model:ExprOf<Model>, position:ExprOf<Vector3>, rotationAxis:ExprOf<Vector3>, rotationAngle:ExprOf<Float>,
+-			scale:ExprOf<Vector3>, tint:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawModelPointsEx: Not implemented", macro {});
++	@:unimplemented("DrawModelPointsEx: Not implemented")
++	@:deprecated("DrawModelPointsEx: Not implemented")
++	public static function DrawModelPointsEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
++		throw "DrawModelPointsEx: refused";
+ 
+ 	/** raylib's `DrawBillboard` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a billboard texture. */
+-	public static macro function DrawBillboard(camera:ExprOf<Camera>, texture:ExprOf<Texture2D>, position:ExprOf<Vector3>, scale:ExprOf<Float>,
+-			tint:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawBillboard: Not implemented", macro {});
++	@:unimplemented("DrawBillboard: Not implemented")
++	@:deprecated("DrawBillboard: Not implemented")
++	public static function DrawBillboard(camera:Camera, texture:Texture2D, position:Vector3, scale:Float, tint:Color):Void
++		throw "DrawBillboard: refused";
+ 
+ 	/** raylib's `DrawBillboardRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a billboard texture defined by source. */
+-	public static macro function DrawBillboardRec(camera:ExprOf<Camera>, texture:ExprOf<Texture2D>, source:ExprOf<Rectangle>, position:ExprOf<Vector3>,
+-			size:ExprOf<Vector2>, tint:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawBillboardRec: Not implemented", macro {});
++	@:unimplemented("DrawBillboardRec: Not implemented")
++	@:deprecated("DrawBillboardRec: Not implemented")
++	public static function DrawBillboardRec(camera:Camera, texture:Texture2D, source:Rectangle, position:Vector3, size:Vector2, tint:Color):Void
++		throw "DrawBillboardRec: refused";
+ 
+ 	/** raylib's `DrawBillboardPro` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a billboard texture defined by source and rotation. */
+-	public static macro function DrawBillboardPro(camera:ExprOf<Camera>, texture:ExprOf<Texture2D>, source:ExprOf<Rectangle>, position:ExprOf<Vector3>,
+-			up:ExprOf<Vector3>, size:ExprOf<Vector2>, origin:ExprOf<Vector2>, rotation:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawBillboardPro: Not implemented", macro {});
++	@:unimplemented("DrawBillboardPro: Not implemented")
++	@:deprecated("DrawBillboardPro: Not implemented")
++	public static function DrawBillboardPro(camera:Camera, texture:Texture2D, source:Rectangle, position:Vector3, up:Vector3, size:Vector2, origin:Vector2,
++			rotation:Float, tint:Color):Void
++		throw "DrawBillboardPro: refused";
+ 
+ 	/** raylib's `UpdateMeshBuffer` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update mesh vertex data in GPU for a specific buffer index. */
+-	public static macro function UpdateMeshBuffer(mesh:ExprOf<Mesh>, index:ExprOf<Int>, data:ExprOf<Dynamic>, dataSize:ExprOf<Int>,
+-			offset:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("UpdateMeshBuffer: Not implemented", macro {});
++	@:unimplemented("UpdateMeshBuffer: Not implemented")
++	@:deprecated("UpdateMeshBuffer: Not implemented")
++	public static function UpdateMeshBuffer(mesh:Mesh, index:Int, data:Dynamic, dataSize:Int, offset:Int):Void
++		throw "UpdateMeshBuffer: refused";
+ 
+ 	/** raylib's `DrawMeshInstanced` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw multiple mesh instances with material and different transforms. */
+-	public static macro function DrawMeshInstanced(mesh:ExprOf<Mesh>, material:ExprOf<Material>, transforms:ExprOf<Array<Matrix>>,
+-			instances:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("DrawMeshInstanced: Not implemented", macro {});
++	@:unimplemented("DrawMeshInstanced: Not implemented")
++	@:deprecated("DrawMeshInstanced: Not implemented")
++	public static function DrawMeshInstanced(mesh:Mesh, material:Material, transforms:Array<Matrix>, instances:Int):Void
++		throw "DrawMeshInstanced: refused";
+ 
+ 	/** raylib's `GenMeshTangents` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Compute mesh tangents. */
+-	public static macro function GenMeshTangents(mesh:ExprOf<Mesh>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("GenMeshTangents: Not implemented", macro {});
++	@:unimplemented("GenMeshTangents: Not implemented")
++	@:deprecated("GenMeshTangents: Not implemented")
++	public static function GenMeshTangents(mesh:Mesh):Void
++		throw "GenMeshTangents: refused";
+ 
+ 	/** raylib's `ExportMesh` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export mesh data to file, returns true on success. */
+-	public static macro function ExportMesh(mesh:ExprOf<Mesh>, fileName:ExprOf<String>):ExprOf<Bool>
+-		return helix.platform.macros.Build.unimplemented("ExportMesh: Not implemented", macro(false : Bool));
++	@:unimplemented("ExportMesh: Not implemented")
++	@:deprecated("ExportMesh: Not implemented")
++	public static function ExportMesh(mesh:Mesh, fileName:String):Bool
++		throw "ExportMesh: refused";
+ 
+ 	/** raylib's `ExportMeshAsCode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Export mesh as code file (.h) defining multiple arrays of vertex attributes. */
+-	public static macro function ExportMeshAsCode(mesh:ExprOf<Mesh>, fileName:ExprOf<String>):ExprOf<Bool>
+-		return helix.platform.macros.Build.unimplemented("ExportMeshAsCode: Not implemented", macro(false : Bool));
++	@:unimplemented("ExportMeshAsCode: Not implemented")
++	@:deprecated("ExportMeshAsCode: Not implemented")
++	public static function ExportMeshAsCode(mesh:Mesh, fileName:String):Bool
++		throw "ExportMeshAsCode: refused";
+ 
+ 	/** raylib's `GenMeshPoly` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate polygonal mesh. */
+-	public static macro function GenMeshPoly(sides:ExprOf<Int>, radius:ExprOf<Float>):ExprOf<Mesh>
+-		return helix.platform.macros.Build.unimplemented("GenMeshPoly: Not implemented", macro(null : helix.ray.Mesh));
++	@:unimplemented("GenMeshPoly: Not implemented")
++	@:deprecated("GenMeshPoly: Not implemented")
++	public static function GenMeshPoly(sides:Int, radius:Float):Mesh
++		throw "GenMeshPoly: refused";
+ 
+ 	/** raylib's `GenMeshHemiSphere` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate half-sphere mesh (no bottom cap). */
+-	public static macro function GenMeshHemiSphere(radius:ExprOf<Float>, rings:ExprOf<Int>, slices:ExprOf<Int>):ExprOf<Mesh>
+-		return helix.platform.macros.Build.unimplemented("GenMeshHemiSphere: Not implemented", macro(null : helix.ray.Mesh));
++	@:unimplemented("GenMeshHemiSphere: Not implemented")
++	@:deprecated("GenMeshHemiSphere: Not implemented")
++	public static function GenMeshHemiSphere(radius:Float, rings:Int, slices:Int):Mesh
++		throw "GenMeshHemiSphere: refused";
+ 
+ 	/** raylib's `GenMeshCylinder` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate cylinder mesh. */
+-	public static macro function GenMeshCylinder(radius:ExprOf<Float>, height:ExprOf<Float>, slices:ExprOf<Int>):ExprOf<Mesh>
+-		return helix.platform.macros.Build.unimplemented("GenMeshCylinder: Not implemented", macro(null : helix.ray.Mesh));
++	@:unimplemented("GenMeshCylinder: Not implemented")
++	@:deprecated("GenMeshCylinder: Not implemented")
++	public static function GenMeshCylinder(radius:Float, height:Float, slices:Int):Mesh
++		throw "GenMeshCylinder: refused";
+ 
+ 	/** raylib's `GenMeshCone` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate cone/pyramid mesh. */
+-	public static macro function GenMeshCone(radius:ExprOf<Float>, height:ExprOf<Float>, slices:ExprOf<Int>):ExprOf<Mesh>
+-		return helix.platform.macros.Build.unimplemented("GenMeshCone: Not implemented", macro(null : helix.ray.Mesh));
++	@:unimplemented("GenMeshCone: Not implemented")
++	@:deprecated("GenMeshCone: Not implemented")
++	public static function GenMeshCone(radius:Float, height:Float, slices:Int):Mesh
++		throw "GenMeshCone: refused";
+ 
+ 	/** raylib's `GenMeshTorus` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate torus mesh. */
+-	public static macro function GenMeshTorus(radius:ExprOf<Float>, size:ExprOf<Float>, radSeg:ExprOf<Int>, sides:ExprOf<Int>):ExprOf<Mesh>
+-		return helix.platform.macros.Build.unimplemented("GenMeshTorus: Not implemented", macro(null : helix.ray.Mesh));
++	@:unimplemented("GenMeshTorus: Not implemented")
++	@:deprecated("GenMeshTorus: Not implemented")
++	public static function GenMeshTorus(radius:Float, size:Float, radSeg:Int, sides:Int):Mesh
++		throw "GenMeshTorus: refused";
+ 
+ 	/** raylib's `GenMeshKnot` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate trefoil knot mesh. */
+-	public static macro function GenMeshKnot(radius:ExprOf<Float>, size:ExprOf<Float>, radSeg:ExprOf<Int>, sides:ExprOf<Int>):ExprOf<Mesh>
+-		return helix.platform.macros.Build.unimplemented("GenMeshKnot: Not implemented", macro(null : helix.ray.Mesh));
++	@:unimplemented("GenMeshKnot: Not implemented")
++	@:deprecated("GenMeshKnot: Not implemented")
++	public static function GenMeshKnot(radius:Float, size:Float, radSeg:Int, sides:Int):Mesh
++		throw "GenMeshKnot: refused";
+ 
+ 	/** raylib's `GenMeshHeightmap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate heightmap mesh from image data. */
+-	public static macro function GenMeshHeightmap(heightmap:ExprOf<Image>, size:ExprOf<Vector3>):ExprOf<Mesh>
+-		return helix.platform.macros.Build.unimplemented("GenMeshHeightmap: Not implemented", macro(null : helix.ray.Mesh));
++	@:unimplemented("GenMeshHeightmap: Not implemented")
++	@:deprecated("GenMeshHeightmap: Not implemented")
++	public static function GenMeshHeightmap(heightmap:Image, size:Vector3):Mesh
++		throw "GenMeshHeightmap: refused";
+ 
+ 	/** raylib's `GenMeshCubicmap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate cubes-based map mesh from image data. */
+-	public static macro function GenMeshCubicmap(cubicmap:ExprOf<Image>, cubeSize:ExprOf<Vector3>):ExprOf<Mesh>
+-		return helix.platform.macros.Build.unimplemented("GenMeshCubicmap: Not implemented", macro(null : helix.ray.Mesh));
++	@:unimplemented("GenMeshCubicmap: Not implemented")
++	@:deprecated("GenMeshCubicmap: Not implemented")
++	public static function GenMeshCubicmap(cubicmap:Image, cubeSize:Vector3):Mesh
++		throw "GenMeshCubicmap: refused";
+ 
+ 	/** raylib's `LoadMaterials` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load materials from model file. */
+-	public static macro function LoadMaterials(fileName:ExprOf<String>, materialCount:ExprOf<Array<Int>>):ExprOf<Array<Material>>
+-		return helix.platform.macros.Build.unimplemented("LoadMaterials: Not implemented", macro(null : Array<helix.ray.Material>));
++	@:unimplemented("LoadMaterials: Not implemented")
++	@:deprecated("LoadMaterials: Not implemented")
++	public static function LoadMaterials(fileName:String, materialCount:Array<Int>):Array<Material>
++		throw "LoadMaterials: refused";
+ 
+ 	/** raylib's `IsMaterialValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check if a material is valid (shader assigned, map textures loaded in GPU). */
+-	public static macro function IsMaterialValid(material:ExprOf<Material>):ExprOf<Bool>
+-		return helix.platform.macros.Build.unimplemented("IsMaterialValid: Not implemented", macro(false : Bool));
++	@:unimplemented("IsMaterialValid: Not implemented")
++	@:deprecated("IsMaterialValid: Not implemented")
++	public static function IsMaterialValid(material:Material):Bool
++		throw "IsMaterialValid: refused";
+ 
+ 	/** raylib's `UnloadMaterial` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload material from GPU memory (VRAM). */
+-	public static macro function UnloadMaterial(material:ExprOf<Material>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("UnloadMaterial: Not implemented", macro {});
++	@:unimplemented("UnloadMaterial: Not implemented")
++	@:deprecated("UnloadMaterial: Not implemented")
++	public static function UnloadMaterial(material:Material):Void
++		throw "UnloadMaterial: refused";
+ 
+ 	/** raylib's `LoadModelAnimations` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load model animations from file. */
+-	public static macro function LoadModelAnimations(fileName:ExprOf<String>, animCount:ExprOf<Array<Int>>):ExprOf<Array<ModelAnimation>>
+-		return helix.platform.macros.Build.unimplemented("LoadModelAnimations: Not implemented", macro(null : Array<helix.ray.ModelAnimation>));
++	@:unimplemented("LoadModelAnimations: Not implemented")
++	@:deprecated("LoadModelAnimations: Not implemented")
++	public static function LoadModelAnimations(fileName:String, animCount:Array<Int>):Array<ModelAnimation>
++		throw "LoadModelAnimations: refused";
+ 
+ 	/** raylib's `UpdateModelAnimation` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update model animation pose (CPU). */
+-	public static macro function UpdateModelAnimation(model:ExprOf<Model>, anim:ExprOf<ModelAnimation>, frame:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("UpdateModelAnimation: Not implemented", macro {});
++	@:unimplemented("UpdateModelAnimation: Not implemented")
++	@:deprecated("UpdateModelAnimation: Not implemented")
++	public static function UpdateModelAnimation(model:Model, anim:ModelAnimation, frame:Int):Void
++		throw "UpdateModelAnimation: refused";
+ 
+ 	/** raylib's `UpdateModelAnimationBones` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update model animation mesh bone matrices (GPU skinning). */
+-	public static macro function UpdateModelAnimationBones(model:ExprOf<Model>, anim:ExprOf<ModelAnimation>, frame:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("UpdateModelAnimationBones: Not implemented", macro {});
++	@:unimplemented("UpdateModelAnimationBones: Not implemented")
++	@:deprecated("UpdateModelAnimationBones: Not implemented")
++	public static function UpdateModelAnimationBones(model:Model, anim:ModelAnimation, frame:Int):Void
++		throw "UpdateModelAnimationBones: refused";
+ 
+ 	/** raylib's `UnloadModelAnimation` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload animation data. */
+-	public static macro function UnloadModelAnimation(anim:ExprOf<ModelAnimation>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("UnloadModelAnimation: Not implemented", macro {});
++	@:unimplemented("UnloadModelAnimation: Not implemented")
++	@:deprecated("UnloadModelAnimation: Not implemented")
++	public static function UnloadModelAnimation(anim:ModelAnimation):Void
++		throw "UnloadModelAnimation: refused";
+ 
+ 	/** raylib's `UnloadModelAnimations` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload animation array data. */
+-	public static macro function UnloadModelAnimations(animations:ExprOf<Array<ModelAnimation>>, animCount:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("UnloadModelAnimations: Not implemented", macro {});
++	@:unimplemented("UnloadModelAnimations: Not implemented")
++	@:deprecated("UnloadModelAnimations: Not implemented")
++	public static function UnloadModelAnimations(animations:Array<ModelAnimation>, animCount:Int):Void
++		throw "UnloadModelAnimations: refused";
+ 
+ 	/** raylib's `IsModelAnimationValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check model animation skeleton match. */
+-	public static macro function IsModelAnimationValid(model:ExprOf<Model>, anim:ExprOf<ModelAnimation>):ExprOf<Bool>
+-		return helix.platform.macros.Build.unimplemented("IsModelAnimationValid: Not implemented", macro(false : Bool));
++	@:unimplemented("IsModelAnimationValid: Not implemented")
++	@:deprecated("IsModelAnimationValid: Not implemented")
++	public static function IsModelAnimationValid(model:Model, anim:ModelAnimation):Bool
++		throw "IsModelAnimationValid: refused";
+ 
+ 	/** raylib's `GetRayCollisionQuad` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Get collision info between ray and quad. */
+-	public static macro function GetRayCollisionQuad(ray:ExprOf<Ray>, p1:ExprOf<Vector3>, p2:ExprOf<Vector3>, p3:ExprOf<Vector3>,
+-			p4:ExprOf<Vector3>):ExprOf<RayCollision>
+-		return helix.platform.macros.Build.unimplemented("GetRayCollisionQuad: Not implemented", macro(null : helix.ray.RayCollision));
++	@:unimplemented("GetRayCollisionQuad: Not implemented")
++	@:deprecated("GetRayCollisionQuad: Not implemented")
++	public static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, p4:Vector3):RayCollision
++		throw "GetRayCollisionQuad: refused";
++	#end
+ 
+ 	// ---- generated by tools/gen_raylib.py: end ----
+ 	// ---- Shaders, compiled as the program builds ----
+@@ -5727,8 +5852,8 @@ class Raylib {
+ 			case EConst(CIdent("null")) | EConst(CInt("0")):
+ 				macro @:privateAccess helix.ray.raylib.RCore.newAutomationEventList();
+ 			case _:
+-				helix.platform.macros.Build.unsupported("LoadAutomationEventList: Synchronous loading is not supported. See LoadAutomationEventListAsync(fileName:String, loaded:AutomationEventList->Void, ?failed:String->Void)",
+-					macro(null : helix.ray.AutomationEventList));
++				helix.ray.internal.Refusals.refuse("LoadAutomationEventList: Synchronous loading is not supported. See LoadAutomationEventListAsync(fileName:String, loaded:AutomationEventList->Void, ?failed:String->Void)");
++				macro(null : helix.ray.AutomationEventList);
+ 		}
+ 	}
+ }
+diff --git a/ray/src/helix/ray/Raymath.hx b/ray/src/helix/ray/Raymath.hx
+index 905b5bf..3a2f6e3 100644
+--- a/ray/src/helix/ray/Raymath.hx
++++ b/ray/src/helix/ray/Raymath.hx
+@@ -1,6 +1,6 @@
+ // Partly generated by tools/gen_raylib.py: the functions between its "generated" markers forward to raylib/RMath.hx, where each is
+ // written, so don't edit them here; edit RMath.hx, then run python3 tools/gen_raylib.py (helix.py test fails when it's stale). The rest
+-// of this file (the constants and the refusals of what isn't here) is written by hand.
++// of this file (the constants) is written by hand.
+ package helix.ray;
+ 
+ #if macro
+diff --git a/ray/src/helix/ray/Rlgl.hx b/ray/src/helix/ray/Rlgl.hx
+index 89e3d3e..52f1a81 100644
+--- a/ray/src/helix/ray/Rlgl.hx
++++ b/ray/src/helix/ray/Rlgl.hx
+@@ -861,607 +861,762 @@ class Rlgl {
+ 		@return  False. */
+ 	public static inline function rlCheckRenderBatchLimit(vCount:Int):Bool
+ 		return RRlgl.rlCheckRenderBatchLimit(vCount);
+-	#end
+ 
+ 	// ---- rlgl.h's functions helix-ray won't have: each refuses to compile, saying why and what to use ----
+ 
+ 	/** rlgl's `rlEnableVertexArray`: enable vertex array (vao, if supported), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlEnableVertexArray(vaoId:ExprOf<Int>):ExprOf<Bool>
+-		return helix.platform.macros.Build.unsupported("rlEnableVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro(false : Bool));
++	@:unsupported("rlEnableVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlEnableVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlEnableVertexArray(vaoId:Int):Bool
++		throw "rlEnableVertexArray: refused";
+ 
+ 	/** rlgl's `rlDisableVertexArray`: disable vertex array (vao, if supported), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlDisableVertexArray():ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlDisableVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlDisableVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlDisableVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlDisableVertexArray():Void
++		throw "rlDisableVertexArray: refused";
+ 
+ 	/** rlgl's `rlEnableVertexBuffer`: enable vertex buffer (vbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlEnableVertexBuffer(id:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlEnableVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlEnableVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlEnableVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlEnableVertexBuffer(id:Int):Void
++		throw "rlEnableVertexBuffer: refused";
+ 
+ 	/** rlgl's `rlDisableVertexBuffer`: disable vertex buffer (vbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlDisableVertexBuffer():ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlDisableVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlDisableVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlDisableVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlDisableVertexBuffer():Void
++		throw "rlDisableVertexBuffer: refused";
+ 
+ 	/** rlgl's `rlEnableVertexBufferElement`: enable vertex buffer element (vbo element), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlEnableVertexBufferElement(id:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlEnableVertexBufferElement: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlEnableVertexBufferElement: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlEnableVertexBufferElement: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlEnableVertexBufferElement(id:Int):Void
++		throw "rlEnableVertexBufferElement: refused";
+ 
+ 	/** rlgl's `rlDisableVertexBufferElement`: disable vertex buffer element (vbo element), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlDisableVertexBufferElement():ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlDisableVertexBufferElement: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlDisableVertexBufferElement: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlDisableVertexBufferElement: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlDisableVertexBufferElement():Void
++		throw "rlDisableVertexBufferElement: refused";
+ 
+ 	/** rlgl's `rlEnableVertexAttribute`: enable vertex attribute index, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlEnableVertexAttribute(index:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlEnableVertexAttribute: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlEnableVertexAttribute: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlEnableVertexAttribute: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlEnableVertexAttribute(index:Int):Void
++		throw "rlEnableVertexAttribute: refused";
+ 
+ 	/** rlgl's `rlDisableVertexAttribute`: disable vertex attribute index, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlDisableVertexAttribute(index:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlDisableVertexAttribute: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlDisableVertexAttribute: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlDisableVertexAttribute: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlDisableVertexAttribute(index:Int):Void
++		throw "rlDisableVertexAttribute: refused";
+ 
+ 	/** rlgl's `rlEnableStatePointer`: enable attribute state pointer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlEnableStatePointer(vertexAttribType:ExprOf<Int>, buffer:ExprOf<Dynamic>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlEnableStatePointer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlEnableStatePointer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlEnableStatePointer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlEnableStatePointer(vertexAttribType:Int, buffer:Dynamic):Void
++		throw "rlEnableStatePointer: refused";
+ 
+ 	/** rlgl's `rlDisableStatePointer`: disable attribute state pointer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlDisableStatePointer(vertexAttribType:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlDisableStatePointer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlDisableStatePointer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlDisableStatePointer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlDisableStatePointer(vertexAttribType:Int):Void
++		throw "rlDisableStatePointer: refused";
+ 
+ 	/** rlgl's `rlActiveTextureSlot`: select and active a texture slot, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlActiveTextureSlot(slot:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlActiveTextureSlot: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro {});
++	@:unsupported("rlActiveTextureSlot: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlActiveTextureSlot: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlActiveTextureSlot(slot:Int):Void
++		throw "rlActiveTextureSlot: refused";
+ 
+ 	/** rlgl's `rlEnableTexture`: enable texture, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlEnableTexture(id:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlEnableTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro {});
++	@:unsupported("rlEnableTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlEnableTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlEnableTexture(id:Int):Void
++		throw "rlEnableTexture: refused";
+ 
+ 	/** rlgl's `rlDisableTexture`: disable texture, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlDisableTexture():ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlDisableTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro {});
++	@:unsupported("rlDisableTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlDisableTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlDisableTexture():Void
++		throw "rlDisableTexture: refused";
+ 
+ 	/** rlgl's `rlEnableTextureCubemap`: enable texture cubemap, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlEnableTextureCubemap(id:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlEnableTextureCubemap: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro {});
++	@:unsupported("rlEnableTextureCubemap: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlEnableTextureCubemap: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlEnableTextureCubemap(id:Int):Void
++		throw "rlEnableTextureCubemap: refused";
+ 
+ 	/** rlgl's `rlDisableTextureCubemap`: disable texture cubemap, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlDisableTextureCubemap():ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlDisableTextureCubemap: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro {});
++	@:unsupported("rlDisableTextureCubemap: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlDisableTextureCubemap: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlDisableTextureCubemap():Void
++		throw "rlDisableTextureCubemap: refused";
+ 
+ 	/** rlgl's `rlTextureParameters`: set texture parameters (filter, wrap), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlTextureParameters(id:ExprOf<Int>, param:ExprOf<Int>, value:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlTextureParameters: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro {});
++	@:unsupported("rlTextureParameters: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlTextureParameters: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlTextureParameters(id:Int, param:Int, value:Int):Void
++		throw "rlTextureParameters: refused";
+ 
+ 	/** rlgl's `rlCubemapParameters`: set cubemap parameters (filter, wrap), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlCubemapParameters(id:ExprOf<Int>, param:ExprOf<Int>, value:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlCubemapParameters: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro {});
++	@:unsupported("rlCubemapParameters: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlCubemapParameters: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlCubemapParameters(id:Int, param:Int, value:Int):Void
++		throw "rlCubemapParameters: refused";
+ 
+ 	/** rlgl's `rlEnableShader`: enable shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlEnableShader(id:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlEnableShader: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro {});
++	@:unsupported("rlEnableShader: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlEnableShader: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlEnableShader(id:Int):Void
++		throw "rlEnableShader: refused";
+ 
+ 	/** rlgl's `rlDisableShader`: disable shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlDisableShader():ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlDisableShader: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro {});
++	@:unsupported("rlDisableShader: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlDisableShader: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlDisableShader():Void
++		throw "rlDisableShader: refused";
+ 
+ 	/** rlgl's `rlEnableFramebuffer`: enable render texture (fbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlEnableFramebuffer(id:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlEnableFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+-			macro {});
++	@:unsupported("rlEnableFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	@:deprecated("rlEnableFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	public static function rlEnableFramebuffer(id:Int):Void
++		throw "rlEnableFramebuffer: refused";
+ 
+ 	/** rlgl's `rlDisableFramebuffer`: disable render texture (fbo), return to default framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlDisableFramebuffer():ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlDisableFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+-			macro {});
++	@:unsupported("rlDisableFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	@:deprecated("rlDisableFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	public static function rlDisableFramebuffer():Void
++		throw "rlDisableFramebuffer: refused";
+ 
+ 	/** rlgl's `rlGetActiveFramebuffer`: get the currently active render texture (fbo), 0 for default framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlGetActiveFramebuffer():ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlGetActiveFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+-			macro(0 : Int));
++	@:unsupported("rlGetActiveFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	@:deprecated("rlGetActiveFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	public static function rlGetActiveFramebuffer():Int
++		throw "rlGetActiveFramebuffer: refused";
+ 
+ 	/** rlgl's `rlActiveDrawBuffers`: activate multiple draw color buffers, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlActiveDrawBuffers(count:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlActiveDrawBuffers: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+-			macro {});
++	@:unsupported("rlActiveDrawBuffers: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	@:deprecated("rlActiveDrawBuffers: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	public static function rlActiveDrawBuffers(count:Int):Void
++		throw "rlActiveDrawBuffers: refused";
+ 
+ 	/** rlgl's `rlBlitFramebuffer`: blit active framebuffer to main framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlBlitFramebuffer(srcX:ExprOf<Int>, srcY:ExprOf<Int>, srcWidth:ExprOf<Int>, srcHeight:ExprOf<Int>, dstX:ExprOf<Int>,
+-			dstY:ExprOf<Int>, dstWidth:ExprOf<Int>, dstHeight:ExprOf<Int>, bufferMask:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlBlitFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+-			macro {});
++	@:unsupported("rlBlitFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	@:deprecated("rlBlitFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	public static function rlBlitFramebuffer(srcX:Int, srcY:Int, srcWidth:Int, srcHeight:Int, dstX:Int, dstY:Int, dstWidth:Int, dstHeight:Int,
++			bufferMask:Int):Void
++		throw "rlBlitFramebuffer: refused";
+ 
+ 	/** rlgl's `rlBindFramebuffer`: bind framebuffer (fbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlBindFramebuffer(target:ExprOf<Int>, framebuffer:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlBindFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+-			macro {});
++	@:unsupported("rlBindFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	@:deprecated("rlBindFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	public static function rlBindFramebuffer(target:Int, framebuffer:Int):Void
++		throw "rlBindFramebuffer: refused";
+ 
+ 	/** rlgl's `rlCheckErrors`: check and log opengl error codes, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlCheckErrors():ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlCheckErrors: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+-			macro {});
++	@:unsupported("rlCheckErrors: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
++	@:deprecated("rlCheckErrors: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
++	public static function rlCheckErrors():Void
++		throw "rlCheckErrors: refused";
+ 
+ 	/** rlgl's `rlLoadExtensions`: load opengl extensions (loader function required), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadExtensions(loader:ExprOf<Dynamic>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlLoadExtensions: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+-			macro {});
++	@:unsupported("rlLoadExtensions: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
++	@:deprecated("rlLoadExtensions: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
++	public static function rlLoadExtensions(loader:Dynamic):Void
++		throw "rlLoadExtensions: refused";
+ 
+ 	/** rlgl's `rlGetVersion`: get current opengl version, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlGetVersion():ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlGetVersion: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+-			macro(0 : Int));
++	@:unsupported("rlGetVersion: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
++	@:deprecated("rlGetVersion: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
++	public static function rlGetVersion():Int
++		throw "rlGetVersion: refused";
+ 
+ 	/** rlgl's `rlGetTextureIdDefault`: get default texture id, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlGetTextureIdDefault():ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlGetTextureIdDefault: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro(0 : Int));
++	@:unsupported("rlGetTextureIdDefault: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlGetTextureIdDefault: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlGetTextureIdDefault():Int
++		throw "rlGetTextureIdDefault: refused";
+ 
+ 	/** rlgl's `rlGetShaderIdDefault`: get default shader id, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlGetShaderIdDefault():ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlGetShaderIdDefault: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro(0 : Int));
++	@:unsupported("rlGetShaderIdDefault: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlGetShaderIdDefault: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlGetShaderIdDefault():Int
++		throw "rlGetShaderIdDefault: refused";
+ 
+ 	/** rlgl's `rlGetShaderLocsDefault`: get default shader locations, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlGetShaderLocsDefault():ExprOf<Array<Int>>
+-		return helix.platform.macros.Build.unsupported("rlGetShaderLocsDefault: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro(null : Array<Int>));
++	@:unsupported("rlGetShaderLocsDefault: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlGetShaderLocsDefault: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlGetShaderLocsDefault():Array<Int>
++		throw "rlGetShaderLocsDefault: refused";
+ 
+ 	/** rlgl's `rlLoadRenderBatch`: load a render batch system, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadRenderBatch(numBuffers:ExprOf<Int>, bufferElements:ExprOf<Int>):ExprOf<Dynamic>
+-		return helix.platform.macros.Build.unsupported("rlLoadRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.",
+-			macro(null : Dynamic));
++	@:unsupported("rlLoadRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.")
++	@:deprecated("rlLoadRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.")
++	public static function rlLoadRenderBatch(numBuffers:Int, bufferElements:Int):Dynamic
++		throw "rlLoadRenderBatch: refused";
+ 
+ 	/** rlgl's `rlUnloadRenderBatch`: unload render batch system, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlUnloadRenderBatch(batch:ExprOf<Dynamic>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlUnloadRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.",
+-			macro {});
++	@:unsupported("rlUnloadRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.")
++	@:deprecated("rlUnloadRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.")
++	public static function rlUnloadRenderBatch(batch:Dynamic):Void
++		throw "rlUnloadRenderBatch: refused";
+ 
+ 	/** rlgl's `rlDrawRenderBatch`: draw render batch data (update->draw->reset), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlDrawRenderBatch(batch:ExprOf<Dynamic>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlDrawRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.",
+-			macro {});
++	@:unsupported("rlDrawRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.")
++	@:deprecated("rlDrawRenderBatch: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.")
++	public static function rlDrawRenderBatch(batch:Dynamic):Void
++		throw "rlDrawRenderBatch: refused";
+ 
+ 	/** rlgl's `rlSetRenderBatchActive`: set the active render batch for rlgl (null for default internal), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlSetRenderBatchActive(batch:ExprOf<Dynamic>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlSetRenderBatchActive: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.",
+-			macro {});
++	@:unsupported("rlSetRenderBatchActive: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.")
++	@:deprecated("rlSetRenderBatchActive: Not supported: helix-ray has no render batches of rlgl's; its frame keeps every draw in order, and rlDrawRenderBatchActive ends the current run.")
++	public static function rlSetRenderBatchActive(batch:Dynamic):Void
++		throw "rlSetRenderBatchActive: refused";
+ 
+ 	/** rlgl's `rlLoadVertexArray`: load vertex array (vao) if supported, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadVertexArray():ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlLoadVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro(0 : Int));
++	@:unsupported("rlLoadVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlLoadVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlLoadVertexArray():Int
++		throw "rlLoadVertexArray: refused";
+ 
+ 	/** rlgl's `rlLoadVertexBuffer`: load a vertex buffer object, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadVertexBuffer(buffer:ExprOf<Dynamic>, size:ExprOf<Int>, isDynamic:ExprOf<Bool>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlLoadVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro(0 : Int));
++	@:unsupported("rlLoadVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlLoadVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlLoadVertexBuffer(buffer:Dynamic, size:Int, isDynamic:Bool):Int
++		throw "rlLoadVertexBuffer: refused";
+ 
+ 	/** rlgl's `rlLoadVertexBufferElement`: load vertex buffer elements object, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadVertexBufferElement(buffer:ExprOf<Dynamic>, size:ExprOf<Int>, isDynamic:ExprOf<Bool>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlLoadVertexBufferElement: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro(0 : Int));
++	@:unsupported("rlLoadVertexBufferElement: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlLoadVertexBufferElement: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlLoadVertexBufferElement(buffer:Dynamic, size:Int, isDynamic:Bool):Int
++		throw "rlLoadVertexBufferElement: refused";
+ 
+ 	/** rlgl's `rlUpdateVertexBuffer`: update vertex buffer object data on gpu buffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlUpdateVertexBuffer(bufferId:ExprOf<Int>, data:ExprOf<Dynamic>, dataSize:ExprOf<Int>, offset:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlUpdateVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlUpdateVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlUpdateVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlUpdateVertexBuffer(bufferId:Int, data:Dynamic, dataSize:Int, offset:Int):Void
++		throw "rlUpdateVertexBuffer: refused";
+ 
+ 	/** rlgl's `rlUpdateVertexBufferElements`: update vertex buffer elements data on gpu buffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlUpdateVertexBufferElements(id:ExprOf<Int>, data:ExprOf<Dynamic>, dataSize:ExprOf<Int>, offset:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlUpdateVertexBufferElements: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlUpdateVertexBufferElements: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlUpdateVertexBufferElements: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlUpdateVertexBufferElements(id:Int, data:Dynamic, dataSize:Int, offset:Int):Void
++		throw "rlUpdateVertexBufferElements: refused";
+ 
+ 	/** rlgl's `rlUnloadVertexArray`: unload vertex array (vao), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlUnloadVertexArray(vaoId:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlUnloadVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlUnloadVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlUnloadVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlUnloadVertexArray(vaoId:Int):Void
++		throw "rlUnloadVertexArray: refused";
+ 
+ 	/** rlgl's `rlUnloadVertexBuffer`: unload vertex buffer object, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlUnloadVertexBuffer(vboId:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlUnloadVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlUnloadVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlUnloadVertexBuffer: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlUnloadVertexBuffer(vboId:Int):Void
++		throw "rlUnloadVertexBuffer: refused";
+ 
+ 	/** rlgl's `rlSetVertexAttribute`: set vertex attribute data configuration, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlSetVertexAttribute(index:ExprOf<Int>, compSize:ExprOf<Int>, type:ExprOf<Int>, normalized:ExprOf<Bool>, stride:ExprOf<Int>,
+-			offset:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlSetVertexAttribute: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlSetVertexAttribute: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlSetVertexAttribute: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlSetVertexAttribute(index:Int, compSize:Int, type:Int, normalized:Bool, stride:Int, offset:Int):Void
++		throw "rlSetVertexAttribute: refused";
+ 
+ 	/** rlgl's `rlSetVertexAttributeDivisor`: set vertex attribute data divisor, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlSetVertexAttributeDivisor(index:ExprOf<Int>, divisor:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlSetVertexAttributeDivisor: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlSetVertexAttributeDivisor: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlSetVertexAttributeDivisor: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlSetVertexAttributeDivisor(index:Int, divisor:Int):Void
++		throw "rlSetVertexAttributeDivisor: refused";
+ 
+ 	/** rlgl's `rlSetVertexAttributeDefault`: set vertex attribute default value, when attribute to provided, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlSetVertexAttributeDefault(locIndex:ExprOf<Int>, value:ExprOf<Dynamic>, attribType:ExprOf<Int>,
+-			count:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlSetVertexAttributeDefault: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlSetVertexAttributeDefault: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlSetVertexAttributeDefault: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlSetVertexAttributeDefault(locIndex:Int, value:Dynamic, attribType:Int, count:Int):Void
++		throw "rlSetVertexAttributeDefault: refused";
+ 
+ 	/** rlgl's `rlDrawVertexArray`: draw vertex array (currently active vao), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlDrawVertexArray(offset:ExprOf<Int>, count:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlDrawVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlDrawVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlDrawVertexArray: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlDrawVertexArray(offset:Int, count:Int):Void
++		throw "rlDrawVertexArray: refused";
+ 
+ 	/** rlgl's `rlDrawVertexArrayElements`: draw vertex array elements, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlDrawVertexArrayElements(offset:ExprOf<Int>, count:ExprOf<Int>, buffer:ExprOf<Dynamic>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlDrawVertexArrayElements: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlDrawVertexArrayElements: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlDrawVertexArrayElements: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlDrawVertexArrayElements(offset:Int, count:Int, buffer:Dynamic):Void
++		throw "rlDrawVertexArrayElements: refused";
+ 
+ 	/** rlgl's `rlDrawVertexArrayInstanced`: draw vertex array (currently active vao) with instancing, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlDrawVertexArrayInstanced(offset:ExprOf<Int>, count:ExprOf<Int>, instances:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlDrawVertexArrayInstanced: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlDrawVertexArrayInstanced: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlDrawVertexArrayInstanced: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlDrawVertexArrayInstanced(offset:Int, count:Int, instances:Int):Void
++		throw "rlDrawVertexArrayInstanced: refused";
+ 
+ 	/** rlgl's `rlDrawVertexArrayElementsInstanced`: draw vertex array elements with instancing, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlDrawVertexArrayElementsInstanced(offset:ExprOf<Int>, count:ExprOf<Int>, buffer:ExprOf<Dynamic>,
+-			instances:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlDrawVertexArrayElementsInstanced: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+-			macro {});
++	@:unsupported("rlDrawVertexArrayElementsInstanced: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	@:deprecated("rlDrawVertexArrayElementsInstanced: Not supported: helix-ray has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
++	public static function rlDrawVertexArrayElementsInstanced(offset:Int, count:Int, buffer:Dynamic, instances:Int):Void
++		throw "rlDrawVertexArrayElementsInstanced: refused";
+ 
+ 	/** rlgl's `rlLoadTexture`: load texture data, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadTexture(data:ExprOf<Dynamic>, width:ExprOf<Int>, height:ExprOf<Int>, format:ExprOf<Int>,
+-			mipmapCount:ExprOf<Int>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlLoadTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro(0 : Int));
++	@:unsupported("rlLoadTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlLoadTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlLoadTexture(data:Dynamic, width:Int, height:Int, format:Int, mipmapCount:Int):Int
++		throw "rlLoadTexture: refused";
+ 
+ 	/** rlgl's `rlLoadTextureDepth`: load depth texture/renderbuffer (to be attached to fbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadTextureDepth(width:ExprOf<Int>, height:ExprOf<Int>, useRenderBuffer:ExprOf<Bool>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlLoadTextureDepth: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro(0 : Int));
++	@:unsupported("rlLoadTextureDepth: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlLoadTextureDepth: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlLoadTextureDepth(width:Int, height:Int, useRenderBuffer:Bool):Int
++		throw "rlLoadTextureDepth: refused";
+ 
+ 	/** rlgl's `rlLoadTextureCubemap`: load texture cubemap data, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadTextureCubemap(data:ExprOf<Dynamic>, size:ExprOf<Int>, format:ExprOf<Int>, mipmapCount:ExprOf<Int>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlLoadTextureCubemap: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro(0 : Int));
++	@:unsupported("rlLoadTextureCubemap: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlLoadTextureCubemap: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlLoadTextureCubemap(data:Dynamic, size:Int, format:Int, mipmapCount:Int):Int
++		throw "rlLoadTextureCubemap: refused";
+ 
+ 	/** rlgl's `rlUpdateTexture`: update texture with new data on gpu, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlUpdateTexture(id:ExprOf<Int>, offsetX:ExprOf<Int>, offsetY:ExprOf<Int>, width:ExprOf<Int>, height:ExprOf<Int>,
+-			format:ExprOf<Int>, data:ExprOf<Dynamic>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlUpdateTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro {});
++	@:unsupported("rlUpdateTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlUpdateTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlUpdateTexture(id:Int, offsetX:Int, offsetY:Int, width:Int, height:Int, format:Int, data:Dynamic):Void
++		throw "rlUpdateTexture: refused";
+ 
+ 	/** rlgl's `rlGetGlTextureFormats`: get opengl internal formats, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlGetGlTextureFormats(format:ExprOf<Int>, glInternalFormat:ExprOf<Array<Int>>, glFormat:ExprOf<Array<Int>>,
+-			glType:ExprOf<Array<Int>>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlGetGlTextureFormats: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro {});
++	@:unsupported("rlGetGlTextureFormats: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlGetGlTextureFormats: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlGetGlTextureFormats(format:Int, glInternalFormat:Array<Int>, glFormat:Array<Int>, glType:Array<Int>):Void
++		throw "rlGetGlTextureFormats: refused";
+ 
+ 	/** rlgl's `rlUnloadTexture`: unload texture from gpu memory, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlUnloadTexture(id:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlUnloadTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro {});
++	@:unsupported("rlUnloadTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlUnloadTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlUnloadTexture(id:Int):Void
++		throw "rlUnloadTexture: refused";
+ 
+ 	/** rlgl's `rlGenTextureMipmaps`: generate mipmap data for selected texture, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlGenTextureMipmaps(id:ExprOf<Int>, width:ExprOf<Int>, height:ExprOf<Int>, format:ExprOf<Int>,
+-			mipmaps:ExprOf<Array<Int>>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlGenTextureMipmaps: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro {});
++	@:unsupported("rlGenTextureMipmaps: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlGenTextureMipmaps: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlGenTextureMipmaps(id:Int, width:Int, height:Int, format:Int, mipmaps:Array<Int>):Void
++		throw "rlGenTextureMipmaps: refused";
+ 
+ 	/** rlgl's `rlReadTexturePixels`: read texture pixel data, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlReadTexturePixels(id:ExprOf<Int>, width:ExprOf<Int>, height:ExprOf<Int>, format:ExprOf<Int>):ExprOf<Dynamic>
+-		return helix.platform.macros.Build.unsupported("rlReadTexturePixels: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro(null : Dynamic));
++	@:unsupported("rlReadTexturePixels: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlReadTexturePixels: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlReadTexturePixels(id:Int, width:Int, height:Int, format:Int):Dynamic
++		throw "rlReadTexturePixels: refused";
+ 
+ 	/** rlgl's `rlReadScreenPixels`: read screen pixel data (color buffer), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlReadScreenPixels(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<haxe.io.Bytes>
+-		return helix.platform.macros.Build.unsupported("rlReadScreenPixels: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+-			macro(null : haxe.io.Bytes));
++	@:unsupported("rlReadScreenPixels: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	@:deprecated("rlReadScreenPixels: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	public static function rlReadScreenPixels(width:Int, height:Int):haxe.io.Bytes
++		throw "rlReadScreenPixels: refused";
+ 
+ 	/** rlgl's `rlLoadFramebuffer`: load an empty framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadFramebuffer():ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlLoadFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+-			macro(0 : Int));
++	@:unsupported("rlLoadFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	@:deprecated("rlLoadFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	public static function rlLoadFramebuffer():Int
++		throw "rlLoadFramebuffer: refused";
+ 
+ 	/** rlgl's `rlFramebufferAttach`: attach texture/renderbuffer to a framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlFramebufferAttach(fboId:ExprOf<Int>, texId:ExprOf<Int>, attachType:ExprOf<Int>, texType:ExprOf<Int>,
+-			mipLevel:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlFramebufferAttach: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+-			macro {});
++	@:unsupported("rlFramebufferAttach: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	@:deprecated("rlFramebufferAttach: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	public static function rlFramebufferAttach(fboId:Int, texId:Int, attachType:Int, texType:Int, mipLevel:Int):Void
++		throw "rlFramebufferAttach: refused";
+ 
+ 	/** rlgl's `rlFramebufferComplete`: verify framebuffer is complete, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlFramebufferComplete(id:ExprOf<Int>):ExprOf<Bool>
+-		return helix.platform.macros.Build.unsupported("rlFramebufferComplete: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+-			macro(false : Bool));
++	@:unsupported("rlFramebufferComplete: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	@:deprecated("rlFramebufferComplete: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	public static function rlFramebufferComplete(id:Int):Bool
++		throw "rlFramebufferComplete: refused";
+ 
+ 	/** rlgl's `rlUnloadFramebuffer`: delete framebuffer from gpu, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlUnloadFramebuffer(id:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlUnloadFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+-			macro {});
++	@:unsupported("rlUnloadFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	@:deprecated("rlUnloadFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
++	public static function rlUnloadFramebuffer(id:Int):Void
++		throw "rlUnloadFramebuffer: refused";
+ 
+ 	/** rlgl's `rlLoadShaderCode`: load shader from code strings, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadShaderCode(vsCode:ExprOf<String>, fsCode:ExprOf<String>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlLoadShaderCode: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro(0 : Int));
++	@:unsupported("rlLoadShaderCode: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlLoadShaderCode: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlLoadShaderCode(vsCode:String, fsCode:String):Int
++		throw "rlLoadShaderCode: refused";
+ 
+ 	/** rlgl's `rlCompileShader`: compile custom shader and return shader id (type: rl_vertex_shader, rl_fragment_shader, rl_compute_shader), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlCompileShader(shaderCode:ExprOf<String>, type:ExprOf<Int>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlCompileShader: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro(0 : Int));
++	@:unsupported("rlCompileShader: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlCompileShader: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlCompileShader(shaderCode:String, type:Int):Int
++		throw "rlCompileShader: refused";
+ 
+ 	/** rlgl's `rlLoadShaderProgram`: load custom shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadShaderProgram(vShaderId:ExprOf<Int>, fShaderId:ExprOf<Int>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlLoadShaderProgram: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro(0 : Int));
++	@:unsupported("rlLoadShaderProgram: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlLoadShaderProgram: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlLoadShaderProgram(vShaderId:Int, fShaderId:Int):Int
++		throw "rlLoadShaderProgram: refused";
+ 
+ 	/** rlgl's `rlUnloadShaderProgram`: unload shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlUnloadShaderProgram(id:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlUnloadShaderProgram: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro {});
++	@:unsupported("rlUnloadShaderProgram: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlUnloadShaderProgram: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlUnloadShaderProgram(id:Int):Void
++		throw "rlUnloadShaderProgram: refused";
+ 
+ 	/** rlgl's `rlGetLocationUniform`: get shader location uniform, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlGetLocationUniform(shaderId:ExprOf<Int>, uniformName:ExprOf<String>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlGetLocationUniform: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro(0 : Int));
++	@:unsupported("rlGetLocationUniform: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlGetLocationUniform: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlGetLocationUniform(shaderId:Int, uniformName:String):Int
++		throw "rlGetLocationUniform: refused";
+ 
+ 	/** rlgl's `rlGetLocationAttrib`: get shader location attribute, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlGetLocationAttrib(shaderId:ExprOf<Int>, attribName:ExprOf<String>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlGetLocationAttrib: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro(0 : Int));
++	@:unsupported("rlGetLocationAttrib: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlGetLocationAttrib: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlGetLocationAttrib(shaderId:Int, attribName:String):Int
++		throw "rlGetLocationAttrib: refused";
+ 
+ 	/** rlgl's `rlSetUniform`: set shader value uniform, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlSetUniform(locIndex:ExprOf<Int>, value:ExprOf<Dynamic>, uniformType:ExprOf<Int>, count:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlSetUniform: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro {});
++	@:unsupported("rlSetUniform: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlSetUniform: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlSetUniform(locIndex:Int, value:Dynamic, uniformType:Int, count:Int):Void
++		throw "rlSetUniform: refused";
+ 
+ 	/** rlgl's `rlSetUniformMatrix`: set shader value matrix, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlSetUniformMatrix(locIndex:ExprOf<Int>, mat:ExprOf<Matrix>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlSetUniformMatrix: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro {});
++	@:unsupported("rlSetUniformMatrix: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlSetUniformMatrix: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlSetUniformMatrix(locIndex:Int, mat:Matrix):Void
++		throw "rlSetUniformMatrix: refused";
+ 
+ 	/** rlgl's `rlSetUniformMatrices`: set shader value matrices, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlSetUniformMatrices(locIndex:ExprOf<Int>, mat:ExprOf<Array<Matrix>>, count:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlSetUniformMatrices: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro {});
++	@:unsupported("rlSetUniformMatrices: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlSetUniformMatrices: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlSetUniformMatrices(locIndex:Int, mat:Array<Matrix>, count:Int):Void
++		throw "rlSetUniformMatrices: refused";
+ 
+ 	/** rlgl's `rlSetUniformSampler`: set shader value sampler, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlSetUniformSampler(locIndex:ExprOf<Int>, textureId:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlSetUniformSampler: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro {});
++	@:unsupported("rlSetUniformSampler: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlSetUniformSampler: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlSetUniformSampler(locIndex:Int, textureId:Int):Void
++		throw "rlSetUniformSampler: refused";
+ 
+ 	/** rlgl's `rlSetShader`: set shader currently active (id and locations), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlSetShader(id:ExprOf<Int>, locs:ExprOf<Array<Int>>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlSetShader: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+-			macro {});
++	@:unsupported("rlSetShader: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	@:deprecated("rlSetShader: Not supported: helix-ray has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
++	public static function rlSetShader(id:Int, locs:Array<Int>):Void
++		throw "rlSetShader: refused";
+ 
+ 	/** rlgl's `rlLoadComputeShaderProgram`: load compute shader program, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadComputeShaderProgram(shaderId:ExprOf<Int>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlLoadComputeShaderProgram: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.",
+-			macro(0 : Int));
++	@:unsupported("rlLoadComputeShaderProgram: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	@:deprecated("rlLoadComputeShaderProgram: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	public static function rlLoadComputeShaderProgram(shaderId:Int):Int
++		throw "rlLoadComputeShaderProgram: refused";
+ 
+ 	/** rlgl's `rlComputeShaderDispatch`: dispatch compute shader (equivalent to *draw* for graphics pipeline), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlComputeShaderDispatch(groupX:ExprOf<Int>, groupY:ExprOf<Int>, groupZ:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlComputeShaderDispatch: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.",
+-			macro {});
++	@:unsupported("rlComputeShaderDispatch: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	@:deprecated("rlComputeShaderDispatch: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	public static function rlComputeShaderDispatch(groupX:Int, groupY:Int, groupZ:Int):Void
++		throw "rlComputeShaderDispatch: refused";
+ 
+ 	/** rlgl's `rlLoadShaderBuffer`: load shader storage buffer object (ssbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadShaderBuffer(size:ExprOf<Int>, data:ExprOf<Dynamic>, usageHint:ExprOf<Int>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlLoadShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.",
+-			macro(0 : Int));
++	@:unsupported("rlLoadShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	@:deprecated("rlLoadShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	public static function rlLoadShaderBuffer(size:Int, data:Dynamic, usageHint:Int):Int
++		throw "rlLoadShaderBuffer: refused";
+ 
+ 	/** rlgl's `rlUnloadShaderBuffer`: unload shader storage buffer object (ssbo), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlUnloadShaderBuffer(ssboId:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlUnloadShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.",
+-			macro {});
++	@:unsupported("rlUnloadShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	@:deprecated("rlUnloadShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	public static function rlUnloadShaderBuffer(ssboId:Int):Void
++		throw "rlUnloadShaderBuffer: refused";
+ 
+ 	/** rlgl's `rlUpdateShaderBuffer`: update ssbo buffer data, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlUpdateShaderBuffer(id:ExprOf<Int>, data:ExprOf<Dynamic>, dataSize:ExprOf<Int>, offset:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlUpdateShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.",
+-			macro {});
++	@:unsupported("rlUpdateShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	@:deprecated("rlUpdateShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	public static function rlUpdateShaderBuffer(id:Int, data:Dynamic, dataSize:Int, offset:Int):Void
++		throw "rlUpdateShaderBuffer: refused";
+ 
+ 	/** rlgl's `rlBindShaderBuffer`: bind ssbo buffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlBindShaderBuffer(id:ExprOf<Int>, index:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlBindShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.",
+-			macro {});
++	@:unsupported("rlBindShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	@:deprecated("rlBindShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	public static function rlBindShaderBuffer(id:Int, index:Int):Void
++		throw "rlBindShaderBuffer: refused";
+ 
+ 	/** rlgl's `rlReadShaderBuffer`: read ssbo buffer data (gpu->cpu), which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlReadShaderBuffer(id:ExprOf<Int>, dest:ExprOf<Dynamic>, count:ExprOf<Int>, offset:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlReadShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.",
+-			macro {});
++	@:unsupported("rlReadShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	@:deprecated("rlReadShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	public static function rlReadShaderBuffer(id:Int, dest:Dynamic, count:Int, offset:Int):Void
++		throw "rlReadShaderBuffer: refused";
+ 
+ 	/** rlgl's `rlCopyShaderBuffer`: copy ssbo data between buffers, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlCopyShaderBuffer(destId:ExprOf<Int>, srcId:ExprOf<Int>, destOffset:ExprOf<Int>, srcOffset:ExprOf<Int>,
+-			count:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlCopyShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.",
+-			macro {});
++	@:unsupported("rlCopyShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	@:deprecated("rlCopyShaderBuffer: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	public static function rlCopyShaderBuffer(destId:Int, srcId:Int, destOffset:Int, srcOffset:Int, count:Int):Void
++		throw "rlCopyShaderBuffer: refused";
+ 
+ 	/** rlgl's `rlGetShaderBufferSize`: get ssbo buffer size, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlGetShaderBufferSize(id:ExprOf<Int>):ExprOf<Int>
+-		return helix.platform.macros.Build.unsupported("rlGetShaderBufferSize: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.",
+-			macro(0 : Int));
++	@:unsupported("rlGetShaderBufferSize: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	@:deprecated("rlGetShaderBufferSize: Not supported: helix-ray has no compute shaders or shader storage buffers, as WebGL2 has none.")
++	public static function rlGetShaderBufferSize(id:Int):Int
++		throw "rlGetShaderBufferSize: refused";
+ 
+ 	/** rlgl's `rlBindImageTexture`: bind image texture, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlBindImageTexture(id:ExprOf<Int>, index:ExprOf<Int>, format:ExprOf<Int>, readonly:ExprOf<Bool>):ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlBindImageTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+-			macro {});
++	@:unsupported("rlBindImageTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	@:deprecated("rlBindImageTexture: Not supported: helix-ray has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
++	public static function rlBindImageTexture(id:Int, index:Int, format:Int, readonly:Bool):Void
++		throw "rlBindImageTexture: refused";
+ 
+ 	/** rlgl's `rlLoadDrawCube`: load and draw a cube, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadDrawCube():ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlLoadDrawCube: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+-			macro {});
++	@:unsupported("rlLoadDrawCube: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
++	@:deprecated("rlLoadDrawCube: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
++	public static function rlLoadDrawCube():Void
++		throw "rlLoadDrawCube: refused";
+ 
+ 	/** rlgl's `rlLoadDrawQuad`: load and draw a quad, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+-	public static macro function rlLoadDrawQuad():ExprOf<Void>
+-		return helix.platform.macros.Build.unsupported("rlLoadDrawQuad: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+-			macro {});
++	@:unsupported("rlLoadDrawQuad: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
++	@:deprecated("rlLoadDrawQuad: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
++	public static function rlLoadDrawQuad():Void
++		throw "rlLoadDrawQuad: refused";
+ 
+ 	// ---- rlgl.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
+ 
+ 	/** raylib's `rlViewport` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set the viewport area. */
+-	public static macro function rlViewport(x:ExprOf<Int>, y:ExprOf<Int>, width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlViewport: Not implemented", macro {});
++	@:unimplemented("rlViewport: Not implemented")
++	@:deprecated("rlViewport: Not implemented")
++	public static function rlViewport(x:Int, y:Int, width:Int, height:Int):Void
++		throw "rlViewport: refused";
+ 
+ 	/** raylib's `rlSetClipPlanes` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set clip planes distances. */
+-	public static macro function rlSetClipPlanes(nearPlane:ExprOf<Float>, farPlane:ExprOf<Float>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlSetClipPlanes: Not implemented", macro {});
++	@:unimplemented("rlSetClipPlanes: Not implemented")
++	@:deprecated("rlSetClipPlanes: Not implemented")
++	public static function rlSetClipPlanes(nearPlane:Float, farPlane:Float):Void
++		throw "rlSetClipPlanes: refused";
+ 
+ 	/** raylib's `rlEnableColorBlend` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable color blending. */
+-	public static macro function rlEnableColorBlend():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlEnableColorBlend: Not implemented", macro {});
++	@:unimplemented("rlEnableColorBlend: Not implemented")
++	@:deprecated("rlEnableColorBlend: Not implemented")
++	public static function rlEnableColorBlend():Void
++		throw "rlEnableColorBlend: refused";
+ 
+ 	/** raylib's `rlDisableColorBlend` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable color blending. */
+-	public static macro function rlDisableColorBlend():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlDisableColorBlend: Not implemented", macro {});
++	@:unimplemented("rlDisableColorBlend: Not implemented")
++	@:deprecated("rlDisableColorBlend: Not implemented")
++	public static function rlDisableColorBlend():Void
++		throw "rlDisableColorBlend: refused";
+ 
+ 	/** raylib's `rlEnableDepthTest` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable depth test. */
+-	public static macro function rlEnableDepthTest():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlEnableDepthTest: Not implemented", macro {});
++	@:unimplemented("rlEnableDepthTest: Not implemented")
++	@:deprecated("rlEnableDepthTest: Not implemented")
++	public static function rlEnableDepthTest():Void
++		throw "rlEnableDepthTest: refused";
+ 
+ 	/** raylib's `rlDisableDepthTest` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable depth test. */
+-	public static macro function rlDisableDepthTest():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlDisableDepthTest: Not implemented", macro {});
++	@:unimplemented("rlDisableDepthTest: Not implemented")
++	@:deprecated("rlDisableDepthTest: Not implemented")
++	public static function rlDisableDepthTest():Void
++		throw "rlDisableDepthTest: refused";
+ 
+ 	/** raylib's `rlEnableDepthMask` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable depth write. */
+-	public static macro function rlEnableDepthMask():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlEnableDepthMask: Not implemented", macro {});
++	@:unimplemented("rlEnableDepthMask: Not implemented")
++	@:deprecated("rlEnableDepthMask: Not implemented")
++	public static function rlEnableDepthMask():Void
++		throw "rlEnableDepthMask: refused";
+ 
+ 	/** raylib's `rlDisableDepthMask` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable depth write. */
+-	public static macro function rlDisableDepthMask():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlDisableDepthMask: Not implemented", macro {});
++	@:unimplemented("rlDisableDepthMask: Not implemented")
++	@:deprecated("rlDisableDepthMask: Not implemented")
++	public static function rlDisableDepthMask():Void
++		throw "rlDisableDepthMask: refused";
+ 
+ 	/** raylib's `rlEnableBackfaceCulling` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable backface culling. */
+-	public static macro function rlEnableBackfaceCulling():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlEnableBackfaceCulling: Not implemented", macro {});
++	@:unimplemented("rlEnableBackfaceCulling: Not implemented")
++	@:deprecated("rlEnableBackfaceCulling: Not implemented")
++	public static function rlEnableBackfaceCulling():Void
++		throw "rlEnableBackfaceCulling: refused";
+ 
+ 	/** raylib's `rlDisableBackfaceCulling` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable backface culling. */
+-	public static macro function rlDisableBackfaceCulling():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlDisableBackfaceCulling: Not implemented", macro {});
++	@:unimplemented("rlDisableBackfaceCulling: Not implemented")
++	@:deprecated("rlDisableBackfaceCulling: Not implemented")
++	public static function rlDisableBackfaceCulling():Void
++		throw "rlDisableBackfaceCulling: refused";
+ 
+ 	/** raylib's `rlColorMask` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Color mask control. */
+-	public static macro function rlColorMask(r:ExprOf<Bool>, g:ExprOf<Bool>, b:ExprOf<Bool>, a:ExprOf<Bool>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlColorMask: Not implemented", macro {});
++	@:unimplemented("rlColorMask: Not implemented")
++	@:deprecated("rlColorMask: Not implemented")
++	public static function rlColorMask(r:Bool, g:Bool, b:Bool, a:Bool):Void
++		throw "rlColorMask: refused";
+ 
+ 	/** raylib's `rlSetCullFace` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set face culling mode. */
+-	public static macro function rlSetCullFace(mode:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlSetCullFace: Not implemented", macro {});
++	@:unimplemented("rlSetCullFace: Not implemented")
++	@:deprecated("rlSetCullFace: Not implemented")
++	public static function rlSetCullFace(mode:Int):Void
++		throw "rlSetCullFace: refused";
+ 
+ 	/** raylib's `rlEnableScissorTest` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable scissor test. */
+-	public static macro function rlEnableScissorTest():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlEnableScissorTest: Not implemented", macro {});
++	@:unimplemented("rlEnableScissorTest: Not implemented")
++	@:deprecated("rlEnableScissorTest: Not implemented")
++	public static function rlEnableScissorTest():Void
++		throw "rlEnableScissorTest: refused";
+ 
+ 	/** raylib's `rlDisableScissorTest` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable scissor test. */
+-	public static macro function rlDisableScissorTest():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlDisableScissorTest: Not implemented", macro {});
++	@:unimplemented("rlDisableScissorTest: Not implemented")
++	@:deprecated("rlDisableScissorTest: Not implemented")
++	public static function rlDisableScissorTest():Void
++		throw "rlDisableScissorTest: refused";
+ 
+ 	/** raylib's `rlScissor` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Scissor test. */
+-	public static macro function rlScissor(x:ExprOf<Int>, y:ExprOf<Int>, width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlScissor: Not implemented", macro {});
++	@:unimplemented("rlScissor: Not implemented")
++	@:deprecated("rlScissor: Not implemented")
++	public static function rlScissor(x:Int, y:Int, width:Int, height:Int):Void
++		throw "rlScissor: refused";
+ 
+ 	/** raylib's `rlEnableWireMode` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable wire mode. */
+-	public static macro function rlEnableWireMode():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlEnableWireMode: Not implemented", macro {});
++	@:unimplemented("rlEnableWireMode: Not implemented")
++	@:deprecated("rlEnableWireMode: Not implemented")
++	public static function rlEnableWireMode():Void
++		throw "rlEnableWireMode: refused";
+ 
+ 	/** raylib's `rlEnablePointMode` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable point mode. */
+-	public static macro function rlEnablePointMode():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlEnablePointMode: Not implemented", macro {});
++	@:unimplemented("rlEnablePointMode: Not implemented")
++	@:deprecated("rlEnablePointMode: Not implemented")
++	public static function rlEnablePointMode():Void
++		throw "rlEnablePointMode: refused";
+ 
+ 	/** raylib's `rlDisableWireMode` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable wire (and point) mode. */
+-	public static macro function rlDisableWireMode():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlDisableWireMode: Not implemented", macro {});
++	@:unimplemented("rlDisableWireMode: Not implemented")
++	@:deprecated("rlDisableWireMode: Not implemented")
++	public static function rlDisableWireMode():Void
++		throw "rlDisableWireMode: refused";
+ 
+ 	/** raylib's `rlSetLineWidth` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set the line drawing width. */
+-	public static macro function rlSetLineWidth(width:ExprOf<Float>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlSetLineWidth: Not implemented", macro {});
++	@:unimplemented("rlSetLineWidth: Not implemented")
++	@:deprecated("rlSetLineWidth: Not implemented")
++	public static function rlSetLineWidth(width:Float):Void
++		throw "rlSetLineWidth: refused";
+ 
+ 	/** raylib's `rlGetLineWidth` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Get the line drawing width. */
+-	public static macro function rlGetLineWidth():ExprOf<Float>
+-		return helix.platform.macros.Build.unimplemented("rlGetLineWidth: Not implemented", macro(0.0 : Float));
++	@:unimplemented("rlGetLineWidth: Not implemented")
++	@:deprecated("rlGetLineWidth: Not implemented")
++	public static function rlGetLineWidth():Float
++		throw "rlGetLineWidth: refused";
+ 
+ 	/** raylib's `rlEnableSmoothLines` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable line aliasing. */
+-	public static macro function rlEnableSmoothLines():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlEnableSmoothLines: Not implemented", macro {});
++	@:unimplemented("rlEnableSmoothLines: Not implemented")
++	@:deprecated("rlEnableSmoothLines: Not implemented")
++	public static function rlEnableSmoothLines():Void
++		throw "rlEnableSmoothLines: refused";
+ 
+ 	/** raylib's `rlDisableSmoothLines` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable line aliasing. */
+-	public static macro function rlDisableSmoothLines():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlDisableSmoothLines: Not implemented", macro {});
++	@:unimplemented("rlDisableSmoothLines: Not implemented")
++	@:deprecated("rlDisableSmoothLines: Not implemented")
++	public static function rlDisableSmoothLines():Void
++		throw "rlDisableSmoothLines: refused";
+ 
+ 	/** raylib's `rlEnableStereoRender` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable stereo rendering. */
+-	public static macro function rlEnableStereoRender():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlEnableStereoRender: Not implemented", macro {});
++	@:unimplemented("rlEnableStereoRender: Not implemented")
++	@:deprecated("rlEnableStereoRender: Not implemented")
++	public static function rlEnableStereoRender():Void
++		throw "rlEnableStereoRender: refused";
+ 
+ 	/** raylib's `rlDisableStereoRender` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable stereo rendering. */
+-	public static macro function rlDisableStereoRender():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlDisableStereoRender: Not implemented", macro {});
++	@:unimplemented("rlDisableStereoRender: Not implemented")
++	@:deprecated("rlDisableStereoRender: Not implemented")
++	public static function rlDisableStereoRender():Void
++		throw "rlDisableStereoRender: refused";
+ 
+ 	/** raylib's `rlIsStereoRenderEnabled` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Check if stereo render is enabled. */
+-	public static macro function rlIsStereoRenderEnabled():ExprOf<Bool>
+-		return helix.platform.macros.Build.unimplemented("rlIsStereoRenderEnabled: Not implemented", macro(false : Bool));
++	@:unimplemented("rlIsStereoRenderEnabled: Not implemented")
++	@:deprecated("rlIsStereoRenderEnabled: Not implemented")
++	public static function rlIsStereoRenderEnabled():Bool
++		throw "rlIsStereoRenderEnabled: refused";
+ 
+ 	/** raylib's `rlClearColor` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Clear color buffer with color. */
+-	public static macro function rlClearColor(r:ExprOf<Int>, g:ExprOf<Int>, b:ExprOf<Int>, a:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlClearColor: Not implemented", macro {});
++	@:unimplemented("rlClearColor: Not implemented")
++	@:deprecated("rlClearColor: Not implemented")
++	public static function rlClearColor(r:Int, g:Int, b:Int, a:Int):Void
++		throw "rlClearColor: refused";
+ 
+ 	/** raylib's `rlClearScreenBuffers` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Clear used screen buffers (color and depth). */
+-	public static macro function rlClearScreenBuffers():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlClearScreenBuffers: Not implemented", macro {});
++	@:unimplemented("rlClearScreenBuffers: Not implemented")
++	@:deprecated("rlClearScreenBuffers: Not implemented")
++	public static function rlClearScreenBuffers():Void
++		throw "rlClearScreenBuffers: refused";
+ 
+ 	/** raylib's `rlSetBlendFactors` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set blending mode factor and equation (using OpenGL factors). */
+-	public static macro function rlSetBlendFactors(glSrcFactor:ExprOf<Int>, glDstFactor:ExprOf<Int>, glEquation:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlSetBlendFactors: Not implemented", macro {});
++	@:unimplemented("rlSetBlendFactors: Not implemented")
++	@:deprecated("rlSetBlendFactors: Not implemented")
++	public static function rlSetBlendFactors(glSrcFactor:Int, glDstFactor:Int, glEquation:Int):Void
++		throw "rlSetBlendFactors: refused";
+ 
+ 	/** raylib's `rlSetBlendFactorsSeparate` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set blending mode factors and equations separately (using OpenGL factors). */
+-	public static macro function rlSetBlendFactorsSeparate(glSrcRGB:ExprOf<Int>, glDstRGB:ExprOf<Int>, glSrcAlpha:ExprOf<Int>, glDstAlpha:ExprOf<Int>,
+-			glEqRGB:ExprOf<Int>, glEqAlpha:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlSetBlendFactorsSeparate: Not implemented", macro {});
++	@:unimplemented("rlSetBlendFactorsSeparate: Not implemented")
++	@:deprecated("rlSetBlendFactorsSeparate: Not implemented")
++	public static function rlSetBlendFactorsSeparate(glSrcRGB:Int, glDstRGB:Int, glSrcAlpha:Int, glDstAlpha:Int, glEqRGB:Int, glEqAlpha:Int):Void
++		throw "rlSetBlendFactorsSeparate: refused";
+ 
+ 	/** raylib's `rlglInit` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Initialize rlgl (buffers, shaders, textures, states). */
+-	public static macro function rlglInit(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlglInit: Not implemented", macro {});
++	@:unimplemented("rlglInit: Not implemented")
++	@:deprecated("rlglInit: Not implemented")
++	public static function rlglInit(width:Int, height:Int):Void
++		throw "rlglInit: refused";
+ 
+ 	/** raylib's `rlglClose` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. De-initialize rlgl (buffers, shaders, textures). */
+-	public static macro function rlglClose():ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlglClose: Not implemented", macro {});
++	@:unimplemented("rlglClose: Not implemented")
++	@:deprecated("rlglClose: Not implemented")
++	public static function rlglClose():Void
++		throw "rlglClose: refused";
+ 
+ 	/** raylib's `rlSetFramebufferWidth` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set current framebuffer width. */
+-	public static macro function rlSetFramebufferWidth(width:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlSetFramebufferWidth: Not implemented", macro {});
++	@:unimplemented("rlSetFramebufferWidth: Not implemented")
++	@:deprecated("rlSetFramebufferWidth: Not implemented")
++	public static function rlSetFramebufferWidth(width:Int):Void
++		throw "rlSetFramebufferWidth: refused";
+ 
+ 	/** raylib's `rlGetFramebufferWidth` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Get default framebuffer width. */
+-	public static macro function rlGetFramebufferWidth():ExprOf<Int>
+-		return helix.platform.macros.Build.unimplemented("rlGetFramebufferWidth: Not implemented", macro(0 : Int));
++	@:unimplemented("rlGetFramebufferWidth: Not implemented")
++	@:deprecated("rlGetFramebufferWidth: Not implemented")
++	public static function rlGetFramebufferWidth():Int
++		throw "rlGetFramebufferWidth: refused";
+ 
+ 	/** raylib's `rlSetFramebufferHeight` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set current framebuffer height. */
+-	public static macro function rlSetFramebufferHeight(height:ExprOf<Int>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlSetFramebufferHeight: Not implemented", macro {});
++	@:unimplemented("rlSetFramebufferHeight: Not implemented")
++	@:deprecated("rlSetFramebufferHeight: Not implemented")
++	public static function rlSetFramebufferHeight(height:Int):Void
++		throw "rlSetFramebufferHeight: refused";
+ 
+ 	/** raylib's `rlGetFramebufferHeight` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Get default framebuffer height. */
+-	public static macro function rlGetFramebufferHeight():ExprOf<Int>
+-		return helix.platform.macros.Build.unimplemented("rlGetFramebufferHeight: Not implemented", macro(0 : Int));
++	@:unimplemented("rlGetFramebufferHeight: Not implemented")
++	@:deprecated("rlGetFramebufferHeight: Not implemented")
++	public static function rlGetFramebufferHeight():Int
++		throw "rlGetFramebufferHeight: refused";
+ 
+ 	/** raylib's `rlGetPixelFormatName` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Get name string for pixel format. */
+-	public static macro function rlGetPixelFormatName(format:ExprOf<Int>):ExprOf<String>
+-		return helix.platform.macros.Build.unimplemented("rlGetPixelFormatName: Not implemented", macro(null : String));
++	@:unimplemented("rlGetPixelFormatName: Not implemented")
++	@:deprecated("rlGetPixelFormatName: Not implemented")
++	public static function rlGetPixelFormatName(format:Int):String
++		throw "rlGetPixelFormatName: refused";
+ 
+ 	/** raylib's `rlGetMatrixProjectionStereo` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Get internal projection matrix for stereo render (selected eye). */
+-	public static macro function rlGetMatrixProjectionStereo(eye:ExprOf<Int>):ExprOf<Matrix>
+-		return helix.platform.macros.Build.unimplemented("rlGetMatrixProjectionStereo: Not implemented", macro(null : helix.ray.Matrix));
++	@:unimplemented("rlGetMatrixProjectionStereo: Not implemented")
++	@:deprecated("rlGetMatrixProjectionStereo: Not implemented")
++	public static function rlGetMatrixProjectionStereo(eye:Int):Matrix
++		throw "rlGetMatrixProjectionStereo: refused";
+ 
+ 	/** raylib's `rlGetMatrixViewOffsetStereo` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Get internal view offset matrix for stereo render (selected eye). */
+-	public static macro function rlGetMatrixViewOffsetStereo(eye:ExprOf<Int>):ExprOf<Matrix>
+-		return helix.platform.macros.Build.unimplemented("rlGetMatrixViewOffsetStereo: Not implemented", macro(null : helix.ray.Matrix));
++	@:unimplemented("rlGetMatrixViewOffsetStereo: Not implemented")
++	@:deprecated("rlGetMatrixViewOffsetStereo: Not implemented")
++	public static function rlGetMatrixViewOffsetStereo(eye:Int):Matrix
++		throw "rlGetMatrixViewOffsetStereo: refused";
+ 
+ 	/** raylib's `rlSetMatrixProjectionStereo` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set eyes projection matrices for stereo rendering. */
+-	public static macro function rlSetMatrixProjectionStereo(right:ExprOf<Matrix>, left:ExprOf<Matrix>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlSetMatrixProjectionStereo: Not implemented", macro {});
++	@:unimplemented("rlSetMatrixProjectionStereo: Not implemented")
++	@:deprecated("rlSetMatrixProjectionStereo: Not implemented")
++	public static function rlSetMatrixProjectionStereo(right:Matrix, left:Matrix):Void
++		throw "rlSetMatrixProjectionStereo: refused";
+ 
+ 	/** raylib's `rlSetMatrixViewOffsetStereo` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set eyes view offsets matrices for stereo rendering. */
+-	public static macro function rlSetMatrixViewOffsetStereo(right:ExprOf<Matrix>, left:ExprOf<Matrix>):ExprOf<Void>
+-		return helix.platform.macros.Build.unimplemented("rlSetMatrixViewOffsetStereo: Not implemented", macro {});
++	@:unimplemented("rlSetMatrixViewOffsetStereo: Not implemented")
++	@:deprecated("rlSetMatrixViewOffsetStereo: Not implemented")
++	public static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
++		throw "rlSetMatrixViewOffsetStereo: refused";
++	#end
+ 
+ 	// ---- generated by tools/gen_raylib.py: end ----
+ }
+diff --git a/ray/src/helix/ray/internal/Metadata.hx b/ray/src/helix/ray/internal/Metadata.hx
+index 286ce97..013fa6e 100644
+--- a/ray/src/helix/ray/internal/Metadata.hx
++++ b/ray/src/helix/ray/internal/Metadata.hx
+@@ -13,13 +13,13 @@ class Metadata {
+ 	public static function register():Void {
+ 		Compiler.registerCustomMetadata({
+ 			metadata: ":unsupported",
+-			doc: "On a section's function: helix-ray won't have it, by design. The message says why and what to use instead; tools/gen_raylib.py declares the function in the facade as a macro whose call doesn't compile, reporting it (helix.platform.macros.Build.unsupported).",
++			doc: "On a section's function: helix-ray won't have it, by design. The message says why and what to use instead; tools/gen_raylib.py declares the function in the facade with raylib's signature, and wherever a program names it the build stops with the message (helix.ray.internal.Refusals).",
+ 			params: ["message"],
+ 			targets: [ClassField]
+ 		}, "helix-ray");
+ 		Compiler.registerCustomMetadata({
+ 			metadata: ":unimplemented",
+-			doc: "On a section's function: helix-ray doesn't have it yet. tools/gen_raylib.py declares it in the facade as a macro whose call doesn't compile, reporting the message (helix.platform.macros.Build.unimplemented).",
++			doc: "On a section's function: helix-ray doesn't have it yet. tools/gen_raylib.py declares it in the facade with raylib's signature, and wherever a program names it the build stops with the message (helix.ray.internal.Refusals).",
+ 			params: ["message"],
+ 			targets: [ClassField]
+ 		}, "helix-ray");
+diff --git a/tools/gen_raylib.py b/tools/gen_raylib.py
+index 3873211..af5791e 100644
+--- a/tools/gen_raylib.py
++++ b/tools/gen_raylib.py
+@@ -8,10 +8,10 @@ RRlgl. The sections (ray/src/helix/ray/raylib/) are read as the compiler describ
+   - its header's constants that aren't written by hand: raylib's enum values and number defines (ray/vendor/raylib/raylib_api.json,
+     raymath_api.json and rlgl_api.json, raylib's own description of its API, rlgl's and raymath's made by raylib's parser);
+   - its functions: every function of its sections as an inline forward with its doc comment, under a heading naming its module and file;
+-    then each function a program can't call, as a macro with raylib's signature whose call reports its message where it is
+-    (helix.platform.macros.Build), so the build stops there and the call still has raylib's type. A section's function marked
+-    `@:unsupported("...")` is one helix-ray won't have (Build.unsupported), one marked `@:unimplemented("...")` one it doesn't have yet
+-    (Build.unimplemented), and one of the header's that no section writes is declared `@:unimplemented` with "Not implemented".
++    then each function a program can't call, with raylib's signature, its meta and `@:deprecated` with the same message: wherever the
++    program names it, the build stops with the message there (helix.ray.internal.Refusals), and the call still has raylib's type. A
++    section's function marked `@:unsupported("...")` is one helix-ray won't have, one marked `@:unimplemented("...")` one it doesn't
++    have yet, and one of the header's that no section writes is declared `@:unimplemented` with "Not implemented".
+ 
+ So each file reads like its header, and a call costs nothing more. The sections are compiled with the files' generated functions left
+ out, so a stale file doesn't stop its own making. A struct of raylib's that helix-ray has no type for is written as a type of its own,
+@@ -57,7 +57,7 @@ TARGETS = {
+ SECTIONS = [s for sections, _, _ in TARGETS.values() for s in sections]
+ # A function of raylib's: capitalized, as raylib's names are, or rl and a capital, as rlgl's.
+ FUNCTION = re.compile(r'(?:rl)?[A-Z]\w*')
+-# The section metas that make a function a refusal, and the helper (helix.platform.macros.Build) each calls.
++# The section metas that make a function a refusal, and its kind.
+ REFUSALS = {':unsupported': 'unsupported', ':unimplemented': 'unimplemented'}
+ # A refusal's message naming what to use instead: "See Name(its parameters)".
+ INSTEAD = re.compile(r'See (\w+)\((.*?)\)')
+@@ -132,28 +132,11 @@ def wrapped(line):
+     return [line[:cut + 1], '\t\t\t' + line[cut + 2:]]
+ 
+ 
+-def qualified(haxe):
+-    """A Haxe type with helix-ray's types given their package, as an expression typed in the program's own scope needs them."""
+-    names = {p.stem for p in RAY.glob('*.hx')}
+-    return re.sub(r'\b([A-Z]\w*)\b', lambda m: f'helix.ray.{m.group(1)}' if m.group(1) in names else m.group(1), haxe)
+-
+-
+-def refusal(name, params, result, message, doc, kind='unimplemented', full=None):
+-    """A function helix-ray declares but doesn't have, as a macro: a call reports message where it is, through Build's kind (unimplemented
+-    or unsupported), and has raylib's result type; full is the result with its types' packages, else qualified from result."""
+-    rest = {n for n, t in params if re.match(r'(haxe\.extern\.)?Rest<', t)}
+-    signature = ', '.join(f'{n}:Array<Expr>' if n in rest else f'{n}:ExprOf<{t}>' for n, t in params)
+-    becomes = {'Void': '{}', 'Int': '(0 : Int)', 'Float': '(0.0 : Float)', 'Bool': '(false : Bool)'}.get(result, f'(null : {full or qualified(result)})')
+-    return [f'\t/** {doc} */', *wrapped(f'\tpublic static macro function {name}({signature}):ExprOf<{result}>'),
+-            *body(f'\t\treturn helix.platform.macros.Build.{kind}("{message}", macro{becomes if becomes.startswith("(") else " " + becomes});'), '']
+-
+-
+-def body(line):
+-    """A refusal's body as the formatter lays it out: past 160 columns, broken after the message, the result three tabs in."""
+-    if len(line.expandtabs(4)) <= 160:
+-        return [line]
+-    head, tail = line.rsplit(', macro', 1)
+-    return [head + ',', '\t\t\tmacro' + tail]
++def refusal(name, signature, result, message, doc, kind='unimplemented'):
++    """A function helix-ray declares but doesn't have, with raylib's signature: its kind's meta (unimplemented or unsupported) and
++    `@:deprecated` carry the message, which helix.ray.internal.Refusals reports wherever the program names it; the body is never run."""
++    return [f'\t/** {doc} */', f'\t@:{kind}("{message}")', f'\t@:deprecated("{message}")',
++            *wrapped(f'\tpublic static function {name}({signature}):{result}'), f'\t\tthrow "{name}: refused";', '']
+ 
+ 
+ def stub(f, header, callbacks):
+@@ -168,7 +151,8 @@ def stub(f, header, callbacks):
+         params.append((KEYWORDS.get(p['name'], p['name']), haxe_type(p['type'], callbacks, many)))
+     name = f['name']
+     doc = f"raylib's `{name}` ({header}): not in helix-ray yet, so a call to it doesn't compile. {sentence(f.get('description', ''))}".strip()
+-    return refusal(name, params, haxe_type(f['returnType'], callbacks, True), f'{name}: Not implemented', doc)
++    signature = ', '.join(f'{n}:{t}' for n, t in params)
++    return refusal(name, signature, haxe_type(f['returnType'], callbacks, True), f'{name}: Not implemented', doc)
+ 
+ 
+ def type_text(node, full=False):
+@@ -197,7 +181,7 @@ def type_text(node, full=False):
+ 
+ class Function:
+     """A section's function as the compiler describes it: its name, its parameters (name, type, written as Haxe writes each), its result,
+-    its doc comment, and the refusal its meta asks for, if any (Build's helper and the message)."""
++    its doc comment, and the refusal its meta asks for, if any (its kind and the message)."""
+ 
+     def __init__(self, node):
+         self.name = node.tag
+@@ -212,7 +196,6 @@ class Function:
+             written = f'{name.lstrip("?")}:{text} = {value}' if value else f'{name}:{text}'
+             self.params.append((name.lstrip('?'), text, written, type_text(kid, True)))
+         self.result = type_text(kids[-1])
+-        self.full_result = type_text(kids[-1], True)
+         doc = node.find('haxe_doc')
+         self.doc = doc.text if doc is not None else ''
+         self.refusal = None
+@@ -302,26 +285,24 @@ def generated(file_sections, functions, api, header, written):
+         out += ['', f'\t// ---- {title} (raylib/{name}.hx) ----', '']
+         for f in functions[name]:
+             if f.refusal:
+-                # Declared here as a macro, so the build stops at the program's call, with the section's message.
++                # Declared here, so the build stops wherever the program names it, with the section's message.
+                 kind, message = f.refusal
+                 doc = ' '.join(f.doc.split('@param')[0].split('@return')[0].split())
+-                (unsupported if kind == 'unsupported' else unimplemented).extend(
+-                    refusal(f.name, [(p[0], p[1]) for p in f.params], f.result, message, doc, kind, f.full_result))
++                (unsupported if kind == 'unsupported' else unimplemented).extend(refusal(f.name, f.signature(), f.result, message, doc, kind))
+                 continue
+             # A rest parameter is spread into the call, as its values, not passed as one.
+             call = f'{name}.{f.name}({", ".join("..." + p[0] if p[3].startswith("haxe.extern.Rest") else p[0] for p in f.params)})'
+             out += [f'\t/** {f.doc} */', *wrapped(f'\tpublic static inline function {f.name}({f.signature()}):{f.result}'),
+                     f'\t\t{call if f.result == "Void" else "return " + call};', '']
+-    out += ['\t#end', '']
+     if unsupported:
+-        out += [f"\t// ---- {header}'s functions helix-ray won't have: each refuses to compile, saying why and what to use ----", ''] + unsupported
++        out += ['', f"\t// ---- {header}'s functions helix-ray won't have: each refuses to compile, saying why and what to use ----", ''] + unsupported
+     missing = [f for f in api['functions'] if f['name'] not in written]
+     if unimplemented or missing:
+-        out += [f"\t// ---- {header}'s functions helix-ray doesn't have yet: each refuses to compile, saying so ----", ''] + unimplemented
++        out += ['', f"\t// ---- {header}'s functions helix-ray doesn't have yet: each refuses to compile, saying so ----", ''] + unimplemented
+         callbacks = callback_types(api)
+         for f in missing:
+             out += stub(f, header, callbacks)
+-    out += [END]
++    out += ['\t#end', '', END]
+     # As the formatter lays it out, so formatting leaves it as it is: no blank line just inside the #if or before its #end, and never two.
+     lines = []
+     for line in out:
