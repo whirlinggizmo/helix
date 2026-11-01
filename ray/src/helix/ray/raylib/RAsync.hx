@@ -689,7 +689,8 @@ class RAsync {
 	}
 
 	/** Reads the screen, answering as the next frame ends: helix-ray's own, in place of raylib's `LoadImageFromScreen`, as the GPU
-		answers later. The image is the framebuffer's size, rows top first, its alpha opaque, as raylib's.
+		answers later. The image is the framebuffer's size, as raylib 6.2's is (5.5 scaled the screen's size by its DPI instead), rows top
+		first, its alpha opaque.
 
 		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */

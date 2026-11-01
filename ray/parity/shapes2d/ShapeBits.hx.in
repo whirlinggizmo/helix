@@ -10,7 +10,6 @@ class ShapeBits {
 		var c = new Color(200, 100, 50, 255), c2 = new Color(10, 220, 30, 128), c3 = new Color(0, 40, 250, 255), c4 = new Color(255, 255, 0, 64);
 		var tex = LoadTextureFromImage(GenImageColor(32, 16, WHITE));
 		var cam = new Camera2D(V2(5, 7), V2(1, 2), 10, 2);
-		var cp = V2(-1, -1);
 		@CASES@
 		save();
 	}

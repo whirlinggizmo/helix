@@ -1,0 +1,30 @@
+import helix.ray.*;
+import helix.ray.Raylib.*;
+
+// scene.c.in's 2D scene of the shapes helix-ray takes from raylib 6.2, drawn by helix-ray; its third frame saved as helix.png. cases.py's
+// list is put into it.
+class Main {
+	static function V2(x:Float, y:Float):Vector2
+		return new Vector2(x, y);
+
+	static function R(x:Float, y:Float, w:Float, h:Float):Rectangle
+		return new Rectangle(x, y, w, h);
+
+	static function main():Void {
+		InitWindow(800, 600, "scene2d_62");
+		var spline2 = [V2(220, 220), V2(270, 260), V2(320, 210), V2(370, 270), V2(410, 220)];
+		var spline3 = [V2(430, 220), V2(480, 260), V2(530, 210), V2(580, 270), V2(620, 220)];
+		var cam = new Camera2D(V2(400, 500), V2(0, 0), 10, 2);
+		var frame = 0;
+		while (!WindowShouldClose()) {
+			BeginDrawing();
+			ClearBackground(RAYWHITE);
+			@CASES@
+			if (frame == 2)
+				TakeScreenshot("helix.png");
+			EndDrawing();
+			frame++;
+		}
+		CloseWindow();
+	}
+}

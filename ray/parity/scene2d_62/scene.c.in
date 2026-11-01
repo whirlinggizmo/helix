@@ -1,0 +1,23 @@
+// The 2D scene Main.hx.in draws of the shapes helix-ray takes from raylib 6.2, drawn by raylib, its third frame saved as ref.png;
+// cases.py's list is put into it.
+#include "raylib.h"
+#include "rlgl.h"
+#define V2(x, y) ((Vector2){ (float)(x), (float)(y) })
+#define R(x, y, w, h) ((Rectangle){ (float)(x), (float)(y), (float)(w), (float)(h) })
+int main(void) {
+    SetTraceLogLevel(LOG_WARNING);
+    InitWindow(800, 600, "scene2d_62");
+    Vector2 spline2[5] = { V2(220, 220), V2(270, 260), V2(320, 210), V2(370, 270), V2(410, 220) };
+    Vector2 spline3[5] = { V2(430, 220), V2(480, 260), V2(530, 210), V2(580, 270), V2(620, 220) };
+    Camera2D cam = { V2(400, 500), V2(0, 0), 10, 2 };
+    for (int frame = 0; frame < 3; frame++) {
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
+        @CASES@
+        rlDrawRenderBatchActive();
+        if (frame == 2) ExportImage(LoadImageFromScreen(), "ref.png");
+        EndDrawing();
+    }
+    CloseWindow();
+    return 0;
+}

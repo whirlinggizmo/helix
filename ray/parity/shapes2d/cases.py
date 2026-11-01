@@ -1,6 +1,7 @@
 """shapes2d: raylib 5.5's 2D shapes, read back from rlgl's batch, against helix-ray's frame; spline points and the 2D collisions after.
-One list for both sides (shared/gen.py's syntax): c, c2, c3 and c4 are colors, tex a 32 x 16 white texture, cam a Camera2D and cp
-CheckCollisionLines' out point, all made in ref.c.in and ShapeBits.hx.in."""
+The functions whose oracle is raylib 5.5 (docs/DECISIONS.md 24); those helix-ray takes from 6.2 are in shapes2d_62. One list for both
+sides (shared/gen.py's syntax): c, c2, c3 and c4 are colors, tex a 32 x 16 white texture and cam a Camera2D, all made in ref.c.in and
+ShapeBits.hx.in."""
 
 CASES = [
     ('pixel', 'DrawPixel(10, 12, c);'),
@@ -14,36 +15,11 @@ CASES = [
     ('linestripshort', 'DrawLineStrip(PTS(V2(160, 10)), 1, c);'),
     ('linebezier', 'DrawLineBezier(V2(240, 10), V2(300, 45), 3, c);'),
     ('linebezierback', 'DrawLineBezier(V2(300, 45), V2(240, 10), 1, c);'),
-    ('circle', 'DrawCircle(340, 30, 20, c);'),
-    ('circlev', 'DrawCircleV(V2(390.5, 30), 15, c);'),
-    ('circlezero', 'DrawCircleV(V2(10, 10), 0, c);'),
-    ('circlebig', 'DrawCircleV(V2(400, 300), 250, c);'),
-    ('sector', 'DrawCircleSector(V2(440, 30), 20, 0, 270, 12, c);'),
-    ('sectorswap', 'DrawCircleSector(V2(490, 30), 20, 300, 30, 8, c);'),
-    ('sectorzero', 'DrawCircleSector(V2(490, 30), 20, -45, 45, 3, c);'),
-    ('sector360', 'DrawCircleSector(V2(490, 30), 20, 350, 370, 5, c);'),
-    ('sectorauto', 'DrawCircleSector(V2(100, 100), 30, 0, 360, 0, c);'),
-    ('sectorauto2', 'DrawCircleSector(V2(100, 100), 7.5, 10, 100, 1, c);'),
-    ('sectorodd', 'DrawCircleSector(V2(100, 100), 12, 0, 90, 5, c);'),
-    ('sectortiny', 'DrawCircleSector(V2(100, 100), 0.3, 0, 180, 0, c);'),
-    ('sectorlines', 'DrawCircleSectorLines(V2(540, 30), 20, 45, 200, 10, c);'),
-    ('sectorlinesauto', 'DrawCircleSectorLines(V2(540, 30), 20, 200, 45, 0, c);'),
-    ('sectorlineszero', 'DrawCircleSectorLines(V2(540, 30), 20, -30, 30, 3, c);'),
     ('gradient', 'DrawCircleGradient(590, 30, 20, c, c2);'),
     ('circlelines', 'DrawCircleLines(640, 30, 20, c);'),
     ('circlelinesv', 'DrawCircleLinesV(V2(690.5, 30), 15, c);'),
     ('ellipse', 'DrawEllipse(40, 90, 30, 15, c);'),
     ('ellipselines', 'DrawEllipseLines(110, 90, 30, 15, c);'),
-    ('ring', 'DrawRing(V2(180, 90), 10, 25, 0, 360, 24, c);'),
-    ('ringswap', 'DrawRing(V2(240, 90), 10, 25, 200, 20, 12, c);'),
-    ('ringreversed', 'DrawRing(V2(240, 90), 25, 10, 30, 300, 0, c);'),
-    ('ringzero', 'DrawRing(V2(240, 90), 10, 25, -60, 60, 2, c);'),
-    ('ringsector', 'DrawRing(V2(240, 90), 0, 25, 0, 180, 6, c);'),
-    ('ringsame', 'DrawRing(V2(240, 90), 10, 25, 40, 40, 6, c);'),
-    ('ringnegative', 'DrawRing(V2(240, 90), -5, -10, 0, 90, 4, c);'),
-    ('ringlines', 'DrawRingLines(V2(300, 90), 10, 25, 30, 300, 12, c);'),
-    ('ringlinesauto', 'DrawRingLines(V2(300, 90), 25, 10, 300, 30, 0, c);'),
-    ('ringlinessector', 'DrawRingLines(V2(300, 90), 0, 25, -90, 90, 5, c);'),
     ('rectangle', 'DrawRectangle(340, 70, 40, 30, c);'),
     ('rectanglev', 'DrawRectangleV(V2(390.5, 70), V2(30, 30.25), c);'),
     ('rectanglerec', 'DrawRectangleRec(R(430, 70, 30, 40), c);'),
@@ -54,23 +30,13 @@ CASES = [
     ('gradientv', 'DrawRectangleGradientV(530, 70, 40, 40, c, c2);'),
     ('gradienth', 'DrawRectangleGradientH(580, 70, 40, 40, c, c2);'),
     ('gradientex', 'DrawRectangleGradientEx(R(630, 70, 40, 40), c, c2, c3, c4);'),
-    ('rectlines', 'DrawRectangleLines(680, 70, 40, 40, c);'),
-    ('rectlinesex', 'DrawRectangleLinesEx(R(730, 70, 50, 40), 5, c);'),
-    ('rectlinesexthick', 'DrawRectangleLinesEx(R(10, 10, 10, 6), 8, c); DrawRectangleLinesEx(R(10, 10, 6, 10), 8, c);'),
-    ('rounded', 'DrawRectangleRounded(R(10, 130, 80, 50), 0.4, 6, c);'),
-    ('rounded0', 'DrawRectangleRounded(R(10, 130, 80, 50), 0, 6, c);'),
-    ('rounded1', 'DrawRectangleRounded(R(10, 130, 80, 50), 1, 0, c);'),
-    ('rounded2', 'DrawRectangleRounded(R(10, 130, 50, 80), 2, 5, c);'),
-    ('roundedthin', 'DrawRectangleRounded(R(10, 130, 0.5, 80), 0.5, 5, c);'),
-    ('roundedlines', 'DrawRectangleRoundedLines(R(100, 130, 80, 50), 0.4, 6, c);'),
-    ('roundedlinesauto', 'DrawRectangleRoundedLines(R(100, 130, 80, 50), 1, 0, c);'),
     ('roundedlinesex', 'DrawRectangleRoundedLinesEx(R(190, 130, 80, 50), 0.5, 4, 4, c);'),
     ('roundedlinesex0', 'DrawRectangleRoundedLinesEx(R(190, 130, 80, 50), 0, 4, 4, c);'),
+    # Square and 0 thick: four bars of no width.
+    ('roundedlinesex0zero', 'DrawRectangleRoundedLinesEx(R(190, 130, 80, 50), 0, 4, 0, c);'),
     ('roundedlinesex1', 'DrawRectangleRoundedLinesEx(R(190, 130, 50, 80), 1, 0, 2.5, c);'),
     ('roundedlinesexthin', 'DrawRectangleRoundedLinesEx(R(190, 130, 80, 50), 0.3, 5, 0.5, c);'),
     ('roundedlinesexnegative', 'DrawRectangleRoundedLinesEx(R(190, 130, 80, 50), 0.3, 5, -3, c);'),
-    ('triangle', 'DrawTriangle(V2(300, 130), V2(290, 180), V2(340, 180), c);'),
-    ('trianglecw', 'DrawTriangle(V2(350, 130), V2(400, 180), V2(350, 180), c);'),
     ('trianglelines', 'DrawTriangleLines(V2(410, 130), V2(400, 180), V2(450, 180), c);'),
     ('fan', 'DrawTriangleFan(PTS(V2(480, 155), V2(480, 180), V2(510, 175), V2(515, 145), V2(490, 130)), 5, c);'),
     ('fanshort', 'DrawTriangleFan(PTS(V2(480, 155), V2(480, 180)), 2, c);'),
@@ -79,29 +45,23 @@ CASES = [
     ('poly', 'DrawPoly(V2(600, 155), 6, 25, 15, c);'),
     ('polytwo', 'DrawPoly(V2(600, 155), 2, 25, -40, c);'),
     ('polylines', 'DrawPolyLines(V2(660, 155), 5, 25, 0, c);'),
-    ('polylinesex', 'DrawPolyLinesEx(V2(720, 155), 7, 25, 10, 4, c);'),
-    ('polylinesexthick', 'DrawPolyLinesEx(V2(720, 155), 3, 25, 200, 30, c);'),
     ('splinelinear', 'DrawSplineLinear(PTS(V2(10, 220), V2(60, 260), V2(110, 210), V2(160, 270), V2(200, 220)), 5, 3, c);'),
     ('splinelinearrepeat', 'DrawSplineLinear(PTS(V2(10, 220), V2(60, 260), V2(60, 260), V2(160, 270)), 4, 2, c);'),
-    ('splinebasis', 'DrawSplineBasis(PTS(V2(220, 220), V2(270, 260), V2(320, 210), V2(370, 270), V2(410, 220)), 5, 3, c);'),
-    ('splinecatmullrom', 'DrawSplineCatmullRom(PTS(V2(430, 220), V2(480, 260), V2(530, 210), V2(580, 270), V2(620, 220)), 5, 3, c);'),
     ('splinequadratic', 'DrawSplineBezierQuadratic(PTS(V2(640, 270), V2(660, 200), V2(690, 270), V2(720, 200), V2(750, 270)), 5, 3, c);'),
     ('splinecubic', 'DrawSplineBezierCubic(PTS(V2(10, 280), V2(60, 240), V2(110, 290), V2(160, 280), V2(210, 240), V2(260, 290), V2(310, 280)), 7, 3, c);'),
-    ('splineshort', 'DrawSplineBasis(PTS(V2(1, 2), V2(3, 4), V2(5, 6)), 3, 3, c); DrawSplineBezierCubic(PTS(V2(1, 2), V2(3, 4), V2(5, 6)), 3, 3, c);'),
+    ('splineshort', 'DrawSplineBezierCubic(PTS(V2(1, 2), V2(3, 4), V2(5, 6)), 3, 3, c);'),
     ('segmentlinear', 'DrawSplineSegmentLinear(V2(10, 20), V2(50, 70), 6, c);'),
     ('segmentbasis', 'DrawSplineSegmentBasis(V2(10, 20), V2(50, 70), V2(90, 10), V2(130, 60), 4, c);'),
     ('segmentcatmullrom', 'DrawSplineSegmentCatmullRom(V2(10, 20), V2(50, 70), V2(90, 10), V2(130, 60), 4, c);'),
     ('segmentquadratic', 'DrawSplineSegmentBezierQuadratic(V2(10, 20), V2(50, 70), V2(90, 10), 2.5, c);'),
     ('segmentcubic', 'DrawSplineSegmentBezierCubic(V2(10, 20), V2(50, 70), V2(90, 10), V2(130, 60), 5, c);'),
     # The shapes texture: a part of a texture of its own, then back to the white pixel.
-    ('shapestexture', 'SetShapesTexture(tex, R(4, 2, 8, 6)); DrawRectangle(5, 6, 7, 8, c); DrawCircleSector(V2(20, 20), 9, 0, 90, 3, c); '
-        'DrawRing(V2(20, 20), 4, 9, 0, 90, 2, c); DrawPoly(V2(20, 20), 4, 9, 10, c); DrawPolyLinesEx(V2(20, 20), 4, 9, 10, 2, c); '
-        'DrawTriangle(V2(1, 1), V2(1, 9), V2(9, 9), c); DrawTriangleFan(PTS(V2(1, 1), V2(1, 9), V2(9, 9), V2(9, 1)), 4, c); '
-        'DrawRectangleGradientEx(R(1, 2, 3, 4), c, c2, c3, c4); DrawRectangleRounded(R(10, 10, 30, 20), 0.5, 3, c); '
+    ('shapestexture', 'SetShapesTexture(tex, R(4, 2, 8, 6)); DrawRectangle(5, 6, 7, 8, c); DrawPoly(V2(20, 20), 4, 9, 10, c); '
+        'DrawTriangleFan(PTS(V2(1, 1), V2(1, 9), V2(9, 9), V2(9, 1)), 4, c); DrawRectangleGradientEx(R(1, 2, 3, 4), c, c2, c3, c4); '
         'DrawRectangleRoundedLinesEx(R(10, 10, 30, 20), 0.5, 3, 3, c); DrawPixel(3, 3, c); SetShapesTexture(tex, R(0, 0, 0, 5)); DrawPixel(3, 3, c);'),
-    # Lines through a 2D camera: DrawRectangleLines reaches half a pixel past its corners at the camera's zoom.
-    ('camera', 'BeginMode2D(cam); DrawRectangleLines(10, 20, 30, 40, c); DrawRectangle(1, 2, 3, 4, c); DrawRectangleLines(-5, -5, 10, 10, c2);'),
-    ('cameraend', 'EndMode2D(); DrawRectangleLines(10, 20, 30, 40, c);'),
+    # A 2D camera.
+    ('camera', 'BeginMode2D(cam); DrawRectangle(1, 2, 3, 4, c); DrawLine(-5, -5, 10, 10, c2);'),
+    ('cameraend', 'EndMode2D(); DrawLine(10, 20, 30, 40, c);'),
     # Spline points and the 2D collisions.
     'vec2("linear", GetSplinePointLinear(V2(1, 2), V2(7, -4), 0.3));',
     'vec2("basis", GetSplinePointBasis(V2(10, 20), V2(50, 70), V2(90, 10), V2(130, 60), 0.3));',
@@ -139,12 +99,6 @@ CASES = [
     'flag("pointpoly2", CheckCollisionPointPoly(V2(5, 11), PTS(V2(0, 0), V2(10, 0), V2(10, 10), V2(0, 10)), 4));',
     'flag("pointpoly3", CheckCollisionPointPoly(V2(5, 5), PTS(V2(0, 0), V2(10, 10)), 2));',
     'flag("pointpoly4", CheckCollisionPointPoly(V2(5, 4), PTS(V2(0, 0), V2(10, 0), V2(5, 3), V2(10, 10), V2(0, 10)), 5));',
-    'flag("lines1", CheckCollisionLines(V2(0, 0), V2(10, 10), V2(0, 10), V2(10, 0), OUT(cp))); vec2("lines1at", cp);',
-    'flag("lines2", CheckCollisionLines(V2(0, 0), V2(10, 0), V2(0, 1), V2(10, 1), OUT(cp))); vec2("lines2at", cp);',
-    'flag("lines3", CheckCollisionLines(V2(0, 0), V2(4, 4), V2(0, 10), V2(10, 0), OUT(cp))); vec2("lines3at", cp);',
-    'flag("lines4", CheckCollisionLines(V2(5, -5), V2(5, 5), V2(0, 0), V2(10, 0), OUT(cp))); vec2("lines4at", cp);',
-    'flag("lines5", CheckCollisionLines(V2(0, 0), V2(5, 5), V2(5, 5), V2(10, 0), OUT(cp))); vec2("lines5at", cp);',
-    'flag("lines6", CheckCollisionLines(V2(0, 0), V2(10, 0), V2(5, 0), V2(15, 0), OUT(cp))); vec2("lines6at", cp);',
     'rect("rec1", GetCollisionRec(R(0, 0, 10, 10), R(5, 6, 10, 10)));',
     'rect("rec2", GetCollisionRec(R(0, 0, 10, 10), R(10, 6, 10, 10)));',
     'rect("rec3", GetCollisionRec(R(5, 6, 10, 10), R(0, 0, 10, 10)));',

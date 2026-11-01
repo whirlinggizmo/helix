@@ -82,6 +82,23 @@ class Parity {
 	public static function rect(name:String, r:Rectangle):Void
 		line('$name rect ${r.x} ${r.y} ${r.width} ${r.height}');
 
+	public static function color(name:String, c:Color):Void
+		line('$name color ${c.r} ${c.g} ${c.b} ${c.a}');
+
+	/** An image's size, format and mipmaps, then its first level's bytes in hex, 48 to a line, as parity.h's image prints them. */
+	public static function image(name:String, m:Image):Void {
+		var size = m.data == null ? 0 : Raylib.GetPixelDataSize(m.width, m.height, m.format);
+		line('$name image ${m.width} ${m.height} ${m.format} ${m.mipmaps} $size');
+		var i = 0;
+		while (i < size) {
+			var hex = new StringBuf();
+			for (k in i...(i + 48 < size ? i + 48 : size))
+				hex.add(StringTools.hex(m.data.get(k), 2).toLowerCase());
+			line('$name data #$hex');
+			i += 48;
+		}
+	}
+
 	public static function box(name:String, b:BoundingBox):Void
 		line('$name box ${b.min.x} ${b.min.y} ${b.min.z} ${b.max.x} ${b.max.y} ${b.max.z}');
 

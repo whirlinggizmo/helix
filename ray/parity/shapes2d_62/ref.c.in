@@ -1,0 +1,17 @@
+// raylib 6.2's 2D shapes helix-ray takes (read back from rlgl's batch), a spline point and the line test, printed by parity.h; cases.py's
+// list is put into it.
+#include "parity.h"
+
+int main(void) {
+    parity_open();
+    parity_depth = false;
+    // InitWindow gives the shapes the default font's white rectangle; helix-ray's start with the white pixel, raylib's own fallback.
+    SetShapesTexture((Texture2D){ 0 }, R(0, 0, 0, 0));
+    Color c = { 200, 100, 50, 255 }, c2 = { 10, 220, 30, 128 }, c3 = { 0, 40, 250, 255 }, c4 = { 255, 255, 0, 64 };
+    Texture2D tex = LoadTextureFromImage(GenImageColor(32, 16, WHITE));
+    Camera2D cam = { V2(5, 7), V2(1, 2), 10, 2 };
+    Vector2 cp = { -1, -1 };
+    @CASES@
+    parity_close();
+    return 0;
+}

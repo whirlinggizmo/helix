@@ -30,15 +30,18 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 
 | Suite | Oracle | Kind | What |
 |---|---|---|---|
-| `shapes2d` | 5.5 | values | every 2D Draw function's vertices as rlgl batches them, the spline points, the 2D collisions |
+| `shapes2d` | 5.5 | values | the 2D Draw functions' vertices as rlgl batches them, the spline points, the 2D collisions |
+| `shapes2d_62` | 6.2 | values | the 2D shapes 6.2 fixed or added, their vertices; the line test |
 | `shapes3d` | 5.5 | values | the 3D shapes and billboards, vertex for vertex |
 | `meshes` | 5.5 | values | the generated meshes, their tangents and bounds |
 | `collisions` | 5.5 | values | the 3D ray tests and collision checks |
 | `cameras` | 5.5 | values | the camera matrix, world to screen, screen to ray, and rcamera's moves, over 700 cameras |
 | `camera_update` | 5.5 | values | `UpdateCamera` in each mode over scripted input |
+| `images_62` | 6.2 | values | the image functions 6.2 fixed or added, their images byte for byte |
 | `animation` | 6.2 | values | glTF skeletons and animations, bone matrices, CPU skinning and blending |
 | `modular` | 6.2 | values | real-world models: Quaternius' modular woman, each part its own file, animated from a file of its own |
-| `scene2d` | 5.5 | pixels | a 2D scene of every Draw function, textures and text |
+| `scene2d` | 5.5 | pixels | a 2D scene of the Draw functions, textures and text |
+| `scene2d_62` | 6.2 | pixels | a 2D scene of the shapes 6.2 fixed or added |
 | `scene3d` | 5.5 | pixels | a 3D scene of the shapes, billboards, generated models and shaders |
 | `wires` | 5.5 | pixels | rlgl's render state: wires, culling, wire mode, the depth mask and test |
 | `skinning` | 6.2 | pixels | greenman skinned on the CPU, on the GPU and blended |
@@ -77,7 +80,8 @@ section's name (`cameras`: each camera's size, and whether it is regular or dege
 Within a section the lines are compared word by word. Words and integers must match. Other numbers must be within the bar, as
 |a - b| / max(1, |a|, |b|, scale). raylib computes in floats, helix-ray in doubles, so a few ulps of a float are the floor.
 
-`shared/parity.h` and `shared/Parity.hx` print raylib's batch and helix-ray's frame (`shape`), meshes, ray hits and values alike.
+`shared/parity.h` and `shared/Parity.hx` print raylib's batch and helix-ray's frame (`shape`), meshes, images (`image`, their bytes in hex), ray
+hits and values alike.
 `shared/StubGraphics.hx` is graphics that keeps nothing, and `shared/DiskFiles.hx` files from the working directory.
 
 ### Pixel suites
@@ -90,7 +94,7 @@ The C reference draws three frames and saves the third as `ref.png`. helix-ray's
 In a generated suite, add a line to its `cases.py`. A case is written once, in the syntax `shared/gen.py` describes: `V2`, `V3` and `R` as
 they are, `PTS(...)` and `PTS3(...)` for point arrays, `NEW(Type, ...)` for a struct, `OUT(x)` for a pointer, `LET(x, Type, e)` for a
 local. `('name', 'DrawThing(...);')` draws and prints the vertices. A value is printed by the printers (`hit("name", ...)`, `flag`,
-`vec2`, `rect`, `box`, `num`, `mesh`). What needs setting up (a texture, a camera) goes in the templates (`ref.c.in` or `scene.c.in`,
+`vec2`, `rect`, `box`, `num`, `color`, `mesh`, `image`). What needs setting up (a texture, a camera) goes in the templates (`ref.c.in` or `scene.c.in`,
 and `<Main>.hx.in`). A case that can't be written once is `{'c': ..., 'hx': ...}`. In a suite kept side by side, add the case to both, its
 lines named alike.
 

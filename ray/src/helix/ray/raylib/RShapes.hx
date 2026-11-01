@@ -191,11 +191,46 @@ class RShapes {
 		DrawTriangleStrip(points, 2 * SPLINE_SEGMENT_DIVISIONS + 2, color);
 	}
 
+	/** Draws a dashed line one pixel wide: dashes of a length with gaps of another between them, from the start; the last dash stops at
+		the end.
+
+		@param startPos  The start.
+		@param endPos  The end.
+		@param dashSize  Each dash's length, in pixels; 0 or less, or a line shorter than a dash and a gap, draws the line solid.
+		@param spaceSize  Each gap's length, in pixels.
+		@param color  The color. */
+	static function DrawLineDashed(startPos:Vector2, endPos:Vector2, dashSize:Int, spaceSize:Int, color:Color):Void {
+		var dx = endPos.x - startPos.x, dy = endPos.y - startPos.y;
+		var lineLength = Math.sqrt(dx * dx + dy * dy);
+		if (lineLength < dashSize + spaceSize || dashSize <= 0) {
+			DrawLineV(startPos, endPos, color);
+			return;
+		}
+		var invLineLength = 1 / lineLength;
+		var dirX = dx * invLineLength, dirY = dy * invLineLength;
+		var currentX = startPos.x,
+			currentY = startPos.y,
+			distanceTraveled = 0.;
+		rlBegin(RL_LINES);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		while (distanceTraveled < lineLength) {
+			var dashEndDist = distanceTraveled + dashSize;
+			if (dashEndDist > lineLength)
+				dashEndDist = lineLength;
+			rlVertex2f(currentX, currentY);
+			rlVertex2f(startPos.x + dashEndDist * dirX, startPos.y + dashEndDist * dirY);
+			distanceTraveled = dashEndDist + spaceSize;
+			currentX = startPos.x + distanceTraveled * dirX;
+			currentY = startPos.y + distanceTraveled * dirY;
+		}
+		rlEnd();
+	}
+
 	/** Draws a filled circle.
 
 		@param centerX  The center's x.
 		@param centerY  The center's y.
-		@param radius  The radius.
+		@param radius  The radius; 0 or less draws nothing.
 		@param color  The color. */
 	static function DrawCircle(centerX:Int, centerY:Int, radius:Float, color:Color):Void {
 		DrawCircleV(new Vector2(centerX, centerY), radius, color);
@@ -204,7 +239,7 @@ class RShapes {
 	/** Draws a filled circle.
 
 		@param center  The center.
-		@param radius  The radius.
+		@param radius  The radius; 0 or less draws nothing.
 		@param color  The color. */
 	static function DrawCircleV(center:Vector2, radius:Float, color:Color):Void {
 		DrawCircleSector(center, radius, 0, 360, 36, color);
@@ -213,19 +248,21 @@ class RShapes {
 	/** Draws a filled slice of a circle, clockwise from one angle to another.
 
 		@param center  The center.
-		@param radius  The radius.
+		@param radius  The radius; 0 or less draws nothing.
 		@param startAngle  The angle it starts at, in degrees from the right.
-		@param endAngle  The angle it ends at.
+		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
 		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
 		@param color  The color. */
 	static function DrawCircleSector(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void {
-		if (radius <= 0)
-			radius = .1;
+		if (startAngle == endAngle || radius <= 0)
+			return;
 		if (endAngle < startAngle) {
 			var t = startAngle;
 			startAngle = endAngle;
 			endAngle = t;
 		}
+		if (endAngle - startAngle >= 360)
+			endAngle = startAngle + 360;
 		segments = arcSegments(radius, startAngle, endAngle, segments);
 		var stepLength = (endAngle - startAngle) / segments,
 			angle = startAngle;
@@ -253,40 +290,256 @@ class RShapes {
 		rlSetTexture(0);
 	}
 
-	/** Draws a slice of a circle's outline, one pixel wide, with lines from the center to its ends.
+	/** Draws a slice of a circle's outline, one pixel wide, with lines from the center to its ends; a whole turn has none.
 
 		@param center  The center.
-		@param radius  The radius.
+		@param radius  The radius; 0 or less draws nothing.
 		@param startAngle  The angle it starts at, in degrees from the right.
-		@param endAngle  The angle it ends at.
+		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
 		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
 		@param color  The color. */
 	static function DrawCircleSectorLines(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void {
-		if (radius <= 0)
-			radius = .1;
+		if (startAngle == endAngle || radius <= 0)
+			return;
 		if (endAngle < startAngle) {
 			var t = startAngle;
 			startAngle = endAngle;
 			endAngle = t;
+		}
+		var showCapLines = true;
+		if (endAngle - startAngle >= 360) {
+			showCapLines = false;
+			endAngle = startAngle + 360;
 		}
 		segments = arcSegments(radius, startAngle, endAngle, segments);
 		var stepLength = (endAngle - startAngle) / segments,
 			angle = startAngle;
 		var cx = center.x, cy = center.y;
 		rlBegin(RL_LINES);
-		rlColor4ub(color.r, color.g, color.b, color.a);
-		rlVertex2f(cx, cy);
-		rlVertex2f(arcX(cx, angle, radius), arcY(cy, angle, radius));
+		if (showCapLines) {
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			rlVertex2f(cx, cy);
+			rlVertex2f(arcX(cx, angle, radius), arcY(cy, angle, radius));
+		}
 		for (i in 0...segments) {
 			rlColor4ub(color.r, color.g, color.b, color.a);
 			rlVertex2f(arcX(cx, angle, radius), arcY(cy, angle, radius));
 			rlVertex2f(arcX(cx, angle + stepLength, radius), arcY(cy, angle + stepLength, radius));
 			angle += stepLength;
 		}
-		rlColor4ub(color.r, color.g, color.b, color.a);
-		rlVertex2f(cx, cy);
-		rlVertex2f(arcX(cx, angle, radius), arcY(cy, angle, radius));
+		if (showCapLines) {
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			rlVertex2f(cx, cy);
+			rlVertex2f(arcX(cx, angle, radius), arcY(cy, angle, radius));
+		}
 		rlEnd();
+	}
+
+	/** Draws a slice of a circle's outline of a thickness, inside it, or outside it for a negative thickness, with its edges from the
+		center to its ends that thick too; a whole turn drawn outside has none.
+
+		@param center  The center.
+		@param radius  The radius; 0 or less draws nothing.
+		@param startAngle  The angle it starts at, in degrees from the right.
+		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
+		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+		@param thick  The outline's thickness, measured across its curve's straight edges; one so thick it meets itself fills the slice.
+		@param color  The color. */
+	static function DrawCircleSectorLinesEx(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, thick:Float, color:Color):Void {
+		if (startAngle == endAngle || radius <= 0)
+			return;
+		if (endAngle < startAngle) {
+			var t = startAngle;
+			startAngle = endAngle;
+			endAngle = t;
+		}
+		var showCapLines = true;
+		if (endAngle - startAngle >= 360) {
+			showCapLines = thick >= 0;
+			endAngle = startAngle + 360;
+		}
+		segments = arcSegments(radius, startAngle, endAngle, segments);
+		var stepLength = (endAngle - startAngle) / segments,
+			angle = startAngle;
+		// The curve is a polygon, so the thickness is widened to stay as thick across its straight edges.
+		var apothem = radius * Math.cos(DEG2RAD * ((endAngle - startAngle) / 2) / segments);
+		var radiusThick = thick * (radius / apothem);
+		var outerRadius = radius, innerRadius = radius - radiusThick;
+		if (thick >= 0) {
+			if (thick >= innerRadius) {
+				DrawCircleSector(center, radius, startAngle, endAngle, segments, color);
+				return;
+			}
+		} else {
+			var t = outerRadius;
+			outerRadius = innerRadius;
+			innerRadius = t;
+		}
+		inline function at(angle:Float, r:Float):Vector2
+			return new Vector2(arcX(center.x, angle, r), arcY(center.y, angle, r));
+		inline function lerp(a:Vector2, b:Vector2, t:Float):Vector2
+			return new Vector2(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+		inline function turned(v:Vector2, by:Float):Vector2
+			return new Vector2(Math.cos(by) * v.x - Math.sin(by) * v.y, Math.sin(by) * v.x + Math.cos(by) * v.y);
+		// The caps' corners, as raylib's sketch names them: C0 to C2 along the start's edge, C3 to C5 along the end's.
+		var c0 = new Vector2(),
+			c1 = new Vector2(),
+			c2 = new Vector2(),
+			c3 = new Vector2(),
+			c4 = new Vector2(),
+			c5 = new Vector2();
+		// The steps along the curve before C1 and, when the caps' inner corner S1 is outside the circle, before C0.
+		var stepsBeforeC1 = 0, s1OutsideOfCircle = false, stepsBeforeC0 = 0;
+		if (showCapLines) {
+			if (thick >= 0) {
+				c2 = at(startAngle, innerRadius);
+				c5 = at(endAngle, innerRadius);
+				// C1 and C4 are on the inner edge, the thickness in from the start's and the end's edges.
+				var c1Angle = RAD2DEG * Math.asin(thick / innerRadius);
+				if (c1Angle / stepLength >= segments) {
+					DrawCircleSector(center, radius, startAngle, endAngle, segments, color);
+					return;
+				}
+				stepsBeforeC1 = Std.int(c1Angle / stepLength);
+				var vertexAngleBeforeC1 = stepLength * stepsBeforeC1,
+					vertexAngleAfterC1 = stepLength * (stepsBeforeC1 + 1);
+				var p1 = new Vector2(Math.cos(DEG2RAD * vertexAngleBeforeC1) * innerRadius, Math.sin(DEG2RAD * vertexAngleBeforeC1) * innerRadius);
+				var p2 = new Vector2(Math.cos(DEG2RAD * vertexAngleAfterC1) * innerRadius, Math.sin(DEG2RAD * vertexAngleAfterC1) * innerRadius);
+				var t = (p1.y - thick) / (p1.y - p2.y);
+				c1 = lerp(at(startAngle + vertexAngleBeforeC1, innerRadius), at(startAngle + vertexAngleAfterC1, innerRadius), t);
+				c4 = lerp(at(endAngle - vertexAngleBeforeC1, innerRadius), at(endAngle - vertexAngleAfterC1, innerRadius), t);
+				// S1, where the caps' inner edges meet, goes out from the center as the slice widens.
+				var innerAngleBetweenCapEnds = ((endAngle - 90) - (startAngle + 90)) / 2;
+				var s1Length = thick / Math.cos(DEG2RAD * innerAngleBetweenCapEnds);
+				if (innerAngleBetweenCapEnds < 90 && s1Length <= innerRadius) {
+					c0 = at((endAngle + startAngle) / 2, s1Length);
+					c3 = c0;
+					p1 = new Vector2(c1.x - center.x, c1.y - center.y);
+					p2 = new Vector2(c0.x - center.x, c0.y - center.y);
+					var dot = p1.x * p2.x + p1.y * p2.y,
+						det = p1.x * p2.y - p1.y * p2.x;
+					// C1 and C4 past S1: the caps cover the whole slice.
+					if (Math.atan2(det, dot) < 0) {
+						DrawCircleSector(center, radius, startAngle, endAngle, segments, color);
+						return;
+					}
+				} else {
+					if (endAngle - startAngle <= 180) {
+						DrawCircleSector(center, radius, startAngle, endAngle, segments, color);
+						return;
+					}
+					// S1 outside the circle: the caps' inner edges stop at the curve, at C0 and C3.
+					s1OutsideOfCircle = true;
+					stepsBeforeC0 = Std.int((180 + RAD2DEG * Math.asin(thick / -innerRadius)) / stepLength);
+					var vertexAngleBeforeC0 = stepLength * stepsBeforeC0,
+						vertexAngleAfterC0 = stepLength * (stepsBeforeC0 + 1);
+					p1 = new Vector2(Math.cos(DEG2RAD * vertexAngleBeforeC0) * innerRadius, Math.sin(DEG2RAD * vertexAngleBeforeC0) * innerRadius);
+					p2 = new Vector2(Math.cos(DEG2RAD * vertexAngleAfterC0) * innerRadius, Math.sin(DEG2RAD * vertexAngleAfterC0) * innerRadius);
+					t = (p1.y - thick) / (p1.y - p2.y);
+					c0 = lerp(at(startAngle + vertexAngleBeforeC0, innerRadius), at(startAngle + vertexAngleAfterC0, innerRadius), t);
+					c3 = lerp(at(endAngle - vertexAngleBeforeC0, innerRadius), at(endAngle - vertexAngleAfterC0, innerRadius), t);
+				}
+			} else {
+				var outerAngleBetweenCapEnds = ((endAngle + 90) - (startAngle - 90)) / 2;
+				var s1Length = thick / Math.cos(DEG2RAD * outerAngleBetweenCapEnds);
+				c0 = at(180 + (endAngle + startAngle) / 2, s1Length);
+				c3 = c0;
+				c2 = at(startAngle, outerRadius);
+				c5 = at(endAngle, outerRadius);
+				// Turned so the start is at 0 degrees about the center.
+				var c0Turned = turned(new Vector2(c0.x - center.x, c0.y - center.y), -DEG2RAD * startAngle);
+				var circleVertex1 = turned(new Vector2(c2.x - center.x, c2.y - center.y), -DEG2RAD * startAngle);
+				var circleVertex2 = turned(new Vector2(Math.cos(DEG2RAD * (startAngle + stepLength)) * outerRadius,
+					Math.sin(DEG2RAD * (startAngle + stepLength)) * outerRadius),
+					-DEG2RAD * startAngle);
+				// Where the curve's first edge meets the line across from C0.
+				var rise = circleVertex1.y - circleVertex2.y,
+					run = circleVertex1.x - circleVertex2.x;
+				var c1Run = ((c0Turned.y - circleVertex1.y) / rise) * run;
+				var c1DistanceFromC0 = (circleVertex1.x + c1Run) - c0Turned.x;
+				c1 = new Vector2(c0.x + Math.cos(DEG2RAD * startAngle) * c1DistanceFromC0, c0.y + Math.sin(DEG2RAD * startAngle) * c1DistanceFromC0);
+				c4 = new Vector2(c0.x + Math.cos(DEG2RAD * endAngle) * c1DistanceFromC0, c0.y + Math.sin(DEG2RAD * endAngle) * c1DistanceFromC0);
+				if (c1DistanceFromC0 < 0) {
+					// The caps cross each other: all four meet where the end's first edge crosses C1 to C2.
+					var circleVertex3 = turned(new Vector2(c5.x - center.x, c5.y - center.y), -DEG2RAD * startAngle);
+					var circleVertex4 = turned(new Vector2(Math.cos(DEG2RAD * (endAngle - stepLength)) * outerRadius,
+						Math.sin(DEG2RAD * (endAngle - stepLength)) * outerRadius),
+						-DEG2RAD * startAngle);
+					var c1Turned = new Vector2(c0Turned.x + c1DistanceFromC0, c0Turned.y);
+					circleVertex1 = new Vector2(circleVertex1.x - circleVertex2.x, circleVertex1.y - circleVertex2.y);
+					circleVertex3 = new Vector2(circleVertex3.x - circleVertex2.x, circleVertex3.y - circleVertex2.y);
+					circleVertex4 = new Vector2(circleVertex4.x - circleVertex2.x, circleVertex4.y - circleVertex2.y);
+					c1Turned = new Vector2(c1Turned.x - circleVertex2.x, c1Turned.y - circleVertex2.y);
+					var theta = Math.atan2(circleVertex1.y, circleVertex1.x);
+					circleVertex1 = turned(circleVertex1, -theta);
+					circleVertex3 = turned(circleVertex3, -theta);
+					circleVertex4 = turned(circleVertex4, -theta);
+					c1Turned = turned(c1Turned, -theta);
+					rise = circleVertex3.y - circleVertex4.y;
+					run = circleVertex3.x - circleVertex4.x;
+					var targetX = circleVertex3.x + (-circleVertex3.y / rise) * run;
+					var t = (c1Turned.x - targetX) / (c1Turned.x - circleVertex1.x);
+					c1 = lerp(c1, c2, t);
+					c4 = c1;
+					c0 = c1;
+					c3 = c1;
+				}
+				// Swapped for the winding.
+				var temp = c0;
+				c0 = c2;
+				c2 = temp;
+				temp = c3;
+				c3 = c5;
+				c5 = temp;
+			}
+		}
+		rlSetTexture(GetShapesTexture().id);
+		rlBegin(RL_QUADS);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		// The curve, then the caps, then what fills between the caps and the curve.
+		for (i in 0...segments) {
+			outlineQuad(at(angle, outerRadius), at(angle, innerRadius), at(angle + stepLength, innerRadius), at(angle + stepLength, outerRadius));
+			angle += stepLength;
+		}
+		if (showCapLines) {
+			outlineQuad(center, c0, c1, c2);
+			outlineQuad(center, c5, c4, c3);
+			if (thick >= 0) {
+				if (stepsBeforeC1 > 0) {
+					angle = 0;
+					for (i in 0...Std.int(stepsBeforeC1 / 2)) {
+						outlineQuad(c1, at(startAngle + (angle + stepLength * 2), innerRadius), at(startAngle + (angle + stepLength), innerRadius),
+							at(startAngle + angle, innerRadius));
+						outlineQuad(c4, at(endAngle - angle, innerRadius), at(endAngle - (angle + stepLength), innerRadius),
+							at(endAngle - (angle + stepLength * 2), innerRadius));
+						angle += stepLength * 2;
+					}
+					if (stepsBeforeC1 % 2 == 1) {
+						outlineQuad(c1, c1, at(startAngle + (angle + stepLength), innerRadius), at(startAngle + angle, innerRadius));
+						outlineQuad(c4, c4, at(endAngle - angle, innerRadius), at(endAngle - (angle + stepLength), innerRadius));
+					}
+				}
+				if (s1OutsideOfCircle) {
+					var verticesBetweenC0andC3 = (segments - stepsBeforeC0 * 2) - 1;
+					if (verticesBetweenC0andC3 == 0)
+						outlineQuad(center, center, c3, c0);
+					else {
+						outlineQuad(center, center, at(startAngle + stepLength * (stepsBeforeC0 + 1), innerRadius), c0);
+						outlineQuad(center, center, c3, at(endAngle - stepLength * (stepsBeforeC0 + 1), innerRadius));
+						verticesBetweenC0andC3 -= 1;
+						angle = startAngle + stepLength * (stepsBeforeC0 + 1);
+						for (i in 0...Std.int(verticesBetweenC0andC3 / 2)) {
+							outlineQuad(center, at(angle + stepLength * 2, innerRadius), at(angle + stepLength, innerRadius), at(angle, innerRadius));
+							angle += stepLength * 2;
+						}
+						if (verticesBetweenC0andC3 % 2 == 1)
+							outlineQuad(center, center, at(angle + stepLength, innerRadius), at(angle, innerRadius));
+					}
+				}
+			}
+		}
+		rlEnd();
+		rlSetTexture(0);
 	}
 
 	/** Draws a filled circle that blends from one color at its center to another at its edge.
@@ -339,6 +592,16 @@ class RShapes {
 		rlEnd();
 	}
 
+	/** Draws a circle's outline of a thickness, inside it: a ring of 36 segments from the radius less the thickness to the radius.
+
+		@param center  The center.
+		@param radius  The radius.
+		@param thick  The thickness; more than the radius draws a filled circle, and a negative one an outline that thick outside it.
+		@param color  The color. */
+	static function DrawCircleLinesEx(center:Vector2, radius:Float, thick:Float, color:Color):Void {
+		DrawRing(center, radius - thick, radius, 0, 360, 36, color);
+	}
+
 	/** Draws a filled ellipse.
 
 		@param centerX  The center's x.
@@ -347,13 +610,23 @@ class RShapes {
 		@param radiusV  The radius up and down.
 		@param color  The color. */
 	static function DrawEllipse(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void {
+		DrawEllipseV(new Vector2(centerX, centerY), radiusH, radiusV, color);
+	}
+
+	/** Draws a filled ellipse.
+
+		@param center  The center.
+		@param radiusH  The radius across.
+		@param radiusV  The radius up and down.
+		@param color  The color. */
+	static function DrawEllipseV(center:Vector2, radiusH:Float, radiusV:Float, color:Color):Void {
 		rlBegin(RL_TRIANGLES);
 		var i = 0;
 		while (i < 360) {
 			rlColor4ub(color.r, color.g, color.b, color.a);
-			rlVertex2f(centerX, centerY);
-			rlVertex2f(arcX(centerX, i + 10, radiusH), arcY(centerY, i + 10, radiusV));
-			rlVertex2f(arcX(centerX, i, radiusH), arcY(centerY, i, radiusV));
+			rlVertex2f(center.x, center.y);
+			rlVertex2f(arcX(center.x, i + 10, radiusH), arcY(center.y, i + 10, radiusV));
+			rlVertex2f(arcX(center.x, i, radiusH), arcY(center.y, i, radiusV));
 			i += 10;
 		}
 		rlEnd();
@@ -367,24 +640,75 @@ class RShapes {
 		@param radiusV  The radius up and down.
 		@param color  The color. */
 	static function DrawEllipseLines(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void {
+		DrawEllipseLinesV(new Vector2(centerX, centerY), radiusH, radiusV, color);
+	}
+
+	/** Draws an ellipse's outline, one pixel wide.
+
+		@param center  The center.
+		@param radiusH  The radius across.
+		@param radiusV  The radius up and down.
+		@param color  The color. */
+	static function DrawEllipseLinesV(center:Vector2, radiusH:Float, radiusV:Float, color:Color):Void {
 		rlBegin(RL_LINES);
 		var i = 0;
 		while (i < 360) {
 			rlColor4ub(color.r, color.g, color.b, color.a);
-			rlVertex2f(arcX(centerX, i + 10, radiusH), arcY(centerY, i + 10, radiusV));
-			rlVertex2f(arcX(centerX, i, radiusH), arcY(centerY, i, radiusV));
+			rlVertex2f(arcX(center.x, i + 10, radiusH), arcY(center.y, i + 10, radiusV));
+			rlVertex2f(arcX(center.x, i, radiusH), arcY(center.y, i, radiusV));
 			i += 10;
 		}
 		rlEnd();
+	}
+
+	/** Draws an ellipse's outline of a thickness, inside it, or outside it for a negative thickness: 36 segments, each radius less the
+		thickness to the radius.
+
+		@param center  The center.
+		@param radiusH  The radius across.
+		@param radiusV  The radius up and down.
+		@param thick  The thickness; as much as either radius draws a filled ellipse.
+		@param color  The color. */
+	static function DrawEllipseLinesEx(center:Vector2, radiusH:Float, radiusV:Float, thick:Float, color:Color):Void {
+		var outerRadiusH = radiusH,
+			innerRadiusH = radiusH - thick,
+			outerRadiusV = radiusV,
+			innerRadiusV = radiusV - thick;
+		if (thick >= 0) {
+			if (innerRadiusH <= 0 || innerRadiusV <= 0) {
+				DrawEllipseV(center, radiusH, radiusV, color);
+				return;
+			}
+		} else {
+			var t = outerRadiusH;
+			outerRadiusH = innerRadiusH;
+			innerRadiusH = t;
+			t = outerRadiusV;
+			outerRadiusV = innerRadiusV;
+			innerRadiusV = t;
+		}
+		rlSetTexture(GetShapesTexture().id);
+		rlBegin(RL_QUADS);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		var i = 0;
+		while (i < 360) {
+			shapeVertex(shapeU0, shapeV0, arcX(center.x, i, innerRadiusH), arcY(center.y, i, innerRadiusV));
+			shapeVertex(shapeU0, shapeV1, arcX(center.x, i + 10, innerRadiusH), arcY(center.y, i + 10, innerRadiusV));
+			shapeVertex(shapeU1, shapeV1, arcX(center.x, i + 10, outerRadiusH), arcY(center.y, i + 10, outerRadiusV));
+			shapeVertex(shapeU1, shapeV0, arcX(center.x, i, outerRadiusH), arcY(center.y, i, outerRadiusV));
+			i += 10;
+		}
+		rlEnd();
+		rlSetTexture(0);
 	}
 
 	/** Draws a filled ring, or a slice of one, clockwise from one angle to another.
 
 		@param center  The center.
 		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle.
-		@param outerRadius  The radius of its edge.
+		@param outerRadius  The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
 		@param startAngle  The angle it starts at, in degrees from the right.
-		@param endAngle  The angle it ends at; the same as the start draws nothing.
+		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
 		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
 		@param color  The color. */
 	static function DrawRing(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void {
@@ -394,14 +718,16 @@ class RShapes {
 			var t = outerRadius;
 			outerRadius = innerRadius;
 			innerRadius = t;
-			if (outerRadius <= 0)
-				outerRadius = .1;
 		}
+		if (outerRadius <= 0)
+			return;
 		if (endAngle < startAngle) {
 			var t = startAngle;
 			startAngle = endAngle;
 			endAngle = t;
 		}
+		if (endAngle - startAngle >= 360)
+			endAngle = startAngle + 360;
 		segments = arcSegments(outerRadius, startAngle, endAngle, segments);
 		if (innerRadius <= 0) {
 			DrawCircleSector(center, outerRadius, startAngle, endAngle, segments, color);
@@ -424,13 +750,13 @@ class RShapes {
 		rlSetTexture(0);
 	}
 
-	/** Draws a ring's outline, or a slice of one, one pixel wide.
+	/** Draws a ring's outline, or a slice of one, one pixel wide, with lines across its ends; a whole turn has none.
 
 		@param center  The center.
 		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle.
-		@param outerRadius  The radius of its edge.
+		@param outerRadius  The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
 		@param startAngle  The angle it starts at, in degrees from the right.
-		@param endAngle  The angle it ends at; the same as the start draws nothing.
+		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
 		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
 		@param color  The color. */
 	static function DrawRingLines(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void {
@@ -440,13 +766,18 @@ class RShapes {
 			var t = outerRadius;
 			outerRadius = innerRadius;
 			innerRadius = t;
-			if (outerRadius <= 0)
-				outerRadius = .1;
 		}
+		if (outerRadius <= 0)
+			return;
 		if (endAngle < startAngle) {
 			var t = startAngle;
 			startAngle = endAngle;
 			endAngle = t;
+		}
+		var showCapLines = true;
+		if (endAngle - startAngle >= 360) {
+			showCapLines = false;
+			endAngle = startAngle + 360;
 		}
 		segments = arcSegments(outerRadius, startAngle, endAngle, segments);
 		if (innerRadius <= 0) {
@@ -457,9 +788,11 @@ class RShapes {
 			angle = startAngle;
 		var cx = center.x, cy = center.y;
 		rlBegin(RL_LINES);
-		rlColor4ub(color.r, color.g, color.b, color.a);
-		rlVertex2f(arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius));
-		rlVertex2f(arcX(cx, angle, innerRadius), arcY(cy, angle, innerRadius));
+		if (showCapLines) {
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			rlVertex2f(arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius));
+			rlVertex2f(arcX(cx, angle, innerRadius), arcY(cy, angle, innerRadius));
+		}
 		for (i in 0...segments) {
 			rlColor4ub(color.r, color.g, color.b, color.a);
 			rlVertex2f(arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius));
@@ -468,10 +801,267 @@ class RShapes {
 			rlVertex2f(arcX(cx, angle + stepLength, innerRadius), arcY(cy, angle + stepLength, innerRadius));
 			angle += stepLength;
 		}
-		rlColor4ub(color.r, color.g, color.b, color.a);
-		rlVertex2f(arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius));
-		rlVertex2f(arcX(cx, angle, innerRadius), arcY(cy, angle, innerRadius));
+		if (showCapLines) {
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			rlVertex2f(arcX(cx, angle, outerRadius), arcY(cy, angle, outerRadius));
+			rlVertex2f(arcX(cx, angle, innerRadius), arcY(cy, angle, innerRadius));
+		}
 		rlEnd();
+	}
+
+	/** Draws a ring's outline, or a slice of one, of a thickness: inside its edge and outside its hole, or the other way for a negative
+		thickness, with its ends that thick too; a whole turn drawn outside has no ends.
+
+		@param center  The center.
+		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle (`DrawCircleSectorLinesEx`) for a negative
+			thickness.
+		@param outerRadius  The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
+		@param startAngle  The angle it starts at, in degrees from the right.
+		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
+		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+		@param thick  The outline's thickness, measured across its curve's straight edges; one so thick it meets itself fills the ring.
+		@param color  The color. */
+	static function DrawRingLinesEx(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int, thick:Float,
+			color:Color):Void {
+		if (startAngle == endAngle)
+			return;
+		if (outerRadius < innerRadius) {
+			var t = outerRadius;
+			outerRadius = innerRadius;
+			innerRadius = t;
+		}
+		if (outerRadius <= 0)
+			return;
+		if (endAngle < startAngle) {
+			var t = startAngle;
+			startAngle = endAngle;
+			endAngle = t;
+		}
+		var showCapLines = true;
+		if (endAngle - startAngle >= 360) {
+			showCapLines = thick >= 0;
+			endAngle = startAngle + 360;
+		}
+		segments = arcSegments(outerRadius, startAngle, endAngle, segments);
+		var stepLength = (endAngle - startAngle) / segments;
+		// The curve is a polygon, so the thickness is widened to stay as thick across its straight edges.
+		var apothem = outerRadius * Math.cos(DEG2RAD * ((endAngle - startAngle) / 2) / segments);
+		var radiusThick = thick * (outerRadius / apothem);
+		// Two rings are drawn, so four radii, farthest first: outerOuterRadius, innerOuterRadius, outerInnerRadius, innerInnerRadius.
+		var innerOuterRadius = 0.,
+			outerOuterRadius = 0.,
+			innerInnerRadius = 0.,
+			outerInnerRadius = 0.;
+		if (thick >= 0) {
+			innerRadius = Math.max(0, innerRadius);
+			if (radiusThick > (outerRadius - innerRadius) / 2) {
+				DrawRing(center, innerRadius, outerRadius, startAngle, endAngle, segments, color);
+				return;
+			}
+			innerInnerRadius = innerRadius;
+			outerInnerRadius = innerInnerRadius + radiusThick;
+			outerOuterRadius = outerRadius;
+			innerOuterRadius = outerOuterRadius - radiusThick;
+		} else {
+			if (innerRadius <= 0) {
+				DrawCircleSectorLinesEx(center, outerRadius, startAngle, endAngle, segments, thick, color);
+				return;
+			}
+			outerInnerRadius = innerRadius;
+			innerInnerRadius = Math.max(0, outerInnerRadius + radiusThick);
+			innerOuterRadius = outerRadius;
+			outerOuterRadius = innerOuterRadius - radiusThick;
+		}
+		inline function at(angle:Float, r:Float):Vector2
+			return new Vector2(arcX(center.x, angle, r), arcY(center.y, angle, r));
+		inline function lerp(a:Vector2, b:Vector2, t:Float):Vector2
+			return new Vector2(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+		// For a thickness of 0 or more: the steps along each curve the caps cover, and where the caps' last edges cross the curves.
+		var stepsBeforeInner = 0, stepsBeforeOuter = 0, tInner = 0., tOuter = 0., innerAnglesCrossEachOther = false;
+		// For a negative one: the caps' outer corners, and where the caps cross each other, if they do.
+		var cap1SecondInnerVertex = new Vector2(),
+			cap1SecondOuterVertex = new Vector2(),
+			cap2SecondInnerVertex = new Vector2(),
+			cap2SecondOuterVertex = new Vector2();
+		var capsIntersect = false, capIntersectionVertex = new Vector2();
+		if (showCapLines) {
+			if (thick >= 0) {
+				// The angles of arcs the thickness long along the inner and outer curves.
+				var cap1InnerAngleEnd = RAD2DEG * (thick / outerInnerRadius);
+				var cap1OuterAngleEnd = RAD2DEG * (thick / innerOuterRadius);
+				if (endAngle - startAngle < cap1OuterAngleEnd * 2) {
+					DrawRing(center, innerRadius, outerRadius, startAngle, endAngle, segments, color);
+					return;
+				}
+				if (endAngle - startAngle < cap1InnerAngleEnd * 2)
+					innerAnglesCrossEachOther = true;
+				stepsBeforeInner = Std.int(cap1InnerAngleEnd / stepLength);
+				stepsBeforeOuter = Std.int(cap1OuterAngleEnd / stepLength);
+				// Where each arc's end crosses the curve's edge it falls on, the arc's end turned to 0 degrees about the center.
+				var beforeInnerY = Math.sin(DEG2RAD * (stepsBeforeInner * stepLength - cap1InnerAngleEnd)) * outerInnerRadius;
+				var afterInnerY = Math.sin(DEG2RAD * ((stepsBeforeInner + 1) * stepLength - cap1InnerAngleEnd)) * outerInnerRadius;
+				tInner = beforeInnerY / (beforeInnerY - afterInnerY);
+				var beforeOuterY = Math.sin(DEG2RAD * (stepsBeforeOuter * stepLength - cap1OuterAngleEnd)) * innerOuterRadius;
+				var afterOuterY = Math.sin(DEG2RAD * ((stepsBeforeOuter + 1) * stepLength - cap1OuterAngleEnd)) * innerOuterRadius;
+				tOuter = beforeOuterY / (beforeOuterY - afterOuterY);
+			} else {
+				// Cap 1 on the start, cap 2 on the end, in raylib's sketch: I0, I1 and I2 on the inner side, O0, O1 and O2 on the outer,
+				// first with the center at the origin and the start at 0 degrees.
+				var cap1O0 = new Vector2(outerOuterRadius, 0);
+				var cap1O1 = new Vector2(Math.cos(DEG2RAD * stepLength) * outerOuterRadius, Math.sin(DEG2RAD * stepLength) * outerOuterRadius);
+				var tOuterCap = (cap1O1.y - thick) / cap1O1.y;
+				var cap1O2 = new Vector2(cap1O1.x + (cap1O0.x - cap1O1.x) * tOuterCap, thick);
+				var capLongEdgeLength = outerOuterRadius - innerInnerRadius;
+				var cap1I2 = new Vector2(cap1O2.x - capLongEdgeLength, thick);
+				var span = endAngle - startAngle;
+				var cap2O0 = new Vector2(Math.cos(DEG2RAD * span) * outerOuterRadius, Math.sin(DEG2RAD * span) * outerOuterRadius);
+				var cap2O1 = new Vector2(Math.cos(DEG2RAD * (endAngle - startAngle - stepLength)) * outerOuterRadius,
+					Math.sin(DEG2RAD * (endAngle - startAngle - stepLength)) * outerOuterRadius);
+				var cap2O2 = lerp(cap2O1, cap2O0, tOuterCap);
+				var cap2I0 = new Vector2(Math.cos(DEG2RAD * span) * innerInnerRadius, Math.sin(DEG2RAD * span) * innerInnerRadius);
+				var cap2I2 = new Vector2(cap2O2.x - Math.cos(DEG2RAD * span) * capLongEdgeLength, cap2O2.y - Math.sin(DEG2RAD * span) * capLongEdgeLength);
+				// Where cap 2's long edge crosses cap 1's.
+				var tCapLongEdgeCross = -1.;
+				if (cap2I2.y - cap2O2.y != 0) {
+					tCapLongEdgeCross = (cap2I2.y - thick) / (cap2I2.y - cap2O2.y);
+					if (tCapLongEdgeCross >= 0 && tCapLongEdgeCross <= 1)
+						capsIntersect = true;
+				}
+				// Turned so cap 1's I0 to I2 is upright; only x is wanted.
+				var rotateBy = -DEG2RAD * stepLength / 2;
+				var cosres = Math.cos(rotateBy), sinres = Math.sin(rotateBy);
+				inline function turnedX(v:Vector2):Float
+					return v.x * cosres - v.y * sinres;
+				var cap1I2x = turnedX(cap1I2),
+					cap1O2x = turnedX(cap1O2),
+					cap2I0x = turnedX(cap2I0),
+					cap2I2x = turnedX(cap2I2),
+					cap2O0x = turnedX(cap2O0),
+					cap2O2x = turnedX(cap2O2);
+				var tCrossInner = -1.;
+				if (cap2I0x - cap2I2x != 0)
+					tCrossInner = (cap2I0x - cap1I2x) / (cap2I0x - cap2I2x);
+				if (innerInnerRadius <= 0)
+					tCrossInner = 0;
+				var tCrossOuter = -1.;
+				if (cap2O0x - cap2O2x != 0)
+					tCrossOuter = (cap2O0x - cap1O2x) / (cap2O0x - cap2O2x);
+				// The corners where they are drawn.
+				cap1O0 = at(startAngle, outerOuterRadius);
+				cap1O1 = at(startAngle + stepLength, outerOuterRadius);
+				cap1O2 = lerp(cap1O1, cap1O0, tOuterCap);
+				cap2O0 = at(endAngle, outerOuterRadius);
+				cap2O1 = at(endAngle - stepLength, outerOuterRadius);
+				cap2O2 = lerp(cap2O1, cap2O0, tOuterCap);
+				cap1I2 = new Vector2(cap1O2.x - Math.cos(DEG2RAD * startAngle) * capLongEdgeLength,
+					cap1O2.y - Math.sin(DEG2RAD * startAngle) * capLongEdgeLength);
+				cap2I0 = at(endAngle, innerInnerRadius);
+				cap2I2 = new Vector2(cap2O2.x - Math.cos(DEG2RAD * endAngle) * capLongEdgeLength, cap2O2.y - Math.sin(DEG2RAD * endAngle) * capLongEdgeLength);
+				if (capsIntersect) {
+					capIntersectionVertex = lerp(cap2I2, cap2O2, tCapLongEdgeCross);
+					cap2I2 = lerp(cap2I0, cap2I2, tCrossInner);
+					cap1I2 = cap2I2;
+				} else if (tCrossOuter >= 0 && tCrossOuter <= 1) {
+					cap2O2 = lerp(cap2O0, cap2O2, tCrossOuter);
+					cap1O2 = cap2O2;
+					cap2I2 = lerp(cap2I0, cap2I2, tCrossInner);
+					cap1I2 = cap2I2;
+				}
+				cap1SecondInnerVertex = cap1I2;
+				cap1SecondOuterVertex = cap1O2;
+				cap2SecondInnerVertex = cap2I2;
+				cap2SecondOuterVertex = cap2O2;
+			}
+		}
+		var angle = startAngle;
+		rlSetTexture(GetShapesTexture().id);
+		rlBegin(RL_QUADS);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		// The inner ring and the outer ring, then the caps.
+		for (i in 0...segments) {
+			outlineQuad(at(angle, outerInnerRadius), at(angle, innerInnerRadius), at(angle + stepLength, innerInnerRadius),
+				at(angle + stepLength, outerInnerRadius));
+			outlineQuad(at(angle, outerOuterRadius), at(angle, innerOuterRadius), at(angle + stepLength, innerOuterRadius),
+				at(angle + stepLength, outerOuterRadius));
+			angle += stepLength;
+		}
+		if (showCapLines) {
+			if (thick >= 0) {
+				angle = 0;
+				for (i in 0...stepsBeforeOuter) {
+					outlineQuad(at(startAngle + angle, outerInnerRadius), at(startAngle + angle + stepLength, outerInnerRadius),
+						at(startAngle + angle + stepLength, innerOuterRadius), at(startAngle + angle, innerOuterRadius));
+					outlineQuad(at(endAngle - angle, outerInnerRadius), at(endAngle - angle, innerOuterRadius),
+						at(endAngle - angle - stepLength, innerOuterRadius), at(endAngle - angle - stepLength, outerInnerRadius));
+					angle += stepLength;
+				}
+				// stepsBeforeOuter steps are drawn from each end.
+				var totalStepsLeft = segments - stepsBeforeOuter * 2;
+				var innerStepsLeft = stepsBeforeInner - stepsBeforeOuter;
+				var cap1OuterVertexBeforeEnd = at(startAngle + angle, innerOuterRadius);
+				var cap1OuterVertexAfterEnd = at(startAngle + angle + stepLength, innerOuterRadius);
+				var cap1InnerVertexBeforeEnd = at(startAngle + angle + innerStepsLeft * stepLength, outerInnerRadius);
+				var cap1InnerVertexAfterEnd = at(startAngle + angle + (innerStepsLeft + 1) * stepLength, outerInnerRadius);
+				var cap1InnerVertexEnd = lerp(cap1InnerVertexBeforeEnd, cap1InnerVertexAfterEnd, tInner);
+				var cap1OuterVertexEnd = lerp(cap1OuterVertexBeforeEnd, cap1OuterVertexAfterEnd, tOuter);
+				var cap2OuterVertexBeforeEnd = at(endAngle - angle, innerOuterRadius);
+				var cap2OuterVertexAfterEnd = at(endAngle - angle - stepLength, innerOuterRadius);
+				var cap2InnerVertexBeforeEnd = at(endAngle - angle - innerStepsLeft * stepLength, outerInnerRadius);
+				var cap2InnerVertexAfterEnd = at(endAngle - angle - (innerStepsLeft + 1) * stepLength, outerInnerRadius);
+				var cap2InnerVertexEnd = lerp(cap2InnerVertexBeforeEnd, cap2InnerVertexAfterEnd, tInner);
+				var cap2OuterVertexEnd = lerp(cap2OuterVertexBeforeEnd, cap2OuterVertexAfterEnd, tOuter);
+				var stepsCount = innerAnglesCrossEachOther ? Std.int(totalStepsLeft / 2) : innerStepsLeft;
+				for (i in 0...Std.int(stepsCount / 2)) {
+					outlineQuad(cap1OuterVertexBeforeEnd, at(startAngle + angle, outerInnerRadius), at(startAngle + angle + stepLength, outerInnerRadius),
+						at(startAngle + angle + stepLength * 2, outerInnerRadius));
+					outlineQuad(cap2OuterVertexBeforeEnd, at(endAngle - angle - stepLength * 2, outerInnerRadius),
+						at(endAngle - angle - stepLength, outerInnerRadius), at(endAngle - angle, outerInnerRadius));
+					angle += stepLength * 2;
+				}
+				if (stepsCount % 2 == 1) {
+					outlineQuad(cap1OuterVertexBeforeEnd, cap1OuterVertexBeforeEnd, at(startAngle + angle, outerInnerRadius),
+						at(startAngle + angle + stepLength, outerInnerRadius));
+					outlineQuad(cap2OuterVertexBeforeEnd, cap2OuterVertexBeforeEnd, at(endAngle - angle - stepLength, outerInnerRadius),
+						at(endAngle - angle, outerInnerRadius));
+					angle += stepLength;
+				}
+				if (innerAnglesCrossEachOther) {
+					// The caps' inner ends pass each other: they stop where the caps' last edges cross.
+					var a = new Vector2(cap1OuterVertexEnd.x - cap1InnerVertexEnd.x, cap1OuterVertexEnd.y - cap1InnerVertexEnd.y);
+					var b = new Vector2(cap2InnerVertexEnd.x - cap1InnerVertexEnd.x, cap2InnerVertexEnd.y - cap1InnerVertexEnd.y);
+					var c = new Vector2(cap2OuterVertexEnd.x - cap1InnerVertexEnd.x, cap2OuterVertexEnd.y - cap1InnerVertexEnd.y);
+					var rotateBy = -Math.atan2(a.y, a.x);
+					var start = Math.sin(rotateBy) * b.x + Math.cos(rotateBy) * b.y;
+					var end = Math.sin(rotateBy) * c.x + Math.cos(rotateBy) * c.y;
+					var intersection = lerp(cap2InnerVertexEnd, cap2OuterVertexEnd, start / (start - end));
+					if (segments % 2 == 0) {
+						// An odd number of vertices: one in the middle.
+						var middleInnerVertex = at(startAngle + angle, outerInnerRadius);
+						outlineQuad(intersection, cap1OuterVertexEnd, cap1OuterVertexBeforeEnd, middleInnerVertex);
+						outlineQuad(intersection, middleInnerVertex, cap2OuterVertexBeforeEnd, cap2OuterVertexEnd);
+					} else {
+						// An even number: two in the middle, and a triangle between the caps.
+						var middleInnerVertex1 = at(startAngle + angle, outerInnerRadius),
+							middleInnerVertex2 = at(endAngle - angle, outerInnerRadius);
+						outlineQuad(intersection, cap1OuterVertexEnd, cap1OuterVertexBeforeEnd, middleInnerVertex1);
+						outlineQuad(intersection, middleInnerVertex2, cap2OuterVertexBeforeEnd, cap2OuterVertexEnd);
+						outlineQuad(intersection, intersection, middleInnerVertex1, middleInnerVertex2);
+					}
+				} else {
+					outlineQuad(cap1OuterVertexBeforeEnd, cap1InnerVertexBeforeEnd, cap1InnerVertexEnd, cap1OuterVertexEnd);
+					outlineQuad(cap2OuterVertexBeforeEnd, cap2OuterVertexEnd, cap2InnerVertexEnd, cap2InnerVertexBeforeEnd);
+				}
+			} else {
+				outlineQuad(at(startAngle, innerInnerRadius), at(startAngle, outerOuterRadius), cap1SecondOuterVertex, cap1SecondInnerVertex);
+				outlineQuad(at(endAngle, innerInnerRadius), cap2SecondInnerVertex, cap2SecondOuterVertex, at(endAngle, outerOuterRadius));
+				if (capsIntersect) {
+					outlineQuad(cap1SecondInnerVertex, cap1SecondInnerVertex, cap1SecondOuterVertex, capIntersectionVertex);
+					outlineQuad(cap2SecondInnerVertex, capIntersectionVertex, cap2SecondOuterVertex, cap2SecondInnerVertex);
+				}
+			}
+		}
+		rlEnd();
+		// raylib 6.2's leaves the shapes texture set, as here.
 	}
 
 	/** Draws a filled rectangle.
@@ -593,9 +1183,10 @@ class RShapes {
 		rlSetTexture(0);
 	}
 
-	/** Draws a rectangle's outline, one pixel wide.
+	/** Draws a rectangle's outline, one pixel wide, its lines through the centers of its edge pixels.
 
-		Each line reaches half a pixel past its corners, at the 2D camera's zoom, so the corners are filled.
+		The lines are half a pixel inside the edges, by the matrix `rlPushMatrix` and its kin set (`rlGetMatrixTransform`); a 2D camera's
+		zoom isn't counted, so under a camera they are half a unit inside.
 
 		@param posX  The left edge.
 		@param posY  The top edge.
@@ -603,47 +1194,58 @@ class RShapes {
 		@param height  The height.
 		@param color  The color. */
 	static function DrawRectangleLines(posX:Int, posY:Int, width:Int, height:Int, color:Color):Void {
-		var zoomFactor = .5 / rlGetMatrixModelview().m0;
+		var mat = rlGetMatrixTransform();
+		var xOffset = .5 / mat.m0, yOffset = .5 / mat.m5;
 		rlBegin(RL_LINES);
 		rlColor4ub(color.r, color.g, color.b, color.a);
-		rlVertex2f(posX - zoomFactor, posY);
-		rlVertex2f(posX + width + zoomFactor, posY);
-		rlVertex2f(posX + width, posY - zoomFactor);
-		rlVertex2f(posX + width, posY + height + zoomFactor);
-		rlVertex2f(posX + width + zoomFactor, posY + height);
-		rlVertex2f(posX - zoomFactor, posY + height);
-		rlVertex2f(posX, posY + height + zoomFactor);
-		rlVertex2f(posX, posY - zoomFactor);
+		rlVertex2f(posX + xOffset, posY + yOffset);
+		rlVertex2f(posX + width - xOffset, posY + yOffset);
+		rlVertex2f(posX + width - xOffset, posY + yOffset);
+		rlVertex2f(posX + width - xOffset, posY + height - yOffset);
+		rlVertex2f(posX + width - xOffset, posY + height - yOffset);
+		rlVertex2f(posX + xOffset, posY + height - yOffset);
+		rlVertex2f(posX + xOffset, posY + height - yOffset);
+		rlVertex2f(posX + xOffset, posY + yOffset);
 		rlEnd();
 	}
 
-	/** Draws a rectangle's outline, its lines inside it.
+	/** Draws a rectangle's outline of a thickness, inside it, or outside it for a negative thickness.
 
 		@param rec  The rectangle.
-		@param lineThick  The lines' thickness; more than the rectangle's width or height is clamped to half its shorter side.
+		@param lineThick  The lines' thickness; more than half the rectangle's width or height is half its shorter side, and 0 or less
+			draws the outline that thick outside the rectangle (bars of no width, for 0).
 		@param color  The color. */
 	static function DrawRectangleLinesEx(rec:Rectangle, lineThick:Float, color:Color):Void {
-		if (lineThick > rec.width || lineThick > rec.height) {
+		if (lineThick > rec.width / 2 || lineThick > rec.height / 2) {
 			if (rec.width >= rec.height)
 				lineThick = rec.height / 2;
 			else if (rec.width <= rec.height)
 				lineThick = rec.width / 2;
 		}
-		// The top and bottom across the whole width, the left and right between them.
-		DrawRectangleRec(new Rectangle(rec.x, rec.y, rec.width, lineThick), color);
-		DrawRectangleRec(new Rectangle(rec.x, rec.y - lineThick + rec.height, rec.width, lineThick), color);
-		DrawRectangleRec(new Rectangle(rec.x, rec.y + lineThick, lineThick, rec.height - lineThick * 2), color);
-		DrawRectangleRec(new Rectangle(rec.x - lineThick + rec.width, rec.y + lineThick, lineThick, rec.height - lineThick * 2), color);
+		if (lineThick > 0) {
+			// The top and bottom across the whole width, the left and right between them.
+			DrawRectangleRec(new Rectangle(rec.x, rec.y, rec.width, lineThick), color);
+			DrawRectangleRec(new Rectangle(rec.x, rec.y - lineThick + rec.height, rec.width, lineThick), color);
+			DrawRectangleRec(new Rectangle(rec.x, rec.y + lineThick, lineThick, rec.height - lineThick * 2), color);
+			DrawRectangleRec(new Rectangle(rec.x - lineThick + rec.width, rec.y + lineThick, lineThick, rec.height - lineThick * 2), color);
+		} else {
+			// Outside: the top and bottom across the whole width and both sides, the left and right beside the rectangle.
+			lineThick *= -1;
+			DrawRectangleRec(new Rectangle(rec.x - lineThick, rec.y - lineThick, rec.width + lineThick * 2, lineThick), color);
+			DrawRectangleRec(new Rectangle(rec.x - lineThick, rec.y + rec.height, rec.width + lineThick * 2, lineThick), color);
+			DrawRectangleRec(new Rectangle(rec.x - lineThick, rec.y, lineThick, rec.height), color);
+			DrawRectangleRec(new Rectangle(rec.x + rec.width, rec.y, lineThick, rec.height), color);
+		}
 	}
 
 	/** Draws a filled rectangle with rounded corners.
 
 		@param rec  The rectangle.
 		@param roundness  How round its corners are: 0 for square, 1 for a radius of half its shorter side.
-		@param segments  How many straight edges make each corner's curve; fewer than 4 picks enough for a smooth curve.
+		@param segments  How many straight edges make each corner's curve; fewer than 1 picks enough for a smooth curve.
 		@param color  The color. */
 	static function DrawRectangleRounded(rec:Rectangle, roundness:Float, segments:Int, color:Color):Void {
-		if (roundness <= 0 || rec.width < 1 || rec.height < 1) {
+		if (roundness <= 0) {
 			DrawRectangleRec(rec, color);
 			return;
 		}
@@ -652,8 +1254,8 @@ class RShapes {
 		var radius = rec.width > rec.height ? rec.height * roundness / 2 : rec.width * roundness / 2;
 		if (radius <= 0)
 			return;
-		if (segments < 4) {
-			segments = Std.int(Math.fceil(2 * Math.PI / smoothAngle(radius)) / 4);
+		if (segments < 1) {
+			segments = Std.int(Math.fceil(2 * Math.PI / smoothAngle(radius) / 4));
 			if (segments <= 0)
 				segments = 4;
 		}
@@ -721,14 +1323,60 @@ class RShapes {
 		rlSetTexture(0);
 	}
 
-	/** Draws a rounded rectangle's outline, one pixel wide.
+	/** Draws a rounded rectangle's outline, one pixel wide, its lines through the centers of its edge pixels.
 
 		@param rec  The rectangle.
-		@param roundness  How round its corners are: 0 for square, 1 for a radius of half its shorter side.
-		@param segments  How many straight edges make each corner's curve; fewer than 4 picks enough for a smooth curve.
+		@param roundness  How round its corners are: 0 or less for square (`DrawRectangleLines`, the rectangle cut to whole pixels), 1 for
+			a radius of half its shorter side.
+		@param segments  How many straight edges make each corner's curve; fewer than 1 picks enough for a smooth curve.
 		@param color  The color. */
 	static function DrawRectangleRoundedLines(rec:Rectangle, roundness:Float, segments:Int, color:Color):Void {
-		DrawRectangleRoundedLinesEx(rec, roundness, segments, 1, color);
+		if (roundness <= 0) {
+			DrawRectangleLines(Std.int(rec.x), Std.int(rec.y), Std.int(rec.width), Std.int(rec.height), color);
+			return;
+		}
+		if (roundness >= 1)
+			roundness = 1;
+		var radius = rec.width > rec.height ? rec.height * roundness / 2 : rec.width * roundness / 2;
+		if (radius <= 0)
+			return;
+		if (segments < 1) {
+			segments = Std.int(Math.fceil(2 * Math.PI / smoothAngle(radius) / 4));
+			if (segments <= 0)
+				segments = 4;
+		}
+		var stepLength = 90 / segments;
+		var x0 = rec.x + radius + .5,
+			x1 = rec.x + rec.width - radius - .5,
+			x2 = rec.x + rec.width - .5,
+			x3 = rec.x + .5;
+		var y0 = rec.y + .5,
+			y1 = rec.y + radius + .5,
+			y2 = rec.y + rec.height - radius - .5,
+			y3 = rec.y + rec.height - .5;
+		// P0 to P7 around the edge from the top's left end, and the corners' centers.
+		var px = [x0, x1, x2, x2, x1, x0, x3, x3],
+			py = [y0, y0, y1, y2, y3, y3, y2, y1];
+		var centersX = [x0, x1, x1, x0], centersY = [y1, y1, y2, y2];
+		rlBegin(RL_LINES);
+		// The corners first: top-left, top-right, bottom-right, bottom-left; then the four sides.
+		for (k in 0...4) {
+			var angle = CORNER_ANGLES[k], cx = centersX[k], cy = centersY[k];
+			for (i in 0...segments) {
+				rlColor4ub(color.r, color.g, color.b, color.a);
+				rlVertex2f(arcX(cx, angle, radius), arcY(cy, angle, radius));
+				rlVertex2f(arcX(cx, angle + stepLength, radius), arcY(cy, angle + stepLength, radius));
+				angle += stepLength;
+			}
+		}
+		var i = 0;
+		while (i < 8) {
+			rlColor4ub(color.r, color.g, color.b, color.a);
+			rlVertex2f(px[i], py[i]);
+			rlVertex2f(px[i + 1], py[i + 1]);
+			i += 2;
+		}
+		rlEnd();
 	}
 
 	/** Draws a rounded rectangle's outline, its lines outside it.
@@ -742,6 +1390,7 @@ class RShapes {
 		if (lineThick < 0)
 			lineThick = 0;
 		if (roundness <= 0) {
+			// Around the rectangle grown by the thickness, which is never more than half its size: 5.5's bars and 6.2's are the same.
 			DrawRectangleLinesEx(new Rectangle(rec.x - lineThick, rec.y - lineThick, rec.width + 2 * lineThick, rec.height + 2 * lineThick), lineThick, color);
 			return;
 		}
@@ -832,12 +1481,30 @@ class RShapes {
 		@param v3  The third point.
 		@param color  The color. */
 	static function DrawTriangle(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void {
+		DrawTriangleGradient(v1, v2, v3, color, color, color);
+	}
+
+	/** Draws a filled triangle that blends between a color at each point.
+
+		Its points must go counterclockwise on the screen, as `DrawTriangle`'s must.
+
+		@param v1  The first point.
+		@param v2  The second point.
+		@param v3  The third point.
+		@param c1  The first point's color.
+		@param c2  The second point's color.
+		@param c3  The third point's color. */
+	static function DrawTriangleGradient(v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void {
 		rlSetTexture(GetShapesTexture().id);
 		rlBegin(RL_QUADS);
-		rlColor4ub(color.r, color.g, color.b, color.a);
+		rlNormal3f(0, 0, 1);
+		rlColor4ub(c1.r, c1.g, c1.b, c1.a);
 		shapeVertex(shapeU0, shapeV0, v1.x, v1.y);
+		rlColor4ub(c2.r, c2.g, c2.b, c2.a);
 		shapeVertex(shapeU0, shapeV1, v2.x, v2.y);
-		shapeVertex(shapeU1, shapeV1, v2.x, v2.y);
+		rlColor4ub(c3.r, c3.g, c3.b, c3.a);
+		shapeVertex(shapeU1, shapeV1, v3.x, v3.y);
+		rlColor4ub(c3.r, c3.g, c3.b, c3.a);
 		shapeVertex(shapeU1, shapeV0, v3.x, v3.y);
 		rlEnd();
 		rlSetTexture(0);
@@ -859,6 +1526,63 @@ class RShapes {
 		rlVertex2f(v3.x, v3.y);
 		rlVertex2f(v1.x, v1.y);
 		rlEnd();
+	}
+
+	/** Draws a triangle's outline of a thickness, inside it, or outside it for a negative thickness: the triangle less a copy of it
+		shrunk about its incenter, so each side is as thick.
+
+		Its points must go counterclockwise on the screen, as `DrawTriangle`'s must.
+
+		@param v1  The first point.
+		@param v2  The second point.
+		@param v3  The third point.
+		@param thick  The thickness; as much as the radius of the circle inside it draws it filled.
+		@param color  The color. */
+	static function DrawTriangleLinesEx(v1:Vector2, v2:Vector2, v3:Vector2, thick:Float, color:Color):Void {
+		var e1x = v2.x - v3.x, e1y = v2.y - v3.y;
+		var e2x = v3.x - v1.x, e2y = v3.y - v1.y;
+		var e3x = v1.x - v2.x, e3y = v1.y - v2.y;
+		var e1Length = Math.sqrt(e1x * e1x + e1y * e1y),
+			e2Length = Math.sqrt(e2x * e2x + e2y * e2y),
+			e3Length = Math.sqrt(e3x * e3x + e3y * e3y);
+		var perimeter = e1Length + e2Length + e3Length;
+		var semiperimeter = perimeter / 2;
+		// The incenter, the same distance from each edge, and the inradius, that distance.
+		var incenterX = (e1Length * v1.x + e2Length * v2.x + e3Length * v3.x) / perimeter,
+			incenterY = (e1Length * v1.y + e2Length * v2.y + e3Length * v3.y) / perimeter;
+		var inradius = Math.sqrt(((semiperimeter - e1Length) * (semiperimeter - e2Length) * (semiperimeter - e3Length)) / semiperimeter);
+		var scale = 1 - thick / inradius;
+		if (scale <= 0) {
+			DrawTriangle(v1, v2, v3, color);
+			return;
+		}
+		var v4 = new Vector2(incenterX + (v1.x - incenterX) * scale, incenterY + (v1.y - incenterY) * scale);
+		var v5 = new Vector2(incenterX + (v2.x - incenterX) * scale, incenterY + (v2.y - incenterY) * scale);
+		var v6 = new Vector2(incenterX + (v3.x - incenterX) * scale, incenterY + (v3.y - incenterY) * scale);
+		// Outside: the inner and outer corners swapped, for the winding.
+		if (thick < 0) {
+			var temp = v1;
+			v1 = v4;
+			v4 = temp;
+			temp = v2;
+			v2 = v5;
+			v5 = temp;
+			temp = v3;
+			v3 = v6;
+			v6 = temp;
+		}
+		rlSetTexture(GetShapesTexture().id);
+		rlBegin(RL_QUADS);
+		rlColor4ub(color.r, color.g, color.b, color.a);
+		// Edge 3, edge 1, edge 2.
+		for (q in [[v1, v2, v5, v4], [v2, v3, v6, v5], [v3, v1, v4, v6]]) {
+			shapeVertex(shapeU0, shapeV0, q[0].x, q[0].y);
+			shapeVertex(shapeU0, shapeV1, q[1].x, q[1].y);
+			shapeVertex(shapeU1, shapeV1, q[2].x, q[2].y);
+			shapeVertex(shapeU1, shapeV0, q[3].x, q[3].y);
+		}
+		rlEnd();
+		rlSetTexture(0);
 	}
 
 	/** Draws filled triangles that all share the first point, each from it to the next two points.
@@ -957,31 +1681,40 @@ class RShapes {
 		rlEnd();
 	}
 
-	/** Draws a regular polygon's outline, its lines inside it.
+	/** Draws a regular polygon's outline of a thickness, inside it, or outside it for a negative thickness.
 
 		@param center  The center.
 		@param sides  How many sides it has, 3 or more.
 		@param radius  The distance from the center to each corner.
 		@param rotation  The turn of its first corner from the right, in degrees clockwise.
-		@param lineThick  The lines' thickness.
+		@param lineThick  The lines' thickness, measured across each side; past the center it fills the polygon, and a negative thickness
+			draws the outline that thick outside it.
 		@param color  The color. */
 	static function DrawPolyLinesEx(center:Vector2, sides:Int, radius:Float, rotation:Float, lineThick:Float, color:Color):Void {
 		if (sides < 3)
 			sides = 3;
 		var centralAngle = rotation * DEG2RAD,
 			exteriorAngle = 360 / sides * DEG2RAD;
-		// As raylib's: the angle is already in radians, and is turned into radians again.
-		var innerRadius = radius - lineThick * Math.cos(DEG2RAD * exteriorAngle / 2);
+		var apothem = radius * Math.cos(DEG2RAD * 180 / sides);
+		var outerRadius = 0., innerRadius = 0.;
+		if (lineThick >= 0) {
+			outerRadius = radius;
+			innerRadius = Math.max(0, radius - lineThick * (radius / apothem));
+		} else {
+			lineThick *= -1;
+			outerRadius = radius + lineThick * (radius / apothem);
+			innerRadius = radius;
+		}
 		var cx = center.x, cy = center.y;
 		rlSetTexture(GetShapesTexture().id);
 		rlBegin(RL_QUADS);
 		for (i in 0...sides) {
 			rlColor4ub(color.r, color.g, color.b, color.a);
 			var nextAngle = centralAngle + exteriorAngle;
-			shapeVertex(shapeU0, shapeV1, cx + Math.cos(centralAngle) * radius, cy + Math.sin(centralAngle) * radius);
+			shapeVertex(shapeU0, shapeV1, cx + Math.cos(centralAngle) * outerRadius, cy + Math.sin(centralAngle) * outerRadius);
 			shapeVertex(shapeU0, shapeV0, cx + Math.cos(centralAngle) * innerRadius, cy + Math.sin(centralAngle) * innerRadius);
 			shapeVertex(shapeU1, shapeV1, cx + Math.cos(nextAngle) * innerRadius, cy + Math.sin(nextAngle) * innerRadius);
-			shapeVertex(shapeU1, shapeV0, cx + Math.cos(nextAngle) * radius, cy + Math.sin(nextAngle) * radius);
+			shapeVertex(shapeU1, shapeV0, cx + Math.cos(nextAngle) * outerRadius, cy + Math.sin(nextAngle) * outerRadius);
 			centralAngle = nextAngle;
 		}
 		rlEnd();
@@ -1290,6 +2023,18 @@ class RShapes {
 		return new Vector2(Interpolate.quadraticBezier(p1.x, c2.x, p3.x, t), Interpolate.quadraticBezier(p1.y, c2.y, p3.y, t));
 	}
 
+	/** Returns a point on a quadratic Bezier curve: `GetSplinePointBezierQuad` by raylib 6's name for it.
+
+		@param startPos  The start.
+		@param controlPos  The control point.
+		@param endPos  The end.
+		@param t  How far along, 0 at the start to 1 at the end.
+		@return  The point. */
+	static function GetSplinePointBezierQuadratic(startPos:Vector2, controlPos:Vector2, endPos:Vector2, t:Float):Vector2 {
+		return new Vector2(Interpolate.quadraticBezier(startPos.x, controlPos.x, endPos.x, t),
+			Interpolate.quadraticBezier(startPos.y, controlPos.y, endPos.y, t));
+	}
+
 	/** Returns a point on a cubic Bezier curve.
 
 		@param p1  The start.
@@ -1462,6 +2207,14 @@ class RShapes {
 		rlVertex2f(x, y);
 	}
 
+	// One quad of raylib 6's thick outlines, its texture coordinates from the shapes texture's bottom-left, up, across and down.
+	static inline function outlineQuad(a:Vector2, b:Vector2, c:Vector2, d:Vector2):Void {
+		shapeVertex(shapeU0, shapeV1, a.x, a.y);
+		shapeVertex(shapeU0, shapeV0, b.x, b.y);
+		shapeVertex(shapeU1, shapeV0, c.x, c.y);
+		shapeVertex(shapeU1, shapeV1, d.x, d.y);
+	}
+
 	// A point on a circle about a center, at an angle in degrees.
 	static inline function arcX(cx:Float, angle:Float, radius:Float):Float {
 		return cx + Math.cos(DEG2RAD * angle) * radius;
@@ -1477,12 +2230,12 @@ class RShapes {
 	}
 
 	// How many segments raylib gives an arc: those asked for, unless that is fewer than one for each 90 degrees, when it picks enough
-	// to keep within its error rate.
+	// to keep within its error rate, rounded up.
 	static function arcSegments(radius:Float, startAngle:Float, endAngle:Float, segments:Int):Int {
 		var minSegments = Std.int(Math.fceil((endAngle - startAngle) / 90));
 		if (segments >= minSegments)
 			return segments;
-		segments = Std.int((endAngle - startAngle) * Math.fceil(2 * Math.PI / smoothAngle(radius)) / 360);
+		segments = Std.int(Math.fceil((endAngle - startAngle) * (2 * Math.PI / smoothAngle(radius)) / 360));
 		return segments <= 0 ? minSegments : segments;
 	}
 

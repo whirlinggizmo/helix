@@ -2434,11 +2434,22 @@ class Raylib {
 	public static inline function DrawLineBezier(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void
 		RShapes.DrawLineBezier(startPos, endPos, thick, color);
 
+	/** Draws a dashed line one pixel wide: dashes of a length with gaps of another between them, from the start; the last dash stops at
+		the end.
+
+		@param startPos  The start.
+		@param endPos  The end.
+		@param dashSize  Each dash's length, in pixels; 0 or less, or a line shorter than a dash and a gap, draws the line solid.
+		@param spaceSize  Each gap's length, in pixels.
+		@param color  The color. */
+	public static inline function DrawLineDashed(startPos:Vector2, endPos:Vector2, dashSize:Int, spaceSize:Int, color:Color):Void
+		RShapes.DrawLineDashed(startPos, endPos, dashSize, spaceSize, color);
+
 	/** Draws a filled circle.
 
 		@param centerX  The center's x.
 		@param centerY  The center's y.
-		@param radius  The radius.
+		@param radius  The radius; 0 or less draws nothing.
 		@param color  The color. */
 	public static inline function DrawCircle(centerX:Int, centerY:Int, radius:Float, color:Color):Void
 		RShapes.DrawCircle(centerX, centerY, radius, color);
@@ -2446,7 +2457,7 @@ class Raylib {
 	/** Draws a filled circle.
 
 		@param center  The center.
-		@param radius  The radius.
+		@param radius  The radius; 0 or less draws nothing.
 		@param color  The color. */
 	public static inline function DrawCircleV(center:Vector2, radius:Float, color:Color):Void
 		RShapes.DrawCircleV(center, radius, color);
@@ -2454,24 +2465,38 @@ class Raylib {
 	/** Draws a filled slice of a circle, clockwise from one angle to another.
 
 		@param center  The center.
-		@param radius  The radius.
+		@param radius  The radius; 0 or less draws nothing.
 		@param startAngle  The angle it starts at, in degrees from the right.
-		@param endAngle  The angle it ends at.
+		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
 		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
 		@param color  The color. */
 	public static inline function DrawCircleSector(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
 		RShapes.DrawCircleSector(center, radius, startAngle, endAngle, segments, color);
 
-	/** Draws a slice of a circle's outline, one pixel wide, with lines from the center to its ends.
+	/** Draws a slice of a circle's outline, one pixel wide, with lines from the center to its ends; a whole turn has none.
 
 		@param center  The center.
-		@param radius  The radius.
+		@param radius  The radius; 0 or less draws nothing.
 		@param startAngle  The angle it starts at, in degrees from the right.
-		@param endAngle  The angle it ends at.
+		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
 		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
 		@param color  The color. */
 	public static inline function DrawCircleSectorLines(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
 		RShapes.DrawCircleSectorLines(center, radius, startAngle, endAngle, segments, color);
+
+	/** Draws a slice of a circle's outline of a thickness, inside it, or outside it for a negative thickness, with its edges from the
+		center to its ends that thick too; a whole turn drawn outside has none.
+
+		@param center  The center.
+		@param radius  The radius; 0 or less draws nothing.
+		@param startAngle  The angle it starts at, in degrees from the right.
+		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
+		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+		@param thick  The outline's thickness, measured across its curve's straight edges; one so thick it meets itself fills the slice.
+		@param color  The color. */
+	public static inline function DrawCircleSectorLinesEx(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, thick:Float,
+			color:Color):Void
+		RShapes.DrawCircleSectorLinesEx(center, radius, startAngle, endAngle, segments, thick, color);
 
 	/** Draws a filled circle that blends from one color at its center to another at its edge.
 
@@ -2500,6 +2525,15 @@ class Raylib {
 	public static inline function DrawCircleLinesV(center:Vector2, radius:Float, color:Color):Void
 		RShapes.DrawCircleLinesV(center, radius, color);
 
+	/** Draws a circle's outline of a thickness, inside it: a ring of 36 segments from the radius less the thickness to the radius.
+
+		@param center  The center.
+		@param radius  The radius.
+		@param thick  The thickness; more than the radius draws a filled circle, and a negative one an outline that thick outside it.
+		@param color  The color. */
+	public static inline function DrawCircleLinesEx(center:Vector2, radius:Float, thick:Float, color:Color):Void
+		RShapes.DrawCircleLinesEx(center, radius, thick, color);
+
 	/** Draws a filled ellipse.
 
 		@param centerX  The center's x.
@@ -2509,6 +2543,15 @@ class Raylib {
 		@param color  The color. */
 	public static inline function DrawEllipse(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void
 		RShapes.DrawEllipse(centerX, centerY, radiusH, radiusV, color);
+
+	/** Draws a filled ellipse.
+
+		@param center  The center.
+		@param radiusH  The radius across.
+		@param radiusV  The radius up and down.
+		@param color  The color. */
+	public static inline function DrawEllipseV(center:Vector2, radiusH:Float, radiusV:Float, color:Color):Void
+		RShapes.DrawEllipseV(center, radiusH, radiusV, color);
 
 	/** Draws an ellipse's outline, one pixel wide.
 
@@ -2520,31 +2563,67 @@ class Raylib {
 	public static inline function DrawEllipseLines(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void
 		RShapes.DrawEllipseLines(centerX, centerY, radiusH, radiusV, color);
 
+	/** Draws an ellipse's outline, one pixel wide.
+
+		@param center  The center.
+		@param radiusH  The radius across.
+		@param radiusV  The radius up and down.
+		@param color  The color. */
+	public static inline function DrawEllipseLinesV(center:Vector2, radiusH:Float, radiusV:Float, color:Color):Void
+		RShapes.DrawEllipseLinesV(center, radiusH, radiusV, color);
+
+	/** Draws an ellipse's outline of a thickness, inside it, or outside it for a negative thickness: 36 segments, each radius less the
+		thickness to the radius.
+
+		@param center  The center.
+		@param radiusH  The radius across.
+		@param radiusV  The radius up and down.
+		@param thick  The thickness; as much as either radius draws a filled ellipse.
+		@param color  The color. */
+	public static inline function DrawEllipseLinesEx(center:Vector2, radiusH:Float, radiusV:Float, thick:Float, color:Color):Void
+		RShapes.DrawEllipseLinesEx(center, radiusH, radiusV, thick, color);
+
 	/** Draws a filled ring, or a slice of one, clockwise from one angle to another.
 
 		@param center  The center.
 		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle.
-		@param outerRadius  The radius of its edge.
+		@param outerRadius  The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
 		@param startAngle  The angle it starts at, in degrees from the right.
-		@param endAngle  The angle it ends at; the same as the start draws nothing.
+		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
 		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
 		@param color  The color. */
 	public static inline function DrawRing(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int,
 			color:Color):Void
 		RShapes.DrawRing(center, innerRadius, outerRadius, startAngle, endAngle, segments, color);
 
-	/** Draws a ring's outline, or a slice of one, one pixel wide.
+	/** Draws a ring's outline, or a slice of one, one pixel wide, with lines across its ends; a whole turn has none.
 
 		@param center  The center.
 		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle.
-		@param outerRadius  The radius of its edge.
+		@param outerRadius  The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
 		@param startAngle  The angle it starts at, in degrees from the right.
-		@param endAngle  The angle it ends at; the same as the start draws nothing.
+		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
 		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
 		@param color  The color. */
 	public static inline function DrawRingLines(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int,
 			color:Color):Void
 		RShapes.DrawRingLines(center, innerRadius, outerRadius, startAngle, endAngle, segments, color);
+
+	/** Draws a ring's outline, or a slice of one, of a thickness: inside its edge and outside its hole, or the other way for a negative
+		thickness, with its ends that thick too; a whole turn drawn outside has no ends.
+
+		@param center  The center.
+		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle (`DrawCircleSectorLinesEx`) for a negative
+			thickness.
+		@param outerRadius  The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
+		@param startAngle  The angle it starts at, in degrees from the right.
+		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
+		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+		@param thick  The outline's thickness, measured across its curve's straight edges; one so thick it meets itself fills the ring.
+		@param color  The color. */
+	public static inline function DrawRingLinesEx(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int,
+			thick:Float, color:Color):Void
+		RShapes.DrawRingLinesEx(center, innerRadius, outerRadius, startAngle, endAngle, segments, thick, color);
 
 	/** Draws a filled rectangle.
 
@@ -2613,9 +2692,10 @@ class Raylib {
 	public static inline function DrawRectangleGradientEx(rec:Rectangle, topLeft:Color, bottomLeft:Color, topRight:Color, bottomRight:Color):Void
 		RShapes.DrawRectangleGradientEx(rec, topLeft, bottomLeft, topRight, bottomRight);
 
-	/** Draws a rectangle's outline, one pixel wide.
+	/** Draws a rectangle's outline, one pixel wide, its lines through the centers of its edge pixels.
 
-		Each line reaches half a pixel past its corners, at the 2D camera's zoom, so the corners are filled.
+		The lines are half a pixel inside the edges, by the matrix `rlPushMatrix` and its kin set (`rlGetMatrixTransform`); a 2D camera's
+		zoom isn't counted, so under a camera they are half a unit inside.
 
 		@param posX  The left edge.
 		@param posY  The top edge.
@@ -2625,10 +2705,11 @@ class Raylib {
 	public static inline function DrawRectangleLines(posX:Int, posY:Int, width:Int, height:Int, color:Color):Void
 		RShapes.DrawRectangleLines(posX, posY, width, height, color);
 
-	/** Draws a rectangle's outline, its lines inside it.
+	/** Draws a rectangle's outline of a thickness, inside it, or outside it for a negative thickness.
 
 		@param rec  The rectangle.
-		@param lineThick  The lines' thickness; more than the rectangle's width or height is clamped to half its shorter side.
+		@param lineThick  The lines' thickness; more than half the rectangle's width or height is half its shorter side, and 0 or less
+			draws the outline that thick outside the rectangle (bars of no width, for 0).
 		@param color  The color. */
 	public static inline function DrawRectangleLinesEx(rec:Rectangle, lineThick:Float, color:Color):Void
 		RShapes.DrawRectangleLinesEx(rec, lineThick, color);
@@ -2637,16 +2718,17 @@ class Raylib {
 
 		@param rec  The rectangle.
 		@param roundness  How round its corners are: 0 for square, 1 for a radius of half its shorter side.
-		@param segments  How many straight edges make each corner's curve; fewer than 4 picks enough for a smooth curve.
+		@param segments  How many straight edges make each corner's curve; fewer than 1 picks enough for a smooth curve.
 		@param color  The color. */
 	public static inline function DrawRectangleRounded(rec:Rectangle, roundness:Float, segments:Int, color:Color):Void
 		RShapes.DrawRectangleRounded(rec, roundness, segments, color);
 
-	/** Draws a rounded rectangle's outline, one pixel wide.
+	/** Draws a rounded rectangle's outline, one pixel wide, its lines through the centers of its edge pixels.
 
 		@param rec  The rectangle.
-		@param roundness  How round its corners are: 0 for square, 1 for a radius of half its shorter side.
-		@param segments  How many straight edges make each corner's curve; fewer than 4 picks enough for a smooth curve.
+		@param roundness  How round its corners are: 0 or less for square (`DrawRectangleLines`, the rectangle cut to whole pixels), 1 for
+			a radius of half its shorter side.
+		@param segments  How many straight edges make each corner's curve; fewer than 1 picks enough for a smooth curve.
 		@param color  The color. */
 	public static inline function DrawRectangleRoundedLines(rec:Rectangle, roundness:Float, segments:Int, color:Color):Void
 		RShapes.DrawRectangleRoundedLines(rec, roundness, segments, color);
@@ -2673,6 +2755,19 @@ class Raylib {
 	public static inline function DrawTriangle(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
 		RShapes.DrawTriangle(v1, v2, v3, color);
 
+	/** Draws a filled triangle that blends between a color at each point.
+
+		Its points must go counterclockwise on the screen, as `DrawTriangle`'s must.
+
+		@param v1  The first point.
+		@param v2  The second point.
+		@param v3  The third point.
+		@param c1  The first point's color.
+		@param c2  The second point's color.
+		@param c3  The third point's color. */
+	public static inline function DrawTriangleGradient(v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
+		RShapes.DrawTriangleGradient(v1, v2, v3, c1, c2, c3);
+
 	/** Draws a triangle's outline, one pixel wide.
 
 		@param v1  The first point.
@@ -2681,6 +2776,19 @@ class Raylib {
 		@param color  The color. */
 	public static inline function DrawTriangleLines(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
 		RShapes.DrawTriangleLines(v1, v2, v3, color);
+
+	/** Draws a triangle's outline of a thickness, inside it, or outside it for a negative thickness: the triangle less a copy of it
+		shrunk about its incenter, so each side is as thick.
+
+		Its points must go counterclockwise on the screen, as `DrawTriangle`'s must.
+
+		@param v1  The first point.
+		@param v2  The second point.
+		@param v3  The third point.
+		@param thick  The thickness; as much as the radius of the circle inside it draws it filled.
+		@param color  The color. */
+	public static inline function DrawTriangleLinesEx(v1:Vector2, v2:Vector2, v3:Vector2, thick:Float, color:Color):Void
+		RShapes.DrawTriangleLinesEx(v1, v2, v3, thick, color);
 
 	/** Draws filled triangles that all share the first point, each from it to the next two points.
 
@@ -2720,13 +2828,14 @@ class Raylib {
 	public static inline function DrawPolyLines(center:Vector2, sides:Int, radius:Float, rotation:Float, color:Color):Void
 		RShapes.DrawPolyLines(center, sides, radius, rotation, color);
 
-	/** Draws a regular polygon's outline, its lines inside it.
+	/** Draws a regular polygon's outline of a thickness, inside it, or outside it for a negative thickness.
 
 		@param center  The center.
 		@param sides  How many sides it has, 3 or more.
 		@param radius  The distance from the center to each corner.
 		@param rotation  The turn of its first corner from the right, in degrees clockwise.
-		@param lineThick  The lines' thickness.
+		@param lineThick  The lines' thickness, measured across each side; past the center it fills the polygon, and a negative thickness
+			draws the outline that thick outside it.
 		@param color  The color. */
 	public static inline function DrawPolyLinesEx(center:Vector2, sides:Int, radius:Float, rotation:Float, lineThick:Float, color:Color):Void
 		RShapes.DrawPolyLinesEx(center, sides, radius, rotation, lineThick, color);
@@ -2869,6 +2978,16 @@ class Raylib {
 		@return  The point. */
 	public static inline function GetSplinePointBezierQuad(p1:Vector2, c2:Vector2, p3:Vector2, t:Float):Vector2
 		return RShapes.GetSplinePointBezierQuad(p1, c2, p3, t);
+
+	/** Returns a point on a quadratic Bezier curve: `GetSplinePointBezierQuad` by raylib 6's name for it.
+
+		@param startPos  The start.
+		@param controlPos  The control point.
+		@param endPos  The end.
+		@param t  How far along, 0 at the start to 1 at the end.
+		@return  The point. */
+	public static inline function GetSplinePointBezierQuadratic(startPos:Vector2, controlPos:Vector2, endPos:Vector2, t:Float):Vector2
+		return RShapes.GetSplinePointBezierQuadratic(startPos, controlPos, endPos, t);
 
 	/** Returns a point on a cubic Bezier curve.
 
@@ -3160,17 +3279,29 @@ class Raylib {
 		@param width  The width, in pixels.
 		@param height  The height.
 		@param format  The format (`PIXELFORMAT_*`).
-		@return  The bytes; a compressed format smaller than 4 by 4 pixels takes a whole block, 8 or 16 bytes, and an unknown format 0. */
+		@return  The bytes; a compressed format smaller than 4 by 4 pixels takes a whole block, 8 or 16 bytes. An unknown format, a width
+			or height of 0 or less, and a size of 2 GB or more (with a warning) give 0. */
 	public static inline function GetPixelDataSize(width:Int, height:Int, format:Int):Int
 		return RTextures.GetPixelDataSize(width, height, format);
 
-	/** Makes a texture to draw into, with depth.
+	/** Makes a texture to draw into, with depth, 8-bit RGBA.
 
 		@param width  Its width, in pixels.
 		@param height  Its height.
 		@return  The render texture. */
 	public static inline function LoadRenderTexture(width:Int, height:Int):RenderTexture2D
 		return RTextures.LoadRenderTexture(width, height);
+
+	/** Makes a texture to draw into, with depth, in a pixel format. helix-ray's render textures are 8-bit RGBA or half-float RGBA, so
+		`PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and `PIXELFORMAT_UNCOMPRESSED_R16G16B16A16` (where the GPU draws into half floats,
+		`IGraphics.canRender`) are made; any other format, and a compressed one as in raylib, makes none, with a warning.
+
+		@param width  Its width, in pixels.
+		@param height  Its height.
+		@param format  Its pixel format (`PIXELFORMAT_*`).
+		@return  The render texture; one whose id is 0 when the format isn't made. */
+	public static inline function LoadRenderTextureEx(width:Int, height:Int, format:Int):RenderTexture2D
+		return RTextures.LoadRenderTextureEx(width, height, format);
 
 	/** Returns whether a render texture was made.
 
@@ -3335,7 +3466,7 @@ class Raylib {
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
-		@param text  The text.
+		@param text  The text; null gives a black image.
 		@return  The image. */
 	public static inline function GenImageText(width:Int, height:Int, text:String):Image
 		return RTextures.GenImageText(width, height, text);
@@ -3347,8 +3478,8 @@ class Raylib {
 	public static inline function ImageCopy(image:Image):Image
 		return RTextures.ImageCopy(image);
 
-	/** Returns a rectangle of an image, in its format. A row reaching past the image's right edge reads on into the next row, as
-		raylib's does; what lies past the image's pixels reads as zeros, where raylib's reads past them.
+	/** Returns a rectangle of an image, in its format. A rectangle not wholly inside the image, of no size, or of a compressed image
+		gives an empty image, with a warning.
 
 		@param image  The image.
 		@param rec  The rectangle, in pixels, cut to whole pixels.
@@ -3380,7 +3511,7 @@ class Raylib {
 		`ImageResize`, which isn't raylib's.
 
 		@param font  The font, its glyphs' images drawn.
-		@param text  The text.
+		@param text  The text; null gives an empty image.
 		@param fontSize  The height of a line, in pixels.
 		@param spacing  The space between letters, at the font's size.
 		@param tint  The color the glyphs are multiplied by.
@@ -3442,8 +3573,9 @@ class Raylib {
 	public static inline function ImageAlphaPremultiply(image:Image):Void
 		RTextures.ImageAlphaPremultiply(image);
 
-	/** Blurs an image, as raylib's does: an approximate Gaussian, four passes of a box blur across and down, over premultiplied alpha.
-		A box reaching past the image's last pixel reads 0 there, where raylib's reads past its pixels.
+	/** Blurs an image, as raylib's does: an approximate Gaussian, four passes of a box blur across and down, over premultiplied alpha,
+		each channel taken back from it no higher than 255. A box reaching past the image's last pixel reads 0 there, where raylib's reads
+		past its pixels.
 
 		@param image  The image.
 		@param blurSize  How far each box reaches either side of a pixel, in pixels. */
@@ -3451,8 +3583,8 @@ class Raylib {
 		RTextures.ImageBlurGaussian(image, blurSize);
 
 	/** Applies a square kernel to an image, as raylib's does: each channel, alpha too, the sum of the pixels around it as fractions times
-		the weights; red, green and blue clamped to 0 to 1, alpha not. A pixel past the left or right edge is taken from the row beside,
-		one past the top or bottom is 0. A count that isn't square changes nothing, with a warning.
+		the weights, clamped to 0 to 1. A pixel past an edge is taken from the edge. A count that isn't square changes nothing, with a
+		warning.
 
 		@param image  The image.
 		@param kernel  The weights, rows top first.
@@ -3618,8 +3750,7 @@ class Raylib {
 	public static inline function GetImageAlphaBorder(image:Image, threshold:Float):Rectangle
 		return RTextures.GetImageAlphaBorder(image, threshold);
 
-	/** Returns a pixel's color, as `LoadImageColors` reads it but for raylib's R32G32B32A32 and R16G16B16A16, whose channels are each
-		read from red. A pixel outside the image is clear black, with a warning.
+	/** Returns a pixel's color, as `LoadImageColors` reads it. A pixel outside the image is clear black, with a warning.
 
 		@param image  The image.
 		@param x  The pixel's column.
@@ -3653,7 +3784,7 @@ class Raylib {
 	public static inline function ImageDrawPixelV(dst:Image, position:Vector2, color:Color):Void
 		RTextures.ImageDrawPixelV(dst, position, color);
 
-	/** Draws a line one pixel wide, from its start up to its end; the end pixel isn't drawn.
+	/** Draws a line one pixel wide, from its start to its end, both drawn.
 
 		@param dst  The image.
 		@param startPosX  The start's column.
@@ -3673,18 +3804,28 @@ class Raylib {
 	public static inline function ImageDrawLineV(dst:Image, start:Vector2, end:Vector2, color:Color):Void
 		RTextures.ImageDrawLineV(dst, start, end, color);
 
-	/** Draws a line of a thickness: the line, and copies of it above and below for a line more across than down, left and right
-		otherwise. Its ends are rounded to whole pixels.
+	/** Draws a line of a thickness: as many lines as it is thick, side by side, below and above the line for a line more across than
+		down, right and left of it otherwise (the odd one out below or right). Its ends are rounded to whole pixels; a line from a pixel
+		to itself draws nothing.
 
 		@param dst  The image.
 		@param start  The start.
 		@param end  The end.
-		@param thick  The thickness, in pixels.
+		@param thick  The thickness, in pixels; less than 1 draws the line alone.
 		@param color  The color. */
 	public static inline function ImageDrawLineEx(dst:Image, start:Vector2, end:Vector2, thick:Int, color:Color):Void
 		RTextures.ImageDrawLineEx(dst, start, end, thick, color);
 
-	/** Fills a circle.
+	/** Draws lines one pixel wide from each point to the next, as `ImageDrawLineV` draws each.
+
+		@param dst  The image.
+		@param points  The points.
+		@param pointCount  How many of them to draw through; under 2 draws nothing.
+		@param color  The color. */
+	public static inline function ImageDrawLineStrip(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
+		RTextures.ImageDrawLineStrip(dst, points, pointCount, color);
+
+	/** Fills a circle, each row as wide either side of the middle.
 
 		@param dst  The image.
 		@param centerX  The middle's column.
@@ -3722,6 +3863,17 @@ class Raylib {
 	public static inline function ImageDrawCircleLinesV(dst:Image, center:Vector2, radius:Int, color:Color):Void
 		RTextures.ImageDrawCircleLinesV(dst, center, radius, color);
 
+	/** Fills a circle that blends from one color at its middle to another at its edge, by each pixel's center's distance from the
+		middle; a pixel whose center is outside is left.
+
+		@param dst  The image.
+		@param center  The middle.
+		@param radius  The radius, in pixels; 0 or less draws nothing.
+		@param inner  The color at the middle.
+		@param outer  The color at the edge. */
+	public static inline function ImageDrawCircleGradient(dst:Image, center:Vector2, radius:Float, inner:Color, outer:Color):Void
+		RTextures.ImageDrawCircleGradient(dst, center, radius, inner, outer);
+
 	/** Fills a rectangle; what falls outside the image is skipped.
 
 		@param dst  The image.
@@ -3750,7 +3902,17 @@ class Raylib {
 	public static inline function ImageDrawRectangleRec(dst:Image, rec:Rectangle, color:Color):Void
 		RTextures.ImageDrawRectangleRec(dst, rec, color);
 
-	/** Outlines a rectangle, the outline inside it.
+	/** Fills a rectangle turned about a point of it: each pixel whose center is inside it.
+
+		@param dst  The image.
+		@param rec  The rectangle, in pixels; its x and y are where the point is drawn. One 0 wide or high, or less, draws nothing.
+		@param origin  The point it turns about, from its top-left corner.
+		@param rotation  The turn, in degrees clockwise.
+		@param color  The color. */
+	public static inline function ImageDrawRectanglePro(dst:Image, rec:Rectangle, origin:Vector2, rotation:Float, color:Color):Void
+		RTextures.ImageDrawRectanglePro(dst, rec, origin, rotation, color);
+
+	/** Outlines a rectangle, the outline inside it, as `ImageDrawRectangleLinesEx` does.
 
 		@param dst  The image.
 		@param rec  The rectangle, in pixels.
@@ -3758,6 +3920,26 @@ class Raylib {
 		@param color  The color. */
 	public static inline function ImageDrawRectangleLines(dst:Image, rec:Rectangle, thick:Int, color:Color):Void
 		RTextures.ImageDrawRectangleLines(dst, rec, thick, color);
+
+	/** Outlines a rectangle, the outline inside it: its top and bottom across its whole width, its sides between them.
+
+		@param dst  The image.
+		@param rec  The rectangle, in pixels, cut to whole pixels.
+		@param thick  The outline's thickness, in pixels.
+		@param color  The color. */
+	public static inline function ImageDrawRectangleLinesEx(dst:Image, rec:Rectangle, thick:Int, color:Color):Void
+		RTextures.ImageDrawRectangleLinesEx(dst, rec, thick, color);
+
+	/** Fills a rectangle that blends between a color at each corner, by each pixel's top-left corner's place in it.
+
+		@param dst  The image.
+		@param rec  The rectangle, in pixels; one 0 wide or high, or less, draws nothing.
+		@param col1  The top-left corner's color.
+		@param col2  The bottom-left corner's color.
+		@param col3  The bottom-right corner's color.
+		@param col4  The top-right corner's color. */
+	public static inline function ImageDrawRectangleGradientEx(dst:Image, rec:Rectangle, col1:Color, col2:Color, col3:Color, col4:Color):Void
+		RTextures.ImageDrawRectangleGradientEx(dst, rec, col1, col2, col3, col4);
 
 	/** Fills a triangle; its corners may go either way round.
 
@@ -3781,6 +3963,18 @@ class Raylib {
 		@param c3  The third corner's color. */
 	public static inline function ImageDrawTriangleEx(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
 		RTextures.ImageDrawTriangleEx(dst, v1, v2, v3, c1, c2, c3);
+
+	/** Fills a triangle, each corner its own color, blended across it as `ImageDrawTriangleEx` blends it.
+
+		@param dst  The image.
+		@param v1  The first corner.
+		@param v2  The second corner.
+		@param v3  The third corner.
+		@param c1  The first corner's color.
+		@param c2  The second corner's color.
+		@param c3  The third corner's color. */
+	public static inline function ImageDrawTriangleGradient(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
+		RTextures.ImageDrawTriangleGradient(dst, v1, v2, v3, c1, c2, c3);
 
 	/** Outlines a triangle with three `ImageDrawLine`s, its corners cut to whole pixels.
 
@@ -3813,7 +4007,7 @@ class Raylib {
 	/** Draws a rectangle of one image into a rectangle of another, tinted, blended over (raylib's `ColorAlphaBlend`), in their formats.
 		A source with no alpha under an opaque tint is copied, the tint's color ignored, as raylib's is; a float destination is unchanged,
 		as `SetPixelColor` writes none. A source rectangle of another whole-pixel size than the destination's is first resized by
-		`ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them.
+		`ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them. raylib 6 calls it `ImageDrawImagePro`.
 
 		@param dst  The image drawn into.
 		@param src  The image drawn from.
@@ -3822,6 +4016,51 @@ class Raylib {
 		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
 	public static inline function ImageDraw(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectangle, tint:Color):Void
 		RTextures.ImageDraw(dst, src, srcRec, dstRec, tint);
+
+	/** Draws one image into another at a point, tinted and blended over, as `ImageDraw` draws it.
+
+		@param dst  The image drawn into.
+		@param src  The image drawn.
+		@param posX  The left edge, in the destination's pixels.
+		@param posY  The top edge.
+		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
+	public static inline function ImageDrawImage(dst:Image, src:Image, posX:Int, posY:Int, tint:Color):Void
+		RTextures.ImageDrawImage(dst, src, posX, posY, tint);
+
+	/** Draws a rectangle of one image into another at a point, at its size, tinted and blended over, as `ImageDraw` draws it.
+
+		@param dst  The image drawn into.
+		@param src  The image drawn from.
+		@param srcRec  The source rectangle, in its pixels, cut to it.
+		@param position  The top-left corner, in the destination's pixels.
+		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
+	public static inline function ImageDrawImageRec(dst:Image, src:Image, srcRec:Rectangle, position:Vector2, tint:Color):Void
+		RTextures.ImageDrawImageRec(dst, src, srcRec, position, tint);
+
+	/** Draws a rectangle of one image into a rectangle of another, as `ImageDraw` draws it. The origin and rotation are taken and not
+		used, as in raylib 6.2, whose own are still to be written.
+
+		@param dst  The image drawn into.
+		@param src  The image drawn from.
+		@param srcRec  The source rectangle, in its pixels, cut to it.
+		@param dstRec  The destination rectangle.
+		@param origin  The point it would turn about; not used.
+		@param rotation  The turn, in degrees; not used.
+		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
+	public static inline function ImageDrawImagePro(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void
+		RTextures.ImageDrawImagePro(dst, src, srcRec, dstRec, origin, rotation, tint);
+
+	/** Draws one image into another turned about its top-left corner and scaled: each destination pixel whose center falls on the
+		source takes its nearest source pixel, tinted and blended over (`ColorAlphaBlend`); clear source pixels are skipped.
+
+		@param dst  The image drawn into.
+		@param src  The image drawn.
+		@param position  Where its top-left corner is drawn, in the destination's pixels.
+		@param rotation  The turn, in degrees clockwise.
+		@param scale  The scale; 1 for its own size.
+		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
+	public static inline function ImageDrawImageEx(dst:Image, src:Image, position:Vector2, rotation:Float, scale:Float, tint:Color):Void
+		RTextures.ImageDrawImageEx(dst, src, position, rotation, scale, tint);
 
 	/** Draws text in raylib's default font into an image, letters 1 pixel apart, as `ImageDrawTextEx` draws it.
 
@@ -3845,6 +4084,22 @@ class Raylib {
 		@param tint  The color. */
 	public static inline function ImageDrawTextEx(dst:Image, font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
 		RTextures.ImageDrawTextEx(dst, font, text, position, fontSize, spacing, tint);
+
+	/** Draws text in a font into an image, turned about a point. raylib 6.2's draws nothing, its body still to be written, and so does
+		this.
+
+		@param dst  The image.
+		@param font  The font.
+		@param text  The text.
+		@param position  Where the point is drawn.
+		@param origin  The point it turns about, from the text's top-left corner.
+		@param rotation  The turn, in degrees.
+		@param fontSize  The height of a line, in pixels.
+		@param spacing  The space between letters, at the font's size.
+		@param tint  The color. */
+	public static inline function ImageDrawTextPro(dst:Image, font:Font, text:String, position:Vector2, origin:Vector2, rotation:Float, fontSize:Float,
+			spacing:Float, tint:Color):Void
+		RTextures.ImageDrawTextPro(dst, font, text, position, origin, rotation, fontSize, spacing, tint);
 
 	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, so the texture's
 		format is `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and it has one level. A compressed format gives no texture, with a warning.
@@ -3875,8 +4130,7 @@ class Raylib {
 		RTextures.DrawTextureNPatch(texture, nPatchInfo, dest, origin, rotation, tint);
 
 	/** Returns one pixel's color from pixels in a format, as raylib's does: 16-bit channels widened by integers, floats times 255.
-		raylib's R5G5B5A1 blue takes in the alpha bit, as it does here. raylib takes a pointer to the pixel; here it is the pixels and the
-		pixel's first byte.
+		raylib takes a pointer to the pixel; here it is the pixels and the pixel's first byte.
 
 		@param srcPtr  The pixels.
 		@param format  Their format (`PIXELFORMAT_UNCOMPRESSED_*`).
@@ -5604,7 +5858,8 @@ class Raylib {
 		RAsync.LoadImageFromTextureAsync(texture, loaded, failed);
 
 	/** Reads the screen, answering as the next frame ends: helix-ray's own, in place of raylib's `LoadImageFromScreen`, as the GPU
-		answers later. The image is the framebuffer's size, rows top first, its alpha opaque, as raylib's.
+		answers later. The image is the framebuffer's size, as raylib 6.2's is (5.5 scaled the screen's size by its DPI instead), rows top
+		first, its alpha opaque.
 
 		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */

@@ -10,6 +10,8 @@ class Geometry2D {
 
 	/** Returns whether two segments cross, and where. Parallel segments, overlapping ones too, don't.
 
+		Each segment is a start plus a fraction of its direction, and they cross when both fractions are from 0 to 1, so a nearly
+		vertical or nearly horizontal segment is tested as any other.
 		@param ax  The first segment's start x.
 		@param ay  Its start y.
 		@param bx  Its end x.
@@ -18,20 +20,19 @@ class Geometry2D {
 		@param cy  Its start y.
 		@param dx  Its end x.
 		@param dy  Its end y.
-		@param out  Optional. Set to where they cross, when they do.
+		@param out  Optional. Set to where they cross, when they do: on the first segment, at its fraction.
 		@return  True when they cross, their ends included. */
 	public static function intersectSegments(ax:Float, ay:Float, bx:Float, by:Float, cx:Float, cy:Float, dx:Float, dy:Float, ?out:Vector2D):Bool {
-		var div = (dy - cy) * (bx - ax) - (dx - cx) * (by - ay);
+		var rx = bx - ax, ry = by - ay, sx = dx - cx, sy = dy - cy;
+		var div = rx * sy - ry * sx;
 		if (Math.abs(div) < EPSILON)
 			return false;
-		var c1 = ax * by - ay * bx, c2 = cx * dy - cy * dx;
-		var x = ((cx - dx) * c1 - (ax - bx) * c2) / div,
-			y = ((cy - dy) * c1 - (ay - by) * c2) / div;
-		// Along an axis a segment barely spans, its rounding is no test.
-		if (outside(x, ax, bx) || outside(x, cx, dx) || outside(y, ay, by) || outside(y, cy, dy))
+		var acx = cx - ax, acy = cy - ay;
+		var t = (acx * sy - acy * sx) / div, u = (acx * ry - acy * rx) / div;
+		if (t < 0 || t > 1 || u < 0 || u > 1)
 			return false;
 		if (out != null)
-			out.set(x, y);
+			out.set(ax + t * rx, ay + t * ry);
 		return true;
 	}
 
@@ -106,7 +107,4 @@ class Geometry2D {
 		@return  True when they touch, the circle's edge included. */
 	public static function intersectsCircleSegment(cx:Float, cy:Float, radius:Float, ax:Float, ay:Float, bx:Float, by:Float):Bool
 		return getDistanceToSegment(cx, cy, ax, ay, bx, by) <= radius;
-
-	static function outside(v:Float, a:Float, b:Float):Bool
-		return Math.abs(a - b) > EPSILON && (v < Math.min(a, b) || v > Math.max(a, b));
 }

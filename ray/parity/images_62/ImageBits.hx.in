@@ -1,0 +1,36 @@
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import Parity.*;
+
+// helix-ray's image functions taken from raylib 6.2, their images printed by Parity as ref.c.in prints raylib's.
+class ImageBits {
+	// An image of xorshift32 noise, every byte its own (alpha too), RGBA, as ref.c.in makes it.
+	static function noise(width:Int, height:Int, seed:Int):Image {
+		var state = seed, bytes = haxe.io.Bytes.alloc(width * height * 4);
+		for (i in 0...bytes.length) {
+			state ^= state << 13;
+			state ^= state >>> 17;
+			state ^= state << 5;
+			bytes.set(i, (state >>> 8) & 255);
+		}
+		return new Image(bytes, width, height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+	}
+
+	// noise in another format, through ImageFormat.
+	static function noiseIn(width:Int, height:Int, seed:Int, format:Int):Image {
+		var image = noise(width, height, seed);
+		ImageFormat(image, format);
+		return image;
+	}
+
+	static function main() {
+		open();
+		var A = new Color(32, 128, 224, 255), B = new Color(240, 160, 16, 64), C = new Color(10, 220, 30, 128), D = new Color(255, 255, 0, 200);
+		var sharpen = [0., -1, 0, -1, 5, -1, 0, -1, 0];
+		var ones = [1., 1, 1, 1, 1, 1, 1, 1, 1];
+		var box5 = [for (i in 0...25) .04];
+		var edge4 = [1., -1, -1, 1];
+		@CASES@
+		save();
+	}
+}

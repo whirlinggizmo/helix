@@ -2054,17 +2054,24 @@ static function DrawLineV(startPos:Vector2, endPos:Vector2, color:Color):Void
 static function DrawLineEx(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void
 static function DrawLineStrip(points:Array<Vector2>, pointCount:Int, color:Color):Void
 static function DrawLineBezier(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void
+static function DrawLineDashed(startPos:Vector2, endPos:Vector2, dashSize:Int, spaceSize:Int, color:Color):Void
 static function DrawCircle(centerX:Int, centerY:Int, radius:Float, color:Color):Void
 static function DrawCircleV(center:Vector2, radius:Float, color:Color):Void
 static function DrawCircleSector(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
 static function DrawCircleSectorLines(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
+static function DrawCircleSectorLinesEx(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, thick:Float, color:Color):Void
 static function DrawCircleGradient(centerX:Int, centerY:Int, radius:Float, inner:Color, outer:Color):Void
 static function DrawCircleLines(centerX:Int, centerY:Int, radius:Float, color:Color):Void
 static function DrawCircleLinesV(center:Vector2, radius:Float, color:Color):Void
+static function DrawCircleLinesEx(center:Vector2, radius:Float, thick:Float, color:Color):Void
 static function DrawEllipse(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void
+static function DrawEllipseV(center:Vector2, radiusH:Float, radiusV:Float, color:Color):Void
 static function DrawEllipseLines(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void
+static function DrawEllipseLinesV(center:Vector2, radiusH:Float, radiusV:Float, color:Color):Void
+static function DrawEllipseLinesEx(center:Vector2, radiusH:Float, radiusV:Float, thick:Float, color:Color):Void
 static function DrawRing(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
 static function DrawRingLines(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
+static function DrawRingLinesEx(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int, thick:Float, color:Color):Void
 static function DrawRectangle(posX:Int, posY:Int, width:Int, height:Int, color:Color):Void
 static function DrawRectangleV(position:Vector2, size:Vector2, color:Color):Void
 static function DrawRectangleRec(rec:Rectangle, color:Color):Void
@@ -2078,7 +2085,9 @@ static function DrawRectangleRounded(rec:Rectangle, roundness:Float, segments:In
 static function DrawRectangleRoundedLines(rec:Rectangle, roundness:Float, segments:Int, color:Color):Void
 static function DrawRectangleRoundedLinesEx(rec:Rectangle, roundness:Float, segments:Int, lineThick:Float, color:Color):Void
 static function DrawTriangle(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
+static function DrawTriangleGradient(v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
 static function DrawTriangleLines(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
+static function DrawTriangleLinesEx(v1:Vector2, v2:Vector2, v3:Vector2, thick:Float, color:Color):Void
 static function DrawTriangleFan(points:Array<Vector2>, pointCount:Int, color:Color):Void
 static function DrawTriangleStrip(points:Array<Vector2>, pointCount:Int, color:Color):Void
 static function DrawPoly(center:Vector2, sides:Int, radius:Float, rotation:Float, color:Color):Void
@@ -2098,6 +2107,7 @@ static function GetSplinePointLinear(startPos:Vector2, endPos:Vector2, t:Float):
 static function GetSplinePointBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2
 static function GetSplinePointCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2
 static function GetSplinePointBezierQuad(p1:Vector2, c2:Vector2, p3:Vector2, t:Float):Vector2
+static function GetSplinePointBezierQuadratic(startPos:Vector2, controlPos:Vector2, endPos:Vector2, t:Float):Vector2
 static function GetSplinePointBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, t:Float):Vector2
 static function CheckCollisionRecs(rec1:Rectangle, rec2:Rectangle):Bool
 static function CheckCollisionCircles(center1:Vector2, radius1:Float, center2:Vector2, radius2:Float):Bool
@@ -2150,28 +2160,42 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `endPos`: The end.
   - `thick`: The thickness, in pixels.
   - `color`: The color.
+- `DrawLineDashed`: Draws a dashed line one pixel wide: dashes of a length with gaps of another between them, from the start; the last dash stops at the end.
+  - `startPos`: The start.
+  - `endPos`: The end.
+  - `dashSize`: Each dash's length, in pixels; 0 or less, or a line shorter than a dash and a gap, draws the line solid.
+  - `spaceSize`: Each gap's length, in pixels.
+  - `color`: The color.
 - `DrawCircle`: Draws a filled circle.
   - `centerX`: The center's x.
   - `centerY`: The center's y.
-  - `radius`: The radius.
+  - `radius`: The radius; 0 or less draws nothing.
   - `color`: The color.
 - `DrawCircleV`: Draws a filled circle.
   - `center`: The center.
-  - `radius`: The radius.
+  - `radius`: The radius; 0 or less draws nothing.
   - `color`: The color.
 - `DrawCircleSector`: Draws a filled slice of a circle, clockwise from one angle to another.
   - `center`: The center.
-  - `radius`: The radius.
+  - `radius`: The radius; 0 or less draws nothing.
   - `startAngle`: The angle it starts at, in degrees from the right.
-  - `endAngle`: The angle it ends at.
+  - `endAngle`: The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
   - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
   - `color`: The color.
-- `DrawCircleSectorLines`: Draws a slice of a circle's outline, one pixel wide, with lines from the center to its ends.
+- `DrawCircleSectorLines`: Draws a slice of a circle's outline, one pixel wide, with lines from the center to its ends; a whole turn has none.
   - `center`: The center.
-  - `radius`: The radius.
+  - `radius`: The radius; 0 or less draws nothing.
   - `startAngle`: The angle it starts at, in degrees from the right.
-  - `endAngle`: The angle it ends at.
+  - `endAngle`: The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
   - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+  - `color`: The color.
+- `DrawCircleSectorLinesEx`: Draws a slice of a circle's outline of a thickness, inside it, or outside it for a negative thickness, with its edges from the center to its ends that thick too; a whole turn drawn outside has none.
+  - `center`: The center.
+  - `radius`: The radius; 0 or less draws nothing.
+  - `startAngle`: The angle it starts at, in degrees from the right.
+  - `endAngle`: The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
+  - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+  - `thick`: The outline's thickness, measured across its curve's straight edges; one so thick it meets itself fills the slice.
   - `color`: The color.
 - `DrawCircleGradient`: Draws a filled circle that blends from one color at its center to another at its edge.
   - `centerX`: The center's x.
@@ -2188,9 +2212,19 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `center`: The center.
   - `radius`: The radius.
   - `color`: The color.
+- `DrawCircleLinesEx`: Draws a circle's outline of a thickness, inside it: a ring of 36 segments from the radius less the thickness to the radius.
+  - `center`: The center.
+  - `radius`: The radius.
+  - `thick`: The thickness; more than the radius draws a filled circle, and a negative one an outline that thick outside it.
+  - `color`: The color.
 - `DrawEllipse`: Draws a filled ellipse.
   - `centerX`: The center's x.
   - `centerY`: The center's y.
+  - `radiusH`: The radius across.
+  - `radiusV`: The radius up and down.
+  - `color`: The color.
+- `DrawEllipseV`: Draws a filled ellipse.
+  - `center`: The center.
   - `radiusH`: The radius across.
   - `radiusV`: The radius up and down.
   - `color`: The color.
@@ -2200,21 +2234,41 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `radiusH`: The radius across.
   - `radiusV`: The radius up and down.
   - `color`: The color.
+- `DrawEllipseLinesV`: Draws an ellipse's outline, one pixel wide.
+  - `center`: The center.
+  - `radiusH`: The radius across.
+  - `radiusV`: The radius up and down.
+  - `color`: The color.
+- `DrawEllipseLinesEx`: Draws an ellipse's outline of a thickness, inside it, or outside it for a negative thickness: 36 segments, each radius less the thickness to the radius.
+  - `center`: The center.
+  - `radiusH`: The radius across.
+  - `radiusV`: The radius up and down.
+  - `thick`: The thickness; as much as either radius draws a filled ellipse.
+  - `color`: The color.
 - `DrawRing`: Draws a filled ring, or a slice of one, clockwise from one angle to another.
   - `center`: The center.
   - `innerRadius`: The radius of its hole; 0 or less draws a slice of a circle.
-  - `outerRadius`: The radius of its edge.
+  - `outerRadius`: The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
   - `startAngle`: The angle it starts at, in degrees from the right.
-  - `endAngle`: The angle it ends at; the same as the start draws nothing.
+  - `endAngle`: The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
   - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
   - `color`: The color.
-- `DrawRingLines`: Draws a ring's outline, or a slice of one, one pixel wide.
+- `DrawRingLines`: Draws a ring's outline, or a slice of one, one pixel wide, with lines across its ends; a whole turn has none.
   - `center`: The center.
   - `innerRadius`: The radius of its hole; 0 or less draws a slice of a circle.
-  - `outerRadius`: The radius of its edge.
+  - `outerRadius`: The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
   - `startAngle`: The angle it starts at, in degrees from the right.
-  - `endAngle`: The angle it ends at; the same as the start draws nothing.
+  - `endAngle`: The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
   - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+  - `color`: The color.
+- `DrawRingLinesEx`: Draws a ring's outline, or a slice of one, of a thickness: inside its edge and outside its hole, or the other way for a negative thickness, with its ends that thick too; a whole turn drawn outside has no ends.
+  - `center`: The center.
+  - `innerRadius`: The radius of its hole; 0 or less draws a slice of a circle (`DrawCircleSectorLinesEx`) for a negative thickness.
+  - `outerRadius`: The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
+  - `startAngle`: The angle it starts at, in degrees from the right.
+  - `endAngle`: The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
+  - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
+  - `thick`: The outline's thickness, measured across its curve's straight edges; one so thick it meets itself fills the ring.
   - `color`: The color.
 - `DrawRectangle`: Draws a filled rectangle.
   - `posX`: The left edge.
@@ -2254,27 +2308,27 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `bottomLeft`: The bottom-left corner's color.
   - `topRight`: The bottom-right corner's color.
   - `bottomRight`: The top-right corner's color.
-- `DrawRectangleLines`: Draws a rectangle's outline, one pixel wide.
+- `DrawRectangleLines`: Draws a rectangle's outline, one pixel wide, its lines through the centers of its edge pixels.
   - `posX`: The left edge.
   - `posY`: The top edge.
   - `width`: The width.
   - `height`: The height.
   - `color`: The color.
 
-  Each line reaches half a pixel past its corners, at the 2D camera's zoom, so the corners are filled.
-- `DrawRectangleLinesEx`: Draws a rectangle's outline, its lines inside it.
+  The lines are half a pixel inside the edges, by the matrix `rlPushMatrix` and its kin set (`rlGetMatrixTransform`); a 2D camera's zoom isn't counted, so under a camera they are half a unit inside.
+- `DrawRectangleLinesEx`: Draws a rectangle's outline of a thickness, inside it, or outside it for a negative thickness.
   - `rec`: The rectangle.
-  - `lineThick`: The lines' thickness; more than the rectangle's width or height is clamped to half its shorter side.
+  - `lineThick`: The lines' thickness; more than half the rectangle's width or height is half its shorter side, and 0 or less draws the outline that thick outside the rectangle (bars of no width, for 0).
   - `color`: The color.
 - `DrawRectangleRounded`: Draws a filled rectangle with rounded corners.
   - `rec`: The rectangle.
   - `roundness`: How round its corners are: 0 for square, 1 for a radius of half its shorter side.
-  - `segments`: How many straight edges make each corner's curve; fewer than 4 picks enough for a smooth curve.
+  - `segments`: How many straight edges make each corner's curve; fewer than 1 picks enough for a smooth curve.
   - `color`: The color.
-- `DrawRectangleRoundedLines`: Draws a rounded rectangle's outline, one pixel wide.
+- `DrawRectangleRoundedLines`: Draws a rounded rectangle's outline, one pixel wide, its lines through the centers of its edge pixels.
   - `rec`: The rectangle.
-  - `roundness`: How round its corners are: 0 for square, 1 for a radius of half its shorter side.
-  - `segments`: How many straight edges make each corner's curve; fewer than 4 picks enough for a smooth curve.
+  - `roundness`: How round its corners are: 0 or less for square (`DrawRectangleLines`, the rectangle cut to whole pixels), 1 for a radius of half its shorter side.
+  - `segments`: How many straight edges make each corner's curve; fewer than 1 picks enough for a smooth curve.
   - `color`: The color.
 - `DrawRectangleRoundedLinesEx`: Draws a rounded rectangle's outline, its lines outside it.
   - `rec`: The rectangle.
@@ -2289,11 +2343,28 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `color`: The color.
 
   Its points must go counterclockwise on the screen, as raylib's must: a triangle whose points go clockwise faces away, and isn't drawn while back faces are culled (`rlEnableBackfaceCulling`, the default).
+- `DrawTriangleGradient`: Draws a filled triangle that blends between a color at each point.
+  - `v1`: The first point.
+  - `v2`: The second point.
+  - `v3`: The third point.
+  - `c1`: The first point's color.
+  - `c2`: The second point's color.
+  - `c3`: The third point's color.
+
+  Its points must go counterclockwise on the screen, as `DrawTriangle`'s must.
 - `DrawTriangleLines`: Draws a triangle's outline, one pixel wide.
   - `v1`: The first point.
   - `v2`: The second point.
   - `v3`: The third point.
   - `color`: The color.
+- `DrawTriangleLinesEx`: Draws a triangle's outline of a thickness, inside it, or outside it for a negative thickness: the triangle less a copy of it shrunk about its incenter, so each side is as thick.
+  - `v1`: The first point.
+  - `v2`: The second point.
+  - `v3`: The third point.
+  - `thick`: The thickness; as much as the radius of the circle inside it draws it filled.
+  - `color`: The color.
+
+  Its points must go counterclockwise on the screen, as `DrawTriangle`'s must.
 - `DrawTriangleFan`: Draws filled triangles that all share the first point, each from it to the next two points.
   - `points`: The points, the shared one first.
   - `pointCount`: How many of them to draw, 3 or more.
@@ -2316,12 +2387,12 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `radius`: The distance from the center to each corner.
   - `rotation`: The turn of its first corner from the right, in degrees clockwise.
   - `color`: The color.
-- `DrawPolyLinesEx`: Draws a regular polygon's outline, its lines inside it.
+- `DrawPolyLinesEx`: Draws a regular polygon's outline of a thickness, inside it, or outside it for a negative thickness.
   - `center`: The center.
   - `sides`: How many sides it has, 3 or more.
   - `radius`: The distance from the center to each corner.
   - `rotation`: The turn of its first corner from the right, in degrees clockwise.
-  - `lineThick`: The lines' thickness.
+  - `lineThick`: The lines' thickness, measured across each side; past the center it fills the polygon, and a negative thickness draws the outline that thick outside it.
   - `color`: The color.
 - `DrawSplineLinear`: Draws straight lines of a thickness from each point to the next.
   - `points`: The points.
@@ -2403,6 +2474,12 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `p1`: The start.
   - `c2`: The control point.
   - `p3`: The end.
+  - `t`: How far along, 0 at the start to 1 at the end.
+  - returns: The point.
+- `GetSplinePointBezierQuadratic`: Returns a point on a quadratic Bezier curve: `GetSplinePointBezierQuad` by raylib 6's name for it.
+  - `startPos`: The start.
+  - `controlPos`: The control point.
+  - `endPos`: The end.
   - `t`: How far along, 0 at the start to 1 at the end.
   - returns: The point.
 - `GetSplinePointBezierCubic`: Returns a point on a cubic Bezier curve.
@@ -2497,6 +2574,7 @@ static function ColorLerp(color1:Color, color2:Color, factor:Float):Color
 static function GetColor(hexValue:Int):Color
 static function GetPixelDataSize(width:Int, height:Int, format:Int):Int
 static function LoadRenderTexture(width:Int, height:Int):RenderTexture2D
+static function LoadRenderTextureEx(width:Int, height:Int, format:Int):RenderTexture2D
 static function IsRenderTextureValid(target:RenderTexture2D):Bool
 static function UnloadRenderTexture(target:RenderTexture2D):Void
 static function BeginTextureMode(target:RenderTexture2D):Void
@@ -2558,22 +2636,33 @@ static function ImageDrawPixelV(dst:Image, position:Vector2, color:Color):Void
 static function ImageDrawLine(dst:Image, startPosX:Int, startPosY:Int, endPosX:Int, endPosY:Int, color:Color):Void
 static function ImageDrawLineV(dst:Image, start:Vector2, end:Vector2, color:Color):Void
 static function ImageDrawLineEx(dst:Image, start:Vector2, end:Vector2, thick:Int, color:Color):Void
+static function ImageDrawLineStrip(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
 static function ImageDrawCircle(dst:Image, centerX:Int, centerY:Int, radius:Int, color:Color):Void
 static function ImageDrawCircleV(dst:Image, center:Vector2, radius:Int, color:Color):Void
 static function ImageDrawCircleLines(dst:Image, centerX:Int, centerY:Int, radius:Int, color:Color):Void
 static function ImageDrawCircleLinesV(dst:Image, center:Vector2, radius:Int, color:Color):Void
+static function ImageDrawCircleGradient(dst:Image, center:Vector2, radius:Float, inner:Color, outer:Color):Void
 static function ImageDrawRectangle(dst:Image, posX:Int, posY:Int, width:Int, height:Int, color:Color):Void
 static function ImageDrawRectangleV(dst:Image, position:Vector2, size:Vector2, color:Color):Void
 static function ImageDrawRectangleRec(dst:Image, rec:Rectangle, color:Color):Void
+static function ImageDrawRectanglePro(dst:Image, rec:Rectangle, origin:Vector2, rotation:Float, color:Color):Void
 static function ImageDrawRectangleLines(dst:Image, rec:Rectangle, thick:Int, color:Color):Void
+static function ImageDrawRectangleLinesEx(dst:Image, rec:Rectangle, thick:Int, color:Color):Void
+static function ImageDrawRectangleGradientEx(dst:Image, rec:Rectangle, col1:Color, col2:Color, col3:Color, col4:Color):Void
 static function ImageDrawTriangle(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
 static function ImageDrawTriangleEx(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
+static function ImageDrawTriangleGradient(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
 static function ImageDrawTriangleLines(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
 static function ImageDrawTriangleFan(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
 static function ImageDrawTriangleStrip(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
 static function ImageDraw(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectangle, tint:Color):Void
+static function ImageDrawImage(dst:Image, src:Image, posX:Int, posY:Int, tint:Color):Void
+static function ImageDrawImageRec(dst:Image, src:Image, srcRec:Rectangle, position:Vector2, tint:Color):Void
+static function ImageDrawImagePro(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void
+static function ImageDrawImageEx(dst:Image, src:Image, position:Vector2, rotation:Float, scale:Float, tint:Color):Void
 static function ImageDrawText(dst:Image, text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void
 static function ImageDrawTextEx(dst:Image, font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
+static function ImageDrawTextPro(dst:Image, font:Font, text:String, position:Vector2, origin:Vector2, rotation:Float, fontSize:Float, spacing:Float, tint:Color):Void
 static function LoadTextureFromImage(image:Image):Texture2D
 static function SetTextureWrap(texture:Texture2D, wrap:Int):Void
 static function DrawTextureNPatch(texture:Texture2D, nPatchInfo:NPatchInfo, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void
@@ -2671,11 +2760,16 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `width`: The width, in pixels.
   - `height`: The height.
   - `format`: The format (`PIXELFORMAT_*`).
-  - returns: The bytes; a compressed format smaller than 4 by 4 pixels takes a whole block, 8 or 16 bytes, and an unknown format 0.
-- `LoadRenderTexture`: Makes a texture to draw into, with depth.
+  - returns: The bytes; a compressed format smaller than 4 by 4 pixels takes a whole block, 8 or 16 bytes. An unknown format, a width or height of 0 or less, and a size of 2 GB or more (with a warning) give 0.
+- `LoadRenderTexture`: Makes a texture to draw into, with depth, 8-bit RGBA.
   - `width`: Its width, in pixels.
   - `height`: Its height.
   - returns: The render texture.
+- `LoadRenderTextureEx`: Makes a texture to draw into, with depth, in a pixel format. helix-ray's render textures are 8-bit RGBA or half-float RGBA, so `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and `PIXELFORMAT_UNCOMPRESSED_R16G16B16A16` (where the GPU draws into half floats, `IGraphics.canRender`) are made; any other format, and a compressed one as in raylib, makes none, with a warning.
+  - `width`: Its width, in pixels.
+  - `height`: Its height.
+  - `format`: Its pixel format (`PIXELFORMAT_*`).
+  - returns: The render texture; one whose id is 0 when the format isn't made.
 - `IsRenderTextureValid`: Returns whether a render texture was made.
   - `target`: The render texture.
   - returns: True when it was.
@@ -2759,12 +2853,12 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
 - `GenImageText`: Returns an image of text's bytes, grayscale: its UTF-8, a byte a pixel, rows top first, the rest black.
   - `width`: The width, in pixels.
   - `height`: The height, in pixels.
-  - `text`: The text.
+  - `text`: The text; null gives a black image.
   - returns: The image.
 - `ImageCopy`: Returns a copy of an image, its mipmaps too.
   - `image`: The image.
   - returns: The copy.
-- `ImageFromImage`: Returns a rectangle of an image, in its format. A row reaching past the image's right edge reads on into the next row, as raylib's does; what lies past the image's pixels reads as zeros, where raylib's reads past them.
+- `ImageFromImage`: Returns a rectangle of an image, in its format. A rectangle not wholly inside the image, of no size, or of a compressed image gives an empty image, with a warning.
   - `image`: The image.
   - `rec`: The rectangle, in pixels, cut to whole pixels.
   - returns: The image.
@@ -2779,7 +2873,7 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - returns: The image.
 - `ImageTextEx`: Returns text in a font, as an image, RGBA, laid out as raylib's: at the font's size, each glyph's image drawn tinted, then scaled to the size, nearest for the default font. A newline starts a line one and a half of the font's size down, though the image's height counts each line as the size and `SetTextLineSpacing`'s spacing, as raylib's does. Another font is scaled by `ImageResize`, which isn't raylib's.
   - `font`: The font, its glyphs' images drawn.
-  - `text`: The text.
+  - `text`: The text; null gives an empty image.
   - `fontSize`: The height of a line, in pixels.
   - `spacing`: The space between letters, at the font's size.
   - `tint`: The color the glyphs are multiplied by.
@@ -2805,10 +2899,10 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `alphaMask`: The mask.
 - `ImageAlphaPremultiply`: Multiplies each pixel's red, green and blue by its alpha, rounding down; the image keeps its format.
   - `image`: The image.
-- `ImageBlurGaussian`: Blurs an image, as raylib's does: an approximate Gaussian, four passes of a box blur across and down, over premultiplied alpha. A box reaching past the image's last pixel reads 0 there, where raylib's reads past its pixels.
+- `ImageBlurGaussian`: Blurs an image, as raylib's does: an approximate Gaussian, four passes of a box blur across and down, over premultiplied alpha, each channel taken back from it no higher than 255. A box reaching past the image's last pixel reads 0 there, where raylib's reads past its pixels.
   - `image`: The image.
   - `blurSize`: How far each box reaches either side of a pixel, in pixels.
-- `ImageKernelConvolution`: Applies a square kernel to an image, as raylib's does: each channel, alpha too, the sum of the pixels around it as fractions times the weights; red, green and blue clamped to 0 to 1, alpha not. A pixel past the left or right edge is taken from the row beside, one past the top or bottom is 0. A count that isn't square changes nothing, with a warning.
+- `ImageKernelConvolution`: Applies a square kernel to an image, as raylib's does: each channel, alpha too, the sum of the pixels around it as fractions times the weights, clamped to 0 to 1. A pixel past an edge is taken from the edge. A count that isn't square changes nothing, with a warning.
   - `image`: The image.
   - `kernel`: The weights, rows top first.
   - `kernelSize`: How many: 9 for 3 by 3, 25 for 5 by 5.
@@ -2879,7 +2973,7 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `image`: The image.
   - `threshold`: The threshold, 0 to 1.
   - returns: The rectangle, in pixels; all zero when no pixel is over it.
-- `GetImageColor`: Returns a pixel's color, as `LoadImageColors` reads it but for raylib's R32G32B32A32 and R16G16B16A16, whose channels are each read from red. A pixel outside the image is clear black, with a warning.
+- `GetImageColor`: Returns a pixel's color, as `LoadImageColors` reads it. A pixel outside the image is clear black, with a warning.
   - `image`: The image.
   - `x`: The pixel's column.
   - `y`: Its row.
@@ -2896,7 +2990,7 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `dst`: The image.
   - `position`: The pixel.
   - `color`: The color.
-- `ImageDrawLine`: Draws a line one pixel wide, from its start up to its end; the end pixel isn't drawn.
+- `ImageDrawLine`: Draws a line one pixel wide, from its start to its end, both drawn.
   - `dst`: The image.
   - `startPosX`: The start's column.
   - `startPosY`: The start's row.
@@ -2908,13 +3002,18 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `start`: The start.
   - `end`: The end.
   - `color`: The color.
-- `ImageDrawLineEx`: Draws a line of a thickness: the line, and copies of it above and below for a line more across than down, left and right otherwise. Its ends are rounded to whole pixels.
+- `ImageDrawLineEx`: Draws a line of a thickness: as many lines as it is thick, side by side, below and above the line for a line more across than down, right and left of it otherwise (the odd one out below or right). Its ends are rounded to whole pixels; a line from a pixel to itself draws nothing.
   - `dst`: The image.
   - `start`: The start.
   - `end`: The end.
-  - `thick`: The thickness, in pixels.
+  - `thick`: The thickness, in pixels; less than 1 draws the line alone.
   - `color`: The color.
-- `ImageDrawCircle`: Fills a circle.
+- `ImageDrawLineStrip`: Draws lines one pixel wide from each point to the next, as `ImageDrawLineV` draws each.
+  - `dst`: The image.
+  - `points`: The points.
+  - `pointCount`: How many of them to draw through; under 2 draws nothing.
+  - `color`: The color.
+- `ImageDrawCircle`: Fills a circle, each row as wide either side of the middle.
   - `dst`: The image.
   - `centerX`: The middle's column.
   - `centerY`: The middle's row.
@@ -2936,6 +3035,12 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `center`: The middle.
   - `radius`: The radius, in pixels.
   - `color`: The color.
+- `ImageDrawCircleGradient`: Fills a circle that blends from one color at its middle to another at its edge, by each pixel's center's distance from the middle; a pixel whose center is outside is left.
+  - `dst`: The image.
+  - `center`: The middle.
+  - `radius`: The radius, in pixels; 0 or less draws nothing.
+  - `inner`: The color at the middle.
+  - `outer`: The color at the edge.
 - `ImageDrawRectangle`: Fills a rectangle; what falls outside the image is skipped.
   - `dst`: The image.
   - `posX`: The left edge.
@@ -2952,11 +3057,29 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `dst`: The image.
   - `rec`: The rectangle, in pixels.
   - `color`: The color.
-- `ImageDrawRectangleLines`: Outlines a rectangle, the outline inside it.
+- `ImageDrawRectanglePro`: Fills a rectangle turned about a point of it: each pixel whose center is inside it.
+  - `dst`: The image.
+  - `rec`: The rectangle, in pixels; its x and y are where the point is drawn. One 0 wide or high, or less, draws nothing.
+  - `origin`: The point it turns about, from its top-left corner.
+  - `rotation`: The turn, in degrees clockwise.
+  - `color`: The color.
+- `ImageDrawRectangleLines`: Outlines a rectangle, the outline inside it, as `ImageDrawRectangleLinesEx` does.
   - `dst`: The image.
   - `rec`: The rectangle, in pixels.
   - `thick`: The outline's thickness, in pixels.
   - `color`: The color.
+- `ImageDrawRectangleLinesEx`: Outlines a rectangle, the outline inside it: its top and bottom across its whole width, its sides between them.
+  - `dst`: The image.
+  - `rec`: The rectangle, in pixels, cut to whole pixels.
+  - `thick`: The outline's thickness, in pixels.
+  - `color`: The color.
+- `ImageDrawRectangleGradientEx`: Fills a rectangle that blends between a color at each corner, by each pixel's top-left corner's place in it.
+  - `dst`: The image.
+  - `rec`: The rectangle, in pixels; one 0 wide or high, or less, draws nothing.
+  - `col1`: The top-left corner's color.
+  - `col2`: The bottom-left corner's color.
+  - `col3`: The bottom-right corner's color.
+  - `col4`: The top-right corner's color.
 - `ImageDrawTriangle`: Fills a triangle; its corners may go either way round.
   - `dst`: The image.
   - `v1`: The first corner.
@@ -2964,6 +3087,14 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `v3`: The third corner.
   - `color`: The color.
 - `ImageDrawTriangleEx`: Fills a triangle, each corner its own color, blended across it as raylib's does: each channel by the pixel's weights, each rounded down, so three corners of one color may not give it exactly.
+  - `dst`: The image.
+  - `v1`: The first corner.
+  - `v2`: The second corner.
+  - `v3`: The third corner.
+  - `c1`: The first corner's color.
+  - `c2`: The second corner's color.
+  - `c3`: The third corner's color.
+- `ImageDrawTriangleGradient`: Fills a triangle, each corner its own color, blended across it as `ImageDrawTriangleEx` blends it.
   - `dst`: The image.
   - `v1`: The first corner.
   - `v2`: The second corner.
@@ -2987,11 +3118,38 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `points`: The points.
   - `pointCount`: How many; under 3 draws nothing.
   - `color`: The color.
-- `ImageDraw`: Draws a rectangle of one image into a rectangle of another, tinted, blended over (raylib's `ColorAlphaBlend`), in their formats. A source with no alpha under an opaque tint is copied, the tint's color ignored, as raylib's is; a float destination is unchanged, as `SetPixelColor` writes none. A source rectangle of another whole-pixel size than the destination's is first resized by `ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them.
+- `ImageDraw`: Draws a rectangle of one image into a rectangle of another, tinted, blended over (raylib's `ColorAlphaBlend`), in their formats. A source with no alpha under an opaque tint is copied, the tint's color ignored, as raylib's is; a float destination is unchanged, as `SetPixelColor` writes none. A source rectangle of another whole-pixel size than the destination's is first resized by `ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them. raylib 6 calls it `ImageDrawImagePro`.
   - `dst`: The image drawn into.
   - `src`: The image drawn from.
   - `srcRec`: The source rectangle, in its pixels, cut to it.
   - `dstRec`: The destination rectangle.
+  - `tint`: The color the source is multiplied by; `WHITE` keeps it unchanged.
+- `ImageDrawImage`: Draws one image into another at a point, tinted and blended over, as `ImageDraw` draws it.
+  - `dst`: The image drawn into.
+  - `src`: The image drawn.
+  - `posX`: The left edge, in the destination's pixels.
+  - `posY`: The top edge.
+  - `tint`: The color the source is multiplied by; `WHITE` keeps it unchanged.
+- `ImageDrawImageRec`: Draws a rectangle of one image into another at a point, at its size, tinted and blended over, as `ImageDraw` draws it.
+  - `dst`: The image drawn into.
+  - `src`: The image drawn from.
+  - `srcRec`: The source rectangle, in its pixels, cut to it.
+  - `position`: The top-left corner, in the destination's pixels.
+  - `tint`: The color the source is multiplied by; `WHITE` keeps it unchanged.
+- `ImageDrawImagePro`: Draws a rectangle of one image into a rectangle of another, as `ImageDraw` draws it. The origin and rotation are taken and not used, as in raylib 6.2, whose own are still to be written.
+  - `dst`: The image drawn into.
+  - `src`: The image drawn from.
+  - `srcRec`: The source rectangle, in its pixels, cut to it.
+  - `dstRec`: The destination rectangle.
+  - `origin`: The point it would turn about; not used.
+  - `rotation`: The turn, in degrees; not used.
+  - `tint`: The color the source is multiplied by; `WHITE` keeps it unchanged.
+- `ImageDrawImageEx`: Draws one image into another turned about its top-left corner and scaled: each destination pixel whose center falls on the source takes its nearest source pixel, tinted and blended over (`ColorAlphaBlend`); clear source pixels are skipped.
+  - `dst`: The image drawn into.
+  - `src`: The image drawn.
+  - `position`: Where its top-left corner is drawn, in the destination's pixels.
+  - `rotation`: The turn, in degrees clockwise.
+  - `scale`: The scale; 1 for its own size.
   - `tint`: The color the source is multiplied by; `WHITE` keeps it unchanged.
 - `ImageDrawText`: Draws text in raylib's default font into an image, letters 1 pixel apart, as `ImageDrawTextEx` draws it.
   - `dst`: The image.
@@ -3008,6 +3166,16 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `fontSize`: The height of a line, in pixels.
   - `spacing`: The space between letters, at the font's size.
   - `tint`: The color.
+- `ImageDrawTextPro`: Draws text in a font into an image, turned about a point. raylib 6.2's draws nothing, its body still to be written, and so does this.
+  - `dst`: The image.
+  - `font`: The font.
+  - `text`: The text.
+  - `position`: Where the point is drawn.
+  - `origin`: The point it turns about, from the text's top-left corner.
+  - `rotation`: The turn, in degrees.
+  - `fontSize`: The height of a line, in pixels.
+  - `spacing`: The space between letters, at the font's size.
+  - `tint`: The color.
 - `LoadTextureFromImage`: Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, so the texture's format is `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and it has one level. A compressed format gives no texture, with a warning.
   - `image`: The image.
   - returns: The texture.
@@ -3021,7 +3189,7 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `origin`: The point it turns about, from dest's top-left corner.
   - `rotation`: Clockwise, in degrees.
   - `tint`: The color it is multiplied by.
-- `GetPixelColor`: Returns one pixel's color from pixels in a format, as raylib's does: 16-bit channels widened by integers, floats times 255. raylib's R5G5B5A1 blue takes in the alpha bit, as it does here. raylib takes a pointer to the pixel; here it is the pixels and the pixel's first byte.
+- `GetPixelColor`: Returns one pixel's color from pixels in a format, as raylib's does: 16-bit channels widened by integers, floats times 255. raylib takes a pointer to the pixel; here it is the pixels and the pixel's first byte.
   - `srcPtr`: The pixels.
   - `format`: Their format (`PIXELFORMAT_UNCOMPRESSED_*`).
   - `offset`: Optional. The pixel's first byte; 0 when omitted.
@@ -4044,7 +4212,7 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `texture`: The texture.
   - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
-- `LoadImageFromScreenAsync`: Reads the screen, answering as the next frame ends: helix-ray's own, in place of raylib's `LoadImageFromScreen`, as the GPU answers later. The image is the framebuffer's size, rows top first, its alpha opaque, as raylib's.
+- `LoadImageFromScreenAsync`: Reads the screen, answering as the next frame ends: helix-ray's own, in place of raylib's `LoadImageFromScreen`, as the GPU answers later. The image is the framebuffer's size, as raylib 6.2's is (5.5 scaled the screen's size by its DPI instead), rows top first, its alpha opaque.
   - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 - `GetClipboardTextAsync`: Reads the clipboard's text, answering at a later poll: helix-ray's own, in place of raylib's `GetClipboardText`, as a page's clipboard answers later. A page reads it only with the player's permission, which the browser may ask for.

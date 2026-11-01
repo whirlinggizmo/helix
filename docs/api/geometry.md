@@ -291,8 +291,10 @@ static function intersectsCircleSegment(cx:Float, cy:Float, radius:Float, ax:Flo
   - `cy`: Its start y.
   - `dx`: Its end x.
   - `dy`: Its end y.
-  - `out`: Optional. Set to where they cross, when they do.
+  - `out`: Optional. Set to where they cross, when they do: on the first segment, at its fraction.
   - returns: True when they cross, their ends included.
+
+  Each segment is a start plus a fraction of its direction, and they cross when both fractions are from 0 to 1, so a nearly vertical or nearly horizontal segment is tested as any other.
 - `isPointInTriangle`: Returns whether a point is inside a triangle, its edges not included.
   - `x`: The point's x.
   - `y`: Its y.

@@ -1,0 +1,19 @@
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import helix.ray.Rlgl.*;
+import Parity.*;
+
+// helix-ray's 2D shapes taken from raylib 6.2 (read back from its frame), a spline point and the line test, printed by Parity as ref.c.in
+// prints raylib's.
+class ShapeBits {
+	static function main() {
+		open();
+		depth = false;
+		var c = new Color(200, 100, 50, 255), c2 = new Color(10, 220, 30, 128), c3 = new Color(0, 40, 250, 255), c4 = new Color(255, 255, 0, 64);
+		var tex = LoadTextureFromImage(GenImageColor(32, 16, WHITE));
+		var cam = new Camera2D(V2(5, 7), V2(1, 2), 10, 2);
+		var cp = V2(-1, -1);
+		@CASES@
+		save();
+	}
+}

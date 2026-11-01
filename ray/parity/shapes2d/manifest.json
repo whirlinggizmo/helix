@@ -1,6 +1,6 @@
 {
   "oracle": "5.5",
-  "covers": "rshapes.c: every 2D Draw function's vertices as rlgl batches them (lines, triangles, quads as two triangles; texture coordinates, normals, colors; z left out), the shapes texture, a 2D camera; the spline points; the 2D collisions",
+  "covers": "rshapes.c's 2D shapes whose oracle is 5.5 (those 6.2 changed are in shapes2d_62): their vertices as rlgl batches them (lines, triangles, quads as two triangles; texture coordinates, normals, colors; z left out), the shapes texture, a 2D camera; the spline points; the 2D collisions but the line test",
   "kind": "values",
   "generated": true,
   "main": "ShapeBits",

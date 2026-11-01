@@ -9,7 +9,6 @@ int main(void) {
     Color c = { 200, 100, 50, 255 }, c2 = { 10, 220, 30, 128 }, c3 = { 0, 40, 250, 255 }, c4 = { 255, 255, 0, 64 };
     Texture2D tex = LoadTextureFromImage(GenImageColor(32, 16, WHITE));
     Camera2D cam = { V2(5, 7), V2(1, 2), 10, 2 };
-    Vector2 cp = { -1, -1 };
     @CASES@
     parity_close();
     return 0;

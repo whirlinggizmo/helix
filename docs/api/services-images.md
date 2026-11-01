@@ -10,7 +10,7 @@ Represents an image in memory: its size and its pixels, 8-bit RGBA.
 
 An image is made here, loaded by `Images.load`, or decoded by `Images.decode`; then changed, drawn into and copied, and made a texture. What changes the size (cropping, resizing, rotating) returns a new image; everything else changes the pixels in place and returns the image, so calls chain (`image.grayscale().contrast(20)`). Positions are in pixels from the top-left, and what falls outside the image is skipped. Colors are 0xAARRGGBB, as `helix.math.Color` reads them.
 
-The operations are raylib 5.5's, in its arithmetic: each gives the pixels raylib's function of the same name gives an R8G8B8A8 image, byte for byte, on every target. Shapes overwrite the pixels they cover, as raylib's do; images and text blend over them.
+The operations are raylib's, in its arithmetic: each gives the pixels raylib's function of the same name gives an R8G8B8A8 image, byte for byte, on every target. They are raylib 5.5's, but for the lines and the filled circle (`drawLine`, `drawThickLine`, `drawCircle`), which are 6.2's, as it fixed them. Shapes overwrite the pixels they cover, as raylib's do; images and text blend over them.
 
 ```haxe
 var badge = Image.filled(64, 64, 0);
@@ -264,24 +264,24 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `y`: Its row, from the top.
   - `color`: The color, as 0xAARRGGBB.
   - returns: This image.
-- `drawLine`: Draws a line one pixel wide, from its start up to its end; the end pixel itself is not drawn.
+- `drawLine`: Draws a line one pixel wide, from its start to its end, both drawn; the rows (or columns) it steps across are rounded to the nearest.
   - `x0`: The start's column, in pixels from the left.
   - `y0`: The start's row, from the top.
   - `x1`: The end's column.
   - `y1`: The end's row.
   - `color`: The color, as 0xAARRGGBB.
   - returns: This image.
-- `drawThickLine`: Draws a line of a thickness: the line, and copies of it beside it, above and below for a line more across than down, left and right otherwise.
+- `drawThickLine`: Draws a line of a thickness: as many `drawLine`s as it is thick, side by side, below and above the line for a line more across than down, right and left of it otherwise, the odd one out below or right.
   - `x0`: The start's x, in pixels from the left.
   - `y0`: The start's y, from the top.
   - `x1`: The end's x.
   - `y1`: The end's y.
-  - `thickness`: The thickness, in pixels.
+  - `thickness`: The thickness, in pixels; less than 1 draws the line alone.
   - `color`: The color, as 0xAARRGGBB.
   - returns: This image.
 
-  The ends are rounded to whole pixels.
-- `drawCircle`: Fills a circle (midpoint algorithm).
+  The ends are rounded to whole pixels; a line from a pixel to itself draws nothing.
+- `drawCircle`: Fills a circle (midpoint algorithm), each row as wide either side of the middle.
   - `x`: The middle's column, in pixels from the left.
   - `y`: The middle's row, from the top.
   - `radius`: The radius, in pixels.

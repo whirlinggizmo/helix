@@ -5,8 +5,8 @@ import helix.services.fonts.Font2D;
 import helix.services.fonts.Glyph2D;
 import helix.services.images.Image;
 
-/** Checks Image's operations: the pixels of a few cases of each pinned by their CRC-32, each the value raylib 5.5's own function gives
-	the same input (compiled from its C, R8G8B8A8); and the behaviour around them: the byte order, clipping, the filters of this library's
+/** Checks Image's operations: the pixels of a few cases of each pinned by their CRC-32, each the value raylib's own function gives the
+	same input (compiled from its C, R8G8B8A8: 5.5's, and 6.2's for the lines and the filled circle); and the behaviour around them: the byte order, clipping, the filters of this library's
 	own (`Bilinear`, `Bicubic`, the mipmaps), scaled drawing, and where it differs from raylib by design (alpha kept by `grayscale` and
 	`convolve`, `dither` left 8-bit, `crop` outside, `resizeCanvas` at the same size). */
 @:access(helix.services.fonts)
@@ -215,17 +215,23 @@ class ImageTests {
 		check(paletted.getPalette(2).length == 2, "getPalette stops at its most");
 
 		// Drawn into.
-		pin("drawLine", changed(noise(64, 48), i -> i.drawLine(5, 40, 60, 2, A)), 64, 48, 0xc89e6a71);
-		pin("drawLine clipped", changed(noise(64, 48), i -> i.drawLine(-20, -5, 80, 60, A)), 64, 48, 0xb82db38b);
-		pin("drawThickLine", changed(noise(64, 48), i -> i.drawThickLine(5.3, 40.6, 60.5, 2.2, 6, A)), 64, 48, 0x3ab909a1);
-		pin("drawCircle", changed(noise(64, 48), i -> i.drawCircle(60, 45, 15, A)), 64, 48, 0x6cfa35df);
+		pin("drawLine", changed(noise(64, 48), i -> i.drawLine(5, 40, 60, 2, A)), 64, 48, 0x01e7706b);
+		pin("drawLine clipped", changed(noise(64, 48), i -> i.drawLine(-20, -5, 80, 60, A)), 64, 48, 0x5fdd68b0);
+		// One pixel: its end is drawn, where 5.5 drew nothing.
+		pin("drawLine point", changed(noise(64, 48), i -> i.drawLine(7, 9, 7, 9, A)), 64, 48, 0x0e979fd6);
+		pin("drawThickLine", changed(noise(64, 48), i -> i.drawThickLine(5.3, 40.6, 60.5, 2.2, 6, A)), 64, 48, 0xeb7522ca);
+		// 4 thick is 4 lines, where 5.5 drew 3 across and 1 down.
+		pin("drawThickLine 4 across", changed(noise(64, 48), i -> i.drawThickLine(10, 30, 50, 30, 4, A)), 64, 48, 0xc1964ac8);
+		pin("drawThickLine down", changed(noise(64, 48), i -> i.drawThickLine(30, 5, 33, 40, 3, B)), 64, 48, 0xb5209eac);
+		// Each row as wide either side of the middle, where 5.5's were a pixel short on the right.
+		pin("drawCircle", changed(noise(64, 48), i -> i.drawCircle(60, 45, 15, A)), 64, 48, 0xabde38fa);
 		pin("drawCircleLines", changed(noise(64, 48), i -> i.drawCircleLines(32, 24, 20, A)), 64, 48, 0x81a4db76);
 		pin("drawRectangle", changed(noise(64, 48), i -> i.drawRectangle(-5, -5, 20, 10, B)), 64, 48, 0xd826001e);
 		pin("drawRectangle 0 wide", changed(noise(64, 48), i -> i.drawRectangle(10, 10, 0, 5, B)), 64, 48, 0x35e34bfa);
 		pin("drawRectangleLines", changed(noise(64, 48), i -> i.drawRectangleLines(5, 5, 20, 10, 3, B)), 64, 48, 0xcbf31987);
 		pin("drawTriangle", changed(noise(64, 48), i -> i.drawTriangle(10.5, 3.25, 50.75, 20.5, 2.5, 40.125, A, A, A)), 64, 48, 0x02c65883);
 		pin("drawTriangle blended", changed(noise(64, 48), i -> i.drawTriangle(5, 5, 60, 10, 30, 45, A, B, 0xff00ff00)), 64, 48, 0x7f17db16);
-		pin("drawTriangleLines", changed(noise(64, 48), i -> i.drawTriangleLines(10.5, 3.25, 50.75, 20.5, 2.5, 40.125, B)), 64, 48, 0x8a38916c);
+		pin("drawTriangleLines", changed(noise(64, 48), i -> i.drawTriangleLines(10.5, 3.25, 50.75, 20.5, 2.5, 40.125, B)), 64, 48, 0xf977df9e);
 		pin("drawImage", changed(noise(64, 48), i -> i.drawImage(noise(30, 20, 5), 3, 2, 16, 16, 10.5, 7.75, 16, 16, 0xc0ff8040)), 64, 48, 0x49a86a00);
 		pin("drawImage clipped", changed(noise(64, 48), i -> i.drawImage(noise(30, 20, 5), 0, 0, 30, 20, 40, -15, 30, 20, 0x80ffffff)), 64, 48, 0x88a48dd6);
 		var f = font();

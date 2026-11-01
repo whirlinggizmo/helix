@@ -1,0 +1,11 @@
+{
+  "oracle": "6.2",
+  "covers": "the 2D Draw functions helix-ray takes from 6.2 (its fixed circles, sectors, rings, rectangle and polygon outlines, rounded rectangles, triangles and spline ends; its dashed line, thick outlines and V ellipses; DrawRectangleLines under a 2D camera), drawn into an 800 x 600 frame",
+  "kind": "pixels",
+  "generated": true,
+  "frames": 5,
+  "backends": {
+    "gl": 4,
+    "sdl_gpu": 900
+  }
+}

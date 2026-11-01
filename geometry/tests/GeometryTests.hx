@@ -1,7 +1,7 @@
 import helix.geometry.Geometry2D;
 import helix.math.Vector2D;
 
-/** Checks Geometry2D with the library alone: segments crossing (parallel and end-to-end ones too), points in triangles and polygons,
+/** Checks Geometry2D with the library alone: segments crossing (parallel, end-to-end and nearly vertical ones too), points in triangles and polygons,
 	distances to segments and circles touching them. */
 class GeometryTests {
 	static var checks = 0;
@@ -23,6 +23,10 @@ class GeometryTests {
 			"parallel, and overlapping: no crossing");
 		check(Geometry2D.intersectSegments(0, 0, 10, 0, 10, -5, 10, 5, p) && near(p.x, 10), "meeting at an end crosses");
 		check(Geometry2D.intersectSegments(5, -5, 5, 5, 0, 0, 10, 0, p) && near(p.x, 5) && near(p.y, 0), "a vertical segment");
+		check(Geometry2D.intersectSegments(520.21936, 67.8957138, 520.219299, 179.760956, 469.264191, 99.073822, 571.237671, 101.955383, p)
+			&& Math.abs(p.x - 520.2193422) < 1e-6
+			&& Math.abs(p.y - 100.5137099) < 1e-6,
+			"a nearly vertical segment, its x spanning a few millionths");
 
 		check(Geometry2D.isPointInTriangle(2, 1, 0, 0, 6, 0, 0, 6), "inside a triangle");
 		check(!Geometry2D.isPointInTriangle(5, 5, 0, 0, 6, 0, 0, 6) && !Geometry2D.isPointInTriangle(3, 0, 0, 0, 6, 0, 0, 6),

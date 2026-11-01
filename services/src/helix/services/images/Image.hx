@@ -14,8 +14,10 @@ import helix.services.fonts.Glyph2D;
 	image, so calls chain (`image.grayscale().contrast(20)`). Positions are in pixels from the top-left, and what falls outside the image
 	is skipped. Colors are 0xAARRGGBB, as `helix.math.Color` reads them.
 
-	The operations are raylib 5.5's, in its arithmetic: each gives the pixels raylib's function of the same name gives an R8G8B8A8 image,
-	byte for byte, on every target. Shapes overwrite the pixels they cover, as raylib's do; images and text blend over them.
+	The operations are raylib's, in its arithmetic: each gives the pixels raylib's function of the same name gives an R8G8B8A8 image,
+	byte for byte, on every target. They are raylib 5.5's, but for the lines and the filled circle (`drawLine`, `drawThickLine`,
+	`drawCircle`), which are 6.2's, as it fixed them. Shapes overwrite the pixels they cover, as raylib's do; images and text blend over
+	them.
 
 	```haxe
 	var badge = Image.filled(64, 64, 0);
@@ -911,7 +913,8 @@ class Image {
 		return this;
 	}
 
-	/** Draws a line one pixel wide, from its start up to its end; the end pixel itself is not drawn.
+	/** Draws a line one pixel wide, from its start to its end, both drawn; the rows (or columns) it steps across are rounded to the
+		nearest.
 
 		@param x0  The start's column, in pixels from the left.
 		@param y0  The start's row, from the top.
@@ -930,12 +933,14 @@ class Image {
 			longLen = t;
 			yLonger = true;
 		}
-		var endVal = longLen, sgnInc = 1;
+		var endVal = longLen + 1, sgnInc = 1;
 		if (longLen < 0) {
 			longLen = -longLen;
 			sgnInc = -1;
+			endVal -= 2;
 		}
-		var decInc = longLen == 0 ? 0 : Std.int((shortLen << 16) / longLen), i = 0, j = 0;
+		// The minor axis in 16.16 fixed point, from a half for rounding.
+		var decInc = longLen == 0 ? 0 : Std.int((shortLen << 16) / longLen), i = 0, j = 1 << 15;
 		while (i != endVal) {
 			if (yLonger)
 				plot(x0 + (j >> 16), y0 + i, c);
@@ -947,15 +952,15 @@ class Image {
 		return this;
 	}
 
-	/** Draws a line of a thickness: the line, and copies of it beside it, above and below for a line more across than down, left and
-		right otherwise.
+	/** Draws a line of a thickness: as many `drawLine`s as it is thick, side by side, below and above the line for a line more across
+		than down, right and left of it otherwise, the odd one out below or right.
 
-		The ends are rounded to whole pixels.
+		The ends are rounded to whole pixels; a line from a pixel to itself draws nothing.
 		@param x0  The start's x, in pixels from the left.
 		@param y0  The start's y, from the top.
 		@param x1  The end's x.
 		@param y1  The end's y.
-		@param thickness  The thickness, in pixels.
+		@param thickness  The thickness, in pixels; less than 1 draws the line alone.
 		@param color  The color, as 0xAARRGGBB.
 		@return  This image. */
 	public function drawThickLine(x0:Float, y0:Float, x1:Float, y1:Float, thickness:Int, color:Int):Image {
@@ -964,25 +969,23 @@ class Image {
 			bx = Std.int(f32(f32(x1) + 0.5)),
 			by = Std.int(f32(f32(y1) + 0.5));
 		var dx = bx - ax, dy = by - ay;
-		drawLine(ax, ay, bx, by, color);
-		var length = Std.int(f32(Math.sqrt(f32(dx * dx + dy * dy))));
 		if (dx != 0 && iabs(Std.int(dy / dx)) < 1) {
-			var wy = Std.int((thickness - 1) * length / (2 * iabs(dx)));
-			for (i in 1...wy + 1) {
-				drawLine(ax, ay - i, bx, by - i, color);
+			var wy = thickness - 1;
+			for (i in 0...Std.int((wy + 1) / 2) + 1)
 				drawLine(ax, ay + i, bx, by + i, color);
-			}
+			for (i in 1...Std.int(wy / 2) + 1)
+				drawLine(ax, ay - i, bx, by - i, color);
 		} else if (dy != 0) {
-			var wx = Std.int((thickness - 1) * length / (2 * iabs(dy)));
-			for (i in 1...wx + 1) {
-				drawLine(ax - i, ay, bx - i, by, color);
+			var wx = thickness - 1;
+			for (i in 0...Std.int((wx + 1) / 2) + 1)
 				drawLine(ax + i, ay, bx + i, by, color);
-			}
+			for (i in 1...Std.int(wx / 2) + 1)
+				drawLine(ax - i, ay, bx - i, by, color);
 		}
 		return this;
 	}
 
-	/** Fills a circle (midpoint algorithm).
+	/** Fills a circle (midpoint algorithm), each row as wide either side of the middle.
 
 		@param x  The middle's column, in pixels from the left.
 		@param y  The middle's row, from the top.
@@ -992,10 +995,10 @@ class Image {
 	public function drawCircle(x:Int, y:Int, radius:Int, color:Int):Image {
 		var cx = 0, cy = radius, decision = 3 - 2 * radius;
 		while (cy >= cx) {
-			drawRectangle(x - cx, y + cy, cx * 2, 1, color);
-			drawRectangle(x - cx, y - cy, cx * 2, 1, color);
-			drawRectangle(x - cy, y + cx, cy * 2, 1, color);
-			drawRectangle(x - cy, y - cx, cy * 2, 1, color);
+			drawRectangle(x - cx, y + cy, cx * 2 + 1, 1, color);
+			drawRectangle(x - cx, y - cy, cx * 2 + 1, 1, color);
+			drawRectangle(x - cy, y + cx, cy * 2 + 1, 1, color);
+			drawRectangle(x - cy, y - cx, cy * 2 + 1, 1, color);
 			cx++;
 			if (decision > 0) {
 				cy--;

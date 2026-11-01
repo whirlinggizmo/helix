@@ -80,6 +80,19 @@ static void num(const char *name, float x) { printf("%s num %.9g\n", name, x); }
 static void vec2(const char *name, Vector2 v) { printf("%s vec2 %.9g %.9g\n", name, v.x, v.y); }
 static void rect(const char *name, Rectangle r) { printf("%s rect %.9g %.9g %.9g %.9g\n", name, r.x, r.y, r.width, r.height); }
 
+static void color(const char *name, Color c) { printf("%s color %d %d %d %d\n", name, c.r, c.g, c.b, c.a); }
+
+// An image's size, format and mipmaps, then its first level's bytes in hex, 48 to a line, each line a word compared whole.
+static void image(const char *name, Image m) {
+    int size = m.data ? GetPixelDataSize(m.width, m.height, m.format) : 0;
+    printf("%s image %d %d %d %d %d\n", name, m.width, m.height, m.format, m.mipmaps, size);
+    for (int i = 0; i < size; i += 48) {
+        printf("%s data #", name);
+        for (int k = i; k < size && k < i + 48; k++) printf("%02x", ((unsigned char *)m.data)[k]);
+        printf("\n");
+    }
+}
+
 static void box(const char *name, BoundingBox b) {
     printf("%s box %.9g %.9g %.9g %.9g %.9g %.9g\n", name, b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z);
 }

@@ -4,13 +4,13 @@ import haxe.ds.Vector;
 import haxe.io.Bytes;
 import haxe.io.FPHelper;
 
-/** Holds raylib 5.5's pixel formats (`rtextures.c`), ported byte for byte: reading a format's pixels as 8-bit colors or as floats,
+/** Holds raylib's pixel formats (`rtextures.c`), ported byte for byte: reading a format's pixels as 8-bit colors or as floats,
 	writing them back, one pixel's color read and written, and the half floats. Colors here are packed as an image's RGBA bytes read
 	as one little-endian Int32: red in the low byte, alpha in the high.
 
-	raylib's arithmetic is in single precision; `f32` rounds each step as it does. Its quirks are kept: `LoadImageDataNormalized` reads
-	every pixel of an R32 or R16 image from the first, `GetPixelColor`'s R5G5B5A1 blue takes in the alpha bit, and `SetPixelColor`
-	writes no float format. */
+	They are raylib 5.5's, but for `LoadImageDataNormalized` and `GetPixelColor`, which are 6.2's: an R32 or R16 image's pixels each
+	read from their own place, and R5G5B5A1's blue from its own five bits (docs/DECISIONS.md 24). raylib's arithmetic is in single
+	precision; `f32` rounds each step as it does. `SetPixelColor` writes no float format, as raylib's doesn't. */
 @:noCompletion
 class Pixels {
 	public static inline final GRAYSCALE = 1;
@@ -190,8 +190,8 @@ class Pixels {
 		};
 	}
 
-	/** raylib's `LoadImageDataNormalized`: an image's pixels as floats, red, green, blue and alpha, 0 to 1 for the integer formats. An
-		R32 or R16 image reads every pixel from its first, as raylib's does. A compressed format gives zeros, and a warning.
+	/** raylib 6.2's `LoadImageDataNormalized`: an image's pixels as floats, red, green, blue and alpha, 0 to 1 for the integer formats.
+		A compressed format gives zeros, and a warning.
 
 		@param data  The pixels.
 		@param count  How many.
@@ -235,13 +235,13 @@ class Pixels {
 				case R8G8B8:
 					set(i, unit(data.get(i * 3)), unit(data.get(i * 3 + 1)), unit(data.get(i * 3 + 2)), 1);
 				case R32:
-					set(i, data.getFloat(0), 0, 0, 1);
+					set(i, data.getFloat(i * 4), 0, 0, 1);
 				case R32G32B32:
 					set(i, data.getFloat(i * 12), data.getFloat(i * 12 + 4), data.getFloat(i * 12 + 8), 1);
 				case R32G32B32A32:
 					set(i, data.getFloat(i * 16), data.getFloat(i * 16 + 4), data.getFloat(i * 16 + 8), data.getFloat(i * 16 + 12));
 				case R16:
-					set(i, halfToFloat(data.getUInt16(0)), 0, 0, 1);
+					set(i, halfToFloat(data.getUInt16(i * 2)), 0, 0, 1);
 				case R16G16B16:
 					set(i, halfToFloat(data.getUInt16(i * 6)), halfToFloat(data.getUInt16(i * 6 + 2)), halfToFloat(data.getUInt16(i * 6 + 4)), 1);
 				case R16G16B16A16:
@@ -328,7 +328,7 @@ class Pixels {
 		return out;
 	}
 
-	/** raylib's `GetPixelColor`: one pixel's color.
+	/** raylib 6.2's `GetPixelColor`: one pixel's color.
 
 		@param data  The pixels.
 		@param at  The pixel's first byte.
@@ -347,7 +347,7 @@ class Pixels {
 				pack(Std.int((p >> 11) * 255 / 31), Std.int(((p >> 5) & 63) * 255 / 63), Std.int((p & 31) * 255 / 31), 255);
 			case R5G5B5A1:
 				var p = data.getUInt16(at);
-				pack(Std.int((p >> 11) * 255 / 31), Std.int(((p >> 6) & 31) * 255 / 31), Std.int((p & 31) * 255 / 31), (p & 1) != 0 ? 255 : 0);
+				pack(Std.int((p >> 11) * 255 / 31), Std.int(((p >> 6) & 31) * 255 / 31), Std.int(((p >> 1) & 31) * 255 / 31), (p & 1) != 0 ? 255 : 0);
 			case R4G4B4A4:
 				var p = data.getUInt16(at);
 				pack(Std.int((p >> 12) * 255 / 15), Std.int(((p >> 8) & 15) * 255 / 15), Std.int(((p >> 4) & 15) * 255 / 15), Std.int((p & 15) * 255 / 15));

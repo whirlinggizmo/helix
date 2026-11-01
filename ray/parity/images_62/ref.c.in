@@ -1,0 +1,37 @@
+// raylib 6.2's image functions helix-ray takes, their images printed by parity.h, byte for byte; cases.py's list is put into it.
+#include "parity.h"
+#include <stdint.h>
+#include <stdlib.h>
+
+// An image of xorshift32 noise, every byte its own (alpha too), RGBA, as ImageBits.hx.in makes it.
+static Image noise(int width, int height, int seed) {
+    uint32_t state = (uint32_t)seed;
+    unsigned char *bytes = malloc(width * height * 4);
+    for (int i = 0; i < width * height * 4; i++) {
+        state ^= state << 13;
+        state ^= state >> 17;
+        state ^= state << 5;
+        bytes[i] = (state >> 8) & 255;
+    }
+    return (Image){ bytes, width, height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
+}
+
+// noise in another format, through ImageFormat.
+static Image noiseIn(int width, int height, int seed, int format) {
+    Image image = noise(width, height, seed);
+    ImageFormat(&image, format);
+    return image;
+}
+
+int main(void) {
+    parity_open();
+    Color A = { 32, 128, 224, 255 }, B = { 240, 160, 16, 64 }, C = { 10, 220, 30, 128 }, D = { 255, 255, 0, 200 };
+    float sharpen[9] = { 0, -1, 0, -1, 5, -1, 0, -1, 0 };
+    float ones[9] = { 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+    float box5[25] = { 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f,
+        0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f };
+    float edge4[4] = { 1, -1, -1, 1 };
+    @CASES@
+    parity_close();
+    return 0;
+}
