@@ -92,6 +92,7 @@ class ObjBits {
 		model("missing", "web/obj/missing.obj");
 		model("empty", "web/obj/empty.obj");
 		model("nothere", "web/obj/nothere.obj");
+		model("latin", "web/obj/latin.obj");
 		Parity.save();
 	}
 }

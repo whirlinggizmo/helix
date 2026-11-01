@@ -5,6 +5,11 @@ import haxe.io.Bytes;
 /** Represents a Wavefront material library read from an .mtl file, or several combined: the materials an OBJ model's `usemtl` lines
 	name.
 
+	Its text is decoded as UTF-8 when the bytes are UTF-8, and otherwise as Latin-1, each byte the character of its value (U+0000 to
+	U+00FF), as older tools write files in their system's 8-bit encoding; a NUL byte is refused, as text has none. A name or path is
+	kept as its characters: a path reaches the file system as a String, which each target spells as its file names are (UTF-8 on Linux
+	and macOS and in URLs, UTF-16 on Windows), so a Latin-1 file's `é` names the file whose name is `é`.
+
 	```haxe
 	var library = MtlFile.read(bytes, "models/house.mtl");
 	var wall = library.findMaterial("wall");
@@ -43,10 +48,10 @@ class MtlFile {
 
 	/** Reads a material library.
 
-		@param bytes  The file's bytes, as UTF-8 text.
+		@param bytes  The file's bytes: UTF-8 text, or Latin-1.
 		@param path  The file's path, whose directory texture paths are resolved against.
 		@return  The library.
-		@throws String  Its bytes aren't UTF-8 text, or a line can't be read, naming its number: read each library apart to skip one
+		@throws String  Its bytes hold a NUL byte, or a line can't be read, naming its number: read each library apart to skip one
 			that's broken. Only a String is thrown. */
 	public static function read(bytes:Bytes, path:String):MtlFile {
 		var lines = ObjText.lines(bytes);

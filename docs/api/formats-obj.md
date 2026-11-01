@@ -8,6 +8,8 @@
 
 Represents a Wavefront material library read from an .mtl file, or several combined: the materials an OBJ model's `usemtl` lines name.
 
+Its text is decoded as UTF-8 when the bytes are UTF-8, and otherwise as Latin-1, each byte the character of its value (U+0000 to U+00FF), as older tools write files in their system's 8-bit encoding; a NUL byte is refused, as text has none. A name or path is kept as its characters: a path reaches the file system as a String, which each target spells as its file names are (UTF-8 on Linux and macOS and in URLs, UTF-16 on Windows), so a Latin-1 file's `é` names the file whose name is `é`.
+
 ```haxe
 var library = MtlFile.read(bytes, "models/house.mtl");
 var wall = library.findMaterial("wall");
@@ -25,10 +27,10 @@ function findMaterial(name:String):Null<MtlMaterial>
   - `libraries`: The libraries, in the order the model names them; none gives a library with no materials.
   - returns: The library.
 - `read`: Reads a material library.
-  - `bytes`: The file's bytes, as UTF-8 text.
+  - `bytes`: The file's bytes: UTF-8 text, or Latin-1.
   - `path`: The file's path, whose directory texture paths are resolved against.
   - returns: The library.
-  - throws `String`: Its bytes aren't UTF-8 text, or a line can't be read, naming its number: read each library apart to skip one that's broken. Only a String is thrown.
+  - throws `String`: Its bytes hold a NUL byte, or a line can't be read, naming its number: read each library apart to skip one that's broken. Only a String is thrown.
 - `materials`: Gets the materials, in the file's order: a new one at each `newmtl` line.
 - `findMaterial`: Returns the material of a name.
   - `name`: The name, as `newmtl` gives it; case counts.
@@ -148,6 +150,8 @@ A face's material is named by the `usemtl` line before it, which holds across `o
 
 Values are as the file gives them: texture coordinates are not flipped (v is 0 at the image's bottom, as OBJ has it), normals are not normalized, and a face's corners go counter-clockwise seen from its front, as OBJ has them. Paths are resolved against the file's directory and normalized: `/` between parts, `.` and `..` taken out; an absolute path is kept as it is, and a `..` above the root is kept at its start. The arrays are the file's own, read-only.
 
+Its text is decoded as UTF-8 when the bytes are UTF-8, and otherwise as Latin-1, each byte the character of its value (U+0000 to U+00FF), as older tools write files in their system's 8-bit encoding; a NUL byte is refused, as text has none. A name or path is kept as its characters: a path reaches the file system as a String, which each target spells as its file names are (UTF-8 on Linux and macOS and in URLs, UTF-16 on Windows), so a Latin-1 file's `é` names the file whose name is `é`.
+
 ```haxe
 var obj = ObjFile.read(bytes, "models/house.obj");
 var libraries = [];
@@ -192,10 +196,10 @@ function computeParts(byGroup:Bool):Array<ObjPart>
 ```
 
 - `read`: Reads an OBJ model.
-  - `bytes`: The file's bytes, as UTF-8 text.
+  - `bytes`: The file's bytes: UTF-8 text, or Latin-1.
   - `path`: The file's path, whose directory `mtllib` paths are resolved against.
   - returns: The model.
-  - throws `String`: The file is refused, never read in part: its bytes aren't UTF-8 text, or a line can't be read (naming its number), a corner numbered 0 among them. A corner naming a position, texture coordinate or normal the file doesn't have is read (`missingIndexCount`). Only a String is thrown.
+  - throws `String`: The file is refused, never read in part: its bytes hold a NUL byte, or a line can't be read (naming its number), a corner numbered 0 among them. A corner naming a position, texture coordinate or normal the file doesn't have is read (`missingIndexCount`). Only a String is thrown.
 - `positionCount`: Gets how many positions the file has: one for each `v` line.
 - `positions`: Gets the positions, three values for each (as every array here, the file's own: read it, don't change it): position i's x, y and z at `positions[3 * i]`, `[3 * i + 1]` and `[3 * i + 2]`. A fourth value a `v` line may give, w, is dropped.
 - `colors`: Gets the positions' colors, three values for each, red, green and blue from 0 to 1: position i's at `colors[3 * i]` on, so a corner's color is its position's. Null unless every `v` line gives six values (a common extension): a file where only some do has none.

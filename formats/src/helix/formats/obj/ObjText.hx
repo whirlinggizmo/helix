@@ -6,21 +6,39 @@ import haxe.io.Bytes;
 @:noCompletion
 @:allow(helix.formats.obj)
 class ObjText {
-	/** Returns a file's lines: its bytes checked as UTF-8 text (a byte order mark at the start skipped, no NUL byte), split at `\n`,
-		`\r\n` and `\r`.
+	/** Returns a file's lines: its bytes decoded as UTF-8 when they are UTF-8 (a byte order mark at the start skipped), and otherwise as
+		Latin-1, each byte the character of its value (U+0000 to U+00FF), as older tools write OBJ and MTL files in their system's
+		8-bit encoding; split at `\n`, `\r\n` and `\r`.
 
 		@param bytes  The file's bytes.
 		@return  The lines, the first line 1's.
-		@throws String  The bytes aren't UTF-8 text. */
+		@throws String  The bytes hold a NUL byte, so aren't text, naming its line. */
 	static function lines(bytes:Bytes):Array<String> {
-		var start = bytes.length >= 3 && bytes.get(0) == 0xEF && bytes.get(1) == 0xBB && bytes.get(2) == 0xBF ? 3 : 0;
-		var at = start, line = 1;
-		while (at < bytes.length) {
+		var line = 1;
+		for (at in 0...bytes.length) {
 			var b = bytes.get(at);
 			if (b == 10)
 				line++;
-			if (b == 0)
+			else if (b == 0)
 				throw 'Line $line: not text (a NUL byte)';
+		}
+		var text = if (isUtf8(bytes)) {
+			var start = bytes.length >= 3 && bytes.get(0) == 0xEF && bytes.get(1) == 0xBB && bytes.get(2) == 0xBF ? 3 : 0;
+			bytes.getString(start, bytes.length - start);
+		} else {
+			var latin1 = new StringBuf();
+			for (at in 0...bytes.length)
+				latin1.addChar(bytes.get(at));
+			latin1.toString();
+		}
+		return ~/\r\n|\r|\n/g.split(text);
+	}
+
+	// Whether bytes are UTF-8: each sequence whole, none overlong, no surrogate, none past U+10FFFF.
+	static function isUtf8(bytes:Bytes):Bool {
+		var at = 0;
+		while (at < bytes.length) {
+			var b = bytes.get(at);
 			if (b < 0x80) {
 				at++;
 				continue;
@@ -40,21 +58,20 @@ class ObjText {
 				least = 0x10000;
 				code = b & 0x07;
 			} else
-				throw 'Line $line: not UTF-8 text';
+				return false;
 			if (at + count >= bytes.length)
-				throw 'Line $line: not UTF-8 text';
+				return false;
 			for (k in 1...count + 1) {
 				var c = bytes.get(at + k);
 				if (c & 0xC0 != 0x80)
-					throw 'Line $line: not UTF-8 text';
+					return false;
 				code = (code << 6) | (c & 0x3F);
 			}
 			if (code < least || code > 0x10FFFF || (code >= 0xD800 && code <= 0xDFFF))
-				throw 'Line $line: not UTF-8 text';
+				return false;
 			at += count + 1;
 		}
-		var text = bytes.getString(start, bytes.length - start);
-		return ~/\r\n|\r|\n/g.split(text);
+		return true;
 	}
 
 	/** Returns a line's words: what's between spaces and tabs, up to a `#` that starts a word, which begins a comment.

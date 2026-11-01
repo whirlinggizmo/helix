@@ -240,9 +240,17 @@ Why things are the way they are, numbered, in order.
 
     A file that breaks the format is refused, not read as tinyobj's lenient parse makes it: `LoadModelAsync` fails, and a library
     refused leaves its model with the default material (logged), `LoadMaterialsAsync` failing on it. These aren't raylib's bugs but
-    files no format allows, refused whole with the line named: text that isn't UTF-8 or holds a NUL byte (tinyobj reads bytes as they
-    come; a Haxe string holds Unicode text), a word that isn't a number where one is due (tinyobj's 0, or its leading digits), a `v`
+    files no format allows, refused whole with the line named: text holding a NUL byte (tinyobj stops reading at it), a word that isn't a number where one is due (tinyobj's 0, or its leading digits), a `v`
     line of other than 3, 4 or 6 values, a `vt` of none or more than 3, a `vn` of other than 3, a corner not of OBJ's forms, a corner
     numbered 0 (tinyobj's first), an `f` line with no corners (tinyobj copies two uninitialized corners), a `usemtl` line naming
     nothing (tinyobj keeps the material before); in an .mtl file a `newmtl` line naming nothing, a color of 2 values, a number
     missing, an `illum` not a whole number, a texture line naming no file.
+
+    Text is UTF-8 when its bytes are, and otherwise Latin-1, each byte the character of its value, as older tools write their
+    system's 8-bit encoding (Windows-1252 among them); tinyobj compares names' bytes, so names match in both as they do in raylib
+    (`obj_62`'s latin.obj). A path stays characters: helix-platform's file systems take a String, which hxcpp hands POSIX as UTF-8
+    and Windows as UTF-16, and a browser fetches as a UTF-8 URL, so no target can be handed a lone byte 0xE9. A Latin-1 library's
+    `café.png` is the file named `café.png` in the system's own spelling: found on Windows, where that name is UTF-16, on a page,
+    and on Linux and macOS when the name is UTF-8, as unpacking and copying tools write it; raylib's `fopen` there looks for the
+    name's raw bytes instead. It is the one difference kept on a file the formats allow that isn't raylib's bug; no parity case shows it, as each side's file
+    is spelled apart.

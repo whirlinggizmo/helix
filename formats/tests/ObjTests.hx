@@ -9,7 +9,7 @@ import helix.formats.obj.ObjFile;
 	twice two groups, empty ones left out), usemtl across groups, triangle fans, parts by group and by material (repeats joined, faces
 	without triangles left out, faces before usemtl, their order), materials found and stood in for, libraries combined, every MTL
 	statement read (Tr against d, texture options read past, the PBR extension, null for what a file doesn't give), the computed values
-	and their defaults, texture paths by statement, paths resolved and normalized, UTF-8, and refusals naming their line. */
+	and their defaults, texture paths by statement, paths resolved and normalized, UTF-8 and Latin-1 text (é in names and paths), and refusals naming their line. */
 class ObjTests {
 	static var checks = 0;
 
@@ -367,13 +367,26 @@ class ObjTests {
 			"UTF-8 names, a byte order mark, \\r\\n, \\r and \\n");
 		var bad = Bytes.ofString("v 0 0 0\nv 1 0 0\no x\n");
 		bad.set(bad.length - 2, 0xFF);
-		var error = thrown(() -> ObjFile.read(bad, "m.obj"));
-		check(error != null && error.indexOf("Line 3") >= 0, "bytes that aren't UTF-8 refused, naming the line: " + error);
+		check(ObjFile.read(bad, "m.obj").positionCount == 2, "bytes that aren't UTF-8 read as Latin-1");
 		var overlong = Bytes.ofString("newmtl a\nnewmtl b\n");
 		overlong.set(8, 0xC0);
-		check(thrown(() -> MtlFile.read(overlong, "m.mtl")) != null, "an overlong form refused");
+		check(MtlFile.read(overlong, "m.mtl").materials[0].name == "a\u00c0newmtl b", "an overlong form: not UTF-8, read as Latin-1");
 		var cut = Bytes.ofString("newmtl \u00e9");
-		check(thrown(() -> MtlFile.read(cut.sub(0, cut.length - 1), "m.mtl")) != null, "a sequence cut short refused");
+		check(MtlFile.read(cut.sub(0, cut.length - 1), "m.mtl").materials[0].name == "\u00c3", "a sequence cut short: read as Latin-1");
+		// A Windows-1252 library: é is 0xE9, in a name and a texture's path.
+		function latin1(text:String):Bytes {
+			var bytes = Bytes.alloc(text.length);
+			for (i in 0...text.length)
+				bytes.set(i, StringTools.fastCodeAt(text, i));
+			return bytes;
+		}
+		var w = MtlFile.read(latin1("newmtl caf\u00e9\nmap_Kd textures/caf\u00e9 cr\u00e8me.png\n"), "models/m.mtl").materials[0];
+		check(w.name == "caf\u00e9"
+			&& w.diffuseTexturePath == "models/textures/caf\u00e9 cr\u00e8me.png", "Windows-1252: é in a name and a path");
+		var o = ObjFile.read(latin1("v 0 0 0\nusemtl caf\u00e9\nf 1 1 1\n"), "m.obj");
+		check(o.materialNames[0] == "caf\u00e9", "a Latin-1 OBJ's usemtl name");
+		var u = MtlFile.read(Bytes.ofString("newmtl caf\u00e9\nmap_Kd caf\u00e9.png\n"), "m.mtl").materials[0];
+		check(u.name == "caf\u00e9" && u.diffuseTexturePath == "caf\u00e9.png", "UTF-8 é read as UTF-8, not as two Latin-1 characters");
 		var nul = Bytes.ofString("v 0 0 0\nv 1 0 0\n");
 		nul.set(10, 0);
 		var why = thrown(() -> ObjFile.read(nul, "m.obj"));

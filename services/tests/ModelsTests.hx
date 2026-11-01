@@ -203,6 +203,23 @@ class ModelsTests {
 			&& colored.meshes[0].colors.join(",") == "1,0,0,1,0,1,0,1,0,0,1,1",
 			"an .OBJ: positions' colors, alpha 1; no libraries, no materials");
 
+		// A Latin-1 library naming a texture whose file name has é (0xE9): found by its name's characters.
+		files.files.set("objs/latin.obj", Bytes.ofString("mtllib latin.mtl\nv 0 0 0\nv 1 0 0\nv 0 1 0\nusemtl caf\u00e9\nf 1 2 3\n"));
+		var mtl = Bytes.ofString("newmtl caf_\nmap_Kd caf_.png\n");
+		mtl.set(10, 0xE9);
+		mtl.set(22, 0xE9);
+		files.files.set("objs/latin.mtl", mtl);
+		files.files.set("objs/caf\u00e9.png", Bytes.ofString("2x2"));
+		var latin:Model3D = null;
+		models.load("objs/latin.obj", m -> latin = m, e -> throw e);
+		pump();
+		check(latin != null
+			&& latin.materials[0].name == "caf\u00e9"
+			&& latin.materials[0].baseColorImageIndex == 0
+			&& latin.images[0] != null
+			&& latin.images[0].path == "objs/caf\u00e9.png",
+			"a Latin-1 library's texture named with é, loaded");
+
 		files.files.set("objs/bad.obj", Bytes.ofString("v 0 0 0\nf 1 1 x\n"));
 		var why = "";
 		models.load("objs/bad.obj", _ -> throw "loaded a bad file", message -> why = message);

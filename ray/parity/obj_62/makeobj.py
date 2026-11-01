@@ -14,7 +14,8 @@ web/obj/groups.obj splits as tinyobj_loader_c splits shapes: g lines with no fac
 each, o lines, faces of 1 and 2 corners (counted among a group's faces, giving no triangles), a polygon after them, g lines at the end
 with no faces after them. web/obj/missing.obj's corners name positions, texture coordinates and normals the file doesn't have, and
 ones on lines after the face (raylib 6.2's zeros, (0, 1, 0) normals and (0, 0) texture coordinates; the later lines read).
-web/obj/empty.obj is empty, read as a file that can't be read."""
+web/obj/empty.obj is empty, read as a file that can't be read. web/obj/latin.obj and its library latin.mtl are Latin-1 (Windows-1252)
+text, a material named with é (0xE9): tinyobj_loader_c matches the names' bytes, helix-formats their characters."""
 import struct, sys, zlib
 from pathlib import Path
 
@@ -184,6 +185,23 @@ f -1/-1/-1 -5/-3/-2 1/1/1
 f 1/1/2 2/1/1 3/7/1
 """
 
+LATIN_OBJ = """mtllib latin.mtl
+v 0 0 0
+v 1 0 0
+v 0 1 0
+usemtl café
+f 1 2 3
+usemtl crème
+f 1 3 2
+"""
+
+LATIN_MTL = """newmtl crème
+Kd 0.9 0.8 0.6
+newmtl café
+Kd 0.4 0.25 0.1
+Ns 12
+"""
+
 destination = Path(sys.argv[1])
 directory = destination.parent
 directory.mkdir(parents=True, exist_ok=True)
@@ -192,6 +210,8 @@ if destination.name == 'shapes.obj':
              'empty.obj': ''}
     for name, text in files.items():
         (directory / name).write_text(text, encoding='utf-8')
+    (directory / 'latin.obj').write_text(LATIN_OBJ, encoding='latin-1')
+    (directory / 'latin.mtl').write_text(LATIN_MTL, encoding='latin-1')
 elif destination.name == 'lib.mtl':
     destination.write_text(LIBRARY, encoding='utf-8')
 else:
