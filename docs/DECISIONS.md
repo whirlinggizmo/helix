@@ -252,5 +252,7 @@ Why things are the way they are, numbered, in order.
     and Windows as UTF-16, and a browser fetches as a UTF-8 URL, so no target can be handed a lone byte 0xE9. A Latin-1 library's
     `café.png` is the file named `café.png` in the system's own spelling: found on Windows, where that name is UTF-16, on a page,
     and on Linux and macOS when the name is UTF-8, as unpacking and copying tools write it; raylib's `fopen` there looks for the
-    name's raw bytes instead. It is the one difference kept on a file the formats allow that isn't raylib's bug; no parity case shows it, as each side's file
-    is spelled apart.
+    name's raw bytes instead. Paths stay text because that is what engines give: SDL3's file I/O takes UTF-8, Godot, Unity and
+    Unreal take Unicode strings, and a page fetches a URL; only languages' own libraries (Rust's `OsStr`, Python's surrogate escapes)
+    keep a path's raw bytes. It is the one difference kept on a file the formats allow that isn't raylib's bug; no parity case shows
+    it, as each side's file is spelled apart.
