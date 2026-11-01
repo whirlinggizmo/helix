@@ -12,6 +12,7 @@ import helix.services.input.Keyboard;
 import helix.services.time.Time;
 
 /** A program on helix-services and what it sits on, constructing only what it uses, as a game built on them would. */
+@:adds("helix.platform.adapters.gamepads.dom", "helix.platform.adapters.keyboard.dom", "helix.services.input")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;

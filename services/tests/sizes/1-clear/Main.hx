@@ -4,6 +4,8 @@ import helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter;
 import helix.platform.adapters.window.dom.DomWindowAdapter;
 
 /** A program on helix-services and what it sits on, constructing only what it uses, as a game built on them would. */
+@:adds("helix.platform", "helix.platform.adapters.events.dom", "helix.platform.adapters.graphics.webgl2", "helix.platform.adapters.window.dom",
+	"helix.platform.adapters.shared", "helix.platform.adapters.shared.dom")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;

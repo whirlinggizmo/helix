@@ -16,6 +16,7 @@ import helix.services.saves.Saves;
 import helix.services.time.Time;
 
 /** A program on helix-services and what it sits on, constructing only what it uses, as a game built on them would. */
+@:adds("helix.platform.adapters.http.fetchapi", "helix.services.assets")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;

@@ -13,6 +13,7 @@ import helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter;
 import helix.platform.adapters.window.dom.DomWindowAdapter;
 
 /** A program on helix-platform alone, constructing only what it uses, as a game built on the platform would. */
+@:adds("helix.platform.adapters.filesystem.browser")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;

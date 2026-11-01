@@ -11,6 +11,7 @@ import helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter;
 import helix.platform.adapters.window.dom.DomWindowAdapter;
 
 /** A program on helix-platform alone, constructing only what it uses, as a game built on the platform would. */
+@:adds("helix.platform.adapters.audio.webaudio", "helix.platform.adapters.audiodecoder.webaudio")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;

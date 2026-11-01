@@ -54,7 +54,7 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `tools/format.py` | haxe-formatter over the libraries (`--check` only checks) |
 | `tools/gen_apidoc.py` | The API reference from the doc comments: `docs/api` (committed) and `build/api` (`--check`) |
 | `tools/gen_raylib.py` | helix-ray's `Raylib.hx`, `Raymath.hx` and `Rlgl.hx`: forwards to each function of its sections (`ray/src/helix/ray/raylib`, read through `haxe -xml`), by raylib's modules, and the refusals of what helix-ray won't or doesn't yet have (`--check`) |
-| `tools/measure_sizes.py` | Each library's web size ladder (`<library>/tests/sizes`) against `docs/benchmarks.json` (`--write`, `--check`) |
+| `tools/measure_sizes.py` | Each library's web size ladder (`<library>/tests/sizes`) against `docs/benchmarks.json` (`--write`, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
 | `tools/native_build.py` | hxcpp's environment for the adapters' C, and the platform's C-only tests built with CMake (a module) |
 | `tools/page_check.cjs` | A page in headless Chromium: its errors, its result and a screenshot (run by `platform_checks.py`) |
 | `tools/pins.py` | The repository's haxelib: dev links to the libraries and the pinned hxcpp (a module) |

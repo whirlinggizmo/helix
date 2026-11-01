@@ -13,7 +13,9 @@ alone (Terser, when a build runs it, takes some 15% of the gzipped size more).
 
   --write  write docs/benchmarks.json (the baseline: every number, and the Haxe and commit measured) and docs/benchmarks.md (the tables)
   --check  measure and compare with the baseline: a rung more than TOLERANCE larger (gzip) fails; one smaller says to --write a new
-           baseline. helix.py test runs it.
+           baseline. And check what each rung links (links(), docs/CONVENTIONS.md "A program links only what it names"): a library
+           class no rung up to it declares in its Main's @:adds, a declaration it doesn't link, run-time type inspection linked, or
+           a library's @:keep fails. helix.py test runs it.
 
 Standard library only."""
 import argparse
@@ -27,6 +29,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[1]
 # Each library's ladder: its programs' directory and how a rung is built.
@@ -36,6 +39,8 @@ LADDERS = {
     'ray': (ROOT / 'ray/tests/sizes', ['-lib', 'helix-ray']),
 }
 LIBRARIES = {'helix-platform': ROOT / 'platform', 'helix-log': ROOT / 'log', 'helix-math': ROOT / 'math', 'helix-geometry': ROOT / 'geometry', 'helix-formats': ROOT / 'formats', 'helix-services': ROOT / 'services', 'helix-ray': ROOT / 'ray'}
+# The libraries' classes, by their full names' start.
+LIBRARY_PREFIX = 'helix.'
 BASELINE = ROOT / 'docs/benchmarks.json'
 TABLE = ROOT / 'docs/benchmarks.md'
 OUT = ROOT / 'build/sizes'
@@ -49,11 +54,14 @@ def rungs(ladder):
 
 
 def build(ladder, rung, haxelib):
-    """The rung built as a release for the browser; its JavaScript's path."""
+    """The rung built as a release for the browser; its JavaScript's path. Beside it, app.xml (the build's -xml: what dead-code
+    elimination kept) and kept.json (what the libraries mark @:keep, tools/haxe/Kept.hx), for the links' check."""
     out = OUT / ladder / rung.name / 'app.js'
     out.parent.mkdir(parents=True, exist_ok=True)
+    kept = (out.parent / 'kept.json').as_posix()
     args = ['haxe'] + LADDERS[ladder][1] + ['-cp', str(rung), '-main', 'Main', '-dce', 'full', '-D', 'analyzer-optimize', '-D', 'source-map', '-js',
-                                 str(out)]
+                                 str(out), '-xml', str(out.parent / 'app.xml'), '-cp', str(ROOT / 'tools/haxe'), '--macro',
+                                 f'Kept.write("{kept}", ["{LIBRARY_PREFIX}"])']
     done = subprocess.run(args, cwd=rung, env=dict(os.environ, HAXELIB_PATH=str(haxelib)), capture_output=True, text=True,
                           encoding='utf-8')
     if done.returncode:
@@ -140,6 +148,49 @@ def breakdown(js, source_map):
     return dict(sizes.most_common())
 
 
+def unit(path, module):
+    """What a declaration names a library class by: its package (the names before its first capitalized one), its module or itself."""
+    names = path.split('.')
+    package = '.'.join(n for n in names[:next((i for i, n in enumerate(names) if n[:1].isupper() or n[:1] == '_'), len(names))])
+    return {package, module, path}
+
+
+def links(ladder):
+    """The links' check on a ladder's rungs as built (docs/CONVENTIONS.md, "A program links only what it names"): each rung's Main
+    declares, in @:adds, the library packages, modules or classes it adds to the rungs before (read from its build's -xml, as the
+    compiler has the metadata); a rung linking a library class that no declaration up to it names, a declaration naming nothing the
+    rung links, the standard library's run-time type inspection (Type, ValueType, haxe.rtti, js.Boot.getClass) linked, or a library's
+    @:keep (tools/haxe/Kept.hx) is a problem. Interfaces, externs and abstracts' implementations aren't counted: the compiler keeps
+    those of its own. Returns the problems."""
+    problems, declared, reported = [], set(), set()
+    for rung in rungs(ladder):
+        name = f'{ladder} {rung.name}'
+        root = ElementTree.parse(OUT / ladder / rung.name / 'app.xml').getroot()
+        kept, adds = {}, []
+        for e in root:
+            path = e.get('path')
+            if e.tag not in ('class', 'enum') or e.get('extern'):
+                continue
+            if path == 'Main':
+                adds = [json.loads(v.text) for m in e.iter('m') if m.get('n') == ':adds' for v in m.findall('e')]
+            elif path.startswith(LIBRARY_PREFIX) and not e.get('interface') and '_Impl_' not in path:
+                kept[path] = unit(path, e.get('module'))
+            fields = {f.tag for f in e if f.tag not in ('meta', 'haxe_doc', 'implements', 'extends')}
+            if path in ('Type', 'ValueType') or path.startswith('haxe.rtti.') or path == 'js.Boot' and 'getClass' in fields:
+                problems.append(f'{name} links {path}{" (" + ", ".join(sorted(fields)) + ")" if fields else ""}: run-time type inspection')
+        for declaration in adds:
+            if not any(declaration in units for units in kept.values()):
+                problems.append(f'{name} declares {declaration} in @:adds, which it doesn\'t link')
+        declared |= set(adds)
+        for path, units in sorted(kept.items()):
+            if not units & declared and path not in reported:
+                problems.append(f'{name} links {path}, which no rung up to it declares in @:adds')
+                reported.add(path)
+        for marked in json.loads((OUT / ladder / rung.name / 'kept.json').read_text(encoding='utf-8')):
+            problems.append(f'{marked} is marked @:keep, so every program typing it links it')
+    return list(dict.fromkeys(problems))
+
+
 def measure():
     """Every rung of every ladder measured: {ladder: {name: {adds, raw, gzip, brotli, packages}}}."""
     haxelib = Path(tempfile.mkdtemp(prefix='helix-sizes-'))
@@ -188,8 +239,10 @@ INTRODUCTIONS = {
     'ray': ('helix-ray',
             'Programs written in raylib on helix-ray (`ray/tests/sizes/`), each adding one feature to the one before, from a window '
             'cleared each frame: what a feature costs through raylib\'s API is its row\'s increment, gzip; brotli in brackets. Against '
-            'the services\' ladder this is what the familiar API costs (DECISIONS 15): helix-ray builds, before `main`, what any raylib '
-            'program may reach (the assets its files load through, saves, time, the screen and input), so its first rung holds them. Its 3D starts with a cube made in memory (GenMeshCube, '
+            'the services\' ladder this is what the familiar API costs (DECISIONS 15): helix-ray\'s window brings its time, the screen '
+            '(with the saves it keeps its state in) and the keyboard, so its first rung holds them; the rest (the assets its files load '
+            'through, the image decoder, the dropped files) comes with the functions that need it (DECISIONS 30). Each rung\'s `@:adds` '
+            'names what it adds. Its 3D starts with a cube made in memory (GenMeshCube, '
             'LoadModelFromMesh), drawn unlit with a camera: the 3D drawing alone, so the glTF rung after it is the reader\'s own cost. '
             'helix-ray\'s bytes are counted by source file: raylib\'s modules (R*) and its internals, its facade and structs as ray.'),
 }
@@ -265,6 +318,9 @@ def main():
                 failed = True
             elif growth < -TOLERANCE[1]:
                 print(f'measure_sizes: {name} shrank {kb(-growth)} KB gzipped: --write a new baseline')
+        for problem in dict.fromkeys(p for ladder in results for p in links(ladder)):
+            print(f'measure_sizes: {problem}')
+            failed = True
         if failed:
             sys.exit(1)
 

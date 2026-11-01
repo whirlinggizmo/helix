@@ -3,6 +3,7 @@ import helix.ray.Raylib.*;
 import helix.ray.Vector2;
 
 /** A program written in raylib on helix-ray, as a game in raylib would be. */
+@:adds("helix.ray.internal.DefaultFont", "helix.ray.internal.Pixels", "helix.ray.raylib.RText", "helix.ray.raylib.RTextures")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

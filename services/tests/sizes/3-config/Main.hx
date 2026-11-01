@@ -7,6 +7,7 @@ import helix.services.config.Config;
 import helix.services.time.Time;
 
 /** A program on helix-services and what it sits on, constructing only what it uses, as a game built on them would. */
+@:adds("helix.services.config")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;
