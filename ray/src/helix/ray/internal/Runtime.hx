@@ -474,11 +474,12 @@ class Runtime {
 
 	static var fontRasterizer:Null<helix.platform.IFontRasterizer> = null;
 
-	/** Gets the screenshots, made over the graphics when first asked for: the frame reads them back as each frame ends. */
+	/** Gets the screenshots, made over the graphics when first asked for: the frame reads them back as each frame ends (`Frame.ended`). */
 	public static function screenshots():helix.services.screenshots.Screenshots {
 		if (screenshotsService == null) {
-			screenshotsService = new helix.services.screenshots.Screenshots(graphics);
-			frame.screenshots = screenshotsService;
+			var made = new helix.services.screenshots.Screenshots(graphics);
+			screenshotsService = made;
+			frame.ended.push(made.frameEnded);
 		}
 		return screenshotsService;
 	}
