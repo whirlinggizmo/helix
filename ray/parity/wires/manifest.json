@@ -1,0 +1,11 @@
+{
+  "oracle": "5.5",
+  "covers": "rlgl's render state across its batch: DrawModelWires and DrawModelWiresEx, culling off, wire mode, the front face culled, the depth mask and the depth test off, drawn into a 640 x 360 frame",
+  "kind": "pixels",
+  "generated": true,
+  "frames": 5,
+  "backends": {
+    "gl": 0,
+    "sdl_gpu": 1100
+  }
+}

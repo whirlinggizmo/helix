@@ -1,0 +1,14 @@
+greenman.glb and robot.glb are raylib's example models, from raylib 6.2's examples/models/resources/models/gltf/, unchanged, as its LICENSE there
+gives them:
+
+robot.glb model by @Quaternius (https://www.patreon.com/quaternius)
+Licensed under CC0 1.0 Universal (CC0 1.0) - Public Domain Dedication (https://creativecommons.org/publicdomain/zero/1.0/)
+
+greenman.glb, greenman_hat.glb, greenman_sword.glb, greenman_shield.glb models by @iP (https://github.com/ipzaur)
+Licensed under CC0 1.0 Universal (CC0 1.0) - Public Domain Dedication (https://creativecommons.org/publicdomain/zero/1.0/)
+
+modular-women/: Animations.glb, Adventurer_Head.glb, Adventurer_Body.glb, Adventurer_Legs.glb, Adventurer_Feet.glb and Sword.glb, from
+Ultimate Modular Women by Quaternius (https://quaternius.com), CC0 1.0 Universal (CC0 1.0) - Public Domain Dedication
+(https://creativecommons.org/publicdomain/zero/1.0/). Converted from the pack's FBX files to glTF binaries in Blender 5.1.2, materials
+made opaque and normals smoothed by angle (75 degrees); each part skinned to the pack's one 62-joint armature, the animations (24 clips)
+an armature without meshes.

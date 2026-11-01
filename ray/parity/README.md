@@ -1,0 +1,102 @@
+# helix-ray's parity suites
+
+helix-ray behaves as raylib does, and these suites check it against raylib's own C. Each suite is a C reference built against a raylib
+release and a Haxe harness or program doing the same with helix-ray. `tools/ray_parity.py` builds and runs both and compares what they
+give: numbers line by line (value suites), or the frames they draw (pixel suites).
+
+## The oracle
+
+Each function has one oracle (docs/DECISIONS.md 24). Where helix-ray took a bug fix from a later release, that release's C is the oracle
+(6.2 now). Everywhere else it is raylib 5.5's. A suite names its oracle in its manifest (`"oracle": "5.5"`), so a suite only holds
+functions that share one. A fix taken from 6.2 moves its function's cases into a 6.2 suite, or into a new one. A version bump (a later
+release's API taken) is a rerun: change the suites' oracles, pin the release's tarball in the tool (`RELEASES`), and the bars show what
+moved.
+
+## Running
+
+```console
+python3 tools/ray_parity.py              # every suite
+python3 tools/ray_parity.py shapes2d     # the suites named
+python3 tools/ray_parity.py --list       # the suites, their oracles and what each covers
+```
+
+Linux only. The C references and native programs run on a private display (`tools/private_display.py`, Xvfb and Openbox), with SDL's dummy
+audio driver and no session bus. raylib's desktop build needs a C compiler, make, X11 and GL headers. The first run fetches each release
+from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/raylib/<version>/`. Everything the suites build goes in
+`build/ray-parity/<suite>/`: the generated sources (`src/`), the reference (`ref`, `ref.txt` or `raylib.png`), the harness's output (`js.txt`,
+`cpp.txt`) or frames (`gl.png`, `sdl_gpu.png`). The tool exits 1 when any suite fails.
+
+## The suites
+
+| Suite | Oracle | Kind | What |
+|---|---|---|---|
+| `shapes2d` | 5.5 | values | every 2D Draw function's vertices as rlgl batches them, the spline points, the 2D collisions |
+| `shapes3d` | 5.5 | values | the 3D shapes and billboards, vertex for vertex |
+| `meshes` | 5.5 | values | the generated meshes, their tangents and bounds |
+| `collisions` | 5.5 | values | the 3D ray tests and collision checks |
+| `cameras` | 5.5 | values | the camera matrix, world to screen, screen to ray, and rcamera's moves, over 700 cameras |
+| `camera_update` | 5.5 | values | `UpdateCamera` in each mode over scripted input |
+| `animation` | 6.2 | values | glTF skeletons and animations, bone matrices, CPU skinning and blending |
+| `modular` | 6.2 | values | real-world models: Quaternius' modular woman, each part its own file, animated from a file of its own |
+| `scene2d` | 5.5 | pixels | a 2D scene of every Draw function, textures and text |
+| `scene3d` | 5.5 | pixels | a 3D scene of the shapes, billboards, generated models and shaders |
+| `wires` | 5.5 | pixels | rlgl's render state: wires, culling, wire mode, the depth mask and test |
+| `skinning` | 6.2 | pixels | greenman skinned on the CPU, on the GPU and blended |
+| `modular_scene` | 6.2 | pixels | the modular woman dressed and holding the sword, CPU-skinned |
+
+Each suite's manifest says in full what it covers (`covers`), and `notes` say why a bar is where it is.
+
+## A suite
+
+`<suite>/manifest.json`:
+
+- `oracle`: the raylib release its C reference is built against.
+- `covers`, `notes`: what it checks, and what a reader should know about its numbers.
+- `kind`: `values` or `pixels`.
+- `generated`: its two sides come from one list (below). Otherwise `reference` names its C file and `harness` its Haxe files, kept side by
+  side, their lines named alike.
+- `main`: the Haxe main class.
+- `link`: false for a reference built against raylib's headers alone (`camera_update` builds rcamera.h itself).
+- `assets`: files put into the suite's build directory before anything runs, by where they go: a path in the repository (`../assets/`),
+  a script run with the destination as its argument (`makerig.py`), or `raylib:<path>`, a file from the oracle's own source.
+- `resources`: files compiled into the Haxe harness (`-resource`), by name.
+- Value suites: `tolerance`, the largest difference allowed in a section, and `bars`, a section's own (`worst`, and `nonfinite`, how many
+  numbers may be NaN or infinite where the other side's are not). `hex`: numbers printed as a double's bits. `sections`: how lines are
+  grouped (below).
+- Pixel suites: `frames`, how long helix-ray's program runs (`HELIX_FRAMES`); `backends`, for each backend it is built for (`gl`, `sdl_gpu`),
+  how many pixels may differ from raylib's frame at all.
+
+### Value suites
+
+Both sides print lines, each led by its case's name: `pixel drawn 6`, then `pixel T 10 12 0 0 ...`. The C side prints to its output, the
+Haxe side through `shared/Parity.hx`'s `line` and `save`. The tool reads both by section: a line's first word, or the group of the
+manifest's `sections.pattern` matched against it. `sections.headers` names first words that start a block (`file 0`), which the sections after
+are named under. A scale line, `NAME scale SCALE CLASS`, sets what the lines after it are measured against and adds CLASS to their
+section's name (`cameras`: each camera's size, and whether it is regular or degenerate).
+
+Within a section the lines are compared word by word. Words and integers must match. Other numbers must be within the bar, as
+|a - b| / max(1, |a|, |b|, scale). raylib computes in floats, helix-ray in doubles, so a few ulps of a float are the floor.
+
+`shared/parity.h` and `shared/Parity.hx` print raylib's batch and helix-ray's frame (`shape`), meshes, ray hits and values alike.
+`shared/StubGraphics.hx` is graphics that keeps nothing, and `shared/DiskFiles.hx` files from the working directory.
+
+### Pixel suites
+
+The C reference draws three frames and saves the third as `ref.png`. helix-ray's program draws the same and saves its third with
+`TakeScreenshot("helix.png")`. Both run on the private display's software renderers (Mesa), so a frame is the same from run to run.
+
+## Adding a case
+
+In a generated suite, add a line to its `cases.py`. A case is written once, in the syntax `shared/gen.py` describes: `V2`, `V3` and `R` as
+they are, `PTS(...)` and `PTS3(...)` for point arrays, `NEW(Type, ...)` for a struct, `OUT(x)` for a pointer, `LET(x, Type, e)` for a
+local. `('name', 'DrawThing(...);')` draws and prints the vertices. A value is printed by the printers (`hit("name", ...)`, `flag`,
+`vec2`, `rect`, `box`, `num`, `mesh`). What needs setting up (a texture, a camera) goes in the templates (`ref.c.in` or `scene.c.in`,
+and `<Main>.hx.in`). A case that can't be written once is `{'c': ..., 'hx': ...}`. In a suite kept side by side, add the case to both, its
+lines named alike.
+
+Then run the suite. A new case that differs is a finding: fix helix-ray, or say in the manifest's `notes` why it differs. Bars sit a
+little above today's worst, so a change that makes a suite worse fails it. One that makes a suite better can lower its bar.
+
+## Adding a suite
+
+Make `<suite>/` with its manifest and its two sides, and add it to the table above. A suite holds one oracle's functions.

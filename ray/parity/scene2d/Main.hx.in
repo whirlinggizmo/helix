@@ -1,0 +1,44 @@
+import helix.ray.*;
+import helix.ray.Raylib.*;
+
+// scene.c.in's 2D scene, drawn by helix-ray; its third frame saved as helix.png. cases.py's list is put into it.
+class Main {
+	static function V2(x:Float, y:Float):Vector2
+		return new Vector2(x, y);
+
+	static function R(x:Float, y:Float, w:Float, h:Float):Rectangle
+		return new Rectangle(x, y, w, h);
+
+	static function main():Void {
+		InitWindow(800, 600, "scene2d");
+		var checks = LoadTextureFromImage(GenImageChecked(64, 64, 8, 8, ORANGE, DARKBLUE));
+		var font = GetFontDefault();
+		var target = LoadRenderTexture(100, 60);
+		var patch = new NPatchInfo(R(0, 0, 64, 64), 16, 16, 16, 16, NPATCH_NINE_PATCH);
+		var strip = [V2(160, 10), V2(180, 40), V2(200, 12), V2(230, 38)];
+		var fan = [V2(480, 155), V2(480, 180), V2(510, 175), V2(515, 145), V2(490, 130)];
+		var tstrip = [V2(530, 130), V2(530, 180), V2(550, 130), V2(550, 180), V2(570, 135), V2(575, 175)];
+		var spline = [V2(10, 220), V2(60, 260), V2(110, 210), V2(160, 270), V2(200, 220)];
+		var spline2 = [V2(220, 220), V2(270, 260), V2(320, 210), V2(370, 270), V2(410, 220)];
+		var spline3 = [V2(430, 220), V2(480, 260), V2(530, 210), V2(580, 270), V2(620, 220)];
+		var quad = [V2(640, 270), V2(660, 200), V2(690, 270), V2(720, 200), V2(750, 270)];
+		var cubic = [V2(10, 280), V2(60, 240), V2(110, 290), V2(160, 280), V2(210, 240), V2(260, 290), V2(310, 280)];
+		var frame = 0;
+		while (!WindowShouldClose()) {
+			BeginTextureMode(target);
+			ClearBackground(SKYBLUE);
+			DrawCircle(30, 30, 20, RED);
+			DrawRectangle(60, 10, 30, 20, DARKGREEN);
+			DrawTriangle(V2(50, 55), V2(90, 55), V2(70, 35), GOLD);
+			EndTextureMode();
+			BeginDrawing();
+			ClearBackground(RAYWHITE);
+			@CASES@
+			if (frame == 2)
+				TakeScreenshot("helix.png");
+			EndDrawing();
+			frame++;
+		}
+		CloseWindow();
+	}
+}

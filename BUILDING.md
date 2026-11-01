@@ -28,6 +28,7 @@ python3 helix.py test --native              # also each library's tests in hxcpp
 python3 tools/check_types.py --no-output    # type-check every entry point of every library on its targets
 python3 tools/platform_checks.py --browser <chromium>   # the platform's examples and GPU tests, natively on a private display and in Chromium
 python3 tools/services_checks.py --browser <chromium>   # the services' examples, natively on a private display and in Chromium
+python3 tools/ray_parity.py                 # helix-ray against raylib's own C, each suite against its release (Linux)
 python3 tools/format.py --check             # layout
 python3 tools/check_docs.py                 # doc comments
 python3 tools/gen_apidoc.py                 # remake docs/api after a doc comment changes (--check in the tests)
@@ -60,6 +61,7 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `tools/platform_checks.py` | The platform's examples and graphics tests on the GPU, natively on a private display and in Chromium |
 | `tools/services_checks.py` | The services' examples on the platform's real adapters, natively on a private display and in Chromium |
 | `tools/private_display.py` | A private X display for native windows in checks (a module) |
+| `tools/ray_parity.py` | helix-ray against raylib's own C (`ray/parity`): each suite's C reference built against its raylib release (fetched, pinned by sha256, built into `build/raylib`), run on a private display, and helix-ray's harness (Node and hxcpp) or program (natively) compared with it, within the suite's bars (Linux) |
 | `tools/remote_windows.py` | This checkout built and checked on a Windows machine over ssh |
 | `tools/sdl3.py` | The SDL3 library a native build links: the system's, or the pinned release made into `build/deps` |
 

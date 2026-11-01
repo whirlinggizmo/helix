@@ -1,0 +1,8 @@
+{
+  "oracle": "5.5",
+  "covers": "rmodels.c's GenMeshPoly, Plane, Cube, HemiSphere, Sphere, Cylinder, Cone, Torus, Knot (par_shapes), Heightmap and Cubicmap, vertex for vertex (positions, texture coordinates, normals, indices); GenMeshTangents; GetMeshBoundingBox",
+  "kind": "values",
+  "generated": true,
+  "main": "MeshBits",
+  "tolerance": 8e-06
+}

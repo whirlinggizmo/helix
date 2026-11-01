@@ -1,0 +1,8 @@
+{
+  "oracle": "5.5",
+  "covers": "rmodels.c's GetRayCollisionSphere, Box, Triangle, Quad and Mesh over four rays (from outside, from inside, diagonal, missing), CheckCollisionBoxes, Spheres and BoxSphere on either side of touching",
+  "kind": "values",
+  "generated": true,
+  "main": "CollisionBits",
+  "tolerance": 3e-06
+}

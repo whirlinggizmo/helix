@@ -1,0 +1,25 @@
+// The wire, culling and depth scene Main.hx.in draws, drawn by raylib, its third frame saved as ref.png; cases.py's list is put into it.
+#include "raylib.h"
+#include "rlgl.h"
+#define V3(x, y, z) ((Vector3){ (float)(x), (float)(y), (float)(z) })
+int main(void) {
+    SetTraceLogLevel(LOG_WARNING);
+    InitWindow(640, 360, "wires");
+    Camera camera = { { 6, 6, 9 }, { 0, 0.5f, 0 }, { 0, 1, 0 }, 45, CAMERA_PERSPECTIVE };
+    Model sphere = LoadModelFromMesh(GenMeshSphere(1, 10, 12));
+    Model cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
+    Model torus = LoadModelFromMesh(GenMeshTorus(0.4f, 2, 16, 8));
+    for (int frame = 0; frame < 3; frame++) {
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
+        BeginMode3D(camera);
+        DrawGrid(10, 1);
+        @CASES@
+        EndMode3D();
+        rlDrawRenderBatchActive();
+        if (frame == 2) ExportImage(LoadImageFromScreen(), "ref.png");
+        EndDrawing();
+    }
+    CloseWindow();
+    return 0;
+}

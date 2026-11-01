@@ -45,6 +45,12 @@ where a native program finds its files, relative to itself (default `../web`). `
 - `text`: a TrueType font loaded and drawn beside the default font.
 - `images`: an image made on the CPU, a circle and text drawn into it, drawn as a texture.
 
+## Checked against raylib
+
+`parity/` holds suites that check helix-ray against raylib's own C: each function against one release, 6.2 where helix-ray took one of
+its fixes and 5.5 elsewhere (docs/DECISIONS.md 24). `python3 tools/ray_parity.py` runs them (Linux); [parity/README.md](parity/README.md)
+says what each covers and how to add a case.
+
 ## Depends on
 
 helix-services and helix-platform (and helix-formats, helix-math and helix-log under them).

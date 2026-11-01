@@ -1,0 +1,11 @@
+// raylib's 3D ray tests and collision checks, printed by parity.h; cases.py's list is put into it.
+#include "parity.h"
+#include "raymath.h"
+
+int main(void) {
+    parity_open();
+    BoundingBox box = { { -1, -1, -1 }, { 1, 2, 1 } };
+    @CASES@
+    parity_close();
+    return 0;
+}

@@ -1,0 +1,21 @@
+{
+  "oracle": "6.2",
+  "covers": "rmodels.c's glTF skeletons and animations as 6.2 reads them (bones, bind poses from the inverse binds or the joints, bone ids and weights), LoadModelAnimations' sampled frames, UpdateModelAnimationBones at whole, fractional and wrapped frames, UpdateModelAnimation's CPU skinning (vertices and normals), UpdateModelAnimationEx's blend, IsModelAnimationValid; on greenman.glb, robot.glb and a rig made to reach the corners",
+  "kind": "values",
+  "main": "AnimBits",
+  "reference": "ref.c",
+  "harness": [
+    "AnimBits.hx"
+  ],
+  "assets": {
+    "web/greenman.glb": "../assets/greenman.glb",
+    "web/robot.glb": "../assets/robot.glb",
+    "web/rig.gltf": "makerig.py"
+  },
+  "sections": {
+    "headers": [
+      "file"
+    ]
+  },
+  "tolerance": 3e-06
+}

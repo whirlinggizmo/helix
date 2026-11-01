@@ -1,0 +1,22 @@
+{
+  "oracle": "6.2",
+  "covers": "Quaternius' Adventurer woman (head, body, legs, feet, each a model of its own) holding the sword, CPU-skinned at frame 20 of Sword_Slash from Animations.glb, drawn into a 640 x 360 frame",
+  "kind": "pixels",
+  "reference": "scene.c",
+  "harness": [
+    "Main.hx"
+  ],
+  "assets": {
+    "web/Animations.glb": "../assets/modular-women/Animations.glb",
+    "web/Adventurer_Head.glb": "../assets/modular-women/Adventurer_Head.glb",
+    "web/Adventurer_Body.glb": "../assets/modular-women/Adventurer_Body.glb",
+    "web/Adventurer_Legs.glb": "../assets/modular-women/Adventurer_Legs.glb",
+    "web/Adventurer_Feet.glb": "../assets/modular-women/Adventurer_Feet.glb",
+    "web/Sword.glb": "../assets/modular-women/Sword.glb"
+  },
+  "frames": 60,
+  "backends": {
+    "gl": 2,
+    "sdl_gpu": 400
+  }
+}

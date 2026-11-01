@@ -1,0 +1,11 @@
+{
+  "oracle": "5.5",
+  "covers": "every 2D Draw function, textures (flipped and turned source rectangles, a nine-patch, a render texture) and the default font's text, drawn into an 800 x 600 frame",
+  "kind": "pixels",
+  "generated": true,
+  "frames": 5,
+  "backends": {
+    "gl": 15,
+    "sdl_gpu": 1100
+  }
+}

@@ -1,0 +1,16 @@
+mouse 12 -7
+keys 87 68
+keys 83 65 265
+keys 263 81
+keys 262 69 264
+pan 5 -3
+wheel 1.5
+press 333
+press 334
+keys 32
+keys 341
+pad 0.6 -0.4 -0.8 0.5
+pad -0.3 0.7 0.9 -0.6
+mouse 0 -900
+mouse 0 1800
+keys 87 32 263

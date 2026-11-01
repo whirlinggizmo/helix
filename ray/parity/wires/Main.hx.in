@@ -1,0 +1,31 @@
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import helix.ray.Rlgl.*;
+
+// scene.c.in's wire, culling and depth scene, drawn by helix-ray; its third frame saved as helix.png. cases.py's list is put into it.
+class Main {
+	static function V3(x:Float, y:Float, z:Float):Vector3
+		return new Vector3(x, y, z);
+
+	static function main():Void {
+		InitWindow(640, 360, "wires");
+		var camera = new Camera(V3(6, 6, 9), V3(0, 0.5, 0), V3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
+		var sphere = LoadModelFromMesh(GenMeshSphere(1, 10, 12));
+		var cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
+		var torus = LoadModelFromMesh(GenMeshTorus(0.4, 2, 16, 8));
+		var frame = 0;
+		while (!WindowShouldClose()) {
+			BeginDrawing();
+			ClearBackground(RAYWHITE);
+			BeginMode3D(camera);
+			DrawGrid(10, 1);
+			@CASES@
+			EndMode3D();
+			if (frame == 2)
+				TakeScreenshot("helix.png");
+			EndDrawing();
+			frame++;
+		}
+		CloseWindow();
+	}
+}

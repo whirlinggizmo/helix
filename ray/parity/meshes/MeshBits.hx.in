@@ -1,0 +1,20 @@
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import Parity.*;
+
+// helix-ray's generated meshes, tangents and bounds, printed by Parity as ref.c.in prints raylib's.
+class MeshBits {
+	static function main() {
+		open();
+		var height = GenImageColor(5, 4, BLACK);
+		for (y in 0...4)
+			for (x in 0...5)
+				ImageDrawPixel(height, x, y, new Color((x * 53 + y * 31) % 256, (x * 17 + y * 89) % 256, (x * 7 + y * 120) % 256, 255));
+		var cubic = GenImageColor(4, 3, BLACK);
+		var walls = [1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 2, 1];
+		for (i in 0...12)
+			ImageDrawPixel(cubic, i % 4, Std.int(i / 4), walls[i] == 1 ? WHITE : walls[i] == 2 ? RED : BLACK);
+		@CASES@
+		save();
+	}
+}

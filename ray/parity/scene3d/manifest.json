@@ -1,0 +1,11 @@
+{
+  "oracle": "5.5",
+  "covers": "the 3D shapes and billboards, the eleven generated meshes as textured models, a mesh with tangents drawn by a shader of its own (vertexTangent, vertexTexCoord2), a shader over the batch, drawn into a 640 x 360 frame",
+  "kind": "pixels",
+  "generated": true,
+  "frames": 5,
+  "backends": {
+    "gl": 340,
+    "sdl_gpu": 1900
+  }
+}

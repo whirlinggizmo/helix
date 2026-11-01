@@ -1,0 +1,35 @@
+{
+  "oracle": "5.5",
+  "covers": "rcore.c's GetCameraMatrix, GetWorldToScreenEx and GetScreenToWorldRayEx, and rcamera.h's CameraYaw, Pitch, Roll, MoveForward, MoveRight, MoveUp, MoveToTarget and UpdateCameraPro, over 700 cameras (positions, targets, ups, perspective and orthographic, degenerate ones among them), as double bits",
+  "notes": "Sections by function and by whether the camera is regular or degenerate, each difference against the scene's size. Points behind the camera and degenerate cameras give NaN or infinity where the other gives a number (raylib in floats, helix-ray in doubles): the bars count them.",
+  "kind": "values",
+  "main": "CameraBits",
+  "reference": "ref.c",
+  "harness": [
+    "CameraBits.hx"
+  ],
+  "hex": true,
+  "sections": {
+    "pattern": "^c\\d+\\.([a-z0-9]+)"
+  },
+  "tolerance": 1e-06,
+  "bars": {
+    "w2s regular": {
+      "worst": 1.2e-05,
+      "nonfinite": 221
+    },
+    "ray regular": 3e-05,
+    "pro50 regular": 4e-05,
+    "prolock regular": 6e-06,
+    "matrix degenerate": 1.5,
+    "w2s degenerate": {
+      "worst": 3,
+      "nonfinite": 1429
+    },
+    "ray degenerate": {
+      "worst": 0.25,
+      "nonfinite": 18180
+    },
+    "pro50 degenerate": 6e-06
+  }
+}
