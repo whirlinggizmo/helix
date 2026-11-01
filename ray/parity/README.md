@@ -32,12 +32,17 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 |---|---|---|---|
 | `shapes2d` | 5.5 | values | the 2D Draw functions' vertices as rlgl batches them, the spline points, the 2D collisions |
 | `shapes2d_62` | 6.2 | values | the 2D shapes 6.2 fixed or added, their vertices; the line test |
-| `shapes3d` | 5.5 | values | the 3D shapes and billboards, vertex for vertex |
-| `meshes` | 5.5 | values | the generated meshes, their tangents and bounds |
+| `shapes3d` | 5.5 | values | the 3D shapes, vertex for vertex |
+| `shapes3d_62` | 6.2 | values | the spheres, capsules and billboards, vertex for vertex |
+| `meshes` | 5.5 | values | the generated meshes and their bounds |
+| `meshes_62` | 6.2 | values | `GenMeshTangents`, with indices and without, and `ExportMesh`'s text |
 | `collisions` | 5.5 | values | the 3D ray tests and collision checks |
 | `collisions_62` | 6.2 | values | `GetRayCollisionSphere`, missing a sphere behind the ray |
-| `cameras` | 5.5 | values | the camera matrix, world to screen, screen to ray, and rcamera's moves, over 700 cameras |
-| `camera_update` | 5.5 | values | `UpdateCamera` in each mode over scripted input |
+| `cameras` | 5.5 | values | the camera matrix, world to screen, screen to ray, and rcamera's turns, over 700 cameras |
+| `cameras_62` | 6.2 | values | rcamera's moves forward and right and `UpdateCameraPro`, Z-up and X-up cameras among them |
+| `camera_update` | 5.5 | values | `UpdateCamera` in each mode over scripted input, from Y-up starts |
+| `camera_update_62` | 6.2 | values | `UpdateCamera` in each mode from a Z-up start |
+| `core_62` | 6.2 | values | file names, Base64, SHA-1 and SHA-256, the file functions 6.2 added, raymath's additions |
 | `images_62` | 6.2 | values | the image functions 6.2 fixed or added, their images byte for byte |
 | `animation` | 6.2 | values | glTF skeletons and animations, bone matrices, CPU skinning and blending |
 | `modular` | 6.2 | values | real-world models: Quaternius' modular woman, each part its own file, animated from a file of its own |
@@ -48,7 +53,8 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `rlgl_62` | 6.2 | values | rlgl's texture across changes of mode, the matrix stack's overflow, the point calls |
 | `scene2d` | 5.5 | pixels | a 2D scene of the Draw functions, textures and text |
 | `scene2d_62` | 6.2 | pixels | a 2D scene of the shapes 6.2 fixed or added |
-| `scene3d` | 5.5 | pixels | a 3D scene of the shapes, billboards, generated models and shaders |
+| `scene3d` | 5.5 | pixels | a 3D scene of the shapes, generated models and shaders |
+| `scene3d_62` | 6.2 | pixels | the spheres, capsules and billboards, and a mesh given tangents, in that scene |
 | `wires` | 5.5 | pixels | rlgl's render state: wires, culling, wire mode, the depth mask and test |
 | `skinning` | 6.2 | pixels | greenman skinned on the CPU, on the GPU and blended |
 | `modular_scene` | 6.2 | pixels | the modular woman dressed and holding the sword, CPU-skinned |

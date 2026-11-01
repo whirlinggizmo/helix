@@ -164,6 +164,16 @@ class RMath {
 		return v1.x * v2.x + v1.y * v2.y;
 	}
 
+	/** Returns the cross product of two 2D vectors, raylib 6.2's: the z of their 3D cross product, positive when the second is
+		counterclockwise of the first (with y up).
+
+		@param v1  One.
+		@param v2  The other.
+		@return  The product. */
+	static function Vector2CrossProduct(v1:Vector2, v2:Vector2):Float {
+		return v1.x * v2.y - v1.y * v2.x;
+	}
+
 	/** Returns the distance between two points.
 
 		@param v1  One.
@@ -1257,6 +1267,17 @@ class RMath {
 			- right.m15);
 	}
 
+	/** Returns a matrix with each of its values multiplied by a number, raylib 6.2's.
+
+		@param left  The matrix.
+		@param value  The number.
+		@return  The matrix multiplied. */
+	static function MatrixMultiplyValue(left:Matrix, value:Float):Matrix {
+		return new Matrix(left.m0 * value, left.m4 * value, left.m8 * value, left.m12 * value, left.m1 * value, left.m5 * value, left.m9 * value,
+			left.m13 * value, left.m2 * value, left.m6 * value, left.m10 * value, left.m14 * value, left.m3 * value, left.m7 * value, left.m11 * value,
+			left.m15 * value);
+	}
+
 	/** Returns two matrices multiplied: left, then right.
 
 		@param left  The first.
@@ -1601,15 +1622,32 @@ class RMath {
 		return QuaternionNormalize(QuaternionAdd(QuaternionAdd(QuaternionAdd(p0, m0), p1), m1));
 	}
 
-	/** Returns the rotation turning one direction to another.
+	/** Returns the rotation turning one direction to another, as raylib 6.2's: the directions may be of any length, and opposite ones
+		give half a turn about a direction square to the first.
 
-		@param from  The direction turned from, of length 1.
-		@param to  The direction turned to, of length 1.
-		@return  The quaternion. */
+		@param from  The direction turned from.
+		@param to  The direction turned to.
+		@return  The quaternion, of length 1; all 0 when either direction is. */
 	static function QuaternionFromVector3ToVector3(from:Vector3, to:Vector3):Quaternion {
 		var cos2Theta = from.x * to.x + from.y * to.y + from.z * to.z;
 		var cross = new Vector3(from.y * to.z - from.z * to.y, from.z * to.x - from.x * to.z, from.x * to.y - from.y * to.x);
-		return QuaternionNormalize(new Vector4(cross.x, cross.y, cross.z, 1 + cos2Theta));
+		// The two lengths multiplied.
+		var lengths = Math.sqrt(cross.x * cross.x + cross.y * cross.y + cross.z * cross.z + cos2Theta * cos2Theta);
+		var result = new Vector4(cross.x, cross.y, cross.z, lengths + cos2Theta);
+		// Opposite directions: their cross product is 0, so half a turn about a direction square to the first.
+		if (lengths > 0 && result.w <= lengths * Raymath.EPSILON) {
+			if (Math.abs(from.x) > Math.abs(from.z)) {
+				result.x = -from.y;
+				result.y = from.x;
+				result.z = 0;
+			} else {
+				result.x = 0;
+				result.y = -from.z;
+				result.z = from.y;
+			}
+			result.w = 0;
+		}
+		return QuaternionNormalize(result);
 	}
 
 	/** Returns a rotation matrix's rotation as a quaternion.
@@ -1766,6 +1804,32 @@ class RMath {
 		var same = FloatEquals(p.x, q.x) == 1 && FloatEquals(p.y, q.y) == 1 && FloatEquals(p.z, q.z) == 1 && FloatEquals(p.w, q.w) == 1;
 		var negated = FloatEquals(p.x, -q.x) == 1 && FloatEquals(p.y, -q.y) == 1 && FloatEquals(p.z, -q.z) == 1 && FloatEquals(p.w, -q.w) == 1;
 		return same || negated ? 1 : 0;
+	}
+
+	/** Returns a transform matrix from a translation, a rotation and a scale, raylib 6.2's: the axes scaled, then turned, then moved.
+
+		@param translation  The translation.
+		@param rotation  The rotation, a quaternion of length 1.
+		@param scale  The scale along each axis.
+		@return  The matrix. */
+	static function MatrixCompose(translation:Vector3, rotation:Quaternion, scale:Vector3):Matrix {
+		var x = rotation.x, y = rotation.y, z = rotation.z, w = rotation.w;
+		// raylib turns each scaled axis by the quaternion written out (Vector3RotateByQuaternion's terms).
+		function turn(t:Vector3):Vector3
+			return new Vector3(t.x * (x * x + w * w - y * y - z * z)
+				+ t.y * (2 * x * y - 2 * w * z)
+				+ t.z * (2 * x * z + 2 * w * y),
+				t.x * (2 * w * z + 2 * x * y)
+				+ t.y * (w * w - x * x + y * y - z * z)
+				+ t.z * (-2 * w * x + 2 * y * z),
+				t.x * (-2 * w * y + 2 * x * z)
+				+ t.y * (2 * w * x + 2 * y * z)
+				+ t.z * (w * w - x * x - y * y + z * z));
+		var right = turn(new Vector3(scale.x, 0, 0)),
+			up = turn(new Vector3(0, scale.y, 0)),
+			forward = turn(new Vector3(0, 0, scale.z));
+		return new Matrix(right.x, up.x, forward.x, translation.x, right.y, up.y, forward.y, translation.y, right.z, up.z, forward.z, translation.z, 0, 0, 0,
+			1);
 	}
 
 	/** Splits a transform matrix into its translation, rotation and scale, as raylib 6.2's (5.5's took the scale from the rows, wrong for a

@@ -671,6 +671,9 @@ class Raylib {
 	/** Shader location: array of matrices uniform: boneMatrices. */
 	public static inline final SHADER_LOC_BONE_MATRICES = 28;
 
+	/** Shader location: vertex attribute: instanceTransform, raylib 6.2's, the attribute a shader reads an instance's transform from. */
+	public static inline final SHADER_LOC_VERTEX_INSTANCETRANSFORM = 29;
+
 	// ---- Shader value types (ShaderUniformDataType) ----
 
 	/** Shader uniform type: float. */
@@ -1221,8 +1224,9 @@ class Raylib {
 	public static inline function GetMonitorRefreshRate(monitor:Int):Int
 		return RCore.GetMonitorRefreshRate(monitor);
 
-	/** Opens a URL in the system's browser; in a page, a new tab, at the next press when there is no fresh one. As raylib's, a URL with
-		`'` is refused as possibly malicious; helix-ray also opens only http, https and mailto URLs.
+	/** Opens a URL in the system's browser; in a page, a new tab, at the next press when there is no fresh one. As raylib 6.2's, a URL
+		with `'` or `"` is refused as possibly malicious. helix-ray opens only http, https and mailto URLs, where raylib 5.5 opens any and
+		6.2 only http and https.
 
 		@param url  The URL. */
 	public static inline function OpenURL(url:String):Void
@@ -1270,6 +1274,9 @@ class Raylib {
 		return RCore.GetWindowPosition();
 
 	/** Returns how many of the display's pixels a pixel drawn takes, across and down: 2 on most phones and high-density displays.
+
+		It is the display's scale whatever the flags, as raylib 5.5's desktop build has it and 6.2's web build; raylib 6.2's desktop build
+		gives 1 unless `FLAG_WINDOW_HIGHDPI` is set and the window isn't fullscreen, and 5.5's web build always 1.
 
 		@return  The scale. */
 	public static inline function GetWindowScaleDPI():Vector2
@@ -1574,6 +1581,7 @@ class Raylib {
 		return RCore.GetMousePosition();
 
 	/** Moves the mouse to a place on the screen. In a page the cursor can't be moved, so the position reads there until the mouse moves.
+		As raylib 6.2's, where the mouse was isn't forgotten: `GetMouseDelta` this frame includes the move.
 
 		@param x  The place across, in the screen's pixels.
 		@param y  The place down. */
@@ -1788,7 +1796,8 @@ class Raylib {
 		return RCore.IsGamepadButtonUp(gamepad, button);
 
 	/** Returns the last button held, as raylib polls them: gamepads 0 to 3, each's buttons in the browser's order in a page (the second
-		triggers among them, the middle button never), else GLFW's (the middle button among them, the second triggers never).
+		triggers among them, the middle button never), else GLFW's (the middle button among them), then, as raylib 6.2's, the left
+		second trigger and the right while its axis (`GetGamepadAxisMovement`) is over 0.1.
 
 		@return  The button (`GAMEPAD_BUTTON_*`), or `GAMEPAD_BUTTON_UNKNOWN` when none is held. */
 	public static inline function GetGamepadButtonPressed():Int
@@ -1875,10 +1884,13 @@ class Raylib {
 	public static inline function ChangeDirectory(dir:String):Bool
 		return RCore.ChangeDirectory(dir);
 
-	/** Returns whether a file name ends in one of some extensions, ignoring the case of A to Z.
+	/** Returns whether a file name ends in one of some extensions, ignoring the case of A to Z, as raylib 6.2's.
+
+		Up to 15 characters of the file's extension are compared, and the list's first 32 extensions. An extension in the list without
+		its dot matches as well ("png" as ".png").
 
 		@param fileName  The file name.
-		@param ext  The extensions with their dots, `;` between them: ".png;.jpg".
+		@param ext  The extensions, `;` between them: ".png;.jpg".
 		@return  True when its extension, from its last dot, is one of them. */
 	public static inline function IsFileExtension(fileName:String, ext:String):Bool
 		return RCore.IsFileExtension(fileName, ext);
@@ -1912,10 +1924,14 @@ class Raylib {
 	public static inline function GetDirectoryPath(filePath:String):String
 		return RCore.GetDirectoryPath(filePath);
 
-	/** Returns the directory a path is in: up to its last `/` or `\`, keeping a root's ("/", "C:\").
+	/** Returns the directory a path is in, as raylib 6.2's: up to its last `/` or `\` but one at its end, keeping a root's ("/",
+		"C:\").
+
+		"/a/b/" gives "/a", "/a" gives "/" and "abc" gives "". raylib 6.2 also takes a path naming a file to its directory's parent; a
+		file can't be looked for without waiting here, so every path is taken as a directory's.
 
 		@param dirPath  The path.
-		@return  The directory above it; the path itself when it has 3 characters or fewer, and "" when a longer one has no slash. */
+		@return  The directory above it; "" when there is none. */
 	public static inline function GetPrevDirectoryPath(dirPath:String):String
 		return RCore.GetPrevDirectoryPath(dirPath);
 
@@ -1927,12 +1943,30 @@ class Raylib {
 	public static inline function IsFileNameValid(fileName:String):Bool
 		return RCore.IsFileNameValid(fileName);
 
-	/** Makes a directory. There is nothing to make: a directory is there once a file is written under it, so this succeeds.
+	/** Makes a directory. There is nothing to make: a directory is there once a file is written under it, so this succeeds for any path
+		that could name one.
 
 		@param dirPath  The directory.
-		@return  0, success; 1 for null or "", as raylib's. */
+		@return  0, success; 1 for null or "", as raylib 5.5's; -1, as raylib 6.2's for a directory not made, for a path that can't name
+			one. */
 	public static inline function MakeDirectory(dirPath:String):Int
 		return RCore.MakeDirectory(dirPath);
+
+	/** Returns whether a path names a hidden file or directory, as raylib 6.2's does outside Windows: its last part starts with a dot and
+		isn't "." or "..".
+
+		@param filePath  The path.
+		@return  True when it is hidden. */
+	public static inline function IsFileHidden(filePath:String):Bool
+		return RCore.IsFileHidden(filePath);
+
+	/** Returns whether a path is absolute, as raylib 6.2's: natively on Windows one starting with `\\` or a drive letter, a colon and a
+		slash ("C:\", "D:/"); elsewhere, and in a page, one starting with `/`.
+
+		@param path  The path.
+		@return  True when it is absolute; false for null or "". */
+	public static inline function IsPathAbsolute(path:String):Bool
+		return RCore.IsPathAbsolute(path);
 
 	/** Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave. There is nothing to free here, and the list is
 		unchanged.
@@ -1991,11 +2025,13 @@ class Raylib {
 	public static inline function EncodeDataBase64(data:haxe.io.Bytes, dataSize:Int, outputSize:Array<Int>):String
 		return RCore.EncodeDataBase64(data, dataSize, outputSize);
 
-	/** Returns the bytes of Base64 text. It reads 4 characters at a time up to a zero byte or the end, and a character that isn't
-		Base64's reads as 0, as raylib's does.
+	/** Returns the bytes of Base64 text, as raylib 6.2 decodes it: the text runs to a zero byte or the end, and is read 4 characters at a
+		time, a character that isn't Base64's reading as 0. Text whose length isn't a multiple of 4 warns and is read up to its last 4
+		characters.
 
 		@param data  The text's bytes.
-		@param outputSize  Its first element is set to how many bytes it gives.
+		@param outputSize  Its first element is set to how many bytes it gives: 3 for every 4 characters, less one for each `=` at the
+			end.
 		@return  The bytes. */
 	public static inline function DecodeDataBase64(data:haxe.io.Bytes, outputSize:Array<Int>):haxe.io.Bytes
 		return RCore.DecodeDataBase64(data, outputSize);
@@ -2017,14 +2053,22 @@ class Raylib {
 	public static inline function ComputeMD5(data:haxe.io.Bytes, dataSize:Int):Array<Int>
 		return RCore.ComputeMD5(data, dataSize);
 
-	/** Returns the SHA-1 hash of some bytes, as raylib 5.5 computes it: its padding holds only the lowest byte of the length in bits,
-		so from 32 bytes on it differs from standard SHA-1.
+	/** Returns the SHA-1 hash of some bytes, as raylib 6.2 computes it: standard SHA-1 (raylib 5.5's padding held only the lowest byte of
+		the length in bits, so from 32 bytes on it wasn't).
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
 		@return  Its 5 words, the first the hash's first 4 bytes, the highest first; one above 0x7fffffff is negative. */
 	public static inline function ComputeSHA1(data:haxe.io.Bytes, dataSize:Int):Array<Int>
 		return RCore.ComputeSHA1(data, dataSize);
+
+	/** Returns the SHA-256 hash of some bytes, raylib 6.2's.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@return  Its 8 words, the first the hash's first 4 bytes, the highest first; one above 0x7fffffff is negative. */
+	public static inline function ComputeSHA256(data:haxe.io.Bytes, dataSize:Int):Array<Int>
+		return RCore.ComputeSHA256(data, dataSize);
 
 	/** Reads files through the program from now on: every load raylib makes of a file (textures, models, sounds, music, data) asks it
 		first, and a file it doesn't have (null) is read as it would be. In a page, a texture's or model's images still decode only
@@ -2082,8 +2126,8 @@ class Raylib {
 		RCore.SetAutomationEventBaseFrame(frame);
 
 	/** Starts recording into the list `SetAutomationEventList` set: as each frame ends, before the next frame's input is read, every
-		key, mouse button and finger held, the mouse's moves and the wheel's, gamepads' buttons held and axes off rest, and the gesture,
-		as raylib records them, each logged. A full list (16384 events) records no more. */
+		key, mouse button and finger held, the mouse's moves, the wheel's and, as raylib 6.2's, the fingers', gamepads' buttons held and
+		axes off rest, and the gesture, as raylib records them, each logged. A full list (16384 events) records no more. */
 	public static inline function StartAutomationEventRecording():Void
 		RCore.StartAutomationEventRecording();
 
@@ -2101,11 +2145,13 @@ class Raylib {
 		RCore.PlayAutomationEvent(event);
 
 	/** Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImage` writes it by the name's extension
-		(".png", ".qoi" or ".raw"): in a page it is downloaded, as raylib's web build does; natively it is written to the working
-		directory, as raylib writes it there, under the name's file name. raylib's is taken from the frame drawn last, before it is
-		shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as raylib's is.
+		(".png", ".qoi" or ".raw"): in a page it is downloaded under the name's file name, as raylib's web build does; natively it is
+		written where the name says, as raylib 6.2 writes it: a relative name under the working directory, its directories kept, and an
+		absolute one where it is. A directory that isn't there isn't made, and the screenshot isn't saved. raylib's is taken from the frame
+		drawn last, before it is shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as
+		raylib's is.
 
-		@param fileName  The file name; a directory before it is dropped, and a name with `'` is refused, as raylib's is. */
+		@param fileName  The file's name, or its path; a name with `'` is refused, as raylib's is. */
 	public static inline function TakeScreenshot(fileName:String):Void
 		RCore.TakeScreenshot(fileName);
 
@@ -2248,7 +2294,8 @@ class Raylib {
 	public static inline function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int):Vector2
 		return RCore.GetWorldToScreenEx(position, camera, width, height);
 
-	/** Returns how far the mouse moved since the last frame, in the screen's pixels.
+	/** Returns how far the mouse moved since the last frame, in the screen's pixels times the mouse's scale (`SetMouseScale`), as raylib
+		6.2's. A `SetMousePosition` this frame is part of it.
 
 		@return  The movement. */
 	public static inline function GetMouseDelta():Vector2
@@ -4722,21 +4769,21 @@ class Raylib {
 	public static inline function DrawSphere(centerPos:Vector3, radius:Float, color:Color):Void
 		RModels.DrawSphere(centerPos, radius, color);
 
-	/** Draws a filled sphere, as raylib does: rings + 1 bands of slices, from the top.
+	/** Draws a filled sphere: rings bands of slices, from the top, each vertex with its normal.
 
 		@param centerPos  Its center.
 		@param radius  Its radius.
-		@param rings  Rings top to bottom.
+		@param rings  Bands top to bottom.
 		@param slices  Slices around.
 		@param color  The color. */
 	public static inline function DrawSphereEx(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void
 		RModels.DrawSphereEx(centerPos, radius, rings, slices, color);
 
-	/** Draws a sphere's wires, as raylib does: rings + 2 bands of slices, each slice's three lines.
+	/** Draws a sphere's wires: rings bands of slices, from the top, each face's longitude, latitude and diagonal lines.
 
 		@param centerPos  Its center.
 		@param radius  Its radius.
-		@param rings  Rings top to bottom.
+		@param rings  Bands top to bottom.
 		@param slices  Slices around.
 		@param color  The color. */
 	public static inline function DrawSphereWires(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void
@@ -4792,7 +4839,7 @@ class Raylib {
 		@param endPos  The other's.
 		@param radius  Its radius.
 		@param slices  Slices around, at least 3.
-		@param rings  Rings in each half sphere.
+		@param rings  Rings in each half sphere, at least 1.
 		@param color  The color. */
 	public static inline function DrawCapsule(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void
 		RModels.DrawCapsule(startPos, endPos, radius, slices, rings, color);
@@ -4803,7 +4850,7 @@ class Raylib {
 		@param endPos  The other's.
 		@param radius  Its radius.
 		@param slices  Slices around, at least 3.
-		@param rings  Rings in each half sphere.
+		@param rings  Rings in each half sphere, at least 1.
 		@param color  The color. */
 	public static inline function DrawCapsuleWires(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void
 		RModels.DrawCapsuleWires(startPos, endPos, radius, slices, rings, color);
@@ -4945,6 +4992,9 @@ class Raylib {
 	/** Sends a mesh's vertices to the GPU, so it can be drawn. A mesh not sent goes when it is first drawn, as `LoadModelAsync`'s and the
 		`GenMesh*` functions' do.
 
+		An attribute the mesh has no array for reads a default in a shader: texture coordinates 0, 0, normals 0, 0, 1, colors white,
+		tangents 1, 0, 0, 1, second texture coordinates, bone ids and bone weights 0.
+
 		@param mesh  The mesh.
 		@param isDynamic  Whether it will change (raylib names it `dynamic`, a Haxe keyword); any mesh here can be changed by
 			`UpdateMeshBuffer`, so it is ignored. */
@@ -5074,16 +5124,19 @@ class Raylib {
 	public static inline function GenMeshCubicmap(cubicmap:Image, cubeSize:Vector3):Mesh
 		return RModels.GenMeshCubicmap(cubicmap, cubeSize);
 
-	/** Computes a mesh's tangents from its positions, texture coordinates and normals, as raylib's: each triangle's direction of u, made
-		square to each vertex's normal, w the side its direction of v is on. It reads the vertices three at a time, as raylib's does, so it
-		is meant for a mesh without indices.
+	/** Computes a mesh's tangents from its positions, texture coordinates and normals: each triangle's direction of u, by its indices
+		when it has them, summed at each of its vertices, made square to the vertex's normal and of length 1, w the side the summed
+		direction of v is on.
 
-		@param mesh  The mesh; one without positions or texture coordinates is left as it is. */
+		A vertex whose tangent comes out of length near 0, or along its normal, takes one square to the normal: x when the normal is
+		mostly z, else (-y, x, 0) of the normal, w 1.
+
+		@param mesh  The mesh; one without positions, texture coordinates or normals is unchanged. */
 	public static inline function GenMeshTangents(mesh:Mesh):Void
 		RModels.GenMeshTangents(mesh);
 
-	/** Writes a mesh as an OBJ file through `SaveFileText`, as raylib's does: its positions to 2 places, its texture coordinates and
-		normals to 3, and a face a triangle.
+	/** Writes a mesh as an OBJ file through `SaveFileText`, as raylib's does: its positions and texture coordinates to 6 places, its
+		normals to 4, and a face a triangle.
 
 		@param mesh  The mesh, with positions, texture coordinates and normals.
 		@param fileName  The file; only ".obj" is written.
@@ -5865,6 +5918,94 @@ class Raylib {
 	public static inline function LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void):Void
 		RAsync.LoadDirectoryFilesExAsync(basePath, filter, scanSubdirs, loaded);
 
+	/** Answers whether a path is a directory, as raylib 6.2's `IsPathDirectory`: helix-ray's own, in place of it. As raylib's, a path
+		that isn't a file (`IsPathFileAsync`) is a directory, so one with nothing there is too. The answer comes at a later frame, never
+		during the call.
+
+		@param path  The path.
+		@param answer  Receives true unless it is a file. */
+	public static inline function IsPathDirectoryAsync(path:String, answer:Bool->Void):Void
+		RAsync.IsPathDirectoryAsync(path, answer);
+
+	/** Counts a directory's files and subdirectories, as raylib 6.2's `GetDirectoryFileCount`: helix-ray's own, in place of it.
+		`GetDirectoryFileCountExAsync` with the filter "*.*" and no subdirectories' files. The answer comes at a later frame, never during
+		the call.
+
+		@param dirPath  The directory.
+		@param answer  Receives the count; 0, with a warning, when the directory can't be listed. */
+	public static inline function GetDirectoryFileCountAsync(dirPath:String, answer:Int->Void):Void
+		RAsync.GetDirectoryFileCountAsync(dirPath, answer);
+
+	/** Counts a directory's files, those with some extensions, and with `scanSubdirs` its subdirectories' too, as raylib 6.2's
+		`GetDirectoryFileCountEx`: helix-ray's own, in place of it. The directories are `LoadDirectoryFilesAsync`'s. 6.2's filter: one
+		holding "*.*" counts every file and directory, "FILES*" every file, "DIRS*" every directory, and otherwise a file counts by
+		`IsFileExtension`; a null filter counts every file. The answer comes at a later frame, never during the call.
+
+		@param basePath  The directory.
+		@param filter  The extensions counted, such as ".png;.jpg", or a tag above, or null.
+		@param scanSubdirs  Whether the subdirectories' files are counted too.
+		@param answer  Receives the count; a directory that can't be listed adds nothing, with a warning. */
+	public static inline function GetDirectoryFileCountExAsync(basePath:String, filter:String, scanSubdirs:Bool, answer:Int->Void):Void
+		RAsync.GetDirectoryFileCountExAsync(basePath, filter, scanSubdirs, answer);
+
+	/** Renames a file, as raylib 6.2's `FileRename`: helix-ray's own, in place of it. A file `SaveFileText` or `SaveFileData` wrote is
+		renamed; the program's own files can't be changed. The answer comes at a later frame, never during the call.
+
+		@param fileName  The file.
+		@param fileRename  Its new name, its path.
+		@param answer  Receives 0 when it was renamed, else -1. */
+	public static inline function FileRenameAsync(fileName:String, fileRename:String, answer:Int->Void):Void
+		RAsync.FileRenameAsync(fileName, fileRename, answer);
+
+	/** Removes a file, as raylib 6.2's `FileRemove`: helix-ray's own, in place of it. A file `SaveFileText` or `SaveFileData` wrote is
+		removed; the program's own files can't be. The answer comes at a later frame, never during the call.
+
+		@param fileName  The file.
+		@param answer  Receives 0 when it was removed, else -1. */
+	public static inline function FileRemoveAsync(fileName:String, answer:Int->Void):Void
+		RAsync.FileRemoveAsync(fileName, answer);
+
+	/** Copies a file, as raylib 6.2's `FileCopy`: helix-ray's own, in place of it. The file is read as `LoadFileDataAsync` reads it and
+		its copy written by `SaveFileData`, or, for one `SaveFileText` wrote, read and written as text; a directory needs no making here.
+		As raylib 6.2's, a file not read, or one of no bytes, makes no copy, yet answers 0 as the directory is there. The answer comes at a
+		later frame, never during the call.
+
+		@param srcPath  The file.
+		@param dstPath  The copy.
+		@param answer  Receives 0 when the copy's directory is there (always, here), else -1. */
+	public static inline function FileCopyAsync(srcPath:String, dstPath:String, answer:Int->Void):Void
+		RAsync.FileCopyAsync(srcPath, dstPath, answer);
+
+	/** Moves a file, as raylib 6.2's `FileMove`: helix-ray's own, in place of it. The file is copied (`FileCopyAsync`), then, when the
+		copy is there and of its size, removed (`FileRemoveAsync`), so one of the program's own files is copied and stays. The answer comes
+		at a later frame, never during the call.
+
+		@param srcPath  The file.
+		@param dstPath  Where it goes.
+		@param answer  Receives 0 when it was moved, else -1; a file not there, or not removed, is logged. */
+	public static inline function FileMoveAsync(srcPath:String, dstPath:String, answer:Int->Void):Void
+		RAsync.FileMoveAsync(srcPath, dstPath, answer);
+
+	/** Replaces every piece of a text file that matches, as raylib 6.2's `FileTextReplace`: helix-ray's own, in place of it. The file is
+		read as `LoadFileTextAsync` reads it and written back by `SaveFileText`. The answer comes at a later frame, never during the call.
+
+		@param fileName  The file.
+		@param search  The text replaced; nothing is replaced when it is null or "".
+		@param replacement  The text put in its place; null for none.
+		@param answer  Receives 0 when the file was written, else -1. */
+	public static inline function FileTextReplaceAsync(fileName:String, search:String, replacement:String, answer:Int->Void):Void
+		RAsync.FileTextReplaceAsync(fileName, search, replacement, answer);
+
+	/** Finds text in a text file, as raylib 6.2's `FileTextFindIndex`: helix-ray's own, in place of it. The file is read as
+		`LoadFileTextAsync` reads it. The answer comes at a later frame, never during the call.
+
+		@param fileName  The file.
+		@param search  The text looked for.
+		@param answer  Receives where it first starts, in UTF-8 bytes from the file's start, or -1 when it isn't there or there is no
+			file. */
+	public static inline function FileTextFindIndexAsync(fileName:String, search:String, answer:Int->Void):Void
+		RAsync.FileTextFindIndexAsync(fileName, search, answer);
+
 	/** Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType
 		file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto
 		one texture, as raylib's; an image (PNG, JPEG, BMP, TGA or QOI) its glyphs on a `MAGENTA` key from the space on, as
@@ -6041,6 +6182,36 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)",
 			macro(null : Null<haxe.io.Bytes>));
 
+	/** raylib 6.2's file rename, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `FileRenameAsync` renames it. */
+	public static macro function FileRename(fileName:ExprOf<String>, fileRename:ExprOf<String>):ExprOf<Int>
+		return helix.platform.macros.Build.unsupported("FileRename: Synchronous file access is not supported. See FileRenameAsync(fileName:String, fileRename:String, answer:Int->Void)",
+			macro(0 : Int));
+
+	/** raylib 6.2's file removal, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `FileRemoveAsync` removes it. */
+	public static macro function FileRemove(fileName:ExprOf<String>):ExprOf<Int>
+		return helix.platform.macros.Build.unsupported("FileRemove: Synchronous file access is not supported. See FileRemoveAsync(fileName:String, answer:Int->Void)",
+			macro(0 : Int));
+
+	/** raylib 6.2's file copy, which waits for the file. A page can't wait, so a call doesn't compile on any target: `FileCopyAsync` copies it. */
+	public static macro function FileCopy(srcPath:ExprOf<String>, dstPath:ExprOf<String>):ExprOf<Int>
+		return helix.platform.macros.Build.unsupported("FileCopy: Synchronous file access is not supported. See FileCopyAsync(srcPath:String, dstPath:String, answer:Int->Void)",
+			macro(0 : Int));
+
+	/** raylib 6.2's file move, which waits for the file. A page can't wait, so a call doesn't compile on any target: `FileMoveAsync` moves it. */
+	public static macro function FileMove(srcPath:ExprOf<String>, dstPath:ExprOf<String>):ExprOf<Int>
+		return helix.platform.macros.Build.unsupported("FileMove: Synchronous file access is not supported. See FileMoveAsync(srcPath:String, dstPath:String, answer:Int->Void)",
+			macro(0 : Int));
+
+	/** raylib 6.2's replacement of text in a file, which waits for the file. A page can't wait, so a call doesn't compile on any target: `FileTextReplaceAsync` replaces it. */
+	public static macro function FileTextReplace(fileName:ExprOf<String>, search:ExprOf<String>, replacement:ExprOf<String>):ExprOf<Int>
+		return helix.platform.macros.Build.unsupported("FileTextReplace: Synchronous file access is not supported. See FileTextReplaceAsync(fileName:String, search:String, replacement:String, answer:Int->Void)",
+			macro(0 : Int));
+
+	/** raylib 6.2's search of a file's text, which waits for the file. A page can't wait, so a call doesn't compile on any target: `FileTextFindIndexAsync` searches it. */
+	public static macro function FileTextFindIndex(fileName:ExprOf<String>, search:ExprOf<String>):ExprOf<Int>
+		return helix.platform.macros.Build.unsupported("FileTextFindIndex: Synchronous file access is not supported. See FileTextFindIndexAsync(fileName:String, search:String, answer:Int->Void)",
+			macro(0 : Int));
+
 	/** raylib's check for a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `DirectoryExistsAsync` answers it. */
 	public static macro function DirectoryExists(dirPath:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("DirectoryExists: Synchronous file access is not supported. See DirectoryExistsAsync(dirPath:String, answer:Bool->Void)",
@@ -6049,6 +6220,21 @@ class Raylib {
 	/** raylib's file size, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `GetFileLengthAsync` answers it. */
 	public static macro function GetFileLength(fileName:ExprOf<String>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("GetFileLength: Synchronous file access is not supported. See GetFileLengthAsync(fileName:String, answer:Int->Void)",
+			macro(0 : Int));
+
+	/** raylib 6.2's check for a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `IsPathDirectoryAsync` answers it. */
+	public static macro function IsPathDirectory(path:ExprOf<String>):ExprOf<Bool>
+		return helix.platform.macros.Build.unsupported("IsPathDirectory: Synchronous file access is not supported. See IsPathDirectoryAsync(path:String, answer:Bool->Void)",
+			macro(false : Bool));
+
+	/** raylib 6.2's count of a directory's files, which waits for it. A page can't wait, so a call doesn't compile on any target: `GetDirectoryFileCountAsync` counts them. */
+	public static macro function GetDirectoryFileCount(dirPath:ExprOf<String>):ExprOf<Int>
+		return helix.platform.macros.Build.unsupported("GetDirectoryFileCount: Synchronous file access is not supported. See GetDirectoryFileCountAsync(dirPath:String, answer:Int->Void)",
+			macro(0 : Int));
+
+	/** raylib 6.2's filtered and recursive count of a directory's files, which waits for it. A page can't wait, so a call doesn't compile on any target: `GetDirectoryFileCountExAsync` counts them. */
+	public static macro function GetDirectoryFileCountEx(basePath:ExprOf<String>, filter:ExprOf<String>, scanSubdirs:ExprOf<Bool>):ExprOf<Int>
+		return helix.platform.macros.Build.unsupported("GetDirectoryFileCountEx: Synchronous file access is not supported. See GetDirectoryFileCountExAsync(basePath:String, filter:String, scanSubdirs:Bool, answer:Int->Void)",
 			macro(0 : Int));
 
 	/** raylib's check for a file, as against a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `IsPathFileAsync` answers it. */
@@ -6194,6 +6380,11 @@ class Raylib {
 			macro {});
 
 	// ---- raylib.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
+
+	/** raylib 6.2's name of a key on the keyboard's layout ("q" for `KEY_A` on an AZERTY keyboard). helix-platform reads keys by their place on a US layout and doesn't give the layout's names, so a call doesn't compile yet. */
+	public static macro function GetKeyName(key:ExprOf<Int>):ExprOf<String>
+		return helix.platform.macros.Build.unimplemented("GetKeyName: Not implemented: helix-platform does not give the keyboard layout's key names",
+			macro(null : String));
 
 	/** raylib's export of a font as C code, which reads its atlas back from the GPU and waits. Here the atlas is read back only asynchronously, and it is RGBA where raylib's is gray and alpha, so a call doesn't compile yet. */
 	public static macro function ExportFontAsCode(font:ExprOf<Font>, fileName:ExprOf<String>):ExprOf<Bool>

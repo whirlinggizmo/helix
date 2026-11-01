@@ -1,0 +1,9 @@
+{
+  "oracle": "6.2",
+  "covers": "rmodels.c's DrawSphere, DrawSphereEx and DrawSphereWires (rings bands, normals), DrawCapsule and DrawCapsuleWires (at least one ring; 5.5's parameter order on helix-ray's side), DrawBillboard, DrawBillboardRec and DrawBillboardPro (flipped), 6.2's: each one's vertices as rlgl batches them (lines, triangles, quads as two triangles; texture coordinates, normals, colors)",
+  "kind": "values",
+  "generated": true,
+  "main": "ShapeBits3D62",
+  "tolerance": 1e-05,
+  "notes": "The filled spheres are of radius 1: raylib 6.2's rlNormal3f leaves a normal as the matrix makes it (rlScalef by the radius), where helix-ray's rlgl, raylib 5.5's, makes it of length 1 again; rlgl isn't taken from 6.2."
+}

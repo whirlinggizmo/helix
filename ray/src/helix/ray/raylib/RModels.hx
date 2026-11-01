@@ -199,11 +199,11 @@ class RModels {
 		DrawSphereEx(centerPos, radius, 16, 16, color);
 	}
 
-	/** Draws a filled sphere, as raylib does: rings + 1 bands of slices, from the top.
+	/** Draws a filled sphere: rings bands of slices, from the top, each vertex with its normal.
 
 		@param centerPos  Its center.
 		@param radius  Its radius.
-		@param rings  Rings top to bottom.
+		@param rings  Bands top to bottom.
 		@param slices  Slices around.
 		@param color  The color. */
 	static function DrawSphereEx(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void {
@@ -212,36 +212,26 @@ class RModels {
 		rlScalef(radius, radius, radius);
 		rlBegin(RL_TRIANGLES);
 		rlColor4ub(color.r, color.g, color.b, color.a);
-		var ringangle = DEG2RAD * (180.0 / (rings + 1)),
-			sliceangle = DEG2RAD * (360.0 / slices);
-		var cosring = Math.cos(ringangle), sinring = Math.sin(ringangle);
-		var cosslice = Math.cos(sliceangle), sinslice = Math.sin(sliceangle);
-		// The face's four corners, each turned about y for the next slice, and about z for the next ring.
-		var v0 = [0., 0, 0],
-			v1 = [0., 0, 0],
-			v2 = [0., 1, 0],
-			v3 = [sinring, cosring, 0];
-		for (_ in 0...rings + 1) {
-			for (_ in 0...slices) {
-				v0 = v2;
-				v1 = v3;
-				v2 = [cosslice * v2[0] - sinslice * v2[2], v2[1], sinslice * v2[0] + cosslice * v2[2]];
-				v3 = [cosslice * v3[0] - sinslice * v3[2], v3[1], sinslice * v3[0] + cosslice * v3[2]];
-				for (v in [v0, v3, v1, v0, v2, v3])
-					rlVertex3f(v[0], v[1], v[2]);
+		var faces = sphereFaces(rings, slices);
+		for (k in 0...faces.length >> 2) {
+			var v0 = faces[k * 4],
+				v1 = faces[k * 4 + 1],
+				v2 = faces[k * 4 + 2],
+				v3 = faces[k * 4 + 3];
+			for (v in [v0, v3, v1, v0, v2, v3]) {
+				rlNormal3f(v[0], v[1], v[2]);
+				rlVertex3f(v[0], v[1], v[2]);
 			}
-			v2 = v3;
-			v3 = [cosring * v3[0] + sinring * v3[1], -sinring * v3[0] + cosring * v3[1], v3[2]];
 		}
 		rlEnd();
 		rlPopMatrix();
 	}
 
-	/** Draws a sphere's wires, as raylib does: rings + 2 bands of slices, each slice's three lines.
+	/** Draws a sphere's wires: rings bands of slices, from the top, each face's longitude, latitude and diagonal lines.
 
 		@param centerPos  Its center.
 		@param radius  Its radius.
-		@param rings  Rings top to bottom.
+		@param rings  Bands top to bottom.
 		@param slices  Slices around.
 		@param color  The color. */
 	static function DrawSphereWires(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void {
@@ -250,22 +240,42 @@ class RModels {
 		rlScalef(radius, radius, radius);
 		rlBegin(RL_LINES);
 		rlColor4ub(color.r, color.g, color.b, color.a);
-		function at(i:Int, j:Int):Void {
-			var ring = DEG2RAD * (270 + (180.0 / (rings + 1)) * i),
-				slice = DEG2RAD * (360.0 * j / slices);
-			rlVertex3f(Math.cos(ring) * Math.sin(slice), Math.sin(ring), Math.cos(ring) * Math.cos(slice));
+		var faces = sphereFaces(rings, slices);
+		for (k in 0...faces.length >> 2) {
+			var v0 = faces[k * 4],
+				v1 = faces[k * 4 + 1],
+				v2 = faces[k * 4 + 2],
+				v3 = faces[k * 4 + 3];
+			for (v in [v0, v1, v0, v2, v0, v3])
+				rlVertex3f(v[0], v[1], v[2]);
 		}
-		for (i in 0...rings + 2)
-			for (j in 0...slices) {
-				at(i, j);
-				at(i + 1, j + 1);
-				at(i + 1, j + 1);
-				at(i + 1, j);
-				at(i + 1, j);
-				at(i, j);
-			}
 		rlEnd();
 		rlPopMatrix();
+	}
+
+	// A unit sphere's faces as raylib 6.2's DrawSphereEx and DrawSphereWires make them, four corners each: rings bands of 180 / rings
+	// degrees, each of slices faces, the corners turned about y for the next face and about z for the next band.
+	static function sphereFaces(rings:Int, slices:Int):Array<Array<Float>> {
+		var ringangle = DEG2RAD * (180.0 / rings),
+			sliceangle = DEG2RAD * (360.0 / slices);
+		var cosring = Math.cos(ringangle), sinring = Math.sin(ringangle);
+		var cosslice = Math.cos(sliceangle), sinslice = Math.sin(sliceangle);
+		var v2 = [0., 1, 0], v3 = [sinring, cosring, 0];
+		var faces = [];
+		for (_ in 0...rings) {
+			for (_ in 0...slices) {
+				var v0 = v2, v1 = v3;
+				v2 = [cosslice * v2[0] - sinslice * v2[2], v2[1], sinslice * v2[0] + cosslice * v2[2]];
+				v3 = [cosslice * v3[0] - sinslice * v3[2], v3[1], sinslice * v3[0] + cosslice * v3[2]];
+				faces.push(v0);
+				faces.push(v1);
+				faces.push(v2);
+				faces.push(v3);
+			}
+			v2 = v3;
+			v3 = [cosring * v3[0] + sinring * v3[1], -sinring * v3[0] + cosring * v3[1], v3[2]];
+		}
+		return faces;
 	}
 
 	/** Draws a filled cylinder standing on the XZ plane, or a cone when its top's radius is 0.
@@ -475,11 +485,13 @@ class RModels {
 		@param endPos  The other's.
 		@param radius  Its radius.
 		@param slices  Slices around, at least 3.
-		@param rings  Rings in each half sphere.
+		@param rings  Rings in each half sphere, at least 1.
 		@param color  The color. */
 	static function DrawCapsule(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void {
 		if (slices < 3)
 			slices = 3;
+		if (rings < 1)
+			rings = 1;
 		rlBegin(RL_TRIANGLES);
 		rlColor4ub(color.r, color.g, color.b, color.a);
 		for (q in capsuleQuads(startPos, endPos, radius, slices, rings)) {
@@ -498,11 +510,13 @@ class RModels {
 		@param endPos  The other's.
 		@param radius  Its radius.
 		@param slices  Slices around, at least 3.
-		@param rings  Rings in each half sphere.
+		@param rings  Rings in each half sphere, at least 1.
 		@param color  The color. */
 	static function DrawCapsuleWires(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void {
 		if (slices < 3)
 			slices = 3;
+		if (rings < 1)
+			rings = 1;
 		rlBegin(RL_LINES);
 		rlColor4ub(color.r, color.g, color.b, color.a);
 		var caps = rings * slices * 2;
@@ -623,15 +637,15 @@ class RModels {
 		var right = Vector3Scale(new Vector3(matView.m0, matView.m4, matView.m8), size.x);
 		up = Vector3Scale(up, size.y);
 		var sx = source.x, sy = source.y, sw = source.width, sh = source.height, ox = origin.x, oy = origin.y;
-		// Flipped, its corners still counterclockwise.
+		// Flipped, its corners still counterclockwise; the part moves by the size, as raylib 6.2 moves it (#5276).
 		if (size.x < 0) {
-			sx += size.x;
+			sx -= size.x;
 			sw *= -1.0;
 			right = Vector3Negate(right);
 			ox *= -1.0;
 		}
 		if (size.y < 0) {
-			sy += size.y;
+			sy -= size.y;
 			sh *= -1.0;
 			up = Vector3Negate(up);
 			oy *= -1.0;
@@ -786,6 +800,9 @@ class RModels {
 
 	/** Sends a mesh's vertices to the GPU, so it can be drawn. A mesh not sent goes when it is first drawn, as `LoadModelAsync`'s and the
 		`GenMesh*` functions' do.
+
+		An attribute the mesh has no array for reads a default in a shader: texture coordinates 0, 0, normals 0, 0, 1, colors white,
+		tangents 1, 0, 0, 1, second texture coordinates, bone ids and bone weights 0.
 
 		@param mesh  The mesh.
 		@param isDynamic  Whether it will change (raylib names it `dynamic`, a Haxe keyword); any mesh here can be changed by
@@ -1229,52 +1246,73 @@ class RModels {
 		return mesh;
 	}
 
-	/** Computes a mesh's tangents from its positions, texture coordinates and normals, as raylib's: each triangle's direction of u, made
-		square to each vertex's normal, w the side its direction of v is on. It reads the vertices three at a time, as raylib's does, so it
-		is meant for a mesh without indices.
+	/** Computes a mesh's tangents from its positions, texture coordinates and normals: each triangle's direction of u, by its indices
+		when it has them, summed at each of its vertices, made square to the vertex's normal and of length 1, w the side the summed
+		direction of v is on.
 
-		@param mesh  The mesh; one without positions or texture coordinates is left as it is. */
+		A vertex whose tangent comes out of length near 0, or along its normal, takes one square to the normal: x when the normal is
+		mostly z, else (-y, x, 0) of the normal, w 1.
+
+		@param mesh  The mesh; one without positions, texture coordinates or normals is unchanged. */
 	static function GenMeshTangents(mesh:Mesh):Void {
-		if (mesh.vertices == null || mesh.texcoords == null) {
-			Runtime.log(LOG_WARNING, "MESH: Tangents generation requires texcoord vertex attribute data");
+		if (mesh.vertices == null || mesh.texcoords == null || mesh.normals == null) {
+			Runtime.log(LOG_WARNING, "MESH: Tangents generation requires vertices, texcoords and normals vertex attribute data");
 			return;
 		}
-		if (mesh.vertexCount % 3 != 0)
-			Runtime.log(LOG_WARNING, "MESH: vertexCount expected to be a multiple of 3. Expect uninitialized values.");
-		var vs = mesh.vertices, uvs = mesh.texcoords, n = mesh.vertexCount;
+		var vs = mesh.vertices,
+			uvs = mesh.texcoords,
+			ns = mesh.normals,
+			n = mesh.vertexCount;
 		var tan1 = [for (_ in 0...n) new Vector3()],
 			tan2 = [for (_ in 0...n) new Vector3()];
-		var i = 0;
-		while (i <= n - 3) {
-			var x1 = vs[(i + 1) * 3] - vs[i * 3],
-				y1 = vs[(i + 1) * 3 + 1] - vs[i * 3 + 1],
-				z1 = vs[(i + 1) * 3 + 2] - vs[i * 3 + 2];
-			var x2 = vs[(i + 2) * 3] - vs[i * 3],
-				y2 = vs[(i + 2) * 3 + 1] - vs[i * 3 + 1],
-				z2 = vs[(i + 2) * 3 + 2] - vs[i * 3 + 2];
-			var s1 = uvs[(i + 1) * 2] - uvs[i * 2],
-				t1 = uvs[(i + 1) * 2 + 1] - uvs[i * 2 + 1];
-			var s2 = uvs[(i + 2) * 2] - uvs[i * 2],
-				t2 = uvs[(i + 2) * 2 + 1] - uvs[i * 2 + 1];
+		for (t in 0...mesh.triangleCount) {
+			var i0 = t * 3, i1 = t * 3 + 1, i2 = t * 3 + 2;
+			if (mesh.indices != null) {
+				i0 = mesh.indices[t * 3];
+				i1 = mesh.indices[t * 3 + 1];
+				i2 = mesh.indices[t * 3 + 2];
+			}
+			var x1 = vs[i1 * 3] - vs[i0 * 3],
+				y1 = vs[i1 * 3 + 1] - vs[i0 * 3 + 1],
+				z1 = vs[i1 * 3 + 2] - vs[i0 * 3 + 2];
+			var x2 = vs[i2 * 3] - vs[i0 * 3],
+				y2 = vs[i2 * 3 + 1] - vs[i0 * 3 + 1],
+				z2 = vs[i2 * 3 + 2] - vs[i0 * 3 + 2];
+			var s1 = uvs[i1 * 2] - uvs[i0 * 2],
+				t1 = uvs[i1 * 2 + 1] - uvs[i0 * 2 + 1];
+			var s2 = uvs[i2 * 2] - uvs[i0 * 2],
+				t2 = uvs[i2 * 2 + 1] - uvs[i0 * 2 + 1];
 			var div = s1 * t2 - s2 * t1;
-			var r = div == 0.0 ? 0.0 : 1.0 / div;
+			var r = Math.abs(div) < 0.0001 ? 0.0 : 1.0 / div;
 			var sdir = new Vector3((t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r);
 			var tdir = new Vector3((s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r);
-			for (k in 0...3) {
-				tan1[i + k] = sdir;
-				tan2[i + k] = tdir;
+			for (k in [i0, i1, i2]) {
+				tan1[k] = Vector3Add(tan1[k], sdir);
+				tan2[k] = Vector3Add(tan2[k], tdir);
 			}
-			i += 3;
 		}
 		var tangents = [];
-		for (v in 0...n) {
-			var normal = mesh.normals == null ? new Vector3() : new Vector3(mesh.normals[v * 3], mesh.normals[v * 3 + 1], mesh.normals[v * 3 + 2]);
-			var tangent = new Vector3(tan1[v].x, tan1[v].y, tan1[v].z);
-			Vector3OrthoNormalize(normal, tangent);
-			tangents.push(tangent.x);
-			tangents.push(tangent.y);
-			tangents.push(tangent.z);
-			tangents.push(Vector3DotProduct(Vector3CrossProduct(normal, tangent), tan2[v]) < 0.0 ? -1.0 : 1.0);
+		// A tangent square to a normal, for one that can't be computed.
+		function square(normal:Vector3):Vector3
+			return Math.abs(normal.z) > 0.707 ? new Vector3(1, 0, 0) : Vector3Normalize(new Vector3(-normal.y, normal.x, 0));
+		for (i in 0...n) {
+			var normal = new Vector3(ns[i * 3], ns[i * 3 + 1], ns[i * 3 + 2]);
+			var tangent = tan1[i];
+			if (Vector3Length(tangent) < 0.0001) {
+				tangent = square(normal);
+				tangents.push(tangent.x);
+				tangents.push(tangent.y);
+				tangents.push(tangent.z);
+				tangents.push(1.0);
+				continue;
+			}
+			// Gram-Schmidt: the tangent less its part along the normal.
+			var orthogonalized = Vector3Subtract(tangent, Vector3Scale(normal, Vector3DotProduct(normal, tangent)));
+			orthogonalized = Vector3Length(orthogonalized) < 0.0001 ? square(normal) : Vector3Normalize(orthogonalized);
+			tangents.push(orthogonalized.x);
+			tangents.push(orthogonalized.y);
+			tangents.push(orthogonalized.z);
+			tangents.push(Vector3DotProduct(Vector3CrossProduct(normal, orthogonalized), tan2[i]) < 0.0 ? -1.0 : 1.0);
 		}
 		mesh.tangents = tangents;
 		// An uploaded mesh's tangents go to the GPU with the next draw that reads them.
@@ -1286,8 +1324,8 @@ class RModels {
 		Runtime.log(LOG_INFO, "MESH: Tangents data computed and uploaded for provided mesh");
 	}
 
-	/** Writes a mesh as an OBJ file through `SaveFileText`, as raylib's does: its positions to 2 places, its texture coordinates and
-		normals to 3, and a face a triangle.
+	/** Writes a mesh as an OBJ file through `SaveFileText`, as raylib's does: its positions and texture coordinates to 6 places, its
+		normals to 4, and a face a triangle.
 
 		@param mesh  The mesh, with positions, texture coordinates and normals.
 		@param fileName  The file; only ".obj" is written.
@@ -1303,7 +1341,7 @@ class RModels {
 		text.add("# // more info and bugs-report:  github.com/raysan5/raylib                        //\n");
 		text.add("# // feedback and support:       ray[at]raylib.com                                //\n");
 		text.add("# //                                                                              //\n");
-		text.add("# // Copyright (c) 2018-2024 Ramon Santamaria (@raysan5)                          //\n");
+		text.add("# // Copyright (c) 2018-2026 Ramon Santamaria (@raysan5)                          //\n");
 		text.add("# //                                                                              //\n");
 		text.add("# //////////////////////////////////////////////////////////////////////////////////\n\n");
 		text.add('# Vertex Count:     ${mesh.vertexCount}\n');
@@ -1312,18 +1350,17 @@ class RModels {
 		inline function at(a:Null<Array<Float>>, i:Int):Float
 			return a != null && i < a.length ? a[i] : 0;
 		for (i in 0...mesh.vertexCount)
-			text.add(TextFormat("v %.2f %.2f %.2f\n", at(mesh.vertices, i * 3), at(mesh.vertices, i * 3 + 1), at(mesh.vertices, i * 3 + 2)));
+			text.add(TextFormat("v %.6f %.6f %.6f\n", at(mesh.vertices, i * 3), at(mesh.vertices, i * 3 + 1), at(mesh.vertices, i * 3 + 2)));
 		for (i in 0...mesh.vertexCount)
-			text.add(TextFormat("vt %.3f %.3f\n", at(mesh.texcoords, i * 2), at(mesh.texcoords, i * 2 + 1)));
+			text.add(TextFormat("vt %.6f %.6f\n", at(mesh.texcoords, i * 2), at(mesh.texcoords, i * 2 + 1)));
 		for (i in 0...mesh.vertexCount)
-			text.add(TextFormat("vn %.3f %.3f %.3f\n", at(mesh.normals, i * 3), at(mesh.normals, i * 3 + 1), at(mesh.normals, i * 3 + 2)));
+			text.add(TextFormat("vn %.4f %.4f %.4f\n", at(mesh.normals, i * 3), at(mesh.normals, i * 3 + 1), at(mesh.normals, i * 3 + 2)));
 		for (i in 0...mesh.triangleCount) {
 			var a = mesh.indices != null ? mesh.indices[i * 3] + 1 : i * 3 + 1,
 				b = mesh.indices != null ? mesh.indices[i * 3 + 1] + 1 : i * 3 + 2,
 				c = mesh.indices != null ? mesh.indices[i * 3 + 2] + 1 : i * 3 + 3;
 			text.add('f $a/$a/$a $b/$b/$b $c/$c/$c\n');
 		}
-		text.add("\n");
 		return SaveFileText(fileName, text.toString());
 	}
 
@@ -1776,8 +1813,8 @@ class RModels {
 		answers:Array<Null<String>->Void>
 	}>();
 	static var deltaFrame = -1;
-	static var deltaX = 0.;
-	static var deltaY = 0.;
+	static var seenX = 0.;
+	static var seenY = 0.;
 	static var previousX = 0.;
 	static var previousY = 0.;
 
@@ -1812,6 +1849,7 @@ class RModels {
 		locs[SHADER_LOC_VERTEX_BONEIDS] = p.attributes.indexOf("vertexBoneIds") >= 0 ? p.attributes.indexOf("vertexBoneIds") : p.attributes.indexOf("vertexBoneIndices");
 		locs[SHADER_LOC_VERTEX_BONEWEIGHTS] = p.attributes.indexOf("vertexBoneWeights");
 		locs[SHADER_LOC_BONE_MATRICES] = p.locate("boneMatrices");
+		locs[SHADER_LOC_VERTEX_INSTANCETRANSFORM] = p.attributes.indexOf("instanceTransform");
 		locs[SHADER_LOC_MATRIX_MVP] = p.locate("mvp");
 		locs[SHADER_LOC_MATRIX_VIEW] = p.locate("matView");
 		locs[SHADER_LOC_MATRIX_PROJECTION] = p.locate("matProjection");

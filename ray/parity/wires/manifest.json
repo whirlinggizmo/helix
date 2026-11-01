@@ -1,11 +1,12 @@
 {
   "oracle": "5.5",
-  "covers": "rlgl's render state across its batch: DrawModelWires and DrawModelWiresEx, culling off, wire mode, the front face culled, the depth mask and the depth test off, drawn into a 640 x 360 frame",
+  "covers": "rlgl's render state across its batch: DrawModelWires and DrawModelWiresEx, culling off, wire mode, the front face culled, the depth mask and the depth test off, its spheres generated meshes as models (DrawSphere is 6.2's), drawn into a 640 x 360 frame",
   "kind": "pixels",
   "generated": true,
   "frames": 5,
   "backends": {
-    "gl": 0,
-    "sdl_gpu": 1100
-  }
+    "gl": 10,
+    "sdl_gpu": 1200
+  },
+  "notes": "Its spheres are the generated sphere drawn as a model, where they were DrawSphere's (6.2's now, in shapes3d_62 and scene3d_62): 7 pixels of the wire mode's edges differ on GL."
 }

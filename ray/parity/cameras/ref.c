@@ -1,5 +1,6 @@
 // raylib 5.5's own 3D-camera functions over the cases CameraBits.hx prints, as double bits, one line per case; each camera's first line
-// its scale line, as CameraBits.hx prints it.
+// its scale line, as CameraBits.hx prints it. CameraMoveForward, CameraMoveRight and UpdateCameraPro are
+// raylib 6.2's (cameras_62).
 #include "raylib.h"
 #include <stdio.h>
 #include <string.h>
@@ -81,18 +82,10 @@ int main(void) {
                 OP(nm, CameraPitch(&c, av[a], l, r, up));
             }
             OP("roll", CameraRoll(&c, .25f));
-            for (int pl = 0; pl < 2; pl++) {
-                char nm[64];
-                sprintf(nm, "forward.%s", tf[pl]); OP(nm, CameraMoveForward(&c, 1.5f, pl));
-                sprintf(nm, "right.%s", tf[pl]); OP(nm, CameraMoveRight(&c, -.7f, pl));
-            }
             OP("up", CameraMoveUp(&c, .6f));
             OP("zoom.0.5", CameraMoveToTarget(&c, .5f));
             OP("zoom.-100", CameraMoveToTarget(&c, -100));
             OP("zoom.-3", CameraMoveToTarget(&c, -3));
-            OP("pro", UpdateCameraPro(&c, (Vector3){ 1.5f, -.75f, .2f }, (Vector3){ -33, 12, 4 }, .5f));
-            OP("pro50", for (int i = 0; i < 50; i++) UpdateCameraPro(&c, (Vector3){ .1f, .05f, .01f }, (Vector3){ 1.3f, -.7f, .2f }, .01f));
-            OP("prolock", UpdateCameraPro(&c, (Vector3){ 0, 0, 0 }, (Vector3){ 0, -200, 0 }, 0); UpdateCameraPro(&c, (Vector3){ 0, 0, 0 }, (Vector3){ 10, 400, 15 }, 0));
         }
     }
     return 0;

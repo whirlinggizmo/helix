@@ -1,6 +1,6 @@
-"""meshes: raylib 5.5's generated meshes (GenMesh*), their tangents and bounds, against helix-ray's, vertex for vertex. One list for both
-sides (shared/gen.py's syntax): height (a 5 x 4 image of varied grays) and cubic (a 4 x 3 map of walls, a red cell among them) are made in
-ref.c.in and MeshBits.hx.in."""
+"""meshes: raylib 5.5's generated meshes (GenMesh*) and their bounds, against helix-ray's, vertex for vertex (GenMeshTangents is 6.2's, in
+meshes_62). One list for both sides (shared/gen.py's syntax): height (a 5 x 4 image of varied grays) and cubic (a 4 x 3 map of walls, a
+red cell among them) are made in ref.c.in and MeshBits.hx.in."""
 
 CASES = [
     'mesh("poly", GenMeshPoly(5, 2.5));',
@@ -16,7 +16,5 @@ CASES = [
     'mesh("knot", GenMeshKnot(1.2, 1.5, 12, 6));',
     'mesh("heightmap", GenMeshHeightmap(height, V3(8, 3, 6)));',
     'mesh("cubicmap", GenMeshCubicmap(cubic, V3(1, 1.5, 2)));',
-    'LET(t, Mesh, GenMeshSphere(1, 4, 5)); GenMeshTangents(OUT(t)); mesh("tangents", t);',
-    'LET(k, Mesh, GenMeshKnot(1, 1, 5, 4)); GenMeshTangents(OUT(k)); mesh("knottangents", k);',
     'box("bounds", GetMeshBoundingBox(GenMeshTorus(0.4, 2, 10, 6)));',
 ]

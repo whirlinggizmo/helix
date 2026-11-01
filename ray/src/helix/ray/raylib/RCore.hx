@@ -201,13 +201,14 @@ class RCore {
 		return Math.round(Runtime.window.getMonitorRefreshRate(monitor));
 	}
 
-	/** Opens a URL in the system's browser; in a page, a new tab, at the next press when there is no fresh one. As raylib's, a URL with
-		`'` is refused as possibly malicious; helix-ray also opens only http, https and mailto URLs.
+	/** Opens a URL in the system's browser; in a page, a new tab, at the next press when there is no fresh one. As raylib 6.2's, a URL
+		with `'` or `"` is refused as possibly malicious. helix-ray opens only http, https and mailto URLs, where raylib 5.5 opens any and
+		6.2 only http and https.
 
 		@param url  The URL. */
 	static function OpenURL(url:String):Void {
-		if (url.indexOf("'") >= 0)
-			Runtime.log(LOG_WARNING, "SYSTEM: Provided URL could be potentially malicious, avoid [\'] character");
+		if (url.indexOf("'") >= 0 || url.indexOf('"') >= 0)
+			Runtime.log(LOG_WARNING, "SYSTEM: Provided URL could be potentially malicious, avoid [\'\"] characters");
 		else if (!Runtime.system.openUrl(url))
 			Runtime.log(LOG_WARNING, 'SYSTEM: Failed to open URL: $url');
 	}
@@ -304,6 +305,9 @@ class RCore {
 	}
 
 	/** Returns how many of the display's pixels a pixel drawn takes, across and down: 2 on most phones and high-density displays.
+
+		It is the display's scale whatever the flags, as raylib 5.5's desktop build has it and 6.2's web build; raylib 6.2's desktop build
+		gives 1 unless `FLAG_WINDOW_HIGHDPI` is set and the window isn't fullscreen, and 5.5's web build always 1.
 
 		@return  The scale. */
 	static function GetWindowScaleDPI():Vector2 {
@@ -658,6 +662,16 @@ class RCore {
 		return Runtime.charsPressed.length == 0 ? 0 : Runtime.charsPressed.shift();
 	}
 
+	/** raylib 6.2's name of a key on the keyboard's layout ("q" for `KEY_A` on an AZERTY keyboard). helix-platform reads keys by their
+		place on a US layout and doesn't give the layout's names, so a call doesn't compile yet.
+
+		@param key  The key (`KEY_*`).
+		@return  Never returns: a call doesn't compile. */
+	@:unimplemented("GetKeyName: Not implemented: helix-platform does not give the keyboard layout's key names")
+	static function GetKeyName(key:Int):String {
+		throw "GetKeyName is unimplemented";
+	}
+
 	// ---- Mouse and touch ----
 
 	/** Returns whether a mouse button went down this frame. A finger touching counts as the left button, as in raylib.
@@ -777,6 +791,7 @@ class RCore {
 	}
 
 	/** Moves the mouse to a place on the screen. In a page the cursor can't be moved, so the position reads there until the mouse moves.
+		As raylib 6.2's, where the mouse was isn't forgotten: `GetMouseDelta` this frame includes the move.
 
 		@param x  The place across, in the screen's pixels.
 		@param y  The place down. */
@@ -789,8 +804,8 @@ class RCore {
 		lastPointerY = y;
 		var played = Automation.active;
 		if (played != null) {
-			played.mouseX = played.previousMouseX = x;
-			played.mouseY = played.previousMouseY = y;
+			played.mouseX = x;
+			played.mouseY = y;
 		}
 	}
 
@@ -1147,16 +1162,25 @@ class RCore {
 	}
 
 	/** Returns the last button held, as raylib polls them: gamepads 0 to 3, each's buttons in the browser's order in a page (the second
-		triggers among them, the middle button never), else GLFW's (the middle button among them, the second triggers never).
+		triggers among them, the middle button never), else GLFW's (the middle button among them), then, as raylib 6.2's, the left
+		second trigger and the right while its axis (`GetGamepadAxisMovement`) is over 0.1.
 
 		@return  The button (`GAMEPAD_BUTTON_*`), or `GAMEPAD_BUTTON_UNKNOWN` when none is held. */
 	static function GetGamepadButtonPressed():Int {
 		var last = GAMEPAD_BUTTON_UNKNOWN;
 		for (pad in 0...4)
-			if (IsGamepadAvailable(pad))
+			if (IsGamepadAvailable(pad)) {
 				for (button in pollOrder)
 					if (IsGamepadButtonDown(pad, button))
 						last = button;
+				#if !js
+				// GLFW has the second triggers as axes alone; raylib 6.2 counts each as held past 0.1.
+				if (GetGamepadAxisMovement(pad, GAMEPAD_AXIS_LEFT_TRIGGER) > 0.1)
+					last = GAMEPAD_BUTTON_LEFT_TRIGGER_2;
+				if (GetGamepadAxisMovement(pad, GAMEPAD_AXIS_RIGHT_TRIGGER) > 0.1)
+					last = GAMEPAD_BUTTON_RIGHT_TRIGGER_2;
+				#end
+			}
 		return last;
 	}
 
@@ -1298,6 +1322,72 @@ class RCore {
 		return success;
 	}
 
+	/** raylib 6.2's file rename, which waits for the answer. A page can't wait, so a call doesn't compile on any target:
+		`FileRenameAsync` renames it.
+
+		@param fileName  The file.
+		@param fileRename  Its new name.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("FileRename: Synchronous file access is not supported. See FileRenameAsync(fileName:String, fileRename:String, answer:Int->Void)")
+	static function FileRename(fileName:String, fileRename:String):Int {
+		throw "FileRename is unimplemented";
+	}
+
+	/** raylib 6.2's file removal, which waits for the answer. A page can't wait, so a call doesn't compile on any target:
+		`FileRemoveAsync` removes it.
+
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("FileRemove: Synchronous file access is not supported. See FileRemoveAsync(fileName:String, answer:Int->Void)")
+	static function FileRemove(fileName:String):Int {
+		throw "FileRemove is unimplemented";
+	}
+
+	/** raylib 6.2's file copy, which waits for the file. A page can't wait, so a call doesn't compile on any target: `FileCopyAsync`
+		copies it.
+
+		@param srcPath  The file.
+		@param dstPath  The copy.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("FileCopy: Synchronous file access is not supported. See FileCopyAsync(srcPath:String, dstPath:String, answer:Int->Void)")
+	static function FileCopy(srcPath:String, dstPath:String):Int {
+		throw "FileCopy is unimplemented";
+	}
+
+	/** raylib 6.2's file move, which waits for the file. A page can't wait, so a call doesn't compile on any target: `FileMoveAsync`
+		moves it.
+
+		@param srcPath  The file.
+		@param dstPath  Where it goes.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("FileMove: Synchronous file access is not supported. See FileMoveAsync(srcPath:String, dstPath:String, answer:Int->Void)")
+	static function FileMove(srcPath:String, dstPath:String):Int {
+		throw "FileMove is unimplemented";
+	}
+
+	/** raylib 6.2's replacement of text in a file, which waits for the file. A page can't wait, so a call doesn't compile on any target:
+		`FileTextReplaceAsync` replaces it.
+
+		@param fileName  The file.
+		@param search  The text replaced.
+		@param replacement  The text put in its place.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("FileTextReplace: Synchronous file access is not supported. See FileTextReplaceAsync(fileName:String, search:String, replacement:String, answer:Int->Void)")
+	static function FileTextReplace(fileName:String, search:String, replacement:String):Int {
+		throw "FileTextReplace is unimplemented";
+	}
+
+	/** raylib 6.2's search of a file's text, which waits for the file. A page can't wait, so a call doesn't compile on any target:
+		`FileTextFindIndexAsync` searches it.
+
+		@param fileName  The file.
+		@param search  The text looked for.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("FileTextFindIndex: Synchronous file access is not supported. See FileTextFindIndexAsync(fileName:String, search:String, answer:Int->Void)")
+	static function FileTextFindIndex(fileName:String, search:String):Int {
+		throw "FileTextFindIndex is unimplemented";
+	}
+
 	// ---- Directories ----
 
 	/** Returns the working directory: natively the process's, where `TakeScreenshot` writes; in a page ".", the page's own directory.
@@ -1353,23 +1443,28 @@ class RCore {
 
 	// ---- File names ----
 
-	/** Returns whether a file name ends in one of some extensions, ignoring the case of A to Z.
+	/** Returns whether a file name ends in one of some extensions, ignoring the case of A to Z, as raylib 6.2's.
+
+		Up to 15 characters of the file's extension are compared, and the list's first 32 extensions. An extension in the list without
+		its dot matches as well ("png" as ".png").
 
 		@param fileName  The file name.
-		@param ext  The extensions with their dots, `;` between them: ".png;.jpg".
+		@param ext  The extensions, `;` between them: ".png;.jpg".
 		@return  True when its extension, from its last dot, is one of them. */
 	static function IsFileExtension(fileName:String, ext:String):Bool {
 		var fileExt = GetFileExtension(fileName);
 		if (fileExt == null)
 			return false;
-		// raylib keeps 16 characters of the file's extension, and splits the list into at most 128.
-		var lower = asciiLower(fileExt).substr(0, 16);
-		var checks = ext.split(";");
-		if (checks.length >= 128)
-			checks = checks.slice(0, 127).concat([""]);
-		for (check in checks)
-			if (asciiLower(check) == lower)
+		var fileExtLower = asciiLower(fileExt).substr(0, 15);
+		var extList = asciiLower(ext).split(";");
+		if (extList.length > 32)
+			extList = extList.slice(0, 32);
+		for (check in extList) {
+			// An extension given without its dot is compared with the file's without its own.
+			var own = check.charAt(0) != "." ? fileExtLower.substr(1) : fileExtLower;
+			if (own == check)
 				return true;
+		}
 		return false;
 	}
 
@@ -1421,19 +1516,32 @@ class RCore {
 		return (relative ? "./" : "") + filePath.substr(0, slash);
 	}
 
-	/** Returns the directory a path is in: up to its last `/` or `\`, keeping a root's ("/", "C:\").
+	/** Returns the directory a path is in, as raylib 6.2's: up to its last `/` or `\` but one at its end, keeping a root's ("/",
+		"C:\").
+
+		"/a/b/" gives "/a", "/a" gives "/" and "abc" gives "". raylib 6.2 also takes a path naming a file to its directory's parent; a
+		file can't be looked for without waiting here, so every path is taken as a directory's.
 
 		@param dirPath  The path.
-		@return  The directory above it; the path itself when it has 3 characters or fewer, and "" when a longer one has no slash. */
+		@return  The directory above it; "" when there is none. */
 	static function GetPrevDirectoryPath(dirPath:String):String {
-		if (dirPath.length <= 3)
-			return dirPath;
-		var i = lastSlash(dirPath);
-		if (i < 0)
-			return "";
-		if ((i == 2 && dirPath.charAt(1) == ":") || i == 0)
-			i++;
-		return dirPath.substr(0, i);
+		var lastIndex = dirPath.length - 1;
+		var i = lastIndex;
+		while (i >= 0) {
+			var c = dirPath.charAt(i);
+			if (c == "\\" || c == "/") {
+				// A leading separator ("/usr") or a drive's root ("C:\") stays; one at the end ("/usr/bin/") is skipped.
+				if (i == 0 || (i == 2 && dirPath.charAt(1) == ":"))
+					i += 1;
+				else if (i == lastIndex) {
+					i--;
+					continue;
+				}
+				return dirPath.substr(0, i);
+			}
+			i--;
+		}
+		return "";
 	}
 
 	/** Returns whether a file name could name a file on any system: none of `< > : " / \ | ? *` or a control character, and not
@@ -1482,12 +1590,83 @@ class RCore {
 		throw "GetFileLength is unimplemented";
 	}
 
-	/** Makes a directory. There is nothing to make: a directory is there once a file is written under it, so this succeeds.
+	/** Makes a directory. There is nothing to make: a directory is there once a file is written under it, so this succeeds for any path
+		that could name one.
 
 		@param dirPath  The directory.
-		@return  0, success; 1 for null or "", as raylib's. */
+		@return  0, success; 1 for null or "", as raylib 5.5's; -1, as raylib 6.2's for a directory not made, for a path that can't name
+			one. */
 	static function MakeDirectory(dirPath:String):Int {
-		return dirPath == null || dirPath == "" ? 1 : 0;
+		if (dirPath == null || dirPath == "")
+			return 1;
+		var path = normalize(dirPath);
+		while (path.length > 1 && StringTools.endsWith(path, "/"))
+			path = path.substr(0, path.length - 1);
+		return path == "" || path == "." || path == "/" || helix.platform.FilePath.isValid(path) ? 0 : -1;
+	}
+
+	/** Returns whether a path names a hidden file or directory, as raylib 6.2's does outside Windows: its last part starts with a dot and
+		isn't "." or "..".
+
+		@param filePath  The path.
+		@return  True when it is hidden. */
+	static function IsFileHidden(filePath:String):Bool {
+		var slash = filePath.lastIndexOf("/");
+		var basePath = slash >= 0 ? filePath.substr(slash + 1) : filePath;
+		return basePath.charAt(0) == "." && basePath != "." && basePath != "..";
+	}
+
+	/** Returns whether a path is absolute, as raylib 6.2's: natively on Windows one starting with `\\` or a drive letter, a colon and a
+		slash ("C:\", "D:/"); elsewhere, and in a page, one starting with `/`.
+
+		@param path  The path.
+		@return  True when it is absolute; false for null or "". */
+	static function IsPathAbsolute(path:String):Bool {
+		if (path == null || path == "")
+			return false;
+		#if windows
+		if (StringTools.startsWith(path, "\\\\"))
+			return true;
+		var drive = path.charCodeAt(0);
+		return ((drive >= "A".code && drive <= "Z".code)
+			|| (drive >= "a".code && drive <= "z".code))
+			&& path.charAt(1) == ":"
+			&& (path.charAt(2) == "\\" || path.charAt(2) == "/");
+		#else
+		return path.charAt(0) == "/";
+		#end
+	}
+
+	/** raylib 6.2's check for a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target:
+		`IsPathDirectoryAsync` answers it.
+
+		@param path  The path.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("IsPathDirectory: Synchronous file access is not supported. See IsPathDirectoryAsync(path:String, answer:Bool->Void)")
+	static function IsPathDirectory(path:String):Bool {
+		throw "IsPathDirectory is unimplemented";
+	}
+
+	/** raylib 6.2's count of a directory's files, which waits for it. A page can't wait, so a call doesn't compile on any target:
+		`GetDirectoryFileCountAsync` counts them.
+
+		@param dirPath  The directory.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("GetDirectoryFileCount: Synchronous file access is not supported. See GetDirectoryFileCountAsync(dirPath:String, answer:Int->Void)")
+	static function GetDirectoryFileCount(dirPath:String):Int {
+		throw "GetDirectoryFileCount is unimplemented";
+	}
+
+	/** raylib 6.2's filtered and recursive count of a directory's files, which waits for it. A page can't wait, so a call doesn't compile
+		on any target: `GetDirectoryFileCountExAsync` counts them.
+
+		@param basePath  The directory.
+		@param filter  The extensions counted.
+		@param scanSubdirs  Whether subdirectories are counted too.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("GetDirectoryFileCountEx: Synchronous file access is not supported. See GetDirectoryFileCountExAsync(basePath:String, filter:String, scanSubdirs:Bool, answer:Int->Void)")
+	static function GetDirectoryFileCountEx(basePath:String, filter:String, scanSubdirs:Bool):Int {
+		throw "GetDirectoryFileCountEx is unimplemented";
 	}
 
 	/** raylib's check for a file, as against a directory, which waits for the answer. A page can't wait, so a call doesn't compile on
@@ -1639,39 +1818,57 @@ class RCore {
 		return text.toString().substr(0, size - padding) + "==".substr(0, padding);
 	}
 
-	/** Returns the bytes of Base64 text. It reads 4 characters at a time up to a zero byte or the end, and a character that isn't
-		Base64's reads as 0, as raylib's does.
+	/** Returns the bytes of Base64 text, as raylib 6.2 decodes it: the text runs to a zero byte or the end, and is read 4 characters at a
+		time, a character that isn't Base64's reading as 0. Text whose length isn't a multiple of 4 warns and is read up to its last 4
+		characters.
 
 		@param data  The text's bytes.
-		@param outputSize  Its first element is set to how many bytes it gives.
+		@param outputSize  Its first element is set to how many bytes it gives: 3 for every 4 characters, less one for each `=` at the
+			end.
 		@return  The bytes. */
 	static function DecodeDataBase64(data:haxe.io.Bytes, outputSize:Array<Int>):haxe.io.Bytes {
-		var at = (i:Int) -> i < data.length ? data.get(i) : 0;
-		var value = (i:Int) -> {
-			var c = at(i);
+		inline function value(c:Int):Int
 			return if (c >= "A".code && c <= "Z".code) c - "A".code; else if (c >= "a".code && c <= "z".code) c - "a".code + 26; else if (c >= "0".code
 				&& c <= "9".code) c
 				- "0".code + 52; else if (c == "+".code) 62; else if (c == "/".code) 63; else 0;
+		var dataSize = 0;
+		while (dataSize < data.length && data.get(dataSize) != 0)
+			dataSize++;
+		var ending = dataSize - 1, padding = 0;
+		while (ending >= 0 && data.get(ending) == "=".code) {
+			padding++;
+			ending--;
 		}
-		var size = 0, i = 0;
-		while (at(4 * i) != 0) {
-			size += at(4 * i + 3) != "=".code ? 3 : at(4 * i + 2) == "=".code ? 1 : 2;
-			i++;
+		var estimatedOutputSize = 3 * Std.int(dataSize / 4) - padding;
+		var maxOutputSize = 3 * Std.int(dataSize / 4);
+		var decoded = haxe.io.Bytes.alloc(maxOutputSize);
+		decoded.fill(0, maxOutputSize, 0);
+		var outputCount = 0, i = 0;
+		while (i < dataSize) {
+			// Every 4 characters give 3 bytes.
+			if (i + 2 >= dataSize) {
+				Runtime.log(LOG_WARNING, "BASE64: Decoding error: Input data size is not valid");
+				break;
+			}
+			var sixtetA = value(data.get(i)), sixtetB = value(data.get(i + 1));
+			var sixtetC = i + 2 < dataSize && data.get(i + 2) != "=".code ? value(data.get(i + 2)) : 0;
+			var sixtetD = i + 3 < dataSize && data.get(i + 3) != "=".code ? value(data.get(i + 3)) : 0;
+			var octetPack = (sixtetA << 18) | (sixtetB << 12) | (sixtetC << 6) | sixtetD;
+			if (outputCount + 3 > maxOutputSize) {
+				Runtime.log(LOG_WARNING, "BASE64: Decoding error: Output data size is too small");
+				break;
+			}
+			decoded.set(outputCount, (octetPack >> 16) & 0xff);
+			decoded.set(outputCount + 1, (octetPack >> 8) & 0xff);
+			decoded.set(outputCount + 2, octetPack & 0xff);
+			outputCount += 3;
+			i += 4;
 		}
-		var decoded = haxe.io.Bytes.alloc(size);
-		for (i in 0...Std.int((size + 2) / 3)) {
-			var a = value(4 * i),
-				b = value(4 * i + 1),
-				c = value(4 * i + 2),
-				d = value(4 * i + 3);
-			var bytes = [(a << 2) | (b >> 4), (b << 4) | (c >> 2), (c << 6) | d];
-			for (j in 0...3)
-				if (3 * i + j < size)
-					decoded.set(3 * i + j, bytes[j] & 255);
-		}
+		if (estimatedOutputSize != outputCount - padding)
+			Runtime.log(LOG_WARNING, "BASE64: Decoded size differs from estimation");
 		if (outputSize != null)
-			outputSize[0] = size;
-		return decoded;
+			outputSize[0] = estimatedOutputSize;
+		return decoded.sub(0, estimatedOutputSize < 0 ? 0 : estimatedOutputSize);
 	}
 
 	/** Returns the CRC-32 of some bytes, as zlib and PNG compute it.
@@ -1742,8 +1939,8 @@ class RCore {
 		return hash;
 	}
 
-	/** Returns the SHA-1 hash of some bytes, as raylib 5.5 computes it: its padding holds only the lowest byte of the length in bits,
-		so from 32 bytes on it differs from standard SHA-1.
+	/** Returns the SHA-1 hash of some bytes, as raylib 6.2 computes it: standard SHA-1 (raylib 5.5's padding held only the lowest byte of
+		the length in bits, so from 32 bytes on it wasn't).
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
@@ -1755,7 +1952,7 @@ class RCore {
 		msg.fill(0, msg.length, 0);
 		msg.blit(0, data, 0, dataSize);
 		msg.set(dataSize, 128);
-		msg.set(newDataSize - 1, (8 * dataSize) & 255);
+		lengthInBits(msg, newDataSize, dataSize);
 		var w = [for (i in 0...80) 0];
 		var offset = 0;
 		while (offset < newDataSize) {
@@ -1797,6 +1994,91 @@ class RCore {
 		}
 		return hash;
 	}
+
+	// A message's length in bits as SHA-1 and SHA-256 end its padding: 64 bits, the highest byte first, in the 8 bytes before end.
+	static function lengthInBits(msg:haxe.io.Bytes, end:Int, dataSize:Int):Void {
+		var low = dataSize << 3, high = dataSize >>> 29;
+		for (i in 0...4) {
+			msg.set(end - 1 - i, (low >>> (8 * i)) & 255);
+			msg.set(end - 5 - i, (high >>> (8 * i)) & 255);
+		}
+	}
+
+	/** Returns the SHA-256 hash of some bytes, raylib 6.2's.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@return  Its 8 words, the first the hash's first 4 bytes, the highest first; one above 0x7fffffff is negative. */
+	static function ComputeSHA256(data:haxe.io.Bytes, dataSize:Int):Array<Int> {
+		inline function rotateRight(x:Int, c:Int):Int
+			return (x >>> c) | (x << (32 - c));
+		var hash = [
+			0x6A09e667,
+			0xbb67ae85,
+			0x3c6ef372,
+			0xa54ff53a,
+			0x510e527f,
+			0x9b05688c,
+			0x1f83d9ab,
+			0x5be0cd19
+		];
+		// Room for the length's 64 bits at the end, then up to a whole block.
+		var paddedSize = dataSize + 8;
+		paddedSize += 64 - paddedSize % 64;
+		var buffer = haxe.io.Bytes.alloc(paddedSize);
+		buffer.fill(0, paddedSize, 0);
+		buffer.blit(0, data, 0, dataSize);
+		buffer.set(dataSize, 0x80);
+		lengthInBits(buffer, paddedSize, dataSize);
+		var w = [for (_ in 0...64) 0];
+		for (blockN in 0...Std.int(paddedSize / 64)) {
+			var a = hash[0], b = hash[1], c = hash[2], d = hash[3], e = hash[4], f = hash[5], g = hash[6], h = hash[7];
+			var block = blockN * 64;
+			for (i in 0...16) {
+				var at = block + i * 4;
+				w[i] = (buffer.get(at) << 24) | (buffer.get(at + 1) << 16) | (buffer.get(at + 2) << 8) | buffer.get(at + 3);
+			}
+			for (t in 16...64) {
+				var a1 = rotateRight(w[t - 2], 17) ^ rotateRight(w[t - 2], 19) ^ (w[t - 2] >>> 10);
+				var a0 = rotateRight(w[t - 15], 7) ^ rotateRight(w[t - 15], 18) ^ (w[t - 15] >>> 3);
+				w[t] = (((((a1 + w[t - 7]) | 0) + a0) | 0) + w[t - 16]) | 0;
+			}
+			for (t in 0...64) {
+				var e1 = rotateRight(e, 6) ^ rotateRight(e, 11) ^ rotateRight(e, 25);
+				var ch = (e & f) ^ (~e & g);
+				var t1 = (((((((h + e1) | 0) + ch) | 0) + SHA256_K[t]) | 0) + w[t]) | 0;
+				var e0 = rotateRight(a, 2) ^ rotateRight(a, 13) ^ rotateRight(a, 22);
+				var maj = (a & b) ^ (a & c) ^ (b & c);
+				var t2 = (e0 + maj) | 0;
+				h = g;
+				g = f;
+				f = e;
+				e = (d + t1) | 0;
+				d = c;
+				c = b;
+				b = a;
+				a = (t1 + t2) | 0;
+			}
+			hash[0] = (hash[0] + a) | 0;
+			hash[1] = (hash[1] + b) | 0;
+			hash[2] = (hash[2] + c) | 0;
+			hash[3] = (hash[3] + d) | 0;
+			hash[4] = (hash[4] + e) | 0;
+			hash[5] = (hash[5] + f) | 0;
+			hash[6] = (hash[6] + g) | 0;
+			hash[7] = (hash[7] + h) | 0;
+		}
+		return hash;
+	}
+
+	static final SHA256_K = [
+		0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+		0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+		0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+		0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+		0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+		0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+	];
 
 	// ---- Hooks ----
 
@@ -1891,8 +2173,8 @@ class RCore {
 	}
 
 	/** Starts recording into the list `SetAutomationEventList` set: as each frame ends, before the next frame's input is read, every
-		key, mouse button and finger held, the mouse's moves and the wheel's, gamepads' buttons held and axes off rest, and the gesture,
-		as raylib records them, each logged. A full list (16384 events) records no more. */
+		key, mouse button and finger held, the mouse's moves, the wheel's and, as raylib 6.2's, the fingers', gamepads' buttons held and
+		axes off rest, and the gesture, as raylib records them, each logged. A full list (16384 events) records no more. */
 	static function StartAutomationEventRecording():Void {
 		Automation.use().recording = true;
 	}
@@ -1944,17 +2226,36 @@ class RCore {
 	// ---- Screenshots ----
 
 	/** Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImage` writes it by the name's extension
-		(".png", ".qoi" or ".raw"): in a page it is downloaded, as raylib's web build does; natively it is written to the working
-		directory, as raylib writes it there, under the name's file name. raylib's is taken from the frame drawn last, before it is
-		shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as raylib's is.
+		(".png", ".qoi" or ".raw"): in a page it is downloaded under the name's file name, as raylib's web build does; natively it is
+		written where the name says, as raylib 6.2 writes it: a relative name under the working directory, its directories kept, and an
+		absolute one where it is. A directory that isn't there isn't made, and the screenshot isn't saved. raylib's is taken from the frame
+		drawn last, before it is shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as
+		raylib's is.
 
-		@param fileName  The file name; a directory before it is dropped, and a name with `'` is refused, as raylib's is. */
+		@param fileName  The file's name, or its path; a name with `'` is refused, as raylib's is. */
 	static function TakeScreenshot(fileName:String):Void {
 		if (fileName.indexOf("'") >= 0) {
 			Runtime.log(LOG_WARNING, "SYSTEM: Provided fileName could be potentially malicious, avoid ['] character");
 			return;
 		}
 		var name = GetFileName(fileName);
+		#if js
+		var exporter = Runtime.exporter();
+		#else
+		// raylib 6.2's: a relative name under the working directory, an absolute one as it is.
+		var slash = lastSlash(fileName);
+		var exporter = Runtime.exporter();
+		if (slash >= 0) {
+			var directory = fileName.substr(0, slash == 0 ? 1 : slash);
+			if (!IsPathAbsolute(fileName))
+				directory = haxe.io.Path.join([Sys.getCwd(), directory]);
+			if (!sys.FileSystem.exists(directory) || !sys.FileSystem.isDirectory(directory)) {
+				Runtime.log(LOG_WARNING, 'SYSTEM: [$fileName] Screenshot could not be saved');
+				return;
+			}
+			exporter = new helix.platform.adapters.export.filesystem.FileSystemExportAdapter({directory: directory});
+		}
+		#end
 		if (Runtime.frame == null) {
 			Runtime.log(LOG_WARNING, 'SYSTEM: [$name] Screenshot could not be saved: InitWindow first');
 			return;
@@ -1970,7 +2271,7 @@ class RCore {
 				return;
 			}
 			var type = IsFileExtension(name, ".png") ? "image/png" : IsFileExtension(name, ".qoi") ? "image/qoi" : "application/octet-stream";
-			Runtime.exporter().export(name, type, file, where -> {
+			exporter.export(name, type, file, where -> {
 				Runtime.log(LOG_INFO, 'FILEIO: [$where] Image exported successfully');
 				Runtime.log(LOG_INFO, 'SYSTEM: [$where] Screenshot taken successfully');
 			},
@@ -2377,11 +2678,24 @@ class RCore {
 		camera.target = new Vector3(t.x + by.x, t.y + by.y, t.z + by.z);
 	}
 
+	// A direction in the world's plane, as raylib 6.2's: the part along the axis the camera's up is mostly along dropped (z when its
+	// up's z is over 0.7071, else x when its x is, else y), then of length 1.
+	static function inWorldPlane(camera:Camera, v:Vector3D):Vector3D {
+		var up = camera.up;
+		if (Math.abs(up.z) > 0.7071)
+			v.z = 0;
+		else if (Math.abs(up.x) > 0.7071)
+			v.x = 0;
+		else
+			v.y = 0;
+		return v.normalize(v);
+	}
+
 	// Moves the position and the target forward, along the ground in the world's plane.
 	static function cameraMoveForward(camera:Camera, distance:Float, moveInWorldPlane:Bool):Void {
 		var forward = cameraForward(camera);
 		if (moveInWorldPlane)
-			forward.set(forward.x, 0, forward.z).normalize(forward);
+			inWorldPlane(camera, forward);
 		cameraMove(camera, forward.scale(distance, forward));
 	}
 
@@ -2393,7 +2707,7 @@ class RCore {
 	static function cameraMoveRight(camera:Camera, distance:Float, moveInWorldPlane:Bool):Void {
 		var right = cameraRight(camera);
 		if (moveInWorldPlane)
-			right.set(right.x, 0, right.z).normalize(right);
+			inWorldPlane(camera, right);
 		cameraMove(camera, right.scale(distance, right));
 	}
 
@@ -2547,24 +2861,25 @@ class RCore {
 		return view3D;
 	}
 
-	/** Returns how far the mouse moved since the last frame, in the screen's pixels.
+	/** Returns how far the mouse moved since the last frame, in the screen's pixels times the mouse's scale (`SetMouseScale`), as raylib
+		6.2's. A `SetMousePosition` this frame is part of it.
 
 		@return  The movement. */
 	static function GetMouseDelta():Vector2 {
 		var played = Automation.active;
 		if (played != null)
-			return new Vector2(played.mouseX - played.previousMouseX, played.mouseY - played.previousMouseY);
-		// raylib's delta is the mouse's own, before SetMouseOffset and SetMouseScale.
+			return new Vector2((played.mouseX - played.previousMouseX) * mouseScaleX, (played.mouseY - played.previousMouseY) * mouseScaleY);
+		// From where the mouse was last seen in an earlier frame, before SetMouseOffset.
 		pointer();
 		var frame = Runtime.frames;
 		if (frame != deltaFrame) {
 			deltaFrame = frame;
-			deltaX = lastPointerX - previousX;
-			deltaY = lastPointerY - previousY;
-			previousX = lastPointerX;
-			previousY = lastPointerY;
+			previousX = seenX;
+			previousY = seenY;
 		}
-		return new Vector2(deltaX, deltaY);
+		seenX = lastPointerX;
+		seenY = lastPointerY;
+		return new Vector2((lastPointerX - previousX) * mouseScaleX, (lastPointerY - previousY) * mouseScaleY);
 	}
 
 	// ---- Shaders ----

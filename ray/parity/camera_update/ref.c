@@ -1,4 +1,5 @@
-// raylib 5.5's rcamera UpdateCamera over the frames in frames.txt, its input functions stubbed with them, each frame 1/60 s.
+// raylib 5.5's rcamera UpdateCamera over the frames in frames.txt, its input functions stubbed with them, each frame 1/60 s; a Z-up
+// start is camera_update_62's.
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -21,8 +22,8 @@ int main(void) {
     char lines[64][128]; int n = 0; FILE *f = fopen("frames.txt", "r");
     while (fgets(lines[n], 128, f)) { lines[n][strcspn(lines[n], "\n")] = 0; if (lines[n][0]) n++; }
     int modes[5] = { CAMERA_FREE, CAMERA_FIRST_PERSON, CAMERA_THIRD_PERSON, CAMERA_ORBITAL, CAMERA_CUSTOM };
-    float starts[3][3][3] = { { {0, 2, 4}, {0, 2, 0}, {0, 1, 0} }, { {3, -1, 2}, {-1, .5f, -4}, {.2f, .9f, .1f} }, { {0, 0, 5}, {0, 0, 0}, {0, 0, 1} } };
-    for (int s = 0; s < 3; s++) for (int m = 0; m < 5; m++) {
+    float starts[2][3][3] = { { {0, 2, 4}, {0, 2, 0}, {0, 1, 0} }, { {3, -1, 2}, {-1, .5f, -4}, {.2f, .9f, .1f} } };
+    for (int s = 0; s < 2; s++) for (int m = 0; m < 5; m++) {
         Camera c = { { starts[s][0][0], starts[s][0][1], starts[s][0][2] }, { starts[s][1][0], starts[s][1][1], starts[s][1][2] },
             { starts[s][2][0], starts[s][2][1], starts[s][2][2] }, 60, CAMERA_PERSPECTIVE };
         memset(keys, 0, sizeof keys); mouseX = mouseY = 0;

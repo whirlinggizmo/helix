@@ -1,0 +1,22 @@
+{
+  "oracle": "6.2",
+  "covers": "rcamera.h's CameraMoveForward and CameraMoveRight, 6.2's (#5458: in the plane square to the camera's up, so Z-up and X-up cameras move on their ground), on and off the world's plane, and UpdateCameraPro, which moves in it, over cameras' 700 cameras and 140 more with an X up, as double bits",
+  "notes": "Sections by function and by whether the camera is regular or degenerate, each difference against the scene's size. Points behind the camera and degenerate cameras give NaN or infinity where the other gives a number (raylib in floats, helix-ray in doubles): the bars count them.",
+  "kind": "values",
+  "main": "CameraBits62",
+  "reference": "ref.c",
+  "harness": [
+    "CameraBits62.hx"
+  ],
+  "hex": true,
+  "sections": {
+    "pattern": "^c\\d+\\.([a-z0-9]+)"
+  },
+  "tolerance": 1e-06,
+  "bars": {
+    "pro50 regular": 4e-05,
+    "prolock regular": 6e-06,
+    "pro50 degenerate": 6e-06,
+    "pro regular": 2e-06
+  }
+}

@@ -1,0 +1,173 @@
+import haxe.io.Bytes;
+import helix.platform.IFileSystem;
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import helix.ray.Raymath.*;
+import helix.ray.internal.Runtime;
+import Parity.*;
+
+// helix-ray's file names, encodings, hashes, file functions and raymath additions, raylib 6.2's, printed by Parity as ref.c.in prints
+// raylib's. Its file functions are the async ones, waited for here, over the saves (kept in memory) and the working directory's files.
+@:access(helix.ray.internal.Runtime)
+class CoreBits62 {
+	// n bytes of text, 'a' to 'z' over and over.
+	static function filled(n:Int):Bytes {
+		var b = Bytes.alloc(n);
+		for (i in 0...n)
+			b.set(i, "a".code + i % 26);
+		return b;
+	}
+
+	static function words(name:String, w:Array<Int>):Void
+		line('$name hash ' + [for (x in w) StringTools.hex(x, 8).toLowerCase()].join(" "));
+
+	static function sha1(name:String, n:Int):Void
+		words(name, ComputeSHA1(filled(n), n));
+
+	static function sha256(name:String, n:Int):Void
+		words(name, ComputeSHA256(filled(n), n));
+
+	static function b64(name:String, text:String):Void {
+		var size = [0];
+		var bytes = DecodeDataBase64(Bytes.ofString(text), size);
+		line('$name base64 ${size[0]}' + [for (i in 0...size[0]) ' ${bytes.get(i)}'].join(""));
+	}
+
+	static function text(name:String, s:String):Void
+		line('$name text ${s == null || s == "" ? "-" : s}');
+
+	static function quat(name:String, q:Quaternion):Void
+		line('$name quat ${q.x} ${q.y} ${q.z} ${q.w}');
+
+	static function mat(name:String, m:Matrix):Void
+		line('$name mat ${[m.m0, m.m1, m.m2, m.m3, m.m4, m.m5, m.m6, m.m7, m.m8, m.m9, m.m10, m.m11, m.m12, m.m13, m.m14, m.m15].join(" ")}');
+
+	// Runs the async loads' answers until one has come.
+	static function wait<T>(start:(T->Void)->Void):T {
+		var got:Null<T> = null, done = false;
+		start(v -> {
+			got = v;
+			done = true;
+		});
+		for (_ in 0...100000) {
+			if (done)
+				return got;
+			Runtime.pollAll();
+			var now = Runtime.waiting;
+			Runtime.waiting = [];
+			for (f in now)
+				f();
+		}
+		throw "never answered";
+	}
+
+	static function file(name:String, result:Int, path:String):Void {
+		var exists = wait(answer -> FileExistsAsync(path, answer));
+		var t = exists ? wait(answer -> LoadFileTextAsync(path, answer, _ -> answer(null))) : null;
+		line('$name file $result ${exists ? 1 : 0} ${t == null || t == "" ? "-" : t}');
+	}
+
+	static function main() {
+		open();
+		var disk = new DiskFiles();
+		Runtime.polled.push(disk);
+		Runtime.shipped = disk;
+		Runtime.assets = new helix.services.assets.Assets({sources: [FileSystem(disk)]});
+		var kept = new MemoryFileSystem();
+		Runtime.polled.push(kept);
+		Runtime.saves = new helix.services.saves.Saves(kept);
+		Runtime.polled.push(Runtime.saves);
+		@CASES@
+		// The file functions, waited for, over the saves and the working directory's files, as ref.c.in runs raylib's.
+		SaveFileText("f1.txt", "hello world hello");
+		file("rename", wait(a -> FileRenameAsync("f1.txt", "f2.txt", a)), "f2.txt");
+		file("renamed", 0, "f1.txt");
+		file("renamenone", wait(a -> FileRenameAsync("nope.txt", "f5.txt", a)), "f5.txt");
+		flag("directoryfile", wait(a -> IsPathDirectoryAsync("f2.txt", a)));
+		flag("directorynone", wait(a -> IsPathDirectoryAsync("nope.txt", a)));
+		file("copy", wait(a -> FileCopyAsync("f2.txt", "f3.txt", a)), "f3.txt");
+		file("copynone", wait(a -> FileCopyAsync("nope.txt", "f5.txt", a)), "f5.txt");
+		num("find", wait(a -> FileTextFindIndexAsync("f3.txt", "world", a)));
+		num("findlast", wait(a -> FileTextFindIndexAsync("f3.txt", "llo", a)));
+		num("findnone", wait(a -> FileTextFindIndexAsync("f3.txt", "zzz", a)));
+		num("findnofile", wait(a -> FileTextFindIndexAsync("nope.txt", "a", a)));
+		file("replace", wait(a -> FileTextReplaceAsync("f3.txt", "hello", "bye", a)), "f3.txt");
+		file("replacenone", wait(a -> FileTextReplaceAsync("nope.txt", "a", "b", a)), "nope.txt");
+		file("move", wait(a -> FileMoveAsync("f3.txt", "f4.txt", a)), "f4.txt");
+		file("moved", 0, "f3.txt");
+		file("movenone", wait(a -> FileMoveAsync("nope.txt", "f5.txt", a)), "f5.txt");
+		file("remove", wait(a -> FileRemoveAsync("f4.txt", a)), "f4.txt");
+		file("removeagain", wait(a -> FileRemoveAsync("f4.txt", a)), "f4.txt");
+		file("removelast", wait(a -> FileRemoveAsync("f2.txt", a)), "f2.txt");
+		// The directory ref.c.in made, counted.
+		num("count", wait(a -> GetDirectoryFileCountAsync("count", a)));
+		num("countpng", wait(a -> GetDirectoryFileCountExAsync("count", ".png", true, a)));
+		num("countpngtop", wait(a -> GetDirectoryFileCountExAsync("count", "png", false, a)));
+		num("countdirs", wait(a -> GetDirectoryFileCountExAsync("count", "DIRS*", false, a)));
+		num("countfiles", wait(a -> GetDirectoryFileCountExAsync("count", "FILES*", true, a)));
+		num("countall", wait(a -> GetDirectoryFileCountExAsync("count", "*.*", true, a)));
+		num("countpngdirs", wait(a -> GetDirectoryFileCountExAsync("count", ".png;DIRS*", true, a)));
+		num("countnull", wait(a -> GetDirectoryFileCountExAsync("count", null, true, a)));
+		num("countnone", wait(a -> GetDirectoryFileCountAsync("nope", a)));
+		save();
+	}
+}
+
+// Files kept in memory, written and read at the next poll: the saves' file system here.
+class MemoryFileSystem implements IFileSystem {
+	final files = new Map<String, Bytes>();
+	final waiting:Array<Void->Void> = [];
+
+	public function new() {}
+
+	public var root(get, never):String;
+
+	function get_root():String
+		return "";
+
+	public var canWrite(get, never):Bool;
+
+	function get_canWrite():Bool
+		return true;
+
+	public function read(path:String, maxBytes:Int, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void->Void {
+		waiting.push(() -> files.exists(path) ? loaded(files.get(path)) : missing());
+		return () -> {};
+	}
+
+	public function write(path:String, bytes:Bytes, written:Void->Void, failed:String->Void):Void
+		waiting.push(() -> {
+			files.set(path, bytes);
+			written();
+		});
+
+	public function deleteFile(path:String, deleted:Void->Void, failed:String->Void):Void
+		waiting.push(() -> {
+			files.remove(path);
+			deleted();
+		});
+
+	public function deleteFiles(deleted:Void->Void, failed:String->Void):Void
+		waiting.push(() -> {
+			files.clear();
+			deleted();
+		});
+
+	public function getInfo(path:String, found:(size:Int, modified:Float) -> Void, missing:Void->Void, failed:String->Void):Void
+		waiting.push(() -> files.exists(path) ? found(files.get(path).length, 0) : missing());
+
+	public function list(directory:String, listed:Array<String>->Void, missing:Void->Void, failed:String->Void):Void
+		waiting.push(() -> missing());
+
+	public function locate(path:String, located:(location:String, release:Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void
+		waiting.push(() -> missing());
+
+	public function poll():Void {
+		var now = waiting.copy();
+		waiting.resize(0);
+		for (f in now)
+			f();
+	}
+
+	public function dispose():Void {}
+}

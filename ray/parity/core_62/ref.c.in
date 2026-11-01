@@ -1,0 +1,93 @@
+// raylib 6.2's file names, encodings, hashes, file functions and raymath additions, printed by parity.h; cases.py's list is put into it,
+// then the file functions run on files of the working directory.
+#include "parity.h"
+#include "raymath.h"
+#include <string.h>
+
+// n bytes of text, 'a' to 'z' over and over.
+static const char *filled(int n) {
+    static char text[512];
+    for (int i = 0; i < n; i++) text[i] = (char)('a' + i % 26);
+    text[n] = 0;
+    return text;
+}
+
+static void words(const char *name, const unsigned int *w, int n) {
+    printf("%s hash", name);
+    for (int i = 0; i < n; i++) printf(" %08x", w[i]);
+    printf("\n");
+}
+
+static void sha1(const char *name, int n) { words(name, ComputeSHA1((const unsigned char *)filled(n), n), 5); }
+static void sha256(const char *name, int n) { words(name, ComputeSHA256((const unsigned char *)filled(n), n), 8); }
+
+static void b64(const char *name, const char *text) {
+    int size = 0;
+    unsigned char *bytes = DecodeDataBase64(text, &size);
+    printf("%s base64 %d", name, size);
+    for (int i = 0; i < size; i++) printf(" %d", bytes[i]);
+    printf("\n");
+    MemFree(bytes);
+}
+
+static void text(const char *name, const char *s) { printf("%s text %s\n", name, s && s[0] ? s : "-"); }
+static void quat(const char *name, Quaternion q) { printf("%s quat %.9g %.9g %.9g %.9g\n", name, q.x, q.y, q.z, q.w); }
+
+static void mat(const char *name, Matrix m) {
+    float v[16] = { m.m0, m.m1, m.m2, m.m3, m.m4, m.m5, m.m6, m.m7, m.m8, m.m9, m.m10, m.m11, m.m12, m.m13, m.m14, m.m15 };
+    printf("%s mat", name);
+    for (int i = 0; i < 16; i++) printf(" %.9g", v[i]);
+    printf("\n");
+}
+
+static void file(const char *name, int result, const char *path) {
+    char *t = FileExists(path) ? LoadFileText(path) : NULL;
+    printf("%s file %d %d %s\n", name, result, FileExists(path) ? 1 : 0, t && t[0] ? t : "-");
+    if (t) UnloadFileText(t);
+}
+
+int main(void) {
+    parity_open();
+    @CASES@
+    // The file functions, on files of the working directory, each line a result and what is there after.
+    const char *names[6] = { "f1.txt", "f2.txt", "f3.txt", "f4.txt", "f5.txt", "nope.txt" };
+    for (int i = 0; i < 6; i++) remove(names[i]);
+    SaveFileText("f1.txt", "hello world hello");
+    file("rename", FileRename("f1.txt", "f2.txt"), "f2.txt");
+    file("renamed", 0, "f1.txt");
+    file("renamenone", FileRename("nope.txt", "f5.txt"), "f5.txt");
+    flag("directoryfile", IsPathDirectory("f2.txt"));
+    flag("directorynone", IsPathDirectory("nope.txt"));
+    file("copy", FileCopy("f2.txt", "f3.txt"), "f3.txt");
+    file("copynone", FileCopy("nope.txt", "f5.txt"), "f5.txt");
+    num("find", FileTextFindIndex("f3.txt", "world"));
+    num("findlast", FileTextFindIndex("f3.txt", "llo"));
+    num("findnone", FileTextFindIndex("f3.txt", "zzz"));
+    num("findnofile", FileTextFindIndex("nope.txt", "a"));
+    file("replace", FileTextReplace("f3.txt", "hello", "bye"), "f3.txt");
+    file("replacenone", FileTextReplace("nope.txt", "a", "b"), "nope.txt");
+    file("move", FileMove("f3.txt", "f4.txt"), "f4.txt");
+    file("moved", 0, "f3.txt");
+    file("movenone", FileMove("nope.txt", "f5.txt"), "f5.txt");
+    file("remove", FileRemove("f4.txt"), "f4.txt");
+    file("removeagain", FileRemove("f4.txt"), "f4.txt");
+    file("removelast", FileRemove("f2.txt"), "f2.txt");
+    // A directory of files to count, left for the harness, which runs after.
+    MakeDirectory("count/sub");
+    SaveFileText("count/a.png", "a");
+    SaveFileText("count/b.txt", "b");
+    SaveFileText("count/.hidden", "h");
+    SaveFileText("count/sub/c.png", "c");
+    SaveFileText("count/sub/d.txt", "d");
+    num("count", GetDirectoryFileCount("count"));
+    num("countpng", GetDirectoryFileCountEx("count", ".png", true));
+    num("countpngtop", GetDirectoryFileCountEx("count", "png", false));
+    num("countdirs", GetDirectoryFileCountEx("count", "DIRS*", false));
+    num("countfiles", GetDirectoryFileCountEx("count", "FILES*", true));
+    num("countall", GetDirectoryFileCountEx("count", "*.*", true));
+    num("countpngdirs", GetDirectoryFileCountEx("count", ".png;DIRS*", true));
+    num("countnull", GetDirectoryFileCountEx("count", NULL, true));
+    num("countnone", GetDirectoryFileCount("nope"));
+    parity_close();
+    return 0;
+}

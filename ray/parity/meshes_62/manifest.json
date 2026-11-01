@@ -1,0 +1,8 @@
+{
+  "oracle": "6.2",
+  "covers": "rmodels.c's GenMeshTangents, 6.2's, on meshes without indices (sphere, knot, heightmap, cubicmap) and with them (cube, plane), and with degenerate texture coordinates, and ExportMesh's OBJ text (an indexed cube, a knot without indices), line by line",
+  "kind": "values",
+  "generated": true,
+  "main": "MeshBits62",
+  "tolerance": 8e-06
+}

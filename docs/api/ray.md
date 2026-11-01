@@ -1025,6 +1025,22 @@ static inline var SHADER_LOC_BONE_MATRICES:Int
 - `SHADER_LOC_VERTEX_BONEWEIGHTS`: Shader location: vertex attribute: boneWeights.
 - `SHADER_LOC_BONE_MATRICES`: Shader location: array of matrices uniform: boneMatrices.
 
+```haxe
+static inline var SHADER_LOC_VERTEX_INSTANCETRANSFORM:Int
+static inline var MATERIAL_MAP_DIFFUSE:Int
+static inline var MATERIAL_MAP_SPECULAR:Int
+static inline var SHADER_LOC_MAP_DIFFUSE:Int
+static inline var SHADER_LOC_MAP_SPECULAR:Int
+static inline var MAX_MATERIAL_MAPS:Int
+```
+
+- `SHADER_LOC_VERTEX_INSTANCETRANSFORM`: Shader location: vertex attribute: instanceTransform, raylib 6.2's, the attribute a shader reads an instance's transform from.
+- `MATERIAL_MAP_DIFFUSE`: The diffuse map, the same as `MATERIAL_MAP_ALBEDO`.
+- `MATERIAL_MAP_SPECULAR`: The specular map, the same as `MATERIAL_MAP_METALNESS`.
+- `SHADER_LOC_MAP_DIFFUSE`: The diffuse texture's location, the same as `SHADER_LOC_MAP_ALBEDO`.
+- `SHADER_LOC_MAP_SPECULAR`: The specular texture's location, the same as `SHADER_LOC_MAP_METALNESS`.
+- `MAX_MATERIAL_MAPS`: The number of a material's maps.
+
 ### Shader uniform data type (ShaderUniformDataType)
 
 ```haxe
@@ -1172,20 +1188,6 @@ static final RAYWHITE(default, null):Color
 - `BLANK`: Blank (Transparent).
 - `MAGENTA`: Magenta.
 - `RAYWHITE`: My own White (raylib logo).
-
-```haxe
-static inline var MATERIAL_MAP_DIFFUSE:Int
-static inline var MATERIAL_MAP_SPECULAR:Int
-static inline var SHADER_LOC_MAP_DIFFUSE:Int
-static inline var SHADER_LOC_MAP_SPECULAR:Int
-static inline var MAX_MATERIAL_MAPS:Int
-```
-
-- `MATERIAL_MAP_DIFFUSE`: The diffuse map, the same as `MATERIAL_MAP_ALBEDO`.
-- `MATERIAL_MAP_SPECULAR`: The specular map, the same as `MATERIAL_MAP_METALNESS`.
-- `SHADER_LOC_MAP_DIFFUSE`: The diffuse texture's location, the same as `SHADER_LOC_MAP_ALBEDO`.
-- `SHADER_LOC_MAP_SPECULAR`: The specular texture's location, the same as `SHADER_LOC_MAP_METALNESS`.
-- `MAX_MATERIAL_MAPS`: The number of a material's maps.
 
 ### Pixel formats (PixelFormat)
 
@@ -1507,6 +1509,8 @@ static function GetDirectoryPath(filePath:String):String
 static function GetPrevDirectoryPath(dirPath:String):String
 static function IsFileNameValid(fileName:String):Bool
 static function MakeDirectory(dirPath:String):Int
+static function IsFileHidden(filePath:String):Bool
+static function IsPathAbsolute(path:String):Bool
 static function UnloadDirectoryFiles(files:FilePathList):Void
 static function IsFileDropped():Bool
 static function LoadDroppedFiles():FilePathList
@@ -1518,6 +1522,7 @@ static function DecodeDataBase64(data:haxe.io.Bytes, outputSize:Array<Int>):haxe
 static function ComputeCRC32(data:haxe.io.Bytes, dataSize:Int):Int
 static function ComputeMD5(data:haxe.io.Bytes, dataSize:Int):Array<Int>
 static function ComputeSHA1(data:haxe.io.Bytes, dataSize:Int):Array<Int>
+static function ComputeSHA256(data:haxe.io.Bytes, dataSize:Int):Array<Int>
 static function SetLoadFileDataCallback(callback:Null<(fileName:String) -> Null<haxe.io.Bytes>>):Void
 static function SetSaveFileDataCallback(callback:Null<(fileName:String, data:haxe.io.Bytes, dataSize:Int) -> Bool>):Void
 static function SetLoadFileTextCallback(callback:Null<(fileName:String) -> Null<String>>):Void
@@ -1609,7 +1614,7 @@ static function EndScissorMode():Void
 - `GetMonitorRefreshRate`: Returns how many times a second a monitor shows a new picture.
   - `monitor`: The monitor.
   - returns: The refresh rate in hertz, or 0 in a page, which can't tell.
-- `OpenURL`: Opens a URL in the system's browser; in a page, a new tab, at the next press when there is no fresh one. As raylib's, a URL with `'` is refused as possibly malicious; helix-ray also opens only http, https and mailto URLs.
+- `OpenURL`: Opens a URL in the system's browser; in a page, a new tab, at the next press when there is no fresh one. As raylib 6.2's, a URL with `'` or `"` is refused as possibly malicious. helix-ray opens only http, https and mailto URLs, where raylib 5.5 opens any and 6.2 only http and https.
   - `url`: The URL.
 - `SetClipboardText`: Puts text on the system's clipboard. A page writes it only while it has the keyboard, soon after a press; a refusal is logged.
   - `text`: The text.
@@ -1626,6 +1631,8 @@ static function EndScissorMode():Void
   - returns: Its left and top edges, in pixels.
 - `GetWindowScaleDPI`: Returns how many of the display's pixels a pixel drawn takes, across and down: 2 on most phones and high-density displays.
   - returns: The scale.
+
+  It is the display's scale whatever the flags, as raylib 5.5's desktop build has it and 6.2's web build; raylib 6.2's desktop build gives 1 unless `FLAG_WINDOW_HIGHDPI` is set and the window isn't fullscreen, and 5.5's web build always 1.
 - `GetMonitorCount`: Returns the number of monitors. A page sees one.
   - returns: The count, at least 1.
 - `GetCurrentMonitor`: Returns the monitor holding the window.
@@ -1729,7 +1736,7 @@ static function EndScissorMode():Void
   - returns: The y.
 - `GetMousePosition`: Returns the mouse's position, in the screen's pixels, `SetMouseOffset`'s offset added and `SetMouseScale`'s scale applied; the first finger's while one is down.
   - returns: The position.
-- `SetMousePosition`: Moves the mouse to a place on the screen. In a page the cursor can't be moved, so the position reads there until the mouse moves.
+- `SetMousePosition`: Moves the mouse to a place on the screen. In a page the cursor can't be moved, so the position reads there until the mouse moves. As raylib 6.2's, where the mouse was isn't forgotten: `GetMouseDelta` this frame includes the move.
   - `x`: The place across, in the screen's pixels.
   - `y`: The place down.
 - `SetMouseOffset`: Sets what `GetMousePosition` adds to the mouse's position, before its scale.
@@ -1811,7 +1818,7 @@ static function EndScissorMode():Void
   - `gamepad`: The gamepad, 0 to 3.
   - `button`: The button (`GAMEPAD_BUTTON_*`).
   - returns: True while it is up.
-- `GetGamepadButtonPressed`: Returns the last button held, as raylib polls them: gamepads 0 to 3, each's buttons in the browser's order in a page (the second triggers among them, the middle button never), else GLFW's (the middle button among them, the second triggers never).
+- `GetGamepadButtonPressed`: Returns the last button held, as raylib polls them: gamepads 0 to 3, each's buttons in the browser's order in a page (the second triggers among them, the middle button never), else GLFW's (the middle button among them), then, as raylib 6.2's, the left second trigger and the right while its axis (`GetGamepadAxisMovement`) is over 0.1.
   - returns: The button (`GAMEPAD_BUTTON_*`), or `GAMEPAD_BUTTON_UNKNOWN` when none is held.
 - `GetGamepadAxisCount`: Returns the number of axes a gamepad has.
   - `gamepad`: The gamepad, 0 to 3.
@@ -1845,10 +1852,12 @@ static function EndScissorMode():Void
 - `ChangeDirectory`: Changes the working directory, natively the process's, as raylib's: `TakeScreenshot` writes to it from then on. helix-ray's loads are unchanged, reading the program's files wherever it is. A page has no working directory of its own: there, only "." or the page's directory (`GetApplicationDirectory`) succeeds, changing nothing. A failure is logged, as raylib's is.
   - `dir`: The directory.
   - returns: True when the working directory is it now.
-- `IsFileExtension`: Returns whether a file name ends in one of some extensions, ignoring the case of A to Z.
+- `IsFileExtension`: Returns whether a file name ends in one of some extensions, ignoring the case of A to Z, as raylib 6.2's.
   - `fileName`: The file name.
-  - `ext`: The extensions with their dots, `;` between them: ".png;.jpg".
+  - `ext`: The extensions, `;` between them: ".png;.jpg".
   - returns: True when its extension, from its last dot, is one of them.
+
+  Up to 15 characters of the file's extension are compared, and the list's first 32 extensions. An extension in the list without its dot matches as well ("png" as ".png").
 - `GetFileExtension`: Returns a file name's extension, from its last dot: "file.tar.gz" gives ".gz".
   - `fileName`: The file name, or a path.
   - returns: The extension with its dot, or null when there is no dot or the name starts with its only one.
@@ -1861,15 +1870,23 @@ static function EndScissorMode():Void
 - `GetDirectoryPath`: Returns the directory of a path: up to its last `/` or `\`. A relative path's starts "./", as raylib's does: "dir/file.png" gives "./dir", "file.png" gives "./", and "/file.png" gives "/".
   - `filePath`: The path.
   - returns: The directory, without a slash at its end.
-- `GetPrevDirectoryPath`: Returns the directory a path is in: up to its last `/` or `\`, keeping a root's ("/", "C:\").
+- `GetPrevDirectoryPath`: Returns the directory a path is in, as raylib 6.2's: up to its last `/` or `\` but one at its end, keeping a root's ("/", "C:\").
   - `dirPath`: The path.
-  - returns: The directory above it; the path itself when it has 3 characters or fewer, and "" when a longer one has no slash.
+  - returns: The directory above it; "" when there is none.
+
+  "/a/b/" gives "/a", "/a" gives "/" and "abc" gives "". raylib 6.2 also takes a path naming a file to its directory's parent; a file can't be looked for without waiting here, so every path is taken as a directory's.
 - `IsFileNameValid`: Returns whether a file name could name a file on any system: none of `< > : " / \ | ? *` or a control character, and not only dots.
   - `fileName`: The file name, without a directory.
   - returns: True when it could; true for null or "", as raylib's is.
-- `MakeDirectory`: Makes a directory. There is nothing to make: a directory is there once a file is written under it, so this succeeds.
+- `MakeDirectory`: Makes a directory. There is nothing to make: a directory is there once a file is written under it, so this succeeds for any path that could name one.
   - `dirPath`: The directory.
-  - returns: 0, success; 1 for null or "", as raylib's.
+  - returns: 0, success; 1 for null or "", as raylib 5.5's; -1, as raylib 6.2's for a directory not made, for a path that can't name one.
+- `IsFileHidden`: Returns whether a path names a hidden file or directory, as raylib 6.2's does outside Windows: its last part starts with a dot and isn't "." or "..".
+  - `filePath`: The path.
+  - returns: True when it is hidden.
+- `IsPathAbsolute`: Returns whether a path is absolute, as raylib 6.2's: natively on Windows one starting with `\\` or a drive letter, a colon and a slash ("C:\", "D:/"); elsewhere, and in a page, one starting with `/`.
+  - `path`: The path.
+  - returns: True when it is absolute; false for null or "".
 - `UnloadDirectoryFiles`: Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave. There is nothing to free here, and the list is unchanged.
   - `files`: The listing.
 - `IsFileDropped`: Returns whether files were dropped on the window, natively from the desktop and in a page on the canvas. It stays true until `UnloadDroppedFiles`, and a new drop's files replace the last one's, as raylib's do. A dropped file counts once its bytes are read, natively in the frame it is dropped, in a page a frame or so after.
@@ -1893,9 +1910,9 @@ static function EndScissorMode():Void
   - `dataSize`: How many of them.
   - `outputSize`: Its first element is set to the text's length.
   - returns: The text.
-- `DecodeDataBase64`: Returns the bytes of Base64 text. It reads 4 characters at a time up to a zero byte or the end, and a character that isn't Base64's reads as 0, as raylib's does.
+- `DecodeDataBase64`: Returns the bytes of Base64 text, as raylib 6.2 decodes it: the text runs to a zero byte or the end, and is read 4 characters at a time, a character that isn't Base64's reading as 0. Text whose length isn't a multiple of 4 warns and is read up to its last 4 characters.
   - `data`: The text's bytes.
-  - `outputSize`: Its first element is set to how many bytes it gives.
+  - `outputSize`: Its first element is set to how many bytes it gives: 3 for every 4 characters, less one for each `=` at the end.
   - returns: The bytes.
 - `ComputeCRC32`: Returns the CRC-32 of some bytes, as zlib and PNG compute it.
   - `data`: The bytes.
@@ -1905,10 +1922,14 @@ static function EndScissorMode():Void
   - `data`: The bytes.
   - `dataSize`: How many of them.
   - returns: Its 4 words, as raylib gives them: each read from 4 bytes of the hash, the first the lowest, and one above 0x7fffffff is negative.
-- `ComputeSHA1`: Returns the SHA-1 hash of some bytes, as raylib 5.5 computes it: its padding holds only the lowest byte of the length in bits, so from 32 bytes on it differs from standard SHA-1.
+- `ComputeSHA1`: Returns the SHA-1 hash of some bytes, as raylib 6.2 computes it: standard SHA-1 (raylib 5.5's padding held only the lowest byte of the length in bits, so from 32 bytes on it wasn't).
   - `data`: The bytes.
   - `dataSize`: How many of them.
   - returns: Its 5 words, the first the hash's first 4 bytes, the highest first; one above 0x7fffffff is negative.
+- `ComputeSHA256`: Returns the SHA-256 hash of some bytes, raylib 6.2's.
+  - `data`: The bytes.
+  - `dataSize`: How many of them.
+  - returns: Its 8 words, the first the hash's first 4 bytes, the highest first; one above 0x7fffffff is negative.
 - `SetLoadFileDataCallback`: Reads files through the program from now on: every load raylib makes of a file (textures, models, sounds, music, data) asks it first, and a file it doesn't have (null) is read as it would be. In a page, a texture's or model's images still decode only asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load those it gives.
   - `callback`: Returns a file's bytes, or null; null for none.
 - `SetSaveFileDataCallback`: Writes files through the program from now on (`SaveFileData`).
@@ -1927,12 +1948,12 @@ static function EndScissorMode():Void
   - `list`: The list, made by `LoadAutomationEventList(null)` or `LoadAutomationEventListAsync`.
 - `SetAutomationEventBaseFrame`: Sets the frame the next event recorded is stamped with; each frame after counts up from it. Until set, it is the frames since `InitWindow`.
   - `frame`: The frame.
-- `StartAutomationEventRecording`: Starts recording into the list `SetAutomationEventList` set: as each frame ends, before the next frame's input is read, every key, mouse button and finger held, the mouse's moves and the wheel's, gamepads' buttons held and axes off rest, and the gesture, as raylib records them, each logged. A full list (16384 events) records no more.
+- `StartAutomationEventRecording`: Starts recording into the list `SetAutomationEventList` set: as each frame ends, before the next frame's input is read, every key, mouse button and finger held, the mouse's moves, the wheel's and, as raylib 6.2's, the fingers', gamepads' buttons held and axes off rest, and the gesture, as raylib records them, each logged. A full list (16384 events) records no more.
 - `StopAutomationEventRecording`: Stops recording.
 - `PlayAutomationEvent`: Plays an event, as raylib's: input becomes the input the functions read now, as it would from the devices, and stays until they change it or another event does; a window event or an action is done (`WINDOW_CLOSE` makes `WindowShouldClose` true). Nothing is played while recording. As raylib's, the program plays each event in its frame, after the frame's input is read: a key held is an event every frame, so a frame's events are played together.
   - `event`: The event.
-- `TakeScreenshot`: Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImage` writes it by the name's extension (".png", ".qoi" or ".raw"): in a page it is downloaded, as raylib's web build does; natively it is written to the working directory, as raylib writes it there, under the name's file name. raylib's is taken from the frame drawn last, before it is shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as raylib's is.
-  - `fileName`: The file name; a directory before it is dropped, and a name with `'` is refused, as raylib's is.
+- `TakeScreenshot`: Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImage` writes it by the name's extension (".png", ".qoi" or ".raw"): in a page it is downloaded under the name's file name, as raylib's web build does; natively it is written where the name says, as raylib 6.2 writes it: a relative name under the working directory, its directories kept, and an absolute one where it is. A directory that isn't there isn't made, and the screenshot isn't saved. raylib's is taken from the frame drawn last, before it is shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as raylib's is.
+  - `fileName`: The file's name, or its path; a name with `'` is refused, as raylib's is.
 - `TraceLog`: Writes a message to the log, when its level is at least `SetTraceLogLevel`'s. raylib formats its arguments as printf does; here the text is written as it is (Haxe's string interpolation builds it).
   - `logLevel`: The level (`LOG_*`).
   - `text`: The message.
@@ -1994,7 +2015,7 @@ static function EndScissorMode():Void
   - `width`: The view's width.
   - `height`: The view's height.
   - returns: The position in the view; infinite or NaN for a point level with a perspective camera's position, as raylib's is.
-- `GetMouseDelta`: Returns how far the mouse moved since the last frame, in the screen's pixels.
+- `GetMouseDelta`: Returns how far the mouse moved since the last frame, in the screen's pixels times the mouse's scale (`SetMouseScale`), as raylib 6.2's. A `SetMousePosition` this frame is part of it.
   - returns: The movement.
 - `IsShaderValid`: Returns whether a shader was made.
   - `shader`: The shader.
@@ -3618,16 +3639,16 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `centerPos`: Its center.
   - `radius`: Its radius.
   - `color`: The color.
-- `DrawSphereEx`: Draws a filled sphere, as raylib does: rings + 1 bands of slices, from the top.
+- `DrawSphereEx`: Draws a filled sphere: rings bands of slices, from the top, each vertex with its normal.
   - `centerPos`: Its center.
   - `radius`: Its radius.
-  - `rings`: Rings top to bottom.
+  - `rings`: Bands top to bottom.
   - `slices`: Slices around.
   - `color`: The color.
-- `DrawSphereWires`: Draws a sphere's wires, as raylib does: rings + 2 bands of slices, each slice's three lines.
+- `DrawSphereWires`: Draws a sphere's wires: rings bands of slices, from the top, each face's longitude, latitude and diagonal lines.
   - `centerPos`: Its center.
   - `radius`: Its radius.
-  - `rings`: Rings top to bottom.
+  - `rings`: Bands top to bottom.
   - `slices`: Slices around.
   - `color`: The color.
 - `DrawCylinder`: Draws a filled cylinder standing on the XZ plane, or a cone when its top's radius is 0.
@@ -3663,14 +3684,14 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `endPos`: The other's.
   - `radius`: Its radius.
   - `slices`: Slices around, at least 3.
-  - `rings`: Rings in each half sphere.
+  - `rings`: Rings in each half sphere, at least 1.
   - `color`: The color.
 - `DrawCapsuleWires`: Draws a capsule's wires: a cylinder with half a sphere on each end, their centers the two points.
   - `startPos`: One end's center.
   - `endPos`: The other's.
   - `radius`: Its radius.
   - `slices`: Slices around, at least 3.
-  - `rings`: Rings in each half sphere.
+  - `rings`: Rings in each half sphere, at least 1.
   - `color`: The color.
 - `DrawPlane`: Draws a flat rectangle on the XZ plane, facing up.
   - `centerPos`: Its center.
@@ -3747,6 +3768,8 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
 - `UploadMesh`: Sends a mesh's vertices to the GPU, so it can be drawn. A mesh not sent goes when it is first drawn, as `LoadModelAsync`'s and the `GenMesh*` functions' do.
   - `mesh`: The mesh.
   - `isDynamic`: Whether it will change (raylib names it `dynamic`, a Haxe keyword); any mesh here can be changed by `UpdateMeshBuffer`, so it is ignored.
+
+  An attribute the mesh has no array for reads a default in a shader: texture coordinates 0, 0, normals 0, 0, 1, colors white, tangents 1, 0, 0, 1, second texture coordinates, bone ids and bone weights 0.
 - `UpdateMeshBuffer`: Changes part of one of a mesh's buffers on the GPU, as raylib's: the mesh's own arrays stay as they were. Draws asked for before it keep what was there; those after see the change.
   - `mesh`: The mesh, uploaded (`UploadMesh`, or drawn once); one that isn't changes nothing.
   - `index`: The buffer: 0 positions, 1 texture coordinates, 2 normals, 3 colors, 4 tangents, 5 second texture coordinates, 6 indices. One the mesh has no array for changes nothing.
@@ -3810,9 +3833,11 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `cubicmap`: The image.
   - `cubeSize`: A cube's size: x along the image's width, z along its height, y the walls' height.
   - returns: The mesh.
-- `GenMeshTangents`: Computes a mesh's tangents from its positions, texture coordinates and normals, as raylib's: each triangle's direction of u, made square to each vertex's normal, w the side its direction of v is on. It reads the vertices three at a time, as raylib's does, so it is meant for a mesh without indices.
-  - `mesh`: The mesh; one without positions or texture coordinates is left as it is.
-- `ExportMesh`: Writes a mesh as an OBJ file through `SaveFileText`, as raylib's does: its positions to 2 places, its texture coordinates and normals to 3, and a face a triangle.
+- `GenMeshTangents`: Computes a mesh's tangents from its positions, texture coordinates and normals: each triangle's direction of u, by its indices when it has them, summed at each of its vertices, made square to the vertex's normal and of length 1, w the side the summed direction of v is on.
+  - `mesh`: The mesh; one without positions, texture coordinates or normals is unchanged.
+
+  A vertex whose tangent comes out of length near 0, or along its normal, takes one square to the normal: x when the normal is mostly z, else (-y, x, 0) of the normal, w 1.
+- `ExportMesh`: Writes a mesh as an OBJ file through `SaveFileText`, as raylib's does: its positions and texture coordinates to 6 places, its normals to 4, and a face a triangle.
   - `mesh`: The mesh, with positions, texture coordinates and normals.
   - `fileName`: The file; only ".obj" is written.
   - returns: True when it was written.
@@ -4152,6 +4177,15 @@ static function IsPathFileAsync(path:String, answer:Bool -> Void):Void
 static function DirectoryExistsAsync(dirPath:String, answer:Bool -> Void):Void
 static function LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList -> Void):Void
 static function LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList -> Void):Void
+static function IsPathDirectoryAsync(path:String, answer:Bool -> Void):Void
+static function GetDirectoryFileCountAsync(dirPath:String, answer:Int -> Void):Void
+static function GetDirectoryFileCountExAsync(basePath:String, filter:String, scanSubdirs:Bool, answer:Int -> Void):Void
+static function FileRenameAsync(fileName:String, fileRename:String, answer:Int -> Void):Void
+static function FileRemoveAsync(fileName:String, answer:Int -> Void):Void
+static function FileCopyAsync(srcPath:String, dstPath:String, answer:Int -> Void):Void
+static function FileMoveAsync(srcPath:String, dstPath:String, answer:Int -> Void):Void
+static function FileTextReplaceAsync(fileName:String, search:String, replacement:String, answer:Int -> Void):Void
+static function FileTextFindIndexAsync(fileName:String, search:String, answer:Int -> Void):Void
 static function LoadFontAsync(fileName:String, loaded:Font -> Void, ?failed:String -> Void):Void
 static function LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
 static function LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
@@ -4228,6 +4262,41 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `filter`: The extensions kept, such as ".png;.jpg;DIR", or null for every file.
   - `scanSubdirs`: Whether the subdirectories' files are listed too.
   - `loaded`: Receives the list, its `capacity` 8192; a directory that can't be listed adds nothing, with a warning.
+- `IsPathDirectoryAsync`: Answers whether a path is a directory, as raylib 6.2's `IsPathDirectory`: helix-ray's own, in place of it. As raylib's, a path that isn't a file (`IsPathFileAsync`) is a directory, so one with nothing there is too. The answer comes at a later frame, never during the call.
+  - `path`: The path.
+  - `answer`: Receives true unless it is a file.
+- `GetDirectoryFileCountAsync`: Counts a directory's files and subdirectories, as raylib 6.2's `GetDirectoryFileCount`: helix-ray's own, in place of it. `GetDirectoryFileCountExAsync` with the filter "*.*" and no subdirectories' files. The answer comes at a later frame, never during the call.
+  - `dirPath`: The directory.
+  - `answer`: Receives the count; 0, with a warning, when the directory can't be listed.
+- `GetDirectoryFileCountExAsync`: Counts a directory's files, those with some extensions, and with `scanSubdirs` its subdirectories' too, as raylib 6.2's `GetDirectoryFileCountEx`: helix-ray's own, in place of it. The directories are `LoadDirectoryFilesAsync`'s. 6.2's filter: one holding "*.*" counts every file and directory, "FILES*" every file, "DIRS*" every directory, and otherwise a file counts by `IsFileExtension`; a null filter counts every file. The answer comes at a later frame, never during the call.
+  - `basePath`: The directory.
+  - `filter`: The extensions counted, such as ".png;.jpg", or a tag above, or null.
+  - `scanSubdirs`: Whether the subdirectories' files are counted too.
+  - `answer`: Receives the count; a directory that can't be listed adds nothing, with a warning.
+- `FileRenameAsync`: Renames a file, as raylib 6.2's `FileRename`: helix-ray's own, in place of it. A file `SaveFileText` or `SaveFileData` wrote is renamed; the program's own files can't be changed. The answer comes at a later frame, never during the call.
+  - `fileName`: The file.
+  - `fileRename`: Its new name, its path.
+  - `answer`: Receives 0 when it was renamed, else -1.
+- `FileRemoveAsync`: Removes a file, as raylib 6.2's `FileRemove`: helix-ray's own, in place of it. A file `SaveFileText` or `SaveFileData` wrote is removed; the program's own files can't be. The answer comes at a later frame, never during the call.
+  - `fileName`: The file.
+  - `answer`: Receives 0 when it was removed, else -1.
+- `FileCopyAsync`: Copies a file, as raylib 6.2's `FileCopy`: helix-ray's own, in place of it. The file is read as `LoadFileDataAsync` reads it and its copy written by `SaveFileData`, or, for one `SaveFileText` wrote, read and written as text; a directory needs no making here. As raylib 6.2's, a file not read, or one of no bytes, makes no copy, yet answers 0 as the directory is there. The answer comes at a later frame, never during the call.
+  - `srcPath`: The file.
+  - `dstPath`: The copy.
+  - `answer`: Receives 0 when the copy's directory is there (always, here), else -1.
+- `FileMoveAsync`: Moves a file, as raylib 6.2's `FileMove`: helix-ray's own, in place of it. The file is copied (`FileCopyAsync`), then, when the copy is there and of its size, removed (`FileRemoveAsync`), so one of the program's own files is copied and stays. The answer comes at a later frame, never during the call.
+  - `srcPath`: The file.
+  - `dstPath`: Where it goes.
+  - `answer`: Receives 0 when it was moved, else -1; a file not there, or not removed, is logged.
+- `FileTextReplaceAsync`: Replaces every piece of a text file that matches, as raylib 6.2's `FileTextReplace`: helix-ray's own, in place of it. The file is read as `LoadFileTextAsync` reads it and written back by `SaveFileText`. The answer comes at a later frame, never during the call.
+  - `fileName`: The file.
+  - `search`: The text replaced; nothing is replaced when it is null or "".
+  - `replacement`: The text put in its place; null for none.
+  - `answer`: Receives 0 when the file was written, else -1.
+- `FileTextFindIndexAsync`: Finds text in a text file, as raylib 6.2's `FileTextFindIndex`: helix-ray's own, in place of it. The file is read as `LoadFileTextAsync` reads it. The answer comes at a later frame, never during the call.
+  - `fileName`: The file.
+  - `search`: The text looked for.
+  - `answer`: Receives where it first starts, in UTF-8 bytes from the file's start, or -1 when it isn't there or there is no file.
 - `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto one texture, as raylib's; an image (PNG, JPEG, BMP, TGA or QOI) its glyphs on a `MAGENTA` key from the space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the font.
@@ -4317,13 +4386,13 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
 
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
-`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `MemAlloc`, `MemRealloc`, `MemFree`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `FileRename`, `FileRemove`, `FileCopy`, `FileMove`, `FileTextReplace`, `FileTextFindIndex`, `DirectoryExists`, `GetFileLength`, `IsPathDirectory`, `GetDirectoryFileCount`, `GetDirectoryFileCountEx`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `MemAlloc`, `MemRealloc`, `MemFree`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ### Not in helix-ray yet
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`.
+`GetKeyName`, `ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`.
 
 ## Raymath
 
@@ -4370,6 +4439,7 @@ static function Vector2SubtractValue(v:Vector2, sub:Float):Vector2
 static function Vector2Length(v:Vector2):Float
 static function Vector2LengthSqr(v:Vector2):Float
 static function Vector2DotProduct(v1:Vector2, v2:Vector2):Float
+static function Vector2CrossProduct(v1:Vector2, v2:Vector2):Float
 static function Vector2Distance(v1:Vector2, v2:Vector2):Float
 static function Vector2DistanceSqr(v1:Vector2, v2:Vector2):Float
 static function Vector2Angle(v1:Vector2, v2:Vector2):Float
@@ -4459,6 +4529,7 @@ static function MatrixInvert(mat:Matrix):Matrix
 static function MatrixIdentity():Matrix
 static function MatrixAdd(left:Matrix, right:Matrix):Matrix
 static function MatrixSubtract(left:Matrix, right:Matrix):Matrix
+static function MatrixMultiplyValue(left:Matrix, value:Float):Matrix
 static function MatrixMultiply(left:Matrix, right:Matrix):Matrix
 static function MatrixTranslate(x:Float, y:Float, z:Float):Matrix
 static function MatrixRotate(axis:Vector3, angle:Float):Matrix
@@ -4497,6 +4568,7 @@ static function QuaternionFromEuler(pitch:Float, yaw:Float, roll:Float):Quaterni
 static function QuaternionToEuler(q:Quaternion):Vector3
 static function QuaternionTransform(q:Quaternion, mat:Matrix):Quaternion
 static function QuaternionEquals(p:Quaternion, q:Quaternion):Int
+static function MatrixCompose(translation:Vector3, rotation:Quaternion, scale:Vector3):Matrix
 static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quaternion, scale:Vector3):Void
 ```
 
@@ -4558,6 +4630,10 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `v`: The vector.
   - returns: The length squared.
 - `Vector2DotProduct`: Returns the dot product.
+  - `v1`: One.
+  - `v2`: The other.
+  - returns: The product.
+- `Vector2CrossProduct`: Returns the cross product of two 2D vectors, raylib 6.2's: the z of their 3D cross product, positive when the second is counterclockwise of the first (with y up).
   - `v1`: One.
   - `v2`: The other.
   - returns: The product.
@@ -4906,6 +4982,10 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `left`: The first.
   - `right`: The one taken from it.
   - returns: The difference.
+- `MatrixMultiplyValue`: Returns a matrix with each of its values multiplied by a number, raylib 6.2's.
+  - `left`: The matrix.
+  - `value`: The number.
+  - returns: The matrix multiplied.
 - `MatrixMultiply`: Returns two matrices multiplied: left, then right.
   - `left`: The first.
   - `right`: The second.
@@ -5030,10 +5110,10 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `inTangent2`: The tangent arriving at it.
   - `t`: 0 for the start, 1 for the end.
   - returns: The quaternion.
-- `QuaternionFromVector3ToVector3`: Returns the rotation turning one direction to another.
-  - `from`: The direction turned from, of length 1.
-  - `to`: The direction turned to, of length 1.
-  - returns: The quaternion.
+- `QuaternionFromVector3ToVector3`: Returns the rotation turning one direction to another, as raylib 6.2's: the directions may be of any length, and opposite ones give half a turn about a direction square to the first.
+  - `from`: The direction turned from.
+  - `to`: The direction turned to.
+  - returns: The quaternion, of length 1; all 0 when either direction is.
 - `QuaternionFromMatrix`: Returns a rotation matrix's rotation as a quaternion.
   - `mat`: The matrix.
   - returns: The quaternion.
@@ -5064,6 +5144,11 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `p`: One.
   - `q`: The other.
   - returns: 1 if they are, 0 if not.
+- `MatrixCompose`: Returns a transform matrix from a translation, a rotation and a scale, raylib 6.2's: the axes scaled, then turned, then moved.
+  - `translation`: The translation.
+  - `rotation`: The rotation, a quaternion of length 1.
+  - `scale`: The scale along each axis.
+  - returns: The matrix.
 - `MatrixDecompose`: Splits a transform matrix into its translation, rotation and scale, as raylib 6.2's (5.5's took the scale from the rows, wrong for a turned matrix scaled unevenly): the columns, made orthonormal one after another (the shear between them dropped), are the rotation, their lengths the scale, all three negated when the matrix mirrors.
   - `mat`: The matrix.
   - `translation`: Set to its translation.

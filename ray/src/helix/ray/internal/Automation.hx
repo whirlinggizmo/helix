@@ -102,12 +102,15 @@ class Automation {
 	public var previousWheelX = 0.;
 	public var previousWheelY = 0.;
 
-	/** Each finger down by its place, 0 for the first down, as the last frame had it, and where each is, in the screen's pixels. */
+	/** Each finger down by its place, 0 for the first down, as the last frame had it, and where each is, in the screen's pixels, now and
+		the last frame. */
 	public final touches = flags(TOUCHES);
 
 	public final previousTouches = flags(TOUCHES);
 	public final touchX = [for (_ in 0...TOUCHES) 0.];
 	public final touchY = [for (_ in 0...TOUCHES) 0.];
+	public final previousTouchX = [for (_ in 0...TOUCHES) 0.];
+	public final previousTouchY = [for (_ in 0...TOUCHES) 0.];
 
 	/** Each gamepad connected, its buttons down (`GAMEPAD_BUTTON_*`, gamepad times 32 plus the button) as now and the last frame, and its
 		axes (gamepad times 8 plus the axis). */
@@ -148,8 +151,11 @@ class Automation {
 		mouseX = previousMouseX = seenMouseX = pointer.x;
 		mouseY = previousMouseY = seenMouseY = pointer.y;
 		readTouches();
-		for (i in 0...TOUCHES)
+		for (i in 0...TOUCHES) {
 			previousTouches[i] = touches[i];
+			previousTouchX[i] = touchX[i];
+			previousTouchY[i] = touchY[i];
+		}
 		readPads();
 		for (i in 0...padButtons.length)
 			previousPadButtons[i] = padButtons[i];
@@ -187,8 +193,11 @@ class Automation {
 		var wheel = RCore.realWheel();
 		wheelX = wheel.x;
 		wheelY = wheel.y;
-		for (i in 0...TOUCHES)
+		for (i in 0...TOUCHES) {
 			previousTouches[i] = touches[i];
+			previousTouchX[i] = touchX[i];
+			previousTouchY[i] = touchY[i];
+		}
 		readTouches();
 		for (i in 0...padButtons.length)
 			previousPadButtons[i] = padButtons[i];
@@ -265,6 +274,10 @@ class Automation {
 			if (previousTouches[id] && !touches[id] && !add(l, 14, "INPUT_TOUCH_UP", id, 0))
 				return;
 			if (touches[id] && !add(l, 15, "INPUT_TOUCH_DOWN", id, 0))
+				return;
+			// raylib 6.2's: a finger's move, wherever it is.
+			if ((Std.int(touchX[id]) != Std.int(previousTouchX[id]) || Std.int(touchY[id]) != Std.int(previousTouchY[id]))
+				&& !add(l, 16, "INPUT_TOUCH_POSITION", id, Std.int(touchX[id]), Std.int(touchY[id])))
 				return;
 		}
 		for (pad in 0...PADS) {

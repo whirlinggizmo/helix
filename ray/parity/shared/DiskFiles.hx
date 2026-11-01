@@ -1,7 +1,7 @@
 import haxe.io.Bytes;
 import helix.platform.IFileSystem;
 
-// The harness's files, read from the working directory, each answer at the next poll.
+// The harness's files, read and listed from the working directory, each answer at the next poll.
 class DiskFiles implements IFileSystem {
 	final waiting:Array<Void->Void> = [];
 
@@ -55,8 +55,32 @@ class DiskFiles implements IFileSystem {
 			b == null ? missing() : found(b.length, 0);
 		});
 
+	// A directory's names, a subdirectory's with "/" after it, sorted; null when there is no directory.
+	static function names(directory:String):Null<Array<String>> {
+		var path = directory == "" ? "." : directory;
+		#if js
+		var fs:Dynamic = js.Syntax.code("require('fs')");
+		if (!fs.existsSync(path) || !fs.statSync(path).isDirectory())
+			return null;
+		var entries:Array<Dynamic> = fs.readdirSync(path, {withFileTypes: true});
+		var out = [for (e in entries) e.isDirectory() ? e.name + "/" : e.name];
+		#else
+		if (!sys.FileSystem.exists(path) || !sys.FileSystem.isDirectory(path))
+			return null;
+		var out = [
+			for (n in sys.FileSystem.readDirectory(path))
+				sys.FileSystem.isDirectory(path + "/" + n) ? n + "/" : n
+		];
+		#end
+		out.sort(Reflect.compare);
+		return out;
+	}
+
 	public function list(directory:String, listed:Array<String>->Void, missing:Void->Void, failed:String->Void):Void
-		waiting.push(() -> missing());
+		waiting.push(() -> {
+			var found = names(directory);
+			found == null ? missing() : listed(found);
+		});
 
 	public function locate(path:String, located:(location:String, release:Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void
 		waiting.push(() -> missing());

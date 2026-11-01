@@ -486,6 +486,224 @@ class RAsync {
 		scan(basePath, () -> loaded(list));
 	}
 
+	/** Answers whether a path is a directory, as raylib 6.2's `IsPathDirectory`: helix-ray's own, in place of it. As raylib's, a path
+		that isn't a file (`IsPathFileAsync`) is a directory, so one with nothing there is too. The answer comes at a later frame, never
+		during the call.
+
+		@param path  The path.
+		@param answer  Receives true unless it is a file. */
+	static function IsPathDirectoryAsync(path:String, answer:Bool->Void):Void {
+		IsPathFileAsync(path, isFile -> answer(!isFile));
+	}
+
+	/** Counts a directory's files and subdirectories, as raylib 6.2's `GetDirectoryFileCount`: helix-ray's own, in place of it.
+		`GetDirectoryFileCountExAsync` with the filter "*.*" and no subdirectories' files. The answer comes at a later frame, never during
+		the call.
+
+		@param dirPath  The directory.
+		@param answer  Receives the count; 0, with a warning, when the directory can't be listed. */
+	static function GetDirectoryFileCountAsync(dirPath:String, answer:Int->Void):Void {
+		GetDirectoryFileCountExAsync(dirPath, "*.*", false, answer);
+	}
+
+	/** Counts a directory's files, those with some extensions, and with `scanSubdirs` its subdirectories' too, as raylib 6.2's
+		`GetDirectoryFileCountEx`: helix-ray's own, in place of it. The directories are `LoadDirectoryFilesAsync`'s. 6.2's filter: one
+		holding "*.*" counts every file and directory, "FILES*" every file, "DIRS*" every directory, and otherwise a file counts by
+		`IsFileExtension`; a null filter counts every file. The answer comes at a later frame, never during the call.
+
+		@param basePath  The directory.
+		@param filter  The extensions counted, such as ".png;.jpg", or a tag above, or null.
+		@param scanSubdirs  Whether the subdirectories' files are counted too.
+		@param answer  Receives the count; a directory that can't be listed adds nothing, with a warning. */
+	static function GetDirectoryFileCountExAsync(basePath:String, filter:String, scanSubdirs:Bool, answer:Int->Void):Void {
+		var all = filter != null && filter.indexOf("*.*") >= 0;
+		var files = filter == null || all || filter.indexOf("FILES*") >= 0;
+		var directories = filter != null && (all || filter.indexOf("DIRS*") >= 0);
+		var count = 0;
+		function scan(dirPath:String, done:Void->Void):Void {
+			listOf(directoryOf(dirPath), names -> {
+				if (names == null) {
+					Runtime.log(LOG_WARNING, 'FILEIO: Directory cannot be opened ($dirPath)');
+					done();
+					return;
+				}
+				var i = 0;
+				function next():Void {
+					while (i < names.length) {
+						var name = names[i++];
+						if (!StringTools.endsWith(name, "/")) {
+							if (files || IsFileExtension(joined(dirPath, name), filter))
+								count++;
+							continue;
+						}
+						if (directories)
+							count++;
+						if (scanSubdirs) {
+							scan(joined(dirPath, name.substr(0, name.length - 1)), next);
+							return;
+						}
+					}
+					done();
+				}
+				next();
+			});
+		}
+		scan(basePath, () -> answer(count));
+	}
+
+	/** Renames a file, as raylib 6.2's `FileRename`: helix-ray's own, in place of it. A file `SaveFileText` or `SaveFileData` wrote is
+		renamed; the program's own files can't be changed. The answer comes at a later frame, never during the call.
+
+		@param fileName  The file.
+		@param fileRename  Its new name, its path.
+		@param answer  Receives 0 when it was renamed, else -1. */
+	static function FileRenameAsync(fileName:String, fileRename:String, answer:Int->Void):Void {
+		var from = normalize(fileName), to = normalize(fileRename);
+		Runtime.withSaves(saves -> {
+			if (!isSaved(saves, from)) {
+				Runtime.later(() -> answer(-1));
+				return;
+			}
+			if (from != to) {
+				for (prefix in [SAVED, SAVED_DATA, SAVED_TIME]) {
+					saves.deleteKey(prefix + to);
+					if (saves.hasKey(prefix + from)) {
+						if (prefix == SAVED_TIME)
+							saves.setFloat(prefix + to, saves.getFloat(prefix + from, 0));
+						else
+							saves.setString(prefix + to, saves.getString(prefix + from, ""));
+						saves.deleteKey(prefix + from);
+					}
+				}
+			}
+			Runtime.later(() -> answer(0));
+		});
+	}
+
+	/** Removes a file, as raylib 6.2's `FileRemove`: helix-ray's own, in place of it. A file `SaveFileText` or `SaveFileData` wrote is
+		removed; the program's own files can't be. The answer comes at a later frame, never during the call.
+
+		@param fileName  The file.
+		@param answer  Receives 0 when it was removed, else -1. */
+	static function FileRemoveAsync(fileName:String, answer:Int->Void):Void {
+		var path = normalize(fileName);
+		Runtime.withSaves(saves -> {
+			var saved = isSaved(saves, path);
+			if (saved)
+				for (prefix in [SAVED, SAVED_DATA, SAVED_TIME])
+					saves.deleteKey(prefix + path);
+			Runtime.later(() -> answer(saved ? 0 : -1));
+		});
+	}
+
+	/** Copies a file, as raylib 6.2's `FileCopy`: helix-ray's own, in place of it. The file is read as `LoadFileDataAsync` reads it and
+		its copy written by `SaveFileData`, or, for one `SaveFileText` wrote, read and written as text; a directory needs no making here.
+		As raylib 6.2's, a file not read, or one of no bytes, makes no copy, yet answers 0 as the directory is there. The answer comes at a
+		later frame, never during the call.
+
+		@param srcPath  The file.
+		@param dstPath  The copy.
+		@param answer  Receives 0 when the copy's directory is there (always, here), else -1. */
+	static function FileCopyAsync(srcPath:String, dstPath:String, answer:Int->Void):Void {
+		var result = MakeDirectory(GetDirectoryPath(dstPath)),
+			path = normalize(srcPath);
+		function copy(bytes:haxe.io.Bytes):Void {
+			if (result == 0 && bytes.length > 0)
+				SaveFileData(dstPath, bytes, bytes.length);
+			answer(result);
+		}
+		// A file SaveFileText wrote is copied as text, so LoadFileTextAsync reads the copy as it reads the file.
+		Runtime.withSaves(saves -> {
+			if (saves.hasKey(SAVED + path) && !saves.hasKey(SAVED_DATA + path)) {
+				var text = saves.getString(SAVED + path, "");
+				Runtime.later(() -> {
+					if (result == 0 && text.length > 0)
+						SaveFileText(dstPath, text);
+					answer(result);
+				});
+			} else
+				LoadFileDataAsync(srcPath, copy, _ -> answer(result));
+		});
+	}
+
+	/** Moves a file, as raylib 6.2's `FileMove`: helix-ray's own, in place of it. The file is copied (`FileCopyAsync`), then, when the
+		copy is there and of its size, removed (`FileRemoveAsync`), so one of the program's own files is copied and stays. The answer comes
+		at a later frame, never during the call.
+
+		@param srcPath  The file.
+		@param dstPath  Where it goes.
+		@param answer  Receives 0 when it was moved, else -1; a file not there, or not removed, is logged. */
+	static function FileMoveAsync(srcPath:String, dstPath:String, answer:Int->Void):Void {
+		FileExistsAsync(srcPath, exists -> {
+			if (!exists) {
+				Runtime.log(LOG_WARNING, 'FILEIO: [$srcPath] Source file does not exist');
+				answer(-1);
+				return;
+			}
+			FileCopyAsync(srcPath, dstPath, result -> {
+				if (result != 0) {
+					answer(result);
+					return;
+				}
+				FileExistsAsync(dstPath, copied -> GetFileLengthAsync(srcPath, srcLength -> GetFileLengthAsync(dstPath, dstLength -> {
+					if (!copied || srcLength != dstLength) {
+						Runtime.log(LOG_WARNING, 'FILEIO: [$srcPath] Failed to copy file to [$dstPath]');
+						answer(result);
+						return;
+					}
+					FileRemoveAsync(srcPath, removed -> {
+						if (removed != 0)
+							Runtime.log(LOG_WARNING, 'FILEIO: [$srcPath] Failed to remove source file after copy');
+						answer(removed);
+					});
+				})));
+			});
+		});
+	}
+
+	/** Replaces every piece of a text file that matches, as raylib 6.2's `FileTextReplace`: helix-ray's own, in place of it. The file is
+		read as `LoadFileTextAsync` reads it and written back by `SaveFileText`. The answer comes at a later frame, never during the call.
+
+		@param fileName  The file.
+		@param search  The text replaced; nothing is replaced when it is null or "".
+		@param replacement  The text put in its place; null for none.
+		@param answer  Receives 0 when the file was written, else -1. */
+	static function FileTextReplaceAsync(fileName:String, search:String, replacement:String, answer:Int->Void):Void {
+		FileExistsAsync(fileName, exists -> {
+			if (!exists) {
+				answer(-1);
+				return;
+			}
+			LoadFileTextAsync(fileName, text -> {
+				if (search == null || search == "") {
+					answer(-1);
+					return;
+				}
+				answer(SaveFileText(fileName, text.split(search).join(replacement == null ? "" : replacement)) ? 0 : -1);
+			}, _ -> answer(-1));
+		});
+	}
+
+	/** Finds text in a text file, as raylib 6.2's `FileTextFindIndex`: helix-ray's own, in place of it. The file is read as
+		`LoadFileTextAsync` reads it. The answer comes at a later frame, never during the call.
+
+		@param fileName  The file.
+		@param search  The text looked for.
+		@param answer  Receives where it first starts, in UTF-8 bytes from the file's start, or -1 when it isn't there or there is no
+			file. */
+	static function FileTextFindIndexAsync(fileName:String, search:String, answer:Int->Void):Void {
+		FileExistsAsync(fileName, exists -> {
+			if (!exists) {
+				answer(-1);
+				return;
+			}
+			LoadFileTextAsync(fileName, text -> {
+				var at = text.indexOf(search);
+				answer(at < 0 ? -1 : haxe.io.Bytes.ofString(text.substr(0, at)).length);
+			}, _ -> answer(-1));
+		});
+	}
+
 	/** Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType
 		file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto
 		one texture, as raylib's; an image (PNG, JPEG, BMP, TGA or QOI) its glyphs on a `MAGENTA` key from the space on, as
@@ -752,6 +970,11 @@ class RAsync {
 		while (base.length > 1 && StringTools.endsWith(base, "/"))
 			base = base.substr(0, base.length - 1);
 		return base == "" ? name : '$base/$name';
+	}
+
+	// Whether SaveFileText or SaveFileData wrote a file.
+	static function isSaved(saves:helix.services.saves.Saves, path:String):Bool {
+		return saves.hasKey(SAVED + path) || saves.hasKey(SAVED_DATA + path);
 	}
 
 	// Whether a path is the dropped files' or under it.

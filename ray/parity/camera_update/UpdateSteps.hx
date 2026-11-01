@@ -5,7 +5,7 @@ import helix.ray.internal.Automation;
 import helix.ray.internal.Runtime;
 
 // helix-ray's UpdateCamera in each mode over scripted input frames (frames.txt, compiled in), each frame 1/60 s, its input played as
-// automation state: the camera after each, as ref.c prints raylib's rcamera for the same frames.
+// automation state: the camera after each, as ref.c prints raylib's rcamera for the same frames. A Z-up start is camera_update_62's.
 @:access(helix.ray.internal.Automation)
 @:access(helix.services.time.Time)
 class UpdateSteps {
@@ -26,8 +26,7 @@ class UpdateSteps {
 		];
 		var starts = [
 			[[0., 2., 4.], [0., 2., 0.], [0., 1., 0.]],
-			[[3., -1., 2.], [-1., .5, -4.], [.2, .9, .1]],
-			[[0., 0., 5.], [0., 0., 0.], [0., 0., 1.]]
+			[[3., -1., 2.], [-1., .5, -4.], [.2, .9, .1]]
 		];
 		var s = 0;
 		for (start in starts) {

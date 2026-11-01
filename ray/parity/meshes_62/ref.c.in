@@ -1,0 +1,31 @@
+// raylib 6.2's GenMeshTangents and ExportMesh, printed by parity.h; cases.py's list is put into it.
+#include "parity.h"
+#include <string.h>
+
+// What ExportMesh writes, through SaveFileText: each line led by the case's name, an empty line as "-".
+static const char *exported = "export";
+static bool exportText(const char *fileName, const char *text) {
+    for (const char *at = text; *at;) {
+        const char *end = strchr(at, '\n');
+        int n = end ? (int)(end - at) : (int)strlen(at);
+        if (n) printf("%s %.*s\n", exported, n, at);
+        else printf("%s -\n", exported);
+        at += n + (end ? 1 : 0);
+    }
+    return true;
+}
+
+int main(void) {
+    parity_open();
+    SetSaveFileTextCallback(exportText);
+    Image height = GenImageColor(5, 4, BLACK);
+    for (int y = 0; y < 4; y++)
+        for (int x = 0; x < 5; x++)
+            ImageDrawPixel(&height, x, y, (Color){ (x * 53 + y * 31) % 256, (x * 17 + y * 89) % 256, (x * 7 + y * 120) % 256, 255 });
+    Image cubic = GenImageColor(4, 3, BLACK);
+    int walls[12] = { 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 2, 1 };
+    for (int i = 0; i < 12; i++) ImageDrawPixel(&cubic, i % 4, i / 4, walls[i] == 1 ? WHITE : walls[i] == 2 ? RED : BLACK);
+    @CASES@
+    parity_close();
+    return 0;
+}

@@ -1,0 +1,13 @@
+// raylib 6.2's spheres, capsules and billboards (read back from rlgl's batch), printed by parity.h; cases.py's list is put into it.
+#include "parity.h"
+
+int main(void) {
+    parity_open();
+    Color c = { 200, 100, 50, 255 };
+    Vector3 p = { 1, 2, 3 };
+    Texture2D texture = LoadTextureFromImage(GenImageColor(32, 16, WHITE));
+    Camera camera = { { 3, 4, 10 }, { 0, 1, 0 }, { 0, 1, 0 }, 45, CAMERA_PERSPECTIVE };
+    @CASES@
+    parity_close();
+    return 0;
+}

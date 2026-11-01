@@ -11,16 +11,16 @@ import helix.ray.raylib.RModels;
 @:noCompletion
 class Models {
 	/** Each of raylib's vertex buffers, by its index: the size of an element and its default, for a mesh without the attribute. A default
-		is raylib's (normals 1, 1, 1; colors white; tangents, second texture coordinates, bone ids and bone weights 0). Index 6 is raylib's
-		indices, kept apart. */
+		is raylib 6.2's (normals 0, 0, 1; colors white; tangents 1, 0, 0, 1; second texture coordinates, bone ids and bone weights 0). Index
+		6 is raylib's indices, kept apart. */
 	static final SIZES = [3, 2, 3, 4, 4, 2, 0, 4, 4];
 
 	static final DEFAULTS:Array<Array<Float>> = [
 		[0, 0, 0],
 		[0, 0],
-		[1, 1, 1],
+		[0, 0, 1],
 		[1, 1, 1, 1],
-		[0, 0, 0, 0],
+		[1, 0, 0, 1],
 		[0, 0],
 		[],
 		[0, 0, 0, 0],

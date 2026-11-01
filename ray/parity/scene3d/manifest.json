@@ -1,6 +1,6 @@
 {
   "oracle": "5.5",
-  "covers": "the 3D shapes and billboards, the eleven generated meshes as textured models, a mesh with tangents drawn by a shader of its own (vertexTangent, vertexTexCoord2), a shader over the batch, drawn into a 640 x 360 frame",
+  "covers": "the 3D shapes, the eleven generated meshes as textured models, a shader over the batch (vertexTangent, vertexTexCoord2), drawn into a 640 x 360 frame; the spheres, capsules, billboards and a mesh given tangents are 6.2's (scene3d_62)",
   "kind": "pixels",
   "generated": true,
   "frames": 5,

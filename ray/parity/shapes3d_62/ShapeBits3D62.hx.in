@@ -1,0 +1,16 @@
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import helix.ray.Rlgl.*;
+import Parity.*;
+
+// helix-ray's spheres, capsules and billboards, raylib 6.2's (read back from its frame), printed by Parity as ref.c.in prints raylib's.
+class ShapeBits3D62 {
+	static function main() {
+		open();
+		var c = new Color(200, 100, 50, 255), p = V3(1, 2, 3);
+		var texture = LoadTextureFromImage(GenImageColor(32, 16, WHITE));
+		var camera = new Camera(V3(3, 4, 10), V3(0, 1, 0), V3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
+		@CASES@
+		save();
+	}
+}
