@@ -1,6 +1,6 @@
 {
   "oracle": "6.2",
-  "covers": "greenman.glb CPU-skinned (UpdateModelAnimation, the default shader), GPU-skinned (raylib 6.2's example skinning shader) and blended (UpdateModelAnimationEx), drawn into a 640 x 360 frame",
+  "covers": "greenman.glb CPU-skinned (UpdateModelAnimation, the default shader), GPU-skinned (raylib 6.2's example skinning shader) and blended (UpdateModelAnimationEx), on the CPU and on the GPU by that shader, drawn into a 640 x 360 frame",
   "kind": "pixels",
   "reference": "scene.c",
   "harness": [
@@ -13,7 +13,7 @@
   },
   "frames": 40,
   "backends": {
-    "gl": 5,
+    "gl": 8,
     "sdl_gpu": 600
   }
 }
