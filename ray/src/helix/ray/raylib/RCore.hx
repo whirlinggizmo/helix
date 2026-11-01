@@ -8,6 +8,7 @@ import helix.math.Quaternion3D;
 import helix.math.Trig;
 import helix.math.Vector3D;
 import helix.ray.internal.DefaultFont;
+import helix.ray.internal.DroppedFiles;
 import helix.ray.internal.Models;
 import helix.ray.internal.Runtime;
 import helix.ray.internal.Textures;
@@ -1591,7 +1592,7 @@ class RCore {
 
 		@return  True while dropped files are held. */
 	static function IsFileDropped():Bool {
-		return Runtime.dropped.length > 0;
+		return DroppedFiles.paths().length > 0;
 	}
 
 	/** Returns the paths of the files last dropped. Each is helix-ray's own, `helix-ray-dropped/<n>/<name>`, which every load reads, as
@@ -1600,7 +1601,7 @@ class RCore {
 		@return  The paths, `count` of them; `capacity` is 0, as raylib's. */
 	static function LoadDroppedFiles():FilePathList {
 		var list = new FilePathList();
-		list.paths = Runtime.dropped.copy();
+		list.paths = DroppedFiles.paths().copy();
 		list.count = list.paths.length;
 		return list;
 	}

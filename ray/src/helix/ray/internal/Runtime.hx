@@ -56,11 +56,16 @@ class Runtime {
 		raylib's disk, until the next drop's files replace them. */
 	public static var held:Array<String> = [];
 
-	/** The models, reading glTF files with what they name, made with the assets. */
+	/** The models, reading glTF files with what they name, made with the images (`imaging`). */
 	public static var models:Null<helix.services.models.Models> = null;
 
-	/** The images, decoding the program's image files and a model's. */
+	/** The images, decoding the program's image files and a model's, made when first needed (`imaging`). */
 	public static var decoding:Null<helix.services.images.Images> = null;
+
+	/** What reads a drop's files into memory: set by `DroppedFiles` when the program names a function that reads a drop
+		(`IsFileDropped`, `LoadDroppedFiles`, a dropped directory listed), so a program that never reads one never links what reads it.
+		While it is null a drop is ignored. It has no initial value, so the program's start never resets what `DroppedFiles` set. */
+	public static var dropping:Null<Int->Void>;
 
 	public static final polled:Array<IPollable> = [];
 
@@ -131,15 +136,14 @@ class Runtime {
 	/** Natively, where the program's files are, relative to the program's directory (`-D helix-ray-native-root`). */
 	public static var root = "../web";
 
-	/** Makes what loads the program's files, once: the assets over a page's server and its cache, or natively over the files' directory,
-		and the images decoding them. */
+	/** Makes what loads the program's files, once: the assets over a page's server and its cache, or natively over the files' directory.
+		What decodes images is `imaging`'s, so a program loading only sounds or text never links an image decoder. */
 	public static function loading():Void {
 		if (assets != null)
 			return;
 		#if js
 		var http = new helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter();
 		var cache = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory()});
-		var imageDecoder = new helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter();
 		polled.push(http);
 		var callback = new CallbackFiles();
 		polled.push(callback);
@@ -158,7 +162,6 @@ class Runtime {
 		var directory = haxe.io.Path.join([system.getProgramDirectory(), root]);
 		var cache = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory, readOnly: true});
 		shipped = cache;
-		var imageDecoder = new helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter();
 		var callback = new CallbackFiles();
 		polled.push(callback);
 		memory = new MemoryFiles();
@@ -166,6 +169,19 @@ class Runtime {
 		assets = new Assets({sources: [FileSystem(memory), FileSystem(callback), FileSystem(cache)]});
 		#end
 		polled.push(cache);
+	}
+
+	/** Makes what decodes the program's images and reads its models, once, over the assets (`loading`): the platform's image decoder,
+		the images over it and the models over them. */
+	public static function imaging():Void {
+		loading();
+		if (decoding != null)
+			return;
+		#if js
+		var imageDecoder = new helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter();
+		#else
+		var imageDecoder = new helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter();
+		#end
 		polled.push(imageDecoder);
 		decoding = new helix.services.images.Images(imageDecoder, assets);
 		polled.push(decoding);
@@ -181,6 +197,8 @@ class Runtime {
 		loading();
 		var lower = path.toLowerCase();
 		var image = lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".tga");
+		if (image)
+			imaging();
 		if (image ? images.exists(path) : files.exists(path)) {
 			later(() -> done(null));
 			return;
@@ -433,7 +451,7 @@ class Runtime {
 	/** Gets the fonts service, made when first asked for, over the font rasterizer, the assets and the images. */
 	public static function fonts():helix.services.fonts.Fonts {
 		if (fontsService == null) {
-			loading();
+			imaging();
 			fontsService = new helix.services.fonts.Fonts(rasterizer(), assets, decoding);
 		}
 		return fontsService;
@@ -613,7 +631,8 @@ class Runtime {
 				case MouseLeave:
 					cursorOnScreen = false;
 				case FilesDropped(count):
-					drop(count);
+					if (dropping != null)
+						dropping(count);
 				case _:
 			}
 		for (device in devices)
@@ -628,28 +647,6 @@ class Runtime {
 		if (exitKey != 0 && keyboardService.isKeyPressed(cast exitKey))
 			shouldClose = true;
 		#end
-	}
-
-	// Reads the files of a drop into memory in place of the last drop's, then lists their paths, as raylib's do.
-	static function drop(count:Int):Void {
-		loading();
-		var paths:Array<Null<String>> = [for (_ in 0...count) null], left = count;
-		function answered():Void {
-			if (--left > 0)
-				return;
-			for (path in held)
-				memory.remove(path);
-			held = [for (path in paths) if (path != null) path];
-			dropped = held.copy();
-		}
-		for (i in 0...count)
-			window.readDroppedFile(i, 1 << 30, (name, bytes) -> {
-				paths[i] = memory.addDropped(name, bytes);
-				answered();
-			}, error -> {
-				log(4, 'FILEIO: Failed to read a dropped file: $error');
-				answered();
-			});
 	}
 
 	static function pollAll():Void {

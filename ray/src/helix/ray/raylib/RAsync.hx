@@ -70,7 +70,7 @@ class RAsync {
 			Runtime.later(() -> loaded(RModels.loadModel(path)));
 			return;
 		}
-		Runtime.loading();
+		Runtime.imaging();
 		Runtime.models.loadGltf(path, read -> {
 			// raylib gives a mesh without joints whose node is a bone's child to that bone: the nodes are the file's, read again.
 			if (read.skeleton != null && read.skins.length > 0 && Lambda.exists(read.meshes, m -> m.jointIndices == null)) {
@@ -786,7 +786,7 @@ class RAsync {
 			return;
 		}
 		var data = dataSize < fileData.length ? fileData.sub(0, dataSize) : fileData;
-		Runtime.loading();
+		Runtime.imaging();
 		Runtime.later(() -> decoded("LoadImageFromMemoryAsync", fileType == null ? "" : fileType.toLowerCase(), data, loaded, failed));
 	}
 
@@ -859,7 +859,7 @@ class RAsync {
 		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
 		@param failed  Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged. */
 	static function GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void):Void {
-		Runtime.loading();
+		Runtime.imaging();
 		Runtime.clipboard()
 			.requestImage(png -> Runtime.later(() -> decoded("GetClipboardImageAsync", ".png", png, loaded, failed)),
 				error -> Runtime.later(() -> refuse("GetClipboardImageAsync", error, failed)));
