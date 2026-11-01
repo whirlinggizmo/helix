@@ -797,13 +797,19 @@ private class ServerSource {
 
 	static function hashes(value:Dynamic):Map<String, String> {
 		var out = new Map<String, String>();
-		if (value == null || Type.typeof(value) != TObject)
+		if (!isRecord(value))
 			return out;
 		var entries:DynamicAccess<Dynamic> = value;
 		for (name => hash in entries)
 			if (name.indexOf("/") < 0 && Std.isOfType(hash, String) && ~/^sha256:[0-9a-f]{64}$/.match(hash))
 				out.set(name, hash);
 		return out;
+	}
+
+	// Whether a parsed JSON value is an object: not null, a string, a bool, a number or an array. Without Type.typeof, which links the
+	// run-time type inspection every program with the assets would carry.
+	static function isRecord(value:Dynamic):Bool {
+		return value != null && !Std.isOfType(value, String) && !Std.isOfType(value, Bool) && !Std.isOfType(value, Float) && !Std.isOfType(value, Array);
 	}
 }
 

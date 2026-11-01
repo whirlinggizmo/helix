@@ -107,6 +107,18 @@ class SavesTests {
 		bad.load(() -> {}, message -> why = message);
 		files.poll();
 		check(why != null && !bad.loaded, "a file that isn't saves fails");
+		for (json in ["[1, 2]", "[]", '"text"', "3", "1.5", "true", "null"]) {
+			files.files.set("shape.json", Bytes.ofString(json));
+			var other = new Saves(files, "shape.json"), refused = null;
+			other.load(() -> {}, message -> refused = message);
+			files.poll();
+			check(refused != null && !other.loaded, 'JSON that isn\'t an object fails: $json');
+		}
+		files.files.set("empty.json", Bytes.ofString("{}"));
+		var empty = new Saves(files, "empty.json");
+		empty.load(() -> {});
+		files.poll();
+		check(empty.loaded, "an empty object is saves");
 
 		files.failReads = true;
 		var unread = new Saves(files, "other.json");

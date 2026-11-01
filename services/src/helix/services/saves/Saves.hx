@@ -98,7 +98,7 @@ class Saves implements IPollable {
 		}
 		fileSystem.read(name, MAX_BYTES, bytes -> {
 			var parsed:Dynamic = try Json.parse(bytes.toString()) catch (_:Dynamic) null;
-			if (parsed == null || Type.typeof(parsed) != TObject)
+			if (!isRecord(parsed))
 				finish('$name isn\'t saves');
 			else {
 				values = parsed;
@@ -349,6 +349,12 @@ class Saves implements IPollable {
 			failed(message);
 		else
 			Log.warn(message, "saves");
+	}
+
+	// Whether a parsed JSON value is an object: not null, a string, a bool, a number or an array. Without Type.typeof, which links the
+	// run-time type inspection every program with saves would carry.
+	static function isRecord(value:Dynamic):Bool {
+		return value != null && !Std.isOfType(value, String) && !Std.isOfType(value, Bool) && !Std.isOfType(value, Float) && !Std.isOfType(value, Array);
 	}
 }
 
