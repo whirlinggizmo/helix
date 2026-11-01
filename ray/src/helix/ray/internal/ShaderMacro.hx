@@ -13,7 +13,8 @@ using StringTools;
 /** Compiles raylib's shaders as the program builds, through helix-platform's shader pipeline, so they run on every backend.
 
 	A raylib shader is GLSL 330 (or 100, for the web) with raylib's names: the attributes `vertexPosition`, `vertexTexCoord`, `vertexNormal`,
-	`vertexColor`, `vertexTangent` and `vertexTexCoord2`, loose uniforms such as `mvp` and `colDiffuse`, and the textures `texture0` to
+	`vertexColor`, `vertexTangent`, `vertexTexCoord2`, and for skinning `vertexBoneIds` (raylib 5.5's name; `vertexBoneIndices`, 6.2's)
+	and `vertexBoneWeights`, loose uniforms such as `mvp` and `colDiffuse`, and the textures `texture0` to
 	`texture2`. Each stage is turned into GLSL 450: the attributes and the values between the stages get locations; each stage's uniforms
 	become one block of its own (an integer or a boolean held as a float, read back through a `#define`); the textures get bindings; the
 	vertex stage scales its `gl_Position.y` by block 0, which the platform turns over in a pass into a render target (`ClipFlip.ClipScale`). */
@@ -25,7 +26,10 @@ class ShaderMacro {
 		"vertexNormal",
 		"vertexColor",
 		"vertexTangent",
-		"vertexTexCoord2"
+		"vertexTexCoord2",
+		"vertexBoneIds",
+		"vertexBoneIndices",
+		"vertexBoneWeights"
 	];
 
 	/** raylib's default vertex stage, as its rlgl writes it. */
@@ -137,7 +141,8 @@ void main() {
 
 	// A stage's declarations, taken out of its text, and what remains.
 	static function parse(text:String, vertex:Bool, name:String, pos:Position):{decls:Array<Decl>, body:String, defines:String} {
-		// Comments out first, so a declaration in one isn't read.
+		// Windows' line ends as \n, as raylib's own shaders have them; then comments out, so a declaration in one isn't read.
+		text = StringTools.replace(text, "\r\n", "\n");
 		text = ~/\/\*[\s\S]*?\*\//g.replace(text, "");
 		text = ~/\/\/[^\n]*/g.replace(text, "");
 		text = ~/^[ \t]*#version[^\n]*/m.replace(text, "");

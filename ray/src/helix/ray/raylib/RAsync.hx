@@ -5,6 +5,7 @@ import helix.ray.*;
 import helix.ray.Raylib.*;
 import helix.math.Matrix3D;
 import helix.ray.internal.DefaultFont;
+import helix.ray.internal.Animations;
 import helix.ray.internal.Models;
 import helix.ray.internal.Runtime;
 import helix.ray.internal.Textures;
@@ -57,9 +58,39 @@ class RAsync {
 		}
 		Runtime.loading();
 		Runtime.models.load(path, read -> {
+			// raylib gives a mesh without joints whose node is a bone's child to that bone: the nodes are the file's, read again.
+			if (read.skeleton != null && read.skins.length > 0 && Lambda.exists(read.meshes, m -> m.joints == null)) {
+				Animations.read(path, file -> {
+					Models.keep(read, defaultShader(), Animations.attached(file));
+					loaded(RModels.loadModel(path));
+				}, error -> refuse("LoadModelAsync", error, failed));
+				return;
+			}
 			Models.keep(read, defaultShader());
 			loaded(RModels.loadModel(path));
 		}, error -> refuse("LoadModelAsync", error, failed));
+	}
+
+	/** Loads a glTF or GLB file's animations, answering when they are read: helix-ray's own, in place of raylib's
+		`LoadModelAnimations`. They are read as raylib 6.2 reads them, of the file's first skin: each sampled 60 times a second, with
+		(int)(duration * 60) + 1 frames, each frame's pose its bones' transforms in the model. A file without skins gives none.
+
+		@param fileName  The file, as the program names it.
+		@param loaded  Receives the animations, as many as the file has; their count is its length.
+		@param failed  Optional. Receives why they couldn't be loaded; when omitted, it is logged. */
+	static function LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void):Void {
+		var path = normalize(fileName), lower = path.toLowerCase();
+		if (!(StringTools.endsWith(lower, ".glb") || StringTools.endsWith(lower, ".gltf"))) {
+			Runtime.later(() -> refuse("LoadModelAnimationsAsync", '$path: only glTF and GLB are read here', failed));
+			return;
+		}
+		Animations.read(path, file -> {
+			var animations = try Animations.fromGltf(file, path) catch (e:Dynamic) {
+				refuse("LoadModelAnimationsAsync", '$path: $e', failed);
+				return;
+			}
+			loaded(animations);
+		}, error -> refuse("LoadModelAnimationsAsync", error, failed));
 	}
 
 	/** Loads a sound file and decodes it, answering when it is ready to play at once: helix-ray's own, in place of raylib's `LoadSound`.

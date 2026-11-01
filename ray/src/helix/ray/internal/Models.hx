@@ -4,18 +4,31 @@ import helix.math.Matrix3D;
 import haxe.io.Bytes;
 import helix.ray.*;
 import helix.services.models.Model3D;
+import helix.ray.raylib.RMath;
+import helix.ray.raylib.RModels;
 
 /** Makes raylib's meshes and models: a mesh's GPU buffers, and a model from what the models service read of a glTF file. */
 @:noCompletion
 class Models {
 	/** Each of raylib's vertex buffers, by its index: the size of an element and its default, for a mesh without the attribute. A default
-		is raylib's (normals 1, 1, 1; colors white; tangents and second texture coordinates 0). */
-	static final SIZES = [3, 2, 3, 4, 4, 2];
+		is raylib's (normals 1, 1, 1; colors white; tangents, second texture coordinates, bone ids and bone weights 0). Index 6 is raylib's
+		indices, kept apart. */
+	static final SIZES = [3, 2, 3, 4, 4, 2, 0, 4, 4];
 
-	static final DEFAULTS:Array<Array<Float>> = [[0, 0, 0], [0, 0], [1, 1, 1], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0]];
+	static final DEFAULTS:Array<Array<Float>> = [
+		[0, 0, 0],
+		[0, 0],
+		[1, 1, 1],
+		[1, 1, 1, 1],
+		[0, 0, 0, 0],
+		[0, 0],
+		[],
+		[0, 0, 0, 0],
+		[0, 0, 0, 0]
+	];
 
 	/** Sends a mesh's vertices to the GPU: its positions, texture coordinates, normals and colors, those it lacks as raylib's defaults, and
-		its indices. Its tangents and second texture coordinates go when a shader first reads them (`buffer`).
+		its indices. Its tangents, second texture coordinates, bone ids and bone weights go when a shader first reads them (`buffer`).
 
 		@param mesh  The mesh. */
 	public static function upload(mesh:Mesh):Void {
@@ -23,7 +36,7 @@ class Models {
 			return;
 		var g = Runtime.graphics;
 		mesh.gpu.buffers = [
-			for (i in 0...6)
+			for (i in 0...9)
 				i < 4 ? g.createStaticBuffer(bytesOf(mesh, i), mesh.vertexCount * SIZES[i] * 4, false) : 0
 		];
 		if (mesh.indices != null && mesh.indices.length > 0) {
@@ -35,13 +48,41 @@ class Models {
 	/** Returns one of an uploaded mesh's vertex buffers, making it first when it isn't yet.
 
 		@param mesh  The mesh, uploaded.
-		@param index  raylib's buffer index, 0 to 5.
+		@param index  raylib's buffer index, 0 to 5, 7 or 8.
 		@return  The buffer. */
 	public static function buffer(mesh:Mesh, index:Int):Int {
 		var buffers = mesh.gpu.buffers;
 		if (buffers[index] == 0)
 			buffers[index] = Runtime.graphics.createStaticBuffer(bytesOf(mesh, index), mesh.vertexCount * SIZES[index] * 4, false);
 		return buffers[index];
+	}
+
+	/** Returns an uploaded mesh's buffer of several attributes interleaved, a vertex's values one attribute after another, for a program
+		reading more attributes than the platform binds buffers: made when first asked for, and again once one of them has changed.
+
+		@param mesh  The mesh, uploaded.
+		@param indices  raylib's buffer indices of the attributes, in their order in a vertex.
+		@return  The buffer. */
+	public static function interleaved(mesh:Mesh, indices:Array<Int>):Int {
+		var gpu = mesh.gpu, key = indices.join(",");
+		var made = gpu.interleaved.get(key);
+		if (made != null && made.version == gpu.version)
+			return made.buffer;
+		if (made != null)
+			retire(gpu, made.buffer);
+		var sources = [for (i in indices) bytesOf(mesh, i)];
+		var stride = 0;
+		for (i in indices)
+			stride += SIZES[i];
+		var bytes = Bytes.alloc(mesh.vertexCount * stride * 4), at = 0;
+		for (v in 0...mesh.vertexCount)
+			for (k => i in indices) {
+				bytes.blit(at, sources[k], v * SIZES[i] * 4, SIZES[i] * 4);
+				at += SIZES[i] * 4;
+			}
+		var buffer = Runtime.graphics.createStaticBuffer(bytes, bytes.length, false);
+		gpu.interleaved.set(key, {buffer: buffer, version: gpu.version});
+		return buffer;
 	}
 
 	// A buffer's bytes as the GPU takes them: the bytes UpdateMeshBuffer last left, or the mesh's numbers as 32-bit floats (colors 0 to 1),
@@ -62,7 +103,9 @@ class Models {
 			case 2: mesh.normals;
 			case 3: mesh.colors == null ? null : [for (c in mesh.colors) c / 255];
 			case 4: mesh.tangents;
-			case _: mesh.texcoords2;
+			case 5: mesh.texcoords2;
+			case 7: mesh.boneIds == null ? null : [for (b in mesh.boneIds) (b : Float)];
+			case _: mesh.boneWeights;
 		}
 		var size = SIZES[index],
 			fallback = DEFAULTS[index],
@@ -102,19 +145,74 @@ class Models {
 				bytes.setFloat(at, index == 3 ? value / 255 : value);
 		}
 		mesh.gpu.contents[index] = bytes;
+		mesh.gpu.version++;
 		var g = Runtime.graphics,
 			old = index == 6 ? mesh.gpu.indexBuffer : buffers[index];
 		var made = g.createStaticBuffer(bytes, bytes.length, index == 6);
 		if (index == 6) {
 			mesh.gpu.indexBuffer = made;
 			// The edges are the old indices'; made again from the mesh's when next drawn in wire mode.
-			if (mesh.gpu.edgeBuffer != 0)
-				Runtime.frame.retire(mesh.gpu.edgeBuffer);
+			retire(mesh.gpu, mesh.gpu.edgeBuffer);
 			mesh.gpu.edgeBuffer = 0;
 		} else
 			buffers[index] = made;
-		if (old != 0)
-			Runtime.frame.retire(old);
+		retire(mesh.gpu, old);
+	}
+
+	// Frees a buffer a holder no longer draws with once the frame is drawn, unless it is borrowed from the holder it was made from.
+	static function retire(gpu:MeshGpu, buffer:Int):Void {
+		if (buffer != 0 && !gpu.borrowed.remove(buffer))
+			Runtime.frame.retire(buffer);
+	}
+
+	/** Puts an animation's positions and normals in a mesh's GPU buffers, as raylib's `UpdateModelAnimation` does: each buffer made
+		again, so the draws asked for before keep the old one, freed when the frame is drawn. A mesh sharing its buffers with other loads
+		of its file takes its own first (`own`), so the others don't move.
+
+		@param mesh  The mesh.
+		@param positions  The positions, x, y and z a vertex.
+		@param normals  The normals, or null to leave them. */
+	public static function animate(mesh:Mesh, positions:Array<Float>, normals:Null<Array<Float>>):Void {
+		upload(mesh);
+		if (mesh.gpu.buffers == null)
+			return;
+		own(mesh);
+		replace(mesh, 0, positions);
+		if (normals != null)
+			replace(mesh, 2, normals);
+	}
+
+	// A buffer made again of numbers, as 32-bit floats, the old one retired.
+	static function replace(mesh:Mesh, index:Int, values:Array<Float>):Void {
+		var n = mesh.vertexCount * SIZES[index];
+		var bytes = haxe.io.Bytes.alloc(n * 4);
+		for (i in 0...n)
+			bytes.setFloat(i * 4, i < values.length ? values[i] : 0);
+		mesh.gpu.contents[index] = bytes;
+		mesh.gpu.version++;
+		var old = mesh.gpu.buffers[index];
+		mesh.gpu.buffers[index] = Runtime.graphics.createStaticBuffer(bytes, bytes.length, false);
+		retire(mesh.gpu, old);
+	}
+
+	/** Gives a mesh copied from its file's first load (`load`) a holder of GPU buffers of its own, borrowing the shared one's until it
+		replaces them; nothing for a mesh with its own already.
+
+		@param mesh  The mesh, uploaded. */
+	public static function own(mesh:Mesh):Void {
+		var shared = mesh.gpu;
+		if (!shared.shared || shared.buffers == null)
+			return;
+		var own = new MeshGpu();
+		own.buffers = shared.buffers.copy();
+		own.indexBuffer = shared.indexBuffer;
+		own.edgeBuffer = shared.edgeBuffer;
+		for (i => bytes in shared.contents)
+			own.contents[i] = bytes;
+		for (b in own.buffers.concat([own.indexBuffer, own.edgeBuffer]))
+			if (b != 0)
+				own.borrowed.push(b);
+		mesh.gpu = own;
 	}
 
 	/** Returns an uploaded mesh's edges, as an index buffer of two indices an edge, three a triangle, made when first asked for.
@@ -142,14 +240,19 @@ class Models {
 
 		@param mesh  The mesh. */
 	public static function unload(mesh:Mesh):Void {
-		if (mesh.gpu.buffers != null)
-			for (b in mesh.gpu.buffers)
-				if (b != 0)
-					Runtime.graphics.disposeBuffer(b);
-		if (mesh.gpu.indexBuffer != 0)
-			Runtime.graphics.disposeBuffer(mesh.gpu.indexBuffer);
-		if (mesh.gpu.edgeBuffer != 0)
-			Runtime.graphics.disposeBuffer(mesh.gpu.edgeBuffer);
+		var gpu = mesh.gpu;
+		function dispose(b:Int):Void
+			if (b != 0 && gpu.borrowed.indexOf(b) < 0)
+				Runtime.graphics.disposeBuffer(b);
+		if (gpu.buffers != null)
+			for (b in gpu.buffers)
+				dispose(b);
+		dispose(gpu.indexBuffer);
+		dispose(gpu.edgeBuffer);
+		for (made in gpu.interleaved)
+			dispose(made.buffer);
+		gpu.interleaved.clear();
+		gpu.borrowed.resize(0);
 		mesh.gpu.buffers = null;
 		mesh.gpu.indexBuffer = 0;
 		mesh.gpu.edgeBuffer = 0;
@@ -169,12 +272,14 @@ class Models {
 	}
 
 	/** Makes a raylib model of a model the models service read: material 0 raylib's default, then the file's, as raylib numbers them,
-		each image a texture kept by its file's path, or the model's and the image's index for one the model holds.
+		each image a texture kept by its file's path, or the model's and the image's index for one the model holds; and its bones, as
+		raylib 6.2 reads them (`skeleton`).
 
 		@param read  The model.
 		@param shader  The default shader.
+		@param attached  Each mesh's bone when its node is a child of one and it has no joints of its own, or -1; null for none.
 		@return  The model. */
-	static function fromModel3D(read:Model3D, shader:Shader):Model {
+	static function fromModel3D(read:Model3D, shader:Shader, attached:Null<Array<Int>>):Model {
 		var textures = new Map<Int, Texture2D>();
 		function texture(index:Int):Texture2D {
 			if (textures.exists(index))
@@ -211,16 +316,105 @@ class Models {
 			meshMaterial.push(read.meshMaterials[i] + 1);
 		}
 		// Its meshes go to the GPU when first drawn.
-		return new Model(meshes, materials, meshMaterial);
+		var model = new Model(meshes, materials, meshMaterial);
+		skeleton(model, read, attached);
+		return model;
+	}
+
+	// raylib 6.2's LoadGLTF's skin part: the first skin's joints as the bones, each parent the nearest joint above it; the bind pose each
+	// inverse bind matrix inverted, or the joint's world transform at rest when the file gives none (the models service gives identities
+	// then, so a skin whose matrices are all exactly identity is taken as one without); each mesh's joints and weights as its bone ids
+	// and weights (a joint above 255 cut to a byte, with raylib's warning), a mesh without joints on a bone's child all that bone's.
+	static function skeleton(model:Model, read:Model3D, attached:Null<Array<Int>>):Void {
+		var bones = read.skeleton;
+		if (bones == null || read.skins.length == 0)
+			return;
+		var skin = read.skins[0], joints = skin.bones;
+		model.boneCount = joints.length;
+		model.bones = [
+			for (b in joints) {
+				var parent = -1, above = bones.bones[b].parent;
+				while (above >= 0 && parent < 0) {
+					parent = joints.indexOf(above);
+					above = bones.bones[above].parent;
+				}
+				new BoneInfo(boneName(bones.bones[b].name), parent);
+			}
+		];
+		var identity = new Matrix3D(), given = false;
+		for (m in skin.inverseBinds)
+			for (k in 0...16)
+				if (m.values[k] != identity.values[k])
+					given = true;
+		// raylib reads the matrices when there are as many as joints.
+		if (skin.inverseBinds.length < joints.length)
+			given = false;
+		var world = given ? null : bones.computeWorld(bones.computeRestPose());
+		model.bindPose = [
+			for (i => b in joints) {
+				var bind = world == null ? RMath.MatrixInvert(RModels.toMatrix(skin.inverseBinds[i])) : RModels.toMatrix(world[b]);
+				var pose = new Transform();
+				RMath.MatrixDecompose(bind, pose.translation, pose.rotation, pose.scale);
+				pose;
+			}
+		];
+		if (read.skins.length > 1)
+			Runtime.log(4, 'MODEL: [${read.path}] can only load one skin (armature) per model, but gltf skins_count == ${read.skins.length}');
+		var warned = false;
+		for (i => mesh in model.meshes) {
+			var m = read.meshes[i];
+			if (m.joints != null && m.weights != null) {
+				mesh.boneIds = [
+					for (j in m.joints) {
+						if (j > 255 && !warned) {
+							Runtime.log(4, 'MODEL: [${read.path}] Joint attribute data format (u16) overflow');
+							warned = true;
+						}
+						j & 255;
+					}
+				];
+				mesh.boneWeights = m.weights;
+			} else if (attached != null && attached[i] >= 0) {
+				mesh.boneIds = [for (k in 0...mesh.vertexCount * 4) k % 4 == 0 ? attached[i] : 0];
+				mesh.boneWeights = [for (k in 0...mesh.vertexCount * 4) k % 4 == 0 ? 1 : 0];
+			}
+		}
+		animated(model);
+	}
+
+	// A model's pose and bone matrices, at rest: raylib 6.2's currentPose zeros, its matrices identities, every mesh's boneMatrices
+	// those (raylib 5.5 gives each mesh of a skinned model its own).
+	static function animated(model:Model):Void {
+		if (model.boneCount == 0)
+			return;
+		model.pose = [for (_ in 0...model.boneCount) new Transform()];
+		model.boneMatrices = [
+			for (_ in 0...model.boneCount)
+				new Matrix(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+		];
+		for (mesh in model.meshes) {
+			mesh.boneCount = model.boneCount;
+			mesh.boneMatrices = model.boneMatrices;
+		}
+	}
+
+	/** Returns a name as raylib's 32 bytes hold it: its first 31 bytes, in UTF-8.
+
+		@param name  The name.
+		@return  The name, cut. */
+	public static function boneName(name:String):String {
+		var bytes = Bytes.ofString(name);
+		return bytes.length <= 31 ? name : bytes.getString(0, 31);
 	}
 
 	/** Keeps a model the models service read, as its file's first load, unless one is kept already.
 
 		@param read  The model.
-		@param shader  The default shader. */
-	public static function keep(read:Model3D, shader:Shader):Void {
+		@param shader  The default shader.
+		@param attached  Optional. Each mesh's bone when its node is a child of one and it has no joints of its own, or -1. */
+	public static function keep(read:Model3D, shader:Shader, ?attached:Array<Int>):Void {
 		if (!loaded.exists(read.path))
-			loaded.set(read.path, {model: fromModel3D(read, shader), refs: 0});
+			loaded.set(read.path, {model: fromModel3D(read, shader, attached), refs: 0});
 	}
 
 	/** Returns whether a file's model is kept, so a load of it needs no read.
@@ -254,6 +448,12 @@ class Models {
 		];
 		var model = new Model(meshes, materials, original.meshMaterial.copy());
 		model.path = path;
+		if (original.bones != null) {
+			model.boneCount = original.boneCount;
+			model.bones = [for (b in original.bones) new BoneInfo(b.name, b.parent)];
+			model.bindPose = [for (t in original.bindPose) copyTransform(t)];
+			animated(model);
+		}
 		return model;
 	}
 
@@ -262,7 +462,13 @@ class Models {
 		@param model  The model. */
 	public static function release(model:Model):Void {
 		var entry = loaded.get(model.path);
-		if (entry == null || --entry.refs > 0)
+		if (entry == null)
+			return;
+		// A mesh an animation moved has buffers of its own.
+		for (mesh in model.meshes)
+			if (!mesh.gpu.shared)
+				unload(mesh);
+		if (--entry.refs > 0)
 			return;
 		loaded.remove(model.path);
 		for (mesh in entry.model.meshes)
@@ -284,7 +490,19 @@ class Models {
 		mesh.tangents = m.tangents;
 		mesh.colors = m.colors;
 		mesh.indices = m.indices;
+		mesh.boneIds = m.boneIds;
+		mesh.boneWeights = m.boneWeights;
+		m.gpu.shared = true;
 		mesh.gpu = m.gpu;
 		return mesh;
+	}
+
+	/** Returns a copy of a transform, its parts new.
+
+		@param t  The transform.
+		@return  The copy. */
+	public static function copyTransform(t:Transform):Transform {
+		return new Transform(new Vector3(t.translation.x, t.translation.y, t.translation.z),
+			new Quaternion(t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w), new Vector3(t.scale.x, t.scale.y, t.scale.z));
 	}
 }

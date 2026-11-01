@@ -1563,7 +1563,9 @@ class RMath {
 			w2 = -w2;
 			cosHalfTheta = -cosHalfTheta;
 		}
-		if (Math.abs(cosHalfTheta) >= 1)
+		// Whether they are one rotation is decided as C's floats find it, each product and sum rounded to a float: rotations that close
+		// are the same one to raylib, which keeps the first.
+		if (Math.abs(f32(f32(f32(f32(f32(q1.x) * f32(q2.x)) + f32(f32(q1.y) * f32(q2.y))) + f32(f32(q1.z) * f32(q2.z))) + f32(f32(q1.w) * f32(q2.w)))) >= 1)
 			return new Vector4(q1.x, q1.y, q1.z, q1.w);
 		if (cosHalfTheta > .95)
 			return QuaternionNlerp(q1, new Vector4(x2, y2, z2, w2), amount);
@@ -1766,39 +1768,75 @@ class RMath {
 		return same || negated ? 1 : 0;
 	}
 
-	/** Splits a transform matrix into its translation, rotation and scale; the scale negated when the matrix mirrors, the rotation the
-		identity when it flattens.
+	/** Splits a transform matrix into its translation, rotation and scale, as raylib 6.2's (5.5's took the scale from the rows, wrong for a
+		turned matrix scaled unevenly): the columns, made orthonormal one after another (the shear between them dropped), are the
+		rotation, their lengths the scale, all three negated when the matrix mirrors.
 
 		@param mat  The matrix.
 		@param translation  Set to its translation.
 		@param rotation  Set to its rotation.
 		@param scale  Set to its scale. */
 	static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quaternion, scale:Vector3):Void {
+		var eps = 1e-9;
 		translation.x = mat.m12;
 		translation.y = mat.m13;
 		translation.z = mat.m14;
-		var a = mat.m0, b = mat.m4, c = mat.m8;
-		var d = mat.m1, e = mat.m5, f = mat.m9;
-		var g = mat.m2, h = mat.m6, i = mat.m10;
-		var A = e * i - f * h;
-		var B = f * g - d * i;
-		var C = d * h - e * g;
-		var det = a * A + b * B + c * C;
-		var s = new Vector3(Vector3Length(new Vector3(a, b, c)), Vector3Length(new Vector3(d, e, f)), Vector3Length(new Vector3(g, h, i)));
-		if (det < 0)
-			s = Vector3Negate(s);
+		var columns = [
+			new Vector3(mat.m0, mat.m1, mat.m2),
+			new Vector3(mat.m4, mat.m5, mat.m6),
+			new Vector3(mat.m8, mat.m9, mat.m10)
+		];
+		var shear = [0., 0., 0.];
+		var scl = new Vector3();
+		// Dividing by the largest element first keeps it stable.
+		var stabilizer = eps;
+		for (c in columns) {
+			stabilizer = fmaxf(stabilizer, Math.abs(c.x));
+			stabilizer = fmaxf(stabilizer, Math.abs(c.y));
+			stabilizer = fmaxf(stabilizer, Math.abs(c.z));
+		}
+		for (i in 0...3)
+			columns[i] = Vector3Scale(columns[i], 1 / stabilizer);
+		scl.x = Vector3Length(columns[0]);
+		if (scl.x > eps)
+			columns[0] = Vector3Scale(columns[0], 1 / scl.x);
+		// The second column made orthogonal to the first.
+		shear[0] = Vector3DotProduct(columns[0], columns[1]);
+		columns[1] = Vector3Subtract(columns[1], Vector3Scale(columns[0], shear[0]));
+		scl.y = Vector3Length(columns[1]);
+		if (scl.y > eps) {
+			columns[1] = Vector3Scale(columns[1], 1 / scl.y);
+			shear[0] /= scl.y;
+		}
+		// The third to both.
+		shear[1] = Vector3DotProduct(columns[0], columns[2]);
+		columns[2] = Vector3Subtract(columns[2], Vector3Scale(columns[0], shear[1]));
+		shear[2] = Vector3DotProduct(columns[1], columns[2]);
+		columns[2] = Vector3Subtract(columns[2], Vector3Scale(columns[1], shear[2]));
+		scl.z = Vector3Length(columns[2]);
+		if (scl.z > eps)
+			columns[2] = Vector3Scale(columns[2], 1 / scl.z);
+		// A rotation, not a mirror: det 1.
+		if (Vector3DotProduct(columns[0], Vector3CrossProduct(columns[1], columns[2])) < 0) {
+			scl = Vector3Negate(scl);
+			for (i in 0...3)
+				columns[i] = Vector3Negate(columns[i]);
+		}
+		var s = Vector3Scale(scl, stabilizer);
 		scale.x = s.x;
 		scale.y = s.y;
 		scale.z = s.z;
-		var r = if (FloatEquals(det, 0) == 0) {
-			// raymath divides each row by one scale, as it does.
-			QuaternionFromMatrix(new Matrix(mat.m0 / s.x, mat.m4 / s.x, mat.m8 / s.x, mat.m12, mat.m1 / s.y, mat.m5 / s.y, mat.m9 / s.y, mat.m13,
-				mat.m2 / s.z, mat.m6 / s.z, mat.m10 / s.z, mat.m14, mat.m3, mat.m7, mat.m11, mat.m15));
-		} else QuaternionIdentity();
+		var r = QuaternionFromMatrix(new Matrix(columns[0].x, columns[1].x, columns[2].x, 0, columns[0].y, columns[1].y, columns[2].y, 0, columns[0].z,
+			columns[1].z, columns[2].z, 0, 0, 0, 0, 1));
 		rotation.x = r.x;
 		rotation.y = r.y;
 		rotation.z = r.z;
 		rotation.w = r.w;
+	}
+
+	// A number as C's float holds it.
+	static inline function f32(x:Float):Float {
+		return haxe.io.FPHelper.i32ToFloat(haxe.io.FPHelper.floatToI32(x));
 	}
 
 	// C's fminf and fmaxf, which give the number when the other is NaN, where Math.min and Math.max give NaN.

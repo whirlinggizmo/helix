@@ -1,8 +1,12 @@
 package helix.ray.internal;
 
 /** Holds a mesh's GPU buffers, shared by the copies of one model's mesh however often the model is loaded: by raylib's buffer index,
-	positions, texture coordinates, normals, colors, tangents and second texture coordinates (0 for one not made yet), null until the
-	mesh is first drawn or `UploadMesh` sends it; and the indices (0 for none). */
+	positions, texture coordinates, normals, colors, tangents, second texture coordinates, then (at 7 and 8) bone ids and bone weights
+	(0 for one not made yet, and at 6, where raylib keeps its indices), null until the mesh is first drawn or `UploadMesh` sends it; and
+	the indices (0 for none).
+
+	A copy whose vertices an animation moves takes a holder of its own (`Models.own`), its positions and normals its own, the rest still
+	the shared holder's, listed in `borrowed` so it doesn't free them. */
 @:noCompletion
 class MeshGpu {
 	/** The vertex buffers, by raylib's buffer index, or null until uploaded. */
@@ -14,9 +18,22 @@ class MeshGpu {
 	/** The edges of its triangles, two indices each, for wire mode; 0 until first drawn so. */
 	public var edgeBuffer = 0;
 
-	/** The bytes of each buffer `UpdateMeshBuffer` has changed, by raylib's buffer index (6 for the indices), so the next change starts
-		from them; null for one not changed. */
-	public final contents:Array<Null<haxe.io.Bytes>> = [for (_ in 0...7) null];
+	/** The bytes of each buffer `UpdateMeshBuffer` or an animation has changed, by raylib's buffer index (6 for the indices), so the
+		next change starts from them; null for one not changed. */
+	public final contents:Array<Null<haxe.io.Bytes>> = [for (_ in 0...9) null];
+
+	/** How often a buffer's contents have changed (`UpdateMeshBuffer`, an animation), so an interleaved buffer made before is made again. */
+	public var version = 0;
+
+	/** Buffers of several attributes interleaved, for a program reading more attributes than the platform binds buffers (`Models.interleaved`),
+		by their buffer indices joined with commas: each with the `version` it was made at. */
+	public final interleaved = new Map<String, {buffer:Int, version:Int}>();
+
+	/** Whether the copies of a file's mesh share it, each load's (`Models.load`). */
+	public var shared = false;
+
+	/** The buffers it shares with the holder it was made from, which that holder frees; empty for a holder of its own. */
+	public final borrowed:Array<Int> = [];
 
 	/** Creates an empty holder. */
 	public function new() {}

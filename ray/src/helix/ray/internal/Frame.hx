@@ -31,22 +31,40 @@ class Frame {
 		"vertexNormal" => 3,
 		"vertexColor" => 4,
 		"vertexTangent" => 4,
-		"vertexTexCoord2" => 2
+		"vertexTexCoord2" => 2,
+		"vertexBoneIds" => 4,
+		"vertexBoneIndices" => 4,
+		"vertexBoneWeights" => 4
 	];
 
-	/** Each raylib attribute's buffer in a mesh, by raylib's buffer index. */
+	/** Each raylib attribute's buffer in a mesh, by raylib's buffer index: the bone ids by raylib 5.5's name or 6.2's. */
 	static final MESH_BUFFERS = [
-		"vertexPosition",
-		"vertexTexCoord",
-		"vertexNormal",
-		"vertexColor",
-		"vertexTangent",
-		"vertexTexCoord2"
+		"vertexPosition" => 0,
+		"vertexTexCoord" => 1,
+		"vertexNormal" => 2,
+		"vertexColor" => 3,
+		"vertexTangent" => 4,
+		"vertexTexCoord2" => 5,
+		"vertexBoneIds" => 7,
+		"vertexBoneIndices" => 7,
+		"vertexBoneWeights" => 8
 	];
+
+	/** The most vertex buffers the platform's native adapters bind to a draw. */
+	static inline final MAX_BUFFERS = 4;
+
+	/** The bytes of the one record of `constants`. */
+	static inline final CONSTANT_BYTES = 56;
 
 	/** The attributes immediate vertices don't carry, and where each is in the one record of `constants`, in floats: raylib's batch has
 		none, so a shader reads raylib's defaults, 0. */
-	static final CONSTANTS = ["vertexTangent" => 0, "vertexTexCoord2" => 4];
+	static final CONSTANTS = [
+		"vertexTangent" => 0,
+		"vertexTexCoord2" => 4,
+		"vertexBoneIds" => 6,
+		"vertexBoneIndices" => 6,
+		"vertexBoneWeights" => 10
+	];
 
 	final graphics:IGraphics;
 	var data = Bytes.alloc(STRIDE * 6 * 1024);
@@ -139,7 +157,7 @@ class Frame {
 		var texel = Bytes.alloc(4);
 		texel.fill(0, 4, 255);
 		white = graphics.createTexture(1, 1, [texel]);
-		constants = graphics.createStaticBuffer(Bytes.alloc(24), 24, false);
+		constants = graphics.createStaticBuffer(Bytes.alloc(CONSTANT_BYTES), CONSTANT_BYTES, false);
 		view = new Matrix3D();
 		projection = new Matrix3D();
 		pass = {
@@ -369,7 +387,7 @@ class Frame {
 					]
 				},
 				{
-					stride: 24,
+					stride: CONSTANT_BYTES,
 					instanced: true,
 					attributes: [
 						for (i => name in p.attributes)
@@ -431,26 +449,40 @@ class Frame {
 			edges = Models.edges(mesh);
 		var indexed = wire || mesh.gpu.indexBuffer != 0, state = states();
 		var key = 'm${indexed ? "x" : ""}${wire ? "w" : ""}$state';
-		var pipeline = p.pipeline(key, () -> graphics.createPipeline({
-			shader: p.handle,
-			buffers: [
-				for (i => name in p.attributes)
+		// A buffer an attribute; for a program reading more than the platform binds, the first three apart and the rest interleaved in one.
+		var names = p.attributes,
+			apart = names.length <= MAX_BUFFERS ? names.length : MAX_BUFFERS - 1;
+		var pipeline = p.pipeline(key, () -> {
+			var layouts:Array<helix.platform.VertexBuffer> = [
+				for (i in 0...apart)
 					{
-						stride: SIZES.get(name) * 4,
+						stride: SIZES.get(names[i]) * 4,
 						instanced: false,
-						attributes: [{slot: i, componentCount: SIZES.get(name), offset: 0}]
+						attributes: [{slot: i, componentCount: SIZES.get(names[i]), offset: 0}]
 					}
-			],
-			primitive: wire ? Lines : Triangles,
-			indexed: indexed,
-			blend: colorBlend ? blend : Opaque,
-			depthTest: depthTest ? LessEqual : Off,
-			depthWrite: depthTest && depthMask,
-			cull: wire ? None : cullFace(),
-			clockwise: false,
-			depthOnly: false,
-			flip: ClipScale
-		}));
+			];
+			if (apart < names.length) {
+				var attributes = [], offset = 0;
+				for (i in apart...names.length) {
+					attributes.push({slot: i, componentCount: SIZES.get(names[i]), offset: offset});
+					offset += SIZES.get(names[i]) * 4;
+				}
+				layouts.push({stride: offset, instanced: false, attributes: attributes});
+			}
+			graphics.createPipeline({
+				shader: p.handle,
+				buffers: layouts,
+				primitive: wire ? Lines : Triangles,
+				indexed: indexed,
+				blend: colorBlend ? blend : Opaque,
+				depthTest: depthTest ? LessEqual : Off,
+				depthWrite: depthTest && depthMask,
+				cull: wire ? None : cullFace(),
+				clockwise: false,
+				depthOnly: false,
+				flip: ClipScale
+			});
+		});
 		var bound = p.textures.copy();
 		for (k => slot in [p.texture0, p.texture1, p.texture2])
 			if (slot >= 0)
@@ -458,7 +490,9 @@ class Frame {
 		for (i in 0...bound.length)
 			if (bound[i] == 0)
 				bound[i] = white;
-		var buffers = [for (name in p.attributes) Models.buffer(mesh, MESH_BUFFERS.indexOf(name))];
+		var buffers = [for (i in 0...apart) Models.buffer(mesh, MESH_BUFFERS.get(names[i]))];
+		if (apart < names.length)
+			buffers.push(Models.interleaved(mesh, [for (i in apart...names.length) MESH_BUFFERS.get(names[i])]));
 		pass.draws.push({
 			pipeline: pipeline,
 			buffers: buffers,
@@ -505,9 +539,10 @@ class Frame {
 		return cullFront ? area > 0 : area <= 0;
 	}
 
-	// The edges, two indices each, of a mesh's triangles culling leaves, its positions moved to clip space by a matrix.
+	// The edges, two indices each, of a mesh's triangles culling leaves, its positions (an animation's, when one moved it) moved to clip
+	// space by a matrix.
 	function frontEdges(mesh:helix.ray.Mesh, m:Array<Float>):Array<Int> {
-		var p = mesh.vertices, indices = mesh.indices, edges = [];
+		var p = mesh.animVertices != null ? mesh.animVertices : mesh.vertices, indices = mesh.indices, edges = [];
 		for (k in 0...mesh.triangleCount) {
 			var a = indices == null ? k * 3 : indices[k * 3],
 				b = indices == null ? k * 3 + 1 : indices[k * 3 + 1],

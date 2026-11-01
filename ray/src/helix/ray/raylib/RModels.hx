@@ -6,6 +6,7 @@ import helix.ray.Raylib.*;
 import helix.math.Matrix3D;
 import helix.math.Trig;
 import helix.ray.internal.DefaultFont;
+import helix.ray.internal.Animations;
 import helix.ray.internal.Models;
 import helix.ray.internal.ParShapes;
 import helix.ray.internal.Runtime;
@@ -1376,6 +1377,98 @@ class RModels {
 		return SaveFileText(fileName, text.toString());
 	}
 
+	// ---- Model animations ----
+	// As raylib 6.2 has them (raylib.h's 5.5 names and signatures, its frame a float as 6.2's): its glTF animations read, its frames mixed,
+	// its CPU skinning; the bone matrices in each mesh's boneMatrices, raylib 5.5's place, so a skinning shader is given them as it draws.
+
+	/** raylib's animation load, which waits for the file. A page can't wait, so a call doesn't compile on any target:
+		`LoadModelAnimationsAsync` loads them.
+
+		@param fileName  The file.
+		@param animCount  Would be set to how many.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadModelAnimations: Synchronous loading is not supported. See LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void)")
+	static function LoadModelAnimations(fileName:String, animCount:Array<Int>):Array<ModelAnimation> {
+		throw "LoadModelAnimations is unimplemented";
+	}
+
+	/** Poses a model's bones by a frame of an animation, as raylib 6.2's: the frame's whole part and the next mixed by its fraction (a
+		5.5 program's whole frames work as they did), each wrapped to the animation's frames; each bone's matrix then its bind pose's
+		inverse and the pose, in each mesh's `boneMatrices`. Its vertices don't move: a skinning shader moves them as they are drawn, or
+		`UpdateModelAnimation` on the CPU. Nothing for a model without bones or an animation without frames.
+
+		@param model  The model.
+		@param anim  The animation, of the model's skeleton (`IsModelAnimationValid`).
+		@param frame  The frame, from 0. */
+	static function UpdateModelAnimationBones(model:Model, anim:ModelAnimation, frame:Float):Void {
+		Animations.updateBones(model, anim, frame);
+	}
+
+	/** Poses a model by a frame of an animation, as raylib 6.2's: its bones as `UpdateModelAnimationBones` poses them, then each skinned
+		mesh's vertices moved on the CPU into its `animVertices` and `animNormals` (each normal by its bones' matrices inverted and
+		transposed, not normalized), which the GPU then draws. A mesh whose material's shader reads `vertexBoneIds` (or
+		`vertexBoneIndices`) is left for the shader to move. Draws asked for before keep the vertices they were asked with.
+
+		@param model  The model.
+		@param anim  The animation, of the model's skeleton.
+		@param frame  The frame, from 0, fractional. */
+	static function UpdateModelAnimation(model:Model, anim:ModelAnimation, frame:Float):Void {
+		if (anim.frameCount > 0 && model.bones != null && anim.framePoses != null) {
+			Animations.updateBones(model, anim, frame);
+			Animations.skin(model);
+		}
+	}
+
+	/** Poses a model by two animations mixed, raylib 6.2's own: each at its frame as `UpdateModelAnimation` takes one, then the two mixed
+		by the blend, the bones and the vertices as it moves them. Note that, as raylib's, a frame is wrapped to its animation's frames
+		before its fraction is taken, so past the last frame it holds the frame it wrapped to. Nothing for a blend outside 0 to 1.
+
+		@param model  The model.
+		@param animA  The first animation.
+		@param frameA  Its frame, fractional.
+		@param animB  The second animation.
+		@param frameB  Its frame, fractional.
+		@param blend  How much of the second: 0 the first alone, 1 the second alone. */
+	static function UpdateModelAnimationEx(model:Model, animA:ModelAnimation, frameA:Float, animB:ModelAnimation, frameB:Float, blend:Float):Void {
+		if (model.boneMatrices == null)
+			return;
+		if (animA.frameCount > 0 && animA.framePoses != null && animB.frameCount > 0 && animB.framePoses != null && blend >= 0 && blend <= 1) {
+			Animations.updateBonesEx(model, animA, frameA, animB, frameB, blend);
+			Animations.skin(model);
+		}
+	}
+
+	/** Frees an animation's frames: its poses and bones are let go, its counts 0.
+
+		@param anim  The animation. */
+	static function UnloadModelAnimation(anim:ModelAnimation):Void {
+		anim.framePoses = null;
+		anim.bones = null;
+		anim.frameCount = 0;
+		anim.boneCount = 0;
+	}
+
+	/** Frees animations' frames, each as `UnloadModelAnimation` frees one.
+
+		@param animations  The animations.
+		@param animCount  How many of them. */
+	static function UnloadModelAnimations(animations:Array<ModelAnimation>, animCount:Int):Void {
+		if (animations == null)
+			return;
+		for (i in 0...animCount)
+			if (i < animations.length)
+				UnloadModelAnimation(animations[i]);
+	}
+
+	/** Returns whether an animation moves a model's skeleton, as raylib 6.2 checks it: whether they have as many bones.
+
+		@param model  The model.
+		@param anim  The animation.
+		@return  True when their bone counts match. */
+	static function IsModelAnimationValid(model:Model, anim:ModelAnimation):Bool {
+		return model.boneCount == anim.boneCount;
+	}
+
 	/** Returns raylib's default material: the default shader, white.
 
 		@return  The material. */
@@ -1705,6 +1798,9 @@ class RModels {
 		locs[SHADER_LOC_VERTEX_COLOR] = p.attributes.indexOf("vertexColor");
 		locs[SHADER_LOC_VERTEX_TANGENT] = p.attributes.indexOf("vertexTangent");
 		locs[SHADER_LOC_VERTEX_TEXCOORD02] = p.attributes.indexOf("vertexTexCoord2");
+		locs[SHADER_LOC_VERTEX_BONEIDS] = p.attributes.indexOf("vertexBoneIds") >= 0 ? p.attributes.indexOf("vertexBoneIds") : p.attributes.indexOf("vertexBoneIndices");
+		locs[SHADER_LOC_VERTEX_BONEWEIGHTS] = p.attributes.indexOf("vertexBoneWeights");
+		locs[SHADER_LOC_BONE_MATRICES] = p.locate("boneMatrices");
 		locs[SHADER_LOC_MATRIX_MVP] = p.locate("mvp");
 		locs[SHADER_LOC_MATRIX_VIEW] = p.locate("matView");
 		locs[SHADER_LOC_MATRIX_PROJECTION] = p.locate("matProjection");
@@ -1767,6 +1863,16 @@ class RModels {
 			c.a / 255 * tint.a / 255
 		];
 		var textures = [for (i in 0...3) Textures.handle(material.maps[i].texture.id)];
+		// The bones' matrices, for a skinning shader, as raylib 5.5's DrawMesh uploads them.
+		var bones = shader.locs[SHADER_LOC_BONE_MATRICES];
+		if (bones != -1 && mesh.boneMatrices != null) {
+			var values = [];
+			for (i in 0...mesh.boneCount)
+				if (i < mesh.boneMatrices.length)
+					for (v in toMatrix3D(mesh.boneMatrices[i]).values)
+						values.push(v);
+			shader.program.write(bones, values);
+		}
 		Runtime.frame.mesh(mesh, shader.program, transform, diffuse, textures);
 	}
 	#end

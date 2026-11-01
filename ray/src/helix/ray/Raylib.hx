@@ -4744,6 +4744,62 @@ class Raylib {
 	public static inline function ExportMeshAsCode(mesh:Mesh, fileName:String):Bool
 		return RModels.ExportMeshAsCode(mesh, fileName);
 
+	/** Poses a model's bones by a frame of an animation, as raylib 6.2's: the frame's whole part and the next mixed by its fraction (a
+		5.5 program's whole frames work as they did), each wrapped to the animation's frames; each bone's matrix then its bind pose's
+		inverse and the pose, in each mesh's `boneMatrices`. Its vertices don't move: a skinning shader moves them as they are drawn, or
+		`UpdateModelAnimation` on the CPU. Nothing for a model without bones or an animation without frames.
+
+		@param model  The model.
+		@param anim  The animation, of the model's skeleton (`IsModelAnimationValid`).
+		@param frame  The frame, from 0. */
+	public static inline function UpdateModelAnimationBones(model:Model, anim:ModelAnimation, frame:Float):Void
+		RModels.UpdateModelAnimationBones(model, anim, frame);
+
+	/** Poses a model by a frame of an animation, as raylib 6.2's: its bones as `UpdateModelAnimationBones` poses them, then each skinned
+		mesh's vertices moved on the CPU into its `animVertices` and `animNormals` (each normal by its bones' matrices inverted and
+		transposed, not normalized), which the GPU then draws. A mesh whose material's shader reads `vertexBoneIds` (or
+		`vertexBoneIndices`) is left for the shader to move. Draws asked for before keep the vertices they were asked with.
+
+		@param model  The model.
+		@param anim  The animation, of the model's skeleton.
+		@param frame  The frame, from 0, fractional. */
+	public static inline function UpdateModelAnimation(model:Model, anim:ModelAnimation, frame:Float):Void
+		RModels.UpdateModelAnimation(model, anim, frame);
+
+	/** Poses a model by two animations mixed, raylib 6.2's own: each at its frame as `UpdateModelAnimation` takes one, then the two mixed
+		by the blend, the bones and the vertices as it moves them. Note that, as raylib's, a frame is wrapped to its animation's frames
+		before its fraction is taken, so past the last frame it holds the frame it wrapped to. Nothing for a blend outside 0 to 1.
+
+		@param model  The model.
+		@param animA  The first animation.
+		@param frameA  Its frame, fractional.
+		@param animB  The second animation.
+		@param frameB  Its frame, fractional.
+		@param blend  How much of the second: 0 the first alone, 1 the second alone. */
+	public static inline function UpdateModelAnimationEx(model:Model, animA:ModelAnimation, frameA:Float, animB:ModelAnimation, frameB:Float, blend:Float):Void
+		RModels.UpdateModelAnimationEx(model, animA, frameA, animB, frameB, blend);
+
+	/** Frees an animation's frames: its poses and bones are let go, its counts 0.
+
+		@param anim  The animation. */
+	public static inline function UnloadModelAnimation(anim:ModelAnimation):Void
+		RModels.UnloadModelAnimation(anim);
+
+	/** Frees animations' frames, each as `UnloadModelAnimation` frees one.
+
+		@param animations  The animations.
+		@param animCount  How many of them. */
+	public static inline function UnloadModelAnimations(animations:Array<ModelAnimation>, animCount:Int):Void
+		RModels.UnloadModelAnimations(animations, animCount);
+
+	/** Returns whether an animation moves a model's skeleton, as raylib 6.2 checks it: whether they have as many bones.
+
+		@param model  The model.
+		@param anim  The animation.
+		@return  True when their bone counts match. */
+	public static inline function IsModelAnimationValid(model:Model, anim:ModelAnimation):Bool
+		return RModels.IsModelAnimationValid(model, anim);
+
 	/** Returns raylib's default material: the default shader, white.
 
 		@return  The material. */
@@ -5298,6 +5354,16 @@ class Raylib {
 	public static inline function LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void):Void
 		RAsync.LoadModelAsync(fileName, loaded, failed);
 
+	/** Loads a glTF or GLB file's animations, answering when they are read: helix-ray's own, in place of raylib's
+		`LoadModelAnimations`. They are read as raylib 6.2 reads them, of the file's first skin: each sampled 60 times a second, with
+		(int)(duration * 60) + 1 frames, each frame's pose its bones' transforms in the model. A file without skins gives none.
+
+		@param fileName  The file, as the program names it.
+		@param loaded  Receives the animations, as many as the file has; their count is its length.
+		@param failed  Optional. Receives why they couldn't be loaded; when omitted, it is logged. */
+	public static inline function LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void):Void
+		RAsync.LoadModelAnimationsAsync(fileName, loaded, failed);
+
 	/** Loads a sound file and decodes it, answering when it is ready to play at once: helix-ray's own, in place of raylib's `LoadSound`.
 		A file loaded again shares its first load's decoded sound. `InitAudioDevice` comes first.
 
@@ -5715,6 +5781,11 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)",
 			macro(null : helix.ray.Model));
 
+	/** raylib's animation load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAnimationsAsync` loads them. */
+	public static macro function LoadModelAnimations(fileName:ExprOf<String>, animCount:ExprOf<Array<Int>>):ExprOf<Array<ModelAnimation>>
+		return helix.platform.macros.Build.unsupported("LoadModelAnimations: Synchronous loading is not supported. See LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void)",
+			macro(null : Array<helix.ray.ModelAnimation>));
+
 	/** raylib's wave load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadWaveAsync` loads it. */
 	public static macro function LoadWave(fileName:ExprOf<String>):ExprOf<Wave>
 		return helix.platform.macros.Build.unsupported("LoadWave: Synchronous loading is not supported. See LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void)",
@@ -5824,30 +5895,6 @@ class Raylib {
 	/** raylib's `UnloadMaterial` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload material from GPU memory (VRAM). */
 	public static macro function UnloadMaterial(material:ExprOf<Material>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("UnloadMaterial: Not implemented", macro {});
-
-	/** raylib's `LoadModelAnimations` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load model animations from file. */
-	public static macro function LoadModelAnimations(fileName:ExprOf<String>, animCount:ExprOf<Array<Int>>):ExprOf<Array<ModelAnimation>>
-		return helix.platform.macros.Build.unimplemented("LoadModelAnimations: Not implemented", macro(null : Array<helix.ray.ModelAnimation>));
-
-	/** raylib's `UpdateModelAnimation` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update model animation pose (CPU). */
-	public static macro function UpdateModelAnimation(model:ExprOf<Model>, anim:ExprOf<ModelAnimation>, frame:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UpdateModelAnimation: Not implemented", macro {});
-
-	/** raylib's `UpdateModelAnimationBones` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update model animation mesh bone matrices (GPU skinning). */
-	public static macro function UpdateModelAnimationBones(model:ExprOf<Model>, anim:ExprOf<ModelAnimation>, frame:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UpdateModelAnimationBones: Not implemented", macro {});
-
-	/** raylib's `UnloadModelAnimation` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload animation data. */
-	public static macro function UnloadModelAnimation(anim:ExprOf<ModelAnimation>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadModelAnimation: Not implemented", macro {});
-
-	/** raylib's `UnloadModelAnimations` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload animation array data. */
-	public static macro function UnloadModelAnimations(animations:ExprOf<Array<ModelAnimation>>, animCount:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadModelAnimations: Not implemented", macro {});
-
-	/** raylib's `IsModelAnimationValid` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Check model animation skeleton match. */
-	public static macro function IsModelAnimationValid(model:ExprOf<Model>, anim:ExprOf<ModelAnimation>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("IsModelAnimationValid: Not implemented", macro(false : Bool));
 
 	// ---- generated by tools/gen_raylib.py: end ----
 	// ---- Shaders, compiled as the program builds ----

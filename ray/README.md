@@ -14,11 +14,12 @@ The window and frame, the keyboard, mouse, touch and gamepads, text input, shape
 font and TrueType and OpenType fonts (signed distance fields too), sounds and their aliases, waves (loaded, converted, cropped and
 exported as raylib's are), music with its length, position and seeking, audio streams fed by the program or its callback, text files; images on the CPU in raylib's uncompressed pixel
 formats (made, changed and drawn into as raylib's are, byte for byte, but for resizing), exported as PNG or QOI, and screenshots; in 3D
-the camera, glTF and GLB models, raylib's shapes and billboards (its vertices, in its order), its generated meshes (vertex for vertex,
+the camera, glTF and GLB models, skinned models and their animations (read, mixed between frames and between animations, and skinned
+on the CPU or by a skinning shader, as raylib 6.2 does), raylib's shapes and billboards (its vertices, in its order), its generated meshes (vertex for vertex,
 the same on every target), tangents, mesh buffers updated and meshes exported, render textures, rays and their collisions; raylib's
 shaders, compiled as the program builds for every target; rlgl's render state (culling, depth, wire mode, viewport, scissor) and its
 batch, flushed as raylib's is; automation events, recorded and played as raylib's, and raylib's random numbers for a seed. Not here
-yet: materials loaded from files, skinned models and animations, models drawn as points, animated (GIF) and compressed images, and
+yet: materials loaded from files, IQM and M3D animations, morph targets, models drawn as points, animated (GIF) and compressed images, and
 updating a texture's pixels.
 
 ## Using it

@@ -1174,8 +1174,9 @@ class Raymath {
 	public static inline function QuaternionEquals(p:Quaternion, q:Quaternion):Int
 		return RMath.QuaternionEquals(p, q);
 
-	/** Splits a transform matrix into its translation, rotation and scale; the scale negated when the matrix mirrors, the rotation the
-		identity when it flattens.
+	/** Splits a transform matrix into its translation, rotation and scale, as raylib 6.2's (5.5's took the scale from the rows, wrong for a
+		turned matrix scaled unevenly): the columns, made orthonormal one after another (the shear between them dropped), are the
+		rotation, their lengths the scale, all three negated when the matrix mirrors.
 
 		@param mat  The matrix.
 		@param translation  Set to its translation.

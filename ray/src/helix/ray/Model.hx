@@ -20,6 +20,25 @@ class Model {
 	/** Gets the material of each mesh, by its index in `materials`. */
 	public var meshMaterial:Array<Int>;
 
+	/** Gets the number of bones: the joints of the file's first skin, 0 for a model without one. */
+	public var boneCount:Int = 0;
+
+	/** Gets the bones, the file's first skin's joints in its order, each parent the nearest joint above it; null without a skin. */
+	public var bones:Null<Array<BoneInfo>> = null;
+
+	/** Gets each bone's transform in the model as the skin was bound to it: its inverse bind matrix inverted, or, for a file that gives
+		none, its node's at rest; null without a skin. */
+	public var bindPose:Null<Array<Transform>> = null;
+
+	// The pose UpdateModelAnimation last set, by bone (raylib 6.2's currentPose); null without bones.
+	@:allow(helix.ray)
+	var pose:Null<Array<Transform>> = null;
+
+	// The bone matrices UpdateModelAnimation last computed, each skinned mesh's boneMatrices (raylib 6.2's model.boneMatrices); null
+	// without bones.
+	@:allow(helix.ray)
+	var boneMatrices:Null<Array<Matrix>> = null;
+
 	// The file it was loaded from, sharing its GPU data with the file's other loads, or "" for a model of a mesh.
 	@:allow(helix.ray)
 	var path = "";

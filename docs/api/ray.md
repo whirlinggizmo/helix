@@ -60,17 +60,21 @@ var events:Array<AutomationEvent>
 
 *class* in [`ray/src/helix/ray/BoneInfo.hx`](../../ray/src/helix/ray/BoneInfo.hx), `import helix.ray.BoneInfo;`
 
-raylib's `BoneInfo` (raylib.h): not in helix-ray yet; its fields are raylib's. Bone, skeletal animation bone.
+Represents raylib's `BoneInfo`: one bone of a skeleton, its name and its parent.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-function new()
+{?name:String, ?parent:Int}
+```
+
+```haxe
 var name:String
 var parent:Int
 ```
 
-- `new`: Creates one, its fields zero, empty or null.
-- `name`: Bone name.
-- `parent`: Bone parent.
+- `name`: Gets or sets the name: its node's, cut to 31 bytes as raylib's holds it.
+- `parent`: Gets or sets the parent, by its index in the same bones, or -1 for a root.
 
 ## BoundingBox
 
@@ -375,6 +379,12 @@ var normals:Null<Array<Float>>
 var tangents:Null<Array<Float>>
 var colors:Null<Array<Int>>
 var indices:Null<Array<Int>>
+var animVertices:Null<Array<Float>>
+var animNormals:Null<Array<Float>>
+var boneIds:Null<Array<Int>>
+var boneWeights:Null<Array<Float>>
+var boneMatrices:Null<Array<Matrix>>
+var boneCount:Int
 ```
 
 - `new`: Creates an empty mesh.
@@ -387,6 +397,12 @@ var indices:Null<Array<Int>>
 - `tangents`: Gets or sets the tangents, x, y, z and w a vertex (w is 1 or -1, the way the bitangent turns), or null for none. `GenMeshTangents` makes them.
 - `colors`: Gets or sets the colors, r, g, b and a a vertex, 0 to 255, or null for white.
 - `indices`: Gets or sets the indices, three a triangle, or null for vertices taken three at a time.
+- `animVertices`: Gets the positions `UpdateModelAnimation` last moved its vertices to, x, y and z a vertex, or null until it has; the GPU draws these in place of `vertices`.
+- `animNormals`: Gets the normals `UpdateModelAnimation` last turned its vertices' to, or null until it has (or for a mesh without normals). Each is moved by its bones' matrices inverted and transposed, and not normalized, as raylib's.
+- `boneIds`: Gets or sets the bones each vertex follows, four a vertex, as indices into its model's `bones` (0 to 255), or null for none. A shader reads them as the attribute `vertexBoneIds` (raylib 5.5's name) or `vertexBoneIndices` (6.2's), floats.
+- `boneWeights`: Gets or sets how much each of a vertex's four bones moves it, or null for none: the attribute `vertexBoneWeights`.
+- `boneMatrices`: Gets or sets the bones' matrices, by bone, each taking a vertex from where the skin was bound to where the bone is now: `UpdateModelAnimationBones` sets them, and a shader declaring `uniform mat4 boneMatrices[N]` is given them as the mesh is drawn. Shared by a model's meshes; null for a mesh without bones.
+- `boneCount`: Gets or sets the number of bones, its model's.
 
 ## Model
 
@@ -402,6 +418,9 @@ var materialCount:Int
 var meshes:Array<Mesh>
 var materials:Array<Material>
 var meshMaterial:Array<Int>
+var boneCount:Int
+var bones:Null<Array<BoneInfo>>
+var bindPose:Null<Array<Transform>>
 ```
 
 - `new`: Creates a model. Models are made by `Raylib.LoadModelAsync` and `Raylib.LoadModelFromMesh`.
@@ -414,28 +433,31 @@ var meshMaterial:Array<Int>
 - `meshes`: Gets the meshes.
 - `materials`: Gets the materials.
 - `meshMaterial`: Gets the material of each mesh, by its index in `materials`.
+- `boneCount`: Gets the number of bones: the joints of the file's first skin, 0 for a model without one.
+- `bones`: Gets the bones, the file's first skin's joints in its order, each parent the nearest joint above it; null without a skin.
+- `bindPose`: Gets each bone's transform in the model as the skin was bound to it: its inverse bind matrix inverted, or, for a file that gives none, its node's at rest; null without a skin.
 
 ## ModelAnimation
 
 *class* in [`ray/src/helix/ray/ModelAnimation.hx`](../../ray/src/helix/ray/ModelAnimation.hx), `import helix.ray.ModelAnimation;`
 
-raylib's `ModelAnimation` (raylib.h): not in helix-ray yet; its fields are raylib's. ModelAnimation.
+Represents raylib's `ModelAnimation`: a skeleton's poses, frame by frame. `Raylib.LoadModelAnimationsAsync` makes them, 60 frames a second; `Raylib.UpdateModelAnimation` poses a model by one.
 
 ```haxe
 function new()
 var boneCount:Int
 var frameCount:Int
-var bones:Array<BoneInfo>
-var framePoses:Array<Array<Transform>>
+var bones:Null<Array<BoneInfo>>
+var framePoses:Null<Array<Array<Transform>>>
 var name:String
 ```
 
-- `new`: Creates one, its fields zero, empty or null.
-- `boneCount`: Number of bones.
-- `frameCount`: Number of animation frames.
-- `bones`: Bones information (skeleton).
-- `framePoses`: Poses array by frame.
-- `name`: Animation name.
+- `new`: Creates an animation of no frames.
+- `boneCount`: Gets or sets the number of bones, which a model it moves has too (`Raylib.IsModelAnimationValid`).
+- `frameCount`: Gets or sets the number of frames.
+- `bones`: Gets or sets the bones, as the model's are.
+- `framePoses`: Gets or sets each frame's pose: for each bone, its transform in the model, not its parent's (a parent's already in it).
+- `name`: Gets or sets the name: the file's, cut to 31 bytes as raylib's holds it, or empty.
 
 ## Music
 
@@ -3298,6 +3320,12 @@ static function GenMeshCubicmap(cubicmap:Image, cubeSize:Vector3):Mesh
 static function GenMeshTangents(mesh:Mesh):Void
 static function ExportMesh(mesh:Mesh, fileName:String):Bool
 static function ExportMeshAsCode(mesh:Mesh, fileName:String):Bool
+static function UpdateModelAnimationBones(model:Model, anim:ModelAnimation, frame:Float):Void
+static function UpdateModelAnimation(model:Model, anim:ModelAnimation, frame:Float):Void
+static function UpdateModelAnimationEx(model:Model, animA:ModelAnimation, frameA:Float, animB:ModelAnimation, frameB:Float, blend:Float):Void
+static function UnloadModelAnimation(anim:ModelAnimation):Void
+static function UnloadModelAnimations(animations:Array<ModelAnimation>, animCount:Int):Void
+static function IsModelAnimationValid(model:Model, anim:ModelAnimation):Bool
 static function LoadMaterialDefault():Material
 static function SetMaterialTexture(material:Material, mapType:Int, texture:Texture2D):Void
 static function SetModelMeshMaterial(model:Model, meshId:Int, materialId:Int):Void
@@ -3561,6 +3589,30 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `mesh`: The mesh.
   - `fileName`: The file; its name, upper case, names the defines and the arrays.
   - returns: True when it was written.
+- `UpdateModelAnimationBones`: Poses a model's bones by a frame of an animation, as raylib 6.2's: the frame's whole part and the next mixed by its fraction (a 5.5 program's whole frames work as they did), each wrapped to the animation's frames; each bone's matrix then its bind pose's inverse and the pose, in each mesh's `boneMatrices`. Its vertices don't move: a skinning shader moves them as they are drawn, or `UpdateModelAnimation` on the CPU. Nothing for a model without bones or an animation without frames.
+  - `model`: The model.
+  - `anim`: The animation, of the model's skeleton (`IsModelAnimationValid`).
+  - `frame`: The frame, from 0.
+- `UpdateModelAnimation`: Poses a model by a frame of an animation, as raylib 6.2's: its bones as `UpdateModelAnimationBones` poses them, then each skinned mesh's vertices moved on the CPU into its `animVertices` and `animNormals` (each normal by its bones' matrices inverted and transposed, not normalized), which the GPU then draws. A mesh whose material's shader reads `vertexBoneIds` (or `vertexBoneIndices`) is left for the shader to move. Draws asked for before keep the vertices they were asked with.
+  - `model`: The model.
+  - `anim`: The animation, of the model's skeleton.
+  - `frame`: The frame, from 0, fractional.
+- `UpdateModelAnimationEx`: Poses a model by two animations mixed, raylib 6.2's own: each at its frame as `UpdateModelAnimation` takes one, then the two mixed by the blend, the bones and the vertices as it moves them. Note that, as raylib's, a frame is wrapped to its animation's frames before its fraction is taken, so past the last frame it holds the frame it wrapped to. Nothing for a blend outside 0 to 1.
+  - `model`: The model.
+  - `animA`: The first animation.
+  - `frameA`: Its frame, fractional.
+  - `animB`: The second animation.
+  - `frameB`: Its frame, fractional.
+  - `blend`: How much of the second: 0 the first alone, 1 the second alone.
+- `UnloadModelAnimation`: Frees an animation's frames: its poses and bones are let go, its counts 0.
+  - `anim`: The animation.
+- `UnloadModelAnimations`: Frees animations' frames, each as `UnloadModelAnimation` frees one.
+  - `animations`: The animations.
+  - `animCount`: How many of them.
+- `IsModelAnimationValid`: Returns whether an animation moves a model's skeleton, as raylib 6.2 checks it: whether they have as many bones.
+  - `model`: The model.
+  - `anim`: The animation.
+  - returns: True when their bone counts match.
 - `LoadMaterialDefault`: Returns raylib's default material: the default shader, white.
   - returns: The material.
 - `SetMaterialTexture`: Sets a texture on a material's map.
@@ -3851,6 +3903,7 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
 ```haxe
 static function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void, ?failed:String -> Void):Void
 static function LoadModelAsync(fileName:String, loaded:Model -> Void, ?failed:String -> Void):Void
+static function LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation> -> Void, ?failed:String -> Void):Void
 static function LoadSoundAsync(fileName:String, loaded:Sound -> Void, ?failed:String -> Void):Void
 static function LoadWaveAsync(fileName:String, loaded:Wave -> Void, ?failed:String -> Void):Void
 static function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave -> Void, ?failed:String -> Void):Void
@@ -3885,6 +3938,10 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the model.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+- `LoadModelAnimationsAsync`: Loads a glTF or GLB file's animations, answering when they are read: helix-ray's own, in place of raylib's `LoadModelAnimations`. They are read as raylib 6.2 reads them, of the file's first skin: each sampled 60 times a second, with (int)(duration * 60) + 1 frames, each frame's pose its bones' transforms in the model. A file without skins gives none.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the animations, as many as the file has; their count is its length.
+  - `failed`: Optional. Receives why they couldn't be loaded; when omitted, it is logged.
 - `LoadSoundAsync`: Loads a sound file and decodes it, answering when it is ready to play at once: helix-ray's own, in place of raylib's `LoadSound`. A file loaded again shares its first load's decoded sound. `InitAudioDevice` comes first.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the sound.
@@ -4021,13 +4078,13 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
 
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
-`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `MemAlloc`, `MemRealloc`, `MemFree`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `MemAlloc`, `MemRealloc`, `MemFree`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ### Not in helix-ray yet
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`, `LoadModelAnimations`, `UpdateModelAnimation`, `UpdateModelAnimationBones`, `UnloadModelAnimation`, `UnloadModelAnimations`, `IsModelAnimationValid`.
+`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`.
 
 ## Raymath
 
@@ -4768,7 +4825,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `p`: One.
   - `q`: The other.
   - returns: 1 if they are, 0 if not.
-- `MatrixDecompose`: Splits a transform matrix into its translation, rotation and scale; the scale negated when the matrix mirrors, the rotation the identity when it flattens.
+- `MatrixDecompose`: Splits a transform matrix into its translation, rotation and scale, as raylib 6.2's (5.5's took the scale from the rows, wrong for a turned matrix scaled unevenly): the columns, made orthonormal one after another (the shear between them dropped), are the rotation, their lengths the scale, all three negated when the matrix mirrors.
   - `mat`: The matrix.
   - `translation`: Set to its translation.
   - `rotation`: Set to its rotation.
@@ -5598,19 +5655,23 @@ An alias of `Texture`.
 
 *class* in [`ray/src/helix/ray/Transform.hx`](../../ray/src/helix/ray/Transform.hx), `import helix.ray.Transform;`
 
-raylib's `Transform` (raylib.h): not in helix-ray yet; its fields are raylib's. Transform, vertex transformation data.
+Represents raylib's `Transform`: a translation, a rotation and a scale, as a bone's pose holds them.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-function new()
+{?translation:Vector3, ?rotation:Quaternion, ?scale:Vector3}
+```
+
+```haxe
 var translation:Vector3
 var rotation:Quaternion
 var scale:Vector3
 ```
 
-- `new`: Creates one, its fields zero, empty or null.
-- `translation`: Translation.
-- `rotation`: Rotation.
-- `scale`: Scale.
+- `translation`: Gets or sets the translation.
+- `rotation`: Gets or sets the rotation, a quaternion.
+- `scale`: Gets or sets the scale on each axis.
 
 ## Vector2
 
