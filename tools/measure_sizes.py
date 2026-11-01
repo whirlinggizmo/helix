@@ -105,7 +105,8 @@ def package(source):
 
 
 def breakdown(js, source_map):
-    """Bytes by package, from the source map; what it gives no source (Haxe's class and enum metadata) as 'haxe metadata'."""
+    """Bytes by package, from the source map; what it gives no source (Haxe's class and enum metadata) as 'haxe metadata'. What leads a
+    line before its first segment (indentation, `var`, a field's name) is counted with the first segment that has a source."""
     text = js.decode('utf-8')
     lines = text.split('\n')
     sizes = collections.Counter()
@@ -129,7 +130,9 @@ def breakdown(js, source_map):
             sizes['haxe metadata'] += len(line.encode()) + 1
             continue
         if segments[0][0] > 0:
-            sizes['haxe metadata'] += len(line[:segments[0][0]].encode())
+            # What leads a line before its first segment (its indentation, `var`, a declaration's name) is the code's that follows.
+            first = next((src for _, src in segments if src is not None), None)
+            sizes[package(source_map['sources'][first]) if first is not None else 'haxe metadata'] += len(line[:segments[0][0]].encode())
         for i, (start, src) in enumerate(segments):
             end = segments[i + 1][0] if i + 1 < len(segments) else len(line)
             name = package(source_map['sources'][src]) if src is not None else 'haxe metadata'
@@ -209,8 +212,9 @@ def render(baseline):
             increment = '' if before is None else f'+{kb(row["gzip"] - before["gzip"])}'
             out.append(f'| {name} | {row["adds"]} | {kb(row["raw"])} | {kb(row["gzip"])} ({kb(row["brotli"])}) | {increment} |')
             before = row
-        out += ['', 'Each rung\'s JavaScript by package, raw KB, from its source map; "haxe metadata" is what the map gives no source: Haxe\'s '
-                'per-class and per-enum metadata (names, links, constructor tables), which grows with the classes a build links.', '']
+        out += ['', 'Each rung\'s JavaScript by package, raw KB, from its source map, a line\'s start (its indentation, a declaration\'s '
+                'name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe\'s per-class and per-enum '
+                'metadata (names, links, constructor tables), which grows with the classes a build links.', '']
         names = list(rows)
         packages = sorted({p for row in rows.values() for p in row['packages']},
                           key=lambda p: -max(row['packages'].get(p, 0) for row in rows.values()))
