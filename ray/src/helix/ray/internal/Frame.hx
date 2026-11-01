@@ -131,6 +131,14 @@ class Frame {
 	/** The matrix the next immediate vertices are moved by, rlgl's pushed one (`rlPushMatrix`); null for none. */
 	public var transform:Null<Matrix3D> = null;
 
+	/** The mode of the draw call rlgl's next vertices join (`RL_LINES`, `RL_TRIANGLES` or `RL_QUADS`), as `rlBegin` sets it; each flush
+		starts a new one in `RL_QUADS`, as rlgl's batch does. */
+	public var drawMode = 7;
+
+	/** The texture id of the draw call rlgl's next vertices join, as `rlSetTexture` and `rlBegin` set it; 0 for the white texture, as
+		each flush starts. */
+	public var drawTexture = 0;
+
 	// Where a vertex goes under the transform.
 	final moved = new helix.math.Vector3D();
 
@@ -268,6 +276,8 @@ class Frame {
 	/** Draws the batch, rlgl's `rlDrawRenderBatchActive`: its runs into the pass, each through the current program, matrices and state
 		(in wire mode, its triangles as their edges, those culling leaves). */
 	public function flush():Void {
+		drawMode = 7;
+		drawTexture = 0;
 		if (batch.length == 0)
 			return;
 		var m = wire && cull ? Matrix3D.compose(view, projection, viewProjection).values : null;

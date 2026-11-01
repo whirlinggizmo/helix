@@ -4233,11 +4233,23 @@ class Raylib {
 	public static inline function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2
 		return RText.MeasureTextEx(font, text, fontSize, spacing);
 
+	/** Returns the size characters are drawn at by `DrawTextCodepoints`: their widest line's width, and their lines' height, as
+		`MeasureTextEx` measures text.
+
+		@param font  The font.
+		@param codepoints  The characters.
+		@param length  How many of them.
+		@param fontSize  The height of a line, in pixels.
+		@param spacing  The space between letters, in pixels.
+		@return  The size, in pixels; 0 by 0 for no characters or a font with no texture. */
+	public static inline function MeasureTextCodepoints(font:Font, codepoints:Array<Int>, length:Int, fontSize:Float, spacing:Float):Vector2
+		return RText.MeasureTextCodepoints(font, codepoints, length, fontSize, spacing);
+
 	/** Returns where a character is in a font's glyphs: its own, else the question mark's, else the first.
 
 		@param font  The font.
 		@param codepoint  The character.
-		@return  The index. */
+		@return  The index; 0 for a font that isn't valid (`IsFontValid`). */
 	public static inline function GetGlyphIndex(font:Font, codepoint:Int):Int
 		return RText.GetGlyphIndex(font, codepoint);
 
@@ -4289,6 +4301,10 @@ class Raylib {
 		image is white with the glyphs' coverage as alpha (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`), and its bottom-right 3 by 3 texels are
 		opaque white.
 
+		Its size is estimated from the glyphs' widths, a power of two wide; when packing rows in order (`packMethod` 0) runs out of rows,
+		it is made twice as high, as many times as it needs, so every glyph has its place. The skyline packer (1) leaves a glyph that
+		doesn't fit out, with a warning, placed at 2147483648 across and down, as raylib's.
+
 		@param glyphs  The glyphs, their images 8-bit grayscale.
 		@param glyphRecs  Receives each glyph's place, replacing what it held.
 		@param glyphCount  How many glyphs; 0 for 95.
@@ -4302,8 +4318,9 @@ class Raylib {
 
 	/** Makes a font from an image of glyphs, as raylib's does: the glyphs in rows on a key color, the key's border before the first
 		glyph giving the space between glyphs and between rows; each glyph a run of pixels that aren't the key, numbered from a first
-		character. The key becomes clear on the font's texture. An image with no such border gives the default font. At most 256 glyphs
-		are read, and a pixel past the image reads as the key, where raylib's reads past its pixels.
+		character. The key becomes clear on the font's texture. An image with no such border gives the default font. A glyph's height
+		ends at the image's bottom and its width at its right edge, as raylib's scan has them. At most 256 glyphs are read, where
+		raylib's writes past its 256.
 
 		@param image  The image, in any uncompressed format.
 		@param key  The color around the glyphs.
@@ -4324,9 +4341,11 @@ class Raylib {
 		`#`), widths and precisions, as in `%5d`, `%-8s`, `%03i` and `%*d`. C's length modifiers (`l`, `ll`, `h`, `z`) are read and
 		ignored.
 
+		As raylib's, the text is at most 1023 UTF-8 bytes: longer, it is cut to its first 1020 and "..." ends it.
+
 		@param text  The format.
 		@param args  The values, one for each conversion.
-		@return  The text. */
+		@return  The text; empty for a null format. */
 	public static inline function TextFormat(text:String, args:haxe.extern.Rest<Dynamic>):String
 		return RText.TextFormat(text, ...args);
 
@@ -4346,17 +4365,35 @@ class Raylib {
 	public static inline function TextLength(text:String):Int
 		return RText.TextLength(text);
 
-	/** Returns a piece of text, by its place in UTF-8 bytes. A position at or past the end gives no text, and the piece ends with the
-		text.
+	/** Returns a piece of text, by its place in UTF-8 bytes. The piece ends with the text, and is at most 1023 bytes, as raylib's.
 
 		A character the piece cuts through is a "?" for each of its bytes taken, as raylib draws it.
 
 		@param text  The text.
 		@param position  Where the piece starts, in bytes from the start.
 		@param length  How long it is, in bytes.
-		@return  The piece. */
+		@return  The piece; empty for null text, a position below 0 or at or past the end, or a length below 1. */
 	public static inline function TextSubtext(text:String, position:Int, length:Int):String
 		return RText.TextSubtext(text, position, length);
+
+	/** Returns text without its spaces (" ", not other white space), as raylib's: only the text's first 1023 UTF-8 bytes are read.
+
+		@param text  The text.
+		@return  The new text; empty for null text. */
+	public static inline function TextRemoveSpaces(text:String):String
+		return RText.TextRemoveSpaces(text);
+
+	/** Returns the text between the first place `begin` is found and the first place `end` is found after it.
+
+		As raylib's, the result is at most 1023 UTF-8 bytes: when what lies between is longer, it is the first 1023 bytes after `begin`,
+		running past `end`.
+
+		@param text  The text searched.
+		@param begin  The text before the piece.
+		@param end  The text after it.
+		@return  The piece; empty when either isn't found or any is null. */
+	public static inline function GetTextBetween(text:String, begin:String, end:String):String
+		return RText.GetTextBetween(text, begin, end);
 
 	/** Returns text with every piece of it that matches replaced, from the start, each match after the one before.
 
@@ -4367,18 +4404,62 @@ class Raylib {
 	public static inline function TextReplace(text:String, replace:String, by:String):String
 		return RText.TextReplace(text, replace, by);
 
-	/** Returns text with other text put in at a place in UTF-8 bytes.
+	/** Returns text with every piece of it that matches replaced, from the start, each match after the one before: raylib 6.2's, with no
+		limit to its length.
+
+		@param text  The text.
+		@param search  The text replaced.
+		@param replacement  The text put in its place; null for none.
+		@return  The new text; null when `text` or `search` is null or `search` is empty. */
+	public static inline function TextReplaceAlloc(text:String, search:String, replacement:String):String
+		return RText.TextReplaceAlloc(text, search, replacement);
+
+	/** Returns text with what lies between the first place `begin` is found and the first place `end` is found after it replaced, the two
+		kept. As raylib's, the result is at most 1022 UTF-8 bytes.
+
+		@param text  The text.
+		@param begin  The text before the piece replaced.
+		@param end  The text after it.
+		@param replacement  The text put in its place; null to remove the piece.
+		@return  The new text; empty when either isn't found, the result is too long, or `text`, `begin` or `end` is null. */
+	public static inline function TextReplaceBetween(text:String, begin:String, end:String, replacement:String):String
+		return RText.TextReplaceBetween(text, begin, end, replacement);
+
+	/** Returns text with what lies between the first place `begin` is found and the first place `end` is found after it replaced, the two
+		kept: `TextReplaceBetween` with no limit to its length.
+
+		@param text  The text.
+		@param begin  The text before the piece replaced.
+		@param end  The text after it.
+		@param replacement  The text put in its place; null to remove the piece.
+		@return  The new text; null when either isn't found, or `text`, `begin` or `end` is null. */
+	public static inline function TextReplaceBetweenAlloc(text:String, begin:String, end:String, replacement:String):String
+		return RText.TextReplaceBetweenAlloc(text, begin, end, replacement);
+
+	/** Returns text with other text put in at a place in UTF-8 bytes. As raylib's, the result is at most 1022 bytes.
 
 		A character the place cuts through is a "?" for each of its bytes, as raylib draws it.
 
 		@param text  The text.
 		@param insert  The text put in.
 		@param position  Where, in bytes from the start, clamped to the end.
-		@return  The new text; empty when either is null or the position is below 0. */
+		@return  The new text; empty when either is null, the position is below 0, or the result is too long. */
 	public static inline function TextInsert(text:String, insert:String, position:Int):String
 		return RText.TextInsert(text, insert, position);
 
+	/** Returns text with other text put in at a place in UTF-8 bytes: `TextInsert` with no limit to its length.
+
+		@param text  The text.
+		@param insert  The text put in.
+		@param position  Where, in bytes from the start, clamped to the end.
+		@return  The new text; null when either is null or the position is below 0. */
+	public static inline function TextInsertAlloc(text:String, insert:String, position:Int):String
+		return RText.TextInsertAlloc(text, insert, position);
+
 	/** Returns texts joined into one, a delimiter between each two.
+
+		As raylib's, the result is at most 1023 UTF-8 bytes: a text that would take it past them, with its delimiter, is left out, and the
+		texts after it are still joined.
 
 		@param textList  The texts; a null one is empty.
 		@param count  How many of them.
@@ -4389,15 +4470,30 @@ class Raylib {
 
 	/** Returns the pieces of text between a delimiter: one more than the delimiters it holds, an empty one between two together.
 
-		The delimiter is a character, so a character outside ASCII splits text as an ASCII one does; raylib's is one byte. There is no
-		limit to the pieces, where raylib's stops at 128.
+		As raylib's, the delimiter is one byte (its low 8 bits), only the text's first 1023 UTF-8 bytes are read, and there are at most 128
+		pieces, the last of them empty when the text holds more. A character a piece cuts through is a "?" for each of its bytes.
 
 		@param text  The text.
-		@param delimiter  The character between pieces.
+		@param delimiter  The byte between pieces, such as `",".code`.
 		@param count  Receives how many pieces there are, at its index 0; 0 for null text.
 		@return  The pieces; none for null text. */
 	public static inline function TextSplit(text:String, delimiter:Int, count:Array<Int>):Array<String>
 		return RText.TextSplit(text, delimiter, count);
+
+	/** Returns the lines of text: the pieces between its "\n"s, one more than it holds, with no limit to their length.
+
+		@param text  The text.
+		@param count  Receives how many lines there are, at its index 0; 0 for null text.
+		@return  The lines; null for null text. */
+	public static inline function LoadTextLines(text:String, count:Array<Int>):Array<String>
+		return RText.LoadTextLines(text, count);
+
+	/** Does nothing: lines from `LoadTextLines` are freed by the garbage collector.
+
+		@param text  The lines.
+		@param lineCount  How many of them. */
+	public static inline function UnloadTextLines(text:Array<String>, lineCount:Int):Void
+		RText.UnloadTextLines(text, lineCount);
 
 	/** Returns where text is first found in other text, in UTF-8 bytes from the start, as `TextSubtext` takes it.
 
@@ -4422,15 +4518,18 @@ class Raylib {
 		return RText.TextToLower(text);
 
 	/** Returns snake-case text in Pascal case: "hello_world" is "HelloWorld". Each run of underscores is dropped, and the first letter
-		and the one after each run are made capitals if they are a to z.
+		and the one after each run are made capitals if they are a to z. As raylib's, the result is at most 1023 UTF-8 bytes.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
 	public static inline function TextToPascal(text:String):String
 		return RText.TextToPascal(text);
 
-	/** Returns Pascal- or camel-case text in snake case: "helloWorld" is "hello_world". Each capital A to Z is made lower case, an
-		underscore before it unless it starts the text.
+	/** Returns Pascal- or camel-case text, or words, in snake case: "helloWorld" and "Hello World" are "hello_world", "HTTPServer" is
+		"http_server". Each capital A to Z is made lower case, an underscore before it when it follows a letter a to z, or a capital with
+		a letter a to z after it; a space is an underscore. No underscore is added where the text so far ends in one, nor at its start.
+
+		As raylib's, the result is at most 1023 UTF-8 bytes.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
@@ -4438,7 +4537,8 @@ class Raylib {
 		return RText.TextToSnake(text);
 
 	/** Returns snake-case text in camel case: "hello_world" is "helloWorld". Each run of underscores is dropped, the letter after it
-		made a capital if it is a to z, and the first letter made lower case if it is A to Z.
+		made a capital if it is a to z, and the first letter made lower case if it is A to Z. As raylib's, the result is at most 1023
+		UTF-8 bytes.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
@@ -4481,8 +4581,8 @@ class Raylib {
 	/** Returns the codes of text's characters.
 
 		@param text  The text.
-		@param count  Receives how many there are, at its index 0.
-		@return  The codes; none for null text. */
+		@param count  Receives how many there are, at its index 0; 0 for null text.
+		@return  The codes; null for null text. */
 	public static inline function LoadCodepoints(text:String, count:Array<Int>):Array<Int>
 		return RText.LoadCodepoints(text, count);
 
@@ -4502,8 +4602,9 @@ class Raylib {
 	/** Returns the code of text's first character, checked as RFC 3629 has UTF-8, as raylib checks it.
 
 		@param text  The text.
-		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by.
-		@return  The code; 0 for empty text. */
+		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by; 1 for empty or
+			null text.
+		@return  The code; 0 for empty text, '?' (0x3F) for null text. */
 	public static inline function GetCodepoint(text:String, codepointSize:Array<Int>):Int
 		return RText.GetCodepoint(text, codepointSize);
 
@@ -4511,16 +4612,17 @@ class Raylib {
 
 		@param text  The text.
 		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by, as in
-			`TextSubtext(text, codepointSize[0], TextLength(text))`.
-		@return  The code; 0 for empty text. */
+			`TextSubtext(text, codepointSize[0], TextLength(text))`; 1 for empty or null text.
+		@return  The code; 0 for empty text, '?' (0x3F) for null text. */
 	public static inline function GetCodepointNext(text:String, codepointSize:Array<Int>):Int
 		return RText.GetCodepointNext(text, codepointSize);
 
 	/** Returns the code of text's last character: the one before where it ends, as raylib's finds the one before a place in text.
 
 		@param text  The text; `TextSubtext(text, 0, position)` gives the character before a position.
-		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move back by; 0 for empty text.
-		@return  The code; '?' (0x3F) for empty text. */
+		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move back by; 1 for empty or null
+			text.
+		@return  The code; '?' (0x3F) for empty or null text. */
 	public static inline function GetCodepointPrevious(text:String, codepointSize:Array<Int>):Int
 		return RText.GetCodepointPrevious(text, codepointSize);
 
@@ -5352,7 +5454,8 @@ class Raylib {
 	public static inline function SetSoundVolume(sound:Sound, volume:Float):Void
 		RAudio.SetSoundVolume(sound, volume);
 
-	/** Sets a sound's pitch, for its next play and the one playing.
+	/** Sets a sound's pitch, for its next play and the one playing: the pitch given, whatever was set before, so 1 sets it back to as
+		recorded. It speeds or slows the sound with it, and is clamped to 0.25 to 4, the platform's range.
 
 		@param sound  The sound.
 		@param pitch  1 for as recorded, 2 an octave up. */
@@ -5361,8 +5464,11 @@ class Raylib {
 
 	/** Sets where a sound is heard, for its next play and the one playing.
 
+		The range is raylib 5.5's, 0 to 1 with 0.5 the middle, and 1 is the right, as later releases' +1 is; raylib 5.5's own mixer put 1
+		on the left.
+
 		@param sound  The sound.
-		@param pan  0 for left, 0.5 the middle, 1 for right, as raylib's. */
+		@param pan  0 for left, 0.5 the middle, 1 for right. */
 	public static inline function SetSoundPan(sound:Sound, pan:Float):Void
 		RAudio.SetSoundPan(sound, pan);
 
@@ -5410,7 +5516,8 @@ class Raylib {
 	public static inline function IsMusicStreamPlaying(music:Music):Bool
 		return RAudio.IsMusicStreamPlaying(music);
 
-	/** Keeps music playing. raylib's programs call it each frame; here the stream feeds itself, so it does nothing.
+	/** Keeps music playing. raylib's programs call it each frame; here the stream feeds itself, so it does nothing. Music that doesn't
+		loop is heard to its last sample, and stops then.
 
 		@param music  The music. */
 	public static inline function UpdateMusicStream(music:Music):Void
@@ -5449,17 +5556,17 @@ class Raylib {
 	public static inline function SetMusicVolume(music:Music, volume:Float):Void
 		RAudio.SetMusicVolume(music, volume);
 
-	/** Sets music's pitch.
+	/** Sets music's pitch: the pitch given, whatever was set before, clamped to 0.25 to 4, as `SetSoundPitch` sets a sound's.
 
 		@param music  The music.
 		@param pitch  1 for as recorded. */
 	public static inline function SetMusicPitch(music:Music, pitch:Float):Void
 		RAudio.SetMusicPitch(music, pitch);
 
-	/** Sets where music is heard.
+	/** Sets where music is heard, in `SetSoundPan`'s range: 1 is the right.
 
 		@param music  The music.
-		@param pan  0 for left, 0.5 the middle, 1 for right, as raylib's. */
+		@param pan  0 for left, 0.5 the middle, 1 for right. */
 	public static inline function SetMusicPan(music:Music, pan:Float):Void
 		RAudio.SetMusicPan(music, pan);
 
@@ -5471,7 +5578,8 @@ class Raylib {
 	public static inline function GetMusicTimeLength(music:Music):Float
 		return RAudio.GetMusicTimeLength(music);
 
-	/** Returns how far music has played, back to 0 at each loop, as raylib's. Paused, it holds; stopped, it is 0.
+	/** Returns how far music has played, back to 0 at each loop, as raylib's. Paused, it holds; stopped, or played to its end without
+		looping, it is 0; played again, it starts from 0.
 
 		@param music  The music.
 		@return  The position, in seconds from its start. */
@@ -5556,17 +5664,17 @@ class Raylib {
 	public static inline function SetAudioStreamVolume(stream:AudioStream, volume:Float):Void
 		RAudio.SetAudioStreamVolume(stream, volume);
 
-	/** Sets a stream's pitch.
+	/** Sets a stream's pitch: the pitch given, whatever was set before, clamped to 0.25 to 4, as `SetSoundPitch` sets a sound's.
 
 		@param stream  The stream.
 		@param pitch  1 for as given. */
 	public static inline function SetAudioStreamPitch(stream:AudioStream, pitch:Float):Void
 		RAudio.SetAudioStreamPitch(stream, pitch);
 
-	/** Sets where a stream is heard.
+	/** Sets where a stream is heard, in `SetSoundPan`'s range: 1 is the right.
 
 		@param stream  The stream.
-		@param pan  0 for left, 0.5 the middle, 1 for right, as raylib's. */
+		@param pan  0 for left, 0.5 the middle, 1 for right. */
 	public static inline function SetAudioStreamPan(stream:AudioStream, pan:Float):Void
 		RAudio.SetAudioStreamPan(stream, pan);
 
@@ -5769,6 +5877,10 @@ class Raylib {
 	/** Loads a TrueType or OpenType font file at a size, answering when its glyphs are ready: helix-ray's own, in place of raylib's
 		`LoadFontEx`.
 
+		The font holds only the characters the file has, so `glyphCount` may be fewer than asked for and a character it lacks draws as
+		its '?'; each Unicode space it has (U+0020, U+00A0, U+2000 to U+200A, U+3000 and the others) is a blank glyph as wide as its
+		advance.
+
 		@param fileName  The file, as the program names it.
 		@param fontSize  The glyphs' size: the height of a line, in pixels.
 		@param codepoints  The characters, or null for those from the space on.
@@ -5781,6 +5893,8 @@ class Raylib {
 
 	/** Makes a font from a TrueType or OpenType file's bytes, answering when its glyphs are ready: helix-ray's own, in place of raylib's
 		`LoadFontFromMemory`, as the glyphs are rasterized off the main thread.
+
+		The font holds only the characters the file has, as `LoadFontExAsync`'s does; with none of them, it is the default font.
 
 		@param fileType  The file's extension, ".ttf" or ".otf".
 		@param fileData  The file's bytes.

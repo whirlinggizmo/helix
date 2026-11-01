@@ -1,0 +1,9 @@
+{
+  "oracle": "6.2",
+  "covers": "rtext.c's GenImageFontAtlas (rows in order, the atlas made higher as it fills; glyphs clipped at its edges; the white corner; the skyline packer) and LoadFontFromImage's scan (a glyph to the image's right edge and bottom), as 6.2 has them, on glyphs and images made to reach those cases",
+  "notes": "An atlas is printed as its size, format and a checksum of its texels; a font as its glyphs and their places.",
+  "kind": "values",
+  "generated": true,
+  "main": "FontBits",
+  "tolerance": 1e-07
+}

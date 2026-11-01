@@ -1,0 +1,8 @@
+{
+  "oracle": "6.2",
+  "covers": "rlgl.h's calls taken from 6.2: rlSetTexture and rlBegin (the texture a draw call takes across changes of mode, the white texture on a second change, rlSetTexture(0) in the same mode), rlPushMatrix past RL_MAX_MATRIX_STACK_SIZE, and 6.2's rlSetPointSize, rlGetPointSize and rlDisablePointMode; each vertex as rlgl batches it with its draw call's texture, GL's polygon mode",
+  "kind": "values",
+  "generated": true,
+  "main": "RlglBits",
+  "tolerance": 1e-07
+}

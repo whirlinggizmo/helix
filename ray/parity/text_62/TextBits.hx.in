@@ -1,0 +1,56 @@
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import Parity.*;
+
+// helix-ray's text and codepoint functions, printed by Parity and the printers here as ref.c.in prints raylib 6.2's.
+class TextBits {
+	static final NULL:String = null;
+
+	// piece, n times over.
+	static function rep(n:Int, piece:String):String
+		return [for (_ in 0...n) piece].join("");
+
+	static function count(name:String, n:Int):Void
+		line('$name count $n');
+
+	static function split(name:String, text:String, delimiter:Int):Void {
+		var n = [-1];
+		var pieces = TextSplit(text, delimiter, n);
+		count(name, n[0]);
+		for (i in 0...n[0])
+			str(name, pieces[i]);
+	}
+
+	static function lines(name:String, text:String):Void {
+		var n = [-1];
+		var found = LoadTextLines(text, n);
+		count(name, n[0]);
+		line('$name lines ${found == null ? "NULL" : "some"}');
+		for (i in 0...n[0])
+			str(name, found[i]);
+		if (found != null)
+			UnloadTextLines(found, n[0]);
+	}
+
+	static function codepoints(name:String, text:String):Void {
+		var n = [-1];
+		var found = LoadCodepoints(text, n);
+		line('$name codepoints ${n[0]} ${found == null ? "NULL" : "some"}' + [for (i in 0...n[0]) ' ${found[i]}'].join(""));
+		if (found != null)
+			UnloadCodepoints(found);
+	}
+
+	// A codepoint function's code and size: first, next, or the one before the text's end.
+	static function codepoint(name:String, text:String, which:Int):Void {
+		var size = [-1];
+		var code = which == 0 ? GetCodepoint(text, size) : which == 1 ? GetCodepointNext(text, size) : GetCodepointPrevious(text, size);
+		line('$name codepoint $code ${size[0]}');
+	}
+
+	static function main() {
+		open();
+		var font = GetFontDefault();
+		@CASES@
+		save();
+	}
+}

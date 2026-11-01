@@ -1,0 +1,9 @@
+{
+  "oracle": "5.5",
+  "covers": "rtext.c's text and codepoint functions kept from 5.5: TextReplace and LoadUTF8 (6.2 changed them by choice), TextLength, TextIsEqual, TextToUpper, TextToLower and CodepointToUTF8",
+  "notes": "Text is printed as its UTF-8 bytes, as text_62's is.",
+  "kind": "values",
+  "generated": true,
+  "main": "TextBits55",
+  "tolerance": 1e-07
+}

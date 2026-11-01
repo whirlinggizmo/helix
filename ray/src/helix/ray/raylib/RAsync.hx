@@ -526,6 +526,10 @@ class RAsync {
 	/** Loads a TrueType or OpenType font file at a size, answering when its glyphs are ready: helix-ray's own, in place of raylib's
 		`LoadFontEx`.
 
+		The font holds only the characters the file has, so `glyphCount` may be fewer than asked for and a character it lacks draws as
+		its '?'; each Unicode space it has (U+0020, U+00A0, U+2000 to U+200A, U+3000 and the others) is a blank glyph as wide as its
+		advance.
+
 		@param fileName  The file, as the program names it.
 		@param fontSize  The glyphs' size: the height of a line, in pixels.
 		@param codepoints  The characters, or null for those from the space on.
@@ -546,6 +550,8 @@ class RAsync {
 	/** Makes a font from a TrueType or OpenType file's bytes, answering when its glyphs are ready: helix-ray's own, in place of raylib's
 		`LoadFontFromMemory`, as the glyphs are rasterized off the main thread.
 
+		The font holds only the characters the file has, as `LoadFontExAsync`'s does; with none of them, it is the default font.
+
 		@param fileType  The file's extension, ".ttf" or ".otf".
 		@param fileData  The file's bytes.
 		@param dataSize  How many of them.
@@ -561,8 +567,12 @@ class RAsync {
 			Runtime.later(() -> refuse("LoadFontFromMemoryAsync", '$fileType fonts aren\'t in helix-ray yet', failed));
 			return;
 		}
-		LoadFontDataAsync(fileData, dataSize, fontSize, codepoints, codepointCount, FONT_DEFAULT, glyphs -> loaded(RText.fontOf(glyphs, fontSize)),
-			message -> refuse("LoadFontFromMemoryAsync", message, failed));
+		var count = codepointCount > 0 ? codepointCount : 95;
+		var wanted = codepoints == null ? [for (i in 0...count) 32 + i] : codepoints.slice(0, count);
+		var data = dataSize < fileData.length ? fileData.sub(0, dataSize) : fileData;
+		Runtime.rasterizer()
+			.rasterize(data, fontSize, wanted, false, (glyphs, ascent, _, _) -> loaded(RText.fontOf(RText.foundGlyphs(glyphs, ascent, fontSize), fontSize)),
+				message -> refuse("LoadFontFromMemoryAsync", message, failed));
 	}
 
 	/** Rasterizes a TrueType or OpenType font's glyphs, answering when they are ready: helix-ray's own, in place of raylib's

@@ -99,6 +99,16 @@ class Parity {
 		}
 	}
 
+	/** Text: its UTF-8 bytes' count and the bytes in hex ("-" for none), or NULL, as parity.h's str prints raylib's. */
+	public static function str(name:String, s:Null<String>):Void {
+		if (s == null) {
+			line('$name str NULL');
+			return;
+		}
+		var bytes = haxe.io.Bytes.ofString(s, UTF8);
+		line('$name str ${bytes.length} ${bytes.length == 0 ? "-" : bytes.toHex()}');
+	}
+
 	public static function box(name:String, b:BoundingBox):Void
 		line('$name box ${b.min.x} ${b.min.y} ${b.min.z} ${b.max.x} ${b.max.y} ${b.max.z}');
 

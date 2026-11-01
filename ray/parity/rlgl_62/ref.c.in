@@ -1,0 +1,59 @@
+// raylib 6.2's rlgl: the texture a draw call takes across changes of mode, the matrix stack's overflow, the point calls; read back from
+// rlgl's batch and GL, printed by parity.h and the printers here. cases.py's list is put into it.
+#include "parity.h"
+#include <GL/gl.h>
+
+static Texture2D tex, tex2;
+
+// What was drawn since the last drawn: each vertex's mode (T a triangle's, L a line's; a quad's four as two triangles), the texture its
+// draw call draws with (white, tex or tex2) and its position. The batch is flushed after.
+static void drawn(const char *name) {
+    rlVertexBuffer *b = &parity_batch.vertexBuffer[parity_batch.currentBuffer];
+    int corners[6] = { 0, 1, 2, 0, 2, 3 }, at = 0;
+    for (int d = 0; d < parity_batch.drawCounter; d++) {
+        rlDrawCall *c = &parity_batch.draws[d];
+        int n = c->mode == RL_QUADS ? c->vertexCount / 4 * 6 : c->vertexCount;
+        const char *texture = c->textureId == tex.id ? "tex" : c->textureId == tex2.id ? "tex2" : c->textureId == rlGetTextureIdDefault() ? "white" : "other";
+        for (int k = 0; k < n; k++) {
+            int i = c->mode == RL_QUADS ? at + k / 6 * 4 + corners[k % 6] : at + k;
+            printf("%s %c %s %.9g %.9g %.9g\n", name, c->mode == RL_LINES ? 'L' : 'T', texture, b->vertices[i * 3], b->vertices[i * 3 + 1], b->vertices[i * 3 + 2]);
+        }
+        at += c->vertexCount + c->vertexAlignment;
+    }
+    printf("%s end\n", name);
+    rlDrawRenderBatch(&parity_batch);
+}
+
+// Whether GL draws triangles filled or as their edges.
+static void polygons(const char *name) {
+    GLint mode[2] = { 0, 0 };
+    glGetIntegerv(GL_POLYGON_MODE, mode);
+    printf("%s polygons %s\n", name, mode[0] == GL_LINE ? "line" : mode[0] == GL_FILL ? "fill" : "other");
+}
+
+static void tri(float x) {
+    rlVertex3f(x, 0, 0);
+    rlVertex3f(x + 1, 0, 0);
+    rlVertex3f(x, 1, 0);
+}
+
+static void quad(float x) {
+    rlVertex3f(x, 0, 0);
+    rlVertex3f(x, 1, 0);
+    rlVertex3f(x + 1, 1, 0);
+    rlVertex3f(x + 1, 0, 0);
+}
+
+static void seg(float x) {
+    rlVertex3f(x, 0, 0);
+    rlVertex3f(x, 1, 0);
+}
+
+int main(void) {
+    parity_open();
+    tex = LoadTextureFromImage(GenImageColor(4, 4, RED));
+    tex2 = LoadTextureFromImage(GenImageColor(4, 4, BLUE));
+    @CASES@
+    parity_close();
+    return 0;
+}

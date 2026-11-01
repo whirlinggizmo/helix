@@ -1,0 +1,60 @@
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import helix.ray.internal.Runtime;
+import Parity.*;
+
+// helix-ray's fonts loaded from a TrueType file, printed by Parity and the printers here as ref.c.in prints raylib 6.2's. The glyphs are
+// rasterized by the platform's native rasterizer, so this runs in hxcpp alone.
+@:access(helix.ray.internal.Runtime)
+class FontFileBits {
+	static final NULL:Array<Int> = null;
+
+	// Polls what loads until done says it has, the rasterizer working on a thread of its own.
+	static function pump(done:Void->Bool):Void {
+		for (_ in 0...20000) {
+			if (done())
+				return;
+			Runtime.pollAll();
+			var now = Runtime.waiting;
+			Runtime.waiting = [];
+			for (f in now)
+				f();
+			Sys.sleep(0.001);
+		}
+		throw "never loaded";
+	}
+
+	static function load(fileName:String, fontSize:Int, codepoints:Array<Int>, count:Int):Font {
+		var font:Font = null;
+		LoadFontExAsync(fileName, fontSize, codepoints, count, loaded -> font = loaded, error -> throw error);
+		pump(() -> font != null);
+		return font;
+	}
+
+	// An image's size and format, and a checksum of its bytes.
+	static function pixels(name:String, image:Image, bytes:Int):Void {
+		var sum = 0;
+		for (i in 0...bytes)
+			sum = (sum + image.data.get(i) * (i % 251 + 1)) % 1000000007;
+		line('$name image ${image.width} ${image.height} ${image.format} $sum');
+	}
+
+	static function font(name:String, f:Font):Void {
+		line('$name font ${f.baseSize} ${f.glyphCount} ${f.glyphPadding} ${f.texture.width} ${f.texture.height}');
+		for (i in 0...f.glyphCount) {
+			var g = f.glyphs[i];
+			line('$name glyph ${g.value} ${g.offsetX} ${g.offsetY} ${g.advanceX} ${g.image.width} ${g.image.height}');
+			rect(name, f.recs[i]);
+			pixels(name, g.image, g.image.width * g.image.height * 2);
+		}
+	}
+
+	static function main() {
+		open();
+		var files = new DiskFiles();
+		Runtime.polled.push(files);
+		Runtime.assets = new helix.services.assets.Assets({sources: [FileSystem(files)]});
+		@CASES@
+		save();
+	}
+}

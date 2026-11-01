@@ -185,12 +185,53 @@ class RText {
 		return new Vector2(f32(f32(widest * scale) + f32((most - 1) * f32(spacing))), height);
 	}
 
+	/** Returns the size characters are drawn at by `DrawTextCodepoints`: their widest line's width, and their lines' height, as
+		`MeasureTextEx` measures text.
+
+		@param font  The font.
+		@param codepoints  The characters.
+		@param length  How many of them.
+		@param fontSize  The height of a line, in pixels.
+		@param spacing  The space between letters, in pixels.
+		@return  The size, in pixels; 0 by 0 for no characters or a font with no texture. */
+	static function MeasureTextCodepoints(font:Font, codepoints:Array<Int>, length:Int, fontSize:Float, spacing:Float):Vector2 {
+		if (font.texture == null || font.texture.id == 0 || codepoints == null || length == 0)
+			return new Vector2();
+		// raylib's float arithmetic, each step rounded to single precision.
+		inline function f32(x:Float):Float
+			return helix.ray.internal.Pixels.f32(x);
+		fontSize = f32(fontSize);
+		var width = 0., widest = 0., height = fontSize, count = 0, most = 0, scale = f32(fontSize / font.baseSize);
+		for (i in 0...length) {
+			var codepoint = codepoints[i],
+				index = GetGlyphIndex(font, codepoint);
+			if (codepoint != "\n".code) {
+				count++;
+				var glyph = font.glyphs[index];
+				width = f32(width + (glyph.advanceX > 0 ? glyph.advanceX : f32(f32(font.recs[index].width) + glyph.offsetX)));
+			} else {
+				if (widest < width)
+					widest = width;
+				width = 0;
+				count = 0;
+				height = f32(height + f32(fontSize + textLineSpacing));
+			}
+			if (most < count)
+				most = count;
+		}
+		if (widest < width)
+			widest = width;
+		return new Vector2(f32(f32(widest * scale) + f32((most - 1) * f32(spacing))), height);
+	}
+
 	/** Returns where a character is in a font's glyphs: its own, else the question mark's, else the first.
 
 		@param font  The font.
 		@param codepoint  The character.
-		@return  The index. */
+		@return  The index; 0 for a font that isn't valid (`IsFontValid`). */
 	static function GetGlyphIndex(font:Font, codepoint:Int):Int {
+		if (!IsFontValid(font))
+			return 0;
 		var fallback = 0;
 		for (i in 0...font.glyphCount) {
 			if (font.glyphs[i].value == "?".code)
@@ -306,6 +347,10 @@ class RText {
 		image is white with the glyphs' coverage as alpha (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`), and its bottom-right 3 by 3 texels are
 		opaque white.
 
+		Its size is estimated from the glyphs' widths, a power of two wide; when packing rows in order (`packMethod` 0) runs out of rows,
+		it is made twice as high, as many times as it needs, so every glyph has its place. The skyline packer (1) leaves a glyph that
+		doesn't fit out, with a warning, placed at 2147483648 across and down, as raylib's.
+
 		@param glyphs  The glyphs, their images 8-bit grayscale.
 		@param glyphRecs  Receives each glyph's place, replacing what it held.
 		@param glyphCount  How many glyphs; 0 for 95.
@@ -316,7 +361,7 @@ class RText {
 	static function GenImageFontAtlas(glyphs:Array<GlyphInfo>, glyphRecs:Array<Rectangle>, glyphCount:Int, fontSize:Int, padding:Int, packMethod:Int):Image {
 		var atlas = new Image();
 		if (glyphs == null) {
-			Runtime.log(LOG_WARNING, "FONT: Provided chars info not valid, returning empty image atlas");
+			Runtime.log(LOG_WARNING, "FONT: Provided glyphs info not valid, returning empty image atlas");
 			return atlas;
 		}
 		glyphCount = glyphCount > 0 ? glyphCount : 95;
@@ -324,16 +369,21 @@ class RText {
 		for (i in 0...glyphCount)
 			total += glyphs[i].image.width + 2 * padding;
 		var padded = fontSize + 2 * padding;
-		var area = total * padded * 1.2,
-			size = Std.int(Math.pow(2, Math.ceil(Math.log(Math.sqrt(area)) / Math.log(2))));
+		// raylib's estimate, in single precision as it works it out.
+		inline function f32(x:Float):Float
+			return helix.ray.internal.Pixels.f32(x);
+		var area = f32(total * padded * f32(1.2)),
+			size = Std.int(Math.pow(2, Math.fceil(f32(f32(Math.log(f32(Math.sqrt(area)))) / f32(Math.log(2))))));
 		atlas.width = size;
-		atlas.height = area < size * size / 2 ? Std.int(size / 2) : size;
+		atlas.height = area < Std.int(size * size / 2) ? Std.int(size / 2) : size;
 		var gray = haxe.io.Bytes.alloc(atlas.width * atlas.height);
 		var recs = [for (_ in 0...glyphCount) new Rectangle()];
+		// A glyph's texels inside the atlas, those past its edges left out.
 		inline function blit(glyph:GlyphInfo, left:Int, top:Int)
 			for (y in 0...glyph.image.height)
 				for (x in 0...glyph.image.width)
-					gray.set((top + y) * atlas.width + left + x, (glyph.image.data : haxe.io.Bytes).get(y * glyph.image.width + x));
+					if (left + x >= 0 && left + x < atlas.width && top + y >= 0 && top + y < atlas.height)
+						gray.set((top + y) * atlas.width + left + x, (glyph.image.data : haxe.io.Bytes).get(y * glyph.image.width + x));
 		if (packMethod == 0) {
 			var x = padding, y = padding;
 			for (i in 0...glyphCount) {
@@ -341,10 +391,13 @@ class RText {
 				if (x >= atlas.width - glyph.image.width - 2 * padding) {
 					x = padding;
 					y += fontSize + 2 * padding;
+					// Out of rows: the atlas is made twice as high, keeping what it holds.
 					if (y > atlas.height - fontSize - padding) {
-						for (j in i + 1...glyphCount)
-							Runtime.log(LOG_WARNING, 'FONT: Failed to package character ($j)');
-						break;
+						Runtime.log(LOG_WARNING, "FONT: Updating atlas size to fit all characters");
+						var taller = haxe.io.Bytes.alloc(atlas.width * atlas.height * 2);
+						taller.blit(0, gray, 0, gray.length);
+						gray = taller;
+						atlas.height *= 2;
 					}
 				}
 				blit(glyph, x, y);
@@ -365,14 +418,18 @@ class RText {
 				recs[i] = new Rectangle(x, y, glyph.image.width, glyph.image.height);
 				if (places[i * 3 + 2] == 1)
 					blit(glyph, x, y);
-				else
-					Runtime.log(LOG_WARNING, 'FONT: Failed to package character ($i)');
+				else {
+					// A glyph left out is placed where stb_rect_pack marks it, at its largest coordinate, as a float.
+					recs[i].x = recs[i].y = f32(2147483647.0 + padding);
+					Runtime.log(LOG_WARNING, 'FONT: Failed to package glyph (0x${StringTools.hex(glyph.value, 2).toLowerCase()})');
+				}
 			}
 		}
-		// raylib's white texels, for shapes drawn from the font's texture.
-		for (i in 0...3)
-			for (j in 0...3)
-				gray.set((atlas.height - 1 - i) * atlas.width + atlas.width - 1 - j, 255);
+		// raylib's white texels, for shapes drawn from the font's texture, in an atlas big enough for them.
+		if (atlas.width >= 3 && atlas.height >= 3)
+			for (i in 0...3)
+				for (j in 0...3)
+					gray.set((atlas.height - 1 - i) * atlas.width + atlas.width - 1 - j, 255);
 		var pixels = haxe.io.Bytes.alloc(atlas.width * atlas.height * 2);
 		for (i in 0...atlas.width * atlas.height) {
 			pixels.set(i * 2, 255);
@@ -389,8 +446,9 @@ class RText {
 
 	/** Makes a font from an image of glyphs, as raylib's does: the glyphs in rows on a key color, the key's border before the first
 		glyph giving the space between glyphs and between rows; each glyph a run of pixels that aren't the key, numbered from a first
-		character. The key becomes clear on the font's texture. An image with no such border gives the default font. At most 256 glyphs
-		are read, and a pixel past the image reads as the key, where raylib's reads past its pixels.
+		character. The key becomes clear on the font's texture. An image with no such border gives the default font. A glyph's height
+		ends at the image's bottom and its width at its right edge, as raylib's scan has them. At most 256 glyphs are read, where
+		raylib's writes past its 256.
 
 		@param image  The image, in any uncompressed format.
 		@param key  The color around the glyphs.
@@ -423,7 +481,7 @@ class RText {
 		if (x == 0 || y == 0)
 			return font;
 		var charSpacing = x, lineSpacing = y, charHeight = 0;
-		while (!isKey((lineSpacing + charHeight) * width + charSpacing))
+		while (lineSpacing + charHeight < height && !isKey((lineSpacing + charHeight) * width + charSpacing))
 			charHeight++;
 		var values:Array<Int> = [], recs:Array<Rectangle> = [];
 		var lineToRead = 0, xPosToRead = charSpacing;
@@ -431,7 +489,7 @@ class RText {
 			var row = (lineSpacing + (charHeight + lineSpacing) * lineToRead) * width;
 			while (xPosToRead < width && !isKey(row + xPosToRead) && values.length < 256) {
 				var charWidth = 0;
-				while (!isKey(row + xPosToRead + charWidth))
+				while (xPosToRead + charWidth < width && !isKey(row + xPosToRead + charWidth))
 					charWidth++;
 				values.push(firstChar + values.length);
 				recs.push(new Rectangle(xPosToRead, lineSpacing + lineToRead * (charHeight + lineSpacing), charWidth, charHeight));
@@ -549,8 +607,60 @@ class RText {
 		];
 	}
 
-	// raylib's LoadFontFromMemory, from the glyphs: packed with 4 texels of padding into the texture, each glyph's image its part of it.
+	// raylib 6.2's LoadFontData, as its LoadFontEx and LoadFontFromMemory take it: only the glyphs the font has, so a character it lacks
+	// draws as its '?'; each Unicode space a blank image as wide as its advance (none when that isn't above 0); offsets from the line's
+	// top.
+	static function foundGlyphs(raster:Array<helix.platform.RasterGlyph>, ascent:Float, fontSize:Int):Array<GlyphInfo> {
+		var glyphs = [];
+		for (r in raster) {
+			if (!r.found)
+				continue;
+			var glyph = new GlyphInfo();
+			glyph.value = r.codepoint;
+			glyph.image = new Image();
+			glyph.offsetX = r.offsetX;
+			glyph.offsetY = r.offsetY;
+			if (r.width > 0 && r.height > 0) {
+				glyph.advanceX = Std.int(r.advance);
+				glyph.offsetY += Std.int(ascent);
+				glyph.image.data = r.pixels;
+				glyph.image.width = r.width;
+				glyph.image.height = r.height;
+				glyph.image.mipmaps = 1;
+				glyph.image.format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE;
+			}
+			if (SPACES.indexOf(r.codepoint) >= 0) {
+				glyph.advanceX = Std.int(r.advance);
+				glyph.image = new Image();
+				glyph.image.width = glyph.advanceX;
+				glyph.image.height = fontSize;
+				glyph.image.mipmaps = 1;
+				glyph.image.format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE;
+				if (glyph.advanceX > 0)
+					glyph.image.data = haxe.io.Bytes.alloc(glyph.advanceX * fontSize);
+				else
+					glyph.advanceX = 0;
+			}
+			glyphs.push(glyph);
+		}
+		if (glyphs.length < raster.length)
+			Runtime.log(LOG_WARNING, 'FONT: Requested codepoints glyphs found: [${glyphs.length}/${raster.length}]');
+		return glyphs;
+	}
+
+	// The Unicode spaces raylib 6.2 gives blank glyphs: the ASCII space, the no-break space, the Ogham space mark, U+2000 to U+200A, the
+	// narrow no-break space, the medium mathematical space and the ideographic space.
+	static final SPACES = [
+		0x20, 0xA0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x202F, 0x205F, 0x3000
+	];
+
+	// raylib's LoadFontFromMemory, from the glyphs: packed with 4 texels of padding into the texture, each glyph's image its part of it;
+	// the default font when there are none.
 	static function fontOf(glyphs:Array<GlyphInfo>, fontSize:Int):Font {
+		if (glyphs.length == 0) {
+			Runtime.log(LOG_WARNING, "FONT: Font is not supported by LoadFontEx/LoadFontFromMemory or no glyphs found, reverted to default font");
+			return GetFontDefault();
+		}
 		var font = new Font();
 		font.baseSize = fontSize;
 		font.glyphCount = glyphs.length;
@@ -610,6 +720,11 @@ class RText {
 	static var textLineSpacing = 2;
 	static var fontDefault:Null<Font> = null;
 
+	// raylib's MAX_TEXT_BUFFER_LENGTH, the bytes of the buffer its text functions write into, its terminating 0 among them, and
+	// MAX_TEXTSPLIT_COUNT, the most pieces TextSplit gives.
+	static inline final BUFFER = 1024;
+	static inline final SPLIT = 128;
+
 	/** Draws the frames a second, as "60 FPS", in green.
 
 		@param posX  The left edge.
@@ -627,10 +742,14 @@ class RText {
 		`#`), widths and precisions, as in `%5d`, `%-8s`, `%03i` and `%*d`. C's length modifiers (`l`, `ll`, `h`, `z`) are read and
 		ignored.
 
+		As raylib's, the text is at most 1023 UTF-8 bytes: longer, it is cut to its first 1020 and "..." ends it.
+
 		@param text  The format.
 		@param args  The values, one for each conversion.
-		@return  The text. */
+		@return  The text; empty for a null format. */
 	static function TextFormat(text:String, args:haxe.extern.Rest<Dynamic>):String {
+		if (text == null)
+			return "";
 		var out = new StringBuf();
 		var next = 0;
 		var i = 0;
@@ -681,7 +800,9 @@ class RText {
 			}
 			out.add(formatted(conversion, take(), flags, width, precision));
 		}
-		return out.toString();
+		// raylib's buffer of 1024 bytes: text that doesn't fit is cut, "..." over its last three.
+		var result = out.toString(), bytes = utf8(result);
+		return bytes.length >= BUFFER ? decoded(bytes, 0, BUFFER - 4) + "..." : result;
 	}
 
 	// One conversion of TextFormat's, padded to its width.
@@ -893,23 +1014,59 @@ class RText {
 		return length;
 	}
 
-	/** Returns a piece of text, by its place in UTF-8 bytes. A position at or past the end gives no text, and the piece ends with the
-		text.
+	/** Returns a piece of text, by its place in UTF-8 bytes. The piece ends with the text, and is at most 1023 bytes, as raylib's.
 
 		A character the piece cuts through is a "?" for each of its bytes taken, as raylib draws it.
 
 		@param text  The text.
 		@param position  Where the piece starts, in bytes from the start.
 		@param length  How long it is, in bytes.
-		@return  The piece. */
+		@return  The piece; empty for null text, a position below 0 or at or past the end, or a length below 1. */
 	static function TextSubtext(text:String, position:Int, length:Int):String {
+		if (text == null || position < 0 || length <= 0)
+			return "";
 		var bytes = utf8(text), total = bytes.length;
 		if (position >= total)
 			return "";
-		if (position < 0)
-			position = 0;
-		var end = length > total - position ? total : position + length;
-		return decoded(bytes, position, end);
+		if (length > total - position)
+			length = total - position;
+		if (length >= BUFFER)
+			length = BUFFER - 1;
+		return decoded(bytes, position, position + length);
+	}
+
+	/** Returns text without its spaces (" ", not other white space), as raylib's: only the text's first 1023 UTF-8 bytes are read.
+
+		@param text  The text.
+		@return  The new text; empty for null text. */
+	static function TextRemoveSpaces(text:String):String {
+		var bytes = utf8(text), out = [];
+		for (i in 0...(bytes.length < BUFFER - 1 ? bytes.length : BUFFER - 1))
+			if (bytes[i] != " ".code)
+				out.push(bytes[i]);
+		return decoded(out, 0, out.length);
+	}
+
+	/** Returns the text between the first place `begin` is found and the first place `end` is found after it.
+
+		As raylib's, the result is at most 1023 UTF-8 bytes: when what lies between is longer, it is the first 1023 bytes after `begin`,
+		running past `end`.
+
+		@param text  The text searched.
+		@param begin  The text before the piece.
+		@param end  The text after it.
+		@return  The piece; empty when either isn't found or any is null. */
+	static function GetTextBetween(text:String, begin:String, end:String):String {
+		var beginIndex = TextFindIndex(text, begin);
+		if (beginIndex < 0)
+			return "";
+		var bytes = utf8(text), start = beginIndex + TextLength(begin);
+		var endIndex = TextFindIndex(decoded(bytes, start, bytes.length), end);
+		if (endIndex < 0)
+			return "";
+		if (endIndex < BUFFER - 1)
+			return decoded(bytes, start, start + endIndex);
+		return decoded(bytes, start, bytes.length - start < BUFFER - 1 ? bytes.length : start + BUFFER - 1);
 	}
 
 	/** Returns text with every piece of it that matches replaced, from the start, each match after the one before.
@@ -924,67 +1081,162 @@ class RText {
 		return text.split(replace).join(by);
 	}
 
-	/** Returns text with other text put in at a place in UTF-8 bytes.
+	/** Returns text with every piece of it that matches replaced, from the start, each match after the one before: raylib 6.2's, with no
+		limit to its length.
+
+		@param text  The text.
+		@param search  The text replaced.
+		@param replacement  The text put in its place; null for none.
+		@return  The new text; null when `text` or `search` is null or `search` is empty. */
+	static function TextReplaceAlloc(text:String, search:String, replacement:String):String {
+		if (text == null || search == null || search.length == 0)
+			return null;
+		return text.split(search).join(replacement == null ? "" : replacement);
+	}
+
+	/** Returns text with what lies between the first place `begin` is found and the first place `end` is found after it replaced, the two
+		kept. As raylib's, the result is at most 1022 UTF-8 bytes.
+
+		@param text  The text.
+		@param begin  The text before the piece replaced.
+		@param end  The text after it.
+		@param replacement  The text put in its place; null to remove the piece.
+		@return  The new text; empty when either isn't found, the result is too long, or `text`, `begin` or `end` is null. */
+	static function TextReplaceBetween(text:String, begin:String, end:String, replacement:String):String {
+		var replaced = replacedBetween(text, begin, end, replacement);
+		return replaced == null || replaced.length >= BUFFER - 1 ? "" : decoded(replaced, 0, replaced.length);
+	}
+
+	/** Returns text with what lies between the first place `begin` is found and the first place `end` is found after it replaced, the two
+		kept: `TextReplaceBetween` with no limit to its length.
+
+		@param text  The text.
+		@param begin  The text before the piece replaced.
+		@param end  The text after it.
+		@param replacement  The text put in its place; null to remove the piece.
+		@return  The new text; null when either isn't found, or `text`, `begin` or `end` is null. */
+	static function TextReplaceBetweenAlloc(text:String, begin:String, end:String, replacement:String):String {
+		var replaced = replacedBetween(text, begin, end, replacement);
+		return replaced == null ? null : decoded(replaced, 0, replaced.length);
+	}
+
+	// raylib's TextReplaceBetween's bytes, before its limit: null when there is nothing to replace.
+	static function replacedBetween(text:String, begin:String, end:String, replacement:String):Null<Array<Int>> {
+		if (text == null || begin == null || end == null)
+			return null;
+		var beginIndex = TextFindIndex(text, begin);
+		if (beginIndex < 0)
+			return null;
+		var bytes = utf8(text), start = beginIndex + TextLength(begin);
+		var endIndex = TextFindIndex(decoded(bytes, start, bytes.length), end);
+		if (endIndex < 0)
+			return null;
+		return bytes.slice(0, start).concat(utf8(replacement)).concat(bytes.slice(start + endIndex));
+	}
+
+	/** Returns text with other text put in at a place in UTF-8 bytes. As raylib's, the result is at most 1022 bytes.
 
 		A character the place cuts through is a "?" for each of its bytes, as raylib draws it.
 
 		@param text  The text.
 		@param insert  The text put in.
 		@param position  Where, in bytes from the start, clamped to the end.
-		@return  The new text; empty when either is null or the position is below 0. */
+		@return  The new text; empty when either is null, the position is below 0, or the result is too long. */
 	static function TextInsert(text:String, insert:String, position:Int):String {
+		var inserted = insertedAt(text, insert, position);
+		return inserted == null || inserted.length >= BUFFER - 1 ? "" : decoded(inserted, 0, inserted.length);
+	}
+
+	/** Returns text with other text put in at a place in UTF-8 bytes: `TextInsert` with no limit to its length.
+
+		@param text  The text.
+		@param insert  The text put in.
+		@param position  Where, in bytes from the start, clamped to the end.
+		@return  The new text; null when either is null or the position is below 0. */
+	static function TextInsertAlloc(text:String, insert:String, position:Int):String {
+		var inserted = insertedAt(text, insert, position);
+		return inserted == null ? null : decoded(inserted, 0, inserted.length);
+	}
+
+	// raylib's TextInsert's bytes, before its limit: null when it gives nothing.
+	static function insertedAt(text:String, insert:String, position:Int):Null<Array<Int>> {
 		if (text == null || insert == null || position < 0)
-			return "";
+			return null;
 		var bytes = utf8(text);
 		if (position > bytes.length)
 			position = bytes.length;
-		var joined = bytes.slice(0, position).concat(utf8(insert)).concat(bytes.slice(position));
-		return decoded(joined, 0, joined.length);
+		return bytes.slice(0, position).concat(utf8(insert)).concat(bytes.slice(position));
 	}
 
 	/** Returns texts joined into one, a delimiter between each two.
+
+		As raylib's, the result is at most 1023 UTF-8 bytes: a text that would take it past them, with its delimiter, is left out, and the
+		texts after it are still joined.
 
 		@param textList  The texts; a null one is empty.
 		@param count  How many of them.
 		@param delimiter  The text between them; null for none.
 		@return  The joined text. */
 	static function TextJoin(textList:Array<String>, count:Int, delimiter:String):String {
-		var out = new StringBuf();
+		var out = [], between = utf8(delimiter);
 		for (i in 0...count) {
-			if (textList[i] != null)
-				out.add(textList[i]);
-			if (delimiter != null && i < count - 1)
-				out.add(delimiter);
+			var piece = utf8(textList[i]);
+			if (out.length + piece.length + between.length < BUFFER) {
+				out = out.concat(piece);
+				if (between.length > 0 && i < count - 1)
+					out = out.concat(between);
+			}
 		}
-		return out.toString();
+		return decoded(out, 0, out.length);
 	}
 
 	/** Returns the pieces of text between a delimiter: one more than the delimiters it holds, an empty one between two together.
 
-		The delimiter is a character, so a character outside ASCII splits text as an ASCII one does; raylib's is one byte. There is no
-		limit to the pieces, where raylib's stops at 128.
+		As raylib's, the delimiter is one byte (its low 8 bits), only the text's first 1023 UTF-8 bytes are read, and there are at most 128
+		pieces, the last of them empty when the text holds more. A character a piece cuts through is a "?" for each of its bytes.
 
 		@param text  The text.
-		@param delimiter  The character between pieces.
+		@param delimiter  The byte between pieces, such as `",".code`.
 		@param count  Receives how many pieces there are, at its index 0; 0 for null text.
 		@return  The pieces; none for null text. */
 	static function TextSplit(text:String, delimiter:Int, count:Array<Int>):Array<String> {
 		var pieces = [];
 		if (text != null) {
-			var piece = new StringBuf();
-			for (codepoint in new haxe.iterators.StringIteratorUnicode(text)) {
-				if (codepoint == delimiter && delimiter != 0) {
-					pieces.push(piece.toString());
-					piece = new StringBuf();
-				} else
-					piece.addChar(codepoint);
+			var bytes = utf8(text), byte = delimiter & 0xFF, start = 0, end = bytes.length < BUFFER - 1 ? bytes.length : BUFFER - 1;
+			for (i in 0...end) {
+				if (bytes[i] == byte && byte != 0) {
+					pieces.push(decoded(bytes, start, i));
+					start = i + 1;
+					if (pieces.length + 1 == SPLIT) {
+						end = start;
+						break;
+					}
+				}
 			}
-			pieces.push(piece.toString());
+			pieces.push(decoded(bytes, start, end));
 		}
 		if (count != null)
 			count[0] = pieces.length;
 		return pieces;
 	}
+
+	/** Returns the lines of text: the pieces between its "\n"s, one more than it holds, with no limit to their length.
+
+		@param text  The text.
+		@param count  Receives how many lines there are, at its index 0; 0 for null text.
+		@return  The lines; null for null text. */
+	static function LoadTextLines(text:String, count:Array<Int>):Array<String> {
+		var lines = text == null ? null : text.split("\n");
+		if (count != null)
+			count[0] = lines == null ? 0 : lines.length;
+		return lines;
+	}
+
+	/** Does nothing: lines from `LoadTextLines` are freed by the garbage collector.
+
+		@param text  The lines.
+		@param lineCount  How many of them. */
+	static function UnloadTextLines(text:Array<String>, lineCount:Int):Void {}
 
 	/** Returns where text is first found in other text, in UTF-8 bytes from the start, as `TextSubtext` takes it.
 
@@ -1023,7 +1275,7 @@ class RText {
 	}
 
 	/** Returns snake-case text in Pascal case: "hello_world" is "HelloWorld". Each run of underscores is dropped, and the first letter
-		and the one after each run are made capitals if they are a to z.
+		and the one after each run are made capitals if they are a to z. As raylib's, the result is at most 1023 UTF-8 bytes.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
@@ -1031,25 +1283,45 @@ class RText {
 		return joinedWords(text, true);
 	}
 
-	/** Returns Pascal- or camel-case text in snake case: "helloWorld" is "hello_world". Each capital A to Z is made lower case, an
-		underscore before it unless it starts the text.
+	/** Returns Pascal- or camel-case text, or words, in snake case: "helloWorld" and "Hello World" are "hello_world", "HTTPServer" is
+		"http_server". Each capital A to Z is made lower case, an underscore before it when it follows a letter a to z, or a capital with
+		a letter a to z after it; a space is an underscore. No underscore is added where the text so far ends in one, nor at its start.
+
+		As raylib's, the result is at most 1023 UTF-8 bytes.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
 	static function TextToSnake(text:String):String {
-		var out = new StringBuf(), first = true;
-		if (text != null)
-			for (codepoint in new haxe.iterators.StringIteratorUnicode(text)) {
-				if (codepoint >= "A".code && codepoint <= "Z".code && !first)
-					out.addChar("_".code);
-				out.addChar(lower(codepoint));
-				first = false;
-			}
-		return out.toString();
+		var bytes = utf8(text), out = [];
+		inline function at(k:Int)
+			return k < bytes.length ? bytes[k] : 0;
+		inline function isLower(c:Int)
+			return c >= "a".code && c <= "z".code;
+		inline function isUpper(c:Int)
+			return c >= "A".code && c <= "Z".code;
+		var j = 0;
+		while (out.length < BUFFER - 1 && at(j) != 0) {
+			var c = at(j);
+			if (c == " ".code) {
+				if (out.length > 0 && out[out.length - 1] != "_".code)
+					out.push("_".code);
+			} else if (isUpper(c)) {
+				if (out.length > 0 && out[out.length - 1] != "_".code) {
+					var before = at(j - 1), after = at(j + 1);
+					if ((isLower(before) || (isUpper(before) && isLower(after))) && out.length < BUFFER - 2)
+						out.push("_".code);
+				}
+				out.push(c + 32);
+			} else
+				out.push(c);
+			j++;
+		}
+		return decoded(out, 0, out.length);
 	}
 
 	/** Returns snake-case text in camel case: "hello_world" is "helloWorld". Each run of underscores is dropped, the letter after it
-		made a capital if it is a to z, and the first letter made lower case if it is A to Z.
+		made a capital if it is a to z, and the first letter made lower case if it is A to Z. As raylib's, the result is at most 1023
+		UTF-8 bytes.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
@@ -1133,9 +1405,14 @@ class RText {
 	/** Returns the codes of text's characters.
 
 		@param text  The text.
-		@param count  Receives how many there are, at its index 0.
-		@return  The codes; none for null text. */
+		@param count  Receives how many there are, at its index 0; 0 for null text.
+		@return  The codes; null for null text. */
 	static function LoadCodepoints(text:String, count:Array<Int>):Array<Int> {
+		if (text == null) {
+			if (count != null)
+				count[0] = 0;
+			return null;
+		}
 		var bytes = utf8(text), codepoints = [], size = [0], i = 0;
 		while (i < bytes.length) {
 			codepoints.push(next(bytes, i, size));
@@ -1168,11 +1445,12 @@ class RText {
 	/** Returns the code of text's first character, checked as RFC 3629 has UTF-8, as raylib checks it.
 
 		@param text  The text.
-		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by.
-		@return  The code; 0 for empty text. */
+		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by; 1 for empty or
+			null text.
+		@return  The code; 0 for empty text, '?' (0x3F) for null text. */
 	static function GetCodepoint(text:String, codepointSize:Array<Int>):Int {
 		var bytes = utf8(text, 4), size = [1];
-		var codepoint = checked(bytes, size);
+		var codepoint = text == null ? "?".code : checked(bytes, size);
 		if (codepointSize != null)
 			codepointSize[0] = size[0];
 		return codepoint;
@@ -1182,11 +1460,11 @@ class RText {
 
 		@param text  The text.
 		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by, as in
-			`TextSubtext(text, codepointSize[0], TextLength(text))`.
-		@return  The code; 0 for empty text. */
+			`TextSubtext(text, codepointSize[0], TextLength(text))`; 1 for empty or null text.
+		@return  The code; 0 for empty text, '?' (0x3F) for null text. */
 	static function GetCodepointNext(text:String, codepointSize:Array<Int>):Int {
 		var bytes = utf8(text, 4), size = [1];
-		var codepoint = next(bytes, 0, size);
+		var codepoint = text == null ? "?".code : next(bytes, 0, size);
 		if (codepointSize != null)
 			codepointSize[0] = size[0];
 		return codepoint;
@@ -1195,17 +1473,19 @@ class RText {
 	/** Returns the code of text's last character: the one before where it ends, as raylib's finds the one before a place in text.
 
 		@param text  The text; `TextSubtext(text, 0, position)` gives the character before a position.
-		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move back by; 0 for empty text.
-		@return  The code; '?' (0x3F) for empty text. */
+		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move back by; 1 for empty or null
+			text.
+		@return  The code; '?' (0x3F) for empty or null text. */
 	static function GetCodepointPrevious(text:String, codepointSize:Array<Int>):Int {
-		var bytes = utf8(text), i = bytes.length, size = [0];
+		var bytes = utf8(text), i = bytes.length, size = [1];
 		do
 			i-- while (i >= 0 && bytes[i] & 0xC0 == 0x80);
 		var codepoint = "?".code;
 		if (i >= 0) {
-			codepoint = next(bytes, i, size);
-			if (codepoint == 0)
-				size[0] = 0;
+			var found = [0];
+			codepoint = next(bytes, i, found);
+			if (codepoint != 0)
+				size[0] = found[0];
 		}
 		if (codepointSize != null)
 			codepointSize[0] = size[0];
@@ -1358,31 +1638,29 @@ class RText {
 		return codepoint >= "A".code && codepoint <= "Z".code ? codepoint + 32 : codepoint;
 	}
 
-	// TextToPascal (capital) and TextToCamel: the first character made a capital or lower case, each run of underscores after it dropped
-	// and the character after the run made a capital, as raylib's after 5.5 has it (5.5's ended the text at an underscore not followed
-	// by a to z).
+	// TextToPascal (capital) and TextToCamel, raylib 6.2's on the text's UTF-8 bytes: the first made a capital or lower case, each run
+	// of underscores after it dropped and the byte after the run made a capital, at most 1023 bytes written (5.5's ended the text at an
+	// underscore not followed by a to z).
 	static function joinedWords(text:String, capital:Bool):String {
-		var out = new StringBuf();
-		if (text == null)
+		var bytes = utf8(text);
+		if (bytes.length == 0)
 			return "";
-		var codepoints = [for (c in new haxe.iterators.StringIteratorUnicode(text)) c];
-		if (codepoints.length == 0)
-			return "";
-		out.addChar(capital ? upper(codepoints[0]) : lower(codepoints[0]));
-		var j = 1;
-		while (j < codepoints.length) {
-			if (codepoints[j] != "_".code)
-				out.addChar(codepoints[j]);
+		inline function at(k:Int)
+			return k < bytes.length ? bytes[k] : 0;
+		var out = [capital ? upper(bytes[0]) : lower(bytes[0])], j = 1;
+		while (out.length < BUFFER - 1 && at(j) != 0) {
+			if (at(j) != "_".code)
+				out.push(at(j));
 			else {
-				while (j < codepoints.length && codepoints[j] == "_".code)
+				while (at(j) == "_".code)
 					j++;
-				if (j == codepoints.length)
+				if (at(j) == 0)
 					break;
-				out.addChar(upper(codepoints[j]));
+				out.push(upper(at(j)));
 			}
 			j++;
 		}
-		return out.toString();
+		return decoded(out, 0, out.length);
 	}
 	#end
 }

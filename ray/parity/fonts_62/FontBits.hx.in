@@ -1,0 +1,58 @@
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import Parity.*;
+
+// helix-ray's font atlases and fonts from images, printed by Parity and the printers here as ref.c.in prints raylib 6.2's.
+class FontBits {
+	// n glyphs, the ith w0 + (i*dw)%wm wide and h0 + i%hm high, their texels a pattern of their place; values from 32.
+	static function glyphs(n:Int, w0:Int, dw:Int, wm:Int, h0:Int, hm:Int):Array<GlyphInfo> {
+		return [
+			for (i in 0...n) {
+				var w = w0 + (i * dw) % wm, h = h0 + i % hm;
+				var data = haxe.io.Bytes.alloc(w * h > 0 ? w * h : 1);
+				for (y in 0...h)
+					for (x in 0...w)
+						data.set(y * w + x, (x * 7 + y * 13 + i * 3) & 255);
+				var g = new GlyphInfo();
+				g.value = 32 + i;
+				g.image = new Image(data, w, h, 1, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+				g;
+			}
+		];
+	}
+
+	// An image's size and format, and a checksum of its bytes.
+	static function pixels(name:String, image:Image, bytes:Int):Void {
+		var sum = 0, lit = 0;
+		for (i in 0...bytes) {
+			var b = image.data.get(i);
+			sum = (sum + b * (i % 251 + 1)) % 1000000007;
+			if (b != 0)
+				lit++;
+		}
+		line('$name image ${image.width} ${image.height} ${image.format} $sum $lit');
+	}
+
+	static function atlas(name:String, g:Array<GlyphInfo>, n:Int, fontSize:Int, padding:Int, pack:Int):Void {
+		var recs:Array<Rectangle> = [];
+		var a = GenImageFontAtlas(g, recs, n, fontSize, padding, pack);
+		pixels(name, a, a.width * a.height * 2);
+		for (i in 0...(n > 0 ? n : 95))
+			rect(name, recs[i]);
+	}
+
+	static function font(name:String, f:Font):Void {
+		line('$name font ${f.baseSize} ${f.glyphCount} ${f.glyphPadding} ${f.texture.width} ${f.texture.height}');
+		for (i in 0...f.glyphCount) {
+			var g = f.glyphs[i];
+			line('$name glyph ${g.value} ${g.offsetX} ${g.offsetY} ${g.advanceX} ${g.image.width} ${g.image.height}');
+			rect(name, f.recs[i]);
+		}
+	}
+
+	static function main() {
+		open();
+		@CASES@
+		save();
+	}
+}

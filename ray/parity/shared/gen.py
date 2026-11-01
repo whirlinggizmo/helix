@@ -4,7 +4,7 @@ read once translated, put into its templates (ref.c.in, or scene.c.in for a pixe
 
 A case is a string of statements, written the same for both, or (name, statements) for a drawing whose vertices shape(name) then prints.
 The statements use V2(x, y), V3(x, y, z) and R(x, y, w, h) as they are, and the printers shared/parity.h and shared/Parity.hx both have
-(mesh, image, hit, flag, num, color, vec2, rect, box), and these, which the two write differently:
+(mesh, image, hit, flag, num, color, vec2, rect, box, str), and these, which the two write differently:
 
     PTS(a, b, ...)      a Vector2 array           C (Vector2[]){ a, b }      Haxe [a, b]
     PTS3(a, b, ...)     a Vector3 array           C (Vector3[]){ a, b }      Haxe [a, b]

@@ -604,7 +604,8 @@ class RAudio {
 			sound.voice.volume = volume;
 	}
 
-	/** Sets a sound's pitch, for its next play and the one playing.
+	/** Sets a sound's pitch, for its next play and the one playing: the pitch given, whatever was set before, so 1 sets it back to as
+		recorded. It speeds or slows the sound with it, and is clamped to 0.25 to 4, the platform's range.
 
 		@param sound  The sound.
 		@param pitch  1 for as recorded, 2 an octave up. */
@@ -616,8 +617,11 @@ class RAudio {
 
 	/** Sets where a sound is heard, for its next play and the one playing.
 
+		The range is raylib 5.5's, 0 to 1 with 0.5 the middle, and 1 is the right, as later releases' +1 is; raylib 5.5's own mixer put 1
+		on the left.
+
 		@param sound  The sound.
-		@param pan  0 for left, 0.5 the middle, 1 for right, as raylib's. */
+		@param pan  0 for left, 0.5 the middle, 1 for right. */
 	static function SetSoundPan(sound:Sound, pan:Float):Void {
 		sound.pan = pan;
 		if (sound.voice != null)
@@ -728,7 +732,8 @@ class RAudio {
 		return music.waiting || music.voice != null && music.voice.playing && !music.voice.paused;
 	}
 
-	/** Keeps music playing. raylib's programs call it each frame; here the stream feeds itself, so it does nothing.
+	/** Keeps music playing. raylib's programs call it each frame; here the stream feeds itself, so it does nothing. Music that doesn't
+		loop is heard to its last sample, and stops then.
 
 		@param music  The music. */
 	static function UpdateMusicStream(music:Music):Void {}
@@ -782,7 +787,7 @@ class RAudio {
 			music.voice.volume = volume;
 	}
 
-	/** Sets music's pitch.
+	/** Sets music's pitch: the pitch given, whatever was set before, clamped to 0.25 to 4, as `SetSoundPitch` sets a sound's.
 
 		@param music  The music.
 		@param pitch  1 for as recorded. */
@@ -792,10 +797,10 @@ class RAudio {
 			music.voice.pitch = pitch;
 	}
 
-	/** Sets where music is heard.
+	/** Sets where music is heard, in `SetSoundPan`'s range: 1 is the right.
 
 		@param music  The music.
-		@param pan  0 for left, 0.5 the middle, 1 for right, as raylib's. */
+		@param pan  0 for left, 0.5 the middle, 1 for right. */
 	static function SetMusicPan(music:Music, pan:Float):Void {
 		music.pan = pan;
 		if (music.voice != null)
@@ -811,7 +816,8 @@ class RAudio {
 		return music.sound == null ? 0 : music.sound.duration;
 	}
 
-	/** Returns how far music has played, back to 0 at each loop, as raylib's. Paused, it holds; stopped, it is 0.
+	/** Returns how far music has played, back to 0 at each loop, as raylib's. Paused, it holds; stopped, or played to its end without
+		looping, it is 0; played again, it starts from 0.
 
 		@param music  The music.
 		@return  The position, in seconds from its start. */
@@ -945,7 +951,7 @@ class RAudio {
 			stream.voice.volume = volume;
 	}
 
-	/** Sets a stream's pitch.
+	/** Sets a stream's pitch: the pitch given, whatever was set before, clamped to 0.25 to 4, as `SetSoundPitch` sets a sound's.
 
 		@param stream  The stream.
 		@param pitch  1 for as given. */
@@ -955,10 +961,10 @@ class RAudio {
 			stream.voice.pitch = pitch;
 	}
 
-	/** Sets where a stream is heard.
+	/** Sets where a stream is heard, in `SetSoundPan`'s range: 1 is the right.
 
 		@param stream  The stream.
-		@param pan  0 for left, 0.5 the middle, 1 for right, as raylib's. */
+		@param pan  0 for left, 0.5 the middle, 1 for right. */
 	static function SetAudioStreamPan(stream:AudioStream, pan:Float):Void {
 		stream.pan = pan;
 		if (stream.voice != null)

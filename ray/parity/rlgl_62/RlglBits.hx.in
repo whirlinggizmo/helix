@@ -1,0 +1,61 @@
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import helix.ray.Rlgl.*;
+import helix.ray.internal.Runtime;
+import helix.ray.internal.Textures;
+import Parity.*;
+
+// helix-ray's rlgl, read back from its frame, printed by Parity and the printers here as ref.c.in prints raylib 6.2's.
+@:access(helix.ray.internal.Frame)
+class RlglBits {
+	static var tex:Texture2D;
+	static var tex2:Texture2D;
+
+	// What was drawn since the last drawn: each vertex's mode, the texture its draw call draws with (white, tex or tex2) and its
+	// position. The frame is drawn after.
+	static function drawn(name:String):Void {
+		var f = Runtime.frame;
+		f.flush();
+		for (d in f.pass.draws) {
+			if (d.buffers != null)
+				continue;
+			var texture = d.texture == Textures.handle(tex.id) ? "tex" : d.texture == Textures.handle(tex2.id) ? "tex2" : d.texture == f.white ? "white" : "other";
+			for (i in d.first...d.first + d.count) {
+				var at = i * 48;
+				line('$name ${d.lines ? "L" : "T"} $texture ${f.data.getFloat(at)} ${f.data.getFloat(at + 4)} ${f.data.getFloat(at + 8)}');
+			}
+		}
+		line('$name end');
+		f.draw(64, 64, true);
+	}
+
+	// Whether triangles are drawn filled or as their edges.
+	static function polygons(name:String):Void
+		line('$name polygons ${Runtime.frame.wire ? "line" : "fill"}');
+
+	static function tri(x:Float):Void {
+		rlVertex3f(x, 0, 0);
+		rlVertex3f(x + 1, 0, 0);
+		rlVertex3f(x, 1, 0);
+	}
+
+	static function quad(x:Float):Void {
+		rlVertex3f(x, 0, 0);
+		rlVertex3f(x, 1, 0);
+		rlVertex3f(x + 1, 1, 0);
+		rlVertex3f(x + 1, 0, 0);
+	}
+
+	static function seg(x:Float):Void {
+		rlVertex3f(x, 0, 0);
+		rlVertex3f(x, 1, 0);
+	}
+
+	static function main() {
+		open();
+		tex = LoadTextureFromImage(GenImageColor(4, 4, RED));
+		tex2 = LoadTextureFromImage(GenImageColor(4, 4, BLUE));
+		@CASES@
+		save();
+	}
+}

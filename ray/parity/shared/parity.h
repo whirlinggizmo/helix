@@ -93,6 +93,26 @@ static void image(const char *name, Image m) {
     }
 }
 
+// Text as raylib reads it to draw, a '?' for each byte it can't (as helix-ray's String holds it): its UTF-8 bytes' count and the bytes in
+// hex ("-" for none), or NULL.
+static void str(const char *name, const char *s) {
+    if (s == NULL) { printf("%s str NULL\n", name); return; }
+    unsigned char out[8192];
+    int n = 0;
+    for (int i = 0; s[i] != '\0';) {
+        int size = 0, bytes = 0;
+        int cp = GetCodepointNext(s + i, &size);
+        if (cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) cp = '?';
+        const char *utf8 = CodepointToUTF8(cp, &bytes);
+        for (int k = 0; k < bytes && n < (int)sizeof(out); k++) out[n++] = (unsigned char)utf8[k];
+        i += size;
+    }
+    printf("%s str %d ", name, n);
+    if (n == 0) printf("-");
+    for (int k = 0; k < n; k++) printf("%02x", out[k]);
+    printf("\n");
+}
+
 static void box(const char *name, BoundingBox b) {
     printf("%s box %.9g %.9g %.9g %.9g %.9g %.9g\n", name, b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z);
 }

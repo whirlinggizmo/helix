@@ -66,16 +66,17 @@ class RectPacker2D {
 				active = added;
 			else
 				bestPrev.next = added;
+			// The step it covers is its own width, not the aligned one it was placed by, as stb_rect_pack's.
 			var cur = best;
-			while (cur.next != null && cur.next.x <= x + aligned) {
+			while (cur.next != null && cur.next.x <= x + w) {
 				var next = cur.next;
 				cur.next = free;
 				free = cur;
 				cur = next;
 			}
 			added.next = cur;
-			if (cur.x < x + aligned)
-				cur.x = x + aligned;
+			if (cur.x < x + w)
+				cur.x = x + w;
 			places[i * 3] = x;
 			places[i * 3 + 1] = bestY;
 		}

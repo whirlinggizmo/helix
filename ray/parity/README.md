@@ -40,6 +40,11 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `images_62` | 6.2 | values | the image functions 6.2 fixed or added, their images byte for byte |
 | `animation` | 6.2 | values | glTF skeletons and animations, bone matrices, CPU skinning and blending |
 | `modular` | 6.2 | values | real-world models: Quaternius' modular woman, each part its own file, animated from a file of its own |
+| `text_55` | 5.5 | values | the text functions kept from 5.5: `TextReplace`, `LoadUTF8`, and those 6.2 didn't change |
+| `text_62` | 6.2 | values | the text and codepoint functions taken from 6.2, null text and its 1024-byte buffers, and 6.2's own text functions |
+| `fonts_62` | 6.2 | values | `GenImageFontAtlas` (rows, the atlas grown, the skyline packer) and `LoadFontFromImage`'s scan |
+| `fontfile_62` | 6.2 | values | `LoadFontEx` on a TrueType file: only the glyphs the font has, the Unicode spaces (hxcpp alone) |
+| `rlgl_62` | 6.2 | values | rlgl's texture across changes of mode, the matrix stack's overflow, the point calls |
 | `scene2d` | 5.5 | pixels | a 2D scene of the Draw functions, textures and text |
 | `scene2d_62` | 6.2 | pixels | a 2D scene of the shapes 6.2 fixed or added |
 | `scene3d` | 5.5 | pixels | a 3D scene of the shapes, billboards, generated models and shaders |
@@ -63,6 +68,8 @@ Each suite's manifest says in full what it covers (`covers`), and `notes` say wh
 - `assets`: files put into the suite's build directory before anything runs, by where they go: a path in the repository (`../assets/`),
   a script run with the destination as its argument (`makerig.py`), or `raylib:<path>`, a file from the oracle's own source.
 - `resources`: files compiled into the Haxe harness (`-resource`), by name.
+- `targets`: the targets a value suite's harness runs on, `js` and `cpp` unless it names one: `fontfile_62` runs in hxcpp alone, as its
+  glyphs are rasterized by the native rasterizer, which Node hasn't.
 - Value suites: `tolerance`, the largest difference allowed in a section, and `bars`, a section's own (`worst`, and `nonfinite`, how many
   numbers may be NaN or infinite where the other side's are not). `hex`: numbers printed as a double's bits. `sections`: how lines are
   grouped (below).
@@ -94,7 +101,7 @@ The C reference draws three frames and saves the third as `ref.png`. helix-ray's
 In a generated suite, add a line to its `cases.py`. A case is written once, in the syntax `shared/gen.py` describes: `V2`, `V3` and `R` as
 they are, `PTS(...)` and `PTS3(...)` for point arrays, `NEW(Type, ...)` for a struct, `OUT(x)` for a pointer, `LET(x, Type, e)` for a
 local. `('name', 'DrawThing(...);')` draws and prints the vertices. A value is printed by the printers (`hit("name", ...)`, `flag`,
-`vec2`, `rect`, `box`, `num`, `color`, `mesh`, `image`). What needs setting up (a texture, a camera) goes in the templates (`ref.c.in` or `scene.c.in`,
+`vec2`, `rect`, `box`, `num`, `color`, `mesh`, `image`, `str` for text). What needs setting up (a texture, a camera) goes in the templates (`ref.c.in` or `scene.c.in`,
 and `<Main>.hx.in`). A case that can't be written once is `{'c': ..., 'hx': ...}`. In a suite kept side by side, add the case to both, its
 lines named alike.
 

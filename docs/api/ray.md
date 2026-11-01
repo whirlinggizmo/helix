@@ -3211,6 +3211,7 @@ static function DrawTextCodepoint(font:Font, codepoint:Int, position:Vector2, fo
 static function DrawTextCodepoints(font:Font, codepoints:Array<Int>, codepointCount:Int, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
 static function SetTextLineSpacing(spacing:Int):Void
 static function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2
+static function MeasureTextCodepoints(font:Font, codepoints:Array<Int>, length:Int, fontSize:Float, spacing:Float):Vector2
 static function GetGlyphIndex(font:Font, codepoint:Int):Int
 static function GetGlyphInfo(font:Font, codepoint:Int):GlyphInfo
 static function GetGlyphAtlasRec(font:Font, codepoint:Int):Rectangle
@@ -3225,10 +3226,18 @@ static function TextFormat(text:String, args:haxe.extern.Rest<Dynamic>):String
 static function TextIsEqual(text1:String, text2:String):Bool
 static function TextLength(text:String):Int
 static function TextSubtext(text:String, position:Int, length:Int):String
+static function TextRemoveSpaces(text:String):String
+static function GetTextBetween(text:String, begin:String, end:String):String
 static function TextReplace(text:String, replace:String, by:String):String
+static function TextReplaceAlloc(text:String, search:String, replacement:String):String
+static function TextReplaceBetween(text:String, begin:String, end:String, replacement:String):String
+static function TextReplaceBetweenAlloc(text:String, begin:String, end:String, replacement:String):String
 static function TextInsert(text:String, insert:String, position:Int):String
+static function TextInsertAlloc(text:String, insert:String, position:Int):String
 static function TextJoin(textList:Array<String>, count:Int, delimiter:String):String
 static function TextSplit(text:String, delimiter:Int, count:Array<Int>):Array<String>
+static function LoadTextLines(text:String, count:Array<Int>):Array<String>
+static function UnloadTextLines(text:Array<String>, lineCount:Int):Void
 static function TextFindIndex(text:String, find:String):Int
 static function TextToUpper(text:String):String
 static function TextToLower(text:String):String
@@ -3296,10 +3305,17 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
   - `fontSize`: The height of a line, in pixels.
   - `spacing`: The space between letters, in pixels.
   - returns: The size, in pixels; 0 by 0 for no text or a font with no texture.
+- `MeasureTextCodepoints`: Returns the size characters are drawn at by `DrawTextCodepoints`: their widest line's width, and their lines' height, as `MeasureTextEx` measures text.
+  - `font`: The font.
+  - `codepoints`: The characters.
+  - `length`: How many of them.
+  - `fontSize`: The height of a line, in pixels.
+  - `spacing`: The space between letters, in pixels.
+  - returns: The size, in pixels; 0 by 0 for no characters or a font with no texture.
 - `GetGlyphIndex`: Returns where a character is in a font's glyphs: its own, else the question mark's, else the first.
   - `font`: The font.
   - `codepoint`: The character.
-  - returns: The index.
+  - returns: The index; 0 for a font that isn't valid (`IsFontValid`).
 - `GetGlyphInfo`: Returns a character's glyph in a font, as `GetGlyphIndex` finds it.
   - `font`: The font.
   - `codepoint`: The character.
@@ -3326,7 +3342,9 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
   - `padding`: The empty texels around each glyph.
   - `packMethod`: 0 packs rows in order; 1 packs by height, as raylib's skyline packer.
   - returns: The image.
-- `LoadFontFromImage`: Makes a font from an image of glyphs, as raylib's does: the glyphs in rows on a key color, the key's border before the first glyph giving the space between glyphs and between rows; each glyph a run of pixels that aren't the key, numbered from a first character. The key becomes clear on the font's texture. An image with no such border gives the default font. At most 256 glyphs are read, and a pixel past the image reads as the key, where raylib's reads past its pixels.
+
+  Its size is estimated from the glyphs' widths, a power of two wide; when packing rows in order (`packMethod` 0) runs out of rows, it is made twice as high, as many times as it needs, so every glyph has its place. The skyline packer (1) leaves a glyph that doesn't fit out, with a warning, placed at 2147483648 across and down, as raylib's.
+- `LoadFontFromImage`: Makes a font from an image of glyphs, as raylib's does: the glyphs in rows on a key color, the key's border before the first glyph giving the space between glyphs and between rows; each glyph a run of pixels that aren't the key, numbered from a first character. The key becomes clear on the font's texture. An image with no such border gives the default font. A glyph's height ends at the image's bottom and its width at its right edge, as raylib's scan has them. At most 256 glyphs are read, where raylib's writes past its 256.
   - `image`: The image, in any uncompressed format.
   - `key`: The color around the glyphs.
   - `firstChar`: The first glyph's character.
@@ -3337,7 +3355,9 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
 - `TextFormat`: Formats text as C's `printf` does. It takes `%d` and `%i`, `%u`, `%f` and `%F` (6 places unless a precision is given, as in `%.2f`), `%e`, `%g`, `%x`, `%X`, `%o`, `%c` (a character code), `%s` and `%%`. It also takes C's flags (`-`, `0`, `+`, space, `#`), widths and precisions, as in `%5d`, `%-8s`, `%03i` and `%*d`. C's length modifiers (`l`, `ll`, `h`, `z`) are read and ignored.
   - `text`: The format.
   - `args`: The values, one for each conversion.
-  - returns: The text.
+  - returns: The text; empty for a null format.
+
+  As raylib's, the text is at most 1023 UTF-8 bytes: longer, it is cut to its first 1020 and "..." ends it.
 - `TextIsEqual`: Returns whether two texts are the same.
   - `text1`: The first text.
   - `text2`: The second text.
@@ -3345,37 +3365,78 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
 - `TextLength`: Returns the length of text in UTF-8 bytes, as raylib counts it: "héllo" is 6. The text functions' positions and lengths are all in these bytes, where `String.length` counts otherwise, and not alike on every target.
   - `text`: The text.
   - returns: The length, in bytes; 0 for null text.
-- `TextSubtext`: Returns a piece of text, by its place in UTF-8 bytes. A position at or past the end gives no text, and the piece ends with the text.
+- `TextSubtext`: Returns a piece of text, by its place in UTF-8 bytes. The piece ends with the text, and is at most 1023 bytes, as raylib's.
   - `text`: The text.
   - `position`: Where the piece starts, in bytes from the start.
   - `length`: How long it is, in bytes.
-  - returns: The piece.
+  - returns: The piece; empty for null text, a position below 0 or at or past the end, or a length below 1.
 
   A character the piece cuts through is a "?" for each of its bytes taken, as raylib draws it.
+- `TextRemoveSpaces`: Returns text without its spaces (" ", not other white space), as raylib's: only the text's first 1023 UTF-8 bytes are read.
+  - `text`: The text.
+  - returns: The new text; empty for null text.
+- `GetTextBetween`: Returns the text between the first place `begin` is found and the first place `end` is found after it.
+  - `text`: The text searched.
+  - `begin`: The text before the piece.
+  - `end`: The text after it.
+  - returns: The piece; empty when either isn't found or any is null.
+
+  As raylib's, the result is at most 1023 UTF-8 bytes: when what lies between is longer, it is the first 1023 bytes after `begin`, running past `end`.
 - `TextReplace`: Returns text with every piece of it that matches replaced, from the start, each match after the one before.
   - `text`: The text.
   - `replace`: The text replaced.
   - `by`: The text put in its place.
   - returns: The new text; null when any is null or `replace` is empty.
-- `TextInsert`: Returns text with other text put in at a place in UTF-8 bytes.
+- `TextReplaceAlloc`: Returns text with every piece of it that matches replaced, from the start, each match after the one before: raylib 6.2's, with no limit to its length.
+  - `text`: The text.
+  - `search`: The text replaced.
+  - `replacement`: The text put in its place; null for none.
+  - returns: The new text; null when `text` or `search` is null or `search` is empty.
+- `TextReplaceBetween`: Returns text with what lies between the first place `begin` is found and the first place `end` is found after it replaced, the two kept. As raylib's, the result is at most 1022 UTF-8 bytes.
+  - `text`: The text.
+  - `begin`: The text before the piece replaced.
+  - `end`: The text after it.
+  - `replacement`: The text put in its place; null to remove the piece.
+  - returns: The new text; empty when either isn't found, the result is too long, or `text`, `begin` or `end` is null.
+- `TextReplaceBetweenAlloc`: Returns text with what lies between the first place `begin` is found and the first place `end` is found after it replaced, the two kept: `TextReplaceBetween` with no limit to its length.
+  - `text`: The text.
+  - `begin`: The text before the piece replaced.
+  - `end`: The text after it.
+  - `replacement`: The text put in its place; null to remove the piece.
+  - returns: The new text; null when either isn't found, or `text`, `begin` or `end` is null.
+- `TextInsert`: Returns text with other text put in at a place in UTF-8 bytes. As raylib's, the result is at most 1022 bytes.
   - `text`: The text.
   - `insert`: The text put in.
   - `position`: Where, in bytes from the start, clamped to the end.
-  - returns: The new text; empty when either is null or the position is below 0.
+  - returns: The new text; empty when either is null, the position is below 0, or the result is too long.
 
   A character the place cuts through is a "?" for each of its bytes, as raylib draws it.
+- `TextInsertAlloc`: Returns text with other text put in at a place in UTF-8 bytes: `TextInsert` with no limit to its length.
+  - `text`: The text.
+  - `insert`: The text put in.
+  - `position`: Where, in bytes from the start, clamped to the end.
+  - returns: The new text; null when either is null or the position is below 0.
 - `TextJoin`: Returns texts joined into one, a delimiter between each two.
   - `textList`: The texts; a null one is empty.
   - `count`: How many of them.
   - `delimiter`: The text between them; null for none.
   - returns: The joined text.
+
+  As raylib's, the result is at most 1023 UTF-8 bytes: a text that would take it past them, with its delimiter, is left out, and the texts after it are still joined.
 - `TextSplit`: Returns the pieces of text between a delimiter: one more than the delimiters it holds, an empty one between two together.
   - `text`: The text.
-  - `delimiter`: The character between pieces.
+  - `delimiter`: The byte between pieces, such as `",".code`.
   - `count`: Receives how many pieces there are, at its index 0; 0 for null text.
   - returns: The pieces; none for null text.
 
-  The delimiter is a character, so a character outside ASCII splits text as an ASCII one does; raylib's is one byte. There is no limit to the pieces, where raylib's stops at 128.
+  As raylib's, the delimiter is one byte (its low 8 bits), only the text's first 1023 UTF-8 bytes are read, and there are at most 128 pieces, the last of them empty when the text holds more. A character a piece cuts through is a "?" for each of its bytes.
+- `LoadTextLines`: Returns the lines of text: the pieces between its "\n"s, one more than it holds, with no limit to their length.
+  - `text`: The text.
+  - `count`: Receives how many lines there are, at its index 0; 0 for null text.
+  - returns: The lines; null for null text.
+- `UnloadTextLines`: Does nothing: lines from `LoadTextLines` are freed by the garbage collector.
+  - `text`: The lines.
+  - `lineCount`: How many of them.
 - `TextFindIndex`: Returns where text is first found in other text, in UTF-8 bytes from the start, as `TextSubtext` takes it.
   - `text`: The text searched.
   - `find`: The text found; empty text is found at 0.
@@ -3386,13 +3447,15 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
 - `TextToLower`: Returns text with its capitals A to Z made lower case, as raylib makes them. Other letters, as "É", are unchanged.
   - `text`: The text.
   - returns: The new text; empty for null text.
-- `TextToPascal`: Returns snake-case text in Pascal case: "hello_world" is "HelloWorld". Each run of underscores is dropped, and the first letter and the one after each run are made capitals if they are a to z.
+- `TextToPascal`: Returns snake-case text in Pascal case: "hello_world" is "HelloWorld". Each run of underscores is dropped, and the first letter and the one after each run are made capitals if they are a to z. As raylib's, the result is at most 1023 UTF-8 bytes.
   - `text`: The text.
   - returns: The new text; empty for null text.
-- `TextToSnake`: Returns Pascal- or camel-case text in snake case: "helloWorld" is "hello_world". Each capital A to Z is made lower case, an underscore before it unless it starts the text.
+- `TextToSnake`: Returns Pascal- or camel-case text, or words, in snake case: "helloWorld" and "Hello World" are "hello_world", "HTTPServer" is "http_server". Each capital A to Z is made lower case, an underscore before it when it follows a letter a to z, or a capital with a letter a to z after it; a space is an underscore. No underscore is added where the text so far ends in one, nor at its start.
   - `text`: The text.
   - returns: The new text; empty for null text.
-- `TextToCamel`: Returns snake-case text in camel case: "hello_world" is "helloWorld". Each run of underscores is dropped, the letter after it made a capital if it is a to z, and the first letter made lower case if it is A to Z.
+
+  As raylib's, the result is at most 1023 UTF-8 bytes.
+- `TextToCamel`: Returns snake-case text in camel case: "hello_world" is "helloWorld". Each run of underscores is dropped, the letter after it made a capital if it is a to z, and the first letter made lower case if it is A to Z. As raylib's, the result is at most 1023 UTF-8 bytes.
   - `text`: The text.
   - returns: The new text; empty for null text.
 - `TextToInteger`: Returns the whole number text starts with, as raylib reads it: an optional "+" or "-", then the digits up to the first that isn't one. Nothing else is skipped, spaces neither; a number past 32 bits wraps.
@@ -3411,8 +3474,8 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
   - `text`: The text.
 - `LoadCodepoints`: Returns the codes of text's characters.
   - `text`: The text.
-  - `count`: Receives how many there are, at its index 0.
-  - returns: The codes; none for null text.
+  - `count`: Receives how many there are, at its index 0; 0 for null text.
+  - returns: The codes; null for null text.
 - `UnloadCodepoints`: Does nothing: codes from `LoadCodepoints` are freed by the garbage collector.
   - `codepoints`: The codes.
 - `GetCodepointCount`: Returns how many characters text holds: "héllo→" holds 6, in 9 bytes.
@@ -3420,16 +3483,16 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
   - returns: The count; 0 for null text.
 - `GetCodepoint`: Returns the code of text's first character, checked as RFC 3629 has UTF-8, as raylib checks it.
   - `text`: The text.
-  - `codepointSize`: Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by.
-  - returns: The code; 0 for empty text.
+  - `codepointSize`: Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by; 1 for empty or null text.
+  - returns: The code; 0 for empty text, '?' (0x3F) for null text.
 - `GetCodepointNext`: Returns the code of text's first character.
   - `text`: The text.
-  - `codepointSize`: Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by, as in `TextSubtext(text, codepointSize[0], TextLength(text))`.
-  - returns: The code; 0 for empty text.
+  - `codepointSize`: Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by, as in `TextSubtext(text, codepointSize[0], TextLength(text))`; 1 for empty or null text.
+  - returns: The code; 0 for empty text, '?' (0x3F) for null text.
 - `GetCodepointPrevious`: Returns the code of text's last character: the one before where it ends, as raylib's finds the one before a place in text.
   - `text`: The text; `TextSubtext(text, 0, position)` gives the character before a position.
-  - `codepointSize`: Receives the character's length in UTF-8 bytes, at its index 0: what to move back by; 0 for empty text.
-  - returns: The code; '?' (0x3F) for empty text.
+  - `codepointSize`: Receives the character's length in UTF-8 bytes, at its index 0: what to move back by; 1 for empty or null text.
+  - returns: The code; '?' (0x3F) for empty or null text.
 - `CodepointToUTF8`: Returns a character as text.
   - `codepoint`: The character's code.
   - `utf8Size`: Receives its length in UTF-8 bytes, at its index 0; 0 for a code past 0x10FFFF.
@@ -3973,12 +4036,14 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
 - `SetSoundVolume`: Sets a sound's volume, for its next play and the one playing.
   - `sound`: The sound.
   - `volume`: 0 (silent) to 1.
-- `SetSoundPitch`: Sets a sound's pitch, for its next play and the one playing.
+- `SetSoundPitch`: Sets a sound's pitch, for its next play and the one playing: the pitch given, whatever was set before, so 1 sets it back to as recorded. It speeds or slows the sound with it, and is clamped to 0.25 to 4, the platform's range.
   - `sound`: The sound.
   - `pitch`: 1 for as recorded, 2 an octave up.
 - `SetSoundPan`: Sets where a sound is heard, for its next play and the one playing.
   - `sound`: The sound.
-  - `pan`: 0 for left, 0.5 the middle, 1 for right, as raylib's.
+  - `pan`: 0 for left, 0.5 the middle, 1 for right.
+
+  The range is raylib 5.5's, 0 to 1 with 0.5 the middle, and 1 is the right, as later releases' +1 is; raylib 5.5's own mixer put 1 on the left.
 - `LoadMusicStream`: Opens a music file, to be played as it is read (helix-services' `Audio.stream`): natively from its file, in a page from the download as it arrives, never loaded whole. It may be played at once; it starts once it opens.
   - `fileName`: The file, as the program names it, such as "assets/theme.ogg".
   - returns: The music.
@@ -3997,7 +4062,7 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
 - `IsMusicStreamPlaying`: Returns whether music is playing, or will once it opens.
   - `music`: The music.
   - returns: True while it plays; false while it is paused, as raylib's.
-- `UpdateMusicStream`: Keeps music playing. raylib's programs call it each frame; here the stream feeds itself, so it does nothing.
+- `UpdateMusicStream`: Keeps music playing. raylib's programs call it each frame; here the stream feeds itself, so it does nothing. Music that doesn't loop is heard to its last sample, and stops then.
   - `music`: The music.
 - `StopMusicStream`: Stops music, so its next play starts from its beginning.
   - `music`: The music.
@@ -4011,16 +4076,16 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
 - `SetMusicVolume`: Sets music's volume.
   - `music`: The music.
   - `volume`: 0 (silent) to 1.
-- `SetMusicPitch`: Sets music's pitch.
+- `SetMusicPitch`: Sets music's pitch: the pitch given, whatever was set before, clamped to 0.25 to 4, as `SetSoundPitch` sets a sound's.
   - `music`: The music.
   - `pitch`: 1 for as recorded.
-- `SetMusicPan`: Sets where music is heard.
+- `SetMusicPan`: Sets where music is heard, in `SetSoundPan`'s range: 1 is the right.
   - `music`: The music.
-  - `pan`: 0 for left, 0.5 the middle, 1 for right, as raylib's.
+  - `pan`: 0 for left, 0.5 the middle, 1 for right.
 - `GetMusicTimeLength`: Returns music's length (helix-services' `Sound.duration`): known once it opens from a file natively or in a page; a server's file natively once its start and its last 64 KiB have arrived. 0 while it isn't known.
   - `music`: The music.
   - returns: The length, in seconds.
-- `GetMusicTimePlayed`: Returns how far music has played, back to 0 at each loop, as raylib's. Paused, it holds; stopped, it is 0.
+- `GetMusicTimePlayed`: Returns how far music has played, back to 0 at each loop, as raylib's. Paused, it holds; stopped, or played to its end without looping, it is 0; played again, it starts from 0.
   - `music`: The music.
   - returns: The position, in seconds from its start.
 - `LoadAudioStream`: Opens a stream for samples the program makes as it goes, played as they are given (`UpdateAudioStream`) through helix-services' `SampleQueue`, which the platform resamples. `InitAudioDevice` comes first.
@@ -4054,12 +4119,12 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
 - `SetAudioStreamVolume`: Sets a stream's volume.
   - `stream`: The stream.
   - `volume`: 0 (silent) to 1.
-- `SetAudioStreamPitch`: Sets a stream's pitch.
+- `SetAudioStreamPitch`: Sets a stream's pitch: the pitch given, whatever was set before, clamped to 0.25 to 4, as `SetSoundPitch` sets a sound's.
   - `stream`: The stream.
   - `pitch`: 1 for as given.
-- `SetAudioStreamPan`: Sets where a stream is heard.
+- `SetAudioStreamPan`: Sets where a stream is heard, in `SetSoundPan`'s range: 1 is the right.
   - `stream`: The stream.
-  - `pan`: 0 for left, 0.5 the middle, 1 for right, as raylib's.
+  - `pan`: 0 for left, 0.5 the middle, 1 for right.
 - `SetAudioStreamBufferSizeDefault`: Sets the frames in each of a stream's two buffers, for the streams opened after; 0 for raylib's default, a 30th of a second at 44100 Hz (1470 frames).
   - `size`: The frames.
 - `SetAudioStreamCallback`: Has a stream ask the program for its samples: while it plays, the callback is called with a buffer's frames to fill until the stream holds two buffers ahead of what is heard. raylib calls it on its audio thread as the mixer needs frames; a page can't run Haxe there, so here it is called on the main thread as each frame ends (`EndDrawing`'s poll), and once as the stream starts to play. A frame long enough to empty both buffers is heard as a gap.
@@ -4172,6 +4237,8 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `codepointCount`: How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
   - `loaded`: Receives the font.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+
+  The font holds only the characters the file has, so `glyphCount` may be fewer than asked for and a character it lacks draws as its '?'; each Unicode space it has (U+0020, U+00A0, U+2000 to U+200A, U+3000 and the others) is a blank glyph as wide as its advance.
 - `LoadFontFromMemoryAsync`: Makes a font from a TrueType or OpenType file's bytes, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFontFromMemory`, as the glyphs are rasterized off the main thread.
   - `fileType`: The file's extension, ".ttf" or ".otf".
   - `fileData`: The file's bytes.
@@ -4181,6 +4248,8 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `codepointCount`: How many characters; 0 for 95.
   - `loaded`: Receives the font.
   - `failed`: Optional. Receives why it couldn't be made; when omitted, it is logged.
+
+  The font holds only the characters the file has, as `LoadFontExAsync`'s does; with none of them, it is the default font.
 - `LoadFontDataAsync`: Rasterizes a TrueType or OpenType font's glyphs, answering when they are ready: helix-ray's own, in place of raylib's `LoadFontData`. Each glyph has its own image, 8-bit grayscale, for `GenImageFontAtlas`; `FONT_SDF` makes them signed distances, with 4 texels of padding, 128 on the outline and 64 a texel.
   - `fileData`: The font file's bytes.
   - `dataSize`: How many of them.
@@ -5579,6 +5648,7 @@ static function rlDisableBackfaceCulling():Void
 static function rlSetCullFace(mode:Int):Void
 static function rlEnableWireMode():Void
 static function rlDisableWireMode():Void
+static function rlDisablePointMode():Void
 static function rlEnableScissorTest():Void
 static function rlDisableScissorTest():Void
 static function rlScissor(x:Int, y:Int, width:Int, height:Int):Void
@@ -5588,6 +5658,8 @@ static function rlClearColor(r:Int, g:Int, b:Int, a:Int):Void
 static function rlClearScreenBuffers():Void
 static function rlSetLineWidth(width:Float):Void
 static function rlGetLineWidth():Float
+static function rlSetPointSize(size:Float):Void
+static function rlGetPointSize():Float
 static function rlEnableSmoothLines():Void
 static function rlDisableSmoothLines():Void
 static function rlSetFramebufferWidth(width:Int):Void
@@ -5600,7 +5672,7 @@ static function rlGetPixelFormatName(format:Int):String
 - `rlMatrixMode`: Chooses the matrix the next matrix calls change: `RL_MODELVIEW`, the view (or, between `rlPushMatrix` and `rlPopMatrix`, the transform the next vertices are moved by), or `RL_PROJECTION`.
   - `mode`: The matrix (`RL_MODELVIEW` or `RL_PROJECTION`; `RL_TEXTURE` changes nothing).
 - `rlPushMatrix`: Saves the current matrix, to go back to with `rlPopMatrix`. In `RL_MODELVIEW`, the matrix calls until then move the vertices drawn after them.
-  - throws `String`: More than 32 saved at once, as rlgl allows.
+  At most 32 are saved at once, as rlgl allows: past them it saves nothing and changes nothing, logging an error.
 - `rlPopMatrix`: Goes back to the matrix last saved by `rlPushMatrix`.
 - `rlLoadIdentity`: Makes the current matrix the identity.
 - `rlTranslatef`: Moves by an offset before the current matrix.
@@ -5648,6 +5720,8 @@ static function rlGetPixelFormatName(format:Int):String
   - returns: The distance.
 - `rlBegin`: Starts vertices: each 2 a line, 3 a triangle or 4 a quad, until `rlEnd`.
   - `mode`: `RL_LINES`, `RL_TRIANGLES` or `RL_QUADS`.
+
+  A mode other than the last one's starts a new draw call: it takes the texture `rlSetTexture` last set, and the white texture is set for the next, so a second change of mode without another `rlSetTexture` draws untextured. The same mode again keeps the draw call and its texture.
 - `rlEnd`: Ends the vertices `rlBegin` started; a shape left short of its vertices isn't drawn.
 - `rlVertex2i`: Adds a vertex, with the color, texture coordinate and normal set last.
   - `x`: The x.
@@ -5680,7 +5754,7 @@ static function rlGetPixelFormatName(format:Int):String
   - `y`: The green.
   - `z`: The blue.
   - `w`: The alpha.
-- `rlSetTexture`: Sets the texture the next vertices draw with.
+- `rlSetTexture`: Sets the texture the next vertices draw with, as rlgl's: the vertices after it draw with it, and so does the draw call the next change of mode (`rlBegin`) starts. 0 leaves the vertices after it with the texture they have, and has the next change of mode start with the white texture.
   - `id`: The texture's id (`Texture2D.id`), or 0 for none.
 - `rlSetBlendMode`: Sets how the next draws blend, as `BeginBlendMode` does.
   - `mode`: The mode (`RL_BLEND_*`, the same as `BLEND_*`).
@@ -5700,6 +5774,7 @@ static function rlGetPixelFormatName(format:Int):String
   - `mode`: `RL_CULL_FACE_BACK`, as raylib starts, or `RL_CULL_FACE_FRONT`.
 - `rlEnableWireMode`: Draws triangles as their edges from now: a model drawn after it at once, and the shapes in rlgl's batch when it is next drawn (`rlDrawRenderBatchActive`), as GL's line mode does, which a page's WebGL hasn't, done here as lines. Culling still leaves out the triangles it would, by their facing on the screen as GL finds it; a shader that moves the vertices isn't seen in that.
 - `rlDisableWireMode`: Draws the next triangles filled, as raylib starts; it also ends point mode, which helix-ray doesn't have yet.
+- `rlDisablePointMode`: Ends point mode, which helix-ray doesn't have yet, by drawing the next triangles filled: it ends wire mode too, as rlgl's does, point and wire mode being one GL setting.
 - `rlEnableScissorTest`: Clips the next draws to the rectangle `rlScissor` last set: the whole pass until it is set.
 - `rlDisableScissorTest`: Stops clipping the next draws, as `EndScissorMode` does.
 - `rlScissor`: Sets the rectangle the next draws are clipped to while the scissor test is on, as GL takes it: in the framebuffer's pixels, from its bottom left. `BeginScissorMode` takes one from the top left in the screen's pixels.
@@ -5725,6 +5800,10 @@ static function rlGetPixelFormatName(format:Int):String
   - `width`: The width, in pixels.
 - `rlGetLineWidth`: Returns the width `rlSetLineWidth` last set, 1 until then.
   - returns: The width.
+- `rlSetPointSize`: Sets the size points are drawn at, which changes nothing, as on rlgl's GL 3.3 and ES, where a shader sets it.
+  - `size`: The size, in pixels.
+- `rlGetPointSize`: Returns the size points are drawn at: 1, as rlgl's GL 3.3 and ES give it, whatever `rlSetPointSize` was given.
+  - returns: The size, in pixels.
 - `rlEnableSmoothLines`: Asks for smoothed lines. GL 3.3's core profile and WebGL don't smooth them, so this changes nothing; `FLAG_MSAA_4X_HINT` smooths every edge.
 - `rlDisableSmoothLines`: Stops asking for smoothed lines, which changes nothing here (`rlEnableSmoothLines`).
 - `rlSetFramebufferWidth`: Sets the width rlgl takes the framebuffer drawn into to have, until the next pass begins, as `BeginTextureMode` and `EndTextureMode` set it. Drawing here doesn't read it; `rlGetFramebufferWidth` gives it back.
@@ -5743,7 +5822,7 @@ static function rlGetPixelFormatName(format:Int):String
 
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
-`rlEnableVertexArray`, `rlDisableVertexArray`, `rlEnableVertexBuffer`, `rlDisableVertexBuffer`, `rlEnableVertexBufferElement`, `rlDisableVertexBufferElement`, `rlEnableVertexAttribute`, `rlDisableVertexAttribute`, `rlEnableStatePointer`, `rlDisableStatePointer`, `rlActiveTextureSlot`, `rlEnableTexture`, `rlDisableTexture`, `rlEnableTextureCubemap`, `rlDisableTextureCubemap`, `rlTextureParameters`, `rlCubemapParameters`, `rlEnableShader`, `rlDisableShader`, `rlEnableFramebuffer`, `rlDisableFramebuffer`, `rlGetActiveFramebuffer`, `rlActiveDrawBuffers`, `rlBlitFramebuffer`, `rlBindFramebuffer`, `rlCheckErrors`, `rlglInit`, `rlglClose`, `rlLoadExtensions`, `rlGetVersion`, `rlGetTextureIdDefault`, `rlGetShaderIdDefault`, `rlGetShaderLocsDefault`, `rlLoadRenderBatch`, `rlUnloadRenderBatch`, `rlDrawRenderBatch`, `rlSetRenderBatchActive`, `rlLoadVertexArray`, `rlLoadVertexBuffer`, `rlLoadVertexBufferElement`, `rlUpdateVertexBuffer`, `rlUpdateVertexBufferElements`, `rlUnloadVertexArray`, `rlUnloadVertexBuffer`, `rlSetVertexAttribute`, `rlSetVertexAttributeDivisor`, `rlSetVertexAttributeDefault`, `rlDrawVertexArray`, `rlDrawVertexArrayElements`, `rlDrawVertexArrayInstanced`, `rlDrawVertexArrayElementsInstanced`, `rlLoadTexture`, `rlLoadTextureDepth`, `rlLoadTextureCubemap`, `rlUpdateTexture`, `rlGetGlTextureFormats`, `rlUnloadTexture`, `rlGenTextureMipmaps`, `rlReadTexturePixels`, `rlReadScreenPixels`, `rlLoadFramebuffer`, `rlFramebufferAttach`, `rlFramebufferComplete`, `rlUnloadFramebuffer`, `rlLoadShaderCode`, `rlCompileShader`, `rlLoadShaderProgram`, `rlUnloadShaderProgram`, `rlGetLocationUniform`, `rlGetLocationAttrib`, `rlSetUniform`, `rlSetUniformMatrix`, `rlSetUniformMatrices`, `rlSetUniformSampler`, `rlSetShader`, `rlLoadComputeShaderProgram`, `rlComputeShaderDispatch`, `rlLoadShaderBuffer`, `rlUnloadShaderBuffer`, `rlUpdateShaderBuffer`, `rlBindShaderBuffer`, `rlReadShaderBuffer`, `rlCopyShaderBuffer`, `rlGetShaderBufferSize`, `rlBindImageTexture`, `rlLoadDrawCube`, `rlLoadDrawQuad`.
+`rlEnableVertexArray`, `rlDisableVertexArray`, `rlEnableVertexBuffer`, `rlDisableVertexBuffer`, `rlEnableVertexBufferElement`, `rlDisableVertexBufferElement`, `rlEnableVertexAttribute`, `rlDisableVertexAttribute`, `rlEnableStatePointer`, `rlDisableStatePointer`, `rlActiveTextureSlot`, `rlEnableTexture`, `rlDisableTexture`, `rlEnableTextureCubemap`, `rlDisableTextureCubemap`, `rlTextureParameters`, `rlCubemapParameters`, `rlEnableShader`, `rlDisableShader`, `rlEnableFramebuffer`, `rlDisableFramebuffer`, `rlGetActiveFramebuffer`, `rlActiveDrawBuffers`, `rlBlitFramebuffer`, `rlBindFramebuffer`, `rlCheckErrors`, `rlglInit`, `rlglClose`, `rlLoadExtensions`, `rlGetProcAddress`, `rlGetVersion`, `rlGetTextureIdDefault`, `rlGetShaderIdDefault`, `rlGetShaderLocsDefault`, `rlLoadRenderBatch`, `rlUnloadRenderBatch`, `rlDrawRenderBatch`, `rlSetRenderBatchActive`, `rlLoadVertexArray`, `rlLoadVertexBuffer`, `rlLoadVertexBufferElement`, `rlUpdateVertexBuffer`, `rlUpdateVertexBufferElements`, `rlUnloadVertexArray`, `rlUnloadVertexBuffer`, `rlSetVertexAttribute`, `rlSetVertexAttributeDivisor`, `rlSetVertexAttributeDefault`, `rlDrawVertexArray`, `rlDrawVertexArrayElements`, `rlDrawVertexArrayInstanced`, `rlDrawVertexArrayElementsInstanced`, `rlLoadTexture`, `rlLoadTextureDepth`, `rlLoadTextureCubemap`, `rlUpdateTexture`, `rlGetGlTextureFormats`, `rlUnloadTexture`, `rlGenTextureMipmaps`, `rlReadTexturePixels`, `rlReadScreenPixels`, `rlCopyFramebuffer`, `rlResizeFramebuffer`, `rlLoadFramebuffer`, `rlFramebufferAttach`, `rlFramebufferComplete`, `rlUnloadFramebuffer`, `rlLoadShaderCode`, `rlCompileShader`, `rlLoadShaderProgram`, `rlUnloadShaderProgram`, `rlGetLocationUniform`, `rlGetLocationAttrib`, `rlSetUniform`, `rlSetUniformMatrix`, `rlSetUniformMatrices`, `rlSetUniformSampler`, `rlSetShader`, `rlLoadComputeShaderProgram`, `rlComputeShaderDispatch`, `rlLoadShaderBuffer`, `rlUnloadShaderBuffer`, `rlUpdateShaderBuffer`, `rlBindShaderBuffer`, `rlReadShaderBuffer`, `rlCopyShaderBuffer`, `rlGetShaderBufferSize`, `rlBindImageTexture`, `rlLoadDrawCube`, `rlLoadDrawQuad`.
 
 ### Not in helix-ray yet
 

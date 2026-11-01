@@ -91,6 +91,15 @@ class AudioTests {
 		voice.paused = true;
 		var v = output.voices.get(lastVoice(output));
 		check(voice.pitch == 4 && v.pitch == 4 && voice.pan == -1 && v.pan == -1 && v.paused, "pitch, pan held to their ranges; paused");
+		voice.pitch = 2;
+		voice.pitch = 2;
+		check(voice.pitch == 2 && v.pitch == 2, "a pitch set twice is the pitch set, not one relative to the last");
+		voice.pitch = 1;
+		check(voice.pitch == 1 && v.pitch == 1, "and set back to 1, as recorded");
+		var again = audio.play(jump);
+		check(again.position == 0
+			&& output.voices.get(lastVoice(output)).position == 0, "a sound played again: a new voice, from its start");
+		again.stop();
 
 		system.now = 10;
 		var song = audio.play(music, null, true, 0);

@@ -10,8 +10,8 @@ sha256 here (RELEASES), and built once (make PLATFORM=PLATFORM_DESKTOP) into bui
 into build/ray-parity/<suite>/ (a generated suite's two sides from its one list of cases, by ray/parity/shared/gen.py) with its assets,
 and its C reference is built and run on a private display (tools/private_display.py), with SDL's dummy audio and no session bus.
 
-A value suite's Haxe harness is then built for Node (js) and hxcpp (cpp) and run, each printing what the reference prints, a line at a
-time. Each section's lines (by their first word, or as the manifest's sections say) are compared word by word: words and integers
+A value suite's Haxe harness is then built for Node (js) and hxcpp (cpp), or the one its manifest's targets name, and run, each
+printing what the reference prints, a line at a time. Each section's lines (by their first word, or as the manifest's sections say) are compared word by word: words and integers
 exactly, other numbers relative to max(1, |either|, the line's scale), within the section's bar (the manifest's bars, else its
 tolerance). A pixel suite's helix-ray program is built natively for each backend it names (gl, sdl_gpu) and run on the private display,
 and its frame compared with raylib's: how many pixels differ at all, against the backend's allowance. Each section's or backend's
@@ -51,6 +51,9 @@ LINK = ['-lGL', '-lm', '-lpthread', '-ldl', '-lrt', '-lX11']
 # The libraries a value harness builds with (helix-ray itself from its source, without its program loop).
 LIBRARIES = ['helix-log', 'helix-math', 'helix-geometry', 'helix-formats', 'helix-platform', 'helix-services']
 TIMEOUT = 300
+# The targets a value suite's harness runs on, unless its manifest names fewer (targets): a suite whose functions need what one target
+# lacks (the native font rasterizer) runs on the other alone.
+TARGETS = ['js', 'cpp']
 # The SDL3 a native build links (tools/sdl3.py), found once.
 SDL3 = None
 
@@ -259,29 +262,34 @@ def bar(manifest, key):
         return own.get('worst', manifest['tolerance']), own.get('nonfinite', 0)
     return own, 0
 
-
 def check_values(name, manifest, main, out, display, env):
-    """Builds and runs a value suite's harness for js and cpp and compares each with ref.txt; returns the problems."""
+    """Builds and runs a value suite's harness for each of its targets (js and cpp, unless its manifest's targets say fewer) and compares
+    each with ref.txt; returns the problems."""
+    targets = manifest.get('targets', TARGETS)
     ran = run([str(out / 'ref')], display, out, what='the C reference')
     (out / 'ref.txt').write_text(ran.stdout, encoding='utf-8')
     base = sum((['-lib', lib] for lib in LIBRARIES), []) + ['-cp', 'ray/src', '--macro', 'helix.ray.internal.Metadata.register()', '-cp',
                                                             str(PARITY / 'shared'), '-cp', str(out / 'src'), '-main', main]
     for resource, file in manifest.get('resources', {}).items():
         base += ['-resource', f'{PARITY / name / file}@{resource}']
-    haxe(base + ['-js', str(out / 'js/harness.js'), '-D', 'js-es=6'], env)
-    run(['node', str(out / 'js/harness.js'), str(out / 'js.txt')], display, out, what='the js harness')
-    import native_build
-    haxe(base + ['-cpp', str(out / 'cpp'), '-D', 'analyzer-optimize', '-D', native_build.ARCH, '-D', f'HXCPP_COMPILE_THREADS={os.cpu_count() or 4}'], env)
-    run([str(out / 'cpp' / main), str(out / 'cpp.txt')], display, out, what='the cpp harness')
-    results = {target: compare(out / 'ref.txt', out / f'{target}.txt', manifest) for target in ('js', 'cpp')}
-    keys = list(results['js']) + [k for k in results['cpp'] if k not in results['js']]
+    if 'js' in targets:
+        haxe(base + ['-js', str(out / 'js/harness.js'), '-D', 'js-es=6'], env)
+        run(['node', str(out / 'js/harness.js'), str(out / 'js.txt')], display, out, what='the js harness')
+    if 'cpp' in targets:
+        import native_build
+        haxe(base + ['-cpp', str(out / 'cpp'), '-D', 'analyzer-optimize', '-D', native_build.ARCH, '-D', f'HXCPP_COMPILE_THREADS={os.cpu_count() or 4}'], env)
+        run([str(out / 'cpp' / main), str(out / 'cpp.txt')], display, out, what='the cpp harness')
+    results = {target: compare(out / 'ref.txt', out / f'{target}.txt', manifest) for target in targets}
+    keys = []
+    for target in targets:
+        keys += [k for k in results[target] if k not in keys]
     width = max(len(k) for k in keys) if keys else 8
-    print(f'  {"section":{width}}  {"js":>15}  {"cpp":>15}  bar')
+    print(f'  {"section":{width}}  ' + '  '.join(f'{target:>15}' for target in targets) + '  bar')
     problems = []
     for key in keys:
         worst_bar, nonfinite_bar = bar(manifest, key)
         cells = []
-        for target in ('js', 'cpp'):
+        for target in targets:
             worst, nonfinite, problem = results[target].get(key, (math.inf, 0, 'missing'))
             cells.append('differs' if problem else (f'{worst:.2e}' if worst else '0') + (f' +{nonfinite}' if nonfinite else ''))
             if problem:
@@ -291,13 +299,12 @@ def check_values(name, manifest, main, out, display, env):
             elif nonfinite > nonfinite_bar:
                 problems.append(f'{target} {key}: {nonfinite} numbers non-finite against another, over the {nonfinite_bar} allowed')
         allowed = f'{worst_bar:g}' + (f' +{nonfinite_bar}' if nonfinite_bar else '')
-        print(f'  {key:{width}}  {cells[0]:>15}  {cells[1]:>15}  {allowed}')
-    for target in ('js', 'cpp'):
+        print(f'  {key:{width}}  ' + '  '.join(f'{cell:>15}' for cell in cells) + f'  {allowed}')
+    for target in targets:
         finite = [(w, k) for k, (w, _, p) in results[target].items() if not p]
         w, k = max(finite) if finite else (0, '-')
         print(f'  worst {target}: {w:.3g} ({k})')
     return problems
-
 
 def png_pixels(path):
     from platform_checks import png_pixels as read

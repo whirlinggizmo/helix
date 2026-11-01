@@ -658,7 +658,7 @@ class Rlgl {
 	/** Saves the current matrix, to go back to with `rlPopMatrix`. In `RL_MODELVIEW`, the matrix calls until then move the vertices drawn
 		after them.
 
-		@throws String  More than 32 saved at once, as rlgl allows. */
+		At most 32 are saved at once, as rlgl allows: past them it saves nothing and changes nothing, logging an error. */
 	public static inline function rlPushMatrix():Void
 		RRlgl.rlPushMatrix();
 
@@ -767,6 +767,10 @@ class Rlgl {
 
 	/** Starts vertices: each 2 a line, 3 a triangle or 4 a quad, until `rlEnd`.
 
+		A mode other than the last one's starts a new draw call: it takes the texture `rlSetTexture` last set, and the white texture is
+		set for the next, so a second change of mode without another `rlSetTexture` draws untextured. The same mode again keeps the draw
+		call and its texture.
+
 		@param mode  `RL_LINES`, `RL_TRIANGLES` or `RL_QUADS`. */
 	public static inline function rlBegin(mode:Int):Void
 		RRlgl.rlBegin(mode);
@@ -838,7 +842,9 @@ class Rlgl {
 	public static inline function rlColor4f(x:Float, y:Float, z:Float, w:Float):Void
 		RRlgl.rlColor4f(x, y, z, w);
 
-	/** Sets the texture the next vertices draw with.
+	/** Sets the texture the next vertices draw with, as rlgl's: the vertices after it draw with it, and so does the draw call the next
+		change of mode (`rlBegin`) starts. 0 leaves the vertices after it with the texture they have, and has the next change of mode
+		start with the white texture.
 
 		@param id  The texture's id (`Texture2D.id`), or 0 for none. */
 	public static inline function rlSetTexture(id:Int):Void
@@ -912,6 +918,11 @@ class Rlgl {
 	public static inline function rlDisableWireMode():Void
 		RRlgl.rlDisableWireMode();
 
+	/** Ends point mode, which helix-ray doesn't have yet, by drawing the next triangles filled: it ends wire mode too, as rlgl's does,
+		point and wire mode being one GL setting. */
+	public static inline function rlDisablePointMode():Void
+		RRlgl.rlDisablePointMode();
+
 	/** Clips the next draws to the rectangle `rlScissor` last set: the whole pass until it is set. */
 	public static inline function rlEnableScissorTest():Void
 		RRlgl.rlEnableScissorTest();
@@ -972,6 +983,18 @@ class Rlgl {
 		@return  The width. */
 	public static inline function rlGetLineWidth():Float
 		return RRlgl.rlGetLineWidth();
+
+	/** Sets the size points are drawn at, which changes nothing, as on rlgl's GL 3.3 and ES, where a shader sets it.
+
+		@param size  The size, in pixels. */
+	public static inline function rlSetPointSize(size:Float):Void
+		RRlgl.rlSetPointSize(size);
+
+	/** Returns the size points are drawn at: 1, as rlgl's GL 3.3 and ES give it, whatever `rlSetPointSize` was given.
+
+		@return  The size, in pixels. */
+	public static inline function rlGetPointSize():Float
+		return RRlgl.rlGetPointSize();
 
 	/** Asks for smoothed lines. GL 3.3's core profile and WebGL don't smooth them, so this changes nothing; `FLAG_MSAA_4X_HINT` smooths
 		every edge. */
@@ -1164,6 +1187,11 @@ class Rlgl {
 		return helix.platform.macros.Build.unsupported("rlLoadExtensions: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
 			macro {});
 
+	/** rlgl's `rlGetProcAddress`: a GL function's address from the loader `rlLoadExtensions` was given, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
+	public static macro function rlGetProcAddress(procName:ExprOf<String>):ExprOf<Dynamic>
+		return helix.platform.macros.Build.unsupported("rlGetProcAddress: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+			macro(null : Dynamic));
+
 	/** rlgl's `rlGetVersion`: get current opengl version, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
 	public static macro function rlGetVersion():ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("rlGetVersion: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
@@ -1325,6 +1353,17 @@ class Rlgl {
 	public static macro function rlReadScreenPixels(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<haxe.io.Bytes>
 		return helix.platform.macros.Build.unsupported("rlReadScreenPixels: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
 			macro(null : haxe.io.Bytes));
+
+	/** rlgl's `rlCopyFramebuffer`: copy its software renderer's framebuffer's pixels, which helix-ray doesn't have, as it draws through helix-platform, not a renderer of rlgl's, so a call doesn't compile. */
+	public static macro function rlCopyFramebuffer(x:ExprOf<Int>, y:ExprOf<Int>, width:ExprOf<Int>, height:ExprOf<Int>, format:ExprOf<Int>,
+			pixels:ExprOf<Dynamic>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("rlCopyFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+			macro {});
+
+	/** rlgl's `rlResizeFramebuffer`: resize its software renderer's framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not a renderer of rlgl's, so a call doesn't compile. */
+	public static macro function rlResizeFramebuffer(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("rlResizeFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+			macro {});
 
 	/** rlgl's `rlLoadFramebuffer`: load an empty framebuffer, which helix-ray doesn't have, as it draws through helix-platform, not GL, so a call doesn't compile. */
 	public static macro function rlLoadFramebuffer():ExprOf<Int>

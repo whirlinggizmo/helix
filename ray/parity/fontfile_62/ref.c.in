@@ -1,0 +1,30 @@
+// raylib 6.2's fonts loaded from a TrueType file, printed by parity.h and the printers here; cases.py's list is put into it.
+#include "parity.h"
+
+static Font load(const char *fileName, int fontSize, int *codepoints, int count) {
+    return LoadFontEx(fileName, fontSize, codepoints, count);
+}
+
+// An image's size and format, and a checksum of its bytes.
+static void pixels(const char *name, Image image, int bytes) {
+    long sum = 0;
+    for (int i = 0; i < bytes; i++) sum = (sum + ((unsigned char *)image.data)[i] * (i % 251 + 1)) % 1000000007;
+    printf("%s image %d %d %d %ld\n", name, image.width, image.height, image.format, sum);
+}
+
+static void font(const char *name, Font f) {
+    printf("%s font %d %d %d %d %d\n", name, f.baseSize, f.glyphCount, f.glyphPadding, f.texture.width, f.texture.height);
+    for (int i = 0; i < f.glyphCount; i++) {
+        GlyphInfo g = f.glyphs[i];
+        printf("%s glyph %d %d %d %d %d %d\n", name, g.value, g.offsetX, g.offsetY, g.advanceX, g.image.width, g.image.height);
+        rect(name, f.recs[i]);
+        pixels(name, g.image, g.image.width * g.image.height * 2);
+    }
+}
+
+int main(void) {
+    parity_open();
+    @CASES@
+    parity_close();
+    return 0;
+}

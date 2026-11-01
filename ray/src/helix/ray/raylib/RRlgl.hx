@@ -39,10 +39,12 @@ class RRlgl {
 	/** Saves the current matrix, to go back to with `rlPopMatrix`. In `RL_MODELVIEW`, the matrix calls until then move the vertices drawn
 		after them.
 
-		@throws String  More than 32 saved at once, as rlgl allows. */
+		At most 32 are saved at once, as rlgl allows: past them it saves nothing and changes nothing, logging an error. */
 	static function rlPushMatrix():Void {
-		if (stack.length >= RL_MAX_MATRIX_STACK_SIZE)
-			throw "rlPushMatrix: matrix stack overflow (RL_MAX_MATRIX_STACK_SIZE)";
+		if (stack.length >= RL_MAX_MATRIX_STACK_SIZE) {
+			Runtime.log(LOG_ERROR, "RLGL: Matrix stack overflow (RL_MAX_MATRIX_STACK_SIZE)");
+			return;
+		}
 		if (matrixMode == RL_MODELVIEW)
 			pushed = true;
 		stack.push(new Matrix3D().copyFrom(current()));
@@ -180,9 +182,18 @@ class RRlgl {
 
 	/** Starts vertices: each 2 a line, 3 a triangle or 4 a quad, until `rlEnd`.
 
+		A mode other than the last one's starts a new draw call: it takes the texture `rlSetTexture` last set, and the white texture is
+		set for the next, so a second change of mode without another `rlSetTexture` draws untextured. The same mode again keeps the draw
+		call and its texture.
+
 		@param mode  `RL_LINES`, `RL_TRIANGLES` or `RL_QUADS`. */
 	static function rlBegin(mode:Int):Void {
-		drawMode = mode;
+		var f = Runtime.frame;
+		if (f.drawMode != mode) {
+			f.drawMode = mode;
+			f.drawTexture = textureId;
+			textureId = 0;
+		}
 		quad.resize(0);
 	}
 
@@ -213,8 +224,9 @@ class RRlgl {
 		@param y  The y.
 		@param z  The z. */
 	static function rlVertex3f(x:Float, y:Float, z:Float):Void {
-		if (drawMode != RL_QUADS) {
-			Runtime.frame.vertex(texture(), drawMode == RL_LINES, x, y, z, u, v, color);
+		var mode = Runtime.frame.drawMode;
+		if (mode != RL_QUADS) {
+			Runtime.frame.vertex(texture(), mode == RL_LINES, x, y, z, u, v, color);
 			return;
 		}
 		// A quad as two triangles, its first, second and third corners, then its first, third and fourth.
@@ -291,11 +303,15 @@ class RRlgl {
 		color = new Color(Std.int(x * 255), Std.int(y * 255), Std.int(z * 255), Std.int(w * 255));
 	}
 
-	/** Sets the texture the next vertices draw with.
+	/** Sets the texture the next vertices draw with, as rlgl's: the vertices after it draw with it, and so does the draw call the next
+		change of mode (`rlBegin`) starts. 0 leaves the vertices after it with the texture they have, and has the next change of mode
+		start with the white texture.
 
 		@param id  The texture's id (`Texture2D.id`), or 0 for none. */
 	static function rlSetTexture(id:Int):Void {
 		textureId = id;
+		if (id != 0)
+			Runtime.frame.drawTexture = id;
 	}
 
 	// ---- State ----
@@ -382,6 +398,12 @@ class RRlgl {
 		state().wire = false;
 	}
 
+	/** Ends point mode, which helix-ray doesn't have yet, by drawing the next triangles filled: it ends wire mode too, as rlgl's does,
+		point and wire mode being one GL setting. */
+	static function rlDisablePointMode():Void {
+		state().wire = false;
+	}
+
 	/** Clips the next draws to the rectangle `rlScissor` last set: the whole pass until it is set. */
 	static function rlEnableScissorTest():Void {
 		var f = state();
@@ -462,6 +484,18 @@ class RRlgl {
 		@return  The width. */
 	static function rlGetLineWidth():Float {
 		return lineWidth;
+	}
+
+	/** Sets the size points are drawn at, which changes nothing, as on rlgl's GL 3.3 and ES, where a shader sets it.
+
+		@param size  The size, in pixels. */
+	static function rlSetPointSize(size:Float):Void {}
+
+	/** Returns the size points are drawn at: 1, as rlgl's GL 3.3 and ES give it, whatever `rlSetPointSize` was given.
+
+		@return  The size, in pixels. */
+	static function rlGetPointSize():Float {
+		return 1;
 	}
 
 	/** Asks for smoothed lines. GL 3.3's core profile and WebGL don't smooth them, so this changes nothing; `FLAG_MSAA_4X_HINT` smooths
@@ -809,6 +843,16 @@ class RRlgl {
 		throw "rlLoadExtensions is unsupported";
 	}
 
+	/** rlgl's `rlGetProcAddress`: a GL function's address from the loader `rlLoadExtensions` was given, which helix-ray doesn't have, as it
+		draws through helix-platform, not GL, so a call doesn't compile.
+
+		@param procName  As rlgl takes it.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("rlGetProcAddress: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
+	static function rlGetProcAddress(procName:String):Dynamic {
+		throw "rlGetProcAddress is unsupported";
+	}
+
 	/** rlgl's `rlGetVersion`: get current opengl version, which helix-ray doesn't have, as it
 		draws through helix-platform, not GL, so a call doesn't compile.
 
@@ -1150,6 +1194,30 @@ class RRlgl {
 		throw "rlReadScreenPixels is unsupported";
 	}
 
+	/** rlgl's `rlCopyFramebuffer`: copy its software renderer's framebuffer's pixels, which helix-ray doesn't have, as it draws through
+		helix-platform, not a renderer of rlgl's, so a call doesn't compile.
+
+		@param x  As rlgl takes it.
+		@param y  As rlgl takes it.
+		@param width  As rlgl takes it.
+		@param height  As rlgl takes it.
+		@param format  As rlgl takes it.
+		@param pixels  As rlgl takes it. */
+	@:unsupported("rlCopyFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
+	static function rlCopyFramebuffer(x:Int, y:Int, width:Int, height:Int, format:Int, pixels:Dynamic):Void {
+		throw "rlCopyFramebuffer is unsupported";
+	}
+
+	/** rlgl's `rlResizeFramebuffer`: resize its software renderer's framebuffer, which helix-ray doesn't have, as it draws through
+		helix-platform, not a renderer of rlgl's, so a call doesn't compile.
+
+		@param width  As rlgl takes it.
+		@param height  As rlgl takes it. */
+	@:unsupported("rlResizeFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
+	static function rlResizeFramebuffer(width:Int, height:Int):Void {
+		throw "rlResizeFramebuffer is unsupported";
+	}
+
 	/** rlgl's `rlLoadFramebuffer`: load an empty framebuffer, which helix-ray doesn't have, as it
 		draws through helix-platform, not GL, so a call doesn't compile.
 
@@ -1447,11 +1515,11 @@ class RRlgl {
 	static var pushed = false;
 	static final transform = new Matrix3D();
 	static final stack:Array<Matrix3D> = [];
-	static var drawMode = RL_TRIANGLES;
 	static final quad:Array<Array<Float>> = [];
 	static var u = 0.;
 	static var v = 0.;
 	static var color = new Color(255, 255, 255, 255);
+	// rlgl's current texture id, which the next change of mode (rlBegin) gives its draw call: 0 for the white texture.
 	static var textureId = 0;
 
 	// The frame whose state rlgl's state calls set: without flushing its batch, as rlgl's don't, so the vertices waiting in it are drawn
@@ -1484,8 +1552,10 @@ class RRlgl {
 		set(Matrix3D.compose(m, current()));
 	}
 
+	// The draw call's texture, the white one for none.
 	static function texture():Int {
-		var handle = textureId == 0 ? 0 : Textures.handle(textureId);
+		var id = Runtime.frame.drawTexture;
+		var handle = id == 0 ? 0 : Textures.handle(id);
 		return handle == 0 ? Runtime.frame.white : handle;
 	}
 	#end

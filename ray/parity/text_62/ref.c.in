@@ -1,0 +1,56 @@
+// raylib 6.2's text and codepoint functions, printed by parity.h and the printers here; cases.py's list is put into it.
+#include "parity.h"
+#include <stdlib.h>
+#include <string.h>
+
+// piece, n times over, in memory of its own.
+static const char *rep(int n, const char *piece) {
+    size_t length = strlen(piece);
+    char *out = calloc(n * length + 1, 1);
+    for (int i = 0; i < n; i++) memcpy(out + i * length, piece, length);
+    return out;
+}
+
+static void count(const char *name, int n) { printf("%s count %d\n", name, n); }
+
+static void split(const char *name, const char *text, char delimiter) {
+    int n = -1;
+    char **pieces = TextSplit(text, delimiter, &n);
+    count(name, n);
+    for (int i = 0; i < n; i++) str(name, pieces[i]);
+}
+
+static void lines(const char *name, const char *text) {
+    int n = -1;
+    char **found = LoadTextLines(text, &n);
+    count(name, n);
+    printf("%s lines %s\n", name, found == NULL ? "NULL" : "some");
+    for (int i = 0; i < n; i++) str(name, found[i]);
+    if (found != NULL) UnloadTextLines(found, n);
+}
+
+static void codepoints(const char *name, const char *text) {
+    int n = -1;
+    int *found = LoadCodepoints(text, &n);
+    printf("%s codepoints %d %s", name, n, found == NULL ? "NULL" : "some");
+    for (int i = 0; i < n; i++) printf(" %d", found[i]);
+    printf("\n");
+    if (found != NULL) UnloadCodepoints(found);
+}
+
+// A codepoint function's code and size: first, next, or the one before the text's end.
+static void codepoint(const char *name, const char *text, int which) {
+    int size = -1, code;
+    if (which == 0) code = GetCodepoint(text, &size);
+    else if (which == 1) code = GetCodepointNext(text, &size);
+    else code = GetCodepointPrevious(text == NULL ? NULL : text + strlen(text), &size);
+    printf("%s codepoint %d %d\n", name, code, size);
+}
+
+int main(void) {
+    parity_open();
+    Font font = GetFontDefault();
+    @CASES@
+    parity_close();
+    return 0;
+}
