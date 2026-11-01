@@ -1,0 +1,7 @@
+seed=8675309
+width=2600
+height=1600
+rocks=20
+crystals=25
+seconds=60
+target=18

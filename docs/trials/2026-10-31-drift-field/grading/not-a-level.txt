@@ -1,0 +1,6 @@
+seed=12
+width=wide
+height=1000
+rocks=10
+crystals=8
+seconds=30
