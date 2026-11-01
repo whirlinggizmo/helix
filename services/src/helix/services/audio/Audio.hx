@@ -109,12 +109,15 @@ class Audio implements IPollable {
 			}
 			abortOpen = output.openStream(source, stream -> {
 				var sound = new Sound(output, path, true, stream, output.getStreamChannelCount(stream), 0, release);
+				// Natively a download from a server starts with its last bytes (Assets.tailOf), its length read once its start arrives too.
+				#if !js
 				switch source {
 					case Downloading(growing):
-						sound.growing = growing;
-						sound.tail = assets.tailOf(growing);
+						var tail = assets.tailOf(growing);
+						if (tail != null) sound.measureFrom(growing, tail);
 					case _:
 				}
+				#end
 				sounds.push(sound);
 				opened(sound);
 			}, message -> {

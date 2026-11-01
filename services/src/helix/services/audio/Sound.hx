@@ -19,9 +19,9 @@ class Sound {
 	final output:IAudio;
 	// A clip's length; a stream's once known, from a download's tail or the platform.
 	var seconds = 0.;
-	// A stream downloading in two parts, and its last bytes, from which its length is read once its start has arrived too.
-	var growing:Null<GrowingSource> = null;
-	var tail:Null<Bytes> = null;
+	// Natively, a stream downloading in two parts: what reads its length from its start and its last bytes once its start has arrived,
+	// -1 until then (`measureFrom`); null for any other sound, so only a program streaming from a server links the headers' reading.
+	var measure:Null<Void->Float> = null;
 
 	@:allow(helix.services.audio)
 	function new(output:IAudio, path:String, streamed:Bool, id:Int, channelCount:Int, seconds:Float, release:Null<Void->Void>) {
@@ -54,16 +54,28 @@ class Sound {
 	function get_duration():Float {
 		if (seconds > 0 || unloaded || !streamed)
 			return seconds;
-		if (tail != null && growing != null && growing.received >= Std.int(Math.min(START, growing.total - tail.length))) {
-			var start = growing.bytes.sub(0, Std.int(Math.min(START, growing.received)));
-			seconds = AudioHeader.readDuration(start, tail, growing.total);
-			tail = null;
-			if (seconds > 0)
-				return seconds;
+		if (measure != null) {
+			var read = measure();
+			if (read >= 0) {
+				measure = null;
+				seconds = read;
+				if (seconds > 0)
+					return seconds;
+			}
 		}
 		var known = output.getStreamDuration(id);
 		if (known > 0)
 			seconds = known;
 		return known;
+	}
+
+	// Has the length read from a download's start and its last bytes, once its start has arrived (`Audio.stream`, natively).
+	function measureFrom(growing:GrowingSource, tail:Bytes):Void {
+		measure = () -> {
+			if (growing.received < Std.int(Math.min(START, growing.total - tail.length)))
+				return -1;
+			var start = growing.bytes.sub(0, Std.int(Math.min(START, growing.received)));
+			return AudioHeader.readDuration(start, tail, growing.total);
+		};
 	}
 }
