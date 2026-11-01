@@ -29,10 +29,6 @@ class RlglBits {
 		f.draw(64, 64, true);
 	}
 
-	// Whether triangles are drawn filled or as their edges.
-	static function polygons(name:String):Void
-		line('$name polygons ${Runtime.frame.wire ? "line" : "fill"}');
-
 	static function tri(x:Float):Void {
 		rlVertex3f(x, 0, 0);
 		rlVertex3f(x + 1, 0, 0);

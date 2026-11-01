@@ -1849,7 +1849,6 @@ class RModels {
 		locs[SHADER_LOC_VERTEX_BONEIDS] = p.attributes.indexOf("vertexBoneIds") >= 0 ? p.attributes.indexOf("vertexBoneIds") : p.attributes.indexOf("vertexBoneIndices");
 		locs[SHADER_LOC_VERTEX_BONEWEIGHTS] = p.attributes.indexOf("vertexBoneWeights");
 		locs[SHADER_LOC_BONE_MATRICES] = p.locate("boneMatrices");
-		locs[SHADER_LOC_VERTEX_INSTANCETRANSFORM] = p.attributes.indexOf("instanceTransform");
 		locs[SHADER_LOC_MATRIX_MVP] = p.locate("mvp");
 		locs[SHADER_LOC_MATRIX_VIEW] = p.locate("matView");
 		locs[SHADER_LOC_MATRIX_PROJECTION] = p.locate("matProjection");

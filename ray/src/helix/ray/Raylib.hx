@@ -671,9 +671,6 @@ class Raylib {
 	/** Shader location: array of matrices uniform: boneMatrices. */
 	public static inline final SHADER_LOC_BONE_MATRICES = 28;
 
-	/** Shader location: vertex attribute: instanceTransform, raylib 6.2's, the attribute a shader reads an instance's transform from. */
-	public static inline final SHADER_LOC_VERTEX_INSTANCETRANSFORM = 29;
-
 	// ---- Shader value types (ShaderUniformDataType) ----
 
 	/** Shader uniform type: float. */
@@ -1952,22 +1949,6 @@ class Raylib {
 	public static inline function MakeDirectory(dirPath:String):Int
 		return RCore.MakeDirectory(dirPath);
 
-	/** Returns whether a path names a hidden file or directory, as raylib 6.2's does outside Windows: its last part starts with a dot and
-		isn't "." or "..".
-
-		@param filePath  The path.
-		@return  True when it is hidden. */
-	public static inline function IsFileHidden(filePath:String):Bool
-		return RCore.IsFileHidden(filePath);
-
-	/** Returns whether a path is absolute, as raylib 6.2's: natively on Windows one starting with `\\` or a drive letter, a colon and a
-		slash ("C:\", "D:/"); elsewhere, and in a page, one starting with `/`.
-
-		@param path  The path.
-		@return  True when it is absolute; false for null or "". */
-	public static inline function IsPathAbsolute(path:String):Bool
-		return RCore.IsPathAbsolute(path);
-
 	/** Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave. There is nothing to free here, and the list is
 		unchanged.
 
@@ -2061,14 +2042,6 @@ class Raylib {
 		@return  Its 5 words, the first the hash's first 4 bytes, the highest first; one above 0x7fffffff is negative. */
 	public static inline function ComputeSHA1(data:haxe.io.Bytes, dataSize:Int):Array<Int>
 		return RCore.ComputeSHA1(data, dataSize);
-
-	/** Returns the SHA-256 hash of some bytes, raylib 6.2's.
-
-		@param data  The bytes.
-		@param dataSize  How many of them.
-		@return  Its 8 words, the first the hash's first 4 bytes, the highest first; one above 0x7fffffff is negative. */
-	public static inline function ComputeSHA256(data:haxe.io.Bytes, dataSize:Int):Array<Int>
-		return RCore.ComputeSHA256(data, dataSize);
 
 	/** Reads files through the program from now on: every load raylib makes of a file (textures, models, sounds, music, data) asks it
 		first, and a file it doesn't have (null) is read as it would be. In a page, a texture's or model's images still decode only
@@ -2481,17 +2454,6 @@ class Raylib {
 	public static inline function DrawLineBezier(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void
 		RShapes.DrawLineBezier(startPos, endPos, thick, color);
 
-	/** Draws a dashed line one pixel wide: dashes of a length with gaps of another between them, from the start; the last dash stops at
-		the end.
-
-		@param startPos  The start.
-		@param endPos  The end.
-		@param dashSize  Each dash's length, in pixels; 0 or less, or a line shorter than a dash and a gap, draws the line solid.
-		@param spaceSize  Each gap's length, in pixels.
-		@param color  The color. */
-	public static inline function DrawLineDashed(startPos:Vector2, endPos:Vector2, dashSize:Int, spaceSize:Int, color:Color):Void
-		RShapes.DrawLineDashed(startPos, endPos, dashSize, spaceSize, color);
-
 	/** Draws a filled circle.
 
 		@param centerX  The center's x.
@@ -2531,20 +2493,6 @@ class Raylib {
 	public static inline function DrawCircleSectorLines(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
 		RShapes.DrawCircleSectorLines(center, radius, startAngle, endAngle, segments, color);
 
-	/** Draws a slice of a circle's outline of a thickness, inside it, or outside it for a negative thickness, with its edges from the
-		center to its ends that thick too; a whole turn drawn outside has none.
-
-		@param center  The center.
-		@param radius  The radius; 0 or less draws nothing.
-		@param startAngle  The angle it starts at, in degrees from the right.
-		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
-		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
-		@param thick  The outline's thickness, measured across its curve's straight edges; one so thick it meets itself fills the slice.
-		@param color  The color. */
-	public static inline function DrawCircleSectorLinesEx(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, thick:Float,
-			color:Color):Void
-		RShapes.DrawCircleSectorLinesEx(center, radius, startAngle, endAngle, segments, thick, color);
-
 	/** Draws a filled circle that blends from one color at its center to another at its edge.
 
 		@param centerX  The center's x.
@@ -2572,15 +2520,6 @@ class Raylib {
 	public static inline function DrawCircleLinesV(center:Vector2, radius:Float, color:Color):Void
 		RShapes.DrawCircleLinesV(center, radius, color);
 
-	/** Draws a circle's outline of a thickness, inside it: a ring of 36 segments from the radius less the thickness to the radius.
-
-		@param center  The center.
-		@param radius  The radius.
-		@param thick  The thickness; more than the radius draws a filled circle, and a negative one an outline that thick outside it.
-		@param color  The color. */
-	public static inline function DrawCircleLinesEx(center:Vector2, radius:Float, thick:Float, color:Color):Void
-		RShapes.DrawCircleLinesEx(center, radius, thick, color);
-
 	/** Draws a filled ellipse.
 
 		@param centerX  The center's x.
@@ -2591,15 +2530,6 @@ class Raylib {
 	public static inline function DrawEllipse(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void
 		RShapes.DrawEllipse(centerX, centerY, radiusH, radiusV, color);
 
-	/** Draws a filled ellipse.
-
-		@param center  The center.
-		@param radiusH  The radius across.
-		@param radiusV  The radius up and down.
-		@param color  The color. */
-	public static inline function DrawEllipseV(center:Vector2, radiusH:Float, radiusV:Float, color:Color):Void
-		RShapes.DrawEllipseV(center, radiusH, radiusV, color);
-
 	/** Draws an ellipse's outline, one pixel wide.
 
 		@param centerX  The center's x.
@@ -2609,26 +2539,6 @@ class Raylib {
 		@param color  The color. */
 	public static inline function DrawEllipseLines(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void
 		RShapes.DrawEllipseLines(centerX, centerY, radiusH, radiusV, color);
-
-	/** Draws an ellipse's outline, one pixel wide.
-
-		@param center  The center.
-		@param radiusH  The radius across.
-		@param radiusV  The radius up and down.
-		@param color  The color. */
-	public static inline function DrawEllipseLinesV(center:Vector2, radiusH:Float, radiusV:Float, color:Color):Void
-		RShapes.DrawEllipseLinesV(center, radiusH, radiusV, color);
-
-	/** Draws an ellipse's outline of a thickness, inside it, or outside it for a negative thickness: 36 segments, each radius less the
-		thickness to the radius.
-
-		@param center  The center.
-		@param radiusH  The radius across.
-		@param radiusV  The radius up and down.
-		@param thick  The thickness; as much as either radius draws a filled ellipse.
-		@param color  The color. */
-	public static inline function DrawEllipseLinesEx(center:Vector2, radiusH:Float, radiusV:Float, thick:Float, color:Color):Void
-		RShapes.DrawEllipseLinesEx(center, radiusH, radiusV, thick, color);
 
 	/** Draws a filled ring, or a slice of one, clockwise from one angle to another.
 
@@ -2655,22 +2565,6 @@ class Raylib {
 	public static inline function DrawRingLines(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int,
 			color:Color):Void
 		RShapes.DrawRingLines(center, innerRadius, outerRadius, startAngle, endAngle, segments, color);
-
-	/** Draws a ring's outline, or a slice of one, of a thickness: inside its edge and outside its hole, or the other way for a negative
-		thickness, with its ends that thick too; a whole turn drawn outside has no ends.
-
-		@param center  The center.
-		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle (`DrawCircleSectorLinesEx`) for a negative
-			thickness.
-		@param outerRadius  The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
-		@param startAngle  The angle it starts at, in degrees from the right.
-		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
-		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
-		@param thick  The outline's thickness, measured across its curve's straight edges; one so thick it meets itself fills the ring.
-		@param color  The color. */
-	public static inline function DrawRingLinesEx(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int,
-			thick:Float, color:Color):Void
-		RShapes.DrawRingLinesEx(center, innerRadius, outerRadius, startAngle, endAngle, segments, thick, color);
 
 	/** Draws a filled rectangle.
 
@@ -2802,19 +2696,6 @@ class Raylib {
 	public static inline function DrawTriangle(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
 		RShapes.DrawTriangle(v1, v2, v3, color);
 
-	/** Draws a filled triangle that blends between a color at each point.
-
-		Its points must go counterclockwise on the screen, as `DrawTriangle`'s must.
-
-		@param v1  The first point.
-		@param v2  The second point.
-		@param v3  The third point.
-		@param c1  The first point's color.
-		@param c2  The second point's color.
-		@param c3  The third point's color. */
-	public static inline function DrawTriangleGradient(v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
-		RShapes.DrawTriangleGradient(v1, v2, v3, c1, c2, c3);
-
 	/** Draws a triangle's outline, one pixel wide.
 
 		@param v1  The first point.
@@ -2823,19 +2704,6 @@ class Raylib {
 		@param color  The color. */
 	public static inline function DrawTriangleLines(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
 		RShapes.DrawTriangleLines(v1, v2, v3, color);
-
-	/** Draws a triangle's outline of a thickness, inside it, or outside it for a negative thickness: the triangle less a copy of it
-		shrunk about its incenter, so each side is as thick.
-
-		Its points must go counterclockwise on the screen, as `DrawTriangle`'s must.
-
-		@param v1  The first point.
-		@param v2  The second point.
-		@param v3  The third point.
-		@param thick  The thickness; as much as the radius of the circle inside it draws it filled.
-		@param color  The color. */
-	public static inline function DrawTriangleLinesEx(v1:Vector2, v2:Vector2, v3:Vector2, thick:Float, color:Color):Void
-		RShapes.DrawTriangleLinesEx(v1, v2, v3, thick, color);
 
 	/** Draws filled triangles that all share the first point, each from it to the next two points.
 
@@ -3025,16 +2893,6 @@ class Raylib {
 		@return  The point. */
 	public static inline function GetSplinePointBezierQuad(p1:Vector2, c2:Vector2, p3:Vector2, t:Float):Vector2
 		return RShapes.GetSplinePointBezierQuad(p1, c2, p3, t);
-
-	/** Returns a point on a quadratic Bezier curve: `GetSplinePointBezierQuad` by raylib 6's name for it.
-
-		@param startPos  The start.
-		@param controlPos  The control point.
-		@param endPos  The end.
-		@param t  How far along, 0 at the start to 1 at the end.
-		@return  The point. */
-	public static inline function GetSplinePointBezierQuadratic(startPos:Vector2, controlPos:Vector2, endPos:Vector2, t:Float):Vector2
-		return RShapes.GetSplinePointBezierQuadratic(startPos, controlPos, endPos, t);
 
 	/** Returns a point on a cubic Bezier curve.
 
@@ -3338,17 +3196,6 @@ class Raylib {
 		@return  The render texture. */
 	public static inline function LoadRenderTexture(width:Int, height:Int):RenderTexture2D
 		return RTextures.LoadRenderTexture(width, height);
-
-	/** Makes a texture to draw into, with depth, in a pixel format. helix-ray's render textures are 8-bit RGBA or half-float RGBA, so
-		`PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and `PIXELFORMAT_UNCOMPRESSED_R16G16B16A16` (where the GPU draws into half floats,
-		`IGraphics.canRender`) are made; any other format, and a compressed one as in raylib, makes none, with a warning.
-
-		@param width  Its width, in pixels.
-		@param height  Its height.
-		@param format  Its pixel format (`PIXELFORMAT_*`).
-		@return  The render texture; one whose id is 0 when the format isn't made. */
-	public static inline function LoadRenderTextureEx(width:Int, height:Int, format:Int):RenderTexture2D
-		return RTextures.LoadRenderTextureEx(width, height, format);
 
 	/** Returns whether a render texture was made.
 
@@ -3863,15 +3710,6 @@ class Raylib {
 	public static inline function ImageDrawLineEx(dst:Image, start:Vector2, end:Vector2, thick:Int, color:Color):Void
 		RTextures.ImageDrawLineEx(dst, start, end, thick, color);
 
-	/** Draws lines one pixel wide from each point to the next, as `ImageDrawLineV` draws each.
-
-		@param dst  The image.
-		@param points  The points.
-		@param pointCount  How many of them to draw through; under 2 draws nothing.
-		@param color  The color. */
-	public static inline function ImageDrawLineStrip(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
-		RTextures.ImageDrawLineStrip(dst, points, pointCount, color);
-
 	/** Fills a circle, each row as wide either side of the middle.
 
 		@param dst  The image.
@@ -3910,17 +3748,6 @@ class Raylib {
 	public static inline function ImageDrawCircleLinesV(dst:Image, center:Vector2, radius:Int, color:Color):Void
 		RTextures.ImageDrawCircleLinesV(dst, center, radius, color);
 
-	/** Fills a circle that blends from one color at its middle to another at its edge, by each pixel's center's distance from the
-		middle; a pixel whose center is outside is left.
-
-		@param dst  The image.
-		@param center  The middle.
-		@param radius  The radius, in pixels; 0 or less draws nothing.
-		@param inner  The color at the middle.
-		@param outer  The color at the edge. */
-	public static inline function ImageDrawCircleGradient(dst:Image, center:Vector2, radius:Float, inner:Color, outer:Color):Void
-		RTextures.ImageDrawCircleGradient(dst, center, radius, inner, outer);
-
 	/** Fills a rectangle; what falls outside the image is skipped.
 
 		@param dst  The image.
@@ -3949,44 +3776,14 @@ class Raylib {
 	public static inline function ImageDrawRectangleRec(dst:Image, rec:Rectangle, color:Color):Void
 		RTextures.ImageDrawRectangleRec(dst, rec, color);
 
-	/** Fills a rectangle turned about a point of it: each pixel whose center is inside it.
-
-		@param dst  The image.
-		@param rec  The rectangle, in pixels; its x and y are where the point is drawn. One 0 wide or high, or less, draws nothing.
-		@param origin  The point it turns about, from its top-left corner.
-		@param rotation  The turn, in degrees clockwise.
-		@param color  The color. */
-	public static inline function ImageDrawRectanglePro(dst:Image, rec:Rectangle, origin:Vector2, rotation:Float, color:Color):Void
-		RTextures.ImageDrawRectanglePro(dst, rec, origin, rotation, color);
-
-	/** Outlines a rectangle, the outline inside it, as `ImageDrawRectangleLinesEx` does.
-
-		@param dst  The image.
-		@param rec  The rectangle, in pixels.
-		@param thick  The outline's thickness, in pixels.
-		@param color  The color. */
-	public static inline function ImageDrawRectangleLines(dst:Image, rec:Rectangle, thick:Int, color:Color):Void
-		RTextures.ImageDrawRectangleLines(dst, rec, thick, color);
-
 	/** Outlines a rectangle, the outline inside it: its top and bottom across its whole width, its sides between them.
 
 		@param dst  The image.
 		@param rec  The rectangle, in pixels, cut to whole pixels.
 		@param thick  The outline's thickness, in pixels.
 		@param color  The color. */
-	public static inline function ImageDrawRectangleLinesEx(dst:Image, rec:Rectangle, thick:Int, color:Color):Void
-		RTextures.ImageDrawRectangleLinesEx(dst, rec, thick, color);
-
-	/** Fills a rectangle that blends between a color at each corner, by each pixel's top-left corner's place in it.
-
-		@param dst  The image.
-		@param rec  The rectangle, in pixels; one 0 wide or high, or less, draws nothing.
-		@param col1  The top-left corner's color.
-		@param col2  The bottom-left corner's color.
-		@param col3  The bottom-right corner's color.
-		@param col4  The top-right corner's color. */
-	public static inline function ImageDrawRectangleGradientEx(dst:Image, rec:Rectangle, col1:Color, col2:Color, col3:Color, col4:Color):Void
-		RTextures.ImageDrawRectangleGradientEx(dst, rec, col1, col2, col3, col4);
+	public static inline function ImageDrawRectangleLines(dst:Image, rec:Rectangle, thick:Int, color:Color):Void
+		RTextures.ImageDrawRectangleLines(dst, rec, thick, color);
 
 	/** Fills a triangle; its corners may go either way round.
 
@@ -4010,18 +3807,6 @@ class Raylib {
 		@param c3  The third corner's color. */
 	public static inline function ImageDrawTriangleEx(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
 		RTextures.ImageDrawTriangleEx(dst, v1, v2, v3, c1, c2, c3);
-
-	/** Fills a triangle, each corner its own color, blended across it as `ImageDrawTriangleEx` blends it.
-
-		@param dst  The image.
-		@param v1  The first corner.
-		@param v2  The second corner.
-		@param v3  The third corner.
-		@param c1  The first corner's color.
-		@param c2  The second corner's color.
-		@param c3  The third corner's color. */
-	public static inline function ImageDrawTriangleGradient(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
-		RTextures.ImageDrawTriangleGradient(dst, v1, v2, v3, c1, c2, c3);
 
 	/** Outlines a triangle with three `ImageDrawLine`s, its corners cut to whole pixels.
 
@@ -4054,7 +3839,7 @@ class Raylib {
 	/** Draws a rectangle of one image into a rectangle of another, tinted, blended over (raylib's `ColorAlphaBlend`), in their formats.
 		A source with no alpha under an opaque tint is copied, the tint's color ignored, as raylib's is; a float destination is unchanged,
 		as `SetPixelColor` writes none. A source rectangle of another whole-pixel size than the destination's is first resized by
-		`ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them. raylib 6 calls it `ImageDrawImagePro`.
+		`ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them.
 
 		@param dst  The image drawn into.
 		@param src  The image drawn from.
@@ -4063,51 +3848,6 @@ class Raylib {
 		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
 	public static inline function ImageDraw(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectangle, tint:Color):Void
 		RTextures.ImageDraw(dst, src, srcRec, dstRec, tint);
-
-	/** Draws one image into another at a point, tinted and blended over, as `ImageDraw` draws it.
-
-		@param dst  The image drawn into.
-		@param src  The image drawn.
-		@param posX  The left edge, in the destination's pixels.
-		@param posY  The top edge.
-		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
-	public static inline function ImageDrawImage(dst:Image, src:Image, posX:Int, posY:Int, tint:Color):Void
-		RTextures.ImageDrawImage(dst, src, posX, posY, tint);
-
-	/** Draws a rectangle of one image into another at a point, at its size, tinted and blended over, as `ImageDraw` draws it.
-
-		@param dst  The image drawn into.
-		@param src  The image drawn from.
-		@param srcRec  The source rectangle, in its pixels, cut to it.
-		@param position  The top-left corner, in the destination's pixels.
-		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
-	public static inline function ImageDrawImageRec(dst:Image, src:Image, srcRec:Rectangle, position:Vector2, tint:Color):Void
-		RTextures.ImageDrawImageRec(dst, src, srcRec, position, tint);
-
-	/** Draws a rectangle of one image into a rectangle of another, as `ImageDraw` draws it. The origin and rotation are taken and not
-		used, as in raylib 6.2, whose own are still to be written.
-
-		@param dst  The image drawn into.
-		@param src  The image drawn from.
-		@param srcRec  The source rectangle, in its pixels, cut to it.
-		@param dstRec  The destination rectangle.
-		@param origin  The point it would turn about; not used.
-		@param rotation  The turn, in degrees; not used.
-		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
-	public static inline function ImageDrawImagePro(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void
-		RTextures.ImageDrawImagePro(dst, src, srcRec, dstRec, origin, rotation, tint);
-
-	/** Draws one image into another turned about its top-left corner and scaled: each destination pixel whose center falls on the
-		source takes its nearest source pixel, tinted and blended over (`ColorAlphaBlend`); clear source pixels are skipped.
-
-		@param dst  The image drawn into.
-		@param src  The image drawn.
-		@param position  Where its top-left corner is drawn, in the destination's pixels.
-		@param rotation  The turn, in degrees clockwise.
-		@param scale  The scale; 1 for its own size.
-		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
-	public static inline function ImageDrawImageEx(dst:Image, src:Image, position:Vector2, rotation:Float, scale:Float, tint:Color):Void
-		RTextures.ImageDrawImageEx(dst, src, position, rotation, scale, tint);
 
 	/** Draws text in raylib's default font into an image, letters 1 pixel apart, as `ImageDrawTextEx` draws it.
 
@@ -4131,22 +3871,6 @@ class Raylib {
 		@param tint  The color. */
 	public static inline function ImageDrawTextEx(dst:Image, font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
 		RTextures.ImageDrawTextEx(dst, font, text, position, fontSize, spacing, tint);
-
-	/** Draws text in a font into an image, turned about a point. raylib 6.2's draws nothing, its body still to be written, and so does
-		this.
-
-		@param dst  The image.
-		@param font  The font.
-		@param text  The text.
-		@param position  Where the point is drawn.
-		@param origin  The point it turns about, from the text's top-left corner.
-		@param rotation  The turn, in degrees.
-		@param fontSize  The height of a line, in pixels.
-		@param spacing  The space between letters, at the font's size.
-		@param tint  The color. */
-	public static inline function ImageDrawTextPro(dst:Image, font:Font, text:String, position:Vector2, origin:Vector2, rotation:Float, fontSize:Float,
-			spacing:Float, tint:Color):Void
-		RTextures.ImageDrawTextPro(dst, font, text, position, origin, rotation, fontSize, spacing, tint);
 
 	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, so the texture's
 		format is `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and it has one level. A compressed format gives no texture, with a warning.
@@ -4280,18 +4004,6 @@ class Raylib {
 	public static inline function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2
 		return RText.MeasureTextEx(font, text, fontSize, spacing);
 
-	/** Returns the size characters are drawn at by `DrawTextCodepoints`: their widest line's width, and their lines' height, as
-		`MeasureTextEx` measures text.
-
-		@param font  The font.
-		@param codepoints  The characters.
-		@param length  How many of them.
-		@param fontSize  The height of a line, in pixels.
-		@param spacing  The space between letters, in pixels.
-		@return  The size, in pixels; 0 by 0 for no characters or a font with no texture. */
-	public static inline function MeasureTextCodepoints(font:Font, codepoints:Array<Int>, length:Int, fontSize:Float, spacing:Float):Vector2
-		return RText.MeasureTextCodepoints(font, codepoints, length, fontSize, spacing);
-
 	/** Returns where a character is in a font's glyphs: its own, else the question mark's, else the first.
 
 		@param font  The font.
@@ -4423,25 +4135,6 @@ class Raylib {
 	public static inline function TextSubtext(text:String, position:Int, length:Int):String
 		return RText.TextSubtext(text, position, length);
 
-	/** Returns text without its spaces (" ", not other white space), as raylib's: only the text's first 1023 UTF-8 bytes are read.
-
-		@param text  The text.
-		@return  The new text; empty for null text. */
-	public static inline function TextRemoveSpaces(text:String):String
-		return RText.TextRemoveSpaces(text);
-
-	/** Returns the text between the first place `begin` is found and the first place `end` is found after it.
-
-		As raylib's, the result is at most 1023 UTF-8 bytes: when what lies between is longer, it is the first 1023 bytes after `begin`,
-		running past `end`.
-
-		@param text  The text searched.
-		@param begin  The text before the piece.
-		@param end  The text after it.
-		@return  The piece; empty when either isn't found or any is null. */
-	public static inline function GetTextBetween(text:String, begin:String, end:String):String
-		return RText.GetTextBetween(text, begin, end);
-
 	/** Returns text with every piece of it that matches replaced, from the start, each match after the one before.
 
 		@param text  The text.
@@ -4450,38 +4143,6 @@ class Raylib {
 		@return  The new text; null when any is null or `replace` is empty. */
 	public static inline function TextReplace(text:String, replace:String, by:String):String
 		return RText.TextReplace(text, replace, by);
-
-	/** Returns text with every piece of it that matches replaced, from the start, each match after the one before: raylib 6.2's, with no
-		limit to its length.
-
-		@param text  The text.
-		@param search  The text replaced.
-		@param replacement  The text put in its place; null for none.
-		@return  The new text; null when `text` or `search` is null or `search` is empty. */
-	public static inline function TextReplaceAlloc(text:String, search:String, replacement:String):String
-		return RText.TextReplaceAlloc(text, search, replacement);
-
-	/** Returns text with what lies between the first place `begin` is found and the first place `end` is found after it replaced, the two
-		kept. As raylib's, the result is at most 1022 UTF-8 bytes.
-
-		@param text  The text.
-		@param begin  The text before the piece replaced.
-		@param end  The text after it.
-		@param replacement  The text put in its place; null to remove the piece.
-		@return  The new text; empty when either isn't found, the result is too long, or `text`, `begin` or `end` is null. */
-	public static inline function TextReplaceBetween(text:String, begin:String, end:String, replacement:String):String
-		return RText.TextReplaceBetween(text, begin, end, replacement);
-
-	/** Returns text with what lies between the first place `begin` is found and the first place `end` is found after it replaced, the two
-		kept: `TextReplaceBetween` with no limit to its length.
-
-		@param text  The text.
-		@param begin  The text before the piece replaced.
-		@param end  The text after it.
-		@param replacement  The text put in its place; null to remove the piece.
-		@return  The new text; null when either isn't found, or `text`, `begin` or `end` is null. */
-	public static inline function TextReplaceBetweenAlloc(text:String, begin:String, end:String, replacement:String):String
-		return RText.TextReplaceBetweenAlloc(text, begin, end, replacement);
 
 	/** Returns text with other text put in at a place in UTF-8 bytes. As raylib's, the result is at most 1022 bytes.
 
@@ -4493,15 +4154,6 @@ class Raylib {
 		@return  The new text; empty when either is null, the position is below 0, or the result is too long. */
 	public static inline function TextInsert(text:String, insert:String, position:Int):String
 		return RText.TextInsert(text, insert, position);
-
-	/** Returns text with other text put in at a place in UTF-8 bytes: `TextInsert` with no limit to its length.
-
-		@param text  The text.
-		@param insert  The text put in.
-		@param position  Where, in bytes from the start, clamped to the end.
-		@return  The new text; null when either is null or the position is below 0. */
-	public static inline function TextInsertAlloc(text:String, insert:String, position:Int):String
-		return RText.TextInsertAlloc(text, insert, position);
 
 	/** Returns texts joined into one, a delimiter between each two.
 
@@ -4526,21 +4178,6 @@ class Raylib {
 		@return  The pieces; none for null text. */
 	public static inline function TextSplit(text:String, delimiter:Int, count:Array<Int>):Array<String>
 		return RText.TextSplit(text, delimiter, count);
-
-	/** Returns the lines of text: the pieces between its "\n"s, one more than it holds, with no limit to their length.
-
-		@param text  The text.
-		@param count  Receives how many lines there are, at its index 0; 0 for null text.
-		@return  The lines; null for null text. */
-	public static inline function LoadTextLines(text:String, count:Array<Int>):Array<String>
-		return RText.LoadTextLines(text, count);
-
-	/** Does nothing: lines from `LoadTextLines` are freed by the garbage collector.
-
-		@param text  The lines.
-		@param lineCount  How many of them. */
-	public static inline function UnloadTextLines(text:Array<String>, lineCount:Int):Void
-		RText.UnloadTextLines(text, lineCount);
 
 	/** Returns where text is first found in other text, in UTF-8 bytes from the start, as `TextSubtext` takes it.
 
@@ -5918,94 +5555,6 @@ class Raylib {
 	public static inline function LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void):Void
 		RAsync.LoadDirectoryFilesExAsync(basePath, filter, scanSubdirs, loaded);
 
-	/** Answers whether a path is a directory, as raylib 6.2's `IsPathDirectory`: helix-ray's own, in place of it. As raylib's, a path
-		that isn't a file (`IsPathFileAsync`) is a directory, so one with nothing there is too. The answer comes at a later frame, never
-		during the call.
-
-		@param path  The path.
-		@param answer  Receives true unless it is a file. */
-	public static inline function IsPathDirectoryAsync(path:String, answer:Bool->Void):Void
-		RAsync.IsPathDirectoryAsync(path, answer);
-
-	/** Counts a directory's files and subdirectories, as raylib 6.2's `GetDirectoryFileCount`: helix-ray's own, in place of it.
-		`GetDirectoryFileCountExAsync` with the filter "*.*" and no subdirectories' files. The answer comes at a later frame, never during
-		the call.
-
-		@param dirPath  The directory.
-		@param answer  Receives the count; 0, with a warning, when the directory can't be listed. */
-	public static inline function GetDirectoryFileCountAsync(dirPath:String, answer:Int->Void):Void
-		RAsync.GetDirectoryFileCountAsync(dirPath, answer);
-
-	/** Counts a directory's files, those with some extensions, and with `scanSubdirs` its subdirectories' too, as raylib 6.2's
-		`GetDirectoryFileCountEx`: helix-ray's own, in place of it. The directories are `LoadDirectoryFilesAsync`'s. 6.2's filter: one
-		holding "*.*" counts every file and directory, "FILES*" every file, "DIRS*" every directory, and otherwise a file counts by
-		`IsFileExtension`; a null filter counts every file. The answer comes at a later frame, never during the call.
-
-		@param basePath  The directory.
-		@param filter  The extensions counted, such as ".png;.jpg", or a tag above, or null.
-		@param scanSubdirs  Whether the subdirectories' files are counted too.
-		@param answer  Receives the count; a directory that can't be listed adds nothing, with a warning. */
-	public static inline function GetDirectoryFileCountExAsync(basePath:String, filter:String, scanSubdirs:Bool, answer:Int->Void):Void
-		RAsync.GetDirectoryFileCountExAsync(basePath, filter, scanSubdirs, answer);
-
-	/** Renames a file, as raylib 6.2's `FileRename`: helix-ray's own, in place of it. A file `SaveFileText` or `SaveFileData` wrote is
-		renamed; the program's own files can't be changed. The answer comes at a later frame, never during the call.
-
-		@param fileName  The file.
-		@param fileRename  Its new name, its path.
-		@param answer  Receives 0 when it was renamed, else -1. */
-	public static inline function FileRenameAsync(fileName:String, fileRename:String, answer:Int->Void):Void
-		RAsync.FileRenameAsync(fileName, fileRename, answer);
-
-	/** Removes a file, as raylib 6.2's `FileRemove`: helix-ray's own, in place of it. A file `SaveFileText` or `SaveFileData` wrote is
-		removed; the program's own files can't be. The answer comes at a later frame, never during the call.
-
-		@param fileName  The file.
-		@param answer  Receives 0 when it was removed, else -1. */
-	public static inline function FileRemoveAsync(fileName:String, answer:Int->Void):Void
-		RAsync.FileRemoveAsync(fileName, answer);
-
-	/** Copies a file, as raylib 6.2's `FileCopy`: helix-ray's own, in place of it. The file is read as `LoadFileDataAsync` reads it and
-		its copy written by `SaveFileData`, or, for one `SaveFileText` wrote, read and written as text; a directory needs no making here.
-		As raylib 6.2's, a file not read, or one of no bytes, makes no copy, yet answers 0 as the directory is there. The answer comes at a
-		later frame, never during the call.
-
-		@param srcPath  The file.
-		@param dstPath  The copy.
-		@param answer  Receives 0 when the copy's directory is there (always, here), else -1. */
-	public static inline function FileCopyAsync(srcPath:String, dstPath:String, answer:Int->Void):Void
-		RAsync.FileCopyAsync(srcPath, dstPath, answer);
-
-	/** Moves a file, as raylib 6.2's `FileMove`: helix-ray's own, in place of it. The file is copied (`FileCopyAsync`), then, when the
-		copy is there and of its size, removed (`FileRemoveAsync`), so one of the program's own files is copied and stays. The answer comes
-		at a later frame, never during the call.
-
-		@param srcPath  The file.
-		@param dstPath  Where it goes.
-		@param answer  Receives 0 when it was moved, else -1; a file not there, or not removed, is logged. */
-	public static inline function FileMoveAsync(srcPath:String, dstPath:String, answer:Int->Void):Void
-		RAsync.FileMoveAsync(srcPath, dstPath, answer);
-
-	/** Replaces every piece of a text file that matches, as raylib 6.2's `FileTextReplace`: helix-ray's own, in place of it. The file is
-		read as `LoadFileTextAsync` reads it and written back by `SaveFileText`. The answer comes at a later frame, never during the call.
-
-		@param fileName  The file.
-		@param search  The text replaced; nothing is replaced when it is null or "".
-		@param replacement  The text put in its place; null for none.
-		@param answer  Receives 0 when the file was written, else -1. */
-	public static inline function FileTextReplaceAsync(fileName:String, search:String, replacement:String, answer:Int->Void):Void
-		RAsync.FileTextReplaceAsync(fileName, search, replacement, answer);
-
-	/** Finds text in a text file, as raylib 6.2's `FileTextFindIndex`: helix-ray's own, in place of it. The file is read as
-		`LoadFileTextAsync` reads it. The answer comes at a later frame, never during the call.
-
-		@param fileName  The file.
-		@param search  The text looked for.
-		@param answer  Receives where it first starts, in UTF-8 bytes from the file's start, or -1 when it isn't there or there is no
-			file. */
-	public static inline function FileTextFindIndexAsync(fileName:String, search:String, answer:Int->Void):Void
-		RAsync.FileTextFindIndexAsync(fileName, search, answer);
-
 	/** Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType
 		file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto
 		one texture, as raylib's; an image (PNG, JPEG, BMP, TGA or QOI) its glyphs on a `MAGENTA` key from the space on, as
@@ -6182,36 +5731,6 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)",
 			macro(null : Null<haxe.io.Bytes>));
 
-	/** raylib 6.2's file rename, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `FileRenameAsync` renames it. */
-	public static macro function FileRename(fileName:ExprOf<String>, fileRename:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("FileRename: Synchronous file access is not supported. See FileRenameAsync(fileName:String, fileRename:String, answer:Int->Void)",
-			macro(0 : Int));
-
-	/** raylib 6.2's file removal, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `FileRemoveAsync` removes it. */
-	public static macro function FileRemove(fileName:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("FileRemove: Synchronous file access is not supported. See FileRemoveAsync(fileName:String, answer:Int->Void)",
-			macro(0 : Int));
-
-	/** raylib 6.2's file copy, which waits for the file. A page can't wait, so a call doesn't compile on any target: `FileCopyAsync` copies it. */
-	public static macro function FileCopy(srcPath:ExprOf<String>, dstPath:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("FileCopy: Synchronous file access is not supported. See FileCopyAsync(srcPath:String, dstPath:String, answer:Int->Void)",
-			macro(0 : Int));
-
-	/** raylib 6.2's file move, which waits for the file. A page can't wait, so a call doesn't compile on any target: `FileMoveAsync` moves it. */
-	public static macro function FileMove(srcPath:ExprOf<String>, dstPath:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("FileMove: Synchronous file access is not supported. See FileMoveAsync(srcPath:String, dstPath:String, answer:Int->Void)",
-			macro(0 : Int));
-
-	/** raylib 6.2's replacement of text in a file, which waits for the file. A page can't wait, so a call doesn't compile on any target: `FileTextReplaceAsync` replaces it. */
-	public static macro function FileTextReplace(fileName:ExprOf<String>, search:ExprOf<String>, replacement:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("FileTextReplace: Synchronous file access is not supported. See FileTextReplaceAsync(fileName:String, search:String, replacement:String, answer:Int->Void)",
-			macro(0 : Int));
-
-	/** raylib 6.2's search of a file's text, which waits for the file. A page can't wait, so a call doesn't compile on any target: `FileTextFindIndexAsync` searches it. */
-	public static macro function FileTextFindIndex(fileName:ExprOf<String>, search:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("FileTextFindIndex: Synchronous file access is not supported. See FileTextFindIndexAsync(fileName:String, search:String, answer:Int->Void)",
-			macro(0 : Int));
-
 	/** raylib's check for a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `DirectoryExistsAsync` answers it. */
 	public static macro function DirectoryExists(dirPath:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("DirectoryExists: Synchronous file access is not supported. See DirectoryExistsAsync(dirPath:String, answer:Bool->Void)",
@@ -6220,21 +5739,6 @@ class Raylib {
 	/** raylib's file size, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `GetFileLengthAsync` answers it. */
 	public static macro function GetFileLength(fileName:ExprOf<String>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("GetFileLength: Synchronous file access is not supported. See GetFileLengthAsync(fileName:String, answer:Int->Void)",
-			macro(0 : Int));
-
-	/** raylib 6.2's check for a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `IsPathDirectoryAsync` answers it. */
-	public static macro function IsPathDirectory(path:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unsupported("IsPathDirectory: Synchronous file access is not supported. See IsPathDirectoryAsync(path:String, answer:Bool->Void)",
-			macro(false : Bool));
-
-	/** raylib 6.2's count of a directory's files, which waits for it. A page can't wait, so a call doesn't compile on any target: `GetDirectoryFileCountAsync` counts them. */
-	public static macro function GetDirectoryFileCount(dirPath:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("GetDirectoryFileCount: Synchronous file access is not supported. See GetDirectoryFileCountAsync(dirPath:String, answer:Int->Void)",
-			macro(0 : Int));
-
-	/** raylib 6.2's filtered and recursive count of a directory's files, which waits for it. A page can't wait, so a call doesn't compile on any target: `GetDirectoryFileCountExAsync` counts them. */
-	public static macro function GetDirectoryFileCountEx(basePath:ExprOf<String>, filter:ExprOf<String>, scanSubdirs:ExprOf<Bool>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("GetDirectoryFileCountEx: Synchronous file access is not supported. See GetDirectoryFileCountExAsync(basePath:String, filter:String, scanSubdirs:Bool, answer:Int->Void)",
 			macro(0 : Int));
 
 	/** raylib's check for a file, as against a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `IsPathFileAsync` answers it. */
@@ -6380,11 +5884,6 @@ class Raylib {
 			macro {});
 
 	// ---- raylib.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
-
-	/** raylib 6.2's name of a key on the keyboard's layout ("q" for `KEY_A` on an AZERTY keyboard). helix-platform reads keys by their place on a US layout and doesn't give the layout's names, so a call doesn't compile yet. */
-	public static macro function GetKeyName(key:ExprOf<Int>):ExprOf<String>
-		return helix.platform.macros.Build.unimplemented("GetKeyName: Not implemented: helix-platform does not give the keyboard layout's key names",
-			macro(null : String));
 
 	/** raylib's export of a font as C code, which reads its atlas back from the GPU and waits. Here the atlas is read back only asynchronously, and it is RGBA where raylib's is gray and alpha, so a call doesn't compile yet. */
 	public static macro function ExportFontAsCode(font:ExprOf<Font>, fileName:ExprOf<String>):ExprOf<Bool>

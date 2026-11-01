@@ -185,45 +185,6 @@ class RText {
 		return new Vector2(f32(f32(widest * scale) + f32((most - 1) * f32(spacing))), height);
 	}
 
-	/** Returns the size characters are drawn at by `DrawTextCodepoints`: their widest line's width, and their lines' height, as
-		`MeasureTextEx` measures text.
-
-		@param font  The font.
-		@param codepoints  The characters.
-		@param length  How many of them.
-		@param fontSize  The height of a line, in pixels.
-		@param spacing  The space between letters, in pixels.
-		@return  The size, in pixels; 0 by 0 for no characters or a font with no texture. */
-	static function MeasureTextCodepoints(font:Font, codepoints:Array<Int>, length:Int, fontSize:Float, spacing:Float):Vector2 {
-		if (font.texture == null || font.texture.id == 0 || codepoints == null || length == 0)
-			return new Vector2();
-		// raylib's float arithmetic, each step rounded to single precision.
-		inline function f32(x:Float):Float
-			return helix.ray.internal.Pixels.f32(x);
-		fontSize = f32(fontSize);
-		var width = 0., widest = 0., height = fontSize, count = 0, most = 0, scale = f32(fontSize / font.baseSize);
-		for (i in 0...length) {
-			var codepoint = codepoints[i],
-				index = GetGlyphIndex(font, codepoint);
-			if (codepoint != "\n".code) {
-				count++;
-				var glyph = font.glyphs[index];
-				width = f32(width + (glyph.advanceX > 0 ? glyph.advanceX : f32(f32(font.recs[index].width) + glyph.offsetX)));
-			} else {
-				if (widest < width)
-					widest = width;
-				width = 0;
-				count = 0;
-				height = f32(height + f32(fontSize + textLineSpacing));
-			}
-			if (most < count)
-				most = count;
-		}
-		if (widest < width)
-			widest = width;
-		return new Vector2(f32(f32(widest * scale) + f32((most - 1) * f32(spacing))), height);
-	}
-
 	/** Returns where a character is in a font's glyphs: its own, else the question mark's, else the first.
 
 		@param font  The font.
@@ -1035,40 +996,6 @@ class RText {
 		return decoded(bytes, position, position + length);
 	}
 
-	/** Returns text without its spaces (" ", not other white space), as raylib's: only the text's first 1023 UTF-8 bytes are read.
-
-		@param text  The text.
-		@return  The new text; empty for null text. */
-	static function TextRemoveSpaces(text:String):String {
-		var bytes = utf8(text), out = [];
-		for (i in 0...(bytes.length < BUFFER - 1 ? bytes.length : BUFFER - 1))
-			if (bytes[i] != " ".code)
-				out.push(bytes[i]);
-		return decoded(out, 0, out.length);
-	}
-
-	/** Returns the text between the first place `begin` is found and the first place `end` is found after it.
-
-		As raylib's, the result is at most 1023 UTF-8 bytes: when what lies between is longer, it is the first 1023 bytes after `begin`,
-		running past `end`.
-
-		@param text  The text searched.
-		@param begin  The text before the piece.
-		@param end  The text after it.
-		@return  The piece; empty when either isn't found or any is null. */
-	static function GetTextBetween(text:String, begin:String, end:String):String {
-		var beginIndex = TextFindIndex(text, begin);
-		if (beginIndex < 0)
-			return "";
-		var bytes = utf8(text), start = beginIndex + TextLength(begin);
-		var endIndex = TextFindIndex(decoded(bytes, start, bytes.length), end);
-		if (endIndex < 0)
-			return "";
-		if (endIndex < BUFFER - 1)
-			return decoded(bytes, start, start + endIndex);
-		return decoded(bytes, start, bytes.length - start < BUFFER - 1 ? bytes.length : start + BUFFER - 1);
-	}
-
 	/** Returns text with every piece of it that matches replaced, from the start, each match after the one before.
 
 		@param text  The text.
@@ -1079,59 +1006,6 @@ class RText {
 		if (text == null || replace == null || by == null || replace.length == 0)
 			return null;
 		return text.split(replace).join(by);
-	}
-
-	/** Returns text with every piece of it that matches replaced, from the start, each match after the one before: raylib 6.2's, with no
-		limit to its length.
-
-		@param text  The text.
-		@param search  The text replaced.
-		@param replacement  The text put in its place; null for none.
-		@return  The new text; null when `text` or `search` is null or `search` is empty. */
-	static function TextReplaceAlloc(text:String, search:String, replacement:String):String {
-		if (text == null || search == null || search.length == 0)
-			return null;
-		return text.split(search).join(replacement == null ? "" : replacement);
-	}
-
-	/** Returns text with what lies between the first place `begin` is found and the first place `end` is found after it replaced, the two
-		kept. As raylib's, the result is at most 1022 UTF-8 bytes.
-
-		@param text  The text.
-		@param begin  The text before the piece replaced.
-		@param end  The text after it.
-		@param replacement  The text put in its place; null to remove the piece.
-		@return  The new text; empty when either isn't found, the result is too long, or `text`, `begin` or `end` is null. */
-	static function TextReplaceBetween(text:String, begin:String, end:String, replacement:String):String {
-		var replaced = replacedBetween(text, begin, end, replacement);
-		return replaced == null || replaced.length >= BUFFER - 1 ? "" : decoded(replaced, 0, replaced.length);
-	}
-
-	/** Returns text with what lies between the first place `begin` is found and the first place `end` is found after it replaced, the two
-		kept: `TextReplaceBetween` with no limit to its length.
-
-		@param text  The text.
-		@param begin  The text before the piece replaced.
-		@param end  The text after it.
-		@param replacement  The text put in its place; null to remove the piece.
-		@return  The new text; null when either isn't found, or `text`, `begin` or `end` is null. */
-	static function TextReplaceBetweenAlloc(text:String, begin:String, end:String, replacement:String):String {
-		var replaced = replacedBetween(text, begin, end, replacement);
-		return replaced == null ? null : decoded(replaced, 0, replaced.length);
-	}
-
-	// raylib's TextReplaceBetween's bytes, before its limit: null when there is nothing to replace.
-	static function replacedBetween(text:String, begin:String, end:String, replacement:String):Null<Array<Int>> {
-		if (text == null || begin == null || end == null)
-			return null;
-		var beginIndex = TextFindIndex(text, begin);
-		if (beginIndex < 0)
-			return null;
-		var bytes = utf8(text), start = beginIndex + TextLength(begin);
-		var endIndex = TextFindIndex(decoded(bytes, start, bytes.length), end);
-		if (endIndex < 0)
-			return null;
-		return bytes.slice(0, start).concat(utf8(replacement)).concat(bytes.slice(start + endIndex));
 	}
 
 	/** Returns text with other text put in at a place in UTF-8 bytes. As raylib's, the result is at most 1022 bytes.
@@ -1145,17 +1019,6 @@ class RText {
 	static function TextInsert(text:String, insert:String, position:Int):String {
 		var inserted = insertedAt(text, insert, position);
 		return inserted == null || inserted.length >= BUFFER - 1 ? "" : decoded(inserted, 0, inserted.length);
-	}
-
-	/** Returns text with other text put in at a place in UTF-8 bytes: `TextInsert` with no limit to its length.
-
-		@param text  The text.
-		@param insert  The text put in.
-		@param position  Where, in bytes from the start, clamped to the end.
-		@return  The new text; null when either is null or the position is below 0. */
-	static function TextInsertAlloc(text:String, insert:String, position:Int):String {
-		var inserted = insertedAt(text, insert, position);
-		return inserted == null ? null : decoded(inserted, 0, inserted.length);
 	}
 
 	// raylib's TextInsert's bytes, before its limit: null when it gives nothing.
@@ -1219,24 +1082,6 @@ class RText {
 			count[0] = pieces.length;
 		return pieces;
 	}
-
-	/** Returns the lines of text: the pieces between its "\n"s, one more than it holds, with no limit to their length.
-
-		@param text  The text.
-		@param count  Receives how many lines there are, at its index 0; 0 for null text.
-		@return  The lines; null for null text. */
-	static function LoadTextLines(text:String, count:Array<Int>):Array<String> {
-		var lines = text == null ? null : text.split("\n");
-		if (count != null)
-			count[0] = lines == null ? 0 : lines.length;
-		return lines;
-	}
-
-	/** Does nothing: lines from `LoadTextLines` are freed by the garbage collector.
-
-		@param text  The lines.
-		@param lineCount  How many of them. */
-	static function UnloadTextLines(text:Array<String>, lineCount:Int):Void {}
 
 	/** Returns where text is first found in other text, in UTF-8 bytes from the start, as `TextSubtext` takes it.
 

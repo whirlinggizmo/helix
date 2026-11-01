@@ -161,15 +161,6 @@ class Raymath {
 	public static inline function Vector2DotProduct(v1:Vector2, v2:Vector2):Float
 		return RMath.Vector2DotProduct(v1, v2);
 
-	/** Returns the cross product of two 2D vectors, raylib 6.2's: the z of their 3D cross product, positive when the second is
-		counterclockwise of the first (with y up).
-
-		@param v1  One.
-		@param v2  The other.
-		@return  The product. */
-	public static inline function Vector2CrossProduct(v1:Vector2, v2:Vector2):Float
-		return RMath.Vector2CrossProduct(v1, v2);
-
 	/** Returns the distance between two points.
 
 		@param v1  One.
@@ -872,14 +863,6 @@ class Raymath {
 	public static inline function MatrixSubtract(left:Matrix, right:Matrix):Matrix
 		return RMath.MatrixSubtract(left, right);
 
-	/** Returns a matrix with each of its values multiplied by a number, raylib 6.2's.
-
-		@param left  The matrix.
-		@param value  The number.
-		@return  The matrix multiplied. */
-	public static inline function MatrixMultiplyValue(left:Matrix, value:Float):Matrix
-		return RMath.MatrixMultiplyValue(left, value);
-
 	/** Returns two matrices multiplied: left, then right.
 
 		@param left  The first.
@@ -1193,15 +1176,6 @@ class Raymath {
 		@return  1 if they are, 0 if not. */
 	public static inline function QuaternionEquals(p:Quaternion, q:Quaternion):Int
 		return RMath.QuaternionEquals(p, q);
-
-	/** Returns a transform matrix from a translation, a rotation and a scale, raylib 6.2's: the axes scaled, then turned, then moved.
-
-		@param translation  The translation.
-		@param rotation  The rotation, a quaternion of length 1.
-		@param scale  The scale along each axis.
-		@return  The matrix. */
-	public static inline function MatrixCompose(translation:Vector3, rotation:Quaternion, scale:Vector3):Matrix
-		return RMath.MatrixCompose(translation, rotation, scale);
 
 	/** Splits a transform matrix into its translation, rotation and scale, as raylib 6.2's (5.5's took the scale from the rows, wrong for a
 		turned matrix scaled unevenly): the columns, made orthonormal one after another (the shear between them dropped), are the

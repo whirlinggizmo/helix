@@ -1,7 +1,6 @@
-// raylib 6.2's rlgl: the texture a draw call takes across changes of mode, the matrix stack's overflow, the point calls; read back from
-// rlgl's batch and GL, printed by parity.h and the printers here. cases.py's list is put into it.
+// raylib 6.2's rlgl: the texture a draw call takes across changes of mode and the matrix stack's overflow; read back from rlgl's
+// batch, printed by parity.h and the printers here. cases.py's list is put into it.
 #include "parity.h"
-#include <GL/gl.h>
 
 static Texture2D tex, tex2;
 
@@ -22,13 +21,6 @@ static void drawn(const char *name) {
     }
     printf("%s end\n", name);
     rlDrawRenderBatch(&parity_batch);
-}
-
-// Whether GL draws triangles filled or as their edges.
-static void polygons(const char *name) {
-    GLint mode[2] = { 0, 0 };
-    glGetIntegerv(GL_POLYGON_MODE, mode);
-    printf("%s polygons %s\n", name, mode[0] == GL_LINE ? "line" : mode[0] == GL_FILL ? "fill" : "other");
 }
 
 static void tri(float x) {

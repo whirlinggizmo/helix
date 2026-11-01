@@ -1,7 +1,7 @@
 {
   "oracle": "6.2",
-  "covers": "rcore.c's IsFileExtension, GetPrevDirectoryPath, ComputeSHA1, DecodeDataBase64 and MakeDirectory (a path it makes), 6.2's, and 6.2's additions ComputeSHA256, IsFileHidden, IsPathAbsolute, FileRename, FileRemove, FileCopy, FileMove, FileTextReplace, FileTextFindIndex, IsPathDirectory, GetDirectoryFileCount and GetDirectoryFileCountEx (helix-ray's async ones, over its saves and the working directory's files); raymath's QuaternionFromVector3ToVector3, 6.2's, and its additions Vector2CrossProduct, MatrixMultiplyValue and MatrixCompose",
-  "notes": "raylib's file functions run on the working directory's files; helix-ray's write to its saves (kept in memory here) and read the working directory's files beside them, so both start from files they wrote, and the directory counted is one raylib's side made. GetPrevDirectoryPath's paths name nothing: raylib 6.2 takes a path naming a file to its directory's parent, which helix-ray can't look for without waiting.",
+  "covers": "rcore.c's IsFileExtension, GetPrevDirectoryPath, ComputeSHA1, DecodeDataBase64 and MakeDirectory (a path it makes), 6.2's; raymath's QuaternionFromVector3ToVector3, 6.2's",
+  "notes": "GetPrevDirectoryPath's paths name nothing: raylib 6.2 takes a path naming a file to its directory's parent, which helix-ray can't look for without waiting.",
   "kind": "values",
   "generated": true,
   "main": "CoreBits62",

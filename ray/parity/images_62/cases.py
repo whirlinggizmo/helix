@@ -1,15 +1,22 @@
 """images_62: the image functions helix-ray takes from raylib 6.2 (docs/DECISIONS.md 24), their images compared byte for byte: those 6.2
 fixed (lines, thick lines, circles, the convolution and the blur, a rectangle of an image, the pixel reads and sizes, text with no text),
-those reading through them (ImageFormat from R32 and R16, ImageDraw from R5G5B5A1, the triangle outline), and 6.2's own (the
-ImageDrawImage family, the line strip, gradients, the turned rectangle, LoadRenderTextureEx). One list for both sides (shared/gen.py's
-syntax): A, B, C and D are colors, sharpen, ones, box5 and edge4 kernels, noise(width, height, seed) an RGBA image of noise and
-noiseIn(width, height, seed, format) one in a format, all made in ref.c.in and ImageBits.hx.in. Each case's image is a local of its own
+and those reading through them (ImageFormat from R32 and R16, ImageDraw from R5G5B5A1, the triangle outline). ImageDraw is 6.2's
+ImageDrawImagePro, and ImageDrawImage at a point, so their C calls 6.2's names. One list for both sides (shared/gen.py's syntax): A, B,
+C and D are colors, sharpen, ones, box5 and edge4 kernels, noise(width, height, seed) an RGBA image of noise and noiseIn(width, height,
+seed, format) one in a format, all made in ref.c.in and ImageBits.hx.in. Each case's image is a local of its own
 block. A case named for a bug is built from the input that shows it."""
 
 
 def drawn(name, statements, width=48, height=32, seed=1):
     """A case drawing into a noise image i, then printing it."""
     return f'{{ LET(i, Image, noise({width}, {height}, {seed})); {statements} image("{name}", i); }}'
+
+
+def at(name, image, source, width, height, x, y, tint):
+    """A case drawing a source of a size into an image at a point: 6.2's ImageDrawImage in C, ImageDraw from the whole source in Haxe."""
+    whole = f'R(0, 0, {width}, {height})'
+    return {'c': f'{{ Image i = {image}; Image s = {source}; ImageDrawImage(&i, s, {x}, {y}, {tint}); image("{name}", i); }}',
+            'hx': f'{{ var i = {image}; var s = {source}; ImageDraw(i, s, {whole}, R({x}, {y}, {width}, {height}), {tint}); image("{name}", i); }}'}
 
 
 CASES = [
@@ -30,26 +37,13 @@ CASES = [
     drawn('lineexdown', 'ImageDrawLineEx(OUT(i), V2(20, 2), V2(23, 30), 3, B);'),
     drawn('lineexdiagonal', 'ImageDrawLineEx(OUT(i), V2(2, 2), V2(30, 30), 5, C);'),
     drawn('lineexpoint', 'ImageDrawLineEx(OUT(i), V2(10, 10), V2(10.2, 10.3), 5, C);'),
-    drawn('linestrip', 'ImageDrawLineStrip(OUT(i), PTS(V2(2, 2), V2(30, 5.5), V2(12, 28), V2(45, 30)), 4, D);'),
-    drawn('linestripshort', 'ImageDrawLineStrip(OUT(i), PTS(V2(2, 2)), 1, D);'),
     # #6118: each row as wide either side of the middle, where 5.5's were a pixel short on the right.
     drawn('circle', 'ImageDrawCircle(OUT(i), 20, 14, 9, A);'),
     drawn('circleedge', 'ImageDrawCircle(OUT(i), 44, 30, 12, B);'),
     drawn('circlezero', 'ImageDrawCircle(OUT(i), 20, 14, 0, A);'),
     drawn('circlev', 'ImageDrawCircleV(OUT(i), V2(24.7, 15.2), 6, C);'),
     drawn('circlelines', 'ImageDrawCircleLines(OUT(i), 20, 14, 9, A);'),
-    drawn('circlegradient', 'ImageDrawCircleGradient(OUT(i), V2(20.5, 14.25), 11.5, A, D);'),
-    drawn('circlegradientedge', 'ImageDrawCircleGradient(OUT(i), V2(44, 2), 9, C, B);'),
-    drawn('circlegradientnone', 'ImageDrawCircleGradient(OUT(i), V2(20, 14), 0, C, B);'),
-    drawn('rectanglegradient', 'ImageDrawRectangleGradientEx(OUT(i), R(4.5, 3.25, 30, 20.5), A, B, C, D);'),
-    drawn('rectanglegradientclipped', 'ImageDrawRectangleGradientEx(OUT(i), R(-6, -4, 30, 20), A, B, C, D);'),
-    drawn('rectanglegradientnone', 'ImageDrawRectangleGradientEx(OUT(i), R(4, 3, 0, 20), A, B, C, D);'),
-    drawn('rectanglelinesex', 'ImageDrawRectangleLinesEx(OUT(i), R(4.5, 3.75, 30, 20), 3, B);'),
-    drawn('rectanglepro', 'ImageDrawRectanglePro(OUT(i), R(24, 16, 20, 10), V2(10, 5), 30, A);'),
-    drawn('rectanglepro0', 'ImageDrawRectanglePro(OUT(i), R(4.5, 3.5, 20, 10), V2(0, 0), 0, B);'),
-    drawn('rectangleproturned', 'ImageDrawRectanglePro(OUT(i), R(40, 4, 30, 8), V2(-2, 3), -115, C);'),
     drawn('triangle', 'ImageDrawTriangle(OUT(i), V2(10.5, 3.25), V2(40.75, 20.5), V2(2.5, 30.125), A);'),
-    drawn('trianglegradient', 'ImageDrawTriangleGradient(OUT(i), V2(4, 3), V2(44, 10), V2(20, 30), A, B, C);'),
     # #6192: taps past an edge taken from the edge, and alpha clamped, where 5.5 wrapped into the next row, read 0 past the top and
     # bottom, and left alpha unclamped.
     drawn('convolution', 'ImageKernelConvolution(OUT(i), sharpen, 9);', 20, 12),
@@ -90,40 +84,20 @@ CASES = [
     '{ LET(i, Image, noiseIn(12, 6, 9, PIXELFORMAT_UNCOMPRESSED_R16)); ImageFormat(OUT(i), PIXELFORMAT_UNCOMPRESSED_R8G8B8A8); image("formatr16", i); }',
     '{ LET(i, Image, noiseIn(12, 6, 9, PIXELFORMAT_UNCOMPRESSED_R32)); ImageFormat(OUT(i), PIXELFORMAT_UNCOMPRESSED_GRAYSCALE); image("formatr32gray", i); }',
     # #6113: R5G5B5A1's blue from its own bits, where 5.5 took in the alpha bit: drawn from, and read.
-    '{ LET(i, Image, noise(24, 16, 1)); LET(s, Image, noiseIn(24, 16, 11, PIXELFORMAT_UNCOMPRESSED_R5G5B5A1)); '
-        'ImageDrawImage(OUT(i), s, 2, 3, WHITE); image("draw5551", i); }',
-    '{ LET(i, Image, noise(24, 16, 1)); LET(s, Image, noiseIn(24, 16, 11, PIXELFORMAT_UNCOMPRESSED_R5G5B5A1)); '
-        'ImageDrawImage(OUT(i), s, 2, 3, C); image("draw5551tinted", i); }',
-    '{ LET(i, Image, noiseIn(24, 16, 1, PIXELFORMAT_UNCOMPRESSED_R5G5B5A1)); LET(s, Image, noise(24, 16, 11)); '
-        'ImageDrawImage(OUT(i), s, -3, 2, WHITE); image("drawinto5551", i); }',
+    at('draw5551', 'noise(24, 16, 1)', 'noiseIn(24, 16, 11, PIXELFORMAT_UNCOMPRESSED_R5G5B5A1)', 24, 16, 2, 3, 'WHITE'),
+    at('draw5551tinted', 'noise(24, 16, 1)', 'noiseIn(24, 16, 11, PIXELFORMAT_UNCOMPRESSED_R5G5B5A1)', 24, 16, 2, 3, 'C'),
+    at('drawinto5551', 'noiseIn(24, 16, 1, PIXELFORMAT_UNCOMPRESSED_R5G5B5A1)', 'noise(24, 16, 11)', 24, 16, -3, 2, 'WHITE'),
     '{ LET(s, Image, noiseIn(4, 2, 11, PIXELFORMAT_UNCOMPRESSED_R5G5B5A1)); color("pixel5551", GetPixelColor(s.data, PIXELFORMAT_UNCOMPRESSED_R5G5B5A1)); }',
-    # ImageDraw, raylib 6's ImageDrawImagePro, and the rest of its family.
+    # ImageDraw, 6.2's ImageDrawImagePro, and at a point, 6.2's ImageDrawImage.
     {'c': '{ Image i = noise(48, 32, 1); Image s = noise(20, 16, 4); ImageDrawImagePro(&i, s, R(2, 3, 12, 10), R(10.5, 7.75, 12, 10), V2(0, 0), 0, D); '
           'image("draw", i); }',
      'hx': '{ var i = noise(48, 32, 1); var s = noise(20, 16, 4); ImageDraw(i, s, R(2, 3, 12, 10), R(10.5, 7.75, 12, 10), D); image("draw", i); }'},
-    '{ LET(i, Image, noise(48, 32, 1)); LET(s, Image, noise(20, 16, 4)); ImageDrawImage(OUT(i), s, 40, -5, WHITE); image("drawimage", i); }',
-    '{ LET(i, Image, noise(48, 32, 1)); LET(s, Image, noise(20, 16, 4)); ImageDrawImageRec(OUT(i), s, R(-2, 4, 12, 30), V2(3.5, 6), B); '
-        'image("drawimagerec", i); }',
-    '{ LET(i, Image, noise(48, 32, 1)); LET(s, Image, noise(20, 16, 4)); ImageDrawImagePro(OUT(i), s, R(2, 3, 12, 10), R(-4, 20, 12, 10), V2(3, 4), 45, D); '
-        'image("drawimagepro", i); }',
-    '{ LET(i, Image, noise(48, 32, 1)); LET(s, Image, noiseIn(20, 16, 4, PIXELFORMAT_UNCOMPRESSED_R8G8B8)); '
-        'ImageDrawImage(OUT(i), s, 5, 5, WHITE); image("drawimageopaque", i); }',
-    '{ LET(i, Image, noise(48, 32, 1)); LET(s, Image, noise(12, 8, 4)); ImageDrawImageEx(OUT(i), s, V2(10, 4), 0, 1, WHITE); image("drawimageex", i); }',
-    '{ LET(i, Image, noise(48, 32, 1)); LET(s, Image, noise(12, 8, 4)); ImageDrawImageEx(OUT(i), s, V2(20.5, 2.25), 30, 1.5, D); '
-        'image("drawimageexturned", i); }',
-    '{ LET(i, Image, noise(48, 32, 1)); LET(s, Image, noise(12, 8, 4)); ImageDrawImageEx(OUT(i), s, V2(40, 28), 200, 0.75, C); '
-        'image("drawimageexback", i); }',
-    '{ LET(i, Image, noiseIn(48, 32, 1, PIXELFORMAT_UNCOMPRESSED_R5G6B5)); LET(s, Image, noise(12, 8, 4)); '
-        'ImageDrawImageEx(OUT(i), s, V2(4, 4), -60, 2, WHITE); image("drawimageexinto565", i); }',
-    # ImageDrawTextPro is still to be written in 6.2: the image is left as it is.
-    '{ LET(i, Image, noise(16, 8, 1)); ImageDrawTextPro(OUT(i), GetFontDefault(), "Hi", V2(1, 1), V2(0, 0), 30, 10, 1, A); image("textpro", i); }',
+    at('drawimage', 'noise(48, 32, 1)', 'noise(20, 16, 4)', 20, 16, 40, -5, 'WHITE'),
+    at('drawimageopaque', 'noise(48, 32, 1)', 'noiseIn(20, 16, 4, PIXELFORMAT_UNCOMPRESSED_R8G8B8)', 20, 16, 5, 5, 'WHITE'),
     # Text: none gives an image of none, or a black one.
     {'c': 'image("textnull", ImageTextEx(GetFontDefault(), NULL, 20, 2, A)); image("gentextnull", GenImageText(6, 3, NULL));',
      'hx': 'image("textnull", ImageTextEx(GetFontDefault(), null, 20, 2, A)); image("gentextnull", GenImageText(6, 3, null));'},
     'image("gentext", GenImageText(6, 3, "hello raylib"));',
     'image("text", ImageTextEx(GetFontDefault(), "Hi!", 10, 1, A));',
     'image("textscaled", ImageText("Ab", 20, B));',
-    # A render texture in a format: RGBA is made, a compressed format isn't.
-    'flag("rendertexture", IsRenderTextureValid(LoadRenderTextureEx(16, 8, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8)));',
-    'flag("rendertexturedxt", IsRenderTextureValid(LoadRenderTextureEx(16, 8, PIXELFORMAT_COMPRESSED_DXT1_RGB)));',
 ]

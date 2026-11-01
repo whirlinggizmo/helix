@@ -21,17 +21,6 @@ class TextBits {
 			str(name, pieces[i]);
 	}
 
-	static function lines(name:String, text:String):Void {
-		var n = [-1];
-		var found = LoadTextLines(text, n);
-		count(name, n[0]);
-		line('$name lines ${found == null ? "NULL" : "some"}');
-		for (i in 0...n[0])
-			str(name, found[i]);
-		if (found != null)
-			UnloadTextLines(found, n[0]);
-	}
-
 	static function codepoints(name:String, text:String):Void {
 		var n = [-1];
 		var found = LoadCodepoints(text, n);

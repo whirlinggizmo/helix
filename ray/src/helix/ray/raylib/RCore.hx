@@ -662,16 +662,6 @@ class RCore {
 		return Runtime.charsPressed.length == 0 ? 0 : Runtime.charsPressed.shift();
 	}
 
-	/** raylib 6.2's name of a key on the keyboard's layout ("q" for `KEY_A` on an AZERTY keyboard). helix-platform reads keys by their
-		place on a US layout and doesn't give the layout's names, so a call doesn't compile yet.
-
-		@param key  The key (`KEY_*`).
-		@return  Never returns: a call doesn't compile. */
-	@:unimplemented("GetKeyName: Not implemented: helix-platform does not give the keyboard layout's key names")
-	static function GetKeyName(key:Int):String {
-		throw "GetKeyName is unimplemented";
-	}
-
 	// ---- Mouse and touch ----
 
 	/** Returns whether a mouse button went down this frame. A finger touching counts as the left button, as in raylib.
@@ -1322,72 +1312,6 @@ class RCore {
 		return success;
 	}
 
-	/** raylib 6.2's file rename, which waits for the answer. A page can't wait, so a call doesn't compile on any target:
-		`FileRenameAsync` renames it.
-
-		@param fileName  The file.
-		@param fileRename  Its new name.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("FileRename: Synchronous file access is not supported. See FileRenameAsync(fileName:String, fileRename:String, answer:Int->Void)")
-	static function FileRename(fileName:String, fileRename:String):Int {
-		throw "FileRename is unimplemented";
-	}
-
-	/** raylib 6.2's file removal, which waits for the answer. A page can't wait, so a call doesn't compile on any target:
-		`FileRemoveAsync` removes it.
-
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("FileRemove: Synchronous file access is not supported. See FileRemoveAsync(fileName:String, answer:Int->Void)")
-	static function FileRemove(fileName:String):Int {
-		throw "FileRemove is unimplemented";
-	}
-
-	/** raylib 6.2's file copy, which waits for the file. A page can't wait, so a call doesn't compile on any target: `FileCopyAsync`
-		copies it.
-
-		@param srcPath  The file.
-		@param dstPath  The copy.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("FileCopy: Synchronous file access is not supported. See FileCopyAsync(srcPath:String, dstPath:String, answer:Int->Void)")
-	static function FileCopy(srcPath:String, dstPath:String):Int {
-		throw "FileCopy is unimplemented";
-	}
-
-	/** raylib 6.2's file move, which waits for the file. A page can't wait, so a call doesn't compile on any target: `FileMoveAsync`
-		moves it.
-
-		@param srcPath  The file.
-		@param dstPath  Where it goes.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("FileMove: Synchronous file access is not supported. See FileMoveAsync(srcPath:String, dstPath:String, answer:Int->Void)")
-	static function FileMove(srcPath:String, dstPath:String):Int {
-		throw "FileMove is unimplemented";
-	}
-
-	/** raylib 6.2's replacement of text in a file, which waits for the file. A page can't wait, so a call doesn't compile on any target:
-		`FileTextReplaceAsync` replaces it.
-
-		@param fileName  The file.
-		@param search  The text replaced.
-		@param replacement  The text put in its place.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("FileTextReplace: Synchronous file access is not supported. See FileTextReplaceAsync(fileName:String, search:String, replacement:String, answer:Int->Void)")
-	static function FileTextReplace(fileName:String, search:String, replacement:String):Int {
-		throw "FileTextReplace is unimplemented";
-	}
-
-	/** raylib 6.2's search of a file's text, which waits for the file. A page can't wait, so a call doesn't compile on any target:
-		`FileTextFindIndexAsync` searches it.
-
-		@param fileName  The file.
-		@param search  The text looked for.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("FileTextFindIndex: Synchronous file access is not supported. See FileTextFindIndexAsync(fileName:String, search:String, answer:Int->Void)")
-	static function FileTextFindIndex(fileName:String, search:String):Int {
-		throw "FileTextFindIndex is unimplemented";
-	}
-
 	// ---- Directories ----
 
 	/** Returns the working directory: natively the process's, where `TakeScreenshot` writes; in a page ".", the page's own directory.
@@ -1605,23 +1529,9 @@ class RCore {
 		return path == "" || path == "." || path == "/" || helix.platform.FilePath.isValid(path) ? 0 : -1;
 	}
 
-	/** Returns whether a path names a hidden file or directory, as raylib 6.2's does outside Windows: its last part starts with a dot and
-		isn't "." or "..".
-
-		@param filePath  The path.
-		@return  True when it is hidden. */
-	static function IsFileHidden(filePath:String):Bool {
-		var slash = filePath.lastIndexOf("/");
-		var basePath = slash >= 0 ? filePath.substr(slash + 1) : filePath;
-		return basePath.charAt(0) == "." && basePath != "." && basePath != "..";
-	}
-
-	/** Returns whether a path is absolute, as raylib 6.2's: natively on Windows one starting with `\\` or a drive letter, a colon and a
-		slash ("C:\", "D:/"); elsewhere, and in a page, one starting with `/`.
-
-		@param path  The path.
-		@return  True when it is absolute; false for null or "". */
-	static function IsPathAbsolute(path:String):Bool {
+	// Whether a path is absolute, as raylib 6.2's TakeScreenshot finds it: natively on Windows one starting with `\\` or a drive letter,
+	// a colon and a slash ("C:\", "D:/"); elsewhere, and in a page, one starting with `/`. False for null or "".
+	static function isPathAbsolute(path:String):Bool {
 		if (path == null || path == "")
 			return false;
 		#if windows
@@ -1635,38 +1545,6 @@ class RCore {
 		#else
 		return path.charAt(0) == "/";
 		#end
-	}
-
-	/** raylib 6.2's check for a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target:
-		`IsPathDirectoryAsync` answers it.
-
-		@param path  The path.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("IsPathDirectory: Synchronous file access is not supported. See IsPathDirectoryAsync(path:String, answer:Bool->Void)")
-	static function IsPathDirectory(path:String):Bool {
-		throw "IsPathDirectory is unimplemented";
-	}
-
-	/** raylib 6.2's count of a directory's files, which waits for it. A page can't wait, so a call doesn't compile on any target:
-		`GetDirectoryFileCountAsync` counts them.
-
-		@param dirPath  The directory.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GetDirectoryFileCount: Synchronous file access is not supported. See GetDirectoryFileCountAsync(dirPath:String, answer:Int->Void)")
-	static function GetDirectoryFileCount(dirPath:String):Int {
-		throw "GetDirectoryFileCount is unimplemented";
-	}
-
-	/** raylib 6.2's filtered and recursive count of a directory's files, which waits for it. A page can't wait, so a call doesn't compile
-		on any target: `GetDirectoryFileCountExAsync` counts them.
-
-		@param basePath  The directory.
-		@param filter  The extensions counted.
-		@param scanSubdirs  Whether subdirectories are counted too.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GetDirectoryFileCountEx: Synchronous file access is not supported. See GetDirectoryFileCountExAsync(basePath:String, filter:String, scanSubdirs:Bool, answer:Int->Void)")
-	static function GetDirectoryFileCountEx(basePath:String, filter:String, scanSubdirs:Bool):Int {
-		throw "GetDirectoryFileCountEx is unimplemented";
 	}
 
 	/** raylib's check for a file, as against a directory, which waits for the answer. A page can't wait, so a call doesn't compile on
@@ -1995,7 +1873,7 @@ class RCore {
 		return hash;
 	}
 
-	// A message's length in bits as SHA-1 and SHA-256 end its padding: 64 bits, the highest byte first, in the 8 bytes before end.
+	// A message's length in bits as SHA-1 ends its padding: 64 bits, the highest byte first, in the 8 bytes before end.
 	static function lengthInBits(msg:haxe.io.Bytes, end:Int, dataSize:Int):Void {
 		var low = dataSize << 3, high = dataSize >>> 29;
 		for (i in 0...4) {
@@ -2003,82 +1881,6 @@ class RCore {
 			msg.set(end - 5 - i, (high >>> (8 * i)) & 255);
 		}
 	}
-
-	/** Returns the SHA-256 hash of some bytes, raylib 6.2's.
-
-		@param data  The bytes.
-		@param dataSize  How many of them.
-		@return  Its 8 words, the first the hash's first 4 bytes, the highest first; one above 0x7fffffff is negative. */
-	static function ComputeSHA256(data:haxe.io.Bytes, dataSize:Int):Array<Int> {
-		inline function rotateRight(x:Int, c:Int):Int
-			return (x >>> c) | (x << (32 - c));
-		var hash = [
-			0x6A09e667,
-			0xbb67ae85,
-			0x3c6ef372,
-			0xa54ff53a,
-			0x510e527f,
-			0x9b05688c,
-			0x1f83d9ab,
-			0x5be0cd19
-		];
-		// Room for the length's 64 bits at the end, then up to a whole block.
-		var paddedSize = dataSize + 8;
-		paddedSize += 64 - paddedSize % 64;
-		var buffer = haxe.io.Bytes.alloc(paddedSize);
-		buffer.fill(0, paddedSize, 0);
-		buffer.blit(0, data, 0, dataSize);
-		buffer.set(dataSize, 0x80);
-		lengthInBits(buffer, paddedSize, dataSize);
-		var w = [for (_ in 0...64) 0];
-		for (blockN in 0...Std.int(paddedSize / 64)) {
-			var a = hash[0], b = hash[1], c = hash[2], d = hash[3], e = hash[4], f = hash[5], g = hash[6], h = hash[7];
-			var block = blockN * 64;
-			for (i in 0...16) {
-				var at = block + i * 4;
-				w[i] = (buffer.get(at) << 24) | (buffer.get(at + 1) << 16) | (buffer.get(at + 2) << 8) | buffer.get(at + 3);
-			}
-			for (t in 16...64) {
-				var a1 = rotateRight(w[t - 2], 17) ^ rotateRight(w[t - 2], 19) ^ (w[t - 2] >>> 10);
-				var a0 = rotateRight(w[t - 15], 7) ^ rotateRight(w[t - 15], 18) ^ (w[t - 15] >>> 3);
-				w[t] = (((((a1 + w[t - 7]) | 0) + a0) | 0) + w[t - 16]) | 0;
-			}
-			for (t in 0...64) {
-				var e1 = rotateRight(e, 6) ^ rotateRight(e, 11) ^ rotateRight(e, 25);
-				var ch = (e & f) ^ (~e & g);
-				var t1 = (((((((h + e1) | 0) + ch) | 0) + SHA256_K[t]) | 0) + w[t]) | 0;
-				var e0 = rotateRight(a, 2) ^ rotateRight(a, 13) ^ rotateRight(a, 22);
-				var maj = (a & b) ^ (a & c) ^ (b & c);
-				var t2 = (e0 + maj) | 0;
-				h = g;
-				g = f;
-				f = e;
-				e = (d + t1) | 0;
-				d = c;
-				c = b;
-				b = a;
-				a = (t1 + t2) | 0;
-			}
-			hash[0] = (hash[0] + a) | 0;
-			hash[1] = (hash[1] + b) | 0;
-			hash[2] = (hash[2] + c) | 0;
-			hash[3] = (hash[3] + d) | 0;
-			hash[4] = (hash[4] + e) | 0;
-			hash[5] = (hash[5] + f) | 0;
-			hash[6] = (hash[6] + g) | 0;
-			hash[7] = (hash[7] + h) | 0;
-		}
-		return hash;
-	}
-
-	static final SHA256_K = [
-		0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
-		0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-		0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
-		0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-		0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
-		0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-	];
 
 	// ---- Hooks ----
 
@@ -2247,7 +2049,7 @@ class RCore {
 		var exporter = Runtime.exporter();
 		if (slash >= 0) {
 			var directory = fileName.substr(0, slash == 0 ? 1 : slash);
-			if (!IsPathAbsolute(fileName))
+			if (!isPathAbsolute(fileName))
 				directory = haxe.io.Path.join([Sys.getCwd(), directory]);
 			if (!sys.FileSystem.exists(directory) || !sys.FileSystem.isDirectory(directory)) {
 				Runtime.log(LOG_WARNING, 'SYSTEM: [$fileName] Screenshot could not be saved');

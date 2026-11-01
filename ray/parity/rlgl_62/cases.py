@@ -1,7 +1,6 @@
 """rlgl_62: raylib 6.2's rlgl, those calls helix-ray takes from 6.2, read back from rlgl's batch against helix-ray's frame. One list for
 both sides (shared/gen.py's syntax): tex and tex2 are textures, tri, quad and seg add a triangle's, a quad's and a line's vertices at an x,
-drawn prints each vertex drawn since the last with its draw call's texture, and polygons GL's polygon mode, all in ref.c.in and
-RlglBits.hx.in. Each case starts on a new draw call, RL_QUADS with the white texture, as each drawn flushes the batch. Each fix has a
+drawn prints each vertex drawn since the last with its draw call's texture, all in ref.c.in and RlglBits.hx.in. Each case starts on a new draw call, RL_QUADS with the white texture, as each drawn flushes the batch. Each fix has a
 case built from the input that showed its bug in raylib 5.5."""
 
 CASES = [
@@ -33,7 +32,4 @@ CASES = [
      'hx': 'for (i in 0...33) rlPushMatrix(); rlTranslatef(1, 2, 3); rlBegin(RL_TRIANGLES); tri(0); rlEnd(); '
            'for (i in 0...32) rlPopMatrix(); rlBegin(RL_TRIANGLES); tri(0); rlEnd(); rlPopMatrix(); rlBegin(RL_TRIANGLES); tri(5); rlEnd(); '
            'drawn("overflow");'},
-    # 6.2's point calls: the size is 1 whatever is set, as on GL 3.3; ending point mode ends wire mode.
-    'rlSetPointSize(5); num("pointsize", rlGetPointSize());',
-    'polygons("polygonsfirst"); rlEnableWireMode(); polygons("polygonswire"); rlDisablePointMode(); polygons("polygonspointoff");',
 ]

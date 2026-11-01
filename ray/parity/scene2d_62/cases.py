@@ -1,7 +1,7 @@
 """scene2d_62: the 2D scene of the shapes helix-ray takes from raylib 6.2 (docs/DECISIONS.md 24), a call a line (shared/gen.py's
 syntax), between scene.c.in's and Main.hx.in's ClearBackground and the frame's end: the circles, sectors, rings, rectangle and polygon
-outlines, rounded rectangles, triangles and spline ends 6.2 fixed, and its dashed line, thick outlines and V ellipses. spline2 and
-spline3 are point arrays and cam a 2D camera, made there."""
+outlines, rounded rectangles, triangles and spline ends 6.2 fixed. spline2 and spline3 are point arrays and cam a 2D camera, made
+there."""
 
 CASES = [
     'DrawCircle(340, 30, 20, RED);',
@@ -26,24 +26,9 @@ CASES = [
     'DrawRectangleRoundedLines(R(80, 70, 60, 40), 0.7, 0, DARKBLUE);',
     'DrawTriangle(V2(300, 130), V2(290, 180), V2(340, 180), GOLD);',
     'DrawTriangle(V2(350, 130), V2(400, 180), V2(350, 180), RED);',
-    'DrawTriangleGradient(V2(410, 130), V2(400, 180), V2(450, 180), RED, GREEN, BLUE);',
-    'DrawTriangleLinesEx(V2(470, 130), V2(460, 180), V2(520, 180), 4, BLACK);',
-    'DrawTriangleLinesEx(V2(540, 140), V2(535, 175), V2(575, 175), -3, BROWN);',
     'DrawPolyLinesEx(V2(720, 155), 7, 25, 10, 4, DARKGREEN);',
     'DrawPolyLinesEx(V2(650, 155), 6, 20, 0, -4, GREEN);',
     'DrawSplineBasis(spline2, 5, 3, BLUE);',
     'DrawSplineCatmullRom(spline3, 5, 3, GREEN);',
-    'DrawLineDashed(V2(10, 300), V2(300, 360), 9, 4, BLACK);',
-    'DrawLineDashed(V2(10, 380), V2(300, 380), 15, 5, RED);',
-    'DrawCircleLinesEx(V2(360, 330), 30, 5, ORANGE);',
-    'DrawCircleSectorLinesEx(V2(440, 330), 35, 0, 270, 12, 6, BLUE);',
-    'DrawCircleSectorLinesEx(V2(520, 330), 30, 30, 120, 8, -6, PURPLE);',
-    'DrawEllipseV(V2(620, 330), 40, 20, PINK);',
-    'DrawEllipseLinesV(V2(720, 330), 40, 20, DARKPURPLE);',
-    'DrawEllipseLinesEx(V2(620, 400), 40, 20, 5, DARKPURPLE);',
-    'DrawEllipseLinesEx(V2(720, 400), 30, 15, -4, MAROON);',
-    'DrawRingLinesEx(V2(360, 430), 10, 30, 0, 270, 0, 3, DARKGRAY);',
-    'DrawRingLinesEx(V2(440, 430), 10, 30, 20, 210, 12, -3, DARKBLUE);',
-    'DrawRingLinesEx(V2(520, 430), 10, 30, 0, 30, 6, 5, RED);',
     'BeginMode2D(cam); DrawRectangleLines(-10, -4, 20, 8, RED); EndMode2D();',
 ]

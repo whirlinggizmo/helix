@@ -31,7 +31,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | Suite | Oracle | Kind | What |
 |---|---|---|---|
 | `shapes2d` | 5.5 | values | the 2D Draw functions' vertices as rlgl batches them, the spline points, the 2D collisions |
-| `shapes2d_62` | 6.2 | values | the 2D shapes 6.2 fixed or added, their vertices; the line test |
+| `shapes2d_62` | 6.2 | values | the 2D shapes 6.2 fixed, their vertices; the line test |
 | `shapes3d` | 5.5 | values | the 3D shapes, vertex for vertex |
 | `shapes3d_62` | 6.2 | values | the spheres, capsules and billboards, vertex for vertex |
 | `meshes` | 5.5 | values | the generated meshes and their bounds |
@@ -44,17 +44,17 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `camera_update_62` | 6.2 | values | `UpdateCamera` in each mode from a Z-up start |
 | `raymath` | 5.5 | values | every raymath function over three inputs each, a singular matrix and zero vectors among them |
 | `raymath_62` | 6.2 | values | `MatrixDecompose`, 6.2's |
-| `core_62` | 6.2 | values | file names, Base64, SHA-1 and SHA-256, the file functions 6.2 added, raymath's additions |
-| `images_62` | 6.2 | values | the image functions 6.2 fixed or added, their images byte for byte |
+| `core_62` | 6.2 | values | file names, Base64, SHA-1, `MakeDirectory`, `QuaternionFromVector3ToVector3` |
+| `images_62` | 6.2 | values | the image functions 6.2 fixed, their images byte for byte |
 | `animation` | 6.2 | values | glTF skeletons and animations, bone matrices, CPU skinning and blending |
 | `modular` | 6.2 | values | real-world models: Quaternius' modular woman, each part its own file, animated from a file of its own |
 | `text_55` | 5.5 | values | the text functions kept from 5.5: `TextReplace`, `LoadUTF8`, and those 6.2 didn't change |
-| `text_62` | 6.2 | values | the text and codepoint functions taken from 6.2, null text and its 1024-byte buffers, and 6.2's own text functions |
+| `text_62` | 6.2 | values | the text and codepoint functions taken from 6.2, null text and its 1024-byte buffers |
 | `fonts_62` | 6.2 | values | `GenImageFontAtlas` (rows, the atlas grown, the skyline packer) and `LoadFontFromImage`'s scan |
 | `fontfile_62` | 6.2 | values | `LoadFontEx` on a TrueType file: only the glyphs the font has, the Unicode spaces (hxcpp alone) |
-| `rlgl_62` | 6.2 | values | rlgl's texture across changes of mode, the matrix stack's overflow, the point calls |
+| `rlgl_62` | 6.2 | values | rlgl's texture across changes of mode, the matrix stack's overflow |
 | `scene2d` | 5.5 | pixels | a 2D scene of the Draw functions, textures and text |
-| `scene2d_62` | 6.2 | pixels | a 2D scene of the shapes 6.2 fixed or added |
+| `scene2d_62` | 6.2 | pixels | a 2D scene of the shapes 6.2 fixed |
 | `scene3d` | 5.5 | pixels | a 3D scene of the shapes, generated models and shaders |
 | `scene3d_62` | 6.2 | pixels | the spheres, capsules and billboards, and a mesh given tangents, in that scene |
 | `wires` | 5.5 | pixels | rlgl's render state: wires, culling, wire mode, the depth mask and test |

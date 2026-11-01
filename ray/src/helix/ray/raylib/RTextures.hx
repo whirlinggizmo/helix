@@ -418,29 +418,8 @@ class RTextures {
 		@param height  Its height.
 		@return  The render texture. */
 	static function LoadRenderTexture(width:Int, height:Int):RenderTexture2D {
-		return LoadRenderTextureEx(width, height, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
-	}
-
-	/** Makes a texture to draw into, with depth, in a pixel format. helix-ray's render textures are 8-bit RGBA or half-float RGBA, so
-		`PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and `PIXELFORMAT_UNCOMPRESSED_R16G16B16A16` (where the GPU draws into half floats,
-		`IGraphics.canRender`) are made; any other format, and a compressed one as in raylib, makes none, with a warning.
-
-		@param width  Its width, in pixels.
-		@param height  Its height.
-		@param format  Its pixel format (`PIXELFORMAT_*`).
-		@return  The render texture; one whose id is 0 when the format isn't made. */
-	static function LoadRenderTextureEx(width:Int, height:Int, format:Int):RenderTexture2D {
-		var textureFormat:Null<helix.platform.TextureFormat> = switch format {
-			case PIXELFORMAT_UNCOMPRESSED_R8G8B8A8: helix.platform.TextureFormat.Rgba8;
-			case PIXELFORMAT_UNCOMPRESSED_R16G16B16A16 if (Runtime.graphics.canRender(helix.platform.TextureFormat.Rgba16f)): helix.platform.TextureFormat.Rgba16f;
-			case _: null;
-		}
-		if (textureFormat == null) {
-			Runtime.log(LOG_WARNING, "FBO: Render texture format not supported");
-			return new RenderTexture();
-		}
-		var target = Runtime.graphics.createRenderTarget(width, height, textureFormat);
-		var texture = new Texture2D(Textures.fromHandle(target), width, height, 1, format);
+		var target = Runtime.graphics.createRenderTarget(width, height);
+		var texture = new Texture2D(Textures.fromHandle(target), width, height);
 		texture.flipped = true;
 		return new RenderTexture(target, texture, new Texture2D(0, width, height));
 	}
@@ -1912,17 +1891,6 @@ class RTextures {
 		shape(dst, color, (pixels, c) -> pixels.drawThickLine(start.x, start.y, end.x, end.y, thick, c));
 	}
 
-	/** Draws lines one pixel wide from each point to the next, as `ImageDrawLineV` draws each.
-
-		@param dst  The image.
-		@param points  The points.
-		@param pointCount  How many of them to draw through; under 2 draws nothing.
-		@param color  The color. */
-	static function ImageDrawLineStrip(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void {
-		for (i in 0...pointCount - 1)
-			ImageDrawLineV(dst, points[i], points[i + 1], color);
-	}
-
 	/** Fills a circle, each row as wide either side of the middle.
 
 		@param dst  The image.
@@ -1963,47 +1931,6 @@ class RTextures {
 		@param color  The color. */
 	static function ImageDrawCircleLinesV(dst:Image, center:Vector2, radius:Int, color:Color):Void {
 		ImageDrawCircleLines(dst, Std.int(f32(center.x)), Std.int(f32(center.y)), radius, color);
-	}
-
-	/** Fills a circle that blends from one color at its middle to another at its edge, by each pixel's center's distance from the
-		middle; a pixel whose center is outside is left.
-
-		@param dst  The image.
-		@param center  The middle.
-		@param radius  The radius, in pixels; 0 or less draws nothing.
-		@param inner  The color at the middle.
-		@param outer  The color at the edge. */
-	static function ImageDrawCircleGradient(dst:Image, center:Vector2, radius:Float, inner:Color, outer:Color):Void {
-		var cx = f32(center.x), cy = f32(center.y), r = f32(radius);
-		if (dst.data == null || r <= 0)
-			return;
-		var x0 = Std.int(Math.ffloor(f32(cx - r))),
-			y0 = Std.int(Math.ffloor(f32(cy - r))),
-			x1 = Std.int(Math.fceil(f32(cx + r))),
-			y1 = Std.int(Math.fceil(f32(cy + r)));
-		if (x0 < 0)
-			x0 = 0;
-		if (y0 < 0)
-			y0 = 0;
-		if (x1 > dst.width)
-			x1 = dst.width;
-		if (y1 > dst.height)
-			y1 = dst.height;
-		if (x0 >= x1 || y0 >= y1)
-			return;
-		var radiusSq = f32(r * r);
-		inline function channel(a:Int, b:Int, t:Float):Int
-			return byte(f32(a + f32((b - a) * t)));
-		for (y in y0...y1)
-			for (x in x0...x1) {
-				var dx = f32(f32(x + .5) - cx), dy = f32(f32(y + .5) - cy);
-				var distSq = f32(f32(dx * dx) + f32(dy * dy));
-				if (distSq > radiusSq)
-					continue;
-				var t = f32(f32(Math.sqrt(distSq)) / r);
-				ImageDrawPixel(dst, x, y,
-					new Color(channel(inner.r, outer.r, t), channel(inner.g, outer.g, t), channel(inner.b, outer.b, t), channel(inner.a, outer.a, t)));
-			}
 	}
 
 	/** Fills a rectangle; what falls outside the image is skipped.
@@ -2071,81 +1998,13 @@ class RTextures {
 			dst.data.blit(first + j * dst.width * bytesPerPixel, dst.data, first, bytesPerPixel * w);
 	}
 
-	/** Fills a rectangle turned about a point of it: each pixel whose center is inside it.
-
-		@param dst  The image.
-		@param rec  The rectangle, in pixels; its x and y are where the point is drawn. One 0 wide or high, or less, draws nothing.
-		@param origin  The point it turns about, from its top-left corner.
-		@param rotation  The turn, in degrees clockwise.
-		@param color  The color. */
-	static function ImageDrawRectanglePro(dst:Image, rec:Rectangle, origin:Vector2, rotation:Float, color:Color):Void {
-		var rx = f32(rec.x),
-			ry = f32(rec.y),
-			rw = f32(rec.width),
-			rh = f32(rec.height),
-			oxs = f32(origin.x),
-			oys = f32(origin.y);
-		if (dst.data == null || rw <= 0 || rh <= 0)
-			return;
-		var angle = f32(f32(rotation) * DEG2RAD_F32);
-		var cosAngle = f32(Math.cos(angle)), sinAngle = f32(Math.sin(angle));
-		var ox = f32(rx + oxs), oy = f32(ry + oys);
-		var x1 = -oxs, y1 = -oys, x2 = f32(rw - oxs), y2 = f32(rh - oys);
-		var cornersX = [x1, x2, x2, x1], cornersY = [y1, y1, y2, y2];
-		var minX = 65536., minY = 65536., maxX = -65536., maxY = -65536.;
-		for (i in 0...4) {
-			var px = f32(f32(f32(cornersX[i] * cosAngle) - f32(cornersY[i] * sinAngle)) + ox);
-			var py = f32(f32(f32(cornersX[i] * sinAngle) + f32(cornersY[i] * cosAngle)) + oy);
-			if (px < minX)
-				minX = px;
-			if (py < minY)
-				minY = py;
-			if (px > maxX)
-				maxX = px;
-			if (py > maxY)
-				maxY = py;
-		}
-		var x0 = Std.int(Math.ffloor(minX)),
-			y0 = Std.int(Math.ffloor(minY)),
-			xEnd = Std.int(Math.fceil(maxX)),
-			yEnd = Std.int(Math.fceil(maxY));
-		if (x0 < 0)
-			x0 = 0;
-		if (y0 < 0)
-			y0 = 0;
-		if (xEnd > dst.width)
-			xEnd = dst.width;
-		if (yEnd > dst.height)
-			yEnd = dst.height;
-		if (x0 >= xEnd || y0 >= yEnd)
-			return;
-		for (y in y0...yEnd)
-			for (x in x0...xEnd) {
-				var px = f32(f32(x + .5) - ox), py = f32(f32(y + .5) - oy);
-				var localX = f32(f32(px * cosAngle) + f32(py * sinAngle)),
-					localY = f32(f32(-px * sinAngle) + f32(py * cosAngle));
-				if (localX >= x1 && localX < x2 && localY >= y1 && localY < y2)
-					ImageDrawPixel(dst, x, y, color);
-			}
-	}
-
-	/** Outlines a rectangle, the outline inside it, as `ImageDrawRectangleLinesEx` does.
-
-		@param dst  The image.
-		@param rec  The rectangle, in pixels.
-		@param thick  The outline's thickness, in pixels.
-		@param color  The color. */
-	static function ImageDrawRectangleLines(dst:Image, rec:Rectangle, thick:Int, color:Color):Void {
-		ImageDrawRectangleLinesEx(dst, rec, thick, color);
-	}
-
 	/** Outlines a rectangle, the outline inside it: its top and bottom across its whole width, its sides between them.
 
 		@param dst  The image.
 		@param rec  The rectangle, in pixels, cut to whole pixels.
 		@param thick  The outline's thickness, in pixels.
 		@param color  The color. */
-	static function ImageDrawRectangleLinesEx(dst:Image, rec:Rectangle, thick:Int, color:Color):Void {
+	static function ImageDrawRectangleLines(dst:Image, rec:Rectangle, thick:Int, color:Color):Void {
 		var x = f32(rec.x),
 			y = f32(rec.y),
 			width = f32(rec.width),
@@ -2154,60 +2013,6 @@ class RTextures {
 		ImageDrawRectangle(dst, Std.int(x), Std.int(f32(y + thick)), thick, Std.int(f32(height - thick * 2)), color);
 		ImageDrawRectangle(dst, Std.int(f32(f32(x + width) - thick)), Std.int(f32(y + thick)), thick, Std.int(f32(height - thick * 2)), color);
 		ImageDrawRectangle(dst, Std.int(x), Std.int(f32(f32(y + height) - thick)), Std.int(width), thick, color);
-	}
-
-	/** Fills a rectangle that blends between a color at each corner, by each pixel's top-left corner's place in it.
-
-		@param dst  The image.
-		@param rec  The rectangle, in pixels; one 0 wide or high, or less, draws nothing.
-		@param col1  The top-left corner's color.
-		@param col2  The bottom-left corner's color.
-		@param col3  The bottom-right corner's color.
-		@param col4  The top-right corner's color. */
-	static function ImageDrawRectangleGradientEx(dst:Image, rec:Rectangle, col1:Color, col2:Color, col3:Color, col4:Color):Void {
-		var rx = f32(rec.x),
-			ry = f32(rec.y),
-			rw = f32(rec.width),
-			rh = f32(rec.height);
-		if (dst.data == null || rw <= 0 || rh <= 0)
-			return;
-		var x0 = Std.int(Math.ffloor(rx)),
-			y0 = Std.int(Math.ffloor(ry)),
-			x1 = Std.int(Math.fceil(f32(rx + rw))),
-			y1 = Std.int(Math.fceil(f32(ry + rh)));
-		if (x0 < 0)
-			x0 = 0;
-		if (y0 < 0)
-			y0 = 0;
-		if (x1 > dst.width)
-			x1 = dst.width;
-		if (y1 > dst.height)
-			y1 = dst.height;
-		if (x0 >= x1 || y0 >= y1)
-			return;
-		inline function channel(a:Int, b:Int, c:Int, d:Int, w1:Float, w2:Float, w3:Float, w4:Float):Int
-			return byte(f32(f32(f32(f32(a * w1) + f32(b * w2)) + f32(c * w3)) + f32(d * w4)));
-		for (y in y0...y1) {
-			var ty = f32(f32(y - ry) / rh);
-			if (ty < 0)
-				ty = 0;
-			if (ty > 1)
-				ty = 1;
-			for (x in x0...x1) {
-				var tx = f32(f32(x - rx) / rw);
-				if (tx < 0)
-					tx = 0;
-				if (tx > 1)
-					tx = 1;
-				var w1 = f32(f32(1 - tx) * f32(1 - ty)),
-					w2 = f32(f32(1 - tx) * ty),
-					w3 = f32(tx * ty),
-					w4 = f32(tx * f32(1 - ty));
-				ImageDrawPixel(dst, x, y,
-					new Color(channel(col1.r, col2.r, col3.r, col4.r, w1, w2, w3, w4), channel(col1.g, col2.g, col3.g, col4.g, w1, w2, w3, w4),
-						channel(col1.b, col2.b, col3.b, col4.b, w1, w2, w3, w4), channel(col1.a, col2.a, col3.a, col4.a, w1, w2, w3, w4)));
-			}
-		}
 	}
 
 	/** Fills a triangle; its corners may go either way round.
@@ -2282,19 +2087,6 @@ class RTextures {
 		}
 	}
 
-	/** Fills a triangle, each corner its own color, blended across it as `ImageDrawTriangleEx` blends it.
-
-		@param dst  The image.
-		@param v1  The first corner.
-		@param v2  The second corner.
-		@param v3  The third corner.
-		@param c1  The first corner's color.
-		@param c2  The second corner's color.
-		@param c3  The third corner's color. */
-	static function ImageDrawTriangleGradient(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void {
-		ImageDrawTriangleEx(dst, v1, v2, v3, c1, c2, c3);
-	}
-
 	/** Outlines a triangle with three `ImageDrawLine`s, its corners cut to whole pixels.
 
 		@param dst  The image.
@@ -2336,7 +2128,7 @@ class RTextures {
 	/** Draws a rectangle of one image into a rectangle of another, tinted, blended over (raylib's `ColorAlphaBlend`), in their formats.
 		A source with no alpha under an opaque tint is copied, the tint's color ignored, as raylib's is; a float destination is unchanged,
 		as `SetPixelColor` writes none. A source rectangle of another whole-pixel size than the destination's is first resized by
-		`ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them. raylib 6 calls it `ImageDrawImagePro`.
+		`ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them.
 
 		@param dst  The image drawn into.
 		@param src  The image drawn from.
@@ -2345,102 +2137,6 @@ class RTextures {
 		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
 	static function ImageDraw(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectangle, tint:Color):Void {
 		drawImage(dst, 0, src, srcRec, dstRec, tint);
-	}
-
-	/** Draws one image into another at a point, tinted and blended over, as `ImageDraw` draws it.
-
-		@param dst  The image drawn into.
-		@param src  The image drawn.
-		@param posX  The left edge, in the destination's pixels.
-		@param posY  The top edge.
-		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
-	static function ImageDrawImage(dst:Image, src:Image, posX:Int, posY:Int, tint:Color):Void {
-		drawImage(dst, 0, src, new Rectangle(0, 0, src.width, src.height), new Rectangle(posX, posY, src.width, src.height), tint);
-	}
-
-	/** Draws a rectangle of one image into another at a point, at its size, tinted and blended over, as `ImageDraw` draws it.
-
-		@param dst  The image drawn into.
-		@param src  The image drawn from.
-		@param srcRec  The source rectangle, in its pixels, cut to it.
-		@param position  The top-left corner, in the destination's pixels.
-		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
-	static function ImageDrawImageRec(dst:Image, src:Image, srcRec:Rectangle, position:Vector2, tint:Color):Void {
-		drawImage(dst, 0, src, srcRec, new Rectangle(position.x, position.y, srcRec.width, srcRec.height), tint);
-	}
-
-	/** Draws a rectangle of one image into a rectangle of another, as `ImageDraw` draws it. The origin and rotation are taken and not
-		used, as in raylib 6.2, whose own are still to be written.
-
-		@param dst  The image drawn into.
-		@param src  The image drawn from.
-		@param srcRec  The source rectangle, in its pixels, cut to it.
-		@param dstRec  The destination rectangle.
-		@param origin  The point it would turn about; not used.
-		@param rotation  The turn, in degrees; not used.
-		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
-	static function ImageDrawImagePro(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void {
-		drawImage(dst, 0, src, srcRec, dstRec, tint);
-	}
-
-	/** Draws one image into another turned about its top-left corner and scaled: each destination pixel whose center falls on the
-		source takes its nearest source pixel, tinted and blended over (`ColorAlphaBlend`); clear source pixels are skipped.
-
-		@param dst  The image drawn into.
-		@param src  The image drawn.
-		@param position  Where its top-left corner is drawn, in the destination's pixels.
-		@param rotation  The turn, in degrees clockwise.
-		@param scale  The scale; 1 for its own size.
-		@param tint  The color the source is multiplied by; `WHITE` keeps it unchanged. */
-	static function ImageDrawImageEx(dst:Image, src:Image, position:Vector2, rotation:Float, scale:Float, tint:Color):Void {
-		if (dst.data == null || dst.width <= 0 || dst.height <= 0 || src.width <= 0 || src.height <= 0)
-			return;
-		var angle = f32(f32(rotation) * DEG2RAD_F32),
-			s = f32(scale),
-			posX = f32(position.x),
-			posY = f32(position.y);
-		var cosA = f32(Math.cos(angle)), sinA = f32(Math.sin(angle));
-		var w = f32(src.width * s), h = f32(src.height * s);
-		var cornersX = [0, w, w, 0], cornersY = [0, 0, h, h];
-		var minX = 65536., minY = 65536., maxX = -65536., maxY = -65536.;
-		for (i in 0...4) {
-			var rx = f32(f32(f32(cornersX[i] * cosA) - f32(cornersY[i] * sinA)) + posX);
-			var ry = f32(f32(f32(cornersX[i] * sinA) + f32(cornersY[i] * cosA)) + posY);
-			if (rx < minX)
-				minX = rx;
-			if (ry < minY)
-				minY = ry;
-			if (rx > maxX)
-				maxX = rx;
-			if (ry > maxY)
-				maxY = ry;
-		}
-		var x0 = Std.int(Math.ffloor(minX)),
-			y0 = Std.int(Math.ffloor(minY)),
-			x1 = Std.int(Math.fceil(maxX)),
-			y1 = Std.int(Math.fceil(maxY));
-		if (x0 < 0)
-			x0 = 0;
-		if (y0 < 0)
-			y0 = 0;
-		if (x1 > dst.width)
-			x1 = dst.width;
-		if (y1 > dst.height)
-			y1 = dst.height;
-		if (x0 >= x1 || y0 >= y1)
-			return;
-		for (y in y0...y1)
-			for (x in x0...x1) {
-				var dx = f32(f32(x + .5) - posX), dy = f32(f32(y + .5) - posY);
-				var sx = f32(f32(f32(dx * cosA) + f32(dy * sinA)) / s),
-					sy = f32(f32(f32(-dx * sinA) + f32(dy * cosA)) / s);
-				if (sx < 0 || sy < 0 || sx >= src.width || sy >= src.height)
-					continue;
-				var srcColor = GetImageColor(src, Std.int(sx), Std.int(sy));
-				if (srcColor.a == 0)
-					continue;
-				ImageDrawPixel(dst, x, y, ColorAlphaBlend(GetImageColor(dst, x, y), srcColor, tint));
-			}
 	}
 
 	// ImageDraw into the level of dst whose pixels start at a byte: raylib's pointer into a mipmapped image.
@@ -2568,24 +2264,7 @@ class RTextures {
 		ImageDraw(dst, imText, new Rectangle(0, 0, imText.width, imText.height), new Rectangle(position.x, position.y, imText.width, imText.height), WHITE);
 	}
 
-	/** Draws text in a font into an image, turned about a point. raylib 6.2's draws nothing, its body still to be written, and so does
-		this.
-
-		@param dst  The image.
-		@param font  The font.
-		@param text  The text.
-		@param position  Where the point is drawn.
-		@param origin  The point it turns about, from the text's top-left corner.
-		@param rotation  The turn, in degrees.
-		@param fontSize  The height of a line, in pixels.
-		@param spacing  The space between letters, at the font's size.
-		@param tint  The color. */
-	static function ImageDrawTextPro(dst:Image, font:Font, text:String, position:Vector2, origin:Vector2, rotation:Float, fontSize:Float, spacing:Float,
-		tint:Color):Void {}
-
 	// ---- Images: what the functions share ----
-	// raylib's DEG2RAD, a float.
-	static final DEG2RAD_F32 = f32(f32(Math.PI) / 180);
 	static final ONE_31 = f32(1 / 31);
 	static final ONE_63 = f32(1 / 63);
 	static final ONE_15 = f32(1 / 15);

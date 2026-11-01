@@ -1,4 +1,4 @@
-// raylib 6.2's 2D shapes helix-ray takes (read back from rlgl's batch), a spline point and the line test, printed by parity.h; cases.py's
+// raylib 6.2's 2D shapes helix-ray takes (read back from rlgl's batch) and the line test, printed by parity.h; cases.py's
 // list is put into it.
 #include "parity.h"
 

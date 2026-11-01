@@ -1025,22 +1025,6 @@ static inline var SHADER_LOC_BONE_MATRICES:Int
 - `SHADER_LOC_VERTEX_BONEWEIGHTS`: Shader location: vertex attribute: boneWeights.
 - `SHADER_LOC_BONE_MATRICES`: Shader location: array of matrices uniform: boneMatrices.
 
-```haxe
-static inline var SHADER_LOC_VERTEX_INSTANCETRANSFORM:Int
-static inline var MATERIAL_MAP_DIFFUSE:Int
-static inline var MATERIAL_MAP_SPECULAR:Int
-static inline var SHADER_LOC_MAP_DIFFUSE:Int
-static inline var SHADER_LOC_MAP_SPECULAR:Int
-static inline var MAX_MATERIAL_MAPS:Int
-```
-
-- `SHADER_LOC_VERTEX_INSTANCETRANSFORM`: Shader location: vertex attribute: instanceTransform, raylib 6.2's, the attribute a shader reads an instance's transform from.
-- `MATERIAL_MAP_DIFFUSE`: The diffuse map, the same as `MATERIAL_MAP_ALBEDO`.
-- `MATERIAL_MAP_SPECULAR`: The specular map, the same as `MATERIAL_MAP_METALNESS`.
-- `SHADER_LOC_MAP_DIFFUSE`: The diffuse texture's location, the same as `SHADER_LOC_MAP_ALBEDO`.
-- `SHADER_LOC_MAP_SPECULAR`: The specular texture's location, the same as `SHADER_LOC_MAP_METALNESS`.
-- `MAX_MATERIAL_MAPS`: The number of a material's maps.
-
 ### Shader uniform data type (ShaderUniformDataType)
 
 ```haxe
@@ -1188,6 +1172,20 @@ static final RAYWHITE(default, null):Color
 - `BLANK`: Blank (Transparent).
 - `MAGENTA`: Magenta.
 - `RAYWHITE`: My own White (raylib logo).
+
+```haxe
+static inline var MATERIAL_MAP_DIFFUSE:Int
+static inline var MATERIAL_MAP_SPECULAR:Int
+static inline var SHADER_LOC_MAP_DIFFUSE:Int
+static inline var SHADER_LOC_MAP_SPECULAR:Int
+static inline var MAX_MATERIAL_MAPS:Int
+```
+
+- `MATERIAL_MAP_DIFFUSE`: The diffuse map, the same as `MATERIAL_MAP_ALBEDO`.
+- `MATERIAL_MAP_SPECULAR`: The specular map, the same as `MATERIAL_MAP_METALNESS`.
+- `SHADER_LOC_MAP_DIFFUSE`: The diffuse texture's location, the same as `SHADER_LOC_MAP_ALBEDO`.
+- `SHADER_LOC_MAP_SPECULAR`: The specular texture's location, the same as `SHADER_LOC_MAP_METALNESS`.
+- `MAX_MATERIAL_MAPS`: The number of a material's maps.
 
 ### Pixel formats (PixelFormat)
 
@@ -1509,8 +1507,6 @@ static function GetDirectoryPath(filePath:String):String
 static function GetPrevDirectoryPath(dirPath:String):String
 static function IsFileNameValid(fileName:String):Bool
 static function MakeDirectory(dirPath:String):Int
-static function IsFileHidden(filePath:String):Bool
-static function IsPathAbsolute(path:String):Bool
 static function UnloadDirectoryFiles(files:FilePathList):Void
 static function IsFileDropped():Bool
 static function LoadDroppedFiles():FilePathList
@@ -1522,7 +1518,6 @@ static function DecodeDataBase64(data:haxe.io.Bytes, outputSize:Array<Int>):haxe
 static function ComputeCRC32(data:haxe.io.Bytes, dataSize:Int):Int
 static function ComputeMD5(data:haxe.io.Bytes, dataSize:Int):Array<Int>
 static function ComputeSHA1(data:haxe.io.Bytes, dataSize:Int):Array<Int>
-static function ComputeSHA256(data:haxe.io.Bytes, dataSize:Int):Array<Int>
 static function SetLoadFileDataCallback(callback:Null<(fileName:String) -> Null<haxe.io.Bytes>>):Void
 static function SetSaveFileDataCallback(callback:Null<(fileName:String, data:haxe.io.Bytes, dataSize:Int) -> Bool>):Void
 static function SetLoadFileTextCallback(callback:Null<(fileName:String) -> Null<String>>):Void
@@ -1881,12 +1876,6 @@ static function EndScissorMode():Void
 - `MakeDirectory`: Makes a directory. There is nothing to make: a directory is there once a file is written under it, so this succeeds for any path that could name one.
   - `dirPath`: The directory.
   - returns: 0, success; 1 for null or "", as raylib 5.5's; -1, as raylib 6.2's for a directory not made, for a path that can't name one.
-- `IsFileHidden`: Returns whether a path names a hidden file or directory, as raylib 6.2's does outside Windows: its last part starts with a dot and isn't "." or "..".
-  - `filePath`: The path.
-  - returns: True when it is hidden.
-- `IsPathAbsolute`: Returns whether a path is absolute, as raylib 6.2's: natively on Windows one starting with `\\` or a drive letter, a colon and a slash ("C:\", "D:/"); elsewhere, and in a page, one starting with `/`.
-  - `path`: The path.
-  - returns: True when it is absolute; false for null or "".
 - `UnloadDirectoryFiles`: Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave. There is nothing to free here, and the list is unchanged.
   - `files`: The listing.
 - `IsFileDropped`: Returns whether files were dropped on the window, natively from the desktop and in a page on the canvas. It stays true until `UnloadDroppedFiles`, and a new drop's files replace the last one's, as raylib's do. A dropped file counts once its bytes are read, natively in the frame it is dropped, in a page a frame or so after.
@@ -1926,10 +1915,6 @@ static function EndScissorMode():Void
   - `data`: The bytes.
   - `dataSize`: How many of them.
   - returns: Its 5 words, the first the hash's first 4 bytes, the highest first; one above 0x7fffffff is negative.
-- `ComputeSHA256`: Returns the SHA-256 hash of some bytes, raylib 6.2's.
-  - `data`: The bytes.
-  - `dataSize`: How many of them.
-  - returns: Its 8 words, the first the hash's first 4 bytes, the highest first; one above 0x7fffffff is negative.
 - `SetLoadFileDataCallback`: Reads files through the program from now on: every load raylib makes of a file (textures, models, sounds, music, data) asks it first, and a file it doesn't have (null) is read as it would be. In a page, a texture's or model's images still decode only asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load those it gives.
   - `callback`: Returns a file's bytes, or null; null for none.
 - `SetSaveFileDataCallback`: Writes files through the program from now on (`SaveFileData`).
@@ -2075,24 +2060,17 @@ static function DrawLineV(startPos:Vector2, endPos:Vector2, color:Color):Void
 static function DrawLineEx(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void
 static function DrawLineStrip(points:Array<Vector2>, pointCount:Int, color:Color):Void
 static function DrawLineBezier(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void
-static function DrawLineDashed(startPos:Vector2, endPos:Vector2, dashSize:Int, spaceSize:Int, color:Color):Void
 static function DrawCircle(centerX:Int, centerY:Int, radius:Float, color:Color):Void
 static function DrawCircleV(center:Vector2, radius:Float, color:Color):Void
 static function DrawCircleSector(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
 static function DrawCircleSectorLines(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
-static function DrawCircleSectorLinesEx(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, thick:Float, color:Color):Void
 static function DrawCircleGradient(centerX:Int, centerY:Int, radius:Float, inner:Color, outer:Color):Void
 static function DrawCircleLines(centerX:Int, centerY:Int, radius:Float, color:Color):Void
 static function DrawCircleLinesV(center:Vector2, radius:Float, color:Color):Void
-static function DrawCircleLinesEx(center:Vector2, radius:Float, thick:Float, color:Color):Void
 static function DrawEllipse(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void
-static function DrawEllipseV(center:Vector2, radiusH:Float, radiusV:Float, color:Color):Void
 static function DrawEllipseLines(centerX:Int, centerY:Int, radiusH:Float, radiusV:Float, color:Color):Void
-static function DrawEllipseLinesV(center:Vector2, radiusH:Float, radiusV:Float, color:Color):Void
-static function DrawEllipseLinesEx(center:Vector2, radiusH:Float, radiusV:Float, thick:Float, color:Color):Void
 static function DrawRing(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
 static function DrawRingLines(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
-static function DrawRingLinesEx(center:Vector2, innerRadius:Float, outerRadius:Float, startAngle:Float, endAngle:Float, segments:Int, thick:Float, color:Color):Void
 static function DrawRectangle(posX:Int, posY:Int, width:Int, height:Int, color:Color):Void
 static function DrawRectangleV(position:Vector2, size:Vector2, color:Color):Void
 static function DrawRectangleRec(rec:Rectangle, color:Color):Void
@@ -2106,9 +2084,7 @@ static function DrawRectangleRounded(rec:Rectangle, roundness:Float, segments:In
 static function DrawRectangleRoundedLines(rec:Rectangle, roundness:Float, segments:Int, color:Color):Void
 static function DrawRectangleRoundedLinesEx(rec:Rectangle, roundness:Float, segments:Int, lineThick:Float, color:Color):Void
 static function DrawTriangle(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
-static function DrawTriangleGradient(v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
 static function DrawTriangleLines(v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
-static function DrawTriangleLinesEx(v1:Vector2, v2:Vector2, v3:Vector2, thick:Float, color:Color):Void
 static function DrawTriangleFan(points:Array<Vector2>, pointCount:Int, color:Color):Void
 static function DrawTriangleStrip(points:Array<Vector2>, pointCount:Int, color:Color):Void
 static function DrawPoly(center:Vector2, sides:Int, radius:Float, rotation:Float, color:Color):Void
@@ -2128,7 +2104,6 @@ static function GetSplinePointLinear(startPos:Vector2, endPos:Vector2, t:Float):
 static function GetSplinePointBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2
 static function GetSplinePointCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2
 static function GetSplinePointBezierQuad(p1:Vector2, c2:Vector2, p3:Vector2, t:Float):Vector2
-static function GetSplinePointBezierQuadratic(startPos:Vector2, controlPos:Vector2, endPos:Vector2, t:Float):Vector2
 static function GetSplinePointBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, t:Float):Vector2
 static function CheckCollisionRecs(rec1:Rectangle, rec2:Rectangle):Bool
 static function CheckCollisionCircles(center1:Vector2, radius1:Float, center2:Vector2, radius2:Float):Bool
@@ -2181,12 +2156,6 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `endPos`: The end.
   - `thick`: The thickness, in pixels.
   - `color`: The color.
-- `DrawLineDashed`: Draws a dashed line one pixel wide: dashes of a length with gaps of another between them, from the start; the last dash stops at the end.
-  - `startPos`: The start.
-  - `endPos`: The end.
-  - `dashSize`: Each dash's length, in pixels; 0 or less, or a line shorter than a dash and a gap, draws the line solid.
-  - `spaceSize`: Each gap's length, in pixels.
-  - `color`: The color.
 - `DrawCircle`: Draws a filled circle.
   - `centerX`: The center's x.
   - `centerY`: The center's y.
@@ -2210,14 +2179,6 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `endAngle`: The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
   - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
   - `color`: The color.
-- `DrawCircleSectorLinesEx`: Draws a slice of a circle's outline of a thickness, inside it, or outside it for a negative thickness, with its edges from the center to its ends that thick too; a whole turn drawn outside has none.
-  - `center`: The center.
-  - `radius`: The radius; 0 or less draws nothing.
-  - `startAngle`: The angle it starts at, in degrees from the right.
-  - `endAngle`: The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
-  - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
-  - `thick`: The outline's thickness, measured across its curve's straight edges; one so thick it meets itself fills the slice.
-  - `color`: The color.
 - `DrawCircleGradient`: Draws a filled circle that blends from one color at its center to another at its edge.
   - `centerX`: The center's x.
   - `centerY`: The center's y.
@@ -2233,19 +2194,9 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `center`: The center.
   - `radius`: The radius.
   - `color`: The color.
-- `DrawCircleLinesEx`: Draws a circle's outline of a thickness, inside it: a ring of 36 segments from the radius less the thickness to the radius.
-  - `center`: The center.
-  - `radius`: The radius.
-  - `thick`: The thickness; more than the radius draws a filled circle, and a negative one an outline that thick outside it.
-  - `color`: The color.
 - `DrawEllipse`: Draws a filled ellipse.
   - `centerX`: The center's x.
   - `centerY`: The center's y.
-  - `radiusH`: The radius across.
-  - `radiusV`: The radius up and down.
-  - `color`: The color.
-- `DrawEllipseV`: Draws a filled ellipse.
-  - `center`: The center.
   - `radiusH`: The radius across.
   - `radiusV`: The radius up and down.
   - `color`: The color.
@@ -2254,17 +2205,6 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `centerY`: The center's y.
   - `radiusH`: The radius across.
   - `radiusV`: The radius up and down.
-  - `color`: The color.
-- `DrawEllipseLinesV`: Draws an ellipse's outline, one pixel wide.
-  - `center`: The center.
-  - `radiusH`: The radius across.
-  - `radiusV`: The radius up and down.
-  - `color`: The color.
-- `DrawEllipseLinesEx`: Draws an ellipse's outline of a thickness, inside it, or outside it for a negative thickness: 36 segments, each radius less the thickness to the radius.
-  - `center`: The center.
-  - `radiusH`: The radius across.
-  - `radiusV`: The radius up and down.
-  - `thick`: The thickness; as much as either radius draws a filled ellipse.
   - `color`: The color.
 - `DrawRing`: Draws a filled ring, or a slice of one, clockwise from one angle to another.
   - `center`: The center.
@@ -2281,15 +2221,6 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `startAngle`: The angle it starts at, in degrees from the right.
   - `endAngle`: The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
   - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
-  - `color`: The color.
-- `DrawRingLinesEx`: Draws a ring's outline, or a slice of one, of a thickness: inside its edge and outside its hole, or the other way for a negative thickness, with its ends that thick too; a whole turn drawn outside has no ends.
-  - `center`: The center.
-  - `innerRadius`: The radius of its hole; 0 or less draws a slice of a circle (`DrawCircleSectorLinesEx`) for a negative thickness.
-  - `outerRadius`: The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
-  - `startAngle`: The angle it starts at, in degrees from the right.
-  - `endAngle`: The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
-  - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
-  - `thick`: The outline's thickness, measured across its curve's straight edges; one so thick it meets itself fills the ring.
   - `color`: The color.
 - `DrawRectangle`: Draws a filled rectangle.
   - `posX`: The left edge.
@@ -2364,28 +2295,11 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `color`: The color.
 
   Its points must go counterclockwise on the screen, as raylib's must: a triangle whose points go clockwise faces away, and isn't drawn while back faces are culled (`rlEnableBackfaceCulling`, the default).
-- `DrawTriangleGradient`: Draws a filled triangle that blends between a color at each point.
-  - `v1`: The first point.
-  - `v2`: The second point.
-  - `v3`: The third point.
-  - `c1`: The first point's color.
-  - `c2`: The second point's color.
-  - `c3`: The third point's color.
-
-  Its points must go counterclockwise on the screen, as `DrawTriangle`'s must.
 - `DrawTriangleLines`: Draws a triangle's outline, one pixel wide.
   - `v1`: The first point.
   - `v2`: The second point.
   - `v3`: The third point.
   - `color`: The color.
-- `DrawTriangleLinesEx`: Draws a triangle's outline of a thickness, inside it, or outside it for a negative thickness: the triangle less a copy of it shrunk about its incenter, so each side is as thick.
-  - `v1`: The first point.
-  - `v2`: The second point.
-  - `v3`: The third point.
-  - `thick`: The thickness; as much as the radius of the circle inside it draws it filled.
-  - `color`: The color.
-
-  Its points must go counterclockwise on the screen, as `DrawTriangle`'s must.
 - `DrawTriangleFan`: Draws filled triangles that all share the first point, each from it to the next two points.
   - `points`: The points, the shared one first.
   - `pointCount`: How many of them to draw, 3 or more.
@@ -2497,12 +2411,6 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `p3`: The end.
   - `t`: How far along, 0 at the start to 1 at the end.
   - returns: The point.
-- `GetSplinePointBezierQuadratic`: Returns a point on a quadratic Bezier curve: `GetSplinePointBezierQuad` by raylib 6's name for it.
-  - `startPos`: The start.
-  - `controlPos`: The control point.
-  - `endPos`: The end.
-  - `t`: How far along, 0 at the start to 1 at the end.
-  - returns: The point.
 - `GetSplinePointBezierCubic`: Returns a point on a cubic Bezier curve.
   - `p1`: The start.
   - `c2`: The start's control point.
@@ -2595,7 +2503,6 @@ static function ColorLerp(color1:Color, color2:Color, factor:Float):Color
 static function GetColor(hexValue:Int):Color
 static function GetPixelDataSize(width:Int, height:Int, format:Int):Int
 static function LoadRenderTexture(width:Int, height:Int):RenderTexture2D
-static function LoadRenderTextureEx(width:Int, height:Int, format:Int):RenderTexture2D
 static function IsRenderTextureValid(target:RenderTexture2D):Bool
 static function UnloadRenderTexture(target:RenderTexture2D):Void
 static function BeginTextureMode(target:RenderTexture2D):Void
@@ -2657,33 +2564,22 @@ static function ImageDrawPixelV(dst:Image, position:Vector2, color:Color):Void
 static function ImageDrawLine(dst:Image, startPosX:Int, startPosY:Int, endPosX:Int, endPosY:Int, color:Color):Void
 static function ImageDrawLineV(dst:Image, start:Vector2, end:Vector2, color:Color):Void
 static function ImageDrawLineEx(dst:Image, start:Vector2, end:Vector2, thick:Int, color:Color):Void
-static function ImageDrawLineStrip(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
 static function ImageDrawCircle(dst:Image, centerX:Int, centerY:Int, radius:Int, color:Color):Void
 static function ImageDrawCircleV(dst:Image, center:Vector2, radius:Int, color:Color):Void
 static function ImageDrawCircleLines(dst:Image, centerX:Int, centerY:Int, radius:Int, color:Color):Void
 static function ImageDrawCircleLinesV(dst:Image, center:Vector2, radius:Int, color:Color):Void
-static function ImageDrawCircleGradient(dst:Image, center:Vector2, radius:Float, inner:Color, outer:Color):Void
 static function ImageDrawRectangle(dst:Image, posX:Int, posY:Int, width:Int, height:Int, color:Color):Void
 static function ImageDrawRectangleV(dst:Image, position:Vector2, size:Vector2, color:Color):Void
 static function ImageDrawRectangleRec(dst:Image, rec:Rectangle, color:Color):Void
-static function ImageDrawRectanglePro(dst:Image, rec:Rectangle, origin:Vector2, rotation:Float, color:Color):Void
 static function ImageDrawRectangleLines(dst:Image, rec:Rectangle, thick:Int, color:Color):Void
-static function ImageDrawRectangleLinesEx(dst:Image, rec:Rectangle, thick:Int, color:Color):Void
-static function ImageDrawRectangleGradientEx(dst:Image, rec:Rectangle, col1:Color, col2:Color, col3:Color, col4:Color):Void
 static function ImageDrawTriangle(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
 static function ImageDrawTriangleEx(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
-static function ImageDrawTriangleGradient(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, c1:Color, c2:Color, c3:Color):Void
 static function ImageDrawTriangleLines(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
 static function ImageDrawTriangleFan(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
 static function ImageDrawTriangleStrip(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
 static function ImageDraw(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectangle, tint:Color):Void
-static function ImageDrawImage(dst:Image, src:Image, posX:Int, posY:Int, tint:Color):Void
-static function ImageDrawImageRec(dst:Image, src:Image, srcRec:Rectangle, position:Vector2, tint:Color):Void
-static function ImageDrawImagePro(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void
-static function ImageDrawImageEx(dst:Image, src:Image, position:Vector2, rotation:Float, scale:Float, tint:Color):Void
 static function ImageDrawText(dst:Image, text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void
 static function ImageDrawTextEx(dst:Image, font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
-static function ImageDrawTextPro(dst:Image, font:Font, text:String, position:Vector2, origin:Vector2, rotation:Float, fontSize:Float, spacing:Float, tint:Color):Void
 static function LoadTextureFromImage(image:Image):Texture2D
 static function SetTextureWrap(texture:Texture2D, wrap:Int):Void
 static function DrawTextureNPatch(texture:Texture2D, nPatchInfo:NPatchInfo, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void
@@ -2786,11 +2682,6 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `width`: Its width, in pixels.
   - `height`: Its height.
   - returns: The render texture.
-- `LoadRenderTextureEx`: Makes a texture to draw into, with depth, in a pixel format. helix-ray's render textures are 8-bit RGBA or half-float RGBA, so `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and `PIXELFORMAT_UNCOMPRESSED_R16G16B16A16` (where the GPU draws into half floats, `IGraphics.canRender`) are made; any other format, and a compressed one as in raylib, makes none, with a warning.
-  - `width`: Its width, in pixels.
-  - `height`: Its height.
-  - `format`: Its pixel format (`PIXELFORMAT_*`).
-  - returns: The render texture; one whose id is 0 when the format isn't made.
 - `IsRenderTextureValid`: Returns whether a render texture was made.
   - `target`: The render texture.
   - returns: True when it was.
@@ -3029,11 +2920,6 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `end`: The end.
   - `thick`: The thickness, in pixels; less than 1 draws the line alone.
   - `color`: The color.
-- `ImageDrawLineStrip`: Draws lines one pixel wide from each point to the next, as `ImageDrawLineV` draws each.
-  - `dst`: The image.
-  - `points`: The points.
-  - `pointCount`: How many of them to draw through; under 2 draws nothing.
-  - `color`: The color.
 - `ImageDrawCircle`: Fills a circle, each row as wide either side of the middle.
   - `dst`: The image.
   - `centerX`: The middle's column.
@@ -3056,12 +2942,6 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `center`: The middle.
   - `radius`: The radius, in pixels.
   - `color`: The color.
-- `ImageDrawCircleGradient`: Fills a circle that blends from one color at its middle to another at its edge, by each pixel's center's distance from the middle; a pixel whose center is outside is left.
-  - `dst`: The image.
-  - `center`: The middle.
-  - `radius`: The radius, in pixels; 0 or less draws nothing.
-  - `inner`: The color at the middle.
-  - `outer`: The color at the edge.
 - `ImageDrawRectangle`: Fills a rectangle; what falls outside the image is skipped.
   - `dst`: The image.
   - `posX`: The left edge.
@@ -3078,29 +2958,11 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `dst`: The image.
   - `rec`: The rectangle, in pixels.
   - `color`: The color.
-- `ImageDrawRectanglePro`: Fills a rectangle turned about a point of it: each pixel whose center is inside it.
-  - `dst`: The image.
-  - `rec`: The rectangle, in pixels; its x and y are where the point is drawn. One 0 wide or high, or less, draws nothing.
-  - `origin`: The point it turns about, from its top-left corner.
-  - `rotation`: The turn, in degrees clockwise.
-  - `color`: The color.
-- `ImageDrawRectangleLines`: Outlines a rectangle, the outline inside it, as `ImageDrawRectangleLinesEx` does.
-  - `dst`: The image.
-  - `rec`: The rectangle, in pixels.
-  - `thick`: The outline's thickness, in pixels.
-  - `color`: The color.
-- `ImageDrawRectangleLinesEx`: Outlines a rectangle, the outline inside it: its top and bottom across its whole width, its sides between them.
+- `ImageDrawRectangleLines`: Outlines a rectangle, the outline inside it: its top and bottom across its whole width, its sides between them.
   - `dst`: The image.
   - `rec`: The rectangle, in pixels, cut to whole pixels.
   - `thick`: The outline's thickness, in pixels.
   - `color`: The color.
-- `ImageDrawRectangleGradientEx`: Fills a rectangle that blends between a color at each corner, by each pixel's top-left corner's place in it.
-  - `dst`: The image.
-  - `rec`: The rectangle, in pixels; one 0 wide or high, or less, draws nothing.
-  - `col1`: The top-left corner's color.
-  - `col2`: The bottom-left corner's color.
-  - `col3`: The bottom-right corner's color.
-  - `col4`: The top-right corner's color.
 - `ImageDrawTriangle`: Fills a triangle; its corners may go either way round.
   - `dst`: The image.
   - `v1`: The first corner.
@@ -3108,14 +2970,6 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `v3`: The third corner.
   - `color`: The color.
 - `ImageDrawTriangleEx`: Fills a triangle, each corner its own color, blended across it as raylib's does: each channel by the pixel's weights, each rounded down, so three corners of one color may not give it exactly.
-  - `dst`: The image.
-  - `v1`: The first corner.
-  - `v2`: The second corner.
-  - `v3`: The third corner.
-  - `c1`: The first corner's color.
-  - `c2`: The second corner's color.
-  - `c3`: The third corner's color.
-- `ImageDrawTriangleGradient`: Fills a triangle, each corner its own color, blended across it as `ImageDrawTriangleEx` blends it.
   - `dst`: The image.
   - `v1`: The first corner.
   - `v2`: The second corner.
@@ -3139,38 +2993,11 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `points`: The points.
   - `pointCount`: How many; under 3 draws nothing.
   - `color`: The color.
-- `ImageDraw`: Draws a rectangle of one image into a rectangle of another, tinted, blended over (raylib's `ColorAlphaBlend`), in their formats. A source with no alpha under an opaque tint is copied, the tint's color ignored, as raylib's is; a float destination is unchanged, as `SetPixelColor` writes none. A source rectangle of another whole-pixel size than the destination's is first resized by `ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them. raylib 6 calls it `ImageDrawImagePro`.
+- `ImageDraw`: Draws a rectangle of one image into a rectangle of another, tinted, blended over (raylib's `ColorAlphaBlend`), in their formats. A source with no alpha under an opaque tint is copied, the tint's color ignored, as raylib's is; a float destination is unchanged, as `SetPixelColor` writes none. A source rectangle of another whole-pixel size than the destination's is first resized by `ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them.
   - `dst`: The image drawn into.
   - `src`: The image drawn from.
   - `srcRec`: The source rectangle, in its pixels, cut to it.
   - `dstRec`: The destination rectangle.
-  - `tint`: The color the source is multiplied by; `WHITE` keeps it unchanged.
-- `ImageDrawImage`: Draws one image into another at a point, tinted and blended over, as `ImageDraw` draws it.
-  - `dst`: The image drawn into.
-  - `src`: The image drawn.
-  - `posX`: The left edge, in the destination's pixels.
-  - `posY`: The top edge.
-  - `tint`: The color the source is multiplied by; `WHITE` keeps it unchanged.
-- `ImageDrawImageRec`: Draws a rectangle of one image into another at a point, at its size, tinted and blended over, as `ImageDraw` draws it.
-  - `dst`: The image drawn into.
-  - `src`: The image drawn from.
-  - `srcRec`: The source rectangle, in its pixels, cut to it.
-  - `position`: The top-left corner, in the destination's pixels.
-  - `tint`: The color the source is multiplied by; `WHITE` keeps it unchanged.
-- `ImageDrawImagePro`: Draws a rectangle of one image into a rectangle of another, as `ImageDraw` draws it. The origin and rotation are taken and not used, as in raylib 6.2, whose own are still to be written.
-  - `dst`: The image drawn into.
-  - `src`: The image drawn from.
-  - `srcRec`: The source rectangle, in its pixels, cut to it.
-  - `dstRec`: The destination rectangle.
-  - `origin`: The point it would turn about; not used.
-  - `rotation`: The turn, in degrees; not used.
-  - `tint`: The color the source is multiplied by; `WHITE` keeps it unchanged.
-- `ImageDrawImageEx`: Draws one image into another turned about its top-left corner and scaled: each destination pixel whose center falls on the source takes its nearest source pixel, tinted and blended over (`ColorAlphaBlend`); clear source pixels are skipped.
-  - `dst`: The image drawn into.
-  - `src`: The image drawn.
-  - `position`: Where its top-left corner is drawn, in the destination's pixels.
-  - `rotation`: The turn, in degrees clockwise.
-  - `scale`: The scale; 1 for its own size.
   - `tint`: The color the source is multiplied by; `WHITE` keeps it unchanged.
 - `ImageDrawText`: Draws text in raylib's default font into an image, letters 1 pixel apart, as `ImageDrawTextEx` draws it.
   - `dst`: The image.
@@ -3184,16 +3011,6 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `font`: The font.
   - `text`: The text.
   - `position`: The top-left corner.
-  - `fontSize`: The height of a line, in pixels.
-  - `spacing`: The space between letters, at the font's size.
-  - `tint`: The color.
-- `ImageDrawTextPro`: Draws text in a font into an image, turned about a point. raylib 6.2's draws nothing, its body still to be written, and so does this.
-  - `dst`: The image.
-  - `font`: The font.
-  - `text`: The text.
-  - `position`: Where the point is drawn.
-  - `origin`: The point it turns about, from the text's top-left corner.
-  - `rotation`: The turn, in degrees.
   - `fontSize`: The height of a line, in pixels.
   - `spacing`: The space between letters, at the font's size.
   - `tint`: The color.
@@ -3232,7 +3049,6 @@ static function DrawTextCodepoint(font:Font, codepoint:Int, position:Vector2, fo
 static function DrawTextCodepoints(font:Font, codepoints:Array<Int>, codepointCount:Int, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
 static function SetTextLineSpacing(spacing:Int):Void
 static function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2
-static function MeasureTextCodepoints(font:Font, codepoints:Array<Int>, length:Int, fontSize:Float, spacing:Float):Vector2
 static function GetGlyphIndex(font:Font, codepoint:Int):Int
 static function GetGlyphInfo(font:Font, codepoint:Int):GlyphInfo
 static function GetGlyphAtlasRec(font:Font, codepoint:Int):Rectangle
@@ -3247,18 +3063,10 @@ static function TextFormat(text:String, args:haxe.extern.Rest<Dynamic>):String
 static function TextIsEqual(text1:String, text2:String):Bool
 static function TextLength(text:String):Int
 static function TextSubtext(text:String, position:Int, length:Int):String
-static function TextRemoveSpaces(text:String):String
-static function GetTextBetween(text:String, begin:String, end:String):String
 static function TextReplace(text:String, replace:String, by:String):String
-static function TextReplaceAlloc(text:String, search:String, replacement:String):String
-static function TextReplaceBetween(text:String, begin:String, end:String, replacement:String):String
-static function TextReplaceBetweenAlloc(text:String, begin:String, end:String, replacement:String):String
 static function TextInsert(text:String, insert:String, position:Int):String
-static function TextInsertAlloc(text:String, insert:String, position:Int):String
 static function TextJoin(textList:Array<String>, count:Int, delimiter:String):String
 static function TextSplit(text:String, delimiter:Int, count:Array<Int>):Array<String>
-static function LoadTextLines(text:String, count:Array<Int>):Array<String>
-static function UnloadTextLines(text:Array<String>, lineCount:Int):Void
 static function TextFindIndex(text:String, find:String):Int
 static function TextToUpper(text:String):String
 static function TextToLower(text:String):String
@@ -3326,13 +3134,6 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
   - `fontSize`: The height of a line, in pixels.
   - `spacing`: The space between letters, in pixels.
   - returns: The size, in pixels; 0 by 0 for no text or a font with no texture.
-- `MeasureTextCodepoints`: Returns the size characters are drawn at by `DrawTextCodepoints`: their widest line's width, and their lines' height, as `MeasureTextEx` measures text.
-  - `font`: The font.
-  - `codepoints`: The characters.
-  - `length`: How many of them.
-  - `fontSize`: The height of a line, in pixels.
-  - `spacing`: The space between letters, in pixels.
-  - returns: The size, in pixels; 0 by 0 for no characters or a font with no texture.
 - `GetGlyphIndex`: Returns where a character is in a font's glyphs: its own, else the question mark's, else the first.
   - `font`: The font.
   - `codepoint`: The character.
@@ -3393,38 +3194,11 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
   - returns: The piece; empty for null text, a position below 0 or at or past the end, or a length below 1.
 
   A character the piece cuts through is a "?" for each of its bytes taken, as raylib draws it.
-- `TextRemoveSpaces`: Returns text without its spaces (" ", not other white space), as raylib's: only the text's first 1023 UTF-8 bytes are read.
-  - `text`: The text.
-  - returns: The new text; empty for null text.
-- `GetTextBetween`: Returns the text between the first place `begin` is found and the first place `end` is found after it.
-  - `text`: The text searched.
-  - `begin`: The text before the piece.
-  - `end`: The text after it.
-  - returns: The piece; empty when either isn't found or any is null.
-
-  As raylib's, the result is at most 1023 UTF-8 bytes: when what lies between is longer, it is the first 1023 bytes after `begin`, running past `end`.
 - `TextReplace`: Returns text with every piece of it that matches replaced, from the start, each match after the one before.
   - `text`: The text.
   - `replace`: The text replaced.
   - `by`: The text put in its place.
   - returns: The new text; null when any is null or `replace` is empty.
-- `TextReplaceAlloc`: Returns text with every piece of it that matches replaced, from the start, each match after the one before: raylib 6.2's, with no limit to its length.
-  - `text`: The text.
-  - `search`: The text replaced.
-  - `replacement`: The text put in its place; null for none.
-  - returns: The new text; null when `text` or `search` is null or `search` is empty.
-- `TextReplaceBetween`: Returns text with what lies between the first place `begin` is found and the first place `end` is found after it replaced, the two kept. As raylib's, the result is at most 1022 UTF-8 bytes.
-  - `text`: The text.
-  - `begin`: The text before the piece replaced.
-  - `end`: The text after it.
-  - `replacement`: The text put in its place; null to remove the piece.
-  - returns: The new text; empty when either isn't found, the result is too long, or `text`, `begin` or `end` is null.
-- `TextReplaceBetweenAlloc`: Returns text with what lies between the first place `begin` is found and the first place `end` is found after it replaced, the two kept: `TextReplaceBetween` with no limit to its length.
-  - `text`: The text.
-  - `begin`: The text before the piece replaced.
-  - `end`: The text after it.
-  - `replacement`: The text put in its place; null to remove the piece.
-  - returns: The new text; null when either isn't found, or `text`, `begin` or `end` is null.
 - `TextInsert`: Returns text with other text put in at a place in UTF-8 bytes. As raylib's, the result is at most 1022 bytes.
   - `text`: The text.
   - `insert`: The text put in.
@@ -3432,11 +3206,6 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
   - returns: The new text; empty when either is null, the position is below 0, or the result is too long.
 
   A character the place cuts through is a "?" for each of its bytes, as raylib draws it.
-- `TextInsertAlloc`: Returns text with other text put in at a place in UTF-8 bytes: `TextInsert` with no limit to its length.
-  - `text`: The text.
-  - `insert`: The text put in.
-  - `position`: Where, in bytes from the start, clamped to the end.
-  - returns: The new text; null when either is null or the position is below 0.
 - `TextJoin`: Returns texts joined into one, a delimiter between each two.
   - `textList`: The texts; a null one is empty.
   - `count`: How many of them.
@@ -3451,13 +3220,6 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
   - returns: The pieces; none for null text.
 
   As raylib's, the delimiter is one byte (its low 8 bits), only the text's first 1023 UTF-8 bytes are read, and there are at most 128 pieces, the last of them empty when the text holds more. A character a piece cuts through is a "?" for each of its bytes.
-- `LoadTextLines`: Returns the lines of text: the pieces between its "\n"s, one more than it holds, with no limit to their length.
-  - `text`: The text.
-  - `count`: Receives how many lines there are, at its index 0; 0 for null text.
-  - returns: The lines; null for null text.
-- `UnloadTextLines`: Does nothing: lines from `LoadTextLines` are freed by the garbage collector.
-  - `text`: The lines.
-  - `lineCount`: How many of them.
 - `TextFindIndex`: Returns where text is first found in other text, in UTF-8 bytes from the start, as `TextSubtext` takes it.
   - `text`: The text searched.
   - `find`: The text found; empty text is found at 0.
@@ -4177,15 +3939,6 @@ static function IsPathFileAsync(path:String, answer:Bool -> Void):Void
 static function DirectoryExistsAsync(dirPath:String, answer:Bool -> Void):Void
 static function LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList -> Void):Void
 static function LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList -> Void):Void
-static function IsPathDirectoryAsync(path:String, answer:Bool -> Void):Void
-static function GetDirectoryFileCountAsync(dirPath:String, answer:Int -> Void):Void
-static function GetDirectoryFileCountExAsync(basePath:String, filter:String, scanSubdirs:Bool, answer:Int -> Void):Void
-static function FileRenameAsync(fileName:String, fileRename:String, answer:Int -> Void):Void
-static function FileRemoveAsync(fileName:String, answer:Int -> Void):Void
-static function FileCopyAsync(srcPath:String, dstPath:String, answer:Int -> Void):Void
-static function FileMoveAsync(srcPath:String, dstPath:String, answer:Int -> Void):Void
-static function FileTextReplaceAsync(fileName:String, search:String, replacement:String, answer:Int -> Void):Void
-static function FileTextFindIndexAsync(fileName:String, search:String, answer:Int -> Void):Void
 static function LoadFontAsync(fileName:String, loaded:Font -> Void, ?failed:String -> Void):Void
 static function LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
 static function LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
@@ -4262,41 +4015,6 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `filter`: The extensions kept, such as ".png;.jpg;DIR", or null for every file.
   - `scanSubdirs`: Whether the subdirectories' files are listed too.
   - `loaded`: Receives the list, its `capacity` 8192; a directory that can't be listed adds nothing, with a warning.
-- `IsPathDirectoryAsync`: Answers whether a path is a directory, as raylib 6.2's `IsPathDirectory`: helix-ray's own, in place of it. As raylib's, a path that isn't a file (`IsPathFileAsync`) is a directory, so one with nothing there is too. The answer comes at a later frame, never during the call.
-  - `path`: The path.
-  - `answer`: Receives true unless it is a file.
-- `GetDirectoryFileCountAsync`: Counts a directory's files and subdirectories, as raylib 6.2's `GetDirectoryFileCount`: helix-ray's own, in place of it. `GetDirectoryFileCountExAsync` with the filter "*.*" and no subdirectories' files. The answer comes at a later frame, never during the call.
-  - `dirPath`: The directory.
-  - `answer`: Receives the count; 0, with a warning, when the directory can't be listed.
-- `GetDirectoryFileCountExAsync`: Counts a directory's files, those with some extensions, and with `scanSubdirs` its subdirectories' too, as raylib 6.2's `GetDirectoryFileCountEx`: helix-ray's own, in place of it. The directories are `LoadDirectoryFilesAsync`'s. 6.2's filter: one holding "*.*" counts every file and directory, "FILES*" every file, "DIRS*" every directory, and otherwise a file counts by `IsFileExtension`; a null filter counts every file. The answer comes at a later frame, never during the call.
-  - `basePath`: The directory.
-  - `filter`: The extensions counted, such as ".png;.jpg", or a tag above, or null.
-  - `scanSubdirs`: Whether the subdirectories' files are counted too.
-  - `answer`: Receives the count; a directory that can't be listed adds nothing, with a warning.
-- `FileRenameAsync`: Renames a file, as raylib 6.2's `FileRename`: helix-ray's own, in place of it. A file `SaveFileText` or `SaveFileData` wrote is renamed; the program's own files can't be changed. The answer comes at a later frame, never during the call.
-  - `fileName`: The file.
-  - `fileRename`: Its new name, its path.
-  - `answer`: Receives 0 when it was renamed, else -1.
-- `FileRemoveAsync`: Removes a file, as raylib 6.2's `FileRemove`: helix-ray's own, in place of it. A file `SaveFileText` or `SaveFileData` wrote is removed; the program's own files can't be. The answer comes at a later frame, never during the call.
-  - `fileName`: The file.
-  - `answer`: Receives 0 when it was removed, else -1.
-- `FileCopyAsync`: Copies a file, as raylib 6.2's `FileCopy`: helix-ray's own, in place of it. The file is read as `LoadFileDataAsync` reads it and its copy written by `SaveFileData`, or, for one `SaveFileText` wrote, read and written as text; a directory needs no making here. As raylib 6.2's, a file not read, or one of no bytes, makes no copy, yet answers 0 as the directory is there. The answer comes at a later frame, never during the call.
-  - `srcPath`: The file.
-  - `dstPath`: The copy.
-  - `answer`: Receives 0 when the copy's directory is there (always, here), else -1.
-- `FileMoveAsync`: Moves a file, as raylib 6.2's `FileMove`: helix-ray's own, in place of it. The file is copied (`FileCopyAsync`), then, when the copy is there and of its size, removed (`FileRemoveAsync`), so one of the program's own files is copied and stays. The answer comes at a later frame, never during the call.
-  - `srcPath`: The file.
-  - `dstPath`: Where it goes.
-  - `answer`: Receives 0 when it was moved, else -1; a file not there, or not removed, is logged.
-- `FileTextReplaceAsync`: Replaces every piece of a text file that matches, as raylib 6.2's `FileTextReplace`: helix-ray's own, in place of it. The file is read as `LoadFileTextAsync` reads it and written back by `SaveFileText`. The answer comes at a later frame, never during the call.
-  - `fileName`: The file.
-  - `search`: The text replaced; nothing is replaced when it is null or "".
-  - `replacement`: The text put in its place; null for none.
-  - `answer`: Receives 0 when the file was written, else -1.
-- `FileTextFindIndexAsync`: Finds text in a text file, as raylib 6.2's `FileTextFindIndex`: helix-ray's own, in place of it. The file is read as `LoadFileTextAsync` reads it. The answer comes at a later frame, never during the call.
-  - `fileName`: The file.
-  - `search`: The text looked for.
-  - `answer`: Receives where it first starts, in UTF-8 bytes from the file's start, or -1 when it isn't there or there is no file.
 - `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto one texture, as raylib's; an image (PNG, JPEG, BMP, TGA or QOI) its glyphs on a `MAGENTA` key from the space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the font.
@@ -4386,13 +4104,13 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
 
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
-`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `FileRename`, `FileRemove`, `FileCopy`, `FileMove`, `FileTextReplace`, `FileTextFindIndex`, `DirectoryExists`, `GetFileLength`, `IsPathDirectory`, `GetDirectoryFileCount`, `GetDirectoryFileCountEx`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `MemAlloc`, `MemRealloc`, `MemFree`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `MemAlloc`, `MemRealloc`, `MemFree`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ### Not in helix-ray yet
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`GetKeyName`, `ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`.
+`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`, `LoadMaterials`, `IsMaterialValid`, `UnloadMaterial`.
 
 ## Raymath
 
@@ -4439,7 +4157,6 @@ static function Vector2SubtractValue(v:Vector2, sub:Float):Vector2
 static function Vector2Length(v:Vector2):Float
 static function Vector2LengthSqr(v:Vector2):Float
 static function Vector2DotProduct(v1:Vector2, v2:Vector2):Float
-static function Vector2CrossProduct(v1:Vector2, v2:Vector2):Float
 static function Vector2Distance(v1:Vector2, v2:Vector2):Float
 static function Vector2DistanceSqr(v1:Vector2, v2:Vector2):Float
 static function Vector2Angle(v1:Vector2, v2:Vector2):Float
@@ -4529,7 +4246,6 @@ static function MatrixInvert(mat:Matrix):Matrix
 static function MatrixIdentity():Matrix
 static function MatrixAdd(left:Matrix, right:Matrix):Matrix
 static function MatrixSubtract(left:Matrix, right:Matrix):Matrix
-static function MatrixMultiplyValue(left:Matrix, value:Float):Matrix
 static function MatrixMultiply(left:Matrix, right:Matrix):Matrix
 static function MatrixTranslate(x:Float, y:Float, z:Float):Matrix
 static function MatrixRotate(axis:Vector3, angle:Float):Matrix
@@ -4568,7 +4284,6 @@ static function QuaternionFromEuler(pitch:Float, yaw:Float, roll:Float):Quaterni
 static function QuaternionToEuler(q:Quaternion):Vector3
 static function QuaternionTransform(q:Quaternion, mat:Matrix):Quaternion
 static function QuaternionEquals(p:Quaternion, q:Quaternion):Int
-static function MatrixCompose(translation:Vector3, rotation:Quaternion, scale:Vector3):Matrix
 static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quaternion, scale:Vector3):Void
 ```
 
@@ -4630,10 +4345,6 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `v`: The vector.
   - returns: The length squared.
 - `Vector2DotProduct`: Returns the dot product.
-  - `v1`: One.
-  - `v2`: The other.
-  - returns: The product.
-- `Vector2CrossProduct`: Returns the cross product of two 2D vectors, raylib 6.2's: the z of their 3D cross product, positive when the second is counterclockwise of the first (with y up).
   - `v1`: One.
   - `v2`: The other.
   - returns: The product.
@@ -4982,10 +4693,6 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `left`: The first.
   - `right`: The one taken from it.
   - returns: The difference.
-- `MatrixMultiplyValue`: Returns a matrix with each of its values multiplied by a number, raylib 6.2's.
-  - `left`: The matrix.
-  - `value`: The number.
-  - returns: The matrix multiplied.
 - `MatrixMultiply`: Returns two matrices multiplied: left, then right.
   - `left`: The first.
   - `right`: The second.
@@ -5144,11 +4851,6 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `p`: One.
   - `q`: The other.
   - returns: 1 if they are, 0 if not.
-- `MatrixCompose`: Returns a transform matrix from a translation, a rotation and a scale, raylib 6.2's: the axes scaled, then turned, then moved.
-  - `translation`: The translation.
-  - `rotation`: The rotation, a quaternion of length 1.
-  - `scale`: The scale along each axis.
-  - returns: The matrix.
 - `MatrixDecompose`: Splits a transform matrix into its translation, rotation and scale, as raylib 6.2's (5.5's took the scale from the rows, wrong for a turned matrix scaled unevenly): the columns, made orthonormal one after another (the shear between them dropped), are the rotation, their lengths the scale, all three negated when the matrix mirrors.
   - `mat`: The matrix.
   - `translation`: Set to its translation.
@@ -5735,7 +5437,6 @@ static function rlDisableBackfaceCulling():Void
 static function rlSetCullFace(mode:Int):Void
 static function rlEnableWireMode():Void
 static function rlDisableWireMode():Void
-static function rlDisablePointMode():Void
 static function rlEnableScissorTest():Void
 static function rlDisableScissorTest():Void
 static function rlScissor(x:Int, y:Int, width:Int, height:Int):Void
@@ -5745,8 +5446,6 @@ static function rlClearColor(r:Int, g:Int, b:Int, a:Int):Void
 static function rlClearScreenBuffers():Void
 static function rlSetLineWidth(width:Float):Void
 static function rlGetLineWidth():Float
-static function rlSetPointSize(size:Float):Void
-static function rlGetPointSize():Float
 static function rlEnableSmoothLines():Void
 static function rlDisableSmoothLines():Void
 static function rlSetFramebufferWidth(width:Int):Void
@@ -5861,7 +5560,6 @@ static function rlGetPixelFormatName(format:Int):String
   - `mode`: `RL_CULL_FACE_BACK`, as raylib starts, or `RL_CULL_FACE_FRONT`.
 - `rlEnableWireMode`: Draws triangles as their edges from now: a model drawn after it at once, and the shapes in rlgl's batch when it is next drawn (`rlDrawRenderBatchActive`), as GL's line mode does, which a page's WebGL hasn't, done here as lines. Culling still leaves out the triangles it would, by their facing on the screen as GL finds it; a shader that moves the vertices isn't seen in that.
 - `rlDisableWireMode`: Draws the next triangles filled, as raylib starts; it also ends point mode, which helix-ray doesn't have yet.
-- `rlDisablePointMode`: Ends point mode, which helix-ray doesn't have yet, by drawing the next triangles filled: it ends wire mode too, as rlgl's does, point and wire mode being one GL setting.
 - `rlEnableScissorTest`: Clips the next draws to the rectangle `rlScissor` last set: the whole pass until it is set.
 - `rlDisableScissorTest`: Stops clipping the next draws, as `EndScissorMode` does.
 - `rlScissor`: Sets the rectangle the next draws are clipped to while the scissor test is on, as GL takes it: in the framebuffer's pixels, from its bottom left. `BeginScissorMode` takes one from the top left in the screen's pixels.
@@ -5887,10 +5585,6 @@ static function rlGetPixelFormatName(format:Int):String
   - `width`: The width, in pixels.
 - `rlGetLineWidth`: Returns the width `rlSetLineWidth` last set, 1 until then.
   - returns: The width.
-- `rlSetPointSize`: Sets the size points are drawn at, which changes nothing, as on rlgl's GL 3.3 and ES, where a shader sets it.
-  - `size`: The size, in pixels.
-- `rlGetPointSize`: Returns the size points are drawn at: 1, as rlgl's GL 3.3 and ES give it, whatever `rlSetPointSize` was given.
-  - returns: The size, in pixels.
 - `rlEnableSmoothLines`: Asks for smoothed lines. GL 3.3's core profile and WebGL don't smooth them, so this changes nothing; `FLAG_MSAA_4X_HINT` smooths every edge.
 - `rlDisableSmoothLines`: Stops asking for smoothed lines, which changes nothing here (`rlEnableSmoothLines`).
 - `rlSetFramebufferWidth`: Sets the width rlgl takes the framebuffer drawn into to have, until the next pass begins, as `BeginTextureMode` and `EndTextureMode` set it. Drawing here doesn't read it; `rlGetFramebufferWidth` gives it back.
@@ -5909,7 +5603,7 @@ static function rlGetPixelFormatName(format:Int):String
 
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
-`rlEnableVertexArray`, `rlDisableVertexArray`, `rlEnableVertexBuffer`, `rlDisableVertexBuffer`, `rlEnableVertexBufferElement`, `rlDisableVertexBufferElement`, `rlEnableVertexAttribute`, `rlDisableVertexAttribute`, `rlEnableStatePointer`, `rlDisableStatePointer`, `rlActiveTextureSlot`, `rlEnableTexture`, `rlDisableTexture`, `rlEnableTextureCubemap`, `rlDisableTextureCubemap`, `rlTextureParameters`, `rlCubemapParameters`, `rlEnableShader`, `rlDisableShader`, `rlEnableFramebuffer`, `rlDisableFramebuffer`, `rlGetActiveFramebuffer`, `rlActiveDrawBuffers`, `rlBlitFramebuffer`, `rlBindFramebuffer`, `rlCheckErrors`, `rlglInit`, `rlglClose`, `rlLoadExtensions`, `rlGetProcAddress`, `rlGetVersion`, `rlGetTextureIdDefault`, `rlGetShaderIdDefault`, `rlGetShaderLocsDefault`, `rlLoadRenderBatch`, `rlUnloadRenderBatch`, `rlDrawRenderBatch`, `rlSetRenderBatchActive`, `rlLoadVertexArray`, `rlLoadVertexBuffer`, `rlLoadVertexBufferElement`, `rlUpdateVertexBuffer`, `rlUpdateVertexBufferElements`, `rlUnloadVertexArray`, `rlUnloadVertexBuffer`, `rlSetVertexAttribute`, `rlSetVertexAttributeDivisor`, `rlSetVertexAttributeDefault`, `rlDrawVertexArray`, `rlDrawVertexArrayElements`, `rlDrawVertexArrayInstanced`, `rlDrawVertexArrayElementsInstanced`, `rlLoadTexture`, `rlLoadTextureDepth`, `rlLoadTextureCubemap`, `rlUpdateTexture`, `rlGetGlTextureFormats`, `rlUnloadTexture`, `rlGenTextureMipmaps`, `rlReadTexturePixels`, `rlReadScreenPixels`, `rlCopyFramebuffer`, `rlResizeFramebuffer`, `rlLoadFramebuffer`, `rlFramebufferAttach`, `rlFramebufferComplete`, `rlUnloadFramebuffer`, `rlLoadShaderCode`, `rlCompileShader`, `rlLoadShaderProgram`, `rlUnloadShaderProgram`, `rlGetLocationUniform`, `rlGetLocationAttrib`, `rlSetUniform`, `rlSetUniformMatrix`, `rlSetUniformMatrices`, `rlSetUniformSampler`, `rlSetShader`, `rlLoadComputeShaderProgram`, `rlComputeShaderDispatch`, `rlLoadShaderBuffer`, `rlUnloadShaderBuffer`, `rlUpdateShaderBuffer`, `rlBindShaderBuffer`, `rlReadShaderBuffer`, `rlCopyShaderBuffer`, `rlGetShaderBufferSize`, `rlBindImageTexture`, `rlLoadDrawCube`, `rlLoadDrawQuad`.
+`rlEnableVertexArray`, `rlDisableVertexArray`, `rlEnableVertexBuffer`, `rlDisableVertexBuffer`, `rlEnableVertexBufferElement`, `rlDisableVertexBufferElement`, `rlEnableVertexAttribute`, `rlDisableVertexAttribute`, `rlEnableStatePointer`, `rlDisableStatePointer`, `rlActiveTextureSlot`, `rlEnableTexture`, `rlDisableTexture`, `rlEnableTextureCubemap`, `rlDisableTextureCubemap`, `rlTextureParameters`, `rlCubemapParameters`, `rlEnableShader`, `rlDisableShader`, `rlEnableFramebuffer`, `rlDisableFramebuffer`, `rlGetActiveFramebuffer`, `rlActiveDrawBuffers`, `rlBlitFramebuffer`, `rlBindFramebuffer`, `rlCheckErrors`, `rlglInit`, `rlglClose`, `rlLoadExtensions`, `rlGetVersion`, `rlGetTextureIdDefault`, `rlGetShaderIdDefault`, `rlGetShaderLocsDefault`, `rlLoadRenderBatch`, `rlUnloadRenderBatch`, `rlDrawRenderBatch`, `rlSetRenderBatchActive`, `rlLoadVertexArray`, `rlLoadVertexBuffer`, `rlLoadVertexBufferElement`, `rlUpdateVertexBuffer`, `rlUpdateVertexBufferElements`, `rlUnloadVertexArray`, `rlUnloadVertexBuffer`, `rlSetVertexAttribute`, `rlSetVertexAttributeDivisor`, `rlSetVertexAttributeDefault`, `rlDrawVertexArray`, `rlDrawVertexArrayElements`, `rlDrawVertexArrayInstanced`, `rlDrawVertexArrayElementsInstanced`, `rlLoadTexture`, `rlLoadTextureDepth`, `rlLoadTextureCubemap`, `rlUpdateTexture`, `rlGetGlTextureFormats`, `rlUnloadTexture`, `rlGenTextureMipmaps`, `rlReadTexturePixels`, `rlReadScreenPixels`, `rlLoadFramebuffer`, `rlFramebufferAttach`, `rlFramebufferComplete`, `rlUnloadFramebuffer`, `rlLoadShaderCode`, `rlCompileShader`, `rlLoadShaderProgram`, `rlUnloadShaderProgram`, `rlGetLocationUniform`, `rlGetLocationAttrib`, `rlSetUniform`, `rlSetUniformMatrix`, `rlSetUniformMatrices`, `rlSetUniformSampler`, `rlSetShader`, `rlLoadComputeShaderProgram`, `rlComputeShaderDispatch`, `rlLoadShaderBuffer`, `rlUnloadShaderBuffer`, `rlUpdateShaderBuffer`, `rlBindShaderBuffer`, `rlReadShaderBuffer`, `rlCopyShaderBuffer`, `rlGetShaderBufferSize`, `rlBindImageTexture`, `rlLoadDrawCube`, `rlLoadDrawQuad`.
 
 ### Not in helix-ray yet
 

@@ -1,6 +1,6 @@
 {
   "oracle": "6.2",
-  "covers": "rtext.c's text and codepoint functions taken from 6.2: TextFormat, TextSubtext, TextInsert, TextJoin, TextSplit, TextFindIndex, TextToPascal, TextToCamel, TextToSnake, TextToInteger, TextToFloat, GetCodepoint, GetCodepointNext, GetCodepointPrevious, GetCodepointCount, LoadCodepoints and GetGlyphIndex, each fix from the input that showed 5.5's bug, null text and 6.2's 1024-byte buffers; and 6.2's own MeasureTextCodepoints, LoadTextLines, TextRemoveSpaces, GetTextBetween, TextReplaceAlloc, TextReplaceBetween, TextReplaceBetweenAlloc and TextInsertAlloc",
+  "covers": "rtext.c's text and codepoint functions taken from 6.2: TextFormat, TextSubtext, TextInsert, TextJoin, TextSplit, TextFindIndex, TextToPascal, TextToCamel, TextToSnake, TextToInteger, TextToFloat, GetCodepoint, GetCodepointNext, GetCodepointPrevious, GetCodepointCount, LoadCodepoints and GetGlyphIndex, each fix from the input that showed 5.5's bug, null text and 6.2's 1024-byte buffers",
   "notes": "Text is printed as its UTF-8 bytes, raylib's read as it reads them to draw (a '?' for a byte it can't), as helix-ray's String holds it: a character a function cuts through is a '?' for each byte taken on both sides. TextToFloat's numbers are raylib's floats, helix-ray's the same floats in doubles.",
   "kind": "values",
   "generated": true,

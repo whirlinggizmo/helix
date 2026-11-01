@@ -398,12 +398,6 @@ class RRlgl {
 		state().wire = false;
 	}
 
-	/** Ends point mode, which helix-ray doesn't have yet, by drawing the next triangles filled: it ends wire mode too, as rlgl's does,
-		point and wire mode being one GL setting. */
-	static function rlDisablePointMode():Void {
-		state().wire = false;
-	}
-
 	/** Clips the next draws to the rectangle `rlScissor` last set: the whole pass until it is set. */
 	static function rlEnableScissorTest():Void {
 		var f = state();
@@ -484,18 +478,6 @@ class RRlgl {
 		@return  The width. */
 	static function rlGetLineWidth():Float {
 		return lineWidth;
-	}
-
-	/** Sets the size points are drawn at, which changes nothing, as on rlgl's GL 3.3 and ES, where a shader sets it.
-
-		@param size  The size, in pixels. */
-	static function rlSetPointSize(size:Float):Void {}
-
-	/** Returns the size points are drawn at: 1, as rlgl's GL 3.3 and ES give it, whatever `rlSetPointSize` was given.
-
-		@return  The size, in pixels. */
-	static function rlGetPointSize():Float {
-		return 1;
 	}
 
 	/** Asks for smoothed lines. GL 3.3's core profile and WebGL don't smooth them, so this changes nothing; `FLAG_MSAA_4X_HINT` smooths
@@ -843,16 +825,6 @@ class RRlgl {
 		throw "rlLoadExtensions is unsupported";
 	}
 
-	/** rlgl's `rlGetProcAddress`: a GL function's address from the loader `rlLoadExtensions` was given, which helix-ray doesn't have, as it
-		draws through helix-platform, not GL, so a call doesn't compile.
-
-		@param procName  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlGetProcAddress: Not supported: helix-ray has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
-	static function rlGetProcAddress(procName:String):Dynamic {
-		throw "rlGetProcAddress is unsupported";
-	}
-
 	/** rlgl's `rlGetVersion`: get current opengl version, which helix-ray doesn't have, as it
 		draws through helix-platform, not GL, so a call doesn't compile.
 
@@ -1192,30 +1164,6 @@ class RRlgl {
 	@:unsupported("rlReadScreenPixels: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
 	static function rlReadScreenPixels(width:Int, height:Int):haxe.io.Bytes {
 		throw "rlReadScreenPixels is unsupported";
-	}
-
-	/** rlgl's `rlCopyFramebuffer`: copy its software renderer's framebuffer's pixels, which helix-ray doesn't have, as it draws through
-		helix-platform, not a renderer of rlgl's, so a call doesn't compile.
-
-		@param x  As rlgl takes it.
-		@param y  As rlgl takes it.
-		@param width  As rlgl takes it.
-		@param height  As rlgl takes it.
-		@param format  As rlgl takes it.
-		@param pixels  As rlgl takes it. */
-	@:unsupported("rlCopyFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
-	static function rlCopyFramebuffer(x:Int, y:Int, width:Int, height:Int, format:Int, pixels:Dynamic):Void {
-		throw "rlCopyFramebuffer is unsupported";
-	}
-
-	/** rlgl's `rlResizeFramebuffer`: resize its software renderer's framebuffer, which helix-ray doesn't have, as it draws through
-		helix-platform, not a renderer of rlgl's, so a call doesn't compile.
-
-		@param width  As rlgl takes it.
-		@param height  As rlgl takes it. */
-	@:unsupported("rlResizeFramebuffer: Not supported: helix-ray has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
-	static function rlResizeFramebuffer(width:Int, height:Int):Void {
-		throw "rlResizeFramebuffer is unsupported";
 	}
 
 	/** rlgl's `rlLoadFramebuffer`: load an empty framebuffer, which helix-ray doesn't have, as it
