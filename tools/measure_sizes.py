@@ -186,8 +186,9 @@ INTRODUCTIONS = {
             'Programs written in raylib on helix-ray (`ray/tests/sizes/`), each adding one feature to the one before, from a window '
             'cleared each frame: what a feature costs through raylib\'s API is its row\'s increment, gzip; brotli in brackets. Against '
             'the services\' ladder this is what the familiar API costs (DECISIONS 15): helix-ray builds, before `main`, what any raylib '
-            'program may reach (the assets its files load through, saves, time, the screen and input), so its first rung holds them. helix-ray\'s bytes are counted by source file: raylib\'s modules (R*) and '
-            'its internals, its facade and structs as ray.'),
+            'program may reach (the assets its files load through, saves, time, the screen and input), so its first rung holds them. Its 3D starts with a cube made in memory (GenMeshCube, '
+            'LoadModelFromMesh), drawn unlit with a camera: the 3D drawing alone, so the glTF rung after it is the reader\'s own cost. '
+            'helix-ray\'s bytes are counted by source file: raylib\'s modules (R*) and its internals, its facade and structs as ray.'),
 }
 
 

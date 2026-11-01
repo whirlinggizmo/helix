@@ -1,4 +1,4 @@
-// helix-ray's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a glTF model loaded with LoadModelAsync and drawn in 3D.
+// helix-ray's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a glTF model loaded with LoadModelAsync and drawn beside the cube.
 import helix.ray.Raylib.*;
 import helix.ray.Camera3D;
 import helix.ray.Model;
@@ -14,12 +14,14 @@ class Main {
 		var camera = new Camera3D(new Vector3(6, 4, 6), new Vector3(0, 1.5, 0), new Vector3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
 		var texture:Null<Texture2D> = null;
 		var model:Null<Model> = null;
+		var cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
 		LoadTextureAsync("player.png", loaded -> texture = loaded);
 		LoadModelAsync("robot.glb", loaded -> model = loaded);
 		while (!WindowShouldClose()) {
 			BeginDrawing();
 			ClearBackground(RAYWHITE);
 			BeginMode3D(camera);
+			DrawModel(cube, new Vector3(-3, 0.5, 0), 1, WHITE);
 			if (model != null)
 				DrawModel(model, new Vector3(0, 0, 0), 1, WHITE);
 			EndMode3D();
