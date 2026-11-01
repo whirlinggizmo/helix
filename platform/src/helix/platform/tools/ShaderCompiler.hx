@@ -18,7 +18,8 @@ typedef ShaderMember = {
 	final count:Int;
 }
 
-/** Represents a compiled program: its `ShaderSource`; the GLSL type of each vertex attribute, by slot, for a caller packing vertices; and
+/** Represents a compiled program: its `ShaderSource`; the GLSL type of each vertex attribute, by slot (a matrix's at its first, its
+	columns' at the rest), for a caller packing vertices; and
 	the members of each of its uniform blocks by the block's name, for a caller that writes the blocks by member name. */
 @:noCompletion
 typedef CompiledShader = {
@@ -43,7 +44,9 @@ typedef ShaderDialects = {
 	numbered apart. A texture's kind comes from its type (`sampler2D`, `sampler2DArray`, `samplerCube`, `sampler2DArrayShadow` for a shadow
 	map); one the program only reads with `texelFetch` is never filtered (`ShaderTexture.data`). Every adapter binds uniform blocks 0 to 3
 	and textures 0 to 11; a binding past them is refused. The vertex attributes are the vertex
-	stage's inputs, at `layout(location = n)` from 0 without gaps; the values passed between the stages may leave their locations out. The
+	stage's inputs, at `layout(location = n)` from 0 without gaps; the values passed between the stages may leave their locations out. A
+	`mat2`, `mat3` or `mat4` input takes a location a column, from its own: its columns are attributes of 2, 3 or 4 floats at consecutive
+	slots, fed as any other (`VertexAttribute`), as instanced matrices are. The
 	vertex stage writes GL's clip space, depth -1 to 1, as every adapter takes it.
 
 	For GL each block becomes one `vec4` array named for the block, so a block's members must be all floating point (`float`, `vecN`,
@@ -206,6 +209,15 @@ class ShaderCompiler {
 		return own.concat(includes == null ? [] : includes);
 	}
 
+	// The locations a vertex input of a GLSL type takes: a matrix's columns, or one.
+	static function columns(type:String):Int
+		return switch type {
+			case "mat2": 2;
+			case "mat3": 3;
+			case "mat4": 4;
+			case _: 1;
+		}
+
 	// The program's attributes, blocks and textures from each stage's reflection, its rules checked.
 	static function describe(reflected:Map<String, Dynamic>, fetched:Map<String, Array<String>>, vertexName:String, fragmentName:String):{
 		attributes:Array<String>,
@@ -215,14 +227,23 @@ class ShaderCompiler {
 		members:Map<String, Array<ShaderMember>>
 	} {
 		var inputs:Array<Dynamic> = reflected.get("vertex").inputs == null ? [] : reflected.get("vertex").inputs;
-		var attributes = [for (_ in 0...inputs.length) ""],
-			attributeTypes = [for (_ in 0...inputs.length) ""];
+		// A matrix input takes a location a column, from its own: mat4's four vec4s.
+		var slots = 0;
+		for (input in inputs)
+			slots += columns(input.type);
+		var attributes = [for (_ in 0...slots) ""],
+			attributeTypes = [for (_ in 0...slots) ""];
 		for (input in inputs) {
-			var location:Int = input.location;
-			if (location >= inputs.length || attributes[location] != "")
-				throw new CommandException('shader: $vertexName: the vertex inputs\' locations must run from 0 without gaps');
+			var location:Int = input.location,
+				type:String = input.type,
+				count = columns(type);
+			for (column in 0...count)
+				if (location + column >= slots || attributeTypes[location + column] != "")
+					throw new CommandException('shader: $vertexName: the vertex inputs\' locations must run from 0 without gaps');
 			attributes[location] = input.name;
-			attributeTypes[location] = input.type;
+			attributeTypes[location] = type;
+			for (column in 1...count)
+				attributeTypes[location + column] = 'vec${type.charAt(3)}';
 		}
 		var blocks:Array<Dynamic> = [],
 			textures:Array<Dynamic> = [],

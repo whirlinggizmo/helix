@@ -2,7 +2,7 @@ import helix.platform.tools.CommandException;
 import helix.platform.tools.ShaderCompiler;
 import helix.platform.tools.ShaderTools;
 
-/** Checks helix-platform's shader compiler on the interpreter, with the library alone: what it reflects (attributes by location, blocks at
+/** Checks helix-platform's shader compiler on the interpreter, with the library alone: what it reflects (attributes by location, a matrix's columns too, blocks at
 	their declared size with their members, textures and their kinds, a texture only fetched never filtered, what's declared whether read
 	or not), what it refuses and how it says so, its dialects, and SDL_GPU's bindings. Run by helix.py test; fetches glslang and builds
 	SPIRV-Cross into the user's cache the first time. */
@@ -53,6 +53,7 @@ void main() {
 ";
 
 	static function main():Void {
+		var message:String;
 		var compiled = compile(VERTEX, FRAGMENT);
 		var source = compiled.source;
 		// Attributes: the vertex stage's inputs, by location.
@@ -97,8 +98,23 @@ void main() {
 		var bound = [for (t in textures) t.name => '${t.set}/${t.binding}'];
 		check(bound["image"] == "2/0" && bound["sky"] == "2/1" && bound["shadows"] == "2/2" && bound["table"] == "2/3" && bound["unread"] == "2/4",
 			"SDL_GPU: the fragment textures in set 2, by slot: " + bound);
+		// A matrix input: a location a column, its name at the first, and the columns' type at the rest.
+		var instanced = compile("#version 450\nlayout(location = 0) in vec2 position;\nlayout(location = 1) in mat4 placement;\n"
+			+ "layout(location = 5) in vec3 tint;\nlayout(location = 0) out vec3 v_tint;\n"
+			+ "void main() { gl_Position = placement * vec4(position, 0.0, 1.0); v_tint = tint; }\n",
+			"#version 450\nlayout(location = 0) in vec3 v_tint;\nlayout(location = 0) out vec4 color;\nvoid main() { color = vec4(v_tint, 1.0); }\n");
+		check(instanced.source.attributes.join(",") == "position,placement,,,,tint"
+			&& instanced.attributeTypes.join(",") == "vec2,mat4,vec4,vec4,vec4,vec3",
+			"A mat4 input takes four locations: "
+			+ instanced.source.attributes
+			+ " "
+			+ instanced.attributeTypes);
+		message = refusal("#version 450\nlayout(location = 0) in mat3 turn;\nlayout(location = 4) in vec3 position;\n"
+			+ "void main() { gl_Position = vec4(turn * position, 1.0); }\n",
+			"#version 450\nlayout(location = 0) out vec4 color;\nvoid main() { color = vec4(1.0); }\n");
+		check(message.indexOf("without gaps") >= 0, "A gap after a matrix's columns refused: " + message);
 		// Refusals, each saying what's wrong.
-		var message = refusal(VERTEX, "#version 450\nlayout(location = 0) out vec4 color;\nvoid main() { color = missing; }\n");
+		message = refusal(VERTEX, "#version 450\nlayout(location = 0) out vec4 color;\nvoid main() { color = missing; }\n");
 		check(message.indexOf("test.frag") >= 0 && message.indexOf(":3:") >= 0 && message.indexOf("missing") >= 0,
 			"A compile error names the stage's file and line: " + message);
 		message = refusal(VERTEX,

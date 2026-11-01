@@ -816,6 +816,37 @@ class RModels {
 		drawMesh(mesh, material, toMatrix3D(transform), WHITE);
 	}
 
+	/** Draws a mesh many times in one draw, as raylib 5.5's does: each instance is placed by its own transform, which the material's
+		shader takes as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies itself (raylib's instancing example sets
+		it with `GetShaderLocationAttrib(shader, "instanceTransform")`). `mvp` is the camera's alone, and `matNormal` the identity. A shader
+		without a `mat4` attribute there draws nothing, with a warning. The mesh's attributes and the transforms are a buffer each, eight
+		at most, so a shader reading every one of raylib's attributes besides the transforms can't be drawn.
+
+		@param mesh  The mesh.
+		@param material  Its material: the shader, the diffuse color and the textures.
+		@param transforms  The instances' transforms.
+		@param instances  How many instances, at most the transforms given. */
+	static function DrawMeshInstanced(mesh:Mesh, material:Material, transforms:Array<Matrix>, instances:Int):Void {
+		var count = transforms == null ? 0 : instances < transforms.length ? instances : transforms.length;
+		if (count <= 0)
+			return;
+		var shader = material.shader == null || material.shader.program == null ? defaultShader() : material.shader;
+		var slot = shader.locs[SHADER_LOC_MATRIX_MODEL],
+			names = shader.program.attributes;
+		if (slot < 0 || slot + 4 > names.length || names[slot] == "" || names[slot + 1] != "") {
+			Runtime.log(LOG_WARNING,
+				'SHADER: [ID ${shader.id}] DrawMeshInstanced: no mat4 attribute at SHADER_LOC_MATRIX_MODEL for the instances\' transforms');
+			return;
+		}
+		var bytes = haxe.io.Bytes.alloc(count * 64);
+		for (i in 0...count)
+			for (k => v in toMatrix3D(transforms[i]).values)
+				bytes.setFloat((i * 16 + k) * 4, v);
+		var buffer = Runtime.graphics.createStaticBuffer(bytes, bytes.length, false);
+		Runtime.frame.retire(buffer);
+		drawMesh(mesh, material, new Matrix3D(), WHITE, buffer, count);
+	}
+
 	/** Sends a mesh's vertices to the GPU, so it can be drawn. A mesh not sent goes when it is first drawn, as `LoadModelAsync`'s and the
 		`GenMesh*` functions' do.
 
@@ -1935,7 +1966,7 @@ class RModels {
 		return new Matrix(a[0], a[4], a[8], a[12], a[1], a[5], a[9], a[13], a[2], a[6], a[10], a[14], a[3], a[7], a[11], a[15]);
 	}
 
-	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix3D, tint:Color):Void {
+	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix3D, tint:Color, instances:Int = 0, instanceCount:Int = 1):Void {
 		if (mesh.gpu.buffers == null)
 			Models.upload(mesh);
 		if (mesh.gpu.buffers == null)
@@ -1959,7 +1990,7 @@ class RModels {
 						values.push(v);
 			shader.program.write(bones, values);
 		}
-		Runtime.frame.mesh(mesh, shader.program, transform, diffuse, textures);
+		Runtime.frame.mesh(mesh, shader.program, transform, diffuse, textures, instances, instanceCount);
 	}
 	#end
 }

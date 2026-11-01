@@ -56,7 +56,9 @@ CASES = [
     'DrawTexture(second, 16, 16, WHITE); EndTextureMode(); DrawTextureRec(copy.texture, R(0, 0, 32, -32), V2(140, 290), WHITE);',
     # A texture read back once drawn and updated (raylib's LoadImageFromTexture; helix-ray's answers after the frame, its update in it),
     # made a texture again and drawn.
-    {'c': 'if (frame == 1) readBack = LoadTextureFromImage(LoadImageFromTexture(patched)); if (readBack.id > 0) DrawTexture(readBack, 440, 290, WHITE);',
+    {'c': 'if (frame == 1) readBack = LoadTextureFromImage(LoadImageFromTexture(patched)); if (readBack.id > 0) DrawTexture(readBack, 590, 290, WHITE);',
      'hx': 'if (frame == 0) LoadImageFromTextureAsync(patched, image -> readBack = LoadTextureFromImage(image)); '
-           'if (readBack != null) DrawTexture(readBack, 440, 290, WHITE);'},
+           'if (readBack != null) DrawTexture(readBack, 590, 290, WHITE);'},
+    # Nine instances of a cube in one draw, each placed by its own transform, the last three left out.
+    'BeginMode3D(camera); DrawMeshInstanced(cube, placed, transforms, 6); EndMode3D();',
 ]

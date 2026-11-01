@@ -243,7 +243,9 @@ SPIRV-Cross emits every dialect from it (GLSL 410 and GLSL ES 300 with each unif
 block's type; MSL and HLSL laid out as SDL_GPU binds them) and reflects the attributes, blocks and textures.
 
 **What it refuses, saying why:** a block that can't be flattened (members of mixed types; arrays not of `vec4`, `ivec4` or `mat4`);
-a uniform block bound past 3 or a texture past 11, since every adapter binds blocks 0 to 3 and textures 0 to 11. Errors name the
+a uniform block bound past 3 or a texture past 11, since every adapter binds blocks 0 to 3 and textures 0 to 11. A `mat2`, `mat3` or `mat4` vertex input
+takes a location a column, from its own, as GLSL, SPIR-V and every dialect place it: a pipeline feeds its columns as attributes of 2, 3 or 4
+floats at consecutive slots (instanced matrices, say), and `ShaderSource.attributes` names it at its first slot, "" at the rest. Errors name the
 source file's lines. Values passed between the stages may leave out their locations; the compiler numbers them.
 
 **What's reflected is what's declared:** every uniform block and texture the source declares, at its binding and its declared size

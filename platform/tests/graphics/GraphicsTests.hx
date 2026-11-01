@@ -36,7 +36,7 @@ typedef Case = {
 	The cases: a clear, a triangle's colors interpolated, eight vertex buffers read and a ninth refused, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
 	additive blending, each blend factor and operation and a color write mask, a texture's rectangles replaced, and replaced
 	between passes, targets kept from pass to pass and frame to frame (their depth and samples too) and one never cleared, textures read
-	back, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
+	back, instances placed by a mat4 vertex input, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
 	texel by texel, a cubemap's six faces, and declared textures left unbound reading clear. The shaders are `shaders/*.vert` and `*.frag`,
 	compiled by the build, so it checks the shader compiler's dialects too. One case runs a frame; on a GPU that reads back later, the next
 	waits for it.
@@ -162,6 +162,7 @@ class GraphicsTests {
 		var cube = shader(ShaderCompiler.compile("shaders/texture.vert", "shaders/cube.frag"));
 		var tint = shader(ShaderCompiler.compile("shaders/offset.vert", "shaders/tint.frag"));
 		var eight = shader(ShaderCompiler.compile("shaders/eight.vert", "shaders/color.frag"));
+		var matrices = shader(ShaderCompiler.compile("shaders/instanced.vert", "shaders/color.frag"));
 
 		// Vertex layouts: a position and a color (24 bytes), a position and a texture coordinate (16), a position (8).
 		var colored:VertexBuffer = {
@@ -196,6 +197,28 @@ class GraphicsTests {
 			fetched = pipeline(data, textured, Blend.OPAQUE),
 			looked = pipeline(cube, textured, Blend.OPAQUE);
 		var tinted = pipeline(tint, plain, Blend.OPAQUE);
+		// Instances of a square, each placed by a matrix (slots 1 to 4) and colored (slot 5), from one instanced buffer.
+		var placed = graphics.createPipeline({
+			shader: matrices,
+			buffers: [
+				plain,
+				{
+					stride: 80,
+					instanced: true,
+					attributes: [for (column in 0...5) {slot: column + 1, componentCount: 4, offset: column * 16}]
+				}
+			],
+			primitive: Triangles,
+			indexed: false,
+			blend: Blend.OPAQUE,
+			depthTest: Off,
+			depthWrite: false,
+			cull: None,
+			clockwise: false,
+			depthOnly: false,
+			flip: ClipScale
+		});
+		pipelines.push(placed);
 		// The same, testing and writing depth.
 		var deep = graphics.createPipeline({
 			shader: tint,
@@ -280,6 +303,11 @@ class GraphicsTests {
 		var triangle = buffer([-1., -1, 1, 0, 0, 1, 3, -1, 0, 1, 0, 1, -1, 3, 0, 0, 1, 1]);
 
 		var positions = buffer(square);
+		// Three instances: a matrix moving half the square to a quarter, column by column, then a color: red top left, green bottom right,
+		// blue top right.
+		function instance(x:Float, y:Float, color:Array<Float>):Array<Float>
+			return [.5, 0, 0, 0, 0, .5, 0, 0, 0, 0, 1, 0, x, y, 0, 1].concat(color);
+		var instances = buffer(instance(-.5, .5, [1, 0, 0, 1]).concat(instance(.5, -.5, [0, 1, 0, 1])).concat(instance(.5, .5, [0, 0, 1, 1])));
 		var numbers = [for (value in [.25, .25, .5, .25, .125, .5, 1]) buffer([for (_ in 0...6) value])];
 
 		var target = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false),
@@ -590,6 +618,21 @@ class GraphicsTests {
 					p.expect(1, 2, [0, 1, 1, 128 / 255], 0);
 					p.expect(3, 2, [0, 1, 1, 128 / 255], 0);
 					p.expect(2, 3, [1, 1, 0, 1], 0);
+				}
+			},
+			{
+				name: "instances placed by a matrix input",
+				// The first two instances; the third (top right) only from a second draw starting at it.
+				before: into(0, 0, 0, 1, () -> {
+					graphics.draw(placed, [positions, instances], 0, 0, 6, 0, 2, [], [], [clip]);
+					graphics.draw(placed, [positions, instances], 0, 0, 6, 2, 1, [], [], [clip]);
+				}),
+				target: target,
+				check: p -> {
+					p.expect(4, 4, [1, 0, 0, 1], 0);
+					p.expect(12, 12, [0, 1, 0, 1], 0);
+					p.expect(12, 4, [0, 0, 1, 1], 0);
+					p.expect(4, 12, [0, 0, 0, 1], 0);
 				}
 			},
 			{

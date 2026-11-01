@@ -15,7 +15,11 @@ import haxe.io.Bytes;
 abstract class NativeGraphics implements IGraphics {
 	/** Returns a program's layout as the C reads it: its attributes, uniform blocks and textures, a line each. */
 	static function layout(source:helix.platform.ShaderSource):String {
-		var lines = [for (i in 0...source.attributes.length) 'a $i ${source.attributes[i]}'];
+		// A matrix's later columns have no name: the C takes them by slot.
+		var lines = [
+			for (i in 0...source.attributes.length)
+				if (source.attributes[i] != "") 'a $i ${source.attributes[i]}'
+		];
 		for (b in source.uniformBlocks)
 			lines.push('u ${b.slot} ${b.stage.charAt(0)} ${b.size} ${b.vec4Count} ${b.glslName}');
 		for (t in source.textures)

@@ -5,7 +5,7 @@ package helix.platform;
 	`IGraphics.createShader` builds a program from it. An adapter reads only its own dialect. That is GLSL ES 300 in the browser, GLSL 410
 	for GL natively, and SDL_GPU's stages for SDL_GPU. */
 typedef ShaderSource = {
-	/** The vertex attributes' names, by slot. */
+	/** The vertex attributes' names, by slot. A matrix's name is at its first slot, and its other columns' slots hold "". */
 	final attributes:Array<String>;
 
 	/** GLSL 410, for GL natively. Absent from a browser build. */

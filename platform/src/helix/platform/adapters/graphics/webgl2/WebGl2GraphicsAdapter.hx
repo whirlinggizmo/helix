@@ -351,8 +351,10 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		var p = gl.createProgram();
 		gl.attachShader(p, v);
 		gl.attachShader(p, f);
+		// A matrix is bound at its first column's slot, its other columns following it; they have no name of their own.
 		for (i in 0...source.attributes.length)
-			gl.bindAttribLocation(p, i, source.attributes[i]);
+			if (source.attributes[i] != "")
+				gl.bindAttribLocation(p, i, source.attributes[i]);
 		gl.linkProgram(p);
 		gl.deleteShader(v);
 		gl.deleteShader(f);

@@ -1624,7 +1624,7 @@ Represents a compiled program, with its stages in each dialect the adapters comp
 - `sdlGpu:Null<SdlGpuStages>`: SDL_GPU's stages. Present only in a build for SDL_GPU.
 - `glsl410:Null<ShaderStages>`: GLSL 410, for GL natively. Absent from a browser build.
 - `glsl300es:ShaderStages`: GLSL ES 300, for WebGL2.
-- `attributes:Array<String>`: The vertex attributes' names, by slot.
+- `attributes:Array<String>`: The vertex attributes' names, by slot. A matrix's name is at its first slot, and its other columns' slots hold "".
 
 ## ShaderStages
 

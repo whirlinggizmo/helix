@@ -2,6 +2,7 @@
 // into it.
 #include "raylib.h"
 #include "rlgl.h"
+#include "raymath.h"
 #define V2(x, y) ((Vector2){ (float)(x), (float)(y) })
 #define R(x, y, w, h) ((Rectangle){ (float)(x), (float)(y), (float)(w), (float)(h) })
 int main(void) {
@@ -20,6 +21,15 @@ int main(void) {
     ImageFormat(&dark, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
     Texture2D gray = LoadTextureFromImage(ramp);
     RenderTexture2D trail = LoadRenderTexture(200, 60);
+    Camera camera = { { -5.5f, 16, 10 }, { -5.5f, 0, -6 }, { 0, 1, 0 }, 45, CAMERA_PERSPECTIVE };
+    Mesh cube = GenMeshCube(1, 1, 1);
+    Shader instancing = LoadShaderFromMemory("#version 330\nin vec3 vertexPosition;\nin vec3 vertexNormal;\nin mat4 instanceTransform;\nuniform mat4 mvp;\nout vec3 n;\nvoid main() { n = vertexNormal; gl_Position = mvp*instanceTransform*vec4(vertexPosition, 1.0); }\n", "#version 330\nin vec3 n;\nuniform vec4 colDiffuse;\nout vec4 finalColor;\nvoid main() { finalColor = vec4(n*0.5 + 0.5, 1.0)*colDiffuse; }\n");
+    instancing.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocationAttrib(instancing, "instanceTransform");
+    Material placed = LoadMaterialDefault();
+    placed.shader = instancing;
+    placed.maps[MATERIAL_MAP_DIFFUSE].color = (Color){ 250, 220, 180, 255 };
+    Matrix transforms[9];
+    for (int i = 0; i < 9; i++) transforms[i] = MatrixMultiply(MatrixRotateY(i*0.4f), MatrixTranslate((float)(i%3*2 - 2), 0, (float)(i/3*2 - 2)));
     Texture2D readBack = { 0 };
     for (int frame = 0; frame < 3; frame++) {
         BeginDrawing();

@@ -3350,6 +3350,7 @@ static function DrawModelEx(model:Model, position:Vector3, rotationAxis:Vector3,
 static function DrawModelWires(model:Model, position:Vector3, scale:Float, tint:Color):Void
 static function DrawModelWiresEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
 static function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void
+static function DrawMeshInstanced(mesh:Mesh, material:Material, transforms:Array<Matrix>, instances:Int):Void
 static function UploadMesh(mesh:Mesh, isDynamic:Bool):Void
 static function UpdateMeshBuffer(mesh:Mesh, index:Int, data:Dynamic, dataSize:Int, offset:Int):Void
 static function UnloadMesh(mesh:Mesh):Void
@@ -3564,6 +3565,11 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `mesh`: The mesh.
   - `material`: The material.
   - `transform`: The transform.
+- `DrawMeshInstanced`: Draws a mesh many times in one draw, as raylib 5.5's does: each instance is placed by its own transform, which the material's shader takes as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies itself (raylib's instancing example sets it with `GetShaderLocationAttrib(shader, "instanceTransform")`). `mvp` is the camera's alone, and `matNormal` the identity. A shader without a `mat4` attribute there draws nothing, with a warning. The mesh's attributes and the transforms are a buffer each, eight at most, so a shader reading every one of raylib's attributes besides the transforms can't be drawn.
+  - `mesh`: The mesh.
+  - `material`: Its material: the shader, the diffuse color and the textures.
+  - `transforms`: The instances' transforms.
+  - `instances`: How many instances, at most the transforms given.
 - `UploadMesh`: Sends a mesh's vertices to the GPU, so it can be drawn. A mesh not sent goes when it is first drawn, as `LoadModelAsync`'s and the `GenMesh*` functions' do.
   - `mesh`: The mesh.
   - `isDynamic`: Whether it will change (raylib names it `dynamic`, a Haxe keyword); any mesh here can be changed by `UpdateMeshBuffer`, so it is ignored.
@@ -4159,7 +4165,7 @@ Each of these is raylib's name, and a call to it doesn't compile, saying why and
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`.
+`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`.
 
 ## Raymath
 

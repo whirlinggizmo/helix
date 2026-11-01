@@ -14,7 +14,8 @@ using StringTools;
 
 	A raylib shader is GLSL 330 (or 100, for the web) with raylib's names: the attributes `vertexPosition`, `vertexTexCoord`, `vertexNormal`,
 	`vertexColor`, `vertexTangent`, `vertexTexCoord2`, and for skinning `vertexBoneIds` (raylib 5.5's name; `vertexBoneIndices`, 6.2's)
-	and `vertexBoneWeights`, loose uniforms such as `mvp` and `colDiffuse`, and the textures `texture0` to
+	and `vertexBoneWeights`, and a `mat4` of the instances' transforms for `DrawMeshInstanced` (raylib's example's `instanceTransform`,
+	after the others, a location a column), loose uniforms such as `mvp` and `colDiffuse`, and the textures `texture0` to
 	`texture2`. Each stage is turned into GLSL 450: the attributes and the values between the stages get locations; each stage's uniforms
 	become one block of its own (an integer or a boolean held as a float, read back through a `#define`); the textures get bindings; the
 	vertex stage scales its `gl_Position.y` by block 0, which the platform turns over in a pass into a render target (`ClipFlip.ClipScale`). */
@@ -80,8 +81,9 @@ void main() {
 		var inputs = [for (d in v.decls) if (d.kind == "in") d];
 		inputs.sort((a, b) -> rank(a.name) - rank(b.name));
 		for (d in inputs)
-			if (ATTRIBUTES.indexOf(d.name) < 0)
-				Context.error('$vsName: the attribute "${d.name}" isn\'t one raylib gives here (${ATTRIBUTES.join(", ")})', pos);
+			if (ATTRIBUTES.indexOf(d.name) < 0 && d.type != "mat4")
+				Context.error('$vsName: the attribute "${d.name}" isn\'t one raylib gives here (${ATTRIBUTES.join(", ")}, or a mat4 of the instances\' transforms, `DrawMeshInstanced`\'s)',
+					pos);
 		// Textures: texture0 to texture2 at their own numbers, the rest after, in the order declared.
 		var samplers:Array<String> = [];
 		for (stage in [v, f])
@@ -191,9 +193,14 @@ void main() {
 			slots:Map<String, Int>, block:Int, name:String, pos:Position):String {
 		var out = new StringBuf();
 		out.add("#version 450\n");
-		if (vertex)
-			for (i => d in inputs)
-				out.add('layout(location = $i) in ${d.type} ${d.name};\n');
+		if (vertex) {
+			// A mat4 takes four locations, a column each.
+			var location = 0;
+			for (d in inputs) {
+				out.add('layout(location = $location) in ${d.type} ${d.name};\n');
+				location += d.type == "mat4" ? 4 : 1;
+			}
+		}
 		for (i => d in varyings)
 			if (vertex || Lambda.exists(stage.decls, x -> x.kind == "in" && x.name == d.name))
 				out.add('layout(location = $i) ${vertex ? "out" : "in"} ${d.type} ${d.name};\n');

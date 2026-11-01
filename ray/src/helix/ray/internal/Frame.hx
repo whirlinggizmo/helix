@@ -52,7 +52,11 @@ class Frame {
 	];
 
 	/** The bytes of the one record of `constants`. */
-	static inline final CONSTANT_BYTES = 56;
+	static inline final CONSTANT_BYTES = 120;
+
+	/** Where a matrix attribute's columns are in the one record of `constants`, in floats: each column 0, 0, 0, 1, GL's value for an
+		attribute no buffer feeds. A matrix is a program's instance transforms (`DrawMeshInstanced`), fed only there. */
+	static inline final MATRIX_CONSTANT = 14;
 
 	/** The attributes immediate vertices don't carry, and where each is in the one record of `constants`, in floats: raylib's batch has
 		none, so a shader reads raylib's defaults, 0. */
@@ -180,7 +184,11 @@ class Frame {
 		var texel = Bytes.alloc(4);
 		texel.fill(0, 4, 255);
 		white = graphics.createTexture(1, 1, [texel]);
-		constants = graphics.createStaticBuffer(Bytes.alloc(CONSTANT_BYTES), CONSTANT_BYTES, false);
+		var record = Bytes.alloc(CONSTANT_BYTES);
+		record.fill(0, CONSTANT_BYTES, 0);
+		for (column in 0...4)
+			record.setFloat((MATRIX_CONSTANT + column * 4 + 3) * 4, 1);
+		constants = graphics.createStaticBuffer(record, CONSTANT_BYTES, false);
 		view = new Matrix3D();
 		projection = new Matrix3D();
 		pass = {
@@ -492,10 +500,7 @@ class Frame {
 				{
 					stride: CONSTANT_BYTES,
 					instanced: true,
-					attributes: [
-						for (i => name in p.attributes)
-							if (CONSTANTS.exists(name)) {slot: i, componentCount: SIZES.get(name), offset: CONSTANTS.get(name) * 4}
-					]
+					attributes: constantAttributes(p.attributes)
 				}
 			],
 			primitive: lines ? Lines : Triangles,
@@ -524,9 +529,26 @@ class Frame {
 			scissor: scissor,
 			viewport: viewport,
 			textures: textures,
-			uniforms: values(p, model, [1, 1, 1, 1])
+			uniforms: values(p, model, [1, 1, 1, 1]),
+			instances: 1
 		};
 	}
+
+	// The attributes the constants' one record feeds: those immediate vertices don't carry, and each matrix's columns.
+	static function constantAttributes(names:Array<String>):Array<helix.platform.VertexAttribute> {
+		var attributes:Array<helix.platform.VertexAttribute> = [];
+		for (i => name in names)
+			if (CONSTANTS.exists(name))
+				attributes.push({slot: i, componentCount: SIZES.get(name), offset: CONSTANTS.get(name) * 4});
+			else if (isMatrix(names, i))
+				for (column in 0...4)
+					attributes.push({slot: i + column, componentCount: 4, offset: (MATRIX_CONSTANT + column * 4) * 4});
+		return attributes;
+	}
+
+	// Whether a program's attribute at a slot is a mat4, its other columns' slots following it unnamed.
+	static function isMatrix(names:Array<String>, slot:Int):Bool
+		return names[slot] != "" && slot + 1 < names.length && names[slot + 1] == "";
 
 	/** Draws a mesh.
 
@@ -534,12 +556,16 @@ class Frame {
 		@param p  The program.
 		@param model  Its transform.
 		@param diffuse  The diffuse color, 0 to 1 each.
-		@param textures  The textures for raylib's slots 0 to 2 (0 for white). */
-	public function mesh(mesh:helix.ray.Mesh, p:Program, model:Matrix3D, diffuse:Array<Float>, textures:Array<Int>):Void {
+		@param textures  The textures for raylib's slots 0 to 2 (0 for white).
+		@param instances  Optional. The instances' transforms, a static buffer of 16 floats each, column by column, fed to the program's
+			mat4 attribute; 0 for one instance, the attribute fed GL's default.
+		@param instanceCount  Optional. How many instances; defaults to 1. */
+	public function mesh(mesh:helix.ray.Mesh, p:Program, model:Matrix3D, diffuse:Array<Float>, textures:Array<Int>, instances:Int = 0,
+			instanceCount:Int = 1):Void {
 		// In wire mode, the mesh's triangles drawn as their edges, from an index buffer of them: those culling leaves, found here, as GL's
 		// line mode culls the triangles it outlines.
 		var edges = 0, edgeCount = mesh.triangleCount * 6;
-		if (wire && cull) {
+		if (wire && cull && instances == 0) {
 			var front = frontEdges(mesh, Matrix3D.compose(Matrix3D.compose(model, view, viewProjection), projection, viewProjection).values);
 			edgeCount = front.length;
 			if (edgeCount == 0)
@@ -552,13 +578,21 @@ class Frame {
 		} else if (wire)
 			edges = Models.edges(mesh);
 		var indexed = wire || mesh.gpu.indexBuffer != 0, state = states();
-		var key = 'm${indexed ? "x" : ""}${wire ? "w" : ""}$state';
+		var key = 'm${indexed ? "x" : ""}${wire ? "w" : ""}${instances != 0 ? "i" : ""}$state';
 		// A buffer an attribute: the platform takes eight, as many as raylib's attributes.
 		var names = p.attributes;
 		var pipeline = p.pipeline(key, () -> {
+			// A matrix's columns from the instances' transforms, or from the constants' record.
 			var layouts:Array<helix.platform.VertexBuffer> = [
 				for (i => name in names)
-					{
+					if (isMatrix(names, i)) {
+						stride: instances != 0 ? 64 : CONSTANT_BYTES,
+						instanced: true,
+						attributes: [
+							for (column in 0...4)
+								{slot: i + column, componentCount: 4, offset: (instances != 0 ? 0 : MATRIX_CONSTANT * 4) + column * 16}
+						]
+					} else if (name != "") {
 						stride: SIZES.get(name) * 4,
 						instanced: false,
 						attributes: [{slot: i, componentCount: SIZES.get(name), offset: 0}]
@@ -586,7 +620,10 @@ class Frame {
 		for (i in 0...bound.length)
 			if (bound[i] == 0)
 				bound[i] = white;
-		var buffers = [for (name in names) Models.buffer(mesh, MESH_BUFFERS.get(name))];
+		var buffers = [
+			for (i => name in names)
+				if (isMatrix(names, i)) instances != 0 ? instances : constants else if (name != "") Models.buffer(mesh, MESH_BUFFERS.get(name))
+		];
 		pass.draws.push({
 			pipeline: pipeline,
 			buffers: buffers,
@@ -598,7 +635,8 @@ class Frame {
 			scissor: scissor,
 			viewport: viewport,
 			textures: bound,
-			uniforms: values(p, model, diffuse)
+			uniforms: values(p, model, diffuse),
+			instances: instanceCount
 		});
 	}
 
@@ -717,8 +755,8 @@ class Frame {
 				}
 				var count = d.lines ? d.count - d.count % 2 : d.count - d.count % 3;
 				var samplings = [for (t in d.textures) Textures.samplingOf(t)];
-				graphics.draw(d.pipeline, d.buffers == null ? [buffer, constants] : d.buffers, d.indices, d.first, count, 0, 1, d.textures, samplings,
-					d.uniforms);
+				graphics.draw(d.pipeline, d.buffers == null ? [buffer, constants] : d.buffers, d.indices, d.first, count, 0, d.instances, d.textures,
+					samplings, d.uniforms);
 			}
 			if (p.target == 0) {
 				graphics.endFrame();
@@ -830,6 +868,7 @@ private typedef Draw = {
 	final viewport:Null<Array<Int>>;
 	final textures:Array<Int>;
 	final uniforms:Array<Null<Bytes>>;
+	final instances:Int;
 }
 
 private typedef Run = {

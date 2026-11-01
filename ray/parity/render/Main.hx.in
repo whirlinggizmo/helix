@@ -1,6 +1,7 @@
 import helix.ray.*;
 import helix.ray.Raylib.*;
 import helix.ray.Rlgl.*;
+import helix.ray.Raymath.*;
 
 // scene.c.in's render state and render texture scene, drawn by helix-ray; its third frame saved as helix.png. cases.py's list is put into
 // it.
@@ -26,6 +27,14 @@ class Main {
 		ImageFormat(dark, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
 		var gray = LoadTextureFromImage(ramp);
 		var trail = LoadRenderTexture(200, 60);
+		var camera = new Camera(new Vector3(-5.5, 16, 10), new Vector3(-5.5, 0, -6), new Vector3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
+		var cube = GenMeshCube(1, 1, 1);
+		var instancing = LoadShaderFromMemory("#version 330\nin vec3 vertexPosition;\nin vec3 vertexNormal;\nin mat4 instanceTransform;\nuniform mat4 mvp;\nout vec3 n;\nvoid main() { n = vertexNormal; gl_Position = mvp*instanceTransform*vec4(vertexPosition, 1.0); }\n", "#version 330\nin vec3 n;\nuniform vec4 colDiffuse;\nout vec4 finalColor;\nvoid main() { finalColor = vec4(n*0.5 + 0.5, 1.0)*colDiffuse; }\n");
+		instancing.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocationAttrib(instancing, "instanceTransform");
+		var placed = LoadMaterialDefault();
+		placed.shader = instancing;
+		placed.maps[MATERIAL_MAP_DIFFUSE].color = new Color(250, 220, 180, 255);
+		var transforms = [for (i in 0...9) MatrixMultiply(MatrixRotateY(i * 0.4), MatrixTranslate(i % 3 * 2 - 2, 0, Std.int(i / 3) * 2 - 2))];
 		var readBack:Texture2D = null;
 		var frame = 0;
 		while (!WindowShouldClose()) {
