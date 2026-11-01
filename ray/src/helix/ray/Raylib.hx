@@ -3890,6 +3890,25 @@ class Raylib {
 	public static inline function LoadTextureFromImage(image:Image):Texture2D
 		return RTextures.LoadTextureFromImage(image);
 
+	/** Replaces a texture's pixels, as raylib's does on the GPU. The pixels are in the texture's format (`texture.format`), rows top
+		first, its width by its height. Draws asked for before it this frame in a render texture drawn into since, or on the screen, show
+		the new pixels too, as rlgl's batch drawn after it does; those in render textures drawn into before it keep the old. A render
+		texture's, a compressed format's and pixels too few for the texture change nothing (raylib's reads past them), with a warning.
+
+		@param texture  The texture.
+		@param pixels  The pixels: their bytes (`haxe.io.Bytes`), or an array of `Color` (R8G8B8A8's bytes, as raylib's `Color *` is). */
+	public static inline function UpdateTexture(texture:Texture2D, pixels:Dynamic):Void
+		RTextures.UpdateTexture(texture, pixels);
+
+	/** Replaces a rectangle of a texture's pixels, as `UpdateTexture` does the whole. A rectangle not inside the texture changes nothing,
+		as GL refuses it.
+
+		@param texture  The texture.
+		@param rec  The rectangle, in pixels from the texture's top-left corner; its numbers are cut to whole pixels.
+		@param pixels  The rectangle's pixels, rows top first, in the texture's format: bytes, or an array of `Color`. */
+	public static inline function UpdateTextureRec(texture:Texture2D, rec:Rectangle, pixels:Dynamic):Void
+		RTextures.UpdateTextureRec(texture, rec, pixels);
+
 	/** Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT` (raylib's default), `TEXTURE_WRAP_CLAMP` or
 		`TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning.
 
@@ -5988,14 +6007,6 @@ class Raylib {
 	/** raylib's `LoadTextureCubemap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load cubemap from image, multiple image cubemap layouts supported. */
 	public static macro function LoadTextureCubemap(image:ExprOf<Image>, layout:ExprOf<Int>):ExprOf<TextureCubemap>
 		return helix.platform.macros.Build.unimplemented("LoadTextureCubemap: Not implemented", macro(null : helix.ray.TextureCubemap));
-
-	/** raylib's `UpdateTexture` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update GPU texture with new data. */
-	public static macro function UpdateTexture(texture:ExprOf<Texture2D>, pixels:ExprOf<Dynamic>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UpdateTexture: Not implemented", macro {});
-
-	/** raylib's `UpdateTextureRec` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Update GPU texture rectangle with new data. */
-	public static macro function UpdateTextureRec(texture:ExprOf<Texture2D>, rec:ExprOf<Rectangle>, pixels:ExprOf<Dynamic>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UpdateTextureRec: Not implemented", macro {});
 
 	/** raylib's `GenTextureMipmaps` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate GPU mipmaps for a texture. */
 	public static macro function GenTextureMipmaps(texture:ExprOf<Texture2D>):ExprOf<Void>

@@ -63,6 +63,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	var cubes:Map<Int, Bool> = [];
 	// Data textures, by handle: their size.
 	var dataTextures:Map<Int, {width:Int, height:Int}> = [];
+	// createTexture's textures, by handle: their size and format.
+	var plainTextures:Map<Int, {width:Int, height:Int, format:TextureFormat}> = [];
 	var active = false;
 	// In a target pass: drawn flipped, as GL's framebuffers' origin is the bottom left, so a target is stored top row first like any texture.
 	var flipped = false;
@@ -136,6 +138,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, levels.length - 1);
 		var id = next++;
 		textures[id] = tex;
+		plainTextures[id] = {width: width, height: height, format: format};
 		return id;
 	}
 
@@ -153,14 +156,39 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		return id;
 	}
 
-	public function updateDataTexture(handle:Int, data:Bytes):Void {
+	public function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:Bytes):Void {
 		var d = dataTextures[handle];
-		if (d == null || data.length < d.width * d.height * 16)
-			throw "Invalid data texture update";
+		if (d != null) {
+			if (x != 0 || y != 0 || width != d.width || height != d.height || data.length < d.width * d.height * 16)
+				throw "Invalid data texture update";
+			gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, textures[handle]);
+			gl.pixelStorei(WebGL2RenderingContext.UNPACK_ALIGNMENT, 4);
+			gl.texSubImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, 0, 0, d.width, d.height, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.FLOAT,
+				new js.lib.Float32Array(data.getData(), 0, d.width * d.height * 4));
+			return;
+		}
+		var p = plainTextures[handle];
+		if (p == null
+			|| active
+			|| p.format != Rgba8
+			&& p.format != Rgba16f
+			|| x < 0
+			|| y < 0
+			|| width <= 0
+			|| height <= 0
+			|| x + width > p.width
+			|| y + height > p.height
+			|| data.length < p.format.levelBytes(width, height))
+			throw "Invalid texture update";
 		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, textures[handle]);
-		gl.pixelStorei(WebGL2RenderingContext.UNPACK_ALIGNMENT, 4);
-		gl.texSubImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, 0, 0, d.width, d.height, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.FLOAT,
-			new js.lib.Float32Array(data.getData(), 0, d.width * d.height * 4));
+		gl.pixelStorei(WebGL2RenderingContext.UNPACK_ALIGNMENT, 1);
+		// The texture's first row is its top, as uploaded: GL's y counts from it.
+		if (p.format == Rgba8)
+			gl.texSubImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, x, y, width, height, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE,
+				new js.lib.Uint8Array(data.getData(), 0, width * height * 4));
+		else
+			gl.texSubImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, x, y, width, height, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.HALF_FLOAT,
+				new js.lib.Uint16Array(data.getData(), 0, width * height * 4));
 	}
 
 	public function createCubeTexture(size:Int, levels:Array<Bytes>, format:TextureFormat):Int {
@@ -860,6 +888,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		textures.remove(handle);
 		cubes.remove(handle);
 		dataTextures.remove(handle);
+		plainTextures.remove(handle);
 		var map = shadowMaps[handle];
 		if (map != null) {
 			for (framebuffer in map.framebuffers)

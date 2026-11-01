@@ -10,7 +10,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int format);int helix_can_sample(int format);int helix_msaa_samples(void);int helix_max_msaa_samples(void);uint32_t helix_cube_texture(int size,const void *data,int bytes,int levels,int format);uint32_t helix_data_texture(int w,int h);int helix_update_data(uint32_t texture,const void *data,int bytes);
+uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int format);int helix_can_sample(int format);int helix_msaa_samples(void);int helix_max_msaa_samples(void);uint32_t helix_cube_texture(int size,const void *data,int bytes,int levels,int format);uint32_t helix_data_texture(int w,int h);int helix_update_texture(uint32_t texture,int x,int y,int w,int h,const void *data,int bytes);
 uint32_t helix_buffer(int capacity);uint32_t helix_static_buffer(const void *data,int bytes,int index);uint32_t helix_pipeline(const int *desc,int count);
 int helix_update(uint32_t buffer,const void *data,int bytes);uint32_t helix_target(int w,int h,int format,int depth);int helix_can_render(int format);uint32_t helix_shadow_map(int size,int layers);int helix_begin_shadow(uint32_t map,int layer);int helix_begin_target(uint32_t target,float red,float green,float blue,float alpha);int helix_end_target(void);
 int helix_begin(int width,int height,uint32_t color);int helix_viewport(int x,int y,int w,int h);

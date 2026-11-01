@@ -158,6 +158,33 @@ class Textures {
 		return e.gpu;
 	}
 
+	/** Replaces a rectangle of a texture's pixels: in memory while it isn't on the GPU yet, else on the GPU in the frame's order
+		(`Frame.updateTexture`).
+
+		@param id  The texture's id.
+		@param x  The rectangle's left edge, in pixels.
+		@param y  Its top edge.
+		@param width  Its width.
+		@param height  Its height.
+		@param rgba  Its pixels, 8-bit RGBA, rows top first. */
+	public static function update(id:Int, x:Int, y:Int, width:Int, height:Int, rgba:haxe.io.Bytes):Void {
+		var e = entries.get(id);
+		if (e == null)
+			return;
+		if (e.gpu == 0 && e.image != null) {
+			// Its own copy: a file's image may be shared with other loads, and the decoded file kept.
+			if (!e.owned) {
+				e.image = new Image(e.image.path, e.image.width, e.image.height, e.image.pixels.sub(0, e.image.pixels.length));
+				e.owned = true;
+			}
+			for (row in 0...height)
+				e.image.pixels.blit(((y + row) * e.image.width + x) * 4, rgba, row * width * 4, width * 4);
+			return;
+		}
+		if (e.gpu != 0)
+			Runtime.frame.updateTexture(e.gpu, x, y, width, height, rgba);
+	}
+
 	/** Releases one of a texture's holders, freeing it when it was the last.
 
 		@param id  The texture's id.
@@ -193,6 +220,8 @@ class Textures {
 private typedef Entry = {
 	final path:String;
 	var image:Null<Image>;
+	// Whether image is its own, so changing it changes no one else's (a file's image is shared with its other loads).
+	var ?owned:Bool;
 	var gpu:Int;
 	var refs:Int;
 	var held:Int;

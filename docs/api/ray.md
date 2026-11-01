@@ -2605,6 +2605,8 @@ static function ImageDraw(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectang
 static function ImageDrawText(dst:Image, text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void
 static function ImageDrawTextEx(dst:Image, font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
 static function LoadTextureFromImage(image:Image):Texture2D
+static function UpdateTexture(texture:Texture2D, pixels:Dynamic):Void
+static function UpdateTextureRec(texture:Texture2D, rec:Rectangle, pixels:Dynamic):Void
 static function SetTextureWrap(texture:Texture2D, wrap:Int):Void
 static function DrawTextureNPatch(texture:Texture2D, nPatchInfo:NPatchInfo, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void
 static function GetPixelColor(srcPtr:haxe.io.Bytes, format:Int, ?offset:Int = 0):Color
@@ -3041,6 +3043,13 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
 - `LoadTextureFromImage`: Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, and it has one level. Its format is the image's, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed format gives no texture, with a warning.
   - `image`: The image.
   - returns: The texture.
+- `UpdateTexture`: Replaces a texture's pixels, as raylib's does on the GPU. The pixels are in the texture's format (`texture.format`), rows top first, its width by its height. Draws asked for before it this frame in a render texture drawn into since, or on the screen, show the new pixels too, as rlgl's batch drawn after it does; those in render textures drawn into before it keep the old. A render texture's, a compressed format's and pixels too few for the texture change nothing (raylib's reads past them), with a warning.
+  - `texture`: The texture.
+  - `pixels`: The pixels: their bytes (`haxe.io.Bytes`), or an array of `Color` (R8G8B8A8's bytes, as raylib's `Color *` is).
+- `UpdateTextureRec`: Replaces a rectangle of a texture's pixels, as `UpdateTexture` does the whole. A rectangle not inside the texture changes nothing, as GL refuses it.
+  - `texture`: The texture.
+  - `rec`: The rectangle, in pixels from the texture's top-left corner; its numbers are cut to whole pixels.
+  - `pixels`: The rectangle's pixels, rows top first, in the texture's format: bytes, or an array of `Color`.
 - `SetTextureWrap`: Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT` (raylib's default), `TEXTURE_WRAP_CLAMP` or `TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning.
   - `texture`: The texture.
   - `wrap`: The wrap (`TEXTURE_WRAP_*`).
@@ -4150,7 +4159,7 @@ Each of these is raylib's name, and a call to it doesn't compile, saying why and
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`.
+`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`.
 
 ## Raymath
 

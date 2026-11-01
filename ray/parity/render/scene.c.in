@@ -6,9 +6,18 @@
 #define R(x, y, w, h) ((Rectangle){ (float)(x), (float)(y), (float)(w), (float)(h) })
 int main(void) {
     SetTraceLogLevel(LOG_WARNING);
-    InitWindow(640, 360, "render");
+    InitWindow(640, 480, "render");
     RenderTexture2D target = LoadRenderTexture(200, 100);
     Texture2D checks = LoadTextureFromImage(GenImageChecked(64, 64, 8, 8, ORANGE, DARKBLUE));
+    Image red = GenImageColor(32, 32, RED);
+    Image tile = GenImageChecked(8, 8, 2, 2, GREEN, BLUE);
+    Texture2D patched = LoadTextureFromImage(red);
+    RenderTexture2D copy = LoadRenderTexture(32, 32);
+    Image ramp = GenImageGradientLinear(16, 16, 90, BLACK, WHITE);
+    ImageFormat(&ramp, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+    Image dark = GenImageColor(8, 4, DARKGRAY);
+    ImageFormat(&dark, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+    Texture2D gray = LoadTextureFromImage(ramp);
     for (int frame = 0; frame < 3; frame++) {
         BeginDrawing();
         ClearBackground(RAYWHITE);

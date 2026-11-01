@@ -52,7 +52,7 @@ class CountingGraphics implements IGraphics {
 	public function createDataTexture(width:Int, height:Int):Int
 		return handle();
 
-	public function updateDataTexture(handle:Int, data:Bytes):Void {}
+	public function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:Bytes):Void {}
 
 	public function canSample(format:TextureFormat):Bool
 		return true;

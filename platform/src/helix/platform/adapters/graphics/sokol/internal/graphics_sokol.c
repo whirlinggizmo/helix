@@ -65,7 +65,7 @@ static struct{sg_view color,depth,resolve;sg_image depth_image,samples_image;int
    (comparing, linear, clamped), made with the first. */
 #define MAX_SHADOW_LAYERS 16
 static struct{sg_image image;sg_view layers[MAX_SHADOW_LAYERS];int size,count;}shadow_maps[256];static sg_sampler comparison;
-/* Data textures, by texture view slot: RGBA32F, rewritten whole by helix_update_data. sokol's write-transient images hold what's written for
+/* Data textures, by texture view slot: RGBA32F, rewritten whole by helix_update_texture. sokol's write-transient images hold what's written for
    the frame alone, and take writes only until they're bound, so the adapter keeps the contents (copy) and writes them at the first bind of a
    frame without a write of its own; and a write after a bind goes to a spare of the same size (made the first time it's needed): renamed is
    how many are in use this frame, and the texture's draws read the latest. */
@@ -161,9 +161,8 @@ static void write_data(int slot){
  sg_write_image_transient(&(sg_write_image_desc){.src.data={data_textures[slot].copy,size},.dst.image=current_data_image(slot)});
  data_textures[slot].written=1;
 }
-int helix_update_data(uint32_t texture,const void *data,int bytes){
- const int slot=texture&0xffff;
- if(!data||slot>=256||!data_textures[slot].image.id||sg_query_view_state((sg_view){texture})!=SG_RESOURCESTATE_VALID)return 0;
+/* Rewrites a data texture's contents whole: its current image, unless a draw bound it since its last write, then the next spare. */
+static int update_data(int slot,const void *data,int bytes){
  const size_t size=(size_t)data_textures[slot].width*(size_t)data_textures[slot].height*16;
  if((size_t)bytes<size)return 0;
  if(data_textures[slot].bound){
@@ -178,6 +177,25 @@ int helix_update_data(uint32_t texture,const void *data,int bytes){
   data_textures[slot].renamed++;data_textures[slot].bound=0;
  }
  memcpy(data_textures[slot].copy,data,size);write_data(slot);return 1;
+}
+/* Replaces a rectangle of a texture's texels: a data texture's whole (x and y 0, its size), inside a pass or outside; a helix_texture
+   texture's top level, RGBA8 or half floats, outside a pass, through GL directly (sokol can't write an image made with its data), with
+   sokol's cached GL state reset after. GL's rows run from the first, which is the texture's top. 0 for anything else. */
+int helix_update_texture(uint32_t texture,int x,int y,int w,int h,const void *data,int bytes){
+ const int slot=texture&0xffff;
+ if(!data||slot>=256||x<0||y<0||w<=0||h<=0||sg_query_view_state((sg_view){texture})!=SG_RESOURCESTATE_VALID)return 0;
+ if(data_textures[slot].image.id)return x||y||w!=data_textures[slot].width||h!=data_textures[slot].height?0:update_data(slot,data,bytes);
+ if(active||targets[slot].color.id||shadow_maps[slot].image.id)return 0;
+ const sg_image image=sg_query_view_image((sg_view){texture});
+ const sg_image_desc desc=sg_query_image_desc(image);
+ const int half=desc.pixel_format==SG_PIXELFORMAT_RGBA16F;
+ if(desc.type!=SG_IMAGETYPE_2D||(!half&&desc.pixel_format!=SG_PIXELFORMAT_RGBA8)||x+w>desc.width||y+h>desc.height||(size_t)bytes<level_bytes(half?4:0,w,h))return 0;
+ const sg_gl_image_info info=sg_gl_query_image_info(image);
+ glBindTexture(GL_TEXTURE_2D,info.tex[info.active_slot]);glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+ glTexSubImage2D(GL_TEXTURE_2D,0,x,y,w,h,GL_RGBA,half?GL_HALF_FLOAT:GL_UNSIGNED_BYTE,data);
+ const int ok=glGetError()==GL_NO_ERROR;
+ sg_reset_state_cache();
+ return ok;
 }
 /* The view a texture's draws read: a data texture's latest write, or itself. */
 static sg_view current_view(uint32_t texture){

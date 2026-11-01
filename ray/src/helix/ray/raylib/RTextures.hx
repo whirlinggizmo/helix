@@ -2364,6 +2364,57 @@ class RTextures {
 			image.format);
 	}
 
+	/** Replaces a texture's pixels, as raylib's does on the GPU. The pixels are in the texture's format (`texture.format`), rows top
+		first, its width by its height. Draws asked for before it this frame in a render texture drawn into since, or on the screen, show
+		the new pixels too, as rlgl's batch drawn after it does; those in render textures drawn into before it keep the old. A render
+		texture's, a compressed format's and pixels too few for the texture change nothing (raylib's reads past them), with a warning.
+
+		@param texture  The texture.
+		@param pixels  The pixels: their bytes (`haxe.io.Bytes`), or an array of `Color` (R8G8B8A8's bytes, as raylib's `Color *` is). */
+	static function UpdateTexture(texture:Texture2D, pixels:Dynamic):Void {
+		updateRectangle(texture, 0, 0, texture.width, texture.height, pixels);
+	}
+
+	/** Replaces a rectangle of a texture's pixels, as `UpdateTexture` does the whole. A rectangle not inside the texture changes nothing,
+		as GL refuses it.
+
+		@param texture  The texture.
+		@param rec  The rectangle, in pixels from the texture's top-left corner; its numbers are cut to whole pixels.
+		@param pixels  The rectangle's pixels, rows top first, in the texture's format: bytes, or an array of `Color`. */
+	static function UpdateTextureRec(texture:Texture2D, rec:Rectangle, pixels:Dynamic):Void {
+		updateRectangle(texture, Std.int(rec.x), Std.int(rec.y), Std.int(rec.width), Std.int(rec.height), pixels);
+	}
+
+	// rlUpdateTexture: a rectangle of a texture's pixels in its format, made RGBA and replaced.
+	static function updateRectangle(texture:Texture2D, x:Int, y:Int, width:Int, height:Int, pixels:Dynamic):Void {
+		if (texture.id <= 0 || pixels == null)
+			return;
+		if (texture.flipped || texture.format >= Pixels.COMPRESSED || texture.format < PIXELFORMAT_UNCOMPRESSED_GRAYSCALE) {
+			Runtime.log(LOG_WARNING, 'TEXTURE: [ID ${texture.id}] Failed to update for current texture format (${texture.format})');
+			return;
+		}
+		if (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > texture.width || y + height > texture.height)
+			return;
+		var bytes:haxe.io.Bytes = null;
+		if (Std.isOfType(pixels, haxe.io.Bytes))
+			bytes = pixels;
+		else if (Std.isOfType(pixels, Array)) {
+			var colors:Array<Color> = pixels;
+			bytes = haxe.io.Bytes.alloc(colors.length * 4);
+			for (i => c in colors) {
+				bytes.set(i * 4, c.r);
+				bytes.set(i * 4 + 1, c.g);
+				bytes.set(i * 4 + 2, c.b);
+				bytes.set(i * 4 + 3, c.a);
+			}
+		}
+		if (bytes == null || bytes.length < GetPixelDataSize(width, height, texture.format)) {
+			Runtime.log(LOG_WARNING, 'TEXTURE: [ID ${texture.id}] Failed to update: fewer pixels than the rectangle');
+			return;
+		}
+		Textures.update(texture.id, x, y, width, height, Pixels.colors(bytes, width, height, texture.format));
+	}
+
 	/** Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT` (raylib's default), `TEXTURE_WRAP_CLAMP` or
 		`TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning.
 

@@ -64,7 +64,7 @@ static struct{uint32_t generation;int live;SDL_GPUGraphicsPipeline *pipeline,*fl
    target (a color texture sampled, drawn through a multisampled one when it has depth and the screen is multisampled, its depth or none, the
    pipelines' variant drawing into it), or a shadow map (a depth array). */
 enum{PLAIN,DATA,TARGET,SHADOW};
-static struct{uint32_t generation;int live,kind,width,height,layers,variant;SDL_GPUTexture *texture,*samples,*depth;
+static struct{uint32_t generation;int live,kind,width,height,layers,variant,format;SDL_GPUTexture *texture,*samples,*depth;
  SDL_GPUTexture *versions[MAX_RENAMES];int current,bound[MAX_RENAMES];}textures[SLOTS];
 
 /* Samplers by Sampling value (helix.platform.Sampling: bit 0 linear, bits 1-2 wrap u, bits 3-4 wrap v), made when first used, and the
@@ -90,7 +90,7 @@ static SDL_GPUColorTargetInfo pass_color;static SDL_GPUDepthStencilTargetInfo pa
 static unsigned char *staging;static size_t staging_used,staging_size;
 /* cycle: a data texture's whole rewrite, cycled so a frame still on the GPU keeps what it read (a new texture's levels mustn't be: each
    cycle would drop the levels before it). */
-typedef struct{size_t at;Uint32 bytes;SDL_GPUBuffer *buffer;Uint32 offset;SDL_GPUTexture *texture;Uint32 level,layer,width,height;bool cycle;}Upload;
+typedef struct{size_t at;Uint32 bytes;SDL_GPUBuffer *buffer;Uint32 offset;SDL_GPUTexture *texture;Uint32 level,layer,x,y,width,height;bool cycle;}Upload;
 static Upload *uploads;static int upload_count,upload_size;
 enum{DRAW,VIEWPORT,SCISSOR};
 typedef struct{int kind;SDL_GPUGraphicsPipeline *pipeline;SDL_GPUBufferBinding vertex[HELIX_MAX_VERTEX_BUFFERS];int vertex_count;SDL_GPUBuffer *index;
@@ -148,7 +148,7 @@ static int upload_staged(SDL_GPUCommandBuffer *cmd,const unsigned char *bytes,si
    const bool cycle=u->buffer==arena&&!arena_cycled;if(cycle)arena_cycled=1;
    SDL_UploadToGPUBuffer(copy,&(SDL_GPUTransferBufferLocation){transfer,(Uint32)u->at},&(SDL_GPUBufferRegion){u->buffer,u->offset,u->bytes},cycle);
   }else SDL_UploadToGPUTexture(copy,&(SDL_GPUTextureTransferInfo){.transfer_buffer=transfer,.offset=(Uint32)u->at},
-    &(SDL_GPUTextureRegion){.texture=u->texture,.mip_level=u->level,.layer=u->layer,.w=u->width,.h=u->height,.d=1},u->cycle);
+    &(SDL_GPUTextureRegion){.texture=u->texture,.mip_level=u->level,.layer=u->layer,.x=u->x,.y=u->y,.w=u->width,.h=u->height,.d=1},u->cycle);
  }
  SDL_EndGPUCopyPass(copy);
  return 1;
@@ -257,7 +257,7 @@ static uint32_t sampled(int w,int h,int faces,const void *data,int bytes,int lev
   lw=lw>1?lw/2:1;lh=lh>1?lh/2:1;
  }
  if(!upload_now(data,total,list,count)){SDL_ReleaseGPUTexture(device,texture);return 0;}
- textures[slot].texture=texture;textures[slot].layers=faces;
+ textures[slot].texture=texture;textures[slot].layers=faces;textures[slot].format=format;
  return take_texture(slot,PLAIN,w,h);
 }
 uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int format){return sampled(w,h,1,data,bytes,levels,format);}
@@ -279,10 +279,7 @@ uint32_t helix_data_texture(int w,int h){
 static int texture_live(uint32_t handle){const int s=slot_of(handle);return s>=0&&s<SLOTS&&textures[s].live&&(handle>>16)==textures[s].generation;}
 /* Rewrites a data texture whole. Its current version, unless a draw read it this frame: then the next it hasn't, made when first needed.
    Staged for the pass's copy, or uploaded at once outside a pass. */
-int helix_update_data(uint32_t handle,const void *data,int bytes){
- if(!texture_live(handle)||!data)return 0;
- const int slot=slot_of(handle);
- if(textures[slot].kind!=DATA)return 0;
+static int update_data(int slot,const void *data,int bytes){
  const size_t size=(size_t)textures[slot].width*(size_t)textures[slot].height*16;
  if((size_t)bytes<size)return 0;
  int v=textures[slot].current;
@@ -297,6 +294,20 @@ int helix_update_data(uint32_t handle,const void *data,int bytes){
  const size_t at=stage_bytes(data,size);Upload *staged=at==(size_t)-1?NULL:add_upload();
  if(!staged)return 0;
  *staged=u;staged->at=at;return 1;
+}
+/* Replaces a rectangle of a texture's texels: a data texture's whole (x and y 0, its size), inside a pass or outside; a 2D texture's top
+   level, RGBA8 or half floats, outside a pass, not cycled (the texels outside the rectangle are kept): a copy in the frame's command buffer
+   when a frame is being recorded, after its passes so far, else uploaded at once. 0 for anything else. */
+int helix_update_texture(uint32_t handle,int x,int y,int w,int h,const void *data,int bytes){
+ if(!texture_live(handle)||!data||x<0||y<0||w<=0||h<=0)return 0;
+ const int slot=slot_of(handle);
+ if(textures[slot].kind==DATA)return x||y||w!=textures[slot].width||h!=textures[slot].height?0:update_data(slot,data,bytes);
+ const int format=textures[slot].format;
+ if(active||textures[slot].kind!=PLAIN||textures[slot].layers!=1||(format!=0&&format!=4)||x+w>textures[slot].width||y+h>textures[slot].height)return 0;
+ const size_t size=level_bytes(format,w,h);
+ if((size_t)bytes<size)return 0;
+ const Upload u={.bytes=(Uint32)size,.texture=textures[slot].texture,.x=(Uint32)x,.y=(Uint32)y,.width=(Uint32)w,.height=(Uint32)h};
+ return command?upload_staged(command,data,size,&u,1):upload_now(data,size,&u,1);
 }
 
 static int free_buffer_slot(void){for(int i=0;i<SLOTS;i++)if(!buffers[i].live)return i;return -1;}

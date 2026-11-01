@@ -188,7 +188,8 @@ class Frame {
 			clear: 0xff000000,
 			width: 1,
 			height: 1,
-			draws: []
+			draws: [],
+			updates: []
 		};
 		reset();
 	}
@@ -219,7 +220,8 @@ class Frame {
 			clear: 0xff000000,
 			width: screen == null ? 1 : screen.width,
 			height: screen == null ? 1 : screen.height,
-			draws: []
+			draws: [],
+			updates: []
 		};
 		passes.push(pass);
 		batch.resize(0);
@@ -266,7 +268,8 @@ class Frame {
 			clear: 0,
 			width: width,
 			height: height,
-			draws: []
+			draws: [],
+			updates: []
 		};
 		passes.insert(passes.length - 1, pass);
 		viewport = null;
@@ -289,6 +292,43 @@ class Frame {
 	public function clear(color:Int):Void {
 		pass.clear = color;
 		pass.draws.resize(0);
+	}
+
+	/** Replaces a rectangle of a texture on the GPU in the frame's order, as rlgl's `rlUpdateTexture` does at once: before the render
+		texture pass being drawn into, or, drawing on the screen, after the render texture passes so far and before those begun later. The
+		screen's draws all see it, as rlgl's batch drawn after it does.
+
+		@param texture  The texture's GPU handle.
+		@param x  The rectangle's left edge, in texels.
+		@param y  Its top edge.
+		@param width  Its width.
+		@param height  Its height.
+		@param rgba  Its texels, 8-bit RGBA, rows top first. */
+	public function updateTexture(texture:Int, x:Int, y:Int, width:Int, height:Int, rgba:Bytes):Void {
+		var update:Update = {
+			texture: texture,
+			x: x,
+			y: y,
+			width: width,
+			height: height,
+			rgba: rgba
+		};
+		if (pass.target != 0) {
+			pass.updates.push(update);
+			return;
+		}
+		var last = passes.length > 1 ? passes[passes.length - 2] : null;
+		if (last != null && last.target == -1)
+			last.updates.push(update);
+		else
+			passes.insert(passes.length - 1, {
+				target: -1,
+				clear: 0,
+				width: 0,
+				height: 0,
+				draws: [],
+				updates: [update]
+			});
 	}
 
 	/** Draws the batch, rlgl's `rlDrawRenderBatchActive`: its runs into the pass, each through the current program, matrices and state
@@ -604,6 +644,10 @@ class Frame {
 		flush();
 		present();
 		for (p in passes) {
+			for (u in p.updates)
+				graphics.updateTexture(u.texture, u.x, u.y, u.width, u.height, u.rgba);
+			if (p.target == -1)
+				continue;
 			if (p.target == 0)
 				graphics.beginFrame(framebufferWidth, framebufferHeight, p.clear);
 			else
@@ -709,11 +753,23 @@ class Frame {
 }
 
 private typedef Pass = {
+	// The render target, 0 for the screen, or -1 for no pass: updates alone, between passes.
 	final target:Int;
 	var clear:Int;
 	var width:Float;
 	var height:Float;
 	final draws:Array<Draw>;
+	// Textures' rectangles replaced before the pass begins.
+	final updates:Array<Update>;
+}
+
+private typedef Update = {
+	final texture:Int;
+	final x:Int;
+	final y:Int;
+	final width:Int;
+	final height:Int;
+	final rgba:Bytes;
 }
 
 private typedef Draw = {

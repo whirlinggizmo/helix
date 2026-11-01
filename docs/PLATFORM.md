@@ -193,8 +193,10 @@ enum Event {
 
 `IGraphics`: resources, passes and one draw. The adapter knows no program or layout of its caller's.
 
-- Textures: `createTexture(width, height, levels, format)` (2D, with its mip levels), `createCubeTexture`, `createDataTexture` and
-  `updateDataTexture` (floats read texel by texel), `createRenderTarget(width, height, format, depth)` (RGBA8 or half floats, with or
+- Textures: `createTexture(width, height, levels, format)` (2D, with its mip levels), `createCubeTexture`, `createDataTexture` (floats read texel by texel),
+  `updateTexture(handle, x, y, width, height, data)` (a rectangle of a texture's top level, RGBA8 or half floats, outside a pass, the
+  passes before it reading the old texels; a data texture whole, at any time; sokol writes through GL directly, SDL_GPU copies in the
+  frame's command buffer, uncycled), `createRenderTarget(width, height, format, depth)` (RGBA8 or half floats, with or
   without depth), `createShadowMap(size, layerCount)` (a depth array read through a comparison sampler), `disposeTexture`; `canSample(format)`
   and `canRender(format)` say what the GPU can.
 - Buffers: `createBuffer(capacityBytes)` and `updateBuffer`, `createStaticBuffer(data, bytes, index)`, `disposeBuffer`.

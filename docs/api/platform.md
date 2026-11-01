@@ -793,7 +793,7 @@ A call that cannot be done throws before doing anything.
 function createTexture(width:Int, height:Int, levels:Array<haxe.io.Bytes>, ?format:TextureFormat = Rgba8):Int
 function createCubeTexture(size:Int, levels:Array<haxe.io.Bytes>, format:TextureFormat):Int
 function createDataTexture(width:Int, height:Int):Int
-function updateDataTexture(handle:Int, data:haxe.io.Bytes):Void
+function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:haxe.io.Bytes):Void
 function canSample(format:TextureFormat):Bool
 var msaaSampleCount(get, never):Int
 var maxMsaaSampleCount(get, never):Int
@@ -846,13 +846,17 @@ function dispose():Void
   - returns: The data texture's handle.
   - throws `String`: A size of 0 or less, or larger than this GPU allows.
 
-  A data texture is read texel by texel and never filtered, so its samplings are ignored. `updateDataTexture` fills it.
-- `updateDataTexture`: Replaces a data texture's contents for the draws after it.
-  - `handle`: The data texture.
-  - `data`: The texels, at least width * height * 16 bytes, as little-endian floats with rows top first.
-  - throws `String`: A handle that is not a data texture, or data that is too short.
+  A data texture is read texel by texel and never filtered, so its samplings are ignored. `updateTexture` fills it, whole.
+- `updateTexture`: Replaces a rectangle of a texture's texels, for the draws after it.
+  - `handle`: The texture: a `createTexture` texture of format Rgba8 or Rgba16f, or a data texture.
+  - `x`: The rectangle's left edge, in texels.
+  - `y`: The rectangle's top edge, in texels from the top row.
+  - `width`: The rectangle's width, in texels.
+  - `height`: The rectangle's height, in texels.
+  - `data`: The rectangle's texels with rows top first, `format.levelBytes(width, height)` bytes of the texture's format, or 16 bytes a texel of little-endian floats for a data texture.
+  - throws `String`: An unknown handle, a cube, render target or shadow map, a compressed format, a call inside a pass for a `createTexture` texture, a rectangle that is empty or not inside the texture (not all of a data texture), or data that is too short.
 
-  It can be called any number of times a frame.
+  A `createTexture` texture is updated outside a pass, any number of times a frame: draws in the passes before it read the old texels, and those after it the new. Only its top level changes; its mipmaps are left as they were. A data texture is rewritten whole, the rectangle all of it, any number of times a frame, inside a pass or outside: each draw reads the latest.
 - `canSample`: Returns whether this GPU samples textures of a format.
   - `format`: The format.
   - returns: True when textures of the format can be sampled.

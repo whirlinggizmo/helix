@@ -9,7 +9,7 @@ extern class GraphicsDeviceBridge {
 	@:native("helix_texture") static function texture(w:Int, h:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int, levels:Int, format:Int):Int;
 	@:native("helix_cube_texture") static function cubeTexture(size:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int, levels:Int, format:Int):Int;
 	@:native("helix_data_texture") static function dataTexture(w:Int, h:Int):Int;
-	@:native("helix_update_data") static function updateData(texture:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
+	@:native("helix_update_texture") static function updateTexture(texture:Int, x:Int, y:Int, w:Int, h:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
 	@:native("helix_can_sample") static function canSample(format:Int):Int;
 	@:native("helix_msaa_samples") static function msaaSamples():Int;
 	@:native("helix_max_msaa_samples") static function maxMsaaSamples():Int;

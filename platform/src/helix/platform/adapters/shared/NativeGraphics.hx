@@ -62,9 +62,9 @@ abstract class NativeGraphics implements IGraphics {
 	public function createDataTexture(width:Int, height:Int):Int
 		return valid(GraphicsDeviceBridge.dataTexture(width, height));
 
-	public function updateDataTexture(handle:Int, data:Bytes):Void
-		if (data.length == 0 || GraphicsDeviceBridge.updateData(handle, pointer(data), data.length) != 1)
-			throw "Invalid native data texture update";
+	public function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:Bytes):Void
+		if (data.length == 0 || GraphicsDeviceBridge.updateTexture(handle, x, y, width, height, pointer(data), data.length) != 1)
+			throw "Invalid native texture update";
 
 	public function canSample(format:TextureFormat):Bool
 		return GraphicsDeviceBridge.canSample(format) == 1;

@@ -508,7 +508,7 @@ var msaaSampleCount(get, never):Int
 var maxMsaaSampleCount(get, never):Int
 function createTexture(width:Int, height:Int, levels:Array<haxe.io.Bytes>, ?format:TextureFormat = Rgba8):Int
 function createDataTexture(width:Int, height:Int):Int
-function updateDataTexture(handle:Int, data:haxe.io.Bytes):Void
+function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:haxe.io.Bytes):Void
 function createCubeTexture(size:Int, levels:Array<haxe.io.Bytes>, format:TextureFormat):Int
 function canSample(format:TextureFormat):Bool
 function createBuffer(capacityBytes:Int):Int

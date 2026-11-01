@@ -34,7 +34,8 @@ typedef Case = {
 	its pixels against what arithmetic says they are.
 
 	The cases: a clear, a triangle's colors interpolated, eight vertex buffers read and a ninth refused, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
-	additive blending, each blend factor and operation and a color write mask, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
+	additive blending, each blend factor and operation and a color write mask, a texture's rectangles replaced, and replaced
+	between passes, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
 	texel by texel, a cubemap's six faces, and declared textures left unbound reading clear. The shaders are `shaders/*.vert` and `*.frag`,
 	compiled by the build, so it checks the shader compiler's dialects too. One case runs a frame; on a GPU that reads back later, the next
 	waits for it.
@@ -265,8 +266,17 @@ class GraphicsTests {
 		var positions = buffer(square);
 		var numbers = [for (value in [.25, .25, .5, .25, .125, .5, 1]) buffer([for (_ in 0...6) value])];
 
-		var target = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false);
+		var target = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false),
+			second = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false);
 		textures.push(target);
+		textures.push(second);
+		// 4 x 4, red, its rectangles replaced by the cases; and 2 x 1 of half floats.
+		var patched = texture2D(4, 4, [for (_ in 0...16) 0xff0000ff]);
+		var halves = Bytes.alloc(16);
+		for (i in 0...8)
+			halves.setUInt16(i * 2, 0x3c00);
+		var halfTexture = graphics.createTexture(2, 1, [halves], Rgba16f);
+		textures.push(halfTexture);
 		// 2 x 2, rows top first: red, green, then blue, white.
 		var checker = texture2D(2, 2, [0xff0000ff, 0x00ff00ff, 0x0000ffff, 0xffffffff]);
 		// One texel a face: +X red, -X green, +Y blue, -Y yellow, +Z magenta, -Z cyan.
@@ -279,7 +289,7 @@ class GraphicsTests {
 		var table = graphics.createDataTexture(4, 1);
 		textures.push(table);
 		var floats = [1., -.25, .5, 0, 3, -.5, .25, 0, 5, -.75, 1, 0, 7, 0, 0, 0];
-		graphics.updateDataTexture(table, floatBytes(floats));
+		graphics.updateTexture(table, 0, 0, 4, 1, floatBytes(floats));
 
 		var clip = floatBytes([1, 1, 0, 0]);
 		function draw(pipeline:Int, buffer:Int, count:Int, ?textures:Array<Int>, ?samplings:Array<Sampling>, ?uniforms:Array<Null<Bytes>>):Void
@@ -422,6 +432,58 @@ class GraphicsTests {
 				}
 			},
 			{
+				name: "a texture's rectangle replaced",
+				// Rows 1 and 2 of columns 2 and 3 made green, then column 0's top two texels blue; the rest stays red.
+				before: () -> {
+					graphics.updateTexture(patched, 2, 1, 2, 2, rgbaTexels([0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff]));
+					graphics.updateTexture(patched, 0, 0, 1, 2, rgbaTexels([0x0000ffff, 0x0000ffff]));
+					into(0, 0, 0, 0, () -> draw(sampled, uvQuad, 6, [patched], [Sampling.NEAREST]))();
+				},
+				target: target,
+				// Each texel is 4 x 4 of the target.
+				check: p -> {
+					p.expect(10, 6, [0, 1, 0, 1], 0);
+					p.expect(14, 10, [0, 1, 0, 1], 0);
+					p.expect(2, 2, [0, 0, 1, 1], 0);
+					p.expect(2, 6, [0, 0, 1, 1], 0);
+					p.expect(2, 10, [1, 0, 0, 1], 0);
+					p.expect(6, 2, [1, 0, 0, 1], 0);
+					p.expect(10, 14, [1, 0, 0, 1], 0);
+					p.expect(14, 2, [1, 0, 0, 1], 0);
+				}
+			},
+			{
+				name: "a texture replaced between passes",
+				// Drawn white into the second target, then made yellow: the first target gets the second's copy on the left, the texture
+				// on the right; half floats, a level of 0.5 and of 2, which the target holds as 1.
+				before: () -> {
+					graphics.updateTexture(patched, 0, 0, 4, 4, rgbaTexels([for (_ in 0...16) 0xffffffff]));
+					graphics.beginTargetPass(second, 0, 0, 0, 0);
+					draw(sampled, uvQuad, 6, [patched], [Sampling.NEAREST]);
+					graphics.endTargetPass();
+					graphics.updateTexture(patched, 0, 0, 4, 4, rgbaTexels([for (_ in 0...16) 0xffff00ff]));
+					var half = Bytes.alloc(8);
+					for (i => value in [0x3800, 0x4000, 0x3800, 0x3c00])
+						half.setUInt16(i * 2, value);
+					graphics.updateTexture(halfTexture, 1, 0, 1, 1, half);
+					into(0, 0, 0, 0, () -> {
+						graphics.applyViewport(0, 0, SIZE >> 1, SIZE);
+						draw(sampled, uvQuad, 6, [second], [Sampling.NEAREST]);
+						graphics.applyViewport(SIZE >> 1, 0, SIZE >> 2, SIZE);
+						draw(sampled, uvQuad, 6, [patched], [Sampling.NEAREST]);
+						graphics.applyViewport(SIZE * 3 >> 2, 0, SIZE >> 2, SIZE);
+						draw(sampled, uvQuad, 6, [halfTexture], [Sampling.NEAREST]);
+					})();
+				},
+				target: target,
+				check: p -> {
+					p.expect(4, 8, [1, 1, 1, 1], 0);
+					p.expect(10, 8, [1, 1, 0, 1], 0);
+					p.expect(12, 8, [1, 1, 1, 1], 1);
+					p.expect(15, 8, [.5, 1, .5, 1], 1);
+				}
+			},
+			{
 				name: "a render target drawn to the screen",
 				// Red with a green top right quarter, drawn over the screen: the quarter stays top right.
 				before: into(1, 0, 0, 1, () -> draw(tinted, half, 6, null, null, [clip, floatBytes([.5, .5, 0, 0]), floatBytes([0, 1, 0, 1])])),
@@ -552,6 +614,14 @@ class GraphicsTests {
 		var handle = graphics.createTexture(width, height, [bytes]);
 		textures.push(handle);
 		return handle;
+	}
+
+	// RGBA8 texels given as 0xRRGGBBAA.
+	static function rgbaTexels(texels:Array<Int>):Bytes {
+		var bytes = Bytes.alloc(texels.length * 4);
+		for (i => rgba in texels)
+			bytes.setInt32(i * 4, rgbaBytes(rgba));
+		return bytes;
 	}
 
 	// 0xRRGGBBAA as the little-endian int whose bytes are R, G, B, A.

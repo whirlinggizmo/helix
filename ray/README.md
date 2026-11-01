@@ -10,7 +10,7 @@ program written as raylib is written runs in a page and natively.
 | `helix.ray.Rlgl` | rlgl's matrix stack, immediate drawing and render state, as `rlgl.h` names them, imported apart as raylib includes it |
 | `helix.ray.Vector2`, `Vector3`, `Color`, `Texture2D`, `Camera3D`, `Model`, `Shader`, `RenderTexture2D` and the rest | raylib's structs, with their fields |
 
-The window and frame, the keyboard, mouse, touch and gamepads, text input, shapes (with 6.2's fixes), textures, every blend mode (rlgl's custom factors too) and scissor modes, the default
+The window and frame, the keyboard, mouse, touch and gamepads, text input, shapes (with 6.2's fixes), textures (their pixels updated too), every blend mode (rlgl's custom factors too) and scissor modes, the default
 font and TrueType and OpenType fonts (signed distance fields too), sounds and their aliases, waves (loaded, converted, cropped and
 exported as raylib's are), music with its length, position and seeking, audio streams fed by the program or its callback, text files; images on the CPU in raylib's uncompressed pixel
 formats (made, changed and drawn into as raylib's are, byte for byte, but for resizing; with 6.2's fixes), exported as PNG or QOI, and screenshots; in 3D
@@ -20,8 +20,7 @@ on the CPU or by a skinning shader, as raylib 6.2 does), raylib's shapes and bil
 the same on every target), tangents, mesh buffers updated and meshes exported, render textures, rays and their collisions; raylib's
 shaders, compiled as the program builds for every target; rlgl's render state (blending, the color mask, culling, depth, wire mode, viewport, scissor) and its
 batch, flushed as raylib's is; automation events, recorded and played as raylib's, and raylib's random numbers for a seed. IQM, VOX and M3D models
-and animations aren't read (docs/DECISIONS.md 27). Not here yet: morph targets, models drawn as points, animated (GIF) and compressed images, and
-updating a texture's pixels.
+and animations aren't read (docs/DECISIONS.md 27). Not here yet: morph targets, models drawn as points, and animated (GIF) or compressed images.
 
 ## Using it
 

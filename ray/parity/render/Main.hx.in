@@ -12,9 +12,18 @@ class Main {
 		return new Rectangle(x, y, w, h);
 
 	static function main():Void {
-		InitWindow(640, 360, "render");
+		InitWindow(640, 480, "render");
 		var target = LoadRenderTexture(200, 100);
 		var checks = LoadTextureFromImage(GenImageChecked(64, 64, 8, 8, ORANGE, DARKBLUE));
+		var red = GenImageColor(32, 32, RED);
+		var tile = GenImageChecked(8, 8, 2, 2, GREEN, BLUE);
+		var patched = LoadTextureFromImage(red);
+		var copy = LoadRenderTexture(32, 32);
+		var ramp = GenImageGradientLinear(16, 16, 90, BLACK, WHITE);
+		ImageFormat(ramp, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+		var dark = GenImageColor(8, 4, DARKGRAY);
+		ImageFormat(dark, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+		var gray = LoadTextureFromImage(ramp);
 		var frame = 0;
 		while (!WindowShouldClose()) {
 			BeginDrawing();
