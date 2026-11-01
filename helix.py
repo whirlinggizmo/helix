@@ -78,7 +78,10 @@ def ray_tests(native):
         value=result(['node',f'build/tests/{main}.js'])
         if native:
             import native_build,sdl3
-            run(['haxe',*base,'-main',main,'-cpp',f'build/tests/{main}-cpp','-D','analyzer-optimize','-D',native_build.ARCH],env=native_build.env(sdl3.find()))
+            found=sdl3.find()
+            run(['haxe',*base,'-main',main,'-cpp',f'build/tests/{main}-cpp','-D','analyzer-optimize','-D',native_build.ARCH],env=native_build.env(found))
+            # helix-ray links SDL3 (its runtime's adapters): on Windows its DLL goes beside the program, or the program doesn't start.
+            native_build.place_runtimes(ROOT/'build/tests'/f'{main}-cpp',found)
             result([str(ROOT/'build/tests'/f'{main}-cpp'/(f'{main}.exe' if sys.platform=='win32' else main))])
         print(f'{main}: {value["checks"]} checks (Node{" and hxcpp" if native else ""})',flush=True)
 
