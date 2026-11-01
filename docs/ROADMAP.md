@@ -1,5 +1,11 @@
 # Roadmap
 
+- **Drawing, shaders and a scene, drafted as APIs:** helix-draw (2D and 3D drawing over the platform: batches, draw lists, lit
+  materials, lights, shadows, environment maps, post-processing, points; HeliX's renderers carried over), a shaders package in
+  helix-services (compiling, knowing a shader by name, setting values by name; helix-draw and helix-ray both on it), then a scene
+  library on helix-draw (2D and 3D nodes, transforms, hierarchy, the walk that culls, lights and sorts; HeliX's nodes and stage
+  carried over). Each judged by what a raylib layer and a three.js layer would need from below; helix-ray to be rebuilt on
+  helix-draw. Drafts agreed with the user and tried by fresh agents before any is written.
 - **helix-ray, on trial (DECISIONS 16, 19, 20, 21):** raylib's API over the services; to decide whether it merges. Next: a managed layer beside it (assets, instances,
   placeholders, as librl has them), designed as an API first. Then a trial of how agents take to
   the `...Async` loads (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
