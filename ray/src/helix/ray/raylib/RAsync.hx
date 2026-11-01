@@ -43,26 +43,9 @@ class RAsync {
 		Runtime.fetch(path, error -> error == null ? loaded(RTextures.loadTexture(path)) : refuse("LoadTextureAsync", error, failed));
 	}
 
-	/** Loads a model from a glTF, GLB or OBJ file, with the files it points to (a glTF file's images and buffers, an OBJ file's material
-		library and its textures), answering when it is ready: helix-ray's own, in place of raylib's `LoadModel`. A file loaded again,
-		while a load of it lives, shares its meshes' GPU buffers and its textures, with materials of its own.
-
-		An OBJ file is read as raylib 6.2's `LoadOBJ` reads it: its polygons split into fans of triangles; a new mesh at each `g` or `o`
-		line with faces after it, and where a face's material differs from the face before's, unless that face had none (faces before
-		any `usemtl` join the next material's mesh); its vertices its triangles' corners, unindexed; a corner without a normal, or naming
-		one the file doesn't have, given (0, 1, 0), one without texture coordinates (0, 0), the others' v turned (1 - v), and one naming
-		a position the file doesn't have (0, 0, 0); every vertex's color white, whatever colors the file gives; each mesh's material its
-		last face's, or 0 when that is no material of the library. Its materials are the library's, read as `LoadMaterialsAsync` reads
-		them, of the file's last `mtllib` line; with no library, or one that can't be read (logged), the model has raylib's default
-		material alone. raylib counts the start of each group in the file's `f` lines against the triangles it has made, so a polygon, or
-		a face of 1 or 2 corners, before a group moves the group's first mesh; helix-ray does too. An empty file fails to load, as one
-		raylib can't read. Where raylib's reading is broken, helix-ray reads the file as the format has it, and a file that breaks the
-		format fails to load (docs/DECISIONS.md 28). IQM, VOX and M3D models aren't read (docs/DECISIONS.md 27).
-
-		@param fileName  The file, as the program names it.
-		@param loaded  Receives the model.
-		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
-	static function LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void):Void {
+	// LoadModelAsync's call where its file's name isn't known as the program builds (Raylib.LoadModelAsync): the reader picked by its
+	// extension as it runs, so both readers are in the program. A format helix-ray doesn't read is refused.
+	static function loadModel(fileName:String, loaded:Model->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName), lower = path.toLowerCase();
 		var extension = lower.lastIndexOf(".") >= 0 ? lower.substr(lower.lastIndexOf(".")) : "";
 		if (extension == ".iqm" || extension == ".vox" || extension == ".m3d") {
@@ -74,16 +57,21 @@ class RAsync {
 			Runtime.later(() -> refuse("LoadModelAsync", '$path: only glTF, GLB and OBJ are read here', failed));
 			return;
 		}
+		if (extension == ".obj")
+			loadObjModel(fileName, loaded, failed);
+		else
+			loadGltfModel(fileName, loaded, failed);
+	}
+
+	// LoadModelAsync's call for a glTF or GLB file.
+	static function loadGltfModel(fileName:String, loaded:Model->Void, ?failed:String->Void):Void {
+		var path = normalize(fileName);
 		if (Models.isKept(path)) {
 			Runtime.later(() -> loaded(RModels.loadModel(path)));
 			return;
 		}
-		if (extension == ".obj") {
-			loadObj(path, loaded, failed);
-			return;
-		}
 		Runtime.loading();
-		Runtime.models.load(path, read -> {
+		Runtime.models.loadGltf(path, read -> {
 			// raylib gives a mesh without joints whose node is a bone's child to that bone: the nodes are the file's, read again.
 			if (read.skeleton != null && read.skins.length > 0 && Lambda.exists(read.meshes, m -> m.jointIndices == null)) {
 				Animations.read(path, file -> {
@@ -95,6 +83,16 @@ class RAsync {
 			Models.keep(read, defaultShader());
 			loaded(RModels.loadModel(path));
 		}, error -> refuse("LoadModelAsync", error, failed));
+	}
+
+	// LoadModelAsync's call for an OBJ file.
+	static function loadObjModel(fileName:String, loaded:Model->Void, ?failed:String->Void):Void {
+		var path = normalize(fileName);
+		if (Models.isKept(path)) {
+			Runtime.later(() -> loaded(RModels.loadModel(path)));
+			return;
+		}
+		loadObj(path, loaded, failed);
 	}
 
 	// An OBJ file, the last library its mtllib lines name (one that can't be read logged and left out) and that library's textures (one that

@@ -227,10 +227,16 @@ class Function:
         return ', '.join(p[2] for p in self.params)
 
 
+def bare(declared):
+    """A macro function's parameter type as a section's would be written: ExprOf<T> as T, its arrows without spaces."""
+    return re.sub(r'^ExprOf<(.*)>$', r'\1', declared or '').replace(' -> ', '->')
+
+
 def described(texts):
     """The sections' functions and each file's members written by hand, as the compiler describes them (haxe -xml). The sections are
     compiled over a copy of ray/src whose files keep only their generated constants (which the sections name), so a stale file doesn't
-    stop its own making. Returns ({section: [Function, in order]}, {file: names written by hand})."""
+    stop its own making. Returns ({section: [Function, in order]}, {file: names written by hand}, {macro function written by hand: its
+    parameters})."""
     sys.path.insert(0, str(ROOT / 'tools'))
     import pins
     env = pins.use_haxelib()
@@ -257,8 +263,11 @@ def described(texts):
             raise SystemExit('gen_raylib: the sections don\'t compile:\n' + ran.stdout + ran.stderr)
         classes = {c.get('path'): c for c in ET.parse(out).getroot()}
         facades = {f'helix.ray.{n[:-3]}' for n in texts}
-        facade_fields = [(f['owner'], f['name'], f['line'], f['isMacro']) for f in json.loads(fields.read_text(encoding='utf-8'))
-                         if f['isStatic'] and f['owner'] in facades]
+        declared = [f for f in json.loads(fields.read_text(encoding='utf-8')) if f['isStatic'] and f['owner'] in facades]
+        facade_fields = [(f['owner'], f['name'], f['line'], f['isMacro']) for f in declared]
+        # A macro function written by hand (LoadModelAsync), its parameters as a section writes them: each ExprOf<T> as T, its arrows bare.
+        macros = {f['name']: ', '.join(('?' if a['optional'] else '') + a['name'] + ':' + bare(a['type']) for a in f['args'])
+                  for f in declared if f['isMacro'] and f.get('args') is not None}
     sections = {}
     for name, _ in SECTIONS:
         functions = [Function(n) for n in classes[f'helix.ray.raylib.{name}']
@@ -270,7 +279,7 @@ def described(texts):
         first, last = spans[name]
         if not first <= int(line) <= last:
             own[name][field] = is_macro
-    return sections, own
+    return sections, own, macros
 
 
 def generated(file_sections, functions, api, header, written):
@@ -339,7 +348,7 @@ def layout():
     and the macros the file writes by hand under one of their own. refused holds the functions a call to which doesn't compile, by kind
     ('unsupported', 'unimplemented'), each a list of names in the header's order."""
     texts = {name: (RAY / name).read_text(encoding='utf-8') for name in TARGETS}
-    functions, own = described(texts)
+    functions, own, _ = described(texts)
     every = {f.name for fs in functions.values() for f in fs}
     out = {}
     for name, (target_sections, api_file, header) in TARGETS.items():
@@ -399,11 +408,14 @@ def main():
         if BEGIN not in text or END not in text:
             print(f'gen_raylib: {name} has no generated part (its markers are missing)')
             return 1
-    functions, own = described(texts)
-    # A refusal's message naming what to use instead gives its parameters as the section writes them.
+    functions, own, macros = described(texts)
+    # A refusal's message naming what to use instead gives its parameters as the section writes them, or as a facade's macro function
+    # takes them.
     every = {f.name: f for fs in functions.values() for f in fs}
+    written = {name: f.signature() for name, f in every.items()}
+    written.update(macros)
     stale = [f'{m.group(1)}({m.group(2)})' for f in every.values() if f.refusal for m in [INSTEAD.search(f.refusal[1])]
-             if m and (m.group(1) not in every or every[m.group(1)].signature() != m.group(2))]
+             if m and written.get(m.group(1)) != m.group(2)]
     if stale:
         print('gen_raylib: a refusal\'s message names a signature that isn\'t written so: ' + ', '.join(stale))
         return 1

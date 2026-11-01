@@ -294,6 +294,21 @@ void main() {
 		return {name: value, text: File.getContent(path)};
 	}
 
+	/** Returns a string known as the program builds: a constant, or constants joined with +.
+
+		@param e  The expression.
+		@return  The string, or null for anything else. */
+	public static function known(e:Expr):Null<String> {
+		switch e.expr {
+			case EConst(CString(s, _)):
+				return s;
+			case EConst(CIdent("null")):
+				return null;
+			case _:
+		}
+		return try fold(Context.typeExpr(e)) catch (_:Dynamic) null;
+	}
+
 	// A constant string, a null, or one made of constants with +: what the program builds with.
 	static function constant(e:Expr):Null<String> {
 		switch e.expr {

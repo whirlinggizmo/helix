@@ -23,7 +23,8 @@ import helix.services.images.Images;
 
 /** Provides 3D models by path: a glTF 2.0 file (.gltf or .glb) or a Wavefront OBJ file (.obj) read through the assets, with the files it
 	names (a glTF file's buffers and images, an OBJ file's material libraries and their textures) brought in and its images decoded, as one
-	`Model3D`. The file's extension decides how it is read.
+	`Model3D`. `load` reads a file as its extension says; `loadGltf` and `loadObj` read one format, so a program reading one carries only
+	its reader.
 
 	The file is read by helix-formats' `GltfFile`. Each node of its scene puts its transform, and its parents', into its meshes'
 	positions, normals and tangents (`Mesh3D.transform`), so a model's meshes are drawn as they are; a skinned mesh's vertices stay as
@@ -57,7 +58,18 @@ class Models {
 		this.images = images;
 	}
 
-	/** Loads a model, the files it names and its images.
+	/** Loads a model, the files it names and its images, read as its extension says: `loadObj` for an .obj file, `loadGltf` for any other.
+
+		A program calling `load` carries both readers; one calling `loadGltf` or `loadObj` alone carries only that one's.
+		@param path  The file, as the assets name it.
+		@param loaded  Receives the model.
+		@param failed  Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
+		@return  A function that aborts the load; neither callback is called after it, and once one was, it does nothing. */
+	public function load(path:String, loaded:Model3D->Void, ?failed:String->Void):Void->Void {
+		return StringTools.endsWith(path.toLowerCase(), ".obj") ? loadObj(path, loaded, failed) : loadGltf(path, loaded, failed);
+	}
+
+	/** Loads a glTF 2.0 model (.gltf or .glb), the files it names and its images.
 
 		One of `loaded` or `failed` is called once, at a later poll, never during this call. A buffer the file names that can't be read
 		fails the load; an image that can't be read or decoded is null in the model, and logged.
@@ -65,9 +77,7 @@ class Models {
 		@param loaded  Receives the model.
 		@param failed  Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
 		@return  A function that aborts the load; neither callback is called after it, and once one was, it does nothing. */
-	public function load(path:String, loaded:Model3D->Void, ?failed:String->Void):Void->Void {
-		if (StringTools.endsWith(path.toLowerCase(), ".obj"))
-			return loadObj(path, loaded, failed);
+	public function loadGltf(path:String, loaded:Model3D->Void, ?failed:String->Void):Void->Void {
 		var aborted = false, finished = false, aborts:Array<Void->Void> = [];
 		function fail(message:String):Void {
 			if (aborted || finished)
@@ -149,9 +159,16 @@ class Models {
 		};
 	}
 
-	// An OBJ file's model: the file, then each library it names (one that can't be read logged and skipped), then each texture its
-	// materials name, decoded (one that can't be, null and logged).
-	function loadObj(path:String, loaded:Model3D->Void, ?failed:String->Void):Void->Void {
+	/** Loads a Wavefront OBJ model, the material libraries it names and their textures.
+
+		The file is read first, then each library it names (one that can't be read logged and skipped), then each texture its materials
+		name, decoded (one that can't be, null in the model and logged). One of `loaded` or `failed` is called once, at a later poll, never
+		during this call.
+		@param path  The file, as the assets name it.
+		@param loaded  Receives the model.
+		@param failed  Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
+		@return  A function that aborts the load; neither callback is called after it, and once one was, it does nothing. */
+	public function loadObj(path:String, loaded:Model3D->Void, ?failed:String->Void):Void->Void {
 		var aborted = false, finished = false, aborts:Array<Void->Void> = [];
 		function fail(message:String):Void {
 			if (aborted || finished)

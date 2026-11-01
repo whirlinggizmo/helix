@@ -256,3 +256,14 @@ Why things are the way they are, numbered, in order.
     Unreal take Unicode strings, and a page fetches a URL; only languages' own libraries (Rust's `OsStr`, Python's surrogate escapes)
     keep a path's raw bytes. It is the one difference kept on a file the formats allow that isn't raylib's bug; no parity case shows
     it, as each side's file is spelled apart.
+
+29. **A model's reader is chosen as the program builds, from its file's name.** `LoadModelAsync` read glTF, GLB and OBJ files, choosing
+    the reader by the name's extension as the program ran, so every program loading a model carried both: a glTF-only program carried
+    the OBJ and MTL readers (ray/tests/sizes' 6-model). `LoadModelAsync` is now a macro in `Raylib`, as `LoadShader` is: a name known as
+    the program builds (a constant, or constants joined with +) calls its extension's reader alone, so dead-code elimination drops the
+    other; a name known only as the program runs calls the one choosing then, which brings both. helix-services' `Models.load` chose by
+    the extension too, so it gains `loadGltf` and `loadObj` beside it, and helix-ray's glTF reader calls `loadGltf`: any engine on the
+    services carries only the readers it calls. raylib's API is unchanged: a program
+    names its files as raylib's do, and a constant name is what raylib's programs write. Rejected: a define (`-D helix-ray-no-obj`),
+    which a program has to know to set and which fails only as it runs when set wrong; a call registering a reader, which raylib's API
+    doesn't have; a reader built when first used (AGENTS.md).
