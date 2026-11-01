@@ -4,8 +4,8 @@ import helix.ray.internal.Frame;
 import helix.ray.internal.Runtime;
 import helix.ray.internal.Textures;
 
-// helix-ray's materials, printed as ref.c prints raylib 5.5's, for tools/ray_parity.py. Where ref.c sees a texture freed by GL taking
-// its name again, this sees its pixels gone (Textures.imageOf).
+// helix-ray's materials, printed as ref.c prints raylib 5.5's, for tools/ray_parity.py. Where ref.c sees a texture freed or kept by
+// whether GL takes its name again, this sees its pixels gone or there (Textures.imageOf).
 @:access(helix.ray.internal.Runtime)
 class MaterialDefaultBits {
 	static function line(s:String)
@@ -34,6 +34,20 @@ class MaterialDefaultBits {
 		throw "never answered";
 	}
 
+	static function pixels(key:String, t:Texture2D) {
+		var im:Image = null;
+		LoadImageFromTextureAsync(t, i -> im = i, e -> throw e);
+		pump(() -> im != null);
+		Parity.image(key, im);
+	}
+
+	static function load(file:String):Model {
+		var model:Model = null;
+		LoadModelAsync(file, m -> model = m, e -> throw e);
+		pump(() -> model != null);
+		return model;
+	}
+
 	static function valid(m:Material):Int
 		return IsMaterialValid(m) ? 1 : 0;
 
@@ -42,6 +56,13 @@ class MaterialDefaultBits {
 		var gr = new StubGraphics();
 		Runtime.graphics = gr;
 		Runtime.frame = new Frame(gr);
+		var files = new DiskFiles(), decoder = new PngDecoder();
+		Runtime.polled.push(files);
+		Runtime.polled.push(decoder);
+		Runtime.assets = new helix.services.assets.Assets({sources: [FileSystem(files)]});
+		Runtime.decoding = new helix.services.images.Images(decoder, Runtime.assets);
+		Runtime.polled.push(Runtime.decoding);
+		Runtime.models = new helix.services.models.Models(Runtime.assets, Runtime.decoding);
 		var m = LoadMaterialDefault(), shader = m.shader;
 		line('default valid ${valid(m)} shader ${shader.id == Runtime.frame.defaultProgram.handle ? 1 : 0} params ${m.params.join(" ")}');
 		maps("default", m);
@@ -62,6 +83,20 @@ class MaterialDefaultBits {
 		pump(() -> white != null);
 		Parity.image("unloaded default", white);
 		line('unloaded freed ${Textures.imageOf(id) == null ? 1 : 0}');
+
+		// A texture taken from a model, the model unloaded.
+		var taken = load("web/materials.gltf");
+		var kept = taken.materials[1].maps[MATERIAL_MAP_ALBEDO].texture;
+		UnloadModel(taken);
+		pixels("taken", kept);
+		line('taken kept ${Textures.imageOf(kept.id) != null ? 1 : 0}');
+
+		// Two loads of the file: the first's material unloaded, the second's textures read after.
+		var first = load("web/materials.gltf"),
+			second = load("web/materials.gltf");
+		UnloadMaterial(first.materials[1]);
+		pixels("shared albedo", second.materials[1].maps[MATERIAL_MAP_ALBEDO].texture);
+		pixels("shared normal", second.materials[1].maps[MATERIAL_MAP_NORMAL].texture);
 		Parity.save();
 	}
 }

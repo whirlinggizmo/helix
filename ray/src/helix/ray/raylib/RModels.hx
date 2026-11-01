@@ -712,8 +712,8 @@ class RModels {
 		return model.meshCount > 0;
 	}
 
-	/** Frees a model: its maps' textures, each map's load of its own (so a texture another load of its file shares stays), and its
-		meshes, a file's with its last load. A texture set on a map is freed with it.
+	/** Frees a model's meshes, as raylib's: a file's with its last load. Its materials' textures and shaders stay, as a program may share
+		them between models: `UnloadMaterial`, `UnloadTexture` and `UnloadShader` free them.
 
 		@param model  The model. */
 	static function UnloadModel(model:Model):Void {
@@ -724,7 +724,6 @@ class RModels {
 		}
 		for (mesh in model.meshes)
 			Models.unload(mesh);
-		Models.releaseTextures(model);
 	}
 
 	/** Draws a model at a position and a scale, its materials' colors times a tint.

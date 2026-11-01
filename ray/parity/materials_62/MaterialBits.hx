@@ -65,19 +65,13 @@ class MaterialBits {
 			line('meshmaterial $i ${model.meshMaterial[i]}');
 		var shader = LoadMaterialDefault().shader;
 		for (i => m in model.materials) {
-			line('material $i valid ${IsMaterialValid(m) ? 1 : 0} default ${m.shader.id == shader.id ? 1 : 0}');
+			line('material $i default ${m.shader.id == shader.id ? 1 : 0}');
 			for (k => map in m.maps) {
 				var c = map.color;
 				line('map $i $k color ${c.r} ${c.g} ${c.b} ${c.a} value ${map.value}');
 				texture('texture $i $k', map.texture);
 			}
 		}
-		line('empty valid ${IsMaterialValid(new Material(@:privateAccess new Shader(0, [], null), null)) ? 1 : 0}');
-		// Two loads of the file: one's first material freed, the other's textures read after.
-		var other = load("web/materials.gltf");
-		UnloadMaterial(model.materials[1]);
-		for (k => map in other.materials[1].maps)
-			texture('shared $k', map.texture);
 		Parity.save();
 	}
 }

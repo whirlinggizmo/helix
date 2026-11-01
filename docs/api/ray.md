@@ -3499,7 +3499,7 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
 - `IsModelValid`: Returns whether a model has meshes.
   - `model`: The model.
   - returns: True when it has.
-- `UnloadModel`: Frees a model: its maps' textures, each map's load of its own (so a texture another load of its file shares stays), and its meshes, a file's with its last load. A texture set on a map is freed with it.
+- `UnloadModel`: Frees a model's meshes, as raylib's: a file's with its last load. Its materials' textures and shaders stay, as a program may share them between models: `UnloadMaterial`, `UnloadTexture` and `UnloadShader` free them.
   - `model`: The model.
 - `DrawModel`: Draws a model at a position and a scale, its materials' colors times a tint.
   - `model`: The model.

@@ -1,6 +1,7 @@
 // raylib 5.5's materials, printed for tools/ray_parity.py: LoadMaterialDefault's maps, IsMaterialValid on it and on materials without
 // maps or a shader, and what UnloadMaterial leaves: the default texture, a map's own texture freed (GL takes its name again for the next
-// texture made), and the default shader.
+// texture made), and the default shader; a texture taken from a model still there after UnloadModel (the next texture made takes another
+// name); and a model's texture read from a second load of its file after UnloadMaterial frees the first load's material.
 #include "raylib.h"
 #include "rlgl.h"
 #include "parity.h"
@@ -12,6 +13,14 @@
 static void texture(const char *key, Texture2D t) {
     if (t.id == 0) { printf("%s none\n", key); return; }
     printf("%s %s %d %d %d %d\n", key, t.id == rlGetTextureIdDefault() ? "default" : "own", t.width, t.height, t.mipmaps, t.format);
+}
+
+// A texture's pixels, read back and made RGBA.
+static void pixels(const char *key, Texture2D t) {
+    Image im = LoadImageFromTexture(t);
+    ImageFormat(&im, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+    image(key, im);
+    UnloadImage(im);
 }
 
 static void maps(const char *name, Material m) {
@@ -54,6 +63,21 @@ int main(void) {
     image("unloaded default", white);
     Texture2D again = LoadTextureFromImage(checked);
     printf("unloaded freed %d\n", again.id == own.id);
+
+    // A texture taken from a model, the model unloaded: its first texture made, so GL would take its name first were it freed.
+    Model taken = LoadModel("web/materials.gltf");
+    Texture2D kept = taken.materials[1].maps[MATERIAL_MAP_ALBEDO].texture;
+    UnloadModel(taken);
+    pixels("taken", kept);
+    Texture2D next = LoadTextureFromImage(checked);
+    printf("taken kept %d\n", next.id != kept.id);
+
+    // Two loads of the file: the first's material unloaded, the second's textures read after.
+    Model first = LoadModel("web/materials.gltf");
+    Model second = LoadModel("web/materials.gltf");
+    UnloadMaterial(first.materials[1]);
+    pixels("shared albedo", second.materials[1].maps[MATERIAL_MAP_ALBEDO].texture);
+    pixels("shared normal", second.materials[1].maps[MATERIAL_MAP_NORMAL].texture);
     CloseWindow();
     return 0;
 }

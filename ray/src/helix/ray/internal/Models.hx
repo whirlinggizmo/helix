@@ -486,8 +486,8 @@ class Models {
 		return model;
 	}
 
-	/** Releases one load of a file's model: its maps' loads of their textures, and with the last load its meshes' GPU buffers and the
-		textures.
+	/** Releases one load of a file's model: the GPU buffers its own meshes have, and with the last load the shared meshes' buffers. Its
+		textures stay, as raylib's `UnloadModel` leaves them: `UnloadMaterial` or `UnloadTexture` frees them.
 
 		@param model  The model. */
 	public static function release(model:Model):Void {
@@ -498,26 +498,12 @@ class Models {
 		for (mesh in model.meshes)
 			if (!mesh.gpu.shared)
 				unload(mesh);
-		releaseTextures(model);
 		if (--entry.refs > 0)
 			return;
 		loaded.remove(model.path);
 		for (mesh in entry.model.meshes)
 			unload(mesh);
-		releaseTextures(entry.model);
 	}
-
-	/** Releases each of a model's maps' load of its texture, the map left without one.
-
-		@param model  The model. */
-	public static function releaseTextures(model:Model):Void
-		for (m in model.materials)
-			if (m.maps != null)
-				for (map in m.maps)
-					if (map.texture.id != 0) {
-						Textures.release(map.texture.id);
-						map.texture.id = 0;
-					}
 
 	static function copyMesh(m:Mesh):Mesh {
 		var mesh = new Mesh();

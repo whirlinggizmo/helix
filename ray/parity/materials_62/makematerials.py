@@ -1,4 +1,4 @@
-"""Writes the model the materials_62 suite reads as web/materials.gltf, to the path its command line names (tools/ray_parity.py runs it):
+"""Writes the model the materials_62 and materials suites read as web/materials.gltf, to the path its command line names (ray_parity runs it):
 a triangle on each of four materials, its images PNGs held as data: URIs. "full" has every texture glTF's metallic-roughness flow names
 and its factors, its metallic-roughness image RGB, green and blue different at each pixel; "factors" has factors and no textures;
 "bare" has a normal and an emissive texture but no pbrMetallicRoughness block; "split" has a metallic-roughness texture alone."""

@@ -1,6 +1,5 @@
 // raylib 6.2's glTF materials, printed for tools/ray_parity.py: each material LoadModel reads from web/materials.gltf (makematerials.py),
-// its twelve maps' colors, values and textures, each texture's pixels as RGBA, and IsMaterialValid; then a texture two loads of the file
-// share, after UnloadMaterial frees one load's.
+// its shader and its twelve maps' colors, values and textures, each texture's pixels as RGBA.
 #include "raylib.h"
 #include "rlgl.h"
 #include "parity.h"
@@ -29,22 +28,13 @@ int main(void) {
     char key[64];
     for (int i = 0; i < model.materialCount; i++) {
         Material *m = &model.materials[i];
-        printf("material %d valid %d default %d\n", i, IsMaterialValid(*m), m->shader.id == rlGetShaderIdDefault());
+        printf("material %d default %d\n", i, m->shader.id == rlGetShaderIdDefault());
         for (int k = 0; k < MAX_MATERIAL_MAPS; k++) {
             MaterialMap *map = &m->maps[k];
             printf("map %d %d color %d %d %d %d value %.9g\n", i, k, map->color.r, map->color.g, map->color.b, map->color.a, map->value);
             sprintf(key, "texture %d %d", i, k);
             texture(key, map->texture);
         }
-    }
-    Material empty = { 0 };
-    printf("empty valid %d\n", IsMaterialValid(empty));
-    // Two loads of the file: one's first material freed, the other's textures read after.
-    Model other = LoadModel("web/materials.gltf");
-    UnloadMaterial(model.materials[1]);
-    for (int k = 0; k < MAX_MATERIAL_MAPS; k++) {
-        sprintf(key, "shared %d", k);
-        texture(key, other.materials[1].maps[k].texture);
     }
     CloseWindow();
     return 0;
