@@ -226,6 +226,7 @@ class GltfFile {
 		var mode:Null<Int> = field(primitive, "mode");
 		var position:Null<Int> = field(attributes, "POSITION");
 		var normal:Null<Int> = field(attributes, "NORMAL");
+		var tangent:Null<Int> = field(attributes, "TANGENT");
 		var uv:Null<Int> = field(attributes, "TEXCOORD_0");
 		var color:Null<Int> = field(attributes, "COLOR_0");
 		var colors:Null<Array<Float>> = null;
@@ -241,7 +242,8 @@ class GltfFile {
 		var indices:Null<Int> = field(primitive, "indices");
 		var material:Null<Int> = field(primitive, "material");
 		return new GltfPrimitive(mode == null ? 4 : mode, position == null ? [] : floats(position), normal == null ? null : floats(normal),
-			uv == null ? null : floats(uv), colors, indices == null ? null : ints(indices), material == null ? -1 : material);
+			tangent == null ? null : floats(tangent), uv == null ? null : floats(uv), colors, indices == null ? null : ints(indices),
+			material == null ? -1 : material);
 	}
 
 	// A node's own transform: its matrix, or its scale, then rotation, then translation.

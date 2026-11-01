@@ -1,4 +1,6 @@
-package helix.math;
+package helix.geometry;
+
+import helix.math.Vector2D;
 
 /** Provides tests on points, segments, triangles, polygons and circles in a plane, their points given as plain numbers.
 

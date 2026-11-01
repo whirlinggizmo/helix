@@ -34,7 +34,7 @@ LADDERS = {
     'platform': (ROOT / 'platform/tests/sizes', ['-lib', 'helix-platform']),
     'services': (ROOT / 'services/tests/sizes', ['-lib', 'helix-services']),
 }
-LIBRARIES = {'helix-platform': ROOT / 'platform', 'helix-log': ROOT / 'log', 'helix-math': ROOT / 'math', 'helix-formats': ROOT / 'formats', 'helix-services': ROOT / 'services'}
+LIBRARIES = {'helix-platform': ROOT / 'platform', 'helix-log': ROOT / 'log', 'helix-math': ROOT / 'math', 'helix-geometry': ROOT / 'geometry', 'helix-formats': ROOT / 'formats', 'helix-services': ROOT / 'services'}
 BASELINE = ROOT / 'docs/benchmarks.json'
 TABLE = ROOT / 'docs/benchmarks.md'
 OUT = ROOT / 'build/sizes'

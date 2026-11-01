@@ -5,7 +5,7 @@ import helix.ray.*;
 import helix.ray.Raylib.*;
 import helix.math.Matrix3D;
 import helix.math.Bounds2D;
-import helix.math.Geometry2D;
+import helix.geometry.Geometry2D;
 import helix.math.Interpolate;
 import helix.math.Vector2D;
 import helix.ray.internal.DefaultFont;

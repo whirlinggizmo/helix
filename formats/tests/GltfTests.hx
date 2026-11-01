@@ -129,7 +129,7 @@ class GltfTests {
 		check(same(primitive.positions, [0, 0, 0, 1, 0, 0, 0, 1, 0]), "GLB: positions");
 		check(same(primitive.texCoords, [0, 0, 1, 0, 0, 1]), "GLB: texture coordinates");
 		check(same(primitive.colors, [1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0.2, 1]), "GLB: normalized colors over a stride, alpha 1 for three");
-		check(primitive.normals == null, "GLB: no normals");
+		check(primitive.normals == null && primitive.tangents == null, "GLB: no normals, no tangents");
 		check(primitive.indices.join(",") == "0,1,2", "GLB: indices");
 		var material = model.materials[0];
 		check(model.materials.length == 1 && material.name == "paint" && same(material.baseColorFactor, [1, 0.5, 0.25, 1]),
@@ -150,22 +150,24 @@ class GltfTests {
 			bin.writeInt8(n);
 		for (i in [2, 1, 0]) // 45: indices, unsigned bytes
 			bin.writeByte(i);
+		bin.write(floats([1, 0, 0, 1, 0, 1, 0, -1, 0, 0, 1, 1])); // 48: tangents, 48 bytes
 		var buffer = haxe.crypto.Base64.encode(bin.getBytes());
 		var png = Bytes.ofHex("89504e47");
 		var json = '{"asset":{"version":"2.1"},
 			"nodes":[{"mesh":0,"rotation":[0,0,0.7071067811865476,0.7071067811865476]},{"mesh":0}],
-			"meshes":[{"primitives":[{"attributes":{"POSITION":0,"NORMAL":1,"TEXCOORD_0":3},"indices":2},
+			"meshes":[{"primitives":[{"attributes":{"POSITION":0,"NORMAL":1,"TANGENT":4,"TEXCOORD_0":3},"indices":2},
 				{"attributes":{"POSITION":0},"mode":1}]}],
 			"materials":[{"emissiveFactor":[1,1,0],"emissiveTexture":{"index":0},"normalTexture":{"index":1}}],
 			"textures":[{"source":0},{}],
 			"images":[{"uri":"data:image/png;base64,${haxe.crypto.Base64.encode(png)}"}],
-			"buffers":[{"byteLength":48,"uri":"data:application/octet-stream;base64,$buffer"}],
+			"buffers":[{"byteLength":96,"uri":"data:application/octet-stream;base64,$buffer"}],
 			"bufferViews":[{"buffer":0,"byteOffset":0,"byteLength":36},{"buffer":0,"byteOffset":36,"byteLength":9},
-				{"buffer":0,"byteOffset":45,"byteLength":3}],
+				{"buffer":0,"byteOffset":45,"byteLength":3},{"buffer":0,"byteOffset":48,"byteLength":48}],
 			"accessors":[{"bufferView":0,"componentType":5126,"count":3,"type":"VEC3"},
 				{"bufferView":1,"componentType":5120,"normalized":true,"count":3,"type":"VEC3"},
 				{"bufferView":2,"componentType":5121,"count":3,"type":"SCALAR"},
-				{"componentType":5126,"count":3,"type":"VEC2"}]}';
+				{"componentType":5126,"count":3,"type":"VEC2"},
+				{"bufferView":3,"componentType":5126,"count":3,"type":"VEC4"}]}';
 		var model = GltfFile.read(Bytes.ofString(json), "ship.gltf");
 		check(model.missingBuffers.length == 0, ".gltf: a data: URI buffer is read, none missing");
 		check(model.scene.join(",") == "0,1", ".gltf: with no scenes, every node no node's child is a root");
@@ -177,6 +179,7 @@ class GltfTests {
 			&& primitive.indices.join(",") == "2,1,0", ".gltf: positions, byte indices");
 		check(same(primitive.normals, [0, 0, 1, 0, 0, -1, 0, 1, 0]), ".gltf: normalized signed bytes, -128 clamped to -1");
 		check(same(primitive.texCoords, [0, 0, 0, 0, 0, 0]), ".gltf: an accessor with no buffer view is zeros");
+		check(same(primitive.tangents, [1, 0, 0, 1, 0, 1, 0, -1, 0, 0, 1, 1]), ".gltf: tangents, their w");
 		check(primitive.colors == null && primitive.material == -1, ".gltf: no colors, no material");
 		var lines = model.meshes[0].primitives[1];
 		check(lines.mode == 1 && lines.indices == null && lines.positions.length == 9, ".gltf: a primitive of lines, no indices");

@@ -169,4 +169,21 @@ class Bounds3D {
 	public function intersects(other:Bounds3D):Bool
 		return !isEmpty && !other.isEmpty && minX <= other.maxX && other.minX <= maxX && minY <= other.maxY && other.minY <= maxY && minZ <= other.maxZ
 			&& other.minZ <= maxZ;
+
+	/** Returns whether a sphere touches or overlaps the bounds.
+
+		@param x  The sphere's center's x.
+		@param y  Its y.
+		@param z  Its z.
+		@param radius  Its radius.
+		@return  True when they touch or overlap; false for empty bounds. */
+	public function intersectsSphere(x:Float, y:Float, z:Float, radius:Float):Bool {
+		if (isEmpty)
+			return false;
+		// The distance squared from the center to the nearest point of the bounds.
+		var dx = x < minX ? minX - x : x > maxX ? x - maxX : 0.;
+		var dy = y < minY ? minY - y : y > maxY ? y - maxY : 0.;
+		var dz = z < minZ ? minZ - z : z > maxZ ? z - maxZ : 0.;
+		return dx * dx + dy * dy + dz * dz <= radius * radius;
+	}
 }

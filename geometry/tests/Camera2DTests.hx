@@ -1,5 +1,5 @@
 import helix.math.Bounds2D;
-import helix.math.Camera2D;
+import helix.geometry.Camera2D;
 import helix.math.Matrix2D;
 import helix.math.Vector2D;
 

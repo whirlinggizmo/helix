@@ -2,6 +2,7 @@ package helix.services.models;
 
 import haxe.io.Bytes;
 import helix.formats.gltf.GltfFile;
+import helix.geometry.Mesh3D;
 import helix.log.Log;
 import helix.math.Matrix3D;
 import helix.services.assets.Assets;
@@ -12,7 +13,7 @@ import helix.services.images.Images;
 	images) brought in and its images decoded, as one `Model3D`.
 
 	The file is read by helix-formats' `GltfFile`. Each node of its scene puts its transform, and its parents', into its meshes'
-	positions and normals, so a model's meshes are drawn as they are. Only triangles are read; skins and animations aren't yet. Its
+	positions, normals and tangents (`Mesh3D.transform`), so a model's meshes are drawn as they are. Only triangles are read; skins and animations aren't yet. Its
 	answers come as the assets and images it reads through are polled.
 
 	```haxe
@@ -66,7 +67,8 @@ class Models {
 				if (--left > 0 || aborted || finished)
 					return;
 				finished = true;
-				loaded(new Model3D(path, meshes(file), file.materials, decoded));
+				var found = meshes(file);
+				loaded(new Model3D(path, found.meshes, found.materials, file.materials, decoded));
 			}
 			function decode():Void {
 				var list = file.images;
@@ -117,57 +119,31 @@ class Models {
 		};
 	}
 
-	// The scene's meshes, each node's transform, after its parents', in its positions and normals; triangles alone.
-	static function meshes(file:GltfFile):Array<Mesh3D> {
-		var out = [], all = file.meshes;
+	// The scene's meshes, each node's transform, after its parents', in its positions, normals and tangents (a mirroring one turning its
+	// triangles round, as glTF has it); triangles alone; and each one's material.
+	static function meshes(file:GltfFile):{meshes:Array<Mesh3D>, materials:Array<Int>} {
+		var meshes = [], materials = [], all = file.meshes;
 		function visit(index:Int, parent:Matrix3D):Void {
 			var node = file.nodes[index];
 			var world = Matrix3D.compose(node.transform, parent);
 			if (node.mesh >= 0)
 				for (primitive in all[node.mesh].primitives)
-					if (primitive.mode == 4)
-						out.push(placed(primitive.positions, primitive.normals, primitive.texCoords, primitive.colors, primitive.indices, primitive.material,
-							world));
+					if (primitive.mode == 4) {
+						var mesh = new Mesh3D();
+						mesh.positions = primitive.positions;
+						mesh.normals = primitive.normals;
+						mesh.tangents = primitive.tangents;
+						mesh.texCoords = primitive.texCoords;
+						mesh.colors = primitive.colors;
+						mesh.indices = primitive.indices;
+						meshes.push(mesh.transform(world));
+						materials.push(primitive.material);
+					}
 			for (child in node.children)
 				visit(child, world);
 		}
 		for (root in file.scene)
 			visit(root, new Matrix3D());
-		return out;
-	}
-
-	// A primitive moved by its node's world transform: positions as points, normals by the inverse transpose, kept unit length.
-	static function placed(positions:Array<Float>, normals:Null<Array<Float>>, texCoords:Null<Array<Float>>, colors:Null<Array<Float>>,
-			indices:Null<Array<Int>>, material:Int, world:Matrix3D):Mesh3D {
-		var count = Std.int(positions.length / 3), moved = [];
-		for (i in 0...count) {
-			var p = world.transformPoint(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
-			moved.push(p.x);
-			moved.push(p.y);
-			moved.push(p.z);
-		}
-		var turned:Null<Array<Float>> = null;
-		if (normals != null) {
-			var turn = new Matrix3D().copyFrom(world);
-			turn.invert(turn);
-			turn.transpose(turn);
-			var v = turn.values;
-			turned = [];
-			for (i in 0...count) {
-				var x = normals[i * 3],
-					y = normals[i * 3 + 1],
-					z = normals[i * 3 + 2];
-				var nx = v[0] * x + v[4] * y + v[8] * z,
-					ny = v[1] * x + v[5] * y + v[9] * z,
-					nz = v[2] * x + v[6] * y + v[10] * z;
-				var length = Math.sqrt(nx * nx + ny * ny + nz * nz);
-				if (length == 0)
-					length = 1;
-				turned.push(nx / length);
-				turned.push(ny / length);
-				turned.push(nz / length);
-			}
-		}
-		return new Mesh3D(moved, turned, texCoords, colors, indices, material);
+		return {meshes: meshes, materials: materials};
 	}
 }

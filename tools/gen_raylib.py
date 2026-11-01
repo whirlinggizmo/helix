@@ -248,7 +248,7 @@ def described(texts):
             (src / 'helix/ray' / name).write_text(kept, encoding='utf-8')
         out = Path(tmp) / 'ray.xml'
         fields = Path(tmp) / 'fields.json'
-        args = ['haxe', '-cp', str(src), '-lib', 'helix-services', '-lib', 'helix-platform', '-lib', 'helix-formats', '-lib', 'helix-math', '-lib', 'helix-log',
+        args = ['haxe', '-cp', str(src), '-lib', 'helix-services', '-lib', 'helix-platform', '-lib', 'helix-formats', '-lib', 'helix-geometry', '-lib', 'helix-math', '-lib', 'helix-log',
                 '--macro', "include('helix.ray.raylib')", '--macro', "include('helix.ray', false)", '-xml', str(out), '-D', 'doc-gen', '--no-output', '-js', str(Path(tmp) / 'unused.js'),
                 # The facades' macro functions are in the macro context alone, which -xml doesn't describe.
                 '-cp', str(ROOT / 'tools/haxe'), '--macro', f'Fields.write("{fields.as_posix()}", {json.dumps(["helix.ray." + n[:-3] for n in texts])})']

@@ -137,12 +137,13 @@ final transform:Matrix3D
 
 Represents one primitive of a glTF mesh: its vertices, read from their accessors, its indices and its material.
 
-Each attribute is every component of every vertex in order, as floats: a normalized integer is scaled to 0..1 when unsigned and -1..1 when signed, any other value is as the file has it. Positions and normals are in the mesh's own units: no node's transform is applied. Only the first set of texture coordinates (`TEXCOORD_0`) and of colors (`COLOR_0`) is read.
+Each attribute is every component of every vertex in order, as floats: a normalized integer is scaled to 0..1 when unsigned and -1..1 when signed, any other value is as the file has it. Positions, normals and tangents are in the mesh's own units: no node's transform is applied. Only the first set of texture coordinates (`TEXCOORD_0`) and of colors (`COLOR_0`) is read.
 
 ```haxe
 final mode:Int
 final positions:Array<Float>
 final normals:Null<Array<Float>>
+final tangents:Null<Array<Float>>
 final texCoords:Null<Array<Float>>
 final colors:Null<Array<Float>>
 final indices:Null<Array<Int>>
@@ -152,6 +153,7 @@ final material:Int
 - `mode`: Gets what the primitive draws, glTF's `mode`: 0 points, 1 lines, 2 a line loop, 3 a line strip, 4 triangles, 5 a triangle strip, 6 a triangle fan. Defaults to 4.
 - `positions`: Gets the vertices' positions, `POSITION`: x, y and z for each vertex. Empty when the primitive has none.
 - `normals`: Gets the vertices' normals, `NORMAL`: x, y and z for each vertex, or null when the primitive has none.
+- `tangents`: Gets the vertices' tangents, `TANGENT`: x, y, z and w for each vertex, w 1 or -1 for the bitangent's side, or null when the primitive has none.
 - `texCoords`: Gets the vertices' texture coordinates, `TEXCOORD_0`: u and v for each vertex, v down from the image's top, or null when the primitive has none.
 - `colors`: Gets the vertices' colors, `COLOR_0`: red, green, blue and alpha for each vertex, each 0 to 1 (alpha 1 when the file gives three components), or null when the primitive has none.
 - `indices`: Gets the vertices' indices, or null when the primitive has none and its vertices are drawn in order.

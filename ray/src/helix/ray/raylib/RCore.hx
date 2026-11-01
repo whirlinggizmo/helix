@@ -2239,13 +2239,13 @@ class RCore {
 
 	// raylib's Camera2D as helix-math's, reused: its target the position, its rotation in radians and negated (raylib's turns the world,
 	// helix-math's the camera), its zoom and its offset.
-	static final view2D = new helix.math.Camera2D();
+	static final view2D = new helix.geometry.Camera2D();
 
 	static final viewMatrix2D = new helix.math.Matrix2D();
 
 	static final point2D = new helix.math.Vector2D();
 
-	static function camera2D(camera:Camera2D):helix.math.Camera2D {
+	static function camera2D(camera:Camera2D):helix.geometry.Camera2D {
 		view2D.transform.position.set(camera.target.x, camera.target.y);
 		view2D.transform.rotation = -(camera.rotation * DEG2RAD);
 		view2D.zoom = camera.zoom;
@@ -2529,12 +2529,9 @@ class RCore {
 		var x = 2 * position.x / width - 1,
 			y = 1 - 2 * position.y / height,
 			aspect = width / height;
-		var view = camera3D(camera);
-		var origin = view.unprojectOrigin(x, y, aspect, point3D);
-		var ray = new Ray(new Vector3(origin.x, origin.y, origin.z));
-		var direction = view.unprojectDirection(x, y, aspect, point3D);
-		ray.direction = new Vector3(direction.x, direction.y, direction.z);
-		return ray;
+		var picked = camera3D(camera).computeRay(x, y, aspect, ray3D);
+		var origin = picked.origin, direction = picked.direction;
+		return new Ray(new Vector3(origin.x, origin.y, origin.z), new Vector3(direction.x, direction.y, direction.z));
 	}
 
 	/** Returns the ray from a camera through a screen position: raylib's old name for `GetScreenToWorldRay`.
@@ -2570,15 +2567,17 @@ class RCore {
 	// raylib's Camera3D as helix-math's, reused: its position, turned to face its target with its up kept as near as it can be (an up
 	// along the view, or a target at its position, as Quaternion3D.fromLookRotation replaces them), its fovy in radians or, orthographic,
 	// the height it shows, and raylib's near and far planes, 0.01 and 1000.
-	static final view3D = new helix.math.Camera3D();
+	static final view3D = new helix.geometry.Camera3D();
 
 	static final viewMatrix3D = new Matrix3D();
 
 	static final point3D = new Vector3D();
 
+	static final ray3D = new helix.geometry.Ray3D();
+
 	static final view3DVector = new Vector3D();
 
-	static function camera3D(camera:Camera3D):helix.math.Camera3D {
+	static function camera3D(camera:Camera3D):helix.geometry.Camera3D {
 		var p = camera.position, t = camera.target, u = camera.up;
 		view3D.transform.position.set(p.x, p.y, p.z);
 		Quaternion3D.fromLookRotation(t.x - p.x, t.y - p.y, t.z - p.z, u.x, u.y, u.z, view3D.transform.rotation);

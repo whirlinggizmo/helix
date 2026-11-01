@@ -1,4 +1,10 @@
-package helix.math;
+package helix.geometry;
+
+import helix.math.Matrix3D;
+import helix.math.Quaternion3D;
+import helix.math.Transform3D;
+import helix.math.Trig;
+import helix.math.Vector3D;
 
 /** Represents a view of a 3D world: where it is and which way it looks (a `Transform3D`), and how it projects what it sees.
 
@@ -112,43 +118,31 @@ class Camera3D {
 		return out == null ? new Vector3D(px, py, pz) : out.set(px, py, pz);
 	}
 
-	/** Returns the direction from the camera through a point in the view, as a pointer's ray to pick with.
+	/** Returns the ray from the camera through a point of its view, for picking: from the camera's position for a perspective camera,
+		and from the point on its near plane, along its forward, for an orthographic one.
 
-		@param viewX  The point across the view, from -1 (left) to 1 (right).
-		@param viewY  The point up the view, from -1 (bottom) to 1 (top).
+		@param viewX  The point's x, -1 at the view's left to 1 at its right.
+		@param viewY  Its y, -1 at the bottom to 1 at the top.
 		@param aspect  The view's width over its height.
-		@param out  Optional. The vector to write into: the direction, of length 1, in world units; a new one when omitted.
-		@return  The direction. For a perspective camera the ray starts at its position; for an orthographic one at that point on its
-			near plane (`unprojectOrigin`). */
-	public function unprojectDirection(viewX:Float, viewY:Float, aspect:Float, ?out:Vector3D):Vector3D {
-		var q = turned();
+		@param out  Optional. Set to the ray.
+		@return  The ray, its direction of length 1. */
+	public function computeRay(viewX:Float, viewY:Float, aspect:Float, ?out:Ray3D):Ray3D {
+		if (out == null)
+			out = new Ray3D();
+		var q = turned(), position = transform.position, origin = out.origin, direction = out.direction;
+		var px = position.x, py = position.y, pz = position.z;
 		if (orthographic) {
-			var forward = q.transformPoint(0, 0, -1, out);
-			return forward.normalize(forward);
+			var top = orthographicHeight / 2;
+			q.transformPoint(real(viewX) * top * aspect, real(viewY) * top, -near, origin);
+			origin.set(origin.x + px, origin.y + py, origin.z + pz);
+			q.transformPoint(0, 0, -1, direction);
+		} else {
+			origin.set(px, py, pz);
+			var tan = Trig.tan(fieldOfView / 2);
+			q.transformPoint(real(viewX) * tan * aspect, real(viewY) * tan, -1, direction);
 		}
-		var tan = Trig.tan(fieldOfView / 2);
-		var direction = q.transformPoint(real(viewX) * tan * aspect, real(viewY) * tan, -1, out);
-		return direction.normalize(direction);
-	}
-
-	/** Returns where the ray through a point in the view starts: the camera's position for a perspective camera, the point on its near
-		plane for an orthographic one.
-
-		@param viewX  The point across the view, from -1 (left) to 1 (right).
-		@param viewY  The point up the view, from -1 (bottom) to 1 (top).
-		@param aspect  The view's width over its height.
-		@param out  Optional. The vector to write into, in world units; a new one when omitted.
-		@return  The ray's start. */
-	public function unprojectOrigin(viewX:Float, viewY:Float, aspect:Float, ?out:Vector3D):Vector3D {
-		var position = transform.position,
-			px = position.x,
-			py = position.y,
-			pz = position.z;
-		if (!orthographic)
-			return out == null ? new Vector3D(px, py, pz) : out.set(px, py, pz);
-		var top = orthographicHeight / 2;
-		var origin = turned().transformPoint(real(viewX) * top * aspect, real(viewY) * top, -near, out);
-		return origin.set(origin.x + px, origin.y + py, origin.z + pz);
+		direction.normalize(direction);
+		return out;
 	}
 
 	// Its rotation made length 1, so a rotation set by hand still gives a rigid view.

@@ -1,5 +1,5 @@
 import helix.math.Bounds3D;
-import helix.math.Frustum3D;
+import helix.geometry.Frustum3D;
 import helix.math.Matrix3D;
 
 /** Checks Frustum3D with the library alone: made holding everything; its planes from a perspective and an orthographic view-projection,

@@ -8,5 +8,5 @@
 	"classPath": "src/",
 	"releasenote": "First release.",
 	"contributors": ["whirlinggizmo"],
-	"dependencies": {"helix-platform": "", "helix-math": "", "helix-log": ""}
+	"dependencies": {"helix-platform": "", "helix-geometry": "", "helix-math": "", "helix-log": ""}
 }

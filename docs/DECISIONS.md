@@ -144,3 +144,11 @@ Why things are the way they are, numbered, in order.
     render state over helix-ray's frame, its constants, and refuses its GPU objects (vertex arrays and buffers, framebuffers, GL ids),
     which helix-platform has no GL to give. Its API description, `rlgl_api.json`, is made from `rlgl.h` by raylib's parser, as
     `raymath_api.json` is.
+
+23. **Geometry is a library of its own, helix-geometry, over helix-math.** helix-math holds the values every layer computes with (vectors,
+    matrices, quaternions, transforms, bounds, curves, trig, random numbers, colors), depending on nothing. What is built of them as
+    objects in a world went to helix-geometry when meshes came: the cameras, the frustum, rays and what they meet, meshes made and changed,
+    and the tests on 2D shapes. A mesh library would have doubled helix-math's weight for programs that only need its values; the
+    cameras went with the rays, since a camera makes the ray a pointer picks with. A mesh is helix-geometry's `Mesh3D` everywhere:
+    helix-services' models hold their meshes as it, each with its material's index beside it, so a file's mesh and a made shape are one
+    type. helix-ray keeps raylib's own meshes and ray tests (par_shapes' vertices, raylib's box normal), which helix-geometry's are not.

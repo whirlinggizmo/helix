@@ -2,7 +2,7 @@ import helix.math.Interpolate;
 
 /** Checks Interpolate's easing curves with the library alone: each of the thirty at 0 and 1, each family's ease-in the mirror of its
 	ease-out, each ease-in-out halfway at the middle and (but for back's and elastic's) made of the two halves, the curves that don't overshoot rising steadily, and
-	cubic's ease-in-out as raylib's reasings computes it. */
+	cubic's ease-in-out as raylib's reasings computes it; and each spline piece at its ends and middle. */
 class InterpolateTests {
 	static var checks = 0;
 
@@ -55,6 +55,18 @@ class InterpolateTests {
 			same = same && near(Interpolate.easeInOutCubic(i / 10), raylib);
 		}
 		check(same, "cubic's ease-in-out is raylib's");
+
+		check(near(Interpolate.catmullRom(0, 1, 2, 3, 0), 1)
+			&& near(Interpolate.catmullRom(0, 1, 2, 3, 1), 2)
+			&& near(Interpolate.catmullRom(0, 1, 2, 3, .5), 1.5),
+			"Catmull-Rom: through the middle two, evenly on a line");
+		check(near(Interpolate.bSpline(0, 6, 12, 18, 0), 6) && near(Interpolate.bSpline(0, 0, 6, 0, 0), 1),
+			"B-spline: on a line through its points; near, not through, a peak");
+		check(near(Interpolate.quadraticBezier(0, 10, 0, 0), 0)
+			&& near(Interpolate.quadraticBezier(0, 10, 0, .5), 5)
+			&& near(Interpolate.quadraticBezier(0, 10, 4, 1), 4),
+			"quadratic Bezier: its ends, halfway to the control point");
+		check(near(Interpolate.cubicBezier(0, 10, 10, 0, .5), 7.5) && near(Interpolate.cubicBezier(1, 5, 7, 2, 1), 2), "cubic Bezier");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

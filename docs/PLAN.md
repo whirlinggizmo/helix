@@ -5,7 +5,8 @@ helix-2.0 is several haxelibs in one repository, built from the bottom up.
 ## Layers
 
 ```
-math/       points, bounds, curves, geometry, deterministic trig     depends on nothing
+math/       points, bounds, transforms, curves, deterministic trig   depends on nothing
+geometry/       cameras, rays, meshes, tests on shapes                   depends on math
 log/        levels and tags, to the console or stdio                 depends on nothing
 formats/    file formats read into plain data: glTF, BMFont, fonts   depends on math
 platform/   the hardware and the OS as contracts and adapters        depends on math, formats

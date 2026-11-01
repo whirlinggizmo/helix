@@ -166,18 +166,19 @@ class Models {
 			materials.push(material);
 		}
 		var meshes = [], meshMaterial = [];
-		for (m in read.meshes) {
+		for (i => m in read.meshes) {
 			var mesh = new Mesh();
-			mesh.vertexCount = Std.int(m.positions.length / 3);
+			mesh.vertexCount = m.vertexCount;
 			mesh.vertices = m.positions;
 			mesh.normals = m.normals;
+			mesh.tangents = m.tangents;
 			mesh.texcoords = m.texCoords;
 			if (m.colors != null)
 				mesh.colors = [for (c in m.colors) Std.int(c * 255)];
 			mesh.indices = m.indices;
-			mesh.triangleCount = Std.int((mesh.indices != null ? mesh.indices.length : mesh.vertexCount) / 3);
+			mesh.triangleCount = m.triangleCount;
 			meshes.push(mesh);
-			meshMaterial.push(m.material + 1);
+			meshMaterial.push(read.meshMaterials[i] + 1);
 		}
 		// Its meshes go to the GPU when first drawn.
 		return new Model(meshes, materials, meshMaterial);

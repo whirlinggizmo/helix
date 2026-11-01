@@ -89,7 +89,8 @@ class ModelsTests {
 		check(model.meshes.length == 1, "the lines primitive left out");
 		var mesh = model.meshes[0];
 		check(near(mesh.positions[0], 10) && near(mesh.positions[3], 12) && near(mesh.positions[7], 2), "the nodes' transforms in its positions");
-		check(near(mesh.normals[2], 1) && mesh.indices == null && mesh.material == 0, "its normals kept unit length; no indices; its material");
+		check(near(mesh.normals[2], 1) && mesh.indices == null && model.meshMaterials.join(",") == "0",
+			"its normals kept unit length; no indices; its material beside it");
 		check(model.materials[0].baseColorImage == 0 && model.images.length == 2, "materials name images by index");
 		check(model.images[0] != null && model.images[0].width == 4 && model.images[0].path == "models/wood grain.png",
 			"the image beside it, its name decoded, decoded");

@@ -1,0 +1,12 @@
+{
+	"name": "helix-geometry",
+	"url": "https://github.com/whirlinggizmo/helix-2.0",
+	"license": "BSD",
+	"tags": ["geometry", "mesh", "camera", "ray", "js", "cpp"],
+	"description": "Geometry for games: 2D and 3D cameras, frustums, rays and what they meet, meshes made in the usual shapes with their normals and tangents, and tests on segments, triangles and polygons. Pure Haxe; built on helix-math.",
+	"version": "0.1.0",
+	"classPath": "src/",
+	"releasenote": "First release.",
+	"contributors": ["whirlinggizmo"],
+	"dependencies": {"helix-math": ""}
+}

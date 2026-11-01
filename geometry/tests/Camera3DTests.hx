@@ -1,5 +1,6 @@
-import helix.math.Camera3D;
-import helix.math.Frustum3D;
+import helix.geometry.Camera3D;
+import helix.geometry.Frustum3D;
+import helix.geometry.Ray3D;
 import helix.math.Matrix3D;
 import helix.math.Vector3D;
 
@@ -212,26 +213,26 @@ class Camera3DTests {
 		check(near(sample().project(2 - .1 * 2 / Math.sqrt(72), 3 - .1 * 2 / Math.sqrt(72), 8 - .1 * 8 / Math.sqrt(72), aspect).z, -1, 1e-9)
 			&& near(sample().project(2 - 1000 * 2 / Math.sqrt(72), 3 - 1000 * 2 / Math.sqrt(72), 8 - 1000 * 8 / Math.sqrt(72), aspect).z, 1, 1e-9),
 			"its near plane at depth -1, its far plane at 1");
-		var direction = threeWays(false, (c, out) -> c.unprojectDirection(.25, -.6, aspect, out), "unprojectDirection");
-		check(at(direction, -0.010208844252822424, -0.48667957996079414, -0.8735209018381911), "the ray's direction: pinned");
-		check(at(threeWays(false, (c, out) -> c.unprojectOrigin(.25, -.6, aspect, out), "unprojectOrigin"), 2, 3, 8), "its start, the camera's position");
-		check(at(threeWays(true, (c, out) -> c.unprojectDirection(.25, -.6, aspect, out), "unprojectDirection, orthographic"), -0.23570226039551584,
-			-0.23570226039551578, -0.9428090415820634),
-			"orthographic: the way it faces, pinned");
-		check(at(threeWays(true, (c, out) -> c.unprojectOrigin(.25, -.6, aspect, out), "unprojectOrigin, orthographic"), 4.769274743185662,
-			-0.5221413629467406, 8.082150637762197),
-			"orthographic: its start on the near plane, pinned");
+		var ray = sample().computeRay(.25, -.6, aspect), given = new Ray3D();
+		check(at(ray.direction, -0.010208844252822424, -0.48667957996079414, -0.8735209018381911), "the ray's direction: pinned");
+		check(at(ray.origin, 2, 3, 8), "its start, the camera's position");
+		check(sample().computeRay(.25, -.6, aspect, given) == given
+			&& at(given.direction, ray.direction.x, ray.direction.y, ray.direction.z)
+			&& at(given.origin, 2, 3, 8),
+			"the ray, into the one given");
+		var flat = sample(true).computeRay(.25, -.6, aspect);
+		check(at(flat.direction, -0.23570226039551584, -0.23570226039551578, -0.9428090415820634), "orthographic: the way it faces, pinned");
+		check(at(flat.origin, 4.769274743185662, -0.5221413629467406, 8.082150637762197), "orthographic: its start on the near plane, pinned");
 		for (orthographic in [false, true])
 			for (point in [[0., 0.], [.25, -.6], [-1., 1.], [.9, .99]]) {
 				var c = sample(orthographic);
-				var origin = c.unprojectOrigin(point[0], point[1], aspect),
-					toward = c.unprojectDirection(point[0], point[1], aspect);
+				var picked = c.computeRay(point[0], point[1], aspect);
 				for (distance in [.5, 10., 300.]) {
-					var onRay = origin.addScaled(toward, distance);
+					var onRay = picked.computePoint(distance);
 					var shown = c.project(onRay.x, onRay.y, onRay.z, aspect);
 					check(near(shown.x, point[0], 1e-9) && near(shown.y, point[1], 1e-9), 'a point on the ray lands where it was picked (${point})');
 				}
-				check(near(toward.length, 1), "the direction of length 1");
+				check(near(picked.direction.length, 1), "the direction of length 1");
 			}
 
 		// What it sees.

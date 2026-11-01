@@ -1,4 +1,10 @@
-package helix.math;
+package helix.geometry;
+
+import helix.math.Bounds2D;
+import helix.math.Matrix2D;
+import helix.math.Transform2D;
+import helix.math.Trig;
+import helix.math.Vector2D;
 
 /** Represents a view of a 2D world: where it looks and how it is turned (a `Transform2D`), how near it is, and where in the view the
 	point it looks at shows.

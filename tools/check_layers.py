@@ -24,14 +24,15 @@ ROOT = Path(__file__).resolve().parents[1]
 # Bottom to top: (library, its source directory, the package roots it owns, the libraries below it that it's built on).
 LAYERS = [
     ('helix-math', 'math/src', ['helix.math'], []),
+    ('helix-geometry', 'geometry/src', ['helix.geometry'], ['helix-math']),
     ('helix-log', 'log/src', ['helix.log'], []),
     ('helix-formats', 'formats/src', ['helix.formats'], ['helix-math']),
-    ('helix-platform', 'platform/src', ['helix.platform'], ['helix-formats', 'helix-math']),
-    ('helix-services', 'services/src', ['helix.services'], ['helix-platform', 'helix-formats', 'helix-math', 'helix-log']),
-    ('helix-ray', 'ray/src', ['helix.ray'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-math', 'helix-log']),
+    ('helix-platform', 'platform/src', ['helix.platform'], ['helix-formats', 'helix-geometry', 'helix-math']),
+    ('helix-services', 'services/src', ['helix.services'], ['helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
+    ('helix-ray', 'ray/src', ['helix.ray'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
 ]
 # Each library's tests and examples, held to its layer too: they build with that library alone.
-TESTS = {'helix-math': ['math/tests'], 'helix-log': ['log/tests'], 'helix-formats': ['formats/tests'], 'helix-platform': ['platform/tests', 'platform/examples'],
+TESTS = {'helix-math': ['math/tests'], 'helix-geometry': ['geometry/tests'], 'helix-log': ['log/tests'], 'helix-formats': ['formats/tests'], 'helix-platform': ['platform/tests', 'platform/examples'],
          'helix-services': ['services/tests'], 'helix-ray': ['ray/examples']}
 # The interfaces in helix.platform that contracts extend (rule 3): IPollable, the poll a program calls each frame.
 BASES = {'IPollable'}
