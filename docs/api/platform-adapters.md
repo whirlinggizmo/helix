@@ -532,7 +532,7 @@ function applyViewport(x:Int, y:Int, w:Int, h:Int):Void
 function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<haxe.io.Bytes>>):Void
 function endFrame():Void
 function present():Void
-function readPixels(target:Int, read:(pixels:haxe.io.Bytes, width:Int, height:Int) -> Void, failed:String -> Void):Void
+function readPixels(handle:Int, read:(pixels:haxe.io.Bytes, width:Int, height:Int) -> Void, failed:String -> Void):Void
 function disposeBuffer(handle:Int):Void
 function disposeTexture(handle:Int):Void
 function dispose():Void

@@ -1,6 +1,6 @@
 {
   "oracle": "5.5",
-  "covers": "rlgl's blending as rlSetBlendMode sets GL's (every BLEND_ mode, BLEND_ALPHA's alpha by glBlendFunc's one pair of factors, the custom factors and when they take effect, a factor GL refuses) and rlColorMask, a render texture's alpha under them drawn over the screen; UpdateTexture and UpdateTextureRec (from bytes, a grayscale texture, a rectangle past the edge, in memory and on the GPU, ordered among render texture passes and the batch); render textures keeping what they hold, from pass to pass and frame to frame, and an update (from colors) between two draws in one, drawn into a 640 x 480 frame",
+  "covers": "rlgl's blending as rlSetBlendMode sets GL's (every BLEND_ mode, BLEND_ALPHA's alpha by glBlendFunc's one pair of factors, the custom factors and when they take effect, a factor GL refuses) and rlColorMask, a render texture's alpha under them drawn over the screen; UpdateTexture and UpdateTextureRec (from bytes, a grayscale texture, a rectangle past the edge, in memory and on the GPU, ordered among render texture passes and the batch); render textures keeping what they hold, from pass to pass and frame to frame, and an update (from colors) between two draws in one; LoadImageFromTexture of a texture drawn and updated, drawn into a 640 x 480 frame",
   "kind": "pixels",
   "generated": true,
   "frames": 5,

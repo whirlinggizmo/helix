@@ -1,7 +1,7 @@
 """render: rlgl's blending and color mask, and render textures, as both draw them between scene.c.in's and Main.hx.in's ClearBackground and
 the frame's end (shared/gen.py's syntax). target (a 200 x 100 render texture), checks (a 64 x 64 checked texture) and frame (0, 1 or 2) are
 made there; so are red (a 32 x 32 red image), tile (8 x 8 green and blue checks), patched and second (textures of red), copy (a 32 x 32 render
-texture), gray (a 16 x 16 grayscale ramp's texture), dark (8 x 4 of grayscale dark gray) and trail (a 200 x 60 render texture)."""
+texture), gray (a 16 x 16 grayscale ramp's texture), dark (8 x 4 of grayscale dark gray), trail (a 200 x 60 render texture) and readBack (none yet)."""
 
 # Each blend mode drawn half over a blue band, a cell of 70 x 70 each: x is 10 + 78 * the mode's place.
 MODES = [
@@ -54,4 +54,9 @@ CASES = [
     'LET(colors, Color *, LoadImageColors(tile)); UpdateTexture(second, red.data); UpdateTextureRec(second, R(8, 0, 8, 8), colors); '
     'BeginTextureMode(copy); DrawTexture(second, 0, 0, WHITE); rlDrawRenderBatchActive(); UpdateTextureRec(second, R(0, 0, 8, 8), tile.data); '
     'DrawTexture(second, 16, 16, WHITE); EndTextureMode(); DrawTextureRec(copy.texture, R(0, 0, 32, -32), V2(140, 290), WHITE);',
+    # A texture read back once drawn and updated (raylib's LoadImageFromTexture; helix-ray's answers after the frame, its update in it),
+    # made a texture again and drawn.
+    {'c': 'if (frame == 1) readBack = LoadTextureFromImage(LoadImageFromTexture(patched)); if (readBack.id > 0) DrawTexture(readBack, 440, 290, WHITE);',
+     'hx': 'if (frame == 0) LoadImageFromTextureAsync(patched, image -> readBack = LoadTextureFromImage(image)); '
+           'if (readBack != null) DrawTexture(readBack, 440, 290, WHITE);'},
 ]

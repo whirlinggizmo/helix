@@ -213,7 +213,8 @@ enum Event {
   height, clearColor)` and `endFrame`; within a pass `applyViewport`, `applyScissor`, `resetScissor`.
 - `draw(pipeline, buffers, indexBuffer, firstElementIndex, elementCount, firstInstanceIndex, instanceCount, textures, samplings, uniforms)`: buffers by the
   pipeline's buffer index, an index buffer for indexed pipelines, a range, instances, textures, samplings and uniform blocks by slot.
-- `readPixels(target, read(pixels, width, height), failed(message))`; `msaaSampleCount`, `maxMsaaSampleCount`; `dispose`.
+- `readPixels(handle, read(pixels, width, height), failed(message))`: an RGBA8 texture's top level, an RGBA8 render target, or the frame
+  just ended (0); `msaaSampleCount`, `maxMsaaSampleCount`; `dispose`.
 
 `endFrame` ends the screen's pass and submits it; `present()` shows the frame and waits for the display's refresh, which paces the
 owner's loop. Between the two the frame can still be read back (`readPixels(0)`), and the owner can do work in the time the display

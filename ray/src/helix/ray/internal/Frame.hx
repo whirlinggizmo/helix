@@ -347,6 +347,28 @@ class Frame {
 			});
 	}
 
+	/** Returns whether a texture is updated in this frame's passes (`updateTexture`), not yet drawn.
+
+		@param texture  The texture's GPU handle.
+		@return  True when an update of it waits. */
+	public function isUpdating(texture:Int):Bool {
+		for (p in passes)
+			for (u in p.updates)
+				if (u.texture == texture)
+					return true;
+		return false;
+	}
+
+	/** Calls a function once the frame is drawn (`draw`), after its passes.
+
+		@param call  The function. */
+	public function afterDraw(call:() -> Void):Void {
+		drawn.push(call);
+	}
+
+	// What waits for the frame to be drawn.
+	final drawn:Array<() -> Void> = [];
+
 	/** Draws the batch, rlgl's `rlDrawRenderBatchActive`: its runs into the pass, each through the current program, matrices and state
 		(in wire mode, its triangles as their edges, those culling leaves). */
 	public function flush():Void {
@@ -713,6 +735,10 @@ class Frame {
 			graphics.disposeBuffer(b);
 		retired.resize(0);
 		reset();
+		var calls = drawn.copy();
+		drawn.resize(0);
+		for (call in calls)
+			call();
 	}
 
 	/** Frees a buffer once the frame is drawn, as draws asked for already may read it.

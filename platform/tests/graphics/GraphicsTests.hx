@@ -23,7 +23,7 @@ typedef Case = {
 	/** Draws in the screen's pass, given its size. */
 	final ?screen:(width:Int, height:Int) -> Void;
 
-	/** The render target read back; 0 for the screen. */
+	/** The texture or render target read back; 0 for the screen. */
 	final target:Int;
 
 	/** Checks the pixels read back. */
@@ -35,7 +35,8 @@ typedef Case = {
 
 	The cases: a clear, a triangle's colors interpolated, eight vertex buffers read and a ninth refused, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
 	additive blending, each blend factor and operation and a color write mask, a texture's rectangles replaced, and replaced
-	between passes, targets kept from pass to pass and frame to frame (their depth and samples too) and one never cleared, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
+	between passes, targets kept from pass to pass and frame to frame (their depth and samples too) and one never cleared, textures read
+	back, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
 	texel by texel, a cubemap's six faces, and declared textures left unbound reading clear. The shaders are `shaders/*.vert` and `*.frag`,
 	compiled by the build, so it checks the shader compiler's dialects too. One case runs a frame; on a GPU that reads back later, the next
 	waits for it.
@@ -566,6 +567,30 @@ class GraphicsTests {
 				target: fresh,
 				check: p -> for (at in [[0, 0], [8, 8], [15, 15]])
 					p.expect(at[0], at[1], [0, 0, 0, 0], 0)
+			},
+			{
+				name: "a texture read back",
+				target: checker,
+				check: p -> {
+					if (p.width != 2 || p.height != 2)
+						throw 'a texture read back: ${p.width} x ${p.height}, not 2 x 2';
+					p.expect(0, 0, [1, 0, 0, 1], 0);
+					p.expect(1, 0, [0, 1, 0, 1], 0);
+					p.expect(0, 1, [0, 0, 1, 1], 0);
+					p.expect(1, 1, [1, 1, 1, 1], 0);
+				}
+			},
+			{
+				name: "a texture read back after its rectangle replaced",
+				before: () -> graphics.updateTexture(patched, 1, 2, 3, 1, rgbaTexels([0x00ffff80, 0x00ffff80, 0x00ffff80])),
+				target: patched,
+				// Yellow from the case before, its third row from column 1 a half-transparent cyan.
+				check: p -> {
+					p.expect(0, 2, [1, 1, 0, 1], 0);
+					p.expect(1, 2, [0, 1, 1, 128 / 255], 0);
+					p.expect(3, 2, [0, 1, 1, 128 / 255], 0);
+					p.expect(2, 3, [1, 1, 0, 1], 0);
+				}
 			},
 			{
 				name: "a render target drawn to the screen",

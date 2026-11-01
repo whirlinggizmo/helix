@@ -20,6 +20,7 @@ int main(void) {
     ImageFormat(&dark, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
     Texture2D gray = LoadTextureFromImage(ramp);
     RenderTexture2D trail = LoadRenderTexture(200, 60);
+    Texture2D readBack = { 0 };
     for (int frame = 0; frame < 3; frame++) {
         BeginDrawing();
         ClearBackground(RAYWHITE);

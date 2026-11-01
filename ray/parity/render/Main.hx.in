@@ -26,6 +26,7 @@ class Main {
 		ImageFormat(dark, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
 		var gray = LoadTextureFromImage(ramp);
 		var trail = LoadRenderTexture(200, 60);
+		var readBack:Texture2D = null;
 		var frame = 0;
 		while (!WindowShouldClose()) {
 			BeginDrawing();

@@ -820,7 +820,7 @@ function resetScissor():Void
 function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<haxe.io.Bytes>>):Void
 function endFrame():Void
 function present():Void
-function readPixels(target:Int, read:(pixels:haxe.io.Bytes, width:Int, height:Int) -> Void, failed:String -> Void):Void
+function readPixels(handle:Int, read:(pixels:haxe.io.Bytes, width:Int, height:Int) -> Void, failed:String -> Void):Void
 function dispose():Void
 ```
 
@@ -992,13 +992,13 @@ function dispose():Void
   `present` shows the frame. Between the two calls, the frame can be read back with `readPixels(0)`, and the caller can do other work.
 - `present`: Shows the frame that `endFrame` submitted, and waits for the display's refresh.
   Natively the wait paces the caller's loop. In a page it does nothing, because the browser shows the frame when the frame's callback returns.
-- `readPixels`: Reads a render target, or the frame just ended, back from the GPU.
-  - `target`: The render target, as a `createRenderTarget` handle, or 0 for the frame `endFrame` just ended.
+- `readPixels`: Reads a texture, a render target, or the frame just ended, back from the GPU.
+  - `handle`: An RGBA8 `createTexture` texture (its top level), an RGBA8 render target, or 0 for the frame `endFrame` just ended.
   - `read`: Receives the pixels and their width and height. The pixels are `width * height * 4` bytes of RGBA8, with rows top first.
   - `failed`: Receives why the pixels can't be read, which is that no frame has ended since the last `beginFrame`.
-  - throws `String`: A call inside a pass, or a handle that is not an RGBA8 render target.
+  - throws `String`: A call inside a pass, or a handle that is none of these.
 
-  It waits for the GPU, so it suits screenshots and checks, not every frame. The frame `endFrame` ended must be read before `present`, and in a page before the frame's callback returns. One of `read` or `failed` is called once, on the main thread. It is called during the call, or later on a GPU that reads back asynchronously.
+  It waits for the GPU, so it suits screenshots and checks, not every frame. A texture or render target is read as the passes so far left it. The frame `endFrame` ended must be read before `present`, and in a page before the frame's callback returns. One of `read` or `failed` is called once, on the main thread. It is called during the call, or later on a GPU that reads back asynchronously.
 - `dispose`: Releases the adapter.
   It is called after every handle the adapter made is disposed, and before its window is closed.
 

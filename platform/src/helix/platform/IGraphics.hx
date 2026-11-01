@@ -284,16 +284,16 @@ interface IGraphics {
 		returns. */
 	public function present():Void;
 
-	/** Reads a render target, or the frame just ended, back from the GPU.
+	/** Reads a texture, a render target, or the frame just ended, back from the GPU.
 
-		It waits for the GPU, so it suits screenshots and checks, not every frame. The frame `endFrame` ended must be read before
-		`present`, and in a page before the frame's callback returns. One of `read` or `failed` is called once, on the main thread. It is
-		called during the call, or later on a GPU that reads back asynchronously.
-		@param target  The render target, as a `createRenderTarget` handle, or 0 for the frame `endFrame` just ended.
+		It waits for the GPU, so it suits screenshots and checks, not every frame. A texture or render target is read as the passes so far
+		left it. The frame `endFrame` ended must be read before `present`, and in a page before the frame's callback returns. One of `read`
+		or `failed` is called once, on the main thread. It is called during the call, or later on a GPU that reads back asynchronously.
+		@param handle  An RGBA8 `createTexture` texture (its top level), an RGBA8 render target, or 0 for the frame `endFrame` just ended.
 		@param read  Receives the pixels and their width and height. The pixels are `width * height * 4` bytes of RGBA8, with rows top first.
 		@param failed  Receives why the pixels can't be read, which is that no frame has ended since the last `beginFrame`.
-		@throws String  A call inside a pass, or a handle that is not an RGBA8 render target. */
-	public function readPixels(target:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void;
+		@throws String  A call inside a pass, or a handle that is none of these. */
+	public function readPixels(handle:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void;
 
 	/** Releases the adapter.
 

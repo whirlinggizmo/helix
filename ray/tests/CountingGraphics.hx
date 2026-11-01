@@ -114,7 +114,7 @@ class CountingGraphics implements IGraphics {
 
 	public function present():Void {}
 
-	public function readPixels(target:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void {}
+	public function readPixels(handle:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void {}
 
 	public function dispose():Void {}
 }

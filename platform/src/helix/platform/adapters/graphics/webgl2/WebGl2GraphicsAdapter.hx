@@ -87,6 +87,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	var comparison:Dynamic = null;
 	// A block 0 turned over for a flipped pass, reused.
 	var flippedBlock = new js.lib.Float32Array(64);
+	// The framebuffer a texture is read back through, made the first time.
+	var reading:Dynamic = null;
 	// Attribute slots enabled by the last draw: each draw enables its own and turns the rest off.
 	var enabled:Array<Bool> = [];
 
@@ -856,29 +858,38 @@ class WebGl2GraphicsAdapter implements IGraphics {
 
 	public function present():Void {}
 
-	public function readPixels(target:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void {
+	public function readPixels(handle:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void {
 		if (active)
 			throw "Inside a pass";
-		var t = targets[target];
+		var t = targets[handle], p = plainTextures[handle];
 		// Half floats read back only as floats in WebGL2: not this call's RGBA8.
-		if (target != 0 && (t == null || t.half))
-			throw "Invalid render target";
-		if (target == 0 && !frameEnded) {
+		if (handle != 0 && (t == null || t.half) && (p == null || p.format != Rgba8))
+			throw "Invalid texture to read";
+		if (handle == 0 && !frameEnded) {
 			failed("No frame has ended");
 			return;
 		}
-		var width = target == 0 ? frameWidth : t.width,
-			height = target == 0 ? frameHeight : t.height;
-		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, target == 0 ? null : t.framebuffer);
+		var width = handle == 0 ? frameWidth : t != null ? t.width : p.width,
+			height = handle == 0 ? frameHeight : t != null ? t.height : p.height;
+		if (p != null) {
+			// A texture's top level, through a framebuffer of its own, made the first time.
+			if (reading == null)
+				reading = gl.createFramebuffer();
+			gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, reading);
+			gl.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D,
+				textures[handle], 0);
+		} else
+			gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, handle == 0 ? null : t.framebuffer);
 		var pixels = new js.lib.Uint8Array(width * height * 4);
 		gl.readPixels(0, 0, width, height, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE, pixels);
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
 		var raw = Bytes.ofData(pixels.buffer);
-		if (target != 0) {
+		if (handle != 0) {
+			// A texture's rows are its first first, as uploaded, and a target's top first, drawn flipped.
 			read(raw, width, height);
 			return;
 		}
-		// The screen's rows come bottom first (GL's origin); a target's are already top first, drawn flipped.
+		// The screen's rows come bottom first (GL's origin).
 		var rgba = Bytes.alloc(raw.length), row = width * 4;
 		for (y in 0...height)
 			rgba.blit(y * row, raw, (height - 1 - y) * row, row);
@@ -937,5 +948,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		if (comparison != null)
 			gl.deleteSampler(comparison);
 		comparison = null;
+		if (reading != null)
+			gl.deleteFramebuffer(reading);
+		reading = null;
 	}
 }

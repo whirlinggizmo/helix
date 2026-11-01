@@ -185,6 +185,17 @@ class Textures {
 			Runtime.frame.updateTexture(e.gpu, x, y, width, height, rgba);
 	}
 
+	/** Returns a texture's GPU handle when it is on the GPU, without sending it there.
+
+		@param id  The texture's id.
+		@return  The handle, the frame's white texture for `DEFAULT`, or 0 while it is only in memory. */
+	public static function onGpu(id:Int):Int {
+		if (id == DEFAULT)
+			return 0;
+		var e = entries.get(id);
+		return e == null ? 0 : e.gpu;
+	}
+
 	/** Releases one of a texture's holders, freeing it when it was the last.
 
 		@param id  The texture's id.

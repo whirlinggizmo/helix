@@ -414,14 +414,28 @@ int helix_begin(int width,int height,uint32_t color){
  return 1;
 }
 /* Reading back. The back buffer holds the ended frame until helix_present swaps it. */
-/* What target 0 (the frame just ended) or an RGBA8 render target reads back as: its width and height, 0 when it can't be read now (or, a target
-   of half floats, at all). */
+/* What handle 0 (the frame just ended), an RGBA8 render target or an RGBA8 helix_texture texture reads back as: its width and height, 0
+   when it can't be read now (or, a target of half floats, a cube, a data texture or a shadow map, at all). */
+static sg_image_desc plain_desc(uint32_t texture){
+ const int slot=texture&0xffff;
+ if(slot>=256||targets[slot].color.id||data_textures[slot].image.id||shadow_maps[slot].image.id||sg_query_view_state((sg_view){texture})!=SG_RESOURCESTATE_VALID)
+  return (sg_image_desc){0};
+ const sg_image_desc desc=sg_query_image_desc(sg_query_view_image((sg_view){texture}));
+ return desc.type==SG_IMAGETYPE_2D&&desc.pixel_format==SG_PIXELFORMAT_RGBA8?desc:(sg_image_desc){0};
+}
 static int readable(uint32_t target){int slot=target&0xffff;return slot<256&&targets[slot].color.id&&!(targets[slot].variant&1);}
-int helix_read_width(uint32_t target){return target?(readable(target)?targets[target&0xffff].width:0):(frame_ended?screen_width:0);}
-int helix_read_height(uint32_t target){return target?(readable(target)?targets[target&0xffff].height:0):(frame_ended?screen_height:0);}
+int helix_read_width(uint32_t handle){
+ if(!handle)return frame_ended?screen_width:0;
+ return readable(handle)?targets[handle&0xffff].width:plain_desc(handle).width;
+}
+int helix_read_height(uint32_t handle){
+ if(!handle)return frame_ended?screen_height:0;
+ return readable(handle)?targets[handle&0xffff].height:plain_desc(handle).height;
+}
 /* Reads target into out (width * height * 4 bytes, RGBA8, rows top first) through GL, outside any pass: the back buffer for 0 (GL's rows
-   come bottom first, so they're turned over), else the target's color image attached to a framebuffer of the moment (its rows are already
-   top first: target passes draw flipped). sokol caches GL state, so its cache is reset after. */
+   come bottom first, so they're turned over), else the texture's (a target's color) top level attached to a framebuffer of the moment (its
+   rows are already top first: textures are uploaded first row first, and target passes draw flipped). sokol caches GL state, so its cache is
+   reset after. */
 int helix_read_pixels(uint32_t target,unsigned char *out){
  int w=helix_read_width(target),h=helix_read_height(target);
  if(active||!out||w<=0||h<=0)return 0;

@@ -756,9 +756,13 @@ void helix_end(void){
  for(int i=0;i<SLOTS;i++){if(buffers[i].live&&buffers[i].stream){buffers[i].used=0;buffers[i].buffer=NULL;}if(textures[i].kind==DATA)memset(textures[i].bound,0,sizeof textures[i].bound);}
 }
 
-/* What target 0 (the frame just ended) or an RGBA8 render target reads back as: its width and height, 0 when it can't be read now (or, a target
-   of half floats, at all). */
-static int readable(uint32_t target){return texture_live(target)&&textures[slot_of(target)].kind==TARGET&&!(textures[slot_of(target)].variant&1);}
+/* What handle 0 (the frame just ended), an RGBA8 render target or an RGBA8 2D texture of helix_texture reads back as: its width and
+   height, 0 when it can't be read now (or, a target of half floats, a cube, a data texture or a shadow map, at all). */
+static int readable(uint32_t handle){
+ if(!texture_live(handle))return 0;
+ const int slot=slot_of(handle);
+ return textures[slot].kind==TARGET?!(textures[slot].variant&1):textures[slot].kind==PLAIN&&textures[slot].layers==1&&textures[slot].format==0;
+}
 int helix_read_width(uint32_t target){
  if(!target)return frame_ended?screen_width:0;
  return readable(target)?textures[slot_of(target)].width:0;
@@ -768,7 +772,7 @@ int helix_read_height(uint32_t target){
  return readable(target)?textures[slot_of(target)].height:0;
 }
 /* Reads target into out (width * height * 4 bytes, RGBA8, rows top first), outside any pass, waiting for the GPU: the screen texture for 0,
-   else the target's color texture. A frame still being recorded is submitted first. */
+   else the texture (a target's color texture), its top level. A frame still being recorded is submitted first. */
 int helix_read_pixels(uint32_t target,unsigned char *out){
  const int w=helix_read_width(target),h=helix_read_height(target);
  if(active||!out||w<=0||h<=0)return 0;

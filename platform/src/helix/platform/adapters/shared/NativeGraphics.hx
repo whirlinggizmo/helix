@@ -220,17 +220,17 @@ abstract class NativeGraphics implements IGraphics {
 	public function present():Void
 		GraphicsDeviceBridge.present();
 
-	public function readPixels(target:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void {
-		var width = GraphicsDeviceBridge.readWidth(target),
-			height = GraphicsDeviceBridge.readHeight(target);
-		if (target != 0 && width == 0)
-			throw "Invalid render target";
+	public function readPixels(handle:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void {
+		var width = GraphicsDeviceBridge.readWidth(handle),
+			height = GraphicsDeviceBridge.readHeight(handle);
+		if (handle != 0 && width == 0)
+			throw "Invalid texture to read";
 		if (width == 0) {
 			failed("No frame has ended");
 			return;
 		}
 		var rgba = Bytes.alloc(width * height * 4);
-		if (GraphicsDeviceBridge.readPixels(target, cpp.Pointer.arrayElem(rgba.getData(), 0).raw) != 1)
+		if (GraphicsDeviceBridge.readPixels(handle, cpp.Pointer.arrayElem(rgba.getData(), 0).raw) != 1)
 			throw "Native read back failed";
 		read(rgba, width, height);
 	}

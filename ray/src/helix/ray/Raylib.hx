@@ -5736,10 +5736,10 @@ class Raylib {
 		RAsync.LoadImageFromMemoryAsync(fileType, fileData, dataSize, loaded, failed);
 
 	/** Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU
-		answers later. A render texture's are read back from the GPU after the frame it was drawn in, rows bottom first as raylib's are,
-		so it reads upside down as raylib's does. Another texture's pixels are what went to the GPU, while they are in memory: before it
-		is first drawn, or when it was loaded from a file (raylib's default texture's, its white pixel, always); once only on the GPU they
-		can't be read here, and it fails.
+		answers later. A texture on the GPU (one drawn, or a render texture) is read back from it as the frames drawn so far left it; a
+		render texture's rows come bottom first, as raylib's do, so it reads upside down as raylib's does. A texture updated this frame
+		(`UpdateTexture`) is read once the frame is drawn, so the update shows. One not drawn yet is read from memory (raylib's default
+		texture is its white pixel). The image is RGBA, whatever the texture's format.
 
 		@param texture  The texture.
 		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.

@@ -793,31 +793,38 @@ class RAsync {
 	}
 
 	/** Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU
-		answers later. A render texture's are read back from the GPU after the frame it was drawn in, rows bottom first as raylib's are,
-		so it reads upside down as raylib's does. Another texture's pixels are what went to the GPU, while they are in memory: before it
-		is first drawn, or when it was loaded from a file (raylib's default texture's, its white pixel, always); once only on the GPU they
-		can't be read here, and it fails.
+		answers later. A texture on the GPU (one drawn, or a render texture) is read back from it as the frames drawn so far left it; a
+		render texture's rows come bottom first, as raylib's do, so it reads upside down as raylib's does. A texture updated this frame
+		(`UpdateTexture`) is read once the frame is drawn, so the update shows. One not drawn yet is read from memory (raylib's default
+		texture is its white pixel). The image is RGBA, whatever the texture's format.
 
 		@param texture  The texture.
 		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	static function LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void):Void {
-		if (texture.flipped) {
-			var answered = false, during = true;
-			Runtime.graphics.readPixels(Textures.handle(texture.id), (pixels, width, height) -> {
+		var gpu = Textures.onGpu(texture.id);
+		if (gpu == 0) {
+			var image = Textures.imageOf(texture.id);
+			Runtime.later(() -> image == null ? refuse("LoadImageFromTextureAsync", 'TEXTURE: [ID ${texture.id}] Failed to retrieve pixel data',
+				failed) : loaded(rgba(image.pixels.sub(0, image.pixels.length), image.width, image.height)));
+			return;
+		}
+		function read():Void {
+			var during = true;
+			Runtime.graphics.readPixels(gpu, (pixels, width, height) -> {
 				var image = rgba(pixels, width, height);
-				ImageFlipVertical(image);
+				if (texture.flipped)
+					ImageFlipVertical(image);
 				Runtime.log(LOG_INFO, 'TEXTURE: [ID ${texture.id}] Pixel data retrieved successfully');
 				during ? Runtime.later(() -> loaded(image)) : loaded(image);
 			},
 				error -> during ? Runtime.later(() -> refuse("LoadImageFromTextureAsync", error, failed)) : refuse("LoadImageFromTextureAsync", error, failed));
 			during = false;
-			return;
 		}
-		var image = Textures.imageOf(texture.id);
-		Runtime.later(() -> image == null ? refuse("LoadImageFromTextureAsync",
-			'TEXTURE: [ID ${texture.id}] Failed to retrieve pixel data: its pixels are on the GPU alone',
-			failed) : loaded(rgba(image.pixels.sub(0, image.pixels.length), image.width, image.height)));
+		if (Runtime.frame.isUpdating(gpu))
+			Runtime.frame.afterDraw(read);
+		else
+			read();
 	}
 
 	/** Reads the screen, answering as the next frame ends: helix-ray's own, in place of raylib's `LoadImageFromScreen`, as the GPU

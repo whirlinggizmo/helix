@@ -4115,7 +4115,7 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `dataSize`: How many of them.
   - `loaded`: Receives the image.
   - `failed`: Optional. Receives why it couldn't be decoded; when omitted, it is logged.
-- `LoadImageFromTextureAsync`: Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU answers later. A render texture's are read back from the GPU after the frame it was drawn in, rows bottom first as raylib's are, so it reads upside down as raylib's does. Another texture's pixels are what went to the GPU, while they are in memory: before it is first drawn, or when it was loaded from a file (raylib's default texture's, its white pixel, always); once only on the GPU they can't be read here, and it fails.
+- `LoadImageFromTextureAsync`: Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU answers later. A texture on the GPU (one drawn, or a render texture) is read back from it as the frames drawn so far left it; a render texture's rows come bottom first, as raylib's do, so it reads upside down as raylib's does. A texture updated this frame (`UpdateTexture`) is read once the frame is drawn, so the update shows. One not drawn yet is read from memory (raylib's default texture is its white pixel). The image is RGBA, whatever the texture's format.
   - `texture`: The texture.
   - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
