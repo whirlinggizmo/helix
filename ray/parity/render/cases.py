@@ -61,4 +61,13 @@ CASES = [
            'if (readBack != null) DrawTexture(readBack, 590, 290, WHITE);'},
     # Nine instances of a cube in one draw, each placed by its own transform, the last three left out.
     'BeginMode3D(camera); DrawMeshInstanced(cube, placed, transforms, 6); EndMode3D();',
+    # Mipmaps under raylib's filters, drawn at 24 x 24 (level 1.4): its point, bilinear and trilinear tables, anisotropy; trilinear without
+    # mipmaps is bilinear.
+    {'c': 'for (int i = 0; i < 4; i++) DrawTexturePro(mipped[i], R(0, 0, 64, 64), R(20 + i * 40, 380, 24, 24), V2(0, 0), 0, WHITE); '
+          'DrawTexturePro(plain, R(0, 0, 64, 64), R(180, 380, 24, 24), V2(0, 0), 0, WHITE);',
+     'hx': 'for (i in 0...4) DrawTexturePro(mipped[i], R(0, 0, 64, 64), R(20 + i * 40, 380, 24, 24), V2(0, 0), 0, WHITE); '
+           'DrawTexturePro(plain, R(0, 0, 64, 64), R(180, 380, 24, 24), V2(0, 0), 0, WHITE);'},
+    # Mipmaps made after the texture's first draw, from its pixels on the GPU, then read trilinear.
+    'DrawTexture(late, 230, 380, WHITE); if (frame == 0) { GenTextureMipmaps(OUT(late)); SetTextureFilter(late, TEXTURE_FILTER_TRILINEAR); } '
+    'DrawTexturePro(late, R(0, 0, 64, 64), R(300, 380, 20, 20), V2(0, 0), 0, WHITE);',
 ]

@@ -67,9 +67,10 @@ enum{PLAIN,DATA,TARGET,SHADOW};
 static struct{uint32_t generation;int live,kind,width,height,layers,variant,format,cleared;SDL_GPUTexture *texture,*samples,*depth;
  SDL_GPUTexture *versions[MAX_RENAMES];int current,bound[MAX_RENAMES];}textures[SLOTS];
 
-/* Samplers by Sampling value (helix.platform.Sampling: bit 0 linear, bits 1-2 wrap u, bits 3-4 wrap v), made when first used, and the
-   comparison sampler shadow maps are read through. */
-static SDL_GPUSampler *samplers[32],*comparison;
+/* Samplers by Sampling value (helix.platform.Sampling: bit 0 linear, bits 1-2 wrap u, bits 3-4 wrap v, bits 5-6 the mipmap filter, bits
+   7-9 the anisotropy's power of two), made when first used, and the comparison sampler shadow maps are read through. */
+#define SAMPLINGS 1024
+static SDL_GPUSampler *samplers[SAMPLINGS],*comparison;
 
 /* The frame: its command buffer (acquired by its first pass), the texture the screen is drawn into (with its multisampled and depth
    textures), the screen's size this frame, and whether the frame has ended (it can be read back). */
@@ -636,15 +637,18 @@ int helix_viewport(int x,int y,int w,int h){
  c->x=(float)x;c->y=(float)(flipped?y:pass_height-y-h);c->w=(float)w;c->h=(float)h;
  return 1;
 }
-/* The sampler for a Sampling value: linear (through the mipmaps) or nearest, and each axis's wrap. */
+/* The sampler for a Sampling value: linear or nearest; the mipmaps not read (their levels clamped to the top), the nearest, or the two
+   nearest blended; each axis's wrap; and the anisotropy, only with every filter linear, as sokol's adapter takes it. */
 static SDL_GPUSampler *sampler_of(int sampling){
  static const SDL_GPUSamplerAddressMode wraps[3]={SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,SDL_GPU_SAMPLERADDRESSMODE_REPEAT,SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT};
- sampling&=31;
+ sampling&=SAMPLINGS-1;
  if(!samplers[sampling]){
   const SDL_GPUFilter filter=sampling&1?SDL_GPU_FILTER_LINEAR:SDL_GPU_FILTER_NEAREST;
+  const int mipmaps=sampling>>5&3,anisotropy=1<<(sampling>>7&7),anisotropic=(sampling&1)&&mipmaps==2&&anisotropy>1&&anisotropy<=16;
   samplers[sampling]=SDL_CreateGPUSampler(device,&(SDL_GPUSamplerCreateInfo){.min_filter=filter,.mag_filter=filter,
-   .mipmap_mode=sampling&1?SDL_GPU_SAMPLERMIPMAPMODE_LINEAR:SDL_GPU_SAMPLERMIPMAPMODE_NEAREST,.address_mode_u=wraps[(sampling>>1&3)%3],
-   .address_mode_v=wraps[(sampling>>3&3)%3],.address_mode_w=SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,.max_lod=1000});
+   .mipmap_mode=mipmaps==2?SDL_GPU_SAMPLERMIPMAPMODE_LINEAR:SDL_GPU_SAMPLERMIPMAPMODE_NEAREST,.address_mode_u=wraps[(sampling>>1&3)%3],
+   .address_mode_v=wraps[(sampling>>3&3)%3],.address_mode_w=SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,.max_lod=mipmaps?1000:0,
+   .max_anisotropy=anisotropic?(float)anisotropy:1,.enable_anisotropy=anisotropic});
  }
  return samplers[sampling];
 }
@@ -846,7 +850,7 @@ void helix_sdl3gpu_dispose(void){
   buffers[i].live=0;
  }
  memset(placeholders,0,sizeof placeholders);
- for(int i=0;i<32;i++)if(samplers[i]){SDL_ReleaseGPUSampler(device,samplers[i]);samplers[i]=NULL;}
+ for(int i=0;i<SAMPLINGS;i++)if(samplers[i]){SDL_ReleaseGPUSampler(device,samplers[i]);samplers[i]=NULL;}
  if(comparison){SDL_ReleaseGPUSampler(device,comparison);comparison=NULL;}
  for(int i=0;i<retired_count;i++)SDL_ReleaseGPUBuffer(device,retired[i]);
  retired_count=0;

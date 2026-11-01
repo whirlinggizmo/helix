@@ -259,7 +259,9 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		return known;
 	}
 
-	// The sampler object for sampling: linear (through the mipmaps, when there are any) or nearest, and each axis's wrap.
+	// The sampler object for sampling: linear or nearest; the mipmaps not read (their levels clamped to the top), the nearest, or the two
+	// nearest blended; each axis's wrap; and the anisotropy, where the browser has EXT_texture_filter_anisotropic, only with every filter
+	// linear, as the native adapters take it.
 	function sampler(sampling:Sampling):Dynamic {
 		var index:Int = sampling;
 		if (samplers[index] == null) {
@@ -270,11 +272,22 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			];
 			var linear = sampling.filter == helix.platform.Filter.Linear,
 				made = gl.createSampler();
-			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_MIN_FILTER,
-				linear ? WebGL2RenderingContext.LINEAR_MIPMAP_LINEAR : WebGL2RenderingContext.NEAREST_MIPMAP_NEAREST);
+			var minify = switch sampling.mipmapFilter {
+				case Linear: linear ? WebGL2RenderingContext.LINEAR_MIPMAP_LINEAR : WebGL2RenderingContext.NEAREST_MIPMAP_LINEAR;
+				case Nearest: linear ? WebGL2RenderingContext.LINEAR_MIPMAP_NEAREST : WebGL2RenderingContext.NEAREST_MIPMAP_NEAREST;
+				case None: linear ? WebGL2RenderingContext.LINEAR : WebGL2RenderingContext.NEAREST;
+			}
+			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_MIN_FILTER, minify);
 			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_MAG_FILTER, linear ? WebGL2RenderingContext.LINEAR : WebGL2RenderingContext.NEAREST);
 			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_WRAP_S, wraps[(sampling.wrapU : Int) % 3]);
 			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_WRAP_T, wraps[(sampling.wrapV : Int) % 3]);
+			if (linear && sampling.mipmapFilter == Linear && sampling.anisotropy > 1) {
+				var extension = gl.getExtension("EXT_texture_filter_anisotropic");
+				if (extension != null) {
+					var most:Float = gl.getParameter(0x84FF); // MAX_TEXTURE_MAX_ANISOTROPY_EXT
+					gl.samplerParameterf(made, 0x84FE, Math.min(sampling.anisotropy, most)); // TEXTURE_MAX_ANISOTROPY_EXT
+				}
+			}
 			samplers[index] = made;
 		}
 		return samplers[index];

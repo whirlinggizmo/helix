@@ -2,6 +2,7 @@ import helix.platform.Blend;
 import helix.platform.BlendFactor;
 import helix.platform.ColorChannels;
 import helix.platform.Filter;
+import helix.platform.MipmapFilter;
 import helix.platform.Sampling;
 import helix.platform.TextureFormat;
 import helix.platform.Wrap;
@@ -92,12 +93,33 @@ class PlatformTests {
 		check(sampling.withWrap(Clamp, Clamp).wrapV == Clamp
 			&& sampling.withWrap(Clamp, Clamp).filter == Linear, "withWrap changes the wraps alone");
 		check(Sampling.NEAREST.filter == Nearest && Sampling.LINEAR.filter == Linear && Sampling.LINEAR.wrapU == Clamp, "The two clamped samplings");
+		// The mipmap filter follows the filter unless given; anisotropy rounds down to a power of two, at most 16.
+		check(sampling.mipmapFilter == Linear && Sampling.NEAREST.mipmapFilter == Nearest && sampling.anisotropy == 1,
+			"The mipmap filter defaults to the filter's, the anisotropy to 1");
+		var mipped = new Sampling(Nearest, Clamp, Repeat, None, 6);
+		check(mipped.mipmapFilter == None
+			&& mipped.anisotropy == 4
+			&& new Sampling(Linear, Clamp, Clamp, Linear,
+				40).anisotropy == 16
+					&& mipped.withMipmapFilter(Linear)
+						.mipmapFilter == Linear
+					&& mipped.withMipmapFilter(Linear)
+						.anisotropy == 4
+					&& mipped.withAnisotropy(8)
+						.anisotropy == 8
+					&& mipped.withAnisotropy(8)
+						.wrapV == Repeat
+					&& mipped.withFilter(Linear)
+						.mipmapFilter == None,
+			"Mipmap filter and anisotropy kept, and changed alone");
 		var seen = new Map<Int, Bool>();
-		for (filter in [Nearest, Linear])
+		for (filter in [Filter.Nearest, Filter.Linear])
 			for (u in [Clamp, Repeat, Mirror])
 				for (v in [Clamp, Repeat, Mirror])
-					seen.set(new Sampling(filter, u, v), true);
-		check(Lambda.count(seen) == 18 && [for (s in seen.keys()) s].filter(s -> s < 0 || s >= Sampling.COUNT).length == 0,
+					for (mipmaps in [MipmapFilter.None, MipmapFilter.Nearest, MipmapFilter.Linear])
+						for (anisotropy in [1, 2, 4, 8, 16])
+							seen.set(new Sampling(filter, u, v, mipmaps, anisotropy), true);
+		check(Lambda.count(seen) == 270 && [for (s in seen.keys()) s].filter(s -> s < 0 || s >= Sampling.COUNT).length == 0,
 			"Every combination distinct and under COUNT");
 
 		// Level sizes: blocks of 4x4 of 16 bytes, or bytes a texel.

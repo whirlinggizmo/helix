@@ -36,8 +36,10 @@ static struct{int blocks,texture_mask,unfiltered_mask,block_size[MAX_BLOCKS];cha
    needed. */
 static uint32_t placeholders[3];
 static sg_sampler sampler_of(int sampling);
-/* One sampler for each Sampling value used (helix.platform.Sampling: bit 0 linear, bits 1-2 wrap u, bits 3-4 wrap v), made when first used. */
-static sg_sampler samplers[32];
+/* One sampler for each Sampling value used (helix.platform.Sampling: bit 0 linear, bits 1-2 wrap u, bits 3-4 wrap v, bits 5-6 the mipmap
+   filter, bits 7-9 the anisotropy's power of two), made when first used. */
+#define SAMPLINGS 1024
+static sg_sampler samplers[SAMPLINGS];
 /* Pipelines (helix_pipeline), by pipeline slot: what a draw through one checks and binds (its program, its buffers' strides and whether each
    is an instance's and read at all, indexed or not, lines or triangles, depth alone, block 0's clip flip). Per buffer slot: whether it is an
    index buffer. */
@@ -95,7 +97,7 @@ void helix_setup(void){
  n=0;glGetIntegerv(GL_MAX_SAMPLES,&n);max_samples=n>=8?8:n>=4?4:n>=2?2:1;
 }
 void helix_dispose(void){
- for(int i=0;i<32;i++)if(samplers[i].id)sg_destroy_sampler(samplers[i]);
+ for(int i=0;i<SAMPLINGS;i++)if(samplers[i].id)sg_destroy_sampler(samplers[i]);
  if(comparison.id)sg_destroy_sampler(comparison);
  sg_shutdown();
  memset(placeholders,0,sizeof placeholders);
@@ -466,14 +468,18 @@ int helix_viewport(int x,int y,int w,int h){
  /* From the bottom left, as asked; a flipped pass's rows are upside down. */
  sg_apply_viewport(x,flipped?frame_height-y-h:y,w,h,false);return 1;
 }
-/* The sampler for a Sampling value: linear (through the mipmaps, when there are any) or nearest, and each axis's wrap. */
+/* The sampler for a Sampling value: linear or nearest; the mipmaps not read (the level clamped to a quarter, which the nearest mipmap
+   rounds to the top: sokol takes a max_lod of 0 for its default), the nearest, or the two
+   nearest blended; each axis's wrap; and the anisotropy, which sokol takes only with every filter linear (GL clamps it to its own most). */
 static sg_sampler sampler_of(int sampling){
  static const sg_wrap wraps[3]={SG_WRAP_CLAMP_TO_EDGE,SG_WRAP_REPEAT,SG_WRAP_MIRRORED_REPEAT};
- sampling&=31;
+ sampling&=SAMPLINGS-1;
  if(!samplers[sampling].id){
   const sg_filter filter=sampling&1?SG_FILTER_LINEAR:SG_FILTER_NEAREST;
-  samplers[sampling]=sg_make_sampler(&(sg_sampler_desc){.min_filter=filter,.mag_filter=filter,.mipmap_filter=filter,
-   .wrap_u=wraps[(sampling>>1&3)%3],.wrap_v=wraps[(sampling>>3&3)%3]});
+  const int mipmaps=sampling>>5&3,anisotropy=1<<(sampling>>7&7);
+  samplers[sampling]=sg_make_sampler(&(sg_sampler_desc){.min_filter=filter,.mag_filter=filter,.mipmap_filter=mipmaps==2?SG_FILTER_LINEAR:SG_FILTER_NEAREST,
+   .max_lod=mipmaps?1000.0f:0.25f,.wrap_u=wraps[(sampling>>1&3)%3],.wrap_v=wraps[(sampling>>3&3)%3],
+   .max_anisotropy=(uint32_t)((sampling&1)&&mipmaps==2&&anisotropy<=16?anisotropy:1)});
  }
  return samplers[sampling];
 }

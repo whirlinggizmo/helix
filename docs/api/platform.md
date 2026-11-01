@@ -274,7 +274,7 @@ static function isDirectoryName(name:String):Bool
 Specifies how a texture is filtered when drawn at a size other than its own.
 
 - `Filter.Nearest`: The nearest texel is used. It looks sharp and suits pixel art.
-- `Filter.Linear`: Neighboring texels are blended, which looks smooth. A texture with mipmaps is also blended between them, so it shrinks without shimmering.
+- `Filter.Linear`: Neighboring texels are blended, which looks smooth.
 
 ```haxe
 function toString():String
@@ -1427,6 +1427,24 @@ function toString():String
   The name is the key's own spelling, such as "Space", "PageUp" or "KeypadEnter", or a digit key's digit, such as "0".
 - `toString`: Returns the value's name as written (Space, Apostrophe): what Std.string, interpolation and trace show.
 
+## MipmapFilter
+
+*abstract* in [`platform/src/helix/platform/MipmapFilter.hx`](../../platform/src/helix/platform/MipmapFilter.hx), `import helix.platform.MipmapFilter;`
+
+Specifies how a texture's mipmaps are sampled when it is drawn smaller than its size.
+
+A texture without mipmaps reads its top level whatever this is.
+
+- `MipmapFilter.None`: The mipmaps aren't read: the top level alone, filtered as the sampling's filter says.
+- `MipmapFilter.Nearest`: The mipmap nearest the drawn size, filtered as the sampling's filter says.
+- `MipmapFilter.Linear`: The two mipmaps nearest the drawn size, each filtered as the sampling's filter says, blended, so a texture shrinks without shimmering or a seam between levels.
+
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (None, Nearest): what Std.string, interpolation and trace show.
+
 ## MouseButton
 
 *abstract* in [`platform/src/helix/platform/MouseButton.hx`](../../platform/src/helix/platform/MouseButton.hx), `import helix.platform.MouseButton;`
@@ -1554,12 +1572,13 @@ Represents one glyph from `IFontRasterizer.rasterize`: its bitmap, where it sits
 
 *abstract* in [`platform/src/helix/platform/Sampling.hx`](../../platform/src/helix/platform/Sampling.hx), `import helix.platform.Sampling;`
 
-Represents how a draw samples a texture, by its filter and how it wraps along u and v.
+Represents how a draw samples a texture: its filter, how it wraps along u and v, how its mipmaps are read, and its anisotropy.
 
 It is a small value passed with each texture a draw uses. Adapters keep one sampler for each value used.
 
 ```haxe
 var tiled = new Sampling(Nearest, Repeat, Repeat);
+var floor = new Sampling(Linear, Repeat, Repeat, Linear, 8);
 ```
 
 ```haxe
@@ -1568,8 +1587,12 @@ static final LINEAR(default, null):Sampling
 var filter(get, never):Filter
 var wrapU(get, never):Wrap
 var wrapV(get, never):Wrap
+var mipmapFilter(get, never):MipmapFilter
+var anisotropy(get, never):Int
 function withFilter(filter:Filter):Sampling
 function withWrap(wrapU:Wrap, wrapV:Wrap):Sampling
+function withMipmapFilter(mipmapFilter:MipmapFilter):Sampling
+function withAnisotropy(anisotropy:Int):Sampling
 static inline var COUNT:Int
 ```
 
@@ -1578,13 +1601,21 @@ static inline var COUNT:Int
 - `filter`: Gets how the texture is filtered, Linear or Nearest.
 - `wrapU`: Gets how the texture wraps along u.
 - `wrapV`: Gets how the texture wraps along v.
+- `mipmapFilter`: Gets how the texture's mipmaps are read.
+- `anisotropy`: Gets the most texels read along a surface seen at a slant: 1, 2, 4, 8 or 16.
 - `withFilter`: Returns this sampling with another filter.
   - `filter`: The new filter.
-  - returns: The sampling, its wrapping unchanged.
+  - returns: The sampling, its wrapping, mipmap filter and anisotropy unchanged.
 - `withWrap`: Returns this sampling with other wrapping.
   - `wrapU`: How the texture wraps along u.
   - `wrapV`: How the texture wraps along v.
-  - returns: The sampling, its filter unchanged.
+  - returns: The sampling, its filters and anisotropy unchanged.
+- `withMipmapFilter`: Returns this sampling with another mipmap filter.
+  - `mipmapFilter`: How the texture's mipmaps are read.
+  - returns: The sampling, its filter, wrapping and anisotropy unchanged.
+- `withAnisotropy`: Returns this sampling with another anisotropy.
+  - `anisotropy`: The most texels read along a surface seen at a slant, 1 to 16, as the constructor takes it.
+  - returns: The sampling, its filters and wrapping unchanged.
 - `COUNT`: The number of distinct values, which run 0 to COUNT - 1. It is the size of an adapter's table of samplers.
 
 ## SdlGpuStages

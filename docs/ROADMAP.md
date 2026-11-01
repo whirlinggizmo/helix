@@ -12,7 +12,7 @@
   (Atomics.wait, which a worker may; cross-origin isolation, OffscreenCanvas, input and audio relayed; raylib's loop run as written)
   against a whole-program rewrite into callbacks. A `Future` of our own over the callbacks, cross-target, may serve the managed layer,
   as Haxe has none (`js.lib.Promise` is the browser's alone). Not there yet: skinned models and animations, fonts from files, images
-  on the CPU, `SetTextureFilter`, `UpdateMeshBuffer`; each refuses to compile, naming itself. Platform changes it would like,
+  on the CPU, `UpdateMeshBuffer`; each refuses to compile, naming itself. Platform changes it would like,
   for review: a uniform block both shader stages share (worked around: a block a stage), `ShaderCompiler.compileText` as a supported
   entry point, a sound's length and the position it plays at in services' `Audio` (raylib's `GetMusicTimeLength`,
   `GetMusicTimePlayed` and `SeekMusicStream` refuse until then), and a page's cache in OPFS readable at once from the main thread (a worker holding OPFS's sync handles, the page

@@ -21,8 +21,9 @@ class Textures {
 
 		@param path  The file (or a key of its own, as a model's image's), or "" for an image of no file, which is never shared.
 		@param image  Its pixels, used when no load of the file is held.
+		@param levels  Optional. Its mipmaps, 8-bit RGBA, each half the size of the last; none when omitted.
 		@return  The id. */
-	public static function fromImage(path:String, image:Image):Int {
+	public static function fromImage(path:String, image:Image, ?levels:Array<haxe.io.Bytes>):Int {
 		if (path != "" && byPath.exists(path)) {
 			var id = byPath.get(path), e = entries.get(id);
 			e.refs++;
@@ -35,7 +36,8 @@ class Textures {
 			image: image,
 			gpu: 0,
 			refs: 1,
-			held: 1
+			held: 1,
+			levels: levels
 		});
 		if (path != "")
 			byPath.set(path, id);
@@ -98,9 +100,9 @@ class Textures {
 			samplings.set(e.gpu, sampling);
 	}
 
-	/** How a texture is sampled until `setSampling` says otherwise: raylib's point filter, repeating past its edges as rlLoadTexture sets
-		on desktop GL. */
-	public static final DEFAULT_SAMPLING = new helix.platform.Sampling(Nearest, Repeat, Repeat);
+	/** How a texture is sampled until `setSampling` says otherwise: raylib's point filter, its mipmaps not read, repeating past its
+		edges as rlLoadTexture sets on desktop GL. */
+	public static final DEFAULT_SAMPLING = new helix.platform.Sampling(Nearest, Repeat, Repeat, None);
 
 	/** Returns how a texture is drawn, by its GPU handle: as `setSampling` set, else `DEFAULT_SAMPLING`.
 
@@ -149,11 +151,12 @@ class Textures {
 		if (e == null)
 			return 0;
 		if (e.gpu == 0 && e.image != null) {
-			e.gpu = Runtime.graphics.createTexture(e.image.width, e.image.height, [e.image.pixels]);
+			e.gpu = Runtime.graphics.createTexture(e.image.width, e.image.height, e.levels == null ? [e.image.pixels] : [e.image.pixels].concat(e.levels));
 			if (e.sampling != null)
 				samplings.set(e.gpu, e.sampling);
 			// Its pixels are on the GPU now; the copy here isn't needed again.
 			e.image = null;
+			e.levels = null;
 		}
 		return e.gpu;
 	}
@@ -196,6 +199,42 @@ class Textures {
 		return e == null ? 0 : e.gpu;
 	}
 
+	/** Makes a texture's mipmaps, as GL's `glGenerateMipmap` makes them (`Mipmaps`): in memory while it isn't on the GPU yet; else from its
+		pixels read back from the GPU, a texture of them taking its place, the old one freed once the frame is drawn (draws asked for
+		before read the old). One updated this frame (`update`) is read once the frame is drawn, so the update is in its mipmaps.
+
+		@param id  The texture's id. */
+	public static function generateMipmaps(id:Int):Void {
+		var e = entries.get(id);
+		if (e == null || id == DEFAULT)
+			return;
+		if (e.gpu == 0) {
+			if (e.image != null)
+				e.levels = Mipmaps.build(e.image.width, e.image.height, e.image.pixels);
+			return;
+		}
+		function remake():Void {
+			var gpu = e.gpu;
+			Runtime.graphics.readPixels(gpu, (pixels, width, height) -> {
+				if (entries.get(id) != e || e.gpu != gpu)
+					return;
+				var made = Runtime.graphics.createTexture(width, height, [pixels].concat(Mipmaps.build(width, height, pixels)));
+				var sampling = samplings.get(gpu);
+				if (sampling != null)
+					samplings.set(made, sampling);
+				e.gpu = made;
+				Runtime.frame.afterDraw(() -> {
+					Runtime.graphics.disposeTexture(gpu);
+					samplings.remove(gpu);
+				});
+			}, _ -> {});
+		}
+		if (Runtime.frame.isUpdating(e.gpu))
+			Runtime.frame.afterDraw(remake);
+		else
+			remake();
+	}
+
 	/** Releases one of a texture's holders, freeing it when it was the last.
 
 		@param id  The texture's id.
@@ -231,6 +270,8 @@ class Textures {
 private typedef Entry = {
 	final path:String;
 	var image:Null<Image>;
+	// Its mipmaps while it isn't on the GPU, or null for none.
+	var ?levels:Null<Array<haxe.io.Bytes>>;
 	// Whether image is its own, so changing it changes no one else's (a file's image is shared with its other loads).
 	var ?owned:Bool;
 	var gpu:Int;

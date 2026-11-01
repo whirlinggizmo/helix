@@ -6,7 +6,6 @@ enum abstract Filter(Int) to Int {
 	/** The nearest texel is used. It looks sharp and suits pixel art. */
 	var Nearest = 0;
 
-	/** Neighboring texels are blended, which looks smooth. A texture with mipmaps is also blended between them, so it shrinks without
-		shimmering. */
+	/** Neighboring texels are blended, which looks smooth. */
 	var Linear = 1;
 }

@@ -456,13 +456,56 @@ class RTextures {
 		Runtime.frame.toScreen();
 	}
 
-	/** Sets how a texture is sampled when drawn larger or smaller: `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel,
-		and the others blend the nearest four, as `TEXTURE_FILTER_BILINEAR` does (there are no mipmaps here).
+	/** Sets how a texture is sampled when drawn larger or smaller, as raylib's GL does, by whether the texture has mipmaps
+		(`texture.mipmaps`, as this copy of it says): `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel (of the nearest
+		mipmap); `TEXTURE_FILTER_BILINEAR` blends the nearest four (of the nearest mipmap); `TEXTURE_FILTER_TRILINEAR` blends the nearest
+		four of the two nearest mipmaps, or, without mipmaps, is `TEXTURE_FILTER_BILINEAR`, with a warning. `TEXTURE_FILTER_ANISOTROPIC_4X`,
+		`8X` and `16X` read up to that many texels along a surface seen at a slant, leaving the filter as it was; the GPU uses it only with
+		`TEXTURE_FILTER_TRILINEAR` on a mipmapped texture.
 
 		@param texture  The texture.
 		@param filter  The filter (`TEXTURE_FILTER_*`). */
 	static function SetTextureFilter(texture:Texture2D, filter:Int):Void {
-		Textures.setSampling(texture.id, Textures.samplingOfId(texture.id).withFilter(filter == TEXTURE_FILTER_POINT ? Nearest : Linear));
+		var mipmapped = texture.mipmaps > 1,
+			sampling = Textures.samplingOfId(texture.id);
+		switch filter {
+			case TEXTURE_FILTER_POINT:
+				sampling = sampling.withFilter(Nearest).withMipmapFilter(mipmapped ? Nearest : None);
+			case TEXTURE_FILTER_BILINEAR:
+				sampling = sampling.withFilter(Linear).withMipmapFilter(mipmapped ? Nearest : None);
+			case TEXTURE_FILTER_TRILINEAR:
+				if (!mipmapped)
+					Runtime.log(LOG_WARNING, 'TEXTURE: [ID ${texture.id}] No mipmaps available for TRILINEAR texture filtering');
+				sampling = sampling.withFilter(Linear).withMipmapFilter(mipmapped ? Linear : None);
+			case TEXTURE_FILTER_ANISOTROPIC_4X:
+				sampling = sampling.withAnisotropy(4);
+			case TEXTURE_FILTER_ANISOTROPIC_8X:
+				sampling = sampling.withAnisotropy(8);
+			case TEXTURE_FILTER_ANISOTROPIC_16X:
+				sampling = sampling.withAnisotropy(16);
+			case _:
+				return;
+		}
+		Textures.setSampling(texture.id, sampling);
+	}
+
+	/** Makes a texture's mipmaps, down to 1 by 1, as raylib's does with GL's `glGenerateMipmap`: each level the rounded average of the
+		2 by 2 above it, made on the CPU, so the same on every target. `texture.mipmaps` becomes their count. The texture's filter is left
+		as it was: `SetTextureFilter` after it reads them. A texture already drawn gets them from its pixels read back from the GPU, and
+		draws asked for before it this frame don't; a render texture's can't be made, with a warning.
+
+		@param texture  The texture. */
+	static function GenTextureMipmaps(texture:Texture2D):Void {
+		if (texture.id <= 0)
+			return;
+		if (texture.flipped) {
+			Runtime.log(LOG_WARNING, 'TEXTURE: [ID ${texture.id}] Failed to generate mipmaps');
+			return;
+		}
+		Textures.generateMipmaps(texture.id);
+		var largest = texture.width > texture.height ? texture.width : texture.height;
+		texture.mipmaps = 1 + Math.floor(Math.log(largest) / Math.log(2));
+		Runtime.log(LOG_INFO, 'TEXTURE: [ID ${texture.id}] Mipmaps generated automatically, total: ${texture.mipmaps}');
 	}
 
 	// ---- Images: loading and exporting ----
@@ -2344,7 +2387,8 @@ class RTextures {
 
 	// ---- Images as textures ----
 
-	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, and it has one level.
+	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, its mipmaps too when it
+		has them (`ImageMipmaps`), filtered through them, trilinear, as raylib sets it.
 		Its format is the image's, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed
 		format gives no texture, with a warning.
 
@@ -2360,8 +2404,22 @@ class RTextures {
 			return new Texture2D();
 		}
 		var pixels = Pixels.colors(image.data, image.width, image.height, image.format);
-		return new Texture2D(Textures.fromImage("", new helix.services.images.Image("", image.width, image.height, pixels)), image.width, image.height, 1,
-			image.format);
+		// Its mipmaps, each after the last in its data, made RGBA as its top level is.
+		var levels = [], at = GetPixelDataSize(image.width, image.height, image.format), w = image.width, h = image.height;
+		for (_ in 1...image.mipmaps) {
+			w = w > 1 ? w >> 1 : 1;
+			h = h > 1 ? h >> 1 : 1;
+			var size = GetPixelDataSize(w, h, image.format);
+			if (at + size > image.data.length)
+				break;
+			levels.push(Pixels.colors(image.data.sub(at, size), w, h, image.format));
+			at += size;
+		}
+		var id = Textures.fromImage("", new helix.services.images.Image("", image.width, image.height, pixels), levels.length > 0 ? levels : null);
+		// A texture with mipmaps is filtered through them, trilinear, as rlLoadTexture sets it.
+		if (levels.length > 0)
+			Textures.setSampling(id, Textures.samplingOfId(id).withFilter(Linear).withMipmapFilter(Linear));
+		return new Texture2D(id, image.width, image.height, levels.length + 1, image.format);
 	}
 
 	/** Replaces a texture's pixels, as raylib's does on the GPU. The pixels are in the texture's format (`texture.format`), rows top

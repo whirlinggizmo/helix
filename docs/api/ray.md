@@ -2532,6 +2532,7 @@ static function UnloadRenderTexture(target:RenderTexture2D):Void
 static function BeginTextureMode(target:RenderTexture2D):Void
 static function EndTextureMode():Void
 static function SetTextureFilter(texture:Texture2D, filter:Int):Void
+static function GenTextureMipmaps(texture:Texture2D):Void
 static function IsImageValid(image:Image):Bool
 static function UnloadImage(image:Image):Void
 static function ExportImage(image:Image, fileName:String):Bool
@@ -2716,9 +2717,11 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
 - `BeginTextureMode`: Draws into a render texture until `EndTextureMode`, over what it holds: what was drawn into it before, in this frame or an earlier one, stays until `ClearBackground` clears it, as raylib's does. A render texture never drawn into holds transparent black.
   - `target`: The render texture.
 - `EndTextureMode`: Goes back to drawing on the screen.
-- `SetTextureFilter`: Sets how a texture is sampled when drawn larger or smaller: `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel, and the others blend the nearest four, as `TEXTURE_FILTER_BILINEAR` does (there are no mipmaps here).
+- `SetTextureFilter`: Sets how a texture is sampled when drawn larger or smaller, as raylib's GL does, by whether the texture has mipmaps (`texture.mipmaps`, as this copy of it says): `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel (of the nearest mipmap); `TEXTURE_FILTER_BILINEAR` blends the nearest four (of the nearest mipmap); `TEXTURE_FILTER_TRILINEAR` blends the nearest four of the two nearest mipmaps, or, without mipmaps, is `TEXTURE_FILTER_BILINEAR`, with a warning. `TEXTURE_FILTER_ANISOTROPIC_4X`, `8X` and `16X` read up to that many texels along a surface seen at a slant, leaving the filter as it was; the GPU uses it only with `TEXTURE_FILTER_TRILINEAR` on a mipmapped texture.
   - `texture`: The texture.
   - `filter`: The filter (`TEXTURE_FILTER_*`).
+- `GenTextureMipmaps`: Makes a texture's mipmaps, down to 1 by 1, as raylib's does with GL's `glGenerateMipmap`: each level the rounded average of the 2 by 2 above it, made on the CPU, so the same on every target. `texture.mipmaps` becomes their count. The texture's filter is left as it was: `SetTextureFilter` after it reads them. A texture already drawn gets them from its pixels read back from the GPU, and draws asked for before it this frame don't; a render texture's can't be made, with a warning.
+  - `texture`: The texture.
 - `IsImageValid`: Returns whether an image holds pixels: data, a size, a format and a mipmap level.
   - `image`: The image.
   - returns: True when it does.
@@ -3040,7 +3043,7 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `fontSize`: The height of a line, in pixels.
   - `spacing`: The space between letters, at the font's size.
   - `tint`: The color.
-- `LoadTextureFromImage`: Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, and it has one level. Its format is the image's, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed format gives no texture, with a warning.
+- `LoadTextureFromImage`: Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, its mipmaps too when it has them (`ImageMipmaps`), filtered through them, trilinear, as raylib sets it. Its format is the image's, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed format gives no texture, with a warning.
   - `image`: The image.
   - returns: The texture.
 - `UpdateTexture`: Replaces a texture's pixels, as raylib's does on the GPU. The pixels are in the texture's format (`texture.format`), rows top first, its width by its height. Draws asked for before it this frame in a render texture drawn into since, or on the screen, show the new pixels too, as rlgl's batch drawn after it does; those in render textures drawn into before it keep the old. A render texture's, a compressed format's and pixels too few for the texture change nothing (raylib's reads past them), with a warning.
@@ -4165,7 +4168,7 @@ Each of these is raylib's name, and a call to it doesn't compile, saying why and
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`.
+`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `DrawModelPoints`, `DrawModelPointsEx`.
 
 ## Raymath
 

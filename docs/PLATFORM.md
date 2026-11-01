@@ -213,6 +213,10 @@ enum Event {
   height, clearColor)` and `endFrame`; within a pass `applyViewport`, `applyScissor`, `resetScissor`.
 - `draw(pipeline, buffers, indexBuffer, firstElementIndex, elementCount, firstInstanceIndex, instanceCount, textures, samplings, uniforms)`: buffers by the
   pipeline's buffer index, an index buffer for indexed pipelines, a range, instances, textures, samplings and uniform blocks by slot.
+  A `Sampling` is a filter, each axis's wrap, a `MipmapFilter` (None: the top level alone; Nearest: the nearest mipmap; Linear: the two
+  nearest blended; it follows the filter when omitted) and an anisotropy of 1 to 16, used with linear filtering and linear mipmaps only
+  (sokol takes it so; WebGL2 through EXT_texture_filter_anisotropic where the browser has it), each adapter keeping a sampler a value.
+  Mipmaps come with a texture's levels; the platform makes none.
 - `readPixels(handle, read(pixels, width, height), failed(message))`: an RGBA8 texture's top level, an RGBA8 render target, or the frame
   just ended (0); `msaaSampleCount`, `maxMsaaSampleCount`; `dispose`.
 

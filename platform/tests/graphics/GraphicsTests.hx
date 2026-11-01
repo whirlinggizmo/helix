@@ -36,7 +36,7 @@ typedef Case = {
 	The cases: a clear, a triangle's colors interpolated, eight vertex buffers read and a ninth refused, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
 	additive blending, each blend factor and operation and a color write mask, a texture's rectangles replaced, and replaced
 	between passes, targets kept from pass to pass and frame to frame (their depth and samples too) and one never cleared, textures read
-	back, instances placed by a mat4 vertex input, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
+	back, instances placed by a mat4 vertex input, mipmaps under each mipmap filter, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
 	texel by texel, a cubemap's six faces, and declared textures left unbound reading clear. The shaders are `shaders/*.vert` and `*.frag`,
 	compiled by the build, so it checks the shader compiler's dialects too. One case runs a frame; on a GPU that reads back later, the next
 	waits for it.
@@ -326,6 +326,13 @@ class GraphicsTests {
 			halves.setUInt16(i * 2, 0x3c00);
 		var halfTexture = graphics.createTexture(2, 1, [halves], Rgba16f);
 		textures.push(halfTexture);
+		// 8 x 8 with its mipmaps, each level one color: red, green, blue, white.
+		var levels = [
+			for (i => rgba in [0xff0000ff, 0x00ff00ff, 0x0000ffff, 0xffffffff])
+				rgbaTexels([for (_ in 0...(64 >> (i * 2))) rgba])
+		];
+		var mipmapped = graphics.createTexture(8, 8, levels);
+		textures.push(mipmapped);
 		// 2 x 2, rows top first: red, green, then blue, white.
 		var checker = texture2D(2, 2, [0xff0000ff, 0x00ff00ff, 0x0000ffff, 0xffffffff]);
 		// One texel a face: +X red, -X green, +Y blue, -Y yellow, +Z magenta, -Z cyan.
@@ -633,6 +640,31 @@ class GraphicsTests {
 					p.expect(12, 12, [0, 1, 0, 1], 0);
 					p.expect(12, 4, [0, 0, 1, 1], 0);
 					p.expect(4, 12, [0, 0, 0, 1], 0);
+				}
+			},
+			{
+				name: "mipmaps under each mipmap filter",
+				// Drawn into 3 x 3, which reads level 1.415: its top level alone, the nearest level (1, green), the two nearest blended
+				// (green and blue), filtered nearest; then linear with an anisotropy of 16.
+				before: into(0, 0, 0, 1, () -> for (i => sampling in [
+					new Sampling(Nearest, Clamp, Clamp, None),
+					new Sampling(Nearest, Clamp, Clamp, Nearest),
+					new Sampling(Nearest, Clamp, Clamp, Linear),
+					new Sampling(Linear, Clamp, Clamp, Linear, 16)
+				]) {
+					graphics.applyViewport(i * 4, 0, 3, 3);
+					draw(sampled, uvQuad, 6, [mipmapped], [sampling]);
+				}),
+				target: target,
+				check: p -> {
+					p.expect(1, 14, [1, 0, 0, 1], 0);
+					p.expect(5, 14, [0, 1, 0, 1], 0);
+					p.expect(9, 14, [0, .585, .415, 1], 10);
+					// Anisotropy may choose its level apart from a square's (lavapipe and SwiftShader do): green and blue blended, whatever
+					// their share.
+					var at = (14 * p.width + 13) * 4;
+					GraphicsTests.check(p.bytes.get(at) <= 2 && Math.abs(p.bytes.get(at + 1) + p.bytes.get(at + 2) - 255) <= 4,
+						'at 13,14: ${[for (i in 0...3) p.bytes.get(at + i)]}, expected green and blue blended');
 				}
 			},
 			{

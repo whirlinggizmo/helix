@@ -3230,13 +3230,26 @@ class Raylib {
 	public static inline function EndTextureMode():Void
 		RTextures.EndTextureMode();
 
-	/** Sets how a texture is sampled when drawn larger or smaller: `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel,
-		and the others blend the nearest four, as `TEXTURE_FILTER_BILINEAR` does (there are no mipmaps here).
+	/** Sets how a texture is sampled when drawn larger or smaller, as raylib's GL does, by whether the texture has mipmaps
+		(`texture.mipmaps`, as this copy of it says): `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel (of the nearest
+		mipmap); `TEXTURE_FILTER_BILINEAR` blends the nearest four (of the nearest mipmap); `TEXTURE_FILTER_TRILINEAR` blends the nearest
+		four of the two nearest mipmaps, or, without mipmaps, is `TEXTURE_FILTER_BILINEAR`, with a warning. `TEXTURE_FILTER_ANISOTROPIC_4X`,
+		`8X` and `16X` read up to that many texels along a surface seen at a slant, leaving the filter as it was; the GPU uses it only with
+		`TEXTURE_FILTER_TRILINEAR` on a mipmapped texture.
 
 		@param texture  The texture.
 		@param filter  The filter (`TEXTURE_FILTER_*`). */
 	public static inline function SetTextureFilter(texture:Texture2D, filter:Int):Void
 		RTextures.SetTextureFilter(texture, filter);
+
+	/** Makes a texture's mipmaps, down to 1 by 1, as raylib's does with GL's `glGenerateMipmap`: each level the rounded average of the
+		2 by 2 above it, made on the CPU, so the same on every target. `texture.mipmaps` becomes their count. The texture's filter is left
+		as it was: `SetTextureFilter` after it reads them. A texture already drawn gets them from its pixels read back from the GPU, and
+		draws asked for before it this frame don't; a render texture's can't be made, with a warning.
+
+		@param texture  The texture. */
+	public static inline function GenTextureMipmaps(texture:Texture2D):Void
+		RTextures.GenTextureMipmaps(texture);
 
 	/** Returns whether an image holds pixels: data, a size, a format and a mipmap level.
 
@@ -3881,7 +3894,8 @@ class Raylib {
 	public static inline function ImageDrawTextEx(dst:Image, font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
 		RTextures.ImageDrawTextEx(dst, font, text, position, fontSize, spacing, tint);
 
-	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, and it has one level.
+	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, its mipmaps too when it
+		has them (`ImageMipmaps`), filtered through them, trilinear, as raylib sets it.
 		Its format is the image's, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed
 		format gives no texture, with a warning.
 
@@ -6020,10 +6034,6 @@ class Raylib {
 	/** raylib's `LoadTextureCubemap` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load cubemap from image, multiple image cubemap layouts supported. */
 	public static macro function LoadTextureCubemap(image:ExprOf<Image>, layout:ExprOf<Int>):ExprOf<TextureCubemap>
 		return helix.platform.macros.Build.unimplemented("LoadTextureCubemap: Not implemented", macro(null : helix.ray.TextureCubemap));
-
-	/** raylib's `GenTextureMipmaps` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Generate GPU mipmaps for a texture. */
-	public static macro function GenTextureMipmaps(texture:ExprOf<Texture2D>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("GenTextureMipmaps: Not implemented", macro {});
 
 	/** raylib's `DrawModelPoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model as points. */
 	public static macro function DrawModelPoints(model:ExprOf<Model>, position:ExprOf<Vector3>, scale:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>

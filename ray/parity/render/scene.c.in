@@ -21,6 +21,18 @@ int main(void) {
     ImageFormat(&dark, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
     Texture2D gray = LoadTextureFromImage(ramp);
     RenderTexture2D trail = LoadRenderTexture(200, 60);
+    Image squares = GenImageChecked(64, 64, 16, 16, RED, BLUE);
+    Texture2D mipped[4];
+    int filters[4] = { TEXTURE_FILTER_POINT, TEXTURE_FILTER_BILINEAR, TEXTURE_FILTER_TRILINEAR, TEXTURE_FILTER_ANISOTROPIC_16X };
+    for (int i = 0; i < 4; i++) {
+        mipped[i] = LoadTextureFromImage(squares);
+        GenTextureMipmaps(&mipped[i]);
+        if (i == 3) SetTextureFilter(mipped[i], TEXTURE_FILTER_TRILINEAR);
+        SetTextureFilter(mipped[i], filters[i]);
+    }
+    Texture2D late = LoadTextureFromImage(squares);
+    Texture2D plain = LoadTextureFromImage(squares);
+    SetTextureFilter(plain, TEXTURE_FILTER_TRILINEAR);
     Camera camera = { { -5.5f, 16, 10 }, { -5.5f, 0, -6 }, { 0, 1, 0 }, 45, CAMERA_PERSPECTIVE };
     Mesh cube = GenMeshCube(1, 1, 1);
     Shader instancing = LoadShaderFromMemory("#version 330\nin vec3 vertexPosition;\nin vec3 vertexNormal;\nin mat4 instanceTransform;\nuniform mat4 mvp;\nout vec3 n;\nvoid main() { n = vertexNormal; gl_Position = mvp*instanceTransform*vec4(vertexPosition, 1.0); }\n", "#version 330\nin vec3 n;\nuniform vec4 colDiffuse;\nout vec4 finalColor;\nvoid main() { finalColor = vec4(n*0.5 + 0.5, 1.0)*colDiffuse; }\n");

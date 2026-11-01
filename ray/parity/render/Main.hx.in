@@ -27,6 +27,18 @@ class Main {
 		ImageFormat(dark, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
 		var gray = LoadTextureFromImage(ramp);
 		var trail = LoadRenderTexture(200, 60);
+		var squares = GenImageChecked(64, 64, 16, 16, RED, BLUE);
+		var filters = [TEXTURE_FILTER_POINT, TEXTURE_FILTER_BILINEAR, TEXTURE_FILTER_TRILINEAR, TEXTURE_FILTER_ANISOTROPIC_16X];
+		var mipped = [for (i in 0...4) LoadTextureFromImage(squares)];
+		for (i in 0...4) {
+			GenTextureMipmaps(mipped[i]);
+			if (i == 3)
+				SetTextureFilter(mipped[i], TEXTURE_FILTER_TRILINEAR);
+			SetTextureFilter(mipped[i], filters[i]);
+		}
+		var late = LoadTextureFromImage(squares);
+		var plain = LoadTextureFromImage(squares);
+		SetTextureFilter(plain, TEXTURE_FILTER_TRILINEAR);
 		var camera = new Camera(new Vector3(-5.5, 16, 10), new Vector3(-5.5, 0, -6), new Vector3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
 		var cube = GenMeshCube(1, 1, 1);
 		var instancing = LoadShaderFromMemory("#version 330\nin vec3 vertexPosition;\nin vec3 vertexNormal;\nin mat4 instanceTransform;\nuniform mat4 mvp;\nout vec3 n;\nvoid main() { n = vertexNormal; gl_Position = mvp*instanceTransform*vec4(vertexPosition, 1.0); }\n", "#version 330\nin vec3 n;\nuniform vec4 colDiffuse;\nout vec4 finalColor;\nvoid main() { finalColor = vec4(n*0.5 + 0.5, 1.0)*colDiffuse; }\n");
