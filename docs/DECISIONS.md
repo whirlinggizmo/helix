@@ -165,6 +165,10 @@ Why things are the way they are, numbered, in order.
     so each function has one oracle: the later release's C where a fix was taken, 5.5's everywhere else. Taking a later release's API,
     when agents know it as well as 5.5's, is a version bump: the API changes, and every caller with it (rule: no backward
     compatibility).
+    Where even the latest release is broken (it crashes, reads past its arrays, or draws what GL refused), helix-ray fixes it rather
+    than reproduce it, and lists the fix here: a cubemap read from a cross or a row that comes with mipmaps gets each face's own
+    mipmaps (6.2 makes them magenta); `SetShaderValueTexture` binds a cubemap to a `samplerCube` (raylib binds it as a 2D texture,
+    which GL refuses, so it draws black). OBJ and MTL reading keeps its own list (28).
 
 25. **helix-ray counts what a model holds, following ownership, where raylib leaves it to the program.** raylib's `UnloadModel`
     frees a model's meshes and its maps arrays and never a texture or shader, so a C program frees those itself, or leaks them; Haxe
