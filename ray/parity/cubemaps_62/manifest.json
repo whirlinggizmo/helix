@@ -1,0 +1,20 @@
+{
+  "oracle": "6.2",
+  "covers": "LoadTextureCubemap in each layout (a column, a row, the 3 x 4 and 4 x 3 crosses, AUTO_DETECT finding three of them and failing on a square), each face's place and orientation, a grayscale image, a translucent face drawn over magenta, an image read as a column it isn't and a 3 x 4 cross read as a 4 x 3, each cubemap's fields; raylib's skybox example (skybox.png, its shaders, its samplerCube set to MATERIAL_MAP_CUBEMAP's unit with SetShaderValue, culling and the depth mask off) and cubes sampling a cubemap found through shader.locs[SHADER_LOC_MAP_CUBEMAP], drawn into a 640 x 360 frame",
+  "kind": "pixels",
+  "reference": "scene.c",
+  "harness": [
+    "Main.hx"
+  ],
+  "assets": {
+    "web/skybox.png": "raylib:examples/models/resources/skybox.png",
+    "web/skybox.vs": "raylib:examples/models/resources/shaders/glsl330/skybox.vs",
+    "web/skybox.fs": "raylib:examples/models/resources/shaders/glsl330/skybox.fs"
+  },
+  "frames": 300,
+  "backends": {
+    "gl": 50,
+    "sdl_gpu": 6000
+  },
+  "notes": "GL: 41 pixels differ by one level, inside the cubes, where raylib turns them in floats. SDL_GPU (Vulkan on lavapipe): about 5,700 by one or two levels, its linear filtering rounding apart from llvmpipe's across the sky and the faces. A cross past its image's edges isn't here: raylib's ImageDraw divides by zero on a face wholly outside it. Its oracle is 6.2: 5.5's LoadTextureCubemap gives every cross and row magenta mipmaps, read when a face is drawn smaller than its texels, which 6.2 fixed (only an image with mipmaps gets them). SetShaderValueTexture with a cubemap isn't here: raylib binds it as a 2D texture, which GL refuses, so raylib's reads black where helix-ray's binds it."
+}

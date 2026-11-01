@@ -2723,6 +2723,8 @@ class RCore {
 
 	/** Sets a shader's uniform, for the models drawn after it and the shapes in rlgl's batch when it is next drawn, as raylib's: shapes
 		drawn before it but not yet flushed (`BeginShaderMode`, `EndShaderMode`, a mode changing, `rlDrawRenderBatchActive`) take it too.
+		A texture's location takes the texture unit its sampler reads, as GL's: `DrawMesh` binds there the material's map of that index
+		(raylib's skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`).
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
@@ -2743,8 +2745,15 @@ class RCore {
 		if (shader.program == null)
 			return;
 		var slot = shader.program.textureSlot(locIndex);
-		if (slot >= 0)
+		if (slot >= 0) {
+			// A sampler's texture unit, as GL takes an int for it: DrawMesh binds the material's map of that index there.
+			var unit = numbers(value);
+			if (unit.length > 0) {
+				Runtime.frame.cut();
+				shader.program.units[slot] = Std.int(unit[0]);
+			}
 			return;
+		}
 		Runtime.frame.cut();
 		shader.program.write(locIndex, numbers(value));
 	}
@@ -2761,7 +2770,9 @@ class RCore {
 		shader.program.write(locIndex, toMatrix3D(mat).values);
 	}
 
-	/** Sets a shader's texture, for the draws after it.
+	/** Sets a shader's texture, for the draws after it: a `Texture2D` at a `sampler2D`, or a cubemap (`LoadTextureCubemap`) at a
+		`samplerCube`. A texture at a sampler of the other kind binds nothing. raylib 5.5's binds every texture it is given as a 2D texture,
+		so a cubemap given it reads as black there; here it is bound.
 
 		@param shader  The shader.
 		@param locIndex  The texture's location.

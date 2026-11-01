@@ -4,7 +4,7 @@ import helix.services.images.Image;
 
 /** Holds every texture a program has, by the id its `Texture2D` carries: one GPU texture for each file however often it is loaded,
 	counted by its holders (docs/DECISIONS.md 25) and freed when the last lets go, and sent to the GPU when first drawn rather than when
-	loaded. A holder is the program, from each load of it (`fromImage`, `fromHandle`) until `releaseHeld`, or a material map given it
+	loaded; a cubemap (`fromCube`) is one too. A holder is the program, from each load of it (`fromImage`, `fromHandle`, `fromCube`) until `releaseHeld`, or a material map given it
 	(`retain`, `release`); the program's holds are counted apart too, so `UnloadTexture` on a map's copy lets go of one of them first. */
 @:noCompletion
 class Textures {
@@ -60,6 +60,45 @@ class Textures {
 		return id;
 	}
 
+	/** Returns the id of a cubemap, held by the program: its faces go to the GPU when first drawn. It is sampled linearly, through its
+		mipmaps when it has them, as rlgl's cubemaps are, and `setSampling` leaves it so.
+
+		@param size  Each face's width and height, in pixels.
+		@param levels  Its levels, each half the size of the last and at least 1: each its six faces, 8-bit RGBA, in the order +X, -X, +Y,
+			-Y, +Z, -Z, rows top first.
+		@return  The id. */
+	public static function fromCube(size:Int, levels:Array<haxe.io.Bytes>):Int {
+		var id = next++;
+		entries.set(id, {
+			path: "",
+			image: null,
+			gpu: 0,
+			refs: 1,
+			held: 1,
+			cube: {size: size, levels: levels},
+			sampling: new helix.platform.Sampling(Linear, Clamp, Clamp, levels.length > 1 ? Linear : None)
+		});
+		return id;
+	}
+
+	/** Returns whether a texture is a cubemap (`fromCube`).
+
+		@param id  The texture's id.
+		@return  True when it is. */
+	public static function isCube(id:Int):Bool {
+		var e = entries.get(id);
+		return e != null && e.cube != null;
+	}
+
+	/** Returns whether a GPU texture is a cubemap's, so a draw binds it only where a program samples a cube.
+
+		@param gpu  The GPU handle.
+		@return  True when it is. */
+	public static function isCubeHandle(gpu:Int):Bool
+		return cubeHandles.exists(gpu);
+
+	static final cubeHandles = new Map<Int, Bool>();
+
 	/** Returns whether a file's texture (or a key's, as `fromImage` takes it) is held, so a load of it shares it.
 
 		@param path  The file, or the key.
@@ -93,7 +132,7 @@ class Textures {
 		@param sampling  The sampling. */
 	public static function setSampling(id:Int, sampling:helix.platform.Sampling):Void {
 		var e = entries.get(id);
-		if (e == null)
+		if (e == null || e.cube != null)
 			return;
 		e.sampling = sampling;
 		if (e.gpu != 0)
@@ -157,6 +196,11 @@ class Textures {
 			// Its pixels are on the GPU now; the copy here isn't needed again.
 			e.image = null;
 			e.levels = null;
+		} else if (e.gpu == 0 && e.cube != null) {
+			e.gpu = Runtime.graphics.createCubeTexture(e.cube.size, e.cube.levels, helix.platform.TextureFormat.Rgba8);
+			cubeHandles.set(e.gpu, true);
+			samplings.set(e.gpu, e.sampling);
+			e.cube = {size: e.cube.size, levels: null};
 		}
 		return e.gpu;
 	}
@@ -172,7 +216,7 @@ class Textures {
 		@param rgba  Its pixels, 8-bit RGBA, rows top first. */
 	public static function update(id:Int, x:Int, y:Int, width:Int, height:Int, rgba:haxe.io.Bytes):Void {
 		var e = entries.get(id);
-		if (e == null)
+		if (e == null || e.cube != null)
 			return;
 		if (e.gpu == 0 && e.image != null) {
 			// Its own copy: a file's image may be shared with other loads, and the decoded file kept.
@@ -206,7 +250,7 @@ class Textures {
 		@param id  The texture's id. */
 	public static function generateMipmaps(id:Int):Void {
 		var e = entries.get(id);
-		if (e == null || id == DEFAULT)
+		if (e == null || id == DEFAULT || e.cube != null)
 			return;
 		if (e.gpu == 0) {
 			if (e.image != null)
@@ -250,6 +294,7 @@ class Textures {
 		if (e.gpu != 0) {
 			Runtime.graphics.disposeTexture(e.gpu);
 			samplings.remove(e.gpu);
+			cubeHandles.remove(e.gpu);
 		}
 		entries.remove(id);
 		if (e.path != "" && byPath.get(e.path) == id)
@@ -278,4 +323,6 @@ private typedef Entry = {
 	var refs:Int;
 	var held:Int;
 	var ?sampling:helix.platform.Sampling;
+	// A cubemap's size, and its levels while it isn't on the GPU (null once it is); null for a 2D texture.
+	var ?cube:Null<{size:Int, levels:Null<Array<haxe.io.Bytes>>}>;
 }

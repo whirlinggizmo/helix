@@ -796,13 +796,13 @@ class RAsync {
 		answers later. A texture on the GPU (one drawn, or a render texture) is read back from it as the frames drawn so far left it; a
 		render texture's rows come bottom first, as raylib's do, so it reads upside down as raylib's does. A texture updated this frame
 		(`UpdateTexture`) is read once the frame is drawn, so the update shows. One not drawn yet is read from memory (raylib's default
-		texture is its white pixel). The image is RGBA, whatever the texture's format.
+		texture is its white pixel). The image is RGBA, whatever the texture's format. A cubemap's can't be read.
 
 		@param texture  The texture.
 		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	static function LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void):Void {
-		var gpu = Textures.onGpu(texture.id);
+		var gpu = Textures.isCube(texture.id) ? 0 : Textures.onGpu(texture.id);
 		if (gpu == 0) {
 			var image = Textures.imageOf(texture.id);
 			Runtime.later(() -> image == null ? refuse("LoadImageFromTextureAsync", 'TEXTURE: [ID ${texture.id}] Failed to retrieve pixel data',

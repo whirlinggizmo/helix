@@ -65,6 +65,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `wires` | 5.5 | pixels | rlgl's render state: wires, culling, wire mode, the depth mask and test |
 | `skinning` | 6.2 | pixels | greenman skinned on the CPU, on the GPU and blended |
 | `modular_scene` | 6.2 | pixels | the modular woman dressed and holding the sword, CPU-skinned |
+| `cubemaps_62` | 6.2 | pixels | `LoadTextureCubemap` in each layout, raylib's skybox example, and cubes sampling cubemaps through their material |
 
 Each suite's manifest says in full what it covers (`covers`), and `notes` say why a bar is where it is.
 

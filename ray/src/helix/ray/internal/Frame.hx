@@ -529,6 +529,7 @@ class Frame {
 			scissor: scissor,
 			viewport: viewport,
 			textures: textures,
+			cubes: p.cubes,
 			uniforms: values(p, model, [1, 1, 1, 1]),
 			instances: 1
 		};
@@ -556,7 +557,8 @@ class Frame {
 		@param p  The program.
 		@param model  Its transform.
 		@param diffuse  The diffuse color, 0 to 1 each.
-		@param textures  The textures for raylib's slots 0 to 2 (0 for white).
+		@param textures  The texture at each of the program's slots: a GPU handle (0 for white), or -1 for the program's own
+			(`SetShaderValueTexture`'s).
 		@param instances  Optional. The instances' transforms, a static buffer of 16 floats each, column by column, fed to the program's
 			mat4 attribute; 0 for one instance, the attribute fed GL's default.
 		@param instanceCount  Optional. How many instances; defaults to 1. */
@@ -614,9 +616,9 @@ class Frame {
 			});
 		});
 		var bound = p.textures.copy();
-		for (k => slot in [p.texture0, p.texture1, p.texture2])
-			if (slot >= 0)
-				bound[slot] = textures[k] == 0 ? white : textures[k];
+		for (slot => t in textures)
+			if (t >= 0 && slot < bound.length)
+				bound[slot] = t;
 		for (i in 0...bound.length)
 			if (bound[i] == 0)
 				bound[i] = white;
@@ -635,6 +637,7 @@ class Frame {
 			scissor: scissor,
 			viewport: viewport,
 			textures: bound,
+			cubes: p.cubes,
 			uniforms: values(p, model, diffuse),
 			instances: instanceCount
 		});
@@ -754,9 +757,14 @@ class Frame {
 						clip(clipped, width / p.width, height / p.height, width, height);
 				}
 				var count = d.lines ? d.count - d.count % 2 : d.count - d.count % 3;
-				var samplings = [for (t in d.textures) Textures.samplingOf(t)];
-				graphics.draw(d.pipeline, d.buffers == null ? [buffer, constants] : d.buffers, d.indices, d.first, count, 0, d.instances, d.textures,
-					samplings, d.uniforms);
+				// A texture binds only to a sampler of its kind, a cubemap to a samplerCube; any other reads the platform's clear texture.
+				var textures = [
+					for (slot => t in d.textures)
+						t != 0 && (slot < d.cubes.length && d.cubes[slot]) != Textures.isCubeHandle(t) ? 0 : t
+				];
+				var samplings = [for (t in textures) Textures.samplingOf(t)];
+				graphics.draw(d.pipeline, d.buffers == null ? [buffer, constants] : d.buffers, d.indices, d.first, count, 0, d.instances, textures, samplings,
+					d.uniforms);
 			}
 			if (p.target == 0) {
 				graphics.endFrame();
@@ -867,6 +875,8 @@ private typedef Draw = {
 	final scissor:Null<Array<Float>>;
 	final viewport:Null<Array<Int>>;
 	final textures:Array<Int>;
+	// Whether each slot's sampler is a samplerCube.
+	final cubes:Array<Bool>;
 	final uniforms:Array<Null<Bytes>>;
 	final instances:Int;
 }

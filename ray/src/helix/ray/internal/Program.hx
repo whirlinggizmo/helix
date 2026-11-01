@@ -18,6 +18,13 @@ class Program {
 	/** The texture at each slot, set by `SetShaderValueTexture` or by the draw. */
 	public final textures:Array<Int> = [];
 
+	/** Whether the texture at each slot is a `samplerCube`, which only a cubemap binds to. */
+	public final cubes:Array<Bool> = [];
+
+	/** The texture unit each slot's sampler reads, as `SetShaderValue` sets it (raylib's skybox sets its `environmentMap` to
+		`MATERIAL_MAP_CUBEMAP`), so `DrawMesh` binds the material's map of that index there; -1 until set. */
+	public final units:Array<Int> = [];
+
 	/** The slots of raylib's textures, -1 for one it doesn't declare. */
 	public final texture0:Int;
 
@@ -60,8 +67,14 @@ class Program {
 		for (t in source.textures)
 			if (t.slot + 1 > count)
 				count = t.slot + 1;
-		for (_ in 0...count)
+		for (_ in 0...count) {
 			textures.push(0);
+			cubes.push(false);
+			units.push(-1);
+		}
+		for (t in source.source.textures)
+			if (t.slot < count)
+				cubes[t.slot] = t.cube;
 	}
 
 	/** Returns a uniform's or texture's location.

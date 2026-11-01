@@ -2039,7 +2039,7 @@ static function EndScissorMode():Void
   - `shader`: The shader.
   - `attribName`: The name.
   - returns: Its location, or -1 when the shader doesn't declare it.
-- `SetShaderValue`: Sets a shader's uniform, for the models drawn after it and the shapes in rlgl's batch when it is next drawn, as raylib's: shapes drawn before it but not yet flushed (`BeginShaderMode`, `EndShaderMode`, a mode changing, `rlDrawRenderBatchActive`) take it too.
+- `SetShaderValue`: Sets a shader's uniform, for the models drawn after it and the shapes in rlgl's batch when it is next drawn, as raylib's: shapes drawn before it but not yet flushed (`BeginShaderMode`, `EndShaderMode`, a mode changing, `rlDrawRenderBatchActive`) take it too. A texture's location takes the texture unit its sampler reads, as GL's: `DrawMesh` binds there the material's map of that index (raylib's skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`).
   - `shader`: The shader.
   - `locIndex`: The uniform's location.
   - `value`: The value: a number, an array of numbers, or a `Vector2`, `Vector3`, `Vector4` or `Color`.
@@ -2054,7 +2054,7 @@ static function EndScissorMode():Void
   - `shader`: The shader.
   - `locIndex`: The uniform's location.
   - `mat`: The matrix.
-- `SetShaderValueTexture`: Sets a shader's texture, for the draws after it.
+- `SetShaderValueTexture`: Sets a shader's texture, for the draws after it: a `Texture2D` at a `sampler2D`, or a cubemap (`LoadTextureCubemap`) at a `samplerCube`. A texture at a sampler of the other kind binds nothing. raylib 5.5's binds every texture it is given as a 2D texture, so a cubemap given it reads as black there; here it is bound.
   - `shader`: The shader.
   - `locIndex`: The texture's location.
   - `texture`: The texture.
@@ -2606,6 +2606,7 @@ static function ImageDraw(dst:Image, src:Image, srcRec:Rectangle, dstRec:Rectang
 static function ImageDrawText(dst:Image, text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void
 static function ImageDrawTextEx(dst:Image, font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
 static function LoadTextureFromImage(image:Image):Texture2D
+static function LoadTextureCubemap(image:Image, layout:Int):TextureCubemap
 static function UpdateTexture(texture:Texture2D, pixels:Dynamic):Void
 static function UpdateTextureRec(texture:Texture2D, rec:Rectangle, pixels:Dynamic):Void
 static function SetTextureWrap(texture:Texture2D, wrap:Int):Void
@@ -2717,10 +2718,10 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
 - `BeginTextureMode`: Draws into a render texture until `EndTextureMode`, over what it holds: what was drawn into it before, in this frame or an earlier one, stays until `ClearBackground` clears it, as raylib's does. A render texture never drawn into holds transparent black.
   - `target`: The render texture.
 - `EndTextureMode`: Goes back to drawing on the screen.
-- `SetTextureFilter`: Sets how a texture is sampled when drawn larger or smaller, as raylib's GL does, by whether the texture has mipmaps (`texture.mipmaps`, as this copy of it says): `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel (of the nearest mipmap); `TEXTURE_FILTER_BILINEAR` blends the nearest four (of the nearest mipmap); `TEXTURE_FILTER_TRILINEAR` blends the nearest four of the two nearest mipmaps, or, without mipmaps, is `TEXTURE_FILTER_BILINEAR`, with a warning. `TEXTURE_FILTER_ANISOTROPIC_4X`, `8X` and `16X` read up to that many texels along a surface seen at a slant, leaving the filter as it was; the GPU uses it only with `TEXTURE_FILTER_TRILINEAR` on a mipmapped texture.
+- `SetTextureFilter`: Sets how a texture is sampled when drawn larger or smaller, as raylib's GL does, by whether the texture has mipmaps (`texture.mipmaps`, as this copy of it says): `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel (of the nearest mipmap); `TEXTURE_FILTER_BILINEAR` blends the nearest four (of the nearest mipmap); `TEXTURE_FILTER_TRILINEAR` blends the nearest four of the two nearest mipmaps, or, without mipmaps, is `TEXTURE_FILTER_BILINEAR`, with a warning. `TEXTURE_FILTER_ANISOTROPIC_4X`, `8X` and `16X` read up to that many texels along a surface seen at a slant, leaving the filter as it was; the GPU uses it only with `TEXTURE_FILTER_TRILINEAR` on a mipmapped texture. A cubemap (`LoadTextureCubemap`) is left unchanged: raylib's binds it as a 2D texture, which GL refuses.
   - `texture`: The texture.
   - `filter`: The filter (`TEXTURE_FILTER_*`).
-- `GenTextureMipmaps`: Makes a texture's mipmaps, down to 1 by 1, as raylib's does with GL's `glGenerateMipmap`: each level the rounded average of the 2 by 2 above it, made on the CPU, so the same on every target. `texture.mipmaps` becomes their count. The texture's filter is left as it was: `SetTextureFilter` after it reads them. A texture already drawn gets them from its pixels read back from the GPU, and draws asked for before it this frame don't; a render texture's can't be made, with a warning.
+- `GenTextureMipmaps`: Makes a texture's mipmaps, down to 1 by 1, as raylib's does with GL's `glGenerateMipmap`: each level the rounded average of the 2 by 2 above it, made on the CPU, so the same on every target. `texture.mipmaps` becomes their count. The texture's filter is left as it was: `SetTextureFilter` after it reads them. A texture already drawn gets them from its pixels read back from the GPU, and draws asked for before it this frame don't; a render texture's and a cubemap's can't be made, with a warning.
   - `texture`: The texture.
 - `IsImageValid`: Returns whether an image holds pixels: data, a size, a format and a mipmap level.
   - `image`: The image.
@@ -3046,14 +3047,22 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
 - `LoadTextureFromImage`: Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, its mipmaps too when it has them (`ImageMipmaps`), filtered through them, trilinear, as raylib sets it. Its format is the image's, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed format gives no texture, with a warning.
   - `image`: The image.
   - returns: The texture.
-- `UpdateTexture`: Replaces a texture's pixels, as raylib's does on the GPU. The pixels are in the texture's format (`texture.format`), rows top first, its width by its height. Draws asked for before it this frame in a render texture drawn into since, or on the screen, show the new pixels too, as rlgl's batch drawn after it does; those in render textures drawn into before it keep the old. A render texture's, a compressed format's and pixels too few for the texture change nothing (raylib's reads past them), with a warning.
+- `LoadTextureCubemap`: Makes a cubemap of an image, its six faces laid out as raylib's layouts lay them: `CUBEMAP_LAYOUT_LINE_VERTICAL` (a column, +X, -X, +Y, -Y, +Z, -Z from the top), `CUBEMAP_LAYOUT_LINE_HORIZONTAL` (a row, in that order from the left), `CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR` (3 faces wide, 4 high: +Y, +X, -Y and -X down the middle column, +Z left of +X and -Z right of it) or `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE` (4 wide, 3 high: +Y at the top of the second column, then -X, +Z, +X, -Z across, then -Y below +Z), each face's rows top first as GL's cube faces take them; `CUBEMAP_LAYOUT_AUTO_DETECT` takes the layout from the image's shape. A face is the image's height over 6 (a column), its width over 6 (a row), over 3 (3 by 4) or over 4 (4 by 3).
+  - `image`: The image.
+  - `layout`: The layout (`CUBEMAP_LAYOUT_*`).
+  - returns: The cubemap; id 0 for none.
+
+  As raylib's: a column is read as it is, the face size squared times 6 pixels from the image's first, row after row, so an image not 1 face by 6 is read across its rows; the other layouts draw each face onto magenta (`ImageDraw`), a translucent pixel blended over it, a face partly past the image's edge its part inside stretched to the face, and one wholly past it left magenta (raylib's divides by zero). A shape `CUBEMAP_LAYOUT_AUTO_DETECT` doesn't know gives no cubemap, with a warning. Its format is the image's, its pixels RGBA on the GPU, sampled linearly as rlgl's cubemaps are. An image with mipmaps gives a cubemap with mipmaps, sampled through them: a column's from the image's levels, read as its first is; the other layouts' made from each face, as GL's `glGenerateMipmap` makes them, where raylib 6.2's are magenta (5.5's are magenta whatever the image). Where raylib's differs, it makes an empty GL cubemap: a face size of 0 (an image too small for its layout, or a layout raylib doesn't have) gives none here, as do a compressed format and an image too small for the column it is read as, with a warning.
+
+  The cubemap is a `Texture2D`'s record: a material's `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` or `MATERIAL_MAP_PREFILTER` binds it to a shader's `samplerCube` (`DrawMesh`), as does `SetShaderValueTexture`; drawn as a 2D texture, it draws nothing. `UnloadTexture` lets go of it, and it is counted as any texture is (docs/DECISIONS.md 25).
+- `UpdateTexture`: Replaces a texture's pixels, as raylib's does on the GPU. The pixels are in the texture's format (`texture.format`), rows top first, its width by its height. Draws asked for before it this frame in a render texture drawn into since, or on the screen, show the new pixels too, as rlgl's batch drawn after it does; those in render textures drawn into before it keep the old. A render texture's, a cubemap's, a compressed format's and pixels too few for the texture change nothing (raylib's reads past them), with a warning.
   - `texture`: The texture.
   - `pixels`: The pixels: their bytes (`haxe.io.Bytes`), or an array of `Color` (R8G8B8A8's bytes, as raylib's `Color *` is).
 - `UpdateTextureRec`: Replaces a rectangle of a texture's pixels, as `UpdateTexture` does the whole. A rectangle not inside the texture changes nothing, as GL refuses it.
   - `texture`: The texture.
   - `rec`: The rectangle, in pixels from the texture's top-left corner; its numbers are cut to whole pixels.
   - `pixels`: The rectangle's pixels, rows top first, in the texture's format: bytes, or an array of `Color`.
-- `SetTextureWrap`: Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT` (raylib's default), `TEXTURE_WRAP_CLAMP` or `TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning.
+- `SetTextureWrap`: Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT` (raylib's default), `TEXTURE_WRAP_CLAMP` or `TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning. A cubemap is left unchanged.
   - `texture`: The texture.
   - `wrap`: The wrap (`TEXTURE_WRAP_*`).
 - `DrawTextureNPatch`: Draws a texture as a nine-patch (or a three-patch) into a rectangle, turned about an origin, as raylib's does: its corners kept, its edges and middle stretched; a rectangle smaller than the borders shrinks them and drops the middle.
@@ -3568,6 +3577,8 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `mesh`: The mesh.
   - `material`: The material.
   - `transform`: The transform.
+
+  The material's maps bind as raylib's: the first three at `texture0` to `texture2`, and each other map with a texture at the sampler `shader.locs[SHADER_LOC_MAP_DIFFUSE + index]` names, or at a sampler set to its index with `SetShaderValue` (raylib's skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`). `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` and `MATERIAL_MAP_PREFILTER` bind a cubemap (`LoadTextureCubemap`) to a `samplerCube`, the rest a 2D texture to a `sampler2D`; a texture of the other kind binds nothing.
 - `DrawMeshInstanced`: Draws a mesh many times in one draw, as raylib 5.5's does: each instance is placed by its own transform, which the material's shader takes as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies itself (raylib's instancing example sets it with `GetShaderLocationAttrib(shader, "instanceTransform")`). `mvp` is the camera's alone, and `matNormal` the identity. A shader without a `mat4` attribute there draws nothing, with a warning. The mesh's attributes and the transforms are a buffer each, eight at most, so a shader reading every one of raylib's attributes besides the transforms can't be drawn.
   - `mesh`: The mesh.
   - `material`: Its material: the shader, the diffuse color and the textures.
@@ -4124,7 +4135,7 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `dataSize`: How many of them.
   - `loaded`: Receives the image.
   - `failed`: Optional. Receives why it couldn't be decoded; when omitted, it is logged.
-- `LoadImageFromTextureAsync`: Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU answers later. A texture on the GPU (one drawn, or a render texture) is read back from it as the frames drawn so far left it; a render texture's rows come bottom first, as raylib's do, so it reads upside down as raylib's does. A texture updated this frame (`UpdateTexture`) is read once the frame is drawn, so the update shows. One not drawn yet is read from memory (raylib's default texture is its white pixel). The image is RGBA, whatever the texture's format.
+- `LoadImageFromTextureAsync`: Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU answers later. A texture on the GPU (one drawn, or a render texture) is read back from it as the frames drawn so far left it; a render texture's rows come bottom first, as raylib's do, so it reads upside down as raylib's does. A texture updated this frame (`UpdateTexture`) is read once the frame is drawn, so the update shows. One not drawn yet is read from memory (raylib's default texture is its white pixel). The image is RGBA, whatever the texture's format. A cubemap's can't be read.
   - `texture`: The texture.
   - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
@@ -4168,7 +4179,7 @@ Each of these is raylib's name, and a call to it doesn't compile, saying why and
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `DrawModelPoints`, `DrawModelPointsEx`.
+`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `DrawModelPoints`, `DrawModelPointsEx`.
 
 ## Raymath
 
@@ -5752,7 +5763,7 @@ var format:Int
 
 *typedef* in [`ray/src/helix/ray/TextureCubemap.hx`](../../ray/src/helix/ray/TextureCubemap.hx), `import helix.ray.TextureCubemap;`
 
-raylib's `TextureCubemap` (raylib.h): TextureCubemap, same as Texture.
+raylib's `TextureCubemap`, the same as `Texture`: a cubemap's record, made by `Raylib.LoadTextureCubemap`.
 
 An alias of `Texture`.
 

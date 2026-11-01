@@ -809,6 +809,11 @@ class RModels {
 
 	/** Draws a mesh with a material and a transform.
 
+		The material's maps bind as raylib's: the first three at `texture0` to `texture2`, and each other map with a texture at the sampler
+		`shader.locs[SHADER_LOC_MAP_DIFFUSE + index]` names, or at a sampler set to its index with `SetShaderValue` (raylib's skybox sets
+		its `samplerCube` to `MATERIAL_MAP_CUBEMAP`). `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` and `MATERIAL_MAP_PREFILTER` bind a
+		cubemap (`LoadTextureCubemap`) to a `samplerCube`, the rest a 2D texture to a `sampler2D`; a texture of the other kind binds nothing.
+
 		@param mesh  The mesh.
 		@param material  The material.
 		@param transform  The transform. */
@@ -1966,6 +1971,35 @@ class RModels {
 		return new Matrix(a[0], a[4], a[8], a[12], a[1], a[5], a[9], a[13], a[2], a[6], a[10], a[14], a[3], a[7], a[11], a[15]);
 	}
 
+	// The texture DrawMesh binds at each of the program's slots, -1 for the program's own (SetShaderValueTexture's). raylib binds each map
+	// with a texture at the texture unit of its index, the cubemap, irradiance and prefilter maps as cubemaps and the rest as 2D textures,
+	// and sets the sampler at shader.locs[SHADER_LOC_MAP_DIFFUSE + index] to it; a sampler set to a unit (SetShaderValue) reads what is
+	// bound there. texture0 to texture2 read the first three maps, white for none.
+	static function mapTextures(shader:Shader, material:Material):Array<Int> {
+		var p = shader.program;
+		var textures = [for (_ in p.textures) -1];
+		for (k => slot in [p.texture0, p.texture1, p.texture2])
+			if (slot >= 0)
+				textures[slot] = Textures.handle(material.maps[k].texture.id);
+		for (slot in 0...textures.length) {
+			if (slot == p.texture0 || slot == p.texture1 || slot == p.texture2)
+				continue;
+			var unit = p.units[slot];
+			for (i in 0...MATERIAL_MAP_BRDF + 1) {
+				var location = shader.locs[SHADER_LOC_MAP_DIFFUSE + i];
+				if (location >= 0 && material.maps[i].texture.id > 0 && p.textureSlot(location) == slot)
+					unit = i;
+			}
+			if (unit < 0 || unit >= MAX_MATERIAL_MAPS || material.maps[unit].texture.id <= 0)
+				continue;
+			var id = material.maps[unit].texture.id;
+			var cube = unit == MATERIAL_MAP_CUBEMAP || unit == MATERIAL_MAP_IRRADIANCE || unit == MATERIAL_MAP_PREFILTER;
+			// A texture bound as the other kind binds nothing, as GL refuses it.
+			textures[slot] = cube == Textures.isCube(id) ? Textures.handle(id) : 0;
+		}
+		return textures;
+	}
+
 	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix3D, tint:Color, instances:Int = 0, instanceCount:Int = 1):Void {
 		if (mesh.gpu.buffers == null)
 			Models.upload(mesh);
@@ -1979,7 +2013,7 @@ class RModels {
 			c.b / 255 * tint.b / 255,
 			c.a / 255 * tint.a / 255
 		];
-		var textures = [for (i in 0...3) Textures.handle(material.maps[i].texture.id)];
+		var textures = mapTextures(shader, material);
 		// The bones' matrices, for a skinning shader, as raylib 5.5's DrawMesh uploads them.
 		var bones = shader.locs[SHADER_LOC_BONE_MATRICES];
 		if (bones != -1 && mesh.boneMatrices != null) {

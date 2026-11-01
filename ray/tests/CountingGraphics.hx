@@ -47,7 +47,7 @@ class CountingGraphics implements IGraphics {
 		return made(textures);
 
 	public function createCubeTexture(size:Int, levels:Array<Bytes>, format:TextureFormat):Int
-		return handle();
+		return made(textures);
 
 	public function createDataTexture(width:Int, height:Int):Int
 		return handle();

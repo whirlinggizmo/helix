@@ -11,7 +11,8 @@ import helix.ray.internal.Textures;
 	out of a map freed with its model, where raylib leaks it; two loads unloaded in either order, UnloadTexture on one load's texture
 	leaving the other's, a lone load's UnloadMaterial freeing its textures, a load after the last re-reading the file; a shader shared by
 	two models' materials, the program unloading it first and last; two loads of an OBJ file sharing its textures and buffers, and an MTL
-	file's materials, held by the program, sharing a texture the program loaded; IQM, VOX and M3D files refused. Nothing is freed while held, nothing twice, and nothing
+	file's materials, held by the program, sharing a texture the program loaded; a cubemap in a model's cubemap map, as raylib's skybox
+	holds one; IQM, VOX and M3D files refused. Nothing is freed while held, nothing twice, and nothing
 	is left. */
 @:access(helix.ray.internal.Runtime)
 @:access(helix.ray.internal.Textures)
@@ -153,6 +154,20 @@ class CountTests {
 		UnloadModel(model);
 		check(!alive(id), "through the map: UnloadModel frees it");
 		clean("through the map");
+
+		// raylib's skybox: a cubemap given to a model's cubemap map, unloaded through the map, then the model.
+		model = LoadModelFromMesh(cube());
+		var sky = LoadTextureCubemap(GenImageColor(2, 12, RED), CUBEMAP_LAYOUT_AUTO_DETECT);
+		id = sky.id;
+		check(sky.width == 2 && sky.height == 2 && sky.mipmaps == 1 && Textures.isCube(id), "cubemap: a column of 2 by 2 faces");
+		model.materials[0].maps[MATERIAL_MAP_CUBEMAP].texture = sky;
+		var gpu = Textures.handle(id);
+		check(Textures.isCubeHandle(gpu), "cubemap: on the GPU as a cube");
+		UnloadTexture(model.materials[0].maps[MATERIAL_MAP_CUBEMAP].texture);
+		check(alive(id), "cubemap: the map still holds it");
+		UnloadModel(model);
+		check(!alive(id) && !Textures.isCubeHandle(gpu), "cubemap: UnloadModel frees it");
+		clean("cubemap");
 
 		// A material shared by two models.
 		var a = LoadModelFromMesh(cube()), b = LoadModelFromMesh(cube());

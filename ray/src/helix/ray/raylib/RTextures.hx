@@ -6,6 +6,7 @@ import helix.ray.Raylib.*;
 import helix.math.Matrix3D;
 import helix.ray.internal.DefaultFont;
 import helix.ray.internal.Models;
+import helix.ray.internal.Mipmaps;
 import helix.ray.internal.Pixels;
 import helix.ray.internal.Runtime;
 import helix.ray.internal.Textures;
@@ -461,7 +462,7 @@ class RTextures {
 		mipmap); `TEXTURE_FILTER_BILINEAR` blends the nearest four (of the nearest mipmap); `TEXTURE_FILTER_TRILINEAR` blends the nearest
 		four of the two nearest mipmaps, or, without mipmaps, is `TEXTURE_FILTER_BILINEAR`, with a warning. `TEXTURE_FILTER_ANISOTROPIC_4X`,
 		`8X` and `16X` read up to that many texels along a surface seen at a slant, leaving the filter as it was; the GPU uses it only with
-		`TEXTURE_FILTER_TRILINEAR` on a mipmapped texture.
+		`TEXTURE_FILTER_TRILINEAR` on a mipmapped texture. A cubemap (`LoadTextureCubemap`) is left unchanged: raylib's binds it as a 2D texture, which GL refuses.
 
 		@param texture  The texture.
 		@param filter  The filter (`TEXTURE_FILTER_*`). */
@@ -492,13 +493,13 @@ class RTextures {
 	/** Makes a texture's mipmaps, down to 1 by 1, as raylib's does with GL's `glGenerateMipmap`: each level the rounded average of the
 		2 by 2 above it, made on the CPU, so the same on every target. `texture.mipmaps` becomes their count. The texture's filter is left
 		as it was: `SetTextureFilter` after it reads them. A texture already drawn gets them from its pixels read back from the GPU, and
-		draws asked for before it this frame don't; a render texture's can't be made, with a warning.
+		draws asked for before it this frame don't; a render texture's and a cubemap's can't be made, with a warning.
 
 		@param texture  The texture. */
 	static function GenTextureMipmaps(texture:Texture2D):Void {
 		if (texture.id <= 0)
 			return;
-		if (texture.flipped) {
+		if (texture.flipped || Textures.isCube(texture.id)) {
 			Runtime.log(LOG_WARNING, 'TEXTURE: [ID ${texture.id}] Failed to generate mipmaps');
 			return;
 		}
@@ -2422,10 +2423,133 @@ class RTextures {
 		return new Texture2D(id, image.width, image.height, levels.length + 1, image.format);
 	}
 
+	/** Makes a cubemap of an image, its six faces laid out as raylib's layouts lay them: `CUBEMAP_LAYOUT_LINE_VERTICAL` (a column, +X,
+		-X, +Y, -Y, +Z, -Z from the top), `CUBEMAP_LAYOUT_LINE_HORIZONTAL` (a row, in that order from the left),
+		`CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR` (3 faces wide, 4 high: +Y, +X, -Y and -X down the middle column, +Z left of +X and -Z right
+		of it) or `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE` (4 wide, 3 high: +Y at the top of the second column, then -X, +Z, +X, -Z
+		across, then -Y below +Z), each face's rows top first as GL's cube faces take them; `CUBEMAP_LAYOUT_AUTO_DETECT` takes the layout
+		from the image's shape. A face is the image's height over 6 (a column), its width over 6 (a row), over 3 (3 by 4) or over 4 (4 by 3).
+
+		As raylib's: a column is read as it is, the face size squared times 6 pixels from the image's first, row after row, so an image
+		not 1 face by 6 is read across its rows; the other layouts draw each face onto magenta (`ImageDraw`), a translucent pixel blended
+		over it, a face partly past the image's edge its part inside stretched to the face, and one wholly past it left magenta (raylib's
+		divides by zero). A shape `CUBEMAP_LAYOUT_AUTO_DETECT` doesn't know gives no cubemap,
+		with a warning. Its format is the image's, its pixels RGBA on the GPU, sampled linearly as rlgl's cubemaps are. An image with
+		mipmaps gives a cubemap with mipmaps, sampled through them: a column's from the image's levels, read as its first is; the other
+		layouts' made from each face, as GL's `glGenerateMipmap` makes them, where raylib 6.2's are magenta (5.5's are magenta whatever the
+		image). Where raylib's differs, it makes an empty GL cubemap: a face size of 0 (an image too small for its layout, or a layout raylib
+		doesn't have) gives none here, as do a compressed format and an image too small for the column it is read as, with a warning.
+
+		The cubemap is a `Texture2D`'s record: a material's `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` or `MATERIAL_MAP_PREFILTER`
+		binds it to a shader's `samplerCube` (`DrawMesh`), as does `SetShaderValueTexture`; drawn as a 2D texture, it draws nothing.
+		`UnloadTexture` lets go of it, and it is counted as any texture is (docs/DECISIONS.md 25).
+
+		@param image  The image.
+		@param layout  The layout (`CUBEMAP_LAYOUT_*`).
+		@return  The cubemap; id 0 for none. */
+	static function LoadTextureCubemap(image:Image, layout:Int):TextureCubemap {
+		var size = 0;
+		if (layout == CUBEMAP_LAYOUT_AUTO_DETECT) {
+			if (image.width > image.height) {
+				if (Std.int(image.width / 6) == image.height) {
+					layout = CUBEMAP_LAYOUT_LINE_HORIZONTAL;
+					size = Std.int(image.width / 6);
+				} else if (Std.int(image.width / 4) == Std.int(image.height / 3)) {
+					layout = CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE;
+					size = Std.int(image.width / 4);
+				}
+			} else if (image.height > image.width) {
+				if (Std.int(image.height / 6) == image.width) {
+					layout = CUBEMAP_LAYOUT_LINE_VERTICAL;
+					size = Std.int(image.height / 6);
+				} else if (Std.int(image.width / 3) == Std.int(image.height / 4)) {
+					layout = CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR;
+					size = Std.int(image.width / 3);
+				}
+			}
+		} else
+			size = switch layout {
+				case CUBEMAP_LAYOUT_LINE_VERTICAL: Std.int(image.height / 6);
+				case CUBEMAP_LAYOUT_LINE_HORIZONTAL: Std.int(image.width / 6);
+				case CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR: Std.int(image.width / 3);
+				case CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE: Std.int(image.width / 4);
+				case _: 0;
+			}
+		if (layout == CUBEMAP_LAYOUT_AUTO_DETECT) {
+			Runtime.log(LOG_WARNING, "IMAGE: Failed to detect cubemap image layout");
+			return new Texture2D(0, 0, 0, 0, 0);
+		}
+		var failed = new Texture2D(0, size, size, 0, 0);
+		if (size < 1 || image.data == null || image.format >= Pixels.COMPRESSED || image.format < PIXELFORMAT_UNCOMPRESSED_GRAYSCALE) {
+			Runtime.log(LOG_WARNING, "TEXTURE: Failed to load cubemap texture");
+			return failed;
+		}
+		var faceBytes = size * size * 4;
+		// Its levels, each 6 faces of RGBA: a cube's chain goes down to 1 by 1.
+		var most = 1, side = size;
+		while (side > 1) {
+			side >>= 1;
+			most++;
+		}
+		var levels:Array<haxe.io.Bytes> = [];
+		if (layout == CUBEMAP_LAYOUT_LINE_VERTICAL) {
+			// rlLoadTextureCubemap reads the image's bytes as they come, level after level.
+			var pixels = new haxe.io.BytesBuffer(), w = image.width, h = image.height, at = 0;
+			for (_ in 0...(image.mipmaps < 1 ? 1 : image.mipmaps)) {
+				var bytes = GetPixelDataSize(w, h, image.format);
+				if (at + bytes > image.data.length)
+					break;
+				pixels.add(Pixels.colors(image.data.sub(at, bytes), w * h, 1, image.format));
+				at += bytes;
+				w = w > 1 ? w >> 1 : 1;
+				h = h > 1 ? h >> 1 : 1;
+			}
+			var all = pixels.getBytes(), read = 0;
+			side = size;
+			for (level in 0...(image.mipmaps < 1 ? 1 : image.mipmaps > most ? most : image.mipmaps)) {
+				var bytes = side * side * 4 * 6;
+				if (read + bytes > all.length)
+					break;
+				levels.push(all.sub(read, bytes));
+				read += bytes;
+				side = side > 1 ? side >> 1 : 1;
+			}
+			if (levels.length == 0) {
+				Runtime.log(LOG_WARNING, "TEXTURE: Failed to load cubemap texture");
+				return failed;
+			}
+		} else {
+			var origins = switch layout {
+				case CUBEMAP_LAYOUT_LINE_HORIZONTAL: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0]];
+				case CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR: [[1, 1], [1, 3], [1, 0], [1, 2], [0, 1], [2, 1]];
+				case _: [[2, 1], [0, 1], [1, 0], [1, 2], [1, 1], [3, 1]];
+			}
+			var faces = GenImageColor(size, size * 6, MAGENTA);
+			ImageFormat(faces, image.format);
+			for (i => o in origins)
+				ImageDraw(faces, image, new Rectangle(o[0] * size, o[1] * size, size, size), new Rectangle(0, size * i, size, size), WHITE);
+			var top = Pixels.colors(faces.data, size, size * 6, faces.format);
+			levels.push(top);
+			if (image.mipmaps > 1) {
+				var chains = [for (i in 0...6) Mipmaps.build(size, size, top.sub(i * faceBytes, faceBytes))];
+				for (level in 0...most - 1) {
+					var level6 = new haxe.io.BytesBuffer();
+					for (chain in chains)
+						level6.add(chain[level]);
+					levels.push(level6.getBytes());
+				}
+			}
+		}
+		var id = Textures.fromCube(size, levels);
+		Runtime.log(LOG_INFO, 'TEXTURE: [ID $id] Cubemap texture loaded successfully (${size}x$size)');
+		return new Texture2D(id, size, size, levels.length, image.format);
+	}
+
 	/** Replaces a texture's pixels, as raylib's does on the GPU. The pixels are in the texture's format (`texture.format`), rows top
 		first, its width by its height. Draws asked for before it this frame in a render texture drawn into since, or on the screen, show
 		the new pixels too, as rlgl's batch drawn after it does; those in render textures drawn into before it keep the old. A render
-		texture's, a compressed format's and pixels too few for the texture change nothing (raylib's reads past them), with a warning.
+		texture's, a cubemap's, a compressed format's and pixels too few for the texture change nothing (raylib's reads past them), with a
+		warning.
 
 		@param texture  The texture.
 		@param pixels  The pixels: their bytes (`haxe.io.Bytes`), or an array of `Color` (R8G8B8A8's bytes, as raylib's `Color *` is). */
@@ -2447,7 +2571,10 @@ class RTextures {
 	static function updateRectangle(texture:Texture2D, x:Int, y:Int, width:Int, height:Int, pixels:Dynamic):Void {
 		if (texture.id <= 0 || pixels == null)
 			return;
-		if (texture.flipped || texture.format >= Pixels.COMPRESSED || texture.format < PIXELFORMAT_UNCOMPRESSED_GRAYSCALE) {
+		if (texture.flipped
+			|| Textures.isCube(texture.id)
+			|| texture.format >= Pixels.COMPRESSED
+			|| texture.format < PIXELFORMAT_UNCOMPRESSED_GRAYSCALE) {
 			Runtime.log(LOG_WARNING, 'TEXTURE: [ID ${texture.id}] Failed to update for current texture format (${texture.format})');
 			return;
 		}
@@ -2474,7 +2601,7 @@ class RTextures {
 	}
 
 	/** Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT` (raylib's default), `TEXTURE_WRAP_CLAMP` or
-		`TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning.
+		`TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning. A cubemap is left unchanged.
 
 		@param texture  The texture.
 		@param wrap  The wrap (`TEXTURE_WRAP_*`). */
