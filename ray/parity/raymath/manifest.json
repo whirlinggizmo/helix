@@ -1,0 +1,8 @@
+{
+  "oracle": "5.5",
+  "covers": "raymath.h's functions, each over three inputs drawn from a few values (zero vectors, opposite directions, a singular matrix among them), and its functions with outs (QuaternionFromVector3ToVector3 and MatrixDecompose are 6.2's, in core_62 and raymath_62): Vector3OrthoNormalize, QuaternionToAxisAngle, Vector3ToFloatV and MatrixToFloatV",
+  "kind": "values",
+  "generated": true,
+  "main": "RaymathBits",
+  "tolerance": 1e-06
+}

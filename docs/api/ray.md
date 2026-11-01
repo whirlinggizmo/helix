@@ -3200,7 +3200,7 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
 - `LoadTextureFromImage`: Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, so the texture's format is `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` and it has one level. A compressed format gives no texture, with a warning.
   - `image`: The image.
   - returns: The texture.
-- `SetTextureWrap`: Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT`, `TEXTURE_WRAP_CLAMP` (raylib's default) or `TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning.
+- `SetTextureWrap`: Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT` (raylib's default), `TEXTURE_WRAP_CLAMP` or `TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning.
   - `texture`: The texture.
   - `wrap`: The wrap (`TEXTURE_WRAP_*`).
 - `DrawTextureNPatch`: Draws a texture as a nine-patch (or a three-patch) into a rectangle, turned about an origin, as raylib's does: its corners kept, its edges and middle stretched; a rectangle smaller than the borders shrinks them and drops the middle.
@@ -4969,7 +4969,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
 - `MatrixTranspose`: Returns a matrix transposed.
   - `mat`: The matrix.
   - returns: Its transpose.
-- `MatrixInvert`: Returns a matrix inverted.
+- `MatrixInvert`: Returns a matrix inverted, by raymath's own steps: a singular matrix's inverse divides by a determinant of 0, so it is infinite or NaN, as raylib's is.
   - `mat`: The matrix.
   - returns: Its inverse.
 - `MatrixIdentity`: Returns the identity matrix.
@@ -5008,7 +5008,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
 - `MatrixRotateZ`: Returns a rotation about z.
   - `angle`: The angle, in radians.
   - returns: The matrix.
-- `MatrixRotateXYZ`: Returns rotations about x, then y, then z.
+- `MatrixRotateXYZ`: Returns raymath's xyz rotation, by its own steps: built from the negated angles and laid out as raylib's is, which turns a point about z, then y, then x (the reverse of `MatrixRotateZYX`'s order).
   - `angle`: The angles, in radians.
   - returns: The matrix.
 - `MatrixRotateZYX`: Returns rotations about z, then y, then x.

@@ -4156,7 +4156,7 @@ class Raylib {
 	public static inline function LoadTextureFromImage(image:Image):Texture2D
 		return RTextures.LoadTextureFromImage(image);
 
-	/** Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT`, `TEXTURE_WRAP_CLAMP` (raylib's default) or
+	/** Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT` (raylib's default), `TEXTURE_WRAP_CLAMP` or
 		`TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning.
 
 		@param texture  The texture.

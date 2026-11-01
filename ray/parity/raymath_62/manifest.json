@@ -1,0 +1,8 @@
+{
+  "oracle": "6.2",
+  "covers": "raymath.h's MatrixDecompose, 6.2's (its scale from the columns), over a rotation and translation, a general matrix, a scaled, turned and moved one and a mirrored one",
+  "kind": "values",
+  "generated": true,
+  "main": "RaymathBits62",
+  "tolerance": 1e-06
+}

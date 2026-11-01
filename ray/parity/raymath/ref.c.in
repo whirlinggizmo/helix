@@ -1,0 +1,24 @@
+// raylib 5.5's raymath, every function over a few inputs, printed by parity.h and the printers here; cases.py's list is put into it.
+#include "parity.h"
+#include "raymath.h"
+
+static void v3(const char *name, Vector3 v) { printf("%s v3 %.9g %.9g %.9g\n", name, v.x, v.y, v.z); }
+static void v4(const char *name, Vector4 v) { printf("%s v4 %.9g %.9g %.9g %.9g\n", name, v.x, v.y, v.z, v.w); }
+
+static void floats(const char *name, const float *v, int n) {
+    printf("%s floats", name);
+    for (int i = 0; i < n; i++) printf(" %.9g", v[i]);
+    printf("\n");
+}
+
+static void mat(const char *name, Matrix m) {
+    float v[16] = { m.m0, m.m1, m.m2, m.m3, m.m4, m.m5, m.m6, m.m7, m.m8, m.m9, m.m10, m.m11, m.m12, m.m13, m.m14, m.m15 };
+    floats(name, v, 16);
+}
+
+int main(void) {
+    parity_open();
+    @CASES@
+    parity_close();
+    return 0;
+}

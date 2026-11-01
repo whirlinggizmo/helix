@@ -1196,14 +1196,47 @@ class RMath {
 		return toMatrix(toMatrix3D(mat).transpose());
 	}
 
-	/** Returns a matrix inverted.
+	/** Returns a matrix inverted, by raymath's own steps: a singular matrix's inverse divides by a determinant of 0, so it is infinite or
+		NaN, as raylib's is.
 
 		@param mat  The matrix.
 		@return  Its inverse. */
 	static function MatrixInvert(mat:Matrix):Matrix {
-		var inverse = toMatrix3D(mat);
-		inverse.invert(inverse);
-		return toMatrix(inverse);
+		var a00 = mat.m0, a01 = mat.m1, a02 = mat.m2, a03 = mat.m3;
+		var a10 = mat.m4, a11 = mat.m5, a12 = mat.m6, a13 = mat.m7;
+		var a20 = mat.m8, a21 = mat.m9, a22 = mat.m10, a23 = mat.m11;
+		var a30 = mat.m12, a31 = mat.m13, a32 = mat.m14, a33 = mat.m15;
+		var b00 = a00 * a11 - a01 * a10,
+			b01 = a00 * a12 - a02 * a10,
+			b02 = a00 * a13 - a03 * a10;
+		var b03 = a01 * a12 - a02 * a11,
+			b04 = a01 * a13 - a03 * a11,
+			b05 = a02 * a13 - a03 * a12;
+		var b06 = a20 * a31 - a21 * a30,
+			b07 = a20 * a32 - a22 * a30,
+			b08 = a20 * a33 - a23 * a30;
+		var b09 = a21 * a32 - a22 * a31,
+			b10 = a21 * a33 - a23 * a31,
+			b11 = a22 * a33 - a23 * a32;
+		var invDet = 1.0 / (b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06);
+		var result = new Matrix();
+		result.m0 = (a11 * b11 - a12 * b10 + a13 * b09) * invDet;
+		result.m1 = (-a01 * b11 + a02 * b10 - a03 * b09) * invDet;
+		result.m2 = (a31 * b05 - a32 * b04 + a33 * b03) * invDet;
+		result.m3 = (-a21 * b05 + a22 * b04 - a23 * b03) * invDet;
+		result.m4 = (-a10 * b11 + a12 * b08 - a13 * b07) * invDet;
+		result.m5 = (a00 * b11 - a02 * b08 + a03 * b07) * invDet;
+		result.m6 = (-a30 * b05 + a32 * b02 - a33 * b01) * invDet;
+		result.m7 = (a20 * b05 - a22 * b02 + a23 * b01) * invDet;
+		result.m8 = (a10 * b10 - a11 * b08 + a13 * b06) * invDet;
+		result.m9 = (-a00 * b10 + a01 * b08 - a03 * b06) * invDet;
+		result.m10 = (a30 * b04 - a31 * b02 + a33 * b00) * invDet;
+		result.m11 = (-a20 * b04 + a21 * b02 - a23 * b00) * invDet;
+		result.m12 = (-a10 * b09 + a11 * b07 - a12 * b06) * invDet;
+		result.m13 = (a00 * b09 - a01 * b07 + a02 * b06) * invDet;
+		result.m14 = (-a30 * b03 + a31 * b01 - a32 * b00) * invDet;
+		result.m15 = (a20 * b03 - a21 * b01 + a22 * b00) * invDet;
+		return result;
 	}
 
 	/** Returns the identity matrix.
@@ -1330,13 +1363,26 @@ class RMath {
 		return toMatrix(Matrix3D.fromRotation(0, 0, 1, angle));
 	}
 
-	/** Returns rotations about x, then y, then z.
+	/** Returns raymath's xyz rotation, by its own steps: built from the negated angles and laid out as raylib's is, which turns a point
+		about z, then y, then x (the reverse of `MatrixRotateZYX`'s order).
 
 		@param angle  The angles, in radians.
 		@return  The matrix. */
 	static function MatrixRotateXYZ(angle:Vector3):Matrix {
-		var m = Matrix3D.compose(Matrix3D.fromRotation(1, 0, 0, angle.x), Matrix3D.fromRotation(0, 1, 0, angle.y));
-		return toMatrix(Matrix3D.compose(m, Matrix3D.fromRotation(0, 0, 1, angle.z)));
+		var cosz = Math.cos(-angle.z), sinz = Math.sin(-angle.z);
+		var cosy = Math.cos(-angle.y), siny = Math.sin(-angle.y);
+		var cosx = Math.cos(-angle.x), sinx = Math.sin(-angle.x);
+		var result = toMatrix(new Matrix3D());
+		result.m0 = cosz * cosy;
+		result.m1 = (cosz * siny * sinx) - (sinz * cosx);
+		result.m2 = (cosz * siny * cosx) + (sinz * sinx);
+		result.m4 = sinz * cosy;
+		result.m5 = (sinz * siny * sinx) + (cosz * cosx);
+		result.m6 = (sinz * siny * cosx) - (cosz * sinx);
+		result.m8 = -siny;
+		result.m9 = cosy * sinx;
+		result.m10 = cosy * cosx;
+		return result;
 	}
 
 	/** Returns rotations about z, then y, then x.

@@ -42,6 +42,8 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `cameras_62` | 6.2 | values | rcamera's moves forward and right and `UpdateCameraPro`, Z-up and X-up cameras among them |
 | `camera_update` | 5.5 | values | `UpdateCamera` in each mode over scripted input, from Y-up starts |
 | `camera_update_62` | 6.2 | values | `UpdateCamera` in each mode from a Z-up start |
+| `raymath` | 5.5 | values | every raymath function over three inputs each, a singular matrix and zero vectors among them |
+| `raymath_62` | 6.2 | values | `MatrixDecompose`, 6.2's |
 | `core_62` | 6.2 | values | file names, Base64, SHA-1 and SHA-256, the file functions 6.2 added, raymath's additions |
 | `images_62` | 6.2 | values | the image functions 6.2 fixed or added, their images byte for byte |
 | `animation` | 6.2 | values | glTF skeletons and animations, bone matrices, CPU skinning and blending |

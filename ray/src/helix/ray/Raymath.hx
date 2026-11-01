@@ -842,7 +842,8 @@ class Raymath {
 	public static inline function MatrixTranspose(mat:Matrix):Matrix
 		return RMath.MatrixTranspose(mat);
 
-	/** Returns a matrix inverted.
+	/** Returns a matrix inverted, by raymath's own steps: a singular matrix's inverse divides by a determinant of 0, so it is infinite or
+		NaN, as raylib's is.
 
 		@param mat  The matrix.
 		@return  Its inverse. */
@@ -925,7 +926,8 @@ class Raymath {
 	public static inline function MatrixRotateZ(angle:Float):Matrix
 		return RMath.MatrixRotateZ(angle);
 
-	/** Returns rotations about x, then y, then z.
+	/** Returns raymath's xyz rotation, by its own steps: built from the negated angles and laid out as raylib's is, which turns a point
+		about z, then y, then x (the reverse of `MatrixRotateZYX`'s order).
 
 		@param angle  The angles, in radians.
 		@return  The matrix. */
