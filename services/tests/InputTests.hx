@@ -140,6 +140,30 @@ class InputTests {
 		check(!actions.unbind("left", Keyboard(Left)), "unbind what isn't bound: false");
 		actions.unbindAll();
 		check(actions.getBindings("jump").length == 0, "unbindAll: none left");
+		var each:Array<helix.services.input.Binding> = [
+			Keyboard(Left),
+			Keyboard(Right),
+			Mouse(Left),
+			Mouse(Right),
+			Pad(0, South),
+			Pad(1, South),
+			Pad(0, East),
+			Axis(0, LeftX, Positive),
+			Axis(0, LeftX, Negative),
+			Axis(0, LeftY, Positive),
+			Axis(1, LeftX, Positive),
+			Tilt(X, Positive),
+			Tilt(X, Negative),
+			Tilt(Y, Positive)
+		];
+		actions.bind("each", ...each);
+		actions.bind("each", ...each);
+		check(actions.getBindings("each").length == each.length, "a binding bound again is held once; each differing in a part is apart");
+		check(actions.unbind("each", Axis(0, LeftX, Negative), Pad(1, South), Tilt(Y, Positive))
+			&& actions.getBindings("each").length == each.length - 3
+			&& actions.getBindings("each").indexOf(each[7]) >= 0,
+			"unbind removes only the bindings equal to those given");
+		actions.unbindAll();
 		// Tilt: asked through the platform's tilt, level taken once held steady for half a second, then read turned with the screen.
 		check(tilt.requestAccess() && devices.tiltRequested && tilt.status == Off, "tilt asked for through the platform's tilt");
 		frame([TiltState(On), Tilt(10, 5, 0)]);

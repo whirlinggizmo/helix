@@ -67,7 +67,7 @@ class Actions {
 		var removed = false;
 		for (binding in bindings)
 			for (i in 0...bound.length)
-				if (Type.enumEq(bound[i], binding)) {
+				if (same(bound[i], binding)) {
 					bound.splice(i, 1);
 					removed = true;
 					break;
@@ -221,8 +221,21 @@ class Actions {
 
 	static function contains(bound:Array<Binding>, binding:Binding):Bool {
 		for (b in bound)
-			if (Type.enumEq(b, binding))
+			if (same(b, binding))
 				return true;
 		return false;
+	}
+
+	// Whether two bindings are the same: the same kind, with the same device, slot, key, button, axis and side. Written out rather than
+	// Type.enumEq, which links the run-time type inspection every program with actions would carry.
+	static function same(a:Binding, b:Binding):Bool {
+		return switch [a, b] {
+			case [Keyboard(key), Keyboard(other)]: key == other;
+			case [Mouse(button), Mouse(other)]: button == other;
+			case [Pad(slot, button), Pad(otherSlot, other)]: slot == otherSlot && button == other;
+			case [Axis(slot, axis, direction), Axis(otherSlot, other, otherDirection)]: slot == otherSlot && axis == other && direction == otherDirection;
+			case [Tilt(axis, direction), Tilt(other, otherDirection)]: axis == other && direction == otherDirection;
+			case _: false;
+		}
 	}
 }
