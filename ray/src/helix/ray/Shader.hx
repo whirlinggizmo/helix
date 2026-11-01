@@ -14,6 +14,14 @@ class Shader {
 	@:allow(helix.ray)
 	var program:Null<helix.ray.internal.Program>;
 
+	// A material's copy (`Material.shader`), holding the material's count, as a map's copy of a texture does (`Texture2D.mapped`).
+	@:allow(helix.ray)
+	var mapped = false;
+
+	// Whether a material's copy has let go of the material's count already, through `UnloadShader`.
+	@:allow(helix.ray)
+	var spent = false;
+
 	/** Creates a shader's record. Shaders are made by `Raylib.LoadShader`.
 
 		@param id  The handle.

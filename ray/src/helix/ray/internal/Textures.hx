@@ -3,8 +3,9 @@ package helix.ray.internal;
 import helix.services.images.Image;
 
 /** Holds every texture a program has, by the id its `Texture2D` carries: one GPU texture for each file however often it is loaded,
-	counted by its holders (the program's loads of it and the material maps given it, docs/DECISIONS.md 25) and freed when the last lets
-	go, and sent to the GPU when first drawn rather than when loaded. */
+	counted by its holders (docs/DECISIONS.md 25) and freed when the last lets go, and sent to the GPU when first drawn rather than when
+	loaded. A holder is the program, from each load of it (`fromImage`, `fromHandle`) until `releaseHeld`, or a material map given it
+	(`retain`, `release`); the program's holds are counted apart too, so `UnloadTexture` on a map's copy lets go of one of them first. */
 @:noCompletion
 class Textures {
 	/** The id of raylib's default texture, rlgl's 1x1 white pixel (`rlGetTextureIdDefault`): the frame's white texture, which
@@ -15,15 +16,17 @@ class Textures {
 	static final entries = new Map<Int, Entry>();
 	static final byPath = new Map<String, Int>();
 
-	/** Returns the id of a file's texture, shared with its earlier loads: the image goes to the GPU when first drawn.
+	/** Returns the id of a file's texture, shared with its earlier loads while any holds it, held by the program: the image goes to the
+		GPU when first drawn.
 
-		@param path  The file, or "" for an image of no file, which is never shared.
-		@param image  Its pixels.
+		@param path  The file (or a key of its own, as a model's image's), or "" for an image of no file, which is never shared.
+		@param image  Its pixels, used when no load of the file is held.
 		@return  The id. */
 	public static function fromImage(path:String, image:Image):Int {
 		if (path != "" && byPath.exists(path)) {
-			var id = byPath.get(path);
-			entries.get(id).refs++;
+			var id = byPath.get(path), e = entries.get(id);
+			e.refs++;
+			e.held++;
 			return id;
 		}
 		var id = next++;
@@ -31,14 +34,15 @@ class Textures {
 			path: path,
 			image: image,
 			gpu: 0,
-			refs: 1
+			refs: 1,
+			held: 1
 		});
 		if (path != "")
 			byPath.set(path, id);
 		return id;
 	}
 
-	/** Returns an id for a texture already on the GPU: a render texture's, or the default font's.
+	/** Returns an id for a texture already on the GPU, held by the program: a render texture's, or the default font's.
 
 		@param gpu  Its handle.
 		@return  The id. */
@@ -48,9 +52,37 @@ class Textures {
 			path: "",
 			image: null,
 			gpu: gpu,
-			refs: 1
+			refs: 1,
+			held: 1
 		});
 		return id;
+	}
+
+	/** Returns whether a file's texture (or a key's, as `fromImage` takes it) is held, so a load of it shares it.
+
+		@param path  The file, or the key.
+		@return  True when it is. */
+	public static function hasPath(path:String):Bool
+		return byPath.exists(path);
+
+	/** Returns whether the program holds a texture: whether a load of it hasn't been let go of (`releaseHeld`).
+
+		@param id  The texture's id.
+		@return  True when it does. */
+	public static function isHeld(id:Int):Bool {
+		var e = entries.get(id);
+		return e != null && e.held > 0;
+	}
+
+	/** Lets go of one of the program's holds on a texture, freeing it when it was the last holder.
+
+		@param id  The texture's id.
+		@return  True when the texture is gone, as `release` answers. */
+	public static function releaseHeld(id:Int):Bool {
+		var e = entries.get(id);
+		if (e != null && e.held > 0)
+			e.held--;
+		return release(id);
 	}
 
 	/** Sets how a texture is sampled, by its GPU handle when it has one, or once it is sent.
@@ -163,5 +195,6 @@ private typedef Entry = {
 	var image:Null<Image>;
 	var gpu:Int;
 	var refs:Int;
+	var held:Int;
 	var ?sampling:helix.platform.Sampling;
 }

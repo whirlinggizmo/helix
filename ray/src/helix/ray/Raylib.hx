@@ -2281,7 +2281,9 @@ class Raylib {
 	public static inline function IsShaderValid(shader:Shader):Bool
 		return RCore.IsShaderValid(shader);
 
-	/** Frees a shader; the default one stays.
+	/** Lets go of the program's hold on a shader (docs/DECISIONS.md 25), its id set to 0: the shader is freed when no material holds it
+		too, else when the last material holding it lets go. Given a material's shader (`material.shader`), it lets go of one hold and
+		leaves the material drawing with it while anything holds it. The default shader stays.
 
 		@param shader  The shader. */
 	public static inline function UnloadShader(shader:Shader):Void
@@ -4578,13 +4580,12 @@ class Raylib {
 		return RModels.IsModelValid(model);
 
 	/** Frees a model: it lets go of its meshes and materials, and what no one else holds is freed with it (docs/DECISIONS.md 25): a
-		mesh's GPU buffers, a material's maps' textures and its shader unless it is the default one. A file's textures and GPU buffers,
-		shared by its loads, go with its last load. The model is left empty, so unloading it again does nothing.
+		mesh's GPU buffers, a material's maps' textures and its shader, each when nothing else holds it (another load of its file, another
+		model, the program); the default shader and texture stay. The model is left empty, so unloading it again does nothing.
 
-		raylib's frees only the meshes, and leaves the textures and shaders to the program. Where helix-ray's differs: a texture copied out
-		of a map (`var t = map.texture`) and drawn after the model is unloaded is freed and draws as none, where raylib's leaks it; a material or mesh shared
-		between models works, where raylib's C frees it twice; and a shader shared between models is unloaded with the first whose material
-		lets go of it.
+		raylib's frees only the meshes, and leaves the textures and shaders to the program. Where helix-ray's differs: a texture or shader
+		copied out of a material (`var t = map.texture`) and used after the model is unloaded is freed, where raylib's leaks it; and a
+		material or mesh shared between models works, where raylib's C frees it twice.
 
 		@param model  The model. */
 	public static inline function UnloadModel(model:Model):Void
@@ -5430,7 +5431,7 @@ class Raylib {
 		RAsync.LoadTextureAsync(fileName, loaded, failed);
 
 	/** Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own,
-		in place of raylib's `LoadModel`. A file loaded again shares its first load's meshes and textures, with materials of its own.
+		in place of raylib's `LoadModel`. A file loaded again, while a load of it lives, shares its meshes' GPU buffers and its textures, with materials of its own.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the model.
@@ -5985,7 +5986,7 @@ class Raylib {
 
 	/** Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the
 		program builds, for every target, so their names are constants; the files are found under `-D helix-ray-files` (default `web`), as the
-		program's other files are.
+		program's other files are. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25).
 
 		@param vsFileName  The vertex stage's file, or null.
 		@param fsFileName  The fragment stage's file, or null.
@@ -5999,7 +6000,7 @@ class Raylib {
 	}
 
 	/** Loads a shader from raylib GLSL text, either null for raylib's default stage. It is compiled as the program builds, so the text is
-		a constant.
+		a constant. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25).
 
 		@param vsCode  The vertex stage's text, or null.
 		@param fsCode  The fragment stage's text, or null.

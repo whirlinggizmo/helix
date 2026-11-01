@@ -41,7 +41,7 @@ class RAsync {
 	}
 
 	/** Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own,
-		in place of raylib's `LoadModel`. A file loaded again shares its first load's meshes and textures, with materials of its own.
+		in place of raylib's `LoadModel`. A file loaded again, while a load of it lives, shares its meshes' GPU buffers and its textures, with materials of its own.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the model.

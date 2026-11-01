@@ -169,17 +169,20 @@ Why things are the way they are, numbered, in order.
 25. **helix-ray counts what a model holds, following ownership, where raylib leaves it to the program.** raylib's `UnloadModel`
     frees a model's meshes and its maps arrays and never a texture or shader, so a C program frees those itself, or leaks them; Haxe
     has no destructor to lean on, and a model loaded from a file shares its textures and GPU buffers with the file's other loads, so
-    helix-ray counts holders instead. A texture is counted by each holder: the program from the load that made it (`LoadTextureAsync`,
+    helix-ray counts holders instead. A texture is counted by each holder: the program from each load that made it (`LoadTextureAsync`,
     `LoadTextureFromImage`) until `UnloadTexture`, and each material map it is assigned to (`MaterialMap.texture` is a property: the
-    map keeps a copy of the record, retains the new texture and releases the old). A material and a mesh are counted the same way: the
-    program from the call that made it (`LoadMaterialDefault`, `GenMesh*`, a `Mesh` made by hand) until `UnloadMaterial` or
-    `UnloadMesh`, and each model whose `materials` or `meshes` holds it (both are abstracts over arrays, written by index as raylib's
-    are, each write retaining the new element and releasing the old). `LoadModelFromMesh` takes over the program's count on its mesh,
-    as raylib programs don't unload a mesh given to a model. A material reaching 0 releases its maps' textures and its shader (unless
-    it is the default one), as `UnloadMaterial` does in raylib; a mesh reaching 0 frees its GPU buffers, those shared by a file's
-    loads with the last mesh using them. `UnloadModel` releases the model's counts, so nothing leaks, and a release of something already
-    at 0 does nothing. Where this differs from raylib: a texture copied out of a map and drawn after its model is unloaded is freed
-    (raylib leaks it); a material or mesh shared between models works (raylib's C frees it twice); a texture a program gives a map
-    and never unloads stays while it lives, where raylib's `UnloadMaterial` frees it; and a file's loads keep the textures their first
-    load made until the last of them is unloaded, so `UnloadMaterial` on one load frees none of them before then. Shaders aren't
-    counted: a shader on materials of several models is unloaded with the first of them to reach 0.
+    map keeps a copy of the record, retains the new texture and releases the old). A shader the same: the program from `LoadShader`
+    until `UnloadShader`, and each material given it (`Material.shader` a property alike); the default shader and texture are never
+    freed. A material and a mesh are counted the same way: the program from the call that made it (`LoadMaterialDefault`, `GenMesh*`,
+    a `Mesh` made by hand) until `UnloadMaterial` or `UnloadMesh`, and each model whose `materials` or `meshes` holds it (both are
+    abstracts over arrays, written by index as raylib's are, each write retaining the new element and releasing the old).
+    `LoadModelFromMesh` takes over the program's hold on its mesh, as raylib programs don't unload a mesh given to a model. A material
+    reaching 0 lets go of its maps' textures and its shader; a mesh reaching 0 lets go of its GPU buffers. Each is freed when its last
+    holder lets go, and a release of something already at 0 does nothing. `UnloadTexture` or `UnloadShader` given a material's copy
+    (`UnloadTexture(model.materials[0].maps[0].texture)`) lets go of one of the program's holds when there is one, else of that
+    material's own, which it then doesn't let go of again. A file's loads share its textures and GPU buffers through a cache keyed by
+    its path that holds no count: every load, the first included, takes its own counts on what it shares, and the file leaves the cache
+    with its last load, so a later load reads it again. `UnloadModel` releases the model's counts, so nothing leaks. Where this differs
+    from raylib: a texture or shader copied out of a material and used after its model is unloaded is freed (raylib leaks it); a
+    material or mesh shared between models works (raylib's C frees it twice); and a texture or shader a program gives a material and
+    never unloads stays while it lives, where raylib's `UnloadMaterial` frees it.

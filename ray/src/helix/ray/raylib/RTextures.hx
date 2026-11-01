@@ -56,9 +56,7 @@ class RTextures {
 
 		@param texture  The texture. */
 	static function UnloadTexture(texture:Texture2D):Void {
-		Models.releaseTexture(texture);
-		if (!texture.mapped)
-			texture.id = 0;
+		Models.unloadTexture(texture);
 	}
 
 	/** Returns whether a texture was loaded.
@@ -440,7 +438,7 @@ class RTextures {
 
 		@param target  The render texture. */
 	static function UnloadRenderTexture(target:RenderTexture2D):Void {
-		Models.releaseTexture(target.texture);
+		Models.unloadTexture(target.texture);
 		target.id = 0;
 		target.texture.id = 0;
 	}

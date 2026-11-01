@@ -8,7 +8,9 @@ import helix.ray.internal.Textures;
 /** Checks helix-ray's counting of what models hold (docs/DECISIONS.md 25), on graphics that count what is live: a texture the program
 	unloads after giving it to a model, one given straight to a map and unloaded through it, a material shared by two models, a mesh
 	replaced, a material unloaded before its model, a mesh LoadModelFromMesh takes over, two loads of one glTF file, and a texture copied
-	out of a map freed with its model, where raylib leaks it. Nothing is freed while held, nothing twice, and nothing is left. */
+	out of a map freed with its model, where raylib leaks it; two loads unloaded in either order, UnloadTexture on one load's texture
+	leaving the other's, a lone load's UnloadMaterial freeing its textures, a load after the last re-reading the file; a shader shared by
+	two models' materials, the program unloading it first and last. Nothing is freed while held, nothing twice, and nothing is left. */
 @:access(helix.ray.internal.Runtime)
 @:access(helix.ray.internal.Textures)
 @:access(helix.ray.Mesh)
@@ -19,6 +21,8 @@ class CountTests {
 	static var baseTextures = 0;
 	static var baseBuffers = 0;
 	static var baseEntries = 0;
+	static var baseShaders = 0;
+	static var files:MemoryFiles;
 
 	static function check(value:Bool, message:String):Void {
 		if (!value)
@@ -34,6 +38,7 @@ class CountTests {
 		check(count(Textures.entries) == baseEntries, '$message: texture records ${count(Textures.entries)}, not $baseEntries');
 		check(count(graphics.textures) == baseTextures, '$message: GPU textures ${count(graphics.textures)}, not $baseTextures');
 		check(count(graphics.buffers) == baseBuffers, '$message: GPU buffers ${count(graphics.buffers)}, not $baseBuffers');
+		check(count(graphics.shaders) == baseShaders, '$message: GPU shaders ${count(graphics.shaders)}, not $baseShaders');
 		check(graphics.doubles == 0, '$message: ${graphics.doubles} disposed twice');
 	}
 
@@ -52,6 +57,23 @@ class CountTests {
 		UploadMesh(m, false);
 		return m;
 	}
+
+	// A load's textures of its own, every map's but the default texture.
+	static function textures(model:Model):Array<Int>
+		return [
+			for (m in model.materials)
+				for (map in m.maps)
+					if (map.texture.id > Textures.DEFAULT)
+						map.texture.id
+		];
+
+	// A shader of its own: raylib's default program, made again, as LoadShader makes one.
+	static function makeShader():Shader
+		return @:privateAccess helix.ray.raylib.RModels.makeShader(helix.ray.internal.Defaults.shader());
+
+	// A material's shader set, as raylib programs set one.
+	static function SetMaterialShader(material:Material, shader:Shader):Void
+		material.shader = shader;
 
 	static function pump(done:Void->Bool) {
 		for (_ in 0...10000) {
@@ -83,8 +105,8 @@ class CountTests {
 		graphics = new CountingGraphics();
 		Runtime.graphics = graphics;
 		Runtime.frame = new Frame(graphics);
-		var files = new MemoryFiles(["ship.gltf" => Bytes.ofString(ship())]),
-			decoder = new SolidDecoder();
+		files = new MemoryFiles(["ship.gltf" => Bytes.ofString(ship())]);
+		var decoder = new SolidDecoder();
 		Runtime.polled.push(files);
 		Runtime.polled.push(decoder);
 		Runtime.assets = new helix.services.assets.Assets({sources: [FileSystem(files)]});
@@ -94,6 +116,7 @@ class CountTests {
 		baseTextures = count(graphics.textures);
 		baseBuffers = count(graphics.buffers);
 		baseEntries = count(Textures.entries);
+		baseShaders = count(graphics.shaders);
 
 		// A texture alone: UnloadTexture frees it.
 		var lone = texture(), id = lone.id;
@@ -185,6 +208,73 @@ class CountTests {
 		check(!Lambda.exists(ids, alive), "two loads: freed with the last");
 		clean("two loads");
 
+		// Two loads unloaded the other way about.
+		one = load();
+		two = load();
+		ids = textures(one);
+		UnloadModel(two);
+		check(Lambda.foreach(ids, alive), "other order: the first keeps its textures");
+		UnloadModel(one);
+		check(!Lambda.exists(ids, alive), "other order: freed with the last");
+		clean("other order");
+
+		// UnloadTexture on one load's texture, then that load unloaded: the other load's hold stays.
+		one = load();
+		two = load();
+		id = one.materials[1].maps[MATERIAL_MAP_ALBEDO].texture.id;
+		UnloadTexture(one.materials[1].maps[MATERIAL_MAP_ALBEDO].texture);
+		UnloadModel(one);
+		check(alive(id) && two.materials[1].maps[MATERIAL_MAP_ALBEDO].texture.id == id, "one load's texture: the other load keeps it");
+		UnloadModel(two);
+		check(!alive(id), "one load's texture: freed with the other");
+		clean("one load's texture");
+
+		// A lone load's UnloadMaterial frees its textures.
+		one = load();
+		ids = textures(one);
+		UnloadMaterial(one.materials[1]);
+		check(!Lambda.exists(ids, alive), "lone load: UnloadMaterial frees its textures");
+		UnloadModel(one);
+		clean("lone load");
+
+		// A load after the last is unloaded reads the file again.
+		var reads = files.reads;
+		check(!helix.ray.internal.Models.isKept("ship.gltf"), "again: the file leaves the cache with its last load");
+		one = load();
+		check(files.reads == reads + 1 && Lambda.foreach(textures(one), alive), "again: read afresh, its textures made again");
+		UnloadModel(one);
+		clean("again");
+
+		// A shader shared by two models' materials, the program unloading it first.
+		var shader = makeShader();
+		a = LoadModelFromMesh(cube());
+		b = LoadModelFromMesh(cube());
+		a.materials[0].shader = shader;
+		b.materials[0].shader = shader;
+		var handle = shader.id;
+		UnloadShader(shader);
+		check(shader.id == 0 && graphics.shaders.exists(handle) && a.materials[0].shader.id == handle,
+			"shader first: the materials keep the shader the program unloaded");
+		UnloadModel(a);
+		check(graphics.shaders.exists(handle), "shader first: held by the second model's material");
+		UnloadModel(b);
+		check(!graphics.shaders.exists(handle), "shader first: freed with the second model");
+		clean("shader first");
+
+		// The same, the program unloading it last.
+		shader = makeShader();
+		handle = shader.id;
+		a = LoadModelFromMesh(cube());
+		b = LoadModelFromMesh(cube());
+		SetMaterialShader(a.materials[0], shader);
+		b.materials[0].shader = shader;
+		UnloadModel(a);
+		UnloadModel(b);
+		check(graphics.shaders.exists(handle) && shader.id == handle, "shader last: the program's hold keeps it");
+		UnloadShader(shader);
+		check(!graphics.shaders.exists(handle) && shader.id == 0, "shader last: UnloadShader frees it");
+		clean("shader last");
+
 		// A texture copied out of a map, its model unloaded: freed here, where raylib leaks it.
 		var three = load();
 		var copied = three.materials[1].maps[MATERIAL_MAP_ALBEDO].texture;
@@ -222,6 +312,10 @@ class CountTests {
 // Files held in memory, each answer at the next poll.
 private class MemoryFiles implements helix.platform.IFileSystem {
 	final files:Map<String, Bytes>;
+
+	/** How many reads were asked for. */
+	public var reads = 0;
+
 	final waiting:Array<Void->Void> = [];
 
 	public function new(files:Map<String, Bytes>)
@@ -238,6 +332,7 @@ private class MemoryFiles implements helix.platform.IFileSystem {
 		return false;
 
 	public function read(path:String, maxBytes:Int, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void->Void {
+		reads++;
 		waiting.push(() -> files.exists(path) ? loaded(files.get(path)) : missing());
 		return () -> {};
 	}

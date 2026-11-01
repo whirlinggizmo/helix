@@ -173,6 +173,13 @@ class Program {
 		return p;
 	}
 
+	/** How many hold it (docs/DECISIONS.md 25): the program from `LoadShader` until `UnloadShader`, and each material given it. It is
+		freed when the last lets go; the default program is never counted. */
+	public var refs = 1;
+
+	/** How many of `refs` are the program's own, from `LoadShader`, so `UnloadShader` on a material's copy lets go of one of those first. */
+	public var held = 1;
+
 	/** Frees the pipelines and the program. */
 	public function dispose():Void {
 		for (p in pipelines)

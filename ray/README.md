@@ -42,13 +42,14 @@ where a native program finds its files, relative to itself (default `../web`). `
 
 raylib leaves textures and shaders to the program: its `UnloadModel` frees a model's meshes and nothing else. helix-ray counts holders
 instead (docs/DECISIONS.md 25), so nothing a program drops leaks and nothing it still uses is freed. A texture is held by the program from
-its load until `UnloadTexture`, and by each material map given it; a material by the program from `LoadMaterialDefault` until
-`UnloadMaterial`, and by each model whose `materials` holds it; a mesh likewise, through `UnloadMesh` and `meshes`. `LoadModelFromMesh`
-takes over the program's hold on its mesh. raylib's code runs as it is: `model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture`,
-then `UnloadTexture(texture)` and `UnloadModel(model)`, frees the texture once, at `UnloadModel`. Where it differs: a texture copied out of
-a map and drawn after its model is unloaded draws as none (raylib's leaks and still draws), a material or mesh shared between models
-works (raylib's C frees it twice), a texture given to a map and never unloaded stays while the program runs, and a shader is unloaded
-with the first material holding it to be freed.
+its load until `UnloadTexture`, and by each material map given it; a shader by the program from `LoadShader` until `UnloadShader`, and by
+each material given it; a material by the program from `LoadMaterialDefault` until `UnloadMaterial`, and by each model whose `materials`
+holds it; a mesh likewise, through `UnloadMesh` and `meshes`. `LoadModelFromMesh` takes over the program's hold on its mesh. A file loaded
+more than once shares its textures and GPU buffers, each load holding them, until its last load is unloaded. raylib's code runs as it is:
+`model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture`, then `UnloadTexture(texture)` and `UnloadModel(model)`, frees the
+texture once, at `UnloadModel`. Where it differs: a texture or shader copied out of a material and used after its model is unloaded is
+freed (raylib's leaks and still works), a material or mesh shared between models works (raylib's C frees it twice), and a texture or
+shader given to a material and never unloaded stays while the program runs.
 
 ## Examples
 

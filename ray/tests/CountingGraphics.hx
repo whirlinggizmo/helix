@@ -12,6 +12,9 @@ class CountingGraphics implements IGraphics {
 	/** The buffers made and not yet disposed. */
 	public final buffers = new Map<Int, Bool>();
 
+	/** The shaders made and not yet disposed. */
+	public final shaders = new Map<Int, Bool>();
+
 	/** How many disposals were of a handle not live. */
 	public var doubles = 0;
 
@@ -78,9 +81,10 @@ class CountingGraphics implements IGraphics {
 		gone(buffers, handle);
 
 	public function createShader(source:ShaderSource):Int
-		return handle();
+		return made(shaders);
 
-	public function disposeShader(handle:Int):Void {}
+	public function disposeShader(handle:Int):Void
+		gone(shaders, handle);
 
 	public function createPipeline(desc:PipelineDesc):Int
 		return handle();

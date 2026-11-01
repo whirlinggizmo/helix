@@ -28,8 +28,8 @@ class MeshGpu {
 	/** The buffers it shares with the holder it was made from, which that holder frees; empty for a holder of its own. */
 	public final borrowed:Array<Int> = [];
 
-	/** How many meshes use it: the copies of a file's mesh, each load's and its first load's; its buffers are freed when the last lets
-		go (`Models.releaseMesh`). */
+	/** How many meshes use it: the copies of a file's mesh, one a load; its buffers are freed when the last lets go
+		(`Models.releaseMesh`). */
 	public var holders = 1;
 
 	/** The holder it borrows from (`Models.own`), which it keeps a mesh's hold on until it is freed itself; null for none. */

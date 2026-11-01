@@ -689,7 +689,7 @@ class RModels {
 	}
 
 	// The model of a glTF or GLB file `LoadModelAsync` brought in: its meshes, their materials and its images. A file loaded again shares
-	// its first load's meshes and textures, with materials of its own; meshes go to the GPU when first drawn.
+	// its other loads' meshes' GPU buffers and textures while one lives, with materials of its own; meshes go to the GPU when first drawn.
 
 	static function loadModel(fileName:String):Model {
 		var model = Models.load(normalize(fileName));
@@ -722,13 +722,12 @@ class RModels {
 	}
 
 	/** Frees a model: it lets go of its meshes and materials, and what no one else holds is freed with it (docs/DECISIONS.md 25): a
-		mesh's GPU buffers, a material's maps' textures and its shader unless it is the default one. A file's textures and GPU buffers,
-		shared by its loads, go with its last load. The model is left empty, so unloading it again does nothing.
+		mesh's GPU buffers, a material's maps' textures and its shader, each when nothing else holds it (another load of its file, another
+		model, the program); the default shader and texture stay. The model is left empty, so unloading it again does nothing.
 
-		raylib's frees only the meshes, and leaves the textures and shaders to the program. Where helix-ray's differs: a texture copied out
-		of a map (`var t = map.texture`) and drawn after the model is unloaded is freed and draws as none, where raylib's leaks it; a material or mesh shared
-		between models works, where raylib's C frees it twice; and a shader shared between models is unloaded with the first whose material
-		lets go of it.
+		raylib's frees only the meshes, and leaves the textures and shaders to the program. Where helix-ray's differs: a texture or shader
+		copied out of a material (`var t = map.texture`) and used after the model is unloaded is freed, where raylib's leaks it; and a
+		material or mesh shared between models works, where raylib's C frees it twice.
 
 		@param model  The model. */
 	static function UnloadModel(model:Model):Void {

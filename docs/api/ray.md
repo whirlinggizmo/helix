@@ -277,11 +277,11 @@ var format:Int
 
 Represents raylib's `Material`: a shader and its maps (`MATERIAL_MAP_*`); the diffuse map's texture and color are what a draw shows.
 
-It is counted (docs/DECISIONS.md 25): the program holds it from `LoadMaterialDefault` until `UnloadMaterial`, and each model whose `materials` holds it holds it too. When the last lets go, its maps' textures are released and its shader unloaded, unless it is the default one.
+It is counted (docs/DECISIONS.md 25): the program holds it from `LoadMaterialDefault` until `UnloadMaterial`, and each model whose `materials` holds it holds it too. When the last lets go, its maps let go of their textures and it of its shader, each freed when nothing else holds it.
 
 ```haxe
 function new(shader:Shader, maps:Array<MaterialMap>, ?params:Array<Float>)
-var shader:Shader
+var shader(default, set):Shader
 var maps:Array<MaterialMap>
 var params:Array<Float>
 ```
@@ -290,7 +290,7 @@ var params:Array<Float>
   - `shader`: The shader.
   - `maps`: The maps.
   - `params`: The values.
-- `shader`: Gets or sets the shader it draws with.
+- `shader`: Gets or sets the shader it draws with. Assigning keeps a copy of the record, counted as one of the shader's holders, and lets go of the shader it replaces; the material lets go of it when it is freed. The default shader is never freed.
 - `maps`: Gets its maps, `MAX_MATERIAL_MAPS` of them, by `MATERIAL_MAP_*`.
 - `params`: Gets four values for a shader's own use.
 
@@ -2029,7 +2029,7 @@ static function EndScissorMode():Void
 - `IsShaderValid`: Returns whether a shader was made.
   - `shader`: The shader.
   - returns: True when it was.
-- `UnloadShader`: Frees a shader; the default one stays.
+- `UnloadShader`: Lets go of the program's hold on a shader (docs/DECISIONS.md 25), its id set to 0: the shader is freed when no material holds it too, else when the last material holding it lets go. Given a material's shader (`material.shader`), it lets go of one hold and leaves the material drawing with it while anything holds it. The default shader stays.
   - `shader`: The shader.
 - `GetShaderLocation`: Returns the location of a shader's uniform or texture, by its name.
   - `shader`: The shader.
@@ -3523,10 +3523,10 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
 - `IsModelValid`: Returns whether a model has meshes.
   - `model`: The model.
   - returns: True when it has.
-- `UnloadModel`: Frees a model: it lets go of its meshes and materials, and what no one else holds is freed with it (docs/DECISIONS.md 25): a mesh's GPU buffers, a material's maps' textures and its shader unless it is the default one. A file's textures and GPU buffers, shared by its loads, go with its last load. The model is left empty, so unloading it again does nothing.
+- `UnloadModel`: Frees a model: it lets go of its meshes and materials, and what no one else holds is freed with it (docs/DECISIONS.md 25): a mesh's GPU buffers, a material's maps' textures and its shader, each when nothing else holds it (another load of its file, another model, the program); the default shader and texture stay. The model is left empty, so unloading it again does nothing.
   - `model`: The model.
 
-  raylib's frees only the meshes, and leaves the textures and shaders to the program. Where helix-ray's differs: a texture copied out of a map (`var t = map.texture`) and drawn after the model is unloaded is freed and draws as none, where raylib's leaks it; a material or mesh shared between models works, where raylib's C frees it twice; and a shader shared between models is unloaded with the first whose material lets go of it.
+  raylib's frees only the meshes, and leaves the textures and shaders to the program. Where helix-ray's differs: a texture or shader copied out of a material (`var t = map.texture`) and used after the model is unloaded is freed, where raylib's leaks it; and a material or mesh shared between models works, where raylib's C frees it twice.
 - `DrawModel`: Draws a model at a position and a scale, its materials' colors times a tint.
   - `model`: The model.
   - `position`: Where.
@@ -3989,7 +3989,7 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the texture.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadModelAsync`: Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own, in place of raylib's `LoadModel`. A file loaded again shares its first load's meshes and textures, with materials of its own.
+- `LoadModelAsync`: Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own, in place of raylib's `LoadModel`. A file loaded again, while a load of it lives, shares its meshes' GPU buffers and its textures, with materials of its own.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the model.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
@@ -4121,11 +4121,11 @@ static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<Stri
 static macro function LoadAutomationEventList(fileName:Null<String>):AutomationEventList
 ```
 
-- `LoadShader`: Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the program builds, for every target, so their names are constants; the files are found under `-D helix-ray-files` (default `web`), as the program's other files are.
+- `LoadShader`: Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the program builds, for every target, so their names are constants; the files are found under `-D helix-ray-files` (default `web`), as the program's other files are. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25).
   - `vsFileName`: The vertex stage's file, or null.
   - `fsFileName`: The fragment stage's file, or null.
   - returns: The shader.
-- `LoadShaderFromMemory`: Loads a shader from raylib GLSL text, either null for raylib's default stage. It is compiled as the program builds, so the text is a constant.
+- `LoadShaderFromMemory`: Loads a shader from raylib GLSL text, either null for raylib's default stage. It is compiled as the program builds, so the text is a constant. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25).
   - `vsCode`: The vertex stage's text, or null.
   - `fsCode`: The fragment stage's text, or null.
   - returns: The shader.

@@ -7,7 +7,6 @@ import helix.formats.gltf.GltfMaterial;
 import helix.services.models.Model3D;
 import helix.ray.raylib.RMath;
 import helix.ray.raylib.RModels;
-import helix.ray.raylib.RTextures;
 
 /** Makes raylib's meshes and models: a mesh's GPU buffers, and a model from what the models service read of a glTF file. */
 @:noCompletion
@@ -167,7 +166,7 @@ class Models {
 		retire(mesh.gpu, old);
 	}
 
-	/** Gives a mesh copied from its file's first load (`load`) a holder of GPU buffers of its own, borrowing the shared one's until it
+	/** Gives a mesh of a file's load (`load`) a holder of GPU buffers of its own, borrowing the shared one's until it
 		replaces them, and keeping the mesh's hold on the shared one (`MeshGpu.source`); nothing for a mesh with its own already.
 
 		@param mesh  The mesh, uploaded. */
@@ -257,29 +256,105 @@ class Models {
 		if (material != null && material.refs > 0)
 			material.refs++;
 
-	/** Releases one of a material's holders (the program's, or a model's): when it was the last, its maps' textures are released and its
-		shader unloaded unless it is the default one, as raylib's `UnloadMaterial` does. A material already at 0 stays there.
+	/** Releases one of a material's holders (the program's, or a model's): when it was the last, its maps let go of their textures and it
+		of its shader, as raylib's `UnloadMaterial` frees them, each freed when nothing else holds it. A material already at 0 stays there.
 
 		@param material  The material, or null for nothing. */
 	public static function releaseMaterial(material:Null<Material>):Void {
 		if (material == null || material.refs <= 0 || --material.refs > 0)
 			return;
 		if (material.shader != null)
-			helix.ray.raylib.RCore.UnloadShader(material.shader);
+			releaseShader(material.shader);
 		if (material.maps != null)
 			for (map in material.maps)
 				releaseTexture(map.texture);
 	}
 
-	/** Releases one of a texture's holders, its id set to 0 when the texture is gone, or when it isn't a map's copy (`Texture2D.mapped`)
-		and so the holder's own record; the default texture and none are left.
+	/** Lets go of a map's hold on its texture, unless `UnloadTexture` let go of it already (`Texture2D.spent`): its id set to 0 when the
+		texture is gone. The default texture and none are left.
+
+		@param texture  The map's texture. */
+	public static function releaseTexture(texture:Texture2D):Void {
+		if (texture.id == 0 || texture.id == Textures.DEFAULT || texture.spent)
+			return;
+		if (Textures.release(texture.id))
+			texture.id = 0;
+	}
+
+	/** Lets go of the program's hold on a texture (`UnloadTexture`), its id set to 0. Given a map's copy (`Texture2D.mapped`), it lets
+		go of one of the program's holds when there is one, else of the map's, and leaves the id while the texture lives, as the map still
+		draws it.
 
 		@param texture  The texture. */
-	public static function releaseTexture(texture:Texture2D):Void {
-		if (texture.id == 0 || texture.id == Textures.DEFAULT)
+	public static function unloadTexture(texture:Texture2D):Void {
+		if (texture.id == 0 || texture.spent)
 			return;
-		if (Textures.release(texture.id) || !texture.mapped)
+		if (texture.id == Textures.DEFAULT) {
+			if (!texture.mapped)
+				texture.id = 0;
+			return;
+		}
+		if (!texture.mapped) {
+			Textures.releaseHeld(texture.id);
 			texture.id = 0;
+		} else if (Textures.isHeld(texture.id)) {
+			if (Textures.releaseHeld(texture.id))
+				texture.id = 0;
+		} else {
+			texture.spent = true;
+			if (Textures.release(texture.id))
+				texture.id = 0;
+		}
+	}
+
+	/** Takes one more holder of a shader: a material given it. The default shader isn't counted.
+
+		@param shader  The shader. */
+	public static function retainShader(shader:Shader):Void
+		if (shader.program != null && shader.program != Runtime.frame.defaultProgram && shader.program.refs > 0)
+			shader.program.refs++;
+
+	/** Lets go of a material's hold on its shader, unless `UnloadShader` let go of it already (`Shader.spent`), freeing the program
+		when it was the last holder. The default shader is never freed.
+
+		@param shader  The material's shader. */
+	public static function releaseShader(shader:Shader):Void
+		if (!shader.spent)
+			dropShader(shader, false);
+
+	/** Lets go of the program's hold on a shader (`UnloadShader`): given a material's copy (`Shader.mapped`), one of the program's holds
+		when there is one, else the material's. Its id and program are cleared when it is the program's own record or the program is
+		freed. The default shader stays.
+
+		@param shader  The shader. */
+	public static function unloadShader(shader:Shader):Void {
+		if (shader.spent)
+			return;
+		var p = shader.program;
+		if (p == null || p == Runtime.frame.defaultProgram)
+			return;
+		var held = !shader.mapped || p.held > 0;
+		if (!held)
+			shader.spent = true;
+		dropShader(shader, held);
+		if (!shader.mapped) {
+			shader.program = null;
+			shader.id = 0;
+		}
+	}
+
+	// One hold on a shader's program let go of, the program's own when held, the program freed and the record cleared at 0.
+	static function dropShader(shader:Shader, held:Bool):Void {
+		var p = shader.program;
+		if (p == null || p == Runtime.frame.defaultProgram || p.refs <= 0)
+			return;
+		if (held && p.held > 0)
+			p.held--;
+		if (--p.refs > 0)
+			return;
+		p.dispose();
+		shader.program = null;
+		shader.id = 0;
 	}
 
 	/** Returns raylib's default material, as raylib 5.5's `LoadMaterialDefault`: the default shader, the diffuse map raylib's default
@@ -295,34 +370,9 @@ class Models {
 		return new Material(shader, maps);
 	}
 
-	/** Makes a raylib model of a model the models service read: material 0 raylib's default, then the file's, as raylib numbers them
-		and as raylib 6.2 reads them (`material`), each image a texture kept by its file's path, or the model's and the image's index for
-		one the model holds; and its bones, as raylib 6.2 reads them (`skeleton`).
-
-		@param read  The model.
-		@param shader  The default shader.
-		@param attached  Each mesh's bone when its node is a child of one and it has no joints of its own, or -1; null for none.
-		@return  The model. */
-	static function fromModel3D(read:Model3D, shader:Shader, attached:Null<Array<Int>>):Model {
-		var textures = new Map<Int, Texture2D>();
-		// An image's texture, made when first asked for and shared by the maps that sample it, each map holding it; null for an image that
-		// couldn't be read or decoded. Its making's own count is let go once the maps hold it.
-		function texture(index:Int):Null<Texture2D> {
-			var made = textures.get(index);
-			if (made == null) {
-				var image = read.images[index];
-				if (image == null)
-					return null;
-				made = new Texture2D(Textures.fromImage(image.path != "" ? image.path : '${read.path}#$index', image), image.width, image.height);
-				textures.set(index, made);
-			}
-			return made;
-		}
-		var materials = [defaultMaterial(shader)];
-		for (m in read.materials)
-			materials.push(material(read, m, shader, texture));
-		for (made in textures)
-			Textures.release(made.id);
+	// A file's model as read, its meshes made once (`template`), each with a holder of GPU buffers its loads share (holders 0 until a
+	// load's mesh takes it); none of it counted.
+	static function templateOf(read:Model3D, attached:Null<Array<Int>>):Model {
 		var meshes = [], meshMaterial = [];
 		for (i => found in read.meshes) {
 			// raylib puts every mesh's node's transform into its vertices, a skinned mesh's too.
@@ -337,12 +387,14 @@ class Models {
 				mesh.colors = [for (c in m.colors) Std.int(c * 255)];
 			mesh.indices = m.indices;
 			mesh.triangleCount = m.triangleCount;
+			var gpu = new MeshGpu();
+			gpu.holders = 0;
+			gpu.shared = true;
+			mesh.gpu = gpu;
 			meshes.push(mesh);
 			meshMaterial.push(read.meshMaterials[i] + 1);
 		}
-		// Its meshes go to the GPU when first drawn. The model holds its meshes and materials; their makings' counts are let go.
-		var model = new Model(meshes, materials, meshMaterial);
-		disown(meshes, materials);
+		var model = new Model(meshes, [], meshMaterial);
 		skeleton(model, read, attached);
 		return model;
 	}
@@ -358,20 +410,26 @@ class Models {
 			releaseMaterial(m);
 	}
 
+	// A load's materials: material 0 raylib's default, then the file's, as raylib numbers them and as raylib 6.2 reads them (`material`).
+	static function materialsOf(read:Model3D, shader:Shader):Array<Material>
+		return [defaultMaterial(shader)].concat([for (m in read.materials) material(read, m, shader)]);
+
 	// raylib 6.2's LoadGLTF's materials part: the default material, and only when the material has a pbrMetallicRoughness block, the
 	// base color image and factor; the metallic-roughness image split into two grayscale textures, roughness from its green, metalness
 	// from its blue (raylib 5.5 put the image whole in the roughness map), and the roughness and metalness factors as those maps' values,
 	// set only when the material has that image; the normal, occlusion and emissive images; the emissive factor, alpha 255, only when it
 	// has an emissive image. A factor's byte is raylib's (unsigned char)(f*255), in floats. An image that couldn't be decoded leaves its
-	// map as it was.
-	static function material(read:Model3D, m:GltfMaterial, shader:Shader, texture:Int->Null<Texture2D>):Material {
+	// map as it was. Each texture is kept by its image's file, or the model's path and the image's index (and the split's name), so the
+	// loads of a file share it while any holds it.
+	static function material(read:Model3D, m:GltfMaterial, shader:Shader):Material {
 		var material = defaultMaterial(shader), maps = material.maps;
 		if (!m.hasPbrMetallicRoughness)
 			return material;
 		function set(map:Int, index:Int):Void {
-			var t = index >= 0 ? texture(index) : null;
-			if (t != null)
-				maps[map].texture = t;
+			var image = index >= 0 ? read.images[index] : null;
+			if (image != null)
+				give(maps[map], image.path != "" ? image.path : '${read.path}#$index', () -> image, image.width, image.height,
+					Raylib.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
 		}
 		set(Raylib.MATERIAL_MAP_ALBEDO, m.baseColorImage);
 		maps[Raylib.MATERIAL_MAP_ALBEDO].color = byteColor(m.baseColorFactor, byte(m.baseColorFactor[3]));
@@ -379,23 +437,17 @@ class Models {
 			var image = read.images[m.metallicRoughnessImage];
 			if (image != null) {
 				var w = image.width, h = image.height;
-				var roughness = Bytes.alloc(w * h),
-					metallic = Bytes.alloc(w * h);
-				// GetImageColor's green and blue: the decoded image is RGBA.
-				for (x in 0...w)
-					for (y in 0...h) {
-						roughness.set(y * w + x, image.pixels.get((y * w + x) * 4 + 1));
-						metallic.set(y * w + x, image.pixels.get((y * w + x) * 4 + 2));
-					}
-				// Each made with a count of its own, let go once its map holds it.
-				for (split in [
-					{map: Raylib.MATERIAL_MAP_ROUGHNESS, pixels: roughness},
-					{map: Raylib.MATERIAL_MAP_METALNESS, pixels: metallic}
-				]) {
-					var made = RTextures.LoadTextureFromImage(new Image(split.pixels, w, h, 1, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE));
-					maps[split.map].texture = made;
-					Textures.release(made.id);
+				// GetImageColor's green (roughness) or blue (metalness): the decoded image is RGBA. Made only when no load holds it.
+				function split(channel:Int):helix.services.images.Image {
+					var gray = Bytes.alloc(w * h);
+					for (x in 0...w)
+						for (y in 0...h)
+							gray.set(y * w + x, image.pixels.get((y * w + x) * 4 + channel));
+					return new helix.services.images.Image("", w, h, Pixels.colors(gray, w, h, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE));
 				}
+				var key = '${read.path}#${m.metallicRoughnessImage}';
+				give(maps[Raylib.MATERIAL_MAP_ROUGHNESS], '$key:roughness', () -> split(1), w, h, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+				give(maps[Raylib.MATERIAL_MAP_METALNESS], '$key:metalness', () -> split(2), w, h, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
 			}
 			maps[Raylib.MATERIAL_MAP_ROUGHNESS].value = Pixels.f32(m.roughness);
 			maps[Raylib.MATERIAL_MAP_METALNESS].value = Pixels.f32(m.metallic);
@@ -407,6 +459,13 @@ class Models {
 			maps[Raylib.MATERIAL_MAP_EMISSION].color = byteColor(m.emissiveFactor, 255);
 		}
 		return material;
+	}
+
+	// Gives a map the texture kept by a key, made of an image when no load holds it: the map holds it, the making's hold let go.
+	static function give(map:MaterialMap, key:String, image:Void->helix.services.images.Image, width:Int, height:Int, format:Int):Void {
+		var id = Textures.fromImage(key, Textures.hasPath(key) ? null : image());
+		map.texture = new Texture2D(id, width, height, 1, format);
+		Textures.releaseHeld(id);
 	}
 
 	// A color of a factor's red, green and blue as raylib's bytes, and an alpha.
@@ -503,14 +562,21 @@ class Models {
 		return bytes.length <= 31 ? name : bytes.getString(0, 31);
 	}
 
-	/** Keeps a model the models service read, as its file's first load, unless one is kept already.
+	/** Keeps a model the models service read, so its loads share it, unless it is kept already: the file's meshes, made once with their
+		bones, and what the file holds, its materials made of it for each load. It holds no count on anything; it stays while any load of
+		the file lives (`release`).
 
 		@param read  The model.
 		@param shader  The default shader.
 		@param attached  Optional. Each mesh's bone when its node is a child of one and it has no joints of its own, or -1. */
 	public static function keep(read:Model3D, shader:Shader, ?attached:Array<Int>):Void {
 		if (!loaded.exists(read.path))
-			loaded.set(read.path, {model: fromModel3D(read, shader, attached), refs: 0});
+			loaded.set(read.path, {
+				read: read,
+				shader: shader,
+				template: templateOf(read, attached),
+				loads: 0
+			});
 	}
 
 	/** Returns whether a file's model is kept, so a load of it needs no read.
@@ -520,11 +586,16 @@ class Models {
 	public static function isKept(path:String):Bool
 		return loaded.exists(path);
 
-	static final loaded = new Map<String, {model:Model, refs:Int}>();
+	static final loaded = new Map<String, {
+		read:Model3D,
+		shader:Shader,
+		template:Model,
+		loads:Int
+	}>();
 
-	/** Returns a model loaded from a file: a copy of its first load (`keep`), sharing its meshes' GPU buffers and its textures, with
-		materials of its own, so one load's changes don't reach another's. Each of its maps holds its texture, and the first load holds them
-		all until the file's last load is unloaded (`release`).
+	/** Returns a model loaded from a file kept (`keep`): its meshes copies of the file's, sharing their GPU buffers, and materials of its
+		own, sharing the file's textures, so one load's changes don't reach another's. Each load holds its own counts on what it shares, so
+		what one lets go of stays for the others, and what none holds is freed.
 
 		@param path  The file.
 		@return  The model, or null when none is kept. */
@@ -532,39 +603,30 @@ class Models {
 		var entry = loaded.get(path);
 		if (entry == null)
 			return null;
-		entry.refs++;
-		var original = entry.model;
-		var meshes = [for (m in original.meshes) copyMesh(m)];
-		var materials = [
-			for (m in original.materials)
-				new Material(m.shader, [
-					for (map in m.maps)
-						new MaterialMap(map.texture, new Color(map.color.r, map.color.g, map.color.b, map.color.a), map.value)
-				], m.params.copy())
-		];
-		var model = new Model(meshes, materials, original.meshMaterial.copy());
+		entry.loads++;
+		var template = entry.template;
+		var meshes = [for (m in template.meshes) copyMesh(m)];
+		var materials = materialsOf(entry.read, entry.shader);
+		var model = new Model(meshes, materials, template.meshMaterial.copy());
 		disown(meshes, materials);
 		model.path = path;
-		if (original.bones != null) {
-			model.boneCount = original.boneCount;
-			model.bones = [for (b in original.bones) new BoneInfo(b.name, b.parent)];
-			model.bindPose = [for (t in original.bindPose) copyTransform(t)];
+		if (template.bones != null) {
+			model.boneCount = template.boneCount;
+			model.bones = [for (b in template.bones) new BoneInfo(b.name, b.parent)];
+			model.bindPose = [for (t in template.bindPose) copyTransform(t)];
 			animated(model);
 		}
 		return model;
 	}
 
-	/** Lets go of one load of a file's model, its meshes and materials already released (`UnloadModel`): with the last, the first load
-		lets go of its own, so what no one else holds is freed.
+	/** Lets go of one load of a file's model, its meshes and materials already released (`UnloadModel`): with the last, the file leaves
+		the cache, so a later load reads it again.
 
 		@param path  The file. */
 	public static function release(path:String):Void {
 		var entry = loaded.get(path);
-		if (entry == null || --entry.refs > 0)
-			return;
-		loaded.remove(path);
-		entry.model.meshes = [];
-		entry.model.materials = [];
+		if (entry != null && --entry.loads <= 0)
+			loaded.remove(path);
 	}
 
 	static function copyMesh(m:Mesh):Mesh {

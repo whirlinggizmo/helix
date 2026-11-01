@@ -2694,15 +2694,13 @@ class RCore {
 		return shader.id != 0;
 	}
 
-	/** Frees a shader; the default one stays.
+	/** Lets go of the program's hold on a shader (docs/DECISIONS.md 25), its id set to 0: the shader is freed when no material holds it
+		too, else when the last material holding it lets go. Given a material's shader (`material.shader`), it lets go of one hold and
+		leaves the material drawing with it while anything holds it. The default shader stays.
 
 		@param shader  The shader. */
 	static function UnloadShader(shader:Shader):Void {
-		if (shader.program != null && shader.program != Runtime.frame.defaultProgram) {
-			shader.program.dispose();
-			shader.program = null;
-			shader.id = 0;
-		}
+		helix.ray.internal.Models.unloadShader(shader);
 	}
 
 	/** Returns the location of a shader's uniform or texture, by its name.
