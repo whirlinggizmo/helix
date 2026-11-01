@@ -28,7 +28,6 @@
 #define SLOTS 256
 #define MAX_BLOCKS 4
 #define MAX_TEXTURES 12
-#define MAX_BUFFERS 4
 #define MAX_RENAMES 8
 #define MAX_SHADOW_LAYERS 16
 
@@ -57,9 +56,9 @@ static struct{uint32_t generation;int live;SDL_GPUShader *vertex,*fragment;int b
    the others, made from its description (kept, with what it points to) the first time a draw needs one. A variant is the pass's kind: bit 0
    half floats, bit 1 no depth, bit 2 single sampled where the screen isn't; variant 0 (the screen's) is the pipeline itself. */
 #define VARIANTS 8
-static struct{uint32_t generation;int live;SDL_GPUGraphicsPipeline *pipeline,*flipped,*variants[VARIANTS];uint32_t program;int buffer_count,stride[MAX_BUFFERS],
- instanced[MAX_BUFFERS],read[MAX_BUFFERS],indexed,lines,flip,depth_only;SDL_GPUGraphicsPipelineCreateInfo info;SDL_GPUVertexBufferDescription described[MAX_BUFFERS];
- SDL_GPUVertexAttribute attrs[16];SDL_GPUColorTargetDescription color;}pipelines[SLOTS];
+static struct{uint32_t generation;int live;SDL_GPUGraphicsPipeline *pipeline,*flipped,*variants[VARIANTS];uint32_t program;int buffer_count,stride[HELIX_MAX_VERTEX_BUFFERS],
+ instanced[HELIX_MAX_VERTEX_BUFFERS],read[HELIX_MAX_VERTEX_BUFFERS],indexed,lines,flip,depth_only;SDL_GPUGraphicsPipelineCreateInfo info;SDL_GPUVertexBufferDescription described[HELIX_MAX_VERTEX_BUFFERS];
+ SDL_GPUVertexAttribute attrs[HELIX_MAX_VERTEX_ATTRIBUTES];SDL_GPUColorTargetDescription color;}pipelines[SLOTS];
 
 /* Textures by kind: sampled (a 2D image or a cube), a data texture (RGBA32F, its versions for writes after a read in a frame), a render
    target (a color texture sampled, drawn through a multisampled one when it has depth and the screen is multisampled, its depth or none, the
@@ -94,7 +93,7 @@ static unsigned char *staging;static size_t staging_used,staging_size;
 typedef struct{size_t at;Uint32 bytes;SDL_GPUBuffer *buffer;Uint32 offset;SDL_GPUTexture *texture;Uint32 level,layer,width,height;bool cycle;}Upload;
 static Upload *uploads;static int upload_count,upload_size;
 enum{DRAW,VIEWPORT,SCISSOR};
-typedef struct{int kind;SDL_GPUGraphicsPipeline *pipeline;SDL_GPUBufferBinding vertex[MAX_BUFFERS];int vertex_count;SDL_GPUBuffer *index;
+typedef struct{int kind;SDL_GPUGraphicsPipeline *pipeline;SDL_GPUBufferBinding vertex[HELIX_MAX_VERTEX_BUFFERS];int vertex_count;SDL_GPUBuffer *index;
  SDL_GPUTextureSamplerBinding vertex_samplers[MAX_TEXTURES],fragment_samplers[MAX_TEXTURES];int vertex_sampler_count,fragment_sampler_count;
  size_t uniform_at[MAX_BLOCKS];int uniform_size[MAX_BLOCKS],uniform_stage[MAX_BLOCKS],uniform_index[MAX_BLOCKS],uniform_count;
  int first,count,instances,indexed;float x,y,w,h;}Command;
@@ -413,9 +412,9 @@ uint32_t helix_pipeline(const int *desc,int count){
  if(slot<0||!desc||count<11||!program_live((uint32_t)desc[0]))return 0;
  const int program=slot_of((uint32_t)desc[0]),lines=desc[1]==1,indexed=desc[2],blend=desc[3],depth_only=desc[8],clockwise=desc[7];
  if(blend<0||blend>2)return 0;
- SDL_GPUVertexBufferDescription vbs[MAX_BUFFERS];SDL_GPUVertexAttribute attrs[16];int nattrs=0;
- const int nbuffers=desc[10];int at=11,strides[MAX_BUFFERS]={0},instanced[MAX_BUFFERS]={0},read[MAX_BUFFERS]={0};
- if(nbuffers<0||nbuffers>MAX_BUFFERS)return 0;
+ SDL_GPUVertexBufferDescription vbs[HELIX_MAX_VERTEX_BUFFERS];SDL_GPUVertexAttribute attrs[HELIX_MAX_VERTEX_ATTRIBUTES];int nattrs=0;
+ const int nbuffers=desc[10];int at=11,strides[HELIX_MAX_VERTEX_BUFFERS]={0},instanced[HELIX_MAX_VERTEX_BUFFERS]={0},read[HELIX_MAX_VERTEX_BUFFERS]={0};
+ if(nbuffers<0||nbuffers>HELIX_MAX_VERTEX_BUFFERS)return 0;
  for(int b=0;b<nbuffers;b++){
   if(at+3>count)return 0;
   strides[b]=desc[at];instanced[b]=desc[at+1]!=0;const int n=desc[at+2];at+=3;
@@ -423,14 +422,14 @@ uint32_t helix_pipeline(const int *desc,int count){
   vbs[b]=(SDL_GPUVertexBufferDescription){.slot=(Uint32)b,.pitch=(Uint32)strides[b],.input_rate=instanced[b]?SDL_GPU_VERTEXINPUTRATE_INSTANCE:SDL_GPU_VERTEXINPUTRATE_VERTEX};
   for(int a=0;a<n;a++,at+=3){
    const int location=desc[at],components=desc[at+1],offset=desc[at+2];
-   if(location<0||location>=16||components<1||components>4||offset<0||offset+components*4>strides[b]||nattrs==16)return 0;
+   if(location<0||location>=HELIX_MAX_VERTEX_ATTRIBUTES||components<1||components>4||offset<0||offset+components*4>strides[b]||nattrs==HELIX_MAX_VERTEX_ATTRIBUTES)return 0;
    static const SDL_GPUVertexElementFormat formats[4]={SDL_GPU_VERTEXELEMENTFORMAT_FLOAT,SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4};
    attrs[nattrs++]=(SDL_GPUVertexAttribute){.location=(Uint32)location,.buffer_slot=(Uint32)b,.format=formats[components-1],.offset=(Uint32)offset};
   }
   read[b]=n>0;
  }
  /* Buffers no attribute reads aren't described: SDL_GPU wants none it isn't given. */
- SDL_GPUVertexBufferDescription described[MAX_BUFFERS];int ndescribed=0;
+ SDL_GPUVertexBufferDescription described[HELIX_MAX_VERTEX_BUFFERS];int ndescribed=0;
  for(int b=0;b<nbuffers;b++)if(read[b])described[ndescribed++]=vbs[b];
  const SDL_GPUColorTargetDescription color={.format=SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,.blend_state=blend_of(blend)};
  SDL_GPUGraphicsPipelineCreateInfo info={.vertex_shader=programs[program].vertex,.fragment_shader=programs[program].fragment,

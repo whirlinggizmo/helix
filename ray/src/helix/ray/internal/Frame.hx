@@ -50,9 +50,6 @@ class Frame {
 		"vertexBoneWeights" => 8
 	];
 
-	/** The most vertex buffers the platform's native adapters bind to a draw. */
-	static inline final MAX_BUFFERS = 4;
-
 	/** The bytes of the one record of `constants`. */
 	static inline final CONSTANT_BYTES = 56;
 
@@ -449,26 +446,17 @@ class Frame {
 			edges = Models.edges(mesh);
 		var indexed = wire || mesh.gpu.indexBuffer != 0, state = states();
 		var key = 'm${indexed ? "x" : ""}${wire ? "w" : ""}$state';
-		// A buffer an attribute; for a program reading more than the platform binds, the first three apart and the rest interleaved in one.
-		var names = p.attributes,
-			apart = names.length <= MAX_BUFFERS ? names.length : MAX_BUFFERS - 1;
+		// A buffer an attribute: the platform takes eight, as many as raylib's attributes.
+		var names = p.attributes;
 		var pipeline = p.pipeline(key, () -> {
 			var layouts:Array<helix.platform.VertexBuffer> = [
-				for (i in 0...apart)
+				for (i => name in names)
 					{
-						stride: SIZES.get(names[i]) * 4,
+						stride: SIZES.get(name) * 4,
 						instanced: false,
-						attributes: [{slot: i, componentCount: SIZES.get(names[i]), offset: 0}]
+						attributes: [{slot: i, componentCount: SIZES.get(name), offset: 0}]
 					}
 			];
-			if (apart < names.length) {
-				var attributes = [], offset = 0;
-				for (i in apart...names.length) {
-					attributes.push({slot: i, componentCount: SIZES.get(names[i]), offset: offset});
-					offset += SIZES.get(names[i]) * 4;
-				}
-				layouts.push({stride: offset, instanced: false, attributes: attributes});
-			}
 			graphics.createPipeline({
 				shader: p.handle,
 				buffers: layouts,
@@ -490,9 +478,7 @@ class Frame {
 		for (i in 0...bound.length)
 			if (bound[i] == 0)
 				bound[i] = white;
-		var buffers = [for (i in 0...apart) Models.buffer(mesh, MESH_BUFFERS.get(names[i]))];
-		if (apart < names.length)
-			buffers.push(Models.interleaved(mesh, [for (i in apart...names.length) MESH_BUFFERS.get(names[i])]));
+		var buffers = [for (name in names) Models.buffer(mesh, MESH_BUFFERS.get(name))];
 		pass.draws.push({
 			pipeline: pipeline,
 			buffers: buffers,

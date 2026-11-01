@@ -11,7 +11,8 @@ typedef PipelineDesc = {
 	/** The program, as an `IGraphics.createShader` handle. */
 	final shader:Int;
 
-	/** The vertex buffers' layouts, by their index in a draw's buffers. */
+	/** The vertex buffers' layouts, by their index in a draw's buffers: at most 8, with at most 16 attributes across them, each at a slot
+		from 0 to 15, as every adapter takes them. */
 	final buffers:Array<VertexBuffer>;
 
 	/** The primitive the draws make. */

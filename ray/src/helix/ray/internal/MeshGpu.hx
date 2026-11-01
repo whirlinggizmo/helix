@@ -22,13 +22,6 @@ class MeshGpu {
 		next change starts from them; null for one not changed. */
 	public final contents:Array<Null<haxe.io.Bytes>> = [for (_ in 0...9) null];
 
-	/** How often a buffer's contents have changed (`UpdateMeshBuffer`, an animation), so an interleaved buffer made before is made again. */
-	public var version = 0;
-
-	/** Buffers of several attributes interleaved, for a program reading more attributes than the platform binds buffers (`Models.interleaved`),
-		by their buffer indices joined with commas: each with the `version` it was made at. */
-	public final interleaved = new Map<String, {buffer:Int, version:Int}>();
-
 	/** Whether the copies of a file's mesh share it, each load's (`Models.load`). */
 	public var shared = false;
 

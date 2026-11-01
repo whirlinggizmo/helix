@@ -31,7 +31,6 @@ __declspec(dllimport) void __stdcall glReadPixels(GLint x, GLint y, GLsizei widt
    each). */
 #define MAX_BLOCKS 4
 #define MAX_TEXTURES 12
-#define MAX_BUFFERS 4
 static struct{int blocks,texture_mask,unfiltered_mask,block_size[MAX_BLOCKS];char kind[MAX_TEXTURES];}programs[256];
 /* What an unbound slot reads (a draw's texture 0 where the program declares one): a 1x1 texture of the slot's kind, clear, made when first
    needed. */
@@ -42,7 +41,7 @@ static sg_sampler samplers[32];
 /* Pipelines (helix_pipeline), by pipeline slot: what a draw through one checks and binds (its program, its buffers' strides and whether each
    is an instance's and read at all, indexed or not, lines or triangles, depth alone, block 0's clip flip). Per buffer slot: whether it is an
    index buffer. */
-static struct{uint32_t id,shader;int buffer_count,stride[MAX_BUFFERS],instanced[MAX_BUFFERS],read[MAX_BUFFERS],indexed,lines,depth_only,flip;}pipeline_info[256];
+static struct{uint32_t id,shader;int buffer_count,stride[HELIX_MAX_VERTEX_BUFFERS],instanced[HELIX_MAX_VERTEX_BUFFERS],read[HELIX_MAX_VERTEX_BUFFERS],indexed,lines,depth_only,flip;}pipeline_info[256];
 /* A sokol pipeline is made for one kind of pass (its color format, depth format and samples), and a flipped pass draws triangles with their
    front faces the other way round: a pipeline's variants, by pipeline slot, each made from its description the first time a draw needs it.
    A variant is the pass's kind: bit 0 half floats, bit 1 no depth, bit 2 single sampled where the screen isn't, bit 3 flipped; variant 0
@@ -218,8 +217,8 @@ uint32_t helix_pipeline(const int *desc,int count){
   .cull_mode=desc[6]==2?SG_CULLMODE_FRONT:desc[6]?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,.colors[0].blend=blend_of(blend)};
  /* Depth alone: a shadow pass's, no color attachment. */
  if(depth_only){pd.depth.pixel_format=SG_PIXELFORMAT_DEPTH;pd.color_count=0;pd.sample_count=1;}
- const int buffers=desc[10];int at=11,strides[MAX_BUFFERS]={0},instanced[MAX_BUFFERS]={0},read[MAX_BUFFERS]={0};
- if(buffers<0||buffers>MAX_BUFFERS)return 0;
+ const int buffers=desc[10];int at=11,strides[HELIX_MAX_VERTEX_BUFFERS]={0},instanced[HELIX_MAX_VERTEX_BUFFERS]={0},read[HELIX_MAX_VERTEX_BUFFERS]={0};
+ if(buffers<0||buffers>HELIX_MAX_VERTEX_BUFFERS)return 0;
  for(int b=0;b<buffers;b++){
   if(at+3>count)return 0;
   strides[b]=desc[at];instanced[b]=desc[at+1]!=0;const int attrs=desc[at+2];at+=3;
@@ -227,7 +226,7 @@ uint32_t helix_pipeline(const int *desc,int count){
   pd.layout.buffers[b].stride=strides[b];if(instanced[b])pd.layout.buffers[b].step_func=SG_VERTEXSTEP_PER_INSTANCE;
   for(int a=0;a<attrs;a++,at+=3){
    const int slot=desc[at],components=desc[at+1],offset=desc[at+2];
-   if(slot<0||slot>=SG_MAX_VERTEX_ATTRIBUTES||components<1||components>4||offset<0||offset+components*4>strides[b])return 0;
+   if(slot<0||slot>=HELIX_MAX_VERTEX_ATTRIBUTES||components<1||components>4||offset<0||offset+components*4>strides[b])return 0;
    static const sg_vertex_format formats[4]={SG_VERTEXFORMAT_FLOAT,SG_VERTEXFORMAT_FLOAT2,SG_VERTEXFORMAT_FLOAT3,SG_VERTEXFORMAT_FLOAT4};
    pd.layout.attrs[slot]=(sg_vertex_attr_state){.format=formats[components-1],.offset=offset,.buffer_index=b};
   }

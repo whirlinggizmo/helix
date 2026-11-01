@@ -57,34 +57,6 @@ class Models {
 		return buffers[index];
 	}
 
-	/** Returns an uploaded mesh's buffer of several attributes interleaved, a vertex's values one attribute after another, for a program
-		reading more attributes than the platform binds buffers: made when first asked for, and again once one of them has changed.
-
-		@param mesh  The mesh, uploaded.
-		@param indices  raylib's buffer indices of the attributes, in their order in a vertex.
-		@return  The buffer. */
-	public static function interleaved(mesh:Mesh, indices:Array<Int>):Int {
-		var gpu = mesh.gpu, key = indices.join(",");
-		var made = gpu.interleaved.get(key);
-		if (made != null && made.version == gpu.version)
-			return made.buffer;
-		if (made != null)
-			retire(gpu, made.buffer);
-		var sources = [for (i in indices) bytesOf(mesh, i)];
-		var stride = 0;
-		for (i in indices)
-			stride += SIZES[i];
-		var bytes = Bytes.alloc(mesh.vertexCount * stride * 4), at = 0;
-		for (v in 0...mesh.vertexCount)
-			for (k => i in indices) {
-				bytes.blit(at, sources[k], v * SIZES[i] * 4, SIZES[i] * 4);
-				at += SIZES[i] * 4;
-			}
-		var buffer = Runtime.graphics.createStaticBuffer(bytes, bytes.length, false);
-		gpu.interleaved.set(key, {buffer: buffer, version: gpu.version});
-		return buffer;
-	}
-
 	// A buffer's bytes as the GPU takes them: the bytes UpdateMeshBuffer last left, or the mesh's numbers as 32-bit floats (colors 0 to 1),
 	// those it lacks its default; the indices (6) as 32-bit integers.
 	static function bytesOf(mesh:Mesh, index:Int):Bytes {
@@ -145,7 +117,6 @@ class Models {
 				bytes.setFloat(at, index == 3 ? value / 255 : value);
 		}
 		mesh.gpu.contents[index] = bytes;
-		mesh.gpu.version++;
 		var g = Runtime.graphics,
 			old = index == 6 ? mesh.gpu.indexBuffer : buffers[index];
 		var made = g.createStaticBuffer(bytes, bytes.length, index == 6);
@@ -189,7 +160,6 @@ class Models {
 		for (i in 0...n)
 			bytes.setFloat(i * 4, i < values.length ? values[i] : 0);
 		mesh.gpu.contents[index] = bytes;
-		mesh.gpu.version++;
 		var old = mesh.gpu.buffers[index];
 		mesh.gpu.buffers[index] = Runtime.graphics.createStaticBuffer(bytes, bytes.length, false);
 		retire(mesh.gpu, old);
@@ -249,9 +219,6 @@ class Models {
 				dispose(b);
 		dispose(gpu.indexBuffer);
 		dispose(gpu.edgeBuffer);
-		for (made in gpu.interleaved)
-			dispose(made.buffer);
-		gpu.interleaved.clear();
 		gpu.borrowed.resize(0);
 		mesh.gpu.buffers = null;
 		mesh.gpu.indexBuffer = 0;

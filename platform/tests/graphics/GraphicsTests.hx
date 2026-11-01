@@ -32,7 +32,7 @@ typedef Case = {
 /** Checks helix-platform's graphics on the GPU, with the library alone: each case draws, reads the result back with `readPixels` and checks
 	its pixels against what arithmetic says they are.
 
-	The cases: a clear, a triangle's colors interpolated, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
+	The cases: a clear, a triangle's colors interpolated, eight vertex buffers read and a ninth refused, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
 	additive blending, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
 	texel by texel, a cubemap's six faces, and declared textures left unbound reading clear. The shaders are `shaders/*.vert` and `*.frag`,
 	compiled by the build, so it checks the shader compiler's dialects too. One case runs a frame; on a GPU that reads back later, the next
@@ -158,6 +158,7 @@ class GraphicsTests {
 		var data = shader(ShaderCompiler.compile("shaders/texture.vert", "shaders/data.frag"));
 		var cube = shader(ShaderCompiler.compile("shaders/texture.vert", "shaders/cube.frag"));
 		var tint = shader(ShaderCompiler.compile("shaders/offset.vert", "shaders/tint.frag"));
+		var eight = shader(ShaderCompiler.compile("shaders/eight.vert", "shaders/color.frag"));
 
 		// Vertex layouts: a position and a color (24 bytes), a position and a texture coordinate (16), a position (8).
 		var colored:VertexBuffer = {
@@ -192,6 +193,32 @@ class GraphicsTests {
 			fetched = pipeline(data, textured, Opaque),
 			looked = pipeline(cube, textured, Opaque);
 		var tinted = pipeline(tint, plain, Opaque);
+		// Eight buffers, the most a pipeline reads: a position, then a number from each of seven; a ninth is refused.
+		var single:Array<VertexBuffer> = [
+			for (slot in 1...9)
+				{stride: 4, instanced: false, attributes: [{slot: slot, componentCount: 1, offset: 0}]}
+		];
+		function many(layouts:Array<VertexBuffer>):Int
+			return graphics.createPipeline({
+				shader: eight,
+				buffers: layouts,
+				primitive: Triangles,
+				indexed: false,
+				blend: Opaque,
+				depthTest: Off,
+				depthWrite: false,
+				cull: None,
+				clockwise: false,
+				depthOnly: false,
+				flip: ClipScale
+			});
+		var eightBuffers = many([plain].concat(single.slice(0, 7)));
+		pipelines.push(eightBuffers);
+		var nineRefused = try {
+			pipelines.push(many([plain].concat(single)));
+			false;
+		} catch (e:Dynamic)
+			true;
 
 		// Clip space's square as two triangles; a texture coordinate's v runs down, as a texture's rows do.
 		var square = [-1., -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1];
@@ -217,6 +244,9 @@ class GraphicsTests {
 		var half = buffer([for (v in square) v / 2]);
 		// One triangle over the whole square: red at (-1, -1), green at (3, -1), blue at (-1, 3).
 		var triangle = buffer([-1., -1, 1, 0, 0, 1, 3, -1, 0, 1, 0, 1, -1, 3, 0, 0, 1, 1]);
+
+		var positions = buffer(square);
+		var numbers = [for (value in [.25, .25, .5, .25, .125, .5, 1]) buffer([for (_ in 0...6) value])];
 
 		var target = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false);
 		textures.push(target);
@@ -288,6 +318,17 @@ class GraphicsTests {
 					var green = (clipX(at[0]) + 1) / 4,
 						blue = (clipY(at[1]) + 1) / 4;
 					p.expect(at[0], at[1], [1 - green - blue, green, blue, 1], 2);
+				}
+			},
+			{
+				name: "eight buffers read, a ninth refused",
+				before: into(0, 0, 0, 0, () -> graphics.draw(eightBuffers, [positions].concat(numbers), 0, 0, 6, 0, 1, [], [], [clip])),
+				target: target,
+				check: p -> {
+					if (!nineRefused)
+						throw "eight buffers read, a ninth refused: a pipeline of nine was made";
+					for (at in [[0, 0], [8, 8], [15, 15]])
+						p.expect(at[0], at[1], [.5, .75, .625, 1], 1);
 				}
 			},
 			{

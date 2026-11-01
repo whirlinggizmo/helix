@@ -1412,7 +1412,7 @@ Represents everything a pipeline fixes for the draws through it.
 - `depthOnly:Bool`: Whether the draws write depth alone, for a shadow pass.
 - `cull:CullFace`: Which faces are culled.
 - `clockwise:Bool`: Whether clockwise winding is the front face.
-- `buffers:Array<VertexBuffer>`: The vertex buffers' layouts, by their index in a draw's buffers.
+- `buffers:Array<VertexBuffer>`: The vertex buffers' layouts, by their index in a draw's buffers: at most 8, with at most 16 attributes across them, each at a slot from 0 to 15, as every adapter takes them.
 - `blend:BlendMode`: How the colors are combined with the target's.
 
 ## Primitive
@@ -1599,7 +1599,7 @@ Specifies where the device's tilt is (`Event.TiltState`, after `ITilt.requestAcc
 
 Represents a vertex attribute that a pipeline reads from one of its buffers.
 
-- `slot:Int`: The shader's input slot.
+- `slot:Int`: The shader's input slot, 0 to 15.
 - `offset:Int`: The byte offset within each record.
 - `componentCount:Int`: The number of floats, 1 to 4.
 

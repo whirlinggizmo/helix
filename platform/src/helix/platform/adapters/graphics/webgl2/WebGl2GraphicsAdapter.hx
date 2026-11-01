@@ -366,9 +366,16 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	public function createPipeline(desc:PipelineDesc):Int {
 		if (!shaders.exists(desc.shader))
 			throw "Invalid pipeline shader";
+		// The limits every adapter takes (PipelineDesc), though WebGL2 may allow more, so a pipeline made here is made natively too.
+		var attributes = 0;
+		for (b in desc.buffers)
+			attributes += b.attributes.length;
+		if (desc.buffers.length > 8 || attributes > 16)
+			throw "Invalid pipeline layout: more than 8 buffers or 16 attributes";
 		for (b in desc.buffers)
 			for (a in b.attributes)
 				if (a.slot < 0
+					|| a.slot > 15
 					|| a.componentCount < 1
 					|| a.componentCount > 4
 					|| a.offset < 0
