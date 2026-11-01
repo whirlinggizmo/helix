@@ -18,8 +18,8 @@ class ObjModels {
 		return paths.length > 0 ? paths[paths.length - 1] : null;
 	}
 
-	/** Returns the textures a library's materials name that raylib loads: each material's diffuse, specular, bump and displacement
-		textures, each file once.
+	/** Returns the textures a library's materials name that raylib loads: each material's diffuse, specular, bump (`bumpTexture`) and
+		displacement textures, each file once.
 
 		@param library  The library, or null for none.
 		@return  Their paths. */
@@ -30,7 +30,7 @@ class ObjModels {
 				for (path in [
 					m.diffuseTexturePath,
 					m.specularTexturePath,
-					m.bumpTexturePath,
+					bumpTexture(m),
 					m.displacementTexturePath
 				])
 					if (path != null && paths.indexOf(path) < 0)
@@ -38,14 +38,23 @@ class ObjModels {
 		return paths;
 	}
 
+	/** Returns a material's bump texture as tinyobj_loader_c reads it: the last `bump` or `map_bump` line's, `map_Bump` not among them.
+
+		@param m  The material.
+		@return  The path, or null for none. */
+	public static function bumpTexture(m:MtlMaterial):Null<String>
+		return m.findTexturePath(["bump", "map_bump"]);
+
 	/** Returns an OBJ file's model as raylib 6.2's `LoadOBJ` makes it, its materials none (`materials` makes them for each load).
 
-		Its faces are tinyobj_loader_c's: each polygon a fan from its first corner, a triangle a face. A new mesh starts at a face where
-		the next of the file's groups (tinyobj's shapes) starts, counting the groups' starts in the file's faces where the faces walked
-		are triangles, as raylib counts them, so a polygon before a group moves the mesh's start back by a triangle; and at a face whose
-		material differs from the face before's, unless that face had none, so faces before any `usemtl` join the next material's mesh.
-		Each mesh's vertices are its corners, three a triangle, unindexed: its positions; its normals, (0, 1, 0) for a corner without
-		one; its texture coordinates, v turned (1 - v), (0, 0) for a corner without one; its colors white. A mesh's material is its last
+		Its faces are tinyobj_loader_c's: each polygon a fan from its first corner, a triangle a face, one of 1 or 2 corners none. A new
+		mesh starts at a face where the next of the file's groups (tinyobj's shapes: one at each `o` or `g` line with faces after it)
+		starts, counting the groups' starts in the file's `f` lines where the faces walked are triangles, as raylib counts them, so a
+		polygon, or a face of 1 or 2 corners, before a group moves the mesh's start; and at a face whose material differs from the face
+		before's, unless that face had none, so faces before any `usemtl` join the next material's mesh. Each mesh's vertices are its
+		corners, three a triangle, unindexed: its positions, (0, 0, 0) for a corner naming one the file doesn't have; its normals,
+		(0, 1, 0) for a corner without one or naming one the file doesn't have; its texture coordinates, v turned (1 - v), (0, 0) for a
+		corner without them or naming ones the file doesn't have; its colors white. A mesh's material is its last
 		face's, when that material is in the library, else 0. A file without faces has one mesh, empty.
 
 		@param obj  The file.
@@ -98,8 +107,8 @@ class ObjModels {
 		return new Model(meshes, [], meshMaterial);
 	}
 
-	// A mesh of corners, as raylib 6.2 fills one: positions, normals ((0, 1, 0) without one), texture coordinates (v turned, (0, 0)
-	// without one) and white colors, as floats and bytes; its GPU buffers to be shared by the file's loads.
+	// A mesh of corners, as raylib 6.2 fills one: positions ((0, 0, 0) for one the file lacks), normals ((0, 1, 0) without one or for
+	// one it lacks), texture coordinates (v turned, (0, 0) without them or for ones it lacks) and white colors, as floats and bytes; its GPU buffers to be shared by the file's loads.
 	static function mesh(obj:ObjFile, corners:Array<Int>):Mesh {
 		var f32 = Pixels.f32;
 		var vertices = [], normals = [], texcoords = [], colors = [];
@@ -108,8 +117,8 @@ class ObjModels {
 				n = obj.cornerNormalIndices[c],
 				t = obj.cornerTexCoordIndices[c];
 			for (k in 0...3)
-				vertices.push(f32(obj.positions[p * 3 + k]));
-			if (n >= 0)
+				vertices.push(p < obj.positionCount ? f32(obj.positions[p * 3 + k]) : 0);
+			if (n >= 0 && n < obj.normalCount)
 				for (k in 0...3)
 					normals.push(f32(obj.normals[n * 3 + k]));
 			else {
@@ -117,7 +126,7 @@ class ObjModels {
 				normals.push(1);
 				normals.push(0);
 			}
-			if (t >= 0) {
+			if (t >= 0 && t < obj.texCoordCount) {
 				texcoords.push(f32(obj.texCoords[t * 2]));
 				texcoords.push(f32(1 - f32(obj.texCoords[t * 2 + 1])));
 			} else {
@@ -143,8 +152,9 @@ class ObjModels {
 
 	/** Returns a library's materials as raylib's `ProcessMaterialsOBJ` makes them, each held once: raylib's default material, then the
 		diffuse texture (`map_Kd`), or with none the diffuse color (`Kd`, alpha 255); the specular texture (`map_Ks`) and color (`Ks`);
-		the normal map the bump texture (`bump`, `map_bump`), its color white and its value the specular exponent (`Ns`); the emission
-		color (`Ke`); the height map the displacement texture (`disp`); each value 0 but the normal map's. A color's bytes are raylib's
+		the normal map the bump texture (`bumpTexture`), its color white and its value the specular exponent (`Ns`); the emission
+		color (`Ke`); the height map the displacement texture (`disp`); each value 0 but the normal map's. What the file doesn't give is
+		tinyobj_loader_c's default: each color black, the specular exponent 1. A color's bytes are raylib's
 		(unsigned char)(f*255). A texture is its file's, decoded already (`Runtime.image`), shared with every load of the file; one that
 		couldn't be read is none (id 0). With no materials, a model has the default material alone (`LoadOBJ`).
 
@@ -156,8 +166,9 @@ class ObjModels {
 
 	static function material(m:MtlMaterial, shader:Shader):Material {
 		var material = Models.defaultMaterial(shader), maps = material.maps;
-		function color(c:haxe.ds.ReadOnlyArray<Float>):Color
-			return new Color(Models.byte(c[0]), Models.byte(c[1]), Models.byte(c[2]), 255);
+		// tinyobj_loader_c's colors: black where the file gives none.
+		function color(c:Null<haxe.ds.ReadOnlyArray<Float>>):Color
+			return c == null ? new Color(0, 0, 0, 255) : new Color(Models.byte(c[0]), Models.byte(c[1]), Models.byte(c[2]), 255);
 		function texture(map:MaterialMap, path:String):Void {
 			var image = Runtime.image(path);
 			if (image == null) {
@@ -179,10 +190,12 @@ class ObjModels {
 		specular.color = color(m.specular);
 		specular.value = 0;
 		var normal = maps[Raylib.MATERIAL_MAP_NORMAL];
-		if (m.bumpTexturePath != null)
-			texture(normal, m.bumpTexturePath);
+		var bump = bumpTexture(m);
+		if (bump != null)
+			texture(normal, bump);
 		normal.color = new Color(255, 255, 255, 255);
-		normal.value = Pixels.f32(m.shininess);
+		// tinyobj_loader_c's specular exponent: 1 where the file gives none.
+		normal.value = Pixels.f32(m.shininess != null ? m.shininess : 1);
 		maps[Raylib.MATERIAL_MAP_EMISSION].color = color(m.emission);
 		if (m.displacementTexturePath != null)
 			texture(maps[Raylib.MATERIAL_MAP_HEIGHT], m.displacementTexturePath);

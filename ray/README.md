@@ -54,16 +54,11 @@ shader given to a material and never unloaded stays while the program runs.
 
 ## OBJ models
 
-`LoadModelAsync` reads an OBJ file as raylib's `LoadOBJ` reads it with tinyobj_loader_c, its quirks kept: a mesh for each group and at
-each change of material, faces before any `usemtl` joining the next material's mesh, a `usemtl` naming no material of the library given
-material 0, vertices unindexed, every vertex's color white, the library the file's last `mtllib` line's. Where it reads a file
-differently, helix-formats' `ObjFile` and `MtlFile` decide: a file naming a position, texture coordinate or normal it doesn't have, or
-that isn't UTF-8, fails to load (raylib's reads zeros, or out of its arrays); a face of more than five corners is read (raylib's reader
-breaks on one), one of fewer than three left out where tinyobj_loader_c counts it among a group's faces; a `#` after a statement starts a
-comment; a group is started only where the group or object changes, not at each `g` line; several libraries on one `mtllib` line are
-read as names of their own, of which the last is used; and in an .mtl file, a texture's path is resolved against the file's directory,
-its options (`-s`, `-bm` and the rest) are read past, `map_Bump` is a bump texture, `d` wins over `Tr`, a name is the rest of its
-line, and a material without `Kd` is white and one without `Ns` has an exponent of 0 (raylib's black and 1).
+`LoadModelAsync` reads an OBJ file, and `LoadMaterialsAsync` an .mtl file, as raylib 6.2's `LoadOBJ` and raylib's `LoadMaterials` read
+them with tinyobj_loader_c, its quirks kept, and the `obj_62` and `obj` parity suites hold them to raylib's own C. helix-formats'
+`ObjFile` and `MtlFile` read what the file says; helix-ray makes of it what raylib makes. Where tinyobj_loader_c's reading is broken (it
+reads outside its buffers or uninitialized memory, misreads a form the OBJ and MTL formats give, or reads one name two ways), helix-ray
+reads the file as the format has it, and a file that breaks the format fails to load: docs/DECISIONS.md 28 lists each.
 
 ## Examples
 

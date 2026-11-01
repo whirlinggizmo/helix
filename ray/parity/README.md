@@ -50,7 +50,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `materials` | 5.5 | values | `LoadMaterialDefault`'s maps, `IsMaterialValid`, what `UnloadMaterial` frees and keeps (a texture another load shares), a texture given to a model freed after `UnloadTexture` and `UnloadModel` |
 | `materials_62` | 6.2 | values | glTF materials: each map's color, value and texture, its pixels |
 | `obj` | 5.5 | values | `LoadMaterials` on an .mtl file: each map's color, value and texture, its pixels; none from a file it can't read |
-| `obj_62` | 6.2 | values | OBJ models: their meshes split as raylib splits them, their vertices, each mesh's material, the library's materials and textures |
+| `obj_62` | 6.2 | values | OBJ models: their meshes split as raylib splits them, their vertices (corners naming what the file lacks among them), each mesh's material, the library's materials and textures, files raylib can't read |
 | `modular` | 6.2 | values | real-world models: Quaternius' modular woman, each part its own file, animated from a file of its own |
 | `text_55` | 5.5 | values | the text functions kept from 5.5: `TextReplace`, `LoadUTF8`, and those 6.2 didn't change |
 | `text_62` | 6.2 | values | the text and codepoint functions taken from 6.2, null text and its 1024-byte buffers |

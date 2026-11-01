@@ -6,11 +6,12 @@ import haxe.io.Bytes;
 @:noCompletion
 @:allow(helix.formats.obj)
 class ObjText {
-	/** Returns a file's lines: its bytes checked as UTF-8 (a byte order mark at the start skipped), split at `\n`, `\r\n` and `\r`.
+	/** Returns a file's lines: its bytes checked as UTF-8 text (a byte order mark at the start skipped, no NUL byte), split at `\n`,
+		`\r\n` and `\r`.
 
 		@param bytes  The file's bytes.
 		@return  The lines, the first line 1's.
-		@throws String  The bytes aren't UTF-8. */
+		@throws String  The bytes aren't UTF-8 text. */
 	static function lines(bytes:Bytes):Array<String> {
 		var start = bytes.length >= 3 && bytes.get(0) == 0xEF && bytes.get(1) == 0xBB && bytes.get(2) == 0xBF ? 3 : 0;
 		var at = start, line = 1;
@@ -18,6 +19,8 @@ class ObjText {
 			var b = bytes.get(at);
 			if (b == 10)
 				line++;
+			if (b == 0)
+				throw 'Line $line: not text (a NUL byte)';
 			if (b < 0x80) {
 				at++;
 				continue;

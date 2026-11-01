@@ -47,10 +47,10 @@ class Model3D {
 	/** Gets the materials, as the file has them; a material names its images by their index in `images`.
 
 		An OBJ file's are its `usemtl` names' materials, in `ObjFile.materialNames`' order, each made a glTF material: its name; its
-		diffuse color (`Kd`) and opacity the base color factor, its diffuse texture the base color image; its metalness and roughness
-		`MtlMaterial.computeMetalness` and `computeRoughness`, with no metallic-roughness image; its normal map
-		`computeNormalTexturePath`'s; its emissive color (`Ke`) the emissive factor, white when it names an emissive texture without one,
-		and that texture the emissive image; no occlusion image. A name no library gives is a material of every default. */
+		diffuse color and opacity (`MtlMaterial.computeDiffuse` and `computeOpacity`) the base color factor, its diffuse texture the base
+		color image; its metalness and roughness `computeMetalness` and `computeRoughness`, with no metallic-roughness image; its normal
+		map `computeNormalTexturePath`'s; its emissive color (`computeEmission`) the emissive factor, white when it names an emissive
+		texture with that color black, and that texture the emissive image; no occlusion image. A name no library gives is a material of every default. */
 	public final materials:Array<GltfMaterial>;
 
 	/** Gets the images, decoded, by their index in the file; null for one that couldn't be read or decoded (the failure logged). An OBJ

@@ -201,3 +201,48 @@ Why things are the way they are, numbered, in order.
     make models export glTF and OBJ, and a program that has an IQM, VOX or M3D file can convert it, where each format kept would be a
     reader to write, check against raylib's C and carry. `LoadModelAsync` refuses a file of one of them with a message saying it isn't
     supported and naming the formats that are, so an agent learns it at once rather than meeting a model with no meshes.
+
+28. **helix-ray reads OBJ and MTL files as raylib does, except where raylib's reading is broken.** helix-formats' `ObjFile` and `MtlFile`
+    read what a file says: every `g` and `o` line, a value the file doesn't give as null, a face of 1 or 2 corners, a corner naming a
+    line the file doesn't have. helix-ray makes of that what raylib 6.2's `LoadOBJ` and raylib's `LoadMaterials` make with
+    tinyobj_loader_c, quirks too, and the `obj_62` and `obj` parity suites hold it to raylib's C: a mesh at every `g` or `o` line with
+    faces after it, a group's start counted in `f` lines against triangles, a face of 1 or 2 corners counted and giving no triangles,
+    a material's `Kd`, `Ks` and `Ke` black where it gives none and its `Ns` 1, `map_Bump` not read (only `bump` and `map_bump`), a corner naming what the file lacks read as 6.2 reads it ((0, 0, 0), (0, 0), (0, 1, 0)) and one naming a line after
+    its face read, an empty file read as one raylib can't read. Where tinyobj_loader_c's reading is broken (it reads outside its
+    buffers or uninitialized memory, misreads a form the OBJ or MTL format gives, or reads one name two ways), helix-ray reads the file
+    as the format has it. Each fix, checked against tinyobj_loader_c's source; none has a parity case, as raylib's side can't be
+    declared to differ:
+    - **A face of more than 5 corners** is a fan like any other. tinyobj's `parseLine` gives up on one, leaving the line's command
+      uninitialized, and `tinyobj_parse_obj` reads it anyway (5.5's assertion stops the program instead); one of more than 16 corners
+      overruns its stack array.
+    - **A line longer than 4095 bytes** is read. `parseLine` gives up before setting the command's type, which is read uninitialized.
+    - **A `g` or `o` line naming nothing** starts a group, as any such line does. tinyobj reads one only when a space or tab follows
+      the keyword, and then, with nothing after it, looks for the name's end past its line buffer (`length_until_newline` given a
+      length of 0); an `mtllib` line naming nothing alike.
+    - **A material's name is the rest of its line, spaces at its ends taken off, in `newmtl` and `usemtl` alike.** tinyobj reads
+      `newmtl`'s first word (`sscanf` into a 4096-byte buffer, which a longer name overruns, and which an empty one leaves
+      uninitialized) and `usemtl`'s whole rest of line, so a name with a space in it, or a `usemtl` line with a space after its name,
+      never finds its material.
+    - **A material is found by its name.** tinyobj's table compares the names' djb2 hashes alone, so of two names that hash alike
+      (`Ez` and `FY`) the later takes the earlier's place.
+    - **An `mtllib` line naming several libraries** names each, as the format has it, and the last is read. tinyobj takes the line as
+      one file's name, spaces included, and opens none; a library whose own name holds a space can't be named, as the format has it.
+    - **A texture's path** is what follows its options (`-s`, `-bm` and the rest), resolved against its library's directory. tinyobj
+      takes the rest of the line after one character as the name, options and spaces included, so a texture with options, or two
+      spaces before its name, isn't found; and raylib resolves it against the OBJ file's directory in `LoadOBJ` and the working
+      directory in `LoadMaterials`, so one library finds different textures by the two.
+    - **A `#` after a statement starts a comment.** tinyobj reads an `f` line's comment as corners numbered 0 (`my_atoi` of a word),
+      which its `fixIndex` makes the first position, and a `usemtl`, `mtllib` or texture line's as part of the name.
+    - **A color of one value** (`Kd 0.5`) is that value three times, as the MTL format has it; tinyobj reads green and blue as 0. A
+      `spectral` or `xyz` color is skipped; tinyobj reads its words as numbers, 0 for a word.
+    - **A number with no digit before its point** (`.5`, `-.25`) is read; tinyobj's `tryParseDouble` fails on it and gives 0.
+    - **An .mtl file whose lines end in `\r` alone** is read line by line; tinyobj reads it with `fgets`, as one line.
+
+    A file that breaks the format is refused, not read as tinyobj's lenient parse makes it: `LoadModelAsync` fails, and a library
+    refused leaves its model with the default material (logged), `LoadMaterialsAsync` failing on it. These aren't raylib's bugs but
+    files no format allows, refused whole with the line named: text that isn't UTF-8 or holds a NUL byte (tinyobj reads bytes as they
+    come; a Haxe string holds Unicode text), a word that isn't a number where one is due (tinyobj's 0, or its leading digits), a `v`
+    line of other than 3, 4 or 6 values, a `vt` of none or more than 3, a `vn` of other than 3, a corner not of OBJ's forms, a corner
+    numbered 0 (tinyobj's first), an `f` line with no corners (tinyobj copies two uninitialized corners), a `usemtl` line naming
+    nothing (tinyobj keeps the material before); in an .mtl file a `newmtl` line naming nothing, a color of 2 values, a number
+    missing, an `illum` not a whole number, a texture line naming no file.

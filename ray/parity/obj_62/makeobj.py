@@ -6,9 +6,15 @@ web/obj/shapes.obj: faces before any usemtl, a quad and a pentagon split into fa
 group's start in faces against its triangles), materials changing within a group and an object, negative numbers, corners without
 normals or texture coordinates, a position's w, a usemtl naming no material of the library and one after it (raylib joins them), its
 library's materials in another order than they're used, with textures (a diffuse, specular, bump and displacement one, and one
-missing), Kd, Ks, Ke and Ns. web/obj/nolib.obj names a library that isn't there: usemtl changes split nothing, and the model has the
-default material. web/obj/plain.obj names none: six-value positions (their colors not read), an object and a group starting after a
-quad."""
+missing), Kd, Ks, Ke and Ns, and materials giving none of them (tinyobj_loader_c's defaults: black, and an Ns of 1), a name given twice
+(the last wins), the bump texture's statements (bump and map_bump, the last of them; map_Bump, which tinyobj_loader_c doesn't read).
+web/obj/nolib.obj names a library that isn't there: usemtl changes split nothing, and the model has the default material.
+web/obj/plain.obj names none: six-value positions (their colors not read), an object and a group starting after a quad.
+web/obj/groups.obj splits as tinyobj_loader_c splits shapes: g lines with no faces between, a name given again with faces after
+each, o lines, faces of 1 and 2 corners (counted among a group's faces, giving no triangles), a polygon after them, g lines at the end
+with no faces after them. web/obj/missing.obj's corners name positions, texture coordinates and normals the file doesn't have, and
+ones on lines after the face (raylib 6.2's zeros, (0, 1, 0) normals and (0, 0) texture coordinates; the later lines read).
+web/obj/empty.obj is empty, read as a file that can't be read."""
 import struct, sys, zlib
 from pathlib import Path
 
@@ -53,6 +59,18 @@ newmtl spare
 Kd 1 0.5 0.25
 Ks 0.6 0.6 0.6
 Ns 0.5
+newmtl bare
+newmtl bumpy
+Kd 0.5 0.5 0.5
+bump spec.png
+map_Bump red.png
+map_bump normal.png
+newmtl blender
+Ks 0.2 0.4 0.6
+map_Bump normal.png
+newmtl spare
+Kd 0.25 0.75 0.5
+Ns 7
 """
 
 SHAPES = """# shapes.obj
@@ -118,11 +136,60 @@ g one
 f 1 2 3
 """
 
+GROUPS = """mtllib shapes.mtl
+v 0 0 0
+v 1 0 0
+v 1 1 0
+v 0 1 0
+vt 0 0
+vt 1 1
+vn 0 0 1
+g a
+g b
+usemtl bare
+f 1/1/1 2/2/1 3/1/1
+g a
+f 1 3 4
+g a
+f 2 3 4
+f 1 2
+g c
+f 1 2 3 4
+g lone
+f 2
+g after
+f 1 2 3
+o thing
+f 1 2 3
+o thing
+g d
+f 4 3 2
+usemtl spare
+f 1 2 3
+usemtl bumpy
+f 1 2 3
+usemtl blender
+f 1 3 4
+g e
+g f
+"""
+
+MISSING = """v 0 0 0
+vt 0.5 0.25
+f 2/1/1 3/2 9//1
+v 1 0 0
+v 0 1 0
+vn 0 0 1
+f -1/-1/-1 -5/-3/-2 1/1/1
+f 1/1/2 2/1/1 3/7/1
+"""
+
 destination = Path(sys.argv[1])
 directory = destination.parent
 directory.mkdir(parents=True, exist_ok=True)
 if destination.name == 'shapes.obj':
-    files = {'shapes.obj': SHAPES, 'shapes.mtl': LIBRARY, 'nolib.obj': NOLIB, 'plain.obj': PLAIN}
+    files = {'shapes.obj': SHAPES, 'shapes.mtl': LIBRARY, 'nolib.obj': NOLIB, 'plain.obj': PLAIN, 'groups.obj': GROUPS, 'missing.obj': MISSING,
+             'empty.obj': ''}
     for name, text in files.items():
         (directory / name).write_text(text, encoding='utf-8')
 elif destination.name == 'lib.mtl':

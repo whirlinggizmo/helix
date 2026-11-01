@@ -5,13 +5,17 @@ import haxe.io.Bytes;
 /** Represents a Wavefront OBJ model read from an .obj file: its vertex data, its faces and their groups, as the file gives them.
 
 	The file's positions, texture coordinates and normals are numbered from 0 in the order of their lines (`v`, `vt`, `vn`); the
-	file's own 1-based and negative (relative) numbers are turned into these. A face is a polygon of corners, kept as the file writes
-	it, and each corner names a position by its number, and may name a texture coordinate and a normal. `computeTriangles` splits the
-	faces into triangles.
+	file's own numbers are turned into these: a positive one names that line of its kind in the whole file, before the face or after
+	it, and a negative one counts back from the lines before the face. A number naming a line the file doesn't have is kept as one past
+	the last (`positionCount` for a position), and `missingIndexCount` counts them, for the caller to refuse the file or make do. A
+	face is a polygon of corners, kept as the file writes it, and each corner names a position by its number, and may name a texture
+	coordinate and a normal. `computeTriangles` splits the faces into triangles.
 
 	A face's material is named by the `usemtl` line before it, which holds across `o` and `g` lines until the next `usemtl`. The
 	materials themselves are in the .mtl files `materialLibraryPaths` names, read by `MtlFile`; `computeMaterials` finds each name's.
-	`computeParts` gathers the faces into parts, one for each object, group and material, split into triangles. Points, lines, curves and surfaces are not read; a face of fewer than 3 corners is left out of every face array.
+	`computeParts` gathers the faces into parts, one for each object, group and material, split into triangles. Points, lines, curves
+	and surfaces are not read; a face of 1 or 2 corners (a point or a line written as a face) is kept as the file writes it, and gives
+	no triangles.
 
 	Values are as the file gives them: texture coordinates are not flipped (v is 0 at the image's bottom, as OBJ has it), normals are
 	not normalized, and a face's corners go counter-clockwise seen from its front, as OBJ has them. Paths are resolved against the
@@ -60,10 +64,11 @@ class ObjFile {
 	/** Gets the normals, three values for each: normal i's x, y and z at `normals[3 * i]` on, as the file gives them, not normalized. */
 	public final normals:haxe.ds.ReadOnlyArray<Float>;
 
-	/** Gets how many faces the file has. */
+	/** Gets how many faces the file has: one for each `f` line. */
 	public final faceCount:Int;
 
-	/** Gets how many corners each face has, in the file's order: 3 for a triangle, more for a polygon. */
+	/** Gets how many corners each face has, in the file's order: 3 for a triangle, more for a polygon, 1 or 2 for a point or a line
+		written as a face. */
 	public final faceVertexCounts:haxe.ds.ReadOnlyArray<Int>;
 
 	/** Gets where each face's corners start in the corner arrays: face f's corners are from `faceFirstCornerIndices[f]` up to, but
@@ -76,14 +81,22 @@ class ObjFile {
 	/** Gets how many corners the faces have in all: the length of each corner array. */
 	public final cornerCount:Int;
 
-	/** Gets each corner's position, by its number (0 to `positionCount` - 1), the corners of each face in turn. */
+	/** Gets each corner's position, by its number (0 to `positionCount` - 1), the corners of each face in turn; `positionCount` when
+		the corner names one the file doesn't have. */
 	public final cornerPositionIndices:haxe.ds.ReadOnlyArray<Int>;
 
-	/** Gets each corner's texture coordinate, by its number (0 to `texCoordCount` - 1), or -1 when the corner names none. */
+	/** Gets each corner's texture coordinate, by its number (0 to `texCoordCount` - 1); -1 when the corner names none, and
+		`texCoordCount` when it names one the file doesn't have. */
 	public final cornerTexCoordIndices:haxe.ds.ReadOnlyArray<Int>;
 
-	/** Gets each corner's normal, by its number (0 to `normalCount` - 1), or -1 when the corner names none. */
+	/** Gets each corner's normal, by its number (0 to `normalCount` - 1); -1 when the corner names none, and `normalCount` when it
+		names one the file doesn't have. */
 	public final cornerNormalIndices:haxe.ds.ReadOnlyArray<Int>;
+
+	/** Gets how many of the corners' numbers name a position, texture coordinate or normal the file doesn't have: a positive number
+		past the last line of its kind, or a negative one reaching back before the first. Each is kept as one past the last; 0 for a file
+		whose corners all name what it has. */
+	public final missingIndexCount:Int;
 
 	/** Gets the material names the `usemtl` lines give, each once, in the order the file first uses them, matched as written (case
 		counts). */
@@ -93,14 +106,15 @@ class ObjFile {
 		a path for each, split at spaces, so a file name can't hold one. */
 	public final materialLibraryPaths:haxe.ds.ReadOnlyArray<String>;
 
-	/** Gets the file's groups of faces: runs of faces in one object and one group, in the file's order, a new one wherever an `o` or
-		`g` line between faces changes the object or group (two `g a` lines with no faces between are one group). A name can come
-		back later in the file as a group of its own (`g a`, `g b`, `g a` are three groups); `computeParts` joins them. A `usemtl`
-		line doesn't start a group: a group's faces may have several materials. A group with no faces is left out. */
+	/** Gets the file's groups of faces, in the file's order: the faces before the first `o` or `g` line, and those after each such
+		line up to the next. Each line starts a group of its own, whatever it names, so a name given twice with faces after each
+		(`g a`, faces, `g a`, faces) is two groups, and so is a name coming back later (`g a`, `g b`, `g a` are three); `computeParts`
+		joins them. A line with no faces after it, before the next such line or the end, starts none: a group has at least 1 face. A
+		`usemtl` line doesn't start a group: a group's faces may have several materials. */
 	public final groups:Array<ObjGroup>;
 
 	/** Returns some faces split into triangles, each polygon a fan from its first corner (corners 0, i and i + 1), as most readers
-		do: a face of n corners gives n - 2 triangles, in the faces' order.
+		do: a face of n corners gives n - 2 triangles, in the faces' order, and one of 1 or 2 corners gives none.
 
 		@param firstFaceIndex  The first face.
 		@param faceCount  How many faces, from it.
@@ -136,7 +150,7 @@ class ObjFile {
 
 	/** Returns the faces gathered into parts, each split into triangles as `computeTriangles` splits them: one part for each object,
 		group and material, the faces of a name that comes back later in the file joined to its part. Parts come in the order their
-		first face does.
+		first face does. A face giving no triangles (1 or 2 corners) is left out, and so a part has at least one triangle.
 
 		Faces before any `usemtl` make a part of their own, its `materialIndex` -1 and its `materialName` "".
 
@@ -153,6 +167,8 @@ class ObjFile {
 		var byKey = new Map<String, Int>();
 		for (group in groups)
 			for (f in group.firstFaceIndex...group.firstFaceIndex + group.faceCount) {
+				if (faceVertexCounts[f] < 3)
+					continue;
 				var objectName = byGroup ? group.objectName : "",
 					groupName = byGroup ? group.groupName : "",
 					materialIndex = faceMaterialIndices[f];
@@ -185,8 +201,9 @@ class ObjFile {
 		@param bytes  The file's bytes, as UTF-8 text.
 		@param path  The file's path, whose directory `mtllib` paths are resolved against.
 		@return  The model.
-		@throws String  The file is refused, never read in part: its bytes aren't UTF-8 text, a line can't be read (naming its number),
-			or a corner names a position, texture coordinate or normal the file doesn't have. Only a String is thrown. */
+		@throws String  The file is refused, never read in part: its bytes aren't UTF-8 text, or a line can't be read (naming its
+			number), a corner numbered 0 among them. A corner naming a position, texture coordinate or normal the file doesn't have is
+			read (`missingIndexCount`). Only a String is thrown. */
 	public static function read(bytes:Bytes, path:String):ObjFile {
 		var lines = ObjText.lines(bytes);
 		var positions:Array<Float> = [], colors:Array<Float> = [], colored = 0, texCoords:Array<Float> = [], normals:Array<Float> = [];
@@ -201,19 +218,21 @@ class ObjFile {
 			materialLibraryPaths:Array<String> = [];
 		var groups:Array<ObjGroup> = [];
 		var objectName = "", groupName = "", material = -1;
-		// The run of faces the last face is in: its object, group and first face; -1 before the first face.
-		var runObject = "", runGroup = "", runFirst = -1;
+		// The group the last face is in: its object, group and first face, -1 before the first face; and whether an o or g line has
+		// come since, so the next face starts a group.
+		var runObject = "", runGroup = "", runFirst = -1, split = false;
 		function close():Void {
 			if (runFirst >= 0)
 				groups.push(new ObjGroup(runObject, runGroup, runFirst, faceVertexCounts.length - runFirst));
 		}
-		// A corner's number of a position, texture coordinate or normal: 1-based, or negative, counting back from the last line so far.
+		// A corner's number of a position, texture coordinate or normal: 1-based, naming that line in the whole file (checked once it is
+		// read), or negative, counting back from the lines so far (REACHED when it reaches before the first).
 		function index(word:String, count:Int, what:String, line:Int):Int {
 			var n = ObjText.integer(word, line);
+			if (n == 0)
+				throw 'Line $line: a corner names $what 0, but OBJ numbers them from 1';
 			var i = n > 0 ? n - 1 : count + n;
-			if (n == 0 || i < 0 || i >= count)
-				throw 'Line $line: a corner names $what $n, but the file has $count before it';
-			return i;
+			return i < 0 ? REACHED : i;
 		}
 		for (k => text in lines) {
 			var line = k + 1, words = ObjText.words(text);
@@ -260,13 +279,12 @@ class ObjFile {
 							&& parts[1] != "" ? index(parts[1], Std.int(texCoords.length / 2), "texture coordinate", line) : -1);
 						n.push(parts.length > 2 ? index(parts[2], Std.int(normals.length / 3), "normal", line) : -1);
 					}
-					if (values < 3)
-						continue;
-					if (runFirst < 0 || runObject != objectName || runGroup != groupName) {
+					if (runFirst < 0 || split) {
 						close();
 						runObject = objectName;
 						runGroup = groupName;
 						runFirst = faceVertexCounts.length;
+						split = false;
 					}
 					faceVertexCounts.push(values);
 					faceFirstCornerIndices.push(cornerPositionIndices.length);
@@ -279,8 +297,10 @@ class ObjFile {
 				case "o":
 					objectName = ObjText.rest(text, "o");
 					groupName = "";
+					split = true;
 				case "g":
 					groupName = ObjText.rest(text, "g");
+					split = true;
 				case "usemtl":
 					var name = ObjText.rest(text, "usemtl");
 					if (name == "")
@@ -299,19 +319,35 @@ class ObjFile {
 			}
 		}
 		close();
-		var positionCount = Std.int(positions.length / 3);
+		var positionCount = Std.int(positions.length / 3),
+			texCoordCount = Std.int(texCoords.length / 2),
+			normalCount = Std.int(normals.length / 3);
+		// A number past the last line, or reaching before the first, kept as one past the last.
+		var missing = 0;
+		function keep(indices:Array<Int>, count:Int):Void
+			for (k => i in indices)
+				if (i == REACHED || i >= count) {
+					indices[k] = count;
+					missing++;
+				}
+		keep(cornerPositionIndices, positionCount);
+		keep(cornerTexCoordIndices, texCoordCount);
+		keep(cornerNormalIndices, normalCount);
 		return new ObjFile(positionCount, positions, positionCount > 0
-			&& colored == positionCount ? colors : null, Std.int(texCoords.length / 2), texCoords,
-			Std.int(normals.length / 3), normals, faceVertexCounts.length, faceVertexCounts, faceFirstCornerIndices, faceMaterialIndices,
-			cornerPositionIndices.length, cornerPositionIndices, cornerTexCoordIndices, cornerNormalIndices, materialNames, materialLibraryPaths, groups);
+			&& colored == positionCount ? colors : null, texCoordCount, texCoords, normalCount,
+			normals, faceVertexCounts.length, faceVertexCounts, faceFirstCornerIndices, faceMaterialIndices, cornerPositionIndices.length,
+			cornerPositionIndices, cornerTexCoordIndices, cornerNormalIndices, missing, materialNames, materialLibraryPaths, groups);
 	}
+
+	// A negative corner number reaching before the first line, until the file is read.
+	static inline final REACHED = -2;
 
 	function new(positionCount:Int, positions:haxe.ds.ReadOnlyArray<Float>, colors:Null<haxe.ds.ReadOnlyArray<Float>>, texCoordCount:Int,
 			texCoords:haxe.ds.ReadOnlyArray<Float>, normalCount:Int, normals:haxe.ds.ReadOnlyArray<Float>, faceCount:Int,
 			faceVertexCounts:haxe.ds.ReadOnlyArray<Int>, faceFirstCornerIndices:haxe.ds.ReadOnlyArray<Int>, faceMaterialIndices:haxe.ds.ReadOnlyArray<Int>,
 			cornerCount:Int, cornerPositionIndices:haxe.ds.ReadOnlyArray<Int>, cornerTexCoordIndices:haxe.ds.ReadOnlyArray<Int>,
-			cornerNormalIndices:haxe.ds.ReadOnlyArray<Int>, materialNames:haxe.ds.ReadOnlyArray<String>, materialLibraryPaths:haxe.ds.ReadOnlyArray<String>,
-			groups:Array<ObjGroup>) {
+			cornerNormalIndices:haxe.ds.ReadOnlyArray<Int>, missingIndexCount:Int, materialNames:haxe.ds.ReadOnlyArray<String>,
+			materialLibraryPaths:haxe.ds.ReadOnlyArray<String>, groups:Array<ObjGroup>) {
 		this.positionCount = positionCount;
 		this.positions = positions;
 		this.colors = colors;
@@ -327,6 +363,7 @@ class ObjFile {
 		this.cornerPositionIndices = cornerPositionIndices;
 		this.cornerTexCoordIndices = cornerTexCoordIndices;
 		this.cornerNormalIndices = cornerNormalIndices;
+		this.missingIndexCount = missingIndexCount;
 		this.materialNames = materialNames;
 		this.materialLibraryPaths = materialLibraryPaths;
 		this.groups = groups;

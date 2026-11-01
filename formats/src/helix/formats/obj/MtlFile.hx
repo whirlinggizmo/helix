@@ -8,7 +8,7 @@ import haxe.io.Bytes;
 	```haxe
 	var library = MtlFile.read(bytes, "models/house.mtl");
 	var wall = library.findMaterial("wall");
-	var color = wall != null ? wall.diffuse : MtlMaterial.DEFAULT.diffuse;
+	var color = (wall != null ? wall : MtlMaterial.DEFAULT).computeDiffuse();
 	``` */
 class MtlFile {
 	/** Gets the materials, in the file's order: a new one at each `newmtl` line. */
@@ -54,22 +54,16 @@ class MtlFile {
 		// The material being read: its name, colors, numbers and texture paths by statement; null before the first newmtl, whose
 		// statements are ignored.
 		var name:Null<String> = null;
-		var colors = new Map<String, Array<Float>>(),
+		var colors = new Map<String, haxe.ds.ReadOnlyArray<Float>>(),
 			numbers = new Map<String, Float>(),
-			textures = new Map<String, String>();
-		var illumination = 0;
+			statements:Array<String> = [],
+			paths:Array<String> = [];
+		var illumination:Null<Int> = null;
 		function flush():Void {
 			if (name == null)
 				return;
-			function color(key:String, fallback:Float):Array<Float>
-				return colors.exists(key) ? colors.get(key) : [fallback, fallback, fallback];
-			function value(key:String, fallback:Float):Float
-				return numbers.exists(key) ? numbers.get(key) : fallback;
-			var opacity = numbers.exists("d") ? numbers.get("d") : numbers.exists("Tr") ? 1 - numbers.get("Tr") : 1;
-			materials.push(new MtlMaterial(name, true, color("Ka", 0), color("Kd", 1), color("Ks", 0), color("Ke", 0), color("Tf", 1), value("Ns", 0),
-				value("Ni", 1), opacity, illumination, numbers.get("Pr"), numbers.get("Pm"), textures.get("map_Ka"), textures.get("map_Kd"),
-				textures.get("map_Ks"), textures.get("map_Ns"), textures.get("map_Ke"), textures.get("map_d"), textures.get("bump"), textures.get("disp"),
-				textures.get("norm"), textures.get("map_Pr"), textures.get("map_Pm")));
+			var opacity:Null<Float> = numbers.exists("d") ? numbers.get("d") : numbers.exists("Tr") ? 1 - numbers.get("Tr") : null;
+			materials.push(new MtlMaterial(name, true, colors, numbers, opacity, illumination, statements, paths));
 		}
 		for (k => text in lines) {
 			var line = k + 1, words = ObjText.words(text);
@@ -83,15 +77,16 @@ class MtlFile {
 					throw 'Line $line: newmtl names no material';
 				colors = new Map();
 				numbers = new Map();
-				textures = new Map();
-				illumination = 0;
+				statements = [];
+				paths = [];
+				illumination = null;
 				continue;
 			}
 			if (name == null)
 				continue;
 			switch keyword {
 				case "Ka" | "Kd" | "Ks" | "Ke" | "Tf":
-					// "spectral" and "xyz" colors aren't read: the color keeps its default.
+					// "spectral" and "xyz" colors aren't read: the line is skipped.
 					if (words.length > 1 && (words[1] == "spectral" || words[1] == "xyz"))
 						continue;
 					if (words.length != 2 && words.length != 4)
@@ -109,8 +104,8 @@ class MtlFile {
 						throw 'Line $line: illum has ${words.length - 1} values, not 1';
 					illumination = ObjText.integer(words[1], line);
 				case "map_Ka" | "map_Kd" | "map_Ks" | "map_Ns" | "map_Ke" | "map_d" | "map_bump" | "map_Bump" | "bump" | "disp" | "norm" | "map_Pr" | "map_Pm":
-					var key = keyword == "map_bump" || keyword == "map_Bump" ? "bump" : keyword;
-					textures.set(key, ObjText.resolve(texturePath(text, keyword, line), path));
+					statements.push(keyword);
+					paths.push(ObjText.resolve(texturePath(text, keyword, line), path));
 				case _:
 			}
 		}

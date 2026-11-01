@@ -123,7 +123,8 @@ class ModelsTests {
 	}
 
 	// OBJ files: a house naming three libraries (one missing, one broken) whose materials name textures (one missing), its faces before
-	// any usemtl, in two groups, a material no library gives; a colored triangle; a file that can't be read.
+	// any usemtl, in two groups, a material no library gives; a colored triangle; a file that can't be read, and one naming positions it
+	// doesn't have.
 	static function obj(files:FakeFileSystem, models:Models, pump:Void->Void):Void {
 		files.files.set("objs/house.obj",
 			Bytes.ofString("mtllib house.mtl missing.mtl broken.mtl\n"
@@ -202,11 +203,17 @@ class ModelsTests {
 			&& colored.meshes[0].colors.join(",") == "1,0,0,1,0,1,0,1,0,0,1,1",
 			"an .OBJ: positions' colors, alpha 1; no libraries, no materials");
 
-		files.files.set("objs/bad.obj", Bytes.ofString("v 0 0 0\nf 1 2 3\n"));
+		files.files.set("objs/bad.obj", Bytes.ofString("v 0 0 0\nf 1 1 x\n"));
 		var why = "";
 		models.load("objs/bad.obj", _ -> throw "loaded a bad file", message -> why = message);
 		pump();
 		check(why.indexOf("objs/bad.obj") >= 0 && why.indexOf("Line 2") >= 0, "a file that can't be read fails, by its path and line");
+		files.files.set("objs/missing.obj", Bytes.ofString("v 0 0 0\nf 1 2 3\n"));
+		why = "";
+		models.load("objs/missing.obj", _ -> throw "loaded a file naming what it lacks", message -> why = message);
+		pump();
+		check(why.indexOf("objs/missing.obj") >= 0
+			&& why.indexOf("2 of its corners") >= 0, "a file naming positions it lacks fails: " + why);
 	}
 
 	static function main():Void {

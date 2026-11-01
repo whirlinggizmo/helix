@@ -33,8 +33,10 @@ static void materials(const char *name, Material *ms, int count) {
     }
 }
 
+// A model, or "failed" where LoadModel can't read the file and gives no meshes.
 static void model(const char *name, const char *file) {
     Model model = LoadModel(file);
+    if (model.meshCount == 0) { printf("%s failed\n", name); UnloadModel(model); return; }
     printf("%s model %d %d\n", name, model.meshCount, model.materialCount);
     char key[96];
     for (int i = 0; i < model.meshCount; i++) {
@@ -58,6 +60,10 @@ int main(void) {
     model("nolib", "web/obj/nolib.obj");
     model("plain", "web/obj/plain.obj");
     model("cube", "web/obj/cube.obj");
+    model("groups", "web/obj/groups.obj");
+    model("missing", "web/obj/missing.obj");
+    model("empty", "web/obj/empty.obj");
+    model("nothere", "web/obj/nothere.obj");
     CloseWindow();
     return 0;
 }

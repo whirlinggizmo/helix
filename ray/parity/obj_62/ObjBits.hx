@@ -52,10 +52,15 @@ class ObjBits {
 		}
 	}
 
+	// A model, or "failed" where LoadModelAsync fails: where raylib's LoadModel can't read the file and gives no meshes.
 	static function model(name:String, file:String) {
-		var model:Model = null;
-		LoadModelAsync(file, m -> model = m, e -> throw e);
-		pump(() -> model != null);
+		var model:Model = null, failed = false;
+		LoadModelAsync(file, m -> model = m, e -> failed = true);
+		pump(() -> model != null || failed);
+		if (failed) {
+			line('$name failed');
+			return;
+		}
 		line('$name model ${model.meshCount} ${model.materialCount}');
 		for (i in 0...model.meshCount) {
 			line('$name meshmaterial $i ${model.meshMaterial[i]}');
@@ -83,6 +88,10 @@ class ObjBits {
 		model("nolib", "web/obj/nolib.obj");
 		model("plain", "web/obj/plain.obj");
 		model("cube", "web/obj/cube.obj");
+		model("groups", "web/obj/groups.obj");
+		model("missing", "web/obj/missing.obj");
+		model("empty", "web/obj/empty.obj");
+		model("nothere", "web/obj/nothere.obj");
 		Parity.save();
 	}
 }

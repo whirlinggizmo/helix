@@ -4,11 +4,12 @@ import helix.formats.obj.MtlMaterial;
 import helix.formats.obj.ObjFile;
 
 /** Checks ObjFile and MtlFile with the library alone, on files written here: positions, texture coordinates and normals and their
-	1-based and negative numbers, w dropped, six-value positions' colors (all or none), faces of fewer than 3 corners left out, groups
-	(o resetting g, a g repeated as one, a name coming back as a run of its own, empty ones left out), usemtl across groups, triangle fans,
-	parts by group and by material (repeats joined, faces before usemtl, their order), materials found and stood in for, libraries
-	combined, every MTL statement read (Tr against d, texture options read past, the PBR extension), the computed roughness, metalness and
-	normal map, paths resolved and normalized, UTF-8, and refusals naming their line. */
+	1-based, negative and forward numbers, those naming what the file lacks counted, w dropped, six-value positions' colors (all or none),
+	faces of 1 or 2 corners kept without triangles, groups (o resetting g, one at each o or g line with faces after it, a name given
+	twice two groups, empty ones left out), usemtl across groups, triangle fans, parts by group and by material (repeats joined, faces
+	without triangles left out, faces before usemtl, their order), materials found and stood in for, libraries combined, every MTL
+	statement read (Tr against d, texture options read past, the PBR extension, null for what a file doesn't give), the computed values
+	and their defaults, texture paths by statement, paths resolved and normalized, UTF-8, and refusals naming their line. */
 class ObjTests {
 	static var checks = 0;
 
@@ -91,21 +92,31 @@ class ObjTests {
 			+ "f 1/1/1 2/2/1 3/3/2\n" // all three
 			+ "f -4//-2 -3//-1 -2//-2 -1//-1\n" // relative, normals alone, a quad
 			+ "f 1/3 2/2 4/1\n" // texture coordinates alone
-			+ "f 1 2\n" // fewer than 3: left out
+			+ "f 1 2\n" // fewer than 3: kept, no triangles
 			+ "f 2 3 4\n"; // positions alone
 		var m = obj(text);
-		check(m.faceCount == 4 && same(m.faceVertexCounts, [3, 4, 3, 3]), "faces of fewer than 3 corners left out");
-		check(same(m.faceFirstCornerIndices, [0, 3, 7, 10]) && m.cornerCount == 13, "each face's first corner");
-		check(same(m.cornerPositionIndices, [0, 1, 2, 0, 1, 2, 3, 0, 1, 3, 1, 2, 3]), "positions: 1-based and negative numbers made 0-based");
-		check(same(m.cornerTexCoordIndices, [0, 1, 2, -1, -1, -1, -1, 2, 1, 0, -1, -1, -1]), "texture coordinates, -1 for none");
-		check(same(m.cornerNormalIndices, [0, 0, 1, 0, 1, 0, 1, -1, -1, -1, -1, -1, -1]), "normals, -1 for none");
-		check(same(m.computeTriangles(0, m.faceCount), [0, 1, 2, 3, 4, 5, 3, 5, 6, 7, 8, 9, 10, 11, 12]), "triangles: a fan from each face's first corner");
+		check(m.faceCount == 5 && same(m.faceVertexCounts, [3, 4, 3, 2, 3]), "a face of 2 corners kept");
+		check(same(m.faceFirstCornerIndices, [0, 3, 7, 10, 12]) && m.cornerCount == 15, "each face's first corner");
+		check(same(m.cornerPositionIndices, [0, 1, 2, 0, 1, 2, 3, 0, 1, 3, 0, 1, 1, 2, 3]), "positions: 1-based and negative numbers made 0-based");
+		check(same(m.cornerTexCoordIndices, [0, 1, 2, -1, -1, -1, -1, 2, 1, 0, -1, -1, -1, -1, -1]), "texture coordinates, -1 for none");
+		check(same(m.cornerNormalIndices, [0, 0, 1, 0, 1, 0, 1, -1, -1, -1, -1, -1, -1, -1, -1]), "normals, -1 for none");
+		check(m.missingIndexCount == 0, "every corner names what the file has");
+		check(same(m.computeTriangles(0, m.faceCount), [0, 1, 2, 3, 4, 5, 3, 5, 6, 7, 8, 9, 12, 13, 14]),
+			"triangles: a fan from each face's first corner, none for 2 corners");
+		check(m.computeTriangles(3, 1).length == 0 && obj("v 0 0 0\nf 1\n").faceVertexCounts[0] == 1, "a face of 1 corner, no triangles");
 		check(same(m.computeTriangles(1, 1), [3, 4, 5, 3, 5, 6]) && m.computeTriangles(2, 0).length == 0, "triangles of some faces");
 		var pentagon = obj("v 0 0 0\nv 1 0 0\nv 2 1 0\nv 1 2 0\nv 0 1 0\nf 1 2 3 4 5\n");
 		check(same(pentagon.computeTriangles(0, 1), [0, 1, 2, 0, 2, 3, 0, 3, 4]), "a pentagon's fan: n - 2 triangles");
 		// A negative number counts back from the lines read so far.
 		var relative = obj("v 0 0 0\nv 1 0 0\nv 0 1 0\nf -3 -2 -1\nv 5 5 5\nf -1 -2 -3\n");
 		check(same(relative.cornerPositionIndices, [0, 1, 2, 3, 2, 1]), "negative numbers count back from the lines so far");
+		// A positive number names its line in the whole file; one past the last, or reaching before the first, is kept as the count.
+		var forward = obj("vt 0 0\nf 4/1 5/2 6//3\nv 0 0 0\nv 1 0 0\nv 0 1 0\nv 1 1 0\nv 2 2 2\nf -6 -1 9\n");
+		check(same(forward.cornerPositionIndices, [3, 4, 5, 5, 4, 5]), "forward numbers read, missing positions kept as positionCount");
+		check(same(forward.cornerTexCoordIndices, [0, 1, -1, -1, -1, -1])
+			&& forward.texCoordCount == 1, "a missing texture coordinate as texCoordCount");
+		check(same(forward.cornerNormalIndices, [-1, -1, 0, -1, -1, -1]) && forward.normalCount == 0, "a missing normal as normalCount");
+		check(forward.missingIndexCount == 5, "missing numbers counted: " + forward.missingIndexCount);
 	}
 
 	// Runs of faces in one object and group.
@@ -117,9 +128,9 @@ class ObjTests {
 			+ tri
 			+ tri
 			+ "g a\n"
-			+ tri // a g repeated with faces between is the same group
+			+ tri // a g repeated with faces between: a group of its own
 			+ "g b\ng a\n"
-			+ tri // a b with no faces, then a again: still the same run
+			+ tri // a b with no faces makes no group
 			+ "g b\n"
 			+ tri // b
 			+ "g a\n"
@@ -131,23 +142,26 @@ class ObjTests {
 			+ tri // a line naming several groups keeps them as written
 			+ "o ship\n"
 			+ tri // the same object again, its group reset
-			+ "f 1 2\n"
-			+ "g never\nf 1 2\n" // faces left out make no group
+			+ "f 1 2\n" // a face of 2 corners counted in its group
+			+ "g line\nf 1 2\n" // and a group of such faces alone
+			+ "g last\n" // no faces after it: no group
 		);
 		var g = [
 			for (x in m.groups)
 				'${x.objectName}|${x.groupName}|${x.firstFaceIndex}|${x.faceCount}'
 		];
-		check(same(g,
-			[
-				"||0|1",
-				"|a|1|4",
-				"|b|5|1",
-				"|a|6|1",
-				"ship||7|1",
-				"ship|hull part|8|1",
-				"ship||9|1"
-			]), "groups: o resets g, repeats and returns as runs, empty ones left out: " + g);
+		check(same(g, [
+			"||0|1",
+			"|a|1|2",
+			"|a|3|1",
+			"|a|4|1",
+			"|b|5|1",
+			"|a|6|1",
+			"ship||7|1",
+			"ship|hull part|8|1",
+			"ship||9|2",
+			"ship|line|11|1"
+		]), "groups: o resets g, one at each o or g line with faces after it: " + g);
 		// usemtl doesn't start a group, and holds across o and g lines.
 		var u = obj("v 0 0 0\nv 1 0 0\nv 0 1 0\n"
 			+ tri
@@ -199,6 +213,9 @@ class ObjTests {
 		check(same(q, ["||-1||1", "||0|red|5", "||1|blue|2"]), "parts by material alone: " + q);
 		check(same(byMaterial[1].cornerIndices, [3, 4, 5, 6, 7, 8, 6, 8, 9, 13, 14, 15, 16, 17, 18]), "by material: every red triangle");
 		check(obj("v 0 0 0\n").computeParts(true).length == 0, "no parts without faces");
+		var lines = obj("v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2\nusemtl red\nf 1 2 3\n");
+		check(lines.groups.length == 1 && lines.computeParts(true).length == 1 && lines.computeParts(true)[0].materialName == "red",
+			"a face without triangles in no part");
 	}
 
 	// MTL statements, and materials found for an OBJ's names.
@@ -216,12 +233,19 @@ class ObjTests {
 		var full = lib.findMaterial("full");
 		check(full == lib.materials[0] && full.defined && full.name == "full", "findMaterial: the first of a name");
 		check(same(full.ambient, [0.1, 0.2, 0.3])
+			&& same(full.computeAmbient(), [0.1, 0.2, 0.3])
+			&& same(full.computeDiffuse(), [0.4, 0.5, 0.6])
 			&& same(full.diffuse, [0.4, 0.5, 0.6])
 			&& same(full.specular, [0.7, 0.8, 0.9])
 			&& same(full.emission, [1.0, 0.5, 0])
 			&& same(full.transmission, [0.2, 0.3, 0.4]),
 			"colors");
 		check(full.shininess == 250 && full.opticalDensity == 1.45 && full.opacity == 0.75 && full.illumination == 2, "numbers; d wins over Tr");
+		check(full.computeShininess() == 250
+			&& full.computeOpticalDensity() == 1.45
+			&& full.computeOpacity() == 0.75
+			&& full.computeIllumination() == 2,
+			"the computed numbers, the file's");
 		check(full.roughness == null && full.metalness == null, "no PBR values in a classic material");
 		check(full.ambientTexturePath == "models/amb.png"
 			&& full.diffuseTexturePath == "models/diffuse map.png"
@@ -232,6 +256,10 @@ class ObjTests {
 			&& full.bumpTexturePath == "models/bumpy.png"
 			&& full.displacementTexturePath == "models/height.png",
 			"textures: options read past, paths resolved");
+		check(full.findTexturePath(["map_Bump"]) == "models/bumpy.png"
+			&& full.findTexturePath(["bump", "map_bump"]) == null
+			&& full.findTexturePath(["map_Kd", "map_Ks"]) == "models/spec.png",
+			"findTexturePath: the last of the statements asked for");
 		check(full.normalTexturePath == null
 			&& full.computeNormalTexturePath() == "models/bumpy.png", "the bump texture as the normal map");
 		check(near(full.computeRoughness(), 1 - Math.sqrt(0.25)) && full.computeMetalness() == 0, "roughness from Ns, metalness 0");
@@ -248,40 +276,62 @@ class ObjTests {
 		check(pbr.computeNormalTexturePath() == "models/normal.png", "norm wins over bump");
 		var empty = lib.findMaterial("empty");
 		check(empty.defined
-			&& same(empty.ambient, [0.0, 0, 0])
-			&& same(empty.diffuse, [1.0, 1, 1])
-			&& same(empty.specular, [0.0, 0, 0])
-			&& same(empty.emission, [0.0, 0, 0])
-			&& same(empty.transmission, [1.0, 1, 1])
-			&& empty.shininess == 0
-			&& empty.opticalDensity == 1
-			&& empty.opacity == 1
-			&& empty.illumination == 0
+			&& empty.ambient == null
+			&& empty.diffuse == null
+			&& empty.specular == null
+			&& empty.emission == null
+			&& empty.transmission == null
+			&& empty.shininess == null
+			&& empty.opticalDensity == null
+			&& empty.opacity == null
+			&& empty.illumination == null
 			&& empty.diffuseTexturePath == null
+			&& empty.findTexturePath(["map_Kd", "bump"]) == null
 			&& empty.computeNormalTexturePath() == null,
-			"a material's defaults");
+			"null for what the file doesn't give");
+		check(same(empty.computeAmbient(), [0.0, 0, 0])
+			&& same(empty.computeDiffuse(), [1.0, 1, 1])
+			&& same(empty.computeSpecular(), [0.0, 0, 0])
+			&& same(empty.computeEmission(), [0.0, 0, 0])
+			&& same(empty.computeTransmission(), [1.0, 1, 1])
+			&& empty.computeShininess() == 0
+			&& empty.computeOpticalDensity() == 1
+			&& empty.computeOpacity() == 1
+			&& empty.computeIllumination() == 0,
+			"the computed defaults");
 		check(empty.computeRoughness() == 1, "Ns 0: roughness 1");
 		var halo = lib.findMaterial("halo");
-		check(halo.opacity == 0.5 && same(halo.ambient, [0.0, 0, 0]) && halo.computeRoughness() == 0,
+		check(halo.opacity == 0.5 && halo.ambient == null && same(halo.computeAmbient(), [0.0, 0, 0]) && halo.computeRoughness() == 0,
 			"d -halo read past, a spectral color skipped, Ns 1000: roughness 0");
 		check(lib.findMaterial("Full") == null && lib.findMaterial("nothing") == null, "names: case counts, none for an unknown");
 		check(mtl("newmtl a\nNs 4000\n").materials[0].computeRoughness() == 0
 			&& mtl("newmtl a\nPr 2\nPm -1\n").materials[0].computeRoughness() == 1
 			&& mtl("newmtl a\nPm -1\n").materials[0].computeMetalness() == 0,
 			"roughness and metalness held to 0 to 1");
+		var bumps = mtl("newmtl a\nbump a.png\nmap_Bump b.png\nmap_bump c.png\nnewmtl b\nmap_bump c.png\nbump a.png\nmap_Bump b.png\n");
+		var a = bumps.materials[0], b = bumps.materials[1];
+		check(a.bumpTexturePath == "models/c.png" && b.bumpTexturePath == "models/b.png", "the bump texture: the last of its three statements");
+		check(a.findTexturePath(["bump", "map_bump"]) == "models/c.png" && b.findTexturePath(["bump", "map_bump"]) == "models/a.png",
+			"findTexturePath: the last line of those asked for, in the file's order");
 		// DEFAULT, and stand-ins for names no library gives.
 		var d = MtlMaterial.DEFAULT;
 		check(d != null
 			&& d.name == ""
 			&& !d.defined
-			&& same(d.diffuse, [1.0, 1, 1])
-			&& d.opacity == 1
+			&& d.diffuse == null
+			&& d.opacity == null
+			&& same(d.computeDiffuse(), [1.0, 1, 1])
+			&& d.computeOpacity() == 1
 			&& d.diffuseTexturePath == null,
-			"DEFAULT: white, opaque, no textures, not defined");
+			"DEFAULT: nothing given, computed white and opaque, no textures, not defined");
 		var model = obj("v 0 0 0\nv 1 0 0\nv 0 1 0\nusemtl pbr\nf 1 2 3\nusemtl missing\nf 1 2 3\nusemtl full\nf 1 2 3\n");
 		var found = model.computeMaterials(lib);
 		check(found.length == 3 && found[0] == pbr && found[2] == full, "computeMaterials: the library's, in materialNames' order");
-		check(found[1].name == "missing" && !found[1].defined && same(found[1].diffuse, [1.0, 1, 1]), "a stand-in, named, not defined");
+		check(found[1].name == "missing"
+			&& !found[1].defined
+			&& found[1].diffuse == null
+			&& same(found[1].computeDiffuse(), [1.0, 1, 1]),
+			"a stand-in, named, not defined, giving nothing");
 	}
 
 	// Libraries combined, as an OBJ naming several uses them.
@@ -324,6 +374,10 @@ class ObjTests {
 		check(thrown(() -> MtlFile.read(overlong, "m.mtl")) != null, "an overlong form refused");
 		var cut = Bytes.ofString("newmtl \u00e9");
 		check(thrown(() -> MtlFile.read(cut.sub(0, cut.length - 1), "m.mtl")) != null, "a sequence cut short refused");
+		var nul = Bytes.ofString("v 0 0 0\nv 1 0 0\n");
+		nul.set(10, 0);
+		var why = thrown(() -> ObjFile.read(nul, "m.obj"));
+		check(why != null && why.indexOf("Line 2") >= 0, "a NUL byte refused as not text: " + why);
 	}
 
 	// What can't be read, each naming its line.
@@ -338,12 +392,8 @@ class ObjTests {
 		check(names("v 0 0 0\nv 1.5.2 0 0\n", 2), "a malformed number");
 		check(names("vn 0 0\n", 1), "a normal of 2 values");
 		check(names("vt\n", 1), "a texture coordinate of no values");
-		check(names("v 0 0 0\nf 1 1 2\n", 2), "a corner naming a position not yet given");
 		check(names("v 0 0 0\nf 0 1 1\n", 2), "a corner numbered 0");
-		check(names("v 0 0 0\nf -2 1 1\n", 2), "a negative number before the first line");
-		check(names("v 0 0 0\nvt 0 0\nf 1/2 1/1 1/1\n", 3), "a texture coordinate the file doesn't have");
-		check(names("v 0 0 0\nf 1//1 1//1 1//1\n", 2), "a normal the file doesn't have");
-		check(names("v 0 0 0\nf 1 2\n", 2), "a corner out of range, in a face left out");
+		check(names("v 0 0 0\nvt 0 0\nf 1/0 1/1 1/1\n", 3), "a texture coordinate numbered 0");
 		check(names("v 0 0 0\nf 1/x 1 1\n", 2), "a corner number that isn't a number");
 		check(names("v 0 0 0\nf 1/1/1/1 1 1\n", 2), "a corner of four numbers");
 		check(names("v 0 0 0\n\nusemtl\n", 3), "usemtl without a name");

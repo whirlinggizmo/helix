@@ -30,8 +30,9 @@ import helix.services.images.Images;
 	the file gives them, its skin's matrices placing it. Its skins become a skeleton (`Model3D.skeleton`), and its animations of that
 	skeleton's bones `Animation3D`s. Only triangles are read; morph targets aren't yet.
 
-	An OBJ file is read by helix-formats' `ObjFile`, and the .mtl files it names by `MtlFile`: a library that can't be read is logged and
-	skipped, its materials' names then standing for materials with every value its default. Its faces become a mesh for each object,
+	An OBJ file is read by helix-formats' `ObjFile`, and the .mtl files it names by `MtlFile`: a file whose corners name a position,
+	texture coordinate or normal it doesn't have fails, and a library that can't be read is logged and skipped, its materials' names
+	then standing for materials with every value its default. Its faces become a mesh for each object,
 	group and material (`ObjFile.computeParts`), each corner that differs a vertex of its own, its texture coordinates' v turned to run
 	down the image as glTF's do, and its normals made length 1, or computed from the triangles where the file gives none for some of
 	its corners. Its materials are given as `GltfMaterial`s (`Model3D.materials` says how), and the textures they name decoded. It has
@@ -170,6 +171,10 @@ class Models {
 				fail('$path: $e');
 				return;
 			}
+			if (file.missingIndexCount > 0) {
+				fail('$path: ${file.missingIndexCount} of its corners name a position, texture coordinate or normal the file doesn\'t have');
+				return;
+			}
 			var paths = file.materialLibraryPaths,
 				libraries:Array<Null<MtlFile>> = [for (_ in paths) null],
 				left = paths.length + 1;
@@ -243,10 +248,11 @@ class Models {
 		var base = image(m.diffuseTexturePath),
 			normal = image(m.computeNormalTexturePath()),
 			emissive = image(m.emissionTexturePath);
-		var emission = [m.emission[0], m.emission[1], m.emission[2]];
+		var color = m.computeEmission(), diffuse = m.computeDiffuse();
+		var emission = [color[0], color[1], color[2]];
 		if (emissive >= 0 && emission[0] == 0 && emission[1] == 0 && emission[2] == 0)
 			emission = [1, 1, 1];
-		return new GltfMaterial(m.name, true, [m.diffuse[0], m.diffuse[1], m.diffuse[2], m.opacity], base, m.computeMetalness(), m.computeRoughness(), -1,
+		return new GltfMaterial(m.name, true, [diffuse[0], diffuse[1], diffuse[2], m.computeOpacity()], base, m.computeMetalness(), m.computeRoughness(), -1,
 			normal, -1, emission, emissive);
 	}
 
