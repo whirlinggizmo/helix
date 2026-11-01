@@ -58,9 +58,9 @@ static int screen_width,screen_height,frame_ended;
    before a bind: renamed[slot] is how many of its extras are in use this frame, bound[slot] whether the current one was bound since its write. */
 #define MAX_RENAMES 8
 static sg_buffer extras[256][MAX_RENAMES];static int renamed[256],bound[256];
-/* Render targets, by texture view slot: their color and depth attachment views (no depth view without depth), depth image and size, and the
-   pipelines' variant drawing into them (unflipped). */
-static struct{sg_view color,depth,resolve;sg_image depth_image,samples_image;int width,height,variant;}targets[256];
+/* Render targets, by texture view slot: their color and depth attachment views (no depth view without depth), depth image and size, the
+   pipelines' variant drawing into them (unflipped), and whether a pass has cleared them yet. */
+static struct{sg_view color,depth,resolve;sg_image depth_image,samples_image;int width,height,variant,cleared;}targets[256];
 /* Shadow maps, by texture view slot: the depth array, an attachment view a layer, and their size; and the sampler they're read through
    (comparing, linear, clamped), made with the first. */
 #define MAX_SHADOW_LAYERS 16
@@ -387,17 +387,25 @@ int helix_begin_shadow(uint32_t map,int layer){
  return 1;
 }
 static sg_color color_of(uint32_t color){return (sg_color){((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f,(color>>24)/255.f};}
-/* A pass into target, cleared to red, green, blue, alpha as its texels store them (and its depth, if it has one, to the farthest), before the
-   screen's: drawn flipped where the backend's origin is the bottom left (GL). */
-int helix_begin_target(uint32_t target,float red,float green,float blue,float alpha){
+/* A pass into target, before the screen's: cleared to red, green, blue, alpha as its texels store them and its depth, if it has one, to the
+   farthest, or (clear 0) loading what it holds, cleared to transparent black the first time. Its samples and depth are stored either way
+   (sokol's defaults discard a multisampled image's samples once resolved, and depth), so a later pass can load them. Drawn flipped where the
+   backend's origin is the bottom left (GL). */
+static int begin_target(uint32_t target,int clear,sg_color color){
  int slot=target&0xffff;
  if(active||slot>=256||!targets[slot].color.id||sg_query_view_state((sg_view){target})!=SG_RESOURCESTATE_VALID)return 0;
+ if(!targets[slot].cleared)clear=1;
+ targets[slot].cleared=1;
  active=2;flipped=!sg_query_features().origin_top_left;frame_width=targets[slot].width;frame_height=targets[slot].height;
  pass_variant=targets[slot].variant|(flipped?8:0);
- sg_begin_pass(&(sg_pass){.action={.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value={red,green,blue,alpha}},.depth={.load_action=SG_LOADACTION_CLEAR,.clear_value=1.0f}},
+ const sg_load_action load=clear?SG_LOADACTION_CLEAR:SG_LOADACTION_LOAD;
+ sg_begin_pass(&(sg_pass){.action={.colors[0]={.load_action=load,.store_action=SG_STOREACTION_STORE,.clear_value=color},
+  .depth={.load_action=load,.store_action=SG_STOREACTION_STORE,.clear_value=1.0f}},
   .attachments={.colors[0]=targets[slot].color,.resolves[0]=targets[slot].resolve,.depth_stencil=targets[slot].depth}});
  return 1;
 }
+int helix_begin_target(uint32_t target,float red,float green,float blue,float alpha){return begin_target(target,1,(sg_color){red,green,blue,alpha});}
+int helix_resume_target(uint32_t target){return begin_target(target,0,(sg_color){0,0,0,0});}
 int helix_end_target(void){if(active!=2)return 0;sg_end_pass();active=0;flipped=0;return 1;}
 int helix_begin(int width,int height,uint32_t color){
  if(active||width<=0||height<=0)return 0;

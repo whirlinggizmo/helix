@@ -443,8 +443,8 @@ class RTextures {
 		target.texture.id = 0;
 	}
 
-	/** Draws into a render texture until `EndTextureMode`. Unlike raylib's, what was drawn into it in an earlier frame isn't kept: each
-		frame's drawing into it starts cleared, to clear black unless `ClearBackground` gives a color.
+	/** Draws into a render texture until `EndTextureMode`, over what it holds: what was drawn into it before, in this frame or an earlier
+		one, stays until `ClearBackground` clears it, as raylib's does. A render texture never drawn into holds transparent black.
 
 		@param target  The render texture. */
 	static function BeginTextureMode(target:RenderTexture2D):Void {

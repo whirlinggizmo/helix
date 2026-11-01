@@ -18,12 +18,14 @@ class Main {
 		var red = GenImageColor(32, 32, RED);
 		var tile = GenImageChecked(8, 8, 2, 2, GREEN, BLUE);
 		var patched = LoadTextureFromImage(red);
+		var second = LoadTextureFromImage(red);
 		var copy = LoadRenderTexture(32, 32);
 		var ramp = GenImageGradientLinear(16, 16, 90, BLACK, WHITE);
 		ImageFormat(ramp, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
 		var dark = GenImageColor(8, 4, DARKGRAY);
 		ImageFormat(dark, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
 		var gray = LoadTextureFromImage(ramp);
+		var trail = LoadRenderTexture(200, 60);
 		var frame = 0;
 		while (!WindowShouldClose()) {
 			BeginDrawing();

@@ -95,6 +95,8 @@ class CountingGraphics implements IGraphics {
 
 	public function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void {}
 
+	public function resumeTargetPass(target:Int):Void {}
+
 	public function endTargetPass():Void {}
 
 	public function beginFrame(width:Int, height:Int, clearColor:Int):Void {}

@@ -88,8 +88,9 @@ interface IGraphics {
 
 		The target is sampled like any texture and stored top row first. A target with depth has its own depth buffer. It is multisampled
 		as the screen is (`msaaSampleCount`), or single-sampled where this GPU cannot multisample the format, and it is resolved into the
-		texture at the end of each pass. A target without depth has neither a depth buffer nor multisampling, for a pass that draws over the
-		whole target.
+		texture at the end of each pass. A target without depth has neither a depth buffer nor multisampling. What a pass leaves in a
+		target, its samples and depth too, lasts until a `beginTargetPass` clears it, so `resumeTargetPass` draws over it in a later pass or
+		frame. A new target holds transparent black and the farthest depth.
 		@param width  The width, in texels.
 		@param height  The height, in texels.
 		@param format  Optional. The texels' format; defaults to Rgba8.
@@ -203,7 +204,15 @@ interface IGraphics {
 		@throws String  A call inside a pass, or a handle that is not a render target. */
 	public function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void;
 
-	/** Ends the pass that `beginTargetPass` or `beginShadowPass` started.
+	/** Starts a pass into a render target that keeps what the target holds: its texels, and its depth if it has one.
+
+		It is `beginTargetPass` without the clear: the viewport is set to all of the target, and the pass comes before the screen's and
+		outside any other. `endTargetPass` ends it.
+		@param target  The render target, as a `createRenderTarget` handle.
+		@throws String  A call inside a pass, or a handle that is not a render target. */
+	public function resumeTargetPass(target:Int):Void;
+
+	/** Ends the pass that `beginTargetPass`, `resumeTargetPass` or `beginShadowPass` started.
 
 		Its target can be sampled from then on.
 		@throws String  No such pass is open. */

@@ -523,6 +523,7 @@ function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8
 function createShadowMap(size:Int, layerCount:Int):Int
 function beginShadowPass(map:Int, layerIndex:Int):Void
 function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void
+function resumeTargetPass(target:Int):Void
 function endTargetPass():Void
 function beginFrame(width:Int, height:Int, clearColor:Int):Void
 function applyScissor(x:Int, y:Int, w:Int, h:Int):Void

@@ -176,6 +176,10 @@ abstract class NativeGraphics implements IGraphics {
 		if (GraphicsDeviceBridge.beginTarget(target, red, green, blue, alpha) != 1)
 			throw "Invalid native target pass";
 
+	public function resumeTargetPass(target:Int):Void
+		if (GraphicsDeviceBridge.resumeTarget(target) != 1)
+			throw "Invalid native target pass";
+
 	public function endTargetPass():Void
 		if (GraphicsDeviceBridge.endTarget() != 1)
 			throw "No native target pass open";

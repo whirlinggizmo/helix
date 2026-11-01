@@ -256,7 +256,8 @@ class Frame {
 		projection = Matrix3D.fromOrthographic(0, pass.width, pass.height, 0, 0, 1);
 	}
 
-	/** Starts drawing into a render target, as its own pass, until `toScreen`.
+	/** Starts drawing into a render target, as its own pass, until `toScreen`: over what it holds, as raylib's render textures keep it,
+		unless `clear` clears it.
 
 		@param target  The render target's handle.
 		@param width  Its width.
@@ -265,7 +266,7 @@ class Frame {
 		flush();
 		pass = {
 			target: target,
-			clear: 0,
+			clear: null,
 			width: width,
 			height: height,
 			draws: [],
@@ -294,9 +295,9 @@ class Frame {
 		pass.draws.resize(0);
 	}
 
-	/** Replaces a rectangle of a texture on the GPU in the frame's order, as rlgl's `rlUpdateTexture` does at once: before the render
-		texture pass being drawn into, or, drawing on the screen, after the render texture passes so far and before those begun later. The
-		screen's draws all see it, as rlgl's batch drawn after it does.
+	/** Replaces a rectangle of a texture on the GPU in the frame's order, as rlgl's `rlUpdateTexture` does at once: in a render
+		texture's pass, between its draws so far and those after (and the batch waiting); drawing on the screen, after the render texture
+		passes so far and before those begun later. The screen's draws all see it, as rlgl's batch drawn after it does.
 
 		@param texture  The texture's GPU handle.
 		@param x  The rectangle's left edge, in texels.
@@ -314,7 +315,22 @@ class Frame {
 			rgba: rgba
 		};
 		if (pass.target != 0) {
-			pass.updates.push(update);
+			if (pass.draws.length == 0) {
+				pass.updates.push(update);
+				return;
+			}
+			// Drawn into already: those draws keep the old texels, and the pass goes on after the update, keeping what they drew. The
+			// batch waiting moves on with it, as rlgl's draws after the update.
+			var next:Pass = {
+				target: pass.target,
+				clear: null,
+				width: pass.width,
+				height: pass.height,
+				draws: [],
+				updates: [update]
+			};
+			passes.insert(passes.indexOf(pass) + 1, next);
+			pass = next;
 			return;
 		}
 		var last = passes.length > 1 ? passes[passes.length - 2] : null;
@@ -648,10 +664,13 @@ class Frame {
 				graphics.updateTexture(u.texture, u.x, u.y, u.width, u.height, u.rgba);
 			if (p.target == -1)
 				continue;
+			var color:Int = p.clear == null ? 0xff000000 : p.clear;
 			if (p.target == 0)
-				graphics.beginFrame(framebufferWidth, framebufferHeight, p.clear);
+				graphics.beginFrame(framebufferWidth, framebufferHeight, color);
+			else if (p.clear == null)
+				graphics.resumeTargetPass(p.target);
 			else
-				graphics.beginTargetPass(p.target, (p.clear >> 16 & 255) / 255, (p.clear >> 8 & 255) / 255, (p.clear & 255) / 255, (p.clear >>> 24) / 255);
+				graphics.beginTargetPass(p.target, (color >> 16 & 255) / 255, (color >> 8 & 255) / 255, (color & 255) / 255, (color >>> 24) / 255);
 			upload();
 			var width = p.target == 0 ? framebufferWidth : Std.int(p.width),
 				height = p.target == 0 ? framebufferHeight : Std.int(p.height);
@@ -755,7 +774,8 @@ class Frame {
 private typedef Pass = {
 	// The render target, 0 for the screen, or -1 for no pass: updates alone, between passes.
 	final target:Int;
-	var clear:Int;
+	// The color the pass is cleared to, 0xAARRGGBB, or null to keep what a render texture holds (the screen's black).
+	var clear:Null<Int>;
 	var width:Float;
 	var height:Float;
 	final draws:Array<Draw>;

@@ -20,6 +20,7 @@ import js.html.webgl.WebGL2RenderingContext;
 	floats; when multisampled, the framebuffer drawn into and its color. */
 private typedef Target = {
 	framebuffer:Dynamic,
+	cleared:Bool,
 	depth:Dynamic,
 	half:Bool,
 	drawn:Dynamic,
@@ -501,6 +502,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		textures[id] = tex;
 		targets[id] = {
 			framebuffer: framebuffer,
+			cleared: false,
 			depth: depthBuffer,
 			half: half,
 			drawn: drawn,
@@ -566,17 +568,26 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		// Not flipped: a shadow map's rows run bottom first, as its lookups expect.
 		inTarget = true;
 		flipped = false;
-		open(m.size, m.size, 0, 0, 0, 0);
+		open(m.size, m.size, true, 0, 0, 0, 0);
 	}
 
-	public function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void {
+	public function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void
+		beginTarget(target, true, red, green, blue, alpha);
+
+	public function resumeTargetPass(target:Int):Void
+		beginTarget(target, false, 0, 0, 0, 0);
+
+	// A pass into a target, cleared or keeping what it holds (cleared to transparent black the first time): its multisampled framebuffer
+	// when it has one, which keeps its samples from pass to pass, resolved into the texture at each pass's end.
+	function beginTarget(target:Int, clear:Bool, red:Float, green:Float, blue:Float, alpha:Float):Void {
 		var t = targets[target];
 		if (active || t == null)
 			throw "Invalid target pass";
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, t.drawn != null ? t.drawn : t.framebuffer);
 		drawing = t;
 		inTarget = flipped = true;
-		open(t.width, t.height, red, green, blue, alpha);
+		open(t.width, t.height, clear || !t.cleared, red, green, blue, alpha);
+		t.cleared = true;
 	}
 
 	public function endTargetPass():Void {
@@ -601,22 +612,24 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		inTarget = flipped = frameEnded = false;
 		frameWidth = width;
 		frameHeight = height;
-		open(width, height, Color.getRed(clearColor) / 255, Color.getGreen(clearColor) / 255, Color.getBlue(clearColor) / 255,
+		open(width, height, true, Color.getRed(clearColor) / 255, Color.getGreen(clearColor) / 255, Color.getBlue(clearColor) / 255,
 			Color.getAlpha(clearColor) / 255);
 	}
 
-	// Opens a pass on the bound framebuffer, width x height, cleared.
-	function open(width:Int, height:Int, red:Float, green:Float, blue:Float, alpha:Float):Void {
+	// Opens a pass on the bound framebuffer, width x height, cleared or not.
+	function open(width:Int, height:Int, clear:Bool, red:Float, green:Float, blue:Float, alpha:Float):Void {
 		active = true;
 		passHeight = height;
 		gl.disable(WebGL2RenderingContext.SCISSOR_TEST);
 		gl.disable(WebGL2RenderingContext.CULL_FACE);
-		gl.depthMask(true);
-		// A depth-only draw before may have masked the colors off: a clear writes them all.
-		gl.colorMask(true, true, true, true);
-		gl.clearColor(red, green, blue, alpha);
-		gl.clearDepth(1);
-		gl.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT | WebGL2RenderingContext.DEPTH_BUFFER_BIT);
+		if (clear) {
+			gl.depthMask(true);
+			// A depth-only draw or a color write mask before may have masked the colors off: a clear writes them all.
+			gl.colorMask(true, true, true, true);
+			gl.clearColor(red, green, blue, alpha);
+			gl.clearDepth(1);
+			gl.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT | WebGL2RenderingContext.DEPTH_BUFFER_BIT);
+		}
 		gl.viewport(0, 0, width, height);
 	}
 

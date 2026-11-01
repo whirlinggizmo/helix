@@ -2713,7 +2713,7 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - returns: True when it was.
 - `UnloadRenderTexture`: Frees a render texture.
   - `target`: The render texture.
-- `BeginTextureMode`: Draws into a render texture until `EndTextureMode`. Unlike raylib's, what was drawn into it in an earlier frame isn't kept: each frame's drawing into it starts cleared, to clear black unless `ClearBackground` gives a color.
+- `BeginTextureMode`: Draws into a render texture until `EndTextureMode`, over what it holds: what was drawn into it before, in this frame or an earlier one, stays until `ClearBackground` clears it, as raylib's does. A render texture never drawn into holds transparent black.
   - `target`: The render texture.
 - `EndTextureMode`: Goes back to drawing on the screen.
 - `SetTextureFilter`: Sets how a texture is sampled when drawn larger or smaller: `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel, and the others blend the nearest four, as `TEXTURE_FILTER_BILINEAR` does (there are no mipmaps here).

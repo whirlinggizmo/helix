@@ -207,7 +207,9 @@ enum Event {
   the color and for the alpha apart, as every backend has them; `Blend.OPAQUE`, `ALPHA` (the alpha kept as `a + destination * (1 - a)`)
   and `ADDITIVE` are the common ones. No blend constant: no factor reads one. `colorWrite` (`ColorChannels`, all when omitted) masks the
   channels written; a pass's clear writes every channel.
-- Passes: `beginShadowPass(map, layerIndex)`; `beginTargetPass(target, r, g, b, a)` and `endTargetPass`; the screen's, `beginFrame(width,
+- Passes: `beginShadowPass(map, layerIndex)`; `beginTargetPass(target, r, g, b, a)`, `resumeTargetPass(target)` (no clear: a target keeps
+  what passes leave in it, its samples and depth too, from pass to pass and frame to frame; a new one holds transparent black and the
+  farthest depth) and `endTargetPass`; the screen's, `beginFrame(width,
   height, clearColor)` and `endFrame`; within a pass `applyViewport`, `applyScissor`, `resetScissor`.
 - `draw(pipeline, buffers, indexBuffer, firstElementIndex, elementCount, firstInstanceIndex, instanceCount, textures, samplings, uniforms)`: buffers by the
   pipeline's buffer index, an index buffer for indexed pipelines, a range, instances, textures, samplings and uniform blocks by slot.

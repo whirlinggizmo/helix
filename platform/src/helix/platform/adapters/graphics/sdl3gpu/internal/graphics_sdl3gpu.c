@@ -64,7 +64,7 @@ static struct{uint32_t generation;int live;SDL_GPUGraphicsPipeline *pipeline,*fl
    target (a color texture sampled, drawn through a multisampled one when it has depth and the screen is multisampled, its depth or none, the
    pipelines' variant drawing into it), or a shadow map (a depth array). */
 enum{PLAIN,DATA,TARGET,SHADOW};
-static struct{uint32_t generation;int live,kind,width,height,layers,variant,format;SDL_GPUTexture *texture,*samples,*depth;
+static struct{uint32_t generation;int live,kind,width,height,layers,variant,format,cleared;SDL_GPUTexture *texture,*samples,*depth;
  SDL_GPUTexture *versions[MAX_RENAMES];int current,bound[MAX_RENAMES];}textures[SLOTS];
 
 /* Samplers by Sampling value (helix.platform.Sampling: bit 0 linear, bits 1-2 wrap u, bits 3-4 wrap v), made when first used, and the
@@ -551,24 +551,32 @@ int helix_begin_shadow(uint32_t map,int layer){
  begin_recording(2,1,textures[slot].width,textures[slot].height);
  return 1;
 }
-/* Color and depth targets for a pass cleared to color: drawn into color, or into samples resolved into color at the pass's end; depth, or none. */
-static void color_pass(SDL_GPUTexture *color,SDL_GPUTexture *samples,SDL_GPUTexture *depth,SDL_FColor clear){
+/* Color and depth targets for a pass cleared to color, or (keep) loading what they hold: drawn into color, or into samples resolved into
+   color at the pass's end; depth, or none. A kept target's samples and depth are stored, so a later pass can load them. */
+static void color_pass(SDL_GPUTexture *color,SDL_GPUTexture *samples,SDL_GPUTexture *depth,SDL_FColor clear,int keep){
  pass_has_color=1;pass_has_depth=depth!=NULL;
- pass_color=samples?(SDL_GPUColorTargetInfo){.texture=samples,.clear_color=clear,.load_op=SDL_GPU_LOADOP_CLEAR,.store_op=SDL_GPU_STOREOP_RESOLVE,.resolve_texture=color}
-  :(SDL_GPUColorTargetInfo){.texture=color,.clear_color=clear,.load_op=SDL_GPU_LOADOP_CLEAR,.store_op=SDL_GPU_STOREOP_STORE};
- pass_depth=(SDL_GPUDepthStencilTargetInfo){.texture=depth,.clear_depth=1,.load_op=SDL_GPU_LOADOP_CLEAR,.store_op=SDL_GPU_STOREOP_DONT_CARE,
+ const SDL_GPULoadOp load=keep?SDL_GPU_LOADOP_LOAD:SDL_GPU_LOADOP_CLEAR;
+ pass_color=samples?(SDL_GPUColorTargetInfo){.texture=samples,.clear_color=clear,.load_op=load,.store_op=keep?SDL_GPU_STOREOP_RESOLVE_AND_STORE:SDL_GPU_STOREOP_RESOLVE,.resolve_texture=color}
+  :(SDL_GPUColorTargetInfo){.texture=color,.clear_color=clear,.load_op=load,.store_op=SDL_GPU_STOREOP_STORE};
+ pass_depth=(SDL_GPUDepthStencilTargetInfo){.texture=depth,.clear_depth=1,.load_op=load,.store_op=keep?SDL_GPU_STOREOP_STORE:SDL_GPU_STOREOP_DONT_CARE,
   .stencil_load_op=SDL_GPU_LOADOP_DONT_CARE,.stencil_store_op=SDL_GPU_STOREOP_DONT_CARE};
 }
-/* A pass into target, cleared to red, green, blue, alpha as its texels store them, before the screen's. Not flipped: SDL_GPU's rows are stored
-   top first, as every texture's are. */
-int helix_begin_target(uint32_t target,float red,float green,float blue,float alpha){
+/* A pass into target, before the screen's: cleared to red, green, blue, alpha as its texels store them (clear), or loading what it holds,
+   cleared to transparent black the first time. Its samples and depth are stored, so a later pass can load them. Not flipped: SDL_GPU's rows
+   are stored top first, as every texture's are. */
+static int begin_target(uint32_t target,int clear,SDL_FColor color){
  if(active||!texture_live(target))return 0;
  const int slot=slot_of(target);
  if(textures[slot].kind!=TARGET||!frame_command())return 0;
- color_pass(textures[slot].texture,textures[slot].samples,textures[slot].depth,(SDL_FColor){red,green,blue,alpha});
+ if(!textures[slot].cleared)clear=1;
+ textures[slot].cleared=1;
+ color_pass(textures[slot].texture,textures[slot].samples,textures[slot].depth,color,1);
+ if(clear){pass_color.load_op=SDL_GPU_LOADOP_CLEAR;pass_depth.load_op=SDL_GPU_LOADOP_CLEAR;}
  begin_recording(2,0,textures[slot].width,textures[slot].height);pass_variant=textures[slot].variant;
  return 1;
 }
+int helix_begin_target(uint32_t target,float red,float green,float blue,float alpha){return begin_target(target,1,(SDL_FColor){red,green,blue,alpha});}
+int helix_resume_target(uint32_t target){return begin_target(target,0,(SDL_FColor){0,0,0,0});}
 /* The screen's pass: into the screen texture (made again when the size changes), copied to the swapchain when the frame ends. */
 int helix_begin(int width,int height,uint32_t color){
  if(active||width<=0||height<=0||!frame_command())return 0;
@@ -580,7 +588,7 @@ int helix_begin(int width,int height,uint32_t color){
   if(!screen||(window_samples>1&&!screen_samples)||!screen_depth)return 0;
  }
  frame_ended=0;
- color_pass(screen,screen_samples,screen_depth,color_of(color));
+ color_pass(screen,screen_samples,screen_depth,color_of(color),0);
  begin_recording(1,0,width,height);pass_variant=0;
  return 1;
 }

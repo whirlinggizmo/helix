@@ -811,6 +811,7 @@ function createPipeline(desc:PipelineDesc):Int
 function disposePipeline(handle:Int):Void
 function beginShadowPass(map:Int, layerIndex:Int):Void
 function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void
+function resumeTargetPass(target:Int):Void
 function endTargetPass():Void
 function beginFrame(width:Int, height:Int, clearColor:Int):Void
 function applyViewport(x:Int, y:Int, w:Int, h:Int):Void
@@ -874,7 +875,7 @@ function dispose():Void
   - returns: The render target's handle.
   - throws `String`: A size of 0 or less, or a format this GPU cannot draw into (`canRender`).
 
-  The target is sampled like any texture and stored top row first. A target with depth has its own depth buffer. It is multisampled as the screen is (`msaaSampleCount`), or single-sampled where this GPU cannot multisample the format, and it is resolved into the texture at the end of each pass. A target without depth has neither a depth buffer nor multisampling, for a pass that draws over the whole target.
+  The target is sampled like any texture and stored top row first. A target with depth has its own depth buffer. It is multisampled as the screen is (`msaaSampleCount`), or single-sampled where this GPU cannot multisample the format, and it is resolved into the texture at the end of each pass. A target without depth has neither a depth buffer nor multisampling. What a pass leaves in a target, its samples and depth too, lasts until a `beginTargetPass` clears it, so `resumeTargetPass` draws over it in a later pass or frame. A new target holds transparent black and the farthest depth.
 - `canRender`: Returns whether this GPU draws into, blends over and filters render targets of a format.
   - `format`: The format.
   - returns: True when render targets of the format can be drawn into.
@@ -939,7 +940,12 @@ function dispose():Void
   - throws `String`: A call inside a pass, or a handle that is not a render target.
 
   The target is cleared to the color as its texels store it. That is 0 to 1 in an RGBA8 target, and can be beyond 1 in a half-float one. Its depth, if it has one, is cleared to the farthest, and the viewport is set to all of it. The pass comes before the screen's and outside any other. `endTargetPass` ends it.
-- `endTargetPass`: Ends the pass that `beginTargetPass` or `beginShadowPass` started.
+- `resumeTargetPass`: Starts a pass into a render target that keeps what the target holds: its texels, and its depth if it has one.
+  - `target`: The render target, as a `createRenderTarget` handle.
+  - throws `String`: A call inside a pass, or a handle that is not a render target.
+
+  It is `beginTargetPass` without the clear: the viewport is set to all of the target, and the pass comes before the screen's and outside any other. `endTargetPass` ends it.
+- `endTargetPass`: Ends the pass that `beginTargetPass`, `resumeTargetPass` or `beginShadowPass` started.
   - throws `String`: No such pass is open.
 
   Its target can be sampled from then on.

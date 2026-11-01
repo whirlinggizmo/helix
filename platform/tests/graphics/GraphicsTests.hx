@@ -35,7 +35,7 @@ typedef Case = {
 
 	The cases: a clear, a triangle's colors interpolated, eight vertex buffers read and a ninth refused, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
 	additive blending, each blend factor and operation and a color write mask, a texture's rectangles replaced, and replaced
-	between passes, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
+	between passes, targets kept from pass to pass and frame to frame (their depth and samples too) and one never cleared, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
 	texel by texel, a cubemap's six faces, and declared textures left unbound reading clear. The shaders are `shaders/*.vert` and `*.frag`,
 	compiled by the build, so it checks the shader compiler's dialects too. One case runs a frame; on a GPU that reads back later, the next
 	waits for it.
@@ -195,6 +195,21 @@ class GraphicsTests {
 			fetched = pipeline(data, textured, Blend.OPAQUE),
 			looked = pipeline(cube, textured, Blend.OPAQUE);
 		var tinted = pipeline(tint, plain, Blend.OPAQUE);
+		// The same, testing and writing depth.
+		var deep = graphics.createPipeline({
+			shader: tint,
+			buffers: [plain],
+			primitive: Triangles,
+			indexed: false,
+			blend: Blend.OPAQUE,
+			depthTest: LessEqual,
+			depthWrite: true,
+			cull: None,
+			clockwise: false,
+			depthOnly: false,
+			flip: ClipScale
+		});
+		pipelines.push(deep);
 		// Each blend over the target's (.25, .5, .75, .25) with (1, .5, 0, .5), and what it leaves there, red, green, blue and alpha.
 		var blends:Array<{blend:Blend, expected:Array<Float>}> = [
 			{blend: new Blend(DestinationColor, OneMinusSourceAlpha), expected: [.375, .5, .375, .25]},
@@ -268,8 +283,13 @@ class GraphicsTests {
 
 		var target = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false),
 			second = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false);
+		// With depth, multisampled as the screen is, kept from one frame to the next; and one never cleared.
+		var kept = graphics.createRenderTarget(SIZE, SIZE),
+			fresh = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false);
 		textures.push(target);
 		textures.push(second);
+		textures.push(kept);
+		textures.push(fresh);
 		// 4 x 4, red, its rectangles replaced by the cases; and 2 x 1 of half floats.
 		var patched = texture2D(4, 4, [for (_ in 0...16) 0xff0000ff]);
 		var halves = Bytes.alloc(16);
@@ -482,6 +502,70 @@ class GraphicsTests {
 					p.expect(12, 8, [1, 1, 1, 1], 1);
 					p.expect(15, 8, [.5, 1, .5, 1], 1);
 				}
+			},
+			{
+				name: "a target kept from pass to pass",
+				// Cleared to black with red on the left, then resumed, green drawn on the right.
+				before: () -> {
+					graphics.beginTargetPass(target, 0, 0, 0, 1);
+					graphics.applyViewport(0, 0, SIZE >> 1, SIZE);
+					draw(opaque, red, 6);
+					graphics.endTargetPass();
+					graphics.resumeTargetPass(target);
+					graphics.applyViewport(SIZE >> 1, 0, SIZE >> 1, SIZE >> 1);
+					draw(tinted, positions, 6, null, null, [clip, floatBytes([0, 0, 0, 0]), floatBytes([0, 1, 0, 1])]);
+					graphics.endTargetPass();
+				},
+				target: target,
+				check: p -> {
+					p.expect(3, 3, [1, 0, 0, 1], 0);
+					p.expect(3, 12, [1, 0, 0, 1], 0);
+					p.expect(12, 12, [0, 1, 0, 1], 0);
+					p.expect(12, 3, [0, 0, 0, 1], 0);
+				}
+			},
+			{
+				name: "a target with depth, drawn in one frame",
+				// Blue, with a red band on the left half's middle at a depth of 0.25.
+				before: () -> {
+					graphics.beginTargetPass(kept, 0, 0, 1, 1);
+					draw(deep, half, 6, null, null, [clip, floatBytes([-.5, 0, -.5, 0]), floatBytes([1, 0, 0, 1])]);
+					graphics.endTargetPass();
+				},
+				target: kept,
+				check: p -> {
+					p.expect(3, 8, [1, 0, 0, 1], 1);
+					p.expect(12, 8, [0, 0, 1, 1], 1);
+				}
+			},
+			{
+				name: "the target kept, its depth too, in the next",
+				// Resumed: green over the bottom half at a depth of 0.5, hidden behind the band, the blue above it kept.
+				before: () -> {
+					graphics.resumeTargetPass(kept);
+					graphics.applyViewport(0, 0, SIZE, SIZE >> 1);
+					draw(deep, positions, 6, null, null, [clip, floatBytes([0, 0, 0, 0]), floatBytes([0, 1, 0, 1])]);
+					graphics.endTargetPass();
+				},
+				target: kept,
+				check: p -> {
+					p.expect(3, 2, [0, 0, 1, 1], 1);
+					p.expect(12, 2, [0, 0, 1, 1], 1);
+					p.expect(3, 6, [1, 0, 0, 1], 1);
+					p.expect(3, 10, [1, 0, 0, 1], 1);
+					p.expect(3, 14, [0, 1, 0, 1], 1);
+					p.expect(12, 10, [0, 1, 0, 1], 1);
+				}
+			},
+			{
+				name: "a target never cleared, resumed",
+				before: () -> {
+					graphics.resumeTargetPass(fresh);
+					graphics.endTargetPass();
+				},
+				target: fresh,
+				check: p -> for (at in [[0, 0], [8, 8], [15, 15]])
+					p.expect(at[0], at[1], [0, 0, 0, 0], 0)
 			},
 			{
 				name: "a render target drawn to the screen",
