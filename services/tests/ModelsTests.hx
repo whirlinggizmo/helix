@@ -7,8 +7,10 @@ import helix.services.models.Models;
 /** Checks Models over fakes: a .gltf whose buffer and image are files of their own (named URI-encoded, beside it in a folder) and whose
 	second image is held in it, read with what it names; its nodes' transforms put into its mesh's positions and normals; a lines primitive
 	left out; the images decoded by index, one that won't decode null; a rig's skeleton (its joints and the node above them), skin,
-	skinned mesh left unplaced beside its node's transform, and animation of its bones alone; and a missing buffer failing the load by
-	name. */
+	skinned mesh left unplaced beside its node's transform, and animation of its bones alone; a missing buffer failing the load by
+	name; and OBJ files: their libraries (a missing and a broken one skipped) and textures (a missing one null), a mesh for each group
+	and material, vertices made of corners, v turned, normals made length 1 or computed, MTL materials as glTF's, positions' colors, an
+	.OBJ, and a file that can't be read failing by its line. */
 class ModelsTests {
 	static var checks = 0;
 
@@ -118,6 +120,93 @@ class ModelsTests {
 			] : Array<Dynamic>)
 		};
 		return haxe.Json.stringify(document);
+	}
+
+	// OBJ files: a house naming three libraries (one missing, one broken) whose materials name textures (one missing), its faces before
+	// any usemtl, in two groups, a material no library gives; a colored triangle; a file that can't be read.
+	static function obj(files:FakeFileSystem, models:Models, pump:Void->Void):Void {
+		files.files.set("objs/house.obj",
+			Bytes.ofString("mtllib house.mtl missing.mtl broken.mtl\n"
+				+ "v 0 0 0\nv 1 0 0\nv 1 1 0\nv 0 1 0\nvt 0 0\nvt 1 0\nvt 1 0.25\nvt 0 1\nvn 0 0 2\n"
+				+ "f 1 2 3\n" // before any usemtl
+				+ "g a\nusemtl wall\nf 1/1/1 2/2/1 3/3/1 4/4/1\n" // a quad, its corners' normals given
+				+ "g b\nusemtl roof\nf 1/1 2/2 3/3\n" // no normals
+				+ "usemtl nowhere\nf 1 3 4\n"));
+		files.files.set("objs/house.mtl",
+			Bytes.ofString("newmtl wall\nKd 0.5 0.25 1\nd 0.5\nNs 250\nmap_Kd tex/wall.png\nbump gone.png\n"
+				+ "map_Ke glow.png\nnewmtl roof\nPr 0.2\nPm 1\nKe 0.5 0.5 0.5\nmap_Kd tex/wall.png\nnorm roof.png\n"));
+		files.files.set("objs/broken.mtl", Bytes.ofString("newmtl\n"));
+		files.files.set("objs/tex/wall.png", Bytes.ofString("2x2"));
+		files.files.set("objs/glow.png", Bytes.ofString("1x1"));
+		files.files.set("objs/roof.png", Bytes.ofString("3x3"));
+		var house:Model3D = null;
+		models.load("objs/house.obj", m -> house = m, e -> throw e);
+		pump();
+		check(house != null && house.path == "objs/house.obj", "an OBJ file loaded, a missing and a broken library skipped");
+		check(house.meshes.length == 4
+			&& house.meshMaterialIndices.join(",") == "-1,0,1,2", "a mesh for each group and material, -1 before usemtl");
+		check(house.skeleton == null
+			&& house.skins.length == 0
+			&& house.animations.length == 0
+			&& house.meshSkinIndices.join(",") == "-1,-1,-1,-1"
+			&& house.meshTransforms[0].values[12] == 0
+			&& house.meshTransforms[0].values[0] == 1,
+			"no skeleton; identity transforms");
+		var quad = house.meshes[1];
+		check(quad.vertexCount == 4 && quad.indices.join(",") == "0,1,2,0,2,3", "a quad: a vertex a corner, two triangles indexing them");
+		check(quad.texCoords.join(",") == "0,1,1,1,1,0.75,0,0", "texture coordinates' v turned to run down the image");
+		check(near(quad.normals[2], 1) && near(quad.normals[11], 1), "normals made length 1");
+		var roof = house.meshes[2];
+		check(roof.normals != null && near(roof.normals[2], 1), "normals computed where the file gives none");
+		check(house.meshes[0].texCoords == null && house.meshes[0].colors == null, "no texture coordinates or colors where there are none");
+		check(house.materials.length == 3 && house.materials[0].name == "wall" && house.materials[2].name == "nowhere", "a material each usemtl name");
+		var wall = house.materials[0];
+		check(wall.hasPbrMetallicRoughness
+			&& wall.baseColorFactor.join(",") == "0.5,0.25,1,0.5"
+			&& wall.metallic == 0
+			&& near(wall.roughness, 0.5)
+			&& wall.metallicRoughnessImageIndex == -1
+			&& wall.occlusionImageIndex == -1,
+			"Kd and d the base color; metalness and roughness computed");
+		check(wall.baseColorImageIndex == 0
+			&& wall.normalImageIndex == 1
+			&& wall.emissiveImageIndex == 2
+			&& wall.emissiveFactor.join(",") == "1,1,1",
+			"its textures by index; the emissive color white with a texture and no Ke");
+		var r = house.materials[1];
+		check(r.baseColorImageIndex == 0
+			&& r.metallic == 1
+			&& r.roughness == 0.2
+			&& r.normalImageIndex == 3
+			&& r.emissiveImageIndex == -1
+			&& r.emissiveFactor.join(",") == "0.5,0.5,0.5",
+			"a texture two materials name is one image; Pr, Pm, norm and Ke");
+		var nowhere = house.materials[2];
+		check(nowhere.baseColorFactor.join(",") == "1,1,1,1" && nowhere.baseColorImageIndex == -1 && nowhere.normalImageIndex == -1,
+			"a name no library gives: every default");
+		check(house.images.length == 4
+			&& house.images[0].path == "objs/tex/wall.png"
+			&& house.images[0].width == 2
+			&& house.images[1] == null
+			&& house.images[2].width == 1
+			&& house.images[3].width == 3,
+			"its textures decoded, a missing one null");
+
+		files.files.set("objs/colors.OBJ", Bytes.ofString("v 0 0 0 1 0 0\nv 1 0 0 0 1 0\nv 0 1 0 0 0 1\nf 1 2 3\n"));
+		var colored:Model3D = null;
+		models.load("objs/colors.OBJ", m -> colored = m, e -> throw e);
+		pump();
+		check(colored != null
+			&& colored.materials.length == 0
+			&& colored.meshMaterialIndices.join(",") == "-1"
+			&& colored.meshes[0].colors.join(",") == "1,0,0,1,0,1,0,1,0,0,1,1",
+			"an .OBJ: positions' colors, alpha 1; no libraries, no materials");
+
+		files.files.set("objs/bad.obj", Bytes.ofString("v 0 0 0\nf 1 2 3\n"));
+		var why = "";
+		models.load("objs/bad.obj", _ -> throw "loaded a bad file", message -> why = message);
+		pump();
+		check(why.indexOf("objs/bad.obj") >= 0 && why.indexOf("Line 2") >= 0, "a file that can't be read fails, by its path and line");
 	}
 
 	static function main():Void {
@@ -237,6 +326,7 @@ class ModelsTests {
 		models.load("broken/thing.gltf", _ -> throw "loaded without its buffer", message -> why = message);
 		pump();
 		check(why.indexOf("broken/mesh data.bin") >= 0, "a missing buffer fails the load, by its path");
+		obj(files, models, pump);
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);
