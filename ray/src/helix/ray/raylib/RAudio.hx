@@ -41,7 +41,6 @@ class RAudio {
 		Runtime.loading();
 		var audio = new helix.services.audio.Audio(output, decoder, Runtime.assets, Runtime.system);
 		Runtime.polled.push(audio);
-		Runtime.polled.push(streams);
 		Runtime.output = output;
 		Runtime.audio = audio;
 	}
@@ -50,11 +49,14 @@ class RAudio {
 	static function CloseAudioDevice():Void {
 		if (Runtime.audio == null)
 			return;
-		for (p in ([Runtime.audio, Runtime.audioDecoder, Runtime.output, streams] : Array<helix.platform.IPollable>))
+		for (p in ([Runtime.audio, Runtime.audioDecoder, Runtime.output] : Array<helix.platform.IPollable>))
 			Runtime.polled.remove(p);
-		for (stream in streams.streams)
-			stream.voice = null;
-		streams.streams.resize(0);
+		if (streams != null) {
+			Runtime.polled.remove(streams);
+			for (stream in streams.streams)
+				stream.voice = null;
+			streams = null;
+		}
 		Runtime.audio.dispose();
 		Runtime.audioDecoder.dispose();
 		Runtime.output.dispose();
@@ -858,7 +860,8 @@ class RAudio {
 
 		@param stream  The stream. */
 	static function UnloadAudioStream(stream:AudioStream):Void {
-		streams.streams.remove(stream);
+		if (streams != null)
+			streams.streams.remove(stream);
 		if (stream.queue != null)
 			stream.queue.dispose();
 		stream.queue = null;
@@ -990,9 +993,15 @@ class RAudio {
 		if (stream.queue == null)
 			return;
 		stream.callback = callback;
-		streams.streams.remove(stream);
-		if (callback != null)
+		if (streams != null)
+			streams.streams.remove(stream);
+		if (callback != null) {
+			if (streams == null) {
+				streams = new AudioStreams();
+				Runtime.polled.push(streams);
+			}
 			streams.streams.push(stream);
+		}
 	}
 
 	/** raylib's processor on a stream's samples, which it calls on its audio thread. A page can't run Haxe there, so a call doesn't compile
@@ -1068,8 +1077,12 @@ class RAudio {
 		return sampleSize == 8 ? 1 : sampleSize == 16 ? 2 : 4;
 	}
 
-	// The streams' default buffer frames (SetAudioStreamBufferSizeDefault), 0 for raylib's own; the streams with callbacks.
+	// The streams' default buffer frames (SetAudioStreamBufferSizeDefault), 0 for raylib's own.
 	static var bufferSizeDefault = 0;
-	static final streams = new AudioStreams();
+
+	// The streams with callbacks, made and polled with the first (SetAudioStreamCallback), so a program giving none never links their
+	// topping up; null until then and after CloseAudioDevice. A stream fed by UpdateAudioStream needs no poll: its samples are queued as
+	// they are given.
+	static var streams:Null<AudioStreams> = null;
 	#end
 }
