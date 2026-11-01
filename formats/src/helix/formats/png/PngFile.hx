@@ -21,18 +21,18 @@ class PngFile {
 
 		@param width  The image's width, in pixels.
 		@param height  The image's height, in pixels.
-		@param channels  The channels a pixel has, 1 to 4, a byte each.
-		@param pixels  The pixels, rows top first, each `width * channels` bytes.
+		@param channelCount  The channels a pixel has, 1 to 4, a byte each.
+		@param pixels  The pixels, rows top first, each `width * channelCount` bytes.
 		@return  The PNG file.
 		@throws String  The width or height is under 1, the channels are outside 1 to 4, or there are fewer pixels than the size needs. */
-	public static function write(width:Int, height:Int, channels:Int, pixels:Bytes):Bytes {
+	public static function write(width:Int, height:Int, channelCount:Int, pixels:Bytes):Bytes {
 		if (width < 1 || height < 1)
 			throw 'A PNG of $width x $height pixels: both must be 1 or more';
-		if (channels < 1 || channels > 4)
-			throw 'A PNG of $channels channels: it takes 1 to 4';
-		if (pixels.length < width * height * channels)
-			throw 'A PNG of $width x $height x $channels needs ${width * height * channels} bytes, given ${pixels.length}';
-		return StbPngWriter.write(pixels, width * channels, width, height, channels);
+		if (channelCount < 1 || channelCount > 4)
+			throw 'A PNG of $channelCount channels: it takes 1 to 4';
+		if (pixels.length < width * height * channelCount)
+			throw 'A PNG of $width x $height x $channelCount needs ${width * height * channelCount} bytes, given ${pixels.length}';
+		return StbPngWriter.write(pixels, width * channelCount, width, height, channelCount);
 	}
 }
 

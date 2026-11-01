@@ -294,20 +294,20 @@ class AudioHeaderTests {
 		check(near(AudioHeader.readDuration(layer2, 626 * 100), 626 * 100 * 8 / 192000), "MP2: a constant bitrate's estimate");
 
 		// Channels.
-		check(AudioHeader.readChannels(head) == 2, "channels: WAV stereo");
-		check(AudioHeader.readChannels(streamed) == 1, "channels: WAV mono");
-		check(AudioHeader.readChannels(extensible) == 2, "channels: WAV extensible");
-		check(AudioHeader.readChannels(first) == 2, "channels: Ogg Vorbis");
-		check(AudioHeader.readChannels(opus) == 2, "channels: Ogg Opus");
-		check(AudioHeader.readChannels(oggFlac) == 2, "channels: Ogg FLAC");
-		check(AudioHeader.readChannels(speex) == 1, "channels: Ogg Speex");
-		check(AudioHeader.readChannels(tagged) == 2, "channels: FLAC after an ID3v2 tag");
-		check(AudioHeader.readChannels(xing) == 2, "channels: MP3 stereo after an ID3v2 tag");
-		check(AudioHeader.readChannels(info) == 1, "channels: MP3 mono");
-		check(AudioHeader.readChannels(layer2) == 2, "channels: MP2");
-		check(AudioHeader.readChannels(Bytes.ofString("not a sound file")) == 0, "channels: an unknown kind is 0");
-		check(AudioHeader.readChannels(Bytes.alloc(0)) == 0, "channels: no bytes is 0");
-		check(AudioHeader.readChannels(Bytes.ofString("RIFF\x00\x00\x00\x00WAVE")) == 0, "channels: a WAV file cut before its fmt chunk is 0");
+		check(AudioHeader.readChannelCount(head) == 2, "channels: WAV stereo");
+		check(AudioHeader.readChannelCount(streamed) == 1, "channels: WAV mono");
+		check(AudioHeader.readChannelCount(extensible) == 2, "channels: WAV extensible");
+		check(AudioHeader.readChannelCount(first) == 2, "channels: Ogg Vorbis");
+		check(AudioHeader.readChannelCount(opus) == 2, "channels: Ogg Opus");
+		check(AudioHeader.readChannelCount(oggFlac) == 2, "channels: Ogg FLAC");
+		check(AudioHeader.readChannelCount(speex) == 1, "channels: Ogg Speex");
+		check(AudioHeader.readChannelCount(tagged) == 2, "channels: FLAC after an ID3v2 tag");
+		check(AudioHeader.readChannelCount(xing) == 2, "channels: MP3 stereo after an ID3v2 tag");
+		check(AudioHeader.readChannelCount(info) == 1, "channels: MP3 mono");
+		check(AudioHeader.readChannelCount(layer2) == 2, "channels: MP2");
+		check(AudioHeader.readChannelCount(Bytes.ofString("not a sound file")) == 0, "channels: an unknown kind is 0");
+		check(AudioHeader.readChannelCount(Bytes.alloc(0)) == 0, "channels: no bytes is 0");
+		check(AudioHeader.readChannelCount(Bytes.ofString("RIFF\x00\x00\x00\x00WAVE")) == 0, "channels: a WAV file cut before its fmt chunk is 0");
 
 		// What it can't tell.
 		check(AudioHeader.readDuration(Bytes.ofString("not a sound file"), 16) == 0, "an unknown kind is 0");

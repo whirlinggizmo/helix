@@ -52,7 +52,7 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
   `requestOpacity` (natively the compositor's, in a page the canvas's); `requestMinimumSize`, `requestMaximumSize` (false in a page).
 - The monitors: `monitorCount`, `monitorIndex`, `requestMonitorIndex`, `getMonitorName`, `getMonitorX`, `getMonitorY`,
   `getMonitorWidth`, `getMonitorHeight`, `getMonitorRefreshRate` (0 in a page).
-- `readDroppedFile(index, maxBytes, read(name, bytes), failed(message))`: a file the last `FilesDropped` counted, its name without
+- `readDroppedFile(fileIndex, maxBytes, read(name, bytes), failed(message))`: a file the last `FilesDropped` counted, its name without
   its directory; natively read from its path during the call, in a page the File the canvas's drop gave, later.
 - `onClose`, a property: the call made once, the last before the window is gone (natively in `close`, in a page at pagehide). Not a
   place to save: a page's write started there isn't kept.
@@ -195,16 +195,16 @@ enum Event {
 
 - Textures: `createTexture(width, height, levels, format)` (2D, with its mip levels), `createCubeTexture`, `createDataTexture` and
   `updateDataTexture` (floats read texel by texel), `createRenderTarget(width, height, format, depth)` (RGBA8 or half floats, with or
-  without depth), `createShadowMap(size, layers)` (a depth array read through a comparison sampler), `disposeTexture`; `canSample(format)`
+  without depth), `createShadowMap(size, layerCount)` (a depth array read through a comparison sampler), `disposeTexture`; `canSample(format)`
   and `canRender(format)` say what the GPU can.
 - Buffers: `createBuffer(capacityBytes)` and `updateBuffer`, `createStaticBuffer(data, bytes, index)`, `disposeBuffer`.
 - Programs and pipelines: `createShader(source:ShaderSource)`, `createPipeline(desc:PipelineDesc)` (a program, its buffers' layout,
   primitive, indexing, blend, depth test and write, culling and winding, depth-only, and the clip flip), each with its `dispose`.
-- Passes: `beginShadowPass(map, layer)`; `beginTargetPass(target, r, g, b, a)` and `endTargetPass`; the screen's, `beginFrame(width,
+- Passes: `beginShadowPass(map, layerIndex)`; `beginTargetPass(target, r, g, b, a)` and `endTargetPass`; the screen's, `beginFrame(width,
   height, clearColor)` and `endFrame`; within a pass `applyViewport`, `applyScissor`, `resetScissor`.
-- `draw(pipeline, buffers, indices, first, count, firstInstance, instanceCount, textures, samplings, uniforms)`: buffers by the
+- `draw(pipeline, buffers, indexBuffer, firstElementIndex, elementCount, firstInstanceIndex, instanceCount, textures, samplings, uniforms)`: buffers by the
   pipeline's buffer index, an index buffer for indexed pipelines, a range, instances, textures, samplings and uniform blocks by slot.
-- `readPixels(target, read(pixels, width, height), failed(message))`; `msaaSamples`, `maxMsaaSamples`; `dispose`.
+- `readPixels(target, read(pixels, width, height), failed(message))`; `msaaSampleCount`, `maxMsaaSampleCount`; `dispose`.
 
 `endFrame` ends the screen's pass and submits it; `present()` shows the frame and waits for the display's refresh, which paces the
 owner's loop. Between the two the frame can still be read back (`readPixels(0)`), and the owner can do work in the time the display
@@ -254,9 +254,9 @@ for Linux on ARM64. On a system without a build, SPIRV-Cross is built from its s
 
 - `available` (a device opened), `running` (producing sound now; in a page, after the user's first gesture), `playsUrls` (whether a
   stream can be a URL the platform plays itself).
-- `createClip(samples, channels)` from float32 PCM at 44100 Hz, mono or stereo interleaved, `disposeClip`; `openStream(source, opened,
-  failed)` returning an abort, `getStreamDuration` (seconds, 0 while unknown), `getStreamChannels`, `disposeStream`; `createQueue(channels, sampleRate)`,
-  `queueSamples`, `getQueuedFrames` (not yet heard), `disposeQueue`.
+- `createClip(samples, channelCount)` from float32 PCM at 44100 Hz, mono or stereo interleaved, `disposeClip`; `openStream(source, opened,
+  failed)` returning an abort, `getStreamDuration` (seconds, 0 while unknown), `getStreamChannelCount`, `disposeStream`; `createQueue(channelCount, sampleRate)`,
+  `queueSamples`, `getQueuedFrameCount` (not yet heard), `disposeQueue`.
 - `playClip(clip, loop, volume)`, `playStream(stream, loop, volume)` and `playQueue(queue, volume)` giving a voice; `stop`, `pause`,
   `setVolume`, `setPitch`, `setPan` (equal power for a mono voice, a balance for a stereo one, as Web Audio's `StereoPannerNode`),
   `getPosition` and `setPosition` (seconds; a queue's voice isn't moved), `isPlaying`.

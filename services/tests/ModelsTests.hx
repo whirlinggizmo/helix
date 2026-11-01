@@ -191,16 +191,16 @@ class ModelsTests {
 		check(model.meshes.length == 1, "the lines primitive left out");
 		var mesh = model.meshes[0];
 		check(near(mesh.positions[0], 10) && near(mesh.positions[3], 12) && near(mesh.positions[7], 2), "the nodes' transforms in its positions");
-		check(near(mesh.normals[2], 1) && mesh.indices == null && model.meshMaterials.join(",") == "0",
+		check(near(mesh.normals[2], 1) && mesh.indices == null && model.meshMaterialIndices.join(",") == "0",
 			"its normals kept unit length; no indices; its material beside it");
-		check(model.materials[0].baseColorImage == 0 && model.images.length == 2, "materials name images by index");
+		check(model.materials[0].baseColorImageIndex == 0 && model.images.length == 2, "materials name images by index");
 		check(model.images[0] != null && model.images[0].width == 4 && model.images[0].path == "models/wood grain.png",
 			"the image beside it, its name decoded, decoded");
 		check(model.images[1] == null, "an image that won't decode: null");
 		check(model.skeleton == null
 			&& model.skins.length == 0
 			&& model.animations.length == 0
-			&& model.meshSkins.join(",") == "-1"
+			&& model.meshSkinIndices.join(",") == "-1"
 			&& near(model.meshTransforms[0].values[12], 10),
 			"no skin: no skeleton, no animations; its node's transform beside it");
 
@@ -208,16 +208,16 @@ class ModelsTests {
 		models.load("models/rig.gltf", m -> rigged = m);
 		pump();
 		var bones = rigged.skeleton.bones;
-		check(bones.length == 3 && bones[0].name == "armature" && bones[0].parent == -1 && bones[1].name == "hip" && bones[1].parent == 0
-			&& bones[2].name == "knee" && bones[2].parent == 1,
+		check(bones.length == 3 && bones[0].name == "armature" && bones[0].parentIndex == -1 && bones[1].name == "hip" && bones[1].parentIndex == 0
+			&& bones[2].name == "knee" && bones[2].parentIndex == 1,
 			"the skeleton: its joints and the node above them, parents first");
 		check(near(bones[0].rest.position.z, 5) && near(bones[2].rest.position.y, 1), "each bone at rest its node's own transform");
 		check(rigged.skins.length == 1
-			&& rigged.skins[0].bones.join(",") == "2,1", "the skin's joints as the skeleton's bones, in its order");
+			&& rigged.skins[0].boneIndices.join(",") == "2,1", "the skin's joints as the skeleton's bones, in its order");
 		var body = rigged.meshes[0];
-		check(rigged.meshSkins.join(",") == "0"
+		check(rigged.meshSkinIndices.join(",") == "0"
 			&& near(body.positions[3], 1)
-			&& body.joints.join(",") == "0,1,0,0,1,0,0,0,0,1,0,0"
+			&& body.jointIndices.join(",") == "0,1,0,0,1,0,0,0,0,1,0,0"
 			&& near(body.weights[0], .5),
 			"a skinned mesh: its vertices as the file has them, its joints and weights");
 		var placed = rigged.meshTransforms[0].values;
@@ -226,7 +226,7 @@ class ModelsTests {
 		check(rigged.animations.length == 1
 			&& kick.name == "Kick"
 			&& kick.tracks.length == 1
-			&& kick.tracks[0].bone == 2
+			&& kick.tracks[0].boneIndex == 2
 			&& kick.tracks[0].property == Rotation
 			&& kick.tracks[0].interpolation == Linear
 			&& near(kick.duration, 2),

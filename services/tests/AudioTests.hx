@@ -49,20 +49,16 @@ class AudioTests {
 		check(why.length == 2 && why.join("|").indexOf("bad.wav") >= 0 && why.join("|").indexOf("none.wav") >= 0,
 			"a file that won't decode, and one not found, fail");
 
-		check(jump.channels == 1 && near(jump.duration, 1 / 44100), "a sound loaded whole: its channels, and its frames over 44100 its length");
-		check(both.channels == 2 && near(both.duration, 1 / 44100), "a stereo file: 2 channels, its frames counted in pairs");
-		check(music.channels == 2 && music.duration == 0, "a stream: the platform's channels, its length 0 while the platform doesn't know it");
+		check(jump.channelCount == 1 && near(jump.duration, 1 / 44100), "a sound loaded whole: its channels, and its frames over 44100 its length");
+		check(both.channelCount == 2 && near(both.duration, 1 / 44100), "a stereo file: 2 channels, its frames counted in pairs");
+		check(music.channelCount == 2 && music.duration == 0, "a stream: the platform's channels, its length 0 while the platform doesn't know it");
 		output.streamDuration = 12.5;
 		check(music.duration == 12.5, "and the platform's once it does");
 		output.streamDuration = 0;
 		check(music.duration == 12.5, "kept once known");
 
 		var made = audio.createSound(Bytes.alloc(44100 * 8), 2);
-		check(made.path == ""
-			&& !made.streamed
-			&& made.channels == 2
-			&& near(made.duration, 1)
-			&& output.sounds.get(made.id) == "clip",
+		check(made.path == "" && !made.streamed && made.channelCount == 2 && near(made.duration, 1) && output.sounds.get(made.id) == "clip",
 			"a sound made from samples: a clip, a second of stereo");
 		check(try {
 			audio.createSound(Bytes.alloc(8), 3);
@@ -141,9 +137,9 @@ class AudioTests {
 		} catch (_:String) true, "playing null throws");
 
 		var queue = audio.createSampleQueue(2, 22050);
-		check(output.sounds.get(queue.id) == "queue" && queue.queuedFrames == 0, "a queue, holding nothing");
+		check(output.sounds.get(queue.id) == "queue" && queue.queuedFrameCount == 0, "a queue, holding nothing");
 		queue.queueSamples(Bytes.alloc(800));
-		check(queue.queuedFrames == 100, "samples queued: 100 stereo frames");
+		check(queue.queuedFrameCount == 100, "samples queued: 100 stereo frames");
 		var tones = audio.createGroup();
 		tones.volume = .5;
 		var tone = queue.play(tones, .5);
@@ -162,11 +158,11 @@ class AudioTests {
 		tones.volume = 1;
 		check(!tone.setPosition(1), "a queue's voice can't be moved");
 		var again = queue.play();
-		check(!tone.playing && again.playing && queue.queuedFrames == 100, "played again: the earlier voice ended, the samples kept");
+		check(!tone.playing && again.playing && queue.queuedFrameCount == 100, "played again: the earlier voice ended, the samples kept");
 		again.stop();
-		check(queue.queuedFrames == 0, "its voice stopped: what it held dropped");
+		check(queue.queuedFrameCount == 0, "its voice stopped: what it held dropped");
 		queue.dispose();
-		check(!output.sounds.exists(queue.id) && queue.queuedFrames == 0, "disposed: the platform's queue let go");
+		check(!output.sounds.exists(queue.id) && queue.queuedFrameCount == 0, "disposed: the platform's queue let go");
 		check(try {
 			queue.queueSamples(Bytes.alloc(8));
 			false;

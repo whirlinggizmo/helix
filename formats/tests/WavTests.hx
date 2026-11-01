@@ -119,7 +119,7 @@ class WavTests {
 		var what = 'format $tag, $bits bits, $channels channels, $frames frames, flags $flags';
 		var rate = channels == 3 ? 8000 : 44100;
 		var wav = WavFile.read(make(tag, bits, channels, rate, frames, flags));
-		check(wav.frameCount == read && wav.channels == channels && wav.sampleRate == rate, '$what: $read frames, its channels and rate');
+		check(wav.frameCount == read && wav.channelCount == channels && wav.sampleRate == rate, '$what: $read frames, its channels and rate');
 		check(wav.sampleSize == ((bits + 7) >> 3) * 8
 			&& wav.samples.length == read * channels * (wav.sampleSize >> 3), '$what: its sample size and samples');
 		check(haxe.crypto.Crc32.make(wav.toInt16()) == int16, '$what: as 16-bit integers, dr_wav\'s CRC 0x${StringTools.hex(int16, 8)}');
@@ -142,7 +142,7 @@ class WavTests {
 		check(file.length == length && haxe.crypto.Crc32.make(file) == crc32, '$what: ExportWave\'s $length bytes, CRC 0x${StringTools.hex(crc32, 8)}');
 		var wav = WavFile.read(file);
 		check(wav.sampleRate == rate
-			&& wav.channels == channels
+			&& wav.channelCount == channels
 			&& wav.sampleSize == size
 			&& wav.frameCount == frames
 			&& wav.encoding == (size == 32 ? FloatingPoint : Pcm),

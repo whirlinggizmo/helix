@@ -68,14 +68,14 @@ abstract class NativeGraphics implements IGraphics {
 	public function canSample(format:TextureFormat):Bool
 		return GraphicsDeviceBridge.canSample(format) == 1;
 
-	public var msaaSamples(get, never):Int;
+	public var msaaSampleCount(get, never):Int;
 
-	function get_msaaSamples():Int
+	function get_msaaSampleCount():Int
 		return GraphicsDeviceBridge.msaaSamples();
 
-	public var maxMsaaSamples(get, never):Int;
+	public var maxMsaaSampleCount(get, never):Int;
 
-	function get_maxMsaaSamples():Int
+	function get_maxMsaaSampleCount():Int
 		return GraphicsDeviceBridge.maxMsaaSamples();
 
 	public function createBuffer(capacityBytes:Int):Int
@@ -162,11 +162,11 @@ abstract class NativeGraphics implements IGraphics {
 	public function canRender(format:TextureFormat):Bool
 		return GraphicsDeviceBridge.canRender(format) == 1;
 
-	public function createShadowMap(size:Int, layers:Int):Int
-		return valid(GraphicsDeviceBridge.shadowMap(size, layers));
+	public function createShadowMap(size:Int, layerCount:Int):Int
+		return valid(GraphicsDeviceBridge.shadowMap(size, layerCount));
 
-	public function beginShadowPass(map:Int, layer:Int):Void
-		if (GraphicsDeviceBridge.beginShadow(map, layer) != 1)
+	public function beginShadowPass(map:Int, layerIndex:Int):Void
+		if (GraphicsDeviceBridge.beginShadow(map, layerIndex) != 1)
 			throw "Invalid native shadow pass";
 
 	public function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void
@@ -195,14 +195,14 @@ abstract class NativeGraphics implements IGraphics {
 			throw "Invalid native viewport";
 	}
 
-	public function draw(pipeline:Int, buffers:Array<Int>, indices:Int, first:Int, count:Int, firstInstance:Int, instanceCount:Int, textures:Array<Int>,
-			samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
+	public function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int,
+			instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
 		var args = pack(textures, samplings, uniforms),
 			handles = new haxe.ds.Vector<cpp.UInt32>(buffers.length < 1 ? 1 : buffers.length);
 		for (i in 0...buffers.length)
 			handles[i] = buffers[i];
-		if (GraphicsDeviceBridge.draw(pipeline, cpp.Pointer.ofArray(handles.toData()).raw, buffers.length, indices, first, count, firstInstance,
-			instanceCount, cpp.Pointer.ofArray(args.handles.toData()).raw, cpp.Pointer.ofArray(args.modes.toData()).raw, textures.length,
+		if (GraphicsDeviceBridge.draw(pipeline, cpp.Pointer.ofArray(handles.toData()).raw, buffers.length, indexBuffer, firstElementIndex, elementCount,
+			firstInstanceIndex, instanceCount, cpp.Pointer.ofArray(args.handles.toData()).raw, cpp.Pointer.ofArray(args.modes.toData()).raw, textures.length,
 			pointer(args.uniforms), args.bytes) != 1)
 			throw "Invalid native draw";
 	}

@@ -93,26 +93,26 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	public function new(options:WebGl2GraphicsAdapterOptions) {
 		gl = cast DomPage.canvas(options.canvasId).getContext("webgl2", {
 			alpha: false,
-			antialias: options.msaaSamples > 1,
+			antialias: options.msaaSampleCount > 1,
 			depth: true,
 			stencil: false,
 			preserveDrawingBuffer: options.preserveDrawingBuffer
 		});
 		if (gl == null)
 			throw new helix.platform.GraphicsUnavailableException("WebGL2 is required");
-		this.msaaSamples = Std.int(Math.max(1, gl.getParameter(WebGL2RenderingContext.SAMPLES)));
+		this.msaaSampleCount = Std.int(Math.max(1, gl.getParameter(WebGL2RenderingContext.SAMPLES)));
 	}
 
-	@:isVar public var msaaSamples(get, null):Int = 1;
+	@:isVar public var msaaSampleCount(get, null):Int = 1;
 
-	function get_msaaSamples():Int
-		return msaaSamples;
+	function get_msaaSampleCount():Int
+		return msaaSampleCount;
 
 	// The canvas's own count when antialiased; otherwise the 4 browsers give, where the GPU has 4.
-	public var maxMsaaSamples(get, never):Int;
+	public var maxMsaaSampleCount(get, never):Int;
 
-	function get_maxMsaaSamples():Int
-		return msaaSamples > 1 ? msaaSamples : gl.getParameter(WebGL2RenderingContext.MAX_SAMPLES) >= 4 ? 4 : 1;
+	function get_maxMsaaSampleCount():Int
+		return msaaSampleCount > 1 ? msaaSampleCount : gl.getParameter(WebGL2RenderingContext.MAX_SAMPLES) >= 4 ? 4 : 1;
 
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int {
 		if (width <= 0 || height <= 0 || levels.length == 0 || !canSample(format))
@@ -420,7 +420,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		var count = 1;
 		if (depth) {
 			var most:js.lib.Int32Array = gl.getInternalformatParameter(WebGL2RenderingContext.RENDERBUFFER, internal, WebGL2RenderingContext.SAMPLES);
-			count = Std.int(Math.min(msaaSamples, most != null && most.length > 0 ? most[0] : 1));
+			count = Std.int(Math.min(msaaSampleCount, most != null && most.length > 0 ? most[0] : 1));
 		}
 		var depthBuffer:Dynamic = null;
 		if (depth) {
@@ -478,16 +478,16 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		return id;
 	}
 
-	public function createShadowMap(size:Int, layers:Int):Int {
+	public function createShadowMap(size:Int, layerCount:Int):Int {
 		var largest:Int = gl.getParameter(WebGL2RenderingContext.MAX_TEXTURE_SIZE),
 			most:Int = gl.getParameter(WebGL2RenderingContext.MAX_ARRAY_TEXTURE_LAYERS);
-		if (size <= 0 || layers <= 0 || size > largest || layers > most)
+		if (size <= 0 || layerCount <= 0 || size > largest || layerCount > most)
 			throw "Invalid shadow map";
 		var tex = gl.createTexture();
 		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D_ARRAY, tex);
-		gl.texStorage3D(WebGL2RenderingContext.TEXTURE_2D_ARRAY, 1, WebGL2RenderingContext.DEPTH_COMPONENT24, size, size, layers);
+		gl.texStorage3D(WebGL2RenderingContext.TEXTURE_2D_ARRAY, 1, WebGL2RenderingContext.DEPTH_COMPONENT24, size, size, layerCount);
 		var framebuffers = [];
-		for (layer in 0...layers) {
+		for (layer in 0...layerCount) {
 			var framebuffer = gl.createFramebuffer();
 			gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, framebuffer);
 			gl.framebufferTextureLayer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, tex, 0, layer);
@@ -525,11 +525,11 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		return comparison;
 	}
 
-	public function beginShadowPass(map:Int, layer:Int):Void {
+	public function beginShadowPass(map:Int, layerIndex:Int):Void {
 		var m = shadowMaps[map];
-		if (active || m == null || layer < 0 || layer >= m.framebuffers.length)
+		if (active || m == null || layerIndex < 0 || layerIndex >= m.framebuffers.length)
 			throw "Invalid shadow pass";
-		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, m.framebuffers[layer]);
+		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, m.framebuffers[layerIndex]);
 		// Not flipped: a shadow map's rows run bottom first, as its lookups expect.
 		inTarget = true;
 		flipped = false;
@@ -619,21 +619,21 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				WebGL2RenderingContext.ONE, additive ? WebGL2RenderingContext.ONE : WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
 		}
 
-	public function draw(pipeline:Int, buffers:Array<Int>, indices:Int, first:Int, count:Int, firstInstance:Int, instanceCount:Int, textures:Array<Int>,
-			samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
+	public function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int,
+			instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
 		var p = pipelines[pipeline];
 		if (!active || p == null)
 			throw "Invalid draw";
 		var shader = shaders[p.shader],
 			group = p.primitive == Lines ? 2 : 3,
-			ix = p.indexed ? this.buffers[indices] : null;
-		if (first < 0
-			|| count <= 0
-			|| count % group != 0
-			|| firstInstance < 0
+			ix = p.indexed ? this.buffers[indexBuffer] : null;
+		if (firstElementIndex < 0
+			|| elementCount <= 0
+			|| elementCount % group != 0
+			|| firstInstanceIndex < 0
 			|| instanceCount <= 0
 			|| p.indexed
-			&& (ix == null || !ix.index || (first + count) * 4 > ix.used))
+			&& (ix == null || !ix.index || (firstElementIndex + elementCount) * 4 > ix.used))
 			throw "Invalid draw";
 		// Each buffer's records must cover the draw: an instanced one's the instances, a vertex one's the vertices (indexed: GL checks them).
 		for (i in 0...p.buffers.length) {
@@ -644,10 +644,10 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			if (b == null
 				|| b.index
 				|| layout.instanced
-				&& (firstInstance + instanceCount) * layout.stride > b.used
+				&& (firstInstanceIndex + instanceCount) * layout.stride > b.used
 					|| !layout.instanced
 					&& !p.indexed
-					&& (first + count) * layout.stride > b.used)
+					&& (firstElementIndex + elementCount) * layout.stride > b.used)
 				throw "Invalid draw";
 		}
 		gl.useProgram(shader.program);
@@ -660,7 +660,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				continue;
 			gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.buffers[buffers[i]].buffer);
 			// No base instance in WebGL2: an instanced buffer's attributes start at the draw's first record instead.
-			var base = layout.instanced ? firstInstance * layout.stride : 0;
+			var base = layout.instanced ? firstInstanceIndex * layout.stride : 0;
 			for (a in layout.attributes) {
 				gl.enableVertexAttribArray(a.slot);
 				gl.vertexAttribPointer(a.slot, a.componentCount, WebGL2RenderingContext.FLOAT, false, layout.stride, base + a.offset);
@@ -692,9 +692,9 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		var mode = p.primitive == Lines ? WebGL2RenderingContext.LINES : WebGL2RenderingContext.TRIANGLES;
 		if (p.indexed) {
 			gl.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, ix.buffer);
-			gl.drawElementsInstanced(mode, count, WebGL2RenderingContext.UNSIGNED_INT, first * 4, instanceCount);
+			gl.drawElementsInstanced(mode, elementCount, WebGL2RenderingContext.UNSIGNED_INT, firstElementIndex * 4, instanceCount);
 		} else
-			gl.drawArraysInstanced(mode, first, count, instanceCount);
+			gl.drawArraysInstanced(mode, firstElementIndex, elementCount, instanceCount);
 	}
 
 	// What an unbound slot reads (a draw's texture 0 where the program declares one): a 1x1 texture of the slot's kind, clear, made when

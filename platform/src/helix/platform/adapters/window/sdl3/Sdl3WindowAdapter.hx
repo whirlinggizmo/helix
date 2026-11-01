@@ -18,7 +18,7 @@ class Sdl3WindowAdapter implements IWindow {
 		@throws String  SDL or the window can't be had. */
 	public function new(options:Sdl3WindowAdapterOptions) {
 		Sdl3Bridge.nameApp(ProgramName.product());
-		if (Sdl3Bridge.open(options.msaaSamples, options.graphics == Gl ? 1 : 0, options.vsync ? 1 : 0) != 1)
+		if (Sdl3Bridge.open(options.msaaSampleCount, options.graphics == Gl ? 1 : 0, options.vsync ? 1 : 0) != 1)
 			throw "SDL3 can't open a window here (see the log)";
 		title = "HeliX";
 	}
@@ -169,8 +169,8 @@ class Sdl3WindowAdapter implements IWindow {
 	public function requestMaximumSize(width:Int, height:Int):Bool
 		return WindowBridge.setMaximumSize(width, height) != 0;
 
-	public function getMonitorRefreshRate(index:Int):Float
-		return index >= 0 && index < monitorCount ? WindowBridge.displayRefreshRate(index) : 0;
+	public function getMonitorRefreshRate(monitorIndex:Int):Float
+		return monitorIndex >= 0 && monitorIndex < monitorCount ? WindowBridge.displayRefreshRate(monitorIndex) : 0;
 
 	public var monitorCount(get, never):Int;
 
@@ -182,37 +182,37 @@ class Sdl3WindowAdapter implements IWindow {
 	function get_monitorIndex():Int
 		return WindowBridge.displayCurrent();
 
-	public function requestMonitorIndex(index:Int):Bool {
-		if (index < 0 || index >= this.monitorCount || !canMove())
+	public function requestMonitorIndex(monitorIndex:Int):Bool {
+		if (monitorIndex < 0 || monitorIndex >= this.monitorCount || !canMove())
 			return false;
-		WindowBridge.setDisplay(index);
+		WindowBridge.setDisplay(monitorIndex);
 		return true;
 	}
 
 	function isMonitor(index:Int):Bool
 		return index >= 0 && index < this.monitorCount;
 
-	public function getMonitorName(index:Int):String
-		return isMonitor(index) ? (WindowBridge.displayName(index) : String) : "";
+	public function getMonitorName(monitorIndex:Int):String
+		return isMonitor(monitorIndex) ? (WindowBridge.displayName(monitorIndex) : String) : "";
 
-	public function getMonitorX(index:Int):Int
-		return isMonitor(index) ? WindowBridge.displayX(index) : 0;
+	public function getMonitorX(monitorIndex:Int):Int
+		return isMonitor(monitorIndex) ? WindowBridge.displayX(monitorIndex) : 0;
 
-	public function getMonitorY(index:Int):Int
-		return isMonitor(index) ? WindowBridge.displayY(index) : 0;
+	public function getMonitorY(monitorIndex:Int):Int
+		return isMonitor(monitorIndex) ? WindowBridge.displayY(monitorIndex) : 0;
 
-	public function getMonitorWidth(index:Int):Int
-		return isMonitor(index) ? WindowBridge.displayWidth(index) : 0;
+	public function getMonitorWidth(monitorIndex:Int):Int
+		return isMonitor(monitorIndex) ? WindowBridge.displayWidth(monitorIndex) : 0;
 
-	public function getMonitorHeight(index:Int):Int
-		return isMonitor(index) ? WindowBridge.displayHeight(index) : 0;
+	public function getMonitorHeight(monitorIndex:Int):Int
+		return isMonitor(monitorIndex) ? WindowBridge.displayHeight(monitorIndex) : 0;
 
-	public function readDroppedFile(index:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void {
-		if (index < 0 || index >= Sdl3Bridge.droppedCount()) {
-			failed('No dropped file $index');
+	public function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void {
+		if (fileIndex < 0 || fileIndex >= Sdl3Bridge.droppedCount()) {
+			failed('No dropped file $fileIndex');
 			return;
 		}
-		var path = (Sdl3Bridge.droppedPath(index) : String);
+		var path = (Sdl3Bridge.droppedPath(fileIndex) : String);
 		var bytes = try {
 			if (sys.FileSystem.stat(path).size > maxBytes) {
 				failed("File exceeds byte limit");

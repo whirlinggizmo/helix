@@ -35,12 +35,18 @@ The API uses what Haxe gives: properties for values, classes for kinds, methods 
 | Whether an action is possible here, so whether to offer it | `canX()` | `window.canMove()`, `window.canClose()` |
 | Ask for what the platform may refuse or grant later | `requestX(...)` | `window.requestFullscreen(true)`, `window.requestSize(800, 600)` |
 | An action | a verb | `window.close()`, `audio.stop(voice)`, `assets.load(path, done)` |
-| A count or a limit | a property naming what it counts; the limit first | `events.padCount`, `graphics.msaaSamples`, `graphics.maxMsaaSamples` |
+| A count or a limit | a property naming what it counts, ending in `Count`; an array of counts ends in `Counts`; the limit first | `events.padCount`, `graphics.msaaSampleCount`, `graphics.maxMsaaSampleCount`, `wav.channelCount` |
+| An index | a property naming what it indexes, ending in `Index`; an array of indices ends in `Indices`. A mesh's vertex indices stay `indices`, as glTF and raylib name them | `GltfNode.meshIndex`, `GltfMaterial.baseColorImageIndex`, `Model3D.meshMaterialIndices`, `Mesh3D.indices` |
 | Fill what it's given | a verb, not a property | `camera.computeRay(x, y, ray)`, `node.computeWorld(out)` |
 | A command for what follows in a pass | `applyX(...)` (sokol's word) | `graphics.applyViewport(...)`, `graphics.applyScissor(...)` |
 | A call made on its own, answering no request | an `onX` property, null for none; never a method | `window.onClose = save` |
 | Remove one or all | one verb, the noun singular and plural, or `X` and `XAll` for a verb of its own; never a bare `clear()`. A value made empty is `makeEmpty()` | `files.deleteFile(path)` and `deleteFiles()`, `saves.deleteKey(key)` and `deleteKeys()`, `actions.unbind(...)` and `unbindAll()`, `bounds.makeEmpty()` |
 
+- **A parameter holding a count or an index is named as such a property would be:** `window.getMonitorX(monitorIndex)`,
+  `Mesh3D.fromSphere(radius, sliceCount, stackCount)`, `gltf.setBuffer(bufferIndex, bytes)`. A handle, an id or a slot is neither, and
+  keeps its own noun (`audio.stop(voice)`, `gamepads.getAxis(slot, axis)`, `touch.getX(id)`); a number of bytes is a size, named for
+  its unit (`capacityBytes`, `usedBytes`). `tools/check_names.py` checks every field and parameter whose doc comment calls it an index
+  or a number of things.
 - **A value is a property.** One that must act when assigned has a `set_` accessor; one read back from somewhere else has a `get_`;
   one nothing may assign is `(default, null)`. A record made whole and never changed after (`Touch`, a parsed header, a progress
   report) shows `final` fields. Nothing public is a bare `var` that something else keeps in step by hand.

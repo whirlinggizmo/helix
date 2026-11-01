@@ -12,7 +12,7 @@ import haxe.io.Bytes;
 	```haxe
 	var qoi = QoiFile.write(64, 32, 4, pixels);
 	var image = QoiFile.read(qoi);
-	trace(image.width, image.height, image.channels);
+	trace(image.width, image.height, image.channelCount);
 	``` */
 class QoiFile {
 	/** Gets the image's width, in pixels. */
@@ -21,20 +21,20 @@ class QoiFile {
 	/** Gets the image's height, in pixels. */
 	public final height:Int;
 
-	/** Gets the channels a pixel has: 3 (RGB) or 4 (RGBA). */
-	public final channels:Int;
+	/** Gets the number of channels a pixel has: 3 (RGB) or 4 (RGBA). */
+	public final channelCount:Int;
 
 	/** Gets a value indicating whether every channel is linear: false when the color channels are sRGB with a linear alpha, as raylib
 		writes them. QOI only records it; the pixels are the same either way. */
 	public final linear:Bool;
 
-	/** Gets the pixels, rows top first, each pixel `channels` bytes. */
+	/** Gets the pixels, rows top first, each pixel `channelCount` bytes. */
 	public final pixels:Bytes;
 
-	function new(width:Int, height:Int, channels:Int, linear:Bool, pixels:Bytes) {
+	function new(width:Int, height:Int, channelCount:Int, linear:Bool, pixels:Bytes) {
 		this.width = width;
 		this.height = height;
-		this.channels = channels;
+		this.channelCount = channelCount;
 		this.linear = linear;
 		this.pixels = pixels;
 	}
@@ -53,18 +53,12 @@ class QoiFile {
 		var headerMagic = read32(data, 0);
 		var width = read32(data, 4);
 		var height = read32(data, 8);
-		var channels = data.get(12);
+		var channelCount = data.get(12);
 		var colorspace = data.get(13);
-		if (width == 0
-			|| height == 0
-			|| channels < 3
-			|| channels > 4
-			|| colorspace > 1
-			|| headerMagic != MAGIC
-			|| !fits(width, height))
+		if (width == 0 || height == 0 || channelCount < 3 || channelCount > 4 || colorspace > 1 || headerMagic != MAGIC || !fits(width, height))
 			throw "not a QOI file: its header is wrong";
 
-		var pxLen = width * height * channels;
+		var pxLen = width * height * channelCount;
 		var pixels = Bytes.alloc(pxLen);
 		var index = new Vector<Int>(64, 0);
 		var r = 0, g = 0, b = 0, a = 255;
@@ -108,11 +102,11 @@ class QoiFile {
 			pixels.set(pxPos, r);
 			pixels.set(pxPos + 1, g);
 			pixels.set(pxPos + 2, b);
-			if (channels == 4)
+			if (channelCount == 4)
 				pixels.set(pxPos + 3, a);
-			pxPos += channels;
+			pxPos += channelCount;
 		}
-		return new QoiFile(width, height, channels, colorspace == 1, pixels);
+		return new QoiFile(width, height, channelCount, colorspace == 1, pixels);
 	}
 
 	/** Writes pixels as a QOI file.
@@ -122,40 +116,40 @@ class QoiFile {
 
 		@param width  The image's width, in pixels.
 		@param height  The image's height, in pixels.
-		@param channels  The channels a pixel has: 3 (RGB) or 4 (RGBA), a byte each.
-		@param pixels  The pixels, rows top first, each `width * channels` bytes.
+		@param channelCount  The channels a pixel has: 3 (RGB) or 4 (RGBA), a byte each.
+		@param pixels  The pixels, rows top first, each `width * channelCount` bytes.
 		@return  The QOI file.
 		@throws String  The width or height is under 1, the size is over 400 million pixels, the channels are neither 3 nor 4, or there
 			are fewer pixels than the size needs. */
-	public static function write(width:Int, height:Int, channels:Int, pixels:Bytes):Bytes {
+	public static function write(width:Int, height:Int, channelCount:Int, pixels:Bytes):Bytes {
 		if (width < 1 || height < 1 || !fits(width, height))
 			throw 'A QOI of $width x $height pixels: both must be 1 or more, and 400 million pixels at most';
-		if (channels != 3 && channels != 4)
-			throw 'A QOI of $channels channels: it takes 3 or 4';
-		var pxLen = width * height * channels;
+		if (channelCount != 3 && channelCount != 4)
+			throw 'A QOI of $channelCount channels: it takes 3 or 4';
+		var pxLen = width * height * channelCount;
 		if (pixels.length < pxLen)
-			throw 'A QOI of $width x $height x $channels needs $pxLen bytes, given ${pixels.length}';
+			throw 'A QOI of $width x $height x $channelCount needs $pxLen bytes, given ${pixels.length}';
 
-		var bytes = Bytes.alloc(width * height * (channels + 1) + HEADER_SIZE + PADDING.length);
+		var bytes = Bytes.alloc(width * height * (channelCount + 1) + HEADER_SIZE + PADDING.length);
 		var p = 0;
 		write32(bytes, p, MAGIC);
 		write32(bytes, p + 4, width);
 		write32(bytes, p + 8, height);
 		p += 12;
-		bytes.set(p++, channels);
+		bytes.set(p++, channelCount);
 		bytes.set(p++, SRGB);
 
 		var index = new Vector<Int>(64, 0);
 		var run = 0;
 		var pr = 0, pg = 0, pb = 0, pa = 255;
 		var r = pr, g = pg, b = pb, a = pa;
-		var pxEnd = pxLen - channels;
+		var pxEnd = pxLen - channelCount;
 		var pxPos = 0;
 		while (pxPos < pxLen) {
 			r = pixels.get(pxPos);
 			g = pixels.get(pxPos + 1);
 			b = pixels.get(pxPos + 2);
-			if (channels == 4)
+			if (channelCount == 4)
 				a = pixels.get(pxPos + 3);
 
 			if (r == pr && g == pg && b == pb && a == pa) {
@@ -205,7 +199,7 @@ class QoiFile {
 			pg = g;
 			pb = b;
 			pa = a;
-			pxPos += channels;
+			pxPos += channelCount;
 		}
 		for (v in PADDING)
 			bytes.set(p++, v);

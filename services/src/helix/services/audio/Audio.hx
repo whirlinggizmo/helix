@@ -108,7 +108,7 @@ class Audio implements IPollable {
 				return;
 			}
 			abortOpen = output.openStream(source, stream -> {
-				var sound = new Sound(output, path, true, stream, output.getStreamChannels(stream), 0, release);
+				var sound = new Sound(output, path, true, stream, output.getStreamChannelCount(stream), 0, release);
 				switch source {
 					case Downloading(growing):
 						sound.growing = growing;
@@ -135,21 +135,21 @@ class Audio implements IPollable {
 		The samples are copied. A partial frame at the end is ignored.
 
 		@param samples  32-bit float PCM at 44100 Hz, -1 to 1, interleaved when stereo: the platform's clip format (`IAudio.createClip`).
-		@param channels  The channels, 1 (mono) or 2 (stereo).
+		@param channelCount  The channels, 1 (mono) or 2 (stereo).
 		@return  The sound, its path "".
-		@throws String  When channels isn't 1 or 2, or the samples hold no whole frame. */
-	public function createSound(samples:Bytes, channels:Int):Sound {
-		return clipOf("", samples, channels);
+		@throws String  When channelCount isn't 1 or 2, or the samples hold no whole frame. */
+	public function createSound(samples:Bytes, channelCount:Int):Sound {
+		return clipOf("", samples, channelCount);
 	}
 
 	/** Creates a queue, which plays samples as they are added to it, at its own rate.
 
-		@param channels  The channels, 1 (mono) or 2 (stereo).
+		@param channelCount  The channels, 1 (mono) or 2 (stereo).
 		@param sampleRate  The samples' rate in frames a second, 8000 to 96000; the platform resamples them.
 		@return  The queue, holding nothing.
-		@throws String  When channels or sampleRate is out of range. */
-	public function createSampleQueue(channels:Int, sampleRate:Int):SampleQueue {
-		var queue = new SampleQueue(this, output, output.createQueue(channels, sampleRate));
+		@throws String  When channelCount or sampleRate is out of range. */
+	public function createSampleQueue(channelCount:Int, sampleRate:Int):SampleQueue {
+		var queue = new SampleQueue(this, output, output.createQueue(channelCount, sampleRate));
 		queues.push(queue);
 		return queue;
 	}
@@ -203,10 +203,10 @@ class Audio implements IPollable {
 	}
 
 	// A clip from samples, its length counted from them.
-	function clipOf(path:String, samples:Bytes, channels:Int):Sound {
-		var clip = output.createClip(samples, channels);
-		var frames = Std.int(samples.length / (4 * channels));
-		var sound = new Sound(output, path, false, clip, channels, frames / 44100, null);
+	function clipOf(path:String, samples:Bytes, channelCount:Int):Sound {
+		var clip = output.createClip(samples, channelCount);
+		var frames = Std.int(samples.length / (4 * channelCount));
+		var sound = new Sound(output, path, false, clip, channelCount, frames / 44100, null);
 		sounds.push(sound);
 		return sound;
 	}

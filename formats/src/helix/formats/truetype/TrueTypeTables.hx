@@ -138,23 +138,23 @@ class TrueTypeTables {
 
 	/** Returns a glyph's advance, in font units.
 
-		@param glyph  The glyph index.
+		@param glyphIndex  The glyph index.
 		@return  The advance. */
-	public function advance(glyph:Int):Int {
+	public function advance(glyphIndex:Int):Int {
 		var metrics = u16(hhea + 34);
-		return u16(hmtx + 4 * (glyph < metrics ? glyph : metrics - 1));
+		return u16(hmtx + 4 * (glyphIndex < metrics ? glyphIndex : metrics - 1));
 	}
 
 	/** Returns a TrueType glyph's box, in font units: x0, y0, x1, y1, y up; null for one with no outline.
 
 		Only a font with `hasGlyf` has boxes to read.
 
-		@param glyph  The glyph index.
+		@param glyphIndex  The glyph index.
 		@return  The box. */
-	public function box(glyph:Int):Null<Array<Int>> {
+	public function box(glyphIndex:Int):Null<Array<Int>> {
 		var long = s16(head + 50) == 1;
-		var start = long ? u32(loca + glyph * 4) : u16(loca + glyph * 2) * 2,
-			end = long ? u32(loca + glyph * 4 + 4) : u16(loca + glyph * 2 + 2) * 2;
+		var start = long ? u32(loca + glyphIndex * 4) : u16(loca + glyphIndex * 2) * 2,
+			end = long ? u32(loca + glyphIndex * 4 + 4) : u16(loca + glyphIndex * 2 + 2) * 2;
 		if (start == end)
 			return null;
 		var at = glyf + start;

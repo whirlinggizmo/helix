@@ -15,15 +15,15 @@ function new()
 var available(get, never):Bool
 var running(get, never):Bool
 var playsUrls(get, never):Bool
-function createClip(samples:haxe.io.Bytes, channels:Int):Int
+function createClip(samples:haxe.io.Bytes, channelCount:Int):Int
 function disposeClip(clip:Int):Void
 function openStream(source:StreamSource, opened:Int -> Void, failed:String -> Void):() -> Void
 function disposeStream(stream:Int):Void
 function getStreamDuration(stream:Int):Float
-function getStreamChannels(stream:Int):Int
-function createQueue(channels:Int, sampleRate:Int):Int
+function getStreamChannelCount(stream:Int):Int
+function createQueue(channelCount:Int, sampleRate:Int):Int
 function queueSamples(queue:Int, samples:haxe.io.Bytes):Void
-function getQueuedFrames(queue:Int):Int
+function getQueuedFrameCount(queue:Int):Int
 function disposeQueue(queue:Int):Void
 function playQueue(queue:Int, volume:Float):Int
 function playClip(clip:Int, loop:Bool, volume:Float):Int
@@ -55,15 +55,15 @@ function new()
 var available(get, never):Bool
 var playsUrls(get, never):Bool
 var running(get, never):Bool
-function createClip(samples:haxe.io.Bytes, channels:Int):Int
+function createClip(samples:haxe.io.Bytes, channelCount:Int):Int
 function getStreamDuration(stream:Int):Float
-function getStreamChannels(stream:Int):Int
+function getStreamChannelCount(stream:Int):Int
 function openStream(source:StreamSource, opened:Int -> Void, failed:String -> Void):() -> Void
 function playClip(clip:Int, loop:Bool, volume:Float):Int
 function playStream(stream:Int, loop:Bool, volume:Float):Int
-function createQueue(channels:Int, sampleRate:Int):Int
+function createQueue(channelCount:Int, sampleRate:Int):Int
 function queueSamples(queue:Int, samples:haxe.io.Bytes):Void
-function getQueuedFrames(queue:Int):Int
+function getQueuedFrameCount(queue:Int):Int
 function disposeQueue(queue:Int):Void
 function playQueue(queue:Int, volume:Float):Int
 function stop(id:Int):Void
@@ -504,8 +504,8 @@ It builds programs from a `ShaderSource`'s GLSL ES 300 and pipelines from a `Pip
 
 ```haxe
 function new(options:WebGl2GraphicsAdapterOptions)
-var msaaSamples(get, never):Int
-var maxMsaaSamples(get, never):Int
+var msaaSampleCount(get, never):Int
+var maxMsaaSampleCount(get, never):Int
 function createTexture(width:Int, height:Int, levels:Array<haxe.io.Bytes>, ?format:TextureFormat = Rgba8):Int
 function createDataTexture(width:Int, height:Int):Int
 function updateDataTexture(handle:Int, data:haxe.io.Bytes):Void
@@ -520,15 +520,15 @@ function createPipeline(desc:PipelineDesc):Int
 function disposePipeline(handle:Int):Void
 function canRender(format:TextureFormat):Bool
 function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:Bool = true):Int
-function createShadowMap(size:Int, layers:Int):Int
-function beginShadowPass(map:Int, layer:Int):Void
+function createShadowMap(size:Int, layerCount:Int):Int
+function beginShadowPass(map:Int, layerIndex:Int):Void
 function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void
 function endTargetPass():Void
 function beginFrame(width:Int, height:Int, clearColor:Int):Void
 function applyScissor(x:Int, y:Int, w:Int, h:Int):Void
 function resetScissor():Void
 function applyViewport(x:Int, y:Int, w:Int, h:Int):Void
-function draw(pipeline:Int, buffers:Array<Int>, indices:Int, first:Int, count:Int, firstInstance:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<haxe.io.Bytes>>):Void
+function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<haxe.io.Bytes>>):Void
 function endFrame():Void
 function present():Void
 function readPixels(target:Int, read:(pixels:haxe.io.Bytes, width:Int, height:Int) -> Void, failed:String -> Void):Void
@@ -553,17 +553,17 @@ Represents how `WebGl2GraphicsAdapter` makes its context.
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{canvasId:String, ?msaaSamples:Int, ?preserveDrawingBuffer:Bool}
+{canvasId:String, ?msaaSampleCount:Int, ?preserveDrawingBuffer:Bool}
 ```
 
 ```haxe
 final canvasId:String
-final msaaSamples:Int = 1
+final msaaSampleCount:Int = 1
 final preserveDrawingBuffer:Bool = false
 ```
 
 - `canvasId`: Gets the id of the canvas whose WebGL2 context is drawn with.
-- `msaaSamples`: Gets the multisampling samples a pixel asks for; 1 for none, the default. Over 1 makes the context antialiased, and the browser chooses the number, nearly always 4.
+- `msaaSampleCount`: Gets the number of multisampling samples a pixel asks for; 1 for none, the default. Over 1 makes the context antialiased, and the browser chooses the number, nearly always 4.
 - `preserveDrawingBuffer`: Gets a value indicating whether the drawing buffer is kept after a frame is shown, so it can be read back later; false by default.
 
 ## FetchApiHttpAdapter
@@ -1009,18 +1009,18 @@ var opacity(get, never):Float
 function requestOpacity(opacity:Float):Bool
 function requestMinimumSize(width:Int, height:Int):Bool
 function requestMaximumSize(width:Int, height:Int):Bool
-function getMonitorRefreshRate(index:Int):Float
+function getMonitorRefreshRate(monitorIndex:Int):Float
 var visible(get, never):Bool
 function requestVisible(visible:Bool):Bool
 var monitorCount(get, never):Int
 var monitorIndex(get, never):Int
-function requestMonitorIndex(index:Int):Bool
-function getMonitorName(index:Int):String
-function getMonitorX(index:Int):Int
-function getMonitorY(index:Int):Int
-function getMonitorWidth(index:Int):Int
-function getMonitorHeight(index:Int):Int
-function readDroppedFile(index:Int, maxBytes:Int, read:(name:String, bytes:haxe.io.Bytes) -> Void, failed:String -> Void):Void
+function requestMonitorIndex(monitorIndex:Int):Bool
+function getMonitorName(monitorIndex:Int):String
+function getMonitorX(monitorIndex:Int):Int
+function getMonitorY(monitorIndex:Int):Int
+function getMonitorWidth(monitorIndex:Int):Int
+function getMonitorHeight(monitorIndex:Int):Int
+function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:haxe.io.Bytes) -> Void, failed:String -> Void):Void
 function canClose():Bool
 function close():Void
 var onClose:Null<() -> Void>
@@ -1087,16 +1087,16 @@ var opacity(get, never):Float
 function requestOpacity(opacity:Float):Bool
 function requestMinimumSize(width:Int, height:Int):Bool
 function requestMaximumSize(width:Int, height:Int):Bool
-function getMonitorRefreshRate(index:Int):Float
+function getMonitorRefreshRate(monitorIndex:Int):Float
 var monitorCount(get, never):Int
 var monitorIndex(get, never):Int
-function requestMonitorIndex(index:Int):Bool
-function getMonitorName(index:Int):String
-function getMonitorX(index:Int):Int
-function getMonitorY(index:Int):Int
-function getMonitorWidth(index:Int):Int
-function getMonitorHeight(index:Int):Int
-function readDroppedFile(index:Int, maxBytes:Int, read:(name:String, bytes:haxe.io.Bytes) -> Void, failed:String -> Void):Void
+function requestMonitorIndex(monitorIndex:Int):Bool
+function getMonitorName(monitorIndex:Int):String
+function getMonitorX(monitorIndex:Int):Int
+function getMonitorY(monitorIndex:Int):Int
+function getMonitorWidth(monitorIndex:Int):Int
+function getMonitorHeight(monitorIndex:Int):Int
+function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:haxe.io.Bytes) -> Void, failed:String -> Void):Void
 function canClose():Bool
 function close():Void
 var onClose:Null<() -> Void>
@@ -1115,17 +1115,17 @@ Represents how `Sdl3WindowAdapter` opens its window.
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{graphics:Sdl3WindowGraphics, ?msaaSamples:Int, ?vsync:Bool}
+{graphics:Sdl3WindowGraphics, ?msaaSampleCount:Int, ?vsync:Bool}
 ```
 
 ```haxe
 final graphics:Sdl3WindowGraphics
-final msaaSamples:Int = 1
+final msaaSampleCount:Int = 1
 final vsync:Bool = true
 ```
 
 - `graphics`: Gets the graphics adapter that draws in the window.
-- `msaaSamples`: Gets the multisampling samples a pixel asks for; 1 for none, the default. The GPU may give fewer.
+- `msaaSampleCount`: Gets the number of multisampling samples a pixel asks for; 1 for none, the default. The GPU may give fewer.
 - `vsync`: Gets whether presenting waits for the display's refresh, which paces the owner's loop: true, the default. False shows each frame as soon as it is drawn, which may tear.
 
 ## Sdl3WindowGraphics

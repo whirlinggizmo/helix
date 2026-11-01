@@ -27,8 +27,8 @@ var master(default, null):Group
 function createGroup(?parent:Group):Group
 function load(path:String, loaded:Sound -> Void, ?failed:String -> Void):() -> Void
 function stream(path:String, opened:Sound -> Void, ?failed:String -> Void):() -> Void
-function createSound(samples:haxe.io.Bytes, channels:Int):Sound
-function createSampleQueue(channels:Int, sampleRate:Int):SampleQueue
+function createSound(samples:haxe.io.Bytes, channelCount:Int):Sound
+function createSampleQueue(channelCount:Int, sampleRate:Int):SampleQueue
 function play(sound:Sound, ?group:Group, ?loop:Bool = false, ?volume:Float = 1.):Voice
 function unload(sound:Sound):Void
 function poll():Void
@@ -60,16 +60,16 @@ function dispose():Void
   The file is found through `Assets.locate`. A file system's file is read where it is. A server's file is read from its kept copy, or played as it downloads while the copy is kept.
 - `createSound`: Makes a sound from samples, held whole as a loaded sound is.
   - `samples`: 32-bit float PCM at 44100 Hz, -1 to 1, interleaved when stereo: the platform's clip format (`IAudio.createClip`).
-  - `channels`: The channels, 1 (mono) or 2 (stereo).
+  - `channelCount`: The channels, 1 (mono) or 2 (stereo).
   - returns: The sound, its path "".
-  - throws `String`: When channels isn't 1 or 2, or the samples hold no whole frame.
+  - throws `String`: When channelCount isn't 1 or 2, or the samples hold no whole frame.
 
   The samples are copied. A partial frame at the end is ignored.
 - `createSampleQueue`: Creates a queue, which plays samples as they are added to it, at its own rate.
-  - `channels`: The channels, 1 (mono) or 2 (stereo).
+  - `channelCount`: The channels, 1 (mono) or 2 (stereo).
   - `sampleRate`: The samples' rate in frames a second, 8000 to 96000; the platform resamples them.
   - returns: The queue, holding nothing.
-  - throws `String`: When channels or sampleRate is out of range.
+  - throws `String`: When channelCount or sampleRate is out of range.
 - `play`: Starts a sound playing.
   - `sound`: The sound, from `load` or `stream`.
   - `group`: Optional. The group it plays in. Defaults to `master`.
@@ -122,13 +122,13 @@ var queue = audio.createSampleQueue(1, 22050);
 queue.queueSamples(tone);
 var voice = queue.play(effects);
 // each frame, while fewer than a buffer's frames wait:
-if (queue.queuedFrames < 4096)
+if (queue.queuedFrameCount < 4096)
 queue.queueSamples(more());
 ```
 
 ```haxe
 function queueSamples(samples:haxe.io.Bytes):Void
-var queuedFrames(get, never):Int
+var queuedFrameCount(get, never):Int
 function play(?group:Group, ?volume:Float = 1.):Voice
 function dispose():Void
 ```
@@ -138,7 +138,7 @@ function dispose():Void
   - throws `String`: When the queue is disposed.
 
   They are copied. Samples added while the queue has no voice wait for `play`. A partial frame at the end is ignored.
-- `queuedFrames`: Gets how many frames the queue holds that haven't been heard yet; 0 once it is disposed.
+- `queuedFrameCount`: Gets how many frames the queue holds that haven't been heard yet; 0 once it is disposed.
 - `play`: Starts the queue playing what it holds and what is added to it.
   - `group`: Optional. The group it plays in. Defaults to `Audio.master`.
   - `volume`: Optional. The voice's own volume, 0 to 1, before its groups' volumes apply. Defaults to 1.
@@ -157,13 +157,13 @@ Represents a sound ready to play: decoded whole (`Audio.load`), made from sample
 ```haxe
 var path(default, null):String
 var streamed(default, null):Bool
-var channels(default, null):Int
+var channelCount(default, null):Int
 var duration(get, never):Float
 ```
 
 - `path`: Gets the path it was loaded from, or "" for a sound made from samples (`Audio.createSound`).
 - `streamed`: Gets a value indicating whether the sound is read as it plays (`Audio.stream`) rather than held whole.
-- `channels`: Gets the channels it plays, 1 (mono) or 2 (stereo); 0 for a streamed sound whose channels the platform can't tell (`IAudio.getStreamChannels`).
+- `channelCount`: Gets the number of channels it plays, 1 (mono) or 2 (stereo); 0 for a streamed sound whose channels the platform can't tell (`IAudio.getStreamChannelCount`).
 - `duration`: Gets the sound's length in seconds, or 0 while it isn't known.
   A sound held whole knows its length at once. A streamed sound's is the platform's (`IAudio.getStreamDuration`), which may come later. A streamed sound downloading from a server knows its length once the file's start and its last 64 KiB have arrived, which `Assets` fetches first.
 

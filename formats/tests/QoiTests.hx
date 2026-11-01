@@ -63,7 +63,7 @@ class QoiTests {
 		check(qoi.length == length && haxe.crypto.Crc32.make(qoi) == crc32, '$what: qoi.h\'s $length bytes, CRC 0x${StringTools.hex(crc32, 8)}');
 		check(qoi.getString(0, 4) == "qoif" && qoi.get(12) == channels && qoi.get(13) == 0, '$what: the magic, its channels, sRGB');
 		var read = QoiFile.read(qoi);
-		check(read.width == width && read.height == height && read.channels == channels && !read.linear, '$what: its header read back');
+		check(read.width == width && read.height == height && read.channelCount == channels && !read.linear, '$what: its header read back');
 		check(read.pixels.compare(image) == 0, '$what: its pixels read back');
 	}
 

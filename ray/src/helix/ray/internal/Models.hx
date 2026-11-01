@@ -376,7 +376,7 @@ class Models {
 		var meshes = [], meshMaterial = [];
 		for (i => found in read.meshes) {
 			// raylib puts every mesh's node's transform into its vertices, a skinned mesh's too.
-			var m = read.meshSkins[i] >= 0 ? found.transform(read.meshTransforms[i]) : found;
+			var m = read.meshSkinIndices[i] >= 0 ? found.transform(read.meshTransforms[i]) : found;
 			var mesh = new Mesh();
 			mesh.vertexCount = m.vertexCount;
 			mesh.vertices = m.positions;
@@ -392,7 +392,7 @@ class Models {
 			gpu.shared = true;
 			mesh.gpu = gpu;
 			meshes.push(mesh);
-			meshMaterial.push(read.meshMaterials[i] + 1);
+			meshMaterial.push(read.meshMaterialIndices[i] + 1);
 		}
 		var model = new Model(meshes, [], meshMaterial);
 		skeleton(model, read, attached);
@@ -431,10 +431,10 @@ class Models {
 				give(maps[map], image.path != "" ? image.path : '${read.path}#$index', () -> image, image.width, image.height,
 					Raylib.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
 		}
-		set(Raylib.MATERIAL_MAP_ALBEDO, m.baseColorImage);
+		set(Raylib.MATERIAL_MAP_ALBEDO, m.baseColorImageIndex);
 		maps[Raylib.MATERIAL_MAP_ALBEDO].color = byteColor(m.baseColorFactor, byte(m.baseColorFactor[3]));
-		if (m.metallicRoughnessImage >= 0) {
-			var image = read.images[m.metallicRoughnessImage];
+		if (m.metallicRoughnessImageIndex >= 0) {
+			var image = read.images[m.metallicRoughnessImageIndex];
 			if (image != null) {
 				var w = image.width, h = image.height;
 				// GetImageColor's green (roughness) or blue (metalness): the decoded image is RGBA. Made only when no load holds it.
@@ -445,17 +445,17 @@ class Models {
 							gray.set(y * w + x, image.pixels.get((y * w + x) * 4 + channel));
 					return new helix.services.images.Image("", w, h, Pixels.colors(gray, w, h, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE));
 				}
-				var key = '${read.path}#${m.metallicRoughnessImage}';
+				var key = '${read.path}#${m.metallicRoughnessImageIndex}';
 				give(maps[Raylib.MATERIAL_MAP_ROUGHNESS], '$key:roughness', () -> split(1), w, h, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
 				give(maps[Raylib.MATERIAL_MAP_METALNESS], '$key:metalness', () -> split(2), w, h, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
 			}
 			maps[Raylib.MATERIAL_MAP_ROUGHNESS].value = Pixels.f32(m.roughness);
 			maps[Raylib.MATERIAL_MAP_METALNESS].value = Pixels.f32(m.metallic);
 		}
-		set(Raylib.MATERIAL_MAP_NORMAL, m.normalImage);
-		set(Raylib.MATERIAL_MAP_OCCLUSION, m.occlusionImage);
-		if (m.emissiveImage >= 0) {
-			set(Raylib.MATERIAL_MAP_EMISSION, m.emissiveImage);
+		set(Raylib.MATERIAL_MAP_NORMAL, m.normalImageIndex);
+		set(Raylib.MATERIAL_MAP_OCCLUSION, m.occlusionImageIndex);
+		if (m.emissiveImageIndex >= 0) {
+			set(Raylib.MATERIAL_MAP_EMISSION, m.emissiveImageIndex);
 			maps[Raylib.MATERIAL_MAP_EMISSION].color = byteColor(m.emissiveFactor, 255);
 		}
 		return material;
@@ -484,14 +484,14 @@ class Models {
 		var bones = read.skeleton;
 		if (bones == null || read.skins.length == 0)
 			return;
-		var skin = read.skins[0], joints = skin.bones;
+		var skin = read.skins[0], joints = skin.boneIndices;
 		model.boneCount = joints.length;
 		model.bones = [
 			for (b in joints) {
-				var parent = -1, above = bones.bones[b].parent;
+				var parent = -1, above = bones.bones[b].parentIndex;
 				while (above >= 0 && parent < 0) {
 					parent = joints.indexOf(above);
-					above = bones.bones[above].parent;
+					above = bones.bones[above].parentIndex;
 				}
 				new BoneInfo(boneName(bones.bones[b].name), parent);
 			}
@@ -518,9 +518,9 @@ class Models {
 		var warned = false;
 		for (i => mesh in model.meshes) {
 			var m = read.meshes[i];
-			if (m.joints != null && m.weights != null) {
+			if (m.jointIndices != null && m.weights != null) {
 				mesh.boneIds = [
-					for (j in m.joints) {
+					for (j in m.jointIndices) {
 						if (j > 255 && !warned) {
 							Runtime.log(4, 'MODEL: [${read.path}] Joint attribute data format (u16) overflow');
 							warned = true;

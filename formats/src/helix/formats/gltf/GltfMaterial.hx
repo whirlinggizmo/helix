@@ -16,7 +16,7 @@ class GltfMaterial {
 	public final baseColorFactor:Array<Float>;
 
 	/** Gets the index of the base color image in `GltfFile.images`, or -1 when there is none. */
-	public final baseColorImage:Int;
+	public final baseColorImageIndex:Int;
 
 	/** Gets the metalness factor, 0 to 1. Defaults to 1. */
 	public final metallic:Float;
@@ -26,34 +26,34 @@ class GltfMaterial {
 
 	/** Gets the index of the metallic-roughness image in `GltfFile.images`, or -1 when there is none: roughness in its green channel,
 		metalness in its blue. */
-	public final metallicRoughnessImage:Int;
+	public final metallicRoughnessImageIndex:Int;
 
 	/** Gets the index of the normal map's image in `GltfFile.images`, or -1 when there is none. */
-	public final normalImage:Int;
+	public final normalImageIndex:Int;
 
 	/** Gets the index of the occlusion image in `GltfFile.images`, or -1 when there is none: how much light reaches each point, in its
 		red channel. */
-	public final occlusionImage:Int;
+	public final occlusionImageIndex:Int;
 
 	/** Gets the emissive factor: red, green and blue, each 0 to 1, multiplying the emissive image. Defaults to 0, 0, 0. */
 	public final emissiveFactor:Array<Float>;
 
 	/** Gets the index of the emissive image in `GltfFile.images`, or -1 when there is none. */
-	public final emissiveImage:Int;
+	public final emissiveImageIndex:Int;
 
 	@:allow(helix.formats.gltf)
-	function new(name:String, hasPbrMetallicRoughness:Bool, baseColorFactor:Array<Float>, baseColorImage:Int, metallic:Float, roughness:Float,
-			metallicRoughnessImage:Int, normalImage:Int, occlusionImage:Int, emissiveFactor:Array<Float>, emissiveImage:Int) {
+	function new(name:String, hasPbrMetallicRoughness:Bool, baseColorFactor:Array<Float>, baseColorImageIndex:Int, metallic:Float, roughness:Float,
+			metallicRoughnessImageIndex:Int, normalImageIndex:Int, occlusionImageIndex:Int, emissiveFactor:Array<Float>, emissiveImageIndex:Int) {
 		this.name = name;
 		this.hasPbrMetallicRoughness = hasPbrMetallicRoughness;
 		this.baseColorFactor = baseColorFactor;
-		this.baseColorImage = baseColorImage;
+		this.baseColorImageIndex = baseColorImageIndex;
 		this.metallic = metallic;
 		this.roughness = roughness;
-		this.metallicRoughnessImage = metallicRoughnessImage;
-		this.normalImage = normalImage;
-		this.occlusionImage = occlusionImage;
+		this.metallicRoughnessImageIndex = metallicRoughnessImageIndex;
+		this.normalImageIndex = normalImageIndex;
+		this.occlusionImageIndex = occlusionImageIndex;
 		this.emissiveFactor = emissiveFactor;
-		this.emissiveImage = emissiveImage;
+		this.emissiveImageIndex = emissiveImageIndex;
 	}
 }

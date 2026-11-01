@@ -50,8 +50,8 @@ class Skeleton3D {
 		out = fit(out, bones.length, () -> new Matrix3D());
 		for (i => bone in bones) {
 			pose[i].toMatrix(out[i]);
-			if (bone.parent >= 0)
-				Matrix3D.compose(out[i], out[bone.parent], out[i]);
+			if (bone.parentIndex >= 0)
+				Matrix3D.compose(out[i], out[bone.parentIndex], out[i]);
 		}
 		return out;
 	}

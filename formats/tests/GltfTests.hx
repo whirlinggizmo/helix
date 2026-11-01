@@ -114,11 +114,11 @@ class GltfTests {
 		check(model.missingBuffers.length == 0, "GLB: its buffer is its BIN chunk, none missing");
 		check(model.nodes.length == 2
 			&& model.nodes[0].name == "root"
-			&& model.nodes[0].mesh == -1
-			&& model.nodes[0].children.join(",") == "1",
+			&& model.nodes[0].meshIndex == -1
+			&& model.nodes[0].childIndices.join(",") == "1",
 			"GLB: a node's name, no mesh, its children");
-		check(model.nodes[1].mesh == 0 && model.nodes[1].children.length == 0, "GLB: a node's mesh, no children");
-		check(model.scene.join(",") == "0", "GLB: the default scene's roots");
+		check(model.nodes[1].meshIndex == 0 && model.nodes[1].childIndices.length == 0, "GLB: a node's mesh, no children");
+		check(model.sceneNodeIndices.join(",") == "0", "GLB: the default scene's roots");
 		var p = model.nodes[0].transform.transformPoint(1, 0, 0);
 		check(near(p.x, 3) && near(p.y, 2) && near(p.z, 3), "GLB: scale, then translation");
 		var q = model.nodes[1].transform.transformPoint(1, 1, 1);
@@ -126,7 +126,7 @@ class GltfTests {
 		var mesh = model.meshes[0];
 		check(model.meshes.length == 1 && mesh.name == "triangle" && mesh.primitives.length == 1, "GLB: a mesh and its primitive");
 		var primitive = mesh.primitives[0];
-		check(primitive.mode == 4 && primitive.material == 0, "GLB: triangles by default, its material");
+		check(primitive.mode == 4 && primitive.materialIndex == 0, "GLB: triangles by default, its material");
 		check(same(primitive.positions, [0, 0, 0, 1, 0, 0, 0, 1, 0]), "GLB: positions");
 		check(same(primitive.texCoords, [0, 0, 1, 0, 0, 1]), "GLB: texture coordinates");
 		check(same(primitive.colors, [1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0.2, 1]), "GLB: normalized colors over a stride, alpha 1 for three");
@@ -135,10 +135,10 @@ class GltfTests {
 		var material = model.materials[0];
 		check(model.materials.length == 1 && material.name == "paint" && same(material.baseColorFactor, [1, 0.5, 0.25, 1]),
 			"GLB: a material's name and base color");
-		check(material.baseColorImage == 0 && material.metallic == 0 && material.roughness == 1, "GLB: its texture's image, its factors");
-		check(material.normalImage == -1 && material.emissiveImage == -1 && same(material.emissiveFactor, [0, 0, 0]),
+		check(material.baseColorImageIndex == 0 && material.metallic == 0 && material.roughness == 1, "GLB: its texture's image, its factors");
+		check(material.normalImageIndex == -1 && material.emissiveImageIndex == -1 && same(material.emissiveFactor, [0, 0, 0]),
 			"GLB: no normal or emissive image, black emission");
-		check(material.hasPbrMetallicRoughness && material.metallicRoughnessImage == -1 && material.occlusionImage == -1,
+		check(material.hasPbrMetallicRoughness && material.metallicRoughnessImageIndex == -1 && material.occlusionImageIndex == -1,
 			"GLB: a pbrMetallicRoughness block, no metallic-roughness or occlusion image");
 		var image = model.images[0];
 		check(model.images.length == 1 && image.path == null && image.mimeType == "image/png" && image.encoded.compare(png) == 0,
@@ -195,7 +195,7 @@ class GltfTests {
 				{"bufferView":9,"componentType":5126,"count":2,"type":"VEC3"}]}';
 		var model = GltfFile.read(Bytes.ofString(json), "ship.gltf");
 		check(model.missingBuffers.length == 0, ".gltf: a data: URI buffer is read, none missing");
-		check(model.scene.join(",") == "0,1,2", ".gltf: with no scenes, every node no node's child is a root");
+		check(model.sceneNodeIndices.join(",") == "0,1,2", ".gltf: with no scenes, every node no node's child is a root");
 		var p = model.nodes[0].transform.transformPoint(1, 0, 0);
 		check(near(p.x, 0) && near(p.y, 1) && near(p.z, 0), ".gltf: a quaternion turns +x to +y");
 		check(model.nodes[1].name == "" && model.meshes[0].name == "", ".gltf: no name is empty");
@@ -205,7 +205,7 @@ class GltfTests {
 		check(same(primitive.normals, [0, 0, 1, 0, 0, -1, 0, 1, 0]), ".gltf: normalized signed bytes, -128 clamped to -1");
 		check(same(primitive.texCoords, [0, 0, 0, 0, 0, 0]), ".gltf: an accessor with no buffer view is zeros");
 		check(same(primitive.tangents, [1, 0, 0, 1, 0, 1, 0, -1, 0, 0, 1, 1]), ".gltf: tangents, their w");
-		check(primitive.joints.join(",") == "0,1,0,0,1,0,0,0,0,1,0,0"
+		check(primitive.jointIndices.join(",") == "0,1,0,0,1,0,0,0,0,1,0,0"
 			&& same(primitive.weights, [.75, .25, 0, 0, 1, 0, 0, 0, .5, .5, 0, 0]),
 			".gltf: joints and weights, four a vertex");
 		var r = model.nodes[0].local.rotation;
@@ -216,18 +216,18 @@ class GltfTests {
 			".gltf: a node's parts as it gives them, the rest their defaults");
 		var knee = model.nodes[3].local;
 		check(near(knee.scale.x, 2) && near(knee.position.y, 1) && near(knee.rotation.w, 1), ".gltf: a node's matrix taken apart");
-		check(model.nodes[1].skin == 0 && model.nodes[0].skin == -1, ".gltf: a node's skin, or none");
+		check(model.nodes[1].skinIndex == 0 && model.nodes[0].skinIndex == -1, ".gltf: a node's skin, or none");
 		var skin = model.skins[0];
-		check(model.skins.length == 2 && skin.name == "legs" && skin.joints.join(",") == "2,3" && skin.skeleton == 2,
+		check(model.skins.length == 2 && skin.name == "legs" && skin.jointIndices.join(",") == "2,3" && skin.skeletonIndex == 2,
 			".gltf: a skin's name, joints and skeleton");
 		check(near(skin.inverseBindMatrices[1].values[13], -2)
 			&& near(skin.inverseBindMatrices[0].values[0], 1), ".gltf: its inverse binds");
-		check(model.skins[1].inverseBindMatrices[0].values.join(",") == new helix.math.Matrix3D().values.join(",") && model.skins[1].skeleton == -1
+		check(model.skins[1].inverseBindMatrices[0].values.join(",") == new helix.math.Matrix3D().values.join(",") && model.skins[1].skeletonIndex == -1
 			&& model.skins[1].name == "",
 			".gltf: none given, identities; no skeleton, no name");
 		var walk = model.animations[0];
-		check(model.animations.length == 2 && walk.name == "Walk" && walk.channels.length == 2 && walk.channels[0].node == 3
-			&& walk.channels[0].path == "rotation" && walk.channels[1].sampler == 1,
+		check(model.animations.length == 2 && walk.name == "Walk" && walk.channels.length == 2 && walk.channels[0].nodeIndex == 3
+			&& walk.channels[0].path == "rotation" && walk.channels[1].samplerIndex == 1,
 			".gltf: an animation's channels");
 		check(same(walk.samplers[0].input, [0, 1.5])
 			&& same(walk.samplers[0].output, [0, 0, 0, 1, 0, 0, 0.7071067811865476, 0.7071067811865476])
@@ -236,21 +236,25 @@ class GltfTests {
 			&& same(walk.samplers[1].output, [0, 1, 0, 0, 2, 0]),
 			".gltf: its samplers' keys, linear unless it says");
 		check(model.animations[1].name == "" && model.animations[1].channels.length == 0, ".gltf: an empty animation");
-		check(primitive.colors == null && primitive.material == -1, ".gltf: no colors, no material");
+		check(primitive.colors == null && primitive.materialIndex == -1, ".gltf: no colors, no material");
 		var lines = model.meshes[0].primitives[1];
 		check(lines.mode == 1 && lines.indices == null && lines.positions.length == 9, ".gltf: a primitive of lines, no indices");
 		var material = model.materials[0];
 		check(material.name == ""
 			&& same(material.baseColorFactor, [1, 1, 1, 1])
-			&& material.baseColorImage == -1
+			&& material.baseColorImageIndex == -1
 			&& material.metallic == 1,
 			".gltf: a material's defaults");
-		check(material.emissiveImage == 0 && same(material.emissiveFactor, [1, 1, 0]) && material.normalImage == -1,
+		check(material.emissiveImageIndex == 0 && same(material.emissiveFactor, [1, 1, 0]) && material.normalImageIndex == -1,
 			".gltf: emission; a texture with no source is no image");
-		check(!material.hasPbrMetallicRoughness && material.metallicRoughnessImage == -1 && material.occlusionImage == -1,
+		check(!material.hasPbrMetallicRoughness && material.metallicRoughnessImageIndex == -1 && material.occlusionImageIndex == -1,
 			".gltf: no pbrMetallicRoughness block, no metallic-roughness or occlusion image");
 		var pbr = model.materials[1];
-		check(pbr.hasPbrMetallicRoughness && pbr.metallicRoughnessImage == 0 && pbr.occlusionImage == 0 && pbr.baseColorImage == -1 && pbr.roughness == 1,
+		check(pbr.hasPbrMetallicRoughness
+			&& pbr.metallicRoughnessImageIndex == 0
+			&& pbr.occlusionImageIndex == 0
+			&& pbr.baseColorImageIndex == -1
+			&& pbr.roughness == 1,
 			".gltf: a pbrMetallicRoughness block of a metallic-roughness texture alone; an occlusion texture");
 		check(model.images[0].encoded.compare(png) == 0
 			&& model.images[0].path == null
@@ -269,11 +273,12 @@ class GltfTests {
 			"accessors":[{"bufferView":0,"componentType":5126,"count":3,"type":"VEC3"}]}';
 		var model = GltfFile.read(Bytes.ofString(json), "assets/models/ship.gltf");
 		var missing = model.missingBuffers;
-		check(missing.length == 1 && missing[0].index == 0 && missing[0].path == "assets/models/bin/my mesh+1.bin",
+		check(missing.length == 1 && missing[0].bufferIndex == 0 && missing[0].path == "assets/models/bin/my mesh+1.bin",
 			"external: a missing buffer, its path decoded (a + kept) and resolved");
 		check(GltfFile.read(Bytes.ofString(json), "ship.gltf").missingBuffers[0].path == "bin/my mesh+1.bin",
 			"external: a model with no directory leaves the path as decoded");
-		check(model.nodes[0].mesh == 0 && model.materials[0].baseColorImage == 0, "external: nodes and materials are read without the buffer");
+		check(model.nodes[0].meshIndex == 0
+			&& model.materials[0].baseColorImageIndex == 0, "external: nodes and materials are read without the buffer");
 		var image = model.images[0];
 		check(image.encoded == null && image.path == "assets/models/textures/my wood.png" && image.mimeType == "image/png",
 			"external: an image in a file of its own, its path decoded and resolved");

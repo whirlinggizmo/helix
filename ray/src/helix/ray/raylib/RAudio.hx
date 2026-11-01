@@ -523,7 +523,7 @@ class RAudio {
 		if (service == null || Runtime.audio == null || data == null)
 			return;
 		StopSound(sound);
-		var channels = service.channels;
+		var channels = service.channelCount;
 		var samples = owner.samples != null ? owner.samples : haxe.io.Bytes.alloc(Std.int(Math.max(1, Math.round(service.duration * 44100))) * channels * 4);
 		var bytes = Std.int(Math.min(Math.min(sampleCount * channels * 4, data.length), samples.length));
 		if (bytes > 0)
@@ -892,7 +892,7 @@ class RAudio {
 		@param stream  The stream.
 		@return  True when `UpdateAudioStream` would take samples. */
 	static function IsAudioStreamProcessed(stream:AudioStream):Bool {
-		return stream.queue != null && stream.queue.queuedFrames <= stream.bufferFrames;
+		return stream.queue != null && stream.queue.queuedFrameCount <= stream.bufferFrames;
 	}
 
 	/** Plays a stream: what it holds, and what it is given after. A stream with a callback is filled by it at once.
@@ -1043,7 +1043,7 @@ class RAudio {
 		var frames = stream.bufferFrames;
 		if (frames <= 0)
 			return;
-		while (stream.queue != null && stream.callback == callback && stream.queue.queuedFrames < 2 * frames) {
+		while (stream.queue != null && stream.callback == callback && stream.queue.queuedFrameCount < 2 * frames) {
 			var buffer = haxe.io.Bytes.alloc(frames * stream.channels * bytesPerSample(stream.sampleSize));
 			callback(buffer, frames);
 			if (stream.queue != null)

@@ -186,3 +186,12 @@ Why things are the way they are, numbered, in order.
     from raylib: a texture or shader copied out of a material and used after its model is unloaded is freed (raylib leaks it); a
     material or mesh shared between models works (raylib's C frees it twice); and a texture or shader a program gives a material and
     never unloads stays while it lives, where raylib's `UnloadMaterial` frees it.
+
+26. **An index ends in `Index` and a count in `Count`, so a name says which it holds.** A bare noun read as the thing itself:
+    `GltfNode.mesh` was the mesh's index in `GltfFile.meshes`, `Skin3D.bones` the bones' indices in the skeleton's, `WavFile.channels`
+    the number of channels; a reader had to open the doc comment to learn it was a number, and of which kind. Now a whole number naming
+    a position in an array ends in `Index` (an array of them in `Indices`), and one naming how many ends in `Count` (`Counts`), fields
+    and parameters alike (docs/CONVENTIONS.md, Names). A mesh's vertex indices keep glTF's and raylib's `indices`, the one name every
+    reader of a mesh knows; a number of bytes is a size, named for its unit (`capacityBytes`); a handle, an id or a slot keeps its own
+    noun. helix-ray's raylib types keep raylib's names (`Model.meshMaterial`, `BoneInfo.parent`). `tools/check_names.py` holds each
+    field and parameter whose doc comment calls it an index or a number of things to the rule, reading Haxe's XML description.

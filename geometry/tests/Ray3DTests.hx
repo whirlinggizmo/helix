@@ -30,7 +30,7 @@ class Ray3DTests {
 			&& near(hit.distance, distance)
 			&& at(hit.point, point[0], point[1], point[2])
 			&& at(hit.normal, normal[0], normal[1], normal[2])
-			&& hit.triangle == triangle;
+			&& hit.triangleIndex == triangle;
 
 	static function main():Void {
 		var ray = new Ray3D();
@@ -86,7 +86,9 @@ class Ray3DTests {
 		var along = new Ray3D().set(0, .5, .25, 1, 0, 0);
 		var hit = along.intersectMesh(cube, placed);
 		check(hit != null && near(hit.distance, 9) && at(hit.point, 9, .5, .25) && at(hit.normal, -1, 0, 0), "a mesh moved: its nearest face, in the world");
-		var hitTriangle = hit.triangle, p = cube.positions, i = cube.indices;
+		var hitTriangle = hit.triangleIndex,
+			p = cube.positions,
+			i = cube.indices;
 		var normalX = 0.;
 		for (c in 0...3)
 			normalX += p[i[hitTriangle * 3 + c] * 3];
@@ -96,7 +98,7 @@ class Ray3DTests {
 		check(inside != null && near(inside.distance, 1) && at(inside.normal, 1, 0, 0), "from inside a closed mesh: where it comes out");
 		var flat = Mesh3D.fromBox(2, 2, 2).toUnindexed();
 		var unindexed = along.intersectMesh(flat, placed);
-		check(unindexed != null && near(unindexed.distance, 9) && unindexed.triangle == hitTriangle, "without indices, the same triangle");
+		check(unindexed != null && near(unindexed.distance, 9) && unindexed.triangleIndex == hitTriangle, "without indices, the same triangle");
 
 		// Into the hit given; a miss leaves it.
 		var given = new RayHit3D();
@@ -104,8 +106,8 @@ class Ray3DTests {
 		check(toSphere.intersectSphere(50, 0, 0, 2, given) == null
 			&& near(given.distance, 8)
 			&& at(given.point, 0, 0, 2), "a miss: it unchanged");
-		check(along.intersectMesh(cube, placed, given) == given && given.triangle == hitTriangle, "a mesh's hit into the one given");
-		check(toSphere.intersectPlane(0, 0, 0, 0, 0, 1, given) == given && given.triangle == -1, "another test's: no triangle");
+		check(along.intersectMesh(cube, placed, given) == given && given.triangleIndex == hitTriangle, "a mesh's hit into the one given");
+		check(toSphere.intersectPlane(0, 0, 0, 0, 0, 1, given) == given && given.triangleIndex == -1, "another test's: no triangle");
 		var copy = new RayHit3D().copyFrom(given);
 		check(copy.distance == given.distance
 			&& at(copy.point, given.point.x, given.point.y, given.point.z)

@@ -43,14 +43,14 @@ class Animation3D {
 		out = skeleton.computeRestPose(out);
 		for (track in tracks) {
 			var keys = track.times, count = keys.length;
-			if (count == 0 || track.bone < 0 || track.bone >= out.length)
+			if (count == 0 || track.boneIndex < 0 || track.boneIndex >= out.length)
 				continue;
 			var size = track.property == Rotation ? 4 : 3,
 				cubic = track.interpolation == CubicSpline;
 			// A key's value starts here: after its in-tangent, for a cubic track.
 			inline function at(key:Int):Int
 				return cubic ? key * size * 3 + size : key * size;
-			var v = track.values, target = out[track.bone];
+			var v = track.values, target = out[track.boneIndex];
 			// The key at or before the time, and how far on to the next.
 			var k = 0;
 			while (k + 1 < count && keys[k + 1] <= time)

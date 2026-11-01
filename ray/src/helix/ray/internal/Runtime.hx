@@ -348,14 +348,14 @@ class Runtime {
 		#if js
 		window = new helix.platform.adapters.window.dom.DomWindowAdapter({canvasId: "canvas"});
 		events = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
-		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvasId: "canvas", msaaSamples: samples});
+		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvasId: "canvas", msaaSampleCount: samples});
 		#else
 		var vsync = flags & helix.ray.Raylib.FLAG_VSYNC_HINT != 0;
 		#if sdl_gpu
-		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gpu, msaaSamples: samples, vsync: vsync});
+		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gpu, msaaSampleCount: samples, vsync: vsync});
 		graphics = new helix.platform.adapters.graphics.sdl3gpu.Sdl3GpuGraphicsAdapter();
 		#else
-		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gl, msaaSamples: samples, vsync: vsync});
+		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gl, msaaSampleCount: samples, vsync: vsync});
 		graphics = new helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter();
 		#end
 		events = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();

@@ -35,8 +35,8 @@ class Mesh3D {
 	/** Gets or sets the indices, three a triangle; null when the vertices are the triangles in order. */
 	public var indices:Null<Array<Int>> = null;
 
-	/** Gets or sets the joints, four a vertex: indices of the bones its position follows in its skin (`Skin3D.bones`); null for none. */
-	public var joints:Null<Array<Int>> = null;
+	/** Gets or sets the joints, four a vertex: indices of the bones its position follows in its skin (`Skin3D.boneIndices`); null for none. */
+	public var jointIndices:Null<Array<Int>> = null;
 
 	/** Gets or sets the weights, four a vertex, one for each of its joints, adding up to 1; null for none. */
 	public var weights:Null<Array<Float>> = null;
@@ -91,74 +91,74 @@ class Mesh3D {
 
 		@param width  Its size along x.
 		@param depth  Along z.
-		@param columns  Cells along x, at least 1.
-		@param rows  Cells along z, at least 1.
+		@param columnCount  Cells along x, at least 1.
+		@param rowCount  Cells along z, at least 1.
 		@param out  Optional. Set to the plane.
 		@return  The plane; its texture's top at -z. */
-	public static function fromPlane(width:Float, depth:Float, columns:Int, rows:Int, ?out:Mesh3D):Mesh3D {
+	public static function fromPlane(width:Float, depth:Float, columnCount:Int, rowCount:Int, ?out:Mesh3D):Mesh3D {
 		var m = start(out);
-		columns = columns < 1 ? 1 : columns;
-		rows = rows < 1 ? 1 : rows;
-		for (j in 0...rows + 1)
-			for (i in 0...columns + 1) {
-				var u = i / columns, v = j / rows;
+		columnCount = columnCount < 1 ? 1 : columnCount;
+		rowCount = rowCount < 1 ? 1 : rowCount;
+		for (j in 0...rowCount + 1)
+			for (i in 0...columnCount + 1) {
+				var u = i / columnCount, v = j / rowCount;
 				vertex(m, (u - .5) * width, 0, (v - .5) * depth, 0, 1, 0, u, v);
 			}
-		grid(m, 0, columns, rows, null);
+		grid(m, 0, columnCount, rowCount, null);
 		return m;
 	}
 
 	/** Returns a flat disk on the XZ plane, facing +y; with few slices, a regular polygon.
 
 		@param radius  Its radius.
-		@param slices  Its sides, at least 3.
+		@param sliceCount  Its sides, at least 3.
 		@param out  Optional. Set to the disk.
 		@return  The disk: a vertex at its center and one at each corner, the texture a circle touching its edges. */
-	public static function fromDisk(radius:Float, slices:Int, ?out:Mesh3D):Mesh3D {
+	public static function fromDisk(radius:Float, sliceCount:Int, ?out:Mesh3D):Mesh3D {
 		var m = start(out);
-		disk(m, radius, 0, slices < 3 ? 3 : slices, true);
+		disk(m, radius, 0, sliceCount < 3 ? 3 : sliceCount, true);
 		return m;
 	}
 
 	/** Returns a sphere, its poles on y.
 
 		@param radius  Its radius.
-		@param slices  Around, at least 3.
-		@param stacks  Pole to pole, at least 2.
+		@param sliceCount  Around, at least 3.
+		@param stackCount  Pole to pole, at least 2.
 		@param out  Optional. Set to the sphere.
 		@return  The sphere. */
-	public static function fromSphere(radius:Float, slices:Int, stacks:Int, ?out:Mesh3D):Mesh3D {
+	public static function fromSphere(radius:Float, sliceCount:Int, stackCount:Int, ?out:Mesh3D):Mesh3D {
 		var m = start(out);
-		stacks = stacks < 2 ? 2 : stacks;
+		stackCount = stackCount < 2 ? 2 : stackCount;
 		var rows = [
-			for (j in 0...stacks + 1) {
-				var phi = Math.PI * j / stacks;
-				var s = j == 0 || j == stacks ? 0 : Trig.sin(phi), c = j == 0 ? 1 : j == stacks ? -1 : Trig.cos(phi);
-				new Row(radius * s, radius * c, s, c, j / stacks);
+			for (j in 0...stackCount + 1) {
+				var phi = Math.PI * j / stackCount;
+				var s = j == 0 || j == stackCount ? 0 : Trig.sin(phi), c = j == 0 ? 1 : j == stackCount ? -1 : Trig.cos(phi);
+				new Row(radius * s, radius * c, s, c, j / stackCount);
 			}
 		];
-		lathe(m, rows, slices);
+		lathe(m, rows, sliceCount);
 		return m;
 	}
 
 	/** Returns the top half of a sphere, open at its base, its pole at +y and its base on the XZ plane.
 
 		@param radius  Its radius.
-		@param slices  Around, at least 3.
-		@param stacks  Pole to base, at least 1.
+		@param sliceCount  Around, at least 3.
+		@param stackCount  Pole to base, at least 1.
 		@param out  Optional. Set to the hemisphere.
 		@return  The hemisphere. */
-	public static function fromHemisphere(radius:Float, slices:Int, stacks:Int, ?out:Mesh3D):Mesh3D {
+	public static function fromHemisphere(radius:Float, sliceCount:Int, stackCount:Int, ?out:Mesh3D):Mesh3D {
 		var m = start(out);
-		stacks = stacks < 1 ? 1 : stacks;
+		stackCount = stackCount < 1 ? 1 : stackCount;
 		var rows = [
-			for (j in 0...stacks + 1) {
-				var phi = Math.PI / 2 * j / stacks;
-				var s = j == 0 ? 0 : j == stacks ? 1 : Trig.sin(phi), c = j == 0 ? 1 : j == stacks ? 0 : Trig.cos(phi);
-				new Row(radius * s, radius * c, s, c, j / stacks);
+			for (j in 0...stackCount + 1) {
+				var phi = Math.PI / 2 * j / stackCount;
+				var s = j == 0 ? 0 : j == stackCount ? 1 : Trig.sin(phi), c = j == 0 ? 1 : j == stackCount ? 0 : Trig.cos(phi);
+				new Row(radius * s, radius * c, s, c, j / stackCount);
 			}
 		];
-		lathe(m, rows, slices);
+		lathe(m, rows, sliceCount);
 		return m;
 	}
 
@@ -167,15 +167,15 @@ class Mesh3D {
 		@param bottomRadius  Its base's radius, at -height / 2.
 		@param topRadius  Its top's, at height / 2; 0 makes a cone.
 		@param height  Its height.
-		@param slices  Around, at least 3.
-		@param stacks  Base to top, at least 1.
+		@param sliceCount  Around, at least 3.
+		@param stackCount  Base to top, at least 1.
 		@param capped  Whether its ends are closed, each by a disk; an end of radius 0 has none.
 		@param out  Optional. Set to the cylinder.
 		@return  The cylinder. */
-	public static function fromCylinder(bottomRadius:Float, topRadius:Float, height:Float, slices:Int, stacks:Int, capped:Bool, ?out:Mesh3D):Mesh3D {
+	public static function fromCylinder(bottomRadius:Float, topRadius:Float, height:Float, sliceCount:Int, stackCount:Int, capped:Bool, ?out:Mesh3D):Mesh3D {
 		var m = start(out);
-		stacks = stacks < 1 ? 1 : stacks;
-		slices = slices < 3 ? 3 : slices;
+		stackCount = stackCount < 1 ? 1 : stackCount;
+		sliceCount = sliceCount < 3 ? 3 : sliceCount;
 		// The side's normal leans up as the side narrows toward the top.
 		var nr = height, ny = bottomRadius - topRadius, length = Math.sqrt(nr * nr + ny * ny);
 		if (length == 0) {
@@ -183,16 +183,16 @@ class Mesh3D {
 			length = 1;
 		}
 		var rows = [
-			for (j in 0...stacks + 1) {
-				var t = j / stacks;
+			for (j in 0...stackCount + 1) {
+				var t = j / stackCount;
 				new Row(topRadius + (bottomRadius - topRadius) * t, height / 2 - height * t, nr / length, ny / length, t);
 			}
 		];
-		lathe(m, rows, slices);
+		lathe(m, rows, sliceCount);
 		if (capped && topRadius > 0)
-			disk(m, topRadius, height / 2, slices, true);
+			disk(m, topRadius, height / 2, sliceCount, true);
 		if (capped && bottomRadius > 0)
-			disk(m, bottomRadius, -height / 2, slices, false);
+			disk(m, bottomRadius, -height / 2, sliceCount, false);
 		return m;
 	}
 
@@ -200,23 +200,23 @@ class Mesh3D {
 
 		@param radius  Its radius.
 		@param height  Its height between the two half spheres' centers; its whole height is this and two radii.
-		@param slices  Around, at least 3.
-		@param stacks  In each half sphere, at least 1.
+		@param sliceCount  Around, at least 3.
+		@param stackCount  In each half sphere, at least 1.
 		@param out  Optional. Set to the capsule.
 		@return  The capsule. */
-	public static function fromCapsule(radius:Float, height:Float, slices:Int, stacks:Int, ?out:Mesh3D):Mesh3D {
+	public static function fromCapsule(radius:Float, height:Float, sliceCount:Int, stackCount:Int, ?out:Mesh3D):Mesh3D {
 		var m = start(out);
-		stacks = stacks < 1 ? 1 : stacks;
+		stackCount = stackCount < 1 ? 1 : stackCount;
 		// Texture coordinates down the profile by its length: a quarter circle, the side, a quarter circle.
 		var arc = Math.PI / 2 * radius, total = 2 * arc + height;
 		if (total == 0)
 			total = 1;
 		var rows = [];
 		for (half in 0...2)
-			for (j in 0...stacks + 1) {
-				var phi = Math.PI / 2 * j / stacks;
-				var s = j == 0 ? 0 : j == stacks ? 1 : Trig.sin(phi),
-					c = j == 0 ? 1 : j == stacks ? 0 : Trig.cos(phi);
+			for (j in 0...stackCount + 1) {
+				var phi = Math.PI / 2 * j / stackCount;
+				var s = j == 0 ? 0 : j == stackCount ? 1 : Trig.sin(phi),
+					c = j == 0 ? 1 : j == stackCount ? 0 : Trig.cos(phi);
 				if (half == 1) {
 					// The bottom half, from its rim down to its pole.
 					var t = s;
@@ -224,10 +224,10 @@ class Mesh3D {
 					c = -t;
 				}
 				var y = radius * c + (half == 0 ? height / 2 : -height / 2);
-				var along = half == 0 ? arc * j / stacks : arc + height + arc * j / stacks;
+				var along = half == 0 ? arc * j / stackCount : arc + height + arc * j / stackCount;
 				rows.push(new Row(radius * s, y, s, c, along / total));
 			}
-		lathe(m, rows, slices);
+		lathe(m, rows, sliceCount);
 		return m;
 	}
 
@@ -235,28 +235,28 @@ class Mesh3D {
 
 		@param radius  From its center to the middle of its tube.
 		@param tubeRadius  The tube's radius.
-		@param slices  Around the ring, at least 3.
-		@param sides  Around the tube, at least 3.
+		@param sliceCount  Around the ring, at least 3.
+		@param sideCount  Around the tube, at least 3.
 		@param out  Optional. Set to the torus.
 		@return  The torus. */
-	public static function fromTorus(radius:Float, tubeRadius:Float, slices:Int, sides:Int, ?out:Mesh3D):Mesh3D {
+	public static function fromTorus(radius:Float, tubeRadius:Float, sliceCount:Int, sideCount:Int, ?out:Mesh3D):Mesh3D {
 		var m = start(out);
-		slices = slices < 3 ? 3 : slices;
-		sides = sides < 3 ? 3 : sides;
-		for (k in 0...sides + 1) {
+		sliceCount = sliceCount < 3 ? 3 : sliceCount;
+		sideCount = sideCount < 3 ? 3 : sideCount;
+		for (k in 0...sideCount + 1) {
 			// Around the tube from its outside, down under it and back, so the rows run down its outside as the front is seen.
-			var phi = -2 * Math.PI * (k % sides) / sides,
+			var phi = -2 * Math.PI * (k % sideCount) / sideCount,
 				cp = Trig.cos(phi),
 				sp = Trig.sin(phi);
-			for (i in 0...slices + 1) {
-				var theta = 2 * Math.PI * (i % slices) / slices,
+			for (i in 0...sliceCount + 1) {
+				var theta = 2 * Math.PI * (i % sliceCount) / sliceCount,
 					ct = Trig.cos(theta),
 					st = Trig.sin(theta);
 				var r = radius + tubeRadius * cp;
-				vertex(m, r * ct, tubeRadius * sp, -r * st, cp * ct, sp, -cp * st, i / slices, k / sides);
+				vertex(m, r * ct, tubeRadius * sp, -r * st, cp * ct, sp, -cp * st, i / sliceCount, k / sideCount);
 			}
 		}
-		grid(m, 0, slices, sides, null);
+		grid(m, 0, sliceCount, sideCount, null);
 		return m;
 	}
 
@@ -265,26 +265,26 @@ class Mesh3D {
 
 		@param radius  The ring's radius, from its center to the tube's middle at its widest.
 		@param tubeRadius  The tube's radius.
-		@param slices  Along the knot, at least 3.
-		@param sides  Around the tube, at least 3.
+		@param sliceCount  Along the knot, at least 3.
+		@param sideCount  Around the tube, at least 3.
 		@param p  Turns about the y axis, at least 1.
 		@param q  Turns through the ring, at least 1.
 		@param out  Optional. Set to the knot.
 		@return  The knot. */
-	public static function fromTorusKnot(radius:Float, tubeRadius:Float, slices:Int, sides:Int, p:Int, q:Int, ?out:Mesh3D):Mesh3D {
+	public static function fromTorusKnot(radius:Float, tubeRadius:Float, sliceCount:Int, sideCount:Int, p:Int, q:Int, ?out:Mesh3D):Mesh3D {
 		var m = start(out);
-		slices = slices < 3 ? 3 : slices;
-		sides = sides < 3 ? 3 : sides;
+		sliceCount = sliceCount < 3 ? 3 : sliceCount;
+		sideCount = sideCount < 3 ? 3 : sideCount;
 		p = p < 1 ? 1 : p;
 		q = q < 1 ? 1 : q;
 		var ratio = q / p;
-		for (k in 0...sides + 1) {
-			var phi = 2 * Math.PI * (k % sides) / sides,
+		for (k in 0...sideCount + 1) {
+			var phi = 2 * Math.PI * (k % sideCount) / sideCount,
 				cp = Trig.cos(phi),
 				sp = Trig.sin(phi);
-			for (i in 0...slices + 1) {
+			for (i in 0...sliceCount + 1) {
 				// The knot's middle at u, its width (radius at its widest, a third of it at its narrowest) and its height.
-				var u = 2 * Math.PI * p * (i % slices) / slices, a = ratio * u;
+				var u = 2 * Math.PI * p * (i % sliceCount) / sliceCount, a = ratio * u;
 				var cu = Trig.cos(u),
 					su = Trig.sin(u),
 					ca = Trig.cos(a),
@@ -312,10 +312,10 @@ class Mesh3D {
 				var ox = cp * nx + sp * bx,
 					oy = cp * ny + sp * by,
 					oz = cp * nz + sp * bz;
-				vertex(m, cx + tubeRadius * ox, cy + tubeRadius * oy, cz + tubeRadius * oz, ox, oy, oz, i / slices, k / sides);
+				vertex(m, cx + tubeRadius * ox, cy + tubeRadius * oy, cz + tubeRadius * oz, ox, oy, oz, i / sliceCount, k / sideCount);
 			}
 		}
-		grid(m, 0, slices, sides, null);
+		grid(m, 0, sliceCount, sideCount, null);
 		return m;
 	}
 
@@ -336,7 +336,7 @@ class Mesh3D {
 			tangents = both(first.tangents, second.tangents),
 			colors = both(first.colors, second.colors),
 			weights = both(first.weights, second.weights);
-		var joints = first.joints == null || second.joints == null ? null : first.joints.concat(second.joints);
+		var joints = first.jointIndices == null || second.jointIndices == null ? null : first.jointIndices.concat(second.jointIndices);
 		var indices:Null<Array<Int>> = null;
 		if (first.indices != null || second.indices != null) {
 			indices = first.indices != null ? first.indices.copy() : [for (i in 0...count) i];
@@ -355,7 +355,7 @@ class Mesh3D {
 		out.tangents = tangents;
 		out.colors = colors;
 		out.indices = indices;
-		out.joints = joints;
+		out.jointIndices = joints;
 		out.weights = weights;
 		return out;
 	}
@@ -371,7 +371,7 @@ class Mesh3D {
 		tangents = other.tangents == null ? null : other.tangents.copy();
 		colors = other.colors == null ? null : other.colors.copy();
 		indices = other.indices == null ? null : other.indices.copy();
-		joints = other.joints == null ? null : other.joints.copy();
+		jointIndices = other.jointIndices == null ? null : other.jointIndices.copy();
 		weights = other.weights == null ? null : other.weights.copy();
 		return this;
 	}
@@ -442,14 +442,14 @@ class Mesh3D {
 			tangents = spread(this.tangents, 4),
 			colors = spread(this.colors, 4),
 			weights = spread(this.weights, 4);
-		var source = this.joints;
+		var source = this.jointIndices;
 		var joints = source == null ? null : order == null ? source.copy() : [for (i in order) for (c in 0...4) source[i * 4 + c]];
 		out.positions = positions;
 		out.normals = normals;
 		out.texCoords = texCoords;
 		out.tangents = tangents;
 		out.colors = colors;
-		out.joints = joints;
+		out.jointIndices = joints;
 		out.weights = weights;
 		out.indices = null;
 		return out;
@@ -597,9 +597,9 @@ class Mesh3D {
 		out.texCoords = texCoords;
 		out.colors = colors;
 		out.indices = indices;
-		out.joints = joints;
+		out.jointIndices = jointIndices;
 		out.weights = weights;
-		var j = joints, w = weights, p = positions, n = normals, t = tangents;
+		var j = jointIndices, w = weights, p = positions, n = normals, t = tangents;
 		var op = out.positions, on = out.normals, ot = out.tangents;
 		var m = blended;
 		for (v in 0...vertexCount) {
@@ -745,8 +745,8 @@ class Mesh3D {
 		for (values in [positions, normals, texCoords, tangents, colors, weights])
 			if (values != null)
 				swapCorners(values, Std.int(values.length / vertexCount));
-		if (joints != null)
-			swapCorners(joints, 4);
+		if (jointIndices != null)
+			swapCorners(jointIndices, 4);
 	}
 
 	// Swaps each triangle's second and third vertices' values, size a vertex.

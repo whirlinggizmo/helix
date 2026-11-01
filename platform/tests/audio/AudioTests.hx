@@ -223,7 +223,7 @@ class AudioTests {
 				ready: () -> stream != 0 || failures.length > 0,
 				check: () -> {
 					near(audio.getStreamDuration(stream), 1.5, 1 / 60, "duration");
-					check(audio.getStreamChannels(stream) == 2, 'channels: ${audio.getStreamChannels(stream)}');
+					check(audio.getStreamChannelCount(stream) == 2, 'channels: ${audio.getStreamChannelCount(stream)}');
 				}
 			},
 			{
@@ -261,13 +261,13 @@ class AudioTests {
 				enter: () -> {
 					queue = audio.createQueue(2, 22050);
 					audio.queueSamples(queue, frames(11025, .5, .25));
-					check(audio.getQueuedFrames(queue) == 11025, 'queued before playing: ${audio.getQueuedFrames(queue)}');
+					check(audio.getQueuedFrameCount(queue) == 11025, 'queued before playing: ${audio.getQueuedFrameCount(queue)}');
 					voice = audio.playQueue(queue, 1);
 					started = haxe.Timer.stamp();
 				},
 				wait: .25,
 				check: () -> {
-					near(audio.getQueuedFrames(queue), 11025 - elapsed() * 22050, 22050 * .1, "queued");
+					near(audio.getQueuedFrameCount(queue), 11025 - elapsed() * 22050, 22050 * .1, "queued");
 					near(audio.getPosition(voice), elapsed(), .1, "position");
 					check(!audio.setPosition(voice, 0), "a queue's voice moved");
 				}
@@ -276,7 +276,7 @@ class AudioTests {
 				name: "a queue run dry keeps playing",
 				wait: .5,
 				check: () -> {
-					check(audio.getQueuedFrames(queue) == 0, 'queued: ${audio.getQueuedFrames(queue)}');
+					check(audio.getQueuedFrameCount(queue) == 0, 'queued: ${audio.getQueuedFrameCount(queue)}');
 					check(audio.isPlaying(voice), "not playing");
 					near(audio.getPosition(voice), .5, .01, "position");
 				}
@@ -285,12 +285,12 @@ class AudioTests {
 				name: "a dry queue resumes when fed",
 				enter: () -> {
 					audio.queueSamples(queue, frames(5512, .5, .25));
-					queued = audio.getQueuedFrames(queue);
+					queued = audio.getQueuedFrameCount(queue);
 					near(queued, 5512, 22050 * .02, "queued when fed");
 				},
 				wait: .15,
 				check: () -> {
-					check(audio.getQueuedFrames(queue) < queued - 22050 * .05, 'queued: ${audio.getQueuedFrames(queue)} of $queued');
+					check(audio.getQueuedFrameCount(queue) < queued - 22050 * .05, 'queued: ${audio.getQueuedFrameCount(queue)} of $queued');
 					check(audio.getPosition(voice) > .55, 'position: ${audio.getPosition(voice)}');
 				}
 			},
@@ -298,7 +298,7 @@ class AudioTests {
 				name: "a queue's voice stopped drops what it held",
 				enter: () -> audio.stop(voice),
 				check: () -> {
-					check(!audio.isPlaying(voice) && audio.getQueuedFrames(queue) == 0, "still holds samples");
+					check(!audio.isPlaying(voice) && audio.getQueuedFrameCount(queue) == 0, "still holds samples");
 					audio.disposeQueue(queue);
 					audio.disposeStream(stream);
 					var refused = 0;

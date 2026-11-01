@@ -111,14 +111,14 @@ class WebAudioAdapter implements IAudio {
 	function get_running():Bool
 		return context != null && context.state == "running";
 
-	public function createClip(samples:Bytes, channels:Int):Int {
-		if (channels != 1 && channels != 2)
+	public function createClip(samples:Bytes, channelCount:Int):Int {
+		if (channelCount != 1 && channelCount != 2)
 			throw "Audio clip channels must be 1 or 2";
-		var frames = Std.int(samples.length / (4 * channels));
+		var frames = Std.int(samples.length / (4 * channelCount));
 		if (frames == 0)
 			throw "Audio clip creation failed";
 		var id = nextClip++;
-		clips[id] = {samples: samples.sub(0, frames * channels * 4), channels: channels};
+		clips[id] = {samples: samples.sub(0, frames * channelCount * 4), channels: channelCount};
 		return id;
 	}
 
@@ -135,7 +135,7 @@ class WebAudioAdapter implements IAudio {
 		return entry.element != null ? durationOf(entry.element) : entry.duration;
 	}
 
-	public function getStreamChannels(stream:Int):Int {
+	public function getStreamChannelCount(stream:Int):Int {
 		var entry = streams[stream];
 		if (entry == null)
 			throw "Invalid audio stream";
@@ -233,7 +233,7 @@ class WebAudioAdapter implements IAudio {
 		var limit = 65536, buffer = new js.lib.Uint8Array(limit), got = 0;
 		function done():Void
 			if (!fetching.signal.aborted)
-				read(AudioHeader.readChannels(Bytes.ofData(buffer.buffer).sub(0, got)));
+				read(AudioHeader.readChannelCount(Bytes.ofData(buffer.buffer).sub(0, got)));
 		var init:Dynamic = {headers: {"Range": 'bytes=0-${limit - 1}'}, signal: fetching.signal};
 		js.Browser.window.fetch(url, init).then((response:Dynamic) -> {
 			if (!response.ok || response.body == null) {
@@ -293,13 +293,13 @@ class WebAudioAdapter implements IAudio {
 		return play(stream, loop, volume);
 	}
 
-	public function createQueue(channels:Int, sampleRate:Int):Int {
-		if (channels != 1 && channels != 2)
+	public function createQueue(channelCount:Int, sampleRate:Int):Int {
+		if (channelCount != 1 && channelCount != 2)
 			throw "Audio queue channels must be 1 or 2";
 		if (sampleRate < 8000 || sampleRate > 96000)
 			throw "Audio queue sample rate must be 8000 to 96000";
 		var id = nextClip++;
-		var q:Queue = {channels: channels, rate: sampleRate};
+		var q:Queue = {channels: channelCount, rate: sampleRate};
 		queues[id] = q;
 		return id;
 	}
@@ -321,7 +321,7 @@ class WebAudioAdapter implements IAudio {
 			schedule(q, v);
 	}
 
-	public function getQueuedFrames(queue:Int):Int {
+	public function getQueuedFrameCount(queue:Int):Int {
 		var q = queues[queue];
 		if (q == null)
 			throw "Invalid audio queue";

@@ -117,7 +117,7 @@ class Models {
 					if (aborted || finished)
 						return;
 					try
-						file.setBuffer(buffer.index, bytes)
+						file.setBuffer(buffer.bufferIndex, bytes)
 					catch (e:String) {
 						fail('${buffer.path}: $e');
 						return;
@@ -143,10 +143,10 @@ class Models {
 			wanted = new Map<Int, Bool>(),
 			parents = new Map<Int, Int>();
 		for (i => node in nodes)
-			for (child in node.children)
+			for (child in node.childIndices)
 				parents.set(child, i);
 		for (skin in fileSkins)
-			for (joint in skin.joints) {
+			for (joint in skin.jointIndices) {
 				var n:Null<Int> = joint;
 				while (n != null && !wanted.exists(n)) {
 					wanted.set(n, true);
@@ -162,8 +162,8 @@ class Models {
 				bones.push(new Bone3D(node.name, bone, new Transform3D().copyFrom(node.local)));
 				bone = bones.length - 1;
 			}
-			if (node.mesh >= 0)
-				for (primitive in all[node.mesh].primitives)
+			if (node.meshIndex >= 0)
+				for (primitive in all[node.meshIndex].primitives)
 					if (primitive.mode == 4) {
 						var mesh = new Mesh3D();
 						mesh.positions = primitive.positions;
@@ -172,25 +172,25 @@ class Models {
 						mesh.texCoords = primitive.texCoords;
 						mesh.colors = primitive.colors;
 						mesh.indices = primitive.indices;
-						var skinned = node.skin >= 0 && node.skin < fileSkins.length && primitive.joints != null && primitive.weights != null;
+						var skinned = node.skinIndex >= 0 && node.skinIndex < fileSkins.length && primitive.jointIndices != null && primitive.weights != null;
 						if (skinned) {
-							mesh.joints = primitive.joints;
+							mesh.jointIndices = primitive.jointIndices;
 							mesh.weights = primitive.weights;
 						}
 						meshes.push(skinned ? mesh : mesh.transform(world));
-						materials.push(primitive.material);
-						skins.push(skinned ? node.skin : -1);
+						materials.push(primitive.materialIndex);
+						skins.push(skinned ? node.skinIndex : -1);
 						transforms.push(world);
 					}
-			for (child in node.children)
+			for (child in node.childIndices)
 				visit(child, world, bone);
 		}
-		for (root in file.scene)
+		for (root in file.sceneNodeIndices)
 			visit(root, new Matrix3D(), -1);
 		var skeleton = bones.length > 0 ? new Skeleton3D(bones) : null;
 		var madeSkins = [
 			for (skin in fileSkins)
-				new Skin3D(skin.name, [for (joint in skin.joints) boneOf.exists(joint) ? boneOf.get(joint) : 0], skin.inverseBindMatrices)
+				new Skin3D(skin.name, [for (joint in skin.jointIndices) boneOf.exists(joint) ? boneOf.get(joint) : 0], skin.inverseBindMatrices)
 		];
 		var animations = [];
 		if (skeleton != null)
@@ -204,17 +204,17 @@ class Models {
 						case _: null;
 					}
 					if (property == null
-						|| !boneOf.exists(channel.node)
-						|| channel.sampler < 0
-						|| channel.sampler >= animation.samplers.length)
+						|| !boneOf.exists(channel.nodeIndex)
+						|| channel.samplerIndex < 0
+						|| channel.samplerIndex >= animation.samplers.length)
 						continue;
-					var sampler = animation.samplers[channel.sampler];
+					var sampler = animation.samplers[channel.samplerIndex];
 					var interpolation:KeyInterpolation = switch sampler.interpolation {
 						case "STEP": Step;
 						case "CUBICSPLINE": CubicSpline;
 						case _: Linear;
 					}
-					tracks.push(new AnimationTrack3D(boneOf.get(channel.node), property, interpolation, sampler.input, sampler.output));
+					tracks.push(new AnimationTrack3D(boneOf.get(channel.nodeIndex), property, interpolation, sampler.input, sampler.output));
 				}
 				animations.push(new Animation3D(animation.name, tracks));
 			}

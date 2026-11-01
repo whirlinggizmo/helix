@@ -12,12 +12,12 @@ It reads WAV, Ogg (Vorbis, Opus, FLAC and Speex), FLAC and MP3 (MPEG audio layer
 
 ```haxe
 var seconds = AudioHeader.readDuration(first64k, last64k, fileSize);
-var channels = AudioHeader.readChannels(first64k);
+var channels = AudioHeader.readChannelCount(first64k);
 ```
 
 ```haxe
 static function readDuration(start:haxe.io.Bytes, ?end:haxe.io.Bytes, size:Int):Float
-static function readChannels(start:haxe.io.Bytes):Int
+static function readChannelCount(start:haxe.io.Bytes):Int
 ```
 
 - `readDuration`: Returns a sound file's length in seconds.
@@ -27,7 +27,7 @@ static function readChannels(start:haxe.io.Bytes):Int
   - returns: The length, in seconds, or 0 when it can't tell: an unknown kind, too few bytes, or a file that doesn't record it.
 
   WAV: the data chunk's frames over the rate; for a compressed encoding, the `fact` chunk's frames, or the data's size over its bytes a second. A data chunk whose size is 0 or 0xFFFFFFFF, as a streamed file leaves it, runs to the file's end. Ogg: the last page's position over the rate, less Opus's pre-skip; the first stream's pages alone are read, each checked by its CRC. FLAC: STREAMINFO's frames over its rate; 0 when it doesn't record them. MP3: ID3v2 tags are skipped; the frames a Xing, Info or VBRI header records; otherwise an estimate, the bytes after the tags (and before an ID3v1 tag, when `end` is provided) over the first frame's bitrate, exact for a file of one bitrate and off for one whose bitrate varies.
-- `readChannels`: Returns how many channels a sound file has.
+- `readChannelCount`: Returns how many channels a sound file has.
   - `start`: The file's first bytes, as many as there are or as are read; 64 KiB is enough for most files.
   - returns: The channels, or 0 when it can't tell: an unknown kind or too few bytes.
 

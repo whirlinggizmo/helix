@@ -25,8 +25,8 @@ final lineGap:Int
 function scaleFor(size:Float):Float
 var hasGlyf(get, never):Bool
 function glyphIndex(codepoint:Int):Int
-function advance(glyph:Int):Int
-function box(glyph:Int):Null<Array<Int>>
+function advance(glyphIndex:Int):Int
+function box(glyphIndex:Int):Null<Array<Int>>
 ```
 
 - `new`: Reads a font's tables.
@@ -46,10 +46,10 @@ function box(glyph:Int):Null<Array<Int>>
   - `codepoint`: The codepoint.
   - returns: The glyph index.
 - `advance`: Returns a glyph's advance, in font units.
-  - `glyph`: The glyph index.
+  - `glyphIndex`: The glyph index.
   - returns: The advance.
 - `box`: Returns a TrueType glyph's box, in font units: x0, y0, x1, y1, y up; null for one with no outline.
-  - `glyph`: The glyph index.
+  - `glyphIndex`: The glyph index.
   - returns: The box.
 
   Only a font with `hasGlyf` has boxes to read.

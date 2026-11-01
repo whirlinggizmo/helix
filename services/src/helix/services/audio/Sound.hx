@@ -24,12 +24,12 @@ class Sound {
 	var tail:Null<Bytes> = null;
 
 	@:allow(helix.services.audio)
-	function new(output:IAudio, path:String, streamed:Bool, id:Int, channels:Int, seconds:Float, release:Null<Void->Void>) {
+	function new(output:IAudio, path:String, streamed:Bool, id:Int, channelCount:Int, seconds:Float, release:Null<Void->Void>) {
 		this.output = output;
 		this.path = path;
 		this.streamed = streamed;
 		this.id = id;
-		this.channels = channels;
+		this.channelCount = channelCount;
 		this.seconds = seconds;
 		this.release = release;
 	}
@@ -40,9 +40,9 @@ class Sound {
 	/** Gets a value indicating whether the sound is read as it plays (`Audio.stream`) rather than held whole. */
 	public var streamed(default, null):Bool;
 
-	/** Gets the channels it plays, 1 (mono) or 2 (stereo); 0 for a streamed sound whose channels the platform can't tell
-		(`IAudio.getStreamChannels`). */
-	public var channels(default, null):Int;
+	/** Gets the number of channels it plays, 1 (mono) or 2 (stereo); 0 for a streamed sound whose channels the platform can't tell
+		(`IAudio.getStreamChannelCount`). */
+	public var channelCount(default, null):Int;
 
 	/** Gets the sound's length in seconds, or 0 while it isn't known.
 

@@ -179,56 +179,56 @@ interface IWindow {
 	/** Asks for the window on another monitor.
 
 		`monitorIndex` reflects the result once the request completes.
-		@param index  The monitor, 0 to `monitorCount` - 1.
+		@param monitorIndex  The monitor, 0 to `monitorCount` - 1.
 		@return  False, asking nothing, for an index out of range or where the window can't move (`canMove`). */
-	function requestMonitorIndex(index:Int):Bool;
+	function requestMonitorIndex(monitorIndex:Int):Bool;
 
 	/** Returns a monitor's name.
 
-		@param index  The monitor.
+		@param monitorIndex  The monitor.
 		@return  Its name, or "" for an index out of range. */
-	function getMonitorName(index:Int):String;
+	function getMonitorName(monitorIndex:Int):String;
 
 	/** Returns a monitor's left edge on the desktop.
 
-		@param index  The monitor.
+		@param monitorIndex  The monitor.
 		@return  The edge, in logical pixels, or 0 for an index out of range and in a page. */
-	function getMonitorX(index:Int):Int;
+	function getMonitorX(monitorIndex:Int):Int;
 
 	/** Returns a monitor's top edge on the desktop.
 
-		@param index  The monitor.
+		@param monitorIndex  The monitor.
 		@return  The edge, in logical pixels, or 0 for an index out of range and in a page. */
-	function getMonitorY(index:Int):Int;
+	function getMonitorY(monitorIndex:Int):Int;
 
 	/** Returns a monitor's width.
 
-		@param index  The monitor.
+		@param monitorIndex  The monitor.
 		@return  The width, in logical pixels, or 0 for an index out of range. */
-	function getMonitorWidth(index:Int):Int;
+	function getMonitorWidth(monitorIndex:Int):Int;
 
 	/** Returns a monitor's height.
 
-		@param index  The monitor.
+		@param monitorIndex  The monitor.
 		@return  The height, in logical pixels, or 0 for an index out of range. */
-	function getMonitorHeight(index:Int):Int;
+	function getMonitorHeight(monitorIndex:Int):Int;
 
 	/** Returns how many times a second a monitor shows a new picture.
 
-		@param index  The monitor, 0 to `monitorCount` - 1.
+		@param monitorIndex  The monitor, 0 to `monitorCount` - 1.
 		@return  The refresh rate in hertz, or 0 where it isn't known, as in a page. */
-	function getMonitorRefreshRate(index:Int):Float;
+	function getMonitorRefreshRate(monitorIndex:Int):Float;
 
 	/** Reads a file dropped on the window, one the last `FilesDropped` event counted.
 
 		One of `read` or `failed` is called once, during this call or later: natively during it, in a page later. Natively the file is
 		read from where it is on disk, so one moved or changed since the drop reads as it is now. In a page it is the File the browser
 		gave, kept until the next drop.
-		@param index  The file, 0 to the event's count - 1.
+		@param fileIndex  The file, 0 to the event's count - 1.
 		@param maxBytes  The largest file to read; a larger one fails.
 		@param read  Receives the file's name, without its directory, and its bytes.
 		@param failed  Receives why it can't be read: an index no drop gave, a file over `maxBytes`, or the platform's reason. */
-	function readDroppedFile(index:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void;
+	function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void;
 
 	/** Returns whether `close` removes the window.
 

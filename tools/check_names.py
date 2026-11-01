@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Checks the naming rules a tool can (docs/CONVENTIONS.md): that 2D and 3D are named apart, so no one has to guess whether a type is
-one kind's (1 to 3), that a call made on its own is a property (4), and that removing (5) and looking for (6) name what they're about:
+one kind's (1 to 3), that a call made on its own is a property (4), that removing (5) and looking for (6) name what they're about, and
+that counts and indices say they are (7):
 
   1. Every public type in a package of one kind (a package whose name ends in 2d or 3d: helix.render2d, helix.render3d) ends in that
      kind, a counterpart of the other kind or not, but for those holding both kinds or neither (NEUTRAL, each with its reason).
@@ -11,10 +12,17 @@ one kind's (1 to 3), that a call made on its own is a property (4), and that rem
   4. No method is named onX: a call made on its own is an `onX` property (`window.onClose = save`), assigned, not passed to a method.
   5. No method is named clear: removing one or all names what goes (`files.deleteFile`, `deleteFiles`; `assets.clearCache()`).
   6. No method is named has: whether something is there names what it looks for (`saves.hasKey`, `config.hasOption`).
+  7. A public field, property or parameter of a whole number (Int, or an array of them) whose doc comment calls it an index ends in
+     Index, or Indices for an array, but for a mesh's vertex indices, `indices`; one whose doc comment calls it a number of things
+     ("the number of", "how many") ends in Count, or Counts for an array. Read through the compiler: Haxe's XML description of every
+     library on both targets (tools/gen_apidoc.py's), each member's doc comment and each parameter's @param, so a name the doc
+     comment doesn't call an index or a count isn't judged. helix-ray is left out: its names are raylib's (DECISIONS 24).
 
 Run by helix.py test. Exits 1, listing each type, when one breaks a rule. Standard library only."""
 import re
 import sys
+import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,8 +53,96 @@ CLEAR_METHOD = re.compile(r'\bfunction\s+clear\s*\(')
 HAS_METHOD = re.compile(r'\bfunction\s+has\s*\(')
 
 
+# A doc comment calling what it describes an index, or a number of things (rule 7).
+# A number of bytes is a size, named for its unit (`capacityBytes`, `usedBytes`), not a count; "by index" says how an array is laid out,
+# not that it holds indices.
+INDEX_DOC = re.compile(r'(?<!by )\b(index|indices)\b(?! buffer)', re.I)
+COUNT_DOC = re.compile(r'^(gets (or sets )?)?((the )?((largest|smallest) )?number of|how many)\b(?! bytes)', re.I)
+# Packages left out of rule 7, each with its reason.
+UNJUDGED = {'helix.ray': "raylib's names (DECISIONS 24)"}
+
+
+def whole_numbers(node):
+    """'one' for an Int (or Null<Int>), 'many' for an array of them, else None: a member's or a parameter's type in Haxe's XML."""
+    while node is not None and node.get('path') == 'Null' and len(node):
+        node = node[0]
+    if node is None:
+        return None
+    if node.get('path') == 'Int':
+        return 'one'
+    if node.get('path') == 'Array' and len(node) and whole_numbers(node[0]) == 'one':
+        return 'many'
+    return None
+
+
+def named_wrongly(name, kind, doc):
+    """Why a whole number's name breaks rule 7, by what its doc comment calls it, or None."""
+    doc = ' '.join(doc.split())
+    if COUNT_DOC.search(doc):
+        if kind == 'one' and not name.endswith('Count'):
+            return 'a count: name it ...Count'
+        if kind == 'many' and not name.endswith('Counts'):
+            return 'counts: name it ...Counts'
+    elif INDEX_DOC.search(doc):
+        if kind == 'one' and not name.endswith('Index'):
+            return 'an index: name it ...Index'
+        if kind == 'many' and not name.endswith('Indices') and name != 'indices':
+            return 'indices: name it ...Indices'
+    return None
+
+
+def params(doc):
+    """{name: text} of a doc comment's @param tags."""
+    return {m.group(1): m.group(2) for m in re.finditer(r'@param\s+(\w+)\s+(.*?)(?=@\w+|$)', doc, re.S)}
+
+
+def describe(target):
+    """Haxe's XML description of every library on one target, as tools/gen_apidoc.py makes it."""
+    import gen_apidoc
+    gen_apidoc.describe(target)
+    return gen_apidoc.OUT / 'xml' / f'{target}.xml'
+
+
+def counts_and_indices():
+    """Rule 7's problems, over both targets' descriptions."""
+    found = set()
+    with ThreadPoolExecutor(2) as pool:
+        files = list(pool.map(describe, ('js', 'cpp')))
+    for file in files:
+        for node in ET.parse(file).getroot():
+            path = node.get('path') or ''
+            if not path.startswith('helix.') or '._' in path or node.get('private') == '1' or any(path.startswith(p + '.') for p in UNJUDGED):
+                continue
+            for member in node:
+                if member.tag in ('haxe_doc', 'meta') or (member.get('public') != '1' and member.tag != 'new') or hidden(member):
+                    continue
+                kids = [c for c in member if c.tag not in ('haxe_doc', 'meta', 'overloads')]
+                if not kids:
+                    continue
+                doc = member.findtext('haxe_doc') or ''
+                if kids[0].tag == 'f':
+                    names = [n.lstrip('?') for n in kids[0].get('a', '').split(':')] if kids[0].get('a') else []
+                    tags = params(doc)
+                    for name, kind in zip(names, (whole_numbers(k) for k in kids[0])):
+                        why = kind and named_wrongly(name, kind, tags.get(name, ''))
+                        if why:
+                            found.add(f'{path}.{member.tag}: its parameter {name} is {why}')
+                elif member.get('set') != 'method':
+                    kind = whole_numbers(kids[0])
+                    why = kind and named_wrongly(member.tag, kind, doc.strip().split('\n\n')[0])
+                    if why:
+                        found.add(f'{path}.{member.tag} is {why}')
+    return sorted(found)
+
+
+def hidden(node):
+    """Whether a type or member is marked @:noCompletion, a library's own."""
+    meta = node.find('meta')
+    return meta is not None and any(m.get('n') == ':noCompletion' for m in meta)
+
+
 def problems():
-    found = []
+    found = counts_and_indices()
     for path in sorted(p for source in SOURCES for p in source.rglob('*.hx') if p.parent.name.endswith('2d')):
         code = COMMENT.sub('', path.read_text(encoding='utf-8'))
         for name in sorted(set(THREE_D.findall(code))):

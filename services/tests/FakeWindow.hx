@@ -136,25 +136,25 @@ class FakeWindow implements IWindow {
 	function get_monitorIndex():Int
 		return 0;
 
-	public function requestMonitorIndex(index:Int):Bool
+	public function requestMonitorIndex(monitorIndex:Int):Bool
 		return false;
 
-	public function getMonitorName(index:Int):String
+	public function getMonitorName(monitorIndex:Int):String
 		return "";
 
-	public function getMonitorX(index:Int):Int
+	public function getMonitorX(monitorIndex:Int):Int
 		return 0;
 
-	public function getMonitorY(index:Int):Int
+	public function getMonitorY(monitorIndex:Int):Int
 		return 0;
 
-	public function getMonitorWidth(index:Int):Int
+	public function getMonitorWidth(monitorIndex:Int):Int
 		return 1920;
 
-	public function getMonitorHeight(index:Int):Int
+	public function getMonitorHeight(monitorIndex:Int):Int
 		return 1080;
 
-	public function getMonitorRefreshRate(index:Int):Float
+	public function getMonitorRefreshRate(monitorIndex:Int):Float
 		return 60;
 
 	public var maximized(get, never):Bool;
@@ -195,10 +195,10 @@ class FakeWindow implements IWindow {
 	/** Gets the files dropped, as name and bytes, which `readDroppedFile` reads by index. */
 	public final dropped:Array<{name:String, bytes:Bytes}> = [];
 
-	public function readDroppedFile(index:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void {
-		var file = dropped[index];
-		if (index < 0 || file == null)
-			failed('No dropped file $index');
+	public function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void {
+		var file = dropped[fileIndex];
+		if (fileIndex < 0 || file == null)
+			failed('No dropped file $fileIndex');
 		else if (file.bytes.length > maxBytes)
 			failed("too large");
 		else

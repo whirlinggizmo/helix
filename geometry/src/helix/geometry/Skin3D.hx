@@ -2,14 +2,14 @@ package helix.geometry;
 
 import helix.math.Matrix3D;
 
-/** Represents a skin: the bones of a skeleton a mesh's vertices follow, and how each vertex was bound to them. A vertex's `joints`
-	index this skin's `bones`, not the skeleton's. */
+/** Represents a skin: the bones of a skeleton a mesh's vertices follow, and how each vertex was bound to them. A vertex's `jointIndices`
+	index this skin's `boneIndices`, not the skeleton's. */
 class Skin3D {
 	/** Gets its name: empty for none. */
 	public final name:String;
 
-	/** Gets its bones, as indices into the skeleton's `bones`. */
-	public final bones:Array<Int>;
+	/** Gets the indices of its bones in the skeleton's `bones`. */
+	public final boneIndices:Array<Int>;
 
 	/** Gets each of its bones' inverse bind matrix, taking a vertex from the mesh's space to the bone's as the mesh was bound. */
 	public final inverseBinds:Array<Matrix3D>;
@@ -17,11 +17,11 @@ class Skin3D {
 	/** Creates a skin.
 
 		@param name  Its name.
-		@param bones  Its bones, as indices into the skeleton's.
+		@param boneIndices  The indices of its bones in the skeleton's.
 		@param inverseBinds  Each one's inverse bind matrix. */
-	public function new(name:String, bones:Array<Int>, inverseBinds:Array<Matrix3D>) {
+	public function new(name:String, boneIndices:Array<Int>, inverseBinds:Array<Matrix3D>) {
 		this.name = name;
-		this.bones = bones;
+		this.boneIndices = boneIndices;
 		this.inverseBinds = inverseBinds;
 	}
 
@@ -33,8 +33,8 @@ class Skin3D {
 		@param out  Optional. Set to the matrices, reused, grown or shrunk to fit.
 		@return  The matrices, by this skin's bone. */
 	public function computeSkinning(world:Array<Matrix3D>, ?out:Array<Matrix3D>):Array<Matrix3D> {
-		out = Skeleton3D.fit(out, bones.length, () -> new Matrix3D());
-		for (j => bone in bones)
+		out = Skeleton3D.fit(out, boneIndices.length, () -> new Matrix3D());
+		for (j => bone in boneIndices)
 			Matrix3D.compose(inverseBinds[j], world[bone], out[j]);
 		return out;
 	}

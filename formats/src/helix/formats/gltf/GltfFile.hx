@@ -8,7 +8,7 @@ import helix.math.Transform3D;
 
 	`read` takes the file's bytes and its path. A buffer held in the file (a GLB's BIN chunk, a base64 `data:` URI) is read then; one in a
 	file of its own is listed in `missingBuffers`, its path resolved against the model's, for the caller to fetch and give to `setBuffer`.
-	`nodes`, `scene` and `materials` are read with the file; `meshes` and `images` read the buffers when asked for, and throw while a
+	`nodes`, `sceneNodeIndices` and `materials` are read with the file; `meshes` and `images` read the buffers when asked for, and throw while a
 	buffer they need is missing.
 
 	Accessors of every component type are read, normalized integers scaled to 0..1 or -1..1; one with no buffer view is zeros, and a
@@ -17,19 +17,19 @@ import helix.math.Transform3D;
 
 	```haxe
 	var model = GltfFile.read(bytes, "models/ship.gltf");
-	for (missing in model.missingBuffers) model.setBuffer(missing.index, fetched(missing.path));
+	for (missing in model.missingBuffers) model.setBuffer(missing.bufferIndex, fetched(missing.path));
 	var positions = model.meshes[0].primitives[0].positions;
 	``` */
 class GltfFile {
 	static inline var JSON_CHUNK = 0x4E4F534A;
 	static inline var BIN_CHUNK = 0x004E4942;
 
-	/** Gets the model's nodes, in the file's order: nodes name each other, and `scene` names its roots, by their index here. */
+	/** Gets the model's nodes, in the file's order: nodes name each other, and `sceneNodeIndices` names its roots, by their index here. */
 	public final nodes:Array<GltfNode>;
 
 	/** Gets the indices in `nodes` of the default scene's roots: the file's `scene`, or its first scene; with no scenes, every node that
 		is no node's child. */
-	public final scene:Array<Int>;
+	public final sceneNodeIndices:Array<Int>;
 
 	/** Gets the model's materials, in the file's order: a primitive names its own by its index here. */
 	public final materials:Array<GltfMaterial>;
@@ -54,9 +54,9 @@ class GltfFile {
 		@throws String  A buffer an image needs is missing (`missingBuffers`, which the message names). */
 	public var images(get, never):Array<GltfImage>;
 
-	/** Gets the buffers in files of their own that are still missing, each its index and its file's path: URI-decoded and resolved
+	/** Gets the buffers in files of their own that are still missing, each its index (`bufferIndex`) and its file's path: URI-decoded and resolved
 		against the model's directory. Empty when every buffer is read. */
-	public var missingBuffers(get, never):Array<{index:Int, path:String}>;
+	public var missingBuffers(get, never):Array<{bufferIndex:Int, path:String}>;
 
 	final document:Dynamic;
 	final directory:String;
@@ -87,17 +87,17 @@ class GltfFile {
 
 	/** Sets a buffer in a file of its own to that file's bytes, so the meshes and images that need it can be read.
 
-		@param index  The buffer's index, as `missingBuffers` gives it.
+		@param bufferIndex  The buffer's index, as `missingBuffers` gives it.
 		@param bytes  The buffer's file.
 		@throws String  The index is out of range, or the bytes are fewer than the buffer's `byteLength`. */
-	public function setBuffer(index:Int, bytes:Bytes):Void {
+	public function setBuffer(bufferIndex:Int, bytes:Bytes):Void {
 		var all = list(document, "buffers");
-		if (index < 0 || index >= all.length)
-			throw 'No buffer $index';
-		var length:Null<Int> = field(all[index], "byteLength");
+		if (bufferIndex < 0 || bufferIndex >= all.length)
+			throw 'No buffer $bufferIndex';
+		var length:Null<Int> = field(all[bufferIndex], "byteLength");
 		if (length != null && bytes.length < length)
-			throw 'Buffer $index is $length bytes, but ${bytes.length} were given';
-		buffers[index] = bytes;
+			throw 'Buffer $bufferIndex is $length bytes, but ${bytes.length} were given';
+		buffers[bufferIndex] = bytes;
 		readMeshes = null;
 		readImages = null;
 		readSkins = null;
@@ -153,11 +153,11 @@ class GltfFile {
 		if (roots == null) {
 			var children = new Map<Int, Bool>();
 			for (node in nodes)
-				for (i in node.children)
+				for (i in node.childIndices)
 					children.set(i, true);
 			roots = [for (i in 0...nodes.length) if (!children.exists(i)) i];
 		}
-		scene = roots;
+		sceneNodeIndices = roots;
 	}
 
 	// Reads a GLB file: its JSON chunk, and its BIN chunk as the first buffer.
@@ -207,11 +207,11 @@ class GltfFile {
 		return directory == "" ? decoded : directory + "/" + decoded;
 	}
 
-	function get_missingBuffers():Array<{index:Int, path:String}> {
+	function get_missingBuffers():Array<{bufferIndex:Int, path:String}> {
 		var declared = list(document, "buffers");
 		return [
 			for (i in 0...buffers.length)
-				if (buffers[i] == null) {index: i, path: resolve(field(declared[i], "uri"))}
+				if (buffers[i] == null) {bufferIndex: i, path: resolve(field(declared[i], "uri"))}
 		];
 	}
 
@@ -359,7 +359,7 @@ class GltfFile {
 		if (buffer < 0 || buffer >= buffers.length)
 			throw 'Buffer view $index names no buffer $buffer';
 		if (buffers[buffer] == null)
-			throw 'Buffer $buffer is missing; set the missing buffers first: ' + [for (m in missingBuffers) '${m.index} (${m.path})'].join(", ");
+			throw 'Buffer $buffer is missing; set the missing buffers first: ' + [for (m in missingBuffers) '${m.bufferIndex} (${m.path})'].join(", ");
 		var bytes = buffers[buffer];
 		var offset:Int = field(v, "byteOffset") == null ? 0 : field(v, "byteOffset");
 		var length:Int = field(v, "byteLength");

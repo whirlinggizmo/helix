@@ -7,14 +7,14 @@ class StubGraphics implements IGraphics {
 
 	public function new() {}
 
-	public var msaaSamples(get, never):Int;
+	public var msaaSampleCount(get, never):Int;
 
-	function get_msaaSamples():Int
+	function get_msaaSampleCount():Int
 		return 1;
 
-	public var maxMsaaSamples(get, never):Int;
+	public var maxMsaaSampleCount(get, never):Int;
 
-	function get_maxMsaaSamples():Int
+	function get_maxMsaaSampleCount():Int
 		return 1;
 
 	function handle():Int
@@ -40,7 +40,7 @@ class StubGraphics implements IGraphics {
 	public function canRender(format:TextureFormat):Bool
 		return true;
 
-	public function createShadowMap(size:Int, layers:Int):Int
+	public function createShadowMap(size:Int, layerCount:Int):Int
 		return handle();
 
 	public function disposeTexture(handle:Int):Void {}
@@ -65,7 +65,7 @@ class StubGraphics implements IGraphics {
 
 	public function disposePipeline(handle:Int):Void {}
 
-	public function beginShadowPass(map:Int, layer:Int):Void {}
+	public function beginShadowPass(map:Int, layerIndex:Int):Void {}
 
 	public function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void {}
 
@@ -79,8 +79,8 @@ class StubGraphics implements IGraphics {
 
 	public function resetScissor():Void {}
 
-	public function draw(pipeline:Int, buffers:Array<Int>, indices:Int, first:Int, count:Int, firstInstance:Int, instanceCount:Int, textures:Array<Int>,
-		samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {}
+	public function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int,
+		instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {}
 
 	public function endFrame():Void {}
 

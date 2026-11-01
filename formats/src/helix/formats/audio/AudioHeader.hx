@@ -10,7 +10,7 @@ import haxe.io.Bytes;
 
 	```haxe
 	var seconds = AudioHeader.readDuration(first64k, last64k, fileSize);
-	var channels = AudioHeader.readChannels(first64k);
+	var channels = AudioHeader.readChannelCount(first64k);
 	``` */
 class AudioHeader {
 	/** Returns a sound file's length in seconds.
@@ -48,7 +48,7 @@ class AudioHeader {
 
 		@param start  The file's first bytes, as many as there are or as are read; 64 KiB is enough for most files.
 		@return  The channels, or 0 when it can't tell: an unknown kind or too few bytes. */
-	public static function readChannels(start:Bytes):Int {
+	public static function readChannelCount(start:Bytes):Int {
 		if (start.length >= 12 && matches(start, 0, "RIFF") && matches(start, 8, "WAVE")) {
 			var p = 12;
 			while (p + 8 <= start.length) {

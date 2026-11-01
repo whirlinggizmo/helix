@@ -23,15 +23,15 @@ class Curve {
 	// The length table: the cumulative length at each sample, lazily.
 	var lengths:Null<Array<Float>>;
 
-	function new(kind:CurveKind, points:Array<Float>, dimensions:Int, closed:Bool) {
-		if (dimensions != 2 && dimensions != 3)
-			throw 'A curve is in 2 or 3 dimensions, not $dimensions';
-		if (points.length % dimensions != 0)
-			throw 'A curve\'s points are ${dimensions} numbers each: ${points.length} don\'t divide';
+	function new(kind:CurveKind, points:Array<Float>, dimensionCount:Int, closed:Bool) {
+		if (dimensionCount != 2 && dimensionCount != 3)
+			throw 'A curve is in 2 or 3 dimensions, not $dimensionCount';
+		if (points.length % dimensionCount != 0)
+			throw 'A curve\'s points are ${dimensionCount} numbers each: ${points.length} don\'t divide';
 		this.kind = kind;
-		this.dimensions = dimensions;
+		this.dimensionCount = dimensionCount;
 		this.points = points.copy();
-		count = Std.int(points.length / dimensions);
+		count = Std.int(points.length / dimensionCount);
 		switch kind {
 			case Through | Polyline:
 				if (count < 2)
@@ -50,37 +50,37 @@ class Curve {
 
 		It is a centripetal Catmull-Rom spline, which makes no loops or kinks between unevenly spaced points.
 		@param points  The points, flat: x, y or x, y, z each.
-		@param dimensions  Optional. 2 or 3; defaults to 2.
+		@param dimensionCount  Optional. 2 or 3; defaults to 2.
 		@param closed  Optional. Whether it comes back to the first point; defaults to false.
 		@return  The curve.
 		@throws String  Fewer than 2 points, or a count of numbers that dimensions doesn't divide. */
-	public static function through(points:Array<Float>, dimensions = 2, closed = false):Curve
-		return new Curve(Through, points, dimensions, closed);
+	public static function through(points:Array<Float>, dimensionCount = 2, closed = false):Curve
+		return new Curve(Through, points, dimensionCount, closed);
 
 	/** Returns a curve of joined cubic Bézier pieces.
 
 		@param points  The first point, then three for each piece: two control points and the piece's end. Flat: x, y or x, y, z each.
-		@param dimensions  Optional. 2 or 3; defaults to 2.
+		@param dimensionCount  Optional. 2 or 3; defaults to 2.
 		@return  The curve.
 		@throws String  A point count other than 4, 7, 10 and so on. */
-	public static function bezier(points:Array<Float>, dimensions = 2):Curve
-		return new Curve(Bezier, points, dimensions, false);
+	public static function bezier(points:Array<Float>, dimensionCount = 2):Curve
+		return new Curve(Bezier, points, dimensionCount, false);
 
 	/** Returns a curve straight from point to point.
 
 		@param points  The points, flat: x, y or x, y, z each.
-		@param dimensions  Optional. 2 or 3; defaults to 2.
+		@param dimensionCount  Optional. 2 or 3; defaults to 2.
 		@param closed  Optional. Whether it comes back to the first point; defaults to false.
 		@return  The curve.
 		@throws String  Fewer than 2 points, or a count of numbers that dimensions doesn't divide. */
-	public static function polyline(points:Array<Float>, dimensions = 2, closed = false):Curve
-		return new Curve(Polyline, points, dimensions, closed);
+	public static function polyline(points:Array<Float>, dimensionCount = 2, closed = false):Curve
+		return new Curve(Polyline, points, dimensionCount, closed);
 
 	/** Gets how the curve passes its points. */
 	public var kind(default, null):CurveKind;
 
 	/** Gets the number of dimensions: 2 or 3. */
-	public var dimensions(default, null):Int;
+	public var dimensionCount(default, null):Int;
 
 	/** Gets a value indicating whether the curve comes back to its start. */
 	public var closed(default, null):Bool;
@@ -93,11 +93,14 @@ class Curve {
 
 	/** Returns one coordinate of one of the points the curve was made with.
 
-		@param index  The point's index.
+		@param pointIndex  The point's index.
 		@param axis  The axis: 0 for x, 1 for y, 2 for z.
 		@return  The coordinate, or 0 for an index or axis out of range. */
-	public function getPoint(index:Int, axis:Int):Float
-		return index < 0 || index >= count || axis < 0 || axis >= dimensions ? 0 : points[index * dimensions + axis];
+	public function getPoint(pointIndex:Int, axis:Int):Float
+		return pointIndex < 0
+			|| pointIndex >= count
+			|| axis < 0
+			|| axis >= dimensionCount ? 0 : points[pointIndex * dimensionCount + axis];
 
 	/** Returns the x coordinate at a parameter.
 
@@ -119,7 +122,7 @@ class Curve {
 		@param t  The parameter: 0 at the start, 1 at the end.
 		@return  The z coordinate, or 0 in 2 dimensions. */
 	public function getZ(t:Float):Float
-		return dimensions < 3 ? 0 : at(t, 2);
+		return dimensionCount < 3 ? 0 : at(t, 2);
 
 	/** Returns the position at a parameter, every coordinate at once.
 
@@ -128,8 +131,8 @@ class Curve {
 		@return  The position. */
 	public function computePosition(t:Float, ?out:Array<Float>):Array<Float> {
 		if (out == null)
-			out = [for (_ in 0...dimensions) 0.];
-		for (axis in 0...dimensions)
+			out = [for (_ in 0...dimensionCount) 0.];
+		for (axis in 0...dimensionCount)
 			out[axis] = at(t, axis);
 		return out;
 	}
@@ -142,16 +145,16 @@ class Curve {
 		@return  The direction. */
 	public function computeTangent(t:Float, ?out:Array<Float>):Array<Float> {
 		if (out == null)
-			out = [for (_ in 0...dimensions) 0.];
+			out = [for (_ in 0...dimensionCount) 0.];
 		var h = 1e-4, length = 0.;
 		var before = closed ? t - h : Math.max(0, t - h),
 			after = closed ? t + h : Math.min(1, t + h);
-		for (axis in 0...dimensions) {
+		for (axis in 0...dimensionCount) {
 			out[axis] = at(after, axis) - at(before, axis);
 			length += out[axis] * out[axis];
 		}
 		length = Math.sqrt(length);
-		for (axis in 0...dimensions)
+		for (axis in 0...dimensionCount)
 			out[axis] = length > 0 ? out[axis] / length : 0;
 		return out;
 	}
@@ -223,15 +226,15 @@ class Curve {
 			index = ((index % count) + count) % count;
 		else
 			index = index < 0 ? 0 : index >= count ? count - 1 : index;
-		return points[index * dimensions + axis];
+		return points[index * dimensionCount + axis];
 	}
 
 	function bezierAt(segment:Int, u:Float, axis:Int):Float {
 		var i = segment * 3, v = 1 - u;
-		var p0 = points[i * dimensions + axis],
-			p1 = points[(i + 1) * dimensions + axis],
-			p2 = points[(i + 2) * dimensions + axis],
-			p3 = points[(i + 3) * dimensions + axis];
+		var p0 = points[i * dimensionCount + axis],
+			p1 = points[(i + 1) * dimensionCount + axis],
+			p2 = points[(i + 2) * dimensionCount + axis],
+			p3 = points[(i + 3) * dimensionCount + axis];
 		return v * v * v * p0 + 3 * v * v * u * p1 + 3 * v * u * u * p2 + u * u * u * p3;
 	}
 
@@ -255,7 +258,7 @@ class Curve {
 	// The knot spacing between two points: the square root of their distance (centripetal); a hair for points on top of each other.
 	function knot(a:Int, b:Int):Float {
 		var d = 0.;
-		for (axis in 0...dimensions) {
+		for (axis in 0...dimensionCount) {
 			var e = coordinate(b, axis) - coordinate(a, axis);
 			d += e * e;
 		}
@@ -273,7 +276,7 @@ class Curve {
 		for (i in 1...n + 1) {
 			computePosition(i / n, current);
 			var d = 0.;
-			for (axis in 0...dimensions) {
+			for (axis in 0...dimensionCount) {
 				var e = current[axis] - previous[axis];
 				d += e * e;
 			}

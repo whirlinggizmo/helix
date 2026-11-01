@@ -13,15 +13,15 @@ Reading and writing are qoi.h's (raylib 5.5's copy) `qoi_decode` and `qoi_encode
 ```haxe
 var qoi = QoiFile.write(64, 32, 4, pixels);
 var image = QoiFile.read(qoi);
-trace(image.width, image.height, image.channels);
+trace(image.width, image.height, image.channelCount);
 ```
 
 ```haxe
 static function read(data:haxe.io.Bytes):QoiFile
-static function write(width:Int, height:Int, channels:Int, pixels:haxe.io.Bytes):haxe.io.Bytes
+static function write(width:Int, height:Int, channelCount:Int, pixels:haxe.io.Bytes):haxe.io.Bytes
 final width:Int
 final height:Int
-final channels:Int
+final channelCount:Int
 final linear:Bool
 final pixels:haxe.io.Bytes
 ```
@@ -35,14 +35,14 @@ final pixels:haxe.io.Bytes
 - `write`: Writes pixels as a QOI file.
   - `width`: The image's width, in pixels.
   - `height`: The image's height, in pixels.
-  - `channels`: The channels a pixel has: 3 (RGB) or 4 (RGBA), a byte each.
-  - `pixels`: The pixels, rows top first, each `width * channels` bytes.
+  - `channelCount`: The channels a pixel has: 3 (RGB) or 4 (RGBA), a byte each.
+  - `pixels`: The pixels, rows top first, each `width * channelCount` bytes.
   - returns: The QOI file.
   - throws `String`: The width or height is under 1, the size is over 400 million pixels, the channels are neither 3 nor 4, or there are fewer pixels than the size needs.
 
   The file says its color channels are sRGB with a linear alpha, as raylib's `ExportImage` writes it. Bytes past the image's are ignored.
 - `width`: Gets the image's width, in pixels.
 - `height`: Gets the image's height, in pixels.
-- `channels`: Gets the channels a pixel has: 3 (RGB) or 4 (RGBA).
+- `channelCount`: Gets the number of channels a pixel has: 3 (RGB) or 4 (RGBA).
 - `linear`: Gets a value indicating whether every channel is linear: false when the color channels are sRGB with a linear alpha, as raylib writes them. QOI only records it; the pixels are the same either way.
-- `pixels`: Gets the pixels, rows top first, each pixel `channels` bytes.
+- `pixels`: Gets the pixels, rows top first, each pixel `channelCount` bytes.

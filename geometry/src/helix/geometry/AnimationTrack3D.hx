@@ -2,8 +2,8 @@ package helix.geometry;
 
 /** Represents one track of an animation: keys moving one part of one bone's transform. */
 class AnimationTrack3D {
-	/** Gets the bone it moves, an index into the skeleton's `bones`. */
-	public final bone:Int;
+	/** Gets the index of the bone it moves in the skeleton's `bones`. */
+	public final boneIndex:Int;
 
 	/** Gets the part it moves. */
 	public final property:AnimationProperty3D;
@@ -20,13 +20,13 @@ class AnimationTrack3D {
 
 	/** Creates a track.
 
-		@param bone  The bone it moves.
+		@param boneIndex  The index of the bone it moves.
 		@param property  The part it moves.
 		@param interpolation  How it goes between keys.
 		@param times  The keys' times, rising.
 		@param values  The keys' values. */
-	public function new(bone:Int, property:AnimationProperty3D, interpolation:KeyInterpolation, times:Array<Float>, values:Array<Float>) {
-		this.bone = bone;
+	public function new(boneIndex:Int, property:AnimationProperty3D, interpolation:KeyInterpolation, times:Array<Float>, values:Array<Float>) {
+		this.boneIndex = boneIndex;
 		this.property = property;
 		this.interpolation = interpolation;
 		this.times = times;

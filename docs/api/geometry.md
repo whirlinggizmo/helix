@@ -45,8 +45,8 @@ Specifies which part of a bone's transform an animation's track moves.
 Represents one track of an animation: keys moving one part of one bone's transform.
 
 ```haxe
-function new(bone:Int, property:AnimationProperty3D, interpolation:KeyInterpolation, times:Array<Float>, values:Array<Float>)
-final bone:Int
+function new(boneIndex:Int, property:AnimationProperty3D, interpolation:KeyInterpolation, times:Array<Float>, values:Array<Float>)
+final boneIndex:Int
 final property:AnimationProperty3D
 final interpolation:KeyInterpolation
 final times:Array<Float>
@@ -54,12 +54,12 @@ final values:Array<Float>
 ```
 
 - `new`: Creates a track.
-  - `bone`: The bone it moves.
+  - `boneIndex`: The index of the bone it moves.
   - `property`: The part it moves.
   - `interpolation`: How it goes between keys.
   - `times`: The keys' times, rising.
   - `values`: The keys' values.
-- `bone`: Gets the bone it moves, an index into the skeleton's `bones`.
+- `boneIndex`: Gets the index of the bone it moves in the skeleton's `bones`.
 - `property`: Gets the part it moves.
 - `interpolation`: Gets how it goes between keys.
 - `times`: Gets the keys' times, in seconds, rising.
@@ -72,18 +72,18 @@ final values:Array<Float>
 Represents a bone of a skeleton: its name, its parent, and where it is at rest.
 
 ```haxe
-function new(name:String, parent:Int, rest:Transform3D)
+function new(name:String, parentIndex:Int, rest:Transform3D)
 final name:String
-final parent:Int
+final parentIndex:Int
 final rest:Transform3D
 ```
 
 - `new`: Creates a bone.
   - `name`: Its name.
-  - `parent`: Its parent's index, before it; -1 for a root.
+  - `parentIndex`: Its parent's index, before it; -1 for a root.
   - `rest`: Where it is at rest.
 - `name`: Gets its name: empty for none.
-- `parent`: Gets its parent, an index into its skeleton's `bones`, before it; -1 for a root.
+- `parentIndex`: Gets the index of its parent in its skeleton's `bones`, before it; -1 for a root.
 - `rest`: Gets where it is at rest, relative to its parent; for a root, relative to the model, with whatever placed it there.
 
 ## Camera2D
@@ -351,14 +351,14 @@ A model read from a file (helix-services' `Model3D`) holds its meshes as these, 
 ```haxe
 function new()
 static function fromBox(width:Float, height:Float, depth:Float, ?out:Mesh3D):Mesh3D
-static function fromPlane(width:Float, depth:Float, columns:Int, rows:Int, ?out:Mesh3D):Mesh3D
-static function fromDisk(radius:Float, slices:Int, ?out:Mesh3D):Mesh3D
-static function fromSphere(radius:Float, slices:Int, stacks:Int, ?out:Mesh3D):Mesh3D
-static function fromHemisphere(radius:Float, slices:Int, stacks:Int, ?out:Mesh3D):Mesh3D
-static function fromCylinder(bottomRadius:Float, topRadius:Float, height:Float, slices:Int, stacks:Int, capped:Bool, ?out:Mesh3D):Mesh3D
-static function fromCapsule(radius:Float, height:Float, slices:Int, stacks:Int, ?out:Mesh3D):Mesh3D
-static function fromTorus(radius:Float, tubeRadius:Float, slices:Int, sides:Int, ?out:Mesh3D):Mesh3D
-static function fromTorusKnot(radius:Float, tubeRadius:Float, slices:Int, sides:Int, p:Int, q:Int, ?out:Mesh3D):Mesh3D
+static function fromPlane(width:Float, depth:Float, columnCount:Int, rowCount:Int, ?out:Mesh3D):Mesh3D
+static function fromDisk(radius:Float, sliceCount:Int, ?out:Mesh3D):Mesh3D
+static function fromSphere(radius:Float, sliceCount:Int, stackCount:Int, ?out:Mesh3D):Mesh3D
+static function fromHemisphere(radius:Float, sliceCount:Int, stackCount:Int, ?out:Mesh3D):Mesh3D
+static function fromCylinder(bottomRadius:Float, topRadius:Float, height:Float, sliceCount:Int, stackCount:Int, capped:Bool, ?out:Mesh3D):Mesh3D
+static function fromCapsule(radius:Float, height:Float, sliceCount:Int, stackCount:Int, ?out:Mesh3D):Mesh3D
+static function fromTorus(radius:Float, tubeRadius:Float, sliceCount:Int, sideCount:Int, ?out:Mesh3D):Mesh3D
+static function fromTorusKnot(radius:Float, tubeRadius:Float, sliceCount:Int, sideCount:Int, p:Int, q:Int, ?out:Mesh3D):Mesh3D
 static function merge(first:Mesh3D, second:Mesh3D, ?out:Mesh3D):Mesh3D
 var positions:Array<Float>
 var normals:Null<Array<Float>>
@@ -366,7 +366,7 @@ var texCoords:Null<Array<Float>>
 var tangents:Null<Array<Float>>
 var colors:Null<Array<Float>>
 var indices:Null<Array<Int>>
-var joints:Null<Array<Int>>
+var jointIndices:Null<Array<Int>>
 var weights:Null<Array<Float>>
 var vertexCount(get, never):Int
 var triangleCount(get, never):Int
@@ -389,55 +389,55 @@ function computeBounds(?out:Bounds3D):Bounds3D
 - `fromPlane`: Returns a flat rectangle on the XZ plane, facing +y.
   - `width`: Its size along x.
   - `depth`: Along z.
-  - `columns`: Cells along x, at least 1.
-  - `rows`: Cells along z, at least 1.
+  - `columnCount`: Cells along x, at least 1.
+  - `rowCount`: Cells along z, at least 1.
   - `out`: Optional. Set to the plane.
   - returns: The plane; its texture's top at -z.
 - `fromDisk`: Returns a flat disk on the XZ plane, facing +y; with few slices, a regular polygon.
   - `radius`: Its radius.
-  - `slices`: Its sides, at least 3.
+  - `sliceCount`: Its sides, at least 3.
   - `out`: Optional. Set to the disk.
   - returns: The disk: a vertex at its center and one at each corner, the texture a circle touching its edges.
 - `fromSphere`: Returns a sphere, its poles on y.
   - `radius`: Its radius.
-  - `slices`: Around, at least 3.
-  - `stacks`: Pole to pole, at least 2.
+  - `sliceCount`: Around, at least 3.
+  - `stackCount`: Pole to pole, at least 2.
   - `out`: Optional. Set to the sphere.
   - returns: The sphere.
 - `fromHemisphere`: Returns the top half of a sphere, open at its base, its pole at +y and its base on the XZ plane.
   - `radius`: Its radius.
-  - `slices`: Around, at least 3.
-  - `stacks`: Pole to base, at least 1.
+  - `sliceCount`: Around, at least 3.
+  - `stackCount`: Pole to base, at least 1.
   - `out`: Optional. Set to the hemisphere.
   - returns: The hemisphere.
 - `fromCylinder`: Returns a cylinder along y, or a cone or a truncated one when the radii differ.
   - `bottomRadius`: Its base's radius, at -height / 2.
   - `topRadius`: Its top's, at height / 2; 0 makes a cone.
   - `height`: Its height.
-  - `slices`: Around, at least 3.
-  - `stacks`: Base to top, at least 1.
+  - `sliceCount`: Around, at least 3.
+  - `stackCount`: Base to top, at least 1.
   - `capped`: Whether its ends are closed, each by a disk; an end of radius 0 has none.
   - `out`: Optional. Set to the cylinder.
   - returns: The cylinder.
 - `fromCapsule`: Returns a capsule along y: a cylinder with half a sphere on each end.
   - `radius`: Its radius.
   - `height`: Its height between the two half spheres' centers; its whole height is this and two radii.
-  - `slices`: Around, at least 3.
-  - `stacks`: In each half sphere, at least 1.
+  - `sliceCount`: Around, at least 3.
+  - `stackCount`: In each half sphere, at least 1.
   - `out`: Optional. Set to the capsule.
   - returns: The capsule.
 - `fromTorus`: Returns a torus about y, lying on the XZ plane.
   - `radius`: From its center to the middle of its tube.
   - `tubeRadius`: The tube's radius.
-  - `slices`: Around the ring, at least 3.
-  - `sides`: Around the tube, at least 3.
+  - `sliceCount`: Around the ring, at least 3.
+  - `sideCount`: Around the tube, at least 3.
   - `out`: Optional. Set to the torus.
   - returns: The torus.
 - `fromTorusKnot`: Returns a tube wound into a (p, q) torus knot about y: p times about the y axis while q times through the ring; p 2 and q 3 make a trefoil.
   - `radius`: The ring's radius, from its center to the tube's middle at its widest.
   - `tubeRadius`: The tube's radius.
-  - `slices`: Along the knot, at least 3.
-  - `sides`: Around the tube, at least 3.
+  - `sliceCount`: Along the knot, at least 3.
+  - `sideCount`: Around the tube, at least 3.
   - `p`: Turns about the y axis, at least 1.
   - `q`: Turns through the ring, at least 1.
   - `out`: Optional. Set to the knot.
@@ -453,7 +453,7 @@ function computeBounds(?out:Bounds3D):Bounds3D
 - `tangents`: Gets or sets the tangents, x, y, z and w a vertex: the way u grows along the surface, square to the normal, w 1 or -1 for the way v grows (the bitangent is the normal crossed with the tangent, times w); null for none.
 - `colors`: Gets or sets the colors, red, green, blue and alpha a vertex, 0 to 1; null for none.
 - `indices`: Gets or sets the indices, three a triangle; null when the vertices are the triangles in order.
-- `joints`: Gets or sets the joints, four a vertex: indices of the bones its position follows in its skin (`Skin3D.bones`); null for none.
+- `jointIndices`: Gets or sets the joints, four a vertex: indices of the bones its position follows in its skin (`Skin3D.boneIndices`); null for none.
 - `weights`: Gets or sets the weights, four a vertex, one for each of its joints, adding up to 1; null for none.
 - `vertexCount`: Gets the number of vertices.
 - `triangleCount`: Gets the number of triangles.
@@ -563,7 +563,7 @@ function intersectMesh(mesh:Mesh3D, ?transform:Matrix3D, ?out:RayHit3D):Null<Ray
 - `intersectMesh`: Returns where the ray first meets a mesh's triangles, from either side, as `intersectTriangle` meets each. With a transform, the hit's point, normal and distance are in the ray's space, the world's, as the other tests' are.
   - `mesh`: The mesh.
   - `transform`: Optional. Where the mesh is: its positions are moved by it. Omitted, they are as they are.
-  - `out`: Optional. Set to the hit; its `triangle` says which, counted in the order the indices (or the vertices) give them.
+  - `out`: Optional. Set to the hit; its `triangleIndex` says which, counted in the order the indices (or the vertices) give them.
   - returns: The nearest hit; null when it meets none.
 
 ## RayHit3D
@@ -577,7 +577,7 @@ function new()
 var distance:Float
 final point:Vector3D
 final normal:Vector3D
-var triangle:Int
+var triangleIndex:Int
 function copyFrom(other:RayHit3D):RayHit3D
 ```
 
@@ -585,7 +585,7 @@ function copyFrom(other:RayHit3D):RayHit3D
 - `distance`: Gets or sets how far along the ray, in its direction's lengths.
 - `point`: Gets the point.
 - `normal`: Gets the surface's normal at the point, of length 1.
-- `triangle`: Gets or sets which of a mesh's triangles was met (`Ray3D.intersectMesh`), counted from 0; -1 for any other test.
+- `triangleIndex`: Gets or sets the index of the mesh's triangle that was met (`Ray3D.intersectMesh`), counted from 0; -1 for any other test.
 - `copyFrom`: Copies another hit into this one.
   - `other`: The hit.
   - returns: This hit.
@@ -624,22 +624,22 @@ function computeWorld(pose:Array<Transform3D>, ?out:Array<Matrix3D>):Array<Matri
 
 *class* in [`geometry/src/helix/geometry/Skin3D.hx`](../../geometry/src/helix/geometry/Skin3D.hx), `import helix.geometry.Skin3D;`
 
-Represents a skin: the bones of a skeleton a mesh's vertices follow, and how each vertex was bound to them. A vertex's `joints` index this skin's `bones`, not the skeleton's.
+Represents a skin: the bones of a skeleton a mesh's vertices follow, and how each vertex was bound to them. A vertex's `jointIndices` index this skin's `boneIndices`, not the skeleton's.
 
 ```haxe
-function new(name:String, bones:Array<Int>, inverseBinds:Array<Matrix3D>)
+function new(name:String, boneIndices:Array<Int>, inverseBinds:Array<Matrix3D>)
 final name:String
-final bones:Array<Int>
+final boneIndices:Array<Int>
 final inverseBinds:Array<Matrix3D>
 function computeSkinning(world:Array<Matrix3D>, ?out:Array<Matrix3D>):Array<Matrix3D>
 ```
 
 - `new`: Creates a skin.
   - `name`: Its name.
-  - `bones`: Its bones, as indices into the skeleton's.
+  - `boneIndices`: The indices of its bones in the skeleton's.
   - `inverseBinds`: Each one's inverse bind matrix.
 - `name`: Gets its name: empty for none.
-- `bones`: Gets its bones, as indices into the skeleton's `bones`.
+- `boneIndices`: Gets the indices of its bones in the skeleton's `bones`.
 - `inverseBinds`: Gets each of its bones' inverse bind matrix, taking a vertex from the mesh's space to the bone's as the mesh was bound.
 - `computeSkinning`: Returns the matrices a mesh of this skin is moved by, from each bone's place in the model (`Skeleton3D.computeWorld`): each of its bones' inverse bind, then its place, so a skinned vertex comes out in the model's space. For a shader's joint matrices, or `Mesh3D.computeSkinned`.
   - `world`: Each of the skeleton's bones' place in the model.

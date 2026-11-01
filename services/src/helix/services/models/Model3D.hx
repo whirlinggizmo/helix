@@ -15,14 +15,14 @@ class Model3D {
 	public final path:String;
 
 	/** Gets the meshes, each node's triangles in the scene's order: its transform in their positions, normals and tangents, but for a
-		skinned mesh's (`meshSkins`), whose vertices are as the file gives them, in the space its skin binds them in, as glTF has it. */
+		skinned mesh's (`meshSkinIndices`), whose vertices are as the file gives them, in the space its skin binds them in, as glTF has it. */
 	public final meshes:Array<Mesh3D>;
 
-	/** Gets each mesh's material, by its index in `materials`, beside it in `meshes`; -1 for none. */
-	public final meshMaterials:Array<Int>;
+	/** Gets the index of each mesh's material in `materials`, beside it in `meshes`; -1 for none. */
+	public final meshMaterialIndices:Array<Int>;
 
-	/** Gets each mesh's skin, by its index in `skins`, beside it in `meshes`; -1 for a mesh without one. */
-	public final meshSkins:Array<Int>;
+	/** Gets the index of each mesh's skin in `skins`, beside it in `meshes`; -1 for a mesh without one. */
+	public final meshSkinIndices:Array<Int>;
 
 	/** Gets each mesh's node's transform in the model, beside it in `meshes`. A mesh without a skin has it in its vertices already; a
 		skinned one hasn't, and doesn't need it: its skin's matrices put it in the model. It is kept for an engine that places skinned
@@ -47,12 +47,12 @@ class Model3D {
 	public final images:Array<Null<Image>>;
 
 	@:allow(helix.services.models)
-	function new(path:String, meshes:Array<Mesh3D>, meshMaterials:Array<Int>, meshSkins:Array<Int>, meshTransforms:Array<Matrix3D>, skeleton:Null<Skeleton3D>,
-			skins:Array<Skin3D>, animations:Array<Animation3D>, materials:Array<GltfMaterial>, images:Array<Null<Image>>) {
+	function new(path:String, meshes:Array<Mesh3D>, meshMaterialIndices:Array<Int>, meshSkinIndices:Array<Int>, meshTransforms:Array<Matrix3D>,
+			skeleton:Null<Skeleton3D>, skins:Array<Skin3D>, animations:Array<Animation3D>, materials:Array<GltfMaterial>, images:Array<Null<Image>>) {
 		this.path = path;
 		this.meshes = meshes;
-		this.meshMaterials = meshMaterials;
-		this.meshSkins = meshSkins;
+		this.meshMaterialIndices = meshMaterialIndices;
+		this.meshSkinIndices = meshSkinIndices;
 		this.meshTransforms = meshTransforms;
 		this.skeleton = skeleton;
 		this.skins = skins;

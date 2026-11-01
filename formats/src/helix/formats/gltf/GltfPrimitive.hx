@@ -21,8 +21,8 @@ class GltfPrimitive {
 		primitive has none. */
 	public final tangents:Null<Array<Float>>;
 
-	/** Gets the vertices' joints, `JOINTS_0`: four indices into its node's skin's `joints` for each vertex, or null when it has none. */
-	public final joints:Null<Array<Int>>;
+	/** Gets the vertices' joints, `JOINTS_0`: four indices into its node's skin's `jointIndices` for each vertex, or null when it has none. */
+	public final jointIndices:Null<Array<Int>>;
 
 	/** Gets the vertices' weights, `WEIGHTS_0`: four for each vertex, one for each of its joints, or null when it has none. */
 	public final weights:Null<Array<Float>>;
@@ -39,20 +39,20 @@ class GltfPrimitive {
 	public final indices:Null<Array<Int>>;
 
 	/** Gets the index of the primitive's material in `GltfFile.materials`, or -1 when it has none (glTF's default material). */
-	public final material:Int;
+	public final materialIndex:Int;
 
 	@:allow(helix.formats.gltf)
 	function new(mode:Int, positions:Array<Float>, normals:Null<Array<Float>>, tangents:Null<Array<Float>>, texCoords:Null<Array<Float>>,
-			colors:Null<Array<Float>>, joints:Null<Array<Int>>, weights:Null<Array<Float>>, indices:Null<Array<Int>>, material:Int) {
+			colors:Null<Array<Float>>, jointIndices:Null<Array<Int>>, weights:Null<Array<Float>>, indices:Null<Array<Int>>, materialIndex:Int) {
 		this.mode = mode;
 		this.positions = positions;
 		this.normals = normals;
 		this.tangents = tangents;
-		this.joints = joints;
+		this.jointIndices = jointIndices;
 		this.weights = weights;
 		this.texCoords = texCoords;
 		this.colors = colors;
 		this.indices = indices;
-		this.material = material;
+		this.materialIndex = materialIndex;
 	}
 }

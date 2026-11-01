@@ -59,7 +59,7 @@ class RAsync {
 		Runtime.loading();
 		Runtime.models.load(path, read -> {
 			// raylib gives a mesh without joints whose node is a bone's child to that bone: the nodes are the file's, read again.
-			if (read.skeleton != null && read.skins.length > 0 && Lambda.exists(read.meshes, m -> m.joints == null)) {
+			if (read.skeleton != null && read.skins.length > 0 && Lambda.exists(read.meshes, m -> m.jointIndices == null)) {
 				Animations.read(path, file -> {
 					Models.keep(read, defaultShader(), Animations.attached(file));
 					loaded(RModels.loadModel(path));
@@ -155,7 +155,7 @@ class RAsync {
 		if (fileType == ".wav" || fileType == ".WAV") {
 			var wav = try helix.formats.wav.WavFile.read(data) catch (_:Dynamic) null;
 			Runtime.later(() -> wav == null ? refuse("LoadWaveFromMemoryAsync", "WAVE: Failed to load WAV data",
-				failed) : done(new Wave(wav.frameCount, wav.sampleRate, 16, wav.channels, wav.toInt16())));
+				failed) : done(new Wave(wav.frameCount, wav.sampleRate, 16, wav.channelCount, wav.toInt16())));
 			return;
 		}
 		var decoded = ["ogg", "mp3", "flac"].indexOf(fileType == null ? "" : fileType.substr(1).toLowerCase()) >= 0;
@@ -812,7 +812,8 @@ class RAsync {
 				refuse(name, "IMAGE: Failed to load image data", failed);
 				return;
 			}
-			loaded(new Image(qoi.pixels, qoi.width, qoi.height, 1, qoi.channels == 4 ? PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 : PIXELFORMAT_UNCOMPRESSED_R8G8B8));
+			loaded(new Image(qoi.pixels, qoi.width, qoi.height, 1,
+				qoi.channelCount == 4 ? PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 : PIXELFORMAT_UNCOMPRESSED_R8G8B8));
 			return;
 		}
 		if (!isDecoded(fileType.substr(1))) {

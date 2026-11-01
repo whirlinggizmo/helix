@@ -255,15 +255,15 @@ A browser starts its audio on the page's first key or pointer press, and suspend
 var available(get, never):Bool
 var running(get, never):Bool
 var playsUrls(get, never):Bool
-function createClip(samples:haxe.io.Bytes, channels:Int):Int
+function createClip(samples:haxe.io.Bytes, channelCount:Int):Int
 function disposeClip(clip:Int):Void
 function openStream(source:StreamSource, opened:Int -> Void, failed:String -> Void):() -> Void
 function disposeStream(stream:Int):Void
 function getStreamDuration(stream:Int):Float
-function getStreamChannels(stream:Int):Int
-function createQueue(channels:Int, sampleRate:Int):Int
+function getStreamChannelCount(stream:Int):Int
+function createQueue(channelCount:Int, sampleRate:Int):Int
 function queueSamples(queue:Int, samples:haxe.io.Bytes):Void
-function getQueuedFrames(queue:Int):Int
+function getQueuedFrameCount(queue:Int):Int
 function disposeQueue(queue:Int):Void
 function playClip(clip:Int, loop:Bool, volume:Float):Int
 function playStream(stream:Int, loop:Bool, volume:Float):Int
@@ -287,7 +287,7 @@ function dispose():Void
   It is true in a browser, whose media element streams the URL. It is false natively, where the caller downloads the file and opens the download as a `Downloading` source.
 - `createClip`: Copies samples into a new clip.
   - `samples`: 32-bit float PCM at 44100 Hz, -1 to 1, interleaved when stereo.
-  - `channels`: The channels, 1 (mono) or 2 (stereo).
+  - `channelCount`: The channels, 1 (mono) or 2 (stereo).
   - returns: The clip's id.
   - throws `String`: When channels isn't 1 or 2, the samples hold no whole frame, or there is no room for the clip.
 
@@ -311,12 +311,12 @@ function dispose():Void
   - throws `String`: For an unknown stream.
 
   The length may be unknown at first and known later. Natively, a `Downloading` source's length is unknown until all of it has arrived. In a page, it is unknown for a live stream.
-- `getStreamChannels`: Returns how many channels a stream plays.
+- `getStreamChannelCount`: Returns how many channels a stream plays.
   - `stream`: The stream.
   - returns: 1 (mono) or 2 (stereo); a file of more plays as stereo. 0 when it can't tell: in a page, where a stream's channels are read from its file's first bytes (helix-formats' `AudioHeader`), a kind it doesn't read or a fetch that failed.
   - throws `String`: For an unknown stream.
 - `createQueue`: Creates a queue, which plays samples given to it as it goes.
-  - `channels`: The channels, 1 (mono) or 2 (stereo).
+  - `channelCount`: The channels, 1 (mono) or 2 (stereo).
   - `sampleRate`: The samples' rate in frames a second, 8000 to 96000.
   - returns: The queue's id.
   - throws `String`: When channels or sampleRate is out of range.
@@ -328,7 +328,7 @@ function dispose():Void
   - throws `String`: For an unknown queue.
 
   They are copied. Samples added while the queue has no voice wait for `playQueue`. A partial frame at the end is ignored.
-- `getQueuedFrames`: Returns how many frames a queue holds that haven't been heard yet.
+- `getQueuedFrameCount`: Returns how many frames a queue holds that haven't been heard yet.
   - `queue`: The queue.
   - returns: The frames queued and not yet played.
   - throws `String`: For an unknown queue.
@@ -701,11 +701,11 @@ function createCubeTexture(size:Int, levels:Array<haxe.io.Bytes>, format:Texture
 function createDataTexture(width:Int, height:Int):Int
 function updateDataTexture(handle:Int, data:haxe.io.Bytes):Void
 function canSample(format:TextureFormat):Bool
-var msaaSamples(get, never):Int
-var maxMsaaSamples(get, never):Int
+var msaaSampleCount(get, never):Int
+var maxMsaaSampleCount(get, never):Int
 function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:Bool = true):Int
 function canRender(format:TextureFormat):Bool
-function createShadowMap(size:Int, layers:Int):Int
+function createShadowMap(size:Int, layerCount:Int):Int
 function disposeTexture(handle:Int):Void
 function createBuffer(capacityBytes:Int):Int
 function createStaticBuffer(data:haxe.io.Bytes, bytes:Int, index:Bool):Int
@@ -715,14 +715,14 @@ function createShader(source:ShaderSource):Int
 function disposeShader(handle:Int):Void
 function createPipeline(desc:PipelineDesc):Int
 function disposePipeline(handle:Int):Void
-function beginShadowPass(map:Int, layer:Int):Void
+function beginShadowPass(map:Int, layerIndex:Int):Void
 function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void
 function endTargetPass():Void
 function beginFrame(width:Int, height:Int, clearColor:Int):Void
 function applyViewport(x:Int, y:Int, w:Int, h:Int):Void
 function applyScissor(x:Int, y:Int, w:Int, h:Int):Void
 function resetScissor():Void
-function draw(pipeline:Int, buffers:Array<Int>, indices:Int, first:Int, count:Int, firstInstance:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<haxe.io.Bytes>>):Void
+function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<haxe.io.Bytes>>):Void
 function endFrame():Void
 function present():Void
 function readPixels(target:Int, read:(pixels:haxe.io.Bytes, width:Int, height:Int) -> Void, failed:String -> Void):Void
@@ -764,9 +764,9 @@ function dispose():Void
   - returns: True when textures of the format can be sampled.
 
   RGBA8 can always be sampled. The compressed formats can be sampled on GPUs that have them, and half floats where this GPU filters them.
-- `msaaSamples`: Gets the number of multisampling samples per pixel that the screen is drawn with, or 1 for none.
+- `msaaSampleCount`: Gets the number of multisampling samples per pixel that the screen is drawn with, or 1 for none.
   It can be fewer than the window asked for. Render targets with depth are drawn with the same number, and resolved into the texture that is sampled.
-- `maxMsaaSamples`: Gets the largest number of multisampling samples a window could ask for here, at most 8.
+- `maxMsaaSampleCount`: Gets the largest number of multisampling samples a window could ask for here, at most 8.
   A browser only switches antialiasing on or off, and chooses its own count. In a browser this is therefore the count the canvas has when antialiasing is on, which is 4 where the GPU supports 4, and 1 otherwise.
 - `createRenderTarget`: Creates a render target, which is a texture that a target pass draws into.
   - `width`: The width, in texels.
@@ -776,7 +776,7 @@ function dispose():Void
   - returns: The render target's handle.
   - throws `String`: A size of 0 or less, or a format this GPU cannot draw into (`canRender`).
 
-  The target is sampled like any texture and stored top row first. A target with depth has its own depth buffer. It is multisampled as the screen is (`msaaSamples`), or single-sampled where this GPU cannot multisample the format, and it is resolved into the texture at the end of each pass. A target without depth has neither a depth buffer nor multisampling, for a pass that draws over the whole target.
+  The target is sampled like any texture and stored top row first. A target with depth has its own depth buffer. It is multisampled as the screen is (`msaaSampleCount`), or single-sampled where this GPU cannot multisample the format, and it is resolved into the texture at the end of each pass. A target without depth has neither a depth buffer nor multisampling, for a pass that draws over the whole target.
 - `canRender`: Returns whether this GPU draws into, blends over and filters render targets of a format.
   - `format`: The format.
   - returns: True when render targets of the format can be drawn into.
@@ -784,7 +784,7 @@ function dispose():Void
   RGBA8 always can. RGBA16F can where float targets exist, which is nearly always natively, and in a browser through EXT_color_buffer_float. A compressed format never can.
 - `createShadowMap`: Creates a shadow map, which is a depth texture of layers that shadow passes draw into.
   - `size`: Each layer's width and height, in texels.
-  - `layers`: The number of layers.
+  - `layerCount`: The number of layers.
   - returns: The shadow map's handle.
   - throws `String`: A size or layer count of 0 or less, or larger than this GPU allows.
 
@@ -828,7 +828,7 @@ function dispose():Void
   - throws `String`: An unknown handle.
 - `beginShadowPass`: Starts a depth-only pass into one layer of a shadow map, for depth-only pipelines.
   - `map`: The shadow map, as a `createShadowMap` handle.
-  - `layer`: The layer to draw into.
+  - `layerIndex`: The index of the layer to draw into.
   - throws `String`: A call inside a pass, a handle that is not a shadow map, or a layer it does not have.
 
   The layer is cleared to the farthest depth, and the viewport is set to all of it. The pass comes before the screen's and outside any other. `endTargetPass` ends it.
@@ -871,17 +871,17 @@ function dispose():Void
 - `draw`: Draws through a pipeline.
   - `pipeline`: The pipeline.
   - `buffers`: The buffer for each of the pipeline's buffers, by index, or 0 for a gap. Each is a `createBuffer` handle as this frame's upload left it, or a `createStaticBuffer` handle.
-  - `indices`: For an indexed pipeline, a static index buffer. Otherwise it is ignored.
-  - `first`: The first vertex, or for an indexed pipeline the first index.
-  - `count`: The number of vertices, or indices.
-  - `firstInstance`: The first record of the instanced buffers.
+  - `indexBuffer`: For an indexed pipeline, a static index buffer. Otherwise it is ignored.
+  - `firstElementIndex`: The index of the first element drawn: its first vertex, or for an indexed pipeline its first index.
+  - `elementCount`: The number of elements drawn: vertices, or for an indexed pipeline indices.
+  - `firstInstanceIndex`: The index of the first instance drawn: the first record of the instanced buffers.
   - `instanceCount`: The number of instances.
   - `textures`: The texture bound at each of the program's texture slots, by slot. A slot provided 0, or past the array's end, reads a clear 1x1 texture of its kind, for a texture the program declares and doesn't read.
   - `samplings`: How each texture is sampled, by slot. A shadow map or data texture is sampled as its kind requires.
   - `uniforms`: The bytes of each uniform block, by slot, at its declared size, or null for a slot the program lacks.
   - throws `String`: Anything invalid, before drawing.
 
-  Only whole primitives are drawn. A pipeline without buffers draws count vertices from no data, so one triangle over the viewport is three vertices. Block 0 of the uniforms is flipped as the pipeline's `ClipFlip` specifies.
+  Only whole primitives are drawn. A pipeline without buffers draws `elementCount` vertices from no data, so one triangle over the viewport is three vertices. Block 0 of the uniforms is flipped as the pipeline's `ClipFlip` specifies.
 - `endFrame`: Ends the screen's pass and the frame, and submits it.
   - throws `String`: No screen pass is open.
 
@@ -1151,14 +1151,14 @@ function requestMinimumSize(width:Int, height:Int):Bool
 function requestMaximumSize(width:Int, height:Int):Bool
 var monitorCount(get, never):Int
 var monitorIndex(get, never):Int
-function requestMonitorIndex(index:Int):Bool
-function getMonitorName(index:Int):String
-function getMonitorX(index:Int):Int
-function getMonitorY(index:Int):Int
-function getMonitorWidth(index:Int):Int
-function getMonitorHeight(index:Int):Int
-function getMonitorRefreshRate(index:Int):Float
-function readDroppedFile(index:Int, maxBytes:Int, read:(name:String, bytes:haxe.io.Bytes) -> Void, failed:String -> Void):Void
+function requestMonitorIndex(monitorIndex:Int):Bool
+function getMonitorName(monitorIndex:Int):String
+function getMonitorX(monitorIndex:Int):Int
+function getMonitorY(monitorIndex:Int):Int
+function getMonitorWidth(monitorIndex:Int):Int
+function getMonitorHeight(monitorIndex:Int):Int
+function getMonitorRefreshRate(monitorIndex:Int):Float
+function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:haxe.io.Bytes) -> Void, failed:String -> Void):Void
 function canClose():Bool
 function close():Void
 var onClose:Null<() -> Void>
@@ -1252,30 +1252,30 @@ var onClose:Null<() -> Void>
 - `monitorCount`: Gets the number of monitors, at least 1. A page sees one screen.
 - `monitorIndex`: Gets the index of the monitor holding the window.
 - `requestMonitorIndex`: Asks for the window on another monitor.
-  - `index`: The monitor, 0 to `monitorCount` - 1.
+  - `monitorIndex`: The monitor, 0 to `monitorCount` - 1.
   - returns: False, asking nothing, for an index out of range or where the window can't move (`canMove`).
 
   `monitorIndex` reflects the result once the request completes.
 - `getMonitorName`: Returns a monitor's name.
-  - `index`: The monitor.
+  - `monitorIndex`: The monitor.
   - returns: Its name, or "" for an index out of range.
 - `getMonitorX`: Returns a monitor's left edge on the desktop.
-  - `index`: The monitor.
+  - `monitorIndex`: The monitor.
   - returns: The edge, in logical pixels, or 0 for an index out of range and in a page.
 - `getMonitorY`: Returns a monitor's top edge on the desktop.
-  - `index`: The monitor.
+  - `monitorIndex`: The monitor.
   - returns: The edge, in logical pixels, or 0 for an index out of range and in a page.
 - `getMonitorWidth`: Returns a monitor's width.
-  - `index`: The monitor.
+  - `monitorIndex`: The monitor.
   - returns: The width, in logical pixels, or 0 for an index out of range.
 - `getMonitorHeight`: Returns a monitor's height.
-  - `index`: The monitor.
+  - `monitorIndex`: The monitor.
   - returns: The height, in logical pixels, or 0 for an index out of range.
 - `getMonitorRefreshRate`: Returns how many times a second a monitor shows a new picture.
-  - `index`: The monitor, 0 to `monitorCount` - 1.
+  - `monitorIndex`: The monitor, 0 to `monitorCount` - 1.
   - returns: The refresh rate in hertz, or 0 where it isn't known, as in a page.
 - `readDroppedFile`: Reads a file dropped on the window, one the last `FilesDropped` event counted.
-  - `index`: The file, 0 to the event's count - 1.
+  - `fileIndex`: The file, 0 to the event's count - 1.
   - `maxBytes`: The largest file to read; a larger one fails.
   - `read`: Receives the file's name, without its directory, and its bytes.
   - `failed`: Receives why it can't be read: an index no drop gave, a file over `maxBytes`, or the platform's reason.

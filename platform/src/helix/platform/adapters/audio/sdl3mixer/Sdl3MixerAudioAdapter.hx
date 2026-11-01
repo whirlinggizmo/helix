@@ -83,11 +83,11 @@ class Sdl3MixerAudioAdapter implements IAudio {
 	function get_playsUrls():Bool
 		return false;
 
-	public function createClip(samples:Bytes, channels:Int):Int {
-		if (channels != 1 && channels != 2)
+	public function createClip(samples:Bytes, channelCount:Int):Int {
+		if (channelCount != 1 && channelCount != 2)
 			throw "Audio clip channels must be 1 or 2";
-		var frames = Std.int(samples.length / (4 * channels));
-		var id = frames == 0 ? 0 : AudioBridge.clip(cpp.Pointer.arrayElem(samples.getData(), 0).raw, frames, channels);
+		var frames = Std.int(samples.length / (4 * channelCount));
+		var id = frames == 0 ? 0 : AudioBridge.clip(cpp.Pointer.arrayElem(samples.getData(), 0).raw, frames, channelCount);
 		if (id == 0)
 			throw "Audio clip creation failed";
 		return id;
@@ -165,19 +165,19 @@ class Sdl3MixerAudioAdapter implements IAudio {
 		return file.duration;
 	}
 
-	public function getStreamChannels(stream:Int):Int {
+	public function getStreamChannelCount(stream:Int):Int {
 		var file = streams[stream];
 		if (file == null)
 			throw "Invalid audio stream";
 		return file.channels;
 	}
 
-	public function createQueue(channels:Int, sampleRate:Int):Int {
-		if (channels != 1 && channels != 2)
+	public function createQueue(channelCount:Int, sampleRate:Int):Int {
+		if (channelCount != 1 && channelCount != 2)
 			throw "Audio queue channels must be 1 or 2";
 		if (sampleRate < 8000 || sampleRate > 96000)
 			throw "Audio queue sample rate must be 8000 to 96000";
-		var id = AudioBridge.queue(channels, sampleRate);
+		var id = AudioBridge.queue(channelCount, sampleRate);
 		if (id == 0)
 			throw "Audio queue creation failed";
 		return id;
@@ -187,7 +187,7 @@ class Sdl3MixerAudioAdapter implements IAudio {
 		if (AudioBridge.queueSamples(queue, samples.length == 0 ? null : cpp.Pointer.arrayElem(samples.getData(), 0).raw, samples.length) == 0)
 			throw "Invalid audio queue";
 
-	public function getQueuedFrames(queue:Int):Int {
+	public function getQueuedFrameCount(queue:Int):Int {
 		var frames = AudioBridge.queuedFrames(queue);
 		if (frames < 0)
 			throw "Invalid audio queue";

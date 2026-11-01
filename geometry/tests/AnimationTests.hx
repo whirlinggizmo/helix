@@ -93,12 +93,12 @@ class AnimationTests {
 
 		// A tube 0.2 in radius from y 0 to y 2: below y 1 it follows the shoulder, above it the elbow.
 		var tube = Mesh3D.fromCylinder(.2, .2, 2, 8, 4, false).transform(Matrix3D.fromTranslation(0, 1, 0));
-		tube.joints = [];
+		tube.jointIndices = [];
 		tube.weights = [];
 		for (v in 0...tube.vertexCount) {
 			var upper = tube.positions[v * 3 + 1] > 1;
 			for (k in [upper ? 1 : 0, 0, 0, 0])
-				tube.joints.push(k);
+				tube.jointIndices.push(k);
 			for (k in [1., 0, 0, 0])
 				tube.weights.push(k);
 		}
@@ -115,7 +115,10 @@ class AnimationTests {
 		var low = 0;
 		check(bent.positions[low * 3 + 1] == tube.positions[low * 3 + 1] || tube.positions[low * 3 + 1] > 1,
 			"a vertex following the shoulder, which didn't move");
-		check(bent.texCoords == tube.texCoords && bent.indices == tube.indices && bent.joints == tube.joints && bent.positions != tube.positions,
+		check(bent.texCoords == tube.texCoords
+			&& bent.indices == tube.indices
+			&& bent.jointIndices == tube.jointIndices
+			&& bent.positions != tube.positions,
 			"its other arrays the mesh's, its positions its own");
 		var reused = bent.positions;
 		check(tube.computeSkinned(moving, bent) == bent && bent.positions == reused, "moved again into the same mesh, its arrays reused");
@@ -137,21 +140,20 @@ class AnimationTests {
 
 		// Joints and weights carried.
 		var a = Mesh3D.fromBox(1, 1, 1), b = Mesh3D.fromBox(1, 1, 1);
-		a.joints = [for (i in 0...a.vertexCount * 4) i % 4 == 0 ? 1 : 0];
+		a.jointIndices = [for (i in 0...a.vertexCount * 4) i % 4 == 0 ? 1 : 0];
 		a.weights = [for (i in 0...a.vertexCount * 4) i % 4 == 0 ? 1. : 0];
-		b.joints = a.joints.copy();
+		b.jointIndices = a.jointIndices.copy();
 		b.weights = a.weights.copy();
 		var merged = Mesh3D.merge(a, b);
-		check(merged.joints.length == 48 * 4 && merged.weights.length == 48 * 4, "merged: joints and weights, both's");
-		check(Mesh3D.merge(a, Mesh3D.fromBox(1, 1, 1)).joints == null, "merged with a mesh without: dropped");
+		check(merged.jointIndices.length == 48 * 4 && merged.weights.length == 48 * 4, "merged: joints and weights, both's");
+		check(Mesh3D.merge(a, Mesh3D.fromBox(1, 1, 1)).jointIndices == null, "merged with a mesh without: dropped");
 		var flat = a.toUnindexed();
-		check(flat.joints.length == flat.vertexCount * 4
-			&& flat.weights.length == flat.vertexCount * 4
-			&& flat.joints[0] == 1, "unindexed: spread");
+		check(flat.jointIndices.length == flat.vertexCount * 4 && flat.weights.length == flat.vertexCount * 4 && flat.jointIndices[0] == 1,
+			"unindexed: spread");
 		var copied = new Mesh3D().copyFrom(a);
-		check(copied.joints.join(",") == a.joints.join(",") && copied.joints != a.joints, "copied: its own");
+		check(copied.jointIndices.join(",") == a.jointIndices.join(",") && copied.jointIndices != a.jointIndices, "copied: its own");
 		var mirrored = flat.transform(Matrix3D.fromScale(-1, 1, 1));
-		check(mirrored.joints.length == flat.joints.length, "mirrored: joints turned round with the triangles");
+		check(mirrored.jointIndices.length == flat.jointIndices.length, "mirrored: joints turned round with the triangles");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

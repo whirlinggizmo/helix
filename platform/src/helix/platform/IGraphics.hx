@@ -67,18 +67,18 @@ interface IGraphics {
 
 		It can be fewer than the window asked for. Render targets with depth are drawn with the same number, and resolved into the texture
 		that is sampled. */
-	var msaaSamples(get, never):Int;
+	var msaaSampleCount(get, never):Int;
 
 	/** Gets the largest number of multisampling samples a window could ask for here, at most 8.
 
 		A browser only switches antialiasing on or off, and chooses its own count. In a browser this is therefore the count the canvas has
 		when antialiasing is on, which is 4 where the GPU supports 4, and 1 otherwise. */
-	var maxMsaaSamples(get, never):Int;
+	var maxMsaaSampleCount(get, never):Int;
 
 	/** Creates a render target, which is a texture that a target pass draws into.
 
 		The target is sampled like any texture and stored top row first. A target with depth has its own depth buffer. It is multisampled
-		as the screen is (`msaaSamples`), or single-sampled where this GPU cannot multisample the format, and it is resolved into the
+		as the screen is (`msaaSampleCount`), or single-sampled where this GPU cannot multisample the format, and it is resolved into the
 		texture at the end of each pass. A target without depth has neither a depth buffer nor multisampling, for a pass that draws over the
 		whole target.
 		@param width  The width, in texels.
@@ -102,10 +102,10 @@ interface IGraphics {
 		A program that declares a shadow texture samples it through a comparison sampler that is linear, less or equal, and clamped to its
 		edge. The slot's sampling is ignored. The map's rows are stored bottom first, as GL's are, so clip space's -1 to 1 is its 0 to 1.
 		@param size  Each layer's width and height, in texels.
-		@param layers  The number of layers.
+		@param layerCount  The number of layers.
 		@return  The shadow map's handle.
 		@throws String  A size or layer count of 0 or less, or larger than this GPU allows. */
-	public function createShadowMap(size:Int, layers:Int):Int;
+	public function createShadowMap(size:Int, layerCount:Int):Int;
 
 	/** Frees a texture of any kind.
 
@@ -177,9 +177,9 @@ interface IGraphics {
 		The layer is cleared to the farthest depth, and the viewport is set to all of it. The pass comes before the screen's and outside any
 		other. `endTargetPass` ends it.
 		@param map  The shadow map, as a `createShadowMap` handle.
-		@param layer  The layer to draw into.
+		@param layerIndex  The index of the layer to draw into.
 		@throws String  A call inside a pass, a handle that is not a shadow map, or a layer it does not have. */
-	public function beginShadowPass(map:Int, layer:Int):Void;
+	public function beginShadowPass(map:Int, layerIndex:Int):Void;
 
 	/** Starts a pass into a render target.
 
@@ -235,23 +235,23 @@ interface IGraphics {
 
 	/** Draws through a pipeline.
 
-		Only whole primitives are drawn. A pipeline without buffers draws count vertices from no data, so one triangle over the viewport is
+		Only whole primitives are drawn. A pipeline without buffers draws `elementCount` vertices from no data, so one triangle over the viewport is
 		three vertices. Block 0 of the uniforms is flipped as the pipeline's `ClipFlip` specifies.
 		@param pipeline  The pipeline.
 		@param buffers  The buffer for each of the pipeline's buffers, by index, or 0 for a gap. Each is a `createBuffer` handle as this
 			frame's upload left it, or a `createStaticBuffer` handle.
-		@param indices  For an indexed pipeline, a static index buffer. Otherwise it is ignored.
-		@param first  The first vertex, or for an indexed pipeline the first index.
-		@param count  The number of vertices, or indices.
-		@param firstInstance  The first record of the instanced buffers.
+		@param indexBuffer  For an indexed pipeline, a static index buffer. Otherwise it is ignored.
+		@param firstElementIndex  The index of the first element drawn: its first vertex, or for an indexed pipeline its first index.
+		@param elementCount  The number of elements drawn: vertices, or for an indexed pipeline indices.
+		@param firstInstanceIndex  The index of the first instance drawn: the first record of the instanced buffers.
 		@param instanceCount  The number of instances.
 		@param textures  The texture bound at each of the program's texture slots, by slot. A slot provided 0, or past the array's end,
 			reads a clear 1x1 texture of its kind, for a texture the program declares and doesn't read.
 		@param samplings  How each texture is sampled, by slot. A shadow map or data texture is sampled as its kind requires.
 		@param uniforms  The bytes of each uniform block, by slot, at its declared size, or null for a slot the program lacks.
 		@throws String  Anything invalid, before drawing. */
-	public function draw(pipeline:Int, buffers:Array<Int>, indices:Int, first:Int, count:Int, firstInstance:Int, instanceCount:Int, textures:Array<Int>,
-		samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void;
+	public function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int,
+		instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void;
 
 	/** Ends the screen's pass and the frame, and submits it.
 

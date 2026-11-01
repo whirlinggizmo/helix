@@ -12,16 +12,16 @@ import haxe.io.FPHelper;
 
 	```haxe
 	var wav = WavFile.read(bytes);
-	trace(wav.sampleRate, wav.channels, wav.frameCount / wav.sampleRate);
+	trace(wav.sampleRate, wav.channelCount, wav.frameCount / wav.sampleRate);
 	var samples = wav.toInt16(); // raylib's Wave: sampleSize 16
-	var file = WavFile.write(wav.sampleRate, wav.channels, 16, wav.frameCount, samples);
+	var file = WavFile.write(wav.sampleRate, wav.channelCount, 16, wav.frameCount, samples);
 	``` */
 class WavFile {
 	/** Gets the frames a second, 1 to 384000. */
 	public final sampleRate:Int;
 
-	/** Gets the channels a frame has, 1 to 256: 1 is mono, 2 stereo. */
-	public final channels:Int;
+	/** Gets the number of channels a frame has, 1 to 256: 1 is mono, 2 stereo. */
+	public final channelCount:Int;
 
 	/** Gets the bits a sample takes in `samples`: 8, 16, 24, 32 or more for `Pcm`, 32 or 64 for `FloatingPoint`, 8 for `ALaw` and
 		`MuLaw`. A file whose samples have bits not a multiple of 8 (12 in 16, say) gives the size they are stored in. */
@@ -37,9 +37,9 @@ class WavFile {
 		bytes, little-endian. */
 	public final samples:Bytes;
 
-	function new(sampleRate:Int, channels:Int, sampleSize:Int, encoding:WavEncoding, frameCount:Int, samples:Bytes) {
+	function new(sampleRate:Int, channelCount:Int, sampleSize:Int, encoding:WavEncoding, frameCount:Int, samples:Bytes) {
 		this.sampleRate = sampleRate;
-		this.channels = channels;
+		this.channelCount = channelCount;
 		this.sampleSize = sampleSize;
 		this.encoding = encoding;
 		this.frameCount = frameCount;
@@ -59,7 +59,7 @@ class WavFile {
 		var size = data.length;
 		if (!matches(data, 0, "RIFF") || !matches(data, 8, "WAVE"))
 			throw "not a WAV file: no RIFF WAVE header";
-		var formatTag = 0, channels = 0, sampleRate = 0, blockAlign = 0, bitsPerSample = 0, subFormat = 0;
+		var formatTag = 0, channelCount = 0, sampleRate = 0, blockAlign = 0, bitsPerSample = 0, subFormat = 0;
 		var foundFormat = false;
 		var dataPos = -1, dataSize = 0;
 		var p = 12;
@@ -73,7 +73,7 @@ class WavFile {
 					throw "not a WAV file: its format chunk ends early";
 				foundFormat = true;
 				formatTag = data.getUInt16(start);
-				channels = data.getUInt16(start + 2);
+				channelCount = data.getUInt16(start + 2);
 				sampleRate = data.getInt32(start + 4);
 				blockAlign = data.getUInt16(start + 12);
 				bitsPerSample = data.getUInt16(start + 14);
@@ -116,14 +116,14 @@ class WavFile {
 		}
 		if (!foundFormat || dataPos < 0)
 			throw "not a WAV file: it has no format or no data chunk";
-		if (sampleRate <= 0 || sampleRate > 384000 || channels == 0 || channels > 256 || bitsPerSample == 0 || bitsPerSample > 64 || blockAlign == 0)
+		if (sampleRate <= 0 || sampleRate > 384000 || channelCount == 0 || channelCount > 256 || bitsPerSample == 0 || bitsPerSample > 64 || blockAlign == 0)
 			throw "not a WAV file: its format is out of range";
 		var tag = formatTag == EXTENSIBLE ? subFormat : formatTag;
 		if (tag != PCM && tag != IEEE_FLOAT && tag != ALAW && tag != MULAW)
 			throw 'a WAV file of format 0x${StringTools.hex(tag, 4)}: only integer, floating-point, A-law and mu-law samples are read';
-		var bytesPerFrame = (bitsPerSample & 7) == 0 ? (bitsPerSample * channels) >> 3 : blockAlign;
-		var bytesPerSample = Std.int(bytesPerFrame / channels);
-		if (bytesPerSample == 0 || bytesPerFrame % channels != 0)
+		var bytesPerFrame = (bitsPerSample & 7) == 0 ? (bitsPerSample * channelCount) >> 3 : blockAlign;
+		var bytesPerSample = Std.int(bytesPerFrame / channelCount);
+		if (bytesPerSample == 0 || bytesPerFrame % channelCount != 0)
 			throw "a WAV file whose samples aren't a whole number of bytes";
 		if ((tag == ALAW || tag == MULAW) && bytesPerSample != 1)
 			throw "a WAV file of A-law or mu-law samples of more than a byte";
@@ -134,7 +134,7 @@ class WavFile {
 			dataSize = available;
 		var frameCount = Std.int(dataSize / bytesPerFrame);
 		var encoding:WavEncoding = cast tag;
-		return new WavFile(sampleRate, channels, bytesPerSample * 8, encoding, frameCount, data.sub(dataPos, frameCount * bytesPerFrame));
+		return new WavFile(sampleRate, channelCount, bytesPerSample * 8, encoding, frameCount, data.sub(dataPos, frameCount * bytesPerFrame));
 	}
 
 	/** Returns the samples as 16-bit signed integers, as raylib's `LoadWave` gives a WAV file's (dr_wav's `drwav_read_pcm_frames_s16`).
@@ -144,7 +144,7 @@ class WavFile {
 
 		@return  `frameCount` frames, a sample for each channel in turn, 2 bytes each, little-endian. */
 	public function toInt16():Bytes {
-		var count = frameCount * channels;
+		var count = frameCount * channelCount;
 		var out = Bytes.alloc(count * 2);
 		var bytes = sampleSize >> 3;
 		var p = 0;
@@ -194,7 +194,7 @@ class WavFile {
 
 		@return  `frameCount` frames, a sample for each channel in turn, 4 bytes each, little-endian. */
 	public function toFloat32():Bytes {
-		var count = frameCount * channels;
+		var count = frameCount * channelCount;
 		var out = Bytes.alloc(count * 4);
 		var bytes = sampleSize >> 3;
 		var p = 0;
@@ -238,21 +238,21 @@ class WavFile {
 		samples are ignored.
 
 		@param sampleRate  The frames a second.
-		@param channels  The channels a frame has.
+		@param channelCount  The channels a frame has.
 		@param sampleSize  The bits a sample takes: 8, 16, 24 or 32.
 		@param frameCount  The frames to write, a sample for each channel.
 		@param samples  The samples, a sample for each channel in turn, `sampleSize / 8` bytes each, little-endian.
 		@return  The WAV file.
 		@throws String  The rate is under 1, the channels are outside 1 to 65535, the sample size isn't 8, 16, 24 or 32, the frame
 			count is negative, or there are fewer samples than it needs. */
-	public static function write(sampleRate:Int, channels:Int, sampleSize:Int, frameCount:Int, samples:Bytes):Bytes {
-		if (sampleRate < 1 || channels < 1 || channels > 0xFFFF)
-			throw 'A WAV file of $channels channels at $sampleRate frames a second: the rate must be 1 or more, the channels 1 to 65535';
+	public static function write(sampleRate:Int, channelCount:Int, sampleSize:Int, frameCount:Int, samples:Bytes):Bytes {
+		if (sampleRate < 1 || channelCount < 1 || channelCount > 0xFFFF)
+			throw 'A WAV file of $channelCount channels at $sampleRate frames a second: the rate must be 1 or more, the channels 1 to 65535';
 		if (sampleSize != 8 && sampleSize != 16 && sampleSize != 24 && sampleSize != 32)
 			throw 'A WAV file of $sampleSize-bit samples: it takes 8, 16, 24 or 32';
-		var dataSize = frameCount * channels * (sampleSize >> 3);
+		var dataSize = frameCount * channelCount * (sampleSize >> 3);
 		if (frameCount < 0 || samples.length < dataSize)
-			throw 'A WAV file of $frameCount frames of $channels channels needs $dataSize bytes, given ${samples.length}';
+			throw 'A WAV file of $frameCount frames of $channelCount channels needs $dataSize bytes, given ${samples.length}';
 		var padding = dataSize & 1;
 		var out = Bytes.alloc(44 + dataSize + padding);
 		out.blit(0, Bytes.ofString("RIFF"), 0, 4);
@@ -260,10 +260,10 @@ class WavFile {
 		out.blit(8, Bytes.ofString("WAVEfmt "), 0, 8);
 		out.setInt32(16, 16);
 		out.setUInt16(20, sampleSize == 32 ? IEEE_FLOAT : PCM);
-		out.setUInt16(22, channels);
+		out.setUInt16(22, channelCount);
 		out.setInt32(24, sampleRate);
-		out.setInt32(28, Std.int(sampleSize * sampleRate * channels / 8));
-		out.setUInt16(32, (channels * sampleSize >> 3) & 0xFFFF);
+		out.setInt32(28, Std.int(sampleSize * sampleRate * channelCount / 8));
+		out.setUInt16(32, (channelCount * sampleSize >> 3) & 0xFFFF);
 		out.setUInt16(34, sampleSize);
 		out.blit(36, Bytes.ofString("data"), 0, 4);
 		out.setInt32(40, dataSize);

@@ -34,7 +34,7 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 	/** Gets or sets what `getStreamDuration` answers for every stream. Defaults to 0, unknown. */
 	public var streamDuration = 0.;
 
-	/** Gets or sets what `getStreamChannels` answers for every stream. Defaults to 2. */
+	/** Gets or sets what `getStreamChannelCount` answers for every stream. Defaults to 2. */
 	public var streamChannels = 2;
 
 	final queueChannels = new Map<Int, Int>();
@@ -67,9 +67,9 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 	public function decode(encoded:Bytes, decoded:(samples:Bytes, channels:Int) -> Void, failed:String->Void):Void
 		waiting.push(() -> encoded.toString() == "bad" ? failed("not audio") : decoded(encoded, StringTools.startsWith(encoded.toString(), "stereo") ? 2 : 1));
 
-	public function createClip(samples:Bytes, channels:Int):Int {
-		if (channels != 1 && channels != 2)
-			throw 'createClip takes 1 or 2 channels, not $channels';
+	public function createClip(samples:Bytes, channelCount:Int):Int {
+		if (channelCount != 1 && channelCount != 2)
+			throw 'createClip takes 1 or 2 channels, not $channelCount';
 		sounds.set(next, "clip");
 		return next++;
 	}
@@ -94,15 +94,15 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 		return streamDuration;
 
 	/** Returns `streamChannels`. */
-	public function getStreamChannels(stream:Int):Int
+	public function getStreamChannelCount(stream:Int):Int
 		return streamChannels;
 
-	public function createQueue(channels:Int, sampleRate:Int):Int {
-		if (channels != 1 && channels != 2 || sampleRate < 8000 || sampleRate > 96000)
-			throw 'createQueue: $channels channels at $sampleRate';
+	public function createQueue(channelCount:Int, sampleRate:Int):Int {
+		if (channelCount != 1 && channelCount != 2 || sampleRate < 8000 || sampleRate > 96000)
+			throw 'createQueue: $channelCount channels at $sampleRate';
 		sounds.set(next, "queue");
 		queued.set(next, 0);
-		queueChannels.set(next, channels);
+		queueChannels.set(next, channelCount);
 		return next++;
 	}
 
@@ -113,7 +113,7 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 		queued.set(queue, queued.get(queue) + Std.int(samples.length / (4 * queueChannels.get(queue))));
 	}
 
-	public function getQueuedFrames(queue:Int):Int {
+	public function getQueuedFrameCount(queue:Int):Int {
 		if (!queued.exists(queue))
 			throw 'unknown queue $queue';
 		return queued.get(queue);

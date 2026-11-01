@@ -194,7 +194,7 @@ class Ray3D {
 
 		@param mesh  The mesh.
 		@param transform  Optional. Where the mesh is: its positions are moved by it. Omitted, they are as they are.
-		@param out  Optional. Set to the hit; its `triangle` says which, counted in the order the indices (or the vertices) give them.
+		@param out  Optional. Set to the hit; its `triangleIndex` says which, counted in the order the indices (or the vertices) give them.
 		@return  The nearest hit; null when it meets none. */
 	public function intersectMesh(mesh:Mesh3D, ?transform:Matrix3D, ?out:RayHit3D):Null<RayHit3D> {
 		var p = mesh.positions,
@@ -281,7 +281,7 @@ class Ray3D {
 		out.distance = t;
 		computePoint(t, out.point);
 		out.normal.set(nx, ny, nz);
-		out.triangle = triangle;
+		out.triangleIndex = triangle;
 		return out;
 	}
 }

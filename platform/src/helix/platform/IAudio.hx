@@ -30,10 +30,10 @@ interface IAudio extends IPollable {
 
 		A partial frame at the end is ignored.
 		@param samples  32-bit float PCM at 44100 Hz, -1 to 1, interleaved when stereo.
-		@param channels  The channels, 1 (mono) or 2 (stereo).
+		@param channelCount  The channels, 1 (mono) or 2 (stereo).
 		@return  The clip's id.
 		@throws String  When channels isn't 1 or 2, the samples hold no whole frame, or there is no room for the clip. */
-	function createClip(samples:Bytes, channels:Int):Int;
+	function createClip(samples:Bytes, channelCount:Int):Int;
 
 	/** Disposes a clip and stops its voices.
 
@@ -74,17 +74,17 @@ interface IAudio extends IPollable {
 		@return  1 (mono) or 2 (stereo); a file of more plays as stereo. 0 when it can't tell: in a page, where a stream's channels are
 			read from its file's first bytes (helix-formats' `AudioHeader`), a kind it doesn't read or a fetch that failed.
 		@throws String  For an unknown stream. */
-	function getStreamChannels(stream:Int):Int;
+	function getStreamChannelCount(stream:Int):Int;
 
 	/** Creates a queue, which plays samples given to it as it goes.
 
 		Samples are added with `queueSamples` and played by `playQueue`, back to back without a gap while they are added ahead of what is
 		heard. The platform resamples them to the output's rate.
-		@param channels  The channels, 1 (mono) or 2 (stereo).
+		@param channelCount  The channels, 1 (mono) or 2 (stereo).
 		@param sampleRate  The samples' rate in frames a second, 8000 to 96000.
 		@return  The queue's id.
 		@throws String  When channels or sampleRate is out of range. */
-	function createQueue(channels:Int, sampleRate:Int):Int;
+	function createQueue(channelCount:Int, sampleRate:Int):Int;
 
 	/** Adds samples to the end of a queue.
 
@@ -99,7 +99,7 @@ interface IAudio extends IPollable {
 		@param queue  The queue.
 		@return  The frames queued and not yet played.
 		@throws String  For an unknown queue. */
-	function getQueuedFrames(queue:Int):Int;
+	function getQueuedFrameCount(queue:Int):Int;
 
 	/** Disposes a queue and stops its voice.
 

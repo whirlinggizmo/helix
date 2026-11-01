@@ -232,7 +232,7 @@ class DomWindowAdapter implements IWindow {
 	public function requestMaximumSize(width:Int, height:Int):Bool
 		return false;
 
-	public function getMonitorRefreshRate(index:Int):Float
+	public function getMonitorRefreshRate(monitorIndex:Int):Float
 		return 0;
 
 	public var visible(get, never):Bool;
@@ -255,28 +255,28 @@ class DomWindowAdapter implements IWindow {
 	function get_monitorIndex():Int
 		return 0;
 
-	public function requestMonitorIndex(index:Int):Bool
+	public function requestMonitorIndex(monitorIndex:Int):Bool
 		return false;
 
-	public function getMonitorName(index:Int):String
-		return index == 0 ? "screen" : "";
+	public function getMonitorName(monitorIndex:Int):String
+		return monitorIndex == 0 ? "screen" : "";
 
-	public function getMonitorX(index:Int):Int
+	public function getMonitorX(monitorIndex:Int):Int
 		return 0;
 
-	public function getMonitorY(index:Int):Int
+	public function getMonitorY(monitorIndex:Int):Int
 		return 0;
 
-	public function getMonitorWidth(index:Int):Int
-		return index == 0 ? Browser.window.screen.width : 0;
+	public function getMonitorWidth(monitorIndex:Int):Int
+		return monitorIndex == 0 ? Browser.window.screen.width : 0;
 
-	public function getMonitorHeight(index:Int):Int
-		return index == 0 ? Browser.window.screen.height : 0;
+	public function getMonitorHeight(monitorIndex:Int):Int
+		return monitorIndex == 0 ? Browser.window.screen.height : 0;
 
-	public function readDroppedFile(index:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void {
-		var file = DomPage.dropped[index];
-		if (index < 0 || file == null) {
-			js.Browser.window.setTimeout(() -> failed('No dropped file $index'), 0);
+	public function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void {
+		var file = DomPage.dropped[fileIndex];
+		if (fileIndex < 0 || file == null) {
+			js.Browser.window.setTimeout(() -> failed('No dropped file $fileIndex'), 0);
 			return;
 		}
 		if (file.size > maxBytes) {

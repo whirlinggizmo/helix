@@ -13,7 +13,7 @@ import helix.platform.IAudio;
 	queue.queueSamples(tone);
 	var voice = queue.play(effects);
 	// each frame, while fewer than a buffer's frames wait:
-	if (queue.queuedFrames < 4096)
+	if (queue.queuedFrameCount < 4096)
 		queue.queueSamples(more());
 	``` */
 @:allow(helix.services.audio)
@@ -45,10 +45,10 @@ class SampleQueue {
 	}
 
 	/** Gets how many frames the queue holds that haven't been heard yet; 0 once it is disposed. */
-	public var queuedFrames(get, never):Int;
+	public var queuedFrameCount(get, never):Int;
 
-	function get_queuedFrames():Int {
-		return disposed ? 0 : output.getQueuedFrames(id);
+	function get_queuedFrameCount():Int {
+		return disposed ? 0 : output.getQueuedFrameCount(id);
 	}
 
 	/** Starts the queue playing what it holds and what is added to it.

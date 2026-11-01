@@ -40,7 +40,7 @@ class CurveTests {
 
 		// A polyline: on its points, straight between, its length the sum.
 		var line = Curve.polyline([0, 0, 10, 0, 10, 5]);
-		check(line.pointCount == 3 && line.dimensions == 2 && !line.closed && line.kind == Polyline, "A polyline of three points");
+		check(line.pointCount == 3 && line.dimensionCount == 2 && !line.closed && line.kind == Polyline, "A polyline of three points");
 		check(line.getX(0) == 0 && line.getX(.5) == 10 && line.getY(.5) == 0 && line.getX(1) == 10 && line.getY(1) == 5, "At its points at the segments' ends");
 		check(line.getX(.25) == 5 && near(line.getY(.75), 2.5), "Straight between them");
 		check(near(line.length, 15), "Its length is the sum of its pieces");
@@ -85,7 +85,7 @@ class CurveTests {
 
 		// 3D.
 		var rise = Curve.polyline([0, 0, 0, 0, 0, 10], 3);
-		check(rise.dimensions == 3 && near(rise.getZ(.5), 5) && near(rise.length, 10) && rise.computeTangent(.5)[2] == 1, "A 3D curve has z");
+		check(rise.dimensionCount == 3 && near(rise.getZ(.5), 5) && near(rise.length, 10) && rise.computeTangent(.5)[2] == 1, "A 3D curve has z");
 		var given = [], out = rise.computePosition(.3, given);
 		check(out == given && out.length == 3 && near(out[2], 3) && rise.computePosition(.3).length == 3,
 			"a position fills every axis, into the array given or a new one");

@@ -41,7 +41,7 @@ class Animations {
 						return;
 					if (error == null)
 						try
-							file.setBuffer(m.index, Runtime.files.get(m.path))
+							file.setBuffer(m.bufferIndex, Runtime.files.get(m.path))
 						catch (e:Dynamic)
 							error = '$path: $e';
 					if (error != null) {
@@ -63,20 +63,20 @@ class Animations {
 		@return  Each mesh's joint, or -1. */
 	public static function attached(file:GltfFile):Array<Int> {
 		var nodes = file.nodes, meshes = file.meshes, out = [];
-		var joints = file.skins.length > 0 ? file.skins[0].joints : [];
+		var joints = file.skins.length > 0 ? file.skins[0].jointIndices : [];
 		var parents = parentsOf(file);
 		function visit(index:Int):Void {
 			var node = nodes[index];
-			if (node.mesh >= 0)
-				for (p in meshes[node.mesh].primitives)
+			if (node.meshIndex >= 0)
+				for (p in meshes[node.meshIndex].primitives)
 					if (p.mode == 4) {
 						var parent = parents.get(index);
-						out.push(p.joints == null && parent != null && nodes[parent].mesh < 0 ? joints.indexOf(parent) : -1);
+						out.push(p.jointIndices == null && parent != null && nodes[parent].meshIndex < 0 ? joints.indexOf(parent) : -1);
 					}
-			for (child in node.children)
+			for (child in node.childIndices)
 				visit(child);
 		}
-		for (root in file.scene)
+		for (root in file.sceneNodeIndices)
 			visit(root);
 		return out;
 	}
@@ -84,7 +84,7 @@ class Animations {
 	static function parentsOf(file:GltfFile):Map<Int, Int> {
 		var parents = new Map<Int, Int>();
 		for (i => node in file.nodes)
-			for (child in node.children)
+			for (child in node.childIndices)
 				parents.set(child, i);
 		return parents;
 	}
@@ -123,7 +123,7 @@ class Animations {
 		if (skins.length == 0)
 			return [];
 		var nodes = file.nodes, parents = parentsOf(file);
-		var joints = skins[0].joints, jointCount = joints.length;
+		var joints = skins[0].jointIndices, jointCount = joints.length;
 		// Per joint, the static transform of the nodes between it and its nearest joint ancestor that aren't joints.
 		var extOffset = [
 			for (k in 0...jointCount) {
@@ -152,20 +152,20 @@ class Animations {
 				scale = translate.copy();
 			var animDuration = 0.;
 			for (j => channel in data.channels) {
-				var boneIndex = channel.node < 0 ? -1 : joints.indexOf(channel.node);
-				if (boneIndex == -1 || channel.sampler < 0 || channel.sampler >= data.samplers.length)
+				var boneIndex = channel.nodeIndex < 0 ? -1 : joints.indexOf(channel.nodeIndex);
+				if (boneIndex == -1 || channel.samplerIndex < 0 || channel.samplerIndex >= data.samplers.length)
 					continue;
 				switch channel.path {
 					case "translation":
-						translate[boneIndex] = channel.sampler;
+						translate[boneIndex] = channel.samplerIndex;
 					case "rotation":
-						rotate[boneIndex] = channel.sampler;
+						rotate[boneIndex] = channel.samplerIndex;
 					case "scale":
-						scale[boneIndex] = channel.sampler;
+						scale[boneIndex] = channel.samplerIndex;
 					case _:
 						Runtime.log(4, 'MODEL: [$path] Unsupported target_path on channel $j\'s sampler for animation $a. Skipping.');
 				}
-				var input = data.samplers[channel.sampler].input;
+				var input = data.samplers[channel.samplerIndex].input;
 				if (input.length == 0) {
 					Runtime.log(4, 'MODEL: [$path] Failed to load input time');
 					continue;

@@ -277,14 +277,14 @@ var x = rail.getX(t), y = rail.getY(t);
 ```
 
 ```haxe
-static function through(points:Array<Float>, ?dimensions:Int = 2, ?closed:Bool = false):Curve
-static function bezier(points:Array<Float>, ?dimensions:Int = 2):Curve
-static function polyline(points:Array<Float>, ?dimensions:Int = 2, ?closed:Bool = false):Curve
+static function through(points:Array<Float>, ?dimensionCount:Int = 2, ?closed:Bool = false):Curve
+static function bezier(points:Array<Float>, ?dimensionCount:Int = 2):Curve
+static function polyline(points:Array<Float>, ?dimensionCount:Int = 2, ?closed:Bool = false):Curve
 var kind(default, null):CurveKind
-var dimensions(default, null):Int
+var dimensionCount(default, null):Int
 var closed(default, null):Bool
 var pointCount(get, never):Int
-function getPoint(index:Int, axis:Int):Float
+function getPoint(pointIndex:Int, axis:Int):Float
 function getX(t:Float):Float
 function getY(t:Float):Float
 function getZ(t:Float):Float
@@ -296,7 +296,7 @@ function getParameterAtDistance(distance:Float):Float
 
 - `through`: Returns a curve that passes smoothly through every point in order.
   - `points`: The points, flat: x, y or x, y, z each.
-  - `dimensions`: Optional. 2 or 3; defaults to 2.
+  - `dimensionCount`: Optional. 2 or 3; defaults to 2.
   - `closed`: Optional. Whether it comes back to the first point; defaults to false.
   - returns: The curve.
   - throws `String`: Fewer than 2 points, or a count of numbers that dimensions doesn't divide.
@@ -304,21 +304,21 @@ function getParameterAtDistance(distance:Float):Float
   It is a centripetal Catmull-Rom spline, which makes no loops or kinks between unevenly spaced points.
 - `bezier`: Returns a curve of joined cubic Bézier pieces.
   - `points`: The first point, then three for each piece: two control points and the piece's end. Flat: x, y or x, y, z each.
-  - `dimensions`: Optional. 2 or 3; defaults to 2.
+  - `dimensionCount`: Optional. 2 or 3; defaults to 2.
   - returns: The curve.
   - throws `String`: A point count other than 4, 7, 10 and so on.
 - `polyline`: Returns a curve straight from point to point.
   - `points`: The points, flat: x, y or x, y, z each.
-  - `dimensions`: Optional. 2 or 3; defaults to 2.
+  - `dimensionCount`: Optional. 2 or 3; defaults to 2.
   - `closed`: Optional. Whether it comes back to the first point; defaults to false.
   - returns: The curve.
   - throws `String`: Fewer than 2 points, or a count of numbers that dimensions doesn't divide.
 - `kind`: Gets how the curve passes its points.
-- `dimensions`: Gets the number of dimensions: 2 or 3.
+- `dimensionCount`: Gets the number of dimensions: 2 or 3.
 - `closed`: Gets a value indicating whether the curve comes back to its start.
 - `pointCount`: Gets the number of points the curve was made with.
 - `getPoint`: Returns one coordinate of one of the points the curve was made with.
-  - `index`: The point's index.
+  - `pointIndex`: The point's index.
   - `axis`: The axis: 0 for x, 1 for y, 2 for z.
   - returns: The coordinate, or 0 for an index or axis out of range.
 - `getX`: Returns the x coordinate at a parameter.

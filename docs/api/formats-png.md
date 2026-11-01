@@ -15,14 +15,14 @@ var png = PngFile.write(64, 32, 4, pixels);
 ```
 
 ```haxe
-static function write(width:Int, height:Int, channels:Int, pixels:haxe.io.Bytes):haxe.io.Bytes
+static function write(width:Int, height:Int, channelCount:Int, pixels:haxe.io.Bytes):haxe.io.Bytes
 ```
 
 - `write`: Writes pixels as a PNG file.
   - `width`: The image's width, in pixels.
   - `height`: The image's height, in pixels.
-  - `channels`: The channels a pixel has, 1 to 4, a byte each.
-  - `pixels`: The pixels, rows top first, each `width * channels` bytes.
+  - `channelCount`: The channels a pixel has, 1 to 4, a byte each.
+  - `pixels`: The pixels, rows top first, each `width * channelCount` bytes.
   - returns: The PNG file.
   - throws `String`: The width or height is under 1, the channels are outside 1 to 4, or there are fewer pixels than the size needs.
 

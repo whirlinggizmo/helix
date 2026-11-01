@@ -24,10 +24,10 @@ import helix.formats.gltf.GltfFile;
 
 var model = GltfFile.read(bytes, "models/ship.gltf");
 for (missing in model.missingBuffers)
-	model.setBuffer(missing.index, fetched(missing.path));
+	model.setBuffer(missing.bufferIndex, fetched(missing.path));
 for (mesh in model.meshes)
 	for (primitive in mesh.primitives)
-		trace(primitive.positions.length / 3, primitive.material);
+		trace(primitive.positions.length / 3, primitive.materialIndex);
 ```
 
 ## Using it

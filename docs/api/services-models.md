@@ -11,8 +11,8 @@ Represents a model as `Models` reads it: its meshes, with their nodes' transform
 ```haxe
 final path:String
 final meshes:Array<Mesh3D>
-final meshMaterials:Array<Int>
-final meshSkins:Array<Int>
+final meshMaterialIndices:Array<Int>
+final meshSkinIndices:Array<Int>
 final meshTransforms:Array<Matrix3D>
 final skeleton:Null<Skeleton3D>
 final skins:Array<Skin3D>
@@ -23,9 +23,9 @@ function findAnimation(name:String):Int
 ```
 
 - `path`: Gets the file it was read from, as the assets name it.
-- `meshes`: Gets the meshes, each node's triangles in the scene's order: its transform in their positions, normals and tangents, but for a skinned mesh's (`meshSkins`), whose vertices are as the file gives them, in the space its skin binds them in, as glTF has it.
-- `meshMaterials`: Gets each mesh's material, by its index in `materials`, beside it in `meshes`; -1 for none.
-- `meshSkins`: Gets each mesh's skin, by its index in `skins`, beside it in `meshes`; -1 for a mesh without one.
+- `meshes`: Gets the meshes, each node's triangles in the scene's order: its transform in their positions, normals and tangents, but for a skinned mesh's (`meshSkinIndices`), whose vertices are as the file gives them, in the space its skin binds them in, as glTF has it.
+- `meshMaterialIndices`: Gets the index of each mesh's material in `materials`, beside it in `meshes`; -1 for none.
+- `meshSkinIndices`: Gets the index of each mesh's skin in `skins`, beside it in `meshes`; -1 for a mesh without one.
 - `meshTransforms`: Gets each mesh's node's transform in the model, beside it in `meshes`. A mesh without a skin has it in its vertices already; a skinned one hasn't, and doesn't need it: its skin's matrices put it in the model. It is kept for an engine that places skinned meshes by their nodes anyway, as raylib does.
 - `skeleton`: Gets the skeleton its skinned meshes follow: every node any of the file's skins names as a joint, and the nodes above them, each a bone (its node's name, its parent, its node's own transform at rest), parents first; null for a model without skins.
 - `skins`: Gets the skins, as the file has them, their bones the skeleton's.
