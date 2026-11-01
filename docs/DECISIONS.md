@@ -195,3 +195,9 @@ Why things are the way they are, numbered, in order.
     reader of a mesh knows; a number of bytes is a size, named for its unit (`capacityBytes`); a handle, an id or a slot keeps its own
     noun. helix-ray's raylib types keep raylib's names (`Model.meshMaterial`, `BoneInfo.parent`). `tools/check_names.py` holds each
     field and parameter whose doc comment calls it an index or a number of things to the rule, reading Haxe's XML description.
+
+27. **helix-ray reads glTF, GLB and OBJ models, and not IQM, VOX or M3D.** raylib's `LoadModel` also reads Inter-Quake Models, MagicaVoxel
+    files and Model 3D files, and `LoadModelAnimations` IQM's and M3D's animations. They are rare beside glTF and OBJ: the tools that
+    make models export glTF and OBJ, and a program that has an IQM, VOX or M3D file can convert it, where each format kept would be a
+    reader to write, check against raylib's C and carry. `LoadModelAsync` refuses a file of one of them with a message saying it isn't
+    supported and naming the formats that are, so an agent learns it at once rather than meeting a model with no meshes.

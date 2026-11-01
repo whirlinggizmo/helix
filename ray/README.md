@@ -14,12 +14,13 @@ The window and frame, the keyboard, mouse, touch and gamepads, text input, shape
 font and TrueType and OpenType fonts (signed distance fields too), sounds and their aliases, waves (loaded, converted, cropped and
 exported as raylib's are), music with its length, position and seeking, audio streams fed by the program or its callback, text files; images on the CPU in raylib's uncompressed pixel
 formats (made, changed and drawn into as raylib's are, byte for byte, but for resizing; with 6.2's fixes), exported as PNG or QOI, and screenshots; in 3D
-the camera, glTF and GLB models and their materials (as raylib 6.2 reads them: its metallic-roughness image split into roughness and metalness maps), skinned models and their animations (read, mixed between frames and between animations, and skinned
+the camera, glTF and GLB models and their materials (as raylib 6.2 reads them: its metallic-roughness image split into roughness and metalness maps), OBJ models
+and the .mtl materials they name, as raylib 6.2's `LoadOBJ` and `LoadMaterials` make them (`LoadMaterialsAsync` in place of `LoadMaterials`), skinned models and their animations (read, mixed between frames and between animations, and skinned
 on the CPU or by a skinning shader, as raylib 6.2 does), raylib's shapes and billboards (its vertices, in its order), its generated meshes (vertex for vertex,
 the same on every target), tangents, mesh buffers updated and meshes exported, render textures, rays and their collisions; raylib's
 shaders, compiled as the program builds for every target; rlgl's render state (culling, depth, wire mode, viewport, scissor) and its
-batch, flushed as raylib's is; automation events, recorded and played as raylib's, and raylib's random numbers for a seed. Not here
-yet: materials loaded from .mtl files (`LoadMaterials`), IQM and M3D animations, morph targets, models drawn as points, animated (GIF) and compressed images, and
+batch, flushed as raylib's is; automation events, recorded and played as raylib's, and raylib's random numbers for a seed. IQM, VOX and M3D models
+and animations aren't read (docs/DECISIONS.md 27). Not here yet: morph targets, models drawn as points, animated (GIF) and compressed images, and
 updating a texture's pixels.
 
 ## Using it
@@ -50,6 +51,19 @@ more than once shares its textures and GPU buffers, each load holding them, unti
 texture once, at `UnloadModel`. Where it differs: a texture or shader copied out of a material and used after its model is unloaded is
 freed (raylib's leaks and still works), a material or mesh shared between models works (raylib's C frees it twice), and a texture or
 shader given to a material and never unloaded stays while the program runs.
+
+## OBJ models
+
+`LoadModelAsync` reads an OBJ file as raylib's `LoadOBJ` reads it with tinyobj_loader_c, its quirks kept: a mesh for each group and at
+each change of material, faces before any `usemtl` joining the next material's mesh, a `usemtl` naming no material of the library given
+material 0, vertices unindexed, every vertex's color white, the library the file's last `mtllib` line's. Where it reads a file
+differently, helix-formats' `ObjFile` and `MtlFile` decide: a file naming a position, texture coordinate or normal it doesn't have, or
+that isn't UTF-8, fails to load (raylib's reads zeros, or out of its arrays); a face of more than five corners is read (raylib's reader
+breaks on one), one of fewer than three left out where tinyobj_loader_c counts it among a group's faces; a `#` after a statement starts a
+comment; a group is started only where the group or object changes, not at each `g` line; several libraries on one `mtllib` line are
+read as names of their own, of which the last is used; and in an .mtl file, a texture's path is resolved against the file's directory,
+its options (`-s`, `-bm` and the rest) are read past, `map_Bump` is a bump texture, `d` wins over `Tr`, a name is the rest of its
+line, and a material without `Kd` is white and one without `Ns` has an exponent of 0 (raylib's black and 1).
 
 ## Examples
 

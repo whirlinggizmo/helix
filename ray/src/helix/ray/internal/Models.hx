@@ -8,7 +8,8 @@ import helix.services.models.Model3D;
 import helix.ray.raylib.RMath;
 import helix.ray.raylib.RModels;
 
-/** Makes raylib's meshes and models: a mesh's GPU buffers, and a model from what the models service read of a glTF file. */
+/** Makes raylib's meshes and models: a mesh's GPU buffers, and a model from what the models service read of a glTF file, or from an
+	OBJ file's meshes and materials (`ObjModels`). */
 @:noCompletion
 class Models {
 	/** Each of raylib's vertex buffers, by its index: the size of an element and its default, for a mesh without the attribute. A default
@@ -461,8 +462,15 @@ class Models {
 		return material;
 	}
 
-	// Gives a map the texture kept by a key, made of an image when no load holds it: the map holds it, the making's hold let go.
-	static function give(map:MaterialMap, key:String, image:Void->helix.services.images.Image, width:Int, height:Int, format:Int):Void {
+	/** Gives a map the texture kept by a key, made of an image when no load holds it: the map holds it, the making's hold let go.
+
+		@param map  The map.
+		@param key  The texture's key: its file, or a key of its own.
+		@param image  Returns its pixels, asked for only when no load holds it.
+		@param width  Its width, in pixels.
+		@param height  Its height, in pixels.
+		@param format  Its pixel format, as raylib numbers them. */
+	public static function give(map:MaterialMap, key:String, image:Void->helix.services.images.Image, width:Int, height:Int, format:Int):Void {
 		var id = Textures.fromImage(key, Textures.hasPath(key) ? null : image());
 		map.texture = new Texture2D(id, width, height, 1, format);
 		Textures.releaseHeld(id);
@@ -472,8 +480,11 @@ class Models {
 	static function byteColor(factor:Array<Float>, alpha:Int):Color
 		return new Color(byte(factor[0]), byte(factor[1]), byte(factor[2]), alpha);
 
-	// raylib's (unsigned char)(f*255): f a float, the product a float, cut toward zero.
-	static function byte(f:Float):Int
+	/** Returns raylib's (unsigned char)(f*255): f a float, the product a float, cut toward zero, kept to a byte.
+
+		@param f  The value, usually 0 to 1.
+		@return  The byte. */
+	public static function byte(f:Float):Int
 		return Std.int(Pixels.f32(Pixels.f32(f) * 255)) & 255;
 
 	// raylib 6.2's LoadGLTF's skin part: the first skin's joints as the bones, each parent the nearest joint above it; the bind pose each
@@ -572,9 +583,24 @@ class Models {
 	public static function keep(read:Model3D, shader:Shader, ?attached:Array<Int>):Void {
 		if (!loaded.exists(read.path))
 			loaded.set(read.path, {
-				read: read,
-				shader: shader,
 				template: templateOf(read, attached),
+				materials: () -> materialsOf(read, shader),
+				loads: 0
+			});
+	}
+
+	/** Keeps a file's model made elsewhere (an OBJ file's, `ObjModels`), so its loads share it, unless it is kept already: its meshes,
+		made once, each with a holder of GPU buffers its loads share (holders 0), and what makes each load's materials. It holds no count
+		on anything, and stays while any load of the file lives (`release`).
+
+		@param path  The file.
+		@param template  The model: its meshes and meshMaterial, its materials none.
+		@param materials  Returns a load's materials, each held once, as made. */
+	public static function keepMade(path:String, template:Model, materials:Void->Array<Material>):Void {
+		if (!loaded.exists(path))
+			loaded.set(path, {
+				template: template,
+				materials: materials,
 				loads: 0
 			});
 	}
@@ -587,9 +613,8 @@ class Models {
 		return loaded.exists(path);
 
 	static final loaded = new Map<String, {
-		read:Model3D,
-		shader:Shader,
 		template:Model,
+		materials:Void->Array<Material>,
 		loads:Int
 	}>();
 
@@ -606,7 +631,7 @@ class Models {
 		entry.loads++;
 		var template = entry.template;
 		var meshes = [for (m in template.meshes) copyMesh(m)];
-		var materials = materialsOf(entry.read, entry.shader);
+		var materials = entry.materials();
 		var model = new Model(meshes, materials, template.meshMaterial.copy());
 		disown(meshes, materials);
 		model.path = path;

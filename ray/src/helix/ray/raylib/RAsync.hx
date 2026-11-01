@@ -7,6 +7,9 @@ import helix.math.Matrix3D;
 import helix.ray.internal.DefaultFont;
 import helix.ray.internal.Animations;
 import helix.ray.internal.Models;
+import helix.ray.internal.ObjModels;
+import helix.formats.obj.MtlFile;
+import helix.formats.obj.ObjFile;
 import helix.ray.internal.Runtime;
 import helix.ray.internal.Textures;
 import helix.ray.internal.CallbackFiles;
@@ -40,20 +43,43 @@ class RAsync {
 		Runtime.fetch(path, error -> error == null ? loaded(RTextures.loadTexture(path)) : refuse("LoadTextureAsync", error, failed));
 	}
 
-	/** Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own,
-		in place of raylib's `LoadModel`. A file loaded again, while a load of it lives, shares its meshes' GPU buffers and its textures, with materials of its own.
+	/** Loads a model from a glTF, GLB or OBJ file, with the files it points to (a glTF file's images and buffers, an OBJ file's material
+		library and its textures), answering when it is ready: helix-ray's own, in place of raylib's `LoadModel`. A file loaded again,
+		while a load of it lives, shares its meshes' GPU buffers and its textures, with materials of its own.
+
+		An OBJ file is read as raylib 6.2's `LoadOBJ` reads it: its polygons split into fans of triangles; a mesh for each of the file's
+		groups and objects, and a new one where a face's material differs from the face before's, unless that face had none (faces
+		before any `usemtl` join the next material's mesh), its vertices its triangles' corners, unindexed; a corner without a normal
+		given (0, 1, 0), and one without texture coordinates (0, 0), the others' v turned (1 - v); every vertex's color white, whatever
+		colors the file gives; each mesh's material its last face's, or 0 when that is no material of the library. Its materials are the
+		library's, read as `LoadMaterialsAsync` reads them, of the file's last `mtllib` line, its textures resolved against the
+		library's directory; with no library, or one that can't be read (logged), the model has raylib's default material alone. raylib
+		counts the start of each group in the file's faces against the triangles it has made, so a polygon before a group moves the
+		group's first mesh back by a triangle; helix-ray does too. Unlike raylib's, an OBJ file a corner of which names a position,
+		texture coordinate or normal the file doesn't have, or which isn't UTF-8 text, fails to load, and a face of more than 5 corners is
+		read (raylib's reader breaks on one). IQM, VOX and M3D models aren't read (docs/DECISIONS.md 27).
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the model.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	static function LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName), lower = path.toLowerCase();
-		if (!(StringTools.endsWith(lower, ".glb") || StringTools.endsWith(lower, ".gltf"))) {
-			Runtime.later(() -> refuse("LoadModelAsync", '$path: only glTF and GLB are read here', failed));
+		var extension = lower.lastIndexOf(".") >= 0 ? lower.substr(lower.lastIndexOf(".")) : "";
+		if (extension == ".iqm" || extension == ".vox" || extension == ".m3d") {
+			Runtime.later(() -> refuse("LoadModelAsync", '$path: ${extension.substr(1).toUpperCase()} models are not supported; glTF, GLB and OBJ are',
+				failed));
+			return;
+		}
+		if (extension != ".glb" && extension != ".gltf" && extension != ".obj") {
+			Runtime.later(() -> refuse("LoadModelAsync", '$path: only glTF, GLB and OBJ are read here', failed));
 			return;
 		}
 		if (Models.isKept(path)) {
 			Runtime.later(() -> loaded(RModels.loadModel(path)));
+			return;
+		}
+		if (extension == ".obj") {
+			loadObj(path, loaded, failed);
 			return;
 		}
 		Runtime.loading();
@@ -71,15 +97,105 @@ class RAsync {
 		}, error -> refuse("LoadModelAsync", error, failed));
 	}
 
+	// An OBJ file, the last library its mtllib lines name (one that can't be read logged and left out) and that library's textures (one that
+	// can't be, logged and left none), then its model kept for its loads.
+	static function loadObj(path:String, loaded:Model->Void, failed:Null<String->Void>):Void {
+		Runtime.fetch(path, error -> {
+			if (error != null) {
+				refuse("LoadModelAsync", error, failed);
+				return;
+			}
+			var obj = try ObjFile.read(Runtime.files.get(path), path) catch (e:String) {
+				refuse("LoadModelAsync", '$path: $e', failed);
+				return;
+			}
+			function made(library:Null<MtlFile>):Void
+				withTextures(library, () -> {
+					var shader = defaultShader();
+					Models.keepMade(path, ObjModels.template(obj, library), library != null && library.materials.length > 0 ? () ->
+						ObjModels.materials(library, shader) : () -> [Models.defaultMaterial(shader)]);
+					loaded(RModels.loadModel(path));
+				});
+			var libraryPath = ObjModels.libraryPath(obj);
+			if (libraryPath == null)
+				made(null);
+			else
+				readLibrary(libraryPath, made, message -> {
+					Runtime.log(4, 'MODEL: [$path] $message');
+					made(null);
+				});
+		});
+	}
+
+	// An MTL file read, or why it couldn't be.
+	static function readLibrary(path:String, done:MtlFile->Void, failed:String->Void):Void {
+		Runtime.fetch(path, error -> {
+			if (error != null) {
+				failed(error);
+				return;
+			}
+			var library = try MtlFile.read(Runtime.files.get(path), path) catch (e:String) {
+				failed('$path: $e');
+				return;
+			}
+			done(library);
+		});
+	}
+
+	// Each texture a library's materials name brought in (one that can't be, logged), then done.
+	static function withTextures(library:Null<MtlFile>, done:Void->Void):Void {
+		var paths = ObjModels.texturePaths(library), left = paths.length + 1;
+		function one():Void
+			if (--left == 0)
+				done();
+		for (p in paths)
+			Runtime.fetch(p, error -> {
+				if (error != null)
+					Runtime.log(4, 'TEXTURE: $error');
+				one();
+			});
+		one();
+	}
+
+	/** Loads the materials of an .mtl file, with the textures they name, answering when they are ready: helix-ray's own, in place of
+		raylib's `LoadMaterials`. Each is made as raylib's `ProcessMaterialsOBJ` makes it: raylib's default material, then its diffuse
+		texture (`map_Kd`), or with none its diffuse color (`Kd`, alpha 255); its specular texture (`map_Ks`) and color (`Ks`); the
+		normal map its bump texture (`bump` or `map_bump`), white, its value the specular exponent (`Ns`); its emission color (`Ke`); the
+		height map its displacement texture (`disp`). A texture that can't be read is none (id 0, logged). The program holds each
+		material until `UnloadMaterial`. Where raylib's differ: a texture's path is resolved against the file's directory (raylib's
+		against the working directory), a texture line's options (`-s`, `-bm` and the rest) are read past (raylib takes them as the
+		file's name), `map_Bump` is a bump texture too, and a material that gives no `Kd` or `Ns` is white with a specular exponent of 0
+		(raylib's black and 1).
+
+		@param fileName  The file, as the program names it: an .mtl file.
+		@param loaded  Receives the materials, in the file's order; their count is its length.
+		@param failed  Optional. Receives why they couldn't be loaded (the file isn't an .mtl file, can't be found or can't be read); when
+			omitted, it is logged. */
+	static function LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void):Void {
+		var path = normalize(fileName);
+		if (!StringTools.endsWith(path.toLowerCase(), ".mtl")) {
+			Runtime.later(() -> refuse("LoadMaterialsAsync", '$path: only .mtl files are read here', failed));
+			return;
+		}
+		readLibrary(path, library -> withTextures(library, () -> loaded(ObjModels.materials(library, defaultShader()))),
+			error -> refuse("LoadMaterialsAsync", error, failed));
+	}
+
 	/** Loads a glTF or GLB file's animations, answering when they are read: helix-ray's own, in place of raylib's
 		`LoadModelAnimations`. They are read as raylib 6.2 reads them, of the file's first skin: each sampled 60 times a second, with
-		(int)(duration * 60) + 1 frames, each frame's pose its bones' transforms in the model. A file without skins gives none.
+		(int)(duration * 60) + 1 frames, each frame's pose its bones' transforms in the model. A file without skins gives none. IQM and M3D
+		animations aren't read (docs/DECISIONS.md 27).
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the animations, as many as the file has; their count is its length.
 		@param failed  Optional. Receives why they couldn't be loaded; when omitted, it is logged. */
 	static function LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName), lower = path.toLowerCase();
+		if (StringTools.endsWith(lower, ".iqm") || StringTools.endsWith(lower, ".m3d")) {
+			Runtime.later(() -> refuse("LoadModelAnimationsAsync", '$path: ${lower.substr(-3).toUpperCase()} animations are not supported; glTF and GLB are',
+				failed));
+			return;
+		}
 		if (!(StringTools.endsWith(lower, ".glb") || StringTools.endsWith(lower, ".gltf"))) {
 			Runtime.later(() -> refuse("LoadModelAnimationsAsync", '$path: only glTF and GLB are read here', failed));
 			return;

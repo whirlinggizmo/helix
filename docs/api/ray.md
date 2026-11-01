@@ -3958,6 +3958,7 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
 ```haxe
 static function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void, ?failed:String -> Void):Void
 static function LoadModelAsync(fileName:String, loaded:Model -> Void, ?failed:String -> Void):Void
+static function LoadMaterialsAsync(fileName:String, loaded:Array<Material> -> Void, ?failed:String -> Void):Void
 static function LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation> -> Void, ?failed:String -> Void):Void
 static function LoadSoundAsync(fileName:String, loaded:Sound -> Void, ?failed:String -> Void):Void
 static function LoadWaveAsync(fileName:String, loaded:Wave -> Void, ?failed:String -> Void):Void
@@ -3989,11 +3990,17 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the texture.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadModelAsync`: Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own, in place of raylib's `LoadModel`. A file loaded again, while a load of it lives, shares its meshes' GPU buffers and its textures, with materials of its own.
+- `LoadModelAsync`: Loads a model from a glTF, GLB or OBJ file, with the files it points to (a glTF file's images and buffers, an OBJ file's material library and its textures), answering when it is ready: helix-ray's own, in place of raylib's `LoadModel`. A file loaded again, while a load of it lives, shares its meshes' GPU buffers and its textures, with materials of its own.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the model.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadModelAnimationsAsync`: Loads a glTF or GLB file's animations, answering when they are read: helix-ray's own, in place of raylib's `LoadModelAnimations`. They are read as raylib 6.2 reads them, of the file's first skin: each sampled 60 times a second, with (int)(duration * 60) + 1 frames, each frame's pose its bones' transforms in the model. A file without skins gives none.
+
+  An OBJ file is read as raylib 6.2's `LoadOBJ` reads it: its polygons split into fans of triangles; a mesh for each of the file's groups and objects, and a new one where a face's material differs from the face before's, unless that face had none (faces before any `usemtl` join the next material's mesh), its vertices its triangles' corners, unindexed; a corner without a normal given (0, 1, 0), and one without texture coordinates (0, 0), the others' v turned (1 - v); every vertex's color white, whatever colors the file gives; each mesh's material its last face's, or 0 when that is no material of the library. Its materials are the library's, read as `LoadMaterialsAsync` reads them, of the file's last `mtllib` line, its textures resolved against the library's directory; with no library, or one that can't be read (logged), the model has raylib's default material alone. raylib counts the start of each group in the file's faces against the triangles it has made, so a polygon before a group moves the group's first mesh back by a triangle; helix-ray does too. Unlike raylib's, an OBJ file a corner of which names a position, texture coordinate or normal the file doesn't have, or which isn't UTF-8 text, fails to load, and a face of more than 5 corners is read (raylib's reader breaks on one). IQM, VOX and M3D models aren't read (docs/DECISIONS.md 27).
+- `LoadMaterialsAsync`: Loads the materials of an .mtl file, with the textures they name, answering when they are ready: helix-ray's own, in place of raylib's `LoadMaterials`. Each is made as raylib's `ProcessMaterialsOBJ` makes it: raylib's default material, then its diffuse texture (`map_Kd`), or with none its diffuse color (`Kd`, alpha 255); its specular texture (`map_Ks`) and color (`Ks`); the normal map its bump texture (`bump` or `map_bump`), white, its value the specular exponent (`Ns`); its emission color (`Ke`); the height map its displacement texture (`disp`). A texture that can't be read is none (id 0, logged). The program holds each material until `UnloadMaterial`. Where raylib's differ: a texture's path is resolved against the file's directory (raylib's against the working directory), a texture line's options (`-s`, `-bm` and the rest) are read past (raylib takes them as the file's name), `map_Bump` is a bump texture too, and a material that gives no `Kd` or `Ns` is white with a specular exponent of 0 (raylib's black and 1).
+  - `fileName`: The file, as the program names it: an .mtl file.
+  - `loaded`: Receives the materials, in the file's order; their count is its length.
+  - `failed`: Optional. Receives why they couldn't be loaded (the file isn't an .mtl file, can't be found or can't be read); when omitted, it is logged.
+- `LoadModelAnimationsAsync`: Loads a glTF or GLB file's animations, answering when they are read: helix-ray's own, in place of raylib's `LoadModelAnimations`. They are read as raylib 6.2 reads them, of the file's first skin: each sampled 60 times a second, with (int)(duration * 60) + 1 frames, each frame's pose its bones' transforms in the model. A file without skins gives none. IQM and M3D animations aren't read (docs/DECISIONS.md 27).
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the animations, as many as the file has; their count is its length.
   - `failed`: Optional. Receives why they couldn't be loaded; when omitted, it is logged.
@@ -4137,13 +4144,13 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
 
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
-`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `MemAlloc`, `MemRealloc`, `MemFree`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `MemAlloc`, `MemRealloc`, `MemFree`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadMaterials`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ### Not in helix-ray yet
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`, `LoadMaterials`.
+`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadTextureCubemap`, `UpdateTexture`, `UpdateTextureRec`, `GenTextureMipmaps`, `DrawModelPoints`, `DrawModelPointsEx`, `DrawMeshInstanced`.
 
 ## Raymath
 

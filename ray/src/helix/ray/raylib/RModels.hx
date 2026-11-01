@@ -688,7 +688,18 @@ class RModels {
 		throw "LoadModel is unimplemented";
 	}
 
-	// The model of a glTF or GLB file `LoadModelAsync` brought in: its meshes, their materials and its images. A file loaded again shares
+	/** raylib's material load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadMaterialsAsync`
+		loads them.
+
+		@param fileName  The file.
+		@param materialCount  Receives how many.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadMaterials: Synchronous loading is not supported. See LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void)")
+	static function LoadMaterials(fileName:String, materialCount:Array<Int>):Array<Material> {
+		throw "LoadMaterials is unimplemented";
+	}
+
+	// The model of a glTF, GLB or OBJ file `LoadModelAsync` brought in: its meshes, their materials and its images. A file loaded again shares
 	// its other loads' meshes' GPU buffers and textures while one lives, with materials of its own; meshes go to the GPU when first drawn.
 
 	static function loadModel(fileName:String):Model {

@@ -10,7 +10,9 @@ import helix.ray.internal.Textures;
 	replaced, a material unloaded before its model, a mesh LoadModelFromMesh takes over, two loads of one glTF file, and a texture copied
 	out of a map freed with its model, where raylib leaks it; two loads unloaded in either order, UnloadTexture on one load's texture
 	leaving the other's, a lone load's UnloadMaterial freeing its textures, a load after the last re-reading the file; a shader shared by
-	two models' materials, the program unloading it first and last. Nothing is freed while held, nothing twice, and nothing is left. */
+	two models' materials, the program unloading it first and last; two loads of an OBJ file sharing its textures and buffers, and an MTL
+	file's materials, held by the program, sharing a texture the program loaded; IQM, VOX and M3D files refused. Nothing is freed while held, nothing twice, and nothing
+	is left. */
 @:access(helix.ray.internal.Runtime)
 @:access(helix.ray.internal.Textures)
 @:access(helix.ray.Mesh)
@@ -105,7 +107,13 @@ class CountTests {
 		graphics = new CountingGraphics();
 		Runtime.graphics = graphics;
 		Runtime.frame = new Frame(graphics);
-		files = new MemoryFiles(["ship.gltf" => Bytes.ofString(ship())]);
+		files = new MemoryFiles([
+			"ship.gltf" => Bytes.ofString(ship()),
+			"hut.obj" => Bytes.ofString("mtllib hut.mtl\nv 0 0 0\nv 1 0 0\nv 0 1 0\nusemtl wood\nf 1 2 3\nusemtl roof\nf 1 3 2\n"),
+			"hut.mtl" => Bytes.ofString("newmtl wood\nKd 1 1 1\nNs 1\nmap_Kd wood.png\nmap_Ks wood.png\nbump bump.png\nnewmtl roof\nKd 1 0 0\nNs 1\n"),
+			"wood.png" => Bytes.ofString("any"),
+			"bump.png" => Bytes.ofString("any")
+		]);
 		var decoder = new SolidDecoder();
 		Runtime.polled.push(files);
 		Runtime.polled.push(decoder);
@@ -283,6 +291,58 @@ class CountTests {
 		// Its record keeps the id (the first load's maps let go last), but the texture is gone: it draws as none.
 		check(!alive(id) && Textures.handle(copied.id) == 0, "copied out: freed with its model");
 		clean("copied out");
+
+		// Two loads of an OBJ file share its textures and GPU buffers, each holding them, until the last is unloaded.
+		var hut:Model = null, hut2:Model = null;
+		LoadModelAsync("hut.obj", m -> hut = m, e -> throw e);
+		pump(() -> hut != null);
+		LoadModelAsync("hut.obj", m -> hut2 = m, e -> throw e);
+		pump(() -> hut2 != null);
+		for (m in [hut, hut2]) {
+			for (mesh in m.meshes)
+				UploadMesh(mesh, false);
+			for (material in m.materials)
+				for (map in material.maps)
+					Textures.handle(map.texture.id);
+		}
+		var wood = hut.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture.id;
+		check(hut.meshCount == 2
+			&& hut.materialCount == 2
+			&& wood > Textures.DEFAULT
+			&& hut.materials[0].maps[MATERIAL_MAP_SPECULAR].texture.id == wood
+			&& hut2.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture.id == wood
+			&& hut.materials[0] != hut2.materials[0],
+			"OBJ: two loads share a texture, each with materials of its own");
+		check(hut.meshes[0].gpu == hut2.meshes[0].gpu, "OBJ: two loads share GPU buffers");
+		ids = textures(hut);
+		UnloadModel(hut);
+		check(Lambda.foreach(ids, alive), "OBJ: the other load keeps the textures");
+		UnloadModel(hut2);
+		check(!Lambda.exists(ids, alive)
+			&& !helix.ray.internal.Models.isKept("hut.obj"), "OBJ: freed with the last load, the file let go");
+		clean("OBJ");
+
+		// An MTL file's materials are the program's until UnloadMaterial; a texture the program loaded too stays with its load.
+		var materials:Array<Material> = null, own:Texture2D = null;
+		LoadTextureAsync("wood.png", t -> own = t, e -> throw e);
+		pump(() -> own != null);
+		LoadMaterialsAsync("hut.mtl", ms -> materials = ms, e -> throw e);
+		pump(() -> materials != null);
+		check(materials.length == 2 && materials[0].maps[MATERIAL_MAP_DIFFUSE].texture.id == own.id, "MTL: the program's texture shared");
+		var bump = materials[0].maps[MATERIAL_MAP_NORMAL].texture.id;
+		for (m in materials)
+			UnloadMaterial(m);
+		check(alive(own.id) && !alive(bump), "MTL: UnloadMaterial frees its own textures, the program's load keeps its");
+		UnloadTexture(own);
+		clean("MTL");
+
+		// IQM, VOX and M3D aren't read: the refusal says so (docs/DECISIONS.md 27).
+		for (file in ["guy.iqm", "knight.vox", "cesium.M3D"]) {
+			var why:String = null;
+			LoadModelAsync(file, _ -> throw 'loaded $file', e -> why = e);
+			pump(() -> why != null);
+			check(why.indexOf("not supported") >= 0 && why.indexOf(file) >= 0, '$file: refused as not supported: $why');
+		}
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

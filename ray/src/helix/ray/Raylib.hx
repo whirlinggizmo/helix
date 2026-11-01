@@ -5430,8 +5430,21 @@ class Raylib {
 	public static inline function LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void
 		RAsync.LoadTextureAsync(fileName, loaded, failed);
 
-	/** Loads a model from a glTF or GLB file, with its images and the files it points to, answering when it is ready: helix-ray's own,
-		in place of raylib's `LoadModel`. A file loaded again, while a load of it lives, shares its meshes' GPU buffers and its textures, with materials of its own.
+	/** Loads a model from a glTF, GLB or OBJ file, with the files it points to (a glTF file's images and buffers, an OBJ file's material
+		library and its textures), answering when it is ready: helix-ray's own, in place of raylib's `LoadModel`. A file loaded again,
+		while a load of it lives, shares its meshes' GPU buffers and its textures, with materials of its own.
+
+		An OBJ file is read as raylib 6.2's `LoadOBJ` reads it: its polygons split into fans of triangles; a mesh for each of the file's
+		groups and objects, and a new one where a face's material differs from the face before's, unless that face had none (faces
+		before any `usemtl` join the next material's mesh), its vertices its triangles' corners, unindexed; a corner without a normal
+		given (0, 1, 0), and one without texture coordinates (0, 0), the others' v turned (1 - v); every vertex's color white, whatever
+		colors the file gives; each mesh's material its last face's, or 0 when that is no material of the library. Its materials are the
+		library's, read as `LoadMaterialsAsync` reads them, of the file's last `mtllib` line, its textures resolved against the
+		library's directory; with no library, or one that can't be read (logged), the model has raylib's default material alone. raylib
+		counts the start of each group in the file's faces against the triangles it has made, so a polygon before a group moves the
+		group's first mesh back by a triangle; helix-ray does too. Unlike raylib's, an OBJ file a corner of which names a position,
+		texture coordinate or normal the file doesn't have, or which isn't UTF-8 text, fails to load, and a face of more than 5 corners is
+		read (raylib's reader breaks on one). IQM, VOX and M3D models aren't read (docs/DECISIONS.md 27).
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the model.
@@ -5439,9 +5452,27 @@ class Raylib {
 	public static inline function LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void):Void
 		RAsync.LoadModelAsync(fileName, loaded, failed);
 
+	/** Loads the materials of an .mtl file, with the textures they name, answering when they are ready: helix-ray's own, in place of
+		raylib's `LoadMaterials`. Each is made as raylib's `ProcessMaterialsOBJ` makes it: raylib's default material, then its diffuse
+		texture (`map_Kd`), or with none its diffuse color (`Kd`, alpha 255); its specular texture (`map_Ks`) and color (`Ks`); the
+		normal map its bump texture (`bump` or `map_bump`), white, its value the specular exponent (`Ns`); its emission color (`Ke`); the
+		height map its displacement texture (`disp`). A texture that can't be read is none (id 0, logged). The program holds each
+		material until `UnloadMaterial`. Where raylib's differ: a texture's path is resolved against the file's directory (raylib's
+		against the working directory), a texture line's options (`-s`, `-bm` and the rest) are read past (raylib takes them as the
+		file's name), `map_Bump` is a bump texture too, and a material that gives no `Kd` or `Ns` is white with a specular exponent of 0
+		(raylib's black and 1).
+
+		@param fileName  The file, as the program names it: an .mtl file.
+		@param loaded  Receives the materials, in the file's order; their count is its length.
+		@param failed  Optional. Receives why they couldn't be loaded (the file isn't an .mtl file, can't be found or can't be read); when
+			omitted, it is logged. */
+	public static inline function LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void):Void
+		RAsync.LoadMaterialsAsync(fileName, loaded, failed);
+
 	/** Loads a glTF or GLB file's animations, answering when they are read: helix-ray's own, in place of raylib's
 		`LoadModelAnimations`. They are read as raylib 6.2 reads them, of the file's first skin: each sampled 60 times a second, with
-		(int)(duration * 60) + 1 frames, each frame's pose its bones' transforms in the model. A file without skins gives none.
+		(int)(duration * 60) + 1 frames, each frame's pose its bones' transforms in the model. A file without skins gives none. IQM and M3D
+		animations aren't read (docs/DECISIONS.md 27).
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the animations, as many as the file has; their count is its length.
@@ -5874,6 +5905,11 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)",
 			macro(null : helix.ray.Model));
 
+	/** raylib's material load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadMaterialsAsync` loads them. */
+	public static macro function LoadMaterials(fileName:ExprOf<String>, materialCount:ExprOf<Array<Int>>):ExprOf<Array<Material>>
+		return helix.platform.macros.Build.unsupported("LoadMaterials: Synchronous loading is not supported. See LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void)",
+			macro(null : Array<helix.ray.Material>));
+
 	/** raylib's animation load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAnimationsAsync` loads them. */
 	public static macro function LoadModelAnimations(fileName:ExprOf<String>, animCount:ExprOf<Array<Int>>):ExprOf<Array<ModelAnimation>>
 		return helix.platform.macros.Build.unsupported("LoadModelAnimations: Synchronous loading is not supported. See LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void)",
@@ -5976,10 +6012,6 @@ class Raylib {
 	public static macro function DrawMeshInstanced(mesh:ExprOf<Mesh>, material:ExprOf<Material>, transforms:ExprOf<Array<Matrix>>,
 			instances:ExprOf<Int>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("DrawMeshInstanced: Not implemented", macro {});
-
-	/** raylib's `LoadMaterials` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load materials from model file. */
-	public static macro function LoadMaterials(fileName:ExprOf<String>, materialCount:ExprOf<Array<Int>>):ExprOf<Array<Material>>
-		return helix.platform.macros.Build.unimplemented("LoadMaterials: Not implemented", macro(null : Array<helix.ray.Material>));
 
 	// ---- generated by tools/gen_raylib.py: end ----
 	// ---- Shaders, compiled as the program builds ----
