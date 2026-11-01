@@ -3875,11 +3875,13 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `center`: The sphere's center.
   - `radius`: Its radius.
   - returns: True when they overlap.
-- `GetRayCollisionSphere`: Returns where a ray meets a sphere, as raylib's: the near side from outside, the far side from inside (its normal then pointing in); its point and distance are set even when it misses. The ray's direction should be of length 1.
+- `GetRayCollisionSphere`: Returns where a ray meets a sphere: the near side from outside, the far side from inside (its normal then pointing in).
   - `ray`: The ray.
   - `center`: The sphere's center.
   - `radius`: Its radius.
   - returns: The hit.
+
+  A sphere wholly behind the ray is missed. On a miss the point, normal and distance are 0. The ray's direction should be of length 1.
 - `GetRayCollisionBox`: Returns where a ray meets a box, as raylib's: from inside, the way out, its distance negative and its normal pointing in; its point, distance and normal are set even when it misses.
   - `ray`: The ray.
   - `box`: The box.

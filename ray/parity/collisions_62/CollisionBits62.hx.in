@@ -1,0 +1,14 @@
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import helix.ray.Raymath.*;
+import Parity.*;
+
+// helix-ray's ray tests taken from raylib 6.2, printed by Parity as ref.c.in prints raylib's.
+class CollisionBits62 {
+	static function main() {
+		open();
+		var box = new BoundingBox(V3(-1, -1, -1), V3(1, 2, 1));
+		@CASES@
+		save();
+	}
+}

@@ -1606,8 +1606,10 @@ class RModels {
 		return dmin <= radius * radius;
 	}
 
-	/** Returns where a ray meets a sphere, as raylib's: the near side from outside, the far side from inside (its normal then pointing in);
-		its point and distance are set even when it misses. The ray's direction should be of length 1.
+	/** Returns where a ray meets a sphere: the near side from outside, the far side from inside (its normal then pointing in).
+
+		A sphere wholly behind the ray is missed. On a miss the point, normal and distance are 0. The ray's direction should be of
+		length 1.
 
 		@param ray  The ray.
 		@param center  The sphere's center.
@@ -1617,17 +1619,26 @@ class RModels {
 		var collision = new RayCollision(false, 0, new Vector3(), new Vector3());
 		var raySpherePos = Vector3Subtract(center, ray.position);
 		var vector = Vector3DotProduct(raySpherePos, ray.direction);
-		var distance = Vector3Length(raySpherePos);
-		var d = radius * radius - (distance * distance - vector * vector);
-		collision.hit = d >= 0.0;
-		if (distance < radius) {
-			collision.distance = vector + Math.sqrt(d);
-			collision.point = Vector3Add(ray.position, Vector3Scale(ray.direction, collision.distance));
-			collision.normal = Vector3Negate(Vector3Normalize(Vector3Subtract(collision.point, center)));
-		} else {
-			collision.distance = vector - Math.sqrt(d);
-			collision.point = Vector3Add(ray.position, Vector3Scale(ray.direction, collision.distance));
-			collision.normal = Vector3Normalize(Vector3Subtract(collision.point, center));
+		var distanceToCenter = Vector3Length(raySpherePos);
+		var d = radius * radius - (distanceToCenter * distanceToCenter - vector * vector);
+		// The ray's line meets the sphere; from inside, the hit is on the far side.
+		if (d >= 0.0) {
+			var hitDistance, point, normal;
+			if (distanceToCenter < radius) {
+				hitDistance = vector + Math.sqrt(d);
+				point = Vector3Add(ray.position, Vector3Scale(ray.direction, hitDistance));
+				normal = Vector3Negate(Vector3Normalize(Vector3Subtract(point, center)));
+			} else {
+				hitDistance = vector - Math.sqrt(d);
+				point = Vector3Add(ray.position, Vector3Scale(ray.direction, hitDistance));
+				normal = Vector3Normalize(Vector3Subtract(point, center));
+			}
+			if (hitDistance >= 0.0) {
+				collision.hit = true;
+				collision.point = point;
+				collision.normal = normal;
+				collision.distance = hitDistance;
+			}
 		}
 		return collision;
 	}

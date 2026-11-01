@@ -1,0 +1,8 @@
+{
+  "oracle": "6.2",
+  "covers": "rmodels.c's GetRayCollisionSphere, 6.2's: collisions' four rays and three the sphere is behind (wholly, from just outside it, off to one side), which 5.5 reported as hits",
+  "kind": "values",
+  "generated": true,
+  "main": "CollisionBits62",
+  "tolerance": 3e-06
+}

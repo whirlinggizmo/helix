@@ -35,6 +35,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `shapes3d` | 5.5 | values | the 3D shapes and billboards, vertex for vertex |
 | `meshes` | 5.5 | values | the generated meshes, their tangents and bounds |
 | `collisions` | 5.5 | values | the 3D ray tests and collision checks |
+| `collisions_62` | 6.2 | values | `GetRayCollisionSphere`, missing a sphere behind the ray |
 | `cameras` | 5.5 | values | the camera matrix, world to screen, screen to ray, and rcamera's moves, over 700 cameras |
 | `camera_update` | 5.5 | values | `UpdateCamera` in each mode over scripted input |
 | `images_62` | 6.2 | values | the image functions 6.2 fixed or added, their images byte for byte |
