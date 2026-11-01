@@ -2,23 +2,86 @@
 
 [Back to the index](README.md)
 
-## BlendMode
+## Blend
 
-*abstract* in [`platform/src/helix/platform/BlendMode.hx`](../../platform/src/helix/platform/BlendMode.hx), `import helix.platform.BlendMode;`
+*abstract* in [`platform/src/helix/platform/Blend.hx`](../../platform/src/helix/platform/Blend.hx), `import helix.platform.Blend;`
 
-Specifies how a pipeline's colors are combined with the colors already in the target.
+Represents how a pipeline's colors are combined with the colors already in the target: a factor for each side and an operation, for red, green and blue, and for alpha.
 
-Colors use straight alpha, not premultiplied alpha.
+The source is the color a draw writes, and the destination the color in the target. Each channel becomes `source * sourceFactor` combined by the operation with `destination * destinationFactor`, then clamped to what the target stores (0 to 1 in an RGBA8 target). Colors are straight alpha, not premultiplied, unless a program premultiplies its own. It is a small value, like `Sampling`; adapters keep a GPU blend state for each value used.
 
-- `BlendMode.Opaque`: The color replaces the target's.
-- `BlendMode.Alpha`: The color is blended over the target's by its alpha.
-- `BlendMode.Additive`: The color, multiplied by its alpha, is added to the target's. It suits light, fire and glows.
+```haxe
+var multiply = new Blend(DestinationColor, OneMinusSourceAlpha);
+var keepAlpha = new Blend(SourceAlpha, OneMinusSourceAlpha, Add, Zero, One);
+```
+
+```haxe
+static final OPAQUE(default, null):Blend
+static final ALPHA(default, null):Blend
+static final ADDITIVE(default, null):Blend
+var colorSource(get, never):BlendFactor
+var colorDestination(get, never):BlendFactor
+var alphaSource(get, never):BlendFactor
+var alphaDestination(get, never):BlendFactor
+var colorOperation(get, never):BlendOperation
+var alphaOperation(get, never):BlendOperation
+```
+
+- `OPAQUE`: No blending: the color replaces the target's.
+- `ALPHA`: The color blended over the target's by its alpha. The target's alpha becomes `a + destination alpha * (1 - a)`, so what is drawn over a clear target stays as opaque as it was drawn.
+- `ADDITIVE`: The color, multiplied by its alpha, added to the target's. It suits light, fire and glows.
+- `colorSource`: Gets the factor for the source's red, green and blue.
+- `colorDestination`: Gets the factor for the destination's red, green and blue.
+- `alphaSource`: Gets the factor for the source's alpha.
+- `alphaDestination`: Gets the factor for the destination's alpha.
+- `colorOperation`: Gets how red, green and blue are combined.
+- `alphaOperation`: Gets how the alphas are combined.
+
+## BlendFactor
+
+*abstract* in [`platform/src/helix/platform/BlendFactor.hx`](../../platform/src/helix/platform/BlendFactor.hx), `import helix.platform.BlendFactor;`
+
+Specifies what one side of a blend is multiplied by.
+
+The source is the color a draw writes, and the destination the color already in the target. Each factor is a value per channel.
+
+- `BlendFactor.Zero`: 0: the side adds nothing.
+- `BlendFactor.One`: 1: the side as it is.
+- `BlendFactor.SourceColor`: The source color, channel by channel.
+- `BlendFactor.OneMinusSourceColor`: 1 minus the source color, channel by channel.
+- `BlendFactor.DestinationColor`: The destination color, channel by channel.
+- `BlendFactor.OneMinusDestinationColor`: 1 minus the destination color, channel by channel.
+- `BlendFactor.SourceAlpha`: The source's alpha.
+- `BlendFactor.OneMinusSourceAlpha`: 1 minus the source's alpha.
+- `BlendFactor.DestinationAlpha`: The destination's alpha.
+- `BlendFactor.OneMinusDestinationAlpha`: 1 minus the destination's alpha.
+- `BlendFactor.SourceAlphaSaturated`: The smaller of the source's alpha and 1 minus the destination's alpha for red, green and blue, and 1 for alpha.
 
 ```haxe
 function toString():String
 ```
 
-- `toString`: Returns the value's name as written (Opaque, Alpha): what Std.string, interpolation and trace show.
+- `toString`: Returns the value's name as written (Zero, One): what Std.string, interpolation and trace show.
+
+## BlendOperation
+
+*abstract* in [`platform/src/helix/platform/BlendOperation.hx`](../../platform/src/helix/platform/BlendOperation.hx), `import helix.platform.BlendOperation;`
+
+Specifies how a blend combines its two sides, each already multiplied by its factor.
+
+The source is the color a draw writes, and the destination the color already in the target. Min and Max take the two colors as they are, and their factors are ignored.
+
+- `BlendOperation.Add`: The source plus the destination.
+- `BlendOperation.Subtract`: The source minus the destination.
+- `BlendOperation.ReverseSubtract`: The destination minus the source.
+- `BlendOperation.Min`: The smaller of the source and the destination, channel by channel.
+- `BlendOperation.Max`: The larger of the source and the destination, channel by channel.
+
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (Add, Subtract): what Std.string, interpolation and trace show.
 
 ## ClipFlip
 
@@ -37,6 +100,37 @@ function toString():String
 ```
 
 - `toString`: Returns the value's name as written (None, ClipScale): what Std.string, interpolation and trace show.
+
+## ColorChannels
+
+*abstract* in [`platform/src/helix/platform/ColorChannels.hx`](../../platform/src/helix/platform/ColorChannels.hx), `import helix.platform.ColorChannels;`
+
+Specifies a set of a color's channels, combined with `|`, such as the ones a pipeline's draws write (`PipelineDesc.colorWrite`).
+
+```haxe
+var noAlpha:ColorChannels = Red | Green | Blue;
+```
+
+- `ColorChannels.None`: No channel.
+- `ColorChannels.Red`: Red.
+- `ColorChannels.Green`: Green.
+- `ColorChannels.Blue`: Blue.
+- `ColorChannels.Alpha`: Alpha.
+- `ColorChannels.All`: Red, green, blue and alpha.
+
+```haxe
+function or(other:ColorChannels):ColorChannels
+function hasChannels(channels:ColorChannels):Bool
+function toString():String
+```
+
+- `or`: Returns the channels in either set.
+  - `other`: The other set.
+  - returns: The channels of both sets together.
+- `hasChannels`: Returns whether the set has every channel of another.
+  - `channels`: The channels looked for.
+  - returns: True when each of them is in the set.
+- `toString`: Returns the value's name as written (None, Red): what Std.string, interpolation and trace show.
 
 ## CullFace
 
@@ -1411,9 +1505,10 @@ Represents everything a pipeline fixes for the draws through it.
 - `depthTest:DepthTest`: The depth test.
 - `depthOnly:Bool`: Whether the draws write depth alone, for a shadow pass.
 - `cull:CullFace`: Which faces are culled.
+- `colorWrite:Null<ColorChannels>`: The color channels the draws write; omitted, all of them. A channel left out keeps the target's value, blended or not. Depth is written as `depthWrite` specifies, and a depth-only pipeline writes no color whatever this holds.
 - `clockwise:Bool`: Whether clockwise winding is the front face.
 - `buffers:Array<VertexBuffer>`: The vertex buffers' layouts, by their index in a draw's buffers: at most 8, with at most 16 attributes across them, each at a slot from 0 to 15, as every adapter takes them.
-- `blend:BlendMode`: How the colors are combined with the target's.
+- `blend:Blend`: How the colors are combined with the target's.
 
 ## Primitive
 

@@ -1,7 +1,10 @@
 package helix.platform.adapters.graphics.webgl2;
 
 import haxe.io.Bytes;
-import helix.platform.BlendMode;
+import helix.platform.Blend;
+import helix.platform.BlendFactor;
+import helix.platform.BlendOperation;
+import helix.platform.ColorChannels;
 import helix.math.Color;
 import helix.platform.IGraphics;
 import helix.platform.PipelineDesc;
@@ -381,6 +384,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 					|| a.offset < 0
 					|| a.offset + a.componentCount * 4 > b.stride)
 					throw "Invalid pipeline layout";
+		if (!validBlend(desc.blend) || desc.colorWrite != null && ((desc.colorWrite : Int) < 0 || (desc.colorWrite : Int) > 15))
+			throw "Invalid pipeline blend or color write";
 		var id = next++;
 		pipelines[id] = desc;
 		return id;
@@ -608,15 +613,44 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		gl.viewport(x, flipped ? passHeight - y - h : y, w, h);
 	}
 
-	function blend(mode:BlendMode):Void
-		if (mode == Opaque)
+	// GL's blend factors and equations, by BlendFactor's and BlendOperation's values.
+	static final FACTORS = [
+		WebGL2RenderingContext.ZERO,
+		WebGL2RenderingContext.ONE,
+		WebGL2RenderingContext.SRC_COLOR,
+		WebGL2RenderingContext.ONE_MINUS_SRC_COLOR,
+		WebGL2RenderingContext.DST_COLOR,
+		WebGL2RenderingContext.ONE_MINUS_DST_COLOR,
+		WebGL2RenderingContext.SRC_ALPHA,
+		WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA,
+		WebGL2RenderingContext.DST_ALPHA,
+		WebGL2RenderingContext.ONE_MINUS_DST_ALPHA,
+		WebGL2RenderingContext.SRC_ALPHA_SATURATE
+	];
+
+	static final OPERATIONS = [
+		WebGL2RenderingContext.FUNC_ADD,
+		WebGL2RenderingContext.FUNC_SUBTRACT,
+		WebGL2RenderingContext.FUNC_REVERSE_SUBTRACT,
+		WebGL2RenderingContext.MIN,
+		WebGL2RenderingContext.MAX
+	];
+
+	// Whether a blend's every field is one GL has: four factors of 4 bits, below 11, and two operations of 3, below 5.
+	static function validBlend(blend:Int):Bool {
+		for (shift in [0, 4, 8, 12, 16, 19])
+			if ((blend >> shift & (shift < 16 ? 15 : 7)) >= (shift < 16 ? 11 : 5))
+				return false;
+		return blend >>> 22 == 0;
+	}
+
+	function blend(mode:Blend):Void
+		if (mode == Blend.OPAQUE)
 			gl.disable(WebGL2RenderingContext.BLEND);
 		else {
 			gl.enable(WebGL2RenderingContext.BLEND);
-			// Added: the source times its alpha, plus what's there.
-			var additive = mode == Additive;
-			gl.blendFuncSeparate(WebGL2RenderingContext.SRC_ALPHA, additive ? WebGL2RenderingContext.ONE : WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA,
-				WebGL2RenderingContext.ONE, additive ? WebGL2RenderingContext.ONE : WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
+			gl.blendFuncSeparate(FACTORS[mode.colorSource], FACTORS[mode.colorDestination], FACTORS[mode.alphaSource], FACTORS[mode.alphaDestination]);
+			gl.blendEquationSeparate(OPERATIONS[mode.colorOperation], OPERATIONS[mode.alphaOperation]);
 		}
 
 	public function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int,
@@ -687,7 +721,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			gl.disable(WebGL2RenderingContext.CULL_FACE);
 		// The front faces as described; flipped, they wind the other way (gl_FrontFacing too).
 		gl.frontFace(flipped != p.clockwise ? WebGL2RenderingContext.CW : WebGL2RenderingContext.CCW);
-		gl.colorMask(!p.depthOnly, !p.depthOnly, !p.depthOnly, !p.depthOnly);
+		var write:ColorChannels = p.depthOnly ? None : p.colorWrite == null ? All : p.colorWrite;
+		gl.colorMask(write.hasChannels(Red), write.hasChannels(Green), write.hasChannels(Blue), write.hasChannels(Alpha));
 		blend(p.blend);
 		var mode = p.primitive == Lines ? WebGL2RenderingContext.LINES : WebGL2RenderingContext.TRIANGLES;
 		if (p.indexed) {

@@ -323,6 +323,57 @@ class RRlgl {
 		BeginBlendMode(mode);
 	}
 
+	/** Sets the GL factors and equation `RL_BLEND_CUSTOM` blends by, red, green, blue and alpha alike, as `glBlendFunc` and `glBlendEquation`
+		take them. They take effect at the next `rlSetBlendMode(RL_BLEND_CUSTOM)`, even in that mode already. A value GL doesn't have leaves
+		the factors (or the equation) as they were, as GL refuses it. raylib sets no blend color, so `RL_CONSTANT_COLOR` and
+		`RL_CONSTANT_ALPHA` are 0 and their `RL_ONE_MINUS_` forms 1.
+
+		@param glSrcFactor  The source's factor (`RL_ZERO`, `RL_ONE`, `RL_SRC_COLOR`, ...).
+		@param glDstFactor  The destination's factor.
+		@param glEquation  How they combine (`RL_FUNC_ADD`, `RL_FUNC_SUBTRACT`, `RL_FUNC_REVERSE_SUBTRACT`, `RL_MIN`, `RL_MAX`). */
+	static function rlSetBlendFactors(glSrcFactor:Int, glDstFactor:Int, glEquation:Int):Void {
+		var gl = Runtime.frame.customBlend;
+		if (gl[0] == glSrcFactor && gl[1] == glDstFactor && gl[2] == glEquation)
+			return;
+		gl[0] = glSrcFactor;
+		gl[1] = glDstFactor;
+		gl[2] = glEquation;
+		Runtime.frame.customBlendChanged = true;
+	}
+
+	/** Sets the GL factors and equations `RL_BLEND_CUSTOM_SEPARATE` blends by, for red, green and blue apart from alpha, as
+		`glBlendFuncSeparate` and `glBlendEquationSeparate` take them. They take effect at the next
+		`rlSetBlendMode(RL_BLEND_CUSTOM_SEPARATE)`, as `rlSetBlendFactors`' do.
+
+		@param glSrcRGB  The source color's factor.
+		@param glDstRGB  The destination color's factor.
+		@param glSrcAlpha  The source alpha's factor.
+		@param glDstAlpha  The destination alpha's factor.
+		@param glEqRGB  How the colors combine.
+		@param glEqAlpha  How the alphas combine. */
+	static function rlSetBlendFactorsSeparate(glSrcRGB:Int, glDstRGB:Int, glSrcAlpha:Int, glDstAlpha:Int, glEqRGB:Int, glEqAlpha:Int):Void {
+		var gl = Runtime.frame.customBlend, given = [glSrcRGB, glDstRGB, glSrcAlpha, glDstAlpha, glEqRGB, glEqAlpha], same = true;
+		for (i in 0...6)
+			if (gl[3 + i] != given[i])
+				same = false;
+		if (same)
+			return;
+		for (i in 0...6)
+			gl[3 + i] = given[i];
+		Runtime.frame.customBlendChanged = true;
+	}
+
+	/** Sets which color channels the next draws write, as `glColorMask` does. The batch isn't drawn first, so the vertices waiting in it
+		are masked too. `ClearBackground` clears every channel whatever this says, where raylib's clears only those written.
+
+		@param r  Whether red is written.
+		@param g  Whether green is written.
+		@param b  Whether blue is written.
+		@param a  Whether alpha is written. */
+	static function rlColorMask(r:Bool, g:Bool, b:Bool, a:Bool):Void {
+		state().colorMask = cast((r ? 1 : 0) | (g ? 2 : 0) | (b ? 4 : 0) | (a ? 8 : 0));
+	}
+
 	/** Draws the vertices waiting in rlgl's batch now, with the state as it is (rlgl's state calls don't, so a program calls this before
 		and after changing one for the shapes between); a mode, a shader, blending, scissor or a pass changing does it too. */
 	static function rlDrawRenderBatchActive():Void {

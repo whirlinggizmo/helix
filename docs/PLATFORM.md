@@ -199,7 +199,12 @@ enum Event {
   and `canRender(format)` say what the GPU can.
 - Buffers: `createBuffer(capacityBytes)` and `updateBuffer`, `createStaticBuffer(data, bytes, index)`, `disposeBuffer`.
 - Programs and pipelines: `createShader(source:ShaderSource)`, `createPipeline(desc:PipelineDesc)` (a program, its buffers' layout,
-  primitive, indexing, blend, depth test and write, culling and winding, depth-only, and the clip flip), each with its `dispose`.
+  primitive, indexing, blend, the color channels written, depth test and write, culling and winding, depth-only, and the clip flip), each
+  with its `dispose`. A `Blend` is a factor for each side (`BlendFactor`: zero, one, the source's or destination's color or alpha and
+  their one-minus forms, the saturated source alpha) and an operation (`BlendOperation`: add, subtract, reverse subtract, min, max), for
+  the color and for the alpha apart, as every backend has them; `Blend.OPAQUE`, `ALPHA` (the alpha kept as `a + destination * (1 - a)`)
+  and `ADDITIVE` are the common ones. No blend constant: no factor reads one. `colorWrite` (`ColorChannels`, all when omitted) masks the
+  channels written; a pass's clear writes every channel.
 - Passes: `beginShadowPass(map, layerIndex)`; `beginTargetPass(target, r, g, b, a)` and `endTargetPass`; the screen's, `beginFrame(width,
   height, clearColor)` and `endFrame`; within a pass `applyViewport`, `applyScissor`, `resetScissor`.
 - `draw(pipeline, buffers, indexBuffer, firstElementIndex, elementCount, firstInstanceIndex, instanceCount, textures, samplings, uniforms)`: buffers by the

@@ -1,0 +1,30 @@
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import helix.ray.Rlgl.*;
+
+// scene.c.in's render state and render texture scene, drawn by helix-ray; its third frame saved as helix.png. cases.py's list is put into
+// it.
+class Main {
+	static function V2(x:Float, y:Float):Vector2
+		return new Vector2(x, y);
+
+	static function R(x:Float, y:Float, w:Float, h:Float):Rectangle
+		return new Rectangle(x, y, w, h);
+
+	static function main():Void {
+		InitWindow(640, 360, "render");
+		var target = LoadRenderTexture(200, 100);
+		var checks = LoadTextureFromImage(GenImageChecked(64, 64, 8, 8, ORANGE, DARKBLUE));
+		var frame = 0;
+		while (!WindowShouldClose()) {
+			BeginDrawing();
+			ClearBackground(RAYWHITE);
+			@CASES@
+			if (frame == 2)
+				TakeScreenshot("helix.png");
+			EndDrawing();
+			frame++;
+		}
+		CloseWindow();
+	}
+}

@@ -2,6 +2,8 @@ package helix.platform;
 
 import helix.platform.DepthTest;
 import helix.platform.ClipFlip;
+import helix.platform.Blend;
+import helix.platform.ColorChannels;
 
 /** Represents everything a pipeline fixes for the draws through it.
 
@@ -22,7 +24,11 @@ typedef PipelineDesc = {
 	final indexed:Bool;
 
 	/** How the colors are combined with the target's. */
-	final blend:BlendMode;
+	final blend:Blend;
+
+	/** The color channels the draws write; omitted, all of them. A channel left out keeps the target's value, blended or not. Depth is
+		written as `depthWrite` specifies, and a depth-only pipeline writes no color whatever this holds. */
+	final ?colorWrite:ColorChannels;
 
 	/** The depth test. */
 	final depthTest:DepthTest;

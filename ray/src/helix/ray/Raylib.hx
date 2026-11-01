@@ -2351,14 +2351,17 @@ class Raylib {
 	public static inline function EndShaderMode():Void
 		RCore.EndShaderMode();
 
-	/** Blends what is drawn until `EndBlendMode` another way. `BLEND_ALPHA` and `BLEND_ADDITIVE` are here; the others draw as
-		`BLEND_ALPHA` does, and say so once in the log.
+	/** Blends what is drawn until `EndBlendMode` another way, as rlgl sets GL's blending: `BLEND_ALPHA` (alpha blended by the same factors
+		as the color), `BLEND_ADDITIVE`, `BLEND_MULTIPLIED`, `BLEND_ADD_COLORS`, `BLEND_SUBTRACT_COLORS` and `BLEND_ALPHA_PREMULTIPLY`;
+		`BLEND_CUSTOM` and `BLEND_CUSTOM_SEPARATE` take the factors `rlSetBlendFactors` and `rlSetBlendFactorsSeparate` last set. The
+		batch is drawn first when the mode changes, or when a custom mode is set again after its factors changed; otherwise nothing
+		happens. A mode raylib doesn't have changes nothing but the mode remembered.
 
 		@param mode  The mode (`BLEND_*`). */
 	public static inline function BeginBlendMode(mode:Int):Void
 		RCore.BeginBlendMode(mode);
 
-	/** Goes back to blending by alpha. */
+	/** Goes back to blending by alpha, as `BeginBlendMode(BLEND_ALPHA)` does. */
 	public static inline function EndBlendMode():Void
 		RCore.EndBlendMode();
 

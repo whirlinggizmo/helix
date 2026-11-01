@@ -1,0 +1,22 @@
+// The render state and render texture scene Main.hx.in draws, drawn by raylib, its third frame saved as ref.png; cases.py's list is put
+// into it.
+#include "raylib.h"
+#include "rlgl.h"
+#define V2(x, y) ((Vector2){ (float)(x), (float)(y) })
+#define R(x, y, w, h) ((Rectangle){ (float)(x), (float)(y), (float)(w), (float)(h) })
+int main(void) {
+    SetTraceLogLevel(LOG_WARNING);
+    InitWindow(640, 360, "render");
+    RenderTexture2D target = LoadRenderTexture(200, 100);
+    Texture2D checks = LoadTextureFromImage(GenImageChecked(64, 64, 8, 8, ORANGE, DARKBLUE));
+    for (int frame = 0; frame < 3; frame++) {
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
+        @CASES@
+        rlDrawRenderBatchActive();
+        if (frame == 2) ExportImage(LoadImageFromScreen(), "ref.png");
+        EndDrawing();
+    }
+    CloseWindow();
+    return 0;
+}

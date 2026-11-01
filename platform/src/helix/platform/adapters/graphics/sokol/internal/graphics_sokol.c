@@ -199,25 +199,38 @@ uint32_t helix_static_buffer(const void *data,int bytes,int index){
  if(sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(buffer.id&0xffff)>=256){sg_destroy_buffer(buffer);return 0;}
  int slot=buffer.id&0xffff;used[slot]=bytes;index_buffers[slot]=index!=0;stream_buffers[slot]=0;return buffer.id;
 }
-/* helix.platform.BlendMode's: opaque (none), alpha (straight), additive (the source times its alpha, plus what's there). */
-static sg_blend_state blend_of(int blend){
- if(!blend)return (sg_blend_state){0};
- const sg_blend_factor dst=blend==2?SG_BLENDFACTOR_ONE:SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
- return (sg_blend_state){.enabled=true,.src_factor_rgb=SG_BLENDFACTOR_SRC_ALPHA,.dst_factor_rgb=dst,.src_factor_alpha=SG_BLENDFACTOR_ONE,.dst_factor_alpha=dst};
+/* A helix.platform.Blend (bits 0-3 the color's source factor, 4-7 its destination's, 8-11 and 12-15 the alpha's, 16-18 the color's
+   operation, 19-21 the alpha's) as sokol's blend state: BlendFactor's and BlendOperation's values in order. No blending for One, Zero and
+   Add on both; MIN and MAX take every factor ONE (sokol checks it; GL ignores them). 0 in *ok for a value outside the enums. */
+static sg_blend_state blend_of(int blend,int *ok){
+ static const sg_blend_factor factors[11]={SG_BLENDFACTOR_ZERO,SG_BLENDFACTOR_ONE,SG_BLENDFACTOR_SRC_COLOR,SG_BLENDFACTOR_ONE_MINUS_SRC_COLOR,
+  SG_BLENDFACTOR_DST_COLOR,SG_BLENDFACTOR_ONE_MINUS_DST_COLOR,SG_BLENDFACTOR_SRC_ALPHA,SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,SG_BLENDFACTOR_DST_ALPHA,
+  SG_BLENDFACTOR_ONE_MINUS_DST_ALPHA,SG_BLENDFACTOR_SRC_ALPHA_SATURATED};
+ static const sg_blend_op ops[5]={SG_BLENDOP_ADD,SG_BLENDOP_SUBTRACT,SG_BLENDOP_REVERSE_SUBTRACT,SG_BLENDOP_MIN,SG_BLENDOP_MAX};
+ const int cs=blend&15,cd=blend>>4&15,as=blend>>8&15,ad=blend>>12&15,co=blend>>16&7,ao=blend>>19&7;
+ *ok=blend>=0&&blend<1<<22&&cs<11&&cd<11&&as<11&&ad<11&&co<5&&ao<5;
+ if(!*ok||(cs==1&&cd==0&&as==1&&ad==0&&co==0&&ao==0))return (sg_blend_state){0};
+ const int cm=co>=3,am=ao>=3;
+ return (sg_blend_state){.enabled=true,.src_factor_rgb=cm?SG_BLENDFACTOR_ONE:factors[cs],.dst_factor_rgb=cm?SG_BLENDFACTOR_ONE:factors[cd],.op_rgb=ops[co],
+  .src_factor_alpha=am?SG_BLENDFACTOR_ONE:factors[as],.dst_factor_alpha=am?SG_BLENDFACTOR_ONE:factors[ad],.op_alpha=ops[ao]};
 }
-/* A pipeline as helix.platform.PipelineDesc describes it, its ints in order: shader, primitive (0 triangles, 1 lines), indexed, blend,
-   depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front), clockwise, depth only, clip flip (0 none, 1 clip scale, 2 view-projection), the buffer count, then each
-   buffer's stride, instanced and attribute count, each attribute's slot, components and offset. 0 for a description it can't make. */
+/* A helix.platform.ColorChannels (bit 0 red, 1 green, 2 blue, 3 alpha) as sokol's write mask. */
+static sg_color_mask mask_of(int channels){return channels?(sg_color_mask)channels:SG_COLORMASK_NONE;}
+/* A pipeline as helix.platform.PipelineDesc describes it, its ints in order: shader, primitive (0 triangles, 1 lines), indexed, blend
+   (blend_of), depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front), clockwise, depth only, clip flip
+   (0 none, 1 clip scale, 2 view-projection), the color channels written (mask_of), the buffer count, then each buffer's stride, instanced and
+   attribute count, each attribute's slot, components and offset. 0 for a description it can't make. */
 uint32_t helix_pipeline(const int *desc,int count){
- if(!desc||count<11)return 0;
- const uint32_t shader=(uint32_t)desc[0];const int lines=desc[1]==1,indexed=desc[2],blend=desc[3],depth_only=desc[8],clockwise=desc[7];
- if(blend<0||blend>2||(shader&0xffff)>=256||sg_query_shader_state((sg_shader){shader})!=SG_RESOURCESTATE_VALID)return 0;
+ if(!desc||count<12)return 0;
+ const uint32_t shader=(uint32_t)desc[0];const int lines=desc[1]==1,indexed=desc[2],depth_only=desc[8],clockwise=desc[7],channels=desc[10];int blend_ok=0;
+ const sg_blend_state blend=blend_of(desc[3],&blend_ok);
+ if(!blend_ok||channels<0||channels>15||(shader&0xffff)>=256||sg_query_shader_state((sg_shader){shader})!=SG_RESOURCESTATE_VALID)return 0;
  sg_pipeline_desc pd={.shader={shader},.primitive_type=lines?SG_PRIMITIVETYPE_LINES:SG_PRIMITIVETYPE_TRIANGLES,
   .index_type=indexed?SG_INDEXTYPE_UINT32:SG_INDEXTYPE_NONE,.depth={.compare=desc[4]==2?SG_COMPAREFUNC_GREATER:desc[4]?SG_COMPAREFUNC_LESS_EQUAL:SG_COMPAREFUNC_ALWAYS,.write_enabled=desc[5]!=0},
-  .cull_mode=desc[6]==2?SG_CULLMODE_FRONT:desc[6]?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,.colors[0].blend=blend_of(blend)};
+  .cull_mode=desc[6]==2?SG_CULLMODE_FRONT:desc[6]?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,.colors[0]={.blend=blend,.write_mask=mask_of(channels)}};
  /* Depth alone: a shadow pass's, no color attachment. */
  if(depth_only){pd.depth.pixel_format=SG_PIXELFORMAT_DEPTH;pd.color_count=0;pd.sample_count=1;}
- const int buffers=desc[10];int at=11,strides[HELIX_MAX_VERTEX_BUFFERS]={0},instanced[HELIX_MAX_VERTEX_BUFFERS]={0},read[HELIX_MAX_VERTEX_BUFFERS]={0};
+ const int buffers=desc[11];int at=12,strides[HELIX_MAX_VERTEX_BUFFERS]={0},instanced[HELIX_MAX_VERTEX_BUFFERS]={0},read[HELIX_MAX_VERTEX_BUFFERS]={0};
  if(buffers<0||buffers>HELIX_MAX_VERTEX_BUFFERS)return 0;
  for(int b=0;b<buffers;b++){
   if(at+3>count)return 0;

@@ -1,4 +1,5 @@
 // The platform's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a triangle drawn: a compiled shader, a buffer and a pipeline.
+import helix.platform.Blend;
 import haxe.io.Bytes;
 import helix.platform.tools.ShaderCompiler;
 import helix.platform.adapters.events.dom.DomEventsAdapter;
@@ -29,7 +30,7 @@ class Main {
 			],
 			primitive: Triangles,
 			indexed: false,
-			blend: Opaque,
+			blend: Blend.OPAQUE,
 			depthTest: Off,
 			depthWrite: false,
 			cull: None,

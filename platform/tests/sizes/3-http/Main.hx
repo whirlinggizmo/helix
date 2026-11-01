@@ -1,4 +1,5 @@
 // The platform's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a file downloaded over HTTP.
+import helix.platform.Blend;
 import haxe.io.Bytes;
 import haxe.io.BytesBuffer;
 import helix.platform.tools.ShaderCompiler;
@@ -32,7 +33,7 @@ class Main {
 			],
 			primitive: Triangles,
 			indexed: false,
-			blend: Opaque,
+			blend: Blend.OPAQUE,
 			depthTest: Off,
 			depthWrite: false,
 			cull: None,

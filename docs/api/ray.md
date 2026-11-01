@@ -2061,9 +2061,9 @@ static function EndScissorMode():Void
 - `BeginShaderMode`: Draws shapes, text and textures with a shader until `EndShaderMode`.
   - `shader`: The shader.
 - `EndShaderMode`: Goes back to the default shader.
-- `BeginBlendMode`: Blends what is drawn until `EndBlendMode` another way. `BLEND_ALPHA` and `BLEND_ADDITIVE` are here; the others draw as `BLEND_ALPHA` does, and say so once in the log.
+- `BeginBlendMode`: Blends what is drawn until `EndBlendMode` another way, as rlgl sets GL's blending: `BLEND_ALPHA` (alpha blended by the same factors as the color), `BLEND_ADDITIVE`, `BLEND_MULTIPLIED`, `BLEND_ADD_COLORS`, `BLEND_SUBTRACT_COLORS` and `BLEND_ALPHA_PREMULTIPLY`; `BLEND_CUSTOM` and `BLEND_CUSTOM_SEPARATE` take the factors `rlSetBlendFactors` and `rlSetBlendFactorsSeparate` last set. The batch is drawn first when the mode changes, or when a custom mode is set again after its factors changed; otherwise nothing happens. A mode raylib doesn't have changes nothing but the mode remembered.
   - `mode`: The mode (`BLEND_*`).
-- `EndBlendMode`: Goes back to blending by alpha.
+- `EndBlendMode`: Goes back to blending by alpha, as `BeginBlendMode(BLEND_ALPHA)` does.
 - `BeginScissorMode`: Draws only within a rectangle of the screen, or of the render texture drawn into, until `EndScissorMode`.
   - `x`: The left edge, in pixels.
   - `y`: The top edge, in pixels.
@@ -5464,6 +5464,9 @@ static function rlColor3f(x:Float, y:Float, z:Float):Void
 static function rlColor4f(x:Float, y:Float, z:Float, w:Float):Void
 static function rlSetTexture(id:Int):Void
 static function rlSetBlendMode(mode:Int):Void
+static function rlSetBlendFactors(glSrcFactor:Int, glDstFactor:Int, glEquation:Int):Void
+static function rlSetBlendFactorsSeparate(glSrcRGB:Int, glDstRGB:Int, glSrcAlpha:Int, glDstAlpha:Int, glEqRGB:Int, glEqAlpha:Int):Void
+static function rlColorMask(r:Bool, g:Bool, b:Bool, a:Bool):Void
 static function rlDrawRenderBatchActive():Void
 static function rlCheckRenderBatchLimit(vCount:Int):Bool
 static function rlEnableColorBlend():Void
@@ -5584,6 +5587,22 @@ static function rlGetPixelFormatName(format:Int):String
   - `id`: The texture's id (`Texture2D.id`), or 0 for none.
 - `rlSetBlendMode`: Sets how the next draws blend, as `BeginBlendMode` does.
   - `mode`: The mode (`RL_BLEND_*`, the same as `BLEND_*`).
+- `rlSetBlendFactors`: Sets the GL factors and equation `RL_BLEND_CUSTOM` blends by, red, green, blue and alpha alike, as `glBlendFunc` and `glBlendEquation` take them. They take effect at the next `rlSetBlendMode(RL_BLEND_CUSTOM)`, even in that mode already. A value GL doesn't have leaves the factors (or the equation) as they were, as GL refuses it. raylib sets no blend color, so `RL_CONSTANT_COLOR` and `RL_CONSTANT_ALPHA` are 0 and their `RL_ONE_MINUS_` forms 1.
+  - `glSrcFactor`: The source's factor (`RL_ZERO`, `RL_ONE`, `RL_SRC_COLOR`, ...).
+  - `glDstFactor`: The destination's factor.
+  - `glEquation`: How they combine (`RL_FUNC_ADD`, `RL_FUNC_SUBTRACT`, `RL_FUNC_REVERSE_SUBTRACT`, `RL_MIN`, `RL_MAX`).
+- `rlSetBlendFactorsSeparate`: Sets the GL factors and equations `RL_BLEND_CUSTOM_SEPARATE` blends by, for red, green and blue apart from alpha, as `glBlendFuncSeparate` and `glBlendEquationSeparate` take them. They take effect at the next `rlSetBlendMode(RL_BLEND_CUSTOM_SEPARATE)`, as `rlSetBlendFactors`' do.
+  - `glSrcRGB`: The source color's factor.
+  - `glDstRGB`: The destination color's factor.
+  - `glSrcAlpha`: The source alpha's factor.
+  - `glDstAlpha`: The destination alpha's factor.
+  - `glEqRGB`: How the colors combine.
+  - `glEqAlpha`: How the alphas combine.
+- `rlColorMask`: Sets which color channels the next draws write, as `glColorMask` does. The batch isn't drawn first, so the vertices waiting in it are masked too. `ClearBackground` clears every channel whatever this says, where raylib's clears only those written.
+  - `r`: Whether red is written.
+  - `g`: Whether green is written.
+  - `b`: Whether blue is written.
+  - `a`: Whether alpha is written.
 - `rlDrawRenderBatchActive`: Draws the vertices waiting in rlgl's batch now, with the state as it is (rlgl's state calls don't, so a program calls this before and after changing one for the shapes between); a mode, a shader, blending, scissor or a pass changing does it too.
 - `rlCheckRenderBatchLimit`: Returns whether the next vertices would overflow rlgl's batch, which it then draws first. The batch here has no such limit, so it is drawn only as it is flushed (`rlDrawRenderBatchActive`).
   - `vCount`: The vertices.
@@ -5649,7 +5668,7 @@ Each of these is raylib's name, and a call to it doesn't compile, saying why and
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`rlColorMask`, `rlEnablePointMode`, `rlEnableStereoRender`, `rlDisableStereoRender`, `rlIsStereoRenderEnabled`, `rlSetBlendFactors`, `rlSetBlendFactorsSeparate`, `rlGetMatrixProjectionStereo`, `rlGetMatrixViewOffsetStereo`, `rlSetMatrixProjectionStereo`, `rlSetMatrixViewOffsetStereo`.
+`rlEnablePointMode`, `rlEnableStereoRender`, `rlDisableStereoRender`, `rlIsStereoRenderEnabled`, `rlGetMatrixProjectionStereo`, `rlGetMatrixViewOffsetStereo`, `rlSetMatrixProjectionStereo`, `rlSetMatrixViewOffsetStereo`.
 
 ## Shader
 

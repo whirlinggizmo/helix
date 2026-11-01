@@ -1,5 +1,6 @@
 package helix.platform.adapters.shared;
 
+import helix.platform.ColorChannels;
 import helix.platform.IGraphics;
 import helix.platform.PipelineDesc;
 import helix.platform.Sampling;
@@ -120,7 +121,8 @@ abstract class NativeGraphics implements IGraphics {
 
 	public function createPipeline(desc:PipelineDesc):Int {
 		// The description as the bridge reads it: the state, then each buffer's stride, step and attributes.
-		var ints = [
+		var colorWrite:Int = desc.colorWrite == null ? (All : ColorChannels) : desc.colorWrite;
+		var ints:Array<Int> = [
 			desc.shader,
 			desc.primitive,
 			desc.indexed ? 1 : 0,
@@ -131,6 +133,7 @@ abstract class NativeGraphics implements IGraphics {
 			desc.clockwise ? 1 : 0,
 			desc.depthOnly ? 1 : 0,
 			desc.flip,
+			colorWrite,
 			desc.buffers.length
 		];
 		for (b in desc.buffers) {

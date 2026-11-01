@@ -2,7 +2,8 @@ package helix.ray.internal;
 
 import helix.math.Matrix3D;
 import haxe.io.Bytes;
-import helix.platform.BlendMode;
+import helix.platform.Blend;
+import helix.platform.ColorChannels;
 import helix.platform.IGraphics;
 
 /** Records a frame's drawing as rlgl orders it, and draws it at the frame's end: each render texture's pass, then the screen's.
@@ -142,8 +143,25 @@ class Frame {
 	// Where a vertex goes under the transform.
 	final moved = new helix.math.Vector3D();
 
-	/** How the next draws blend, `BeginBlendMode`'s. */
-	public var blend:BlendMode = Alpha;
+	/** raylib's `BLEND_ALPHA` as rlgl sets it, `glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)`: alpha blended by the same factors as
+		the color, so a render texture's alpha becomes alpha * alpha + its own * (1 - alpha). */
+	public static final RAYLIB_ALPHA = new Blend(SourceAlpha, OneMinusSourceAlpha);
+
+	/** How the next draws blend, as rlgl's `rlSetBlendMode` last set it. */
+	public var blend:Blend = RAYLIB_ALPHA;
+
+	/** The blend mode rlgl's `rlSetBlendMode` last set (`BLEND_*`), `BLEND_ALPHA` as raylib starts. */
+	public var blendMode = 0;
+
+	/** The GL factors and equations `BLEND_CUSTOM` and `BLEND_CUSTOM_SEPARATE` blend by, as rlgl keeps them: `rlSetBlendFactors`'
+		source, destination and equation, then `rlSetBlendFactorsSeparate`'s six; 0 as raylib starts. */
+	public final customBlend = [for (_ in 0...9) 0];
+
+	/** Whether `customBlend` changed since `rlSetBlendMode` last set a mode, so setting a custom mode again applies it. */
+	public var customBlendChanged = false;
+
+	/** The color channels the next draws write, rlgl's `rlColorMask`: all, as raylib starts. */
+	public var colorMask:ColorChannels = All;
 
 	/** The rectangle the next draws are clipped to, `BeginScissorMode`'s: x, y, width and height in the pass's pixels from its top left;
 		null for none. */
@@ -404,7 +422,8 @@ class Frame {
 			],
 			primitive: lines ? Lines : Triangles,
 			indexed: false,
-			blend: colorBlend ? blend : Opaque,
+			blend: colorBlend ? blend : Blend.OPAQUE,
+			colorWrite: colorMask,
 			depthTest: depthTest ? LessEqual : Off,
 			depthWrite: depthTest && depthMask,
 			cull: cullFace(),
@@ -472,7 +491,8 @@ class Frame {
 				buffers: layouts,
 				primitive: wire ? Lines : Triangles,
 				indexed: indexed,
-				blend: colorBlend ? blend : Opaque,
+				blend: colorBlend ? blend : Blend.OPAQUE,
+				colorWrite: colorMask,
 				depthTest: depthTest ? LessEqual : Off,
 				depthWrite: depthTest && depthMask,
 				cull: wire ? None : cullFace(),
@@ -553,7 +573,7 @@ class Frame {
 
 	// The render state a pipeline is made for, as part of its key.
 	function states():String
-		return '${depthTest ? "d" : ""}${depthTest && depthMask ? "w" : ""}${cull ? (cullFront ? "f" : "b") : ""}${colorBlend ? (blend : Int) : -1}';
+		return '${depthTest ? "d" : ""}${depthTest && depthMask ? "w" : ""}${cull ? (cullFront ? "f" : "b") : ""}${colorBlend ? (blend : Int) : -1}c${(colorMask : Int)}';
 
 	function cullFace():helix.platform.CullFace
 		return cull ? (cullFront ? Front : Back) : None;

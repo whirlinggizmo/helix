@@ -1,3 +1,4 @@
+import helix.platform.Blend;
 import haxe.io.Bytes;
 import helix.platform.IEvents;
 import helix.platform.IGraphics;
@@ -68,7 +69,7 @@ class Main {
 			],
 			primitive: Triangles,
 			indexed: false,
-			blend: Opaque,
+			blend: Blend.OPAQUE,
 			depthTest: Off,
 			depthWrite: false,
 			cull: None,

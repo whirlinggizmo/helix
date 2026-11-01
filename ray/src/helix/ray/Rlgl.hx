@@ -856,6 +856,40 @@ class Rlgl {
 	public static inline function rlSetBlendMode(mode:Int):Void
 		RRlgl.rlSetBlendMode(mode);
 
+	/** Sets the GL factors and equation `RL_BLEND_CUSTOM` blends by, red, green, blue and alpha alike, as `glBlendFunc` and `glBlendEquation`
+		take them. They take effect at the next `rlSetBlendMode(RL_BLEND_CUSTOM)`, even in that mode already. A value GL doesn't have leaves
+		the factors (or the equation) as they were, as GL refuses it. raylib sets no blend color, so `RL_CONSTANT_COLOR` and
+		`RL_CONSTANT_ALPHA` are 0 and their `RL_ONE_MINUS_` forms 1.
+
+		@param glSrcFactor  The source's factor (`RL_ZERO`, `RL_ONE`, `RL_SRC_COLOR`, ...).
+		@param glDstFactor  The destination's factor.
+		@param glEquation  How they combine (`RL_FUNC_ADD`, `RL_FUNC_SUBTRACT`, `RL_FUNC_REVERSE_SUBTRACT`, `RL_MIN`, `RL_MAX`). */
+	public static inline function rlSetBlendFactors(glSrcFactor:Int, glDstFactor:Int, glEquation:Int):Void
+		RRlgl.rlSetBlendFactors(glSrcFactor, glDstFactor, glEquation);
+
+	/** Sets the GL factors and equations `RL_BLEND_CUSTOM_SEPARATE` blends by, for red, green and blue apart from alpha, as
+		`glBlendFuncSeparate` and `glBlendEquationSeparate` take them. They take effect at the next
+		`rlSetBlendMode(RL_BLEND_CUSTOM_SEPARATE)`, as `rlSetBlendFactors`' do.
+
+		@param glSrcRGB  The source color's factor.
+		@param glDstRGB  The destination color's factor.
+		@param glSrcAlpha  The source alpha's factor.
+		@param glDstAlpha  The destination alpha's factor.
+		@param glEqRGB  How the colors combine.
+		@param glEqAlpha  How the alphas combine. */
+	public static inline function rlSetBlendFactorsSeparate(glSrcRGB:Int, glDstRGB:Int, glSrcAlpha:Int, glDstAlpha:Int, glEqRGB:Int, glEqAlpha:Int):Void
+		RRlgl.rlSetBlendFactorsSeparate(glSrcRGB, glDstRGB, glSrcAlpha, glDstAlpha, glEqRGB, glEqAlpha);
+
+	/** Sets which color channels the next draws write, as `glColorMask` does. The batch isn't drawn first, so the vertices waiting in it
+		are masked too. `ClearBackground` clears every channel whatever this says, where raylib's clears only those written.
+
+		@param r  Whether red is written.
+		@param g  Whether green is written.
+		@param b  Whether blue is written.
+		@param a  Whether alpha is written. */
+	public static inline function rlColorMask(r:Bool, g:Bool, b:Bool, a:Bool):Void
+		RRlgl.rlColorMask(r, g, b, a);
+
 	/** Draws the vertices waiting in rlgl's batch now, with the state as it is (rlgl's state calls don't, so a program calls this before
 		and after changing one for the shapes between); a mode, a shader, blending, scissor or a pass changing does it too. */
 	public static inline function rlDrawRenderBatchActive():Void
@@ -1471,10 +1505,6 @@ class Rlgl {
 
 	// ---- rlgl.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
 
-	/** raylib's `rlColorMask` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Color mask control. */
-	public static macro function rlColorMask(r:ExprOf<Bool>, g:ExprOf<Bool>, b:ExprOf<Bool>, a:ExprOf<Bool>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlColorMask: Not implemented", macro {});
-
 	/** raylib's `rlEnablePointMode` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable point mode. */
 	public static macro function rlEnablePointMode():ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("rlEnablePointMode: Not implemented", macro {});
@@ -1490,15 +1520,6 @@ class Rlgl {
 	/** raylib's `rlIsStereoRenderEnabled` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Check if stereo render is enabled. */
 	public static macro function rlIsStereoRenderEnabled():ExprOf<Bool>
 		return helix.platform.macros.Build.unimplemented("rlIsStereoRenderEnabled: Not implemented", macro(false : Bool));
-
-	/** raylib's `rlSetBlendFactors` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set blending mode factor and equation (using OpenGL factors). */
-	public static macro function rlSetBlendFactors(glSrcFactor:ExprOf<Int>, glDstFactor:ExprOf<Int>, glEquation:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlSetBlendFactors: Not implemented", macro {});
-
-	/** raylib's `rlSetBlendFactorsSeparate` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set blending mode factors and equations separately (using OpenGL factors). */
-	public static macro function rlSetBlendFactorsSeparate(glSrcRGB:ExprOf<Int>, glDstRGB:ExprOf<Int>, glSrcAlpha:ExprOf<Int>, glDstAlpha:ExprOf<Int>,
-			glEqRGB:ExprOf<Int>, glEqAlpha:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlSetBlendFactorsSeparate: Not implemented", macro {});
 
 	/** raylib's `rlGetMatrixProjectionStereo` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Get internal projection matrix for stereo render (selected eye). */
 	public static macro function rlGetMatrixProjectionStereo(eye:ExprOf<Int>):ExprOf<Matrix>

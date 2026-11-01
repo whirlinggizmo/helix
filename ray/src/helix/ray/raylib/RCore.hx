@@ -2792,30 +2792,80 @@ class RCore {
 		Runtime.frame.program = Runtime.frame.defaultProgram;
 	}
 
-	/** Blends what is drawn until `EndBlendMode` another way. `BLEND_ALPHA` and `BLEND_ADDITIVE` are here; the others draw as
-		`BLEND_ALPHA` does, and say so once in the log.
+	/** Blends what is drawn until `EndBlendMode` another way, as rlgl sets GL's blending: `BLEND_ALPHA` (alpha blended by the same factors
+		as the color), `BLEND_ADDITIVE`, `BLEND_MULTIPLIED`, `BLEND_ADD_COLORS`, `BLEND_SUBTRACT_COLORS` and `BLEND_ALPHA_PREMULTIPLY`;
+		`BLEND_CUSTOM` and `BLEND_CUSTOM_SEPARATE` take the factors `rlSetBlendFactors` and `rlSetBlendFactorsSeparate` last set. The
+		batch is drawn first when the mode changes, or when a custom mode is set again after its factors changed; otherwise nothing
+		happens. A mode raylib doesn't have changes nothing but the mode remembered.
 
 		@param mode  The mode (`BLEND_*`). */
 	static function BeginBlendMode(mode:Int):Void {
-		var blend:helix.platform.BlendMode = switch mode {
-			case BLEND_ADDITIVE: Additive;
-			case BLEND_ALPHA: Alpha;
-			case _:
-				if (!blendsWarned.exists(mode)) {
-					blendsWarned.set(mode, true);
-					Runtime.log(LOG_WARNING, 'BeginBlendMode: blend mode $mode isn\'t in helix-ray yet; drawing with BLEND_ALPHA');
-				}
-				Alpha;
+		var frame = Runtime.frame;
+		if (frame.blendMode == mode && !((mode == BLEND_CUSTOM || mode == BLEND_CUSTOM_SEPARATE) && frame.customBlendChanged))
+			return;
+		frame.cut();
+		var gl = frame.customBlend;
+		frame.blend = switch mode {
+			case BLEND_ALPHA: helix.ray.internal.Frame.RAYLIB_ALPHA;
+			case BLEND_ADDITIVE: new helix.platform.Blend(SourceAlpha, One);
+			case BLEND_MULTIPLIED: new helix.platform.Blend(DestinationColor, OneMinusSourceAlpha);
+			case BLEND_ADD_COLORS: new helix.platform.Blend(One, One);
+			case BLEND_SUBTRACT_COLORS: new helix.platform.Blend(One, One, Subtract);
+			case BLEND_ALPHA_PREMULTIPLY: new helix.platform.Blend(One, OneMinusSourceAlpha);
+			case BLEND_CUSTOM: glBlend(frame.blend, gl[0], gl[1], gl[0], gl[1], gl[2], gl[2]);
+			case BLEND_CUSTOM_SEPARATE: glBlend(frame.blend, gl[3], gl[4], gl[5], gl[6], gl[7], gl[8]);
+			case _: frame.blend;
 		}
-		Runtime.frame.cut();
-		Runtime.frame.blend = blend;
+		frame.blendMode = mode;
+		frame.customBlendChanged = false;
 	}
 
-	/** Goes back to blending by alpha. */
+	/** Goes back to blending by alpha, as `BeginBlendMode(BLEND_ALPHA)` does. */
 	static function EndBlendMode():Void {
-		Runtime.frame.cut();
-		Runtime.frame.blend = Alpha;
+		BeginBlendMode(BLEND_ALPHA);
 	}
+
+	// A blend from GL's factors and equations, as glBlendFuncSeparate and glBlendEquationSeparate set them over the current one: the factors
+	// only when all four are GL's, the equations only when both are (GL refuses the call otherwise, changing nothing). The constant color
+	// raylib never sets is GL's 0, 0, 0, 0, so its factors are 0 and its 1 - factors 1.
+	static function glBlend(current:helix.platform.Blend, colorSource:Int, colorDestination:Int, alphaSource:Int, alphaDestination:Int, colorEquation:Int,
+			alphaEquation:Int):helix.platform.Blend {
+		var factors = [
+			for (f in [colorSource, colorDestination, alphaSource, alphaDestination])
+				glFactor(f)
+		], operations = [glOperation(colorEquation), glOperation(alphaEquation)];
+		var known = factors.indexOf(null) < 0,
+			knownOperations = operations.indexOf(null) < 0;
+		return new helix.platform.Blend(known ? factors[0] : current.colorSource, known ? factors[1] : current.colorDestination,
+			knownOperations ? operations[0] : current.colorOperation, known ? factors[2] : current.alphaSource, known ? factors[3] : current.alphaDestination,
+			knownOperations ? operations[1] : current.alphaOperation);
+	}
+
+	static function glFactor(gl:Int):Null<helix.platform.BlendFactor>
+		return switch gl {
+			case 0 | 0x8001 | 0x8003: Zero;
+			case 1 | 0x8002 | 0x8004: One;
+			case 0x0300: SourceColor;
+			case 0x0301: OneMinusSourceColor;
+			case 0x0302: SourceAlpha;
+			case 0x0303: OneMinusSourceAlpha;
+			case 0x0304: DestinationAlpha;
+			case 0x0305: OneMinusDestinationAlpha;
+			case 0x0306: DestinationColor;
+			case 0x0307: OneMinusDestinationColor;
+			case 0x0308: SourceAlphaSaturated;
+			case _: null;
+		}
+
+	static function glOperation(gl:Int):Null<helix.platform.BlendOperation>
+		return switch gl {
+			case 0x8006: Add;
+			case 0x800A: Subtract;
+			case 0x800B: ReverseSubtract;
+			case 0x8007: Min;
+			case 0x8008: Max;
+			case _: null;
+		}
 
 	/** Draws only within a rectangle of the screen, or of the render texture drawn into, until `EndScissorMode`.
 
@@ -2833,7 +2883,5 @@ class RCore {
 		Runtime.frame.cut();
 		Runtime.frame.scissor = null;
 	}
-
-	static final blendsWarned = new Map<Int, Bool>();
 	#end
 }

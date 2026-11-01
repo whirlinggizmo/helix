@@ -1,4 +1,6 @@
-import helix.platform.BlendMode;
+import helix.platform.Blend;
+import helix.platform.BlendFactor;
+import helix.platform.ColorChannels;
 import helix.platform.Filter;
 import helix.platform.Sampling;
 import helix.platform.TextureFormat;
@@ -105,11 +107,36 @@ class PlatformTests {
 			&& (Rgba16f : TextureFormat).levelBytes(5, 3) == 120, "Uncompressed: 4 or 8 bytes a texel");
 
 		// The enum abstracts read as their names where typed (helix.platform.macros.EnumNames), staying numbers.
-		var blend = BlendMode.Additive,
+		var blend = BlendFactor.SourceAlpha,
 			format = TextureFormat.Etc2Rgba8,
 			wrap = Wrap.Mirror;
-		check(Std.string(blend) == "Additive" && '$format' == "Etc2Rgba8" && "" + wrap == "Mirror" && (blend : Int) == 2,
-			"BlendMode, TextureFormat, Wrap by name, still their numbers");
+		check(Std.string(blend) == "SourceAlpha" && '$format' == "Etc2Rgba8" && "" + wrap == "Mirror" && (blend : Int) == 6,
+			"BlendFactor, TextureFormat, Wrap by name, still their numbers");
+		// A blend keeps its six fields, the alpha's defaulting to the color's.
+		var separate = new Blend(DestinationColor, OneMinusSourceAlpha, ReverseSubtract, Zero, SourceAlphaSaturated, Max),
+			same = new Blend(SourceColor, OneMinusDestinationAlpha, Subtract);
+		check(separate.colorSource == DestinationColor
+			&& separate.colorDestination == OneMinusSourceAlpha
+			&& separate.colorOperation == ReverseSubtract
+			&& separate.alphaSource == Zero
+			&& separate.alphaDestination == SourceAlphaSaturated
+			&& separate.alphaOperation == Max
+			&& same.alphaSource == SourceColor
+			&& same.alphaDestination == OneMinusDestinationAlpha
+			&& same.alphaOperation == Subtract,
+			"Blend: six fields, the alpha's defaulting to the color's");
+		check(Blend.OPAQUE.colorSource == One
+			&& Blend.OPAQUE.alphaDestination == Zero
+			&& Blend.ALPHA.alphaSource == One
+			&& Blend.ALPHA.colorSource == SourceAlpha
+			&& Blend.ADDITIVE.colorDestination == One,
+			"Blend's OPAQUE, ALPHA and ADDITIVE");
+		var channels:ColorChannels = Red | Alpha;
+		check(channels.hasChannels(Red)
+			&& channels.hasChannels(Red | Alpha)
+			&& !channels.hasChannels(Green)
+			&& (channels : Int) == 9 && ColorChannels.All.hasChannels(Red | Green | Blue | Alpha),
+			"ColorChannels combined with |");
 
 		#if sys
 		fileSystem();

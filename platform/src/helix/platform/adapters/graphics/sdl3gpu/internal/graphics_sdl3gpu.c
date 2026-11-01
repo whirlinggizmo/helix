@@ -397,23 +397,34 @@ uint32_t helix_sdl3gpu_shader(const void *vs,int vs_bytes,const void *fs,int fs_
 }
 static int program_live(uint32_t handle){const int s=slot_of(handle);return s>=0&&s<SLOTS&&programs[s].live&&(handle>>16)==programs[s].generation;}
 
-/* helix.platform.BlendMode's: opaque (none), alpha (straight), additive (the source times its alpha, plus what's there). */
-static SDL_GPUColorTargetBlendState blend_of(int blend){
- if(!blend)return (SDL_GPUColorTargetBlendState){0};
- const SDL_GPUBlendFactor dst=blend==2?SDL_GPU_BLENDFACTOR_ONE:SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
- return (SDL_GPUColorTargetBlendState){.enable_blend=true,.src_color_blendfactor=SDL_GPU_BLENDFACTOR_SRC_ALPHA,.dst_color_blendfactor=dst,.color_blend_op=SDL_GPU_BLENDOP_ADD,
-  .src_alpha_blendfactor=SDL_GPU_BLENDFACTOR_ONE,.dst_alpha_blendfactor=dst,.alpha_blend_op=SDL_GPU_BLENDOP_ADD};
+/* A helix.platform.Blend (bits 0-3 the color's source factor, 4-7 its destination's, 8-11 and 12-15 the alpha's, 16-18 the color's
+   operation, 19-21 the alpha's) and ColorChannels (bit 0 red, 1 green, 2 blue, 3 alpha) as SDL_GPU's blend state: BlendFactor's and
+   BlendOperation's values in order; no blending for One, Zero and Add on both. 0 in *ok for a value outside the enums. */
+static SDL_GPUColorTargetBlendState blend_of(int blend,int channels,int *ok){
+ static const SDL_GPUBlendFactor factors[11]={SDL_GPU_BLENDFACTOR_ZERO,SDL_GPU_BLENDFACTOR_ONE,SDL_GPU_BLENDFACTOR_SRC_COLOR,SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_COLOR,
+  SDL_GPU_BLENDFACTOR_DST_COLOR,SDL_GPU_BLENDFACTOR_ONE_MINUS_DST_COLOR,SDL_GPU_BLENDFACTOR_SRC_ALPHA,SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+  SDL_GPU_BLENDFACTOR_DST_ALPHA,SDL_GPU_BLENDFACTOR_ONE_MINUS_DST_ALPHA,SDL_GPU_BLENDFACTOR_SRC_ALPHA_SATURATE};
+ static const SDL_GPUBlendOp ops[5]={SDL_GPU_BLENDOP_ADD,SDL_GPU_BLENDOP_SUBTRACT,SDL_GPU_BLENDOP_REVERSE_SUBTRACT,SDL_GPU_BLENDOP_MIN,SDL_GPU_BLENDOP_MAX};
+ const int cs=blend&15,cd=blend>>4&15,as=blend>>8&15,ad=blend>>12&15,co=blend>>16&7,ao=blend>>19&7;
+ *ok=blend>=0&&blend<1<<22&&cs<11&&cd<11&&as<11&&ad<11&&co<5&&ao<5&&channels>=0&&channels<=15;
+ SDL_GPUColorTargetBlendState state={.color_write_mask=(SDL_GPUColorComponentFlags)(*ok?channels:15),.enable_color_write_mask=true};
+ if(!*ok||(cs==1&&cd==0&&as==1&&ad==0&&co==0&&ao==0))return state;
+ state.enable_blend=true;state.src_color_blendfactor=factors[cs];state.dst_color_blendfactor=factors[cd];state.color_blend_op=ops[co];
+ state.src_alpha_blendfactor=factors[as];state.dst_alpha_blendfactor=factors[ad];state.alpha_blend_op=ops[ao];
+ return state;
 }
 /* A pipeline as helix.platform.PipelineDesc describes it, its ints in order (as sokol's adapter reads them): shader, primitive (0 triangles,
-   1 lines), indexed, blend, depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front), clockwise, depth only, clip flip (0 none, 1 clip scale, 2 view-projection),
-   the buffer count, then each buffer's stride, instanced and attribute count, each attribute's slot, components and offset. */
+   1 lines), indexed, blend (blend_of), depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front),
+   clockwise, depth only, clip flip (0 none, 1 clip scale, 2 view-projection), the color channels written (blend_of), the buffer count, then
+   each buffer's stride, instanced and attribute count, each attribute's slot, components and offset. */
 uint32_t helix_pipeline(const int *desc,int count){
  int slot=-1;for(int i=0;i<SLOTS;i++)if(!pipelines[i].live){slot=i;break;}
- if(slot<0||!desc||count<11||!program_live((uint32_t)desc[0]))return 0;
- const int program=slot_of((uint32_t)desc[0]),lines=desc[1]==1,indexed=desc[2],blend=desc[3],depth_only=desc[8],clockwise=desc[7];
- if(blend<0||blend>2)return 0;
+ if(slot<0||!desc||count<12||!program_live((uint32_t)desc[0]))return 0;
+ const int program=slot_of((uint32_t)desc[0]),lines=desc[1]==1,indexed=desc[2],depth_only=desc[8],clockwise=desc[7];int blend_ok=0;
+ const SDL_GPUColorTargetBlendState blend=blend_of(desc[3],desc[10],&blend_ok);
+ if(!blend_ok)return 0;
  SDL_GPUVertexBufferDescription vbs[HELIX_MAX_VERTEX_BUFFERS];SDL_GPUVertexAttribute attrs[HELIX_MAX_VERTEX_ATTRIBUTES];int nattrs=0;
- const int nbuffers=desc[10];int at=11,strides[HELIX_MAX_VERTEX_BUFFERS]={0},instanced[HELIX_MAX_VERTEX_BUFFERS]={0},read[HELIX_MAX_VERTEX_BUFFERS]={0};
+ const int nbuffers=desc[11];int at=12,strides[HELIX_MAX_VERTEX_BUFFERS]={0},instanced[HELIX_MAX_VERTEX_BUFFERS]={0},read[HELIX_MAX_VERTEX_BUFFERS]={0};
  if(nbuffers<0||nbuffers>HELIX_MAX_VERTEX_BUFFERS)return 0;
  for(int b=0;b<nbuffers;b++){
   if(at+3>count)return 0;
@@ -431,7 +442,7 @@ uint32_t helix_pipeline(const int *desc,int count){
  /* Buffers no attribute reads aren't described: SDL_GPU wants none it isn't given. */
  SDL_GPUVertexBufferDescription described[HELIX_MAX_VERTEX_BUFFERS];int ndescribed=0;
  for(int b=0;b<nbuffers;b++)if(read[b])described[ndescribed++]=vbs[b];
- const SDL_GPUColorTargetDescription color={.format=SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,.blend_state=blend_of(blend)};
+ const SDL_GPUColorTargetDescription color={.format=SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,.blend_state=blend};
  SDL_GPUGraphicsPipelineCreateInfo info={.vertex_shader=programs[program].vertex,.fragment_shader=programs[program].fragment,
   .vertex_input_state={.vertex_buffer_descriptions=described,.num_vertex_buffers=(Uint32)ndescribed,.vertex_attributes=attrs,.num_vertex_attributes=(Uint32)nattrs},
   .primitive_type=lines?SDL_GPU_PRIMITIVETYPE_LINELIST:SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,

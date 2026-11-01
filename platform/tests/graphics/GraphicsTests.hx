@@ -1,5 +1,6 @@
 import haxe.io.Bytes;
-import helix.platform.BlendMode;
+import helix.platform.Blend;
+import helix.platform.ColorChannels;
 import helix.platform.IEvents;
 import helix.platform.IGraphics;
 import helix.platform.ISystem;
@@ -33,7 +34,7 @@ typedef Case = {
 	its pixels against what arithmetic says they are.
 
 	The cases: a clear, a triangle's colors interpolated, eight vertex buffers read and a ninth refused, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
-	additive blending, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
+	additive blending, each blend factor and operation and a color write mask, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
 	texel by texel, a cubemap's six faces, and declared textures left unbound reading clear. The shaders are `shaders/*.vert` and `*.frag`,
 	compiled by the build, so it checks the shader compiler's dialects too. One case runs a frame; on a GPU that reads back later, the next
 	waits for it.
@@ -186,13 +187,28 @@ class GraphicsTests {
 			]
 		};
 		var plain:VertexBuffer = {stride: 8, instanced: false, attributes: [{slot: 0, componentCount: 2, offset: 0}]};
-		var opaque = pipeline(color, colored, Opaque),
-			alpha = pipeline(color, colored, Alpha),
-			additive = pipeline(color, colored, Additive);
-		var sampled = pipeline(texture, textured, Opaque),
-			fetched = pipeline(data, textured, Opaque),
-			looked = pipeline(cube, textured, Opaque);
-		var tinted = pipeline(tint, plain, Opaque);
+		var opaque = pipeline(color, colored, Blend.OPAQUE),
+			alpha = pipeline(color, colored, Blend.ALPHA),
+			additive = pipeline(color, colored, Blend.ADDITIVE);
+		var sampled = pipeline(texture, textured, Blend.OPAQUE),
+			fetched = pipeline(data, textured, Blend.OPAQUE),
+			looked = pipeline(cube, textured, Blend.OPAQUE);
+		var tinted = pipeline(tint, plain, Blend.OPAQUE);
+		// Each blend over the target's (.25, .5, .75, .25) with (1, .5, 0, .5), and what it leaves there, red, green, blue and alpha.
+		var blends:Array<{blend:Blend, expected:Array<Float>}> = [
+			{blend: new Blend(DestinationColor, OneMinusSourceAlpha), expected: [.375, .5, .375, .25]},
+			{blend: new Blend(One, One), expected: [1, 1, .75, .75]},
+			{blend: new Blend(One, One, Subtract), expected: [.75, 0, 0, .25]},
+			{blend: new Blend(One, One, ReverseSubtract), expected: [0, 0, .75, 0]},
+			{blend: new Blend(One, One, Min), expected: [.25, .5, 0, .25]},
+			{blend: new Blend(One, One, Max), expected: [1, .5, .75, .5]},
+			{blend: new Blend(SourceAlpha, OneMinusSourceAlpha, Add, Zero, One), expected: [.625, .5, .375, .25]},
+			// The same factors for alpha as for the color: alpha * alpha + the target's * (1 - alpha).
+			{blend: new Blend(SourceAlpha, OneMinusSourceAlpha), expected: [.625, .5, .375, .375]}
+		];
+		var blended = [for (b in blends) pipeline(color, colored, b.blend)];
+		var masked = pipeline(color, colored, Blend.OPAQUE, Red | Alpha),
+			saturated = pipeline(color, colored, new Blend(SourceAlphaSaturated, One));
 		// Eight buffers, the most a pipeline reads: a position, then a number from each of seven; a ninth is refused.
 		var single:Array<VertexBuffer> = [
 			for (slot in 1...9)
@@ -204,7 +220,7 @@ class GraphicsTests {
 				buffers: layouts,
 				primitive: Triangles,
 				indexed: false,
-				blend: Opaque,
+				blend: Blend.OPAQUE,
 				depthTest: Off,
 				depthWrite: false,
 				cull: None,
@@ -230,7 +246,8 @@ class GraphicsTests {
 		}
 		var white = quad(1, 1, 1, 1),
 			red = quad(1, 0, 0, 1),
-			halfRed = quad(1, 0, 0, .5);
+			halfRed = quad(1, 0, 0, .5),
+			halfOrange = quad(1, .5, 0, .5);
 		var uvSquare = [];
 		for (i in 0...6)
 			uvSquare = uvSquare.concat([
@@ -379,6 +396,32 @@ class GraphicsTests {
 				}
 			},
 			{
+				name: "blend factors and operations",
+				// Eight cells of 4 x 8, each a blend of half-transparent orange over the clear color; the first four on the bottom row.
+				before: into(.25, .5, .75, .25, () -> for (i => p in blended) {
+					graphics.applyViewport((i % 4) * 4, Std.int(i / 4) * 8, 4, 8);
+					draw(p, halfOrange, 6);
+				}),
+				target: target,
+				check: p -> for (i => b in blends)
+					p.expect((i % 4) * 4 + 2, i < 4 ? 12 : 3, b.expected, 2)
+			},
+			{
+				name: "the color write mask, and a saturated blend",
+				// White written to red and alpha alone on the left; on the right, half-transparent orange times min(alpha, 1 - the target's).
+				before: into(.25, .5, .75, .25, () -> {
+					graphics.applyViewport(0, 0, SIZE >> 1, SIZE);
+					draw(masked, white, 6);
+					graphics.applyViewport(SIZE >> 1, 0, SIZE >> 1, SIZE);
+					draw(saturated, halfOrange, 6);
+				}),
+				target: target,
+				check: p -> {
+					p.expect(3, 8, [1, .5, .75, 1], 1);
+					p.expect(12, 8, [.75, .75, .75, .75], 2);
+				}
+			},
+			{
 				name: "a render target drawn to the screen",
 				// Red with a green top right quarter, drawn over the screen: the quarter stays top right.
 				before: into(1, 0, 0, 1, () -> draw(tinted, half, 6, null, null, [clip, floatBytes([.5, .5, 0, 0]), floatBytes([0, 1, 0, 1])])),
@@ -476,13 +519,14 @@ class GraphicsTests {
 		return handle;
 	}
 
-	static function pipeline(shader:Int, layout:VertexBuffer, blend:BlendMode):Int {
+	static function pipeline(shader:Int, layout:VertexBuffer, blend:Blend, ?colorWrite:ColorChannels):Int {
 		var handle = graphics.createPipeline({
 			shader: shader,
 			buffers: [layout],
 			primitive: Triangles,
 			indexed: false,
 			blend: blend,
+			colorWrite: colorWrite,
 			depthTest: Off,
 			depthWrite: false,
 			cull: None,
