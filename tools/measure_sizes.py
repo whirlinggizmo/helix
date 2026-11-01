@@ -33,8 +33,9 @@ ROOT = Path(__file__).resolve().parents[1]
 LADDERS = {
     'platform': (ROOT / 'platform/tests/sizes', ['-lib', 'helix-platform']),
     'services': (ROOT / 'services/tests/sizes', ['-lib', 'helix-services']),
+    'ray': (ROOT / 'ray/tests/sizes', ['-lib', 'helix-ray']),
 }
-LIBRARIES = {'helix-platform': ROOT / 'platform', 'helix-log': ROOT / 'log', 'helix-math': ROOT / 'math', 'helix-geometry': ROOT / 'geometry', 'helix-formats': ROOT / 'formats', 'helix-services': ROOT / 'services'}
+LIBRARIES = {'helix-platform': ROOT / 'platform', 'helix-log': ROOT / 'log', 'helix-math': ROOT / 'math', 'helix-geometry': ROOT / 'geometry', 'helix-formats': ROOT / 'formats', 'helix-services': ROOT / 'services', 'helix-ray': ROOT / 'ray'}
 BASELINE = ROOT / 'docs/benchmarks.json'
 TABLE = ROOT / 'docs/benchmarks.md'
 OUT = ROOT / 'build/sizes'
@@ -83,8 +84,12 @@ def vlq(text):
 
 def package(source):
     """The package a source file's bytes are counted under: the platform's by contract (its adapters under their contract), the services'
-    by service, another library's by its name, Haxe's standard library, the program's."""
+    by service, helix-ray's by source file (raylib's modules, R*, and its internals; its facade and structs as ray), another library's by
+    its name, Haxe's standard library, the program's."""
     path = source.replace('\\', '/')
+    if '/ray/src/helix/ray/' in path:
+        parts = path.split('/ray/src/helix/ray/', 1)[1].split('/')
+        return 'ray/' + parts[-1].removesuffix('.hx') if parts[0] in ('raylib', 'internal') else 'ray'
     if '/services/src/helix/services/' in path:
         return 'services/' + path.split('/services/src/helix/services/', 1)[1].split('/')[0]
     if '/platform/src/helix/platform/' in path:
@@ -177,6 +182,12 @@ INTRODUCTIONS = {
                  'Programs on helix-services and what it sits on (`services/tests/sizes/`), each adding one service, with the platform\'s '
                  'adapters it needs, to the one before, from a window cleared each frame: what a service costs is its row\'s increment, gzip; '
                  'brotli in brackets. Each service\'s bytes are counted under its package; the adapters\' under their contract.'),
+    'ray': ('helix-ray',
+            'Programs written in raylib on helix-ray (`ray/tests/sizes/`), each adding one feature to the one before, from a window '
+            'cleared each frame: what a feature costs through raylib\'s API is its row\'s increment, gzip; brotli in brackets. Against '
+            'the services\' ladder this is what the familiar API costs (DECISIONS 15): helix-ray builds, before `main`, what any raylib '
+            'program may reach (the assets its files load through, saves, time, the screen and input), so its first rung holds them. helix-ray\'s bytes are counted by source file: raylib\'s modules (R*) and '
+            'its internals, its facade and structs as ray.'),
 }
 
 
