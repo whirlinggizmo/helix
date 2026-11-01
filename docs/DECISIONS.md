@@ -271,3 +271,19 @@ Why things are the way they are, numbered, in order.
     names its files as raylib's do, and a constant name is what raylib's programs write. Rejected: a define (`-D helix-ray-no-obj`),
     which a program has to know to set and which fails only as it runs when set wrong; a call registering a reader, which raylib's API
     doesn't have; a reader built when first used (AGENTS.md).
+
+30. **A program links only what it names, and the size ladders check it.** An audit of the ladders' builds (`-dce full`) found code
+    every program carried that it never asked for, each reached from something that always runs or a choice made as the program
+    runs: helix-ray's poll read every drop, so a window cleared each frame linked the assets, the HTTP client, the caches, the image
+    decoder, `Images` and `Models`; its frame's end called the screenshots through a field it tested; `InitAudioDevice` polled the
+    streams' topping up; a sound's length read every format's headers; the saves, the manifests and the actions linked `Type` to test
+    a value. Each is now reached only from the call that asks for it (`DroppedFiles`, `Runtime.imaging` and `modelling`,
+    `Frame.ended`, the first `SetAudioStreamCallback`, a native download's `Sound.measureFrom`), behaving as before; ray 1-window went
+    from 26.6 to 22.0 KB gzipped, 8-audio from 88.4 to 78.7. CONVENTIONS, "A program links only what it names", is the rule: a
+    library chooses an implementation from what the program wrote, never a run-time string, extension or enum value; an optional collaborator is reached through a hook
+    its call installs, never a typed field tested for null; no run-time type inspection or `@:keep` in a library; a layer wearing a
+    run-time-choosing API narrows it as the program builds (29). It names what still chooses at run time as known, not fixed. The
+    check is `tools/measure_sizes.py --check`, through the compiler: each rung's `Main` declares in `@:adds` what it adds, and its
+    build's `-xml` (what dead-code elimination kept) and a macro reading `@:keep` as written (`-xml` marks every kept type so) fail a
+    rung linking what no rung up to it declares. Rejected: a table of each rung's packages in the tool, apart from the program it
+    describes; matching the JavaScript's text for class names, which breaks on the next minifier or name mangling.

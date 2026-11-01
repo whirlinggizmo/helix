@@ -19,6 +19,41 @@ them share is passed in, not reached for.
 The layers above (the runner, an engine wearing a known API) may own the loop, and build a feature when its API is first touched where
 the API they match requires it. A game on them carries what it uses (DECISIONS 15).
 
+## A program links only what it names
+
+What a program carries is what `-dce full` can't prove unused, so a library is written for the compiler to see what each program uses
+(DECISIONS 30):
+
+- **A library chooses an implementation from what the program wrote,** never from a string, an extension or an enum value the program
+  passes as it runs. Readers, decoders, codecs, cache policies and sources are classes the program constructs and passes in, or
+  functions it calls by name: `Models.loadGltf`, not a load that reads the extension and so carries every reader.
+- **An optional collaborator is reached only from the call that asks for it.** Code that always runs (a poll, a frame's end) holds a
+  hook that call installs, never a typed field it tests for null: a typed field links its class, and the class all it reaches.
+  helix-ray's frame keeps `Frame.ended`, which `Runtime.screenshots` adds to; its poll calls `Runtime.dropping`, which
+  `DroppedFiles` sets in its `__init__` when the program names `IsFileDropped` or `LoadDroppedFiles` (from the program's start, as
+  raylib reads every drop).
+- **Nothing inspects a value's type as the program runs** (`Type`, `ValueType`, `haxe.rtti`, `js.Boot.getClass`) outside tools and
+  macros, and nothing in a library is marked `@:keep`, which links it into every program that types it. Where an API takes a value
+  of no type (parsed JSON, raylib's `void *` and varargs), `Std.isOfType` tests it against the few kinds it can be.
+- **A layer wearing an API that chooses as the program runs narrows the choice as the program builds.** raylib's `LoadModel` reads
+  the file's extension; helix-ray's `LoadModelAsync` is a macro that, given a constant name, calls that extension's reader alone
+  (DECISIONS 29), and chooses as the program runs only for a name it can't know.
+
+`tools/measure_sizes.py --check` holds the size ladders to it: each rung's `Main` declares in `@:adds` the library packages, modules
+or classes it adds, and a rung linking a library class no rung up to it declares, a declaration it doesn't link, run-time type
+inspection, or a library's `@:keep` fails, read from the build's `-xml` and a macro (`tools/haxe/Kept.hx`).
+
+Known, not fixed yet (each a rung's `@:adds` or a program's bytes show):
+
+- helix-services' `Models.load` chooses its reader by the extension (`loadGltf` and `loadObj` don't).
+- helix-services' `Assets` takes its sources as an enum (`AssetSource`) and its cache policy as one (`AssetCacheMode`), so a program
+  reading only a file system links the server's downloading, manifests and cache.
+- helix-services' `Screen` tests its saves each poll, so a program with a screen links `Saves`; helix-ray's poll tests its keyboard,
+  so every raylib program links `Keyboard`.
+- helix-ray's `Runtime.fetch` decodes a file by its extension, so a program loading text or data through it links the image
+  decoder; its `LoadImageFromMemoryAsync`, `LoadWaveFromMemoryAsync` and `LoadMusicStreamFromMemory` choose by their `fileType`, as
+  raylib's do; and in a page its assets are made over the server and its cache whatever a program loads.
+
 ## Names
 
 The API uses what Haxe gives: properties for values, classes for kinds, methods named for what they do. The earlier C frameworks' rules
