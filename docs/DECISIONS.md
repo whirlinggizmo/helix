@@ -356,3 +356,13 @@ Why things are the way they are, numbered, in order.
     (most combinations refused by prose and each adapter's check); bytes or shorts read unnormalized as floats ("scaled": raylib's bone
     IDs, three.js' `skinIndex`, glTF's quantized positions), which only GL and WebGL2 have, as a platform format. Deferred: such inputs
     fed normalized and scaled back by the compiler, rounded; bone IDs stay floats until then.
+
+34. **A render target's samples are chosen apart from its depth.** `createRenderTarget` multisampled a target exactly when it had depth,
+    at the screen's count, so raylib's render textures (a depth buffer, one sample) were multisampled under an MSAA window and a target
+    without depth (three.js' `samples`) could not be. It takes `msaaSampleCount`: 1 for none, 0 (the default) for the screen's, a count
+    rounded down to the nearest the GPU draws the format with, up to `getMaxRenderTargetMsaaSampleCount(format)`, and never refused for
+    being more than the GPU takes. A GPU need not take every power of two (lavapipe takes 1 and 4), so each adapter rounds to a count the GPU
+    reports for the format. helix-ray's `LoadRenderTexture` asks for 1. SDL_GPU on NVIDIA's Vulkan driver (595.104) loses the device when a
+    multisampled pass is followed by one of fewer samples in a command buffer (validation and synchronization layers clean, lavapipe
+    fine), so the adapter submits what it has recorded before such a pass. Rejected: a target's count read back after it is made (the
+    limit answers the question before); one limit for windows and targets (a browser's canvas count is its own choice).

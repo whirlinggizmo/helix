@@ -798,7 +798,8 @@ function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:hax
 function canSample(format:TextureFormat):Bool
 var msaaSampleCount(get, never):Int
 var maxMsaaSampleCount(get, never):Int
-function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:Bool = true):Int
+function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int
+function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:Bool = true, ?msaaSampleCount:Int = 0):Int
 function canRender(format:TextureFormat):Bool
 function createShadowMap(size:Int, layerCount:Int):Int
 function disposeTexture(handle:Int):Void
@@ -865,18 +866,24 @@ function dispose():Void
 
   RGBA8 can always be sampled. The compressed formats can be sampled on GPUs that have them, and half floats where this GPU filters them.
 - `msaaSampleCount`: Gets the number of multisampling samples per pixel that the screen is drawn with, or 1 for none.
-  It can be fewer than the window asked for. Render targets with depth are drawn with the same number, and resolved into the texture that is sampled.
+  It can be fewer than the window asked for. A render target created with a sample count of 0 is drawn with the same number, where its format takes it.
 - `maxMsaaSampleCount`: Gets the largest number of multisampling samples a window could ask for here, at most 8.
-  A browser only switches antialiasing on or off, and chooses its own count. In a browser this is therefore the count the canvas has when antialiasing is on, which is 4 where the GPU supports 4, and 1 otherwise.
+  A browser only switches antialiasing on or off, and chooses its own count. In a browser this is therefore the count the canvas has when antialiasing is on, which is 4 where the GPU supports 4, and 1 otherwise. A render target's limit is `getMaxRenderTargetMsaaSampleCount`.
+- `getMaxRenderTargetMsaaSampleCount`: Returns the largest number of multisampling samples a render target of a format can be drawn with here, at most 8.
+  - `format`: The format.
+  - returns: The largest sample count `createRenderTarget` gives a target of the format.
+
+  It is 1, 2, 4 or 8: 1 where this GPU cannot multisample the format, or cannot draw into it at all (`canRender`).
 - `createRenderTarget`: Creates a render target, which is a texture that a target pass draws into.
   - `width`: The width, in texels.
   - `height`: The height, in texels.
   - `format`: Optional. The texels' format; defaults to Rgba8.
   - `depth`: Optional. Whether it has a depth buffer; defaults to true.
+  - `msaaSampleCount`: Optional. The multisampling samples per texel asked for: 1 for none, or 0, the default, for the screen's (`msaaSampleCount`).
   - returns: The render target's handle.
-  - throws `String`: A size of 0 or less, or a format this GPU cannot draw into (`canRender`).
+  - throws `String`: A size of 0 or less, a format this GPU cannot draw into (`canRender`), or a sample count below 0.
 
-  The target is sampled like any texture and stored top row first. A target with depth has its own depth buffer. It is multisampled as the screen is (`msaaSampleCount`), or single-sampled where this GPU cannot multisample the format, and it is resolved into the texture at the end of each pass. A target without depth has neither a depth buffer nor multisampling. What a pass leaves in a target, its samples and depth too, lasts until a `beginTargetPass` clears it, so `resumeTargetPass` draws over it in a later pass or frame. A new target holds transparent black and the farthest depth.
+  The target is sampled like any texture and stored top row first. A target with depth has its own depth buffer. Whether it has depth and how many samples it is drawn with are chosen apart. A target of more than one sample is drawn into its samples, which are resolved into the texture at the end of each pass; a target of one sample is drawn into the texture itself. The count asked for is rounded down to the nearest that this GPU draws the format with: 1, 2, 4 or 8, at most `getMaxRenderTargetMsaaSampleCount(format)`. A count the GPU can't give is never refused. What a pass leaves in a target, its samples and depth too, lasts until a `beginTargetPass` clears it, so `resumeTargetPass` draws over it in a later pass or frame. A new target holds transparent black and the farthest depth.
 - `canRender`: Returns whether this GPU draws into, blends over and filters render targets of a format.
   - `format`: The format.
   - returns: True when render targets of the format can be drawn into.

@@ -53,8 +53,11 @@ class FakeGraphics implements IGraphics {
 	public function canSample(format:TextureFormat):Bool
 		return true;
 
-	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true):Int
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0):Int
 		return next++;
+
+	public function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int
+		return 1;
 
 	public function canRender(format:TextureFormat):Bool
 		return true;

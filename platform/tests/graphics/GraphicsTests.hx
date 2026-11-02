@@ -38,7 +38,9 @@ typedef Case = {
 	colors interpolated, eight vertex buffers read and a ninth refused, each vertex format read (a signed 0 as 0, fewer and more components
 	than the input, formats mixed in one record, instances from the second) and layouts the platform refuses, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
 	additive blending, each blend factor and operation and a color write mask, a texture's rectangles replaced, and replaced
-	between passes, targets kept from pass to pass and frame to frame (their depth and samples too) and one never cleared, textures read
+	between passes, targets kept from pass to pass and frame to frame (their depth and samples too) and one never cleared, targets'
+	multisampling chosen apart from their depth (one sample with depth, the screen's, no depth and the most, a count rounded down
+	to the most and a negative one refused) on a window asking for 4 samples, textures read
 	back, instances placed by a mat4 vertex input, mipmaps under each mipmap filter, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
 	texel by texel, a cubemap's six faces, and declared textures left unbound reading clear. The shaders are `shaders/*.vert` and `*.frag`,
 	compiled by the build, so it checks the shader compiler's dialects too. One case runs a frame; on a GPU that reads back later, the next
@@ -74,7 +76,7 @@ class GraphicsTests {
 		js.Syntax.code("window.helixResult = null");
 		window = new helix.platform.adapters.window.dom.DomWindowAdapter({canvasId: "canvas"});
 		events = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
-		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvasId: "canvas"});
+		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvasId: "canvas", msaaSampleCount: 4});
 		system = new helix.platform.adapters.system.dom.DomSystemAdapter();
 		setup();
 		var frame:Float->Void = null;
@@ -82,10 +84,10 @@ class GraphicsTests {
 		js.Browser.window.requestAnimationFrame(frame);
 		#else
 		#if sdl_gpu
-		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gpu});
+		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gpu, msaaSampleCount: 4});
 		graphics = new helix.platform.adapters.graphics.sdl3gpu.Sdl3GpuGraphicsAdapter();
 		#else
-		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gl});
+		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gl, msaaSampleCount: 4});
 		graphics = new helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter();
 		#end
 		events = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();
@@ -464,6 +466,8 @@ class GraphicsTests {
 		var half = buffer([for (v in square) v / 2]);
 		// One triangle over the whole square: red at (-1, -1), green at (3, -1), blue at (-1, 3).
 		var triangle = buffer([-1., -1, 1, 0, 0, 1, 3, -1, 0, 1, 0, 1, -1, 3, 0, 0, 1, 1]);
+		// A red triangle whose long edge slants across texels, partly covering those it crosses.
+		var slanted = buffer([-1., -1, 1, 0, 0, 1, 1, -1, 1, 0, 0, 1, -1, .37, 1, 0, 0, 1]);
 
 		var positions = buffer(square);
 		// Three instances: a matrix moving half the square to a quarter, column by column, then a color: red top left, green bottom right,
@@ -509,15 +513,33 @@ class GraphicsTests {
 		var instanceColorBuffer = graphics.createStaticBuffer(instanceColors, 12, false);
 		buffers.push(instanceColorBuffer);
 
-		var target = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false),
-			second = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false);
+		// Single-sampled, so the cases' edges fall on whole texels.
+		var target = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1),
+			second = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1);
 		// With depth, multisampled as the screen is, kept from one frame to the next; and one never cleared.
 		var kept = graphics.createRenderTarget(SIZE, SIZE),
-			fresh = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false);
+			fresh = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1);
 		textures.push(target);
 		textures.push(second);
 		textures.push(kept);
 		textures.push(fresh);
+		// Multisampling chosen apart from depth: depth and one sample (raylib's render textures), depth and the screen's samples, no depth
+		// and the most the format takes, and far more than any GPU takes, rounded down to that most.
+		var most = graphics.getMaxRenderTargetMsaaSampleCount(Rgba8);
+		var singleDepth = graphics.createRenderTarget(SIZE, SIZE, Rgba8, true, 1),
+			screenDepth = graphics.createRenderTarget(SIZE, SIZE, Rgba8, true),
+			mostFlat = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, most),
+			clamped = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1000);
+		for (t in [singleDepth, screenDepth, mostFlat, clamped])
+			textures.push(t);
+		var mostHalf = graphics.getMaxRenderTargetMsaaSampleCount(Rgba16f);
+		if (graphics.canRender(Rgba16f))
+			textures.push(graphics.createRenderTarget(SIZE, SIZE, Rgba16f, true, 1000));
+		var negativeRefused = try {
+			textures.push(graphics.createRenderTarget(SIZE, SIZE, Rgba8, true, -1));
+			false;
+		} catch (_:Dynamic)
+			true;
 		// 4 x 4, red, its rectangles replaced by the cases; and 2 x 1 of half floats.
 		var patched = texture2D(4, 4, [for (_ in 0...16) 0xff0000ff]);
 		var halves = Bytes.alloc(16);
@@ -620,6 +642,19 @@ class GraphicsTests {
 			var bottom = [for (i in 0...3) [0., 0, 1][i] * (1 - u) + [1., 1, 1][i] * u];
 			return [for (i in 0...3) top[i] * (1 - v) + bottom[i] * v];
 		}
+
+		// The slanted triangle drawn into a target over black, its edge texels partly red where the target is multisampled.
+		function slantedCase(name:String, into:Int, multisampled:Bool):Case
+			return {
+				name: name,
+				before: () -> {
+					graphics.beginTargetPass(into, 0, 0, 0, 1);
+					draw(opaque, slanted, 3);
+					graphics.endTargetPass();
+				},
+				target: into,
+				check: p -> checkEdge(p, multisampled)
+			};
 
 		cases = [
 			{
@@ -1027,6 +1062,25 @@ class GraphicsTests {
 					p.expect(12, 10, [0, 1, 0, 1], 1);
 				}
 			},
+			slantedCase("depth and one sample: every texel one color or the other", singleDepth, false),
+			slantedCase('depth and the screen\'s samples (${graphics.msaaSampleCount})', screenDepth, Math.min(graphics.msaaSampleCount, most) > 1),
+			slantedCase('no depth and the most samples the format takes ($most)', mostFlat, most > 1),
+			{
+				name: "a sample count rounded down to what the GPU takes, a negative one refused",
+				before: () -> {
+					graphics.beginTargetPass(clamped, 0, 0, 0, 1);
+					draw(opaque, slanted, 3);
+					graphics.endTargetPass();
+				},
+				target: clamped,
+				check: p -> {
+					for (m in [most, mostHalf])
+						check(m == 1 || m == 2 || m == 4 || m == 8, 'a most of $m samples, not 1, 2, 4 or 8');
+					check(graphics.maxMsaaSampleCount >= graphics.msaaSampleCount, 'the window\'s most samples below its own');
+					check(negativeRefused, "a target of -1 samples made");
+					checkEdge(p, most > 1);
+				}
+			},
 			{
 				name: "a target never cleared, resumed",
 				before: () -> {
@@ -1199,6 +1253,27 @@ class GraphicsTests {
 				}
 			}
 		];
+	}
+
+	/** Checks the slanted red triangle over black: some texels wholly red and some black, and texels partly red along its edge exactly when
+		the target is multisampled. */
+	static function checkEdge(p:Pixels, multisampled:Bool):Void {
+		var red = 0, black = 0, partial = 0;
+		for (i in 0...p.width * p.height) {
+			var r = p.bytes.get(i * 4),
+				g = p.bytes.get(i * 4 + 1),
+				b = p.bytes.get(i * 4 + 2);
+			if (r == 255 && g == 0 && b == 0)
+				red++;
+			else if (r == 0 && g == 0 && b == 0)
+				black++;
+			else if (g == 0 && b == 0)
+				partial++;
+			else
+				check(false, 'a texel of $r, $g, $b, neither red nor black');
+		}
+		check(red > 0 && black > 0, '$red texels red and $black black');
+		check(multisampled ? partial > 0 : partial == 0, '$partial texels partly red along the edge, ${multisampled ? "none" : "some"} expected');
 	}
 
 	static function shader(source:helix.platform.ShaderSource):Int {

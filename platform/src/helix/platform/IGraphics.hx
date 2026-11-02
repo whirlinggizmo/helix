@@ -74,30 +74,42 @@ interface IGraphics {
 
 	/** Gets the number of multisampling samples per pixel that the screen is drawn with, or 1 for none.
 
-		It can be fewer than the window asked for. Render targets with depth are drawn with the same number, and resolved into the texture
-		that is sampled. */
+		It can be fewer than the window asked for. A render target created with a sample count of 0 is drawn with the same number, where
+		its format takes it. */
 	var msaaSampleCount(get, never):Int;
 
 	/** Gets the largest number of multisampling samples a window could ask for here, at most 8.
 
 		A browser only switches antialiasing on or off, and chooses its own count. In a browser this is therefore the count the canvas has
-		when antialiasing is on, which is 4 where the GPU supports 4, and 1 otherwise. */
+		when antialiasing is on, which is 4 where the GPU supports 4, and 1 otherwise. A render target's limit is
+		`getMaxRenderTargetMsaaSampleCount`. */
 	var maxMsaaSampleCount(get, never):Int;
+
+	/** Returns the largest number of multisampling samples a render target of a format can be drawn with here, at most 8.
+
+		It is 1, 2, 4 or 8: 1 where this GPU cannot multisample the format, or cannot draw into it at all (`canRender`).
+		@param format  The format.
+		@return  The largest sample count `createRenderTarget` gives a target of the format. */
+	public function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int;
 
 	/** Creates a render target, which is a texture that a target pass draws into.
 
-		The target is sampled like any texture and stored top row first. A target with depth has its own depth buffer. It is multisampled
-		as the screen is (`msaaSampleCount`), or single-sampled where this GPU cannot multisample the format, and it is resolved into the
-		texture at the end of each pass. A target without depth has neither a depth buffer nor multisampling. What a pass leaves in a
-		target, its samples and depth too, lasts until a `beginTargetPass` clears it, so `resumeTargetPass` draws over it in a later pass or
-		frame. A new target holds transparent black and the farthest depth.
+		The target is sampled like any texture and stored top row first. A target with depth has its own depth buffer. Whether it has depth
+		and how many samples it is drawn with are chosen apart. A target of more than one sample is drawn into its samples, which are
+		resolved into the texture at the end of each pass; a target of one sample is drawn into the texture itself. The count asked for is
+		rounded down to the nearest that this GPU draws the format with: 1, 2, 4 or 8, at most `getMaxRenderTargetMsaaSampleCount(format)`.
+		A count the GPU can't give is never refused.
+		What a pass leaves in a target, its samples and depth too, lasts until a `beginTargetPass` clears it, so `resumeTargetPass` draws
+		over it in a later pass or frame. A new target holds transparent black and the farthest depth.
 		@param width  The width, in texels.
 		@param height  The height, in texels.
 		@param format  Optional. The texels' format; defaults to Rgba8.
 		@param depth  Optional. Whether it has a depth buffer; defaults to true.
+		@param msaaSampleCount  Optional. The multisampling samples per texel asked for: 1 for none, or 0, the default, for the screen's
+			(`msaaSampleCount`).
 		@return  The render target's handle.
-		@throws String  A size of 0 or less, or a format this GPU cannot draw into (`canRender`). */
-	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true):Int;
+		@throws String  A size of 0 or less, a format this GPU cannot draw into (`canRender`), or a sample count below 0. */
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0):Int;
 
 	/** Returns whether this GPU draws into, blends over and filters render targets of a format.
 

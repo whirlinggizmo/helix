@@ -519,7 +519,8 @@ function disposeShader(handle:Int):Void
 function createPipeline(desc:PipelineDesc):Int
 function disposePipeline(handle:Int):Void
 function canRender(format:TextureFormat):Bool
-function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:Bool = true):Int
+function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int
+function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:Bool = true, ?msaaSampleCount:Int = 0):Int
 function createShadowMap(size:Int, layerCount:Int):Int
 function beginShadowPass(map:Int, layerIndex:Int):Void
 function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void

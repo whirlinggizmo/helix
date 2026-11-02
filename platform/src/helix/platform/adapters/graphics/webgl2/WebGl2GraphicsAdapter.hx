@@ -104,7 +104,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	var frameEnded = false;
 	var passHeight = 0;
 	// Render targets, by texture handle: their framebuffer, depth buffer and size; multisampled, the framebuffer drawn into (its color and
-	// depth the screen's samples), resolved into the texture's at the pass's end.
+	// depth of the target's samples), resolved into the texture's at the pass's end.
 	var targets:Map<Int, Target> = [];
 	// The target a target pass draws into, or null.
 	var drawing:Null<Target>;
@@ -492,8 +492,22 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		return known;
 	}
 
-	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true):Int {
-		if (width <= 0 || height <= 0 || !canRender(format))
+	public function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int {
+		if (!canRender(format))
+			return 1;
+		// The most of 2, 4 and 8 that a renderbuffer of the format takes.
+		var taken:js.lib.Int32Array = gl.getInternalformatParameter(WebGL2RenderingContext.RENDERBUFFER,
+			format == Rgba16f ? WebGL2RenderingContext.RGBA16F : WebGL2RenderingContext.RGBA8, WebGL2RenderingContext.SAMPLES);
+		var most = 1;
+		if (taken != null)
+			for (n in taken)
+				if (n > most && (n == 2 || n == 4 || n == 8))
+					most = n;
+		return most;
+	}
+
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0):Int {
+		if (width <= 0 || height <= 0 || !canRender(format) || msaaSampleCount < 0)
 			throw "Invalid render target";
 		var half = format == Rgba16f,
 			internal = half ? WebGL2RenderingContext.RGBA16F : WebGL2RenderingContext.RGBA8;
@@ -502,12 +516,14 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, internal, width, height, 0, WebGL2RenderingContext.RGBA,
 			half ? WebGL2RenderingContext.HALF_FLOAT : WebGL2RenderingContext.UNSIGNED_BYTE, null);
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, 0);
-		// With depth, the screen's samples (at most what this GPU gives the format), so a target is drawn as smooth as the screen; without, one.
-		var count = 1;
-		if (depth) {
-			var most:js.lib.Int32Array = gl.getInternalformatParameter(WebGL2RenderingContext.RENDERBUFFER, internal, WebGL2RenderingContext.SAMPLES);
-			count = Std.int(Math.min(msaaSampleCount, most != null && most.length > 0 ? most[0] : 1));
-		}
+		// The count asked (0: the screen's), rounded down to 1, 2, 4 or 8 and to one the format takes (the list's, most first); with or without
+		// depth.
+		var asked = Std.int(Math.min(msaaSampleCount == 0 ? this.msaaSampleCount : msaaSampleCount, 8)), count = 1;
+		var taken:js.lib.Int32Array = gl.getInternalformatParameter(WebGL2RenderingContext.RENDERBUFFER, internal, WebGL2RenderingContext.SAMPLES);
+		if (taken != null)
+			for (n in taken)
+				if (n <= asked && n > count && (n == 2 || n == 4 || n == 8))
+					count = n;
 		var depthBuffer:Dynamic = null;
 		if (depth) {
 			depthBuffer = gl.createRenderbuffer();

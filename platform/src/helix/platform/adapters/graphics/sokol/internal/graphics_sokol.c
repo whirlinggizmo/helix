@@ -76,9 +76,9 @@ static sg_sampler samplers[SAMPLINGS];
 static struct{uint32_t id,shader;int buffer_count,stride[HELIX_MAX_VERTEX_BUFFERS],instanced[HELIX_MAX_VERTEX_BUFFERS],read[HELIX_MAX_VERTEX_BUFFERS],indexed,group,depth_only,flip,flip_slot,flip_offset,fed;float constants[HELIX_MAX_VERTEX_ATTRIBUTES][4];}pipeline_info[256];
 /* A sokol pipeline is made for one kind of pass (its color format, depth format and samples), and a flipped pass draws triangles with their
    front faces the other way round: a pipeline's variants, by pipeline slot, each made from its description the first time a draw needs it.
-   A variant is the pass's kind: bit 0 half floats, bit 1 no depth, bit 2 single sampled where the screen isn't, bit 3 flipped; variant 0
-   (the screen's) is the pipeline itself. */
-#define VARIANTS 16
+   A variant is the pass's kind: bit 0 half floats, bit 1 no depth, bits 2-3 the samples' power of two exclusive-or the screen's (0: the
+   screen's samples), bit 4 flipped; variant 0 (the screen's) is the pipeline itself. */
+#define VARIANTS 32
 static sg_pipeline_desc pipeline_descs[256];static sg_pipeline variants[256][VARIANTS];
 static int index_buffers[256];
 /* active: 1 in the screen's pass, 2 in a target's; flipped: the pass is drawn flipped (GL, whose framebuffers' origin is the bottom left, into a
@@ -118,6 +118,9 @@ static sg_swapchain swapchain(void){
 }
 int helix_msaa_samples(void){return window_samples;}
 int helix_max_msaa_samples(void){return max_samples;}
+/* The power of two of a sample count (1, 2, 4 or 8), and the screen's samples (sokol's environment default, which pipelines are made for). */
+static int power_of(int samples){return samples>=8?3:samples>=4?2:samples>=2?1:0;}
+static int screen_samples(void){const int n=sg_query_desc().environment.defaults.sample_count;return n>1?n:1;}
 void helix_setup(void){
  /* Pools as large as the adapter's tables, which are indexed by slot (below 256): sokol's defaults (64 pipelines) run out on a stage with
     a few surface shaders, each several pipelines and their flipped twins. */
@@ -460,15 +463,17 @@ int helix_can_render(int format){
  const sg_pixelformat_info info=sg_query_pixelformat(format_of(format));
  return info.render&&info.blend&&info.sample&&info.filter;
 }
-/* A render target: a color image of format sampled through the returned texture view; with depth, a depth image for its passes and the
-   screen's samples (where the format takes them), without, neither. */
-uint32_t helix_target(int w,int h,int format,int depth){
- if(w<=0||h<=0||w>16384||h>16384||!helix_can_render(format))return 0;
- /* The screen's depth format and samples (sokol's environment defaults): multisampled, its passes draw into an image of the screen's samples,
-    resolved at the pass's end into the one sampled. */
+/* The most samples a render target of format takes: GL's most (max_samples) where sokol multisamples the format, else 1. */
+int helix_max_target_samples(int format){return helix_can_render(format)&&sg_query_pixelformat(format_of(format)).msaa?max_samples:1;}
+/* A render target: a color image of format sampled through the returned texture view, drawn with the samples asked for (at least 1) rounded
+   down to 1, 2, 4 or 8 and to helix_max_target_samples; with depth, a depth image of the same samples for its passes. */
+uint32_t helix_target(int w,int h,int format,int depth,int asked){
+ if(w<=0||h<=0||w>16384||h>16384||!helix_can_render(format)||asked<1)return 0;
+ const int most=helix_max_target_samples(format),n=asked<most?asked:most,samples=n>=8?8:n>=4?4:n>=2?2:1;
+ /* The screen's depth format (sokol's environment default). Multisampled, its passes draw into an image of its samples, resolved at the
+    pass's end into the one sampled. */
  const sg_environment_defaults defaults=sg_query_desc().environment.defaults;
  const sg_pixel_format pixels=format_of(format);
- const int screen=defaults.sample_count>1?defaults.sample_count:1,samples=depth&&sg_query_pixelformat(pixels).msaa?screen:1;
  sg_image color=sg_make_image(&(sg_image_desc){.usage={.color_attachment=samples==1,.resolve_attachment=samples>1},.width=w,.height=h,
   .pixel_format=pixels,.sample_count=1});
  sg_image drawn=samples>1?sg_make_image(&(sg_image_desc){.usage.color_attachment=true,.width=w,.height=h,.pixel_format=pixels,
@@ -487,7 +492,7 @@ uint32_t helix_target(int w,int h,int format,int depth){
  if(samples>1){targets[slot].resolve=sg_make_view(&(sg_view_desc){.resolve_attachment.image=color});targets[slot].samples_image=drawn;}
  if(depth){targets[slot].depth=sg_make_view(&(sg_view_desc){.depth_stencil_attachment.image=depth_image});targets[slot].depth_image=depth_image;}
  targets[slot].width=w;targets[slot].height=h;
- targets[slot].variant=(format==4?1:0)|(depth?0:2)|(samples==1&&screen>1?4:0);
+ targets[slot].variant=(format==4?1:0)|(depth?0:2)|((power_of(samples)^power_of(screen_samples()))<<2);
  return texture.id;
 }
 /* A shadow map: a depth array of layers layers, each size x size, sampled through the returned texture view, with an attachment view a layer. */
@@ -528,7 +533,7 @@ static int begin_target(uint32_t target,int clear,sg_color color){
  if(!targets[slot].cleared)clear=1;
  targets[slot].cleared=1;
  active=2;flipped=!sg_query_features().origin_top_left;frame_width=targets[slot].width;frame_height=targets[slot].height;pass_texture=target;
- pass_variant=targets[slot].variant|(flipped?8:0);
+ pass_variant=targets[slot].variant|(flipped?16:0);
  const sg_load_action load=clear?SG_LOADACTION_CLEAR:SG_LOADACTION_LOAD;
  sg_begin_pass(&(sg_pass){.action={.colors[0]={.load_action=load,.store_action=SG_STOREACTION_STORE,.clear_value=color},
   .depth={.load_action=load,.store_action=SG_STOREACTION_STORE,.clear_value=1.0f}},
@@ -679,14 +684,14 @@ static void apply_blocks(int shader,int p,const void *uniforms){
 /* The variant of the pipeline in slot that draws in the open pass, made the first time: depth alone has none (it draws only into shadow
    maps), lines and points none flipped (they have no faces). */
 static sg_pipeline variant_of(int slot){
- const int v=pipeline_info[slot].depth_only?0:pipeline_info[slot].group<3?pass_variant&7:pass_variant;
+ const int v=pipeline_info[slot].depth_only?0:pipeline_info[slot].group<3?pass_variant&15:pass_variant;
  if(!variants[slot][v].id){
   sg_pipeline_desc pd=pipeline_descs[slot];
   if(v&1)pd.colors[0].pixel_format=SG_PIXELFORMAT_RGBA16F;
   if(v&2){pd.depth.pixel_format=SG_PIXELFORMAT_NONE;pd.depth.compare=SG_COMPAREFUNC_ALWAYS;pd.depth.write_enabled=false;}
-  if(v&6)pd.sample_count=1;
+  if(v&12)pd.sample_count=1<<(((v>>2)&3)^power_of(screen_samples()));
   /* Flipped: the front faces (and gl_FrontFacing) the other way round. */
-  if(v&8)pd.face_winding=pd.face_winding==SG_FACEWINDING_CW?SG_FACEWINDING_CCW:SG_FACEWINDING_CW;
+  if(v&16)pd.face_winding=pd.face_winding==SG_FACEWINDING_CW?SG_FACEWINDING_CCW:SG_FACEWINDING_CW;
   variants[slot][v]=sg_make_pipeline(&pd);
  }
  return variants[slot][v];

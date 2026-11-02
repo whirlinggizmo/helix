@@ -196,8 +196,13 @@ enum Event {
 - Textures: `createTexture(width, height, levels, format)` (2D, with its mip levels), `createCubeTexture`, `createDataTexture` (floats read texel by texel),
   `updateTexture(handle, x, y, width, height, data)` (a rectangle of a texture's top level, RGBA8 or half floats, outside a pass, the
   passes before it reading the old texels; a data texture whole, at any time; sokol writes through GL directly, SDL_GPU copies in the
-  frame's command buffer, uncycled), `createRenderTarget(width, height, format, depth)` (RGBA8 or half floats, with or
-  without depth), `createShadowMap(size, layerCount)` (a depth array read through a comparison sampler), `disposeTexture`; `canSample(format)`
+  frame's command buffer, uncycled), `createRenderTarget(width, height, format, depth, msaaSampleCount)` (RGBA8 or half floats, with or
+  without depth, and multisampled apart from its depth: 1 for no multisampling, 0 for the screen's count, a count rounded down to the
+  nearest the GPU draws the format with, 1, 2, 4 or 8 up to `getMaxRenderTargetMsaaSampleCount(format)` (a GPU need not take every
+  one: lavapipe takes 1 and 4), 1 where it can't multisample the format; a multisampled target is resolved into its texture at each
+  pass's end, WebGL2 blitting its multisampled renderbuffers, sokol and SDL_GPU through a resolve attachment; SDL_GPU submits the frame's
+  passes so far before a pass of fewer samples than one already in its command buffer, as NVIDIA's Vulkan driver loses the device on
+  such a pair in one command buffer), `createShadowMap(size, layerCount)` (a depth array read through a comparison sampler), `disposeTexture`; `canSample(format)`
   and `canRender(format)` say what the GPU can.
 - Buffers: `createBuffer(capacityBytes)` and `updateBuffer`, `createStaticBuffer(data, bytes, index)`, `disposeBuffer`.
 - Programs and pipelines: `createShader(source:ShaderSource)`, `createPipeline(desc:PipelineDesc)` (a program, its buffers' layout,
@@ -243,7 +248,7 @@ enum Event {
   (sokol takes it so; WebGL2 through EXT_texture_filter_anisotropic where the browser has it), each adapter keeping a sampler a value.
   Mipmaps come with a texture's levels; the platform makes none.
 - `readPixels(handle, read(pixels, width, height), failed(message))`: an RGBA8 texture's top level, an RGBA8 render target, or the frame
-  just ended (0); `msaaSampleCount`, `maxMsaaSampleCount`; `dispose`.
+  just ended (0); `msaaSampleCount` (the screen's), `maxMsaaSampleCount` (the most a window could ask for); `dispose`.
 
 `endFrame` ends the screen's pass and submits it; `present()` shows the frame and waits for the display's refresh, which paces the
 owner's loop. Between the two the frame can still be read back (`readPixels(0)`), and the owner can do work in the time the display

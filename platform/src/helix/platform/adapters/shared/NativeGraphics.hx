@@ -191,8 +191,16 @@ abstract class NativeGraphics implements IGraphics {
 			throw "Invalid native upload";
 	}
 
-	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true):Int
-		return valid(GraphicsDeviceBridge.target(width, height, format, depth ? 1 : 0));
+	public function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int
+		return GraphicsDeviceBridge.maxTargetSamples(format);
+
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0):Int {
+		if (msaaSampleCount < 0)
+			throw "Invalid native render target";
+		// The count asked (0: the screen's), which the C rounds down to one the GPU takes for the format.
+		return valid(GraphicsDeviceBridge.target(width, height, format, depth ? 1 : 0,
+			msaaSampleCount == 0 ? GraphicsDeviceBridge.msaaSamples() : msaaSampleCount));
+	}
 
 	public function canRender(format:TextureFormat):Bool
 		return GraphicsDeviceBridge.canRender(format) == 1;

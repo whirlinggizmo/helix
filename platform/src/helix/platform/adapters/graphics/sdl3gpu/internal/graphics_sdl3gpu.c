@@ -58,8 +58,9 @@ static struct{uint32_t generation;int live;SDL_GPUShader *vertex,*fragment;int a
 /* Pipelines: SDL's, a twin with the front faces the other way round for flipped passes (depth alone, into shadow maps), and what a draw
    through one checks and binds. An SDL_GPU pipeline is made for one kind of pass (its color format, depth and samples): its variants for
    the others, made from its description (kept, with what it points to) the first time a draw needs one. A variant is the pass's kind: bit 0
-   half floats, bit 1 no depth, bit 2 single sampled where the screen isn't; variant 0 (the screen's) is the pipeline itself. */
-#define VARIANTS 8
+   half floats, bit 1 no depth, bits 2-3 the samples' power of two exclusive-or the screen's (0: the screen's samples); variant 0 (the
+   screen's) is the pipeline itself. */
+#define VARIANTS 16
 /* The attributes no buffer feeds read constants (theirs, or (0, 0, 0, 1)) from a buffer of the pipeline's own stepped per instance, as
    SDL_GPU steps an instance buffer one record an instance and no slower: its record (constants, 16 bytes an attribute) repeated
    constant_count times, made again larger when a draw has more instances. */
@@ -69,10 +70,10 @@ static struct{uint32_t generation;int live;SDL_GPUGraphicsPipeline *pipeline,*fl
  float constants[HELIX_MAX_VERTEX_ATTRIBUTES*4];int constant_attributes,constant_count;SDL_GPUBuffer *constant_buffer;}pipelines[SLOTS];
 
 /* Textures by kind: sampled (a 2D image or a cube), a data texture (RGBA32F, its versions for writes after a read in a frame), a render
-   target (a color texture sampled, drawn through a multisampled one when it has depth and the screen is multisampled, its depth or none, the
-   pipelines' variant drawing into it), or a shadow map (a depth array). */
+   target (a color texture sampled, drawn through a multisampled one when it has more than one sample, its depth or none, the pipelines'
+   variant drawing into it), or a shadow map (a depth array). */
 enum{PLAIN,DATA,TARGET,SHADOW};
-static struct{uint32_t generation;int live,kind,width,height,layers,variant,format,cleared;SDL_GPUTexture *texture,*samples,*depth;
+static struct{uint32_t generation;int live,kind,width,height,layers,variant,format,cleared,sample_count;SDL_GPUTexture *texture,*samples,*depth;
  SDL_GPUTexture *versions[MAX_RENAMES];int current,bound[MAX_RENAMES];}textures[SLOTS];
 
 /* Samplers by Sampling value (helix.platform.Sampling: bit 0 linear, bits 1-2 wrap u, bits 3-4 wrap v, bits 5-6 the mipmap filter, bits
@@ -224,6 +225,8 @@ int helix_sdl3gpu_setup(void){
 int helix_sdl3gpu_shader_format(void){return shader_format==SDL_GPU_SHADERFORMAT_SPIRV?0:shader_format==SDL_GPU_SHADERFORMAT_MSL?1:2;}
 int helix_msaa_samples(void){return window_samples;}
 int helix_max_msaa_samples(void){return max_samples;}
+/* The power of two of a sample count (1, 2, 4 or 8). */
+static int power_of(int samples){return samples>=8?3:samples>=4?2:samples>=2?1:0;}
 
 /* helix.platform.TextureFormat's values as SDL_GPU's: RGBA8, BC7, ASTC 4x4, ETC2 RGBA8 (none: SDL_GPU has no ETC2), RGBA16F. */
 static SDL_GPUTextureFormat format_of(int format){
@@ -545,19 +548,31 @@ static SDL_GPUTexture *depth_texture(int w,int h,int layers,int samples){
   .usage=SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET|(samples>1?0:SDL_GPU_TEXTUREUSAGE_SAMPLER),.width=(Uint32)w,.height=(Uint32)h,
   .layer_count_or_depth=(Uint32)layers,.num_levels=1,.sample_count=sample_count_of(samples)});
 }
-/* A render target: a color texture of format sampled through the handle; with depth, depth for its passes and drawn through a multisampled
-   texture when the screen is multisampled (and the format takes the screen's samples), without, neither. */
-uint32_t helix_target(int w,int h,int format,int depth){
- const int slot=free_texture_slot();
- if(slot<0||w<=0||h<=0||w>16384||h>16384||!helix_can_render(format))return 0;
+/* The most samples a render target of format takes, at most 8: the most both it and the depth format take, so it holds with depth or without. */
+int helix_max_target_samples(int format){
+ if(!helix_can_render(format))return 1;
  const SDL_GPUTextureFormat pixels=format_of(format);
- const int samples=depth&&window_samples>1&&SDL_GPUTextureSupportsSampleCount(device,pixels,sample_count_of(window_samples))?window_samples:1;
+ for(int n=8;n>=2;n/=2)if(SDL_GPUTextureSupportsSampleCount(device,pixels,sample_count_of(n))&&SDL_GPUTextureSupportsSampleCount(device,depth_format,sample_count_of(n)))
+  return n;
+ return 1;
+}
+/* A render target: a color texture of format sampled through the handle, drawn through a multisampled texture resolved into it, or with one
+   sample into it directly; with depth, a depth texture of the same samples for its passes. Its samples are the most the device takes for
+   both the format and depth (as helix_max_target_samples) up to the samples asked for (at least 1), which a device need not take for every
+   power of two (lavapipe takes 1 and 4). */
+uint32_t helix_target(int w,int h,int format,int depth,int asked){
+ const int slot=free_texture_slot();
+ if(slot<0||w<=0||h<=0||w>16384||h>16384||!helix_can_render(format)||asked<1)return 0;
+ const SDL_GPUTextureFormat pixels=format_of(format);
+ int samples=asked>=8?8:asked>=4?4:asked>=2?2:1;
+ while(samples>1&&!(SDL_GPUTextureSupportsSampleCount(device,pixels,sample_count_of(samples))&&
+  SDL_GPUTextureSupportsSampleCount(device,depth_format,sample_count_of(samples))))samples/=2;
  SDL_GPUTexture *color=color_texture(w,h,pixels),*drawn=samples_texture(w,h,pixels,samples),*depth_target=depth?depth_texture(w,h,1,samples):NULL;
  if(!color||(samples>1&&!drawn)||(depth&&!depth_target)){
   if(color)SDL_ReleaseGPUTexture(device,color);if(drawn)SDL_ReleaseGPUTexture(device,drawn);if(depth_target)SDL_ReleaseGPUTexture(device,depth_target);return 0;
  }
- textures[slot].texture=color;textures[slot].samples=drawn;textures[slot].depth=depth_target;textures[slot].layers=1;
- textures[slot].variant=(format==4?1:0)|(depth?0:2)|(samples==1&&window_samples>1?4:0);
+ textures[slot].texture=color;textures[slot].samples=drawn;textures[slot].depth=depth_target;textures[slot].layers=1;textures[slot].sample_count=samples;
+ textures[slot].variant=(format==4?1:0)|(depth?0:2)|((power_of(samples)^power_of(window_samples))<<2);
  return take_texture(slot,TARGET,w,h);
 }
 /* A shadow map: a depth array of layers layers, each size x size, sampled through the handle. Always an array, so its programs read it as one. */
@@ -574,11 +589,17 @@ uint32_t helix_shadow_map(int size,int layers){
  return take_texture(slot,SHADOW,size,size);
 }
 
-/* The frame's command buffer, acquired by its first pass. */
-static int frame_command(void){
- if(!command)command=SDL_AcquireGPUCommandBuffer(device);
- if(!command)fprintf(stderr,"HeliX SDL_GPU: no command buffer: %s\n",SDL_GetError());
- return command!=NULL;
+/* The frame's command buffer, acquired by its first pass, for a pass drawn with samples samples. A pass of fewer samples than one
+   already recorded in it goes in a new one, the recorded passes submitted first: NVIDIA's Vulkan driver (595) loses the device on a
+   multisampled pass followed by one of fewer samples in a command buffer, which the validation layers find nothing wrong with and Mesa's
+   lavapipe draws. command_samples is the most samples a pass recorded in the command buffer has. */
+static int command_samples;
+static int frame_command(int samples){
+ if(command&&samples<command_samples){SDL_SubmitGPUCommandBuffer(command);command=NULL;}
+ if(!command){command=SDL_AcquireGPUCommandBuffer(device);command_samples=1;}
+ if(!command){fprintf(stderr,"HeliX SDL_GPU: no command buffer: %s\n",SDL_GetError());return 0;}
+ if(samples>command_samples)command_samples=samples;
+ return 1;
 }
 static void begin_recording(int kind,int flip,int w,int h){
  active=kind;flipped=flip;pass_width=w;pass_height=h;staging_used=0;upload_count=0;command_count=0;uniform_used=0;
@@ -590,7 +611,7 @@ static SDL_FColor color_of(uint32_t color){return (SDL_FColor){((color>>16)&255)
 int helix_begin_shadow(uint32_t map,int layer){
  if(active||!texture_live(map))return 0;
  const int slot=slot_of(map);
- if(textures[slot].kind!=SHADOW||layer<0||layer>=textures[slot].layers||!frame_command())return 0;
+ if(textures[slot].kind!=SHADOW||layer<0||layer>=textures[slot].layers||!frame_command(1))return 0;
  pass_has_color=0;pass_has_depth=1;pass_variant=0;
  pass_depth=(SDL_GPUDepthStencilTargetInfo){.texture=textures[slot].texture,.clear_depth=1,.load_op=SDL_GPU_LOADOP_CLEAR,.store_op=SDL_GPU_STOREOP_STORE,
   .stencil_load_op=SDL_GPU_LOADOP_DONT_CARE,.stencil_store_op=SDL_GPU_STOREOP_DONT_CARE,.layer=(Uint8)layer};
@@ -613,7 +634,7 @@ static void color_pass(SDL_GPUTexture *color,SDL_GPUTexture *samples,SDL_GPUText
 static int begin_target(uint32_t target,int clear,SDL_FColor color){
  if(active||!texture_live(target))return 0;
  const int slot=slot_of(target);
- if(textures[slot].kind!=TARGET||!frame_command())return 0;
+ if(textures[slot].kind!=TARGET||!frame_command(textures[slot].sample_count))return 0;
  if(!textures[slot].cleared)clear=1;
  textures[slot].cleared=1;
  color_pass(textures[slot].texture,textures[slot].samples,textures[slot].depth,color,1);
@@ -625,7 +646,7 @@ int helix_begin_target(uint32_t target,float red,float green,float blue,float al
 int helix_resume_target(uint32_t target){return begin_target(target,0,(SDL_FColor){0,0,0,0});}
 /* The screen's pass: into the screen texture (made again when the size changes), copied to the swapchain when the frame ends. */
 int helix_begin(int width,int height,uint32_t color){
- if(active||width<=0||height<=0||!frame_command())return 0;
+ if(active||width<=0||height<=0||!frame_command(window_samples))return 0;
  if(!screen||width!=screen_width||height!=screen_height){
   if(screen)SDL_ReleaseGPUTexture(device,screen);if(screen_samples)SDL_ReleaseGPUTexture(device,screen_samples);if(screen_depth)SDL_ReleaseGPUTexture(device,screen_depth);
   screen=color_texture(width,height,SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM);screen_samples=samples_texture(width,height,SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,window_samples);
@@ -713,7 +734,7 @@ static SDL_GPUGraphicsPipeline *variant_of(int slot){
   if(v&1)color.format=SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT;
   info.target_info.color_target_descriptions=&color;
   if(v&2){info.target_info.has_depth_stencil_target=false;info.depth_stencil_state.enable_depth_test=false;info.depth_stencil_state.enable_depth_write=false;}
-  if(v&6)info.multisample_state.sample_count=SDL_GPU_SAMPLECOUNT_1;
+  if(v&12)info.multisample_state.sample_count=sample_count_of(1<<(((v>>2)&3)^power_of(window_samples)));
   pipelines[slot].variants[v]=SDL_CreateGPUGraphicsPipeline(device,&info);
   if(!pipelines[slot].variants[v])fprintf(stderr,"HeliX SDL_GPU: a pipeline's variant didn't build: %s\n",SDL_GetError());
  }
