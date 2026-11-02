@@ -421,8 +421,9 @@ premultiplied; `poll`; `dispose`. It reads **PNG, JPEG, BMP, TGA and GIF** (the 
 which stores pixels premultiplied, so a partly transparent pixel may come back a level or two from the file's value. Natively,
 `imagedecoder/stb` (`StbImageDecoderAdapter`): stb_image 2.30 (`platform/vendor/stb`) on a worker thread, exact, delivered at `poll`.
 
-`IFontRasterizer`: `rasterize(encoded, size, codepoints, sdf, rasterized(glyphs, ascent, descent, lineGap), failed(message))`; `poll`;
-`dispose`. It reads **TrueType and OpenType** fonts (not a collection's) and gives each codepoint's glyph (`RasterGlyph`): whether the font
+`IFontRasterizer`: `rasterize(encoded, size, codepoints, rasterized(glyphs, ascent, descent, lineGap), failed(message))` for coverage,
+`rasterizeDistanceField` with the same arguments for signed distances, so a program rasterizing coverage carries no distance
+transform; `poll`; `dispose`. It reads **TrueType and OpenType** fonts (not a collection's) and gives each codepoint's glyph (`RasterGlyph`): whether the font
 has it, its bitmap (8-bit coverage, or signed distances: 4 pixels of padding, 128 on the outline, 64 a pixel), its offset from the pen and
 the baseline, and its advance, with the font's ascent, descent and line gap. Sizes and lengths are stb_truetype's: the size is the pixel
 height, ascent minus descent. Natively, `fontrasterizer/stb` (`StbFontRasterizerAdapter`): stb_truetype 1.26 (`platform/vendor/stb`) on

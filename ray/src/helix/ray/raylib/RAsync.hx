@@ -757,8 +757,7 @@ class RAsync {
 		var wanted = codepoints == null ? [for (i in 0...count) 32 + i] : codepoints.slice(0, count);
 		var data = dataSize < fileData.length ? fileData.sub(0, dataSize) : fileData;
 		Runtime.fonts()
-			.rasterize(data, fontSize, wanted, Coverage,
-				(glyphs, ascent, _, _) -> loaded(RText.fontOf(RText.foundGlyphs(glyphs, ascent, fontSize), fontSize)),
+			.rasterize(data, fontSize, wanted, (glyphs, ascent, _, _) -> loaded(RText.fontOf(RText.foundGlyphs(glyphs, ascent, fontSize), fontSize)),
 				message -> refuse("LoadFontFromMemoryAsync", message, failed));
 	}
 
@@ -779,10 +778,11 @@ class RAsync {
 		var count = codepointCount > 0 ? codepointCount : 95;
 		var wanted = codepoints == null ? [for (i in 0...count) 32 + i] : codepoints.slice(0, count);
 		var data = dataSize < fileData.length ? fileData.sub(0, dataSize) : fileData;
-		var kind:helix.services.fonts.FontKind = type == FONT_SDF ? Distance : type == FONT_BITMAP ? Bitmap : Coverage;
-		Runtime.fonts()
-			.rasterize(data, fontSize, wanted, kind, (glyphs, ascent, _, _) -> loaded(RText.fontData(glyphs, ascent, fontSize, type)),
-				message -> refuse("LoadFontDataAsync", message, failed));
+		var fonts = Runtime.fonts();
+		// raylib's type is a value the program passes as it runs, so each kind's rasterizing is in the program that calls it.
+		var rasterize = type == FONT_SDF ? fonts.rasterizeDistanceField : type == FONT_BITMAP ? fonts.rasterizeBitmap : fonts.rasterize;
+		rasterize(data, fontSize, wanted, (glyphs, ascent, _, _) -> loaded(RText.fontData(glyphs, ascent, fontSize, type)),
+			message -> refuse("LoadFontDataAsync", message, failed));
 	}
 
 	// LoadImageAsync's call where its file's name isn't known as the program builds (Raylib.LoadImageAsync): a GIF file's first frame

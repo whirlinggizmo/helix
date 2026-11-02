@@ -357,7 +357,8 @@ What stb_truetype reads from the font's tables is read here the same way (helix-
 
 ```haxe
 function new()
-function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, sdf:Bool, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
+function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
+function rasterizeDistanceField(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
 ```
@@ -373,7 +374,8 @@ Provides `IFontRasterizer` natively over stb_truetype, each rasterize on a worke
 
 ```haxe
 function new()
-function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, sdf:Bool, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
+function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
+function rasterizeDistanceField(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
 ```

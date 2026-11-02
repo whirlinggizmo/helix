@@ -6,6 +6,9 @@ import helix.math.DistanceField2D;
 import helix.platform.IFontRasterizer;
 import helix.platform.RasterGlyph;
 
+/** A glyph's pixels: its text drawn with its pen at (x, y) on a width by height canvas, as coverage or distances. */
+private typedef Pixels = (family:String, em:Float, text:String, x:Float, y:Float, width:Int, height:Int) -> Bytes;
+
 /** Provides `IFontRasterizer` in a page: the font loaded as a `FontFace` and its glyphs drawn with `fillText` on an `OffscreenCanvas`.
 
 	What stb_truetype reads from the font's tables is read here the same way (helix-formats' `TrueTypeTables`): the metrics, which
@@ -26,7 +29,16 @@ class CanvasFontRasterizerAdapter implements IFontRasterizer {
 	/** Creates the rasterizer. */
 	public function new() {}
 
-	public function rasterize(encoded:Bytes, size:Float, codepoints:Array<Int>, sdf:Bool,
+	public function rasterize(encoded:Bytes, size:Float, codepoints:Array<Int>,
+			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String->Void):Void
+		run(encoded, size, codepoints, 0, coverage, rasterized, failed);
+
+	public function rasterizeDistanceField(encoded:Bytes, size:Float, codepoints:Array<Int>,
+			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String->Void):Void
+		run(encoded, size, codepoints, SDF_PADDING, distances, rasterized, failed);
+
+	// The font loaded as a FontFace and each glyph drawn, its box padded and its pixels made by pixels (coverage or distances).
+	function run(encoded:Bytes, size:Float, codepoints:Array<Int>, padding:Int, pixels:Pixels,
 			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String->Void):Void {
 		var tables = try new TrueTypeTables(encoded) catch (e:String) {
 			js.Browser.window.setTimeout(() -> if (!closed) failed('Font rasterize failed: $e'), 0);
@@ -38,7 +50,10 @@ class CanvasFontRasterizerAdapter implements IFontRasterizer {
 		var fonts:Dynamic = js.Syntax.code("document.fonts");
 		face.load().then(_ -> {
 			fonts.add(face);
-			var glyphs = [for (codepoint in wanted) glyph(tables, family, size, codepoint, sdf)];
+			var glyphs = [
+				for (codepoint in wanted)
+					glyph(tables, family, size, codepoint, padding, pixels)
+			];
 			fonts.delete(face);
 			var scale = tables.scaleFor(size);
 			if (!closed)
@@ -47,7 +62,7 @@ class CanvasFontRasterizerAdapter implements IFontRasterizer {
 			(error:Dynamic) -> if (!closed) failed("Font rasterize failed: " + Std.string(error)));
 	}
 
-	function glyph(tables:TrueTypeTables, family:String, size:Float, codepoint:Int, sdf:Bool):RasterGlyph {
+	function glyph(tables:TrueTypeTables, family:String, size:Float, codepoint:Int, padding:Int, pixels:Pixels):RasterGlyph {
 		var index = tables.glyphIndex(codepoint);
 		if (index == 0)
 			return empty(codepoint, false, 0, 0, 0);
@@ -75,23 +90,10 @@ class CanvasFontRasterizerAdapter implements IFontRasterizer {
 		}
 		if (x1 <= x0 || y1 <= y0)
 			return empty(codepoint, true, x0, y0, advance);
-		if (!sdf) {
-			var width = x1 - x0, height = y1 - y0;
-			return {
-				codepoint: codepoint,
-				found: true,
-				width: width,
-				height: height,
-				offsetX: x0,
-				offsetY: y0,
-				advance: advance,
-				pixels: coverage(family, tables.unitsPerEm * scale, text, -x0, -y0, width, height)
-			};
-		}
-		x0 -= SDF_PADDING;
-		y0 -= SDF_PADDING;
-		x1 += SDF_PADDING;
-		y1 += SDF_PADDING;
+		x0 -= padding;
+		y0 -= padding;
+		x1 += padding;
+		y1 += padding;
 		var width = x1 - x0, height = y1 - y0;
 		return {
 			codepoint: codepoint,
@@ -101,7 +103,7 @@ class CanvasFontRasterizerAdapter implements IFontRasterizer {
 			offsetX: x0,
 			offsetY: y0,
 			advance: advance,
-			pixels: distances(family, tables.unitsPerEm * scale, text, -x0, -y0, width, height)
+			pixels: pixels(family, tables.unitsPerEm * scale, text, -x0, -y0, width, height)
 		};
 	}
 

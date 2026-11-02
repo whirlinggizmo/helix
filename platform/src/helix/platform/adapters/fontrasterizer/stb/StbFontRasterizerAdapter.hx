@@ -15,7 +15,16 @@ class StbFontRasterizerAdapter implements IFontRasterizer {
 	/** Creates the rasterizer. */
 	public function new() {}
 
-	public function rasterize(encoded:Bytes, size:Float, codepoints:Array<Int>, sdf:Bool,
+	public function rasterize(encoded:Bytes, size:Float, codepoints:Array<Int>,
+			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String->Void):Void
+		run(encoded, size, codepoints, false, rasterized, failed);
+
+	public function rasterizeDistanceField(encoded:Bytes, size:Float, codepoints:Array<Int>,
+			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String->Void):Void
+		run(encoded, size, codepoints, true, rasterized, failed);
+
+	// Rasterizes on a worker thread, as coverage or signed distances, and answers at a poll.
+	function run(encoded:Bytes, size:Float, codepoints:Array<Int>, sdf:Bool,
 			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String->Void):Void {
 		var wanted = codepoints.copy();
 		Thread.create(() -> {

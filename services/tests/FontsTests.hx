@@ -48,7 +48,7 @@ class FontsTests {
 		for (packing in [helix.services.fonts.FontPacking.Skyline, helix.services.fonts.FontPacking.Rows]) {
 			var fonts = new Fonts(rasterizer, assets, images, {padding: 1, packing: packing}),
 				font:Font2D = null;
-			fonts.load("ui.ttf", 8, [65, 0x4E00, 66, 67], Coverage, f -> font = f);
+			fonts.load("ui.ttf", 8, [65, 0x4E00, 66, 67], f -> font = f);
 			check(font == null, '$packing: not answered during the call');
 			pump();
 			check(font != null && font.glyphs.length == 3 && font.getGlyph(0x4E00) == null, '$packing: a character the font lacks has no glyph');
@@ -63,13 +63,13 @@ class FontsTests {
 		}
 
 		var hard:Font2D = null;
-		new Fonts(rasterizer, assets, images).load("ui.ttf", 4, [65], Bitmap, f -> hard = f);
+		new Fonts(rasterizer, assets, images).loadBitmap("ui.ttf", 4, [65], f -> hard = f);
 		pump();
 		var a = hard.getGlyph(65);
 		check(hard.atlas.pixels.get((a.y * hard.atlas.width + a.x) * 4 + 3) == 255, "hard-edged: coverage over 80 is full");
 
 		var why = "";
-		new Fonts(rasterizer, assets, images).load("bad.ttf", 8, [65], Coverage, _ -> throw "loaded what isn't a font", m -> why = m);
+		new Fonts(rasterizer, assets, images).load("bad.ttf", 8, [65], _ -> throw "loaded what isn't a font", m -> why = m);
 		pump();
 		check(why.indexOf("bad.ttf") >= 0, "what isn't a font fails, by name");
 
@@ -89,7 +89,7 @@ class FontsTests {
 		pump();
 		check(why.indexOf("fonts/binary.fnt") >= 0 && why.indexOf("binary BMFont") >= 0, "a binary BMFont file fails, by name: " + why);
 		var fonts = new Fonts(rasterizer, assets, images), raster:Array<helix.platform.RasterGlyph> = null, metrics = [];
-		fonts.rasterize(Bytes.ofString("font"), 8, [65, 0x4E00, 66], Coverage, (glyphs, ascent, descent, lineGap) -> {
+		fonts.rasterize(Bytes.ofString("font"), 8, [65, 0x4E00, 66], (glyphs, ascent, descent, lineGap) -> {
 			raster = glyphs;
 			metrics = [ascent, descent, lineGap];
 		});
@@ -107,28 +107,28 @@ class FontsTests {
 		check(metrics[0] == 6 && metrics[1] == -2 && metrics[2] == 0, "rasterized from bytes: the metrics");
 
 		var bitmap:Array<helix.platform.RasterGlyph> = null;
-		fonts.rasterize(Bytes.ofString("font"), 4, [65, 66], Bitmap, (glyphs, _, _, _) -> bitmap = glyphs);
+		fonts.rasterizeBitmap(Bytes.ofString("font"), 4, [65, 66], (glyphs, _, _, _) -> bitmap = glyphs);
 		pump();
 		check(bitmap[1].pixels.get(0) == 255 && bitmap[1].pixels.get(7) == 0, "hard-edged from bytes: coverage under 80 is none, the rest full");
 
 		var distances = false;
-		fonts.rasterize(Bytes.ofString("font"), 4, [65], Distance, (_, _, _, _) -> distances = true);
+		fonts.rasterizeDistanceField(Bytes.ofString("font"), 4, [65], (_, _, _, _) -> distances = true);
 		check(rasterizer.sdf, "signed distances asked of the platform");
 		pump();
 		check(distances, "signed distances rasterized");
 
 		var aborted = false;
-		fonts.rasterize(Bytes.ofString("font"), 4, [65], Coverage, (_, _, _, _) -> aborted = true, _ -> aborted = true)();
+		fonts.rasterize(Bytes.ofString("font"), 4, [65], (_, _, _, _) -> aborted = true, _ -> aborted = true)();
 		pump();
 		check(!aborted, "an aborted rasterize calls nothing");
 
 		var refused = "";
-		fonts.rasterize(Bytes.ofString("junk"), 4, [65], Coverage, (_, _, _, _) -> throw "rasterized what isn't a font", m -> refused = m);
+		fonts.rasterize(Bytes.ofString("junk"), 4, [65], (_, _, _, _) -> throw "rasterized what isn't a font", m -> refused = m);
 		pump();
 		check(refused == "not a font", "what isn't a font fails");
 
 		var abortedLoad = false;
-		fonts.load("ui.ttf", 4, [65], Coverage, _ -> abortedLoad = true, _ -> abortedLoad = true)();
+		fonts.load("ui.ttf", 4, [65], _ -> abortedLoad = true, _ -> abortedLoad = true)();
 		pump();
 		check(!abortedLoad, "an aborted load calls nothing");
 

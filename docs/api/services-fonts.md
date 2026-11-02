@@ -34,7 +34,7 @@ function getGlyph(codepoint:Int):Null<Glyph2D>
 
 *abstract* in [`services/src/helix/services/fonts/FontKind.hx`](../../services/src/helix/services/fonts/FontKind.hx), `import helix.services.fonts.FontKind;`
 
-Specifies what a font's glyphs hold, as `Fonts.load` and `Fonts.rasterize` rasterize them.
+Specifies what a font's glyphs hold: `Fonts.load` and `rasterize` make Coverage, `loadBitmap` and `rasterizeBitmap` Bitmap, `loadDistanceField` and `rasterizeDistanceField` Distance.
 
 - `FontKind.Coverage`: Antialiased coverage: each texel how much of it the glyph covers.
 - `FontKind.Bitmap`: Coverage made hard-edged: each texel covered or not, for pixel fonts drawn at their own size.
@@ -65,19 +65,23 @@ function toString():String
 
 *class* in [`services/src/helix/services/fonts/Fonts.hx`](../../services/src/helix/services/fonts/Fonts.hx), `import helix.services.fonts.Fonts;`
 
-Provides fonts by path: a TrueType or OpenType font rasterized at a size (`load`), or a BMFont's .fnt and its images (`loadBmFont`), each as a `Font2D` with its glyphs on one atlas. A TrueType font's glyphs also come from its bytes, each on its own, for a program that places them itself (`rasterize`).
+Provides fonts by path: a TrueType or OpenType font rasterized at a size as coverage (`load`), hard-edged (`loadBitmap`) or signed distances (`loadDistanceField`), or a BMFont's .fnt and its images (`loadBmFont`), each as a `Font2D` with its glyphs on one atlas. A TrueType font's glyphs also come from its bytes, each on its own, for a program that places them itself (`rasterize`, `rasterizeBitmap`, `rasterizeDistanceField`). Each kind is its own call, so a program carries only the rasterizing it asks for.
 
 A TrueType font's glyphs are rasterized by the platform (`IFontRasterizer`) and packed onto an atlas as `FontsOptions` says. Its answers come as the assets, images and rasterizer it uses are polled.
 
 ```haxe
 var fonts = new Fonts(rasterizer, assets, images);
-fonts.load("ui.ttf", 24, [for (c in 32...127) c], Coverage, font -> ui = font);
+fonts.load("ui.ttf", 24, [for (c in 32...127) c], font -> ui = font);
 ```
 
 ```haxe
 function new(rasterizer:IFontRasterizer, assets:Assets, images:Images, ?options:FontsOptions)
-function load(path:String, size:Float, codepoints:Array<Int>, kind:FontKind, loaded:Font2D -> Void, ?failed:String -> Void):() -> Void
-function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, kind:FontKind, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, ?failed:String -> Void):() -> Void
+function load(path:String, size:Float, codepoints:Array<Int>, loaded:Font2D -> Void, ?failed:String -> Void):() -> Void
+function loadBitmap(path:String, size:Float, codepoints:Array<Int>, loaded:Font2D -> Void, ?failed:String -> Void):() -> Void
+function loadDistanceField(path:String, size:Float, codepoints:Array<Int>, loaded:Font2D -> Void, ?failed:String -> Void):() -> Void
+function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, ?failed:String -> Void):() -> Void
+function rasterizeBitmap(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, ?failed:String -> Void):() -> Void
+function rasterizeDistanceField(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, ?failed:String -> Void):() -> Void
 function loadBmFont(path:String, loaded:Font2D -> Void, ?failed:String -> Void):() -> Void
 ```
 
@@ -86,26 +90,52 @@ function loadBmFont(path:String, loaded:Font2D -> Void, ?failed:String -> Void):
   - `assets`: The assets the files are read through.
   - `images`: The images a BMFont's pages are decoded by.
   - `options`: Optional. How the atlas is made. Defaults to a texel of padding, packed as a skyline.
-- `load`: Loads a TrueType or OpenType font and rasterizes its glyphs at a size onto one atlas.
+- `load`: Loads a TrueType or OpenType font and rasterizes its glyphs at a size onto one atlas, as antialiased coverage (`FontKind.Coverage`).
   - `path`: The file, as the assets name it.
   - `size`: The pixel height: the font's ascent to its descent.
   - `codepoints`: The characters wanted; one the font lacks has no glyph.
-  - `kind`: What the glyphs hold: coverage, hard-edged coverage, or signed distances.
   - `loaded`: Receives the font.
   - `failed`: Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
   - returns: A function that aborts the load; neither callback is called after it, and once one was, it does nothing.
 
   One of `loaded` or `failed` is called once, at a later poll, never during this call.
-- `rasterize`: Rasterizes a TrueType or OpenType font's glyphs from the file's bytes, each on its own, for a program that places them itself: on an atlas of its own, or one image each. `load` makes a font of them on one atlas.
+- `loadBitmap`: Loads a TrueType or OpenType font as `load` does, its glyphs' coverage made hard-edged (`FontKind.Bitmap`), for pixel fonts drawn at their own size.
+  - `path`: The file, as the assets name it.
+  - `size`: The pixel height: the font's ascent to its descent.
+  - `codepoints`: The characters wanted; one the font lacks has no glyph.
+  - `loaded`: Receives the font.
+  - `failed`: Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
+  - returns: A function that aborts the load; neither callback is called after it, and once one was, it does nothing.
+- `loadDistanceField`: Loads a TrueType or OpenType font as `load` does, its glyphs signed distances to their outlines (`FontKind.Distance`), sharp at any size through a distance-field shader.
+  - `path`: The file, as the assets name it.
+  - `size`: The pixel height: the font's ascent to its descent.
+  - `codepoints`: The characters wanted; one the font lacks has no glyph.
+  - `loaded`: Receives the font.
+  - `failed`: Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
+  - returns: A function that aborts the load; neither callback is called after it, and once one was, it does nothing.
+- `rasterize`: Rasterizes a TrueType or OpenType font's glyphs from the file's bytes as antialiased coverage, each on its own, for a program that places them itself: on an atlas of its own, or one image each. `load` makes a font of them on one atlas.
   - `encoded`: The font file's bytes, TTF or OTF.
   - `size`: The pixel height: the font's ascent to its descent.
   - `codepoints`: The characters wanted.
-  - `kind`: What the glyphs hold: coverage, hard-edged coverage, or signed distances.
-  - `rasterized`: Receives a glyph for each codepoint, in their order, its bitmap as `kind` says (one the font lacks isn't `found`, and is empty), and the font's ascent, descent (below the baseline, negative) and line gap, in pixels.
+  - `rasterized`: Receives a glyph for each codepoint, in their order (one the font lacks isn't `found`, and is empty), and the font's ascent, descent (below the baseline, negative) and line gap, in pixels.
   - `failed`: Optional. Receives why the font can't be read. When omitted, the failure is logged.
   - returns: A function that aborts it; neither callback is called after it, and once one was, it does nothing.
 
   One of `rasterized` or `failed` is called once, at a later poll, never during this call.
+- `rasterizeBitmap`: Rasterizes glyphs as `rasterize` does, their coverage made hard-edged: each texel covered or not.
+  - `encoded`: The font file's bytes, TTF or OTF.
+  - `size`: The pixel height: the font's ascent to its descent.
+  - `codepoints`: The characters wanted.
+  - `rasterized`: Receives a glyph for each codepoint, in their order, and the font's ascent, descent and line gap.
+  - `failed`: Optional. Receives why the font can't be read. When omitted, the failure is logged.
+  - returns: A function that aborts it; neither callback is called after it, and once one was, it does nothing.
+- `rasterizeDistanceField`: Rasterizes glyphs as signed distances to their outlines (`IFontRasterizer.rasterizeDistanceField`): 128 on the outline, 64 a texel, with 4 texels of padding around each glyph.
+  - `encoded`: The font file's bytes, TTF or OTF.
+  - `size`: The pixel height: the font's ascent to its descent.
+  - `codepoints`: The characters wanted.
+  - `rasterized`: Receives a glyph for each codepoint, in their order, and the font's ascent, descent and line gap.
+  - `failed`: Optional. Receives why the font can't be read. When omitted, the failure is logged.
+  - returns: A function that aborts it; neither callback is called after it, and once one was, it does nothing.
 - `loadBmFont`: Loads a BMFont: its .fnt (the text format) and its pages, stacked top to bottom onto one atlas. A page with no transparency whose texels are gray is coverage, so it becomes white with the gray as alpha, as raylib takes it.
   - `path`: The .fnt file, as the assets name it.
   - `loaded`: Receives the font: its size the .fnt's line height, its ascent its base.

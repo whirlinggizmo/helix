@@ -22,8 +22,8 @@ import helix.ray.Vector3;
 	kept with SaveFileTextAsync and read back with LoadFileTextAsync, collisions and raymath, fullscreen and the window's size. What a game
 	doesn't usually carry is left to the next rung: the other readers (OBJ, GIF, QOA, MP3, BMFont, image fonts), VR, ExportFontAsCodeAsync,
 	automation events, the clipboard. It is built and measured, never run: its files aren't there. */
-@:adds("helix.formats.audio.AudioHeader", "helix.formats.bmfont", "helix.formats.qoi", "helix.formats.truetype", "helix.math.DistanceField2D",
-	"helix.math.Matrix2D", "helix.math.RectPacker2D", "helix.math.Transform2D", "helix.math.Vector2D", "helix.platform.adapters.fontrasterizer.canvas",
+@:adds("helix.formats.audio.AudioHeader", "helix.formats.bmfont", "helix.formats.qoi", "helix.formats.truetype", "helix.math.Matrix2D",
+	"helix.math.RectPacker2D", "helix.math.Transform2D", "helix.math.Vector2D", "helix.platform.adapters.fontrasterizer.canvas",
 	"helix.platform.adapters.gamepads.dom", "helix.platform.adapters.keyboard.dom", "helix.platform.adapters.mouse.dom", "helix.platform.adapters.touch.dom",
 	"helix.ray.internal.AudioStreams", "helix.ray.internal.Automation", "helix.ray.internal.FrameConverter", "helix.services.fonts",
 	"helix.services.input.Gamepads", "helix.services.input.Gestures", "helix.services.input.Mouse", "helix.services.input.Touch")

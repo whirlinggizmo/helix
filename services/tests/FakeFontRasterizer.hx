@@ -14,7 +14,15 @@ class FakeFontRasterizer implements IFontRasterizer {
 	/** Creates it. */
 	public function new() {}
 
-	public function rasterize(encoded:Bytes, size:Float, codepoints:Array<Int>, sdf:Bool,
+	public function rasterize(encoded:Bytes, size:Float, codepoints:Array<Int>,
+			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String->Void):Void
+		run(encoded, size, codepoints, false, rasterized, failed);
+
+	public function rasterizeDistanceField(encoded:Bytes, size:Float, codepoints:Array<Int>,
+			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String->Void):Void
+		run(encoded, size, codepoints, true, rasterized, failed);
+
+	function run(encoded:Bytes, size:Float, codepoints:Array<Int>, sdf:Bool,
 			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String->Void):Void {
 		this.sdf = sdf;
 		var font = encoded.toString() == "font";

@@ -41,7 +41,7 @@ class Main {
 		var decoder = new CanvasImageDecoderAdapter();
 		var rasterizer = new CanvasFontRasterizerAdapter();
 		var fonts = new Fonts(rasterizer, assets, new Images(decoder, assets));
-		fonts.load("ui.ttf", 20, [for (c in 32...127) c], Coverage, loaded -> {
+		fonts.load("ui.ttf", 20, [for (c in 32...127) c], loaded -> {
 			font = renderer.createFont(loaded);
 			layout = new TextLayout2D(font, "A paragraph, wrapped and centered.");
 			layout.maxWidth = 200;

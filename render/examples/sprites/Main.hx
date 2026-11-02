@@ -129,7 +129,7 @@ class Main {
 			flame = frames[1];
 			batch.shapeRegion = sheet.writeWhiteTexel(sheet.width - 1, sheet.height - 1);
 		});
-		fonts.load("ui.ttf", 20, [for (c in 32...127) c], Coverage, loaded -> {
+		fonts.load("ui.ttf", 20, [for (c in 32...127) c], loaded -> {
 			font = renderer.createFont(loaded);
 			story = new TextLayout2D(font, STORY);
 			story.maxWidth = 320;

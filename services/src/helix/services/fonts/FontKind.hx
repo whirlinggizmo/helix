@@ -1,6 +1,7 @@
 package helix.services.fonts;
 
-/** Specifies what a font's glyphs hold, as `Fonts.load` and `Fonts.rasterize` rasterize them. */
+/** Specifies what a font's glyphs hold: `Fonts.load` and `rasterize` make Coverage, `loadBitmap` and `rasterizeBitmap` Bitmap,
+	`loadDistanceField` and `rasterizeDistanceField` Distance. */
 #if !macro
 @:build(helix.platform.macros.EnumNames.build())
 #end
