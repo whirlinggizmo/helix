@@ -26,7 +26,8 @@ class Sdl3GpuGraphicsAdapter extends NativeGraphics implements IGraphics {
 		var format = GraphicsBridge.shaderFormat();
 		var vertex = format == 0 ? haxe.crypto.Base64.decode(dialects.spirv.vertex) : text(format == 1 ? dialects.msl.vertex : dialects.hlsl.vertex),
 			fragment = format == 0 ? haxe.crypto.Base64.decode(dialects.spirv.fragment) : text(format == 1 ? dialects.msl.fragment : dialects.hlsl.fragment),
-			lines:String = NativeGraphics.layout(source);
+			lines:String = NativeGraphics.layout(source) + '\nk ${source.attributes.length}';
+		// Every attribute slot, a matrix's columns each one (`k <count>`): SDL_GPU feeds each, those no buffer does from a constant.
 		// Text keeps its NUL past the bytes given.
 		var vertexBytes = format == 0 ? vertex.length : vertex.length - 1,
 			fragmentBytes = format == 0 ? fragment.length : fragment.length - 1;

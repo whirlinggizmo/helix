@@ -29,6 +29,14 @@ private typedef Target = {
 	height:Int
 }
 
+/** A program's uniform block: its binding point, which is its index in a draw's uniforms, its size, and whether the linked program kept
+	it. */
+private typedef ProgramBlock = {
+	final point:Int;
+	final size:Int;
+	final bound:Bool;
+}
+
 /** Provides `IGraphics` on a canvas's WebGL2 context.
 
 	It builds programs from a `ShaderSource`'s GLSL ES 300 and pipelines from a `PipelineDesc`. */
@@ -53,10 +61,11 @@ class WebGl2GraphicsAdapter implements IGraphics {
 
 	var shaders:Map<Int, {
 		program:Dynamic,
-		blocks:Array<Null<{location:Dynamic, size:Int}>>,
+		blocks:Array<ProgramBlock>,
 		textures:Array<Dynamic>,
 		unfiltered:Array<Bool>,
-		kinds:Array<Int>
+		kinds:Array<Int>,
+		attributeCount:Int
 	}> = [];
 	// Pipelines, by handle: their description.
 	var pipelines:Map<Int, PipelineDesc> = [];
@@ -85,8 +94,13 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	var shadowMaps:Map<Int, {framebuffers:Array<Dynamic>, size:Int}> = [];
 	// The sampler shadow maps are read through: comparing, linear, clamped.
 	var comparison:Dynamic = null;
-	// A block 0 turned over for a flipped pass, reused.
-	var flippedBlock = new js.lib.Float32Array(64);
+	// A block's bytes with its flip uniform written, the caller's left as they are; grown as needed.
+	var flippedBlock = new js.lib.Uint8Array(256);
+	// A uniform buffer for each binding point (a vertex block's slot, a fragment block's 4 + its slot), and its size; made when first used.
+	var blockBuffers:Array<Dynamic> = [];
+	var blockBufferSizes:Array<Int> = [];
+	// The texture the open target or shadow pass draws into, 0 for none: a draw may not sample it.
+	var passTexture = 0;
 	// The framebuffer a texture is read back through, made the first time.
 	var reading:Dynamic = null;
 	// Attribute slots enabled by the last draw: each draw enables its own and turns the rest off.
@@ -376,12 +390,19 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			gl.deleteProgram(p);
 			throw log;
 		}
-		var blocks:Array<Null<{location:Dynamic, size:Int}>> = [],
+		var blocks:Array<ProgramBlock> = [],
 			samplerLocations:Array<Dynamic> = [],
 			unfiltered:Array<Bool> = [],
 			kinds:Array<Int> = [];
-		for (b in source.uniformBlocks)
-			blocks[b.slot] = {location: gl.getUniformLocation(p, b.glslName), size: b.size};
+		// Each block at a binding point of its own: a vertex block's slot, a fragment block's 4 + its slot (a block both read, the vertex
+		// stage's), its bytes the draw's at that index.
+		for (b in source.uniformBlocks) {
+			var point = b.stage == "fragment" ? 4 + b.slot : b.slot;
+			var index = gl.getUniformBlockIndex(p, b.glslName);
+			if (index != WebGL2RenderingContext.INVALID_INDEX)
+				gl.uniformBlockBinding(p, index, point);
+			blocks.push({point: point, size: b.size, bound: index != WebGL2RenderingContext.INVALID_INDEX});
+		}
 		gl.useProgram(p);
 		for (t in source.textures) {
 			samplerLocations[t.slot] = gl.getUniformLocation(p, t.glslName);
@@ -396,7 +417,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			blocks: blocks,
 			textures: samplerLocations,
 			unfiltered: unfiltered,
-			kinds: kinds
+			kinds: kinds,
+			attributeCount: source.attributes.length
 		};
 		return id;
 	}
@@ -432,6 +454,17 @@ class WebGl2GraphicsAdapter implements IGraphics {
 					throw "Invalid pipeline layout";
 		if (!validBlend(desc.blend) || desc.colorWrite != null && ((desc.colorWrite : Int) < 0 || (desc.colorWrite : Int) > 15))
 			throw "Invalid pipeline blend or color write";
+		if (desc.attributeConstants != null)
+			for (c in desc.attributeConstants)
+				if (c.slot < 0
+					|| c.slot > 15
+					|| c.values.length > 4
+					|| Lambda.exists(desc.buffers, b -> Lambda.exists(b.attributes, a -> a.slot == c.slot)))
+					throw "Invalid pipeline attribute constant: a slot from 0 to 15 no buffer feeds, at most four values";
+		var flipSlot = desc.flipBlockSlot == null ? 0 : desc.flipBlockSlot,
+			flipOffset = desc.flipOffset == null ? 0 : desc.flipOffset;
+		if (desc.flip != None && (flipSlot < 0 || flipSlot > 3 || flipOffset < 0 || flipOffset % 4 != 0))
+			throw "Invalid pipeline flip place";
 		var id = next++;
 		pipelines[id] = desc;
 		return id;
@@ -585,6 +618,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		// Not flipped: a shadow map's rows run bottom first, as its lookups expect.
 		inTarget = true;
 		flipped = false;
+		passTexture = map;
 		open(m.size, m.size, true, 0, 0, 0, 0);
 	}
 
@@ -602,6 +636,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			throw "Invalid target pass";
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, t.drawn != null ? t.drawn : t.framebuffer);
 		drawing = t;
+		passTexture = target;
 		inTarget = flipped = true;
 		open(t.width, t.height, clear || !t.cleared, red, green, blue, alpha);
 		t.cleared = true;
@@ -619,6 +654,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			gl.blitFramebuffer(0, 0, t.width, t.height, 0, 0, t.width, t.height, WebGL2RenderingContext.COLOR_BUFFER_BIT, WebGL2RenderingContext.NEAREST);
 		}
 		drawing = null;
+		passTexture = 0;
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
 		active = inTarget = flipped = false;
 	}
@@ -744,7 +780,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		}
 		gl.useProgram(shader.program);
 		bindTextures(shader, textures, samplings);
-		bindBlocks(shader, uniforms, p.flip);
+		bindBlocks(shader, uniforms, p);
 		var used = [];
 		for (i in 0...p.buffers.length) {
 			var layout = p.buffers[i];
@@ -766,6 +802,15 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				gl.vertexAttribDivisor(slot, 0);
 			}
 		enabled = used;
+		// What no buffer feeds reads the pipeline's constant, or (0, 0, 0, 1).
+		for (slot in 0...shader.attributeCount)
+			if (used[slot] != true)
+				gl.vertexAttrib4f(slot, 0, 0, 0, 1);
+		if (p.attributeConstants != null)
+			for (c in p.attributeConstants) {
+				var v = c.values;
+				gl.vertexAttrib4f(c.slot, v.length > 0 ? v[0] : 0, v.length > 1 ? v[1] : 0, v.length > 2 ? v[2] : 0, v.length > 3 ? v[3] : 1);
+			}
 		if (p.depthTest != DepthTest.Off) {
 			gl.enable(WebGL2RenderingContext.DEPTH_TEST);
 			gl.depthFunc(p.depthTest == DepthTest.Greater ? WebGL2RenderingContext.GREATER : WebGL2RenderingContext.LEQUAL);
@@ -803,10 +848,11 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	// filters (it only fetches texels) and a data texture nearest, any other as its sampling says.
 	function bindTextures(shader:{
 		program:Dynamic,
-		blocks:Array<Null<{location:Dynamic, size:Int}>>,
+		blocks:Array<ProgramBlock>,
 		textures:Array<Dynamic>,
 		unfiltered:Array<Bool>,
-		kinds:Array<Int>
+		kinds:Array<Int>,
+		attributeCount:Int
 	}, textures:Array<Int>, samplings:Array<Sampling>):Void
 		for (slot in 0...shader.textures.length) {
 			if (shader.textures[slot] == null)
@@ -816,6 +862,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				t = this.textures[handle];
 			if (t == null)
 				throw "Invalid draw texture";
+			if (handle == passTexture)
+				throw "Invalid draw texture: it is the pass's own target, which a draw into it can't sample";
 			gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + slot);
 			if (shadowMaps.exists(handle)) {
 				gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D_ARRAY, t);
@@ -832,36 +880,54 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			}
 		}
 
-	// Sets the program's uniform blocks from uniforms by slot, each its declared size; block 0 turned over in a flipped pass as flip says.
+	// Uploads the program's uniform blocks from uniforms by stage and slot, each its declared size, into their binding points' buffers; the
+	// pipeline's flip uniform written into a copy as its flip says.
 	function bindBlocks(shader:{
 		program:Dynamic,
-		blocks:Array<Null<{location:Dynamic, size:Int}>>,
+		blocks:Array<ProgramBlock>,
 		textures:Array<Dynamic>,
 		unfiltered:Array<Bool>,
-		kinds:Array<Int>
-	}, uniforms:Array<Null<Bytes>>, flip:ClipFlip):Void
-		for (slot in 0...shader.blocks.length) {
-			var block = shader.blocks[slot];
-			if (block == null)
-				continue;
-			var data = slot < uniforms.length ? uniforms[slot] : null;
+		kinds:Array<Int>,
+		attributeCount:Int
+	}, uniforms:Array<Null<Bytes>>, p:PipelineDesc):Void
+		for (block in shader.blocks) {
+			var data = block.point < uniforms.length ? uniforms[block.point] : null;
 			if (data == null || data.length < block.size)
-				throw "Invalid draw uniforms";
-			var floats = new js.lib.Float32Array(data.getData(), 0, Std.int(block.size / 4));
-			if (slot == 0 && flip == ClipScale) {
-				floats = flippedBlock.subarray(0, Std.int(block.size / 4));
-				floats.fill(0);
-				floats[0] = 1;
-				floats[1] = flipped ? -1 : 1;
-			} else if (slot == 0 && flip == ViewProjection && flipped) {
-				var copy = flippedBlock.length >= floats.length ? flippedBlock.subarray(0, floats.length) : new js.lib.Float32Array(floats.length);
-				copy.set(floats);
-				for (i in [1, 5, 9, 13])
-					copy[i] = -copy[i];
-				floats = copy;
+				throw "Invalid draw uniforms: a block's bytes missing or short";
+			if (!block.bound)
+				continue;
+			var bytes = new js.lib.Uint8Array(data.getData(), 0, block.size);
+			var flipSlot = p.flipBlockSlot == null ? 0 : p.flipBlockSlot,
+				flipOffset = p.flipOffset == null ? 0 : p.flipOffset;
+			if (p.flip != None && block.point == flipSlot && (p.flip == ClipScale || flipped)) {
+				if (flippedBlock.length < block.size)
+					flippedBlock = new js.lib.Uint8Array(block.size);
+				var copy = flippedBlock.subarray(0, block.size);
+				copy.set(bytes);
+				var floats = new js.lib.Float32Array(copy.buffer, 0, block.size >> 2),
+					at = flipOffset >> 2;
+				if (p.flip == ClipScale && at + 4 <= floats.length) {
+					floats[at] = 1;
+					floats[at + 1] = flipped ? -1 : 1;
+					floats[at + 2] = 1;
+					floats[at + 3] = 1;
+				} else if (p.flip == ViewProjection && at + 16 <= floats.length)
+					for (i in [1, 5, 9, 13])
+						floats[at + i] = -floats[at + i];
+				bytes = copy;
 			}
-			if (block.location != null)
-				gl.uniform4fv(block.location, floats);
+			var buffer = blockBuffers[block.point];
+			if (buffer == null || blockBufferSizes[block.point] < block.size) {
+				if (buffer != null)
+					gl.deleteBuffer(buffer);
+				buffer = blockBuffers[block.point] = gl.createBuffer();
+				blockBufferSizes[block.point] = block.size;
+				gl.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, buffer);
+				gl.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, block.size, WebGL2RenderingContext.DYNAMIC_DRAW);
+			} else
+				gl.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, buffer);
+			gl.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, bytes);
+			gl.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, block.point, buffer, 0, block.size);
 		}
 
 	public function endFrame():Void {
@@ -966,5 +1032,10 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		if (reading != null)
 			gl.deleteFramebuffer(reading);
 		reading = null;
+		for (made in blockBuffers)
+			if (made != null)
+				gl.deleteBuffer(made);
+		blockBuffers = [];
+		blockBufferSizes = [];
 	}
 }

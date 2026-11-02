@@ -114,14 +114,15 @@ class Main {
 			}
 		if (hidden)
 			return true;
-		// The uniforms: the square a quarter of the way to either side at most, its brightness between a half and the texture's own.
+		// The uniforms: the square a quarter of the way to either side at most, its brightness between a half and the texture's own. Blocks
+		// are numbered by stage: the vertex stage's place at 0, the fragment stage's shade at 4 + 1.
 		place.setFloat(0, .25 * Math.sin(frame * .05));
 		var brightness = .75 + .25 * Math.cos(frame * .08);
 		for (i in 0...3)
 			shade.setFloat(i * 4, brightness);
 		shade.setFloat(12, 1);
 		graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff0a0e18);
-		graphics.draw(pipeline, [buffer], 0, 0, 6, 0, 1, [texture], [new Sampling(Nearest, Repeat, Repeat)], [place, shade]);
+		graphics.draw(pipeline, [buffer], 0, 0, 6, 0, 1, [texture], [new Sampling(Nearest, Repeat, Repeat)], [place, null, null, null, null, shade]);
 		graphics.endFrame();
 		graphics.present();
 		frame++;

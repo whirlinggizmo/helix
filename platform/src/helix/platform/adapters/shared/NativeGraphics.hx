@@ -13,15 +13,20 @@ import haxe.io.Bytes;
 	A subclass sets up its C, builds programs from the dialect its C takes (`createShader`) and shuts down. A call the C refuses throws. */
 @:noCompletion
 abstract class NativeGraphics implements IGraphics {
-	/** Returns a program's layout as the C reads it: its attributes, uniform blocks and textures, a line each. */
+	/** Returns a program's layout as the C reads it, a line each: its attributes (`a <slot> <name>`), its uniform blocks
+		(`u <slot> <v|f|b> <size> <name>`, b for a block both stages read), each followed by its members (`m <type> <offset> <count>
+		<stride> <path>`), and its textures (`t|s|c|d <slot> <v|f> <name>`). */
 	static function layout(source:helix.platform.ShaderSource):String {
 		// A matrix's later columns have no name: the C takes them by slot.
 		var lines = [
 			for (i in 0...source.attributes.length)
 				if (source.attributes[i] != "") 'a $i ${source.attributes[i]}'
 		];
-		for (b in source.uniformBlocks)
-			lines.push('u ${b.slot} ${b.stage.charAt(0)} ${b.size} ${b.vec4Count} ${b.glslName}');
+		for (b in source.uniformBlocks) {
+			lines.push('u ${b.slot} ${b.stage.charAt(0)} ${b.size} ${b.glslName}');
+			for (m in b.members)
+				lines.push('m ${m.type} ${m.offset} ${m.elementCount} ${m.stride} ${m.glslName}');
+		}
 		for (t in source.textures)
 			lines.push('${t.shadow ? "s" : t.cube ? "c" : t.data ? "d" : "t"} ${t.slot} ${t.stage.charAt(0)} ${t.glslName}');
 		return lines.join("\n");
@@ -92,7 +97,8 @@ abstract class NativeGraphics implements IGraphics {
 		return valid(GraphicsDeviceBridge.staticBuffer(pointer(data), bytes, index ? 1 : 0));
 	}
 
-	// Textures, samplings and uniform blocks by slot as the bridge reads them: two arrays, and the blocks' bytes one after another.
+	// Textures, samplings and uniform blocks as the bridge reads them: two arrays, and the blocks' bytes one after another by their index in
+	// uniforms (stage and slot: the vertex stage's 0 to 3, the fragment stage's 4 to 7), a block both read at both.
 	static function pack(textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):{
 		handles:haxe.ds.Vector<cpp.UInt32>,
 		modes:haxe.ds.Vector<Int>,
@@ -138,6 +144,8 @@ abstract class NativeGraphics implements IGraphics {
 			desc.depthOnly ? 1 : 0,
 			desc.flip,
 			colorWrite,
+			desc.flipBlockSlot == null ? 0 : desc.flipBlockSlot,
+			desc.flipOffset == null ? 0 : desc.flipOffset,
 			desc.buffers.length
 		];
 		for (b in desc.buffers) {
@@ -149,6 +157,16 @@ abstract class NativeGraphics implements IGraphics {
 				ints.push(a.componentCount);
 				ints.push(a.offset);
 			}
+		}
+		// The constants no buffer feeds: each slot, then its four floats' bits, the missing ones 0, 0, 1 as (0, 0, 0, 1) has them.
+		var constants = desc.attributeConstants == null ? [] : desc.attributeConstants;
+		ints.push(constants.length);
+		for (c in constants) {
+			if (c.values.length > 4)
+				throw "Invalid pipeline attribute constant: more than four values";
+			ints.push(c.slot);
+			for (i in 0...4)
+				ints.push(haxe.io.FPHelper.floatToI32(i < c.values.length ? c.values[i] : i == 3 ? 1 : 0));
 		}
 		var packed = haxe.ds.Vector.fromArrayCopy(ints);
 		return valid(GraphicsDeviceBridge.pipeline(cpp.Pointer.ofArray(packed.toData()).raw, ints.length));
@@ -212,9 +230,12 @@ abstract class NativeGraphics implements IGraphics {
 			handles = new haxe.ds.Vector<cpp.UInt32>(buffers.length < 1 ? 1 : buffers.length);
 		for (i in 0...buffers.length)
 			handles[i] = buffers[i];
-		if (GraphicsDeviceBridge.draw(pipeline, cpp.Pointer.ofArray(handles.toData()).raw, buffers.length, indexBuffer, firstElementIndex, elementCount,
-			firstInstanceIndex, instanceCount, cpp.Pointer.ofArray(args.handles.toData()).raw, cpp.Pointer.ofArray(args.modes.toData()).raw, textures.length,
-			pointer(args.uniforms), args.bytes) != 1)
+		var drawn = GraphicsDeviceBridge.draw(pipeline, cpp.Pointer.ofArray(handles.toData()).raw, buffers.length, indexBuffer, firstElementIndex,
+			elementCount, firstInstanceIndex, instanceCount, cpp.Pointer.ofArray(args.handles.toData()).raw, cpp.Pointer.ofArray(args.modes.toData()).raw,
+			textures.length, pointer(args.uniforms), args.bytes);
+		if (drawn == -1)
+			throw "Invalid native draw: a texture is the pass's own target, which a draw into it can't sample";
+		if (drawn != 1)
 			throw "Invalid native draw";
 	}
 

@@ -201,8 +201,8 @@ enum Event {
   and `canRender(format)` say what the GPU can.
 - Buffers: `createBuffer(capacityBytes)` and `updateBuffer`, `createStaticBuffer(data, bytes, index)`, `disposeBuffer`.
 - Programs and pipelines: `createShader(source:ShaderSource)`, `createPipeline(desc:PipelineDesc)` (a program, its buffers' layout,
-  primitive, indexing, blend, the color channels written, depth test and write, culling and winding, depth-only, and the clip flip), each
-  with its `dispose`. A `Blend` is a factor for each side (`BlendFactor`: zero, one, the source's or destination's color or alpha and
+  primitive, indexing, blend, the color channels written, depth test and write, culling and winding, depth-only, the clip flip and the
+  place of the uniform it flips, and what attributes no buffer feeds read), each with its `dispose`. A `Blend` is a factor for each side (`BlendFactor`: zero, one, the source's or destination's color or alpha and
   their one-minus forms, the saturated source alpha) and an operation (`BlendOperation`: add, subtract, reverse subtract, min, max), for
   the color and for the alpha apart, as every backend has them; `Blend.OPAQUE`, `ALPHA` (the alpha kept as `a + destination * (1 - a)`)
   and `ADDITIVE` are the common ones. No blend constant: no factor reads one. `colorWrite` (`ColorChannels`, all when omitted) masks the
@@ -212,7 +212,15 @@ enum Event {
   farthest depth) and `endTargetPass`; the screen's, `beginFrame(width,
   height, clearColor)` and `endFrame`; within a pass `applyViewport`, `applyScissor`, `resetScissor`.
 - `draw(pipeline, buffers, indexBuffer, firstElementIndex, elementCount, firstInstanceIndex, instanceCount, textures, samplings, uniforms)`: buffers by the
-  pipeline's buffer index, an index buffer for indexed pipelines, a range, instances, textures, samplings and uniform blocks by slot.
+  pipeline's buffer index, an index buffer for indexed pipelines, a range, instances, textures, samplings and uniform blocks by stage and
+  slot (the vertex stage's slot n at n, the fragment stage's at 4 + n, a block both stages read at both). Each block's bytes are std140
+  as its `ShaderBlock.members` place them, on every adapter: WebGL2 uploads them into a uniform buffer; sokol's GL sets each member by its
+  type at its offset (sokol_gfx's own uniform layout computes offsets from a flat list of members, which can't hold a struct's padding,
+  and has no `mat2`, `mat3`, `uint` or `bool`); SDL_GPU pushes the bytes whole. An attribute the program declares that no buffer feeds
+  reads the pipeline's constant for its slot (`PipelineDesc.attributeConstants`), or (0, 0, 0, 1): GL sets it as the attribute's
+  current value, sokol and SDL_GPU read it from a buffer of their own stepped per instance. A draw refuses a texture that is the open
+  pass's own target (the render target drawn into, the shadow map whose layer is drawn into), as sampling what a pass draws into is
+  undefined on GL and an error on Vulkan.
   A `Sampling` is a filter, each axis's wrap, a `MipmapFilter` (None: the top level alone; Nearest: the nearest mipmap; Linear: the two
   nearest blended; it follows the filter when omitted) and an anisotropy of 1 to 16, used with linear filtering and linear mipmaps only
   (sokol takes it so; WebGL2 through EXT_texture_filter_anisotropic where the browser has it), each adapter keeping a sampler a value.
@@ -227,7 +235,10 @@ page `present` does nothing, since the browser presents when the frame's callbac
 presents at once and waits for nothing, and the frame may tear: GL swaps with interval 0, SDL_GPU presents IMMEDIATE, or MAILBOX where the
 window has no IMMEDIATE, or VSYNC where it has neither. A page always waits.
 
-Render targets are stored top row first on every backend. A declared texture a draw leaves unbound gets a placeholder, so a shader may
+Render targets are stored top row first on every backend: GL's adapters draw into a target flipped, through the uniform a pipeline
+names (`PipelineDesc.flip`, `flipBlockSlot` and `flipOffset`): with `ClipScale` every adapter writes the vec4 there, (1, -1, 1, 1) in a GL
+target pass and (1, 1, 1, 1) otherwise; with `ViewProjection` GL negates the y row of the matrix there in a target pass; each into its own
+copy of the block, the caller's bytes unchanged, and with the winding reversed. A shadow pass is never flipped. A declared texture a draw leaves unbound gets a placeholder, so a shader may
 declare more than a draw binds. Adapters: `graphics/webgl2` (`WebGl2GraphicsAdapter`), `graphics/sokol` (`SokolGraphicsAdapter`,
 sokol_gfx on GL 4.1), `graphics/sdl3gpu` (`Sdl3GpuGraphicsAdapter`, SDL_GPU on Vulkan, Direct3D 12 or Metal). `platform/tests/graphics`
 draws on each and checks the pixels it reads back.
@@ -236,27 +247,53 @@ draws on each and checks the pixels it reads back.
 
 `helix.platform.tools.ShaderCompiler`: a program on `IGraphics` needs every backend's dialect, and gets them from standard GLSL.
 
-**What a program writes:** Vulkan-style GLSL 450, one file a stage (`triangle.vert`, `triangle.frag`): attributes at
-`layout(location = n)`, uniform blocks at `layout(binding = n)`, textures as combined samplers. No annotations. The build macro
-`ShaderCompiler.compile("triangle.vert", "triangle.frag")`, paths beside the calling file, compiles them while Haxe builds the program and
-puts the `ShaderSource` in it as a literal; the program hands it to `IGraphics.createShader`. `#include` with a quoted name resolves
-beside the including file (`#extension GL_GOOGLE_include_directive : require`).
+**What a program writes:** one file a stage (`triangle.vert`, `triangle.frag`), both in one of two forms, told apart by `#version`:
+Vulkan-style GLSL 450, where attributes may give `layout(location = n)` and blocks and textures `layout(binding = n)`; or GL's,
+`#version 300 es` or 330 to 440, where nothing gives a location or a binding (one written is refused, as GLSL ES 3.0 has none). No
+annotations. The build macro `ShaderCompiler.compile("triangle.vert", "triangle.frag")`, paths beside the calling file, compiles them
+while Haxe builds the program and puts the `ShaderSource` in it as a literal; the program hands it to `IGraphics.createShader`.
+`ShaderCompiler.compileText(vertex, fragment, options)` compiles text a macro or a tool has (`ShaderCompileOptions`: the dialects, include
+directories, defines, loose uniforms, gathered blocks and the clip-scale wrap). `#include` with a quoted name resolves beside the
+including file, then in the include directories; the compiler enables `GL_GOOGLE_include_directive` for every stage, so no stage declares
+it.
 
-**The chain:** glslang compiles each stage to SPIR-V (Vulkan 1.0, unoptimized, so nothing declared is trimmed; the drivers optimize);
-SPIRV-Cross emits every dialect from it (GLSL 410 and GLSL ES 300 with each uniform block flattened to a `vec4` array named for the
-block's type; MSL and HLSL laid out as SDL_GPU binds them) and reflects the attributes, blocks and textures.
+**The chain:** glslang preprocesses each stage (`-E`: includes and defines resolved), a strict text step over that output places what the
+source leaves unplaced and gathers loose uniforms, each rewrite on the line it replaces so an error's line is the file's; glslang compiles
+the result to SPIR-V (Vulkan 1.0, unoptimized, so nothing declared is trimmed; the drivers optimize) and reflects it (what the code
+reads, and each member's GLSL type); SPIRV-Cross emits every dialect (GLSL ES 300 keeping each block a `std140` uniform block, GLSL 410
+each block a uniform of its struct type, MSL and HLSL laid out as SDL_GPU binds them) and reflects the layouts.
 
-**What it refuses, saying why:** a block that can't be flattened (members of mixed types; arrays not of `vec4`, `ivec4` or `mat4`);
-a uniform block bound past 3 or a texture past 11, since every adapter binds blocks 0 to 3 and textures 0 to 11. A `mat2`, `mat3` or `mat4` vertex input
-takes a location a column, from its own, as GLSL, SPIR-V and every dialect place it: a pipeline feeds its columns as attributes of 2, 3 or 4
-floats at consecutive slots (instanced matrices, say), and `ShaderSource.attributes` names it at its first slot, "" at the rest. Errors name the
-source file's lines. Values passed between the stages may leave out their locations; the compiler numbers them.
+**Placement**, where the source gives none: blocks are numbered in each stage, 0 to 3 (as SDL_GPU binds four a stage); named blocks take
+the lowest free bindings of their stages in the order declared, the vertex stage's first; a block both stages declare alike (the same
+name, binding and members, as an include declares it) is one block at one slot in each (`ShaderBlock.stage` "both"), and two declarations
+of one name that differ are refused. Textures are numbered across the program, 0 to 11, at the lowest free in the order declared.
+Attributes take the lowest free locations in the order declared, a matrix a location a column; the values passed between the stages are
+matched by name. Nothing about placement is the program's to keep: the reflection says where everything is.
+
+**Loose uniforms** (`looseUniforms`): uniforms outside a block, in either form, both stages' gathered into one block, `helix_uniforms`,
+read by both, the vertex stage's in declared order then the fragment stage's not already there, at the lowest slot free in both; named
+ones go into `gatheredBlocks` of their own after it. A struct a gathered uniform names is copied into a stage that lacks it. One name
+of two types, and an initializer (which the compiler would drop), are refused. With `clipScale` the vertex stage is wrapped: its `main`
+renamed, a loose `uniform vec4 helix_clipScale`, and a `main` calling it and multiplying `gl_Position` by it, for `ClipFlip.ClipScale`.
+
+**What it refuses, saying why:** a uniform block bound past 3 or a texture past 11; two blocks at one binding of a stage, or two
+textures at one binding; a sampler array, a separate texture and sampler, an array of arrays, an array inside an array of structs, a
+`double`, a storage buffer; a loose uniform without `looseUniforms`; a vertex input array; attribute locations with a gap; and, for
+SDL_GPU, a struct laid out so Direct3D's constant buffers can't hold it at its std140 offsets (a vector after a scalar in a struct,
+which std140 starts on 16 bytes and Direct3D packs beside it; the vector first, or padding, fixes it). A `mat2`, `mat3` or `mat4` vertex
+input takes a location a column, from its own, as GLSL, SPIR-V and every dialect place it: a pipeline feeds its columns as attributes
+of 2, 3 or 4 floats at consecutive slots (instanced matrices, say), and `ShaderSource.attributes` names it at its first slot, "" at the
+rest. Errors name the source file's (or an include's) lines.
 
 **What's reflected is what's declared:** every uniform block and texture the source declares, at its binding and its declared size
-(rounded up to whole `vec4`s, as GL's flattened array holds it), whether or not the code reads it, so commenting out a line never
-changes what the program binds. A texture's kind comes from its GLSL type (`sampler2D`, `sampler2DArray`, `samplerCube`,
-`sampler2DArrayShadow` for a shadow map's comparison); a texture the shader reads only with `texelFetch` is never filtered
-(`ShaderSource`'s `data`), since fetching reads one exact texel.
+(rounded up to whole `vec4`s), whether or not the code reads it, so commenting out a line never changes what the program binds; what
+the code reads is marked (`ShaderMember.active`, `ShaderTexture.active`, `ShaderSource.activeAttributes`), per member, not per element.
+A block's members are its leaves (`ShaderMember`): a struct's fields by path (`material.roughness`), a field of an array of structs one
+member whose elements are the array's (`lights.color`, its stride the struct's size), a member of a block with an instance name under
+it (`camera.viewProjection`). Blocks hold `float`, `vecN`, `matN`, `int`, `ivecN`, `uint`, `uvecN`, `bool` and `bvecN` together. The
+attributes' types are `ShaderSource.attributeTypes`. A texture's kind comes from its GLSL type (`sampler2D`, `sampler2DArray`,
+`samplerCube`, `sampler2DArrayShadow` for a shadow map's comparison); a texture the shader reads only with `texelFetch` is never filtered
+(`ShaderTexture.data`), since fetching reads one exact texel.
 
 **The tools,** pinned in `ShaderTools.hx` and made ready in the user's cache, checked by SHA-256, the first time a shader is compiled:
 glslang's official release builds (Linux x86_64, macOS, Windows x64); SPIRV-Cross, which publishes source only, from the builds of the

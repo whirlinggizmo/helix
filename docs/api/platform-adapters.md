@@ -484,7 +484,7 @@ function dispose():Void
 
 Provides `IGraphics` on sokol_gfx, natively, drawing with GL 4.1 in the window's context.
 
-Programs come from a `ShaderSource`'s GLSL 410.
+Programs come from a `ShaderSource`'s GLSL 410, each uniform block a uniform of its struct type there, whose members the adapter sets by their types from the reflection (sokol_gfx's own uniform layout can't hold a struct's padding).
 
 ```haxe
 function new()

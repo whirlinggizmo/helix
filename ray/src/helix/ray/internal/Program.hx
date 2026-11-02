@@ -12,8 +12,9 @@ class Program {
 	/** Each uniform and texture by its location, as `GetShaderLocation` gives it. */
 	public final names:Array<String> = [];
 
-	/** The blocks' bytes by slot: 0 the platform's flip, 1 the vertex stage's values, 2 the fragment stage's. */
-	public final blocks:Array<Null<Bytes>> = [null, null, null];
+	/** The blocks' bytes by their index in a draw's uniforms: 0 the platform's flip, 1 the vertex stage's values, 6 the fragment stage's
+		(its slot 2). */
+	public final blocks:Array<Null<Bytes>> = [for (_ in 0...7) null];
 
 	/** The texture at each slot, set by `SetShaderValueTexture` or by the draw. */
 	public final textures:Array<Int> = [];
@@ -48,7 +49,7 @@ class Program {
 		attributes = source.attributes;
 		handle = graphics.createShader(source.source);
 		for (b in source.source.uniformBlocks)
-			blocks[b.slot] = Bytes.alloc(b.size);
+			blocks[b.stage == "fragment" ? 4 + b.slot : b.slot] = Bytes.alloc(b.size);
 		if (blocks[0] != null)
 			for (i in 0...4)
 				blocks[0].setFloat(i * 4, 1);

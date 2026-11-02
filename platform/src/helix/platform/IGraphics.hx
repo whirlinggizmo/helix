@@ -254,7 +254,10 @@ interface IGraphics {
 	/** Draws through a pipeline.
 
 		Only whole primitives are drawn. A pipeline without buffers draws `elementCount` vertices from no data, so one triangle over the viewport is
-		three vertices. Block 0 of the uniforms is flipped as the pipeline's `ClipFlip` specifies.
+		three vertices. An attribute the program declares that no buffer feeds reads the pipeline's constant for its slot, or (0, 0, 0, 1)
+		(`PipelineDesc.attributeConstants`). The uniform the pipeline names is flipped as its `ClipFlip` specifies, in the adapter's own
+		copy of the block. A texture that is the open pass's own target (the render target drawn into, or the shadow map whose layer is
+		drawn into) is refused, as sampling what a pass draws into is undefined.
 		@param pipeline  The pipeline.
 		@param buffers  The buffer for each of the pipeline's buffers, by index, or 0 for a gap. Each is a `createBuffer` handle as this
 			frame's upload left it, or a `createStaticBuffer` handle.
@@ -266,8 +269,9 @@ interface IGraphics {
 		@param textures  The texture bound at each of the program's texture slots, by slot. A slot provided 0, or past the array's end,
 			reads a clear 1x1 texture of its kind, for a texture the program declares and doesn't read.
 		@param samplings  How each texture is sampled, by slot. A shadow map or data texture is sampled as its kind requires.
-		@param uniforms  The bytes of each uniform block, by slot, at its declared size, or null for a slot the program lacks.
-		@throws String  Anything invalid, before drawing. */
+		@param uniforms  The bytes of each uniform block at its declared size, by stage and slot: the vertex stage's slot n at index n, the
+			fragment stage's at 4 + n, a block both stages read at both (`ShaderBlock`); null at an index the program has no block for.
+		@throws String  Anything invalid, before drawing: a texture that is the pass's own target among them. */
 	public function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int,
 		instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void;
 

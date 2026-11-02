@@ -87,13 +87,13 @@ function toString():String
 
 *abstract* in [`platform/src/helix/platform/ClipFlip.hx`](../../platform/src/helix/platform/ClipFlip.hx), `import helix.platform.ClipFlip;`
 
-Specifies what a pipeline's uniform block 0 holds, so that an adapter can draw a render target the right way up.
+Specifies what a pipeline's flip uniform holds, so that an adapter can draw a render target the right way up.
 
-An adapter whose render targets are stored bottom row first, as GL's are, flips its draws into a target. With ClipScale, it writes block 0 as (1, -1) in a pass into a target and as (1, 1) otherwise. With ViewProjection, it negates the y row of the column-major matrix in block 0's first 64 bytes in a pass into a target. An adapter whose targets are stored top row first ignores this value.
+The uniform is the one at `PipelineDesc.flipBlockSlot` and `flipOffset`, in the vertex stage's block of that slot. An adapter whose render targets are stored bottom row first, as GL's are, flips its draws into a target. With ClipScale every adapter writes the vec4 there, all four components: (1, -1, 1, 1) in a pass into a target on an adapter storing targets bottom row first, and (1, 1, 1, 1) otherwise, so a shader multiplying `gl_Position` by it is right everywhere. With ViewProjection an adapter storing targets bottom row first negates the y row of the column-major matrix there in a pass into a target. An adapter flips its own copy of the bytes, never the caller's, and reverses the winding with it. A shadow pass is never flipped.
 
-- `ClipFlip.None`: Block 0 is not touched, or there is none.
-- `ClipFlip.ClipScale`: Block 0 is a vec4 clip scale that the adapter writes.
-- `ClipFlip.ViewProjection`: Block 0 starts with a view-projection matrix whose y row the adapter negates.
+- `ClipFlip.None`: Nothing is touched.
+- `ClipFlip.ClipScale`: The uniform is a vec4 clip scale that the adapter writes.
+- `ClipFlip.ViewProjection`: The uniform is a view-projection matrix whose y row the adapter negates.
 
 ```haxe
 function toString():String
@@ -982,10 +982,10 @@ function dispose():Void
   - `instanceCount`: The number of instances.
   - `textures`: The texture bound at each of the program's texture slots, by slot. A slot provided 0, or past the array's end, reads a clear 1x1 texture of its kind, for a texture the program declares and doesn't read.
   - `samplings`: How each texture is sampled, by slot. A shadow map or data texture is sampled as its kind requires.
-  - `uniforms`: The bytes of each uniform block, by slot, at its declared size, or null for a slot the program lacks.
-  - throws `String`: Anything invalid, before drawing.
+  - `uniforms`: The bytes of each uniform block at its declared size, by stage and slot: the vertex stage's slot n at index n, the fragment stage's at 4 + n, a block both stages read at both (`ShaderBlock`); null at an index the program has no block for.
+  - throws `String`: Anything invalid, before drawing: a texture that is the pass's own target among them.
 
-  Only whole primitives are drawn. A pipeline without buffers draws `elementCount` vertices from no data, so one triangle over the viewport is three vertices. Block 0 of the uniforms is flipped as the pipeline's `ClipFlip` specifies.
+  Only whole primitives are drawn. A pipeline without buffers draws `elementCount` vertices from no data, so one triangle over the viewport is three vertices. An attribute the program declares that no buffer feeds reads the pipeline's constant for its slot, or (0, 0, 0, 1) (`PipelineDesc.attributeConstants`). The uniform the pipeline names is flipped as its `ClipFlip` specifies, in the adapter's own copy of the block. A texture that is the open pass's own target (the render target drawn into, or the shadow map whose layer is drawn into) is refused, as sampling what a pass draws into is undefined.
 - `endFrame`: Ends the screen's pass and the frame, and submits it.
   - throws `String`: No screen pass is open.
 
@@ -1528,7 +1528,9 @@ Represents everything a pipeline fixes for the draws through it.
 - `shader:Int`: The program, as an `IGraphics.createShader` handle.
 - `primitive:Primitive`: The primitive the draws make.
 - `indexed:Bool`: Whether the draws are indexed, by uint32 indices.
-- `flip:ClipFlip`: What uniform block 0 holds, for drawing render targets the right way up.
+- `flipOffset:Null<Int>`: The byte offset in its block of the uniform `flip` reads. Optional; 0 when omitted. The adapter flips its own copy of the bytes as it uploads them, never the caller's, and reverses the winding with it, so `clockwise` and `cull` hold in a target and on the screen alike.
+- `flipBlockSlot:Null<Int>`: The slot of the vertex stage's block holding the uniform `flip` reads. Optional; 0 when omitted.
+- `flip:ClipFlip`: How a draw into a render target is turned the right way up, and through which uniform: the one at `flipBlockSlot` and `flipOffset`.
 - `depthWrite:Bool`: Whether the draws write depth.
 - `depthTest:DepthTest`: The depth test.
 - `depthOnly:Bool`: Whether the draws write depth alone, for a shadow pass.
@@ -1537,6 +1539,7 @@ Represents everything a pipeline fixes for the draws through it.
 - `clockwise:Bool`: Whether clockwise winding is the front face.
 - `buffers:Array<VertexBuffer>`: The vertex buffers' layouts, by their index in a draw's buffers: at most 8, with at most 16 attributes across them, each at a slot from 0 to 15, as every adapter takes them.
 - `blend:Blend`: How the colors are combined with the target's.
+- `attributeConstants:Null<Array<{values:Array<Float>, slot:Int}>>`: What attributes no buffer feeds read, by slot: up to four floats each, the rest 0, 0, 1 as (0, 0, 0, 1) has them, the same for every vertex and instance. Optional; a slot not given reads (0, 0, 0, 1). A constant for a slot a buffer feeds is refused.
 
 ## Primitive
 
@@ -1632,15 +1635,30 @@ Represents a program in SDL_GPU's dialects, laid out as SDL_GPU binds them.
 
 *typedef* in [`platform/src/helix/platform/ShaderBlock.hx`](../../platform/src/helix/platform/ShaderBlock.hx), `import helix.platform.ShaderBlock;`
 
-Represents a uniform block that a program declares.
+Represents a uniform block that a program declares, and its members.
 
-In GLSL the block is flattened to an array of vec4s.
+A block's bytes are laid out by std140, as `members` places them, on every adapter. Blocks are numbered in each stage, 0 to 3; one both stages declare alike is one block, at the same slot in each. `IGraphics.draw` takes a block's bytes at its index in `uniforms`: its slot for the vertex stage's, 4 plus its slot for the fragment stage's, and both for a block both read.
 
-- `vec4Count:Int`: The number of vec4s the GLSL array holds.
-- `stage:String`: The stage that reads it: "vertex" or "fragment".
-- `slot:Int`: The binding slot.
-- `size:Int`: The size, in bytes.
+- `stage:String`: The stage that reads it: "vertex", "fragment", or "both" for a block both declare alike (the same name, slot and members).
+- `slot:Int`: The binding slot in its stage, or in each stage for a block both read: 0 to 3.
+- `size:Int`: The size, in bytes, rounded up to whole `vec4`s.
+- `members:Array<ShaderMember>`: The members, in the order the block declares them, at their std140 offsets.
 - `glslName:String`: The block's name in the GLSL.
+
+## ShaderMember
+
+*typedef* in [`platform/src/helix/platform/ShaderMember.hx`](../../platform/src/helix/platform/ShaderMember.hx), `import helix.platform.ShaderMember;`
+
+Represents a member of a uniform block that a program declares, as a leaf: its path, its GLSL type, where it starts in the block's bytes, and how many elements it has.
+
+The block is laid out by std140: each element of an array, and each column of a matrix, starts on a 16-byte boundary, and a `vec3` is followed by room for one float. A struct member is reflected as its fields, each with its path (`light.color`); a field of an array of structs is one member whose elements are the array's (`lights.color`, `elementCount` the array's length, `stride` the struct's size). A member of a block with an instance name (`uniform Camera { ... } camera;`) has a path starting with that name (`camera.viewProjection`), as the GLSL writes it.
+
+- `type:String`: The GLSL type: `float`, `vec2`, `vec3`, `vec4`, `mat2`, `mat3`, `mat4`, `int`, `ivec2`, `ivec3`, `ivec4`, `uint`, `uvec2`, `uvec3`, `uvec4`, `bool`, `bvec2`, `bvec3` or `bvec4`. A `bool` takes 4 bytes, 0 or 1, as a `uint` does.
+- `stride:Int`: The bytes from one element to the next: 16 for a scalar or a vector, 16 a column for a matrix (64 for a `mat4`), a struct's size for a field of an array of structs.
+- `offset:Int`: The byte offset of its first element in the block.
+- `glslName:String`: The member's path in the GLSL: its name, or a struct field's `name.field`.
+- `elementCount:Int`: The number of elements: 1, an array's length, or the length of the array of structs it is a field of.
+- `active:Bool`: Whether the program's code reads it, as glslang's reflection of the stages finds; an unread one is still reflected, at its place. It is the whole member's: an array read at any element is active.
 
 ## ShaderSource
 
@@ -1648,14 +1666,16 @@ In GLSL the block is flattened to an array of vec4s.
 
 Represents a compiled program, with its stages in each dialect the adapters compile, its vertex attributes, and what it binds.
 
-`IGraphics.createShader` builds a program from it. An adapter reads only its own dialect. That is GLSL ES 300 in the browser, GLSL 410 for GL natively, and SDL_GPU's stages for SDL_GPU.
+`IGraphics.createShader` builds a program from it. An adapter reads only its own dialect. That is GLSL ES 300 in the browser, GLSL 410 for GL natively, and SDL_GPU's stages for SDL_GPU. The attributes with their types, the blocks with their members, and the textures are the program's reflection, for a caller that fills them by name.
 
-- `uniformBlocks:Array<ShaderBlock>`: The uniform blocks it declares.
+- `uniformBlocks:Array<ShaderBlock>`: The uniform blocks it declares, with their members.
 - `textures:Array<ShaderTexture>`: The textures it samples.
 - `sdlGpu:Null<SdlGpuStages>`: SDL_GPU's stages. Present only in a build for SDL_GPU.
 - `glsl410:Null<ShaderStages>`: GLSL 410, for GL natively. Absent from a browser build.
 - `glsl300es:ShaderStages`: GLSL ES 300, for WebGL2.
 - `attributes:Array<String>`: The vertex attributes' names, by slot. A matrix's name is at its first slot, and its other columns' slots hold "".
+- `attributeTypes:Array<String>`: The vertex attributes' GLSL types (`float`, `vec2`, `vec3`, `vec4`, `mat4`, `int`, `ivec4` and the rest), by slot: a matrix's at its first slot, and its columns' (`vec4` for a `mat4`) at the rest.
+- `activeAttributes:Array<Int>`: The slots of the vertex attributes the vertex stage's code reads, as glslang finds; the others are declared and fed, and unread. A matrix's slot is its first column's.
 
 ## ShaderStages
 
@@ -1680,6 +1700,7 @@ A texture is a plain 2D texture unless one of shadow, cube or data is true.
 - `glslName:String`: The GLSL name of the texture and sampler pair.
 - `data:Bool`: Whether the program never filters it.
 - `cube:Bool`: Whether it is a cubemap.
+- `active:Bool`: Whether the program's code samples it, as glslang finds; one unsampled is still declared and bound.
 
 ## StreamSource
 

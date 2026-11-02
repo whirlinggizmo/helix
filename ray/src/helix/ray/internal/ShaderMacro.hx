@@ -109,25 +109,26 @@ void main() {
 			Context.error('$vsName, $fsName: ${e.message}\n--- vertex as compiled:\n$vertexText\n--- fragment as compiled:\n$fragmentText', pos);
 		}
 		var uniforms = [];
-		for (block => members in compiled.members) {
-			var slot = block == "raylib_vs" ? 1 : block == "raylib_fs" ? 2 : 0;
-			if (slot == 0)
+		for (b in compiled.uniformBlocks) {
+			// A block's index in a draw's uniforms: its slot in the vertex stage, 4 + its slot in the fragment stage.
+			var index = b.glslName == "raylib_vs" ? b.slot : b.glslName == "raylib_fs" ? 4 + b.slot : -1;
+			if (index < 0)
 				continue;
-			for (m in members) {
-				var integer = m.name.startsWith("helix_i_"),
-					boolean = m.name.startsWith("helix_b_");
+			for (m in b.members) {
+				var integer = m.glslName.startsWith("helix_i_"),
+					boolean = m.glslName.startsWith("helix_b_");
 				uniforms.push({
-					name: integer || boolean ? m.name.substr(8) : m.name,
-					block: slot,
+					name: integer || boolean ? m.glslName.substr(8) : m.glslName,
+					block: index,
 					offset: m.offset,
 					type: m.type,
-					count: m.count,
+					count: m.elementCount,
 					integer: integer || boolean});
 			}
 		}
-		var source:helix.platform.ShaderSource = compiled.source;
+		var source:helix.platform.ShaderSource = compiled;
 		var textures = [for (name => slot in slots) {name: name, slot: slot}];
-		var attributes:Array<String> = compiled.source.attributes;
+		var attributes:Array<String> = compiled.attributes;
 		return macro({
 			source: (${Context.makeExpr(source, pos)} : helix.platform.ShaderSource),
 			attributes: $v{attributes},

@@ -7,8 +7,8 @@
    - A stream buffer's every write is a new range of one frame-wide vertex buffer (the arena), so a draw keeps the range it was given; a
      data texture written after a draw read it this frame goes to a spare, as under sokol.
    - Its origin is the top left, as every texture's rows are stored: the screen and render targets are drawn unflipped, and shadow maps,
-     whose lookups expect their rows bottom first, are drawn flipped (block 0's clip flip, and pipelines' twins with the front faces the other
-     way round). Clip depth is 0..1, which the shaders' translation already gives (tools/gpu_shaders.py).
+     whose lookups expect their rows bottom first, are drawn flipped (the pipeline's flip uniform, and pipelines' twins with the front faces
+     the other way round). A clip scale is written (1, 1, 1, 1) in every other pass. Clip depth is 0..1, which the shaders' translation already gives (tools/gpu_shaders.py).
    - The swapchain can't be read back: frames are drawn into a texture of the screen's size, copied to the swapchain at the frame's end.
    - Direct3D 12 takes the HLSL as DXBC, compiled when the program is made by the system's d3dcompiler_47.dll (as sokol_gfx does for
      Direct3D 11); Metal compiles the MSL itself. */
@@ -27,6 +27,8 @@
 
 #define SLOTS 256
 #define MAX_BLOCKS 4
+/* A draw's uniforms by stage and slot: the vertex stage's 0 to 3, the fragment stage's 4 to 7. */
+#define MAX_BLOCK_INDICES 8
 #define MAX_TEXTURES 12
 #define MAX_RENAMES 8
 #define MAX_SHADOW_LAYERS 16
@@ -47,8 +49,10 @@ static int slot_of(uint32_t handle){return (int)(handle&0xffff)-1;}
    arena: the latest range's buffer, offset and bytes. */
 static struct{uint32_t generation;int live,stream,index,capacity,used;SDL_GPUBuffer *buffer;Uint32 offset;}buffers[SLOTS];
 
-/* Programs: their shaders, and where each of IGraphics' slots lands in SDL_GPU's numbering (per stage, from 0 by slot). */
-static struct{uint32_t generation;int live;SDL_GPUShader *vertex,*fragment;int blocks,block_size[MAX_BLOCKS],block_stage[MAX_BLOCKS],block_index[MAX_BLOCKS];
+/* Programs: their shaders, their attribute slots, each block by its index in a draw's uniforms (its size, 0 for none, and whether it is the
+   fragment copy of a block both stages read, pushed from the vertex copy), and where each texture slot lands in SDL_GPU's numbering (per
+   stage, from 0 by slot). A block is pushed at its slot in its stage. */
+static struct{uint32_t generation;int live;SDL_GPUShader *vertex,*fragment;int attributes,block_size[MAX_BLOCK_INDICES],block_both[MAX_BLOCK_INDICES];
  int texture_mask,unfiltered_mask;char texture_kind[MAX_TEXTURES];int texture_stage[MAX_TEXTURES],texture_index[MAX_TEXTURES],vertex_samplers,fragment_samplers;}programs[SLOTS];
 
 /* Pipelines: SDL's, a twin with the front faces the other way round for flipped passes (depth alone, into shadow maps), and what a draw
@@ -56,9 +60,13 @@ static struct{uint32_t generation;int live;SDL_GPUShader *vertex,*fragment;int b
    the others, made from its description (kept, with what it points to) the first time a draw needs one. A variant is the pass's kind: bit 0
    half floats, bit 1 no depth, bit 2 single sampled where the screen isn't; variant 0 (the screen's) is the pipeline itself. */
 #define VARIANTS 8
+/* The attributes no buffer feeds read constants (theirs, or (0, 0, 0, 1)) from a buffer of the pipeline's own stepped per instance, as
+   SDL_GPU steps an instance buffer one record an instance and no slower: its record (constants, 16 bytes an attribute) repeated
+   constant_count times, made again larger when a draw has more instances. */
 static struct{uint32_t generation;int live;SDL_GPUGraphicsPipeline *pipeline,*flipped,*variants[VARIANTS];uint32_t program;int buffer_count,stride[HELIX_MAX_VERTEX_BUFFERS],
- instanced[HELIX_MAX_VERTEX_BUFFERS],read[HELIX_MAX_VERTEX_BUFFERS],indexed,lines,flip,depth_only;SDL_GPUGraphicsPipelineCreateInfo info;SDL_GPUVertexBufferDescription described[HELIX_MAX_VERTEX_BUFFERS];
- SDL_GPUVertexAttribute attrs[HELIX_MAX_VERTEX_ATTRIBUTES];SDL_GPUColorTargetDescription color;}pipelines[SLOTS];
+ instanced[HELIX_MAX_VERTEX_BUFFERS],read[HELIX_MAX_VERTEX_BUFFERS],indexed,lines,flip,flip_slot,flip_offset,depth_only;SDL_GPUGraphicsPipelineCreateInfo info;
+ SDL_GPUVertexBufferDescription described[HELIX_MAX_VERTEX_BUFFERS+1];SDL_GPUVertexAttribute attrs[HELIX_MAX_VERTEX_ATTRIBUTES];SDL_GPUColorTargetDescription color;
+ float constants[HELIX_MAX_VERTEX_ATTRIBUTES*4];int constant_attributes,constant_count;SDL_GPUBuffer *constant_buffer;}pipelines[SLOTS];
 
 /* Textures by kind: sampled (a 2D image or a cube), a data texture (RGBA32F, its versions for writes after a read in a frame), a render
    target (a color texture sampled, drawn through a multisampled one when it has depth and the screen is multisampled, its depth or none, the
@@ -85,6 +93,8 @@ static SDL_GPUBuffer *arena,*retired[16];static int arena_size,arena_used,arena_
 /* The pass being recorded: 0 none, 1 the screen's, 2 a target's or shadow map's; whether it's drawn flipped; the pipelines' variant it
    draws with; its size; its targets. */
 static int active,flipped,pass_variant,pass_width,pass_height;
+/* The texture the open target or shadow pass draws into, which its draws may not sample; 0 for none. */
+static uint32_t pass_texture;
 static SDL_GPUColorTargetInfo pass_color;static SDL_GPUDepthStencilTargetInfo pass_depth;static int pass_has_color,pass_has_depth;
 
 /* What the pass stages: bytes to upload (staging), each to a buffer range or a texture region; and its commands, replayed in order. */
@@ -94,9 +104,9 @@ static unsigned char *staging;static size_t staging_used,staging_size;
 typedef struct{size_t at;Uint32 bytes;SDL_GPUBuffer *buffer;Uint32 offset;SDL_GPUTexture *texture;Uint32 level,layer,x,y,width,height;bool cycle;}Upload;
 static Upload *uploads;static int upload_count,upload_size;
 enum{DRAW,VIEWPORT,SCISSOR};
-typedef struct{int kind;SDL_GPUGraphicsPipeline *pipeline;SDL_GPUBufferBinding vertex[HELIX_MAX_VERTEX_BUFFERS];int vertex_count;SDL_GPUBuffer *index;
+typedef struct{int kind;SDL_GPUGraphicsPipeline *pipeline;SDL_GPUBufferBinding vertex[HELIX_MAX_VERTEX_BUFFERS+1];int vertex_count;SDL_GPUBuffer *index;
  SDL_GPUTextureSamplerBinding vertex_samplers[MAX_TEXTURES],fragment_samplers[MAX_TEXTURES];int vertex_sampler_count,fragment_sampler_count;
- size_t uniform_at[MAX_BLOCKS];int uniform_size[MAX_BLOCKS],uniform_stage[MAX_BLOCKS],uniform_index[MAX_BLOCKS],uniform_count;
+ size_t uniform_at[MAX_BLOCK_INDICES];int uniform_size[MAX_BLOCK_INDICES],uniform_stage[MAX_BLOCK_INDICES],uniform_index[MAX_BLOCK_INDICES],uniform_count;
  int first,count,instances,indexed;float x,y,w,h;}Command;
 static Command *commands;static int command_count,command_size;
 static unsigned char *uniform_bytes;static size_t uniform_used,uniform_size;
@@ -357,28 +367,34 @@ int helix_update(uint32_t handle,const void *data,int bytes){
 }
 
 /* A program from its stages in the device's format (helix_sdl3gpu_shader_format: SPIR-V, MSL or HLSL; text ends with a NUL) and its layout,
-   a line each, as sokol's adapter reads it: "a <slot> <name>" an attribute, "u <slot> <v|f> <size> <vec4s> <name>" a uniform block,
-   "t|s|c|d <slot> <v|f> <name>" a texture (plain, shadow map, cube, data) and its sampler, sharing the slot. */
+   a line each, as NativeGraphics writes it: "a <slot> <name>" an attribute, "k <count>" the attribute slots (a matrix's columns each one),
+   "u <slot> <v|f|b> <size> <name>" a uniform block at its slot in its stage, or in both (b), its "m ..." members after it (SDL_GPU takes the
+   block's bytes whole), "t|s|c|d <slot> <v|f> <name>" a texture (plain, shadow map, cube, data) and its sampler, sharing the slot. */
 uint32_t helix_sdl3gpu_shader(const void *vs,int vs_bytes,const void *fs,int fs_bytes,const char *layout){
  int slot=-1;for(int i=0;i<SLOTS;i++)if(!programs[i].live){slot=i;break;}
  if(slot<0||!vs||!fs||vs_bytes<=0||fs_bytes<=0)return 0;
- int blocks=0,sizes[MAX_BLOCKS]={0},stages[MAX_BLOCKS]={0},mask=0,unfiltered=0,texture_stages[MAX_TEXTURES]={0};char kinds[MAX_TEXTURES]={0};
+ int sizes[MAX_BLOCK_INDICES]={0},both[MAX_BLOCK_INDICES]={0},block_counts[2]={0,0},attributes=0,mask=0,unfiltered=0,texture_stages[MAX_TEXTURES]={0};char kinds[MAX_TEXTURES]={0};
  for(const char *line=layout;line&&*line;){
-  char kind,stage;int s,size,count,used=0;char name[128];
-  if(sscanf(line," a %d %127s%n",&s,name,&used)==2){if(s<0||s>=16)return 0;}
-  else if(sscanf(line," u %d %c %d %d %127s%n",&s,&stage,&size,&count,name,&used)==5){
-   if(s<0||s>=MAX_BLOCKS||size<=0)return 0;
-   sizes[s]=size;stages[s]=stage=='v'?0:1;if(s+1>blocks)blocks=s+1;
+  char kind,stage;int s,size,used=0;char name[128];
+  if(sscanf(line," a %d %127s%n",&s,name,&used)==2){if(s<0||s>=16)return 0;if(s+1>attributes)attributes=s+1;}
+  else if(sscanf(line," k %d%n",&s,&used)==1){if(s<0||s>16)return 0;if(s>attributes)attributes=s;}
+  else if(sscanf(line," u %d %c %d %127s%n",&s,&stage,&size,name,&used)==4){
+   if(s<0||s>=MAX_BLOCKS||size<=0||(stage!='v'&&stage!='f'&&stage!='b'))return 0;
+   /* A block both stages read: at both indices, its fragment copy pushed from the vertex one. */
+   if(stage!='f'){if(sizes[s])return 0;sizes[s]=size;if(s+1>block_counts[0])block_counts[0]=s+1;}
+   if(stage!='v'){if(sizes[4+s])return 0;sizes[4+s]=size;both[4+s]=stage=='b';if(s+1>block_counts[1])block_counts[1]=s+1;}
+  }else if(sscanf(line," m %127s %d%n",name,&s,&used)==2){
+   /* A member: the rest of its line. */
+   while(line[used]&&line[used]!='\n')used++;
   }else if(sscanf(line," %c %d %c %127s%n",&kind,&s,&stage,name,&used)==4&&(kind=='t'||kind=='s'||kind=='c'||kind=='d')){
    if(s<0||s>=MAX_TEXTURES)return 0;
    mask|=1<<s;texture_stages[s]=stage=='v'?0:1;kinds[s]=kind;if(kind=='d')unfiltered|=1<<s;
   }else return 0;
   line+=used;while(*line=='\n'||*line==' ')line++;
  }
- /* SDL_GPU's numbering: per stage, from 0 in slot order. */
- int counts[2]={0,0},block_index[MAX_BLOCKS]={0},block_counts[2]={0,0},texture_index[MAX_TEXTURES]={0};
+ /* SDL_GPU's numbering of textures: per stage, from 0 in slot order; blocks at their slots (num_uniform_buffers the highest and one). */
+ int counts[2]={0,0},texture_index[MAX_TEXTURES]={0};
  for(int i=0;i<MAX_TEXTURES;i++)if(mask&1<<i)texture_index[i]=counts[texture_stages[i]]++;
- for(int i=0;i<blocks;i++)if(sizes[i])block_index[i]=block_counts[stages[i]]++;
  const char *entry=shader_format==SDL_GPU_SHADERFORMAT_MSL?"main0":"main";
  const void *code[2]={vs,fs};size_t code_size[2]={(size_t)vs_bytes,(size_t)fs_bytes};
 #if defined(_WIN32)
@@ -400,8 +416,8 @@ uint32_t helix_sdl3gpu_shader(const void *vs,int vs_bytes,const void *fs,int fs_
  for(int i=0;i<2;i++)if(compiled[i])ID3D10Blob_Release(compiled[i]);
 #endif
  if(!made[0]||!made[1]){for(int i=0;i<2;i++)if(made[i])SDL_ReleaseGPUShader(device,made[i]);return 0;}
- programs[slot].vertex=made[0];programs[slot].fragment=made[1];programs[slot].blocks=blocks;programs[slot].texture_mask=mask;programs[slot].unfiltered_mask=unfiltered;memcpy(programs[slot].texture_kind,kinds,sizeof kinds);
- memcpy(programs[slot].block_size,sizes,sizeof sizes);memcpy(programs[slot].block_stage,stages,sizeof stages);memcpy(programs[slot].block_index,block_index,sizeof block_index);
+ programs[slot].vertex=made[0];programs[slot].fragment=made[1];programs[slot].attributes=attributes;programs[slot].texture_mask=mask;programs[slot].unfiltered_mask=unfiltered;memcpy(programs[slot].texture_kind,kinds,sizeof kinds);
+ memcpy(programs[slot].block_size,sizes,sizeof sizes);memcpy(programs[slot].block_both,both,sizeof both);
  memcpy(programs[slot].texture_stage,texture_stages,sizeof texture_stages);memcpy(programs[slot].texture_index,texture_index,sizeof texture_index);
  programs[slot].vertex_samplers=counts[0];programs[slot].fragment_samplers=counts[1];
  programs[slot].live=1;programs[slot].generation++;
@@ -427,16 +443,17 @@ static SDL_GPUColorTargetBlendState blend_of(int blend,int channels,int *ok){
 }
 /* A pipeline as helix.platform.PipelineDesc describes it, its ints in order (as sokol's adapter reads them): shader, primitive (0 triangles,
    1 lines), indexed, blend (blend_of), depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front),
-   clockwise, depth only, clip flip (0 none, 1 clip scale, 2 view-projection), the color channels written (blend_of), the buffer count, then
-   each buffer's stride, instanced and attribute count, each attribute's slot, components and offset. */
+   clockwise, depth only, clip flip (0 none, 1 clip scale, 2 view-projection), the color channels written (blend_of), the flip uniform's
+   block slot (the vertex stage's) and byte offset, the buffer count, then each buffer's stride, instanced and attribute count, each
+   attribute's slot, components and offset, then the constants' count and each one's slot and four floats' bits. */
 uint32_t helix_pipeline(const int *desc,int count){
  int slot=-1;for(int i=0;i<SLOTS;i++)if(!pipelines[i].live){slot=i;break;}
- if(slot<0||!desc||count<12||!program_live((uint32_t)desc[0]))return 0;
+ if(slot<0||!desc||count<15||!program_live((uint32_t)desc[0]))return 0;
  const int program=slot_of((uint32_t)desc[0]),lines=desc[1]==1,indexed=desc[2],depth_only=desc[8],clockwise=desc[7];int blend_ok=0;
  const SDL_GPUColorTargetBlendState blend=blend_of(desc[3],desc[10],&blend_ok);
  if(!blend_ok)return 0;
  SDL_GPUVertexBufferDescription vbs[HELIX_MAX_VERTEX_BUFFERS];SDL_GPUVertexAttribute attrs[HELIX_MAX_VERTEX_ATTRIBUTES];int nattrs=0;
- const int nbuffers=desc[11];int at=12,strides[HELIX_MAX_VERTEX_BUFFERS]={0},instanced[HELIX_MAX_VERTEX_BUFFERS]={0},read[HELIX_MAX_VERTEX_BUFFERS]={0};
+ const int flip_slot=desc[11],flip_offset=desc[12],nbuffers=desc[13];int at=14,strides[HELIX_MAX_VERTEX_BUFFERS]={0},instanced[HELIX_MAX_VERTEX_BUFFERS]={0},read[HELIX_MAX_VERTEX_BUFFERS]={0};
  if(nbuffers<0||nbuffers>HELIX_MAX_VERTEX_BUFFERS)return 0;
  for(int b=0;b<nbuffers;b++){
   if(at+3>count)return 0;
@@ -451,9 +468,32 @@ uint32_t helix_pipeline(const int *desc,int count){
   }
   read[b]=n>0;
  }
- /* Buffers no attribute reads aren't described: SDL_GPU wants none it isn't given. */
- SDL_GPUVertexBufferDescription described[HELIX_MAX_VERTEX_BUFFERS];int ndescribed=0;
- for(int b=0;b<nbuffers;b++)if(read[b])described[ndescribed++]=vbs[b];
+ if(flip_slot<0||flip_slot>=MAX_BLOCKS||flip_offset<0||flip_offset%4)return 0;
+ /* The constants: each slot no buffer feeds, its four floats. */
+ float given[HELIX_MAX_VERTEX_ATTRIBUTES][4];int has_constant[HELIX_MAX_VERTEX_ATTRIBUTES]={0},fed[HELIX_MAX_VERTEX_ATTRIBUTES]={0};
+ for(int a=0;a<nattrs;a++)fed[attrs[a].location]=1;
+ if(at>=count)return 0;
+ const int nconstants=desc[at++];
+ if(nconstants<0||at+nconstants*5>count)return 0;
+ for(int k=0;k<nconstants;k++,at+=5){
+  const int location=desc[at];
+  if(location<0||location>=HELIX_MAX_VERTEX_ATTRIBUTES||fed[location])return 0;
+  has_constant[location]=1;for(int i=0;i<4;i++){union{int i;float f;}bits={desc[at+1+i]};given[location][i]=bits.f;}
+ }
+ /* Buffers no attribute reads aren't described: SDL_GPU wants none it isn't given. The rest are numbered in order, as a draw binds them;
+    the constants' buffer after them. */
+ SDL_GPUVertexBufferDescription described[HELIX_MAX_VERTEX_BUFFERS+1];int ndescribed=0,renumbered[HELIX_MAX_VERTEX_BUFFERS]={0};
+ for(int b=0;b<nbuffers;b++)if(read[b]){renumbered[b]=ndescribed;described[ndescribed]=vbs[b];described[ndescribed].slot=(Uint32)ndescribed;ndescribed++;}
+ for(int a=0;a<nattrs;a++)attrs[a].buffer_slot=(Uint32)renumbered[attrs[a].buffer_slot];
+ float constants[HELIX_MAX_VERTEX_ATTRIBUTES*4];int nconstant=0;
+ for(int location=0;location<programs[program].attributes;location++){
+  if(fed[location])continue;
+  if(nattrs==HELIX_MAX_VERTEX_ATTRIBUTES)return 0;
+  for(int i=0;i<4;i++)constants[nconstant*4+i]=has_constant[location]?given[location][i]:i==3?1.0f:0.0f;
+  attrs[nattrs++]=(SDL_GPUVertexAttribute){.location=(Uint32)location,.buffer_slot=(Uint32)ndescribed,.format=SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,.offset=(Uint32)(nconstant*16)};
+  nconstant++;
+ }
+ if(nconstant){described[ndescribed]=(SDL_GPUVertexBufferDescription){.slot=(Uint32)ndescribed,.pitch=(Uint32)(nconstant*16),.input_rate=SDL_GPU_VERTEXINPUTRATE_INSTANCE};ndescribed++;}
  const SDL_GPUColorTargetDescription color={.format=SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,.blend_state=blend};
  SDL_GPUGraphicsPipelineCreateInfo info={.vertex_shader=programs[program].vertex,.fragment_shader=programs[program].fragment,
   .vertex_input_state={.vertex_buffer_descriptions=described,.num_vertex_buffers=(Uint32)ndescribed,.vertex_attributes=attrs,.num_vertex_attributes=(Uint32)nattrs},
@@ -480,6 +520,8 @@ uint32_t helix_pipeline(const int *desc,int count){
  pipelines[slot].pipeline=pipeline;pipelines[slot].flipped=twin;pipelines[slot].program=(uint32_t)desc[0];pipelines[slot].buffer_count=nbuffers;
  memcpy(pipelines[slot].stride,strides,sizeof strides);memcpy(pipelines[slot].instanced,instanced,sizeof instanced);memcpy(pipelines[slot].read,read,sizeof read);
  pipelines[slot].indexed=indexed!=0;pipelines[slot].lines=lines;pipelines[slot].flip=desc[9];pipelines[slot].depth_only=depth_only!=0;
+ pipelines[slot].flip_slot=flip_slot;pipelines[slot].flip_offset=flip_offset;
+ memcpy(pipelines[slot].constants,constants,sizeof constants);pipelines[slot].constant_attributes=nconstant;pipelines[slot].constant_count=0;pipelines[slot].constant_buffer=NULL;
  pipelines[slot].live=1;pipelines[slot].generation++;
  return handle_of(slot,pipelines[slot].generation);
 }
@@ -549,7 +591,7 @@ int helix_begin_shadow(uint32_t map,int layer){
  pass_has_color=0;pass_has_depth=1;pass_variant=0;
  pass_depth=(SDL_GPUDepthStencilTargetInfo){.texture=textures[slot].texture,.clear_depth=1,.load_op=SDL_GPU_LOADOP_CLEAR,.store_op=SDL_GPU_STOREOP_STORE,
   .stencil_load_op=SDL_GPU_LOADOP_DONT_CARE,.stencil_store_op=SDL_GPU_STOREOP_DONT_CARE,.layer=(Uint8)layer};
- begin_recording(2,1,textures[slot].width,textures[slot].height);
+ begin_recording(2,1,textures[slot].width,textures[slot].height);pass_texture=map;
  return 1;
 }
 /* Color and depth targets for a pass cleared to color, or (keep) loading what they hold: drawn into color, or into samples resolved into
@@ -573,7 +615,7 @@ static int begin_target(uint32_t target,int clear,SDL_FColor color){
  textures[slot].cleared=1;
  color_pass(textures[slot].texture,textures[slot].samples,textures[slot].depth,color,1);
  if(clear){pass_color.load_op=SDL_GPU_LOADOP_CLEAR;pass_depth.load_op=SDL_GPU_LOADOP_CLEAR;}
- begin_recording(2,0,textures[slot].width,textures[slot].height);pass_variant=textures[slot].variant;
+ begin_recording(2,0,textures[slot].width,textures[slot].height);pass_variant=textures[slot].variant;pass_texture=target;
  return 1;
 }
 int helix_begin_target(uint32_t target,float red,float green,float blue,float alpha){return begin_target(target,1,(SDL_FColor){red,green,blue,alpha});}
@@ -610,8 +652,9 @@ static int end_pass(void){
    if(c->vertex_sampler_count)SDL_BindGPUVertexSamplers(pass,0,c->vertex_samplers,(Uint32)c->vertex_sampler_count);
    if(c->fragment_sampler_count)SDL_BindGPUFragmentSamplers(pass,0,c->fragment_samplers,(Uint32)c->fragment_sampler_count);
    for(int u=0;u<c->uniform_count;u++){
+    /* Stage 0 the vertex's, 1 the fragment's, 2 both. */
     if(c->uniform_stage[u])SDL_PushGPUFragmentUniformData(command,(Uint32)c->uniform_index[u],uniform_bytes+c->uniform_at[u],(Uint32)c->uniform_size[u]);
-    else SDL_PushGPUVertexUniformData(command,(Uint32)c->uniform_index[u],uniform_bytes+c->uniform_at[u],(Uint32)c->uniform_size[u]);
+    if(c->uniform_stage[u]!=1)SDL_PushGPUVertexUniformData(command,(Uint32)c->uniform_index[u],uniform_bytes+c->uniform_at[u],(Uint32)c->uniform_size[u]);
    }
    if(c->indexed)SDL_DrawGPUIndexedPrimitives(pass,(Uint32)c->count,(Uint32)c->instances,(Uint32)c->first,0,0);
    else SDL_DrawGPUPrimitives(pass,(Uint32)c->count,(Uint32)c->instances,(Uint32)c->first,0);
@@ -620,7 +663,7 @@ static int end_pass(void){
  SDL_EndGPURenderPass(pass);
  return 1;
 }
-int helix_end_target(void){if(active!=2)return 0;const int ok=end_pass();active=0;flipped=0;return ok;}
+int helix_end_target(void){if(active!=2)return 0;const int ok=end_pass();active=0;flipped=0;pass_texture=0;return ok;}
 
 /* Clips to x, y, w, h from the bottom left (on), or to the whole pass (off); lasts the pass. */
 int helix_scissor(int x,int y,int w,int h,int on){
@@ -673,10 +716,6 @@ static SDL_GPUGraphicsPipeline *variant_of(int slot){
  }
  return pipelines[slot].variants[v];
 }
-/* A draw through pipeline p, recorded for the pass's replay, checked as sokol's adapter checks it: count vertices from first (or indices, for
-   an indexed pipeline, from first of `indices`) as instance_count instances from record first_instance of its instanced buffers; buffers[i]
-   its buffer i (0 for one it doesn't read); the program's textures and samplings by slot; its uniform blocks' bytes one after another by
-   slot, block 0 as the pipeline's clip flip says. 0, drawing nothing, for anything invalid. */
 /* What an unbound slot reads (a draw's texture 0 where the program declares one): a 1x1 texture of the slot's kind, clear, made when first
    needed. */
 static uint32_t placeholders[3];
@@ -686,6 +725,28 @@ static uint32_t placeholder(char kind){
  if(!placeholders[which])placeholders[which]=which==1?helix_cube_texture(1,clear,24,1,0):which==2?helix_shadow_map(1,1):helix_texture(1,1,clear,4,1,0);
  return placeholders[which];
 }
+/* The pipeline's constants' buffer, holding its record for at least instances instances, made again larger when it holds too few (the old
+   one released once the GPU is done with it). */
+static SDL_GPUBuffer *constant_buffer(int ps,int instances){
+ if(pipelines[ps].constant_count<instances){
+  int n=pipelines[ps].constant_count?pipelines[ps].constant_count:1;while(n<instances)n*=2;
+  const size_t record=(size_t)pipelines[ps].constant_attributes*16,bytes=record*(size_t)n;
+  unsigned char *data=malloc(bytes);if(!data)return NULL;
+  for(int i=0;i<n;i++)memcpy(data+record*(size_t)i,pipelines[ps].constants,record);
+  SDL_GPUBuffer *buffer=SDL_CreateGPUBuffer(device,&(SDL_GPUBufferCreateInfo){.usage=SDL_GPU_BUFFERUSAGE_VERTEX,.size=(Uint32)bytes});
+  const Upload u={.bytes=(Uint32)bytes,.buffer=buffer};
+  if(!buffer||!upload_now(data,bytes,&u,1)){free(data);if(buffer)SDL_ReleaseGPUBuffer(device,buffer);return NULL;}
+  free(data);
+  if(pipelines[ps].constant_buffer)SDL_ReleaseGPUBuffer(device,pipelines[ps].constant_buffer);
+  pipelines[ps].constant_buffer=buffer;pipelines[ps].constant_count=n;
+ }
+ return pipelines[ps].constant_buffer;
+}
+/* A draw through pipeline p, recorded for the pass's replay, checked as sokol's adapter checks it: count vertices from first (or indices, for
+   an indexed pipeline, from first of `indices`) as instance_count instances from record first_instance of its instanced buffers; buffers[i]
+   its buffer i (0 for one it doesn't read); the program's textures and samplings by slot; its uniform blocks' bytes one after another by
+   their index (the vertex stage's slots 0 to 3, the fragment stage's 4 to 7, a block both read at both), the pipeline's flip uniform
+   written as its clip flip says. -1 for a texture that is the pass's own target; 0, drawing nothing, for anything else invalid. */
 int helix_draw(uint32_t p,const uint32_t *buffer_handles,int buffer_count,uint32_t indices,int first,int count,int first_instance,int instance_count,
                const uint32_t *texture_handles,const int *samplings,int texture_count,const void *uniforms,int uniform_total){
  if(!active||!pipeline_live(p))return 0;
@@ -693,7 +754,7 @@ int helix_draw(uint32_t p,const uint32_t *buffer_handles,int buffer_count,uint32
  if(!program_live(pipelines[ps].program))return 0;
  const int program=slot_of(pipelines[ps].program);
  if(first<0||count<=0||count%group||first_instance<0||instance_count<=0||buffer_count<pipelines[ps].buffer_count)return 0;
- int total=0;for(int i=0;i<programs[program].blocks;i++)total+=programs[program].block_size[i];
+ int total=0;for(int i=0;i<MAX_BLOCK_INDICES;i++)total+=programs[program].block_size[i];
  const int mask=programs[program].texture_mask;
  if(total!=uniform_total||texture_count>MAX_TEXTURES)return 0;
  Command c={.kind=DRAW,.first=first,.count=count,.instances=instance_count,.indexed=indexed};
@@ -714,12 +775,18 @@ int helix_draw(uint32_t p,const uint32_t *buffer_handles,int buffer_count,uint32
   if(!instanced&&!indexed&&(long)(first+count)*stride>buffers[bs].used)return 0;
   c.vertex[c.vertex_count++]=(SDL_GPUBufferBinding){buffers[bs].buffer,buffers[bs].offset+(Uint32)(instanced?first_instance*stride:0)};
  }
+ if(pipelines[ps].constant_attributes){
+  SDL_GPUBuffer *constants=constant_buffer(ps,instance_count);
+  if(!constants)return 0;
+  c.vertex[c.vertex_count++]=(SDL_GPUBufferBinding){constants,0};
+ }
  for(int i=0;i<MAX_TEXTURES;i++){
   if(!(mask&1<<i))continue;
   /* A slot the draw leaves unbound reads a placeholder of its kind. */
   const uint32_t handle=i<texture_count&&texture_handles[i]?texture_handles[i]:placeholder(programs[program].texture_kind[i]);
   const int sampling=i<texture_count?samplings[i]:0;
   if(!texture_live(handle))return 0;
+  if(handle==pass_texture)return -1;
   const int ts=slot_of(handle),kind=textures[ts].kind;
   SDL_GPUTexture *texture=textures[ts].texture;
   if(kind==DATA){texture=textures[ts].versions[textures[ts].current];textures[ts].bound[textures[ts].current]=1;}
@@ -731,18 +798,23 @@ int helix_draw(uint32_t p,const uint32_t *buffer_handles,int buffer_count,uint32
  }
  c.vertex_sampler_count=programs[program].vertex_samplers;c.fragment_sampler_count=programs[program].fragment_samplers;
  const char *at=uniforms;
- for(int i=0;i<programs[program].blocks;i++){
+ for(int i=0;i<MAX_BLOCK_INDICES;i++){
   const int size=programs[program].block_size[i];
   if(!size)continue;
-  size_t staged;
-  if(i==0&&pipelines[ps].flip==1){const float clip[4]={1.0f,flipped?-1.0f:1.0f,0.0f,0.0f};staged=stage_uniform(clip,sizeof clip);}
-  else if(i==0&&pipelines[ps].flip==2&&flipped){
-   float copy[256];if((size_t)size>sizeof copy)return 0;memcpy(copy,at,(size_t)size);
-   copy[1]=-copy[1];copy[5]=-copy[5];copy[9]=-copy[9];copy[13]=-copy[13];staged=stage_uniform(copy,(size_t)size);
-  }else staged=stage_uniform(at,(size_t)size);
+  /* The fragment copy of a block both stages read: the vertex copy is pushed to both. */
+  if(programs[program].block_both[i]){at+=size;continue;}
+  size_t staged=stage_uniform(at,(size_t)size);
   if(staged==(size_t)-1)return 0;
-  c.uniform_at[c.uniform_count]=staged;c.uniform_size[c.uniform_count]=i==0&&pipelines[ps].flip==1?16:size;
-  c.uniform_stage[c.uniform_count]=programs[program].block_stage[i];c.uniform_index[c.uniform_count]=programs[program].block_index[i];c.uniform_count++;
+  /* The flip uniform, in the adapter's copy: a clip scale (1, -1, 1, 1) in a flipped pass (a shadow map's, its rows bottom first) and
+     (1, 1, 1, 1) in any other; a view-projection's y row negated in a flipped pass. */
+  const int flip=pipelines[ps].flip,offset=pipelines[ps].flip_offset;
+  if(flip&&i==pipelines[ps].flip_slot){
+   float *place=(float*)(uniform_bytes+staged+offset);
+   if(flip==1&&offset+16<=size){place[0]=1.0f;place[1]=flipped?-1.0f:1.0f;place[2]=1.0f;place[3]=1.0f;}
+   else if(flip==2&&flipped&&offset+64<=size){place[1]=-place[1];place[5]=-place[5];place[9]=-place[9];place[13]=-place[13];}
+  }
+  c.uniform_at[c.uniform_count]=staged;c.uniform_size[c.uniform_count]=size;
+  c.uniform_stage[c.uniform_count]=i<4?(programs[program].block_both[i+4]?2:0):1;c.uniform_index[c.uniform_count]=i&3;c.uniform_count++;
   at+=size;
  }
  Command *recorded=add_command(DRAW);
@@ -809,6 +881,7 @@ static void release_texture(int slot){
  const uint32_t generation=textures[slot].generation;memset(&textures[slot],0,sizeof textures[slot]);textures[slot].generation=generation;
 }
 static void release_pipeline(int slot){
+ if(pipelines[slot].constant_buffer)SDL_ReleaseGPUBuffer(device,pipelines[slot].constant_buffer);
  SDL_ReleaseGPUGraphicsPipeline(device,pipelines[slot].pipeline);if(pipelines[slot].flipped)SDL_ReleaseGPUGraphicsPipeline(device,pipelines[slot].flipped);
  for(int v=1;v<VARIANTS;v++)if(pipelines[slot].variants[v])SDL_ReleaseGPUGraphicsPipeline(device,pipelines[slot].variants[v]);
  const uint32_t generation=pipelines[slot].generation;memset(&pipelines[slot],0,sizeof pipelines[slot]);pipelines[slot].generation=generation;

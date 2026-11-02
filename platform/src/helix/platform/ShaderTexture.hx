@@ -24,4 +24,7 @@ typedef ShaderTexture = {
 		The program only reads it texel by texel (`texelFetch`). It is therefore sampled nearest, whatever the draw's sampling, as a data
 		texture (`IGraphics.createDataTexture`) always is. */
 	final data:Bool;
+
+	/** Whether the program's code samples it, as glslang finds; one unsampled is still declared and bound. */
+	final active:Bool;
 }

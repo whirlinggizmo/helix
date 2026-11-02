@@ -25,13 +25,43 @@
 #define GL_PACK_ALIGNMENT 0x0D05
 #endif
 __declspec(dllimport) void __stdcall glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void *pixels);
+/* The uniform setters and the generic attribute sokol never calls, loaded the first time a program is made. */
+__declspec(dllimport) PROC __stdcall wglGetProcAddress(LPCSTR name);
+typedef void (APIENTRY *helix_uniform_uiv)(GLint location,GLsizei count,const GLuint *value);
+typedef void (APIENTRY *helix_uniform_matrix)(GLint location,GLsizei count,GLboolean transpose,const GLfloat *value);
+typedef void (APIENTRY *helix_attrib4fv)(GLuint index,const GLfloat *value);
+static helix_uniform_uiv helix_glUniform1uiv,helix_glUniform2uiv,helix_glUniform3uiv,helix_glUniform4uiv;
+static helix_uniform_matrix helix_glUniformMatrix2fv,helix_glUniformMatrix3fv;
+static helix_attrib4fv helix_glVertexAttrib4fv;
+#define glUniform1uiv helix_glUniform1uiv
+#define glUniform2uiv helix_glUniform2uiv
+#define glUniform3uiv helix_glUniform3uiv
+#define glUniform4uiv helix_glUniform4uiv
+#define glUniformMatrix2fv helix_glUniformMatrix2fv
+#define glUniformMatrix3fv helix_glUniformMatrix3fv
+#define glVertexAttrib4fv helix_glVertexAttrib4fv
+static void load_gl(void){
+ if(helix_glVertexAttrib4fv)return;
+ helix_glUniform1uiv=(helix_uniform_uiv)wglGetProcAddress("glUniform1uiv");helix_glUniform2uiv=(helix_uniform_uiv)wglGetProcAddress("glUniform2uiv");
+ helix_glUniform3uiv=(helix_uniform_uiv)wglGetProcAddress("glUniform3uiv");helix_glUniform4uiv=(helix_uniform_uiv)wglGetProcAddress("glUniform4uiv");
+ helix_glUniformMatrix2fv=(helix_uniform_matrix)wglGetProcAddress("glUniformMatrix2fv");helix_glUniformMatrix3fv=(helix_uniform_matrix)wglGetProcAddress("glUniformMatrix3fv");
+ helix_glVertexAttrib4fv=(helix_attrib4fv)wglGetProcAddress("glVertexAttrib4fv");
+}
+#else
+static void load_gl(void){}
 #endif
 
-/* Programs (helix_shader), by shader slot: their uniform blocks' count and sizes by binding slot, and the texture slots they sample (a bit
-   each). */
-#define MAX_BLOCKS 4
+/* Programs (helix_shader), by shader slot: their uniform blocks' sizes by index in a draw's uniforms (a vertex block's slot, a fragment
+   block's 4 + its slot, a block both stages read at both, 0 for none), the texture slots they sample (a bit each), and the GL uniform
+   setters their blocks' members are applied by. GL 410 holds a block as a uniform of its struct type; sokol's own uniform blocks compute
+   their offsets from a flat member list (no struct's padding, no mat2, mat3, uint or bool, 16 members at most), so each member is set
+   here, by its type, from its std140 place in the block. */
+#define MAX_BLOCKS 8
 #define MAX_TEXTURES 12
-static struct{int blocks,texture_mask,unfiltered_mask,block_size[MAX_BLOCKS];char kind[MAX_TEXTURES];}programs[256];
+/* A setter: count elements of a member (base 'f', 'i' or 'u'; comps a column's components; cols a matrix's columns, else 1), the first at
+   offset in the bytes of block (an index), each stride bytes after the last, to the GL location loc. */
+typedef struct{int block,offset,stride,count,loc;char base,comps,cols;}setter;
+static struct{int texture_mask,unfiltered_mask,block_size[MAX_BLOCKS];char kind[MAX_TEXTURES];setter *setters;int setter_count;}programs[256];
 /* What an unbound slot reads (a draw's texture 0 where the program declares one): a 1x1 texture of the slot's kind, clear, made when first
    needed. */
 static uint32_t placeholders[3];
@@ -43,7 +73,7 @@ static sg_sampler samplers[SAMPLINGS];
 /* Pipelines (helix_pipeline), by pipeline slot: what a draw through one checks and binds (its program, its buffers' strides and whether each
    is an instance's and read at all, indexed or not, lines or triangles, depth alone, block 0's clip flip). Per buffer slot: whether it is an
    index buffer. */
-static struct{uint32_t id,shader;int buffer_count,stride[HELIX_MAX_VERTEX_BUFFERS],instanced[HELIX_MAX_VERTEX_BUFFERS],read[HELIX_MAX_VERTEX_BUFFERS],indexed,lines,depth_only,flip;}pipeline_info[256];
+static struct{uint32_t id,shader;int buffer_count,stride[HELIX_MAX_VERTEX_BUFFERS],instanced[HELIX_MAX_VERTEX_BUFFERS],read[HELIX_MAX_VERTEX_BUFFERS],indexed,lines,depth_only,flip,flip_slot,flip_offset,fed;float constants[HELIX_MAX_VERTEX_ATTRIBUTES][4];}pipeline_info[256];
 /* A sokol pipeline is made for one kind of pass (its color format, depth format and samples), and a flipped pass draws triangles with their
    front faces the other way round: a pipeline's variants, by pipeline slot, each made from its description the first time a draw needs it.
    A variant is the pass's kind: bit 0 half floats, bit 1 no depth, bit 2 single sampled where the screen isn't, bit 3 flipped; variant 0
@@ -54,6 +84,8 @@ static int index_buffers[256];
 /* active: 1 in the screen's pass, 2 in a target's; flipped: the pass is drawn flipped (GL, whose framebuffers' origin is the bottom left, into a
    target), so a target is stored top row first, as every texture is; pass_variant: the pipelines' variant the pass draws with. */
 static int active,flipped,pass_variant,used[256],frame_width,frame_height;
+/* The texture the open target or shadow pass draws into (its view), 0 for none: a draw may not sample it. */
+static uint32_t pass_texture;
 /* The screen's size this frame, and whether helix_end has ended it (so it can be read back). */
 static int screen_width,screen_height,frame_ended;
 /* A stream buffer written again after a draw bound it this frame takes another sokol buffer of the same size, as sokol allows writes only
@@ -238,10 +270,12 @@ static sg_blend_state blend_of(int blend,int *ok){
 static sg_color_mask mask_of(int channels){return channels?(sg_color_mask)channels:SG_COLORMASK_NONE;}
 /* A pipeline as helix.platform.PipelineDesc describes it, its ints in order: shader, primitive (0 triangles, 1 lines), indexed, blend
    (blend_of), depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front), clockwise, depth only, clip flip
-   (0 none, 1 clip scale, 2 view-projection), the color channels written (mask_of), the buffer count, then each buffer's stride, instanced and
-   attribute count, each attribute's slot, components and offset. 0 for a description it can't make. */
+   (0 none, 1 clip scale, 2 view-projection), the color channels written (mask_of), the flip uniform's vertex block slot and byte offset, the
+   buffer count, then each buffer's stride, instanced and attribute count, each attribute's slot, components and offset, then the count of
+   attribute constants and each one's slot and four floats' bits. An attribute no buffer feeds reads its constant, or (0, 0, 0, 1): GL's
+   generic attribute value, set before each draw. 0 for a description it can't make (a constant for a slot a buffer feeds among them). */
 uint32_t helix_pipeline(const int *desc,int count){
- if(!desc||count<12)return 0;
+ if(!desc||count<15)return 0;
  const uint32_t shader=(uint32_t)desc[0];const int lines=desc[1]==1,indexed=desc[2],depth_only=desc[8],clockwise=desc[7],channels=desc[10];int blend_ok=0;
  const sg_blend_state blend=blend_of(desc[3],&blend_ok);
  if(!blend_ok||channels<0||channels>15||(shader&0xffff)>=256||sg_query_shader_state((sg_shader){shader})!=SG_RESOURCESTATE_VALID)return 0;
@@ -250,7 +284,9 @@ uint32_t helix_pipeline(const int *desc,int count){
   .cull_mode=desc[6]==2?SG_CULLMODE_FRONT:desc[6]?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,.colors[0]={.blend=blend,.write_mask=mask_of(channels)}};
  /* Depth alone: a shadow pass's, no color attachment. */
  if(depth_only){pd.depth.pixel_format=SG_PIXELFORMAT_DEPTH;pd.color_count=0;pd.sample_count=1;}
- const int buffers=desc[11];int at=12,strides[HELIX_MAX_VERTEX_BUFFERS]={0},instanced[HELIX_MAX_VERTEX_BUFFERS]={0},read[HELIX_MAX_VERTEX_BUFFERS]={0};
+ const int flip_slot=desc[11],flip_offset=desc[12];
+ if(desc[9]&&(flip_slot<0||flip_slot>3||flip_offset<0||flip_offset%4))return 0;
+ const int buffers=desc[13];int at=14,fed=0,strides[HELIX_MAX_VERTEX_BUFFERS]={0},instanced[HELIX_MAX_VERTEX_BUFFERS]={0},read[HELIX_MAX_VERTEX_BUFFERS]={0};
  if(buffers<0||buffers>HELIX_MAX_VERTEX_BUFFERS)return 0;
  for(int b=0;b<buffers;b++){
   if(at+3>count)return 0;
@@ -262,8 +298,19 @@ uint32_t helix_pipeline(const int *desc,int count){
    if(slot<0||slot>=HELIX_MAX_VERTEX_ATTRIBUTES||components<1||components>4||offset<0||offset+components*4>strides[b])return 0;
    static const sg_vertex_format formats[4]={SG_VERTEXFORMAT_FLOAT,SG_VERTEXFORMAT_FLOAT2,SG_VERTEXFORMAT_FLOAT3,SG_VERTEXFORMAT_FLOAT4};
    pd.layout.attrs[slot]=(sg_vertex_attr_state){.format=formats[components-1],.offset=offset,.buffer_index=b};
+   fed|=1<<slot;
   }
   read[b]=attrs>0;
+ }
+ float constants[HELIX_MAX_VERTEX_ATTRIBUTES][4];
+ for(int i=0;i<HELIX_MAX_VERTEX_ATTRIBUTES;i++){constants[i][0]=constants[i][1]=constants[i][2]=0;constants[i][3]=1;}
+ if(at>=count)return 0;
+ const int constant_count=desc[at++];
+ if(constant_count<0||at+constant_count*5>count)return 0;
+ for(int c=0;c<constant_count;c++,at+=5){
+  const int slot=desc[at];
+  if(slot<0||slot>=HELIX_MAX_VERTEX_ATTRIBUTES||fed&1<<slot)return 0;
+  memcpy(constants[slot],&desc[at+1],sizeof constants[slot]);
  }
  sg_pipeline pipeline=sg_make_pipeline(&pd);
  if(sg_query_pipeline_state(pipeline)!=SG_RESOURCESTATE_VALID||(pipeline.id&0xffff)>=256){sg_destroy_pipeline(pipeline);return 0;}
@@ -271,6 +318,7 @@ uint32_t helix_pipeline(const int *desc,int count){
  pipeline_descs[slot]=pd;memset(variants[slot],0,sizeof variants[slot]);variants[slot][0]=pipeline;
  pipeline_info[slot].id=pipeline.id;pipeline_info[slot].shader=shader;pipeline_info[slot].buffer_count=buffers;pipeline_info[slot].indexed=indexed!=0;pipeline_info[slot].lines=lines;
  pipeline_info[slot].depth_only=depth_only!=0;pipeline_info[slot].flip=desc[9];
+ pipeline_info[slot].flip_slot=flip_slot;pipeline_info[slot].flip_offset=flip_offset;pipeline_info[slot].fed=fed;memcpy(pipeline_info[slot].constants,constants,sizeof constants);
  memcpy(pipeline_info[slot].stride,strides,sizeof strides);memcpy(pipeline_info[slot].instanced,instanced,sizeof instanced);memcpy(pipeline_info[slot].read,read,sizeof read);
  return pipeline.id;
 }
@@ -289,25 +337,91 @@ int helix_update(uint32_t id,const void *data,int bytes){
  }
  if(bytes)sg_write_buffer_transient(&(sg_write_buffer_desc){.src.data={data,(size_t)bytes},.dst.buffer=current_buffer(id)});used[slot]=bytes;return 1;
 }
-/* A program from its GLSL 410 stages and its layout, a line each: "a <slot> <name>" an attribute, "u <slot> <v|f> <size> <vec4s> <name>" a
-   uniform block (flattened to a vec4 array), "t <slot> <v|f> <name>" a texture and its sampler, sharing the slot, "s <slot> <v|f> <name>" a
-   shadow map (a depth array) and its comparison sampler, "c <slot> <v|f> <name>" a cube and its sampler, "d <slot> <v|f> <name>" a data
-   texture (RGBA32F, unfiltered) and its nonfiltering sampler. */
+/* A member's type as a setter's base, components a column and columns: GL 410 declares a bool as a uint, a bvecN as a uvecN. 0 for one it
+   doesn't know. */
+static int type_of(const char *type,setter *u){
+ static const struct{const char *name;char base,comps,cols;}types[]={{"float",'f',1,1},{"vec2",'f',2,1},{"vec3",'f',3,1},{"vec4",'f',4,1},
+  {"int",'i',1,1},{"ivec2",'i',2,1},{"ivec3",'i',3,1},{"ivec4",'i',4,1},{"uint",'u',1,1},{"uvec2",'u',2,1},{"uvec3",'u',3,1},{"uvec4",'u',4,1},
+  {"bool",'u',1,1},{"bvec2",'u',2,1},{"bvec3",'u',3,1},{"bvec4",'u',4,1},{"mat2",'f',2,2},{"mat3",'f',3,3},{"mat4",'f',4,4}};
+ for(size_t i=0;i<sizeof types/sizeof types[0];i++)if(!strcmp(types[i].name,type)){u->base=types[i].base;u->comps=types[i].comps;u->cols=types[i].cols;return 1;}
+ return 0;
+}
+/* The GL name of element e of a member whose path's parts are parts[0..n) (parts[0] the block's uniform), its array at part k (k == n:
+   none), as GL 410 names a struct's fields: an array of structs indexed at the struct (`_31.lights[1].on`), any other array at itself. */
+static void element_name(char *out,size_t size,char parts[][128],int n,int k,int e){
+ size_t at=0;out[0]=0;
+ for(int i=0;i<n;i++){
+  at+=(size_t)snprintf(out+at,at<size?size-at:0,"%s%s",i?".":"",parts[i]);
+  if(i==k&&e>=0)at+=(size_t)snprintf(out+at,at<size?size-at:0,"[%d]",e);
+ }
+}
+/* Adds the setters of one member through a block's uniform named var: one setting every element (an array whose elements' locations follow
+   one another), or one an element (a field of an array of structs, or an array GL placed apart). */
+static int add_setters(setter **list,int *count,int *cap,GLuint prog,const char *var,const char *path,setter u,int elements){
+ char full[512],name[640],parts[16][128];int n=0;
+ size_t vl=strlen(var);
+ if(!strncmp(path,var,vl)&&path[vl]=='.')snprintf(full,sizeof full,"%s",path);else snprintf(full,sizeof full,"%s.%s",var,path);
+ for(const char *at=full;*at&&n<16;n++){
+  const char *dot=strchr(at,'.');size_t len=dot?(size_t)(dot-at):strlen(at);if(len>127)return 0;
+  memcpy(parts[n],at,len);parts[n][len]=0;at=dot?dot+1:at+len;
+ }
+ #define PUSH(x) do{if(*count==*cap){*cap=*cap?*cap*2:16;setter *g=realloc(*list,sizeof(setter)*(size_t)*cap);if(!g)return 0;*list=g;}(*list)[(*count)++]=(x);}while(0)
+ if(elements<=1){
+  element_name(name,sizeof name,parts,n,n,-1);u.loc=glGetUniformLocation(prog,name);u.count=1;
+  if(u.loc>=0)PUSH(u);
+  return 1;
+ }
+ /* Which part the array is at: the first where an element is there. */
+ int k=-1;
+ for(int part=n-1;part>=1&&k<0;part--)for(int e=0;e<elements;e++){element_name(name,sizeof name,parts,n,part,e);if(glGetUniformLocation(prog,name)>=0){k=part;break;}}
+ if(k<0)return 1;
+ int first=-1,together=k==n-1;
+ for(int e=0;e<elements;e++){
+  element_name(name,sizeof name,parts,n,k,e);const int loc=glGetUniformLocation(prog,name);
+  if(e==0)first=loc;
+  if(loc<0||loc!=first+e)together=0;
+ }
+ if(together){u.loc=first;u.count=elements;PUSH(u);return 1;}
+ const int offset=u.offset;
+ for(int e=0;e<elements;e++){
+  element_name(name,sizeof name,parts,n,k,e);u.loc=glGetUniformLocation(prog,name);u.count=1;u.offset=offset+e*u.stride;
+  if(u.loc>=0)PUSH(u);
+ }
+ #undef PUSH
+ return 1;
+}
+/* A program from its GLSL 410 stages and its layout, a line each: "a <slot> <name>" an attribute; "u <slot> <v|f|b> <size> <name>" a uniform
+   block (b: one both stages read, at the slot in each), each followed by its members, "m <type> <offset> <count> <stride> <path>", at their
+   std140 places; "n <block> <vertex> <fragment>" the block's uniform's name in each stage (- for none); "t <slot> <v|f> <name>" a texture and
+   its sampler, sharing the slot, "s <slot> <v|f> <name>" a shadow map (a depth array) and its comparison sampler, "c <slot> <v|f> <name>" a
+   cube and its sampler, "d <slot> <v|f> <name>" a data texture (RGBA32F, unfiltered) and its nonfiltering sampler. */
 uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
+ load_gl();
  sg_shader_desc desc={.vertex_func={.source=vs,.entry="main"},.fragment_func={.source=fs,.entry="main"},.label="app_shader"};
- static char names[32][128];int name=0,blocks=0,textures=0,unfiltered=0,sizes[MAX_BLOCKS]={0};char kinds[MAX_TEXTURES]={0};
+ static char names[32][128];int name=0,textures=0,unfiltered=0,sizes[MAX_BLOCKS]={0};char kinds[MAX_TEXTURES]={0};
+ /* The blocks and their members as read, applied once the program is linked. */
+ static struct{int slot;char stage;char name[128],vertex[128],fragment[128];}blocks[MAX_BLOCKS];int block_count=0;
+ static struct{int block,offset,count,stride;char type[16],path[256];}members[1024];int member_count=0;
  for(const char *line=layout;line&&*line;){
-  char kind,stage;int slot,size,count,used=0;
+  char kind,stage,type[16],word[256],other[128],third[128];int slot,size,offset,count,stride,used=0;
   if(name>=32)return 0;
   if(sscanf(line," a %d %127s%n",&slot,names[name],&used)==2){
    if(slot<0||slot>=SG_MAX_VERTEX_ATTRIBUTES)return 0;
    desc.attrs[slot].base_type=SG_SHADERATTRBASETYPE_FLOAT;desc.attrs[slot].glsl_name=names[name++];
-  }else if(sscanf(line," u %d %c %d %d %127s%n",&slot,&stage,&size,&count,names[name],&used)==5){
-   if(slot<0||slot>=MAX_BLOCKS||size<=0||count<=0)return 0;
-   desc.uniform_blocks[slot].stage=stage=='v'?SG_SHADERSTAGE_VERTEX:SG_SHADERSTAGE_FRAGMENT;desc.uniform_blocks[slot].layout=SG_UNIFORMLAYOUT_STD140;
-   desc.uniform_blocks[slot].size=(uint32_t)size;desc.uniform_blocks[slot].glsl_uniforms[0].type=SG_UNIFORMTYPE_FLOAT4;
-   desc.uniform_blocks[slot].glsl_uniforms[0].array_count=(uint16_t)count;desc.uniform_blocks[slot].glsl_uniforms[0].glsl_name=names[name++];
-   sizes[slot]=size;if(slot+1>blocks)blocks=slot+1;
+  }else if(sscanf(line," u %d %c %d %127s%n",&slot,&stage,&size,word,&used)==4){
+   if(slot<0||slot>3||size<=0||block_count==MAX_BLOCKS||(stage!='v'&&stage!='f'&&stage!='b'))return 0;
+   blocks[block_count].slot=slot;blocks[block_count].stage=stage;snprintf(blocks[block_count].name,128,"%s",word);
+   blocks[block_count].vertex[0]=blocks[block_count].fragment[0]=0;block_count++;
+   if(stage!='f')sizes[slot]=size;
+   if(stage!='v')sizes[4+slot]=size;
+  }else if(sscanf(line," m %15s %d %d %d %255s%n",type,&offset,&count,&stride,word,&used)==5){
+   if(!block_count||member_count==1024||offset<0||count<1||stride<0)return 0;
+   members[member_count].block=block_count-1;members[member_count].offset=offset;members[member_count].count=count;members[member_count].stride=stride;
+   snprintf(members[member_count].type,16,"%s",type);snprintf(members[member_count].path,256,"%s",word);member_count++;
+  }else if(sscanf(line," n %127s %127s %127s%n",other,word,third,&used)==3){
+   for(int b=0;b<block_count;b++)if(!strcmp(blocks[b].name,other)){
+    snprintf(blocks[b].vertex,128,"%s",strcmp(word,"-")?word:"");snprintf(blocks[b].fragment,128,"%s",strcmp(third,"-")?third:"");
+   }
   }else if(sscanf(line," %c %d %c %127s%n",&kind,&slot,&stage,names[name],&used)==4&&(kind=='t'||kind=='s'||kind=='c'||kind=='d')){
    if(slot<0||slot>=MAX_TEXTURES)return 0;
    const sg_shader_stage st=stage=='v'?SG_SHADERSTAGE_VERTEX:SG_SHADERSTAGE_FRAGMENT;const int shadow=kind=='s';
@@ -321,7 +435,20 @@ uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
  }
  sg_shader shader=sg_make_shader(&desc);
  if(sg_query_shader_state(shader)!=SG_RESOURCESTATE_VALID||(shader.id&0xffff)>=256){sg_destroy_shader(shader);return 0;}
- int slot=shader.id&0xffff;programs[slot].blocks=blocks;programs[slot].texture_mask=textures;programs[slot].unfiltered_mask=unfiltered;memcpy(programs[slot].kind,kinds,sizeof kinds);memcpy(programs[slot].block_size,sizes,sizeof sizes);
+ /* Each member's setters through the block's uniform in each stage that has it (once where both stages name it alike). */
+ const GLuint prog=sg_gl_query_shader_info(shader).prog;
+ setter *list=NULL;int list_count=0,cap=0;
+ for(int i=0;i<member_count;i++){
+  const int b=members[i].block;setter u={.block=blocks[b].stage=='f'?4+blocks[b].slot:blocks[b].slot,.offset=members[i].offset,.stride=members[i].stride};
+  if(!type_of(members[i].type,&u)){free(list);sg_destroy_shader(shader);return 0;}
+  const char *vars[2]={blocks[b].stage!='f'?blocks[b].vertex:"",blocks[b].stage!='v'?blocks[b].fragment:""};
+  for(int v=0;v<2;v++){
+   if(!vars[v][0]||(v==1&&!strcmp(vars[0],vars[1])))continue;
+   if(!add_setters(&list,&list_count,&cap,prog,vars[v],members[i].path,u,members[i].count)){free(list);sg_destroy_shader(shader);return 0;}
+  }
+ }
+ int slot=shader.id&0xffff;programs[slot].texture_mask=textures;programs[slot].unfiltered_mask=unfiltered;memcpy(programs[slot].kind,kinds,sizeof kinds);memcpy(programs[slot].block_size,sizes,sizeof sizes);
+ free(programs[slot].setters);programs[slot].setters=list;programs[slot].setter_count=list_count;
  return shader.id;
 }
 /* Whether render targets of format (helix.platform.TextureFormat's) can be drawn into, blended over and sampled filtered: RGBA8, and RGBA16F
@@ -383,7 +510,7 @@ uint32_t helix_shadow_map(int size,int layers){
 int helix_begin_shadow(uint32_t map,int layer){
  int slot=map&0xffff;
  if(active||slot>=256||!shadow_maps[slot].image.id||layer<0||layer>=shadow_maps[slot].count||sg_query_view_state((sg_view){map})!=SG_RESOURCESTATE_VALID)return 0;
- active=2;flipped=0;pass_variant=0;frame_width=frame_height=shadow_maps[slot].size;
+ active=2;flipped=0;pass_variant=0;frame_width=frame_height=shadow_maps[slot].size;pass_texture=map;
  sg_begin_pass(&(sg_pass){.action={.depth={.load_action=SG_LOADACTION_CLEAR,.store_action=SG_STOREACTION_STORE,.clear_value=1.0f},
   .stencil={.load_action=SG_LOADACTION_DONTCARE}},.attachments={.depth_stencil=shadow_maps[slot].layers[layer]},.label="helix-shadow-map"});
  return 1;
@@ -398,7 +525,7 @@ static int begin_target(uint32_t target,int clear,sg_color color){
  if(active||slot>=256||!targets[slot].color.id||sg_query_view_state((sg_view){target})!=SG_RESOURCESTATE_VALID)return 0;
  if(!targets[slot].cleared)clear=1;
  targets[slot].cleared=1;
- active=2;flipped=!sg_query_features().origin_top_left;frame_width=targets[slot].width;frame_height=targets[slot].height;
+ active=2;flipped=!sg_query_features().origin_top_left;frame_width=targets[slot].width;frame_height=targets[slot].height;pass_texture=target;
  pass_variant=targets[slot].variant|(flipped?8:0);
  const sg_load_action load=clear?SG_LOADACTION_CLEAR:SG_LOADACTION_LOAD;
  sg_begin_pass(&(sg_pass){.action={.colors[0]={.load_action=load,.store_action=SG_STOREACTION_STORE,.clear_value=color},
@@ -408,7 +535,7 @@ static int begin_target(uint32_t target,int clear,sg_color color){
 }
 int helix_begin_target(uint32_t target,float red,float green,float blue,float alpha){return begin_target(target,1,(sg_color){red,green,blue,alpha});}
 int helix_resume_target(uint32_t target){return begin_target(target,0,(sg_color){0,0,0,0});}
-int helix_end_target(void){if(active!=2)return 0;sg_end_pass();active=0;flipped=0;return 1;}
+int helix_end_target(void){if(active!=2)return 0;sg_end_pass();active=0;flipped=0;pass_texture=0;return 1;}
 int helix_begin(int width,int height,uint32_t color){
  if(active||width<=0||height<=0)return 0;
  active=1;flipped=0;pass_variant=0;frame_width=screen_width=width;frame_height=screen_height=height;frame_ended=0;
@@ -494,13 +621,15 @@ static uint32_t placeholder(char kind){
 }
 static int bind_program(int shader,sg_bindings *bindings,const uint32_t *textures,const int *samplings,int texture_count,int uniform_bytes){
  int total=0;
- for(int i=0;i<programs[shader].blocks;i++)total+=programs[shader].block_size[i];
+ for(int i=0;i<MAX_BLOCKS;i++)total+=programs[shader].block_size[i];
  const int mask=programs[shader].texture_mask;
  if(total!=uniform_bytes||texture_count>MAX_TEXTURES)return 0;
  for(int i=0;i<MAX_TEXTURES;i++){
   if(!(mask&1<<i))continue;
   /* A slot the draw leaves unbound reads a placeholder of its kind. */
   const uint32_t texture=i<texture_count&&textures[i]?textures[i]:placeholder(programs[shader].kind[i]);
+  /* Sampling what the pass draws into is undefined. */
+  if(texture==pass_texture)return -1;
   const int sampling=i<texture_count?samplings[i]:0;
   if(sg_query_view_state((sg_view){texture})!=SG_RESOURCESTATE_VALID)return 0;
   const int vslot=texture&0xffff,data=vslot<256&&data_textures[vslot].image.id;
@@ -513,19 +642,36 @@ static int bind_program(int shader,sg_bindings *bindings,const uint32_t *texture
  }
  return 1;
 }
-/* Applies the program's uniform blocks after the pipeline and bindings; block 0 as the pipeline's clip flip says: a clip scale written here,
-   or a view-projection's y row negated in a flipped pass. */
-static void apply_blocks(int shader,int flip,const void *uniforms){
- const char *at=uniforms;
- for(int i=0;i<programs[shader].blocks;i++){
-  const int size=programs[shader].block_size[i];
-  if(!size)continue;
-  if(i==0&&flip==1){float clip[4]={1.0f,flipped?-1.0f:1.0f,0.0f,0.0f};sg_apply_uniforms(0,&SG_RANGE(clip));}
-  else if(i==0&&flip==2&&flipped){
-   float copy[256];if((size_t)size>sizeof copy)return;memcpy(copy,at,(size_t)size);
-   copy[1]=-copy[1];copy[5]=-copy[5];copy[9]=-copy[9];copy[13]=-copy[13];sg_apply_uniforms(0,&(sg_range){copy,(size_t)size});
-  }else sg_apply_uniforms(i,&(sg_range){at,(size_t)size});
-  at+=size;
+/* Sets the program's uniforms after the pipeline and bindings, each member by its type from its std140 place in its block's bytes (the
+   blocks one after another by index, a block both stages read at both, read from its vertex copy), repacked tight as GL takes them; the
+   pipeline's flip uniform written into a copy of its block: a clip scale always, a view-projection's y row negated in a flipped pass. */
+static void apply_blocks(int shader,int p,const void *uniforms){
+ static unsigned char *flip_copy;static size_t flip_size;static float *packed;static size_t packed_size;
+ const unsigned char *at[MAX_BLOCKS];const unsigned char *base=uniforms;int offset=0;
+ for(int i=0;i<MAX_BLOCKS;i++){at[i]=base+offset;offset+=programs[shader].block_size[i];}
+ const int flip=pipeline_info[p].flip,fs=pipeline_info[p].flip_slot,fo=pipeline_info[p].flip_offset,size=programs[shader].block_size[fs];
+ if(flip&&size&&(flip==1||flipped)){
+  if(flip_size<(size_t)size){unsigned char *g=realloc(flip_copy,(size_t)size);if(!g)return;flip_copy=g;flip_size=(size_t)size;}
+  memcpy(flip_copy,at[fs],(size_t)size);
+  if(flip==1&&fo+16<=size){const float scale[4]={1.0f,flipped?-1.0f:1.0f,1.0f,1.0f};memcpy(flip_copy+fo,scale,16);}
+  else if(flip==2&&fo+64<=size)for(int i=1;i<16;i+=4){float v;memcpy(&v,flip_copy+fo+i*4,4);v=-v;memcpy(flip_copy+fo+i*4,&v,4);}
+  at[fs]=flip_copy;
+ }
+ for(int k=0;k<programs[shader].setter_count;k++){
+  const setter *u=&programs[shader].setters[k];
+  const size_t words=(size_t)u->count*(size_t)u->comps*(size_t)u->cols;
+  if(packed_size<words){float *g=realloc(packed,words*sizeof(float));if(!g)return;packed=g;packed_size=words;}
+  const unsigned char *src=at[u->block]+u->offset;size_t w=0;
+  for(int e=0;e<u->count;e++)for(int c=0;c<u->cols;c++){memcpy(packed+w,src+(size_t)e*(size_t)u->stride+(size_t)c*16,(size_t)u->comps*4);w+=(size_t)u->comps;}
+  const GLfloat *f=packed;const GLint *iv=(const GLint *)packed;const GLuint *uv=(const GLuint *)packed;
+  if(u->cols>1)switch(u->cols){case 2:glUniformMatrix2fv(u->loc,u->count,GL_FALSE,f);break;case 3:glUniformMatrix3fv(u->loc,u->count,GL_FALSE,f);break;
+   default:glUniformMatrix4fv(u->loc,u->count,GL_FALSE,f);}
+  else if(u->base=='f')switch(u->comps){case 1:glUniform1fv(u->loc,u->count,f);break;case 2:glUniform2fv(u->loc,u->count,f);break;
+   case 3:glUniform3fv(u->loc,u->count,f);break;default:glUniform4fv(u->loc,u->count,f);}
+  else if(u->base=='i')switch(u->comps){case 1:glUniform1iv(u->loc,u->count,iv);break;case 2:glUniform2iv(u->loc,u->count,iv);break;
+   case 3:glUniform3iv(u->loc,u->count,iv);break;default:glUniform4iv(u->loc,u->count,iv);}
+  else switch(u->comps){case 1:glUniform1uiv(u->loc,u->count,uv);break;case 2:glUniform2uiv(u->loc,u->count,uv);break;
+   case 3:glUniform3uiv(u->loc,u->count,uv);break;default:glUniform4uiv(u->loc,u->count,uv);}
  }
 }
 /* The variant of the pipeline in slot that draws in the open pass, made the first time: depth alone has none (it draws only into shadow
@@ -545,7 +691,8 @@ static sg_pipeline variant_of(int slot){
 }
 /* A draw through pipeline p: count vertices from first (or indices, for an indexed pipeline, from first of `indices`) as instance_count
    instances from record first_instance of its instanced buffers; buffers[i] its buffer i (0 for one it doesn't read), the program's textures
-   and samplings by slot, its uniform blocks' bytes one after another by slot. 0, drawing nothing, for anything invalid. */
+   and samplings by slot, its uniform blocks' bytes one after another by index (a vertex block's slot, a fragment block's 4 + its slot, a
+   block both stages read at both). -1, drawing nothing, for a texture that is the pass's own target; 0 for anything else invalid. */
 int helix_draw(uint32_t p,const uint32_t *buffers,int buffer_count,uint32_t indices,int first,int count,int first_instance,int instance_count,
                const uint32_t *textures,const int *samplings,int texture_count,const void *uniforms,int uniform_bytes){
  const int pslot=p&0xffff;
@@ -567,12 +714,14 @@ int helix_draw(uint32_t p,const uint32_t *buffers,int buffer_count,uint32_t indi
   bindings.vertex_buffers[b]=current_buffer(buffers[b]);
   if(instanced)bindings.vertex_buffer_offsets[b]=first_instance*stride;
  }
- if(!bind_program(shader,&bindings,textures,samplings,texture_count,uniform_bytes))return 0;
+ {const int bound=bind_program(shader,&bindings,textures,samplings,texture_count,uniform_bytes);if(bound!=1)return bound;}
  const sg_pipeline pipeline=variant_of(pslot);
  if(sg_query_pipeline_state(pipeline)!=SG_RESOURCESTATE_VALID)return 0;
  sg_apply_pipeline(pipeline);
  sg_apply_bindings(&bindings);
- apply_blocks(shader,pipeline_info[pslot].flip,uniforms);
+ apply_blocks(shader,pslot,uniforms);
+ /* What no buffer feeds reads its constant, or (0, 0, 0, 1): GL's generic attribute values, which sokol's state cache leaves alone. */
+ for(int a=0;a<HELIX_MAX_VERTEX_ATTRIBUTES;a++)if(!(pipeline_info[pslot].fed&1<<a))glVertexAttrib4fv((GLuint)a,pipeline_info[pslot].constants[a]);
  for(int b=0;b<pipeline_info[pslot].buffer_count;b++)if(pipeline_info[pslot].read[b])bound[buffers[b]&0xffff]=1;
  sg_draw(first,count,instance_count);return 1;
 }
@@ -619,7 +768,9 @@ int helix_dispose_resource(int kind,uint32_t id){
  if(kind==3&&sg_query_shader_state((sg_shader){id})==SG_RESOURCESTATE_VALID){
   /* Its pipelines (and their twins) go first. */
   for(int i=0;i<256;i++)if(pipeline_info[i].id&&pipeline_info[i].shader==id)dispose_pipeline(pipeline_info[i].id);
-  sg_destroy_shader((sg_shader){id});return 1;
+  sg_destroy_shader((sg_shader){id});
+  if(slot<256){free(programs[slot].setters);programs[slot].setters=NULL;programs[slot].setter_count=0;}
+  return 1;
  }
  if(kind==2&&sg_query_pipeline_state((sg_pipeline){id})==SG_RESOURCESTATE_VALID){dispose_pipeline(id);return 1;}
  return 0;

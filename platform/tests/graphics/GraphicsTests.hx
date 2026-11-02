@@ -163,6 +163,8 @@ class GraphicsTests {
 		var tint = shader(ShaderCompiler.compile("shaders/offset.vert", "shaders/tint.frag"));
 		var eight = shader(ShaderCompiler.compile("shaders/eight.vert", "shaders/color.frag"));
 		var matrices = shader(ShaderCompiler.compile("shaders/instanced.vert", "shaders/color.frag"));
+		var sharedSource = ShaderCompiler.compile("shaders/shared.vert", "shaders/shared.frag");
+		var sharing = shader(sharedSource);
 
 		// Vertex layouts: a position and a color (24 bytes), a position and a texture coordinate (16), a position (8).
 		var colored:VertexBuffer = {
@@ -197,6 +199,45 @@ class GraphicsTests {
 			fetched = pipeline(data, textured, Blend.OPAQUE),
 			looked = pipeline(cube, textured, Blend.OPAQUE);
 		var tinted = pipeline(tint, plain, Blend.OPAQUE);
+		// The shared block's program, flipped through block 0's second vec4 (its first is another value, left as it is).
+		var shared = graphics.createPipeline({
+			shader: sharing,
+			buffers: [plain],
+			primitive: Triangles,
+			indexed: false,
+			blend: Blend.OPAQUE,
+			depthTest: Off,
+			depthWrite: false,
+			cull: None,
+			clockwise: false,
+			depthOnly: false,
+			flip: ClipScale,
+			flipBlockSlot: 0,
+			flipOffset: 16
+		});
+		pipelines.push(shared);
+		// The colored program with its color unfed: read as a constant, or as (0, 0, 0, 1) where none is given.
+		var constant = graphics.createPipeline({
+			shader: color,
+			buffers: [plain],
+			primitive: Triangles,
+			indexed: false,
+			blend: Blend.OPAQUE,
+			depthTest: Off,
+			depthWrite: false,
+			cull: None,
+			clockwise: false,
+			depthOnly: false,
+			flip: ClipScale,
+			attributeConstants: [
+				{
+					slot: 1,
+					values: [0, 1]
+				}
+			]
+		});
+		pipelines.push(constant);
+		var unfed = pipeline(color, plain, Blend.OPAQUE);
 		// Instances of a square, each placed by a matrix (slots 1 to 4) and colored (slot 5), from one instanced buffer.
 		var placed = graphics.createPipeline({
 			shader: matrices,
@@ -348,6 +389,33 @@ class GraphicsTests {
 		graphics.updateTexture(table, 0, 0, 4, 1, floatBytes(floats));
 
 		var clip = floatBytes([1, 1, 0, 0]);
+		// The shared block's bytes, each member written at the place the reflection gives it.
+		var sharedBlock = Lambda.find(sharedSource.uniformBlocks, b -> b.glslName == "Shared");
+		var sharedBytes = Bytes.alloc(sharedBlock.size);
+		function put(path:String, element:Int, values:Array<Float>, integer:Bool):Void {
+			var m = Lambda.find(sharedBlock.members, m -> m.glslName == path);
+			if (m == null)
+				throw 'the shared block has no $path';
+			for (i => v in values) {
+				// A matrix's column is 16 bytes, its rows floats in it.
+				var at = m.offset + element * m.stride + (m.type == "mat3" ? Std.int(i / 3) * 16 + (i % 3) * 4 : i * 4);
+				if (integer)
+					sharedBytes.setInt32(at, Std.int(v));
+				else
+					sharedBytes.setFloat(at, v);
+			}
+		}
+		put("scale", 0, [1, 1, 0, 0], false);
+		put("lights.color", 0, [1, 1, 1], false);
+		put("lights.color", 1, [.25, 0, 0], false);
+		put("lights.color", 2, [1, 1, 1], false);
+		put("lights.on", 1, [1], true);
+		put("pick", 0, [1], true);
+		put("bright", 0, [1], true);
+		put("mask", 0, [3], true);
+		put("weights", 2, [1], false);
+		put("turn", 0, [0, 0, 0, 0, 0, .75, 0, 0, 0], false);
+		var sharedVertexBlock = floatBytes([7, 7, 7, 7, 0, 0, 0, 0]);
 		function draw(pipeline:Int, buffer:Int, count:Int, ?textures:Array<Int>, ?samplings:Array<Sampling>, ?uniforms:Array<Null<Bytes>>):Void
 			graphics.draw(pipeline, [buffer], 0, 0, count, 0, 1, textures == null ? [] : textures, samplings == null ? [] : samplings,
 				uniforms == null ? [clip] : uniforms);
@@ -437,7 +505,15 @@ class GraphicsTests {
 			{
 				name: "uniform blocks in both stages",
 				// Half the square moved up and right by a quarter of the target: its top right quarter, in block 2's color.
-				before: into(0, 0, 0, 1, () -> draw(tinted, half, 6, null, null, [clip, floatBytes([.5, .5, 0, 0]), floatBytes([.2, .4, .6, 1])])),
+				before: into(0, 0, 0, 1, () -> draw(tinted, half, 6, null, null, [
+					clip,
+					floatBytes([.5, .5, 0, 0]),
+					null,
+					null,
+					null,
+					null,
+					floatBytes([.2, .4, .6, 1])
+				])),
 				target: target,
 				check: p -> {
 					p.expect(12, 3, [.2, .4, .6, 1], 1);
@@ -445,6 +521,48 @@ class GraphicsTests {
 					p.expect(12, 12, [0, 0, 0, 1], 0);
 					p.expect(3, 12, [0, 0, 0, 1], 0);
 				}
+			},
+			{
+				name: "a block both stages read, of floats, integers, a bool, a struct array, a float array and a mat3",
+				// Over the whole target, read back right way up through a flip at an offset; the block shared by both stages at slot 1,
+				// passed at both its indices.
+				before: into(0, 0, 0, 0, () -> draw(shared, positions, 6, null, null, [sharedVertexBlock, sharedBytes, null, null, null, sharedBytes])),
+				target: target,
+				check: p -> {
+					p.expect(3, 3, [.5, .25, .75, 1], 1);
+					p.expect(12, 12, [.5, .25, .75, 1], 1);
+					if (sharedVertexBlock.getFloat(16) != 0 || sharedVertexBlock.getFloat(0) != 7)
+						throw "a block's flip uniform was written into the caller's bytes";
+				}
+			},
+			{
+				name: "unfed attributes read their constants",
+				// Left half: the color's constant, green; right half: none given, (0, 0, 0, 1).
+				before: into(1, 0, 0, 1, () -> {
+					graphics.applyViewport(0, 0, 8, SIZE);
+					draw(constant, positions, 6);
+					graphics.applyViewport(8, 0, 8, SIZE);
+					draw(unfed, positions, 6);
+				}),
+				target: target,
+				check: p -> {
+					p.expect(3, 8, [0, 1, 0, 1], 0);
+					p.expect(12, 8, [0, 0, 0, 1], 0);
+				}
+			},
+			{
+				name: "a draw sampling its own pass's target refused",
+				before: into(0, 0, 1, 1, () -> {
+					var refused = try {
+						draw(sampled, uvQuad, 6, [target], [Sampling.NEAREST]);
+						false;
+					} catch (e:Dynamic)
+						true;
+					if (!refused)
+						fail("a draw sampling the target it draws into was taken");
+				}),
+				target: target,
+				check: p -> p.expect(8, 8, [0, 0, 1, 1], 0)
 			},
 			{
 				name: "alpha and additive blending",
@@ -549,7 +667,7 @@ class GraphicsTests {
 					graphics.endTargetPass();
 					graphics.resumeTargetPass(target);
 					graphics.applyViewport(SIZE >> 1, 0, SIZE >> 1, SIZE >> 1);
-					draw(tinted, positions, 6, null, null, [clip, floatBytes([0, 0, 0, 0]), floatBytes([0, 1, 0, 1])]);
+					draw(tinted, positions, 6, null, null, [clip, floatBytes([0, 0, 0, 0]), null, null, null, null, floatBytes([0, 1, 0, 1])]);
 					graphics.endTargetPass();
 				},
 				target: target,
@@ -565,7 +683,15 @@ class GraphicsTests {
 				// Blue, with a red band on the left half's middle at a depth of 0.25.
 				before: () -> {
 					graphics.beginTargetPass(kept, 0, 0, 1, 1);
-					draw(deep, half, 6, null, null, [clip, floatBytes([-.5, 0, -.5, 0]), floatBytes([1, 0, 0, 1])]);
+					draw(deep, half, 6, null, null, [
+						clip,
+						floatBytes([-.5, 0, -.5, 0]),
+						null,
+						null,
+						null,
+						null,
+						floatBytes([1, 0, 0, 1])
+					]);
 					graphics.endTargetPass();
 				},
 				target: kept,
@@ -580,7 +706,7 @@ class GraphicsTests {
 				before: () -> {
 					graphics.resumeTargetPass(kept);
 					graphics.applyViewport(0, 0, SIZE, SIZE >> 1);
-					draw(deep, positions, 6, null, null, [clip, floatBytes([0, 0, 0, 0]), floatBytes([0, 1, 0, 1])]);
+					draw(deep, positions, 6, null, null, [clip, floatBytes([0, 0, 0, 0]), null, null, null, null, floatBytes([0, 1, 0, 1])]);
 					graphics.endTargetPass();
 				},
 				target: kept,
@@ -670,7 +796,15 @@ class GraphicsTests {
 			{
 				name: "a render target drawn to the screen",
 				// Red with a green top right quarter, drawn over the screen: the quarter stays top right.
-				before: into(1, 0, 0, 1, () -> draw(tinted, half, 6, null, null, [clip, floatBytes([.5, .5, 0, 0]), floatBytes([0, 1, 0, 1])])),
+				before: into(1, 0, 0, 1, () -> draw(tinted, half, 6, null, null, [
+					clip,
+					floatBytes([.5, .5, 0, 0]),
+					null,
+					null,
+					null,
+					null,
+					floatBytes([0, 1, 0, 1])
+				])),
 				screen: (_, _) -> draw(sampled, uvQuad, 6, [target], [Sampling.NEAREST]),
 				target: 0,
 				check: p -> {
