@@ -20,6 +20,8 @@
 - **Platform proposals queued, for review:** depth sampled after a pass, depth bias, and stencil. Deferred from the vertex formats
   (DECISIONS 33): bone IDs and three.js' skinIndex fed as normalized bytes or shorts and scaled back by the compiler, rounded, as a
   `ShaderCompileOptions` entry; until then they are floats, or a layer owning its shader scales them itself.
+  The platform's checks of a pipeline's vertex layout (`PipelineLayout.check`, every backend, about 0.3 KB gzip) to be trimmed to what
+  a backend would otherwise get wrong silently, once the platform's API is settled.
 - **A drawing library,** between the services and a mirror, when a second mirror needs what helix-ray draws with (its frame recording,
   meshes, default font; its shader programs are the services' now); and glTF's reading as a services package beside `images`.
 - **The layer above the services:** constructs the platform and the services for a target, runs the frame in order and ends with the
