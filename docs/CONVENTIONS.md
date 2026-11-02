@@ -51,8 +51,11 @@ Known, not fixed yet (each a rung's `@:adds` or a program's bytes show):
 - helix-services' `Screen` tests its saves each poll, so a program with a screen links `Saves`; helix-ray's poll tests its keyboard,
   so every raylib program links `Keyboard`.
 - helix-ray's `Runtime.fetch` decodes a file by its extension, so a program loading text or data through it links the image
-  decoder; its `LoadImageFromMemoryAsync`, `LoadWaveFromMemoryAsync` and `LoadMusicStreamFromMemory` choose by their `fileType`, as
-  raylib's do; and in a page its assets are made over the server and its cache whatever a program loads.
+  decoder; its `LoadImageFromMemoryAsync` and `LoadMusicStreamFromMemory` choose by their `fileType`, as raylib's do, and
+  `LoadWaveAsync` and `LoadWaveFromMemoryAsync` by a name or type known only as the program runs; and in a page its assets are made
+  over the server and its cache whatever a program loads.
+- helix-platform's `WebAudioDecoderAdapter` reads a file's rate from its header for `decode` at rate 0, so a program asking for
+  44100 links helix-formats' `AudioHeader.readSampleRate` too.
 
 ## Names
 

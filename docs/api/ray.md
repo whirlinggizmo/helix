@@ -4023,8 +4023,6 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
 static function LoadMaterialsAsync(fileName:String, loaded:Array<Material> -> Void, ?failed:String -> Void):Void
 static function LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation> -> Void, ?failed:String -> Void):Void
 static function LoadSoundAsync(fileName:String, loaded:Sound -> Void, ?failed:String -> Void):Void
-static function LoadWaveAsync(fileName:String, loaded:Wave -> Void, ?failed:String -> Void):Void
-static function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave -> Void, ?failed:String -> Void):Void
 static function LoadFileTextAsync(fileName:String, loaded:String -> Void, ?failed:String -> Void):Void
 static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):Void
 static function LoadAutomationEventListAsync(fileName:String, loaded:AutomationEventList -> Void, ?failed:String -> Void):Void
@@ -4057,18 +4055,6 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the sound.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadWaveAsync`: Loads a sound file's samples, answering when they are read: helix-ray's own, in place of raylib's `LoadWave`. The formats are `LoadWaveFromMemoryAsync`'s, by the file's extension.
-  - `fileName`: The file, as the program names it.
-  - `loaded`: Receives the wave, its samples its own.
-  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadWaveFromMemoryAsync`: Reads a sound file's samples from its bytes, answering when they are read: helix-ray's own, in place of raylib's `LoadWaveFromMemory`, as files other than WAV are decoded off the main thread.
-  - `fileType`: The file's extension with its dot: ".wav", ".ogg", ".mp3" or ".flac", or the same in upper case.
-  - `fileData`: The file's bytes.
-  - `dataSize`: How many of them.
-  - `loaded`: Receives the wave, its samples its own.
-  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
-
-  A ".wav" file is read as raylib's dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed WAV encodings aren't read). An ".ogg", ".mp3" or ".flac" file is decoded by the platform, as 32-bit float samples at its own rate in the file's channels, where raylib gives Ogg 16-bit samples; a file of more than 2 channels is mixed to stereo. FLAC is read here, which raylib's default build leaves out; QOA isn't. As raylib's, the extension is lower or upper case. The answer comes at a later frame.
 - `LoadFileTextAsync`: Reads a text file, answering when it is read: helix-ray's own, in place of raylib's `LoadFileText`. The program's `SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
   - `fileName`: The file.
   - `loaded`: Receives its text.
@@ -4165,6 +4151,8 @@ static macro function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void
 static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?failed:String -> Void):Void
 static macro function LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
 static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
+static macro function LoadWaveAsync(fileName:String, loaded:Wave -> Void, ?failed:String -> Void):Void
+static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave -> Void, ?failed:String -> Void):Void
 static macro function LoadShader(vsFileName:Null<String>, fsFileName:Null<String>):Shader
 static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<String>):Shader
 static macro function LoadAutomationEventList(fileName:Null<String>):AutomationEventList
@@ -4214,6 +4202,22 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
   - `frames`: Receives the frame count, in its first element.
   - `loaded`: Receives the frames.
   - `failed`: Optional. Receives why they couldn't be decoded; when omitted, it is logged.
+- `LoadWaveAsync`: Loads a sound file's samples, answering when they are read: helix-ray's own, in place of raylib's `LoadWave`. The formats are `LoadWaveFromMemoryAsync`'s, by the file's extension.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the wave, its samples its own.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+
+  The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming only Ogg files carries no WAV or QOA reader; a name known only as the program runs brings every reader, the one its extension names chosen then.
+- `LoadWaveFromMemoryAsync`: Reads a sound file's samples from its bytes, answering when they are read: helix-ray's own, in place of raylib's `LoadWaveFromMemory`, as files other than WAV and QOA are decoded off the main thread. Each is read as raylib 5.5 reads it.
+  - `fileType`: The file's extension with its dot: ".wav", ".qoa", ".ogg" or ".mp3", or the same in upper case.
+  - `fileData`: The file's bytes.
+  - `dataSize`: How many of them.
+  - `loaded`: Receives the wave, its samples its own.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+  A ".wav" file is read as dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed WAV encodings aren't read). A ".qoa" file is read as qoa.h reads it, as 16-bit samples, bit for bit. An ".ogg" file (Vorbis) is decoded by the platform at its own rate and made 16-bit as stb_vorbis makes its samples, its frames the stream's length, its last page's position. An ".mp3" file is decoded by the platform at its own rate, every frame of it, as raylib 5.5's dr_mp3 decodes it (a first Xing or Info frame is silence, and the encoder's delay and padding a LAME tag records are kept), and made 16-bit and then 32-bit float samples as that dr_mp3 makes them. Natively an MP3's samples are raylib's and an Ogg file's within 1 in 32768 of them; in a page the decoders are the browser's, so the samples differ in their last bits, and the frames Chromium leaves off an Ogg stream's end (tens of them) are silence. A file of more than 2 channels is mixed to stereo. A ".flac" file isn't read, as raylib 5.5's default build leaves FLAC out ("WAVE: Data format not supported"). As raylib's, the extension is lower or upper case. The answer comes at a later frame.
+
+  The reader is chosen as the program builds when `fileType` is a constant, so a program reading only Ogg files carries no WAV or QOA reader; a type known only as the program runs brings every reader.
 - `LoadShader`: Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the program builds, for every target, so their names are constants; the files are found under `-D helix-ray-files` (default `web`), as the program's other files are. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25). A uniform given an initializer in the GLSL (`uniform vec2 scale = vec2(0.25, 0.45);`) starts at it, as GL sets it.
   - `vsFileName`: The vertex stage's file, or null.
   - `fsFileName`: The fragment stage's file, or null.

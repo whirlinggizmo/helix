@@ -5608,32 +5608,6 @@ class Raylib {
 	public static inline function LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void):Void
 		RAsync.LoadSoundAsync(fileName, loaded, failed);
 
-	/** Loads a sound file's samples, answering when they are read: helix-ray's own, in place of raylib's `LoadWave`. The formats are
-		`LoadWaveFromMemoryAsync`'s, by the file's extension.
-
-		@param fileName  The file, as the program names it.
-		@param loaded  Receives the wave, its samples its own.
-		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
-	public static inline function LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void):Void
-		RAsync.LoadWaveAsync(fileName, loaded, failed);
-
-	/** Reads a sound file's samples from its bytes, answering when they are read: helix-ray's own, in place of raylib's
-		`LoadWaveFromMemory`, as files other than WAV are decoded off the main thread.
-
-		A ".wav" file is read as raylib's dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed
-		WAV encodings aren't read). An ".ogg", ".mp3" or ".flac" file is decoded by the platform, as 32-bit float samples at its own rate in
-		the file's channels, where raylib gives Ogg 16-bit samples; a file of more than 2 channels is mixed to
-		stereo. FLAC is read here, which raylib's default build leaves out; QOA isn't. As raylib's, the extension is lower or upper case.
-		The answer comes at a later frame.
-
-		@param fileType  The file's extension with its dot: ".wav", ".ogg", ".mp3" or ".flac", or the same in upper case.
-		@param fileData  The file's bytes.
-		@param dataSize  How many of them.
-		@param loaded  Receives the wave, its samples its own.
-		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
-	public static inline function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void):Void
-		RAsync.LoadWaveFromMemoryAsync(fileType, fileData, dataSize, loaded, failed);
-
 	/** Reads a text file, answering when it is read: helix-ray's own, in place of raylib's `LoadFileText`. The program's
 		`SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
 
@@ -6017,7 +5991,7 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadWave: Synchronous loading is not supported. See LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void)",
 			macro(null : helix.ray.Wave));
 
-	/** raylib's wave load from a file's bytes, which answers at once. A file other than WAV is decoded off the main thread here, so a call doesn't compile on any target: `LoadWaveFromMemoryAsync` loads it. */
+	/** raylib's wave load from a file's bytes, which answers at once. A file other than WAV or QOA is decoded off the main thread here, so a call doesn't compile on any target: `LoadWaveFromMemoryAsync` loads it. */
 	public static macro function LoadWaveFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Wave>
 		return helix.platform.macros.Build.unsupported("LoadWaveFromMemory: Decoding is asynchronous. See LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void)",
 			macro(null : helix.ray.Wave));
@@ -6174,6 +6148,49 @@ class Raylib {
 	public static macro function LoadImageAnimFromMemoryAsync(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>,
 			frames:ExprOf<Array<Int>>, loaded:ExprOf<Image->Void>, ?failed:ExprOf<String->Void>):ExprOf<Void> {
 		return helix.ray.internal.ImageMacro.loadAnimFromMemory(fileType, fileData, dataSize, frames, loaded, failed);
+	}
+
+	// ---- Sound files, read by the readers the program names ----
+
+	/** Loads a sound file's samples, answering when they are read: helix-ray's own, in place of raylib's `LoadWave`. The formats are
+		`LoadWaveFromMemoryAsync`'s, by the file's extension.
+
+		The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program
+		naming only Ogg files carries no WAV or QOA reader; a name known only as the program runs brings every reader, the one its
+		extension names chosen then.
+
+		@param fileName  The file, as the program names it.
+		@param loaded  Receives the wave, its samples its own.
+		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
+	public static macro function LoadWaveAsync(fileName:ExprOf<String>, loaded:ExprOf<Wave->Void>, ?failed:ExprOf<String->Void>):ExprOf<Void> {
+		return helix.ray.internal.WaveMacro.load(fileName, loaded, failed);
+	}
+
+	/** Reads a sound file's samples from its bytes, answering when they are read: helix-ray's own, in place of raylib's
+		`LoadWaveFromMemory`, as files other than WAV and QOA are decoded off the main thread. Each is read as raylib 5.5 reads it.
+
+		A ".wav" file is read as dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed WAV
+		encodings aren't read). A ".qoa" file is read as qoa.h reads it, as 16-bit samples, bit for bit. An ".ogg" file (Vorbis) is decoded
+		by the platform at its own rate and made 16-bit as stb_vorbis makes its samples, its frames the stream's length, its last page's
+		position. An ".mp3" file is decoded by the platform at its own rate, every frame of it, as raylib 5.5's dr_mp3 decodes it (a first
+		Xing or Info frame is silence, and the encoder's delay and padding a LAME tag records are kept), and made 16-bit and then 32-bit
+		float samples as that dr_mp3 makes them. Natively an MP3's samples are raylib's and an Ogg file's within 1 in 32768 of them; in a
+		page the decoders are the browser's, so the samples differ in their last bits, and the frames Chromium leaves off an Ogg stream's
+		end (tens of them) are silence. A file of more than 2 channels is mixed to stereo. A ".flac" file isn't read, as raylib 5.5's
+		default build leaves FLAC out ("WAVE: Data format not supported"). As raylib's, the extension is lower or upper case. The answer
+		comes at a later frame.
+
+		The reader is chosen as the program builds when `fileType` is a constant, so a program reading only Ogg files carries no WAV or
+		QOA reader; a type known only as the program runs brings every reader.
+
+		@param fileType  The file's extension with its dot: ".wav", ".qoa", ".ogg" or ".mp3", or the same in upper case.
+		@param fileData  The file's bytes.
+		@param dataSize  How many of them.
+		@param loaded  Receives the wave, its samples its own.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	public static macro function LoadWaveFromMemoryAsync(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>,
+			loaded:ExprOf<Wave->Void>, ?failed:ExprOf<String->Void>):ExprOf<Void> {
+		return helix.ray.internal.WaveMacro.fromMemory(fileType, fileData, dataSize, loaded, failed);
 	}
 
 	// ---- Shaders, compiled as the program builds ----

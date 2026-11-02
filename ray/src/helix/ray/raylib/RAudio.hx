@@ -111,7 +111,7 @@ class RAudio {
 		throw "LoadWave is unimplemented";
 	}
 
-	/** raylib's wave load from a file's bytes, which answers at once. A file other than WAV is decoded off the main thread here, so a
+	/** raylib's wave load from a file's bytes, which answers at once. A file other than WAV or QOA is decoded off the main thread here, so a
 		call doesn't compile on any target: `LoadWaveFromMemoryAsync` loads it.
 
 		@param fileType  The file's extension.

@@ -319,3 +319,17 @@ Why things are the way they are, numbered, in order.
     them. helix-ray's shaders are the service's, its `ShaderMacro` keeping only raylib's adaptations. Rejected: compiling while the
     program runs (megabytes of compiler in a page, GOALS 2); names at the setters (a lookup a draw); a second reflector in each
     library; sokol_gfx's uniform blocks with padding members (sixteen members a block, and no struct, `mat3`, `uint` or `bool`).
+
+32. **A wave keeps its file's rate and raylib 5.5's sample size, and reads what 5.5's default build reads.** `LoadWaveAsync` decoded
+    every compressed file at 44100 Hz as floats, read FLAC and refused QOA, where raylib 5.5's `LoadWave` keeps a file's rate, gives
+    Ogg 16-bit samples, MP3 32-bit floats and QOA 16-bit, and refuses FLAC (its config.h leaves `SUPPORT_FILEFORMAT_FLAC` out). The
+    platform's `IAudioDecoder.decode` takes the rate to decode at (0 for the file's own), and helix-ray asks for 0; Ogg's floats are
+    made 16-bit as stb_vorbis makes them; QOA is helix-formats' port of qoa.h; FLAC is refused as 5.5 refuses it, matching its default
+    configuration rather than fixing anything. Decoders that read an MP3's LAME tag (SDL3_mixer's dr_mp3 0.7.4, Chromium's) trim the
+    encoder's delay and padding and skip the tag's frame, where 5.5's dr_mp3 0.6.39 decodes every frame; helix-ray hides the tag from
+    the decoder (Chromium still drops its frame, put back as the silence 0.6.39 decodes it as), so the frames are 5.5's on every
+    target, and rounds the floats to 16 bits and back as 0.6.39 does (minimp3's SSE and scalar roundings), so natively they are 5.5's
+    bit for bit (the `waves` parity suite). Chromium also ends an Ogg Vorbis stream early (by tens of frames, measured),
+    so a wave's length is the stream's own (its last page's position) and what the browser left out is silence. The reader is chosen as
+    the program builds, from a constant file name or type, as a model's is (29). Rejected: padding a trimmed MP3 back by the tag's
+    numbers, as first proposed (silence where 5.5 has the decoder's own samples).
