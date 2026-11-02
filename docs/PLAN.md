@@ -11,6 +11,7 @@ log/        levels and tags, to the console or stdio                 depends on 
 formats/    file formats read into plain data: glTF, BMFont, fonts   depends on math
 platform/   the hardware and the OS as contracts and adapters        depends on math, formats
 services/   what a program needs over the platform that isn't drawing
+render/     drawing: 2D and 3D batches, materials, lights, post-processing, over the services (DECISIONS 34)
 ray/        raylib's API over the services, on trial (DECISIONS 16)
 ...         the layers above, as the path chosen asks for them
 ```

@@ -68,7 +68,7 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 ## Layout
 
 ```
-math/ log/ formats/ platform/ services/ ray/   the libraries: haxelib.json, README.md, src/, tests/ (and examples/, vendor/)
+math/ log/ formats/ platform/ services/ render/ ray/   the libraries: haxelib.json, README.md, src/, tests/ (and examples/, vendor/)
 tools/                                         the repository's checks and helpers, never shipped
 docs/                                          the plan, the specs, conventions, architecture, the API reference and the benchmarks
 build/                                         scratch: the repository's haxelib, SDL3, hxcpp's output (ignored)

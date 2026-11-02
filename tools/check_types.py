@@ -26,8 +26,15 @@ def targets(web=False):
         name=f'platform example {directory.name}' if main=='Main' else f'platform {directory.name} tests'
         found.append((f'{name} js',['-lib','helix-platform','-cp',str(directory.relative_to(ROOT)),'-main',main,'-js','build/check_types.js']))
         if not web:found.append((f'{name} cpp',['-lib','helix-platform','-cp',str(directory.relative_to(ROOT)),'-main',main,'-cpp','build/check_types-cpp']))
+    # helix-render whole, on both targets; its tests on the interpreter; its examples as their own hxml files build them.
+    found.append(('render js',['-lib','helix-render','--macro',"include('helix.render')",'-js','build/check_types.js']))
+    if not web:found.append(('render cpp',['-lib','helix-render','--macro',"include('helix.render')",'-cpp','build/check_types-cpp']))
+    for main in sorted(p.stem for p in (ROOT/'render/tests').glob('*Tests.hx')):found.append((f'render {main}',['-lib','helix-render','-cp','render/tests','-main',main,'--interp']))
+    for directory in sorted(p.parent for p in (ROOT/'render/examples').glob('*/Main.hx')):
+        found.append((f'render example {directory.name} js',['-lib','helix-render','-cp',str(directory.relative_to(ROOT)),'-main','Main','-js','build/check_types.js']))
+        if not web:found.append((f'render example {directory.name} cpp',['-lib','helix-render','-cp',str(directory.relative_to(ROOT)),'-main','Main','-cpp','build/check_types-cpp']))
     # The size ladder's rungs, the browser's (tools/measure_sizes.py builds them so).
-    for library in ('platform','services'):
+    for library in ('platform','services','render'):
         for rung in sorted((ROOT/library/'tests/sizes').glob('*/Main.hx')):
             found.append((f'{library} size {rung.parent.name}',['-lib',f'helix-{library}','-cp',str(rung.parent.relative_to(ROOT)),'-main','Main','-js','build/check_types.js']))
     return found

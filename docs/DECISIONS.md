@@ -366,3 +366,43 @@ Why things are the way they are, numbered, in order.
     multisampled pass is followed by one of fewer samples in a command buffer (validation and synchronization layers clean, lavapipe
     fine), so the adapter submits what it has recorded before such a pass. Rejected: a target's count read back after it is made (the
     limit answers the question before); one limit for windows and targets (a browser's canvas count is its own choice).
+
+35. **helix-render draws for the engines above, judged by a raylib layer and a three.js layer, and is built in stages from its API.**
+    Its API was drafted whole (nine revisions; types and doc comments, no code, typechecked against the libraries below) and tried by
+    cold-start agents three times: five trials of revision 6 (a 2D game, a 3D scene, custom shaders, a raylib layer, a three.js layer),
+    three of revision 7 (custom shaders, raylib, three.js) and a raylib layer of revision 8; each round's findings changed the API, not
+    the prose. What was agreed: one `Renderer` over `IGraphics` creating what is drawn (textures, targets, cube textures, meshes,
+    models, fonts, environment maps) and recording the frame, drawn at `endFrame` (shaders built, then shadow passes, target passes in
+    the order begun, the screen's); a target read and then drawn into again copied on write, as raylib's frame shows it; `clearTarget`
+    recorded in order, a batch open or not; `beginFrame`'s clear optional (the platform always clears, and a swap chain need not keep
+    the last frame, so black is the portable "not cleared"). `Batch2D` for 2D programs and `Batch3D` for everything else, raylib's 2D
+    included (rlgl is one 3D batch under matrices: wire and point modes, shaders and stereo reach its 2D), both filling one set of
+    shader names so one shader serves both and a material; draw state kept across `begin`s and frames as rlgl's, `resetState` putting
+    it back; `transform` and `customData` written into the vertices, splitting nothing; shapes drawn from `shapeRegion`, a white texel
+    on a sheet or atlas (`Texture2D.writeWhiteTexel`, raylib's `SetShapesTexture`), so shapes join the sprites' or the text's GPU draw;
+    one shader for every font kind. Views (`View3D`, `beginViews`): each draw recorded once and drawn once a view, culled, lit and
+    shadow-fitted for them all (raylib's stereo, three.js's ArrayCamera and WebXR); `View3D.isInView` at any time, for a layer culling
+    its scene before the batch opens. Points: one pixel is the platform's `Primitive.Points`, larger, attenuated (three.js's
+    `size × (viewportHeight / 2) / -z`) or textured ones and wide lines squares made in the vertex stage. Colors: a target's format says
+    what it holds (RGBA8 and the screen sRGB, RGBA16F linear); 3D works in linear light, one `exposure` and `toneMapping` on the
+    renderer for a direct draw and a resolve alike; the batch draws, and an `Unlit` material with `colorSpace` Srgb, multiply as stored
+    (a 0x80 tint on a 0x80 texel gives 0x40, as raylib). Shaders are helix-services' (31): a program's draws through its `ShaderValues`,
+    compiled by the type owning the vertex stage (`compileShader` for a fragment stage over helix-render's, `compileShaderStages` for
+    both, `Batch3D.makeShaderExpr` for a layer's macro), every shader compiled with `clipScale` and `points`, the `View` and `Lighting`
+    blocks shared through their includes (a shader declaring a name loose is written it per draw), names `Shader.withNames` gives
+    filled as declared ones, clip planes cut by wrapping a fragment stage's `main`; no variants for a program's material (instancing
+    by unfed attributes' constants, skinning and morphing by uniforms); bones and morph deltas in data textures (no 4 KiB block
+    limit). Per-draw mesh state as one `MeshState3D` (helix-ray mirrors rlgl's global state in one; the materials stay as three.js
+    expects them). Light in three.js's units, every light starting at π; four shadings; at most 4 casting lights, texel-snapped
+    directional maps with cascades, bias in texels with a normal offset; HeliX's CPU environment bake, bloom and screen effects carried
+    over. What the layers keep is named in the draft's tables: helix-ray its parity (raylib's exact vertices, `BLEND_ALPHA`, the
+    default font's data, locations, high-DPI scissor), a three.js layer its scene graph, sorting, render lists and what needs MRT or
+    cube targets. Rejected: a renderer-level pass per eye (draws recorded twice); a shapes flag in the vertex in place of a white texel
+    (a program's shader would see it); a per-draw `colorSpace` on `Batch3D`; VSM shadows; a mask target for `toneMapped` off in a
+    linear frame. It is built in stages, each member of a later stage throwing and naming it: 1, the renderer, textures and targets,
+    the 2D batch and lists, text, and `Batch3D`'s unlit work; 2, lit materials and lights; 3, shadows; 4, environment maps; 5,
+    post-processing; 6, fog; 7, morph targets. Asked of the libraries below and not yet there: `Font2D.kind` and kerning pairs and a
+    `Font2D` from glyph data (helix-services), `GltfMaterial`'s alpha mode, cutoff, sides, samplers, texture transforms and
+    extensions, and morph targets (helix-formats), `Mesh3D`'s second texture coordinates, morph targets and groups (helix-geometry),
+    Euler orders, an object's `lookAt` and `Bounds3D` through a matrix (helix-math); and of the platform, a render target's own
+    sample count, more depth tests, depth bias, stencil and a sampled depth.

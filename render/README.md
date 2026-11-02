@@ -1,0 +1,90 @@
+# helix-render
+
+Drawing over [helix-platform](../platform/README.md)'s graphics and [helix-services](../services/README.md)' shaders: 2D and 3D
+batches, draw lists, text, unlit and lit materials, lights, shadows, environment maps, points, views for stereo and post-processing.
+It is what an engine layer draws with: helix-ray (raylib's API) and a three.js layer are the two it is judged by.
+
+| Package | What |
+|---|---|
+| `helix.render` | `Renderer`: textures, render targets, cube textures, meshes, models and fonts on the GPU, and the frame, recorded pass by pass and drawn at its end. `Batch2D` and `DrawList2D`: sprites, shapes and text in a camera's units or the viewport's pixels, batched into as few GPU draws as their order allows. `Batch3D` and `DrawList3D`: meshes and models with their `Material3D`s, instanced and skinned, and lines, points, triangles, billboards, sprites, shapes and text, through a camera or several `View3D`s at once. `GpuFont2D` and `TextLayout2D`: text measured, wrapped and aligned. Lights, `Environment3D`, `Fog3D`. |
+| `helix.render.effects` | `PostProcess`: a linear frame brought to the screen by the renderer's exposure and tone mapping, with bloom, grading, FXAA or a program's own pass between. |
+
+It depends on helix-services (images, fonts, models and shaders), helix-platform, helix-formats, helix-geometry, helix-math and
+helix-log.
+
+## Using it
+
+```
+-lib helix-render
+```
+
+Until it is published, link it, and the libraries it's built on, from a checkout:
+
+```
+haxelib dev helix-render <checkout>/render
+```
+
+## Being built
+
+helix-render is built in stages from its agreed API (docs/DECISIONS.md, 34); every member of a later stage throws, naming its stage,
+until that stage is built.
+
+1. **Being built:** the renderer and its recorded frame (target passes, copy on write, clears in order, viewport and scissor), textures,
+   render targets and cube textures, `Batch2D` and `DrawList2D` (sprites, shapes, text, draw lists, culling), fonts and text layout,
+   and `Batch3D`'s unlit work: views, the batch draws (lines, points, triangles, billboards, sprites, shapes and text in a plane),
+   unlit meshes and models (tints, `MeshState3D`, instancing, skinning by a bone texture, polygon modes), `DrawList3D`, and the
+   compile macros for a program's own shaders.
+2. Lit materials and lights.
+3. Shadows.
+4. Environment maps and the background.
+5. Post-processing.
+6. Fog.
+7. Morph targets.
+
+## A frame
+
+```haxe
+var renderer = new Renderer(graphics);
+var batch = new Batch2D(renderer);
+var ship = renderer.createTexture(shipImage);
+// each frame:
+renderer.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff101820);
+batch.begin();
+batch.drawTexture(ship, 100, 80);
+batch.end();
+renderer.endFrame();
+graphics.present();
+```
+
+A frame is recorded as it is drawn and reaches the GPU at `endFrame`: the shaders built, then each render target's pass in the order
+begun, then the screen's. A draw that reads a render target reads it as it was at that point of the frame; a target drawn into again
+after something read it is copied on write.
+
+## Shaders
+
+A program's own shader is helix-services' (`Shader`, `ShaderValues`), compiled while the program builds by the type that owns its
+vertex stage: `Batch2D.compileShader` and `compileShaderStages` for sprites, shapes and text, `Batch3D`'s for the batch draws,
+`Material3D`'s for meshes, `ScreenEffect`'s for a screen pass, and `Batch3D.makeShaderExpr` for a layer's own macro. Each type's doc
+comment lists the names it fills; a shader reads what it declares. The includes helix-render gives:
+
+| Include | What |
+|---|---|
+| `<helix/render/view.glsl>` | The `View` block: a view's matrices, its viewport, the target's kind, exposure, tone mapping and fog (`View3D`). |
+| `<helix/render/color.glsl>` | `decodeSrgb`, `encodeSrgb`, `applyToneMapping`, `applyFog`, `encodeColor`, `writeColor` (`View3D`). |
+| `<helix/render/batch.glsl>` | A batch draw's attributes, uniforms and outputs, and `placeBatchVertex` (`Batch3D`). |
+| `<helix/render/mesh.glsl>` | A mesh's attributes, the per-draw uniforms and outputs, and `placeVertex`: skinned and instanced (`Material3D`). |
+| `<helix/render/lighting.glsl>` | The `Lighting` block, the draw's lights and the shadings (`Batch3D`); stage 2. |
+| `<helix/render/material.glsl>` | A material's names, `readMaterialSurface`, `shadeMaterial`, `writeMaterialColor` (`Material3D`); stage 2. |
+
+## Colors
+
+What a target holds is its format's: RGBA8 and the screen hold sRGB, RGBA16F holds linear light. 2D draws as stored into sRGB and
+decodes into linear. 3D works in linear light and encodes for the target; the batch draws and an `Unlit` material with `colorSpace`
+Srgb multiply as stored, as raylib does, so its colors pass through.
+
+## Examples and tests
+
+The examples (`examples/`, each showing one thing and built from the hxml files beside it) and the tests (`tests/`) come with
+stage 1.
+
+The API reference is [docs/api/](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/api/README.md), one page per package.

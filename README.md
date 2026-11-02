@@ -12,6 +12,7 @@ A Haxe game framework built as layered libraries: one Haxe program runs in the b
 | [helix-formats](formats/README.md) | File formats read into plain data: glTF 2.0 and GLB models, BMFont text fonts, TrueType and OpenType font tables | helix-math |
 | [helix-log](log/README.md) | Levels and tags, to the browser's console or the process's output | nothing |
 | [helix-services](services/README.md) | Time, input, assets, audio, images, saves and config over the platform | helix-platform, helix-formats, helix-geometry, helix-math, helix-log |
+| [helix-render](render/README.md) | Drawing: 2D and 3D batches, draw lists, text, materials, lights, shadows, environment maps and post-processing (being built in stages) | helix-services, helix-platform, helix-formats, helix-geometry, helix-math, helix-log |
 | [helix-ray](ray/README.md) | raylib 5.5's API over the services and the platform, 2D and 3D, in a page and natively (on trial, branch `raylib-slice`) | helix-services, helix-platform, helix-formats, helix-geometry, helix-math |
 
 Until they're published:
@@ -23,6 +24,7 @@ haxelib dev helix-geometry <checkout>/geom
 haxelib dev helix-formats <checkout>/formats
 haxelib dev helix-log <checkout>/log
 haxelib dev helix-services <checkout>/services
+haxelib dev helix-render <checkout>/render
 haxelib dev helix-ray <checkout>/ray
 ```
 

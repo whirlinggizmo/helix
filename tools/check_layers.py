@@ -29,11 +29,12 @@ LAYERS = [
     ('helix-formats', 'formats/src', ['helix.formats'], ['helix-math']),
     ('helix-platform', 'platform/src', ['helix.platform'], ['helix-formats', 'helix-geometry', 'helix-math']),
     ('helix-services', 'services/src', ['helix.services'], ['helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
+    ('helix-render', 'render/src', ['helix.render'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
     ('helix-ray', 'ray/src', ['helix.ray'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
 ]
 # Each library's tests and examples, held to its layer too: they build with that library alone.
 TESTS = {'helix-math': ['math/tests'], 'helix-geometry': ['geometry/tests'], 'helix-log': ['log/tests'], 'helix-formats': ['formats/tests'], 'helix-platform': ['platform/tests', 'platform/examples'],
-         'helix-services': ['services/tests'], 'helix-ray': ['ray/examples']}
+         'helix-services': ['services/tests'], 'helix-render': ['render/tests', 'render/examples'], 'helix-ray': ['ray/examples']}
 # The interfaces in helix.platform that contracts extend (rule 3): IPollable, the poll a program calls each frame.
 BASES = {'IPollable'}
 # The contracts built over another (rule 3): each device's adapters add their events to the events adapter of their API.

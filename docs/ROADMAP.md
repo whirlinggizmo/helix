@@ -1,12 +1,16 @@
 # Roadmap
 
-- **Rendering and a scene, drafted as APIs:** helix-render (directory `render/`, packages `helix.render` and `helix.render.effects`:
-  2D and 3D batches, draw lists, lit materials, lights, shadows, environment maps, post-processing, points, views for stereo; HeliX's
-  renderers carried over), on helix-services' shaders package (DECISIONS 31); its draft is in its eighth revision after two rounds of
-  cold-start trials. Then helix-scene (directory `scene/`, package `helix.scene`) on helix-render (2D and 3D nodes, transforms, hierarchy, the walk that culls, lights and
-  sorts; HeliX's nodes and stage carried over). Each judged by what a raylib layer and a three.js layer would need from below;
-  helix-ray to be rebuilt on helix-render; the engines over helix-scene, which first to be chosen: HeliX's engine (its game-level API, its games and
-  docs) and a three.js-style one. Drafts agreed with the user and tried by fresh agents before any is written.
+- **helix-render, being built** (directory `render/`, packages `helix.render` and `helix.render.effects`; DECISIONS 35), from its
+  agreed API (revision 9), in stages, each member of a later stage throwing and naming it: 1, the renderer and its recorded frame,
+  textures and targets, `Batch2D`, `DrawList2D`, fonts and text, and `Batch3D`'s unlit work (views, the batch draws, unlit meshes and
+  models, instancing, skinning, `DrawList3D`, the compile macros); 2, lit materials and lights (with the draft's model example);
+  3, shadows; 4, environment maps and the background; 5, post-processing (with the draft's scene example); 6, fog; 7, morph targets.
+  Asked below it: helix-services' `Font2D.kind` and kerning pairs (until then every font draws as coverage, unkerned) and a `Font2D`
+  from glyph data; helix-formats' `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions, and morph
+  targets; helix-geometry's second texture coordinates, morph targets and mesh groups; helix-math's Euler orders, an object's `lookAt`
+  and `Bounds3D` through a matrix. Then helix-ray rebuilt on it, and helix-scene (`scene/`, `helix.scene`) on it (2D and 3D nodes, transforms, hierarchy,
+  the walk that culls, lights and sorts; HeliX's nodes and stage carried over), drafted as an API and tried by fresh agents first;
+  the engines over helix-scene, which first to be chosen: HeliX's engine (its game-level API, its games and docs) and a three.js-style one.
 - **helix-ray, on trial (DECISIONS 16, 19, 20, 21):** raylib's API over the services; to decide whether it merges. Next: a managed layer beside it (assets, instances,
   placeholders, as librl has them), designed as an API first. Then a trial of how agents take to
   the `...Async` loads (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
@@ -18,7 +22,8 @@
   `GetMusicTimePlayed` and `SeekMusicStream` refuse until then), and a page's cache in OPFS readable at once from the main thread (a worker holding OPFS's sync handles, the page
   spinning on a SharedArrayBuffer for the reply, as emscripten does), which needs the page cross-origin isolated (COOP and COEP), so
   only ever an option a program chooses, never the default.
-- **Platform proposals queued, for review:** depth sampled after a pass, depth bias, and stencil. Deferred from the vertex formats
+- **Platform proposals queued, for review:** depth sampled after a pass, depth bias, stencil, and the depth tests `Always`, `Less`,
+  `Equal` and `GreaterEqual` (helix-render's revision 9). A render target's own sample count, apart from its depth, is being built. Deferred from the vertex formats
   (DECISIONS 33): bone IDs and three.js' skinIndex fed as normalized bytes or shorts and scaled back by the compiler, rounded, as a
   `ShaderCompileOptions` entry; until then they are floats, or a layer owning its shader scales them itself.
   The platform's checks of a pipeline's vertex layout (`PipelineLayout.check`, every backend, about 0.3 KB gzip) to be trimmed to what
