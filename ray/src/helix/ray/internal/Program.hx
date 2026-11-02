@@ -184,10 +184,15 @@ class Program {
 		@param view  The view's.
 		@param projection  The projection's.
 		@param diffuse  The diffuse color, 0 to 1 each.
+		@param mvpView  Optional. The view the mvp is made with in place of `view` (an eye's, in stereo).
+		@param mvpProjection  Optional. The projection it is made with in place of `projection`.
 		@return  The blocks' bytes, by stage and slot. */
-	public function capture(model:helix.math.Matrix3D, view:helix.math.Matrix3D, projection:helix.math.Matrix3D, diffuse:Array<Float>):Array<Null<Bytes>> {
+	public function capture(model:helix.math.Matrix3D, view:helix.math.Matrix3D, projection:helix.math.Matrix3D, diffuse:Array<Float>,
+			?mvpView:helix.math.Matrix3D, ?mvpProjection:helix.math.Matrix3D):Array<Null<Bytes>> {
 		if (mvp != null)
-			values.writeMatrix(mvp, helix.math.Matrix3D.compose(helix.math.Matrix3D.compose(model, view), projection));
+			values.writeMatrix(mvp,
+				helix.math.Matrix3D.compose(helix.math.Matrix3D.compose(model, mvpView != null ? mvpView : view),
+					mvpProjection != null ? mvpProjection : projection));
 		if (matModel != null)
 			values.writeMatrix(matModel, model);
 		if (matView != null)

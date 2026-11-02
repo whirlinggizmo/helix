@@ -46,6 +46,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `raymath_62` | 6.2 | values | `MatrixDecompose`, 6.2's |
 | `core_62` | 6.2 | values | file names, Base64, SHA-1, `MakeDirectory`, `QuaternionFromVector3ToVector3` |
 | `images` | 5.5 | values | `LoadImageAnim` and `LoadImageAnimFromMemory` on GIFs (disposal, transparency, interlacing, a background index) and a PNG, their frames byte for byte |
+| `stereo` | 5.5 | values | `LoadVrStereoConfig` for two displays and other clip planes, rlgl's stereo flag and matrices |
 | `images_62` | 6.2 | values | the image functions 6.2 fixed, their images byte for byte |
 | `animation` | 6.2 | values | glTF skeletons and animations, bone matrices, CPU skinning and blending |
 | `materials` | 5.5 | values | `LoadMaterialDefault`'s maps, `IsMaterialValid`, what `UnloadMaterial` frees and keeps (a texture another load shares), a texture given to a model freed after `UnloadTexture` and `UnloadModel` |
@@ -57,6 +58,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `text_62` | 6.2 | values | the text and codepoint functions taken from 6.2, null text and its 1024-byte buffers |
 | `fonts_62` | 6.2 | values | `GenImageFontAtlas` (rows, the atlas grown, the skyline packer) and `LoadFontFromImage`'s scan |
 | `fontfile_62` | 6.2 | values | `LoadFontEx` on a TrueType file: only the glyphs the font has, the Unicode spaces (hxcpp alone) |
+| `fontcode` | 5.5 | values | `ExportFontAsCode`'s header byte for byte: the default font, a TrueType font, a font from an image (hxcpp alone) |
 | `rlgl_62` | 6.2 | values | rlgl's texture across changes of mode, the matrix stack's overflow |
 | `scene2d` | 5.5 | pixels | a 2D scene of the Draw functions, textures and text |
 | `scene2d_62` | 6.2 | pixels | a 2D scene of the shapes 6.2 fixed |
@@ -67,6 +69,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `skinning` | 6.2 | pixels | greenman skinned on the CPU, on the GPU and blended |
 | `modular_scene` | 6.2 | pixels | the modular woman dressed and holding the sword, CPU-skinned |
 | `cubemaps_62` | 6.2 | pixels | `LoadTextureCubemap` in each layout, raylib's skybox example, and cubes sampling cubemaps through their material |
+| `vr` | 5.5 | pixels | raylib's VR simulator: both eyes drawn into a render texture (shapes and a model), drawn through its distortion shader |
 
 Each suite's manifest says in full what it covers (`covers`), and `notes` say why a bar is where it is.
 

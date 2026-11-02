@@ -2274,6 +2274,36 @@ class Raylib {
 	public static inline function GetMouseDelta():Vector2
 		return RCore.GetMouseDelta();
 
+	/** Starts drawing for both eyes of a head-mounted display: stereo rendering on (`rlEnableStereoRender`) with the config's
+		projections and view offsets. Until `EndVrStereoMode`, each flush of the batch and each mesh is drawn twice, the left half of
+		what is drawn into for the first eye and the right half for the second; `BeginMode3D`'s projection is replaced by each eye's.
+		raylib's VR simulator draws the eyes into a render texture, then draws it to the screen through a distortion shader.
+
+		@param config  The config, from `LoadVrStereoConfig`. */
+	public static inline function BeginVrStereoMode(config:VrStereoConfig):Void
+		RCore.BeginVrStereoMode(config);
+
+	/** Stops drawing for both eyes (`rlDisableStereoRender`), for the next flush of the batch and the next mesh drawn: shapes drawn in
+		stereo and not flushed yet (`EndMode3D` flushes them) are drawn once. */
+	public static inline function EndVrStereoMode():Void
+		RCore.EndVrStereoMode();
+
+	/** Returns the stereo config of a head-mounted display, as raylib 5.5 computes it: each eye's projection, from the field of view
+		the lenses' distortion widens, shifted by the lenses' offset from the eyes' halves of the screen, between the clip planes
+		(`rlSetClipPlanes`); each eye's view offset, half the interpupillary distance to its side, 0.075 up and 0.045 forward; and the
+		lens and screen centers and scales a distortion shader reads (raylib's `distortion330.fs`).
+
+		@param device  The display's parameters.
+		@return  The config. */
+	public static inline function LoadVrStereoConfig(device:VrDeviceInfo):VrStereoConfig
+		return RCore.LoadVrStereoConfig(device);
+
+	/** Frees a stereo config, which holds nothing to free, as raylib's: it logs that, as raylib 5.5 does.
+
+		@param config  The config. */
+	public static inline function UnloadVrStereoConfig(config:VrStereoConfig):Void
+		RCore.UnloadVrStereoConfig(config);
+
 	/** Returns whether a shader was made.
 
 		@param shader  The shader.
@@ -4123,6 +4153,18 @@ class Raylib {
 		@param font  The font. */
 	public static inline function UnloadFont(font:Font):Void
 		RText.UnloadFont(font);
+
+	/** Writes a font as a C header through `SaveFileText`, the text raylib 5.5's writes: its texture's pixels in the texture's format
+		(gray and alpha for the default font and a TrueType font's), compressed as `CompressData` compresses them, 20 bytes a line; each
+		glyph's rectangle and its character, offsets and advance; and a function loading it. The file's name, in Pascal case, names
+		them. The pixels are those the font's texture was made from, or the texture's own while it hasn't been drawn; one made otherwise
+		and already on the GPU (a render texture's) is written as an empty image, as raylib writes a texture it can't read back.
+
+		@param font  The font.
+		@param fileName  The file.
+		@return  True when it was written. */
+	public static inline function ExportFontAsCode(font:Font, fileName:String):Bool
+		return RText.ExportFontAsCode(font, fileName);
 
 	/** Frees glyphs' images.
 
@@ -6027,27 +6069,6 @@ class Raylib {
 
 	// ---- raylib.h's functions helix-ray doesn't have yet: each refuses to compile, saying so ----
 
-	/** raylib's export of a font as C code, which reads its atlas back from the GPU and waits. Here the atlas is read back only asynchronously, and it is RGBA where raylib's is gray and alpha, so a call doesn't compile yet. */
-	public static macro function ExportFontAsCode(font:ExprOf<Font>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("ExportFontAsCode: A font's atlas is on the GPU, read back asynchronously, and in RGBA where raylib's is gray and alpha; not implemented yet.",
-			macro(false : Bool));
-
-	/** raylib's `BeginVrStereoMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Begin stereo rendering (requires VR simulator). */
-	public static macro function BeginVrStereoMode(config:ExprOf<VrStereoConfig>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("BeginVrStereoMode: Not implemented", macro {});
-
-	/** raylib's `EndVrStereoMode` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. End stereo rendering (requires VR simulator). */
-	public static macro function EndVrStereoMode():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("EndVrStereoMode: Not implemented", macro {});
-
-	/** raylib's `LoadVrStereoConfig` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load VR stereo config for VR simulator device parameters. */
-	public static macro function LoadVrStereoConfig(device:ExprOf<VrDeviceInfo>):ExprOf<VrStereoConfig>
-		return helix.platform.macros.Build.unimplemented("LoadVrStereoConfig: Not implemented", macro(null : helix.ray.VrStereoConfig));
-
-	/** raylib's `UnloadVrStereoConfig` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Unload VR stereo config. */
-	public static macro function UnloadVrStereoConfig(config:ExprOf<VrStereoConfig>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("UnloadVrStereoConfig: Not implemented", macro {});
-
 	/** raylib's `DrawModelPoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model as points. */
 	public static macro function DrawModelPoints(model:ExprOf<Model>, position:ExprOf<Vector3>, scale:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("DrawModelPoints: Not implemented", macro {});
@@ -6133,7 +6154,8 @@ class Raylib {
 
 	/** Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the
 		program builds, for every target, so their names are constants; the files are found under `-D helix-ray-files` (default `web`), as the
-		program's other files are. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25).
+		program's other files are. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25). A uniform
+		given an initializer in the GLSL (`uniform vec2 scale = vec2(0.25, 0.45);`) starts at it, as GL sets it.
 
 		@param vsFileName  The vertex stage's file, or null.
 		@param fsFileName  The fragment stage's file, or null.
@@ -6141,13 +6163,13 @@ class Raylib {
 	public static macro function LoadShader(vsFileName:ExprOf<Null<String>>, fsFileName:ExprOf<Null<String>>):ExprOf<Shader> {
 		var vs = helix.ray.internal.ShaderMacro.text(vsFileName, true),
 			fs = helix.ray.internal.ShaderMacro.text(fsFileName, true);
-		var program = helix.ray.internal.ShaderMacro.program(vs == null ? "default vertex" : vs.name, vs == null ? null : vs.text,
+		return helix.ray.internal.ShaderMacro.load(vs == null ? "default vertex" : vs.name, vs == null ? null : vs.text,
 			fs == null ? "default fragment" : fs.name, fs == null ? null : fs.text, haxe.macro.Context.currentPos());
-		return macro @:privateAccess helix.ray.raylib.RModels.makeShader($program);
 	}
 
 	/** Loads a shader from raylib GLSL text, either null for raylib's default stage. It is compiled as the program builds, so the text is
-		a constant. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25).
+		a constant. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25). A uniform given an
+		initializer in the GLSL starts at it, as GL sets it.
 
 		@param vsCode  The vertex stage's text, or null.
 		@param fsCode  The fragment stage's text, or null.
@@ -6155,9 +6177,8 @@ class Raylib {
 	public static macro function LoadShaderFromMemory(vsCode:ExprOf<Null<String>>, fsCode:ExprOf<Null<String>>):ExprOf<Shader> {
 		var vs = helix.services.shaders.Shader.foldText(vsCode),
 			fs = helix.services.shaders.Shader.foldText(fsCode);
-		var program = helix.ray.internal.ShaderMacro.program(vs == null ? "default vertex" : vs.name, vs == null ? null : vs.text,
+		return helix.ray.internal.ShaderMacro.load(vs == null ? "default vertex" : vs.name, vs == null ? null : vs.text,
 			fs == null ? "default fragment" : fs.name, fs == null ? null : fs.text, haxe.macro.Context.currentPos());
-		return macro @:privateAccess helix.ray.raylib.RModels.makeShader($program);
 	}
 
 	// ---- Automation events ----

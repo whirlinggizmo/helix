@@ -170,7 +170,9 @@ Why things are the way they are, numbered, in order.
     mipmaps (6.2 makes them magenta); `SetShaderValueTexture` binds a cubemap to a `samplerCube` (raylib binds it as a 2D texture,
     which GL refuses, so it draws black); a GIF frame `LoadImageAnimAsync` reads that is disposed of to the previous frame has its
     rectangle put back as it was before the frame was drawn, on every frame (stb_image does so for the second frame, and from the third
-    reads before its own buffer, so raylib draws whatever memory lies there). OBJ and MTL reading keeps its own list (28).
+    reads before its own buffer, so raylib draws whatever memory lies there); `ExportFontAsCode` writes a font of any size (5.5's writes into a 1 MB buffer, past its end
+    for an atlas compressing to more than about 170 KB); `rlGetMatrixProjectionStereo` and `rlGetMatrixViewOffsetStereo` give a zero
+    matrix for an eye other than 0 and 1 (rlgl reads past its two). OBJ and MTL reading keeps its own list (28).
 
 25. **helix-ray counts what a model holds, following ownership, where raylib leaves it to the program.** raylib's `UnloadModel`
     frees a model's meshes and its maps arrays and never a texture or shader, so a C program frees those itself, or leaks them; Haxe

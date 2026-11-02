@@ -11,14 +11,14 @@ program written as raylib is written runs in a page and natively.
 | `helix.ray.Vector2`, `Vector3`, `Color`, `Texture2D`, `Camera3D`, `Model`, `Shader`, `RenderTexture2D` and the rest | raylib's structs, with their fields |
 
 The window and frame, the keyboard, mouse, touch and gamepads, text input, shapes (with 6.2's fixes), textures (their pixels updated and read back, their mipmaps made and filtered as raylib's GL filters them; cubemaps from an image in any of raylib's layouts, drawn as a skybox or sampled by a shader), every blend mode (rlgl's custom factors too) and scissor modes, the default
-font and TrueType and OpenType fonts (signed distance fields too), sounds and their aliases, waves (loaded, converted, cropped and
+font and TrueType and OpenType fonts (signed distance fields too, exported as C code), sounds and their aliases, waves (loaded, converted, cropped and
 exported as raylib's are), music with its length, position and seeking, audio streams fed by the program or its callback, text files; images on the CPU in raylib's uncompressed pixel
 formats (made, changed and drawn into as raylib's are, byte for byte, but for resizing; with 6.2's fixes), exported as PNG or QOI, GIF animations' frames (`LoadImageAnimAsync`, composited as raylib 5.5's are), and screenshots; in 3D
 the camera, glTF and GLB models and their materials (as raylib 6.2 reads them: its metallic-roughness image split into roughness and metalness maps), OBJ models
 and the .mtl materials they name, as raylib 6.2's `LoadOBJ` and `LoadMaterials` make them (`LoadMaterialsAsync` in place of `LoadMaterials`), skinned models and their animations (read, mixed between frames and between animations, and skinned
 on the CPU or by a skinning shader, as raylib 6.2 does), raylib's shapes and billboards (its vertices, in its order), its generated meshes (vertex for vertex,
-the same on every target), tangents, mesh buffers updated and meshes exported, render textures (kept from frame to frame), instanced meshes, rays and their collisions; raylib's
-shaders, compiled as the program builds for every target; rlgl's render state (blending, the color mask, culling, depth, wire mode, viewport, scissor) and its
+the same on every target), tangents, mesh buffers updated and meshes exported, render textures (kept from frame to frame), instanced meshes, rays and their collisions; VR stereo rendering as raylib's simulator draws it; raylib's
+shaders, compiled as the program builds for every target, their uniforms' initializers kept; rlgl's render state (blending, the color mask, culling, depth, wire mode, viewport, scissor) and its
 batch, flushed as raylib's is; automation events, recorded and played as raylib's, and raylib's random numbers for a seed. IQM, VOX and M3D models
 and animations aren't read (docs/DECISIONS.md 27). Not here yet: morph targets, models drawn as points, and compressed images.
 

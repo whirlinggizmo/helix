@@ -200,7 +200,7 @@ var paths:Array<String>
 
 *class* in [`ray/src/helix/ray/Font.hx`](../../ray/src/helix/ray/Font.hx), `import helix.ray.Font;`
 
-raylib's `Font` (raylib.h): not in helix-ray yet; its fields are raylib's. Font, font texture and GlyphInfo array data.
+Represents raylib's `Font`: its glyphs, their places on its texture, and the texture.
 
 ```haxe
 function new()
@@ -212,13 +212,13 @@ var recs:Array<Rectangle>
 var glyphs:Array<GlyphInfo>
 ```
 
-- `new`: Creates one, its fields zero, empty or null.
-- `baseSize`: Base size (default chars height).
-- `glyphCount`: Number of glyph characters.
-- `glyphPadding`: Padding around the glyph characters.
-- `texture`: Texture atlas containing the glyphs.
-- `recs`: Rectangles in texture for the glyphs.
-- `glyphs`: Glyphs info data.
+- `new`: Creates a font, its fields zero or empty. Fonts are made by `Raylib.GetFontDefault`, `Raylib.LoadFontExAsync` and the other loads.
+- `baseSize`: Gets or sets the size it was made at: its glyphs' height, in pixels.
+- `glyphCount`: Gets or sets how many glyphs it has.
+- `glyphPadding`: Gets or sets the padding around each glyph on its texture, in pixels.
+- `texture`: Gets or sets the texture its glyphs are drawn from.
+- `recs`: Gets or sets each glyph's rectangle on the texture.
+- `glyphs`: Gets or sets each glyph's character, offsets, advance and image.
 
 ## GlyphInfo
 
@@ -1573,6 +1573,10 @@ static function GetMouseRay(position:Vector2, camera:Camera3D):Ray
 static function GetWorldToScreen(position:Vector3, camera:Camera3D):Vector2
 static function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int):Vector2
 static function GetMouseDelta():Vector2
+static function BeginVrStereoMode(config:VrStereoConfig):Void
+static function EndVrStereoMode():Void
+static function LoadVrStereoConfig(device:VrDeviceInfo):VrStereoConfig
+static function UnloadVrStereoConfig(config:VrStereoConfig):Void
 static function IsShaderValid(shader:Shader):Bool
 static function UnloadShader(shader:Shader):Void
 static function GetShaderLocation(shader:Shader, uniformName:String):Int
@@ -2026,6 +2030,14 @@ static function EndScissorMode():Void
   - returns: The position in the view; infinite or NaN for a point level with a perspective camera's position, as raylib's is.
 - `GetMouseDelta`: Returns how far the mouse moved since the last frame, in the screen's pixels times the mouse's scale (`SetMouseScale`), as raylib 6.2's. A `SetMousePosition` this frame is part of it.
   - returns: The movement.
+- `BeginVrStereoMode`: Starts drawing for both eyes of a head-mounted display: stereo rendering on (`rlEnableStereoRender`) with the config's projections and view offsets. Until `EndVrStereoMode`, each flush of the batch and each mesh is drawn twice, the left half of what is drawn into for the first eye and the right half for the second; `BeginMode3D`'s projection is replaced by each eye's. raylib's VR simulator draws the eyes into a render texture, then draws it to the screen through a distortion shader.
+  - `config`: The config, from `LoadVrStereoConfig`.
+- `EndVrStereoMode`: Stops drawing for both eyes (`rlDisableStereoRender`), for the next flush of the batch and the next mesh drawn: shapes drawn in stereo and not flushed yet (`EndMode3D` flushes them) are drawn once.
+- `LoadVrStereoConfig`: Returns the stereo config of a head-mounted display, as raylib 5.5 computes it: each eye's projection, from the field of view the lenses' distortion widens, shifted by the lenses' offset from the eyes' halves of the screen, between the clip planes (`rlSetClipPlanes`); each eye's view offset, half the interpupillary distance to its side, 0.075 up and 0.045 forward; and the lens and screen centers and scales a distortion shader reads (raylib's `distortion330.fs`).
+  - `device`: The display's parameters.
+  - returns: The config.
+- `UnloadVrStereoConfig`: Frees a stereo config, which holds nothing to free, as raylib's: it logs that, as raylib 5.5 does.
+  - `config`: The config.
 - `IsShaderValid`: Returns whether a shader was made.
   - `shader`: The shader.
   - returns: True when it was.
@@ -3100,6 +3112,7 @@ static function GetGlyphAtlasRec(font:Font, codepoint:Int):Rectangle
 static function GetFontDefault():Font
 static function IsFontValid(font:Font):Bool
 static function UnloadFont(font:Font):Void
+static function ExportFontAsCode(font:Font, fileName:String):Bool
 static function UnloadFontData(glyphs:Array<GlyphInfo>, glyphCount:Int):Void
 static function GenImageFontAtlas(glyphs:Array<GlyphInfo>, glyphRecs:Array<Rectangle>, glyphCount:Int, fontSize:Int, padding:Int, packMethod:Int):Image
 static function LoadFontFromImage(image:Image, key:Color, firstChar:Int):Font
@@ -3198,6 +3211,10 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
   - returns: True when it does.
 - `UnloadFont`: Frees a font: its texture and its glyphs' images. The default font is never freed.
   - `font`: The font.
+- `ExportFontAsCode`: Writes a font as a C header through `SaveFileText`, the text raylib 5.5's writes: its texture's pixels in the texture's format (gray and alpha for the default font and a TrueType font's), compressed as `CompressData` compresses them, 20 bytes a line; each glyph's rectangle and its character, offsets and advance; and a function loading it. The file's name, in Pascal case, names them. The pixels are those the font's texture was made from, or the texture's own while it hasn't been drawn; one made otherwise and already on the GPU (a render texture's) is written as an empty image, as raylib writes a texture it can't read back.
+  - `font`: The font.
+  - `fileName`: The file.
+  - returns: True when it was written.
 - `UnloadFontData`: Frees glyphs' images.
   - `glyphs`: The glyphs.
   - `glyphCount`: How many of them.
@@ -4177,11 +4194,11 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
   - `frames`: Receives the frame count, in its first element.
   - `loaded`: Receives the frames.
   - `failed`: Optional. Receives why they couldn't be decoded; when omitted, it is logged.
-- `LoadShader`: Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the program builds, for every target, so their names are constants; the files are found under `-D helix-ray-files` (default `web`), as the program's other files are. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25).
+- `LoadShader`: Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the program builds, for every target, so their names are constants; the files are found under `-D helix-ray-files` (default `web`), as the program's other files are. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25). A uniform given an initializer in the GLSL (`uniform vec2 scale = vec2(0.25, 0.45);`) starts at it, as GL sets it.
   - `vsFileName`: The vertex stage's file, or null.
   - `fsFileName`: The fragment stage's file, or null.
   - returns: The shader.
-- `LoadShaderFromMemory`: Loads a shader from raylib GLSL text, either null for raylib's default stage. It is compiled as the program builds, so the text is a constant. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25).
+- `LoadShaderFromMemory`: Loads a shader from raylib GLSL text, either null for raylib's default stage. It is compiled as the program builds, so the text is a constant. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25). A uniform given an initializer in the GLSL starts at it, as GL sets it.
   - `vsCode`: The vertex stage's text, or null.
   - `fsCode`: The fragment stage's text, or null.
   - returns: The shader.
@@ -4199,7 +4216,7 @@ Each of these is raylib's name, and a call to it doesn't compile, saying why and
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `DrawModelPoints`, `DrawModelPointsEx`.
+`DrawModelPoints`, `DrawModelPointsEx`.
 
 ## Raymath
 
@@ -5545,6 +5562,13 @@ static function rlGetFramebufferWidth():Int
 static function rlSetFramebufferHeight(height:Int):Void
 static function rlGetFramebufferHeight():Int
 static function rlGetPixelFormatName(format:Int):String
+static function rlEnableStereoRender():Void
+static function rlDisableStereoRender():Void
+static function rlIsStereoRenderEnabled():Bool
+static function rlGetMatrixProjectionStereo(eye:Int):Matrix
+static function rlGetMatrixViewOffsetStereo(eye:Int):Matrix
+static function rlSetMatrixProjectionStereo(right:Matrix, left:Matrix):Void
+static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
 ```
 
 - `rlMatrixMode`: Chooses the matrix the next matrix calls change: `RL_MODELVIEW`, the view (or, between `rlPushMatrix` and `rlPopMatrix`, the transform the next vertices are moved by), or `RL_PROJECTION`.
@@ -5706,6 +5730,22 @@ static function rlGetPixelFormatName(format:Int):String
 - `rlGetPixelFormatName`: Returns a pixel format's name, as rlgl writes it in its log: "R8G8B8A8" for `RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `format`: The format (`RL_PIXELFORMAT_*`).
   - returns: Its name; "UNKNOWN" for another number.
+- `rlEnableStereoRender`: Turns stereo rendering on: from the next flush of the batch, its vertices waiting among them, and the next mesh drawn, each is drawn twice, in the left half of what is drawn into through the first eye's view offset and projection, then in the right half through the second's (`rlSetMatrixViewOffsetStereo`, `rlSetMatrixProjectionStereo`). After the batch the viewport is the whole again; after a mesh it is left the right half, as rlgl leaves it. `BeginVrStereoMode` turns it on with a config's matrices.
+- `rlDisableStereoRender`: Turns stereo rendering off, for the next flush of the batch and the next mesh drawn.
+- `rlIsStereoRenderEnabled`: Returns whether stereo rendering is on (`rlEnableStereoRender`).
+  - returns: True when it is.
+- `rlGetMatrixProjectionStereo`: Returns an eye's projection in stereo rendering, as `rlSetMatrixProjectionStereo` set it: zero until then, and for any other eye (raylib reads past its two).
+  - `eye`: The eye: 0, drawn in the left half, or 1.
+  - returns: The matrix.
+- `rlGetMatrixViewOffsetStereo`: Returns an eye's view offset in stereo rendering, as `rlSetMatrixViewOffsetStereo` set it: zero until then, and for any other eye (raylib reads past its two).
+  - `eye`: The eye: 0, drawn in the left half, or 1.
+  - returns: The matrix.
+- `rlSetMatrixProjectionStereo`: Sets each eye's projection in stereo rendering, in place of the projection, for the batch's next flush; a mesh's mvp takes it, its `matProjection` left the projection.
+  - `right`: Eye 0's projection, drawn in the left half (raylib names it the right).
+  - `left`: Eye 1's, drawn in the right half.
+- `rlSetMatrixViewOffsetStereo`: Sets each eye's view offset in stereo rendering, applied after the view for the batch's next flush and a mesh's mvp.
+  - `right`: Eye 0's offset, drawn in the left half (raylib names it the right).
+  - `left`: Eye 1's, drawn in the right half.
 
 ### Not supported in helix-ray
 
@@ -5717,7 +5757,7 @@ Each of these is raylib's name, and a call to it doesn't compile, saying why and
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`rlEnablePointMode`, `rlEnableStereoRender`, `rlDisableStereoRender`, `rlIsStereoRenderEnabled`, `rlGetMatrixProjectionStereo`, `rlGetMatrixViewOffsetStereo`, `rlSetMatrixProjectionStereo`, `rlSetMatrixViewOffsetStereo`.
+`rlEnablePointMode`.
 
 ## Shader
 
@@ -5879,10 +5919,15 @@ var w:Float
 
 *class* in [`ray/src/helix/ray/VrDeviceInfo.hx`](../../ray/src/helix/ray/VrDeviceInfo.hx), `import helix.ray.VrDeviceInfo;`
 
-raylib's `VrDeviceInfo` (raylib.h): not in helix-ray yet; its fields are raylib's. VrDeviceInfo, Head-Mounted-Display device parameters.
+Represents raylib's `VrDeviceInfo`: a head-mounted display's parameters, which `LoadVrStereoConfig` makes a stereo config of.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-function new()
+{?hResolution:Int, ?vResolution:Int, ?hScreenSize:Float, ?vScreenSize:Float, ?eyeToScreenDistance:Float, ?lensSeparationDistance:Float, ?interpupillaryDistance:Float, ?lensDistortionValues:Array<Float>, ?chromaAbCorrection:Array<Float>}
+```
+
+```haxe
 var hResolution:Int
 var vResolution:Int
 var hScreenSize:Float
@@ -5894,25 +5939,29 @@ var lensDistortionValues:Array<Float>
 var chromaAbCorrection:Array<Float>
 ```
 
-- `new`: Creates one, its fields zero, empty or null.
-- `hResolution`: Horizontal resolution in pixels.
-- `vResolution`: Vertical resolution in pixels.
-- `hScreenSize`: Horizontal size in meters.
-- `vScreenSize`: Vertical size in meters.
-- `eyeToScreenDistance`: Distance between eye and display in meters.
-- `lensSeparationDistance`: Lens separation distance in meters.
-- `interpupillaryDistance`: IPD (distance between pupils) in meters.
-- `lensDistortionValues`: Lens distortion constant parameters.
-- `chromaAbCorrection`: Chromatic aberration correction parameters.
+- `hResolution`: Gets or sets the horizontal resolution, in pixels.
+- `vResolution`: Gets or sets the vertical resolution, in pixels.
+- `hScreenSize`: Gets or sets the screen's horizontal size, in meters.
+- `vScreenSize`: Gets or sets the screen's vertical size, in meters.
+- `eyeToScreenDistance`: Gets or sets the distance from the eyes to the screen, in meters.
+- `lensSeparationDistance`: Gets or sets the distance between the lenses' centers, in meters.
+- `interpupillaryDistance`: Gets or sets the distance between the pupils, in meters.
+- `lensDistortionValues`: Gets or sets the lenses' four distortion constants.
+- `chromaAbCorrection`: Gets or sets the four chromatic aberration correction parameters.
 
 ## VrStereoConfig
 
 *class* in [`ray/src/helix/ray/VrStereoConfig.hx`](../../ray/src/helix/ray/VrStereoConfig.hx), `import helix.ray.VrStereoConfig;`
 
-raylib's `VrStereoConfig` (raylib.h): not in helix-ray yet; its fields are raylib's. VrStereoConfig, VR stereo rendering configuration for simulator.
+Represents raylib's `VrStereoConfig`: what `BeginVrStereoMode` draws each eye with, and what a distortion shader reads, as `LoadVrStereoConfig` computes them from a display's parameters.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-function new()
+{?projection:Array<Matrix>, ?viewOffset:Array<Matrix>, ?leftLensCenter:Array<Float>, ?rightLensCenter:Array<Float>, ?leftScreenCenter:Array<Float>, ?rightScreenCenter:Array<Float>, ?scale:Array<Float>, ?scaleIn:Array<Float>}
+```
+
+```haxe
 var projection:Array<Matrix>
 var viewOffset:Array<Matrix>
 var leftLensCenter:Array<Float>
@@ -5923,15 +5972,14 @@ var scale:Array<Float>
 var scaleIn:Array<Float>
 ```
 
-- `new`: Creates one, its fields zero, empty or null.
-- `projection`: VR projection matrices (per eye).
-- `viewOffset`: VR view offset matrices (per eye).
-- `leftLensCenter`: VR left lens center.
-- `rightLensCenter`: VR right lens center.
-- `leftScreenCenter`: VR left screen center.
-- `rightScreenCenter`: VR right screen center.
-- `scale`: VR distortion scale.
-- `scaleIn`: VR distortion scale in.
+- `projection`: Gets or sets each eye's projection: the first drawn in the left half.
+- `viewOffset`: Gets or sets each eye's view offset, applied after the view.
+- `leftLensCenter`: Gets or sets the left lens's center, x and y, 0 to 1 across what is drawn into.
+- `rightLensCenter`: Gets or sets the right lens's center.
+- `leftScreenCenter`: Gets or sets the left screen half's center.
+- `rightScreenCenter`: Gets or sets the right screen half's center.
+- `scale`: Gets or sets the distortion's scale, x and y.
+- `scaleIn`: Gets or sets the distortion's scale in, x and y.
 
 ## Wave
 

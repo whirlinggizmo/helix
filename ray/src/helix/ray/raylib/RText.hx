@@ -241,6 +241,7 @@ class RText {
 		font.glyphCount = DefaultFont.WIDTHS.length;
 		font.glyphPadding = 0;
 		font.texture = LoadTextureFromImage(image);
+		keepAtlas(font, image);
 		// raylib's layout: rows of glyphs a pixel apart, a row ending where the next glyph would reach the texture's edge.
 		var line = 0, x = 1, test = 1;
 		for (i in 0...font.glyphCount) {
@@ -283,15 +284,140 @@ class RText {
 		UnloadTexture(font.texture);
 	}
 
-	/** raylib's export of a font as C code, which reads its atlas back from the GPU and waits. Here the atlas is read back only
-		asynchronously, and it is RGBA where raylib's is gray and alpha, so a call doesn't compile yet.
+	/** Writes a font as a C header through `SaveFileText`, the text raylib 5.5's writes: its texture's pixels in the texture's format
+		(gray and alpha for the default font and a TrueType font's), compressed as `CompressData` compresses them, 20 bytes a line; each
+		glyph's rectangle and its character, offsets and advance; and a function loading it. The file's name, in Pascal case, names
+		them. The pixels are those the font's texture was made from, or the texture's own while it hasn't been drawn; one made otherwise
+		and already on the GPU (a render texture's) is written as an empty image, as raylib writes a texture it can't read back.
 
 		@param font  The font.
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unimplemented("ExportFontAsCode: A font's atlas is on the GPU, read back asynchronously, and in RGBA where raylib's is gray and alpha; not implemented yet.")
+		@return  True when it was written. */
 	static function ExportFontAsCode(font:Font, fileName:String):Bool {
-		throw "ExportFontAsCode is unimplemented";
+		var name = TextToPascal(GetFileNameWithoutExt(fileName));
+		var upperName = TextToUpper(name);
+		var text = new StringBuf();
+		text.add("////////////////////////////////////////////////////////////////////////////////////////\n");
+		text.add("//                                                                                    //\n");
+		text.add("// FontAsCode exporter v1.0 - Font data exported as an array of bytes                 //\n");
+		text.add("//                                                                                    //\n");
+		text.add("// more info and bugs-report:  github.com/raysan5/raylib                              //\n");
+		text.add("// feedback and support:       ray[at]raylib.com                                      //\n");
+		text.add("//                                                                                    //\n");
+		text.add("// Copyright (c) 2018-2024 Ramon Santamaria (@raysan5)                                //\n");
+		text.add("//                                                                                    //\n");
+		text.add("// ---------------------------------------------------------------------------------- //\n");
+		text.add("//                                                                                    //\n");
+		text.add("// TODO: Fill the information and license of the exported font here:                  //\n");
+		text.add("//                                                                                    //\n");
+		text.add("// Font name:    ....                                                                 //\n");
+		text.add("// Font creator: ....                                                                 //\n");
+		text.add("// Font LICENSE: ....                                                                 //\n");
+		text.add("//                                                                                    //\n");
+		text.add("////////////////////////////////////////////////////////////////////////////////////////\n\n");
+		var image = atlasOf(font);
+		if (image.format != PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA)
+			Runtime.log(LOG_WARNING, "Font export as code: Font image format is not GRAY+ALPHA!");
+		var imageDataSize = GetPixelDataSize(image.width, image.height, image.format);
+		var data = image.data == null ? haxe.io.Bytes.alloc(0) : image.data;
+		var compDataSize = [0];
+		var compData = CompressData(data, imageDataSize < data.length ? imageDataSize : data.length, compDataSize);
+		inline function hex(b:Int):String
+			return StringTools.hex(b, 2).toLowerCase();
+		text.add('#define COMPRESSED_DATA_SIZE_FONT_$upperName ${compDataSize[0]}\n\n');
+		text.add("// Font image pixels data compressed (DEFLATE)\n");
+		text.add("// NOTE: Original pixel data simplified to GRAYSCALE\n");
+		text.add('static unsigned char fontData_$name[COMPRESSED_DATA_SIZE_FONT_$upperName] = { ');
+		for (i in 0...compDataSize[0] - 1)
+			text.add(i % 20 == 0 ? '0x${hex(compData.get(i))},\n    ' : '0x${hex(compData.get(i))}, ');
+		text.add('0x${hex(compData.get(compDataSize[0] - 1))} };\n\n');
+		text.add("// Font characters rectangles data\n");
+		text.add('static Rectangle fontRecs_$name[${font.glyphCount}] = {\n');
+		for (i in 0...font.glyphCount) {
+			var r = font.recs[i];
+			text.add('    { ${whole(r.x)}, ${whole(r.y)}, ${whole(r.width)} , ${whole(r.height)} },\n');
+		}
+		text.add("};\n\n");
+		text.add("// Font glyphs info data\n");
+		text.add("// NOTE: No glyphs.image data provided\n");
+		text.add('static GlyphInfo fontGlyphs_$name[${font.glyphCount}] = {\n');
+		for (i in 0...font.glyphCount) {
+			var g = font.glyphs[i];
+			text.add('    { ${g.value}, ${g.offsetX}, ${g.offsetY}, ${g.advanceX}, { 0 }},\n');
+		}
+		text.add("};\n\n");
+		text.add('// Font loading function: $name\n');
+		text.add('static Font LoadFont_$name(void)\n{\n');
+		text.add("    Font font = { 0 };\n\n");
+		text.add('    font.baseSize = ${font.baseSize};\n');
+		text.add('    font.glyphCount = ${font.glyphCount};\n');
+		text.add('    font.glyphPadding = ${font.glyphPadding};\n\n');
+		text.add("    // Custom font loading\n");
+		text.add("    // NOTE: Compressed font image data (DEFLATE), it requires DecompressData() function\n");
+		text.add('    int fontDataSize_$name = 0;\n');
+		text.add('    unsigned char *data = DecompressData(fontData_$name, COMPRESSED_DATA_SIZE_FONT_$upperName, &fontDataSize_$name);\n');
+		text.add('    Image imFont = { data, ${image.width}, ${image.height}, 1, ${image.format} };\n\n');
+		text.add("    // Load texture from image\n");
+		text.add("    if (isGpuReady) font.texture = LoadTextureFromImage(imFont);\n");
+		text.add("    UnloadImage(imFont);  // Uncompressed data can be unloaded from memory\n\n");
+		text.add("    // Assign glyph recs and info data directly\n");
+		text.add("    // WARNING: This font data must not be unloaded\n");
+		text.add('    font.recs = fontRecs_$name;\n');
+		text.add('    font.glyphs = fontGlyphs_$name;\n\n');
+		text.add("    return font;\n");
+		text.add("}\n");
+		var success = SaveFileText(fileName, text.toString());
+		if (success)
+			Runtime.log(LOG_INFO, 'FILEIO: [$fileName] Font as code exported successfully');
+		else
+			Runtime.log(LOG_WARNING, 'FILEIO: [$fileName] Failed to export font as code');
+		return success;
+	}
+
+	// A font's texture's pixels as raylib's LoadImageFromTexture reads them back from the GPU, in the texture's format: the image the
+	// texture was made from, or the texture's own in memory (RGBA) made its format; an empty image, as raylib's for a texture it can't
+	// read, for one on the GPU alone.
+	static function atlasOf(font:Font):Image {
+		var texture = font.texture;
+		if (texture == null)
+			return new Image();
+		if (font.atlas != null && font.atlasTexture == texture.id && font.atlas.format == texture.format) {
+			var a = font.atlas;
+			return new Image(a.data, a.width, a.height, 1, a.format);
+		}
+		var memory = Textures.onGpu(texture.id) == 0 ? Textures.imageOf(texture.id) : null;
+		if (memory == null) {
+			Runtime.log(LOG_WARNING, 'TEXTURE: [ID ${texture.id}] Failed to retrieve pixel data');
+			return new Image();
+		}
+		var image = new Image(memory.pixels, memory.width, memory.height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+		if (texture.format == PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA || texture.format == PIXELFORMAT_UNCOMPRESSED_GRAYSCALE) {
+			// Gray textures are white with their gray in red: taken back as they were sent.
+			var alpha = texture.format == PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA,
+				count = image.width * image.height;
+			var out = haxe.io.Bytes.alloc(count * (alpha ? 2 : 1));
+			for (i in 0...count) {
+				out.set(alpha ? i * 2 : i, memory.pixels.get(i * 4));
+				if (alpha)
+					out.set(i * 2 + 1, memory.pixels.get(i * 4 + 3));
+			}
+			return new Image(out, image.width, image.height, 1, texture.format);
+		}
+		ImageFormat(image, texture.format);
+		return image;
+	}
+
+	// A number as C's printf writes it with %1.0f: rounded to the nearest whole, a half to the even one, -0 for a negative rounded to 0.
+	static function whole(x:Float):String {
+		var floor = Math.ffloor(x), rest = x - floor;
+		var rounded = rest > 0.5 ? floor + 1 : rest < 0.5 ? floor : (floor % 2 == 0 ? floor : floor + 1);
+		return rounded == 0 && (x < 0 || 1 / x < 0) ? "-0" : Std.string(Std.int(rounded));
+	}
+
+	// Keeps the image a font's texture was made from, for ExportFontAsCode.
+	static function keepAtlas(font:Font, image:Image):Void {
+		font.atlas = image;
+		font.atlasTexture = font.texture.id;
 	}
 
 	/** Frees glyphs' images.
@@ -422,6 +548,8 @@ class RText {
 		font.glyphCount = defaults.glyphCount;
 		font.glyphPadding = defaults.glyphPadding;
 		font.texture = defaults.texture;
+		font.atlas = defaults.atlas;
+		font.atlasTexture = defaults.atlasTexture;
 		font.recs = defaults.recs;
 		font.glyphs = defaults.glyphs;
 		var width = image.width, height = image.height, count = width * height;
@@ -464,6 +592,7 @@ class RText {
 				pixels.setInt32(i * 4, 0);
 		var fontClear = new Image(pixels, width, height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
 		font.texture = LoadTextureFromImage(fontClear);
+		keepAtlas(font, fontClear);
 		font.glyphCount = values.length;
 		font.glyphPadding = 0;
 		font.recs = recs;
@@ -629,6 +758,7 @@ class RText {
 		font.glyphPadding = 4;
 		var atlas = GenImageFontAtlas(glyphs, font.recs, font.glyphCount, font.baseSize, font.glyphPadding, 0);
 		font.texture = LoadTextureFromImage(atlas);
+		keepAtlas(font, atlas);
 		for (i in 0...font.glyphCount) {
 			var rec = font.recs[i],
 				image = new Image(),
@@ -654,6 +784,7 @@ class RText {
 		font.glyphCount = read.glyphs.length;
 		font.glyphPadding = 0;
 		font.texture = new Texture2D(Textures.fromImage(atlas.path, atlas), atlas.width, atlas.height);
+		keepAtlas(font, new Image(atlas.pixels, atlas.width, atlas.height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8));
 		for (g in read.glyphs) {
 			font.recs.push(new Rectangle(g.x, g.y, g.width, g.height));
 			var glyph = new GlyphInfo();

@@ -1,0 +1,16 @@
+{
+  "oracle": "5.5",
+  "covers": "rtext.c's ExportFontAsCode, the header's text byte for byte: the default font, a TrueType font (LoadFontEx, the printable ASCII at 20 and five characters at 48) and a font read from an image (LoadFontFromImage, its RGBA texture written as it is): the atlas compressed as CompressData compresses it, the glyphs' rectangles and metrics, the loading function, the names from the file's name",
+  "notes": "hxcpp alone: helix-ray rasterizes TrueType glyphs with the platform's native rasterizer, which Node hasn't. Each line is printed as its bytes, so a section matches only when every byte does.",
+  "kind": "values",
+  "main": "FontCodeBits",
+  "reference": "ref.c",
+  "harness": [
+    "FontCodeBits.hx"
+  ],
+  "targets": ["cpp"],
+  "assets": {
+    "font.ttf": "../../examples/text/web/assets/JetBrainsMono-Regular.ttf"
+  },
+  "tolerance": 0
+}

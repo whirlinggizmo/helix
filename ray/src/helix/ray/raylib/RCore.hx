@@ -2685,6 +2685,73 @@ class RCore {
 		return new Vector2((lastPointerX - previousX) * mouseScaleX, (lastPointerY - previousY) * mouseScaleY);
 	}
 
+	// ---- VR stereo rendering ----
+
+	/** Starts drawing for both eyes of a head-mounted display: stereo rendering on (`rlEnableStereoRender`) with the config's
+		projections and view offsets. Until `EndVrStereoMode`, each flush of the batch and each mesh is drawn twice, the left half of
+		what is drawn into for the first eye and the right half for the second; `BeginMode3D`'s projection is replaced by each eye's.
+		raylib's VR simulator draws the eyes into a render texture, then draws it to the screen through a distortion shader.
+
+		@param config  The config, from `LoadVrStereoConfig`. */
+	static function BeginVrStereoMode(config:VrStereoConfig):Void {
+		helix.ray.raylib.RRlgl.rlEnableStereoRender();
+		helix.ray.raylib.RRlgl.rlSetMatrixProjectionStereo(config.projection[0], config.projection[1]);
+		helix.ray.raylib.RRlgl.rlSetMatrixViewOffsetStereo(config.viewOffset[0], config.viewOffset[1]);
+	}
+
+	/** Stops drawing for both eyes (`rlDisableStereoRender`), for the next flush of the batch and the next mesh drawn: shapes drawn in
+		stereo and not flushed yet (`EndMode3D` flushes them) are drawn once. */
+	static function EndVrStereoMode():Void {
+		helix.ray.raylib.RRlgl.rlDisableStereoRender();
+	}
+
+	/** Returns the stereo config of a head-mounted display, as raylib 5.5 computes it: each eye's projection, from the field of view
+		the lenses' distortion widens, shifted by the lenses' offset from the eyes' halves of the screen, between the clip planes
+		(`rlSetClipPlanes`); each eye's view offset, half the interpupillary distance to its side, 0.075 up and 0.045 forward; and the
+		lens and screen centers and scales a distortion shader reads (raylib's `distortion330.fs`).
+
+		@param device  The display's parameters.
+		@return  The config. */
+	static function LoadVrStereoConfig(device:VrDeviceInfo):VrStereoConfig {
+		var config = new VrStereoConfig();
+		var aspect = (device.hResolution * 0.5) / device.vResolution;
+		var lensShift = (device.hScreenSize * 0.25 - device.lensSeparationDistance * 0.5) / device.hScreenSize;
+		config.leftLensCenter = [0.25 + lensShift, 0.5];
+		config.rightLensCenter = [0.75 - lensShift, 0.5];
+		config.leftScreenCenter = [0.25, 0.5];
+		config.rightScreenCenter = [0.75, 0.5];
+		// The lens's radius, lensShift taken to -1 to 1.
+		var lensRadius = Math.abs(-1 - 4 * lensShift);
+		var lensRadiusSq = lensRadius * lensRadius;
+		var k = device.lensDistortionValues;
+		var distortionScale = k[0] + k[1] * lensRadiusSq + k[2] * lensRadiusSq * lensRadiusSq + k[3] * lensRadiusSq * lensRadiusSq * lensRadiusSq;
+		var normScreenWidth = 0.5, normScreenHeight = 1.0;
+		config.scaleIn = [2 / normScreenWidth, 2 / normScreenHeight / aspect];
+		config.scale = [
+			normScreenWidth * 0.5 / distortionScale,
+			normScreenHeight * 0.5 * aspect / distortionScale
+		];
+		var fovy = 2 * Math.atan2(device.vScreenSize * 0.5 * distortionScale, device.eyeToScreenDistance);
+		var projOffset = 4 * lensShift;
+		var proj = MatrixPerspective(fovy, aspect, helix.ray.raylib.RRlgl.rlGetCullDistanceNear(), helix.ray.raylib.RRlgl.rlGetCullDistanceFar());
+		config.projection = [
+			MatrixMultiply(proj, MatrixTranslate(projOffset, 0, 0)),
+			MatrixMultiply(proj, MatrixTranslate(-projOffset, 0, 0))
+		];
+		config.viewOffset = [
+			MatrixTranslate(device.interpupillaryDistance * 0.5, 0.075, 0.045),
+			MatrixTranslate(-device.interpupillaryDistance * 0.5, 0.075, 0.045)
+		];
+		return config;
+	}
+
+	/** Frees a stereo config, which holds nothing to free, as raylib's: it logs that, as raylib 5.5 does.
+
+		@param config  The config. */
+	static function UnloadVrStereoConfig(config:VrStereoConfig):Void {
+		Runtime.log(LOG_INFO, "UnloadVrStereoConfig not implemented in rcore.c");
+	}
+
 	// ---- Shaders ----
 
 	/** Returns whether a shader was made.

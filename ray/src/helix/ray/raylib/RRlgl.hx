@@ -606,6 +606,63 @@ class RRlgl {
 		return format >= 1 && format <= names.length ? names[format - 1] : "UNKNOWN";
 	}
 
+	// ---- Stereo rendering ----
+
+	/** Turns stereo rendering on: from the next flush of the batch, its vertices waiting among them, and the next mesh drawn, each is
+		drawn twice, in the left half of what is drawn into through the first eye's view offset and projection, then in the right half
+		through the second's (`rlSetMatrixViewOffsetStereo`, `rlSetMatrixProjectionStereo`). After the batch the viewport is the whole
+		again; after a mesh it is left the right half, as rlgl leaves it. `BeginVrStereoMode` turns it on with a config's matrices. */
+	static function rlEnableStereoRender():Void {
+		helix.ray.internal.Stereo.enable(true);
+	}
+
+	/** Turns stereo rendering off, for the next flush of the batch and the next mesh drawn. */
+	static function rlDisableStereoRender():Void {
+		helix.ray.internal.Stereo.enable(false);
+	}
+
+	/** Returns whether stereo rendering is on (`rlEnableStereoRender`).
+
+		@return  True when it is. */
+	static function rlIsStereoRenderEnabled():Bool {
+		return helix.ray.internal.Stereo.enabled;
+	}
+
+	/** Returns an eye's projection in stereo rendering, as `rlSetMatrixProjectionStereo` set it: zero until then, and for any other eye (raylib reads past its two).
+
+		@param eye  The eye: 0, drawn in the left half, or 1.
+		@return  The matrix. */
+	static function rlGetMatrixProjectionStereo(eye:Int):Matrix {
+		return eye == 0 || eye == 1 ? toMatrix(helix.ray.internal.Stereo.projections[eye]) : new Matrix();
+	}
+
+	/** Returns an eye's view offset in stereo rendering, as `rlSetMatrixViewOffsetStereo` set it: zero until then, and for any other eye (raylib reads past its two).
+
+		@param eye  The eye: 0, drawn in the left half, or 1.
+		@return  The matrix. */
+	static function rlGetMatrixViewOffsetStereo(eye:Int):Matrix {
+		return eye == 0 || eye == 1 ? toMatrix(helix.ray.internal.Stereo.offsets[eye]) : new Matrix();
+	}
+
+	/** Sets each eye's projection in stereo rendering, in place of the projection, for the batch's next flush; a mesh's mvp takes it,
+		its `matProjection` left the projection.
+
+		@param right  Eye 0's projection, drawn in the left half (raylib names it the right).
+		@param left  Eye 1's, drawn in the right half. */
+	static function rlSetMatrixProjectionStereo(right:Matrix, left:Matrix):Void {
+		helix.ray.internal.Stereo.projections[0].copyFrom(toMatrix3D(right));
+		helix.ray.internal.Stereo.projections[1].copyFrom(toMatrix3D(left));
+	}
+
+	/** Sets each eye's view offset in stereo rendering, applied after the view for the batch's next flush and a mesh's mvp.
+
+		@param right  Eye 0's offset, drawn in the left half (raylib names it the right).
+		@param left  Eye 1's, drawn in the right half. */
+	static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void {
+		helix.ray.internal.Stereo.offsets[0].copyFrom(toMatrix3D(right));
+		helix.ray.internal.Stereo.offsets[1].copyFrom(toMatrix3D(left));
+	}
+
 	// ---- rlgl's GL objects and GL itself, which helix-ray draws without: each refuses to compile, saying what to use ----
 
 	/** rlgl's `rlEnableVertexArray`: enable vertex array (vao, if supported), which helix-ray doesn't have, as it

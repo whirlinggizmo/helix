@@ -1,0 +1,12 @@
+{
+  "oracle": "5.5",
+  "covers": "rcore.c's LoadVrStereoConfig (each eye's projection and view offset, the lens and screen centers, the distortion's scales) for the Oculus Rift CV1 (core_vr_simulator's parameters) and the DK2, and between other clip planes (rlSetClipPlanes); BeginVrStereoMode and EndVrStereoMode, rlgl's stereo flag (rlEnableStereoRender, rlDisableStereoRender, rlIsStereoRenderEnabled) and its matrices set and read back (rlSetMatrixProjectionStereo, rlSetMatrixViewOffsetStereo and their getters), zero before any is set",
+  "notes": "raylib computes the config in floats, helix-ray in doubles: the field of view's atan2 and the projections' near and far terms differ in the last float bits.",
+  "kind": "values",
+  "main": "StereoBits",
+  "reference": "ref.c",
+  "harness": [
+    "StereoBits.hx"
+  ],
+  "tolerance": 5e-07
+}

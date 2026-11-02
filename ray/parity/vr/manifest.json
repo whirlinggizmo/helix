@@ -1,0 +1,18 @@
+{
+  "oracle": "5.5",
+  "covers": "raylib's core_vr_simulator: LoadVrStereoConfig for the Oculus Rift CV1, BeginVrStereoMode and EndVrStereoMode around BeginMode3D drawing a cube, its wires, a grid (the batch, drawn once for each eye in its half of a 2160 x 1200 render texture through the eye's view offset and projection) and a sphere model (a mesh, its mvp alone moved to each eye), the render texture drawn onto an 800 x 450 screen through raylib's distortion330.fs, its uniforms' initializers in the GLSL and SetShaderValue's values",
+  "kind": "pixels",
+  "reference": "scene.c",
+  "harness": [
+    "Main.hx"
+  ],
+  "assets": {
+    "web/distortion330.fs": "raylib:examples/core/resources/distortion330.fs"
+  },
+  "frames": 5,
+  "backends": {
+    "gl": 80,
+    "sdl_gpu": 1100
+  },
+  "notes": "The example's camera input, cursor and DrawFPS are left out, so every frame is the same. GL: 65 pixels differ, each in one channel at the cube's and the wires' edges, which the distortion's chromatic aberration reads apart (red, green and blue each sampled at a place of its own), so an edge rasterized a texel apart in the 2160 x 1200 texture shows in one channel. SDL_GPU (Vulkan on lavapipe): about 950 such, its lines and edges rasterized apart from llvmpipe's."
+}

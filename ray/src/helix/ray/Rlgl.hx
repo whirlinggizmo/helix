@@ -1054,6 +1054,52 @@ class Rlgl {
 		@return  Its name; "UNKNOWN" for another number. */
 	public static inline function rlGetPixelFormatName(format:Int):String
 		return RRlgl.rlGetPixelFormatName(format);
+
+	/** Turns stereo rendering on: from the next flush of the batch, its vertices waiting among them, and the next mesh drawn, each is
+		drawn twice, in the left half of what is drawn into through the first eye's view offset and projection, then in the right half
+		through the second's (`rlSetMatrixViewOffsetStereo`, `rlSetMatrixProjectionStereo`). After the batch the viewport is the whole
+		again; after a mesh it is left the right half, as rlgl leaves it. `BeginVrStereoMode` turns it on with a config's matrices. */
+	public static inline function rlEnableStereoRender():Void
+		RRlgl.rlEnableStereoRender();
+
+	/** Turns stereo rendering off, for the next flush of the batch and the next mesh drawn. */
+	public static inline function rlDisableStereoRender():Void
+		RRlgl.rlDisableStereoRender();
+
+	/** Returns whether stereo rendering is on (`rlEnableStereoRender`).
+
+		@return  True when it is. */
+	public static inline function rlIsStereoRenderEnabled():Bool
+		return RRlgl.rlIsStereoRenderEnabled();
+
+	/** Returns an eye's projection in stereo rendering, as `rlSetMatrixProjectionStereo` set it: zero until then, and for any other eye (raylib reads past its two).
+
+		@param eye  The eye: 0, drawn in the left half, or 1.
+		@return  The matrix. */
+	public static inline function rlGetMatrixProjectionStereo(eye:Int):Matrix
+		return RRlgl.rlGetMatrixProjectionStereo(eye);
+
+	/** Returns an eye's view offset in stereo rendering, as `rlSetMatrixViewOffsetStereo` set it: zero until then, and for any other eye (raylib reads past its two).
+
+		@param eye  The eye: 0, drawn in the left half, or 1.
+		@return  The matrix. */
+	public static inline function rlGetMatrixViewOffsetStereo(eye:Int):Matrix
+		return RRlgl.rlGetMatrixViewOffsetStereo(eye);
+
+	/** Sets each eye's projection in stereo rendering, in place of the projection, for the batch's next flush; a mesh's mvp takes it,
+		its `matProjection` left the projection.
+
+		@param right  Eye 0's projection, drawn in the left half (raylib names it the right).
+		@param left  Eye 1's, drawn in the right half. */
+	public static inline function rlSetMatrixProjectionStereo(right:Matrix, left:Matrix):Void
+		RRlgl.rlSetMatrixProjectionStereo(right, left);
+
+	/** Sets each eye's view offset in stereo rendering, applied after the view for the batch's next flush and a mesh's mvp.
+
+		@param right  Eye 0's offset, drawn in the left half (raylib names it the right).
+		@param left  Eye 1's, drawn in the right half. */
+	public static inline function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
+		RRlgl.rlSetMatrixViewOffsetStereo(right, left);
 	#end
 
 	// ---- rlgl.h's functions helix-ray won't have: each refuses to compile, saying why and what to use ----
@@ -1508,34 +1554,6 @@ class Rlgl {
 	/** raylib's `rlEnablePointMode` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable point mode. */
 	public static macro function rlEnablePointMode():ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("rlEnablePointMode: Not implemented", macro {});
-
-	/** raylib's `rlEnableStereoRender` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Enable stereo rendering. */
-	public static macro function rlEnableStereoRender():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlEnableStereoRender: Not implemented", macro {});
-
-	/** raylib's `rlDisableStereoRender` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Disable stereo rendering. */
-	public static macro function rlDisableStereoRender():ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlDisableStereoRender: Not implemented", macro {});
-
-	/** raylib's `rlIsStereoRenderEnabled` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Check if stereo render is enabled. */
-	public static macro function rlIsStereoRenderEnabled():ExprOf<Bool>
-		return helix.platform.macros.Build.unimplemented("rlIsStereoRenderEnabled: Not implemented", macro(false : Bool));
-
-	/** raylib's `rlGetMatrixProjectionStereo` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Get internal projection matrix for stereo render (selected eye). */
-	public static macro function rlGetMatrixProjectionStereo(eye:ExprOf<Int>):ExprOf<Matrix>
-		return helix.platform.macros.Build.unimplemented("rlGetMatrixProjectionStereo: Not implemented", macro(null : helix.ray.Matrix));
-
-	/** raylib's `rlGetMatrixViewOffsetStereo` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Get internal view offset matrix for stereo render (selected eye). */
-	public static macro function rlGetMatrixViewOffsetStereo(eye:ExprOf<Int>):ExprOf<Matrix>
-		return helix.platform.macros.Build.unimplemented("rlGetMatrixViewOffsetStereo: Not implemented", macro(null : helix.ray.Matrix));
-
-	/** raylib's `rlSetMatrixProjectionStereo` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set eyes projection matrices for stereo rendering. */
-	public static macro function rlSetMatrixProjectionStereo(right:ExprOf<Matrix>, left:ExprOf<Matrix>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlSetMatrixProjectionStereo: Not implemented", macro {});
-
-	/** raylib's `rlSetMatrixViewOffsetStereo` (rlgl.h): not in helix-ray yet, so a call to it doesn't compile. Set eyes view offsets matrices for stereo rendering. */
-	public static macro function rlSetMatrixViewOffsetStereo(right:ExprOf<Matrix>, left:ExprOf<Matrix>):ExprOf<Void>
-		return helix.platform.macros.Build.unimplemented("rlSetMatrixViewOffsetStereo: Not implemented", macro {});
 
 	// ---- generated by tools/gen_raylib.py: end ----
 }

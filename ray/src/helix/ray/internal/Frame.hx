@@ -383,8 +383,27 @@ class Frame {
 	public function flush():Void {
 		drawMode = 7;
 		drawTexture = 0;
-		if (batch.length == 0)
-			return;
+		if (eyes != null)
+			eyes(() -> drawBatch(), false);
+		else if (batch.length > 0)
+			drawBatch();
+		batch.resize(0);
+		open = null;
+	}
+
+	/** Draws what is added once for each eye, as rlgl's stereo rendering does: null while it is off, set by `rlEnableStereoRender`
+		(`Stereo`), so a program not drawing in stereo links none of it. It receives what adds the draws, called once an eye, and whether
+		they are a mesh's (raylib's `DrawMesh` moves only its mvp to each eye, through `meshView` and `meshProjection`). */
+	public var eyes:Null<(add:() -> Void, mesh:Bool)->Void> = null;
+
+	/** The view a mesh's mvp is made with in place of `view`, an eye's in stereo; null otherwise. */
+	public var meshView:Null<Matrix3D> = null;
+
+	/** The projection a mesh's mvp is made with in place of `projection`, an eye's in stereo; null otherwise. */
+	public var meshProjection:Null<Matrix3D> = null;
+
+	// The batch's runs as draws in the pass, through the current program, matrices and state.
+	function drawBatch():Void {
 		var m = wire && cull ? Matrix3D.compose(view, projection, viewProjection).values : null;
 		for (run in batch) {
 			if (run.count == 0)
@@ -410,8 +429,6 @@ class Frame {
 			}
 			pass.draws.push(d);
 		}
-		batch.resize(0);
-		open = null;
 	}
 
 	/** Flushes the batch, as a change rlgl flushes for does: `flush`. */
@@ -631,21 +648,26 @@ class Frame {
 			for (i => name in names)
 				if (isMatrix(names, i)) instances != 0 ? instances : constants else if (name != "") Models.buffer(mesh, MESH_BUFFERS.get(name))
 		];
-		pass.draws.push({
-			pipeline: pipeline,
-			buffers: buffers,
-			indices: wire ? edges : mesh.gpu.indexBuffer,
-			first: 0,
-			count: wire ? edgeCount : indexed ? mesh.triangleCount * 3 : mesh.vertexCount,
-			texture: 0,
-			lines: wire,
-			scissor: scissor,
-			viewport: viewport,
-			textures: bound,
-			cubes: p.cubes,
-			uniforms: values(p, model, diffuse),
-			instances: instanceCount
-		});
+		function add():Void
+			pass.draws.push({
+				pipeline: pipeline,
+				buffers: buffers,
+				indices: wire ? edges : mesh.gpu.indexBuffer,
+				first: 0,
+				count: wire ? edgeCount : indexed ? mesh.triangleCount * 3 : mesh.vertexCount,
+				texture: 0,
+				lines: wire,
+				scissor: scissor,
+				viewport: viewport,
+				textures: bound,
+				cubes: p.cubes,
+				uniforms: values(p, model, diffuse),
+				instances: instanceCount
+			});
+		if (eyes != null)
+			eyes(add, true);
+		else
+			add();
 	}
 
 	// The view and projection together, reused.
@@ -704,7 +726,7 @@ class Frame {
 
 	// The program's blocks as they are now, with raylib's own values set: the matrices and the diffuse color.
 	function values(p:Program, model:Matrix3D, diffuse:Array<Float>):Array<Null<Bytes>>
-		return p.capture(model, view, projection, diffuse);
+		return p.capture(model, view, projection, diffuse, meshView, meshProjection);
 
 	/** Draws the frame: each render texture's pass, then the screen's, then shows it unless told to wait for `present`. A frame ended
 		and not shown yet is shown first.

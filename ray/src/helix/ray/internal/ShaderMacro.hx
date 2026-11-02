@@ -19,7 +19,8 @@ using StringTools;
 	What raylib's GLSL needs before helix-services compiles it is done here: GLSL 100 written as 330 (`attribute`, `varying`,
 	`gl_FragColor` and `texture2D`), a stage left out given rlgl's default, the attributes declared in raylib's order, so each takes
 	the location rlgl gives it, and each array uniform in a block of its own, so the rest stay within the 4 KiB of a block SDL_GPU's
-	Vulkan reads. The rest is the service's: GL's form, loose uniforms gathered, every type in its block, and the vertex
+	Vulkan reads, and each uniform's initializer taken out, its value written when the shader is made (`load`), as GL sets it
+	when it links. The rest is the service's: GL's form, loose uniforms gathered, every type in its block, and the vertex
 	stage wrapped with a clip scale (`ShaderOptions.clipScale`), which the platform turns over in a pass into a render target. */
 class ShaderMacro {
 	/** raylib's attributes, in the order their locations are given. */
@@ -70,10 +71,18 @@ void main() {
 		@param fsName  The fragment stage's name.
 		@param fs  Its text, or null.
 		@param pos  Where errors point.
+		@param initials  Optional. Receives each uniform the stages give an initializer (`uniform vec2 scale = vec2(0.25, 0.45);`), its
+			name and its value's numbers; the initializers are taken out of the text, which the service refuses them in. When omitted, an
+			initializer is refused.
 		@return  An expression of type `helix.services.shaders.Shader`. */
-	public static function program(vsName:String, vs:Null<String>, fsName:String, fs:Null<String>, pos:Position):Expr {
+	public static function program(vsName:String, vs:Null<String>, fsName:String, fs:Null<String>, pos:Position,
+			?initials:Array<{name:String, numbers:Array<Float>}>):Expr {
 		var vertex = adapt(vs == null ? DEFAULT_VS : vs, true, vsName, pos),
 			fragment = adapt(fs == null ? DEFAULT_FS : fs, false, fsName, pos);
+		if (initials != null) {
+			vertex = initialize(vertex, vsName, pos, initials);
+			fragment = initialize(fragment, fsName, pos, initials);
+		}
 		var sent = [for (d in declarations(vertex)) if (d.kind == "out") d.name];
 		for (d in declarations(fragment))
 			if (d.kind == "in" && sent.indexOf(d.name) < 0)
@@ -83,6 +92,133 @@ void main() {
 				Context.error('$vsName: the attribute "${d.name}" isn\'t one raylib gives here (${ATTRIBUTES.join(", ")}, or a mat4 of the instances\' transforms, `DrawMeshInstanced`\'s)',
 					pos);
 		return helix.services.shaders.Shader.makeExpr({name: vsName, text: vertex}, {name: fsName, text: fragment}, {clipScale: true}, pos);
+	}
+
+	/** Returns the expression of a raylib shader loaded from two stages' text (`LoadShader`, `LoadShaderFromMemory`), either null for
+		raylib's default: the shader made, and each uniform given an initializer in the GLSL set to it, as GL sets one when it links.
+
+		@param vsName  The vertex stage's name, for errors.
+		@param vs  Its text, or null.
+		@param fsName  The fragment stage's name.
+		@param fs  Its text, or null.
+		@param pos  Where errors point.
+		@return  An expression of type `helix.ray.Shader`. */
+	public static function load(vsName:String, vs:Null<String>, fsName:String, fs:Null<String>, pos:Position):Expr {
+		var initials = [];
+		var shader = program(vsName, vs, fsName, fs, pos, initials);
+		var made = macro @:privateAccess helix.ray.raylib.RModels.makeShader($shader);
+		if (initials.length == 0)
+			return made;
+		var writes = [
+			for (i in initials) {
+				var numbers = [for (n in i.numbers) macro $v{n}];
+				macro @:privateAccess shader.program.writeNamed($v{i.name}, ([$a{numbers}] : Array<Float>));
+			}
+		];
+		return macro {
+			var shader = $made;
+			$b{writes};
+			shader;
+		};
+	}
+
+	// A stage with its uniforms' initializers taken out, each uniform's name and value added to initials. A value is a constant: numbers,
+	// true and false, and GLSL's constructors of them (float, int, vec2, ivec3, mat4 and the rest), as GL evaluates it.
+	static function initialize(text:String, name:String, pos:Position, initials:Array<{name:String, numbers:Array<Float>}>):String {
+		var declaration = ~/^([ \t]*uniform\s+(?:(?:lowp|mediump|highp)\s+)?(\w+)\s+(\w+))\s*=\s*([^;]*);/gm;
+		return declaration.map(text, r -> {
+			var type = r.matched(2), uniform = r.matched(3);
+			var numbers = evaluate(r.matched(4));
+			if (numbers == null || numbers.length != components(type))
+				Context.error('$name: uniform $uniform\'s initializer "${StringTools.trim(r.matched(4))}" isn\'t a constant of its type helix-ray reads (numbers, and GLSL\'s constructors of them); set it with SetShaderValue',
+					pos);
+			var known = false;
+			for (i in initials)
+				if (i.name == uniform)
+					known = true;
+			if (!known)
+				initials.push({name: uniform, numbers: numbers});
+			r.matched(1) + ";";
+		});
+	}
+
+	// How many numbers a GLSL type holds: 0 for one an initializer isn't read for.
+	static function components(type:String):Int {
+		var scalar = ~/^(float|int|uint|bool|double)$/,
+			vector = ~/^[ibud]?vec([234])$/,
+			matrix = ~/^d?mat([234])$/;
+		if (scalar.match(type))
+			return 1;
+		if (vector.match(type))
+			return Std.parseInt(vector.matched(1));
+		if (matrix.match(type)) {
+			var n = Std.parseInt(matrix.matched(1));
+			return n * n;
+		}
+		return 0;
+	}
+
+	// A constant expression's numbers, in GLSL's order (a matrix by columns), or null for one not read here.
+	static function evaluate(expression:String):Null<Array<Float>> {
+		var tokens = [];
+		var token = ~/^\s*([0-9]+\.[0-9]*(?:[eE][-+]?[0-9]+)?[fF]?|\.[0-9]+(?:[eE][-+]?[0-9]+)?[fF]?|[0-9]+(?:[eE][-+]?[0-9]+)?[fFuU]?|\w+|[(),+-])/;
+		var rest = expression;
+		while (StringTools.trim(rest) != "") {
+			if (!token.match(rest))
+				return null;
+			tokens.push(token.matched(1));
+			rest = token.matchedRight();
+		}
+		var at = 0;
+		function value():Null<Array<Float>> {
+			if (at >= tokens.length)
+				return null;
+			var t = tokens[at++];
+			if (t == "-" || t == "+") {
+				var v = value();
+				return v == null ? null : t == "-" ? [for (x in v) -x] : v;
+			}
+			if (t == "true" || t == "false")
+				return [t == "true" ? 1 : 0];
+			if (~/^[0-9.]/.match(t))
+				return [Std.parseFloat(~/[fFuU]$/.replace(t, ""))];
+			var size = components(t);
+			if (size == 0 || at >= tokens.length || tokens[at] != "(")
+				return null;
+			at++;
+			var args = [];
+			while (true) {
+				var v = value();
+				if (v == null)
+					return null;
+				for (x in v)
+					args.push(x);
+				if (at >= tokens.length)
+					return null;
+				var next = tokens[at++];
+				if (next == ")")
+					break;
+				if (next != ",")
+					return null;
+			}
+			var integer = ~/^(int|uint|[iu]vec[234])$/.match(t),
+				boolean = ~/^(bool|bvec[234])$/.match(t);
+			var out:Array<Float> = if (args.length == 1 && size > 1) {
+				var n = Std.int(Math.sqrt(size));
+				if (~/mat/.match(t))
+					[for (i in 0...size) i % (n + 1) == 0 ? args[0] : 0];
+				else
+					[for (_ in 0...size) args[0]];
+			} else if (args.length >= size && (args.length == size || size == 1)) args.slice(0, size); else null;
+			if (out == null)
+				return null;
+			return [
+				for (x in out)
+					boolean ? (x != 0 ? 1 : 0) : integer ? (x < 0 ? Math.ceil(x) : Math.floor(x)) : x
+			];
+		}
+		var v = value();
+		return v == null || at != tokens.length ? null : v;
 	}
 
 	static function rank(name:String):Int {
