@@ -271,16 +271,18 @@ class RCore {
 		return Runtime.window.focused;
 	}
 
-	/** Asks for fullscreen, or back to the window, the size and place it had. In a page the browser grants it only soon after a key
-		press, click or tap; without one, it waits for the player's next. */
+	/** raylib's fullscreen toggle, done when it returns. The platform applies it later or refuses it (a page only soon after a key
+		press, click or tap), so a call doesn't compile on any target: `ToggleFullscreenAsync` asks for it and answers. */
+	@:unsupported("ToggleFullscreen: The window changes later, or is refused. See ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void)")
 	static function ToggleFullscreen():Void {
-		Runtime.screen.requestFullscreen(!Runtime.screen.fullscreen);
+		throw "ToggleFullscreen is unimplemented";
 	}
 
-	/** Asks for the window to fill the screen without borders, or back to the window: here the same as `ToggleFullscreen`, as a
-		fullscreen window natively is borderless and the size of the desktop. */
+	/** raylib's borderless windowed toggle, done when it returns. The platform applies it later or refuses it, so a call doesn't
+		compile on any target: `ToggleBorderlessWindowedAsync` asks for it and answers. */
+	@:unsupported("ToggleBorderlessWindowed: The window changes later, or is refused. See ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void)")
 	static function ToggleBorderlessWindowed():Void {
-		ToggleFullscreen();
+		throw "ToggleBorderlessWindowed is unimplemented";
 	}
 
 	/** Asks for the window's place on the desktop. Where the window can't be moved (in a page, or under Wayland), nothing changes.

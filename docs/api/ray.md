@@ -1428,8 +1428,6 @@ static function GetMonitorRefreshRate(monitor:Int):Int
 static function OpenURL(url:String):Void
 static function SetClipboardText(text:String):Void
 static function IsWindowFocused():Bool
-static function ToggleFullscreen():Void
-static function ToggleBorderlessWindowed():Void
 static function SetWindowPosition(x:Int, y:Int):Void
 static function SetWindowMonitor(monitor:Int):Void
 static function GetWindowPosition():Vector2
@@ -1643,8 +1641,6 @@ static function EndScissorMode():Void
   - `text`: The text.
 - `IsWindowFocused`: Returns whether the window has the keyboard.
   - returns: True while it has.
-- `ToggleFullscreen`: Asks for fullscreen, or back to the window, the size and place it had. In a page the browser grants it only soon after a key press, click or tap; without one, it waits for the player's next.
-- `ToggleBorderlessWindowed`: Asks for the window to fill the screen without borders, or back to the window: here the same as `ToggleFullscreen`, as a fullscreen window natively is borderless and the size of the desktop.
 - `SetWindowPosition`: Asks for the window's place on the desktop. Where the window can't be moved (in a page, or under Wayland), nothing changes.
   - `x`: The left edge, in pixels.
   - `y`: The top edge, in pixels.
@@ -4017,7 +4013,7 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
   - `stream`: The stream.
   - `callback`: Receives a buffer to fill, in the stream's sample size and channels, and its frames; null for none.
 
-### the async loads, helix-ray's own in place of raylib's that wait for a file
+### the async loads and window requests, helix-ray's own in place of raylib's that wait for a file or a window
 
 ```haxe
 static function LoadMaterialsAsync(fileName:String, loaded:Array<Material> -> Void, ?failed:String -> Void):Void
@@ -4041,6 +4037,8 @@ static function LoadImageFromTextureAsync(texture:Texture2D, loaded:Image -> Voi
 static function LoadImageFromScreenAsync(loaded:Image -> Void, ?failed:String -> Void):Void
 static function GetClipboardTextAsync(read:String -> Void, ?failed:String -> Void):Void
 static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> Void):Void
+static function ToggleFullscreenAsync(?done:() -> Void, ?failed:String -> Void):Void
+static function ToggleBorderlessWindowedAsync(?done:() -> Void, ?failed:String -> Void):Void
 ```
 
 - `LoadMaterialsAsync`: Loads the materials of an .mtl file, with the textures they name, answering when they are ready: helix-ray's own, in place of raylib's `LoadMaterials`. Each is made as raylib's `ProcessMaterialsOBJ` makes it: raylib's default material, then its diffuse texture (`map_Kd`), or with none its diffuse color (`Kd`, alpha 255); its specular texture (`map_Ks`) and color (`Ks`); the normal map its bump texture (`bump` or `map_bump`), white, its value the specular exponent (`Ns`); its emission color (`Ke`); the height map its displacement texture (`disp`). What a material doesn't give is tinyobj_loader_c's default, as raylib has it: each color black, the specular exponent 1. A texture that can't be read is none (id 0, logged). The program holds each material until `UnloadMaterial`. Where raylib's reading is broken, helix-ray reads the file as the format has it (a texture's path resolved against the file's directory among them), and a file that breaks the format fails (docs/DECISIONS.md 28).
@@ -4140,6 +4138,12 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
 - `GetClipboardImageAsync`: Reads the clipboard's image, answering at a later poll once it is decoded: helix-ray's own, in place of raylib's `GetClipboardImage`. A page reads it only with the player's permission.
   - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged.
+- `ToggleFullscreenAsync`: Asks for fullscreen, or back to the window, the size and place it had, answering once it is granted or refused: helix-ray's own, in place of raylib's `ToggleFullscreen`. In a page the browser grants it only soon after a key press, click or tap; without one, it waits for the player's next, or refuses. `IsWindowFullscreen` says the new state once the window has changed, not when the call returns.
+  - `done`: Optional. Called once the platform grants it, at a later poll.
+  - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
+- `ToggleBorderlessWindowedAsync`: Asks for the window to fill the screen without borders, or back to the window, answering once it is granted or refused: helix-ray's own, in place of raylib's `ToggleBorderlessWindowed`. It is `ToggleFullscreenAsync`, as a fullscreen window natively is borderless and the size of the desktop.
+  - `done`: Optional. Called once the platform grants it, at a later poll.
+  - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
 
 ### Macros, run as the program builds
 
@@ -4234,7 +4238,7 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
 
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
-`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `MemAlloc`, `MemRealloc`, `MemFree`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadMaterials`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `ToggleFullscreen`, `ToggleBorderlessWindowed`, `FileExists`, `LoadFileText`, `LoadFileData`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `MemAlloc`, `MemRealloc`, `MemFree`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadMaterials`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ## Raymath
 

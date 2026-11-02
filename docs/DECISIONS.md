@@ -175,6 +175,14 @@ Why things are the way they are, numbered, in order.
     matrix for an eye other than 0 and 1 (rlgl reads past its two). OBJ and MTL reading keeps its own list (28).
     helix-ray is raylib 5.5 as configured with `SUPPORT_GIF_RECORDING 0`: Ctrl+F12 records nothing (5.5's default records the window to
     a GIF, a debug key rather than an API, which 6.2 removes). GIF loading stays as 5.5's (`SUPPORT_FILEFORMAT_GIF 1`).
+    A raylib call is done when it returns. Where the platform can refuse a call or applies it later, that can't hold, so the call is
+    a candidate for an Async form, as the loads are (19, 20, 21): helix-ray's own `...Async(...args, ?done, ?failed)`, `done` once the
+    change is granted, `failed` with the reason (logged as raylib's warning would be when omitted), and raylib's form `@:unsupported`,
+    naming it. Each call is decided on its own. The window's requests are the first: `ToggleFullscreenAsync` and
+    `ToggleBorderlessWindowedAsync`, as a page grants fullscreen only in a key press, click or tap and a window manager in its own
+    time, so `IsWindowFullscreen` says the new state once the window has changed, not when the call returns. The window's other
+    requests (its size, position, maximized, minimized, monitor, size limits, opacity, focus) stay raylib's form until `IWindow`
+    answers them as it answers `requestFullscreen`.
 
 25. **helix-ray counts what a model holds, following ownership, where raylib leaves it to the program.** raylib's `UnloadModel`
     frees a model's meshes and its maps arrays and never a texture or shader, so a C program frees those itself, or leaks them; Haxe

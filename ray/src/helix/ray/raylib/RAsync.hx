@@ -25,8 +25,8 @@ import helix.ray.raylib.RMath.*;
 import helix.ray.raylib.RAsync.*;
 #end
 
-/** Holds the async loads, helix-ray's own in place of raylib's loads that wait for a file, written here; `Raylib` forwards to each
-	(`tools/gen_raylib.py`). */
+/** Holds the async loads and window requests, helix-ray's own in place of raylib's loads that wait for a file and its window calls
+	done when they return, written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.ray)
 class RAsync {
@@ -1201,7 +1201,39 @@ class RAsync {
 		Runtime.decoding.decode(data, image -> loaded(rgba(image.pixels, image.width, image.height)), error -> refuse(name, error, failed));
 	}
 
-	// Answers a load that failed: to the program's failed callback, or logged. Every error names the file, as the services' do.
+	// ---- The async window requests: helix-ray's own, not raylib's ----
+
+	/** Asks for fullscreen, or back to the window, the size and place it had, answering once it is granted or refused: helix-ray's
+		own, in place of raylib's `ToggleFullscreen`. In a page the browser grants it only soon after a key press, click or tap; without
+		one, it waits for the player's next, or refuses. `IsWindowFullscreen` says the new state once the window has changed, not when
+		the call returns.
+
+		@param done  Optional. Called once the platform grants it, at a later poll.
+		@param failed  Optional. Receives why it was refused; when omitted, it is logged. */
+	static function ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void):Void {
+		toggleFullscreen("ToggleFullscreenAsync", done, failed);
+	}
+
+	/** Asks for the window to fill the screen without borders, or back to the window, answering once it is granted or refused:
+		helix-ray's own, in place of raylib's `ToggleBorderlessWindowed`. It is `ToggleFullscreenAsync`, as a fullscreen window natively
+		is borderless and the size of the desktop.
+
+		@param done  Optional. Called once the platform grants it, at a later poll.
+		@param failed  Optional. Receives why it was refused; when omitted, it is logged. */
+	static function ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void):Void {
+		toggleFullscreen("ToggleBorderlessWindowedAsync", done, failed);
+	}
+
+	// Asks the screen for fullscreen or the window, whichever it isn't; a refusal, or a window that can't be fullscreen, is refused for
+	// the request named. done is called at a later poll, never during the call: SDL3's adapter calls it as it asks.
+	static function toggleFullscreen(name:String, done:Null<Void->Void>, failed:Null<String->Void>):Void {
+		var screen = Runtime.screen;
+		var granted = () -> if (done != null) Runtime.later(done);
+		if (!screen.requestFullscreen(!screen.fullscreen, granted, error -> refuse(name, error, failed)))
+			Runtime.later(() -> refuse(name, "the window can't be fullscreen here", failed));
+	}
+
+	// Answers a load or a request that failed: to the program's failed callback, or logged. Every error names the file, as the services' do.
 	static function refuse(name:String, error:String, failed:Null<String->Void>):Void {
 		if (failed != null)
 			failed(error);

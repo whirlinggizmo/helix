@@ -1241,16 +1241,6 @@ class Raylib {
 	public static inline function IsWindowFocused():Bool
 		return RCore.IsWindowFocused();
 
-	/** Asks for fullscreen, or back to the window, the size and place it had. In a page the browser grants it only soon after a key
-		press, click or tap; without one, it waits for the player's next. */
-	public static inline function ToggleFullscreen():Void
-		RCore.ToggleFullscreen();
-
-	/** Asks for the window to fill the screen without borders, or back to the window: here the same as `ToggleFullscreen`, as a
-		fullscreen window natively is borderless and the size of the desktop. */
-	public static inline function ToggleBorderlessWindowed():Void
-		RCore.ToggleBorderlessWindowed();
-
 	/** Asks for the window's place on the desktop. Where the window can't be moved (in a page, or under Wayland), nothing changes.
 
 		@param x  The left edge, in pixels.
@@ -5572,7 +5562,7 @@ class Raylib {
 	public static inline function SetAudioStreamCallback(stream:AudioStream, callback:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void
 		RAudio.SetAudioStreamCallback(stream, callback);
 
-	// ---- the async loads, helix-ray's own in place of raylib's that wait for a file (raylib/RAsync.hx) ----
+	// ---- the async loads and window requests, helix-ray's own in place of raylib's that wait for a file or a window (raylib/RAsync.hx) ----
 
 	/** Loads the materials of an .mtl file, with the textures they name, answering when they are ready: helix-ray's own, in place of
 		raylib's `LoadMaterials`. Each is made as raylib's `ProcessMaterialsOBJ` makes it: raylib's default material, then its diffuse
@@ -5812,6 +5802,25 @@ class Raylib {
 		@param failed  Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged. */
 	public static inline function GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void):Void
 		RAsync.GetClipboardImageAsync(loaded, failed);
+
+	/** Asks for fullscreen, or back to the window, the size and place it had, answering once it is granted or refused: helix-ray's
+		own, in place of raylib's `ToggleFullscreen`. In a page the browser grants it only soon after a key press, click or tap; without
+		one, it waits for the player's next, or refuses. `IsWindowFullscreen` says the new state once the window has changed, not when
+		the call returns.
+
+		@param done  Optional. Called once the platform grants it, at a later poll.
+		@param failed  Optional. Receives why it was refused; when omitted, it is logged. */
+	public static inline function ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void):Void
+		RAsync.ToggleFullscreenAsync(done, failed);
+
+	/** Asks for the window to fill the screen without borders, or back to the window, answering once it is granted or refused:
+		helix-ray's own, in place of raylib's `ToggleBorderlessWindowed`. It is `ToggleFullscreenAsync`, as a fullscreen window natively
+		is borderless and the size of the desktop.
+
+		@param done  Optional. Called once the platform grants it, at a later poll.
+		@param failed  Optional. Receives why it was refused; when omitted, it is logged. */
+	public static inline function ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void):Void
+		RAsync.ToggleBorderlessWindowedAsync(done, failed);
 	#end
 
 	// ---- raylib.h's functions helix-ray won't have: each refuses to compile, saying why and what to use ----
@@ -5840,6 +5849,16 @@ class Raylib {
 	public static macro function GetMonitorPhysicalHeight(monitor:ExprOf<Int>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalHeight: A monitor's physical size is not known to helix-ray's platform.",
 			macro(0 : Int));
+
+	/** raylib's fullscreen toggle, done when it returns. The platform applies it later or refuses it (a page only soon after a key press, click or tap), so a call doesn't compile on any target: `ToggleFullscreenAsync` asks for it and answers. */
+	public static macro function ToggleFullscreen():ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("ToggleFullscreen: The window changes later, or is refused. See ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void)",
+			macro {});
+
+	/** raylib's borderless windowed toggle, done when it returns. The platform applies it later or refuses it, so a call doesn't compile on any target: `ToggleBorderlessWindowedAsync` asks for it and answers. */
+	public static macro function ToggleBorderlessWindowed():ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("ToggleBorderlessWindowed: The window changes later, or is refused. See ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void)",
+			macro {});
 
 	/** raylib's check for a file, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `FileExistsAsync` answers it. */
 	public static macro function FileExists(fileName:ExprOf<String>):ExprOf<Bool>
