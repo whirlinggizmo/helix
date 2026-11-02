@@ -36,9 +36,10 @@ ROOT = Path(__file__).resolve().parents[1]
 LADDERS = {
     'platform': (ROOT / 'platform/tests/sizes', ['-lib', 'helix-platform']),
     'services': (ROOT / 'services/tests/sizes', ['-lib', 'helix-services']),
+    'render': (ROOT / 'render/tests/sizes', ['-lib', 'helix-render']),
     'ray': (ROOT / 'ray/tests/sizes', ['-lib', 'helix-ray']),
 }
-LIBRARIES = {'helix-platform': ROOT / 'platform', 'helix-log': ROOT / 'log', 'helix-math': ROOT / 'math', 'helix-geometry': ROOT / 'geometry', 'helix-formats': ROOT / 'formats', 'helix-services': ROOT / 'services', 'helix-ray': ROOT / 'ray'}
+LIBRARIES = {'helix-platform': ROOT / 'platform', 'helix-log': ROOT / 'log', 'helix-math': ROOT / 'math', 'helix-geometry': ROOT / 'geometry', 'helix-formats': ROOT / 'formats', 'helix-services': ROOT / 'services', 'helix-render': ROOT / 'render', 'helix-ray': ROOT / 'ray'}
 # The libraries' classes, by their full names' start.
 LIBRARY_PREFIX = 'helix.'
 BASELINE = ROOT / 'docs/benchmarks.json'
@@ -92,12 +93,16 @@ def vlq(text):
 
 def package(source):
     """The package a source file's bytes are counted under: the platform's by contract (its adapters under their contract), the services'
-    by service, helix-ray's by source file (raylib's modules, R*, and its internals; its facade and structs as ray), another library's by
+    by service, helix-render's by source file (its effects by package), helix-ray's by source file (raylib's modules, R*, and its
+    internals; its facade and structs as ray), another library's by
     its name, Haxe's standard library, the program's."""
     path = source.replace('\\', '/')
     if '/ray/src/helix/ray/' in path:
         parts = path.split('/ray/src/helix/ray/', 1)[1].split('/')
         return 'ray/' + parts[-1].removesuffix('.hx') if parts[0] in ('raylib', 'internal') else 'ray'
+    if '/render/src/helix/render/' in path:
+        parts = path.split('/render/src/helix/render/', 1)[1].split('/')
+        return 'render/' + (parts[0] if len(parts) > 1 else parts[0].removesuffix('.hx'))
     if '/services/src/helix/services/' in path:
         return 'services/' + path.split('/services/src/helix/services/', 1)[1].split('/')[0]
     if '/platform/src/helix/platform/' in path:
@@ -236,6 +241,12 @@ INTRODUCTIONS = {
                  'Programs on helix-services and what it sits on (`services/tests/sizes/`), each adding one service, with the platform\'s '
                  'adapters it needs, to the one before, from a window cleared each frame: what a service costs is its row\'s increment, gzip; '
                  'brotli in brackets. Each service\'s bytes are counted under its package; the adapters\' under their contract.'),
+    'render': ('helix-render',
+               'Programs on helix-render and what it sits on (`render/tests/sizes/`), each adding one feature to the one before, from the '
+               'renderer\'s frame clearing the screen: what a feature costs is its row\'s increment, gzip; brotli in brackets. Its first '
+               'draw brings the batches\' shader (GLSL ES carried in the program) and helix-services\' shaders; its text the assets, the '
+               'images and the fonts it loads a TrueType font through; its 3D the 3D batch, a mesh and an unlit material. helix-render\'s '
+               'bytes are counted by source file, or by package for `effects`.'),
     'ray': ('helix-ray',
             'Programs written in raylib on helix-ray (`ray/tests/sizes/`), each adding one feature to the one before, from a window '
             'cleared each frame: what a feature costs through raylib\'s API is its row\'s increment, gzip; brotli in brackets. Against '
