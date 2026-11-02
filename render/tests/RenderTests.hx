@@ -295,7 +295,7 @@ class RenderTests {
 		var camera = new Camera2D();
 		camera.transform.position.set(1000, 1000);
 		r.beginFrame(100, 100);
-		b.begin(camera);
+		b.beginCamera(camera);
 		b.drawTexture(t, 0, 0);
 		b.fillCircle(1050, 1050, 4, 0xffffffff);
 		b.end();

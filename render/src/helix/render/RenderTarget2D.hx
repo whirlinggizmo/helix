@@ -21,7 +21,7 @@ import helix.platform.TextureFormat;
 	```haxe
 	var minimap = renderer.createRenderTarget(256, 256);
 	renderer.beginTarget(minimap, 0xff000000);
-	batch.begin(mapCamera);
+	batch.beginCamera(mapCamera);
 	drawWorld(batch);
 	batch.end();
 	renderer.endTarget();

@@ -161,7 +161,7 @@ class Main {
 		camera.offset.set(width / 2, height / 2);
 
 		renderer.beginFrame(width, height, 0xff0b0f1a);
-		batch.begin(camera);
+		batch.beginCamera(camera);
 		for (rock in rocks) {
 			var spin = rock[3] + t;
 			var corners = [

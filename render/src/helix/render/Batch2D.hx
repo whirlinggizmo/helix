@@ -17,8 +17,8 @@ import helix.render.RenderPass.RenderCommand;
 /** Provides 2D drawing: sprites, shapes and text, in a camera's world units or the viewport's pixels, through as few GPU draws as their
 	order allows.
 
-	A program constructs one over its `Renderer`, and between `Renderer.beginFrame` and `endFrame` draws between `begin` and `end`. Units
-	are the camera's world units, or without a camera the viewport's pixels from its top left, y down. Angles are radians, a positive one
+	A program constructs one over its `Renderer`, and between `Renderer.beginFrame` and `endFrame` draws between `begin` or `beginCamera`
+	and `end`. Units are the viewport's pixels from its top left, y down, after `begin`, or a camera's world units after `beginCamera`. Angles are radians, a positive one
 	turning clockwise on screen. Colors are 0xAARRGGBB, blended by their alpha.
 
 	Colors and texels are sRGB values. Into an RGBA8 target or the screen they are drawn as they are stored: a tint multiplies them, and
@@ -101,7 +101,7 @@ import helix.render.RenderPass.RenderCommand;
 	```haxe
 	var batch = new Batch2D(renderer);
 	// each frame, between Renderer.beginFrame and endFrame:
-	batch.begin(camera);
+	batch.beginCamera(camera);
 	batch.drawSprite(player, x, y, angle); // turned about the region's origin
 	batch.fillCircle(coinX, coinY, 6, 0xffffd700);
 	batch.end();
@@ -142,7 +142,7 @@ class Batch2D {
 		alpha each 0 to 1; 0 until set. It is read as each draw is made and splits nothing; the batch's own shader ignores it. */
 	public var customData:Int = 0;
 
-	/** Gets a value indicating whether it is open: from `begin` until `end`. */
+	/** Gets a value indicating whether it is open: from `begin` or `beginCamera` until `end`. */
 	public var open(default, null):Bool = false;
 
 	/** Creates a batch over a renderer, with its default shader: textured and colored triangles, which draw sprites, shapes and text of
@@ -186,24 +186,37 @@ class Batch2D {
 		customData = 0;
 	}
 
-	/** Opens the batch for drawing in the renderer's current pass, under a camera or in the viewport's pixels.
+	/** Opens the batch for drawing in the renderer's current pass, in the viewport's pixels from its top left, y down.
 
-		The camera is read now: changing it after takes effect at the next `begin`. The draw state is kept as the program left it.
-		@param camera  Optional. The camera, whose view units are the viewport's pixels; omitted, draws are in the viewport's pixels.
+		The draw state is kept as the program left it. `beginCamera` draws in a camera's world units.
 		@throws String  No frame being recorded, or a batch (this or another) already open. */
-	public function begin(?camera:Camera2D):Void {
+	public function begin():Void {
+		var width = renderer.viewportWidth, height = renderer.viewportHeight;
+		viewMatrix.makeIdentity();
+		viewBounds.set(0, 0, width, height);
+		zoom = 1;
+		opened();
+	}
+
+	/** Opens the batch for drawing in the renderer's current pass, in a camera's world units.
+
+		The camera is read now: changing it after takes effect at the next `begin` or `beginCamera`. The draw state is kept as the program
+		left it.
+		@param camera  The camera, whose view units are the viewport's pixels.
+		@throws String  No frame being recorded, or a batch (this or another) already open. */
+	public function beginCamera(camera:Camera2D):Void {
+		var width = renderer.viewportWidth, height = renderer.viewportHeight;
+		camera.computeViewMatrix(cameraMatrix).toMatrix3D(viewMatrix);
+		camera.computeBounds(width, height, viewBounds);
+		zoom = Math.abs(camera.zoom);
+		opened();
+	}
+
+	// Opens the batch through viewMatrix, over the renderer's viewport.
+	function opened():Void {
 		renderer.opening(this, flush);
 		open = true;
 		var width = renderer.viewportWidth, height = renderer.viewportHeight;
-		if (camera != null) {
-			camera.computeViewMatrix(cameraMatrix).toMatrix3D(viewMatrix);
-			camera.computeBounds(width, height, viewBounds);
-			zoom = Math.abs(camera.zoom);
-		} else {
-			viewMatrix.makeIdentity();
-			viewBounds.set(0, 0, width, height);
-			zoom = 1;
-		}
 		Matrix3D.fromOrthographic(0, width, height, 0, -1, 1, projectionMatrix);
 		view.set(viewMatrix, projectionMatrix, renderer.viewportX, renderer.viewportY, width, height);
 		view.setLook(renderer.linearPass(), 0, None, null);

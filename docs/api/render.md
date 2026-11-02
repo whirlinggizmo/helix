@@ -8,7 +8,7 @@
 
 Provides 2D drawing: sprites, shapes and text, in a camera's world units or the viewport's pixels, through as few GPU draws as their order allows.
 
-A program constructs one over its `Renderer`, and between `Renderer.beginFrame` and `endFrame` draws between `begin` and `end`. Units are the camera's world units, or without a camera the viewport's pixels from its top left, y down. Angles are radians, a positive one turning clockwise on screen. Colors are 0xAARRGGBB, blended by their alpha.
+A program constructs one over its `Renderer`, and between `Renderer.beginFrame` and `endFrame` draws between `begin` or `beginCamera` and `end`. Units are the viewport's pixels from its top left, y down, after `begin`, or a camera's world units after `beginCamera`. Angles are radians, a positive one turning clockwise on screen. Colors are 0xAARRGGBB, blended by their alpha.
 
 Colors and texels are sRGB values. Into an RGBA8 target or the screen they are drawn as they are stored: a tint multiplies them, and blending mixes them, as sRGB values, which is what 2D art is drawn expecting. Into an RGBA16F target, which holds linear light, they are decoded to linear as they are drawn, so they blend with the 3D drawn there and show as they would on the screen once the target is encoded. Nothing is tone mapped. A program's own shader (`shaderValues`) is given them as stored either way.
 
@@ -56,7 +56,7 @@ Lines, outlines and shapes are made of triangles, as many as keep a curve's edge
 ```haxe
 var batch = new Batch2D(renderer);
 // each frame, between Renderer.beginFrame and endFrame:
-batch.begin(camera);
+batch.beginCamera(camera);
 batch.drawSprite(player, x, y, angle); // turned about the region's origin
 batch.fillCircle(coinX, coinY, 6, 0xffffd700);
 batch.end();
@@ -77,7 +77,8 @@ var culling:Bool
 var customData:Int
 var open(default, null):Bool
 function resetState():Void
-function begin(?camera:Camera2D):Void
+function begin():Void
+function beginCamera(camera:Camera2D):Void
 function end():Void
 function drawTexture(texture:Texture2D, x:Float, y:Float, ?tint:Int = 0xffffffff):Void
 function drawTextureRegion(texture:Texture2D, regionX:Float, regionY:Float, regionWidth:Float, regionHeight:Float, x:Float, y:Float, width:Float, height:Float, ?rotation:Float = 0., ?originX:Float = 0., ?originY:Float = 0., ?tint:Int = 0xffffffff):Void
@@ -125,14 +126,18 @@ function drawList(list:DrawList2D, ?placement:Matrix2D):Void
   Shapes read the texel at the region's center alone, so it must be white there: `Texture2D.writeWhiteTexel` makes one on a sheet or an atlas, and shapes then join one GPU draw with its sprites, as raylib's `SetShapesTexture` does. Assigning it ends the open GPU draw. It is not draw state: `resetState` leaves it.
 - `culling`: Gets or sets a value indicating whether draws out of view are skipped: true until set; read at each draw.
 - `customData`: Gets or sets four bytes each following vertex carries, for a program's shader to read as `customData`: a hit flash's amount, a palette row, a dissolve's threshold, a sprite's own value without a GPU draw of its own. 0xAARRGGBB, read as red, green, blue and alpha each 0 to 1; 0 until set. It is read as each draw is made and splits nothing; the batch's own shader ignores it.
-- `open`: Gets a value indicating whether it is open: from `begin` until `end`.
+- `open`: Gets a value indicating whether it is open: from `begin` or `beginCamera` until `end`.
 - `resetState`: Puts the draw state back to its defaults: `transform` identity, `blend` Alpha, no `shaderValues`, `customData` 0.
   It may be called at any time, open or not. `shapeRegion` and `culling` are left as they are.
-- `begin`: Opens the batch for drawing in the renderer's current pass, under a camera or in the viewport's pixels.
-  - `camera`: Optional. The camera, whose view units are the viewport's pixels; omitted, draws are in the viewport's pixels.
+- `begin`: Opens the batch for drawing in the renderer's current pass, in the viewport's pixels from its top left, y down.
   - throws `String`: No frame being recorded, or a batch (this or another) already open.
 
-  The camera is read now: changing it after takes effect at the next `begin`. The draw state is kept as the program left it.
+  The draw state is kept as the program left it. `beginCamera` draws in a camera's world units.
+- `beginCamera`: Opens the batch for drawing in the renderer's current pass, in a camera's world units.
+  - `camera`: The camera, whose view units are the viewport's pixels.
+  - throws `String`: No frame being recorded, or a batch (this or another) already open.
+
+  The camera is read now: changing it after takes effect at the next `begin` or `beginCamera`. The draw state is kept as the program left it.
 - `end`: Closes the batch, so another can open or the pass can end.
   - throws `String`: The batch isn't open.
 - `drawTexture`: Draws a whole texture at its size, its top left at a point.
@@ -1851,7 +1856,7 @@ A pass into it starts cleared, or keeps what it holds (`Renderer.beginTarget`). 
 ```haxe
 var minimap = renderer.createRenderTarget(256, 256);
 renderer.beginTarget(minimap, 0xff000000);
-batch.begin(mapCamera);
+batch.beginCamera(mapCamera);
 drawWorld(batch);
 batch.end();
 renderer.endTarget();
