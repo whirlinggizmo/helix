@@ -275,7 +275,11 @@ Why things are the way they are, numbered, in order.
     the extension too, so it gains `loadGltf` and `loadObj` beside it, and helix-ray's glTF reader calls `loadGltf`: any engine on the
     services carries only the readers it calls. The loads of an image file choose its GIF reader so (`LoadImageAsync`,
     `LoadTextureAsync`, `LoadFontAsync` and `LoadImageAnimAsync` by the name, `LoadImageFromMemoryAsync` and
-    `LoadImageAnimFromMemoryAsync` by the type), so a program naming no GIF file carries no GIF reader. raylib's API is unchanged: a program
+    `LoadImageAnimFromMemoryAsync` by the type), so a program naming no GIF file carries no GIF reader. Two size trades follow from
+    it, where raylib differs. A GIF texture an OBJ's .mtl file names isn't read (the map gets no texture, as for a file that can't be read): its name arrives as the program runs, so reading it
+    would link the GIF reader into every program loading a model (glTF 2.0 names only PNG and JPEG images, so a glTF model never
+    needs it). And an image's format is picked by its file's extension or the type given, never by its bytes as stb_image's is, as
+    sniffing them would link every decoder into every load. raylib's API is unchanged: a program
     names its files as raylib's do, and a constant name is what raylib's programs write. Rejected: a define (`-D helix-ray-no-obj`),
     which a program has to know to set and which fails only as it runs when set wrong; a call registering a reader, which raylib's API
     doesn't have; a reader built when first used (AGENTS.md).

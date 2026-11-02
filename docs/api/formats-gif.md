@@ -28,7 +28,7 @@ trace(gif.width, gif.height, frames.length, gif.frames[0].delay);
 ```
 
 ```haxe
-static function read(data:haxe.io.Bytes):GifFile
+static function read(data:haxe.io.Bytes, ?maxFrameCount:Int):GifFile
 final width:Int
 final height:Int
 final colors:Null<Array<Int>>
@@ -40,10 +40,11 @@ function computeFrames():Array<haxe.io.Bytes>
 
 - `read`: Reads a GIF file.
   - `data`: The file.
+  - `maxFrameCount`: Optional. The most frames to read; every frame when omitted.
   - returns: The file's screen and frames.
   - throws `String`: It isn't a GIF file (its signature is wrong, or its screen is 0 pixels wide or high, or over 400 million pixels), or it is broken: it ends inside a block, a frame lies outside the screen, has no color table, or has image data that is wrong or ends before its last pixel, a graphic control block isn't 4 bytes, or a block is of no kind GIF has.
 
-  A file ending where a block would start, without its trailer, is read up to there. Blocks after the trailer are ignored, and so are extensions other than the graphic control block and the NETSCAPE2.0 (or ANIMEXTS1.0) loop count. A frame's image data holding more pixels than its rectangle has the rest ignored.
+  A file ending where a block would start, without its trailer, is read up to there. Blocks after the trailer are ignored, and so are extensions other than the graphic control block and the NETSCAPE2.0 (or ANIMEXTS1.0) loop count. A frame's image data holding more pixels than its rectangle has the rest ignored. With a frame limit, nothing after that many frames is read, so a file broken after them reads as those frames.
 - `width`: Gets the screen's width, in pixels: the width of every frame `computeFrames` returns.
 - `height`: Gets the screen's height, in pixels.
 - `colors`: Gets the global color table, each color `0xFFRRGGBB`, or null when the file has none.

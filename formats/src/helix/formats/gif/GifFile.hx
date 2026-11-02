@@ -46,14 +46,16 @@ class GifFile {
 
 		A file ending where a block would start, without its trailer, is read up to there. Blocks after the trailer are ignored, and so
 		are extensions other than the graphic control block and the NETSCAPE2.0 (or ANIMEXTS1.0) loop count. A frame's image data
-		holding more pixels than its rectangle has the rest ignored.
+		holding more pixels than its rectangle has the rest ignored. With a frame limit, nothing after that many frames is read, so a file
+		broken after them reads as those frames.
 
 		@param data  The file.
+		@param maxFrameCount  Optional. The most frames to read; every frame when omitted.
 		@return  The file's screen and frames.
 		@throws String  It isn't a GIF file (its signature is wrong, or its screen is 0 pixels wide or high, or over 400 million pixels), or
 			it is broken: it ends inside a block, a frame lies outside the screen, has no color table, or has image data that is wrong or
 			ends before its last pixel, a graphic control block isn't 4 bytes, or a block is of no kind GIF has. */
-	public static function read(data:Bytes):GifFile {
+	public static function read(data:Bytes, ?maxFrameCount:Int):GifFile {
 		var reader = new GifReader(data);
 		if (!matches(data, 0, "GIF87a") && !matches(data, 0, "GIF89a"))
 			throw "not a GIF file: its signature is wrong";
@@ -67,7 +69,7 @@ class GifFile {
 
 		var frames = [], loopCount = -1;
 		var transparentIndex = -1, disposal = GifDisposal.Unspecified, delay = 0.0;
-		while (reader.position < data.length) {
+		while (reader.position < data.length && (maxFrameCount == null || frames.length < maxFrameCount)) {
 			var introducer = reader.read8();
 			if (introducer == TRAILER)
 				break;

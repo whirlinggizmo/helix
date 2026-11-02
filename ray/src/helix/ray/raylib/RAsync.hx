@@ -916,22 +916,40 @@ class RAsync {
 		loaded(all);
 	}
 
+	// A broken GIF file's frames before its break, as stb_image keeps them: the most frames that read (GifFile.read's limit), or null
+	// when not even the first does.
+	static function gifBefore(data:haxe.io.Bytes):Null<helix.formats.gif.GifFile> {
+		var read:Null<helix.formats.gif.GifFile> = null;
+		while (true) {
+			var count = read == null ? 1 : read.frames.length + 1;
+			var next = try helix.formats.gif.GifFile.read(data, count) catch (e:String) null;
+			if (next == null || next.frames.length < count)
+				return read;
+			read = next;
+		}
+	}
+
 	// A GIF file's frames as one image, the screen's size, each frame after the last, composited as raylib 5.5 composites them
-	// (stb_image's GIF reader): every frame (LoadImageAnim) or the first alone (LoadImage). helix-formats reads the file; the frames are
-	// drawn here by stb's rules. The screen starts transparent. Before each frame, a last frame disposed of to the background or the
+	// (stb_image's GIF reader): every frame (LoadImageAnim) or the first alone (LoadImage). As stb, the first alone is read with
+	// nothing after it, and every frame of a file broken after some are those before the break (gifBefore), so a file broken after its
+	// first frame loads it. helix-formats reads the file; the frames are drawn here by stb's rules. The screen starts transparent. Before each frame, a last frame disposed of to the background or the
 	// previous frame has its rectangle put back as it was before it was drawn (stb restores both so, and for Previous from the third
 	// frame on reads before its own buffer: docs/DECISIONS.md 24). After the first frame, when the background index isn't 0, the
 	// pixels outside its rectangle take the global table's color there, opaque, its bytes in stb's palette order (blue, green, red), or
 	// opaque black where the table has none. A file that can't be read, or has no frames, is refused for the load named, giving null.
 	static function gifFrames(name:String, what:String, data:haxe.io.Bytes, all:Bool, failed:Null<String->Void>):Null<Image> {
-		var gif = try helix.formats.gif.GifFile.read(data) catch (e:String) {
-			refuse(name, '$what: $e', failed);
-			return null;
+		var gif = try helix.formats.gif.GifFile.read(data, all ? null : 1) catch (e:String) {
+			var before = all ? gifBefore(data) : null;
+			if (before == null) {
+				refuse(name, '$what: $e', failed);
+				return null;
+			}
+			before;
 		}
 		var width = gif.width,
 			height = gif.height,
 			size = width * height * 4,
-			count = all || gif.frames.length == 0 ? gif.frames.length : 1;
+			count = gif.frames.length;
 		if (count == 0 || size * 1.0 * count > 0x7FFFFFFF) {
 			refuse(name, count == 0 ? '$what: a GIF file with no frames' : '$what: $count frames of $width x $height pixels, over 2 GB', failed);
 			return null;

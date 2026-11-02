@@ -10,7 +10,8 @@ import helix.formats.gif.GifFile;
 	code first, a frame with no graphic control block, no trailer; 256 colors of noise filling the code table, written on at 12 bits
 	and with a clear code; one PIL wrote; and one of no frames. Then what is refused: every shorter cut of a file and every byte of it changed refuse with a
 	message or read, never reading past the end; a wrong signature, an empty screen, a frame outside the screen, no color table, a
-	graphic control block of 5 bytes, an unknown block, a code size of 12, a code not yet in the table, data ending early. */
+	graphic control block of 5 bytes, an unknown block, a code size of 12, a code not yet in the table, data ending early. Last, a frame limit: a file broken after its first frame reads that frame with a limit of
+	1, and a limit reads that many frames. */
 class GifTests {
 	static var checks = 0;
 
@@ -68,6 +69,7 @@ class GifTests {
 			large = embed("formats/tests/assets/gif/large.gif");
 		var pil = embed("formats/tests/assets/gif/pil.gif"),
 			empty = embed("formats/tests/assets/gif/empty.gif");
+		var broken = embed("formats/tests/assets/gif/broken.gif");
 
 		var gif = GifFile.read(still);
 		check(gif.width == 5 && gif.height == 3 && gif.frames.length == 1, "still: a 5 x 3 screen, one frame");
@@ -167,6 +169,15 @@ class GifTests {
 		check(refused(short), "image data ending before the last pixel is refused");
 		var good = Bytes.ofHex("47494638396102000100800000000000ffffff2c0000000002000100000202440a003b");
 		check(GifFile.read(good).frames[0].indices.toHex() == "0001", "the same frame with both pixels reads");
+
+		// A frame limit: nothing after that many frames is read, so a file broken after them reads.
+		check(refused(broken), "broken: anim.gif's first frame, then a block of no kind GIF has, is refused");
+		var first = GifFile.read(broken, 1);
+		check(first.frames.length == 1 && first.width == 6 && first.height == 4, "broken: its first frame reads with a limit of 1");
+		composited("broken", first, [0xa7afa803]);
+		check(GifFile.read(anim, 2).frames.length == 2
+			&& GifFile.read(anim, 5).frames.length == 3, "anim: a limit reads that many frames, or all");
+		check(GifFile.read(anim, 0).frames.length == 0, "anim: a limit of 0 reads none");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

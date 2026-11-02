@@ -89,6 +89,7 @@ int main(void) {
     file("large", "large.gif");
     file("pil", "pil.gif");
     file("empty", "empty.gif");
+    file("broken", "broken.gif");
     file("missing", "nothere.gif");
     file("png", "still.png");
     file("named", TextFormat("%s.gif", "dispose"));
@@ -96,6 +97,7 @@ int main(void) {
     memory("memoryupper", "anim.gif", ".GIF");
     memory("memorypng", "still.png", ".png");
     memory("memorytyped", "pil.gif", TextFormat(".%s", "gif"));
+    memory("memorybroken", "broken.gif", ".gif");
     still("first still", "still.gif");
     still("first anim", "anim.gif");
     still("first dispose", "dispose.gif");
@@ -103,6 +105,7 @@ int main(void) {
     still("first large", "large.gif");
     still("first pil", "pil.gif");
     still("first empty", "empty.gif");
+    still("first broken", "broken.gif");
     still("first missing", "nothere.gif");
     still("first named", TextFormat("%s.gif", "large"));
     still("first namedpng", TextFormat("%s.png", "still"));
@@ -110,11 +113,13 @@ int main(void) {
     stillMemory("first memoryupper", "anim.gif", ".GIF");
     stillMemory("first memorytyped", "dispose.gif", TextFormat(".%s", "gif"));
     stillMemory("first memorymixed", "dispose.gif", ".Gif");
+    stillMemory("first memorybroken", "broken.gif", ".gif");
     stillMemory("first memorypng", "still.png", TextFormat(".%s", "png"));
     texture("texture anim", "anim.gif");
     texture("texture large", "large.gif");
     texture("texture named", TextFormat("%s.gif", "pil"));
     texture("texture empty", "empty.gif");
+    texture("texture broken", "broken.gif");
     font("font gif", "font.gif");
     font("font named", TextFormat("%s.gif", "font"));
     CloseWindow();

@@ -126,6 +126,8 @@ class ImageBits {
 		anim("pil", a.image, a.frames);
 		a = answer((f, l, e) -> LoadImageAnimAsync("empty.gif", f, l, e));
 		anim("empty", a.image, a.frames);
+		a = answer((f, l, e) -> LoadImageAnimAsync("broken.gif", f, l, e));
+		anim("broken", a.image, a.frames);
 		a = answer((f, l, e) -> LoadImageAnimAsync("nothere.gif", f, l, e));
 		anim("missing", a.image, a.frames);
 		a = answer((f, l, e) -> LoadImageAnimAsync("still.png", f, l, e));
@@ -144,6 +146,9 @@ class ImageBits {
 		data = bytes("pil.gif");
 		a = answer((f, l, e) -> LoadImageAnimFromMemoryAsync(made(".|gif"), data, data.length, f, l, e));
 		anim("memorytyped", a.image, a.frames);
+		data = bytes("broken.gif");
+		a = answer((f, l, e) -> LoadImageAnimFromMemoryAsync(".gif", data, data.length, f, l, e));
+		anim("memorybroken", a.image, a.frames);
 		still("first still", (l, e) -> LoadImageAsync("still.gif", l, e));
 		still("first anim", (l, e) -> LoadImageAsync("anim.gif", l, e));
 		still("first dispose", (l, e) -> LoadImageAsync("dispose.gif", l, e));
@@ -151,6 +156,7 @@ class ImageBits {
 		still("first large", (l, e) -> LoadImageAsync("large.gif", l, e));
 		still("first pil", (l, e) -> LoadImageAsync("pil.gif", l, e));
 		still("first empty", (l, e) -> LoadImageAsync("empty.gif", l, e));
+		still("first broken", (l, e) -> LoadImageAsync("broken.gif", l, e));
 		still("first missing", (l, e) -> LoadImageAsync("nothere.gif", l, e));
 		still("first named", (l, e) -> LoadImageAsync(made("large|.gif"), l, e));
 		still("first namedpng", (l, e) -> LoadImageAsync(made("still|.png"), l, e));
@@ -161,12 +167,15 @@ class ImageBits {
 		data = bytes("dispose.gif");
 		still("first memorytyped", (l, e) -> LoadImageFromMemoryAsync(made(".|gif"), data, data.length, l, e));
 		still("first memorymixed", (l, e) -> LoadImageFromMemoryAsync(".Gif", data, data.length, l, e));
+		var broken = bytes("broken.gif");
+		still("first memorybroken", (l, e) -> LoadImageFromMemoryAsync(".gif", broken, broken.length, l, e));
 		data = bytes("still.png");
 		still("first memorypng", (l, e) -> LoadImageFromMemoryAsync(made(".|png"), data, data.length, l, e));
 		texture("texture anim", (l, e) -> LoadTextureAsync("anim.gif", l, e));
 		texture("texture large", (l, e) -> LoadTextureAsync("large.gif", l, e));
 		texture("texture named", (l, e) -> LoadTextureAsync(made("pil|.gif"), l, e));
 		texture("texture empty", (l, e) -> LoadTextureAsync("empty.gif", l, e));
+		texture("texture broken", (l, e) -> LoadTextureAsync("broken.gif", l, e));
 		font("font gif", (l, e) -> LoadFontAsync("font.gif", l, e));
 		font("font named", (l, e) -> LoadFontAsync(made("font|.gif"), l, e));
 		Parity.save();

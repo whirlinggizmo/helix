@@ -6083,8 +6083,8 @@ class Raylib {
 	/** Loads an image file, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImage`, as a page can't wait for a
 		file. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its
 		channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. A GIF
-		file gives its first frame, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, as `LoadImageAnimAsync` gives it; one with no frames, or that
-		breaks the format anywhere, fails to load.
+		file gives its first frame, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, as `LoadImageAnimAsync` gives it, and nothing after it is read;
+		one with no frames, or broken before its first frame ends, fails to load.
 
 		The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program
 		naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension
@@ -6144,8 +6144,8 @@ class Raylib {
 		A GIF file's frames are composited as raylib 5.5's are: the screen starts transparent; each frame is drawn over the last, its
 		transparent pixels not drawn; a frame disposed of to the background, or to the previous frame, has its rectangle put back as it
 		was before it was drawn; and when the file's background index isn't 0, what the first frame doesn't cover is the global table's
-		background color, opaque, its red and blue swapped (black with no such color). A GIF file with no frames, or one that breaks the
-		format, fails to load. Any other file loads as `LoadImageAsync` loads it, as one frame.
+		background color, opaque, its red and blue swapped (black with no such color). A GIF file broken after some frames gives the frames
+		before the break, as raylib's does; one with no frames, or broken before its first frame ends, fails to load. Any other file loads as `LoadImageAsync` loads it, as one frame.
 
 		The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program
 		naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension
