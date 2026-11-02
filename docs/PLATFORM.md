@@ -252,7 +252,7 @@ enum Event {
   pipeline's buffer index, an index buffer for indexed pipelines, a range, instances, textures, samplings and uniform blocks by stage and
   slot (the vertex stage's slot n at n, the fragment stage's at 4 + n, a block both stages read at both). Each block's bytes are std140
   as its `ShaderBlock.members` place them, on every adapter: WebGL2 uploads them into a uniform buffer; sokol's GL sets each member by its
-  type at its offset (sokol_gfx's own uniform layout computes offsets from a flat list of members, which can't hold a struct's padding,
+  type at its offset, through the names GL lists as active, as NVIDIA's driver also finds names GL doesn't list (sokol_gfx's own uniform layout computes offsets from a flat list of members, which can't hold a struct's padding,
   and has no `mat2`, `mat3`, `uint` or `bool`); SDL_GPU pushes the bytes whole (its Vulkan driver binds 4 KiB of each block, so a shader there reads no further into one). An attribute the program declares that no buffer feeds
   reads the pipeline's constant for its slot (`PipelineDesc.attributeConstants`), or (0, 0, 0, 1): GL sets it as the attribute's
   current value, sokol and SDL_GPU read it from a buffer of their own stepped per instance. A draw refuses a texture that is the open

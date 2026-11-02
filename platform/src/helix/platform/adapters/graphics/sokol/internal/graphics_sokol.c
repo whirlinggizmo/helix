@@ -30,9 +30,11 @@ __declspec(dllimport) PROC __stdcall wglGetProcAddress(LPCSTR name);
 typedef void (APIENTRY *helix_uniform_uiv)(GLint location,GLsizei count,const GLuint *value);
 typedef void (APIENTRY *helix_uniform_matrix)(GLint location,GLsizei count,GLboolean transpose,const GLfloat *value);
 typedef void (APIENTRY *helix_attrib4fv)(GLuint index,const GLfloat *value);
+typedef void (APIENTRY *helix_active_uniform)(GLuint program,GLuint index,GLsizei size,GLsizei *length,GLint *count,GLenum *type,GLchar *name);
 static helix_uniform_uiv helix_glUniform1uiv,helix_glUniform2uiv,helix_glUniform3uiv,helix_glUniform4uiv;
 static helix_uniform_matrix helix_glUniformMatrix2fv,helix_glUniformMatrix3fv;
 static helix_attrib4fv helix_glVertexAttrib4fv;
+static helix_active_uniform helix_glGetActiveUniform;
 #define glUniform1uiv helix_glUniform1uiv
 #define glUniform2uiv helix_glUniform2uiv
 #define glUniform3uiv helix_glUniform3uiv
@@ -40,11 +42,16 @@ static helix_attrib4fv helix_glVertexAttrib4fv;
 #define glUniformMatrix2fv helix_glUniformMatrix2fv
 #define glUniformMatrix3fv helix_glUniformMatrix3fv
 #define glVertexAttrib4fv helix_glVertexAttrib4fv
+#define glGetActiveUniform helix_glGetActiveUniform
+#ifndef GL_ACTIVE_UNIFORMS
+#define GL_ACTIVE_UNIFORMS 0x8B86
+#endif
 static void load_gl(void){
  if(helix_glVertexAttrib4fv)return;
  helix_glUniform1uiv=(helix_uniform_uiv)wglGetProcAddress("glUniform1uiv");helix_glUniform2uiv=(helix_uniform_uiv)wglGetProcAddress("glUniform2uiv");
  helix_glUniform3uiv=(helix_uniform_uiv)wglGetProcAddress("glUniform3uiv");helix_glUniform4uiv=(helix_uniform_uiv)wglGetProcAddress("glUniform4uiv");
  helix_glUniformMatrix2fv=(helix_uniform_matrix)wglGetProcAddress("glUniformMatrix2fv");helix_glUniformMatrix3fv=(helix_uniform_matrix)wglGetProcAddress("glUniformMatrix3fv");
+ helix_glGetActiveUniform=(helix_active_uniform)wglGetProcAddress("glGetActiveUniform");
  helix_glVertexAttrib4fv=(helix_attrib4fv)wglGetProcAddress("glVertexAttrib4fv");
 }
 #else
@@ -360,6 +367,27 @@ static void element_name(char *out,size_t size,char parts[][128],int n,int k,int
   if(i==k&&e>=0)at+=(size_t)snprintf(out+at,at<size?size-at:0,"[%d]",e);
  }
 }
+/* The location of the uniform named name in prog, -1 unless the program has it: its name exactly as GL lists its active uniforms, or an
+   element of an array GL lists (`weights[2]` of `weights[0]`, three long). glGetUniformLocation alone can't say: NVIDIA's driver finds
+   names GL doesn't give (a location for `lights.color[0]`, where the array is `lights`), so the array a member is in would be guessed
+   wrong. */
+static GLint located(GLuint prog,const char *name){
+ GLint uniforms=0;glGetProgramiv(prog,GL_ACTIVE_UNIFORMS,&uniforms);
+ const size_t length=strlen(name);
+ for(GLint i=0;i<uniforms;i++){
+  char listed[640];GLsizei used=0;GLint size=0;GLenum type=0;
+  glGetActiveUniform(prog,(GLuint)i,sizeof listed,&used,&size,&type,listed);
+  if(!strcmp(listed,name))return glGetUniformLocation(prog,name);
+  /* An array GL lists as its first element: name is its base, or one of its elements. */
+  if(used<3||strcmp(listed+used-3,"[0]"))continue;
+  const size_t base=(size_t)used-3;
+  if(length==base&&!strncmp(listed,name,base))return glGetUniformLocation(prog,name);
+  int element=-1,end=0;
+  if(length>base&&!strncmp(listed,name,base)&&sscanf(name+base,"[%d]%n",&element,&end)==1&&(size_t)(base+(size_t)end)==length&&element>=0&&element<size)
+   return glGetUniformLocation(prog,name);
+ }
+ return -1;
+}
 /* Adds the setters of one member through a block's uniform named var: one setting every element (an array whose elements' locations follow
    one another), or one an element (a field of an array of structs, or an array GL placed apart). */
 static int add_setters(setter **list,int *count,int *cap,GLuint prog,const char *var,const char *path,setter u,int elements){
@@ -372,24 +400,24 @@ static int add_setters(setter **list,int *count,int *cap,GLuint prog,const char 
  }
  #define PUSH(x) do{if(*count==*cap){*cap=*cap?*cap*2:16;setter *g=realloc(*list,sizeof(setter)*(size_t)*cap);if(!g)return 0;*list=g;}(*list)[(*count)++]=(x);}while(0)
  if(elements<=1){
-  element_name(name,sizeof name,parts,n,n,-1);u.loc=glGetUniformLocation(prog,name);u.count=1;
+  element_name(name,sizeof name,parts,n,n,-1);u.loc=located(prog,name);u.count=1;
   if(u.loc>=0)PUSH(u);
   return 1;
  }
  /* Which part the array is at: the first where an element is there. */
  int k=-1;
- for(int part=n-1;part>=1&&k<0;part--)for(int e=0;e<elements;e++){element_name(name,sizeof name,parts,n,part,e);if(glGetUniformLocation(prog,name)>=0){k=part;break;}}
+ for(int part=n-1;part>=1&&k<0;part--)for(int e=0;e<elements;e++){element_name(name,sizeof name,parts,n,part,e);if(located(prog,name)>=0){k=part;break;}}
  if(k<0)return 1;
  int first=-1,together=k==n-1;
  for(int e=0;e<elements;e++){
-  element_name(name,sizeof name,parts,n,k,e);const int loc=glGetUniformLocation(prog,name);
+  element_name(name,sizeof name,parts,n,k,e);const int loc=located(prog,name);
   if(e==0)first=loc;
   if(loc<0||loc!=first+e)together=0;
  }
  if(together){u.loc=first;u.count=elements;PUSH(u);return 1;}
  const int offset=u.offset;
  for(int e=0;e<elements;e++){
-  element_name(name,sizeof name,parts,n,k,e);u.loc=glGetUniformLocation(prog,name);u.count=1;u.offset=offset+e*u.stride;
+  element_name(name,sizeof name,parts,n,k,e);u.loc=located(prog,name);u.count=1;u.offset=offset+e*u.stride;
   if(u.loc>=0)PUSH(u);
  }
  #undef PUSH
