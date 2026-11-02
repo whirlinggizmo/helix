@@ -1,0 +1,55 @@
+{
+  "oracle": "5.5",
+  "covers": "raudio.c's LoadWave and LoadWaveFromMemory: WAV at 22050 Hz in 8 bits mono and 24 bits stereo (dr_wav, 16-bit), Ogg Vorbis at 48000 Hz mono and 44100 Hz stereo (stb_vorbis, 16-bit), MP3 at 32000 Hz with a LAME tag and without (dr_mp3, 32-bit float), QOA at 44100 Hz stereo (qoa.h, 16-bit), FLAC refused as 5.5's default build refuses it, an Ogg file under a mixed-case type refused, and a QOA file under a type known only as the program runs; each wave's frames, rate, sample size and channels, and every sample",
+  "notes": "Natively the platform decodes Ogg and MP3 with SDL3_mixer's stb_vorbis 1.22 and dr_mp3 0.7.4; in a page with Chromium's decoders. Frames, rates, sample sizes and channels match raylib's on both, and WAV and QOA (helix-formats' readers) match bit for bit. MP3: dr_mp3 0.7.4 and Chromium trim a LAME-tagged file (8000 frames of the 10368 raylib's dr_mp3 0.6.39 gives), so helix-ray hides the tag and decodes every frame; Chromium still leaves out the tag's frame, which helix-ray puts back as the silence 0.6.39 decodes it as. 0.6.39 decodes to 16 bits (minimp3's SSE rounding, its scalar rounding every 16th frame) and back to floats; helix-ray rounds the decoded floats the same way, so natively every sample is raylib's, and in a page 1 in 32768 apart in 0.3% of them. Ogg: made 16-bit as stb_vorbis's rounding makes them; natively 1 in 32768 apart in about 0.25% of the samples, SDL3_mixer's floats a few ulps from raylib's (not its SDL_AudioStream, which passes raylib's floats through unchanged, nor its copy of stb_vorbis, which decodes raylib's floats alone: the cause in its decoder is unfound), the bar 1 in 32768. In a page Chromium ends both Ogg files early (32 and 81 frames before their last page's position) and helix-ray gives silence there; the tone ends in 20 ms of silence, as sound files usually do, so the bars hold the codec's noise there (up to 14 in 32768) and its rounding elsewhere (up to 3). A file ending in sound would differ by the sound in those frames.",
+  "kind": "values",
+  "main": "WaveBits",
+  "reference": "ref.c",
+  "harness": [
+    "WaveBits.hx"
+  ],
+  "targets": [
+    "page",
+    "cpp"
+  ],
+  "assets": {
+    "tone22_u8.wav": "data/tone22_u8.wav",
+    "tone22_s24.wav": "data/tone22_s24.wav",
+    "tone48_mono.ogg": "data/tone48_mono.ogg",
+    "tone44_stereo.ogg": "data/tone44_stereo.ogg",
+    "tone32_lame.mp3": "data/tone32_lame.mp3",
+    "tone32_plain.mp3": "data/tone32_plain.mp3",
+    "tone44_stereo.qoa": "data/tone44_stereo.qoa",
+    "tone48.flac": "data/tone48.flac"
+  },
+  "resources": {
+    "tone22_u8.wav": "data/tone22_u8.wav",
+    "tone22_s24.wav": "data/tone22_s24.wav",
+    "tone48_mono.ogg": "data/tone48_mono.ogg",
+    "tone44_stereo.ogg": "data/tone44_stereo.ogg",
+    "tone32_lame.mp3": "data/tone32_lame.mp3",
+    "tone32_plain.mp3": "data/tone32_plain.mp3",
+    "tone44_stereo.qoa": "data/tone44_stereo.qoa",
+    "tone48.flac": "data/tone48.flac"
+  },
+  "tolerance": {
+    "cpp": 0,
+    "page": 0
+  },
+  "bars": {
+    "ogg48_mono": {
+      "cpp": 3.1e-05,
+      "page": 0.0001
+    },
+    "ogg44_stereo": {
+      "cpp": 3.1e-05,
+      "page": 0.0005
+    },
+    "mp3_lame": {
+      "page": 3.1e-05
+    },
+    "mp3_plain": {
+      "page": 3.1e-05
+    }
+  }
+}

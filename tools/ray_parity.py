@@ -10,9 +10,10 @@ sha256 here (RELEASES), and built once (make PLATFORM=PLATFORM_DESKTOP) into bui
 into build/ray-parity/<suite>/ (a generated suite's two sides from its one list of cases, by ray/parity/shared/gen.py) with its assets,
 and its C reference is built and run on a private display (tools/private_display.py), with SDL's dummy audio and no session bus.
 
-A value suite's Haxe harness is then built for Node (js) and hxcpp (cpp), or the one its manifest's targets name, and run, each
+A value suite's Haxe harness is then built for Node (js) and hxcpp (cpp), or the ones its manifest's targets name (page: the harness
+in a headless Chromium, Playwright's own, muted, through tools/page_check.cjs, for what only a browser has), and run, each
 printing what the reference prints, a line at a time. Each section's lines (by their first word, or as the manifest's sections say) are compared word by word: words and integers
-exactly, other numbers relative to max(1, |either|, the line's scale), within the section's bar (the manifest's bars, else its
+exactly, other numbers relative to max(1, |either|, the line's scale), within the section's bar (the manifest's bars, a target's own where it names one, else its
 tolerance). A pixel suite's helix-ray program is built natively for each backend it names (gl, sdl_gpu) and run on the private display,
 and its frame compared with raylib's: how many pixels differ at all, against the backend's allowance. Each section's or backend's
 worst is printed beside its bar. Exits 1 on any failure.
@@ -51,8 +52,9 @@ LINK = ['-lGL', '-lm', '-lpthread', '-ldl', '-lrt', '-lX11']
 # The libraries a value harness builds with (helix-ray itself from its source, without its program loop).
 LIBRARIES = ['helix-log', 'helix-math', 'helix-geometry', 'helix-formats', 'helix-platform', 'helix-services']
 TIMEOUT = 300
-# The targets a value suite's harness runs on, unless its manifest names fewer (targets): a suite whose functions need what one target
-# lacks (the native font rasterizer) runs on the other alone.
+# The targets a value suite's harness runs on, unless its manifest names others (targets): a suite whose functions need what one target
+# lacks (the native font rasterizer) runs on the other alone, and one needing a browser (Web Audio's decoder) names page, the harness
+# built for the browser and run in a headless Chromium, its lines the page's result (window.helixResult).
 TARGETS = ['js', 'cpp']
 # The SDL3 a native build links (tools/sdl3.py), found once.
 SDL3 = None
@@ -244,14 +246,18 @@ def compare(reference, other, manifest):
     return result
 
 
-def bar(manifest, key):
-    """(the worst difference allowed, the non-finite numbers allowed) in a section: its own bar in the manifest's bars, else its tolerance
-    and none."""
+def bar(manifest, key, target):
+    """(the worst difference allowed, the non-finite numbers allowed) in a section on a target: its own bar in the manifest's bars (the
+    target's, where the bar names one: {"worst": 0, "page": 1e-4}), else its tolerance (the target's, where tolerance names each) and
+    none."""
+    tolerance = manifest['tolerance']
+    if isinstance(tolerance, dict):
+        tolerance = tolerance[target]
     own = manifest.get('bars', {}).get(key)
     if own is None:
-        return manifest['tolerance'], 0
+        return tolerance, 0
     if isinstance(own, dict):
-        return own.get('worst', manifest['tolerance']), own.get('nonfinite', 0)
+        return own.get(target, own.get('worst', tolerance)), own.get('nonfinite', 0)
     return own, 0
 
 def check_values(name, manifest, main, out, display, env):
@@ -267,6 +273,16 @@ def check_values(name, manifest, main, out, display, env):
     if 'js' in targets:
         haxe(base + ['-js', str(out / 'js/harness.js'), '-D', 'js-es=6'], env)
         run(['node', str(out / 'js/harness.js'), str(out / 'js.txt')], display, out, what='the js harness')
+    if 'page' in targets:
+        page = out / 'page'
+        haxe(base + ['-js', str(page / 'harness.js'), '-D', 'js-es=6'], env)
+        (page / 'index.html').write_text('<!doctype html><meta charset="utf-8"><script src="harness.js"></script>\n', encoding='utf-8')
+        ran = run(['node', str(ROOT / 'tools/page_check.cjs'), '', str(page), '', str(page / 'page.png')], {**os.environ, **display}, ROOT,
+                  what='the page harness')
+        printed = json.loads(ran.stdout)
+        if printed['errors'] or not isinstance(printed['result'], str):
+            raise Failure(f'the page harness: {printed["errors"] or "no result"}')
+        (out / 'page.txt').write_text(printed['result'], encoding='utf-8')
     if 'cpp' in targets:
         import native_build
         haxe(base + ['-cpp', str(out / 'cpp'), '-D', 'analyzer-optimize', '-D', native_build.ARCH, '-D', f'HXCPP_COMPILE_THREADS={os.cpu_count() or 4}'], env)
@@ -279,9 +295,9 @@ def check_values(name, manifest, main, out, display, env):
     print(f'  {"section":{width}}  ' + '  '.join(f'{target:>15}' for target in targets) + '  bar')
     problems = []
     for key in keys:
-        worst_bar, nonfinite_bar = bar(manifest, key)
-        cells = []
+        cells, allowed = [], []
         for target in targets:
+            worst_bar, nonfinite_bar = bar(manifest, key, target)
             worst, nonfinite, problem = results[target].get(key, (math.inf, 0, 'missing'))
             cells.append('differs' if problem else (f'{worst:.2e}' if worst else '0') + (f' +{nonfinite}' if nonfinite else ''))
             if problem:
@@ -290,7 +306,10 @@ def check_values(name, manifest, main, out, display, env):
                 problems.append(f'{target} {key}: {worst:.3g} over its bar, {worst_bar:g}')
             elif nonfinite > nonfinite_bar:
                 problems.append(f'{target} {key}: {nonfinite} numbers non-finite against another, over the {nonfinite_bar} allowed')
-        allowed = f'{worst_bar:g}' + (f' +{nonfinite_bar}' if nonfinite_bar else '')
+            text = f'{worst_bar:g}' + (f' +{nonfinite_bar}' if nonfinite_bar else '')
+            if text not in allowed:
+                allowed.append(text)
+        allowed = ' / '.join(allowed)
         print(f'  {key:{width}}  ' + '  '.join(f'{cell:>15}' for cell in cells) + f'  {allowed}')
     for target in targets:
         finite = [(w, k) for k, (w, _, p) in results[target].items() if not p]

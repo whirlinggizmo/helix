@@ -69,6 +69,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `points` | 5.5 | pixels | rlgl's point mode: `DrawModelPoints` and `DrawModelPointsEx` (a cloud, indexed meshes), point mode with culling, the batch as points |
 | `skinning` | 6.2 | pixels | greenman skinned on the CPU, on the GPU and blended |
 | `modular_scene` | 6.2 | pixels | the modular woman dressed and holding the sword, CPU-skinned |
+| `waves` | 5.5 | values | `LoadWave` on WAV, Ogg Vorbis, MP3 (with a LAME tag and without), QOA and FLAC (refused): frames, rate, sample size, channels and every sample, natively and in a page |
 | `cubemaps_62` | 6.2 | pixels | `LoadTextureCubemap` in each layout, raylib's skybox example, and cubes sampling cubemaps through their material |
 | `vr` | 5.5 | pixels | raylib's VR simulator: both eyes drawn into a render texture (shapes and a model), drawn through its distortion shader |
 
@@ -88,10 +89,13 @@ Each suite's manifest says in full what it covers (`covers`), and `notes` say wh
 - `assets`: files put into the suite's build directory before anything runs, by where they go: a path in the repository (`../assets/`),
   a script run with the destination as its argument (`makerig.py`), or `raylib:<path>`, a file from the oracle's own source.
 - `resources`: files compiled into the Haxe harness (`-resource`), by name.
-- `targets`: the targets a value suite's harness runs on, `js` and `cpp` unless it names one: `fontfile_62` runs in hxcpp alone, as its
-  glyphs are rasterized by the native rasterizer, which Node hasn't.
-- Value suites: `tolerance`, the largest difference allowed in a section, and `bars`, a section's own (`worst`, and `nonfinite`, how many
-  numbers may be NaN or infinite where the other side's are not). `hex`: numbers printed as a double's bits. `sections`: how lines are
+- `targets`: the targets a value suite's harness runs on, `js` and `cpp` unless it names others: `fontfile_62` runs in hxcpp alone, as its
+  glyphs are rasterized by the native rasterizer, which Node hasn't; `waves` runs in hxcpp and `page`, the harness in a headless
+  Chromium (Playwright's, muted, through `tools/page_check.cjs`), as its sounds are decoded by Web Audio, which Node hasn't. A page
+  harness leaves its lines in `window.helixResult`.
+- Value suites: `tolerance`, the largest difference allowed in a section (or one for each target, `{"cpp": 0, "page": 0}`), and `bars`,
+  a section's own (`worst`, a target's own by its name, and `nonfinite`, how many numbers may be NaN or infinite where the other
+  side's are not). `hex`: numbers printed as a double's bits. `sections`: how lines are
   grouped (below).
 - Pixel suites: `frames`, how long helix-ray's program runs (`HELIX_FRAMES`); `backends`, for each backend it is built for (`gl`, `sdl_gpu`),
   how many pixels may differ from raylib's frame at all.
