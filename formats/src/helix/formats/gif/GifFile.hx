@@ -200,7 +200,6 @@ class GifFile {
 }
 
 /** Reads a GIF file's bytes, refusing to read past its end, and decodes its frames' LZW data. */
-
 @:allow(helix.formats.gif.GifFile)
 private class GifReader {
 	var position = 0;
