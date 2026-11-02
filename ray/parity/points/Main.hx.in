@@ -1,0 +1,58 @@
+import helix.ray.*;
+import helix.ray.Raylib.*;
+import helix.ray.Rlgl.*;
+
+// scene.c.in's points scene, drawn by helix-ray; its third frame saved as helix.png. cases.py's list is put into it.
+class Main {
+	static inline final CLOUD = 997;
+
+	static function V3(x:Float, y:Float, z:Float):Vector3
+		return new Vector3(x, y, z);
+
+	// A mesh of positions, colors and indices given, uploaded, as a model.
+	static function model(vertices:Array<Float>, colors:Array<Int>, indices:Null<Array<Int>>, triangleCount:Int):Model {
+		var mesh = new Mesh();
+		mesh.vertexCount = Std.int(vertices.length / 3);
+		mesh.triangleCount = triangleCount;
+		mesh.vertices = vertices;
+		mesh.colors = colors;
+		mesh.indices = indices;
+		UploadMesh(mesh, false);
+		return LoadModelFromMesh(mesh);
+	}
+
+	static function main():Void {
+		InitWindow(640, 360, "points");
+		var camera = new Camera(V3(6, 6, 9), V3(0, 0.5, 0), V3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
+		// A cloud as raylib's point rendering example makes one: vertices alone, one triangle counted, 997 of them (996 whole triangles').
+		var positions = [], colors = [];
+		for (i in 0...CLOUD) {
+			positions.push((i % 13) * 0.25 - 1.5 + ((i * 7) % 5) * 0.015625);
+			positions.push(Std.int(i / 13) % 9 * 0.25 + ((i * 3) % 7) * 0.015625);
+			positions.push(Std.int(i / 117) * 0.25 - 1.0);
+			for (c in [(i * 37) % 256, (i * 91) % 256, (i * 53) % 256, 255])
+				colors.push(c);
+		}
+		var cloud = model(positions, colors, null, 1);
+		// A fan of three triangles by index, and a sixth vertex no index names.
+		var fan = model([0, 0, 0, 1, 0, 0, 0.5, 0, -0.8, -0.5, 0, -0.8, -1, 0, 0, 0, 1, 0],
+			[255, 0, 0, 255, 0, 160, 0, 255, 0, 0, 255, 255, 200, 0, 200, 255, 0, 120, 120, 255, 0, 0, 0, 255], [0, 1, 2, 0, 2, 3, 0, 3, 4], 3);
+		var plane = LoadModelFromMesh(GenMeshPlane(2, 2, 6, 6));
+		var cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
+		var sphere = LoadModelFromMesh(GenMeshSphere(1, 10, 12));
+		var frame = 0;
+		while (!WindowShouldClose()) {
+			BeginDrawing();
+			ClearBackground(BLACK);
+			BeginMode3D(camera);
+			DrawGrid(10, 1);
+			@CASES@
+			EndMode3D();
+			if (frame == 2)
+				TakeScreenshot("helix.png");
+			EndDrawing();
+			frame++;
+		}
+		CloseWindow();
+	}
+}

@@ -439,14 +439,33 @@ class RRlgl {
 
 	/** Draws triangles as their edges from now: a model drawn after it at once, and the shapes in rlgl's batch when it is next drawn
 		(`rlDrawRenderBatchActive`), as GL's line mode does, which a page's WebGL hasn't, done here as lines. Culling still leaves out the
-		triangles it would, by their facing on the screen as GL finds it; a shader that moves the vertices isn't seen in that. */
+		triangles it would, by their facing on the screen as GL finds it; a shader that moves the vertices isn't seen in that. It ends
+		point mode (`rlEnablePointMode`). */
 	static function rlEnableWireMode():Void {
-		state().wire = true;
+		var f = state();
+		f.wire = true;
+		f.pointRun = null;
+		f.pointMesh = null;
 	}
 
-	/** Draws the next triangles filled, as raylib starts; it also ends point mode, which helix-ray doesn't have yet. */
+	/** Draws triangles as their corners from now, one pixel each: a model drawn after it at once (each index of its triangles, or each
+		vertex of its whole triangles without indices), and the triangles in rlgl's batch when it is next drawn, as desktop GL's point mode
+		does, which a page's WebGL hasn't, done here as points on every backend. Lines are drawn as lines. Culling still leaves out the
+		triangles it would, by their facing on the screen as GL finds it. A shader's own `gl_PointSize` is ignored: every point is one
+		pixel, the size every backend draws. `rlDisableWireMode` ends it, and `rlEnableWireMode` replaces it. */
+	static function rlEnablePointMode():Void {
+		var f = state();
+		f.wire = false;
+		f.pointRun = f.pointsOfRun;
+		f.pointMesh = f.pointsOfMesh;
+	}
+
+	/** Draws the next triangles filled, as raylib starts, ending wire mode or point mode. */
 	static function rlDisableWireMode():Void {
-		state().wire = false;
+		var f = state();
+		f.wire = false;
+		f.pointRun = null;
+		f.pointMesh = null;
 	}
 
 	/** Clips the next draws to the rectangle `rlScissor` last set: the whole pass until it is set. */

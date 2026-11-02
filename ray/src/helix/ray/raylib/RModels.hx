@@ -807,6 +807,40 @@ class RModels {
 		rlDisableWireMode();
 	}
 
+	/** Draws a model's triangles as their corners, one pixel each, as `DrawModel` places it, through rlgl's point mode with culling off.
+
+		Each index of a mesh's triangles is a point, or each vertex of its whole triangles when it has no indices (a cloud of points is a
+		mesh of vertices alone). Culling is on after it, as raylib leaves it.
+		@param model  The model.
+		@param position  Where.
+		@param scale  The scale, the same on each axis.
+		@param tint  The tint. */
+	static function DrawModelPoints(model:Model, position:Vector3, scale:Float, tint:Color):Void {
+		rlEnablePointMode();
+		rlDisableBackfaceCulling();
+		DrawModel(model, position, scale, tint);
+		rlEnableBackfaceCulling();
+		rlDisableWireMode();
+	}
+
+	/** Draws a model's triangles as their corners, one pixel each, as `DrawModelEx` places it, through rlgl's point mode with culling off.
+
+		Each index of a mesh's triangles is a point, or each vertex of its whole triangles when it has no indices. Culling is on after it,
+		as raylib leaves it.
+		@param model  The model.
+		@param position  Where.
+		@param rotationAxis  The axis.
+		@param rotationAngle  The angle, in degrees.
+		@param scale  The scale on each axis.
+		@param tint  The tint. */
+	static function DrawModelPointsEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void {
+		rlEnablePointMode();
+		rlDisableBackfaceCulling();
+		DrawModelEx(model, position, rotationAxis, rotationAngle, scale, tint);
+		rlEnableBackfaceCulling();
+		rlDisableWireMode();
+	}
+
 	/** Draws a mesh with a material and a transform.
 
 		The material's maps bind as raylib's: the first three at `texture0` to `texture2`, and each other map with a texture at the sampler

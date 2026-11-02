@@ -5,13 +5,14 @@ import haxe.io.Bytes;
 import helix.platform.Blend;
 import helix.platform.ColorChannels;
 import helix.platform.IGraphics;
+import helix.platform.Primitive;
 
 /** Records a frame's drawing as rlgl orders it, and draws it at the frame's end: each render texture's pass, then the screen's.
 
 	Shapes, text and textures are immediate vertices, collected in one buffer, uploaded once in each pass; a mesh draws from its own
 	buffers. As in rlgl, immediate vertices wait in a batch until it is flushed (`flush`: a change of mode, matrices, shader, blending,
 	scissor or pass, and the pass's end), and are drawn then with the state and the program's values as they are at that moment: rlgl's
-	state calls (wire mode, culling, depth) don't flush, so they reach what is in the batch. A mesh is drawn as it is asked for, with the
+	state calls (wire and point mode, culling, depth) don't flush, so they reach what is in the batch. A mesh is drawn as it is asked for, with the
 	state then, ahead of the batch's vertices still waiting. */
 @:noCompletion
 class Frame {
@@ -116,6 +117,16 @@ class Frame {
 
 	/** Whether the next triangles are drawn as their edges, rlgl's `rlEnableWireMode`. */
 	public var wire = false;
+
+	/** Gives the points a run of the batch's triangles is drawn as, in rlgl's point mode (`rlEnablePointMode`): null while it is off.
+		`rlEnablePointMode` sets it to `pointsOfRun`, so a program drawing no points links none of it. It receives the run's first vertex
+		and its vertex count, and returns the first vertex and the count of the points. */
+	public var pointRun:Null<(first:Int, count:Int) -> Array<Int>> = null;
+
+	/** Gives the points a mesh's triangles are drawn as, in rlgl's point mode: null while it is off. `rlEnablePointMode` sets it to
+		`pointsOfMesh`. It receives the mesh, its transform and whether it is drawn as instances, and returns the index buffer of the points
+		(0 for none: the vertices in order) and their count. */
+	public var pointMesh:Null<(mesh:helix.ray.Mesh, model:Matrix3D, instanced:Bool) -> Array<Int>> = null;
 
 	/** Whether the next draws blend as `blend` says, rlgl's `rlEnableColorBlend`; when not, they draw over what is there. */
 	public var colorBlend = true;
@@ -379,7 +390,7 @@ class Frame {
 	final drawn:Array<() -> Void> = [];
 
 	/** Draws the batch, rlgl's `rlDrawRenderBatchActive`: its runs into the pass, each through the current program, matrices and state
-		(in wire mode, its triangles as their edges, those culling leaves). */
+		(in wire mode, its triangles as their edges, those culling leaves; in point mode, their corners). */
 	public function flush():Void {
 		drawMode = 7;
 		drawTexture = 0;
@@ -408,14 +419,22 @@ class Frame {
 		for (run in batch) {
 			if (run.count == 0)
 				continue;
+			// GL's point mode: each triangle's corners, as points.
+			if (pointRun != null && !run.lines) {
+				var points = pointRun(run.first, run.count);
+				var d = immediate(run.texture, Points, points[0]);
+				d.count = points[1];
+				pass.draws.push(d);
+				continue;
+			}
 			if (!wire || run.lines) {
-				var d = immediate(run.texture, run.lines, run.first);
+				var d = immediate(run.texture, run.lines ? Lines : Triangles, run.first);
 				d.count = run.count;
 				pass.draws.push(d);
 				continue;
 			}
 			// GL's line mode: each triangle's edges, written after the batch's vertices, unless culling drops it.
-			var d = immediate(run.texture, true, vertices);
+			var d = immediate(run.texture, Lines, vertices);
 			for (k in 0...Std.int(run.count / 3)) {
 				var a = (run.first + k * 3) * STRIDE, b = a + STRIDE, c = b + STRIDE;
 				if (m != null
@@ -500,10 +519,66 @@ class Frame {
 		vertices++;
 	}
 
+	/** Returns the points a run of the batch's triangles is drawn as in point mode, `pointRun` while it is on: each whole triangle's
+		corners, in order; with culling, those of the triangles it leaves, copied after the batch's vertices, as GL culls the triangles
+		whose corners it draws.
+
+		@param first  The run's first vertex.
+		@param count  Its vertex count.
+		@return  The first vertex of the points and their count. */
+	public function pointsOfRun(first:Int, count:Int):Array<Int> {
+		if (!cull)
+			return [first, count - count % 3];
+		var m = Matrix3D.compose(view, projection, viewProjection).values,
+			from = vertices;
+		for (k in 0...Std.int(count / 3)) {
+			var a = (first + k * 3) * STRIDE, b = a + STRIDE, c = b + STRIDE;
+			if (culled(m, data.getFloat(a), data.getFloat(a + 4), data.getFloat(a + 8), data.getFloat(b), data.getFloat(b + 4), data.getFloat(b + 8),
+				data.getFloat(c), data.getFloat(c + 4), data.getFloat(c + 8)))
+				continue;
+			for (corner in [a, b, c])
+				copyVertex(corner);
+		}
+		return [from, vertices - from];
+	}
+
+	/** Returns the points a mesh's triangles are drawn as in point mode, `pointMesh` while it is on: each index of its triangles, or
+		each vertex of its whole triangles when it has no indices, as GL draws them; with culling, the corners of the triangles it
+		leaves, from an index buffer made for the frame.
+
+		Instances are drawn whole, culling not found for them, as in wire mode.
+		@param mesh  The mesh, uploaded.
+		@param model  Its transform.
+		@param instanced  Whether it is drawn as instances.
+		@return  The index buffer of the points (0 for none) and their count. */
+	public function pointsOfMesh(mesh:helix.ray.Mesh, model:Matrix3D, instanced:Bool):Array<Int> {
+		var indices = mesh.indices;
+		if (!cull || instanced)
+			return indices != null ? [mesh.gpu.indexBuffer, mesh.triangleCount * 3] : [0, mesh.vertexCount - mesh.vertexCount % 3];
+		var m = Matrix3D.compose(Matrix3D.compose(model, view, viewProjection), projection, viewProjection).values;
+		var p = mesh.animVertices != null ? mesh.animVertices : mesh.vertices, corners = [];
+		for (k in 0...(indices != null ? mesh.triangleCount : Std.int(mesh.vertexCount / 3))) {
+			var a = indices == null ? k * 3 : indices[k * 3],
+				b = indices == null ? k * 3 + 1 : indices[k * 3 + 1],
+				c = indices == null ? k * 3 + 2 : indices[k * 3 + 2];
+			if (!culled(m, p[a * 3], p[a * 3 + 1], p[a * 3 + 2], p[b * 3], p[b * 3 + 1], p[b * 3 + 2], p[c * 3], p[c * 3 + 1], p[c * 3 + 2]))
+				for (i in [a, b, c])
+					corners.push(i);
+		}
+		if (corners.length == 0)
+			return [0, 0];
+		var bytes = Bytes.alloc(corners.length * 4);
+		for (i => index in corners)
+			bytes.setInt32(i * 4, index);
+		var buffer = graphics.createStaticBuffer(bytes, bytes.length, true);
+		retire(buffer);
+		return [buffer, corners.length];
+	}
+
 	// A draw of immediate vertices from first, through the current program, matrices and state.
-	function immediate(texture:Int, lines:Bool, first:Int):Draw {
+	function immediate(texture:Int, primitive:Primitive, first:Int):Draw {
 		var p = program, state = states();
-		var key = 'i${lines ? "l" : "t"}$state';
+		var key = 'i${(primitive : Int)}$state';
 		var pipeline = p.pipeline(key, () -> graphics.createPipeline({
 			shader: p.handle,
 			buffers: [
@@ -521,7 +596,7 @@ class Frame {
 					attributes: constantAttributes(p.attributes)
 				}
 			],
-			primitive: lines ? Lines : Triangles,
+			primitive: primitive,
 			indexed: false,
 			blend: colorBlend ? blend : Blend.OPAQUE,
 			colorWrite: colorMask,
@@ -545,7 +620,7 @@ class Frame {
 			first: first,
 			count: 0,
 			texture: texture,
-			lines: lines,
+			primitive: primitive,
 			scissor: scissor,
 			viewport: viewport,
 			textures: textures,
@@ -584,6 +659,14 @@ class Frame {
 		@param instanceCount  Optional. How many instances; defaults to 1. */
 	public function mesh(mesh:helix.ray.Mesh, p:Program, model:Matrix3D, diffuse:Array<Float>, textures:Array<Int>, instances:Int = 0,
 			instanceCount:Int = 1):Void {
+		// In point mode, the mesh's triangles drawn as their corners: those culling leaves, found here, as GL's point mode culls the
+		// triangles whose corners it draws.
+		var points:Null<Array<Int>> = null;
+		if (pointMesh != null) {
+			points = pointMesh(mesh, model, instances != 0);
+			if (points[1] == 0)
+				return;
+		}
 		// In wire mode, the mesh's triangles drawn as their edges, from an index buffer of them: those culling leaves, found here, as GL's
 		// line mode culls the triangles it outlines.
 		var edges = 0, edgeCount = mesh.triangleCount * 6;
@@ -599,8 +682,11 @@ class Frame {
 			retire(edges);
 		} else if (wire)
 			edges = Models.edges(mesh);
-		var indexed = wire || mesh.gpu.indexBuffer != 0, state = states();
-		var key = 'm${indexed ? "x" : ""}${wire ? "w" : ""}${instances != 0 ? "i" : ""}$state';
+		var primitive:Primitive = points != null ? Points : wire ? Lines : Triangles;
+		// Point mode and wire mode are never both on: each ends the other, as GL's one polygon mode.
+		var indexed = points != null ? points[0] != 0 : wire || mesh.gpu.indexBuffer != 0,
+			state = states();
+		var key = 'm${indexed ? "x" : ""}${(primitive : Int)}${instances != 0 ? "i" : ""}$state';
 		// A buffer an attribute: the platform takes eight, as many as raylib's attributes.
 		var names = p.attributes;
 		var pipeline = p.pipeline(key, () -> {
@@ -623,13 +709,13 @@ class Frame {
 			graphics.createPipeline({
 				shader: p.handle,
 				buffers: layouts,
-				primitive: wire ? Lines : Triangles,
+				primitive: primitive,
 				indexed: indexed,
 				blend: colorBlend ? blend : Blend.OPAQUE,
 				colorWrite: colorMask,
 				depthTest: depthTest ? LessEqual : Off,
 				depthWrite: depthTest && depthMask,
-				cull: wire ? None : cullFace(),
+				cull: primitive == Triangles ? cullFace() : None,
 				clockwise: false,
 				depthOnly: false,
 				flip: ClipScale,
@@ -652,11 +738,11 @@ class Frame {
 			pass.draws.push({
 				pipeline: pipeline,
 				buffers: buffers,
-				indices: wire ? edges : mesh.gpu.indexBuffer,
+				indices: points != null ? points[0] : wire ? edges : mesh.gpu.indexBuffer,
 				first: 0,
-				count: wire ? edgeCount : indexed ? mesh.triangleCount * 3 : mesh.vertexCount,
+				count: points != null ? points[1] : wire ? edgeCount : indexed ? mesh.triangleCount * 3 : mesh.vertexCount,
 				texture: 0,
-				lines: wire,
+				primitive: primitive,
 				scissor: scissor,
 				viewport: viewport,
 				textures: bound,
@@ -771,7 +857,7 @@ class Frame {
 					else
 						clip(clipped, width / p.width, height / p.height, width, height);
 				}
-				var count = d.lines ? d.count - d.count % 2 : d.count - d.count % 3;
+				var count = d.primitive == Points ? d.count : d.primitive == Lines ? d.count - d.count % 2 : d.count - d.count % 3;
 				// A texture binds only to a sampler of its kind, a cubemap to a samplerCube; any other reads the platform's clear texture.
 				var textures = [
 					for (slot => t in d.textures)
@@ -886,7 +972,7 @@ private typedef Draw = {
 	final first:Int;
 	var count:Int;
 	final texture:Int;
-	final lines:Bool;
+	final primitive:Primitive;
 	final scissor:Null<Array<Float>>;
 	final viewport:Null<Array<Int>>;
 	final textures:Array<Int>;

@@ -44,7 +44,7 @@ class Parity {
 				var at = i * 48;
 				var v = [for (k in 0...8) if (depth || k != 2) Std.string(f.data.getFloat(at + k * 4))];
 				var c = [for (k in 8...12) Std.string(Math.round(f.data.getFloat(at + k * 4) * 255))];
-				lines.push('$name ${d.lines ? "L" : "T"} ' + v.concat(c).join(" "));
+				lines.push('$name ${d.primitive == Lines ? "L" : "T"} ' + v.concat(c).join(" "));
 			}
 		}
 		line('$name drawn ${lines.length}');

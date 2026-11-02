@@ -3378,6 +3378,8 @@ static function DrawModel(model:Model, position:Vector3, scale:Float, tint:Color
 static function DrawModelEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
 static function DrawModelWires(model:Model, position:Vector3, scale:Float, tint:Color):Void
 static function DrawModelWiresEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
+static function DrawModelPoints(model:Model, position:Vector3, scale:Float, tint:Color):Void
+static function DrawModelPointsEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
 static function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void
 static function DrawMeshInstanced(mesh:Mesh, material:Material, transforms:Array<Matrix>, instances:Int):Void
 static function UploadMesh(mesh:Mesh, isDynamic:Bool):Void
@@ -3590,6 +3592,22 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `rotationAngle`: The angle, in degrees.
   - `scale`: The scale on each axis.
   - `tint`: The tint.
+- `DrawModelPoints`: Draws a model's triangles as their corners, one pixel each, as `DrawModel` places it, through rlgl's point mode with culling off.
+  - `model`: The model.
+  - `position`: Where.
+  - `scale`: The scale, the same on each axis.
+  - `tint`: The tint.
+
+  Each index of a mesh's triangles is a point, or each vertex of its whole triangles when it has no indices (a cloud of points is a mesh of vertices alone). Culling is on after it, as raylib leaves it.
+- `DrawModelPointsEx`: Draws a model's triangles as their corners, one pixel each, as `DrawModelEx` places it, through rlgl's point mode with culling off.
+  - `model`: The model.
+  - `position`: Where.
+  - `rotationAxis`: The axis.
+  - `rotationAngle`: The angle, in degrees.
+  - `scale`: The scale on each axis.
+  - `tint`: The tint.
+
+  Each index of a mesh's triangles is a point, or each vertex of its whole triangles when it has no indices. Culling is on after it, as raylib leaves it.
 - `DrawMesh`: Draws a mesh with a material and a transform.
   - `mesh`: The mesh.
   - `material`: The material.
@@ -4213,12 +4231,6 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
 `GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `MemAlloc`, `MemRealloc`, `MemFree`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadMaterials`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
-
-### Not in helix-ray yet
-
-Each of these is raylib's name, and a call to it doesn't compile, saying so.
-
-`DrawModelPoints`, `DrawModelPointsEx`.
 
 ## Raymath
 
@@ -5547,6 +5559,7 @@ static function rlEnableBackfaceCulling():Void
 static function rlDisableBackfaceCulling():Void
 static function rlSetCullFace(mode:Int):Void
 static function rlEnableWireMode():Void
+static function rlEnablePointMode():Void
 static function rlDisableWireMode():Void
 static function rlEnableScissorTest():Void
 static function rlDisableScissorTest():Void
@@ -5692,8 +5705,9 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
 - `rlDisableBackfaceCulling`: Draws both sides of the next triangles.
 - `rlSetCullFace`: Chooses which side of triangles culling leaves out.
   - `mode`: `RL_CULL_FACE_BACK`, as raylib starts, or `RL_CULL_FACE_FRONT`.
-- `rlEnableWireMode`: Draws triangles as their edges from now: a model drawn after it at once, and the shapes in rlgl's batch when it is next drawn (`rlDrawRenderBatchActive`), as GL's line mode does, which a page's WebGL hasn't, done here as lines. Culling still leaves out the triangles it would, by their facing on the screen as GL finds it; a shader that moves the vertices isn't seen in that.
-- `rlDisableWireMode`: Draws the next triangles filled, as raylib starts; it also ends point mode, which helix-ray doesn't have yet.
+- `rlEnableWireMode`: Draws triangles as their edges from now: a model drawn after it at once, and the shapes in rlgl's batch when it is next drawn (`rlDrawRenderBatchActive`), as GL's line mode does, which a page's WebGL hasn't, done here as lines. Culling still leaves out the triangles it would, by their facing on the screen as GL finds it; a shader that moves the vertices isn't seen in that. It ends point mode (`rlEnablePointMode`).
+- `rlEnablePointMode`: Draws triangles as their corners from now, one pixel each: a model drawn after it at once (each index of its triangles, or each vertex of its whole triangles without indices), and the triangles in rlgl's batch when it is next drawn, as desktop GL's point mode does, which a page's WebGL hasn't, done here as points on every backend. Lines are drawn as lines. Culling still leaves out the triangles it would, by their facing on the screen as GL finds it. A shader's own `gl_PointSize` is ignored: every point is one pixel, the size every backend draws. `rlDisableWireMode` ends it, and `rlEnableWireMode` replaces it.
+- `rlDisableWireMode`: Draws the next triangles filled, as raylib starts, ending wire mode or point mode.
 - `rlEnableScissorTest`: Clips the next draws to the rectangle `rlScissor` last set: the whole pass until it is set.
 - `rlDisableScissorTest`: Stops clipping the next draws, as `EndScissorMode` does.
 - `rlScissor`: Sets the rectangle the next draws are clipped to while the scissor test is on, as GL takes it: in the framebuffer's pixels, from its bottom left. `BeginScissorMode` takes one from the top left in the screen's pixels.
@@ -5754,12 +5768,6 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
 `rlEnableVertexArray`, `rlDisableVertexArray`, `rlEnableVertexBuffer`, `rlDisableVertexBuffer`, `rlEnableVertexBufferElement`, `rlDisableVertexBufferElement`, `rlEnableVertexAttribute`, `rlDisableVertexAttribute`, `rlEnableStatePointer`, `rlDisableStatePointer`, `rlActiveTextureSlot`, `rlEnableTexture`, `rlDisableTexture`, `rlEnableTextureCubemap`, `rlDisableTextureCubemap`, `rlTextureParameters`, `rlCubemapParameters`, `rlEnableShader`, `rlDisableShader`, `rlEnableFramebuffer`, `rlDisableFramebuffer`, `rlGetActiveFramebuffer`, `rlActiveDrawBuffers`, `rlBlitFramebuffer`, `rlBindFramebuffer`, `rlCheckErrors`, `rlglInit`, `rlglClose`, `rlLoadExtensions`, `rlGetVersion`, `rlGetTextureIdDefault`, `rlGetShaderIdDefault`, `rlGetShaderLocsDefault`, `rlLoadRenderBatch`, `rlUnloadRenderBatch`, `rlDrawRenderBatch`, `rlSetRenderBatchActive`, `rlLoadVertexArray`, `rlLoadVertexBuffer`, `rlLoadVertexBufferElement`, `rlUpdateVertexBuffer`, `rlUpdateVertexBufferElements`, `rlUnloadVertexArray`, `rlUnloadVertexBuffer`, `rlSetVertexAttribute`, `rlSetVertexAttributeDivisor`, `rlSetVertexAttributeDefault`, `rlDrawVertexArray`, `rlDrawVertexArrayElements`, `rlDrawVertexArrayInstanced`, `rlDrawVertexArrayElementsInstanced`, `rlLoadTexture`, `rlLoadTextureDepth`, `rlLoadTextureCubemap`, `rlUpdateTexture`, `rlGetGlTextureFormats`, `rlUnloadTexture`, `rlGenTextureMipmaps`, `rlReadTexturePixels`, `rlReadScreenPixels`, `rlLoadFramebuffer`, `rlFramebufferAttach`, `rlFramebufferComplete`, `rlUnloadFramebuffer`, `rlLoadShaderCode`, `rlCompileShader`, `rlLoadShaderProgram`, `rlUnloadShaderProgram`, `rlGetLocationUniform`, `rlGetLocationAttrib`, `rlSetUniform`, `rlSetUniformMatrix`, `rlSetUniformMatrices`, `rlSetUniformSampler`, `rlSetShader`, `rlLoadComputeShaderProgram`, `rlComputeShaderDispatch`, `rlLoadShaderBuffer`, `rlUnloadShaderBuffer`, `rlUpdateShaderBuffer`, `rlBindShaderBuffer`, `rlReadShaderBuffer`, `rlCopyShaderBuffer`, `rlGetShaderBufferSize`, `rlBindImageTexture`, `rlLoadDrawCube`, `rlLoadDrawQuad`.
-
-### Not in helix-ray yet
-
-Each of these is raylib's name, and a call to it doesn't compile, saying so.
-
-`rlEnablePointMode`.
 
 ## Shader
 

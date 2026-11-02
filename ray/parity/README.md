@@ -66,6 +66,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `scene3d_62` | 6.2 | pixels | the spheres, capsules and billboards, and a mesh given tangents, in that scene |
 | `render` | 5.5 | pixels | rlgl's blend modes, custom factors and color mask, a render texture's alpha under them; texture updates, read back and mipmaps under raylib's filters; render textures kept across passes and frames; `DrawMeshInstanced` |
 | `wires` | 5.5 | pixels | rlgl's render state: wires, culling, wire mode, the depth mask and test |
+| `points` | 5.5 | pixels | rlgl's point mode: `DrawModelPoints` and `DrawModelPointsEx` (a cloud, indexed meshes), point mode with culling, the batch as points |
 | `skinning` | 6.2 | pixels | greenman skinned on the CPU, on the GPU and blended |
 | `modular_scene` | 6.2 | pixels | the modular woman dressed and holding the sword, CPU-skinned |
 | `cubemaps_62` | 6.2 | pixels | `LoadTextureCubemap` in each layout, raylib's skybox example, and cubes sampling cubemaps through their material |

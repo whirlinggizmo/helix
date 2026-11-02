@@ -1,0 +1,58 @@
+// The points scene Main.hx.in draws, drawn by raylib, its third frame saved as ref.png; cases.py's list is put into it.
+#include "raylib.h"
+#include "rlgl.h"
+#define V3(x, y, z) ((Vector3){ (float)(x), (float)(y), (float)(z) })
+#define CLOUD 997
+int main(void) {
+    SetTraceLogLevel(LOG_WARNING);
+    InitWindow(640, 360, "points");
+    Camera camera = { { 6, 6, 9 }, { 0, 0.5f, 0 }, { 0, 1, 0 }, 45, CAMERA_PERSPECTIVE };
+    // A cloud as raylib's point rendering example makes one: vertices alone, one triangle counted, 997 of them (996 whole triangles').
+    Mesh cloudMesh = { 0 };
+    cloudMesh.vertexCount = CLOUD;
+    cloudMesh.triangleCount = 1;
+    cloudMesh.vertices = (float *)MemAlloc(CLOUD*3*sizeof(float));
+    cloudMesh.colors = (unsigned char *)MemAlloc(CLOUD*4);
+    for (int i = 0; i < CLOUD; i++) {
+        cloudMesh.vertices[i*3] = (i%13)*0.25f - 1.5f + ((i*7)%5)*0.015625f;
+        cloudMesh.vertices[i*3 + 1] = ((i/13)%9)*0.25f + ((i*3)%7)*0.015625f;
+        cloudMesh.vertices[i*3 + 2] = (i/117)*0.25f - 1.0f;
+        cloudMesh.colors[i*4] = (i*37)%256;
+        cloudMesh.colors[i*4 + 1] = (i*91)%256;
+        cloudMesh.colors[i*4 + 2] = (i*53)%256;
+        cloudMesh.colors[i*4 + 3] = 255;
+    }
+    UploadMesh(&cloudMesh, false);
+    Model cloud = LoadModelFromMesh(cloudMesh);
+    // A fan of three triangles by index, and a sixth vertex no index names.
+    float fanVertices[] = { 0, 0, 0, 1, 0, 0, 0.5f, 0, -0.8f, -0.5f, 0, -0.8f, -1, 0, 0, 0, 1, 0 };
+    unsigned char fanColors[] = { 255, 0, 0, 255, 0, 160, 0, 255, 0, 0, 255, 255, 200, 0, 200, 255, 0, 120, 120, 255, 0, 0, 0, 255 };
+    unsigned short fanIndices[] = { 0, 1, 2, 0, 2, 3, 0, 3, 4 };
+    Mesh fanMesh = { 0 };
+    fanMesh.vertexCount = 6;
+    fanMesh.triangleCount = 3;
+    fanMesh.vertices = (float *)MemAlloc(sizeof fanVertices);
+    fanMesh.colors = (unsigned char *)MemAlloc(sizeof fanColors);
+    fanMesh.indices = (unsigned short *)MemAlloc(sizeof fanIndices);
+    for (int i = 0; i < 18; i++) fanMesh.vertices[i] = fanVertices[i];
+    for (int i = 0; i < 24; i++) fanMesh.colors[i] = fanColors[i];
+    for (int i = 0; i < 9; i++) fanMesh.indices[i] = fanIndices[i];
+    UploadMesh(&fanMesh, false);
+    Model fan = LoadModelFromMesh(fanMesh);
+    Model plane = LoadModelFromMesh(GenMeshPlane(2, 2, 6, 6));
+    Model cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
+    Model sphere = LoadModelFromMesh(GenMeshSphere(1, 10, 12));
+    for (int frame = 0; frame < 3; frame++) {
+        BeginDrawing();
+        ClearBackground(BLACK);
+        BeginMode3D(camera);
+        DrawGrid(10, 1);
+        @CASES@
+        EndMode3D();
+        rlDrawRenderBatchActive();
+        if (frame == 2) ExportImage(LoadImageFromScreen(), "ref.png");
+        EndDrawing();
+    }
+    CloseWindow();
+    return 0;
+}

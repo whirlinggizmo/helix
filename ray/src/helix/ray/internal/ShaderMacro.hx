@@ -21,7 +21,8 @@ using StringTools;
 	the location rlgl gives it, and each array uniform in a block of its own, so the rest stay within the 4 KiB of a block SDL_GPU's
 	Vulkan reads, and each uniform's initializer taken out, its value written when the shader is made (`load`), as GL sets it
 	when it links. The rest is the service's: GL's form, loose uniforms gathered, every type in its block, and the vertex
-	stage wrapped with a clip scale (`ShaderOptions.clipScale`), which the platform turns over in a pass into a render target. */
+	stage wrapped with a clip scale (`ShaderOptions.clipScale`), which the platform turns over in a pass into a render target, and to
+	write a point size of 1 (`ShaderOptions.points`), so any shader can draw in rlgl's point mode, as GL draws points with any shader. */
 class ShaderMacro {
 	/** raylib's attributes, in the order their locations are given. */
 	static final ATTRIBUTES = [
@@ -91,7 +92,7 @@ void main() {
 			if (d.kind == "in" && ATTRIBUTES.indexOf(d.name) < 0 && d.type != "mat4")
 				Context.error('$vsName: the attribute "${d.name}" isn\'t one raylib gives here (${ATTRIBUTES.join(", ")}, or a mat4 of the instances\' transforms, `DrawMeshInstanced`\'s)',
 					pos);
-		return helix.services.shaders.Shader.makeExpr({name: vsName, text: vertex}, {name: fsName, text: fragment}, {clipScale: true}, pos);
+		return helix.services.shaders.Shader.makeExpr({name: vsName, text: vertex}, {name: fsName, text: fragment}, {clipScale: true, points: true}, pos);
 	}
 
 	/** Returns the expression of a raylib shader loaded from two stages' text (`LoadShader`, `LoadShaderFromMemory`), either null for
