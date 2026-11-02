@@ -1914,11 +1914,14 @@ var viewportHeight(default, null):Int
 var inFrame(default, null):Bool
 var exposure(default, set):Float
 var toneMapping:ToneMapping
-function createTexture(image:Image, ?mipmaps:Bool = false):Texture2D
+function createTexture(image:Image):Texture2D
+function createTextureMipmapped(image:Image):Texture2D
 function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:TargetDepth = Buffer, ?msaaSampleCount:Int):RenderTarget2D
-function createCubeTexture(faces:Array<Image>, ?mipmaps:Bool = false):CubeTexture3D
+function createCubeTexture(faces:Array<Image>):CubeTexture3D
+function createCubeTextureMipmapped(faces:Array<Image>):CubeTexture3D
 function createMesh(mesh:Mesh3D, ?updatedOften:Bool = false):GpuMesh3D
-function createModel(model:Model3D, ?mipmaps:Bool = true, ?colorSpace:ColorSpace = Auto):GpuModel3D
+function createModel(model:Model3D, ?colorSpace:ColorSpace = Auto):GpuModel3D
+function createModelMipmapped(model:Model3D, ?colorSpace:ColorSpace = Auto):GpuModel3D
 function createEnvironmentMap(bake:EnvironmentBake3D):EnvironmentMap3D
 function createFont(font:Font2D):GpuFont2D
 function beginFrame(width:Int, height:Int, ?clearColor:Int):Void
@@ -1944,10 +1947,13 @@ function dispose():Void
 - `exposure`: Gets or sets the exposure, in stops: each one doubles linear light before it is tone mapped. 0 until set.
   It and `toneMapping` are the one pair every lit draw is brought to the screen by. Into an sRGB target (RGBA8, the screen), `Batch3D`'s lit shaders apply them as they draw, read at each `Batch3D.begin`; into an RGBA16F target the batch writes linear light and `PostProcess.draw` applies them in its resolve, read at each call. A value that isn't finite is taken as 0.
 - `toneMapping`: Gets or sets how exposed linear light is brought into the 0 to 1 an sRGB target holds: Neutral until set. Read as `exposure` is.
-- `createTexture`: Uploads an image as a texture.
+- `createTexture`: Uploads an image as a texture, without mipmaps.
   - `image`: The image. Its pixels are copied, so it may be changed or dropped after.
-  - `mipmaps`: Optional. Whether to make its mipmaps too, on the CPU (helix-services' `Image.getMipmaps`), so it shrinks without shimmering; defaults to false.
-  - returns: The texture, sampled linearly and clamped until its `sampling` is set, its mipmaps blended (`MipmapFilter.Linear`) when it has them; `Sampling`'s anisotropy sharpens it at grazing angles.
+  - returns: The texture, sampled linearly and clamped until its `sampling` is set; `Sampling`'s anisotropy sharpens it at grazing angles. `createTextureMipmapped` makes one that shrinks without shimmering.
+  - throws `String`: An image larger than this GPU allows.
+- `createTextureMipmapped`: Uploads an image as a texture with its mipmaps, made on the CPU (helix-services' `Image.getMipmaps`), so it shrinks without shimmering.
+  - `image`: The image. Its pixels are copied, so it may be changed or dropped after.
+  - returns: The texture, sampled linearly and clamped until its `sampling` is set, its mipmaps blended (`MipmapFilter.Linear`); `Sampling`'s anisotropy sharpens it at grazing angles.
   - throws `String`: An image larger than this GPU allows.
 - `createRenderTarget`: Creates a render target: a texture that draws can go into, between `beginTarget` and `endTarget`.
   - `width`: The width, in texels.
@@ -1957,9 +1963,12 @@ function dispose():Void
   - `msaaSampleCount`: Optional. The multisampling samples per pixel it is drawn with, resolved into the texture at the end of each pass, whatever its depth: 1 for none; the screen's (`IGraphics.msaaSampleCount`) when omitted, so its edges are smooth where the screen's are. Clamped to 1 to `IGraphics.maxMsaaSampleCount`, and to 1 where this GPU cannot multisample the format. raylib's render textures are 1, with depth.
   - returns: The render target, holding transparent black until drawn into.
   - throws `String`: A size of 0 or less, or a format this GPU cannot draw into.
-- `createCubeTexture`: Uploads six square images as a cube texture, for a program's own shader to sample by direction (`samplerCube`).
+- `createCubeTexture`: Uploads six square images as a cube texture, without mipmaps, for a program's own shader to sample by direction (`samplerCube`).
   - `faces`: The faces, in the order +X, -X, +Y, -Y, +Z, -Z, as a cube's faces are seen from inside it, each the same size. Their pixels are copied.
-  - `mipmaps`: Optional. Whether to make each face's mipmaps too, on the CPU; defaults to false.
+  - returns: The cube texture, sampled linearly. `createCubeTextureMipmapped` makes one with mipmaps.
+  - throws `String`: Not six faces, faces not square and alike, or larger than this GPU allows.
+- `createCubeTextureMipmapped`: Uploads six square images as a cube texture with each face's mipmaps, made on the CPU, for a program's own shader to sample by direction (`samplerCube`).
+  - `faces`: The faces, in the order +X, -X, +Y, -Y, +Z, -Z, as a cube's faces are seen from inside it, each the same size. Their pixels are copied.
   - returns: The cube texture, sampled linearly.
   - throws `String`: Not six faces, faces not square and alike, or larger than this GPU allows.
 - `createMesh`: Uploads a mesh's vertices and indices.
@@ -1969,13 +1978,16 @@ function dispose():Void
   - throws `String`: A mesh without positions, or whose arrays do not match its vertex count.
 
   The mesh's arrays are copied, so it may be changed or dropped after; `GpuMesh3D.update` sends it again. Its positions are kept on the CPU, and a skinned mesh's joints and weights, with each joint's box of the vertices it moves, for culling and `GpuMesh3D.computeBounds`.
-- `createModel`: Uploads a model: each mesh, each image as a texture, and each material as a `Material3D` over them.
+- `createModel`: Uploads a model: each mesh, each image as a texture without mipmaps, as raylib's `LoadModel` makes them, and each material as a `Material3D` over them; `createModelMipmapped` makes its textures with mipmaps.
   - `model`: The model, as helix-services' `Models` reads it.
-  - `mipmaps`: Optional. Whether its textures are made with mipmaps, on the CPU; defaults to true. raylib's `LoadModel` makes none.
   - `colorSpace`: Optional. How the file's color factors and vertex colors are taken. `Auto`, the default, as the format says: glTF's are linear, its factors encoded to sRGB for the materials' 0xAARRGGBB colors and its vertex colors read as linear (`Material3D.colorSpace` Linear); an OBJ file's are sRGB. `Srgb` takes them as stored, as raylib does: each factor times 255 into the color unconverted, and the materials' `colorSpace` Srgb, so base color, texture and vertex color are multiplied as stored and an unlit model with `toneMapped` off shows the file's numbers in an sRGB target as raylib does. `Linear` takes every file's as linear.
   - returns: The uploaded model, which owns its meshes and textures.
 
   An image that is null (one the model couldn't read) gives no texture, and a material naming it draws without it. A mesh without a material in the file is given one more material, white, at the end of `materials`. Each texture's `colorSpace` is set from the slot it fills. Where helix-formats' `GltfMaterial` gives them, its alpha mode, cutoff and double-sidedness become `blend`, `alphaCutoff` and `cull`, its textures' samplers their `sampling`, its texture transform `textureTransform`, and its KHR_materials_clearcoat, sheen, specular, ior and emissive_strength values the material's; otherwise opaque, uncut, back faces culled, linear and repeated, and none of the extensions. An OBJ file's materials are shaded `Phong` from their Ks and Ns. Meshes keep their morph targets.
+- `createModelMipmapped`: Uploads a model as `createModel` does, its textures made with mipmaps (`createTextureMipmapped`), as three.js makes them.
+  - `model`: The model, as helix-services' `Models` reads it.
+  - `colorSpace`: Optional. How the file's color factors and vertex colors are taken, as `createModel` takes it; `Auto` by default.
+  - returns: The uploaded model, which owns its meshes and textures.
 - `createEnvironmentMap`: Uploads a finished environment bake: its prefiltered and background cubes, and its irradiance.
   - `bake`: The bake, `done`.
   - returns: The environment map.

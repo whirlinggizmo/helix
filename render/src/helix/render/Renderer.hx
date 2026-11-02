@@ -99,23 +99,30 @@ class Renderer {
 		return exposure = Math.isFinite(value) ? value : 0;
 	}
 
-	/** Uploads an image as a texture.
+	/** Uploads an image as a texture, without mipmaps.
 
 		@param image  The image. Its pixels are copied, so it may be changed or dropped after.
-		@param mipmaps  Optional. Whether to make its mipmaps too, on the CPU (helix-services' `Image.getMipmaps`), so it shrinks without
-			shimmering; defaults to false.
-		@return  The texture, sampled linearly and clamped until its `sampling` is set, its mipmaps blended (`MipmapFilter.Linear`) when it
-			has them; `Sampling`'s anisotropy sharpens it at grazing angles.
+		@return  The texture, sampled linearly and clamped until its `sampling` is set; `Sampling`'s anisotropy sharpens it at grazing
+			angles. `createTextureMipmapped` makes one that shrinks without shimmering.
 		@throws String  An image larger than this GPU allows. */
-	public function createTexture(image:Image, mipmaps = false):Texture2D {
+	public function createTexture(image:Image):Texture2D {
+		return own(new Texture2D(graphics.createTexture(image.width, image.height, [image.pixels]), image.width, image.height));
+	}
+
+	/** Uploads an image as a texture with its mipmaps, made on the CPU (helix-services' `Image.getMipmaps`), so it shrinks without
+		shimmering.
+
+		@param image  The image. Its pixels are copied, so it may be changed or dropped after.
+		@return  The texture, sampled linearly and clamped until its `sampling` is set, its mipmaps blended (`MipmapFilter.Linear`);
+			`Sampling`'s anisotropy sharpens it at grazing angles.
+		@throws String  An image larger than this GPU allows. */
+	public function createTextureMipmapped(image:Image):Texture2D {
 		var levels = [image.pixels];
-		if (mipmaps)
-			for (level in image.getMipmaps())
-				levels.push(level.pixels);
+		for (level in image.getMipmaps())
+			levels.push(level.pixels);
 		var texture = new Texture2D(graphics.createTexture(image.width, image.height, levels), image.width, image.height);
-		texture.mipmapped = mipmaps;
-		if (mipmaps)
-			texture.sampling = new Sampling(Linear, Clamp, Clamp, Linear);
+		texture.mipmapped = true;
+		texture.sampling = new Sampling(Linear, Clamp, Clamp, Linear);
 		return own(texture);
 	}
 
@@ -150,32 +157,54 @@ class Renderer {
 		return own(target);
 	}
 
-	/** Uploads six square images as a cube texture, for a program's own shader to sample by direction (`samplerCube`).
+	/** Uploads six square images as a cube texture, without mipmaps, for a program's own shader to sample by direction (`samplerCube`).
 
 		@param faces  The faces, in the order +X, -X, +Y, -Y, +Z, -Z, as a cube's faces are seen from inside it, each the same size. Their
 			pixels are copied.
-		@param mipmaps  Optional. Whether to make each face's mipmaps too, on the CPU; defaults to false.
+		@return  The cube texture, sampled linearly. `createCubeTextureMipmapped` makes one with mipmaps.
+		@throws String  Not six faces, faces not square and alike, or larger than this GPU allows. */
+	public function createCubeTexture(faces:Array<Image>):CubeTexture3D {
+		checkFaces(faces);
+		var levels:Array<Bytes> = [];
+		levels.push(cubeLevel(faces));
+		return cubeOf(levels, faces[0].width);
+	}
+
+	/** Uploads six square images as a cube texture with each face's mipmaps, made on the CPU, for a program's own shader to sample by
+		direction (`samplerCube`).
+
+		@param faces  The faces, in the order +X, -X, +Y, -Y, +Z, -Z, as a cube's faces are seen from inside it, each the same size. Their
+			pixels are copied.
 		@return  The cube texture, sampled linearly.
 		@throws String  Not six faces, faces not square and alike, or larger than this GPU allows. */
-	public function createCubeTexture(faces:Array<Image>, mipmaps = false):CubeTexture3D {
+	public function createCubeTextureMipmapped(faces:Array<Image>):CubeTexture3D {
+		checkFaces(faces);
+		var mips = [for (f in faces) f.getMipmaps()];
+		var levels = [cubeLevel(faces)];
+		for (level in 0...mips[0].length)
+			levels.push(cubeLevel([for (m in mips) m[level]]));
+		return cubeOf(levels, faces[0].width);
+	}
+
+	// Refuses faces that aren't six, square and alike.
+	static function checkFaces(faces:Array<Image>):Void {
 		if (faces.length != 6)
 			throw 'helix-render: a cube texture of ${faces.length} faces; it takes six, +X, -X, +Y, -Y, +Z, -Z';
 		var size = faces[0].width;
 		for (f in faces)
 			if (f.width != size || f.height != size)
 				throw "helix-render: a cube texture's faces are square and alike";
-		var levels:Array<Bytes> = [];
-		var mips = [for (f in faces) mipmaps ? f.getMipmaps() : []];
-		var levelCount = 1 + (mipmaps ? mips[0].length : 0);
-		for (level in 0...levelCount) {
-			var face = level == 0 ? faces[0] : mips[0][level - 1];
-			var bytes = Bytes.alloc(face.width * face.height * 4 * 6);
-			for (i in 0...6) {
-				var image = level == 0 ? faces[i] : mips[i][level - 1];
-				bytes.blit(i * image.pixels.length, image.pixels, 0, image.pixels.length);
-			}
-			levels.push(bytes);
-		}
+	}
+
+	// One level of a cube texture: its six faces' pixels, one after another.
+	static function cubeLevel(faces:Array<Image>):Bytes {
+		var bytes = Bytes.alloc(faces[0].width * faces[0].height * 4 * 6);
+		for (i in 0...6)
+			bytes.blit(i * faces[i].pixels.length, faces[i].pixels, 0, faces[i].pixels.length);
+		return bytes;
+	}
+
+	function cubeOf(levels:Array<Bytes>, size:Int):CubeTexture3D {
 		var cube = new CubeTexture3D(graphics.createCubeTexture(size, levels, Rgba8), size);
 		cube.renderer = this;
 		live.set(cube, cube.dispose);
@@ -199,7 +228,8 @@ class Renderer {
 		return gpu;
 	}
 
-	/** Uploads a model: each mesh, each image as a texture, and each material as a `Material3D` over them.
+	/** Uploads a model: each mesh, each image as a texture without mipmaps, as raylib's `LoadModel` makes them, and each material as a
+		`Material3D` over them; `createModelMipmapped` makes its textures with mipmaps.
 
 		An image that is null (one the model couldn't read) gives no texture, and a material naming it draws without it. A mesh without a
 		material in the file is given one more material, white, at the end of `materials`. Each texture's `colorSpace` is set from the
@@ -209,8 +239,6 @@ class Renderer {
 		specular, ior and emissive_strength values the material's; otherwise opaque, uncut, back faces culled, linear and repeated, and
 		none of the extensions. An OBJ file's materials are shaded `Phong` from their Ks and Ns. Meshes keep their morph targets.
 		@param model  The model, as helix-services' `Models` reads it.
-		@param mipmaps  Optional. Whether its textures are made with mipmaps, on the CPU; defaults to true. raylib's `LoadModel` makes
-			none.
 		@param colorSpace  Optional. How the file's color factors and vertex colors are taken. `Auto`, the default, as the format says:
 			glTF's are linear, its factors encoded to sRGB for the materials' 0xAARRGGBB colors and its vertex colors read as linear
 			(`Material3D.colorSpace` Linear); an OBJ file's are sRGB. `Srgb` takes them as stored, as raylib does: each factor times 255
@@ -218,8 +246,18 @@ class Renderer {
 			stored and an unlit model with `toneMapped` off shows the file's numbers in an sRGB target as raylib does. `Linear` takes
 			every file's as linear.
 		@return  The uploaded model, which owns its meshes and textures. */
-	public function createModel(model:Model3D, mipmaps = true, colorSpace:ColorSpace = Auto):GpuModel3D {
-		return GpuModel3D.make(this, model, mipmaps, colorSpace);
+	public function createModel(model:Model3D, colorSpace:ColorSpace = Auto):GpuModel3D {
+		return GpuModel3D.make(this, model, createTexture, helix.platform.MipmapFilter.None, colorSpace);
+	}
+
+	/** Uploads a model as `createModel` does, its textures made with mipmaps (`createTextureMipmapped`), as three.js makes them.
+
+		@param model  The model, as helix-services' `Models` reads it.
+		@param colorSpace  Optional. How the file's color factors and vertex colors are taken, as `createModel` takes it; `Auto` by
+			default.
+		@return  The uploaded model, which owns its meshes and textures. */
+	public function createModelMipmapped(model:Model3D, colorSpace:ColorSpace = Auto):GpuModel3D {
+		return GpuModel3D.make(this, model, createTextureMipmapped, helix.platform.MipmapFilter.Linear, colorSpace);
 	}
 
 	/** Uploads a finished environment bake: its prefiltered and background cubes, and its irradiance.

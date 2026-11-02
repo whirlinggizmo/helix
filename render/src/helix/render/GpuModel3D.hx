@@ -2,6 +2,7 @@ package helix.render;
 
 import helix.math.Bounds3D;
 import helix.math.Matrix3D;
+import helix.services.images.Image;
 import helix.services.models.Model3D;
 
 /** Represents a model on the GPU: its meshes uploaded, its images made textures, its materials made `Material3D`s over them.
@@ -107,12 +108,13 @@ class GpuModel3D {
 	// A model uploaded: its textures, meshes and materials.
 
 	@:allow(helix.render)
-	static function make(renderer:Renderer, model:Model3D, mipmaps:Bool, colorSpace:ColorSpace):GpuModel3D {
+	static function make(renderer:Renderer, model:Model3D, upload:Image->Texture2D, mipmapFilter:helix.platform.MipmapFilter,
+			colorSpace:ColorSpace):GpuModel3D {
 		var textures:Array<Null<Texture2D>> = [
 			for (image in model.images)
 				if (image == null) null else {
-					var t = renderer.createTexture(image, mipmaps);
-					t.sampling = new helix.platform.Sampling(Linear, Repeat, Repeat, mipmaps ? Linear : None);
+					var t = upload(image);
+					t.sampling = new helix.platform.Sampling(Linear, Repeat, Repeat, mipmapFilter);
 					t;
 				}
 		];
