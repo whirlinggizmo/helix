@@ -10,15 +10,17 @@ import sys.io.File;
 
 using StringTools;
 
-/** Compiles raylib's shaders as the program builds, through helix-platform's shader pipeline, so they run on every backend.
+/** Compiles raylib's shaders as the program builds, through helix-services' shaders, so they run on every backend.
 
 	A raylib shader is GLSL 330 (or 100, for the web) with raylib's names: the attributes `vertexPosition`, `vertexTexCoord`, `vertexNormal`,
 	`vertexColor`, `vertexTangent`, `vertexTexCoord2`, and for skinning `vertexBoneIds` (raylib 5.5's name; `vertexBoneIndices`, 6.2's)
 	and `vertexBoneWeights`, and a `mat4` of the instances' transforms for `DrawMeshInstanced` (raylib's example's `instanceTransform`,
-	after the others, a location a column), loose uniforms such as `mvp` and `colDiffuse`, and the textures `texture0` to
-	`texture2`. Each stage is turned into GLSL 450: the attributes and the values between the stages get locations; each stage's uniforms
-	become one block of its own (an integer or a boolean held as a float, read back through a `#define`); the textures get bindings; the
-	vertex stage scales its `gl_Position.y` by block 0, which the platform turns over in a pass into a render target (`ClipFlip.ClipScale`). */
+	after the others, a location a column), loose uniforms such as `mvp` and `colDiffuse`, and the textures `texture0` to `texture2`.
+	What raylib's GLSL needs before helix-services compiles it is done here: GLSL 100 written as 330 (`attribute`, `varying`,
+	`gl_FragColor` and `texture2D`), a stage left out given rlgl's default, the attributes declared in raylib's order, so each takes
+	the location rlgl gives it, and each array uniform in a block of its own, so the rest stay within the 4 KiB of a block SDL_GPU's
+	Vulkan reads. The rest is the service's: GL's form, loose uniforms gathered, every type in its block, and the vertex
+	stage wrapped with a clip scale (`ShaderOptions.clipScale`), which the platform turns over in a pass into a render target. */
 class ShaderMacro {
 	/** raylib's attributes, in the order their locations are given. */
 	static final ATTRIBUTES = [
@@ -61,80 +63,26 @@ void main() {
 }
 ";
 
-	/** Returns the expression making a program from two stages' text, either null for raylib's default.
+	/** Returns the expression of a raylib shader compiled from two stages' text, either null for raylib's default.
 
-		@param vsName  The vertex stage's name, for errors.
+		@param vsName  The vertex stage's name, for errors (its file's path, which a quoted include resolves beside).
 		@param vs  Its text, or null.
 		@param fsName  The fragment stage's name.
 		@param fs  Its text, or null.
 		@param pos  Where errors point.
-		@return  An expression of type `helix.ray.internal.ProgramSource`. */
+		@return  An expression of type `helix.services.shaders.Shader`. */
 	public static function program(vsName:String, vs:Null<String>, fsName:String, fs:Null<String>, pos:Position):Expr {
-		var vertex = vs == null ? DEFAULT_VS : vs,
-			fragment = fs == null ? DEFAULT_FS : fs;
-		var v = parse(vertex, true, vsName, pos),
-			f = parse(fragment, false, fsName, pos);
-		var varyings = [for (d in v.decls) if (d.kind == "out") d];
-		for (d in f.decls)
-			if (d.kind == "in" && !Lambda.exists(varyings, o -> o.name == d.name))
+		var vertex = adapt(vs == null ? DEFAULT_VS : vs, true, vsName, pos),
+			fragment = adapt(fs == null ? DEFAULT_FS : fs, false, fsName, pos);
+		var sent = [for (d in declarations(vertex)) if (d.kind == "out") d.name];
+		for (d in declarations(fragment))
+			if (d.kind == "in" && sent.indexOf(d.name) < 0)
 				Context.error('$fsName: "${d.name}" comes in, but the vertex stage doesn\'t send it', pos);
-		var inputs = [for (d in v.decls) if (d.kind == "in") d];
-		inputs.sort((a, b) -> rank(a.name) - rank(b.name));
-		for (d in inputs)
-			if (ATTRIBUTES.indexOf(d.name) < 0 && d.type != "mat4")
+		for (d in declarations(vertex))
+			if (d.kind == "in" && ATTRIBUTES.indexOf(d.name) < 0 && d.type != "mat4")
 				Context.error('$vsName: the attribute "${d.name}" isn\'t one raylib gives here (${ATTRIBUTES.join(", ")}, or a mat4 of the instances\' transforms, `DrawMeshInstanced`\'s)',
 					pos);
-		// Textures: texture0 to texture2 at their own numbers, the rest after, in the order declared.
-		var samplers:Array<String> = [];
-		for (stage in [v, f])
-			for (d in stage.decls)
-				if (d.kind == "uniform" && d.type.startsWith("sampler") && samplers.indexOf(d.name) < 0)
-					samplers.push(d.name);
-		var slots = new Map<String, Int>(), next = 3;
-		for (name in samplers)
-			slots.set(name, switch name {
-				case "texture0": 0;
-				case "texture1": 1;
-				case "texture2": 2;
-				case _: next++;
-			});
-		var vertexText = emit(v, true, inputs, varyings, slots, 1, vsName, pos);
-		var fragmentText = emit(f, false, inputs, varyings, slots, 2, fsName, pos);
-		var compiled = try {
-			helix.platform.tools.ShaderCompiler.compileText({name: vsName, text: vertexText}, {name: fsName, text: fragmentText}, {
-				glsl410: !Context.defined("js"),
-				sdlGpu: !Context.defined("js")
-			});
-		} catch (e:haxe.Exception) {
-			Context.error('$vsName, $fsName: ${e.message}\n--- vertex as compiled:\n$vertexText\n--- fragment as compiled:\n$fragmentText', pos);
-		}
-		var uniforms = [];
-		for (b in compiled.uniformBlocks) {
-			// A block's index in a draw's uniforms: its slot in the vertex stage, 4 + its slot in the fragment stage.
-			var index = b.glslName == "raylib_vs" ? b.slot : b.glslName == "raylib_fs" ? 4 + b.slot : -1;
-			if (index < 0)
-				continue;
-			for (m in b.members) {
-				var integer = m.glslName.startsWith("helix_i_"),
-					boolean = m.glslName.startsWith("helix_b_");
-				uniforms.push({
-					name: integer || boolean ? m.glslName.substr(8) : m.glslName,
-					block: index,
-					offset: m.offset,
-					type: m.type,
-					count: m.elementCount,
-					integer: integer || boolean});
-			}
-		}
-		var source:helix.platform.ShaderSource = compiled;
-		var textures = [for (name => slot in slots) {name: name, slot: slot}];
-		var attributes:Array<String> = compiled.attributes;
-		return macro({
-			source: (${Context.makeExpr(source, pos)} : helix.platform.ShaderSource),
-			attributes: $v{attributes},
-			uniforms: $v{uniforms},
-			textures: $v{textures}
-		} : helix.ray.internal.ProgramSource);
+		return helix.services.shaders.Shader.makeExpr({name: vsName, text: vertex}, {name: fsName, text: fragment}, {clipScale: true}, pos);
 	}
 
 	static function rank(name:String):Int {
@@ -142,135 +90,60 @@ void main() {
 		return i < 0 ? 100 : i;
 	}
 
-	// A stage's declarations, taken out of its text, and what remains.
-	static function parse(text:String, vertex:Bool, name:String, pos:Position):{decls:Array<Decl>, body:String, defines:String} {
-		// Windows' line ends as \n, as raylib's own shaders have them; then comments out, so a declaration in one isn't read.
+	// A stage as GLSL 330: GLSL 100's words for GL 3's, and the vertex stage's attributes in raylib's order, each on a line one held, so a
+	// line in an error is the file's.
+	static function adapt(text:String, vertex:Bool, name:String, pos:Position):String {
 		text = StringTools.replace(text, "\r\n", "\n");
-		text = ~/\/\*[\s\S]*?\*\//g.replace(text, "");
-		text = ~/\/\/[^\n]*/g.replace(text, "");
-		text = ~/^[ \t]*#version[^\n]*/m.replace(text, "");
-		text = ~/^[ \t]*precision\s+\w+\s+\w+\s*;/gm.replace(text, "");
-		var defines = new Map<String, String>();
-		var define = ~/^[ \t]*#define\s+(\w+)\s+([^\n]+)/m;
-		var scan = text;
-		while (define.match(scan)) {
-			defines.set(define.matched(1), StringTools.trim(define.matched(2)));
-			scan = define.matchedRight();
-		}
-		var decls:Array<Decl> = [];
-		var declaration = ~/^[ \t]*(attribute|varying|in|out|uniform)\s+(?:(?:lowp|mediump|highp|flat|smooth)\s+)*(\w+)\s+(\w+)\s*(?:\[\s*(\w+)\s*\])?\s*;[ \t]*$/m;
-		var body = new StringBuf();
-		while (declaration.match(text)) {
-			body.add(declaration.matchedLeft());
-			var kind = declaration.matched(1), size = declaration.matched(4);
-			kind = switch kind {
-				case "attribute": "in";
-				case "varying": vertex ? "out" : "in";
-				case k: k;
+		var version = ~/^[ \t]*#version[ \t]+(\d+)[^\n]*/m;
+		var old = !version.match(text) || version.matched(1) == "100";
+		if (!version.match(text))
+			text = "#version 330\n#line 1\n" + text;
+		else if (old)
+			text = version.replace(text, "#version 330");
+		if (old) {
+			text = ~/^([ \t]*)attribute\b/gm.replace(text, "$1in");
+			text = ~/^([ \t]*)varying\b/gm.replace(text, vertex ? "$1out" : "$1in");
+			if (!vertex && ~/\bgl_Frag(Color|Data)\b/.match(text)) {
+				text = ~/\bgl_FragColor\b/g.replace(text, "helix_fragColor");
+				text = ~/\bgl_FragData\s*\[\s*0\s*\]/g.replace(text, "helix_fragColor");
+				// After the version line, on the line it ends.
+				text = ~/^([ \t]*#version[^\n]*)/m.replace(text, "$1\nout vec4 helix_fragColor;\n#line 2");
 			}
-			var count = 1;
-			if (size != null) {
-				var value = defines.exists(size) ? defines.get(size) : size;
-				var n = Std.parseInt(value);
-				if (n == null)
-					Context.error('$name: the array "${declaration.matched(3)}" is sized by "$size", which isn\'t a number', pos);
-				count = n;
-			}
-			decls.push({
-				kind: kind,
-				type: declaration.matched(2),
-				name: declaration.matched(3),
-				count: count,
-				sized: size != null
-			});
-			text = declaration.matchedRight();
 		}
-		body.add(text);
-		return {decls: decls, body: body.toString(), defines: ""};
+		text = ~/\b(texture2D|textureCube|texture2DProj)\s*\(/g.replace(text, "texture(");
+		// Each array uniform in a block of its own, on its line, so the loose uniforms (raylib's matrices and colDiffuse) stay in the first
+		// 4 KiB of their block, all SDL_GPU's Vulkan reads of one, however long the arrays (boneMatrices).
+		text = ~/^([ \t]*)uniform\s+((?:(?:lowp|mediump|highp)\s+)?(\w+)\s+(\w+)\s*\[[^\]\n]+\])\s*;/gm.map(text,
+			r -> StringTools.startsWith(r.matched(3), "sampler") ? r.matched(0) : '${r.matched(1)}uniform raylib_array_${r.matched(4)} { ${r.matched(2)}; };');
+		if (vertex) {
+			// The attributes in raylib's order, each in the line of one before.
+			var input = ~/^[ \t]*in\s+(?:(?:lowp|mediump|highp)\s+)?(\w+)\s+(\w+)\s*;[ \t]*$/;
+			var lines = text.split("\n"), at = [], found = [];
+			for (i => line in lines)
+				if (input.match(line)) {
+					at.push(i);
+					found.push({line: line, name: input.matched(2)});
+				}
+			var sorted = found.copy();
+			sorted.sort((a, b) -> rank(a.name) - rank(b.name));
+			for (k => i in at)
+				lines[i] = sorted[k].line;
+			text = lines.join("\n");
+		}
+		return text;
 	}
 
-	// A stage as GLSL 450.
-	static function emit(stage:{decls:Array<Decl>, body:String, defines:String}, vertex:Bool, inputs:Array<Decl>, varyings:Array<Decl>,
-			slots:Map<String, Int>, block:Int, name:String, pos:Position):String {
-		var out = new StringBuf();
-		out.add("#version 450\n");
-		if (vertex) {
-			// A mat4 takes four locations, a column each.
-			var location = 0;
-			for (d in inputs) {
-				out.add('layout(location = $location) in ${d.type} ${d.name};\n');
-				location += d.type == "mat4" ? 4 : 1;
-			}
+	// A stage's global in and out declarations, read for the checks above.
+	static function declarations(text:String):Array<{kind:String, type:String, name:String}> {
+		var out = [];
+		var declaration = ~/^[ \t]*(?:flat\s+|smooth\s+)?(in|out)\s+(?:(?:lowp|mediump|highp)\s+)?(\w+)\s+(\w+)\s*(?:\[[^\]]*\])?\s*;/m;
+		var rest = ~/\/\*[\s\S]*?\*\//g.replace(text, "");
+		rest = ~/\/\/[^\n]*/g.replace(rest, "");
+		while (declaration.match(rest)) {
+			out.push({kind: declaration.matched(1), type: declaration.matched(2), name: declaration.matched(3)});
+			rest = declaration.matchedRight();
 		}
-		for (i => d in varyings)
-			if (vertex || Lambda.exists(stage.decls, x -> x.kind == "in" && x.name == d.name))
-				out.add('layout(location = $i) ${vertex ? "out" : "in"} ${d.type} ${d.name};\n');
-		var body = stage.body;
-		if (!vertex) {
-			var output = Lambda.find(stage.decls, d -> d.kind == "out");
-			if (output != null)
-				out.add('layout(location = 0) out ${output.type} ${output.name};\n');
-			else {
-				out.add("layout(location = 0) out vec4 helix_fragColor;\n");
-				body = ~/\bgl_FragColor\b/g.replace(body, "helix_fragColor");
-				body = ~/\bgl_FragData\s*\[\s*0\s*\]/g.replace(body, "helix_fragColor");
-			}
-		}
-		body = ~/\b(texture2D|textureCube|texture2DProj)\s*\(/g.replace(body, "texture(");
-		if (vertex)
-			out.add("layout(binding = 0) uniform helix_flip { vec4 helix_clip; };\n");
-		var values = [
-			for (d in stage.decls)
-				if (d.kind == "uniform" && !d.type.startsWith("sampler")) d
-		];
-		var reads = new StringBuf();
-		if (values.length > 0) {
-			out.add('layout(binding = $block) uniform raylib_${vertex ? "vs" : "fs"} {\n');
-			for (d in values) {
-				var array = d.sized ? '[${d.count}]' : "";
-				switch d.type {
-					case "int" | "ivec2" | "ivec3" | "ivec4" | "bool" | "bvec2" | "bvec3" | "bvec4":
-						if (d.sized)
-							Context.error('$name: "${d.name}" is an array of ${d.type}; only float arrays of vec4 or mat4 are held here', pos);
-						var floatType = d.type.length == 3 || d.type == "bool" ? "float" : "vec" + d.type.charAt(d.type.length - 1);
-						var prefix = d.type.startsWith("b") ? "helix_b_" : "helix_i_";
-						out.add('    $floatType $prefix${d.name};\n');
-						reads.add('#define ${d.name} ${d.type}($prefix${d.name})\n');
-					case "float" | "vec2" | "vec3" | "vec4" | "mat2" | "mat3" | "mat4":
-						if (d.sized && d.type != "vec4" && d.type != "mat4")
-							Context.error('$name: "${d.name}" is an array of ${d.type}; only arrays of vec4 or mat4 are held here', pos);
-						out.add('    ${d.type} ${d.name}$array;\n');
-					case t:
-						Context.error('$name: the uniform "${d.name}" is a $t; a struct or other type isn\'t held here yet', pos);
-				}
-			}
-			out.add("};\n");
-		}
-		for (d in stage.decls)
-			if (d.kind == "uniform" && d.type.startsWith("sampler"))
-				out.add('layout(binding = ${slots.get(d.name)}) uniform ${d.type} ${d.name};\n');
-		out.add(reads.toString());
-		if (vertex) {
-			var start = body.indexOf("void main");
-			var open = start < 0 ? -1 : body.indexOf("{", start);
-			if (open < 0)
-				Context.error('$name: no main', pos);
-			var depth = 0, close = -1;
-			for (i in open...body.length) {
-				var c = body.charAt(i);
-				if (c == "{")
-					depth++;
-				else if (c == "}" && --depth == 0) {
-					close = i;
-					break;
-				}
-			}
-			if (close < 0)
-				Context.error('$name: main isn\'t closed', pos);
-			body = body.substring(0, close) + "    gl_Position.y *= helix_clip.y;\n" + body.substring(close);
-		}
-		out.add(body);
-		return out.toString();
+		return out;
 	}
 
 	/** Returns the text a shader argument names: a constant string, or a file's text by its path, relative to the program's files
@@ -342,13 +215,5 @@ void main() {
 			case _: null;
 		}
 	}
-}
-
-private typedef Decl = {
-	final kind:String;
-	final type:String;
-	final name:String;
-	final count:Int;
-	final sized:Bool;
 }
 #end

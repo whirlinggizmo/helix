@@ -7,7 +7,7 @@ import helix.ray.Raylib.*;
 	"helix.platform.adapters.graphics.webgl2", "helix.platform.adapters.window.dom", "helix.platform.adapters.shared", "helix.platform.adapters.shared.dom",
 	"helix.platform.adapters.system.dom", "helix.ray", "helix.ray.raylib.RCore", "helix.ray.internal.Frame", "helix.ray.internal.Program",
 	"helix.ray.internal.Runtime", "helix.ray.internal.Textures", "helix.services.input.Keyboard", "helix.services.saves", "helix.services.screen",
-	"helix.services.time")
+	"helix.services.shaders", "helix.services.shaders.compiled", "helix.services.time")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

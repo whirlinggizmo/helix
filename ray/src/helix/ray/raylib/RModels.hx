@@ -1902,10 +1902,10 @@ class RModels {
 
 	/** Makes a shader from a program compiled as the program built (`LoadShader`).
 
-		@param source  The compiled program.
+		@param source  The compiled shader.
 		@return  The shader. */
 	@:noCompletion
-	static function makeShader(source:helix.ray.internal.ProgramSource):Shader {
+	static function makeShader(source:helix.services.shaders.Shader):Shader {
 		var p = new helix.ray.internal.Program(Runtime.graphics, source);
 		return new Shader(p.handle, locations(p), p);
 	}

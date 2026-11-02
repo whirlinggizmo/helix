@@ -513,7 +513,9 @@ class Frame {
 			cull: cullFace(),
 			clockwise: false,
 			depthOnly: false,
-			flip: ClipScale
+			flip: ClipScale,
+			flipBlockSlot: p.flipSlot,
+			flipOffset: p.flipOffset
 		}));
 		var textures = p.textures.copy();
 		if (p.texture0 >= 0)
@@ -613,7 +615,9 @@ class Frame {
 				cull: wire ? None : cullFace(),
 				clockwise: false,
 				depthOnly: false,
-				flip: ClipScale
+				flip: ClipScale,
+				flipBlockSlot: p.flipSlot,
+				flipOffset: p.flipOffset
 			});
 		});
 		var bound = p.textures.copy();
@@ -699,20 +703,8 @@ class Frame {
 		return cull ? (cullFront ? Front : Back) : None;
 
 	// The program's blocks as they are now, with raylib's own values set: the matrices and the diffuse color.
-	function values(p:Program, model:Matrix3D, diffuse:Array<Float>):Array<Null<Bytes>> {
-		var modelView = Matrix3D.compose(model, view);
-		p.writeNamed("mvp", Matrix3D.compose(modelView, projection).values);
-		p.writeNamed("matModel", model.values);
-		p.writeNamed("matView", view.values);
-		p.writeNamed("matProjection", projection.values);
-		if (p.declares("matNormal")) {
-			var normal = new Matrix3D().copyFrom(model);
-			normal.invert(normal);
-			p.writeNamed("matNormal", normal.transpose(normal).values);
-		}
-		p.writeNamed("colDiffuse", diffuse);
-		return [for (b in p.blocks) b == null ? null : b.sub(0, b.length)];
-	}
+	function values(p:Program, model:Matrix3D, diffuse:Array<Float>):Array<Null<Bytes>>
+		return p.capture(model, view, projection, diffuse);
 
 	/** Draws the frame: each render texture's pass, then the screen's, then shows it unless told to wait for `present`. A frame ended
 		and not shown yet is shown first.

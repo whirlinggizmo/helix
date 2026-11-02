@@ -6109,10 +6109,10 @@ class Raylib {
 		@param fsCode  The fragment stage's text, or null.
 		@return  The shader. */
 	public static macro function LoadShaderFromMemory(vsCode:ExprOf<Null<String>>, fsCode:ExprOf<Null<String>>):ExprOf<Shader> {
-		var vs = helix.ray.internal.ShaderMacro.text(vsCode, false),
-			fs = helix.ray.internal.ShaderMacro.text(fsCode, false);
-		var program = helix.ray.internal.ShaderMacro.program("vertex text", vs == null ? null : vs.text, "fragment text", fs == null ? null : fs.text,
-			haxe.macro.Context.currentPos());
+		var vs = helix.services.shaders.Shader.foldText(vsCode),
+			fs = helix.services.shaders.Shader.foldText(fsCode);
+		var program = helix.ray.internal.ShaderMacro.program(vs == null ? "default vertex" : vs.name, vs == null ? null : vs.text,
+			fs == null ? "default fragment" : fs.name, fs == null ? null : fs.text, haxe.macro.Context.currentPos());
 		return macro @:privateAccess helix.ray.raylib.RModels.makeShader($program);
 	}
 

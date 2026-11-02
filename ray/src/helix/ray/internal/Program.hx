@@ -2,19 +2,23 @@ package helix.ray.internal;
 
 import haxe.io.Bytes;
 import helix.platform.IGraphics;
+import helix.services.shaders.Shader;
+import helix.services.shaders.ShaderSnapshot;
+import helix.services.shaders.ShaderUniform;
+import helix.services.shaders.ShaderValues;
 
-/** Holds a raylib shader on the GPU: its program, the current values of its blocks, the textures set on it, and its pipelines. */
+/** Holds a raylib shader on the GPU: its compiled shader (helix-services'), the values every draw through it reads (raylib shares a
+	shader's uniforms between every material drawn with it), the textures set on it, its locations, and its pipelines. */
 @:noCompletion
 class Program {
-	/** The attributes, as raylib names them, by slot. */
+	/** The attributes, as raylib names them, by slot; a matrix's other columns "". */
 	public final attributes:Array<String>;
 
-	/** Each uniform and texture by its location, as `GetShaderLocation` gives it. */
-	public final names:Array<String> = [];
+	/** The compiled shader. */
+	public final shader:Shader;
 
-	/** The blocks' bytes by their index in a draw's uniforms: 0 the platform's flip, 1 the vertex stage's values, 6 the fragment stage's
-		(its slot 2). */
-	public final blocks:Array<Null<Bytes>> = [for (_ in 0...7) null];
+	/** The values its uniforms hold, as `SetShaderValue` writes them. */
+	public final values:ShaderValues;
 
 	/** The texture at each slot, set by `SetShaderValueTexture` or by the draw. */
 	public final textures:Array<Int> = [];
@@ -35,55 +39,96 @@ class Program {
 	/** The platform's program handle. */
 	public final handle:Int;
 
-	final source:ProgramSource;
+	/** Where its pipelines flip a draw into a render target: its clip scale's block slot and offset. */
+	public final flipSlot:Int;
+
+	public final flipOffset:Int;
+
+	// Each location, as `GetShaderLocation` hands them out: a uniform and an element, or a sampler's name.
+	final locations:Array<{
+		name:String,
+		uniform:Null<ShaderUniform>,
+		elementIndex:Int,
+		sampler:String
+	}> = [];
 	final pipelines = new Map<String, Int>();
 	final graphics:IGraphics;
+	// raylib's own uniforms, written by each draw: null for one the shader doesn't declare.
+	final mvp:Null<ShaderUniform>;
+	final matModel:Null<ShaderUniform>;
+	final matView:Null<ShaderUniform>;
+	final matProjection:Null<ShaderUniform>;
+	final matNormal:Null<ShaderUniform>;
+	final colDiffuse:Null<ShaderUniform>;
 
 	/** Makes the program on the GPU.
 
 		@param graphics  The graphics.
-		@param source  The program as compiled. */
-	public function new(graphics:IGraphics, source:ProgramSource) {
+		@param shader  The shader as compiled. */
+	public function new(graphics:IGraphics, shader:Shader) {
 		this.graphics = graphics;
-		this.source = source;
-		attributes = source.attributes;
-		handle = graphics.createShader(source.source);
-		for (b in source.source.uniformBlocks)
-			blocks[b.stage == "fragment" ? 4 + b.slot : b.slot] = Bytes.alloc(b.size);
-		if (blocks[0] != null)
-			for (i in 0...4)
-				blocks[0].setFloat(i * 4, 1);
-		for (u in source.uniforms)
-			if (names.indexOf(u.name) < 0)
-				names.push(u.name);
-		var slots = new Map<String, Int>();
-		for (t in source.textures) {
-			slots.set(t.name, t.slot);
-			names.push(t.name);
+		this.shader = shader;
+		attributes = shader.source.attributes;
+		handle = graphics.createShader(shader.source);
+		values = new ShaderValues(shader);
+		var place = shader.findUniformPlace(shader.getUniform("helix_clipScale"));
+		flipSlot = place.blockSlot;
+		flipOffset = place.offset;
+		for (s in shader.samplers) {
+			while (textures.length <= s.slot) {
+				textures.push(0);
+				cubes.push(false);
+				units.push(-1);
+			}
+			cubes[s.slot] = s.kind == Cube;
 		}
-		texture0 = slots.exists("texture0") ? slots.get("texture0") : -1;
-		texture1 = slots.exists("texture1") ? slots.get("texture1") : -1;
-		texture2 = slots.exists("texture2") ? slots.get("texture2") : -1;
-		var count = 0;
-		for (t in source.textures)
-			if (t.slot + 1 > count)
-				count = t.slot + 1;
-		for (_ in 0...count) {
-			textures.push(0);
-			cubes.push(false);
-			units.push(-1);
-		}
-		for (t in source.source.textures)
-			if (t.slot < count)
-				cubes[t.slot] = t.cube;
+		texture0 = slotOf("texture0");
+		texture1 = slotOf("texture1");
+		texture2 = slotOf("texture2");
+		mvp = shader.findUniform("mvp");
+		matModel = shader.findUniform("matModel");
+		matView = shader.findUniform("matView");
+		matProjection = shader.findUniform("matProjection");
+		matNormal = shader.findUniform("matNormal");
+		colDiffuse = shader.findUniform("colDiffuse");
 	}
 
-	/** Returns a uniform's or texture's location.
+	function slotOf(name:String):Int {
+		var s = shader.findSampler(name);
+		return s == null ? -1 : s.slot;
+	}
+
+	/** Returns a uniform's or texture's location, as GL gives it: -1 for a name the shader doesn't declare, or declares and doesn't read.
+		A path into an array (`lights[1].color`) has a location of its own.
 
 		@param name  Its name.
-		@return  The location, or -1 when the program doesn't declare it. */
+		@return  The location, or -1. */
 	public function locate(name:String):Int {
-		return names.indexOf(name);
+		for (i => l in locations)
+			if (l.name == name)
+				return i;
+		var sampler = shader.findSampler(name);
+		if (sampler != null) {
+			if (!sampler.active)
+				return -1;
+			locations.push({
+				name: name,
+				uniform: null,
+				elementIndex: 0,
+				sampler: name
+			});
+			return locations.length - 1;
+		}
+		var path = shader.findUniformPath(name);
+		if (path == null || !path.uniform.active || path.uniform.name == "helix_clipScale")
+			return -1;
+		locations.push({
+			name: name,
+			uniform: path.uniform,
+			elementIndex: path.elementIndex,
+			sampler: ""
+		});
+		return locations.length - 1;
 	}
 
 	/** Returns whether a location is a texture's, and its slot.
@@ -91,87 +136,74 @@ class Program {
 		@param location  The location.
 		@return  The texture's slot, or -1 for a uniform's location. */
 	public function textureSlot(location:Int):Int {
-		if (location < 0 || location >= names.length)
+		if (location < 0 || location >= locations.length || locations[location].sampler == "")
 			return -1;
-		for (t in source.textures)
-			if (t.name == names[location])
-				return t.slot;
-		return -1;
+		return slotOf(locations[location].sampler);
 	}
 
-	/** Writes numbers to a uniform, in each stage that declares it.
+	/** Writes numbers to a uniform, from its element, as many whole elements as they hold (a matrix by columns), integers and bools
+		as their numbers taken whole, as GL's `glUniform` takes them.
 
 		@param location  Its location.
-		@param values  The numbers, in GLSL's order (a matrix by columns).
-		@param first  Optional. The first array element written. */
-	public function write(location:Int, values:Array<Float>, first = 0):Void {
-		if (location < 0 || location >= names.length)
+		@param numbers  The numbers, in GLSL's order. */
+	public function write(location:Int, numbers:Array<Float>):Void {
+		if (location < 0 || location >= locations.length || locations[location].uniform == null)
 			return;
-		var name = names[location];
-		for (u in source.uniforms)
-			if (u.name == name)
-				put(blocks[u.block], u, values, first);
+		var l = locations[location];
+		put(l.uniform, numbers, l.elementIndex);
 	}
 
-	/** Writes numbers to a uniform by name, when the program declares it.
+	// Writes whole elements of numbers into a uniform from an element, past its end dropped.
+	function put(u:ShaderUniform, numbers:Array<Float>, first:Int):Void {
+		var size = u.type.componentCount * u.type.columnCount;
+		var count = Std.int(numbers.length / size);
+		if (first + count > u.elementCount)
+			count = u.elementCount - first;
+		if (count <= 0)
+			return;
+		if (u.type.integer)
+			values.writeInts(u, [for (i in 0...count * size) Std.int(numbers[i])], first);
+		else
+			values.writeFloats(u, numbers.length == count * size ? numbers : numbers.slice(0, count * size), first);
+	}
+
+	/** Writes a uniform by name, when the shader declares it.
 
 		@param name  The uniform's name.
-		@param values  The numbers. */
-	public function writeNamed(name:String, values:Array<Float>):Void {
-		for (u in source.uniforms)
-			if (u.name == name)
-				put(blocks[u.block], u, values, 0);
+		@param numbers  The numbers. */
+	public function writeNamed(name:String, numbers:Array<Float>):Void {
+		var u = shader.findUniform(name);
+		if (u != null)
+			put(u, numbers, 0);
 	}
 
-	/** Returns whether the program declares a uniform.
+	/** Returns the blocks a draw reads, raylib's own uniforms written first: the matrices and the diffuse color, each copied, as a draw is
+		recorded and submitted when the frame is drawn.
 
-		@param name  The name.
-		@return  True when it does. */
-	public function declares(name:String):Bool {
-		for (u in source.uniforms)
-			if (u.name == name)
-				return true;
-		return false;
-	}
-
-	// std140: each element of an array, and each column of a matrix, starts on 16 bytes.
-	static function put(bytes:Null<Bytes>, u:{offset:Int, type:String, count:Int}, values:Array<Float>, first:Int):Void {
-		if (bytes == null)
-			return;
-		var columns = 1, rows = 1;
-		switch u.type {
-			case "float":
-				rows = 1;
-			case "vec2":
-				rows = 2;
-			case "vec3":
-				rows = 3;
-			case "vec4":
-				rows = 4;
-			case "mat2":
-				columns = 2;
-				rows = 2;
-			case "mat3":
-				columns = 3;
-				rows = 3;
-			case "mat4":
-				columns = 4;
-				rows = 4;
-			case _:
-				rows = 4;
+		@param model  The model's matrix.
+		@param view  The view's.
+		@param projection  The projection's.
+		@param diffuse  The diffuse color, 0 to 1 each.
+		@return  The blocks' bytes, by stage and slot. */
+	public function capture(model:helix.math.Matrix3D, view:helix.math.Matrix3D, projection:helix.math.Matrix3D, diffuse:Array<Float>):Array<Null<Bytes>> {
+		if (mvp != null)
+			values.writeMatrix(mvp, helix.math.Matrix3D.compose(helix.math.Matrix3D.compose(model, view), projection));
+		if (matModel != null)
+			values.writeMatrix(matModel, model);
+		if (matView != null)
+			values.writeMatrix(matView, view);
+		if (matProjection != null)
+			values.writeMatrix(matProjection, projection);
+		if (matNormal != null) {
+			var normal = new helix.math.Matrix3D().copyFrom(model);
+			normal.invert(normal);
+			values.writeMatrix(matNormal, normal.transpose(normal));
 		}
-		var element = columns * rows, stride = columns * 16;
-		var at = 0, index = first;
-		while (at + element <= values.length && index < u.count) {
-			for (c in 0...columns)
-				for (r in 0...rows) {
-					var offset = u.offset + index * stride + c * 16 + r * 4;
-					if (offset + 4 <= bytes.length)
-						bytes.setFloat(offset, values[at + c * rows + r]);
-				}
-			at += element;
-			index++;
-		}
+		if (colDiffuse != null)
+			put(colDiffuse, diffuse, 0);
+		var snapshot = new ShaderSnapshot();
+		values.capture(snapshot);
+		return snapshot.uniforms;
 	}
 
 	/** Returns the pipeline drawing through the program in a way.

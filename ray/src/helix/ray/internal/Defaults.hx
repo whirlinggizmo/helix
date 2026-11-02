@@ -9,7 +9,7 @@ import haxe.macro.Expr;
 @:noCompletion
 class Defaults {
 	/** Returns raylib's default shader. */
-	public static macro function shader():ExprOf<ProgramSource> {
+	public static macro function shader():ExprOf<helix.services.shaders.Shader> {
 		return ShaderMacro.program("raylib default vertex shader", null, "raylib default fragment shader", null, Context.currentPos());
 	}
 }
