@@ -5,6 +5,7 @@ import helix.platform.IEvents;
 import helix.platform.IGraphics;
 import helix.platform.ISystem;
 import helix.platform.VertexBuffer;
+import helix.platform.VertexFormat;
 import helix.platform.IWindow;
 import helix.platform.Sampling;
 import helix.platform.tools.ShaderCompiler;
@@ -34,7 +35,8 @@ typedef Case = {
 	its pixels against what arithmetic says they are.
 
 	The cases: points a pixel each, unindexed and by index, and refused over a program without the point size; a clear, a triangle's
-	colors interpolated, eight vertex buffers read and a ninth refused, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
+	colors interpolated, eight vertex buffers read and a ninth refused, each vertex format read (a signed 0 as 0, fewer and more components
+	than the input, formats mixed in one record, instances from the second) and layouts the platform refuses, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
 	additive blending, each blend factor and operation and a color write mask, a texture's rectangles replaced, and replaced
 	between passes, targets kept from pass to pass and frame to frame (their depth and samples too) and one never cleared, textures read
 	back, instances placed by a mat4 vertex input, mipmaps under each mipmap filter, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
@@ -165,6 +167,11 @@ class GraphicsTests {
 		var eight = shader(ShaderCompiler.compile("shaders/eight.vert", "shaders/color.frag"));
 		var matrices = shader(ShaderCompiler.compile("shaders/instanced.vert", "shaders/color.frag"));
 		var pointProgram = shader(ShaderCompiler.compile("shaders/color.vert", "shaders/color.frag", {points: true}));
+		var signed = shader(ShaderCompiler.compile("shaders/signed.vert", "shaders/color.frag"));
+		var zero = shader(ShaderCompiler.compile("shaders/zero.vert", "shaders/color.frag"));
+		var three = shader(ShaderCompiler.compile("shaders/three.vert", "shaders/color.frag"));
+		var mixed = shader(ShaderCompiler.compile("shaders/mixed.vert", "shaders/color.frag"));
+		var integer = shader(ShaderCompiler.compile("shaders/integer.vert", "shaders/color.frag"));
 		var sharedSource = ShaderCompiler.compile("shaders/shared.vert", "shaders/shared.frag");
 		var sharing = shader(sharedSource);
 
@@ -173,10 +180,10 @@ class GraphicsTests {
 			stride: 24,
 			instanced: false,
 			attributes: [
-				{slot: 0, componentCount: 2, offset: 0},
+				{slot: 0, format: Float2, offset: 0},
 				{
 					slot: 1,
-					componentCount: 4,
+					format: Float4,
 					offset: 8
 				}
 			]
@@ -185,15 +192,15 @@ class GraphicsTests {
 			stride: 16,
 			instanced: false,
 			attributes: [
-				{slot: 0, componentCount: 2, offset: 0},
+				{slot: 0, format: Float2, offset: 0},
 				{
 					slot: 1,
-					componentCount: 2,
+					format: Float2,
 					offset: 8
 				}
 			]
 		};
-		var plain:VertexBuffer = {stride: 8, instanced: false, attributes: [{slot: 0, componentCount: 2, offset: 0}]};
+		var plain:VertexBuffer = {stride: 8, instanced: false, attributes: [{slot: 0, format: Float2, offset: 0}]};
 		var opaque = pipeline(color, colored, Blend.OPAQUE),
 			alpha = pipeline(color, colored, Blend.ALPHA),
 			additive = pipeline(color, colored, Blend.ADDITIVE);
@@ -248,7 +255,7 @@ class GraphicsTests {
 				{
 					stride: 80,
 					instanced: true,
-					attributes: [for (column in 0...5) {slot: column + 1, componentCount: 4, offset: column * 16}]
+					attributes: [for (column in 0...5) {slot: column + 1, format: Float4, offset: column * 16}]
 				}
 			],
 			primitive: Triangles,
@@ -295,7 +302,7 @@ class GraphicsTests {
 		// Eight buffers, the most a pipeline reads: a position, then a number from each of seven; a ninth is refused.
 		var single:Array<VertexBuffer> = [
 			for (slot in 1...9)
-				{stride: 4, instanced: false, attributes: [{slot: slot, componentCount: 1, offset: 0}]}
+				{stride: 4, instanced: false, attributes: [{slot: slot, format: Float1, offset: 0}]}
 		];
 		function many(layouts:Array<VertexBuffer>):Int
 			return graphics.createPipeline({
@@ -318,6 +325,81 @@ class GraphicsTests {
 			false;
 		} catch (e:Dynamic)
 			true;
+
+		// The vertex formats: a position from one buffer and a value at slot 1 from another, its format's bytes a record; a layout of two
+		// buffers, or refused.
+		function formatted(program:Int, layouts:Array<VertexBuffer>):Int {
+			var handle = graphics.createPipeline({
+				shader: program,
+				buffers: layouts,
+				primitive: Triangles,
+				indexed: false,
+				blend: Blend.OPAQUE,
+				depthTest: Off,
+				depthWrite: false,
+				cull: None,
+				clockwise: false,
+				depthOnly: false,
+				flip: ClipScale
+			});
+			pipelines.push(handle);
+			return handle;
+		}
+		function fed(program:Int, format:VertexFormat):Int
+			return formatted(program, [
+				plain,
+				{stride: format.bytes, instanced: false, attributes: [{slot: 1, format: format, offset: 0}]}
+			]);
+		function refused(program:Int, layout:VertexBuffer):Bool
+			return try {
+				formatted(program, [plain, layout]);
+				false;
+			} catch (e:Dynamic)
+				true;
+		var refusals = [
+			"an offset not a multiple of 4" => refused(color, {stride: 8, instanced: false, attributes: [{slot: 1, format: Float1, offset: 2}]}),
+			"a stride not a multiple of 4" => refused(color, {stride: 10, instanced: false, attributes: [{slot: 1, format: Float2, offset: 0}]}),
+			"a stride over 255" => refused(color, {stride: 256, instanced: false, attributes: [{slot: 1, format: Float4, offset: 0}]}),
+			"a format's bytes past the stride" => refused(color, {stride: 8, instanced: false, attributes: [{slot: 1, format: UShort4Norm, offset: 4}]}),
+			"a number no format has" => refused(color, {stride: 16, instanced: false, attributes: [{slot: 1, format: cast 12, offset: 0}]}),
+			"a format into an ivec4 input" => refused(integer, {stride: 4, instanced: false, attributes: [{slot: 1, format: UByte4Norm, offset: 0}]})
+		];
+		var widest = !refused(color, {stride: 252, instanced: false, attributes: [{slot: 1, format: Float4, offset: 236}]});
+		var unsignedBytes = fed(color, UByte4Norm),
+			signedBytes = fed(signed, Byte4Norm),
+			unsignedShorts2 = fed(color, UShort2Norm),
+			signedShorts2 = fed(signed, Short2Norm),
+			unsignedShorts4 = fed(color, UShort4Norm),
+			signedShorts4 = fed(signed, Short4Norm),
+			zeroBytes = fed(zero, Byte4Norm),
+			zeroShorts = fed(zero, Short2Norm),
+			threeBytes = fed(three, Byte4Norm),
+			oneFloat = fed(color, Float1),
+			threeFloats = fed(color, Float3),
+			twoHalves = fed(color, Half2),
+			fourHalves = fed(color, Half4);
+		// One 16-byte record: a position as two floats, a color as four bytes, a texture coordinate as two shorts.
+		var interleaved = formatted(mixed, [
+			{
+				stride: 16,
+				instanced: false,
+				attributes: [
+					{slot: 0, format: Float2, offset: 0},
+					{slot: 1, format: UByte4Norm, offset: 8},
+					{slot: 2, format: UShort2Norm, offset: 12}
+				]
+			}
+		]);
+		// Instances placed by a matrix (slots 1 to 4) from one instanced buffer and colored (slot 5) as bytes from another.
+		var byteInstances = formatted(matrices, [
+			plain,
+			{
+				stride: 64,
+				instanced: true,
+				attributes: [for (column in 0...4) {slot: column + 1, format: Float4, offset: column * 16}]
+			},
+			{stride: 4, instanced: true, attributes: [{slot: 5, format: UByte4Norm, offset: 0}]}
+		]);
 
 		// Points, unindexed and indexed, through the points program; culling asked for, which points ignore. Over a program compiled
 		// without the point size, refused.
@@ -390,6 +472,42 @@ class GraphicsTests {
 			return [.5, 0, 0, 0, 0, .5, 0, 0, 0, 0, 1, 0, x, y, 0, 1].concat(color);
 		var instances = buffer(instance(-.5, .5, [1, 0, 0, 1]).concat(instance(.5, -.5, [0, 1, 0, 1])).concat(instance(.5, .5, [0, 0, 1, 1])));
 		var numbers = [for (value in [.25, .25, .5, .25, .125, .5, 1]) buffer([for (_ in 0...6) value])];
+		// A value for each of the square's six vertices, as bytes, as 16-bit integers (or half floats' bits), or as floats.
+		function bytesFed(values:Array<Int>):Int {
+			var record = Bytes.alloc(values.length);
+			for (i => v in values)
+				record.set(i, v);
+			return repeated(record);
+		}
+		function shortsFed(values:Array<Int>):Int {
+			var record = Bytes.alloc(values.length * 2);
+			for (i => v in values)
+				record.setUInt16(i * 2, v & 0xffff);
+			return repeated(record);
+		}
+		function floatsFed(values:Array<Float>):Int
+			return repeated(floatBytes(values));
+		var mixedRecords = Bytes.alloc(16 * 6);
+		for (i in 0...6) {
+			mixedRecords.setFloat(i * 16, square[i * 2]);
+			mixedRecords.setFloat(i * 16 + 4, square[i * 2 + 1]);
+			for (k => v in [255, 102, 0, 255])
+				mixedRecords.set(i * 16 + 8 + k, v);
+			mixedRecords.setUInt16(i * 16 + 12, 13107);
+			mixedRecords.setUInt16(i * 16 + 14, 65535);
+		}
+		var mixedBuffer = graphics.createStaticBuffer(mixedRecords, mixedRecords.length, false);
+		buffers.push(mixedBuffer);
+		var placements = buffer([
+			for (at in [[-.5, .5], [.5, -.5], [.5, .5]])
+				for (v in [.5, 0, 0, 0, 0, .5, 0, 0, 0, 0, 1, 0, at[0], at[1], 0, 1])
+					v
+		]);
+		var instanceColors = Bytes.alloc(12);
+		for (i => v in [255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255])
+			instanceColors.set(i, v);
+		var instanceColorBuffer = graphics.createStaticBuffer(instanceColors, 12, false);
+		buffers.push(instanceColorBuffer);
 
 		var target = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false),
 			second = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false);
@@ -429,6 +547,8 @@ class GraphicsTests {
 		graphics.updateTexture(table, 0, 0, 4, 1, floatBytes(floats));
 
 		var clip = floatBytes([1, 1, 0, 0]);
+		function fedDraw(pipeline:Int, values:Int):Void
+			graphics.draw(pipeline, [positions, values], 0, 0, 6, 0, 1, [], [], [clip]);
 		// The shared block's bytes, each member written at the place the reflection gives it.
 		var sharedBlock = Lambda.find(sharedSource.uniformBlocks, b -> b.glslName == "Shared");
 		var sharedBytes = Bytes.alloc(sharedBlock.size);
@@ -564,6 +684,110 @@ class GraphicsTests {
 						throw "eight buffers read, a ninth refused: a pipeline of nine was made";
 					for (at in [[0, 0], [8, 8], [15, 15]])
 						p.expect(at[0], at[1], [.5, .75, .625, 1], 1);
+				}
+			},
+			{
+				name: "UByte4Norm read as each byte over 255",
+				before: into(0, 0, 0, 0, () -> fedDraw(unsignedBytes, bytesFed([0, 128, 255, 64]))),
+				target: target,
+				check: p -> {
+					for (name => refusedIt in refusals)
+						check(refusedIt, '$name: the pipeline was made');
+					check(widest, "a stride of 252, a Float4 at 236: refused");
+					for (at in [[0, 0], [8, 8], [15, 15]])
+						p.expect(at[0], at[1], [0, 128 / 255, 1, 64 / 255], 0);
+				}
+			},
+			{
+				name: "Byte4Norm read as each byte over 127, -128 as -1",
+				before: into(0, 0, 0, 0, () -> fedDraw(signedBytes, bytesFed([128, 129, 0, 127]))),
+				target: target,
+				check: p -> p.expect(8, 8, [0, 0, .5, 1], 1)
+			},
+			{
+				name: "UShort2Norm into a vec4 reads (x, y, 0, 1)",
+				before: into(1, 1, 1, 0, () -> fedDraw(unsignedShorts2, shortsFed([13107, 65535]))),
+				target: target,
+				check: p -> p.expect(8, 8, [.2, 1, 0, 1], 1)
+			},
+			{
+				name: "Short2Norm read as each over 32767, -32768 as -1",
+				before: into(0, 0, 0, 0, () -> fedDraw(signedShorts2, shortsFed([-32768, 32767]))),
+				target: target,
+				// (-1, 1, 0, 1) halved and raised by a half.
+				check: p -> p.expect(8, 8, [0, 1, .5, 1], 1)
+			},
+			{
+				name: "UShort4Norm read as each over 65535",
+				before: into(0, 0, 0, 0, () -> fedDraw(unsignedShorts4, shortsFed([0, 21845, 65535, 32768]))),
+				target: target,
+				check: p -> p.expect(8, 8, [0, 1 / 3, 1, .5], 1)
+			},
+			{
+				name: "Short4Norm read as each over 32767",
+				before: into(0, 0, 0, 0, () -> fedDraw(signedShorts4, shortsFed([-32768, -16384, 16384, 32767]))),
+				target: target,
+				check: p -> p.expect(8, 8, [0, (1 - 16384 / 32767) / 2, (1 + 16384 / 32767) / 2, 1], 1)
+			},
+			{
+				name: "a signed normalized 0 reads 0",
+				// Left, Byte4Norm zeros; right, Short2Norm zeros, read as (0, 0, 0, 1): each component 1 where it reads 0.
+				before: into(.5, .5, .5, .5, () -> {
+					graphics.applyViewport(0, 0, 8, SIZE);
+					fedDraw(zeroBytes, bytesFed([0, 0, 0, 0]));
+					graphics.applyViewport(8, 0, 8, SIZE);
+					fedDraw(zeroShorts, shortsFed([0, 0]));
+				}),
+				target: target,
+				check: p -> {
+					p.expect(3, 8, [1, 1, 1, 1], 0);
+					p.expect(12, 8, [1, 1, 1, 0], 0);
+				}
+			},
+			{
+				name: "Byte4Norm into a vec3 reads its first three",
+				before: into(0, 0, 0, 0, () -> fedDraw(threeBytes, bytesFed([129, 0, 127, 50]))),
+				target: target,
+				check: p -> p.expect(8, 8, [0, .5, 1, 1], 1)
+			},
+			{
+				name: "Float1, Float3, Half2 and Half4 into a vec4",
+				// A column of four texels each: (.5, 0, 0, 1); (.25, .5, .75, 1); (.75, .25, 0, 1); (1, .5, .25, .5).
+				before: into(0, 0, 0, 0, () -> {
+					graphics.applyViewport(0, 0, 4, SIZE);
+					fedDraw(oneFloat, floatsFed([.5]));
+					graphics.applyViewport(4, 0, 4, SIZE);
+					fedDraw(threeFloats, floatsFed([.25, .5, .75]));
+					graphics.applyViewport(8, 0, 4, SIZE);
+					fedDraw(twoHalves, shortsFed([0x3a00, 0x3400]));
+					graphics.applyViewport(12, 0, 4, SIZE);
+					fedDraw(fourHalves, shortsFed([0x3c00, 0x3800, 0x3400, 0x3800]));
+				}),
+				target: target,
+				check: p -> {
+					p.expect(2, 8, [.5, 0, 0, 1], 1);
+					p.expect(6, 8, [.25, .5, .75, 1], 1);
+					p.expect(10, 8, [.75, .25, 0, 1], 1);
+					p.expect(14, 8, [1, .5, .25, .5], 1);
+				}
+			},
+			{
+				name: "one interleaved record of Float2, UByte4Norm and UShort2Norm",
+				before: into(0, 0, 0, 0, () -> graphics.draw(interleaved, [mixedBuffer], 0, 0, 6, 0, 1, [], [], [clip])),
+				target: target,
+				check: p -> for (at in [[0, 0], [8, 8], [15, 15]])
+					p.expect(at[0], at[1], [1, .4, .2, 1], 1)
+			},
+			{
+				name: "instances colored by UByte4Norm, from the second",
+				// Of three instances, the second and third: green bottom right, blue top right; the first's top left stays clear.
+				before: into(0, 0, 0, 1, () -> graphics.draw(byteInstances, [positions, placements, instanceColorBuffer], 0, 0, 6, 1, 2, [], [], [clip])),
+				target: target,
+				check: p -> {
+					p.expect(4, 4, [0, 0, 0, 1], 0);
+					p.expect(12, 12, [0, 1, 0, 1], 0);
+					p.expect(12, 4, [0, 0, 1, 1], 0);
+					p.expect(4, 12, [0, 0, 0, 1], 0);
 				}
 			},
 			{
@@ -999,6 +1223,16 @@ class GraphicsTests {
 			flip: ClipScale
 		});
 		pipelines.push(handle);
+		return handle;
+	}
+
+	// A static buffer of a record six times, a value for each of the square's vertices.
+	static function repeated(record:Bytes):Int {
+		var bytes = Bytes.alloc(record.length * 6);
+		for (i in 0...6)
+			bytes.blit(i * record.length, record, 0, record.length);
+		var handle = graphics.createStaticBuffer(bytes, bytes.length, false);
+		buffers.push(handle);
 		return handle;
 	}
 

@@ -129,12 +129,17 @@ abstract class NativeGraphics implements IGraphics {
 		};
 	}
 
-	// The programs compiled with ShaderCompileOptions.points, by handle, which Points pipelines may draw: set by a subclass's createShader.
-	final pointPrograms = new Map<Int, Bool>();
+	// The programs, by handle, as their sources describe them: whether Points pipelines may draw one, and its attributes' types, which
+	// a pipeline's layout must feed. Set by a subclass's createShader.
+	final programs = new Map<Int, helix.platform.ShaderSource>();
 
 	public function createPipeline(desc:PipelineDesc):Int {
-		if (desc.primitive == helix.platform.Primitive.Points && !pointPrograms.exists(desc.shader))
+		var program = programs.get(desc.shader);
+		if (program == null)
+			throw "Invalid pipeline shader";
+		if (desc.primitive == helix.platform.Primitive.Points && program.points != true)
 			throw "Invalid pipeline: Points over a program compiled without ShaderCompileOptions.points";
+		PipelineLayout.check(desc, program.attributeTypes);
 		// The description as the bridge reads it: the state, then each buffer's stride, step and attributes.
 		var colorWrite:Int = desc.colorWrite == null ? (All : ColorChannels) : desc.colorWrite;
 		var ints:Array<Int> = [
@@ -159,7 +164,7 @@ abstract class NativeGraphics implements IGraphics {
 			ints.push(b.attributes.length);
 			for (a in b.attributes) {
 				ints.push(a.slot);
-				ints.push(a.componentCount);
+				ints.push(a.format);
 				ints.push(a.offset);
 			}
 		}
@@ -167,8 +172,6 @@ abstract class NativeGraphics implements IGraphics {
 		var constants = desc.attributeConstants == null ? [] : desc.attributeConstants;
 		ints.push(constants.length);
 		for (c in constants) {
-			if (c.values.length > 4)
-				throw "Invalid pipeline attribute constant: more than four values";
 			ints.push(c.slot);
 			for (i in 0...4)
 				ints.push(haxe.io.FPHelper.floatToI32(i < c.values.length ? c.values[i] : i == 3 ? 1 : 0));
@@ -180,7 +183,7 @@ abstract class NativeGraphics implements IGraphics {
 	public function disposeShader(handle:Int):Void {
 		if (GraphicsDeviceBridge.disposeResource(3, handle) != 1)
 			throw "Invalid native shader";
-		pointPrograms.remove(handle);
+		programs.remove(handle);
 	}
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void {

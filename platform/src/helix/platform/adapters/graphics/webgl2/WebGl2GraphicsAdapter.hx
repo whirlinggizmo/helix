@@ -13,6 +13,8 @@ import helix.platform.ClipFlip;
 import helix.platform.Sampling;
 import helix.platform.ShaderSource;
 import helix.platform.TextureFormat;
+import helix.platform.VertexFormat;
+import helix.platform.adapters.shared.PipelineLayout;
 import helix.platform.adapters.shared.dom.DomPage;
 import js.html.webgl.WebGL2RenderingContext;
 
@@ -59,13 +61,29 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	static inline final CUBE_PLACEHOLDER = 1;
 	static inline final SHADOW_PLACEHOLDER = 2;
 
+	// Each VertexFormat's component type, by its number.
+	static final TYPES = [
+		WebGL2RenderingContext.FLOAT,
+		WebGL2RenderingContext.FLOAT,
+		WebGL2RenderingContext.FLOAT,
+		WebGL2RenderingContext.FLOAT,
+		WebGL2RenderingContext.UNSIGNED_BYTE,
+		WebGL2RenderingContext.BYTE,
+		WebGL2RenderingContext.UNSIGNED_SHORT,
+		WebGL2RenderingContext.SHORT,
+		WebGL2RenderingContext.UNSIGNED_SHORT,
+		WebGL2RenderingContext.SHORT,
+		WebGL2RenderingContext.HALF_FLOAT,
+		WebGL2RenderingContext.HALF_FLOAT
+	];
+
 	var shaders:Map<Int, {
 		program:Dynamic,
 		blocks:Array<ProgramBlock>,
 		textures:Array<Dynamic>,
 		unfiltered:Array<Bool>,
 		kinds:Array<Int>,
-		attributeCount:Int,
+		attributeTypes:Array<String>,
 		points:Bool
 	}> = [];
 	// Pipelines, by handle: their description.
@@ -419,7 +437,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			textures: samplerLocations,
 			unfiltered: unfiltered,
 			kinds: kinds,
-			attributeCount: source.attributes.length,
+			attributeTypes: source.attributeTypes,
 			points: source.points == true
 		};
 		return id;
@@ -441,30 +459,10 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			throw "Invalid pipeline shader";
 		if (desc.primitive == Points && !shaders[desc.shader].points)
 			throw "Invalid pipeline: Points over a program compiled without ShaderCompileOptions.points";
-		// The limits every adapter takes (PipelineDesc), though WebGL2 may allow more, so a pipeline made here is made natively too.
-		var attributes = 0;
-		for (b in desc.buffers)
-			attributes += b.attributes.length;
-		if (desc.buffers.length > 8 || attributes > 16)
-			throw "Invalid pipeline layout: more than 8 buffers or 16 attributes";
-		for (b in desc.buffers)
-			for (a in b.attributes)
-				if (a.slot < 0
-					|| a.slot > 15
-					|| a.componentCount < 1
-					|| a.componentCount > 4
-					|| a.offset < 0
-					|| a.offset + a.componentCount * 4 > b.stride)
-					throw "Invalid pipeline layout";
+		// The rules every adapter takes, though WebGL2 may allow more, so a pipeline made here is made natively too.
+		PipelineLayout.check(desc, shaders[desc.shader].attributeTypes);
 		if (!validBlend(desc.blend) || desc.colorWrite != null && ((desc.colorWrite : Int) < 0 || (desc.colorWrite : Int) > 15))
 			throw "Invalid pipeline blend or color write";
-		if (desc.attributeConstants != null)
-			for (c in desc.attributeConstants)
-				if (c.slot < 0
-					|| c.slot > 15
-					|| c.values.length > 4
-					|| Lambda.exists(desc.buffers, b -> Lambda.exists(b.attributes, a -> a.slot == c.slot)))
-					throw "Invalid pipeline attribute constant: a slot from 0 to 15 no buffer feeds, at most four values";
 		var flipSlot = desc.flipBlockSlot == null ? 0 : desc.flipBlockSlot,
 			flipOffset = desc.flipOffset == null ? 0 : desc.flipOffset;
 		if (desc.flip != None && (flipSlot < 0 || flipSlot > 3 || flipOffset < 0 || flipOffset % 4 != 0))
@@ -795,7 +793,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			var base = layout.instanced ? firstInstanceIndex * layout.stride : 0;
 			for (a in layout.attributes) {
 				gl.enableVertexAttribArray(a.slot);
-				gl.vertexAttribPointer(a.slot, a.componentCount, WebGL2RenderingContext.FLOAT, false, layout.stride, base + a.offset);
+				gl.vertexAttribPointer(a.slot, a.format.componentCount, TYPES[a.format],
+					(a.format : Int) >= (UByte4Norm : Int) && (a.format : Int) <= (Short4Norm : Int), layout.stride, base + a.offset);
 				gl.vertexAttribDivisor(a.slot, layout.instanced ? 1 : 0);
 				used[a.slot] = true;
 			}
@@ -807,7 +806,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			}
 		enabled = used;
 		// What no buffer feeds reads the pipeline's constant, or (0, 0, 0, 1).
-		for (slot in 0...shader.attributeCount)
+		for (slot in 0...shader.attributeTypes.length)
 			if (used[slot] != true)
 				gl.vertexAttrib4f(slot, 0, 0, 0, 1);
 		if (p.attributeConstants != null)
@@ -856,7 +855,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		textures:Array<Dynamic>,
 		unfiltered:Array<Bool>,
 		kinds:Array<Int>,
-		attributeCount:Int
+		attributeTypes:Array<String>
 	}, textures:Array<Int>, samplings:Array<Sampling>):Void
 		for (slot in 0...shader.textures.length) {
 			if (shader.textures[slot] == null)
@@ -892,7 +891,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		textures:Array<Dynamic>,
 		unfiltered:Array<Bool>,
 		kinds:Array<Int>,
-		attributeCount:Int
+		attributeTypes:Array<String>
 	}, uniforms:Array<Null<Bytes>>, p:PipelineDesc):Void
 		for (block in shader.blocks) {
 			var data = block.point < uniforms.length ? uniforms[block.point] : null;

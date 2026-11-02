@@ -1759,9 +1759,9 @@ Specifies where the device's tilt is (`Event.TiltState`, after `ITilt.requestAcc
 
 Represents a vertex attribute that a pipeline reads from one of its buffers.
 
-- `slot:Int`: The shader's input slot, 0 to 15.
-- `offset:Int`: The byte offset within each record.
-- `componentCount:Int`: The number of floats, 1 to 4.
+- `slot:Int`: The shader's input slot, 0 to 15. The input must be a float one (`float`, `vecN` or a matrix's column).
+- `offset:Int`: The byte offset within each record: a multiple of 4, its format's `bytes` ending within the record.
+- `format:VertexFormat`: How its values are stored.
 
 ## VertexBuffer
 
@@ -1771,9 +1771,40 @@ Represents a vertex buffer that a pipeline reads, by its index in a draw's buffe
 
 A buffer with no attributes is a gap that the draw skips.
 
-- `stride:Int`: The size of one record, in bytes.
+- `stride:Int`: The size of one record, in bytes: a multiple of 4, at most 255.
 - `instanced:Bool`: Whether each record belongs to an instance rather than a vertex, so the buffer steps once per instance.
 - `attributes:Array<VertexAttribute>`: The attributes read from each record.
+
+## VertexFormat
+
+*abstract* in [`platform/src/helix/platform/VertexFormat.hx`](../../platform/src/helix/platform/VertexFormat.hx), `import helix.platform.VertexFormat;`
+
+Specifies how a vertex attribute's values are stored in a buffer's records.
+
+Every format is read by a float input (`float`, `vecN`, a matrix's column): floats and half floats as they are, a normalized format's integers as floats from 0 to 1 (unsigned) or -1 to 1 (signed, the lowest value reading -1 as the next one up does, 0 reading 0). These are the formats every backend has; an input of more components than its format reads the rest as 0, 0, 1 as (0, 0, 0, 1) has them, and one of fewer reads the first ones.
+
+- `VertexFormat.Float1`: One float, 4 bytes.
+- `VertexFormat.Float2`: Two floats, 8 bytes.
+- `VertexFormat.Float3`: Three floats, 12 bytes.
+- `VertexFormat.Float4`: Four floats, 16 bytes.
+- `VertexFormat.UByte4Norm`: Four unsigned bytes, each read as its value over 255: 4 bytes, a color as RGBA8 stores it.
+- `VertexFormat.Byte4Norm`: Four signed bytes, each read as its value over 127, -128 reading -1: 4 bytes.
+- `VertexFormat.UShort2Norm`: Two unsigned 16-bit integers, little-endian, each read as its value over 65535: 4 bytes.
+- `VertexFormat.Short2Norm`: Two signed 16-bit integers, little-endian, each read as its value over 32767, -32768 reading -1: 4 bytes.
+- `VertexFormat.UShort4Norm`: Four unsigned 16-bit integers, little-endian, each read as its value over 65535: 8 bytes.
+- `VertexFormat.Short4Norm`: Four signed 16-bit integers, little-endian, each read as its value over 32767, -32768 reading -1: 8 bytes.
+- `VertexFormat.Half2`: Two half floats (IEEE binary16, little-endian): 4 bytes.
+- `VertexFormat.Half4`: Four half floats (IEEE binary16, little-endian): 8 bytes.
+
+```haxe
+var bytes(get, never):Int
+var componentCount(get, never):Int
+function toString():String
+```
+
+- `bytes`: Gets the bytes one value takes in a record: 4, 8, 12 or 16.
+- `componentCount`: Gets the number of components one value holds, 1 to 4.
+- `toString`: Returns the value's name as written (Float1, Float2): what Std.string, interpolation and trace show.
 
 ## Wrap
 

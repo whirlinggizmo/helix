@@ -271,7 +271,7 @@ static sg_color_mask mask_of(int channels){return channels?(sg_color_mask)channe
 /* A pipeline as helix.platform.PipelineDesc describes it, its ints in order: shader, primitive (0 triangles, 1 lines, 2 points), indexed, blend
    (blend_of), depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front), clockwise, depth only, clip flip
    (0 none, 1 clip scale, 2 view-projection), the color channels written (mask_of), the flip uniform's vertex block slot and byte offset, the
-   buffer count, then each buffer's stride, instanced and attribute count, each attribute's slot, components and offset, then the count of
+   buffer count, then each buffer's stride, instanced and attribute count, each attribute's slot, format (graphics.h) and offset, then the count of
    attribute constants and each one's slot and four floats' bits. An attribute no buffer feeds reads its constant, or (0, 0, 0, 1): GL's
    generic attribute value, set before each draw. 0 for a description it can't make (a constant for a slot a buffer feeds among them). */
 uint32_t helix_pipeline(const int *desc,int count){
@@ -294,10 +294,12 @@ uint32_t helix_pipeline(const int *desc,int count){
   if(strides[b]<0||attrs<0||at+attrs*3>count)return 0;
   pd.layout.buffers[b].stride=strides[b];if(instanced[b])pd.layout.buffers[b].step_func=SG_VERTEXSTEP_PER_INSTANCE;
   for(int a=0;a<attrs;a++,at+=3){
-   const int slot=desc[at],components=desc[at+1],offset=desc[at+2];
-   if(slot<0||slot>=HELIX_MAX_VERTEX_ATTRIBUTES||components<1||components>4||offset<0||offset+components*4>strides[b])return 0;
-   static const sg_vertex_format formats[4]={SG_VERTEXFORMAT_FLOAT,SG_VERTEXFORMAT_FLOAT2,SG_VERTEXFORMAT_FLOAT3,SG_VERTEXFORMAT_FLOAT4};
-   pd.layout.attrs[slot]=(sg_vertex_attr_state){.format=formats[components-1],.offset=offset,.buffer_index=b};
+   const int slot=desc[at],format=desc[at+1],offset=desc[at+2],bytes=helix_vertex_format_bytes(format);
+   if(slot<0||slot>=HELIX_MAX_VERTEX_ATTRIBUTES||!bytes||offset<0||offset+bytes>strides[b])return 0;
+   static const sg_vertex_format formats[HELIX_VERTEX_FORMATS]={SG_VERTEXFORMAT_FLOAT,SG_VERTEXFORMAT_FLOAT2,SG_VERTEXFORMAT_FLOAT3,SG_VERTEXFORMAT_FLOAT4,
+    SG_VERTEXFORMAT_UBYTE4N,SG_VERTEXFORMAT_BYTE4N,SG_VERTEXFORMAT_USHORT2N,SG_VERTEXFORMAT_SHORT2N,SG_VERTEXFORMAT_USHORT4N,SG_VERTEXFORMAT_SHORT4N,
+    SG_VERTEXFORMAT_HALF2,SG_VERTEXFORMAT_HALF4};
+   pd.layout.attrs[slot]=(sg_vertex_attr_state){.format=formats[format],.offset=offset,.buffer_index=b};
    fed|=1<<slot;
   }
   read[b]=attrs>0;

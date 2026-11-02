@@ -41,9 +41,10 @@ class Parity {
 			if (d.buffers != null)
 				continue;
 			for (i in d.first...d.first + d.count) {
-				var at = i * 48;
+				// raylib's 36-byte batch vertex: eight floats, then the color's four bytes.
+				var at = i * 36;
 				var v = [for (k in 0...8) if (depth || k != 2) Std.string(f.data.getFloat(at + k * 4))];
-				var c = [for (k in 8...12) Std.string(Math.round(f.data.getFloat(at + k * 4) * 255))];
+				var c = [for (k in 0...4) Std.string(f.data.get(at + 32 + k))];
 				lines.push('$name ${d.primitive == Lines ? "L" : "T"} ' + v.concat(c).join(" "));
 			}
 		}

@@ -14,14 +14,14 @@ import helix.ray.raylib.RModels;
 class Models {
 	/** Each of raylib's vertex buffers, by its index: the size of an element and its default, for a mesh without the attribute. A default
 		is raylib 6.2's (normals 0, 0, 1; colors white; tangents 1, 0, 0, 1; second texture coordinates, bone ids and bone weights 0). Index
-		6 is raylib's indices, kept apart. */
+		6 is raylib's indices, kept apart. Each number is a 32-bit float on the GPU but a color's, a byte as raylib's (`bytesOf`). */
 	static final SIZES = [3, 2, 3, 4, 4, 2, 0, 4, 4];
 
 	static final DEFAULTS:Array<Array<Float>> = [
 		[0, 0, 0],
 		[0, 0],
 		[0, 0, 1],
-		[1, 1, 1, 1],
+		[255, 255, 255, 255],
 		[1, 0, 0, 1],
 		[0, 0],
 		[],
@@ -39,7 +39,7 @@ class Models {
 		var g = Runtime.graphics;
 		mesh.gpu.buffers = [
 			for (i in 0...9)
-				i < 4 ? g.createStaticBuffer(bytesOf(mesh, i), mesh.vertexCount * SIZES[i] * 4, false) : 0
+				i < 4 ? g.createStaticBuffer(bytesOf(mesh, i), bufferBytes(mesh, i), false) : 0
 		];
 		if (mesh.indices != null && mesh.indices.length > 0) {
 			var bytes = bytesOf(mesh, 6);
@@ -55,12 +55,16 @@ class Models {
 	public static function buffer(mesh:Mesh, index:Int):Int {
 		var buffers = mesh.gpu.buffers;
 		if (buffers[index] == 0)
-			buffers[index] = Runtime.graphics.createStaticBuffer(bytesOf(mesh, index), mesh.vertexCount * SIZES[index] * 4, false);
+			buffers[index] = Runtime.graphics.createStaticBuffer(bytesOf(mesh, index), bufferBytes(mesh, index), false);
 		return buffers[index];
 	}
 
-	// A buffer's bytes as the GPU takes them: the bytes UpdateMeshBuffer last left, or the mesh's numbers as 32-bit floats (colors 0 to 1),
-	// those it lacks its default; the indices (6) as 32-bit integers.
+	// The bytes of one of a mesh's vertex buffers on the GPU: 32-bit floats, a color's numbers a byte each as raylib's.
+	static function bufferBytes(mesh:Mesh, index:Int):Int
+		return mesh.vertexCount * SIZES[index] * (index == 3 ? 1 : 4);
+
+	// A buffer's bytes as the GPU takes them: the bytes UpdateMeshBuffer last left, or the mesh's numbers as 32-bit floats (colors a byte
+	// each, as raylib's, read as UByte4Norm), those it lacks its default; the indices (6) as 32-bit integers.
 	static function bytesOf(mesh:Mesh, index:Int):Bytes {
 		var kept = mesh.gpu.contents[index];
 		if (kept != null)
@@ -75,7 +79,7 @@ class Models {
 			case 0: mesh.vertices;
 			case 1: mesh.texcoords;
 			case 2: mesh.normals;
-			case 3: mesh.colors == null ? null : [for (c in mesh.colors) c / 255];
+			case 3: mesh.colors == null ? null : [for (c in mesh.colors) (c : Float)];
 			case 4: mesh.tangents;
 			case 5: mesh.texcoords2;
 			case 7: mesh.boneIds == null ? null : [for (b in mesh.boneIds) (b : Float)];
@@ -84,9 +88,14 @@ class Models {
 		var size = SIZES[index],
 			fallback = DEFAULTS[index],
 			n = mesh.vertexCount * size;
-		var bytes = Bytes.alloc(n * 4);
-		for (i in 0...n)
-			bytes.setFloat(i * 4, values != null && i < values.length ? values[i] : fallback[i % size]);
+		var bytes = Bytes.alloc(bufferBytes(mesh, index));
+		for (i in 0...n) {
+			var value = values != null && i < values.length ? values[i] : fallback[i % size];
+			if (index == 3)
+				bytes.set(i, Std.int(value));
+			else
+				bytes.setFloat(i * 4, value);
+		}
 		return bytes;
 	}
 
@@ -109,14 +118,18 @@ class Models {
 		var current = bytesOf(mesh, index);
 		var bytes = current.sub(0, current.length);
 		var first = Std.int(offset / size);
+		// A color's numbers are bytes on the GPU as in raylib's buffer, written where raylib writes them; the rest 32-bit.
+		var width = index == 3 ? 1 : 4;
 		for (i => value in values) {
-			var at = (first + i) * 4;
-			if (at + 4 > bytes.length)
+			var at = (first + i) * width;
+			if (at + width > bytes.length)
 				break;
 			if (index == 6)
 				bytes.setInt32(at, Std.int(value));
+			else if (index == 3)
+				bytes.set(at, Std.int(value));
 			else
-				bytes.setFloat(at, index == 3 ? value / 255 : value);
+				bytes.setFloat(at, value);
 		}
 		mesh.gpu.contents[index] = bytes;
 		var g = Runtime.graphics,

@@ -1,6 +1,7 @@
 package helix.services.shaders;
 
 import helix.platform.VertexBuffer;
+import helix.platform.VertexFormat;
 
 /** Represents how a mesh's vertex buffers hold its attributes, by name, for any shader drawing it: each buffer's stride, whether it
 	steps per instance, and where each attribute is; and what an attribute no buffer feeds reads.
@@ -9,12 +10,13 @@ import helix.platform.VertexBuffer;
 	slot a column) once, again after a replacement, and keeps the result: nothing is made per draw. An attribute a shader reads that no
 	buffer feeds reads its constant, or (0, 0, 0, 1) when the layout gives none (platform proposal 8); a constant for an attribute the
 	shader doesn't read is skipped. A buffer none of whose placements the shader reads is a gap: the pipeline reads nothing from it, and
-	a draw may pass 0 for it.
+	a draw may pass 0 for it. An attribute is floats unless its placement gives another `VertexFormat`: a normal as four signed bytes, the
+	weights as four unsigned shorts, below.
 
 	```haxe
-	var skinnedMesh = new ShaderVertexLayout([{stride: 56, placements: [
-		{name: "position", offset: 0}, {name: "normal", offset: 12, optional: true},
-		{name: "joints", offset: 24, optional: true}, {name: "weights", offset: 40, optional: true}
+	var skinnedMesh = new ShaderVertexLayout([{stride: 40, placements: [
+		{name: "position", offset: 0}, {name: "normal", offset: 12, format: Byte4Norm, optional: true},
+		{name: "joints", offset: 16, optional: true}, {name: "weights", offset: 32, format: UShort4Norm, optional: true}
 	]}], [{name: "color", values: [1, 1, 1, 1]}]);
 	``` */
 class ShaderVertexLayout {
@@ -35,7 +37,7 @@ class ShaderVertexLayout {
 			for (b in buffers)
 				'${b.stride} ${b.instanced == true} ' + [
 					for (p in b.placements)
-						'${p.name}/${p.slot}@${p.offset}x${p.componentCount}${p.optional == true ? "?" : ""}'
+						'${p.name}/${p.slot}@${p.offset}x${p.format}${p.optional == true ? "?" : ""}'
 				].join(",")
 		].join(";") + "|" + [for (c in this.constants) '${c.name}/${c.slot}=${c.values.join(",")}'].join(";");
 	}
@@ -84,21 +86,24 @@ class ShaderVertexLayout {
 				}
 				if (a.type.integer)
 					throw 'shader layout: attribute $label is a ${a.type}, an integer input, which the platform can\'t feed yet';
-				var rows = a.type.componentCount, columns = a.type.columnCount;
-				var given = p.componentCount != null ? p.componentCount : rows;
-				if (given < 1 || given > rows)
-					throw 'shader layout: attribute $label is given $given floats; it takes 1 to $rows';
-				for (c in 0...columns) {
-					var at = p.offset + c * given * 4;
-					if (at + given * 4 > b.stride)
+				var format = p.format != null ? p.format : floats(a.type.componentCount);
+				for (c in 0...a.type.columnCount) {
+					var at = p.offset + c * format.bytes;
+					if (at + format.bytes > b.stride)
 						throw 'shader layout: attribute $label runs past the buffer\'s ${b.stride}-byte records';
-					attributes.push({slot: a.slot + c, componentCount: given, offset: at});
+					attributes.push({slot: a.slot + c, format: format, offset: at});
 				}
 			}
 			out.push({stride: b.stride, instanced: b.instanced == true, attributes: attributes});
 		}
 		return out;
 	}
+
+	// The format of a number of floats, 1 to 4.
+
+	@:allow(helix.services.shaders)
+	static function floats(count:Int):VertexFormat
+		return count == 1 ? Float1 : count == 2 ? Float2 : count == 3 ? Float3 : Float4;
 
 	// Its values as one string: layouts with the same values find the same pipeline.
 	@:allow(helix.services.shaders)

@@ -207,6 +207,17 @@ enum Event {
   the color and for the alpha apart, as every backend has them; `Blend.OPAQUE`, `ALPHA` (the alpha kept as `a + destination * (1 - a)`)
   and `ADDITIVE` are the common ones. No blend constant: no factor reads one. `colorWrite` (`ColorChannels`, all when omitted) masks the
   channels written; a pass's clear writes every channel.
+- Vertex layouts: a pipeline reads at most 8 buffers (`VertexBuffer`: a stride, whether it steps per instance, its attributes) and 16
+  attributes across them, each a slot from 0 to 15, a byte offset and a `VertexFormat`: floats (`Float1` to `Float4`), half floats
+  (`Half2`, `Half4`), or integers read as normalized floats (`UByte4Norm`, `Byte4Norm`, `UShort2Norm`, `Short2Norm`, `UShort4Norm`,
+  `Short4Norm`: unsigned over 255 or 65535, signed over 127 or 32767 with the lowest reading -1 and 0 reading 0). These are the formats
+  sokol_gfx, SDL_GPU and WebGL2 all have (and WebGPU), each 4, 8, 12 or 16 bytes: none of 3 bytes or shorts, which only GL has, and no
+  integers read unnormalized as floats ("scaled"), which only GL and WebGL2 have. Offsets and strides are multiples of 4, a stride at
+  most 255 (WebGL's limit, the platform's on every backend), and each attribute's `bytes` end within its record. A format of fewer
+  components than its input reads the rest as 0, 0, 1 as (0, 0, 0, 1) has them; one of more reads the first ones (a `Byte4Norm` normal
+  into a `vec3`). A matrix input takes an attribute a column. Every format feeds a float input: `createPipeline` refuses a layout
+  feeding an `int`, `uint`, `ivecN` or `uvecN` input (`ShaderSource.attributeTypes`). The rules are one check
+  (`adapters/shared/PipelineLayout`) that the WebGL2 and native adapters both call; the native C keeps those guarding its memory.
 - Points are one pixel on every backend, the one size each draws alike (Direct3D 12 draws no other; Vulkan's larger points are a device
   feature SDL_GPU doesn't ask for; WebGL2 promises only 1): a `Points` pipeline draws each vertex, or each index, as the pixel its
   position falls in, culling ignored, as a point has no face. Its program must be compiled with `ShaderCompileOptions.points`, which
@@ -294,7 +305,7 @@ textures at one binding; a sampler array, a separate texture and sampler, an arr
 SDL_GPU, a struct laid out so Direct3D's constant buffers can't hold it at its std140 offsets (a vector after a scalar in a struct,
 which std140 starts on 16 bytes and Direct3D packs beside it; the vector first, or padding, fixes it). A `mat2`, `mat3` or `mat4` vertex
 input takes a location a column, from its own, as GLSL, SPIR-V and every dialect place it: a pipeline feeds its columns as attributes
-of 2, 3 or 4 floats at consecutive slots (instanced matrices, say), and `ShaderSource.attributes` names it at its first slot, "" at the
+at consecutive slots (instanced matrices, say), each column a `VertexFormat`, and `ShaderSource.attributes` names it at its first slot, "" at the
 rest. Errors name the source file's (or an include's) lines.
 
 **What's reflected is what's declared:** every uniform block and texture the source declares, at its binding and its declared size

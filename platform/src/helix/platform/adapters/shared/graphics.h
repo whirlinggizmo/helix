@@ -7,6 +7,10 @@
 /* IGraphics' limits (PipelineDesc): the vertex buffers a pipeline reads, and its attributes across them, each at a slot below that many. */
 #define HELIX_MAX_VERTEX_BUFFERS 8
 #define HELIX_MAX_VERTEX_ATTRIBUTES 16
+/* helix.platform.VertexFormat's formats, by number: Float1 to Float4, UByte4Norm, Byte4Norm, UShort2Norm, Short2Norm, UShort4Norm,
+   Short4Norm, Half2, Half4. Each one's bytes in a record, 0 for a number no format has. */
+#define HELIX_VERTEX_FORMATS 12
+static inline int helix_vertex_format_bytes(int format){static const int bytes[HELIX_VERTEX_FORMATS]={4,8,12,16,4,4,4,4,8,8,4,8};return format>=0&&format<HELIX_VERTEX_FORMATS?bytes[format]:0;}
 #ifdef __cplusplus
 extern "C" {
 #endif

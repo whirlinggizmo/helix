@@ -445,7 +445,7 @@ static SDL_GPUColorTargetBlendState blend_of(int blend,int channels,int *ok){
    1 lines, 2 points), indexed, blend (blend_of), depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front),
    clockwise, depth only, clip flip (0 none, 1 clip scale, 2 view-projection), the color channels written (blend_of), the flip uniform's
    block slot (the vertex stage's) and byte offset, the buffer count, then each buffer's stride, instanced and attribute count, each
-   attribute's slot, components and offset, then the constants' count and each one's slot and four floats' bits. */
+   attribute's slot, format (graphics.h) and offset, then the constants' count and each one's slot and four floats' bits. */
 uint32_t helix_pipeline(const int *desc,int count){
  int slot=-1;for(int i=0;i<SLOTS;i++)if(!pipelines[i].live){slot=i;break;}
  if(slot<0||!desc||count<15||!program_live((uint32_t)desc[0]))return 0;
@@ -461,10 +461,13 @@ uint32_t helix_pipeline(const int *desc,int count){
   if(strides[b]<0||n<0||at+n*3>count)return 0;
   vbs[b]=(SDL_GPUVertexBufferDescription){.slot=(Uint32)b,.pitch=(Uint32)strides[b],.input_rate=instanced[b]?SDL_GPU_VERTEXINPUTRATE_INSTANCE:SDL_GPU_VERTEXINPUTRATE_VERTEX};
   for(int a=0;a<n;a++,at+=3){
-   const int location=desc[at],components=desc[at+1],offset=desc[at+2];
-   if(location<0||location>=HELIX_MAX_VERTEX_ATTRIBUTES||components<1||components>4||offset<0||offset+components*4>strides[b]||nattrs==HELIX_MAX_VERTEX_ATTRIBUTES)return 0;
-   static const SDL_GPUVertexElementFormat formats[4]={SDL_GPU_VERTEXELEMENTFORMAT_FLOAT,SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4};
-   attrs[nattrs++]=(SDL_GPUVertexAttribute){.location=(Uint32)location,.buffer_slot=(Uint32)b,.format=formats[components-1],.offset=(Uint32)offset};
+   const int location=desc[at],format=desc[at+1],offset=desc[at+2],bytes=helix_vertex_format_bytes(format);
+   if(location<0||location>=HELIX_MAX_VERTEX_ATTRIBUTES||!bytes||offset<0||offset+bytes>strides[b]||nattrs==HELIX_MAX_VERTEX_ATTRIBUTES)return 0;
+   static const SDL_GPUVertexElementFormat formats[HELIX_VERTEX_FORMATS]={SDL_GPU_VERTEXELEMENTFORMAT_FLOAT,SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
+    SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM,SDL_GPU_VERTEXELEMENTFORMAT_BYTE4_NORM,
+    SDL_GPU_VERTEXELEMENTFORMAT_USHORT2_NORM,SDL_GPU_VERTEXELEMENTFORMAT_SHORT2_NORM,SDL_GPU_VERTEXELEMENTFORMAT_USHORT4_NORM,
+    SDL_GPU_VERTEXELEMENTFORMAT_SHORT4_NORM,SDL_GPU_VERTEXELEMENTFORMAT_HALF2,SDL_GPU_VERTEXELEMENTFORMAT_HALF4};
+   attrs[nattrs++]=(SDL_GPUVertexAttribute){.location=(Uint32)location,.buffer_slot=(Uint32)b,.format=formats[format],.offset=(Uint32)offset};
   }
   read[b]=n>0;
  }

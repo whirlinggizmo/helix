@@ -6,6 +6,7 @@ import helix.platform.Blend;
 import helix.platform.ColorChannels;
 import helix.platform.IGraphics;
 import helix.platform.Primitive;
+import helix.platform.VertexFormat;
 
 /** Records a frame's drawing as rlgl orders it, and draws it at the frame's end: each render texture's pass, then the screen's.
 
@@ -16,27 +17,30 @@ import helix.platform.Primitive;
 	state then, ahead of the batch's vertices still waiting. */
 @:noCompletion
 class Frame {
-	static inline final FLOATS = 12;
-	static inline final STRIDE = FLOATS * 4;
+	/** The bytes of an immediate vertex, raylib's batch vertex: a position, a texture coordinate and a normal as floats, and a color as
+		four bytes. */
+	static inline final STRIDE = 36;
 
-	/** Each raylib attribute's place in an immediate vertex, in floats, and its size. */
+	/** Each raylib attribute's place in an immediate vertex, in bytes. */
 	static final OFFSETS = [
 		"vertexPosition" => 0,
-		"vertexTexCoord" => 3,
-		"vertexNormal" => 5,
-		"vertexColor" => 8
+		"vertexTexCoord" => 12,
+		"vertexNormal" => 20,
+		"vertexColor" => 32
 	];
 
-	static final SIZES = [
-		"vertexPosition" => 3,
-		"vertexTexCoord" => 2,
-		"vertexNormal" => 3,
-		"vertexColor" => 4,
-		"vertexTangent" => 4,
-		"vertexTexCoord2" => 2,
-		"vertexBoneIds" => 4,
-		"vertexBoneIndices" => 4,
-		"vertexBoneWeights" => 4
+	/** Each raylib attribute's format, in an immediate vertex, a mesh's buffer and the one record of `constants` alike: floats, but for a
+		color's four bytes, as raylib feeds them. */
+	static final FORMATS:Map<String, VertexFormat> = [
+		"vertexPosition" => Float3,
+		"vertexTexCoord" => Float2,
+		"vertexNormal" => Float3,
+		"vertexColor" => UByte4Norm,
+		"vertexTangent" => Float4,
+		"vertexTexCoord2" => Float2,
+		"vertexBoneIds" => Float4,
+		"vertexBoneIndices" => Float4,
+		"vertexBoneWeights" => Float4
 	];
 
 	/** Each raylib attribute's buffer in a mesh, by raylib's buffer index: the bone ids by raylib 5.5's name or 6.2's. */
@@ -483,21 +487,12 @@ class Frame {
 		}
 		open.count++;
 		var at = room();
-		for (i => value in [
-			x,
-			y,
-			z,
-			u,
-			v,
-			nx,
-			ny,
-			nz,
-			color.r / 255,
-			color.g / 255,
-			color.b / 255,
-			color.a / 255
-		])
+		for (i => value in [x, y, z, u, v, nx, ny, nz])
 			data.setFloat(at + i * 4, value);
+		data.set(at + 32, color.r);
+		data.set(at + 33, color.g);
+		data.set(at + 34, color.b);
+		data.set(at + 35, color.a);
 		vertices++;
 	}
 
@@ -587,7 +582,7 @@ class Frame {
 					instanced: false,
 					attributes: [
 						for (i => name in p.attributes)
-							if (OFFSETS.exists(name)) {slot: i, componentCount: SIZES.get(name), offset: OFFSETS.get(name) * 4}
+							if (OFFSETS.exists(name)) {slot: i, format: FORMATS.get(name), offset: OFFSETS.get(name)}
 					]
 				},
 				{
@@ -635,10 +630,10 @@ class Frame {
 		var attributes:Array<helix.platform.VertexAttribute> = [];
 		for (i => name in names)
 			if (CONSTANTS.exists(name))
-				attributes.push({slot: i, componentCount: SIZES.get(name), offset: CONSTANTS.get(name) * 4});
+				attributes.push({slot: i, format: FORMATS.get(name), offset: CONSTANTS.get(name) * 4});
 			else if (isMatrix(names, i))
 				for (column in 0...4)
-					attributes.push({slot: i + column, componentCount: 4, offset: (MATRIX_CONSTANT + column * 4) * 4});
+					attributes.push({slot: i + column, format: Float4, offset: (MATRIX_CONSTANT + column * 4) * 4});
 		return attributes;
 	}
 
@@ -698,12 +693,12 @@ class Frame {
 						instanced: true,
 						attributes: [
 							for (column in 0...4)
-								{slot: i + column, componentCount: 4, offset: (instances != 0 ? 0 : MATRIX_CONSTANT * 4) + column * 16}
+								{slot: i + column, format: Float4, offset: (instances != 0 ? 0 : MATRIX_CONSTANT * 4) + column * 16}
 						]
 					} else if (name != "") {
-						stride: SIZES.get(name) * 4,
+						stride: FORMATS.get(name).bytes,
 						instanced: false,
-						attributes: [{slot: i, componentCount: SIZES.get(name), offset: 0}]
+						attributes: [{slot: i, format: FORMATS.get(name), offset: 0}]
 					}
 			];
 			graphics.createPipeline({

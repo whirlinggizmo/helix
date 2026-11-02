@@ -483,8 +483,16 @@ class ShaderTests {
 			"an undeclared placement not optional refused");
 		throws(() -> new ShaderVertexLayout([{stride: 12, placements: [{name: "texCoord", offset: 8}]}]).computeBuffers(s), "runs past",
 			"one past its stride refused");
-		var short = new ShaderVertexLayout([{stride: 8, placements: [{name: "unread", offset: 0, componentCount: 2}]}]).computeBuffers(s);
-		check(short[0].attributes[0].componentCount == 2, "fewer floats than the attribute takes");
+		var short = new ShaderVertexLayout([{stride: 8, placements: [{name: "unread", offset: 0, format: Float2}]}]).computeBuffers(s);
+		check(short[0].attributes[0].format == Float2, "fewer floats than the attribute takes");
+		check(layout.computeBuffers(s)[0].attributes[1].format == Float2, "an attribute's own floats when no format is given");
+		var bytes = new ShaderVertexLayout([{stride: 4, placements: [{name: "unread", offset: 0, format: UByte4Norm}]}]);
+		check(bytes.computeBuffers(s)[0].attributes[0].format == UByte4Norm, "more components than the attribute takes, a format passed through");
+		throws(() -> new ShaderVertexLayout([{stride: 4, placements: [{name: "unread", offset: 0, format: Short4Norm}]}]).computeBuffers(s), "runs past",
+			"a format's bytes past its stride refused");
+		var signed = new ShaderVertexLayout([{stride: 4, placements: [{name: "unread", offset: 0, format: Byte4Norm}]}]);
+		check(bytes.key != signed.key, "the key tells two formats apart");
+		check(new ShaderVertexLayout([{stride: 4, placements: [{name: "unread", offset: 0, format: UByte4Norm}]}]).key == bytes.key, "and finds the same one");
 		var instanced = LitValues.VARIANTS.getShader(LitValues.SKINNED).computeVertexBuffer(["joints", "weights"], true);
 		check(instanced.instanced && instanced.stride == 32, "an instanced buffer");
 	}

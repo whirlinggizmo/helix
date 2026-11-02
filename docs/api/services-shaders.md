@@ -1270,12 +1270,12 @@ Represents the value an attribute reads when no buffer feeds it, as raylib's `rl
 
 Represents how a mesh's vertex buffers hold its attributes, by name, for any shader drawing it: each buffer's stride, whether it steps per instance, and where each attribute is; and what an attribute no buffer feeds reads.
 
-It is made once, for a kind of mesh, and handed to `ShaderPrograms.getPipeline`, which resolves it for each shader (slots, a matrix a slot a column) once, again after a replacement, and keeps the result: nothing is made per draw. An attribute a shader reads that no buffer feeds reads its constant, or (0, 0, 0, 1) when the layout gives none (platform proposal 8); a constant for an attribute the shader doesn't read is skipped. A buffer none of whose placements the shader reads is a gap: the pipeline reads nothing from it, and a draw may pass 0 for it.
+It is made once, for a kind of mesh, and handed to `ShaderPrograms.getPipeline`, which resolves it for each shader (slots, a matrix a slot a column) once, again after a replacement, and keeps the result: nothing is made per draw. An attribute a shader reads that no buffer feeds reads its constant, or (0, 0, 0, 1) when the layout gives none (platform proposal 8); a constant for an attribute the shader doesn't read is skipped. A buffer none of whose placements the shader reads is a gap: the pipeline reads nothing from it, and a draw may pass 0 for it. An attribute is floats unless its placement gives another `VertexFormat`: a normal as four signed bytes, the weights as four unsigned shorts, below.
 
 ```haxe
-var skinnedMesh = new ShaderVertexLayout([{stride: 56, placements: [
-{name: "position", offset: 0}, {name: "normal", offset: 12, optional: true},
-{name: "joints", offset: 24, optional: true}, {name: "weights", offset: 40, optional: true}
+var skinnedMesh = new ShaderVertexLayout([{stride: 40, placements: [
+{name: "position", offset: 0}, {name: "normal", offset: 12, format: Byte4Norm, optional: true},
+{name: "joints", offset: 16, optional: true}, {name: "weights", offset: 32, format: UShort4Norm, optional: true}
 ]}], [{name: "color", values: [1, 1, 1, 1]}]);
 ```
 
@@ -1313,7 +1313,7 @@ Represents where an attribute is in a vertex buffer's records, at a byte offset:
 - `optional:Null<Bool>`: Whether a shader may leave it unread, as an unlit shader leaves a mesh's normals, unread meaning not declared or declared and not read alike; its bytes are then skipped. Optional; false by default, and an undeclared placement not marked so is refused.
 - `offset:Int`: Its byte offset in a record.
 - `name:Null<String>`: The attribute's name: its GLSL name, or the name `Shader.withNames` gave it. Optional; one of `name` and `slot` is given.
-- `componentCount:Null<Int>`: The number of floats a record holds for it, fewer than the attribute takes, the rest read as 0, 0, 1 as (0, 0, 0, 1) has them: a `vec3` position fed into a `vec4` input reads w 1, as GL feeds it. Optional; the attribute's own count when omitted.
+- `format:Null<VertexFormat>`: How a record holds it (`VertexFormat`): floats, half floats, or normalized integers read as floats. A format of fewer components than the attribute takes reads the rest as 0, 0, 1 as (0, 0, 0, 1) has them (a `Float3` position fed into a `vec4` input reads w 1, as GL feeds it); one of more reads the first ones (a `Byte4Norm` normal into a `vec3`). A matrix takes it for each column, each column its `bytes` after the last. Optional; the attribute's own floats when omitted (`Float3` for a `vec3`, a `Float4` a column for a `mat4`).
 
 ## Shaders
 

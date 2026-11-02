@@ -335,3 +335,16 @@ Why things are the way they are, numbered, in order.
     so a wave's length is the stream's own (its last page's position) and what the browser left out is silence. The reader is chosen as
     the program builds, from a constant file name or type, as a model's is (29). Rejected: padding a trimmed MP3 back by the tag's
     numbers, as first proposed (silence where 5.5 has the decoder's own samples).
+
+33. **A vertex attribute has a format, from the set every backend shares.** Attributes were floats alone, so layers above uploaded
+    bytes as floats (helix-ray's colors four floats a vertex, its immediate vertex 48 bytes). `VertexAttribute.format` is a
+    `VertexFormat`: `Float1` to `Float4`, `Half2`, `Half4`, and the normalized `UByte4Norm`, `Byte4Norm`, `UShort2Norm`, `Short2Norm`,
+    `UShort4Norm` and `Short4Norm`, each read by a float input: the formats sokol_gfx, SDL_GPU (Vulkan, Direct3D 12, Metal) and WebGL2
+    all have, as WebGPU does, each mapping one to one onto their enums. Offsets and strides are multiples of 4 and a stride at most 255,
+    WebGL's limit made the platform's so a layout made in a page is made natively. One check (`adapters/shared/PipelineLayout`) holds
+    the rules for every adapter and refuses a format fed into an integer input (`ShaderSource.attributeTypes`), which nothing checked
+    before. helix-ray takes raylib's own layouts: a mesh's colors raylib's 4 bytes, the immediate vertex raylib's 36 bytes, and
+    `UpdateMeshBuffer` writes color bytes where raylib does. Rejected: a (type, count, normalized) triple as GL and three.js spell it
+    (most combinations refused by prose and each adapter's check); bytes or shorts read unnormalized as floats ("scaled": raylib's bone
+    IDs, three.js' `skinIndex`, glTF's quantized positions), which only GL and WebGL2 have, as a platform format. Deferred: such inputs
+    fed normalized and scaled back by the compiler, rounded; bone IDs stay floats until then.

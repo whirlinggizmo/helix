@@ -17,9 +17,9 @@
   `GetMusicTimePlayed` and `SeekMusicStream` refuse until then), and a page's cache in OPFS readable at once from the main thread (a worker holding OPFS's sync handles, the page
   spinning on a SharedArrayBuffer for the reply, as emscripten does), which needs the page cross-origin isolated (COOP and COEP), so
   only ever an option a program chooses, never the default.
-- **Platform proposals queued, for review:** vertex attribute formats (ubyte, ushort, byte and short, normalized or not, read as
-  float inputs: raylib's colors and bone IDs, three.js' skinIndex, glTF's compact data), in place of integer vertex inputs (shader
-  proposal 7, shelved); then depth sampled after a pass, depth bias, and stencil.
+- **Platform proposals queued, for review:** depth sampled after a pass, depth bias, and stencil. Deferred from the vertex formats
+  (DECISIONS 33): bone IDs and three.js' skinIndex fed as normalized bytes or shorts and scaled back by the compiler, rounded, as a
+  `ShaderCompileOptions` entry; until then they are floats, or a layer owning its shader scales them itself.
 - **A drawing library,** between the services and a mirror, when a second mirror needs what helix-ray draws with (its frame recording,
   meshes, default font; its shader programs are the services' now); and glTF's reading as a services package beside `images`.
 - **The layer above the services:** constructs the platform and the services for a target, runs the frame in order and ends with the

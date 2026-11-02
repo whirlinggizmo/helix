@@ -399,10 +399,10 @@ class Shader implements IShaderHandles {
 			var a = getAttribute(name);
 			if (a.type.integer)
 				throw 'shader: attribute $name is a ${a.type}, an integer input, which the platform can\'t feed yet';
-			var rows = a.type.componentCount;
+			var format = ShaderVertexLayout.floats(a.type.componentCount);
 			for (c in 0...a.type.columnCount) {
-				attributes.push({slot: a.slot + c, componentCount: rows, offset: offset});
-				offset += rows * 4;
+				attributes.push({slot: a.slot + c, format: format, offset: offset});
+				offset += format.bytes;
 			}
 		}
 		return {stride: offset, instanced: instanced, attributes: attributes};

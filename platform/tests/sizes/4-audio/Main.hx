@@ -34,7 +34,7 @@ class Main {
 		pipeline = graphics.createPipeline({
 			shader: graphics.createShader(ShaderCompiler.compile("../triangle.vert", "../triangle.frag")),
 			buffers: [
-				{stride: 20, instanced: false, attributes: [{slot: 0, componentCount: 2, offset: 0}, {slot: 1, componentCount: 3, offset: 8}]}
+				{stride: 20, instanced: false, attributes: [{slot: 0, format: Float2, offset: 0}, {slot: 1, format: Float3, offset: 8}]}
 			],
 			primitive: Triangles,
 			indexed: false,

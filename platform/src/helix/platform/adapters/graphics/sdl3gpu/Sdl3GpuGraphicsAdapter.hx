@@ -35,8 +35,7 @@ class Sdl3GpuGraphicsAdapter extends NativeGraphics implements IGraphics {
 			fragmentBytes, cpp.ConstCharStar.fromString(lines));
 		if (handle == 0)
 			throw "The shader didn't build (see the log)";
-		if (source.points == true)
-			pointPrograms.set(handle, true);
+		programs.set(handle, source);
 		return handle;
 	}
 

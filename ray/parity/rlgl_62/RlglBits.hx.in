@@ -21,7 +21,7 @@ class RlglBits {
 				continue;
 			var texture = d.texture == Textures.handle(tex.id) ? "tex" : d.texture == Textures.handle(tex2.id) ? "tex2" : d.texture == f.white ? "white" : "other";
 			for (i in d.first...d.first + d.count) {
-				var at = i * 48;
+				var at = i * 36;
 				line('$name ${d.primitive == Lines ? "L" : "T"} $texture ${f.data.getFloat(at)} ${f.data.getFloat(at + 4)} ${f.data.getFloat(at + 8)}');
 			}
 		}
