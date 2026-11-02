@@ -4,11 +4,12 @@ import helix.platform.Event;
 import helix.platform.IEvents;
 import helix.platform.adapters.shared.EventStream;
 import helix.platform.adapters.shared.ProgramName;
-import helix.platform.adapters.shared.WindowAnswers;
+import helix.platform.adapters.shared.PollAnswers;
 import helix.platform.adapters.shared.sdl3.Sdl3Bridge;
 import helix.platform.adapters.shared.sdl3.Sdl3EventsBridge;
 
-/** Provides `IEvents` on SDL3, natively: its one queue drained at each poll, after which the window's requests answer.
+/** Provides `IEvents` on SDL3, natively: its one queue drained at each poll, after which the window's requests, the mouse's lock and
+	the clipboard's answer.
 
 	The window must be open (`Sdl3WindowAdapter`) before the first poll. SDL's events for a device are turned off until its adapter is
 	constructed over this one (`Sdl3KeyboardAdapter`, `Sdl3MouseAdapter`, `Sdl3TouchAdapter`, `Sdl3GamepadsAdapter`), except a key,
@@ -33,8 +34,8 @@ class Sdl3EventsAdapter implements IEvents {
 		if (Sdl3Bridge.isOpen() != 0)
 			drain();
 		stream.end();
-		// The window's requests answer once SDL has reported what they changed.
-		WindowAnswers.poll();
+		// The requests answer once SDL has reported what they changed: the window's, the mouse's lock, the clipboard's.
+		PollAnswers.poll();
 	}
 
 	function drain():Void {

@@ -2,10 +2,12 @@ package helix.platform.adapters.mouse.sdl3;
 
 import helix.platform.CursorShape;
 import helix.platform.IMouse;
+import helix.platform.adapters.shared.PollAnswers;
 import helix.platform.adapters.shared.sdl3.Sdl3EventsBridge;
 
 /** Provides `IMouse` on SDL3, natively: the mouse's and a pen's buttons, moves and wheel over the window, in framebuffer pixels. SDL's
-	mouse made of a touch is passed over. The cursor is SDL's system cursor of each shape, and the lock is SDL's relative mouse mode. */
+	mouse made of a touch is passed over. The cursor is SDL's system cursor of each shape, and the lock is SDL's relative mouse mode,
+	answered at the next `Sdl3EventsAdapter` poll. */
 class Sdl3MouseAdapter implements IMouse {
 	/** Turns SDL's mouse events on.
 
@@ -42,13 +44,17 @@ class Sdl3MouseAdapter implements IMouse {
 	function get_locked():Bool
 		return Sdl3EventsBridge.locked() != 0;
 
-	// SDL answers at once, so the lambda is called during the call.
+	// SDL sets the relative mouse mode during the call; the answer waits for the next poll.
 	public function requestLock(locked:Bool, ?done:Void->Void, ?failed:String->Void):Bool {
-		if (Sdl3EventsBridge.setLocked(locked ? 1 : 0) != 0) {
-			if (done != null)
-				done();
-		} else if (failed != null)
-			failed("SDL couldn't " + (locked ? "lock" : "let go of") + " the mouse");
+		var granted = Sdl3EventsBridge.setLocked(locked ? 1 : 0) != 0;
+		PollAnswers.add(() -> {
+			if (granted) {
+				if (done != null)
+					done();
+			} else if (failed != null)
+				failed("SDL couldn't " + (locked ? "lock" : "let go of") + " the mouse");
+			return true;
+		});
 		return true;
 	}
 

@@ -3,6 +3,7 @@ package helix.platform.adapters.mouse.dom;
 import helix.platform.CursorShape;
 import helix.platform.IMouse;
 import helix.platform.adapters.shared.EventStream;
+import helix.platform.adapters.shared.PollAnswers;
 import helix.platform.adapters.shared.dom.DomActivation;
 import helix.platform.adapters.shared.dom.DomListeners;
 import helix.platform.adapters.shared.dom.DomPointer;
@@ -114,7 +115,11 @@ class DomMouseAdapter implements IMouse {
 			asking.failed("Another lock was asked for");
 		asking = {locked: locked, done: done, failed: failed};
 		if (locked == this.locked) {
-			answer(null);
+			// Already as asked: answered at the next poll, never during the call.
+			PollAnswers.add(() -> {
+				answer(null);
+				return true;
+			});
 			return true;
 		}
 		if (!locked) {

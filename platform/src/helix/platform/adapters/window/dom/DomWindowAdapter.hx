@@ -4,7 +4,7 @@ import haxe.io.Bytes;
 import helix.platform.IWindow;
 import helix.platform.Orientation;
 import helix.platform.adapters.shared.dom.DomActivation;
-import helix.platform.adapters.shared.WindowAnswers;
+import helix.platform.adapters.shared.PollAnswers;
 import helix.platform.adapters.shared.dom.DomPage;
 import js.Browser;
 import js.html.CanvasElement;
@@ -77,7 +77,7 @@ class DomWindowAdapter implements IWindow {
 
 	// Answers at the next events' poll: done when reached says the request is done by then, else failed with the reason.
 	function answer(reached:Void->Bool, reason:String, done:Null<Void->Void>, failed:Null<String->Void>):Bool {
-		WindowAnswers.add(() -> {
+		PollAnswers.add(() -> {
 			if (reached()) {
 				if (done != null)
 					done();

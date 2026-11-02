@@ -4,7 +4,7 @@ import haxe.io.Bytes;
 import helix.platform.IWindow;
 import helix.platform.Orientation;
 import helix.platform.adapters.shared.ProgramName;
-import helix.platform.adapters.shared.WindowAnswers;
+import helix.platform.adapters.shared.PollAnswers;
 import helix.platform.adapters.shared.sdl3.Sdl3Bridge;
 import helix.platform.adapters.window.sdl3.internal.WindowBridge;
 
@@ -39,7 +39,7 @@ class Sdl3WindowAdapter implements IWindow {
 		if (asking() == 0)
 			return refuse((WindowBridge.error() : String), failed);
 		var deadline = Sdl3Bridge.time() + PATIENCE;
-		WindowAnswers.add(() -> {
+		PollAnswers.add(() -> {
 			var come = false;
 			for (i in 0...kinds.length)
 				if (WindowBridge.eventCount(kinds[i]) != counts[i])
@@ -60,7 +60,7 @@ class Sdl3WindowAdapter implements IWindow {
 
 	// Fails at the next events' poll, saying why; asked all the same.
 	function refuse(reason:String, failed:Null<String->Void>):Bool {
-		WindowAnswers.add(() -> {
+		PollAnswers.add(() -> {
 			if (failed != null)
 				failed(reason);
 			return true;

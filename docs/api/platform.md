@@ -527,7 +527,7 @@ function dispose():Void
 
 Defines the system's clipboard: text, and an image as PNG.
 
-Reading answers later everywhere, as a page's clipboard does. A page reads only with the player's permission, which the browser may ask for, and writes only while it has the keyboard, soon after a key press, click or tap.
+Each call answers once, never during the call, as a page's clipboard does: natively at the next `IEvents.poll`. A page reads only with the player's permission, which the browser may ask for, and writes only while it has the keyboard, soon after a key press, click or tap.
 
 ```haxe
 function requestText(read:String -> Void, ?failed:String -> Void):Bool
@@ -542,25 +542,25 @@ function dispose():Void
   - `failed`: Optional. Receives why it couldn't be read, such as a page's permission refused.
   - returns: True, because it always asks.
 
-  One of `read` or `failed` is called once, during this call or later.
+  One of `read` or `failed` is called once, never during this call.
 - `setText`: Puts text on the clipboard.
   - `text`: The text.
   - `done`: Optional. Called once the text is on the clipboard.
   - `failed`: Optional. Receives why it couldn't be, such as a page without the keyboard.
 
-  One of `done` or `failed` is called once, during this call or later.
+  One of `done` or `failed` is called once, never during this call.
 - `requestImage`: Asks for the clipboard's image, as PNG.
   - `read`: Receives the PNG's bytes. A page's browser may give the same picture encoded anew.
   - `failed`: Optional. Receives why there is none: no image on the clipboard, or a page's permission refused.
   - returns: True, because it always asks.
 
-  One of `read` or `failed` is called once, during this call or later.
+  One of `read` or `failed` is called once, never during this call.
 - `setImage`: Puts an image on the clipboard.
   - `png`: The image, as a PNG file's bytes.
   - `done`: Optional. Called once the image is on the clipboard.
   - `failed`: Optional. Receives why it couldn't be.
 
-  One of `done` or `failed` is called once, during this call or later.
+  One of `done` or `failed` is called once, never during this call.
 - `dispose`: Releases the adapter; the clipboard keeps what was put on it, where the system does.
 
 ## IEvents
@@ -1104,7 +1104,7 @@ function dispose():Void
   - `failed`: Optional. Receives the reason when it is refused.
   - returns: Whether it asked: false where the mouse can't be locked.
 
-  `locked` reflects the result once the request completes. Natively the answer comes during the call. A page locks only soon after a key press, click or tap; without one, it asks at the player's next. In a page, the player can let it go too, with Escape.
+  One of `done` or `failed` is called once, never during the call, and `locked` reflects the result from then. Natively the answer comes at the next `IEvents.poll`. A page locks only soon after a key press, click or tap; without one, it asks at the player's next. In a page, the player can let it go too, with Escape.
 - `canSetPosition`: Returns whether `setPosition` can move the cursor. It is false in a page, where the browser doesn't let a program move it.
 - `setPosition`: Moves the cursor to a place over the canvas or window, and a `MouseMove` there arrives at the next poll.
   - `x`: The place across, in framebuffer pixels from the left.

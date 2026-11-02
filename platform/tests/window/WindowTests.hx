@@ -1,4 +1,7 @@
+import haxe.io.Bytes;
+import helix.platform.IClipboard;
 import helix.platform.IEvents;
+import helix.platform.IMouse;
 import helix.platform.IWindow;
 
 /** Represents one request: what it asks, and what its answer must agree with. */
@@ -22,7 +25,9 @@ typedef Request = {
 /** Checks helix-platform's window requests against the contract, with the library alone: each answers once, at a later `IEvents.poll`
 	and never during its call, with `done` once the window reflects it or `failed` and a reason; a request refused before it asks returns
 	false and answers nothing. What a page can't do fails and what it can is done; natively, what the window manager does is its own, so
-	each answer is listed (`<request>: done` or `failed: <reason>`) as what this desktop honors.
+	each answer is listed (`<request>: done` or `failed: <reason>`) as what this desktop honors. The mouse's lock and the clipboard
+	answer the same way, and are checked here too: natively each is done, the clipboard reading back what was put on it; in a page the
+	lock already as asked is done, and the clipboard answers as the browser decides.
 
 	Built from the hxml files beside it: in a page, and natively over SDL3 on the display it is given (a private one in the checks). It
 	ends with `{passed, checks, failures, answers}` as JSON: printed natively, exiting 1 on a failure, and in a page in `window.helixResult`, null
@@ -35,6 +40,10 @@ class WindowTests {
 
 	static var window:IWindow;
 	static var events:IEvents;
+	static var mouse:IMouse;
+	static var clipboard:IClipboard;
+	static var read:Null<String>;
+	static var readImage:Null<Bytes>;
 	static var requests:Array<Request>;
 	static var next = 0;
 	static var asked = -1.;
@@ -48,14 +57,20 @@ class WindowTests {
 		#if js
 		js.Syntax.code("window.helixResult = null");
 		window = new helix.platform.adapters.window.dom.DomWindowAdapter({canvasId: "canvas"});
-		events = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
+		var dom = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
+		events = dom;
+		mouse = new helix.platform.adapters.mouse.dom.DomMouseAdapter({events: dom});
+		clipboard = new helix.platform.adapters.clipboard.dom.DomClipboardAdapter();
 		setup();
 		var frame:Float->Void = null;
 		frame = _ -> if (tick()) js.Browser.window.requestAnimationFrame(frame) else finish();
 		js.Browser.window.requestAnimationFrame(frame);
 		#else
 		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gl});
-		events = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();
+		var sdl = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();
+		events = sdl;
+		mouse = new helix.platform.adapters.mouse.sdl3.Sdl3MouseAdapter({events: sdl});
+		clipboard = new helix.platform.adapters.clipboard.sdl3.Sdl3ClipboardAdapter();
 		setup();
 		while (tick())
 			Sys.sleep(1 / 120);
@@ -134,6 +149,21 @@ class WindowTests {
 		];
 		#if js
 		requests = requests.concat([
+			{
+				name: "requestLock(false), not locked",
+				ask: (d, f) -> mouse.requestLock(false, d, f),
+				expected: "done",
+				granted: () -> !mouse.locked
+			},
+			{
+				name: "clipboard setText",
+				ask: (d, f) -> {
+					clipboard.setText("helix", d, f);
+					return true;
+				}
+			},
+			{name: "clipboard requestText", ask: (d, f) -> clipboard.requestText(_ -> d(), f)},
+			{name: "clipboard requestImage", ask: (d, f) -> clipboard.requestImage(_ -> d(), f)},
 			{name: "requestSize(640, 400)", ask: (d, f) -> window.requestSize(640, 400, d, f), expected: "failed"},
 			{name: "requestPosition(50, 60)", ask: (d, f) -> window.requestPosition(50, 60, d, f), expected: "failed"},
 			{name: "requestMaximized(true)", ask: (d, f) -> window.requestMaximized(true, d, f), expected: "failed"},
@@ -176,9 +206,57 @@ class WindowTests {
 			{name: "requestFullscreen(true) again", ask: (d, f) -> window.requestFullscreen(window.fullscreen, d, f), expected: "done"},
 			{name: "requestFullscreen(false)", ask: (d, f) -> window.requestFullscreen(false, d, f), granted: () -> !window.fullscreen},
 			{name: "requestFocus() after", ask: (d, f) -> window.requestFocus(d, f), granted: () -> window.focused},
+			{
+				name: "requestLock(true)",
+				ask: (d, f) -> mouse.requestLock(true, d, f),
+				expected: "done",
+				granted: () -> mouse.locked
+			},
+			{
+				name: "requestLock(false)",
+				ask: (d, f) -> mouse.requestLock(false, d, f),
+				expected: "done",
+				granted: () -> !mouse.locked
+			},
+			{
+				name: "clipboard setText",
+				ask: (d, f) -> {
+					clipboard.setText("helix", d, f);
+					return true;
+				},
+				expected: "done"
+			},
+			{
+				name: "clipboard requestText",
+				ask: (d, f) -> clipboard.requestText(text -> {
+					read = text;
+					d();
+				}, f),
+				expected: "done",
+				granted: () -> read == "helix"
+			},
+			{
+				name: "clipboard setImage",
+				ask: (d, f) -> {
+					clipboard.setImage(PNG, d, f);
+					return true;
+				},
+				expected: "done"
+			},
+			{
+				name: "clipboard requestImage",
+				ask: (d, f) -> clipboard.requestImage(png -> {
+					readImage = png;
+					d();
+				}, f),
+				expected: "done",
+				granted: () -> readImage != null && readImage.compare(PNG) == 0},
 		]);
 		#end
 	}
+
+	// A 1 x 1 PNG, put on the clipboard and read back.
+	static final PNG = haxe.crypto.Base64.decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==");
 
 	static function finish():Void {
 		var result = {

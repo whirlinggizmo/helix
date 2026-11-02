@@ -1,12 +1,13 @@
 package helix.platform.adapters.shared;
 
-/** Provides how the window adapters answer their requests at the events' poll, which is where what happens to the window is seen: each
-	request leaves a check, run after each `IEvents.poll` until it has answered. */
+/** Provides how adapters answer their requests at the events' poll, never during the call that asked: the window's, the mouse's lock
+	and the clipboard's. Each request leaves a check, run after each `IEvents.poll` until it has answered. */
 @:noCompletion
-class WindowAnswers {
+class PollAnswers {
 	static var checks:Array<Void->Bool> = [];
 
-	/** Leaves a check, run first after the next poll, so it never answers during the call that asked.
+	/** Leaves a check, run first after the next poll, so it never answers during the call that asked. A request whose answer is known
+		at once leaves a check that answers and returns true.
 
 		@param check  Answers the request when it can, returning whether it has. */
 	public static function add(check:Void->Bool):Void

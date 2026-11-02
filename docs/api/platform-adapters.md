@@ -120,7 +120,7 @@ function dispose():Void
 
 Provides `IClipboard` in a browser page, over the Clipboard API (`navigator.clipboard`): text, and an image as `image/png`.
 
-The browser may ask the player before a read, and lets the page write only while it has the keyboard, soon after a press. A page served without HTTPS (other than from localhost) has no clipboard, so every call fails. Chromium re-encodes an image it puts on the clipboard, so one read back is the same picture in another PNG.
+The browser may ask the player before a read, and lets the page write only while it has the keyboard, soon after a press. A page served without HTTPS (other than from localhost) has no clipboard, so every call fails, at the next `DomEventsAdapter` poll. Chromium re-encodes an image it puts on the clipboard, so one read back is the same picture in another PNG.
 
 ```haxe
 function new()
@@ -137,7 +137,7 @@ function dispose():Void
 
 *class*, native (cpp) in [`platform/src/helix/platform/adapters/clipboard/sdl3/Sdl3ClipboardAdapter.hx`](../../platform/src/helix/platform/adapters/clipboard/sdl3/Sdl3ClipboardAdapter.hx), `import helix.platform.adapters.clipboard.sdl3.Sdl3ClipboardAdapter;`, implements `IClipboard`
 
-Provides `IClipboard` on SDL3, natively: the system's clipboard, its text and an image as `image/png`. SDL answers at once, so each call's lambda is called during it. It is made after the window, as SDL's clipboard needs its video.
+Provides `IClipboard` on SDL3, natively: the system's clipboard, its text and an image as `image/png`. SDL reads and writes during the call, and the answer comes at the next `Sdl3EventsAdapter` poll. It is made after the window, as SDL's clipboard needs its video.
 
 ```haxe
 function new()
@@ -156,7 +156,7 @@ function dispose():Void
 
 Provides `IEvents` in a browser page.
 
-It listens to the page's focus and visibility, the viewport's size, which the canvas follows, a lost WebGL context and files dropped on the canvas, and for the player's first press anywhere in the page, until it comes. Each listener only records; `poll` hands over what was recorded since the last one, after which the window's requests answer. The device adapters built over it (`DomKeyboardAdapter`, `DomMouseAdapter`, `DomTouchAdapter`, `DomGamepadsAdapter`, `DomTiltAdapter`) add their events to the same records.
+It listens to the page's focus and visibility, the viewport's size, which the canvas follows, a lost WebGL context and files dropped on the canvas, and for the player's first press anywhere in the page, until it comes. Each listener only records; `poll` hands over what was recorded since the last one, after which the window's requests answer, and the mouse's and the clipboard's whose answer was known at once. The device adapters built over it (`DomKeyboardAdapter`, `DomMouseAdapter`, `DomTouchAdapter`, `DomGamepadsAdapter`, `DomTiltAdapter`) add their events to the same records.
 
 ```haxe
 function new(options:DomEventsAdapterOptions)
@@ -193,7 +193,7 @@ final canvasId:String
 
 *class*, native (cpp) in [`platform/src/helix/platform/adapters/events/sdl3/Sdl3EventsAdapter.hx`](../../platform/src/helix/platform/adapters/events/sdl3/Sdl3EventsAdapter.hx), `import helix.platform.adapters.events.sdl3.Sdl3EventsAdapter;`, implements `IEvents`
 
-Provides `IEvents` on SDL3, natively: its one queue drained at each poll, after which the window's requests answer.
+Provides `IEvents` on SDL3, natively: its one queue drained at each poll, after which the window's requests, the mouse's lock and the clipboard's answer.
 
 The window must be open (`Sdl3WindowAdapter`) before the first poll. SDL's events for a device are turned off until its adapter is constructed over this one (`Sdl3KeyboardAdapter`, `Sdl3MouseAdapter`, `Sdl3TouchAdapter`, `Sdl3GamepadsAdapter`), except a key, a mouse button and a finger lifting, which stay on until the first press has come.
 
@@ -753,7 +753,7 @@ final events:DomEventsAdapter
 
 *class*, native (cpp) in [`platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapter.hx`](../../platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapter.hx), `import helix.platform.adapters.mouse.sdl3.Sdl3MouseAdapter;`, implements `IMouse`
 
-Provides `IMouse` on SDL3, natively: the mouse's and a pen's buttons, moves and wheel over the window, in framebuffer pixels. SDL's mouse made of a touch is passed over. The cursor is SDL's system cursor of each shape, and the lock is SDL's relative mouse mode.
+Provides `IMouse` on SDL3, natively: the mouse's and a pen's buttons, moves and wheel over the window, in framebuffer pixels. SDL's mouse made of a touch is passed over. The cursor is SDL's system cursor of each shape, and the lock is SDL's relative mouse mode, answered at the next `Sdl3EventsAdapter` poll.
 
 ```haxe
 function new(options:Sdl3MouseAdapterOptions)

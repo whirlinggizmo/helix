@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Checks helix-platform on the GPU, its audio and its window with the library alone: its examples (platform/examples/<name>), its graphics
 tests (platform/tests/graphics), its audio tests (platform/tests/audio, natively on SDL3's dummy audio driver, which mixes in time, and in a
-page Chromium lets start audio without a gesture, muted) and its window tests (platform/tests/window, each request's answer listed). Each is built from its own hxml files, as a reader builds it, and run natively on a private display (Linux),
+page Chromium lets start audio without a gesture, muted) and its window tests (platform/tests/window, each request's answer listed: the window's, the mouse's lock, the clipboard's). Each is built from its own hxml files, as a reader builds it, and run natively on a private display (Linux),
 each native build it has (GL, and SDL_GPU where it has build-native-gpu.hxml), and in a headless Chromium. An example runs 60 frames and
 the page's screenshot is checked against what it says it draws (its check.json: points and the colors expected there, each within a
 tolerance per channel); the graphics and audio tests check their own results, and say how it went. Exits 1 on any failure.

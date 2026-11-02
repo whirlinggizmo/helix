@@ -40,12 +40,23 @@ class FakeDevices implements IKeyboard implements IMouse implements ITouch imple
 	function get_locked():Bool
 		return held;
 
-	/** Locks or lets go of the mouse at once. */
+	// The answers due at the next answer().
+	var due:Array<Void->Void> = [];
+
+	/** Locks or lets go of the mouse at once, `done` called at the next `answer`, as an `IEvents.poll` would. */
 	public function requestLock(locked:Bool, ?done:Void->Void, ?failed:String->Void):Bool {
 		held = locked;
 		if (done != null)
-			done();
+			due.push(done);
 		return true;
+	}
+
+	/** Answers the locks asked for since the last call, as an `IEvents.poll` would. */
+	public function answer():Void {
+		var now = due;
+		due = [];
+		for (f in now)
+			f();
 	}
 
 	/** Says the pad shakes when one is connected. */

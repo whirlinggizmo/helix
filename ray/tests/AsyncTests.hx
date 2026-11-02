@@ -22,6 +22,8 @@ class AsyncTests {
 	}
 
 	static var window:FakeWindow;
+	static var devices:FakeDevices;
+	static var clipboard:FakeClipboard;
 
 	// A frame's polls, as Runtime's: the services, the work left for later, then the events, which the window's answers come after.
 	static function frame():Void {
@@ -32,6 +34,8 @@ class AsyncTests {
 			f();
 		Runtime.events.poll();
 		window.answer();
+		devices.answer();
+		clipboard.answer();
 	}
 
 	static function pump(answered:Void->Bool):Void {
@@ -61,10 +65,10 @@ class AsyncTests {
 		Runtime.window = window;
 		Runtime.events = new FakeEvents();
 		Runtime.screen = new Screen(window, Runtime.events);
-		var devices = new FakeDevices();
+		devices = new FakeDevices();
 		Runtime.mouseAdapter = devices;
 		Runtime.mouseService = new Mouse(Runtime.events, devices);
-		var clipboard = new FakeClipboard();
+		clipboard = new FakeClipboard();
 		Runtime.clipboardAdapter = clipboard;
 		var files = new FakeFileSystem();
 		Runtime.polled.push(files);
@@ -97,13 +101,15 @@ class AsyncTests {
 		check(answer((d, f) -> ToggleBorderlessWindowedAsync(d, f)) == "done"
 			&& !IsWindowFullscreen(), "ToggleBorderlessWindowedAsync, back");
 
-		// The cursor's lock and the clipboard, which the fakes answer during the call, as the platform's do natively.
-		check(answer((d, f) -> DisableCursorAsync(d, f)) == "done" && devices.locked && IsCursorHidden(),
-			"DisableCursorAsync: done after the call, though the mouse answered during it");
+		// The cursor's lock and the clipboard, which the fakes answer at the next poll, as the platform's do.
+		check(answer((d, f) -> DisableCursorAsync(d, f)) == "done"
+			&& devices.locked
+			&& IsCursorHidden(), "DisableCursorAsync: done after the call");
 		check(answer((d, f) -> EnableCursorAsync(d, f)) == "done" && !devices.locked && !IsCursorHidden(), "EnableCursorAsync");
 		check(answer((d, f) -> SetClipboardTextAsync("copied", d, f)) == "done" && clipboard.text == "copied", "SetClipboardTextAsync");
 		clipboard.refusing = true;
 		check(answer((d, f) -> SetClipboardTextAsync("again", d, f)) == "failed: no keyboard", "SetClipboardTextAsync refused");
+		check(answer((d, f) -> GetClipboardTextAsync(text -> text == "copied" ? d() : f(text), f)) == "done", "GetClipboardTextAsync");
 
 		// The writes, kept in the saves.
 		check(answer((d, f) -> SaveFileTextAsync("notes.txt", "hello", d, f)) == "done"
@@ -167,7 +173,7 @@ class AsyncTests {
 	}
 }
 
-/** A clipboard answering during the call, as SDL3's does: its text kept, or refused while `refusing`. */
+/** A clipboard answering at the next `answer`, as an `IEvents.poll` would: its text kept, or refused while `refusing`. */
 class FakeClipboard implements IClipboard {
 	/** Gets the text last put on it. */
 	public var text(default, null) = "";
@@ -175,34 +181,42 @@ class FakeClipboard implements IClipboard {
 	/** Gets or sets whether writes are refused. */
 	public var refusing = false;
 
+	// The answers due at the next answer().
+	var due:Array<Void->Void> = [];
+
 	/** Creates an empty one. */
 	public function new() {}
 
+	/** Answers the calls made since the last one, as an `IEvents.poll` would. */
+	public function answer():Void {
+		var now = due;
+		due = [];
+		for (f in now)
+			f();
+	}
+
 	public function requestText(read:String->Void, ?failed:String->Void):Bool {
-		read(text);
+		var kept = text;
+		due.push(() -> read(kept));
 		return true;
 	}
 
 	public function setText(text:String, ?done:Void->Void, ?failed:String->Void):Void {
 		if (refusing) {
-			if (failed != null)
-				failed("no keyboard");
+			due.push(() -> if (failed != null) failed("no keyboard"));
 			return;
 		}
 		this.text = text;
-		if (done != null)
-			done();
+		due.push(() -> if (done != null) done());
 	}
 
 	public function requestImage(read:Bytes->Void, ?failed:String->Void):Bool {
-		if (failed != null)
-			failed("no image");
+		due.push(() -> if (failed != null) failed("no image"));
 		return true;
 	}
 
 	public function setImage(png:Bytes, ?done:Void->Void, ?failed:String->Void):Void {
-		if (failed != null)
-			failed("no images");
+		due.push(() -> if (failed != null) failed("no images"));
 	}
 
 	public function dispose():Void {}

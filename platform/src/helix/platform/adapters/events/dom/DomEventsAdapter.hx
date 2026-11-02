@@ -3,7 +3,7 @@ package helix.platform.adapters.events.dom;
 import helix.platform.Event;
 import helix.platform.IEvents;
 import helix.platform.adapters.shared.EventStream;
-import helix.platform.adapters.shared.WindowAnswers;
+import helix.platform.adapters.shared.PollAnswers;
 import helix.platform.adapters.shared.dom.DomListeners;
 import helix.platform.adapters.shared.dom.DomPage;
 import js.Browser;
@@ -13,7 +13,7 @@ import js.html.CanvasElement;
 
 	It listens to the page's focus and visibility, the viewport's size, which the canvas follows, a lost WebGL context and files dropped on
 	the canvas, and for the player's first press anywhere in the page, until it comes. Each listener only records; `poll` hands over what was recorded since the
-	last one, after which the window's requests answer. The device adapters built over it (`DomKeyboardAdapter`, `DomMouseAdapter`, `DomTouchAdapter`, `DomGamepadsAdapter`,
+	last one, after which the window's requests answer, and the mouse's and the clipboard's whose answer was known at once. The device adapters built over it (`DomKeyboardAdapter`, `DomMouseAdapter`, `DomTouchAdapter`, `DomGamepadsAdapter`,
 	`DomTiltAdapter`) add their events to the same records. */
 class DomEventsAdapter implements IEvents {
 	@:allow(helix.platform.adapters)
@@ -101,7 +101,7 @@ class DomEventsAdapter implements IEvents {
 	public function poll():Void {
 		stream.begin();
 		stream.end();
-		WindowAnswers.poll();
+		PollAnswers.poll();
 	}
 
 	public var unlocked(get, never):Bool;

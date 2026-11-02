@@ -1097,7 +1097,7 @@ class RAsync {
 		@param read  Receives the text; "" when the clipboard holds none.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	static function GetClipboardTextAsync(read:String->Void, ?failed:String->Void):Void {
-		Runtime.clipboard().requestText(text -> Runtime.later(() -> read(text)), error -> Runtime.later(() -> refuse("GetClipboardTextAsync", error, failed)));
+		Runtime.clipboard().requestText(read, error -> refuse("GetClipboardTextAsync", error, failed));
 	}
 
 	/** Reads the clipboard's image, answering at a later poll once it is decoded: helix-ray's own, in place of raylib's
@@ -1108,8 +1108,7 @@ class RAsync {
 	static function GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void):Void {
 		Runtime.imaging();
 		Runtime.clipboard()
-			.requestImage(png -> Runtime.later(() -> decoded("GetClipboardImageAsync", ".png", png, loaded, failed)),
-				error -> Runtime.later(() -> refuse("GetClipboardImageAsync", error, failed)));
+			.requestImage(png -> decoded("GetClipboardImageAsync", ".png", png, loaded, failed), error -> refuse("GetClipboardImageAsync", error, failed));
 	}
 
 	// A directory's path as the file systems take it: "" for the root ("", "." or "./"), without "./" before it or a slash after.
@@ -1604,15 +1603,10 @@ class RAsync {
 		}, error -> refuse(name, error, failed));
 	}
 
-	// Asks the platform, answering as it does: never during the call, as the platform's mouse lock and clipboard natively answer during
-	// it. A request it can't ask is refused at a later poll, saying why not.
+	// Asks the platform, answering as it does, at a later poll. A request it can't ask is refused at a later poll, saying why not.
 	static function ask(name:String, asking:(granted:Void->Void, refused:String->Void)->Bool, why:String, done:Null<Void->Void>,
 			failed:Null<String->Void>):Void {
-		var calling = true;
-		var asked = asking(() -> if (done != null) calling ? Runtime.later(done) : done(),
-			error -> calling ? Runtime.later(() -> refuse(name, error, failed)) : refuse(name, error, failed));
-		calling = false;
-		if (!asked)
+		if (!asking(answered(done), error -> refuse(name, error, failed)))
 			Runtime.later(() -> refuse(name, why, failed));
 	}
 

@@ -197,6 +197,9 @@ enum Event {
   reads each by index until the next. Natively they are SDL3's drop events, a dropped directory skipped; in a page the events adapter
   listens for the canvas's dragover and drop, so the canvas takes a drop rather than the browser opening the file, and keeps the File
   objects of its files, not of directories, for the window adapter (`adapters/shared/dom/DomPage`).
+- `requestLock` answers once, never during the call: natively SDL's relative mouse mode is set during the call and answers at the next
+  `IEvents.poll`; in a page the browser's pointer lock answers as it changes or is refused, and a lock already as asked answers at the
+  next poll.
 - `wait` is how a native loop idles while the window can't be seen: the thread sleeps in the OS's event wait (`SDL_WaitEventTimeout`),
   using no CPU, and wakes for an event or at the timeout, so the owner can still pump what must not starve (a music stream, a
   download's completion) at an interval of its choosing: `if (hidden) events.wait(0.25); events.poll(); ...`. In a page the browser
@@ -476,14 +479,16 @@ bringing a file in when it isn't there or is out of date is above.
 
 ## Clipboard
 
-`IClipboard`: the system's clipboard, its text and an image as PNG. `requestText(read, ?failed)` and `requestImage(read, ?failed)`
-answer once, during the call or later; `setText(text, ?done, ?failed)` and `setImage(png, ?done, ?failed)`; `dispose`.
+`IClipboard`: the system's clipboard, its text and an image as PNG. `requestText(read, ?failed)` and `requestImage(read, ?failed)`;
+`setText(text, ?done, ?failed)` and `setImage(png, ?done, ?failed)`; `dispose`. Each answers once, never during the call.
 
 - **In a page, `clipboard/dom` (`DomClipboardAdapter`):** the Clipboard API. A read needs the player's permission, which the browser
   may ask for; a write needs the keyboard, soon after a press; a page served without HTTPS (but localhost) has no clipboard. Chromium
-  re-encodes an image put on it, so one read back is the same picture in another PNG.
+  re-encodes an image put on it, so one read back is the same picture in another PNG. A page without a clipboard fails at the next
+  `IEvents.poll`.
 - **Natively, `clipboard/sdl3` (`Sdl3ClipboardAdapter`):** SDL3's clipboard, made after the window; an image is offered as
-  `image/png` and handed over when another program pastes. Each answer comes during the call.
+  `image/png` and handed over when another program pastes. SDL reads and writes during the call, and the answer comes at the next
+  `IEvents.poll`.
 
 ## Export
 

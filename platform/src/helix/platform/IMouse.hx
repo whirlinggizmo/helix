@@ -17,8 +17,9 @@ interface IMouse {
 
 	/** Asks for the mouse locked, for looking around with it, or let go.
 
-		`locked` reflects the result once the request completes. Natively the answer comes during the call. A page locks only soon after a
-		key press, click or tap; without one, it asks at the player's next. In a page, the player can let it go too, with Escape.
+		One of `done` or `failed` is called once, never during the call, and `locked` reflects the result from then. Natively the answer
+		comes at the next `IEvents.poll`. A page locks only soon after a key press, click or tap; without one, it asks at the player's
+		next. In a page, the player can let it go too, with Escape.
 		@param locked  True to lock it, false to let it go.
 		@param done  Optional. Called once it is granted.
 		@param failed  Optional. Receives the reason when it is refused.

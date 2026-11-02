@@ -2,12 +2,13 @@ package helix.platform.adapters.clipboard.dom;
 
 import haxe.io.Bytes;
 import helix.platform.IClipboard;
+import helix.platform.adapters.shared.PollAnswers;
 
 /** Provides `IClipboard` in a browser page, over the Clipboard API (`navigator.clipboard`): text, and an image as `image/png`.
 
 	The browser may ask the player before a read, and lets the page write only while it has the keyboard, soon after a press. A page
-	served without HTTPS (other than from localhost) has no clipboard, so every call fails. Chromium re-encodes an image it puts on the
-	clipboard, so one read back is the same picture in another PNG. */
+	served without HTTPS (other than from localhost) has no clipboard, so every call fails, at the next `DomEventsAdapter` poll.
+	Chromium re-encodes an image it puts on the clipboard, so one read back is the same picture in another PNG. */
 class DomClipboardAdapter implements IClipboard {
 	/** Uses the page's clipboard. */
 	public function new() {}
@@ -71,9 +72,16 @@ class DomClipboardAdapter implements IClipboard {
 		return navigator.clipboard;
 	}
 
+	// Fails with the browser's error; with none, the page has no clipboard, which is known during the call and answered at the next poll.
 	static function refuse(failed:Null<String->Void>, error:Dynamic):Void {
 		if (failed == null)
 			return;
-		failed(error == null ? "The page has no clipboard" : error.message != null ? Std.string(error.message) : Std.string(error));
+		if (error == null)
+			PollAnswers.add(() -> {
+				failed("The page has no clipboard");
+				return true;
+			});
+		else
+			failed(error.message != null ? Std.string(error.message) : Std.string(error));
 	}
 }
