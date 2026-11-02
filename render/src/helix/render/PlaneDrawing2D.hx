@@ -18,7 +18,8 @@ class PlaneDrawing2D {
 	/** The region shapes read the center of, or null for the white texture. */
 	var shapeRegion:Null<TextureRegion2D> = null;
 
-	final tess:Tessellator2D;
+	// The shapes' tessellator, made at the first shape, so a program drawing only sprites and text links none of it.
+	var tessellator:Null<Tessellator2D> = null;
 	var shapeU = .5;
 	var shapeV = .5;
 	var shapeColor = 0;
@@ -29,17 +30,18 @@ class PlaneDrawing2D {
 		this.use = use;
 		this.vertex = vertex;
 		this.visible = visible;
-		tess = new Tessellator2D(shapeTriangle);
 	}
 
 	/** Pixels a unit where the plane is drawn, for the curves' segments. */
-	var scale(get, set):Float;
+	var scale = 1.;
 
-	inline function get_scale():Float
-		return tess.scale;
-
-	inline function set_scale(value:Float):Float
-		return tess.scale = value;
+	// The tessellator, at the plane's scale.
+	function tess():Tessellator2D {
+		if (tessellator == null)
+			tessellator = new Tessellator2D(shapeTriangle);
+		tessellator.scale = scale;
+		return tessellator;
+	}
 
 	function shapeTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float):Void {
 		vertex(x0, y0, shapeU, shapeV, shapeColor);
@@ -135,7 +137,7 @@ class PlaneDrawing2D {
 		if (!visible(Math.min(x0, x1) - h, Math.min(y0, y1) - h, Math.max(x0, x1) + h, Math.max(y0, y1) + h))
 			return;
 		shape(color);
-		tess.line(x0, y0, x1, y1, thickness);
+		tess().line(x0, y0, x1, y1, thickness);
 	}
 
 	// Whether points' box, grown by a margin, may be seen.
@@ -159,7 +161,7 @@ class PlaneDrawing2D {
 		if (points.length < 4 || !pointsVisible(points, thickness * 2))
 			return;
 		shape(color);
-		tess.stroke(points, closed, thickness);
+		tess().stroke(points, closed, thickness);
 	}
 
 	function triangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color:Int):Void {
@@ -173,7 +175,7 @@ class PlaneDrawing2D {
 		if (!visible(Math.min(x, x + width), Math.min(y, y + height), Math.max(x, x + width), Math.max(y, y + height)))
 			return;
 		shape(color);
-		tess.rectangle(x, y, width, height);
+		tess().rectangle(x, y, width, height);
 	}
 
 	function strokeRectangle(x:Float, y:Float, width:Float, height:Float, thickness:Float, color:Int):Void {
@@ -184,7 +186,7 @@ class PlaneDrawing2D {
 		if (!visible(x, y, x + width, y + height))
 			return;
 		shape(color);
-		tess.fillRounded(x, y, width, height, radius);
+		tess().fillRounded(x, y, width, height, radius);
 	}
 
 	function strokeRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, thickness:Float, color:Int):Void {
@@ -192,7 +194,7 @@ class PlaneDrawing2D {
 		if (!visible(x - h, y - h, x + width + h, y + height + h))
 			return;
 		shape(color);
-		tess.strokeRounded(x, y, width, height, radius, thickness);
+		tess().strokeRounded(x, y, width, height, radius, thickness);
 	}
 
 	function ellipse(x:Float, y:Float, radiusX:Float, radiusY:Float, color:Int):Void {
@@ -200,7 +202,7 @@ class PlaneDrawing2D {
 		if (!visible(x - rx, y - ry, x + rx, y + ry))
 			return;
 		shape(color);
-		tess.fillEllipse(x, y, rx, ry);
+		tess().fillEllipse(x, y, rx, ry);
 	}
 
 	function strokeEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, thickness:Float, color:Int):Void {
@@ -209,7 +211,7 @@ class PlaneDrawing2D {
 		if (!visible(x - rx, y - ry, x + rx, y + ry))
 			return;
 		shape(color);
-		tess.strokeEllipse(x, y, Math.abs(radiusX), Math.abs(radiusY), thickness);
+		tess().strokeEllipse(x, y, Math.abs(radiusX), Math.abs(radiusY), thickness);
 	}
 
 	function polygon(points:Array<Float>, color:Int):Bool {
@@ -220,7 +222,7 @@ class PlaneDrawing2D {
 		if (!pointsVisible(points, 0))
 			return true;
 		shape(color);
-		return tess.fillPolygon(points);
+		return tess().fillPolygon(points);
 	}
 
 	function triangles(texture:Null<Texture2D>, positions:Array<Float>, texCoords:Null<Array<Float>>, colors:Null<Array<Int>>, indices:Null<Array<Int>>):Void {
