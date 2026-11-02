@@ -76,7 +76,7 @@ void main() {
 			time += dt;
 			UpdateMusicStream(music);
 			if (IsKeyPressed(KEY_F))
-				ToggleFullscreen();
+				ToggleFullscreenAsync();
 			if (IsKeyPressed(KEY_R))
 				SetWindowSize(1280, 720);
 			// Input: the keyboard, a gamepad's stick, the mouse and touch all move the player.
