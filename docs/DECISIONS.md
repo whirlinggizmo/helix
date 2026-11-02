@@ -372,9 +372,9 @@ Why things are the way they are, numbered, in order.
     without depth (three.js' `samples`) could not be. It takes `msaaSampleCount`: 1 for none, 0 (the default) for the screen's, a count
     rounded down to the nearest the GPU draws the format with, up to `getMaxRenderTargetMsaaSampleCount(format)`, and never refused for
     being more than the GPU takes. A GPU need not take every power of two (lavapipe takes 1 and 4), so each adapter rounds to a count the GPU
-    reports for the format. helix-ray's `LoadRenderTexture` asks for 1. SDL_GPU on NVIDIA's Vulkan driver (595.104) loses the device when a
-    multisampled pass is followed by one of fewer samples in a command buffer (validation and synchronization layers clean, lavapipe
-    fine), so the adapter submits what it has recorded before such a pass. Rejected: a target's count read back after it is made (the
+    reports for the format. helix-ray's `LoadRenderTexture` asks for 1. SDL_GPU on NVIDIA's Vulkan driver (595.104 on Linux, 537.58 on
+    Windows' RTX 2060) loses the device when a multisampled pass is followed by one of fewer samples in a command buffer (validation and
+    synchronization layers clean, lavapipe fine), so the adapter submits what it has recorded before such a pass. Rejected: a target's count read back after it is made (the
     limit answers the question before); one limit for windows and targets (a browser's canvas count is its own choice).
 
 35. **helix-render draws for the engines above, judged by a raylib layer and a three.js layer, and is built in stages from its API.**
