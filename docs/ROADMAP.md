@@ -9,9 +9,13 @@
   Asked below it: helix-services' `Font2D.kind` and kerning pairs (until then every font draws as coverage, unkerned) and a `Font2D`
   from glyph data; helix-formats' `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions, and morph
   targets; helix-geometry's second texture coordinates, morph targets and mesh groups; helix-math's Euler orders, an object's `lookAt`
-  and `Bounds3D` through a matrix. Then helix-ray rebuilt on it, and helix-scene (`scene/`, `helix.scene`) on it (2D and 3D nodes, transforms, hierarchy,
-  the walk that culls, lights and sorts; HeliX's nodes and stage carried over), drafted as an API and tried by fresh agents first;
-  the engines over helix-scene, which first to be chosen: HeliX's engine (its game-level API, its games and docs) and a three.js-style one.
+  and `Bounds3D` through a matrix. Then helix-ray rebuilt on it (immediate, as raylib is, on helix-render directly).
+- **helix-scene and HeliX's engine: HeliX on top of the libraries, not replaced by them.** helix-scene (`scene/`, `helix.scene`) is
+  HeliX's scene code (its stage, 2D and 3D nodes, transforms, hierarchy, the walk that culls, gathers lights and sorts, picking) moved
+  onto helix-render and made engine-neutral, the link rule applied (a 2D game carries no 3D): a port of HeliX's code, not a new
+  design. HeliX's engine is its game-level API (app, loader, UI, transitions, animator, autopilot) on helix-scene, helix-render and
+  the services, so its users keep the API they know; a three.js-style engine later on the same helix-scene. The test: one of
+  HeliX's games ported, its effort and its size beside its HeliX build.
 - **helix-ray, on trial (DECISIONS 16, 19, 20, 21):** raylib's API over the services; to decide whether it merges. Next: reloading and placeholders under raylib's own names (the assets,
   resources and objects below). Then a trial of how agents take to
   the `...Async` loads (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
