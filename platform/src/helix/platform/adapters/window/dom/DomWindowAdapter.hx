@@ -4,6 +4,7 @@ import haxe.io.Bytes;
 import helix.platform.IWindow;
 import helix.platform.Orientation;
 import helix.platform.adapters.shared.dom.DomActivation;
+import helix.platform.adapters.shared.WindowAnswers;
 import helix.platform.adapters.shared.dom.DomPage;
 import js.Browser;
 import js.html.CanvasElement;
@@ -11,8 +12,9 @@ import js.html.CanvasElement;
 /** Provides `IWindow` in a browser page: the page is the window.
 
 	Its title is the document's, its size the viewport's, and fullscreen and visibility are the canvas's, whose drawing size follows the
-	viewport and the pixel ratio. A page can't move or size its window, choose a monitor, or close; it sees one screen. A dropped file is the
-	File the canvas's drop gave, read later. */
+	viewport and the pixel ratio. A page can't move, size, maximize or minimize its window, choose a monitor, or close; it sees one screen.
+	Those requests fail at the next `DomEventsAdapter` poll, saying so, and what a page can do answers there too; fullscreen and the
+	orientation answer as the browser does. A dropped file is the File the canvas's drop gave, read later. */
 class DomWindowAdapter implements IWindow {
 	var canvas:CanvasElement;
 	var closed = false;
@@ -73,8 +75,24 @@ class DomWindowAdapter implements IWindow {
 	function get_height():Int
 		return Browser.window.innerHeight;
 
-	public function requestSize(width:Int, height:Int):Bool
-		return false;
+	// Answers at the next events' poll: done when reached says the request is done by then, else failed with the reason.
+	function answer(reached:Void->Bool, reason:String, done:Null<Void->Void>, failed:Null<String->Void>):Bool {
+		WindowAnswers.add(() -> {
+			if (reached()) {
+				if (done != null)
+					done();
+			} else if (failed != null)
+				failed(reason);
+			return true;
+		});
+		return true;
+	}
+
+	public function requestSize(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Bool {
+		if (width < 1 || height < 1)
+			return false;
+		return answer(() -> false, "a page's canvas follows the page's size", done, failed);
+	}
 
 	public function canMove():Bool
 		return false;
@@ -89,8 +107,8 @@ class DomWindowAdapter implements IWindow {
 	function get_y():Int
 		return Browser.window.screenY;
 
-	public function requestPosition(x:Int, y:Int):Bool
-		return false;
+	public function requestPosition(x:Int, y:Int, ?done:Void->Void, ?failed:String->Void):Bool
+		return answer(() -> false, "a page can't move its window", done, failed);
 
 	public var orientation(get, never):Orientation;
 
@@ -177,21 +195,21 @@ class DomWindowAdapter implements IWindow {
 	function get_maximized():Bool
 		return false;
 
-	public function requestMaximized(maximized:Bool):Bool
-		return false;
+	public function requestMaximized(maximized:Bool, ?done:Void->Void, ?failed:String->Void):Bool
+		return answer(() -> !maximized, "a page can't maximize its window", done, failed);
 
 	public var minimized(get, never):Bool;
 
 	function get_minimized():Bool
 		return false;
 
-	public function requestMinimized(minimized:Bool):Bool
-		return false;
+	public function requestMinimized(minimized:Bool, ?done:Void->Void, ?failed:String->Void):Bool
+		return answer(() -> !minimized, "a page can't minimize its window", done, failed);
 
-	public function requestFocus():Bool {
+	public function requestFocus(?done:Void->Void, ?failed:String->Void):Bool {
 		Browser.window.focus();
 		canvas.focus();
-		return true;
+		return answer(() -> Browser.document.hasFocus(), "the browser keeps the keyboard in another window", done, failed);
 	}
 
 	// The page's icon: a link the adapter adds, its picture drawn on a canvas of the icon's size.
@@ -221,16 +239,22 @@ class DomWindowAdapter implements IWindow {
 	function get_opacity():Float
 		return canvas.style.opacity == "" ? 1 : Std.parseFloat(canvas.style.opacity);
 
-	public function requestOpacity(opacity:Float):Bool {
+	public function requestOpacity(opacity:Float, ?done:Void->Void, ?failed:String->Void):Bool {
 		canvas.style.opacity = Std.string(opacity < 0 ? 0 : opacity > 1 ? 1 : opacity);
-		return true;
+		return answer(() -> true, "", done, failed);
 	}
 
-	public function requestMinimumSize(width:Int, height:Int):Bool
-		return false;
+	public function requestMinimumSize(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Bool {
+		if (width < 0 || height < 0)
+			return false;
+		return answer(() -> false, "a page's canvas follows the page's size", done, failed);
+	}
 
-	public function requestMaximumSize(width:Int, height:Int):Bool
-		return false;
+	public function requestMaximumSize(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Bool {
+		if (width < 0 || height < 0)
+			return false;
+		return answer(() -> false, "a page's canvas follows the page's size", done, failed);
+	}
 
 	public function getMonitorRefreshRate(monitorIndex:Int):Float
 		return 0;
@@ -240,9 +264,9 @@ class DomWindowAdapter implements IWindow {
 	function get_visible():Bool
 		return canvas.style.visibility != "hidden";
 
-	public function requestVisible(visible:Bool):Bool {
+	public function requestVisible(visible:Bool, ?done:Void->Void, ?failed:String->Void):Bool {
 		canvas.style.visibility = visible ? "" : "hidden";
-		return true;
+		return answer(() -> true, "", done, failed);
 	}
 
 	public var monitorCount(get, never):Int;
@@ -255,8 +279,11 @@ class DomWindowAdapter implements IWindow {
 	function get_monitorIndex():Int
 		return 0;
 
-	public function requestMonitorIndex(monitorIndex:Int):Bool
-		return false;
+	public function requestMonitorIndex(monitorIndex:Int, ?done:Void->Void, ?failed:String->Void):Bool {
+		if (monitorIndex != 0)
+			return false;
+		return answer(() -> true, "", done, failed);
+	}
 
 	public function getMonitorName(monitorIndex:Int):String
 		return monitorIndex == 0 ? "screen" : "";

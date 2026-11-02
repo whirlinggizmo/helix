@@ -7,8 +7,10 @@ import haxe.io.Bytes;
 	In a page the window is the page. Its title is the document's and its size is the viewport's, while fullscreen and visibility apply to
 	the canvas. Sizes are in logical pixels unless they are named as framebuffer pixels.
 
-	A request asks for something the platform may refuse, or grant later. It returns whether it asked, and the matching property answers
-	on a later frame. A `can` method tells whether to offer the request at all.
+	A request asks for something the platform may refuse, or grant later. One of its `done` or `failed` is called once, never during the
+	call: `done` once the window reflects it, and `failed` with the reason where it isn't done. Natively the answer comes at a later
+	`IEvents.poll`, and a request the window manager ignores fails after a second. In a page, what a page can't do fails at the next
+	`IEvents.poll`. A request returns false, calling neither, only where its doc says. A `can` method tells whether to offer it at all.
 
 	The window reports nothing by itself. What happens to it, such as being resized, focused, minimized or asked to close, arrives as
 	events from `IEvents.poll`. */
@@ -36,13 +38,16 @@ interface IWindow {
 
 	/** Asks for an inner size.
 
-		The window manager may give another size, or none; `width` and `height` reflect the result once the request completes.
+		The window manager may give another size; `width` and `height` reflect what it gave. A fullscreen or maximized window keeps its
+		size, and a page's canvas follows the page, so those fail.
 		@param width  The width, in logical pixels.
 		@param height  The height, in logical pixels.
-		@return  False, asking nothing, in a page or for a size under 1. */
-	function requestSize(width:Int, height:Int):Bool;
+		@param done  Optional. Called once the window has a size from the request.
+		@param failed  Optional. Receives the reason the window wasn't resized.
+		@return  False, calling neither, for a size under 1. */
+	function requestSize(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Bool;
 
-	/** Returns whether `requestPosition` and `requestMonitorIndex` can ask.
+	/** Returns whether `requestPosition` and `requestMonitorIndex` can move the window.
 
 		@return  False in a page, and where the compositor places windows (Wayland, XWayland). */
 	function canMove():Bool;
@@ -59,11 +64,14 @@ interface IWindow {
 
 	/** Asks for the window's left and top edges on the desktop.
 
-		`x` and `y` reflect the result once the request completes: what the window manager gave.
+		`x` and `y` reflect what the window manager gave. Where the window can't move (`canMove`), or while it is fullscreen or maximized,
+		it fails.
 		@param x  The left edge, in logical pixels.
 		@param y  The top edge, in logical pixels.
-		@return  False, asking nothing, where the window can't move (`canMove`). */
-	function requestPosition(x:Int, y:Int):Bool;
+		@param done  Optional. Called once the window has moved, or was already there.
+		@param failed  Optional. Receives the reason it didn't move.
+		@return  True, because it always asks. */
+	function requestPosition(x:Int, y:Int, ?done:Void->Void, ?failed:String->Void):Bool;
 
 	/** Returns whether `requestFullscreen` can ask.
 
@@ -75,11 +83,11 @@ interface IWindow {
 
 	/** Asks for fullscreen or a window.
 
-		`fullscreen` reflects the result once the request completes. Natively the request is granted. A browser grants fullscreen only soon after a key press,
-		click or tap. Without a recent one, the request waits for the player's next one.
+		`fullscreen` reflects the result once the request completes. Natively the window manager applies it in its own time. A browser
+		grants fullscreen only soon after a key press, click or tap. Without a recent one, the request waits for the player's next one.
 		@param enabled  True for fullscreen, false for a window.
-		@param done  Optional. Called once the change is granted.
-		@param failed  Optional. Receives the browser's reason when it refuses. The page is unchanged.
+		@param done  Optional. Called once the window is fullscreen, or windowed, as asked.
+		@param failed  Optional. Receives the reason when it is refused. The window is unchanged.
 		@return  False, calling neither, where it can't ask (`canFullscreen`). */
 	function requestFullscreen(enabled:Bool, ?done:Void->Void, ?failed:String->Void):Bool;
 
@@ -108,35 +116,43 @@ interface IWindow {
 
 		`visible` reflects the result once the request completes: natively, once the window manager has shown it.
 		@param visible  True to show it.
+		@param done  Optional. Called once the window is shown, or hidden.
+		@param failed  Optional. Receives the reason it wasn't.
 		@return  True, because it always asks. */
-	function requestVisible(visible:Bool):Bool;
+	function requestVisible(visible:Bool, ?done:Void->Void, ?failed:String->Void):Bool;
 
 	/** Gets a value indicating whether the window fills the desktop as the window manager maximizes it. It is false in a page. */
 	var maximized(get, never):Bool;
 
 	/** Asks for the window maximized, or back to its size from maximized or minimized.
 
-		`maximized` reflects the result once the request completes.
+		`maximized` reflects the result once the request completes. In a page, whose canvas the page sizes, it fails.
 		@param maximized  True to maximize it, false to restore it.
-		@return  False, asking nothing, in a page, whose canvas the page sizes. */
-	function requestMaximized(maximized:Bool):Bool;
+		@param done  Optional. Called once the window is maximized, or restored.
+		@param failed  Optional. Receives the reason it wasn't.
+		@return  True, because it always asks. */
+	function requestMaximized(maximized:Bool, ?done:Void->Void, ?failed:String->Void):Bool;
 
 	/** Gets a value indicating whether the window is minimized. It is false in a page; a tab in the background is `Hidden`. */
 	var minimized(get, never):Bool;
 
 	/** Asks for the window minimized, or back from minimized.
 
-		`minimized` reflects the result once the request completes.
+		`minimized` reflects the result once the request completes. In a page it fails.
 		@param minimized  True to minimize it, false to restore it.
-		@return  False, asking nothing, in a page. */
-	function requestMinimized(minimized:Bool):Bool;
+		@param done  Optional. Called once the window is minimized, or restored.
+		@param failed  Optional. Receives the reason it wasn't.
+		@return  True, because it always asks. */
+	function requestMinimized(minimized:Bool, ?done:Void->Void, ?failed:String->Void):Bool;
 
 	/** Asks for the window brought to the front with the keyboard. A window manager may only flash it. In a page the canvas takes the
 		keyboard.
 
 		`focused` reflects the result once the request completes.
+		@param done  Optional. Called once the window, or in a page the canvas, has the keyboard.
+		@param failed  Optional. Receives the reason it hasn't: natively the window manager kept it elsewhere.
 		@return  True, because it always asks. */
-	function requestFocus():Bool;
+	function requestFocus(?done:Void->Void, ?failed:String->Void):Bool;
 
 	/** Sets the window's icon, which the desktop shows in its title bar and task bar. In a page it is the page's icon.
 
@@ -151,24 +167,30 @@ interface IWindow {
 
 	/** Asks for the window to be see-through. In a page it fades the canvas.
 
-		`opacity` reflects the result once the request completes.
+		`opacity` reflects the result once the request completes. A desktop without a compositor can't, and it fails.
 		@param opacity  From 0 (clear) to 1 (opaque).
-		@return  False, asking nothing, where the desktop can't (a desktop without a compositor). */
-	function requestOpacity(opacity:Float):Bool;
+		@param done  Optional. Called once the window has the opacity.
+		@param failed  Optional. Receives the reason it hasn't.
+		@return  True, because it always asks. */
+	function requestOpacity(opacity:Float, ?done:Void->Void, ?failed:String->Void):Bool;
 
-	/** Asks for the smallest size the player can make the window; 0 by 0 for none.
-
-		@param width  The width, in logical pixels.
-		@param height  The height.
-		@return  False, asking nothing, in a page. */
-	function requestMinimumSize(width:Int, height:Int):Bool;
-
-	/** Asks for the largest size the player can make the window; 0 by 0 for none.
+	/** Asks for the smallest size the player can make the window; 0 by 0 for none. In a page it fails.
 
 		@param width  The width, in logical pixels.
 		@param height  The height.
-		@return  False, asking nothing, in a page. */
-	function requestMaximumSize(width:Int, height:Int):Bool;
+		@param done  Optional. Called once the window has the limit.
+		@param failed  Optional. Receives the reason it hasn't.
+		@return  False, calling neither, for a size under 0. */
+	function requestMinimumSize(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Bool;
+
+	/** Asks for the largest size the player can make the window; 0 by 0 for none. In a page it fails.
+
+		@param width  The width, in logical pixels.
+		@param height  The height.
+		@param done  Optional. Called once the window has the limit.
+		@param failed  Optional. Receives the reason it hasn't.
+		@return  False, calling neither, for a size under 0. */
+	function requestMaximumSize(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Bool;
 
 	/** Gets the number of monitors, at least 1. A page sees one screen. */
 	var monitorCount(get, never):Int;
@@ -178,10 +200,13 @@ interface IWindow {
 
 	/** Asks for the window on another monitor.
 
-		`monitorIndex` reflects the result once the request completes.
+		`monitorIndex` reflects the result once the request completes. Where the window can't move (`canMove`), a monitor other than its
+		own fails.
 		@param monitorIndex  The monitor, 0 to `monitorCount` - 1.
-		@return  False, asking nothing, for an index out of range or where the window can't move (`canMove`). */
-	function requestMonitorIndex(monitorIndex:Int):Bool;
+		@param done  Optional. Called once the window is on the monitor.
+		@param failed  Optional. Receives the reason it isn't.
+		@return  False, calling neither, for an index out of range. */
+	function requestMonitorIndex(monitorIndex:Int, ?done:Void->Void, ?failed:String->Void):Bool;
 
 	/** Returns a monitor's name.
 

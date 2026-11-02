@@ -25,6 +25,7 @@ class ScreenTests {
 				for (e in list)
 					events.next.push(e);
 			events.poll();
+			window.answer();
 			screen.poll();
 		}
 		frame();
@@ -60,6 +61,14 @@ class ScreenTests {
 		frame([Resized(1920, 1080)]);
 		check(screen.fullscreen, "fullscreen");
 		window.full = false;
+		frame();
+		window.logicalWidth = 690;
+		frame();
+		check(window.requests.indexOf("size 700 600") >= 0, "leaving fullscreen asks for the windowed size");
+		frame();
+		check(window.logicalWidth == 690 && window.requests.lastIndexOf("size 700 600") == window.requests.indexOf("size 700 600"),
+			"what the window manager gave counts once the request has answered, and isn't asked for again");
+		window.logicalWidth = 700;
 		frame();
 		check(window.logicalWidth == 700 && window.logicalHeight == 600 && window.left == 40 && window.top == 30,
 			"leaving fullscreen: back to the windowed size and place");

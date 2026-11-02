@@ -1208,7 +1208,7 @@ class RAsync {
 		one, it waits for the player's next, or refuses. `IsWindowFullscreen` says the new state once the window has changed, not when
 		the call returns.
 
-		@param done  Optional. Called once the platform grants it, at a later poll.
+		@param done  Optional. Called once the window has changed, at a later poll.
 		@param failed  Optional. Receives why it was refused; when omitted, it is logged. */
 	static function ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void):Void {
 		toggleFullscreen("ToggleFullscreenAsync", done, failed);
@@ -1218,17 +1218,17 @@ class RAsync {
 		helix-ray's own, in place of raylib's `ToggleBorderlessWindowed`. It is `ToggleFullscreenAsync`, as a fullscreen window natively
 		is borderless and the size of the desktop.
 
-		@param done  Optional. Called once the platform grants it, at a later poll.
+		@param done  Optional. Called once the window has changed, at a later poll.
 		@param failed  Optional. Receives why it was refused; when omitted, it is logged. */
 	static function ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void):Void {
 		toggleFullscreen("ToggleBorderlessWindowedAsync", done, failed);
 	}
 
 	// Asks the screen for fullscreen or the window, whichever it isn't; a refusal, or a window that can't be fullscreen, is refused for
-	// the request named. done is called at a later poll, never during the call: SDL3's adapter calls it as it asks.
+	// the request named. The window answers at a later poll, never during the call.
 	static function toggleFullscreen(name:String, done:Null<Void->Void>, failed:Null<String->Void>):Void {
 		var screen = Runtime.screen;
-		var granted = () -> if (done != null) Runtime.later(done);
+		var granted = () -> if (done != null) done();
 		if (!screen.requestFullscreen(!screen.fullscreen, granted, error -> refuse(name, error, failed)))
 			Runtime.later(() -> refuse(name, "the window can't be fullscreen here", failed));
 	}

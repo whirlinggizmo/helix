@@ -1,0 +1,9 @@
+# The window tests natively, over SDL3: haxe build-native.hxml -> native/WindowTests; hxcpp compiles the adapters' C with it and links the
+# SDL3 library HELIX_SDL3_LIBRARY names (BUILDING.md). It prints {passed, checks, failures, answers} and exits 1 on a failure. Run it on a
+# private display (tools/private_display.py): it opens, moves, hides and fullscreens a window.
+-lib helix-platform
+-cp .
+-main WindowTests
+-dce full
+-D HXCPP_COMPILE_THREADS=4
+-cpp native

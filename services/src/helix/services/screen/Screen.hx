@@ -23,8 +23,6 @@ import helix.services.saves.Saves;
 	if (keyboard.isKeyPressed(F11)) screen.requestFullscreen(!screen.fullscreen);
 	``` */
 class Screen implements IPollable {
-	static inline final RESTORE_FRAMES = 30;
-
 	final window:IWindow;
 	final events:IEvents;
 	// The window's size and place when last windowed, to go back to; and whether it was fullscreen at the last poll.
@@ -33,7 +31,8 @@ class Screen implements IPollable {
 	var windowedX:Int;
 	var windowedY:Int;
 	var wasFullscreen:Bool;
-	// Frames left to wait for the windowed size asked for on leaving fullscreen, before what the window has counts again.
+	// The requests for the windowed size and place, asked for on leaving fullscreen, that haven't answered yet: what the window has
+	// counts again once they have, whatever the window manager gave.
 	var restoring = 0;
 	// Where the window is kept between runs, and what was last kept there.
 	var saves:Null<Saves> = null;
@@ -237,15 +236,10 @@ class Screen implements IPollable {
 			}
 		var full = window.fullscreen;
 		if (!full && wasFullscreen && (window.width != windowedWidth || window.height != windowedHeight)) {
-			window.requestSize(windowedWidth, windowedHeight);
+			restore(answered -> window.requestSize(windowedWidth, windowedHeight, answered, _ -> answered()));
 			if (window.canMove())
-				window.requestPosition(windowedX, windowedY);
-			restoring = RESTORE_FRAMES;
-		} else if (!full && restoring > 0 && (window.width != windowedWidth || window.height != windowedHeight)) {
-			// Still on its way back; a window manager that refuses is believed after RESTORE_FRAMES frames.
-			restoring--;
-		} else if (!full) {
-			restoring = 0;
+				restore(answered -> window.requestPosition(windowedX, windowedY, answered, _ -> answered()));
+		} else if (!full && restoring == 0) {
 			windowedWidth = window.width;
 			windowedHeight = window.height;
 			windowedX = window.x;
@@ -266,6 +260,13 @@ class Screen implements IPollable {
 				saves.setString(key, now);
 			}
 		}
+	}
+
+	// Asks for part of the windowed size and place back, counted until it answers, granted or not.
+	function restore(ask:(answered:Void->Void)->Bool):Void {
+		restoring++;
+		if (!ask(() -> restoring--))
+			restoring--;
 	}
 
 	// The fit worked out again when the window's framebuffer or pixel ratio changed since it last was: a page's canvas is resized

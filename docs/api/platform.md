@@ -1227,7 +1227,7 @@ Defines the window a program draws in, with its title, size, position, fullscree
 
 In a page the window is the page. Its title is the document's and its size is the viewport's, while fullscreen and visibility apply to the canvas. Sizes are in logical pixels unless they are named as framebuffer pixels.
 
-A request asks for something the platform may refuse, or grant later. It returns whether it asked, and the matching property answers on a later frame. A `can` method tells whether to offer the request at all.
+A request asks for something the platform may refuse, or grant later. One of its `done` or `failed` is called once, never during the call: `done` once the window reflects it, and `failed` with the reason where it isn't done. Natively the answer comes at a later `IEvents.poll`, and a request the window manager ignores fails after a second. In a page, what a page can't do fails at the next `IEvents.poll`. A request returns false, calling neither, only where its doc says. A `can` method tells whether to offer it at all.
 
 The window reports nothing by itself. What happens to it, such as being resized, focused, minimized or asked to close, arrives as events from `IEvents.poll`.
 
@@ -1239,31 +1239,31 @@ var focused(get, never):Bool
 var title(get, set):String
 var width(get, never):Int
 var height(get, never):Int
-function requestSize(width:Int, height:Int):Bool
+function requestSize(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 function canMove():Bool
 var x(get, never):Int
 var y(get, never):Int
-function requestPosition(x:Int, y:Int):Bool
+function requestPosition(x:Int, y:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 function canFullscreen():Bool
 var fullscreen(get, never):Bool
 function requestFullscreen(enabled:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
 var orientation(get, never):Orientation
 function requestOrientation(orientation:Orientation, ?done:() -> Void, ?failed:String -> Void):Bool
 var visible(get, never):Bool
-function requestVisible(visible:Bool):Bool
+function requestVisible(visible:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
 var maximized(get, never):Bool
-function requestMaximized(maximized:Bool):Bool
+function requestMaximized(maximized:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
 var minimized(get, never):Bool
-function requestMinimized(minimized:Bool):Bool
-function requestFocus():Bool
+function requestMinimized(minimized:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
+function requestFocus(?done:() -> Void, ?failed:String -> Void):Bool
 function setIcon(width:Int, height:Int, pixels:haxe.io.Bytes):Void
 var opacity(get, never):Float
-function requestOpacity(opacity:Float):Bool
-function requestMinimumSize(width:Int, height:Int):Bool
-function requestMaximumSize(width:Int, height:Int):Bool
+function requestOpacity(opacity:Float, ?done:() -> Void, ?failed:String -> Void):Bool
+function requestMinimumSize(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Bool
+function requestMaximumSize(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 var monitorCount(get, never):Int
 var monitorIndex(get, never):Int
-function requestMonitorIndex(monitorIndex:Int):Bool
+function requestMonitorIndex(monitorIndex:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 function getMonitorName(monitorIndex:Int):String
 function getMonitorX(monitorIndex:Int):Int
 function getMonitorY(monitorIndex:Int):Int
@@ -1286,10 +1286,12 @@ var onClose:Null<() -> Void>
 - `requestSize`: Asks for an inner size.
   - `width`: The width, in logical pixels.
   - `height`: The height, in logical pixels.
-  - returns: False, asking nothing, in a page or for a size under 1.
+  - `done`: Optional. Called once the window has a size from the request.
+  - `failed`: Optional. Receives the reason the window wasn't resized.
+  - returns: False, calling neither, for a size under 1.
 
-  The window manager may give another size, or none; `width` and `height` reflect the result once the request completes.
-- `canMove`: Returns whether `requestPosition` and `requestMonitorIndex` can ask.
+  The window manager may give another size; `width` and `height` reflect what it gave. A fullscreen or maximized window keeps its size, and a page's canvas follows the page, so those fail.
+- `canMove`: Returns whether `requestPosition` and `requestMonitorIndex` can move the window.
   - returns: False in a page, and where the compositor places windows (Wayland, XWayland).
 - `x`: Gets the window's left edge on the desktop, in logical pixels.
   Natively it is 0 where the window can't move. In a page it is the browser window's left edge.
@@ -1298,19 +1300,21 @@ var onClose:Null<() -> Void>
 - `requestPosition`: Asks for the window's left and top edges on the desktop.
   - `x`: The left edge, in logical pixels.
   - `y`: The top edge, in logical pixels.
-  - returns: False, asking nothing, where the window can't move (`canMove`).
+  - `done`: Optional. Called once the window has moved, or was already there.
+  - `failed`: Optional. Receives the reason it didn't move.
+  - returns: True, because it always asks.
 
-  `x` and `y` reflect the result once the request completes: what the window manager gave.
+  `x` and `y` reflect what the window manager gave. Where the window can't move (`canMove`), or while it is fullscreen or maximized, it fails.
 - `canFullscreen`: Returns whether `requestFullscreen` can ask.
   - returns: True natively. In a page, whether the page may go fullscreen.
 - `fullscreen`: Gets a value indicating whether the window is fullscreen now. In a page it tells whether the canvas is.
 - `requestFullscreen`: Asks for fullscreen or a window.
   - `enabled`: True for fullscreen, false for a window.
-  - `done`: Optional. Called once the change is granted.
-  - `failed`: Optional. Receives the browser's reason when it refuses. The page is unchanged.
+  - `done`: Optional. Called once the window is fullscreen, or windowed, as asked.
+  - `failed`: Optional. Receives the reason when it is refused. The window is unchanged.
   - returns: False, calling neither, where it can't ask (`canFullscreen`).
 
-  `fullscreen` reflects the result once the request completes. Natively the request is granted. A browser grants fullscreen only soon after a key press, click or tap. Without a recent one, the request waits for the player's next one.
+  `fullscreen` reflects the result once the request completes. Natively the window manager applies it in its own time. A browser grants fullscreen only soon after a key press, click or tap. Without a recent one, the request waits for the player's next one.
 - `orientation`: Gets the way up the screen is held for the program, as `requestOrientation` asked: `Any` when it isn't held. A page loses it as it leaves fullscreen, as browsers release the lock then; natively it is always `Any`.
 - `requestOrientation`: Asks for the screen to be held one way up, or as the player holds it.
   - `orientation`: Landscape, Portrait, or Any to release a lock.
@@ -1323,22 +1327,30 @@ var onClose:Null<() -> Void>
   Whether the player can see the window, because it isn't minimized and its tab isn't in the background, is reported by the `Shown` and `Hidden` events.
 - `requestVisible`: Asks to show or hide the window. In a page it shows or hides the canvas.
   - `visible`: True to show it.
+  - `done`: Optional. Called once the window is shown, or hidden.
+  - `failed`: Optional. Receives the reason it wasn't.
   - returns: True, because it always asks.
 
   `visible` reflects the result once the request completes: natively, once the window manager has shown it.
 - `maximized`: Gets a value indicating whether the window fills the desktop as the window manager maximizes it. It is false in a page.
 - `requestMaximized`: Asks for the window maximized, or back to its size from maximized or minimized.
   - `maximized`: True to maximize it, false to restore it.
-  - returns: False, asking nothing, in a page, whose canvas the page sizes.
+  - `done`: Optional. Called once the window is maximized, or restored.
+  - `failed`: Optional. Receives the reason it wasn't.
+  - returns: True, because it always asks.
 
-  `maximized` reflects the result once the request completes.
+  `maximized` reflects the result once the request completes. In a page, whose canvas the page sizes, it fails.
 - `minimized`: Gets a value indicating whether the window is minimized. It is false in a page; a tab in the background is `Hidden`.
 - `requestMinimized`: Asks for the window minimized, or back from minimized.
   - `minimized`: True to minimize it, false to restore it.
-  - returns: False, asking nothing, in a page.
+  - `done`: Optional. Called once the window is minimized, or restored.
+  - `failed`: Optional. Receives the reason it wasn't.
+  - returns: True, because it always asks.
 
-  `minimized` reflects the result once the request completes.
+  `minimized` reflects the result once the request completes. In a page it fails.
 - `requestFocus`: Asks for the window brought to the front with the keyboard. A window manager may only flash it. In a page the canvas takes the keyboard.
+  - `done`: Optional. Called once the window, or in a page the canvas, has the keyboard.
+  - `failed`: Optional. Receives the reason it hasn't: natively the window manager kept it elsewhere.
   - returns: True, because it always asks.
 
   `focused` reflects the result once the request completes.
@@ -1350,24 +1362,32 @@ var onClose:Null<() -> Void>
 - `opacity`: Gets how opaque the window is, from 0 (clear) to 1.
 - `requestOpacity`: Asks for the window to be see-through. In a page it fades the canvas.
   - `opacity`: From 0 (clear) to 1 (opaque).
-  - returns: False, asking nothing, where the desktop can't (a desktop without a compositor).
+  - `done`: Optional. Called once the window has the opacity.
+  - `failed`: Optional. Receives the reason it hasn't.
+  - returns: True, because it always asks.
 
-  `opacity` reflects the result once the request completes.
-- `requestMinimumSize`: Asks for the smallest size the player can make the window; 0 by 0 for none.
+  `opacity` reflects the result once the request completes. A desktop without a compositor can't, and it fails.
+- `requestMinimumSize`: Asks for the smallest size the player can make the window; 0 by 0 for none. In a page it fails.
   - `width`: The width, in logical pixels.
   - `height`: The height.
-  - returns: False, asking nothing, in a page.
-- `requestMaximumSize`: Asks for the largest size the player can make the window; 0 by 0 for none.
+  - `done`: Optional. Called once the window has the limit.
+  - `failed`: Optional. Receives the reason it hasn't.
+  - returns: False, calling neither, for a size under 0.
+- `requestMaximumSize`: Asks for the largest size the player can make the window; 0 by 0 for none. In a page it fails.
   - `width`: The width, in logical pixels.
   - `height`: The height.
-  - returns: False, asking nothing, in a page.
+  - `done`: Optional. Called once the window has the limit.
+  - `failed`: Optional. Receives the reason it hasn't.
+  - returns: False, calling neither, for a size under 0.
 - `monitorCount`: Gets the number of monitors, at least 1. A page sees one screen.
 - `monitorIndex`: Gets the index of the monitor holding the window.
 - `requestMonitorIndex`: Asks for the window on another monitor.
   - `monitorIndex`: The monitor, 0 to `monitorCount` - 1.
-  - returns: False, asking nothing, for an index out of range or where the window can't move (`canMove`).
+  - `done`: Optional. Called once the window is on the monitor.
+  - `failed`: Optional. Receives the reason it isn't.
+  - returns: False, calling neither, for an index out of range.
 
-  `monitorIndex` reflects the result once the request completes.
+  `monitorIndex` reflects the result once the request completes. Where the window can't move (`canMove`), a monitor other than its own fails.
 - `getMonitorName`: Returns a monitor's name.
   - `monitorIndex`: The monitor.
   - returns: Its name, or "" for an index out of range.

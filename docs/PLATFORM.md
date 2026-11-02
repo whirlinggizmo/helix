@@ -45,13 +45,15 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
 (natively through `surface.h`, which the window's C implements).
 
 - `title`; `width`, `height` (logical pixels) and `framebufferWidth`, `framebufferHeight`, `pixelRatio`; `focused`.
-- `visible`, `requestVisible`; `requestSize`, `canMove`, `x`, `y`, `requestPosition`; `canFullscreen`, `fullscreen`,
-  `requestFullscreen(enabled, ?done, ?failed)`; `orientation`, `requestOrientation(orientation, ?done, ?failed)`.
-- `maximized`, `requestMaximized`, `minimized`, `requestMinimized` (false and asking nothing in a page); `requestFocus` (natively
-  raised, in a page the canvas taking the keyboard); `setIcon(width, height, pixels)` (in a page, the page's icon); `opacity`,
-  `requestOpacity` (natively the compositor's, in a page the canvas's); `requestMinimumSize`, `requestMaximumSize` (false in a page).
-- The monitors: `monitorCount`, `monitorIndex`, `requestMonitorIndex`, `getMonitorName`, `getMonitorX`, `getMonitorY`,
-  `getMonitorWidth`, `getMonitorHeight`, `getMonitorRefreshRate` (0 in a page).
+- `visible`, `requestVisible(visible, ?done, ?failed)`; `requestSize(width, height, ?done, ?failed)`, `canMove`, `x`, `y`,
+  `requestPosition(x, y, ?done, ?failed)`; `canFullscreen`, `fullscreen`, `requestFullscreen(enabled, ?done, ?failed)`;
+  `orientation`, `requestOrientation(orientation, ?done, ?failed)`.
+- `maximized`, `requestMaximized(maximized, ?done, ?failed)`, `minimized`, `requestMinimized(minimized, ?done, ?failed)` (failing
+  in a page); `requestFocus(?done, ?failed)` (natively raised, in a page the canvas taking the keyboard); `setIcon(width, height,
+  pixels)` (in a page, the page's icon); `opacity`, `requestOpacity(opacity, ?done, ?failed)` (natively the compositor's, in a page
+  the canvas's); `requestMinimumSize`, `requestMaximumSize(width, height, ?done, ?failed)` (failing in a page).
+- The monitors: `monitorCount`, `monitorIndex`, `requestMonitorIndex(monitorIndex, ?done, ?failed)`, `getMonitorName`,
+  `getMonitorX`, `getMonitorY`, `getMonitorWidth`, `getMonitorHeight`, `getMonitorRefreshRate` (0 in a page).
 - `readDroppedFile(fileIndex, maxBytes, read(name, bytes), failed(message))`: a file the last `FilesDropped` counted, its name without
   its directory; natively read from its path during the call, in a page the File the canvas's drop gave, later.
 - `onClose`, a property: the call made once, the last before the window is gone (natively in `close`, in a page at pagehide). Not a
@@ -61,6 +63,19 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
 
 A request asks; the getter answers on a later frame. Presenting the frame is graphics' (`IGraphics.present`), where every backend
 actually swaps; the window only provides the surface.
+
+- Each request answers once, never during the call: `done` once the window reflects it, or `failed` with the reason it wasn't
+  done. It returns false, calling neither, only for what its doc names (a size under 1, a monitor that isn't there, fullscreen where
+  `canFullscreen` says no).
+- Natively the answer comes at a later `IEvents.poll`, as SDL reports the change: the window's event matching the request (resized,
+  moved, maximized, minimized, restored, its display changed, focus gained, shown or hidden, fullscreen entered or left), or the
+  window already as asked. SDL reports nothing when a window manager ignores a request, so one that hasn't answered within a second
+  fails, saying the window manager didn't do it; SDL's own X11 sync waits as long, for a maximize. A request SDL refuses (a position
+  where the compositor places windows, an opacity with no compositor) fails with its reason. Opacity and the size limits have no
+  event: SDL applies them during the call, and they answer at the next poll.
+- In a page, what a page can't do (its window's size, place, maximized, minimized, monitor or size limits) fails at the next
+  `IEvents.poll`, saying why; what it can (the canvas shown, hidden, faded or given the keyboard) is done at the next poll. Fullscreen
+  and the orientation answer as the browser does.
 
 - Natively, a close asked for by the user or the OS (the close button, the OS quitting the program) is an event, `CloseRequested`,
   delivered by `IEvents.poll` like a key press: it happens once, and the owner decides, closing with `close()` or not (asking "quit

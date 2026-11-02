@@ -156,7 +156,7 @@ function dispose():Void
 
 Provides `IEvents` in a browser page.
 
-It listens to the page's focus and visibility, the viewport's size, which the canvas follows, a lost WebGL context and files dropped on the canvas, and for the player's first press anywhere in the page, until it comes. Each listener only records; `poll` hands over what was recorded since the last one. The device adapters built over it (`DomKeyboardAdapter`, `DomMouseAdapter`, `DomTouchAdapter`, `DomGamepadsAdapter`, `DomTiltAdapter`) add their events to the same records.
+It listens to the page's focus and visibility, the viewport's size, which the canvas follows, a lost WebGL context and files dropped on the canvas, and for the player's first press anywhere in the page, until it comes. Each listener only records; `poll` hands over what was recorded since the last one, after which the window's requests answer. The device adapters built over it (`DomKeyboardAdapter`, `DomMouseAdapter`, `DomTouchAdapter`, `DomGamepadsAdapter`, `DomTiltAdapter`) add their events to the same records.
 
 ```haxe
 function new(options:DomEventsAdapterOptions)
@@ -193,7 +193,7 @@ final canvasId:String
 
 *class*, native (cpp) in [`platform/src/helix/platform/adapters/events/sdl3/Sdl3EventsAdapter.hx`](../../platform/src/helix/platform/adapters/events/sdl3/Sdl3EventsAdapter.hx), `import helix.platform.adapters.events.sdl3.Sdl3EventsAdapter;`, implements `IEvents`
 
-Provides `IEvents` on SDL3, natively: its one queue drained at each poll.
+Provides `IEvents` on SDL3, natively: its one queue drained at each poll, after which the window's requests answer.
 
 The window must be open (`Sdl3WindowAdapter`) before the first poll. SDL's events for a device are turned off until its adapter is constructed over this one (`Sdl3KeyboardAdapter`, `Sdl3MouseAdapter`, `Sdl3TouchAdapter`, `Sdl3GamepadsAdapter`), except a key, a mouse button and a finger lifting, which stay on until the first press has come.
 
@@ -980,7 +980,7 @@ final events:Sdl3EventsAdapter
 
 Provides `IWindow` in a browser page: the page is the window.
 
-Its title is the document's, its size the viewport's, and fullscreen and visibility are the canvas's, whose drawing size follows the viewport and the pixel ratio. A page can't move or size its window, choose a monitor, or close; it sees one screen. A dropped file is the File the canvas's drop gave, read later.
+Its title is the document's, its size the viewport's, and fullscreen and visibility are the canvas's, whose drawing size follows the viewport and the pixel ratio. A page can't move, size, maximize or minimize its window, choose a monitor, or close; it sees one screen. Those requests fail at the next `DomEventsAdapter` poll, saying so, and what a page can do answers there too; fullscreen and the orientation answer as the browser does. A dropped file is the File the canvas's drop gave, read later.
 
 ```haxe
 function new(options:DomWindowAdapterOptions)
@@ -991,32 +991,32 @@ var focused(get, never):Bool
 var title(get, set):String
 var width(get, never):Int
 var height(get, never):Int
-function requestSize(width:Int, height:Int):Bool
+function requestSize(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 function canMove():Bool
 var x(get, never):Int
 var y(get, never):Int
-function requestPosition(x:Int, y:Int):Bool
+function requestPosition(x:Int, y:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 var orientation(get, never):Orientation
 function requestOrientation(orientation:Orientation, ?done:() -> Void, ?failed:String -> Void):Bool
 function canFullscreen():Bool
 var fullscreen(get, never):Bool
 function requestFullscreen(enabled:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
 var maximized(get, never):Bool
-function requestMaximized(maximized:Bool):Bool
+function requestMaximized(maximized:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
 var minimized(get, never):Bool
-function requestMinimized(minimized:Bool):Bool
-function requestFocus():Bool
+function requestMinimized(minimized:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
+function requestFocus(?done:() -> Void, ?failed:String -> Void):Bool
 function setIcon(width:Int, height:Int, pixels:haxe.io.Bytes):Void
 var opacity(get, never):Float
-function requestOpacity(opacity:Float):Bool
-function requestMinimumSize(width:Int, height:Int):Bool
-function requestMaximumSize(width:Int, height:Int):Bool
+function requestOpacity(opacity:Float, ?done:() -> Void, ?failed:String -> Void):Bool
+function requestMinimumSize(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Bool
+function requestMaximumSize(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 function getMonitorRefreshRate(monitorIndex:Int):Float
 var visible(get, never):Bool
-function requestVisible(visible:Bool):Bool
+function requestVisible(visible:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
 var monitorCount(get, never):Int
 var monitorIndex(get, never):Int
-function requestMonitorIndex(monitorIndex:Int):Bool
+function requestMonitorIndex(monitorIndex:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 function getMonitorName(monitorIndex:Int):String
 function getMonitorX(monitorIndex:Int):Int
 function getMonitorY(monitorIndex:Int):Int
@@ -1056,7 +1056,7 @@ final canvasId:String
 
 Provides `IWindow` on an SDL3 window, natively.
 
-The window opens with the adapter, before the graphics adapter that draws in it. Moves are refused where the compositor places windows (Wayland, XWayland); orientation is a page's alone. A dropped file is read from its path, during the call.
+The window opens with the adapter, before the graphics adapter that draws in it. A request answers at a later `Sdl3EventsAdapter` poll, as SDL reports the window's matching event, or fails after a second with none: SDL reports nothing when the window manager ignores a request. Moves are refused where the compositor places windows (Wayland, XWayland); orientation is a page's alone. A dropped file is read from its path, during the call.
 
 ```haxe
 function new(options:Sdl3WindowAdapterOptions)
@@ -1067,32 +1067,32 @@ var focused(get, never):Bool
 var title(get, set):String
 var width(get, never):Int
 var height(get, never):Int
-function requestSize(width:Int, height:Int):Bool
+function requestSize(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 function canMove():Bool
 var x(get, never):Int
 var y(get, never):Int
-function requestPosition(x:Int, y:Int):Bool
+function requestPosition(x:Int, y:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 function canFullscreen():Bool
 var fullscreen(get, never):Bool
 function requestFullscreen(enabled:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
 var orientation(get, never):Orientation
 function requestOrientation(orientation:Orientation, ?done:() -> Void, ?failed:String -> Void):Bool
 var visible(get, never):Bool
-function requestVisible(visible:Bool):Bool
+function requestVisible(visible:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
 var maximized(get, never):Bool
-function requestMaximized(maximized:Bool):Bool
+function requestMaximized(maximized:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
 var minimized(get, never):Bool
-function requestMinimized(minimized:Bool):Bool
-function requestFocus():Bool
+function requestMinimized(minimized:Bool, ?done:() -> Void, ?failed:String -> Void):Bool
+function requestFocus(?done:() -> Void, ?failed:String -> Void):Bool
 function setIcon(width:Int, height:Int, pixels:haxe.io.Bytes):Void
 var opacity(get, never):Float
-function requestOpacity(opacity:Float):Bool
-function requestMinimumSize(width:Int, height:Int):Bool
-function requestMaximumSize(width:Int, height:Int):Bool
+function requestOpacity(opacity:Float, ?done:() -> Void, ?failed:String -> Void):Bool
+function requestMinimumSize(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Bool
+function requestMaximumSize(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 function getMonitorRefreshRate(monitorIndex:Int):Float
 var monitorCount(get, never):Int
 var monitorIndex(get, never):Int
-function requestMonitorIndex(monitorIndex:Int):Bool
+function requestMonitorIndex(monitorIndex:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 function getMonitorName(monitorIndex:Int):String
 function getMonitorX(monitorIndex:Int):Int
 function getMonitorY(monitorIndex:Int):Int

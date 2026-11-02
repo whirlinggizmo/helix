@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Checks helix-platform on the GPU and its audio with the library alone: its examples (platform/examples/<name>), its graphics tests
-(platform/tests/graphics) and its audio tests (platform/tests/audio, natively on SDL3's dummy audio driver, which mixes in time, and in a
-page Chromium lets start audio without a gesture, muted). Each is built from its own hxml files, as a reader builds it, and run natively on a private display (Linux),
+"""Checks helix-platform on the GPU, its audio and its window with the library alone: its examples (platform/examples/<name>), its graphics
+tests (platform/tests/graphics), its audio tests (platform/tests/audio, natively on SDL3's dummy audio driver, which mixes in time, and in a
+page Chromium lets start audio without a gesture, muted) and its window tests (platform/tests/window, each request's answer listed). Each is built from its own hxml files, as a reader builds it, and run natively on a private display (Linux),
 each native build it has (GL, and SDL_GPU where it has build-native-gpu.hxml), and in a headless Chromium. An example runs 60 frames and
 the page's screenshot is checked against what it says it draws (its check.json: points and the colors expected there, each within a
 tolerance per channel); the graphics and audio tests check their own results, and say how it went. Exits 1 on any failure.
 
     python3 tools/platform_checks.py --browser BROWSER [--desktop] [NAME ...]
 
-BROWSER is a Chromium to run (Edge on Windows), or "" for Playwright's own. The names are examples', "graphics" and "audio"; they default
+BROWSER is a Chromium to run (Edge on Windows), or "" for Playwright's own. The names are examples', "graphics", "audio" and "window"; they default
 to all of them. --desktop runs the native programs on this machine's own desktop instead of a private display, for a machine kept for checks
 (Windows over tools/remote_windows.py --desktop): never on a desktop someone is using."""
 import json
@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / 'platform/examples'
 GRAPHICS = ROOT / 'platform/tests/graphics'
 AUDIO = ROOT / 'platform/tests/audio'
+WINDOW = ROOT / 'platform/tests/window'
 FRAMES = 60
 # Run natively on this machine's own desktop rather than a private display (--desktop): for a machine kept for checks, such as Windows
 # over tools/remote_windows.py --desktop. A real display paces its frames, so a native run lasts at most PACED_FRAMES.
@@ -161,6 +162,8 @@ def tests(name, directory, main, page, browser, backends=True):
     def outcome(where, result):
         if result is None:
             return ['no result']
+        for answer in result.get('answers', []):
+            print(f'{name}: {where}: {answer}', flush=True)
         if not result['passed']:
             return result['failures']
         print(f'{name}: {result["checks"]} checks passed {where}', flush=True)
@@ -186,6 +189,11 @@ def audio(browser):
     return tests('audio', AUDIO, 'AudioTests', 'Web Audio', browser, backends=False)
 
 
+def window(browser):
+    """Builds and runs the window tests both ways; the problems found."""
+    return tests('window', WINDOW, 'WindowTests', 'the page', browser, backends=False)
+
+
 def main():
     import cli
     parser = cli.parser(__doc__)
@@ -195,10 +203,10 @@ def main():
     a = parser.parse_args()
     global DESKTOP
     DESKTOP = a.desktop
-    names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx')) + ['graphics', 'audio']
+    names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx')) + ['graphics', 'audio', 'window']
     failed = False
     for name in names:
-        check = {'graphics': graphics, 'audio': audio}.get(name, lambda browser: example(name, browser))
+        check = {'graphics': graphics, 'audio': audio, 'window': window}.get(name, lambda browser: example(name, browser))
         for problem in check(a.browser):
             failed = True
             print(f'{name}: {problem}', flush=True)

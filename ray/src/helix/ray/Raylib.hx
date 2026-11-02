@@ -5810,7 +5810,7 @@ class Raylib {
 		one, it waits for the player's next, or refuses. `IsWindowFullscreen` says the new state once the window has changed, not when
 		the call returns.
 
-		@param done  Optional. Called once the platform grants it, at a later poll.
+		@param done  Optional. Called once the window has changed, at a later poll.
 		@param failed  Optional. Receives why it was refused; when omitted, it is logged. */
 	public static inline function ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void):Void
 		RAsync.ToggleFullscreenAsync(done, failed);
@@ -5819,7 +5819,7 @@ class Raylib {
 		helix-ray's own, in place of raylib's `ToggleBorderlessWindowed`. It is `ToggleFullscreenAsync`, as a fullscreen window natively
 		is borderless and the size of the desktop.
 
-		@param done  Optional. Called once the platform grants it, at a later poll.
+		@param done  Optional. Called once the window has changed, at a later poll.
 		@param failed  Optional. Receives why it was refused; when omitted, it is logged. */
 	public static inline function ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void):Void
 		RAsync.ToggleBorderlessWindowedAsync(done, failed);

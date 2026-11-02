@@ -4139,10 +4139,10 @@ static function ToggleBorderlessWindowedAsync(?done:() -> Void, ?failed:String -
   - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged.
 - `ToggleFullscreenAsync`: Asks for fullscreen, or back to the window, the size and place it had, answering once it is granted or refused: helix-ray's own, in place of raylib's `ToggleFullscreen`. In a page the browser grants it only soon after a key press, click or tap; without one, it waits for the player's next, or refuses. `IsWindowFullscreen` says the new state once the window has changed, not when the call returns.
-  - `done`: Optional. Called once the platform grants it, at a later poll.
+  - `done`: Optional. Called once the window has changed, at a later poll.
   - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
 - `ToggleBorderlessWindowedAsync`: Asks for the window to fill the screen without borders, or back to the window, answering once it is granted or refused: helix-ray's own, in place of raylib's `ToggleBorderlessWindowed`. It is `ToggleFullscreenAsync`, as a fullscreen window natively is borderless and the size of the desktop.
-  - `done`: Optional. Called once the platform grants it, at a later poll.
+  - `done`: Optional. Called once the window has changed, at a later poll.
   - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
 
 ### Macros, run as the program builds
