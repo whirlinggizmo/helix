@@ -244,7 +244,12 @@ INTRODUCTIONS = {
             'through, the image decoder, the dropped files) comes with the functions that need it (DECISIONS 30). Each rung\'s `@:adds` '
             'names what it adds. Its 3D starts with a cube made in memory (GenMeshCube, '
             'LoadModelFromMesh), drawn unlit with a camera: the 3D drawing alone, so the glTF rung after it is the reader\'s own cost. '
-            'helix-ray\'s bytes are counted by source file: raylib\'s modules (R*) and its internals, its facade and structs as ray.'),
+            'helix-ray\'s bytes are counted by source file: raylib\'s modules (R*) and its internals, its facade and structs as ray. '
+            'The last two rungs are its high-water marks. The game is what a real game uses, one file format of each kind (a skinned, '
+            'blended glTF model, PNG textures, a TTF font, WAV sounds and Ogg music, every input, a save, a shader and a render '
+            'texture). The kitchen sink calls every function of `Raylib`, `Raymath` and `Rlgl` that compiles, written as the program '
+            'builds (its `Everything.hx`), and every reader by a constant name of each extension, so nothing of helix-ray is left out: '
+            'it is the comparison point for whole-library sizes, such as an Emscripten build of raylib exporting everything.'),
 }
 
 
