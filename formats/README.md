@@ -17,6 +17,9 @@ images, a font's pages) itself; it saves what a writer returns. Depends on helix
 - `png.PngFile`: writes a PNG from 8-bit pixels of 1 to 4 channels, byte for byte as raylib 5.5's `ExportImage` does
   (stb_image_write's writer).
 - `qoi.QoiFile`: a QOI image ("Quite OK Image"), read and written byte for byte as raylib 5.5 does (qoi.h's).
+- `gif.GifFile`: a GIF file (GIF87a or GIF89a): its screen, color tables, loop count (NETSCAPE2.0) and every frame as the file gives
+  it (its rectangle, color indices with interlaced rows put in order, transparent index, disposal and delay), and the frames
+  composited onto the screen as RGBA, as a browser shows them.
 - `deflate.Deflate`: DEFLATE compression, byte for byte as raylib 5.5's `CompressData` compresses (sdefl's).
 - `wav.WavFile`: a WAV file's sound, read as raylib 5.5's `LoadWave` reads it (dr_wav's: integer, floating-point, A-law and mu-law
   samples, its 16-bit samples identical) and written byte for byte as its `ExportWave` writes one.
@@ -49,7 +52,7 @@ haxelib dev helix-math <checkout>/math
 
 The API reference is [docs/api/](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/api/README.md) (the `helix.formats`
 packages). Its tests, in `tests/`, build with `-lib helix-formats` alone, from this repository's root: `TrueTypeTests` embeds the font
-in `tests/assets` as it compiles.
+in `tests/assets` as it compiles, and `GifTests` the GIF files in `tests/assets/gif`.
 
 ## Credit
 
