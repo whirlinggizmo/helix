@@ -4002,7 +4002,6 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
 ### the async loads, helix-ray's own in place of raylib's that wait for a file
 
 ```haxe
-static function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void, ?failed:String -> Void):Void
 static function LoadMaterialsAsync(fileName:String, loaded:Array<Material> -> Void, ?failed:String -> Void):Void
 static function LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation> -> Void, ?failed:String -> Void):Void
 static function LoadSoundAsync(fileName:String, loaded:Sound -> Void, ?failed:String -> Void):Void
@@ -4018,23 +4017,16 @@ static function IsPathFileAsync(path:String, answer:Bool -> Void):Void
 static function DirectoryExistsAsync(dirPath:String, answer:Bool -> Void):Void
 static function LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList -> Void):Void
 static function LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList -> Void):Void
-static function LoadFontAsync(fileName:String, loaded:Font -> Void, ?failed:String -> Void):Void
 static function LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
 static function LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
 static function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo> -> Void, ?failed:String -> Void):Void
-static function LoadImageAsync(fileName:String, loaded:Image -> Void, ?failed:String -> Void):Void
 static function LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image -> Void, ?failed:String -> Void):Void
-static function LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image -> Void, ?failed:String -> Void):Void
 static function LoadImageFromTextureAsync(texture:Texture2D, loaded:Image -> Void, ?failed:String -> Void):Void
 static function LoadImageFromScreenAsync(loaded:Image -> Void, ?failed:String -> Void):Void
 static function GetClipboardTextAsync(read:String -> Void, ?failed:String -> Void):Void
 static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> Void):Void
 ```
 
-- `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page can't wait for a file. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
-  - `fileName`: The file, as the program names it.
-  - `loaded`: Receives the texture.
-  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
 - `LoadMaterialsAsync`: Loads the materials of an .mtl file, with the textures they name, answering when they are ready: helix-ray's own, in place of raylib's `LoadMaterials`. Each is made as raylib's `ProcessMaterialsOBJ` makes it: raylib's default material, then its diffuse texture (`map_Kd`), or with none its diffuse color (`Kd`, alpha 255); its specular texture (`map_Ks`) and color (`Ks`); the normal map its bump texture (`bump` or `map_bump`), white, its value the specular exponent (`Ns`); its emission color (`Ke`); the height map its displacement texture (`disp`). What a material doesn't give is tinyobj_loader_c's default, as raylib has it: each color black, the specular exponent 1. A texture that can't be read is none (id 0, logged). The program holds each material until `UnloadMaterial`. Where raylib's reading is broken, helix-ray reads the file as the format has it (a texture's path resolved against the file's directory among them), and a file that breaks the format fails (docs/DECISIONS.md 28).
   - `fileName`: The file, as the program names it: an .mtl file.
   - `loaded`: Receives the materials, in the file's order; their count is its length.
@@ -4094,10 +4086,6 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `filter`: The extensions kept, such as ".png;.jpg;DIR", or null for every file.
   - `scanSubdirs`: Whether the subdirectories' files are listed too.
   - `loaded`: Receives the list, its `capacity` 8192; a directory that can't be listed adds nothing, with a warning.
-- `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto one texture, as raylib's; an image (PNG, JPEG, BMP, TGA or QOI) its glyphs on a `MAGENTA` key from the space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`.
-  - `fileName`: The file, as the program names it.
-  - `loaded`: Receives the font.
-  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
 - `LoadFontExAsync`: Loads a TrueType or OpenType font file at a size, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFontEx`.
   - `fileName`: The file, as the program names it.
   - `fontSize`: The glyphs' size: the height of a line, in pixels.
@@ -4127,10 +4115,6 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `type`: `FONT_DEFAULT` for antialiased glyphs, `FONT_BITMAP` for glyphs with no gray, `FONT_SDF` for signed distances.
   - `loaded`: Receives the glyphs.
   - `failed`: Optional. Receives why the font couldn't be read; when omitted, it is logged.
-- `LoadImageAsync`: Loads an image file, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImage`, as a page can't wait for a file. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. The answer comes at a later frame, never during the call.
-  - `fileName`: The file, as the program names it.
-  - `loaded`: Receives the image, its pixels its own.
-  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
 - `LoadImageRawAsync`: Loads an image's raw pixels from a file, answering when they are read: helix-ray's own, in place of raylib's `LoadImageRaw`. The file holds the pixels in a format, after a header of some bytes; a file too small for them fails.
   - `fileName`: The file.
   - `width`: The width, in pixels.
@@ -4139,12 +4123,6 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `headerSize`: The bytes before the pixels, skipped when the file holds them and the pixels.
   - `loaded`: Receives the image.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadImageFromMemoryAsync`: Decodes an image file's bytes, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImageFromMemory`, as images are decoded asynchronously. The formats and channels are `LoadImageAsync`'s.
-  - `fileType`: The file's extension: ".png", ".jpg", ".jpeg", ".bmp", ".tga" or ".qoi".
-  - `fileData`: The file's bytes.
-  - `dataSize`: How many of them.
-  - `loaded`: Receives the image.
-  - `failed`: Optional. Receives why it couldn't be decoded; when omitted, it is logged.
 - `LoadImageFromTextureAsync`: Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU answers later. A texture on the GPU (one drawn, or a render texture) is read back from it as the frames drawn so far left it; a render texture's rows come bottom first, as raylib's do, so it reads upside down as raylib's does. A texture updated this frame (`UpdateTexture`) is read once the frame is drawn, so the update shows. One not drawn yet is read from memory (raylib's default texture is its white pixel). The image is RGBA, whatever the texture's format. A cubemap's can't be read.
   - `texture`: The texture.
   - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
@@ -4163,6 +4141,10 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
 
 ```haxe
 static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?failed:String -> Void):Void
+static macro function LoadImageAsync(fileName:String, loaded:Image -> Void, ?failed:String -> Void):Void
+static macro function LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image -> Void, ?failed:String -> Void):Void
+static macro function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void, ?failed:String -> Void):Void
+static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?failed:String -> Void):Void
 static macro function LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
 static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
 static macro function LoadShader(vsFileName:Null<String>, fsFileName:Null<String>):Shader
@@ -4178,6 +4160,26 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
   An OBJ file is read as raylib 6.2's `LoadOBJ` reads it: its polygons split into fans of triangles; a new mesh at each `g` or `o` line with faces after it, and where a face's material differs from the face before's, unless that face had none (faces before any `usemtl` join the next material's mesh); its vertices its triangles' corners, unindexed; a corner without a normal, or naming one the file doesn't have, given (0, 1, 0), one without texture coordinates (0, 0), the others' v turned (1 - v), and one naming a position the file doesn't have (0, 0, 0); every vertex's color white, whatever colors the file gives; each mesh's material its last face's, or 0 when that is no material of the library. Its materials are the library's, read as `LoadMaterialsAsync` reads them, of the file's last `mtllib` line; with no library, or one that can't be read (logged), the model has raylib's default material alone. raylib counts the start of each group in the file's `f` lines against the triangles it has made, so a polygon, or a face of 1 or 2 corners, before a group moves the group's first mesh; helix-ray does too. An empty file fails to load, as one raylib can't read. Where raylib's reading is broken, helix-ray reads the file as the format has it, and a file that breaks the format fails to load (docs/DECISIONS.md 28). IQM, VOX and M3D models aren't read (docs/DECISIONS.md 27).
 
   The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming only glTF files carries no OBJ reader, and one naming only OBJ files no glTF reader; a name known only as the program runs brings both, the reader chosen by its extension then.
+- `LoadImageAsync`: Loads an image file, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImage`, as a page can't wait for a file. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. A GIF file gives its first frame, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, as `LoadImageAnimAsync` gives it; one with no frames, or that breaks the format anywhere, fails to load.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the image, its pixels its own.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+
+  The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension then. The answer comes at a later frame, never during the call.
+- `LoadImageFromMemoryAsync`: Decodes an image file's bytes, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImageFromMemory`, as images are decoded asynchronously. The formats and channels are `LoadImageAsync`'s, a GIF file's when the type is ".gif" or ".GIF". The reader is chosen as the program builds when the type is a constant, as `LoadImageAsync`'s is by the name.
+  - `fileType`: The file's extension: ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".qoi", ".gif" or ".GIF".
+  - `fileData`: The file's bytes.
+  - `dataSize`: How many of them.
+  - `loaded`: Receives the image.
+  - `failed`: Optional. Receives why it couldn't be decoded; when omitted, it is logged.
+- `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page can't wait for a file. The file is read as `LoadImageAsync` reads it, a GIF file's first frame among them, its reader chosen as the program builds as `LoadImageAsync`'s is. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the texture.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+- `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto one texture, as raylib's; an image (PNG, JPEG, BMP, TGA, QOI, or a GIF file's first frame) its glyphs on a `MAGENTA` key from the space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`. The GIF reader is chosen as the program builds as `LoadImageAsync`'s is.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the font.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
 - `LoadImageAnimAsync`: Loads an animated image's frames, answering when they are decoded: helix-ray's own, in place of raylib's `LoadImageAnim`. The frames are one image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, the file's screen size, each frame's pixels after the last's (`GetPixelDataSize(width, height, format)` bytes each), and `frames[0]` is set to how many before `loaded` is called. Their delays and loop count aren't kept.
   - `fileName`: The file, as the program names it.
   - `frames`: Receives the frame count, in its first element.

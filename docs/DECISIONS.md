@@ -271,7 +271,9 @@ Why things are the way they are, numbered, in order.
     the program builds (a constant, or constants joined with +) calls its extension's reader alone, so dead-code elimination drops the
     other; a name known only as the program runs calls the one choosing then, which brings both. helix-services' `Models.load` chose by
     the extension too, so it gains `loadGltf` and `loadObj` beside it, and helix-ray's glTF reader calls `loadGltf`: any engine on the
-    services carries only the readers it calls. raylib's API is unchanged: a program
+    services carries only the readers it calls. The loads of an image file choose its GIF reader so (`LoadImageAsync`,
+    `LoadTextureAsync`, `LoadFontAsync` and `LoadImageAnimAsync` by the name, `LoadImageFromMemoryAsync` and
+    `LoadImageAnimFromMemoryAsync` by the type), so a program naming no GIF file carries no GIF reader. raylib's API is unchanged: a program
     names its files as raylib's do, and a constant name is what raylib's programs write. Rejected: a define (`-D helix-ray-no-obj`),
     which a program has to know to set and which fails only as it runs when set wrong; a call registering a reader, which raylib's API
     doesn't have; a reader built when first used (AGENTS.md).

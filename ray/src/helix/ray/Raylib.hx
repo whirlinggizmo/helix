@@ -5548,16 +5548,6 @@ class Raylib {
 
 	// ---- the async loads, helix-ray's own in place of raylib's that wait for a file (raylib/RAsync.hx) ----
 
-	/** Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page
-		can't wait for a file. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The
-		answer comes at a later frame, never during the call.
-
-		@param fileName  The file, as the program names it.
-		@param loaded  Receives the texture.
-		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
-	public static inline function LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void
-		RAsync.LoadTextureAsync(fileName, loaded, failed);
-
 	/** Loads the materials of an .mtl file, with the textures they name, answering when they are ready: helix-ray's own, in place of
 		raylib's `LoadMaterials`. Each is made as raylib's `ProcessMaterialsOBJ` makes it: raylib's default material, then its diffuse
 		texture (`map_Kd`), or with none its diffuse color (`Kd`, alpha 255); its specular texture (`map_Ks`) and color (`Ks`); the
@@ -5722,17 +5712,6 @@ class Raylib {
 	public static inline function LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void):Void
 		RAsync.LoadDirectoryFilesExAsync(basePath, filter, scanSubdirs, loaded);
 
-	/** Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType
-		file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto
-		one texture, as raylib's; an image (PNG, JPEG, BMP, TGA or QOI) its glyphs on a `MAGENTA` key from the space on, as
-		`LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`.
-
-		@param fileName  The file, as the program names it.
-		@param loaded  Receives the font.
-		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
-	public static inline function LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void):Void
-		RAsync.LoadFontAsync(fileName, loaded, failed);
-
 	/** Loads a TrueType or OpenType font file at a size, answering when its glyphs are ready: helix-ray's own, in place of raylib's
 		`LoadFontEx`.
 
@@ -5783,17 +5762,6 @@ class Raylib {
 			loaded:Array<GlyphInfo>->Void, ?failed:String->Void):Void
 		RAsync.LoadFontDataAsync(fileData, dataSize, fontSize, codepoints, codepointCount, type, loaded, failed);
 
-	/** Loads an image file, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImage`, as a page can't wait for a
-		file. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its
-		channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. The answer
-		comes at a later frame, never during the call.
-
-		@param fileName  The file, as the program names it.
-		@param loaded  Receives the image, its pixels its own.
-		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
-	public static inline function LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void):Void
-		RAsync.LoadImageAsync(fileName, loaded, failed);
-
 	/** Loads an image's raw pixels from a file, answering when they are read: helix-ray's own, in place of raylib's `LoadImageRaw`. The
 		file holds the pixels in a format, after a header of some bytes; a file too small for them fails.
 
@@ -5807,17 +5775,6 @@ class Raylib {
 	public static inline function LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void,
 			?failed:String->Void):Void
 		RAsync.LoadImageRawAsync(fileName, width, height, format, headerSize, loaded, failed);
-
-	/** Decodes an image file's bytes, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImageFromMemory`, as
-		images are decoded asynchronously. The formats and channels are `LoadImageAsync`'s.
-
-		@param fileType  The file's extension: ".png", ".jpg", ".jpeg", ".bmp", ".tga" or ".qoi".
-		@param fileData  The file's bytes.
-		@param dataSize  How many of them.
-		@param loaded  Receives the image.
-		@param failed  Optional. Receives why it couldn't be decoded; when omitted, it is logged. */
-	public static inline function LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void):Void
-		RAsync.LoadImageFromMemoryAsync(fileType, fileData, dataSize, loaded, failed);
 
 	/** Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU
 		answers later. A texture on the GPU (one drawn, or a render texture) is read back from it as the frames drawn so far left it; a
@@ -6108,7 +6065,63 @@ class Raylib {
 		return helix.ray.internal.ModelMacro.load(fileName, loaded, failed);
 	}
 
-	// ---- Animated images, read by the readers the program names ----
+	// ---- Image files, read by the readers the program names ----
+
+	/** Loads an image file, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImage`, as a page can't wait for a
+		file. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its
+		channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. A GIF
+		file gives its first frame, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, as `LoadImageAnimAsync` gives it; one with no frames, or that
+		breaks the format anywhere, fails to load.
+
+		The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program
+		naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension
+		then. The answer comes at a later frame, never during the call.
+
+		@param fileName  The file, as the program names it.
+		@param loaded  Receives the image, its pixels its own.
+		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
+	public static macro function LoadImageAsync(fileName:ExprOf<String>, loaded:ExprOf<Image->Void>, ?failed:ExprOf<String->Void>):ExprOf<Void> {
+		return helix.ray.internal.ImageMacro.load(fileName, loaded, failed);
+	}
+
+	/** Decodes an image file's bytes, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImageFromMemory`, as
+		images are decoded asynchronously. The formats and channels are `LoadImageAsync`'s, a GIF file's when the type is ".gif" or
+		".GIF". The reader is chosen as the program builds when the type is a constant, as `LoadImageAsync`'s is by the name.
+
+		@param fileType  The file's extension: ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".qoi", ".gif" or ".GIF".
+		@param fileData  The file's bytes.
+		@param dataSize  How many of them.
+		@param loaded  Receives the image.
+		@param failed  Optional. Receives why it couldn't be decoded; when omitted, it is logged. */
+	public static macro function LoadImageFromMemoryAsync(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>,
+			loaded:ExprOf<Image->Void>, ?failed:ExprOf<String->Void>):ExprOf<Void> {
+		return helix.ray.internal.ImageMacro.loadFromMemory(fileType, fileData, dataSize, loaded, failed);
+	}
+
+	/** Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page
+		can't wait for a file. The file is read as `LoadImageAsync` reads it, a GIF file's first frame among them, its reader chosen as
+		the program builds as `LoadImageAsync`'s is. A file loaded again shares its first load's texture, and the image goes to the GPU
+		when first drawn. The answer comes at a later frame, never during the call.
+
+		@param fileName  The file, as the program names it.
+		@param loaded  Receives the texture.
+		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
+	public static macro function LoadTextureAsync(fileName:ExprOf<String>, loaded:ExprOf<Texture2D->Void>, ?failed:ExprOf<String->Void>):ExprOf<Void> {
+		return helix.ray.internal.ImageMacro.loadTexture(fileName, loaded, failed);
+	}
+
+	/** Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType
+		file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto
+		one texture, as raylib's; an image (PNG, JPEG, BMP, TGA, QOI, or a GIF file's first frame) its glyphs on a `MAGENTA` key from the
+		space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`. The GIF reader is chosen as the program
+		builds as `LoadImageAsync`'s is.
+
+		@param fileName  The file, as the program names it.
+		@param loaded  Receives the font.
+		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
+	public static macro function LoadFontAsync(fileName:ExprOf<String>, loaded:ExprOf<Font->Void>, ?failed:ExprOf<String->Void>):ExprOf<Void> {
+		return helix.ray.internal.ImageMacro.loadFont(fileName, loaded, failed);
+	}
 
 	/** Loads an animated image's frames, answering when they are decoded: helix-ray's own, in place of raylib's `LoadImageAnim`. The
 		frames are one image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, the file's screen size, each frame's pixels after the last's

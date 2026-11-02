@@ -30,15 +30,23 @@ import helix.ray.raylib.RAsync.*;
 class RAsync {
 	#if !macro
 	// ---- The async loads: helix-ray's own, not raylib's ----
+	// LoadTextureAsync's call where its file's name isn't known as the program builds (Raylib.LoadTextureAsync): a GIF file's first
+	// frame or the platform's decode, picked by its extension as it runs, so both are in the program.
+	static function loadTextureFile(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void {
+		if (isGif(fileName))
+			loadGifTexture(fileName, loaded, failed);
+		else
+			loadPlainTexture(fileName, loaded, failed);
+	}
 
-	/** Loads an image file as a texture, answering when it is ready: helix-ray's own, in place of raylib's `LoadTexture`, as a page
-		can't wait for a file. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The
-		answer comes at a later frame, never during the call.
+	// LoadTextureAsync's call for a GIF file: its first frame, kept as the file's image so later loads share its texture.
+	static function loadGifTexture(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void {
+		var path = normalize(fileName);
+		gifFile("LoadTextureAsync", path, () -> loaded(RTextures.loadTexture(path)), failed);
+	}
 
-		@param fileName  The file, as the program names it.
-		@param loaded  Receives the texture.
-		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
-	static function LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void {
+	// LoadTextureAsync's call for any other file.
+	static function loadPlainTexture(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
 		Runtime.fetch(path, error -> error == null ? loaded(RTextures.loadTexture(path)) : refuse("LoadTextureAsync", error, failed));
 	}
@@ -605,15 +613,29 @@ class RAsync {
 		scan(basePath, () -> loaded(list));
 	}
 
-	/** Loads a font file, answering when its glyphs are ready: helix-ray's own, in place of raylib's `LoadFont`. A TrueType or OpenType
-		file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto
-		one texture, as raylib's; an image (PNG, JPEG, BMP, TGA or QOI) its glyphs on a `MAGENTA` key from the space on, as
-		`LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`.
+	// LoadFontAsync's call where its file's name isn't known as the program builds (Raylib.LoadFontAsync): a GIF image's glyphs or the
+	// other readers, picked by its extension as it runs, so the GIF reader is in the program.
+	static function loadFont(fileName:String, loaded:Font->Void, ?failed:String->Void):Void {
+		if (isGif(fileName))
+			loadGifFont(fileName, loaded, failed);
+		else
+			loadPlainFont(fileName, loaded, failed);
+	}
 
-		@param fileName  The file, as the program names it.
-		@param loaded  Receives the font.
-		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
-	static function LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void):Void {
+	// LoadFontAsync's call for a GIF file: the glyphs of its first frame.
+	static function loadGifFont(fileName:String, loaded:Font->Void, ?failed:String->Void):Void {
+		loadGifImage(fileName, image -> loaded(imageFont(image)), message -> refuse("LoadFontAsync", message, failed));
+	}
+
+	// A font of an image's glyphs, as LoadFontAsync reads one.
+	static function imageFont(image:Image):Font {
+		var font = LoadFontFromImage(image, MAGENTA, 32);
+		SetTextureFilter(font.texture, TEXTURE_FILTER_POINT);
+		return font;
+	}
+
+	// LoadFontAsync's call for any other file.
+	static function loadPlainFont(fileName:String, loaded:Font->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName),
 			type = haxe.io.Path.extension(path).toLowerCase();
 		if (type == "fnt") {
@@ -625,11 +647,7 @@ class RAsync {
 			return;
 		}
 		if (isDecoded(type) || type == "qoi") {
-			LoadImageAsync(path, image -> {
-				var font = LoadFontFromImage(image, MAGENTA, 32);
-				SetTextureFilter(font.texture, TEXTURE_FILTER_POINT);
-				loaded(font);
-			}, message -> refuse("LoadFontAsync", message, failed));
+			loadPlainImage(path, image -> loaded(imageFont(image)), message -> refuse("LoadFontAsync", message, failed));
 			return;
 		}
 		if (type != "ttf" && type != "otf") {
@@ -716,15 +734,44 @@ class RAsync {
 				message -> refuse("LoadFontDataAsync", message, failed));
 	}
 
-	/** Loads an image file, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImage`, as a page can't wait for a
-		file. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its
-		channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. The answer
-		comes at a later frame, never during the call.
+	// LoadImageAsync's call where its file's name isn't known as the program builds (Raylib.LoadImageAsync): a GIF file's first frame
+	// or the other decodes, picked by its extension as it runs, so both are in the program.
+	static function loadImage(fileName:String, loaded:Image->Void, ?failed:String->Void):Void {
+		if (isGif(fileName))
+			loadGifImage(fileName, loaded, failed);
+		else
+			loadPlainImage(fileName, loaded, failed);
+	}
 
-		@param fileName  The file, as the program names it.
-		@param loaded  Receives the image, its pixels its own.
-		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
-	static function LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void):Void {
+	// LoadImageAsync's call for a GIF file: its first frame, kept as the file's image.
+	static function loadGifImage(fileName:String, loaded:Image->Void, ?failed:String->Void):Void {
+		var path = normalize(fileName);
+		gifFile("LoadImageAsync", path, () -> {
+			var image = Runtime.image(path);
+			loaded(rgba(image.pixels.sub(0, image.pixels.length), image.width, image.height));
+		}, failed);
+	}
+
+	// Brings a GIF file into memory, its first frame composited as raylib 5.5's LoadImage reads it (gifFrames) and kept as the file's
+	// image (Runtime.images), then calls done; a file that can't be read or is no GIF is refused for the load named.
+	static function gifFile(name:String, path:String, done:Void->Void, failed:Null<String->Void>):Void {
+		Runtime.fetch(path, error -> {
+			if (error != null) {
+				refuse(name, error, failed);
+				return;
+			}
+			if (!Runtime.images.exists(path)) {
+				var frame = gifFrames(name, path, Runtime.files.get(path), false, failed);
+				if (frame == null)
+					return;
+				Runtime.images.set(path, new helix.services.images.Image(path, frame.width, frame.height, frame.data));
+			}
+			done();
+		});
+	}
+
+	// LoadImageAsync's call for any other file.
+	static function loadPlainImage(fileName:String, loaded:Image->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName),
 			type = haxe.io.Path.extension(path).toLowerCase();
 		if (type == "qoi") {
@@ -772,15 +819,31 @@ class RAsync {
 		}, error -> refuse("LoadImageRawAsync", error, failed));
 	}
 
-	/** Decodes an image file's bytes, answering when it is decoded: helix-ray's own, in place of raylib's `LoadImageFromMemory`, as
-		images are decoded asynchronously. The formats and channels are `LoadImageAsync`'s.
+	// LoadImageFromMemoryAsync's call where its type isn't known as the program builds (Raylib.LoadImageFromMemoryAsync): raylib's two
+	// spellings of ".gif" read as GIF, any other type decoded as the rest are, so both are in the program.
+	static function decodeImage(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void):Void {
+		if (fileType == ".gif" || fileType == ".GIF")
+			decodeGifImage(fileType, fileData, dataSize, loaded, failed);
+		else
+			decodePlainImage(fileType, fileData, dataSize, loaded, failed);
+	}
 
-		@param fileType  The file's extension: ".png", ".jpg", ".jpeg", ".bmp", ".tga" or ".qoi".
-		@param fileData  The file's bytes.
-		@param dataSize  How many of them.
-		@param loaded  Receives the image.
-		@param failed  Optional. Receives why it couldn't be decoded; when omitted, it is logged. */
-	static function LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void):Void {
+	// LoadImageFromMemoryAsync's call for a GIF file's bytes: its first frame.
+	static function decodeGifImage(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void):Void {
+		if (fileData == null || dataSize == 0) {
+			Runtime.later(() -> refuse("LoadImageFromMemoryAsync", "IMAGE: Invalid file data", failed));
+			return;
+		}
+		var data = dataSize < fileData.length ? fileData.sub(0, dataSize) : fileData;
+		Runtime.later(() -> {
+			var frame = gifFrames("LoadImageFromMemoryAsync", "IMAGE", data, false, failed);
+			if (frame != null)
+				loaded(frame);
+		});
+	}
+
+	// LoadImageFromMemoryAsync's call for any other type.
+	static function decodePlainImage(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void):Void {
 		if (fileData == null || dataSize == 0) {
 			Runtime.later(() -> refuse("LoadImageFromMemoryAsync", "IMAGE: Invalid file data", failed));
 			return;
@@ -793,7 +856,7 @@ class RAsync {
 	// LoadImageAnimAsync's call where its file's name isn't known as the program builds (Raylib.LoadImageAnimAsync): the GIF reader or
 	// the image load picked by its extension as it runs, so both are in the program.
 	static function loadImageAnim(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void):Void {
-		if (haxe.io.Path.extension(normalize(fileName)).toLowerCase() == "gif")
+		if (isGif(fileName))
 			loadGifAnim(fileName, frames, loaded, failed);
 		else
 			loadStillAnim(fileName, frames, loaded, failed);
@@ -812,7 +875,7 @@ class RAsync {
 
 	// LoadImageAnimAsync's call for any other file: the image, one frame.
 	static function loadStillAnim(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void):Void {
-		LoadImageAsync(fileName, image -> {
+		loadPlainImage(fileName, image -> {
 			frames[0] = 1;
 			loaded(image);
 		}, error -> refuse("LoadImageAnimAsync", error, failed));
@@ -838,35 +901,46 @@ class RAsync {
 
 	// LoadImageAnimFromMemoryAsync's call for any other type: the image, one frame.
 	static function decodeStillAnim(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void):Void {
-		LoadImageFromMemoryAsync(fileType, fileData, dataSize, image -> {
+		decodePlainImage(fileType, fileData, dataSize, image -> {
 			frames[0] = 1;
 			loaded(image);
 		}, error -> refuse("LoadImageAnimFromMemoryAsync", error, failed));
 	}
 
-	// A GIF file's frames as one image, as raylib 5.5 composites them (stb_image's stbi_load_gif_from_memory): helix-formats reads the
-	// file; the frames are drawn here by stb's rules. The screen starts transparent. Before each frame, a last frame disposed of to the
-	// background or the previous frame has its rectangle put back as it was before it was drawn (stb restores both so, and for
-	// Previous from the third frame on reads before its own buffer: docs/DECISIONS.md 24). After the first frame, when the background
-	// index isn't 0, the pixels outside its rectangle take the global table's color there, opaque, its bytes in stb's palette order
-	// (blue, green, red), or opaque black where the table has none.
+	// A GIF file's frames, as raylib 5.5's LoadImageAnim gives them (gifFrames), and their count.
 	static function gifAnim(name:String, what:String, data:haxe.io.Bytes, frames:Array<Int>, loaded:Image->Void, failed:Null<String->Void>):Void {
+		var all = gifFrames(name, what, data, true, failed);
+		if (all == null)
+			return;
+		frames[0] = Std.int(all.data.length / (all.width * all.height * 4));
+		loaded(all);
+	}
+
+	// A GIF file's frames as one image, the screen's size, each frame after the last, composited as raylib 5.5 composites them
+	// (stb_image's GIF reader): every frame (LoadImageAnim) or the first alone (LoadImage). helix-formats reads the file; the frames are
+	// drawn here by stb's rules. The screen starts transparent. Before each frame, a last frame disposed of to the background or the
+	// previous frame has its rectangle put back as it was before it was drawn (stb restores both so, and for Previous from the third
+	// frame on reads before its own buffer: docs/DECISIONS.md 24). After the first frame, when the background index isn't 0, the
+	// pixels outside its rectangle take the global table's color there, opaque, its bytes in stb's palette order (blue, green, red), or
+	// opaque black where the table has none. A file that can't be read, or has no frames, is refused for the load named, giving null.
+	static function gifFrames(name:String, what:String, data:haxe.io.Bytes, all:Bool, failed:Null<String->Void>):Null<Image> {
 		var gif = try helix.formats.gif.GifFile.read(data) catch (e:String) {
 			refuse(name, '$what: $e', failed);
-			return;
+			return null;
 		}
 		var width = gif.width,
 			height = gif.height,
 			size = width * height * 4,
-			count = gif.frames.length;
+			count = all || gif.frames.length == 0 ? gif.frames.length : 1;
 		if (count == 0 || size * 1.0 * count > 0x7FFFFFFF) {
 			refuse(name, count == 0 ? '$what: a GIF file with no frames' : '$what: $count frames of $width x $height pixels, over 2 GB', failed);
-			return;
+			return null;
 		}
 		var pixels = haxe.io.Bytes.alloc(size * count),
 			screen = haxe.io.Bytes.alloc(size),
 			before = haxe.io.Bytes.alloc(size);
-		for (n => frame in gif.frames) {
+		for (n in 0...count) {
+			var frame = gif.frames[n];
 			if (n > 0) {
 				var last = gif.frames[n - 1];
 				if (last.disposal == helix.formats.gif.GifDisposal.Background || last.disposal == helix.formats.gif.GifDisposal.Previous)
@@ -903,8 +977,7 @@ class RAsync {
 			}
 			pixels.blit(n * size, screen, 0, size);
 		}
-		frames[0] = count;
-		loaded(new Image(pixels, width, height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8));
+		return rgba(pixels, width, height);
 	}
 
 	/** Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU
@@ -1035,6 +1108,11 @@ class RAsync {
 			Runtime.log(LOG_WARNING, 'FILEIO: [$path] $error');
 			answer(null, 0);
 		});
+	}
+
+	// Whether a file's extension is .gif, in any case.
+	static function isGif(fileName:String):Bool {
+		return haxe.io.Path.extension(normalize(fileName)).toLowerCase() == "gif";
 	}
 
 	// Whether an image file's extension is one the platform decodes.

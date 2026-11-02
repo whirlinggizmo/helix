@@ -1,12 +1,12 @@
 {
   "oracle": "5.5",
-  "covers": "rtextures.c's LoadImageAnim and LoadImageAnimFromMemory on helix-formats' test GIFs as stb_image composites them: one frame of GIF87a, rectangles kept over the screen, disposal to the background and to the previous frame (the first frame's) with transparency over it, a background index past 0 under a first frame smaller than the screen, transparency in a global and a local table, interlaced rows, 256 colors of noise filling the LZW code table, a file PIL wrote, a file of no frames, a missing file; a PNG as one frame; a name and a type known only as the program runs; the bytes typed .gif, .GIF and .png",
-  "notes": "Where raylib gives an image with no data (a missing file, a GIF of no frames), LoadImageAnimAsync fails, printed as 0 frames. The PNG is RGBA: helix-ray's file images say PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 whatever the file's channels.",
+  "covers": "rtextures.c's LoadImageAnim and LoadImageAnimFromMemory on helix-formats' test GIFs as stb_image composites them: one frame of GIF87a, rectangles kept over the screen, disposal to the background and to the previous frame (the first frame's) with transparency over it, a background index past 0 under a first frame smaller than the screen, transparency in a global and a local table, interlaced rows, 256 colors of noise filling the LZW code table, a file PIL wrote, a file of no frames, a missing file; a PNG as one frame; a name and a type known only as the program runs; the bytes typed .gif, .GIF and .png; the first frame LoadImage and LoadImageFromMemory read of each test GIF (a name and a type known only as the program runs, a type .Gif raylib doesn't read, a PNG by a name and a type made as it runs among them) and LoadTexture makes (read back), and the font LoadFont reads from a GIF (makegif.py's three glyphs on a magenta key)",
+  "notes": "Where raylib gives an image with no data (a missing file, a GIF of no frames), LoadImageAnimAsync fails, printed as 0 frames, and LoadImageAsync, LoadImageFromMemoryAsync and LoadTextureAsync fail, printed as none (raylib's texture of id 0). The PNG is RGBA: helix-ray's file images say PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 whatever the file's channels.",
   "kind": "values",
-  "main": "ImageAnimBits",
+  "main": "ImageBits",
   "reference": "ref.c",
   "harness": [
-    "ImageAnimBits.hx"
+    "ImageBits.hx"
   ],
   "assets": {
     "still.gif": "../../../formats/tests/assets/gif/still.gif",
@@ -16,7 +16,8 @@
     "large.gif": "../../../formats/tests/assets/gif/large.gif",
     "pil.gif": "../../../formats/tests/assets/gif/pil.gif",
     "empty.gif": "../../../formats/tests/assets/gif/empty.gif",
-    "still.png": "makepng.py"
+    "still.png": "makepng.py",
+    "font.gif": "makegif.py"
   },
   "tolerance": 0
 }
