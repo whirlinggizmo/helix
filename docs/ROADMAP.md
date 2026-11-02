@@ -10,10 +10,10 @@
   from glyph data; helix-formats' `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions, and morph
   targets; helix-geometry's second texture coordinates, morph targets and mesh groups; helix-math's Euler orders, an object's `lookAt`
   and `Bounds3D` through a matrix. Then helix-ray rebuilt on it (immediate, as raylib is, on helix-render directly).
-- **helix-scene and HeliX's engine: HeliX on top of the libraries, not replaced by them.** helix-scene (`scene/`, `helix.scene`) is
+- **helix-scene and Gyre, HeliX's engine (`gyre/`, `helix.gyre`): HeliX on top of the libraries, not replaced by them.** helix-scene (`scene/`, `helix.scene`) is
   HeliX's scene code (its stage, 2D and 3D nodes, transforms, hierarchy, the walk that culls, gathers lights and sorts, picking) moved
   onto helix-render and made engine-neutral, the link rule applied (a 2D game carries no 3D): a port of HeliX's code, not a new
-  design. HeliX's engine is its game-level API (app, loader, UI, transitions, animator, autopilot) on helix-scene, helix-render and
+  design. Gyre is HeliX's game-level API (app, loader, UI, transitions, animator, autopilot) on helix-scene, helix-render and
   the services, so its users keep the API they know; a three.js-style engine later on the same helix-scene. The test: one of
   HeliX's games ported, its effort and its size beside its HeliX build.
 - **helix-ray, on trial (DECISIONS 16, 19, 20, 21):** raylib's API over the services; to decide whether it merges. Next: reloading and placeholders under raylib's own names (the assets,
@@ -52,8 +52,7 @@
   saves written, so a program knows none of that; its spec is the `Main.hx` the services trial's three agents each wrote the same way.
   Whether it wears a known API or an engine's is GOALS' open path.
 - **Libraries apart from engines:** helix the umbrella; the libraries (math, log, formats, platform, services, later UI) know no
-  consumer, and the engines over them (helix-ray, to be renamed, perhaps helix-raylib; an OpenFL mirror; what HeliX's engine
-  becomes, its name to be chosen, as raylib names raylib's) may own the loop and keep statics. First one repository, `libs/` and
+  consumer, and the engines over them (helix-ray, to be renamed, perhaps helix-raylib; an OpenFL mirror; Gyre, what HeliX's engine becomes) may own the loop and keep statics. First one repository, `libs/` and
   `engines/`, `check_layers` refusing a library that reaches an engine and the engines' checks run on every library change, as no
   backward compatibility means every caller changes in the same commit; separate repositories, each engine pinning a library
   version, once the platform has held through a second consumer and is versioned.
