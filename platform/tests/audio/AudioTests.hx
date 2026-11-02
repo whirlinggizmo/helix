@@ -24,7 +24,9 @@ typedef Step = {
 /** Checks helix-platform's audio output and decoder against the clock, with the library alone.
 
 	The steps: a mono and a stereo WAV decoded to their own channels; a 22050 Hz WAV decoded at 22050 Hz and resampled to 44100; a stereo clip played, its position advancing with time, moved, and
-	ended; a stream of a WAV opened, its length read, played, moved and ended; a queue fed half a second, its queued frames falling as it
+	ended; a stream of a WAV opened, its length read, played, moved, ended and played again; in a page, a stream whose play() the browser
+	refuses (as a phone does outside a gesture) waiting, not ended, and played by the next gesture, and a stream asked for while audio
+	is suspended started in the gesture that resumes it; a queue fed half a second, its queued frames falling as it
 	plays, run dry while still playing, and resuming when fed again. The WAVs are made here. Times are checked within a tenth of a second
 	or so, as a frame's timing and the output's buffering allow.
 
@@ -276,6 +278,76 @@ class AudioTests {
 					near(audio.getStreamDuration(stream), 1.5, 1 / 60, "duration after");
 				}
 			},
+			{
+				name: "a stream plays again from its start",
+				enter: () -> {
+					voice = audio.playStream(stream, false, 1);
+					started = haxe.Timer.stamp();
+				},
+				wait: .3,
+				check: () -> {
+					check(audio.isPlaying(voice), "not playing");
+					near(audio.getPosition(voice), elapsed(), .15, "position");
+					audio.stop(voice);
+					check(!audio.isPlaying(voice), "not stopped");
+				}
+			},
+			#if js
+			{
+				// As a phone refuses a media element's play() outside a gesture: refused, the voice waits, with its volume and place, and
+				// isn't tried again at a poll; the next gesture plays it.
+				name: "a stream the browser refuses waits for a gesture",
+				enter: () -> {
+					js.Syntax.code("window.helixRealPlay = HTMLMediaElement.prototype.play; window.helixPlays = 0");
+					js.Syntax.code("HTMLMediaElement.prototype.play = function() { window.helixPlays++; return Promise.reject(new DOMException('refused', 'NotAllowedError')); }");
+					voice = audio.playStream(stream, false, 1);
+					check(audio.setVolume(voice, .5), "volume not set");
+				},
+				wait: .3,
+				check: () -> {
+					check(audio.isPlaying(voice), "a refused voice ended");
+					check(audio.getPosition(voice) == 0, 'position: ${audio.getPosition(voice)}');
+					var plays:Int = js.Syntax.code("window.helixPlays");
+					check(plays == 1, 'play() asked $plays times, not once, before a gesture');
+					js.Syntax.code("HTMLMediaElement.prototype.play = window.helixRealPlay");
+					js.Browser.window.dispatchEvent(new js.html.KeyboardEvent("keydown"));
+					started = haxe.Timer.stamp();
+				}
+			}, {
+				name: "the gesture plays it",
+				wait: .3,
+				check: () -> {
+					check(audio.isPlaying(voice), "not playing");
+					near(audio.getPosition(voice), elapsed(), .15, "position");
+					audio.stop(voice);
+				}
+			}, {
+				name: "audio suspended as the page loses focus",
+				enter: () -> js.Browser.window.dispatchEvent(new js.html.Event("blur")),
+				ready: () -> !audio.running
+			}, {
+				// A phone plays a media element only in a gesture: a stream's voice asked for while audio waits starts in the gesture itself,
+				// not at a poll after it.
+				name: "a stream asked for while audio waits starts in the gesture",
+				enter: () -> {
+					voice = audio.playStream(stream, false, 1);
+					js.Syntax.code("window.helixRealPlay = HTMLMediaElement.prototype.play; window.helixPlays = 0");
+					js.Syntax.code("HTMLMediaElement.prototype.play = function() { if (!this.muted) window.helixPlays++; return window.helixRealPlay.call(this); }");
+					js.Browser.window.dispatchEvent(new js.html.KeyboardEvent("keydown"));
+					var plays:Int = js.Syntax.code("window.helixPlays");
+					js.Syntax.code("HTMLMediaElement.prototype.play = window.helixRealPlay");
+					check(plays == 1, 'play() asked $plays times in the gesture, not once');
+					started = haxe.Timer.stamp();
+				},
+				wait: .3,
+				check: () -> {
+					check(audio.running, "audio not resumed");
+					check(audio.isPlaying(voice), "not playing");
+					near(audio.getPosition(voice), elapsed(), .15, "position");
+					audio.stop(voice);
+				}
+			},
+			#end
 			{
 				name: "a queue fed half a second plays it",
 				enter: () -> {

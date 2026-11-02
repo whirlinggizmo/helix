@@ -48,7 +48,7 @@ function dispose():Void
 
 Provides `IAudio` in a browser page, over Web Audio.
 
-Clips are AudioBuffers and streams media elements routed through the audio graph, each voice a source through a gain and a stereo panner, its volume and pan changes approached by setTargetAtTime and its pitch the source's playback rate. A queue's blocks are AudioBuffers scheduled back to back on the context's clock, the browser resampling them; a pitch change reschedules the blocks not yet started. The page's first key, click or tap unlocks audio, as browsers let it start only in a user gesture; the page losing focus or being hidden suspends it. A voice asked for before then waits, its volume, pitch, pan and pause kept, and starts at the first poll once audio runs.
+Clips are AudioBuffers and streams media elements routed through the audio graph, each voice a source through a gain and a stereo panner, its volume and pan changes approached by setTargetAtTime and its pitch the source's playback rate. A queue's blocks are AudioBuffers scheduled back to back on the context's clock, the browser resampling them; a pitch change reschedules the blocks not yet started. The page's first key, click or tap unlocks audio, as browsers let it start only in a user gesture; the page losing focus or being hidden suspends it. A voice asked for before then waits, its volume, pitch, pan and pause kept: a clip's or a queue's starts at the first poll once audio runs, and a stream's in the gesture itself, as a phone starts a media element only in one. A stream's voice the browser refuses to play there or later waits again, for the next gesture. A stream keeps its media elements, each played once, muted, in the first gesture after it opens, so a phone plays it later without one.
 
 ```haxe
 function new()
@@ -81,7 +81,7 @@ function dispose():Void
 ```
 
 - `new`: Creates the output, listening for the page's gestures (as they reach the window, before the page's own handlers) and its visibility; no AudioContext exists until a gesture unlocks audio.
-- `poll`: Starts the voices that waited, in the order asked, once audio runs, and lets go of queue blocks played; media elements and the audio graph run on their own.
+- `poll`: Starts the voices that waited, in the order asked, once audio runs (but for a stream's the browser refused, which wait for a gesture), and lets go of queue blocks played; media elements and the audio graph run on their own.
 
 ## Sdl3MixerAudioDecoderAdapter
 

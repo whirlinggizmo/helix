@@ -10,8 +10,8 @@ import helix.platform.StreamSource;
 	what it names"). */
 @:allow(helix.platform.adapters.audio.webaudio)
 private class Resource {
-	// Starts voice id of this through gain at position (seconds), as playbacks[id].
-	function start(a:WebAudioAdapter, id:Int, gain:Dynamic, panner:Dynamic, loop:Bool, position:Float):Void {}
+	// Starts voice id of this (resource, its id) through gain at position (seconds), as playbacks[id].
+	function start(a:WebAudioAdapter, resource:Int, id:Int, gain:Dynamic, panner:Dynamic, loop:Bool, position:Float):Void {}
 
 	// Whether a voice of this can be placed (setPosition).
 	function seekable():Bool
@@ -27,12 +27,14 @@ private class Resource {
 	function release():Void {}
 }
 
-/** A voice: its resource, its gain and panner, its pitch and whether it is paused. */
+/** A voice: its resource's id, its gain and panner, the volume and pan last set, its pitch and whether it is paused. */
 @:allow(helix.platform.adapters.audio.webaudio)
 private class Voice {
 	final resource:Int;
 	final gain:Dynamic;
 	final panner:Dynamic;
+	var volume = 1.;
+	var pan = 0.;
 	var pitch = 1.;
 	var paused = false;
 
@@ -72,7 +74,7 @@ private class Clip extends Resource {
 		this.channels = channels;
 	}
 
-	override function start(a:WebAudioAdapter, id:Int, gain:Dynamic, panner:Dynamic, loop:Bool, position:Float):Void {
+	override function start(a:WebAudioAdapter, resource:Int, id:Int, gain:Dynamic, panner:Dynamic, loop:Bool, position:Float):Void {
 		if (buffer == null) {
 			var data = new js.lib.Float32Array(samples.getData(), 0, Std.int(samples.length / 4));
 			var frames = Std.int(data.length / channels);
@@ -84,7 +86,7 @@ private class Clip extends Resource {
 				buffer.copyToChannel(channel, c);
 			}
 		}
-		var v = new ClipVoice(id, gain, panner, buffer, loop, Math.min(position, buffer.duration));
+		var v = new ClipVoice(resource, gain, panner, buffer, loop, Math.min(position, buffer.duration));
 		a.playbacks[id] = v;
 		v.begin(a, id);
 	}
@@ -203,19 +205,42 @@ private class ClipVoice extends Voice {
 	}
 }
 
-/** A stream: its URL, its media element until a voice takes it, its duration (seconds, 0 while unknown) and its channels. */
+/** A stream's media element and, once a voice has played it, the element's node in the audio graph: an element has one node, ever.
+	`primed` once the element has been played in a gesture, after which a phone lets it play outside one. */
+@:allow(helix.platform.adapters.audio.webaudio)
+private class StreamElement {
+	final element:js.html.AudioElement;
+	var node:Dynamic = null;
+	var primed = false;
+
+	function new(element:js.html.AudioElement) {
+		this.element = element;
+	}
+
+	// Lets go of the element's file.
+	function unload():Void {
+		element.pause();
+		element.removeAttribute("src");
+		element.load();
+	}
+}
+
+/** A stream: its URL, its media elements no voice holds, its duration (seconds, 0 while unknown) and its channels.
+
+	A voice takes an element and gives it back when it ends, so a stream keeps its elements: a phone plays a media element only in a
+	gesture until it has once played there, and `prime` plays each in the next gesture. */
 @:allow(helix.platform.adapters.audio.webaudio)
 private class Stream extends Resource {
 	final url:String;
-	var element:Null<js.html.AudioElement>;
-	var duration:Float;
+	final spare:Array<StreamElement> = [];
+	var duration = 0.;
 	final channels:Int;
 
 	function new(url:String, element:js.html.AudioElement, channels:Int) {
 		this.url = url;
-		this.element = element;
-		this.duration = durationOf(element);
 		this.channels = channels;
+		keep(element);
+		duration = durationOf(element);
 	}
 
 	// A media element's duration in seconds, 0 while unknown (NaN) or for a live stream (Infinity).
@@ -226,67 +251,118 @@ private class Stream extends Resource {
 
 	// The duration as known now.
 	function getDuration():Float
-		return element != null ? durationOf(element) : duration;
+		return duration;
 
-	override function start(a:WebAudioAdapter, id:Int, gain:Dynamic, panner:Dynamic, loop:Bool, position:Float):Void {
-		var e = element;
-		if (e == null) {
-			e = js.Browser.document.createAudioElement();
-			e.crossOrigin = "anonymous";
-			e.src = url;
+	// Makes element one of this stream's, its duration followed, and spare.
+	function keep(element:js.html.AudioElement):Void {
+		element.ondurationchange = _ -> {
+			var known = durationOf(element);
+			if (known > 0)
+				duration = known;
+		};
+		spare.push(new StreamElement(element));
+	}
+
+	// Plays each spare element not yet primed, muted, and pauses it at once: in a gesture, that lets a phone play it later outside one.
+	function prime():Void {
+		for (held in spare) {
+			if (held.primed)
+				continue;
+			var e = held.element;
+			held.primed = true;
+			e.muted = true;
+			var playing = e.play();
+			e.pause();
+			e.muted = false;
+			// Pausing at once rejects the play with an AbortError; a refusal means this wasn't a gesture, and the next one tries again.
+			playing.catchError(error -> {
+				if (error.name == "NotAllowedError")
+					held.primed = false;
+				return null;
+			});
 		}
-		element = null;
-		e.ondurationchange = _ -> duration = durationOf(e);
+	}
+
+	override function start(a:WebAudioAdapter, resource:Int, id:Int, gain:Dynamic, panner:Dynamic, loop:Bool, position:Float):Void {
+		if (spare.length == 0) {
+			var made = js.Browser.document.createAudioElement();
+			made.crossOrigin = "anonymous";
+			made.src = url;
+			keep(made);
+		}
+		var held = spare.pop(), e = held.element;
 		e.loop = loop;
 		e.playbackRate = 1;
-		if (position > 0)
+		if (e.currentTime != position)
 			e.currentTime = position;
 		// The rate changes the pitch too, as a clip's does.
 		Reflect.setField(e, "preservesPitch", false);
-		var node:Dynamic = a.context.createMediaElementSource(e);
-		node.connect(gain);
-		var v = new StreamVoice(id, gain, panner, e, node);
+		if (held.node == null)
+			held.node = a.context.createMediaElementSource(e);
+		held.node.connect(gain);
+		var v = new StreamVoice(resource, gain, panner, held, loop);
 		a.playbacks[id] = v;
 		e.onended = _ -> v.finish(a, id);
 		e.onerror = _ -> v.finish(a, id);
-		e.play().catchError(error -> {
-			v.finish(a, id);
+		v.play(a, id);
+	}
+
+	override function release():Void {
+		for (held in spare)
+			held.unload();
+		spare.resize(0);
+	}
+}
+
+/** A stream's voice: the media element it holds, with its node, and whether it loops. */
+@:allow(helix.platform.adapters.audio.webaudio)
+private class StreamVoice extends Voice {
+	final held:StreamElement;
+	final element:js.html.AudioElement;
+	final loop:Bool;
+
+	function new(resource:Int, gain:Dynamic, panner:Dynamic, held:StreamElement, loop:Bool) {
+		super(resource, gain, panner);
+		this.held = held;
+		this.element = held.element;
+		this.loop = loop;
+	}
+
+	// Plays the element. Refused (outside a gesture, on a phone), the voice waits for the next gesture; failing otherwise, it ends.
+	function play(a:WebAudioAdapter, id:Int):Void {
+		element.play().then(_ -> {
+			held.primed = true;
+			return null;
+		}, error -> {
+			if (a.playbacks[id] != this)
+				return null;
+			if (error.name == "NotAllowedError")
+				a.waitForGesture(id, this);
+			else if (error.name != "AbortError") // a pause or a stop interrupted it, and has done what it asked
+				finish(a, id);
 			return null;
 		});
 	}
 
-	override function release():Void {
-		if (element != null) {
-			element.removeAttribute("src");
-			element.load();
-		}
-	}
-}
-
-/** A stream's voice: its media element and the element's node in the graph. */
-@:allow(helix.platform.adapters.audio.webaudio)
-private class StreamVoice extends Voice {
-	final element:js.html.AudioElement;
-	final node:Dynamic;
-
-	function new(resource:Int, gain:Dynamic, panner:Dynamic, element:js.html.AudioElement, node:Dynamic) {
-		super(resource, gain, panner);
-		this.element = element;
-		this.node = node;
-	}
-
-	// Ends voice id, its element let go, if it is still the one playing.
-	function finish(a:WebAudioAdapter, id:Int):Void {
-		if (a.playbacks[id] != this)
-			return;
+	// Takes voice id out of playbacks and the graph, its element given back to the stream (or let go, the stream gone).
+	function leave(a:WebAudioAdapter, id:Int):Void {
 		a.playbacks.remove(id);
 		element.onended = null;
 		element.onerror = null;
 		element.pause();
-		element.removeAttribute("src");
-		element.load();
-		node.disconnect();
+		held.node.disconnect();
 		a.disconnect(this);
+		var stream = a.streams[resource];
+		if (stream != null)
+			stream.spare.push(held);
+		else
+			held.unload();
+	}
+
+	// Ends voice id, if it is still the one playing.
+	function finish(a:WebAudioAdapter, id:Int):Void {
+		if (a.playbacks[id] == this)
+			leave(a, id);
 	}
 
 	override function stop(a:WebAudioAdapter, id:Int):Void
@@ -297,10 +373,7 @@ private class StreamVoice extends Voice {
 		if (paused)
 			element.pause();
 		else
-			element.play().then(_ -> null, error -> {
-				finish(a, id);
-				return null;
-			});
+			play(a, id);
 	}
 
 	override function setPitch(a:WebAudioAdapter, pitch:Float):Void {
@@ -355,8 +428,8 @@ private class Queue extends Resource {
 		this.rate = rate;
 	}
 
-	override function start(a:WebAudioAdapter, id:Int, gain:Dynamic, panner:Dynamic, loop:Bool, position:Float):Void {
-		var v = new QueueVoice(id, gain, panner, put - queued(a));
+	override function start(a:WebAudioAdapter, resource:Int, id:Int, gain:Dynamic, panner:Dynamic, loop:Bool, position:Float):Void {
+		var v = new QueueVoice(resource, gain, panner, put - queued(a));
 		a.playbacks[id] = v;
 		schedule(a, v);
 	}
@@ -500,7 +573,10 @@ private class QueueVoice extends Voice {
 	its volume and pan changes approached by setTargetAtTime and its pitch the source's playback rate. A queue's blocks are AudioBuffers
 	scheduled back to back on the context's clock, the browser resampling them; a pitch change reschedules the blocks not yet started. The page's first key, click or tap
 	unlocks audio, as browsers let it start only in a user gesture; the page losing focus or being hidden suspends it. A voice asked for
-	before then waits, its volume, pitch, pan and pause kept, and starts at the first poll once audio runs. */
+	before then waits, its volume, pitch, pan and pause kept: a clip's or a queue's starts at the first poll once audio runs, and a
+	stream's in the gesture itself, as a phone starts a media element only in one. A stream's voice the browser refuses to play there or
+	later waits again, for the next gesture. A stream keeps its media elements, each played once, muted, in the first gesture after it
+	opens, so a phone plays it later without one. */
 @:allow(helix.platform.adapters.audio.webaudio)
 class WebAudioAdapter implements IAudio {
 	// The time constant a volume or pan change approaches its target by, in seconds: short enough to follow a fade stepped once a frame,
@@ -514,7 +590,8 @@ class WebAudioAdapter implements IAudio {
 	var streams:Map<Int, Stream> = [];
 	var queues:Map<Int, Queue> = [];
 	var playbacks:Map<Int, Voice> = [];
-	// Voices asked for before audio ran, by id, started in order at the first poll once it runs.
+	// Voices asked for before audio ran, by id, started in order at the first poll once it runs; a stream's, in order at the next
+	// gesture, and only then once the browser has refused it (gesture).
 	var waiting:Map<Int, {
 		resource:Int,
 		loop:Bool,
@@ -522,10 +599,13 @@ class WebAudioAdapter implements IAudio {
 		pitch:Float,
 		pan:Float,
 		paused:Bool,
-		position:Float
+		position:Float,
+		gesture:Bool
 	}> = [];
 	var nextClip = 1;
 	var nextPlayback = 1;
+	// What a gesture does for streams (gestureStreams), set as the first stream opens, so a program that never streams links none of it.
+	var streamGesture:Null<Void->Void> = null;
 	var output = true;
 
 	// The events that unlock audio. A key or a mouse button counts as it goes down, but a finger only as it lifts (pointerup, touchend,
@@ -541,12 +621,57 @@ class WebAudioAdapter implements IAudio {
 		js.Browser.document.addEventListener("visibilitychange", _ -> if (js.Browser.document.hidden) suspend());
 	}
 
-	// Creates the AudioContext if needed and resumes it; it works only in a user gesture (the page's listeners call it).
+	// Creates the AudioContext if needed and resumes it, and does what a gesture does for streams; it works only in a user gesture (the
+	// page's listeners call it).
 	function unlock():Void {
 		if (context == null)
 			context = js.Syntax.code("new (window.AudioContext || window.webkitAudioContext)()");
 		// Outside a gesture the browser keeps it suspended and may refuse: the next gesture tries again.
 		js.Syntax.code("{0}.resume().catch(function() {})", context);
+		if (streamGesture != null)
+			streamGesture();
+	}
+
+	// In a gesture, primes the streams' media elements and starts the streams' voices that wait.
+	function gestureStreams():Void {
+		if (!output)
+			return;
+		for (s in streams)
+			s.prime();
+		startWaiting(id -> streams.exists(waiting[id].resource));
+	}
+
+	// Puts voice id of a stream, refused by the browser, back to wait for the next gesture as it was.
+	function waitForGesture(id:Int, v:StreamVoice):Void {
+		var position = v.element.currentTime;
+		v.leave(this, id);
+		waiting[id] = {
+			resource: v.resource,
+			loop: v.loop,
+			volume: v.volume,
+			pitch: v.pitch,
+			pan: v.pan,
+			paused: v.paused,
+			position: position,
+			gesture: true
+		};
+	}
+
+	// Starts the waiting voices chosen, in the order asked, as they were asked for.
+	function startWaiting(chosen:Int->Bool):Void {
+		var ids = [for (id in waiting.keys()) if (chosen(id)) id];
+		ids.sort((a, b) -> a - b);
+		for (id in ids) {
+			var w = waiting[id];
+			waiting.remove(id);
+			start(id, w.resource, w.loop, w.volume, w.position);
+			if (w.pitch != 1)
+				setPitch(id, w.pitch);
+			if (w.pan != 0)
+				setPan(id, w.pan);
+			if (w.paused)
+				pause(id, true);
+		}
 	}
 
 	// Suspends a running AudioContext, as when the page is hidden; the next gesture resumes it.
@@ -634,6 +759,7 @@ class WebAudioAdapter implements IAudio {
 				return;
 			}
 			fetching.abort();
+			streamGesture = gestureStreams;
 			id = nextClip++;
 			var stream = new Stream(url, element, channels < 0 ? 0 : channels);
 			streams[id] = stream;
@@ -804,7 +930,8 @@ class WebAudioAdapter implements IAudio {
 				pitch: 1.,
 				pan: 0.,
 				paused: false,
-				position: 0.
+				position: 0.,
+				gesture: false
 			};
 		return id;
 	}
@@ -821,7 +948,10 @@ class WebAudioAdapter implements IAudio {
 		gain.gain.value = volume;
 		gain.connect(panner);
 		panner.connect(context.destination);
-		resources[resource].start(this, id, gain, panner, loop, position);
+		resources[resource].start(this, resource, id, gain, panner, loop, position);
+		var v = playbacks[id];
+		if (v != null)
+			v.volume = volume;
 	}
 
 	public function stop(id:Int):Void {
@@ -861,6 +991,7 @@ class WebAudioAdapter implements IAudio {
 		var v = playbacks[id];
 		if (v == null)
 			return false;
+		v.volume = volume;
 		v.gain.gain.setTargetAtTime(volume, context.currentTime, RAMP);
 		return true;
 	}
@@ -887,6 +1018,7 @@ class WebAudioAdapter implements IAudio {
 		var v = playbacks[id];
 		if (v == null)
 			return false;
+		v.pan = pan;
 		v.panner.pan.setTargetAtTime(pan, context.currentTime, RAMP);
 		return true;
 	}
@@ -941,26 +1073,13 @@ class WebAudioAdapter implements IAudio {
 		resources.remove(id);
 	}
 
-	/** Starts the voices that waited, in the order asked, once audio runs, and lets go of queue blocks played; media elements and the audio
-		graph run on their own. */
+	/** Starts the voices that waited, in the order asked, once audio runs (but for a stream's the browser refused, which wait for a
+		gesture), and lets go of queue blocks played; media elements and the audio graph run on their own. */
 	public function poll():Void {
 		for (r in resources)
 			r.poll(this);
-		if (!this.running || !waiting.keys().hasNext())
-			return;
-		var ids = [for (id in waiting.keys()) id];
-		ids.sort((a, b) -> a - b);
-		for (id in ids) {
-			var w = waiting[id];
-			waiting.remove(id);
-			start(id, w.resource, w.loop, w.volume, w.position);
-			if (w.pitch != 1)
-				setPitch(id, w.pitch);
-			if (w.pan != 0)
-				setPan(id, w.pan);
-			if (w.paused)
-				pause(id, true);
-		}
+		if (this.running && waiting.keys().hasNext())
+			startWaiting(id -> !waiting[id].gesture);
 	}
 
 	public function dispose():Void {
