@@ -53,7 +53,8 @@ class Main {
 		audio = new WebAudioAdapter();
 		sounds = new WebAudioDecoderAdapter();
 		download("jump.wav",
-			bytes -> sounds.decode(bytes, (samples, channelCount) -> audio.playClip(audio.createClip(samples, channelCount), false, 1), why -> trace(why)));
+			bytes -> sounds.decode(bytes, 44100, (samples, channelCount, _) -> audio.playClip(audio.createClip(samples, channelCount), false, 1),
+				why -> trace(why)));
 		images = new CanvasImageDecoderAdapter();
 		download("logo.png",
 			bytes -> images.decode(bytes, (pixels, width, height) -> texture = graphics.createTexture(width, height, [pixels]), why -> trace(why)));

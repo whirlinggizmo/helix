@@ -23,7 +23,7 @@ typedef Step = {
 
 /** Checks helix-platform's audio output and decoder against the clock, with the library alone.
 
-	The steps: a mono and a stereo WAV decoded to their own channels; a stereo clip played, its position advancing with time, moved, and
+	The steps: a mono and a stereo WAV decoded to their own channels; a 22050 Hz WAV decoded at its own rate and resampled; a stereo clip played, its position advancing with time, moved, and
 	ended; a stream of a WAV opened, its length read, played, moved and ended; a queue fed half a second, its queued frames falling as it
 	plays, run dry while still playing, and resuming when fed again. The WAVs are made here. Times are checked within a tenth of a second
 	or so, as a frame's timing and the output's buffering allow.
@@ -109,8 +109,8 @@ class AudioTests {
 	static function fail(message:String):Void
 		failures.push('$current: $message');
 
-	/** Returns a 16-bit 44100 Hz WAV of frames frames: mono at left, or stereo at left and right. */
-	static function wav(frames:Int, channels:Int, left:Float, right:Float):Bytes {
+	/** Returns a 16-bit WAV of frames frames at rate (44100 when omitted): mono at left, or stereo at left and right. */
+	static function wav(frames:Int, channels:Int, left:Float, right:Float, rate = RATE):Bytes {
 		var data = frames * channels * 2, bytes = Bytes.alloc(44 + data);
 		bytes.blit(0, Bytes.ofString("RIFF"), 0, 4);
 		bytes.setInt32(4, 36 + data);
@@ -118,8 +118,8 @@ class AudioTests {
 		bytes.setInt32(16, 16);
 		bytes.setUInt16(20, 1);
 		bytes.setUInt16(22, channels);
-		bytes.setInt32(24, RATE);
-		bytes.setInt32(28, RATE * channels * 2);
+		bytes.setInt32(24, rate);
+		bytes.setInt32(28, rate * channels * 2);
 		bytes.setUInt16(32, channels * 2);
 		bytes.setUInt16(34, 16);
 		bytes.blit(36, Bytes.ofString("data"), 0, 4);
@@ -155,11 +155,14 @@ class AudioTests {
 	/** Makes the steps. */
 	static function setup():Void {
 		var mono:Null<{samples:Bytes, channels:Int}> = null,
-			stereo:Null<{samples:Bytes, channels:Int}> = null;
+			stereo:Null<{samples:Bytes, channels:Int}> = null,
+			own:Null<{samples:Bytes, rate:Int}> = null,
+			resampled:Null<Bytes> = null;
 		var clip = 0, stream = 0, queue = 0, voice = 0, started = 0., queued = 0;
 		var streamFile = wav(Std.int(RATE * 1.5), 2, .5, -.25);
-		function decode(file:Bytes, decoded:(Bytes, Int) -> Void):Void
-			decoder.decode(file, decoded, why -> fail('not decoded: $why'));
+		function decode(file:Bytes, decoded:(Bytes, Int) -> Void, rate = RATE):Void
+			decoder.decode(file, rate, (samples, channels, given) -> given == rate ? decoded(samples, channels) : fail('decoded at $given Hz, not $rate'),
+				why -> fail('not decoded: $why'));
 		function elapsed():Float
 			return haxe.Timer.stamp() - started;
 		steps = [
@@ -183,6 +186,26 @@ class AudioTests {
 					near(stereo.samples.length / 8, RATE * 1.5, 2, "frames");
 					near(stereo.samples.getFloat(8000), .5, 1e-3, "a left sample");
 					near(stereo.samples.getFloat(8004), -.25, 1e-3, "a right sample");
+				}
+			},
+			{
+				name: "a 22050 Hz WAV decodes at its own rate",
+				enter: () -> decoder.decode(wav(5512, 1, .5, 0, 22050), 0, (samples, _, rate) -> own = {samples: samples, rate: rate},
+					why -> fail('not decoded: $why')),
+				ready: () -> own != null || failures.length > 0,
+				check: () -> {
+					check(own.rate == 22050, 'rate: ${own.rate}');
+					check(own.samples.length == 5512 * 4, 'frames: ${own.samples.length / 4}');
+					near(own.samples.getFloat(8000), .5, 1e-3, "a sample");
+				}
+			},
+			{
+				name: "a 22050 Hz WAV resampled to 44100 Hz",
+				enter: () -> decode(wav(5512, 1, .5, 0, 22050), (samples, _) -> resampled = samples, 44100),
+				ready: () -> resampled != null || failures.length > 0,
+				check: () -> {
+					near(resampled.length / 4, 11024, 4, "frames");
+					near(resampled.getFloat(16000), .5, 1e-3, "a sample");
 				}
 			},
 			{

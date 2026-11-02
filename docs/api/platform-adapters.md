@@ -87,11 +87,11 @@ function dispose():Void
 
 *class*, native (cpp) in [`platform/src/helix/platform/adapters/audiodecoder/sdl3mixer/Sdl3MixerAudioDecoderAdapter.hx`](../../platform/src/helix/platform/adapters/audiodecoder/sdl3mixer/Sdl3MixerAudioDecoderAdapter.hx), `import helix.platform.adapters.audiodecoder.sdl3mixer.Sdl3MixerAudioDecoderAdapter;`, implements `IAudioDecoder`
 
-Provides `IAudioDecoder` natively over SDL3_mixer's decoder: WAV, Ogg Vorbis, MP3 and FLAC, resampled to 44100 Hz by it, in the file's channels (more than 2 mixed down to stereo by SDL), each decode on a worker thread.
+Provides `IAudioDecoder` natively over SDL3_mixer's decoder: WAV, Ogg Vorbis, MP3 and FLAC, at the file's rate or resampled by it, in the file's channels (more than 2 mixed down to stereo by SDL), each decode on a worker thread.
 
 ```haxe
 function new()
-function decode(encoded:haxe.io.Bytes, decoded:(samples:haxe.io.Bytes, channelCount:Int) -> Void, failed:String -> Void):Void
+function decode(encoded:haxe.io.Bytes, sampleRate:Int, decoded:(samples:haxe.io.Bytes, channelCount:Int, sampleRate:Int) -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
 ```
@@ -103,16 +103,16 @@ function dispose():Void
 
 *class*, for the browser (js) in [`platform/src/helix/platform/adapters/audiodecoder/webaudio/WebAudioDecoderAdapter.hx`](../../platform/src/helix/platform/adapters/audiodecoder/webaudio/WebAudioDecoderAdapter.hx), `import helix.platform.adapters.audiodecoder.webaudio.WebAudioDecoderAdapter;`, implements `IAudioDecoder`
 
-Provides `IAudioDecoder` in a browser page: decodeAudioData on an OfflineAudioContext at 44100 Hz, which needs no user gesture and resamples, in the file's channels; a file of more than 2 is rendered through a stereo OfflineAudioContext, which mixes it down by Web Audio's speaker rules.
+Provides `IAudioDecoder` in a browser page: decodeAudioData on an OfflineAudioContext made at the rate asked, which needs no user gesture and resamples to its rate, in the file's channels; a file of more than 2 is rendered through a stereo OfflineAudioContext, which mixes it down by Web Audio's speaker rules. For the file's own rate, the context is made at the rate its header records (`AudioHeader.readSampleRate`), so nothing is resampled; a header it can't read, or a rate a context can't take, decodes at 44100.
 
 ```haxe
 function new()
-function decode(encoded:haxe.io.Bytes, decoded:(samples:haxe.io.Bytes, channelCount:Int) -> Void, failed:String -> Void):Void
+function decode(encoded:haxe.io.Bytes, sampleRate:Int, decoded:(samples:haxe.io.Bytes, channelCount:Int, sampleRate:Int) -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
 ```
 
-- `new`: Creates the decoder; the page's decoding context is made at the first decode.
+- `new`: Creates the decoder; the page's decoding contexts are made at the first decode at each rate.
 
 ## DomClipboardAdapter
 

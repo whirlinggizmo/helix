@@ -5621,8 +5621,8 @@ class Raylib {
 		`LoadWaveFromMemory`, as files other than WAV are decoded off the main thread.
 
 		A ".wav" file is read as raylib's dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed
-		WAV encodings aren't read). An ".ogg", ".mp3" or ".flac" file is decoded by the platform, as 32-bit float samples at 44100 Hz in
-		the file's channels, where raylib keeps the file's rate (and gives Ogg 16-bit samples); a file of more than 2 channels is mixed to
+		WAV encodings aren't read). An ".ogg", ".mp3" or ".flac" file is decoded by the platform, as 32-bit float samples at its own rate in
+		the file's channels, where raylib gives Ogg 16-bit samples; a file of more than 2 channels is mixed to
 		stereo. FLAC is read here, which raylib's default build leaves out; QOA isn't. As raylib's, the extension is lower or upper case.
 		The answer comes at a later frame.
 

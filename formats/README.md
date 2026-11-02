@@ -23,7 +23,7 @@ images, a font's pages) itself; it saves what a writer returns. Depends on helix
 - `deflate.Deflate`: DEFLATE compression, byte for byte as raylib 5.5's `CompressData` compresses (sdefl's).
 - `wav.WavFile`: a WAV file's sound, read as raylib 5.5's `LoadWave` reads it (dr_wav's: integer, floating-point, A-law and mu-law
   samples, its 16-bit samples identical) and written byte for byte as its `ExportWave` writes one.
-- `audio.AudioHeader`: a sound file's length in seconds and its channels from its first bytes (and its last, for Ogg's length),
+- `audio.AudioHeader`: a sound file's length in seconds, its channels and its rate from its first bytes (and its last, for Ogg's length),
   without decoding it: WAV, Ogg (Vorbis, Opus, FLAC, Speex), FLAC and MP3.
 
 ```haxe

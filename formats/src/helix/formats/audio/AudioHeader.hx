@@ -2,7 +2,7 @@ package helix.formats.audio;
 
 import haxe.io.Bytes;
 
-/** Provides reading a sound file's length and channels from its first bytes, and for some kinds its last, without decoding it.
+/** Provides reading a sound file's length, channels and rate from its first bytes, and for some kinds its last, without decoding it.
 
 	It reads WAV, Ogg (Vorbis, Opus, FLAC and Speex), FLAC and MP3 (MPEG audio layers I to III). Given the whole file, it reads the
 	start alone; given part of it, the first 64 KiB is enough for all but an MP3 whose tags are larger, and Ogg's length needs the last
@@ -11,6 +11,7 @@ import haxe.io.Bytes;
 	```haxe
 	var seconds = AudioHeader.readDuration(first64k, last64k, fileSize);
 	var channels = AudioHeader.readChannelCount(first64k);
+	var rate = AudioHeader.readSampleRate(first64k);
 	``` */
 class AudioHeader {
 	/** Returns a sound file's length in seconds.
@@ -80,6 +81,52 @@ class AudioHeader {
 		}
 		var frame = firstFrame(start, p, p > 0);
 		return frame < 0 ? 0 : start.get(frame + 3) >> 6 == 3 ? 1 : 2;
+	}
+
+	/** Returns the frames a second a sound file records.
+
+		WAV: its `fmt ` chunk's. Ogg: the first stream's header's, 48000 for Opus, which always decodes at 48 kHz. FLAC: STREAMINFO's.
+		MP3: the first frame's.
+
+		@param start  The file's first bytes, as many as there are or as are read; 64 KiB is enough for most files.
+		@return  The rate, or 0 when it can't tell: an unknown kind or too few bytes. */
+	public static function readSampleRate(start:Bytes):Int {
+		if (start.length >= 12 && matches(start, 0, "RIFF") && matches(start, 8, "WAVE")) {
+			var p = 12;
+			while (p + 8 <= start.length) {
+				var chunkSize = unsigned(start.getInt32(p + 4));
+				if (matches(start, p, "fmt "))
+					return p + 16 <= start.length ? start.getInt32(p + 12) : 0;
+				p = Std.int(p + 8 + chunkSize + (chunkSize % 2));
+			}
+			return 0;
+		}
+		if (start.length >= 4 && matches(start, 0, "OggS")) {
+			if (start.length < 28 || start.get(4) != 0)
+				return 0;
+			var packet = 27 + start.get(26);
+			if (packet + 16 <= start.length && start.get(packet) == 1 && matches(start, packet + 1, "vorbis"))
+				return start.getInt32(packet + 12);
+			if (packet + 8 <= start.length && matches(start, packet, "OpusHead"))
+				return 48000;
+			if (packet + 30 <= start.length && start.get(packet) == 0x7F && matches(start, packet + 1, "FLAC"))
+				return (start.get(packet + 27) << 12) | (start.get(packet + 28) << 4) | (start.get(packet + 29) >> 4);
+			if (packet + 40 <= start.length && matches(start, packet, "Speex   "))
+				return start.getInt32(packet + 36);
+			return 0;
+		}
+		var p = tagsEnd(start);
+		if (p + 4 <= start.length && matches(start, p, "fLaC")) {
+			var info = p + 8;
+			return info + 13 <= start.length
+				&& (start.get(p + 4) & 0x7F) == 0 ? (start.get(info + 10) << 12) | (start.get(info + 11) << 4) | (start.get(info + 12) >> 4) : 0;
+		}
+		var frame = firstFrame(start, p, p > 0);
+		if (frame < 0)
+			return 0;
+		var b1 = start.get(frame + 1), b2 = start.get(frame + 2);
+		var version = (b1 >> 3) & 3;
+		return SAMPLE_RATES[b2 >> 2 & 3] >> (version == 3 ? 0 : version == 2 ? 1 : 2);
 	}
 
 	// Where a file's ID3v2 tags end: 0 when it has none.

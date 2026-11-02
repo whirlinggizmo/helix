@@ -6,7 +6,8 @@ import helix.formats.audio.AudioHeader;
 	chunk, a byte rate, extensible), Ogg (Vorbis, Opus with its pre-skip, FLAC and Speex; another stream's page, a broken page and an
 	unknown position skipped; no last bytes), FLAC (with an ID3v2 tag before it; an unknown length), MP3 (a Xing frame count, MPEG-2's,
 	VBRI's, a constant bitrate's estimate with ID3v2 and ID3v1 tags, layer II) and what it can't tell. Each length was checked against
-	ffprobe on files ffmpeg made. Channels: each kind's, mono and stereo, and what it can't tell. */
+	ffprobe on files ffmpeg made. Channels: each kind's, mono and stereo, and what it can't tell. Rates: each kind's, Opus's 48 kHz,
+	MPEG-2's halved, and what it can't tell. */
 class AudioHeaderTests {
 	static var checks = 0;
 
@@ -308,6 +309,22 @@ class AudioHeaderTests {
 		check(AudioHeader.readChannelCount(Bytes.ofString("not a sound file")) == 0, "channels: an unknown kind is 0");
 		check(AudioHeader.readChannelCount(Bytes.alloc(0)) == 0, "channels: no bytes is 0");
 		check(AudioHeader.readChannelCount(Bytes.ofString("RIFF\x00\x00\x00\x00WAVE")) == 0, "channels: a WAV file cut before its fmt chunk is 0");
+
+		check(AudioHeader.readSampleRate(head) == 44100, "rate: WAV");
+		check(AudioHeader.readSampleRate(streamed) == 8000, "rate: WAV at 8 kHz");
+		check(AudioHeader.readSampleRate(extensible) == 48000, "rate: WAV extensible");
+		check(AudioHeader.readSampleRate(first) == 44100, "rate: Ogg Vorbis");
+		check(AudioHeader.readSampleRate(opus) == 48000, "rate: Ogg Opus decodes at 48 kHz");
+		check(AudioHeader.readSampleRate(oggFlac) == 96000, "rate: Ogg FLAC");
+		check(AudioHeader.readSampleRate(speex) == 16000, "rate: Ogg Speex");
+		check(AudioHeader.readSampleRate(flac) == 44100, "rate: FLAC");
+		check(AudioHeader.readSampleRate(tagged) == 44100, "rate: FLAC after an ID3v2 tag");
+		check(AudioHeader.readSampleRate(xing) == 44100, "rate: MP3 after an ID3v2 tag");
+		check(AudioHeader.readSampleRate(mpeg2) == 22050, "rate: MPEG-2 halves MPEG-1's");
+		check(AudioHeader.readSampleRate(layer2) == 44100, "rate: MP2");
+		check(AudioHeader.readSampleRate(Bytes.ofString("not a sound file")) == 0, "rate: an unknown kind is 0");
+		check(AudioHeader.readSampleRate(Bytes.alloc(0)) == 0, "rate: no bytes is 0");
+		check(AudioHeader.readSampleRate(Bytes.ofString("RIFF\x00\x00\x00\x00WAVE")) == 0, "rate: a WAV file cut before its fmt chunk is 0");
 
 		// What it can't tell.
 		check(AudioHeader.readDuration(Bytes.ofString("not a sound file"), 16) == 0, "an unknown kind is 0");

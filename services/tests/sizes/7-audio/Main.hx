@@ -19,7 +19,7 @@ import helix.services.saves.Saves;
 import helix.services.time.Time;
 
 /** A program on helix-services and what it sits on, constructing only what it uses, as a game built on them would. */
-@:adds("helix.platform.adapters.audio.webaudio", "helix.platform.adapters.audiodecoder.webaudio", "helix.services.audio")
+@:adds("helix.platform.adapters.audio.webaudio", "helix.platform.adapters.audiodecoder.webaudio", "helix.formats.audio.AudioHeader", "helix.services.audio")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;
