@@ -1,0 +1,25 @@
+{
+  "what": "The 60th frame (frame 59) at 800 x 600: the quad from x 160 to 640 and y 120 to 480, white tinted 0xff80c0ff and pulsed by 0.75 + 0.25 sin(3 * 59 / 60).",
+  "points": [
+    {
+      "x": 40,
+      "y": 40,
+      "color": [
+        10,
+        14,
+        24
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 400,
+      "y": 300,
+      "color": [
+        102,
+        153,
+        203
+      ],
+      "tolerance": 3
+    }
+  ]
+}

@@ -36,7 +36,7 @@ def documented(lines,i):
                 j=k-1
                 continue
         break
-    return j>=0 and lines[j].rstrip().endswith('*/') and any('/**' in lines[k] for k in range(max(0,j-40),j+1))
+    return j>=0 and lines[j].rstrip().endswith('*/') and any('/**' in lines[k] for k in range(max(0,j-120),j+1))
 
 def interface_members():
     """Each interface's member names, by interface name."""

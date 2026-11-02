@@ -1,0 +1,35 @@
+{
+  "what": "The 60th frame (frame 59) at 800 x 600: the quad from x 160 to 640 and y 120 to 480, its 2 x 2 checker four times across (60 by 45 pixels a texel), white then dark grey from the top left, tinted 0xffffc080 and pulsed by 0.75 + 0.25 sin(3 * 59 / 60).",
+  "points": [
+    {
+      "x": 40,
+      "y": 40,
+      "color": [
+        10,
+        14,
+        24
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 190,
+      "y": 140,
+      "color": [
+        203,
+        153,
+        102
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 250,
+      "y": 140,
+      "color": [
+        38,
+        29,
+        19
+      ],
+      "tolerance": 3
+    }
+  ]
+}

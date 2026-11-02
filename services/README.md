@@ -14,6 +14,7 @@ What a game program needs over [helix-platform](../platform/README.md) that isn'
 | `helix.services.screen` | `Screen`: a design size fitted to the window (letterboxed, pixel-perfect, stretched or expanded), fullscreen with the windowed size and place to go back to, resizes, and the window kept between runs |
 | `helix.services.saves` | `Saves`: small values kept between runs, set before they are read if need be |
 | `helix.services.config` | `Config`: the options the program was started with |
+| `helix.services.shaders` | `Shader` and `ShaderVariants`: GLSL compiled while the program builds and known by name; `ShaderValues` and its kin: values by handle as `IGraphics.draw` takes them, layered over defaults, shared blocks and scenes; `ShaderPrograms`: programs and pipelines on the GPU; `Shaders`: shaders replaced in place when their files change |
 
 ## Using it
 
@@ -42,6 +43,8 @@ Each example in `examples/` shows one thing, and builds from the hxml files besi
 - `stream`: one long sound played as it's read, as music is.
 - `patch`: shipped files patched from a server, by its manifests: with nothing kept, with the same manifests, and after the server
   is updated; only what changed is downloaded.
+- `quad`: a shader compiled into the program, its values set by handle over defaults, drawn with `IGraphics` directly.
+- `reload`: the same shader with its file, replaced in place when the assets hear it changed.
 
 Its tests are in `tests/`.
 

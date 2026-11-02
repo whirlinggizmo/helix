@@ -1,8 +1,8 @@
 # Roadmap
 
-- **Drawing, shaders and a scene, drafted as APIs:** helix-draw (2D and 3D drawing over the platform: batches, draw lists, lit
-  materials, lights, shadows, environment maps, post-processing, points; HeliX's renderers carried over), a shaders package in
-  helix-services (compiling, knowing a shader by name, setting values by name; helix-draw and helix-ray both on it), then a scene
+- **Drawing and a scene, drafted as APIs:** helix-draw (2D and 3D drawing over the platform: batches, draw lists, lit
+  materials, lights, shadows, environment maps, post-processing, points; HeliX's renderers carried over), on helix-services' shaders
+  package (DECISIONS 31, helix-ray already on it), then a scene
   library on helix-draw (2D and 3D nodes, transforms, hierarchy, the walk that culls, lights and sorts; HeliX's nodes and stage
   carried over). Each judged by what a raylib layer and a three.js layer would need from below; helix-ray to be rebuilt on
   helix-draw. Drafts agreed with the user and tried by fresh agents before any is written.
@@ -13,13 +13,12 @@
   against a whole-program rewrite into callbacks. A `Future` of our own over the callbacks, cross-target, may serve the managed layer,
   as Haxe has none (`js.lib.Promise` is the browser's alone). Not there yet: skinned models and animations, fonts from files, images
   on the CPU, `UpdateMeshBuffer`; each refuses to compile, naming itself. Platform changes it would like,
-  for review: a uniform block both shader stages share (worked around: a block a stage), `ShaderCompiler.compileText` as a supported
-  entry point, a sound's length and the position it plays at in services' `Audio` (raylib's `GetMusicTimeLength`,
+  for review: a sound's length and the position it plays at in services' `Audio` (raylib's `GetMusicTimeLength`,
   `GetMusicTimePlayed` and `SeekMusicStream` refuse until then), and a page's cache in OPFS readable at once from the main thread (a worker holding OPFS's sync handles, the page
   spinning on a SharedArrayBuffer for the reply, as emscripten does), which needs the page cross-origin isolated (COOP and COEP), so
   only ever an option a program chooses, never the default.
 - **A drawing library,** between the services and a mirror, when a second mirror needs what helix-ray draws with (its frame recording,
-  shader programs, meshes, default font); and glTF's reading as a services package beside `images`.
+  meshes, default font; its shader programs are the services' now); and glTF's reading as a services package beside `images`.
 - **The layer above the services:** constructs the platform and the services for a target, runs the frame in order and ends with the
   saves written, so a program knows none of that; its spec is the `Main.hx` the services trial's three agents each wrote the same way.
   Whether it wears a known API or an engine's is GOALS' open path.
