@@ -235,7 +235,8 @@ class Fonts {
 			for (c in file.chars)
 				new Glyph2D(c.id, c.x, c.y + pageHeight * c.page, c.width, c.height, c.xOffset, c.yOffset - file.base, c.xAdvance)
 		];
-		return new Font2D(file.lineHeight, file.base, file.base - file.lineHeight, 0, new Image(file.pages[0].path, width, height, pixels), glyphs);
+		var notdef = [for (g in glyphs) if (g.codepoint == -1) g][0];
+		return new Font2D(file.lineHeight, file.base, file.base - file.lineHeight, 0, new Image(file.pages[0].path, width, height, pixels), glyphs, notdef);
 	}
 
 	// Whether an image is coverage drawn in gray: opaque everywhere, and gray everywhere.

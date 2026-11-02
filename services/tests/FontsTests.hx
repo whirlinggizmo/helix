@@ -6,7 +6,8 @@ import helix.services.images.Images;
 
 /** Checks Fonts over fakes: a font's glyphs rasterized, a character it lacks left out, placed apart on a power-of-two atlas (skyline and
 	rows), their coverage as the atlas's alpha on white, and their offsets and advances kept; hard-edged glyphs; a file that isn't a font
-	failing; a BMFont's pages stacked onto one atlas, its characters' places on it, offsets from the baseline; and glyphs rasterized from a
+	failing; a BMFont's pages stacked onto one atlas, its characters' places on it, offsets from the baseline, its invalid-character glyph
+	its .notdef, and a binary BMFont failing; and glyphs rasterized from a
 	font's bytes, each on its own, as coverage, hard-edged or signed distances, aborted, or failing. */
 class FontsTests {
 	static var checks = 0;
@@ -22,7 +23,7 @@ class FontsTests {
 		files.files.set("ui.ttf", Bytes.ofString("font"));
 		files.files.set("bad.ttf", Bytes.ofString("junk"));
 		files.files.set("fonts/pixel.fnt",
-			Bytes.ofString('info face="Pixel" size=8\ncommon lineHeight=10 base=8 scaleW=4 scaleH=4 pages=2\npage id=0 file="pixel_0.png"\npage id=1 file="pixel_1.png"\nchars count=2\nchar id=65 x=0 y=0 width=3 height=4 xoffset=1 yoffset=2 xadvance=4 page=0 chnl=15\nchar id=66 x=1 y=1 width=2 height=2 xoffset=0 yoffset=3 xadvance=3 page=1 chnl=15\n'));
+			Bytes.ofString('info face="Pixel" size=8\ncommon lineHeight=10 base=8 scaleW=4 scaleH=4 pages=2\npage id=0 file="pixel_0.png"\npage id=1 file="pixel_1.png"\nchars count=3\nchar id=-1 x=0 y=0 width=2 height=3 xoffset=0 yoffset=3 xadvance=3 page=0 chnl=15\nchar id=65 x=0 y=0 width=3 height=4 xoffset=1 yoffset=2 xadvance=4 page=0 chnl=15\nchar id=66 x=1 y=1 width=2 height=2 xoffset=0 yoffset=3 xadvance=3 page=1 chnl=15\n'));
 		files.files.set("fonts/pixel_0.png", Bytes.ofString("4x4"));
 		files.files.set("fonts/pixel_1.png", Bytes.ofString("4x4"));
 		var rasterizer = new FakeFontRasterizer(),
@@ -79,6 +80,8 @@ class FontsTests {
 		var b = pixel.getGlyph(66);
 		check(b.x == 1 && b.y == 5 && b.offsetY == -5 && b.advance == 3, "a character on the second page: below the first, offset from the baseline");
 		check(pixel.size == 10 && pixel.ascent == 8 && pixel.descent == -2, "its size its line height, its ascent its base");
+		check(pixel.notdef != null && pixel.notdef.codepoint == -1 && pixel.notdef.advance == 3 && hard.notdef == null,
+			"a BMFont's invalid-character glyph (-1) its .notdef; a TrueType font's none");
 		// BMFont's binary format, its header bytes that aren't UTF-8 (a browser's toString throws a RangeError for them).
 		files.files.set("fonts/binary.fnt", Bytes.ofHex("424d4603010e000000f4908080"));
 		why = "";

@@ -259,7 +259,7 @@ function drawList(list:DrawList2D, ?placement:Matrix2D):Void
   The arrays are read during the call, so they may be reused for the next.
 - `drawText`: Draws text in a font, line by line at each line break, left-aligned, its first line's top at a point.
   - `font`: The font.
-  - `text`: The text; a character the font lacks is skipped.
+  - `text`: The text; a character the font lacks is drawn as the font's stand-in, as `GpuFont2D` says.
   - `x`: The left edge.
   - `y`: The top of the first line: its ascent above the baseline.
   - `color`: Optional. The color; defaults to white.
@@ -717,7 +717,7 @@ function drawList(list:DrawList3D, transform:Matrix3D):Void
   - `transform`: Optional. The plane it is drawn in; identity when omitted.
 - `drawText`: Draws text in a font in a plane, as `Batch2D.drawText` draws it: line by line, left-aligned, its first line's top at a point.
   - `font`: The font.
-  - `text`: The text; a character the font lacks is skipped.
+  - `text`: The text; a character the font lacks is drawn as the font's stand-in, as `GpuFont2D` says.
   - `x`: The left edge.
   - `y`: The top of the first line, lines following down the texture.
   - `color`: Optional. The color; defaults to white.
@@ -960,7 +960,7 @@ function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, ?color:Int = 0xff
   The arrays are copied, so they may be reused.
 - `drawText`: Records text in a font, line by line at each line break, left-aligned, its first line's top at a point.
   - `font`: The font.
-  - `text`: The text; a character the font lacks is skipped.
+  - `text`: The text; a character the font lacks is drawn as the font's stand-in, as `GpuFont2D` says.
   - `x`: The left edge.
   - `y`: The top of the first line: its ascent above the baseline.
   - `color`: Optional. The color; defaults to white.
@@ -1230,7 +1230,7 @@ function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, ?color:Int = 0xff
   - `transform`: Optional. The plane it is drawn in, in the list's units, copied; identity when omitted.
 - `drawText`: Records text in a font in a plane, as `Batch3D.drawText` draws it.
   - `font`: The font, held.
-  - `text`: The text; a character the font lacks is skipped.
+  - `text`: The text; a character the font lacks is drawn as the font's stand-in, as `GpuFont2D` says.
   - `x`: The left edge.
   - `y`: The top of the first line, lines following down the texture.
   - `color`: Optional. The color; defaults to white.
@@ -1406,6 +1406,8 @@ Specifies how fog thickens with distance from the camera.
 Represents a font ready to draw: helix-services' `Font2D` with its atlas on the GPU.
 
 `Renderer.createFont` makes one, from a font helix-services' `Fonts` made; `Batch2D.drawText`, `Batch3D.drawText` and `TextLayout2D` use it; the program frees its atlas with `dispose`. A size is measured as the font's is, from its ascent to its descent; a font drawn at another size is scaled. Every kind of font is drawn by the batches' one shader, which reads a coverage or bitmap atlas's alpha as it is and makes a distance-field atlas's edge sharp at the size drawn (`fontKind`).
+
+A character the font lacks is drawn, and measured, as the font's `?`, or else as its .notdef (`Font2D.notdef`), and skipped when it has neither, as raylib draws one; the first time each such character is met in a font, a warning is logged (helix-log, tag "render"). A control character the font lacks (a tab, a carriage return) is skipped, unwarned.
 
 ```haxe
 final font:Font2D

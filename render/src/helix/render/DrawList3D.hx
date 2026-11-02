@@ -456,7 +456,7 @@ class DrawList3D {
 	/** Records text in a font in a plane, as `Batch3D.drawText` draws it.
 
 		@param font  The font, held.
-		@param text  The text; a character the font lacks is skipped.
+		@param text  The text; a character the font lacks is drawn as the font's stand-in, as `GpuFont2D` says.
 		@param x  The left edge.
 		@param y  The top of the first line, lines following down the texture.
 		@param color  Optional. The color; defaults to white.

@@ -22,16 +22,21 @@ class Font2D {
 	/** Gets the glyphs, in the order their characters were asked for; a character the font lacks has none. */
 	public final glyphs:Array<Glyph2D>;
 
+	/** Gets the glyph the font draws for a character it lacks, its .notdef: a BMFont's invalid-character glyph (character -1, also among
+		`glyphs`); null when the font has none, as a TrueType font loaded by `Fonts.load` has none. */
+	public final notdef:Null<Glyph2D>;
+
 	final byCodepoint = new Map<Int, Glyph2D>();
 
 	@:allow(helix.services.fonts)
-	function new(size:Float, ascent:Float, descent:Float, lineGap:Float, atlas:Image, glyphs:Array<Glyph2D>) {
+	function new(size:Float, ascent:Float, descent:Float, lineGap:Float, atlas:Image, glyphs:Array<Glyph2D>, ?notdef:Glyph2D) {
 		this.size = size;
 		this.ascent = ascent;
 		this.descent = descent;
 		this.lineGap = lineGap;
 		this.atlas = atlas;
 		this.glyphs = glyphs;
+		this.notdef = notdef;
 		for (glyph in glyphs)
 			byCodepoint.set(glyph.codepoint, glyph);
 	}

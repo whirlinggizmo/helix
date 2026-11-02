@@ -15,6 +15,7 @@ final descent:Float
 final lineGap:Float
 final atlas:Image
 final glyphs:Array<Glyph2D>
+final notdef:Null<Glyph2D>
 function getGlyph(codepoint:Int):Null<Glyph2D>
 ```
 
@@ -24,6 +25,7 @@ function getGlyph(codepoint:Int):Null<Glyph2D>
 - `lineGap`: Gets the space a line leaves below its descent before the next line's ascent, in pixels.
 - `atlas`: Gets the atlas: white, each glyph's coverage (or distance) as alpha, rows top to bottom.
 - `glyphs`: Gets the glyphs, in the order their characters were asked for; a character the font lacks has none.
+- `notdef`: Gets the glyph the font draws for a character it lacks, its .notdef: a BMFont's invalid-character glyph (character -1, also among `glyphs`); null when the font has none, as a TrueType font loaded by `Fonts.load` has none.
 - `getGlyph`: Returns a character's glyph.
   - `codepoint`: The character.
   - returns: Its glyph, or null when the font has none.

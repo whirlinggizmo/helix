@@ -965,7 +965,7 @@ class Batch3D {
 	/** Draws text in a font in a plane, as `Batch2D.drawText` draws it: line by line, left-aligned, its first line's top at a point.
 
 		@param font  The font.
-		@param text  The text; a character the font lacks is skipped.
+		@param text  The text; a character the font lacks is drawn as the font's stand-in, as `GpuFont2D` says.
 		@param x  The left edge.
 		@param y  The top of the first line, lines following down the texture.
 		@param color  Optional. The color; defaults to white.

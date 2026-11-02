@@ -13,7 +13,8 @@ import helix.services.images.Image;
 
 /** Checks helix-render's work on the CPU over a recording stand-in for the GPU: the frame's passes in order, copies made on write and
 	their textures pooled, clears recorded in order, viewports and scissors; the 2D batch's joining and splitting of GPU draws, culling,
-	shapes, sprites and draw lists; text measured, wrapped and aligned; the 3D batch's views, points, lines, polygon modes, instances,
+	shapes, sprites and draw lists; text measured, wrapped and aligned, a character a font lacks drawn as its stand-in and warned of once;
+	the 3D batch's views, points, lines, polygon modes, instances,
 	meshes, materials, mesh state and skinning. */
 @:access(helix.services.fonts)
 @:access(helix.render)
@@ -59,6 +60,7 @@ class RenderTests {
 		batching2D();
 		culling2D();
 		text();
+		missingGlyphs();
 		shapes();
 		lists2D();
 		views3D();
@@ -343,6 +345,43 @@ class RenderTests {
 			"a right-aligned line ends at the box's right edge, its glyph's top at the ascent");
 		check(d.count == 18 && near(vertexX(d, 6, 24), 0) && near(vertexX(d, 12, 24), 8) && near(vertexY(d, 6, 24), 50),
 			"a space draws nothing; text's top at y");
+		r.dispose();
+	}
+
+	static function missingGlyphs():Void {
+		var g = new RecordingGraphics(),
+			r = new Renderer(g),
+			b = new Batch2D(r);
+		var warnings:Array<String> = [];
+		var listener = (level:helix.log.LogLevel, line:String) -> if (level == Warning) warnings.push(line);
+		helix.log.Log.listen(listener);
+		var f = r.createFont(font());
+		check(near(f.measureText("aé").x, 10), "a character the font lacks measured as its '?'");
+		r.beginFrame(64, 64);
+		b.begin();
+		b.drawText(f, "ééü", 0, 0);
+		b.drawText(f, "a\tb\r", 0, 20);
+		b.end();
+		r.endFrame();
+		var question = f.font.getGlyph("?".code);
+		check(g.draws[0].count == 6 * 5 && near(vertexX(g.draws[0], 6, 24), 5), "each character it lacks drawn as its '?', advancing as it does");
+		check(near((g.draws[0].vertices : Bytes).getFloat(g.draws[0].first * 24 + 8), question.x / 64), "from the '?' glyph's place on the atlas");
+		check(warnings.length == 2 && warnings[0].indexOf("U+00E9") >= 0 && warnings[1].indexOf("U+00FC") >= 0,
+			'warned once per character a font lacks, not for a control character: $warnings');
+		f.dispose();
+
+		var noQuestion = r.createFont(new Font2D(10, 8, -2, 2, Image.filled(8, 8, 0xffffffff), [new Glyph2D(65, 0, 0, 4, 8, 0, -8, 5)]));
+		check(near(noQuestion.measureText("AéA").x, 10) && warnings.length == 3 && warnings[2].indexOf("nothing") >= 0,
+			"with neither '?' nor .notdef, a character it lacks skipped, and warned of: " + warnings);
+		noQuestion.measureText("é");
+		check(warnings.length == 3, "warned once per font");
+		noQuestion.dispose();
+		var notdef = new Glyph2D(-1, 4, 0, 4, 8, 0, -8, 7);
+		var withNotdef = r.createFont(new Font2D(10, 8, -2, 2, Image.filled(8, 8, 0xffffffff), [new Glyph2D(65, 0, 0, 4, 8, 0, -8, 5), notdef], notdef));
+		check(near(withNotdef.measureText("Aé").x, 12) && warnings.length == 4 && warnings[3].indexOf(".notdef") >= 0,
+			"without a '?', its .notdef: " + warnings);
+		withNotdef.dispose();
+		helix.log.Log.unlisten(listener);
 		r.dispose();
 	}
 

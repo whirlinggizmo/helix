@@ -440,7 +440,7 @@ class Batch2D {
 		A distance-field font stays sharp at any size; another is scaled from its atlas. Pairs of characters are kerned as the font gives
 		them, unless `kerned` is false.
 		@param font  The font.
-		@param text  The text; a character the font lacks is skipped.
+		@param text  The text; a character the font lacks is drawn as the font's stand-in, as `GpuFont2D` says.
 		@param x  The left edge.
 		@param y  The top of the first line: its ascent above the baseline.
 		@param color  Optional. The color; defaults to white.

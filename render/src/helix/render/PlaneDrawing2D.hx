@@ -275,7 +275,7 @@ class PlaneDrawing2D {
 		use(atlas, 0);
 		var baseline = top + f.ascent * scale, pen = x, aw = atlas.width, ah = atlas.height, c = corners;
 		for (code in codes) {
-			var g = f.getGlyph(code);
+			var g = font.glyphFor(code);
 			if (g == null)
 				continue;
 			if (g.width > 0 && g.height > 0) {
