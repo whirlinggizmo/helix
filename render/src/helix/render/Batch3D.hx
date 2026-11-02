@@ -9,6 +9,13 @@ import helix.platform.ColorChannels;
 import helix.platform.CullFace;
 import helix.platform.DepthTest;
 import helix.services.shaders.ShaderValues;
+import haxe.io.Bytes;
+import helix.math.Vector3D;
+import helix.platform.Sampling;
+import helix.render.RenderPass.RenderCommand;
+import helix.services.shaders.Shader;
+import helix.services.shaders.ShaderSnapshot;
+import helix.services.shaders.ShaderVertexLayout;
 #end
 
 /** Provides 3D drawing through a camera or through views: meshes and models with their materials, lit, shadowed and fogged, skinned,
@@ -309,46 +316,61 @@ class Batch3D {
 		kind).
 
 		@param renderer  The renderer it records into. */
-	public function new(renderer:Renderer) {}
+	public function new(renderer:Renderer) {
+		this.renderer = renderer;
+		batchShader = RenderShaders.compileOwn("batch.vert", "batch.frag");
+		unlitShader = RenderShaders.compileOwn("mesh.vert", "unlit.frag");
+		narrow = renderer.stream("batch3d", 40, layoutOf(false));
+		wide = renderer.stream("wide3d", 60, layoutOf(true));
+		instances = renderer.stream("instances", RenderConstants.MESH_STRIDE, layoutOf(false));
+		instanceTemplate = RenderConstants.record(RenderConstants.MESH, RenderConstants.MESH_STRIDE, true);
+		identityInstance = renderer.staticBuffer(instanceTemplate, false);
+		plane = new PlaneDrawing2D(planeUse, planeVertex, planeVisible);
+	}
 
 	function set_blend(value:Blend):Blend {
-		throw "helix-render: Batch3D.set_blend is not yet built (stage 1)";
+		return blend = value;
 	}
 
 	function set_depthTest(value:DepthTest):DepthTest {
-		throw "helix-render: Batch3D.set_depthTest is not yet built (stage 1)";
+		return depthTest = value;
 	}
 
 	function set_depthWrite(value:Bool):Bool {
-		throw "helix-render: Batch3D.set_depthWrite is not yet built (stage 1)";
+		return depthWrite = value;
 	}
 
 	function set_cull(value:CullFace):CullFace {
-		throw "helix-render: Batch3D.set_cull is not yet built (stage 1)";
+		return cull = value;
 	}
 
 	function set_colorWrite(value:ColorChannels):ColorChannels {
-		throw "helix-render: Batch3D.set_colorWrite is not yet built (stage 1)";
+		return colorWrite = value;
 	}
 
 	function set_polygonMode(value:PolygonMode3D):PolygonMode3D {
-		throw "helix-render: Batch3D.set_polygonMode is not yet built (stage 1)";
+		return polygonMode = value;
 	}
 
 	function set_pointSize(value:Float):Float {
-		throw "helix-render: Batch3D.set_pointSize is not yet built (stage 1)";
+		return pointSize = value > 0 ? value : 0;
 	}
 
 	function set_pointSizeAttenuated(value:Bool):Bool {
-		throw "helix-render: Batch3D.set_pointSizeAttenuated is not yet built (stage 1)";
+		return pointSizeAttenuated = value;
 	}
 
 	function set_shaderValues(value:Null<ShaderValues>):Null<ShaderValues> {
-		throw "helix-render: Batch3D.set_shaderValues is not yet built (stage 1)";
+		if (open)
+			flush();
+		return shaderValues = value;
 	}
 
 	function set_shapeRegion(value:Null<TextureRegion2D>):Null<TextureRegion2D> {
-		throw "helix-render: Batch3D.set_shapeRegion is not yet built (stage 1)";
+		if (open)
+			flush();
+		plane.shapeRegion = value;
+		return shapeRegion = value;
 	}
 
 	/** Puts the draw state back to its defaults: `blend` Alpha, `depthTest` LessEqual, `depthWrite` on, `cull` None, `colorWrite` all,
@@ -357,7 +379,21 @@ class Batch3D {
 
 		It may be called at any time, open or not. `lights`, `environment`, `fog`, `culling` and `shapeRegion` are left as they are. */
 	public function resetState():Void {
-		throw "helix-render: Batch3D.resetState is not yet built (stage 1)";
+		blend = Blend.ALPHA;
+		depthTest = LessEqual;
+		depthWrite = true;
+		cull = None;
+		colorWrite = All;
+		polygonMode = Fill;
+		pointSize = 1;
+		pointSizeAttenuated = false;
+		shaderValues = null;
+		customData = 0;
+		castShadows = true;
+		receiveShadows = true;
+		clipPlanes.resize(0);
+		fogged = true;
+		toneMapped = false;
 	}
 
 	/** Opens the batch for drawing in the renderer's current pass through a camera, filling the renderer's viewport.
@@ -367,7 +403,10 @@ class Batch3D {
 		@param camera  The camera.
 		@throws String  No frame being recorded, or a batch (this or another) already open. */
 	public function begin(camera:Camera3D):Void {
-		throw "helix-render: Batch3D.begin is not yet built (stage 1)";
+		var width = renderer.viewportWidth, height = renderer.viewportHeight;
+		var v = new View3D();
+		v.setFromCamera(camera, height > 0 ? width / height : 1);
+		beginViews([v]);
 	}
 
 	/** Opens the batch for drawing in the renderer's current pass through views, each draw drawn once in each.
@@ -378,14 +417,46 @@ class Batch3D {
 		@throws String  No frame being recorded, a batch (this or another) already open, no views, or a view's rectangle outside the
 			renderer's viewport. */
 	public function beginViews(views:Array<View3D>):Void {
-		throw "helix-render: Batch3D.beginViews is not yet built (stage 1)";
+		if (views.length == 0)
+			throw "helix-render: beginViews with no views";
+		if (fog != null)
+			throw "helix-render: Batch3D.fog is not yet built (stage 6, fog); set it to null";
+		var x = renderer.viewportX,
+			y = renderer.viewportY,
+			width = renderer.viewportWidth,
+			height = renderer.viewportHeight;
+		for (v in views)
+			if (v.viewportX < 0 || v.viewportY < 0 || v.viewportX + v.viewportWidth > width || v.viewportY + v.viewportHeight > height)
+				throw 'helix-render: a view\'s rectangle (${v.viewportX}, ${v.viewportY}, ${v.viewportWidth} x ${v.viewportHeight}) outside the renderer\'s viewport (${width} x ${height})';
+		renderer.opening(this, flush);
+		open = true;
+		while (viewPool.length < views.length)
+			viewPool.push(new RenderView(batchShader));
+		viewCount = views.length;
+		var linear = renderer.linearPass();
+		for (i in 0...views.length) {
+			var v = views[i], r = viewPool[i];
+			var whole = v.viewportWidth == 0 && v.viewportHeight == 0;
+			r.set(v.viewMatrix, v.projectionMatrix, x + (whole ? 0 : v.viewportX), y + (whole ? 0 : v.viewportY), whole ? width : v.viewportWidth,
+				whole ? height : v.viewportHeight);
+			r.setLook(linear, renderer.exposure, renderer.toneMapping, null);
+			r.write();
+		}
+		var first = viewPool[0];
+		renderer.command(Viewport(first.x, first.y, first.width, first.height));
 	}
 
 	/** Closes the batch, so another can open or the pass can end.
 
 		@throws String  The batch isn't open. */
 	public function end():Void {
-		throw "helix-render: Batch3D.end is not yet built (stage 1)";
+		if (!open)
+			throw "helix-render: Batch3D.end with the batch not open";
+		flush();
+		if (viewCount > 1)
+			renderer.command(Viewport(renderer.viewportX, renderer.viewportY, renderer.viewportWidth, renderer.viewportHeight));
+		renderer.closing(this);
+		open = false;
 	}
 
 	/** Draws the environment's background behind everything: its map, turned, as bright and as blurred as `environment` says, at the far
@@ -415,7 +486,16 @@ class Batch3D {
 		@throws String  A disposed mesh, or a texture of the material disposed. */
 	public function drawMesh(mesh:GpuMesh3D, material:Material3D, transform:Matrix3D, ?skinning:Array<Matrix3D>, ?morphWeights:Array<Float>, ?tint:Int,
 			?state:MeshState3D):Void {
-		throw "helix-render: Batch3D.drawMesh is not yet built (stage 1)";
+		requireOpen();
+		if (morphWeights != null && morphWeights.length > 0)
+			throw "helix-render: Batch3D.drawMesh with morph weights is not yet built (stage 7, morph targets)";
+		flush();
+		if (culling) {
+			var bounds = skinning != null && mesh.hasJoints ? mesh.skinnedBounds(skinning, new Bounds3D()) : mesh.bounds;
+			if (!placedInView(bounds, transform))
+				return;
+		}
+		meshDraw(mesh, material, transform, skinning, tint, state, 0, 1, false);
 	}
 
 	/** Draws a mesh many times with one material, each copy placed by its own transform and tinted by its own color, in one GPU draw.
@@ -435,7 +515,33 @@ class Batch3D {
 		@throws String  A disposed mesh, a texture of the material disposed, or copies past the end of `transforms`. */
 	public function drawMeshInstanced(mesh:GpuMesh3D, material:Material3D, transforms:Array<Matrix3D>, ?colors:Array<Int>, ?transform:Matrix3D,
 			firstInstanceIndex = 0, ?instanceCount:Int):Void {
-		throw "helix-render: Batch3D.drawMeshInstanced is not yet built (stage 1)";
+		requireOpen();
+		var count = instanceCount == null ? transforms.length - firstInstanceIndex : instanceCount;
+		if (firstInstanceIndex < 0 || count < 0 || firstInstanceIndex + count > transforms.length)
+			throw 'helix-render: copies $firstInstanceIndex to ${firstInstanceIndex + count} of ${transforms.length} transforms';
+		if (count == 0)
+			return;
+		flush();
+		var first = instances.count, kept = 0;
+		for (i in firstInstanceIndex...firstInstanceIndex + count) {
+			var copy = transforms[i];
+			if (culling) {
+				var world = transform == null ? copy : Matrix3D.compose(copy, transform, scratch);
+				if (!placedInView(mesh.bounds, world))
+					continue;
+			}
+			var at = instances.reserve(1),
+				b = instances.bytes,
+				m = copy.values;
+			b.blit(at, instanceTemplate, 0, RenderConstants.MESH_STRIDE);
+			for (k in 0...16)
+				b.setFloat(at + k * 4, m[k]);
+			bytesOf(b, at + 64, colors == null ? 0xffffffff : colors[i]);
+			kept++;
+		}
+		if (kept == 0)
+			return;
+		meshDraw(mesh, material, transform == null ? identity : transform, null, null, null, first, kept, true);
 	}
 
 	/** Draws a model: each of its meshes with its material, placed by a transform, each skinned mesh posed by its skin.
@@ -453,7 +559,13 @@ class Batch3D {
 			material's when omitted.
 		@throws String  A disposed model. */
 	public function drawModel(model:GpuModel3D, transform:Matrix3D, ?boneMatrices:Array<Matrix3D>, ?tint:Int, ?state:MeshState3D):Void {
-		throw "helix-render: Batch3D.drawModel is not yet built (stage 1)";
+		requireOpen();
+		if (model.disposed)
+			throw "helix-render: a draw of a disposed model";
+		for (i in 0...model.meshes.length) {
+			var skinning = model.skinningOf(i, boneMatrices);
+			drawMesh(model.meshes[i], model.materials[model.meshMaterialIndices[i]], transform, skinning, null, tint, state);
+		}
 	}
 
 	/** Draws a line between two points, one pixel wide.
@@ -466,7 +578,15 @@ class Batch3D {
 		@param z1  The end's z.
 		@param color  The color. */
 	public function drawLine(x0:Float, y0:Float, z0:Float, x1:Float, y1:Float, z1:Float, color:Int):Void {
-		throw "helix-render: Batch3D.drawLine is not yet built (stage 1)";
+		requireOpen();
+		if (culling) {
+			box.makeEmpty();
+			box.expand(x0, y0, z0);
+			box.expand(x1, y1, z1);
+			if (!inView(box))
+				return;
+		}
+		segment(x0, y0, z0, color, x1, y1, z1, color, 1);
 	}
 
 	/** Draws lines through positions, as segments two by two or as one strip, of a width in pixels.
@@ -479,7 +599,24 @@ class Batch3D {
 		@param strip  Optional. Whether the positions are one line through them all, rather than a segment each two; defaults to false.
 		@param transform  Optional. What the positions are moved by, as a Line's own place; identity when omitted. */
 	public function drawLines(positions:Array<Float>, color:Int, ?colors:Array<Int>, width = 1., strip = false, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.drawLines is not yet built (stage 1)";
+		requireOpen();
+		if (positions.length < 6 || !inView(positionsBox(positions, transform)))
+			return;
+		var count = Std.int(positions.length / 3);
+		var a = new Vector3D(), b = new Vector3D();
+		var i = 0;
+		while (i + 1 < count) {
+			inline function at(index:Int, out:Vector3D):Vector3D {
+				var x = positions[index * 3],
+					y = positions[index * 3 + 1],
+					z = positions[index * 3 + 2];
+				return transform == null ? out.set(x, y, z) : transform.transformPoint(x, y, z, out);
+			}
+			at(i, a);
+			at(i + 1, b);
+			segment(a.x, a.y, a.z, colors == null ? color : colors[i], b.x, b.y, b.z, colors == null ? color : colors[i + 1], width);
+			i += strip ? 1 : 2;
+		}
 	}
 
 	/** Draws a box's twelve edges.
@@ -487,7 +624,7 @@ class Batch3D {
 		@param bounds  The box, in world units.
 		@param color  The color. */
 	public function strokeBox(bounds:Bounds3D, color:Int):Void {
-		throw "helix-render: Batch3D.strokeBox is not yet built (stage 1)";
+		drawLines(boxEdges(bounds), color);
 	}
 
 	/** Draws a sphere as three circles about its center, one square to each axis.
@@ -498,7 +635,7 @@ class Batch3D {
 		@param radius  The radius.
 		@param color  The color. */
 	public function strokeSphere(x:Float, y:Float, z:Float, radius:Float, color:Int):Void {
-		throw "helix-render: Batch3D.strokeSphere is not yet built (stage 1)";
+		drawLines(sphereEdges(x, y, z, radius), color);
 	}
 
 	/** Draws a grid of lines on the ground (y 0), centered on the origin.
@@ -507,7 +644,7 @@ class Batch3D {
 		@param spacing  The distance between two lines.
 		@param color  The color. */
 	public function drawGrid(lineCount:Int, spacing:Float, color:Int):Void {
-		throw "helix-render: Batch3D.drawGrid is not yet built (stage 1)";
+		drawLines(gridEdges(lineCount, spacing), color);
 	}
 
 	/** Draws a transform's axes from its origin: x red, y green, z blue.
@@ -515,7 +652,8 @@ class Batch3D {
 		@param transform  The transform, as a mesh would be placed by it.
 		@param length  Each axis' length, before the transform's scale. */
 	public function drawAxes(transform:Matrix3D, length:Float):Void {
-		throw "helix-render: Batch3D.drawAxes is not yet built (stage 1)";
+		drawLines([0, 0, 0, length, 0, 0, 0, 0, 0, 0, length, 0, 0, 0, 0, 0, 0, length], 0,
+			[0xffff0000, 0xffff0000, 0xff00ff00, 0xff00ff00, 0xff0000ff, 0xff0000ff], 1, false, transform);
 	}
 
 	/** Draws a texture's region facing the camera, upright with the camera's up and turned about its center, its center at a point.
@@ -529,7 +667,8 @@ class Batch3D {
 		@param tint  Optional. The color its texels are multiplied by; defaults to white.
 		@param rotation  Optional. Its turn in the screen's plane, in radians, clockwise; defaults to 0. */
 	public function drawBillboard(region:TextureRegion2D, x:Float, y:Float, z:Float, width:Float, height:Float, tint:Int = 0xffffffff, rotation = 0.):Void {
-		throw "helix-render: Batch3D.drawBillboard is not yet built (stage 1)";
+		requireOpen();
+		billboard(region, x, y, z, width, height, tint, rotation);
 	}
 
 	/** Draws positions as points of `pointSize`, unlit, with the draw state.
@@ -543,7 +682,24 @@ class Batch3D {
 		@param transform  Optional. What the positions are moved by, as a Points object's own place; identity when omitted. A point's
 			size is not scaled by it. */
 	public function drawPoints(positions:Array<Float>, color:Int, ?colors:Array<Int>, ?texture:Texture2D, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.drawPoints is not yet built (stage 1)";
+		requireOpen();
+		if (texture != null)
+			texture.drawnHandle();
+		if (positions.length < 3 || !inView(positionsBox(positions, transform)))
+			return;
+		var count = Std.int(positions.length / 3);
+		for (i in 0...count) {
+			var x = positions[i * 3],
+				y = positions[i * 3 + 1],
+				z = positions[i * 3 + 2];
+			if (transform != null) {
+				transform.transformPoint(x, y, z, moved);
+				x = moved.x;
+				y = moved.y;
+				z = moved.z;
+			}
+			point(x, y, z, .5, .5, colors == null ? color : colors[i], texture);
+		}
 	}
 
 	/** Draws triangles as given, in world units: textured, colored by vertex, or both, unlit, for what has no mesh; as their edges or
@@ -560,7 +716,48 @@ class Batch3D {
 		@param transform  Optional. What the positions and normals are moved by; identity when omitted. */
 	public function drawTriangles(texture:Null<Texture2D>, positions:Array<Float>, ?texCoords:Array<Float>, ?colors:Array<Int>, ?indices:Array<Int>,
 			?normals:Array<Float>, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.drawTriangles is not yet built (stage 1)";
+		requireOpen();
+		if (texture != null)
+			texture.drawnHandle();
+		var count = indices != null ? indices.length - indices.length % 3 : Std.int(positions.length / 9) * 3;
+		if (count == 0 || !inView(positionsBox(positions, transform)))
+			return;
+		var t = pending;
+		var k = 0;
+		for (n in 0...count) {
+			var i = indices != null ? indices[n] : n;
+			var x = positions[i * 3],
+				y = positions[i * 3 + 1],
+				z = positions[i * 3 + 2];
+			var nx = normals != null ? normals[i * 3] : 0.,
+				ny = normals != null ? normals[i * 3 + 1] : 0.,
+				nz = normals != null ? normals[i * 3 + 2] : 1.;
+			if (transform != null) {
+				transform.transformPoint(x, y, z, moved);
+				x = moved.x;
+				y = moved.y;
+				z = moved.z;
+				transform.transformDirection(nx, ny, nz, moved);
+				var l = Math.sqrt(moved.x * moved.x + moved.y * moved.y + moved.z * moved.z);
+				nx = l > 0 ? moved.x / l : 0;
+				ny = l > 0 ? moved.y / l : 0;
+				nz = l > 0 ? moved.z / l : 1;
+			}
+			var at = k * 9;
+			t[at] = x;
+			t[at + 1] = y;
+			t[at + 2] = z;
+			t[at + 3] = texCoords != null ? texCoords[i * 2] : 0;
+			t[at + 4] = texCoords != null ? texCoords[i * 2 + 1] : 0;
+			t[at + 5] = nx;
+			t[at + 6] = ny;
+			t[at + 7] = nz;
+			t[at + 8] = colors != null ? colors[i] : 0xffffffff;
+			if (++k == 3) {
+				triangle(texture, 0, t);
+				k = 0;
+			}
+		}
 	}
 
 	/** Draws lines through points in a plane, one after another, joined at each point with a miter, or a bevel where the miter would
@@ -571,7 +768,8 @@ class Batch3D {
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity, the world's xy plane, when omitted. */
 	public function drawPolyline(points:Array<Float>, thickness:Float, color:Int, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.drawPolyline is not yet built (stage 1)";
+		inPlane(transform);
+		plane.polyline(points, thickness, color, false);
 	}
 
 	/** Fills a triangle in a plane.
@@ -585,7 +783,8 @@ class Batch3D {
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function fillTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color:Int, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.fillTriangle is not yet built (stage 1)";
+		inPlane(transform);
+		plane.triangle(x0, y0, x1, y1, x2, y2, color);
 	}
 
 	/** Fills a rectangle in a plane.
@@ -597,7 +796,8 @@ class Batch3D {
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function fillRectangle(x:Float, y:Float, width:Float, height:Float, color:Int, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.fillRectangle is not yet built (stage 1)";
+		inPlane(transform);
+		plane.rectangle(x, y, width, height, color);
 	}
 
 	/** Draws a rectangle's outline in a plane.
@@ -610,7 +810,8 @@ class Batch3D {
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function strokeRectangle(x:Float, y:Float, width:Float, height:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.strokeRectangle is not yet built (stage 1)";
+		inPlane(transform);
+		plane.strokeRectangle(x, y, width, height, thickness, color);
 	}
 
 	/** Fills a rectangle with rounded corners in a plane.
@@ -623,7 +824,8 @@ class Batch3D {
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function fillRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, color:Int, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.fillRoundedRectangle is not yet built (stage 1)";
+		inPlane(transform);
+		plane.roundedRectangle(x, y, width, height, radius, color);
 	}
 
 	/** Draws the outline of a rectangle with rounded corners in a plane.
@@ -637,7 +839,8 @@ class Batch3D {
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function strokeRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.strokeRoundedRectangle is not yet built (stage 1)";
+		inPlane(transform);
+		plane.strokeRoundedRectangle(x, y, width, height, radius, thickness, color);
 	}
 
 	/** Fills a circle in a plane.
@@ -648,7 +851,8 @@ class Batch3D {
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function fillCircle(x:Float, y:Float, radius:Float, color:Int, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.fillCircle is not yet built (stage 1)";
+		inPlane(transform);
+		plane.ellipse(x, y, radius, radius, color);
 	}
 
 	/** Draws a circle's outline in a plane.
@@ -660,7 +864,8 @@ class Batch3D {
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function strokeCircle(x:Float, y:Float, radius:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.strokeCircle is not yet built (stage 1)";
+		inPlane(transform);
+		plane.strokeEllipse(x, y, radius, radius, thickness, color);
 	}
 
 	/** Fills an ellipse in a plane, its axes across and down.
@@ -672,7 +877,8 @@ class Batch3D {
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function fillEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, color:Int, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.fillEllipse is not yet built (stage 1)";
+		inPlane(transform);
+		plane.ellipse(x, y, radiusX, radiusY, color);
 	}
 
 	/** Draws an ellipse's outline in a plane.
@@ -685,7 +891,8 @@ class Batch3D {
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function strokeEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.strokeEllipse is not yet built (stage 1)";
+		inPlane(transform);
+		plane.strokeEllipse(x, y, radiusX, radiusY, thickness, color);
 	}
 
 	/** Fills a polygon in a plane, convex or not, whose edges don't cross.
@@ -695,7 +902,8 @@ class Batch3D {
 		@param transform  Optional. The plane it is drawn in; identity when omitted.
 		@return  False when its edges cross, and nothing is drawn. */
 	public function fillPolygon(points:Array<Float>, color:Int, ?transform:Matrix3D):Bool {
-		throw "helix-render: Batch3D.fillPolygon is not yet built (stage 1)";
+		inPlane(transform);
+		return plane.polygon(points, color);
 	}
 
 	/** Draws a polygon's outline in a plane: lines through its corners and back to the first, joined as `drawPolyline` joins them.
@@ -705,7 +913,8 @@ class Batch3D {
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function strokePolygon(points:Array<Float>, thickness:Float, color:Int, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.strokePolygon is not yet built (stage 1)";
+		inPlane(transform);
+		plane.polyline(points, thickness, color, true);
 	}
 
 	/** Draws a texture's region in a plane, turned and scaled about its origin, the origin at a point, as `Batch2D.drawSprite` draws it.
@@ -726,7 +935,8 @@ class Batch3D {
 		@param transform  Optional. The plane it is drawn in; identity, the world's xy plane, when omitted. */
 	public function drawSprite(region:TextureRegion2D, x:Float, y:Float, rotation = 0., scaleX = 1., scaleY = 1., tint:Int = 0xffffffff, flipX = false,
 			flipY = false, ?originX:Float, ?originY:Float, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.drawSprite is not yet built (stage 1)";
+		inPlane(transform);
+		plane.sprite(region, x, y, rotation, scaleX, scaleY, tint, flipX, flipY, originX, originY);
 	}
 
 	/** Draws a rectangle of a texture into a rectangle in a plane, turned about an origin, as `Batch2D.drawTextureRegion` draws it (raylib's
@@ -748,7 +958,8 @@ class Batch3D {
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function drawTextureRegion(texture:Texture2D, regionX:Float, regionY:Float, regionWidth:Float, regionHeight:Float, x:Float, y:Float, width:Float,
 			height:Float, rotation = 0., originX = 0., originY = 0., tint:Int = 0xffffffff, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.drawTextureRegion is not yet built (stage 1)";
+		inPlane(transform);
+		plane.textureRegion(texture, regionX, regionY, regionWidth, regionHeight, x, y, width, height, rotation, originX, originY, tint);
 	}
 
 	/** Draws text in a font in a plane, as `Batch2D.drawText` draws it: line by line, left-aligned, its first line's top at a point.
@@ -765,7 +976,8 @@ class Batch3D {
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function drawText(font:GpuFont2D, text:String, x:Float, y:Float, color:Int = 0xffffffff, ?size:Float, letterSpacing = 0., kerned = true,
 			?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.drawText is not yet built (stage 1)";
+		inPlane(transform);
+		plane.text(font, text, x, y, color, size, letterSpacing);
 	}
 
 	/** Draws laid-out text in a plane, wrapped and aligned as its layout says, as `Batch2D.drawTextLayout` draws it.
@@ -777,7 +989,8 @@ class Batch3D {
 		@param color  Optional. The color; defaults to white.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, color:Int = 0xffffffff, ?transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.drawTextLayout is not yet built (stage 1)";
+		inPlane(transform);
+		plane.layout(layout, x, y, color);
 	}
 
 	/** Replays a draw list: its calls in the order recorded, in its own units placed by a transform.
@@ -788,7 +1001,700 @@ class Batch3D {
 		@param transform  Its place in the world, read now.
 		@throws String  A mesh, model or texture it holds disposed. */
 	public function drawList(list:DrawList3D, transform:Matrix3D):Void {
-		throw "helix-render: Batch3D.drawList is not yet built (stage 1)";
+		requireOpen();
+		if (!list.bounds.isEmpty && !placedInView(list.bounds, transform))
+			return;
+		list.replay(this, transform);
+	}
+
+	// The renderer, the default shaders, each shader's filled names, the views drawn through, and the frame's streams: the batch draws'
+	// 40-byte vertices, wide lines' and large points' 60-byte ones, instanced meshes' copies.
+	final renderer:Renderer;
+	final batchShader:Shader;
+	final unlitShader:Shader;
+	final fills = new haxe.ds.ObjectMap<Shader, RenderFill>();
+	final viewPool:Array<RenderView> = [];
+	var viewCount = 0;
+	final narrow:RenderStream;
+	final wide:RenderStream;
+	final instances:RenderStream;
+	final plane:PlaneDrawing2D;
+	// One copy placed where it is and white, read by a mesh drawn once, and the record every copy starts from.
+	final identityInstance:Int;
+	final instanceTemplate:Bytes;
+	// The GPU draw being made: its kind (0 triangles, 1 lines, 2 one-pixel points, 3 wide lines and large points), first vertex, texture,
+	// and the draw state it was made with.
+	var running = false;
+	var runKind = 0;
+	var runFirst = 0;
+	var runTexture = 0;
+	var runSampling = Sampling.LINEAR;
+	var runFontKind = 0;
+	var runValues:Null<ShaderValues> = null;
+	var runCapture = new ShaderSnapshot();
+	var nextCapture = new ShaderSnapshot();
+	var runBlend = Blend.ALPHA;
+	var runDepthTest:DepthTest = LessEqual;
+	var runDepthWrite = true;
+	var runCull:CullFace = None;
+	var runColorWrite:ColorChannels = All;
+	var runLineWidth = 1.;
+	var runPointSize = 1.;
+	var runAttenuated = false;
+	var runFogged = true;
+	var runToneMapped = false;
+	final runPlanes:Array<Float> = [];
+	// The plane drawn in by the 2D draws, null for the world's xy plane; its normal; the texture and font kind they read; a triangle's
+	// corners as they come.
+	var planeMatrix:Null<Matrix3D> = null;
+	var planeTexture:Null<Texture2D> = null;
+	var planeFontKind = 0;
+	var planeNX = 0.;
+	var planeNY = 0.;
+	var planeNZ = 1.;
+	final pending:Array<Float> = [for (_ in 0...18) 0.];
+	var pendingCount = 0;
+	// Scratch values, reused.
+	final box = new Bounds3D();
+	final moved = new Vector3D();
+	final scratch = new Matrix3D();
+	final normalScratch = new Matrix3D();
+	final mvpScratch = new Matrix3D();
+
+	static final identity = new Matrix3D();
+	static var narrowLayout:Null<ShaderVertexLayout> = null;
+	static var wideLayout:Null<ShaderVertexLayout> = null;
+
+	// Each data texture for bones, by its rows.
+	final boneTextures = new Map<Int, Int>();
+
+	static function layoutOf(wide:Bool):ShaderVertexLayout {
+		if (!wide && narrowLayout != null)
+			return narrowLayout;
+		if (wide && wideLayout != null)
+			return wideLayout;
+		var placements:Array<helix.services.shaders.ShaderVertexPlacement> = [
+			{name: "vertexPosition", offset: 0, format: Float3},
+			{
+				name: "vertexTexCoord",
+				offset: 12,
+				format: Float2,
+				optional: true
+			},
+			{
+				name: "vertexNormal",
+				offset: 20,
+				format: Float3,
+				optional: true
+			},
+			{
+				name: "vertexColor",
+				offset: 32,
+				format: UByte4Norm,
+				optional: true
+			},
+			{
+				name: "vertexCustomData",
+				offset: 36,
+				format: UByte4Norm,
+				optional: true
+			}
+		];
+		if (wide) {
+			placements.push({
+				name: "vertexCorner",
+				offset: 40,
+				format: Float2,
+				optional: true
+			});
+			placements.push({
+				name: "vertexLineEnd",
+				offset: 48,
+				format: Float3,
+				optional: true
+			});
+		}
+		var fed = [for (p in placements) p.name];
+		var layout = new ShaderVertexLayout([
+			{stride: wide ? 60 : 40, placements: placements},
+			{stride: RenderConstants.BATCH_STRIDE, instanced: true, placements: RenderConstants.placements(RenderConstants.BATCH, fed)}
+		]);
+		if (wide)
+			wideLayout = layout;
+		else
+			narrowLayout = layout;
+		return layout;
+	}
+
+	function fillFor(s:Shader):RenderFill {
+		var f = fills.get(s);
+		if (f == null)
+			fills.set(s, f = new RenderFill(s));
+		return f;
+	}
+
+	function requireOpen():Void
+		if (!open)
+			throw "helix-render: a Batch3D draw outside begin and end";
+
+	// Whether the shader drawing the batch draws now places wide lines and large points: the batch's own, or one whose vertex stage reads
+	// vertexCorner.
+	function canPlace():Bool {
+		var values = shaderValues;
+		if (values == null)
+			return true;
+		var a = values.shader.findAttribute("vertexCorner");
+		return a != null && a.active;
+	}
+
+	static function samePlanes(a:Array<Float>, b:Array<Float>):Bool {
+		if (a.length != b.length)
+			return false;
+		for (i in 0...a.length)
+			if (a[i] != b[i])
+				return false;
+		return true;
+	}
+
+	static function sameValues(a:ShaderSnapshot, b:ShaderSnapshot):Bool {
+		if (a.uniforms.length != b.uniforms.length || a.textures.length != b.textures.length)
+			return false;
+		for (i in 0...a.textures.length)
+			if (a.textures[i] != b.textures[i] || a.samplings[i] != b.samplings[i])
+				return false;
+		for (i in 0...a.uniforms.length) {
+			var x = a.uniforms[i], y = b.uniforms[i];
+			if (x == null || y == null) {
+				if (x != y)
+					return false;
+				continue;
+			}
+			if (x.length != y.length || x.compare(y) != 0)
+				return false;
+		}
+		return true;
+	}
+
+	// Makes the following vertices join a GPU draw of a kind reading a texture, starting the next one when anything it was made with
+	// differs.
+	function start(kind:Int, texture:Null<Texture2D>, fontKind:Int, lineWidth = 1.):Void {
+		requireOpen();
+		var t = texture == null ? renderer.white : texture;
+		var handle = t.drawnHandle(), sampling = t.sampling;
+		renderer.checkReadable(handle);
+		var values = shaderValues;
+		if (values != null) {
+			// The program's values as a draw reads them: through the draw's own values, the view's block shared.
+			var probe = fillFor(values.shader).values;
+			probe.base = values;
+			probe.scene = viewPool[0].scene;
+			probe.capture(nextCapture);
+			if (running && !sameValues(nextCapture, runCapture))
+				flush();
+		}
+		if (running
+			&& (kind != runKind
+				|| handle != runTexture
+				|| sampling != runSampling
+				|| fontKind != runFontKind
+				|| values != runValues
+				|| blend != runBlend
+				|| depthTest != runDepthTest
+				|| depthWrite != runDepthWrite
+				|| cull != runCull
+				|| colorWrite != runColorWrite
+				|| lineWidth != runLineWidth
+				|| pointSize != runPointSize
+				|| pointSizeAttenuated != runAttenuated
+				|| fogged != runFogged
+				|| toneMapped != runToneMapped
+				|| !samePlanes(clipPlanes, runPlanes)))
+			flush();
+		if (running)
+			return;
+		running = true;
+		runKind = kind;
+		runFirst = (kind == 3 ? wide : narrow).count;
+		runTexture = handle;
+		runSampling = sampling;
+		runFontKind = fontKind;
+		runValues = values;
+		if (values != null) {
+			var swap = runCapture;
+			runCapture = nextCapture;
+			nextCapture = swap;
+		}
+		runBlend = blend;
+		runDepthTest = depthTest;
+		runDepthWrite = depthWrite;
+		runCull = cull;
+		runColorWrite = colorWrite;
+		runLineWidth = lineWidth;
+		runPointSize = pointSize;
+		runAttenuated = pointSizeAttenuated;
+		runFogged = fogged;
+		runToneMapped = toneMapped;
+		runPlanes.resize(0);
+		for (p in clipPlanes)
+			runPlanes.push(p);
+	}
+
+	// A batch vertex: position, texture coordinates, normal, color and customData.
+	function put(x:Float, y:Float, z:Float, u:Float, v:Float, nx:Float, ny:Float, nz:Float, color:Int):Void {
+		var at = narrow.reserve(1), b = narrow.bytes;
+		b.setFloat(at, x);
+		b.setFloat(at + 4, y);
+		b.setFloat(at + 8, z);
+		b.setFloat(at + 12, u);
+		b.setFloat(at + 16, v);
+		b.setFloat(at + 20, nx);
+		b.setFloat(at + 24, ny);
+		b.setFloat(at + 28, nz);
+		bytesOf(b, at + 32, color);
+		bytesOf(b, at + 36, customData);
+	}
+
+	// A wide line's or a large point's vertex: as put, with its corner and the line's other end.
+	function putWide(x:Float, y:Float, z:Float, u:Float, v:Float, color:Int, cornerX:Float, cornerY:Float, endX:Float, endY:Float, endZ:Float):Void {
+		var at = wide.reserve(1), b = wide.bytes;
+		b.setFloat(at, x);
+		b.setFloat(at + 4, y);
+		b.setFloat(at + 8, z);
+		b.setFloat(at + 12, u);
+		b.setFloat(at + 16, v);
+		b.setFloat(at + 20, 0);
+		b.setFloat(at + 24, 0);
+		b.setFloat(at + 28, 1);
+		bytesOf(b, at + 32, color);
+		bytesOf(b, at + 36, customData);
+		b.setFloat(at + 40, cornerX);
+		b.setFloat(at + 44, cornerY);
+		b.setFloat(at + 48, endX);
+		b.setFloat(at + 52, endY);
+		b.setFloat(at + 56, endZ);
+	}
+
+	static inline function bytesOf(b:Bytes, at:Int, color:Int):Void {
+		b.set(at, color >> 16 & 255);
+		b.set(at + 1, color >> 8 & 255);
+		b.set(at + 2, color & 255);
+		b.set(at + 3, color >>> 24);
+	}
+
+	// Records the GPU draw being made, once a view.
+	function flush():Void {
+		if (!running)
+			return;
+		running = false;
+		var stream = runKind == 3 ? wide : narrow;
+		var count = stream.count - runFirst;
+		if (count <= 0)
+			return;
+		var s = runValues != null ? runValues.shader : batchShader;
+		var fill = fillFor(s);
+		var primitive:helix.platform.Primitive = runKind == 1 ? Lines : runKind == 2 ? Points : Triangles;
+		var spec = renderer.pipelineFor(s, renderer.stateFor(primitive, false, runBlend, runDepthTest, runDepthWrite, runCull, runColorWrite),
+			layoutOf(runKind == 3));
+		for (i in 0...viewCount) {
+			var view = viewPool[i];
+			if (viewCount > 1)
+				renderer.command(Viewport(view.x, view.y, view.width, view.height));
+			fill.values.base = runValues;
+			fill.values.scene = view.scene;
+			fill.texture(fill.baseColorTexture, runTexture, runSampling);
+			fill.integer(fill.fontKind, runFontKind);
+			fill.matrix(fill.model, identity);
+			fill.matrix(fill.normalMatrix, identity);
+			fill.matrix(fill.modelViewProjection, view.viewProjection);
+			fill.color(fill.baseColor, 0xffffffff);
+			fill.float(fill.lineWidth, runLineWidth);
+			fill.float(fill.pointSize, runPointSize);
+			fill.integer(fill.pointSizeAttenuated, runAttenuated ? 1 : 0);
+			fill.planes(runPlanes);
+			fill.integer(fill.fogged, runFogged ? 1 : 0);
+			fill.integer(fill.toneMapped, runToneMapped ? 1 : 0);
+			fill.integer(fill.skinned, 0);
+			fill.view(view);
+			var d = renderer.makeDraw(spec);
+			d.setBuffer(0, 0, stream);
+			d.setBuffer(1, renderer.batchConstants());
+			d.first = runFirst;
+			d.count = count;
+			fill.values.capture(d.snapshot);
+			renderer.record(d);
+		}
+	}
+
+	// Whether a box in the world may be seen in any view; always while culling is off.
+	function inView(b:Bounds3D):Bool {
+		if (!culling)
+			return true;
+		for (i in 0...viewCount)
+			if (viewPool[i].frustum.intersectsBounds(b))
+				return true;
+		return false;
+	}
+
+	// Whether a box, moved by a matrix, may be seen.
+	function placedInView(b:Bounds3D, m:Null<Matrix3D>):Bool {
+		if (!culling)
+			return true;
+		if (m == null)
+			return inView(b);
+		transformBox(b, m, box);
+		return inView(box);
+	}
+
+	static function transformBox(b:Bounds3D, matrix:Matrix3D, out:Bounds3D):Bounds3D {
+		var m = matrix.values;
+		var empty = b.isEmpty, minX = b.minX, minY = b.minY, minZ = b.minZ, maxX = b.maxX, maxY = b.maxY, maxZ = b.maxZ;
+		out.makeEmpty();
+		if (empty)
+			return out;
+		for (corner in 0...8) {
+			var x = corner & 1 == 0 ? minX : maxX,
+				y = corner & 2 == 0 ? minY : maxY,
+				z = corner & 4 == 0 ? minZ : maxZ;
+			out.expand(m[0] * x + m[4] * y + m[8] * z + m[12], m[1] * x + m[5] * y + m[9] * z + m[13], m[2] * x + m[6] * y + m[10] * z + m[14]);
+		}
+		return out;
+	}
+
+	// The box around positions, x, y and z each, moved by a matrix.
+	function positionsBox(positions:Array<Float>, m:Null<Matrix3D>):Bounds3D {
+		box.makeEmpty();
+		var i = 0;
+		while (i + 2 < positions.length) {
+			var x = positions[i], y = positions[i + 1], z = positions[i + 2];
+			if (m != null) {
+				m.transformPoint(x, y, z, moved);
+				x = moved.x;
+				y = moved.y;
+				z = moved.z;
+			}
+			box.expand(x, y, z);
+			i += 3;
+		}
+		return box;
+	}
+
+	// A triangle, as the polygon mode draws it: filled, as its edges, or as its corners.
+	function triangle(texture:Null<Texture2D>, fontKind:Int, t:Array<Float>):Void {
+		// Each corner: x, y, z, u, v, nx, ny, nz, color (as a Float of its bits).
+		switch polygonMode {
+			case Fill:
+				start(0, texture, fontKind);
+				for (k in 0...3) {
+					var c = k * 9;
+					put(t[c], t[c + 1], t[c + 2], t[c + 3], t[c + 4], t[c + 5], t[c + 6], t[c + 7], Std.int(t[c + 8]));
+				}
+			case Lines:
+				start(1, texture, fontKind);
+				for (edge in [0, 1, 1, 2, 2, 0]) {
+					var c = edge * 9;
+					put(t[c], t[c + 1], t[c + 2], t[c + 3], t[c + 4], t[c + 5], t[c + 6], t[c + 7], Std.int(t[c + 8]));
+				}
+			case Points:
+				for (k in 0...3) {
+					var c = k * 9;
+					point(t[c], t[c + 1], t[c + 2], t[c + 3], t[c + 4], Std.int(t[c + 8]), texture);
+				}
+		}
+	}
+
+	// A point: the pixel it falls in at a size of 1, not attenuated, or where the shader can't place squares; a square facing the screen
+	// otherwise, the texture across it.
+	function point(x:Float, y:Float, z:Float, u:Float, v:Float, color:Int, texture:Null<Texture2D>):Void {
+		if (pointSize == 1 && !pointSizeAttenuated || !canPlace()) {
+			start(2, texture, 0);
+			put(x, y, z, u, v, 0, 0, 1, color);
+			return;
+		}
+		start(3, texture, 0);
+		putWide(x, y, z, 0, 0, color, -1, 1, x, y, z);
+		putWide(x, y, z, 1, 0, color, 1, 1, x, y, z);
+		putWide(x, y, z, 1, 1, color, 1, -1, x, y, z);
+		putWide(x, y, z, 0, 0, color, -1, 1, x, y, z);
+		putWide(x, y, z, 1, 1, color, 1, -1, x, y, z);
+		putWide(x, y, z, 0, 1, color, -1, -1, x, y, z);
+	}
+
+	// A line segment: one pixel wide, or wider as a quad made in the vertex stage.
+	function segment(x0:Float, y0:Float, z0:Float, c0:Int, x1:Float, y1:Float, z1:Float, c1:Int, width:Float):Void {
+		if (width <= 1 || !canPlace()) {
+			start(1, null, 0);
+			put(x0, y0, z0, 0, 0, 0, 0, 1, c0);
+			put(x1, y1, z1, 0, 0, 0, 0, 1, c1);
+			return;
+		}
+		start(3, null, 0, width);
+		putWide(x0, y0, z0, 0, 0, c0, -1, -1, x1, y1, z1);
+		putWide(x0, y0, z0, 0, 0, c0, -1, 1, x1, y1, z1);
+		putWide(x1, y1, z1, 0, 0, c1, 1, 1, x0, y0, z0);
+		putWide(x0, y0, z0, 0, 0, c0, -1, -1, x1, y1, z1);
+		putWide(x1, y1, z1, 0, 0, c1, 1, 1, x0, y0, z0);
+		putWide(x1, y1, z1, 0, 0, c1, 1, -1, x0, y0, z0);
+	}
+
+	// The 2D draws' sinks: their texture, each vertex placed in the plane, three a triangle.
+	function planeUse(texture:Null<Texture2D>, fontKind:Int):Void {
+		requireOpen();
+		planeTexture = texture;
+		planeFontKind = fontKind;
+	}
+
+	function planeVertex(x:Float, y:Float, u:Float, v:Float, color:Int):Void {
+		var c = pendingCount * 9;
+		var m = planeMatrix;
+		if (m == null) {
+			pending[c] = x;
+			pending[c + 1] = y;
+			pending[c + 2] = 0;
+		} else {
+			m.transformPoint(x, y, 0, moved);
+			pending[c] = moved.x;
+			pending[c + 1] = moved.y;
+			pending[c + 2] = moved.z;
+		}
+		pending[c + 3] = u;
+		pending[c + 4] = v;
+		pending[c + 5] = planeNX;
+		pending[c + 6] = planeNY;
+		pending[c + 7] = planeNZ;
+		pending[c + 8] = color;
+		if (++pendingCount == 3) {
+			pendingCount = 0;
+			triangle(planeTexture, planeFontKind, pending);
+		}
+	}
+
+	function planeVisible(minX:Float, minY:Float, maxX:Float, maxY:Float):Bool {
+		requireOpen();
+		if (!culling)
+			return true;
+		box.makeEmpty();
+		box.expand(minX, minY, 0);
+		box.expand(maxX, maxY, 0);
+		if (planeMatrix != null)
+			transformBox(box, planeMatrix, box);
+		return inView(box);
+	}
+
+	// Draws in a plane: its transform, the scale its curves are cut at, its normal.
+	function inPlane(transform:Null<Matrix3D>):Void {
+		requireOpen();
+		planeMatrix = transform;
+		pendingCount = 0;
+		if (transform == null) {
+			planeNX = planeNY = 0;
+			planeNZ = 1;
+		} else {
+			transform.transformDirection(0, 0, 1, moved);
+			var l = Math.sqrt(moved.x * moved.x + moved.y * moved.y + moved.z * moved.z);
+			planeNX = l > 0 ? moved.x / l : 0;
+			planeNY = l > 0 ? moved.y / l : 0;
+			planeNZ = l > 0 ? moved.z / l : 1;
+		}
+		plane.scale = 1;
+	}
+
+	// The data texture holding a skin's matrices, four texels a bone, 64 bones a row, written before the draw that reads it.
+	function bones(skinning:Array<Matrix3D>):Int {
+		var rows = Std.int(Math.max(1, Math.ceil(skinning.length / 64)));
+		var handle = boneTextures.get(rows);
+		if (handle == null)
+			boneTextures.set(rows, handle = renderer.dataTexture(256, rows));
+		var data = Bytes.alloc(256 * rows * 16);
+		for (i in 0...skinning.length) {
+			var m = skinning[i].values;
+			for (k in 0...16)
+				data.setFloat(i * 64 + k * 4, m[k]);
+		}
+		renderer.command(UpdateData(handle, 256, rows, data));
+		return handle;
+	}
+
+	// A color multiplied by a tint, channel by channel, as stored.
+	static function tinted(color:Int, tint:Int):Int {
+		inline function times(shift:Int):Int
+			return Math.round((color >>> shift & 255) * (tint >>> shift & 255) / 255);
+		return times(24) << 24 | times(16) << 16 | times(8) << 8 | times(0);
+	}
+
+	// A mesh's draw, once a view: its material's names or its program's shader, its state, skinned when given matrices; instanced copies
+	// from the frame's stream when it has some.
+	function meshDraw(mesh:GpuMesh3D, material:Material3D, transform:Matrix3D, skinning:Null<Array<Matrix3D>>, tint:Null<Int>, state:Null<MeshState3D>,
+			firstInstance:Int, instanceCount:Int, instanced:Bool):Void {
+		if (mesh.disposed)
+			throw "helix-render: a draw of a disposed mesh";
+		if (material.shaderValues == null && material.shading != Unlit)
+			throw "helix-render: a lit material (Material3D.shading) is not yet built (stage 2, lit materials and lights); draw it Unlit";
+		var s = material.shaderValues != null ? material.shaderValues.shader : unlitShader;
+		var fill = fillFor(s);
+		var primitive:helix.platform.Primitive = Triangles;
+		var indexBuffer = mesh.indexBuffer,
+			count = mesh.indexed ? mesh.triangleCount * 3 : mesh.vertexCount - mesh.vertexCount % 3;
+		switch polygonMode {
+			case Fill:
+			case Lines:
+				primitive = Lines;
+				indexBuffer = mesh.edges();
+				count = mesh.edgeCount;
+			case Points:
+				if (pointSize != 1 || pointSizeAttenuated)
+					throw "helix-render: a mesh drawn as points larger than a pixel (polygonMode Points, pointSize) is not yet built";
+				primitive = Points;
+				count = mesh.indexed ? mesh.triangleCount * 3 : mesh.vertexCount;
+		}
+		if (count <= 0)
+			return;
+		var blend = state != null && state.blend != null ? state.blend : material.blend;
+		var depthTest = state != null && state.depthTest != null ? state.depthTest : material.depthTest;
+		var depthWrite = state != null && state.depthWrite != null ? state.depthWrite : material.depthWrite;
+		var cull = state != null && state.cull != null ? state.cull : material.cull;
+		var colorWrite = state != null && state.colorWrite != null ? state.colorWrite : material.colorWrite;
+		var spec = renderer.pipelineFor(s, renderer.stateFor(primitive, indexBuffer != 0, blend, depthTest, depthWrite, cull, colorWrite), mesh.layout);
+		var skinned = skinning != null && mesh.hasJoints;
+		var boneTexture = skinned ? bones(skinning) : 0;
+		var baseTexture = material.baseColorTexture,
+			alpha = material.alphaTexture;
+		var baseHandle = baseTexture == null ? renderer.white.handle : baseTexture.drawnHandle();
+		var alphaHandle = alpha == null ? renderer.white.handle : alpha.drawnHandle();
+		var normalMatrix = transform.invert(normalScratch);
+		if (normalMatrix == null)
+			normalMatrix = normalScratch.makeIdentity();
+		normalMatrix.transpose(normalMatrix);
+		for (i in 0...viewCount) {
+			var view = viewPool[i];
+			if (viewCount > 1)
+				renderer.command(Viewport(view.x, view.y, view.width, view.height));
+			var values = fill.values;
+			values.base = material.shaderValues;
+			values.scene = view.scene;
+			fill.matrix(fill.model, transform);
+			fill.matrix(fill.normalMatrix, normalMatrix);
+			fill.matrix(fill.modelViewProjection, Matrix3D.compose(transform, view.viewProjection, mvpScratch));
+			fill.color(fill.baseColor, tint == null ? material.baseColor : tinted(material.baseColor, tint));
+			fill.texture(fill.baseColorTexture, baseHandle, baseTexture == null ? Sampling.LINEAR : baseTexture.sampling);
+			fill.texture(fill.alphaTexture, alphaHandle, alpha == null ? Sampling.LINEAR : alpha.sampling);
+			fill.integer(fill.colorSpaceSrgb, material.colorSpace == Srgb ? 1 : 0);
+			fill.integer(fill.baseColorTextureSrgb, baseTexture == null || baseTexture.colorSpace != Linear ? 1 : 0);
+			fill.float(fill.alphaCutoff, material.alphaCutoff);
+			fill.matrix2D(fill.textureTransform, material.textureTransform);
+			fill.integer(fill.vertexColors, material.vertexColors ? 1 : 0);
+			fill.integer(fill.toneMapped, material.toneMapped ? 1 : 0);
+			fill.integer(fill.skinned, skinned ? 1 : 0);
+			fill.integer(fill.morphTargetCount, 0);
+			fill.float(fill.pointSize, pointSize);
+			fill.integer(fill.pointSizeAttenuated, pointSizeAttenuated ? 1 : 0);
+			fill.planes(clipPlanes);
+			if (skinned) {
+				fill.texture(fill.boneTexture, boneTexture, Sampling.NEAREST);
+				if (fill.boneMatrices.declared && !fill.boneMatrices.shared)
+					for (b in 0...fill.boneMatrices.elementCount)
+						values.writeMatrix(fill.boneMatrices, b < skinning.length ? skinning[b] : identity, b);
+			}
+			fill.view(view);
+			var d = renderer.makeDraw(spec);
+			d.setBuffer(0, mesh.buffer);
+			if (instanced)
+				d.setBuffer(1, 0, instances);
+			else
+				d.setBuffer(1, identityInstance);
+			d.indexBuffer = indexBuffer;
+			d.first = 0;
+			d.count = count;
+			d.firstInstance = firstInstance;
+			d.instanceCount = instanceCount;
+			values.capture(d.snapshot);
+			renderer.record(d);
+		}
+	}
+
+	// The positions of a box's twelve edges, two ends each.
+	static function boxEdges(b:Bounds3D):Array<Float> {
+		var out = [];
+		for (e in [
+			[0, 1], [1, 3], [3, 2], [2, 0], [4, 5], [5, 7], [7, 6], [6, 4], [0, 4], [1, 5], [2, 6], [3, 7]])
+			for (corner in e) {
+				out.push(corner & 1 == 0 ? b.minX : b.maxX);
+				out.push(corner & 2 == 0 ? b.minY : b.maxY);
+				out.push(corner & 4 == 0 ? b.minZ : b.maxZ);
+			}
+		return out;
+	}
+
+	// The positions of three circles about a center, one square to each axis, as segments.
+	static function sphereEdges(x:Float, y:Float, z:Float, radius:Float):Array<Float> {
+		var out = [], n = 32;
+		for (axis in 0...3)
+			for (i in 0...n) {
+				for (k in [i, i + 1]) {
+					var a = k * Math.PI * 2 / n,
+						c = Math.cos(a) * radius,
+						s = Math.sin(a) * radius;
+					out.push(x + (axis == 0 ? 0 : c));
+					out.push(y + (axis == 0 ? c : axis == 1 ? 0 : s));
+					out.push(z + (axis == 2 ? 0 : s));
+				}
+			}
+		return out;
+	}
+
+	// The positions of a grid's lines on y 0, centered on the origin.
+	static function gridEdges(lineCount:Int, spacing:Float):Array<Float> {
+		var out = [], half = (lineCount - 1) * spacing / 2;
+		for (i in 0...lineCount) {
+			var p = -half + i * spacing;
+			for (v in [p, 0, -half, p, 0, half, -half, 0, p, half, 0, p])
+				out.push(v);
+		}
+		return out;
+	}
+
+	// The vertices of a billboard facing the first view, its center at a point.
+	function billboard(region:TextureRegion2D, x:Float, y:Float, z:Float, width:Float, height:Float, tint:Int, rotation:Float):Void {
+		var texture = region.texture;
+		texture.drawnHandle();
+		var radius = Math.sqrt(width * width + height * height) / 2;
+		if (culling) {
+			box.set(x - radius, y - radius, z - radius, x + radius, y + radius, z + radius);
+			if (!inView(box))
+				return;
+		}
+		var v = viewPool[0].view.values;
+		var rx = v[0], ry = v[4], rz = v[8], ux = v[1], uy = v[5], uz = v[9];
+		var cos = Math.cos(rotation),
+			sin = Math.sin(rotation),
+			hw = width / 2,
+			hh = height / 2;
+		var w = texture.width, h = texture.height;
+		var u0 = region.regionX / w,
+			v0 = region.regionY / h,
+			u1 = (region.regionX + region.regionWidth) / w,
+			v1 = (region.regionY + region.regionHeight) / h;
+		var corners = [[-hw, hh, u0, v0], [hw, hh, u1, v0], [hw, -hh, u1, v1], [-hw, -hh, u0, v1]];
+		var t = pending;
+		var k = 0;
+		for (index in [0, 1, 2, 0, 2, 3]) {
+			var c = corners[index];
+			// Turned clockwise on the screen: right and up turned the other way.
+			var px = c[0] * cos + c[1] * sin, py = -c[0] * sin + c[1] * cos;
+			var at = k * 9;
+			t[at] = x + rx * px + ux * py;
+			t[at + 1] = y + ry * px + uy * py;
+			t[at + 2] = z + rz * px + uz * py;
+			t[at + 3] = c[2];
+			t[at + 4] = c[3];
+			t[at + 5] = 0;
+			t[at + 6] = 0;
+			t[at + 7] = 1;
+			t[at + 8] = tint;
+			if (++k == 3) {
+				triangle(texture, 0, t);
+				k = 0;
+			}
+		}
 	}
 	#end
 
@@ -807,7 +1713,7 @@ class Batch3D {
 		@return  The shader, for a `ShaderValues` over it. */
 	public static macro function compileShader(fragment:String,
 			?options:haxe.macro.Expr.ExprOf<helix.services.shaders.ShaderOptions>):haxe.macro.Expr.ExprOf<helix.services.shaders.Shader> {
-		throw "helix-render: Batch3D.compileShader is not yet built (stage 1)";
+		return helix.render.RenderShaders.fragmentOver("batch.vert", fragment, options);
 	}
 
 	/** Compiles a vertex and a fragment stage, both the program's, for a `Batch3D`'s batch draws (`shaderValues`).
@@ -826,7 +1732,7 @@ class Batch3D {
 		@return  The shader, for a `ShaderValues` over it. */
 	public static macro function compileShaderStages(vertex:String, fragment:String,
 			?options:haxe.macro.Expr.ExprOf<helix.services.shaders.ShaderOptions>):haxe.macro.Expr.ExprOf<helix.services.shaders.Shader> {
-		throw "helix-render: Batch3D.compileShaderStages is not yet built (stage 1)";
+		return helix.render.RenderShaders.stages(vertex, fragment, options);
 	}
 
 	#if macro
@@ -850,7 +1756,7 @@ class Batch3D {
 		@return  An expression of type `Shader`. */
 	public static function makeShaderExpr(vertex:{name:String, text:String}, fragment:{name:String, text:String},
 			options:helix.services.shaders.ShaderBuildOptions, pos:haxe.macro.Expr.Position):haxe.macro.Expr {
-		throw "helix-render: Batch3D.makeShaderExpr is not yet built (stage 1)";
+		return helix.render.RenderShaders.make(vertex, fragment, options, pos);
 	}
 	#end
 }

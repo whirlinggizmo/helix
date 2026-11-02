@@ -84,7 +84,9 @@ class View3D {
 		@param aspect  The width of what it fills over its height.
 		@return  This view. */
 	public function setFromCamera(camera:Camera3D, aspect:Float):View3D {
-		throw "helix-render: View3D.setFromCamera is not yet built (stage 1)";
+		camera.computeViewMatrix(viewMatrix);
+		camera.computeProjectionMatrix(aspect, projectionMatrix);
+		return this;
 	}
 
 	/** Sets the matrices to draw in pixels: the view identity, and an orthographic projection with x from 0 at the left to `width` at
@@ -97,7 +99,9 @@ class View3D {
 		@param height  The height it spans, in pixels.
 		@return  This view. */
 	public function setFromScreen(width:Float, height:Float):View3D {
-		throw "helix-render: View3D.setFromScreen is not yet built (stage 1)";
+		viewMatrix.makeIdentity();
+		Matrix3D.fromOrthographic(0, width, height, 0, 0, 1, projectionMatrix);
+		return this;
 	}
 
 	/** Returns whether a box may be seen through this view: whether it is in the frustum of its matrices as they are now.
@@ -107,7 +111,8 @@ class View3D {
 		@param bounds  The box, in world units.
 		@return  True when some of it may be in the frustum; false when all of it is out. */
 	public function isInView(bounds:Bounds3D):Bool {
-		throw "helix-render: View3D.isInView is not yet built (stage 1)";
+		Matrix3D.compose(viewMatrix, projectionMatrix, scratch);
+		return helix.geometry.Frustum3D.fromMatrix(scratch, frustum).intersectsBounds(bounds);
 	}
 
 	/** Sets the rectangle of the renderer's viewport it fills.
@@ -118,6 +123,13 @@ class View3D {
 		@param height  The height, in pixels.
 		@return  This view. */
 	public function setViewport(x:Int, y:Int, width:Int, height:Int):View3D {
-		throw "helix-render: View3D.setViewport is not yet built (stage 1)";
+		viewportX = x;
+		viewportY = y;
+		viewportWidth = width;
+		viewportHeight = height;
+		return this;
 	}
+
+	static final scratch = new Matrix3D();
+	static final frustum = new helix.geometry.Frustum3D();
 }

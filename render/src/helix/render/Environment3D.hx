@@ -36,7 +36,11 @@ class Environment3D {
 		@param intensity  The intensity.
 		@return  False, changing nothing, for an intensity below 0. */
 	public function setAmbient(color:Int, intensity:Float):Bool {
-		throw "helix-render: Environment3D.setAmbient is not yet built (stage 1)";
+		if (!(intensity >= 0))
+			return false;
+		ambientColor = color;
+		ambientIntensity = intensity;
+		return true;
 	}
 
 	/** Sets the environment map the lit materials are lit and reflect by, beside the lights and the ambient light: diffuse light from
@@ -47,7 +51,12 @@ class Environment3D {
 		@param rotation  Optional. Its turn about +y, in radians, which the background shares; defaults to 0.
 		@return  False, changing nothing, for an intensity below 0 or a rotation that isn't finite. */
 	public function setMap(map:Null<EnvironmentMap3D>, intensity = 1., rotation = 0.):Bool {
-		throw "helix-render: Environment3D.setMap is not yet built (stage 1)";
+		if (!(intensity >= 0) || !Math.isFinite(rotation))
+			return false;
+		this.map = map;
+		mapIntensity = intensity;
+		this.rotation = rotation;
+		return true;
 	}
 
 	/** Sets one environment map as both the light and the background, as a sky picture usually is: `setMap` and `setBackground` in
@@ -59,7 +68,11 @@ class Environment3D {
 		@param blur  Optional. How blurred the background is, 0 sharp to 1 its blurriest; defaults to 0.
 		@return  False, changing nothing, for an intensity below 0, a rotation that isn't finite, or a blur outside 0 to 1. */
 	public function setMapAndBackground(map:Null<EnvironmentMap3D>, intensity = 1., rotation = 0., blur = 0.):Bool {
-		throw "helix-render: Environment3D.setMapAndBackground is not yet built (stage 1)";
+		if (!(intensity >= 0) || !Math.isFinite(rotation) || !(blur >= 0 && blur <= 1))
+			return false;
+		setMap(map, intensity, rotation);
+		setBackground(map, blur);
+		return true;
 	}
 
 	/** Sets the environment map `Batch3D.drawBackground` shows behind everything, turned and as bright as `setMap` says.
@@ -68,6 +81,10 @@ class Environment3D {
 		@param blur  Optional. 0 sharp to 1 its blurriest; defaults to 0.
 		@return  False, changing nothing, for a blur outside 0 to 1. */
 	public function setBackground(map:Null<EnvironmentMap3D>, blur = 0.):Bool {
-		throw "helix-render: Environment3D.setBackground is not yet built (stage 1)";
+		if (!(blur >= 0 && blur <= 1))
+			return false;
+		background = map;
+		backgroundBlur = blur;
+		return true;
 	}
 }

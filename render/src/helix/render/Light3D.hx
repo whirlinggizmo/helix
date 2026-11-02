@@ -30,6 +30,6 @@ abstract class Light3D {
 	function new() {}
 
 	function set_intensity(value:Float):Float {
-		throw "helix-render: Light3D.set_intensity is not yet built (stage 1)";
+		return intensity = Math.max(0, value);
 	}
 }

@@ -1,5 +1,19 @@
 package helix.render;
 
+import haxe.io.Bytes;
+import helix.platform.Blend;
+import helix.platform.ColorChannels;
+import helix.platform.CullFace;
+import helix.platform.DepthTest;
+import helix.platform.Primitive;
+import helix.platform.Sampling;
+import helix.render.RenderDraw.RenderPipeline;
+import helix.render.RenderPass.RenderCommand;
+import helix.services.shaders.Shader;
+import helix.services.shaders.ShaderPipelineState;
+import helix.services.shaders.ShaderPrograms;
+import helix.services.shaders.ShaderValues;
+import helix.services.shaders.ShaderVertexLayout;
 import helix.geometry.Mesh3D;
 import helix.platform.IGraphics;
 import helix.platform.TextureFormat;
@@ -74,10 +88,15 @@ class Renderer {
 		@param graphics  The graphics to draw with. */
 	public function new(graphics:IGraphics) {
 		this.graphics = graphics;
+		programs = new ShaderPrograms(graphics);
+		var texel = Bytes.alloc(4);
+		texel.fill(0, 4, 255);
+		white = new Texture2D(graphics.createTexture(1, 1, [texel]), 1, 1);
+		white.renderer = this;
 	}
 
 	function set_exposure(value:Float):Float {
-		throw "helix-render: Renderer.set_exposure is not yet built (stage 1)";
+		return exposure = Math.isFinite(value) ? value : 0;
 	}
 
 	/** Uploads an image as a texture.
@@ -89,7 +108,15 @@ class Renderer {
 			has them; `Sampling`'s anisotropy sharpens it at grazing angles.
 		@throws String  An image larger than this GPU allows. */
 	public function createTexture(image:Image, mipmaps = false):Texture2D {
-		throw "helix-render: Renderer.createTexture is not yet built (stage 1)";
+		var levels = [image.pixels];
+		if (mipmaps)
+			for (level in image.getMipmaps())
+				levels.push(level.pixels);
+		var texture = new Texture2D(graphics.createTexture(image.width, image.height, levels), image.width, image.height);
+		texture.mipmapped = mipmaps;
+		if (mipmaps)
+			texture.sampling = new Sampling(Linear, Clamp, Clamp, Linear);
+		return own(texture);
 	}
 
 	/** Creates a render target: a texture that draws can go into, between `beginTarget` and `endTarget`.
@@ -106,7 +133,18 @@ class Renderer {
 		@return  The render target, holding transparent black until drawn into.
 		@throws String  A size of 0 or less, or a format this GPU cannot draw into. */
 	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:TargetDepth = Buffer, ?msaaSampleCount:Int):RenderTarget2D {
-		throw "helix-render: Renderer.createRenderTarget is not yet built (stage 1)";
+		if (width <= 0 || height <= 0)
+			throw 'helix-render: a render target of ${width} x ${height}; its size is above 0';
+		if (!graphics.canRender(format))
+			throw 'helix-render: this GPU can\'t draw into a render target of format ${(format : Int)}';
+		if (depth == Texture)
+			throw "helix-render: TargetDepth.Texture waits on the platform's sampled depth (queued in docs/ROADMAP.md); use Buffer or None";
+		var handle = graphics.createRenderTarget(width, height, format, depth != None);
+		// The platform multisamples a target with depth as the screen is, and one without not at all, until a target has its own count
+		// (queued in docs/ROADMAP.md): the count given is held to what it draws with.
+		var samples = depth != None ? graphics.msaaSampleCount : 1;
+		var target = new RenderTarget2D(handle, width, height, format, depth, samples, null);
+		return own(target);
 	}
 
 	/** Uploads six square images as a cube texture, for a program's own shader to sample by direction (`samplerCube`).
@@ -117,7 +155,28 @@ class Renderer {
 		@return  The cube texture, sampled linearly.
 		@throws String  Not six faces, faces not square and alike, or larger than this GPU allows. */
 	public function createCubeTexture(faces:Array<Image>, mipmaps = false):CubeTexture3D {
-		throw "helix-render: Renderer.createCubeTexture is not yet built (stage 1)";
+		if (faces.length != 6)
+			throw 'helix-render: a cube texture of ${faces.length} faces; it takes six, +X, -X, +Y, -Y, +Z, -Z';
+		var size = faces[0].width;
+		for (f in faces)
+			if (f.width != size || f.height != size)
+				throw "helix-render: a cube texture's faces are square and alike";
+		var levels:Array<Bytes> = [];
+		var mips = [for (f in faces) mipmaps ? f.getMipmaps() : []];
+		var levelCount = 1 + (mipmaps ? mips[0].length : 0);
+		for (level in 0...levelCount) {
+			var face = level == 0 ? faces[0] : mips[0][level - 1];
+			var bytes = Bytes.alloc(face.width * face.height * 4 * 6);
+			for (i in 0...6) {
+				var image = level == 0 ? faces[i] : mips[i][level - 1];
+				bytes.blit(i * image.pixels.length, image.pixels, 0, image.pixels.length);
+			}
+			levels.push(bytes);
+		}
+		var cube = new CubeTexture3D(graphics.createCubeTexture(size, levels, Rgba8), size);
+		cube.renderer = this;
+		live.set(cube, cube.dispose);
+		return cube;
 	}
 
 	/** Uploads a mesh's vertices and indices.
@@ -130,7 +189,11 @@ class Renderer {
 		@return  The uploaded mesh.
 		@throws String  A mesh without positions, or whose arrays do not match its vertex count. */
 	public function createMesh(mesh:Mesh3D, updatedOften = false):GpuMesh3D {
-		throw "helix-render: Renderer.createMesh is not yet built (stage 1)";
+		var gpu = new GpuMesh3D();
+		gpu.renderer = this;
+		gpu.upload(mesh);
+		live.set(gpu, gpu.dispose);
+		return gpu;
 	}
 
 	/** Uploads a model: each mesh, each image as a texture, and each material as a `Material3D` over them.
@@ -153,7 +216,7 @@ class Renderer {
 			every file's as linear.
 		@return  The uploaded model, which owns its meshes and textures. */
 	public function createModel(model:Model3D, mipmaps = true, colorSpace:ColorSpace = Auto):GpuModel3D {
-		throw "helix-render: Renderer.createModel is not yet built (stage 1)";
+		return GpuModel3D.make(this, model, mipmaps, colorSpace);
 	}
 
 	/** Uploads a finished environment bake: its prefiltered and background cubes, and its irradiance.
@@ -172,7 +235,11 @@ class Renderer {
 		@param font  The font, as helix-services' `Fonts` makes it.
 		@return  The font, ready to draw and measure with. */
 	public function createFont(font:Font2D):GpuFont2D {
-		throw "helix-render: Renderer.createFont is not yet built (stage 1)";
+		var atlas = createTexture(font.atlas);
+		live.remove(atlas);
+		var gpu = new GpuFont2D(font, atlas);
+		live.set(gpu, gpu.dispose);
+		return gpu;
 	}
 
 	/** Starts recording a frame, with the screen's pass.
@@ -189,7 +256,18 @@ class Renderer {
 		@param clearColor  Optional. The color the screen is cleared to, as 0xAARRGGBB; opaque black when omitted.
 		@throws String  A frame already being recorded, or a size of 0 or less. */
 	public function beginFrame(width:Int, height:Int, ?clearColor:Int):Void {
-		throw "helix-render: Renderer.beginFrame is not yet built (stage 1)";
+		if (inFrame)
+			throw "helix-render: beginFrame with a frame already being recorded; endFrame first";
+		if (width <= 0 || height <= 0)
+			throw 'helix-render: beginFrame of ${width} x ${height}; the framebuffer\'s size is above 0';
+		inFrame = true;
+		frameNumber++;
+		passes.resize(0);
+		reads.clear();
+		screen = new RenderPass(null, 0, width, height, clearColor);
+		pass = screen;
+		resetViewportState();
+		scissored = false;
 	}
 
 	/** Ends the frame and draws it: the shaders it draws with built where they aren't, then each shadow pass, each render target's pass, in
@@ -200,7 +278,36 @@ class Renderer {
 		@throws String  No frame being recorded, a batch still open, a target pass not ended, or a shader the GPU refused, with the
 			compiler's log. */
 	public function endFrame():Void {
-		throw "helix-render: Renderer.endFrame is not yet built (stage 1)";
+		if (!inFrame)
+			throw "helix-render: endFrame with no frame being recorded; beginFrame first";
+		if (openBatch != null)
+			throw "helix-render: endFrame with a batch still open; end it first";
+		if (pass != screen)
+			throw "helix-render: endFrame with a target pass not ended; endTarget first";
+		var all = passes.concat([screen]);
+		// The shaders and pipelines the frame draws with, built before its first pass.
+		for (p in all)
+			for (c in p.commands)
+				switch c {
+					case Draw(d):
+						var spec = d.pipeline;
+						if (spec.built == null || spec.built.handle == 0)
+							spec.built = programs.getPipeline(spec.shader, spec.state, spec.layout);
+					case _:
+				}
+		for (s in streams)
+			s.prepare();
+		programs.prepareFrame();
+		try {
+			for (p in all)
+				run(p);
+		} catch (e:Dynamic) {
+			programs.finishFrame();
+			finish();
+			throw e;
+		}
+		programs.finishFrame();
+		finish();
 	}
 
 	/** Starts a pass into a render target: the draws after it go into the target, until `endTarget`.
@@ -219,14 +326,50 @@ class Renderer {
 		@param clearColor  Optional. The color it is cleared to, as 0xAARRGGBB; it keeps what it holds when omitted.
 		@throws String  No frame being recorded, a target pass already open, a batch open, or a disposed target. */
 	public function beginTarget(target:RenderTarget2D, ?clearColor:Int):Void {
-		throw "helix-render: Renderer.beginTarget is not yet built (stage 1)";
+		if (!inFrame)
+			throw "helix-render: beginTarget with no frame being recorded";
+		if (pass != screen)
+			throw "helix-render: beginTarget with a target pass already open; endTarget first";
+		if (openBatch != null)
+			throw "helix-render: beginTarget with a batch open; end it first";
+		if (target.disposed)
+			throw "helix-render: beginTarget into a disposed render target";
+		flushOpen();
+		screenViewport = [viewportX, viewportY, viewportWidth, viewportHeight];
+		screenScissored = scissored;
+		var copied = false;
+		if (reads.exists(target.handle)) {
+			// Read earlier in the frame: the pass goes into a fresh texture, the earlier draws keeping the old.
+			var old = target.handle;
+			var fresh = takeTarget(target);
+			retire(target, old);
+			target.moveTo(fresh);
+			copied = clearColor == null;
+			if (copied)
+				copyFrom = old;
+		}
+		pass = new RenderPass(target, target.handle, target.width, target.height, copied ? 0x00000000 : clearColor);
+		passes.push(pass);
+		if (copied)
+			recordCopy(copyFrom);
+		resetViewportState();
+		scissored = false;
 	}
 
 	/** Ends the target pass, going back to the screen's: its viewport and clip as they were before `beginTarget`.
 
 		@throws String  No target pass open, or a batch still open. */
 	public function endTarget():Void {
-		throw "helix-render: Renderer.endTarget is not yet built (stage 1)";
+		if (pass == screen || !inFrame)
+			throw "helix-render: endTarget with no target pass open";
+		if (openBatch != null)
+			throw "helix-render: endTarget with a batch still open; end it first";
+		pass = screen;
+		viewportX = screenViewport[0];
+		viewportY = screenViewport[1];
+		viewportWidth = screenViewport[2];
+		viewportHeight = screenViewport[3];
+		scissored = screenScissored;
 	}
 
 	/** Clears the current pass to a color: what was drawn into it before is dropped, and its depth is the farthest again.
@@ -237,7 +380,20 @@ class Renderer {
 		@param color  The color, as 0xAARRGGBB.
 		@throws String  No frame being recorded. */
 	public function clearTarget(color:Int):Void {
-		throw "helix-render: Renderer.clearTarget is not yet built (stage 1)";
+		if (!inFrame)
+			throw "helix-render: clearTarget with no frame being recorded";
+		flushOpen();
+		var kept:Array<RenderCommand> = [];
+		for (c in pass.commands)
+			switch c {
+				case Draw(_):
+				case _:
+					kept.push(c);
+			}
+		pass.commands.resize(0);
+		for (c in kept)
+			pass.commands.push(c);
+		pass.clear = color;
 	}
 
 	/** Sets the rectangle of the current pass that the following draws fill, until `resetViewport` or the pass's end.
@@ -251,14 +407,27 @@ class Renderer {
 		@param height  The height, in pixels.
 		@throws String  No frame being recorded, a batch open, or a size of 0 or less. */
 	public function applyViewport(x:Int, y:Int, width:Int, height:Int):Void {
-		throw "helix-render: Renderer.applyViewport is not yet built (stage 1)";
+		if (!inFrame)
+			throw "helix-render: applyViewport with no frame being recorded";
+		if (openBatch != null)
+			throw "helix-render: applyViewport with a batch open; it takes effect at a batch's begin";
+		if (width <= 0 || height <= 0)
+			throw 'helix-render: a viewport of ${width} x ${height}; its size is above 0';
+		viewportX = x;
+		viewportY = y;
+		viewportWidth = width;
+		viewportHeight = height;
 	}
 
 	/** Sets the viewport back to the whole pass.
 
 		@throws String  No frame being recorded, or a batch open. */
 	public function resetViewport():Void {
-		throw "helix-render: Renderer.resetViewport is not yet built (stage 1)";
+		if (!inFrame)
+			throw "helix-render: resetViewport with no frame being recorded";
+		if (openBatch != null)
+			throw "helix-render: resetViewport with a batch open";
+		resetViewportState();
 	}
 
 	/** Clips the following draws to a rectangle of the current pass, until `resetScissor` or the pass's end.
@@ -270,20 +439,414 @@ class Renderer {
 		@param height  The height, in pixels; 0 clips everything.
 		@throws String  No frame being recorded, or a size below 0. */
 	public function applyScissor(x:Int, y:Int, width:Int, height:Int):Void {
-		throw "helix-render: Renderer.applyScissor is not yet built (stage 1)";
+		if (!inFrame)
+			throw "helix-render: applyScissor with no frame being recorded";
+		if (width < 0 || height < 0)
+			throw 'helix-render: a scissor of ${width} x ${height}; its size is 0 or more';
+		flushOpen();
+		scissored = true;
+		pass.commands.push(Scissor(x, y, width, height));
 	}
 
 	/** Removes the clip that `applyScissor` set.
 
 		@throws String  No frame being recorded. */
 	public function resetScissor():Void {
-		throw "helix-render: Renderer.resetScissor is not yet built (stage 1)";
+		if (!inFrame)
+			throw "helix-render: resetScissor with no frame being recorded";
+		flushOpen();
+		scissored = false;
+		pass.commands.push(ResetScissor);
 	}
 
 	/** Frees everything made through it that the program hasn't disposed, then its own textures and buffers.
 
 		It is called before `IGraphics.dispose`, outside a frame. */
 	public function dispose():Void {
-		throw "helix-render: Renderer.dispose is not yet built (stage 1)";
+		if (inFrame)
+			throw "helix-render: dispose inside a frame; after endFrame";
+		var held = [for (k => f in live) f];
+		for (f in held)
+			f();
+		live.clear();
+		for (f in afterFrame)
+			f();
+		afterFrame.resize(0);
+		for (_ => list in pool)
+			for (entry in list)
+				graphics.disposeTexture(entry.handle);
+		pool.clear();
+		for (s in streams)
+			s.dispose();
+		for (b in staticBuffers)
+			graphics.disposeBuffer(b);
+		staticBuffers.resize(0);
+		for (d in dataTextures)
+			graphics.disposeTexture(d);
+		dataTextures.resize(0);
+		white.dispose();
+		programs.dispose();
+	}
+
+	// The shaders built on the GPU, the white texture every batch draws shapes and missing textures with.
+	@:allow(helix.render)
+	final programs:ShaderPrograms;
+
+	@:allow(helix.render)
+	final white:Texture2D;
+
+	// What was made through it and not disposed, each with its dispose.
+	@:allow(helix.render)
+	final live = new haxe.ds.ObjectMap<{}, () -> Void>();
+	// What is freed once the frame being recorded is drawn.
+	final afterFrame:Array<() -> Void> = [];
+	// The frame: its target passes in the order begun, the screen's, the pass being recorded, and the textures its draws read so far.
+	final passes:Array<RenderPass> = [];
+	var screen:Null<RenderPass> = null;
+
+	@:allow(helix.render)
+	var pass:Null<RenderPass> = null;
+
+	final reads = new Map<Int, Bool>();
+	var frameNumber = 0;
+	// The viewport, in the pass's pixels from its top left; the screen's while a target pass is open; whether a scissor is set.
+	@:allow(helix.render)
+	var viewportX = 0;
+
+	@:allow(helix.render)
+	var viewportY = 0;
+
+	var screenViewport = [0, 0, 0, 0];
+	var scissored = false;
+	var screenScissored = false;
+	var copyFrom = 0;
+	// The batch open, and how its waiting draws are recorded.
+	@:allow(helix.render)
+	var openBatch:Null<{}> = null;
+
+	@:allow(helix.render)
+	var openFlush:Null<() -> Void> = null;
+
+	// The frame's vertex streams, by name; static buffers the renderer made; data textures (bones).
+	final streamsByName = new Map<String, RenderStream>();
+	final streams:Array<RenderStream> = [];
+	final staticBuffers:Array<Int> = [];
+	final dataTextures:Array<Int> = [];
+	// Draws made from the pool, reused frame to frame.
+	final drawPool:Array<RenderDraw> = [];
+	var drawsUsed = 0;
+	// Pipelines' specs by shader, layout and state; states by their values.
+	final specs = new haxe.ds.ObjectMap<Shader, haxe.ds.ObjectMap<ShaderVertexLayout, haxe.ds.ObjectMap<ShaderPipelineState, RenderPipeline>>>();
+	final states = new Map<Int, Map<Int, ShaderPipelineState>>();
+	// Render targets' textures retired by a copy on write or a resize, by size and format, each with the frame it was last used in.
+	final pool = new Map<String, Array<{handle:Int, frame:Int}>>();
+	final retiring:Array<{key:String, handle:Int}> = [];
+	// The copy pass's shader, values and corner buffer, made when a target is first copied on write.
+	var copyFill:Null<RenderFill> = null;
+	var copyCorners = 0;
+
+	static var copyLayout:Null<ShaderVertexLayout> = null;
+
+	// Registers what it made, for dispose.
+	function own<T:Texture2D>(texture:T):T {
+		texture.renderer = this;
+		live.set(texture, texture.dispose);
+		return texture;
+	}
+
+	// Forgets what the program disposed.
+
+	@:allow(helix.render)
+	function forget(made:{}):Void
+		live.remove(made);
+
+	// Runs a release now, or after the frame being recorded when one is.
+
+	@:allow(helix.render)
+	function release(free:() -> Void):Void {
+		if (inFrame)
+			afterFrame.push(free);
+		else
+			free();
+	}
+
+	// Runs a texture update before the pass being recorded, or now outside a frame.
+
+	@:allow(helix.render)
+	function updateBeforePass(update:() -> Void):Void {
+		if (inFrame)
+			pass.updates.push(update);
+		else
+			update();
+	}
+
+	function resetViewportState():Void {
+		viewportX = 0;
+		viewportY = 0;
+		viewportWidth = pass.width;
+		viewportHeight = pass.height;
+	}
+
+	// Records the open batch's waiting draws.
+
+	@:allow(helix.render)
+	function flushOpen():Void
+		if (openFlush != null)
+			openFlush();
+
+	// Opens a batch: none other may be.
+
+	@:allow(helix.render)
+	function opening(batch:{}, flush:() -> Void):Void {
+		if (!inFrame)
+			throw "helix-render: a batch's begin with no frame being recorded; Renderer.beginFrame first";
+		if (openBatch != null)
+			throw "helix-render: a batch's begin with a batch already open; end it first";
+		openBatch = batch;
+		openFlush = flush;
+	}
+
+	@:allow(helix.render)
+	function closing(batch:{}):Void {
+		if (openBatch != batch)
+			throw "helix-render: a batch's end with the batch not open";
+		openBatch = null;
+		openFlush = null;
+	}
+
+	// The frame's stream of a name, made the first time.
+
+	@:allow(helix.render)
+	function stream(name:String, stride:Int, layout:ShaderVertexLayout):RenderStream {
+		var s = streamsByName.get(name);
+		if (s == null) {
+			s = new RenderStream(graphics, stride, layout);
+			streamsByName.set(name, s);
+			streams.push(s);
+		}
+		return s;
+	}
+
+	// The record of the values attributes a batch draw's vertices don't carry read (RenderConstants), made the first time.
+	var constants = 0;
+
+	@:allow(helix.render)
+	function batchConstants():Int {
+		if (constants == 0)
+			constants = staticBuffer(RenderConstants.record(RenderConstants.BATCH, RenderConstants.BATCH_STRIDE, false), false);
+		return constants;
+	}
+
+	// A static buffer the renderer keeps until it is disposed.
+
+	@:allow(helix.render)
+	function staticBuffer(data:Bytes, index:Bool):Int {
+		var b = graphics.createStaticBuffer(data, data.length, index);
+		staticBuffers.push(b);
+		return b;
+	}
+
+	// A draw from the pool.
+
+	@:allow(helix.render)
+	function makeDraw(pipeline:RenderPipeline):RenderDraw {
+		if (drawsUsed == drawPool.length)
+			drawPool.push(new RenderDraw());
+		var d = drawPool[drawsUsed++];
+		d.pipeline = pipeline;
+		d.resetBuffers();
+		return d;
+	}
+
+	// Refuses a texture the pass being recorded draws into.
+
+	@:allow(helix.render)
+	function checkReadable(handle:Int):Void
+		if (pass != null && pass.target != null && handle == pass.handle)
+			throw "helix-render: a draw reads the render target its pass draws into; draw it into another target, or after endTarget";
+
+	// Records a draw in the pass, noting the textures it reads; one reading the target drawn into is refused.
+
+	@:allow(helix.render)
+	function record(draw:RenderDraw):Void {
+		for (t in draw.snapshot.textures)
+			if (t != 0) {
+				if (pass.target != null && t == pass.handle)
+					throw "helix-render: a draw reads the render target its pass draws into; draw it into another target, or after endTarget";
+				reads.set(t, true);
+			}
+		pass.addDraw(draw);
+	}
+
+	// Records a command other than a draw.
+
+	@:allow(helix.render)
+	function command(c:RenderCommand):Void
+		pass.commands.push(c);
+
+	// Whether the pass being recorded holds linear light: an RGBA16F target.
+
+	@:allow(helix.render)
+	function linearPass():Bool
+		return pass.target != null && pass.target.format == Rgba16f;
+
+	// The spec of a shader, a state and a layout, the same object each time.
+
+	@:allow(helix.render)
+	function pipelineFor(shader:Shader, state:ShaderPipelineState, layout:ShaderVertexLayout):RenderPipeline {
+		var byLayout = specs.get(shader);
+		if (byLayout == null)
+			specs.set(shader, byLayout = new haxe.ds.ObjectMap());
+		var byState = byLayout.get(layout);
+		if (byState == null)
+			byLayout.set(layout, byState = new haxe.ds.ObjectMap());
+		var spec = byState.get(state);
+		if (spec == null)
+			byState.set(state, spec = new RenderPipeline(shader, state, layout));
+		return spec;
+	}
+
+	// The state of these values, the same object each time; every helix-render shader is flipped by its clip scale.
+
+	@:allow(helix.render)
+	function stateFor(primitive:Primitive, indexed:Bool, blend:Blend, depthTest:DepthTest, depthWrite:Bool, cull:CullFace,
+			colorWrite:ColorChannels):ShaderPipelineState {
+		var code = (primitive : Int) | (indexed ? 4 : 0) | (depthTest : Int) << 3 | (depthWrite ? 32 : 0) | (cull : Int) << 6 | (colorWrite : Int) << 8;
+		var byCode = states.get((blend : Int));
+		if (byCode == null)
+			states.set((blend : Int), byCode = new Map());
+		var state = byCode.get(code);
+		if (state == null)
+			byCode.set(code, state = ShaderPipelineState.CLIP_SCALE.with({
+				primitive: primitive,
+				indexed: indexed,
+				blend: blend,
+				depthTest: depthTest,
+				depthWrite: depthWrite,
+				cull: cull,
+				colorWrite: colorWrite
+			}));
+		return state;
+	}
+
+	// A data texture of a size, made once and kept.
+
+	@:allow(helix.render)
+	function dataTexture(width:Int, height:Int):Int {
+		var handle = graphics.createDataTexture(width, height);
+		dataTextures.push(handle);
+		return handle;
+	}
+
+	// A fresh texture for a target copied on write: one the pool holds of its size and format, or a new one.
+	function takeTarget(target:RenderTarget2D):Int {
+		var list = pool.get(poolKey(target));
+		if (list != null && list.length > 0)
+			return list.pop().handle;
+		return graphics.createRenderTarget(target.width, target.height, target.format, target.depth != None);
+	}
+
+	@:allow(helix.render)
+	static function poolKey(target:RenderTarget2D):String
+		return '${target.width} ${target.height} ${(target.format : Int)} ${target.depth != None}';
+
+	// A target's old texture, kept until the frame is drawn, then pooled.
+
+	@:allow(helix.render)
+	function retire(target:RenderTarget2D, handle:Int):Void
+		retiring.push({key: poolKey(target), handle: handle});
+
+	// The copy of a target's old texture into its new one, the pass's first draw.
+	function recordCopy(from:Int):Void {
+		if (copyFill == null) {
+			var shader = RenderShaders.compileOwn("copy.vert", "copy.frag");
+			copyFill = new RenderFill(shader);
+			var corners = Bytes.alloc(24);
+			for (i => v in [0., 0, 2, 0, 0, 2])
+				corners.setFloat(i * 4, v);
+			copyCorners = staticBuffer(corners, false);
+			if (copyLayout == null)
+				copyLayout = new ShaderVertexLayout([{stride: 8, placements: [{name: "corner", offset: 0}]}]);
+		}
+		var spec = pipelineFor(copyFill.shader, stateFor(Triangles, false, Blend.OPAQUE, Off, false, None, All), copyLayout);
+		var d = makeDraw(spec);
+		d.setBuffer(0, copyCorners);
+		d.first = 0;
+		d.count = 3;
+		copyFill.values.writeTexture(copyFill.shader.getSampler("source"), from, Sampling.NEAREST);
+		copyFill.values.capture(d.snapshot);
+		pass.addDraw(d);
+	}
+
+	// Draws one pass of the frame.
+	function run(p:RenderPass):Void {
+		for (u in p.updates)
+			u();
+		if (p.target == null)
+			graphics.beginFrame(p.width, p.height, p.clear == null ? 0xff000000 : p.clear);
+		else if (p.clear == null)
+			graphics.resumeTargetPass(p.handle);
+		else {
+			var c = p.clear, linear = p.target.format == Rgba16f;
+			graphics.beginTargetPass(p.handle, channel(c >> 16 & 255, linear), channel(c >> 8 & 255, linear), channel(c & 255, linear), (c >>> 24) / 255);
+		}
+		for (s in p.streams)
+			s.upload();
+		for (c in p.commands)
+			switch c {
+				case Draw(d):
+					graphics.draw(d.pipeline.built.handle, d.resolveBuffers(), d.indexBuffer, d.first, d.count, d.firstInstance, d.instanceCount,
+						d.snapshot.textures, d.snapshot.samplings, d.snapshot.uniforms);
+				case Viewport(x, y, w, h):
+					graphics.applyViewport(x, p.height - y - h, w, h);
+				case Scissor(x, y, w, h):
+					graphics.applyScissor(x, p.height - y - h, w, h);
+				case ResetScissor:
+					graphics.resetScissor();
+				case UpdateData(handle, w, h, data):
+					graphics.updateTexture(handle, 0, 0, w, h, data);
+			}
+		if (p.target == null)
+			graphics.endFrame();
+		else
+			graphics.endTargetPass();
+	}
+
+	// A clear color's channel as the target holds it: as stored, or decoded to linear light in an RGBA16F target.
+	static function channel(value:Int, linear:Bool):Float {
+		var c = value / 255;
+		return !linear ? c : c <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4);
+	}
+
+	// After the frame is drawn: what waited freed, retired targets pooled and those unused a frame freed, the streams emptied.
+	function finish():Void {
+		inFrame = false;
+		pass = null;
+		screen = null;
+		for (f in afterFrame)
+			f();
+		afterFrame.resize(0);
+		for (_ => list in pool) {
+			var kept = [];
+			for (entry in list)
+				if (frameNumber - entry.frame > 1)
+					graphics.disposeTexture(entry.handle);
+				else
+					kept.push(entry);
+			list.resize(0);
+			for (e in kept)
+				list.push(e);
+		}
+		for (r in retiring) {
+			var list = pool.get(r.key);
+			if (list == null)
+				pool.set(r.key, list = []);
+			list.push({handle: r.handle, frame: frameNumber});
+		}
+		retiring.resize(0);
+		for (s in streams)
+			s.used = 0;
+		drawsUsed = 0;
+		passes.resize(0);
 	}
 }

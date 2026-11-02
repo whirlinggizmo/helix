@@ -26,7 +26,7 @@ class SpotLight3D extends Light3D {
 	}
 
 	function set_range(value:Float):Float {
-		throw "helix-render: SpotLight3D.set_range is not yet built (stage 1)";
+		return range = Math.max(0, value);
 	}
 
 	/** Sets its cones.
@@ -35,6 +35,10 @@ class SpotLight3D extends Light3D {
 		@param outerCone  The outer cone, in radians from its axis.
 		@return  False, changing nothing, unless 0 <= innerCone <= outerCone < π / 2. */
 	public function setCone(innerCone:Float, outerCone:Float):Bool {
-		throw "helix-render: SpotLight3D.setCone is not yet built (stage 1)";
+		if (!(innerCone >= 0 && innerCone <= outerCone && outerCone < Math.PI / 2))
+			return false;
+		this.innerCone = innerCone;
+		this.outerCone = outerCone;
+		return true;
 	}
 }

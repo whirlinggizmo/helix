@@ -34,6 +34,6 @@ class Fog3D {
 	}
 
 	function set_density(value:Float):Float {
-		throw "helix-render: Fog3D.set_density is not yet built (stage 1)";
+		return density = Math.max(0, value);
 	}
 }

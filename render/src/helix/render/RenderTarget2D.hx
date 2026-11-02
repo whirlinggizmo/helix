@@ -61,6 +61,31 @@ class RenderTarget2D extends Texture2D {
 		@param height  The height, in texels.
 		@throws String  A size of 0 or less, a size this GPU can't make, a pass into it open, or a disposed target. */
 	public function resize(width:Int, height:Int):Void {
-		throw "helix-render: RenderTarget2D.resize is not yet built (stage 1)";
+		if (disposed)
+			throw "helix-render: resize of a disposed render target";
+		if (width <= 0 || height <= 0)
+			throw 'helix-render: a render target resized to ${width} x ${height}; its size is above 0';
+		var r = renderer;
+		if (r == null)
+			throw "helix-render: a render target made by no renderer";
+		if (r.pass != null && r.pass.target == this)
+			throw "helix-render: resize of a render target whose pass is open; endTarget first";
+		var fresh = r.graphics.createRenderTarget(width, height, format, depth != None);
+		var old = handle;
+		this.width = width;
+		this.height = height;
+		moveTo(fresh);
+		r.release(() -> r.graphics.disposeTexture(old));
+	}
+
+	override function isTarget():Bool
+		return true;
+
+	// Takes another texture's place: a copy made on write, or a resize.
+
+	@:allow(helix.render)
+	function moveTo(fresh:Int):Void {
+		handle = fresh;
+		sharedTexture.texture = fresh;
 	}
 }

@@ -32,11 +32,25 @@ class CubeTexture3D {
 	}
 
 	function set_sampling(value:Sampling):Sampling {
-		throw "helix-render: CubeTexture3D.set_sampling is not yet built (stage 1)";
+		sampling = value;
+		sharedTexture.sampling = value;
+		return value;
 	}
 
 	/** Frees the cube on the GPU, after the frame being recorded when it holds a draw with it. A second call does nothing. */
 	public function dispose():Void {
-		throw "helix-render: CubeTexture3D.dispose is not yet built (stage 1)";
+		if (handle == 0)
+			return;
+		var old = handle, r = renderer;
+		handle = 0;
+		sharedTexture.texture = 0;
+		if (r != null) {
+			r.forget(this);
+			r.release(() -> r.graphics.disposeTexture(old));
+		}
 	}
+
+	// The renderer that made it.
+	@:allow(helix.render)
+	var renderer:Null<Renderer> = null;
 }

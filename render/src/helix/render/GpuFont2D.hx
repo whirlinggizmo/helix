@@ -26,7 +26,7 @@ class GpuFont2D {
 	public var lineHeight(get, never):Float;
 
 	function get_lineHeight():Float {
-		throw "helix-render: GpuFont2D.get_lineHeight is not yet built (stage 1)";
+		return font.ascent - font.descent + font.lineGap;
 	}
 
 	/** Returns the size of text drawn on one line per line break, as `Batch2D.drawText` draws it.
@@ -38,11 +38,56 @@ class GpuFont2D {
 		@param out  Optional. Set to the size; a new vector when omitted.
 		@return  The width of its widest line as x, and its lines' height as y, in the units it is drawn in. */
 	public function measureText(text:String, ?size:Float, letterSpacing = 0., kerned = true, ?out:Vector2D):Vector2D {
-		throw "helix-render: GpuFont2D.measureText is not yet built (stage 1)";
+		if (out == null)
+			out = new Vector2D();
+		var scale = scaleOf(size), widest = 0., lines = 0;
+		for (line in text.split("\n")) {
+			widest = Math.max(widest, widthOf(codes(line), scale, letterSpacing));
+			lines++;
+		}
+		return out.set(widest, heightOf(lines, scale, 1));
 	}
 
 	/** Frees the atlas on the GPU, after the frame being recorded when it holds a draw of it. A second call does nothing. */
 	public function dispose():Void {
-		throw "helix-render: GpuFont2D.dispose is not yet built (stage 1)";
+		if (atlas.disposed)
+			return;
+		atlas.dispose();
+		if (atlas.renderer != null)
+			atlas.renderer.forget(this);
 	}
+
+	// The scale a size draws at: the size over the font's own.
+
+	@:allow(helix.render)
+	function scaleOf(size:Null<Float>):Float
+		return size == null || font.size <= 0 ? 1 : size / font.size;
+
+	// A string's characters.
+
+	@:allow(helix.render)
+	static function codes(text:String):Array<Int>
+		return [for (c in new haxe.iterators.StringIteratorUnicode(text)) c];
+
+	// The width of characters on one line at a scale: each one's advance and the spacing after it but the last; those the font lacks
+	// skipped.
+
+	@:allow(helix.render)
+	function widthOf(line:Array<Int>, scale:Float, spacing:Float, from = 0, ?to:Int):Float {
+		var end = to == null ? line.length : to, width = 0., any = false;
+		for (i in from...end) {
+			var g = font.getGlyph(line[i]);
+			if (g == null)
+				continue;
+			width += g.advance * scale + spacing;
+			any = true;
+		}
+		return any ? width - spacing : 0;
+	}
+
+	// The height of lines: one line's ascent to descent, and a line height times the spacing for each after it.
+
+	@:allow(helix.render)
+	function heightOf(lines:Int, scale:Float, spacing:Float):Float
+		return lines <= 0 ? 0 : ((lines - 1) * lineHeight * spacing + font.ascent - font.descent) * scale;
 }

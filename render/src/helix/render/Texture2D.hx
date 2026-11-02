@@ -55,7 +55,9 @@ class Texture2D {
 	}
 
 	function set_sampling(value:Sampling):Sampling {
-		throw "helix-render: Texture2D.set_sampling is not yet built (stage 1)";
+		sampling = value;
+		sharedTexture.sampling = value;
+		return value;
 	}
 
 	/** Replaces a rectangle of its texels with an image's pixels, for the draws after it.
@@ -67,7 +69,16 @@ class Texture2D {
 		@param y  Optional. The top edge, in texels; defaults to 0.
 		@throws String  A rectangle outside the texture, a render target, or a disposed texture. */
 	public function update(image:Image, x = 0, y = 0):Void {
-		throw "helix-render: Texture2D.update is not yet built (stage 1)";
+		if (disposed)
+			throw "helix-render: update of a disposed texture";
+		if (isTarget())
+			throw "helix-render: update of a render target; draw into it instead";
+		if (x < 0 || y < 0 || x + image.width > width || y + image.height > height || image.width <= 0 || image.height <= 0)
+			throw 'helix-render: an update of ${image.width} x ${image.height} at ${x}, ${y} outside the ${width} x ${height} texture';
+		var r = renderer, h = handle, pixels = image.pixels, w = image.width, hh = image.height;
+		if (r == null)
+			throw "helix-render: a texture made by no renderer";
+		r.updateBeforePass(() -> r.graphics.updateTexture(h, x, y, w, hh, pixels));
 	}
 
 	/** Makes one of its texels opaque white and returns its region, for `Batch2D.shapeRegion`: shapes then draw from this texture, so
@@ -80,11 +91,41 @@ class Texture2D {
 		@return  The texel's region, one texel square.
 		@throws String  A texel outside the texture, a render target, or a disposed texture. */
 	public function writeWhiteTexel(x:Int, y:Int):TextureRegion2D {
-		throw "helix-render: Texture2D.writeWhiteTexel is not yet built (stage 1)";
+		update(Image.filled(1, 1, 0xffffffff), x, y);
+		return new TextureRegion2D(this, x, y, 1, 1);
 	}
 
 	/** Frees the texture on the GPU, after the frame being recorded when it holds a draw of it. A second call does nothing. */
 	public function dispose():Void {
-		throw "helix-render: Texture2D.dispose is not yet built (stage 1)";
+		if (disposed)
+			return;
+		disposed = true;
+		var old = handle, r = renderer;
+		handle = 0;
+		sharedTexture.texture = 0;
+		if (r != null) {
+			r.forget(this);
+			r.release(() -> r.graphics.disposeTexture(old));
+		}
+	}
+
+	// The renderer that made it, and whether it was made with mipmaps.
+	@:allow(helix.render)
+	var renderer:Null<Renderer> = null;
+
+	@:allow(helix.render)
+	var mipmapped = false;
+
+	// Whether it is a render target, which draws go into.
+	function isTarget():Bool
+		return false;
+
+	// The handle a draw reads it by, refusing a disposed texture.
+
+	@:allow(helix.render)
+	function drawnHandle():Int {
+		if (disposed)
+			throw "helix-render: a draw of a disposed texture";
+		return handle;
 	}
 }

@@ -33,7 +33,10 @@ class DrawList2D {
 
 		@return  This list. */
 	public function makeEmpty():DrawList2D {
-		throw "helix-render: DrawList2D.makeEmpty is not yet built (stage 1)";
+		calls.resize(0);
+		callCount = 0;
+		bounds.makeEmpty();
+		return this;
 	}
 
 	/** Records a whole texture at its size, its top left at a point.
@@ -43,7 +46,8 @@ class DrawList2D {
 		@param y  The top edge.
 		@param tint  Optional. The color its texels are multiplied by; defaults to white. */
 	public function drawTexture(texture:Texture2D, x:Float, y:Float, tint:Int = 0xffffffff):Void {
-		throw "helix-render: DrawList2D.drawTexture is not yet built (stage 1)";
+		add(b -> b.drawTexture(texture, x, y, tint));
+		box(x, y, x + texture.width, y + texture.height);
 	}
 
 	/** Records a rectangle of a texture drawn into a rectangle, turned about an origin, as `Batch2D.drawTextureRegion` draws it.
@@ -64,7 +68,8 @@ class DrawList2D {
 		@param tint  Optional. The color its texels are multiplied by; defaults to white. */
 	public function drawTextureRegion(texture:Texture2D, regionX:Float, regionY:Float, regionWidth:Float, regionHeight:Float, x:Float, y:Float, width:Float,
 			height:Float, rotation = 0., originX = 0., originY = 0., tint:Int = 0xffffffff):Void {
-		throw "helix-render: DrawList2D.drawTextureRegion is not yet built (stage 1)";
+		add(b -> b.drawTextureRegion(texture, regionX, regionY, regionWidth, regionHeight, x, y, width, height, rotation, originX, originY, tint));
+		turned(-originX, -originY, width - originX, height - originY, x, y, rotation);
 	}
 
 	/** Records a texture's region, turned and scaled about its origin, the origin at a point.
@@ -85,7 +90,11 @@ class DrawList2D {
 		@param originY  Optional. That point, in texels from the region's top; the region's `originY` when omitted. */
 	public function drawSprite(region:TextureRegion2D, x:Float, y:Float, rotation = 0., scaleX = 1., scaleY = 1., tint:Int = 0xffffffff, flipX = false,
 			flipY = false, ?originX:Float, ?originY:Float):Void {
-		throw "helix-render: DrawList2D.drawSprite is not yet built (stage 1)";
+		add(b -> b.drawSprite(region, x, y, rotation, scaleX, scaleY, tint, flipX, flipY, originX, originY));
+		var ox = originX == null ? region.originX : originX,
+			oy = originY == null ? region.originY : originY;
+		var sx = flipX ? -scaleX : scaleX, sy = flipY ? -scaleY : scaleY;
+		turned(-ox * sx, -oy * sy, (region.regionWidth - ox) * sx, (region.regionHeight - oy) * sy, x, y, rotation);
 	}
 
 	/** Records a line between two points.
@@ -97,7 +106,9 @@ class DrawList2D {
 		@param thickness  The width, in the list's units; its ends are square, cut at the points.
 		@param color  The color. */
 	public function drawLine(x0:Float, y0:Float, x1:Float, y1:Float, thickness:Float, color:Int):Void {
-		throw "helix-render: DrawList2D.drawLine is not yet built (stage 1)";
+		add(b -> b.drawLine(x0, y0, x1, y1, thickness, color));
+		var h = thickness / 2;
+		box(Math.min(x0, x1) - h, Math.min(y0, y1) - h, Math.max(x0, x1) + h, Math.max(y0, y1) + h);
 	}
 
 	/** Records lines through points, one after another, joined at each point with a miter, or a bevel where the miter would reach past twice
@@ -107,7 +118,9 @@ class DrawList2D {
 		@param thickness  The width, in the list's units.
 		@param color  The color. */
 	public function drawPolyline(points:Array<Float>, thickness:Float, color:Int):Void {
-		throw "helix-render: DrawList2D.drawPolyline is not yet built (stage 1)";
+		var copy = points.copy();
+		add(b -> b.drawPolyline(copy, thickness, color));
+		pointsBox(copy, thickness * 2);
 	}
 
 	/** Records a filled triangle.
@@ -120,7 +133,8 @@ class DrawList2D {
 		@param y2  The third corner, down.
 		@param color  The color. */
 	public function fillTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color:Int):Void {
-		throw "helix-render: DrawList2D.fillTriangle is not yet built (stage 1)";
+		add(b -> b.fillTriangle(x0, y0, x1, y1, x2, y2, color));
+		box(Math.min(x0, Math.min(x1, x2)), Math.min(y0, Math.min(y1, y2)), Math.max(x0, Math.max(x1, x2)), Math.max(y0, Math.max(y1, y2)));
 	}
 
 	/** Records a filled rectangle.
@@ -131,7 +145,8 @@ class DrawList2D {
 		@param height  The height.
 		@param color  The color. */
 	public function fillRectangle(x:Float, y:Float, width:Float, height:Float, color:Int):Void {
-		throw "helix-render: DrawList2D.fillRectangle is not yet built (stage 1)";
+		add(b -> b.fillRectangle(x, y, width, height, color));
+		box(Math.min(x, x + width), Math.min(y, y + height), Math.max(x, x + width), Math.max(y, y + height));
 	}
 
 	/** Records a rectangle's outline.
@@ -143,7 +158,8 @@ class DrawList2D {
 		@param thickness  The outline's width, centered on the edges.
 		@param color  The color. */
 	public function strokeRectangle(x:Float, y:Float, width:Float, height:Float, thickness:Float, color:Int):Void {
-		throw "helix-render: DrawList2D.strokeRectangle is not yet built (stage 1)";
+		add(b -> b.strokeRectangle(x, y, width, height, thickness, color));
+		box(x - thickness, y - thickness, x + width + thickness, y + height + thickness);
 	}
 
 	/** Records a filled rectangle with rounded corners.
@@ -155,7 +171,8 @@ class DrawList2D {
 		@param radius  The corners' radius, clamped to half the shorter side.
 		@param color  The color. */
 	public function fillRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, color:Int):Void {
-		throw "helix-render: DrawList2D.fillRoundedRectangle is not yet built (stage 1)";
+		add(b -> b.fillRoundedRectangle(x, y, width, height, radius, color));
+		box(x, y, x + width, y + height);
 	}
 
 	/** Records the outline of a rectangle with rounded corners.
@@ -168,7 +185,8 @@ class DrawList2D {
 		@param thickness  The outline's width, centered on the edges.
 		@param color  The color. */
 	public function strokeRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, thickness:Float, color:Int):Void {
-		throw "helix-render: DrawList2D.strokeRoundedRectangle is not yet built (stage 1)";
+		add(b -> b.strokeRoundedRectangle(x, y, width, height, radius, thickness, color));
+		box(x - thickness, y - thickness, x + width + thickness, y + height + thickness);
 	}
 
 	/** Records a filled circle.
@@ -178,7 +196,8 @@ class DrawList2D {
 		@param radius  The radius.
 		@param color  The color. */
 	public function fillCircle(x:Float, y:Float, radius:Float, color:Int):Void {
-		throw "helix-render: DrawList2D.fillCircle is not yet built (stage 1)";
+		add(b -> b.fillCircle(x, y, radius, color));
+		box(x - radius, y - radius, x + radius, y + radius);
 	}
 
 	/** Records a circle's outline.
@@ -189,7 +208,9 @@ class DrawList2D {
 		@param thickness  The outline's width, centered on the circle.
 		@param color  The color. */
 	public function strokeCircle(x:Float, y:Float, radius:Float, thickness:Float, color:Int):Void {
-		throw "helix-render: DrawList2D.strokeCircle is not yet built (stage 1)";
+		add(b -> b.strokeCircle(x, y, radius, thickness, color));
+		var r = radius + thickness / 2;
+		box(x - r, y - r, x + r, y + r);
 	}
 
 	/** Records a filled ellipse whose axes run across and down.
@@ -200,7 +221,8 @@ class DrawList2D {
 		@param radiusY  The radius down.
 		@param color  The color. */
 	public function fillEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, color:Int):Void {
-		throw "helix-render: DrawList2D.fillEllipse is not yet built (stage 1)";
+		add(b -> b.fillEllipse(x, y, radiusX, radiusY, color));
+		box(x - Math.abs(radiusX), y - Math.abs(radiusY), x + Math.abs(radiusX), y + Math.abs(radiusY));
 	}
 
 	/** Records an ellipse's outline.
@@ -212,7 +234,10 @@ class DrawList2D {
 		@param thickness  The outline's width, centered on the ellipse.
 		@param color  The color. */
 	public function strokeEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, thickness:Float, color:Int):Void {
-		throw "helix-render: DrawList2D.strokeEllipse is not yet built (stage 1)";
+		add(b -> b.strokeEllipse(x, y, radiusX, radiusY, thickness, color));
+		var rx = Math.abs(radiusX) + thickness / 2,
+			ry = Math.abs(radiusY) + thickness / 2;
+		box(x - rx, y - ry, x + rx, y + ry);
 	}
 
 	/** Records a filled polygon, convex or not, whose edges don't cross.
@@ -221,7 +246,12 @@ class DrawList2D {
 		@param color  The color.
 		@return  False when its edges cross, and nothing is recorded. */
 	public function fillPolygon(points:Array<Float>, color:Int):Bool {
-		throw "helix-render: DrawList2D.fillPolygon is not yet built (stage 1)";
+		if (points.length >= 6 && Tessellator2D.crosses(points))
+			return false;
+		var copy = points.copy();
+		add(b -> b.fillPolygon(copy, color));
+		pointsBox(copy, 0);
+		return true;
 	}
 
 	/** Records a polygon's outline: lines through its corners and back to the first, joined as `drawPolyline` joins them.
@@ -230,7 +260,9 @@ class DrawList2D {
 		@param thickness  The outline's width, centered on the edges.
 		@param color  The color. */
 	public function strokePolygon(points:Array<Float>, thickness:Float, color:Int):Void {
-		throw "helix-render: DrawList2D.strokePolygon is not yet built (stage 1)";
+		var copy = points.copy();
+		add(b -> b.strokePolygon(copy, thickness, color));
+		pointsBox(copy, thickness * 2);
 	}
 
 	/** Records triangles as given: textured, colored by vertex, or both, for what the shapes here don't make.
@@ -242,7 +274,12 @@ class DrawList2D {
 		@param colors  Optional. Each vertex's color, 0xAARRGGBB; white when omitted.
 		@param indices  Optional. Three a triangle, indexing the vertices; when omitted, the vertices are the triangles in order. */
 	public function drawTriangles(texture:Null<Texture2D>, positions:Array<Float>, ?texCoords:Array<Float>, ?colors:Array<Int>, ?indices:Array<Int>):Void {
-		throw "helix-render: DrawList2D.drawTriangles is not yet built (stage 1)";
+		var p = positions.copy(),
+			t = texCoords == null ? null : texCoords.copy(),
+			c = colors == null ? null : colors.copy(),
+			i = indices == null ? null : indices.copy();
+		add(b -> b.drawTriangles(texture, p, t, c, i));
+		pointsBox(p, 0);
 	}
 
 	/** Records text in a font, line by line at each line break, left-aligned, its first line's top at a point.
@@ -259,7 +296,9 @@ class DrawList2D {
 		@param kerned  Optional. Whether pairs of characters are kerned as the font gives them; defaults to true. raylib's `DrawTextEx`
 			doesn't kern. */
 	public function drawText(font:GpuFont2D, text:String, x:Float, y:Float, color:Int = 0xffffffff, ?size:Float, letterSpacing = 0., kerned = true):Void {
-		throw "helix-render: DrawList2D.drawText is not yet built (stage 1)";
+		add(b -> b.drawText(font, text, x, y, color, size, letterSpacing, kerned));
+		var size = font.measureText(text, size, letterSpacing, kerned);
+		box(x, y, x + size.x, y + size.y);
 	}
 
 	/** Records laid-out text, wrapped and aligned as its layout says, the layout's top left at a point.
@@ -271,6 +310,43 @@ class DrawList2D {
 		@param y  The top of the first line.
 		@param color  Optional. The color; defaults to white. */
 	public function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, color:Int = 0xffffffff):Void {
-		throw "helix-render: DrawList2D.drawTextLayout is not yet built (stage 1)";
+		add(b -> b.drawTextLayout(layout, x, y, color));
+		var width = layout.maxWidth > 0 ? layout.maxWidth : layout.width;
+		box(x, y, x + width, y + layout.height);
+	}
+
+	// The calls recorded, each replayed on a batch.
+	final calls:Array<Batch2D->Void> = [];
+
+	function add(call:Batch2D->Void):Void {
+		calls.push(call);
+		callCount++;
+	}
+
+	// Replays the calls on a batch, in the order recorded.
+
+	@:allow(helix.render)
+	function replay(batch:Batch2D):Void
+		for (call in calls)
+			call(batch);
+
+	function box(minX:Float, minY:Float, maxX:Float, maxY:Float):Void {
+		bounds.expand(minX, minY);
+		bounds.expand(maxX, maxY);
+	}
+
+	// A rectangle around an origin, turned and placed at x, y.
+	function turned(left:Float, top:Float, right:Float, bottom:Float, x:Float, y:Float, rotation:Float):Void {
+		var cos = Math.cos(rotation), sin = Math.sin(rotation);
+		for (p in [[left, top], [right, top], [right, bottom], [left, bottom]])
+			bounds.expand(x + p[0] * cos - p[1] * sin, y + p[0] * sin + p[1] * cos);
+	}
+
+	function pointsBox(points:Array<Float>, margin:Float):Void {
+		var i = 0;
+		while (i + 1 < points.length) {
+			box(points[i] - margin, points[i + 1] - margin, points[i] + margin, points[i + 1] + margin);
+			i += 2;
+		}
 	}
 }

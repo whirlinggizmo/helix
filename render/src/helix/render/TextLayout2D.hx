@@ -62,46 +62,144 @@ class TextLayout2D {
 	}
 
 	function set_font(value:GpuFont2D):GpuFont2D {
-		throw "helix-render: TextLayout2D.set_font is not yet built (stage 1)";
+		font = value;
+		dirty = true;
+		return value;
 	}
 
 	function set_text(value:String):String {
-		throw "helix-render: TextLayout2D.set_text is not yet built (stage 1)";
+		text = value == null ? "" : value;
+		dirty = true;
+		return value;
 	}
 
 	function set_size(value:Float):Float {
-		throw "helix-render: TextLayout2D.set_size is not yet built (stage 1)";
+		size = value;
+		dirty = true;
+		return value;
 	}
 
 	function set_maxWidth(value:Float):Float {
-		throw "helix-render: TextLayout2D.set_maxWidth is not yet built (stage 1)";
+		maxWidth = value > 0 ? value : 0;
+		dirty = true;
+		return maxWidth;
 	}
 
 	function set_align(value:TextAlign2D):TextAlign2D {
-		throw "helix-render: TextLayout2D.set_align is not yet built (stage 1)";
+		align = value;
+		dirty = true;
+		return value;
 	}
 
 	function set_lineSpacing(value:Float):Float {
-		throw "helix-render: TextLayout2D.set_lineSpacing is not yet built (stage 1)";
+		lineSpacing = value;
+		dirty = true;
+		return value;
 	}
 
 	function set_letterSpacing(value:Float):Float {
-		throw "helix-render: TextLayout2D.set_letterSpacing is not yet built (stage 1)";
+		letterSpacing = value;
+		dirty = true;
+		return value;
 	}
 
 	function set_kerned(value:Bool):Bool {
-		throw "helix-render: TextLayout2D.set_kerned is not yet built (stage 1)";
+		kerned = value;
+		dirty = true;
+		return value;
 	}
 
 	function get_width():Float {
-		throw "helix-render: TextLayout2D.get_width is not yet built (stage 1)";
+		layOut();
+		return widest;
 	}
 
 	function get_height():Float {
-		throw "helix-render: TextLayout2D.get_height is not yet built (stage 1)";
+		layOut();
+		return font.heightOf(lines.length, scale, lineSpacing);
 	}
 
 	function get_lineCount():Int {
-		throw "helix-render: TextLayout2D.get_lineCount is not yet built (stage 1)";
+		layOut();
+		return lines.length;
+	}
+
+	// The lines as laid out, each its characters and width; whether a property changed since.
+	var dirty = true;
+
+	@:allow(helix.render)
+	final lines:Array<Array<Int>> = [];
+
+	@:allow(helix.render)
+	final widths:Array<Float> = [];
+
+	var widest = 0.;
+
+	@:allow(helix.render)
+	var scale = 1.;
+
+	// Lays the text out when a property changed: broken at line breaks, wrapped between words past maxWidth, a word wider than the box
+	// broken between its characters; a line's spaces at its end not counted.
+
+	@:allow(helix.render)
+	function layOut():Void {
+		if (!dirty)
+			return;
+		dirty = false;
+		lines.resize(0);
+		widths.resize(0);
+		scale = font.scaleOf(size);
+		for (paragraph in text.split("\n")) {
+			var codes = GpuFont2D.codes(paragraph);
+			if (maxWidth <= 0) {
+				add(codes);
+				continue;
+			}
+			var line:Array<Int> = [];
+			var i = 0;
+			while (i < codes.length) {
+				// The next word, with the spaces before it.
+				var start = i;
+				while (i < codes.length && codes[i] == 32)
+					i++;
+				while (i < codes.length && codes[i] != 32)
+					i++;
+				var word = codes.slice(start, i);
+				var joined = line.concat(word);
+				if (line.length == 0 || measure(joined) <= maxWidth) {
+					line = joined;
+				} else {
+					add(line);
+					while (word.length > 0 && word[0] == 32)
+						word.shift();
+					line = word;
+				}
+				// A word wider than the box, broken between its characters.
+				while (measure(line) > maxWidth && line.length > 1) {
+					var cut = line.length - 1;
+					while (cut > 1 && measure(line.slice(0, cut)) > maxWidth)
+						cut--;
+					add(line.slice(0, cut));
+					line = line.slice(cut);
+				}
+			}
+			add(line);
+		}
+		widest = 0;
+		for (w in widths)
+			widest = Math.max(widest, w);
+	}
+
+	// The width of characters on a line, its spaces at the end left out.
+	function measure(line:Array<Int>):Float {
+		var end = line.length;
+		while (end > 0 && line[end - 1] == 32)
+			end--;
+		return font.widthOf(line, scale, letterSpacing, 0, end);
+	}
+
+	function add(line:Array<Int>):Void {
+		lines.push(line);
+		widths.push(measure(line));
 	}
 }

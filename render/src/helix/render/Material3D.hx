@@ -283,60 +283,64 @@ class Material3D {
 	/** Creates a material: white, metallic-roughness, not metallic, roughness 0.5, opaque, culling back faces. */
 	public function new() {}
 
+	// A value held to 0 to 1.
+	static function clamp(value:Float):Float
+		return Math.max(0, Math.min(1, value));
+
 	function set_metallic(value:Float):Float {
-		throw "helix-render: Material3D.set_metallic is not yet built (stage 1)";
+		return metallic = clamp(value);
 	}
 
 	function set_roughness(value:Float):Float {
-		throw "helix-render: Material3D.set_roughness is not yet built (stage 1)";
+		return roughness = clamp(value);
 	}
 
 	function set_specularIntensity(value:Float):Float {
-		throw "helix-render: Material3D.set_specularIntensity is not yet built (stage 1)";
+		return specularIntensity = clamp(value);
 	}
 
 	function set_shininess(value:Float):Float {
-		throw "helix-render: Material3D.set_shininess is not yet built (stage 1)";
+		return shininess = Math.max(0, value);
 	}
 
 	function set_ior(value:Float):Float {
-		throw "helix-render: Material3D.set_ior is not yet built (stage 1)";
+		return ior = Math.max(1, Math.min(2.333, value));
 	}
 
 	function set_clearcoat(value:Float):Float {
-		throw "helix-render: Material3D.set_clearcoat is not yet built (stage 1)";
+		return clearcoat = clamp(value);
 	}
 
 	function set_clearcoatRoughness(value:Float):Float {
-		throw "helix-render: Material3D.set_clearcoatRoughness is not yet built (stage 1)";
+		return clearcoatRoughness = clamp(value);
 	}
 
 	function set_sheenRoughness(value:Float):Float {
-		throw "helix-render: Material3D.set_sheenRoughness is not yet built (stage 1)";
+		return sheenRoughness = clamp(value);
 	}
 
 	function set_normalScale(value:Float):Float {
-		throw "helix-render: Material3D.set_normalScale is not yet built (stage 1)";
+		return normalScale = Math.max(0, value);
 	}
 
 	function set_occlusionIntensity(value:Float):Float {
-		throw "helix-render: Material3D.set_occlusionIntensity is not yet built (stage 1)";
+		return occlusionIntensity = clamp(value);
 	}
 
 	function set_lightIntensity(value:Float):Float {
-		throw "helix-render: Material3D.set_lightIntensity is not yet built (stage 1)";
+		return lightIntensity = Math.max(0, value);
 	}
 
 	function set_emissiveStrength(value:Float):Float {
-		throw "helix-render: Material3D.set_emissiveStrength is not yet built (stage 1)";
+		return emissiveStrength = Math.max(0, value);
 	}
 
 	function set_environmentIntensity(value:Float):Float {
-		throw "helix-render: Material3D.set_environmentIntensity is not yet built (stage 1)";
+		return environmentIntensity = Math.max(0, value);
 	}
 
 	function set_alphaCutoff(value:Float):Float {
-		throw "helix-render: Material3D.set_alphaCutoff is not yet built (stage 1)";
+		return alphaCutoff = clamp(value);
 	}
 	#end
 
@@ -355,7 +359,7 @@ class Material3D {
 		@return  The shader, for a `ShaderValues` over it. */
 	public static macro function compileShader(fragment:String,
 			?options:haxe.macro.Expr.ExprOf<helix.services.shaders.ShaderOptions>):haxe.macro.Expr.ExprOf<helix.services.shaders.Shader> {
-		throw "helix-render: Material3D.compileShader is not yet built (stage 1)";
+		return helix.render.RenderShaders.fragmentOver("mesh.vert", fragment, options);
 	}
 
 	/** Compiles a vertex and a fragment stage, both the program's, for a `Material3D` (`shaderValues`).
@@ -375,6 +379,6 @@ class Material3D {
 		@return  The shader, for a `ShaderValues` over it. */
 	public static macro function compileShaderStages(vertex:String, fragment:String,
 			?options:haxe.macro.Expr.ExprOf<helix.services.shaders.ShaderOptions>):haxe.macro.Expr.ExprOf<helix.services.shaders.Shader> {
-		throw "helix-render: Material3D.compileShaderStages is not yet built (stage 1)";
+		return helix.render.RenderShaders.stages(vertex, fragment, options);
 	}
 }

@@ -50,7 +50,21 @@ class TextureRegion2D {
 		@throws String  A frame size of 0 or less. */
 	public static function split(texture:Texture2D, frameWidth:Float, frameHeight:Float, margin = 0., spacing = 0., ?frameCount:Int, originX = 0.,
 			originY = 0.):Array<TextureRegion2D> {
-		throw "helix-render: TextureRegion2D.split is not yet built (stage 1)";
+		if (frameWidth <= 0 || frameHeight <= 0)
+			throw 'helix-render: frames of ${frameWidth} x ${frameHeight}; a frame\'s size is above 0';
+		var frames = [];
+		var y = margin;
+		while (y + frameHeight <= texture.height - margin + 1e-9) {
+			var x = margin;
+			while (x + frameWidth <= texture.width - margin + 1e-9) {
+				if (frameCount != null && frames.length >= frameCount)
+					return frames;
+				frames.push(new TextureRegion2D(texture, x, y, frameWidth, frameHeight, originX, originY));
+				x += frameWidth + spacing;
+			}
+			y += frameHeight + spacing;
+		}
+		return frames;
 	}
 
 	/** Returns a region of a whole texture, placed and turned by a point of it.

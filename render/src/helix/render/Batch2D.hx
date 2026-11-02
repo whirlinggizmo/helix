@@ -5,6 +5,13 @@ import helix.geometry.Camera2D;
 import helix.math.Matrix2D;
 import helix.platform.Blend;
 import helix.services.shaders.ShaderValues;
+import helix.math.Bounds2D;
+import helix.math.Matrix3D;
+import helix.platform.Sampling;
+import helix.services.shaders.Shader;
+import helix.services.shaders.ShaderSnapshot;
+import helix.services.shaders.ShaderVertexLayout;
+import helix.render.RenderPass.RenderCommand;
 #end
 
 /** Provides 2D drawing: sprites, shapes and text, in a camera's world units or the viewport's pixels, through as few GPU draws as their
@@ -142,25 +149,41 @@ class Batch2D {
 		every kind of font (a distance-field atlas's edge made sharp by `fontKind`).
 
 		@param renderer  The renderer it records into. */
-	public function new(renderer:Renderer) {}
+	public function new(renderer:Renderer) {
+		this.renderer = renderer;
+		shader = RenderShaders.compileOwn("batch.vert", "batch.frag");
+		view = new RenderView(shader);
+		stream = renderer.stream("batch2d", 24, vertexLayout());
+		plane = new PlaneDrawing2D(use, vertex, visible);
+	}
 
 	function set_blend(value:Blend):Blend {
-		throw "helix-render: Batch2D.set_blend is not yet built (stage 1)";
+		if (open && value != blend)
+			flush();
+		return blend = value;
 	}
 
 	function set_shapeRegion(value:Null<TextureRegion2D>):Null<TextureRegion2D> {
-		throw "helix-render: Batch2D.set_shapeRegion is not yet built (stage 1)";
+		if (open)
+			flush();
+		plane.shapeRegion = value;
+		return shapeRegion = value;
 	}
 
 	function set_shaderValues(value:Null<ShaderValues>):Null<ShaderValues> {
-		throw "helix-render: Batch2D.set_shaderValues is not yet built (stage 1)";
+		if (open)
+			flush();
+		return shaderValues = value;
 	}
 
 	/** Puts the draw state back to its defaults: `transform` identity, `blend` Alpha, no `shaderValues`, `customData` 0.
 
 		It may be called at any time, open or not. `shapeRegion` and `culling` are left as they are. */
 	public function resetState():Void {
-		throw "helix-render: Batch2D.resetState is not yet built (stage 1)";
+		transform.makeIdentity();
+		blend = Blend.ALPHA;
+		shaderValues = null;
+		customData = 0;
 	}
 
 	/** Opens the batch for drawing in the renderer's current pass, under a camera or in the viewport's pixels.
@@ -169,14 +192,34 @@ class Batch2D {
 		@param camera  Optional. The camera, whose view units are the viewport's pixels; omitted, draws are in the viewport's pixels.
 		@throws String  No frame being recorded, or a batch (this or another) already open. */
 	public function begin(?camera:Camera2D):Void {
-		throw "helix-render: Batch2D.begin is not yet built (stage 1)";
+		renderer.opening(this, flush);
+		open = true;
+		var width = renderer.viewportWidth, height = renderer.viewportHeight;
+		if (camera != null) {
+			camera.computeViewMatrix(cameraMatrix).toMatrix3D(viewMatrix);
+			camera.computeBounds(width, height, viewBounds);
+			zoom = Math.abs(camera.zoom);
+		} else {
+			viewMatrix.makeIdentity();
+			viewBounds.set(0, 0, width, height);
+			zoom = 1;
+		}
+		Matrix3D.fromOrthographic(0, width, height, 0, -1, 1, projectionMatrix);
+		view.set(viewMatrix, projectionMatrix, renderer.viewportX, renderer.viewportY, width, height);
+		view.setLook(renderer.linearPass(), 0, None, null);
+		view.write();
+		renderer.command(Viewport(renderer.viewportX, renderer.viewportY, width, height));
 	}
 
 	/** Closes the batch, so another can open or the pass can end.
 
 		@throws String  The batch isn't open. */
 	public function end():Void {
-		throw "helix-render: Batch2D.end is not yet built (stage 1)";
+		if (!open)
+			throw "helix-render: Batch2D.end with the batch not open";
+		flush();
+		renderer.closing(this);
+		open = false;
 	}
 
 	/** Draws a whole texture at its size, its top left at a point.
@@ -186,7 +229,7 @@ class Batch2D {
 		@param y  The top edge.
 		@param tint  Optional. The color its texels are multiplied by; defaults to white. */
 	public function drawTexture(texture:Texture2D, x:Float, y:Float, tint:Int = 0xffffffff):Void {
-		throw "helix-render: Batch2D.drawTexture is not yet built (stage 1)";
+		plane.textureRegion(texture, 0, 0, texture.width, texture.height, x, y, texture.width, texture.height, 0, 0, 0, tint);
 	}
 
 	/** Draws a rectangle of a texture into a rectangle, turned about an origin, as raylib's `DrawTexturePro` draws it: no region is
@@ -209,7 +252,7 @@ class Batch2D {
 		@param tint  Optional. The color its texels are multiplied by; defaults to white. */
 	public function drawTextureRegion(texture:Texture2D, regionX:Float, regionY:Float, regionWidth:Float, regionHeight:Float, x:Float, y:Float, width:Float,
 			height:Float, rotation = 0., originX = 0., originY = 0., tint:Int = 0xffffffff):Void {
-		throw "helix-render: Batch2D.drawTextureRegion is not yet built (stage 1)";
+		plane.textureRegion(texture, regionX, regionY, regionWidth, regionHeight, x, y, width, height, rotation, originX, originY, tint);
 	}
 
 	/** Draws a texture's region, turned and scaled about its origin, the origin at a point.
@@ -230,7 +273,7 @@ class Batch2D {
 		@param originY  Optional. That point, in texels from the region's top; the region's `originY` when omitted. */
 	public function drawSprite(region:TextureRegion2D, x:Float, y:Float, rotation = 0., scaleX = 1., scaleY = 1., tint:Int = 0xffffffff, flipX = false,
 			flipY = false, ?originX:Float, ?originY:Float):Void {
-		throw "helix-render: Batch2D.drawSprite is not yet built (stage 1)";
+		plane.sprite(region, x, y, rotation, scaleX, scaleY, tint, flipX, flipY, originX, originY);
 	}
 
 	/** Draws a line between two points.
@@ -242,7 +285,7 @@ class Batch2D {
 		@param thickness  The width, in the batch's units; its ends are square, cut at the points.
 		@param color  The color. */
 	public function drawLine(x0:Float, y0:Float, x1:Float, y1:Float, thickness:Float, color:Int):Void {
-		throw "helix-render: Batch2D.drawLine is not yet built (stage 1)";
+		plane.line(x0, y0, x1, y1, thickness, color);
 	}
 
 	/** Draws lines through points, one after another, joined at each point with a miter, or a bevel where the miter would reach past twice
@@ -252,7 +295,7 @@ class Batch2D {
 		@param thickness  The width, in the batch's units.
 		@param color  The color. */
 	public function drawPolyline(points:Array<Float>, thickness:Float, color:Int):Void {
-		throw "helix-render: Batch2D.drawPolyline is not yet built (stage 1)";
+		plane.polyline(points, thickness, color, false);
 	}
 
 	/** Fills a triangle.
@@ -265,7 +308,7 @@ class Batch2D {
 		@param y2  The third corner, down.
 		@param color  The color. */
 	public function fillTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color:Int):Void {
-		throw "helix-render: Batch2D.fillTriangle is not yet built (stage 1)";
+		plane.triangle(x0, y0, x1, y1, x2, y2, color);
 	}
 
 	/** Fills a rectangle.
@@ -276,7 +319,7 @@ class Batch2D {
 		@param height  The height.
 		@param color  The color. */
 	public function fillRectangle(x:Float, y:Float, width:Float, height:Float, color:Int):Void {
-		throw "helix-render: Batch2D.fillRectangle is not yet built (stage 1)";
+		plane.rectangle(x, y, width, height, color);
 	}
 
 	/** Draws a rectangle's outline.
@@ -288,7 +331,7 @@ class Batch2D {
 		@param thickness  The outline's width, centered on the edges.
 		@param color  The color. */
 	public function strokeRectangle(x:Float, y:Float, width:Float, height:Float, thickness:Float, color:Int):Void {
-		throw "helix-render: Batch2D.strokeRectangle is not yet built (stage 1)";
+		plane.strokeRectangle(x, y, width, height, thickness, color);
 	}
 
 	/** Fills a rectangle with rounded corners.
@@ -300,7 +343,7 @@ class Batch2D {
 		@param radius  The corners' radius, clamped to half the shorter side.
 		@param color  The color. */
 	public function fillRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, color:Int):Void {
-		throw "helix-render: Batch2D.fillRoundedRectangle is not yet built (stage 1)";
+		plane.roundedRectangle(x, y, width, height, radius, color);
 	}
 
 	/** Draws the outline of a rectangle with rounded corners.
@@ -313,7 +356,7 @@ class Batch2D {
 		@param thickness  The outline's width, centered on the edges.
 		@param color  The color. */
 	public function strokeRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, thickness:Float, color:Int):Void {
-		throw "helix-render: Batch2D.strokeRoundedRectangle is not yet built (stage 1)";
+		plane.strokeRoundedRectangle(x, y, width, height, radius, thickness, color);
 	}
 
 	/** Fills a circle.
@@ -323,7 +366,7 @@ class Batch2D {
 		@param radius  The radius.
 		@param color  The color. */
 	public function fillCircle(x:Float, y:Float, radius:Float, color:Int):Void {
-		throw "helix-render: Batch2D.fillCircle is not yet built (stage 1)";
+		plane.ellipse(x, y, radius, radius, color);
 	}
 
 	/** Draws a circle's outline.
@@ -334,7 +377,7 @@ class Batch2D {
 		@param thickness  The outline's width, centered on the circle.
 		@param color  The color. */
 	public function strokeCircle(x:Float, y:Float, radius:Float, thickness:Float, color:Int):Void {
-		throw "helix-render: Batch2D.strokeCircle is not yet built (stage 1)";
+		plane.strokeEllipse(x, y, radius, radius, thickness, color);
 	}
 
 	/** Fills an ellipse whose axes run across and down.
@@ -345,7 +388,7 @@ class Batch2D {
 		@param radiusY  The radius down.
 		@param color  The color. */
 	public function fillEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, color:Int):Void {
-		throw "helix-render: Batch2D.fillEllipse is not yet built (stage 1)";
+		plane.ellipse(x, y, radiusX, radiusY, color);
 	}
 
 	/** Draws an ellipse's outline.
@@ -357,7 +400,7 @@ class Batch2D {
 		@param thickness  The outline's width, centered on the ellipse.
 		@param color  The color. */
 	public function strokeEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, thickness:Float, color:Int):Void {
-		throw "helix-render: Batch2D.strokeEllipse is not yet built (stage 1)";
+		plane.strokeEllipse(x, y, radiusX, radiusY, thickness, color);
 	}
 
 	/** Fills a polygon, convex or not, whose edges don't cross.
@@ -366,7 +409,8 @@ class Batch2D {
 		@param color  The color.
 		@return  False when its edges cross, and nothing is drawn. */
 	public function fillPolygon(points:Array<Float>, color:Int):Bool {
-		throw "helix-render: Batch2D.fillPolygon is not yet built (stage 1)";
+		requireOpen();
+		return plane.polygon(points, color);
 	}
 
 	/** Draws a polygon's outline: lines through its corners and back to the first, joined as `drawPolyline` joins them.
@@ -375,7 +419,7 @@ class Batch2D {
 		@param thickness  The outline's width, centered on the edges.
 		@param color  The color. */
 	public function strokePolygon(points:Array<Float>, thickness:Float, color:Int):Void {
-		throw "helix-render: Batch2D.strokePolygon is not yet built (stage 1)";
+		plane.polyline(points, thickness, color, true);
 	}
 
 	/** Draws triangles as given: textured, colored by vertex, or both, for what the shapes here don't make.
@@ -387,7 +431,8 @@ class Batch2D {
 		@param colors  Optional. Each vertex's color, 0xAARRGGBB; white when omitted.
 		@param indices  Optional. Three a triangle, indexing the vertices; when omitted, the vertices are the triangles in order. */
 	public function drawTriangles(texture:Null<Texture2D>, positions:Array<Float>, ?texCoords:Array<Float>, ?colors:Array<Int>, ?indices:Array<Int>):Void {
-		throw "helix-render: Batch2D.drawTriangles is not yet built (stage 1)";
+		requireOpen();
+		plane.triangles(texture, positions, texCoords, colors, indices);
 	}
 
 	/** Draws text in a font, line by line at each line break, left-aligned, its first line's top at a point.
@@ -404,7 +449,7 @@ class Batch2D {
 		@param kerned  Optional. Whether pairs of characters are kerned as the font gives them; defaults to true. raylib's `DrawTextEx`
 			doesn't kern. */
 	public function drawText(font:GpuFont2D, text:String, x:Float, y:Float, color:Int = 0xffffffff, ?size:Float, letterSpacing = 0., kerned = true):Void {
-		throw "helix-render: Batch2D.drawText is not yet built (stage 1)";
+		plane.text(font, text, x, y, color, size, letterSpacing);
 	}
 
 	/** Draws laid-out text, wrapped and aligned as its layout says, the layout's top left at a point.
@@ -415,7 +460,7 @@ class Batch2D {
 		@param y  The top of the first line.
 		@param color  Optional. The color; defaults to white. */
 	public function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, color:Int = 0xffffffff):Void {
-		throw "helix-render: Batch2D.drawTextLayout is not yet built (stage 1)";
+		plane.layout(layout, x, y, color);
 	}
 
 	/** Replays a draw list: its calls in the order recorded, in its own units placed by a transform, then by `transform` and the camera.
@@ -426,7 +471,236 @@ class Batch2D {
 		@param placement  Optional. Its place in the batch's units; identity when omitted.
 		@throws String  A texture it holds disposed. */
 	public function drawList(list:DrawList2D, ?placement:Matrix2D):Void {
-		throw "helix-render: Batch2D.drawList is not yet built (stage 1)";
+		requireOpen();
+		if (placement != null && list.bounds.isEmpty == false) {
+			var b = list.bounds, p = placement;
+			var x0 = p.a * b.minX + p.c * b.minY + p.tx,
+				y0 = p.b * b.minX + p.d * b.minY + p.ty;
+			var x1 = p.a * b.maxX + p.c * b.minY + p.tx,
+				y1 = p.b * b.maxX + p.d * b.minY + p.ty;
+			var x2 = p.a * b.maxX + p.c * b.maxY + p.tx,
+				y2 = p.b * b.maxX + p.d * b.maxY + p.ty;
+			var x3 = p.a * b.minX + p.c * b.maxY + p.tx,
+				y3 = p.b * b.minX + p.d * b.maxY + p.ty;
+			if (!visible(Math.min(Math.min(x0, x1), Math.min(x2, x3)), Math.min(Math.min(y0, y1), Math.min(y2, y3)),
+				Math.max(Math.max(x0, x1), Math.max(x2, x3)), Math.max(Math.max(y0, y1), Math.max(y2, y3))))
+				return;
+		} else if (!list.bounds.isEmpty && !visible(list.bounds.minX, list.bounds.minY, list.bounds.maxX, list.bounds.maxY))
+			return;
+		var held = new Matrix2D().copyFrom(transform);
+		if (placement != null)
+			Matrix2D.compose(placement, held, transform);
+		try {
+			list.replay(this);
+		} catch (e:Dynamic) {
+			transform.copyFrom(held);
+			throw e;
+		}
+		transform.copyFrom(held);
+	}
+
+	// The renderer, the default shader, the view its draws are seen through, the stream its vertices go in, and each shader's filled
+	// names.
+	final renderer:Renderer;
+	final shader:Shader;
+	final view:RenderView;
+	final stream:RenderStream;
+	final plane:PlaneDrawing2D;
+	final fills = new haxe.ds.ObjectMap<Shader, RenderFill>();
+	// The GPU draw being made: its first vertex, texture, sampling, font kind and the program's values as captured.
+	var running = false;
+	var runFirst = 0;
+	var runTexture = 0;
+	var runSampling = Sampling.LINEAR;
+	var runFontKind = 0;
+	var runValues:Null<ShaderValues> = null;
+	var runCapture = new ShaderSnapshot();
+	var nextCapture = new ShaderSnapshot();
+	// What is in view, in the batch's units before the transform; the camera's zoom.
+	final viewBounds = new Bounds2D();
+	var zoom = 1.;
+
+	static final identity = new Matrix3D();
+	static final cameraMatrix = new Matrix2D();
+	static final viewMatrix = new Matrix3D();
+	static final projectionMatrix = new Matrix3D();
+	static var layout:Null<ShaderVertexLayout> = null;
+
+	// A record: x and y, u and v as floats, the color and customData as four bytes each.
+	static function vertexLayout():ShaderVertexLayout {
+		if (layout == null)
+			layout = new ShaderVertexLayout([
+				{
+					stride: 24,
+					placements: [
+						{name: "vertexPosition", offset: 0, format: Float2},
+						{
+							name: "vertexTexCoord",
+							offset: 8,
+							format: Float2,
+							optional: true
+						},
+						{
+							name: "vertexColor",
+							offset: 16,
+							format: UByte4Norm,
+							optional: true
+						},
+						{
+							name: "vertexCustomData",
+							offset: 20,
+							format: UByte4Norm,
+							optional: true
+						}
+					]
+				},
+				{
+					stride: RenderConstants.BATCH_STRIDE,
+					instanced: true,
+					placements: RenderConstants.placements(RenderConstants.BATCH, ["vertexPosition", "vertexTexCoord", "vertexColor", "vertexCustomData"])
+				}
+			]);
+		return layout;
+	}
+
+	function fillFor(s:Shader):RenderFill {
+		var f = fills.get(s);
+		if (f == null)
+			fills.set(s, f = new RenderFill(s));
+		return f;
+	}
+
+	function requireOpen():Void
+		if (!open)
+			throw "helix-render: a Batch2D draw outside begin and end";
+
+	// Makes the following vertices read a texture: a texture, sampling or font kind other than the GPU draw's, or values written since,
+	// starts the next GPU draw.
+	function use(texture:Null<Texture2D>, fontKind:Int):Void {
+		requireOpen();
+		var t = texture == null ? renderer.white : texture;
+		var handle = t.drawnHandle(), sampling = t.sampling;
+		renderer.checkReadable(handle);
+		var values = shaderValues;
+		if (values != null) {
+			// The program's values as a draw reads them: through the draw's own values, the view's block shared.
+			var probe = fillFor(values.shader).values;
+			probe.base = values;
+			probe.scene = view.scene;
+			probe.capture(nextCapture);
+			if (running && !sameValues(nextCapture, runCapture))
+				flush();
+		}
+		if (running && (handle != runTexture || sampling != runSampling || fontKind != runFontKind))
+			flush();
+		if (!running) {
+			running = true;
+			runFirst = stream.count;
+			runTexture = handle;
+			runSampling = sampling;
+			runFontKind = fontKind;
+			runValues = values;
+			if (values != null) {
+				var swap = runCapture;
+				runCapture = nextCapture;
+				nextCapture = swap;
+			}
+		}
+	}
+
+	// Whether two captures of values hold the same bytes and textures.
+	static function sameValues(a:ShaderSnapshot, b:ShaderSnapshot):Bool {
+		if (a.uniforms.length != b.uniforms.length || a.textures.length != b.textures.length)
+			return false;
+		for (i in 0...a.textures.length)
+			if (a.textures[i] != b.textures[i] || a.samplings[i] != b.samplings[i])
+				return false;
+		for (i in 0...a.uniforms.length) {
+			var x = a.uniforms[i], y = b.uniforms[i];
+			if (x == null || y == null) {
+				if (x != y)
+					return false;
+				continue;
+			}
+			if (x.length != y.length || x.compare(y) != 0)
+				return false;
+		}
+		return true;
+	}
+
+	// A vertex in the batch's units, moved by the transform.
+	function vertex(x:Float, y:Float, u:Float, v:Float, color:Int):Void {
+		var t = transform;
+		var at = stream.reserve(1), b = stream.bytes;
+		b.setFloat(at, t.a * x + t.c * y + t.tx);
+		b.setFloat(at + 4, t.b * x + t.d * y + t.ty);
+		b.setFloat(at + 8, u);
+		b.setFloat(at + 12, v);
+		b.set(at + 16, color >> 16 & 255);
+		b.set(at + 17, color >> 8 & 255);
+		b.set(at + 18, color & 255);
+		b.set(at + 19, color >>> 24);
+		var d = customData;
+		b.set(at + 20, d >> 16 & 255);
+		b.set(at + 21, d >> 8 & 255);
+		b.set(at + 22, d & 255);
+		b.set(at + 23, d >>> 24);
+	}
+
+	// Whether a box in the batch's units, moved by the transform, may be seen; always while culling is off or shaderValues set.
+	function visible(minX:Float, minY:Float, maxX:Float, maxY:Float):Bool {
+		requireOpen();
+		plane.scale = zoom * Math.sqrt(Math.abs(transform.a * transform.d - transform.b * transform.c));
+		if (!culling || shaderValues != null)
+			return true;
+		var t = transform;
+		var x0 = t.a * minX + t.c * minY + t.tx,
+			y0 = t.b * minX + t.d * minY + t.ty;
+		var x1 = t.a * maxX + t.c * minY + t.tx,
+			y1 = t.b * maxX + t.d * minY + t.ty;
+		var x2 = t.a * maxX + t.c * maxY + t.tx,
+			y2 = t.b * maxX + t.d * maxY + t.ty;
+		var x3 = t.a * minX + t.c * maxY + t.tx,
+			y3 = t.b * minX + t.d * maxY + t.ty;
+		var b = viewBounds;
+		return !(Math.max(Math.max(x0, x1), Math.max(x2, x3)) < b.minX
+			|| Math.min(Math.min(x0, x1), Math.min(x2, x3)) > b.maxX
+			|| Math.max(Math.max(y0, y1), Math.max(y2, y3)) < b.minY
+			|| Math.min(Math.min(y0, y1), Math.min(y2, y3)) > b.maxY);
+	}
+
+	// Records the GPU draw being made, with the names the batch fills.
+	function flush():Void {
+		if (!running)
+			return;
+		running = false;
+		var count = stream.count - runFirst;
+		if (count <= 0)
+			return;
+		var s = runValues != null ? runValues.shader : shader;
+		var fill = fillFor(s);
+		fill.values.base = runValues;
+		fill.values.scene = view.scene;
+		fill.texture(fill.baseColorTexture, runTexture, runSampling);
+		fill.integer(fill.fontKind, runFontKind);
+		fill.matrix(fill.model, identity);
+		fill.matrix(fill.normalMatrix, identity);
+		fill.matrix(fill.modelViewProjection, view.viewProjection);
+		fill.color(fill.baseColor, 0xffffffff);
+		fill.float(fill.lineWidth, 1);
+		fill.float(fill.pointSize, 1);
+		fill.integer(fill.pointSizeAttenuated, 0);
+		fill.integer(fill.clipPlaneCount, 0);
+		fill.integer(fill.fogged, 0);
+		fill.integer(fill.toneMapped, 0);
+		fill.view(view);
+		var d = renderer.makeDraw(renderer.pipelineFor(s, renderer.stateFor(Triangles, false, blend, Off, false, None, All), vertexLayout()));
+		d.setBuffer(0, 0, stream);
+		d.setBuffer(1, renderer.batchConstants());
+		d.first = runFirst;
+		d.count = count;
+		fill.values.capture(d.snapshot);
+		renderer.record(d);
 	}
 	#end
 
@@ -444,7 +718,7 @@ class Batch2D {
 		@return  The shader, for a `ShaderValues` over it. */
 	public static macro function compileShader(fragment:String,
 			?options:haxe.macro.Expr.ExprOf<helix.services.shaders.ShaderOptions>):haxe.macro.Expr.ExprOf<helix.services.shaders.Shader> {
-		throw "helix-render: Batch2D.compileShader is not yet built (stage 1)";
+		return helix.render.RenderShaders.fragmentOver("batch.vert", fragment, options);
 	}
 
 	/** Compiles a vertex and a fragment stage, both the program's, for a `Batch2D`'s draws (`shaderValues`).
@@ -463,6 +737,6 @@ class Batch2D {
 		@return  The shader, for a `ShaderValues` over it. */
 	public static macro function compileShaderStages(vertex:String, fragment:String,
 			?options:haxe.macro.Expr.ExprOf<helix.services.shaders.ShaderOptions>):haxe.macro.Expr.ExprOf<helix.services.shaders.Shader> {
-		throw "helix-render: Batch2D.compileShaderStages is not yet built (stage 1)";
+		return helix.render.RenderShaders.stages(vertex, fragment, options);
 	}
 }

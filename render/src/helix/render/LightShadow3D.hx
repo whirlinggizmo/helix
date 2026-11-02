@@ -65,38 +65,41 @@ class LightShadow3D {
 	public function new() {}
 
 	function set_mapSize(value:Int):Int {
-		throw "helix-render: LightShadow3D.set_mapSize is not yet built (stage 1)";
+		var size = 256;
+		while (size * 2 <= value && size < 4096)
+			size *= 2;
+		return mapSize = size;
 	}
 
 	function set_distance(value:Float):Float {
-		throw "helix-render: LightShadow3D.set_distance is not yet built (stage 1)";
+		return distance = Math.max(.000001, value);
 	}
 
 	function set_cascadeCount(value:Int):Int {
-		throw "helix-render: LightShadow3D.set_cascadeCount is not yet built (stage 1)";
+		return cascadeCount = value < 1 ? 1 : value > 4 ? 4 : value;
 	}
 
 	function set_cascadeSplit(value:Float):Float {
-		throw "helix-render: LightShadow3D.set_cascadeSplit is not yet built (stage 1)";
+		return cascadeSplit = Math.max(0, Math.min(1, value));
 	}
 
 	function set_bias(value:Float):Float {
-		throw "helix-render: LightShadow3D.set_bias is not yet built (stage 1)";
+		return bias = Math.max(0, value);
 	}
 
 	function set_slopeBias(value:Float):Float {
-		throw "helix-render: LightShadow3D.set_slopeBias is not yet built (stage 1)";
+		return slopeBias = Math.max(0, value);
 	}
 
 	function set_normalOffset(value:Float):Float {
-		throw "helix-render: LightShadow3D.set_normalOffset is not yet built (stage 1)";
+		return normalOffset = Math.max(0, value);
 	}
 
 	function set_radius(value:Float):Float {
-		throw "helix-render: LightShadow3D.set_radius is not yet built (stage 1)";
+		return radius = Math.max(0, Math.min(8, value));
 	}
 
 	function set_strength(value:Float):Float {
-		throw "helix-render: LightShadow3D.set_strength is not yet built (stage 1)";
+		return strength = Math.max(0, Math.min(1, value));
 	}
 }

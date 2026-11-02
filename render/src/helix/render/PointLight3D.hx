@@ -22,6 +22,6 @@ class PointLight3D extends Light3D {
 	}
 
 	function set_range(value:Float):Float {
-		throw "helix-render: PointLight3D.set_range is not yet built (stage 1)";
+		return range = Math.max(0, value);
 	}
 }
