@@ -201,17 +201,23 @@ enum Event {
   and `canRender(format)` say what the GPU can.
 - Buffers: `createBuffer(capacityBytes)` and `updateBuffer`, `createStaticBuffer(data, bytes, index)`, `disposeBuffer`.
 - Programs and pipelines: `createShader(source:ShaderSource)`, `createPipeline(desc:PipelineDesc)` (a program, its buffers' layout,
-  primitive, indexing, blend, the color channels written, depth test and write, culling and winding, depth-only, the clip flip and the
+  primitive (`Primitive`: triangles, lines, or points), indexing, blend, the color channels written, depth test and write, culling and winding, depth-only, the clip flip and the
   place of the uniform it flips, and what attributes no buffer feeds read), each with its `dispose`. A `Blend` is a factor for each side (`BlendFactor`: zero, one, the source's or destination's color or alpha and
   their one-minus forms, the saturated source alpha) and an operation (`BlendOperation`: add, subtract, reverse subtract, min, max), for
   the color and for the alpha apart, as every backend has them; `Blend.OPAQUE`, `ALPHA` (the alpha kept as `a + destination * (1 - a)`)
   and `ADDITIVE` are the common ones. No blend constant: no factor reads one. `colorWrite` (`ColorChannels`, all when omitted) masks the
   channels written; a pass's clear writes every channel.
+- Points are one pixel on every backend, the one size each draws alike (Direct3D 12 draws no other; Vulkan's larger points are a device
+  feature SDL_GPU doesn't ask for; WebGL2 promises only 1): a `Points` pipeline draws each vertex, or each index, as the pixel its
+  position falls in, culling ignored, as a point has no face. Its program must be compiled with `ShaderCompileOptions.points`, which
+  writes the size Vulkan and Metal require and GL leaves undefined unwritten (`ShaderSource.points`); a `Points` pipeline over any other
+  program is refused. Larger points, sprites and attenuation are a layer's above, drawn as quads.
 - Passes: `beginShadowPass(map, layerIndex)`; `beginTargetPass(target, r, g, b, a)`, `resumeTargetPass(target)` (no clear: a target keeps
   what passes leave in it, its samples and depth too, from pass to pass and frame to frame; a new one holds transparent black and the
   farthest depth) and `endTargetPass`; the screen's, `beginFrame(width,
   height, clearColor)` and `endFrame`; within a pass `applyViewport`, `applyScissor`, `resetScissor`.
-- `draw(pipeline, buffers, indexBuffer, firstElementIndex, elementCount, firstInstanceIndex, instanceCount, textures, samplings, uniforms)`: buffers by the
+- `draw(pipeline, buffers, indexBuffer, firstElementIndex, elementCount, firstInstanceIndex, instanceCount, textures, samplings, uniforms)`: whole
+  primitives (three elements a triangle, two a line, one a point), buffers by the
   pipeline's buffer index, an index buffer for indexed pipelines, a range, instances, textures, samplings and uniform blocks by stage and
   slot (the vertex stage's slot n at n, the fragment stage's at 4 + n, a block both stages read at both). Each block's bytes are std140
   as its `ShaderBlock.members` place them, on every adapter: WebGL2 uploads them into a uniform buffer; sokol's GL sets each member by its
@@ -253,7 +259,7 @@ Vulkan-style GLSL 450, where attributes may give `layout(location = n)` and bloc
 annotations. The build macro `ShaderCompiler.compile("triangle.vert", "triangle.frag")`, paths beside the calling file, compiles them
 while Haxe builds the program and puts the `ShaderSource` in it as a literal; the program hands it to `IGraphics.createShader`.
 `ShaderCompiler.compileText(vertex, fragment, options)` compiles text a macro or a tool has (`ShaderCompileOptions`: the dialects, include
-directories, defines, loose uniforms, gathered blocks and the clip-scale wrap). `#include` with a quoted name resolves beside the
+directories, defines, loose uniforms, gathered blocks, the clip-scale wrap and the point size). `#include` with a quoted name resolves beside the
 including file, then in the include directories; the compiler enables `GL_GOOGLE_include_directive` for every stage, so no stage declares
 it.
 
@@ -275,6 +281,9 @@ read by both, the vertex stage's in declared order then the fragment stage's not
 ones go into `gatheredBlocks` of their own after it. A struct a gathered uniform names is copied into a stage that lacks it. One name
 of two types, and an initializer (which the compiler would drop), are refused. With `clipScale` the vertex stage is wrapped: its `main`
 renamed, a loose `uniform vec4 helix_clipScale`, and a `main` calling it and multiplying `gl_Position` by it, for `ClipFlip.ClipScale`.
+With `points` the same wrap writes `gl_PointSize = 1.0` after the program's `main`, whatever the program wrote, and the result says so
+(`ShaderSource.points`); SDL_GPU's HLSL is then made with SPIRV-Cross's `--hlsl-enable-compat`, as HLSL has no point size and refuses one
+otherwise (Direct3D 12 draws 1 pixel whatever is written).
 
 **What it refuses, saying why:** a uniform block bound past 3 or a texture past 11; two blocks at one binding of a stage, or two
 textures at one binding; a sampler array, a separate texture and sampler, an array of arrays, an array inside an array of structs, a

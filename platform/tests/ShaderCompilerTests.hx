@@ -146,6 +146,7 @@ void main() { color = scene.ambient + scene.lights[1].color * scene.surface.roug
 		bothStages();
 		gathered();
 		clipScale();
+		points();
 		includes();
 		// Refusals, each saying what's wrong.
 		message = refusal("#version 450\nlayout(location = 0) in mat3 turn;\nlayout(location = 4) in vec3 position;\n"
@@ -310,6 +311,36 @@ void main() { finalColor = texture(texture0, fragTexCoord) * colDiffuse * fragCo
 			"The clip scale a loose uniform in helix_uniforms: " + haxe.Json.stringify(u));
 		check(source.glsl300es.vertex.indexOf("helix_clipScale") >= 0 && source.glsl300es.vertex.indexOf("helix_main") >= 0,
 			"The vertex stage wrapped: " + source.glsl300es.vertex);
+	}
+
+	// The point size: written after main in every dialect, with the clip scale or without it, the result marked; HLSL in its compatibility
+	// mode, which takes it; none without the option.
+	static function points():Void {
+		var vertex = "#version 450\nlayout(location = 0) in vec2 p;\nvoid main() { gl_Position = vec4(p, 0.0, 1.0); gl_PointSize = 4.0; }\n",
+			fragment = "#version 450\nlayout(location = 0) out vec4 color;\nvoid main() { color = vec4(1.0); }\n";
+		for (clipScale in [false, true]) {
+			var source = compile(vertex, fragment, {
+				glsl410: true,
+				sdlGpu: true,
+				clipScale: clipScale,
+				points: true
+			});
+			var written = ~/gl_PointSize = 1\.0/;
+			check(source.points == true, 'Points marked (clip scale $clipScale)');
+			check(written.match(source.glsl300es.vertex)
+				&& written.match(source.glsl410.vertex)
+				&& written.match(source.sdlGpu.msl.vertex),
+				'The point size written after main (clip scale $clipScale): ${source.glsl300es.vertex}');
+			check(source.glsl300es.vertex.lastIndexOf("gl_PointSize = 1.0") > source.glsl300es.vertex.lastIndexOf("gl_PointSize = 4.0"),
+				'The program\'s own size replaced (clip scale $clipScale)');
+			check(source.sdlGpu.hlsl.vertex.indexOf("gl_PointSize") >= 0, 'HLSL takes the size (clip scale $clipScale)');
+			check((source.glsl300es.vertex.indexOf("helix_clipScale") >= 0) == clipScale, 'The clip scale as asked (clip scale $clipScale)');
+		}
+		var plain = compile("#version 450\nlayout(location = 0) in vec2 p;\nvoid main() { gl_Position = vec4(p, 0.0, 1.0); }\n", fragment, {
+			glsl410: false,
+			sdlGpu: false
+		});
+		check(plain.points != true && plain.glsl300es.vertex.indexOf("gl_PointSize") < 0, "No point size without the option");
 	}
 
 	// A quoted include resolves beside the file and in the include directories, with no extension line.

@@ -64,7 +64,7 @@ static struct{uint32_t generation;int live;SDL_GPUShader *vertex,*fragment;int a
    SDL_GPU steps an instance buffer one record an instance and no slower: its record (constants, 16 bytes an attribute) repeated
    constant_count times, made again larger when a draw has more instances. */
 static struct{uint32_t generation;int live;SDL_GPUGraphicsPipeline *pipeline,*flipped,*variants[VARIANTS];uint32_t program;int buffer_count,stride[HELIX_MAX_VERTEX_BUFFERS],
- instanced[HELIX_MAX_VERTEX_BUFFERS],read[HELIX_MAX_VERTEX_BUFFERS],indexed,lines,flip,flip_slot,flip_offset,depth_only;SDL_GPUGraphicsPipelineCreateInfo info;
+ instanced[HELIX_MAX_VERTEX_BUFFERS],read[HELIX_MAX_VERTEX_BUFFERS],indexed,group,flip,flip_slot,flip_offset,depth_only;SDL_GPUGraphicsPipelineCreateInfo info;
  SDL_GPUVertexBufferDescription described[HELIX_MAX_VERTEX_BUFFERS+1];SDL_GPUVertexAttribute attrs[HELIX_MAX_VERTEX_ATTRIBUTES];SDL_GPUColorTargetDescription color;
  float constants[HELIX_MAX_VERTEX_ATTRIBUTES*4];int constant_attributes,constant_count;SDL_GPUBuffer *constant_buffer;}pipelines[SLOTS];
 
@@ -442,16 +442,16 @@ static SDL_GPUColorTargetBlendState blend_of(int blend,int channels,int *ok){
  return state;
 }
 /* A pipeline as helix.platform.PipelineDesc describes it, its ints in order (as sokol's adapter reads them): shader, primitive (0 triangles,
-   1 lines), indexed, blend (blend_of), depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front),
+   1 lines, 2 points), indexed, blend (blend_of), depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front),
    clockwise, depth only, clip flip (0 none, 1 clip scale, 2 view-projection), the color channels written (blend_of), the flip uniform's
    block slot (the vertex stage's) and byte offset, the buffer count, then each buffer's stride, instanced and attribute count, each
    attribute's slot, components and offset, then the constants' count and each one's slot and four floats' bits. */
 uint32_t helix_pipeline(const int *desc,int count){
  int slot=-1;for(int i=0;i<SLOTS;i++)if(!pipelines[i].live){slot=i;break;}
  if(slot<0||!desc||count<15||!program_live((uint32_t)desc[0]))return 0;
- const int program=slot_of((uint32_t)desc[0]),lines=desc[1]==1,indexed=desc[2],depth_only=desc[8],clockwise=desc[7];int blend_ok=0;
+ const int program=slot_of((uint32_t)desc[0]),group=desc[1]==2?1:desc[1]==1?2:3,indexed=desc[2],depth_only=desc[8],clockwise=desc[7];int blend_ok=0;
  const SDL_GPUColorTargetBlendState blend=blend_of(desc[3],desc[10],&blend_ok);
- if(!blend_ok)return 0;
+ if(!blend_ok||desc[1]<0||desc[1]>2)return 0;
  SDL_GPUVertexBufferDescription vbs[HELIX_MAX_VERTEX_BUFFERS];SDL_GPUVertexAttribute attrs[HELIX_MAX_VERTEX_ATTRIBUTES];int nattrs=0;
  const int flip_slot=desc[11],flip_offset=desc[12],nbuffers=desc[13];int at=14,strides[HELIX_MAX_VERTEX_BUFFERS]={0},instanced[HELIX_MAX_VERTEX_BUFFERS]={0},read[HELIX_MAX_VERTEX_BUFFERS]={0};
  if(nbuffers<0||nbuffers>HELIX_MAX_VERTEX_BUFFERS)return 0;
@@ -497,7 +497,7 @@ uint32_t helix_pipeline(const int *desc,int count){
  const SDL_GPUColorTargetDescription color={.format=SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,.blend_state=blend};
  SDL_GPUGraphicsPipelineCreateInfo info={.vertex_shader=programs[program].vertex,.fragment_shader=programs[program].fragment,
   .vertex_input_state={.vertex_buffer_descriptions=described,.num_vertex_buffers=(Uint32)ndescribed,.vertex_attributes=attrs,.num_vertex_attributes=(Uint32)nattrs},
-  .primitive_type=lines?SDL_GPU_PRIMITIVETYPE_LINELIST:SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+  .primitive_type=group==1?SDL_GPU_PRIMITIVETYPE_POINTLIST:group==2?SDL_GPU_PRIMITIVETYPE_LINELIST:SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
   .rasterizer_state={.fill_mode=SDL_GPU_FILLMODE_FILL,.cull_mode=desc[6]==2?SDL_GPU_CULLMODE_FRONT:desc[6]?SDL_GPU_CULLMODE_BACK:SDL_GPU_CULLMODE_NONE,
    .front_face=clockwise?SDL_GPU_FRONTFACE_CLOCKWISE:SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,.enable_depth_clip=true},
   .multisample_state={.sample_count=depth_only?SDL_GPU_SAMPLECOUNT_1:sample_count_of(window_samples)},
@@ -511,7 +511,7 @@ uint32_t helix_pipeline(const int *desc,int count){
  pipelines[slot].info.vertex_input_state.vertex_attributes=pipelines[slot].attrs;
  memset(pipelines[slot].variants,0,sizeof pipelines[slot].variants);pipelines[slot].variants[0]=pipeline;
  /* Depth alone (shadow maps, drawn flipped) gets a twin, its front faces the other way round. */
- if(depth_only&&!lines){
+ if(depth_only&&group==3){
   SDL_GPUGraphicsPipelineCreateInfo flipped_info=info;
   flipped_info.rasterizer_state.front_face=clockwise?SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE:SDL_GPU_FRONTFACE_CLOCKWISE;
   twin=SDL_CreateGPUGraphicsPipeline(device,&flipped_info);
@@ -519,7 +519,7 @@ uint32_t helix_pipeline(const int *desc,int count){
  }
  pipelines[slot].pipeline=pipeline;pipelines[slot].flipped=twin;pipelines[slot].program=(uint32_t)desc[0];pipelines[slot].buffer_count=nbuffers;
  memcpy(pipelines[slot].stride,strides,sizeof strides);memcpy(pipelines[slot].instanced,instanced,sizeof instanced);memcpy(pipelines[slot].read,read,sizeof read);
- pipelines[slot].indexed=indexed!=0;pipelines[slot].lines=lines;pipelines[slot].flip=desc[9];pipelines[slot].depth_only=depth_only!=0;
+ pipelines[slot].indexed=indexed!=0;pipelines[slot].group=group;pipelines[slot].flip=desc[9];pipelines[slot].depth_only=depth_only!=0;
  pipelines[slot].flip_slot=flip_slot;pipelines[slot].flip_offset=flip_offset;
  memcpy(pipelines[slot].constants,constants,sizeof constants);pipelines[slot].constant_attributes=nconstant;pipelines[slot].constant_count=0;pipelines[slot].constant_buffer=NULL;
  pipelines[slot].live=1;pipelines[slot].generation++;
@@ -750,7 +750,7 @@ static SDL_GPUBuffer *constant_buffer(int ps,int instances){
 int helix_draw(uint32_t p,const uint32_t *buffer_handles,int buffer_count,uint32_t indices,int first,int count,int first_instance,int instance_count,
                const uint32_t *texture_handles,const int *samplings,int texture_count,const void *uniforms,int uniform_total){
  if(!active||!pipeline_live(p))return 0;
- const int ps=slot_of(p),group=pipelines[ps].lines?2:3,indexed=pipelines[ps].indexed;
+ const int ps=slot_of(p),group=pipelines[ps].group,indexed=pipelines[ps].indexed;
  if(!program_live(pipelines[ps].program))return 0;
  const int program=slot_of(pipelines[ps].program);
  if(first<0||count<=0||count%group||first_instance<0||instance_count<=0||buffer_count<pipelines[ps].buffer_count)return 0;

@@ -174,6 +174,7 @@ class ShaderMacros {
 			"includeDirectories",
 			"shared",
 			"clipScale",
+			"points",
 			"check",
 			"file",
 			"combinations"
@@ -190,6 +191,7 @@ class ShaderMacros {
 			includeDirectories: [for (d in directories) Path.isAbsolute(d) ? d : Path.join([here, d])],
 			shared: value.shared,
 			clipScale: value.clipScale,
+			points: value.points,
 			check: checkName == null ? null : checkFunction(checkName, pos),
 			file: value.file
 		};
@@ -364,6 +366,7 @@ class ShaderMacros {
 			includeDirectories: options.includeDirectories,
 			shared: options.shared,
 			clipScale: options.clipScale,
+			points: options.points,
 			file: options.file
 		};
 
@@ -422,7 +425,8 @@ class ShaderMacros {
 					defines: (options.defines == null ? [] : options.defines).concat(features),
 					looseUniforms: true,
 					gatheredBlocks: gathered,
-					clipScale: options.clipScale == true
+					clipScale: options.clipScale == true,
+					points: options.points == true
 				});
 			if (scratch != null)
 				helix.platform.tools.Files.removeDirectory(scratch);

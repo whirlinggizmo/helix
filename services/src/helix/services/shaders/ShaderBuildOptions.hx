@@ -19,6 +19,9 @@ typedef ShaderBuildOptions = {
 	/** Whether the compiler wraps the vertex stage with a clip scale, as `ShaderOptions.clipScale`. Optional; false by default. */
 	@:optional final clipScale:Bool;
 
+	/** Whether the compiler wraps the vertex stage to write a point size of 1, as `ShaderOptions.points`. Optional; false by default. */
+	@:optional final points:Bool;
+
 	/** The library's rules, run on the compiled shader: returns why it breaks them, which stops the build, or null. Optional. */
 	@:optional final check:Shader->Null<String>;
 

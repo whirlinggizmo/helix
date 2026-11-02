@@ -1,7 +1,7 @@
 package helix.platform.tools;
 
 /** Represents how `ShaderCompiler.compileText` compiles: the dialects it makes besides GLSL ES 300 (WebGL2), which every `ShaderSource`
-	carries, where includes are looked for, the names defined, and whether loose uniforms are taken. */
+	carries, where includes are looked for, the names defined, whether loose uniforms are taken, and how the vertex stage is wrapped. */
 typedef ShaderCompileOptions = {
 	/** Whether to make GLSL 410, for GL natively. */
 	final glsl410:Bool;
@@ -31,4 +31,11 @@ typedef ShaderCompileOptions = {
 	/** Whether to wrap the vertex stage with a clip scale it multiplies `gl_Position` by, a loose `vec4 helix_clipScale`, for
 		`ClipFlip.ClipScale`. Optional; false by default. */
 	final ?clipScale:Bool;
+
+	/** Whether to wrap the vertex stage so it writes a point size of 1, `gl_PointSize = 1.0` after its own `main`, for `Primitive.Points`
+		pipelines. Optional; false by default.
+
+		A size the program writes is replaced. The result's `ShaderSource.points` is true, and SDL_GPU's HLSL is made in SPIRV-Cross's
+		compatibility mode, which takes the size HLSL has no place for. */
+	final ?points:Bool;
 }

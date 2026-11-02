@@ -44,7 +44,8 @@ import helix.platform.tools.ShaderText.ShaderDeclaration;
 
 	With `ShaderCompileOptions.clipScale` the compiler wraps the vertex stage: `#define main helix_main` before the stage's text, a loose
 	`uniform vec4 helix_clipScale;`, and after it `void main() { helix_main(); gl_Position *= helix_clipScale; }`, so any vertex stage
-	can be flipped through `ClipFlip.ClipScale`.
+	can be flipped through `ClipFlip.ClipScale`. With `ShaderCompileOptions.points` the same wrap writes `gl_PointSize = 1.0` after the
+	stage's `main`, whatever it wrote, for `Primitive.Points` pipelines, and the result's `ShaderSource.points` is true.
 
 	```haxe
 	var shader = graphics.createShader(ShaderCompiler.compile("triangle.vert", "triangle.frag"));
@@ -154,8 +155,15 @@ class ShaderCompiler {
 				text: StringTools.replace(fragment.text, "\r\n", "\n")
 			}
 		];
+		// The clip scale and the point size, written after the program's main, in one wrap.
+		var after = [];
 		if (options.clipScale == true)
-			given[0].text = wrapMain(given[0].text, vertex.name, "helix_main", "uniform vec4 helix_clipScale;", "gl_Position *= helix_clipScale;");
+			after.push("gl_Position *= helix_clipScale;");
+		if (options.points == true)
+			after.push("gl_PointSize = 1.0;");
+		if (after.length > 0)
+			given[0].text = wrapMain(given[0].text, vertex.name, "helix_main", options.clipScale == true ? "uniform vec4 helix_clipScale;" : "",
+				after.join("\n    "));
 		var include = "-P#extension GL_GOOGLE_include_directive : enable";
 		// Preprocessed, includes and defines resolved: the text step reads this.
 		var calls = [];
@@ -249,13 +257,15 @@ class ShaderCompiler {
 				fragment: outputs[per + 1]
 			}
 		};
+		if (options.points == true)
+			source.points = true;
 		if (options.glsl410)
 			source.glsl410 = {vertex: namedBlocks(outputs[2], described.blocks), fragment: namedBlocks(outputs[per + 2], described.blocks)};
 		if (options.sdlGpu)
 			source.sdlGpu = sdlGpu(cross, scratch, [
 				"vertex" => File.getBytes(spv("vertex-sdlgpu")),
 				"fragment" => File.getBytes(spv("fragment"))
-			], described);
+			], described, options.points == true);
 		return source;
 	}
 
@@ -826,8 +836,9 @@ class ShaderCompiler {
 	}
 
 	// SDL_GPU's dialects: each stage's resources bound at SDL_GPU's sets (blocks at their slots, textures numbered from 0 by slot within
-	// each stage), then MSL and HLSL from that.
-	static function sdlGpu(cross:String, scratch:String, modules:Map<String, Bytes>, described:Dynamic):Dynamic {
+	// each stage), then MSL and HLSL from that; a point size's HLSL in SPIRV-Cross's compatibility mode, as HLSL has no point size and
+	// SPIRV-Cross refuses one otherwise.
+	static function sdlGpu(cross:String, scratch:String, modules:Map<String, Bytes>, described:Dynamic, points:Bool):Dynamic {
 		var out:Dynamic = {spirv: {}, msl: {}, hlsl: {}};
 		var calls = [];
 		for (stage in ["vertex", "fragment"]) {
@@ -843,7 +854,7 @@ class ShaderCompiler {
 			File.saveBytes(path, rebound);
 			Reflect.setField(out.spirv, stage, haxe.crypto.Base64.encode(rebound));
 			calls.push({program: cross, args: [path, "--msl", "--msl-version", "20100", "--msl-decoration-binding"]});
-			calls.push({program: cross, args: [path, "--hlsl", "--shader-model", "51"]});
+			calls.push({program: cross, args: [path, "--hlsl", "--shader-model", "51"].concat(points ? ["--hlsl-enable-compat"] : [])});
 		}
 		var results = Scratch.runAll(calls);
 		var packing = ~/cbuffer ID \d+ \(name: (\w+)\), member index \d+ \(name: (\w+)\) cannot be expressed/;

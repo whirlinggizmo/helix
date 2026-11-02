@@ -34,6 +34,8 @@ class SokolGraphicsAdapter extends NativeGraphics implements IGraphics {
 		var handle = GraphicsBridge.shader(cpp.ConstCharStar.fromString(vertex), cpp.ConstCharStar.fromString(fragment), cpp.ConstCharStar.fromString(lines));
 		if (handle == 0)
 			throw "The shader didn't build (see the log)";
+		if (source.points == true)
+			pointPrograms.set(handle, true);
 		return handle;
 	}
 

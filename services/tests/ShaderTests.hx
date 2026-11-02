@@ -411,6 +411,10 @@ class ShaderTests {
 		var place = s.findUniformPlace(s.getUniform("helix_clipScale"));
 		check(desc.flip == ClipScale && desc.flipBlockSlot == place.blockSlot && desc.flipOffset == place.offset, "the flip at its place");
 		check(desc.attributeConstants.length == 0 && desc.buffers[0].attributes.length == 2, "the layout resolved");
+		var dots = Shader.compile("shaders/quad.vert", "shaders/quad.frag", {clipScale: true, points: true});
+		check(dots.source.points == true && s.source.points != true, "the point size written when asked, and only then");
+		var dotted = programs.getPipeline(dots, state.with({primitive: Points}), ShaderVertexLayout.fromAttributes(dots, ["position", "texCoord"]));
+		check(graphics.pipelines.get(dotted.handle).primitive == Points, "a points pipeline over it");
 		throws(() -> programs.getPipeline(s, ShaderPipelineState.OPAQUE, layout), "viewProjection", "a flip uniform the shader lacks refused");
 		programs.prepareFrame();
 		throws(() -> programs.getPipeline(s, ShaderPipelineState.ALPHA.with({flip: None}), layout), "inside a frame", "no first build inside a frame");

@@ -354,6 +354,7 @@ var layoutError(default, null):Null<String>
 Represents how `Shader.makeExpr` and `ShaderVariants.makeExpr` compile, for a library's macro: `ShaderOptions`' choices as values the macro has made rather than constants at a call.
 
 - `shared:Null<Array<ShaderSharedBlock>>`: The blocks whose values are shared, as `ShaderOptions.shared`. Optional; none by default.
+- `points:Null<Bool>`: Whether the compiler wraps the vertex stage to write a point size of 1, as `ShaderOptions.points`. Optional; false by default.
 - `includes:Null<Map<String, String>>`: Texts an angle-bracket `#include` takes by name, before the build's class paths are looked in. Optional; none by default.
 - `includeDirectories:Null<Array<String>>`: Directories a quoted `#include` looks in after the including file's own. Optional; none by default.
 - `file:Null<String>`: The asset path of the file, as `ShaderOptions.file`. Optional; no file by default.
@@ -412,6 +413,7 @@ file: "shaders/lit.shader"});
 ```
 
 - `shared:Null<Array<ShaderSharedBlock>>`: The blocks whose values are shared (`ShaderBlockValues`): a block the shader declares, or loose uniforms gathered into one. Optional; none by default. A values drawn while a shared block is shared neither on it nor on its base throws, so a frame's data is never silently 0, and a typed values class leaves a shared block's members out (`ShaderValueClasses.buildBlock` makes the block's own).
+- `points:Null<Bool>`: Whether the compiler wraps the vertex stage so it writes a point size of 1 after the stage's own `main`, whatever the stage wrote, so a pipeline may draw it as points (`ShaderPipelineState.primitive` `Points`, which the platform refuses over any other shader). Optional; false by default.
 - `includes:Null<String>`: A class whose static `String` constants (`static inline final` or `static final` with a constant value) are texts an angle-bracket `#include` takes by the constant's name: `#include <common>` takes `common`. It is named as Haxe names it from the call's file: `ShaderChunk`, `three.ShaderChunk`, or `three.Chunks.Standard` for a type in another type's module. Optional; none by default. An included text may include others. They are looked in before the build's class paths.
 - `includeDirectories:Null<Array<String>>`: Directories a quoted `#include` looks in after the including file's own, relative to the file holding the call. Optional; none by default.
 - `file:Null<String>`: The asset path of a file holding the compiled shader (`shaders/lit.shader`), which `Shaders.watch` watches, so the shader is replaced in place when the file changes. Optional; no file by default.
@@ -1021,6 +1023,7 @@ function deleteValues():Void
 Represents how a set of variants compiles: `ShaderOptions`, and which combinations of features.
 
 - `shared:Null<Array<ShaderSharedBlock>>`: The blocks whose values are shared (`ShaderBlockValues`): a block the shader declares, or loose uniforms gathered into one. Optional; none by default. A values drawn while a shared block is shared neither on it nor on its base throws, so a frame's data is never silently 0, and a typed values class leaves a shared block's members out (`ShaderValueClasses.buildBlock` makes the block's own).
+- `points:Null<Bool>`: Whether the compiler wraps the vertex stage so it writes a point size of 1 after the stage's own `main`, whatever the stage wrote, so a pipeline may draw it as points (`ShaderPipelineState.primitive` `Points`, which the platform refuses over any other shader). Optional; false by default.
 - `includes:Null<String>`: A class whose static `String` constants (`static inline final` or `static final` with a constant value) are texts an angle-bracket `#include` takes by the constant's name: `#include <common>` takes `common`. It is named as Haxe names it from the call's file: `ShaderChunk`, `three.ShaderChunk`, or `three.Chunks.Standard` for a type in another type's module. Optional; none by default. An included text may include others. They are looked in before the build's class paths.
 - `includeDirectories:Null<Array<String>>`: Directories a quoted `#include` looks in after the including file's own, relative to the file holding the call. Optional; none by default.
 - `file:Null<String>`: The asset path of a file holding the compiled shader (`shaders/lit.shader`), which `Shaders.watch` watches, so the shader is replaced in place when the file changes. Optional; no file by default.

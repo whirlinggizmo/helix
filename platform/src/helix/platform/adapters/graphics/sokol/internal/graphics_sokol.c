@@ -71,9 +71,9 @@ static sg_sampler sampler_of(int sampling);
 #define SAMPLINGS 1024
 static sg_sampler samplers[SAMPLINGS];
 /* Pipelines (helix_pipeline), by pipeline slot: what a draw through one checks and binds (its program, its buffers' strides and whether each
-   is an instance's and read at all, indexed or not, lines or triangles, depth alone, block 0's clip flip). Per buffer slot: whether it is an
+   is an instance's and read at all, indexed or not, the elements a primitive takes (1 points, 2 lines, 3 triangles), depth alone, block 0's clip flip). Per buffer slot: whether it is an
    index buffer. */
-static struct{uint32_t id,shader;int buffer_count,stride[HELIX_MAX_VERTEX_BUFFERS],instanced[HELIX_MAX_VERTEX_BUFFERS],read[HELIX_MAX_VERTEX_BUFFERS],indexed,lines,depth_only,flip,flip_slot,flip_offset,fed;float constants[HELIX_MAX_VERTEX_ATTRIBUTES][4];}pipeline_info[256];
+static struct{uint32_t id,shader;int buffer_count,stride[HELIX_MAX_VERTEX_BUFFERS],instanced[HELIX_MAX_VERTEX_BUFFERS],read[HELIX_MAX_VERTEX_BUFFERS],indexed,group,depth_only,flip,flip_slot,flip_offset,fed;float constants[HELIX_MAX_VERTEX_ATTRIBUTES][4];}pipeline_info[256];
 /* A sokol pipeline is made for one kind of pass (its color format, depth format and samples), and a flipped pass draws triangles with their
    front faces the other way round: a pipeline's variants, by pipeline slot, each made from its description the first time a draw needs it.
    A variant is the pass's kind: bit 0 half floats, bit 1 no depth, bit 2 single sampled where the screen isn't, bit 3 flipped; variant 0
@@ -268,7 +268,7 @@ static sg_blend_state blend_of(int blend,int *ok){
 }
 /* A helix.platform.ColorChannels (bit 0 red, 1 green, 2 blue, 3 alpha) as sokol's write mask. */
 static sg_color_mask mask_of(int channels){return channels?(sg_color_mask)channels:SG_COLORMASK_NONE;}
-/* A pipeline as helix.platform.PipelineDesc describes it, its ints in order: shader, primitive (0 triangles, 1 lines), indexed, blend
+/* A pipeline as helix.platform.PipelineDesc describes it, its ints in order: shader, primitive (0 triangles, 1 lines, 2 points), indexed, blend
    (blend_of), depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front), clockwise, depth only, clip flip
    (0 none, 1 clip scale, 2 view-projection), the color channels written (mask_of), the flip uniform's vertex block slot and byte offset, the
    buffer count, then each buffer's stride, instanced and attribute count, each attribute's slot, components and offset, then the count of
@@ -276,10 +276,10 @@ static sg_color_mask mask_of(int channels){return channels?(sg_color_mask)channe
    generic attribute value, set before each draw. 0 for a description it can't make (a constant for a slot a buffer feeds among them). */
 uint32_t helix_pipeline(const int *desc,int count){
  if(!desc||count<15)return 0;
- const uint32_t shader=(uint32_t)desc[0];const int lines=desc[1]==1,indexed=desc[2],depth_only=desc[8],clockwise=desc[7],channels=desc[10];int blend_ok=0;
+ const uint32_t shader=(uint32_t)desc[0];const int group=desc[1]==2?1:desc[1]==1?2:3,indexed=desc[2],depth_only=desc[8],clockwise=desc[7],channels=desc[10];int blend_ok=0;
  const sg_blend_state blend=blend_of(desc[3],&blend_ok);
- if(!blend_ok||channels<0||channels>15||(shader&0xffff)>=256||sg_query_shader_state((sg_shader){shader})!=SG_RESOURCESTATE_VALID)return 0;
- sg_pipeline_desc pd={.shader={shader},.primitive_type=lines?SG_PRIMITIVETYPE_LINES:SG_PRIMITIVETYPE_TRIANGLES,
+ if(desc[1]<0||desc[1]>2||!blend_ok||channels<0||channels>15||(shader&0xffff)>=256||sg_query_shader_state((sg_shader){shader})!=SG_RESOURCESTATE_VALID)return 0;
+ sg_pipeline_desc pd={.shader={shader},.primitive_type=group==1?SG_PRIMITIVETYPE_POINTS:group==2?SG_PRIMITIVETYPE_LINES:SG_PRIMITIVETYPE_TRIANGLES,
   .index_type=indexed?SG_INDEXTYPE_UINT32:SG_INDEXTYPE_NONE,.depth={.compare=desc[4]==2?SG_COMPAREFUNC_GREATER:desc[4]?SG_COMPAREFUNC_LESS_EQUAL:SG_COMPAREFUNC_ALWAYS,.write_enabled=desc[5]!=0},
   .cull_mode=desc[6]==2?SG_CULLMODE_FRONT:desc[6]?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,.colors[0]={.blend=blend,.write_mask=mask_of(channels)}};
  /* Depth alone: a shadow pass's, no color attachment. */
@@ -316,7 +316,7 @@ uint32_t helix_pipeline(const int *desc,int count){
  if(sg_query_pipeline_state(pipeline)!=SG_RESOURCESTATE_VALID||(pipeline.id&0xffff)>=256){sg_destroy_pipeline(pipeline);return 0;}
  const int slot=pipeline.id&0xffff;
  pipeline_descs[slot]=pd;memset(variants[slot],0,sizeof variants[slot]);variants[slot][0]=pipeline;
- pipeline_info[slot].id=pipeline.id;pipeline_info[slot].shader=shader;pipeline_info[slot].buffer_count=buffers;pipeline_info[slot].indexed=indexed!=0;pipeline_info[slot].lines=lines;
+ pipeline_info[slot].id=pipeline.id;pipeline_info[slot].shader=shader;pipeline_info[slot].buffer_count=buffers;pipeline_info[slot].indexed=indexed!=0;pipeline_info[slot].group=group;
  pipeline_info[slot].depth_only=depth_only!=0;pipeline_info[slot].flip=desc[9];
  pipeline_info[slot].flip_slot=flip_slot;pipeline_info[slot].flip_offset=flip_offset;pipeline_info[slot].fed=fed;memcpy(pipeline_info[slot].constants,constants,sizeof constants);
  memcpy(pipeline_info[slot].stride,strides,sizeof strides);memcpy(pipeline_info[slot].instanced,instanced,sizeof instanced);memcpy(pipeline_info[slot].read,read,sizeof read);
@@ -675,9 +675,9 @@ static void apply_blocks(int shader,int p,const void *uniforms){
  }
 }
 /* The variant of the pipeline in slot that draws in the open pass, made the first time: depth alone has none (it draws only into shadow
-   maps), lines none flipped (they have no faces). */
+   maps), lines and points none flipped (they have no faces). */
 static sg_pipeline variant_of(int slot){
- const int v=pipeline_info[slot].depth_only?0:pipeline_info[slot].lines?pass_variant&7:pass_variant;
+ const int v=pipeline_info[slot].depth_only?0:pipeline_info[slot].group<3?pass_variant&7:pass_variant;
  if(!variants[slot][v].id){
   sg_pipeline_desc pd=pipeline_descs[slot];
   if(v&1)pd.colors[0].pixel_format=SG_PIXELFORMAT_RGBA16F;
@@ -697,7 +697,7 @@ int helix_draw(uint32_t p,const uint32_t *buffers,int buffer_count,uint32_t indi
                const uint32_t *textures,const int *samplings,int texture_count,const void *uniforms,int uniform_bytes){
  const int pslot=p&0xffff;
  if(!active||pslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID)return 0;
- const int shader=pipeline_info[pslot].shader&0xffff,group=pipeline_info[pslot].lines?2:3,indexed=pipeline_info[pslot].indexed;
+ const int shader=pipeline_info[pslot].shader&0xffff,group=pipeline_info[pslot].group,indexed=pipeline_info[pslot].indexed;
  if(first<0||count<=0||count%group||first_instance<0||instance_count<=0||buffer_count<pipeline_info[pslot].buffer_count)return 0;
  sg_bindings bindings={0};
  if(indexed){

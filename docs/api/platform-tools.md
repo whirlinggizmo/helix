@@ -6,9 +6,10 @@
 
 *typedef* in [`platform/src/helix/platform/tools/ShaderCompileOptions.hx`](../../platform/src/helix/platform/tools/ShaderCompileOptions.hx), `import helix.platform.tools.ShaderCompileOptions;`
 
-Represents how `ShaderCompiler.compileText` compiles: the dialects it makes besides GLSL ES 300 (WebGL2), which every `ShaderSource` carries, where includes are looked for, the names defined, and whether loose uniforms are taken.
+Represents how `ShaderCompiler.compileText` compiles: the dialects it makes besides GLSL ES 300 (WebGL2), which every `ShaderSource` carries, where includes are looked for, the names defined, whether loose uniforms are taken, and how the vertex stage is wrapped.
 
 - `sdlGpu:Bool`: Whether to make SDL_GPU's stages: SPIR-V, MSL and HLSL.
+- `points:Null<Bool>`: Whether to wrap the vertex stage so it writes a point size of 1, `gl_PointSize = 1.0` after its own `main`, for `Primitive.Points` pipelines. Optional; false by default.
 - `looseUniforms:Null<Bool>`: Whether a stage may declare uniforms outside a block (`uniform vec3 diffuse;`), in either form of source. Optional; false by default.
 - `includeDirectories:Null<Array<String>>`: Directories `#include` looks in, after the directory of each stage's file. Optional; none by default.
 - `glsl410:Bool`: Whether to make GLSL 410, for GL natively.
@@ -30,7 +31,7 @@ What a program's source declares is what it binds: each uniform block, at its si
 
 **Placement**, where a source gives none: named blocks at the lowest free block bindings of their stages in the order declared (the vertex stage's first), then `helix_uniforms`, then the gathered blocks, each at the lowest binding free in both stages; textures at the lowest free texture bindings in the order declared; attributes at the lowest free locations in the order declared, a matrix a location a column.
 
-With `ShaderCompileOptions.clipScale` the compiler wraps the vertex stage: `#define main helix_main` before the stage's text, a loose `uniform vec4 helix_clipScale;`, and after it `void main() { helix_main(); gl_Position *= helix_clipScale; }`, so any vertex stage can be flipped through `ClipFlip.ClipScale`.
+With `ShaderCompileOptions.clipScale` the compiler wraps the vertex stage: `#define main helix_main` before the stage's text, a loose `uniform vec4 helix_clipScale;`, and after it `void main() { helix_main(); gl_Position *= helix_clipScale; }`, so any vertex stage can be flipped through `ClipFlip.ClipScale`. With `ShaderCompileOptions.points` the same wrap writes `gl_PointSize = 1.0` after the stage's `main`, whatever it wrote, for `Primitive.Points` pipelines, and the result's `ShaderSource.points` is true.
 
 ```haxe
 var shader = graphics.createShader(ShaderCompiler.compile("triangle.vert", "triangle.frag"));

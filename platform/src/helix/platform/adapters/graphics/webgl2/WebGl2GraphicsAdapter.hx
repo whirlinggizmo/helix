@@ -65,7 +65,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		textures:Array<Dynamic>,
 		unfiltered:Array<Bool>,
 		kinds:Array<Int>,
-		attributeCount:Int
+		attributeCount:Int,
+		points:Bool
 	}> = [];
 	// Pipelines, by handle: their description.
 	var pipelines:Map<Int, PipelineDesc> = [];
@@ -418,7 +419,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			textures: samplerLocations,
 			unfiltered: unfiltered,
 			kinds: kinds,
-			attributeCount: source.attributes.length
+			attributeCount: source.attributes.length,
+			points: source.points == true
 		};
 		return id;
 	}
@@ -437,6 +439,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	public function createPipeline(desc:PipelineDesc):Int {
 		if (!shaders.exists(desc.shader))
 			throw "Invalid pipeline shader";
+		if (desc.primitive == Points && !shaders[desc.shader].points)
+			throw "Invalid pipeline: Points over a program compiled without ShaderCompileOptions.points";
 		// The limits every adapter takes (PipelineDesc), though WebGL2 may allow more, so a pipeline made here is made natively too.
 		var attributes = 0;
 		for (b in desc.buffers)
@@ -753,7 +757,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		if (!active || p == null)
 			throw "Invalid draw";
 		var shader = shaders[p.shader],
-			group = p.primitive == Lines ? 2 : 3,
+			group = p.primitive == Points ? 1 : p.primitive == Lines ? 2 : 3,
 			ix = p.indexed ? this.buffers[indexBuffer] : null;
 		if (firstElementIndex < 0
 			|| elementCount <= 0
@@ -827,7 +831,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		var write:ColorChannels = p.depthOnly ? None : p.colorWrite == null ? All : p.colorWrite;
 		gl.colorMask(write.hasChannels(Red), write.hasChannels(Green), write.hasChannels(Blue), write.hasChannels(Alpha));
 		blend(p.blend);
-		var mode = p.primitive == Lines ? WebGL2RenderingContext.LINES : WebGL2RenderingContext.TRIANGLES;
+		var mode = p.primitive == Points ? WebGL2RenderingContext.POINTS : p.primitive == Lines ? WebGL2RenderingContext.LINES : WebGL2RenderingContext.TRIANGLES;
 		if (p.indexed) {
 			gl.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, ix.buffer);
 			gl.drawElementsInstanced(mode, elementCount, WebGL2RenderingContext.UNSIGNED_INT, firstElementIndex * 4, instanceCount);

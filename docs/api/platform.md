@@ -1549,6 +1549,7 @@ Specifies what a pipeline's draws make.
 
 - `Primitive.Triangles`: Triangles, three vertices or indices each.
 - `Primitive.Lines`: Lines, two vertices or indices each.
+- `Primitive.Points`: Points, one vertex or index each, drawn one pixel in size on every backend; culling ignores them.
 
 ```haxe
 function toString():String
@@ -1671,6 +1672,7 @@ Represents a compiled program, with its stages in each dialect the adapters comp
 - `uniformBlocks:Array<ShaderBlock>`: The uniform blocks it declares, with their members.
 - `textures:Array<ShaderTexture>`: The textures it samples.
 - `sdlGpu:Null<SdlGpuStages>`: SDL_GPU's stages. Present only in a build for SDL_GPU.
+- `points:Null<Bool>`: Whether the vertex stage writes a point size of 1, compiled with `ShaderCompileOptions.points`, so `Primitive.Points` pipelines may draw it. Optional; false when omitted.
 - `glsl410:Null<ShaderStages>`: GLSL 410, for GL natively. Absent from a browser build.
 - `glsl300es:ShaderStages`: GLSL ES 300, for WebGL2.
 - `attributes:Array<String>`: The vertex attributes' names, by slot. A matrix's name is at its first slot, and its other columns' slots hold "".

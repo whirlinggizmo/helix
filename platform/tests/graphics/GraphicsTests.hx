@@ -33,7 +33,8 @@ typedef Case = {
 /** Checks helix-platform's graphics on the GPU, with the library alone: each case draws, reads the result back with `readPixels` and checks
 	its pixels against what arithmetic says they are.
 
-	The cases: a clear, a triangle's colors interpolated, eight vertex buffers read and a ninth refused, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
+	The cases: points a pixel each, unindexed and by index, and refused over a program without the point size; a clear, a triangle's
+	colors interpolated, eight vertex buffers read and a ninth refused, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
 	additive blending, each blend factor and operation and a color write mask, a texture's rectangles replaced, and replaced
 	between passes, targets kept from pass to pass and frame to frame (their depth and samples too) and one never cleared, textures read
 	back, instances placed by a mat4 vertex input, mipmaps under each mipmap filter, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
@@ -163,6 +164,7 @@ class GraphicsTests {
 		var tint = shader(ShaderCompiler.compile("shaders/offset.vert", "shaders/tint.frag"));
 		var eight = shader(ShaderCompiler.compile("shaders/eight.vert", "shaders/color.frag"));
 		var matrices = shader(ShaderCompiler.compile("shaders/instanced.vert", "shaders/color.frag"));
+		var pointProgram = shader(PointsShader.compile("shaders/color.vert", "shaders/color.frag"));
 		var sharedSource = ShaderCompiler.compile("shaders/shared.vert", "shaders/shared.frag");
 		var sharing = shader(sharedSource);
 
@@ -317,6 +319,44 @@ class GraphicsTests {
 		} catch (e:Dynamic)
 			true;
 
+		// Points, unindexed and indexed, through the points program; culling asked for, which points ignore. Over a program compiled
+		// without the point size, refused.
+		function points(indexed:Bool):Int {
+			var handle = graphics.createPipeline({
+				shader: pointProgram,
+				buffers: [colored],
+				primitive: Points,
+				indexed: indexed,
+				blend: Blend.OPAQUE,
+				depthTest: Off,
+				depthWrite: false,
+				cull: Back,
+				clockwise: false,
+				depthOnly: false,
+				flip: ClipScale
+			});
+			pipelines.push(handle);
+			return handle;
+		}
+		var dotted = points(false), dottedIndexed = points(true);
+		var pointsRefused = try {
+			pipelines.push(graphics.createPipeline({
+				shader: color,
+				buffers: [colored],
+				primitive: Points,
+				indexed: false,
+				blend: Blend.OPAQUE,
+				depthTest: Off,
+				depthWrite: false,
+				cull: None,
+				clockwise: false,
+				depthOnly: false,
+				flip: ClipScale
+			}));
+			false;
+		} catch (e:Dynamic)
+			true;
+
 		// Clip space's square as two triangles; a texture coordinate's v runs down, as a texture's rows do.
 		var square = [-1., -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1];
 		function quad(r:Float, g:Float, b:Float, a:Float):Int {
@@ -430,6 +470,28 @@ class GraphicsTests {
 			return (x + .5) / SIZE * 2 - 1;
 		function clipY(y:Int):Float
 			return 1 - (y + .5) / SIZE * 2;
+		// Five points at texels' centers, each a color: red, green, blue, white, yellow; and indices drawing the fourth and the first.
+		var spots = [[2, 3], [13, 1], [7, 7], [0, 15], [15, 10]],
+			spotColors = [[1., 0, 0], [0., 1, 0], [0., 0, 1], [1., 1, 1], [1., 1, 0]];
+		var dots = buffer([
+			for (i => s in spots)
+				for (v in [clipX(s[0]), clipY(s[1])].concat(spotColors[i]).concat([1]))
+					v
+		]);
+		var dotIndices = Bytes.alloc(8);
+		dotIndices.setInt32(0, 3);
+		dotIndices.setInt32(4, 0);
+		var dotIndexBuffer = graphics.createStaticBuffer(dotIndices, 8, true);
+		buffers.push(dotIndexBuffer);
+		// The texel a point at s lights, and none of its neighbors.
+		function expectSpot(p:Pixels, s:Array<Int>, color:Array<Float>):Void {
+			p.expect(s[0], s[1], color, 0);
+			for (d in [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+				var x = s[0] + d[0], y = s[1] + d[1];
+				if (x >= 0 && x < SIZE && y >= 0 && y < SIZE)
+					p.expect(x, y, [0, 0, 0, 1], 0);
+			}
+		}
 		// The 2 x 2 texture sampled linearly at a texel's center of the target, clamped to its edge.
 		function bilinear(x:Int, y:Int):Array<Float> {
 			var u = Math.min(Math.max((x + .5) / SIZE * 2 - .5, 0), 1),
@@ -440,6 +502,28 @@ class GraphicsTests {
 		}
 
 		cases = [
+			{
+				name: "points, a pixel each, five drawn",
+				before: into(0, 0, 0, 1, () -> draw(dotted, dots, 5)),
+				target: target,
+				check: p -> {
+					if (!pointsRefused)
+						throw "points over a program without the point size: the pipeline was made";
+					for (i => s in spots)
+						expectSpot(p, s, spotColors[i].concat([1]));
+				}
+			},
+			{
+				name: "points by index",
+				before: into(0, 0, 0, 1, () -> graphics.draw(dottedIndexed, [dots], dotIndexBuffer, 0, 2, 0, 1, [], [], [clip])),
+				target: target,
+				check: p -> {
+					expectSpot(p, spots[3], [1, 1, 1, 1]);
+					expectSpot(p, spots[0], [1, 0, 0, 1]);
+					for (s in [spots[1], spots[2], spots[4]])
+						p.expect(s[0], s[1], [0, 0, 0, 1], 0);
+				}
+			},
 			{
 				name: "a target cleared",
 				before: into(.25, .5, .75, 1, () -> {}),

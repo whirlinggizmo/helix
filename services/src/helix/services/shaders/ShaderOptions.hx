@@ -36,6 +36,11 @@ typedef ShaderOptions = {
 		(`ShaderPipelineState.CLIP_SCALE`): a layer whose users write their own vertex stages (helix-ray) needs no named matrix. */
 	@:optional var clipScale:Bool;
 
+	/** Whether the compiler wraps the vertex stage so it writes a point size of 1 after the stage's own `main`, whatever the stage wrote,
+		so a pipeline may draw it as points (`ShaderPipelineState.primitive` `Points`, which the platform refuses over any other shader).
+		Optional; false by default. */
+	@:optional var points:Bool;
+
 	/** A static function `Shader->Null<String>`, by its dotted path (`helix.draw.ShaderRules.check`), run on the compiled shader while the
 		program builds: it returns why the shader breaks a library's rules, which stops the build at the call, or null. Optional; no check
 		by default. */

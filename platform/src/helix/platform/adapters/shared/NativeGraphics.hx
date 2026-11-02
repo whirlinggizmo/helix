@@ -129,7 +129,12 @@ abstract class NativeGraphics implements IGraphics {
 		};
 	}
 
+	// The programs compiled with ShaderCompileOptions.points, by handle, which Points pipelines may draw: set by a subclass's createShader.
+	final pointPrograms = new Map<Int, Bool>();
+
 	public function createPipeline(desc:PipelineDesc):Int {
+		if (desc.primitive == helix.platform.Primitive.Points && !pointPrograms.exists(desc.shader))
+			throw "Invalid pipeline: Points over a program compiled without ShaderCompileOptions.points";
 		// The description as the bridge reads it: the state, then each buffer's stride, step and attributes.
 		var colorWrite:Int = desc.colorWrite == null ? (All : ColorChannels) : desc.colorWrite;
 		var ints:Array<Int> = [
@@ -172,9 +177,11 @@ abstract class NativeGraphics implements IGraphics {
 		return valid(GraphicsDeviceBridge.pipeline(cpp.Pointer.ofArray(packed.toData()).raw, ints.length));
 	}
 
-	public function disposeShader(handle:Int):Void
+	public function disposeShader(handle:Int):Void {
 		if (GraphicsDeviceBridge.disposeResource(3, handle) != 1)
 			throw "Invalid native shader";
+		pointPrograms.remove(handle);
+	}
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void {
 		if (usedBytes > data.length || usedBytes < 0 || GraphicsDeviceBridge.update(handle, pointer(data), usedBytes) != 1)
