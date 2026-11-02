@@ -164,7 +164,7 @@ class GraphicsTests {
 		var tint = shader(ShaderCompiler.compile("shaders/offset.vert", "shaders/tint.frag"));
 		var eight = shader(ShaderCompiler.compile("shaders/eight.vert", "shaders/color.frag"));
 		var matrices = shader(ShaderCompiler.compile("shaders/instanced.vert", "shaders/color.frag"));
-		var pointProgram = shader(PointsShader.compile("shaders/color.vert", "shaders/color.frag"));
+		var pointProgram = shader(ShaderCompiler.compile("shaders/color.vert", "shaders/color.frag", {points: true}));
 		var sharedSource = ShaderCompiler.compile("shaders/shared.vert", "shaders/shared.frag");
 		var sharing = shader(sharedSource);
 

@@ -84,10 +84,20 @@ class ShaderCompiler {
 
 		A browser build carries GLSL ES 300 alone; a native build GLSL 410 and SDL_GPU's dialects besides. An error stops the build at the call, saying
 		where in the shader it is.
+
+		The options are an object literal at the call, read as the program builds: any of `ShaderCompileOptions` but the dialects, which
+		are the build's. Include directories are relative to the file holding the call. A field `ShaderCompileOptions` doesn't have, a
+		dialect, or a value that isn't a constant is refused.
+
+		```haxe
+		var dots = graphics.createShader(ShaderCompiler.compile("dots.vert", "dots.frag", {points: true}));
+		```
 		@param vertex  The vertex stage's file, relative to the file holding the call.
 		@param fragment  The fragment stage's file, relative to the file holding the call.
+		@param options  Optional. Include directories, defines, loose uniforms, gathered blocks, the clip-scale wrap and the point size, as
+			`ShaderCompileOptions` has them; none by default.
 		@return  The program, as `IGraphics.createShader` takes it. */
-	public static macro function compile(vertex:String, fragment:String):ExprOf<helix.platform.ShaderSource> {
+	public static macro function compile(vertex:String, fragment:String, ?options:ExprOf<ShaderCompileOptions>):ExprOf<helix.platform.ShaderSource> {
 		var pos = Context.currentPos();
 		var here = Path.directory(Context.getPosInfos(pos).file);
 		function locate(path:String):String {
@@ -98,15 +108,59 @@ class ShaderCompiler {
 			return full;
 		}
 		var vertexPath = locate(vertex), fragmentPath = locate(fragment);
-		var js = Context.defined("js");
+		var given = callOptions(options, here);
 		try {
-			var source = compileText({name: vertexPath, text: File.getContent(vertexPath)}, {name: fragmentPath, text: File.getContent(fragmentPath)},
-				{glsl410: !js, sdlGpu: !js});
+			var source = compileText({name: vertexPath, text: File.getContent(vertexPath)}, {name: fragmentPath, text: File.getContent(fragmentPath)}, given);
 			return macro(${Context.makeExpr(source, pos)} : helix.platform.ShaderSource);
 		} catch (error:CommandException) {
 			return Context.error(error.message, pos);
 		}
 	}
+
+	#if macro
+	// The options a call to compile gives, an object literal, with the build's dialects; include directories made relative to here.
+	static function callOptions(options:Null<Expr>, here:String):ShaderCompileOptions {
+		var js = Context.defined("js");
+		var known = [
+			"includeDirectories",
+			"defines",
+			"looseUniforms",
+			"gatheredBlocks",
+			"clipScale",
+			"points"
+		];
+		if (options == null || options.expr.match(EConst(CIdent("null"))))
+			return {glsl410: !js, sdlGpu: !js};
+		var fields = switch options.expr {
+			case EObjectDecl(fields): fields;
+			case _: Context.error('shader: the options are an object literal at the call (${known.join(", ")})', options.pos);
+		}
+		for (f in fields)
+			if (known.indexOf(f.field) < 0)
+				Context.error(f.field == "glsl410"
+					|| f.field == "sdlGpu" ? 'shader: ${f.field}: the dialects are the build\'s' : 'shader: no option ${f.field} (${known.join(", ")})',
+					f.expr.pos);
+		var value:Dynamic = try haxe.macro.ExprTools.getValue(options) catch (_:Dynamic)
+			Context.error('shader: the options are constants: strings, numbers, booleans, arrays and objects of them', options.pos);
+		var directories:Null<Array<String>> = value.includeDirectories;
+		return {
+			glsl410: !js,
+			sdlGpu: !js,
+			// Path.join normalizes "." beside an empty directory to "", which glslang can't take.
+			includeDirectories: directories == null ? null : [
+				for (d in directories) {
+					var full = Path.isAbsolute(d) ? d : Path.join([here, d]);
+					full == "" ? "." : full;
+				}
+			],
+			defines: value.defines,
+			looseUniforms: value.looseUniforms,
+			gatheredBlocks: value.gatheredBlocks,
+			clipScale: value.clipScale,
+			points: value.points
+		};
+	}
+	#end
 
 	/** Compiles a program's two stages from their text, in the compiler or a tool.
 

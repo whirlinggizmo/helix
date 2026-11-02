@@ -257,7 +257,10 @@ draws on each and checks the pixels it reads back.
 Vulkan-style GLSL 450, where attributes may give `layout(location = n)` and blocks and textures `layout(binding = n)`; or GL's,
 `#version 300 es` or 330 to 440, where nothing gives a location or a binding (one written is refused, as GLSL ES 3.0 has none). No
 annotations. The build macro `ShaderCompiler.compile("triangle.vert", "triangle.frag")`, paths beside the calling file, compiles them
-while Haxe builds the program and puts the `ShaderSource` in it as a literal; the program hands it to `IGraphics.createShader`.
+while Haxe builds the program and puts the `ShaderSource` in it as a literal; the program hands it to `IGraphics.createShader`. A third
+argument, an object literal of `ShaderCompileOptions` written at the call, sets the rest
+(`ShaderCompiler.compile("dots.vert", "dots.frag", {points: true})`): the dialects are the build's (GLSL ES 300 in a page, GLSL 410 and
+SDL_GPU's natively), so it doesn't name them, and its include directories are relative to the calling file.
 `ShaderCompiler.compileText(vertex, fragment, options)` compiles text a macro or a tool has (`ShaderCompileOptions`: the dialects, include
 directories, defines, loose uniforms, gathered blocks, the clip-scale wrap and the point size). `#include` with a quoted name resolves beside the
 including file, then in the include directories; the compiler enables `GL_GOOGLE_include_directive` for every stage, so no stage declares

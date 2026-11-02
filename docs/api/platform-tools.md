@@ -38,16 +38,23 @@ var shader = graphics.createShader(ShaderCompiler.compile("triangle.vert", "tria
 ```
 
 ```haxe
-static macro function compile(vertex:String, fragment:String):ShaderSource
+static macro function compile(vertex:String, fragment:String, ?options:ShaderCompileOptions):ShaderSource
 static function compileText(vertex:{text:String, name:String}, fragment:{text:String, name:String}, options:ShaderCompileOptions):ShaderSource
 ```
 
 - `compile`: Compiles a program while the build runs, and returns its `ShaderSource` as a value in the program.
   - `vertex`: The vertex stage's file, relative to the file holding the call.
   - `fragment`: The fragment stage's file, relative to the file holding the call.
+  - `options`: Optional. Include directories, defines, loose uniforms, gathered blocks, the clip-scale wrap and the point size, as `ShaderCompileOptions` has them; none by default.
   - returns: The program, as `IGraphics.createShader` takes it.
 
   A browser build carries GLSL ES 300 alone; a native build GLSL 410 and SDL_GPU's dialects besides. An error stops the build at the call, saying where in the shader it is.
+
+  The options are an object literal at the call, read as the program builds: any of `ShaderCompileOptions` but the dialects, which are the build's. Include directories are relative to the file holding the call. A field `ShaderCompileOptions` doesn't have, a dialect, or a value that isn't a constant is refused.
+
+  ```haxe
+  var dots = graphics.createShader(ShaderCompiler.compile("dots.vert", "dots.frag", {points: true}));
+  ```
 - `compileText`: Compiles a program's two stages from their text, in the compiler or a tool.
   - `vertex`: The vertex stage: a name for messages (its file's path, when it has one) and its GLSL.
   - `fragment`: The fragment stage: a name for messages and its GLSL.
