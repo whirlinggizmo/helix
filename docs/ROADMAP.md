@@ -3,9 +3,10 @@
 - **Rendering and a scene, drafted as APIs:** helix-render (directory `render/`, packages `helix.render` and `helix.render.effects`:
   2D and 3D batches, draw lists, lit materials, lights, shadows, environment maps, post-processing, points, views for stereo; HeliX's
   renderers carried over), on helix-services' shaders package (DECISIONS 31); its draft is in its eighth revision after two rounds of
-  cold-start trials. Then a scene library on helix-render (2D and 3D nodes, transforms, hierarchy, the walk that culls, lights and
+  cold-start trials. Then helix-scene (directory `scene/`, package `helix.scene`) on helix-render (2D and 3D nodes, transforms, hierarchy, the walk that culls, lights and
   sorts; HeliX's nodes and stage carried over). Each judged by what a raylib layer and a three.js layer would need from below;
-  helix-ray to be rebuilt on helix-render. Drafts agreed with the user and tried by fresh agents before any is written.
+  helix-ray to be rebuilt on helix-render; the engines over helix-scene, which first to be chosen: HeliX's engine (its game-level API, its games and
+  docs) and a three.js-style one. Drafts agreed with the user and tried by fresh agents before any is written.
 - **helix-ray, on trial (DECISIONS 16, 19, 20, 21):** raylib's API over the services; to decide whether it merges. Next: a managed layer beside it (assets, instances,
   placeholders, as librl has them), designed as an API first. Then a trial of how agents take to
   the `...Async` loads (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
