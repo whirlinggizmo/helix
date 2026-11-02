@@ -12,8 +12,8 @@
   and `Bounds3D` through a matrix. Then helix-ray rebuilt on it, and helix-scene (`scene/`, `helix.scene`) on it (2D and 3D nodes, transforms, hierarchy,
   the walk that culls, lights and sorts; HeliX's nodes and stage carried over), drafted as an API and tried by fresh agents first;
   the engines over helix-scene, which first to be chosen: HeliX's engine (its game-level API, its games and docs) and a three.js-style one.
-- **helix-ray, on trial (DECISIONS 16, 19, 20, 21):** raylib's API over the services; to decide whether it merges. Next: a managed layer beside it (assets, instances,
-  placeholders, as librl has them), designed as an API first. Then a trial of how agents take to
+- **helix-ray, on trial (DECISIONS 16, 19, 20, 21):** raylib's API over the services; to decide whether it merges. Next: a managed layer beside it (the assets, resources and objects
+  below, worn as raylib's names), designed as an API first. Then a trial of how agents take to
   the `...Async` loads (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
   (Atomics.wait, which a worker may; cross-origin isolation, OffscreenCanvas, input and audio relayed; raylib's loop run as written)
   against a whole-program rewrite into callbacks. A `Future` of our own over the callbacks, cross-target, may serve the managed layer,
@@ -34,10 +34,16 @@
   adapter binds a constants buffer of its own, as its SDL_GPU sibling does.
   The platform's checks of a pipeline's vertex layout (`PipelineLayout.check`, every backend, about 0.3 KB gzip) to be trimmed to what
   a backend would otherwise get wrong silently, once the platform's API is settled.
-- **Reloading while a program runs, beyond shaders (after helix-render's stages):** a watched texture, font, model or sound replaced in place, as `Shaders.watch`
-  replaces a shader (its handles, values and pipelines following): `Renderer` uploading a watched texture into the same
-  `Texture2D`, `GpuFont2D` building its atlas again, a model's meshes and materials replaced, services' `Audio` swapping a sound's
-  samples; each linked only by the watch that asks for it, over `Assets.watch` (which already hands any file's new bytes over).
+- **Assets, resources and objects, as the earlier C frameworks layered them (AGENTS.md's prior art: their resource/object model),
+  after helix-render's stages.** An asset is the source, a path (services' `Assets`: located, loaded, watched). A resource is the
+  loaded runtime data, made from an asset or a generator: reference counted, one per path (or generator's parameters), holding the
+  CPU-side data a game needs (picking), and replaced in place while the program runs: a changed file is loaded beside the old, the
+  resource's contents swapped at a frame boundary, a failure keeping the old, as `Shaders.watch` replaces a shader; a placeholder
+  while the first load runs. helix-render's `Texture2D`, `GpuModel3D` and `GpuFont2D` and services' `Sound` are what a resource
+  holds; programs hold resources, never raw platform handles. An object is the placed or heard instance, holding its own runtime
+  data (transform, tint, offset, animation and playback) and the resources it draws or plays: helix-scene's nodes (texture to
+  sprite, mesh to model, audio to sound, font to text). helix-ray's managed layer is this, worn as raylib's names. Each kind linked
+  only by a program that loads or watches it.
 - **Services features an engine needs and helix-ray now reaches the platform for:** the mouse cursor (shape, visibility, lock) on
   `Mouse`, gamepad vibration and mappings on `Gamepads`, and a clipboard service.
 - **The layer above the services:** constructs the platform and the services for a target, runs the frame in order and ends with the
