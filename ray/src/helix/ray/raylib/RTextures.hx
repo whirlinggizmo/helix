@@ -605,25 +605,15 @@ class RTextures {
 		image.data = null;
 	}
 
-	/** Writes an image to a file through `SaveFileData`, as raylib's default build writes it: ".png" (any uncompressed format; a format
-		other than 8-bit grayscale, grayscale and alpha, RGB or RGBA is written as RGBA), ".qoi" (RGB or RGBA alone) or ".raw" (the pixels
-		as they are). The file is kept as `SaveFileData` keeps it; `TakeScreenshot` writes a real file.
+	/** raylib's image export, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
+		`ExportImageAsync` writes it and answers.
 
 		@param image  The image.
-		@param fileName  The file; its extension chooses the format.
-		@return  True when it was written. */
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("ExportImage: A file is written later, or is refused. See ExportImageAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void)")
 	static function ExportImage(image:Image, fileName:String):Bool {
-		var result = false;
-		if (image.width == 0 || image.height == 0 || image.data == null)
-			return false;
-		var file = encodeImage(image, fileName);
-		if (file != null)
-			result = SaveFileData(fileName, file, file.length);
-		if (result)
-			Runtime.log(LOG_INFO, 'FILEIO: [$fileName] Image exported successfully');
-		else
-			Runtime.log(LOG_WARNING, 'FILEIO: [$fileName] Failed to export image');
-		return result;
+		throw "ExportImage is unimplemented";
 	}
 
 	/** Returns an image encoded as a file in memory: ".png" alone, as raylib's. Like raylib's, an image's bytes are read as 8-bit gray,
@@ -648,13 +638,19 @@ class RTextures {
 		return file;
 	}
 
-	/** Writes an image as a C header through `SaveFileText`, as raylib's does: its size and format as defines, and its pixels (the first
-		level's) as an array of bytes, 20 a line.
+	/** raylib's export of an image as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
+		`ExportImageAsCodeAsync` writes it and answers.
 
 		@param image  The image.
-		@param fileName  The file; its name, upper case, names the defines and the array.
-		@return  True when it was written. */
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("ExportImageAsCode: A file is written later, or is refused. See ExportImageAsCodeAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void)")
 	static function ExportImageAsCode(image:Image, fileName:String):Bool {
+		throw "ExportImageAsCode is unimplemented";
+	}
+
+	// ExportImageAsCodeAsync's text, as raylib's writes it.
+	static function imageAsCode(image:Image, fileName:String):String {
 		var dataSize = GetPixelDataSize(image.width, image.height, image.format);
 		var text = new StringBuf();
 		text.add("////////////////////////////////////////////////////////////////////////////////////////\n");
@@ -684,12 +680,7 @@ class RTextures {
 		for (i in 0...dataSize - 1)
 			text.add(i % 20 == 0 ? '0x${at(i)},\n' : '0x${at(i)}, ');
 		text.add('0x${at(dataSize - 1)} };\n');
-		var success = SaveFileText(fileName, text.toString());
-		if (success)
-			Runtime.log(LOG_INFO, 'FILEIO: [$fileName] Image as code exported successfully');
-		else
-			Runtime.log(LOG_WARNING, 'FILEIO: [$fileName] Failed to export image as code');
-		return success;
+		return text.toString();
 	}
 
 	// ExportImage's file: PNG, QOI or the raw pixels, by the name's extension; null, with raylib's warning for QOI's formats, for none.

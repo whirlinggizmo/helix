@@ -19,8 +19,8 @@ import helix.ray.Vector3;
 /** A game written in raylib on helix-ray, with a full set of a game's features and one file format of each kind: a skinned glTF model
 	whose animations are blended, PNG textures and a sprite sheet, a TTF font and the default one, 2D and 3D drawing with a camera of
 	each, a shader of its own, a render texture, sound effects (WAV) and music (Ogg), the keyboard, mouse, gamepad and touch, a save
-	kept with SaveFileText and read back with LoadFileTextAsync, collisions and raymath, fullscreen and the window's size. What a game
-	doesn't usually carry is left to the next rung: the other readers (OBJ, GIF, QOA, MP3, BMFont, image fonts), VR, ExportFontAsCode,
+	kept with SaveFileTextAsync and read back with LoadFileTextAsync, collisions and raymath, fullscreen and the window's size. What a game
+	doesn't usually carry is left to the next rung: the other readers (OBJ, GIF, QOA, MP3, BMFont, image fonts), VR, ExportFontAsCodeAsync,
 	automation events, the clipboard. It is built and measured, never run: its files aren't there. */
 @:adds("helix.formats.audio.AudioHeader", "helix.formats.bmfont", "helix.formats.qoi", "helix.formats.truetype", "helix.math.DistanceField2D",
 	"helix.math.Matrix2D", "helix.math.RectPacker2D", "helix.math.Transform2D", "helix.math.Vector2D", "helix.platform.adapters.fontrasterizer.canvas",
@@ -78,7 +78,7 @@ void main() {
 			if (IsKeyPressed(KEY_F))
 				ToggleFullscreenAsync();
 			if (IsKeyPressed(KEY_R))
-				SetWindowSize(1280, 720);
+				SetWindowSizeAsync(1280, 720);
 			// Input: the keyboard, a gamepad's stick, the mouse and touch all move the player.
 			var move = new Vector3(0, 0, 0);
 			if (IsKeyDown(KEY_RIGHT))
@@ -108,7 +108,7 @@ void main() {
 					PlaySound(coin);
 				if (score > best) {
 					best = score;
-					SaveFileText("save.txt", Std.string(best));
+					SaveFileTextAsync("save.txt", Std.string(best));
 				}
 			}
 			// The hero's idle and run blended by how fast it moves.

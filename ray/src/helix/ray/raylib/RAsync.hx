@@ -25,8 +25,8 @@ import helix.ray.raylib.RMath.*;
 import helix.ray.raylib.RAsync.*;
 #end
 
-/** Holds the async loads and window requests, helix-ray's own in place of raylib's loads that wait for a file and its window calls
-	done when they return, written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
+/** Holds the async loads, requests and writes, helix-ray's own in place of raylib's loads that wait for a file and its window, cursor,
+	clipboard and file calls done when they return, written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.ray)
 class RAsync {
@@ -1225,15 +1225,403 @@ class RAsync {
 	}
 
 	// Asks the screen for fullscreen or the window, whichever it isn't; a refusal, or a window that can't be fullscreen, is refused for
-	// the request named. The window answers at a later poll, never during the call.
+	// the request named.
 	static function toggleFullscreen(name:String, done:Null<Void->Void>, failed:Null<String->Void>):Void {
 		var screen = Runtime.screen;
-		var granted = () -> if (done != null) done();
-		if (!screen.requestFullscreen(!screen.fullscreen, granted, error -> refuse(name, error, failed)))
-			Runtime.later(() -> refuse(name, "the window can't be fullscreen here", failed));
+		ask(name, (granted, refused) -> screen.requestFullscreen(!screen.fullscreen, granted, refused), "the window can't be fullscreen here", done, failed);
 	}
 
-	// Answers a load or a request that failed: to the program's failed callback, or logged. Every error names the file, as the services' do.
+	/** Asks for the window's size, answering once the window manager has resized it or refused: helix-ray's own, in place of raylib's
+		`SetWindowSize`. The window manager may give another size, which `GetScreenWidth` and `GetScreenHeight` say once it has. A
+		fullscreen or maximized window keeps its size, and a page's canvas follows the page, so those are refused.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param done  Optional. Called once the window has a size from the request, at a later poll.
+		@param failed  Optional. Receives why it wasn't resized; when omitted, it is logged. */
+	static function SetWindowSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Void {
+		ask("SetWindowSizeAsync", (granted, refused) -> Runtime.window.requestSize(width, height, granted, refused), '$width x $height is under 1 pixel',
+			done, failed);
+	}
+
+	/** Asks for the window's place on the desktop, answering once it has moved or the move is refused: helix-ray's own, in place of
+		raylib's `SetWindowPosition`. Where the window can't be moved (in a page, or under Wayland), or while it is fullscreen or
+		maximized, it is refused.
+
+		@param x  The left edge, in pixels.
+		@param y  The top edge, in pixels.
+		@param done  Optional. Called once the window has moved, at a later poll.
+		@param failed  Optional. Receives why it didn't move; when omitted, it is logged. */
+	static function SetWindowPositionAsync(x:Int, y:Int, ?done:Void->Void, ?failed:String->Void):Void {
+		ask("SetWindowPositionAsync", (granted, refused) -> Runtime.window.requestPosition(x, y, granted, refused), "", done, failed);
+	}
+
+	/** Asks for the window on another monitor, answering once it is there or the move is refused: helix-ray's own, in place of raylib's
+		`SetWindowMonitor`. Where the window can't be moved, a monitor other than its own is refused.
+
+		@param monitor  The monitor, 0 to `GetMonitorCount() - 1`.
+		@param done  Optional. Called once the window is on the monitor, at a later poll.
+		@param failed  Optional. Receives why it isn't, such as a monitor that isn't there; when omitted, it is logged. */
+	static function SetWindowMonitorAsync(monitor:Int, ?done:Void->Void, ?failed:String->Void):Void {
+		ask("SetWindowMonitorAsync", (granted, refused) -> Runtime.window.requestMonitorIndex(monitor, granted, refused), 'there is no monitor $monitor',
+			done, failed);
+	}
+
+	/** Asks for the window maximized, answering once it is or the window manager refuses: helix-ray's own, in place of raylib's
+		`MaximizeWindow`. A page can't maximize its window, so it is refused there.
+
+		@param done  Optional. Called once the window is maximized, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	static function MaximizeWindowAsync(?done:Void->Void, ?failed:String->Void):Void {
+		ask("MaximizeWindowAsync", (granted, refused) -> Runtime.window.requestMaximized(true, granted, refused), "", done, failed);
+	}
+
+	/** Asks for the window minimized, answering once it is or the window manager refuses: helix-ray's own, in place of raylib's
+		`MinimizeWindow`. A page can't minimize its window, so it is refused there.
+
+		@param done  Optional. Called once the window is minimized, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	static function MinimizeWindowAsync(?done:Void->Void, ?failed:String->Void):Void {
+		ask("MinimizeWindowAsync", (granted, refused) -> Runtime.window.requestMinimized(true, granted, refused), "", done, failed);
+	}
+
+	/** Asks for the window back to its size from minimized or maximized, answering once it is or the window manager refuses:
+		helix-ray's own, in place of raylib's `RestoreWindow`.
+
+		@param done  Optional. Called once the window is restored, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	static function RestoreWindowAsync(?done:Void->Void, ?failed:String->Void):Void {
+		var window = Runtime.window;
+		ask("RestoreWindowAsync",
+			(granted, refused) -> window.minimized ? window.requestMinimized(false, granted, refused) : window.requestMaximized(false, granted, refused), "",
+			done, failed);
+	}
+
+	/** Asks for the window brought to the front with the keyboard, answering once it has the keyboard or the window manager keeps it
+		elsewhere: helix-ray's own, in place of raylib's `SetWindowFocused`. A window manager may only flash it; in a page the canvas
+		takes the keyboard.
+
+		@param done  Optional. Called once the window has the keyboard, at a later poll.
+		@param failed  Optional. Receives why it hasn't; when omitted, it is logged. */
+	static function SetWindowFocusedAsync(?done:Void->Void, ?failed:String->Void):Void {
+		ask("SetWindowFocusedAsync", (granted, refused) -> Runtime.window.requestFocus(granted, refused), "", done, failed);
+	}
+
+	/** Asks for the window see-through, answering once it is or it is refused: helix-ray's own, in place of raylib's
+		`SetWindowOpacity`. In a page the canvas fades; a desktop without a compositor refuses it.
+
+		@param opacity  From 0 (clear) to 1 (opaque).
+		@param done  Optional. Called once the window has the opacity, at a later poll.
+		@param failed  Optional. Receives why it hasn't; when omitted, it is logged. */
+	static function SetWindowOpacityAsync(opacity:Float, ?done:Void->Void, ?failed:String->Void):Void {
+		ask("SetWindowOpacityAsync", (granted, refused) -> Runtime.window.requestOpacity(opacity, granted, refused), "", done, failed);
+	}
+
+	/** Asks for the smallest size the player can make the window, answering once it has it or it is refused: helix-ray's own, in place
+		of raylib's `SetWindowMinSize`. A page's canvas follows the page, so it is refused there.
+
+		@param width  The width, in the screen's pixels.
+		@param height  The height.
+		@param done  Optional. Called once the window has the limit, at a later poll.
+		@param failed  Optional. Receives why it hasn't; when omitted, it is logged. */
+	static function SetWindowMinSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Void {
+		ask("SetWindowMinSizeAsync", (granted, refused) -> Runtime.window.requestMinimumSize(width, height, granted, refused),
+			'$width x $height is under 0 pixels', done, failed);
+	}
+
+	/** Asks for the largest size the player can make the window, answering once it has it or it is refused: helix-ray's own, in place
+		of raylib's `SetWindowMaxSize`. A page's canvas follows the page, so it is refused there.
+
+		@param width  The width, in the screen's pixels.
+		@param height  The height.
+		@param done  Optional. Called once the window has the limit, at a later poll.
+		@param failed  Optional. Receives why it hasn't; when omitted, it is logged. */
+	static function SetWindowMaxSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Void {
+		ask("SetWindowMaxSizeAsync", (granted, refused) -> Runtime.window.requestMaximumSize(width, height, granted, refused),
+			'$width x $height is under 0 pixels', done, failed);
+	}
+
+	// ---- The async cursor lock and clipboard: helix-ray's own, not raylib's ----
+
+	/** Locks the mouse to the window and hides the cursor, for looking around, answering once it is locked or refused: helix-ray's own,
+		in place of raylib's `DisableCursor`. `GetMouseDelta` keeps coming while the position goes on past the window's edges. In a page
+		the browser locks it only soon after a click or key press, so without one it locks at the player's next, and Escape lets it go.
+		`IsCursorHidden` is true from the call.
+
+		@param done  Optional. Called once the mouse is locked, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	static function DisableCursorAsync(?done:Void->Void, ?failed:String->Void):Void {
+		Runtime.mouse();
+		var mouse = Runtime.mouseAdapter;
+		ask("DisableCursorAsync", (granted, refused) -> mouse.requestLock(true, granted, refused), "the mouse can't be locked here", done, failed);
+		RCore.cursorHidden = true;
+	}
+
+	/** Lets go of the mouse that `DisableCursorAsync` locked, and shows the cursor, answering once it is let go: helix-ray's own, in
+		place of raylib's `EnableCursor`.
+
+		@param done  Optional. Called once the mouse is let go, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	static function EnableCursorAsync(?done:Void->Void, ?failed:String->Void):Void {
+		Runtime.mouse();
+		var mouse = Runtime.mouseAdapter;
+		ask("EnableCursorAsync", (granted, refused) -> mouse.requestLock(false, granted, refused), "the mouse can't be let go here", done, failed);
+		mouse.cursorVisible = true;
+		RCore.cursorHidden = false;
+	}
+
+	/** Puts text on the system's clipboard, answering once it is there or refused: helix-ray's own, in place of raylib's
+		`SetClipboardText`. A page writes it only while it has the keyboard, soon after a press.
+
+		@param text  The text.
+		@param done  Optional. Called once the text is on the clipboard, at a later poll.
+		@param failed  Optional. Receives why it isn't; when omitted, it is logged. */
+	static function SetClipboardTextAsync(text:String, ?done:Void->Void, ?failed:String->Void):Void {
+		var clipboard = Runtime.clipboard();
+		ask("SetClipboardTextAsync", (granted, refused) -> {
+			clipboard.setText(text, granted, refused);
+			return true;
+		}, "", done, failed);
+	}
+
+	// ---- The async writes: helix-ray's own, not raylib's ----
+
+	/** Writes a text file, answering once it is kept or refused: helix-ray's own, in place of raylib's `SaveFileText`. It is written
+		through the program's `SetSaveFileTextCallback` when it has one, during the call, answered by what that returned; else kept
+		across runs (in a page, in its storage; natively, in the program's data directory), answered once the write has finished.
+		`LoadFileTextAsync` reads it back.
+
+		@param fileName  The file.
+		@param text  Its text.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	static function SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void):Void {
+		RCore.writeText(fileName, text, answered(done), error -> refuse("SaveFileTextAsync", error, failed));
+	}
+
+	/** Writes a file's bytes, answering once they are kept or refused: helix-ray's own, in place of raylib's `SaveFileData`. They are
+		written through the program's `SetSaveFileDataCallback` when it has one, else kept across runs as `SaveFileTextAsync`'s are.
+		`LoadFileDataAsync` reads them back.
+
+		@param fileName  The file.
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	static function SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:Void->Void, ?failed:String->Void):Void {
+		RCore.writeData(fileName, data, dataSize, answered(done), error -> refuse("SaveFileDataAsync", error, failed));
+	}
+
+	/** Writes bytes as a C header through `SaveFileTextAsync`, as raylib's `ExportDataAsCode` does, byte for byte: their count as a
+		define, and the bytes as an array, in hexadecimal, 20 a line. helix-ray's own, answering once the file is written.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@param fileName  The file; its name, upper case, names the define and the array, with `_` for `.`, `-`, `?`, `!` and `+`.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	static function ExportDataAsCodeAsync(data:haxe.io.Bytes, dataSize:Int, fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
+		exportText("ExportDataAsCodeAsync", fileName, RCore.dataAsCode(data, dataSize, fileName), "Data as code exported successfully", done, failed);
+	}
+
+	/** Writes a list's events as text through `SaveFileTextAsync`, as raylib's `ExportAutomationEventList` does, byte for byte: a header
+		of comments, `c` and the count, then a line for each event, `e`, its frame, type and four parameters, and its type's name.
+		helix-ray's own, answering once the file is written.
+
+		@param list  The list.
+		@param fileName  The file.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	static function ExportAutomationEventListAsync(list:AutomationEventList, fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
+		exportText("ExportAutomationEventListAsync", fileName, RCore.automationText(list), null, done, failed);
+	}
+
+	/** Writes an image to a file through `SaveFileDataAsync`, as raylib's default build's `ExportImage` writes it: ".png" (any
+		uncompressed format; a format other than 8-bit grayscale, grayscale and alpha, RGB or RGBA is written as RGBA), ".qoi" (RGB or
+		RGBA alone) or ".raw" (the pixels as they are). helix-ray's own, answering once the file is written. The file is kept as
+		`SaveFileDataAsync` keeps it; `TakeScreenshotAsync` writes a real file.
+
+		@param image  The image.
+		@param fileName  The file; its extension chooses the format.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't, such as an empty image or another extension; when omitted, it is logged. */
+	static function ExportImageAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
+		var file = image.width == 0 || image.height == 0 || image.data == null ? null : RTextures.encodeImage(image, fileName);
+		exportData("ExportImageAsync", fileName, file, "Image exported successfully", "Failed to export image", done, failed);
+	}
+
+	/** Writes an image as a C header through `SaveFileTextAsync`, as raylib's `ExportImageAsCode` does: its size and format as defines,
+		and its pixels (the first level's) as an array of bytes, 20 a line. helix-ray's own, answering once the file is written.
+
+		@param image  The image.
+		@param fileName  The file; its name, upper case, names the defines and the array.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	static function ExportImageAsCodeAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
+		exportText("ExportImageAsCodeAsync", fileName, RTextures.imageAsCode(image, fileName), "Image as code exported successfully", done, failed);
+	}
+
+	/** Writes a font as a C header through `SaveFileTextAsync`, the text raylib 5.5's `ExportFontAsCode` writes: its texture's pixels in
+		the texture's format (gray and alpha for the default font and a TrueType font's), compressed as `CompressData` compresses them,
+		20 bytes a line; each glyph's rectangle and its character, offsets and advance; and a function loading it. The file's name, in
+		Pascal case, names them. The pixels are those the font's texture was made from, or the texture's own while it hasn't been drawn;
+		one made otherwise and already on the GPU (a render texture's) is written as an empty image, as raylib writes a texture it can't
+		read back. helix-ray's own, answering once the file is written.
+
+		@param font  The font.
+		@param fileName  The file.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	static function ExportFontAsCodeAsync(font:Font, fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
+		exportText("ExportFontAsCodeAsync", fileName, RText.fontAsCode(font, fileName), "Font as code exported successfully", done, failed);
+	}
+
+	/** Writes a mesh as an OBJ file through `SaveFileTextAsync`, as raylib's `ExportMesh` does: its positions and texture coordinates to
+		6 places, its normals to 4, and a face a triangle. helix-ray's own, answering once the file is written.
+
+		@param mesh  The mesh, with positions, texture coordinates and normals.
+		@param fileName  The file; only ".obj" is written.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't, such as another extension; when omitted, it is logged. */
+	static function ExportMeshAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
+		if (!IsFileExtension(fileName, ".obj"))
+			Runtime.later(() -> refuse("ExportMeshAsync", '$fileName: only .obj files are written', failed));
+		else
+			exportText("ExportMeshAsync", fileName, RModels.meshObj(mesh), null, done, failed);
+	}
+
+	/** Writes a mesh as a C header through `SaveFileTextAsync`, as raylib's `ExportMeshAsCode` does: its counts as defines, and each
+		array it has, 20 values a line, floats to 3 places. helix-ray's own, answering once the file is written.
+
+		@param mesh  The mesh.
+		@param fileName  The file; its name, upper case, names the defines and the arrays.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	static function ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
+		exportText("ExportMeshAsCodeAsync", fileName, RModels.meshAsCode(mesh, fileName), null, done, failed);
+	}
+
+	/** Writes a wave to a file through `SaveFileDataAsync`, as raylib's `ExportWave` does: ".wav" (8, 16 and 24 bits as integers, 32 as
+		floats, as raylib's dr_wav writes them) or ".raw" (the samples as they are). raylib's ".qoa" isn't written here. helix-ray's own,
+		answering once the file is written; the file is kept as `SaveFileDataAsync` keeps it.
+
+		@param wave  The wave.
+		@param fileName  The file; its extension chooses the format.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't, such as a wave with no samples or another extension; when omitted, it is logged. */
+	static function ExportWaveAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
+		exportData("ExportWaveAsync", fileName, RAudio.waveFile(wave, fileName), "Wave data exported successfully", "Failed to export wave data", done, failed);
+	}
+
+	/** Writes a wave as a C header through `SaveFileTextAsync`, as raylib's `ExportWaveAsCode` does: its frames, rate, sample size and
+		channels as defines, and its samples as an array: floats with 4 places for 32-bit samples, else bytes, 20 a line. helix-ray's
+		own, answering once the file is written.
+
+		@param wave  The wave.
+		@param fileName  The file; its name, upper case, names the defines and the array.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	static function ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
+		exportText("ExportWaveAsCodeAsync", fileName, RAudio.waveAsCode(wave, fileName), "Wave as code exported successfully", done, failed);
+	}
+
+	/** Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImageAsync` writes it by the name's extension
+		(".png", ".qoi" or ".raw"), answering once it is saved or refused: helix-ray's own, in place of raylib's `TakeScreenshot`. In a
+		page it is downloaded under the name's file name, as raylib's web build does; natively it is written where the name says, as
+		raylib 6.2 writes it: a relative name under the working directory, its directories kept, and an absolute one where it is. A
+		directory that isn't there isn't made, and the screenshot isn't saved. raylib's is taken from the frame drawn last, before it is
+		shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as raylib's is.
+
+		@param fileName  The file's name, or its path; a name with `'` is refused, as raylib's is.
+		@param done  Optional. Called once the file is written or downloaded, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	static function TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
+		var refused = (error:String) -> refuse("TakeScreenshotAsync", error, failed);
+		if (fileName.indexOf("'") >= 0) {
+			Runtime.later(() -> refused('$fileName: Provided fileName could be potentially malicious, avoid [\'] character'));
+			return;
+		}
+		var name = GetFileName(fileName);
+		var exporter = Runtime.exporter();
+		#if !js
+		// raylib 6.2's: a relative name under the working directory, an absolute one as it is.
+		var slash = lastSlash(fileName);
+		if (slash >= 0) {
+			var directory = fileName.substr(0, slash == 0 ? 1 : slash);
+			if (!isPathAbsolute(fileName))
+				directory = haxe.io.Path.join([Sys.getCwd(), directory]);
+			if (!sys.FileSystem.exists(directory) || !sys.FileSystem.isDirectory(directory)) {
+				Runtime.later(() -> refused('$fileName: Screenshot could not be saved: $directory isn\'t a directory'));
+				return;
+			}
+			exporter = new helix.platform.adapters.export.filesystem.FileSystemExportAdapter({directory: directory});
+		}
+		#end
+		if (Runtime.frame == null) {
+			Runtime.later(() -> refused('$name: Screenshot could not be saved: InitWindow first'));
+			return;
+		}
+		Runtime.screenshots().captureFrame(captured -> {
+			var pixels = captured.pixels;
+			for (i in 0...captured.width * captured.height)
+				pixels.set(i * 4 + 3, 255);
+			var file = RTextures.encodeImage(new Image(pixels, captured.width, captured.height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8), name);
+			if (file == null) {
+				refused('$name: Screenshot could not be saved: only .png, .qoi and .raw files are written');
+				return;
+			}
+			var type = IsFileExtension(name, ".png") ? "image/png" : IsFileExtension(name, ".qoi") ? "image/qoi" : "application/octet-stream";
+			exporter.export(name, type, file, where -> {
+				Runtime.log(LOG_INFO, 'FILEIO: [$where] Image exported successfully');
+				Runtime.log(LOG_INFO, 'SYSTEM: [$where] Screenshot taken successfully');
+				if (done != null)
+					done();
+			}, error -> refused('$name: Screenshot could not be saved: $error'));
+		}, error -> refused('$name: Screenshot could not be saved: $error'));
+	}
+
+	// Writes an export's text through SaveFileTextAsync's writing, logging raylib's line when it is written, as raylib's export does.
+	static function exportText(name:String, fileName:String, text:String, success:Null<String>, done:Null<Void->Void>, failed:Null<String->Void>):Void {
+		RCore.writeText(fileName, text, () -> {
+			if (success != null)
+				Runtime.log(LOG_INFO, 'FILEIO: [$fileName] $success');
+			if (done != null)
+				done();
+		}, error -> refuse(name, error, failed));
+	}
+
+	// Writes an export's file through SaveFileDataAsync's writing, as exportText does; a file that couldn't be made is refused.
+	static function exportData(name:String, fileName:String, file:Null<haxe.io.Bytes>, success:String, failure:String, done:Null<Void->Void>,
+			failed:Null<String->Void>):Void {
+		if (file == null) {
+			Runtime.later(() -> refuse(name, '$fileName: $failure', failed));
+			return;
+		}
+		RCore.writeData(fileName, file, file.length, () -> {
+			Runtime.log(LOG_INFO, 'FILEIO: [$fileName] $success');
+			if (done != null)
+				done();
+		}, error -> refuse(name, error, failed));
+	}
+
+	// Asks the platform, answering as it does: never during the call, as the platform's mouse lock and clipboard natively answer during
+	// it. A request it can't ask is refused at a later poll, saying why not.
+	static function ask(name:String, asking:(granted:Void->Void, refused:String->Void)->Bool, why:String, done:Null<Void->Void>,
+			failed:Null<String->Void>):Void {
+		var calling = true;
+		var asked = asking(() -> if (done != null) calling ? Runtime.later(done) : done(),
+			error -> calling ? Runtime.later(() -> refuse(name, error, failed)) : refuse(name, error, failed));
+		calling = false;
+		if (!asked)
+			Runtime.later(() -> refuse(name, why, failed));
+	}
+
+	// A write's done, which may be omitted.
+	static function answered(done:Null<Void->Void>):Void->Void {
+		return () -> if (done != null) done();
+	}
+
+	// Answers a load, a request or a write that failed: to the program's failed callback, or logged. Every error names the file, as the services' do.
 	static function refuse(name:String, error:String, failed:Null<String->Void>):Void {
 		if (failed != null)
 			failed(error);

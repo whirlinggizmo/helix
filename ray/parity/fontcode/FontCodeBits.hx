@@ -3,7 +3,7 @@ import helix.ray.Raylib.*;
 import helix.ray.internal.Runtime;
 import Parity.*;
 
-// helix-ray's ExportFontAsCode, printed as ref.c prints raylib 5.5's: the header's text, through SetSaveFileTextCallback, a line at a time
+// helix-ray's ExportFontAsCodeAsync, printed as ref.c prints raylib 5.5's: the header's text, through SetSaveFileTextCallback, a line at a time
 // as its bytes. TrueType glyphs are rasterized by the platform's native rasterizer, so this runs in hxcpp alone.
 @:access(helix.ray.internal.Runtime)
 class FontCodeBits {
@@ -21,7 +21,7 @@ class FontCodeBits {
 				f();
 			Sys.sleep(0.001);
 		}
-		throw "never loaded";
+		throw "never answered";
 	}
 
 	static function load(fileName:String, fontSize:Int, codepoints:Array<Int>, count:Int):Font {
@@ -32,7 +32,10 @@ class FontCodeBits {
 	}
 
 	static function exported(name:String, font:Font, fileName:String):Void {
-		line('$name exported ${ExportFontAsCode(font, fileName) ? 1 : 0}');
+		var written = -1;
+		ExportFontAsCodeAsync(font, fileName, () -> written = 1, _ -> written = 0);
+		pump(() -> written >= 0);
+		line('$name exported $written');
 		var lines = saved.split("\n");
 		if (lines[lines.length - 1] == "")
 			lines.pop();

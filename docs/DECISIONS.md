@@ -181,8 +181,18 @@ Why things are the way they are, numbered, in order.
     naming it. Each call is decided on its own. The window's requests are the first: `ToggleFullscreenAsync` and
     `ToggleBorderlessWindowedAsync`, as a page grants fullscreen only in a key press, click or tap and a window manager in its own
     time, so `IsWindowFullscreen` says the new state once the window has changed, not when the call returns. The window's other
-    requests (its size, position, maximized, minimized, monitor, size limits, opacity, focus) stay raylib's form until `IWindow`
-    answers them as it answers `requestFullscreen`.
+    requests followed once `IWindow` answered each with `done` and `failed` (natively on SDL's matching event, failing after a second
+    where the window manager ignores it): `SetWindowSizeAsync`, `SetWindowPositionAsync`, `SetWindowMonitorAsync`,
+    `MaximizeWindowAsync`, `MinimizeWindowAsync`, `RestoreWindowAsync`, `SetWindowFocusedAsync`, `SetWindowOpacityAsync`,
+    `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync`. Then the calls whose outcome comes later on any target: `DisableCursorAsync`
+    and `EnableCursorAsync` (a page locks the mouse only soon after a press), `SetClipboardTextAsync` (a page writes the clipboard only
+    with the keyboard), `TakeScreenshotAsync` (read back as the next frame ends, `done` once the file is written or downloaded), and
+    the writes: `SaveFileTextAsync`, `SaveFileDataAsync` and every raylib export through them (`ExportDataAsCodeAsync`,
+    `ExportAutomationEventListAsync`, `ExportImageAsync`, `ExportImageAsCodeAsync`, `ExportFontAsCodeAsync`, `ExportMeshAsync`,
+    `ExportMeshAsCodeAsync`, `ExportWaveAsync`, `ExportWaveAsCodeAsync`). raylib's `bool` for a write said whether it was written; the
+    Async form's `done` says the same, once the saves have written it (21's "need no answer" no longer holds: a page's write is kept
+    a frame or more later, or not at all), or once the program's save callback has returned true. `SetWindowState` and
+    `ClearWindowState` stay raylib's: here they only set flags, and ask nothing of the window.
 
 25. **helix-ray counts what a model holds, following ownership, where raylib leaves it to the program.** raylib's `UnloadModel`
     frees a model's meshes and its maps arrays and never a texture or shader, so a C program frees those itself, or leaks them; Haxe

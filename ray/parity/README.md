@@ -119,7 +119,7 @@ PNG files decoded in Haxe, for a harness that reads an image's pixels on every t
 ### Pixel suites
 
 The C reference draws three frames and saves the third as `ref.png`. helix-ray's program draws the same and saves its third with
-`TakeScreenshot("helix.png")`. Both run on the private display's software renderers (Mesa), so a frame is the same from run to run.
+`TakeScreenshotAsync("helix.png")`. Both run on the private display's software renderers (Mesa), so a frame is the same from run to run.
 
 ## Adding a case
 

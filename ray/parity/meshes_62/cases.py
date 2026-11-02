@@ -16,6 +16,8 @@ CASES = [
     {'c': 'Mesh flat = GenMeshCube(1, 1, 1); for (int i = 0; i < flat.vertexCount * 2; i++) flat.texcoords[i] = 0.5f; GenMeshTangents(&flat); mesh("flattangents", flat);',
      'hx': 'var flat = GenMeshCube(1, 1, 1); for (i in 0...flat.vertexCount * 2) flat.texcoords[i] = 0.5; GenMeshTangents(flat); mesh("flattangents", flat);'},
     # Positions and normals that 5.5's 2 and 3 places lost.
-    'exported = "objcube"; ExportMesh(GenMeshCube(1.234567, 2.5, 3.25), "cube.obj");',
-    'exported = "objknot"; ExportMesh(GenMeshKnot(0.7, 0.9, 4, 3), "knot.obj");',
+    {'c': 'exported = "objcube"; ExportMesh(GenMeshCube(1.234567, 2.5, 3.25), "cube.obj");',
+     'hx': 'exported = "objcube"; ExportMeshAsync(GenMeshCube(1.234567, 2.5, 3.25), "cube.obj");'},
+    {'c': 'exported = "objknot"; ExportMesh(GenMeshKnot(0.7, 0.9, 4, 3), "knot.obj");',
+     'hx': 'exported = "objknot"; ExportMeshAsync(GenMeshKnot(0.7, 0.9, 4, 3), "knot.obj");'},
 ]

@@ -1413,15 +1413,19 @@ class RModels {
 		Runtime.log(LOG_INFO, "MESH: Tangents data computed and uploaded for provided mesh");
 	}
 
-	/** Writes a mesh as an OBJ file through `SaveFileText`, as raylib's does: its positions and texture coordinates to 6 places, its
-		normals to 4, and a face a triangle.
+	/** raylib's mesh export, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
+		`ExportMeshAsync` writes it and answers.
 
-		@param mesh  The mesh, with positions, texture coordinates and normals.
-		@param fileName  The file; only ".obj" is written.
-		@return  True when it was written. */
+		@param mesh  The mesh.
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("ExportMesh: A file is written later, or is refused. See ExportMeshAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void)")
 	static function ExportMesh(mesh:Mesh, fileName:String):Bool {
-		if (!IsFileExtension(fileName, ".obj"))
-			return false;
+		throw "ExportMesh is unimplemented";
+	}
+
+	// ExportMeshAsync's OBJ file, as raylib's writes it.
+	static function meshObj(mesh:Mesh):String {
 		var text = new StringBuf();
 		text.add("# //////////////////////////////////////////////////////////////////////////////////\n");
 		text.add("# //                                                                              //\n");
@@ -1450,16 +1454,22 @@ class RModels {
 				c = mesh.indices != null ? mesh.indices[i * 3 + 2] + 1 : i * 3 + 3;
 			text.add('f $a/$a/$a $b/$b/$b $c/$c/$c\n');
 		}
-		return SaveFileText(fileName, text.toString());
+		return text.toString();
 	}
 
-	/** Writes a mesh as a C header through `SaveFileText`, as raylib's does: its counts as defines, and each array it has, 20 values a
-		line, floats to 3 places.
+	/** raylib's export of a mesh as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
+		`ExportMeshAsCodeAsync` writes it and answers.
 
 		@param mesh  The mesh.
-		@param fileName  The file; its name, upper case, names the defines and the arrays.
-		@return  True when it was written. */
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("ExportMeshAsCode: A file is written later, or is refused. See ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void)")
 	static function ExportMeshAsCode(mesh:Mesh, fileName:String):Bool {
+		throw "ExportMeshAsCode is unimplemented";
+	}
+
+	// ExportMeshAsCodeAsync's text, as raylib's writes it.
+	static function meshAsCode(mesh:Mesh, fileName:String):String {
 		var text = new StringBuf();
 		text.add("////////////////////////////////////////////////////////////////////////////////////////\n");
 		text.add("//                                                                                    //\n");
@@ -1500,7 +1510,7 @@ class RModels {
 			v -> "0x" + StringTools.hex(Std.int(v)).toLowerCase(), " };\n\n");
 		array("unsigned short", "INDEX_DATA", mesh.indices == null ? null : [for (i in mesh.indices) (i : Float)], mesh.triangleCount * 3,
 			v -> Std.string(Std.int(v)), " };\n");
-		return SaveFileText(fileName, text.toString());
+		return text.toString();
 	}
 
 	// ---- Model animations ----

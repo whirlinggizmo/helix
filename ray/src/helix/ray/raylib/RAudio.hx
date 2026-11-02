@@ -138,37 +138,42 @@ class RAudio {
 		wave.data = null;
 	}
 
-	/** Writes a wave to a file through `SaveFileData`: ".wav" (8, 16 and 24 bits as integers, 32 as floats, as raylib's dr_wav writes
-		them) or ".raw" (the samples as they are). raylib's ".qoa" isn't written here. The file is kept as `SaveFileData` keeps it.
+	/** raylib's wave export, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
+		`ExportWaveAsync` writes it and answers.
 
 		@param wave  The wave.
-		@param fileName  The file; its extension chooses the format.
-		@return  True when it was written. */
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("ExportWave: A file is written later, or is refused. See ExportWaveAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void)")
 	static function ExportWave(wave:Wave, fileName:String):Bool {
-		var success = false;
-		if (IsFileExtension(fileName, ".wav")) {
-			var file = wave.data == null ? null : try helix.formats.wav.WavFile.write(wave.sampleRate, wave.channels, wave.sampleSize, wave.frameCount,
-				padded(wave.data, waveBytes(wave))) catch (_:Dynamic) null;
-			if (file != null)
-				success = SaveFileData(fileName, file, file.length);
-		} else if (IsFileExtension(fileName, ".raw") && wave.data != null) {
-			var size = waveBytes(wave);
-			success = SaveFileData(fileName, padded(wave.data, size), size);
-		}
-		if (success)
-			Runtime.log(LOG_INFO, 'FILEIO: [$fileName] Wave data exported successfully');
-		else
-			Runtime.log(LOG_WARNING, 'FILEIO: [$fileName] Failed to export wave data');
-		return success;
+		throw "ExportWave is unimplemented";
 	}
 
-	/** Writes a wave as a C header through `SaveFileText`, as raylib's does: its frames, rate, sample size and channels as defines, and
-		its samples as an array: floats with 4 places for 32-bit samples, else bytes, 20 a line.
+	// ExportWaveAsync's file: a WAV file or the raw samples, by the name's extension; null for another, or a wave with no samples.
+	static function waveFile(wave:Wave, fileName:String):Null<haxe.io.Bytes> {
+		if (wave.data == null)
+			return null;
+		if (IsFileExtension(fileName, ".wav"))
+			return try helix.formats.wav.WavFile.write(wave.sampleRate, wave.channels, wave.sampleSize, wave.frameCount,
+				padded(wave.data, waveBytes(wave))) catch (_:Dynamic) null;
+		if (IsFileExtension(fileName, ".raw"))
+			return padded(wave.data, waveBytes(wave));
+		return null;
+	}
+
+	/** raylib's export of a wave as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
+		`ExportWaveAsCodeAsync` writes it and answers.
 
 		@param wave  The wave.
-		@param fileName  The file; its name, upper case, names the defines and the array.
-		@return  True when it was written. */
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("ExportWaveAsCode: A file is written later, or is refused. See ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void)")
 	static function ExportWaveAsCode(wave:Wave, fileName:String):Bool {
+		throw "ExportWaveAsCode is unimplemented";
+	}
+
+	// ExportWaveAsCodeAsync's text, as raylib's writes it.
+	static function waveAsCode(wave:Wave, fileName:String):String {
 		var waveDataSize = waveBytes(wave);
 		var text = new StringBuf();
 		text.add("\n//////////////////////////////////////////////////////////////////////////////////\n");
@@ -209,12 +214,7 @@ class RAudio {
 				text.add(i % 20 == 0 ? '0x${at(i - 1)},\n    ' : '0x${at(i - 1)}, ');
 			text.add('0x${at(waveDataSize - 1)} };\n');
 		}
-		var success = SaveFileText(fileName, text.toString());
-		if (success)
-			Runtime.log(LOG_INFO, 'FILEIO: [$fileName] Wave as code exported successfully');
-		else
-			Runtime.log(LOG_WARNING, 'FILEIO: [$fileName] Failed to export wave as code');
-		return success;
+		return text.toString();
 	}
 
 	/** Returns a copy of a wave, its samples its own.

@@ -46,7 +46,7 @@ class Main {
 			@CASES@
 			EndMode3D();
 			if (frame == 2)
-				TakeScreenshot("helix.png");
+				TakeScreenshotAsync("helix.png");
 			EndDrawing();
 			frame++;
 		}

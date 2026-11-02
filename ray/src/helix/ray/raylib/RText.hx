@@ -284,16 +284,19 @@ class RText {
 		UnloadTexture(font.texture);
 	}
 
-	/** Writes a font as a C header through `SaveFileText`, the text raylib 5.5's writes: its texture's pixels in the texture's format
-		(gray and alpha for the default font and a TrueType font's), compressed as `CompressData` compresses them, 20 bytes a line; each
-		glyph's rectangle and its character, offsets and advance; and a function loading it. The file's name, in Pascal case, names
-		them. The pixels are those the font's texture was made from, or the texture's own while it hasn't been drawn; one made otherwise
-		and already on the GPU (a render texture's) is written as an empty image, as raylib writes a texture it can't read back.
+	/** raylib's export of a font as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
+		`ExportFontAsCodeAsync` writes it and answers.
 
 		@param font  The font.
 		@param fileName  The file.
-		@return  True when it was written. */
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("ExportFontAsCode: A file is written later, or is refused. See ExportFontAsCodeAsync(font:Font, fileName:String, ?done:Void->Void, ?failed:String->Void)")
 	static function ExportFontAsCode(font:Font, fileName:String):Bool {
+		throw "ExportFontAsCode is unimplemented";
+	}
+
+	// ExportFontAsCodeAsync's text, the text raylib 5.5's writes.
+	static function fontAsCode(font:Font, fileName:String):String {
 		var name = TextToPascal(GetFileNameWithoutExt(fileName));
 		var upperName = TextToUpper(name);
 		var text = new StringBuf();
@@ -366,12 +369,7 @@ class RText {
 		text.add('    font.glyphs = fontGlyphs_$name;\n\n');
 		text.add("    return font;\n");
 		text.add("}\n");
-		var success = SaveFileText(fileName, text.toString());
-		if (success)
-			Runtime.log(LOG_INFO, 'FILEIO: [$fileName] Font as code exported successfully');
-		else
-			Runtime.log(LOG_WARNING, 'FILEIO: [$fileName] Failed to export font as code');
-		return success;
+		return text.toString();
 	}
 
 	// A number as C's printf writes it with %1.0f: rounded to the nearest whole, a half to the even one, -0 for a negative rounded to 0.

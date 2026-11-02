@@ -49,7 +49,7 @@ TARGETS = {
         ('RText', 'rtext: text'),
         ('RModels', 'rmodels: 3D shapes, models, meshes and rays'),
         ('RAudio', 'raudio: sound'),
-        ('RAsync', "the async loads and window requests, helix-ray's own in place of raylib's that wait for a file or a window"),
+        ('RAsync', "the async loads, requests and writes, helix-ray's own in place of raylib's that wait for a file, a window or a write"),
     ], 'raylib_api.json', 'raylib.h'),
     'Raymath.hx': ([('RMath', 'raymath: vectors, matrices and quaternions')], 'raymath_api.json', 'raymath.h'),
     'Rlgl.hx': ([('RRlgl', 'rlgl: the matrix stack, immediate drawing and render state')], 'rlgl_api.json', 'rlgl.h'),

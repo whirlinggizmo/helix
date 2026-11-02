@@ -78,12 +78,14 @@ class RCore {
 		Runtime.window.title = title;
 	}
 
-	/** Asks for the window's size. A page's canvas follows the page instead.
+	/** raylib's window size, done when it returns. The window manager resizes the window later, or refuses (a page's canvas follows the
+		page), so a call doesn't compile on any target: `SetWindowSizeAsync` asks for it and answers.
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels. */
+	@:unsupported("SetWindowSize: The window changes later, or is refused. See SetWindowSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)")
 	static function SetWindowSize(width:Int, height:Int):Void {
-		Runtime.window.requestSize(width, height);
+		throw "SetWindowSize is unimplemented";
 	}
 
 	/** Returns whether the window is fullscreen. In a page it tells whether the canvas is.
@@ -114,28 +116,32 @@ class RCore {
 		return Runtime.window.maximized;
 	}
 
-	/** Asks for the window maximized. A page's canvas is the page's size, so nothing changes there. */
+	/** raylib's maximize, done when it returns. The window manager maximizes the window later, or refuses (a page can't), so a
+		call doesn't compile on any target: `MaximizeWindowAsync` asks for it and answers. */
+	@:unsupported("MaximizeWindow: The window changes later, or is refused. See MaximizeWindowAsync(?done:Void->Void, ?failed:String->Void)")
 	static function MaximizeWindow():Void {
-		Runtime.window.requestMaximized(true);
+		throw "MaximizeWindow is unimplemented";
 	}
 
-	/** Asks for the window minimized. Nothing changes in a page. */
+	/** raylib's minimize, done when it returns. The window manager minimizes the window later, or refuses (a page can't), so a
+		call doesn't compile on any target: `MinimizeWindowAsync` asks for it and answers. */
+	@:unsupported("MinimizeWindow: The window changes later, or is refused. See MinimizeWindowAsync(?done:Void->Void, ?failed:String->Void)")
 	static function MinimizeWindow():Void {
-		Runtime.window.requestMinimized(true);
+		throw "MinimizeWindow is unimplemented";
 	}
 
-	/** Asks for the window back to its size from maximized or minimized. */
+	/** raylib's restore, done when it returns. The window manager restores the window later, or refuses, so a call doesn't
+		compile on any target: `RestoreWindowAsync` asks for it and answers. */
+	@:unsupported("RestoreWindow: The window changes later, or is refused. See RestoreWindowAsync(?done:Void->Void, ?failed:String->Void)")
 	static function RestoreWindow():Void {
-		if (Runtime.window.minimized)
-			Runtime.window.requestMinimized(false);
-		else
-			Runtime.window.requestMaximized(false);
+		throw "RestoreWindow is unimplemented";
 	}
 
-	/** Asks for the window brought to the front with the keyboard. A window manager may only flash it; in a page the canvas takes the
-		keyboard. */
+	/** raylib's focus, done when it returns. The window manager gives the window the keyboard later, or keeps it elsewhere, so
+		a call doesn't compile on any target: `SetWindowFocusedAsync` asks for it and answers. */
+	@:unsupported("SetWindowFocused: The window changes later, or is refused. See SetWindowFocusedAsync(?done:Void->Void, ?failed:String->Void)")
 	static function SetWindowFocused():Void {
-		Runtime.window.requestFocus();
+		throw "SetWindowFocused is unimplemented";
 	}
 
 	/** Sets the window's icon; in a page, the page's icon. As raylib's, the image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
@@ -171,27 +177,33 @@ class RCore {
 			Runtime.window.setIcon(largest.width, largest.height, largest.data);
 	}
 
-	/** Asks for the window see-through; in a page the canvas fades. A desktop without a compositor leaves it opaque.
+	/** raylib's opacity, done when it returns. A desktop without a compositor refuses it, so a call doesn't compile on any target:
+		`SetWindowOpacityAsync` asks for it and answers.
 
 		@param opacity  From 0 (clear) to 1 (opaque). */
+	@:unsupported("SetWindowOpacity: The window changes later, or is refused. See SetWindowOpacityAsync(opacity:Float, ?done:Void->Void, ?failed:String->Void)")
 	static function SetWindowOpacity(opacity:Float):Void {
-		Runtime.window.requestOpacity(opacity);
+		throw "SetWindowOpacity is unimplemented";
 	}
 
-	/** Sets the smallest size the player can make the window. A page's canvas is the page's size, so nothing changes there.
+	/** raylib's smallest window size, done when it returns. A page refuses it, so a call doesn't compile on any target:
+		`SetWindowMinSizeAsync` asks for it and answers.
 
 		@param width  The width, in the screen's pixels.
 		@param height  The height. */
+	@:unsupported("SetWindowMinSize: The window changes later, or is refused. See SetWindowMinSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)")
 	static function SetWindowMinSize(width:Int, height:Int):Void {
-		Runtime.window.requestMinimumSize(width, height);
+		throw "SetWindowMinSize is unimplemented";
 	}
 
-	/** Sets the largest size the player can make the window. Nothing changes in a page.
+	/** raylib's largest window size, done when it returns. A page refuses it, so a call doesn't compile on any target:
+		`SetWindowMaxSizeAsync` asks for it and answers.
 
 		@param width  The width, in the screen's pixels.
 		@param height  The height. */
+	@:unsupported("SetWindowMaxSize: The window changes later, or is refused. See SetWindowMaxSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)")
 	static function SetWindowMaxSize(width:Int, height:Int):Void {
-		Runtime.window.requestMaximumSize(width, height);
+		throw "SetWindowMaxSize is unimplemented";
 	}
 
 	/** Returns how many times a second a monitor shows a new picture.
@@ -214,11 +226,13 @@ class RCore {
 			Runtime.log(LOG_WARNING, 'SYSTEM: Failed to open URL: $url');
 	}
 
-	/** Puts text on the system's clipboard. A page writes it only while it has the keyboard, soon after a press; a refusal is logged.
+	/** raylib's clipboard write, done when it returns. A page writes it only while it has the keyboard, soon after a press, so a
+		call doesn't compile on any target: `SetClipboardTextAsync` writes it and answers.
 
 		@param text  The text. */
+	@:unsupported("SetClipboardText: The clipboard is written later, or is refused. See SetClipboardTextAsync(text:String, ?done:Void->Void, ?failed:String->Void)")
 	static function SetClipboardText(text:String):Void {
-		Runtime.clipboard().setText(text, null, error -> Runtime.log(LOG_WARNING, 'SYSTEM: Failed to set clipboard text: $error'));
+		throw "SetClipboardText is unimplemented";
 	}
 
 	/** raylib's clipboard text, which waits for the answer. A page's clipboard answers later, so a call doesn't compile on any target:
@@ -285,19 +299,23 @@ class RCore {
 		throw "ToggleBorderlessWindowed is unimplemented";
 	}
 
-	/** Asks for the window's place on the desktop. Where the window can't be moved (in a page, or under Wayland), nothing changes.
+	/** raylib's window position, done when it returns. The window manager moves the window later, or refuses (a page, Wayland),
+		so a call doesn't compile on any target: `SetWindowPositionAsync` asks for it and answers.
 
 		@param x  The left edge, in pixels.
 		@param y  The top edge, in pixels. */
+	@:unsupported("SetWindowPosition: The window changes later, or is refused. See SetWindowPositionAsync(x:Int, y:Int, ?done:Void->Void, ?failed:String->Void)")
 	static function SetWindowPosition(x:Int, y:Int):Void {
-		Runtime.window.requestPosition(x, y);
+		throw "SetWindowPosition is unimplemented";
 	}
 
-	/** Asks for the window on another monitor.
+	/** raylib's move to a monitor, done when it returns. The window manager moves the window later, or refuses, so a call doesn't
+		compile on any target: `SetWindowMonitorAsync` asks for it and answers.
 
 		@param monitor  The monitor, 0 to `GetMonitorCount() - 1`. */
+	@:unsupported("SetWindowMonitor: The window changes later, or is refused. See SetWindowMonitorAsync(monitor:Int, ?done:Void->Void, ?failed:String->Void)")
 	static function SetWindowMonitor(monitor:Int):Void {
-		Runtime.window.requestMonitorIndex(monitor);
+		throw "SetWindowMonitor is unimplemented";
 	}
 
 	/** Returns the window's place on the desktop.
@@ -868,21 +886,18 @@ class RCore {
 		return cursorHidden;
 	}
 
-	/** Lets go of the mouse that `DisableCursor` locked, and shows the cursor. */
+	/** raylib's letting go of the mouse, done when it returns. The platform answers later, so a call doesn't compile on any target:
+		`EnableCursorAsync` lets it go and answers. */
+	@:unsupported("EnableCursor: The mouse is let go later, or is refused. See EnableCursorAsync(?done:Void->Void, ?failed:String->Void)")
 	static function EnableCursor():Void {
-		Runtime.mouse();
-		Runtime.mouseAdapter.requestLock(false);
-		Runtime.mouseAdapter.cursorVisible = true;
-		cursorHidden = false;
+		throw "EnableCursor is unimplemented";
 	}
 
-	/** Locks the mouse to the window and hides the cursor, for looking around: `GetMouseDelta` keeps coming while the position goes on past
-		the window's edges. In a page the browser locks it only soon after a click or key press, so without one it locks at the player's
-		next, and Escape lets it go. */
+	/** raylib's lock of the mouse, done when it returns. A page locks it only soon after a click or key press, so a call doesn't
+		compile on any target: `DisableCursorAsync` locks it and answers. */
+	@:unsupported("DisableCursor: The mouse is locked later, or is refused. See DisableCursorAsync(?done:Void->Void, ?failed:String->Void)")
 	static function DisableCursor():Void {
-		Runtime.mouse();
-		Runtime.mouseAdapter.requestLock(true);
-		cursorHidden = true;
+		throw "DisableCursor is unimplemented";
 	}
 
 	/** Returns whether the mouse is over the window.
@@ -1247,19 +1262,58 @@ class RCore {
 		@param text  The text. */
 	static function UnloadFileText(text:Null<String>):Void {}
 
-	/** Writes a text file: through the program's `SetSaveFileTextCallback` when it has one, else kept across runs (in a page, in its
-		storage; natively, in the program's data directory), kept at the end of the frame.
+	/** raylib's text file write, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
+		`SaveFileTextAsync` writes it and answers.
 
 		@param fileName  The file.
 		@param text  Its text.
-		@return  True when it was written, or will be. */
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("SaveFileText: A file is written later, or is refused. See SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void)")
 	static function SaveFileText(fileName:String, text:String):Bool {
-		if (saveText != null)
-			return saveText(normalize(fileName), text);
+		throw "SaveFileText is unimplemented";
+	}
+
+	// Writes a text file as SaveFileTextAsync does: through the program's SetSaveFileTextCallback when it has one, answered at a later
+	// poll by what it returned; else kept in the saves, answered once they are written.
+	static function writeText(fileName:String, text:String, written:Void->Void, failed:String->Void):Void {
 		var path = normalize(fileName);
-		Runtime.keptSaves().setString(SAVED + path, text);
-		Runtime.keptSaves().setFloat(SAVED_TIME + path, Math.ffloor(Date.now().getTime() / 1000));
-		return true;
+		if (saveText != null) {
+			var wrote = saveText(path, text);
+			Runtime.later(() -> wrote ? written() : failed('$path: the program\'s save callback didn\'t write it'));
+			return;
+		}
+		keep(path, SAVED + path, text, written, failed);
+	}
+
+	// Writes a file's bytes as SaveFileDataAsync does: through the program's SetSaveFileDataCallback when it has one, else kept in the
+	// saves.
+	static function writeData(fileName:String, data:Null<haxe.io.Bytes>, dataSize:Int, written:Void->Void, failed:String->Void):Void {
+		var path = normalize(fileName);
+		if (data == null || dataSize < 0 || dataSize > data.length) {
+			Runtime.later(() -> failed('$path: there are no $dataSize bytes to write'));
+			return;
+		}
+		if (saveData != null) {
+			var wrote = saveData(path, data, dataSize);
+			Runtime.later(() -> wrote ? written() : failed('$path: the program\'s save callback didn\'t write it'));
+			return;
+		}
+		keep(path, SAVED_DATA + path, haxe.crypto.Base64.encode(data.sub(0, dataSize)), written, failed);
+	}
+
+	// Keeps a file in the saves under its key, with the time it was written, once they are read; answered once they are written. Saves
+	// that can't be read are left as they are.
+	static function keep(path:String, key:String, value:String, written:Void->Void, failed:String->Void):Void {
+		var time = Math.ffloor(Date.now().getTime() / 1000);
+		Runtime.withSaves(saves -> {
+			if (!saves.loaded) {
+				failed('$path: the saves can\'t be read, so nothing is written to them');
+				return;
+			}
+			saves.setString(key, value);
+			saves.setFloat(SAVED_TIME + path, time);
+			saves.flush(written, error -> failed('$path: $error'));
+		});
 	}
 
 	/** raylib's file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileDataAsync` reads it.
@@ -1276,31 +1330,32 @@ class RCore {
 		@param data  The bytes. */
 	static function UnloadFileData(data:Null<haxe.io.Bytes>):Void {}
 
-	/** Writes a file's bytes: through the program's `SetSaveFileDataCallback` when it has one, else kept across runs as
-		`SaveFileText`'s are.
+	/** raylib's file write, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
+		`SaveFileDataAsync` writes it and answers.
 
 		@param fileName  The file.
 		@param data  The bytes.
 		@param dataSize  How many of them.
-		@return  True when it was written, or will be. */
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("SaveFileData: A file is written later, or is refused. See SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:Void->Void, ?failed:String->Void)")
 	static function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool {
-		var path = normalize(fileName);
-		if (saveData != null)
-			return saveData(path, data, dataSize);
-		var encoded = haxe.crypto.Base64.encode(data.sub(0, dataSize));
-		Runtime.keptSaves().setString(SAVED_DATA + path, encoded);
-		Runtime.keptSaves().setFloat(SAVED_TIME + path, Math.ffloor(Date.now().getTime() / 1000));
-		return true;
+		throw "SaveFileData is unimplemented";
 	}
 
-	/** Writes bytes as a C header through `SaveFileText`, as raylib's does, byte for byte: their count as a define, and the bytes as an
-		array, in hexadecimal, 20 a line.
+	/** raylib's export of bytes as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any
+		target: `ExportDataAsCodeAsync` writes it and answers.
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
-		@param fileName  The file; its name, upper case, names the define and the array, with `_` for `.`, `-`, `?`, `!` and `+`.
-		@return  True when it was written. */
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("ExportDataAsCode: A file is written later, or is refused. See ExportDataAsCodeAsync(data:haxe.io.Bytes, dataSize:Int, fileName:String, ?done:Void->Void, ?failed:String->Void)")
 	static function ExportDataAsCode(data:haxe.io.Bytes, dataSize:Int, fileName:String):Bool {
+		throw "ExportDataAsCode is unimplemented";
+	}
+
+	// ExportDataAsCodeAsync's text, as raylib's writes it, byte for byte.
+	static function dataAsCode(data:haxe.io.Bytes, dataSize:Int, fileName:String):String {
 		var text = new StringBuf();
 		text.add("////////////////////////////////////////////////////////////////////////////////////////\n");
 		text.add("//                                                                                    //\n");
@@ -1326,12 +1381,7 @@ class RCore {
 		for (i in 0...dataSize - 1)
 			text.add(i % 20 == 0 ? '0x${at(i)},\n' : '0x${at(i)}, ');
 		text.add('0x${at(dataSize - 1)} };\n');
-		var success = SaveFileText(fileName, text.toString());
-		if (success)
-			Runtime.log(LOG_INFO, 'FILEIO: [$fileName] Data as code exported successfully');
-		else
-			Runtime.log(LOG_WARNING, 'FILEIO: [$fileName] Failed to export data as code');
-		return success;
+		return text.toString();
 	}
 
 	// ---- Directories ----
@@ -1951,13 +2001,19 @@ class RCore {
 		@param list  The list. */
 	static function UnloadAutomationEventList(list:AutomationEventList):Void {}
 
-	/** Writes a list's events as text through `SaveFileText`, as raylib's does, byte for byte: a header of comments, `c` and the count,
-		then a line for each event, `e`, its frame, type and four parameters, and its type's name.
+	/** raylib's export of an automation list, done when it returns. A file is kept later, once written, so a call doesn't compile on
+		any target: `ExportAutomationEventListAsync` writes it and answers.
 
 		@param list  The list.
 		@param fileName  The file.
-		@return  True when it was written. */
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("ExportAutomationEventList: A file is written later, or is refused. See ExportAutomationEventListAsync(list:AutomationEventList, fileName:String, ?done:Void->Void, ?failed:String->Void)")
 	static function ExportAutomationEventList(list:AutomationEventList, fileName:String):Bool {
+		throw "ExportAutomationEventList is unimplemented";
+	}
+
+	// ExportAutomationEventListAsync's text, as raylib's writes it, byte for byte.
+	static function automationText(list:AutomationEventList):String {
 		var text = new StringBuf();
 		text.add("#\n");
 		text.add("# Automation events exporter v1.0 - raylib automation events list\n");
@@ -1977,7 +2033,7 @@ class RCore {
 			var name = event.type >= 0 && event.type < Automation.TYPE_NAMES.length ? Automation.TYPE_NAMES[event.type] : "";
 			text.add('e ${event.frame} ${event.type} ${p[0]} ${p[1]} ${p[2]} ${p[3]} // Event: $name\n');
 		}
-		return SaveFileText(fileName, text.toString());
+		return text.toString();
 	}
 
 	/** Sets the list `StartAutomationEventRecording` records into. From the first call, the input functions read the input as
@@ -2049,59 +2105,13 @@ class RCore {
 
 	// ---- Screenshots ----
 
-	/** Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImage` writes it by the name's extension
-		(".png", ".qoi" or ".raw"): in a page it is downloaded under the name's file name, as raylib's web build does; natively it is
-		written where the name says, as raylib 6.2 writes it: a relative name under the working directory, its directories kept, and an
-		absolute one where it is. A directory that isn't there isn't made, and the screenshot isn't saved. raylib's is taken from the frame
-		drawn last, before it is shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as
-		raylib's is.
+	/** raylib's screenshot, saved when it returns. Here it is read back as the next frame ends and saved after, so a call doesn't
+		compile on any target: `TakeScreenshotAsync` saves it and answers.
 
-		@param fileName  The file's name, or its path; a name with `'` is refused, as raylib's is. */
+		@param fileName  The file's name, or its path. */
+	@:unsupported("TakeScreenshot: A screenshot is saved later, or is refused. See TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void)")
 	static function TakeScreenshot(fileName:String):Void {
-		if (fileName.indexOf("'") >= 0) {
-			Runtime.log(LOG_WARNING, "SYSTEM: Provided fileName could be potentially malicious, avoid ['] character");
-			return;
-		}
-		var name = GetFileName(fileName);
-		#if js
-		var exporter = Runtime.exporter();
-		#else
-		// raylib 6.2's: a relative name under the working directory, an absolute one as it is.
-		var slash = lastSlash(fileName);
-		var exporter = Runtime.exporter();
-		if (slash >= 0) {
-			var directory = fileName.substr(0, slash == 0 ? 1 : slash);
-			if (!isPathAbsolute(fileName))
-				directory = haxe.io.Path.join([Sys.getCwd(), directory]);
-			if (!sys.FileSystem.exists(directory) || !sys.FileSystem.isDirectory(directory)) {
-				Runtime.log(LOG_WARNING, 'SYSTEM: [$fileName] Screenshot could not be saved');
-				return;
-			}
-			exporter = new helix.platform.adapters.export.filesystem.FileSystemExportAdapter({directory: directory});
-		}
-		#end
-		if (Runtime.frame == null) {
-			Runtime.log(LOG_WARNING, 'SYSTEM: [$name] Screenshot could not be saved: InitWindow first');
-			return;
-		}
-		Runtime.screenshots().captureFrame(captured -> {
-			var pixels = captured.pixels;
-			for (i in 0...captured.width * captured.height)
-				pixels.set(i * 4 + 3, 255);
-			var file = RTextures.encodeImage(new Image(pixels, captured.width, captured.height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8), name);
-			if (file == null) {
-				Runtime.log(LOG_WARNING, 'FILEIO: [$name] Failed to export image');
-				Runtime.log(LOG_WARNING, 'SYSTEM: [$name] Screenshot could not be saved');
-				return;
-			}
-			var type = IsFileExtension(name, ".png") ? "image/png" : IsFileExtension(name, ".qoi") ? "image/qoi" : "application/octet-stream";
-			exporter.export(name, type, file, where -> {
-				Runtime.log(LOG_INFO, 'FILEIO: [$where] Image exported successfully');
-				Runtime.log(LOG_INFO, 'SYSTEM: [$where] Screenshot taken successfully');
-			},
-				error -> Runtime.log(LOG_WARNING, 'SYSTEM: [$name] Screenshot could not be saved: $error'));
-		},
-			error -> Runtime.log(LOG_WARNING, 'SYSTEM: [$name] Screenshot could not be saved: $error'));
+		throw "TakeScreenshot is unimplemented";
 	}
 
 	// ---- Log ----

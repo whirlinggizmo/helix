@@ -1132,13 +1132,6 @@ class Raylib {
 	public static inline function SetWindowTitle(title:String):Void
 		RCore.SetWindowTitle(title);
 
-	/** Asks for the window's size. A page's canvas follows the page instead.
-
-		@param width  The width, in pixels.
-		@param height  The height, in pixels. */
-	public static inline function SetWindowSize(width:Int, height:Int):Void
-		RCore.SetWindowSize(width, height);
-
 	/** Returns whether the window is fullscreen. In a page it tells whether the canvas is.
 
 		@return  True while it is. */
@@ -1163,23 +1156,6 @@ class Raylib {
 	public static inline function IsWindowMaximized():Bool
 		return RCore.IsWindowMaximized();
 
-	/** Asks for the window maximized. A page's canvas is the page's size, so nothing changes there. */
-	public static inline function MaximizeWindow():Void
-		RCore.MaximizeWindow();
-
-	/** Asks for the window minimized. Nothing changes in a page. */
-	public static inline function MinimizeWindow():Void
-		RCore.MinimizeWindow();
-
-	/** Asks for the window back to its size from maximized or minimized. */
-	public static inline function RestoreWindow():Void
-		RCore.RestoreWindow();
-
-	/** Asks for the window brought to the front with the keyboard. A window manager may only flash it; in a page the canvas takes the
-		keyboard. */
-	public static inline function SetWindowFocused():Void
-		RCore.SetWindowFocused();
-
 	/** Sets the window's icon; in a page, the page's icon. As raylib's, the image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
 
 		@param image  The icon. */
@@ -1193,26 +1169,6 @@ class Raylib {
 		@param count  How many of them. */
 	public static inline function SetWindowIcons(images:Array<Image>, count:Int):Void
 		RCore.SetWindowIcons(images, count);
-
-	/** Asks for the window see-through; in a page the canvas fades. A desktop without a compositor leaves it opaque.
-
-		@param opacity  From 0 (clear) to 1 (opaque). */
-	public static inline function SetWindowOpacity(opacity:Float):Void
-		RCore.SetWindowOpacity(opacity);
-
-	/** Sets the smallest size the player can make the window. A page's canvas is the page's size, so nothing changes there.
-
-		@param width  The width, in the screen's pixels.
-		@param height  The height. */
-	public static inline function SetWindowMinSize(width:Int, height:Int):Void
-		RCore.SetWindowMinSize(width, height);
-
-	/** Sets the largest size the player can make the window. Nothing changes in a page.
-
-		@param width  The width, in the screen's pixels.
-		@param height  The height. */
-	public static inline function SetWindowMaxSize(width:Int, height:Int):Void
-		RCore.SetWindowMaxSize(width, height);
 
 	/** Returns how many times a second a monitor shows a new picture.
 
@@ -1229,30 +1185,11 @@ class Raylib {
 	public static inline function OpenURL(url:String):Void
 		RCore.OpenURL(url);
 
-	/** Puts text on the system's clipboard. A page writes it only while it has the keyboard, soon after a press; a refusal is logged.
-
-		@param text  The text. */
-	public static inline function SetClipboardText(text:String):Void
-		RCore.SetClipboardText(text);
-
 	/** Returns whether the window has the keyboard.
 
 		@return  True while it has. */
 	public static inline function IsWindowFocused():Bool
 		return RCore.IsWindowFocused();
-
-	/** Asks for the window's place on the desktop. Where the window can't be moved (in a page, or under Wayland), nothing changes.
-
-		@param x  The left edge, in pixels.
-		@param y  The top edge, in pixels. */
-	public static inline function SetWindowPosition(x:Int, y:Int):Void
-		RCore.SetWindowPosition(x, y);
-
-	/** Asks for the window on another monitor.
-
-		@param monitor  The monitor, 0 to `GetMonitorCount() - 1`. */
-	public static inline function SetWindowMonitor(monitor:Int):Void
-		RCore.SetWindowMonitor(monitor);
 
 	/** Returns the window's place on the desktop.
 
@@ -1610,16 +1547,6 @@ class Raylib {
 	public static inline function IsCursorHidden():Bool
 		return RCore.IsCursorHidden();
 
-	/** Lets go of the mouse that `DisableCursor` locked, and shows the cursor. */
-	public static inline function EnableCursor():Void
-		RCore.EnableCursor();
-
-	/** Locks the mouse to the window and hides the cursor, for looking around: `GetMouseDelta` keeps coming while the position goes on past
-		the window's edges. In a page the browser locks it only soon after a click or key press, so without one it locks at the player's
-		next, and Escape lets it go. */
-	public static inline function DisableCursor():Void
-		RCore.DisableCursor();
-
 	/** Returns whether the mouse is over the window.
 
 		@return  True from its first move over the window until it leaves. */
@@ -1814,40 +1741,11 @@ class Raylib {
 	public static inline function UnloadFileText(text:Null<String>):Void
 		RCore.UnloadFileText(text);
 
-	/** Writes a text file: through the program's `SetSaveFileTextCallback` when it has one, else kept across runs (in a page, in its
-		storage; natively, in the program's data directory), kept at the end of the frame.
-
-		@param fileName  The file.
-		@param text  Its text.
-		@return  True when it was written, or will be. */
-	public static inline function SaveFileText(fileName:String, text:String):Bool
-		return RCore.SaveFileText(fileName, text);
-
 	/** Frees bytes `LoadFileDataAsync` gave. There is nothing to free here.
 
 		@param data  The bytes. */
 	public static inline function UnloadFileData(data:Null<haxe.io.Bytes>):Void
 		RCore.UnloadFileData(data);
-
-	/** Writes a file's bytes: through the program's `SetSaveFileDataCallback` when it has one, else kept across runs as
-		`SaveFileText`'s are.
-
-		@param fileName  The file.
-		@param data  The bytes.
-		@param dataSize  How many of them.
-		@return  True when it was written, or will be. */
-	public static inline function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool
-		return RCore.SaveFileData(fileName, data, dataSize);
-
-	/** Writes bytes as a C header through `SaveFileText`, as raylib's does, byte for byte: their count as a define, and the bytes as an
-		array, in hexadecimal, 20 a line.
-
-		@param data  The bytes.
-		@param dataSize  How many of them.
-		@param fileName  The file; its name, upper case, names the define and the array, with `_` for `.`, `-`, `?`, `!` and `+`.
-		@return  True when it was written. */
-	public static inline function ExportDataAsCode(data:haxe.io.Bytes, dataSize:Int, fileName:String):Bool
-		return RCore.ExportDataAsCode(data, dataSize, fileName);
 
 	/** Returns the working directory: natively the process's, where `TakeScreenshot` writes; in a page ".", the page's own directory.
 		helix-ray's loads don't read from it: a file's name is under the program's files wherever it is (`GetApplicationDirectory`).
@@ -2067,15 +1965,6 @@ class Raylib {
 	public static inline function UnloadAutomationEventList(list:AutomationEventList):Void
 		RCore.UnloadAutomationEventList(list);
 
-	/** Writes a list's events as text through `SaveFileText`, as raylib's does, byte for byte: a header of comments, `c` and the count,
-		then a line for each event, `e`, its frame, type and four parameters, and its type's name.
-
-		@param list  The list.
-		@param fileName  The file.
-		@return  True when it was written. */
-	public static inline function ExportAutomationEventList(list:AutomationEventList, fileName:String):Bool
-		return RCore.ExportAutomationEventList(list, fileName);
-
 	/** Sets the list `StartAutomationEventRecording` records into. From the first call, the input functions read the input as
 		automation keeps it, so an event `PlayAutomationEvent` plays reads as real input.
 
@@ -2108,17 +1997,6 @@ class Raylib {
 		@param event  The event. */
 	public static inline function PlayAutomationEvent(event:AutomationEvent):Void
 		RCore.PlayAutomationEvent(event);
-
-	/** Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImage` writes it by the name's extension
-		(".png", ".qoi" or ".raw"): in a page it is downloaded under the name's file name, as raylib's web build does; natively it is
-		written where the name says, as raylib 6.2 writes it: a relative name under the working directory, its directories kept, and an
-		absolute one where it is. A directory that isn't there isn't made, and the screenshot isn't saved. raylib's is taken from the frame
-		drawn last, before it is shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as
-		raylib's is.
-
-		@param fileName  The file's name, or its path; a name with `'` is refused, as raylib's is. */
-	public static inline function TakeScreenshot(fileName:String):Void
-		RCore.TakeScreenshot(fileName);
 
 	/** Writes a message to the log, when its level is at least `SetTraceLogLevel`'s. raylib formats its arguments as printf does;
 		here the text is written as it is (Haxe's string interpolation builds it).
@@ -3290,16 +3168,6 @@ class Raylib {
 	public static inline function UnloadImage(image:Image):Void
 		RTextures.UnloadImage(image);
 
-	/** Writes an image to a file through `SaveFileData`, as raylib's default build writes it: ".png" (any uncompressed format; a format
-		other than 8-bit grayscale, grayscale and alpha, RGB or RGBA is written as RGBA), ".qoi" (RGB or RGBA alone) or ".raw" (the pixels
-		as they are). The file is kept as `SaveFileData` keeps it; `TakeScreenshot` writes a real file.
-
-		@param image  The image.
-		@param fileName  The file; its extension chooses the format.
-		@return  True when it was written. */
-	public static inline function ExportImage(image:Image, fileName:String):Bool
-		return RTextures.ExportImage(image, fileName);
-
 	/** Returns an image encoded as a file in memory: ".png" alone, as raylib's. Like raylib's, an image's bytes are read as 8-bit gray,
 		gray and alpha, RGB or RGBA by its format, and as RGBA for any other format, which a 16-bit format has too few of: those it lacks
 		read as 0.
@@ -3310,15 +3178,6 @@ class Raylib {
 		@return  The file, or null for another type or an empty image. */
 	public static inline function ExportImageToMemory(image:Image, fileType:String, fileSize:Array<Int>):haxe.io.Bytes
 		return RTextures.ExportImageToMemory(image, fileType, fileSize);
-
-	/** Writes an image as a C header through `SaveFileText`, as raylib's does: its size and format as defines, and its pixels (the first
-		level's) as an array of bytes, 20 a line.
-
-		@param image  The image.
-		@param fileName  The file; its name, upper case, names the defines and the array.
-		@return  True when it was written. */
-	public static inline function ExportImageAsCode(image:Image, fileName:String):Bool
-		return RTextures.ExportImageAsCode(image, fileName);
 
 	/** Returns an image of one color, RGBA.
 
@@ -4146,18 +4005,6 @@ class Raylib {
 	public static inline function UnloadFont(font:Font):Void
 		RText.UnloadFont(font);
 
-	/** Writes a font as a C header through `SaveFileText`, the text raylib 5.5's writes: its texture's pixels in the texture's format
-		(gray and alpha for the default font and a TrueType font's), compressed as `CompressData` compresses them, 20 bytes a line; each
-		glyph's rectangle and its character, offsets and advance; and a function loading it. The file's name, in Pascal case, names
-		them. The pixels are those the font's texture was made from, or the texture's own while it hasn't been drawn; one made otherwise
-		and already on the GPU (a render texture's) is written as an empty image, as raylib writes a texture it can't read back.
-
-		@param font  The font.
-		@param fileName  The file.
-		@return  True when it was written. */
-	public static inline function ExportFontAsCode(font:Font, fileName:String):Bool
-		return RText.ExportFontAsCode(font, fileName);
-
 	/** Frees glyphs' images.
 
 		@param glyphs  The glyphs.
@@ -4930,24 +4777,6 @@ class Raylib {
 	public static inline function GenMeshTangents(mesh:Mesh):Void
 		RModels.GenMeshTangents(mesh);
 
-	/** Writes a mesh as an OBJ file through `SaveFileText`, as raylib's does: its positions and texture coordinates to 6 places, its
-		normals to 4, and a face a triangle.
-
-		@param mesh  The mesh, with positions, texture coordinates and normals.
-		@param fileName  The file; only ".obj" is written.
-		@return  True when it was written. */
-	public static inline function ExportMesh(mesh:Mesh, fileName:String):Bool
-		return RModels.ExportMesh(mesh, fileName);
-
-	/** Writes a mesh as a C header through `SaveFileText`, as raylib's does: its counts as defines, and each array it has, 20 values a
-		line, floats to 3 places.
-
-		@param mesh  The mesh.
-		@param fileName  The file; its name, upper case, names the defines and the arrays.
-		@return  True when it was written. */
-	public static inline function ExportMeshAsCode(mesh:Mesh, fileName:String):Bool
-		return RModels.ExportMeshAsCode(mesh, fileName);
-
 	/** Poses a model's bones by a frame of an animation, as raylib 6.2's: the frame's whole part and the next mixed by its fraction (a
 		5.5 program's whole frames work as they did), each wrapped to the animation's frames; each bone's matrix then its bind pose's
 		inverse and the pose, in each mesh's `boneMatrices`. Its vertices don't move: a skinning shader moves them as they are drawn, or
@@ -5177,24 +5006,6 @@ class Raylib {
 		@param wave  The wave. */
 	public static inline function UnloadWave(wave:Wave):Void
 		RAudio.UnloadWave(wave);
-
-	/** Writes a wave to a file through `SaveFileData`: ".wav" (8, 16 and 24 bits as integers, 32 as floats, as raylib's dr_wav writes
-		them) or ".raw" (the samples as they are). raylib's ".qoa" isn't written here. The file is kept as `SaveFileData` keeps it.
-
-		@param wave  The wave.
-		@param fileName  The file; its extension chooses the format.
-		@return  True when it was written. */
-	public static inline function ExportWave(wave:Wave, fileName:String):Bool
-		return RAudio.ExportWave(wave, fileName);
-
-	/** Writes a wave as a C header through `SaveFileText`, as raylib's does: its frames, rate, sample size and channels as defines, and
-		its samples as an array: floats with 4 places for 32-bit samples, else bytes, 20 a line.
-
-		@param wave  The wave.
-		@param fileName  The file; its name, upper case, names the defines and the array.
-		@return  True when it was written. */
-	public static inline function ExportWaveAsCode(wave:Wave, fileName:String):Bool
-		return RAudio.ExportWaveAsCode(wave, fileName);
 
 	/** Returns a copy of a wave, its samples its own.
 
@@ -5564,7 +5375,7 @@ class Raylib {
 	public static inline function SetAudioStreamCallback(stream:AudioStream, callback:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void
 		RAudio.SetAudioStreamCallback(stream, callback);
 
-	// ---- the async loads and window requests, helix-ray's own in place of raylib's that wait for a file or a window (raylib/RAsync.hx) ----
+	// ---- the async loads, requests and writes, helix-ray's own in place of raylib's that wait for a file, a window or a write (raylib/RAsync.hx) ----
 
 	/** Loads the materials of an .mtl file, with the textures they name, answering when they are ready: helix-ray's own, in place of
 		raylib's `LoadMaterials`. Each is made as raylib's `ProcessMaterialsOBJ` makes it: raylib's default material, then its diffuse
@@ -5823,9 +5634,311 @@ class Raylib {
 		@param failed  Optional. Receives why it was refused; when omitted, it is logged. */
 	public static inline function ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void):Void
 		RAsync.ToggleBorderlessWindowedAsync(done, failed);
+
+	/** Asks for the window's size, answering once the window manager has resized it or refused: helix-ray's own, in place of raylib's
+		`SetWindowSize`. The window manager may give another size, which `GetScreenWidth` and `GetScreenHeight` say once it has. A
+		fullscreen or maximized window keeps its size, and a page's canvas follows the page, so those are refused.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param done  Optional. Called once the window has a size from the request, at a later poll.
+		@param failed  Optional. Receives why it wasn't resized; when omitted, it is logged. */
+	public static inline function SetWindowSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.SetWindowSizeAsync(width, height, done, failed);
+
+	/** Asks for the window's place on the desktop, answering once it has moved or the move is refused: helix-ray's own, in place of
+		raylib's `SetWindowPosition`. Where the window can't be moved (in a page, or under Wayland), or while it is fullscreen or
+		maximized, it is refused.
+
+		@param x  The left edge, in pixels.
+		@param y  The top edge, in pixels.
+		@param done  Optional. Called once the window has moved, at a later poll.
+		@param failed  Optional. Receives why it didn't move; when omitted, it is logged. */
+	public static inline function SetWindowPositionAsync(x:Int, y:Int, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.SetWindowPositionAsync(x, y, done, failed);
+
+	/** Asks for the window on another monitor, answering once it is there or the move is refused: helix-ray's own, in place of raylib's
+		`SetWindowMonitor`. Where the window can't be moved, a monitor other than its own is refused.
+
+		@param monitor  The monitor, 0 to `GetMonitorCount() - 1`.
+		@param done  Optional. Called once the window is on the monitor, at a later poll.
+		@param failed  Optional. Receives why it isn't, such as a monitor that isn't there; when omitted, it is logged. */
+	public static inline function SetWindowMonitorAsync(monitor:Int, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.SetWindowMonitorAsync(monitor, done, failed);
+
+	/** Asks for the window maximized, answering once it is or the window manager refuses: helix-ray's own, in place of raylib's
+		`MaximizeWindow`. A page can't maximize its window, so it is refused there.
+
+		@param done  Optional. Called once the window is maximized, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	public static inline function MaximizeWindowAsync(?done:Void->Void, ?failed:String->Void):Void
+		RAsync.MaximizeWindowAsync(done, failed);
+
+	/** Asks for the window minimized, answering once it is or the window manager refuses: helix-ray's own, in place of raylib's
+		`MinimizeWindow`. A page can't minimize its window, so it is refused there.
+
+		@param done  Optional. Called once the window is minimized, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	public static inline function MinimizeWindowAsync(?done:Void->Void, ?failed:String->Void):Void
+		RAsync.MinimizeWindowAsync(done, failed);
+
+	/** Asks for the window back to its size from minimized or maximized, answering once it is or the window manager refuses:
+		helix-ray's own, in place of raylib's `RestoreWindow`.
+
+		@param done  Optional. Called once the window is restored, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	public static inline function RestoreWindowAsync(?done:Void->Void, ?failed:String->Void):Void
+		RAsync.RestoreWindowAsync(done, failed);
+
+	/** Asks for the window brought to the front with the keyboard, answering once it has the keyboard or the window manager keeps it
+		elsewhere: helix-ray's own, in place of raylib's `SetWindowFocused`. A window manager may only flash it; in a page the canvas
+		takes the keyboard.
+
+		@param done  Optional. Called once the window has the keyboard, at a later poll.
+		@param failed  Optional. Receives why it hasn't; when omitted, it is logged. */
+	public static inline function SetWindowFocusedAsync(?done:Void->Void, ?failed:String->Void):Void
+		RAsync.SetWindowFocusedAsync(done, failed);
+
+	/** Asks for the window see-through, answering once it is or it is refused: helix-ray's own, in place of raylib's
+		`SetWindowOpacity`. In a page the canvas fades; a desktop without a compositor refuses it.
+
+		@param opacity  From 0 (clear) to 1 (opaque).
+		@param done  Optional. Called once the window has the opacity, at a later poll.
+		@param failed  Optional. Receives why it hasn't; when omitted, it is logged. */
+	public static inline function SetWindowOpacityAsync(opacity:Float, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.SetWindowOpacityAsync(opacity, done, failed);
+
+	/** Asks for the smallest size the player can make the window, answering once it has it or it is refused: helix-ray's own, in place
+		of raylib's `SetWindowMinSize`. A page's canvas follows the page, so it is refused there.
+
+		@param width  The width, in the screen's pixels.
+		@param height  The height.
+		@param done  Optional. Called once the window has the limit, at a later poll.
+		@param failed  Optional. Receives why it hasn't; when omitted, it is logged. */
+	public static inline function SetWindowMinSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.SetWindowMinSizeAsync(width, height, done, failed);
+
+	/** Asks for the largest size the player can make the window, answering once it has it or it is refused: helix-ray's own, in place
+		of raylib's `SetWindowMaxSize`. A page's canvas follows the page, so it is refused there.
+
+		@param width  The width, in the screen's pixels.
+		@param height  The height.
+		@param done  Optional. Called once the window has the limit, at a later poll.
+		@param failed  Optional. Receives why it hasn't; when omitted, it is logged. */
+	public static inline function SetWindowMaxSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.SetWindowMaxSizeAsync(width, height, done, failed);
+
+	/** Locks the mouse to the window and hides the cursor, for looking around, answering once it is locked or refused: helix-ray's own,
+		in place of raylib's `DisableCursor`. `GetMouseDelta` keeps coming while the position goes on past the window's edges. In a page
+		the browser locks it only soon after a click or key press, so without one it locks at the player's next, and Escape lets it go.
+		`IsCursorHidden` is true from the call.
+
+		@param done  Optional. Called once the mouse is locked, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	public static inline function DisableCursorAsync(?done:Void->Void, ?failed:String->Void):Void
+		RAsync.DisableCursorAsync(done, failed);
+
+	/** Lets go of the mouse that `DisableCursorAsync` locked, and shows the cursor, answering once it is let go: helix-ray's own, in
+		place of raylib's `EnableCursor`.
+
+		@param done  Optional. Called once the mouse is let go, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	public static inline function EnableCursorAsync(?done:Void->Void, ?failed:String->Void):Void
+		RAsync.EnableCursorAsync(done, failed);
+
+	/** Puts text on the system's clipboard, answering once it is there or refused: helix-ray's own, in place of raylib's
+		`SetClipboardText`. A page writes it only while it has the keyboard, soon after a press.
+
+		@param text  The text.
+		@param done  Optional. Called once the text is on the clipboard, at a later poll.
+		@param failed  Optional. Receives why it isn't; when omitted, it is logged. */
+	public static inline function SetClipboardTextAsync(text:String, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.SetClipboardTextAsync(text, done, failed);
+
+	/** Writes a text file, answering once it is kept or refused: helix-ray's own, in place of raylib's `SaveFileText`. It is written
+		through the program's `SetSaveFileTextCallback` when it has one, during the call, answered by what that returned; else kept
+		across runs (in a page, in its storage; natively, in the program's data directory), answered once the write has finished.
+		`LoadFileTextAsync` reads it back.
+
+		@param fileName  The file.
+		@param text  Its text.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	public static inline function SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.SaveFileTextAsync(fileName, text, done, failed);
+
+	/** Writes a file's bytes, answering once they are kept or refused: helix-ray's own, in place of raylib's `SaveFileData`. They are
+		written through the program's `SetSaveFileDataCallback` when it has one, else kept across runs as `SaveFileTextAsync`'s are.
+		`LoadFileDataAsync` reads them back.
+
+		@param fileName  The file.
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	public static inline function SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.SaveFileDataAsync(fileName, data, dataSize, done, failed);
+
+	/** Writes bytes as a C header through `SaveFileTextAsync`, as raylib's `ExportDataAsCode` does, byte for byte: their count as a
+		define, and the bytes as an array, in hexadecimal, 20 a line. helix-ray's own, answering once the file is written.
+
+		@param data  The bytes.
+		@param dataSize  How many of them.
+		@param fileName  The file; its name, upper case, names the define and the array, with `_` for `.`, `-`, `?`, `!` and `+`.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	public static inline function ExportDataAsCodeAsync(data:haxe.io.Bytes, dataSize:Int, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.ExportDataAsCodeAsync(data, dataSize, fileName, done, failed);
+
+	/** Writes a list's events as text through `SaveFileTextAsync`, as raylib's `ExportAutomationEventList` does, byte for byte: a header
+		of comments, `c` and the count, then a line for each event, `e`, its frame, type and four parameters, and its type's name.
+		helix-ray's own, answering once the file is written.
+
+		@param list  The list.
+		@param fileName  The file.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	public static inline function ExportAutomationEventListAsync(list:AutomationEventList, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.ExportAutomationEventListAsync(list, fileName, done, failed);
+
+	/** Writes an image to a file through `SaveFileDataAsync`, as raylib's default build's `ExportImage` writes it: ".png" (any
+		uncompressed format; a format other than 8-bit grayscale, grayscale and alpha, RGB or RGBA is written as RGBA), ".qoi" (RGB or
+		RGBA alone) or ".raw" (the pixels as they are). helix-ray's own, answering once the file is written. The file is kept as
+		`SaveFileDataAsync` keeps it; `TakeScreenshotAsync` writes a real file.
+
+		@param image  The image.
+		@param fileName  The file; its extension chooses the format.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't, such as an empty image or another extension; when omitted, it is logged. */
+	public static inline function ExportImageAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.ExportImageAsync(image, fileName, done, failed);
+
+	/** Writes an image as a C header through `SaveFileTextAsync`, as raylib's `ExportImageAsCode` does: its size and format as defines,
+		and its pixels (the first level's) as an array of bytes, 20 a line. helix-ray's own, answering once the file is written.
+
+		@param image  The image.
+		@param fileName  The file; its name, upper case, names the defines and the array.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	public static inline function ExportImageAsCodeAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.ExportImageAsCodeAsync(image, fileName, done, failed);
+
+	/** Writes a font as a C header through `SaveFileTextAsync`, the text raylib 5.5's `ExportFontAsCode` writes: its texture's pixels in
+		the texture's format (gray and alpha for the default font and a TrueType font's), compressed as `CompressData` compresses them,
+		20 bytes a line; each glyph's rectangle and its character, offsets and advance; and a function loading it. The file's name, in
+		Pascal case, names them. The pixels are those the font's texture was made from, or the texture's own while it hasn't been drawn;
+		one made otherwise and already on the GPU (a render texture's) is written as an empty image, as raylib writes a texture it can't
+		read back. helix-ray's own, answering once the file is written.
+
+		@param font  The font.
+		@param fileName  The file.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	public static inline function ExportFontAsCodeAsync(font:Font, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.ExportFontAsCodeAsync(font, fileName, done, failed);
+
+	/** Writes a mesh as an OBJ file through `SaveFileTextAsync`, as raylib's `ExportMesh` does: its positions and texture coordinates to
+		6 places, its normals to 4, and a face a triangle. helix-ray's own, answering once the file is written.
+
+		@param mesh  The mesh, with positions, texture coordinates and normals.
+		@param fileName  The file; only ".obj" is written.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't, such as another extension; when omitted, it is logged. */
+	public static inline function ExportMeshAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.ExportMeshAsync(mesh, fileName, done, failed);
+
+	/** Writes a mesh as a C header through `SaveFileTextAsync`, as raylib's `ExportMeshAsCode` does: its counts as defines, and each
+		array it has, 20 values a line, floats to 3 places. helix-ray's own, answering once the file is written.
+
+		@param mesh  The mesh.
+		@param fileName  The file; its name, upper case, names the defines and the arrays.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	public static inline function ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.ExportMeshAsCodeAsync(mesh, fileName, done, failed);
+
+	/** Writes a wave to a file through `SaveFileDataAsync`, as raylib's `ExportWave` does: ".wav" (8, 16 and 24 bits as integers, 32 as
+		floats, as raylib's dr_wav writes them) or ".raw" (the samples as they are). raylib's ".qoa" isn't written here. helix-ray's own,
+		answering once the file is written; the file is kept as `SaveFileDataAsync` keeps it.
+
+		@param wave  The wave.
+		@param fileName  The file; its extension chooses the format.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't, such as a wave with no samples or another extension; when omitted, it is logged. */
+	public static inline function ExportWaveAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.ExportWaveAsync(wave, fileName, done, failed);
+
+	/** Writes a wave as a C header through `SaveFileTextAsync`, as raylib's `ExportWaveAsCode` does: its frames, rate, sample size and
+		channels as defines, and its samples as an array: floats with 4 places for 32-bit samples, else bytes, 20 a line. helix-ray's
+		own, answering once the file is written.
+
+		@param wave  The wave.
+		@param fileName  The file; its name, upper case, names the defines and the array.
+		@param done  Optional. Called once the file is written, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	public static inline function ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.ExportWaveAsCodeAsync(wave, fileName, done, failed);
+
+	/** Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImageAsync` writes it by the name's extension
+		(".png", ".qoi" or ".raw"), answering once it is saved or refused: helix-ray's own, in place of raylib's `TakeScreenshot`. In a
+		page it is downloaded under the name's file name, as raylib's web build does; natively it is written where the name says, as
+		raylib 6.2 writes it: a relative name under the working directory, its directories kept, and an absolute one where it is. A
+		directory that isn't there isn't made, and the screenshot isn't saved. raylib's is taken from the frame drawn last, before it is
+		shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as raylib's is.
+
+		@param fileName  The file's name, or its path; a name with `'` is refused, as raylib's is.
+		@param done  Optional. Called once the file is written or downloaded, at a later poll.
+		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
+	public static inline function TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void):Void
+		RAsync.TakeScreenshotAsync(fileName, done, failed);
 	#end
 
 	// ---- raylib.h's functions helix-ray won't have: each refuses to compile, saying why and what to use ----
+
+	/** raylib's window size, done when it returns. The window manager resizes the window later, or refuses (a page's canvas follows the page), so a call doesn't compile on any target: `SetWindowSizeAsync` asks for it and answers. */
+	public static macro function SetWindowSize(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("SetWindowSize: The window changes later, or is refused. See SetWindowSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)",
+			macro {});
+
+	/** raylib's maximize, done when it returns. The window manager maximizes the window later, or refuses (a page can't), so a call doesn't compile on any target: `MaximizeWindowAsync` asks for it and answers. */
+	public static macro function MaximizeWindow():ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("MaximizeWindow: The window changes later, or is refused. See MaximizeWindowAsync(?done:Void->Void, ?failed:String->Void)",
+			macro {});
+
+	/** raylib's minimize, done when it returns. The window manager minimizes the window later, or refuses (a page can't), so a call doesn't compile on any target: `MinimizeWindowAsync` asks for it and answers. */
+	public static macro function MinimizeWindow():ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("MinimizeWindow: The window changes later, or is refused. See MinimizeWindowAsync(?done:Void->Void, ?failed:String->Void)",
+			macro {});
+
+	/** raylib's restore, done when it returns. The window manager restores the window later, or refuses, so a call doesn't compile on any target: `RestoreWindowAsync` asks for it and answers. */
+	public static macro function RestoreWindow():ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("RestoreWindow: The window changes later, or is refused. See RestoreWindowAsync(?done:Void->Void, ?failed:String->Void)",
+			macro {});
+
+	/** raylib's focus, done when it returns. The window manager gives the window the keyboard later, or keeps it elsewhere, so a call doesn't compile on any target: `SetWindowFocusedAsync` asks for it and answers. */
+	public static macro function SetWindowFocused():ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("SetWindowFocused: The window changes later, or is refused. See SetWindowFocusedAsync(?done:Void->Void, ?failed:String->Void)",
+			macro {});
+
+	/** raylib's opacity, done when it returns. A desktop without a compositor refuses it, so a call doesn't compile on any target: `SetWindowOpacityAsync` asks for it and answers. */
+	public static macro function SetWindowOpacity(opacity:ExprOf<Float>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("SetWindowOpacity: The window changes later, or is refused. See SetWindowOpacityAsync(opacity:Float, ?done:Void->Void, ?failed:String->Void)",
+			macro {});
+
+	/** raylib's smallest window size, done when it returns. A page refuses it, so a call doesn't compile on any target: `SetWindowMinSizeAsync` asks for it and answers. */
+	public static macro function SetWindowMinSize(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("SetWindowMinSize: The window changes later, or is refused. See SetWindowMinSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)",
+			macro {});
+
+	/** raylib's largest window size, done when it returns. A page refuses it, so a call doesn't compile on any target: `SetWindowMaxSizeAsync` asks for it and answers. */
+	public static macro function SetWindowMaxSize(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("SetWindowMaxSize: The window changes later, or is refused. See SetWindowMaxSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)",
+			macro {});
+
+	/** raylib's clipboard write, done when it returns. A page writes it only while it has the keyboard, soon after a press, so a call doesn't compile on any target: `SetClipboardTextAsync` writes it and answers. */
+	public static macro function SetClipboardText(text:ExprOf<String>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("SetClipboardText: The clipboard is written later, or is refused. See SetClipboardTextAsync(text:String, ?done:Void->Void, ?failed:String->Void)",
+			macro {});
 
 	/** raylib's clipboard text, which waits for the answer. A page's clipboard answers later, so a call doesn't compile on any target: `GetClipboardTextAsync` answers it. */
 	public static macro function GetClipboardText():ExprOf<String>
@@ -5862,6 +5975,26 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("ToggleBorderlessWindowed: The window changes later, or is refused. See ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
+	/** raylib's window position, done when it returns. The window manager moves the window later, or refuses (a page, Wayland), so a call doesn't compile on any target: `SetWindowPositionAsync` asks for it and answers. */
+	public static macro function SetWindowPosition(x:ExprOf<Int>, y:ExprOf<Int>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("SetWindowPosition: The window changes later, or is refused. See SetWindowPositionAsync(x:Int, y:Int, ?done:Void->Void, ?failed:String->Void)",
+			macro {});
+
+	/** raylib's move to a monitor, done when it returns. The window manager moves the window later, or refuses, so a call doesn't compile on any target: `SetWindowMonitorAsync` asks for it and answers. */
+	public static macro function SetWindowMonitor(monitor:ExprOf<Int>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("SetWindowMonitor: The window changes later, or is refused. See SetWindowMonitorAsync(monitor:Int, ?done:Void->Void, ?failed:String->Void)",
+			macro {});
+
+	/** raylib's letting go of the mouse, done when it returns. The platform answers later, so a call doesn't compile on any target: `EnableCursorAsync` lets it go and answers. */
+	public static macro function EnableCursor():ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("EnableCursor: The mouse is let go later, or is refused. See EnableCursorAsync(?done:Void->Void, ?failed:String->Void)",
+			macro {});
+
+	/** raylib's lock of the mouse, done when it returns. A page locks it only soon after a click or key press, so a call doesn't compile on any target: `DisableCursorAsync` locks it and answers. */
+	public static macro function DisableCursor():ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("DisableCursor: The mouse is locked later, or is refused. See DisableCursorAsync(?done:Void->Void, ?failed:String->Void)",
+			macro {});
+
 	/** raylib's check for a file, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `FileExistsAsync` answers it. */
 	public static macro function FileExists(fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("FileExists: Synchronous file access is not supported. See FileExistsAsync(fileName:String, answer:Bool->Void)",
@@ -5872,10 +6005,25 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadFileText: Synchronous loading is not supported. See LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void)",
 			macro(null : Null<String>));
 
+	/** raylib's text file write, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `SaveFileTextAsync` writes it and answers. */
+	public static macro function SaveFileText(fileName:ExprOf<String>, text:ExprOf<String>):ExprOf<Bool>
+		return helix.platform.macros.Build.unsupported("SaveFileText: A file is written later, or is refused. See SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void)",
+			macro(false : Bool));
+
 	/** raylib's file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileDataAsync` reads it. */
 	public static macro function LoadFileData(fileName:ExprOf<String>):ExprOf<Null<haxe.io.Bytes>>
 		return helix.platform.macros.Build.unsupported("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)",
 			macro(null : Null<haxe.io.Bytes>));
+
+	/** raylib's file write, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `SaveFileDataAsync` writes it and answers. */
+	public static macro function SaveFileData(fileName:ExprOf<String>, data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Bool>
+		return helix.platform.macros.Build.unsupported("SaveFileData: A file is written later, or is refused. See SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:Void->Void, ?failed:String->Void)",
+			macro(false : Bool));
+
+	/** raylib's export of bytes as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportDataAsCodeAsync` writes it and answers. */
+	public static macro function ExportDataAsCode(data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fileName:ExprOf<String>):ExprOf<Bool>
+		return helix.platform.macros.Build.unsupported("ExportDataAsCode: A file is written later, or is refused. See ExportDataAsCodeAsync(data:haxe.io.Bytes, dataSize:Int, fileName:String, ?done:Void->Void, ?failed:String->Void)",
+			macro(false : Bool));
 
 	/** raylib's check for a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `DirectoryExistsAsync` answers it. */
 	public static macro function DirectoryExists(dirPath:ExprOf<String>):ExprOf<Bool>
@@ -5907,6 +6055,11 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("GetFileModTime: Synchronous file access is not supported. See GetFileModTimeAsync(fileName:String, answer:Int->Void)",
 			macro(0 : Int));
 
+	/** raylib's export of an automation list, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportAutomationEventListAsync` writes it and answers. */
+	public static macro function ExportAutomationEventList(list:ExprOf<AutomationEventList>, fileName:ExprOf<String>):ExprOf<Bool>
+		return helix.platform.macros.Build.unsupported("ExportAutomationEventList: A file is written later, or is refused. See ExportAutomationEventListAsync(list:AutomationEventList, fileName:String, ?done:Void->Void, ?failed:String->Void)",
+			macro(false : Bool));
+
 	/** raylib's allocator. Haxe has no raw memory to allocate, so a call doesn't compile. */
 	public static macro function MemAlloc(size:ExprOf<Int>):ExprOf<Dynamic>
 		return helix.platform.macros.Build.unsupported("MemAlloc: Haxe has no raw memory to allocate. Make bytes instead: haxe.io.Bytes.alloc(size)",
@@ -5920,6 +6073,11 @@ class Raylib {
 	/** raylib's free. Haxe frees memory once nothing holds it, so a call doesn't compile. */
 	public static macro function MemFree(ptr:ExprOf<Dynamic>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("MemFree: Haxe frees memory once nothing holds it. Drop the reference instead.", macro {});
+
+	/** raylib's screenshot, saved when it returns. Here it is read back as the next frame ends and saved after, so a call doesn't compile on any target: `TakeScreenshotAsync` saves it and answers. */
+	public static macro function TakeScreenshot(fileName:ExprOf<String>):ExprOf<Void>
+		return helix.platform.macros.Build.unsupported("TakeScreenshot: A screenshot is saved later, or is refused. See TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void)",
+			macro {});
 
 	/** raylib's texture load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadTextureAsync` loads it. */
 	public static macro function LoadTexture(fileName:ExprOf<String>):ExprOf<Texture2D>
@@ -5963,6 +6121,21 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadImageFromScreen: The screen is read back asynchronously. See LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void)",
 			macro(null : helix.ray.Image));
 
+	/** raylib's image export, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportImageAsync` writes it and answers. */
+	public static macro function ExportImage(image:ExprOf<Image>, fileName:ExprOf<String>):ExprOf<Bool>
+		return helix.platform.macros.Build.unsupported("ExportImage: A file is written later, or is refused. See ExportImageAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void)",
+			macro(false : Bool));
+
+	/** raylib's export of an image as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportImageAsCodeAsync` writes it and answers. */
+	public static macro function ExportImageAsCode(image:ExprOf<Image>, fileName:ExprOf<String>):ExprOf<Bool>
+		return helix.platform.macros.Build.unsupported("ExportImageAsCode: A file is written later, or is refused. See ExportImageAsCodeAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void)",
+			macro(false : Bool));
+
+	/** raylib's export of a font as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportFontAsCodeAsync` writes it and answers. */
+	public static macro function ExportFontAsCode(font:ExprOf<Font>, fileName:ExprOf<String>):ExprOf<Bool>
+		return helix.platform.macros.Build.unsupported("ExportFontAsCode: A file is written later, or is refused. See ExportFontAsCodeAsync(font:Font, fileName:String, ?done:Void->Void, ?failed:String->Void)",
+			macro(false : Bool));
+
 	/** raylib's font load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontAsync` loads it. */
 	public static macro function LoadFont(fileName:ExprOf<String>):ExprOf<Font>
 		return helix.platform.macros.Build.unsupported("LoadFont: Synchronous loading is not supported. See LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void)",
@@ -6004,6 +6177,16 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadMaterials: Synchronous loading is not supported. See LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void)",
 			macro(null : Array<helix.ray.Material>));
 
+	/** raylib's mesh export, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportMeshAsync` writes it and answers. */
+	public static macro function ExportMesh(mesh:ExprOf<Mesh>, fileName:ExprOf<String>):ExprOf<Bool>
+		return helix.platform.macros.Build.unsupported("ExportMesh: A file is written later, or is refused. See ExportMeshAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void)",
+			macro(false : Bool));
+
+	/** raylib's export of a mesh as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportMeshAsCodeAsync` writes it and answers. */
+	public static macro function ExportMeshAsCode(mesh:ExprOf<Mesh>, fileName:ExprOf<String>):ExprOf<Bool>
+		return helix.platform.macros.Build.unsupported("ExportMeshAsCode: A file is written later, or is refused. See ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void)",
+			macro(false : Bool));
+
 	/** raylib's animation load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAnimationsAsync` loads them. */
 	public static macro function LoadModelAnimations(fileName:ExprOf<String>, animCount:ExprOf<Array<Int>>):ExprOf<Array<ModelAnimation>>
 		return helix.platform.macros.Build.unsupported("LoadModelAnimations: Synchronous loading is not supported. See LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void)",
@@ -6018,6 +6201,16 @@ class Raylib {
 	public static macro function LoadWaveFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Wave>
 		return helix.platform.macros.Build.unsupported("LoadWaveFromMemory: Decoding is asynchronous. See LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void)",
 			macro(null : helix.ray.Wave));
+
+	/** raylib's wave export, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportWaveAsync` writes it and answers. */
+	public static macro function ExportWave(wave:ExprOf<Wave>, fileName:ExprOf<String>):ExprOf<Bool>
+		return helix.platform.macros.Build.unsupported("ExportWave: A file is written later, or is refused. See ExportWaveAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void)",
+			macro(false : Bool));
+
+	/** raylib's export of a wave as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportWaveAsCodeAsync` writes it and answers. */
+	public static macro function ExportWaveAsCode(wave:ExprOf<Wave>, fileName:ExprOf<String>):ExprOf<Bool>
+		return helix.platform.macros.Build.unsupported("ExportWaveAsCode: A file is written later, or is refused. See ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void)",
+			macro(false : Bool));
 
 	/** raylib's sound load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadSoundAsync` loads it. */
 	public static macro function LoadSound(fileName:ExprOf<String>):ExprOf<Sound>
