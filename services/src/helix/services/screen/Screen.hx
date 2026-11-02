@@ -12,7 +12,8 @@ import helix.services.saves.Saves;
 	The program constructs one over its `IWindow` and `IEvents`, and calls `poll` once a frame. With no design size, the design is the
 	window's own logical size. With one, a game draws in design pixels into the viewport (`viewportX` to `viewportHeight`, framebuffer
 	pixels, for `IGraphics.applyViewport`), and turns the mouse's or a finger's framebuffer position into design pixels with `toDesignX`
-	and `toDesignY`.
+	and `toDesignY`. The sizes, scales and viewport follow the window's framebuffer as it is when read, so a page's canvas resized
+	between frames is seen before the next poll.
 
 	```haxe
 	var screen = new Screen(window, events, {designWidth: 320, designHeight: 180, fit: PixelPerfect});
@@ -38,6 +39,10 @@ class Screen implements IPollable {
 	var saves:Null<Saves> = null;
 	var key = "";
 	var kept = "";
+	// The framebuffer size and pixel ratio the fit was last worked out for.
+	var laidWidth = -1;
+	var laidHeight = -1;
+	var laidRatio = 0.0;
 
 	/** Creates the screen over the window, its design and fit as the options say.
 
@@ -82,29 +87,69 @@ class Screen implements IPollable {
 
 	/** Gets the width drawn in, in design pixels: the design's, wider under `Expand` on a wider window, or the window's logical width
 		with no design. */
-	public var width(default, null):Float = 0;
+	@:isVar public var width(get, null):Float = 0;
+
+	function get_width():Float {
+		follow();
+		return width;
+	}
 
 	/** Gets the height drawn in, in design pixels: the design's, taller under `Expand` on a taller window, or the window's logical
 		height with no design. */
-	public var height(default, null):Float = 0;
+	@:isVar public var height(get, null):Float = 0;
+
+	function get_height():Float {
+		follow();
+		return height;
+	}
 
 	/** Gets the framebuffer pixels a design pixel takes across. */
-	public var scaleX(default, null):Float = 1;
+	@:isVar public var scaleX(get, null):Float = 1;
+
+	function get_scaleX():Float {
+		follow();
+		return scaleX;
+	}
 
 	/** Gets the framebuffer pixels a design pixel takes down; `scaleX` unless the fit is `Stretch`. */
-	public var scaleY(default, null):Float = 1;
+	@:isVar public var scaleY(get, null):Float = 1;
+
+	function get_scaleY():Float {
+		follow();
+		return scaleY;
+	}
 
 	/** Gets the left edge of the area drawn in, in framebuffer pixels. */
-	public var viewportX(default, null):Int = 0;
+	@:isVar public var viewportX(get, null):Int = 0;
+
+	function get_viewportX():Int {
+		follow();
+		return viewportX;
+	}
 
 	/** Gets the top edge of the area drawn in, in framebuffer pixels from the top. */
-	public var viewportY(default, null):Int = 0;
+	@:isVar public var viewportY(get, null):Int = 0;
+
+	function get_viewportY():Int {
+		follow();
+		return viewportY;
+	}
 
 	/** Gets the width of the area drawn in, in framebuffer pixels. */
-	public var viewportWidth(default, null):Int = 0;
+	@:isVar public var viewportWidth(get, null):Int = 0;
+
+	function get_viewportWidth():Int {
+		follow();
+		return viewportWidth;
+	}
 
 	/** Gets the height of the area drawn in, in framebuffer pixels. */
-	public var viewportHeight(default, null):Int = 0;
+	@:isVar public var viewportHeight(get, null):Int = 0;
+
+	function get_viewportHeight():Int {
+		follow();
+		return viewportHeight;
+	}
 
 	/** Returns where a framebuffer position across is in design pixels, as the mouse's or a finger's.
 
@@ -223,9 +268,19 @@ class Screen implements IPollable {
 		}
 	}
 
+	// The fit worked out again when the window's framebuffer or pixel ratio changed since it last was: a page's canvas is resized
+	// between frames, before the poll.
+	function follow():Void {
+		if (window.framebufferWidth != laidWidth || window.framebufferHeight != laidHeight || window.pixelRatio != laidRatio)
+			layout();
+	}
+
 	// Where the design goes in the framebuffer, as the fit says.
 	function layout():Void {
 		var fw = window.framebufferWidth, fh = window.framebufferHeight;
+		laidWidth = fw;
+		laidHeight = fh;
+		laidRatio = window.pixelRatio;
 		if (designWidth == 0 || designHeight == 0) {
 			scaleX = scaleY = window.pixelRatio;
 			width = fw / scaleX;

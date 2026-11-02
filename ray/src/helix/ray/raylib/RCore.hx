@@ -90,7 +90,7 @@ class RCore {
 
 		@return  True while it is. */
 	static function IsWindowFullscreen():Bool {
-		return Runtime.window.fullscreen;
+		return Runtime.screen.fullscreen;
 	}
 
 	/** Returns whether the program hid the window (`FLAG_WINDOW_HIDDEN`). In a page it tells whether the canvas is hidden.
@@ -365,14 +365,14 @@ class RCore {
 
 		@return  The width. */
 	static function GetScreenWidth():Int {
-		return Std.int(Runtime.window.framebufferWidth / Runtime.window.pixelRatio);
+		return Std.int(Runtime.screen.width);
 	}
 
 	/** Returns the screen's height, in the pixels drawing is in.
 
 		@return  The height. */
 	static function GetScreenHeight():Int {
-		return Std.int(Runtime.window.framebufferHeight / Runtime.window.pixelRatio);
+		return Std.int(Runtime.screen.height);
 	}
 
 	/** Returns the framebuffer's width, in the display's pixels.
@@ -768,16 +768,16 @@ class RCore {
 	static function pointer():Void {
 		var mouse = Runtime.mouse(),
 			touch = Runtime.touch(),
-			ratio = Runtime.window.pixelRatio;
+			screen = Runtime.screen;
 		var fingers = touch.fingers.length > 0 ? touch.fingers : touch.released;
 		if (fingers.length > 0) {
-			lastPointerX = touch.getX(fingers[0]) / ratio;
-			lastPointerY = touch.getY(fingers[0]) / ratio;
+			lastPointerX = screen.toDesignX(touch.getX(fingers[0]));
+			lastPointerY = screen.toDesignY(touch.getY(fingers[0]));
 		} else if (mouse.x != lastMouseX || mouse.y != lastMouseY) {
 			lastMouseX = mouse.x;
 			lastMouseY = mouse.y;
-			lastPointerX = mouse.x / ratio;
-			lastPointerY = mouse.y / ratio;
+			lastPointerX = screen.toDesignX(mouse.x);
+			lastPointerY = screen.toDesignY(mouse.y);
 		}
 	}
 
@@ -787,8 +787,8 @@ class RCore {
 		@param x  The place across, in the screen's pixels.
 		@param y  The place down. */
 	static function SetMousePosition(x:Int, y:Int):Void {
-		var mouse = Runtime.mouse(), ratio = Runtime.window.pixelRatio;
-		Runtime.mouseAdapter.setPosition(x * ratio, y * ratio);
+		var mouse = Runtime.mouse();
+		Runtime.mouseAdapter.setPosition(Runtime.screen.toScreenX(x), Runtime.screen.toScreenY(y));
 		lastMouseX = mouse.x;
 		lastMouseY = mouse.y;
 		lastPointerX = x;
@@ -924,11 +924,11 @@ class RCore {
 
 	// Where a finger is, by its place, as the touch has it, in the screen's pixels.
 	static function realTouchPosition(index:Int):Vector2 {
-		var touch = Runtime.touch(), ratio = Runtime.window.pixelRatio;
+		var touch = Runtime.touch();
 		if (index < 0 || index >= touch.fingers.length)
 			return new Vector2();
 		var id = touch.fingers[index];
-		return new Vector2(touch.getX(id) / ratio, touch.getY(id) / ratio);
+		return new Vector2(Runtime.screen.toDesignX(touch.getX(id)), Runtime.screen.toDesignY(touch.getY(id)));
 	}
 
 	/** Returns a finger's position, in the screen's pixels.

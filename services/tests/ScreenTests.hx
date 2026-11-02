@@ -1,9 +1,9 @@
 import helix.services.saves.Saves;
 import helix.services.screen.Screen;
 
-/** Checks Screen over a fake window: no design (the window's own size, at its pixel ratio); a design letterboxed, fitted pixel-perfect,
-	stretched and expanded, and positions both ways; a resize seen for one frame; leaving fullscreen going back to the windowed size
-	and place; and the window kept between runs. */
+/** Checks Screen over a fake window: no design (the window's own size, at its pixel ratio), the framebuffer followed as it changes
+	before the poll; a design letterboxed, fitted pixel-perfect, stretched and expanded, and positions both ways; a resize seen for one
+	frame; leaving fullscreen going back to the windowed size and place; and the window kept between runs. */
 class ScreenTests {
 	static var checks = 0;
 
@@ -29,6 +29,9 @@ class ScreenTests {
 		}
 		frame();
 		check(screen.width == 800 && screen.height == 600 && screen.scaleX == 2 && screen.viewportWidth == 1600, "no design: the window's own size");
+		window.ratio = 1;
+		check(screen.viewportWidth == 800 && screen.scaleX == 1 && screen.toDesignX(100) == 100, "the window's framebuffer followed before the poll");
+		window.ratio = 2;
 
 		screen.setDesignSize(320, 180, Letterbox);
 		check(screen.scaleX == 1600 / 320 && screen.viewportWidth == 1600 && screen.viewportHeight == 900 && screen.viewportY == 150,

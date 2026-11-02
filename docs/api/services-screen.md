@@ -8,7 +8,7 @@
 
 Provides the window as a game draws to it: a design size fitted to the window, fullscreen asked for with the windowed size and place to go back to, whether the window was resized, and the window kept as it was between runs.
 
-The program constructs one over its `IWindow` and `IEvents`, and calls `poll` once a frame. With no design size, the design is the window's own logical size. With one, a game draws in design pixels into the viewport (`viewportX` to `viewportHeight`, framebuffer pixels, for `IGraphics.applyViewport`), and turns the mouse's or a finger's framebuffer position into design pixels with `toDesignX` and `toDesignY`.
+The program constructs one over its `IWindow` and `IEvents`, and calls `poll` once a frame. With no design size, the design is the window's own logical size. With one, a game draws in design pixels into the viewport (`viewportX` to `viewportHeight`, framebuffer pixels, for `IGraphics.applyViewport`), and turns the mouse's or a finger's framebuffer position into design pixels with `toDesignX` and `toDesignY`. The sizes, scales and viewport follow the window's framebuffer as it is when read, so a page's canvas resized between frames is seen before the next poll.
 
 ```haxe
 var screen = new Screen(window, events, {designWidth: 320, designHeight: 180, fit: PixelPerfect});
@@ -24,14 +24,14 @@ var designWidth(default, null):Int
 var designHeight(default, null):Int
 var fit(default, null):ScreenFit
 function setDesignSize(width:Int, height:Int, fit:ScreenFit):Void
-var width(default, null):Float
-var height(default, null):Float
-var scaleX(default, null):Float
-var scaleY(default, null):Float
-var viewportX(default, null):Int
-var viewportY(default, null):Int
-var viewportWidth(default, null):Int
-var viewportHeight(default, null):Int
+var width(get, never):Float
+var height(get, never):Float
+var scaleX(get, never):Float
+var scaleY(get, never):Float
+var viewportX(get, never):Int
+var viewportY(get, never):Int
+var viewportWidth(get, never):Int
+var viewportHeight(get, never):Int
 function toDesignX(x:Float):Float
 function toDesignY(y:Float):Float
 function toScreenX(x:Float):Float
