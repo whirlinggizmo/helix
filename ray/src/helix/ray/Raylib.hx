@@ -1567,8 +1567,9 @@ class Raylib {
 	public static inline function GetMousePosition():Vector2
 		return RCore.GetMousePosition();
 
-	/** Moves the mouse to a place on the screen. In a page the cursor can't be moved, so the position reads there until the mouse moves.
-		As raylib 6.2's, where the mouse was isn't forgotten: `GetMouseDelta` this frame includes the move.
+	/** Moves the mouse to a place on the screen. As raylib 6.2's, where the mouse was isn't forgotten: `GetMouseDelta` this frame includes
+		the move. Where the cursor can't be moved (always in a page, and natively where the system refuses, as Wayland does), the position
+		reads there until the mouse moves, and a warning says why, once a run for each reason.
 
 		@param x  The place across, in the screen's pixels.
 		@param y  The place down. */
@@ -1720,7 +1721,8 @@ class Raylib {
 		return RCore.GetGesturePinchAngle();
 
 	/** Shakes a gamepad: its left motor is the heavy one, its right the light one, as raylib's. Shaking lasts at most 2 seconds, as
-		raylib's; a browser without vibration (Firefox) doesn't shake.
+		raylib's. An empty slot is passed over, as raylib's. A pad that can't shake (one without motors, or any in a browser without
+		vibration, as Firefox) doesn't, and a warning says so, once a run.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param leftMotor  The heavy motor's strength, 0 to 1.

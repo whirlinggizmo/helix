@@ -783,14 +783,25 @@ class RCore {
 		}
 	}
 
-	/** Moves the mouse to a place on the screen. In a page the cursor can't be moved, so the position reads there until the mouse moves.
-		As raylib 6.2's, where the mouse was isn't forgotten: `GetMouseDelta` this frame includes the move.
+	/** Moves the mouse to a place on the screen. As raylib 6.2's, where the mouse was isn't forgotten: `GetMouseDelta` this frame includes
+		the move. Where the cursor can't be moved (always in a page, and natively where the system refuses, as Wayland does), the position
+		reads there until the mouse moves, and a warning says why, once a run for each reason.
 
 		@param x  The place across, in the screen's pixels.
 		@param y  The place down. */
 	static function SetMousePosition(x:Int, y:Int):Void {
-		var mouse = Runtime.mouse();
-		Runtime.mouseAdapter.setPosition(Runtime.screen.toScreenX(x), Runtime.screen.toScreenY(y));
+		var mouse = Runtime.mouse(), adapter = Runtime.mouseAdapter;
+		if (!adapter.setPosition(Runtime.screen.toScreenX(x), Runtime.screen.toScreenY(y))) {
+			if (!adapter.canSetPosition()) {
+				if (!warnedMousePage)
+					Runtime.log(LOG_WARNING, "INPUT: SetMousePosition can't move the cursor: a page doesn't let a program move it");
+				warnedMousePage = true;
+			} else {
+				if (!warnedMouseRefused)
+					Runtime.log(LOG_WARNING, "INPUT: SetMousePosition can't move the cursor: the system refused");
+				warnedMouseRefused = true;
+			}
+		}
 		lastMouseX = mouse.x;
 		lastMouseY = mouse.y;
 		lastPointerX = x;
@@ -1038,15 +1049,23 @@ class RCore {
 	// ---- Gamepads ----
 
 	/** Shakes a gamepad: its left motor is the heavy one, its right the light one, as raylib's. Shaking lasts at most 2 seconds, as
-		raylib's; a browser without vibration (Firefox) doesn't shake.
+		raylib's. An empty slot is passed over, as raylib's. A pad that can't shake (one without motors, or any in a browser without
+		vibration, as Firefox) doesn't, and a warning says so, once a run.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param leftMotor  The heavy motor's strength, 0 to 1.
 		@param rightMotor  The light motor's strength, 0 to 1.
 		@param duration  How long, in seconds. */
 	static function SetGamepadVibration(gamepad:Int, leftMotor:Float, rightMotor:Float, duration:Float):Void {
-		Runtime.gamepads();
-		Runtime.gamepadsAdapter.setVibration(gamepad, leftMotor, rightMotor, Math.min(duration, 2));
+		if (!realPadReady(gamepad))
+			return;
+		if (!Runtime.gamepadsAdapter.setVibration(gamepad, leftMotor, rightMotor, Math.min(duration, 2))) {
+			if (!warnedVibration)
+				Runtime.log(LOG_WARNING,
+					'GAMEPAD: [ID $gamepad] SetGamepadVibration can\'t shake it: ' +
+					#if js "it has no motors, or the browser has no vibration" #else "it has no motors" #end);
+			warnedVibration = true;
+		}
 	}
 
 	/** Adds mappings for pads the system doesn't know, in SDL's controller database format, as raylib's.
@@ -2182,6 +2201,10 @@ class RCore {
 	static var mouseScaleX = 1.;
 	static var mouseScaleY = 1.;
 	static var cursorHidden = false;
+	// Whether a refusal has been warned of this run: the cursor not moving in a page, the system refusing to move it, a pad not shaking.
+	static var warnedMousePage = false;
+	static var warnedMouseRefused = false;
+	static var warnedVibration = false;
 
 	// A file's name as the loads and saves read it: relative to the program's files, a leading `GetApplicationDirectory()` and "./"
 	// taken off.

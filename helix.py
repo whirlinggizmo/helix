@@ -67,7 +67,7 @@ def test(native,audio_device):
         if audio_device:print(subprocess.check_output([str(tool('native-sdl3mixer-device-probe'))],text=True,encoding='utf-8'),end='')
 
 # helix-ray's own tests, built as the parity harnesses are: from its source, without its program loop (tools/ray_parity.py).
-RAY_TESTS=('CountTests','DropTests','AudioStreamTests')
+RAY_TESTS=('CountTests','DropTests','AudioStreamTests','RefusalTests')
 
 def ray_tests(native):
     """helix-ray's tests on Node, and with native in hxcpp: on graphics of their own, without a window."""
