@@ -34,6 +34,10 @@
   adapter binds a constants buffer of its own, as its SDL_GPU sibling does.
   The platform's checks of a pipeline's vertex layout (`PipelineLayout.check`, every backend, about 0.3 KB gzip) to be trimmed to what
   a backend would otherwise get wrong silently, once the platform's API is settled.
+- **Reloading while a program runs, beyond shaders (after helix-render's stages):** a watched texture, font, model or sound replaced in place, as `Shaders.watch`
+  replaces a shader (its handles, values and pipelines following): `Renderer` uploading a watched texture into the same
+  `Texture2D`, `GpuFont2D` building its atlas again, a model's meshes and materials replaced, services' `Audio` swapping a sound's
+  samples; each linked only by the watch that asks for it, over `Assets.watch` (which already hands any file's new bytes over).
 - **Services features an engine needs and helix-ray now reaches the platform for:** the mouse cursor (shape, visibility, lock) on
   `Mouse`, gamepad vibration and mappings on `Gamepads`, and a clipboard service.
 - **The layer above the services:** constructs the platform and the services for a target, runs the frame in order and ends with the
