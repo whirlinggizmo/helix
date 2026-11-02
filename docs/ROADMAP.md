@@ -63,3 +63,23 @@
 - **On-screen controls, not as a service, where to be decided:** touch regions and floating touch sticks (one, two halves, regions;
   dead zone, takeover, blocked by buttons) read by `Actions` through `IActionDevice`, placed in the game's units and drawn
   (DECISIONS 13).
+- **From a jam game's friction log (F numbers), for the layers that own them:**
+  - helix-scene: `find` by name and kind, `addChildAt`, `getChildIndex`, `removeChildAt`, `contains` (F1, F2, F4); text pivot or
+    vertical align (F20); a sprite keeping its sheet and index across a reload (F56); a matrix transform, so skew (F57); a pointer
+    that never hovers from a finger (F63); the stage's default font (F66); 3D picking through a function registered when a 3D layer
+    is added, not a hardwired 3D renderer (F74); reparenting that keeps the world transform (F44).
+  - helix-render's size ladder: a 2D-only rung (`Batch2D` and text, no `Batch3D` or lighting) and a rung with UI and a pointer (F74).
+  - HeliX's engine: an event queue (F3); splash, loading screen and transitions run as halves, held until a condition (F7-F11, F41,
+    F42); `Collect2D`/`Collect3D` taking a region or factory, a parent and `cancel` (F37, F70, F71); a loader over the services'
+    loads, fonts too (F39, F75); a camera that follows in 3D (F44).
+  - A UI library: input from the events, not a kept `Input` (F12); keys held at a reset ignored alone (F13, F14); aligned slider
+    tracks (F15); wrapping labels (F58); list rows beyond text (F59); a modal dialog (F60); drawn panel borders (F68); a frame that
+    keeps its layout (F69).
+  - On-screen controls: a touch stick (F48, DECISIONS 13).
+  - Physics: bodies with circle contacts (F18) and spheres against meshes (F44).
+  - Tooling: hot reload and the runner's statics and setup (F26, F27, F29, F45); a pinned release and the starter's `init` (F30, F36);
+    an autopilot feeding the events, fingers too, its failures not timeouts, a `wait` with `atMost` (F31-F33, F50, F72); dev and
+    release output kept apart (F34); one ignore list for copied assets and manifests (F61); a minified release with no Node in a
+    user's path (F73, GOALS 6).
+  - helix-geometry: polygon triangulation returning indices, for textured polygons and extruded outlines (F23, F24); circle-vs-segment,
+    rectangle and polygon contacts with normal and depth (F18).
