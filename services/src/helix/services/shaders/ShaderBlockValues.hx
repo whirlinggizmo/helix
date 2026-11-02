@@ -52,6 +52,16 @@ class ShaderBlockValues extends ShaderUniformValues {
 			throw 'shader values: no shared block $blockName (ShaderOptions.shared) in the source given';
 		layout = found;
 		bytes = Bytes.alloc(layout.size);
+		ShaderValues.readShared = readFor;
+	}
+
+	// The bytes a values' block laid out as l reads from the block shared with it, or null when none is.
+	static function readFor(values:ShaderValues, l:ShaderBlockLayout):Null<Bytes> {
+		var block = values.sharedBlockFor(l.name);
+		if (block == null)
+			return null;
+		block.noteSharer(values.shader, l);
+		return block.bytesFor(l);
 	}
 
 	// The layout the bytes follow, the newest a sharer's shader has; its places by path, and copies packed for other layouts.

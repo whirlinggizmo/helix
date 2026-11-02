@@ -2,6 +2,7 @@ package helix.services.shaders;
 
 import haxe.io.Bytes;
 import helix.platform.Sampling;
+import helix.services.shaders.ShaderLayout.ShaderBlockLayout;
 
 /** Represents values for one shader's uniforms and textures, kept as `IGraphics.draw` takes them.
 
@@ -411,11 +412,10 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 	function blockBytes(b:Int):Bytes {
 		var layout = shader.blocks[b];
 		if (layout.shared) {
-			var block = sharedBlockFor(layout.name);
-			if (block == null)
+			var bytes = readShared == null ? null : readShared(this, layout);
+			if (bytes == null)
 				throw 'shader values: shared block ${layout.name} is shared nowhere (on the values, their base or their scene), so a draw would read 0';
-			block.noteSharer(shader, layout);
-			return block.bytesFor(layout);
+			return bytes;
 		}
 		if (own[b] != null) {
 			refill(b);
@@ -424,7 +424,14 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 		return baseBytes(b);
 	}
 
+	// Reads a shared block's bytes for a values and a layout, or null when it is shared nowhere. ShaderBlockValues' constructor sets
+	// it, so a program that makes no shared block links none of it (docs/CONVENTIONS.md, "A program links only what it names").
+	@:allow(helix.services.shaders)
+	static var readShared:Null<(ShaderValues, ShaderBlockLayout) -> Null<Bytes>>;
+
 	// The shared block a block of a name reads: these values', their base's, then their scene's.
+
+	@:allow(helix.services.shaders)
 	function sharedBlockFor(name:String):Null<ShaderBlockValues> {
 		var found = findSharedBlock(name);
 		if (found != null)
