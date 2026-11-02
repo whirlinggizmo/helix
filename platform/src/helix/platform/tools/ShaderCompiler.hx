@@ -891,7 +891,8 @@ class ShaderCompiler {
 
 	// SDL_GPU's dialects: each stage's resources bound at SDL_GPU's sets (blocks at their slots, textures numbered from 0 by slot within
 	// each stage), then MSL and HLSL from that; a point size's HLSL in SPIRV-Cross's compatibility mode, as HLSL has no point size and
-	// SPIRV-Cross refuses one otherwise.
+	// SPIRV-Cross refuses one otherwise. HLSL's inputs are named as SDL_GPU's Direct3D 12 layout names them, TEXCOORD and the location, a
+	// matrix's columns each its own (SPIRV-Cross would name them TEXCOORD1_0 and on, and Direct3D refuse the pipeline).
 	static function sdlGpu(cross:String, scratch:String, modules:Map<String, Bytes>, described:Dynamic, points:Bool):Dynamic {
 		var out:Dynamic = {spirv: {}, msl: {}, hlsl: {}};
 		var calls = [];
@@ -908,7 +909,16 @@ class ShaderCompiler {
 			File.saveBytes(path, rebound);
 			Reflect.setField(out.spirv, stage, haxe.crypto.Base64.encode(rebound));
 			calls.push({program: cross, args: [path, "--msl", "--msl-version", "20100", "--msl-decoration-binding"]});
-			calls.push({program: cross, args: [path, "--hlsl", "--shader-model", "51"].concat(points ? ["--hlsl-enable-compat"] : [])});
+			calls.push({
+				program: cross,
+				args: [
+					path,
+					"--hlsl",
+					"--shader-model",
+					"51",
+					"--hlsl-flatten-matrix-vertex-input-semantics"
+				].concat(points ? ["--hlsl-enable-compat"] : [])
+			});
 		}
 		var results = Scratch.runAll(calls);
 		var packing = ~/cbuffer ID \d+ \(name: (\w+)\), member index \d+ \(name: (\w+)\) cannot be expressed/;

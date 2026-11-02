@@ -147,6 +147,7 @@ void main() { color = scene.ambient + scene.lights[1].color * scene.surface.roug
 		gathered();
 		clipScale();
 		points();
+		semantics();
 		includes();
 		// Refusals, each saying what's wrong.
 		message = refusal("#version 450\nlayout(location = 0) in mat3 turn;\nlayout(location = 4) in vec3 position;\n"
@@ -341,6 +342,24 @@ void main() { finalColor = texture(texture0, fragTexCoord) * colDiffuse * fragCo
 			sdlGpu: false
 		});
 		check(plain.points != true && plain.glsl300es.vertex.indexOf("gl_PointSize") < 0, "No point size without the option");
+	}
+
+	// SDL_GPU's Direct3D 12 input layout names the attribute at location n TEXCOORDn: the HLSL reads each input by that name, a matrix's
+	// columns each by its own location's, as Direct3D refuses a pipeline whose shader reads a name the layout doesn't give.
+	static function semantics():Void {
+		var source = compile("#version 450\nlayout(location = 0) in vec2 p;\nlayout(location = 1) in mat4 placed;\nlayout(location = 5) in vec4 tint;\n"
+			+ "layout(location = 0) out vec4 v;\nvoid main() { gl_Position = placed * vec4(p, 0.0, 1.0); v = tint; }\n",
+			"#version 450\nlayout(location = 0) in vec4 v;\nlayout(location = 0) out vec4 color;\nvoid main() { color = v; }\n");
+		var hlsl = source.sdlGpu.hlsl.vertex;
+		var input = hlsl.substring(hlsl.indexOf("struct SPIRV_Cross_Input"), hlsl.indexOf("};", hlsl.indexOf("struct SPIRV_Cross_Input")));
+		var semantic = ~/:\s*(\w+)\s*;/g, found = [];
+		semantic.map(input, r -> {
+			found.push(r.matched(1));
+			return "";
+		});
+		found.sort(Reflect.compare);
+		check(found.join(",") == [for (n in 0...6) 'TEXCOORD$n'].join(","),
+			"HLSL's inputs read TEXCOORD and the location, a matrix's columns each its own: " + input);
 	}
 
 	// A quoted include resolves beside the file and in the include directories, with no extension line.
