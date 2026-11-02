@@ -42,6 +42,9 @@ LADDERS = {
 LIBRARIES = {'helix-platform': ROOT / 'platform', 'helix-log': ROOT / 'log', 'helix-math': ROOT / 'math', 'helix-geometry': ROOT / 'geometry', 'helix-formats': ROOT / 'formats', 'helix-services': ROOT / 'services', 'helix-render': ROOT / 'render', 'helix-ray': ROOT / 'ray'}
 # The libraries' classes, by their full names' start.
 LIBRARY_PREFIX = 'helix.'
+# Packages a rung declares by their classes, never whole: a package would declare every class in it, so a class a later rung links
+# without naming it would pass (helix-math's and helix-geometry's, which every library above reaches into, and helix-render's).
+BY_CLASS = ('helix.math', 'helix.geometry', 'helix.render')
 BASELINE = ROOT / 'docs/benchmarks.json'
 TABLE = ROOT / 'docs/benchmarks.md'
 OUT = ROOT / 'build/sizes'
@@ -164,7 +167,7 @@ def links(ladder):
     """The links' check on a ladder's rungs as built (docs/CONVENTIONS.md, "A program links only what it names"): each rung's Main
     declares, in @:adds, the library packages, modules or classes it adds to the rungs before (read from its build's -xml, as the
     compiler has the metadata); a rung linking a library class that no declaration up to it names, a declaration naming nothing the
-    rung links, the standard library's run-time type inspection (Type, ValueType, haxe.rtti, js.Boot.getClass) linked, or a library's
+    rung links, a declaration naming a package of BY_CLASS whole, the standard library's run-time type inspection (Type, ValueType, haxe.rtti, js.Boot.getClass) linked, or a library's
     @:keep (tools/haxe/Kept.hx) is a problem. Interfaces, externs and abstracts' implementations aren't counted: the compiler keeps
     those of its own. Returns the problems."""
     problems, declared, reported = [], set(), set()
@@ -184,6 +187,9 @@ def links(ladder):
             if path in ('Type', 'ValueType') or path.startswith('haxe.rtti.') or path == 'js.Boot' and 'getClass' in fields:
                 problems.append(f'{name} links {path}{" (" + ", ".join(sorted(fields)) + ")" if fields else ""}: run-time type inspection')
         for declaration in adds:
+            package = not any(n[:1].isupper() for n in declaration.split('.'))
+            if package and any(declaration == p or declaration.startswith(p + '.') for p in BY_CLASS):
+                problems.append(f'{name} declares the package {declaration} in @:adds: declare its classes')
             if not any(declaration in units for units in kept.values()):
                 problems.append(f'{name} declares {declaration} in @:adds, which it doesn\'t link')
         declared |= set(adds)

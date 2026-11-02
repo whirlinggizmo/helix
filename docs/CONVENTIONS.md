@@ -40,7 +40,8 @@ What a program carries is what `-dce full` can't prove unused, so a library is w
   (DECISIONS 29), and chooses as the program runs only for a name it can't know.
 
 `tools/measure_sizes.py --check` holds the size ladders to it: each rung's `Main` declares in `@:adds` the library packages, modules
-or classes it adds, and a rung linking a library class no rung up to it declares, a declaration it doesn't link, run-time type
+or classes it adds (helix-math's, helix-geometry's and helix-render's by class, never a whole package, so a class a later rung links
+without naming it is caught), and a rung linking a library class no rung up to it declares, a declaration it doesn't link, run-time type
 inspection, or a library's `@:keep` fails, read from the build's `-xml` and a macro (`tools/haxe/Kept.hx`).
 
 Known, not fixed yet (each a rung's `@:adds` or a program's bytes show):

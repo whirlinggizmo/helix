@@ -17,9 +17,11 @@ import helix.services.images.Image;
 import helix.services.images.Images;
 
 /** A program on helix-render and what it sits on, constructing only what it uses, as a game built on them would. */
-@:adds("helix.services.assets", "helix.services.fonts", "helix.services.images", "helix.platform.adapters.http.fetchapi",
-	"helix.platform.adapters.filesystem.browser", "helix.platform.adapters.fontrasterizer.canvas", "helix.platform.adapters.imagedecoder.canvas",
-	"helix.formats.truetype", "helix.formats.text", "helix.log.Log")
+@:adds("helix.platform.adapters.http.fetchapi", "helix.platform.adapters.filesystem.browser", "helix.platform.adapters.fontrasterizer.canvas",
+	"helix.platform.adapters.imagedecoder.canvas", "helix.formats.text", "helix.formats.truetype.TrueTypeTables", "helix.log.Log", "helix.math.RectPacker2D",
+	"helix.math.Vector2D", "helix.render.GpuFont2D", "helix.render.TextLayout2D", "helix.services.assets.AssetCacheMode", "helix.services.assets.AssetSource",
+	"helix.services.assets.Assets", "helix.services.assets.AssetsOptions", "helix.services.fonts.Font2D", "helix.services.fonts.Fonts",
+	"helix.services.fonts.FontsOptions", "helix.services.fonts.Glyph2D", "helix.services.images.Images")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;

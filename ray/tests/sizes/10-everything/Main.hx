@@ -6,9 +6,10 @@ import helix.ray.Raylib.*;
 	reader, so nothing of helix-ray can be left out. A game approaches it from below. It is built and measured, never run: its calls are
 	given nothing, and its files aren't there. */
 @:adds("helix.formats.deflate", "helix.formats.gif", "helix.formats.obj", "helix.formats.png", "helix.formats.qoa", "helix.formats.wav",
-	"helix.math.Bounds2D", "helix.math.DistanceField2D", "helix.platform.adapters.clipboard.dom", "helix.platform.adapters.export.download",
-	"helix.math.Interpolate", "helix.ray.internal.DroppedFiles", "helix.ray.internal.FontAtlases", "helix.ray.internal.Mipmaps",
-	"helix.ray.internal.ObjModels", "helix.ray.internal.ParShapes", "helix.ray.internal.Stereo", "helix.ray.internal.Waves", "helix.services.screenshots")
+	"helix.geometry.Geometry2D", "helix.math.Bounds2D", "helix.math.DistanceField2D", "helix.platform.adapters.clipboard.dom",
+	"helix.platform.adapters.export.download", "helix.math.Interpolate", "helix.ray.internal.DroppedFiles", "helix.ray.internal.FontAtlases",
+	"helix.ray.internal.Mipmaps", "helix.ray.internal.ObjModels", "helix.ray.internal.ParShapes", "helix.ray.internal.Stereo", "helix.ray.internal.Waves",
+	"helix.services.screenshots")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");
