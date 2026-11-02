@@ -102,7 +102,7 @@ function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, ?color:Int = 0xff
 function drawList(list:DrawList2D, ?placement:Matrix2D):Void
 ```
 
-- `new`: Creates a batch over a renderer, with its default shader: textured and colored triangles, which draw sprites, shapes and text of every kind of font (a distance-field atlas's edge made sharp by `fontKind`).
+- `new`: Creates a batch over a renderer, with its default shader: textured and colored triangles, the texel times the color, which draw sprites, shapes and text, a distance-field font's atlas as its alpha is stored.
   - `renderer`: The renderer it records into.
 - `compileShader`: Compiles a fragment stage over the batch's vertex stage, for a `Batch2D`'s draws (`shaderValues`).
   - `fragment`: The fragment stage's file, relative to the file holding the call.

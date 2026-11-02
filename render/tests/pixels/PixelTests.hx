@@ -428,6 +428,30 @@ class PixelTests {
 				}
 			}
 		];
+		// Into a target holding linear light, 2D draws are decoded from sRGB: a 0x80 texel is 0.216 there, which a draw of the target into an
+		// sRGB one writes as stored, 0x37.
+		if (graphics.canRender(Rgba16f)) {
+			var linear = renderer.createRenderTarget(SIZE, SIZE, Rgba16f, None, 1);
+			cases.push({
+				name: "2D: decoded to linear light into an RGBA16F target",
+				draw: () -> {
+					renderer.beginTarget(linear, 0xff000000);
+					batch.begin();
+					batch.drawTexture(grey, 0, 0);
+					batch.end();
+					renderer.endTarget();
+					renderer.beginTarget(canvas, 0xff0000ff);
+					batch.begin();
+					batch.drawTextureRegion(linear, 0, 0, 4, 4, 0, 0, 4, 4);
+					batch.end();
+					renderer.endTarget();
+					canvas;
+				},
+				check: p -> {
+					expect(p, 1, 1, 0x373737, "a 0x80 texel as linear light, drawn back as stored");
+				}
+			});
+		}
 	}
 
 	/** Frees what was made, says how it went and closes the window where the program owns one. */

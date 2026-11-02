@@ -8,7 +8,7 @@ import helix.render.TextureRegion2D;
 import helix.services.images.Image;
 
 /** A program on helix-render and what it sits on, constructing only what it uses, as a game built on them would. */
-@:adds("helix.services.shaders.compiled", "helix.services.images.Image", "helix.math", "helix.geometry")
+@:adds("helix.services.shaders.compiled", "helix.services.images.Image", "helix.math")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;

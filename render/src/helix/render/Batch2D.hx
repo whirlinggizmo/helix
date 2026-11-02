@@ -9,7 +9,9 @@ import helix.math.Bounds2D;
 import helix.math.Matrix3D;
 import helix.platform.Sampling;
 import helix.services.shaders.Shader;
+import helix.services.shaders.ShaderSampler;
 import helix.services.shaders.ShaderSnapshot;
+import helix.services.shaders.ShaderUniform;
 import helix.services.shaders.ShaderVertexLayout;
 import helix.render.RenderPass.RenderCommand;
 #end
@@ -145,15 +147,29 @@ class Batch2D {
 	/** Gets a value indicating whether it is open: from `begin` or `beginCamera` until `end`. */
 	public var open(default, null):Bool = false;
 
-	/** Creates a batch over a renderer, with its default shader: textured and colored triangles, which draw sprites, shapes and text of
-		every kind of font (a distance-field atlas's edge made sharp by `fontKind`).
+	/** Creates a batch over a renderer, with its default shader: textured and colored triangles, the texel times the color, which draw
+		sprites, shapes and text, a distance-field font's atlas as its alpha is stored.
 
 		@param renderer  The renderer it records into. */
 	public function new(renderer:Renderer) {
 		this.renderer = renderer;
-		shader = RenderShaders.compileOwn("batch.vert", "batch.frag");
-		view = new RenderView(shader);
-		stream = renderer.stream("batch2d", 24, vertexLayout());
+		shader = RenderShaders.compileOwn("batch2d.vert", "batch2d.frag");
+		values = new ShaderValues(shader);
+		modelViewProjection = shader.getUniform("modelViewProjection");
+		linearTarget = shader.getUniform("linearTarget");
+		baseColorTexture = shader.getSampler("baseColorTexture");
+		if (layout == null)
+			layout = new ShaderVertexLayout([
+				{
+					stride: 24,
+					placements: [
+						{name: "vertexPosition", offset: 0, format: Float2},
+						{name: "vertexTexCoord", offset: 8, format: Float2},
+						{name: "vertexColor", offset: 16, format: UByte4Norm}
+					]
+				}
+			]);
+		stream = renderer.stream("batch2d", 24, layout);
 		plane = new PlaneDrawing2D(use, vertex, visible);
 	}
 
@@ -173,6 +189,8 @@ class Batch2D {
 	function set_shaderValues(value:Null<ShaderValues>):Null<ShaderValues> {
 		if (open)
 			flush();
+		if (value != null && valuesUse == null)
+			drawValues();
 		return shaderValues = value;
 	}
 
@@ -182,7 +200,9 @@ class Batch2D {
 	public function resetState():Void {
 		transform.makeIdentity();
 		blend = Blend.ALPHA;
-		shaderValues = null;
+		if (open && shaderValues != null)
+			flush();
+		@:bypassAccessor shaderValues = null;
 		customData = 0;
 	}
 
@@ -216,11 +236,11 @@ class Batch2D {
 	function opened():Void {
 		renderer.opening(this, flush);
 		open = true;
+		opens++;
 		var width = renderer.viewportWidth, height = renderer.viewportHeight;
 		Matrix3D.fromOrthographic(0, width, height, 0, -1, 1, projectionMatrix);
-		view.set(viewMatrix, projectionMatrix, renderer.viewportX, renderer.viewportY, width, height);
-		view.setLook(renderer.linearPass(), 0, None, null);
-		view.write();
+		Matrix3D.compose(viewMatrix, projectionMatrix, viewProjection);
+		linear = renderer.linearPass();
 		renderer.command(Viewport(renderer.viewportX, renderer.viewportY, width, height));
 	}
 
@@ -512,76 +532,42 @@ class Batch2D {
 		transform.copyFrom(held);
 	}
 
-	// The renderer, the default shader, the view its draws are seen through, the stream its vertices go in, and each shader's filled
-	// names.
+	// The renderer, the default shader, the values its draws are filled on and the names it fills, the stream the vertices go in.
 	final renderer:Renderer;
 	final shader:Shader;
-	final view:RenderView;
+	final values:ShaderValues;
+	final modelViewProjection:ShaderUniform;
+	final linearTarget:ShaderUniform;
+	final baseColorTexture:ShaderSampler;
 	final stream:RenderStream;
 	final plane:PlaneDrawing2D;
-	final fills = new haxe.ds.ObjectMap<Shader, RenderFill>();
-	// The GPU draw being made: its first vertex, texture, sampling, font kind and the program's values as captured.
+	// The GPU draw being made: its first vertex, texture, sampling, font kind and the program's values.
 	var running = false;
 	var runFirst = 0;
 	var runTexture = 0;
 	var runSampling = Sampling.LINEAR;
 	var runFontKind = 0;
 	var runValues:Null<ShaderValues> = null;
-	var runCapture = new ShaderSnapshot();
-	var nextCapture = new ShaderSnapshot();
-	// What is in view, in the batch's units before the transform; the camera's zoom.
+	// What is in view, in the batch's units before the transform; the camera's zoom; the view and projection, whether the pass holds
+	// linear light, and the number of opens.
 	final viewBounds = new Bounds2D();
 	var zoom = 1.;
+	final viewMatrix = new Matrix3D();
+	final projectionMatrix = new Matrix3D();
+	final viewProjection = new Matrix3D();
+	var linear = false;
+	var opens = 0;
+	// The program's shaders' draws (shaderValues), made by drawValues at the first shaderValues set, so a program that never sets one
+	// links none of it: at use, the values captured and compared with the run's; at the run's start, its captured values kept; at
+	// flush, the draw recorded.
+	var valuesUse:Null<ShaderValues->Void> = null;
+	var valuesStart:Null<Void->Void> = null;
+	var valuesFlush:Null<(Int, Int) -> Void> = null;
 
-	static final identity = new Matrix3D();
 	static final cameraMatrix = new Matrix2D();
-	static final viewMatrix = new Matrix3D();
-	static final projectionMatrix = new Matrix3D();
+	static final identity = new Matrix3D();
+	// The default shader's vertices: x and y, u and v as floats, the color as four bytes, and customData's four bytes it doesn't read.
 	static var layout:Null<ShaderVertexLayout> = null;
-
-	// A record: x and y, u and v as floats, the color and customData as four bytes each.
-	static function vertexLayout():ShaderVertexLayout {
-		if (layout == null)
-			layout = new ShaderVertexLayout([
-				{
-					stride: 24,
-					placements: [
-						{name: "vertexPosition", offset: 0, format: Float2},
-						{
-							name: "vertexTexCoord",
-							offset: 8,
-							format: Float2,
-							optional: true
-						},
-						{
-							name: "vertexColor",
-							offset: 16,
-							format: UByte4Norm,
-							optional: true
-						},
-						{
-							name: "vertexCustomData",
-							offset: 20,
-							format: UByte4Norm,
-							optional: true
-						}
-					]
-				},
-				{
-					stride: RenderConstants.BATCH_STRIDE,
-					instanced: true,
-					placements: RenderConstants.placements(RenderConstants.BATCH, ["vertexPosition", "vertexTexCoord", "vertexColor", "vertexCustomData"])
-				}
-			]);
-		return layout;
-	}
-
-	function fillFor(s:Shader):RenderFill {
-		var f = fills.get(s);
-		if (f == null)
-			fills.set(s, f = new RenderFill(s));
-		return f;
-	}
 
 	function requireOpen():Void
 		if (!open)
@@ -595,15 +581,8 @@ class Batch2D {
 		var handle = t.drawnHandle(), sampling = t.sampling;
 		renderer.checkReadable(handle);
 		var values = shaderValues;
-		if (values != null) {
-			// The program's values as a draw reads them: through the draw's own values, the view's block shared.
-			var probe = fillFor(values.shader).values;
-			probe.base = values;
-			probe.scene = view.scene;
-			probe.capture(nextCapture);
-			if (running && !sameValues(nextCapture, runCapture))
-				flush();
-		}
+		if (values != null)
+			valuesUse(values);
 		if (running && (handle != runTexture || sampling != runSampling || fontKind != runFontKind))
 			flush();
 		if (!running) {
@@ -613,12 +592,104 @@ class Batch2D {
 			runSampling = sampling;
 			runFontKind = fontKind;
 			runValues = values;
-			if (values != null) {
-				var swap = runCapture;
-				runCapture = nextCapture;
-				nextCapture = swap;
-			}
+			if (values != null)
+				valuesStart();
 		}
+	}
+
+	// Makes the program's shaders' draws: the View block written for them, shared through its scene, at their first draw after each
+	// open; each shader's names the batch fills, the attributes the vertices don't carry fed from the renderer's constants; and the
+	// values a draw reads, captured and compared, so values written since start the next GPU draw.
+	function drawValues():Void {
+		var view = new RenderView(RenderShaders.compileOwn("batch.vert", "batch.frag"));
+		var fills = new haxe.ds.ObjectMap<Shader, RenderFill>();
+		var runCapture = new ShaderSnapshot(),
+			nextCapture = new ShaderSnapshot();
+		var writtenAt = -1;
+		var fed = ["vertexPosition", "vertexTexCoord", "vertexColor", "vertexCustomData"];
+		var programLayout = new ShaderVertexLayout([
+			{
+				stride: 24,
+				placements: [
+					{name: "vertexPosition", offset: 0, format: Float2},
+					{
+						name: "vertexTexCoord",
+						offset: 8,
+						format: Float2,
+						optional: true
+					},
+					{
+						name: "vertexColor",
+						offset: 16,
+						format: UByte4Norm,
+						optional: true
+					},
+					{
+						name: "vertexCustomData",
+						offset: 20,
+						format: UByte4Norm,
+						optional: true
+					}
+				]
+			},
+			{
+				stride: RenderConstants.BATCH_STRIDE,
+				instanced: true,
+				placements: RenderConstants.placements(RenderConstants.BATCH, fed)
+			}
+		]);
+		function fillFor(s:Shader):RenderFill {
+			var f = fills.get(s);
+			if (f == null)
+				fills.set(s, f = new RenderFill(s));
+			if (writtenAt != opens) {
+				writtenAt = opens;
+				view.set(viewMatrix, projectionMatrix, renderer.viewportX, renderer.viewportY, renderer.viewportWidth, renderer.viewportHeight);
+				view.setLook(linear, 0, None, null);
+				view.write();
+			}
+			return f;
+		}
+		valuesUse = values -> {
+			// The program's values as a draw reads them: through the draw's own values, the view's block shared.
+			var probe = fillFor(values.shader).values;
+			probe.base = values;
+			probe.scene = view.scene;
+			probe.capture(nextCapture);
+			if (running && !sameValues(nextCapture, runCapture))
+				flush();
+		};
+		valuesStart = () -> {
+			var swap = runCapture;
+			runCapture = nextCapture;
+			nextCapture = swap;
+		};
+		valuesFlush = (first, count) -> {
+			var s = runValues.shader;
+			var fill = fillFor(s);
+			fill.values.base = runValues;
+			fill.values.scene = view.scene;
+			fill.texture(fill.baseColorTexture, runTexture, runSampling);
+			fill.integer(fill.fontKind, runFontKind);
+			fill.matrix(fill.model, identity);
+			fill.matrix(fill.normalMatrix, identity);
+			fill.matrix(fill.modelViewProjection, view.viewProjection);
+			fill.color(fill.baseColor, 0xffffffff);
+			fill.float(fill.lineWidth, 1);
+			fill.float(fill.pointSize, 1);
+			fill.integer(fill.pointSizeAttenuated, 0);
+			fill.integer(fill.clipPlaneCount, 0);
+			fill.integer(fill.fogged, 0);
+			fill.integer(fill.toneMapped, 0);
+			fill.view(view);
+			var d = renderer.makeDraw(renderer.pipelineFor(s, renderer.stateFor(Triangles, false, blend, Off, false, None, All), programLayout));
+			d.setBuffer(0, 0, stream);
+			d.setBuffer(1, renderer.batchConstants());
+			d.first = first;
+			d.count = count;
+			fill.values.capture(d.snapshot);
+			renderer.record(d);
+		};
 	}
 
 	// Whether two captures of values hold the same bytes and textures.
@@ -690,29 +761,18 @@ class Batch2D {
 		var count = stream.count - runFirst;
 		if (count <= 0)
 			return;
-		var s = runValues != null ? runValues.shader : shader;
-		var fill = fillFor(s);
-		fill.values.base = runValues;
-		fill.values.scene = view.scene;
-		fill.texture(fill.baseColorTexture, runTexture, runSampling);
-		fill.integer(fill.fontKind, runFontKind);
-		fill.matrix(fill.model, identity);
-		fill.matrix(fill.normalMatrix, identity);
-		fill.matrix(fill.modelViewProjection, view.viewProjection);
-		fill.color(fill.baseColor, 0xffffffff);
-		fill.float(fill.lineWidth, 1);
-		fill.float(fill.pointSize, 1);
-		fill.integer(fill.pointSizeAttenuated, 0);
-		fill.integer(fill.clipPlaneCount, 0);
-		fill.integer(fill.fogged, 0);
-		fill.integer(fill.toneMapped, 0);
-		fill.view(view);
-		var d = renderer.makeDraw(renderer.pipelineFor(s, renderer.stateFor(Triangles, false, blend, Off, false, None, All), vertexLayout()));
+		if (runValues != null) {
+			valuesFlush(runFirst, count);
+			return;
+		}
+		values.writeTexture(baseColorTexture, runTexture, runSampling);
+		values.writeMatrix(modelViewProjection, viewProjection);
+		values.writeInt(linearTarget, linear ? 1 : 0);
+		var d = renderer.makeDraw(renderer.pipelineFor(shader, renderer.stateFor(Triangles, false, blend, Off, false, None, All), layout));
 		d.setBuffer(0, 0, stream);
-		d.setBuffer(1, renderer.batchConstants());
 		d.first = runFirst;
 		d.count = count;
-		fill.values.capture(d.snapshot);
+		values.capture(d.snapshot);
 		renderer.record(d);
 	}
 	#end

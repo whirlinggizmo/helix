@@ -23,7 +23,8 @@ import helix.services.images.Image;
 import helix.services.images.Images;
 
 /** A program on helix-render and what it sits on, constructing only what it uses, as a game built on them would. */
-@:adds("helix.render.Batch3D", "helix.render.GpuMesh3D", "helix.render.Material3D", "helix.render.View3D")
+@:adds("helix.render.Batch3D", "helix.render.GpuMesh3D", "helix.render.Material3D", "helix.render.View3D", "helix.geometry.Camera3D",
+	"helix.geometry.Frustum3D", "helix.geometry.Mesh3D")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;
