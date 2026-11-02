@@ -4,6 +4,9 @@ package helix.render;
 
 	`Renderer.toneMapping` holds the one in use: `Batch3D`'s lit shaders apply it to color drawn straight into an sRGB target, and
 	`PostProcess.draw` when it resolves a linear frame. The curves are three.js's, by the same names. */
+#if !macro
+@:build(helix.platform.macros.EnumNames.build())
+#end
 enum abstract ToneMapping(Int) {
 	/** Neither exposed nor mapped: clamped to 1. */
 	var None = 0;

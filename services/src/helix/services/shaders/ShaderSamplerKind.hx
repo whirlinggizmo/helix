@@ -1,6 +1,9 @@
 package helix.services.shaders;
 
 /** Specifies what kind of texture a sampler reads, from its GLSL type, as `IGraphics` creates them. */
+#if !macro
+@:build(helix.platform.macros.EnumNames.build())
+#end
 enum abstract ShaderSamplerKind(Int) to Int {
 	/** A `sampler2D`: an image or a render target (`IGraphics.createTexture`, `createRenderTarget`). */
 	var Texture2D = 0;

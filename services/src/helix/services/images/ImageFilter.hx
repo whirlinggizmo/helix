@@ -1,6 +1,9 @@
 package helix.services.images;
 
 /** Specifies how `Image.resize` makes the pixels between the source's pixels. */
+#if !macro
+@:build(helix.platform.macros.EnumNames.build())
+#end
 enum abstract ImageFilter(Int) {
 	/** Takes the nearest pixel: hard edges, for pixel art. */
 	var Nearest;

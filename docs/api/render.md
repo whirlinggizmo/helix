@@ -748,6 +748,12 @@ Specifies how a texture's texels are read by helix-render's own shaders: as sRGB
 - `ColorSpace.Srgb`: sRGB colors, decoded to linear light wherever it is used.
 - `ColorSpace.Linear`: Linear values, read as they are wherever it is used.
 
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (Auto, Srgb): what Std.string, interpolation and trace show.
+
 ## CubeTexture3D
 
 *class* in [`render/src/helix/render/CubeTexture3D.hx`](../../render/src/helix/render/CubeTexture3D.hx), `import helix.render.CubeTexture3D;`
@@ -1399,6 +1405,12 @@ Specifies how fog thickens with distance from the camera.
 - `FogMode3D.Linear`: From none at `Fog3D.near` to all fog at `Fog3D.far`: three.js's Fog.
 - `FogMode3D.Exponential`: 1 - e^-(density × distance)²: three.js's FogExp2.
 
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (Linear, Exponential): what Std.string, interpolation and trace show.
+
 ## GpuFont2D
 
 *class* in [`render/src/helix/render/GpuFont2D.hx`](../../render/src/helix/render/GpuFont2D.hx), `import helix.render.GpuFont2D;`
@@ -1818,6 +1830,12 @@ Specifies how a `Batch3D` draws the triangles of a mesh or of `drawTriangles`: f
 - `PolygonMode3D.Lines`: Each triangle's edges, as one-pixel lines: raylib's wire mode, three.js's `wireframe`.
 - `PolygonMode3D.Points`: Each triangle's corners, as points of `Batch3D.pointSize`: raylib's point mode, three.js's `Points`. An indexed mesh draws a point an index, so a corner shared by triangles is drawn once each.
 
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (Fill, Lines): what Std.string, interpolation and trace show.
+
 ## RenderTarget2D
 
 *class* in [`render/src/helix/render/RenderTarget2D.hx`](../../render/src/helix/render/RenderTarget2D.hx), `import helix.render.RenderTarget2D;`, extends `Texture2D`
@@ -2031,6 +2049,12 @@ Specifies how a `Material3D` is shaded by the batch's lights.
 - `Shading3D.Phong`: Diffuse light and a Blinn-Phong highlight of `specularColor` and `shininess`: three.js's MeshPhongMaterial, and what an OBJ material's Ks and Ns describe.
 - `Shading3D.MetallicRoughness`: glTF's metallic-roughness model, with its clearcoat, sheen and specular extensions where set: three.js's MeshStandardMaterial and MeshPhysicalMaterial.
 
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (Unlit, Lambert): what Std.string, interpolation and trace show.
+
 ## SpotLight3D
 
 *class* in [`render/src/helix/render/SpotLight3D.hx`](../../render/src/helix/render/SpotLight3D.hx), `import helix.render.SpotLight3D;`, extends `Light3D`
@@ -2068,6 +2092,12 @@ Specifies the depth a render target has; its multisampling is chosen apart (`Ren
 - `TargetDepth.Buffer`: A depth buffer, for 3D drawn into it.
 - `TargetDepth.Texture`: A depth buffer that can be sampled after the pass (`RenderTarget2D.depthTexture`), for effects that read depth: fog, depth of field, ambient occlusion, soft particles.
 
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (None, Buffer): what Std.string, interpolation and trace show.
+
 ## TextAlign2D
 
 *abstract* in [`render/src/helix/render/TextAlign2D.hx`](../../render/src/helix/render/TextAlign2D.hx), `import helix.render.TextAlign2D;`
@@ -2077,6 +2107,12 @@ Specifies where each line of a `TextLayout2D` sits across its box.
 - `TextAlign2D.Left`: Each line starts at the box's left edge.
 - `TextAlign2D.Center`: Each line is centered in the box.
 - `TextAlign2D.Right`: Each line ends at the box's right edge.
+
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (Left, Center): what Std.string, interpolation and trace show.
 
 ## TextLayout2D
 
@@ -2251,6 +2287,12 @@ Specifies how linear light, which can run past 1, is brought into the 0 to 1 an 
 - `ToneMapping.Aces`: ACES's filmic fit: more contrast, highlights desaturated.
 - `ToneMapping.AgX`: AgX: highlights rolled toward white without shifting their hue.
 - `ToneMapping.Neutral`: Khronos PBR Neutral: colors as given up to near 1, highlights rolled off.
+
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (None, Linear): what Std.string, interpolation and trace show.
 
 ## View3D
 

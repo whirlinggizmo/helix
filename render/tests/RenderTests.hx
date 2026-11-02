@@ -66,6 +66,8 @@ class RenderTests {
 		views3D();
 		draws3D();
 		meshes3D();
+		var space:ColorSpace = Linear, align:TextAlign2D = Right;
+		check('$space $align' == "Linear Right", "the enums print as their names: $space $align");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

@@ -1,6 +1,9 @@
 package helix.render;
 
 /** Specifies how fog thickens with distance from the camera. */
+#if !macro
+@:build(helix.platform.macros.EnumNames.build())
+#end
 enum abstract FogMode3D(Int) {
 	/** From none at `Fog3D.near` to all fog at `Fog3D.far`: three.js's Fog. */
 	var Linear = 0;

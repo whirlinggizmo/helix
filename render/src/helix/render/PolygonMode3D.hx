@@ -1,6 +1,9 @@
 package helix.render;
 
 /** Specifies how a `Batch3D` draws the triangles of a mesh or of `drawTriangles`: filled, as their edges, or as their corners. */
+#if !macro
+@:build(helix.platform.macros.EnumNames.build())
+#end
 enum abstract PolygonMode3D(Int) {
 	/** Filled: the triangles themselves. */
 	var Fill = 0;

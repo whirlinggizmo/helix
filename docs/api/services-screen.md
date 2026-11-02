@@ -99,6 +99,12 @@ Specifies how `Screen` fits its design size to the window.
 - `ScreenFit.Stretch`: Scaled to fill the window, its shape stretched to the window's.
 - `ScreenFit.Expand`: Scaled as large as it fits whole, keeping its shape, then grown on its short side to fill the window, so more of the world shows on a wider or taller window and there are no bars.
 
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (Letterbox, PixelPerfect): what Std.string, interpolation and trace show.
+
 ## ScreenOptions
 
 *class* in [`services/src/helix/services/screen/ScreenOptions.hx`](../../services/src/helix/services/screen/ScreenOptions.hx), `import helix.services.screen.ScreenOptions;`

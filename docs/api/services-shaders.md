@@ -609,6 +609,12 @@ Specifies what kind of texture a sampler reads, from its GLSL type, as `IGraphic
 - `ShaderSamplerKind.Shadow`: A `sampler2DArrayShadow`: a shadow map read through a comparison sampler (`IGraphics.createShadowMap`).
 - `ShaderSamplerKind.Data`: A `sampler2D` the code reads only with `texelFetch`: a data texture, never filtered (`IGraphics.createDataTexture`). `textureSize` is a query, not a read, so using it leaves a sampler `Data`; any `texture` call makes it `Texture2D`.
 
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (Texture2D, Cube): what Std.string, interpolation and trace show.
+
 ## ShaderScene
 
 *class* in [`services/src/helix/services/shaders/ShaderScene.hx`](../../services/src/helix/services/shaders/ShaderScene.hx), `import helix.services.shaders.ShaderScene;`

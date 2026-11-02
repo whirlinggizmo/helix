@@ -1,6 +1,9 @@
 package helix.render;
 
 /** Specifies how a `Material3D` is shaded by the batch's lights. */
+#if !macro
+@:build(helix.platform.macros.EnumNames.build())
+#end
 enum abstract Shading3D(Int) {
 	/** Not lit: its colors as they are, three.js's MeshBasicMaterial and raylib's default. */
 	var Unlit = 0;

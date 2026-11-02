@@ -1,6 +1,9 @@
 package helix.services.screen;
 
 /** Specifies how `Screen` fits its design size to the window. */
+#if !macro
+@:build(helix.platform.macros.EnumNames.build())
+#end
 enum abstract ScreenFit(Int) {
 	/** Scaled as large as it fits whole, keeping its shape; bars fill the rest. */
 	var Letterbox = 0;

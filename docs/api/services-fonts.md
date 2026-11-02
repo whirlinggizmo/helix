@@ -40,6 +40,12 @@ Specifies what a font's glyphs hold, as `Fonts.load` and `Fonts.rasterize` raste
 - `FontKind.Bitmap`: Coverage made hard-edged: each texel covered or not, for pixel fonts drawn at their own size.
 - `FontKind.Distance`: Signed distances to the outline, sharp at any size through a distance-field shader: 128 on the outline, 64 a texel, with 4 texels of padding around each glyph.
 
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (Coverage, Bitmap): what Std.string, interpolation and trace show.
+
 ## FontPacking
 
 *abstract* in [`services/src/helix/services/fonts/FontPacking.hx`](../../services/src/helix/services/fonts/FontPacking.hx), `import helix.services.fonts.FontPacking;`
@@ -48,6 +54,12 @@ Specifies how `Fonts.load` places glyphs on the atlas.
 
 - `FontPacking.Rows`: In rows, in the order asked for, each row a line's height.
 - `FontPacking.Skyline`: As tightly as a skyline packs them, tallest first (helix-math's `RectPacker2D`).
+
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (Rows, Skyline): what Std.string, interpolation and trace show.
 
 ## Fonts
 

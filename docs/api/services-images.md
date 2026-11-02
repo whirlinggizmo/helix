@@ -368,6 +368,12 @@ Specifies how `Image.resize` makes the pixels between the source's pixels.
 - `ImageFilter.Bilinear`: Blends the nearest four pixels, weighted by distance and by alpha.
 - `ImageFilter.Bicubic`: Blends the nearest sixteen pixels on a Catmull-Rom curve, weighted by alpha: sharper than `Bilinear`, for photographs.
 
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (Nearest, Bilinear): what Std.string, interpolation and trace show.
+
 ## Images
 
 *class* in [`services/src/helix/services/images/Images.hx`](../../services/src/helix/services/images/Images.hx), `import helix.services.images.Images;`, implements `IPollable`

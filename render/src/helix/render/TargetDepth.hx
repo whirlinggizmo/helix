@@ -1,6 +1,9 @@
 package helix.render;
 
 /** Specifies the depth a render target has; its multisampling is chosen apart (`Renderer.createRenderTarget`'s `msaaSampleCount`). */
+#if !macro
+@:build(helix.platform.macros.EnumNames.build())
+#end
 enum abstract TargetDepth(Int) {
 	/** No depth: for a pass that draws over the whole target, as a screen effect does, or 2D. */
 	var None = 0;
