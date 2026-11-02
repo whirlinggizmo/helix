@@ -307,20 +307,79 @@ class ShaderCompiler {
 			uniformBlocks: described.blocks,
 			textures: described.textures,
 			glsl300es: {
-				vertex: outputs[1],
-				fragment: outputs[per + 1]
+				vertex: shortFloats(outputs[1]),
+				fragment: shortFloats(outputs[per + 1])
 			}
 		};
 		if (options.points == true)
 			source.points = true;
 		if (options.glsl410)
-			source.glsl410 = {vertex: namedBlocks(outputs[2], described.blocks), fragment: namedBlocks(outputs[per + 2], described.blocks)};
+			source.glsl410 = {
+				vertex: shortFloats(namedBlocks(outputs[2], described.blocks)),
+				fragment: shortFloats(namedBlocks(outputs[per + 2], described.blocks))
+			};
 		if (options.sdlGpu)
 			source.sdlGpu = sdlGpu(cross, scratch, [
 				"vertex" => File.getBytes(spv("vertex-sdlgpu")),
 				"fragment" => File.getBytes(spv("fragment"))
 			], described, options.points == true);
 		return source;
+	}
+
+	// GLSL with each float literal SPIRV-Cross wrote with every digit of its 32-bit value (0.054999999701976776123046875) written in the
+	// fewest digits that read back as the same value (0.055), as a program carries the text.
+	static function shortFloats(text:String):String {
+		return ~/(?<![\w.])(\d+)\.(\d+)(?:e([+-]?\d+))?(?![\w.])/g.map(text, e -> {
+			var literal = e.matched(0);
+			var short = shortFloat(e.matched(1), e.matched(2), e.matched(3) == null ? 0 : Std.parseInt(e.matched(3)));
+			short != null
+			&& short.length < literal.length ? short : literal;
+		});
+	}
+
+	// A float literal's fewest digits that read back as the same 32-bit value, plain or with an exponent, whichever is shorter; null for 0.
+	static function shortFloat(whole:String, fraction:String, exponent:Int):Null<String> {
+		var digits = whole + fraction, point = whole.length + exponent;
+		while (digits.length > 0 && digits.charAt(0) == "0") {
+			digits = digits.substr(1);
+			point--;
+		}
+		if (digits.length == 0)
+			return null;
+		var bits = haxe.io.FPHelper.floatToI32(Std.parseFloat(literal(digits, point)));
+		for (count in 1...digits.length + 1) {
+			// The digits rounded to count of them, the value 0.digits × 10^point.
+			var kept = [for (i in 0...count) digits.charCodeAt(i) - "0".code], at = point;
+			if (count < digits.length && digits.charCodeAt(count) >= "5".code) {
+				var i = count - 1;
+				while (i >= 0 && kept[i] == 9)
+					kept[i--] = 0;
+				if (i < 0) {
+					kept.unshift(1);
+					kept.pop();
+					at++;
+				} else
+					kept[i]++;
+			}
+			while (kept.length > 1 && kept[kept.length - 1] == 0)
+				kept.pop();
+			var rounded = kept.join("");
+			var plain = literal(rounded, at);
+			if (haxe.io.FPHelper.floatToI32(Std.parseFloat(plain)) == bits) {
+				var scientific = (rounded.length > 1 ? rounded.charAt(0) + "." + rounded.substr(1) : rounded) + "e" + (at - 1);
+				return scientific.length < plain.length ? scientific : plain;
+			}
+		}
+		return null;
+	}
+
+	// 0.digits × 10^point written plainly, with a digit on each side of the point.
+	static function literal(digits:String, point:Int):String {
+		if (point <= 0)
+			return "0." + StringTools.lpad("", "0", -point) + digits;
+		if (point < digits.length)
+			return digits.substr(0, point) + "." + digits.substr(point);
+		return digits + StringTools.lpad("", "0", point - digits.length) + ".0";
 	}
 
 	// GL 410 holds each block as a uniform of its struct type, a block without an instance name under a name SPIRV-Cross numbers by the

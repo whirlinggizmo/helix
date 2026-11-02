@@ -148,6 +148,7 @@ void main() { color = scene.ambient + scene.lights[1].color * scene.surface.roug
 		clipScale();
 		points();
 		semantics();
+		floats();
 		includes();
 		// Refusals, each saying what's wrong.
 		message = refusal("#version 450\nlayout(location = 0) in mat3 turn;\nlayout(location = 4) in vec3 position;\n"
@@ -312,6 +313,25 @@ void main() { finalColor = texture(texture0, fragTexCoord) * colDiffuse * fragCo
 			"The clip scale a loose uniform in helix_uniforms: " + haxe.Json.stringify(u));
 		check(source.glsl300es.vertex.indexOf("helix_clipScale") >= 0 && source.glsl300es.vertex.indexOf("helix_main") >= 0,
 			"The vertex stage wrapped: " + source.glsl300es.vertex);
+	}
+
+	// GLSL's float literals in the fewest digits that read back as their 32-bit values, plain or with an exponent, in both GL forms; a
+	// value with a short form written so, 1.0 kept.
+	static function floats():Void {
+		var source = compile("#version 450\nlayout(location = 0) in vec2 p;\nvoid main() { gl_Position = vec4(p * 0.055, 1e-7, 1.0); }\n",
+			"#version 450\nlayout(location = 0) out vec4 color;\nlayout(binding = 0) uniform B { float k; };\n" +
+			"void main() { color = vec4(k * 12.92, k * 0.0031308, k * 2.4, 1.0); }\n",
+			{
+				glsl410: true,
+				sdlGpu: false
+			});
+		for (text in [source.glsl300es.vertex, source.glsl410.vertex])
+			check(text.indexOf("0.055") >= 0 && text.indexOf("1e-7") >= 0 && text.indexOf("0.0549999") < 0, "Short vertex floats: " + text);
+		for (text in [source.glsl300es.fragment, source.glsl410.fragment])
+			check(text.indexOf("12.92") >= 0 && text.indexOf("0.0031308") >= 0 && text.indexOf("2.4") >= 0 && text.indexOf("2.40000") < 0
+				&& text.indexOf("1.0") >= 0,
+				"Short fragment floats: "
+				+ text);
 	}
 
 	// The point size: written after main in every dialect, with the clip scale or without it, the result marked; HLSL in its compatibility
