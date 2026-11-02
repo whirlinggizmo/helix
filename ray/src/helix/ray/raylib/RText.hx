@@ -315,7 +315,7 @@ class RText {
 		text.add("// Font LICENSE: ....                                                                 //\n");
 		text.add("//                                                                                    //\n");
 		text.add("////////////////////////////////////////////////////////////////////////////////////////\n\n");
-		var image = atlasOf(font);
+		var image = helix.ray.internal.FontAtlases.atlasOf(font);
 		if (image.format != PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA)
 			Runtime.log(LOG_WARNING, "Font export as code: Font image format is not GRAY+ALPHA!");
 		var imageDataSize = GetPixelDataSize(image.width, image.height, image.format);
@@ -374,39 +374,6 @@ class RText {
 		return success;
 	}
 
-	// A font's texture's pixels as raylib's LoadImageFromTexture reads them back from the GPU, in the texture's format: the image the
-	// texture was made from, or the texture's own in memory (RGBA) made its format; an empty image, as raylib's for a texture it can't
-	// read, for one on the GPU alone.
-	static function atlasOf(font:Font):Image {
-		var texture = font.texture;
-		if (texture == null)
-			return new Image();
-		if (font.atlas != null && font.atlasTexture == texture.id && font.atlas.format == texture.format) {
-			var a = font.atlas;
-			return new Image(a.data, a.width, a.height, 1, a.format);
-		}
-		var memory = Textures.onGpu(texture.id) == 0 ? Textures.imageOf(texture.id) : null;
-		if (memory == null) {
-			Runtime.log(LOG_WARNING, 'TEXTURE: [ID ${texture.id}] Failed to retrieve pixel data');
-			return new Image();
-		}
-		var image = new Image(memory.pixels, memory.width, memory.height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
-		if (texture.format == PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA || texture.format == PIXELFORMAT_UNCOMPRESSED_GRAYSCALE) {
-			// Gray textures are white with their gray in red: taken back as they were sent.
-			var alpha = texture.format == PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA,
-				count = image.width * image.height;
-			var out = haxe.io.Bytes.alloc(count * (alpha ? 2 : 1));
-			for (i in 0...count) {
-				out.set(alpha ? i * 2 : i, memory.pixels.get(i * 4));
-				if (alpha)
-					out.set(i * 2 + 1, memory.pixels.get(i * 4 + 3));
-			}
-			return new Image(out, image.width, image.height, 1, texture.format);
-		}
-		ImageFormat(image, texture.format);
-		return image;
-	}
-
 	// A number as C's printf writes it with %1.0f: rounded to the nearest whole, a half to the even one, -0 for a negative rounded to 0.
 	static function whole(x:Float):String {
 		var floor = Math.ffloor(x), rest = x - floor;
@@ -414,11 +381,13 @@ class RText {
 		return rounded == 0 && (x < 0 || 1 / x < 0) ? "-0" : Std.string(Std.int(rounded));
 	}
 
-	// Keeps the image a font's texture was made from, for ExportFontAsCode.
-	static function keepAtlas(font:Font, image:Image):Void {
-		font.atlas = image;
-		font.atlasTexture = font.texture.id;
-	}
+	// Keeps the image a font's texture was made from, for ExportFontAsCode: set by FontAtlases when the program names it, so a program
+	// that doesn't keeps no font's image.
+	static var keepingAtlas:Null<(font:Font, image:Image) -> Void> = null;
+
+	static function keepAtlas(font:Font, image:Image):Void
+		if (keepingAtlas != null)
+			keepingAtlas(font, image);
 
 	/** Frees glyphs' images.
 
