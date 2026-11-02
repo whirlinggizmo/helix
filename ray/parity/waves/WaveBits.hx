@@ -72,8 +72,10 @@ class WaveBits {
 		function run(i:Int):Void
 			if (i < steps.length)
 				steps[i]()
-			else
+			else {
+				music();
 				save();
+			}
 		function add(name:String, start:(Wave->Void, String->Void)->Void):Void {
 			var i = steps.length;
 			steps.push(() -> wait(name, start, () -> run(i + 1)));
@@ -89,6 +91,12 @@ class WaveBits {
 		add("ogg_mixed_case", (l, f) -> LoadWaveFromMemoryAsync(".Ogg", file("tone48_mono.ogg"), file("tone48_mono.ogg").length, l, f));
 		add("qoa_run_time", (l, f) -> LoadWaveFromMemoryAsync(type, file("tone44_stereo.qoa"), file("tone44_stereo.qoa").length, l, f));
 		run(0);
+	}
+
+	// FLAC music, refused by its file and its bytes before any device is asked for, as raylib refuses it.
+	static function music():Void {
+		out.add('music_flac valid ${IsMusicValid(LoadMusicStream("tone48.flac")) ? 1 : 0}\n');
+		out.add('music_flac_memory valid ${IsMusicValid(LoadMusicStreamFromMemory(".flac", file("tone48.flac"), file("tone48.flac").length)) ? 1 : 0}\n');
 	}
 
 	// The lines: in a page, left for tools/page_check.cjs as the page's result; natively, written to the file the command line names.

@@ -299,22 +299,34 @@ class RAsync {
 			qoa.samples)));
 	}
 
-	// An Ogg Vorbis file, decoded by the platform at its own rate and made 16-bit as stb_vorbis makes its floats for raylib; its frames
-	// the stream's length as stb_vorbis reads it (the last page's position), a decoder that ends early (Chromium's) padded with silence.
-	static function readOgg(fileType:String, data:haxe.io.Bytes, done:Wave->Void, failed:String->Void):Void
-		RAudio.audioDecoder().decode(data, 0, (samples, channelCount, sampleRate) -> {
+	// An Ogg Vorbis file, decoded by the platform at the rate its header records and made 16-bit as stb_vorbis makes its floats for
+	// raylib; its frames the stream's length as stb_vorbis reads it (the last page's position), a decoder that ends early (Chromium's)
+	// padded with silence.
+	static function readOgg(fileType:String, data:haxe.io.Bytes, done:Wave->Void, failed:String->Void):Void {
+		var sampleRate = Waves.readSampleRate(data);
+		if (sampleRate <= 0) {
+			Runtime.later(() -> failed("WAVE: Failed to load OGG data"));
+			return;
+		}
+		RAudio.audioDecoder().decode(data, sampleRate, (samples, channelCount) -> {
 			var decoded = Std.int(samples.length / (4 * channelCount)),
 				length = Math.round(helix.formats.audio.AudioHeader.readDuration(data, data.length) * sampleRate);
 			var frames = length > 0 ? length : decoded;
 			done(new Wave(frames, sampleRate, 16, channelCount, Waves.toInt16(samples, frames * channelCount)));
 		}, message -> failed('WAVE: Failed to load OGG data: $message'));
+	}
 
-	// An MP3 file, decoded by the platform at its own rate as dr_mp3 0.6.39 decodes it for raylib: every frame decoded, its Xing, Info
+	// An MP3 file, decoded by the platform at the rate its first frame records, as dr_mp3 0.6.39 decodes it for raylib: every frame decoded, its Xing, Info
 	// or VBRI frame as silence and its LAME delay and padding kept, as that dr_mp3 reads no tag, the tag hidden from the platform's
 	// decoder (Waves.hideMp3Tag), which would trim them; its 16-bit samples made 32-bit floats (Waves.toMp3Floats).
 	static function readMp3(fileType:String, data:haxe.io.Bytes, done:Wave->Void, failed:String->Void):Void {
-		var file = Waves.hideMp3Tag(data);
-		RAudio.audioDecoder().decode(file, 0, (samples, channelCount, sampleRate) -> {
+		var file = Waves.hideMp3Tag(data),
+			sampleRate = Waves.readSampleRate(data);
+		if (sampleRate <= 0) {
+			Runtime.later(() -> failed("WAVE: Failed to load MP3 data"));
+			return;
+		}
+		RAudio.audioDecoder().decode(file, sampleRate, (samples, channelCount) -> {
 			var floats = Waves.toMp3Floats(samples, channelCount, file, file != data);
 			done(new Wave(Std.int(floats.length / (4 * channelCount)), sampleRate, 32, channelCount, floats));
 		}, message -> failed('WAVE: Failed to load MP3 data: $message'));

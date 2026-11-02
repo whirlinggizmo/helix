@@ -7,6 +7,14 @@ import haxe.io.Bytes;
 	made dr_mp3's 16-bit steps. */
 @:noCompletion
 class Waves {
+	/** Returns the rate a sound file's header records (helix-formats' `AudioHeader.readSampleRate`, given its first 64 KiB), the rate
+		raylib keeps and helix-ray asks the platform's decoder for.
+
+		@param data  The file.
+		@return  The frames a second, or 0 when the header can't be read. */
+	public static function readSampleRate(data:Bytes):Int
+		return helix.formats.audio.AudioHeader.readSampleRate(data.length > 65536 ? data.sub(0, 65536) : data);
+
 	/** Returns floats as 16-bit samples, as stb_vorbis's `stb_vorbis_get_samples_short_interleaved` makes them: each scaled by 32768,
 		rounded to the nearest, a half to even (its float addition of 384), and held to -32768 to 32767.
 

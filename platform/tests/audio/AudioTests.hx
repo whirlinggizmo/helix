@@ -23,7 +23,7 @@ typedef Step = {
 
 /** Checks helix-platform's audio output and decoder against the clock, with the library alone.
 
-	The steps: a mono and a stereo WAV decoded to their own channels; a 22050 Hz WAV decoded at its own rate and resampled; a stereo clip played, its position advancing with time, moved, and
+	The steps: a mono and a stereo WAV decoded to their own channels; a 22050 Hz WAV decoded at 22050 Hz and resampled to 44100; a stereo clip played, its position advancing with time, moved, and
 	ended; a stream of a WAV opened, its length read, played, moved and ended; a queue fed half a second, its queued frames falling as it
 	plays, run dry while still playing, and resuming when fed again. The WAVs are made here. Times are checked within a tenth of a second
 	or so, as a frame's timing and the output's buffering allow.
@@ -156,13 +156,12 @@ class AudioTests {
 	static function setup():Void {
 		var mono:Null<{samples:Bytes, channels:Int}> = null,
 			stereo:Null<{samples:Bytes, channels:Int}> = null,
-			own:Null<{samples:Bytes, rate:Int}> = null,
+			own:Null<Bytes> = null,
 			resampled:Null<Bytes> = null;
 		var clip = 0, stream = 0, queue = 0, voice = 0, started = 0., queued = 0;
 		var streamFile = wav(Std.int(RATE * 1.5), 2, .5, -.25);
 		function decode(file:Bytes, decoded:(Bytes, Int) -> Void, rate = RATE):Void
-			decoder.decode(file, rate, (samples, channels, given) -> given == rate ? decoded(samples, channels) : fail('decoded at $given Hz, not $rate'),
-				why -> fail('not decoded: $why'));
+			decoder.decode(file, rate, decoded, why -> fail('not decoded: $why'));
 		function elapsed():Float
 			return haxe.Timer.stamp() - started;
 		steps = [
@@ -189,14 +188,12 @@ class AudioTests {
 				}
 			},
 			{
-				name: "a 22050 Hz WAV decodes at its own rate",
-				enter: () -> decoder.decode(wav(5512, 1, .5, 0, 22050), 0, (samples, _, rate) -> own = {samples: samples, rate: rate},
-					why -> fail('not decoded: $why')),
+				name: "a 22050 Hz WAV decodes at its own rate, every frame",
+				enter: () -> decode(wav(5512, 1, .5, 0, 22050), (samples, _) -> own = samples, 22050),
 				ready: () -> own != null || failures.length > 0,
 				check: () -> {
-					check(own.rate == 22050, 'rate: ${own.rate}');
-					check(own.samples.length == 5512 * 4, 'frames: ${own.samples.length / 4}');
-					near(own.samples.getFloat(8000), .5, 1e-3, "a sample");
+					check(own.length == 5512 * 4, 'frames: ${own.length / 4}');
+					near(own.getFloat(8000), .5, 1e-3, "a sample");
 				}
 			},
 			{

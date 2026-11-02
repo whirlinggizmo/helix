@@ -368,17 +368,16 @@ stream's length and position, and a queue's frames falling, running dry and resu
 
 ## Decoders
 
-`IAudioDecoder`: `decode(encoded, sampleRate, decoded(samples, channelCount, sampleRate), failed(message))`, float32 in the file's
-channels (mono or stereo interleaved; more mixed down to stereo, by SDL's channel conversion natively and Web Audio's speaker down-mix in
-a page) at the rate asked: 0 for the file's own rate, any other resampled to it; `decoded` reports the rate the samples are at. A clip
-plays at 44100 Hz, so a program decoding for `createClip` asks for 44100. `poll`; `dispose`. It reads **WAV, Ogg Vorbis, MP3 and
-FLAC**. In a page, `audiodecoder/webaudio` (`WebAudioDecoderAdapter`, `decodeAudioData` on an `OfflineAudioContext` made at the rate
-asked, which may read more). For 0 its context is made at the rate the file's header records (helix-formats' `AudioHeader.readSampleRate`),
-so nothing is resampled; a header it can't read decodes at 44100, and says so. Chromium's decoders trim an MP3's LAME delay and padding
+`IAudioDecoder`: `decode(encoded, sampleRate, decoded(samples, channelCount), failed(message))`, float32 in the file's channels (mono
+or stereo interleaved; more mixed down to stereo, by SDL's channel conversion natively and Web Audio's speaker down-mix in a page) at the
+rate asked, resampled to it unless it is the file's own; the platform reads no headers, so a layer keeping a file's own rate reads it
+first (helix-formats' `AudioHeader.readSampleRate`). A clip plays at 44100 Hz, so a program decoding for `createClip` asks for 44100.
+`poll`; `dispose`. It reads **WAV, Ogg Vorbis, MP3 and FLAC**. In a page, `audiodecoder/webaudio` (`WebAudioDecoderAdapter`,
+`decodeAudioData` on an `OfflineAudioContext` made at the rate asked, which may read more). Chromium's decoders trim an MP3's LAME delay and padding
 (and its Xing or Info frame), and end an Ogg Vorbis stream early: 32 and 81 frames before its last page's position in the two files
 measured, where stb_vorbis and Firefox decode to it. Natively, `audiodecoder/sdl3mixer`
-(`Sdl3MixerAudioDecoderAdapter`): SDL3_mixer's decoder on a worker thread, its rate the file's (`MIX_GetAudioDecoderFormat`) for 0,
-resampled by it otherwise, delivered at `poll`. Its built-in decoders are stb_vorbis 1.22 and dr_mp3 0.7.4, which skips an MP3's Xing or
+(`Sdl3MixerAudioDecoderAdapter`): SDL3_mixer's decoder on a worker thread, its output made at the rate asked (resampled by it), delivered
+at `poll`. Its built-in decoders are stb_vorbis 1.22 and dr_mp3 0.7.4, which skips an MP3's Xing or
 Info frame and trims its LAME delay and padding.
 
 `IImageDecoder`: `decode(encoded, decoded(pixels, width, height), failed(message))`, the pixels 8-bit RGBA with rows top to bottom, not

@@ -633,12 +633,18 @@ class RAudio {
 	// ---- Music ----
 
 	/** Opens a music file, to be played as it is read (helix-services' `Audio.stream`): natively from its file, in a page from the
-		download as it arrives, never loaded whole. It may be played at once; it starts once it opens.
+		download as it arrives, never loaded whole. It may be played at once; it starts once it opens. A FLAC file isn't opened, as raylib
+		5.5's default build leaves FLAC out ("STREAM: File format not supported"): the music is invalid (docs/DECISIONS.md 32).
 
 		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
 		@return  The music. */
 	static function LoadMusicStream(fileName:String):Music {
 		var music = new Music();
+		if (StringTools.endsWith(fileName.toLowerCase(), ".flac")) {
+			Runtime.log(LOG_WARNING, 'STREAM: [$fileName] File format not supported');
+			music.failed = true;
+			return music;
+		}
 		if (Runtime.audio == null) {
 			Runtime.log(4, 'LoadMusicStream: InitAudioDevice first');
 			music.failed = true;
@@ -652,14 +658,17 @@ class RAudio {
 	/** Opens music from a file's bytes, to be played as it is read, as `LoadMusicStream` plays a file: in a page from a Blob's URL, natively
 		from a copy written to the program's cache directory, deleted when the music is unloaded. `InitAudioDevice` comes first.
 
-		@param fileType  The file's extension, such as ".ogg": Ogg Vorbis, MP3, WAV or FLAC.
+		@param fileType  The file's extension, such as ".ogg": Ogg Vorbis, MP3 or WAV. FLAC (".flac" or ".FLAC") isn't opened, as raylib
+			5.5's default build leaves it out ("STREAM: Data format not supported"): the music is invalid.
 		@param data  The file's bytes; they are kept until the music is unloaded.
 		@param dataSize  How many of them.
 		@return  The music. */
 	static function LoadMusicStreamFromMemory(fileType:String, data:haxe.io.Bytes, dataSize:Int):Music {
 		var music = new Music();
-		if (Runtime.audio == null || data == null || dataSize <= 0) {
-			Runtime.log(LOG_WARNING, Runtime.audio == null ? 'LoadMusicStreamFromMemory: InitAudioDevice first' : 'STREAM: Data format not supported');
+		if (Runtime.audio == null || data == null || dataSize <= 0 || fileType == ".flac" || fileType == ".FLAC") {
+			var flac = fileType == ".flac" || fileType == ".FLAC";
+			Runtime.log(LOG_WARNING, Runtime.audio == null
+				&& !flac ? 'LoadMusicStreamFromMemory: InitAudioDevice first' : 'STREAM: Data format not supported');
 			music.failed = true;
 			return music;
 		}

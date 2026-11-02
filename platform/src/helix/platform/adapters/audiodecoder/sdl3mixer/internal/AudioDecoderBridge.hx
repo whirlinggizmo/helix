@@ -21,7 +21,6 @@ extern class AudioDecoderBridge {
 	@:native("helix_decoder_decode") static function decode(data:cpp.RawPointer<cpp.UInt8>, bytes:Int, rate:Int):cpp.RawPointer<cpp.Void>;
 	@:native("helix_decoder_count") static function count(result:cpp.RawPointer<cpp.Void>):Int;
 	@:native("helix_decoder_channels") static function channels(result:cpp.RawPointer<cpp.Void>):Int;
-	@:native("helix_decoder_rate") static function rate(result:cpp.RawPointer<cpp.Void>):Int;
 	@:native("helix_decoder_take") static function take(result:cpp.RawPointer<cpp.Void>, into:cpp.RawPointer<cpp.UInt8>):Void;
 	@:native("helix_decoder_error") static function error():cpp.ConstCharStar;
 }

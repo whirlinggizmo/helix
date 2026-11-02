@@ -76,7 +76,7 @@ class Audio implements IPollable {
 	public function load(path:String, loaded:Sound->Void, ?failed:String->Void):Void->Void {
 		var aborted = false;
 		// Decoded at 44100 Hz, the rate a clip plays at.
-		var abortLoad = assets.load(path, bytes -> decoder.decode(bytes, 44100, (samples, channelCount, _) -> {
+		var abortLoad = assets.load(path, bytes -> decoder.decode(bytes, 44100, (samples, channelCount) -> {
 			if (aborted || disposed)
 				return;
 			var sound = try clipOf(path, samples, channelCount) catch (e:Dynamic) {

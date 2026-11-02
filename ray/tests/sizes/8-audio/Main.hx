@@ -10,8 +10,7 @@ import helix.ray.Vector3;
 
 /** A program written in raylib on helix-ray, as a game in raylib would be. Its image and sound are
 	docs/trials/2026-10-30-async/assets/player.png and coin.wav, its model and animations ray/parity/assets/robot.glb. */
-@:adds("helix.platform.adapters.audio.webaudio", "helix.platform.adapters.audiodecoder.webaudio", "helix.formats.audio.AudioHeader",
-	"helix.ray.raylib.RAudio", "helix.services.audio")
+@:adds("helix.platform.adapters.audio.webaudio", "helix.platform.adapters.audiodecoder.webaudio", "helix.ray.raylib.RAudio", "helix.services.audio")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

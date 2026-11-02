@@ -7,7 +7,8 @@ import helix.ray.internal.Runtime;
 /** Checks helix-ray's audio streams, on services' `FakeAudio` as the output: a stream fed by `UpdateAudioStream` plays with nothing
 	polled for it, its two buffers taken and a third refused until one is heard; the first `SetAudioStreamCallback` adds what tops a
 	stream up to the poll, which fills a playing stream's two buffers as it starts and again each poll once they're heard, and nothing
-	once its callback is taken away; `CloseAudioDevice` takes it out of the poll, and the next callback adds it again. */
+	once its callback is taken away; FLAC music refused by `LoadMusicStream` and `LoadMusicStreamFromMemory`; `CloseAudioDevice` takes
+	it out of the poll, and the next callback adds it again. */
 @:access(helix.ray.internal.Runtime)
 @:access(helix.ray.AudioStream)
 class AudioStreamTests {
@@ -64,6 +65,13 @@ class AudioStreamTests {
 			output.queued.set(queue, 0);
 		Runtime.pollAll();
 		check(calls == 4, "its callback taken away, the poll calls nothing");
+
+		// FLAC music isn't opened, as raylib 5.5's default build leaves FLAC out.
+		check(!IsMusicValid(LoadMusicStream("theme.flac"))
+			&& !IsMusicValid(LoadMusicStream("THEME.Flac")), "LoadMusicStream refuses FLAC");
+		var bytes = Bytes.ofString("fLaC");
+		check(!IsMusicValid(LoadMusicStreamFromMemory(".flac", bytes, 4)) && !IsMusicValid(LoadMusicStreamFromMemory(".FLAC", bytes, 4)),
+			"LoadMusicStreamFromMemory refuses FLAC");
 
 		CloseAudioDevice();
 		check(polled() == 0, "CloseAudioDevice takes it out of the poll");

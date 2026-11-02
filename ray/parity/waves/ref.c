@@ -1,6 +1,6 @@
 // raylib 5.5's waves, printed for tools/ray_parity.py: each file LoadWave reads (WAV, Ogg Vorbis, MP3, QOA) and one it refuses (FLAC),
 // its frames, rate, sample size and channels, then its samples 32 a line, each as a double (a 16-bit sample over 32768) printed as
-// hxcpp prints one; and a file read by LoadWaveFromMemory under a type in mixed case, which raylib refuses.
+// hxcpp prints one; a file read by LoadWaveFromMemory under a type in mixed case, which raylib refuses; and FLAC music, refused.
 #include "raylib.h"
 #include <stdio.h>
 
@@ -42,6 +42,11 @@ int main(void) {
     Wave chosen = LoadWaveFromMemory(".qoa", data, size);
     print("qoa_run_time", chosen);
     UnloadWave(chosen);
+    UnloadFileData(data);
+    // Music: FLAC isn't opened, by its file or its bytes (the format is checked before the device, so none is opened here).
+    printf("music_flac valid %d\n", IsMusicValid(LoadMusicStream("tone48.flac")) ? 1 : 0);
+    data = LoadFileData("tone48.flac", &size);
+    printf("music_flac_memory valid %d\n", IsMusicValid(LoadMusicStreamFromMemory(".flac", data, size)) ? 1 : 0);
     UnloadFileData(data);
     return 0;
 }

@@ -3930,11 +3930,11 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
   - `pan`: 0 for left, 0.5 the middle, 1 for right.
 
   The range is raylib 5.5's, 0 to 1 with 0.5 the middle, and 1 is the right, as later releases' +1 is; raylib 5.5's own mixer put 1 on the left.
-- `LoadMusicStream`: Opens a music file, to be played as it is read (helix-services' `Audio.stream`): natively from its file, in a page from the download as it arrives, never loaded whole. It may be played at once; it starts once it opens.
+- `LoadMusicStream`: Opens a music file, to be played as it is read (helix-services' `Audio.stream`): natively from its file, in a page from the download as it arrives, never loaded whole. It may be played at once; it starts once it opens. A FLAC file isn't opened, as raylib 5.5's default build leaves FLAC out ("STREAM: File format not supported"): the music is invalid (docs/DECISIONS.md 32).
   - `fileName`: The file, as the program names it, such as "assets/theme.ogg".
   - returns: The music.
 - `LoadMusicStreamFromMemory`: Opens music from a file's bytes, to be played as it is read, as `LoadMusicStream` plays a file: in a page from a Blob's URL, natively from a copy written to the program's cache directory, deleted when the music is unloaded. `InitAudioDevice` comes first.
-  - `fileType`: The file's extension, such as ".ogg": Ogg Vorbis, MP3, WAV or FLAC.
+  - `fileType`: The file's extension, such as ".ogg": Ogg Vorbis, MP3 or WAV. FLAC (".flac" or ".FLAC") isn't opened, as raylib 5.5's default build leaves it out ("STREAM: Data format not supported"): the music is invalid.
   - `data`: The file's bytes; they are kept until the music is unloaded.
   - `dataSize`: How many of them.
   - returns: The music.

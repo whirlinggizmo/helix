@@ -323,9 +323,11 @@ Why things are the way they are, numbered, in order.
 32. **A wave keeps its file's rate and raylib 5.5's sample size, and reads what 5.5's default build reads.** `LoadWaveAsync` decoded
     every compressed file at 44100 Hz as floats, read FLAC and refused QOA, where raylib 5.5's `LoadWave` keeps a file's rate, gives
     Ogg 16-bit samples, MP3 32-bit floats and QOA 16-bit, and refuses FLAC (its config.h leaves `SUPPORT_FILEFORMAT_FLAC` out). The
-    platform's `IAudioDecoder.decode` takes the rate to decode at (0 for the file's own), and helix-ray asks for 0; Ogg's floats are
-    made 16-bit as stb_vorbis makes them; QOA is helix-formats' port of qoa.h; FLAC is refused as 5.5 refuses it, matching its default
-    configuration rather than fixing anything. Decoders that read an MP3's LAME tag (SDL3_mixer's dr_mp3 0.7.4, Chromium's) trim the
+    platform's `IAudioDecoder.decode` takes the rate to decode at, and helix-ray reads the file's from its header
+    (`AudioHeader.readSampleRate`) and asks for it, so nothing is resampled; the platform reads no headers, so a program decoding for
+    a clip at 44100 links none of it (a first draft's 0 for "the file's own rate" had every decoding program carry the header
+    reader); Ogg's floats are made 16-bit as stb_vorbis makes them; QOA is helix-formats' port of qoa.h; FLAC is refused as 5.5 refuses it, matching its default
+    configuration rather than fixing anything, and so is FLAC music (`LoadMusicStream`, `LoadMusicStreamFromMemory`). Decoders that read an MP3's LAME tag (SDL3_mixer's dr_mp3 0.7.4, Chromium's) trim the
     encoder's delay and padding and skip the tag's frame, where 5.5's dr_mp3 0.6.39 decodes every frame; helix-ray hides the tag from
     the decoder (Chromium still drops its frame, put back as the silence 0.6.39 decodes it as), so the frames are 5.5's on every
     target, and rounds the floats to 16 bits and back as 0.6.39 does (minimp3's SSE and scalar roundings), so natively they are 5.5's

@@ -501,20 +501,20 @@ function dispose():Void
 
 *interface* in [`platform/src/helix/platform/IAudioDecoder.hx`](../../platform/src/helix/platform/IAudioDecoder.hx), `import helix.platform.IAudioDecoder;`, extends `IPollable`
 
-Defines audio decoding from a whole file into 32-bit float PCM, at the file's own rate or one asked for.
+Defines audio decoding from a whole file into 32-bit float PCM at the rate asked.
 
-It reads WAV (PCM or float, at any rate), Ogg Vorbis, MP3 and FLAC files. A clip plays at 44100 Hz (`IAudio.createClip`), so a program decoding for one asks for 44100; one keeping a file's samples as they are asks for 0. A mono file decodes to mono and a stereo file to stereo, interleaved, left first. A file of more channels is mixed down to stereo by the platform's speaker mix: SDL's channel conversion natively, Web Audio's down-mix in a page, which may differ slightly. Samples are -1 to 1.
+It reads WAV (PCM or float, at any rate), Ogg Vorbis, MP3 and FLAC files, resampled to the rate asked unless it is the file's own. A clip plays at 44100 Hz (`IAudio.createClip`), so a program decoding for one asks for 44100; one keeping a file's samples as they are asks for the rate its header records (helix-formats' `AudioHeader.readSampleRate`). A mono file decodes to mono and a stereo file to stereo, interleaved, left first. A file of more channels is mixed down to stereo by the platform's speaker mix: SDL's channel conversion natively, Web Audio's down-mix in a page, which may differ slightly. Samples are -1 to 1.
 
 ```haxe
-function decode(encoded:haxe.io.Bytes, sampleRate:Int, decoded:(samples:haxe.io.Bytes, channelCount:Int, sampleRate:Int) -> Void, failed:String -> Void):Void
+function decode(encoded:haxe.io.Bytes, sampleRate:Int, decoded:(samples:haxe.io.Bytes, channelCount:Int) -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
 ```
 
 - `decode`: Decodes a file, off the main thread where the platform can.
   - `encoded`: The file's bytes.
-  - `sampleRate`: The frames a second to decode at: 0 for the file's own rate, any other resampled to it.
-  - `decoded`: Receives the samples, their number of channels (1 or 2) and their frames a second: the rate asked, or for 0 the file's (44100 in a page when its header can't be read).
+  - `sampleRate`: The frames a second to decode at.
+  - `decoded`: Receives the samples, at `sampleRate`, and their number of channels, 1 or 2.
   - `failed`: Receives why the file can't be read.
 
   One of `decoded` or `failed` is called once, on the main thread, never during this call.

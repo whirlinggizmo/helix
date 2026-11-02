@@ -11,7 +11,7 @@ import helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter;
 import helix.platform.adapters.window.dom.DomWindowAdapter;
 
 /** A program on helix-platform alone, constructing only what it uses, as a game built on the platform would. */
-@:adds("helix.platform.adapters.audio.webaudio", "helix.platform.adapters.audiodecoder.webaudio", "helix.formats.audio.AudioHeader")
+@:adds("helix.platform.adapters.audio.webaudio", "helix.platform.adapters.audiodecoder.webaudio")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;
@@ -50,7 +50,7 @@ class Main {
 		audio = new WebAudioAdapter();
 		sounds = new WebAudioDecoderAdapter();
 		download("jump.wav",
-			bytes -> sounds.decode(bytes, 44100, (samples, channelCount, _) -> audio.playClip(audio.createClip(samples, channelCount), false, 1),
+			bytes -> sounds.decode(bytes, 44100, (samples, channelCount) -> audio.playClip(audio.createClip(samples, channelCount), false, 1),
 				why -> trace(why)));
 		var frame:Float->Void = null;
 		frame = _ -> {

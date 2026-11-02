@@ -9,7 +9,7 @@ import helix.platform.adapters.shared.sdl3.Sdl3Bridge;
 import helix.platform.adapters.shared.sdl3mixer.Sdl3MixerBridge;
 import sys.thread.Thread;
 
-/** Provides `IAudioDecoder` natively over SDL3_mixer's decoder: WAV, Ogg Vorbis, MP3 and FLAC, at the file's rate or resampled by it, in the file's
+/** Provides `IAudioDecoder` natively over SDL3_mixer's decoder: WAV, Ogg Vorbis, MP3 and FLAC, at the rate asked, resampled by it, in the file's
 	channels (more than 2 mixed down to stereo by SDL), each decode on a worker thread. */
 class Sdl3MixerAudioDecoderAdapter implements IAudioDecoder {
 	var mailbox = new Mailbox();
@@ -22,7 +22,7 @@ class Sdl3MixerAudioDecoderAdapter implements IAudioDecoder {
 		AudioDecoderBridge.init();
 	}
 
-	public function decode(encoded:Bytes, sampleRate:Int, decoded:(samples:Bytes, channelCount:Int, sampleRate:Int) -> Void, failed:String->Void):Void
+	public function decode(encoded:Bytes, sampleRate:Int, decoded:(samples:Bytes, channelCount:Int) -> Void, failed:String->Void):Void
 		Thread.create(() -> {
 			var result = AudioDecoderBridge.decode(cpp.Pointer.arrayElem(encoded.getData(), 0).raw, encoded.length, sampleRate);
 			if (result == null) {
@@ -31,10 +31,9 @@ class Sdl3MixerAudioDecoderAdapter implements IAudioDecoder {
 				return;
 			}
 			var samples = Bytes.alloc(AudioDecoderBridge.count(result) * 4),
-				channels = AudioDecoderBridge.channels(result),
-				rate = AudioDecoderBridge.rate(result);
+				channels = AudioDecoderBridge.channels(result);
 			AudioDecoderBridge.take(result, cpp.Pointer.arrayElem(samples.getData(), 0).raw);
-			mailbox.post(() -> decoded(samples, channels, rate));
+			mailbox.post(() -> decoded(samples, channels));
 		});
 
 	public function poll():Void

@@ -54,8 +54,6 @@ Known, not fixed yet (each a rung's `@:adds` or a program's bytes show):
   decoder; its `LoadImageFromMemoryAsync` and `LoadMusicStreamFromMemory` choose by their `fileType`, as raylib's do, and
   `LoadWaveAsync` and `LoadWaveFromMemoryAsync` by a name or type known only as the program runs; and in a page its assets are made
   over the server and its cache whatever a program loads.
-- helix-platform's `WebAudioDecoderAdapter` reads a file's rate from its header for `decode` at rate 0, so a program asking for
-  44100 links helix-formats' `AudioHeader.readSampleRate` too.
 
 ## Names
 
