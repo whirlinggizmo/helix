@@ -20,6 +20,7 @@ images, a font's pages) itself; it saves what a writer returns. Depends on helix
 - `gif.GifFile`: a GIF file (GIF87a or GIF89a): its screen, color tables, loop count (NETSCAPE2.0) and every frame as the file gives
   it (its rectangle, color indices with interlaced rows put in order, transparent index, disposal and delay), and the frames
   composited onto the screen as RGBA, as a browser shows them.
+- `qoa.QoaFile`: a QOA sound ("Quite OK Audio"): its rate, channels and 16-bit samples, read as raylib 5.5 does (qoa.h's), bit for bit.
 - `deflate.Deflate`: DEFLATE compression, byte for byte as raylib 5.5's `CompressData` compresses (sdefl's).
 - `wav.WavFile`: a WAV file's sound, read as raylib 5.5's `LoadWave` reads it (dr_wav's: integer, floating-point, A-law and mu-law
   samples, its 16-bit samples identical) and written byte for byte as its `ExportWave` writes one.

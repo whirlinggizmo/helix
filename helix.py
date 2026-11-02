@@ -14,7 +14,7 @@ pins.use_haxelib()
 # Each library's tests, run with that library alone on the interpreter and Node, and with --native in hxcpp.
 TESTS=(('helix-platform','PlatformTests'),('helix-log','LogTests'),*(('helix-math',m) for m in ('TrigTests','RandomTests','CurveTests','BoundsTests','VectorTests','MatrixTests','Matrix2DTests','Transform2DTests','Quaternion3DTests','Transform3DTests','InterpolateTests','Grid2DTests','ColorTests')),
       *(('helix-geometry',m) for m in ('GeometryTests','Camera2DTests','Frustum3DTests','Camera3DTests','Ray3DTests','Mesh3DTests','AnimationTests')),
-      *(('helix-formats',m) for m in ('GltfTests','ObjTests','BmFontTests','TrueTypeTests','DeflateTests','PngTests','QoiTests','GifTests','WavTests','AudioHeaderTests')),
+      *(('helix-formats',m) for m in ('GltfTests','ObjTests','BmFontTests','TrueTypeTests','DeflateTests','PngTests','QoiTests','QoaTests','GifTests','WavTests','AudioHeaderTests')),
       *(('helix-services',m) for m in ('ConfigTests','TimeTests','InputTests','GesturesTests','SavesTests','AssetsTests','AudioTests','ImagesTests','ImageTests','ModelsTests','FontsTests','ScreenTests','ShaderTests')))
 
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
