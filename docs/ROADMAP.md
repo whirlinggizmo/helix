@@ -6,7 +6,7 @@
   meshes and models, instancing, skinning, `DrawList3D`, the compile macros); next, 2, lit materials and lights (with the draft's
   model example), and a mesh drawn as points larger than a pixel, which stage 1 refuses;
   3, shadows; 4, environment maps and the background; 5, post-processing (with the draft's scene example); 6, fog; 7, morph targets.
-  Asked below it: helix-services' `Font2D.kind` and kerning pairs (until then every font draws as coverage, unkerned) and a `Font2D`
+  Asked below it: helix-services' `Font2D.kind` and kerning pairs (until then every font draws as coverage, unkerned; with it, a distance-field font's sharp edge as a batch shader variant only its draws link) and a `Font2D`
   from glyph data; helix-formats' `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions, and morph
   targets; helix-geometry's second texture coordinates, morph targets and mesh groups; helix-math's Euler orders, an object's `lookAt`
   and `Bounds3D` through a matrix. Then helix-ray rebuilt on it (immediate, as raylib is, on helix-render directly).

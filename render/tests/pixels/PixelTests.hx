@@ -428,6 +428,27 @@ class PixelTests {
 				}
 			}
 		];
+		// Batch draws tone mapped: a rectangle and a wide line, white through Neutral as the tone-mapped mesh shows it.
+		cases.push({
+			name: "3D: batch draws tone mapped, narrow and wide",
+			draw: () -> {
+				renderer.beginTarget(threeD, 0xff000000);
+				batch3D.beginViews([screenView()]);
+				batch3D.toneMapped = true;
+				batch3D.fillRectangle(4, 4, 24, 24, 0xffffffff);
+				batch3D.drawLines([32, 16, 0, 60, 16, 0], 0xffffffff, null, 6);
+				batch3D.resetState();
+				batch3D.fillRectangle(4, 40, 24, 20, 0xffffffff);
+				batch3D.end();
+				renderer.endTarget();
+				threeD;
+			},
+			check: p -> {
+				expect(p, 16, 16, 0xf0f0f0, "a white rectangle through Neutral tone mapping", 4);
+				expect(p, 46, 16, 0xf0f0f0, "a wide white line through it", 4);
+				expect(p, 16, 50, 0xffffff, "white as stored once toneMapped is off again");
+			}
+		});
 		// Into a target holding linear light, 2D draws are decoded from sRGB: a 0x80 texel is 0.216 there, which a draw of the target into an
 		// sRGB one writes as stored, 0x37.
 		if (graphics.canRender(Rgba16f)) {

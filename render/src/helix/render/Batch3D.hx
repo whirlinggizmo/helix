@@ -285,7 +285,7 @@ class Batch3D {
 		renderer's `exposure` and `toneMapping`, as lit color is: false until set, so their colors arrive as given; three.js's
 		`PointsMaterial.toneMapped`, true there, is set per draw by a three.js layer. Into an RGBA16F target nothing is tone mapped as it
 		is drawn (`Material3D.toneMapped`). A mesh is tone mapped as its material's `toneMapped` says. */
-	public var toneMapped:Bool = false;
+	public var toneMapped(default, set):Bool = false;
 
 	/** Gets or sets the region the shapes (`fillTriangle` to `strokePolygon`) are drawn with: null until set, for the batch's own white
 		texture.
@@ -311,15 +311,15 @@ class Batch3D {
 	/** Gets a value indicating whether it is open: from `begin` until `end`. */
 	public var open(default, null):Bool = false;
 
-	/** Creates a batch over a renderer, with its default shaders, built now: every shading (skinned, morphed and instanced too), the
-		shadow casters, the background, and the batch draws' one shader (lines, points, triangles, shapes, sprites and text of every font
-		kind).
+	/** Creates a batch over a renderer, with its default shaders: every shading (skinned, morphed and instanced too), the shadow casters,
+		the background, and the batch draws' (lines, points, triangles, shapes, sprites and text). A program carries the shaders of the
+		draws it calls: the meshes' with `drawMesh` or `drawModel`, the wide lines' and large points' with `drawLines` or `drawPoints`,
+		the tone-mapped batch draws' once `toneMapped` is set.
 
 		@param renderer  The renderer it records into. */
 	public function new(renderer:Renderer) {
 		this.renderer = renderer;
-		batchShader = RenderShaders.compileOwn("batch.vert", "batch.frag");
-		unlitShader = RenderShaders.compileOwn("mesh.vert", "unlit.frag");
+		batchShader = RenderShaders.compileOwn("batch3d.vert", "batch3d.frag");
 		narrow = renderer.stream("batch3d", 40, layoutOf(false));
 		wide = renderer.stream("wide3d", 60, layoutOf(true));
 		instances = renderer.stream("instances", RenderConstants.MESH_STRIDE, layoutOf(false));
@@ -354,6 +354,18 @@ class Batch3D {
 
 	function set_pointSize(value:Float):Float {
 		return pointSize = value > 0 ? value : 0;
+	}
+
+	function set_toneMapped(value:Bool):Bool {
+		if (value && tonedShader == null)
+			tonedShader = wide -> {
+				if (wide && tonedWideShader == null)
+					tonedWideShader = RenderShaders.compileOwn("batch.vert", "batch3d-toned.frag");
+				else if (!wide && tonedNarrowShader == null)
+					tonedNarrowShader = RenderShaders.compileOwn("batch3d.vert", "batch3d-toned.frag");
+				wide ? tonedWideShader : tonedNarrowShader;
+			};
+		return toneMapped = value;
 	}
 
 	function set_pointSizeAttenuated(value:Bool):Bool {
@@ -393,7 +405,7 @@ class Batch3D {
 		receiveShadows = true;
 		clipPlanes.resize(0);
 		fogged = true;
-		toneMapped = false;
+		@:bypassAccessor toneMapped = false;
 	}
 
 	/** Opens the batch for drawing in the renderer's current pass through a camera, filling the renderer's viewport.
@@ -1010,8 +1022,14 @@ class Batch3D {
 	// The renderer, the default shaders, each shader's filled names, the views drawn through, and the frame's streams: the batch draws'
 	// 40-byte vertices, wide lines' and large points' 60-byte ones, instanced meshes' copies.
 	final renderer:Renderer;
+	// The batch draws' shader; those made as the program's calls need them: the wide lines' and large points' (wideShader, at the first),
+	// the tone-mapped (tonedShader, made by the first toneMapped set, narrow or wide), and the Unlit material's (at the first mesh draw).
 	final batchShader:Shader;
-	final unlitShader:Shader;
+	var wideShader:Null<Shader> = null;
+	var tonedShader:Null<Bool->Shader> = null;
+	var tonedNarrowShader:Null<Shader> = null;
+	var tonedWideShader:Null<Shader> = null;
+	var unlitShader:Null<Shader> = null;
 	final fills = new haxe.ds.ObjectMap<Shader, RenderFill>();
 	final viewPool:Array<RenderView> = [];
 	var viewCount = 0;
@@ -1290,7 +1308,7 @@ class Batch3D {
 		var count = stream.count - runFirst;
 		if (count <= 0)
 			return;
-		var s = runValues != null ? runValues.shader : batchShader;
+		var s = runValues != null ? runValues.shader : runToneMapped ? tonedShader(runKind == 3) : runKind == 3 ? wideShader : batchShader;
 		var fill = fillFor(s);
 		var primitive:helix.platform.Primitive = runKind == 1 ? Lines : runKind == 2 ? Points : Triangles;
 		var spec = renderer.pipelineFor(s, renderer.stateFor(primitive, false, runBlend, runDepthTest, runDepthWrite, runCull, runColorWrite),
@@ -1410,6 +1428,8 @@ class Batch3D {
 			put(x, y, z, u, v, 0, 0, 1, color);
 			return;
 		}
+		if (wideShader == null)
+			wideShader = RenderShaders.compileOwn("batch.vert", "batch3d.frag");
 		start(3, texture, 0);
 		putWide(x, y, z, 0, 0, color, -1, 1, x, y, z);
 		putWide(x, y, z, 1, 0, color, 1, 1, x, y, z);
@@ -1427,6 +1447,8 @@ class Batch3D {
 			put(x1, y1, z1, 0, 0, 0, 0, 1, c1);
 			return;
 		}
+		if (wideShader == null)
+			wideShader = RenderShaders.compileOwn("batch.vert", "batch3d.frag");
 		start(3, null, 0, width);
 		putWide(x0, y0, z0, 0, 0, c0, -1, -1, x1, y1, z1);
 		putWide(x0, y0, z0, 0, 0, c0, -1, 1, x1, y1, z1);
@@ -1529,6 +1551,8 @@ class Batch3D {
 			throw "helix-render: a draw of a disposed mesh";
 		if (material.shaderValues == null && material.shading != Unlit)
 			throw "helix-render: a lit material (Material3D.shading) is not yet built (stage 2, lit materials and lights); draw it Unlit";
+		if (material.shaderValues == null && unlitShader == null)
+			unlitShader = RenderShaders.compileOwn("mesh.vert", "unlit.frag");
 		var s = material.shaderValues != null ? material.shaderValues.shader : unlitShader;
 		var fill = fillFor(s);
 		var primitive:helix.platform.Primitive = Triangles;

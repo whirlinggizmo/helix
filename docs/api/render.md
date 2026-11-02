@@ -102,7 +102,7 @@ function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, ?color:Int = 0xff
 function drawList(list:DrawList2D, ?placement:Matrix2D):Void
 ```
 
-- `new`: Creates a batch over a renderer, with its default shader: textured and colored triangles, the texel times the color, which draw sprites, shapes and text, a distance-field font's atlas as its alpha is stored.
+- `new`: Creates a batch over a renderer, with its default shader: textured and colored triangles, the texel times the color, which draw sprites, shapes and text.
   - `renderer`: The renderer it records into.
 - `compileShader`: Compiles a fragment stage over the batch's vertex stage, for a `Batch2D`'s draws (`shaderValues`).
   - `fragment`: The fragment stage's file, relative to the file holding the call.
@@ -417,7 +417,7 @@ var castShadows:Bool
 var receiveShadows:Bool
 final clipPlanes:Array<Float>
 var fogged:Bool
-var toneMapped:Bool
+var toneMapped(default, set):Bool
 var shapeRegion(default, set):Null<TextureRegion2D>
 final lights:Array<Light3D>
 var environment:Environment3D
@@ -460,7 +460,7 @@ function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, ?color:Int = 0xff
 function drawList(list:DrawList3D, transform:Matrix3D):Void
 ```
 
-- `new`: Creates a batch over a renderer, with its default shaders, built now: every shading (skinned, morphed and instanced too), the shadow casters, the background, and the batch draws' one shader (lines, points, triangles, shapes, sprites and text of every font kind).
+- `new`: Creates a batch over a renderer, with its default shaders: every shading (skinned, morphed and instanced too), the shadow casters, the background, and the batch draws' (lines, points, triangles, shapes, sprites and text). A program carries the shaders of the draws it calls: the meshes' with `drawMesh` or `drawModel`, the wide lines' and large points' with `drawLines` or `drawPoints`, the tone-mapped batch draws' once `toneMapped` is set.
   - `renderer`: The renderer it records into.
 - `compileShader`: Compiles a fragment stage over the batch's vertex stage, for a `Batch3D`'s batch draws (`shaderValues`).
   - `fragment`: The fragment stage's file, relative to the file holding the call.
@@ -1422,7 +1422,7 @@ function toString():String
 
 Represents a font ready to draw: helix-services' `Font2D` with its atlas on the GPU.
 
-`Renderer.createFont` makes one, from a font helix-services' `Fonts` made; `Batch2D.drawText`, `Batch3D.drawText` and `TextLayout2D` use it; the program frees its atlas with `dispose`. A size is measured as the font's is, from its ascent to its descent; a font drawn at another size is scaled. Every kind of font is drawn by the batches' one shader, which reads a coverage or bitmap atlas's alpha as it is and makes a distance-field atlas's edge sharp at the size drawn (`fontKind`).
+`Renderer.createFont` makes one, from a font helix-services' `Fonts` made; `Batch2D.drawText`, `Batch3D.drawText` and `TextLayout2D` use it; the program frees its atlas with `dispose`. A size is measured as the font's is, from its ascent to its descent; a font drawn at another size is scaled. Each batch's default shader draws its atlas's alpha as it is stored; a distance-field atlas's sharp edge, at any size, comes with the font's kind (helix-services' `Font2D.kind`, asked for), as a shader variant only a program drawing such a font carries. A program's shader is given the kind as `fontKind`.
 
 A character the font lacks is drawn, and measured, as the font's `?`, or else as its .notdef (`Font2D.notdef`), and skipped when it has neither, as raylib draws one; the first time each such character is met in a font, a warning is logged (helix-log, tag "render"). A control character the font lacks (a tab, a carriage return) is skipped, unwarned.
 

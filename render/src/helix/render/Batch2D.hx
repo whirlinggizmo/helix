@@ -148,7 +148,7 @@ class Batch2D {
 	public var open(default, null):Bool = false;
 
 	/** Creates a batch over a renderer, with its default shader: textured and colored triangles, the texel times the color, which draw
-		sprites, shapes and text, a distance-field font's atlas as its alpha is stored.
+		sprites, shapes and text.
 
 		@param renderer  The renderer it records into. */
 	public function new(renderer:Renderer) {
@@ -601,7 +601,7 @@ class Batch2D {
 	// open; each shader's names the batch fills, the attributes the vertices don't carry fed from the renderer's constants; and the
 	// values a draw reads, captured and compared, so values written since start the next GPU draw.
 	function drawValues():Void {
-		var view = new RenderView(RenderShaders.compileOwn("batch.vert", "batch.frag"));
+		var view = new RenderView(RenderShaders.compileOwn("batch3d.vert", "batch3d.frag"));
 		var fills = new haxe.ds.ObjectMap<Shader, RenderFill>();
 		var runCapture = new ShaderSnapshot(),
 			nextCapture = new ShaderSnapshot();
