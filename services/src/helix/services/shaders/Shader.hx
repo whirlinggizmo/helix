@@ -605,6 +605,9 @@ class Shader implements IShaderHandles {
 
 	@:allow(helix.services.shaders)
 	function replace(next:ShaderSource):Void {
+		#if !macro
+		ShaderPrograms.rebuilding = ShaderPrograms.rebuildReplaced;
+		#end
 		read(next);
 		reloadError = null;
 		reloadCount++;

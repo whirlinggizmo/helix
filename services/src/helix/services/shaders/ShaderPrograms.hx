@@ -47,9 +47,8 @@ class ShaderPrograms {
 		until `finishFrame`. A rebuild the GPU refuses keeps the old (`ShaderPipeline.buildError`, `Shader.reloadError`). */
 	public function prepareFrame():Void {
 		inFrame = false;
-		for (shader => built in programs)
-			if (built.reloadCount != shader.reloadCount)
-				rebuild(shader, built);
+		if (rebuilding != null)
+			rebuilding(this);
 		inFrame = true;
 	}
 
@@ -184,6 +183,20 @@ class ShaderPrograms {
 		programs.clear();
 		pipelines.clear();
 		disposing.resize(0);
+	}
+
+	// What prepareFrame rebuilds with, installed by the first replacement of any shader (Shader.replace), so a program that never replaces
+	// one links none of it (docs/CONVENTIONS.md, "A program links only what it names").
+	@:allow(helix.services.shaders)
+	static var rebuilding:Null<ShaderPrograms->Void> = null;
+
+	// Every program and pipeline whose shader was replaced since it was built, built again.
+
+	@:allow(helix.services.shaders)
+	static function rebuildReplaced(programs:ShaderPrograms):Void {
+		for (shader => built in programs.programs)
+			if (built.reloadCount != shader.reloadCount)
+				programs.rebuild(shader, built);
 	}
 
 	// Each shader's program, the reloadCount it was built at, and the pipelines made with it.

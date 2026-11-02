@@ -6,7 +6,7 @@ import helix.render.Renderer;
 
 /** A program on helix-render and what it sits on, constructing only what it uses, as a game built on them would. */
 @:adds("helix.platform", "helix.platform.adapters.events.dom", "helix.platform.adapters.graphics.webgl2", "helix.platform.adapters.window.dom",
-	"helix.platform.adapters.shared", "helix.platform.adapters.shared.dom", "helix.render", "helix.services.shaders", "helix.log")
+	"helix.platform.adapters.shared", "helix.platform.adapters.shared.dom", "helix.render", "helix.services.shaders")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;
