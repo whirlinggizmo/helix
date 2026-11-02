@@ -225,6 +225,12 @@ class ModelsTests {
 		models.load("objs/bad.obj", _ -> throw "loaded a bad file", message -> why = message);
 		pump();
 		check(why.indexOf("objs/bad.obj") >= 0 && why.indexOf("Line 2") >= 0, "a file that can't be read fails, by its path and line");
+		// An MP3's first bytes named as glTF: not UTF-8, which a browser's Bytes.toString throws a RangeError for.
+		files.files.set("objs/noise.gltf", Bytes.ofHex("fffb9064ffffffff"));
+		why = "";
+		models.load("objs/noise.gltf", _ -> throw "loaded what isn't glTF", message -> why = message);
+		pump();
+		check(why.indexOf("objs/noise.gltf") >= 0 && why.indexOf("Not UTF-8") >= 0, "bytes that aren't text fail as a glTF file, by path: " + why);
 		files.files.set("objs/missing.obj", Bytes.ofString("v 0 0 0\nf 1 2 3\n"));
 		why = "";
 		models.load("objs/missing.obj", _ -> throw "loaded a file naming what it lacks", message -> why = message);

@@ -1,6 +1,7 @@
 package helix.formats.audio;
 
 import haxe.io.Bytes;
+import helix.formats.text.Utf8Text;
 
 /** Provides reading a sound file's length, channels and rate from its first bytes, and for some kinds its last, without decoding it.
 
@@ -31,13 +32,13 @@ class AudioHeader {
 	public static function readDuration(start:Bytes, ?end:Bytes, size:Int):Float {
 		if (end == null && size <= start.length)
 			end = start;
-		if (start.length >= 12 && matches(start, 0, "RIFF") && matches(start, 8, "WAVE"))
+		if (start.length >= 12 && Utf8Text.matchesAscii(start, 0, "RIFF") && Utf8Text.matchesAscii(start, 8, "WAVE"))
 			return wav(start, size);
-		if (start.length >= 4 && matches(start, 0, "OggS"))
+		if (start.length >= 4 && Utf8Text.matchesAscii(start, 0, "OggS"))
 			return ogg(start, end);
 		var p = tagsEnd(start);
 		var tagged = p > 0;
-		if (p + 4 <= start.length && matches(start, p, "fLaC"))
+		if (p + 4 <= start.length && Utf8Text.matchesAscii(start, p, "fLaC"))
 			return flac(start, p);
 		return mp3(start, p, tagged, end, size);
 	}
@@ -50,32 +51,32 @@ class AudioHeader {
 		@param start  The file's first bytes, as many as there are or as are read; 64 KiB is enough for most files.
 		@return  The channels, or 0 when it can't tell: an unknown kind or too few bytes. */
 	public static function readChannelCount(start:Bytes):Int {
-		if (start.length >= 12 && matches(start, 0, "RIFF") && matches(start, 8, "WAVE")) {
+		if (start.length >= 12 && Utf8Text.matchesAscii(start, 0, "RIFF") && Utf8Text.matchesAscii(start, 8, "WAVE")) {
 			var p = 12;
 			while (p + 8 <= start.length) {
 				var chunkSize = unsigned(start.getInt32(p + 4));
-				if (matches(start, p, "fmt "))
+				if (Utf8Text.matchesAscii(start, p, "fmt "))
 					return p + 12 <= start.length ? start.getUInt16(p + 10) : 0;
 				p = Std.int(p + 8 + chunkSize + (chunkSize % 2));
 			}
 			return 0;
 		}
-		if (start.length >= 4 && matches(start, 0, "OggS")) {
+		if (start.length >= 4 && Utf8Text.matchesAscii(start, 0, "OggS")) {
 			if (start.length < 28 || start.get(4) != 0)
 				return 0;
 			var packet = 27 + start.get(26);
-			if (packet + 12 <= start.length && start.get(packet) == 1 && matches(start, packet + 1, "vorbis"))
+			if (packet + 12 <= start.length && start.get(packet) == 1 && Utf8Text.matchesAscii(start, packet + 1, "vorbis"))
 				return start.get(packet + 11);
-			if (packet + 10 <= start.length && matches(start, packet, "OpusHead"))
+			if (packet + 10 <= start.length && Utf8Text.matchesAscii(start, packet, "OpusHead"))
 				return start.get(packet + 9);
-			if (packet + 30 <= start.length && start.get(packet) == 0x7F && matches(start, packet + 1, "FLAC"))
+			if (packet + 30 <= start.length && start.get(packet) == 0x7F && Utf8Text.matchesAscii(start, packet + 1, "FLAC"))
 				return ((start.get(packet + 29) >> 1) & 7) + 1;
-			if (packet + 52 <= start.length && matches(start, packet, "Speex   "))
+			if (packet + 52 <= start.length && Utf8Text.matchesAscii(start, packet, "Speex   "))
 				return start.getInt32(packet + 48);
 			return 0;
 		}
 		var p = tagsEnd(start);
-		if (p + 4 <= start.length && matches(start, p, "fLaC")) {
+		if (p + 4 <= start.length && Utf8Text.matchesAscii(start, p, "fLaC")) {
 			var info = p + 8;
 			return info + 13 <= start.length && (start.get(p + 4) & 0x7F) == 0 ? ((start.get(info + 12) >> 1) & 7) + 1 : 0;
 		}
@@ -91,32 +92,32 @@ class AudioHeader {
 		@param start  The file's first bytes, as many as there are or as are read; 64 KiB is enough for most files.
 		@return  The rate, or 0 when it can't tell: an unknown kind or too few bytes. */
 	public static function readSampleRate(start:Bytes):Int {
-		if (start.length >= 12 && matches(start, 0, "RIFF") && matches(start, 8, "WAVE")) {
+		if (start.length >= 12 && Utf8Text.matchesAscii(start, 0, "RIFF") && Utf8Text.matchesAscii(start, 8, "WAVE")) {
 			var p = 12;
 			while (p + 8 <= start.length) {
 				var chunkSize = unsigned(start.getInt32(p + 4));
-				if (matches(start, p, "fmt "))
+				if (Utf8Text.matchesAscii(start, p, "fmt "))
 					return p + 16 <= start.length ? start.getInt32(p + 12) : 0;
 				p = Std.int(p + 8 + chunkSize + (chunkSize % 2));
 			}
 			return 0;
 		}
-		if (start.length >= 4 && matches(start, 0, "OggS")) {
+		if (start.length >= 4 && Utf8Text.matchesAscii(start, 0, "OggS")) {
 			if (start.length < 28 || start.get(4) != 0)
 				return 0;
 			var packet = 27 + start.get(26);
-			if (packet + 16 <= start.length && start.get(packet) == 1 && matches(start, packet + 1, "vorbis"))
+			if (packet + 16 <= start.length && start.get(packet) == 1 && Utf8Text.matchesAscii(start, packet + 1, "vorbis"))
 				return start.getInt32(packet + 12);
-			if (packet + 8 <= start.length && matches(start, packet, "OpusHead"))
+			if (packet + 8 <= start.length && Utf8Text.matchesAscii(start, packet, "OpusHead"))
 				return 48000;
-			if (packet + 30 <= start.length && start.get(packet) == 0x7F && matches(start, packet + 1, "FLAC"))
+			if (packet + 30 <= start.length && start.get(packet) == 0x7F && Utf8Text.matchesAscii(start, packet + 1, "FLAC"))
 				return (start.get(packet + 27) << 12) | (start.get(packet + 28) << 4) | (start.get(packet + 29) >> 4);
-			if (packet + 40 <= start.length && matches(start, packet, "Speex   "))
+			if (packet + 40 <= start.length && Utf8Text.matchesAscii(start, packet, "Speex   "))
 				return start.getInt32(packet + 36);
 			return 0;
 		}
 		var p = tagsEnd(start);
-		if (p + 4 <= start.length && matches(start, p, "fLaC")) {
+		if (p + 4 <= start.length && Utf8Text.matchesAscii(start, p, "fLaC")) {
 			var info = p + 8;
 			return info + 13 <= start.length
 				&& (start.get(p + 4) & 0x7F) == 0 ? (start.get(info + 10) << 12) | (start.get(info + 11) << 4) | (start.get(info + 12) >> 4) : 0;
@@ -132,7 +133,7 @@ class AudioHeader {
 	// Where a file's ID3v2 tags end: 0 when it has none.
 	static function tagsEnd(start:Bytes):Int {
 		var p = 0;
-		while (p + 10 <= start.length && matches(start, p, "ID3")) {
+		while (p + 10 <= start.length && Utf8Text.matchesAscii(start, p, "ID3")) {
 			var tagSize = (start.get(p + 6) << 21) | (start.get(p + 7) << 14) | (start.get(p + 8) << 7) | start.get(p + 9);
 			p += 10 + tagSize + ((start.get(p + 5) & 0x10) != 0 ? 10 : 0);
 		}
@@ -146,7 +147,7 @@ class AudioHeader {
 		while (p + 8 <= start.length) {
 			var chunkSize = unsigned(start.getInt32(p + 4));
 			var body = p + 8;
-			if (matches(start, p, "fmt ") && body + 16 <= start.length) {
+			if (Utf8Text.matchesAscii(start, p, "fmt ") && body + 16 <= start.length) {
 				tag = start.getUInt16(body);
 				channels = start.getUInt16(body + 2);
 				rate = start.getInt32(body + 4);
@@ -155,9 +156,9 @@ class AudioHeader {
 				bits = start.getUInt16(body + 14);
 				if (tag == 0xFFFE && chunkSize >= 40 && body + 26 <= start.length)
 					tag = start.getUInt16(body + 24);
-			} else if (matches(start, p, "fact") && body + 4 <= start.length)
+			} else if (Utf8Text.matchesAscii(start, p, "fact") && body + 4 <= start.length)
 				factFrames = unsigned(start.getInt32(body));
-			else if (matches(start, p, "data")) {
+			else if (Utf8Text.matchesAscii(start, p, "data")) {
 				if (tag < 0 || rate <= 0)
 					return 0;
 				var available = size - body;
@@ -186,20 +187,20 @@ class AudioHeader {
 			return 0;
 		var serial = start.getInt32(14);
 		var rate = 0, skip = 0;
-		if (start.get(packet) == 1 && matches(start, packet + 1, "vorbis") && packet + 16 <= start.length)
+		if (start.get(packet) == 1 && Utf8Text.matchesAscii(start, packet + 1, "vorbis") && packet + 16 <= start.length)
 			rate = start.getInt32(packet + 12);
-		else if (matches(start, packet, "OpusHead") && packet + 12 <= start.length) {
+		else if (Utf8Text.matchesAscii(start, packet, "OpusHead") && packet + 12 <= start.length) {
 			rate = 48000;
 			skip = start.getUInt16(packet + 10);
-		} else if (start.get(packet) == 0x7F && matches(start, packet + 1, "FLAC") && packet + 30 <= start.length)
+		} else if (start.get(packet) == 0x7F && Utf8Text.matchesAscii(start, packet + 1, "FLAC") && packet + 30 <= start.length)
 			rate = (start.get(packet + 27) << 12) | (start.get(packet + 28) << 4) | (start.get(packet + 29) >> 4);
-		else if (matches(start, packet, "Speex   ") && packet + 40 <= start.length)
+		else if (Utf8Text.matchesAscii(start, packet, "Speex   ") && packet + 40 <= start.length)
 			rate = start.getInt32(packet + 36);
 		if (rate <= 0)
 			return 0;
 		var p = end.length - 27;
 		while (p >= 0) {
-			if (end.get(p) == "O".code && matches(end, p, "OggS") && end.get(p + 4) == 0 && end.getInt32(p + 14) == serial) {
+			if (end.get(p) == "O".code && Utf8Text.matchesAscii(end, p, "OggS") && end.get(p + 4) == 0 && end.getInt32(p + 14) == serial) {
 				var length = page(end, p);
 				var low = end.getInt32(p + 6), high = end.getInt32(p + 10);
 				if (length > 0 && !(low == -1 && high == -1)) {
@@ -265,15 +266,16 @@ class AudioHeader {
 		if (layer == 1) {
 			var xing = frame + 4 + (mpeg1 ? (mono ? 17 : 32) : (mono ? 9 : 17));
 			if (xing + 12 <= start.length) {
-				if ((matches(start, xing, "Xing") || matches(start, xing, "Info")) && (bigEndian32(start, xing + 4) & 1) != 0)
+				if ((Utf8Text.matchesAscii(start, xing, "Xing") || Utf8Text.matchesAscii(start, xing, "Info"))
+					&& (bigEndian32(start, xing + 4) & 1) != 0)
 					return unsigned(bigEndian32(start, xing + 8)) * samplesPerFrame / rate;
 			}
 		}
 		var vbri = frame + 36;
-		if (vbri + 18 <= start.length && matches(start, vbri, "VBRI"))
+		if (vbri + 18 <= start.length && Utf8Text.matchesAscii(start, vbri, "VBRI"))
 			return unsigned(bigEndian32(start, vbri + 14)) * samplesPerFrame / rate;
 		var audio = size - frame;
-		if (end != null && end.length >= 128 && matches(end, end.length - 128, "TAG"))
+		if (end != null && end.length >= 128 && Utf8Text.matchesAscii(end, end.length - 128, "TAG"))
 			audio -= 128;
 		return audio * 8 / (bitrate(b1, b2) * 1000);
 	}
@@ -327,16 +329,6 @@ class AudioHeader {
 
 	// MPEG-1's rates; MPEG-2 halves them, MPEG-2.5 quarters them.
 	static final SAMPLE_RATES = [44100, 48000, 32000];
-
-	// Whether the bytes at p are the ASCII text given (Bytes.getString decodes UTF-8, which arbitrary bytes may not be).
-	static function matches(bytes:Bytes, p:Int, text:String):Bool {
-		if (p < 0 || p + text.length > bytes.length)
-			return false;
-		for (i in 0...text.length)
-			if (bytes.get(p + i) != StringTools.fastCodeAt(text, i))
-				return false;
-		return true;
-	}
 
 	static inline function unsigned(v:Int):Float
 		return v < 0 ? v + 4294967296.0 : v;

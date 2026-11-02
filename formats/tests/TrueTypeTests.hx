@@ -40,6 +40,29 @@ class TrueTypeTests {
 		} catch (e:String)
 			true;
 		check(refused, "what isn't a font throws");
+		// A damaged font: a TrueType version, one table, its tag bytes that aren't UTF-8 (a browser's getString throws a RangeError for
+		// them, not a String).
+		var damaged = haxe.io.Bytes.alloc(64);
+		damaged.set(1, 1);
+		damaged.set(5, 1);
+		for (i in 0...4)
+			damaged.set(12 + i, [0xF4, 0x90, 0x80, 0x80][i]);
+		var why = try {
+			new TrueTypeTables(damaged);
+			null;
+		} catch (e:String)
+			e;
+		check(why != null && why.indexOf("missing") >= 0, "a table tag that isn't text throws a String: the tables are missing");
+		// A table count running past the file's end.
+		var short = haxe.io.Bytes.alloc(12);
+		short.set(1, 1);
+		short.set(4, 0xFF);
+		var shortWhy = try {
+			new TrueTypeTables(short);
+			null;
+		} catch (e:String)
+			e;
+		check(shortWhy != null, "a table directory past the file's end throws a String");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

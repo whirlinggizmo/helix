@@ -297,6 +297,20 @@ class GltfTests {
 		check(thrown(() -> GltfFile.read(Bytes.ofString("hello"), "x.gltf")) != null, "neither GLB nor JSON throws");
 		check(thrown(() -> GltfFile.read(Bytes.ofString("{\"asset\":{\"version\":\"1.0\"}}"), "x.gltf")) != null, "glTF 1.0 throws");
 		check(thrown(() -> GltfFile.read(Bytes.ofString("{\"asset\":"), "x.gltf")) != null, "broken JSON throws a String");
+		// Bytes that aren't UTF-8 (a browser's Bytes.toString throws a RangeError for them, not a String): an MP3's first bytes, a code
+		// point past U+10FFFF, a cut sequence; and a byte order mark before the JSON.
+		for (hex in ["fffb9064ffffffff", "f4908080", "7b22f09f", "efbbbf7b7d"])
+			check(thrown(() -> GltfFile.read(Bytes.ofHex(hex), "x.gltf")) != null, '$hex throws a String');
+		var noisy = glb('{"asset":{"version":"2.0"}}', Bytes.alloc(0));
+		noisy.set(20, 0xFF);
+		check(thrown(() -> GltfFile.read(noisy, "x.glb")) != null, "a GLB whose JSON chunk isn't UTF-8 throws a String");
+		var padded = glb('{"asset":{"version":"2.0"}}', Bytes.alloc(0));
+		var json = padded.getInt32(12), end = 20 + json;
+		while (end > 20 && padded.get(end - 1) == " ".code) {
+			end--;
+			padded.set(end, 0);
+		}
+		check(thrown(() -> GltfFile.read(padded, "x.glb")) == null, "a GLB whose JSON chunk is padded with NUL bytes reads");
 		var v1 = glb('{"asset":{"version":"2.0"}}', Bytes.alloc(0));
 		v1.setInt32(4, 1);
 		check(thrown(() -> GltfFile.read(v1, "x.glb")) != null, "a GLB of version 1 throws");

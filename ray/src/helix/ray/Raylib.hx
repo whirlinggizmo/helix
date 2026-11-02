@@ -5416,6 +5416,9 @@ class Raylib {
 	/** Reads a text file, answering when it is read: helix-ray's own, in place of raylib's `LoadFileText`. The program's
 		`SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
 
+		A file's text ends at its first NUL byte, as raylib's C string does, and a byte that isn't UTF-8 is read as U+FFFD: a file is never
+		refused for what it holds.
+
 		@param fileName  The file.
 		@param loaded  Receives its text.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */

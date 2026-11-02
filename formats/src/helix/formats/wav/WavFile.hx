@@ -1,6 +1,7 @@
 package helix.formats.wav;
 
 import haxe.io.Bytes;
+import helix.formats.text.Utf8Text;
 import haxe.io.FPHelper;
 
 /** Represents the sound read from a WAV file: its rate, channels, sample size and samples; and provides writing one.
@@ -57,7 +58,7 @@ class WavFile {
 			format or data chunk, a format out of range, or samples stored some other way (ADPCM and compressed encodings aren't read). */
 	public static function read(data:Bytes):WavFile {
 		var size = data.length;
-		if (!matches(data, 0, "RIFF") || !matches(data, 8, "WAVE"))
+		if (!Utf8Text.matchesAscii(data, 0, "RIFF") || !Utf8Text.matchesAscii(data, 8, "WAVE"))
 			throw "not a WAV file: no RIFF WAVE header";
 		var formatTag = 0, channelCount = 0, sampleRate = 0, blockAlign = 0, bitsPerSample = 0, subFormat = 0;
 		var foundFormat = false;
@@ -68,7 +69,7 @@ class WavFile {
 			var start = p + 8;
 			var padding = chunkSize & 1;
 			var unsignedSize:Float = unsigned(chunkSize);
-			if (matches(data, p, "fmt ")) {
+			if (Utf8Text.matchesAscii(data, p, "fmt ")) {
 				if (start + 16 > size)
 					throw "not a WAV file: its format chunk ends early";
 				foundFormat = true;
@@ -98,11 +99,11 @@ class WavFile {
 				if (next + padding > size)
 					break;
 				p = next + padding;
-			} else if (matches(data, p, "data")) {
+			} else if (Utf8Text.matchesAscii(data, p, "data")) {
 				dataPos = start;
 				dataSize = chunkSize;
 				break;
-			} else if (matches(data, p, "fact")) {
+			} else if (Utf8Text.matchesAscii(data, p, "fact")) {
 				if (start + 4 > size)
 					throw "not a WAV file: its fact chunk ends early";
 				if (unsignedSize < 4 || unsignedSize + padding > size - start)
@@ -281,16 +282,6 @@ class WavFile {
 	static final U8_SCALE = f32(0.00784313725490196078);
 
 	// A 32-bit unsigned integer's value.
-	// Whether the bytes at p are the ASCII text given (Bytes.getString decodes UTF-8, which arbitrary bytes may not be).
-	static function matches(bytes:Bytes, p:Int, text:String):Bool {
-		if (p < 0 || p + text.length > bytes.length)
-			return false;
-		for (i in 0...text.length)
-			if (bytes.get(p + i) != StringTools.fastCodeAt(text, i))
-				return false;
-		return true;
-	}
-
 	static inline function unsigned(v:Int):Float
 		return v < 0 ? v + 4294967296.0 : v;
 

@@ -1,6 +1,7 @@
 package helix.formats.obj;
 
 import haxe.io.Bytes;
+import helix.formats.text.Utf8Text;
 
 /** Reads the text an OBJ or MTL file is made of: its lines, their words and numbers, and the paths they name. */
 @:noCompletion
@@ -22,9 +23,9 @@ class ObjText {
 			else if (b == 0)
 				throw 'Line $line: not text (a NUL byte)';
 		}
-		var text = if (isUtf8(bytes)) {
+		var text = if (Utf8Text.isValid(bytes)) {
 			var start = bytes.length >= 3 && bytes.get(0) == 0xEF && bytes.get(1) == 0xBB && bytes.get(2) == 0xBF ? 3 : 0;
-			bytes.getString(start, bytes.length - start);
+			Utf8Text.decode(bytes, start);
 		} else {
 			var latin1 = new StringBuf();
 			for (at in 0...bytes.length)
@@ -32,46 +33,6 @@ class ObjText {
 			latin1.toString();
 		}
 		return ~/\r\n|\r|\n/g.split(text);
-	}
-
-	// Whether bytes are UTF-8: each sequence whole, none overlong, no surrogate, none past U+10FFFF.
-	static function isUtf8(bytes:Bytes):Bool {
-		var at = 0;
-		while (at < bytes.length) {
-			var b = bytes.get(at);
-			if (b < 0x80) {
-				at++;
-				continue;
-			}
-			// A lead byte, its count of continuation bytes, and the least code point it may give (no overlong forms).
-			var count = 0, least = 0, code = 0;
-			if (b >= 0xC2 && b <= 0xDF) {
-				count = 1;
-				least = 0x80;
-				code = b & 0x1F;
-			} else if (b >= 0xE0 && b <= 0xEF) {
-				count = 2;
-				least = 0x800;
-				code = b & 0x0F;
-			} else if (b >= 0xF0 && b <= 0xF4) {
-				count = 3;
-				least = 0x10000;
-				code = b & 0x07;
-			} else
-				return false;
-			if (at + count >= bytes.length)
-				return false;
-			for (k in 1...count + 1) {
-				var c = bytes.get(at + k);
-				if (c & 0xC0 != 0x80)
-					return false;
-				code = (code << 6) | (c & 0x3F);
-			}
-			if (code < least || code > 0x10FFFF || (code >= 0xD800 && code <= 0xDFFF))
-				return false;
-			at += count + 1;
-		}
-		return true;
 	}
 
 	/** Returns a line's words: what's between spaces and tabs, up to a `#` that starts a word, which begins a comment.

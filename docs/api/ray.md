@@ -3985,6 +3985,8 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   - `fileName`: The file.
   - `loaded`: Receives its text.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+  A file's text ends at its first NUL byte, as raylib's C string does, and a byte that isn't UTF-8 is read as U+FFFD: a file is never refused for what it holds.
 - `LoadFileDataAsync`: Reads a file's bytes, answering when they are read: helix-ray's own, in place of raylib's `LoadFileData`. The program's `SetLoadFileDataCallback` answers first, then what `SaveFileData` wrote, then the program's files.
   - `fileName`: The file.
   - `loaded`: Receives its bytes.

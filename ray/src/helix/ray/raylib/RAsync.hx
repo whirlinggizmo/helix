@@ -335,6 +335,9 @@ class RAsync {
 	/** Reads a text file, answering when it is read: helix-ray's own, in place of raylib's `LoadFileText`. The program's
 		`SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
 
+		A file's text ends at its first NUL byte, as raylib's C string does, and a byte that isn't UTF-8 is read as U+FFFD: a file is never
+		refused for what it holds.
+
 		@param fileName  The file.
 		@param loaded  Receives its text.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
@@ -351,8 +354,17 @@ class RAsync {
 				Runtime.later(() -> loaded(text));
 				return;
 			}
-			Runtime.fetch(path, error -> error == null ? loaded(Runtime.files.get(path).toString()) : refuse("LoadFileTextAsync", error, failed));
+			Runtime.fetch(path, error -> error == null ? loaded(fileText(Runtime.files.get(path))) : refuse("LoadFileTextAsync", error, failed));
 		});
+	}
+
+	// A file's text as raylib's LoadFileText gives it: its bytes up to the first NUL (a C string ends there for every text function), and
+	// never refused for what they hold; bytes that aren't UTF-8, which a String can't hold, read as U+FFFD.
+	static function fileText(bytes:haxe.io.Bytes):String {
+		var end = 0;
+		while (end < bytes.length && bytes.get(end) != 0)
+			end++;
+		return helix.formats.text.Utf8Text.decodeReplacing(bytes, 0, end);
 	}
 
 	/** Reads a file's bytes, answering when they are read: helix-ray's own, in place of raylib's `LoadFileData`. The program's

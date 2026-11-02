@@ -79,6 +79,12 @@ class FontsTests {
 		var b = pixel.getGlyph(66);
 		check(b.x == 1 && b.y == 5 && b.offsetY == -5 && b.advance == 3, "a character on the second page: below the first, offset from the baseline");
 		check(pixel.size == 10 && pixel.ascent == 8 && pixel.descent == -2, "its size its line height, its ascent its base");
+		// BMFont's binary format, its header bytes that aren't UTF-8 (a browser's toString throws a RangeError for them).
+		files.files.set("fonts/binary.fnt", Bytes.ofHex("424d4603010e000000f4908080"));
+		why = "";
+		new Fonts(rasterizer, assets, images).loadBmFont("fonts/binary.fnt", _ -> throw "loaded a binary BMFont", m -> why = m);
+		pump();
+		check(why.indexOf("fonts/binary.fnt") >= 0 && why.indexOf("binary BMFont") >= 0, "a binary BMFont file fails, by name: " + why);
 		var fonts = new Fonts(rasterizer, assets, images), raster:Array<helix.platform.RasterGlyph> = null, metrics = [];
 		fonts.rasterize(Bytes.ofString("font"), 8, [65, 0x4E00, 66], Coverage, (glyphs, ascent, descent, lineGap) -> {
 			raster = glyphs;

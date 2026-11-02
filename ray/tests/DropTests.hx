@@ -5,7 +5,8 @@ import helix.ray.internal.Runtime;
 
 /** Checks helix-ray's dropped files, which a program naming `IsFileDropped` or `LoadDroppedFiles` links (docs/DECISIONS.md 15): the
 	drop's reading is set as the program starts, so a drop before either is first called is read; a drop's files are listed under
-	helix-ray's own paths, which the assets read; the next drop's replace them; `UnloadDroppedFiles` lets go of the list, the files staying. On
+	helix-ray's own paths, which the assets read; the next drop's replace them; `UnloadDroppedFiles` lets go of the list, the files staying;
+	a dropped file that isn't text read by `LoadFileTextAsync` as raylib's `LoadFileText` reads it. On
 	a window whose dropped files the test sets (services' `FakeWindow`), without events: a drop is given as `Runtime`'s poll gives one. */
 @:access(helix.ray.internal.Runtime)
 class DropTests {
@@ -70,6 +71,17 @@ class DropTests {
 		Runtime.assets.load(first.paths[1], _ -> throw "the last drop's file still read", e -> gone = e);
 		pump(() -> gone != null);
 		check(gone != null, "the last drop's files are let go");
+
+		// A dropped file that isn't text, read as text: as raylib's LoadFileText, up to its first NUL, never refused; what isn't UTF-8
+		// (which a browser's Bytes.toString throws a RangeError for) read as U+FFFD.
+		Runtime.saves = new helix.services.saves.Saves(Runtime.memory);
+		window.dropped.resize(0);
+		window.dropped.push({name: "noise.bin", bytes: Bytes.ofHex("61fffb9062006364")});
+		Runtime.dropping(1);
+		var text:Null<String> = null;
+		LoadFileTextAsync(LoadDroppedFiles().paths[0], t -> text = t, e -> throw e);
+		pump(() -> text != null);
+		check(text == "a\u{FFFD}\u{FFFD}\u{FFFD}b", 'a binary file read as text: up to its NUL, U+FFFD for what isn\'t UTF-8: $text');
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

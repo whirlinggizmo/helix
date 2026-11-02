@@ -1,6 +1,7 @@
 package helix.formats.gltf;
 
 import haxe.io.Bytes;
+import helix.formats.text.Utf8Text;
 import helix.math.Matrix3D;
 import helix.math.Transform3D;
 
@@ -73,11 +74,12 @@ class GltfFile {
 		@param bytes  The file's bytes.
 		@param path  The file's path, against whose directory the paths of its buffers and images are resolved.
 		@return  The model.
-		@throws String  It is neither a glTF 2.0 file nor a GLB, or its JSON or a chunk is broken. */
+		@throws String  It is neither a glTF 2.0 file nor a GLB, or its JSON isn't UTF-8 text or is broken, or a chunk is broken. */
 	public static function read(bytes:Bytes, path:String):GltfFile {
-		if (bytes.length >= 4 && bytes.getString(0, 4) == "glTF")
+		if (Utf8Text.matchesAscii(bytes, 0, "glTF"))
 			return readGlb(bytes, path);
-		var text = bytes.toString(), at = 0;
+		var text = try Utf8Text.decode(bytes) catch (e:String) throw 'Neither a GLB nor a glTF (JSON) file: $e';
+		var at = 0;
 		while (at < text.length && StringTools.isSpace(text, at))
 			at++;
 		if (at >= text.length || text.charAt(at) != "{")
@@ -162,7 +164,7 @@ class GltfFile {
 
 	// Reads a GLB file: its JSON chunk, and its BIN chunk as the first buffer.
 	static function readGlb(bytes:Bytes, path:String):GltfFile {
-		if (bytes.length < 20 || bytes.getString(0, 4) != "glTF")
+		if (bytes.length < 20 || !Utf8Text.matchesAscii(bytes, 0, "glTF"))
 			throw "Not a GLB file";
 		if (bytes.getInt32(4) != 2)
 			throw 'GLB version ${bytes.getInt32(4)} is not 2';
@@ -174,9 +176,13 @@ class GltfFile {
 			var size = bytes.getInt32(at), type = bytes.getInt32(at + 4);
 			if (size < 0 || at + 8 + size > length)
 				throw "GLB chunk runs past the file";
-			if (type == JSON_CHUNK && json == null)
-				json = bytes.getString(at + 8, size);
-			else if (type == BIN_CHUNK && binary == null)
+			if (type == JSON_CHUNK && json == null) {
+				// The chunk is padded with spaces; some writers pad it with NUL bytes instead, which aren't text.
+				var end = size;
+				while (end > 0 && bytes.get(at + 8 + end - 1) == 0)
+					end--;
+				json = try Utf8Text.decode(bytes, at + 8, end) catch (e:String) throw 'GLB JSON chunk: $e';
+			} else if (type == BIN_CHUNK && binary == null)
 				binary = bytes.sub(at + 8, size);
 			at += 8 + size;
 			at += (4 - at % 4) % 4;

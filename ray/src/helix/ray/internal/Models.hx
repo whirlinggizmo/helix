@@ -577,13 +577,20 @@ class Models {
 		}
 	}
 
-	/** Returns a name as raylib's 32 bytes hold it: its first 31 bytes, in UTF-8.
+	/** Returns a name as raylib's 32 bytes hold it: its first 31 bytes, in UTF-8, less a character those bytes would cut in two (which
+		a String can't hold).
 
 		@param name  The name.
 		@return  The name, cut. */
 	public static function boneName(name:String):String {
 		var bytes = Bytes.ofString(name);
-		return bytes.length <= 31 ? name : bytes.getString(0, 31);
+		if (bytes.length <= 31)
+			return name;
+		var end = 31;
+		// Back to the start of the character byte 31 is in, unless it starts one.
+		while (end > 0 && bytes.get(end) & 0xC0 == 0x80)
+			end--;
+		return bytes.getString(0, end);
 	}
 
 	/** Keeps a model the models service read, so its loads share it, unless it is kept already: the file's meshes, made once with their

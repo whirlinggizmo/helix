@@ -67,7 +67,7 @@ function setBuffer(bufferIndex:Int, bytes:haxe.io.Bytes):Void
   - `bytes`: The file's bytes.
   - `path`: The file's path, against whose directory the paths of its buffers and images are resolved.
   - returns: The model.
-  - throws `String`: It is neither a glTF 2.0 file nor a GLB, or its JSON or a chunk is broken.
+  - throws `String`: It is neither a glTF 2.0 file nor a GLB, or its JSON isn't UTF-8 text or is broken, or a chunk is broken.
 
   Buffers held in the file are read now; those in files of their own are listed in `missingBuffers`.
 - `nodes`: Gets the model's nodes, in the file's order: nodes name each other, and `sceneNodeIndices` names its roots, by their index here.

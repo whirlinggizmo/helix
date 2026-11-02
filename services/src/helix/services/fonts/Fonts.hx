@@ -2,6 +2,7 @@ package helix.services.fonts;
 
 import haxe.io.Bytes;
 import helix.formats.bmfont.BmFontFile;
+import helix.formats.text.Utf8Text;
 import helix.log.Log;
 import helix.math.RectPacker2D;
 import helix.platform.IFontRasterizer;
@@ -116,7 +117,9 @@ class Fonts {
 		aborts.push(assets.load(path, bytes -> {
 			if (aborted)
 				return;
-			var file = try BmFontFile.read(bytes.toString(), path) catch (e:String) {
+			// Replacing, not refusing: a face name in a system's 8-bit encoding needn't refuse the font, and a binary BMFont file
+			// still starts "BMF", which the reader names.
+			var file = try BmFontFile.read(Utf8Text.decodeReplacing(bytes), path) catch (e:String) {
 				report('$path: $e');
 				return;
 			}

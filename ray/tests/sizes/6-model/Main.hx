@@ -8,7 +8,7 @@ import helix.ray.Vector3;
 
 /** A program written in raylib on helix-ray, as a game in raylib would be. Its image is docs/trials/2026-10-30-async/assets/player.png,
 	its model ray/parity/assets/robot.glb. */
-@:adds("helix.formats.gltf", "helix.geometry", "helix.ray.internal.Animations", "helix.ray.raylib.RMath", "helix.services.models")
+@:adds("helix.formats.gltf", "helix.formats.text", "helix.geometry", "helix.ray.internal.Animations", "helix.ray.raylib.RMath", "helix.services.models")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

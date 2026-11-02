@@ -1,6 +1,7 @@
 package helix.formats.truetype;
 
 import haxe.io.Bytes;
+import helix.formats.text.Utf8Text;
 
 /** Represents the tables of a TrueType or OpenType font, read as stb_truetype reads them.
 
@@ -164,7 +165,9 @@ class TrueTypeTables {
 	function find(tag:String):Int {
 		for (i in 0...u16(4)) {
 			var record = 12 + 16 * i;
-			if (data.getString(record, 4) == tag)
+			if (record + 16 > data.length)
+				break;
+			if (Utf8Text.matchesAscii(data, record, tag))
 				return u32(record + 8);
 		}
 		return -1;
