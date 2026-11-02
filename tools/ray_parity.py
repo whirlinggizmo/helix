@@ -97,14 +97,6 @@ def raylib(version):
     return source
 
 
-def free_display():
-    """A display number no X server holds."""
-    for number in range(140, 200):
-        if not Path(f'/tmp/.X11-unix/X{number}').exists() and not Path(f'/tmp/.X{number}-lock').exists():
-            return number
-    raise SystemExit('ray_parity: no free display number in 140-199')
-
-
 def stage(name, manifest, source, out):
     """Writes a suite's sources into out/src and its assets into out; returns the C reference's and the Haxe main's paths."""
     import importlib.util
@@ -392,7 +384,7 @@ def main():
     sources = {v: raylib(v) for v in sorted({every[n]['oracle'] for n in names})}
     started = time.monotonic()
     failed, results = [], []
-    with private_display(free_display()) as display:
+    with private_display() as display:
         for name in names:
             manifest = every[name]
             began = time.monotonic()
