@@ -1,0 +1,8 @@
+# The pixel tests natively, SDL3 drawing with GL: haxe build-native.hxml -> native/PixelTests; hxcpp links the SDL3 library
+# HELIX_SDL3_LIBRARY names (BUILDING.md). It prints {passed, checks, failures} and exits 1 on a failure.
+-lib helix-render
+-cp .
+-main PixelTests
+-dce full
+-D HXCPP_COMPILE_THREADS=4
+-cpp native

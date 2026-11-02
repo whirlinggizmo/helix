@@ -1,9 +1,10 @@
 # Roadmap
 
 - **helix-render, being built** (directory `render/`, packages `helix.render` and `helix.render.effects`; DECISIONS 35), from its
-  agreed API (revision 9), in stages, each member of a later stage throwing and naming it: 1, the renderer and its recorded frame,
-  textures and targets, `Batch2D`, `DrawList2D`, fonts and text, and `Batch3D`'s unlit work (views, the batch draws, unlit meshes and
-  models, instancing, skinning, `DrawList3D`, the compile macros); 2, lit materials and lights (with the draft's model example);
+  agreed API (revision 9), in stages, each member of a later stage throwing and naming it: 1 (done), the renderer and its recorded
+  frame, textures and targets, `Batch2D`, `DrawList2D`, fonts and text, and `Batch3D`'s unlit work (views, the batch draws, unlit
+  meshes and models, instancing, skinning, `DrawList3D`, the compile macros); next, 2, lit materials and lights (with the draft's
+  model example), and a mesh drawn as points larger than a pixel, which stage 1 refuses;
   3, shadows; 4, environment maps and the background; 5, post-processing (with the draft's scene example); 6, fog; 7, morph targets.
   Asked below it: helix-services' `Font2D.kind` and kerning pairs (until then every font draws as coverage, unkerned) and a `Font2D`
   from glyph data; helix-formats' `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions, and morph
@@ -26,6 +27,11 @@
   `Equal` and `GreaterEqual` (helix-render's revision 9). A render target's own sample count, apart from its depth, is being built. Deferred from the vertex formats
   (DECISIONS 33): bone IDs and three.js' skinIndex fed as normalized bytes or shorts and scaled back by the compiler, rounded, as a
   `ShaderCompileOptions` entry; until then they are floats, or a layer owning its shader scales them itself.
+  For review, from helix-render's stage 1: sokol_gfx's GL adapter refuses a vertex layout whose fed attributes leave a gap of slots
+  (sokol's "layout.attrs is not continuous"; a release build draws nothing past the gap), where the contract has an unfed attribute
+  read its constant; helix-render feeds every attribute it names from records of its own meanwhile (`RenderConstants`, to be removed
+  when the adapter fills the gaps itself). Pros: the contract holds on every backend, and a layer stops carrying the records. Cons: the
+  adapter binds a constants buffer of its own, as its SDL_GPU sibling does.
   The platform's checks of a pipeline's vertex layout (`PipelineLayout.check`, every backend, about 0.3 KB gzip) to be trimmed to what
   a backend would otherwise get wrong silently, once the platform's API is settled.
 - **Services features an engine needs and helix-ray now reaches the platform for:** the mouse cursor (shape, visibility, lock) on

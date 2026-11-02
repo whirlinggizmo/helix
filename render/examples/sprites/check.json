@@ -1,0 +1,65 @@
+{
+  "what": "The 60th frame (frame 59) at 800 x 600: the background, the panel's fill over it, the ship's blue middle at the screen's center (the camera follows it), two rocks' fill, and the background where no rock is.",
+  "points": [
+    {
+      "x": 780,
+      "y": 580,
+      "color": [
+        11,
+        15,
+        26
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 20,
+      "y": 60,
+      "color": [
+        15,
+        22,
+        37
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 400,
+      "y": 298,
+      "color": [
+        60,
+        120,
+        220
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 267,
+      "y": 200,
+      "color": [
+        90,
+        74,
+        58
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 141,
+      "y": 180,
+      "color": [
+        90,
+        74,
+        58
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 240,
+      "y": 390,
+      "color": [
+        11,
+        15,
+        26
+      ],
+      "tolerance": 3
+    }
+  ]
+}

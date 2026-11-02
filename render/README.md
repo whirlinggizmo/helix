@@ -29,7 +29,7 @@ haxelib dev helix-render <checkout>/render
 helix-render is built in stages from its agreed API (docs/DECISIONS.md, 34); every member of a later stage throws, naming its stage,
 until that stage is built.
 
-1. **Being built:** the renderer and its recorded frame (target passes, copy on write, clears in order, viewport and scissor), textures,
+1. **Done:** the renderer and its recorded frame (target passes, copy on write, clears in order, viewport and scissor), textures,
    render targets and cube textures, `Batch2D` and `DrawList2D` (sprites, shapes, text, draw lists, culling), fonts and text layout,
    and `Batch3D`'s unlit work: views, the batch draws (lines, points, triangles, billboards, sprites, shapes and text in a plane),
    unlit meshes and models (tints, `MeshState3D`, instancing, skinning by a bone texture, polygon modes), `DrawList3D`, and the
@@ -40,6 +40,11 @@ until that stage is built.
 5. Post-processing.
 6. Fog.
 7. Morph targets.
+
+Waiting on the libraries below (docs/ROADMAP.md): every font draws as coverage and unkerned until helix-services' `Font2D` gives its
+kind and kerning pairs; a render target's multisampling is the platform's (a target with depth as the screen's, one without none) until
+a target has its own count; `TargetDepth.Texture` until the platform samples depth. A mesh drawn as points larger than a pixel
+(`polygonMode` Points with a `pointSize`) throws, not yet built.
 
 ## A frame
 
@@ -82,9 +87,19 @@ What a target holds is its format's: RGBA8 and the screen hold sRGB, RGBA16F hol
 decodes into linear. 3D works in linear light and encodes for the target; the batch draws and an `Unlit` material with `colorSpace`
 Srgb multiply as stored, as raylib does, so its colors pass through.
 
-## Examples and tests
+## Examples
 
-The examples (`examples/`, each showing one thing and built from the hxml files beside it) and the tests (`tests/`) come with
-stage 1.
+Each example in `examples/` shows one thing, and builds from the hxml files beside it, as the platform's do (`-D sdl_gpu` and
+`build-native-gpu.hxml` draw with SDL_GPU):
+
+- `sprites`: sprites split from a sheet and flipped, shapes from a white texel on the same sheet in one GPU draw with them, a wrapped
+  text panel recorded once as a `DrawList2D`, and a measured label, under a following camera.
+- `targets`: a render target drawn into, read, and drawn into again in one frame (copy on write), with a clear recorded mid-batch, a
+  viewport and a scissor.
+- `unlit`: `Batch3D`'s unlit work: an instanced mesh with per-copy colors, a model drawn with a tint and a `MeshState3D`, lines,
+  points of one pixel and large ones, a grid recorded as a `DrawList3D`, and text in a plane.
+
+Its tests are in `tests/`: the CPU-side work (layout, culling, batching, copy on write) on every target (`helix.py test`), and pixel
+checks drawn on each backend (`tools/render_checks.py`).
 
 The API reference is [docs/api/](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/api/README.md), one page per package.

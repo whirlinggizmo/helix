@@ -1,0 +1,8 @@
+# The unlit example natively, SDL3 drawing with GL: haxe build-native.hxml -> native/Main; hxcpp links the SDL3
+# library HELIX_SDL3_LIBRARY names (BUILDING.md). HELIX_FRAMES=60 stops it after 60 frames.
+-lib helix-render
+-cp .
+-main Main
+-dce full
+-D HXCPP_COMPILE_THREADS=4
+-cpp native

@@ -27,7 +27,10 @@ import helix.platform.IHttp;
 	it; asteroids drawn as shapes from a white texel on the same sheet, so rocks and ship are one GPU draw; and a panel of wrapped, centered text, recorded once as a draw list, replayed over it all in the screen's pixels. What is off
 	screen is culled, as `Batch2D.culling` is on.
 
-	The window, its events and the loop are the platform's, written out as a program does them until the layer above the services does. */
+	The window, its events and the loop are the platform's, written out as a program does them until the layer above the services does.
+	Its motion follows the frame's number, a sixtieth of a second a frame, so a frame always looks alike; `-D sdl_gpu`
+	(`build-native-gpu.hxml`) draws with SDL_GPU, and the `frames` option (`HELIX_FRAMES=60` natively, `?frames=60` in a page) stops after
+	that many frames. */
 class Main {
 	static inline final STORY = "The belt is thick tonight. Steer with the arrow keys, keep clear of the rocks, and bring the cargo home before the fuel runs out.";
 
@@ -50,6 +53,8 @@ class Main {
 	static final panel = new DrawList2D();
 	static final panelPlace = Matrix2D.fromTranslation(16, 16);
 	// Each rock's x, y, radius and spin.
+	static var frame = 0;
+	static var framesLeft = -1;
 	static final rocks = [
 		for (i in 0...12) [Math.cos(i) * 300, Math.sin(i * 1.7) * 200, 12 + i % 4 * 6, i * .3]
 	];
@@ -63,8 +68,13 @@ class Main {
 		decoder = new helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter();
 		rasterizer = new helix.platform.adapters.fontrasterizer.canvas.CanvasFontRasterizerAdapter();
 		#else
+		#if sdl_gpu
+		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gpu});
+		graphics = new helix.platform.adapters.graphics.sdl3gpu.Sdl3GpuGraphicsAdapter();
+		#else
 		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gl});
 		graphics = new helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter();
+		#end
 		events = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();
 		system = new helix.platform.adapters.system.sdl3.Sdl3SystemAdapter();
 		decoder = new helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter();
@@ -84,6 +94,9 @@ class Main {
 
 	/** Makes the services, the renderer and its batch, and loads the sheet and the font. */
 	static function setup():Void {
+		var frames = system.getOption("frames");
+		if (frames != null)
+			framesLeft = Std.parseInt(frames);
 		#if js
 		var httpClient:IHttp = new helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter();
 		var downloads:IFileSystem = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory()});
@@ -106,8 +119,8 @@ class Main {
 
 		renderer = new Renderer(graphics);
 		batch = new Batch2D(renderer);
-		// The sheet: the ship in its first 32 x 32 cell, its flame in the next, each turned about its middle; its bottom right texel, which
-		// no frame reads, made white for the shapes.
+		// The sheet, 64 x 34: the ship in its first 32 x 32 cell, its flame in the next, each turned about its middle; its bottom right
+		// texel, in the two rows below the frames that no frame reads, made white for the shapes.
 		images.load("ship.png", image -> {
 			var sheet = renderer.createTexture(image);
 			sheet.sampling = Sampling.NEAREST;
@@ -140,7 +153,7 @@ class Main {
 				case _:
 			}
 		var width = window.framebufferWidth, height = window.framebufferHeight;
-		var t = time.elapsed;
+		var t = frame++ / 60;
 		// The ship flies a circle; the camera keeps it in the middle of the screen.
 		var shipX = Math.cos(t * .5) * 150, shipY = Math.sin(t * .5) * 150;
 		var heading = t * .5 + Math.PI / 2;
@@ -179,7 +192,7 @@ class Main {
 		batch.end();
 		renderer.endFrame();
 		graphics.present();
-		return true;
+		return framesLeft < 0 || --framesLeft > 0;
 	}
 
 	/** Frees what was made: the renderer frees the sheet and the font's atlas still held. */

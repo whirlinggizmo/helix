@@ -17,3 +17,9 @@ platform/tests/graphics/native-gpu/
 platform/tests/audio/web/app.js
 platform/tests/audio/native/
 services/examples/reload/web/assets/
+render/examples/*/web/app.js
+render/examples/*/native/
+render/examples/*/native-gpu/
+render/tests/pixels/web/app.js
+render/tests/pixels/native/
+render/tests/pixels/native-gpu/

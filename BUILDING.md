@@ -28,6 +28,7 @@ python3 helix.py test --native              # also each library's tests in hxcpp
 python3 tools/check_types.py --no-output    # type-check every entry point of every library on its targets
 python3 tools/platform_checks.py --browser <chromium>   # the platform's examples and GPU tests, natively on a private display and in Chromium
 python3 tools/services_checks.py --browser <chromium>   # the services' examples, natively on a private display and in Chromium
+python3 tools/render_checks.py --browser <chromium>     # helix-render's examples and pixel tests, on GL, SDL_GPU and WebGL2
 python3 tools/ray_parity.py                 # helix-ray against raylib's own C, each suite against its release (Linux)
 python3 tools/format.py --check             # layout
 python3 tools/check_docs.py                 # doc comments
@@ -59,6 +60,7 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `tools/page_check.cjs` | A page in headless Chromium: its errors, its result and a screenshot (run by `platform_checks.py`) |
 | `tools/pins.py` | The repository's haxelib: dev links to the libraries and the pinned hxcpp (a module) |
 | `tools/platform_checks.py` | The platform's examples and graphics tests on the GPU, natively on a private display and in Chromium |
+| `tools/render_checks.py` | helix-render's examples and pixel tests on the GPU, natively (GL and SDL_GPU) on a private display and in Chromium (WebGL2) |
 | `tools/services_checks.py` | The services' examples on the platform's real adapters, natively on a private display and in Chromium |
 | `tools/private_display.py` | A private X display for native windows in checks (a module) |
 | `tools/ray_parity.py` | helix-ray against raylib's own C (`ray/parity`): each suite's C reference built against its raylib release (fetched, pinned by sha256, built into `build/raylib`), run on a private display, and helix-ray's harness (Node and hxcpp) or program (natively) compared with it, within the suite's bars (Linux) |

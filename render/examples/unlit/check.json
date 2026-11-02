@@ -1,0 +1,65 @@
+{
+  "what": "The 60th frame at 800 x 600: the background, a yellow copy of the ring's cubes, the grey cube drawn over them with its depth test off (0x80 as stored), a large pink point, the wide orange strip, and the background again.",
+  "points": [
+    {
+      "x": 20,
+      "y": 580,
+      "color": [
+        16,
+        20,
+        24
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 410,
+      "y": 480,
+      "color": [
+        255,
+        255,
+        77
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 400,
+      "y": 240,
+      "color": [
+        128,
+        128,
+        128
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 174,
+      "y": 41,
+      "color": [
+        255,
+        64,
+        128
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 400,
+      "y": 105,
+      "color": [
+        255,
+        192,
+        64
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 700,
+      "y": 560,
+      "color": [
+        16,
+        20,
+        24
+      ],
+      "tolerance": 3
+    }
+  ]
+}

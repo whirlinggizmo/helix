@@ -1,0 +1,9 @@
+# The pixel tests natively, SDL3 drawing with SDL_GPU (Vulkan, Direct3D 12 or Metal): haxe build-native-gpu.hxml ->
+# native-gpu/PixelTests. It prints {passed, checks, failures} and exits 1 on a failure.
+-lib helix-render
+-cp .
+-main PixelTests
+-D sdl_gpu
+-dce full
+-D HXCPP_COMPILE_THREADS=4
+-cpp native-gpu

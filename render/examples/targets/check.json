@@ -1,0 +1,75 @@
+{
+  "what": "The 60th frame at 800 x 600: the target as first drawn (its clear, and no ring on the left), then as its copy holds it (the ring), the viewport's strip, the scissored disc's kept half and its clipped one, and the cleared bar's place.",
+  "points": [
+    {
+      "x": 100,
+      "y": 60,
+      "color": [
+        40,
+        56,
+        72
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 60,
+      "y": 120,
+      "color": [
+        40,
+        56,
+        72
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 260,
+      "y": 120,
+      "color": [
+        255,
+        160,
+        64
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 500,
+      "y": 120,
+      "color": [
+        96,
+        208,
+        128
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 80,
+      "y": 400,
+      "color": [
+        224,
+        224,
+        224
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 200,
+      "y": 400,
+      "color": [
+        32,
+        40,
+        48
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 200,
+      "y": 260,
+      "color": [
+        32,
+        40,
+        48
+      ],
+      "tolerance": 3
+    }
+  ]
+}

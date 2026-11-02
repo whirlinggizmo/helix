@@ -30,6 +30,8 @@ def targets(web=False):
     found.append(('render js',['-lib','helix-render','--macro',"include('helix.render')",'-js','build/check_types.js']))
     if not web:found.append(('render cpp',['-lib','helix-render','--macro',"include('helix.render')",'-cpp','build/check_types-cpp']))
     for main in sorted(p.stem for p in (ROOT/'render/tests').glob('*Tests.hx')):found.append((f'render {main}',['-lib','helix-render','-cp','render/tests','-main',main,'--interp']))
+    found.append(('render pixel tests js',['-lib','helix-render','-cp','render/tests/pixels','-main','PixelTests','-js','build/check_types.js']))
+    if not web:found.append(('render pixel tests cpp',['-lib','helix-render','-cp','render/tests/pixels','-main','PixelTests','-cpp','build/check_types-cpp']))
     for directory in sorted(p.parent for p in (ROOT/'render/examples').glob('*/Main.hx')):
         found.append((f'render example {directory.name} js',['-lib','helix-render','-cp',str(directory.relative_to(ROOT)),'-main','Main','-js','build/check_types.js']))
         if not web:found.append((f'render example {directory.name} cpp',['-lib','helix-render','-cp',str(directory.relative_to(ROOT)),'-main','Main','-cpp','build/check_types-cpp']))
