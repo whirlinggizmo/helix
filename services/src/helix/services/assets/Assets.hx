@@ -26,6 +26,11 @@ import helix.platform.StreamSource;
 	Downloads and copies finish in the polls of the HTTP client and file systems it was given, which the program polls each frame.
 	Assets has no `poll` of its own.
 
+	A file can change while the program runs, as a development server's do. Assets doesn't watch for it: whoever knows a file changed
+	calls `notifyChanged` with its path, or `notifyUrlChanged` with the URL it was served at, and each `watch` of that path receives the
+	new bytes. A page's development build wires hotreload-hx in one line, `reloader.assetsChanged = urls -> for (url in urls)
+	assets.notifyUrlChanged(url);`. Natively nothing calls it, and there is no watcher.
+
 	```haxe
 	var httpClient:IHttp = new HaxeHttpAdapter();
 	var shipped:IFileSystem = new NativeFileSystemAdapter({directory: system.getProgramDirectory(), readOnly: true});
@@ -55,6 +60,8 @@ class Assets {
 	final cacheFileSystem:Null<IFileSystem>;
 	// The last bytes of each stream downloading in two parts, until its source is released.
 	final tails = new Map<GrowingSource, Bytes>();
+	// The functions watching each path, in the order added.
+	final watches = new Map<String, Array<Bytes->Void>>();
 
 	/** Creates the assets over their sources.
 
@@ -109,6 +116,82 @@ class Assets {
 			}
 		} from(0);
 		return request.abort;
+	}
+
+	/** Calls a function with a file's new bytes each time a change of it is brought in (`notifyChanged`), until the returned function is
+		called.
+
+		Nothing is read now: a path watched and never changed is never read by the watch.
+		@param path  The file's path.
+		@param changed  Receives the file's bytes, each time a change brings a new copy.
+		@return  A function that stops the watch; nothing is called after it. */
+	public function watch(path:String, changed:Bytes->Void):Void->Void {
+		var list = watches.get(path);
+		if (list == null)
+			watches.set(path, list = []);
+		// A watch of its own, so the same function watching twice is stopped once a stop.
+		var own = bytes -> changed(bytes);
+		list.push(own);
+		return () -> {
+			list.remove(own);
+			if (list.length == 0 && watches.get(path) == list)
+				watches.remove(path);
+		};
+	}
+
+	/** Brings a file in again because it changed, past every cache, and hands the new bytes to each `watch` of it.
+
+		The file is asked of the sources in order, as `load` asks: a server's past the browser's HTTP cache (no-store) and past the copy
+		Assets keeps (IndexedDB in a page, the cache directory natively), the new copy then kept in its place, so a later `load` gets it.
+		A file that can't be brought in keeps the old copy, and no watch is called; the failure is logged with the path. Nothing is
+		called during the call.
+		@param path  The file's path. */
+	public function notifyChanged(path:String):Void {
+		var request = start(path, null);
+		function from(i:Int):Void {
+			if (i == sources.length) {
+				request.fail();
+				return;
+			}
+			switch sources[i] {
+				case Files(fileSystem):
+					request.cancel = fileSystem.read(path, MAX_BYTES, bytes -> request.answer(() -> changed(path, bytes)),
+						() -> request.next(() -> from(i + 1)), message -> request.next(() -> from(i + 1), message));
+				case Server(server):
+					server.refetch(path, request, bytes -> request.answer(() -> changed(path, bytes)), () -> from(i + 1), message -> {
+						request.failure = message;
+						from(i + 1);
+					});
+			}
+		} from(0);
+	}
+
+	/** Brings a file in again because the URL it is served at changed, as `notifyChanged` does for its path.
+
+		The URL is matched against each `HttpServer` source's, resolved against the page's location in a page (a source `"assets/"` on a
+		page at `http://localhost:8080/` serves `/assets/shaders/glow.shader` as `shaders/glow.shader`); a URL no source serves is
+		skipped.
+		@param url  The URL, absolute or from the server's root, as a development server reports it. */
+	public function notifyUrlChanged(url:String):Void {
+		for (source in sources)
+			switch source {
+				case Server(server):
+					var path = server.pathOf(url);
+					if (path != null) {
+						notifyChanged(path);
+						return;
+					}
+				case _:
+			}
+	}
+
+	// Hands a file's new bytes to each of its watches.
+	function changed(path:String, bytes:Bytes):Void {
+		var list = watches.get(path);
+		if (list != null)
+			for (watch in list.copy())
+				if (list.indexOf(watch) >= 0)
+					watch(bytes);
 	}
 
 	/** Finds a file to be played as it is read, without loading it whole, in the form `IAudio.openStream` takes.
@@ -372,6 +455,52 @@ private class ServerSource {
 		});
 	}
 
+	/** Downloads a file again because it changed, past the HTTP caches and the kept copy, and keeps the new copy in the old's place; on a
+		failure the old copy stays. */
+	public function refetch(path:String, request:Request, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void {
+		if (!FilePath.isValid(path)) {
+			refuse(request, failed);
+			return;
+		}
+		download(path, request, null, null, true, (bytes, _) -> {
+			if (mode == Off)
+				held.set(path, bytes);
+			loaded(bytes);
+		}, missing, failed, null, mode != Off);
+	}
+
+	/** Returns the path of a file the server serves at a URL, or null for a URL it doesn't: the URL's path after the server's. A server
+		given relative to the page (`"assets/"`, or `""`) is matched by its path, the page's own directory taken as the root's. */
+	public function pathOf(served:String):Null<String> {
+		var cut = served.indexOf("?");
+		if (cut >= 0)
+			served = served.substr(0, cut);
+		cut = served.indexOf("#");
+		if (cut >= 0)
+			served = served.substr(0, cut);
+		var absolute = url.indexOf("://") >= 0;
+		var path = served;
+		if (served.indexOf("://") >= 0) {
+			if (absolute)
+				return StringTools.startsWith(served, url)
+					&& FilePath.isValid(served.substr(url.length)) ? served.substr(url.length) : null;
+			var start = served.indexOf("/", served.indexOf("://") + 3);
+			path = start < 0 ? "/" : served.substr(start);
+		} else if (absolute) {
+			var start = url.indexOf("/", url.indexOf("://") + 3);
+			var base = start < 0 ? "/" : url.substr(start);
+			return StringTools.startsWith(path, base) && FilePath.isValid(path.substr(base.length)) ? path.substr(base.length) : null;
+		}
+		// Relative to the page: the URL's path from the root, past the server's own part.
+		if (StringTools.startsWith(path, "/"))
+			path = path.substr(1);
+		var base = StringTools.startsWith(url, "./") ? url.substr(2) : url;
+		if (!StringTools.startsWith(path, base))
+			return null;
+		var rest = path.substr(base.length);
+		return FilePath.isValid(rest) ? rest : null;
+	}
+
 	/** Locates a file to play as it is read, from the kept copy or from a download as it arrives. */
 	public function locate(path:String, request:Request, located:(StreamSource, Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void {
 		if (!FilePath.isValid(path)) {
@@ -546,9 +675,10 @@ private class ServerSource {
 
 		A 304 answer uses the copy. A 4xx answer removes the copy, and the file is missing from this source. No answer, because the
 		machine is offline or the server answered 5xx, uses the copy when there is one. Natively, growing receives a download of known
-		length to play as it arrives. got receives the bytes once they are kept, and the source they grew in, if any. */
+		length to play as it arrives. got receives the bytes once they are kept, and the source they grew in, if any. noCache asks past
+		the HTTP caches and keeps nothing, unless keepFresh keeps it. */
 	function download(path:String, request:Request, record:Null<Record>, expected:Null<String>, noCache:Bool, got:(Bytes, Null<GrowingSource>) -> Void,
-			missing:Void->Void, failed:String->Void, ?growing:GrowingSource->Void):Void {
+			missing:Void->Void, failed:String->Void, ?growing:GrowingSource->Void, keepFresh:Bool = false):Void {
 		var headers = new Map<String, String>();
 		if (record != null) {
 			if (record.etag != null)
@@ -591,7 +721,7 @@ private class ServerSource {
 					failed('the download doesn\'t match the manifest');
 					return;
 				}
-				if (!noCache)
+				if (!noCache || keepFresh)
 					keep(path, bytes, recordOf(responseHeaders, hash));
 				got(bytes, source);
 			} else if (status >= 400 && status < 500) {

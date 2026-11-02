@@ -244,6 +244,7 @@ class AssetsTests {
 		pump();
 		check(!answered, "disposed: nothing called");
 
+		watching(base);
 		var emptied = false;
 		assets.clearCache(() -> emptied = true);
 		pump();
@@ -254,6 +255,88 @@ class AssetsTests {
 		#else
 		Sys.println(report);
 		#end
+	}
+
+	// A file changed while the program runs: watched without reading, brought in again past every cache when told, by path or by the URL
+	// it's served at, its new copy kept; a failure keeping the old and calling no watch; a stopped watch called no more.
+	static function watching(base:String):Void {
+		var files = new FakeFileSystem();
+		files.files.set("shaders/glow.shader", text("glow v1"));
+		var local = new Assets({sources: [FileSystem(files)]});
+		var seen:Array<String> = [];
+		var stop = local.watch("shaders/glow.shader", bytes -> seen.push(bytes.toString()));
+		files.poll();
+		check(seen.length == 0 && files.held == 0, "a watch reads nothing");
+		files.files.set("shaders/glow.shader", text("glow v2"));
+		local.notifyChanged("shaders/glow.shader");
+		check(seen.length == 0, "nothing called during notifyChanged");
+		for (_ in 0...5)
+			files.poll();
+		check(seen.join(",") == "glow v2", "a file system's file read again, the watch given its bytes");
+		local.notifyChanged("shaders/other.shader");
+		for (_ in 0...5)
+			files.poll();
+		check(seen.length == 1, "another path's change reaches no watch");
+		stop();
+		local.notifyChanged("shaders/glow.shader");
+		for (_ in 0...5)
+			files.poll();
+		check(seen.length == 1, "a stopped watch is called no more");
+
+		http.routes.set(base + "shaders/lit.shader", {status: 200, headers: ["cache-control" => "max-age=3600"], body: text("lit v1")});
+		var served = new Assets({
+			sources: [HttpServer(base)],
+			httpClient: http,
+			cacheFileSystem: cache,
+			manifestName: ""
+		});
+		check(load(served, "shaders/lit.shader").bytes == "lit v1", "kept fresh for an hour");
+		var got:Array<String> = [];
+		served.watch("shaders/lit.shader", bytes -> got.push(bytes.toString()));
+		http.routes.set(base + "shaders/lit.shader", {status: 200, headers: ["cache-control" => "max-age=3600"], body: text("lit v2")});
+		var before = http.requests.length;
+		served.notifyChanged("shaders/lit.shader");
+		pump();
+		check(got.join(",") == "lit v2"
+			&& http.requests.length == before + 1
+			&& http.requests[before].noCache
+			&& http.requests[before].headers.get("If-None-Match") == null,
+			"a server's file asked again past the HTTP caches and the fresh copy");
+		before = http.requests.length;
+		check(load(served, "shaders/lit.shader").bytes == "lit v2"
+			&& http.requests.length == before, "the new copy kept in the old's place");
+		http.offline = true;
+		served.notifyChanged("shaders/lit.shader");
+		pump();
+		http.offline = false;
+		check(got.length == 1
+			&& load(served, "shaders/lit.shader").bytes == "lit v2", "a failed fetch keeps the old copy and calls no watch");
+		http.routes.set(base + "shaders/lit.shader", {status: 200, body: text("lit v3")});
+		served.notifyUrlChanged(base + "shaders/lit.shader?v=3");
+		pump();
+		check(got.join(",") == "lit v2,lit v3", "an absolute URL the server serves maps to its path");
+		served.notifyUrlChanged("https://elsewhere.example/shaders/lit.shader");
+		pump();
+		check(got.length == 2, "a URL no source serves is skipped");
+
+		var page = "assets/";
+		http.routes.set(page + "shaders/quad.shader", {status: 200, body: text("quad v2")});
+		var inPage = new Assets({
+			sources: [HttpServer(page)],
+			httpClient: http,
+			cacheFileSystem: cache,
+			manifestName: ""
+		});
+		var quads:Array<String> = [];
+		inPage.watch("shaders/quad.shader", bytes -> quads.push(bytes.toString()));
+		inPage.notifyUrlChanged("/assets/shaders/quad.shader");
+		pump();
+		inPage.notifyUrlChanged("http://localhost:8080/assets/shaders/quad.shader");
+		pump();
+		check(quads.join(",") == "quad v2,quad v2", "a source relative to the page: the URL from the server's root, or absolute, maps to its path");
+		inPage.notifyUrlChanged("/other/shaders/quad.shader");
+		pump();
+		check(quads.length == 2, "a URL outside the source's skipped");
 	}
 
 	#if !js

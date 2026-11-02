@@ -20,8 +20,8 @@ class FakeHttp implements IHttp {
 	/** Gets the responses by URL; a URL with none answers 404. */
 	public final routes = new Map<String, FakeResponse>();
 
-	/** Gets every request made: its URL and headers. */
-	public final requests:Array<{url:String, headers:Map<String, String>}> = [];
+	/** Gets every request made: its URL, its headers, and whether it asked past the HTTP caches. */
+	public final requests:Array<{url:String, headers:Map<String, String>, noCache:Bool}> = [];
 
 	/** Gets the body bytes sent so far. */
 	public var bytesSent(default, null) = 0;
@@ -36,7 +36,7 @@ class FakeHttp implements IHttp {
 
 	public function get(url:String, noCache:Bool, headers:Map<String, String>, head:(status:Int, headers:Map<String, String>) -> Void, body:Bytes->Void,
 			done:Void->Void, failed:String->Void):Void->Void {
-		requests.push({url: url, headers: headers});
+		requests.push({url: url, headers: headers, noCache: noCache});
 		var aborted = false;
 		queued.push(() -> {
 			if (aborted)

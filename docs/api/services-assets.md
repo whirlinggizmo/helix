@@ -44,6 +44,8 @@ A path is plain names joined by `/`, as in `IFileSystem` (`FilePath`), from ever
 
 Downloads and copies finish in the polls of the HTTP client and file systems it was given, which the program polls each frame. Assets has no `poll` of its own.
 
+A file can change while the program runs, as a development server's do. Assets doesn't watch for it: whoever knows a file changed calls `notifyChanged` with its path, or `notifyUrlChanged` with the URL it was served at, and each `watch` of that path receives the new bytes. A page's development build wires hotreload-hx in one line, `reloader.assetsChanged = urls -> for (url in urls) assets.notifyUrlChanged(url);`. Natively nothing calls it, and there is no watcher.
+
 ```haxe
 var httpClient:IHttp = new HaxeHttpAdapter();
 var shipped:IFileSystem = new NativeFileSystemAdapter({directory: system.getProgramDirectory(), readOnly: true});
@@ -68,6 +70,9 @@ shipped.poll();
 ```haxe
 function new(options:AssetsOptions)
 function load(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):() -> Void
+function watch(path:String, changed:haxe.io.Bytes -> Void):() -> Void
+function notifyChanged(path:String):Void
+function notifyUrlChanged(url:String):Void
 function locate(path:String, located:(source:StreamSource, release:() -> Void) -> Void, ?failed:String -> Void):() -> Void
 function clearCache(?cleared:() -> Void, ?failed:String -> Void):Void
 function dispose():Void
@@ -81,6 +86,20 @@ function dispose():Void
   - `loaded`: Receives the file's bytes.
   - `failed`: Optional. Receives why the file can't be loaded, because no source has it or the last source asked failed.
   - returns: The abort: nothing is called after it.
+- `watch`: Calls a function with a file's new bytes each time a change of it is brought in (`notifyChanged`), until the returned function is called.
+  - `path`: The file's path.
+  - `changed`: Receives the file's bytes, each time a change brings a new copy.
+  - returns: A function that stops the watch; nothing is called after it.
+
+  Nothing is read now: a path watched and never changed is never read by the watch.
+- `notifyChanged`: Brings a file in again because it changed, past every cache, and hands the new bytes to each `watch` of it.
+  - `path`: The file's path.
+
+  The file is asked of the sources in order, as `load` asks: a server's past the browser's HTTP cache (no-store) and past the copy Assets keeps (IndexedDB in a page, the cache directory natively), the new copy then kept in its place, so a later `load` gets it. A file that can't be brought in keeps the old copy, and no watch is called; the failure is logged with the path. Nothing is called during the call.
+- `notifyUrlChanged`: Brings a file in again because the URL it is served at changed, as `notifyChanged` does for its path.
+  - `url`: The URL, absolute or from the server's root, as a development server reports it.
+
+  The URL is matched against each `HttpServer` source's, resolved against the page's location in a page (a source `"assets/"` on a page at `http://localhost:8080/` serves `/assets/shaders/glow.shader` as `shaders/glow.shader`); a URL no source serves is skipped.
 - `locate`: Finds a file to be played as it is read, without loading it whole, in the form `IAudio.openStream` takes.
   - `path`: The file's path.
   - `located`: Receives the source, and a release function to call once when the source is no longer read.
