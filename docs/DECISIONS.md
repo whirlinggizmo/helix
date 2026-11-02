@@ -173,6 +173,8 @@ Why things are the way they are, numbered, in order.
     reads before its own buffer, so raylib draws whatever memory lies there); `ExportFontAsCode` writes a font of any size (5.5's writes into a 1 MB buffer, past its end
     for an atlas compressing to more than about 170 KB); `rlGetMatrixProjectionStereo` and `rlGetMatrixViewOffsetStereo` give a zero
     matrix for an eye other than 0 and 1 (rlgl reads past its two). OBJ and MTL reading keeps its own list (28).
+    Left out: 5.5's recording of the window to a GIF on Ctrl+F12 (`SUPPORT_GIF_RECORDING`), a debug key rather than an API, which
+    6.2 removes.
 
 25. **helix-ray counts what a model holds, following ownership, where raylib leaves it to the program.** raylib's `UnloadModel`
     frees a model's meshes and its maps arrays and never a texture or shader, so a C program frees those itself, or leaks them; Haxe
