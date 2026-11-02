@@ -70,7 +70,7 @@ class RenderTarget2D extends Texture2D {
 			throw "helix-render: a render target made by no renderer";
 		if (r.pass != null && r.pass.target == this)
 			throw "helix-render: resize of a render target whose pass is open; endTarget first";
-		var fresh = r.graphics.createRenderTarget(width, height, format, depth != None);
+		var fresh = r.graphics.createRenderTarget(width, height, format, depth != None, msaaSampleCount);
 		var old = handle;
 		this.width = width;
 		this.height = height;

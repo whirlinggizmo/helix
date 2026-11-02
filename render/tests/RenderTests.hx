@@ -78,7 +78,15 @@ class RenderTests {
 			b = new Batch2D(r);
 		var target = r.createRenderTarget(64, 32),
 			other = r.createRenderTarget(16, 16, Rgba8, None);
-		check(target.msaaSampleCount == 4 && other.msaaSampleCount == 1, "a target with depth multisampled as the screen, one without not");
+		check(target.msaaSampleCount == 4 && other.msaaSampleCount == 4, "the screen's count when omitted, with depth or without");
+		var plain = r.createRenderTarget(8, 8, Rgba8, Buffer, 1),
+			many = r.createRenderTarget(8, 8, Rgba8, None, 8),
+			odd = r.createRenderTarget(8, 8, Rgba8, None, 3);
+		check(plain.msaaSampleCount == 1
+			&& many.msaaSampleCount == 4
+			&& odd.msaaSampleCount == 2
+			&& g.log.indexOf('target ${plain.handle} 8 8 samples 1') >= 0,
+			"a count given, passed to the platform, held to what it draws with and rounded down to a power of two");
 		throws(() -> r.createRenderTarget(0, 4), "above 0", "a size of 0 refused");
 		throws(() -> r.endFrame(), "no frame", "endFrame outside a frame");
 		r.beginFrame(200, 100, 0xff102030);

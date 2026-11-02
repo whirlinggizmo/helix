@@ -139,10 +139,13 @@ class Renderer {
 			throw 'helix-render: this GPU can\'t draw into a render target of format ${(format : Int)}';
 		if (depth == Texture)
 			throw "helix-render: TargetDepth.Texture waits on the platform's sampled depth (queued in docs/ROADMAP.md); use Buffer or None";
-		var handle = graphics.createRenderTarget(width, height, format, depth != None);
-		// The platform multisamples a target with depth as the screen is, and one without not at all, until a target has its own count
-		// (queued in docs/ROADMAP.md): the count given is held to what it draws with.
-		var samples = depth != None ? graphics.msaaSampleCount : 1;
+		// The count asked for, or the screen's, held to 1 to what this GPU draws the format with, a power of two as the platform rounds it.
+		var asked = msaaSampleCount == null ? graphics.msaaSampleCount : msaaSampleCount;
+		var most = Std.int(Math.min(graphics.maxMsaaSampleCount, graphics.getMaxRenderTargetMsaaSampleCount(format)));
+		var samples = 1;
+		while (samples * 2 <= asked && samples * 2 <= most)
+			samples *= 2;
+		var handle = graphics.createRenderTarget(width, height, format, depth != None, samples);
 		var target = new RenderTarget2D(handle, width, height, format, depth, samples, null);
 		return own(target);
 	}
@@ -743,7 +746,7 @@ class Renderer {
 		var list = pool.get(poolKey(target));
 		if (list != null && list.length > 0)
 			return list.pop().handle;
-		return graphics.createRenderTarget(target.width, target.height, target.format, target.depth != None);
+		return graphics.createRenderTarget(target.width, target.height, target.format, target.depth != None, target.msaaSampleCount);
 	}
 
 	@:allow(helix.render)

@@ -78,9 +78,13 @@ class RecordingGraphics implements IGraphics {
 	public function canSample(format:TextureFormat):Bool
 		return true;
 
-	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true):Int {
+	/** Gets 4 for every format. */
+	public function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int
+		return 4;
+
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0):Int {
 		textures.set(next, {width: width, height: height, target: true});
-		log.push('target $next $width $height');
+		log.push('target $next $width $height samples $msaaSampleCount');
 		return next++;
 	}
 

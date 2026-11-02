@@ -28,7 +28,8 @@ typedef PixelCase = {
 	alpha blending as stored, shapes from a white texel, text placed by its ascent, a program's fragment stage reading `customData`, a
 	target copied on write, a clear recorded in order, a viewport and a scissor; in 3D, an unlit mesh multiplied as stored and one tone
 	mapped (Neutral), instanced copies tinted, a mesh skinned by its bone texture, points of a pixel and large ones, a wide line, a
-	triangle's edges, two views, and a program's material shader.
+	triangle's edges, two views, and a program's material shader; and a render target's own sample count, a target with depth drawn
+	with one sample and one without depth multisampled where the GPU can.
 
 	Built from the hxml files beside it: in a page it runs on WebGL2, natively on GL, or SDL_GPU with `-D sdl_gpu`. It ends with
 	`{passed, checks, failures}` as JSON: printed natively, exiting 1 on a failure, and in a page in `window.helixResult`, null until then.
@@ -199,7 +200,39 @@ class PixelTests {
 		skinnedMesh.weights = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0];
 		var skinned = renderer.createMesh(skinnedMesh);
 		var canvas = target(), copied = target(), threeD = target(true);
+		var single = renderer.createRenderTarget(SIZE, SIZE, Rgba8, Buffer, 1);
+		var multi = renderer.createRenderTarget(SIZE, SIZE, Rgba8, None, 4);
+		// A rectangle whose right edge, at 10.6, covers the middle of column 10 but not all of it.
+		function edge(t:RenderTarget2D):RenderTarget2D {
+			renderer.beginTarget(t, 0xff000000);
+			batch.begin();
+			batch.fillRectangle(0, 0, 10.6, 64, 0xffffffff);
+			batch.end();
+			renderer.endTarget();
+			return t;
+		}
 		cases = [
+			{
+				name: "a target with depth and one sample",
+				draw: () -> edge(single),
+				check: p -> {
+					check(single.msaaSampleCount == 1, 'one sample asked, ${single.msaaSampleCount} given');
+					expect(p, 10, 32, 0xffffff, "column 10 covered at its middle, wholly, with no samples between", 0);
+					expect(p, 11, 32, 0x000000, "column 11 not at all", 0);
+				}
+			},
+			{
+				name: "a target without depth, multisampled where the GPU can",
+				draw: () -> edge(multi),
+				check: p -> {
+					var partial = p.get(10, 32) & 255;
+					if (multi.msaaSampleCount > 1)
+						check(partial > 20 && partial < 235, 'column 10 partly covered by ${multi.msaaSampleCount} samples: $partial');
+					else
+						check(partial == 255, 'no multisampling for the format here: column 10 whole, $partial');
+					expect(p, 4, 32, 0xffffff, "inside the rectangle");
+				}
+			},
 			{
 				name: "2D: a tint and alpha blending as stored",
 				draw: () -> {
