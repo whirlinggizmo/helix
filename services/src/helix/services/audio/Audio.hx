@@ -108,7 +108,8 @@ class Audio implements IPollable {
 				return;
 			}
 			abortOpen = output.openStream(source, stream -> {
-				var sound = new Sound(output, path, true, stream, output.getStreamChannelCount(stream), 0, release);
+				var sound = new Sound(path, stream, output.getStreamChannelCount(stream), 0, release,
+					(loop, volume) -> output.playStream(stream, loop, volume), () -> output.disposeStream(stream), () -> output.getStreamDuration(stream));
 				// Natively a download from a server starts with its last bytes (Assets.tailOf), its length read once its start arrives too.
 				#if !js
 				switch source {
@@ -171,7 +172,7 @@ class Audio implements IPollable {
 		if (group == null)
 			group = master;
 		var heard = heardIn(group, volume);
-		var id = sound.streamed ? output.playStream(sound.id, loop, heard) : output.playClip(sound.id, loop, heard);
+		var id = sound.playing(loop, heard);
 		return voiceOf(id, sound, group, volume, heard);
 	}
 
@@ -209,7 +210,8 @@ class Audio implements IPollable {
 	function clipOf(path:String, samples:Bytes, channelCount:Int):Sound {
 		var clip = output.createClip(samples, channelCount);
 		var frames = Std.int(samples.length / (4 * channelCount));
-		var sound = new Sound(output, path, false, clip, channelCount, frames / 44100, null);
+		var sound = new Sound(path, clip, channelCount, frames / 44100, null, (loop, volume) -> output.playClip(clip, loop, volume),
+			() -> output.disposeClip(clip), null);
 		sounds.push(sound);
 		return sound;
 	}
@@ -226,10 +228,7 @@ class Audio implements IPollable {
 		for (voice in voices)
 			if (voice.sound == sound)
 				voice.stop();
-		if (sound.streamed)
-			output.disposeStream(sound.id);
-		else
-			output.disposeClip(sound.id);
+		sound.disposing();
 		if (sound.release != null)
 			sound.release();
 		sounds.remove(sound);

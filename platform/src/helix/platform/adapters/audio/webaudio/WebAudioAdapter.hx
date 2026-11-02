@@ -5,10 +5,330 @@ import helix.formats.audio.AudioHeader;
 import helix.platform.IAudio;
 import helix.platform.StreamSource;
 
+/** What a voice plays: a clip, a stream or a queue, each its own class, made only by the call that makes one (`createClip`,
+	`openStream`, `createQueue`), so a program that never streams or queues links neither (docs/CONVENTIONS.md, "A program links only
+	what it names"). */
+@:allow(helix.platform.adapters.audio.webaudio)
+private class Resource {
+	// Starts voice id of this through gain at position (seconds), as playbacks[id].
+	function start(a:WebAudioAdapter, id:Int, gain:Dynamic, panner:Dynamic, loop:Bool, position:Float):Void {}
+
+	// Whether a voice of this can be placed (setPosition).
+	function seekable():Bool
+		return true;
+
+	// A voice of this stopped while it waited for audio to run.
+	function stopWaiting(id:Int):Void {}
+
+	// Each poll.
+	function poll(a:WebAudioAdapter):Void {}
+
+	// Lets go of what this holds once it is disposed.
+	function release():Void {}
+}
+
+/** A voice: its resource, its gain and panner, its pitch and whether it is paused. */
+@:allow(helix.platform.adapters.audio.webaudio)
+private class Voice {
+	final resource:Int;
+	final gain:Dynamic;
+	final panner:Dynamic;
+	var pitch = 1.;
+	var paused = false;
+
+	function new(resource:Int, gain:Dynamic, panner:Dynamic) {
+		this.resource = resource;
+		this.gain = gain;
+		this.panner = panner;
+	}
+
+	// Stops voice id, out of playbacks and the graph.
+	function stop(a:WebAudioAdapter, id:Int):Void {}
+
+	// Pauses or resumes voice id; paused differs from the voice's.
+	function pause(a:WebAudioAdapter, id:Int, paused:Bool):Void {}
+
+	// Plays on at pitch.
+	function setPitch(a:WebAudioAdapter, pitch:Float):Void {}
+
+	// Where the voice is, in seconds.
+	function getPosition(a:WebAudioAdapter):Float
+		return 0;
+
+	// Moves voice id to seconds (finite, not negative); false when it can't be.
+	function setPosition(a:WebAudioAdapter, id:Int, seconds:Float):Bool
+		return false;
+}
+
+/** A clip: its samples, interleaved floats, and channels; its AudioBuffer once a voice of it has started. */
+@:allow(helix.platform.adapters.audio.webaudio)
+private class Clip extends Resource {
+	final samples:Bytes;
+	final channels:Int;
+	var buffer:Dynamic = null;
+
+	function new(samples:Bytes, channels:Int) {
+		this.samples = samples;
+		this.channels = channels;
+	}
+
+	override function start(a:WebAudioAdapter, id:Int, gain:Dynamic, panner:Dynamic, loop:Bool, position:Float):Void {
+		if (buffer == null) {
+			var data = new js.lib.Float32Array(samples.getData(), 0, Std.int(samples.length / 4));
+			var frames = Std.int(data.length / channels);
+			buffer = a.context.createBuffer(channels, frames, 44100);
+			for (c in 0...channels) {
+				var channel = new js.lib.Float32Array(frames);
+				for (i in 0...frames)
+					channel[i] = data[i * channels + c];
+				buffer.copyToChannel(channel, c);
+			}
+		}
+		var v = new ClipVoice(id, gain, panner, buffer, loop, Math.min(position, buffer.duration));
+		a.playbacks[id] = v;
+		v.begin(a, id);
+	}
+
+	override function release():Void
+		buffer = null;
+}
+
+/** A clip's voice: its buffer and loop, its source while playing, its offset into the buffer (seconds) and the context time it last
+	started or moved at. */
+@:allow(helix.platform.adapters.audio.webaudio)
+private class ClipVoice extends Voice {
+	final buffer:Dynamic;
+	final loop:Bool;
+	var source:Dynamic = null;
+	var offset:Float;
+	var started = 0.;
+
+	function new(resource:Int, gain:Dynamic, panner:Dynamic, buffer:Dynamic, loop:Bool, offset:Float) {
+		super(resource, gain, panner);
+		this.buffer = buffer;
+		this.loop = loop;
+		this.offset = offset;
+	}
+
+	// Starts a source at the offset, through the gain.
+	function begin(a:WebAudioAdapter, id:Int):Void {
+		var s:Dynamic = a.context.createBufferSource();
+		s.buffer = buffer;
+		s.loop = loop;
+		s.playbackRate.value = pitch;
+		s.connect(gain);
+		source = s;
+		started = a.context.currentTime;
+		paused = false;
+		s.onended = _ -> {
+			if (a.playbacks[id] == this && !paused) {
+				a.playbacks.remove(id);
+				s.disconnect();
+				a.disconnect(this);
+			}
+		};
+		s.start(0, offset);
+	}
+
+	// Moves the offset on by what played since it started or last moved, at its pitch.
+	function played(a:WebAudioAdapter):Void {
+		var now:Float = a.context.currentTime;
+		offset += (now - started) * pitch;
+		if (loop)
+			offset %= buffer.duration;
+		started = now;
+	}
+
+	// Stops the source, still in playbacks.
+	function halt():Void {
+		source.onended = null;
+		source.stop();
+		source.disconnect();
+	}
+
+	override function stop(a:WebAudioAdapter, id:Int):Void {
+		a.playbacks.remove(id);
+		source.onended = null;
+		if (!paused)
+			source.stop();
+		source.disconnect();
+		a.disconnect(this);
+	}
+
+	override function pause(a:WebAudioAdapter, id:Int, paused:Bool):Void {
+		if (paused) {
+			played(a);
+			this.paused = true;
+			halt();
+		} else {
+			if (offset >= buffer.duration) {
+				a.stop(id);
+				return;
+			}
+			begin(a, id);
+		}
+	}
+
+	override function setPitch(a:WebAudioAdapter, pitch:Float):Void {
+		if (!paused) {
+			played(a);
+			source.playbackRate.value = pitch;
+		}
+		this.pitch = pitch;
+	}
+
+	override function getPosition(a:WebAudioAdapter):Float {
+		var at:Float = paused ? offset : offset + (a.context.currentTime - started) * pitch,
+			duration:Float = buffer.duration;
+		return loop ? at % duration : Math.min(at, duration);
+	}
+
+	override function setPosition(a:WebAudioAdapter, id:Int, seconds:Float):Bool {
+		var duration:Float = buffer.duration;
+		if (seconds >= duration) {
+			if (!loop) {
+				a.stop(id);
+				return true;
+			}
+			seconds = 0;
+		}
+		if (paused) {
+			offset = seconds;
+			return true;
+		}
+		halt();
+		offset = seconds;
+		begin(a, id);
+		return true;
+	}
+}
+
+/** A stream: its URL, its media element until a voice takes it, its duration (seconds, 0 while unknown) and its channels. */
+@:allow(helix.platform.adapters.audio.webaudio)
+private class Stream extends Resource {
+	final url:String;
+	var element:Null<js.html.AudioElement>;
+	var duration:Float;
+	final channels:Int;
+
+	function new(url:String, element:js.html.AudioElement, channels:Int) {
+		this.url = url;
+		this.element = element;
+		this.duration = durationOf(element);
+		this.channels = channels;
+	}
+
+	// A media element's duration in seconds, 0 while unknown (NaN) or for a live stream (Infinity).
+	static function durationOf(element:js.html.AudioElement):Float {
+		var duration = element.duration;
+		return Math.isFinite(duration) && duration > 0 ? duration : 0;
+	}
+
+	// The duration as known now.
+	function getDuration():Float
+		return element != null ? durationOf(element) : duration;
+
+	override function start(a:WebAudioAdapter, id:Int, gain:Dynamic, panner:Dynamic, loop:Bool, position:Float):Void {
+		var e = element;
+		if (e == null) {
+			e = js.Browser.document.createAudioElement();
+			e.crossOrigin = "anonymous";
+			e.src = url;
+		}
+		element = null;
+		e.ondurationchange = _ -> duration = durationOf(e);
+		e.loop = loop;
+		e.playbackRate = 1;
+		if (position > 0)
+			e.currentTime = position;
+		// The rate changes the pitch too, as a clip's does.
+		Reflect.setField(e, "preservesPitch", false);
+		var node:Dynamic = a.context.createMediaElementSource(e);
+		node.connect(gain);
+		var v = new StreamVoice(id, gain, panner, e, node);
+		a.playbacks[id] = v;
+		e.onended = _ -> v.finish(a, id);
+		e.onerror = _ -> v.finish(a, id);
+		e.play().catchError(error -> {
+			v.finish(a, id);
+			return null;
+		});
+	}
+
+	override function release():Void {
+		if (element != null) {
+			element.removeAttribute("src");
+			element.load();
+		}
+	}
+}
+
+/** A stream's voice: its media element and the element's node in the graph. */
+@:allow(helix.platform.adapters.audio.webaudio)
+private class StreamVoice extends Voice {
+	final element:js.html.AudioElement;
+	final node:Dynamic;
+
+	function new(resource:Int, gain:Dynamic, panner:Dynamic, element:js.html.AudioElement, node:Dynamic) {
+		super(resource, gain, panner);
+		this.element = element;
+		this.node = node;
+	}
+
+	// Ends voice id, its element let go, if it is still the one playing.
+	function finish(a:WebAudioAdapter, id:Int):Void {
+		if (a.playbacks[id] != this)
+			return;
+		a.playbacks.remove(id);
+		element.onended = null;
+		element.onerror = null;
+		element.pause();
+		element.removeAttribute("src");
+		element.load();
+		node.disconnect();
+		a.disconnect(this);
+	}
+
+	override function stop(a:WebAudioAdapter, id:Int):Void
+		finish(a, id);
+
+	override function pause(a:WebAudioAdapter, id:Int, paused:Bool):Void {
+		this.paused = paused;
+		if (paused)
+			element.pause();
+		else
+			element.play().then(_ -> null, error -> {
+				finish(a, id);
+				return null;
+			});
+	}
+
+	override function setPitch(a:WebAudioAdapter, pitch:Float):Void {
+		element.playbackRate = pitch;
+		this.pitch = pitch;
+	}
+
+	override function getPosition(a:WebAudioAdapter):Float
+		return element.currentTime;
+
+	override function setPosition(a:WebAudioAdapter, id:Int, seconds:Float):Bool {
+		var ranges = element.seekable, duration = Stream.durationOf(element);
+		// Past the end clamped to it, where the element ends or loops as it would.
+		if (duration > 0 && seconds > duration)
+			seconds = duration;
+		for (i in 0...ranges.length)
+			if (seconds >= ranges.start(i) && seconds <= ranges.end(i)) {
+				element.currentTime = seconds;
+				return true;
+			}
+		return false;
+	}
+}
+
 /** A queue's block of samples (one `queueSamples` call's): its interleaved floats and frames, how many of them were played before the
 	voice last paused, and, while scheduled, its source, the context times it starts and ends at, and the rate it was scheduled with. */
 @:structInit
-@:allow(helix.platform.adapters.audio.webaudio.WebAudioAdapter)
+@:allow(helix.platform.adapters.audio.webaudio)
 private class Block {
 	final samples:js.lib.Float32Array;
 	final frames:Int;
@@ -21,15 +341,157 @@ private class Block {
 
 /** A queue: its channels and rate, its blocks not yet played, the frames ever added, the context time its last scheduled block ends at,
 	and its voice (0 for none). */
-@:structInit
-@:allow(helix.platform.adapters.audio.webaudio.WebAudioAdapter)
-private class Queue {
+@:allow(helix.platform.adapters.audio.webaudio)
+private class Queue extends Resource {
 	final channels:Int;
 	final rate:Int;
 	var blocks:Array<Block> = [];
 	var put = 0;
 	var end = 0.;
 	var voice = 0;
+
+	function new(channels:Int, rate:Int) {
+		this.channels = channels;
+		this.rate = rate;
+	}
+
+	override function start(a:WebAudioAdapter, id:Int, gain:Dynamic, panner:Dynamic, loop:Bool, position:Float):Void {
+		var v = new QueueVoice(id, gain, panner, put - queued(a));
+		a.playbacks[id] = v;
+		schedule(a, v);
+	}
+
+	override function seekable():Bool
+		return false;
+
+	override function stopWaiting(id:Int):Void {
+		if (voice == id) {
+			blocks = [];
+			voice = 0;
+		}
+	}
+
+	override function poll(a:WebAudioAdapter):Void
+		prune(a);
+
+	// The frames not yet heard: the blocks' frames past what they played, a scheduled block's from the time it has left.
+	function queued(a:WebAudioAdapter):Int {
+		prune(a);
+		var now:Float = a.context == null ? 0 : a.context.currentTime, frames = 0.;
+		for (block in blocks)
+			frames += block.source == null || now <= block.start ? block.frames - block.offset : (block.end - now) * rate * block.rate;
+		return Math.ceil(frames - 1e-6);
+	}
+
+	// Drops the blocks that have played to their end.
+	function prune(a:WebAudioAdapter):Void {
+		if (a.context == null)
+			return;
+		var now:Float = a.context.currentTime;
+		while (blocks.length > 0 && blocks[0].source != null && blocks[0].end <= now)
+			blocks.shift();
+	}
+
+	// Schedules the blocks not yet scheduled after the last one, at the voice's pitch, each through the voice's gain.
+	function schedule(a:WebAudioAdapter, v:Voice):Void {
+		var context = a.context;
+		var at:Float = Math.max(end, context.currentTime);
+		for (block in blocks) {
+			if (block.source != null)
+				continue;
+			var frames = block.frames - block.offset;
+			var buffer:Dynamic = context.createBuffer(channels, frames, rate);
+			for (c in 0...channels) {
+				var channel = new js.lib.Float32Array(frames);
+				for (i in 0...frames)
+					channel[i] = block.samples[(block.offset + i) * channels + c];
+				buffer.copyToChannel(channel, c);
+			}
+			var source:Dynamic = context.createBufferSource();
+			source.buffer = buffer;
+			source.playbackRate.value = v.pitch;
+			source.connect(v.gain);
+			source.onended = _ -> source.disconnect();
+			source.start(at);
+			block.source = source;
+			block.rate = v.pitch;
+			block.start = at;
+			block.end = at + frames / rate / v.pitch;
+			at = block.end;
+		}
+		end = at;
+	}
+
+	// Takes the blocks off the clock, keeping what they hadn't played: the one playing keeps its place, those after it whole. With
+	// fromNow false the block playing stays scheduled and only those after it are taken off.
+	function unschedule(a:WebAudioAdapter, fromNow = true):Void {
+		prune(a);
+		var now:Float = a.context == null ? 0 : a.context.currentTime;
+		end = 0;
+		for (block in blocks) {
+			if (block.source == null)
+				continue;
+			if (now > block.start) {
+				if (!fromNow) {
+					end = block.end;
+					continue;
+				}
+				block.offset += Std.int(Math.min((now - block.start) * rate * block.rate, block.frames - block.offset));
+			}
+			block.source.onended = null;
+			block.source.stop();
+			block.source.disconnect();
+			block.source = null;
+		}
+		blocks = [for (block in blocks) if (block.offset < block.frames) block];
+	}
+}
+
+/** A queue's voice: the frames the queue had been given before it started, which its position counts from. */
+@:allow(helix.platform.adapters.audio.webaudio)
+private class QueueVoice extends Voice {
+	final base:Int;
+
+	function new(resource:Int, gain:Dynamic, panner:Dynamic, base:Int) {
+		super(resource, gain, panner);
+		this.base = base;
+	}
+
+	function queue(a:WebAudioAdapter):Queue
+		return a.queues[resource];
+
+	override function stop(a:WebAudioAdapter, id:Int):Void {
+		// A queue's voice stopped drops what it hadn't played.
+		var q = queue(a);
+		a.playbacks.remove(id);
+		q.unschedule(a);
+		q.blocks = [];
+		q.voice = 0;
+		a.disconnect(this);
+	}
+
+	override function pause(a:WebAudioAdapter, id:Int, paused:Bool):Void {
+		this.paused = paused;
+		if (paused)
+			queue(a).unschedule(a);
+		else
+			queue(a).schedule(a, this);
+	}
+
+	override function setPitch(a:WebAudioAdapter, pitch:Float):Void {
+		// The block playing finishes at its rate; those after it are scheduled again at the new one.
+		this.pitch = pitch;
+		if (!paused) {
+			var q = queue(a);
+			q.unschedule(a, false);
+			q.schedule(a, this);
+		}
+	}
+
+	override function getPosition(a:WebAudioAdapter):Float {
+		var q = queue(a);
+		return (q.put - q.queued(a) - base) / q.rate;
+	}
 }
 
 /** Provides `IAudio` in a browser page, over Web Audio.
@@ -39,22 +501,19 @@ private class Queue {
 	scheduled back to back on the context's clock, the browser resampling them; a pitch change reschedules the blocks not yet started. The page's first key, click or tap
 	unlocks audio, as browsers let it start only in a user gesture; the page losing focus or being hidden suspends it. A voice asked for
 	before then waits, its volume, pitch, pan and pause kept, and starts at the first poll once audio runs. */
+@:allow(helix.platform.adapters.audio.webaudio)
 class WebAudioAdapter implements IAudio {
 	// The time constant a volume or pan change approaches its target by, in seconds: short enough to follow a fade stepped once a frame,
 	// long enough not to click.
 	static inline var RAMP = .01;
 
 	var context:Dynamic;
-	var clips:Map<Int, {samples:Bytes, channels:Int}> = [];
-	var buffers:Map<Int, Dynamic> = [];
-	var streams:Map<Int, {
-		url:String,
-		element:Null<js.html.AudioElement>,
-		duration:Float,
-		channels:Int
-	}> = [];
+	// Every clip, stream and queue, by id; and each kind's, for the calls that take only that kind.
+	var resources:Map<Int, Resource> = [];
+	var clips:Map<Int, Clip> = [];
+	var streams:Map<Int, Stream> = [];
 	var queues:Map<Int, Queue> = [];
-	var playbacks:Map<Int, Dynamic> = [];
+	var playbacks:Map<Int, Voice> = [];
 	// Voices asked for before audio ran, by id, started in order at the first poll once it runs.
 	var waiting:Map<Int, {
 		resource:Int,
@@ -118,21 +577,17 @@ class WebAudioAdapter implements IAudio {
 		if (frames == 0)
 			throw "Audio clip creation failed";
 		var id = nextClip++;
-		clips[id] = {samples: samples.sub(0, frames * channelCount * 4), channels: channelCount};
+		var clip = new Clip(samples.sub(0, frames * channelCount * 4), channelCount);
+		clips[id] = clip;
+		resources[id] = clip;
 		return id;
-	}
-
-	// A media element's duration in seconds, 0 while unknown (NaN) or for a live stream (Infinity).
-	static function durationOf(element:js.html.AudioElement):Float {
-		var duration = element.duration;
-		return Math.isFinite(duration) && duration > 0 ? duration : 0;
 	}
 
 	public function getStreamDuration(stream:Int):Float {
 		var entry = streams[stream];
 		if (entry == null)
 			throw "Invalid audio stream";
-		return entry.element != null ? durationOf(entry.element) : entry.duration;
+		return entry.getDuration();
 	}
 
 	public function getStreamChannelCount(stream:Int):Int {
@@ -180,12 +635,9 @@ class WebAudioAdapter implements IAudio {
 			}
 			fetching.abort();
 			id = nextClip++;
-			streams[id] = {
-				url: url,
-				element: element,
-				duration: durationOf(element),
-				channels: channels < 0 ? 0 : channels
-			};
+			var stream = new Stream(url, element, channels < 0 ? 0 : channels);
+			streams[id] = stream;
+			resources[id] = stream;
 			opened(id);
 		}
 		// Opens once both the element's metadata and the header have arrived.
@@ -262,25 +714,6 @@ class WebAudioAdapter implements IAudio {
 		}, _ -> done());
 	}
 
-	function clipSource(id:Int, v:Dynamic):Void {
-		var source:Dynamic = context.createBufferSource();
-		source.buffer = v.buffer;
-		source.loop = v.loop;
-		source.playbackRate.value = v.pitch;
-		source.connect(v.gain);
-		v.source = source;
-		v.started = context.currentTime;
-		v.paused = false;
-		source.onended = _ -> {
-			if (playbacks[id] == v && !v.paused) {
-				playbacks.remove(id);
-				source.disconnect();
-				disconnect(v);
-			}
-		};
-		source.start(0, v.offset);
-	}
-
 	public function playClip(clip:Int, loop:Bool, volume:Float):Int {
 		if (!clips.exists(clip))
 			throw "Invalid audio clip";
@@ -299,8 +732,9 @@ class WebAudioAdapter implements IAudio {
 		if (sampleRate < 8000 || sampleRate > 96000)
 			throw "Audio queue sample rate must be 8000 to 96000";
 		var id = nextClip++;
-		var q:Queue = {channels: channelCount, rate: sampleRate};
+		var q = new Queue(channelCount, sampleRate);
 		queues[id] = q;
+		resources[id] = q;
 		return id;
 	}
 
@@ -318,14 +752,14 @@ class WebAudioAdapter implements IAudio {
 		q.put += frames;
 		var v = playbacks[q.voice];
 		if (v != null && !v.paused)
-			schedule(q, v);
+			q.schedule(this, v);
 	}
 
 	public function getQueuedFrameCount(queue:Int):Int {
 		var q = queues[queue];
 		if (q == null)
 			throw "Invalid audio queue";
-		return queued(q);
+		return q.queued(this);
 	}
 
 	public function disposeQueue(queue:Int):Void {
@@ -335,6 +769,7 @@ class WebAudioAdapter implements IAudio {
 		if (isPlaying(q.voice))
 			stop(q.voice);
 		queues.remove(queue);
+		resources.remove(queue);
 	}
 
 	public function playQueue(queue:Int, volume:Float):Int {
@@ -345,84 +780,13 @@ class WebAudioAdapter implements IAudio {
 		if (!waiting.remove(q.voice)) {
 			var earlier = playbacks[q.voice];
 			if (earlier != null) {
-				unschedule(q);
+				q.unschedule(this);
 				playbacks.remove(q.voice);
 				disconnect(earlier);
 			}
 		}
 		q.voice = play(queue, false, volume);
 		return q.voice;
-	}
-
-	// The frames of a queue not yet heard: its blocks' frames past what they played, a scheduled block's from the time it has left.
-	function queued(q:Queue):Int {
-		prune(q);
-		var now:Float = context == null ? 0 : context.currentTime, frames = 0.;
-		for (block in q.blocks)
-			frames += block.source == null || now <= block.start ? block.frames - block.offset : (block.end - now) * q.rate * block.rate;
-		return Math.ceil(frames - 1e-6);
-	}
-
-	// Drops a queue's blocks that have played to their end.
-	function prune(q:Queue):Void {
-		if (context == null)
-			return;
-		var now:Float = context.currentTime;
-		while (q.blocks.length > 0 && q.blocks[0].source != null && q.blocks[0].end <= now)
-			q.blocks.shift();
-	}
-
-	// Schedules a queue's blocks not yet scheduled after the last one, at the voice's pitch, each through the voice's gain.
-	function schedule(q:Queue, v:Dynamic):Void {
-		var at:Float = Math.max(q.end, context.currentTime);
-		for (block in q.blocks) {
-			if (block.source != null)
-				continue;
-			var frames = block.frames - block.offset;
-			var buffer:Dynamic = context.createBuffer(q.channels, frames, q.rate);
-			for (c in 0...q.channels) {
-				var channel = new js.lib.Float32Array(frames);
-				for (i in 0...frames)
-					channel[i] = block.samples[(block.offset + i) * q.channels + c];
-				buffer.copyToChannel(channel, c);
-			}
-			var source:Dynamic = context.createBufferSource();
-			source.buffer = buffer;
-			source.playbackRate.value = v.pitch;
-			source.connect(v.gain);
-			source.onended = _ -> source.disconnect();
-			source.start(at);
-			block.source = source;
-			block.rate = v.pitch;
-			block.start = at;
-			block.end = at + frames / q.rate / v.pitch;
-			at = block.end;
-		}
-		q.end = at;
-	}
-
-	// Takes a queue's blocks off the clock, keeping what they hadn't played: the one playing keeps its place, those after it whole. With
-	// fromNow false the block playing stays scheduled and only those after it are taken off.
-	function unschedule(q:Queue, fromNow = true):Void {
-		prune(q);
-		var now:Float = context == null ? 0 : context.currentTime;
-		q.end = 0;
-		for (block in q.blocks) {
-			if (block.source == null)
-				continue;
-			if (now > block.start) {
-				if (!fromNow) {
-					q.end = block.end;
-					continue;
-				}
-				block.offset += Std.int(Math.min((now - block.start) * q.rate * block.rate, block.frames - block.offset));
-			}
-			block.source.onended = null;
-			block.source.stop();
-			block.source.disconnect();
-			block.source = null;
-		}
-		q.blocks = [for (block in q.blocks) if (block.offset < block.frames) block];
 	}
 
 	// A new voice of resource: started now if audio runs, else waiting for it; 0 with no output.
@@ -446,7 +810,7 @@ class WebAudioAdapter implements IAudio {
 	}
 
 	// A voice's gain and panner, out of the graph.
-	function disconnect(v:Dynamic):Void {
+	function disconnect(v:Voice):Void {
 		v.gain.disconnect();
 		v.panner.disconnect();
 	}
@@ -457,133 +821,21 @@ class WebAudioAdapter implements IAudio {
 		gain.gain.value = volume;
 		gain.connect(panner);
 		panner.connect(context.destination);
-		if (queues.exists(resource)) {
-			var q = queues[resource];
-			var v:Dynamic = {
-				kind: "queue",
-				gain: gain,
-				panner: panner,
-				resource: resource,
-				pitch: 1.,
-				paused: false,
-				base: 0
-			};
-			v.base = q.put - queued(q);
-			playbacks[id] = v;
-			schedule(q, v);
-		} else if (streams.exists(resource)) {
-			var entry = streams[resource],
-				element:js.html.AudioElement = entry.element;
-			if (element == null) {
-				element = js.Browser.document.createAudioElement();
-				element.crossOrigin = "anonymous";
-				element.src = entry.url;
-			}
-			entry.element = null;
-			element.ondurationchange = _ -> if (streams[resource] == entry) entry.duration = durationOf(element);
-			element.loop = loop;
-			element.playbackRate = 1;
-			if (position > 0)
-				element.currentTime = position;
-			// The rate changes the pitch too, as a clip's does.
-			Reflect.setField(element, "preservesPitch", false);
-			var source:Dynamic = context.createMediaElementSource(element);
-			source.connect(gain);
-			var v:Dynamic = {
-				kind: "stream",
-				source: element,
-				node: source,
-				gain: gain,
-				panner: panner,
-				resource: resource,
-				pitch: 1.,
-				paused: false
-			};
-			playbacks[id] = v;
-			element.onended = _ -> finishStream(id, v);
-			element.onerror = _ -> finishStream(id, v);
-			element.play().catchError(error -> {
-				finishStream(id, v);
-				return null;
-			});
-		} else {
-			var buffer = buffers[resource];
-			if (buffer == null) {
-				var clip = clips[resource], channels = clip.channels;
-				var data = new js.lib.Float32Array(clip.samples.getData(), 0, Std.int(clip.samples.length / 4));
-				var frames = Std.int(data.length / channels);
-				buffer = context.createBuffer(channels, frames, 44100);
-				for (c in 0...channels) {
-					var channel = new js.lib.Float32Array(frames);
-					for (i in 0...frames)
-						channel[i] = data[i * channels + c];
-					buffer.copyToChannel(channel, c);
-				}
-				buffers[resource] = buffer;
-			}
-			var v:Dynamic = {
-				kind: "clip",
-				source: null,
-				gain: gain,
-				panner: panner,
-				resource: resource,
-				pitch: 1.,
-				buffer: buffer,
-				loop: loop,
-				offset: Math.min(position, buffer.duration),
-				started: 0.,
-				paused: false
-			};
-			playbacks[id] = v;
-			clipSource(id, v);
-		}
-	}
-
-	function finishStream(id:Int, v:Dynamic):Void {
-		if (playbacks[id] != v)
-			return;
-		playbacks.remove(id);
-		v.source.onended = null;
-		v.source.onerror = null;
-		v.source.pause();
-		v.source.removeAttribute("src");
-		v.source.load();
-		v.node.disconnect();
-		disconnect(v);
+		resources[resource].start(this, id, gain, panner, loop, position);
 	}
 
 	public function stop(id:Int):Void {
 		var w = waiting[id];
 		if (w != null) {
 			waiting.remove(id);
-			var q = queues[w.resource];
-			if (q != null && q.voice == id) {
-				q.blocks = [];
-				q.voice = 0;
-			}
+			var r = resources[w.resource];
+			if (r != null)
+				r.stopWaiting(id);
 			return;
 		}
 		var v = playbacks[id];
-		if (v == null)
-			return;
-		if (v.kind == "stream")
-			finishStream(id, v);
-		else if (v.kind == "queue") {
-			// A queue's voice stopped drops what it hadn't played.
-			var q = queues[v.resource];
-			playbacks.remove(id);
-			unschedule(q);
-			q.blocks = [];
-			q.voice = 0;
-			disconnect(v);
-		} else {
-			playbacks.remove(id);
-			v.source.onended = null;
-			if (!v.paused)
-				v.source.stop();
-			v.source.disconnect();
-			disconnect(v);
-		}
+		if (v != null)
+			v.stop(this, id);
 	}
 
 	public function pause(id:Int, paused:Bool):Void {
@@ -595,34 +847,7 @@ class WebAudioAdapter implements IAudio {
 		var v = playbacks[id];
 		if (v == null || v.paused == paused)
 			return;
-		if (v.kind == "queue") {
-			v.paused = paused;
-			if (paused)
-				unschedule(queues[v.resource]);
-			else
-				schedule(queues[v.resource], v);
-		} else if (v.kind == "stream") {
-			v.paused = paused;
-			if (paused)
-				v.source.pause();
-			else
-				v.source.play().then(_ -> null, error -> {
-					finishStream(id, v);
-					return null;
-				});
-		} else if (paused) {
-			played(v);
-			v.paused = true;
-			v.source.onended = null;
-			v.source.stop();
-			v.source.disconnect();
-		} else {
-			if (v.offset >= v.buffer.duration) {
-				stop(id);
-				return;
-			}
-			clipSource(id, v);
-		}
+		v.pause(this, id, paused);
 	}
 
 	public function setVolume(id:Int, volume:Float):Bool {
@@ -640,15 +865,6 @@ class WebAudioAdapter implements IAudio {
 		return true;
 	}
 
-	// Moves a playing clip voice's offset (in the buffer's seconds) on by what it played since it started or last moved, at its pitch.
-	function played(v:Dynamic):Void {
-		var now:Float = context.currentTime;
-		v.offset += (now - v.started) * v.pitch;
-		if (v.loop)
-			v.offset %= v.buffer.duration;
-		v.started = now;
-	}
-
 	public function setPitch(id:Int, pitch:Float):Bool {
 		var w = waiting[id];
 		if (w != null) {
@@ -658,23 +874,7 @@ class WebAudioAdapter implements IAudio {
 		var v = playbacks[id];
 		if (v == null)
 			return false;
-		if (v.kind == "queue") {
-			// The block playing finishes at its rate; those after it are scheduled again at the new one.
-			v.pitch = pitch;
-			if (!v.paused) {
-				var q = queues[v.resource];
-				unschedule(q, false);
-				schedule(q, v);
-			}
-			return true;
-		}
-		if (v.kind == "stream")
-			v.source.playbackRate = pitch;
-		else if (!v.paused) {
-			played(v);
-			v.source.playbackRate.value = pitch;
-		}
-		v.pitch = pitch;
+		v.setPitch(this, pitch);
 		return true;
 	}
 
@@ -699,19 +899,7 @@ class WebAudioAdapter implements IAudio {
 		if (w != null)
 			return w.position;
 		var v = playbacks[id];
-		if (v == null)
-			return 0;
-		switch v.kind {
-			case "queue":
-				var q = queues[v.resource];
-				return (q.put - queued(q) - v.base) / q.rate;
-			case "stream":
-				return v.source.currentTime;
-			case _:
-				var offset:Float = v.paused ? v.offset : v.offset + (context.currentTime - v.started) * v.pitch,
-					duration:Float = v.buffer.duration;
-				return v.loop ? offset % duration : Math.min(offset, duration);
-		}
+		return v == null ? 0 : v.getPosition(this);
 	}
 
 	public function setPosition(id:Int, seconds:Float):Bool {
@@ -719,79 +907,45 @@ class WebAudioAdapter implements IAudio {
 			return false;
 		var w = waiting[id];
 		if (w != null) {
-			if (queues.exists(w.resource))
+			var r = resources[w.resource];
+			if (r != null && !r.seekable())
 				return false;
 			w.position = seconds;
 			return true;
 		}
 		var v = playbacks[id];
-		if (v == null || v.kind == "queue")
-			return false;
-		if (v.kind == "stream") {
-			var element:js.html.AudioElement = v.source,
-				ranges = element.seekable,
-				duration = durationOf(element);
-			// Past the end clamped to it, where the element ends or loops as it would.
-			if (duration > 0 && seconds > duration)
-				seconds = duration;
-			for (i in 0...ranges.length)
-				if (seconds >= ranges.start(i) && seconds <= ranges.end(i)) {
-					element.currentTime = seconds;
-					return true;
-				}
-			return false;
-		}
-		var duration:Float = v.buffer.duration;
-		if (seconds >= duration) {
-			if (!v.loop) {
-				stop(id);
-				return true;
-			}
-			seconds = 0;
-		}
-		if (v.paused) {
-			v.offset = seconds;
-			return true;
-		}
-		v.source.onended = null;
-		v.source.stop();
-		v.source.disconnect();
-		v.offset = seconds;
-		clipSource(id, v);
-		return true;
+		return v != null && v.setPosition(this, id, seconds);
 	}
 
 	public function disposeClip(id:Int):Void {
 		if (!clips.exists(id))
 			throw "Invalid audio clip";
-		for (playback in [for (p in playbacks.keys()) if (playbacks[p].resource == id) p])
-			stop(playback);
-		for (voice in [for (w in waiting.keys()) if (waiting[w].resource == id) w])
-			waiting.remove(voice);
+		release(id);
 		clips.remove(id);
-		buffers.remove(id);
 	}
 
 	public function disposeStream(id:Int):Void {
-		var entry = streams[id];
-		if (entry == null)
+		if (!streams.exists(id))
 			throw "Invalid audio stream";
+		release(id);
+		streams.remove(id);
+	}
+
+	// Stops a clip's or stream's voices, those waiting dropped, and lets go of what it holds.
+	function release(id:Int):Void {
 		for (playback in [for (p in playbacks.keys()) if (playbacks[p].resource == id) p])
 			stop(playback);
 		for (voice in [for (w in waiting.keys()) if (waiting[w].resource == id) w])
 			waiting.remove(voice);
-		if (entry.element != null) {
-			entry.element.removeAttribute("src");
-			entry.element.load();
-		}
-		streams.remove(id);
+		resources[id].release();
+		resources.remove(id);
 	}
 
 	/** Starts the voices that waited, in the order asked, once audio runs, and lets go of queue blocks played; media elements and the audio
 		graph run on their own. */
 	public function poll():Void {
-		for (q in queues)
-			prune(q);
+		for (r in resources)
+			r.poll(this);
 		if (!this.running || !waiting.keys().hasNext())
 			return;
 		var ids = [for (id in waiting.keys()) id];
@@ -813,11 +967,12 @@ class WebAudioAdapter implements IAudio {
 		waiting.clear();
 		for (id in [for (p in playbacks.keys()) p])
 			stop(id);
-		for (id in [for (s in streams.keys()) s])
-			disposeStream(id);
-		queues.clear();
+		for (r in resources)
+			r.release();
+		resources.clear();
 		clips.clear();
-		buffers.clear();
+		streams.clear();
+		queues.clear();
 		if (context != null) {
 			context.close();
 			context = null;

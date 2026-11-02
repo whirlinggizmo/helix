@@ -16,7 +16,11 @@ class Sound {
 	var id:Int;
 	var release:Null<Void->Void>;
 	var unloaded = false;
-	final output:IAudio;
+	// What plays it (loop, volume; the output's voice), disposes of it and, for a stream, asks the platform its length: the clip's or
+	// the stream's calls, so a program that never streams links none of the output's streaming.
+	final playing:(loop:Bool, volume:Float) -> Int;
+	final disposing:Void->Void;
+	final measuring:Null<Void->Float>;
 	// A clip's length; a stream's once known, from a download's tail or the platform.
 	var seconds = 0.;
 	// Natively, a stream downloading in two parts: what reads its length from its start and its last bytes once its start has arrived,
@@ -24,10 +28,13 @@ class Sound {
 	var measure:Null<Void->Float> = null;
 
 	@:allow(helix.services.audio)
-	function new(output:IAudio, path:String, streamed:Bool, id:Int, channelCount:Int, seconds:Float, release:Null<Void->Void>) {
-		this.output = output;
+	function new(path:String, id:Int, channelCount:Int, seconds:Float, release:Null<Void->Void>, playing:(loop:Bool, volume:Float) -> Int,
+			disposing:Void->Void, measuring:Null<Void->Float>) {
 		this.path = path;
-		this.streamed = streamed;
+		this.streamed = measuring != null;
+		this.playing = playing;
+		this.disposing = disposing;
+		this.measuring = measuring;
 		this.id = id;
 		this.channelCount = channelCount;
 		this.seconds = seconds;
@@ -52,7 +59,7 @@ class Sound {
 	public var duration(get, never):Float;
 
 	function get_duration():Float {
-		if (seconds > 0 || unloaded || !streamed)
+		if (seconds > 0 || unloaded || measuring == null)
 			return seconds;
 		if (measure != null) {
 			var read = measure();
@@ -63,7 +70,7 @@ class Sound {
 					return seconds;
 			}
 		}
-		var known = output.getStreamDuration(id);
+		var known = measuring();
 		if (known > 0)
 			seconds = known;
 		return known;
