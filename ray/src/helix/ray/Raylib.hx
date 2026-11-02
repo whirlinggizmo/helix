@@ -5922,6 +5922,17 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadImageFromMemory: Images are decoded asynchronously. See LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void)",
 			macro(null : helix.ray.Image));
 
+	/** raylib's load of an animated image's frames, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadImageAnimAsync` loads them. */
+	public static macro function LoadImageAnim(fileName:ExprOf<String>, frames:ExprOf<Array<Int>>):ExprOf<Image>
+		return helix.platform.macros.Build.unsupported("LoadImageAnim: Synchronous loading is not supported. See LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void)",
+			macro(null : helix.ray.Image));
+
+	/** raylib's decode of an animated image file's bytes, which returns its frames. Images are decoded asynchronously here, so a call doesn't compile on any target: `LoadImageAnimFromMemoryAsync` decodes them. */
+	public static macro function LoadImageAnimFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>,
+			frames:ExprOf<Array<Int>>):ExprOf<Image>
+		return helix.platform.macros.Build.unsupported("LoadImageAnimFromMemory: Images are decoded asynchronously. See LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void)",
+			macro(null : helix.ray.Image));
+
 	/** raylib's read of a texture back from the GPU, which waits for it. A texture is read back asynchronously here, so a call doesn't compile on any target: `LoadImageFromTextureAsync` reads it. */
 	public static macro function LoadImageFromTexture(texture:ExprOf<Texture2D>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageFromTexture: A texture is read back asynchronously. See LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void)",
@@ -6037,15 +6048,6 @@ class Raylib {
 	public static macro function UnloadVrStereoConfig(config:ExprOf<VrStereoConfig>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("UnloadVrStereoConfig: Not implemented", macro {});
 
-	/** raylib's `LoadImageAnim` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image sequence from file (frames appended to image.data). */
-	public static macro function LoadImageAnim(fileName:ExprOf<String>, frames:ExprOf<Array<Int>>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("LoadImageAnim: Not implemented", macro(null : helix.ray.Image));
-
-	/** raylib's `LoadImageAnimFromMemory` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Load image sequence from memory buffer. */
-	public static macro function LoadImageAnimFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>,
-			frames:ExprOf<Array<Int>>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("LoadImageAnimFromMemory: Not implemented", macro(null : helix.ray.Image));
-
 	/** raylib's `DrawModelPoints` (raylib.h): not in helix-ray yet, so a call to it doesn't compile. Draw a model as points. */
 	public static macro function DrawModelPoints(model:ExprOf<Model>, position:ExprOf<Vector3>, scale:ExprOf<Float>, tint:ExprOf<Color>):ExprOf<Void>
 		return helix.platform.macros.Build.unimplemented("DrawModelPoints: Not implemented", macro {});
@@ -6083,6 +6085,48 @@ class Raylib {
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	public static macro function LoadModelAsync(fileName:ExprOf<String>, loaded:ExprOf<Model->Void>, ?failed:ExprOf<String->Void>):ExprOf<Void> {
 		return helix.ray.internal.ModelMacro.load(fileName, loaded, failed);
+	}
+
+	// ---- Animated images, read by the readers the program names ----
+
+	/** Loads an animated image's frames, answering when they are decoded: helix-ray's own, in place of raylib's `LoadImageAnim`. The
+		frames are one image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, the file's screen size, each frame's pixels after the last's
+		(`GetPixelDataSize(width, height, format)` bytes each), and `frames[0]` is set to how many before `loaded` is called. Their
+		delays and loop count aren't kept.
+
+		A GIF file's frames are composited as raylib 5.5's are: the screen starts transparent; each frame is drawn over the last, its
+		transparent pixels not drawn; a frame disposed of to the background, or to the previous frame, has its rectangle put back as it
+		was before it was drawn; and when the file's background index isn't 0, what the first frame doesn't cover is the global table's
+		background color, opaque, its red and blue swapped (black with no such color). A GIF file with no frames, or one that breaks the
+		format, fails to load. Any other file loads as `LoadImageAsync` loads it, as one frame.
+
+		The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program
+		naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension
+		then. The answer comes at a later frame, never during the call.
+
+		@param fileName  The file, as the program names it.
+		@param frames  Receives the frame count, in its first element.
+		@param loaded  Receives the frames.
+		@param failed  Optional. Receives why they couldn't be loaded; when omitted, it is logged. */
+	public static macro function LoadImageAnimAsync(fileName:ExprOf<String>, frames:ExprOf<Array<Int>>, loaded:ExprOf<Image->Void>,
+			?failed:ExprOf<String->Void>):ExprOf<Void> {
+		return helix.ray.internal.ImageMacro.loadAnim(fileName, frames, loaded, failed);
+	}
+
+	/** Decodes an animated image file's bytes, answering when they are decoded: helix-ray's own, in place of raylib's
+		`LoadImageAnimFromMemory`. The frames and their count are `LoadImageAnimAsync`'s, of a GIF file when the type is ".gif" or ".GIF";
+		any other type is decoded as `LoadImageFromMemoryAsync` decodes it, as one frame. The reader is chosen as the program builds when
+		the type is a constant, as `LoadImageAnimAsync`'s is by the name.
+
+		@param fileType  The file's extension: ".gif", or one `LoadImageFromMemoryAsync` takes.
+		@param fileData  The file's bytes.
+		@param dataSize  How many of them.
+		@param frames  Receives the frame count, in its first element.
+		@param loaded  Receives the frames.
+		@param failed  Optional. Receives why they couldn't be decoded; when omitted, it is logged. */
+	public static macro function LoadImageAnimFromMemoryAsync(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>,
+			frames:ExprOf<Array<Int>>, loaded:ExprOf<Image->Void>, ?failed:ExprOf<String->Void>):ExprOf<Void> {
+		return helix.ray.internal.ImageMacro.loadAnimFromMemory(fileType, fileData, dataSize, frames, loaded, failed);
 	}
 
 	// ---- Shaders, compiled as the program builds ----

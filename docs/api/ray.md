@@ -4146,6 +4146,8 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
 
 ```haxe
 static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?failed:String -> Void):Void
+static macro function LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
+static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
 static macro function LoadShader(vsFileName:Null<String>, fsFileName:Null<String>):Shader
 static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<String>):Shader
 static macro function LoadAutomationEventList(fileName:Null<String>):AutomationEventList
@@ -4159,6 +4161,22 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
   An OBJ file is read as raylib 6.2's `LoadOBJ` reads it: its polygons split into fans of triangles; a new mesh at each `g` or `o` line with faces after it, and where a face's material differs from the face before's, unless that face had none (faces before any `usemtl` join the next material's mesh); its vertices its triangles' corners, unindexed; a corner without a normal, or naming one the file doesn't have, given (0, 1, 0), one without texture coordinates (0, 0), the others' v turned (1 - v), and one naming a position the file doesn't have (0, 0, 0); every vertex's color white, whatever colors the file gives; each mesh's material its last face's, or 0 when that is no material of the library. Its materials are the library's, read as `LoadMaterialsAsync` reads them, of the file's last `mtllib` line; with no library, or one that can't be read (logged), the model has raylib's default material alone. raylib counts the start of each group in the file's `f` lines against the triangles it has made, so a polygon, or a face of 1 or 2 corners, before a group moves the group's first mesh; helix-ray does too. An empty file fails to load, as one raylib can't read. Where raylib's reading is broken, helix-ray reads the file as the format has it, and a file that breaks the format fails to load (docs/DECISIONS.md 28). IQM, VOX and M3D models aren't read (docs/DECISIONS.md 27).
 
   The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming only glTF files carries no OBJ reader, and one naming only OBJ files no glTF reader; a name known only as the program runs brings both, the reader chosen by its extension then.
+- `LoadImageAnimAsync`: Loads an animated image's frames, answering when they are decoded: helix-ray's own, in place of raylib's `LoadImageAnim`. The frames are one image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, the file's screen size, each frame's pixels after the last's (`GetPixelDataSize(width, height, format)` bytes each), and `frames[0]` is set to how many before `loaded` is called. Their delays and loop count aren't kept.
+  - `fileName`: The file, as the program names it.
+  - `frames`: Receives the frame count, in its first element.
+  - `loaded`: Receives the frames.
+  - `failed`: Optional. Receives why they couldn't be loaded; when omitted, it is logged.
+
+  A GIF file's frames are composited as raylib 5.5's are: the screen starts transparent; each frame is drawn over the last, its transparent pixels not drawn; a frame disposed of to the background, or to the previous frame, has its rectangle put back as it was before it was drawn; and when the file's background index isn't 0, what the first frame doesn't cover is the global table's background color, opaque, its red and blue swapped (black with no such color). A GIF file with no frames, or one that breaks the format, fails to load. Any other file loads as `LoadImageAsync` loads it, as one frame.
+
+  The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension then. The answer comes at a later frame, never during the call.
+- `LoadImageAnimFromMemoryAsync`: Decodes an animated image file's bytes, answering when they are decoded: helix-ray's own, in place of raylib's `LoadImageAnimFromMemory`. The frames and their count are `LoadImageAnimAsync`'s, of a GIF file when the type is ".gif" or ".GIF"; any other type is decoded as `LoadImageFromMemoryAsync` decodes it, as one frame. The reader is chosen as the program builds when the type is a constant, as `LoadImageAnimAsync`'s is by the name.
+  - `fileType`: The file's extension: ".gif", or one `LoadImageFromMemoryAsync` takes.
+  - `fileData`: The file's bytes.
+  - `dataSize`: How many of them.
+  - `frames`: Receives the frame count, in its first element.
+  - `loaded`: Receives the frames.
+  - `failed`: Optional. Receives why they couldn't be decoded; when omitted, it is logged.
 - `LoadShader`: Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the program builds, for every target, so their names are constants; the files are found under `-D helix-ray-files` (default `web`), as the program's other files are. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25).
   - `vsFileName`: The vertex stage's file, or null.
   - `fsFileName`: The fragment stage's file, or null.
@@ -4175,13 +4193,13 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
 
 Each of these is raylib's name, and a call to it doesn't compile, saying why and what to use instead.
 
-`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `MemAlloc`, `MemRealloc`, `MemFree`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadMaterials`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `FileExists`, `LoadFileText`, `LoadFileData`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `MemAlloc`, `MemRealloc`, `MemFree`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadMaterials`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ### Not in helix-ray yet
 
 Each of these is raylib's name, and a call to it doesn't compile, saying so.
 
-`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `DrawModelPoints`, `DrawModelPointsEx`.
+`ExportFontAsCode`, `BeginVrStereoMode`, `EndVrStereoMode`, `LoadVrStereoConfig`, `UnloadVrStereoConfig`, `DrawModelPoints`, `DrawModelPointsEx`.
 
 ## Raymath
 

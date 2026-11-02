@@ -546,6 +546,30 @@ class RTextures {
 		throw "LoadImageFromMemory is unimplemented";
 	}
 
+	/** raylib's load of an animated image's frames, which waits for the file. A page can't wait, so a call doesn't compile on any target:
+		`LoadImageAnimAsync` loads them.
+
+		@param fileName  The file.
+		@param frames  Would be set to how many frames.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadImageAnim: Synchronous loading is not supported. See LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void)")
+	static function LoadImageAnim(fileName:String, frames:Array<Int>):Image {
+		throw "LoadImageAnim is unimplemented";
+	}
+
+	/** raylib's decode of an animated image file's bytes, which returns its frames. Images are decoded asynchronously here, so a call
+		doesn't compile on any target: `LoadImageAnimFromMemoryAsync` decodes them.
+
+		@param fileType  The file's extension, ".gif".
+		@param fileData  The file's bytes.
+		@param dataSize  How many.
+		@param frames  Would be set to how many frames.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadImageAnimFromMemory: Images are decoded asynchronously. See LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void)")
+	static function LoadImageAnimFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>):Image {
+		throw "LoadImageAnimFromMemory is unimplemented";
+	}
+
 	/** raylib's read of a texture back from the GPU, which waits for it. A texture is read back asynchronously here, so a call doesn't
 		compile on any target: `LoadImageFromTextureAsync` reads it.
 

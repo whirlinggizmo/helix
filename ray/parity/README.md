@@ -45,6 +45,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `raymath` | 5.5 | values | every raymath function over three inputs each, a singular matrix and zero vectors among them |
 | `raymath_62` | 6.2 | values | `MatrixDecompose`, 6.2's |
 | `core_62` | 6.2 | values | file names, Base64, SHA-1, `MakeDirectory`, `QuaternionFromVector3ToVector3` |
+| `images` | 5.5 | values | `LoadImageAnim` and `LoadImageAnimFromMemory` on GIFs (disposal, transparency, interlacing, a background index) and a PNG, their frames byte for byte |
 | `images_62` | 6.2 | values | the image functions 6.2 fixed, their images byte for byte |
 | `animation` | 6.2 | values | glTF skeletons and animations, bone matrices, CPU skinning and blending |
 | `materials` | 5.5 | values | `LoadMaterialDefault`'s maps, `IsMaterialValid`, what `UnloadMaterial` frees and keeps (a texture another load shares), a texture given to a model freed after `UnloadTexture` and `UnloadModel` |

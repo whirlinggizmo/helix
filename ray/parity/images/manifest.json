@@ -1,0 +1,22 @@
+{
+  "oracle": "5.5",
+  "covers": "rtextures.c's LoadImageAnim and LoadImageAnimFromMemory on helix-formats' test GIFs as stb_image composites them: one frame of GIF87a, rectangles kept over the screen, disposal to the background and to the previous frame (the first frame's) with transparency over it, a background index past 0 under a first frame smaller than the screen, transparency in a global and a local table, interlaced rows, 256 colors of noise filling the LZW code table, a file PIL wrote, a file of no frames, a missing file; a PNG as one frame; a name and a type known only as the program runs; the bytes typed .gif, .GIF and .png",
+  "notes": "Where raylib gives an image with no data (a missing file, a GIF of no frames), LoadImageAnimAsync fails, printed as 0 frames. The PNG is RGBA: helix-ray's file images say PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 whatever the file's channels.",
+  "kind": "values",
+  "main": "ImageAnimBits",
+  "reference": "ref.c",
+  "harness": [
+    "ImageAnimBits.hx"
+  ],
+  "assets": {
+    "still.gif": "../../../formats/tests/assets/gif/still.gif",
+    "anim.gif": "../../../formats/tests/assets/gif/anim.gif",
+    "dispose.gif": "../../../formats/tests/assets/gif/dispose.gif",
+    "transparent.gif": "../../../formats/tests/assets/gif/transparent.gif",
+    "large.gif": "../../../formats/tests/assets/gif/large.gif",
+    "pil.gif": "../../../formats/tests/assets/gif/pil.gif",
+    "empty.gif": "../../../formats/tests/assets/gif/empty.gif",
+    "still.png": "makepng.py"
+  },
+  "tolerance": 0
+}

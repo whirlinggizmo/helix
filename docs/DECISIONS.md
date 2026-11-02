@@ -168,7 +168,9 @@ Why things are the way they are, numbered, in order.
     Where even the latest release is broken (it crashes, reads past its arrays, or draws what GL refused), helix-ray fixes it rather
     than reproduce it, and lists the fix here: a cubemap read from a cross or a row that comes with mipmaps gets each face's own
     mipmaps (6.2 makes them magenta); `SetShaderValueTexture` binds a cubemap to a `samplerCube` (raylib binds it as a 2D texture,
-    which GL refuses, so it draws black). OBJ and MTL reading keeps its own list (28).
+    which GL refuses, so it draws black); a GIF frame `LoadImageAnimAsync` reads that is disposed of to the previous frame has its
+    rectangle put back as it was before the frame was drawn, on every frame (stb_image does so for the second frame, and from the third
+    reads before its own buffer, so raylib draws whatever memory lies there). OBJ and MTL reading keeps its own list (28).
 
 25. **helix-ray counts what a model holds, following ownership, where raylib leaves it to the program.** raylib's `UnloadModel`
     frees a model's meshes and its maps arrays and never a texture or shader, so a C program frees those itself, or leaks them; Haxe

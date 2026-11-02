@@ -790,6 +790,123 @@ class RAsync {
 		Runtime.later(() -> decoded("LoadImageFromMemoryAsync", fileType == null ? "" : fileType.toLowerCase(), data, loaded, failed));
 	}
 
+	// LoadImageAnimAsync's call where its file's name isn't known as the program builds (Raylib.LoadImageAnimAsync): the GIF reader or
+	// the image load picked by its extension as it runs, so both are in the program.
+	static function loadImageAnim(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void):Void {
+		if (haxe.io.Path.extension(normalize(fileName)).toLowerCase() == "gif")
+			loadGifAnim(fileName, frames, loaded, failed);
+		else
+			loadStillAnim(fileName, frames, loaded, failed);
+	}
+
+	// LoadImageAnimAsync's call for a GIF file.
+	static function loadGifAnim(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void):Void {
+		var path = normalize(fileName);
+		Runtime.fetch(path, error -> {
+			if (error != null)
+				refuse("LoadImageAnimAsync", error, failed);
+			else
+				gifAnim("LoadImageAnimAsync", path, Runtime.files.get(path), frames, loaded, failed);
+		});
+	}
+
+	// LoadImageAnimAsync's call for any other file: the image, one frame.
+	static function loadStillAnim(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void):Void {
+		LoadImageAsync(fileName, image -> {
+			frames[0] = 1;
+			loaded(image);
+		}, error -> refuse("LoadImageAnimAsync", error, failed));
+	}
+
+	// LoadImageAnimFromMemoryAsync's call where its type isn't known as the program builds: raylib's two spellings of ".gif" read as GIF.
+	static function decodeImageAnim(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void):Void {
+		if (fileType == ".gif" || fileType == ".GIF")
+			decodeGifAnim(fileType, fileData, dataSize, frames, loaded, failed);
+		else
+			decodeStillAnim(fileType, fileData, dataSize, frames, loaded, failed);
+	}
+
+	// LoadImageAnimFromMemoryAsync's call for a GIF file's bytes.
+	static function decodeGifAnim(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void):Void {
+		if (fileData == null || dataSize == 0) {
+			Runtime.later(() -> refuse("LoadImageAnimFromMemoryAsync", "IMAGE: Invalid file data", failed));
+			return;
+		}
+		var data = dataSize < fileData.length ? fileData.sub(0, dataSize) : fileData;
+		Runtime.later(() -> gifAnim("LoadImageAnimFromMemoryAsync", "IMAGE", data, frames, loaded, failed));
+	}
+
+	// LoadImageAnimFromMemoryAsync's call for any other type: the image, one frame.
+	static function decodeStillAnim(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void):Void {
+		LoadImageFromMemoryAsync(fileType, fileData, dataSize, image -> {
+			frames[0] = 1;
+			loaded(image);
+		}, error -> refuse("LoadImageAnimFromMemoryAsync", error, failed));
+	}
+
+	// A GIF file's frames as one image, as raylib 5.5 composites them (stb_image's stbi_load_gif_from_memory): helix-formats reads the
+	// file; the frames are drawn here by stb's rules. The screen starts transparent. Before each frame, a last frame disposed of to the
+	// background or the previous frame has its rectangle put back as it was before it was drawn (stb restores both so, and for
+	// Previous from the third frame on reads before its own buffer: docs/DECISIONS.md 24). After the first frame, when the background
+	// index isn't 0, the pixels outside its rectangle take the global table's color there, opaque, its bytes in stb's palette order
+	// (blue, green, red), or opaque black where the table has none.
+	static function gifAnim(name:String, what:String, data:haxe.io.Bytes, frames:Array<Int>, loaded:Image->Void, failed:Null<String->Void>):Void {
+		var gif = try helix.formats.gif.GifFile.read(data) catch (e:String) {
+			refuse(name, '$what: $e', failed);
+			return;
+		}
+		var width = gif.width,
+			height = gif.height,
+			size = width * height * 4,
+			count = gif.frames.length;
+		if (count == 0 || size * 1.0 * count > 0x7FFFFFFF) {
+			refuse(name, count == 0 ? '$what: a GIF file with no frames' : '$what: $count frames of $width x $height pixels, over 2 GB', failed);
+			return;
+		}
+		var pixels = haxe.io.Bytes.alloc(size * count),
+			screen = haxe.io.Bytes.alloc(size),
+			before = haxe.io.Bytes.alloc(size);
+		for (n => frame in gif.frames) {
+			if (n > 0) {
+				var last = gif.frames[n - 1];
+				if (last.disposal == helix.formats.gif.GifDisposal.Background || last.disposal == helix.formats.gif.GifDisposal.Previous)
+					for (row in last.y...last.y + last.height)
+						screen.blit((row * width + last.x) * 4, before, (row * width + last.x) * 4, last.width * 4);
+			}
+			before.blit(0, screen, 0, size);
+			var colors = frame.colors, i = 0;
+			for (row in 0...frame.height) {
+				var p = ((frame.y + row) * width + frame.x) * 4;
+				for (_ in 0...frame.width) {
+					var index = frame.indices.get(i++);
+					if (index != frame.transparentIndex && index < colors.length) {
+						var color = colors[index];
+						screen.set(p, (color >> 16) & 0xFF);
+						screen.set(p + 1, (color >> 8) & 0xFF);
+						screen.set(p + 2, color & 0xFF);
+						screen.set(p + 3, 255);
+					}
+					p += 4;
+				}
+			}
+			if (n == 0 && gif.backgroundIndex > 0) {
+				var color = gif.colors != null && gif.backgroundIndex < gif.colors.length ? gif.colors[gif.backgroundIndex] : 0xFF000000;
+				for (y in 0...height)
+					for (x in 0...width)
+						if (x < frame.x || x >= frame.x + frame.width || y < frame.y || y >= frame.y + frame.height) {
+							var p = (y * width + x) * 4;
+							screen.set(p, color & 0xFF);
+							screen.set(p + 1, (color >> 8) & 0xFF);
+							screen.set(p + 2, (color >> 16) & 0xFF);
+							screen.set(p + 3, 255);
+						}
+			}
+			pixels.blit(n * size, screen, 0, size);
+		}
+		frames[0] = count;
+		loaded(new Image(pixels, width, height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8));
+	}
+
 	/** Reads a texture's pixels, answering when they are read: helix-ray's own, in place of raylib's `LoadImageFromTexture`, as the GPU
 		answers later. A texture on the GPU (one drawn, or a render texture) is read back from it as the frames drawn so far left it; a
 		render texture's rows come bottom first, as raylib's do, so it reads upside down as raylib's does. A texture updated this frame
