@@ -744,8 +744,9 @@ class RAsync {
 		var count = codepointCount > 0 ? codepointCount : 95;
 		var wanted = codepoints == null ? [for (i in 0...count) 32 + i] : codepoints.slice(0, count);
 		var data = dataSize < fileData.length ? fileData.sub(0, dataSize) : fileData;
-		Runtime.rasterizer()
-			.rasterize(data, fontSize, wanted, false, (glyphs, ascent, _, _) -> loaded(RText.fontOf(RText.foundGlyphs(glyphs, ascent, fontSize), fontSize)),
+		Runtime.fonts()
+			.rasterize(data, fontSize, wanted, Coverage,
+				(glyphs, ascent, _, _) -> loaded(RText.fontOf(RText.foundGlyphs(glyphs, ascent, fontSize), fontSize)),
 				message -> refuse("LoadFontFromMemoryAsync", message, failed));
 	}
 
@@ -766,8 +767,9 @@ class RAsync {
 		var count = codepointCount > 0 ? codepointCount : 95;
 		var wanted = codepoints == null ? [for (i in 0...count) 32 + i] : codepoints.slice(0, count);
 		var data = dataSize < fileData.length ? fileData.sub(0, dataSize) : fileData;
-		Runtime.rasterizer()
-			.rasterize(data, fontSize, wanted, type == FONT_SDF, (glyphs, ascent, _, _) -> loaded(RText.fontData(glyphs, ascent, fontSize, type)),
+		var kind:helix.services.fonts.FontKind = type == FONT_SDF ? Distance : type == FONT_BITMAP ? Bitmap : Coverage;
+		Runtime.fonts()
+			.rasterize(data, fontSize, wanted, kind, (glyphs, ascent, _, _) -> loaded(RText.fontData(glyphs, ascent, fontSize, type)),
 				message -> refuse("LoadFontDataAsync", message, failed));
 	}
 

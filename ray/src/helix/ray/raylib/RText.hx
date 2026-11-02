@@ -629,8 +629,8 @@ class RText {
 		throw "LoadFontData is unimplemented";
 	}
 
-	// raylib's LoadFontData, from the platform's glyphs: a glyph the font lacks is empty, a space is a blank image as wide as its advance,
-	// and offsets are from the line's top.
+	// raylib's LoadFontData, from the fonts service's glyphs (FONT_BITMAP's made hard-edged there): a glyph the font lacks is empty, a
+	// space is a blank image as wide as its advance, and offsets are from the line's top.
 	static function fontData(raster:Array<helix.platform.RasterGlyph>, ascent:Float, fontSize:Int, type:Int):Array<GlyphInfo> {
 		return [
 			for (r in raster) {
@@ -648,9 +648,6 @@ class RText {
 						glyph.image.height = r.height;
 						glyph.image.mipmaps = 1;
 						glyph.image.format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE;
-						if (type == FONT_BITMAP)
-							for (i in 0...r.pixels.length)
-								r.pixels.set(i, r.pixels.get(i) < 80 ? 0 : 255);
 					}
 					if (r.codepoint == " ".code) {
 						glyph.advanceX = Std.int(r.advance);

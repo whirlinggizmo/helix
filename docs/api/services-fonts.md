@@ -32,7 +32,7 @@ function getGlyph(codepoint:Int):Null<Glyph2D>
 
 *abstract* in [`services/src/helix/services/fonts/FontKind.hx`](../../services/src/helix/services/fonts/FontKind.hx), `import helix.services.fonts.FontKind;`
 
-Specifies what a font's glyphs hold on its atlas, which `Fonts.load` rasterizes.
+Specifies what a font's glyphs hold, as `Fonts.load` and `Fonts.rasterize` rasterize them.
 
 - `FontKind.Coverage`: Antialiased coverage: each texel how much of it the glyph covers.
 - `FontKind.Bitmap`: Coverage made hard-edged: each texel covered or not, for pixel fonts drawn at their own size.
@@ -51,7 +51,7 @@ Specifies how `Fonts.load` places glyphs on the atlas.
 
 *class* in [`services/src/helix/services/fonts/Fonts.hx`](../../services/src/helix/services/fonts/Fonts.hx), `import helix.services.fonts.Fonts;`
 
-Provides fonts by path: a TrueType or OpenType font rasterized at a size (`load`), or a BMFont's .fnt and its images (`loadBmFont`), each as a `Font2D` with its glyphs on one atlas.
+Provides fonts by path: a TrueType or OpenType font rasterized at a size (`load`), or a BMFont's .fnt and its images (`loadBmFont`), each as a `Font2D` with its glyphs on one atlas. A TrueType font's glyphs also come from its bytes, each on its own, for a program that places them itself (`rasterize`).
 
 A TrueType font's glyphs are rasterized by the platform (`IFontRasterizer`) and packed onto an atlas as `FontsOptions` says. Its answers come as the assets, images and rasterizer it uses are polled.
 
@@ -63,6 +63,7 @@ fonts.load("ui.ttf", 24, [for (c in 32...127) c], Coverage, font -> ui = font);
 ```haxe
 function new(rasterizer:IFontRasterizer, assets:Assets, images:Images, ?options:FontsOptions)
 function load(path:String, size:Float, codepoints:Array<Int>, kind:FontKind, loaded:Font2D -> Void, ?failed:String -> Void):() -> Void
+function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, kind:FontKind, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, ?failed:String -> Void):() -> Void
 function loadBmFont(path:String, loaded:Font2D -> Void, ?failed:String -> Void):() -> Void
 ```
 
@@ -81,6 +82,16 @@ function loadBmFont(path:String, loaded:Font2D -> Void, ?failed:String -> Void):
   - returns: A function that aborts the load; neither callback is called after it, and once one was, it does nothing.
 
   One of `loaded` or `failed` is called once, at a later poll, never during this call.
+- `rasterize`: Rasterizes a TrueType or OpenType font's glyphs from the file's bytes, each on its own, for a program that places them itself: on an atlas of its own, or one image each. `load` makes a font of them on one atlas.
+  - `encoded`: The font file's bytes, TTF or OTF.
+  - `size`: The pixel height: the font's ascent to its descent.
+  - `codepoints`: The characters wanted.
+  - `kind`: What the glyphs hold: coverage, hard-edged coverage, or signed distances.
+  - `rasterized`: Receives a glyph for each codepoint, in their order, its bitmap as `kind` says (one the font lacks isn't `found`, and is empty), and the font's ascent, descent (below the baseline, negative) and line gap, in pixels.
+  - `failed`: Optional. Receives why the font can't be read. When omitted, the failure is logged.
+  - returns: A function that aborts it; neither callback is called after it, and once one was, it does nothing.
+
+  One of `rasterized` or `failed` is called once, at a later poll, never during this call.
 - `loadBmFont`: Loads a BMFont: its .fnt (the text format) and its pages, stacked top to bottom onto one atlas. A page with no transparency whose texels are gray is coverage, so it becomes white with the gray as alpha, as raylib takes it.
   - `path`: The .fnt file, as the assets name it.
   - `loaded`: Receives the font: its size the .fnt's line height, its ascent its base.

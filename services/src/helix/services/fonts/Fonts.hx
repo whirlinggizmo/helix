@@ -11,7 +11,8 @@ import helix.services.images.Image;
 import helix.services.images.Images;
 
 /** Provides fonts by path: a TrueType or OpenType font rasterized at a size (`load`), or a BMFont's .fnt and its images (`loadBmFont`),
-	each as a `Font2D` with its glyphs on one atlas.
+	each as a `Font2D` with its glyphs on one atlas. A TrueType font's glyphs also come from its bytes, each on its own, for a program
+	that places them itself (`rasterize`).
 
 	A TrueType font's glyphs are rasterized by the platform (`IFontRasterizer`) and packed onto an atlas as `FontsOptions` says. Its
 	answers come as the assets, images and rasterizer it uses are polled.
@@ -50,25 +51,48 @@ class Fonts {
 		@param failed  Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
 		@return  A function that aborts the load; neither callback is called after it, and once one was, it does nothing. */
 	public function load(path:String, size:Float, codepoints:Array<Int>, kind:FontKind, loaded:Font2D->Void, ?failed:String->Void):Void->Void {
-		var aborted = false;
+		var aborted = false, abortRasterize:Null<Void->Void> = null;
 		var report = (message:String) -> if (!aborted) fail(failed, message);
 		var abortLoad = assets.load(path, bytes -> {
 			if (aborted)
 				return;
-			rasterizer.rasterize(bytes, size, codepoints, kind == Distance, (glyphs, ascent, descent, lineGap) -> {
-				if (aborted)
-					return;
-				if (kind == Bitmap)
-					for (g in glyphs)
-						for (i in 0...g.pixels.length)
-							g.pixels.set(i, g.pixels.get(i) < 80 ? 0 : 255);
-				loaded(pack(path, size, [for (g in glyphs) if (g.found) g], ascent, descent, lineGap));
-			}, message -> report('$path: $message'));
+			abortRasterize = rasterize(bytes, size, codepoints, kind,
+				(glyphs, ascent, descent, lineGap) -> loaded(pack(path, size, [for (g in glyphs) if (g.found) g], ascent, descent, lineGap)),
+				message -> report('$path: $message'));
 		}, report);
 		return () -> {
 			aborted = true;
 			abortLoad();
+			if (abortRasterize != null)
+				abortRasterize();
 		};
+	}
+
+	/** Rasterizes a TrueType or OpenType font's glyphs from the file's bytes, each on its own, for a program that places them itself:
+		on an atlas of its own, or one image each. `load` makes a font of them on one atlas.
+
+		One of `rasterized` or `failed` is called once, at a later poll, never during this call.
+		@param encoded  The font file's bytes, TTF or OTF.
+		@param size  The pixel height: the font's ascent to its descent.
+		@param codepoints  The characters wanted.
+		@param kind  What the glyphs hold: coverage, hard-edged coverage, or signed distances.
+		@param rasterized  Receives a glyph for each codepoint, in their order, its bitmap as `kind` says (one the font lacks isn't
+			`found`, and is empty), and the font's ascent, descent (below the baseline, negative) and line gap, in pixels.
+		@param failed  Optional. Receives why the font can't be read. When omitted, the failure is logged.
+		@return  A function that aborts it; neither callback is called after it, and once one was, it does nothing. */
+	public function rasterize(encoded:Bytes, size:Float, codepoints:Array<Int>, kind:FontKind,
+			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, ?failed:String->Void):Void->Void {
+		var aborted = false;
+		rasterizer.rasterize(encoded, size, codepoints, kind == Distance, (glyphs, ascent, descent, lineGap) -> {
+			if (aborted)
+				return;
+			if (kind == Bitmap)
+				for (g in glyphs)
+					for (i in 0...g.pixels.length)
+						g.pixels.set(i, g.pixels.get(i) < 80 ? 0 : 255);
+			rasterized(glyphs, ascent, descent, lineGap);
+		}, message -> if (!aborted) fail(failed, message));
+		return () -> aborted = true;
 	}
 
 	/** Loads a BMFont: its .fnt (the text format) and its pages, stacked top to bottom onto one atlas. A page with no transparency whose

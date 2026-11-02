@@ -3,16 +3,20 @@ import helix.platform.IFontRasterizer;
 import helix.platform.RasterGlyph;
 
 /** Rasterizes "font" bytes into glyphs of known shapes, at its next poll: each codepoint a box as wide as its order (1, 2, 3...) and as
-	tall as the size, its coverage 100, offset 1 right and the size up, advancing its width plus 1; a codepoint of 0x4E00 isn't in it. Any
-	other bytes fail. */
+	tall as the size, its coverage 100 but its last pixel's 50, offset 1 right and the size up, advancing its width plus 1; a codepoint of
+	0x4E00 isn't in it. Any other bytes fail. */
 class FakeFontRasterizer implements IFontRasterizer {
 	final pending:Array<Void->Void> = [];
+
+	/** Whether the last rasterize asked for signed distances. */
+	public var sdf(default, null) = false;
 
 	/** Creates it. */
 	public function new() {}
 
 	public function rasterize(encoded:Bytes, size:Float, codepoints:Array<Int>, sdf:Bool,
 			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String->Void):Void {
+		this.sdf = sdf;
 		var font = encoded.toString() == "font";
 		pending.push(() -> if (!font) failed("not a font") else {
 			var glyphs:Array<RasterGlyph> = [];
@@ -22,6 +26,8 @@ class FakeFontRasterizer implements IFontRasterizer {
 					h = found ? Std.int(size) : 0;
 				var pixels = Bytes.alloc(w * h);
 				pixels.fill(0, pixels.length, 100);
+				if (pixels.length > 0)
+					pixels.set(pixels.length - 1, 50);
 				glyphs.push({
 					codepoint: codepoints[i],
 					found: found,

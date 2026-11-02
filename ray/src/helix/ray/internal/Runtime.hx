@@ -454,31 +454,22 @@ class Runtime {
 		return gesturesService;
 	}
 
-	/** Gets the fonts service, made when first asked for, over the font rasterizer, the assets and the images. */
+	/** Gets the fonts service, made when first asked for, over the platform's font rasterizer, the assets and the images. */
 	public static function fonts():helix.services.fonts.Fonts {
 		if (fontsService == null) {
 			imaging();
-			fontsService = new helix.services.fonts.Fonts(rasterizer(), assets, decoding);
+			#if js
+			var rasterizer = new helix.platform.adapters.fontrasterizer.canvas.CanvasFontRasterizerAdapter();
+			#else
+			var rasterizer = new helix.platform.adapters.fontrasterizer.stb.StbFontRasterizerAdapter();
+			#end
+			polled.push(rasterizer);
+			fontsService = new helix.services.fonts.Fonts(rasterizer, assets, decoding);
 		}
 		return fontsService;
 	}
 
 	static var fontsService:Null<helix.services.fonts.Fonts> = null;
-
-	/** Gets the font rasterizer, made when first asked for. */
-	public static function rasterizer():helix.platform.IFontRasterizer {
-		if (fontRasterizer == null) {
-			#if js
-			fontRasterizer = new helix.platform.adapters.fontrasterizer.canvas.CanvasFontRasterizerAdapter();
-			#else
-			fontRasterizer = new helix.platform.adapters.fontrasterizer.stb.StbFontRasterizerAdapter();
-			#end
-			polled.push(fontRasterizer);
-		}
-		return fontRasterizer;
-	}
-
-	static var fontRasterizer:Null<helix.platform.IFontRasterizer> = null;
 
 	/** Gets the screenshots, made over the graphics when first asked for: the frame reads them back as each frame ends (`Frame.ended`). */
 	public static function screenshots():helix.services.screenshots.Screenshots {

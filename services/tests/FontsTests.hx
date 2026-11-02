@@ -6,7 +6,8 @@ import helix.services.images.Images;
 
 /** Checks Fonts over fakes: a font's glyphs rasterized, a character it lacks left out, placed apart on a power-of-two atlas (skyline and
 	rows), their coverage as the atlas's alpha on white, and their offsets and advances kept; hard-edged glyphs; a file that isn't a font
-	failing; and a BMFont's pages stacked onto one atlas, its characters' places on it, offsets from the baseline. */
+	failing; a BMFont's pages stacked onto one atlas, its characters' places on it, offsets from the baseline; and glyphs rasterized from a
+	font's bytes, each on its own, as coverage, hard-edged or signed distances, aborted, or failing. */
 class FontsTests {
 	static var checks = 0;
 
@@ -78,6 +79,50 @@ class FontsTests {
 		var b = pixel.getGlyph(66);
 		check(b.x == 1 && b.y == 5 && b.offsetY == -5 && b.advance == 3, "a character on the second page: below the first, offset from the baseline");
 		check(pixel.size == 10 && pixel.ascent == 8 && pixel.descent == -2, "its size its line height, its ascent its base");
+		var fonts = new Fonts(rasterizer, assets, images), raster:Array<helix.platform.RasterGlyph> = null, metrics = [];
+		fonts.rasterize(Bytes.ofString("font"), 8, [65, 0x4E00, 66], Coverage, (glyphs, ascent, descent, lineGap) -> {
+			raster = glyphs;
+			metrics = [ascent, descent, lineGap];
+		});
+		check(raster == null && !rasterizer.sdf, "rasterized from bytes: not answered during the call, as coverage");
+		pump();
+		check(raster != null && raster.length == 3 && raster[1].codepoint == 0x4E00 && !raster[1].found && raster[2].codepoint == 66,
+			"rasterized from bytes: a glyph for each character, in order, one the font lacks not found");
+		check(raster[2].width == 3
+			&& raster[2].height == 8
+			&& raster[2].offsetX == 1
+			&& raster[2].offsetY == -8
+			&& raster[2].advance == 4,
+			"rasterized from bytes: a glyph's size, offsets, advance");
+		check(raster[2].pixels.get(0) == 100 && raster[2].pixels.get(23) == 50, "rasterized from bytes: coverage as it is");
+		check(metrics[0] == 6 && metrics[1] == -2 && metrics[2] == 0, "rasterized from bytes: the metrics");
+
+		var bitmap:Array<helix.platform.RasterGlyph> = null;
+		fonts.rasterize(Bytes.ofString("font"), 4, [65, 66], Bitmap, (glyphs, _, _, _) -> bitmap = glyphs);
+		pump();
+		check(bitmap[1].pixels.get(0) == 255 && bitmap[1].pixels.get(7) == 0, "hard-edged from bytes: coverage under 80 is none, the rest full");
+
+		var distances = false;
+		fonts.rasterize(Bytes.ofString("font"), 4, [65], Distance, (_, _, _, _) -> distances = true);
+		check(rasterizer.sdf, "signed distances asked of the platform");
+		pump();
+		check(distances, "signed distances rasterized");
+
+		var aborted = false;
+		fonts.rasterize(Bytes.ofString("font"), 4, [65], Coverage, (_, _, _, _) -> aborted = true, _ -> aborted = true)();
+		pump();
+		check(!aborted, "an aborted rasterize calls nothing");
+
+		var refused = "";
+		fonts.rasterize(Bytes.ofString("junk"), 4, [65], Coverage, (_, _, _, _) -> throw "rasterized what isn't a font", m -> refused = m);
+		pump();
+		check(refused == "not a font", "what isn't a font fails");
+
+		var abortedLoad = false;
+		fonts.load("ui.ttf", 4, [65], Coverage, _ -> abortedLoad = true, _ -> abortedLoad = true)();
+		pump();
+		check(!abortedLoad, "an aborted load calls nothing");
+
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);
