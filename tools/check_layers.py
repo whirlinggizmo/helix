@@ -162,9 +162,14 @@ def reaches():
     if not engines:
         return violations
     named = re.compile(r'\bengines/|(?<![\w-])(?:' + '|'.join(map(re.escape, engines)) + r')(?![\w-])')
-    # The files under libs/ a build could read: tracked, or new and not ignored (build output is ignored).
-    listed = subprocess.run(['git', 'ls-files', '-co', '--exclude-standard', '-z', 'libs'], cwd=ROOT, capture_output=True, check=True)
-    for relative in sorted(n for n in listed.stdout.decode().split('\0') if n):
+    # The files under libs/ a build could read: tracked, or new and not ignored (build output is ignored). A copy that isn't a checkout
+    # (remote_windows' holds just those files) is read whole.
+    if (ROOT / '.git').exists():
+        listed = subprocess.run(['git', 'ls-files', '-co', '--exclude-standard', '-z', 'libs'], cwd=ROOT, capture_output=True, check=True)
+        relatives = [n for n in listed.stdout.decode().split('\0') if n]
+    else:
+        relatives = [p.relative_to(ROOT).as_posix() for p in (ROOT / 'libs').rglob('*')]
+    for relative in sorted(relatives):
         path = ROOT / relative
         if path.suffix not in BUILD_FILES or '/vendor/' in relative or not path.is_file():
             continue
