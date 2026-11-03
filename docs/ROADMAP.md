@@ -29,7 +29,9 @@
 - **raygui on helix-raylib (`helix.raylib.Raygui`, imported apart as `Raymath` is):** raylib's own immediate-mode GUI, its API as
   `raygui.h` names it (the controls, `GuiSetStyle`/`GuiLoadStyle` and its styles, its icons), drawn through helix-raylib, so a game
   writes its menus and HUD from what agents already know rather than its own widgets (the Katawami port's blind trial wrote some 700
-  lines of UI by hand). raylib's other companion headers agents know, easings (`reasings.h`) and physics (`physac.h`), are each a module
+  lines of UI by hand). raylib's own GUI tools then work unchanged: rGuiStyler's `.rgs` styles (and raygui's bundled ones) load
+  through `GuiLoadStyleAsync` in `Extras`, as every file load does; rGuiLayout's `.rgl` layouts, and its code export through a Haxe
+  code template for helix-raylib, if its custom templates allow one (to be checked). raylib's other companion headers agents know, easings (`reasings.h`) and physics (`physac.h`), are each a module
   of their own the same way when wanted; `Extras` keeps only what has no raylib-family equivalent.
 - **Platform proposals queued, for review:** depth sampled after a pass, depth bias, stencil, and the depth tests `Always`, `Less`,
   `Equal` and `GreaterEqual` (helix-render's revision 9). A render target's own sample count, apart from its depth, is being built. Deferred from the vertex formats
