@@ -26,8 +26,17 @@ class Glyph2D {
 	/** Gets how far the pen moves after it, in pixels at the font's size. */
 	public final advance:Float;
 
-	@:allow(helix.services.fonts)
-	function new(codepoint:Int, x:Int, y:Int, width:Int, height:Int, offsetX:Float, offsetY:Float, advance:Float) {
+	/** Creates a glyph.
+
+		@param codepoint  The character.
+		@param x  Its left edge on the atlas, in texels.
+		@param y  Its top edge on the atlas, in texels.
+		@param width  Its width on the atlas, in texels; 0 for nothing to draw.
+		@param height  Its height on the atlas, in texels.
+		@param offsetX  Its left edge from the pen, in pixels at the font's size.
+		@param offsetY  Its top edge from the baseline, in pixels at the font's size, down positive.
+		@param advance  How far the pen moves after it, in pixels at the font's size. */
+	public function new(codepoint:Int, x:Int, y:Int, width:Int, height:Int, offsetX:Float, offsetY:Float, advance:Float) {
 		this.codepoint = codepoint;
 		this.x = x;
 		this.y = y;

@@ -237,13 +237,13 @@ class PlaneDrawing2D {
 		}
 	}
 
-	function text(font:GpuFont2D, text:String, x:Float, y:Float, color:Int, size:Null<Float>, letterSpacing:Float):Void {
+	function text(font:GpuFont2D, text:String, x:Float, y:Float, color:Int, size:Null<Float>, letterSpacing:Float, kerned:Bool):Void {
 		var scale = font.scaleOf(size),
 			lines = text.split("\n"),
 			step = font.lineHeight * scale;
 		var top = y;
 		for (line in lines) {
-			glyphs(font, GpuFont2D.codes(line), x, top, scale, letterSpacing, color);
+			glyphs(font, GpuFont2D.codes(line), x, top, scale, letterSpacing, kerned, color);
 			top += step;
 		}
 	}
@@ -262,24 +262,28 @@ class PlaneDrawing2D {
 				case Center: (box - w) / 2;
 				case Right: box - w;
 			};
-			glyphs(font, layout.lines[i], left, top, scale, layout.letterSpacing, color);
+			glyphs(font, layout.lines[i], left, top, scale, layout.letterSpacing, layout.kerned, color);
 			top += step;
 		}
 	}
 
-	// A line of glyphs, its top at y: each glyph's quad from the atlas, the pen moved by its advance and the spacing.
-	function glyphs(font:GpuFont2D, codes:Array<Int>, x:Float, top:Float, scale:Float, spacing:Float, color:Int):Void {
+	// A line of glyphs, its top at y: each glyph's quad from the atlas, the pen moved by its advance and the spacing, and by the pair's
+	// kerning where kerned.
+	function glyphs(font:GpuFont2D, codes:Array<Int>, x:Float, top:Float, scale:Float, spacing:Float, kerned:Bool, color:Int):Void {
 		var f = font.font, atlas = font.atlas;
-		var width = font.widthOf(codes, scale, spacing);
+		var width = font.widthOf(codes, scale, spacing, kerned);
 		if (!visible(x, top, x + width, top + (f.ascent - f.descent) * scale))
 			return;
 		atlas.drawnHandle();
-		use(atlas, 0);
-		var baseline = top + f.ascent * scale, pen = x, aw = atlas.width, ah = atlas.height, c = corners;
+		use(atlas, cast f.kind);
+		var baseline = top + f.ascent * scale, pen = x, aw = atlas.width, ah = atlas.height, c = corners, last:Null<helix.services.fonts.Glyph2D> = null;
 		for (code in codes) {
 			var g = font.glyphFor(code);
 			if (g == null)
 				continue;
+			if (kerned && last != null)
+				pen += f.getKerning(last.codepoint, g.codepoint) * scale;
+			last = g;
 			if (g.width > 0 && g.height > 0) {
 				var left = pen + g.offsetX * scale,
 					gy = baseline + g.offsetY * scale;

@@ -1422,7 +1422,7 @@ function toString():String
 
 Represents a font ready to draw: helix-services' `Font2D` with its atlas on the GPU.
 
-`Renderer.createFont` makes one, from a font helix-services' `Fonts` made; `Batch2D.drawText`, `Batch3D.drawText` and `TextLayout2D` use it; the program frees its atlas with `dispose`. A size is measured as the font's is, from its ascent to its descent; a font drawn at another size is scaled. Each batch's default shader draws its atlas's alpha as it is stored; a distance-field atlas's sharp edge, at any size, comes with the font's kind (helix-services' `Font2D.kind`, asked for), as a shader variant only a program drawing such a font carries. A program's shader is given the kind as `fontKind`.
+`Renderer.createFont` makes one, from a font helix-services' `Fonts` made; `Batch2D.drawText`, `Batch3D.drawText` and `TextLayout2D` use it; the program frees its atlas with `dispose`. A size is measured as the font's is, from its ascent to its descent; a font drawn at another size is scaled. Each batch's default shader draws a coverage atlas's alpha as it is stored, and a distance-field atlas's (helix-services' `Font2D.kind` Distance) as a sharp edge at any size; a hard-edged font's atlas (Bitmap) is sampled nearest. A program's shader is given the kind as `fontKind`. Pairs of characters are kerned as the font's `Font2D.kernings` give them, unless a draw's `kerned` is false.
 
 A character the font lacks is drawn, and measured, as the font's `?`, or else as its .notdef (`Font2D.notdef`), and skipped when it has neither, as raylib draws one; the first time each such character is met in a font, a warning is logged (helix-log, tag "render"). A control character the font lacks (a tab, a carriage return) is skipped, unwarned.
 

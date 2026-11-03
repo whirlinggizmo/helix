@@ -3,6 +3,7 @@ package helix.services.fonts;
 import haxe.io.Bytes;
 import helix.formats.bmfont.BmFontFile;
 import helix.formats.text.Utf8Text;
+import helix.formats.truetype.TrueTypeTables;
 import helix.log.Log;
 import helix.math.RectPacker2D;
 import helix.platform.IFontRasterizer;
@@ -14,7 +15,9 @@ import helix.services.images.Images;
 /** Provides fonts by path: a TrueType or OpenType font rasterized at a size as coverage (`load`), hard-edged (`loadBitmap`) or signed
 	distances (`loadDistanceField`), or a BMFont's .fnt and its images (`loadBmFont`), each as a `Font2D` with its glyphs on one atlas. A
 	TrueType font's glyphs also come from its bytes, each on its own, for a program that places them itself (`rasterize`,
-	`rasterizeBitmap`, `rasterizeDistanceField`). Each kind is its own call, so a program carries only the rasterizing it asks for.
+	`rasterizeBitmap`, `rasterizeDistanceField`). Each kind is its own call, so a program carries only the rasterizing it asks for. A
+	font's kerning pairs come with it: a TrueType font's between the characters asked for, a BMFont's from its .fnt. A program or an
+	engine layer holding glyph images of its own makes a font of them with `packFont`.
 
 	A TrueType font's glyphs are rasterized by the platform (`IFontRasterizer`) and packed onto an atlas as `FontsOptions` says. Its
 	answers come as the assets, images and rasterizer it uses are polled.
@@ -52,7 +55,7 @@ class Fonts {
 		@param failed  Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
 		@return  A function that aborts the load; neither callback is called after it, and once one was, it does nothing. */
 	public function load(path:String, size:Float, codepoints:Array<Int>, loaded:Font2D->Void, ?failed:String->Void):Void->Void
-		return loadWith(rasterize, path, size, codepoints, loaded, failed);
+		return loadWith(rasterize, Coverage, path, size, codepoints, loaded, failed);
 
 	/** Loads a TrueType or OpenType font as `load` does, its glyphs' coverage made hard-edged (`FontKind.Bitmap`), for pixel fonts drawn
 		at their own size.
@@ -64,7 +67,7 @@ class Fonts {
 		@param failed  Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
 		@return  A function that aborts the load; neither callback is called after it, and once one was, it does nothing. */
 	public function loadBitmap(path:String, size:Float, codepoints:Array<Int>, loaded:Font2D->Void, ?failed:String->Void):Void->Void
-		return loadWith(rasterizeBitmap, path, size, codepoints, loaded, failed);
+		return loadWith(rasterizeBitmap, Bitmap, path, size, codepoints, loaded, failed);
 
 	/** Loads a TrueType or OpenType font as `load` does, its glyphs signed distances to their outlines (`FontKind.Distance`), sharp at
 		any size through a distance-field shader.
@@ -76,7 +79,7 @@ class Fonts {
 		@param failed  Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
 		@return  A function that aborts the load; neither callback is called after it, and once one was, it does nothing. */
 	public function loadDistanceField(path:String, size:Float, codepoints:Array<Int>, loaded:Font2D->Void, ?failed:String->Void):Void->Void
-		return loadWith(rasterizeDistanceField, path, size, codepoints, loaded, failed);
+		return loadWith(rasterizeDistanceField, Distance, path, size, codepoints, loaded, failed);
 
 	/** Rasterizes a TrueType or OpenType font's glyphs from the file's bytes as antialiased coverage, each on its own, for a program that
 		places them itself: on an atlas of its own, or one image each. `load` makes a font of them on one atlas.
@@ -133,16 +136,17 @@ class Fonts {
 	}
 
 	// A font loaded and rasterized by one of the rasterize calls, packed onto one atlas.
-	function loadWith(raster:(Bytes, Float, Array<Int>, (Array<RasterGlyph>, Float, Float, Float) -> Void, ? (String->Void)) -> (Void->Void), path:String,
-			size:Float, codepoints:Array<Int>, loaded:Font2D->Void, failed:Null<String->Void>):Void->Void {
+	function loadWith(raster:(Bytes, Float, Array<Int>, (Array<RasterGlyph>, Float, Float, Float) -> Void, ? (String->Void)) -> (Void->Void), kind:FontKind,
+			path:String, size:Float, codepoints:Array<Int>, loaded:Font2D->Void, failed:Null<String->Void>):Void->Void {
 		var aborted = false, abortRasterize:Null<Void->Void> = null;
 		var report = (message:String) -> if (!aborted) fail(failed, message);
 		var abortLoad = assets.load(path, bytes -> {
 			if (aborted)
 				return;
-			abortRasterize = raster(bytes, size, codepoints,
-				(glyphs, ascent, descent, lineGap) -> loaded(pack(path, size, [for (g in glyphs) if (g.found) g], ascent, descent, lineGap)),
-				message -> report('$path: $message'));
+			abortRasterize = raster(bytes, size, codepoints, (glyphs, ascent, descent, lineGap) -> {
+				var found = [for (g in glyphs) if (g.found) g];
+				loaded(packFont(path, kind, size, ascent, descent, lineGap, found, kerningsOf(bytes, size, found)));
+			}, message -> report('$path: $message'));
 		}, report);
 		return () -> {
 			aborted = true;
@@ -197,8 +201,21 @@ class Fonts {
 		};
 	}
 
-	// The glyphs placed on the smallest power-of-two atlas they fit, white with their coverage as alpha.
-	function pack(path:String, size:Float, glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float):Font2D {
+	/** Returns a font made of glyph images, packed onto one atlas as `FontsOptions` says, as `load` packs a TrueType font's: the smallest
+		power-of-two square they fit, white, each glyph's image as alpha. For a program or an engine layer holding a font's glyphs of its
+		own (raylib's default font, the glyphs `rasterize` gives).
+
+		@param name  The atlas's name, its image's `path`; "" for none.
+		@param kind  What the glyphs hold.
+		@param size  The pixel height of a line from its ascent to its descent.
+		@param ascent  How far the tallest glyphs rise above the baseline, in pixels.
+		@param descent  How far the lowest fall below it, in pixels, negative.
+		@param lineGap  The space between one line's descent and the next line's ascent, in pixels.
+		@param glyphs  Each glyph's image, `width * height` bytes, its place from the pen and its advance.
+		@param kernings  Optional. The kerning pairs; none when omitted.
+		@return  The font, its glyphs in the order given. */
+	public function packFont(name:String, kind:FontKind, size:Float, ascent:Float, descent:Float, lineGap:Float, glyphs:Array<RasterGlyph>,
+			?kernings:Array<Kerning2D>):Font2D {
 		var padding = options.padding,
 			lineHeight = Math.ceil(size) + 2 * padding;
 		var area = 0;
@@ -226,7 +243,25 @@ class Fonts {
 					pixels.set(((y + row) * width + x + column) * 4 + 3, g.pixels.get(row * g.width + column));
 			made.push(new Glyph2D(g.codepoint, x, y, g.width, g.height, g.offsetX, g.offsetY, g.advance));
 		}
-		return new Font2D(size, ascent, descent, lineGap, new Image(path, width, width, pixels), made);
+		return new Font2D(kind, size, ascent, descent, lineGap, new Image(name, width, width, pixels), made, kernings);
+	}
+
+	// A TrueType font's kerning pairs between the glyphs given, in pixels at a size, as stb_truetype reads them: none for a font it
+	// can't read or without kerning.
+	static function kerningsOf(encoded:Bytes, size:Float, glyphs:Array<RasterGlyph>):Array<Kerning2D> {
+		var tables = try new TrueTypeTables(encoded) catch (_:Dynamic) null;
+		if (tables == null || !tables.hasKerning)
+			return [];
+		var scale = tables.scaleFor(size), out:Array<Kerning2D> = [];
+		var indices = [for (g in glyphs) tables.glyphIndex(g.codepoint)];
+		for (i in 0...glyphs.length)
+			if (tables.canKern(indices[i]))
+				for (j in 0...glyphs.length) {
+					var amount = tables.kerning(indices[i], indices[j]);
+					if (amount != 0)
+						out.push({first: glyphs[i].codepoint, second: glyphs[j].codepoint, amount: amount * scale});
+				}
+		return out;
 	}
 
 	// Each glyph's top-left on a width by height atlas, x then y, or null when they don't all fit.
@@ -292,7 +327,9 @@ class Fonts {
 				new Glyph2D(c.id, c.x, c.y + pageHeight * c.page, c.width, c.height, c.xOffset, c.yOffset - file.base, c.xAdvance)
 		];
 		var notdef = [for (g in glyphs) if (g.codepoint == -1) g][0];
-		return new Font2D(file.lineHeight, file.base, file.base - file.lineHeight, 0, new Image(file.pages[0].path, width, height, pixels), glyphs, notdef);
+		// The .fnt's pairs as they are: a BmFontKerning has a Kerning2D's fields, its amount a whole number of pixels.
+		return new Font2D(Coverage, file.lineHeight, file.base, file.base - file.lineHeight, 0, new Image(file.pages[0].path, width, height, pixels), glyphs,
+			cast file.kernings, notdef);
 	}
 
 	// Whether an image is coverage drawn in gray: opaque everywhere, and gray everywhere.

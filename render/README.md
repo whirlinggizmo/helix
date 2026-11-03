@@ -41,8 +41,7 @@ until that stage is built.
 6. Fog.
 7. Morph targets.
 
-Waiting on the libraries below (docs/ROADMAP.md): every font draws as coverage and unkerned until helix-services' `Font2D` gives its
-kind and kerning pairs; `TargetDepth.Texture` until the platform samples depth. A mesh drawn as points larger than a pixel
+Waiting on the libraries below (docs/ROADMAP.md): `TargetDepth.Texture` until the platform samples depth. A mesh drawn as points larger than a pixel
 (`polygonMode` Points with a `pointSize`) throws, not yet built.
 
 ## A frame

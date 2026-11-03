@@ -8,7 +8,7 @@
 
 Represents the tables of a TrueType or OpenType font, read as stb_truetype reads them.
 
-It reads the vertical metrics (`hhea`), the units per em (`head`), each codepoint's glyph (`cmap`, the subtable stb_truetype picks), its advance (`hmtx`) and, for TrueType outlines, its box (`glyf`), so glyphs are found, measured and placed as a native build places them. An OpenType font with CFF outlines has no `glyf`: `hasGlyf` is false, and its boxes are not read. Nothing is drawn: outlines, kerning and font collections are not read.
+It reads the vertical metrics (`hhea`), the units per em (`head`), each codepoint's glyph (`cmap`, the subtable stb_truetype picks), its advance (`hmtx`), for TrueType outlines its box (`glyf`), and the kerning between two glyphs (`GPOS`'s pair adjustments, or `kern`), so glyphs are found, measured, placed and kerned as a native build does. An OpenType font with CFF outlines has no `glyf`: `hasGlyf` is false, and its boxes are not read. Nothing is drawn: outlines and font collections are not read.
 
 ```haxe
 var tables = new TrueTypeTables(bytes);
@@ -27,6 +27,9 @@ var hasGlyf(get, never):Bool
 function glyphIndex(codepoint:Int):Int
 function advance(glyphIndex:Int):Int
 function box(glyphIndex:Int):Null<Array<Int>>
+function kerning(firstGlyphIndex:Int, secondGlyphIndex:Int):Int
+var hasKerning(get, never):Bool
+function canKern(glyphIndex:Int):Bool
 ```
 
 - `new`: Reads a font's tables.
@@ -53,3 +56,13 @@ function box(glyphIndex:Int):Null<Array<Int>>
   - returns: The box.
 
   Only a font with `hasGlyf` has boxes to read.
+- `kerning`: Returns how far the pen moves between two glyphs beyond the first's advance, in font units, as stb_truetype's `GetGlyphKernAdvance` reads it: from `GPOS`'s pair adjustments where the font has `GPOS`, else from `kern`.
+  - `firstGlyphIndex`: The first glyph's index.
+  - `secondGlyphIndex`: The index of the glyph following it.
+  - returns: The adjustment: negative to close up, 0 for none.
+
+  Of `GPOS`, the pair adjustment lookups are read, each pair's or class pair's x advance alone, a lookup adjusting more than that ending the search, as stb_truetype does; of `kern`, the first table's pairs, when it is horizontal and of format 0. An extension lookup is not read.
+- `hasKerning`: Gets a value indicating whether the font has kerning to read: a `GPOS` or a `kern` table.
+- `canKern`: Returns whether a glyph is the first of a pair any of `GPOS`'s pair adjustments covers, or of `kern`'s pairs, so whether it can be kerned with what follows it at all.
+  - `glyphIndex`: The glyph index.
+  - returns: False when no pair starts with it.

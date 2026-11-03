@@ -992,7 +992,7 @@ class Batch3D {
 	public function drawText(font:GpuFont2D, text:String, x:Float, y:Float, color:Int = 0xffffffff, ?size:Float, letterSpacing = 0., kerned = true,
 			?transform:Matrix3D):Void {
 		inPlane(transform);
-		plane.text(font, text, x, y, color, size, letterSpacing);
+		plane.text(font, text, x, y, color, size, letterSpacing, kerned);
 	}
 
 	/** Draws laid-out text in a plane, wrapped and aligned as its layout says, as `Batch2D.drawTextLayout` draws it.

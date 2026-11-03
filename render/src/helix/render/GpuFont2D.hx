@@ -9,9 +9,10 @@ import helix.services.fonts.Glyph2D;
 
 	`Renderer.createFont` makes one, from a font helix-services' `Fonts` made; `Batch2D.drawText`,
 	`Batch3D.drawText` and `TextLayout2D` use it; the program frees its atlas with `dispose`. A size is measured as the font's is, from its
-	ascent to its descent; a font drawn at another size is scaled. Each batch's default shader draws its atlas's alpha as it is
-	stored; a distance-field atlas's sharp edge, at any size, comes with the font's kind (helix-services' `Font2D.kind`, asked for), as a
-	shader variant only a program drawing such a font carries. A program's shader is given the kind as `fontKind`.
+	ascent to its descent; a font drawn at another size is scaled. Each batch's default shader draws a coverage atlas's alpha as it is
+	stored, and a distance-field atlas's (helix-services' `Font2D.kind` Distance) as a sharp edge at any size; a hard-edged font's atlas
+	(Bitmap) is sampled nearest. A program's shader is given the kind as `fontKind`. Pairs of characters are kerned as the font's
+	`Font2D.kernings` give them, unless a draw's `kerned` is false.
 
 	A character the font lacks is drawn, and measured, as the font's `?`, or else as its .notdef (`Font2D.notdef`), and skipped when it
 	has neither, as raylib draws one; the first time each such character is met in a font, a warning is logged (helix-log, tag
@@ -52,7 +53,7 @@ class GpuFont2D {
 			out = new Vector2D();
 		var scale = scaleOf(size), widest = 0., lines = 0;
 		for (line in text.split("\n")) {
-			widest = Math.max(widest, widthOf(codes(line), scale, letterSpacing));
+			widest = Math.max(widest, widthOf(codes(line), scale, letterSpacing, kerned));
 			lines++;
 		}
 		return out.set(widest, heightOf(lines, scale, 1));
@@ -102,20 +103,22 @@ class GpuFont2D {
 		return stand;
 	}
 
-	// The width of characters on one line at a scale: each one's advance and the spacing after it but the last; one the font lacks as
-	// its stand-in (glyphFor).
+	// The width of characters on one line at a scale: each one's advance and the spacing after it but the last, and each pair's kerning
+	// where kerned; one the font lacks as its stand-in (glyphFor).
 
 	@:allow(helix.render)
-	function widthOf(line:Array<Int>, scale:Float, spacing:Float, from = 0, ?to:Int):Float {
-		var end = to == null ? line.length : to, width = 0., any = false;
+	function widthOf(line:Array<Int>, scale:Float, spacing:Float, kerned:Bool, from = 0, ?to:Int):Float {
+		var end = to == null ? line.length : to, width = 0., last:Null<Glyph2D> = null;
 		for (i in from...end) {
 			var g = glyphFor(line[i]);
 			if (g == null)
 				continue;
+			if (kerned && last != null)
+				width += font.getKerning(last.codepoint, g.codepoint) * scale;
 			width += g.advance * scale + spacing;
-			any = true;
+			last = g;
 		}
-		return any ? width - spacing : 0;
+		return last != null ? width - spacing : 0;
 	}
 
 	// The height of lines: one line's ascent to descent, and a line height times the spacing for each after it.

@@ -6,9 +6,9 @@ import helix.formats.text.Utf8Text;
 /** Represents the tables of a TrueType or OpenType font, read as stb_truetype reads them.
 
 	It reads the vertical metrics (`hhea`), the units per em (`head`), each codepoint's glyph (`cmap`, the subtable stb_truetype picks),
-	its advance (`hmtx`) and, for TrueType outlines, its box (`glyf`), so glyphs are found, measured and placed as a native build places
-	them. An OpenType font with CFF outlines has no `glyf`: `hasGlyf` is false, and its boxes are not read. Nothing is drawn: outlines,
-	kerning and font collections are not read.
+	its advance (`hmtx`), for TrueType outlines its box (`glyf`), and the kerning between two glyphs (`GPOS`'s pair adjustments, or
+	`kern`), so glyphs are found, measured, placed and kerned as a native build does. An OpenType font with CFF outlines has no `glyf`:
+	`hasGlyf` is false, and its boxes are not read. Nothing is drawn: outlines and font collections are not read.
 
 	```haxe
 	var tables = new TrueTypeTables(bytes);
@@ -23,6 +23,23 @@ class TrueTypeTables {
 	final loca:Int;
 	final glyf:Int;
 	final indexMap:Int;
+	// The kerning tables' places, found when kerning is first read, so a program never kerning carries nothing of it.
+	var kernAt:Null<Int>;
+	var gposAt:Null<Int>;
+	var kern(get, never):Int;
+	var gpos(get, never):Int;
+
+	function get_kern():Int {
+		if (kernAt == null)
+			kernAt = find("kern");
+		return kernAt;
+	}
+
+	function get_gpos():Int {
+		if (gposAt == null)
+			gposAt = find("GPOS");
+		return gposAt;
+	}
 
 	/** Gets the font's units per em, from `head`. */
 	public final unitsPerEm:Int;
@@ -160,6 +177,181 @@ class TrueTypeTables {
 			return null;
 		var at = glyf + start;
 		return [s16(at + 2), s16(at + 4), s16(at + 6), s16(at + 8)];
+	}
+
+	/** Returns how far the pen moves between two glyphs beyond the first's advance, in font units, as stb_truetype's
+		`GetGlyphKernAdvance` reads it: from `GPOS`'s pair adjustments where the font has `GPOS`, else from `kern`.
+
+		Of `GPOS`, the pair adjustment lookups are read, each pair's or class pair's x advance alone, a lookup adjusting more than that
+		ending the search, as stb_truetype does; of `kern`, the first table's pairs, when it is horizontal and of format 0. An extension
+		lookup is not read.
+
+		@param firstGlyphIndex  The first glyph's index.
+		@param secondGlyphIndex  The index of the glyph following it.
+		@return  The adjustment: negative to close up, 0 for none. */
+	public function kerning(firstGlyphIndex:Int, secondGlyphIndex:Int):Int {
+		if (gpos >= 0)
+			return gposKerning(firstGlyphIndex, secondGlyphIndex);
+		if (kern < 0 || u16(kern + 2) < 1 || u16(kern + 8) != 1)
+			return 0;
+		var l = 0, r = u16(kern + 10) - 1;
+		while (l <= r) {
+			var m = (l + r) >> 1, at = kern + 18 + m * 6;
+			var left = u16(at), right = u16(at + 2);
+			if (firstGlyphIndex < left || firstGlyphIndex == left && secondGlyphIndex < right)
+				r = m - 1;
+			else if (firstGlyphIndex > left || secondGlyphIndex > right)
+				l = m + 1;
+			else
+				return s16(at + 4);
+		}
+		return 0;
+	}
+
+	/** Gets a value indicating whether the font has kerning to read: a `GPOS` or a `kern` table. */
+	public var hasKerning(get, never):Bool;
+
+	function get_hasKerning():Bool
+		return gpos >= 0 || kern >= 0;
+
+	/** Returns whether a glyph is the first of a pair any of `GPOS`'s pair adjustments covers, or of `kern`'s pairs, so whether it can be
+		kerned with what follows it at all.
+
+		@param glyphIndex  The glyph index.
+		@return  False when no pair starts with it. */
+	public function canKern(glyphIndex:Int):Bool {
+		if (gpos >= 0) {
+			var found = false;
+			eachPairTable(table -> {
+				if (coverage(table + u16(table + 2), glyphIndex) >= 0)
+					found = true;
+				return !found;
+			});
+			return found;
+		}
+		if (kern < 0 || u16(kern + 2) < 1 || u16(kern + 8) != 1)
+			return false;
+		var l = 0, r = u16(kern + 10) - 1;
+		while (l <= r) {
+			var m = (l + r) >> 1, left = u16(kern + 18 + m * 6);
+			if (glyphIndex < left)
+				r = m - 1;
+			else if (glyphIndex > left)
+				l = m + 1;
+			else
+				return true;
+		}
+		return false;
+	}
+
+	// Calls each GPOS pair adjustment subtable while visit returns true.
+	function eachPairTable(visit:Int->Bool):Void {
+		if (u16(gpos) != 1 || u16(gpos + 2) != 0)
+			return;
+		var list = gpos + u16(gpos + 8);
+		for (i in 0...u16(list)) {
+			var lookup = list + u16(list + 2 + 2 * i);
+			if (u16(lookup) != 2)
+				continue;
+			for (s in 0...u16(lookup + 4))
+				if (!visit(lookup + u16(lookup + 6 + 2 * s)))
+					return;
+		}
+	}
+
+	// As stb_truetype's GetGlyphGPOSInfoAdvance.
+	function gposKerning(first:Int, second:Int):Int {
+		var result = 0;
+		eachPairTable(table -> {
+			var index = coverage(table + u16(table + 2), first);
+			if (index < 0)
+				return true;
+			var format = u16(table),
+				plain = u16(table + 4) == 4 && u16(table + 6) == 0;
+			if (format == 1 && plain) {
+				if (index >= u16(table + 8))
+					return false;
+				var pairs = table + u16(table + 10 + 2 * index);
+				var l = 0, r = u16(pairs) - 1;
+				while (l <= r) {
+					var m = (l + r) >> 1,
+						at = pairs + 2 + 4 * m,
+						glyph = u16(at);
+					if (second < glyph)
+						r = m - 1;
+					else if (second > glyph)
+						l = m + 1;
+					else {
+						result = s16(at + 2);
+						return false;
+					}
+				}
+				return true;
+			}
+			if (format == 2 && plain) {
+				var class1 = glyphClass(table + u16(table + 8), first),
+					class2 = glyphClass(table + u16(table + 10), second),
+					count2 = u16(table + 14);
+				if (class1 >= 0 && class1 < u16(table + 12) && class2 >= 0 && class2 < count2)
+					result = s16(table + 16 + 2 * (class1 * count2 + class2));
+			}
+			return false;
+		});
+		return result;
+	}
+
+	// A glyph's index in a coverage table, or -1 when it isn't covered.
+	function coverage(table:Int, glyph:Int):Int {
+		switch u16(table) {
+			case 1:
+				var l = 0, r = u16(table + 2) - 1;
+				while (l <= r) {
+					var m = (l + r) >> 1, id = u16(table + 4 + 2 * m);
+					if (glyph < id)
+						r = m - 1;
+					else if (glyph > id)
+						l = m + 1;
+					else
+						return m;
+				}
+			case 2:
+				var l = 0, r = u16(table + 2) - 1;
+				while (l <= r) {
+					var m = (l + r) >> 1, at = table + 4 + 6 * m;
+					if (glyph < u16(at))
+						r = m - 1;
+					else if (glyph > u16(at + 2))
+						l = m + 1;
+					else
+						return u16(at + 4) + glyph - u16(at);
+				}
+			case _:
+		}
+		return -1;
+	}
+
+	// A glyph's class in a class definition table: 0 for one it doesn't assign, -1 for a table it can't read.
+	function glyphClass(table:Int, glyph:Int):Int {
+		switch u16(table) {
+			case 1:
+				var start = u16(table + 2);
+				if (glyph >= start && glyph < start + u16(table + 4))
+					return u16(table + 6 + 2 * (glyph - start));
+			case 2:
+				var l = 0, r = u16(table + 2) - 1;
+				while (l <= r) {
+					var m = (l + r) >> 1, at = table + 4 + 6 * m;
+					if (glyph < u16(at))
+						r = m - 1;
+					else if (glyph > u16(at + 2))
+						l = m + 1;
+					else
+						return u16(at + 4);
+				}
+			case _:
+				return -1;
+		}
+		return 0;
 	}
 
 	function find(tag:String):Int {

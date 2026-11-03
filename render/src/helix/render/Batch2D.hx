@@ -157,6 +157,7 @@ class Batch2D {
 		values = new ShaderValues(shader);
 		modelViewProjection = shader.getUniform("modelViewProjection");
 		linearTarget = shader.getUniform("linearTarget");
+		fontKind = shader.getUniform("fontKind");
 		baseColorTexture = shader.getSampler("baseColorTexture");
 		if (layout == null)
 			layout = new ShaderVertexLayout([
@@ -482,7 +483,7 @@ class Batch2D {
 		@param kerned  Optional. Whether pairs of characters are kerned as the font gives them; defaults to true. raylib's `DrawTextEx`
 			doesn't kern. */
 	public function drawText(font:GpuFont2D, text:String, x:Float, y:Float, color:Int = 0xffffffff, ?size:Float, letterSpacing = 0., kerned = true):Void {
-		plane.text(font, text, x, y, color, size, letterSpacing);
+		plane.text(font, text, x, y, color, size, letterSpacing, kerned);
 	}
 
 	/** Draws laid-out text, wrapped and aligned as its layout says, the layout's top left at a point.
@@ -538,6 +539,7 @@ class Batch2D {
 	final values:ShaderValues;
 	final modelViewProjection:ShaderUniform;
 	final linearTarget:ShaderUniform;
+	final fontKind:ShaderUniform;
 	final baseColorTexture:ShaderSampler;
 	final stream:RenderStream;
 	final plane:PlaneDrawing2D;
@@ -761,6 +763,7 @@ class Batch2D {
 		values.writeTexture(baseColorTexture, runTexture, runSampling);
 		values.writeMatrix(modelViewProjection, viewProjection);
 		values.writeInt(linearTarget, linear ? 1 : 0);
+		values.writeInt(fontKind, runFontKind);
 		var d = renderer.makeDraw(renderer.pipelineFor(shader, renderer.stateFor(Triangles, false, blend, Off, false, None, All), layout));
 		d.setBuffer(0, 0, stream);
 		d.first = runFirst;

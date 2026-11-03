@@ -278,6 +278,8 @@ class Renderer {
 	public function createFont(font:Font2D):GpuFont2D {
 		var atlas = createTexture(font.atlas);
 		live.remove(atlas);
+		if (font.kind == Bitmap)
+			atlas.sampling = Sampling.NEAREST;
 		var gpu = new GpuFont2D(font, atlas);
 		live.set(gpu, gpu.dispose);
 		return gpu;

@@ -195,7 +195,7 @@ class TextLayout2D {
 		var end = line.length;
 		while (end > 0 && line[end - 1] == 32)
 			end--;
-		return font.widthOf(line, scale, letterSpacing, 0, end);
+		return font.widthOf(line, scale, letterSpacing, kerned, 0, end);
 	}
 
 	function add(line:Array<Int>):Void {

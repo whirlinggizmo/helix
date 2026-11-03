@@ -25,7 +25,7 @@ typedef PixelCase = {
 
 /** Checks helix-render's stage 1 on the GPU: each case draws a frame through the renderer and its batches into a render target, reads it
 	back with `IGraphics.readPixels`, and checks its pixels against what the API says they are: 2D colors and a tint multiplied as stored,
-	alpha blending as stored, shapes from a white texel, text placed by its ascent, a program's fragment stage reading `customData`, a
+	alpha blending as stored, shapes from a white texel, text placed by its ascent, a distance-field font's edge sharp, a program's fragment stage reading `customData`, a
 	target copied on write, a clear recorded in order, a viewport and a scissor; in 3D, an unlit mesh multiplied as stored and one tone
 	mapped (Neutral), instanced copies tinted, a mesh skinned by its bone texture, points of a pixel and large ones, a wide line, a
 	triangle's edges, two views, and a program's material shader; and a render target's own sample count, a target with depth drawn
@@ -188,7 +188,17 @@ class PixelTests {
 		var sheet = renderer.createTexture(Image.filled(8, 8, 0x00000000));
 		var white = sheet.writeWhiteTexel(7, 7);
 		var glyphs = [new Glyph2D(65, 0, 0, 4, 8, 1, -8, 6)];
-		var font = renderer.createFont(new Font2D(10, 8, -2, 2, Image.filled(8, 8, 0xffffffff), glyphs));
+		var font = renderer.createFont(new Font2D(Coverage, 10, 8, -2, 2, Image.filled(8, 8, 0xffffffff), glyphs));
+		// An 8 x 8 glyph whose alpha rises across it, column by column, from 16 to 240: as signed distances, its outline (128) halfway.
+		var ramp = haxe.io.Bytes.alloc(8 * 8 * 4);
+		for (i in 0...64) {
+			ramp.fill(i * 4, 3, 255);
+			ramp.set(i * 4 + 3, 16 + 32 * (i % 8));
+		}
+		function rampFont(kind:helix.services.fonts.FontKind)
+			return renderer.createFont(new Font2D(kind, 8, 8, 0, 0, new Image("ramp", 8, 8, ramp), [new Glyph2D(65, 0, 0, 8, 8, 0, -8, 8)]));
+		var distanceFont = rampFont(Distance),
+			coverageFont = rampFont(Coverage);
 		var flash = Batch2D.compileShader("flash.frag");
 		var flashValues = new ShaderValues(flash);
 		flashValues.writeColor(flash.getUniform("extra"), 0xff000040);
@@ -276,6 +286,25 @@ class PixelTests {
 					expect(p, 3, 44, 0xff8000, "the glyph, its top at the ascent below y");
 					expect(p, 3, 38, 0x000000, "above it");
 					expect(p, 50, 50, 0x804040, "customData read by the program's shader, its uniform added");
+				}
+			},
+			{
+				name: "2D: a distance-field font's edge sharp, a coverage font's as stored",
+				// Each glyph 32 pixels square, a texel 4: the outline at x 16.
+				draw: () -> {
+					renderer.beginTarget(canvas, 0xff000000);
+					batch.begin();
+					batch.drawText(distanceFont, "A", 0, 0, 0xffffffff, 32);
+					batch.drawText(coverageFont, "A", 0, 32, 0xffffffff, 32);
+					batch.end();
+					renderer.endTarget();
+					canvas;
+				},
+				check: p -> {
+					expect(p, 13, 16, 0x000000, "outside the outline: none, where the stored alpha is 0.42");
+					expect(p, 18, 16, 0xffffff, "inside it: all, where the stored alpha is 0.58");
+					expect(p, 13, 48, 0x6c6c6c, "a coverage font's alpha as stored", 8);
+					expect(p, 18, 48, 0x949494, "and inside", 8);
 				}
 			},
 			{

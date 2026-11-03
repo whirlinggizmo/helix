@@ -6,9 +6,13 @@
 
 *class* in [`services/src/helix/services/fonts/Font2D.hx`](../../services/src/helix/services/fonts/Font2D.hx), `import helix.services.fonts.Font2D;`
 
-Represents a font made by `Fonts`: its metrics, its glyphs, and the atlas they are drawn from.
+Represents a font: its kind, its metrics, its glyphs, the atlas they are drawn from, and its kerning pairs.
+
+`Fonts` makes one from a font file, or from glyph images (`Fonts.packFont`). A program or an engine layer holding a font's atlas and glyphs of its own (raylib's default font) constructs one.
 
 ```haxe
+function new(kind:FontKind, size:Float, ascent:Float, descent:Float, lineGap:Float, atlas:Image, glyphs:Array<Glyph2D>, ?kernings:Array<Kerning2D>, ?notdef:Glyph2D)
+final kind:FontKind
 final size:Float
 final ascent:Float
 final descent:Float
@@ -16,9 +20,22 @@ final lineGap:Float
 final atlas:Image
 final glyphs:Array<Glyph2D>
 final notdef:Null<Glyph2D>
+var kernings(get, never):Array<Kerning2D>
 function getGlyph(codepoint:Int):Null<Glyph2D>
+function getKerning(first:Int, second:Int):Float
 ```
 
+- `new`: Creates a font from its atlas and its glyphs' places on it.
+  - `kind`: What its glyphs hold.
+  - `size`: The pixel height of a line from its ascent to its descent.
+  - `ascent`: How far the tallest glyphs rise above the baseline, in pixels.
+  - `descent`: How far the lowest fall below it, in pixels, negative.
+  - `lineGap`: The space between one line's descent and the next line's ascent, in pixels.
+  - `atlas`: The atlas: white, each glyph's coverage or distance as alpha.
+  - `glyphs`: The glyphs, each its place on the atlas.
+  - `kernings`: Optional. The kerning pairs; none when omitted.
+  - `notdef`: Optional. The glyph drawn for a character the font lacks, also among `glyphs`; none when omitted.
+- `kind`: Gets what its glyphs hold: coverage, hard-edged coverage, or signed distances, as it was made.
 - `size`: Gets the size it was made at: the pixel height of a line from its ascent to its descent.
 - `ascent`: Gets how far the tallest glyphs rise above the baseline, in pixels.
 - `descent`: Gets how far the lowest glyphs fall below it, in pixels, negative.
@@ -26,15 +43,20 @@ function getGlyph(codepoint:Int):Null<Glyph2D>
 - `atlas`: Gets the atlas: white, each glyph's coverage (or distance) as alpha, rows top to bottom.
 - `glyphs`: Gets the glyphs, in the order their characters were asked for; a character the font lacks has none.
 - `notdef`: Gets the glyph the font draws for a character it lacks, its .notdef: a BMFont's invalid-character glyph (character -1, also among `glyphs`); null when the font has none, as a TrueType font loaded by `Fonts.load` has none.
+- `kernings`: Gets the kerning pairs: a TrueType font's between the characters it was made with, from its `GPOS` pair adjustments or else its `kern` table; a BMFont's from its .fnt. Empty for a font with none.
 - `getGlyph`: Returns a character's glyph.
   - `codepoint`: The character.
   - returns: Its glyph, or null when the font has none.
+- `getKerning`: Returns how far the pen moves between two characters beyond the first's advance, from `kernings`.
+  - `first`: The first character.
+  - `second`: The character following it.
+  - returns: The amount, in pixels at the font's size: negative to close up, 0 for a pair the font doesn't kern.
 
 ## FontKind
 
 *abstract* in [`services/src/helix/services/fonts/FontKind.hx`](../../services/src/helix/services/fonts/FontKind.hx), `import helix.services.fonts.FontKind;`
 
-Specifies what a font's glyphs hold: `Fonts.load` and `rasterize` make Coverage, `loadBitmap` and `rasterizeBitmap` Bitmap, `loadDistanceField` and `rasterizeDistanceField` Distance.
+Specifies what a font's glyphs hold (`Font2D.kind`): `Fonts.load`, `rasterize` and `loadBmFont` make Coverage, `loadBitmap` and `rasterizeBitmap` Bitmap, `loadDistanceField` and `rasterizeDistanceField` Distance; `packFont` and a `Font2D` a program makes what they are given.
 
 - `FontKind.Coverage`: Antialiased coverage: each texel how much of it the glyph covers.
 - `FontKind.Bitmap`: Coverage made hard-edged: each texel covered or not, for pixel fonts drawn at their own size.
@@ -65,7 +87,7 @@ function toString():String
 
 *class* in [`services/src/helix/services/fonts/Fonts.hx`](../../services/src/helix/services/fonts/Fonts.hx), `import helix.services.fonts.Fonts;`
 
-Provides fonts by path: a TrueType or OpenType font rasterized at a size as coverage (`load`), hard-edged (`loadBitmap`) or signed distances (`loadDistanceField`), or a BMFont's .fnt and its images (`loadBmFont`), each as a `Font2D` with its glyphs on one atlas. A TrueType font's glyphs also come from its bytes, each on its own, for a program that places them itself (`rasterize`, `rasterizeBitmap`, `rasterizeDistanceField`). Each kind is its own call, so a program carries only the rasterizing it asks for.
+Provides fonts by path: a TrueType or OpenType font rasterized at a size as coverage (`load`), hard-edged (`loadBitmap`) or signed distances (`loadDistanceField`), or a BMFont's .fnt and its images (`loadBmFont`), each as a `Font2D` with its glyphs on one atlas. A TrueType font's glyphs also come from its bytes, each on its own, for a program that places them itself (`rasterize`, `rasterizeBitmap`, `rasterizeDistanceField`). Each kind is its own call, so a program carries only the rasterizing it asks for. A font's kerning pairs come with it: a TrueType font's between the characters asked for, a BMFont's from its .fnt. A program or an engine layer holding glyph images of its own makes a font of them with `packFont`.
 
 A TrueType font's glyphs are rasterized by the platform (`IFontRasterizer`) and packed onto an atlas as `FontsOptions` says. Its answers come as the assets, images and rasterizer it uses are polled.
 
@@ -83,6 +105,7 @@ function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, ras
 function rasterizeBitmap(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, ?failed:String -> Void):() -> Void
 function rasterizeDistanceField(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, ?failed:String -> Void):() -> Void
 function loadBmFont(path:String, loaded:Font2D -> Void, ?failed:String -> Void):() -> Void
+function packFont(name:String, kind:FontKind, size:Float, ascent:Float, descent:Float, lineGap:Float, glyphs:Array<RasterGlyph>, ?kernings:Array<Kerning2D>):Font2D
 ```
 
 - `new`: Creates the fonts over the platform's rasterizer, the assets fonts are found in, and the images a BMFont's are decoded by.
@@ -143,6 +166,16 @@ function loadBmFont(path:String, loaded:Font2D -> Void, ?failed:String -> Void):
   - returns: A function that aborts the load; neither callback is called after it, and once one was, it does nothing.
 
   One of `loaded` or `failed` is called once, at a later poll, never during this call.
+- `packFont`: Returns a font made of glyph images, packed onto one atlas as `FontsOptions` says, as `load` packs a TrueType font's: the smallest power-of-two square they fit, white, each glyph's image as alpha. For a program or an engine layer holding a font's glyphs of its own (raylib's default font, the glyphs `rasterize` gives).
+  - `name`: The atlas's name, its image's `path`; "" for none.
+  - `kind`: What the glyphs hold.
+  - `size`: The pixel height of a line from its ascent to its descent.
+  - `ascent`: How far the tallest glyphs rise above the baseline, in pixels.
+  - `descent`: How far the lowest fall below it, in pixels, negative.
+  - `lineGap`: The space between one line's descent and the next line's ascent, in pixels.
+  - `glyphs`: Each glyph's image, `width * height` bytes, its place from the pen and its advance.
+  - `kernings`: Optional. The kerning pairs; none when omitted.
+  - returns: The font, its glyphs in the order given.
 
 ## FontsOptions
 
@@ -171,6 +204,7 @@ final packing:FontPacking = Skyline
 Represents one of a font's glyphs: where it is on the atlas, where it sits from the pen, and how far it moves the pen.
 
 ```haxe
+function new(codepoint:Int, x:Int, y:Int, width:Int, height:Int, offsetX:Float, offsetY:Float, advance:Float)
 final codepoint:Int
 final x:Int
 final y:Int
@@ -181,6 +215,15 @@ final offsetY:Float
 final advance:Float
 ```
 
+- `new`: Creates a glyph.
+  - `codepoint`: The character.
+  - `x`: Its left edge on the atlas, in texels.
+  - `y`: Its top edge on the atlas, in texels.
+  - `width`: Its width on the atlas, in texels; 0 for nothing to draw.
+  - `height`: Its height on the atlas, in texels.
+  - `offsetX`: Its left edge from the pen, in pixels at the font's size.
+  - `offsetY`: Its top edge from the baseline, in pixels at the font's size, down positive.
+  - `advance`: How far the pen moves after it, in pixels at the font's size.
 - `codepoint`: Gets the character.
 - `x`: Gets its place on the atlas: left edge, in texels.
 - `y`: Gets its top edge on the atlas, in texels.
@@ -189,3 +232,13 @@ final advance:Float
 - `offsetX`: Gets its left edge from the pen, in pixels at the font's size.
 - `offsetY`: Gets its top edge from the baseline, in pixels at the font's size, down positive: above the baseline it is negative.
 - `advance`: Gets how far the pen moves after it, in pixels at the font's size.
+
+## Kerning2D
+
+*typedef* in [`services/src/helix/services/fonts/Kerning2D.hx`](../../services/src/helix/services/fonts/Kerning2D.hx), `import helix.services.fonts.Kerning2D;`
+
+Represents a kerning pair of a font: how far the pen moves when one character follows another, beyond the first's advance.
+
+- `second:Int`: The character following it.
+- `first:Int`: The first character.
+- `amount:Float`: How far the pen moves right between them, in pixels at the font's size: negative to close up.

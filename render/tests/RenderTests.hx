@@ -46,7 +46,7 @@ class RenderTests {
 				new Glyph2D(c, (c - 33) * 4 % 64, Std.int((c - 33) * 4 / 64) * 8, 4, 8, 0, -8, 5)
 		];
 		glyphs.push(new Glyph2D(32, 0, 0, 0, 0, 0, 0, 3));
-		return new Font2D(10, 8, -2, 2, Image.filled(64, 64, 0xffffffff), glyphs);
+		return new Font2D(Coverage, 10, 8, -2, 2, Image.filled(64, 64, 0xffffffff), glyphs);
 	}
 
 	static function vertexX(d:Dynamic, i:Int, stride:Int):Float
@@ -348,6 +348,35 @@ class RenderTests {
 		check(d.count == 18 && near(vertexX(d, 6, 24), 0) && near(vertexX(d, 12, 24), 8) && near(vertexY(d, 6, 24), 50),
 			"a space draws nothing; text's top at y");
 		r.dispose();
+		kerning();
+	}
+
+	// A font's kerning pairs: measured, laid out and drawn unless kerned is false; a hard-edged font's atlas sampled nearest.
+	static function kerning():Void {
+		var g = new RecordingGraphics(),
+			r = new Renderer(g),
+			b = new Batch2D(r);
+		var base = font();
+		var f = r.createFont(new Font2D(Coverage, 10, 8, -2, 2, base.atlas, base.glyphs, [{first: 97, second: 98, amount: -2}]));
+		check(near(f.measureText("ab").x, 8) && near(f.measureText("ab", 20).x, 16) && near(f.measureText("ba").x, 10),
+			"a pair kerned as the font gives it, at the size drawn; another pair not");
+		check(near(f.measureText("ab", null, 0, false).x, 10), "unkerned when kerned is false");
+		var layout = new TextLayout2D(f, "abab");
+		check(near(layout.width, 16), "a layout kerned");
+		layout.kerned = false;
+		check(near(layout.width, 20), "a layout unkerned");
+		r.beginFrame(64, 64);
+		b.begin();
+		b.drawText(f, "ab", 0, 0);
+		b.drawText(f, "ab", 0, 20, 0xffffffff, null, 0, false);
+		b.end();
+		r.endFrame();
+		var d = g.draws[0];
+		check(near(vertexX(d, 6, 24), 3) && near(vertexX(d, 18, 24), 5), "drawn kerned, and unkerned when asked");
+		check(f.atlas.sampling == helix.platform.Sampling.LINEAR, "a coverage font's atlas sampled linearly");
+		var hard = r.createFont(new Font2D(Bitmap, 10, 8, -2, 2, base.atlas, base.glyphs));
+		check(hard.atlas.sampling == helix.platform.Sampling.NEAREST, "a hard-edged font's atlas sampled nearest");
+		r.dispose();
 	}
 
 	static function missingGlyphs():Void {
@@ -372,14 +401,15 @@ class RenderTests {
 			'warned once per character a font lacks, not for a control character: $warnings');
 		f.dispose();
 
-		var noQuestion = r.createFont(new Font2D(10, 8, -2, 2, Image.filled(8, 8, 0xffffffff), [new Glyph2D(65, 0, 0, 4, 8, 0, -8, 5)]));
+		var noQuestion = r.createFont(new Font2D(Coverage, 10, 8, -2, 2, Image.filled(8, 8, 0xffffffff), [new Glyph2D(65, 0, 0, 4, 8, 0, -8, 5)]));
 		check(near(noQuestion.measureText("AéA").x, 10) && warnings.length == 3 && warnings[2].indexOf("nothing") >= 0,
 			"with neither '?' nor .notdef, a character it lacks skipped, and warned of: " + warnings);
 		noQuestion.measureText("é");
 		check(warnings.length == 3, "warned once per font");
 		noQuestion.dispose();
 		var notdef = new Glyph2D(-1, 4, 0, 4, 8, 0, -8, 7);
-		var withNotdef = r.createFont(new Font2D(10, 8, -2, 2, Image.filled(8, 8, 0xffffffff), [new Glyph2D(65, 0, 0, 4, 8, 0, -8, 5), notdef], notdef));
+		var withNotdef = r.createFont(new Font2D(Coverage, 10, 8, -2, 2, Image.filled(8, 8, 0xffffffff), [new Glyph2D(65, 0, 0, 4, 8, 0, -8, 5), notdef],
+			null, notdef));
 		check(near(withNotdef.measureText("Aé").x, 12) && warnings.length == 4 && warnings[3].indexOf(".notdef") >= 0,
 			"without a '?', its .notdef: " + warnings);
 		withNotdef.dispose();

@@ -83,7 +83,7 @@ class ImageTests {
 			glyphs.push(new Glyph2D(chars.charCodeAt(k), k * 7, (k % 2) * 4, w, h, space ? 0 : k % 3 - 1, space ? 0 : -h + k % 2,
 				space ? 4 : k == 4 ? 0 : w + 1));
 		}
-		return new Font2D(14, 11, -3, 0, atlas, glyphs);
+		return new Font2D(Coverage, 14, 11, -3, 0, atlas, glyphs);
 	}
 
 	static function main():Void {

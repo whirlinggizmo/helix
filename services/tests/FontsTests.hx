@@ -5,9 +5,10 @@ import helix.services.fonts.Fonts;
 import helix.services.images.Images;
 
 /** Checks Fonts over fakes: a font's glyphs rasterized, a character it lacks left out, placed apart on a power-of-two atlas (skyline and
-	rows), their coverage as the atlas's alpha on white, and their offsets and advances kept; hard-edged glyphs; a file that isn't a font
-	failing; a BMFont's pages stacked onto one atlas, its characters' places on it, offsets from the baseline, its invalid-character glyph
-	its .notdef, and a binary BMFont failing; and glyphs rasterized from a
+	rows), their coverage as the atlas's alpha on white, and their offsets and advances kept; hard-edged glyphs; each load's kind; a
+	TrueType font's kerning pairs (a font of three glyphs made for it), in pixels at its size; a font packed from glyph images; a file
+	that isn't a font failing; a BMFont's pages stacked onto one atlas, its characters' places on it, offsets from the baseline, its
+	invalid-character glyph its .notdef, its kerning pairs, and a binary BMFont failing; and glyphs rasterized from a
 	font's bytes, each on its own, as coverage, hard-edged or signed distances, aborted, or failing. */
 class FontsTests {
 	static var checks = 0;
@@ -22,8 +23,12 @@ class FontsTests {
 		var files = new FakeFileSystem();
 		files.files.set("ui.ttf", Bytes.ofString("font"));
 		files.files.set("bad.ttf", Bytes.ofString("junk"));
+		// A font of three glyphs, A, B and C, whose kern table closes A then B by 50 units and opens B then A by 30, of 1000 from its
+		// ascent to its descent.
+		files.files.set("kerned.ttf",
+			Bytes.ofHex("00010000000500000000000068656164000000000000005c0000003668686561000000000000009400000024686d747800000000000000b800000010636d617000000000000000c80000001c6b65726e00000000000000e40000001e00000000000000000000000000000000000003e8000000000000000000000000000000000000000000000000000000000000000000000000000000000320ff380000000000000000000000000000000000000000000000000000000401f4000001f4000001f4000001f4000000000001000300010000000c00060010000000410003000100020003000000010000001e0001000200000000000000010002ffce00020001001e0000"));
 		files.files.set("fonts/pixel.fnt",
-			Bytes.ofString('info face="Pixel" size=8\ncommon lineHeight=10 base=8 scaleW=4 scaleH=4 pages=2\npage id=0 file="pixel_0.png"\npage id=1 file="pixel_1.png"\nchars count=3\nchar id=-1 x=0 y=0 width=2 height=3 xoffset=0 yoffset=3 xadvance=3 page=0 chnl=15\nchar id=65 x=0 y=0 width=3 height=4 xoffset=1 yoffset=2 xadvance=4 page=0 chnl=15\nchar id=66 x=1 y=1 width=2 height=2 xoffset=0 yoffset=3 xadvance=3 page=1 chnl=15\n'));
+			Bytes.ofString('info face="Pixel" size=8\ncommon lineHeight=10 base=8 scaleW=4 scaleH=4 pages=2\npage id=0 file="pixel_0.png"\npage id=1 file="pixel_1.png"\nkernings count=1\nkerning first=65 second=66 amount=-1\nchars count=3\nchar id=-1 x=0 y=0 width=2 height=3 xoffset=0 yoffset=3 xadvance=3 page=0 chnl=15\nchar id=65 x=0 y=0 width=3 height=4 xoffset=1 yoffset=2 xadvance=4 page=0 chnl=15\nchar id=66 x=1 y=1 width=2 height=2 xoffset=0 yoffset=3 xadvance=3 page=1 chnl=15\n'));
 		files.files.set("fonts/pixel_0.png", Bytes.ofString("4x4"));
 		files.files.set("fonts/pixel_1.png", Bytes.ofString("4x4"));
 		var rasterizer = new FakeFontRasterizer(),
@@ -67,6 +72,44 @@ class FontsTests {
 		pump();
 		var a = hard.getGlyph(65);
 		check(hard.atlas.pixels.get((a.y * hard.atlas.width + a.x) * 4 + 3) == 255, "hard-edged: coverage over 80 is full");
+		var distance:Font2D = null;
+		new Fonts(rasterizer, assets, images).loadDistanceField("ui.ttf", 4, [65], f -> distance = f);
+		pump();
+		check(hard.kind == Bitmap && distance.kind == Distance, "each load's kind");
+		check(hard.kernings.length == 0 && hard.getKerning(65, 66) == 0, "a font that can't be read for kerning has none");
+
+		var kerned:Font2D = null;
+		new Fonts(rasterizer, assets, images).load("kerned.ttf", 8, [65, 66, 67], f -> kerned = f);
+		pump();
+		check(kerned.kind == Coverage && kerned.kernings.length == 2,
+			'a TrueType font\'s kerning pairs among the characters asked for: ${kerned.kernings.length}');
+		check(Math.abs(kerned.getKerning(65, 66) + .4) < 1e-9
+			&& Math.abs(kerned.getKerning(66, 65) - .24) < 1e-9
+			&& kerned.getKerning(65, 67) == 0,
+			"in pixels at the size it was loaded at, 0 for a pair it doesn't kern");
+
+		var packed = new Fonts(rasterizer, assets, images).packFont("mine", Bitmap, 10, 8, -2, 0, [
+			{
+				codepoint: 65,
+				found: true,
+				width: 2,
+				height: 2,
+				offsetX: 0,
+				offsetY: -2,
+				advance: 3,
+				pixels: Bytes.ofHex("ff00ff00")
+			}
+		], [{first: 65, second: 65, amount: -1}]);
+		var p = packed.getGlyph(65);
+		check(packed.kind == Bitmap
+			&& packed.atlas.path == "mine"
+			&& p.width == 2
+			&& p.advance == 3
+			&& packed.getKerning(65, 65) == -1,
+			"a font packed from glyph images: its kind, atlas, glyphs and kerning");
+		check(packed.atlas.pixels.get((p.y * packed.atlas.width + p.x) * 4 + 3) == 255
+			&& packed.atlas.pixels.get((p.y * packed.atlas.width + p.x + 1) * 4 + 3) == 0,
+			"its images as alpha");
 
 		var why = "";
 		new Fonts(rasterizer, assets, images).load("bad.ttf", 8, [65], _ -> throw "loaded what isn't a font", m -> why = m);
@@ -80,6 +123,8 @@ class FontsTests {
 		var b = pixel.getGlyph(66);
 		check(b.x == 1 && b.y == 5 && b.offsetY == -5 && b.advance == 3, "a character on the second page: below the first, offset from the baseline");
 		check(pixel.size == 10 && pixel.ascent == 8 && pixel.descent == -2, "its size its line height, its ascent its base");
+		check(pixel.kind == Coverage && pixel.kernings.length == 1 && pixel.getKerning(65, 66) == -1 && pixel.getKerning(66, 65) == 0,
+			"a BMFont's kerning pairs");
 		check(pixel.notdef != null && pixel.notdef.codepoint == -1 && pixel.notdef.advance == 3 && hard.notdef == null,
 			"a BMFont's invalid-character glyph (-1) its .notdef; a TrueType font's none");
 		// BMFont's binary format, its header bytes that aren't UTF-8 (a browser's toString throws a RangeError for them).
