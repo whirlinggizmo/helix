@@ -96,6 +96,15 @@ class Runtime {
 	// In a page, when the next frame is due by the time's target (`SetTargetFPS`).
 	static var frameDue = 0.;
 
+	#if js
+	/** Asks for a function to be called at the next frame: the page's `requestAnimationFrame`, or a test's own. */
+	static var requestFrame:(Float->Void) -> Void = f -> js.Browser.window.requestAnimationFrame(f);
+
+	/** Counts the calls of `WindowShouldClose` since the last frame began: a loop no frame breaks is a loop the program's own loop
+		rewrite didn't reach, which would hang the page. */
+	public static var unframed = 0;
+	#end
+
 	/** The keys pressed this frame, oldest first, as the keyboard has them, read one at a time by `GetKeyPressed`. */
 	public static final keysPressed:Array<Int> = [];
 
@@ -345,18 +354,19 @@ class Runtime {
 			var now = system.getTime();
 			var frameTarget = time.targetDelta;
 			if (frameTarget > 0 && now < frameDue - .001) {
-				js.Browser.window.requestAnimationFrame(frame);
+				requestFrame(frame);
 				return;
 			}
 			// The next is due a target after this one was: from now when it came early or far behind, so neither adds up.
 			frameDue = (now < frameDue || now - frameDue > frameTarget ? now : frameDue) + frameTarget;
+			unframed = 0;
 			body();
 			if (shouldClose)
 				after();
 			else
-				js.Browser.window.requestAnimationFrame(frame);
+				requestFrame(frame);
 		};
-		js.Browser.window.requestAnimationFrame(frame);
+		requestFrame(frame);
 		#else
 		while (!helix.raylib.Raylib.WindowShouldClose())
 			body();
