@@ -6068,3 +6068,11 @@ var data:Null<haxe.io.Bytes>
 - `sampleSize`: Gets or sets the bits a sample takes: 8, 16 or 32.
 - `channels`: Gets or sets the number of channels: 1 is mono, 2 stereo.
 - `data`: Gets or sets the samples, or null for none.
+
+## Defines
+
+Set in a build's hxml, as `-D helix-raylib-native-root=../assets`. `haxe --help-user-defines` lists them too, and an editor completes them in an hxml file.
+
+- `helix-raylib-files=<directory>`: Where the program's files are as it builds, relative to the build's directory: LoadShader compiles the shaders it names from there. Defaults to web.
+- `helix-raylib-native-root=<directory>`: Where a native program finds its files, relative to its own directory. Defaults to ../web.
+- `helix-raylib-custom-frame-control`: raylib's SUPPORT_CUSTOM_FRAME_CONTROL: EndDrawing only draws, and the program calls SwapScreenBuffer, WaitTime and PollInputEvents itself.

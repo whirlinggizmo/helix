@@ -1,2 +1,3 @@
 --macro helix.raylib.internal.Loop.install()
 --macro helix.raylib.internal.Metadata.register()
+--macro helix.raylib.internal.Defines.register()

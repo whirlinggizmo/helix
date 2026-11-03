@@ -386,12 +386,12 @@ def main():
     p=cli.parser(__doc__);p.add_argument('--check',action='store_true',help="write nothing; fail when docs/api isn't what the sources give")
     generate(check=p.parse_args().check)
 
-def defines_section(env):
-    """The platform's defines, as its init macro registers them for the compiler (helix.platform.macros.Defines.ALL), so the reference
-    and haxe --help-user-defines can't differ."""
-    done=subprocess.run(['haxe','-lib','helix-platform','--macro','helix.platform.macros.Defines.describe()'],cwd=ROOT,
+def defines_section(env,library,macro,example):
+    """A library's defines, as its init macro registers them for the compiler (its Defines.ALL), so the reference and
+    haxe --help-user-defines can't differ."""
+    done=subprocess.run(['haxe','-lib',library,'--macro',f'{macro}.describe()'],cwd=ROOT,
                         env=env,capture_output=True,text=True,encoding='utf-8',check=True)
-    lines=['## Defines','','Set in a build\'s hxml, as `-D helix-product=Asteroids` (quoted when the value has a space: `-D "helix-company=Whirling Gizmo"`). '
+    lines=['## Defines','',f'Set in a build\'s hxml, as `{example}`'+(' (quoted when the value has a space: `-D "helix-company=Whirling Gizmo"`)' if library=='helix-platform' else '')+'. '
            '`haxe --help-user-defines` lists them too, and an editor completes them in an hxml file.','']
     for define in json.loads(done.stdout.strip().splitlines()[-1]):
         params=''.join(f'=<{p}>' for p in define.get('params',[]))
@@ -421,7 +421,8 @@ def generate(check=False):
     leaked=leaks(OUT/'xml/api.xml')
     if leaked:sys.exit('gen_apidoc: shown members name hidden (@:noCompletion) types; hide or privatize the member, or show the type:\n  '+'\n  '.join(leaked))
     pages=markdown(OUT/'xml/api.xml',native)
-    pages['platform.md']=pages['platform.md'].rstrip('\n')+'\n\n'+defines_section(env)
+    pages['platform.md']=pages['platform.md'].rstrip('\n')+'\n\n'+defines_section(env,'helix-platform','helix.platform.macros.Defines','-D helix-product=Asteroids')
+    pages['raylib.md']=pages['raylib.md'].rstrip('\n')+'\n\n'+defines_section(env,'helix-raylib','helix.raylib.internal.Defines','-D helix-raylib-native-root=../assets')
     if check:
         stale=[name for name,text in pages.items() if not (DOCS/name).is_file() or (DOCS/name).read_text(encoding='utf-8')!=text]
         extra=[p.name for p in DOCS.glob('*.md') if p.name not in pages] if DOCS.is_dir() else []
