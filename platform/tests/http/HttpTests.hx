@@ -10,6 +10,10 @@ import helix.platform.IHttp;
 	as a whole one with an empty body. A body that stops partway, a request never answered, and a connection never taken each fail after
 	a second's idle timeout.
 
+	The connection never taken checks the connect's timeout on Linux, where a listening port whose queue is full drops each new connection
+	unanswered. Windows refuses it instead, so the connect can't wait out the timeout there: on Windows, natively and in a page, it only
+	has to fail, refused or timed out.
+
 	In a page those are asked of the page's own origin. Of another origin, the server's second port: a gzip body cut short with
 	`Timing-Allow-Origin` fails, as does a head cut short with it, and a gzip body cut short without it (the browser's own check); a head
 	cut short without it calls `done` with no bytes, the gap the platform's docs describe.
@@ -64,7 +68,7 @@ class HttpTests {
 			ask(server + "cut-head", "failed", #if js true #else false #end);
 			ask(server + "stall", "failed: Nothing arrived", true, IDLE);
 			ask(server + "silent", "failed: Nothing arrived", false, IDLE);
-			ask(unaccepted, "failed: Nothing arrived", false, IDLE);
+			ask(unaccepted, refusesFullQueue() ? "failed" : "failed: Nothing arrived", false, IDLE);
 			#if js
 			if (other == null)
 				check(false, "no other option");
@@ -88,6 +92,11 @@ class HttpTests {
 		finish();
 		#end
 	}
+
+	// Whether this system refuses a connection to a listening port whose queue is full, rather than leaving it unanswered: Windows does.
+	// The test server runs on the same machine as the test.
+	static function refusesFullQueue():Bool
+		return #if js js.Browser.navigator.userAgent.indexOf("Windows") >= 0 #else Sys.systemName() == "Windows" #end;
 
 	// Asks for a URL, with an idle timeout or the default, and checks its answer is the one expected: "done" with size bytes, or one
 	// starting "failed"; and that its head arrives, or never does when headed is false.

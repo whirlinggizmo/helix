@@ -313,9 +313,10 @@ def http(browser):
                                    (('server', server.url), ('other', server.other), ('unaccepted', server.unaccepted))),
                      site=server.url,
                      # The browser reports each body ended early in the console, as it should, and each head: one with no bytes as
-                     # empty, and a cut status line as a response it can't read.
+                     # empty, and a cut status line as a response it can't read. On Windows the connection never taken is refused, the
+                     # listener's queue full (the console's message doesn't name the URL, so it's expected of the whole check there).
                      expected_errors=('ERR_CONTENT_LENGTH_MISMATCH', 'ERR_INCOMPLETE_CHUNKED_ENCODING', 'ERR_EMPTY_RESPONSE',
-                                      'net::ERR_FAILED'))
+                                      'net::ERR_FAILED') + (('net::ERR_CONNECTION_REFUSED',) if sys.platform == 'win32' else ()))
     finally:
         server.close()
 
