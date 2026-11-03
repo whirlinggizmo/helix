@@ -1,4 +1,4 @@
-// The 2D scene Main.hx.in draws of the shapes helix-ray takes from raylib 6.2, drawn by raylib, its third frame saved as ref.png;
+// The 2D scene Main.hx.in draws of the shapes helix-raylib takes from raylib 6.2, drawn by raylib, its third frame saved as ref.png;
 // cases.py's list is put into it.
 #include "raylib.h"
 #include "rlgl.h"

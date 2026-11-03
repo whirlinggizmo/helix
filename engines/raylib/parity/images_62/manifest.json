@@ -1,6 +1,6 @@
 {
   "oracle": "6.2",
-  "covers": "rtextures.c's image functions helix-ray takes from 6.2, byte for byte: its fixes to ImageDrawLine, ImageDrawLineEx, ImageDrawCircle, ImageKernelConvolution, ImageBlurGaussian, ImageFromImage, GetPixelDataSize, GetImageColor, GetPixelColor, LoadImageDataNormalized (through ImageFormat), GenImageText and ImageTextEx; ImageDraw (against 6.2's ImageDrawImagePro, and its ImageDrawImage at a point) and the lines, circles and triangles drawn through them",
+  "covers": "rtextures.c's image functions helix-raylib takes from 6.2, byte for byte: its fixes to ImageDrawLine, ImageDrawLineEx, ImageDrawCircle, ImageKernelConvolution, ImageBlurGaussian, ImageFromImage, GetPixelDataSize, GetImageColor, GetPixelColor, LoadImageDataNormalized (through ImageFormat), GenImageText and ImageTextEx; ImageDraw (against 6.2's ImageDrawImagePro, and its ImageDrawImage at a point) and the lines, circles and triangles drawn through them",
   "kind": "values",
   "generated": true,
   "main": "ImageBits",

@@ -1,5 +1,5 @@
 // The C side of a value suite (engines/raylib/parity/README.md): what raylib's own C gives, printed a line at a time, each line led by its case's
-// name, as Parity.hx prints helix-ray's. tools/ray_parity.py compares the two.
+// name, as Parity.hx prints helix-raylib's. tools/raylib_parity.py compares the two.
 #ifndef PARITY_H
 #define PARITY_H
 #include "raylib.h"
@@ -11,7 +11,7 @@
 #define V3(x, y, z) ((Vector3){ (float)(x), (float)(y), (float)(z) })
 #define R(x, y, w, h) ((Rectangle){ (float)(x), (float)(y), (float)(w), (float)(h) })
 
-// Whether a drawn vertex's z is printed: 2D vertices carry rlgl's batch depth, which helix-ray keeps as draw order instead.
+// Whether a drawn vertex's z is printed: 2D vertices carry rlgl's batch depth, which helix-raylib keeps as draw order instead.
 static bool parity_depth = true;
 static rlRenderBatch parity_batch;
 
@@ -93,7 +93,7 @@ static void image(const char *name, Image m) {
     }
 }
 
-// Text as raylib reads it to draw, a '?' for each byte it can't (as helix-ray's String holds it): its UTF-8 bytes' count and the bytes in
+// Text as raylib reads it to draw, a '?' for each byte it can't (as helix-raylib's String holds it): its UTF-8 bytes' count and the bytes in
 // hex ("-" for none), or NULL.
 static void str(const char *name, const char *s) {
     if (s == NULL) { printf("%s str NULL\n", name); return; }

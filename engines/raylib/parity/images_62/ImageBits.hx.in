@@ -1,8 +1,8 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
 import Parity.*;
 
-// helix-ray's image functions taken from raylib 6.2, their images printed by Parity as ref.c.in prints raylib's.
+// helix-raylib's image functions taken from raylib 6.2, their images printed by Parity as ref.c.in prints raylib's.
 class ImageBits {
 	// An image of xorshift32 noise, every byte its own (alpha too), RGBA, as ref.c.in makes it.
 	static function noise(width:Int, height:Int, seed:Int):Image {

@@ -1,9 +1,9 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.Rlgl.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.Rlgl.*;
 import Parity.*;
 
-// helix-ray's spheres, capsules and billboards, raylib 6.2's (read back from its frame), printed by Parity as ref.c.in prints raylib's.
+// helix-raylib's spheres, capsules and billboards, raylib 6.2's (read back from its frame), printed by Parity as ref.c.in prints raylib's.
 class ShapeBits3D62 {
 	static function main() {
 		open();

@@ -1,4 +1,4 @@
-// raylib 6.2's own skeletal animation, printed for tools/ray_parity.py: each model's bones, bind pose and skinned meshes, each
+// raylib 6.2's own skeletal animation, printed for tools/raylib_parity.py: each model's bones, bind pose and skinned meshes, each
 // animation's frames, and the bone matrices and skinned vertices UpdateModelAnimationBones, UpdateModelAnimation and UpdateModelAnimationEx give.
 #include "raylib.h"
 #include "raymath.h"

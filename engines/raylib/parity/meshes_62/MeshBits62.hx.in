@@ -1,8 +1,8 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
 import Parity.*;
 
-// helix-ray's GenMeshTangents and ExportMesh, raylib 6.2's, printed by Parity as ref.c.in prints raylib's.
+// helix-raylib's GenMeshTangents and ExportMesh, raylib 6.2's, printed by Parity as ref.c.in prints raylib's.
 class MeshBits62 {
 	// What ExportMesh writes, through SaveFileText: each line led by the case's name, an empty line as "-".
 	static var exported = "export";

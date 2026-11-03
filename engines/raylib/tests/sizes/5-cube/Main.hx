@@ -1,14 +1,14 @@
-// helix-ray's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one 3D: a cube made with GenMeshCube and LoadModelFromMesh, drawn with a camera.
-import helix.ray.Raylib.*;
-import helix.ray.Camera3D;
-import helix.ray.Texture2D;
-import helix.ray.Vector2;
-import helix.ray.Vector3;
+// helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one 3D: a cube made with GenMeshCube and LoadModelFromMesh, drawn with a camera.
+import helix.raylib.Raylib.*;
+import helix.raylib.Camera3D;
+import helix.raylib.Texture2D;
+import helix.raylib.Vector2;
+import helix.raylib.Vector3;
 
-/** A program written in raylib on helix-ray, as a game in raylib would be. Its image is docs/trials/2026-10-30-async/assets/player.png;
+/** A program written in raylib on helix-raylib, as a game in raylib would be. Its image is docs/trials/2026-10-30-async/assets/player.png;
 	its cube is made in memory, no file. */
-@:adds("helix.geometry.Camera3D", "helix.math.Quaternion3D", "helix.math.Transform3D", "helix.math.Trig", "helix.ray.internal.MeshGpu",
-	"helix.ray.internal.Models", "helix.ray.raylib.RModels")
+@:adds("helix.geometry.Camera3D", "helix.math.Quaternion3D", "helix.math.Transform3D", "helix.math.Trig", "helix.raylib.internal.MeshGpu",
+	"helix.raylib.internal.Models", "helix.raylib.modules.RModels")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

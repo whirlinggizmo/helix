@@ -1,4 +1,4 @@
-"""raymath_62: the raymath functions helix-ray takes from raylib 6.2 (DECISIONS 24) and not tested elsewhere: MatrixDecompose, which takes
+"""raymath_62: the raymath functions helix-raylib takes from raylib 6.2 (DECISIONS 24) and not tested elsewhere: MatrixDecompose, which takes
 its scale from the matrix's columns where 5.5 took the rows (QuaternionFromVector3ToVector3 is in core_62). shared/gen.py's syntax."""
 
 MATRICES = ['NEW(Matrix, 0.8, -0.6, 0, 3, 0.6, 0.8, 0, -1, 0, 0, 2, 0.5, 0, 0, 0, 1)',

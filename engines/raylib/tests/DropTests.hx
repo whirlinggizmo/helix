@@ -1,15 +1,15 @@
 import haxe.io.Bytes;
-import helix.ray.Raylib.*;
-import helix.ray.internal.MemoryFiles;
-import helix.ray.internal.Runtime;
+import helix.raylib.Raylib.*;
+import helix.raylib.internal.MemoryFiles;
+import helix.raylib.internal.Runtime;
 
-/** Checks helix-ray's dropped files, which a program naming `IsFileDropped` or `LoadDroppedFiles` links (docs/DECISIONS.md 15): the
+/** Checks helix-raylib's dropped files, which a program naming `IsFileDropped` or `LoadDroppedFiles` links (docs/DECISIONS.md 15): the
 	drop's reading is set as the program starts, so a drop before either is first called is read; a drop's files are listed under
-	helix-ray's own paths, which the assets read; the next drop's replace them; `UnloadDroppedFiles` lets go of the list, the files staying;
+	helix-raylib's own paths, which the assets read; the next drop's replace them; `UnloadDroppedFiles` lets go of the list, the files staying;
 	a dropped file that isn't text read by `LoadFileTextAsync` as raylib's `LoadFileText` reads it. On
 	a window whose dropped files the test sets (services' `FakeWindow`), without events: a drop is given as `Runtime`'s poll gives one, and
 	its files read at the window's next answer, as the platform reads them at the next poll. */
-@:access(helix.ray.internal.Runtime)
+@:access(helix.raylib.internal.Runtime)
 class DropTests {
 	static var checks = 0;
 
@@ -50,8 +50,8 @@ class DropTests {
 		var first = LoadDroppedFiles();
 		check(IsFileDropped()
 			&& first.count == 2
-			&& first.paths[0] == "helix-ray-dropped/1/level_1.txt"
-			&& first.paths[1] == "helix-ray-dropped/2/art.png",
+			&& first.paths[0] == "helix-raylib-dropped/1/level_1.txt"
+			&& first.paths[1] == "helix-raylib-dropped/2/art.png",
 			'a drop listed under its own paths: ${first.paths}');
 		var read:Bytes = null;
 		Runtime.assets.load(first.paths[0], bytes -> read = bytes, e -> throw e);
@@ -70,7 +70,7 @@ class DropTests {
 		Runtime.dropping(1);
 		window.answer();
 		var second = LoadDroppedFiles();
-		check(second.count == 1 && second.paths[0] == "helix-ray-dropped/3/file", 'the next drop replaces it: ${second.paths}');
+		check(second.count == 1 && second.paths[0] == "helix-raylib-dropped/3/file", 'the next drop replaces it: ${second.paths}');
 		var gone:Null<String> = null;
 		Runtime.assets.load(first.paths[1], _ -> throw "the last drop's file still read", e -> gone = e);
 		pump(() -> gone != null);

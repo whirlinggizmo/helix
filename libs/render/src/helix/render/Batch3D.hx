@@ -1759,7 +1759,7 @@ class Batch3D {
 
 	#if macro
 	/** Returns the expression of a shader compiled for helix-render from two stages' text, for a layer's macro that makes or adapts the
-		text itself, as `Shader.makeExpr` returns one: helix-ray's `LoadShader`, whose one shader draws rlgl's batch here, its meshes as a
+		text itself, as `Shader.makeExpr` returns one: helix-raylib's `LoadShader`, whose one shader draws rlgl's batch here, its meshes as a
 		`Material3D`'s, and a `Batch2D`'s draws, every one filling the same names, so one `Shader.withNames` map serves them all
 		(`mvp` to `modelViewProjection`, `colDiffuse` to `baseColor`, white where no material sets it).
 

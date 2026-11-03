@@ -1,22 +1,22 @@
-// helix-ray's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a game: what a real game uses, its file formats one of each.
-import helix.ray.Raylib.*;
-import helix.ray.Raymath.*;
-import helix.ray.BoundingBox;
-import helix.ray.Camera2D;
-import helix.ray.Camera3D;
-import helix.ray.Font;
-import helix.ray.Model;
-import helix.ray.ModelAnimation;
-import helix.ray.Music;
-import helix.ray.Rectangle;
-import helix.ray.RenderTexture2D;
-import helix.ray.Shader;
-import helix.ray.Sound;
-import helix.ray.Texture2D;
-import helix.ray.Vector2;
-import helix.ray.Vector3;
+// helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a game: what a real game uses, its file formats one of each.
+import helix.raylib.Raylib.*;
+import helix.raylib.Raymath.*;
+import helix.raylib.BoundingBox;
+import helix.raylib.Camera2D;
+import helix.raylib.Camera3D;
+import helix.raylib.Font;
+import helix.raylib.Model;
+import helix.raylib.ModelAnimation;
+import helix.raylib.Music;
+import helix.raylib.Rectangle;
+import helix.raylib.RenderTexture2D;
+import helix.raylib.Shader;
+import helix.raylib.Sound;
+import helix.raylib.Texture2D;
+import helix.raylib.Vector2;
+import helix.raylib.Vector3;
 
-/** A game written in raylib on helix-ray, with a full set of a game's features and one file format of each kind: a skinned glTF model
+/** A game written in raylib on helix-raylib, with a full set of a game's features and one file format of each kind: a skinned glTF model
 	whose animations are blended, PNG textures and a sprite sheet, a TTF font and the default one, 2D and 3D drawing with a camera of
 	each, a shader of its own, a render texture, sound effects (WAV) and music (Ogg), the keyboard, mouse, gamepad and touch, a save
 	kept with SaveFileTextAsync and read back with LoadFileTextAsync, collisions and raymath, fullscreen and the window's size. What a game
@@ -25,8 +25,8 @@ import helix.ray.Vector3;
 @:adds("helix.formats.audio.AudioHeader", "helix.formats.bmfont", "helix.formats.qoi", "helix.formats.truetype", "helix.geometry.Camera2D",
 	"helix.geometry.Ray3D", "helix.math.Matrix2D", "helix.math.RectPacker2D", "helix.math.Transform2D", "helix.math.Vector2D",
 	"helix.platform.adapters.fontrasterizer.canvas", "helix.platform.adapters.gamepads.dom", "helix.platform.adapters.keyboard.dom",
-	"helix.platform.adapters.mouse.dom", "helix.platform.adapters.touch.dom", "helix.ray.internal.AudioStreams", "helix.ray.internal.Automation",
-	"helix.ray.internal.FrameConverter", "helix.services.fonts", "helix.services.input.Gamepads", "helix.services.input.Gestures",
+	"helix.platform.adapters.mouse.dom", "helix.platform.adapters.touch.dom", "helix.raylib.internal.AudioStreams", "helix.raylib.internal.Automation",
+	"helix.raylib.internal.FrameConverter", "helix.services.fonts", "helix.services.input.Gamepads", "helix.services.input.Gestures",
 	"helix.services.input.Mouse", "helix.services.input.Touch")
 class Main {
 	static function main():Void {

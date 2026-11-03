@@ -1,4 +1,4 @@
-"""shapes2d_62: the 2D shapes helix-ray takes from raylib 6.2 (docs/DECISIONS.md 24), read back from rlgl's batch, against helix-ray's
+"""shapes2d_62: the 2D shapes helix-raylib takes from raylib 6.2 (docs/DECISIONS.md 24), read back from rlgl's batch, against helix-raylib's
 frame: those 6.2 fixed (the sectors, rings, rectangle and polygon outlines, rounded rectangles, the triangle, the line test) and those
 calling them (the circles, the B-spline's and Catmull-Rom's round ends). One list
 for both sides (shared/gen.py's syntax): c, c2, c3 and c4 are colors, tex a 32 x 16 white texture, cam a Camera2D and cp

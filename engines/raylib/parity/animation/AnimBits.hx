@@ -1,11 +1,11 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.internal.Frame;
-import helix.ray.internal.Runtime;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.internal.Frame;
+import helix.raylib.internal.Runtime;
 
-// helix-ray's skeletal animation, printed as ref.c prints raylib 6.2's, for tools/ray_parity.py.
-@:access(helix.ray.internal.Runtime)
-@:access(helix.ray.Model)
+// helix-raylib's skeletal animation, printed as ref.c prints raylib 6.2's, for tools/raylib_parity.py.
+@:access(helix.raylib.internal.Runtime)
+@:access(helix.raylib.Model)
 class AnimBits {
 	static function line(s:String)
 		Parity.line(s);

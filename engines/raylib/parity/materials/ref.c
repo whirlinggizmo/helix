@@ -1,4 +1,4 @@
-// raylib 5.5's materials, printed for tools/ray_parity.py: LoadMaterialDefault's maps, IsMaterialValid on it and on materials without
+// raylib 5.5's materials, printed for tools/raylib_parity.py: LoadMaterialDefault's maps, IsMaterialValid on it and on materials without
 // maps or a shader, and what UnloadMaterial leaves: the default texture, a map's own texture freed (GL takes its name again for the next
 // texture made), and the default shader; a texture given to a model, unloaded, then the model, freed after both; and a model's texture
 // read from a second load of its file after UnloadMaterial frees the first load's material.
@@ -65,7 +65,7 @@ int main(void) {
     Texture2D again = LoadTextureFromImage(checked);
     printf("unloaded freed %d\n", again.id == own.id);
 
-    // A model given a texture, the texture unloaded, then the model: freed, by UnloadTexture in raylib, by UnloadModel in helix-ray.
+    // A model given a texture, the texture unloaded, then the model: freed, by UnloadTexture in raylib, by UnloadModel in helix-raylib.
     Texture2D tex = LoadTextureFromImage(checked);
     Model cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
     cube.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = tex;

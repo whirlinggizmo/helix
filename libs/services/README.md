@@ -25,7 +25,7 @@ What a game program needs over [helix-platform](../platform/README.md) that isn'
 Until it is published, link it, and the libraries it's built on (helix-platform, helix-formats, helix-math and helix-log), from a checkout:
 
 ```
-haxelib dev helix-services <checkout>/services
+haxelib dev helix-services <checkout>/libs/services
 ```
 
 A program polls each service that answers later once a frame, with the platform's adapters it was given: `Assets`, `Audio`, `Images`,

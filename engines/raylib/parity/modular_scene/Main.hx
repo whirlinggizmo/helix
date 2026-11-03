@@ -1,7 +1,7 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
 
-// scene.c's Adventurer woman holding the sword, drawn by helix-ray: the third frame after her loads saved as helix.png.
+// scene.c's Adventurer woman holding the sword, drawn by helix-raylib: the third frame after her loads saved as helix.png.
 class Main {
 	static function main():Void {
 		InitWindow(640, 360, "modular");

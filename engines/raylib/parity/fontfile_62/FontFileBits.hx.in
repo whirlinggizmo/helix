@@ -1,11 +1,11 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.internal.Runtime;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.internal.Runtime;
 import Parity.*;
 
-// helix-ray's fonts loaded from a TrueType file, printed by Parity and the printers here as ref.c.in prints raylib 6.2's. The glyphs are
+// helix-raylib's fonts loaded from a TrueType file, printed by Parity and the printers here as ref.c.in prints raylib 6.2's. The glyphs are
 // rasterized by the platform's native rasterizer, so this runs in hxcpp alone.
-@:access(helix.ray.internal.Runtime)
+@:access(helix.raylib.internal.Runtime)
 class FontFileBits {
 	static final NULL:Array<Int> = null;
 

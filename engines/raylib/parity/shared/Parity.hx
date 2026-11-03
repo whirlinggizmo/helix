@@ -1,14 +1,14 @@
-import helix.ray.*;
-import helix.ray.internal.Frame;
-import helix.ray.internal.Runtime;
+import helix.raylib.*;
+import helix.raylib.internal.Frame;
+import helix.raylib.internal.Runtime;
 
-/** The Haxe side of a value suite (engines/raylib/parity/README.md): what helix-ray gives, a line at a time, each led by its case's name, as
-	shared/parity.h prints raylib's; `save` writes them to the file the command line names. tools/ray_parity.py compares the two. */
-@:access(helix.ray.internal.Frame)
+/** The Haxe side of a value suite (engines/raylib/parity/README.md): what helix-raylib gives, a line at a time, each led by its case's name, as
+	shared/parity.h prints raylib's; `save` writes them to the file the command line names. tools/raylib_parity.py compares the two. */
+@:access(helix.raylib.internal.Frame)
 class Parity {
 	static final out = new StringBuf();
 
-	/** Whether a drawn vertex's z is printed: 2D vertices carry rlgl's batch depth in raylib, draw order in helix-ray. */
+	/** Whether a drawn vertex's z is printed: 2D vertices carry rlgl's batch depth in raylib, draw order in helix-raylib. */
 	public static var depth = true;
 
 	public static function V2(x:Float, y:Float):Vector2
@@ -24,7 +24,7 @@ class Parity {
 	public static function line(s:String):Void
 		out.add(s + "\n");
 
-	/** helix-ray drawing into a frame of its own, on graphics that keep nothing, for `shape` to read back. */
+	/** helix-raylib drawing into a frame of its own, on graphics that keep nothing, for `shape` to read back. */
 	public static function open():Void {
 		Raylib.SetTraceLogLevel(Raylib.LOG_NONE);
 		var g = new StubGraphics();

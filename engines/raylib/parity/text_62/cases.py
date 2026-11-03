@@ -1,4 +1,4 @@
-"""text_62: raylib 6.2's text and codepoint functions, those helix-ray takes from 6.2 (its fixes), against helix-ray's. One list for
+"""text_62: raylib 6.2's text and codepoint functions, those helix-raylib takes from 6.2 (its fixes), against helix-raylib's. One list for
 both sides (shared/gen.py's syntax): rep(n, piece) makes long text, NULL is null, font the default font, and split, codepoints and
 codepoint print what their functions give, all in ref.c.in and TextBits.hx.in. Each fix has a case built
 from the input that showed its bug in raylib 5.5."""

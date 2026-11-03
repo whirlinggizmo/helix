@@ -1,4 +1,4 @@
-// raylib 5.5's waves, printed for tools/ray_parity.py: each file LoadWave reads (WAV, Ogg Vorbis, MP3, QOA) and one it refuses (FLAC),
+// raylib 5.5's waves, printed for tools/raylib_parity.py: each file LoadWave reads (WAV, Ogg Vorbis, MP3, QOA) and one it refuses (FLAC),
 // its frames, rate, sample size and channels, then its samples 32 a line, each as a double (a 16-bit sample over 32768) printed as
 // hxcpp prints one; a file read by LoadWaveFromMemory under a type in mixed case, which raylib refuses; and FLAC music, refused.
 #include "raylib.h"

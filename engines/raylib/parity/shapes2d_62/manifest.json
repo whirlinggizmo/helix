@@ -1,6 +1,6 @@
 {
   "oracle": "6.2",
-  "covers": "rshapes.c's 2D shapes helix-ray takes from 6.2 (its fixes to the sectors, rings, rectangle and polygon outlines, rounded rectangles, the triangle and the line test; the circles and spline ends calling them), their vertices as rlgl batches them, under the shapes texture, a 2D camera and a transform; CheckCollisionLines",
+  "covers": "rshapes.c's 2D shapes helix-raylib takes from 6.2 (its fixes to the sectors, rings, rectangle and polygon outlines, rounded rectangles, the triangle and the line test; the circles and spline ends calling them), their vertices as rlgl batches them, under the shapes texture, a 2D camera and a transform; CheckCollisionLines",
   "kind": "values",
   "generated": true,
   "main": "ShapeBits",

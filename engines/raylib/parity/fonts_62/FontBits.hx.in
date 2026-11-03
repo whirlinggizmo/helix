@@ -1,8 +1,8 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
 import Parity.*;
 
-// helix-ray's font atlases and fonts from images, printed by Parity and the printers here as ref.c.in prints raylib 6.2's.
+// helix-raylib's font atlases and fonts from images, printed by Parity and the printers here as ref.c.in prints raylib 6.2's.
 class FontBits {
 	// n glyphs, the ith w0 + (i*dw)%wm wide and h0 + i%hm high, their texels a pattern of their place; values from 32.
 	static function glyphs(n:Int, w0:Int, dw:Int, wm:Int, h0:Int, hm:Int):Array<GlyphInfo> {

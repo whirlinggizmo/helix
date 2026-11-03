@@ -1,4 +1,4 @@
-// raylib 6.2's raymath functions helix-ray takes from 6.2, printed by parity.h and the printers here; cases.py's list is put into it.
+// raylib 6.2's raymath functions helix-raylib takes from 6.2, printed by parity.h and the printers here; cases.py's list is put into it.
 #include "parity.h"
 #include "raymath.h"
 

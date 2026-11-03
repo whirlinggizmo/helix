@@ -1,4 +1,4 @@
-// raylib 5.5's GIF images, printed for tools/ray_parity.py: each file LoadImageAnim reads (helix-formats' test GIFs, a PNG), and the
+// raylib 5.5's GIF images, printed for tools/raylib_parity.py: each file LoadImageAnim reads (helix-formats' test GIFs, a PNG), and the
 // bytes LoadImageAnimFromMemory decodes, as their frame count and, when it has frames, the image of them all, its height every
 // frame's, byte for byte; then the first frames LoadImage, LoadImageFromMemory and LoadTexture read, and a font LoadFont reads from a
 // GIF.

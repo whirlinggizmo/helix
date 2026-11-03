@@ -37,7 +37,7 @@ LADDERS = {
     'platform': (ROOT / 'libs/platform/tests/sizes', ['-lib', 'helix-platform']),
     'services': (ROOT / 'libs/services/tests/sizes', ['-lib', 'helix-services']),
     'render': (ROOT / 'libs/render/tests/sizes', ['-lib', 'helix-render']),
-    'ray': (ROOT / 'engines/raylib/tests/sizes', ['-lib', 'helix-ray']),
+    'raylib': (ROOT / 'engines/raylib/tests/sizes', ['-lib', 'helix-raylib']),
 }
 sys.path.insert(0, str(ROOT / 'tools'))
 from pins import LIBRARIES  # noqa: E402  the libraries' directories, by haxelib name
@@ -101,13 +101,13 @@ def vlq(text):
 
 def package(source):
     """The package a source file's bytes are counted under: the platform's by contract (its adapters under their contract), the services'
-    by service, helix-render's by source file (its effects by package), helix-ray's by source file (raylib's modules, R*, and its
-    internals; its facade and structs as ray), another library's by
+    by service, helix-render's by source file (its effects by package), helix-raylib's by source file (raylib's modules, R*, and its
+    internals; its facade and structs as raylib), another library's by
     its name, Haxe's standard library, the program's."""
     path = source.replace('\\', '/')
-    if '/src/helix/ray/' in path:
-        parts = path.split('/src/helix/ray/', 1)[1].split('/')
-        return 'ray/' + parts[-1].removesuffix('.hx') if parts[0] in ('raylib', 'internal') else 'ray'
+    if '/src/helix/raylib/' in path:
+        parts = path.split('/src/helix/raylib/', 1)[1].split('/')
+        return 'raylib/' + parts[-1].removesuffix('.hx') if parts[0] in ('modules', 'internal') else 'raylib'
     if '/src/helix/render/' in path:
         parts = path.split('/src/helix/render/', 1)[1].split('/')
         return 'render/' + (parts[0] if len(parts) > 1 else parts[0].removesuffix('.hx'))
@@ -259,19 +259,19 @@ INTRODUCTIONS = {
                'draw brings the batches\' shader (GLSL ES carried in the program) and helix-services\' shaders; its text the assets, the '
                'images and the fonts it loads a TrueType font through; its 3D the 3D batch, a mesh and an unlit material. helix-render\'s '
                'bytes are counted by source file, or by package for `effects`.'),
-    'ray': ('helix-ray',
-            'Programs written in raylib on helix-ray (`engines/raylib/tests/sizes/`), each adding one feature to the one before, from a window '
+    'raylib': ('helix-raylib',
+            'Programs written in raylib on helix-raylib (`engines/raylib/tests/sizes/`), each adding one feature to the one before, from a window '
             'cleared each frame: what a feature costs through raylib\'s API is its row\'s increment, gzip; brotli in brackets. Against '
-            'the services\' ladder this is what the familiar API costs (DECISIONS 15): helix-ray\'s window brings its time, the screen '
+            'the services\' ladder this is what the familiar API costs (DECISIONS 15): helix-raylib\'s window brings its time, the screen '
             '(with the saves it keeps its state in) and the keyboard, so its first rung holds them; the rest (the assets its files load '
             'through, the image decoder, the dropped files) comes with the functions that need it (DECISIONS 30). Each rung\'s `@:adds` '
             'names what it adds. Its 3D starts with a cube made in memory (GenMeshCube, '
             'LoadModelFromMesh), drawn unlit with a camera: the 3D drawing alone, so the glTF rung after it is the reader\'s own cost. '
-            'helix-ray\'s bytes are counted by source file: raylib\'s modules (R*) and its internals, its facade and structs as ray. '
+            'helix-raylib\'s bytes are counted by source file: raylib\'s modules (R*) and its internals, its facade and structs as raylib. '
             'The last two rungs are its high-water marks. The game is what a real game uses, one file format of each kind (a skinned, '
             'blended glTF model, PNG textures, a TTF font, WAV sounds and Ogg music, every input, a save, a shader and a render '
             'texture). The kitchen sink calls every function of `Raylib`, `Raymath` and `Rlgl` that compiles, written as the program '
-            'builds (its `Everything.hx`), and every reader by a constant name of each extension, so nothing of helix-ray is left out: '
+            'builds (its `Everything.hx`), and every reader by a constant name of each extension, so nothing of helix-raylib is left out: '
             'it is the comparison point for whole-library sizes, such as an Emscripten build of raylib exporting everything.'),
 }
 

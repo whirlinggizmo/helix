@@ -1,9 +1,9 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.Rlgl.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.Rlgl.*;
 import Parity.*;
 
-// helix-ray's 3D shapes and billboards (read back from its frame), printed by Parity as ref.c.in prints raylib's.
+// helix-raylib's 3D shapes and billboards (read back from its frame), printed by Parity as ref.c.in prints raylib's.
 class ShapeBits3D {
 	static function main() {
 		open();

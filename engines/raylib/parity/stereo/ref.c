@@ -1,4 +1,4 @@
-// raylib 5.5's VR stereo config and rlgl's stereo state, printed for tools/ray_parity.py: LoadVrStereoConfig for the Oculus Rift CV1
+// raylib 5.5's VR stereo config and rlgl's stereo state, printed for tools/raylib_parity.py: LoadVrStereoConfig for the Oculus Rift CV1
 // (core_vr_simulator's parameters), for the DK2 and with other clip planes; rlgl's stereo flag, and its matrices as set and read back.
 #include "raylib.h"
 #include "rlgl.h"

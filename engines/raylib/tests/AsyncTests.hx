@@ -1,17 +1,17 @@
 import haxe.io.Bytes;
 import helix.platform.IClipboard;
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.internal.Runtime;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.internal.Runtime;
 import helix.services.input.Mouse;
 import helix.services.saves.Saves;
 import helix.services.screen.Screen;
 
-/** Checks helix-ray's Async requests and writes over fakes (services' `FakeWindow`, `FakeEvents`, `FakeDevices` and
+/** Checks helix-raylib's Async requests and writes over fakes (services' `FakeWindow`, `FakeEvents`, `FakeDevices` and
 	`FakeFileSystem`, and a clipboard here): each answers once, at a later poll and never during its call, `done` once the platform
 	reflects it and `failed` with the reason where it refuses; a request the platform can't ask is refused with why; a write is done
 	once the saves are written, or the program's save callback has said it wrote, and fails when they can't be. */
-@:access(helix.ray.internal.Runtime)
+@:access(helix.raylib.internal.Runtime)
 class AsyncTests {
 	static var checks = 0;
 

@@ -1,5 +1,5 @@
 // The 3D scene Main.hx.in draws, drawn by raylib 6.2, its third frame saved as ref.png; cases.py's list is put into it. Its clip planes are
-// 5.5's, as helix-ray's are (6.2 moved them to 0.05 and 4000, a choice helix-ray leaves as 5.5's).
+// 5.5's, as helix-raylib's are (6.2 moved them to 0.05 and 4000, a choice helix-raylib leaves as 5.5's).
 #include "raylib.h"
 #include "rlgl.h"
 #define V2(x, y) ((Vector2){ (float)(x), (float)(y) })

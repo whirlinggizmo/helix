@@ -1,4 +1,4 @@
-"""raymath: raylib 5.5's raymath.h against helix-ray's Raymath, every function over three inputs (shared/gen.py's syntax). Its
+"""raymath: raylib 5.5's raymath.h against helix-raylib's Raymath, every function over three inputs (shared/gen.py's syntax). Its
 signatures are raymath.h's, written here; each case draws its arguments from SAMPLES by type, the k-th case shifting each argument's
 pick by k, so zero vectors, opposite directions and a singular matrix meet each function somewhere. Functions with outs are written out
 below. QuaternionFromVector3ToVector3 and MatrixDecompose are 6.2's, in core_62 and raymath_62."""

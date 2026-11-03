@@ -1,4 +1,4 @@
-// raylib 5.5's MTL materials, printed for tools/ray_parity.py: the materials LoadMaterials reads from lib.mtl (obj_62's makeobj.py), each
+// raylib 5.5's MTL materials, printed for tools/raylib_parity.py: the materials LoadMaterials reads from lib.mtl (obj_62's makeobj.py), each
 // one's maps (as materials_62's ref.c prints them), each texture's pixels as RGBA; and how many it reads from a missing .mtl file and from
 // a file that isn't one.
 #include "raylib.h"

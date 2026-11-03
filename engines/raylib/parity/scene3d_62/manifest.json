@@ -1,7 +1,7 @@
 {
   "oracle": "6.2",
   "covers": "raylib 6.2's DrawSphere, DrawSphereEx and DrawSphereWires, DrawCapsule and DrawCapsuleWires (one with no rings), DrawBillboard, DrawBillboardRec and DrawBillboardPro (flipped among them), and a knot given tangents by GenMeshTangents drawn by a shader reading vertexTangent and vertexTexCoord2, drawn into a 640 x 360 frame",
-  "notes": "raylib 6.2's clip planes are set to 5.5's (rlSetClipPlanes(0.01, 1000)), as helix-ray keeps them. A flipped billboard's part is kept inside its texture: helix-ray's textures clamp by default, where raylib's desktop build repeats.",
+  "notes": "raylib 6.2's clip planes are set to 5.5's (rlSetClipPlanes(0.01, 1000)), as helix-raylib keeps them. A flipped billboard's part is kept inside its texture: helix-raylib's textures clamp by default, where raylib's desktop build repeats.",
   "kind": "pixels",
   "generated": true,
   "frames": 5,

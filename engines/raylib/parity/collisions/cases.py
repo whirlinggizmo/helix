@@ -1,4 +1,4 @@
-"""collisions: raylib 5.5's 3D ray tests and collision checks against helix-ray's (GetRayCollisionSphere is 6.2's, in collisions_62). One
+"""collisions: raylib 5.5's 3D ray tests and collision checks against helix-raylib's (GetRayCollisionSphere is 6.2's, in collisions_62). One
 list for both sides (shared/gen.py's syntax), its rays and shapes spelled once here; box is made in ref.c.in and CollisionBits.hx.in."""
 
 RAYS = ['NEW(Ray, V3(0, 0, -10), V3(0, 0, 1))', 'NEW(Ray, V3(0.2, 0.1, 0), V3(0.6, 0, 0.8))',

@@ -1,4 +1,4 @@
-// raylib 6.2's glTF materials, printed for tools/ray_parity.py: each material LoadModel reads from web/materials.gltf (makematerials.py),
+// raylib 6.2's glTF materials, printed for tools/raylib_parity.py: each material LoadModel reads from web/materials.gltf (makematerials.py),
 // its shader and its twelve maps' colors, values and textures, each texture's pixels as RGBA.
 #include "raylib.h"
 #include "rlgl.h"

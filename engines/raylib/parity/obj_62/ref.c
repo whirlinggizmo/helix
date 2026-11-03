@@ -1,4 +1,4 @@
-// raylib 6.2's OBJ models, printed for tools/ray_parity.py: each model LoadModel reads (makeobj.py's, and raylib's own cube.obj), its
+// raylib 6.2's OBJ models, printed for tools/raylib_parity.py: each model LoadModel reads (makeobj.py's, and raylib's own cube.obj), its
 // meshes' vertices, texture coordinates, normals and colors, each mesh's material, and its materials' maps (as materials_62's ref.c
 // prints them), each texture's pixels as RGBA.
 #include "raylib.h"

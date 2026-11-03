@@ -1,4 +1,4 @@
-"""rlgl_62: raylib 6.2's rlgl, those calls helix-ray takes from 6.2, read back from rlgl's batch against helix-ray's frame. One list for
+"""rlgl_62: raylib 6.2's rlgl, those calls helix-raylib takes from 6.2, read back from rlgl's batch against helix-raylib's frame. One list for
 both sides (shared/gen.py's syntax): tex and tex2 are textures, tri, quad and seg add a triangle's, a quad's and a line's vertices at an x,
 drawn prints each vertex drawn since the last with its draw call's texture, all in ref.c.in and RlglBits.hx.in. Each case starts on a new draw call, RL_QUADS with the white texture, as each drawn flushes the batch. Each fix has a
 case built from the input that showed its bug in raylib 5.5."""

@@ -1,4 +1,4 @@
-"""scene2d_62: the 2D scene of the shapes helix-ray takes from raylib 6.2 (docs/DECISIONS.md 24), a call a line (shared/gen.py's
+"""scene2d_62: the 2D scene of the shapes helix-raylib takes from raylib 6.2 (docs/DECISIONS.md 24), a call a line (shared/gen.py's
 syntax), between scene.c.in's and Main.hx.in's ClearBackground and the frame's end: the circles, sectors, rings, rectangle and polygon
 outlines, rounded rectangles, triangles and spline ends 6.2 fixed. spline2 and spline3 are point arrays and cam a 2D camera, made
 there."""

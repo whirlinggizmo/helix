@@ -13,19 +13,19 @@ A Haxe game framework built as layered libraries: one Haxe program runs in the b
 | [helix-log](libs/log/README.md) | Levels and tags, to the browser's console or the process's output | nothing |
 | [helix-services](libs/services/README.md) | Time, input, assets, audio, images, saves and config over the platform | helix-platform, helix-formats, helix-geometry, helix-math, helix-log |
 | [helix-render](libs/render/README.md) | Drawing: 2D and 3D batches, draw lists, text, materials, lights, shadows, environment maps and post-processing (being built in stages) | helix-services, helix-platform, helix-formats, helix-geometry, helix-math, helix-log |
-| [helix-ray](engines/raylib/README.md) | raylib 5.5's API over the services and the platform, 2D and 3D, in a page and natively | helix-services, helix-platform, helix-formats, helix-geometry, helix-math |
+| [helix-raylib](engines/raylib/README.md) | raylib 5.5's API over the services and the platform, 2D and 3D, in a page and natively | helix-services, helix-platform, helix-formats, helix-geometry, helix-math |
 
 Until they're published:
 
 ```console
-haxelib dev helix-platform <checkout>/platform
-haxelib dev helix-math <checkout>/math
-haxelib dev helix-geometry <checkout>/geom
-haxelib dev helix-formats <checkout>/formats
-haxelib dev helix-log <checkout>/log
-haxelib dev helix-services <checkout>/services
-haxelib dev helix-render <checkout>/render
-haxelib dev helix-ray <checkout>/ray
+haxelib dev helix-platform <checkout>/libs/platform
+haxelib dev helix-math <checkout>/libs/math
+haxelib dev helix-geometry <checkout>/libs/geometry
+haxelib dev helix-formats <checkout>/libs/formats
+haxelib dev helix-log <checkout>/libs/log
+haxelib dev helix-services <checkout>/libs/services
+haxelib dev helix-render <checkout>/libs/render
+haxelib dev helix-raylib <checkout>/engines/raylib
 ```
 
 ## Documents
@@ -45,4 +45,4 @@ haxelib dev helix-ray <checkout>/ray
 zlib: [LICENSE](LICENSE), a copy in each library's directory (haxelib.json says BSD, as haxelib has no zlib). A program built with the
 libraries owes no notice; a copy of their source keeps it. What a library includes of others' work, each with its license, is in its
 README's Credit section ([helix-platform](libs/platform/README.md#credit), [helix-math](libs/math/README.md#credit), [helix-geometry](libs/geometry/README.md#credit),
-[helix-ray](engines/raylib/README.md#credit)); none of it asks anything of a built program either.
+[helix-raylib](engines/raylib/README.md#credit)); none of it asks anything of a built program either.

@@ -1,11 +1,11 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.internal.Runtime;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.internal.Runtime;
 import Parity.*;
 
-// helix-ray's ExportFontAsCodeAsync, printed as ref.c prints raylib 5.5's: the header's text, through SetSaveFileTextCallback, a line at a time
+// helix-raylib's ExportFontAsCodeAsync, printed as ref.c prints raylib 5.5's: the header's text, through SetSaveFileTextCallback, a line at a time
 // as its bytes. TrueType glyphs are rasterized by the platform's native rasterizer, so this runs in hxcpp alone.
-@:access(helix.ray.internal.Runtime)
+@:access(helix.raylib.internal.Runtime)
 class FontCodeBits {
 	static var saved = "";
 

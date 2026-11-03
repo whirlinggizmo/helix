@@ -1,12 +1,12 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.internal.Frame;
-import helix.ray.internal.Runtime;
-import helix.ray.internal.Textures;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.internal.Frame;
+import helix.raylib.internal.Runtime;
+import helix.raylib.internal.Textures;
 
-// helix-ray's materials, printed as ref.c prints raylib 5.5's, for tools/ray_parity.py. Where ref.c sees a texture freed or kept by
+// helix-raylib's materials, printed as ref.c prints raylib 5.5's, for tools/raylib_parity.py. Where ref.c sees a texture freed or kept by
 // whether GL takes its name again, this sees its pixels gone or there (Textures.imageOf).
-@:access(helix.ray.internal.Runtime)
+@:access(helix.raylib.internal.Runtime)
 class MaterialDefaultBits {
 	static function line(s:String)
 		Parity.line(s);

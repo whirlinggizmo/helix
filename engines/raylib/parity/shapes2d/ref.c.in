@@ -4,7 +4,7 @@
 int main(void) {
     parity_open();
     parity_depth = false;
-    // InitWindow gives the shapes the default font's white rectangle; helix-ray's start with the white pixel, raylib's own fallback.
+    // InitWindow gives the shapes the default font's white rectangle; helix-raylib's start with the white pixel, raylib's own fallback.
     SetShapesTexture((Texture2D){ 0 }, R(0, 0, 0, 0));
     Color c = { 200, 100, 50, 255 }, c2 = { 10, 220, 30, 128 }, c3 = { 0, 40, 250, 255 }, c4 = { 255, 255, 0, 64 };
     Texture2D tex = LoadTextureFromImage(GenImageColor(32, 16, WHITE));

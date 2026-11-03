@@ -1,11 +1,11 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.internal.Frame;
-import helix.ray.internal.Runtime;
-import helix.ray.internal.Textures;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.internal.Frame;
+import helix.raylib.internal.Runtime;
+import helix.raylib.internal.Textures;
 
-// helix-ray's OBJ models, printed as ref.c prints raylib 6.2's, for tools/ray_parity.py.
-@:access(helix.ray.internal.Runtime)
+// helix-raylib's OBJ models, printed as ref.c prints raylib 6.2's, for tools/raylib_parity.py.
+@:access(helix.raylib.internal.Runtime)
 class ObjBits {
 	static function line(s:String)
 		Parity.line(s);

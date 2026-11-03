@@ -27,7 +27,7 @@ import helix.services.assets.Assets;
 	`prepareFrame`, which the program, or the renderer it draws through, calls at the frame's start, before `ShaderPrograms.prepareFrame`
 	and before any values are written for the frame. So nothing changes in the middle of a frame: values repack, handles move and
 	pipelines are rebuilt at the same boundary. Then the shader's reload listeners (`Shader.reloadListeners`) are called; nothing need
-	poll `reloadCount`. helix-draw and helix-ray call both `prepareFrame`s inside their own frames.
+	poll `reloadCount`. helix-draw and helix-raylib call both `prepareFrame`s inside their own frames.
 
 	```haxe
 	var shaders = new Shaders(assets);

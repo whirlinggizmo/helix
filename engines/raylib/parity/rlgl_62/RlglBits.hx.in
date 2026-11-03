@@ -1,12 +1,12 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.Rlgl.*;
-import helix.ray.internal.Runtime;
-import helix.ray.internal.Textures;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.Rlgl.*;
+import helix.raylib.internal.Runtime;
+import helix.raylib.internal.Textures;
 import Parity.*;
 
-// helix-ray's rlgl, read back from its frame, printed by Parity and the printers here as ref.c.in prints raylib 6.2's.
-@:access(helix.ray.internal.Frame)
+// helix-raylib's rlgl, read back from its frame, printed by Parity and the printers here as ref.c.in prints raylib 6.2's.
+@:access(helix.raylib.internal.Frame)
 class RlglBits {
 	static var tex:Texture2D;
 	static var tex2:Texture2D;

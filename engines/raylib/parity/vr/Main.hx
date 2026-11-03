@@ -1,7 +1,7 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
 
-// scene.c's core_vr_simulator, drawn by helix-ray as raylib's example is written: the third frame saved as helix.png. Its shader (web/)
+// scene.c's core_vr_simulator, drawn by helix-raylib as raylib's example is written: the third frame saved as helix.png. Its shader (web/)
 // is raylib's distortion330.fs, as the example has it.
 class Main {
 	static function main():Void {

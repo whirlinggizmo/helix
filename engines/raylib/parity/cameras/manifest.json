@@ -1,7 +1,7 @@
 {
   "oracle": "5.5",
   "covers": "rcore.c's GetCameraMatrix, GetWorldToScreenEx and GetScreenToWorldRayEx, and rcamera.h's CameraYaw, Pitch, Roll, MoveUp and MoveToTarget, over 700 cameras (positions, targets, ups, perspective and orthographic, degenerate ones among them), as double bits; CameraMoveForward, CameraMoveRight and UpdateCameraPro are 6.2's (cameras_62)",
-  "notes": "Sections by function and by whether the camera is regular or degenerate, each difference against the scene's size. Points behind the camera and degenerate cameras give NaN or infinity where the other gives a number (raylib in floats, helix-ray in doubles): the bars count them.",
+  "notes": "Sections by function and by whether the camera is regular or degenerate, each difference against the scene's size. Points behind the camera and degenerate cameras give NaN or infinity where the other gives a number (raylib in floats, helix-raylib in doubles): the bars count them.",
   "kind": "values",
   "main": "CameraBits",
   "reference": "ref.c",

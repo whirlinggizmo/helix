@@ -8,14 +8,14 @@
   3, shadows; 4, environment maps and the background; 5, post-processing (with the draft's scene example); 6, fog; 7, morph targets.
   Asked below it: helix-formats' `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions, and morph
   targets; helix-geometry's second texture coordinates, morph targets and mesh groups; helix-math's Euler orders, an object's `lookAt`
-  and `Bounds3D` through a matrix. Then helix-ray rebuilt on it (immediate, as raylib is, on helix-render directly).
+  and `Bounds3D` through a matrix. Then helix-raylib rebuilt on it (immediate, as raylib is, on helix-render directly).
 - **helix-scene and Gyre, HeliX's engine (`gyre/`, `helix.gyre`): HeliX on top of the libraries, not replaced by them.** helix-scene (`scene/`, `helix.scene`) is
   HeliX's scene code (its stage, 2D and 3D nodes, transforms, hierarchy, the walk that culls, gathers lights and sorts, picking) moved
   onto helix-render and made engine-neutral, the link rule applied (a 2D game carries no 3D): a port of HeliX's code, not a new
   design. Gyre is HeliX's game-level API (app, loader, UI, transitions, animator, autopilot) on helix-scene, helix-render and
   the services, so its users keep the API they know; a three.js-style engine later on the same helix-scene. The test: one of
   HeliX's games ported, its effort and its size beside its HeliX build.
-- **helix-ray (DECISIONS 16, 19, 20, 21):** raylib's API over the services, merged to `main`. Next: rebuilt on helix-render; then reloading and placeholders under raylib's own names (the assets,
+- **helix-raylib (DECISIONS 16, 19, 20, 21):** raylib's API over the services, merged to `main`. Next: rebuilt on helix-render; then reloading and placeholders under raylib's own names (the assets,
   resources and objects below). Then a trial of how agents take to
   the `...Async` loads (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
   (Atomics.wait, which a worker may; cross-origin isolation, OffscreenCanvas, input and audio relayed; raylib's loop run as written)
@@ -33,14 +33,14 @@
   The platform's checks of a pipeline's vertex layout (`PipelineLayout.check`, every backend, about 0.3 KB gzip) to be trimmed to what
   a backend would otherwise get wrong silently, once the platform's API is settled.
 - **Assets, resources and objects, as the earlier C frameworks layered them (AGENTS.md's prior art: their resource/object model),
-  after helix-render's stages, as plumbing a game never calls.** Each engine keeps its own names: helix-ray's `texture.id` becomes a
+  after helix-render's stages, as plumbing a game never calls.** Each engine keeps its own names: helix-raylib's `texture.id` becomes a
   stable handle its table maps to the current resource; helix-render's `Texture2D`, `GpuModel3D` and `GpuFont2D` are the stable
   identities, their platform handles internal; the HeliX engine's and a three.js layer's objects are their own nodes and meshes.
   Underneath, an internal registry in the services for layer authors: one resource per path (or generator's parameters), reference
   counted, replaced in place while the program runs (the changed file loaded beside the old, swapped at a frame boundary, a failure
   keeping the old, as `Shaders.watch` replaces a shader), a placeholder while it first loads. Linked only by a program that loads or
   watches that kind; a game reads nothing new.
-- **Services features an engine needs and helix-ray now reaches the platform for:** the mouse cursor (shape, visibility, lock) on
+- **Services features an engine needs and helix-raylib now reaches the platform for:** the mouse cursor (shape, visibility, lock) on
   `Mouse`, gamepad vibration and mappings on `Gamepads`, and a clipboard service.
 - **The layer above the services:** constructs the platform and the services for a target, runs the frame in order and ends with the
   saves written, so a program knows none of that; its spec is the `Main.hx` the services trial's three agents each wrote the same way.

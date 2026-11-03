@@ -29,7 +29,7 @@ class ShaderUniform {
 	public var shared(default, null):Bool;
 
 	/** Gets a value indicating whether its shader's code reads it, as the compiler finds: GL's `glGetUniformLocation` gives -1 for one
-		that isn't, which a layer matching GL (helix-ray) does too. Every declared uniform is reflected, read or not. It is the whole
+		that isn't, which a layer matching GL (helix-raylib) does too. Every declared uniform is reflected, read or not. It is the whole
 		uniform's: an array read at any element is active, as the compiler can't tell which elements a dynamic index reads. */
 	public var active(default, null):Bool;
 

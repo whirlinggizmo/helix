@@ -1,10 +1,10 @@
-import helix.ray.Raylib.*;
+import helix.raylib.Raylib.*;
 
 /** raylib's basic window: text in the middle and a circle at the mouse, in raylib's own shape. The `frames` option (`HELIX_FRAMES=60`
 	natively, `?frames=60` in a page) stops it after that many frames. */
 class Main {
 	static function main():Void {
-		InitWindow(800, 450, "helix-ray: basic window");
+		InitWindow(800, 450, "helix-raylib: basic window");
 		SetTargetFPS(60);
 		while (!WindowShouldClose()) {
 			BeginDrawing();

@@ -1,4 +1,4 @@
-"""scene2d: the 2D scene both draw of the functions whose oracle is raylib 5.5 (docs/DECISIONS.md 24; those helix-ray takes from 6.2 are
+"""scene2d: the 2D scene both draw of the functions whose oracle is raylib 5.5 (docs/DECISIONS.md 24; those helix-raylib takes from 6.2 are
 in scene2d_62), a call a line (shared/gen.py's syntax), between scene.c.in's and Main.hx.in's ClearBackground and the frame's end: checks,
 a 64 x 64 checked texture, font, the default font, target, a render texture drawn into before, patch, a nine-patch, and the point arrays
 strip, fan, tstrip, spline, quad and cubic are made there."""

@@ -1,9 +1,9 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.Rlgl.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.Rlgl.*;
 import Parity.*;
 
-// helix-ray's 2D shapes taken from raylib 6.2 (read back from its frame) and the line test, printed by Parity as ref.c.in
+// helix-raylib's 2D shapes taken from raylib 6.2 (read back from its frame) and the line test, printed by Parity as ref.c.in
 // prints raylib's.
 class ShapeBits {
 	static function main() {

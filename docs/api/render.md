@@ -1783,7 +1783,7 @@ var shaderValues:Null<ShaderValues>
 
 Represents state a mesh draw takes in place of its material's: its blend, depth test, depth write, cull and color channels, each null for the material's own.
 
-`Batch3D.drawMesh` and `drawModel` (and `DrawList3D`'s) take one, read as each draw is made, and change nothing in the material. A layer whose state is global keeps one and updates it as its state changes: helix-ray keeps one mirroring rlgl's, passed to every mesh draw, while the materials stay as three.js expects them.
+`Batch3D.drawMesh` and `drawModel` (and `DrawList3D`'s) take one, read as each draw is made, and change nothing in the material. A layer whose state is global keeps one and updates it as its state changes: helix-raylib keeps one mirroring rlgl's, passed to every mesh draw, while the materials stay as three.js expects them.
 
 ```haxe
 var rlState = new MeshState3D();

@@ -9,11 +9,11 @@ import haxe.macro.Expr;
 	Each refuses a call to a function the library declares but doesn't have: `unimplemented` one it will have, `unsupported` one it won't,
 	by design. The library writes the function as a macro whose body returns it: the message is reported where the program calls it,
 	every such call in one build, and the call keeps the function's result type, so nothing after it is typed wrong because of it.
-	helix-ray declares raylib's functions it doesn't have so (`tools/gen_raylib.py`).
+	helix-raylib declares raylib's functions it doesn't have so (`tools/gen_raylib.py`).
 
 	```haxe
 	public static macro function LoadImage(fileName:ExprOf<String>):ExprOf<Image>
-		return helix.platform.macros.Build.unimplemented("LoadImage: Not implemented", macro (null : helix.ray.Image));
+		return helix.platform.macros.Build.unimplemented("LoadImage: Not implemented", macro (null : helix.raylib.Image));
 	``` */
 class Build {
 	/** Refuses a call to a function the library doesn't have yet: reports a message at the call being typed and returns what the call

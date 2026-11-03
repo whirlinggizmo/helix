@@ -1,7 +1,7 @@
 {
   "oracle": "5.5",
   "covers": "rcamera.h's UpdateCamera in each mode (free, first person, third person, orbital, custom) from two Y-up starts over scripted input frames (frames.txt: mouse, keys, pan, wheel, gamepad), each 1/60 s; raylib's rcamera built alone, its input functions stubbed. A Z-up start moves by 6.2's CameraMoveForward and CameraMoveRight (camera_update_62)",
-  "notes": "Sections by mode (m0 custom, m1 free, m2 orbital, m3 first person, m4 third person). raylib's rcamera works in floats, helix-ray in doubles: over 32 frames of large moves the two drift apart by up to 1e-3 (first and third person), where raylib's rcamera built in doubles matches helix-ray to 2e-7.",
+  "notes": "Sections by mode (m0 custom, m1 free, m2 orbital, m3 first person, m4 third person). raylib's rcamera works in floats, helix-raylib in doubles: over 32 frames of large moves the two drift apart by up to 1e-3 (first and third person), where raylib's rcamera built in doubles matches helix-raylib to 2e-7.",
   "kind": "values",
   "main": "UpdateSteps",
   "reference": "ref.c",

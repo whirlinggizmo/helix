@@ -1,12 +1,12 @@
-import helix.ray.Camera3D;
-import helix.ray.Raylib.*;
-import helix.ray.Vector3;
-import helix.ray.raylib.RCore;
+import helix.raylib.Camera3D;
+import helix.raylib.Raylib.*;
+import helix.raylib.Vector3;
+import helix.raylib.modules.RCore;
 
-// helix-ray's rcamera moves in the world's plane (raylib 6.2's CameraMoveForward and CameraMoveRight) and UpdateCameraPro over a grid of
+// helix-raylib's rcamera moves in the world's plane (raylib 6.2's CameraMoveForward and CameraMoveRight) and UpdateCameraPro over a grid of
 // cameras: each number's bits, one line per case, as ref.c prints raylib 6.2's for the same cases. Each camera's first line is its scale
 // line: what its differences are measured against, and whether it's degenerate.
-@:access(helix.ray.raylib.RCore)
+@:access(helix.raylib.modules.RCore)
 class CameraBits62 {
 	static function bits(x:Float):String {
 		var i = haxe.io.FPHelper.doubleToI64(x);

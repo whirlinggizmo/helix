@@ -1,4 +1,4 @@
-"""meshes: raylib 5.5's generated meshes (GenMesh*) and their bounds, against helix-ray's, vertex for vertex (GenMeshTangents is 6.2's, in
+"""meshes: raylib 5.5's generated meshes (GenMesh*) and their bounds, against helix-raylib's, vertex for vertex (GenMeshTangents is 6.2's, in
 meshes_62). One list for both sides (shared/gen.py's syntax): height (a 5 x 4 image of varied grays) and cubic (a 4 x 3 map of walls, a
 red cell among them) are made in ref.c.in and MeshBits.hx.in."""
 

@@ -1,9 +1,9 @@
-// helix-ray's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one 2D shapes: a rectangle, a circle, a line and a triangle.
-import helix.ray.Raylib.*;
-import helix.ray.Vector2;
+// helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one 2D shapes: a rectangle, a circle, a line and a triangle.
+import helix.raylib.Raylib.*;
+import helix.raylib.Vector2;
 
-/** A program written in raylib on helix-ray, as a game in raylib would be. */
-@:adds("helix.math.Vector3D", "helix.ray.raylib.RRlgl", "helix.ray.raylib.RShapes", "helix.services.images.Image")
+/** A program written in raylib on helix-raylib, as a game in raylib would be. */
+@:adds("helix.math.Vector3D", "helix.raylib.modules.RRlgl", "helix.raylib.modules.RShapes", "helix.services.images.Image")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

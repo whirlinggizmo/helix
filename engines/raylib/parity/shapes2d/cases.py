@@ -1,5 +1,5 @@
-"""shapes2d: raylib 5.5's 2D shapes, read back from rlgl's batch, against helix-ray's frame; spline points and the 2D collisions after.
-The functions whose oracle is raylib 5.5 (docs/DECISIONS.md 24); those helix-ray takes from 6.2 are in shapes2d_62. One list for both
+"""shapes2d: raylib 5.5's 2D shapes, read back from rlgl's batch, against helix-raylib's frame; spline points and the 2D collisions after.
+The functions whose oracle is raylib 5.5 (docs/DECISIONS.md 24); those helix-raylib takes from 6.2 are in shapes2d_62. One list for both
 sides (shared/gen.py's syntax): c, c2, c3 and c4 are colors, tex a 32 x 16 white texture and cam a Camera2D, all made in ref.c.in and
 ShapeBits.hx.in."""
 

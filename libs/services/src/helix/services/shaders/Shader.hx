@@ -52,7 +52,7 @@ import helix.platform.VertexBuffer;
 	macro (`Sampling`'s `Filter`) puts that use under `#if !macro`, or keeps the macro in a class of its own, as `ShaderValueClasses` is.
 
 	**Strict, where GL is lenient.** A write of the wrong kind throws, where GL ignores a `glUniform` of the wrong type; a layer matching
-	GL (helix-ray's `SetShaderValue`) checks the handle's `type` itself and skips.
+	GL (helix-raylib's `SetShaderValue`) checks the handle's `type` itself and skips.
 
 	**With hotreload-hx's code reload**, statics keep their values, so a `static final` holding a compiled shader keeps the old one
 	when its text constant changes and the code reloads: an edit reaches a running page through the shader's `file` and
@@ -154,11 +154,11 @@ class Shader implements IShaderHandles {
 
 	#if macro
 	/** Returns the GLSL text an expression stands for while the program builds, for a library's macro that forwards a program's shader
-		text (helix-ray's `LoadShaderFromMemory`) to `makeExpr`.
+		text (helix-raylib's `LoadShaderFromMemory`) to `makeExpr`.
 
 		The expression is as `compileText` takes it: a literal, a static `String` constant, or such strings joined with `+`, typed where it
 		was written. A `null` gives null: a stage the program left out (raylib's `LoadShader(null, "x.fs")`) is the caller's to supply, as
-		helix-ray supplies rlgl's default.
+		helix-raylib supplies rlgl's default.
 		@param text  The expression.
 		@return  The text, and the file a quoted include in it resolves beside (the file declaring it), or null for `null`.
 		@throws String  An expression whose value isn't known while the program builds. */

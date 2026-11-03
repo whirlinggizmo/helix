@@ -1,4 +1,4 @@
-"""core_62: raylib 6.2's pure core functions and raymath's QuaternionFromVector3ToVector3 against helix-ray's. One list for both sides
+"""core_62: raylib 6.2's pure core functions and raymath's QuaternionFromVector3ToVector3 against helix-raylib's. One list for both sides
 (shared/gen.py's syntax), printed by the helpers in ref.c.in and CoreBits62.hx.in: sha1 hashes n bytes of 'a' to 'z' over and over, b64
 decodes text, text prints a string and quat a quaternion.
 

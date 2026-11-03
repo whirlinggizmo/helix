@@ -1,12 +1,12 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.internal.Frame;
-import helix.ray.internal.Runtime;
-import helix.ray.internal.Textures;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.internal.Frame;
+import helix.raylib.internal.Runtime;
+import helix.raylib.internal.Textures;
 
-// helix-ray's MTL materials, printed as ref.c prints raylib 5.5's, for tools/ray_parity.py. Where raylib's LoadMaterials gives none for a
+// helix-raylib's MTL materials, printed as ref.c prints raylib 5.5's, for tools/raylib_parity.py. Where raylib's LoadMaterials gives none for a
 // file it can't read, LoadMaterialsAsync fails: its failure is printed as a count of 0.
-@:access(helix.ray.internal.Runtime)
+@:access(helix.raylib.internal.Runtime)
 class MtlBits {
 	static function line(s:String)
 		Parity.line(s);

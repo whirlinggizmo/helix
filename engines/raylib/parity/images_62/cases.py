@@ -1,4 +1,4 @@
-"""images_62: the image functions helix-ray takes from raylib 6.2 (docs/DECISIONS.md 24), their images compared byte for byte: those 6.2
+"""images_62: the image functions helix-raylib takes from raylib 6.2 (docs/DECISIONS.md 24), their images compared byte for byte: those 6.2
 fixed (lines, thick lines, circles, the convolution and the blur, a rectangle of an image, the pixel reads and sizes, text with no text),
 and those reading through them (ImageFormat from R32 and R16, ImageDraw from R5G5B5A1, the triangle outline). ImageDraw is 6.2's
 ImageDrawImagePro, and ImageDrawImage at a point, so their C calls 6.2's names. One list for both sides (shared/gen.py's syntax): A, B,

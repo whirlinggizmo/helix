@@ -1,4 +1,4 @@
-// raylib 6.2's skeletal animation on Quaternius' Ultimate Modular Women, printed for tools/ray_parity.py: the animations, read from a
+// raylib 6.2's skeletal animation on Quaternius' Ultimate Modular Women, printed for tools/raylib_parity.py: the animations, read from a
 // file of their own (Animations.glb, an armature without meshes), each outfit part (and the sword) checked against them, and for three
 // clips at whole, fractional and wrapped frames the bone matrices (the body's) and each part's skinned vertices, a sample of them.
 #include "raylib.h"

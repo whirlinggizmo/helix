@@ -1,13 +1,13 @@
 import haxe.io.Bytes;
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.internal.Runtime;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.internal.Runtime;
 
-// helix-ray's waves, printed as ref.c prints raylib 5.5's, for tools/ray_parity.py: each file read through LoadWaveFromMemoryAsync
+// helix-raylib's waves, printed as ref.c prints raylib 5.5's, for tools/raylib_parity.py: each file read through LoadWaveFromMemoryAsync
 // with its type a constant (its reader chosen as the program builds), the last through a type known only as it runs. The files are
 // compiled in (the manifest's resources), so the page needs no server. Natively the platform's decoder answers on its worker, in a
 // page through the browser's promises, so each wave is waited for across turns of the event loop.
-@:access(helix.ray.internal.Runtime)
+@:access(helix.raylib.internal.Runtime)
 class WaveBits {
 	static final out = new StringBuf();
 
@@ -28,7 +28,7 @@ class WaveBits {
 		}
 	}
 
-	// Pumps helix-ray's polls and later answers until the wave answers, then prints it and goes on.
+	// Pumps helix-raylib's polls and later answers until the wave answers, then prints it and goes on.
 	static function wait(name:String, start:(Wave->Void, String->Void)->Void, next:Void->Void):Void {
 		var answered = false, wave:Null<Wave> = null;
 		start(w -> {

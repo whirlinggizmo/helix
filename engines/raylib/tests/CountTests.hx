@@ -1,11 +1,11 @@
 import haxe.io.Bytes;
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.internal.Frame;
-import helix.ray.internal.Runtime;
-import helix.ray.internal.Textures;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.internal.Frame;
+import helix.raylib.internal.Runtime;
+import helix.raylib.internal.Textures;
 
-/** Checks helix-ray's counting of what models hold (docs/DECISIONS.md 25), on graphics that count what is live: a texture the program
+/** Checks helix-raylib's counting of what models hold (docs/DECISIONS.md 25), on graphics that count what is live: a texture the program
 	unloads after giving it to a model, one given straight to a map and unloaded through it, a material shared by two models, a mesh
 	replaced, a material unloaded before its model, a mesh LoadModelFromMesh takes over, two loads of one glTF file, and a texture copied
 	out of a map freed with its model, where raylib leaks it; two loads unloaded in either order, UnloadTexture on one load's texture
@@ -14,10 +14,10 @@ import helix.ray.internal.Textures;
 	file's materials, held by the program, sharing a texture the program loaded; a cubemap in a model's cubemap map, as raylib's skybox
 	holds one; IQM, VOX and M3D files refused. Nothing is freed while held, nothing twice, and nothing
 	is left. */
-@:access(helix.ray.internal.Runtime)
-@:access(helix.ray.internal.Textures)
-@:access(helix.ray.Mesh)
-@:access(helix.ray.Material)
+@:access(helix.raylib.internal.Runtime)
+@:access(helix.raylib.internal.Textures)
+@:access(helix.raylib.Mesh)
+@:access(helix.raylib.Material)
 class CountTests {
 	static var checks = 0;
 	static var graphics:CountingGraphics;
@@ -72,7 +72,7 @@ class CountTests {
 
 	// A shader of its own: raylib's default program, made again, as LoadShader makes one.
 	static function makeShader():Shader
-		return @:privateAccess helix.ray.raylib.RModels.makeShader(helix.ray.internal.Defaults.shader());
+		return @:privateAccess helix.raylib.modules.RModels.makeShader(helix.raylib.internal.Defaults.shader());
 
 	// A material's shader set, as raylib programs set one.
 	static function SetMaterialShader(material:Material, shader:Shader):Void
@@ -262,7 +262,7 @@ class CountTests {
 
 		// A load after the last is unloaded reads the file again.
 		var reads = files.reads;
-		check(!helix.ray.internal.Models.isKept("ship.gltf"), "again: the file leaves the cache with its last load");
+		check(!helix.raylib.internal.Models.isKept("ship.gltf"), "again: the file leaves the cache with its last load");
 		one = load();
 		check(files.reads == reads + 1 && Lambda.foreach(textures(one), alive), "again: read afresh, its textures made again");
 		UnloadModel(one);
@@ -334,7 +334,7 @@ class CountTests {
 		check(Lambda.foreach(ids, alive), "OBJ: the other load keeps the textures");
 		UnloadModel(hut2);
 		check(!Lambda.exists(ids, alive)
-			&& !helix.ray.internal.Models.isKept("hut.obj"), "OBJ: freed with the last load, the file let go");
+			&& !helix.raylib.internal.Models.isKept("hut.obj"), "OBJ: freed with the last load, the file let go");
 		clean("OBJ");
 
 		// An MTL file's materials are the program's until UnloadMaterial; a texture the program loaded too stays with its load.

@@ -2,7 +2,7 @@
 
 Drawing over [helix-platform](../platform/README.md)'s graphics and [helix-services](../services/README.md)' shaders: 2D and 3D
 batches, draw lists, text, unlit and lit materials, lights, shadows, environment maps, points, views for stereo and post-processing.
-It is what an engine layer draws with: helix-ray (raylib's API) and a three.js layer are the two it is judged by.
+It is what an engine layer draws with: helix-raylib (raylib's API) and a three.js layer are the two it is judged by.
 
 | Package | What |
 |---|---|
@@ -21,7 +21,7 @@ helix-log.
 Until it is published, link it, and the libraries it's built on, from a checkout:
 
 ```
-haxelib dev helix-render <checkout>/render
+haxelib dev helix-render <checkout>/libs/render
 ```
 
 ## Being built

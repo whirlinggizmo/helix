@@ -1,15 +1,15 @@
-import helix.ray.Raylib.*;
-import helix.ray.internal.Runtime;
+import helix.raylib.Raylib.*;
+import helix.raylib.internal.Runtime;
 import helix.services.input.Gamepads;
 import helix.services.input.Mouse;
 import helix.services.screen.Screen;
 
-/** Checks helix-ray's warnings when the platform refuses a request: `SetMousePosition` where the cursor can't be moved (a page) and where
+/** Checks helix-raylib's warnings when the platform refuses a request: `SetMousePosition` where the cursor can't be moved (a page) and where
 	the system refuses, and `SetGamepadVibration` on a pad that can't shake. Each warns once a run for each reason, however often it is
 	called; the position asked for is still recorded, as raylib's; an empty pad slot and a request granted warn of nothing. On devices the
 	test sets (services' `FakeDevices`), the program's log taken by the test. */
-@:access(helix.ray.internal.Runtime)
-@:access(helix.ray.raylib.RCore)
+@:access(helix.raylib.internal.Runtime)
+@:access(helix.raylib.modules.RCore)
 class RefusalTests {
 	static var checks = 0;
 
@@ -39,8 +39,8 @@ class RefusalTests {
 		for (_ in 0...3)
 			SetMousePosition(30, 40);
 		check(warnings.length == 1 && warnings[0].indexOf("page") >= 0, 'a page refusing warns once, naming it: $warnings');
-		check(helix.ray.raylib.RCore.lastPointerX == 30
-			&& helix.ray.raylib.RCore.lastPointerY == 40, "the position asked for is recorded");
+		check(helix.raylib.modules.RCore.lastPointerX == 30
+			&& helix.raylib.modules.RCore.lastPointerY == 40, "the position asked for is recorded");
 		refusing.movable = true;
 		for (_ in 0...3)
 			SetMousePosition(50, 60);
@@ -63,7 +63,7 @@ class RefusalTests {
 		#end
 	}
 
-	// Sets the mouse and gamepads helix-ray reads to the fake's.
+	// Sets the mouse and gamepads helix-raylib reads to the fake's.
 	static function use(devices:FakeDevices):Void {
 		Runtime.mouseAdapter = devices;
 		Runtime.mouseService = new Mouse(Runtime.events, devices);

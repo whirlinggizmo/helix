@@ -1,7 +1,7 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
 
-// scene.c.in's 3D scene, drawn by helix-ray; its third frame saved as helix.png. cases.py's list is put into it.
+// scene.c.in's 3D scene, drawn by helix-raylib; its third frame saved as helix.png. cases.py's list is put into it.
 class Main {
 	static function V2(x:Float, y:Float):Vector2
 		return new Vector2(x, y);

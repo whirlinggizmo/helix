@@ -1,16 +1,16 @@
 import haxe.io.Bytes;
-import helix.ray.AudioStream;
-import helix.ray.Raylib.*;
-import helix.ray.internal.AudioStreams;
-import helix.ray.internal.Runtime;
+import helix.raylib.AudioStream;
+import helix.raylib.Raylib.*;
+import helix.raylib.internal.AudioStreams;
+import helix.raylib.internal.Runtime;
 
-/** Checks helix-ray's audio streams, on services' `FakeAudio` as the output: a stream fed by `UpdateAudioStream` plays with nothing
+/** Checks helix-raylib's audio streams, on services' `FakeAudio` as the output: a stream fed by `UpdateAudioStream` plays with nothing
 	polled for it, its two buffers taken and a third refused until one is heard; the first `SetAudioStreamCallback` adds what tops a
 	stream up to the poll, which fills a playing stream's two buffers as it starts and again each poll once they're heard, and nothing
 	once its callback is taken away; FLAC music refused by `LoadMusicStream` and `LoadMusicStreamFromMemory`; `CloseAudioDevice` takes
 	it out of the poll, and the next callback adds it again. */
-@:access(helix.ray.internal.Runtime)
-@:access(helix.ray.AudioStream)
+@:access(helix.raylib.internal.Runtime)
+@:access(helix.raylib.AudioStream)
 class AudioStreamTests {
 	static var checks = 0;
 

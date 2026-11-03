@@ -1,4 +1,4 @@
-"""Writes the rig the animation suite reads as web/rig.gltf, to the path its command line names (tools/ray_parity.py runs it): a two-joint
+"""Writes the rig the animation suite reads as web/rig.gltf, to the path its command line names (tools/raylib_parity.py runs it): a two-joint
 skin without inverse bind matrices, non-joint nodes above and between the joints, a mesh on a joint without joints of its own, and
 animations of each interpolation, keys off the 60 Hz grid, one before its first key."""
 import base64, json, math, struct, sys

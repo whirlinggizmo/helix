@@ -9,7 +9,7 @@ import haxe.macro.Printer;
 	result, types as declared. A target's description (haxe -xml) types a macro function's arguments as Dynamic, and omits some; this
 	gives them as written (ExprOf<String>).
 
-	--macro Fields.write("fields.json", ["helix.ray.Raylib", "helix.ray.Raymath"])
+	--macro Fields.write("fields.json", ["helix.raylib.Raylib", "helix.raylib.Raymath"])
 
 	tools/gen_raylib.py and tools/gen_apidoc.py run it in their compile, beside -xml. */
 class Fields {

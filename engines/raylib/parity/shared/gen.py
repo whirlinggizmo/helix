@@ -1,6 +1,6 @@
 """Writes a suite's two sides from its one list of cases (engines/raylib/parity/README.md): its cases.py's CASES, in a neutral syntax both C and Haxe
 read once translated, put into its templates (ref.c.in, or scene.c.in for a pixel suite, and its Haxe harness's <Main>.hx.in) where
-@CASES@ stands. Imported by tools/ray_parity.py, which writes them under build/ray-parity, never beside the suite.
+@CASES@ stands. Imported by tools/raylib_parity.py, which writes them under build/raylib-parity, never beside the suite.
 
 A case is a string of statements, written the same for both, or (name, statements) for a drawing whose vertices shape(name) then prints.
 The statements use V2(x, y), V3(x, y, z) and R(x, y, w, h) as they are, and the printers shared/parity.h and shared/Parity.hx both have

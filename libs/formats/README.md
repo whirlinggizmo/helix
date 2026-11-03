@@ -47,8 +47,8 @@ for (mesh in model.meshes)
 Until it is published, link it, and helix-math, from a checkout:
 
 ```
-haxelib dev helix-formats <checkout>/formats
-haxelib dev helix-math <checkout>/math
+haxelib dev helix-formats <checkout>/libs/formats
+haxelib dev helix-math <checkout>/libs/math
 ```
 
 The API reference is [docs/api/](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/api/README.md) (the `helix.formats`

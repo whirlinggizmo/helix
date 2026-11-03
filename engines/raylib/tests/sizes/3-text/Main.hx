@@ -1,9 +1,9 @@
-// helix-ray's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one text in raylib's default font.
-import helix.ray.Raylib.*;
-import helix.ray.Vector2;
+// helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one text in raylib's default font.
+import helix.raylib.Raylib.*;
+import helix.raylib.Vector2;
 
-/** A program written in raylib on helix-ray, as a game in raylib would be. */
-@:adds("helix.ray.internal.DefaultFont", "helix.ray.internal.Pixels", "helix.ray.raylib.RText", "helix.ray.raylib.RTextures")
+/** A program written in raylib on helix-raylib, as a game in raylib would be. */
+@:adds("helix.raylib.internal.DefaultFont", "helix.raylib.internal.Pixels", "helix.raylib.modules.RText", "helix.raylib.modules.RTextures")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

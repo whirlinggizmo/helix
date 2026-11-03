@@ -1,4 +1,4 @@
-// raylib 5.5's ExportFontAsCode, printed for tools/ray_parity.py: the header it writes, a line at a time as its bytes (parity.h's str),
+// raylib 5.5's ExportFontAsCode, printed for tools/raylib_parity.py: the header it writes, a line at a time as its bytes (parity.h's str),
 // for the default font, a TrueType font (engines/raylib/examples/text's JetBrains Mono) at two sizes, and a font read from an image (RGBA, which
 // it warns of and writes as it is).
 #include "raylib.h"

@@ -1,5 +1,5 @@
 """Writes the OBJ files the obj_62 suite reads, and the MTL file and textures the obj suite reads, by the path its command line names
-(ray_parity runs it once for each): web/obj/shapes.obj writes web/obj's models, their library and its textures; lib.mtl writes the
+(raylib_parity runs it once for each): web/obj/shapes.obj writes web/obj's models, their library and its textures; lib.mtl writes the
 library LoadMaterials reads from the working directory, and its textures beside it.
 
 web/obj/shapes.obj: faces before any usemtl, a quad and a pentagon split into fans, a group starting after a polygon (raylib counts the

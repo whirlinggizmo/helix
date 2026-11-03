@@ -4,12 +4,12 @@ import haxe.macro.Expr;
 import haxe.macro.Type;
 #end
 
-/** Writes, as the program builds, a call to every function of `helix.ray.Raylib`, `Raymath` and `Rlgl` a program can call, read from
-	the compiler's types of them, so the size ladder's last rung links all of helix-ray. Each argument is `Everything.value` and each result
+/** Writes, as the program builds, a call to every function of `helix.raylib.Raylib`, `Raymath` and `Rlgl` a program can call, read from
+	the compiler's types of them, so the size ladder's last rung links all of helix-raylib. Each argument is `Everything.value` and each result
 	goes to `Everything.result`, both of no type, so nothing a call is given or returns is known as the program builds and nothing is
 	folded away. The functions that refuse to compile (a section's `@:unsupported` or `@:unimplemented`) are left out; the macro functions
 	that choose a reader by a constant file name (DECISIONS 29) are called by hand in `Main`, once for each reader, and named in
-	`BY_HAND`, so a macro function added to helix-ray and not called fails the build here. */
+	`BY_HAND`, so a macro function added to helix-raylib and not called fails the build here. */
 class Everything {
 	/** What every generated call is given: unknown as the program builds. */
 	public static var value:Dynamic = null;
@@ -19,9 +19,9 @@ class Everything {
 
 	#if macro
 	/** The facades whose functions are called. */
-	static final FACADES = ["helix.ray.Raylib", "helix.ray.Raymath", "helix.ray.Rlgl"];
+	static final FACADES = ["helix.raylib.Raylib", "helix.raylib.Raymath", "helix.raylib.Rlgl"];
 
-	/** raylib's modules in helix-ray, whose functions carry the refusals' metadata. */
+	/** raylib's modules in helix-raylib, whose functions carry the refusals' metadata. */
 	static final SECTIONS = [
 		"RAsync",
 		"RAudio",
@@ -61,7 +61,7 @@ class Everything {
 	public static macro function calls():Expr {
 		var refused = new Map<String, Bool>();
 		for (section in SECTIONS)
-			switch Context.getType('helix.ray.raylib.$section') {
+			switch Context.getType('helix.raylib.modules.$section') {
 				case TInst(_.get() => c, _):
 					for (f in c.statics.get())
 						if (Lambda.exists(REFUSALS, m -> f.meta.has(m)))

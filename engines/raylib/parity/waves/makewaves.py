@@ -19,7 +19,7 @@ out.mkdir(parents=True, exist_ok=True)
 def tone(rate, seconds, channels):
     """Interleaved samples in -1..1: 440 Hz and 1250 Hz sines, the right channel a fifth up, and a little noise from an LCG; faded out
     over 5 ms and then 20 ms of silence, as a sound file usually ends (Chromium's Vorbis decoder ends a stream early, measured by tens of
-    frames, where helix-ray gives silence)."""
+    frames, where helix-raylib gives silence)."""
     seed, samples, frames = 12345, [], int(rate * seconds)
     for i in range(frames):
         t = i / rate

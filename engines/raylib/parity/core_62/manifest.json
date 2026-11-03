@@ -1,7 +1,7 @@
 {
   "oracle": "6.2",
   "covers": "rcore.c's IsFileExtension, GetPrevDirectoryPath, ComputeSHA1, DecodeDataBase64 and MakeDirectory (a path it makes), 6.2's; raymath's QuaternionFromVector3ToVector3, 6.2's",
-  "notes": "GetPrevDirectoryPath's paths name nothing: raylib 6.2 takes a path naming a file to its directory's parent, which helix-ray can't look for without waiting.",
+  "notes": "GetPrevDirectoryPath's paths name nothing: raylib 6.2 takes a path naming a file to its directory's parent, which helix-raylib can't look for without waiting.",
   "kind": "values",
   "generated": true,
   "main": "CoreBits62",

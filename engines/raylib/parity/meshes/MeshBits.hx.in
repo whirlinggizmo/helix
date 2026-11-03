@@ -1,8 +1,8 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
 import Parity.*;
 
-// helix-ray's generated meshes, tangents and bounds, printed by Parity as ref.c.in prints raylib's.
+// helix-raylib's generated meshes, tangents and bounds, printed by Parity as ref.c.in prints raylib's.
 class MeshBits {
 	static function main() {
 		open();

@@ -1,5 +1,5 @@
 """meshes_62: raylib 6.2's GenMeshTangents (#4937: by a mesh's indices, summed at each vertex, made square to its normal) and ExportMesh
-(#4496: positions and texture coordinates to 6 places, normals to 4) against helix-ray's. One list for both sides (shared/gen.py's
+(#4496: positions and texture coordinates to 6 places, normals to 4) against helix-raylib's. One list for both sides (shared/gen.py's
 syntax): height and cubic are made in ref.c.in and MeshBits62.hx.in, as meshes' are, and ExportMesh's text goes to a SaveFileText
 callback there that prints it a line at a time, each led by exported."""
 

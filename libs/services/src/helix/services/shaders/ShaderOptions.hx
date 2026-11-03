@@ -33,7 +33,7 @@ typedef ShaderOptions = {
 	/** Whether the compiler wraps the vertex stage so a draw into a render target is turned the right way up whatever the shader
 		writes: it declares a loose `vec4 helix_clipScale` and multiplies `gl_Position` by it, component by component, after the stage's
 		own `main`. Optional; false by default. A pipeline flips it with `flip: ClipScale, flipUniform: "helix_clipScale"`
-		(`ShaderPipelineState.CLIP_SCALE`): a layer whose users write their own vertex stages (helix-ray) needs no named matrix. */
+		(`ShaderPipelineState.CLIP_SCALE`): a layer whose users write their own vertex stages (helix-raylib) needs no named matrix. */
 	@:optional var clipScale:Bool;
 
 	/** Whether the compiler wraps the vertex stage so it writes a point size of 1 after the stage's own `main`, whatever the stage wrote,

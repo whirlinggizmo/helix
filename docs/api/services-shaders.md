@@ -144,7 +144,7 @@ A shader is compiled while the program builds, never while it runs: `compile` fr
 
 **Macros and the program's own types.** The service's types that hold macros import nothing with a build macro, so they type in the macro context. A program's own class holding a macro, or calling one at its class level, that also names a platform enum built by a macro (`Sampling`'s `Filter`) puts that use under `#if !macro`, or keeps the macro in a class of its own, as `ShaderValueClasses` is.
 
-**Strict, where GL is lenient.** A write of the wrong kind throws, where GL ignores a `glUniform` of the wrong type; a layer matching GL (helix-ray's `SetShaderValue`) checks the handle's `type` itself and skips.
+**Strict, where GL is lenient.** A write of the wrong kind throws, where GL ignores a `glUniform` of the wrong type; a layer matching GL (helix-raylib's `SetShaderValue`) checks the handle's `type` itself and skips.
 
 **With hotreload-hx's code reload**, statics keep their values, so a `static final` holding a compiled shader keeps the old one when its text constant changes and the code reloads: an edit reaches a running page through the shader's `file` and `Shaders.watch`, not through the code reload.
 
@@ -418,7 +418,7 @@ file: "shaders/lit.shader"});
 - `includeDirectories:Null<Array<String>>`: Directories a quoted `#include` looks in after the including file's own, relative to the file holding the call. Optional; none by default.
 - `file:Null<String>`: The asset path of a file holding the compiled shader (`shaders/lit.shader`), which `Shaders.watch` watches, so the shader is replaced in place when the file changes. Optional; no file by default.
 - `defines:Null<Array<String>>`: Names defined in both stages, each `NAME` (defined as 1) or `NAME=VALUE`. Optional; none by default. Each stage also has its own: `HELIX_VERTEX` in the vertex stage, `HELIX_FRAGMENT` in the fragment stage, so a file both include tells them apart.
-- `clipScale:Null<Bool>`: Whether the compiler wraps the vertex stage so a draw into a render target is turned the right way up whatever the shader writes: it declares a loose `vec4 helix_clipScale` and multiplies `gl_Position` by it, component by component, after the stage's own `main`. Optional; false by default. A pipeline flips it with `flip: ClipScale, flipUniform: "helix_clipScale"` (`ShaderPipelineState.CLIP_SCALE`): a layer whose users write their own vertex stages (helix-ray) needs no named matrix.
+- `clipScale:Null<Bool>`: Whether the compiler wraps the vertex stage so a draw into a render target is turned the right way up whatever the shader writes: it declares a loose `vec4 helix_clipScale` and multiplies `gl_Position` by it, component by component, after the stage's own `main`. Optional; false by default. A pipeline flips it with `flip: ClipScale, flipUniform: "helix_clipScale"` (`ShaderPipelineState.CLIP_SCALE`): a layer whose users write their own vertex stages (helix-raylib) needs no named matrix.
 - `check:Null<String>`: A static function `Shader->Null<String>`, by its dotted path (`helix.draw.ShaderRules.check`), run on the compiled shader while the program builds: it returns why the shader breaks a library's rules, which stops the build at the call, or null. Optional; no check by default.
 
 ## ShaderPipeline
@@ -751,7 +751,7 @@ var declared(default, null):Bool
 - `elementCount`: Gets the number of elements: 1, an array's length, or the length of the array of structs it is a field of.
 - `blockName`: Gets the GLSL name of the block it is in: a named block, a shared block's (`ShaderSharedBlock.name`), or `helix_uniforms` for a loose uniform.
 - `shared`: Gets a value indicating whether its block is shared (`ShaderOptions.shared`), so it is written on a `ShaderBlockValues`.
-- `active`: Gets a value indicating whether its shader's code reads it, as the compiler finds: GL's `glGetUniformLocation` gives -1 for one that isn't, which a layer matching GL (helix-ray) does too. Every declared uniform is reflected, read or not. It is the whole uniform's: an array read at any element is active, as the compiler can't tell which elements a dynamic index reads.
+- `active`: Gets a value indicating whether its shader's code reads it, as the compiler finds: GL's `glGetUniformLocation` gives -1 for one that isn't, which a layer matching GL (helix-raylib) does too. Every declared uniform is reflected, read or not. It is the whole uniform's: an array read at any element is active, as the compiler can't tell which elements a dynamic index reads.
 - `declared`: Gets a value indicating whether its shader declares it now. False after a reload removed it, or in a variant without it: values written through it are then kept, and written once a reload brings it back.
 
 ## ShaderUniformPath
@@ -1035,7 +1035,7 @@ Represents how a set of variants compiles: `ShaderOptions`, and which combinatio
 - `file:Null<String>`: The asset path of a file holding the compiled shader (`shaders/lit.shader`), which `Shaders.watch` watches, so the shader is replaced in place when the file changes. Optional; no file by default.
 - `defines:Null<Array<String>>`: Names defined in both stages, each `NAME` (defined as 1) or `NAME=VALUE`. Optional; none by default. Each stage also has its own: `HELIX_VERTEX` in the vertex stage, `HELIX_FRAGMENT` in the fragment stage, so a file both include tells them apart.
 - `combinations:Null<Array<Array<String>>>`: The combinations to compile, each a list of features (`[]` for none on). Optional; omitted, every combination of the features is compiled, at most 8 features (256 variants), and a larger set must give its combinations.
-- `clipScale:Null<Bool>`: Whether the compiler wraps the vertex stage so a draw into a render target is turned the right way up whatever the shader writes: it declares a loose `vec4 helix_clipScale` and multiplies `gl_Position` by it, component by component, after the stage's own `main`. Optional; false by default. A pipeline flips it with `flip: ClipScale, flipUniform: "helix_clipScale"` (`ShaderPipelineState.CLIP_SCALE`): a layer whose users write their own vertex stages (helix-ray) needs no named matrix.
+- `clipScale:Null<Bool>`: Whether the compiler wraps the vertex stage so a draw into a render target is turned the right way up whatever the shader writes: it declares a loose `vec4 helix_clipScale` and multiplies `gl_Position` by it, component by component, after the stage's own `main`. Optional; false by default. A pipeline flips it with `flip: ClipScale, flipUniform: "helix_clipScale"` (`ShaderPipelineState.CLIP_SCALE`): a layer whose users write their own vertex stages (helix-raylib) needs no named matrix.
 - `check:Null<String>`: A static function `Shader->Null<String>`, by its dotted path (`helix.draw.ShaderRules.check`), run on the compiled shader while the program builds: it returns why the shader breaks a library's rules, which stops the build at the call, or null. Optional; no check by default.
 
 ## ShaderVariantValues
@@ -1335,7 +1335,7 @@ A replacement changes the shader's `source` and reflection and moves its `reload
 
 **A release build** needs no conditional. hotreload-hx's `Reloader` does nothing outside a hot JS build (`-D hotreload`), on any target, so the line above compiles in a release build and links only that empty class; a program not using hotreload-hx exports a plain function the page's own development script calls with the changed paths. A release build writes no file and tells the assets of nothing, so a watch waits and costs nothing.
 
-**When a replacement happens.** A changed file is read when the assets bring it, and held: it replaces its shader at the next `prepareFrame`, which the program, or the renderer it draws through, calls at the frame's start, before `ShaderPrograms.prepareFrame` and before any values are written for the frame. So nothing changes in the middle of a frame: values repack, handles move and pipelines are rebuilt at the same boundary. Then the shader's reload listeners (`Shader.reloadListeners`) are called; nothing need poll `reloadCount`. helix-draw and helix-ray call both `prepareFrame`s inside their own frames.
+**When a replacement happens.** A changed file is read when the assets bring it, and held: it replaces its shader at the next `prepareFrame`, which the program, or the renderer it draws through, calls at the frame's start, before `ShaderPrograms.prepareFrame` and before any values are written for the frame. So nothing changes in the middle of a frame: values repack, handles move and pipelines are rebuilt at the same boundary. Then the shader's reload listeners (`Shader.reloadListeners`) are called; nothing need poll `reloadCount`. helix-draw and helix-raylib call both `prepareFrame`s inside their own frames.
 
 ```haxe
 var shaders = new Shaders(assets);

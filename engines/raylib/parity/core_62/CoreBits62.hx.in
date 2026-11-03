@@ -1,10 +1,10 @@
 import haxe.io.Bytes;
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.Raymath.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.Raymath.*;
 import Parity.*;
 
-// helix-ray's file names, encodings, hashes and QuaternionFromVector3ToVector3, raylib 6.2's, printed by Parity as ref.c.in prints
+// helix-raylib's file names, encodings, hashes and QuaternionFromVector3ToVector3, raylib 6.2's, printed by Parity as ref.c.in prints
 // raylib's.
 class CoreBits62 {
 	// n bytes of text, 'a' to 'z' over and over.

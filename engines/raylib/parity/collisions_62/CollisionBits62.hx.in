@@ -1,9 +1,9 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.Raymath.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.Raymath.*;
 import Parity.*;
 
-// helix-ray's ray tests taken from raylib 6.2, printed by Parity as ref.c.in prints raylib's.
+// helix-raylib's ray tests taken from raylib 6.2, printed by Parity as ref.c.in prints raylib's.
 class CollisionBits62 {
 	static function main() {
 		open();

@@ -1,7 +1,7 @@
 {
   "oracle": "6.2",
   "covers": "rcamera.h's UpdateCamera in each mode from a Z-up start, moving by 6.2's CameraMoveForward and CameraMoveRight (#5458) in the plane square to its up, over camera_update's frames but its pan, each 1/60 s; raylib 6.2's rcamera built alone, its input functions stubbed",
-  "notes": "Sections by mode (m0 custom, m1 free, m2 orbital, m3 first person, m4 third person). raylib's rcamera works in floats, helix-ray in doubles: over 32 frames of large moves the two drift apart by up to 1e-3 (first and third person), where raylib's rcamera built in doubles matches helix-ray to 2e-7. The pan frame is left out: CAMERA_PAN_SPEED is 5.5's 0.2 in helix-ray (6.2 made it 2.0, a choice kept 5.5's), and 6.2's rcamera.h defines it unconditionally.",
+  "notes": "Sections by mode (m0 custom, m1 free, m2 orbital, m3 first person, m4 third person). raylib's rcamera works in floats, helix-raylib in doubles: over 32 frames of large moves the two drift apart by up to 1e-3 (first and third person), where raylib's rcamera built in doubles matches helix-raylib to 2e-7. The pan frame is left out: CAMERA_PAN_SPEED is 5.5's 0.2 in helix-raylib (6.2 made it 2.0, a choice kept 5.5's), and 6.2's rcamera.h defines it unconditionally.",
   "kind": "values",
   "main": "UpdateSteps",
   "reference": "ref.c",

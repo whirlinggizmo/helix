@@ -1,8 +1,8 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.Rlgl.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.Rlgl.*;
 
-// scene.c.in's points scene, drawn by helix-ray; its third frame saved as helix.png. cases.py's list is put into it.
+// scene.c.in's points scene, drawn by helix-raylib; its third frame saved as helix.png. cases.py's list is put into it.
 class Main {
 	static inline final CLOUD = 997;
 

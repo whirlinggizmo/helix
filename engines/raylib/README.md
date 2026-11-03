@@ -1,14 +1,14 @@
-# helix-ray
+# helix-raylib
 
 [raylib](https://www.raylib.com) 5.5's API over [helix-services](../../libs/services/README.md) and [helix-platform](../../libs/platform/README.md): a
 program written as raylib is written runs in a page and natively.
 
 | Type | What |
 |---|---|
-| `helix.ray.Raylib` | raylib's functions, constants and colors, as `raylib.h` names them |
-| `helix.ray.Raymath` | raymath's vectors, matrices and quaternions, as `raymath.h` names them, imported apart as raylib includes it |
-| `helix.ray.Rlgl` | rlgl's matrix stack, immediate drawing and render state, as `rlgl.h` names them, imported apart as raylib includes it |
-| `helix.ray.Vector2`, `Vector3`, `Color`, `Texture2D`, `Camera3D`, `Model`, `Shader`, `RenderTexture2D` and the rest | raylib's structs, with their fields |
+| `helix.raylib.Raylib` | raylib's functions, constants and colors, as `raylib.h` names them |
+| `helix.raylib.Raymath` | raymath's vectors, matrices and quaternions, as `raymath.h` names them, imported apart as raylib includes it |
+| `helix.raylib.Rlgl` | rlgl's matrix stack, immediate drawing and render state, as `rlgl.h` names them, imported apart as raylib includes it |
+| `helix.raylib.Vector2`, `Vector3`, `Color`, `Texture2D`, `Camera3D`, `Model`, `Shader`, `RenderTexture2D` and the rest | raylib's structs, with their fields |
 
 The window and frame, the keyboard, mouse, touch and gamepads, text input, shapes (with 6.2's fixes), textures (their pixels updated and read back, their mipmaps made and filtered as raylib's GL filters them; cubemaps from an image in any of raylib's layouts, drawn as a skybox or sampled by a shader), every blend mode (rlgl's custom factors too) and scissor modes, the default
 font and TrueType and OpenType fonts (signed distance fields too, exported as C code), sounds and their aliases, waves (loaded, converted, cropped and
@@ -25,22 +25,22 @@ and animations aren't read (docs/DECISIONS.md 27). Not here yet: morph targets, 
 ## Using it
 
 ```
--lib helix-ray
+-lib helix-raylib
 ```
 
 Until it is published, link it, and the libraries it's built on, from a checkout:
 
 ```
-haxelib dev helix-ray <checkout>/ray
+haxelib dev helix-raylib <checkout>/engines/raylib
 ```
 
-`-D helix-ray-files=<directory>` names where the program's shaders are as it builds (default `web`), and `-D helix-ray-native-root=<directory>`
-where a native program finds its files, relative to itself (default `../web`). `-D helix-ray-custom-frame-control` is raylib's
+`-D helix-raylib-files=<directory>` names where the program's shaders are as it builds (default `web`), and `-D helix-raylib-native-root=<directory>`
+where a native program finds its files, relative to itself (default `../web`). `-D helix-raylib-custom-frame-control` is raylib's
 `SUPPORT_CUSTOM_FRAME_CONTROL`: `EndDrawing` only draws, and the program calls `SwapScreenBuffer`, `WaitTime` and `PollInputEvents`.
 
 ## What a model holds
 
-raylib leaves textures and shaders to the program: its `UnloadModel` frees a model's meshes and nothing else. helix-ray counts holders
+raylib leaves textures and shaders to the program: its `UnloadModel` frees a model's meshes and nothing else. helix-raylib counts holders
 instead (docs/DECISIONS.md 25), so nothing a program drops leaks and nothing it still uses is freed. A texture is held by the program from
 its load until `UnloadTexture`, and by each material map given it; a shader by the program from `LoadShader` until `UnloadShader`, and by
 each material given it; a material by the program from `LoadMaterialDefault` until `UnloadMaterial`, and by each model whose `materials`
@@ -55,8 +55,8 @@ shader given to a material and never unloaded stays while the program runs.
 
 `LoadModelAsync` reads an OBJ file, and `LoadMaterialsAsync` an .mtl file, as raylib 6.2's `LoadOBJ` and raylib's `LoadMaterials` read
 them with tinyobj_loader_c, its quirks kept, and the `obj_62` and `obj` parity suites hold them to raylib's own C. helix-formats'
-`ObjFile` and `MtlFile` read what the file says; helix-ray makes of it what raylib makes. Where tinyobj_loader_c's reading is broken (it
-reads outside its buffers or uninitialized memory, misreads a form the OBJ and MTL formats give, or reads one name two ways), helix-ray
+`ObjFile` and `MtlFile` read what the file says; helix-raylib makes of it what raylib makes. Where tinyobj_loader_c's reading is broken (it
+reads outside its buffers or uninitialized memory, misreads a form the OBJ and MTL formats give, or reads one name two ways), helix-raylib
 reads the file as the format has it, and a file that breaks the format fails to load: docs/DECISIONS.md 28 lists each.
 
 ## Examples
@@ -68,8 +68,8 @@ reads the file as the format has it, and a file that breaks the format fails to 
 
 ## Checked against raylib
 
-`parity/` holds suites that check helix-ray against raylib's own C: each function against one release, 6.2 where helix-ray took one of
-its fixes and 5.5 elsewhere (docs/DECISIONS.md 24). `python3 tools/ray_parity.py` runs them (Linux); [parity/README.md](parity/README.md)
+`parity/` holds suites that check helix-raylib against raylib's own C: each function against one release, 6.2 where helix-raylib took one of
+its fixes and 5.5 elsewhere (docs/DECISIONS.md 24). `python3 tools/raylib_parity.py` runs them (Linux); [parity/README.md](parity/README.md)
 says what each covers and how to add a case.
 
 ## Depends on
@@ -78,7 +78,7 @@ helix-services and helix-platform (and helix-formats, helix-math and helix-log u
 
 ## Credit
 
-helix-ray's API and the flow of a program on it are [raylib](https://www.raylib.com)'s, by Ramon Santamaria (@raysan5) and its
+helix-raylib's API and the flow of a program on it are [raylib](https://www.raylib.com)'s, by Ramon Santamaria (@raysan5) and its
 contributors, mirrored in Haxe. A small API that a programmer can hold in their head and guess right is hard to make; raylib's is, and
 this library is built on that work. Portions are from raylib 5.5 (its default font, its default shader, its header's comments, and its
 API description, `vendor/raylib/raylib_api.json`, with `raymath_api.json` and `rlgl_api.json` made from `raymath.h` and `rlgl.h` by raylib's parser), altered; zlib

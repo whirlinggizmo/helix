@@ -1,0 +1,91 @@
+package helix.raylib;
+
+/** Represents raylib's `Matrix`: 4 x 4, named by rows (`m0, m4, m8, m12` the first), stored and sent to shaders by columns (`m0` to `m3` the first), as raylib's is. */
+@:structInit
+class Matrix {
+	/** Gets or sets row 1, column 1. */
+	public var m0:Float;
+
+	/** Gets or sets row 1, column 2. */
+	public var m4:Float;
+
+	/** Gets or sets row 1, column 3. */
+	public var m8:Float;
+
+	/** Gets or sets row 1, column 4. */
+	public var m12:Float;
+
+	/** Gets or sets row 2, column 1. */
+	public var m1:Float;
+
+	/** Gets or sets row 2, column 2. */
+	public var m5:Float;
+
+	/** Gets or sets row 2, column 3. */
+	public var m9:Float;
+
+	/** Gets or sets row 2, column 4. */
+	public var m13:Float;
+
+	/** Gets or sets row 3, column 1. */
+	public var m2:Float;
+
+	/** Gets or sets row 3, column 2. */
+	public var m6:Float;
+
+	/** Gets or sets row 3, column 3. */
+	public var m10:Float;
+
+	/** Gets or sets row 3, column 4. */
+	public var m14:Float;
+
+	/** Gets or sets row 4, column 1. */
+	public var m3:Float;
+
+	/** Gets or sets row 4, column 2. */
+	public var m7:Float;
+
+	/** Gets or sets row 4, column 3. */
+	public var m11:Float;
+
+	/** Gets or sets row 4, column 4. */
+	public var m15:Float;
+
+	/** Creates a Matrix.
+
+		@param m0  Gets or sets row 1, column 1.
+		@param m4  Gets or sets row 1, column 2.
+		@param m8  Gets or sets row 1, column 3.
+		@param m12  Gets or sets row 1, column 4.
+		@param m1  Gets or sets row 2, column 1.
+		@param m5  Gets or sets row 2, column 2.
+		@param m9  Gets or sets row 2, column 3.
+		@param m13  Gets or sets row 2, column 4.
+		@param m2  Gets or sets row 3, column 1.
+		@param m6  Gets or sets row 3, column 2.
+		@param m10  Gets or sets row 3, column 3.
+		@param m14  Gets or sets row 3, column 4.
+		@param m3  Gets or sets row 4, column 1.
+		@param m7  Gets or sets row 4, column 2.
+		@param m11  Gets or sets row 4, column 3.
+		@param m15  Gets or sets row 4, column 4. */
+	public function new(m0:Float = 0, m4:Float = 0, m8:Float = 0, m12:Float = 0, m1:Float = 0, m5:Float = 0, m9:Float = 0, m13:Float = 0, m2:Float = 0,
+			m6:Float = 0, m10:Float = 0, m14:Float = 0, m3:Float = 0, m7:Float = 0, m11:Float = 0, m15:Float = 0) {
+		this.m0 = m0;
+		this.m4 = m4;
+		this.m8 = m8;
+		this.m12 = m12;
+		this.m1 = m1;
+		this.m5 = m5;
+		this.m9 = m9;
+		this.m13 = m13;
+		this.m2 = m2;
+		this.m6 = m6;
+		this.m10 = m10;
+		this.m14 = m14;
+		this.m3 = m3;
+		this.m7 = m7;
+		this.m11 = m11;
+		this.m15 = m15;
+	}
+}

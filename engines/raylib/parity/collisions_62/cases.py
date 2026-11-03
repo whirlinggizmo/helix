@@ -1,5 +1,5 @@
 """collisions_62: raylib 6.2's GetRayCollisionSphere (6.2 #6231: no hit on a sphere behind the ray; point, normal and distance 0 on a miss)
-against helix-ray's. One list for both sides (shared/gen.py's syntax)."""
+against helix-raylib's. One list for both sides (shared/gen.py's syntax)."""
 
 # collisions' four rays (from outside, from inside, diagonal, missing), then rays the sphere is behind: wholly, from just outside it, and
 # off to one side.

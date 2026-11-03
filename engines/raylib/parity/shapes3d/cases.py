@@ -1,4 +1,4 @@
-"""shapes3d: raylib 5.5's 3D shapes, read back from rlgl's batch, against helix-ray's frame; the spheres, capsules and billboards are 6.2's
+"""shapes3d: raylib 5.5's 3D shapes, read back from rlgl's batch, against helix-raylib's frame; the spheres, capsules and billboards are 6.2's
 (shapes3d_62). One list for both sides (shared/gen.py's syntax): c is a color, p a point, texture a 32 x 16 white texture and camera a
 Camera, made in ref.c.in and ShapeBits3D.hx.in."""
 

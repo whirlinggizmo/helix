@@ -1,10 +1,10 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.Raymath.*;
-import helix.ray.Rlgl.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.Raymath.*;
+import helix.raylib.Rlgl.*;
 import Parity.*;
 
-// helix-ray's VR stereo config and rlgl's stereo state, printed as ref.c prints raylib 5.5's.
+// helix-raylib's VR stereo config and rlgl's stereo state, printed as ref.c prints raylib 5.5's.
 class StereoBits {
 	static function matrix(name:String, m:Matrix):Void
 		line('$name matrix ${m.m0} ${m.m1} ${m.m2} ${m.m3} ${m.m4} ${m.m5} ${m.m6} ${m.m7} ${m.m8} ${m.m9} ${m.m10} ${m.m11} ${m.m12} ${m.m13} ${m.m14} ${m.m15}');

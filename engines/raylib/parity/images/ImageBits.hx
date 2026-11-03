@@ -1,11 +1,11 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.internal.Frame;
-import helix.ray.internal.Runtime;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.internal.Frame;
+import helix.raylib.internal.Runtime;
 
-// helix-ray's GIF images, printed as ref.c prints raylib 5.5's, for tools/ray_parity.py. Where raylib gives an image of no frames or
-// no data, or a texture of id 0 (a file it can't read), helix-ray's load fails: its failure is printed as 0 frames, or none.
-@:access(helix.ray.internal.Runtime)
+// helix-raylib's GIF images, printed as ref.c prints raylib 5.5's, for tools/raylib_parity.py. Where raylib gives an image of no frames or
+// no data, or a texture of id 0 (a file it can't read), helix-raylib's load fails: its failure is printed as 0 frames, or none.
+@:access(helix.raylib.internal.Runtime)
 class ImageBits {
 	static function pump(done:Void->Bool) {
 		for (_ in 0...10000) {

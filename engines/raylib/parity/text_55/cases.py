@@ -1,5 +1,5 @@
-"""text_55: raylib 5.5's text and codepoint functions, those helix-ray keeps from 5.5 (TextReplace and LoadUTF8, which 6.2 changed by
-choice, and those 6.2 didn't change), against helix-ray's. One list for both sides (shared/gen.py's syntax): NULL is null and size
+"""text_55: raylib 5.5's text and codepoint functions, those helix-raylib keeps from 5.5 (TextReplace and LoadUTF8, which 6.2 changed by
+choice, and those 6.2 didn't change), against helix-raylib's. One list for both sides (shared/gen.py's syntax): NULL is null and size
 CodepointToUTF8's out, in ref.c.in and TextBits55.hx.in."""
 
 

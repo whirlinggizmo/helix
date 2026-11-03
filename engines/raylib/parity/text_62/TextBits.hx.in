@@ -1,8 +1,8 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
 import Parity.*;
 
-// helix-ray's text and codepoint functions, printed by Parity and the printers here as ref.c.in prints raylib 6.2's.
+// helix-raylib's text and codepoint functions, printed by Parity and the printers here as ref.c.in prints raylib 6.2's.
 class TextBits {
 	static final NULL:String = null;
 

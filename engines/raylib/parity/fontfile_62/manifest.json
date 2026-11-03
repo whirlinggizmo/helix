@@ -1,7 +1,7 @@
 {
   "oracle": "6.2",
   "covers": "rtext.c's LoadFontEx (and LoadFontFromMemory under it) as 6.2 loads a TrueType file: the printable ASCII, only the glyphs the font has (a character it lacks found as its '?'), each Unicode space a blank glyph; each glyph's metrics, its place on the atlas and a checksum of its image",
-  "notes": "hxcpp alone: helix-ray rasterizes glyphs with the platform's font rasterizer, stb_truetype natively, a canvas in a page, which Node hasn't.",
+  "notes": "hxcpp alone: helix-raylib rasterizes glyphs with the platform's font rasterizer, stb_truetype natively, a canvas in a page, which Node hasn't.",
   "kind": "values",
   "generated": true,
   "main": "FontFileBits",

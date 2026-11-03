@@ -1,8 +1,8 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
-import helix.ray.Rlgl.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
+import helix.raylib.Rlgl.*;
 
-// scene.c's cubemaps, drawn by helix-ray: the third frame after the skybox's image loads saved as helix.png. Its files (web/) are raylib's
+// scene.c's cubemaps, drawn by helix-raylib: the third frame after the skybox's image loads saved as helix.png. Its files (web/) are raylib's
 // skybox example's image and shaders.
 class Main {
 	static final CUBE_VS = "#version 330

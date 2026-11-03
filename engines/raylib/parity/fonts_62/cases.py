@@ -1,4 +1,4 @@
-"""fonts_62: raylib 6.2's GenImageFontAtlas and LoadFontFromImage, which helix-ray takes from 6.2, against helix-ray's. One list for both
+"""fonts_62: raylib 6.2's GenImageFontAtlas and LoadFontFromImage, which helix-raylib takes from 6.2, against helix-raylib's. One list for both
 sides (shared/gen.py's syntax): glyphs(n, w0, dw, wm, h0, hm) makes glyphs of known sizes and texels, atlas prints an atlas (its size,
 format and a checksum of its texels, then each glyph's place) and font a font, all in ref.c.in and FontBits.hx.in. Each fix has a case
 built from the input that showed its bug in raylib 5.5."""

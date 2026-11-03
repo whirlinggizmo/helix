@@ -1,4 +1,4 @@
-// raylib 6.2's image functions helix-ray takes, their images printed by parity.h, byte for byte; cases.py's list is put into it.
+// raylib 6.2's image functions helix-raylib takes, their images printed by parity.h, byte for byte; cases.py's list is put into it.
 #include "parity.h"
 #include <stdint.h>
 #include <stdlib.h>

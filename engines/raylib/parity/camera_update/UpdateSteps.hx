@@ -1,12 +1,12 @@
-import helix.ray.Camera3D;
-import helix.ray.Raylib.*;
-import helix.ray.Vector3;
-import helix.ray.internal.Automation;
-import helix.ray.internal.Runtime;
+import helix.raylib.Camera3D;
+import helix.raylib.Raylib.*;
+import helix.raylib.Vector3;
+import helix.raylib.internal.Automation;
+import helix.raylib.internal.Runtime;
 
-// helix-ray's UpdateCamera in each mode over scripted input frames (frames.txt, compiled in), each frame 1/60 s, its input played as
+// helix-raylib's UpdateCamera in each mode over scripted input frames (frames.txt, compiled in), each frame 1/60 s, its input played as
 // automation state: the camera after each, as ref.c prints raylib's rcamera for the same frames. A Z-up start is camera_update_62's.
-@:access(helix.ray.internal.Automation)
+@:access(helix.raylib.internal.Automation)
 @:access(helix.services.time.Time)
 class UpdateSteps {
 	static function out(s:String)

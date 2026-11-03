@@ -1,12 +1,12 @@
-# helix-ray's parity suites
+# helix-raylib's parity suites
 
-helix-ray behaves as raylib does, and these suites check it against raylib's own C. Each suite is a C reference built against a raylib
-release and a Haxe harness or program doing the same with helix-ray. `tools/ray_parity.py` builds and runs both and compares what they
+helix-raylib behaves as raylib does, and these suites check it against raylib's own C. Each suite is a C reference built against a raylib
+release and a Haxe harness or program doing the same with helix-raylib. `tools/raylib_parity.py` builds and runs both and compares what they
 give: numbers line by line (value suites), or the frames they draw (pixel suites).
 
 ## The oracle
 
-Each function has one oracle (docs/DECISIONS.md 24). Where helix-ray took a bug fix from a later release, that release's C is the oracle
+Each function has one oracle (docs/DECISIONS.md 24). Where helix-raylib took a bug fix from a later release, that release's C is the oracle
 (6.2 now). Everywhere else it is raylib 5.5's. A suite names its oracle in its manifest (`"oracle": "5.5"`), so a suite only holds
 functions that share one. A fix taken from 6.2 moves its function's cases into a 6.2 suite, or into a new one. A version bump (a later
 release's API taken) is a rerun: change the suites' oracles, pin the release's tarball in the tool (`RELEASES`), and the bars show what
@@ -15,15 +15,15 @@ moved.
 ## Running
 
 ```console
-python3 tools/ray_parity.py              # every suite
-python3 tools/ray_parity.py shapes2d     # the suites named
-python3 tools/ray_parity.py --list       # the suites, their oracles and what each covers
+python3 tools/raylib_parity.py              # every suite
+python3 tools/raylib_parity.py shapes2d     # the suites named
+python3 tools/raylib_parity.py --list       # the suites, their oracles and what each covers
 ```
 
 Linux only. The C references and native programs run on a private display (`tools/private_display.py`, Xvfb and Openbox), with SDL's dummy
 audio driver and no session bus. raylib's desktop build needs a C compiler, make, X11 and GL headers. The first run fetches each release
 from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/raylib/<version>/`. Everything the suites build goes in
-`build/ray-parity/<suite>/`: the generated sources (`src/`), the reference (`ref`, `ref.txt` or `raylib.png`), the harness's output (`js.txt`,
+`build/raylib-parity/<suite>/`: the generated sources (`src/`), the reference (`ref`, `ref.txt` or `raylib.png`), the harness's output (`js.txt`,
 `cpp.txt`) or frames (`gl.png`, `sdl_gpu.png`). The tool exits 1 when any suite fails.
 
 ## The suites
@@ -97,7 +97,7 @@ Each suite's manifest says in full what it covers (`covers`), and `notes` say wh
   a section's own (`worst`, a target's own by its name, and `nonfinite`, how many numbers may be NaN or infinite where the other
   side's are not). `hex`: numbers printed as a double's bits. `sections`: how lines are
   grouped (below).
-- Pixel suites: `frames`, how long helix-ray's program runs (`HELIX_FRAMES`); `backends`, for each backend it is built for (`gl`, `sdl_gpu`),
+- Pixel suites: `frames`, how long helix-raylib's program runs (`HELIX_FRAMES`); `backends`, for each backend it is built for (`gl`, `sdl_gpu`),
   how many pixels may differ from raylib's frame at all.
 
 ### Value suites
@@ -109,16 +109,16 @@ are named under. A scale line, `NAME scale SCALE CLASS`, sets what the lines aft
 section's name (`cameras`: each camera's size, and whether it is regular or degenerate).
 
 Within a section the lines are compared word by word. Words and integers must match. Other numbers must be within the bar, as
-|a - b| / max(1, |a|, |b|, scale). raylib computes in floats, helix-ray in doubles, so a few ulps of a float are the floor.
+|a - b| / max(1, |a|, |b|, scale). raylib computes in floats, helix-raylib in doubles, so a few ulps of a float are the floor.
 
-`shared/parity.h` and `shared/Parity.hx` print raylib's batch and helix-ray's frame (`shape`), meshes, images (`image`, their bytes in hex), ray
+`shared/parity.h` and `shared/Parity.hx` print raylib's batch and helix-raylib's frame (`shape`), meshes, images (`image`, their bytes in hex), ray
 hits and values alike.
 `shared/StubGraphics.hx` is graphics that keeps nothing, `shared/DiskFiles.hx` files from the working directory, and `shared/PngDecoder.hx`
 PNG files decoded in Haxe, for a harness that reads an image's pixels on every target.
 
 ### Pixel suites
 
-The C reference draws three frames and saves the third as `ref.png`. helix-ray's program draws the same and saves its third with
+The C reference draws three frames and saves the third as `ref.png`. helix-raylib's program draws the same and saves its third with
 `TakeScreenshotAsync("helix.png")`. Both run on the private display's software renderers (Mesa), so a frame is the same from run to run.
 
 ## Adding a case
@@ -130,7 +130,7 @@ local. `('name', 'DrawThing(...);')` draws and prints the vertices. A value is p
 and `<Main>.hx.in`). A case that can't be written once is `{'c': ..., 'hx': ...}`. In a suite kept side by side, add the case to both, its
 lines named alike.
 
-Then run the suite. A new case that differs is a finding: fix helix-ray, or say in the manifest's `notes` why it differs. Bars sit a
+Then run the suite. A new case that differs is a finding: fix helix-raylib, or say in the manifest's `notes` why it differs. Bars sit a
 little above today's worst, so a change that makes a suite worse fails it. One that makes a suite better can lower its bar.
 
 ## Adding a suite

@@ -1,7 +1,7 @@
-import helix.ray.*;
-import helix.ray.Raylib.*;
+import helix.raylib.*;
+import helix.raylib.Raylib.*;
 
-// scene.c's greenman, drawn by helix-ray: the third frame after its loads saved as helix.png. Its files (web/) are the model and raylib
+// scene.c's greenman, drawn by helix-raylib: the third frame after its loads saved as helix.png. Its files (web/) are the model and raylib
 // 6.2's example skinning shaders.
 class Main {
 	static function main():Void {

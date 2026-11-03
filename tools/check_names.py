@@ -16,7 +16,7 @@ that counts and indices say they are (7):
      Index, or Indices for an array, but for a mesh's vertex indices, `indices`; one whose doc comment calls it a number of things
      ("the number of", "how many") ends in Count, or Counts for an array. Read through the compiler: Haxe's XML description of every
      library on both targets (tools/gen_apidoc.py's), each member's doc comment and each parameter's @param, so a name the doc
-     comment doesn't call an index or a count isn't judged. helix-ray is left out: its names are raylib's (DECISIONS 24).
+     comment doesn't call an index or a count isn't judged. helix-raylib is left out: its names are raylib's (DECISIONS 24).
 
 Run by helix.py test. Exits 1, listing each type, when one breaks a rule. Standard library only."""
 import re
@@ -59,7 +59,7 @@ HAS_METHOD = re.compile(r'\bfunction\s+has\s*\(')
 INDEX_DOC = re.compile(r'(?<!by )\b(index|indices)\b(?! buffer)', re.I)
 COUNT_DOC = re.compile(r'^(gets (or sets )?)?((the )?((largest|smallest) )?number of|how many)\b(?! bytes)', re.I)
 # Packages left out of rule 7, each with its reason.
-UNJUDGED = {'helix.ray': "raylib's names (DECISIONS 24)"}
+UNJUDGED = {'helix.raylib': "raylib's names (DECISIONS 24)"}
 
 
 def whole_numbers(node):
