@@ -96,6 +96,36 @@ private class ConnectingSsl extends sys.ssl.Socket {
 	}
 }
 
+/** Represents a socket's input whose reads fail for the idle timeout when they end once it has passed, on every system. A read the
+	socket's timeout ends comes from hxcpp as Blocked on Linux and macOS, but as the connection closed on Windows: hxcpp's socket code takes
+	only WSAEWOULDBLOCK for blocking, and Windows ends the wait with WSAETIMEDOUT. So a read that fails, however it's reported, after waiting
+	the timeout (less a twentieth of a second, for the system's timer) fails as silence. */
+private class Idle extends haxe.io.Input {
+	var input:haxe.io.Input;
+	var timeout:Float;
+
+	/** Creates the input, reading from `input`, a socket's input whose reads give up after `timeout` seconds. */
+	public function new(input:haxe.io.Input, timeout:Float) {
+		this.input = input;
+		this.timeout = timeout;
+	}
+
+	public override function readByte():Int {
+		var start = haxe.Timer.stamp();
+		return try input.readByte() catch (e:Dynamic) throw why(e, start);
+	}
+
+	public override function readBytes(buf:Bytes, pos:Int, len:Int):Int {
+		var start = haxe.Timer.stamp();
+		return try input.readBytes(buf, pos, len) catch (e:Dynamic) throw why(e, start);
+	}
+
+	// Returns what a read begun at `start` that failed with `e` throws: the silence, when it was blocked or waited the timeout; else `e`.
+	function why(e:Dynamic, start:Float):Dynamic
+		return e == haxe.io.Error.Blocked
+			|| haxe.Timer.stamp() - start >= timeout - Math.min(0.05, timeout / 2) ? Request.silence(timeout) : e;
+}
+
 /** Represents one request over `sys.Http`, reading the response itself.
 
 	`sys.Http` retries a read that finds the connection closed while it reads the head, so a server that closes before a whole head would
@@ -104,6 +134,15 @@ private class ConnectingSsl extends sys.ssl.Socket {
 private class Request extends sys.Http {
 	// The most bytes a response's head may have.
 	static inline final HEAD_LIMIT = 65536;
+
+	// How long each read may wait, in seconds.
+	var timeout:Float;
+
+	/** Creates the request for `url`, each read of its response giving up after `timeout` seconds. */
+	public function new(url:String, timeout:Float) {
+		super(url);
+		this.timeout = timeout;
+	}
 
 	/** Returns why a request failed that received nothing for `timeout` seconds. */
 	static function silence(timeout:Float):String
@@ -114,10 +153,10 @@ private class Request extends sys.Http {
 		return StringTools.startsWith(url, "https://") ? new ConnectingSsl(timeout) : new Connecting(timeout);
 
 	override function readHttpResponse(api:haxe.io.Output, sock:sys.net.Socket):Void {
-		var head = new haxe.io.BytesBuffer(), last = 0;
+		var input = new Idle(sock.input, timeout), head = new haxe.io.BytesBuffer(), last = 0;
 		// The head ends at a blank line: its last four bytes CR LF CR LF, or a bare LF LF.
 		while (last != 0x0d0a0d0a && (last & 0xffff) != 0x0a0a) {
-			var byte = try sock.input.readByte() catch (e:haxe.io.Eof) throw "The connection closed before the response's head was complete";
+			var byte = try input.readByte() catch (e:haxe.io.Eof) throw "The connection closed before the response's head was complete";
 			head.addByte(byte);
 			last = (last << 8) | byte;
 			if (head.length > HEAD_LIMIT)
@@ -152,7 +191,7 @@ private class Request extends sys.Http {
 			chunk_buf = null;
 			var pattern = ~/^([0-9A-Fa-f]+)[ ]*\r\n/m;
 			try {
-				while (readChunk(pattern, api, buffer, sock.input.readBytes(buffer, 0, buffer.length))) {}
+				while (readChunk(pattern, api, buffer, input.readBytes(buffer, 0, buffer.length))) {}
 			} catch (e:haxe.io.Eof) {
 				throw "The connection closed before the last chunk";
 			}
@@ -162,12 +201,12 @@ private class Request extends sys.Http {
 			// Without a length, the body ends when the connection closes.
 			try {
 				while (true)
-					api.writeBytes(buffer, 0, sock.input.readBytes(buffer, 0, buffer.length));
+					api.writeBytes(buffer, 0, input.readBytes(buffer, 0, buffer.length));
 			} catch (e:haxe.io.Eof) {}
 		} else {
 			try {
 				while (size > 0) {
-					var len = sock.input.readBytes(buffer, 0, size < buffer.length ? size : buffer.length);
+					var len = input.readBytes(buffer, 0, size < buffer.length ? size : buffer.length);
 					api.writeBytes(buffer, 0, len);
 					size -= len;
 				}
@@ -228,7 +267,7 @@ class HaxeHttpAdapter implements IHttp {
 	public function get(url:String, noCache:Bool, headers:Map<String, String>, head:(status:Int, headers:Map<String, String>) -> Void, body:Bytes->Void,
 			done:Void->Void, failed:String->Void, ?idleTimeout:Float):Void->Void {
 		var timeout = idleTimeout == null ? IDLE_TIMEOUT : Math.min(Math.max(idleTimeout, 0.001), 86400),
-			http = new Request(url),
+			http = new Request(url, timeout),
 			transfer = new Transfer(mailbox, head, body, done, failed);
 		for (name => value in headers)
 			http.setHeader(name, value);
