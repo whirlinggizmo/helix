@@ -12,7 +12,7 @@ import helix.raylib.modules.RAsync;
 	one does. So once automation is used, the input functions read the state here: brought up to date after each poll from the devices
 	where they changed (the mouse wheel and the gamepads every poll, as raylib reads them), and changed by `play`. */
 @:noCompletion
-class Automation {
+class Automation implements PlayedInput {
 	/** The automation in use, or null before a list is set or an event played. */
 	public static var active:Null<Automation> = null;
 
@@ -22,6 +22,7 @@ class Automation {
 	public static function use():Automation {
 		if (active == null) {
 			active = new Automation();
+			Runtime.played = active;
 			Runtime.mirroring = active.mirror;
 		}
 		return active;

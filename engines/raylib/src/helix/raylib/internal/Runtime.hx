@@ -572,6 +572,9 @@ class Runtime {
 	/** What records the frame's input for automation as each frame ends, or null while nothing records. */
 	public static var recording:Null<Void->Void> = null;
 
+	/** The input automation plays into, which the input functions read once automation is used, or null before. */
+	public static var played:Null<PlayedInput> = null;
+
 	/** What brings the input that automation plays into up to date after each poll, or null while automation isn't used. */
 	public static var mirroring:Null<Void->Void> = null;
 

@@ -25,9 +25,8 @@ import helix.raylib.Vector3;
 @:adds("helix.formats.audio.AudioHeader", "helix.formats.bmfont", "helix.formats.qoi", "helix.formats.truetype", "helix.geometry.Camera2D",
 	"helix.geometry.Ray3D", "helix.math.Matrix2D", "helix.math.RectPacker2D", "helix.math.Transform2D", "helix.math.Vector2D",
 	"helix.platform.adapters.fontrasterizer.canvas", "helix.platform.adapters.gamepads.dom", "helix.platform.adapters.keyboard.dom",
-	"helix.platform.adapters.mouse.dom", "helix.platform.adapters.touch.dom", "helix.raylib.internal.AudioStreams", "helix.raylib.internal.Automation",
-	"helix.raylib.internal.FrameConverter", "helix.services.fonts", "helix.services.input.Gamepads", "helix.services.input.Gestures",
-	"helix.services.input.Mouse", "helix.services.input.Touch")
+	"helix.platform.adapters.mouse.dom", "helix.platform.adapters.touch.dom", "helix.raylib.internal.AudioStreams", "helix.raylib.internal.FrameConverter",
+	"helix.services.fonts", "helix.services.input.Gamepads", "helix.services.input.Gestures", "helix.services.input.Mouse", "helix.services.input.Touch")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

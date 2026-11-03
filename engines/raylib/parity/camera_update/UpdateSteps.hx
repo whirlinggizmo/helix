@@ -35,6 +35,7 @@ class UpdateSteps {
 					new Vector3(start[2][0], start[2][1], start[2][2]), 60, CAMERA_PERSPECTIVE);
 				var a = new Automation();
 				Automation.active = a;
+				Runtime.played = a;
 				for (round in 0...2)
 					for (i in 0...frames.length) {
 						var t = frames[i].split(" ");

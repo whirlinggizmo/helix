@@ -624,7 +624,7 @@ class RCore {
 		@param key  The key (`KEY_*`).
 		@return  True for that frame alone. */
 	static function IsKeyPressed(key:Int):Bool {
-		var k = toKey(key), played = Automation.active;
+		var k = toKey(key), played = Runtime.played;
 		if (played != null)
 			return k >= 0 && !played.previousKeys[k] && played.keys[k];
 		return k >= 0 && Runtime.keyboard().isKeyPressed(cast k);
@@ -635,7 +635,7 @@ class RCore {
 		@param key  The key (`KEY_*`).
 		@return  True while it is down. */
 	static function IsKeyDown(key:Int):Bool {
-		var k = toKey(key), played = Automation.active;
+		var k = toKey(key), played = Runtime.played;
 		if (played != null)
 			return k >= 0 && played.keys[k];
 		return k >= 0 && Runtime.keyboard().isKeyDown(cast k);
@@ -646,7 +646,7 @@ class RCore {
 		@param key  The key (`KEY_*`).
 		@return  True for that frame alone. */
 	static function IsKeyReleased(key:Int):Bool {
-		var k = toKey(key), played = Automation.active;
+		var k = toKey(key), played = Runtime.played;
 		if (played != null)
 			return k >= 0 && played.previousKeys[k] && !played.keys[k];
 		return k >= 0 && Runtime.keyboard().isKeyReleased(cast k);
@@ -694,7 +694,7 @@ class RCore {
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
 	static function IsMouseButtonPressed(button:Int):Bool {
-		var played = Automation.active;
+		var played = Runtime.played;
 		if (played != null)
 			return button >= 0 && button < 8 && !played.previousButtons[button] && played.buttons[button];
 		return realButtonPressed(button);
@@ -715,7 +715,7 @@ class RCore {
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True while it is down. */
 	static function IsMouseButtonDown(button:Int):Bool {
-		var played = Automation.active;
+		var played = Runtime.played;
 		if (played != null)
 			return button >= 0 && button < 8 && played.buttons[button];
 		return realButtonDown(button);
@@ -734,7 +734,7 @@ class RCore {
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
 	static function IsMouseButtonReleased(button:Int):Bool {
-		var played = Automation.active;
+		var played = Runtime.played;
 		if (played != null)
 			return button >= 0 && button < 8 && played.previousButtons[button] && !played.buttons[button];
 		return realButtonReleased(button);
@@ -775,7 +775,7 @@ class RCore {
 
 		@return  The position. */
 	static function GetMousePosition():Vector2 {
-		var played = Automation.active;
+		var played = Runtime.played;
 		if (played != null)
 			return new Vector2((played.mouseX + mouseOffsetX) * mouseScaleX, (played.mouseY + mouseOffsetY) * mouseScaleY);
 		pointer();
@@ -828,7 +828,7 @@ class RCore {
 		lastMouseY = mouse.y;
 		lastPointerX = x;
 		lastPointerY = y;
-		var played = Automation.active;
+		var played = Runtime.played;
 		if (played != null) {
 			played.mouseX = x;
 			played.mouseY = y;
@@ -857,7 +857,7 @@ class RCore {
 
 		@return  The notches. */
 	static function GetMouseWheelMoveV():Vector2 {
-		var played = Automation.active;
+		var played = Runtime.played;
 		if (played != null)
 			return new Vector2(played.wheelX, played.wheelY);
 		return realWheel();
@@ -943,7 +943,7 @@ class RCore {
 
 		@return  The count. */
 	static function GetTouchPointCount():Int {
-		var played = Automation.active;
+		var played = Runtime.played;
 		if (played != null)
 			return [for (down in played.touches) if (down) down].length;
 		return Runtime.touch().fingers.length;
@@ -968,7 +968,7 @@ class RCore {
 		@param index  Which finger, 0 for the first down.
 		@return  The position, or (0, 0) when fewer are down. */
 	static function GetTouchPosition(index:Int):Vector2 {
-		var played = Automation.active;
+		var played = Runtime.played;
 		if (played != null)
 			return index >= 0 && index < 8 ? new Vector2(played.touchX[index], played.touchY[index]) : new Vector2();
 		return realTouchPosition(index);
@@ -1017,7 +1017,7 @@ class RCore {
 
 		@return  The gesture (`GESTURE_*`), or `GESTURE_NONE` when it isn't enabled. */
 	static function GetGestureDetected():Int {
-		var played = Automation.active;
+		var played = Runtime.played;
 		if (played != null)
 			return Runtime.gestures().enabled & played.gesture;
 		return Runtime.gestures().current;
@@ -1101,7 +1101,7 @@ class RCore {
 		@param gamepad  The gamepad, 0 to 3.
 		@return  True while one is connected there. */
 	static function IsGamepadAvailable(gamepad:Int):Bool {
-		var played = Automation.active;
+		var played = Runtime.played;
 		if (played != null)
 			return gamepad >= 0 && gamepad < 4 && played.pads[gamepad];
 		return realPadReady(gamepad);
@@ -1128,7 +1128,7 @@ class RCore {
 
 	// A played gamepad button's state, now or the last frame, or null while nothing is played.
 	static function playedPadButton(gamepad:Int, button:Int, previous:Bool):Null<Bool> {
-		var played = Automation.active;
+		var played = Runtime.played;
 		if (played == null)
 			return null;
 		if (gamepad < 0 || gamepad >= 4 || button < 0 || button >= 32 || !played.pads[gamepad])
@@ -1233,7 +1233,7 @@ class RCore {
 		@param axis  The axis (`GAMEPAD_AXIS_*`).
 		@return  The value. */
 	static function GetGamepadAxisMovement(gamepad:Int, axis:Int):Float {
-		var played = Automation.active;
+		var played = Runtime.played;
 		if (played != null)
 			return gamepad >= 0 && gamepad < 4 && axis >= 0 && axis < 8 && played.pads[gamepad] ? played.padAxes[gamepad * 8 + axis] : 0;
 		return realPadAxis(gamepad, axis);
@@ -2708,7 +2708,7 @@ class RCore {
 
 		@return  The movement. */
 	static function GetMouseDelta():Vector2 {
-		var played = Automation.active;
+		var played = Runtime.played;
 		if (played != null)
 			return new Vector2((played.mouseX - played.previousMouseX) * mouseScaleX, (played.mouseY - played.previousMouseY) * mouseScaleY);
 		// From where the mouse was last seen in an earlier frame, before SetMouseOffset.
