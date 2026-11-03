@@ -26,6 +26,11 @@
   `GetMusicTimePlayed` and `SeekMusicStream` refuse until then), and a page's cache in OPFS readable at once from the main thread (a worker holding OPFS's sync handles, the page
   spinning on a SharedArrayBuffer for the reply, as emscripten does), which needs the page cross-origin isolated (COOP and COEP), so
   only ever an option a program chooses, never the default.
+- **raygui on helix-raylib (`helix.raylib.Raygui`, imported apart as `Raymath` is):** raylib's own immediate-mode GUI, its API as
+  `raygui.h` names it (the controls, `GuiSetStyle`/`GuiLoadStyle` and its styles, its icons), drawn through helix-raylib, so a game
+  writes its menus and HUD from what agents already know rather than its own widgets (the Katawami port's blind trial wrote some 700
+  lines of UI by hand). raylib's other companion headers agents know, easings (`reasings.h`) and physics (`physac.h`), are each a module
+  of their own the same way when wanted; `Extras` keeps only what has no raylib-family equivalent.
 - **Platform proposals queued, for review:** depth sampled after a pass, depth bias, stencil, and the depth tests `Always`, `Less`,
   `Equal` and `GreaterEqual` (helix-render's revision 9). A render target's own sample count, apart from its depth, is being built. Deferred from the vertex formats
   (DECISIONS 33): bone IDs and three.js' skinIndex fed as normalized bytes or shorts and scaled back by the compiler, rounded, as a
