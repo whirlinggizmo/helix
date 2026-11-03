@@ -229,6 +229,9 @@ class Runtime {
 			}, error -> done('$path: $error'));
 			return;
 		}
+		// Named before it's asked for, so a file that isn't there (a page's 404, which the browser reports without naming the program's call)
+		// can be told from the log.
+		log(3, 'FILEIO: [$path] Loading');
 		assets.load(path, bytes -> {
 			// The file's bytes are kept too, for LoadFileDataAsync; an image's are small beside its pixels.
 			files.set(path, bytes);
