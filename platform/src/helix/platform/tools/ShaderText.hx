@@ -39,6 +39,9 @@ typedef ShaderDeclaration = {
 
 	/** The names a struct's or a block's members name as types. */
 	final uses:Array<String>;
+
+	/** The interpolation and sampling qualifiers written before the type (`flat`, `noperspective`, `centroid`), in order. */
+	final interpolation:Array<String>;
 }
 
 /** The shader compiler's text step: reading a stage's top-level declarations from glslang's preprocessed output (`-E`), and rewriting it
@@ -47,6 +50,7 @@ typedef ShaderDeclaration = {
 	validates the result. */
 @:noCompletion
 class ShaderText {
+	static final INTERPOLATION = ["flat", "smooth", "noperspective", "centroid", "sample"];
 	static final QUALIFIERS = [
 		"uniform",
 		"in",
@@ -303,7 +307,8 @@ class ShaderText {
 				placed: placed,
 				initialized: initialized,
 				shared: shared,
-				uses: uses
+				uses: uses,
+				interpolation: [for (q in quals) if (INTERPOLATION.indexOf(q) >= 0) q]
 			});
 		if (i >= t.length)
 			return add("other", "", "", "", "", false, false, []);

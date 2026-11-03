@@ -254,6 +254,14 @@ class ShaderCompiler {
 				// GL's clip depth (-1..1) as SDL_GPU's (0..1).
 				text: wrapMain(arranged.texts[0], vertex.name, "helix_gpu_main", "", "gl_Position.z = (gl_Position.z + gl_Position.w) * 0.5;")
 			});
+		var sdlGpuFragment = options.sdlGpu && arranged.sdlGpuFragment != arranged.texts[1];
+		if (sdlGpuFragment)
+			compiles.push({
+				stage: "fragment-sdlgpu",
+				suffix: "frag",
+				name: fragment.name,
+				text: arranged.sdlGpuFragment
+			});
 		var compileCalls = [];
 		for (c in compiles) {
 			var file = Path.join([scratch, '${c.stage}.c.${c.suffix}']);
@@ -321,7 +329,7 @@ class ShaderCompiler {
 		if (options.sdlGpu)
 			source.sdlGpu = sdlGpu(cross, scratch, [
 				"vertex" => File.getBytes(spv("vertex-sdlgpu")),
-				"fragment" => File.getBytes(spv("fragment"))
+				"fragment" => File.getBytes(spv(sdlGpuFragment ? "fragment-sdlgpu" : "fragment"))
 			], described, options.points == true);
 		return source;
 	}
@@ -471,8 +479,12 @@ class ShaderCompiler {
 		suffix:String,
 		name:String,
 		text:String
-	}>,
-			options:ShaderCompileOptions):{texts:Array<String>, blocks:Map<String, {stage:String, slot:Int}>, instances:Map<String, String>} {
+	}>, options:ShaderCompileOptions):{
+		texts:Array<String>,
+		sdlGpuFragment:String,
+		blocks:Map<String, {stage:String, slot:Int}>,
+		instances:Map<String, String>
+	} {
 		var stages = [for (k in 0...2) new ShaderText(preprocessed[k], given[k].name)];
 		var gl = [];
 		for (k => s in stages) {
@@ -712,7 +724,42 @@ class ShaderCompiler {
 			if (glForm)
 				s.setVersion450();
 		}
-		return {texts: [for (s in stages) s.edited()], blocks: blocks, instances: instances};
+		var texts = [for (s in stages) s.edited()];
+		// SDL_GPU's fragment stage reads every value the vertex stage writes: Direct3D links the stages by register, numbered in location
+		// order, so a fragment stage leaving one out reads the rest from the wrong registers and Direct3D refuses the pipeline. The ones
+		// this stage doesn't read are declared under names of their own, unread.
+		var reads = [for (d in all(1, "in")) d.name => true];
+		var unread = [for (d in all(0, "out")) if (!reads.exists(d.name)) d];
+		var sdlGpuFragment = texts[1];
+		if (unread.length > 0) {
+			var copies = new StringBuf(), copied = [];
+			function copy(type:String):Void {
+				if (!structs[0].exists(type) || structs[1].exists(type) || copied.indexOf(type) >= 0)
+					return;
+				copied.push(type);
+				for (u in structs[0].get(type).uses)
+					if (u != type)
+						copy(u);
+				copies.add(stages[0].source(structs[0].get(type)) + " ");
+			}
+			for (d in unread)
+				copy(d.uses[0]);
+			for (d in unread) {
+				var qualifiers = d.interpolation.copy();
+				if (~/^(int|uint|[iu]vec[234])$/.match(d.uses[0]) && qualifiers.indexOf("flat") < 0)
+					qualifiers.push("flat");
+				var location = sent.exists(d.name) ? 'layout(location = ${sent.get(d.name)}) ' : "";
+				copies.add('$location${[for (q in qualifiers) '$q '].join("")}in ${d.type} helix_unread_${d.name}${d.array}; ');
+			}
+			stages[1].insertBefore(stages[1].firstStatement(), copies.toString());
+			sdlGpuFragment = stages[1].edited();
+		}
+		return {
+			texts: texts,
+			sdlGpuFragment: sdlGpuFragment,
+			blocks: blocks,
+			instances: instances
+		};
 	}
 
 	// One entry of glslang's reflection: `name: offset 0, type 8b52, size 1, index 0, binding -1, stages 16, ...`.
@@ -951,7 +998,8 @@ class ShaderCompiler {
 	// SDL_GPU's dialects: each stage's resources bound at SDL_GPU's sets (blocks at their slots, textures numbered from 0 by slot within
 	// each stage), then MSL and HLSL from that; a point size's HLSL in SPIRV-Cross's compatibility mode, as HLSL has no point size and
 	// SPIRV-Cross refuses one otherwise. HLSL's inputs are named as SDL_GPU's Direct3D 12 layout names them, TEXCOORD and the location, a
-	// matrix's columns each its own (SPIRV-Cross would name them TEXCOORD1_0 and on, and Direct3D refuse the pipeline).
+	// matrix's columns each its own (SPIRV-Cross would name them TEXCOORD1_0 and on, and Direct3D refuse the pipeline). The fragment
+	// stage is the one arrange wrote for SDL_GPU, reading every value the vertex stage writes, so the two stages' registers match.
 	static function sdlGpu(cross:String, scratch:String, modules:Map<String, Bytes>, described:Dynamic, points:Bool):Dynamic {
 		var out:Dynamic = {spirv: {}, msl: {}, hlsl: {}};
 		var calls = [];

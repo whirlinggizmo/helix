@@ -148,6 +148,7 @@ void main() { color = scene.ambient + scene.lights[1].color * scene.surface.roug
 		clipScale();
 		points();
 		semantics();
+		linkage();
 		floats();
 		includes();
 		// Refusals, each saying what's wrong.
@@ -380,6 +381,31 @@ void main() { finalColor = texture(texture0, fragTexCoord) * colDiffuse * fragCo
 		found.sort(Reflect.compare);
 		check(found.join(",") == [for (n in 0...6) 'TEXCOORD$n'].join(","),
 			"HLSL's inputs read TEXCOORD and the location, a matrix's columns each its own: " + input);
+	}
+
+	// Direct3D links a vertex stage's outputs to the fragment stage's inputs by register, in location order: SDL_GPU's fragment HLSL
+	// reads every value the vertex stage writes, with its interpolation, though the fragment stage reads only some, and the GL
+	// dialects' fragment stage stays as written.
+	static function linkage():Void {
+		var source = compile("#version 300 es\nin vec3 p;\nout vec3 worldPosition;\nout vec3 normal;\nflat out int kind;\nout vec2 texCoord;\n"
+			+ "void main() { worldPosition = p; normal = p; kind = 1; texCoord = p.xy; gl_Position = vec4(p, 1.0); }\n",
+			"#version 300 es\nprecision highp float;\nin vec2 texCoord;\nin vec3 worldPosition;\nout vec4 color;\n"
+			+ "void main() { color = vec4(texCoord, worldPosition.x, 1.0); }\n");
+		function members(hlsl:String, name:String):String {
+			var at = hlsl.indexOf('struct $name');
+			var struct = hlsl.substring(at, hlsl.indexOf("};", at)), found = [];
+			~/(nointerpolation\s+)?\w+\s+\w+\s*:\s*(TEXCOORD\d+)\s*;/g.map(struct, r -> {
+				found.push((r.matched(1) != null ? "flat " : "") + r.matched(2));
+				return "";
+			});
+			return found.join(",");
+		}
+		var written = members(source.sdlGpu.hlsl.vertex, "SPIRV_Cross_Output"),
+			read = members(source.sdlGpu.hlsl.fragment, "SPIRV_Cross_Input");
+		check(written == "TEXCOORD0,TEXCOORD1,flat TEXCOORD2,TEXCOORD3" && read == written,
+			'SDL_GPU\'s fragment HLSL reads every value the vertex stage writes, at its register: $written, $read');
+		check(source.glsl300es.fragment.indexOf("helix_unread") < 0 && source.glsl300es.fragment.indexOf("normal") < 0,
+			"The GL dialects' fragment stage reads only what it declares");
 	}
 
 	// A quoted include resolves beside the file and in the include directories, with no extension line.

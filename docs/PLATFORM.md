@@ -305,7 +305,9 @@ source leaves unplaced and gathers loose uniforms, each rewrite on the line it r
 the result to SPIR-V (Vulkan 1.0, unoptimized, so nothing declared is trimmed; the drivers optimize) and reflects it (what the code
 reads, and each member's GLSL type); SPIRV-Cross emits every dialect (GLSL ES 300 keeping each block a `std140` uniform block, GLSL 410
 each block a uniform of its struct type, MSL and HLSL laid out as SDL_GPU binds them, HLSL's inputs named `TEXCOORD` and the location as
-SDL_GPU's Direct3D 12 layout names them, a matrix's columns each its own) and reflects the layouts.
+SDL_GPU's Direct3D 12 layout names them, a matrix's columns each its own, and SDL_GPU's fragment stage reading every value the vertex
+stage writes, the ones its source doesn't read declared unread, as Direct3D links the stages by register in location order) and reflects
+the layouts.
 
 **Placement**, where the source gives none: blocks are numbered in each stage, 0 to 3 (as SDL_GPU binds four a stage); named blocks take
 the lowest free bindings of their stages in the order declared, the vertex stage's first; a block both stages declare alike (the same
