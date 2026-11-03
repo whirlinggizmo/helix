@@ -1,5 +1,5 @@
 # The shader example natively, SDL3 drawing with SDL_GPU (Vulkan, Direct3D 12 or Metal): haxe build-native-gpu.hxml -> native-gpu/Main;
-# hxcpp compiles the adapters' C with it and links the SDL3 library HELIX_SDL3_LIBRARY names (BUILDING.md). --frames=60 stops it
+# hxcpp compiles the adapters' C with it and links the SDL3 library HELIX_SDL3_LIBRARY names (BUILDING.md). --quit_after_frame=60 stops it
 # after 60 frames.
 -lib helix-platform
 -cp .

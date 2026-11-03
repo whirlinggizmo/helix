@@ -118,7 +118,7 @@ def run(name, directory, main, browser, native_run, page_run, native_frames=FRAM
             place_runtimes(directory / output, found)
             program = directory / output / (main + '.exe' if sys.platform == 'win32' else main)
             with (nullcontext(dict(os.environ)) if DESKTOP else private_display()) as display:
-                ran = subprocess.run([str(program), f'--frames={frames}'], cwd=directory, env=dict(display, **(native_extra or {}), SDL_AUDIO_DRIVER='dummy'), capture_output=True, text=True, encoding='utf-8', timeout=300)
+                ran = subprocess.run([str(program), f'--quit_after_frame={frames}'], cwd=directory, env=dict(display, **(native_extra or {}), SDL_AUDIO_DRIVER='dummy'), capture_output=True, text=True, encoding='utf-8', timeout=300)
             problems += [f'native {label}: {p}' for p in native_run(label, ran)]
     else:
         print(f'{name}: native runs skipped here (a private display needs Linux; --desktop runs them on this machine\'s own)', flush=True)
@@ -126,7 +126,7 @@ def run(name, directory, main, browser, native_run, page_run, native_frames=FRAM
     out.mkdir(parents=True, exist_ok=True)
     screenshot = out / 'web.png'
     browser_env = {k: v for k, v in os.environ.items() if k not in ('VK_DRIVER_FILES', 'VK_ICD_FILENAMES')}
-    ran = subprocess.run(['node', ROOT / 'tools/page_check.cjs', browser, site or str(directory / 'web'), f'?frames={FRAMES}{query}', str(screenshot)], cwd=ROOT, env=browser_env, capture_output=True, text=True, encoding='utf-8')
+    ran = subprocess.run(['node', ROOT / 'tools/page_check.cjs', browser, site or str(directory / 'web'), f'?quit_after_frame={FRAMES}{query}', str(screenshot)], cwd=ROOT, env=browser_env, capture_output=True, text=True, encoding='utf-8')
     if ran.returncode:
         problems.append(f'browser run failed\n{ran.stdout}{ran.stderr}')
     else:

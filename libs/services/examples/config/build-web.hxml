@@ -1,4 +1,4 @@
-# The config example in a page: haxe build-web.hxml -> web/app.js, beside web/index.html; serve web/ and open it (?frames=60 stops
+# The config example in a page: haxe build-web.hxml -> web/app.js, beside web/index.html; serve web/ and open it (?quit_after_frame=60 stops
 # after 60 frames).
 -lib helix-services
 -D helix-company=helix

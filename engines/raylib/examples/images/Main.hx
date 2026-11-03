@@ -1,7 +1,7 @@
 import helix.raylib.Raylib.*;
 
 /** An image made on the CPU: a gradient with a circle and text drawn into it, then drawn as a texture in the middle of the window. The
-	`frames` option (`--frames=60` natively, `?frames=60` in a page) stops it after that many frames. */
+	`quit_after_frame` option (`--quit_after_frame=60` natively, `?quit_after_frame=60` in a page) quits it after that frame. */
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: images");

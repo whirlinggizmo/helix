@@ -32,8 +32,8 @@ import helix.platform.IHttp;
 
 	The window, its events and the loop are the platform's, written out as a program does them until the layer above the services does.
 	Its motion follows the frame's number, a sixtieth of a second a frame, so a frame always looks alike; `-D sdl_gpu`
-	(`build-native-gpu.hxml`) draws with SDL_GPU, and the `frames` option (`--frames=60` natively, `?frames=60` in a page) stops after
-	that many frames. */
+	(`build-native-gpu.hxml`) draws with SDL_GPU, and the `quit_after_frame` option (`--quit_after_frame=60` natively,
+	`?quit_after_frame=60` in a page) quits after that frame. */
 class Main {
 	static inline final STORY = "The belt is thick tonight. Steer with the arrow keys, keep clear of the rocks, and bring the cargo home before the fuel runs out.";
 
@@ -97,7 +97,7 @@ class Main {
 
 	/** Makes the services, the renderer and its batch, and loads the sheet and the font. */
 	static function setup():Void {
-		var frames = system.getOption("frames");
+		var frames = system.getOption("quit_after_frame");
 		if (frames != null)
 			framesLeft = Std.parseInt(frames);
 		#if js

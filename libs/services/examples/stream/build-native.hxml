@@ -1,5 +1,5 @@
 # The stream example natively: haxe build-native.hxml -> native/Main, linking the SDL3 library HELIX_SDL3_LIBRARY names (BUILDING.md).
-# --frames=60 stops it after 60 frames.
+# --quit_after_frame=60 quits it after frame 60.
 -lib helix-services
 -D helix-company=helix
 -D helix-product=stream-example

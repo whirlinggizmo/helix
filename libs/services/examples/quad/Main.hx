@@ -13,8 +13,8 @@ import helix.services.shaders.ShaderValues;
 
 	The shader is `quad.vert` and `quad.frag`, compiled while the program builds. Its values are set by name: the vertex stage's
 	`offsetScale` once, the fragment stage's `tint` once and its `time` each frame (its handle found once, the frame's number over 60, so
-	a frame always looks alike), and its texture `image`, a 2x2 checker. Each frame hands the values to `IGraphics.draw` as they are. The `frames` option (`--frames=60` natively, `?frames=60` in a page) stops
-	after that many frames. */
+	a frame always looks alike), and its texture `image`, a 2x2 checker. Each frame hands the values to `IGraphics.draw` as they are. The
+	`quit_after_frame` option (`--quit_after_frame=60` natively, `?quit_after_frame=60` in a page) quits after that frame. */
 class Main {
 	static var window:IWindow;
 	static var events:IEvents;
@@ -54,7 +54,7 @@ class Main {
 	/** Makes the program, its values, the quad, the texture and the pipeline. */
 	static function setup():Void {
 		window.title = "helix-services: a shader's values";
-		var frames = system.getOption("frames");
+		var frames = system.getOption("quit_after_frame");
 		if (frames != null)
 			framesLeft = Std.parseInt(frames);
 		var shader = Shader.compile("quad.vert", "quad.frag");

@@ -81,7 +81,7 @@ class Runtime {
 	public static final files = new Map<String, Bytes>();
 
 	/** The frame: whether the window should close, whether the player can't see it (minimized, or its tab in the background), frames
-		left of the `frames` option. */
+		left of the `quit_after_frame` option. */
 	public static var shouldClose = false;
 
 	public static var hidden = false;
@@ -151,7 +151,7 @@ class Runtime {
 		#else
 		system = new helix.platform.adapters.system.sdl3.Sdl3SystemAdapter();
 		#end
-		var frames = system.getOption("frames");
+		var frames = system.getOption("quit_after_frame");
 		if (frames != null)
 			framesLeft = Std.parseInt(frames);
 		main();

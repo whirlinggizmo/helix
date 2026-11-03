@@ -30,8 +30,8 @@ import helix.services.shaders.Shaders;
 	reloader.assetsChanged = urls -> for (url in urls) assets.notifyUrlChanged(url);
 	```
 
-	Its `time` is the frame's number over 60, so a frame always looks alike; the `frames` option (`--frames=60` natively,
-	`?frames=60` in a page) stops after that many frames. */
+	Its `time` is the frame's number over 60, so a frame always looks alike; the `quit_after_frame` option (`--quit_after_frame=60`
+	natively, `?quit_after_frame=60` in a page) quits after that frame. */
 class Main {
 	static var window:IWindow;
 	static var events:IEvents;
@@ -106,7 +106,7 @@ class Main {
 		values.writeColor(shader.getUniform("tint"), 0xff80c0ff);
 		values.writeTexture(shader.getSampler("image"), texture);
 		time = shader.getUniform("time");
-		var frames = system.getOption("frames");
+		var frames = system.getOption("quit_after_frame");
 		if (frames != null)
 			framesLeft = Std.parseInt(frames);
 	}

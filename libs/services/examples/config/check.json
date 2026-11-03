@@ -1,7 +1,7 @@
 {
-  "what": "Green: the check starts it with frames=60.",
+  "what": "Green: the check starts it with quit_after_frame=60.",
   "printed": [
-    "started with frames=60"
+    "started with quit_after_frame=60"
   ],
   "points": [
     {

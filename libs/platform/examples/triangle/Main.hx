@@ -10,8 +10,8 @@ import helix.platform.tools.ShaderCompiler;
 
 	Each frame polls the events, starts the screen's pass, draws through one pipeline, ends the pass and presents. The shader is
 	`triangle.vert` and `triangle.frag`, compiled while the program builds. Natively it draws with GL, or with SDL_GPU when built with
-	`-D sdl_gpu` (`build-native-gpu.hxml`). The `frames` option (`--frames=60` natively, `?frames=60` in a page) stops after that many
-	frames, for a check that runs it unattended. */
+	`-D sdl_gpu` (`build-native-gpu.hxml`). The `quit_after_frame` option (`--quit_after_frame=60` natively, `?quit_after_frame=60` in a
+	page) quits after that frame, for a check that runs it unattended. */
 class Main {
 	static var window:IWindow;
 	static var events:IEvents;
@@ -52,7 +52,7 @@ class Main {
 	/** Makes the program, the vertices and the pipeline. */
 	static function setup():Void {
 		window.title = "helix-platform: a triangle";
-		var frames = system.getOption("frames");
+		var frames = system.getOption("quit_after_frame");
 		if (frames != null)
 			framesLeft = Std.parseInt(frames);
 		shader = graphics.createShader(ShaderCompiler.compile("triangle.vert", "triangle.frag"));

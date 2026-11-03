@@ -10,8 +10,8 @@ import helix.services.input.Touch;
 
 	Each finger landing and lifting is printed with where, and how many are down. The screen is dark grey with none down, and brighter
 	for each finger, as many as the screen takes. The window, its events and the loop are the platform's, written out by hand, as a program
-	does them until the layer above the services does. The `frames` option (`--frames=60` natively, `?frames=60` in a page) stops it
-	after that many frames. */
+	does them until the layer above the services does. The `quit_after_frame` option (`--quit_after_frame=60` natively,
+	`?quit_after_frame=60` in a page) quits it after that frame. */
 class Main {
 	static inline final WAITING = 0xff1a1d26;
 
@@ -41,7 +41,7 @@ class Main {
 		system = new helix.platform.adapters.system.sdl3.Sdl3SystemAdapter();
 		#end
 		window.title = "helix-services: touch";
-		var frames = system.getOption("frames");
+		var frames = system.getOption("quit_after_frame");
 		if (frames != null)
 			framesLeft = Std.parseInt(frames);
 		polled.push(events);

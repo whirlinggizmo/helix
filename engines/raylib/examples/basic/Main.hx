@@ -1,7 +1,7 @@
 import helix.raylib.Raylib.*;
 
-/** raylib's basic window: text in the middle and a circle at the mouse, in raylib's own shape. The `frames` option (`--frames=60`
-	natively, `?frames=60` in a page) stops it after that many frames. */
+/** raylib's basic window: text in the middle and a circle at the mouse, in raylib's own shape. The `quit_after_frame` option
+	(`--quit_after_frame=60` natively, `?quit_after_frame=60` in a page) quits it after that frame. */
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: basic window");

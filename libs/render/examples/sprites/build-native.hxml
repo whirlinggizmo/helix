@@ -1,5 +1,5 @@
 # The sprites example natively, SDL3 drawing with GL: haxe build-native.hxml -> native/Main, reading web/assets; hxcpp links the SDL3
-# library HELIX_SDL3_LIBRARY names (BUILDING.md). --frames=60 stops it after 60 frames.
+# library HELIX_SDL3_LIBRARY names (BUILDING.md). --quit_after_frame=60 quits it after frame 60.
 -lib helix-render
 -cp .
 -main Main

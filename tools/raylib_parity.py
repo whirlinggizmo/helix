@@ -357,7 +357,7 @@ def check_pixels(name, manifest, main, out, display, env):
         shot = directory / 'helix.png'
         if shot.exists():
             shot.unlink()
-        run([str(directory / main)], display, directory, {'HELIX_FRAMES': str(manifest.get('frames', 5))}, what=f'the {backend} program')
+        run([str(directory / main)], display, directory, {'HELIX_QUIT_AFTER_FRAME': str(manifest.get('frames', 5))}, what=f'the {backend} program')
         if not shot.is_file():
             problems.append(f'{backend}: saved no helix.png')
             continue

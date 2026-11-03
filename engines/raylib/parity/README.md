@@ -97,7 +97,7 @@ Each suite's manifest says in full what it covers (`covers`), and `notes` say wh
   a section's own (`worst`, a target's own by its name, and `nonfinite`, how many numbers may be NaN or infinite where the other
   side's are not). `hex`: numbers printed as a double's bits. `sections`: how lines are
   grouped (below).
-- Pixel suites: `frames`, how long helix-raylib's program runs (`HELIX_FRAMES`); `backends`, for each backend it is built for (`gl`, `sdl_gpu`),
+- Pixel suites: `frames`, how long helix-raylib's program runs (`HELIX_QUIT_AFTER_FRAME`); `backends`, for each backend it is built for (`gl`, `sdl_gpu`),
   how many pixels may differ from raylib's frame at all.
 
 ### Value suites
