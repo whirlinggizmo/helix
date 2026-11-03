@@ -55,7 +55,7 @@ class WaveMacro {
 			case ".qoa" | ".QOA": "readQoa";
 			case _: "readUnsupported";
 		}
-		return macro @:privateAccess $p{["helix", "ray", "raylib", "RAsync", name]};
+		return macro @:privateAccess $p{["helix", "raylib", "modules", "RAsync", name]};
 	}
 }
 #end

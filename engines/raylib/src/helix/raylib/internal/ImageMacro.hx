@@ -91,7 +91,7 @@ class ImageMacro {
 	}
 
 	static function call(reader:String, args:Array<Expr>):Expr {
-		return macro @:privateAccess $p{["helix", "ray", "raylib", "RAsync", reader]}($a{args});
+		return macro @:privateAccess $p{["helix", "raylib", "modules", "RAsync", reader]}($a{args});
 	}
 
 	static function orNull(failed:Null<Expr>):Expr {

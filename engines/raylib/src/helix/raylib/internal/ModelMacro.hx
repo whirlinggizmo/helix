@@ -27,7 +27,7 @@ class ModelMacro {
 		}
 		if (failed == null)
 			failed = macro null;
-		return macro @:privateAccess $p{["helix", "ray", "raylib", "RAsync", reader]}($fileName, $loaded, $failed);
+		return macro @:privateAccess $p{["helix", "raylib", "modules", "RAsync", reader]}($fileName, $loaded, $failed);
 	}
 }
 #end
