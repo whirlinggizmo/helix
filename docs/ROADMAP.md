@@ -15,7 +15,7 @@
   design. Gyre is HeliX's game-level API (app, loader, UI, transitions, animator, autopilot) on helix-scene, helix-render and
   the services, so its users keep the API they know; a three.js-style engine later on the same helix-scene. The test: one of
   HeliX's games ported, its effort and its size beside its HeliX build.
-- **helix-ray, on trial (DECISIONS 16, 19, 20, 21):** raylib's API over the services; to decide whether it merges. Next: reloading and placeholders under raylib's own names (the assets,
+- **helix-ray (DECISIONS 16, 19, 20, 21):** raylib's API over the services, merged to `main`. Next: rebuilt on helix-render; then reloading and placeholders under raylib's own names (the assets,
   resources and objects below). Then a trial of how agents take to
   the `...Async` loads (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
   (Atomics.wait, which a worker may; cross-origin isolation, OffscreenCanvas, input and audio relayed; raylib's loop run as written)

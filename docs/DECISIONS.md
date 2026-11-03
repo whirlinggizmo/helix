@@ -78,7 +78,8 @@ Why things are the way they are, numbered, in order.
     before `main` so loads answer at once; raylib's GLSL is compiled as the program builds, for every backend. Three fresh agents wrote
     the game in 2D, then with a 3D view, from raylib knowledge alone: 0 to 2 compile errors each, every one a raylib function missing
     here (since added); all six played in a page and natively. It uses the services (input, time, saves, assets, audio, images) and
-    helix-math (`Matrix3D`), and the platform for drawing. On trial on the branch `raylib-slice`, not merged.
+    helix-math (`Matrix3D`), and the platform for drawing. Tried on the branch `raylib-slice`, and merged to `main` on 2026-11-03,
+    the user's call: raylib 5.5's API complete, its parity suites against raylib's C passing, checked on Linux and Windows.
 
 17. **Images and Matrix3D go below the mirror.** What any engine would take as it is moved out of helix-ray: image files decoded into
     pixels became the services' `Images` (no GPU, so services still doesn't draw), and raymath's matrices became helix-math's
