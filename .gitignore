@@ -18,6 +18,8 @@ platform/tests/audio/web/app.js
 platform/tests/audio/native/
 platform/tests/window/web/app.js
 platform/tests/window/native/
+platform/tests/http/web/app.js
+platform/tests/http/native/
 services/examples/reload/web/assets/
 render/examples/*/web/app.js
 render/examples/*/native/

@@ -1,0 +1,8 @@
+# The HTTP tests natively, over sys.Http: haxe build-native.hxml -> native/HttpTests. Run it with HELIX_SERVER=<a test server's URL>;
+# it prints {passed, checks, failures, answers} and exits 1 on a failure. tools/platform_checks.py starts the server.
+-lib helix-platform
+-cp .
+-main HttpTests
+-dce full
+-D HXCPP_COMPILE_THREADS=4
+-cpp native

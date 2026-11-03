@@ -1,0 +1,7 @@
+# The HTTP tests in a page: haxe build-web.hxml -> web/app.js, beside web/index.html; serve web/ and open it with ?server=<a test server's
+# URL>. window.helixResult holds {passed, checks, failures, answers} when they're done. tools/platform_checks.py starts the server.
+-lib helix-platform
+-cp .
+-main HttpTests
+-dce full
+-js web/app.js

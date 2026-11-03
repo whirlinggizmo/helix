@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Checks helix-platform on the GPU, its audio and its window with the library alone: its examples (platform/examples/<name>), its graphics
 tests (platform/tests/graphics), its audio tests (platform/tests/audio, natively on SDL3's dummy audio driver, which mixes in time, and in a
-page Chromium lets start audio without a gesture, muted) and its window tests (platform/tests/window, each request's answer listed: the window's, the mouse's lock, the clipboard's). Each is built from its own hxml files, as a reader builds it, and run natively on a private display (Linux),
+page Chromium lets start audio without a gesture, muted), its window tests (platform/tests/window, each request's answer listed: the window's, the mouse's lock, the clipboard's) and its HTTP tests (platform/tests/http, against a server started here that ends bodies early). Each is built from its own hxml files, as a reader builds it, and run natively on a private display (Linux),
 each native build it has (GL, and SDL_GPU where it has build-native-gpu.hxml), and in a headless Chromium. An example runs 60 frames and
 the page's screenshot is checked against what it says it draws (its check.json: points and the colors expected there, each within a
 tolerance per channel); the graphics and audio tests check their own results, and say how it went. Exits 1 on any failure.
 
     python3 tools/platform_checks.py --browser BROWSER [--desktop] [NAME ...]
 
-BROWSER is a Chromium to run (Edge on Windows), or "" for Playwright's own. The names are examples', "graphics", "audio" and "window"; they default
+BROWSER is a Chromium to run (Edge on Windows), or "" for Playwright's own. The names are examples', "graphics", "audio", "window" and "http"; they default
 to all of them. --desktop runs the native programs on this machine's own desktop instead of a private display, for a machine kept for checks
 (Windows over tools/remote_windows.py --desktop): never on a desktop someone is using."""
 import json
@@ -25,6 +25,7 @@ EXAMPLES = ROOT / 'platform/examples'
 GRAPHICS = ROOT / 'platform/tests/graphics'
 AUDIO = ROOT / 'platform/tests/audio'
 WINDOW = ROOT / 'platform/tests/window'
+HTTP = ROOT / 'platform/tests/http'
 FRAMES = 60
 # Run natively on this machine's own desktop rather than a private display (--desktop): for a machine kept for checks, such as Windows
 # over tools/remote_windows.py --desktop. A real display paces its frames, so a native run lasts at most PACED_FRAMES.
@@ -90,11 +91,11 @@ def build(directory, hxml, env):
     subprocess.run(['haxe', hxml], cwd=directory, env=env, check=True)
 
 
-def run(name, directory, main, browser, native_run, page_run, native_frames=FRAMES, native_extra=None, query=''):
+def run(name, directory, main, browser, native_run, page_run, native_frames=FRAMES, native_extra=None, query='', expected_errors=()):
     """Builds and runs one program both ways, in directory with its main class main, the page in browser: native_run(label, completed) and
     page_run(printed, screenshot) say what's wrong with each run, as a list of problems. native_frames is how many frames a native run
     lasts, which a private display doesn't pace; native_extra what a native run's environment adds; query what the page's query adds
-    (tools/page_check.cjs reads safeArea from it). The problems found."""
+    (tools/page_check.cjs reads safeArea from it); expected_errors the console errors the page is meant to cause (each named by a part of it). The problems found."""
     import pins
     from native_build import env as native_env
     env = pins.use_haxelib()
@@ -129,6 +130,7 @@ def run(name, directory, main, browser, native_run, page_run, native_frames=FRAM
         problems.append(f'browser run failed\n{ran.stdout}{ran.stderr}')
     else:
         printed = json.loads(ran.stdout)
+        printed['errors'] = [e for e in printed['errors'] if not any(part in e for part in expected_errors)]
         if printed['errors']:
             problems.append(f'page errors: {printed["errors"]}')
         else:
@@ -156,9 +158,9 @@ def example(name, browser):
     return run(name, directory, 'Main', browser, native_run, page_run)
 
 
-def tests(name, directory, main, page, browser, backends=True, query=''):
-    """Builds and runs a test program both ways (one that ends with {passed, checks, failures}), the page's run on page with query added
-    to its query, natively on each graphics backend it builds for (backends) or none; the problems found."""
+def tests(name, directory, main, page, browser, backends=True, native_extra=None, query='', expected_errors=()):
+    """Builds and runs a test program both ways (one that ends with {passed, checks, failures}), the page's run on page, natively on
+    each graphics backend it builds for (backends) or none, native_extra, query and expected_errors as run's; the problems found."""
 
     def outcome(where, result):
         if result is None:
@@ -177,7 +179,8 @@ def tests(name, directory, main, page, browser, backends=True, query=''):
         found = outcome(f'natively on {label}' if backends else 'natively', json.loads(lines[-1]))
         return found or ([f'exited {ran.returncode}\n{ran.stderr}'] if ran.returncode else [])
 
-    return run(name, directory, main, browser, native_run, lambda printed, _: outcome(f'in the page ({page})', printed['result']), query=query)
+    return run(name, directory, main, browser, native_run, lambda printed, _: outcome(f'in the page ({page})', printed['result']),
+               native_extra=native_extra, query=query, expected_errors=expected_errors)
 
 
 def graphics(browser):
@@ -195,6 +198,62 @@ def window(browser):
     return tests('window', WINDOW, 'WindowTests', 'the page', browser, backends=False, query='&safeArea=47,0,34,0')
 
 
+class ShortBodies:
+    """A test server on 127.0.0.1, at a port the OS picks, on a thread of its own: /whole and /chunked send a 1000-byte body whole, as
+    its Content-Length says and in chunks; /short closes after 100 bytes of the 1000 its Content-Length promises, and /cut-chunk after
+    100 bytes of a 1000-byte chunk. Any page may read it (Access-Control-Allow-Origin). Stopped by close(), never by a search for it."""
+
+    def __init__(self):
+        import http.server
+        import threading
+        body = bytes(i * 7 & 255 for i in range(1000))
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            protocol_version = 'HTTP/1.1'
+
+            def log_message(self, *args):
+                pass
+
+            def do_GET(self):
+                path = self.path.split('?')[0]
+                self.close_connection = True
+                head = 'HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\nCache-Control: no-store\r\n'
+                if path == '/whole':
+                    self.wfile.write(f'{head}Content-Length: 1000\r\n\r\n'.encode() + body)
+                elif path == '/short':
+                    self.wfile.write(f'{head}Content-Length: 1000\r\n\r\n'.encode() + body[:100])
+                elif path == '/chunked':
+                    self.wfile.write(f'{head}Transfer-Encoding: chunked\r\n\r\n'.encode() + b'1f4\r\n' + body[:500] + b'\r\n1f4\r\n' + body[500:] +
+                                     b'\r\n0\r\n\r\n')
+                elif path == '/cut-chunk':
+                    self.wfile.write(f'{head}Transfer-Encoding: chunked\r\n\r\n'.encode() + b'3e8\r\n' + body[:100])
+                else:
+                    self.wfile.write(f'HTTP/1.1 404 Not Found\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: 0\r\n\r\n'.encode())
+                self.wfile.flush()
+
+        self.server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        self.url = f'http://127.0.0.1:{self.server.server_address[1]}/'
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+
+    def close(self):
+        self.server.shutdown()
+        self.server.server_close()
+
+
+def http(browser):
+    """Builds and runs the HTTP tests both ways against a ShortBodies server; the problems found."""
+    import urllib.parse
+    server = ShortBodies()
+    try:
+        return tests('http', HTTP, 'HttpTests', 'fetch', browser, backends=False, native_extra={'HELIX_SERVER': server.url},
+                     query='&server=' + urllib.parse.quote(server.url, safe=''),
+                     # The browser reports each body ended early in the console, as it should.
+                     expected_errors=('ERR_CONTENT_LENGTH_MISMATCH', 'ERR_INCOMPLETE_CHUNKED_ENCODING'))
+    finally:
+        server.close()
+
+
 def main():
     import cli
     parser = cli.parser(__doc__)
@@ -204,10 +263,10 @@ def main():
     a = parser.parse_args()
     global DESKTOP
     DESKTOP = a.desktop
-    names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx')) + ['graphics', 'audio', 'window']
+    names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx')) + ['graphics', 'audio', 'window', 'http']
     failed = False
     for name in names:
-        check = {'graphics': graphics, 'audio': audio, 'window': window}.get(name, lambda browser: example(name, browser))
+        check = {'graphics': graphics, 'audio': audio, 'window': window, 'http': http}.get(name, lambda browser: example(name, browser))
         for problem in check(a.browser):
             failed = True
             print(f'{name}: {problem}', flush=True)
