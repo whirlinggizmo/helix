@@ -353,7 +353,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
 - `ToggleFullscreenAsync`: Asks for fullscreen, or back to the window, the size and place it had, answering once it is granted or refused: helix-raylib's own, in place of raylib's `ToggleFullscreen`. In a page the browser grants it only soon after a key press, click or tap; without one, it waits for the player's next, or refuses. `IsWindowFullscreen` says the new state once the window has changed, not when the call returns.
   - `done`: Optional. Called once the window has changed, at a later poll.
   - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
-- `ToggleBorderlessWindowedAsync`: Asks for the window to fill the screen without borders, or back to the window, answering once it is granted or refused: helix-raylib's own, in place of raylib's `ToggleBorderlessWindowed`. It is `ToggleFullscreenAsync`, as a fullscreen window natively is borderless and the size of the desktop.
+- `ToggleBorderlessWindowedAsync`: Asks for the window to fill the screen without borders, or back to the window, answering once it is granted or refused: helix-raylib's own, in place of raylib's `ToggleBorderlessWindowed`. The screen is asked for fullscreen, as a fullscreen window natively is borderless and the size of the desktop. As in raylib, `IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)` is true while it is, and `IsWindowFullscreen` false.
   - `done`: Optional. Called once the window has changed, at a later poll.
   - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
 - `SetWindowSizeAsync`: Asks for the window's size, answering once the window manager has resized it or refused: helix-raylib's own, in place of raylib's `SetWindowSize`. The window manager may give another size, which `GetScreenWidth` and `GetScreenHeight` say once it has. A fullscreen or maximized window keeps its size, and a page's canvas follows the page, so those are refused.
@@ -406,7 +406,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   - `text`: The text.
   - `done`: Optional. Called once the text is on the clipboard, at a later poll.
   - `failed`: Optional. Receives why it isn't; when omitted, it is logged.
-- `SaveFileTextAsync`: Writes a text file, answering once it is kept or refused: helix-raylib's own, in place of raylib's `SaveFileText`. It is written through the program's `SetSaveFileTextCallback` when it has one, during the call, answered by what that returned; else kept across runs (in a page, in its storage; natively, in the program's data directory), answered once the write has finished. `LoadFileTextAsync` reads it back.
+- `SaveFileTextAsync`: Writes a text file, answering once it is kept or refused: helix-raylib's own, in place of raylib's `SaveFileText`. It is written through the program's `SetSaveFileTextCallback` when it has one, during the call, answered by what that returned. Otherwise it is answered once the write has finished. The save file persists between runs, including both native and web builds. `LoadFileTextAsync` reads it back.
   - `fileName`: The file.
   - `text`: Its text.
   - `done`: Optional. Called once the file is written, at a later poll.
@@ -2004,7 +2004,7 @@ static function EndScissorMode():Void
   - returns: True for the frame after a resize.
 - `SetWindowTitle`: Sets the window's title.
   - `title`: The title.
-- `IsWindowFullscreen`: Returns whether the window is fullscreen. In a page it tells whether the canvas is.
+- `IsWindowFullscreen`: Returns whether the window is fullscreen, not a borderless window (`ToggleBorderlessWindowedAsync`), as raylib tells them apart. In a page it tells whether the canvas is.
   - returns: True while it is.
 - `IsWindowHidden`: Returns whether the program hid the window (`FLAG_WINDOW_HIDDEN`). In a page it tells whether the canvas is hidden.
   - returns: True while it is.
@@ -2060,7 +2060,7 @@ static function EndScissorMode():Void
   - `flags`: The flags, or'd together.
 - `ClearWindowState`: Clears flags on the open window (`FLAG_*`).
   - `flags`: The flags, or'd together.
-- `IsWindowState`: Returns whether flags are set on the window.
+- `IsWindowState`: Returns whether flags are set on the window. `FLAG_FULLSCREEN_MODE` and `FLAG_BORDERLESS_WINDOWED_MODE` say what the window is now, as `IsWindowFullscreen` does.
   - `flag`: The flags, or'd together.
   - returns: True when all of them are.
 - `SetTargetFPS`: Sets the most frames a second, as raylib's `EndDrawing` waits out the rest of each frame. Natively it waits; in a page, where frames follow the display's refresh, a frame is skipped until it is time, so a rate above the display's changes nothing.
@@ -2156,15 +2156,15 @@ static function EndScissorMode():Void
   - returns: The notches.
 - `GetTouchPointCount`: Returns the number of fingers down.
   - returns: The count.
-- `GetTouchPosition`: Returns a finger's position, in the screen's pixels.
+- `GetTouchPosition`: Returns a finger's position, in the screen's pixels. While no finger is down, the first is where the mouse is, as raylib's.
   - `index`: Which finger, 0 for the first down.
   - returns: The position, or (0, 0) when fewer are down.
 - `GetTouchPointId`: Returns a finger's id, which stays the same while it is down.
   - `index`: Which finger, 0 for the first down.
   - returns: The id, or -1 when fewer are down.
-- `GetTouchX`: Returns the first finger's x, in the screen's pixels.
+- `GetTouchX`: Returns the first finger's x, in the screen's pixels: the mouse's while no finger is down.
   - returns: The x.
-- `GetTouchY`: Returns the first finger's y, in the screen's pixels.
+- `GetTouchY`: Returns the first finger's y, in the screen's pixels: the mouse's while no finger is down.
   - returns: The y.
 - `SetGesturesEnabled`: Sets which gestures are detected; all of them until it is called.
   - `flags`: The gestures (`GESTURE_*`), or'd together.
@@ -6154,5 +6154,5 @@ Set in a build's hxml, as `-D helix-raylib-native-root=../assets`. `haxe --help-
 
 - `helix-raylib-files=<directory>`: Where the program's files are as it builds, relative to the build's directory: LoadShader compiles the shaders it names from there. Defaults to web.
 - `helix-raylib-native-root=<directory>`: Where a native program finds its files, relative to its own directory. Defaults to ../web.
-- `helix-raylib-host-warnings`: Warns where the program's own code reaches the page or the host (the URL's query, Sys.getEnv, matchMedia, maxTouchPoints, screen.orientation, the safe area's insets, deviceorientation) for what helix.raylib.Extras answers on every target, naming the call. Off by default.
+- `helix-raylib-host-warnings`: Warns where the program's own code reaches the page or the host (the URL's query, Sys.getEnv, matchMedia, maxTouchPoints, screen.orientation, the safe area's insets, deviceorientation, localStorage, the page's fullscreen) for what helix.raylib.Extras or Raylib answers on every target, naming the call. Off by default.
 - `helix-raylib-custom-frame-control`: raylib's SUPPORT_CUSTOM_FRAME_CONTROL: EndDrawing only draws, and the program calls SwapScreenBuffer, WaitTime and PollInputEvents itself.

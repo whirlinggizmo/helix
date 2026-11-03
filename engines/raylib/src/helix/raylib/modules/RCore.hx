@@ -92,11 +92,12 @@ class RCore {
 		throw "SetWindowSize is unimplemented";
 	}
 
-	/** Returns whether the window is fullscreen. In a page it tells whether the canvas is.
+	/** Returns whether the window is fullscreen, not a borderless window (`ToggleBorderlessWindowedAsync`), as raylib tells them apart.
+		In a page it tells whether the canvas is.
 
 		@return  True while it is. */
 	static function IsWindowFullscreen():Bool {
-		return Runtime.screen.fullscreen;
+		return Runtime.screen.fullscreen && !Runtime.borderless;
 	}
 
 	/** Returns whether the program hid the window (`FLAG_WINDOW_HIDDEN`). In a page it tells whether the canvas is hidden.
@@ -436,12 +437,18 @@ class RCore {
 		configFlags &= ~flags;
 	}
 
-	/** Returns whether flags are set on the window.
+	/** Returns whether flags are set on the window. `FLAG_FULLSCREEN_MODE` and `FLAG_BORDERLESS_WINDOWED_MODE` say what the window is
+		now, as `IsWindowFullscreen` does.
 
 		@param flag  The flags, or'd together.
 		@return  True when all of them are. */
 	static function IsWindowState(flag:Int):Bool {
-		return configFlags & flag == flag;
+		var flags = configFlags & ~(FLAG_FULLSCREEN_MODE | FLAG_BORDERLESS_WINDOWED_MODE);
+		if (IsWindowFullscreen())
+			flags |= FLAG_FULLSCREEN_MODE;
+		if (Runtime.borderless)
+			flags |= FLAG_BORDERLESS_WINDOWED_MODE;
+		return flags & flag == flag;
 	}
 
 	/** Sets the most frames a second, as raylib's `EndDrawing` waits out the rest of each frame. Natively it waits; in a page, where
@@ -954,16 +961,18 @@ class RCore {
 		return index < Runtime.touch().fingers.length;
 	}
 
-	// Where a finger is, by its place, as the touch has it, in the screen's pixels.
+	// Where a finger is, by its place, as the touch has it, in the screen's pixels. The first, while none is down, is the pointer.
 	static function realTouchPosition(index:Int):Vector2 {
 		var touch = Runtime.touch();
+		if (index == 0 && touch.fingers.length == 0)
+			return realPointer();
 		if (index < 0 || index >= touch.fingers.length)
 			return new Vector2();
 		var id = touch.fingers[index];
 		return new Vector2(Runtime.screen.toDesignX(touch.getX(id)), Runtime.screen.toDesignY(touch.getY(id)));
 	}
 
-	/** Returns a finger's position, in the screen's pixels.
+	/** Returns a finger's position, in the screen's pixels. While no finger is down, the first is where the mouse is, as raylib's.
 
 		@param index  Which finger, 0 for the first down.
 		@return  The position, or (0, 0) when fewer are down. */
@@ -983,14 +992,14 @@ class RCore {
 		return index >= 0 && index < touch.fingers.length ? touch.fingers[index] : -1;
 	}
 
-	/** Returns the first finger's x, in the screen's pixels.
+	/** Returns the first finger's x, in the screen's pixels: the mouse's while no finger is down.
 
 		@return  The x. */
 	static function GetTouchX():Int {
 		return Std.int(GetTouchPosition(0).x);
 	}
 
-	/** Returns the first finger's y, in the screen's pixels.
+	/** Returns the first finger's y, in the screen's pixels: the mouse's while no finger is down.
 
 		@return  The y. */
 	static function GetTouchY():Int {

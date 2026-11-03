@@ -1133,7 +1133,8 @@ class Raylib {
 	public static inline function SetWindowTitle(title:String):Void
 		RCore.SetWindowTitle(title);
 
-	/** Returns whether the window is fullscreen. In a page it tells whether the canvas is.
+	/** Returns whether the window is fullscreen, not a borderless window (`ToggleBorderlessWindowedAsync`), as raylib tells them apart.
+		In a page it tells whether the canvas is.
 
 		@return  True while it is. */
 	public static inline function IsWindowFullscreen():Bool
@@ -1291,7 +1292,8 @@ class Raylib {
 	public static inline function ClearWindowState(flags:Int):Void
 		RCore.ClearWindowState(flags);
 
-	/** Returns whether flags are set on the window.
+	/** Returns whether flags are set on the window. `FLAG_FULLSCREEN_MODE` and `FLAG_BORDERLESS_WINDOWED_MODE` say what the window is
+		now, as `IsWindowFullscreen` does.
 
 		@param flag  The flags, or'd together.
 		@return  True when all of them are. */
@@ -1572,7 +1574,7 @@ class Raylib {
 	public static inline function GetTouchPointCount():Int
 		return RCore.GetTouchPointCount();
 
-	/** Returns a finger's position, in the screen's pixels.
+	/** Returns a finger's position, in the screen's pixels. While no finger is down, the first is where the mouse is, as raylib's.
 
 		@param index  Which finger, 0 for the first down.
 		@return  The position, or (0, 0) when fewer are down. */
@@ -1586,13 +1588,13 @@ class Raylib {
 	public static inline function GetTouchPointId(index:Int):Int
 		return RCore.GetTouchPointId(index);
 
-	/** Returns the first finger's x, in the screen's pixels.
+	/** Returns the first finger's x, in the screen's pixels: the mouse's while no finger is down.
 
 		@return  The x. */
 	public static inline function GetTouchX():Int
 		return RCore.GetTouchX();
 
-	/** Returns the first finger's y, in the screen's pixels.
+	/** Returns the first finger's y, in the screen's pixels: the mouse's while no finger is down.
 
 		@return  The y. */
 	public static inline function GetTouchY():Int

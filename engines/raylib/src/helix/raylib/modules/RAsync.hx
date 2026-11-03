@@ -1222,24 +1222,34 @@ class RAsync {
 		@param done  Optional. Called once the window has changed, at a later poll.
 		@param failed  Optional. Receives why it was refused; when omitted, it is logged. */
 	static function ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void):Void {
-		toggleFullscreen("ToggleFullscreenAsync", done, failed);
+		toggleFullscreen("ToggleFullscreenAsync", false, done, failed);
 	}
 
 	/** Asks for the window to fill the screen without borders, or back to the window, answering once it is granted or refused:
-		helix-raylib's own, in place of raylib's `ToggleBorderlessWindowed`. It is `ToggleFullscreenAsync`, as a fullscreen window natively
-		is borderless and the size of the desktop.
+		helix-raylib's own, in place of raylib's `ToggleBorderlessWindowed`. The screen is asked for fullscreen, as a fullscreen window
+		natively is borderless and the size of the desktop. As in raylib, `IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)` is true while it
+		is, and `IsWindowFullscreen` false.
 
 		@param done  Optional. Called once the window has changed, at a later poll.
 		@param failed  Optional. Receives why it was refused; when omitted, it is logged. */
 	static function ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void):Void {
-		toggleFullscreen("ToggleBorderlessWindowedAsync", done, failed);
+		toggleFullscreen("ToggleBorderlessWindowedAsync", true, done, failed);
 	}
 
-	// Asks the screen for fullscreen or the window, whichever it isn't; a refusal, or a window that can't be fullscreen, is refused for
-	// the request named.
-	static function toggleFullscreen(name:String, done:Null<Void->Void>, failed:Null<String->Void>):Void {
+	// Asks the screen for fullscreen, or borderless, or the window when it is that already. A fullscreen screen asked for the other of
+	// the two only changes which it is. A refusal, or a window that can't be fullscreen, is refused for the request named.
+	static function toggleFullscreen(name:String, borderless:Bool, done:Null<Void->Void>, failed:Null<String->Void>):Void {
 		var screen = Runtime.screen;
-		ask(name, (granted, refused) -> screen.requestFullscreen(!screen.fullscreen, granted, refused), "the window can't be fullscreen here", done, failed);
+		var leaving = screen.fullscreen && Runtime.borderless == borderless;
+		if (screen.fullscreen && !leaving) {
+			Runtime.borderless = borderless;
+			Runtime.later(answered(done));
+			return;
+		}
+		ask(name, (granted, refused) -> screen.requestFullscreen(!leaving, () -> {
+			Runtime.borderless = borderless && !leaving;
+			granted();
+		}, refused), "the window can't be fullscreen here", done, failed);
 	}
 
 	/** Asks for the window's size, answering once the window manager has resized it or refused: helix-raylib's own, in place of raylib's
@@ -1398,9 +1408,9 @@ class RAsync {
 	// ---- The async writes: helix-raylib's own, not raylib's ----
 
 	/** Writes a text file, answering once it is kept or refused: helix-raylib's own, in place of raylib's `SaveFileText`. It is written
-		through the program's `SetSaveFileTextCallback` when it has one, during the call, answered by what that returned; else kept
-		across runs (in a page, in its storage; natively, in the program's data directory), answered once the write has finished.
-		`LoadFileTextAsync` reads it back.
+		through the program's `SetSaveFileTextCallback` when it has one, during the call, answered by what that returned. Otherwise it is
+		answered once the write has finished. The save file persists between runs, including both native and web builds. `LoadFileTextAsync` reads
+		it back.
 
 		@param fileName  The file.
 		@param text  Its text.

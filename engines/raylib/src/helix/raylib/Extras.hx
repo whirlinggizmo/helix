@@ -294,8 +294,9 @@ class Extras {
 		RAsync.ToggleFullscreenAsync(done, failed);
 
 	/** Asks for the window to fill the screen without borders, or back to the window, answering once it is granted or refused:
-		helix-raylib's own, in place of raylib's `ToggleBorderlessWindowed`. It is `ToggleFullscreenAsync`, as a fullscreen window natively
-		is borderless and the size of the desktop.
+		helix-raylib's own, in place of raylib's `ToggleBorderlessWindowed`. The screen is asked for fullscreen, as a fullscreen window
+		natively is borderless and the size of the desktop. As in raylib, `IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)` is true while it
+		is, and `IsWindowFullscreen` false.
 
 		@param done  Optional. Called once the window has changed, at a later poll.
 		@param failed  Optional. Receives why it was refused; when omitted, it is logged. */
@@ -423,9 +424,9 @@ class Extras {
 		RAsync.SetClipboardTextAsync(text, done, failed);
 
 	/** Writes a text file, answering once it is kept or refused: helix-raylib's own, in place of raylib's `SaveFileText`. It is written
-		through the program's `SetSaveFileTextCallback` when it has one, during the call, answered by what that returned; else kept
-		across runs (in a page, in its storage; natively, in the program's data directory), answered once the write has finished.
-		`LoadFileTextAsync` reads it back.
+		through the program's `SetSaveFileTextCallback` when it has one, during the call, answered by what that returned. Otherwise it is
+		answered once the write has finished. The save file persists between runs, including both native and web builds. `LoadFileTextAsync` reads
+		it back.
 
 		@param fileName  The file.
 		@param text  Its text.

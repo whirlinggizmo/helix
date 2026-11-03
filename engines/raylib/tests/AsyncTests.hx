@@ -5,6 +5,7 @@ import helix.raylib.Raylib.*;
 import helix.raylib.Extras.*;
 import helix.raylib.internal.Runtime;
 import helix.services.input.Mouse;
+import helix.services.input.Touch;
 import helix.services.saves.Saves;
 import helix.services.screen.Screen;
 
@@ -98,9 +99,28 @@ class AsyncTests {
 		check(answer((d, f) -> SetWindowFocusedAsync(d, f)) == "done", "SetWindowFocusedAsync");
 		window.refusing.push("focus");
 		check(answer((d, f) -> SetWindowFocusedAsync(d, f)) == "failed: focus refused", "SetWindowFocusedAsync refused");
-		check(answer((d, f) -> ToggleFullscreenAsync(d, f)) == "done" && IsWindowFullscreen(), "ToggleFullscreenAsync");
+		check(answer((d, f) -> ToggleFullscreenAsync(d, f)) == "done"
+			&& IsWindowFullscreen()
+			&& IsWindowState(FLAG_FULLSCREEN_MODE)
+			&& !IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE),
+			"ToggleFullscreenAsync");
+		// Borderless is told apart from fullscreen, as raylib's: from fullscreen it switches, and again goes back to the window.
 		check(answer((d, f) -> ToggleBorderlessWindowedAsync(d, f)) == "done"
-			&& !IsWindowFullscreen(), "ToggleBorderlessWindowedAsync, back");
+			&& !IsWindowFullscreen()
+			&& IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)
+			&& window.fullscreen,
+			"ToggleBorderlessWindowedAsync from fullscreen");
+		check(answer((d, f) -> ToggleBorderlessWindowedAsync(d, f)) == "done"
+			&& !IsWindowFullscreen()
+			&& !IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)
+			&& !window.fullscreen,
+			"ToggleBorderlessWindowedAsync, back");
+		check(answer((d, f) -> ToggleBorderlessWindowedAsync(d, f)) == "done"
+			&& answer((d, f) -> ToggleFullscreenAsync(d, f)) == "done"
+			&& IsWindowFullscreen()
+			&& !IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE),
+			"ToggleFullscreenAsync from borderless");
+		check(answer((d, f) -> ToggleFullscreenAsync(d, f)) == "done" && !window.fullscreen, "ToggleFullscreenAsync, back");
 
 		// The cursor's lock and the clipboard, which the fakes answer at the next poll, as the platform's do.
 		check(answer((d, f) -> DisableCursorAsync(d, f)) == "done"
@@ -164,6 +184,14 @@ class AsyncTests {
 		check(StringTools.startsWith(answer((d, f) -> TakeScreenshotAsync("it's.png", d, f)),
 			"failed: it's.png: Provided fileName could be potentially malicious"),
 			"a name with ' refused, as raylib's is");
+
+		// The first finger is where the mouse is while no finger is down, as raylib's.
+		Runtime.touchService = new Touch(Runtime.events, devices);
+		(cast Runtime.events : FakeEvents).next.push(MouseMove(30, 40));
+		Runtime.events.poll();
+		Runtime.mouseService.poll();
+		Runtime.touchService.poll();
+		check(GetTouchPointCount() == 0 && GetTouchX() == 30 && GetTouchY() == 40 && GetTouchPosition(1).x == 0, "GetTouchPosition(0) follows the mouse");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
