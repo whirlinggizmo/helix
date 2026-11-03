@@ -77,6 +77,17 @@ class Extras {
 	public static inline function LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void):Void
 		RAsync.LoadSoundAsync(fileName, loaded, failed);
 
+	/** Opens a music file, to be played as it is read (helix-services' `Audio.stream`), answering once enough of it has arrived to start:
+		helix-raylib's own, in place of raylib's `LoadMusicStream`. Natively it is read from its file, in a page from the download as it
+		arrives, never loaded whole. A FLAC file isn't opened, as raylib 5.5's default build leaves FLAC out (docs/DECISIONS.md 32).
+		`InitAudioDevice` comes first.
+
+		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
+		@param loaded  Receives the music, ready to play.
+		@param failed  Optional. Receives why it couldn't be opened; when omitted, it is logged. */
+	public static inline function LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void):Void
+		RAsync.LoadMusicStreamAsync(fileName, loaded, failed);
+
 	/** Reads a text file, answering when it is read: helix-raylib's own, in place of raylib's `LoadFileText`. The program's
 		`SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
 

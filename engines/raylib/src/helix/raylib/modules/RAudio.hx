@@ -632,30 +632,17 @@ class RAudio {
 
 	// ---- Music ----
 
-	/** Opens a music file, to be played as it is read (helix-services' `Audio.stream`): natively from its file, in a page from the
-		download as it arrives, never loaded whole. It may be played at once; it starts once it opens. A FLAC file isn't opened, as raylib
-		5.5's default build leaves FLAC out ("STREAM: File format not supported"): the music is invalid (docs/DECISIONS.md 32).
+	/** raylib's music load, which knows at once whether the file opened. A page can't wait to find out, so a call doesn't compile on any
+		target: `LoadMusicStreamAsync` opens it.
 
-		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
-		@return  The music. */
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadMusicStream: Synchronous loading is not supported. See LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function LoadMusicStream(fileName:String):Music {
-		var music = new Music();
-		if (StringTools.endsWith(fileName.toLowerCase(), ".flac")) {
-			Runtime.log(LOG_WARNING, 'STREAM: [$fileName] File format not supported');
-			music.failed = true;
-			return music;
-		}
-		if (Runtime.audio == null) {
-			Runtime.log(4, 'LoadMusicStream: InitAudioDevice first');
-			music.failed = true;
-			return music;
-		}
-		var path = normalize(fileName);
-		open(music, path, fileName);
-		return music;
+		throw "LoadMusicStream is unimplemented";
 	}
 
-	/** Opens music from a file's bytes, to be played as it is read, as `LoadMusicStream` plays a file: in a page from a Blob's URL, natively
+	/** Opens music from a file's bytes, to be played as it is read, as `LoadMusicStreamAsync` plays a file: in a page from a Blob's URL, natively
 		from a copy written to the program's cache directory, deleted when the music is unloaded. `InitAudioDevice` comes first.
 
 		@param fileType  The file's extension, such as ".ogg": Ogg Vorbis, MP3 or WAV. FLAC (".flac" or ".FLAC") isn't opened, as raylib
@@ -677,19 +664,25 @@ class RAudio {
 		return music;
 	}
 
-	// Opens music's stream by its path; a play asked for meanwhile starts once it opens.
-	static function open(music:Music, path:String, name:String):Void {
-		music.cancel = Runtime.audio.stream(path, opened -> {
+	// Opens music's stream by its path, answering opened or failed when given, or logging the failure under name; a play asked for
+	// meanwhile starts once it opens.
+	static function open(music:Music, path:String, name:String, ?opened:Void->Void, ?failed:String->Void):Void {
+		music.cancel = Runtime.audio.stream(path, sound -> {
 			music.cancel = null;
-			music.sound = opened;
+			music.sound = sound;
 			if (music.waiting) {
 				music.waiting = false;
 				PlayMusicStream(music);
 			}
+			if (opened != null)
+				opened();
 		}, error -> {
 			music.cancel = null;
 			music.failed = true;
-			Runtime.log(4, 'LoadMusicStream: $name: $error');
+			if (failed != null)
+				failed(error);
+			else
+				Runtime.log(4, '$name: $error');
 		});
 	}
 

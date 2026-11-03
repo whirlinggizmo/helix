@@ -204,6 +204,7 @@ static inline var ORIENTATION_PORTRAIT:Int
 static function LoadMaterialsAsync(fileName:String, loaded:Array<Material> -> Void, ?failed:String -> Void):Void
 static function LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation> -> Void, ?failed:String -> Void):Void
 static function LoadSoundAsync(fileName:String, loaded:Sound -> Void, ?failed:String -> Void):Void
+static function LoadMusicStreamAsync(fileName:String, loaded:Music -> Void, ?failed:String -> Void):Void
 static function LoadFileTextAsync(fileName:String, loaded:String -> Void, ?failed:String -> Void):Void
 static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):Void
 static function LoadAutomationEventListAsync(fileName:String, loaded:AutomationEventList -> Void, ?failed:String -> Void):Void
@@ -263,6 +264,10 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the sound.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+- `LoadMusicStreamAsync`: Opens a music file, to be played as it is read (helix-services' `Audio.stream`), answering once enough of it has arrived to start: helix-raylib's own, in place of raylib's `LoadMusicStream`. Natively it is read from its file, in a page from the download as it arrives, never loaded whole. A FLAC file isn't opened, as raylib 5.5's default build leaves FLAC out (docs/DECISIONS.md 32). `InitAudioDevice` comes first.
+  - `fileName`: The file, as the program names it, such as "assets/theme.ogg".
+  - `loaded`: Receives the music, ready to play.
+  - `failed`: Optional. Receives why it couldn't be opened; when omitted, it is logged.
 - `LoadFileTextAsync`: Reads a text file, answering when it is read: helix-raylib's own, in place of raylib's `LoadFileText`. The program's `SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
   - `fileName`: The file.
   - `loaded`: Receives its text.
@@ -4145,7 +4150,6 @@ static function IsSoundPlaying(sound:Sound):Bool
 static function SetSoundVolume(sound:Sound, volume:Float):Void
 static function SetSoundPitch(sound:Sound, pitch:Float):Void
 static function SetSoundPan(sound:Sound, pan:Float):Void
-static function LoadMusicStream(fileName:String):Music
 static function LoadMusicStreamFromMemory(fileType:String, data:haxe.io.Bytes, dataSize:Int):Music
 static function IsMusicValid(music:Music):Bool
 static function UnloadMusicStream(music:Music):Void
@@ -4247,10 +4251,7 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
   - `pan`: 0 for left, 0.5 the middle, 1 for right.
 
   The range is raylib 5.5's, 0 to 1 with 0.5 the middle, and 1 is the right, as later releases' +1 is; raylib 5.5's own mixer put 1 on the left.
-- `LoadMusicStream`: Opens a music file, to be played as it is read (helix-services' `Audio.stream`): natively from its file, in a page from the download as it arrives, never loaded whole. It may be played at once; it starts once it opens. A FLAC file isn't opened, as raylib 5.5's default build leaves FLAC out ("STREAM: File format not supported"): the music is invalid (docs/DECISIONS.md 32).
-  - `fileName`: The file, as the program names it, such as "assets/theme.ogg".
-  - returns: The music.
-- `LoadMusicStreamFromMemory`: Opens music from a file's bytes, to be played as it is read, as `LoadMusicStream` plays a file: in a page from a Blob's URL, natively from a copy written to the program's cache directory, deleted when the music is unloaded. `InitAudioDevice` comes first.
+- `LoadMusicStreamFromMemory`: Opens music from a file's bytes, to be played as it is read, as `LoadMusicStreamAsync` plays a file: in a page from a Blob's URL, natively from a copy written to the program's cache directory, deleted when the music is unloaded. `InitAudioDevice` comes first.
   - `fileType`: The file's extension, such as ".ogg": Ogg Vorbis, MP3 or WAV. FLAC (".flac" or ".FLAC") isn't opened, as raylib 5.5's default build leaves it out ("STREAM: Data format not supported"): the music is invalid.
   - `data`: The file's bytes; they are kept until the music is unloaded.
   - `dataSize`: How many of them.
@@ -4358,7 +4359,7 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
 
 Each of these is raylib's name (or emscripten's, which raylib's web programs call), and a call to it doesn't compile, saying why and what to use instead.
 
-`SetWindowSize`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowFocused`, `SetWindowOpacity`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `ToggleFullscreen`, `ToggleBorderlessWindowed`, `SetWindowPosition`, `SetWindowMonitor`, `EnableCursor`, `DisableCursor`, `FileExists`, `LoadFileText`, `SaveFileText`, `LoadFileData`, `SaveFileData`, `ExportDataAsCode`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `ExportAutomationEventList`, `MemAlloc`, `MemRealloc`, `MemFree`, `TakeScreenshot`, `emscripten_set_main_loop`, `emscripten_set_main_loop_arg`, `emscripten_cancel_main_loop`, `emscripten_run_script`, `emscripten_run_script_int`, `emscripten_run_script_string`, `emscripten_get_now`, `emscripten_sleep`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `ExportImage`, `ExportImageAsCode`, `ExportFontAsCode`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadMaterials`, `ExportMesh`, `ExportMeshAsCode`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `ExportWave`, `ExportWaveAsCode`, `LoadSound`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`SetWindowSize`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowFocused`, `SetWindowOpacity`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `ToggleFullscreen`, `ToggleBorderlessWindowed`, `SetWindowPosition`, `SetWindowMonitor`, `EnableCursor`, `DisableCursor`, `FileExists`, `LoadFileText`, `SaveFileText`, `LoadFileData`, `SaveFileData`, `ExportDataAsCode`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `ExportAutomationEventList`, `MemAlloc`, `MemRealloc`, `MemFree`, `TakeScreenshot`, `emscripten_set_main_loop`, `emscripten_set_main_loop_arg`, `emscripten_cancel_main_loop`, `emscripten_run_script`, `emscripten_run_script_int`, `emscripten_run_script_string`, `emscripten_get_now`, `emscripten_sleep`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `ExportImage`, `ExportImageAsCode`, `ExportFontAsCode`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadMaterials`, `ExportMesh`, `ExportMeshAsCode`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `ExportWave`, `ExportWaveAsCode`, `LoadSound`, `LoadMusicStream`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ## Raymath
 

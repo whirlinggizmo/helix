@@ -5153,16 +5153,7 @@ class Raylib {
 	public static inline function SetSoundPan(sound:Sound, pan:Float):Void
 		RAudio.SetSoundPan(sound, pan);
 
-	/** Opens a music file, to be played as it is read (helix-services' `Audio.stream`): natively from its file, in a page from the
-		download as it arrives, never loaded whole. It may be played at once; it starts once it opens. A FLAC file isn't opened, as raylib
-		5.5's default build leaves FLAC out ("STREAM: File format not supported"): the music is invalid (docs/DECISIONS.md 32).
-
-		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
-		@return  The music. */
-	public static inline function LoadMusicStream(fileName:String):Music
-		return RAudio.LoadMusicStream(fileName);
-
-	/** Opens music from a file's bytes, to be played as it is read, as `LoadMusicStream` plays a file: in a page from a Blob's URL, natively
+	/** Opens music from a file's bytes, to be played as it is read, as `LoadMusicStreamAsync` plays a file: in a page from a Blob's URL, natively
 		from a copy written to the program's cache directory, deleted when the music is unloaded. `InitAudioDevice` comes first.
 
 		@param fileType  The file's extension, such as ".ogg": Ogg Vorbis, MP3 or WAV. FLAC (".flac" or ".FLAC") isn't opened, as raylib
@@ -5743,6 +5734,11 @@ class Raylib {
 	public static macro function LoadSound(fileName:ExprOf<String>):ExprOf<Sound>
 		return helix.platform.macros.Build.unsupported("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)",
 			macro(null : helix.raylib.Sound));
+
+	/** raylib's music load, which knows at once whether the file opened. A page can't wait to find out, so a call doesn't compile on any target: `LoadMusicStreamAsync` opens it. */
+	public static macro function LoadMusicStream(fileName:ExprOf<String>):ExprOf<Music>
+		return helix.platform.macros.Build.unsupported("LoadMusicStream: Synchronous loading is not supported. See LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)",
+			macro(null : helix.raylib.Music));
 
 	/** raylib's processor on a stream's samples, which it calls on its audio thread. A page can't run Haxe there, so a call doesn't compile on any target. */
 	public static macro function AttachAudioStreamProcessor(stream:ExprOf<AudioStream>,

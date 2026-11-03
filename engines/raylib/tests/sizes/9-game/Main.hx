@@ -42,7 +42,7 @@ class Main {
 		var font:Null<Font> = null;
 		var jump:Null<Sound> = null;
 		var coin:Null<Sound> = null;
-		var music:Music = LoadMusicStream("theme.ogg");
+		var music:Null<Music> = null;
 		var target:RenderTexture2D = LoadRenderTexture(400, 225);
 		var shader:Shader = LoadShaderFromMemory(null, "#version 330
 in vec2 fragTexCoord;
@@ -66,7 +66,10 @@ void main() {
 		LoadSoundAsync("jump.wav", loaded -> jump = loaded);
 		LoadSoundAsync("coin.wav", loaded -> coin = loaded);
 		LoadFileTextAsync("save.txt", text -> best = Std.parseInt(text) ?? 0);
-		PlayMusicStream(music);
+		LoadMusicStreamAsync("theme.ogg", loaded -> {
+			music = loaded;
+			PlayMusicStream(loaded);
+		});
 		var player = new Vector3(0, 0, 0);
 		var coinAt = new Vector3(3, 0.5, 0);
 		var score = 0;
@@ -75,7 +78,8 @@ void main() {
 		while (!WindowShouldClose()) {
 			var dt = GetFrameTime();
 			time += dt;
-			UpdateMusicStream(music);
+			if (music != null)
+				UpdateMusicStream(music);
 			if (IsKeyPressed(KEY_F))
 				ToggleFullscreenAsync();
 			if (IsKeyPressed(KEY_R))
@@ -153,7 +157,8 @@ void main() {
 			EndDrawing();
 		}
 		UnloadRenderTexture(target);
-		UnloadMusicStream(music);
+		if (music != null)
+			UnloadMusicStream(music);
 		CloseAudioDevice();
 		CloseWindow();
 	}

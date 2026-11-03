@@ -94,9 +94,15 @@ class WaveBits {
 		run(0);
 	}
 
-	// FLAC music, refused by its file and its bytes before any device is asked for, as raylib refuses it.
+	// FLAC music, refused by its file (answered at the next turn) and its bytes before any device is asked for, as raylib refuses it.
 	static function music():Void {
-		out.add('music_flac valid ${IsMusicValid(LoadMusicStream("tone48.flac")) ? 1 : 0}\n');
+		var valid = -1;
+		LoadMusicStreamAsync("tone48.flac", music -> valid = IsMusicValid(music) ? 1 : 0, _ -> valid = 0);
+		var now = Runtime.waiting;
+		Runtime.waiting = [];
+		for (f in now)
+			f();
+		out.add('music_flac valid $valid\n');
 		out.add('music_flac_memory valid ${IsMusicValid(LoadMusicStreamFromMemory(".flac", file("tone48.flac"), file("tone48.flac").length)) ? 1 : 0}\n');
 	}
 

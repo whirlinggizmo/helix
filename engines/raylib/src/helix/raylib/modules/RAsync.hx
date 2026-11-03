@@ -242,6 +242,28 @@ class RAsync {
 			entry.answers.push(error -> error == null ? loaded(sound) : refuse("LoadSoundAsync", error, failed));
 	}
 
+	/** Opens a music file, to be played as it is read (helix-services' `Audio.stream`), answering once enough of it has arrived to start:
+		helix-raylib's own, in place of raylib's `LoadMusicStream`. Natively it is read from its file, in a page from the download as it
+		arrives, never loaded whole. A FLAC file isn't opened, as raylib 5.5's default build leaves FLAC out (docs/DECISIONS.md 32).
+		`InitAudioDevice` comes first.
+
+		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
+		@param loaded  Receives the music, ready to play.
+		@param failed  Optional. Receives why it couldn't be opened; when omitted, it is logged. */
+	static function LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void):Void {
+		var path = normalize(fileName);
+		if (StringTools.endsWith(path.toLowerCase(), ".flac")) {
+			Runtime.later(() -> refuse("LoadMusicStreamAsync", '$path: STREAM: File format not supported', failed));
+			return;
+		}
+		if (Runtime.audio == null) {
+			Runtime.later(() -> refuse("LoadMusicStreamAsync", '$path: InitAudioDevice first', failed));
+			return;
+		}
+		var music = new Music();
+		RAudio.open(music, path, "LoadMusicStreamAsync", () -> loaded(music), error -> refuse("LoadMusicStreamAsync", error, failed));
+	}
+
 	// LoadWaveAsync's call (Extras.LoadWaveAsync): the file fetched, then read by read, the reader its extension names (WaveMacro).
 	static function loadWave(fileName:String, read:WaveReader, loaded:Wave->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
