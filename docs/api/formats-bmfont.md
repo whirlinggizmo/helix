@@ -4,7 +4,7 @@
 
 ## BmFontChar
 
-*class* in [`formats/src/helix/formats/bmfont/BmFontChar.hx`](../../formats/src/helix/formats/bmfont/BmFontChar.hx), `import helix.formats.bmfont.BmFontChar;`
+*class* in [`libs/formats/src/helix/formats/bmfont/BmFontChar.hx`](../../libs/formats/src/helix/formats/bmfont/BmFontChar.hx), `import helix.formats.bmfont.BmFontChar;`
 
 Represents one glyph of a BMFont: where it is on its page, and how it is placed and advanced, in pixels.
 
@@ -34,7 +34,7 @@ final channel:Int
 
 ## BmFontFile
 
-*class* in [`formats/src/helix/formats/bmfont/BmFontFile.hx`](../../formats/src/helix/formats/bmfont/BmFontFile.hx), `import helix.formats.bmfont.BmFontFile;`
+*class* in [`libs/formats/src/helix/formats/bmfont/BmFontFile.hx`](../../libs/formats/src/helix/formats/bmfont/BmFontFile.hx), `import helix.formats.bmfont.BmFontFile;`
 
 Represents a bitmap font read from AngelCode BMFont's text format (.fnt): its size and line metrics, its pages, glyphs and kerning pairs, in pixels.
 
@@ -75,7 +75,7 @@ final kernings:Array<BmFontKerning>
 
 ## BmFontKerning
 
-*class* in [`formats/src/helix/formats/bmfont/BmFontKerning.hx`](../../formats/src/helix/formats/bmfont/BmFontKerning.hx), `import helix.formats.bmfont.BmFontKerning;`
+*class* in [`libs/formats/src/helix/formats/bmfont/BmFontKerning.hx`](../../libs/formats/src/helix/formats/bmfont/BmFontKerning.hx), `import helix.formats.bmfont.BmFontKerning;`
 
 Represents one kerning pair of a BMFont: how far the pen moves when one glyph follows another.
 
@@ -91,7 +91,7 @@ final amount:Int
 
 ## BmFontPage
 
-*class* in [`formats/src/helix/formats/bmfont/BmFontPage.hx`](../../formats/src/helix/formats/bmfont/BmFontPage.hx), `import helix.formats.bmfont.BmFontPage;`
+*class* in [`libs/formats/src/helix/formats/bmfont/BmFontPage.hx`](../../libs/formats/src/helix/formats/bmfont/BmFontPage.hx), `import helix.formats.bmfont.BmFontPage;`
 
 Represents one page of a BMFont: an image holding some of its glyphs, named by its id.
 

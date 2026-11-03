@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Checks helix-platform on the GPU, its audio and its window with the library alone: its examples (platform/examples/<name>), its graphics
-tests (platform/tests/graphics), its audio tests (platform/tests/audio, natively on SDL3's dummy audio driver, which mixes in time, and in a
-page Chromium lets start audio without a gesture, muted), its window tests (platform/tests/window, each request's answer listed: the window's, the mouse's lock, the clipboard's) and its HTTP tests (platform/tests/http, against a server started here that ends bodies early). Each is built from its own hxml files, as a reader builds it, and run natively on a private display (Linux),
+"""Checks helix-platform on the GPU, its audio and its window with the library alone: its examples (libs/platform/examples/<name>), its graphics
+tests (libs/platform/tests/graphics), its audio tests (libs/platform/tests/audio, natively on SDL3's dummy audio driver, which mixes in time, and in a
+page Chromium lets start audio without a gesture, muted), its window tests (libs/platform/tests/window, each request's answer listed: the window's, the mouse's lock, the clipboard's) and its HTTP tests (libs/platform/tests/http, against a server started here that ends bodies early). Each is built from its own hxml files, as a reader builds it, and run natively on a private display (Linux),
 each native build it has (GL, and SDL_GPU where it has build-native-gpu.hxml), and in a headless Chromium. An example runs 60 frames and
 the page's screenshot is checked against what it says it draws (its check.json: points and the colors expected there, each within a
 tolerance per channel); the graphics and audio tests check their own results, and say how it went. Exits 1 on any failure.
@@ -21,11 +21,11 @@ from contextlib import nullcontext
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES = ROOT / 'platform/examples'
-GRAPHICS = ROOT / 'platform/tests/graphics'
-AUDIO = ROOT / 'platform/tests/audio'
-WINDOW = ROOT / 'platform/tests/window'
-HTTP = ROOT / 'platform/tests/http'
+EXAMPLES = ROOT / 'libs/platform/examples'
+GRAPHICS = ROOT / 'libs/platform/tests/graphics'
+AUDIO = ROOT / 'libs/platform/tests/audio'
+WINDOW = ROOT / 'libs/platform/tests/window'
+HTTP = ROOT / 'libs/platform/tests/http'
 FRAMES = 60
 # Run natively on this machine's own desktop rather than a private display (--desktop): for a machine kept for checks, such as Windows
 # over tools/remote_windows.py --desktop. A real display paces its frames, so a native run lasts at most PACED_FRAMES.

@@ -16,28 +16,28 @@ pins.use_haxelib()
 def targets(web=False):
     """(label, haxe arguments) for each entry point and target; with web, the browser's alone."""
     found=[]
-    for main in ('PlatformTests','ShaderCompilerTests'):found.append((f'platform {main}',['-lib','helix-platform','-cp','platform/tests','-main',main,'--interp']))
-    found.append(('log LogTests',['-lib','helix-log','-cp','log/tests','-main','LogTests','--interp']))
-    for main in ('TrigTests','RandomTests','CurveTests','BoundsTests','VectorTests','TrigBits'):found.append((f'math {main}',['-lib','helix-math','-cp','math/tests','-main',main,'--interp']))
-    for main in ('GltfTests','ObjTests','BmFontTests','TrueTypeTests'):found.append((f'formats {main}',['-lib','helix-formats','-cp','formats/tests','-main',main,'--interp']))
+    for main in ('PlatformTests','ShaderCompilerTests'):found.append((f'platform {main}',['-lib','helix-platform','-cp','libs/platform/tests','-main',main,'--interp']))
+    found.append(('log LogTests',['-lib','helix-log','-cp','libs/log/tests','-main','LogTests','--interp']))
+    for main in ('TrigTests','RandomTests','CurveTests','BoundsTests','VectorTests','TrigBits'):found.append((f'math {main}',['-lib','helix-math','-cp','libs/math/tests','-main',main,'--interp']))
+    for main in ('GltfTests','ObjTests','BmFontTests','TrueTypeTests'):found.append((f'formats {main}',['-lib','helix-formats','-cp','libs/formats/tests','-main',main,'--interp']))
     # Each platform example and the graphics, audio, window and HTTP tests, with the library alone, on both targets (their own hxml files build them:
     # tools/platform_checks.py).
-    for directory,main in [(p.parent,'Main') for p in sorted((ROOT/'platform/examples').glob('*/Main.hx'))]+[(ROOT/'platform/tests/graphics','GraphicsTests'),(ROOT/'platform/tests/audio','AudioTests'),(ROOT/'platform/tests/window','WindowTests'),(ROOT/'platform/tests/http','HttpTests')]:
+    for directory,main in [(p.parent,'Main') for p in sorted((ROOT/'libs/platform/examples').glob('*/Main.hx'))]+[(ROOT/'libs/platform/tests/graphics','GraphicsTests'),(ROOT/'libs/platform/tests/audio','AudioTests'),(ROOT/'libs/platform/tests/window','WindowTests'),(ROOT/'libs/platform/tests/http','HttpTests')]:
         name=f'platform example {directory.name}' if main=='Main' else f'platform {directory.name} tests'
         found.append((f'{name} js',['-lib','helix-platform','-cp',str(directory.relative_to(ROOT)),'-main',main,'-js','build/check_types.js']))
         if not web:found.append((f'{name} cpp',['-lib','helix-platform','-cp',str(directory.relative_to(ROOT)),'-main',main,'-cpp','build/check_types-cpp']))
     # helix-render whole, on both targets; its tests on the interpreter; its examples as their own hxml files build them.
     found.append(('render js',['-lib','helix-render','--macro',"include('helix.render')",'-js','build/check_types.js']))
     if not web:found.append(('render cpp',['-lib','helix-render','--macro',"include('helix.render')",'-cpp','build/check_types-cpp']))
-    for main in sorted(p.stem for p in (ROOT/'render/tests').glob('*Tests.hx')):found.append((f'render {main}',['-lib','helix-render','-cp','render/tests','-main',main,'--interp']))
-    found.append(('render pixel tests js',['-lib','helix-render','-cp','render/tests/pixels','-main','PixelTests','-js','build/check_types.js']))
-    if not web:found.append(('render pixel tests cpp',['-lib','helix-render','-cp','render/tests/pixels','-main','PixelTests','-cpp','build/check_types-cpp']))
-    for directory in sorted(p.parent for p in (ROOT/'render/examples').glob('*/Main.hx')):
+    for main in sorted(p.stem for p in (ROOT/'libs/render/tests').glob('*Tests.hx')):found.append((f'render {main}',['-lib','helix-render','-cp','libs/render/tests','-main',main,'--interp']))
+    found.append(('render pixel tests js',['-lib','helix-render','-cp','libs/render/tests/pixels','-main','PixelTests','-js','build/check_types.js']))
+    if not web:found.append(('render pixel tests cpp',['-lib','helix-render','-cp','libs/render/tests/pixels','-main','PixelTests','-cpp','build/check_types-cpp']))
+    for directory in sorted(p.parent for p in (ROOT/'libs/render/examples').glob('*/Main.hx')):
         found.append((f'render example {directory.name} js',['-lib','helix-render','-cp',str(directory.relative_to(ROOT)),'-main','Main','-js','build/check_types.js']))
         if not web:found.append((f'render example {directory.name} cpp',['-lib','helix-render','-cp',str(directory.relative_to(ROOT)),'-main','Main','-cpp','build/check_types-cpp']))
     # The size ladder's rungs, the browser's (tools/measure_sizes.py builds them so).
     for library in ('platform','services','render'):
-        for rung in sorted((ROOT/library/'tests/sizes').glob('*/Main.hx')):
+        for rung in sorted((ROOT/'libs'/library/'tests/sizes').glob('*/Main.hx')):
             found.append((f'{library} size {rung.parent.name}',['-lib',f'helix-{library}','-cp',str(rung.parent.relative_to(ROOT)),'-main','Main','-js','build/check_types.js']))
     return found
 

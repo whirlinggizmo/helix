@@ -4,7 +4,7 @@
 
 ## WavEncoding
 
-*abstract* in [`formats/src/helix/formats/wav/WavEncoding.hx`](../../formats/src/helix/formats/wav/WavEncoding.hx), `import helix.formats.wav.WavEncoding;`
+*abstract* in [`libs/formats/src/helix/formats/wav/WavEncoding.hx`](../../libs/formats/src/helix/formats/wav/WavEncoding.hx), `import helix.formats.wav.WavEncoding;`
 
 Specifies how a WAV file's samples are stored.
 
@@ -15,7 +15,7 @@ Specifies how a WAV file's samples are stored.
 
 ## WavFile
 
-*class* in [`formats/src/helix/formats/wav/WavFile.hx`](../../formats/src/helix/formats/wav/WavFile.hx), `import helix.formats.wav.WavFile;`
+*class* in [`libs/formats/src/helix/formats/wav/WavFile.hx`](../../libs/formats/src/helix/formats/wav/WavFile.hx), `import helix.formats.wav.WavFile;`
 
 Represents the sound read from a WAV file: its rate, channels, sample size and samples; and provides writing one.
 

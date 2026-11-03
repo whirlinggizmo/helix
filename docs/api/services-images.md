@@ -4,7 +4,7 @@
 
 ## Image
 
-*class* in [`services/src/helix/services/images/Image.hx`](../../services/src/helix/services/images/Image.hx), `import helix.services.images.Image;`
+*class* in [`libs/services/src/helix/services/images/Image.hx`](../../libs/services/src/helix/services/images/Image.hx), `import helix.services.images.Image;`
 
 Represents an image in memory: its size and its pixels, 8-bit RGBA.
 
@@ -360,7 +360,7 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
 
 ## ImageFilter
 
-*abstract* in [`services/src/helix/services/images/ImageFilter.hx`](../../services/src/helix/services/images/ImageFilter.hx), `import helix.services.images.ImageFilter;`
+*abstract* in [`libs/services/src/helix/services/images/ImageFilter.hx`](../../libs/services/src/helix/services/images/ImageFilter.hx), `import helix.services.images.ImageFilter;`
 
 Specifies how `Image.resize` makes the pixels between the source's pixels.
 
@@ -376,7 +376,7 @@ function toString():String
 
 ## Images
 
-*class* in [`services/src/helix/services/images/Images.hx`](../../services/src/helix/services/images/Images.hx), `import helix.services.images.Images;`, implements `IPollable`
+*class* in [`libs/services/src/helix/services/images/Images.hx`](../../libs/services/src/helix/services/images/Images.hx), `import helix.services.images.Images;`, implements `IPollable`
 
 Provides images by path: each file found through the assets, decoded off the main thread where the platform can, into pixels.
 

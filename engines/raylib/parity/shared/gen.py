@@ -1,4 +1,4 @@
-"""Writes a suite's two sides from its one list of cases (ray/parity/README.md): its cases.py's CASES, in a neutral syntax both C and Haxe
+"""Writes a suite's two sides from its one list of cases (engines/raylib/parity/README.md): its cases.py's CASES, in a neutral syntax both C and Haxe
 read once translated, put into its templates (ref.c.in, or scene.c.in for a pixel suite, and its Haxe harness's <Main>.hx.in) where
 @CASES@ stands. Imported by tools/ray_parity.py, which writes them under build/ray-parity, never beside the suite.
 

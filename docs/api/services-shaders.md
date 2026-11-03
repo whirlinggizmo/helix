@@ -4,7 +4,7 @@
 
 ## IShaderHandles
 
-*interface* in [`services/src/helix/services/shaders/IShaderHandles.hx`](../../services/src/helix/services/shaders/IShaderHandles.hx), `import helix.services.shaders.IShaderHandles;`
+*interface* in [`libs/services/src/helix/services/shaders/IShaderHandles.hx`](../../libs/services/src/helix/services/shaders/IShaderHandles.hx), `import helix.services.shaders.IShaderHandles;`
 
 Defines finding what a shader, or any variant of a set, declares: `Shader` and `ShaderVariants` implement it, so a by-name layer works over either.
 
@@ -80,7 +80,7 @@ function findAttribute(name:String):Null<ShaderAttribute>
 
 ## IShaderValues
 
-*interface* in [`services/src/helix/services/shaders/IShaderValues.hx`](../../services/src/helix/services/shaders/IShaderValues.hx), `import helix.services.shaders.IShaderValues;`
+*interface* in [`libs/services/src/helix/services/shaders/IShaderValues.hx`](../../libs/services/src/helix/services/shaders/IShaderValues.hx), `import helix.services.shaders.IShaderValues;`
 
 Defines what values for a whole program take besides uniforms: textures, and the blocks and textures they share. `ShaderValues` and `ShaderVariantValues` implement it.
 
@@ -124,7 +124,7 @@ function findSharedBlock(blockName:String):Null<ShaderBlockValues>
 
 ## Shader
 
-*class* in [`services/src/helix/services/shaders/Shader.hx`](../../services/src/helix/services/shaders/Shader.hx), `import helix.services.shaders.Shader;`, implements `IShaderHandles`
+*class* in [`libs/services/src/helix/services/shaders/Shader.hx`](../../libs/services/src/helix/services/shaders/Shader.hx), `import helix.services.shaders.Shader;`, implements `IShaderHandles`
 
 Represents a compiled shader: the program `IGraphics.createShader` builds, and what it declares, found by name.
 
@@ -302,7 +302,7 @@ function withNames(names:Map<String, String>):Shader
 
 ## ShaderAttribute
 
-*typedef* in [`services/src/helix/services/shaders/ShaderAttribute.hx`](../../services/src/helix/services/shaders/ShaderAttribute.hx), `import helix.services.shaders.ShaderAttribute;`
+*typedef* in [`libs/services/src/helix/services/shaders/ShaderAttribute.hx`](../../libs/services/src/helix/services/shaders/ShaderAttribute.hx), `import helix.services.shaders.ShaderAttribute;`
 
 Represents one of a shader's vertex attributes: the vertex stage's input at a slot, which a pipeline's `VertexAttribute` feeds.
 
@@ -313,7 +313,7 @@ Represents one of a shader's vertex attributes: the vertex stage's input at a sl
 
 ## ShaderBlockValues
 
-*class* in [`services/src/helix/services/shaders/ShaderBlockValues.hx`](../../services/src/helix/services/shaders/ShaderBlockValues.hx), `import helix.services.shaders.ShaderBlockValues;`, extends `ShaderUniformValues`
+*class* in [`libs/services/src/helix/services/shaders/ShaderBlockValues.hx`](../../libs/services/src/helix/services/shaders/ShaderBlockValues.hx), `import helix.services.shaders.ShaderBlockValues;`, extends `ShaderUniformValues`
 
 Represents the values of one shared block (`ShaderOptions.shared`), read by every values that shares it (`IShaderValues.shareBlock`, `ShaderScene.shareBlock`).
 
@@ -349,7 +349,7 @@ var layoutError(default, null):Null<String>
 
 ## ShaderBuildOptions
 
-*typedef* in [`services/src/helix/services/shaders/ShaderBuildOptions.hx`](../../services/src/helix/services/shaders/ShaderBuildOptions.hx), `import helix.services.shaders.ShaderBuildOptions;`
+*typedef* in [`libs/services/src/helix/services/shaders/ShaderBuildOptions.hx`](../../libs/services/src/helix/services/shaders/ShaderBuildOptions.hx), `import helix.services.shaders.ShaderBuildOptions;`
 
 Represents how `Shader.makeExpr` and `ShaderVariants.makeExpr` compile, for a library's macro: `ShaderOptions`' choices as values the macro has made rather than constants at a call.
 
@@ -364,7 +364,7 @@ Represents how `Shader.makeExpr` and `ShaderVariants.makeExpr` compile, for a li
 
 ## ShaderFeatures
 
-*abstract* in [`services/src/helix/services/shaders/ShaderFeatures.hx`](../../services/src/helix/services/shaders/ShaderFeatures.hx), `import helix.services.shaders.ShaderFeatures;`
+*abstract* in [`libs/services/src/helix/services/shaders/ShaderFeatures.hx`](../../libs/services/src/helix/services/shaders/ShaderFeatures.hx), `import helix.services.shaders.ShaderFeatures;`
 
 Represents a set of a `ShaderVariants`' features, the defines its variants differ by, as bits: `ShaderVariants.getShader` takes it.
 
@@ -403,7 +403,7 @@ function hasFeatures(other:ShaderFeatures):Bool
 
 ## ShaderOptions
 
-*typedef* in [`services/src/helix/services/shaders/ShaderOptions.hx`](../../services/src/helix/services/shaders/ShaderOptions.hx), `import helix.services.shaders.ShaderOptions;`
+*typedef* in [`libs/services/src/helix/services/shaders/ShaderOptions.hx`](../../libs/services/src/helix/services/shaders/ShaderOptions.hx), `import helix.services.shaders.ShaderOptions;`
 
 Represents how a build-time compile at a call compiles: every macro that compiles a shader takes it, as a constant object written at the call or a class's static constant holding one (`static final OPTIONS:ShaderOptions = {...}`), so options several calls share live in one place. An array of them composes, left to right: `[Lit.OPTIONS, {file: "shaders/lit.shader"}]` takes `Lit.OPTIONS` and sets `file`; a later array (`defines`, `shared`) is added to an earlier one, a later value replaces an earlier one.
 
@@ -423,7 +423,7 @@ file: "shaders/lit.shader"});
 
 ## ShaderPipeline
 
-*class* in [`services/src/helix/services/shaders/ShaderPipeline.hx`](../../services/src/helix/services/shaders/ShaderPipeline.hx), `import helix.services.shaders.ShaderPipeline;`
+*class* in [`libs/services/src/helix/services/shaders/ShaderPipeline.hx`](../../libs/services/src/helix/services/shaders/ShaderPipeline.hx), `import helix.services.shaders.ShaderPipeline;`
 
 Represents a pipeline `ShaderPrograms` keeps for a shader, a state and a vertex layout: an object a renderer holds, whose `handle` stays current across the shader's replacements.
 
@@ -447,7 +447,7 @@ var buildError(default, null):Null<String>
 
 ## ShaderPipelineState
 
-*class* in [`services/src/helix/services/shaders/ShaderPipelineState.hx`](../../services/src/helix/services/shaders/ShaderPipelineState.hx), `import helix.services.shaders.ShaderPipelineState;`
+*class* in [`libs/services/src/helix/services/shaders/ShaderPipelineState.hx`](../../libs/services/src/helix/services/shaders/ShaderPipelineState.hx), `import helix.services.shaders.ShaderPipelineState;`
 
 Represents what a pipeline fixes besides its program and its vertex layout: a `PipelineDesc` without `shader` and `buffers`, and the uniform flipped for a render target by name, for `ShaderPrograms`, which keeps one pipeline for each state by its values.
 
@@ -501,7 +501,7 @@ function with(values:{primitive:Null<Primitive>, indexed:Null<Bool>, flipUniform
 
 ## ShaderPrograms
 
-*class* in [`services/src/helix/services/shaders/ShaderPrograms.hx`](../../services/src/helix/services/shaders/ShaderPrograms.hx), `import helix.services.shaders.ShaderPrograms;`
+*class* in [`libs/services/src/helix/services/shaders/ShaderPrograms.hx`](../../libs/services/src/helix/services/shaders/ShaderPrograms.hx), `import helix.services.shaders.ShaderPrograms;`
 
 Provides shaders built on the GPU: a program for each shader, a pipeline for each state and vertex layout it is drawn with, each built again when the shader is replaced in place.
 
@@ -573,7 +573,7 @@ function dispose():Void
 
 ## ShaderSampler
 
-*class* in [`services/src/helix/services/shaders/ShaderSampler.hx`](../../services/src/helix/services/shaders/ShaderSampler.hx), `import helix.services.shaders.ShaderSampler;`
+*class* in [`libs/services/src/helix/services/shaders/ShaderSampler.hx`](../../libs/services/src/helix/services/shaders/ShaderSampler.hx), `import helix.services.shaders.ShaderSampler;`
 
 Represents a texture a shader samples, found once by name, which `writeTexture` and `shareTexture` take.
 
@@ -599,7 +599,7 @@ var declared(default, null):Bool
 
 ## ShaderSamplerKind
 
-*abstract* in [`services/src/helix/services/shaders/ShaderSamplerKind.hx`](../../services/src/helix/services/shaders/ShaderSamplerKind.hx), `import helix.services.shaders.ShaderSamplerKind;`
+*abstract* in [`libs/services/src/helix/services/shaders/ShaderSamplerKind.hx`](../../libs/services/src/helix/services/shaders/ShaderSamplerKind.hx), `import helix.services.shaders.ShaderSamplerKind;`
 
 Specifies what kind of texture a sampler reads, from its GLSL type, as `IGraphics` creates them.
 
@@ -617,7 +617,7 @@ function toString():String
 
 ## ShaderScene
 
-*class* in [`services/src/helix/services/shaders/ShaderScene.hx`](../../services/src/helix/services/shaders/ShaderScene.hx), `import helix.services.shaders.ShaderScene;`
+*class* in [`libs/services/src/helix/services/shaders/ShaderScene.hx`](../../libs/services/src/helix/services/shaders/ShaderScene.hx), `import helix.services.shaders.ShaderScene;`
 
 Represents what a scene, or one pass of it, shares with every material drawn in it, whatever their shaders: its shared blocks (a camera, the lights) and shared textures (a shadow map), by name.
 
@@ -671,7 +671,7 @@ function findSharedTexture(samplerName:String):Null<ShaderSharedTexture>
 
 ## ShaderSharedBlock
 
-*typedef* in [`services/src/helix/services/shaders/ShaderSharedBlock.hx`](../../services/src/helix/services/shaders/ShaderSharedBlock.hx), `import helix.services.shaders.ShaderSharedBlock;`
+*typedef* in [`libs/services/src/helix/services/shaders/ShaderSharedBlock.hx`](../../libs/services/src/helix/services/shaders/ShaderSharedBlock.hx), `import helix.services.shaders.ShaderSharedBlock;`
 
 Represents a block whose values many shaders share (`ShaderBlockValues`), named in `ShaderOptions.shared`.
 
@@ -682,7 +682,7 @@ A block the shader declares is named alone (`{name: "Frame"}`). Loose uniforms a
 
 ## ShaderSharedTexture
 
-*class* in [`services/src/helix/services/shaders/ShaderSharedTexture.hx`](../../services/src/helix/services/shaders/ShaderSharedTexture.hx), `import helix.services.shaders.ShaderSharedTexture;`
+*class* in [`libs/services/src/helix/services/shaders/ShaderSharedTexture.hx`](../../libs/services/src/helix/services/shaders/ShaderSharedTexture.hx), `import helix.services.shaders.ShaderSharedTexture;`
 
 Represents a texture many values read, as a scene's shadow map or a white fallback, changeable at any time and seen at once by every values sharing it (`IShaderValues.shareTexture`), whatever their shader.
 
@@ -706,7 +706,7 @@ var sampling:Sampling
 
 ## ShaderSnapshot
 
-*class* in [`services/src/helix/services/shaders/ShaderSnapshot.hx`](../../services/src/helix/services/shaders/ShaderSnapshot.hx), `import helix.services.shaders.ShaderSnapshot;`
+*class* in [`libs/services/src/helix/services/shaders/ShaderSnapshot.hx`](../../libs/services/src/helix/services/shaders/ShaderSnapshot.hx), `import helix.services.shaders.ShaderSnapshot;`
 
 Represents a copy of values as a draw would read them now, for a batcher that records draws and submits them later.
 
@@ -728,7 +728,7 @@ final samplings:Array<Sampling>
 
 ## ShaderUniform
 
-*class* in [`services/src/helix/services/shaders/ShaderUniform.hx`](../../services/src/helix/services/shaders/ShaderUniform.hx), `import helix.services.shaders.ShaderUniform;`
+*class* in [`libs/services/src/helix/services/shaders/ShaderUniform.hx`](../../libs/services/src/helix/services/shaders/ShaderUniform.hx), `import helix.services.shaders.ShaderUniform;`
 
 Represents a uniform, found once by name, which the values' `write` methods take: a block member, a struct's field, or a field of an array of structs.
 
@@ -756,7 +756,7 @@ var declared(default, null):Bool
 
 ## ShaderUniformPath
 
-*class* in [`services/src/helix/services/shaders/ShaderUniformPath.hx`](../../services/src/helix/services/shaders/ShaderUniformPath.hx), `import helix.services.shaders.ShaderUniformPath;`
+*class* in [`libs/services/src/helix/services/shaders/ShaderUniformPath.hx`](../../libs/services/src/helix/services/shaders/ShaderUniformPath.hx), `import helix.services.shaders.ShaderUniformPath;`
 
 Represents a uniform path as GLSL and three.js write it (`pointLights[1].color`, `bones[3]`), turned once into the uniform and the element it names.
 
@@ -774,7 +774,7 @@ final elementIndex:Int
 
 ## ShaderUniformValues
 
-*class* in [`services/src/helix/services/shaders/ShaderUniformValues.hx`](../../services/src/helix/services/shaders/ShaderUniformValues.hx), `import helix.services.shaders.ShaderUniformValues;`
+*class* in [`libs/services/src/helix/services/shaders/ShaderUniformValues.hx`](../../libs/services/src/helix/services/shaders/ShaderUniformValues.hx), `import helix.services.shaders.ShaderUniformValues;`
 
 Provides writing uniform values by handle, which `ShaderValues`, `ShaderBlockValues` and `ShaderVariantValues` share.
 
@@ -869,7 +869,7 @@ function writeInts(uniform:ShaderUniform, values:Array<Int>, ?firstElementIndex:
 
 ## ShaderValue
 
-*enum* in [`services/src/helix/services/shaders/ShaderValue.hx`](../../services/src/helix/services/shaders/ShaderValue.hx), `import helix.services.shaders.ShaderValue;`
+*enum* in [`libs/services/src/helix/services/shaders/ShaderValue.hx`](../../libs/services/src/helix/services/shaders/ShaderValue.hx), `import helix.services.shaders.ShaderValue;`
 
 Specifies a uniform's value for `ShaderUniformValues.write`, for code that holds values as data (a material's table of them).
 
@@ -890,7 +890,7 @@ Each is written as its method writes it: `Vector` as `writeVector`, `Color` as `
 
 ## ShaderValueType
 
-*abstract* in [`services/src/helix/services/shaders/ShaderValueType.hx`](../../services/src/helix/services/shaders/ShaderValueType.hx), `import helix.services.shaders.ShaderValueType;`
+*abstract* in [`libs/services/src/helix/services/shaders/ShaderValueType.hx`](../../libs/services/src/helix/services/shaders/ShaderValueType.hx), `import helix.services.shaders.ShaderValueType;`
 
 Specifies the GLSL type of a uniform or a vertex attribute, as its GLSL name.
 
@@ -926,7 +926,7 @@ var integer(get, never):Bool
 
 ## ShaderValues
 
-*class* in [`services/src/helix/services/shaders/ShaderValues.hx`](../../services/src/helix/services/shaders/ShaderValues.hx), `import helix.services.shaders.ShaderValues;`, extends `ShaderUniformValues`, implements `IShaderValues`
+*class* in [`libs/services/src/helix/services/shaders/ShaderValues.hx`](../../libs/services/src/helix/services/shaders/ShaderValues.hx), `import helix.services.shaders.ShaderValues;`, extends `ShaderUniformValues`, implements `IShaderValues`
 
 Represents values for one shader's uniforms and textures, kept as `IGraphics.draw` takes them.
 
@@ -1024,7 +1024,7 @@ function deleteValues():Void
 
 ## ShaderVariantOptions
 
-*typedef* in [`services/src/helix/services/shaders/ShaderVariantOptions.hx`](../../services/src/helix/services/shaders/ShaderVariantOptions.hx), `import helix.services.shaders.ShaderVariantOptions;`
+*typedef* in [`libs/services/src/helix/services/shaders/ShaderVariantOptions.hx`](../../libs/services/src/helix/services/shaders/ShaderVariantOptions.hx), `import helix.services.shaders.ShaderVariantOptions;`
 
 Represents how a set of variants compiles: `ShaderOptions`, and which combinations of features.
 
@@ -1040,7 +1040,7 @@ Represents how a set of variants compiles: `ShaderOptions`, and which combinatio
 
 ## ShaderVariantValues
 
-*class* in [`services/src/helix/services/shaders/ShaderVariantValues.hx`](../../services/src/helix/services/shaders/ShaderVariantValues.hx), `import helix.services.shaders.ShaderVariantValues;`, extends `ShaderUniformValues`, implements `IShaderValues`
+*class* in [`libs/services/src/helix/services/shaders/ShaderVariantValues.hx`](../../libs/services/src/helix/services/shaders/ShaderVariantValues.hx), `import helix.services.shaders.ShaderVariantValues;`, extends `ShaderUniformValues`, implements `IShaderValues`
 
 Represents values for every variant of a set at once, as a material's: written once, and packed for each variant a draw uses.
 
@@ -1113,7 +1113,7 @@ function deleteValues():Void
 
 ## ShaderVariants
 
-*class* in [`services/src/helix/services/shaders/ShaderVariants.hx`](../../services/src/helix/services/shaders/ShaderVariants.hx), `import helix.services.shaders.ShaderVariants;`, implements `IShaderHandles`
+*class* in [`libs/services/src/helix/services/shaders/ShaderVariants.hx`](../../libs/services/src/helix/services/shaders/ShaderVariants.hx), `import helix.services.shaders.ShaderVariants;`, implements `IShaderHandles`
 
 Represents one shader compiled once for each combination of features while the program builds, and found by its features.
 
@@ -1262,7 +1262,7 @@ function findSampler(name:String):Null<ShaderSampler>
 
 ## ShaderVertexConstant
 
-*typedef* in [`services/src/helix/services/shaders/ShaderVertexConstant.hx`](../../services/src/helix/services/shaders/ShaderVertexConstant.hx), `import helix.services.shaders.ShaderVertexConstant;`
+*typedef* in [`libs/services/src/helix/services/shaders/ShaderVertexConstant.hx`](../../libs/services/src/helix/services/shaders/ShaderVertexConstant.hx), `import helix.services.shaders.ShaderVertexConstant;`
 
 Represents the value an attribute reads when no buffer feeds it, as raylib's `rlSetVertexAttributeDefault` sets one (a vertex color white): the same for every vertex.
 
@@ -1272,7 +1272,7 @@ Represents the value an attribute reads when no buffer feeds it, as raylib's `rl
 
 ## ShaderVertexLayout
 
-*class* in [`services/src/helix/services/shaders/ShaderVertexLayout.hx`](../../services/src/helix/services/shaders/ShaderVertexLayout.hx), `import helix.services.shaders.ShaderVertexLayout;`
+*class* in [`libs/services/src/helix/services/shaders/ShaderVertexLayout.hx`](../../libs/services/src/helix/services/shaders/ShaderVertexLayout.hx), `import helix.services.shaders.ShaderVertexLayout;`
 
 Represents how a mesh's vertex buffers hold its attributes, by name, for any shader drawing it: each buffer's stride, whether it steps per instance, and where each attribute is; and what an attribute no buffer feeds reads.
 
@@ -1311,7 +1311,7 @@ function computeBuffers(shader:Shader):Array<VertexBuffer>
 
 ## ShaderVertexPlacement
 
-*typedef* in [`services/src/helix/services/shaders/ShaderVertexPlacement.hx`](../../services/src/helix/services/shaders/ShaderVertexPlacement.hx), `import helix.services.shaders.ShaderVertexPlacement;`
+*typedef* in [`libs/services/src/helix/services/shaders/ShaderVertexPlacement.hx`](../../libs/services/src/helix/services/shaders/ShaderVertexPlacement.hx), `import helix.services.shaders.ShaderVertexPlacement;`
 
 Represents where an attribute is in a vertex buffer's records, at a byte offset: by name, or by slot for a layer that numbers attributes as GL does (raylib's `rlSetVertexAttribute`).
 
@@ -1323,7 +1323,7 @@ Represents where an attribute is in a vertex buffer's records, at a byte offset:
 
 ## Shaders
 
-*class* in [`services/src/helix/services/shaders/Shaders.hx`](../../services/src/helix/services/shaders/Shaders.hx), `import helix.services.shaders.Shaders;`
+*class* in [`libs/services/src/helix/services/shaders/Shaders.hx`](../../libs/services/src/helix/services/shaders/Shaders.hx), `import helix.services.shaders.Shaders;`
 
 Provides shaders replaced in place when their files change, and shaders that are only files, through the assets.
 

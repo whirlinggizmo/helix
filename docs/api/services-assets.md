@@ -4,19 +4,19 @@
 
 ## AssetCache
 
-*class* in [`services/src/helix/services/assets/AssetCache.hx`](../../services/src/helix/services/assets/AssetCache.hx), `import helix.services.assets.AssetCache;`
+*class* in [`libs/services/src/helix/services/assets/AssetCache.hx`](../../libs/services/src/helix/services/assets/AssetCache.hx), `import helix.services.assets.AssetCache;`
 
 Decides whether a server's kept copy of a file is current, and keeps the copies. Construct one of its kinds.
 
 ## AssetSource
 
-*class* in [`services/src/helix/services/assets/AssetSource.hx`](../../services/src/helix/services/assets/AssetSource.hx), `import helix.services.assets.AssetSource;`
+*class* in [`libs/services/src/helix/services/assets/AssetSource.hx`](../../libs/services/src/helix/services/assets/AssetSource.hx), `import helix.services.assets.AssetSource;`
 
 Specifies a place `Assets` finds files. Construct a `FileSystemSource` or a `ServerSource`.
 
 ## Assets
 
-*class* in [`services/src/helix/services/assets/Assets.hx`](../../services/src/helix/services/assets/Assets.hx), `import helix.services.assets.Assets;`, implements `IPollable`
+*class* in [`libs/services/src/helix/services/assets/Assets.hx`](../../libs/services/src/helix/services/assets/Assets.hx), `import helix.services.assets.Assets;`, implements `IPollable`
 
 Provides files by path, from a file system on this machine or from an HTTP server whose files it keeps copies of.
 
@@ -109,7 +109,7 @@ function dispose():Void
 
 ## FileSystemSource
 
-*class* in [`services/src/helix/services/assets/FileSystemSource.hx`](../../services/src/helix/services/assets/FileSystemSource.hx), `import helix.services.assets.FileSystemSource;`, extends `AssetSource`
+*class* in [`libs/services/src/helix/services/assets/FileSystemSource.hx`](../../libs/services/src/helix/services/assets/FileSystemSource.hx), `import helix.services.assets.FileSystemSource;`, extends `AssetSource`
 
 Reads files as they are from a file system.
 
@@ -124,7 +124,7 @@ function new(fileSystem:IFileSystem)
 
 ## ManifestCache
 
-*class* in [`services/src/helix/services/assets/ManifestCache.hx`](../../services/src/helix/services/assets/ManifestCache.hx), `import helix.services.assets.ManifestCache;`, extends `AssetCache`
+*class* in [`libs/services/src/helix/services/assets/ManifestCache.hx`](../../libs/services/src/helix/services/assets/ManifestCache.hx), `import helix.services.assets.ManifestCache;`, extends `AssetCache`
 
 Uses the server's manifests to tell whether a copy is current, so a run asks for the root manifest alone.
 
@@ -142,7 +142,7 @@ function new(fileSystem:IFileSystem, ?options:ManifestCacheOptions)
 
 ## ManifestCacheOptions
 
-*class* in [`services/src/helix/services/assets/ManifestCacheOptions.hx`](../../services/src/helix/services/assets/ManifestCacheOptions.hx), `import helix.services.assets.ManifestCacheOptions;`
+*class* in [`libs/services/src/helix/services/assets/ManifestCacheOptions.hx`](../../libs/services/src/helix/services/assets/ManifestCacheOptions.hx), `import helix.services.assets.ManifestCacheOptions;`
 
 Specifies how a `ManifestCache` finds manifests.
 
@@ -163,7 +163,7 @@ final shipped:Array<IFileSystem> = []
 
 ## MemoryCache
 
-*class* in [`services/src/helix/services/assets/MemoryCache.hx`](../../services/src/helix/services/assets/MemoryCache.hx), `import helix.services.assets.MemoryCache;`, extends `AssetCache`
+*class* in [`libs/services/src/helix/services/assets/MemoryCache.hx`](../../libs/services/src/helix/services/assets/MemoryCache.hx), `import helix.services.assets.MemoryCache;`, extends `AssetCache`
 
 Keeps nothing between runs. Each file is downloaded once a run and held in memory. It is meant for development.
 
@@ -177,7 +177,7 @@ function new()
 
 ## RevalidateCache
 
-*class* in [`services/src/helix/services/assets/RevalidateCache.hx`](../../services/src/helix/services/assets/RevalidateCache.hx), `import helix.services.assets.RevalidateCache;`, extends `AssetCache`
+*class* in [`libs/services/src/helix/services/assets/RevalidateCache.hx`](../../libs/services/src/helix/services/assets/RevalidateCache.hx), `import helix.services.assets.RevalidateCache;`, extends `AssetCache`
 
 Uses a copy without asking while the server's Cache-Control says it is fresh, and asks the server about any other copy.
 
@@ -192,7 +192,7 @@ function new(fileSystem:IFileSystem)
 
 ## ServerSource
 
-*class* in [`services/src/helix/services/assets/ServerSource.hx`](../../services/src/helix/services/assets/ServerSource.hx), `import helix.services.assets.ServerSource;`, extends `AssetSource`
+*class* in [`libs/services/src/helix/services/assets/ServerSource.hx`](../../libs/services/src/helix/services/assets/ServerSource.hx), `import helix.services.assets.ServerSource;`, extends `AssetSource`
 
 Downloads files from an HTTP server, under a URL, and keeps copies as its cache decides.
 
@@ -209,7 +209,7 @@ function new(url:String, http:IHttp, cache:AssetCache)
 
 ## TrustCache
 
-*class* in [`services/src/helix/services/assets/TrustCache.hx`](../../services/src/helix/services/assets/TrustCache.hx), `import helix.services.assets.TrustCache;`, extends `AssetCache`
+*class* in [`libs/services/src/helix/services/assets/TrustCache.hx`](../../libs/services/src/helix/services/assets/TrustCache.hx), `import helix.services.assets.TrustCache;`, extends `AssetCache`
 
 Uses a copy without asking, however old it is. It suits files that never change, or a game that plays offline.
 

@@ -4,7 +4,7 @@
 
 ## GifDisposal
 
-*abstract* in [`formats/src/helix/formats/gif/GifDisposal.hx`](../../formats/src/helix/formats/gif/GifDisposal.hx), `import helix.formats.gif.GifDisposal;`
+*abstract* in [`libs/formats/src/helix/formats/gif/GifDisposal.hx`](../../libs/formats/src/helix/formats/gif/GifDisposal.hx), `import helix.formats.gif.GifDisposal;`
 
 Specifies what becomes of a GIF frame's rectangle before the next frame is drawn, as its graphic control block says.
 
@@ -15,7 +15,7 @@ Specifies what becomes of a GIF frame's rectangle before the next frame is drawn
 
 ## GifFile
 
-*class* in [`formats/src/helix/formats/gif/GifFile.hx`](../../formats/src/helix/formats/gif/GifFile.hx), `import helix.formats.gif.GifFile;`
+*class* in [`libs/formats/src/helix/formats/gif/GifFile.hx`](../../libs/formats/src/helix/formats/gif/GifFile.hx), `import helix.formats.gif.GifFile;`
 
 Represents a GIF file (GIF87a or GIF89a): its screen, its global color table and loop count, and its frames as the file gives them.
 
@@ -59,7 +59,7 @@ function computeFrames():Array<haxe.io.Bytes>
 
 ## GifFrame
 
-*class* in [`formats/src/helix/formats/gif/GifFrame.hx`](../../formats/src/helix/formats/gif/GifFrame.hx), `import helix.formats.gif.GifFrame;`
+*class* in [`libs/formats/src/helix/formats/gif/GifFrame.hx`](../../libs/formats/src/helix/formats/gif/GifFrame.hx), `import helix.formats.gif.GifFrame;`
 
 Represents one frame of a GIF file as the file gives it: its rectangle of the screen, its color indices and color table, and its graphic control block's transparency, disposal and delay.
 

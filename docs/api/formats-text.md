@@ -4,7 +4,7 @@
 
 ## Utf8Text
 
-*class* in [`formats/src/helix/formats/text/Utf8Text.hx`](../../formats/src/helix/formats/text/Utf8Text.hx), `import helix.formats.text.Utf8Text;`
+*class* in [`libs/formats/src/helix/formats/text/Utf8Text.hx`](../../libs/formats/src/helix/formats/text/Utf8Text.hx), `import helix.formats.text.Utf8Text;`
 
 Provides text read from bytes that may not be text: UTF-8 checked before it is decoded, and tags compared byte by byte.
 

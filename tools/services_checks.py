@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Checks helix-services (or, with --library ray, helix-ray) on the platform's real adapters: its examples (services/examples/<name>, or
-ray/examples/<name>), each built from its own hxml files, run
+"""Checks helix-services (or, with --library ray, helix-ray) on the platform's real adapters: its examples (libs/services/examples/<name>, or
+engines/raylib/examples/<name>), each built from its own hxml files, run
 natively on a private display (Linux, SDL3's dummy audio driver) and in a headless Chromium, as tools/platform_checks.py runs the
 platform's. Each says in its check.json what its native run prints and what its page shows (points and the colors expected there, each
 within a tolerance per channel), and, where it waits on time, how many frames a native run lasts (nativeFrames, 60 by default), as the
@@ -18,11 +18,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
+import pins
 import platform_checks
 from platform_checks import FRAMES, check_pixels, run
 
 LIBRARY = 'services'
-EXAMPLES = ROOT / 'services/examples'
+EXAMPLES = ROOT / 'libs/services/examples'
 
 
 def example(name, browser):
@@ -64,7 +65,7 @@ def main():
     a = parser.parse_args()
     global LIBRARY, EXAMPLES
     LIBRARY = a.library
-    EXAMPLES = ROOT / a.library / 'examples'
+    EXAMPLES = pins.LIBRARIES['helix-' + a.library] / 'examples'
     platform_checks.DESKTOP = a.desktop
     names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx'))
     failed = False

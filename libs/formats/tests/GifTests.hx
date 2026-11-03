@@ -21,10 +21,10 @@ class GifTests {
 		checks++;
 	}
 
-	// A file's bytes, read as the test compiles: the path is from the repository's root, beside this file's directory's parent.
+	// A file's bytes, read as the test compiles: the path is from the library's directory, this file's directory's parent.
 	static macro function embed(path:String):haxe.macro.Expr {
 		var root = haxe.io.Path.directory(haxe.io.Path.directory(haxe.macro.Context.getPosInfos(haxe.macro.Context.currentPos()).file));
-		var file = haxe.io.Path.join([root == "" ? "." : root, "..", path]);
+		var file = haxe.io.Path.join([root == "" ? "." : root, path]);
 		return macro haxe.crypto.Base64.decode($v{haxe.crypto.Base64.encode(sys.io.File.getBytes(file))});
 	}
 
@@ -61,15 +61,15 @@ class GifTests {
 	}
 
 	static function main():Void {
-		var still = embed("formats/tests/assets/gif/still.gif"),
-			anim = embed("formats/tests/assets/gif/anim.gif");
-		var dispose = embed("formats/tests/assets/gif/dispose.gif"),
-			transparent = embed("formats/tests/assets/gif/transparent.gif");
-		var previous = embed("formats/tests/assets/gif/previous.gif"),
-			large = embed("formats/tests/assets/gif/large.gif");
-		var pil = embed("formats/tests/assets/gif/pil.gif"),
-			empty = embed("formats/tests/assets/gif/empty.gif");
-		var broken = embed("formats/tests/assets/gif/broken.gif");
+		var still = embed("tests/assets/gif/still.gif"),
+			anim = embed("tests/assets/gif/anim.gif");
+		var dispose = embed("tests/assets/gif/dispose.gif"),
+			transparent = embed("tests/assets/gif/transparent.gif");
+		var previous = embed("tests/assets/gif/previous.gif"),
+			large = embed("tests/assets/gif/large.gif");
+		var pil = embed("tests/assets/gif/pil.gif"),
+			empty = embed("tests/assets/gif/empty.gif");
+		var broken = embed("tests/assets/gif/broken.gif");
 
 		var gif = GifFile.read(still);
 		check(gif.width == 5 && gif.height == 3 && gif.frames.length == 1, "still: a 5 x 3 screen, one frame");

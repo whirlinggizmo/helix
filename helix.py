@@ -73,7 +73,7 @@ RAY_TESTS=('CountTests','DropTests','AudioStreamTests','RefusalTests','AsyncTest
 def ray_tests(native):
     """helix-ray's tests on Node, and with native in hxcpp: on graphics of their own, without a window."""
     base=[a for lib in ('helix-log','helix-math','helix-geometry','helix-formats','helix-platform','helix-services') for a in ('-lib',lib)]
-    base+=['-cp','ray/src','--macro','helix.ray.internal.Metadata.register()','-cp','ray/tests','-cp','services/tests']
+    base+=['-cp','engines/raylib/src','--macro','helix.ray.internal.Metadata.register()','-cp','engines/raylib/tests','-cp','libs/services/tests']
     for main in RAY_TESTS:
         run(['haxe',*base,'-main',main,'-js',f'build/tests/{main}.js','-D','js-es=6'])
         value=result(['node',f'build/tests/{main}.js'])
@@ -90,7 +90,7 @@ def trig(native):
     """helix.math.Trig's bits over fixed inputs: the same hash under the interpreter, in JS (Node) and, with native, in hxcpp. When they
     differ, the parts' hashes say where."""
     def lines(args,**kw):return [l for l in subprocess.check_output(args,cwd=ROOT,text=True,encoding='utf-8',**kw).splitlines() if l.startswith('trig ')]
-    base=['-lib','helix-math','-cp','math/tests','-main','TrigBits']
+    base=['-lib','helix-math','-cp','libs/math/tests','-main','TrigBits']
     outputs={'interpreter':lines(['haxe',*base,'--interp'])}
     run(['haxe',*base,'-js','build/tests/trigbits.js','-dce','full','-D','analyzer-optimize'])
     outputs['js']=lines(['node','build/tests/trigbits.js'])

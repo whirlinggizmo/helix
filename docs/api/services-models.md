@@ -4,7 +4,7 @@
 
 ## Model3D
 
-*class* in [`services/src/helix/services/models/Model3D.hx`](../../services/src/helix/services/models/Model3D.hx), `import helix.services.models.Model3D;`
+*class* in [`libs/services/src/helix/services/models/Model3D.hx`](../../libs/services/src/helix/services/models/Model3D.hx), `import helix.services.models.Model3D;`
 
 Represents a model as `Models` reads it: its meshes, with their nodes' transforms put into them, its materials, and its images decoded. A glTF file and an OBJ file give the same kinds: an OBJ file's materials are made glTF materials (`materials`), and it has no skeleton, skins or animations.
 
@@ -39,7 +39,7 @@ function findAnimation(name:String):Int
 
 ## Models
 
-*class* in [`services/src/helix/services/models/Models.hx`](../../services/src/helix/services/models/Models.hx), `import helix.services.models.Models;`
+*class* in [`libs/services/src/helix/services/models/Models.hx`](../../libs/services/src/helix/services/models/Models.hx), `import helix.services.models.Models;`
 
 Provides 3D models by path: a glTF 2.0 file (.gltf or .glb) or a Wavefront OBJ file (.obj) read through the assets, with the files it names (a glTF file's buffers and images, an OBJ file's material libraries and their textures) brought in and its images decoded, as one `Model3D`. `load` reads a file as its extension says; `loadGltf` and `loadObj` read one format, so a program reading one carries only its reader.
 

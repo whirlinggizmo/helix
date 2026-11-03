@@ -9,14 +9,14 @@
     "ImageBits.hx"
   ],
   "assets": {
-    "still.gif": "../../../formats/tests/assets/gif/still.gif",
-    "anim.gif": "../../../formats/tests/assets/gif/anim.gif",
-    "dispose.gif": "../../../formats/tests/assets/gif/dispose.gif",
-    "transparent.gif": "../../../formats/tests/assets/gif/transparent.gif",
-    "large.gif": "../../../formats/tests/assets/gif/large.gif",
-    "pil.gif": "../../../formats/tests/assets/gif/pil.gif",
-    "empty.gif": "../../../formats/tests/assets/gif/empty.gif",
-    "broken.gif": "../../../formats/tests/assets/gif/broken.gif",
+    "still.gif": "../../../../libs/formats/tests/assets/gif/still.gif",
+    "anim.gif": "../../../../libs/formats/tests/assets/gif/anim.gif",
+    "dispose.gif": "../../../../libs/formats/tests/assets/gif/dispose.gif",
+    "transparent.gif": "../../../../libs/formats/tests/assets/gif/transparent.gif",
+    "large.gif": "../../../../libs/formats/tests/assets/gif/large.gif",
+    "pil.gif": "../../../../libs/formats/tests/assets/gif/pil.gif",
+    "empty.gif": "../../../../libs/formats/tests/assets/gif/empty.gif",
+    "broken.gif": "../../../../libs/formats/tests/assets/gif/broken.gif",
     "still.png": "makepng.py",
     "font.gif": "makegif.py"
   },

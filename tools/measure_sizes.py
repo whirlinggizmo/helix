@@ -34,12 +34,13 @@ from xml.etree import ElementTree
 ROOT = Path(__file__).resolve().parents[1]
 # Each library's ladder: its programs' directory and how a rung is built.
 LADDERS = {
-    'platform': (ROOT / 'platform/tests/sizes', ['-lib', 'helix-platform']),
-    'services': (ROOT / 'services/tests/sizes', ['-lib', 'helix-services']),
-    'render': (ROOT / 'render/tests/sizes', ['-lib', 'helix-render']),
-    'ray': (ROOT / 'ray/tests/sizes', ['-lib', 'helix-ray']),
+    'platform': (ROOT / 'libs/platform/tests/sizes', ['-lib', 'helix-platform']),
+    'services': (ROOT / 'libs/services/tests/sizes', ['-lib', 'helix-services']),
+    'render': (ROOT / 'libs/render/tests/sizes', ['-lib', 'helix-render']),
+    'ray': (ROOT / 'engines/raylib/tests/sizes', ['-lib', 'helix-ray']),
 }
-LIBRARIES = {'helix-platform': ROOT / 'platform', 'helix-log': ROOT / 'log', 'helix-math': ROOT / 'math', 'helix-geometry': ROOT / 'geometry', 'helix-formats': ROOT / 'formats', 'helix-services': ROOT / 'services', 'helix-render': ROOT / 'render', 'helix-ray': ROOT / 'ray'}
+sys.path.insert(0, str(ROOT / 'tools'))
+from pins import LIBRARIES  # noqa: E402  the libraries' directories, by haxelib name
 # The libraries' classes, by their full names' start.
 LIBRARY_PREFIX = 'helix.'
 # Packages a rung declares by their classes, never whole: a package would declare every class in it, so a class a later rung links
@@ -104,16 +105,16 @@ def package(source):
     internals; its facade and structs as ray), another library's by
     its name, Haxe's standard library, the program's."""
     path = source.replace('\\', '/')
-    if '/ray/src/helix/ray/' in path:
-        parts = path.split('/ray/src/helix/ray/', 1)[1].split('/')
+    if '/src/helix/ray/' in path:
+        parts = path.split('/src/helix/ray/', 1)[1].split('/')
         return 'ray/' + parts[-1].removesuffix('.hx') if parts[0] in ('raylib', 'internal') else 'ray'
-    if '/render/src/helix/render/' in path:
-        parts = path.split('/render/src/helix/render/', 1)[1].split('/')
+    if '/src/helix/render/' in path:
+        parts = path.split('/src/helix/render/', 1)[1].split('/')
         return 'render/' + (parts[0] if len(parts) > 1 else parts[0].removesuffix('.hx'))
-    if '/services/src/helix/services/' in path:
-        return 'services/' + path.split('/services/src/helix/services/', 1)[1].split('/')[0]
-    if '/platform/src/helix/platform/' in path:
-        parts = path.split('/platform/src/helix/platform/', 1)[1].split('/')
+    if '/src/helix/services/' in path:
+        return 'services/' + path.split('/src/helix/services/', 1)[1].split('/')[0]
+    if '/src/helix/platform/' in path:
+        parts = path.split('/src/helix/platform/', 1)[1].split('/')
         return f'platform/{parts[1]}' if parts[0] == 'adapters' and len(parts) > 2 else 'platform'
     for library in LIBRARIES.values():
         if f'/{library.name}/src/helix/' in path:
@@ -245,21 +246,21 @@ def kb(n):
 
 INTRODUCTIONS = {
     'platform': ('helix-platform',
-                 'Programs on helix-platform alone (`platform/tests/sizes/`), each constructing only the adapters it uses and adding one to '
+                 'Programs on helix-platform alone (`libs/platform/tests/sizes/`), each constructing only the adapters it uses and adding one to '
                  'the one before: what a feature costs is its row\'s increment, gzip; brotli in brackets. The adapters\' bytes are counted '
                  'under their contract.'),
     'services': ('helix-services',
-                 'Programs on helix-services and what it sits on (`services/tests/sizes/`), each adding one service, with the platform\'s '
+                 'Programs on helix-services and what it sits on (`libs/services/tests/sizes/`), each adding one service, with the platform\'s '
                  'adapters it needs, to the one before, from a window cleared each frame: what a service costs is its row\'s increment, gzip; '
                  'brotli in brackets. Each service\'s bytes are counted under its package; the adapters\' under their contract.'),
     'render': ('helix-render',
-               'Programs on helix-render and what it sits on (`render/tests/sizes/`), each adding one feature to the one before, from the '
+               'Programs on helix-render and what it sits on (`libs/render/tests/sizes/`), each adding one feature to the one before, from the '
                'renderer\'s frame clearing the screen: what a feature costs is its row\'s increment, gzip; brotli in brackets. Its first '
                'draw brings the batches\' shader (GLSL ES carried in the program) and helix-services\' shaders; its text the assets, the '
                'images and the fonts it loads a TrueType font through; its 3D the 3D batch, a mesh and an unlit material. helix-render\'s '
                'bytes are counted by source file, or by package for `effects`.'),
     'ray': ('helix-ray',
-            'Programs written in raylib on helix-ray (`ray/tests/sizes/`), each adding one feature to the one before, from a window '
+            'Programs written in raylib on helix-ray (`engines/raylib/tests/sizes/`), each adding one feature to the one before, from a window '
             'cleared each frame: what a feature costs through raylib\'s API is its row\'s increment, gzip; brotli in brackets. Against '
             'the services\' ladder this is what the familiar API costs (DECISIONS 15): helix-ray\'s window brings its time, the screen '
             '(with the saves it keeps its state in) and the keyboard, so its first rung holds them; the rest (the assets its files load '

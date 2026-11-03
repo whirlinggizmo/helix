@@ -1,7 +1,7 @@
 # helix-platform: the contracts
 
 What the platform library is, contract by contract: each contract's members, what they mean, and what each adapter does beneath them.
-The interfaces in `platform/src/helix/platform/` are the authority; this is their specification, and a contract changes here first.
+The interfaces in `libs/platform/src/helix/platform/` are the authority; this is their specification, and a contract changes here first.
 
 ## Principles
 
@@ -290,7 +290,7 @@ names (`PipelineDesc.flip`, `flipBlockSlot` and `flipOffset`): with `ClipScale` 
 target pass and (1, 1, 1, 1) otherwise; with `ViewProjection` GL negates the y row of the matrix there in a target pass; each into its own
 copy of the block, the caller's bytes unchanged, and with the winding reversed. A shadow pass is never flipped. A declared texture a draw leaves unbound gets a placeholder, so a shader may
 declare more than a draw binds. Adapters: `graphics/webgl2` (`WebGl2GraphicsAdapter`), `graphics/sokol` (`SokolGraphicsAdapter`,
-sokol_gfx on GL 4.1), `graphics/sdl3gpu` (`Sdl3GpuGraphicsAdapter`, SDL_GPU on Vulkan, Direct3D 12 or Metal). `platform/tests/graphics`
+sokol_gfx on GL 4.1), `graphics/sdl3gpu` (`Sdl3GpuGraphicsAdapter`, SDL_GPU on Vulkan, Direct3D 12 or Metal). `libs/platform/tests/graphics`
 draws on each and checks the pixels it reads back.
 
 ## Shader compiler
@@ -405,10 +405,10 @@ appended as it arrives, `done` or `failure` at the end, written by whoever downl
   applies a gain at once; a stereo voice's pan is the same balance as a page's. `playsUrls` is false: a remote stream is downloaded above and handed over as `Downloading`. With no
   device, clips are still made, nothing plays, and `available` is false.
 
-`platform/tests/native/native_sdl3mixer_audio.c` renders the native adapter's C with no device (`MIX_CreateMixer`, `MIX_Generate`):
+`libs/platform/tests/native/native_sdl3mixer_audio.c` renders the native adapter's C with no device (`MIX_CreateMixer`, `MIX_Generate`):
 clips, pan, pitch, the ramps, pause, stereo balance, positions read and moved, streams' lengths, streams from a file and from a download
 arriving slowly or stopping, looping, queues fed, run dry and fed again, and a render thread racing the main one;
-`native_sdl3mixer_device.c` plays silence on the real device (`helix.py test --native --audio-device`). `platform/tests/audio`
+`native_sdl3mixer_device.c` plays silence on the real device (`helix.py test --native --audio-device`). `libs/platform/tests/audio`
 (`AudioTests`, run by `tools/platform_checks.py`) checks both adapters against the clock: natively on SDL3's dummy driver, which mixes in
 time, and in a headless Chromium let start audio without a gesture: decoded channels, a stereo clip's position advancing and moved, a
 stream's length and position, and a queue's frames falling, running dry and resuming.
@@ -431,20 +431,20 @@ Info frame and trims its LAME delay and padding.
 premultiplied; `poll`; `dispose`. It reads **PNG, JPEG, BMP, TGA and GIF** (the first frame). In a page, `imagedecoder/canvas`
 (`CanvasImageDecoderAdapter`): `createImageBitmap` with no color conversion or premultiplying, read back through an `OffscreenCanvas`,
 which stores pixels premultiplied, so a partly transparent pixel may come back a level or two from the file's value. Natively,
-`imagedecoder/stb` (`StbImageDecoderAdapter`): stb_image 2.30 (`platform/vendor/stb`) on a worker thread, exact, delivered at `poll`.
+`imagedecoder/stb` (`StbImageDecoderAdapter`): stb_image 2.30 (`libs/platform/vendor/stb`) on a worker thread, exact, delivered at `poll`.
 
 `IFontRasterizer`: `rasterize(encoded, size, codepoints, rasterized(glyphs, ascent, descent, lineGap), failed(message))` for coverage,
 `rasterizeDistanceField` with the same arguments for signed distances, so a program rasterizing coverage carries no distance
 transform; `poll`; `dispose`. It reads **TrueType and OpenType** fonts (not a collection's) and gives each codepoint's glyph (`RasterGlyph`): whether the font
 has it, its bitmap (8-bit coverage, or signed distances: 4 pixels of padding, 128 on the outline, 64 a pixel), its offset from the pen and
 the baseline, and its advance, with the font's ascent, descent and line gap. Sizes and lengths are stb_truetype's: the size is the pixel
-height, ascent minus descent. Natively, `fontrasterizer/stb` (`StbFontRasterizerAdapter`): stb_truetype 1.26 (`platform/vendor/stb`) on
+height, ascent minus descent. Natively, `fontrasterizer/stb` (`StbFontRasterizerAdapter`): stb_truetype 1.26 (`libs/platform/vendor/stb`) on
 a worker thread. In a page, `fontrasterizer/canvas` (`CanvasFontRasterizerAdapter`): the font's tables read as stb_truetype reads them
 (which glyphs it has, the metrics, the advances, and a TrueType glyph's box), so glyphs are found, sized and placed the same, and the
 glyphs drawn by the browser with `fillText`, whose coverage may differ by a level or so at the edges; a CFF glyph's box is what the canvas
 measures, and signed distances come from a distance transform of the glyph drawn 8 times larger, within about a sixteenth of a pixel.
 
-SDL3_mixer 3.2.4 is vendored in `platform/vendor/sdl3_mixer` (its sources, pinned by a tree hash in `dependencies.json` that
+SDL3_mixer 3.2.4 is vendored in `libs/platform/vendor/sdl3_mixer` (its sources, pinned by a tree hash in `dependencies.json` that
 `tools/sdl3.py` checks) and compiled with the program by hxcpp, with its built-in decoders only (WAV, stb_vorbis, dr_mp3, dr_flac). A
 native program links no audio library but SDL3.
 

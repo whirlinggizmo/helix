@@ -19,7 +19,7 @@ def check_hxcpp():
     if not active(version):raise RuntimeError(f'Could not install hxcpp {version} into {HAXELIB}')
 
 # The libraries, each a dev link in the repository's haxelib to this checkout's directory holding its haxelib.json.
-LIBRARIES={'helix-platform':ROOT/'platform','helix-log':ROOT/'log','helix-math':ROOT/'math','helix-geometry':ROOT/'geometry','helix-formats':ROOT/'formats','helix-services':ROOT/'services','helix-render':ROOT/'render','helix-ray':ROOT/'ray'}
+LIBRARIES={**{f'helix-{name}':ROOT/'libs'/name for name in ('platform','log','math','geometry','formats','services','render')},'helix-ray':ROOT/'engines/raylib'}
 
 def link(name,path):
     """name in the repository's haxelib as a dev link to path (where its haxelib.json is)."""
@@ -34,7 +34,7 @@ def use_haxelib():
     return os.environ
 
 def check_sokol(root):
-    """The vendored Sokol headers (platform/vendor) match their pins in dependencies.json."""
+    """The vendored Sokol headers (libs/platform/vendor) match their pins in dependencies.json."""
     import hashlib,json
     sokol=json.loads((root/'dependencies.json').read_text(encoding='utf-8'))['sokol']
     for name,identity in sokol['headers'].items():

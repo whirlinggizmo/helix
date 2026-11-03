@@ -4,7 +4,7 @@
 
 ## BloomEffect
 
-*class* in [`render/src/helix/render/effects/BloomEffect.hx`](../../render/src/helix/render/effects/BloomEffect.hx), `import helix.render.effects.BloomEffect;`, extends `ScreenEffect`
+*class* in [`libs/render/src/helix/render/effects/BloomEffect.hx`](../../libs/render/src/helix/render/effects/BloomEffect.hx), `import helix.render.effects.BloomEffect;`, extends `ScreenEffect`
 
 Represents bloom: light past a threshold spread around it, as a bright light glows in a lens or an eye. It works on linear light.
 
@@ -24,7 +24,7 @@ var radius(default, set):Float
 
 ## ColorGradeEffect
 
-*class* in [`render/src/helix/render/effects/ColorGradeEffect.hx`](../../render/src/helix/render/effects/ColorGradeEffect.hx), `import helix.render.effects.ColorGradeEffect;`, extends `ScreenEffect`
+*class* in [`libs/render/src/helix/render/effects/ColorGradeEffect.hx`](../../libs/render/src/helix/render/effects/ColorGradeEffect.hx), `import helix.render.effects.ColorGradeEffect;`, extends `ScreenEffect`
 
 Represents color grading on encoded colors, after the resolve: brightness, contrast and saturation, then a look-up table.
 
@@ -48,7 +48,7 @@ var lutIntensity(default, set):Float
 
 ## FxaaEffect
 
-*class* in [`render/src/helix/render/effects/FxaaEffect.hx`](../../render/src/helix/render/effects/FxaaEffect.hx), `import helix.render.effects.FxaaEffect;`, extends `ScreenEffect`
+*class* in [`libs/render/src/helix/render/effects/FxaaEffect.hx`](../../libs/render/src/helix/render/effects/FxaaEffect.hx), `import helix.render.effects.FxaaEffect;`, extends `ScreenEffect`
 
 Represents FXAA: edges smoothed by their contrast in the encoded frame, an antialiasing for a frame drawn without multisampling.
 
@@ -62,7 +62,7 @@ function new()
 
 ## PostProcess
 
-*class* in [`render/src/helix/render/effects/PostProcess.hx`](../../render/src/helix/render/effects/PostProcess.hx), `import helix.render.effects.PostProcess;`
+*class* in [`libs/render/src/helix/render/effects/PostProcess.hx`](../../libs/render/src/helix/render/effects/PostProcess.hx), `import helix.render.effects.PostProcess;`
 
 Provides post-processing: a frame drawn into a texture, carried through a chain of screen effects and resolved into the current pass.
 
@@ -109,7 +109,7 @@ function dispose():Void
 
 ## ScreenEffect
 
-*class* in [`render/src/helix/render/effects/ScreenEffect.hx`](../../render/src/helix/render/effects/ScreenEffect.hx), `import helix.render.effects.ScreenEffect;`
+*class* in [`libs/render/src/helix/render/effects/ScreenEffect.hx`](../../libs/render/src/helix/render/effects/ScreenEffect.hx), `import helix.render.effects.ScreenEffect;`
 
 Represents an effect over a whole frame in a `PostProcess` chain: `BloomEffect`, `ColorGradeEffect`, `FxaaEffect`, a `ShaderEffect`, or a program's own.
 
@@ -150,7 +150,7 @@ function draw(frame:ScreenFrame):Void
 
 ## ScreenFrame
 
-*class* in [`render/src/helix/render/effects/ScreenFrame.hx`](../../render/src/helix/render/effects/ScreenFrame.hx), `import helix.render.effects.ScreenFrame;`
+*class* in [`libs/render/src/helix/render/effects/ScreenFrame.hx`](../../libs/render/src/helix/render/effects/ScreenFrame.hx), `import helix.render.effects.ScreenFrame;`
 
 Represents what a screen effect draws from in a `PostProcess` chain, this frame: the frame it changes, its size, the time, and the intermediate targets it asked for.
 
@@ -177,7 +177,7 @@ function drawPass(values:ShaderValues, source:Texture2D, ?target:RenderTarget2D)
 
 ## ShaderEffect
 
-*class* in [`render/src/helix/render/effects/ShaderEffect.hx`](../../render/src/helix/render/effects/ShaderEffect.hx), `import helix.render.effects.ShaderEffect;`, extends `ScreenEffect`
+*class* in [`libs/render/src/helix/render/effects/ShaderEffect.hx`](../../libs/render/src/helix/render/effects/ShaderEffect.hx), `import helix.render.effects.ShaderEffect;`, extends `ScreenEffect`
 
 Represents a screen effect of one pass through a program's own shader, drawn over the whole frame: a fragment stage reading `sourceTexture`, `sourceSize` and `time` (filled by the chain), and its own values.
 

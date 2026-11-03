@@ -4,7 +4,7 @@
 
 ## Deflate
 
-*class* in [`formats/src/helix/formats/deflate/Deflate.hx`](../../formats/src/helix/formats/deflate/Deflate.hx), `import helix.formats.deflate.Deflate;`
+*class* in [`libs/formats/src/helix/formats/deflate/Deflate.hx`](../../libs/formats/src/helix/formats/deflate/Deflate.hx), `import helix.formats.deflate.Deflate;`
 
 Provides DEFLATE compression (RFC 1951) as raylib 5.5's `CompressData` compresses, byte for byte.
 

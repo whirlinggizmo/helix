@@ -4,7 +4,7 @@
 
 ## PngFile
 
-*class* in [`formats/src/helix/formats/png/PngFile.hx`](../../formats/src/helix/formats/png/PngFile.hx), `import helix.formats.png.PngFile;`
+*class* in [`libs/formats/src/helix/formats/png/PngFile.hx`](../../libs/formats/src/helix/formats/png/PngFile.hx), `import helix.formats.png.PngFile;`
 
 Provides writing a PNG file as raylib 5.5's `ExportImage` and `ExportImageToMemory` write one, byte for byte.
 

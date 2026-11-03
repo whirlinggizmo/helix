@@ -1,6 +1,6 @@
 # helix-ray
 
-[raylib](https://www.raylib.com) 5.5's API over [helix-services](../services/README.md) and [helix-platform](../platform/README.md): a
+[raylib](https://www.raylib.com) 5.5's API over [helix-services](../../libs/services/README.md) and [helix-platform](../../libs/platform/README.md): a
 program written as raylib is written runs in a page and natively.
 
 | Type | What |

@@ -49,7 +49,7 @@ def adapter_packages(target):
     """The adapters' packages for one target: those the compiler types for it. Each types for one target alone, the browser's (js) or
     native (cpp); one that types for both or neither stops the reference."""
     if not ADAPTER_TARGETS:
-        packages=[f'{ADAPTERS}.{d.parent.name}.{d.name}' for d in sorted((ROOT/'platform/src/helix/platform/adapters').glob('*/*/')) if d.parent.name!='shared']
+        packages=[f'{ADAPTERS}.{d.parent.name}.{d.name}' for d in sorted((ROOT/'libs/platform/src/helix/platform/adapters').glob('*/*/')) if d.parent.name!='shared']
         OUT.mkdir(parents=True,exist_ok=True)
         with ThreadPoolExecutor(8) as pool:
             found=list(pool.map(lambda p:(p,types_for(p,'js'),types_for(p,'cpp')),packages))

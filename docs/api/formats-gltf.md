@@ -4,7 +4,7 @@
 
 ## GltfAnimation
 
-*class* in [`formats/src/helix/formats/gltf/GltfAnimation.hx`](../../formats/src/helix/formats/gltf/GltfAnimation.hx), `import helix.formats.gltf.GltfAnimation;`
+*class* in [`libs/formats/src/helix/formats/gltf/GltfAnimation.hx`](../../libs/formats/src/helix/formats/gltf/GltfAnimation.hx), `import helix.formats.gltf.GltfAnimation;`
 
 Represents a glTF animation: channels, each moving one property of one node by a sampler's keys.
 
@@ -20,7 +20,7 @@ final samplers:Array<GltfSampler>
 
 ## GltfChannel
 
-*class* in [`formats/src/helix/formats/gltf/GltfChannel.hx`](../../formats/src/helix/formats/gltf/GltfChannel.hx), `import helix.formats.gltf.GltfChannel;`
+*class* in [`libs/formats/src/helix/formats/gltf/GltfChannel.hx`](../../libs/formats/src/helix/formats/gltf/GltfChannel.hx), `import helix.formats.gltf.GltfChannel;`
 
 Represents one channel of a glTF animation: which node's property it moves, by which sampler.
 
@@ -36,7 +36,7 @@ final samplerIndex:Int
 
 ## GltfFile
 
-*class* in [`formats/src/helix/formats/gltf/GltfFile.hx`](../../formats/src/helix/formats/gltf/GltfFile.hx), `import helix.formats.gltf.GltfFile;`
+*class* in [`libs/formats/src/helix/formats/gltf/GltfFile.hx`](../../libs/formats/src/helix/formats/gltf/GltfFile.hx), `import helix.formats.gltf.GltfFile;`
 
 Represents a glTF 2.0 model read from a .gltf or GLB file: its nodes, its scene, its meshes, materials and images, as plain data.
 
@@ -89,7 +89,7 @@ function setBuffer(bufferIndex:Int, bytes:haxe.io.Bytes):Void
 
 ## GltfImage
 
-*class* in [`formats/src/helix/formats/gltf/GltfImage.hx`](../../formats/src/helix/formats/gltf/GltfImage.hx), `import helix.formats.gltf.GltfImage;`
+*class* in [`libs/formats/src/helix/formats/gltf/GltfImage.hx`](../../libs/formats/src/helix/formats/gltf/GltfImage.hx), `import helix.formats.gltf.GltfImage;`
 
 Represents one image of a glTF model: its encoded file's bytes when the model holds them, or the path of its own file.
 
@@ -107,7 +107,7 @@ final mimeType:Null<String>
 
 ## GltfMaterial
 
-*class* in [`formats/src/helix/formats/gltf/GltfMaterial.hx`](../../formats/src/helix/formats/gltf/GltfMaterial.hx), `import helix.formats.gltf.GltfMaterial;`
+*class* in [`libs/formats/src/helix/formats/gltf/GltfMaterial.hx`](../../libs/formats/src/helix/formats/gltf/GltfMaterial.hx), `import helix.formats.gltf.GltfMaterial;`
 
 Represents one material of a glTF model: its metallic-roughness factors and the images its textures sample.
 
@@ -141,7 +141,7 @@ final emissiveImageIndex:Int
 
 ## GltfMesh
 
-*class* in [`formats/src/helix/formats/gltf/GltfMesh.hx`](../../formats/src/helix/formats/gltf/GltfMesh.hx), `import helix.formats.gltf.GltfMesh;`
+*class* in [`libs/formats/src/helix/formats/gltf/GltfMesh.hx`](../../libs/formats/src/helix/formats/gltf/GltfMesh.hx), `import helix.formats.gltf.GltfMesh;`
 
 Represents one mesh of a glTF model: its name and its primitives, each drawn with a material of its own.
 
@@ -157,7 +157,7 @@ final primitives:Array<GltfPrimitive>
 
 ## GltfNode
 
-*class* in [`formats/src/helix/formats/gltf/GltfNode.hx`](../../formats/src/helix/formats/gltf/GltfNode.hx), `import helix.formats.gltf.GltfNode;`
+*class* in [`libs/formats/src/helix/formats/gltf/GltfNode.hx`](../../libs/formats/src/helix/formats/gltf/GltfNode.hx), `import helix.formats.gltf.GltfNode;`
 
 Represents one node of a glTF model: its name, its mesh, its children and its transform relative to its parent.
 
@@ -181,7 +181,7 @@ final skinIndex:Int
 
 ## GltfPrimitive
 
-*class* in [`formats/src/helix/formats/gltf/GltfPrimitive.hx`](../../formats/src/helix/formats/gltf/GltfPrimitive.hx), `import helix.formats.gltf.GltfPrimitive;`
+*class* in [`libs/formats/src/helix/formats/gltf/GltfPrimitive.hx`](../../libs/formats/src/helix/formats/gltf/GltfPrimitive.hx), `import helix.formats.gltf.GltfPrimitive;`
 
 Represents one primitive of a glTF mesh: its vertices, read from their accessors, its indices and its material.
 
@@ -213,7 +213,7 @@ final materialIndex:Int
 
 ## GltfSampler
 
-*class* in [`formats/src/helix/formats/gltf/GltfSampler.hx`](../../formats/src/helix/formats/gltf/GltfSampler.hx), `import helix.formats.gltf.GltfSampler;`
+*class* in [`libs/formats/src/helix/formats/gltf/GltfSampler.hx`](../../libs/formats/src/helix/formats/gltf/GltfSampler.hx), `import helix.formats.gltf.GltfSampler;`
 
 Represents a glTF animation sampler: keys at times, and how to go between them.
 
@@ -229,7 +229,7 @@ final interpolation:String
 
 ## GltfSkin
 
-*class* in [`formats/src/helix/formats/gltf/GltfSkin.hx`](../../formats/src/helix/formats/gltf/GltfSkin.hx), `import helix.formats.gltf.GltfSkin;`
+*class* in [`libs/formats/src/helix/formats/gltf/GltfSkin.hx`](../../libs/formats/src/helix/formats/gltf/GltfSkin.hx), `import helix.formats.gltf.GltfSkin;`
 
 Represents a glTF skin: the nodes a skinned mesh's vertices follow, and how the mesh was bound to them.
 

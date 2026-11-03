@@ -4,7 +4,7 @@
 
 ## ShaderCompileOptions
 
-*typedef* in [`platform/src/helix/platform/tools/ShaderCompileOptions.hx`](../../platform/src/helix/platform/tools/ShaderCompileOptions.hx), `import helix.platform.tools.ShaderCompileOptions;`
+*typedef* in [`libs/platform/src/helix/platform/tools/ShaderCompileOptions.hx`](../../libs/platform/src/helix/platform/tools/ShaderCompileOptions.hx), `import helix.platform.tools.ShaderCompileOptions;`
 
 Represents how `ShaderCompiler.compileText` compiles: the dialects it makes besides GLSL ES 300 (WebGL2), which every `ShaderSource` carries, where includes are looked for, the names defined, whether loose uniforms are taken, and how the vertex stage is wrapped.
 
@@ -19,7 +19,7 @@ Represents how `ShaderCompiler.compileText` compiles: the dialects it makes besi
 
 ## ShaderCompiler
 
-*class* in [`platform/src/helix/platform/tools/ShaderCompiler.hx`](../../platform/src/helix/platform/tools/ShaderCompiler.hx), `import helix.platform.tools.ShaderCompiler;`
+*class* in [`libs/platform/src/helix/platform/tools/ShaderCompiler.hx`](../../libs/platform/src/helix/platform/tools/ShaderCompiler.hx), `import helix.platform.tools.ShaderCompiler;`
 
 Provides compiling a program's GLSL into a `ShaderSource` for every graphics adapter: a vertex stage and a fragment stage, compiled once to SPIR-V by glslang and translated by SPIRV-Cross (`ShaderTools`), and reflected.
 

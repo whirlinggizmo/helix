@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Checks helix-ray against raylib's own C (ray/parity/README.md): each suite in ray/parity/<suite> runs a C reference built against the
+"""Checks helix-ray against raylib's own C (engines/raylib/parity/README.md): each suite in engines/raylib/parity/<suite> runs a C reference built against the
 raylib release its manifest names, its oracle (docs/DECISIONS.md 24: 6.2 where helix-ray took a 6.2 fix, 5.5 elsewhere), and helix-ray
 doing the same.
 
@@ -7,7 +7,7 @@ doing the same.
 
 For each suite (all by default, or the names given): raylib's release tarball for its oracle is fetched from GitHub, checked against its
 sha256 here (RELEASES), and built once (make PLATFORM=PLATFORM_DESKTOP) into build/raylib/<version>/. The suite's sources are written
-into build/ray-parity/<suite>/ (a generated suite's two sides from its one list of cases, by ray/parity/shared/gen.py) with its assets,
+into build/ray-parity/<suite>/ (a generated suite's two sides from its one list of cases, by engines/raylib/parity/shared/gen.py) with its assets,
 and its C reference is built and run on a private display (tools/private_display.py), with SDL's dummy audio and no session bus.
 
 A value suite's Haxe harness is then built for Node (js) and hxcpp (cpp), or the ones its manifest's targets name (page: the harness
@@ -38,7 +38,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 import cli  # noqa: E402
 
-PARITY = ROOT / 'ray/parity'
+PARITY = ROOT / 'engines/raylib/parity'
 OUT = ROOT / 'build/ray-parity'
 RAYLIB = ROOT / 'build/raylib'
 # The releases the suites may name as their oracle, each pinned by its tarball's sha256.
@@ -266,7 +266,7 @@ def check_values(name, manifest, main, out, display, env):
     targets = manifest.get('targets', TARGETS)
     ran = run([str(out / 'ref')], display, out, what='the C reference')
     (out / 'ref.txt').write_text(ran.stdout, encoding='utf-8')
-    base = sum((['-lib', lib] for lib in LIBRARIES), []) + ['-cp', 'ray/src', '--macro', 'helix.ray.internal.Metadata.register()', '-cp',
+    base = sum((['-lib', lib] for lib in LIBRARIES), []) + ['-cp', 'engines/raylib/src', '--macro', 'helix.ray.internal.Metadata.register()', '-cp',
                                                             str(PARITY / 'shared'), '-cp', str(out / 'src'), '-main', main]
     for resource, file in manifest.get('resources', {}).items():
         base += ['-resource', f'{PARITY / name / file}@{resource}']

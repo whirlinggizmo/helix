@@ -14,7 +14,7 @@ To develop them, also:
 
 - **Python 3** for the checks and tools in `tools/`, standard library only.
 - **Node** with Playwright (Chromium) for the browser checks (`tools/platform_checks.py`); installed into `build/tools`.
-- **CMake** for the platform's native C tests (`platform/tests/native/CMakeLists.txt`, built by `helix.py test --native` with the
+- **CMake** for the platform's native C tests (`libs/platform/tests/native/CMakeLists.txt`, built by `helix.py test --native` with the
   compiler hxcpp uses), and on Linux to build SDL3 when the system has none.
 
 The repository keeps its own haxelib in `build/haxelib`: a dev link to each library, the pinned hxcpp and the formatter, made by the
@@ -44,7 +44,7 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | Tool | What it does |
 |---|---|
 | `helix.py` | The front door: `test [--native] [--audio-device]` runs the tools' checks, each library's tests on the interpreter and Node, the shader compiler's tests, Trig's bits across targets, and with `--native` the platform's C tests |
-| `tools/check_adapters.py` | The adapter rule (docs/ARCHITECTURE.md) on `platform/src/helix/platform` and its adapters |
+| `tools/check_adapters.py` | The adapter rule (docs/ARCHITECTURE.md) on `libs/platform/src/helix/platform` and its adapters |
 | `tools/check_docs.py` | Every public type and member has a doc comment; nothing but DECISIONS.md and AGENTS.md names the earlier frameworks |
 | `tools/check_layers.py` | Each library names only itself and what it's built on; the platform's contracts don't know each other |
 | `tools/check_names.py` | 2D and 3D named apart (docs/CONVENTIONS.md) |
@@ -54,7 +54,7 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `tools/cli.cjs` | The Node tools' argument parsing (a module) |
 | `tools/format.py` | haxe-formatter over the libraries (`--check` only checks) |
 | `tools/gen_apidoc.py` | The API reference from the doc comments: `docs/api` (committed) and `build/api` (`--check`) |
-| `tools/gen_raylib.py` | helix-ray's `Raylib.hx`, `Raymath.hx` and `Rlgl.hx`: forwards to each function of its sections (`ray/src/helix/ray/raylib`, read through `haxe -xml`), by raylib's modules, and the refusals of what helix-ray won't or doesn't yet have (`--check`) |
+| `tools/gen_raylib.py` | helix-ray's `Raylib.hx`, `Raymath.hx` and `Rlgl.hx`: forwards to each function of its sections (`engines/raylib/src/helix/ray/raylib`, read through `haxe -xml`), by raylib's modules, and the refusals of what helix-ray won't or doesn't yet have (`--check`) |
 | `tools/measure_sizes.py` | Each library's web size ladder (`<library>/tests/sizes`) against `docs/benchmarks.json` (`--write`, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
 | `tools/native_build.py` | hxcpp's environment for the adapters' C, and the platform's C-only tests built with CMake (a module) |
 | `tools/page_check.cjs` | A page in headless Chromium: its errors, its result and a screenshot (run by `platform_checks.py`) |
@@ -63,14 +63,14 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `tools/render_checks.py` | helix-render's examples and pixel tests on the GPU, natively (GL and SDL_GPU) on a private display and in Chromium (WebGL2) |
 | `tools/services_checks.py` | The services' examples on the platform's real adapters, natively on a private display and in Chromium |
 | `tools/private_display.py` | A private X display for native windows in checks (a module) |
-| `tools/ray_parity.py` | helix-ray against raylib's own C (`ray/parity`): each suite's C reference built against its raylib release (fetched, pinned by sha256, built into `build/raylib`), run on a private display, and helix-ray's harness (Node and hxcpp) or program (natively) compared with it, within the suite's bars (Linux) |
+| `tools/ray_parity.py` | helix-ray against raylib's own C (`engines/raylib/parity`): each suite's C reference built against its raylib release (fetched, pinned by sha256, built into `build/raylib`), run on a private display, and helix-ray's harness (Node and hxcpp) or program (natively) compared with it, within the suite's bars (Linux) |
 | `tools/remote_windows.py` | This checkout built and checked on a Windows machine over ssh |
 | `tools/sdl3.py` | The SDL3 library a native build links: the system's, or the pinned release made into `build/deps` |
 
 ## Layout
 
 ```
-math/ log/ formats/ platform/ services/ render/ ray/   the libraries: haxelib.json, README.md, src/, tests/ (and examples/, vendor/)
+libs/math/ libs/log/ libs/formats/ libs/platform/ libs/services/ libs/render/ engines/raylib/   the libraries: haxelib.json, README.md, src/, tests/ (and examples/, vendor/)
 tools/                                         the repository's checks and helpers, never shipped
 docs/                                          the plan, the specs, conventions, architecture, the API reference and the benchmarks
 build/                                         scratch: the repository's haxelib, SDL3, hxcpp's output (ignored)

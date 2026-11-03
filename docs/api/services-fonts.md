@@ -4,7 +4,7 @@
 
 ## Font2D
 
-*class* in [`services/src/helix/services/fonts/Font2D.hx`](../../services/src/helix/services/fonts/Font2D.hx), `import helix.services.fonts.Font2D;`
+*class* in [`libs/services/src/helix/services/fonts/Font2D.hx`](../../libs/services/src/helix/services/fonts/Font2D.hx), `import helix.services.fonts.Font2D;`
 
 Represents a font: its kind, its metrics, its glyphs, the atlas they are drawn from, and its kerning pairs.
 
@@ -54,7 +54,7 @@ function getKerning(first:Int, second:Int):Float
 
 ## FontKind
 
-*abstract* in [`services/src/helix/services/fonts/FontKind.hx`](../../services/src/helix/services/fonts/FontKind.hx), `import helix.services.fonts.FontKind;`
+*abstract* in [`libs/services/src/helix/services/fonts/FontKind.hx`](../../libs/services/src/helix/services/fonts/FontKind.hx), `import helix.services.fonts.FontKind;`
 
 Specifies what a font's glyphs hold (`Font2D.kind`): `Fonts.load`, `rasterize` and `loadBmFont` make Coverage, `loadBitmap` and `rasterizeBitmap` Bitmap, `loadDistanceField` and `rasterizeDistanceField` Distance; `packFont` and a `Font2D` a program makes what they are given.
 
@@ -70,7 +70,7 @@ function toString():String
 
 ## FontPacking
 
-*abstract* in [`services/src/helix/services/fonts/FontPacking.hx`](../../services/src/helix/services/fonts/FontPacking.hx), `import helix.services.fonts.FontPacking;`
+*abstract* in [`libs/services/src/helix/services/fonts/FontPacking.hx`](../../libs/services/src/helix/services/fonts/FontPacking.hx), `import helix.services.fonts.FontPacking;`
 
 Specifies how `Fonts.load` places glyphs on the atlas.
 
@@ -85,7 +85,7 @@ function toString():String
 
 ## Fonts
 
-*class* in [`services/src/helix/services/fonts/Fonts.hx`](../../services/src/helix/services/fonts/Fonts.hx), `import helix.services.fonts.Fonts;`
+*class* in [`libs/services/src/helix/services/fonts/Fonts.hx`](../../libs/services/src/helix/services/fonts/Fonts.hx), `import helix.services.fonts.Fonts;`
 
 Provides fonts by path: a TrueType or OpenType font rasterized at a size as coverage (`load`), hard-edged (`loadBitmap`) or signed distances (`loadDistanceField`), or a BMFont's .fnt and its images (`loadBmFont`), each as a `Font2D` with its glyphs on one atlas. A TrueType font's glyphs also come from its bytes, each on its own, for a program that places them itself (`rasterize`, `rasterizeBitmap`, `rasterizeDistanceField`). Each kind is its own call, so a program carries only the rasterizing it asks for. A font's kerning pairs come with it: a TrueType font's between the characters asked for, a BMFont's from its .fnt. A program or an engine layer holding glyph images of its own makes a font of them with `packFont`.
 
@@ -179,7 +179,7 @@ function packFont(name:String, kind:FontKind, size:Float, ascent:Float, descent:
 
 ## FontsOptions
 
-*class* in [`services/src/helix/services/fonts/FontsOptions.hx`](../../services/src/helix/services/fonts/FontsOptions.hx), `import helix.services.fonts.FontsOptions;`
+*class* in [`libs/services/src/helix/services/fonts/FontsOptions.hx`](../../libs/services/src/helix/services/fonts/FontsOptions.hx), `import helix.services.fonts.FontsOptions;`
 
 Represents how `Fonts` makes a font's atlas.
 
@@ -199,7 +199,7 @@ final packing:FontPacking = Skyline
 
 ## Glyph2D
 
-*class* in [`services/src/helix/services/fonts/Glyph2D.hx`](../../services/src/helix/services/fonts/Glyph2D.hx), `import helix.services.fonts.Glyph2D;`
+*class* in [`libs/services/src/helix/services/fonts/Glyph2D.hx`](../../libs/services/src/helix/services/fonts/Glyph2D.hx), `import helix.services.fonts.Glyph2D;`
 
 Represents one of a font's glyphs: where it is on the atlas, where it sits from the pen, and how far it moves the pen.
 
@@ -235,7 +235,7 @@ final advance:Float
 
 ## Kerning2D
 
-*typedef* in [`services/src/helix/services/fonts/Kerning2D.hx`](../../services/src/helix/services/fonts/Kerning2D.hx), `import helix.services.fonts.Kerning2D;`
+*typedef* in [`libs/services/src/helix/services/fonts/Kerning2D.hx`](../../libs/services/src/helix/services/fonts/Kerning2D.hx), `import helix.services.fonts.Kerning2D;`
 
 Represents a kerning pair of a font: how far the pen moves when one character follows another, beyond the first's advance.
 

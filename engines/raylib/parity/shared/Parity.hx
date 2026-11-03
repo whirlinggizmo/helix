@@ -2,7 +2,7 @@ import helix.ray.*;
 import helix.ray.internal.Frame;
 import helix.ray.internal.Runtime;
 
-/** The Haxe side of a value suite (ray/parity/README.md): what helix-ray gives, a line at a time, each led by its case's name, as
+/** The Haxe side of a value suite (engines/raylib/parity/README.md): what helix-ray gives, a line at a time, each led by its case's name, as
 	shared/parity.h prints raylib's; `save` writes them to the file the command line names. tools/ray_parity.py compares the two. */
 @:access(helix.ray.internal.Frame)
 class Parity {

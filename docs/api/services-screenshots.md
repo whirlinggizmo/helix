@@ -4,7 +4,7 @@
 
 ## Screenshots
 
-*class* in [`services/src/helix/services/screenshots/Screenshots.hx`](../../services/src/helix/services/screenshots/Screenshots.hx), `import helix.services.screenshots.Screenshots;`
+*class* in [`libs/services/src/helix/services/screenshots/Screenshots.hx`](../../libs/services/src/helix/services/screenshots/Screenshots.hx), `import helix.services.screenshots.Screenshots;`
 
 Captures frames as images: the next frame that ends is read back from the GPU, for a screenshot or a check.
 

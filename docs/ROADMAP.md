@@ -1,6 +1,6 @@
 # Roadmap
 
-- **helix-render, being built** (directory `render/`, packages `helix.render` and `helix.render.effects`; DECISIONS 35), from its
+- **helix-render, being built** (directory `libs/render/`, packages `helix.render` and `helix.render.effects`; DECISIONS 35), from its
   agreed API (revision 9), in stages, each member of a later stage throwing and naming it: 1 (done), the renderer and its recorded
   frame, textures and targets, `Batch2D`, `DrawList2D`, fonts and text, and `Batch3D`'s unlit work (views, the batch draws, unlit
   meshes and models, instancing, skinning, `DrawList3D`, the compile macros); next, 2, lit materials and lights (with the draft's

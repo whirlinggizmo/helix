@@ -1,5 +1,5 @@
 """Native builds: hxcpp compiles the adapters' C with each program (the build XML on each adapter's extern bridge), and the platform's
-C-only tests (platform/tests/native) are built by CMake from their CMakeLists.txt, with GCC or Clang, or MSVC on Windows."""
+C-only tests (libs/platform/tests/native) are built by CMake from their CMakeLists.txt, with GCC or Clang, or MSVC on Windows."""
 import os
 from pathlib import Path
 import platform
@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 ROOT=Path(__file__).resolve().parents[1]
-PLATFORM_ADAPTERS=ROOT/'platform/src/helix/platform/adapters'
+PLATFORM_ADAPTERS=ROOT/'libs/platform/src/helix/platform/adapters'
 TESTS=ROOT/'build/native-tests'
 # hxcpp's define for this machine's 64-bit architecture: ARM64 on Apple silicon (else macOS builds x86_64, run under Rosetta) and arm64 Linux.
 ARCH='HXCPP_ARM64' if platform.machine().lower() in ('arm64','aarch64') else 'HXCPP_M64'
@@ -27,14 +27,14 @@ def env(sdl3=None):
     config=ROOT/'build/hxcpp_config.xml';config.parent.mkdir(parents=True,exist_ok=True)
     config.write_text('<xml><set name="HXCPP_COMPILE_CACHE" value="'+(ROOT/'build/hxcpp-cache').as_posix()+'"/></xml>\n', encoding='utf-8')
     extra={'HELIX_SDL3_LIBRARY':sdl3.library} if sdl3 else {}
-    return dict(os.environ,HELIX_PLATFORM=(ROOT/'platform').as_posix(),HXCPP_CONFIG=str(config),**extra)
+    return dict(os.environ,HELIX_PLATFORM=(ROOT/'libs/platform').as_posix(),HXCPP_CONFIG=str(config),**extra)
 
 def tool(name):
     """Build one of the platform's C-only tests with CMake (configured once into build/native-tests, against the SDL3 tools/sdl3.py finds)
     and return its path."""
     import sdl3
     found=sdl3.find()
-    subprocess.run(['cmake','-S',str(ROOT/'platform/tests/native'),'-B',str(TESTS),f'-DHELIX_ROOT={ROOT.as_posix()}',
+    subprocess.run(['cmake','-S',str(ROOT/'libs/platform/tests/native'),'-B',str(TESTS),f'-DHELIX_ROOT={ROOT.as_posix()}',
                     f'-DSDL3_LIBRARY={Path(found.library).as_posix()}','-DSDL3_RUNTIME='+';'.join(Path(r).as_posix() for r in found.runtime)],
                    cwd=ROOT,check=True,stdout=subprocess.DEVNULL)
     subprocess.run(['cmake','--build',str(TESTS),'--config','Release','--target',name],cwd=ROOT,check=True,stdout=subprocess.DEVNULL)

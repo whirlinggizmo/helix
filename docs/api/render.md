@@ -4,7 +4,7 @@
 
 ## Batch2D
 
-*class* in [`render/src/helix/render/Batch2D.hx`](../../render/src/helix/render/Batch2D.hx), `import helix.render.Batch2D;`
+*class* in [`libs/render/src/helix/render/Batch2D.hx`](../../libs/render/src/helix/render/Batch2D.hx), `import helix.render.Batch2D;`
 
 Provides 2D drawing: sprites, shapes and text, in a camera's world units or the viewport's pixels, through as few GPU draws as their order allows.
 
@@ -287,7 +287,7 @@ function drawList(list:DrawList2D, ?placement:Matrix2D):Void
 
 ## Batch3D
 
-*class* in [`render/src/helix/render/Batch3D.hx`](../../render/src/helix/render/Batch3D.hx), `import helix.render.Batch3D;`
+*class* in [`libs/render/src/helix/render/Batch3D.hx`](../../libs/render/src/helix/render/Batch3D.hx), `import helix.render.Batch3D;`
 
 Provides 3D drawing through a camera or through views: meshes and models with their materials, lit, shadowed and fogged, skinned, morphed and instanced; the environment's background; and the batch draws, for what has no mesh: lines, debug shapes, billboards, points, triangles, and sprites, shapes and text in a plane.
 
@@ -745,7 +745,7 @@ function drawList(list:DrawList3D, transform:Matrix3D):Void
 
 ## ColorSpace
 
-*abstract* in [`render/src/helix/render/ColorSpace.hx`](../../render/src/helix/render/ColorSpace.hx), `import helix.render.ColorSpace;`
+*abstract* in [`libs/render/src/helix/render/ColorSpace.hx`](../../libs/render/src/helix/render/ColorSpace.hx), `import helix.render.ColorSpace;`
 
 Specifies how a texture's texels are read by helix-render's own shaders: as sRGB colors, decoded to linear light, or as linear values.
 
@@ -761,7 +761,7 @@ function toString():String
 
 ## CubeTexture3D
 
-*class* in [`render/src/helix/render/CubeTexture3D.hx`](../../render/src/helix/render/CubeTexture3D.hx), `import helix.render.CubeTexture3D;`
+*class* in [`libs/render/src/helix/render/CubeTexture3D.hx`](../../libs/render/src/helix/render/CubeTexture3D.hx), `import helix.render.CubeTexture3D;`
 
 Represents a cube of six square images on the GPU, sampled by direction: a skybox a program's shader draws, or a reflection it reads (`samplerCube`).
 
@@ -783,7 +783,7 @@ function dispose():Void
 
 ## DirectionalLight3D
 
-*class* in [`render/src/helix/render/DirectionalLight3D.hx`](../../render/src/helix/render/DirectionalLight3D.hx), `import helix.render.DirectionalLight3D;`, extends `Light3D`
+*class* in [`libs/render/src/helix/render/DirectionalLight3D.hx`](../../libs/render/src/helix/render/DirectionalLight3D.hx), `import helix.render.DirectionalLight3D;`, extends `Light3D`
 
 Represents the sun: light from one direction, reaching everything alike, wherever it is.
 
@@ -803,7 +803,7 @@ final direction:Vector3D
 
 ## DrawList2D
 
-*class* in [`render/src/helix/render/DrawList2D.hx`](../../render/src/helix/render/DrawList2D.hx), `import helix.render.DrawList2D;`
+*class* in [`libs/render/src/helix/render/DrawList2D.hx`](../../libs/render/src/helix/render/DrawList2D.hx), `import helix.render.DrawList2D;`
 
 Represents 2D drawing recorded once and replayed by a `Batch2D` as often as wanted (`Batch2D.drawList`), under a transform: a HUD panel, a level's static decoration, a shape built of many calls.
 
@@ -990,7 +990,7 @@ function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, ?color:Int = 0xff
 
 ## DrawList3D
 
-*class* in [`render/src/helix/render/DrawList3D.hx`](../../render/src/helix/render/DrawList3D.hx), `import helix.render.DrawList3D;`
+*class* in [`libs/render/src/helix/render/DrawList3D.hx`](../../libs/render/src/helix/render/DrawList3D.hx), `import helix.render.DrawList3D;`
 
 Represents 3D drawing recorded once and replayed by a `Batch3D` as often as wanted (`Batch3D.drawList`), under a transform: a debug grid, a path, gizmos, a group of props placed together.
 
@@ -1258,7 +1258,7 @@ function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, ?color:Int = 0xff
 
 ## Environment3D
 
-*class* in [`render/src/helix/render/Environment3D.hx`](../../render/src/helix/render/Environment3D.hx), `import helix.render.Environment3D;`
+*class* in [`libs/render/src/helix/render/Environment3D.hx`](../../libs/render/src/helix/render/Environment3D.hx), `import helix.render.Environment3D;`
 
 Represents a place's light apart from its lights: the ambient light reaching every surface evenly, an environment map lighting and reflecting the lit materials, and the background behind everything.
 
@@ -1309,7 +1309,7 @@ function setBackground(map:Null<EnvironmentMap3D>, ?blur:Float = 0.):Bool
 
 ## EnvironmentBake3D
 
-*class* in [`render/src/helix/render/EnvironmentBake3D.hx`](../../render/src/helix/render/EnvironmentBake3D.hx), `import helix.render.EnvironmentBake3D;`
+*class* in [`libs/render/src/helix/render/EnvironmentBake3D.hx`](../../libs/render/src/helix/render/EnvironmentBake3D.hx), `import helix.render.EnvironmentBake3D;`
 
 Represents the preparing of an environment map on the CPU, a step at a time, so that it spreads over frames: from a picture of all around, its light for image-based lighting and its background.
 
@@ -1355,7 +1355,7 @@ function run(budgetMs:Float):Bool
 
 ## EnvironmentMap3D
 
-*class* in [`render/src/helix/render/EnvironmentMap3D.hx`](../../render/src/helix/render/EnvironmentMap3D.hx), `import helix.render.EnvironmentMap3D;`
+*class* in [`libs/render/src/helix/render/EnvironmentMap3D.hx`](../../libs/render/src/helix/render/EnvironmentMap3D.hx), `import helix.render.EnvironmentMap3D;`
 
 Represents an environment map on the GPU: the irradiance, prefiltered cube and background cube a finished `EnvironmentBake3D` made.
 
@@ -1371,7 +1371,7 @@ function dispose():Void
 
 ## Fog3D
 
-*class* in [`render/src/helix/render/Fog3D.hx`](../../render/src/helix/render/Fog3D.hx), `import helix.render.Fog3D;`
+*class* in [`libs/render/src/helix/render/Fog3D.hx`](../../libs/render/src/helix/render/Fog3D.hx), `import helix.render.Fog3D;`
 
 Represents fog: what is drawn fades toward a color with its distance from the camera.
 
@@ -1403,7 +1403,7 @@ var density(default, set):Float
 
 ## FogMode3D
 
-*abstract* in [`render/src/helix/render/FogMode3D.hx`](../../render/src/helix/render/FogMode3D.hx), `import helix.render.FogMode3D;`
+*abstract* in [`libs/render/src/helix/render/FogMode3D.hx`](../../libs/render/src/helix/render/FogMode3D.hx), `import helix.render.FogMode3D;`
 
 Specifies how fog thickens with distance from the camera.
 
@@ -1418,7 +1418,7 @@ function toString():String
 
 ## GpuFont2D
 
-*class* in [`render/src/helix/render/GpuFont2D.hx`](../../render/src/helix/render/GpuFont2D.hx), `import helix.render.GpuFont2D;`
+*class* in [`libs/render/src/helix/render/GpuFont2D.hx`](../../libs/render/src/helix/render/GpuFont2D.hx), `import helix.render.GpuFont2D;`
 
 Represents a font ready to draw: helix-services' `Font2D` with its atlas on the GPU.
 
@@ -1448,7 +1448,7 @@ function dispose():Void
 
 ## GpuMesh3D
 
-*class* in [`render/src/helix/render/GpuMesh3D.hx`](../../render/src/helix/render/GpuMesh3D.hx), `import helix.render.GpuMesh3D;`
+*class* in [`libs/render/src/helix/render/GpuMesh3D.hx`](../../libs/render/src/helix/render/GpuMesh3D.hx), `import helix.render.GpuMesh3D;`
 
 Represents a mesh on the GPU: its vertices and indices, uploaded once and drawn as often as wanted (`Batch3D.drawMesh`).
 
@@ -1488,7 +1488,7 @@ function dispose():Void
 
 ## GpuModel3D
 
-*class* in [`render/src/helix/render/GpuModel3D.hx`](../../render/src/helix/render/GpuModel3D.hx), `import helix.render.GpuModel3D;`
+*class* in [`libs/render/src/helix/render/GpuModel3D.hx`](../../libs/render/src/helix/render/GpuModel3D.hx), `import helix.render.GpuModel3D;`
 
 Represents a model on the GPU: its meshes uploaded, its images made textures, its materials made `Material3D`s over them.
 
@@ -1523,7 +1523,7 @@ function dispose():Void
 
 ## HemisphereLight3D
 
-*class* in [`render/src/helix/render/HemisphereLight3D.hx`](../../render/src/helix/render/HemisphereLight3D.hx), `import helix.render.HemisphereLight3D;`, extends `Light3D`
+*class* in [`libs/render/src/helix/render/HemisphereLight3D.hx`](../../libs/render/src/helix/render/HemisphereLight3D.hx), `import helix.render.HemisphereLight3D;`, extends `Light3D`
 
 Represents light from the sky above and the ground below: a surface facing up gets the sky's color, one facing down the ground's, one between a blend, from no one direction. It is three.js's HemisphereLight, and casts no shadows.
 
@@ -1539,7 +1539,7 @@ final up:Vector3D
 
 ## Light3D
 
-*class* in [`render/src/helix/render/Light3D.hx`](../../render/src/helix/render/Light3D.hx), `import helix.render.Light3D;`
+*class* in [`libs/render/src/helix/render/Light3D.hx`](../../libs/render/src/helix/render/Light3D.hx), `import helix.render.Light3D;`
 
 Represents a light that a `Batch3D` lights its lit materials with: a `DirectionalLight3D`, a `PointLight3D`, a `SpotLight3D` or a `HemisphereLight3D`.
 
@@ -1563,7 +1563,7 @@ final shadow:LightShadow3D
 
 ## LightShadow3D
 
-*class* in [`render/src/helix/render/LightShadow3D.hx`](../../render/src/helix/render/LightShadow3D.hx), `import helix.render.LightShadow3D;`
+*class* in [`libs/render/src/helix/render/LightShadow3D.hx`](../../libs/render/src/helix/render/LightShadow3D.hx), `import helix.render.LightShadow3D;`
 
 Represents how a light's shadows are made: its shadow map's size and reach, its bias against a surface shadowing itself, and how soft and dark its shadows are.
 
@@ -1603,7 +1603,7 @@ var color:Int
 
 ## Material3D
 
-*class* in [`render/src/helix/render/Material3D.hx`](../../render/src/helix/render/Material3D.hx), `import helix.render.Material3D;`
+*class* in [`libs/render/src/helix/render/Material3D.hx`](../../libs/render/src/helix/render/Material3D.hx), `import helix.render.Material3D;`
 
 Represents how a mesh's surface is drawn: its shading and the colors, textures and values it takes, how it is blended, culled and depth-tested, and the program's own shader when it has one.
 
@@ -1779,7 +1779,7 @@ var shaderValues:Null<ShaderValues>
 
 ## MeshState3D
 
-*class* in [`render/src/helix/render/MeshState3D.hx`](../../render/src/helix/render/MeshState3D.hx), `import helix.render.MeshState3D;`
+*class* in [`libs/render/src/helix/render/MeshState3D.hx`](../../libs/render/src/helix/render/MeshState3D.hx), `import helix.render.MeshState3D;`
 
 Represents state a mesh draw takes in place of its material's: its blend, depth test, depth write, cull and color channels, each null for the material's own.
 
@@ -1809,7 +1809,7 @@ var colorWrite:Null<ColorChannels>
 
 ## PointLight3D
 
-*class* in [`render/src/helix/render/PointLight3D.hx`](../../render/src/helix/render/PointLight3D.hx), `import helix.render.PointLight3D;`, extends `Light3D`
+*class* in [`libs/render/src/helix/render/PointLight3D.hx`](../../libs/render/src/helix/render/PointLight3D.hx), `import helix.render.PointLight3D;`, extends `Light3D`
 
 Represents a light from a point, in every direction, falling off with the square of the distance and, given a range, to nothing at it.
 
@@ -1827,7 +1827,7 @@ var range(default, set):Float
 
 ## PolygonMode3D
 
-*abstract* in [`render/src/helix/render/PolygonMode3D.hx`](../../render/src/helix/render/PolygonMode3D.hx), `import helix.render.PolygonMode3D;`
+*abstract* in [`libs/render/src/helix/render/PolygonMode3D.hx`](../../libs/render/src/helix/render/PolygonMode3D.hx), `import helix.render.PolygonMode3D;`
 
 Specifies how a `Batch3D` draws the triangles of a mesh or of `drawTriangles`: filled, as their edges, or as their corners.
 
@@ -1843,7 +1843,7 @@ function toString():String
 
 ## RenderTarget2D
 
-*class* in [`render/src/helix/render/RenderTarget2D.hx`](../../render/src/helix/render/RenderTarget2D.hx), `import helix.render.RenderTarget2D;`, extends `Texture2D`
+*class* in [`libs/render/src/helix/render/RenderTarget2D.hx`](../../libs/render/src/helix/render/RenderTarget2D.hx), `import helix.render.RenderTarget2D;`, extends `Texture2D`
 
 Represents a texture that draws go into: a pass between `Renderer.beginTarget` and `Renderer.endTarget` draws into it, and it is then drawn or sampled like any texture.
 
@@ -1886,7 +1886,7 @@ function resize(width:Int, height:Int):Void
 
 ## Renderer
 
-*class* in [`render/src/helix/render/Renderer.hx`](../../render/src/helix/render/Renderer.hx), `import helix.render.Renderer;`
+*class* in [`libs/render/src/helix/render/Renderer.hx`](../../libs/render/src/helix/render/Renderer.hx), `import helix.render.Renderer;`
 
 Provides drawing over the platform's graphics: the textures, meshes and fonts a program draws with, and the frame they are drawn in, pass by pass.
 
@@ -2057,7 +2057,7 @@ function dispose():Void
 
 ## Shading3D
 
-*abstract* in [`render/src/helix/render/Shading3D.hx`](../../render/src/helix/render/Shading3D.hx), `import helix.render.Shading3D;`
+*abstract* in [`libs/render/src/helix/render/Shading3D.hx`](../../libs/render/src/helix/render/Shading3D.hx), `import helix.render.Shading3D;`
 
 Specifies how a `Material3D` is shaded by the batch's lights.
 
@@ -2074,7 +2074,7 @@ function toString():String
 
 ## SpotLight3D
 
-*class* in [`render/src/helix/render/SpotLight3D.hx`](../../render/src/helix/render/SpotLight3D.hx), `import helix.render.SpotLight3D;`, extends `Light3D`
+*class* in [`libs/render/src/helix/render/SpotLight3D.hx`](../../libs/render/src/helix/render/SpotLight3D.hx), `import helix.render.SpotLight3D;`, extends `Light3D`
 
 Represents a point light shining in a cone: full inside its inner cone, fading to nothing at its outer, falling off with distance as a `PointLight3D` does.
 
@@ -2101,7 +2101,7 @@ function setCone(innerCone:Float, outerCone:Float):Bool
 
 ## TargetDepth
 
-*abstract* in [`render/src/helix/render/TargetDepth.hx`](../../render/src/helix/render/TargetDepth.hx), `import helix.render.TargetDepth;`
+*abstract* in [`libs/render/src/helix/render/TargetDepth.hx`](../../libs/render/src/helix/render/TargetDepth.hx), `import helix.render.TargetDepth;`
 
 Specifies the depth a render target has; its multisampling is chosen apart (`Renderer.createRenderTarget`'s `msaaSampleCount`).
 
@@ -2117,7 +2117,7 @@ function toString():String
 
 ## TextAlign2D
 
-*abstract* in [`render/src/helix/render/TextAlign2D.hx`](../../render/src/helix/render/TextAlign2D.hx), `import helix.render.TextAlign2D;`
+*abstract* in [`libs/render/src/helix/render/TextAlign2D.hx`](../../libs/render/src/helix/render/TextAlign2D.hx), `import helix.render.TextAlign2D;`
 
 Specifies where each line of a `TextLayout2D` sits across its box.
 
@@ -2133,7 +2133,7 @@ function toString():String
 
 ## TextLayout2D
 
-*class* in [`render/src/helix/render/TextLayout2D.hx`](../../render/src/helix/render/TextLayout2D.hx), `import helix.render.TextLayout2D;`
+*class* in [`libs/render/src/helix/render/TextLayout2D.hx`](../../libs/render/src/helix/render/TextLayout2D.hx), `import helix.render.TextLayout2D;`
 
 Represents text laid out in lines: broken at line breaks and, given a width, wrapped between words, each line aligned in its box.
 
@@ -2180,7 +2180,7 @@ var lineCount(get, never):Int
 
 ## Texture2D
 
-*class* in [`render/src/helix/render/Texture2D.hx`](../../render/src/helix/render/Texture2D.hx), `import helix.render.Texture2D;`
+*class* in [`libs/render/src/helix/render/Texture2D.hx`](../../libs/render/src/helix/render/Texture2D.hx), `import helix.render.Texture2D;`
 
 Represents an image on the GPU, drawn as a sprite, read by a material, or bound to a shader.
 
@@ -2231,7 +2231,7 @@ function dispose():Void
 
 ## TextureRegion2D
 
-*class* in [`render/src/helix/render/TextureRegion2D.hx`](../../render/src/helix/render/TextureRegion2D.hx), `import helix.render.TextureRegion2D;`
+*class* in [`libs/render/src/helix/render/TextureRegion2D.hx`](../../libs/render/src/helix/render/TextureRegion2D.hx), `import helix.render.TextureRegion2D;`
 
 Represents a rectangle of a texture drawn as a sprite: a frame of a sprite sheet, an image on an atlas, or the whole texture, with the point it is placed and turned by.
 
@@ -2291,7 +2291,7 @@ final originY:Float
 
 ## ToneMapping
 
-*abstract* in [`render/src/helix/render/ToneMapping.hx`](../../render/src/helix/render/ToneMapping.hx), `import helix.render.ToneMapping;`
+*abstract* in [`libs/render/src/helix/render/ToneMapping.hx`](../../libs/render/src/helix/render/ToneMapping.hx), `import helix.render.ToneMapping;`
 
 Specifies how linear light, which can run past 1, is brought into the 0 to 1 an sRGB target holds, after the exposure.
 
@@ -2313,7 +2313,7 @@ function toString():String
 
 ## View3D
 
-*class* in [`render/src/helix/render/View3D.hx`](../../render/src/helix/render/View3D.hx), `import helix.render.View3D;`
+*class* in [`libs/render/src/helix/render/View3D.hx`](../../libs/render/src/helix/render/View3D.hx), `import helix.render.View3D;`
 
 Represents one view a `Batch3D` draws through: where the eye is and how it projects, as matrices, and the rectangle of the pass it fills.
 

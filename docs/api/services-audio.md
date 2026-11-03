@@ -4,7 +4,7 @@
 
 ## Audio
 
-*class* in [`services/src/helix/services/audio/Audio.hx`](../../services/src/helix/services/audio/Audio.hx), `import helix.services.audio.Audio;`, implements `IPollable`
+*class* in [`libs/services/src/helix/services/audio/Audio.hx`](../../libs/services/src/helix/services/audio/Audio.hx), `import helix.services.audio.Audio;`, implements `IPollable`
 
 Provides sounds by path, played as voices in groups whose volumes and fades apply to every voice in them.
 
@@ -88,7 +88,7 @@ function dispose():Void
 
 ## Group
 
-*class* in [`services/src/helix/services/audio/Group.hx`](../../services/src/helix/services/audio/Group.hx), `import helix.services.audio.Group;`
+*class* in [`libs/services/src/helix/services/audio/Group.hx`](../../libs/services/src/helix/services/audio/Group.hx), `import helix.services.audio.Group;`
 
 Represents voices whose volume is set together, such as the music or the effects (`Audio.createGroup`).
 
@@ -111,7 +111,7 @@ function fadeTo(volume:Float, seconds:Float, ?done:() -> Void):Void
 
 ## SampleQueue
 
-*class* in [`services/src/helix/services/audio/SampleQueue.hx`](../../services/src/helix/services/audio/SampleQueue.hx), `import helix.services.audio.SampleQueue;`
+*class* in [`libs/services/src/helix/services/audio/SampleQueue.hx`](../../libs/services/src/helix/services/audio/SampleQueue.hx), `import helix.services.audio.SampleQueue;`
 
 Represents samples played as they are added (`Audio.createSampleQueue`), for sound a program makes as it goes.
 
@@ -150,7 +150,7 @@ function dispose():Void
 
 ## Sound
 
-*class* in [`services/src/helix/services/audio/Sound.hx`](../../services/src/helix/services/audio/Sound.hx), `import helix.services.audio.Sound;`
+*class* in [`libs/services/src/helix/services/audio/Sound.hx`](../../libs/services/src/helix/services/audio/Sound.hx), `import helix.services.audio.Sound;`
 
 Represents a sound ready to play: decoded whole (`Audio.load`), made from samples (`Audio.createSound`), or opened to be read as it plays (`Audio.stream`).
 
@@ -169,7 +169,7 @@ var duration(get, never):Float
 
 ## Voice
 
-*class* in [`services/src/helix/services/audio/Voice.hx`](../../services/src/helix/services/audio/Voice.hx), `import helix.services.audio.Voice;`
+*class* in [`libs/services/src/helix/services/audio/Voice.hx`](../../libs/services/src/helix/services/audio/Voice.hx), `import helix.services.audio.Voice;`
 
 Represents a sound or a queue playing (`Audio.play`, `SampleQueue.play`), until it ends or is stopped.
 

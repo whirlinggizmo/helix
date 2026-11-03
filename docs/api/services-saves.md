@@ -4,7 +4,7 @@
 
 ## Saves
 
-*class* in [`services/src/helix/services/saves/Saves.hx`](../../services/src/helix/services/saves/Saves.hx), `import helix.services.saves.Saves;`, implements `IPollable`
+*class* in [`libs/services/src/helix/services/saves/Saves.hx`](../../libs/services/src/helix/services/saves/Saves.hx), `import helix.services.saves.Saves;`, implements `IPollable`
 
 Provides small values a game keeps between runs, by key, in one file.
 

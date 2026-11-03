@@ -4,7 +4,7 @@
 
 ## QoaFile
 
-*class* in [`formats/src/helix/formats/qoa/QoaFile.hx`](../../formats/src/helix/formats/qoa/QoaFile.hx), `import helix.formats.qoa.QoaFile;`
+*class* in [`libs/formats/src/helix/formats/qoa/QoaFile.hx`](../../libs/formats/src/helix/formats/qoa/QoaFile.hx), `import helix.formats.qoa.QoaFile;`
 
 Represents the sound read from a QOA file ("Quite OK Audio"): its rate, channels and 16-bit samples.
 

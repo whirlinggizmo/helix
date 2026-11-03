@@ -4,7 +4,7 @@
 
 ## Config
 
-*class* in [`services/src/helix/services/config/Config.hx`](../../services/src/helix/services/config/Config.hx), `import helix.services.config.Config;`
+*class* in [`libs/services/src/helix/services/config/Config.hx`](../../libs/services/src/helix/services/config/Config.hx), `import helix.services.config.Config;`
 
 Provides the options the program was started with, read as text, numbers or true and false, each with a fallback.
 

@@ -4,7 +4,7 @@
 
 ## MtlFile
 
-*class* in [`formats/src/helix/formats/obj/MtlFile.hx`](../../formats/src/helix/formats/obj/MtlFile.hx), `import helix.formats.obj.MtlFile;`
+*class* in [`libs/formats/src/helix/formats/obj/MtlFile.hx`](../../libs/formats/src/helix/formats/obj/MtlFile.hx), `import helix.formats.obj.MtlFile;`
 
 Represents a Wavefront material library read from an .mtl file, or several combined: the materials an OBJ model's `usemtl` lines name.
 
@@ -38,7 +38,7 @@ function findMaterial(name:String):Null<MtlMaterial>
 
 ## MtlMaterial
 
-*class* in [`formats/src/helix/formats/obj/MtlMaterial.hx`](../../formats/src/helix/formats/obj/MtlMaterial.hx), `import helix.formats.obj.MtlMaterial;`
+*class* in [`libs/formats/src/helix/formats/obj/MtlMaterial.hx`](../../libs/formats/src/helix/formats/obj/MtlMaterial.hx), `import helix.formats.obj.MtlMaterial;`
 
 Represents one material of an .mtl file: its colors, factors and the textures it names, as paths resolved against the file's directory and normalized as `ObjFile`'s are (null for none). A value the file doesn't give is null, and its `computeX` method gives the default to draw with. Its colors are arrays the material holds, and the defaults' are shared: read them, don't change them. A texture line's options (`-s`, `-o`, `-bm` and the rest) are read past; only the path is kept.
 
@@ -140,7 +140,7 @@ function findTexturePath(statements:Array<String>):Null<String>
 
 ## ObjFile
 
-*class* in [`formats/src/helix/formats/obj/ObjFile.hx`](../../formats/src/helix/formats/obj/ObjFile.hx), `import helix.formats.obj.ObjFile;`
+*class* in [`libs/formats/src/helix/formats/obj/ObjFile.hx`](../../libs/formats/src/helix/formats/obj/ObjFile.hx), `import helix.formats.obj.ObjFile;`
 
 Represents a Wavefront OBJ model read from an .obj file: its vertex data, its faces and their groups, as the file gives them.
 
@@ -234,7 +234,7 @@ function computeParts(byGroup:Bool):Array<ObjPart>
 
 ## ObjGroup
 
-*class* in [`formats/src/helix/formats/obj/ObjGroup.hx`](../../formats/src/helix/formats/obj/ObjGroup.hx), `import helix.formats.obj.ObjGroup;`
+*class* in [`libs/formats/src/helix/formats/obj/ObjGroup.hx`](../../libs/formats/src/helix/formats/obj/ObjGroup.hx), `import helix.formats.obj.ObjGroup;`
 
 Represents a run of an OBJ model's faces that are in one object and one group: the faces after an `o` or `g` line, up to the next such line.
 
@@ -252,7 +252,7 @@ final faceCount:Int
 
 ## ObjPart
 
-*class* in [`formats/src/helix/formats/obj/ObjPart.hx`](../../formats/src/helix/formats/obj/ObjPart.hx), `import helix.formats.obj.ObjPart;`
+*class* in [`libs/formats/src/helix/formats/obj/ObjPart.hx`](../../libs/formats/src/helix/formats/obj/ObjPart.hx), `import helix.formats.obj.ObjPart;`
 
 Represents a part of an OBJ model, as `ObjFile.computeParts` gathers them: the faces of one object, group and material, split into triangles.
 

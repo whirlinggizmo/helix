@@ -4,7 +4,7 @@
 
 ## Sdl3MixerAudioAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/audio/sdl3mixer/Sdl3MixerAudioAdapter.hx`](../../platform/src/helix/platform/adapters/audio/sdl3mixer/Sdl3MixerAudioAdapter.hx), `import helix.platform.adapters.audio.sdl3mixer.Sdl3MixerAudioAdapter;`, implements `IAudio`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/audio/sdl3mixer/Sdl3MixerAudioAdapter.hx`](../../libs/platform/src/helix/platform/adapters/audio/sdl3mixer/Sdl3MixerAudioAdapter.hx), `import helix.platform.adapters.audio.sdl3mixer.Sdl3MixerAudioAdapter;`, implements `IAudio`
 
 Provides `IAudio` natively over SDL3_mixer on SDL3's default playback device.
 
@@ -44,7 +44,7 @@ function dispose():Void
 
 ## WebAudioAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/audio/webaudio/WebAudioAdapter.hx`](../../platform/src/helix/platform/adapters/audio/webaudio/WebAudioAdapter.hx), `import helix.platform.adapters.audio.webaudio.WebAudioAdapter;`, implements `IAudio`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/audio/webaudio/WebAudioAdapter.hx`](../../libs/platform/src/helix/platform/adapters/audio/webaudio/WebAudioAdapter.hx), `import helix.platform.adapters.audio.webaudio.WebAudioAdapter;`, implements `IAudio`
 
 Provides `IAudio` in a browser page, over Web Audio.
 
@@ -85,7 +85,7 @@ function dispose():Void
 
 ## Sdl3MixerAudioDecoderAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/audiodecoder/sdl3mixer/Sdl3MixerAudioDecoderAdapter.hx`](../../platform/src/helix/platform/adapters/audiodecoder/sdl3mixer/Sdl3MixerAudioDecoderAdapter.hx), `import helix.platform.adapters.audiodecoder.sdl3mixer.Sdl3MixerAudioDecoderAdapter;`, implements `IAudioDecoder`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/audiodecoder/sdl3mixer/Sdl3MixerAudioDecoderAdapter.hx`](../../libs/platform/src/helix/platform/adapters/audiodecoder/sdl3mixer/Sdl3MixerAudioDecoderAdapter.hx), `import helix.platform.adapters.audiodecoder.sdl3mixer.Sdl3MixerAudioDecoderAdapter;`, implements `IAudioDecoder`
 
 Provides `IAudioDecoder` natively over SDL3_mixer's decoder: WAV, Ogg Vorbis, MP3 and FLAC, at the rate asked, resampled by it, in the file's channels (more than 2 mixed down to stereo by SDL), each decode on a worker thread.
 
@@ -101,7 +101,7 @@ function dispose():Void
 
 ## WebAudioDecoderAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/audiodecoder/webaudio/WebAudioDecoderAdapter.hx`](../../platform/src/helix/platform/adapters/audiodecoder/webaudio/WebAudioDecoderAdapter.hx), `import helix.platform.adapters.audiodecoder.webaudio.WebAudioDecoderAdapter;`, implements `IAudioDecoder`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/audiodecoder/webaudio/WebAudioDecoderAdapter.hx`](../../libs/platform/src/helix/platform/adapters/audiodecoder/webaudio/WebAudioDecoderAdapter.hx), `import helix.platform.adapters.audiodecoder.webaudio.WebAudioDecoderAdapter;`, implements `IAudioDecoder`
 
 Provides `IAudioDecoder` in a browser page: decodeAudioData on an OfflineAudioContext made at the rate asked, which needs no user gesture and resamples to its rate, in the file's channels; a file of more than 2 is rendered through a stereo OfflineAudioContext, which mixes it down by Web Audio's speaker rules. A rate a context can't take fails the decode.
 
@@ -116,7 +116,7 @@ function dispose():Void
 
 ## DomClipboardAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/clipboard/dom/DomClipboardAdapter.hx`](../../platform/src/helix/platform/adapters/clipboard/dom/DomClipboardAdapter.hx), `import helix.platform.adapters.clipboard.dom.DomClipboardAdapter;`, implements `IClipboard`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/clipboard/dom/DomClipboardAdapter.hx`](../../libs/platform/src/helix/platform/adapters/clipboard/dom/DomClipboardAdapter.hx), `import helix.platform.adapters.clipboard.dom.DomClipboardAdapter;`, implements `IClipboard`
 
 Provides `IClipboard` in a browser page, over the Clipboard API (`navigator.clipboard`): text, and an image as `image/png`.
 
@@ -135,7 +135,7 @@ function dispose():Void
 
 ## Sdl3ClipboardAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/clipboard/sdl3/Sdl3ClipboardAdapter.hx`](../../platform/src/helix/platform/adapters/clipboard/sdl3/Sdl3ClipboardAdapter.hx), `import helix.platform.adapters.clipboard.sdl3.Sdl3ClipboardAdapter;`, implements `IClipboard`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/clipboard/sdl3/Sdl3ClipboardAdapter.hx`](../../libs/platform/src/helix/platform/adapters/clipboard/sdl3/Sdl3ClipboardAdapter.hx), `import helix.platform.adapters.clipboard.sdl3.Sdl3ClipboardAdapter;`, implements `IClipboard`
 
 Provides `IClipboard` on SDL3, natively: the system's clipboard, its text and an image as `image/png`. SDL reads and writes during the call, and the answer comes at the next `Sdl3EventsAdapter` poll. It is made after the window, as SDL's clipboard needs its video.
 
@@ -152,7 +152,7 @@ function dispose():Void
 
 ## DomEventsAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/events/dom/DomEventsAdapter.hx`](../../platform/src/helix/platform/adapters/events/dom/DomEventsAdapter.hx), `import helix.platform.adapters.events.dom.DomEventsAdapter;`, implements `IEvents`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/events/dom/DomEventsAdapter.hx`](../../libs/platform/src/helix/platform/adapters/events/dom/DomEventsAdapter.hx), `import helix.platform.adapters.events.dom.DomEventsAdapter;`, implements `IEvents`
 
 Provides `IEvents` in a browser page.
 
@@ -173,7 +173,7 @@ function dispose():Void
 
 ## DomEventsAdapterOptions
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/events/dom/DomEventsAdapterOptions.hx`](../../platform/src/helix/platform/adapters/events/dom/DomEventsAdapterOptions.hx), `import helix.platform.adapters.events.dom.DomEventsAdapterOptions;`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/events/dom/DomEventsAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/events/dom/DomEventsAdapterOptions.hx), `import helix.platform.adapters.events.dom.DomEventsAdapterOptions;`
 
 Represents what `DomEventsAdapter` listens to.
 
@@ -191,7 +191,7 @@ final canvasId:String
 
 ## Sdl3EventsAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/events/sdl3/Sdl3EventsAdapter.hx`](../../platform/src/helix/platform/adapters/events/sdl3/Sdl3EventsAdapter.hx), `import helix.platform.adapters.events.sdl3.Sdl3EventsAdapter;`, implements `IEvents`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/events/sdl3/Sdl3EventsAdapter.hx`](../../libs/platform/src/helix/platform/adapters/events/sdl3/Sdl3EventsAdapter.hx), `import helix.platform.adapters.events.sdl3.Sdl3EventsAdapter;`, implements `IEvents`
 
 Provides `IEvents` on SDL3, natively: its one queue drained at each poll, after which the window's requests, the mouse's lock and the clipboard's answer.
 
@@ -210,7 +210,7 @@ function dispose():Void
 
 ## DownloadExportAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/export/download/DownloadExportAdapter.hx`](../../platform/src/helix/platform/adapters/export/download/DownloadExportAdapter.hx), `import helix.platform.adapters.export.download.DownloadExportAdapter;`, implements `IExport`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/export/download/DownloadExportAdapter.hx`](../../libs/platform/src/helix/platform/adapters/export/download/DownloadExportAdapter.hx), `import helix.platform.adapters.export.download.DownloadExportAdapter;`, implements `IExport`
 
 Provides `IExport` in a page: the file is downloaded, as a link with the download attribute does it; the browser may ask where, or keep it in its downloads.
 
@@ -225,7 +225,7 @@ function export(name:String, mimeType:String, bytes:haxe.io.Bytes, exported:(whe
 
 ## FileSystemExportAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/export/filesystem/FileSystemExportAdapter.hx`](../../platform/src/helix/platform/adapters/export/filesystem/FileSystemExportAdapter.hx), `import helix.platform.adapters.export.filesystem.FileSystemExportAdapter;`, implements `IExport`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/export/filesystem/FileSystemExportAdapter.hx`](../../libs/platform/src/helix/platform/adapters/export/filesystem/FileSystemExportAdapter.hx), `import helix.platform.adapters.export.filesystem.FileSystemExportAdapter;`, implements `IExport`
 
 Provides `IExport` natively: the file is written into a directory, made when first needed, whole or not at all (`AtomicFile`).
 
@@ -239,7 +239,7 @@ function export(name:String, mimeType:String, bytes:haxe.io.Bytes, exported:(whe
 
 ## FileSystemExportAdapterOptions
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/export/filesystem/FileSystemExportAdapterOptions.hx`](../../platform/src/helix/platform/adapters/export/filesystem/FileSystemExportAdapterOptions.hx), `import helix.platform.adapters.export.filesystem.FileSystemExportAdapterOptions;`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/export/filesystem/FileSystemExportAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/export/filesystem/FileSystemExportAdapterOptions.hx), `import helix.platform.adapters.export.filesystem.FileSystemExportAdapterOptions;`
 
 Represents where `FileSystemExportAdapter` writes.
 
@@ -257,7 +257,7 @@ final directory:String
 
 ## BrowserFileSystemAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/filesystem/browser/BrowserFileSystemAdapter.hx`](../../platform/src/helix/platform/adapters/filesystem/browser/BrowserFileSystemAdapter.hx), `import helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter;`, implements `IFileSystem`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/filesystem/browser/BrowserFileSystemAdapter.hx`](../../libs/platform/src/helix/platform/adapters/filesystem/browser/BrowserFileSystemAdapter.hx), `import helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter;`, implements `IFileSystem`
 
 Provides `IFileSystem` in a page: Files in an IndexedDB database, each a Blob keyed by its path that keeps when it was written, and a located file a Blob's URL, released by revoking it.
 
@@ -284,7 +284,7 @@ function dispose():Void
 
 ## BrowserFileSystemAdapterOptions
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/filesystem/browser/BrowserFileSystemAdapterOptions.hx`](../../platform/src/helix/platform/adapters/filesystem/browser/BrowserFileSystemAdapterOptions.hx), `import helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapterOptions;`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/filesystem/browser/BrowserFileSystemAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/filesystem/browser/BrowserFileSystemAdapterOptions.hx), `import helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapterOptions;`
 
 Represents the database `BrowserFileSystemAdapter` holds.
 
@@ -302,7 +302,7 @@ final name:String
 
 ## NativeFileSystemAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/filesystem/native/NativeFileSystemAdapter.hx`](../../platform/src/helix/platform/adapters/filesystem/native/NativeFileSystemAdapter.hx), `import helix.platform.adapters.filesystem.native.NativeFileSystemAdapter;`, implements `IFileSystem`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/filesystem/native/NativeFileSystemAdapter.hx`](../../libs/platform/src/helix/platform/adapters/filesystem/native/NativeFileSystemAdapter.hx), `import helix.platform.adapters.filesystem.native.NativeFileSystemAdapter;`, implements `IFileSystem`
 
 Provides `IFileSystem` natively: files under a directory on disk, each operation on a worker thread.
 
@@ -329,7 +329,7 @@ function dispose():Void
 
 ## NativeFileSystemAdapterOptions
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/filesystem/native/NativeFileSystemAdapterOptions.hx`](../../platform/src/helix/platform/adapters/filesystem/native/NativeFileSystemAdapterOptions.hx), `import helix.platform.adapters.filesystem.native.NativeFileSystemAdapterOptions;`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/filesystem/native/NativeFileSystemAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/filesystem/native/NativeFileSystemAdapterOptions.hx), `import helix.platform.adapters.filesystem.native.NativeFileSystemAdapterOptions;`
 
 Represents the directory `NativeFileSystemAdapter` holds and how.
 
@@ -349,7 +349,7 @@ final readOnly:Bool = false
 
 ## CanvasFontRasterizerAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/fontrasterizer/canvas/CanvasFontRasterizerAdapter.hx`](../../platform/src/helix/platform/adapters/fontrasterizer/canvas/CanvasFontRasterizerAdapter.hx), `import helix.platform.adapters.fontrasterizer.canvas.CanvasFontRasterizerAdapter;`, implements `IFontRasterizer`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/fontrasterizer/canvas/CanvasFontRasterizerAdapter.hx`](../../libs/platform/src/helix/platform/adapters/fontrasterizer/canvas/CanvasFontRasterizerAdapter.hx), `import helix.platform.adapters.fontrasterizer.canvas.CanvasFontRasterizerAdapter;`, implements `IFontRasterizer`
 
 Provides `IFontRasterizer` in a page: the font loaded as a `FontFace` and its glyphs drawn with `fillText` on an `OffscreenCanvas`.
 
@@ -368,7 +368,7 @@ function dispose():Void
 
 ## StbFontRasterizerAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/fontrasterizer/stb/StbFontRasterizerAdapter.hx`](../../platform/src/helix/platform/adapters/fontrasterizer/stb/StbFontRasterizerAdapter.hx), `import helix.platform.adapters.fontrasterizer.stb.StbFontRasterizerAdapter;`, implements `IFontRasterizer`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/fontrasterizer/stb/StbFontRasterizerAdapter.hx`](../../libs/platform/src/helix/platform/adapters/fontrasterizer/stb/StbFontRasterizerAdapter.hx), `import helix.platform.adapters.fontrasterizer.stb.StbFontRasterizerAdapter;`, implements `IFontRasterizer`
 
 Provides `IFontRasterizer` natively over stb_truetype, each rasterize on a worker thread.
 
@@ -385,7 +385,7 @@ function dispose():Void
 
 ## DomGamepadsAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/gamepads/dom/DomGamepadsAdapter.hx`](../../platform/src/helix/platform/adapters/gamepads/dom/DomGamepadsAdapter.hx), `import helix.platform.adapters.gamepads.dom.DomGamepadsAdapter;`, implements `IGamepads`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/gamepads/dom/DomGamepadsAdapter.hx`](../../libs/platform/src/helix/platform/adapters/gamepads/dom/DomGamepadsAdapter.hx), `import helix.platform.adapters.gamepads.dom.DomGamepadsAdapter;`, implements `IGamepads`
 
 Provides `IGamepads` in a browser page, read at each `IEvents.poll` in the W3C standard layout.
 
@@ -407,7 +407,7 @@ function dispose():Void
 
 ## DomGamepadsAdapterOptions
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/gamepads/dom/DomGamepadsAdapterOptions.hx`](../../platform/src/helix/platform/adapters/gamepads/dom/DomGamepadsAdapterOptions.hx), `import helix.platform.adapters.gamepads.dom.DomGamepadsAdapterOptions;`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/gamepads/dom/DomGamepadsAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/gamepads/dom/DomGamepadsAdapterOptions.hx), `import helix.platform.adapters.gamepads.dom.DomGamepadsAdapterOptions;`
 
 Represents what `DomGamepadsAdapter` is built over.
 
@@ -425,7 +425,7 @@ final events:DomEventsAdapter
 
 ## Sdl3GamepadsAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/gamepads/sdl3/Sdl3GamepadsAdapter.hx`](../../platform/src/helix/platform/adapters/gamepads/sdl3/Sdl3GamepadsAdapter.hx), `import helix.platform.adapters.gamepads.sdl3.Sdl3GamepadsAdapter;`, implements `IGamepads`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/gamepads/sdl3/Sdl3GamepadsAdapter.hx`](../../libs/platform/src/helix/platform/adapters/gamepads/sdl3/Sdl3GamepadsAdapter.hx), `import helix.platform.adapters.gamepads.sdl3.Sdl3GamepadsAdapter;`, implements `IGamepads`
 
 Provides `IGamepads` on SDL3, natively, through SDL's controller database, in the W3C standard layout.
 
@@ -447,7 +447,7 @@ function dispose():Void
 
 ## Sdl3GamepadsAdapterOptions
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/gamepads/sdl3/Sdl3GamepadsAdapterOptions.hx`](../../platform/src/helix/platform/adapters/gamepads/sdl3/Sdl3GamepadsAdapterOptions.hx), `import helix.platform.adapters.gamepads.sdl3.Sdl3GamepadsAdapterOptions;`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/gamepads/sdl3/Sdl3GamepadsAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/gamepads/sdl3/Sdl3GamepadsAdapterOptions.hx), `import helix.platform.adapters.gamepads.sdl3.Sdl3GamepadsAdapterOptions;`
 
 Represents what `Sdl3GamepadsAdapter` is built over.
 
@@ -465,7 +465,7 @@ final events:Sdl3EventsAdapter
 
 ## Sdl3GpuGraphicsAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/graphics/sdl3gpu/Sdl3GpuGraphicsAdapter.hx`](../../platform/src/helix/platform/adapters/graphics/sdl3gpu/Sdl3GpuGraphicsAdapter.hx), `import helix.platform.adapters.graphics.sdl3gpu.Sdl3GpuGraphicsAdapter;`, extends `NativeGraphics`, implements `IGraphics`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/graphics/sdl3gpu/Sdl3GpuGraphicsAdapter.hx`](../../libs/platform/src/helix/platform/adapters/graphics/sdl3gpu/Sdl3GpuGraphicsAdapter.hx), `import helix.platform.adapters.graphics.sdl3gpu.Sdl3GpuGraphicsAdapter;`, extends `NativeGraphics`, implements `IGraphics`
 
 Provides `IGraphics` on SDL_GPU, natively: Vulkan, Direct3D 12 or Metal.
 
@@ -482,7 +482,7 @@ function dispose():Void
 
 ## SokolGraphicsAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/graphics/sokol/SokolGraphicsAdapter.hx`](../../platform/src/helix/platform/adapters/graphics/sokol/SokolGraphicsAdapter.hx), `import helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter;`, extends `NativeGraphics`, implements `IGraphics`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/graphics/sokol/SokolGraphicsAdapter.hx`](../../libs/platform/src/helix/platform/adapters/graphics/sokol/SokolGraphicsAdapter.hx), `import helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter;`, extends `NativeGraphics`, implements `IGraphics`
 
 Provides `IGraphics` on sokol_gfx, natively, drawing with GL 4.1 in the window's context.
 
@@ -498,7 +498,7 @@ function dispose():Void
 
 ## WebGl2GraphicsAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/graphics/webgl2/WebGl2GraphicsAdapter.hx`](../../platform/src/helix/platform/adapters/graphics/webgl2/WebGl2GraphicsAdapter.hx), `import helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter;`, implements `IGraphics`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/graphics/webgl2/WebGl2GraphicsAdapter.hx`](../../libs/platform/src/helix/platform/adapters/graphics/webgl2/WebGl2GraphicsAdapter.hx), `import helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter;`, implements `IGraphics`
 
 Provides `IGraphics` on a canvas's WebGL2 context.
 
@@ -550,7 +550,7 @@ function dispose():Void
 
 ## WebGl2GraphicsAdapterOptions
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/graphics/webgl2/WebGl2GraphicsAdapterOptions.hx`](../../platform/src/helix/platform/adapters/graphics/webgl2/WebGl2GraphicsAdapterOptions.hx), `import helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapterOptions;`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/graphics/webgl2/WebGl2GraphicsAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/graphics/webgl2/WebGl2GraphicsAdapterOptions.hx), `import helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapterOptions;`
 
 Represents how `WebGl2GraphicsAdapter` makes its context.
 
@@ -572,7 +572,7 @@ final preserveDrawingBuffer:Bool = false
 
 ## FetchApiHttpAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/http/fetchapi/FetchApiHttpAdapter.hx`](../../platform/src/helix/platform/adapters/http/fetchapi/FetchApiHttpAdapter.hx), `import helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter;`, implements `IHttp`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/http/fetchapi/FetchApiHttpAdapter.hx`](../../libs/platform/src/helix/platform/adapters/http/fetchapi/FetchApiHttpAdapter.hx), `import helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter;`, implements `IHttp`
 
 Provides `IHttp` in a page over `fetch`: the body read as it arrives, aborted through an `AbortController`.
 
@@ -596,7 +596,7 @@ function dispose():Void
 
 ## HaxeHttpAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/http/haxehttp/HaxeHttpAdapter.hx`](../../platform/src/helix/platform/adapters/http/haxehttp/HaxeHttpAdapter.hx), `import helix.platform.adapters.http.haxehttp.HaxeHttpAdapter;`, implements `IHttp`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/http/haxehttp/HaxeHttpAdapter.hx`](../../libs/platform/src/helix/platform/adapters/http/haxehttp/HaxeHttpAdapter.hx), `import helix.platform.adapters.http.haxehttp.HaxeHttpAdapter;`, implements `IHttp`
 
 Provides `IHttp` natively over `sys.Http`, on a worker thread for each transfer.
 
@@ -613,7 +613,7 @@ function dispose():Void
 
 ## CanvasImageDecoderAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/imagedecoder/canvas/CanvasImageDecoderAdapter.hx`](../../platform/src/helix/platform/adapters/imagedecoder/canvas/CanvasImageDecoderAdapter.hx), `import helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter;`, implements `IImageDecoder`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/imagedecoder/canvas/CanvasImageDecoderAdapter.hx`](../../libs/platform/src/helix/platform/adapters/imagedecoder/canvas/CanvasImageDecoderAdapter.hx), `import helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter;`, implements `IImageDecoder`
 
 Provides `IImageDecoder` in a page over its own decoder (`createImageBitmap`, with no color conversion or premultiplying), read back through an `OffscreenCanvas`.
 
@@ -631,7 +631,7 @@ function dispose():Void
 
 ## StbImageDecoderAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/imagedecoder/stb/StbImageDecoderAdapter.hx`](../../platform/src/helix/platform/adapters/imagedecoder/stb/StbImageDecoderAdapter.hx), `import helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter;`, implements `IImageDecoder`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/imagedecoder/stb/StbImageDecoderAdapter.hx`](../../libs/platform/src/helix/platform/adapters/imagedecoder/stb/StbImageDecoderAdapter.hx), `import helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter;`, implements `IImageDecoder`
 
 Provides `IImageDecoder` natively over stb_image, each decode on a worker thread.
 
@@ -647,7 +647,7 @@ function dispose():Void
 
 ## DomKeyboardAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/keyboard/dom/DomKeyboardAdapter.hx`](../../platform/src/helix/platform/adapters/keyboard/dom/DomKeyboardAdapter.hx), `import helix.platform.adapters.keyboard.dom.DomKeyboardAdapter;`, implements `IKeyboard`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/keyboard/dom/DomKeyboardAdapter.hx`](../../libs/platform/src/helix/platform/adapters/keyboard/dom/DomKeyboardAdapter.hx), `import helix.platform.adapters.keyboard.dom.DomKeyboardAdapter;`, implements `IKeyboard`
 
 Provides `IKeyboard` in a browser page: keys and typed text from the window.
 
@@ -665,7 +665,7 @@ function dispose():Void
 
 ## DomKeyboardAdapterOptions
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/keyboard/dom/DomKeyboardAdapterOptions.hx`](../../platform/src/helix/platform/adapters/keyboard/dom/DomKeyboardAdapterOptions.hx), `import helix.platform.adapters.keyboard.dom.DomKeyboardAdapterOptions;`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/keyboard/dom/DomKeyboardAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/keyboard/dom/DomKeyboardAdapterOptions.hx), `import helix.platform.adapters.keyboard.dom.DomKeyboardAdapterOptions;`
 
 Represents what `DomKeyboardAdapter` is built over.
 
@@ -683,7 +683,7 @@ final events:DomEventsAdapter
 
 ## Sdl3KeyboardAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/keyboard/sdl3/Sdl3KeyboardAdapter.hx`](../../platform/src/helix/platform/adapters/keyboard/sdl3/Sdl3KeyboardAdapter.hx), `import helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapter;`, implements `IKeyboard`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/keyboard/sdl3/Sdl3KeyboardAdapter.hx`](../../libs/platform/src/helix/platform/adapters/keyboard/sdl3/Sdl3KeyboardAdapter.hx), `import helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapter;`, implements `IKeyboard`
 
 Provides `IKeyboard` on SDL3, natively: keys by their physical position, and typed text through SDL's text input.
 
@@ -701,7 +701,7 @@ function dispose():Void
 
 ## Sdl3KeyboardAdapterOptions
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/keyboard/sdl3/Sdl3KeyboardAdapterOptions.hx`](../../platform/src/helix/platform/adapters/keyboard/sdl3/Sdl3KeyboardAdapterOptions.hx), `import helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapterOptions;`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/keyboard/sdl3/Sdl3KeyboardAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/keyboard/sdl3/Sdl3KeyboardAdapterOptions.hx), `import helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapterOptions;`
 
 Represents what `Sdl3KeyboardAdapter` is built over.
 
@@ -719,7 +719,7 @@ final events:Sdl3EventsAdapter
 
 ## DomMouseAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/mouse/dom/DomMouseAdapter.hx`](../../platform/src/helix/platform/adapters/mouse/dom/DomMouseAdapter.hx), `import helix.platform.adapters.mouse.dom.DomMouseAdapter;`, implements `IMouse`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/mouse/dom/DomMouseAdapter.hx`](../../libs/platform/src/helix/platform/adapters/mouse/dom/DomMouseAdapter.hx), `import helix.platform.adapters.mouse.dom.DomMouseAdapter;`, implements `IMouse`
 
 Provides `IMouse` in a browser page: the mouse's and a pen's buttons, moves and wheel over the canvas, in its framebuffer pixels.
 
@@ -741,7 +741,7 @@ function dispose():Void
 
 ## DomMouseAdapterOptions
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/mouse/dom/DomMouseAdapterOptions.hx`](../../platform/src/helix/platform/adapters/mouse/dom/DomMouseAdapterOptions.hx), `import helix.platform.adapters.mouse.dom.DomMouseAdapterOptions;`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/mouse/dom/DomMouseAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/mouse/dom/DomMouseAdapterOptions.hx), `import helix.platform.adapters.mouse.dom.DomMouseAdapterOptions;`
 
 Represents what `DomMouseAdapter` is built over.
 
@@ -759,7 +759,7 @@ final events:DomEventsAdapter
 
 ## Sdl3MouseAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapter.hx`](../../platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapter.hx), `import helix.platform.adapters.mouse.sdl3.Sdl3MouseAdapter;`, implements `IMouse`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapter.hx`](../../libs/platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapter.hx), `import helix.platform.adapters.mouse.sdl3.Sdl3MouseAdapter;`, implements `IMouse`
 
 Provides `IMouse` on SDL3, natively: the mouse's and a pen's buttons, moves and wheel over the window, in framebuffer pixels. SDL's mouse made of a touch is passed over. The cursor is SDL's system cursor of each shape, and the lock is SDL's relative mouse mode, answered at the next `Sdl3EventsAdapter` poll.
 
@@ -779,7 +779,7 @@ function dispose():Void
 
 ## Sdl3MouseAdapterOptions
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapterOptions.hx`](../../platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapterOptions.hx), `import helix.platform.adapters.mouse.sdl3.Sdl3MouseAdapterOptions;`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/mouse/sdl3/Sdl3MouseAdapterOptions.hx), `import helix.platform.adapters.mouse.sdl3.Sdl3MouseAdapterOptions;`
 
 Represents what `Sdl3MouseAdapter` is built over.
 
@@ -797,7 +797,7 @@ final events:Sdl3EventsAdapter
 
 ## DomSystemAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/system/dom/DomSystemAdapter.hx`](../../platform/src/helix/platform/adapters/system/dom/DomSystemAdapter.hx), `import helix.platform.adapters.system.dom.DomSystemAdapter;`, implements `ISystem`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/system/dom/DomSystemAdapter.hx`](../../libs/platform/src/helix/platform/adapters/system/dom/DomSystemAdapter.hx), `import helix.platform.adapters.system.dom.DomSystemAdapter;`, implements `ISystem`
 
 Provides `ISystem` in a browser page: the device as the browser describes it, and options from the URL's query.
 
@@ -820,7 +820,7 @@ function getCacheDirectory():String
 
 ## Sdl3SystemAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/system/sdl3/Sdl3SystemAdapter.hx`](../../platform/src/helix/platform/adapters/system/sdl3/Sdl3SystemAdapter.hx), `import helix.platform.adapters.system.sdl3.Sdl3SystemAdapter;`, implements `ISystem`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/system/sdl3/Sdl3SystemAdapter.hx`](../../libs/platform/src/helix/platform/adapters/system/sdl3/Sdl3SystemAdapter.hx), `import helix.platform.adapters.system.sdl3.Sdl3SystemAdapter;`, implements `ISystem`
 
 Provides `ISystem` on SDL3, natively: the platform SDL names, options from HELIX_ environment variables, SDL's monotonic clock, the program's directory as SDL finds it, and the OS's directories by each OS's rules.
 
@@ -844,7 +844,7 @@ function getCacheDirectory():String
 
 ## DomTiltAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/tilt/dom/DomTiltAdapter.hx`](../../platform/src/helix/platform/adapters/tilt/dom/DomTiltAdapter.hx), `import helix.platform.adapters.tilt.dom.DomTiltAdapter;`, implements `ITilt`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/tilt/dom/DomTiltAdapter.hx`](../../libs/platform/src/helix/platform/adapters/tilt/dom/DomTiltAdapter.hx), `import helix.platform.adapters.tilt.dom.DomTiltAdapter;`, implements `ITilt`
 
 Provides `ITilt` in a browser page: the device's orientation (deviceorientation), asked for at the player's next tap where the browser wants permission (iOS, and Chrome on Android).
 
@@ -863,7 +863,7 @@ function dispose():Void
 
 ## DomTiltAdapterOptions
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/tilt/dom/DomTiltAdapterOptions.hx`](../../platform/src/helix/platform/adapters/tilt/dom/DomTiltAdapterOptions.hx), `import helix.platform.adapters.tilt.dom.DomTiltAdapterOptions;`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/tilt/dom/DomTiltAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/tilt/dom/DomTiltAdapterOptions.hx), `import helix.platform.adapters.tilt.dom.DomTiltAdapterOptions;`
 
 Represents what `DomTiltAdapter` is built over.
 
@@ -881,7 +881,7 @@ final events:DomEventsAdapter
 
 ## Sdl3TiltAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/tilt/sdl3/Sdl3TiltAdapter.hx`](../../platform/src/helix/platform/adapters/tilt/sdl3/Sdl3TiltAdapter.hx), `import helix.platform.adapters.tilt.sdl3.Sdl3TiltAdapter;`, implements `ITilt`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/tilt/sdl3/Sdl3TiltAdapter.hx`](../../libs/platform/src/helix/platform/adapters/tilt/sdl3/Sdl3TiltAdapter.hx), `import helix.platform.adapters.tilt.sdl3.Sdl3TiltAdapter;`, implements `ITilt`
 
 Provides `ITilt` on SDL3, natively. No motion sensor is read yet, so the tilt is unavailable on every target.
 
@@ -900,7 +900,7 @@ function dispose():Void
 
 ## Sdl3TiltAdapterOptions
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/tilt/sdl3/Sdl3TiltAdapterOptions.hx`](../../platform/src/helix/platform/adapters/tilt/sdl3/Sdl3TiltAdapterOptions.hx), `import helix.platform.adapters.tilt.sdl3.Sdl3TiltAdapterOptions;`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/tilt/sdl3/Sdl3TiltAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/tilt/sdl3/Sdl3TiltAdapterOptions.hx), `import helix.platform.adapters.tilt.sdl3.Sdl3TiltAdapterOptions;`
 
 Represents what `Sdl3TiltAdapter` is built over.
 
@@ -918,7 +918,7 @@ final events:Sdl3EventsAdapter
 
 ## DomTouchAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/touch/dom/DomTouchAdapter.hx`](../../platform/src/helix/platform/adapters/touch/dom/DomTouchAdapter.hx), `import helix.platform.adapters.touch.dom.DomTouchAdapter;`, implements `ITouch`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/touch/dom/DomTouchAdapter.hx`](../../libs/platform/src/helix/platform/adapters/touch/dom/DomTouchAdapter.hx), `import helix.platform.adapters.touch.dom.DomTouchAdapter;`, implements `ITouch`
 
 Provides `ITouch` in a browser page: fingers on the canvas, in its framebuffer pixels.
 
@@ -934,7 +934,7 @@ function dispose():Void
 
 ## DomTouchAdapterOptions
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/touch/dom/DomTouchAdapterOptions.hx`](../../platform/src/helix/platform/adapters/touch/dom/DomTouchAdapterOptions.hx), `import helix.platform.adapters.touch.dom.DomTouchAdapterOptions;`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/touch/dom/DomTouchAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/touch/dom/DomTouchAdapterOptions.hx), `import helix.platform.adapters.touch.dom.DomTouchAdapterOptions;`
 
 Represents what `DomTouchAdapter` is built over.
 
@@ -952,7 +952,7 @@ final events:DomEventsAdapter
 
 ## Sdl3TouchAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/touch/sdl3/Sdl3TouchAdapter.hx`](../../platform/src/helix/platform/adapters/touch/sdl3/Sdl3TouchAdapter.hx), `import helix.platform.adapters.touch.sdl3.Sdl3TouchAdapter;`, implements `ITouch`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/touch/sdl3/Sdl3TouchAdapter.hx`](../../libs/platform/src/helix/platform/adapters/touch/sdl3/Sdl3TouchAdapter.hx), `import helix.platform.adapters.touch.sdl3.Sdl3TouchAdapter;`, implements `ITouch`
 
 Provides `ITouch` on SDL3, natively: fingers on the window, in framebuffer pixels, each numbered by its place among the fingers down. A touch SDL cancels arrives as its `TouchUp`.
 
@@ -966,7 +966,7 @@ function dispose():Void
 
 ## Sdl3TouchAdapterOptions
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/touch/sdl3/Sdl3TouchAdapterOptions.hx`](../../platform/src/helix/platform/adapters/touch/sdl3/Sdl3TouchAdapterOptions.hx), `import helix.platform.adapters.touch.sdl3.Sdl3TouchAdapterOptions;`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/touch/sdl3/Sdl3TouchAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/touch/sdl3/Sdl3TouchAdapterOptions.hx), `import helix.platform.adapters.touch.sdl3.Sdl3TouchAdapterOptions;`
 
 Represents what `Sdl3TouchAdapter` is built over.
 
@@ -984,7 +984,7 @@ final events:Sdl3EventsAdapter
 
 ## DomWindowAdapter
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/window/dom/DomWindowAdapter.hx`](../../platform/src/helix/platform/adapters/window/dom/DomWindowAdapter.hx), `import helix.platform.adapters.window.dom.DomWindowAdapter;`, implements `IWindow`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/window/dom/DomWindowAdapter.hx`](../../libs/platform/src/helix/platform/adapters/window/dom/DomWindowAdapter.hx), `import helix.platform.adapters.window.dom.DomWindowAdapter;`, implements `IWindow`
 
 Provides `IWindow` in a browser page: the page is the window.
 
@@ -1046,7 +1046,7 @@ var onClose:Null<() -> Void>
 
 ## DomWindowAdapterOptions
 
-*class*, for the browser (js) in [`platform/src/helix/platform/adapters/window/dom/DomWindowAdapterOptions.hx`](../../platform/src/helix/platform/adapters/window/dom/DomWindowAdapterOptions.hx), `import helix.platform.adapters.window.dom.DomWindowAdapterOptions;`
+*class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/window/dom/DomWindowAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/window/dom/DomWindowAdapterOptions.hx), `import helix.platform.adapters.window.dom.DomWindowAdapterOptions;`
 
 Represents what `DomWindowAdapter` is made over.
 
@@ -1064,7 +1064,7 @@ final canvasId:String
 
 ## Sdl3WindowAdapter
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/window/sdl3/Sdl3WindowAdapter.hx`](../../platform/src/helix/platform/adapters/window/sdl3/Sdl3WindowAdapter.hx), `import helix.platform.adapters.window.sdl3.Sdl3WindowAdapter;`, implements `IWindow`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/window/sdl3/Sdl3WindowAdapter.hx`](../../libs/platform/src/helix/platform/adapters/window/sdl3/Sdl3WindowAdapter.hx), `import helix.platform.adapters.window.sdl3.Sdl3WindowAdapter;`, implements `IWindow`
 
 Provides `IWindow` on an SDL3 window, natively.
 
@@ -1126,7 +1126,7 @@ var onClose:Null<() -> Void>
 
 ## Sdl3WindowAdapterOptions
 
-*class*, native (cpp) in [`platform/src/helix/platform/adapters/window/sdl3/Sdl3WindowAdapterOptions.hx`](../../platform/src/helix/platform/adapters/window/sdl3/Sdl3WindowAdapterOptions.hx), `import helix.platform.adapters.window.sdl3.Sdl3WindowAdapterOptions;`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/window/sdl3/Sdl3WindowAdapterOptions.hx`](../../libs/platform/src/helix/platform/adapters/window/sdl3/Sdl3WindowAdapterOptions.hx), `import helix.platform.adapters.window.sdl3.Sdl3WindowAdapterOptions;`
 
 Represents how `Sdl3WindowAdapter` opens its window.
 
@@ -1148,7 +1148,7 @@ final vsync:Bool = true
 
 ## Sdl3WindowGraphics
 
-*enum*, native (cpp) in [`platform/src/helix/platform/adapters/window/sdl3/Sdl3WindowGraphics.hx`](../../platform/src/helix/platform/adapters/window/sdl3/Sdl3WindowGraphics.hx), `import helix.platform.adapters.window.sdl3.Sdl3WindowGraphics;`
+*enum*, native (cpp) in [`libs/platform/src/helix/platform/adapters/window/sdl3/Sdl3WindowGraphics.hx`](../../libs/platform/src/helix/platform/adapters/window/sdl3/Sdl3WindowGraphics.hx), `import helix.platform.adapters.window.sdl3.Sdl3WindowGraphics;`
 
 Specifies the graphics adapter an SDL3 window is opened for.
 

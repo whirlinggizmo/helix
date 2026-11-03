@@ -1,5 +1,5 @@
 """SDL3 for the SDL3 backends (sdl3-gl, sdl3-gpu): the library a native build links, found or made into build/deps the first time. The headers are always
-platform/vendor/sdl3's, SDL 3.4.18's (dependencies.json, sdl3), so a build never uses an API newer than the pin, whichever library it links.
+libs/platform/vendor/sdl3's, SDL 3.4.18's (dependencies.json, sdl3), so a build never uses an API newer than the pin, whichever library it links.
 
 - Linux: the system's SDL3 when pkg-config finds one of 3.4.18 or newer (SDL keeps its ABI across 3.x); else the pinned source release,
   checked, built once with CMake into build/deps as a static library. CMake is needed for that build alone.
@@ -53,7 +53,7 @@ def tree_digest(directory):
 
 
 def check_headers():
-    """platform/vendor/sdl3 is the pinned release's include/SDL3 and license, and platform/vendor/sdl3_mixer the pinned SDL3_mixer's sources
+    """libs/platform/vendor/sdl3 is the pinned release's include/SDL3 and license, and libs/platform/vendor/sdl3_mixer the pinned SDL3_mixer's sources
     the platform builds (dependencies.json's treeSha256 for each)."""
     pins = json.loads((ROOT / 'dependencies.json').read_text(encoding='utf-8'))
     for entry in (pins['sdl3']['headers'], pins['sdl3Mixer']['vendored']):

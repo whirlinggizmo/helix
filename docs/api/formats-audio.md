@@ -4,7 +4,7 @@
 
 ## AudioHeader
 
-*class* in [`formats/src/helix/formats/audio/AudioHeader.hx`](../../formats/src/helix/formats/audio/AudioHeader.hx), `import helix.formats.audio.AudioHeader;`
+*class* in [`libs/formats/src/helix/formats/audio/AudioHeader.hx`](../../libs/formats/src/helix/formats/audio/AudioHeader.hx), `import helix.formats.audio.AudioHeader;`
 
 Provides reading a sound file's length, channels and rate from its first bytes, and for some kinds its last, without decoding it.
 

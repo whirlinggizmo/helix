@@ -4,7 +4,7 @@
 
 ## Blend
 
-*abstract* in [`platform/src/helix/platform/Blend.hx`](../../platform/src/helix/platform/Blend.hx), `import helix.platform.Blend;`
+*abstract* in [`libs/platform/src/helix/platform/Blend.hx`](../../libs/platform/src/helix/platform/Blend.hx), `import helix.platform.Blend;`
 
 Represents how a pipeline's colors are combined with the colors already in the target: a factor for each side and an operation, for red, green and blue, and for alpha.
 
@@ -39,7 +39,7 @@ var alphaOperation(get, never):BlendOperation
 
 ## BlendFactor
 
-*abstract* in [`platform/src/helix/platform/BlendFactor.hx`](../../platform/src/helix/platform/BlendFactor.hx), `import helix.platform.BlendFactor;`
+*abstract* in [`libs/platform/src/helix/platform/BlendFactor.hx`](../../libs/platform/src/helix/platform/BlendFactor.hx), `import helix.platform.BlendFactor;`
 
 Specifies what one side of a blend is multiplied by.
 
@@ -65,7 +65,7 @@ function toString():String
 
 ## BlendOperation
 
-*abstract* in [`platform/src/helix/platform/BlendOperation.hx`](../../platform/src/helix/platform/BlendOperation.hx), `import helix.platform.BlendOperation;`
+*abstract* in [`libs/platform/src/helix/platform/BlendOperation.hx`](../../libs/platform/src/helix/platform/BlendOperation.hx), `import helix.platform.BlendOperation;`
 
 Specifies how a blend combines its two sides, each already multiplied by its factor.
 
@@ -85,7 +85,7 @@ function toString():String
 
 ## ClipFlip
 
-*abstract* in [`platform/src/helix/platform/ClipFlip.hx`](../../platform/src/helix/platform/ClipFlip.hx), `import helix.platform.ClipFlip;`
+*abstract* in [`libs/platform/src/helix/platform/ClipFlip.hx`](../../libs/platform/src/helix/platform/ClipFlip.hx), `import helix.platform.ClipFlip;`
 
 Specifies what a pipeline's flip uniform holds, so that an adapter can draw a render target the right way up.
 
@@ -103,7 +103,7 @@ function toString():String
 
 ## ColorChannels
 
-*abstract* in [`platform/src/helix/platform/ColorChannels.hx`](../../platform/src/helix/platform/ColorChannels.hx), `import helix.platform.ColorChannels;`
+*abstract* in [`libs/platform/src/helix/platform/ColorChannels.hx`](../../libs/platform/src/helix/platform/ColorChannels.hx), `import helix.platform.ColorChannels;`
 
 Specifies a set of a color's channels, combined with `|`, such as the ones a pipeline's draws write (`PipelineDesc.colorWrite`).
 
@@ -134,7 +134,7 @@ function toString():String
 
 ## CullFace
 
-*abstract* in [`platform/src/helix/platform/CullFace.hx`](../../platform/src/helix/platform/CullFace.hx), `import helix.platform.CullFace;`
+*abstract* in [`libs/platform/src/helix/platform/CullFace.hx`](../../libs/platform/src/helix/platform/CullFace.hx), `import helix.platform.CullFace;`
 
 Specifies which faces of a pipeline's triangles are not drawn.
 
@@ -150,7 +150,7 @@ function toString():String
 
 ## CursorShape
 
-*abstract* in [`platform/src/helix/platform/CursorShape.hx`](../../platform/src/helix/platform/CursorShape.hx), `import helix.platform.CursorShape;`
+*abstract* in [`libs/platform/src/helix/platform/CursorShape.hx`](../../libs/platform/src/helix/platform/CursorShape.hx), `import helix.platform.CursorShape;`
 
 Specifies the cursor's shape over the canvas or window (`IMouse.cursorShape`): the system's own cursor of each kind.
 
@@ -166,7 +166,7 @@ function toString():String
 
 ## DepthTest
 
-*abstract* in [`platform/src/helix/platform/DepthTest.hx`](../../platform/src/helix/platform/DepthTest.hx), `import helix.platform.DepthTest;`
+*abstract* in [`libs/platform/src/helix/platform/DepthTest.hx`](../../libs/platform/src/helix/platform/DepthTest.hx), `import helix.platform.DepthTest;`
 
 Specifies which fragments a pipeline's depth test passes, compared with the depth already in the target.
 
@@ -182,7 +182,7 @@ function toString():String
 
 ## Device
 
-*class* in [`platform/src/helix/platform/Device.hx`](../../platform/src/helix/platform/Device.hx), `import helix.platform.Device;`
+*class* in [`libs/platform/src/helix/platform/Device.hx`](../../libs/platform/src/helix/platform/Device.hx), `import helix.platform.Device;`
 
 Represents what the program runs on, as far as the platform reports it.
 
@@ -211,7 +211,7 @@ var mobile(get, never):Bool
 
 ## Event
 
-*enum* in [`platform/src/helix/platform/Event.hx`](../../platform/src/helix/platform/Event.hx), `import helix.platform.Event;`
+*enum* in [`libs/platform/src/helix/platform/Event.hx`](../../libs/platform/src/helix/platform/Event.hx), `import helix.platform.Event;`
 
 Represents one window or device event, as `IEvents.poll` delivers it.
 
@@ -249,7 +249,7 @@ Positions are in framebuffer pixels from the window's top-left corner. A key is 
 
 ## FilePath
 
-*class* in [`platform/src/helix/platform/FilePath.hx`](../../platform/src/helix/platform/FilePath.hx), `import helix.platform.FilePath;`
+*class* in [`libs/platform/src/helix/platform/FilePath.hx`](../../libs/platform/src/helix/platform/FilePath.hx), `import helix.platform.FilePath;`
 
 Provides the rule for the paths `IFileSystem` takes, which every file system adapter checks, and which helix-services' `Assets` holds every source to, so a name is refused the same way in a page and natively.
 
@@ -269,7 +269,7 @@ static function isDirectoryName(name:String):Bool
 
 ## Filter
 
-*abstract* in [`platform/src/helix/platform/Filter.hx`](../../platform/src/helix/platform/Filter.hx), `import helix.platform.Filter;`
+*abstract* in [`libs/platform/src/helix/platform/Filter.hx`](../../libs/platform/src/helix/platform/Filter.hx), `import helix.platform.Filter;`
 
 Specifies how a texture is filtered when drawn at a size other than its own.
 
@@ -284,7 +284,7 @@ function toString():String
 
 ## GraphicsUnavailableException
 
-*class* in [`platform/src/helix/platform/GraphicsUnavailableException.hx`](../../platform/src/helix/platform/GraphicsUnavailableException.hx), `import helix.platform.GraphicsUnavailableException;`, extends `Exception`
+*class* in [`libs/platform/src/helix/platform/GraphicsUnavailableException.hx`](../../libs/platform/src/helix/platform/GraphicsUnavailableException.hx), `import helix.platform.GraphicsUnavailableException;`, extends `Exception`
 
 Represents the error a graphics adapter throws when the GPU API it draws through is missing, such as WebGL2 in a browser without it.
 
@@ -297,7 +297,7 @@ function new(message:String, ?previous:haxe.Exception, ?native:Any)
 
 ## GrowingSource
 
-*class* in [`platform/src/helix/platform/GrowingSource.hx`](../../platform/src/helix/platform/GrowingSource.hx), `import helix.platform.GrowingSource;`
+*class* in [`libs/platform/src/helix/platform/GrowingSource.hx`](../../libs/platform/src/helix/platform/GrowingSource.hx), `import helix.platform.GrowingSource;`
 
 Represents a file arriving from a download, readable while it arrives.
 
@@ -337,7 +337,7 @@ function fail(message:String):Void
 
 ## IAudio
 
-*interface* in [`platform/src/helix/platform/IAudio.hx`](../../platform/src/helix/platform/IAudio.hx), `import helix.platform.IAudio;`, extends `IPollable`
+*interface* in [`libs/platform/src/helix/platform/IAudio.hx`](../../libs/platform/src/helix/platform/IAudio.hx), `import helix.platform.IAudio;`, extends `IPollable`
 
 Defines the sound output, which plays clips held whole, streams played as they are read, and queues of samples fed as they play.
 
@@ -499,7 +499,7 @@ function dispose():Void
 
 ## IAudioDecoder
 
-*interface* in [`platform/src/helix/platform/IAudioDecoder.hx`](../../platform/src/helix/platform/IAudioDecoder.hx), `import helix.platform.IAudioDecoder;`, extends `IPollable`
+*interface* in [`libs/platform/src/helix/platform/IAudioDecoder.hx`](../../libs/platform/src/helix/platform/IAudioDecoder.hx), `import helix.platform.IAudioDecoder;`, extends `IPollable`
 
 Defines audio decoding from a whole file into 32-bit float PCM at the rate asked.
 
@@ -523,7 +523,7 @@ function dispose():Void
 
 ## IClipboard
 
-*interface* in [`platform/src/helix/platform/IClipboard.hx`](../../platform/src/helix/platform/IClipboard.hx), `import helix.platform.IClipboard;`
+*interface* in [`libs/platform/src/helix/platform/IClipboard.hx`](../../libs/platform/src/helix/platform/IClipboard.hx), `import helix.platform.IClipboard;`
 
 Defines the system's clipboard: text, and an image as PNG.
 
@@ -565,7 +565,7 @@ function dispose():Void
 
 ## IEvents
 
-*interface* in [`platform/src/helix/platform/IEvents.hx`](../../platform/src/helix/platform/IEvents.hx), `import helix.platform.IEvents;`, extends `IPollable`
+*interface* in [`libs/platform/src/helix/platform/IEvents.hx`](../../libs/platform/src/helix/platform/IEvents.hx), `import helix.platform.IEvents;`, extends `IPollable`
 
 Defines the events, polled once a frame: what happens to the window, the player's first press, and what the devices built over it add.
 
@@ -601,7 +601,7 @@ function dispose():Void
 
 ## IExport
 
-*interface* in [`platform/src/helix/platform/IExport.hx`](../../platform/src/helix/platform/IExport.hx), `import helix.platform.IExport;`
+*interface* in [`libs/platform/src/helix/platform/IExport.hx`](../../libs/platform/src/helix/platform/IExport.hx), `import helix.platform.IExport;`
 
 Defines handing a finished file to the user.
 
@@ -623,7 +623,7 @@ function export(name:String, mimeType:String, bytes:haxe.io.Bytes, exported:(whe
 
 ## IFileSystem
 
-*interface* in [`platform/src/helix/platform/IFileSystem.hx`](../../platform/src/helix/platform/IFileSystem.hx), `import helix.platform.IFileSystem;`, extends `IPollable`
+*interface* in [`libs/platform/src/helix/platform/IFileSystem.hx`](../../libs/platform/src/helix/platform/IFileSystem.hx), `import helix.platform.IFileSystem;`, extends `IPollable`
 
 Defines files on this machine under one root, read and written whole by path.
 
@@ -705,7 +705,7 @@ function dispose():Void
 
 ## IFontRasterizer
 
-*interface* in [`platform/src/helix/platform/IFontRasterizer.hx`](../../platform/src/helix/platform/IFontRasterizer.hx), `import helix.platform.IFontRasterizer;`, extends `IPollable`
+*interface* in [`libs/platform/src/helix/platform/IFontRasterizer.hx`](../../libs/platform/src/helix/platform/IFontRasterizer.hx), `import helix.platform.IFontRasterizer;`, extends `IPollable`
 
 Defines rasterizing a TrueType or OpenType font's glyphs at a size, as 8-bit coverage or signed distances.
 
@@ -739,7 +739,7 @@ function dispose():Void
 
 ## IGamepads
 
-*interface* in [`platform/src/helix/platform/IGamepads.hx`](../../platform/src/helix/platform/IGamepads.hx), `import helix.platform.IGamepads;`
+*interface* in [`libs/platform/src/helix/platform/IGamepads.hx`](../../libs/platform/src/helix/platform/IGamepads.hx), `import helix.platform.IGamepads;`
 
 Defines the gamepads, in slots 0 to 3: `PadConnected`, `PadDisconnected`, `PadButtonDown` and `PadButtonUp` in `IEvents.events` while it exists, and each pad's state as of the last `IEvents.poll`.
 
@@ -786,7 +786,7 @@ function dispose():Void
 
 ## IGraphics
 
-*interface* in [`platform/src/helix/platform/IGraphics.hx`](../../platform/src/helix/platform/IGraphics.hx), `import helix.platform.IGraphics;`
+*interface* in [`libs/platform/src/helix/platform/IGraphics.hx`](../../libs/platform/src/helix/platform/IGraphics.hx), `import helix.platform.IGraphics;`
 
 Defines the GPU as a platform's graphics adapter provides it, with its resources, its passes and one draw call.
 
@@ -1018,7 +1018,7 @@ function dispose():Void
 
 ## IHttp
 
-*interface* in [`platform/src/helix/platform/IHttp.hx`](../../platform/src/helix/platform/IHttp.hx), `import helix.platform.IHttp;`, extends `IPollable`
+*interface* in [`libs/platform/src/helix/platform/IHttp.hx`](../../libs/platform/src/helix/platform/IHttp.hx), `import helix.platform.IHttp;`, extends `IPollable`
 
 Defines HTTP GET requests, whose response body arrives in parts and which can be aborted.
 
@@ -1051,7 +1051,7 @@ function dispose():Void
 
 ## IImageDecoder
 
-*interface* in [`platform/src/helix/platform/IImageDecoder.hx`](../../platform/src/helix/platform/IImageDecoder.hx), `import helix.platform.IImageDecoder;`, extends `IPollable`
+*interface* in [`libs/platform/src/helix/platform/IImageDecoder.hx`](../../libs/platform/src/helix/platform/IImageDecoder.hx), `import helix.platform.IImageDecoder;`, extends `IPollable`
 
 Defines image decoding from a file into 8-bit RGBA pixels.
 
@@ -1074,7 +1074,7 @@ function dispose():Void
 
 ## IKeyboard
 
-*interface* in [`platform/src/helix/platform/IKeyboard.hx`](../../platform/src/helix/platform/IKeyboard.hx), `import helix.platform.IKeyboard;`
+*interface* in [`libs/platform/src/helix/platform/IKeyboard.hx`](../../libs/platform/src/helix/platform/IKeyboard.hx), `import helix.platform.IKeyboard;`
 
 Defines the keyboard: `KeyDown`, `KeyUp` and `Text` in `IEvents.events` while it exists.
 
@@ -1090,7 +1090,7 @@ function dispose():Void
 
 ## IMouse
 
-*interface* in [`platform/src/helix/platform/IMouse.hx`](../../platform/src/helix/platform/IMouse.hx), `import helix.platform.IMouse;`
+*interface* in [`libs/platform/src/helix/platform/IMouse.hx`](../../libs/platform/src/helix/platform/IMouse.hx), `import helix.platform.IMouse;`
 
 Defines the mouse: `MouseMove`, `MouseDown`, `MouseUp`, `MouseLeave` and `Wheel` in `IEvents.events` while it exists, and the cursor over the canvas or window.
 
@@ -1125,7 +1125,7 @@ function dispose():Void
 
 ## IPollable
 
-*interface* in [`platform/src/helix/platform/IPollable.hx`](../../platform/src/helix/platform/IPollable.hx), `import helix.platform.IPollable;`
+*interface* in [`libs/platform/src/helix/platform/IPollable.hx`](../../libs/platform/src/helix/platform/IPollable.hx), `import helix.platform.IPollable;`
 
 Defines a contract that answers later, delivering what it was asked for in its `poll` on the main thread and at no other time.
 
@@ -1141,7 +1141,7 @@ function poll():Void
 
 ## ISystem
 
-*interface* in [`platform/src/helix/platform/ISystem.hx`](../../platform/src/helix/platform/ISystem.hx), `import helix.platform.ISystem;`
+*interface* in [`libs/platform/src/helix/platform/ISystem.hx`](../../libs/platform/src/helix/platform/ISystem.hx), `import helix.platform.ISystem;`
 
 Defines the facts about where the program runs.
 
@@ -1195,7 +1195,7 @@ function openUrl(url:String):Bool
 
 ## ITilt
 
-*interface* in [`platform/src/helix/platform/ITilt.hx`](../../platform/src/helix/platform/ITilt.hx), `import helix.platform.ITilt;`
+*interface* in [`libs/platform/src/helix/platform/ITilt.hx`](../../libs/platform/src/helix/platform/ITilt.hx), `import helix.platform.ITilt;`
 
 Defines the device's tilt: `Tilt` and `TiltState` in `IEvents.events` once access is requested.
 
@@ -1218,7 +1218,7 @@ function dispose():Void
 
 ## ITouch
 
-*interface* in [`platform/src/helix/platform/ITouch.hx`](../../platform/src/helix/platform/ITouch.hx), `import helix.platform.ITouch;`
+*interface* in [`libs/platform/src/helix/platform/ITouch.hx`](../../libs/platform/src/helix/platform/ITouch.hx), `import helix.platform.ITouch;`
 
 Defines touch: `TouchDown`, `TouchMove` and `TouchUp` in `IEvents.events` while it exists.
 
@@ -1232,7 +1232,7 @@ function dispose():Void
 
 ## IWindow
 
-*interface* in [`platform/src/helix/platform/IWindow.hx`](../../platform/src/helix/platform/IWindow.hx), `import helix.platform.IWindow;`
+*interface* in [`libs/platform/src/helix/platform/IWindow.hx`](../../libs/platform/src/helix/platform/IWindow.hx), `import helix.platform.IWindow;`
 
 Defines the window a program draws in, with its title, size, position, fullscreen, visibility and monitors.
 
@@ -1444,7 +1444,7 @@ var onClose:Null<() -> Void>
 
 ## Key
 
-*abstract* in [`platform/src/helix/platform/Key.hx`](../../platform/src/helix/platform/Key.hx), `import helix.platform.Key;`
+*abstract* in [`libs/platform/src/helix/platform/Key.hx`](../../libs/platform/src/helix/platform/Key.hx), `import helix.platform.Key;`
 
 Specifies a physical key by its place on a US layout, numbered as GLFW numbers them.
 
@@ -1477,7 +1477,7 @@ function toString():String
 
 ## MipmapFilter
 
-*abstract* in [`platform/src/helix/platform/MipmapFilter.hx`](../../platform/src/helix/platform/MipmapFilter.hx), `import helix.platform.MipmapFilter;`
+*abstract* in [`libs/platform/src/helix/platform/MipmapFilter.hx`](../../libs/platform/src/helix/platform/MipmapFilter.hx), `import helix.platform.MipmapFilter;`
 
 Specifies how a texture's mipmaps are sampled when it is drawn smaller than its size.
 
@@ -1495,7 +1495,7 @@ function toString():String
 
 ## MouseButton
 
-*abstract* in [`platform/src/helix/platform/MouseButton.hx`](../../platform/src/helix/platform/MouseButton.hx), `import helix.platform.MouseButton;`
+*abstract* in [`libs/platform/src/helix/platform/MouseButton.hx`](../../libs/platform/src/helix/platform/MouseButton.hx), `import helix.platform.MouseButton;`
 
 Specifies a mouse button.
 
@@ -1511,7 +1511,7 @@ function toString():String
 
 ## Orientation
 
-*abstract* in [`platform/src/helix/platform/Orientation.hx`](../../platform/src/helix/platform/Orientation.hx), `import helix.platform.Orientation;`
+*abstract* in [`libs/platform/src/helix/platform/Orientation.hx`](../../libs/platform/src/helix/platform/Orientation.hx), `import helix.platform.Orientation;`
 
 Specifies which way up a game wants the screen (`IWindow.requestOrientation`).
 
@@ -1527,7 +1527,7 @@ function toString():String
 
 ## PadAxis
 
-*abstract* in [`platform/src/helix/platform/PadAxis.hx`](../../platform/src/helix/platform/PadAxis.hx), `import helix.platform.PadAxis;`
+*abstract* in [`libs/platform/src/helix/platform/PadAxis.hx`](../../libs/platform/src/helix/platform/PadAxis.hx), `import helix.platform.PadAxis;`
 
 Specifies a gamepad's axis.
 
@@ -1547,7 +1547,7 @@ function toString():String
 
 ## PadButton
 
-*abstract* in [`platform/src/helix/platform/PadButton.hx`](../../platform/src/helix/platform/PadButton.hx), `import helix.platform.PadButton;`
+*abstract* in [`libs/platform/src/helix/platform/PadButton.hx`](../../libs/platform/src/helix/platform/PadButton.hx), `import helix.platform.PadButton;`
 
 Specifies a gamepad's button by its place on an Xbox-style pad, numbered as the W3C standard gamepad numbers them.
 
@@ -1567,7 +1567,7 @@ function toString():String
 
 ## PipelineDesc
 
-*typedef* in [`platform/src/helix/platform/PipelineDesc.hx`](../../platform/src/helix/platform/PipelineDesc.hx), `import helix.platform.PipelineDesc;`
+*typedef* in [`libs/platform/src/helix/platform/PipelineDesc.hx`](../../libs/platform/src/helix/platform/PipelineDesc.hx), `import helix.platform.PipelineDesc;`
 
 Represents everything a pipeline fixes for the draws through it.
 
@@ -1591,7 +1591,7 @@ Represents everything a pipeline fixes for the draws through it.
 
 ## Primitive
 
-*abstract* in [`platform/src/helix/platform/Primitive.hx`](../../platform/src/helix/platform/Primitive.hx), `import helix.platform.Primitive;`
+*abstract* in [`libs/platform/src/helix/platform/Primitive.hx`](../../libs/platform/src/helix/platform/Primitive.hx), `import helix.platform.Primitive;`
 
 Specifies what a pipeline's draws make.
 
@@ -1607,7 +1607,7 @@ function toString():String
 
 ## RasterGlyph
 
-*typedef* in [`platform/src/helix/platform/RasterGlyph.hx`](../../platform/src/helix/platform/RasterGlyph.hx), `import helix.platform.RasterGlyph;`
+*typedef* in [`libs/platform/src/helix/platform/RasterGlyph.hx`](../../libs/platform/src/helix/platform/RasterGlyph.hx), `import helix.platform.RasterGlyph;`
 
 Represents one glyph from `IFontRasterizer.rasterize`: its bitmap, where it sits, and how far it moves the pen.
 
@@ -1622,7 +1622,7 @@ Represents one glyph from `IFontRasterizer.rasterize`: its bitmap, where it sits
 
 ## Sampling
 
-*abstract* in [`platform/src/helix/platform/Sampling.hx`](../../platform/src/helix/platform/Sampling.hx), `import helix.platform.Sampling;`
+*abstract* in [`libs/platform/src/helix/platform/Sampling.hx`](../../libs/platform/src/helix/platform/Sampling.hx), `import helix.platform.Sampling;`
 
 Represents how a draw samples a texture: its filter, how it wraps along u and v, how its mipmaps are read, and its anisotropy.
 
@@ -1672,7 +1672,7 @@ static inline var COUNT:Int
 
 ## SdlGpuStages
 
-*typedef* in [`platform/src/helix/platform/SdlGpuStages.hx`](../../platform/src/helix/platform/SdlGpuStages.hx), `import helix.platform.SdlGpuStages;`
+*typedef* in [`libs/platform/src/helix/platform/SdlGpuStages.hx`](../../libs/platform/src/helix/platform/SdlGpuStages.hx), `import helix.platform.SdlGpuStages;`
 
 Represents a program in SDL_GPU's dialects, laid out as SDL_GPU binds them.
 
@@ -1682,7 +1682,7 @@ Represents a program in SDL_GPU's dialects, laid out as SDL_GPU binds them.
 
 ## ShaderBlock
 
-*typedef* in [`platform/src/helix/platform/ShaderBlock.hx`](../../platform/src/helix/platform/ShaderBlock.hx), `import helix.platform.ShaderBlock;`
+*typedef* in [`libs/platform/src/helix/platform/ShaderBlock.hx`](../../libs/platform/src/helix/platform/ShaderBlock.hx), `import helix.platform.ShaderBlock;`
 
 Represents a uniform block that a program declares, and its members.
 
@@ -1696,7 +1696,7 @@ A block's bytes are laid out by std140, as `members` places them, on every adapt
 
 ## ShaderMember
 
-*typedef* in [`platform/src/helix/platform/ShaderMember.hx`](../../platform/src/helix/platform/ShaderMember.hx), `import helix.platform.ShaderMember;`
+*typedef* in [`libs/platform/src/helix/platform/ShaderMember.hx`](../../libs/platform/src/helix/platform/ShaderMember.hx), `import helix.platform.ShaderMember;`
 
 Represents a member of a uniform block that a program declares, as a leaf: its path, its GLSL type, where it starts in the block's bytes, and how many elements it has.
 
@@ -1711,7 +1711,7 @@ The block is laid out by std140: each element of an array, and each column of a 
 
 ## ShaderSource
 
-*typedef* in [`platform/src/helix/platform/ShaderSource.hx`](../../platform/src/helix/platform/ShaderSource.hx), `import helix.platform.ShaderSource;`
+*typedef* in [`libs/platform/src/helix/platform/ShaderSource.hx`](../../libs/platform/src/helix/platform/ShaderSource.hx), `import helix.platform.ShaderSource;`
 
 Represents a compiled program, with its stages in each dialect the adapters compile, its vertex attributes, and what it binds.
 
@@ -1729,7 +1729,7 @@ Represents a compiled program, with its stages in each dialect the adapters comp
 
 ## ShaderStages
 
-*typedef* in [`platform/src/helix/platform/ShaderStages.hx`](../../platform/src/helix/platform/ShaderStages.hx), `import helix.platform.ShaderStages;`
+*typedef* in [`libs/platform/src/helix/platform/ShaderStages.hx`](../../libs/platform/src/helix/platform/ShaderStages.hx), `import helix.platform.ShaderStages;`
 
 Represents one program's source in one dialect: its vertex and fragment stages.
 
@@ -1738,7 +1738,7 @@ Represents one program's source in one dialect: its vertex and fragment stages.
 
 ## ShaderTexture
 
-*typedef* in [`platform/src/helix/platform/ShaderTexture.hx`](../../platform/src/helix/platform/ShaderTexture.hx), `import helix.platform.ShaderTexture;`
+*typedef* in [`libs/platform/src/helix/platform/ShaderTexture.hx`](../../libs/platform/src/helix/platform/ShaderTexture.hx), `import helix.platform.ShaderTexture;`
 
 Represents a texture that a program samples, and its kind.
 
@@ -1754,7 +1754,7 @@ A texture is a plain 2D texture unless one of shadow, cube or data is true.
 
 ## StreamSource
 
-*enum* in [`platform/src/helix/platform/StreamSource.hx`](../../platform/src/helix/platform/StreamSource.hx), `import helix.platform.StreamSource;`
+*enum* in [`libs/platform/src/helix/platform/StreamSource.hx`](../../libs/platform/src/helix/platform/StreamSource.hx), `import helix.platform.StreamSource;`
 
 Specifies what an audio stream plays (`IAudio.openStream`).
 
@@ -1764,7 +1764,7 @@ Specifies what an audio stream plays (`IAudio.openStream`).
 
 ## TextureFormat
 
-*abstract* in [`platform/src/helix/platform/TextureFormat.hx`](../../platform/src/helix/platform/TextureFormat.hx), `import helix.platform.TextureFormat;`
+*abstract* in [`libs/platform/src/helix/platform/TextureFormat.hx`](../../libs/platform/src/helix/platform/TextureFormat.hx), `import helix.platform.TextureFormat;`
 
 Specifies the format of a texture's texels.
 
@@ -1789,7 +1789,7 @@ function toString():String
 
 ## TiltStatus
 
-*enum* in [`platform/src/helix/platform/TiltStatus.hx`](../../platform/src/helix/platform/TiltStatus.hx), `import helix.platform.TiltStatus;`
+*enum* in [`libs/platform/src/helix/platform/TiltStatus.hx`](../../libs/platform/src/helix/platform/TiltStatus.hx), `import helix.platform.TiltStatus;`
 
 Specifies where the device's tilt is (`Event.TiltState`, after `ITilt.requestAccess`).
 
@@ -1802,7 +1802,7 @@ Specifies where the device's tilt is (`Event.TiltState`, after `ITilt.requestAcc
 
 ## VertexAttribute
 
-*typedef* in [`platform/src/helix/platform/VertexAttribute.hx`](../../platform/src/helix/platform/VertexAttribute.hx), `import helix.platform.VertexAttribute;`
+*typedef* in [`libs/platform/src/helix/platform/VertexAttribute.hx`](../../libs/platform/src/helix/platform/VertexAttribute.hx), `import helix.platform.VertexAttribute;`
 
 Represents a vertex attribute that a pipeline reads from one of its buffers.
 
@@ -1812,7 +1812,7 @@ Represents a vertex attribute that a pipeline reads from one of its buffers.
 
 ## VertexBuffer
 
-*typedef* in [`platform/src/helix/platform/VertexBuffer.hx`](../../platform/src/helix/platform/VertexBuffer.hx), `import helix.platform.VertexBuffer;`
+*typedef* in [`libs/platform/src/helix/platform/VertexBuffer.hx`](../../libs/platform/src/helix/platform/VertexBuffer.hx), `import helix.platform.VertexBuffer;`
 
 Represents a vertex buffer that a pipeline reads, by its index in a draw's buffers.
 
@@ -1824,7 +1824,7 @@ A buffer with no attributes is a gap that the draw skips.
 
 ## VertexFormat
 
-*abstract* in [`platform/src/helix/platform/VertexFormat.hx`](../../platform/src/helix/platform/VertexFormat.hx), `import helix.platform.VertexFormat;`
+*abstract* in [`libs/platform/src/helix/platform/VertexFormat.hx`](../../libs/platform/src/helix/platform/VertexFormat.hx), `import helix.platform.VertexFormat;`
 
 Specifies how a vertex attribute's values are stored in a buffer's records.
 
@@ -1855,7 +1855,7 @@ function toString():String
 
 ## Wrap
 
-*abstract* in [`platform/src/helix/platform/Wrap.hx`](../../platform/src/helix/platform/Wrap.hx), `import helix.platform.Wrap;`
+*abstract* in [`libs/platform/src/helix/platform/Wrap.hx`](../../libs/platform/src/helix/platform/Wrap.hx), `import helix.platform.Wrap;`
 
 Specifies how a texture is sampled outside the 0 to 1 range of its coordinates.
 

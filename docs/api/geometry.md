@@ -4,7 +4,7 @@
 
 ## Animation3D
 
-*class* in [`geometry/src/helix/geometry/Animation3D.hx`](../../geometry/src/helix/geometry/Animation3D.hx), `import helix.geometry.Animation3D;`
+*class* in [`libs/geometry/src/helix/geometry/Animation3D.hx`](../../libs/geometry/src/helix/geometry/Animation3D.hx), `import helix.geometry.Animation3D;`
 
 Represents an animation of a skeleton: tracks moving its bones over time.
 
@@ -30,7 +30,7 @@ function computePose(skeleton:Skeleton3D, time:Float, ?out:Array<Transform3D>):A
 
 ## AnimationProperty3D
 
-*enum* in [`geometry/src/helix/geometry/AnimationProperty3D.hx`](../../geometry/src/helix/geometry/AnimationProperty3D.hx), `import helix.geometry.AnimationProperty3D;`
+*enum* in [`libs/geometry/src/helix/geometry/AnimationProperty3D.hx`](../../libs/geometry/src/helix/geometry/AnimationProperty3D.hx), `import helix.geometry.AnimationProperty3D;`
 
 Specifies which part of a bone's transform an animation's track moves.
 
@@ -40,7 +40,7 @@ Specifies which part of a bone's transform an animation's track moves.
 
 ## AnimationTrack3D
 
-*class* in [`geometry/src/helix/geometry/AnimationTrack3D.hx`](../../geometry/src/helix/geometry/AnimationTrack3D.hx), `import helix.geometry.AnimationTrack3D;`
+*class* in [`libs/geometry/src/helix/geometry/AnimationTrack3D.hx`](../../libs/geometry/src/helix/geometry/AnimationTrack3D.hx), `import helix.geometry.AnimationTrack3D;`
 
 Represents one track of an animation: keys moving one part of one bone's transform.
 
@@ -67,7 +67,7 @@ final values:Array<Float>
 
 ## Bone3D
 
-*class* in [`geometry/src/helix/geometry/Bone3D.hx`](../../geometry/src/helix/geometry/Bone3D.hx), `import helix.geometry.Bone3D;`
+*class* in [`libs/geometry/src/helix/geometry/Bone3D.hx`](../../libs/geometry/src/helix/geometry/Bone3D.hx), `import helix.geometry.Bone3D;`
 
 Represents a bone of a skeleton: its name, its parent, and where it is at rest.
 
@@ -88,7 +88,7 @@ final rest:Transform3D
 
 ## Camera2D
 
-*class* in [`geometry/src/helix/geometry/Camera2D.hx`](../../geometry/src/helix/geometry/Camera2D.hx), `import helix.geometry.Camera2D;`
+*class* in [`libs/geometry/src/helix/geometry/Camera2D.hx`](../../libs/geometry/src/helix/geometry/Camera2D.hx), `import helix.geometry.Camera2D;`
 
 Represents a view of a 2D world: where it looks and how it is turned (a `Transform2D`), how near it is, and where in the view the point it looks at shows.
 
@@ -148,7 +148,7 @@ function computeBounds(viewWidth:Float, viewHeight:Float, ?out:Bounds2D):Bounds2
 
 ## Camera3D
 
-*class* in [`geometry/src/helix/geometry/Camera3D.hx`](../../geometry/src/helix/geometry/Camera3D.hx), `import helix.geometry.Camera3D;`
+*class* in [`libs/geometry/src/helix/geometry/Camera3D.hx`](../../libs/geometry/src/helix/geometry/Camera3D.hx), `import helix.geometry.Camera3D;`
 
 Represents a view of a 3D world: where it is and which way it looks (a `Transform3D`), and how it projects what it sees.
 
@@ -217,7 +217,7 @@ function computeRay(viewX:Float, viewY:Float, aspect:Float, ?out:Ray3D):Ray3D
 
 ## Frustum3D
 
-*class* in [`geometry/src/helix/geometry/Frustum3D.hx`](../../geometry/src/helix/geometry/Frustum3D.hx), `import helix.geometry.Frustum3D;`
+*class* in [`libs/geometry/src/helix/geometry/Frustum3D.hx`](../../libs/geometry/src/helix/geometry/Frustum3D.hx), `import helix.geometry.Frustum3D;`
 
 Represents what a view sees: six planes bounding a volume, from any view-projection matrix.
 
@@ -268,7 +268,7 @@ function intersectsBounds(bounds:Bounds3D):Bool
 
 ## Geometry2D
 
-*class* in [`geometry/src/helix/geometry/Geometry2D.hx`](../../geometry/src/helix/geometry/Geometry2D.hx), `import helix.geometry.Geometry2D;`
+*class* in [`libs/geometry/src/helix/geometry/Geometry2D.hx`](../../libs/geometry/src/helix/geometry/Geometry2D.hx), `import helix.geometry.Geometry2D;`
 
 Provides tests on points, segments, triangles, polygons and circles in a plane, their points given as plain numbers.
 
@@ -330,7 +330,7 @@ static function intersectsCircleSegment(cx:Float, cy:Float, radius:Float, ax:Flo
 
 ## KeyInterpolation
 
-*enum* in [`geometry/src/helix/geometry/KeyInterpolation.hx`](../../geometry/src/helix/geometry/KeyInterpolation.hx), `import helix.geometry.KeyInterpolation;`
+*enum* in [`libs/geometry/src/helix/geometry/KeyInterpolation.hx`](../../libs/geometry/src/helix/geometry/KeyInterpolation.hx), `import helix.geometry.KeyInterpolation;`
 
 Specifies how an animation's track goes from one key to the next.
 
@@ -340,7 +340,7 @@ Specifies how an animation's track goes from one key to the next.
 
 ## Mesh3D
 
-*class* in [`geometry/src/helix/geometry/Mesh3D.hx`](../../geometry/src/helix/geometry/Mesh3D.hx), `import helix.geometry.Mesh3D;`
+*class* in [`libs/geometry/src/helix/geometry/Mesh3D.hx`](../../libs/geometry/src/helix/geometry/Mesh3D.hx), `import helix.geometry.Mesh3D;`
 
 Represents a mesh: a surface made of triangles, as arrays a GPU or a file takes: positions, and for each vertex its normal, texture coordinates, tangent and color when it has them; and the indices of each triangle's corners, or none when the vertices are the triangles in order. A triangle's front is the side its corners are counterclockwise from.
 
@@ -485,7 +485,7 @@ function computeBounds(?out:Bounds3D):Bounds3D
 
 ## Ray3D
 
-*class* in [`geometry/src/helix/geometry/Ray3D.hx`](../../geometry/src/helix/geometry/Ray3D.hx), `import helix.geometry.Ray3D;`
+*class* in [`libs/geometry/src/helix/geometry/Ray3D.hx`](../../libs/geometry/src/helix/geometry/Ray3D.hx), `import helix.geometry.Ray3D;`
 
 Represents a ray: a point it starts from and a direction it goes in, for picking and line of sight.
 
@@ -568,7 +568,7 @@ function intersectMesh(mesh:Mesh3D, ?transform:Matrix3D, ?out:RayHit3D):Null<Ray
 
 ## RayHit3D
 
-*class* in [`geometry/src/helix/geometry/RayHit3D.hx`](../../geometry/src/helix/geometry/RayHit3D.hx), `import helix.geometry.RayHit3D;`
+*class* in [`libs/geometry/src/helix/geometry/RayHit3D.hx`](../../libs/geometry/src/helix/geometry/RayHit3D.hx), `import helix.geometry.RayHit3D;`
 
 Represents where a ray meets something (`Ray3D`'s tests): how far along it, the point, and the surface's normal there.
 
@@ -592,7 +592,7 @@ function copyFrom(other:RayHit3D):RayHit3D
 
 ## Skeleton3D
 
-*class* in [`geometry/src/helix/geometry/Skeleton3D.hx`](../../geometry/src/helix/geometry/Skeleton3D.hx), `import helix.geometry.Skeleton3D;`
+*class* in [`libs/geometry/src/helix/geometry/Skeleton3D.hx`](../../libs/geometry/src/helix/geometry/Skeleton3D.hx), `import helix.geometry.Skeleton3D;`
 
 Represents a skeleton: bones, each a parent's child or a root, that skinned meshes' vertices follow, through skins.
 
@@ -622,7 +622,7 @@ function computeWorld(pose:Array<Transform3D>, ?out:Array<Matrix3D>):Array<Matri
 
 ## Skin3D
 
-*class* in [`geometry/src/helix/geometry/Skin3D.hx`](../../geometry/src/helix/geometry/Skin3D.hx), `import helix.geometry.Skin3D;`
+*class* in [`libs/geometry/src/helix/geometry/Skin3D.hx`](../../libs/geometry/src/helix/geometry/Skin3D.hx), `import helix.geometry.Skin3D;`
 
 Represents a skin: the bones of a skeleton a mesh's vertices follow, and how each vertex was bound to them. A vertex's `jointIndices` index this skin's `boneIndices`, not the skeleton's.
 

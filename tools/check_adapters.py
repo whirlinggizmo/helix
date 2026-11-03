@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Checks the adapter rule (docs/ARCHITECTURE.md) where it can be checked mechanically:
 
-  1. An adapter (platform/src/helix/platform/adapters/) names nothing above the platform: no helix package but helix.platform, and
+  1. An adapter (libs/platform/src/helix/platform/adapters/) names nothing above the platform: no helix package but helix.platform, and
      helix.math and helix.formats, which the platform is built on. It implements a platform contract and nothing else.
-  2. The platform's own code (platform/src/helix/platform/ outside adapters/, macros/ and tools/) uses no platform API (js.html,
+  2. The platform's own code (libs/platform/src/helix/platform/ outside adapters/, macros/ and tools/) uses no platform API (js.html,
      js.Browser, js.Syntax, js.lib, sys., cpp.) and no target conditional (#if js, cpp, sys, hl). The macros (macros/) run in the
      compiler, not on a target, and the tools (tools/: the shader compiler) in the compiler or Haxe's interpreter, never in a program.
   3. An adapter's C includes no generated shader header: programs reach adapters as data.
@@ -33,7 +33,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / 'platform/src/helix/platform'
+SRC = ROOT / 'libs/platform/src/helix/platform'
 SOURCES = [SRC]
 ADAPTER_ROOTS = [root / 'adapters' for root in SOURCES]
 DUPLICATE_LINES = 6
@@ -45,7 +45,7 @@ PLATFORM = re.compile(r'\bjs\.(html|Browser|Syntax|lib)\b|\bsys\.[a-z]|\bcpp\.[A
 DECLARATION = re.compile(r'^(?:(?:extern|final|abstract|enum)\s+)*(?:class|interface|enum|typedef|abstract)\s+(\w+)')
 GENERATED_HEADER = re.compile(r'#include\s+"([^"]*\.glsl\.h|shaders\.h)"')
 
-# Known violations: (rule, file relative to platform/src/helix/platform, the step that removes it).
+# Known violations: (rule, file relative to libs/platform/src/helix/platform, the step that removes it).
 KNOWN = []
 
 
@@ -175,7 +175,7 @@ def main():
             m = re.search(r'\binterface\s+(I\w+)[^{]*\{(.*)\n\}', f.read_text(encoding='utf-8'), re.S)
             if m:
                 interfaces[m.group(1)] = set(re.findall(r'\b(?:function|var)\s+(\w+)', m.group(2)))
-    for path in sorted((ROOT / 'platform/src/helix/platform/adapters').rglob('*.hx')):
+    for path in sorted((ROOT / 'libs/platform/src/helix/platform/adapters').rglob('*.hx')):
         if 'internal' in path.parts:
             continue
         text = path.read_text(encoding='utf-8')
@@ -185,7 +185,7 @@ def main():
             continue
         allowed = {'new'} | {name for c in contracts for name in interfaces.get(c, set())}
         for base in bases:
-            for f in (ROOT / 'platform/src').rglob(base + '.hx'):
+            for f in (ROOT / 'libs/platform/src').rglob(base + '.hx'):
                 allowed |= {name for c in re.findall(r'\bimplements\s+(?:[\w.]+\.)?(I\w+)', f.read_text(encoding='utf-8')) for name in interfaces.get(c, set())}
         for number, line in code_lines(path):
             m = re.match(r'\s*(?:@:[\w.]+(?:\([^)]*\))?\s*)*((?:override|inline|static|final)\s+)*public\s+(?:(?:override|inline|static|final)\s+)*(?:function|var|final)\s+(\w+)', line)

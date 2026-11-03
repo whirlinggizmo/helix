@@ -5,14 +5,14 @@ helix-2.0 is several haxelibs in one repository, built from the bottom up.
 ## Layers
 
 ```
-math/       points, bounds, transforms, curves, deterministic trig   depends on nothing
-geometry/       cameras, rays, meshes, tests on shapes                   depends on math
-log/        levels and tags, to the console or stdio                 depends on nothing
-formats/    file formats read into plain data: glTF, BMFont, fonts   depends on math
-platform/   the hardware and the OS as contracts and adapters        depends on math, formats
-services/   what a program needs over the platform that isn't drawing
-render/     drawing: 2D and 3D batches, materials, lights, post-processing, over the services (DECISIONS 35)
-ray/        raylib's API over the services (DECISIONS 16)
+libs/math/       points, bounds, transforms, curves, deterministic trig   depends on nothing
+libs/geometry/       cameras, rays, meshes, tests on shapes                   depends on math
+libs/log/        levels and tags, to the console or stdio                 depends on nothing
+libs/formats/    file formats read into plain data: glTF, BMFont, fonts   depends on math
+libs/platform/   the hardware and the OS as contracts and adapters        depends on math, formats
+libs/services/   what a program needs over the platform that isn't drawing
+libs/render/     drawing: 2D and 3D batches, materials, lights, post-processing, over the services (DECISIONS 35)
+engines/raylib/        raylib's API over the services (DECISIONS 16)
 ...         the layers above, as the path chosen asks for them
 ```
 

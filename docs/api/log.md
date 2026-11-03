@@ -4,7 +4,7 @@
 
 ## Log
 
-*class* in [`log/src/helix/log/Log.hx`](../../log/src/helix/log/Log.hx), `import helix.log.Log;`
+*class* in [`libs/log/src/helix/log/Log.hx`](../../libs/log/src/helix/log/Log.hx), `import helix.log.Log;`
 
 Provides the log: messages for whoever is developing the program, each with how much it matters and, optionally, a tag saying what it's about.
 
@@ -78,7 +78,7 @@ static function uninstall():Void
 
 ## LogLevel
 
-*abstract* in [`log/src/helix/log/LogLevel.hx`](../../log/src/helix/log/LogLevel.hx), `import helix.log.LogLevel;`
+*abstract* in [`libs/log/src/helix/log/LogLevel.hx`](../../libs/log/src/helix/log/LogLevel.hx), `import helix.log.LogLevel;`
 
 Specifies how much a log message matters.
 

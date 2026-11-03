@@ -1,4 +1,4 @@
-"""fontfile_62: raylib 6.2's LoadFontEx on a TrueType file (ray/examples/text's JetBrains Mono), which helix-ray takes from 6.2, against
+"""fontfile_62: raylib 6.2's LoadFontEx on a TrueType file (engines/raylib/examples/text's JetBrains Mono), which helix-ray takes from 6.2, against
 helix-ray's LoadFontExAsync. One list for both sides (shared/gen.py's syntax): load loads a font and font prints it (each glyph, its place
 and a checksum of its image), in ref.c.in and FontFileBits.hx.in."""
 

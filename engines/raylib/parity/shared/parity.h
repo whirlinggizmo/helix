@@ -1,4 +1,4 @@
-// The C side of a value suite (ray/parity/README.md): what raylib's own C gives, printed a line at a time, each line led by its case's
+// The C side of a value suite (engines/raylib/parity/README.md): what raylib's own C gives, printed a line at a time, each line led by its case's
 // name, as Parity.hx prints helix-ray's. tools/ray_parity.py compares the two.
 #ifndef PARITY_H
 #define PARITY_H

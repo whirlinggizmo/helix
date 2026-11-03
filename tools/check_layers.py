@@ -23,18 +23,18 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # Bottom to top: (library, its source directory, the package roots it owns, the libraries below it that it's built on).
 LAYERS = [
-    ('helix-math', 'math/src', ['helix.math'], []),
-    ('helix-geometry', 'geometry/src', ['helix.geometry'], ['helix-math']),
-    ('helix-log', 'log/src', ['helix.log'], []),
-    ('helix-formats', 'formats/src', ['helix.formats'], ['helix-math']),
-    ('helix-platform', 'platform/src', ['helix.platform'], ['helix-formats', 'helix-geometry', 'helix-math']),
-    ('helix-services', 'services/src', ['helix.services'], ['helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
-    ('helix-render', 'render/src', ['helix.render'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
-    ('helix-ray', 'ray/src', ['helix.ray'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
+    ('helix-math', 'libs/math/src', ['helix.math'], []),
+    ('helix-geometry', 'libs/geometry/src', ['helix.geometry'], ['helix-math']),
+    ('helix-log', 'libs/log/src', ['helix.log'], []),
+    ('helix-formats', 'libs/formats/src', ['helix.formats'], ['helix-math']),
+    ('helix-platform', 'libs/platform/src', ['helix.platform'], ['helix-formats', 'helix-geometry', 'helix-math']),
+    ('helix-services', 'libs/services/src', ['helix.services'], ['helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
+    ('helix-render', 'libs/render/src', ['helix.render'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
+    ('helix-ray', 'engines/raylib/src', ['helix.ray'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
 ]
 # Each library's tests and examples, held to its layer too: they build with that library alone.
-TESTS = {'helix-math': ['math/tests'], 'helix-geometry': ['geometry/tests'], 'helix-log': ['log/tests'], 'helix-formats': ['formats/tests'], 'helix-platform': ['platform/tests', 'platform/examples'],
-         'helix-services': ['services/tests'], 'helix-render': ['render/tests', 'render/examples'], 'helix-ray': ['ray/examples']}
+TESTS = {'helix-math': ['libs/math/tests'], 'helix-geometry': ['libs/geometry/tests'], 'helix-log': ['libs/log/tests'], 'helix-formats': ['libs/formats/tests'], 'helix-platform': ['libs/platform/tests', 'libs/platform/examples'],
+         'helix-services': ['libs/services/tests'], 'helix-render': ['libs/render/tests', 'libs/render/examples'], 'helix-ray': ['engines/raylib/examples']}
 # The interfaces in helix.platform that contracts extend (rule 3): IPollable, the poll a program calls each frame.
 BASES = {'IPollable'}
 # The contracts built over another (rule 3): each device's adapters add their events to the events adapter of their API.
@@ -63,8 +63,8 @@ def owner(name):
 
 
 def contracts():
-    """Violations of rule 3 in platform/src/helix/platform."""
-    base = ROOT / 'platform/src/helix/platform'
+    """Violations of rule 3 in libs/platform/src/helix/platform."""
+    base = ROOT / 'libs/platform/src/helix/platform'
     top = {p.stem: p for p in base.glob('*.hx')}
     texts = {p: code(p.read_text(encoding='utf-8')) for p in base.rglob('*.hx')}
 

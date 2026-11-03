@@ -4,7 +4,7 @@
 
 ## TrueTypeTables
 
-*class* in [`formats/src/helix/formats/truetype/TrueTypeTables.hx`](../../formats/src/helix/formats/truetype/TrueTypeTables.hx), `import helix.formats.truetype.TrueTypeTables;`
+*class* in [`libs/formats/src/helix/formats/truetype/TrueTypeTables.hx`](../../libs/formats/src/helix/formats/truetype/TrueTypeTables.hx), `import helix.formats.truetype.TrueTypeTables;`
 
 Represents the tables of a TrueType or OpenType font, read as stb_truetype reads them.
 

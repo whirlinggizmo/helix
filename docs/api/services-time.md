@@ -4,7 +4,7 @@
 
 ## Time
 
-*class* in [`services/src/helix/services/time/Time.hx`](../../services/src/helix/services/time/Time.hx), `import helix.services.time.Time;`, implements `IPollable`
+*class* in [`libs/services/src/helix/services/time/Time.hx`](../../libs/services/src/helix/services/time/Time.hx), `import helix.services.time.Time;`, implements `IPollable`
 
 Provides a frame's time, in the game's seconds and in real seconds, the frames a second, and how much of a frame aimed for is left.
 
@@ -67,7 +67,7 @@ function dispose():Void
 
 ## Timer
 
-*class* in [`services/src/helix/services/time/Timer.hx`](../../services/src/helix/services/time/Timer.hx), `import helix.services.time.Timer;`
+*class* in [`libs/services/src/helix/services/time/Timer.hx`](../../libs/services/src/helix/services/time/Timer.hx), `import helix.services.time.Timer;`
 
 Represents a function called after some of the game's time, once (`Time.after`) or repeatedly (`Time.every`).
 

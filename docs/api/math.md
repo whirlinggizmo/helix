@@ -4,7 +4,7 @@
 
 ## Bounds2D
 
-*class* in [`math/src/helix/math/Bounds2D.hx`](../../math/src/helix/math/Bounds2D.hx), `import helix.math.Bounds2D;`
+*class* in [`libs/math/src/helix/math/Bounds2D.hx`](../../libs/math/src/helix/math/Bounds2D.hx), `import helix.math.Bounds2D;`
 
 Represents an axis-aligned box in 2 dimensions: its least and greatest coordinate on each axis.
 
@@ -76,7 +76,7 @@ function intersects(other:Bounds2D):Bool
 
 ## Bounds3D
 
-*class* in [`math/src/helix/math/Bounds3D.hx`](../../math/src/helix/math/Bounds3D.hx), `import helix.math.Bounds3D;`
+*class* in [`libs/math/src/helix/math/Bounds3D.hx`](../../libs/math/src/helix/math/Bounds3D.hx), `import helix.math.Bounds3D;`
 
 Represents an axis-aligned box in 3 dimensions: its least and greatest coordinate on each axis.
 
@@ -162,7 +162,7 @@ function intersectsSphere(x:Float, y:Float, z:Float, radius:Float):Bool
 
 ## Color
 
-*class* in [`math/src/helix/math/Color.hx`](../../math/src/helix/math/Color.hx), `import helix.math.Color;`
+*class* in [`libs/math/src/helix/math/Color.hx`](../../libs/math/src/helix/math/Color.hx), `import helix.math.Color;`
 
 Provides functions for colors held as 0xAARRGGBB integers, with alpha in the top byte: their channels, hue, saturation and value, blending one over another, and mixing, tinting, brightening and contrasting them.
 
@@ -264,7 +264,7 @@ static function contrast(color:Int, factor:Float):Int
 
 ## Curve
 
-*class* in [`math/src/helix/math/Curve.hx`](../../math/src/helix/math/Curve.hx), `import helix.math.Curve;`
+*class* in [`libs/math/src/helix/math/Curve.hx`](../../libs/math/src/helix/math/Curve.hx), `import helix.math.Curve;`
 
 Represents a curve through or near points in 2 or 3 dimensions: a camera rail, a patrol path, a projectile's arc.
 
@@ -349,7 +349,7 @@ function getParameterAtDistance(distance:Float):Float
 
 ## CurveKind
 
-*enum* in [`math/src/helix/math/CurveKind.hx`](../../math/src/helix/math/CurveKind.hx), `import helix.math.CurveKind;`
+*enum* in [`libs/math/src/helix/math/CurveKind.hx`](../../libs/math/src/helix/math/CurveKind.hx), `import helix.math.CurveKind;`
 
 Specifies how a `Curve` passes its points.
 
@@ -359,7 +359,7 @@ Specifies how a `Curve` passes its points.
 
 ## DistanceField2D
 
-*class* in [`math/src/helix/math/DistanceField2D.hx`](../../math/src/helix/math/DistanceField2D.hx), `import helix.math.DistanceField2D;`
+*class* in [`libs/math/src/helix/math/DistanceField2D.hx`](../../libs/math/src/helix/math/DistanceField2D.hx), `import helix.math.DistanceField2D;`
 
 Provides the distance transform of a grid: for each cell, the squared distance to the nearest cell that is 0, by Felzenszwalb and Huttenlocher's method, in time proportional to the cells. Two transforms, one from inside a shape and one from outside it, make a signed distance field.
 
@@ -376,7 +376,7 @@ static function transform(grid:Array<Float>, width:Int, height:Int):Void
 
 ## Interpolate
 
-*class* in [`math/src/helix/math/Interpolate.hx`](../../math/src/helix/math/Interpolate.hx), `import helix.math.Interpolate;`
+*class* in [`libs/math/src/helix/math/Interpolate.hx`](../../libs/math/src/helix/math/Interpolate.hx), `import helix.math.Interpolate;`
 
 Provides interpolation: between numbers and angles, along spline pieces, easing curves, clamping, smoothing, stepping and easing toward a target.
 
@@ -611,7 +611,7 @@ static function easeInOutBounce(t:Float):Float
 
 ## Matrix2D
 
-*class* in [`math/src/helix/math/Matrix2D.hx`](../../math/src/helix/math/Matrix2D.hx), `import helix.math.Matrix2D;`
+*class* in [`libs/math/src/helix/math/Matrix2D.hx`](../../libs/math/src/helix/math/Matrix2D.hx), `import helix.math.Matrix2D;`
 
 Represents a 2D affine matrix: moving, turning, scaling and shearing points in 2 dimensions.
 
@@ -731,7 +731,7 @@ function toMatrix3D(?out:Matrix3D):Matrix3D
 
 ## Matrix3D
 
-*class* in [`math/src/helix/math/Matrix3D.hx`](../../math/src/helix/math/Matrix3D.hx), `import helix.math.Matrix3D;`
+*class* in [`libs/math/src/helix/math/Matrix3D.hx`](../../libs/math/src/helix/math/Matrix3D.hx), `import helix.math.Matrix3D;`
 
 Represents a 4 x 4 matrix transforming points in 3 dimensions: moving, turning, scaling and projecting them.
 
@@ -891,7 +891,7 @@ function transformDirection(x:Float, y:Float, z:Float, ?out:Vector3D):Vector3D
 
 ## Quaternion3D
 
-*class* in [`math/src/helix/math/Quaternion3D.hx`](../../math/src/helix/math/Quaternion3D.hx), `import helix.math.Quaternion3D;`
+*class* in [`libs/math/src/helix/math/Quaternion3D.hx`](../../libs/math/src/helix/math/Quaternion3D.hx), `import helix.math.Quaternion3D;`
 
 Represents a rotation in 3 dimensions, as a unit quaternion.
 
@@ -1036,7 +1036,7 @@ function toMatrix(?out:Matrix3D):Matrix3D
 
 ## Random
 
-*class* in [`math/src/helix/math/Random.hx`](../../math/src/helix/math/Random.hx), `import helix.math.Random;`
+*class* in [`libs/math/src/helix/math/Random.hx`](../../libs/math/src/helix/math/Random.hx), `import helix.math.Random;`
 
 Represents a seeded random number generator that gives the same sequence on every target.
 
@@ -1107,7 +1107,7 @@ function shuffle(items:Array<T>):Array<T>
 
 ## RectPacker2D
 
-*class* in [`math/src/helix/math/RectPacker2D.hx`](../../math/src/helix/math/RectPacker2D.hx), `import helix.math.RectPacker2D;`
+*class* in [`libs/math/src/helix/math/RectPacker2D.hx`](../../libs/math/src/helix/math/RectPacker2D.hx), `import helix.math.RectPacker2D;`
 
 Provides packing rectangles into an area, as stb_rect_pack 1.01 does (public domain, Sean Barrett), which raylib packs its font atlases with: a skyline, each rectangle placed as low as it goes and then as far left, the tallest first.
 
@@ -1123,7 +1123,7 @@ static function pack(width:Int, height:Int, sizes:Array<Int>):Array<Int>
 
 ## Transform2D
 
-*class* in [`math/src/helix/math/Transform2D.hx`](../../math/src/helix/math/Transform2D.hx), `import helix.math.Transform2D;`
+*class* in [`libs/math/src/helix/math/Transform2D.hx`](../../libs/math/src/helix/math/Transform2D.hx), `import helix.math.Transform2D;`
 
 Represents where an object is in 2 dimensions, which way it faces, and how large it is: a position, a rotation and a scale.
 
@@ -1217,7 +1217,7 @@ function toMatrix(?out:Matrix2D):Matrix2D
 
 ## Transform3D
 
-*class* in [`math/src/helix/math/Transform3D.hx`](../../math/src/helix/math/Transform3D.hx), `import helix.math.Transform3D;`
+*class* in [`libs/math/src/helix/math/Transform3D.hx`](../../libs/math/src/helix/math/Transform3D.hx), `import helix.math.Transform3D;`
 
 Represents where an object is in 3 dimensions, which way it faces, and how large it is: a position, a rotation and a scale.
 
@@ -1342,7 +1342,7 @@ function toMatrix(?out:Matrix3D):Matrix3D
 
 ## Trig
 
-*class* in [`math/src/helix/math/Trig.hx`](../../math/src/helix/math/Trig.hx), `import helix.math.Trig;`
+*class* in [`libs/math/src/helix/math/Trig.hx`](../../libs/math/src/helix/math/Trig.hx), `import helix.math.Trig;`
 
 Provides trigonometry that gives the same bits on every target.
 
@@ -1381,7 +1381,7 @@ static function acos(x:Float):Float
 
 ## Vector2D
 
-*class* in [`math/src/helix/math/Vector2D.hx`](../../math/src/helix/math/Vector2D.hx), `import helix.math.Vector2D;`
+*class* in [`libs/math/src/helix/math/Vector2D.hx`](../../libs/math/src/helix/math/Vector2D.hx), `import helix.math.Vector2D;`
 
 Represents a vector in 2 dimensions: a position or a direction, as its user means it.
 
@@ -1496,7 +1496,7 @@ function equals(other:Vector2D, ?tolerance:Float = 0.):Bool
 
 ## Vector3D
 
-*class* in [`math/src/helix/math/Vector3D.hx`](../../math/src/helix/math/Vector3D.hx), `import helix.math.Vector3D;`
+*class* in [`libs/math/src/helix/math/Vector3D.hx`](../../libs/math/src/helix/math/Vector3D.hx), `import helix.math.Vector3D;`
 
 Represents a vector in 3 dimensions: a position or a direction, as its user means it.
 

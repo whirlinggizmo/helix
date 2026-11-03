@@ -80,15 +80,15 @@ class TrueTypeTests {
 		check(gpos.canKern(1) && gpos.canKern(2) && gpos.canKern(3), "GPOS: the glyphs its lookups cover start a pair");
 	}
 
-	// A file's bytes, read as the test compiles: the path is from the repository's root, beside this file's directory's parent.
+	// A file's bytes, read as the test compiles: the path is from the library's directory, this file's directory's parent.
 	static macro function embed(path:String):haxe.macro.Expr {
 		var root = haxe.io.Path.directory(haxe.io.Path.directory(haxe.macro.Context.getPosInfos(haxe.macro.Context.currentPos()).file));
-		var file = haxe.io.Path.join([root == "" ? "." : root, "..", path]);
+		var file = haxe.io.Path.join([root == "" ? "." : root, path]);
 		return macro haxe.crypto.Base64.decode($v{haxe.crypto.Base64.encode(sys.io.File.getBytes(file))});
 	}
 
 	static function main():Void {
-		var bytes = embed("formats/tests/assets/JetBrainsMono-Regular.ttf");
+		var bytes = embed("tests/assets/JetBrainsMono-Regular.ttf");
 		var tables = new TrueTypeTables(bytes);
 		check(tables.unitsPerEm == 1000, "head: JetBrains Mono's 1000 units per em");
 		check(tables.ascent == 1020 && tables.descent == -300 && tables.lineGap == 0, "hhea: its ascent, descent and line gap");

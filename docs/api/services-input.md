@@ -4,7 +4,7 @@
 
 ## Actions
 
-*class* in [`services/src/helix/services/input/Actions.hx`](../../services/src/helix/services/input/Actions.hx), `import helix.services.input.Actions;`
+*class* in [`libs/services/src/helix/services/input/Actions.hx`](../../libs/services/src/helix/services/input/Actions.hx), `import helix.services.input.Actions;`
 
 Provides actions, which are names the game reads, such as "jump" or "left", each bound to keys, mouse buttons, gamepads and tilt.
 
@@ -90,7 +90,7 @@ function computeVector(left:String, right:String, up:String, down:String, ?out:V
 
 ## AxisDirection
 
-*enum* in [`services/src/helix/services/input/AxisDirection.hx`](../../services/src/helix/services/input/AxisDirection.hx), `import helix.services.input.AxisDirection;`
+*enum* in [`libs/services/src/helix/services/input/AxisDirection.hx`](../../libs/services/src/helix/services/input/AxisDirection.hx), `import helix.services.input.AxisDirection;`
 
 Specifies which side of a stick's axis a binding reads (`Binding.Axis`). A trigger reads as `Positive`.
 
@@ -99,7 +99,7 @@ Specifies which side of a stick's axis a binding reads (`Binding.Axis`). A trigg
 
 ## Binding
 
-*enum* in [`services/src/helix/services/input/Binding.hx`](../../services/src/helix/services/input/Binding.hx), `import helix.services.input.Binding;`
+*enum* in [`libs/services/src/helix/services/input/Binding.hx`](../../libs/services/src/helix/services/input/Binding.hx), `import helix.services.input.Binding;`
 
 Specifies what an action is bound to (`Actions.bind`).
 
@@ -112,7 +112,7 @@ Specifies what an action is bound to (`Actions.bind`).
 
 ## Gamepads
 
-*class* in [`services/src/helix/services/input/Gamepads.hx`](../../services/src/helix/services/input/Gamepads.hx), `import helix.services.input.Gamepads;`, implements `IActionDevice`, `IPollable`
+*class* in [`libs/services/src/helix/services/input/Gamepads.hx`](../../libs/services/src/helix/services/input/Gamepads.hx), `import helix.services.input.Gamepads;`, implements `IActionDevice`, `IPollable`
 
 Provides the gamepads as state, in slots 0 to 3: which buttons are held or went down or up this frame, and where each stick and trigger is, past a dead zone.
 
@@ -171,7 +171,7 @@ var deadZone(default, set):Float
 
 ## Gesture
 
-*abstract* in [`services/src/helix/services/input/Gesture.hx`](../../services/src/helix/services/input/Gesture.hx), `import helix.services.input.Gesture;`
+*abstract* in [`libs/services/src/helix/services/input/Gesture.hx`](../../libs/services/src/helix/services/input/Gesture.hx), `import helix.services.input.Gesture;`
 
 Specifies a gesture `Gestures` detects, as a flag: flags are or'd together to say which gestures are detected (`Gestures.enabled`).
 
@@ -190,7 +190,7 @@ Specifies a gesture `Gestures` detects, as a flag: flags are or'd together to sa
 
 ## Gestures
 
-*class* in [`services/src/helix/services/input/Gestures.hx`](../../services/src/helix/services/input/Gestures.hx), `import helix.services.input.Gestures;`, implements `IPollable`
+*class* in [`libs/services/src/helix/services/input/Gestures.hx`](../../libs/services/src/helix/services/input/Gestures.hx), `import helix.services.input.Gestures;`, implements `IPollable`
 
 Provides gestures from the mouse and the fingers on the screen: a tap, a double tap, a hold, a drag, a swipe each way and a pinch in or out, as raylib's gestures (rgestures.h) detect them, from the frame's events in the order they came. Every mouse button counts as one finger. Positions and distances are fractions of the window, 0 to 1 across it.
 
@@ -238,7 +238,7 @@ function poll():Void
 
 ## IActionDevice
 
-*interface* in [`services/src/helix/services/input/IActionDevice.hx`](../../services/src/helix/services/input/IActionDevice.hx), `import helix.services.input.IActionDevice;`
+*interface* in [`libs/services/src/helix/services/input/IActionDevice.hx`](../../libs/services/src/helix/services/input/IActionDevice.hx), `import helix.services.input.IActionDevice;`
 
 Defines a device `Actions` reads its bindings from: `Keyboard`, `Mouse`, `Gamepads` and `Tilt` each read their own kind of binding.
 
@@ -246,7 +246,7 @@ A game passes its devices to `Actions` and never calls these itself.
 
 ## Keyboard
 
-*class* in [`services/src/helix/services/input/Keyboard.hx`](../../services/src/helix/services/input/Keyboard.hx), `import helix.services.input.Keyboard;`, implements `IActionDevice`, `IPollable`
+*class* in [`libs/services/src/helix/services/input/Keyboard.hx`](../../libs/services/src/helix/services/input/Keyboard.hx), `import helix.services.input.Keyboard;`, implements `IActionDevice`, `IPollable`
 
 Provides the keyboard as state: what is held, what went down or up this frame, which keys the OS repeated, and the text typed.
 
@@ -293,7 +293,7 @@ function isKeyRepeated(key:Key):Bool
 
 ## Mouse
 
-*class* in [`services/src/helix/services/input/Mouse.hx`](../../services/src/helix/services/input/Mouse.hx), `import helix.services.input.Mouse;`, implements `IActionDevice`, `IPollable`
+*class* in [`libs/services/src/helix/services/input/Mouse.hx`](../../libs/services/src/helix/services/input/Mouse.hx), `import helix.services.input.Mouse;`, implements `IActionDevice`, `IPollable`
 
 Provides the mouse as state: where it is, its wheel, and which buttons are held or went down or up this frame.
 
@@ -338,7 +338,7 @@ function isButtonReleased(button:MouseButton):Bool
 
 ## Tilt
 
-*class* in [`services/src/helix/services/input/Tilt.hx`](../../services/src/helix/services/input/Tilt.hx), `import helix.services.input.Tilt;`, implements `IActionDevice`, `IPollable`
+*class* in [`libs/services/src/helix/services/input/Tilt.hx`](../../libs/services/src/helix/services/input/Tilt.hx), `import helix.services.input.Tilt;`, implements `IActionDevice`, `IPollable`
 
 Provides the device's tilt, from level and turned with the screen, for a game steered by tilting a phone or a tablet.
 
@@ -386,7 +386,7 @@ function poll():Void
 
 ## TiltAxis
 
-*enum* in [`services/src/helix/services/input/TiltAxis.hx`](../../services/src/helix/services/input/TiltAxis.hx), `import helix.services.input.TiltAxis;`
+*enum* in [`libs/services/src/helix/services/input/TiltAxis.hx`](../../libs/services/src/helix/services/input/TiltAxis.hx), `import helix.services.input.TiltAxis;`
 
 Specifies an axis of the device's tilt, turned with the screen (`Tilt.getAxis`).
 
@@ -395,7 +395,7 @@ Specifies an axis of the device's tilt, turned with the screen (`Tilt.getAxis`).
 
 ## Touch
 
-*class* in [`services/src/helix/services/input/Touch.hx`](../../services/src/helix/services/input/Touch.hx), `import helix.services.input.Touch;`, implements `IPollable`
+*class* in [`libs/services/src/helix/services/input/Touch.hx`](../../libs/services/src/helix/services/input/Touch.hx), `import helix.services.input.Touch;`, implements `IPollable`
 
 Provides the fingers on the screen as state: which are down, where each is, and which landed or lifted this frame.
 

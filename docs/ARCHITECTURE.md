@@ -4,8 +4,8 @@ helix-2.0 is layered libraries (docs/PLAN.md), and inside the bottom one, the pl
 
 | Side | Where | What it is |
 | --- | --- | --- |
-| Contracts | `platform/src/helix/platform/I*.hx` and the data types they take | What a platform must provide, stated as capabilities, not as any engine's features. |
-| Adapters | `platform/src/helix/platform/adapters/<contract>/<api>/` | One platform API behind one contract: a hardware and OS abstraction layer, nothing more. |
+| Contracts | `libs/platform/src/helix/platform/I*.hx` and the data types they take | What a platform must provide, stated as capabilities, not as any engine's features. |
+| Adapters | `libs/platform/src/helix/platform/adapters/<contract>/<api>/` | One platform API behind one contract: a hardware and OS abstraction layer, nothing more. |
 
 Everything above the platform (services, then the layers the chosen path asks for) is pure Haxe: no platform API, no target
 conditional. A program constructs one adapter per contract for its target, then the services it wants from them, and uses the

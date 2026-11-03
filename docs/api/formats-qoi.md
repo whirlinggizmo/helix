@@ -4,7 +4,7 @@
 
 ## QoiFile
 
-*class* in [`formats/src/helix/formats/qoi/QoiFile.hx`](../../formats/src/helix/formats/qoi/QoiFile.hx), `import helix.formats.qoi.QoiFile;`
+*class* in [`libs/formats/src/helix/formats/qoi/QoiFile.hx`](../../libs/formats/src/helix/formats/qoi/QoiFile.hx), `import helix.formats.qoi.QoiFile;`
 
 Represents an image read from a QOI file ("Quite OK Image"): its size, its channels and its pixels; and provides writing one.
 

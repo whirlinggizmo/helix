@@ -4,7 +4,7 @@
 
 ## AssetManifests
 
-*class* in [`services/src/helix/services/tools/AssetManifests.hx`](../../services/src/helix/services/tools/AssetManifests.hx), `import helix.services.tools.AssetManifests;`
+*class* in [`libs/services/src/helix/services/tools/AssetManifests.hx`](../../libs/services/src/helix/services/tools/AssetManifests.hx), `import helix.services.tools.AssetManifests;`
 
 Provides a build-time macro that writes the manifests `Assets` reads.
 
@@ -28,7 +28,7 @@ static macro function write(directory:String, name:String = "manifest.json"):Voi
 
 ## ShaderBlockCompiler
 
-*class* in [`services/src/helix/services/tools/ShaderBlockCompiler.hx`](../../services/src/helix/services/tools/ShaderBlockCompiler.hx), `import helix.services.tools.ShaderBlockCompiler;`
+*class* in [`libs/services/src/helix/services/tools/ShaderBlockCompiler.hx`](../../libs/services/src/helix/services/tools/ShaderBlockCompiler.hx), `import helix.services.tools.ShaderBlockCompiler;`
 
 Provides build-time macros making a shared block's values from its declaration alone, so no shader that shares it is needed to make it (a renderer's camera before any material is loaded). They live here, apart from `ShaderBlockValues`, so typing them never types the values classes in the macro context (`Shader`'s note on macros).
 
@@ -54,7 +54,7 @@ static macro function compileText(text:String, blockName:String, ?uniforms:Array
 
 ## ShaderValueClasses
 
-*class* in [`services/src/helix/services/tools/ShaderValueClasses.hx`](../../services/src/helix/services/tools/ShaderValueClasses.hx), `import helix.services.tools.ShaderValueClasses;`
+*class* in [`libs/services/src/helix/services/tools/ShaderValueClasses.hx`](../../libs/services/src/helix/services/tools/ShaderValueClasses.hx), `import helix.services.tools.ShaderValueClasses;`
 
 Provides the build macros that make typed values classes, as sokol-shdc's generated structs are: a member for each uniform and texture, checked by the compiler, each holding its handle, so nothing is looked up by name.
 

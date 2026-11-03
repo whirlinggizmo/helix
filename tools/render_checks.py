@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Checks helix-render on the platform's real adapters: its examples (render/examples/<name>) and its pixel tests (render/tests/pixels),
+"""Checks helix-render on the platform's real adapters: its examples (libs/render/examples/<name>) and its pixel tests (libs/render/tests/pixels),
 each built from its own hxml files, run natively on a private display (Linux) on each native build it has (GL, and SDL_GPU from
 build-native-gpu.hxml) and in a headless Chromium (WebGL2), as tools/platform_checks.py runs the platform's. An example's page is checked
 against its check.json (points and the colors expected there, each within a tolerance per channel) and its native runs by their exit;
@@ -19,8 +19,8 @@ sys.path.insert(0, str(ROOT / 'tools'))
 import platform_checks
 from platform_checks import FRAMES, check_pixels, run, tests
 
-EXAMPLES = ROOT / 'render/examples'
-PIXELS = ROOT / 'render/tests/pixels'
+EXAMPLES = ROOT / 'libs/render/examples'
+PIXELS = ROOT / 'libs/render/tests/pixels'
 
 
 def example(name, browser):

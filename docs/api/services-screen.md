@@ -4,7 +4,7 @@
 
 ## Screen
 
-*class* in [`services/src/helix/services/screen/Screen.hx`](../../services/src/helix/services/screen/Screen.hx), `import helix.services.screen.Screen;`, implements `IPollable`
+*class* in [`libs/services/src/helix/services/screen/Screen.hx`](../../libs/services/src/helix/services/screen/Screen.hx), `import helix.services.screen.Screen;`, implements `IPollable`
 
 Provides the window as a game draws to it: a design size fitted to the window, fullscreen asked for with the windowed size and place to go back to, whether the window was resized, and the window kept as it was between runs.
 
@@ -99,7 +99,7 @@ function poll():Void
 
 ## ScreenFit
 
-*abstract* in [`services/src/helix/services/screen/ScreenFit.hx`](../../services/src/helix/services/screen/ScreenFit.hx), `import helix.services.screen.ScreenFit;`
+*abstract* in [`libs/services/src/helix/services/screen/ScreenFit.hx`](../../libs/services/src/helix/services/screen/ScreenFit.hx), `import helix.services.screen.ScreenFit;`
 
 Specifies how `Screen` fits its design size to the window.
 
@@ -116,7 +116,7 @@ function toString():String
 
 ## ScreenOptions
 
-*class* in [`services/src/helix/services/screen/ScreenOptions.hx`](../../services/src/helix/services/screen/ScreenOptions.hx), `import helix.services.screen.ScreenOptions;`
+*class* in [`libs/services/src/helix/services/screen/ScreenOptions.hx`](../../libs/services/src/helix/services/screen/ScreenOptions.hx), `import helix.services.screen.ScreenOptions;`
 
 Represents how `Screen` starts: its design size and how it fits the window.
 

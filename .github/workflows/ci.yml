@@ -71,7 +71,7 @@ jobs:
             ~/.cache/helix/tools
             ~/Library/Caches/helix/tools
             ~/AppData/Local/helix/tools
-          key: helix-tools-${{ runner.os }}-${{ hashFiles('platform/src/helix/platform/tools/ShaderTools.hx') }}
+          key: helix-tools-${{ runner.os }}-${{ hashFiles('libs/platform/src/helix/platform/tools/ShaderTools.hx') }}
       - name: The tools' checks, the libraries' tests, Trig's bits on every target, the platform's C tests (Linux)
         env:
           SDL_AUDIO_DRIVER: dummy
@@ -123,7 +123,7 @@ jobs:
             ~/.cache/helix/tools
             ~/Library/Caches/helix/tools
             ~/AppData/Local/helix/tools
-          key: helix-tools-${{ runner.os }}-${{ hashFiles('platform/src/helix/platform/tools/ShaderTools.hx') }}
+          key: helix-tools-${{ runner.os }}-${{ hashFiles('libs/platform/src/helix/platform/tools/ShaderTools.hx') }}
       - name: The platform's examples and graphics tests, natively (GL, and SDL_GPU on lavapipe) and in Chromium
         env:
           SDL_AUDIO_DRIVER: dummy
