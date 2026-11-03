@@ -2,7 +2,7 @@ import helix.services.saves.Saves;
 import helix.services.screen.Screen;
 
 /** Checks Screen over a fake window: no design (the window's own size, at its pixel ratio), the framebuffer followed as it changes
-	before the poll; a design letterboxed, fitted pixel-perfect, stretched and expanded, and positions both ways; a resize seen for one
+	before the poll; a design letterboxed, its safe area in design pixels, fitted pixel-perfect, stretched and expanded, and positions both ways; a resize seen for one
 	frame; leaving fullscreen going back to the windowed size and place; and the window kept between runs. */
 class ScreenTests {
 	static var checks = 0;
@@ -38,6 +38,13 @@ class ScreenTests {
 		check(screen.scaleX == 1600 / 320 && screen.viewportWidth == 1600 && screen.viewportHeight == 900 && screen.viewportY == 150,
 			"letterbox: as large as fits whole, bars above and below");
 		check(near(screen.toDesignX(800), 160) && near(screen.toDesignY(150), 0) && near(screen.toScreenY(180), 1050), "positions both ways");
+		check(screen.safeAreaX == 0 && screen.safeAreaY == 0 && screen.safeAreaWidth == 320 && screen.safeAreaHeight == 180,
+			"no insets: the safe area is the area drawn in");
+		window.insetLeft = window.insetRight = 44;
+		window.insetTop = 100;
+		check(near(screen.safeAreaX, 17.6) && near(screen.safeAreaY, 10) && near(screen.safeAreaWidth, 284.8) && near(screen.safeAreaHeight, 170),
+			"the safe area in design pixels, held to the area drawn in");
+		window.insetLeft = window.insetRight = window.insetTop = 0;
 		screen.setDesignSize(320, 180, PixelPerfect);
 		check(screen.scaleX == 5 && screen.viewportWidth == 1600, "pixel-perfect: a whole number");
 		window.logicalWidth = 700;

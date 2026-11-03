@@ -36,6 +36,24 @@ interface IWindow {
 	/** Gets the window's inner height, in logical pixels. In a page it is the viewport's height. */
 	var height(get, never):Int;
 
+	/** Gets the left edge of the safe area, in logical pixels from the window's left.
+
+		The safe area is the part of the window that no notch, rounded corner or system bar covers, where a HUD and buttons go; the
+		window's whole inside where nothing does, as on a desktop. Natively it is SDL's (`SDL_GetWindowSafeArea`). In a page it is the
+		viewport less CSS's `env(safe-area-inset-*)`, which a browser reports only to a page whose viewport meta tag has
+		`viewport-fit=cover` (`<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">`): without it the
+		browser keeps the page inside the safe area itself, and the safe area is the whole viewport. */
+	var safeAreaX(get, never):Int;
+
+	/** Gets the top edge of the safe area, in logical pixels from the window's top. `safeAreaX` says what the safe area is. */
+	var safeAreaY(get, never):Int;
+
+	/** Gets the safe area's width, in logical pixels. `safeAreaX` says what the safe area is. */
+	var safeAreaWidth(get, never):Int;
+
+	/** Gets the safe area's height, in logical pixels. `safeAreaX` says what the safe area is. */
+	var safeAreaHeight(get, never):Int;
+
 	/** Asks for an inner size.
 
 		The window manager may give another size; `width` and `height` reflect what it gave. A fullscreen or maximized window keeps its

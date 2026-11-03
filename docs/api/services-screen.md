@@ -8,7 +8,7 @@
 
 Provides the window as a game draws to it: a design size fitted to the window, fullscreen asked for with the windowed size and place to go back to, whether the window was resized, and the window kept as it was between runs.
 
-The program constructs one over its `IWindow` and `IEvents`, and calls `poll` once a frame. With no design size, the design is the window's own logical size. With one, a game draws in design pixels into the viewport (`viewportX` to `viewportHeight`, framebuffer pixels, for `IGraphics.applyViewport`), and turns the mouse's or a finger's framebuffer position into design pixels with `toDesignX` and `toDesignY`. The sizes, scales and viewport follow the window's framebuffer as it is when read, so a page's canvas resized between frames is seen before the next poll.
+The program constructs one over its `IWindow` and `IEvents`, and calls `poll` once a frame. With no design size, the design is the window's own logical size. With one, a game draws in design pixels into the viewport (`viewportX` to `viewportHeight`, framebuffer pixels, for `IGraphics.applyViewport`), and turns the mouse's or a finger's framebuffer position into design pixels with `toDesignX` and `toDesignY`. A HUD lays out inside the safe area (`safeAreaX` to `safeAreaHeight`, design pixels), clear of a phone's notch and bars. The sizes, scales and viewport follow the window's framebuffer as it is when read, so a page's canvas resized between frames is seen before the next poll.
 
 ```haxe
 var screen = new Screen(window, events, {designWidth: 320, designHeight: 180, fit: PixelPerfect});
@@ -32,6 +32,10 @@ var viewportX(get, never):Int
 var viewportY(get, never):Int
 var viewportWidth(get, never):Int
 var viewportHeight(get, never):Int
+var safeAreaX(get, never):Float
+var safeAreaY(get, never):Float
+var safeAreaWidth(get, never):Float
+var safeAreaHeight(get, never):Float
 function toDesignX(x:Float):Float
 function toDesignY(y:Float):Float
 function toScreenX(x:Float):Float
@@ -62,6 +66,11 @@ function poll():Void
 - `viewportY`: Gets the top edge of the area drawn in, in framebuffer pixels from the top.
 - `viewportWidth`: Gets the width of the area drawn in, in framebuffer pixels.
 - `viewportHeight`: Gets the height of the area drawn in, in framebuffer pixels.
+- `safeAreaX`: Gets the left edge of the safe area, in design pixels: where a HUD's left edge goes.
+  The safe area is the part of the window that no notch, rounded corner or system bar covers (`IWindow.safeAreaX`), here the part of it inside the area drawn in, 0 to `width` across and 0 to `height` down. On a desktop it is the whole area drawn in.
+- `safeAreaY`: Gets the top edge of the safe area, in design pixels. `safeAreaX` says what the safe area is.
+- `safeAreaWidth`: Gets the safe area's width, in design pixels. `safeAreaX` says what the safe area is.
+- `safeAreaHeight`: Gets the safe area's height, in design pixels. `safeAreaX` says what the safe area is.
 - `toDesignX`: Returns where a framebuffer position across is in design pixels, as the mouse's or a finger's.
   - `x`: The position, in framebuffer pixels from the left.
   - returns: The position in design pixels; outside 0 to `width` on a bar.

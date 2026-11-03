@@ -12,6 +12,7 @@ enum {HELIX_WINDOW_EVENT_SHOWN,HELIX_WINDOW_EVENT_HIDDEN,HELIX_WINDOW_EVENT_MOVE
 void helix_window_watch(int on);int helix_window_event_count(int kind);const char *helix_window_error(void);
 float helix_window_pixel_ratio(void);
 void helix_window_set_title(const char*title);int helix_window_width(void);int helix_window_height(void);int helix_window_set_size(int w,int h);
+int helix_window_safe_x(void);int helix_window_safe_y(void);int helix_window_safe_width(void);int helix_window_safe_height(void);
 int helix_window_can_move(void);int helix_window_x(void);int helix_window_y(void);int helix_window_set_position(int x,int y);
 int helix_window_maximized(void);int helix_window_minimized(void);int helix_window_set_maximized(int on);int helix_window_set_minimized(int on);
 int helix_window_raise(void);int helix_window_has_focus(void);void helix_window_set_icon(int w,int h,const void *rgba);float helix_window_opacity(void);int helix_window_set_opacity(float o);

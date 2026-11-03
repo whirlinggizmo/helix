@@ -26,7 +26,7 @@ typedef Request = {
 	and never during its call, with `done` once the window reflects it or `failed` and a reason; a request refused before it asks returns
 	false and answers nothing. What a page can't do fails and what it can is done; natively, what the window manager does is its own, so
 	each answer is listed (`<request>: done` or `failed: <reason>`) as what this desktop honors. The mouse's lock and the clipboard
-	answer the same way, and are checked here too: natively each is done, the clipboard reading back what was put on it; in a page the
+	answer the same way, and are checked here too, as is the safe area (`checkSafeArea`): natively each is done, the clipboard reading back what was put on it; in a page the
 	lock already as asked is done, and the clipboard answers as the browser decides.
 
 	Built from the hxml files beside it: in a page, and natively over SDL3 on the display it is given (a private one in the checks). It
@@ -134,8 +134,32 @@ class WindowTests {
 			failures.push(message);
 	}
 
+	/** Checks the safe area: natively on a private display, the whole window; in a page, the viewport less the insets the page's query
+		names (`safeArea=top,right,bottom,left`, CSS pixels, which `tools/page_check.cjs` has Chromium emulate), or the whole viewport. */
+	static function checkSafeArea():Void {
+		var top = 0, right = 0, bottom = 0, left = 0;
+		#if js
+		var given = new js.html.URLSearchParams(js.Browser.window.location.search).get("safeArea");
+		if (given != null) {
+			var sides = [for (side in given.split(",")) Std.parseInt(side)];
+			top = sides[0];
+			right = sides[1];
+			bottom = sides[2];
+			left = sides[3];
+		}
+		#end
+		var found = '${window.safeAreaX},${window.safeAreaY} ${window.safeAreaWidth}x${window.safeAreaHeight} in ${window.width}x${window.height}';
+		printed.push('safe area: $found');
+		check(window.safeAreaX == left
+			&& window.safeAreaY == top
+			&& window.safeAreaWidth == window.width - left - right
+			&& window.safeAreaHeight == window.height - top - bottom,
+			'safe area $found, expected the window less $top,$right,$bottom,$left');
+	}
+
 	/** Makes the requests: on both targets, then each target's own. */
 	static function setup():Void {
+		checkSafeArea();
 		requests = [
 			{name: "requestSize(0, 10)", ask: (d, f) -> window.requestSize(0, 10, d, f), asks: false},
 			{name: "requestMinimumSize(-1, 0)", ask: (d, f) -> window.requestMinimumSize(-1, 0, d, f), asks: false},

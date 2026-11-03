@@ -993,6 +993,10 @@ var focused(get, never):Bool
 var title(get, set):String
 var width(get, never):Int
 var height(get, never):Int
+var safeAreaX(get, never):Int
+var safeAreaY(get, never):Int
+var safeAreaWidth(get, never):Int
+var safeAreaHeight(get, never):Int
 function requestSize(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 function canMove():Bool
 var x(get, never):Int
@@ -1069,6 +1073,10 @@ var focused(get, never):Bool
 var title(get, set):String
 var width(get, never):Int
 var height(get, never):Int
+var safeAreaX(get, never):Int
+var safeAreaY(get, never):Int
+var safeAreaWidth(get, never):Int
+var safeAreaHeight(get, never):Int
 function requestSize(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 function canMove():Bool
 var x(get, never):Int

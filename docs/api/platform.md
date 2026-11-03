@@ -1245,6 +1245,10 @@ var focused(get, never):Bool
 var title(get, set):String
 var width(get, never):Int
 var height(get, never):Int
+var safeAreaX(get, never):Int
+var safeAreaY(get, never):Int
+var safeAreaWidth(get, never):Int
+var safeAreaHeight(get, never):Int
 function requestSize(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Bool
 function canMove():Bool
 var x(get, never):Int
@@ -1289,6 +1293,11 @@ var onClose:Null<() -> Void>
 - `title`: Gets or sets the title bar's text. In a page it is the document's title.
 - `width`: Gets the window's inner width, in logical pixels. In a page it is the viewport's width.
 - `height`: Gets the window's inner height, in logical pixels. In a page it is the viewport's height.
+- `safeAreaX`: Gets the left edge of the safe area, in logical pixels from the window's left.
+  The safe area is the part of the window that no notch, rounded corner or system bar covers, where a HUD and buttons go; the window's whole inside where nothing does, as on a desktop. Natively it is SDL's (`SDL_GetWindowSafeArea`). In a page it is the viewport less CSS's `env(safe-area-inset-*)`, which a browser reports only to a page whose viewport meta tag has `viewport-fit=cover` (`<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">`): without it the browser keeps the page inside the safe area itself, and the safe area is the whole viewport.
+- `safeAreaY`: Gets the top edge of the safe area, in logical pixels from the window's top. `safeAreaX` says what the safe area is.
+- `safeAreaWidth`: Gets the safe area's width, in logical pixels. `safeAreaX` says what the safe area is.
+- `safeAreaHeight`: Gets the safe area's height, in logical pixels. `safeAreaX` says what the safe area is.
 - `requestSize`: Asks for an inner size.
   - `width`: The width, in logical pixels.
   - `height`: The height, in logical pixels.

@@ -12,7 +12,8 @@ import helix.services.saves.Saves;
 	The program constructs one over its `IWindow` and `IEvents`, and calls `poll` once a frame. With no design size, the design is the
 	window's own logical size. With one, a game draws in design pixels into the viewport (`viewportX` to `viewportHeight`, framebuffer
 	pixels, for `IGraphics.applyViewport`), and turns the mouse's or a finger's framebuffer position into design pixels with `toDesignX`
-	and `toDesignY`. The sizes, scales and viewport follow the window's framebuffer as it is when read, so a page's canvas resized
+	and `toDesignY`. A HUD lays out inside the safe area (`safeAreaX` to `safeAreaHeight`, design pixels), clear of a phone's notch and
+	bars. The sizes, scales and viewport follow the window's framebuffer as it is when read, so a page's canvas resized
 	between frames is seen before the next poll.
 
 	```haxe
@@ -149,6 +150,40 @@ class Screen implements IPollable {
 		follow();
 		return viewportHeight;
 	}
+
+	/** Gets the left edge of the safe area, in design pixels: where a HUD's left edge goes.
+
+		The safe area is the part of the window that no notch, rounded corner or system bar covers (`IWindow.safeAreaX`), here the part of
+		it inside the area drawn in, 0 to `width` across and 0 to `height` down. On a desktop it is the whole area drawn in. */
+	public var safeAreaX(get, never):Float;
+
+	function get_safeAreaX():Float
+		return clampX(toDesignX(window.safeAreaX * window.pixelRatio));
+
+	/** Gets the top edge of the safe area, in design pixels. `safeAreaX` says what the safe area is. */
+	public var safeAreaY(get, never):Float;
+
+	function get_safeAreaY():Float
+		return clampY(toDesignY(window.safeAreaY * window.pixelRatio));
+
+	/** Gets the safe area's width, in design pixels. `safeAreaX` says what the safe area is. */
+	public var safeAreaWidth(get, never):Float;
+
+	function get_safeAreaWidth():Float
+		return clampX(toDesignX((window.safeAreaX + window.safeAreaWidth) * window.pixelRatio)) - safeAreaX;
+
+	/** Gets the safe area's height, in design pixels. `safeAreaX` says what the safe area is. */
+	public var safeAreaHeight(get, never):Float;
+
+	function get_safeAreaHeight():Float
+		return clampY(toDesignY((window.safeAreaY + window.safeAreaHeight) * window.pixelRatio)) - safeAreaY;
+
+	// A design position held to the area drawn in.
+	function clampX(x:Float):Float
+		return x < 0 ? 0 : x > width ? width : x;
+
+	function clampY(y:Float):Float
+		return y < 0 ? 0 : y > height ? height : y;
 
 	/** Returns where a framebuffer position across is in design pixels, as the mouse's or a finger's.
 

@@ -42,6 +42,10 @@ extern class WindowBridge {
 	@:native("helix_window_width") static function width():Int;
 	@:native("helix_window_height") static function height():Int;
 	@:native("helix_window_set_size") static function setSize(width:Int, height:Int):Int;
+	@:native("helix_window_safe_x") static function safeX():Int;
+	@:native("helix_window_safe_y") static function safeY():Int;
+	@:native("helix_window_safe_width") static function safeWidth():Int;
+	@:native("helix_window_safe_height") static function safeHeight():Int;
 	@:native("helix_window_can_move") static function canMove():Int;
 	@:native("helix_window_x") static function x():Int;
 	@:native("helix_window_y") static function y():Int;

@@ -90,10 +90,11 @@ def build(directory, hxml, env):
     subprocess.run(['haxe', hxml], cwd=directory, env=env, check=True)
 
 
-def run(name, directory, main, browser, native_run, page_run, native_frames=FRAMES, native_extra=None):
+def run(name, directory, main, browser, native_run, page_run, native_frames=FRAMES, native_extra=None, query=''):
     """Builds and runs one program both ways, in directory with its main class main, the page in browser: native_run(label, completed) and
     page_run(printed, screenshot) say what's wrong with each run, as a list of problems. native_frames is how many frames a native run
-    lasts, which a private display doesn't pace; native_extra what a native run's environment adds. The problems found."""
+    lasts, which a private display doesn't pace; native_extra what a native run's environment adds; query what the page's query adds
+    (tools/page_check.cjs reads safeArea from it). The problems found."""
     import pins
     from native_build import env as native_env
     env = pins.use_haxelib()
@@ -123,7 +124,7 @@ def run(name, directory, main, browser, native_run, page_run, native_frames=FRAM
     out.mkdir(parents=True, exist_ok=True)
     screenshot = out / 'web.png'
     browser_env = {k: v for k, v in os.environ.items() if k not in ('VK_DRIVER_FILES', 'VK_ICD_FILENAMES')}
-    ran = subprocess.run(['node', ROOT / 'tools/page_check.cjs', browser, str(directory / 'web'), f'?frames={FRAMES}', str(screenshot)], cwd=ROOT, env=browser_env, capture_output=True, text=True, encoding='utf-8')
+    ran = subprocess.run(['node', ROOT / 'tools/page_check.cjs', browser, str(directory / 'web'), f'?frames={FRAMES}{query}', str(screenshot)], cwd=ROOT, env=browser_env, capture_output=True, text=True, encoding='utf-8')
     if ran.returncode:
         problems.append(f'browser run failed\n{ran.stdout}{ran.stderr}')
     else:
@@ -155,9 +156,9 @@ def example(name, browser):
     return run(name, directory, 'Main', browser, native_run, page_run)
 
 
-def tests(name, directory, main, page, browser, backends=True):
-    """Builds and runs a test program both ways (one that ends with {passed, checks, failures}), the page's run on page, natively on
-    each graphics backend it builds for (backends) or none; the problems found."""
+def tests(name, directory, main, page, browser, backends=True, query=''):
+    """Builds and runs a test program both ways (one that ends with {passed, checks, failures}), the page's run on page with query added
+    to its query, natively on each graphics backend it builds for (backends) or none; the problems found."""
 
     def outcome(where, result):
         if result is None:
@@ -176,7 +177,7 @@ def tests(name, directory, main, page, browser, backends=True):
         found = outcome(f'natively on {label}' if backends else 'natively', json.loads(lines[-1]))
         return found or ([f'exited {ran.returncode}\n{ran.stderr}'] if ran.returncode else [])
 
-    return run(name, directory, main, browser, native_run, lambda printed, _: outcome(f'in the page ({page})', printed['result']))
+    return run(name, directory, main, browser, native_run, lambda printed, _: outcome(f'in the page ({page})', printed['result']), query=query)
 
 
 def graphics(browser):
@@ -190,8 +191,8 @@ def audio(browser):
 
 
 def window(browser):
-    """Builds and runs the window tests both ways; the problems found."""
-    return tests('window', WINDOW, 'WindowTests', 'the page', browser, backends=False)
+    """Builds and runs the window tests both ways, the page's safe area emulated as a phone's with a notch; the problems found."""
+    return tests('window', WINDOW, 'WindowTests', 'the page', browser, backends=False, query='&safeArea=47,0,34,0')
 
 
 def main():

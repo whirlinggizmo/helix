@@ -95,6 +95,33 @@ class FakeWindow implements IWindow {
 	function get_height():Int
 		return logicalHeight;
 
+	/** Gets or sets what a notch or a bar covers on each side, in logical pixels: the safe area is the window less these. */
+	public var insetLeft = 0;
+
+	public var insetTop = 0;
+	public var insetRight = 0;
+	public var insetBottom = 0;
+
+	public var safeAreaX(get, never):Int;
+
+	function get_safeAreaX():Int
+		return insetLeft;
+
+	public var safeAreaY(get, never):Int;
+
+	function get_safeAreaY():Int
+		return insetTop;
+
+	public var safeAreaWidth(get, never):Int;
+
+	function get_safeAreaWidth():Int
+		return logicalWidth - insetLeft - insetRight;
+
+	public var safeAreaHeight(get, never):Int;
+
+	function get_safeAreaHeight():Int
+		return logicalHeight - insetTop - insetBottom;
+
 	public function requestSize(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Bool {
 		if (width < 1 || height < 1)
 			return false;

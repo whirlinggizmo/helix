@@ -75,6 +75,42 @@ class DomWindowAdapter implements IWindow {
 	function get_height():Int
 		return Browser.window.innerHeight;
 
+	// An element out of sight whose padding is the page's safe-area insets, made at the first read: a script reads env() only through
+	// a style.
+	var insets:Null<js.html.DivElement> = null;
+
+	// The safe-area inset on a side, in CSS pixels, rounded out.
+	function inset(side:String):Int {
+		if (insets == null) {
+			insets = Browser.document.createDivElement();
+			insets.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;"
+				+ "padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)";
+			Browser.document.body.appendChild(insets);
+		}
+		var value = Std.parseFloat(Browser.window.getComputedStyle(insets).getPropertyValue('padding-$side'));
+		return Math.isNaN(value) || value <= 0 ? 0 : Math.ceil(value);
+	}
+
+	public var safeAreaX(get, never):Int;
+
+	function get_safeAreaX():Int
+		return Std.int(Math.min(inset("left"), width));
+
+	public var safeAreaY(get, never):Int;
+
+	function get_safeAreaY():Int
+		return Std.int(Math.min(inset("top"), height));
+
+	public var safeAreaWidth(get, never):Int;
+
+	function get_safeAreaWidth():Int
+		return Std.int(Math.max(0, width - safeAreaX - inset("right")));
+
+	public var safeAreaHeight(get, never):Int;
+
+	function get_safeAreaHeight():Int
+		return Std.int(Math.max(0, height - safeAreaY - inset("bottom")));
+
 	// Answers at the next events' poll: done when reached says the request is done by then, else failed with the reason.
 	function answer(reached:Void->Bool, reason:String, done:Null<Void->Void>, failed:Null<String->Void>):Bool {
 		PollAnswers.add(() -> {

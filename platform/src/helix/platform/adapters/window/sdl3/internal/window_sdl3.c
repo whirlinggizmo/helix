@@ -11,6 +11,12 @@ float helix_window_pixel_ratio(void){float d=WINDOW?SDL_GetWindowPixelDensity(WI
 void helix_window_set_title(const char*title){SDL_SetWindowTitle(WINDOW,title);}
 int helix_window_width(void){int w=0,h=0;SDL_GetWindowSize(WINDOW,&w,&h);return w;}
 int helix_window_height(void){int w=0,h=0;SDL_GetWindowSize(WINDOW,&w,&h);return h;}
+/* The safe area SDL reports, or the whole window where it reports none. */
+static SDL_Rect safe_area(void){SDL_Rect r={0,0,0,0};if(!SDL_GetWindowSafeArea(WINDOW,&r)||r.w<=0||r.h<=0){r.x=r.y=0;SDL_GetWindowSize(WINDOW,&r.w,&r.h);}return r;}
+int helix_window_safe_x(void){return safe_area().x;}
+int helix_window_safe_y(void){return safe_area().y;}
+int helix_window_safe_width(void){return safe_area().w;}
+int helix_window_safe_height(void){return safe_area().h;}
 int helix_window_set_size(int w,int h){return SDL_SetWindowSize(WINDOW,w,h);}
 /* Whether a move can work: not on Wayland, nor on X11 served by XWayland, where the compositor places windows and ignores a program's
    moves (asked of X as the XWAYLAND extension). */

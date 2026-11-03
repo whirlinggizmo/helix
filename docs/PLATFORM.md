@@ -45,6 +45,13 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
 (natively through `surface.h`, which the window's C implements).
 
 - `title`; `width`, `height` (logical pixels) and `framebufferWidth`, `framebufferHeight`, `pixelRatio`; `focused`.
+- The safe area, `safeAreaX`, `safeAreaY`, `safeAreaWidth`, `safeAreaHeight` (logical pixels in the window): what no notch, rounded
+  corner or system bar covers, the whole window where nothing does. Natively SDL's `SDL_GetWindowSafeArea`; in a page the viewport
+  less CSS's `env(safe-area-inset-*)`, read through an unseen element's padding. A browser reports the insets only to a page whose
+  viewport meta tag has `viewport-fit=cover`, as the libraries' page templates do
+  (`<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">`); without it the browser keeps the page
+  inside the safe area, and the safe area is the whole viewport. The window tests check it natively (a private display's is the whole
+  window) and in Chromium with insets emulated (`tools/page_check.cjs`, a query's `safeArea`).
 - `visible`, `requestVisible(visible, ?done, ?failed)`; `requestSize(width, height, ?done, ?failed)`, `canMove`, `x`, `y`,
   `requestPosition(x, y, ?done, ?failed)`; `canFullscreen`, `fullscreen`, `requestFullscreen(enabled, ?done, ?failed)`;
   `orientation`, `requestOrientation(orientation, ?done, ?failed)`.

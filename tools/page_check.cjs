@@ -4,7 +4,8 @@
 // seconds, until it holds the result. Run by tools/platform_checks.py, which checks an example's screenshot and a test's result.
 // BROWSER is a Chromium to run, or "" for Playwright's own (the repository's, build/tools, or the one HELIX_PLAYWRIGHT names). The page
 // runs on the GPU (Vulkan on Linux, Metal on macOS); where the page says it can't draw it runs again on SwiftShader. Audio is muted, and
-// allowed to start without a gesture so a test page can check it.
+// allowed to start without a gesture so a test page can check it. A query naming safeArea=TOP,RIGHT,BOTTOM,LEFT (CSS pixels) has Chromium
+// report those as the page's env(safe-area-inset-*), as a phone with a notch would.
 const [browserPath,site,query,output]=require('./cli.cjs').args(__filename,['browser','site','query','output']);
 const path=require('path');
 const {chromium}=require(process.env.HELIX_PLAYWRIGHT||path.join(__dirname,'../build/tools/node_modules/playwright'));
@@ -27,6 +28,9 @@ async function run(address,args){
  const browser=await chromium.launch({executablePath:browserPath||undefined,headless:true,args:['--no-sandbox','--mute-audio','--autoplay-policy=no-user-gesture-required',...args]});const errors=[];
  try{const page=await browser.newPage({viewport:{width:800,height:600}});
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+  const safeArea=new URLSearchParams(query).get('safeArea');
+  if(safeArea){const [top,right,bottom,left]=safeArea.split(',').map(Number);
+   await (await page.context().newCDPSession(page)).send('Emulation.setSafeAreaInsetsOverride',{insets:{top,right,bottom,left}});}
   await page.goto(address);
   // A second of frames, then two more animation frames so the last one drawn is composited.
   await page.waitForTimeout(1000);

@@ -114,6 +114,26 @@ class Sdl3WindowAdapter implements IWindow {
 	function get_height():Int
 		return WindowBridge.height();
 
+	public var safeAreaX(get, never):Int;
+
+	function get_safeAreaX():Int
+		return WindowBridge.safeX();
+
+	public var safeAreaY(get, never):Int;
+
+	function get_safeAreaY():Int
+		return WindowBridge.safeY();
+
+	public var safeAreaWidth(get, never):Int;
+
+	function get_safeAreaWidth():Int
+		return WindowBridge.safeWidth();
+
+	public var safeAreaHeight(get, never):Int;
+
+	function get_safeAreaHeight():Int
+		return WindowBridge.safeHeight();
+
 	public function requestSize(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Bool {
 		if (width < 1 || height < 1)
 			return false;
