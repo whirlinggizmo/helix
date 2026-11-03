@@ -264,9 +264,10 @@ interface IWindow {
 
 	/** Reads a file dropped on the window, one the last `FilesDropped` event counted.
 
-		One of `read` or `failed` is called once, during this call or later: natively during it, in a page later. Natively the file is
-		read from where it is on disk, so one moved or changed since the drop reads as it is now. In a page it is the File the browser
-		gave, kept until the next drop.
+		One of `read` or `failed` is called once, never during the call: natively at the next `IEvents.poll`, in a page once the browser
+		has read it, or for an index no drop gave or a file over `maxBytes`, at the next poll. Natively the file is read from where it is
+		on disk then, so one moved or changed since the drop reads as it is then. In a page it is the File the browser gave, kept until
+		the next drop.
 		@param fileIndex  The file, 0 to the event's count - 1.
 		@param maxBytes  The largest file to read; a larger one fails.
 		@param read  Receives the file's name, without its directory, and its bytes.

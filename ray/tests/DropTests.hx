@@ -7,7 +7,8 @@ import helix.ray.internal.Runtime;
 	drop's reading is set as the program starts, so a drop before either is first called is read; a drop's files are listed under
 	helix-ray's own paths, which the assets read; the next drop's replace them; `UnloadDroppedFiles` lets go of the list, the files staying;
 	a dropped file that isn't text read by `LoadFileTextAsync` as raylib's `LoadFileText` reads it. On
-	a window whose dropped files the test sets (services' `FakeWindow`), without events: a drop is given as `Runtime`'s poll gives one. */
+	a window whose dropped files the test sets (services' `FakeWindow`), without events: a drop is given as `Runtime`'s poll gives one, and
+	its files read at the window's next answer, as the platform reads them at the next poll. */
 @:access(helix.ray.internal.Runtime)
 class DropTests {
 	static var checks = 0;
@@ -44,6 +45,8 @@ class DropTests {
 		window.dropped.push({name: "level 1.txt", bytes: Bytes.ofString("one")});
 		window.dropped.push({name: "art.png", bytes: Bytes.ofString("two")});
 		Runtime.dropping(2);
+		check(!IsFileDropped(), "a drop's files are read after the call, at the window's next answer");
+		window.answer();
 		var first = LoadDroppedFiles();
 		check(IsFileDropped()
 			&& first.count == 2
@@ -65,6 +68,7 @@ class DropTests {
 		window.dropped.resize(0);
 		window.dropped.push({name: "", bytes: Bytes.ofString("three")});
 		Runtime.dropping(1);
+		window.answer();
 		var second = LoadDroppedFiles();
 		check(second.count == 1 && second.paths[0] == "helix-ray-dropped/3/file", 'the next drop replaces it: ${second.paths}');
 		var gone:Null<String> = null;
@@ -78,6 +82,7 @@ class DropTests {
 		window.dropped.resize(0);
 		window.dropped.push({name: "noise.bin", bytes: Bytes.ofHex("61fffb9062006364")});
 		Runtime.dropping(1);
+		window.answer();
 		var text:Null<String> = null;
 		LoadFileTextAsync(LoadDroppedFiles().paths[0], t -> text = t, e -> throw e);
 		pump(() -> text != null);

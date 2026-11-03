@@ -338,12 +338,12 @@ class DomWindowAdapter implements IWindow {
 
 	public function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void {
 		var file = DomPage.dropped[fileIndex];
-		if (fileIndex < 0 || file == null) {
-			js.Browser.window.setTimeout(() -> failed('No dropped file $fileIndex'), 0);
-			return;
-		}
-		if (file.size > maxBytes) {
-			js.Browser.window.setTimeout(() -> failed("File exceeds byte limit"), 0);
+		if (fileIndex < 0 || file == null || file.size > maxBytes) {
+			var reason = file == null || fileIndex < 0 ? 'No dropped file $fileIndex' : "File exceeds byte limit";
+			PollAnswers.add(() -> {
+				failed(reason);
+				return true;
+			});
 			return;
 		}
 		(cast file : Dynamic).arrayBuffer().then(data -> {

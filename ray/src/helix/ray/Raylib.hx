@@ -1848,7 +1848,7 @@ class Raylib {
 
 	/** Returns whether files were dropped on the window, natively from the desktop and in a page on the canvas. It stays true until
 		`UnloadDroppedFiles`, and a new drop's files replace the last one's, as raylib's do. A dropped file counts once its bytes are read,
-		natively in the frame it is dropped, in a page a frame or so after.
+		natively in the frame after it is dropped, in a page a frame or so after.
 
 		@return  True while dropped files are held. */
 	public static inline function IsFileDropped():Bool

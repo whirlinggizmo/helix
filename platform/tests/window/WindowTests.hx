@@ -26,12 +26,15 @@ typedef Request = {
 	and never during its call, with `done` once the window reflects it or `failed` and a reason; a request refused before it asks returns
 	false and answers nothing. What a page can't do fails and what it can is done; natively, what the window manager does is its own, so
 	each answer is listed (`<request>: done` or `failed: <reason>`) as what this desktop honors. The mouse's lock and the clipboard
-	answer the same way, and are checked here too, as is the safe area (`checkSafeArea`): natively each is done, the clipboard reading back what was put on it; in a page the
+	answer the same way, and are checked here too, as are a dropped file read (`drop`) and the safe area (`checkSafeArea`): natively each is done, the clipboard reading back what was put on it; in a page the
 	lock already as asked is done, and the clipboard answers as the browser decides.
 
 	Built from the hxml files beside it: in a page, and natively over SDL3 on the display it is given (a private one in the checks). It
 	ends with `{passed, checks, failures, answers}` as JSON: printed natively, exiting 1 on a failure, and in a page in `window.helixResult`, null
 	until then. Run by `tools/platform_checks.py`. */
+#if cpp
+@:headerCode("#include <SDL3/SDL.h>")
+#end
 class WindowTests {
 	// How long a request may take to answer, in seconds: the native adapter fails one after a second.
 	static inline final TIMEOUT = 3.;
@@ -52,6 +55,12 @@ class WindowTests {
 	static var checks = 0;
 	static var failures:Array<String> = [];
 	static var printed:Array<String> = [];
+	// Called with a FilesDropped's count, after the poll delivering it; and what the dropped file read gave.
+	static var onDrop:Null<Int->Void>;
+	static var droppedName:Null<String>;
+	static var droppedBytes:Null<Bytes>;
+	// The dropped file's contents.
+	static final DROPPED = "helix drop";
 
 	static function main():Void {
 		#if js
@@ -82,6 +91,12 @@ class WindowTests {
 		False once every request has. */
 	static function tick():Bool {
 		events.poll();
+		for (event in events.events)
+			switch event {
+				case FilesDropped(count) if (onDrop != null):
+					onDrop(count);
+				case _:
+			}
 		if (next >= requests.length)
 			return false;
 		var request = requests[next], now = haxe.Timer.stamp();
@@ -161,6 +176,46 @@ class WindowTests {
 	static function setup():Void {
 		checkSafeArea();
 		requests = [
+			{
+				name: "a file dropped",
+				ask: (d, f) -> {
+					onDrop = count -> {
+						onDrop = null;
+						count == 1 ? d() : f('$count files');
+					};
+					drop();
+					return true;
+				},
+				expected: "done"
+			},
+			{
+				name: "readDroppedFile(0)",
+				ask: (d, f) -> {
+					window.readDroppedFile(0, 1 << 20, (name, bytes) -> {
+						droppedName = name;
+						droppedBytes = bytes;
+						d();
+					}, f);
+					return true;
+				},
+				expected: "done",
+				granted: () -> droppedName == "dropped.txt" && droppedBytes.toString() == DROPPED},
+			{
+				name: "readDroppedFile(0) over maxBytes",
+				ask: (d, f) -> {
+					window.readDroppedFile(0, 4, (_, _) -> d(), f);
+					return true;
+				},
+				expected: "failed"
+			},
+			{
+				name: "readDroppedFile(5)",
+				ask: (d, f) -> {
+					window.readDroppedFile(5, 1 << 20, (_, _) -> d(), f);
+					return true;
+				},
+				expected: "failed"
+			},
 			{name: "requestSize(0, 10)", ask: (d, f) -> window.requestSize(0, 10, d, f), asks: false},
 			{name: "requestMinimumSize(-1, 0)", ask: (d, f) -> window.requestMinimumSize(-1, 0, d, f), asks: false},
 			{name: "requestMonitorIndex(99)", ask: (d, f) -> window.requestMonitorIndex(99, d, f), asks: false},
@@ -278,6 +333,27 @@ class WindowTests {
 		]);
 		#end
 	}
+
+	/** Drops a file named dropped.txt holding `DROPPED` on the window, as the player would: natively SDL's drop events for a file
+		written beside the program, in a page a drop event on the canvas. */
+	static function drop():Void {
+		#if js
+		js.Syntax.code("(function(){var t=new DataTransfer();t.items.add(new File([{0}],'dropped.txt'));
+			document.getElementById('canvas').dispatchEvent(new DragEvent('drop',{dataTransfer:t,cancelable:true}));})()", DROPPED);
+		#else
+		var path = haxe.io.Path.join([Sys.getCwd(), "native", "dropped.txt"]);
+		sys.io.File.saveContent(path, DROPPED);
+		pushDrop(path);
+		#end
+	}
+
+	#if cpp
+	// SDL's events for one file dropped: the file, then the drop's end. SDL keeps the copy of the path as the event's data.
+
+	@:functionCode("SDL_Event e;SDL_zero(e);e.type=SDL_EVENT_DROP_FILE;e.drop.data=SDL_strdup(path.utf8_str());SDL_PushEvent(&e);
+		SDL_zero(e);e.type=SDL_EVENT_DROP_COMPLETE;SDL_PushEvent(&e);")
+	static function pushDrop(path:String):Void {}
+	#end
 
 	// A 1 x 1 PNG, put on the clipboard and read back.
 	static final PNG = haxe.crypto.Base64.decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==");

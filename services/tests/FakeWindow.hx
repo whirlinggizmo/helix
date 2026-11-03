@@ -4,7 +4,7 @@ import helix.platform.Orientation;
 
 /** A window whose state a test sets: 800 by 600 logical pixels at a pixel ratio of 1 until changed. Requests for size, place and
 	fullscreen are counted and granted at once, and the others' state set, their `done` called at the next `answer`, as a window manager
-	would answer at a later poll; a request named in `refusing` fails there instead, with its name. */
+	would answer at a later poll; a request named in `refusing` fails there instead, with its name. A dropped file is read there too. */
 class FakeWindow implements IWindow {
 	/** Gets or sets the logical size. */
 	public var logicalWidth = 800;
@@ -277,14 +277,11 @@ class FakeWindow implements IWindow {
 	/** Gets the files dropped, as name and bytes, which `readDroppedFile` reads by index. */
 	public final dropped:Array<{name:String, bytes:Bytes}> = [];
 
+	// Answered at the next answer(), as a poll answers it.
 	public function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void {
 		var file = dropped[fileIndex];
-		if (fileIndex < 0 || file == null)
-			failed('No dropped file $fileIndex');
-		else if (file.bytes.length > maxBytes)
-			failed("too large");
-		else
-			read(file.name, file.bytes);
+		due.push(() -> if (fileIndex < 0 || file == null) failed('No dropped file $fileIndex') else if (file.bytes.length > maxBytes) failed("too large") else
+			read(file.name, file.bytes));
 	}
 
 	public function canClose():Bool

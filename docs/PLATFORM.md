@@ -62,7 +62,8 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
 - The monitors: `monitorCount`, `monitorIndex`, `requestMonitorIndex(monitorIndex, ?done, ?failed)`, `getMonitorName`,
   `getMonitorX`, `getMonitorY`, `getMonitorWidth`, `getMonitorHeight`, `getMonitorRefreshRate` (0 in a page).
 - `readDroppedFile(fileIndex, maxBytes, read(name, bytes), failed(message))`: a file the last `FilesDropped` counted, its name without
-  its directory; natively read from its path during the call, in a page the File the canvas's drop gave, later.
+  its directory; answered never during the call, as a request is: natively read from its path at the next `IEvents.poll`, in a page
+  the File the canvas's drop gave, once the browser has read it.
 - `onClose`, a property: the call made once, the last before the window is gone (natively in `close`, in a page at pagehide). Not a
   place to save: a page's write started there isn't kept.
 - `close()` natively destroys the window and in a page does nothing (a script can't close its tab); `canClose()` says whether `close`

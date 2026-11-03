@@ -1846,7 +1846,7 @@ static function EndScissorMode():Void
   - returns: 0, success; 1 for null or "", as raylib 5.5's; -1, as raylib 6.2's for a directory not made, for a path that can't name one.
 - `UnloadDirectoryFiles`: Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave. There is nothing to free here, and the list is unchanged.
   - `files`: The listing.
-- `IsFileDropped`: Returns whether files were dropped on the window, natively from the desktop and in a page on the canvas. It stays true until `UnloadDroppedFiles`, and a new drop's files replace the last one's, as raylib's do. A dropped file counts once its bytes are read, natively in the frame it is dropped, in a page a frame or so after.
+- `IsFileDropped`: Returns whether files were dropped on the window, natively from the desktop and in a page on the canvas. It stays true until `UnloadDroppedFiles`, and a new drop's files replace the last one's, as raylib's do. A dropped file counts once its bytes are read, natively in the frame after it is dropped, in a page a frame or so after.
   - returns: True while dropped files are held.
 - `LoadDroppedFiles`: Returns the paths of the files last dropped. Each is helix-ray's own, `helix-ray-dropped/<n>/<name>`, which every load reads, as `LoadTextureAsync(path)`: the file's name is its last part, a character a path can't hold made `_`. A directory dropped isn't listed.
   - returns: The paths, `count` of them; `capacity` is 0, as raylib's.

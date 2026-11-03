@@ -1062,7 +1062,7 @@ final canvasId:String
 
 Provides `IWindow` on an SDL3 window, natively.
 
-The window opens with the adapter, before the graphics adapter that draws in it. A request answers at a later `Sdl3EventsAdapter` poll, as SDL reports the window's matching event, or fails after a second with none: SDL reports nothing when the window manager ignores a request. Moves are refused where the compositor places windows (Wayland, XWayland); orientation is a page's alone. A dropped file is read from its path, during the call.
+The window opens with the adapter, before the graphics adapter that draws in it. A request answers at a later `Sdl3EventsAdapter` poll, as SDL reports the window's matching event, or fails after a second with none: SDL reports nothing when the window manager ignores a request. Moves are refused where the compositor places windows (Wayland, XWayland); orientation is a page's alone. A dropped file is read from its path at the next poll.
 
 ```haxe
 function new(options:Sdl3WindowAdapterOptions)

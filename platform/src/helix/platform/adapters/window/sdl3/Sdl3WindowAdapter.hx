@@ -13,7 +13,7 @@ import helix.platform.adapters.window.sdl3.internal.WindowBridge;
 	The window opens with the adapter, before the graphics adapter that draws in it. A request answers at a later `Sdl3EventsAdapter`
 	poll, as SDL reports the window's matching event, or fails after a second with none: SDL reports nothing when the window manager
 	ignores a request. Moves are refused where the compositor places windows (Wayland, XWayland); orientation is a page's alone. A
-	dropped file is read from its path, during the call. */
+	dropped file is read from its path at the next poll. */
 class Sdl3WindowAdapter implements IWindow {
 	/** Opens the program's window.
 
@@ -297,23 +297,28 @@ class Sdl3WindowAdapter implements IWindow {
 	public function getMonitorHeight(monitorIndex:Int):Int
 		return isMonitor(monitorIndex) ? WindowBridge.displayHeight(monitorIndex) : 0;
 
+	// The path is taken now, as the next drop replaces the list; the file is read at the next events' poll.
 	public function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void {
-		if (fileIndex < 0 || fileIndex >= Sdl3Bridge.droppedCount()) {
-			failed('No dropped file $fileIndex');
-			return;
-		}
-		var path = (Sdl3Bridge.droppedPath(fileIndex) : String);
-		var bytes = try {
-			if (sys.FileSystem.stat(path).size > maxBytes) {
-				failed("File exceeds byte limit");
-				return;
+		var path:Null<String> = fileIndex >= 0
+			&& fileIndex < Sdl3Bridge.droppedCount() ? (Sdl3Bridge.droppedPath(fileIndex) : String) : null;
+		PollAnswers.add(() -> {
+			if (path == null) {
+				failed('No dropped file $fileIndex');
+				return true;
 			}
-			sys.io.File.getBytes(path);
-		} catch (error:Dynamic) {
-			failed(Std.string(error));
-			return;
-		}
-		read(haxe.io.Path.withoutDirectory(path), bytes);
+			var bytes = try {
+				if (sys.FileSystem.stat(path).size > maxBytes) {
+					failed("File exceeds byte limit");
+					return true;
+				}
+				sys.io.File.getBytes(path);
+			} catch (error:Dynamic) {
+				failed(Std.string(error));
+				return true;
+			}
+			read(haxe.io.Path.withoutDirectory(path), bytes);
+			return true;
+		});
 	}
 
 	public function canClose():Bool
