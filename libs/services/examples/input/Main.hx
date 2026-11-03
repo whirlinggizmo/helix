@@ -12,7 +12,7 @@ import helix.platform.IWindow;
 /** Shows Keyboard, Gamepads and Actions: one action, "jump", bound to Space and the first gamepad's bottom button, read each frame.
 
 	The screen is grey until that happens, then green. The window, its events and the loop are the platform's, written out by hand, as a
-	program does them until the layer above the services does. The `frames` option (`HELIX_FRAMES=60` natively, `?frames=60` in a page)
+	program does them until the layer above the services does. The `frames` option (`--frames=60` natively, `?frames=60` in a page)
 	stops it after that many frames. */
 class Main {
 	static inline final WAITING = 0xff1a1d26;

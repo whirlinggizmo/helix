@@ -17,8 +17,9 @@ interface ISystem {
 
 	/** Returns an option the program was started with.
 
-		Natively the option is the environment variable named HELIX_ followed by the name in capitals. In a page it is the URL's query
-		parameter of that name.
+		Natively the option is the command line's `--name=value`, or a bare `--name` for an empty value. When the command line doesn't
+		have it, it is the environment variable named HELIX_ followed by the name in capitals. In a page it is the URL's query parameter
+		of that name.
 		@param name  The option's name.
 		@return  The option's value, or null when it is not set. */
 	function getOption(name:String):Null<String>;

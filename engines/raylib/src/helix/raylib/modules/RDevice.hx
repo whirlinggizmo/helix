@@ -27,7 +27,7 @@ class RDevice {
 	// ---- Run options ----
 
 	/** Returns an option the program was started with: in a page, the URL's query parameter of that name (`?level=3`); natively, the
-		environment variable `HELIX_` and the name in capitals (`HELIX_LEVEL=3`).
+		command line's `--level=3`, or else the environment variable `HELIX_` and the name in capitals (`HELIX_LEVEL=3`).
 
 		@param name  The option's name.
 		@return  Its value, or null when it isn't set. */

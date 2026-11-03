@@ -13,7 +13,7 @@ import helix.services.shaders.ShaderValues;
 
 	The shader is `quad.vert` and `quad.frag`, compiled while the program builds. Its values are set by name: the vertex stage's
 	`offsetScale` once, the fragment stage's `tint` once and its `time` each frame (its handle found once, the frame's number over 60, so
-	a frame always looks alike), and its texture `image`, a 2x2 checker. Each frame hands the values to `IGraphics.draw` as they are. The `frames` option (`HELIX_FRAMES=60` natively, `?frames=60` in a page) stops
+	a frame always looks alike), and its texture `image`, a 2x2 checker. Each frame hands the values to `IGraphics.draw` as they are. The `frames` option (`--frames=60` natively, `?frames=60` in a page) stops
 	after that many frames. */
 class Main {
 	static var window:IWindow;

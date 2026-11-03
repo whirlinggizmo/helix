@@ -52,6 +52,7 @@ class HostReach {
 		"js.html.Document.location" => RUN_OPTION,
 		"js.html.URL.searchParams" => RUN_OPTION,
 		"Sys.getEnv" => RUN_OPTION,
+		"Sys.args" => RUN_OPTION,
 		"js.html.Window.matchMedia" => POINTER,
 		"js.html.Navigator.maxTouchPoints" => TOUCH_SCREEN,
 		"js.html.Screen.orientation" => ORIENTATION,

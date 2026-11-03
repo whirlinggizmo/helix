@@ -12,7 +12,7 @@ import helix.platform.tools.ShaderCompiler;
 	The shader is `shader.vert` and `shader.frag`, compiled while the program builds. The texture is 2 x 2 texels made here, repeated
 	across the square by the shader and sampled nearest. Each frame the vertex stage's block moves the square from side to side and the
 	fragment stage's block darkens and brightens it, both from the frame's number. Natively it draws with GL, or with SDL_GPU when built
-	with `-D sdl_gpu` (`build-native-gpu.hxml`). The `frames` option (`HELIX_FRAMES=60` natively, `?frames=60` in a page) stops after
+	with `-D sdl_gpu` (`build-native-gpu.hxml`). The `frames` option (`--frames=60` natively, `?frames=60` in a page) stops after
 	that many frames, for a check that runs it unattended. */
 class Main {
 	static var window:IWindow;

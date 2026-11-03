@@ -43,6 +43,13 @@ class Sdl3SystemAdapter implements ISystem {
 	}
 
 	public function getOption(name:String):Null<String> {
+		var flag = "--" + name;
+		for (arg in Sys.args()) {
+			if (arg == flag)
+				return "";
+			if (StringTools.startsWith(arg, flag + "="))
+				return arg.substr(flag.length + 1);
+		}
 		var value = Sdl3Bridge.getenv("HELIX_" + name.toUpperCase());
 		return value == null ? null : (value : String);
 	}

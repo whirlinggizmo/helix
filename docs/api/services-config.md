@@ -8,7 +8,7 @@
 
 Provides the options the program was started with, read as text, numbers or true and false, each with a fallback.
 
-Options come from `ISystem.getOption`. Natively an option is an environment variable named HELIX_ followed by the option's name in capitals. In a page it is a query parameter in the URL. The option `speed=2` is `HELIX_SPEED=2` natively and `?speed=2` in a page.
+Options come from `ISystem.getOption`. Natively an option is on the command line, or else an environment variable named HELIX_ followed by the option's name in capitals. In a page it is a query parameter in the URL. The option `speed=2` is `--speed=2` or `HELIX_SPEED=2` natively and `?speed=2` in a page.
 
 ```haxe
 var sound = config.getBool("audio", true);

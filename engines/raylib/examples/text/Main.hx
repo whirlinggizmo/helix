@@ -5,7 +5,7 @@ import helix.raylib.Vector2;
 
 /** raylib's text in a font of its own: a TrueType font loaded with `LoadFontAsync`, so it loads the same in a page and natively, and
 	drawn with `DrawTextEx` beside raylib's default font. The font is `web/assets/JetBrainsMono-Regular.ttf` (SIL Open Font License,
-	`web/assets/OFL.txt`). The `frames` option (`HELIX_FRAMES=60` natively, `?frames=60` in a page) stops it after that many frames. */
+	`web/assets/OFL.txt`). The `frames` option (`--frames=60` natively, `?frames=60` in a page) stops it after that many frames. */
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: text");

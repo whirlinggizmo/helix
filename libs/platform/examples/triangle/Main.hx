@@ -10,7 +10,7 @@ import helix.platform.tools.ShaderCompiler;
 
 	Each frame polls the events, starts the screen's pass, draws through one pipeline, ends the pass and presents. The shader is
 	`triangle.vert` and `triangle.frag`, compiled while the program builds. Natively it draws with GL, or with SDL_GPU when built with
-	`-D sdl_gpu` (`build-native-gpu.hxml`). The `frames` option (`HELIX_FRAMES=60` natively, `?frames=60` in a page) stops after that many
+	`-D sdl_gpu` (`build-native-gpu.hxml`). The `frames` option (`--frames=60` natively, `?frames=60` in a page) stops after that many
 	frames, for a check that runs it unattended. */
 class Main {
 	static var window:IWindow;

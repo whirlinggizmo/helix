@@ -30,7 +30,7 @@ import helix.services.shaders.Shaders;
 	reloader.assetsChanged = urls -> for (url in urls) assets.notifyUrlChanged(url);
 	```
 
-	Its `time` is the frame's number over 60, so a frame always looks alike; the `frames` option (`HELIX_FRAMES=60` natively,
+	Its `time` is the frame's number over 60, so a frame always looks alike; the `frames` option (`--frames=60` natively,
 	`?frames=60` in a page) stops after that many frames. */
 class Main {
 	static var window:IWindow;

@@ -490,7 +490,7 @@ static function CalibrateTilt():Void
 
 - `GetWindowSafeArea`: Returns the part of the window no notch, rounded corner or system bar covers, in the screen's coordinates (as `GetScreenWidth` measures): where a HUD and buttons go. On a desktop, or in a page without `viewport-fit=cover` in its viewport meta tag, it is the whole window.
   - returns: The safe area.
-- `GetRunOption`: Returns an option the program was started with: in a page, the URL's query parameter of that name (`?level=3`); natively, the environment variable `HELIX_` and the name in capitals (`HELIX_LEVEL=3`).
+- `GetRunOption`: Returns an option the program was started with: in a page, the URL's query parameter of that name (`?level=3`); natively, the command line's `--level=3`, or else the environment variable `HELIX_` and the name in capitals (`HELIX_LEVEL=3`).
   - `name`: The option's name.
   - returns: Its value, or null when it isn't set.
 - `IsPlatformWeb`: Returns whether the program runs in a browser page rather than natively.

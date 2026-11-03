@@ -13,7 +13,7 @@ import helix.render.Renderer;
 
 	The window, its events and the loop are the platform's, written out as a program does them until the layer above the services does.
 	Its motion follows the frame's number, a sixtieth of a second a frame, so a frame always looks alike; `-D sdl_gpu`
-	(`build-native-gpu.hxml`) draws with SDL_GPU, and the `frames` option (`HELIX_FRAMES=60` natively, `?frames=60` in a page) stops after
+	(`build-native-gpu.hxml`) draws with SDL_GPU, and the `frames` option (`--frames=60` natively, `?frames=60` in a page) stops after
 	that many frames. */
 class Main {
 	static var window:IWindow;

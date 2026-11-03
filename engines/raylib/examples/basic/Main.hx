@@ -1,6 +1,6 @@
 import helix.raylib.Raylib.*;
 
-/** raylib's basic window: text in the middle and a circle at the mouse, in raylib's own shape. The `frames` option (`HELIX_FRAMES=60`
+/** raylib's basic window: text in the middle and a circle at the mouse, in raylib's own shape. The `frames` option (`--frames=60`
 	natively, `?frames=60` in a page) stops it after that many frames. */
 class Main {
 	static function main():Void {

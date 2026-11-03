@@ -534,7 +534,7 @@ interface ISystem {
 	var company(default, null):String;               // helix-company, or DefaultCompany
 	var product(default, null):String;               // helix-product, or the executable's name natively and Game in a page
 	var device(get, never):Device;                  // what it runs on: browser, OS, architecture, touch screen, fine pointer
-	function getOption(name:String):Null<String>;   // natively the environment variable HELIX_<NAME>; in a page the URL's query parameter
+	function getOption(name:String):Null<String>;   // natively --name=value or HELIX_<NAME>; in a page the URL's query parameter
 	function getTime():Float;                       // seconds on a monotonic clock: performance.now in a page, SDL's natively
 	function getProgramDirectory():String;    // the files shipped with the program; "./" in a page, a URL
 	function getDataDirectory():String;     // where lasting files go; a database's name in a page

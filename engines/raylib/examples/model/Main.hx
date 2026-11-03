@@ -6,7 +6,7 @@ import helix.raylib.Vector3;
 
 /** raylib's model loading: a glTF model on a grid, the camera turning about it, in raylib's own shape, the model loaded with
 	`LoadModelAsync` so it loads the same in a page and natively. The model is `web/assets/trophy.glb`.
-	The `frames` option (`HELIX_FRAMES=60` natively, `?frames=60` in a page) stops it after that many frames. */
+	The `frames` option (`--frames=60` natively, `?frames=60` in a page) stops it after that many frames. */
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: a model");

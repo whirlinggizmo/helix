@@ -1,5 +1,5 @@
 # The patch example natively: haxe build-native.hxml -> native/Main, linking the SDL3 library HELIX_SDL3_LIBRARY names (BUILDING.md).
-# HELIX_FRAMES=60 stops it after 60 frames. The shipped files' and the server's manifests are written as it builds.
+# --frames=60 stops it after 60 frames. The shipped files' and the server's manifests are written as it builds.
 -lib helix-services
 -D helix-company=helix
 -D helix-product=patch-example

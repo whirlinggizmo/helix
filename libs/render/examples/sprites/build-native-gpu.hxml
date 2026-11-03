@@ -1,5 +1,5 @@
 # The sprites example natively, SDL3 drawing with SDL_GPU (Vulkan, Direct3D 12 or Metal): haxe build-native-gpu.hxml -> native-gpu/Main,
-# reading web/assets. HELIX_FRAMES=60 stops it after 60 frames.
+# reading web/assets. --frames=60 stops it after 60 frames.
 -lib helix-render
 -cp .
 -main Main
