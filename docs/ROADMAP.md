@@ -9,7 +9,7 @@
   Asked below it: helix-formats' `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions, and morph
   targets; helix-geometry's second texture coordinates, morph targets and mesh groups; helix-math's Euler orders, an object's `lookAt`
   and `Bounds3D` through a matrix. Then helix-raylib rebuilt on it (immediate, as raylib is, on helix-render directly).
-- **helix-scene and Gyre, HeliX's engine (`gyre/`, `helix.gyre`): HeliX on top of the libraries, not replaced by them.** helix-scene (`scene/`, `helix.scene`) is
+- **helix-scene and Gyre, HeliX's engine (`engines/gyre/`, `helix.gyre`): HeliX on top of the libraries, not replaced by them.** helix-scene (`libs/scene/`, `helix.scene`) is
   HeliX's scene code (its stage, 2D and 3D nodes, transforms, hierarchy, the walk that culls, gathers lights and sorts, picking) moved
   onto helix-render and made engine-neutral, the link rule applied (a 2D game carries no 3D): a port of HeliX's code, not a new
   design. Gyre is HeliX's game-level API (app, loader, UI, transitions, animator, autopilot) on helix-scene, helix-render and
@@ -45,13 +45,10 @@
 - **The layer above the services:** constructs the platform and the services for a target, runs the frame in order and ends with the
   saves written, so a program knows none of that; its spec is the `Main.hx` the services trial's three agents each wrote the same way.
   Whether it wears a known API or an engine's is GOALS' open path.
-- **Libraries apart from engines, next after helix-ray merges to `main` and before Gyre starts:** helix the umbrella; the
-  libraries (math, log, geometry, formats, platform, services, render, later scene and UI) know no consumer, and the engines over them
-  (helix-raylib, today's helix-ray; Gyre, what HeliX's engine becomes; a three.js-style one) may own the loop and keep statics. One
-  repository, `libs/` and `engines/` (moved with `git mv`, every tool, hxml, haxelib.json and doc naming a path changed with them),
-  `check_layers` refusing a library that reaches an engine and the engines' checks run on every library change, as no backward
-  compatibility means every caller changes in the same commit. helix-ray is renamed helix-raylib in the same move: its directory, its
-  haxelib name, its package (`helix.raylib`) and its defines (`helix-raylib-files` and the rest). Separate repositories, each engine
+- **Libraries apart from engines (done):** the libraries in `libs/` know no consumer, and the engines over them in `engines/` may own
+  the loop and keep statics (docs/PLAN.md); `check_layers` refuses a library that reaches an engine, and the engines' tests run on every
+  library change. helix-ray is helix-raylib: `engines/raylib/`, `-lib helix-raylib`, `import helix.raylib.Raylib.*;`, its defines
+  `helix-raylib-files`, `helix-raylib-native-root` and `helix-raylib-custom-frame-control`. Next, separate repositories, each engine
   pinning a library version, once the platform has held through a second consumer and is versioned.
 - **SDL3 with the platform:** a native build needs only Haxe and hxcpp (goal 6), so the platform haxelib ships the pinned SDL3 per
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.

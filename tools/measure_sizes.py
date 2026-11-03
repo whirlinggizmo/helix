@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Web sizes, measured (GOALS.md, 1): each library's ladder of programs (<library>/tests/sizes/), each rung adding one thing to the one
+"""Web sizes, measured (GOALS.md, 1): each library's and engine's ladder of programs (libs/<library>/tests/sizes/, engines/<engine>/tests/sizes/), each rung adding one thing to the one
 before and constructing only what it uses, so a rung's increment is what its feature costs; built for the browser as a release (-dce
 full, the analyzer's optimizations; a haxelib path holding this checkout's libraries), in docs/benchmarks.md; and a check against the
 committed baseline, docs/benchmarks.json. A library adds its ladder to LADDERS as it moves.

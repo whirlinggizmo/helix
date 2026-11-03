@@ -46,7 +46,7 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `helix.py` | The front door: `test [--native] [--audio-device]` runs the tools' checks, each library's tests on the interpreter and Node, the shader compiler's tests, Trig's bits across targets, and with `--native` the platform's C tests |
 | `tools/check_adapters.py` | The adapter rule (docs/ARCHITECTURE.md) on `libs/platform/src/helix/platform` and its adapters |
 | `tools/check_docs.py` | Every public type and member has a doc comment; nothing but DECISIONS.md and AGENTS.md names the earlier frameworks |
-| `tools/check_layers.py` | Each library names only itself and what it's built on; the platform's contracts don't know each other |
+| `tools/check_layers.py` | Each library names only itself and what it's built on, and no library reaches an engine; the platform's contracts don't know each other |
 | `tools/check_names.py` | 2D and 3D named apart (docs/CONVENTIONS.md) |
 | `tools/check_tools.py` | Every tool answers `--help`, refuses an argument it doesn't take, and is in this table |
 | `tools/check_types.py` | Every entry point type-checked on its targets (`--web`: the browser alone) |
@@ -55,7 +55,7 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `tools/format.py` | haxe-formatter over the libraries (`--check` only checks) |
 | `tools/gen_apidoc.py` | The API reference from the doc comments: `docs/api` (committed) and `build/api` (`--check`) |
 | `tools/gen_raylib.py` | helix-raylib's `Raylib.hx`, `Raymath.hx` and `Rlgl.hx`: forwards to each function of its sections (`engines/raylib/src/helix/raylib/modules`, read through `haxe -xml`), by raylib's modules, and the refusals of what helix-raylib won't or doesn't yet have (`--check`) |
-| `tools/measure_sizes.py` | Each library's web size ladder (`<library>/tests/sizes`) against `docs/benchmarks.json` (`--write`, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
+| `tools/measure_sizes.py` | Each library's and engine's web size ladder (`<directory>/tests/sizes`) against `docs/benchmarks.json` (`--write`, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
 | `tools/native_build.py` | hxcpp's environment for the adapters' C, and the platform's C-only tests built with CMake (a module) |
 | `tools/page_check.cjs` | A page in headless Chromium: its errors, its result and a screenshot (run by `platform_checks.py`) |
 | `tools/pins.py` | The repository's haxelib: dev links to the libraries and the pinned hxcpp (a module) |
@@ -70,8 +70,9 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 ## Layout
 
 ```
-libs/math/ libs/log/ libs/formats/ libs/platform/ libs/services/ libs/render/ engines/raylib/   the libraries: haxelib.json, README.md, src/, tests/ (and examples/, vendor/)
-tools/                                         the repository's checks and helpers, never shipped
-docs/                                          the plan, the specs, conventions, architecture, the API reference and the benchmarks
-build/                                         scratch: the repository's haxelib, SDL3, hxcpp's output (ignored)
+libs/<library>/    the libraries (math, log, geometry, formats, platform, services, render): haxelib.json, README.md, src/, tests/ (and examples/, vendor/)
+engines/<engine>/  the engines over them (raylib, helix-raylib), laid out as a library is (and parity/)
+tools/             the repository's checks and helpers, never shipped
+docs/              the plan, the specs, conventions, architecture, the API reference and the benchmarks
+build/             scratch: the repository's haxelib, SDL3, hxcpp's output (ignored)
 ```

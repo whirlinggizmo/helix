@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Checks the layers: each library names only itself and the libraries it's built on, and owns its package roots alone.
+"""Checks the layers: each library names only itself and the libraries it's built on, and owns its package roots alone; no library
+reaches an engine.
 
   1. A Haxe file in a library refers to no package of a library it isn't built on (its USES), by import or by a qualified name in its code
      (comments and strings aside): not one above it, nor one beside it (math and log know nothing of each other, nor log and platform, nor formats and log).
@@ -10,18 +11,24 @@
      type no contract reaches) is common, and may name at most one contract, whose it then is. A base (BASES) is an interface any
      contract may extend: no contract's, and naming no other type in helix.platform. A device (DEVICES) is built over another contract,
      the events: it and its adapters may name that contract's types and adapters too, and nothing else of another's.
+  4. A library (libs/<name>) knows no consumer: nothing in it reaches an engine (engines/<name>), which may own the loop and keep
+     statics. Beyond rule 1's packages, its build files and code (comments aside) name no engine's haxelib and no path into engines/.
+     Every haxelib.json under libs/ and engines/ is a layer here, named as LAYERS names it and depending only on what it's built on.
 
-LAYERS lists the libraries bottom to top, each with its directory, the package roots it owns and the libraries it's built on; a helix
-package no library owns is a violation wherever it's named. Exits 1 on any violation. Standard library only.
+LAYERS lists the libraries, then the engines, bottom to top, each with its directory, the package roots it owns and the libraries it's
+built on; a helix package no library owns is a violation wherever it's named. Exits 1 on any violation. Standard library only.
 
     python3 tools/check_layers.py"""
+import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# Bottom to top: (library, its source directory, the package roots it owns, the libraries below it that it's built on).
+# Bottom to top, libraries (libs/) then engines (engines/): (its haxelib, its source directory, the package roots it owns, the libraries
+# below it that it's built on).
 LAYERS = [
     ('helix-math', 'libs/math/src', ['helix.math'], []),
     ('helix-geometry', 'libs/geometry/src', ['helix.geometry'], ['helix-math']),
@@ -125,6 +132,51 @@ def contracts():
     return violations
 
 
+def engine(index):
+    """Whether LAYERS[index] is an engine (engines/), not a library (libs/)."""
+    return LAYERS[index][1].startswith('engines/')
+
+
+# A library's files that a build reads (rule 4), and the comments in each kind, left out.
+BUILD_FILES = {'.hx': r'/\*.*?\*/|//[^\n]*', '.hxml': r'#[^\n]*', '.json': None, '.xml': r'<!--.*?-->', '.txt': r'#[^\n]*',
+               '.c': r'/\*.*?\*/|//[^\n]*', '.h': r'/\*.*?\*/|//[^\n]*', '.html': r'<!--.*?-->'}
+
+
+def reaches():
+    """Violations of rule 4: a library that reaches an engine, and a haxelib.json that isn't the layer LAYERS says."""
+    violations = []
+    engines = [name for i, (name, _, _, _) in enumerate(LAYERS) if engine(i)]
+    homes = {Path(directory).parent: (name, uses) for name, directory, _, uses in LAYERS}
+    for found in sorted(ROOT.glob('libs/*/haxelib.json')) + sorted(ROOT.glob('engines/*/haxelib.json')):
+        home = found.parent.relative_to(ROOT)
+        if home not in homes:
+            violations.append(f'{home.as_posix()}: a library or engine LAYERS doesn\'t list')
+            continue
+        name, uses = homes[home]
+        described = json.loads(found.read_text(encoding='utf-8'))
+        if described.get('name') != name:
+            violations.append(f'{home.as_posix()}/haxelib.json: named {described.get("name")}, not {name}')
+        for dependency in described.get('dependencies', {}):
+            if dependency not in uses:
+                violations.append(f'{home.as_posix()}/haxelib.json: {name} depends on {dependency}, which it isn\'t built on')
+    if not engines:
+        return violations
+    named = re.compile(r'\bengines/|(?<![\w-])(?:' + '|'.join(map(re.escape, engines)) + r')(?![\w-])')
+    # The files under libs/ a build could read: tracked, or new and not ignored (build output is ignored).
+    listed = subprocess.run(['git', 'ls-files', '-co', '--exclude-standard', '-z', 'libs'], cwd=ROOT, capture_output=True, check=True)
+    for relative in sorted(n for n in listed.stdout.decode().split('\0') if n):
+        path = ROOT / relative
+        if path.suffix not in BUILD_FILES or '/vendor/' in relative or not path.is_file():
+            continue
+        text = path.read_text(encoding='utf-8', errors='replace')
+        if BUILD_FILES[path.suffix]:
+            text = re.sub(BUILD_FILES[path.suffix], lambda m: '\n' * m.group(0).count('\n'), text, flags=re.S)
+        for number, line in enumerate(text.split('\n'), 1):
+            for match in named.finditer(line):
+                violations.append(f'{relative}:{number}: names {match.group(0)}, ' + ('a path into the engines' if match.group(0) == 'engines/' else 'an engine\'s haxelib') + ': a library reaches no engine')
+    return violations
+
+
 def main():
     import cli
     cli.parser(__doc__).parse_args()
@@ -143,13 +195,16 @@ def main():
                     other = owner(name)
                     if other == -1:
                         violations.append(f'{path.relative_to(ROOT)}:{number}: {library} names {name}, which no library owns')
+                    elif other is not None and other not in allowed and engine(other) and not engine(index):
+                        violations.append(f'{path.relative_to(ROOT)}:{number}: {library} names {name}, in the engine {LAYERS[other][0]}: a library reaches no engine')
                     elif other is not None and other not in allowed:
                         where = 'above it' if other > index else 'which it isn\'t built on'
                         violations.append(f'{path.relative_to(ROOT)}:{number}: {library} names {name}, in {LAYERS[other][0]}, {where}')
     violations += contracts()
+    violations += reaches()
     for v in violations:
         print(v)
-    print(f'check_layers: {"FAILED" if violations else "ok"} ({", ".join(l for l, _, _, _ in LAYERS)}, bottom to top)')
+    print(f'check_layers: {"FAILED" if violations else "ok"} ({", ".join(l for l, _, _, _ in LAYERS)}, bottom to top; no library reaching an engine)')
     return 1 if violations else 0
 
 

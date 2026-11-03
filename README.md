@@ -13,6 +13,11 @@ A Haxe game framework built as layered libraries: one Haxe program runs in the b
 | [helix-log](libs/log/README.md) | Levels and tags, to the browser's console or the process's output | nothing |
 | [helix-services](libs/services/README.md) | Time, input, assets, audio, images, saves and config over the platform | helix-platform, helix-formats, helix-geometry, helix-math, helix-log |
 | [helix-render](libs/render/README.md) | Drawing: 2D and 3D batches, draw lists, text, materials, lights, shadows, environment maps and post-processing (being built in stages) | helix-services, helix-platform, helix-formats, helix-geometry, helix-math, helix-log |
+
+The libraries (`libs/`) know no consumer; the engines over them (`engines/`) may own the loop and keep statics.
+
+| Engine | What it is | Built on |
+|---|---|---|
 | [helix-raylib](engines/raylib/README.md) | raylib 5.5's API over the services and the platform, 2D and 3D, in a page and natively | helix-services, helix-platform, helix-formats, helix-geometry, helix-math |
 
 Until they're published:

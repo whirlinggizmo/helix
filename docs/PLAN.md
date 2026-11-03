@@ -1,28 +1,35 @@
 # The plan
 
-helix-2.0 is several haxelibs in one repository, built from the bottom up.
+helix-2.0 is several haxelibs in one repository, built from the bottom up: the libraries, which know no consumer, and the engines over
+them, which may own the loop and keep statics.
 
 ## Layers
 
 ```
-libs/math/       points, bounds, transforms, curves, deterministic trig   depends on nothing
-libs/geometry/       cameras, rays, meshes, tests on shapes                   depends on math
-libs/log/        levels and tags, to the console or stdio                 depends on nothing
-libs/formats/    file formats read into plain data: glTF, BMFont, fonts   depends on math
-libs/platform/   the hardware and the OS as contracts and adapters        depends on math, formats
-libs/services/   what a program needs over the platform that isn't drawing
-libs/render/     drawing: 2D and 3D batches, materials, lights, post-processing, over the services (DECISIONS 35)
-engines/raylib/        raylib's API over the services (DECISIONS 16)
-...         the layers above, as the path chosen asks for them
+libs/                the libraries
+  math/              points, bounds, transforms, curves, deterministic trig   depends on nothing
+  geometry/          cameras, rays, meshes, tests on shapes                   depends on math
+  log/               levels and tags, to the console or stdio                 depends on nothing
+  formats/           file formats read into plain data: glTF, BMFont, fonts   depends on math
+  platform/          the hardware and the OS as contracts and adapters        depends on math, formats
+  services/          what a program needs over the platform that isn't drawing
+  render/            drawing: 2D and 3D batches, materials, lights, post-processing, over the services (DECISIONS 35)
+  ...                later scene and UI
+engines/             the engines, each an API a program is written in
+  raylib/            helix-raylib: raylib's API over the services (DECISIONS 16)
+  ...                later Gyre, what HeliX's engine becomes, and a three.js-style one
 ```
 
-A library imports only the libraries below it that it's built on (`tools/check_layers.py`). It's split out only where someone could use
-it without what it sits on: assets, input, audio and time need each other, so they're one library, services, with a package each.
+A library imports only the libraries below it that it's built on, and no library reaches an engine (`tools/check_layers.py`); an
+engine's tests run on every change to the libraries (`helix.py test`), so a library's change that breaks an engine is seen in the same
+commit. A library is split out only where someone could use it without what it sits on: assets, input, audio and time need each other,
+so they're one library, services, with a package each. Each becomes a repository of its own, an engine pinning a library's version,
+once the platform has held through a second consumer and is versioned.
 
 ## A library
 
 - A haxelib with a README beside its `haxelib.json`: what it is, what it depends on and how to add it to a build.
-- Self-sufficient: its tests, examples and size ladder (`<library>/tests/sizes/`) build with it and the libraries below, its C
+- Self-sufficient: its tests, examples and size ladder (`libs/<library>/tests/sizes/`) build with it and the libraries below, its C
   vendored in it. Its examples build from hxml files beside them with Haxe alone, each showing one thing.
 - Platform and services: a program constructs what it uses from them, and calls each thing's `poll` from its own loop. They run no
   loop.
