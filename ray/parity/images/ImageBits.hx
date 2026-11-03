@@ -109,7 +109,7 @@ class ImageBits {
 		var files = new DiskFiles(), decoder = new PngDecoder();
 		Runtime.polled.push(files);
 		Runtime.polled.push(decoder);
-		Runtime.assets = new helix.services.assets.Assets({sources: [FileSystem(files)]});
+		Runtime.assets = new helix.services.assets.Assets([new helix.services.assets.FileSystemSource(files)]);
 		Runtime.decoding = new helix.services.images.Images(decoder, Runtime.assets);
 		Runtime.polled.push(Runtime.decoding);
 		var a = answer((f, l, e) -> LoadImageAnimAsync("still.gif", f, l, e));

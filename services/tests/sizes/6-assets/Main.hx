@@ -1,13 +1,13 @@
-// The services' size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a file loaded from beside the page, kept in a cache.
+// The services' size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a file loaded from a file system.
 import helix.platform.adapters.events.dom.DomEventsAdapter;
 import helix.platform.adapters.gamepads.dom.DomGamepadsAdapter;
 import helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter;
 import helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter;
 import helix.platform.adapters.keyboard.dom.DomKeyboardAdapter;
-import helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter;
 import helix.platform.adapters.system.dom.DomSystemAdapter;
 import helix.platform.adapters.window.dom.DomWindowAdapter;
 import helix.services.assets.Assets;
+import helix.services.assets.FileSystemSource;
 import helix.services.config.Config;
 import helix.services.input.Actions;
 import helix.services.input.Gamepads;
@@ -16,7 +16,7 @@ import helix.services.saves.Saves;
 import helix.services.time.Time;
 
 /** A program on helix-services and what it sits on, constructing only what it uses, as a game built on them would. */
-@:adds("helix.platform.adapters.http.fetchapi", "helix.services.assets")
+@:adds("helix.services.assets.AssetRequest", "helix.services.assets.AssetSource", "helix.services.assets.Assets", "helix.services.assets.FileSystemSource")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;
@@ -28,8 +28,7 @@ class Main {
 	static var actions:Actions;
 	static var saveFiles:BrowserFileSystemAdapter;
 	static var saves:Saves;
-	static var httpClient:FetchApiHttpAdapter;
-	static var downloads:BrowserFileSystemAdapter;
+	static var files:BrowserFileSystemAdapter;
 	static var assets:Assets;
 
 	static function main():Void {
@@ -47,9 +46,8 @@ class Main {
 		saveFiles = new BrowserFileSystemAdapter({name: "saves"});
 		saves = new Saves(saveFiles);
 		saves.load(() -> saves.setInt("runs", saves.getInt("runs", 0) + 1));
-		httpClient = new FetchApiHttpAdapter();
-		downloads = new BrowserFileSystemAdapter({name: "cache"});
-		assets = new Assets({sources: [HttpServer("")], httpClient: httpClient, cacheFileSystem: downloads});
+		files = new BrowserFileSystemAdapter({name: "files"});
+		assets = new Assets([new FileSystemSource(files)]);
 		assets.load("level.json", bytes -> trace(bytes.length));
 		var frame:Float->Void = null;
 		frame = _ -> {
@@ -61,8 +59,8 @@ class Main {
 				trace("jump");
 			saveFiles.poll();
 			saves.poll();
-			httpClient.poll();
-			downloads.poll();
+			files.poll();
+			assets.poll();
 			graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff0a0e18);
 			graphics.endFrame();
 			graphics.present();

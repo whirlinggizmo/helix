@@ -1,21 +1,40 @@
 package helix.services.assets;
 
-import helix.platform.IFileSystem;
+import haxe.io.Bytes;
+import helix.platform.GrowingSource;
+import helix.platform.StreamSource;
 
-/** Specifies a place `Assets` finds files: a file system on this machine, or an HTTP server. */
-enum AssetSource {
-	/** Reads files as they are from a file system.
+/** Specifies a place `Assets` finds files. Construct a `FileSystemSource` or a `ServerSource`. */
+@:allow(helix.services.assets)
+abstract class AssetSource {
+	/** The largest file read whole. */
+	static inline final MAX_BYTES = 1 << 30;
 
-		Natively this is usually the files the program ships with: a read-only `NativeFileSystemAdapter` over
-		`ISystem.getProgramDirectory()`. In a page a file system starts empty, so the page's files come from an `HttpServer` instead. */
-	FileSystem(fileSystem:IFileSystem);
+	/** Creates the source, as one of its kinds. */
+	function new() {}
 
-	/** Downloads files from an HTTP server, under a URL.
+	/** Loads a whole file: loaded receives it, missing is called when this source hasn't it, failed receives why it can't be read. */
+	abstract function load(path:String, request:AssetRequest, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void;
 
-		Files are downloaded through `AssetsOptions.httpClient` and kept in `AssetsOptions.cacheFileSystem`. A later run downloads a file
-		again only when its copy is missing or changed.
+	/** Brings a file in again because it changed, past every cache, keeping the new copy in the old's place; as load answers. */
+	abstract function refetch(path:String, request:AssetRequest, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void;
 
-		The URL is the directory the paths are under. In a page it may be relative to the page, and "" is the page's own directory. The
-		optional cache mode decides how a kept copy is known to be current, and defaults to `Revalidate`. */
-	HttpServer(url:String, ?cacheMode:AssetCacheMode);
+	/** Finds a file to be played as it is read; as load answers, located receiving the source and its release. */
+	abstract function locate(path:String, request:AssetRequest, located:(StreamSource, Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void;
+
+	/** Returns the path of a file this source serves at a URL, or null for a URL it doesn't. */
+	function pathOf(url:String):Null<String>
+		return null;
+
+	/** Returns the last bytes of a stream of this source's downloading in two parts, or null. */
+	function tailOf(source:GrowingSource):Null<Bytes>
+		return null;
+
+	/** Empties the copies this source keeps; cleared is called once they are gone, or at once when it keeps none. */
+	function clearCache(cleared:Void->Void, failed:String->Void):Void
+		cleared();
+
+	/** Deletes the copy this source keeps of a file; deleted is called once it is gone, or at once when it keeps none. */
+	function deleteCopy(path:String, deleted:Void->Void, failed:String->Void):Void
+		deleted();
 }

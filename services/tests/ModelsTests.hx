@@ -1,5 +1,6 @@
 import haxe.io.Bytes;
 import helix.services.assets.Assets;
+import helix.services.assets.FileSystemSource;
 import helix.services.images.Images;
 import helix.services.models.Model3D;
 import helix.services.models.Models;
@@ -292,7 +293,7 @@ class ModelsTests {
 		files.files.set("broken/thing.gltf", Bytes.ofString(gltf));
 		files.files.set("models/rig.gltf", Bytes.ofString(rig()));
 		var decoder = new FakeImageDecoder();
-		var assets = new Assets({sources: [FileSystem(files)]});
+		var assets = new Assets([new FileSystemSource(files)]);
 		var images = new Images(decoder, assets);
 		var models = new Models(assets, images);
 		function pump()

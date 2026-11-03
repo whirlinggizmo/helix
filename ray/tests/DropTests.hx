@@ -39,7 +39,7 @@ class DropTests {
 		Runtime.window = window;
 		Runtime.memory = new MemoryFiles();
 		Runtime.polled.push(Runtime.memory);
-		Runtime.assets = new helix.services.assets.Assets({sources: [FileSystem(Runtime.memory)]});
+		Runtime.assets = new helix.services.assets.Assets([new helix.services.assets.FileSystemSource(Runtime.memory)]);
 		check(!IsFileDropped() && LoadDroppedFiles().count == 0, "nothing dropped yet");
 
 		window.dropped.push({name: "level 1.txt", bytes: Bytes.ofString("one")});

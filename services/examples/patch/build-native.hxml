@@ -9,5 +9,6 @@
 --macro helix.services.tools.AssetManifests.write("shipped")
 --macro helix.services.tools.AssetManifests.write("web/cdn")
 --macro helix.services.tools.AssetManifests.write("web/cdn-updated")
+--macro helix.services.tools.AssetManifests.write("web/cdn-dropped")
 -D HXCPP_COMPILE_THREADS=4
 -cpp native

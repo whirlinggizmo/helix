@@ -1,5 +1,8 @@
 import haxe.io.Bytes;
 import helix.services.assets.Assets;
+import helix.services.assets.FileSystemSource;
+import helix.services.assets.RevalidateCache;
+import helix.services.assets.ServerSource;
 import helix.services.audio.Audio;
 import helix.services.audio.Sound;
 
@@ -28,7 +31,7 @@ class AudioTests {
 		files.files.set("both.wav", Bytes.ofString("stereo!!"));
 		var output = new FakeAudio();
 		var system = new FakeSystem();
-		var assets = new Assets({sources: [FileSystem(files)]});
+		var assets = new Assets([new FileSystemSource(files)]);
 		var audio = new Audio(output, output, assets, system);
 		function pump()
 			for (_ in 0...5) {
@@ -199,7 +202,7 @@ class AudioTests {
 		var wav = helix.formats.wav.WavFile.write(rate, 1, 16, frames, Bytes.alloc(frames * 2));
 		http.routes.set(base + "song.wav", {status: 200, headers: ["etag" => '"s1"'], body: wav});
 		http.routes.set(base + "plain.wav", {status: 200, body: wav, ignoresRange: true});
-		var assets = new Assets({sources: [HttpServer(base)], httpClient: http, cacheFileSystem: cache});
+		var assets = new Assets([new ServerSource(base, http, new RevalidateCache(cache))]);
 		var audio = new Audio(output, output, assets, system);
 		function pump()
 			for (_ in 0...10) {

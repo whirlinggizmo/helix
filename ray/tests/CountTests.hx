@@ -118,7 +118,7 @@ class CountTests {
 		var decoder = new SolidDecoder();
 		Runtime.polled.push(files);
 		Runtime.polled.push(decoder);
-		Runtime.assets = new helix.services.assets.Assets({sources: [FileSystem(files)]});
+		Runtime.assets = new helix.services.assets.Assets([new helix.services.assets.FileSystemSource(files)]);
 		Runtime.decoding = new helix.services.images.Images(decoder, Runtime.assets);
 		Runtime.polled.push(Runtime.decoding);
 		Runtime.models = new helix.services.models.Models(Runtime.assets, Runtime.decoding);

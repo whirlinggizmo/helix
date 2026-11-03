@@ -16,10 +16,14 @@ class LocalServer {
 	/** Gets or sets the directory served, so the same URL can serve an updated tree. */
 	public var directory(get, set):String;
 
+	/** Gets or sets whether each connection is lost: a request is answered with a head promising a body, and closed before the body. */
+	public var losing(get, set):Bool;
+
 	/** Gets the paths it served a file for, in order. */
 	public var served(get, never):Array<String>;
 
 	var served_:String;
+	var losing_ = false;
 	final socket = new Socket();
 	final lock = new Mutex();
 	final paths:Array<String> = [];
@@ -52,6 +56,20 @@ class LocalServer {
 		return value;
 	}
 
+	function get_losing():Bool {
+		lock.acquire();
+		var value = losing_;
+		lock.release();
+		return value;
+	}
+
+	function set_losing(value:Bool):Bool {
+		lock.acquire();
+		losing_ = value;
+		lock.release();
+		return value;
+	}
+
 	function get_served():Array<String> {
 		lock.acquire();
 		var copy = paths.copy();
@@ -67,6 +85,12 @@ class LocalServer {
 		try {
 			var request = StringTools.trim(client.input.readLine()).split(" ");
 			while (StringTools.trim(client.input.readLine()) != "") {}
+			if (losing) {
+				// A head promising a body, then the connection closed, as one lost on the way.
+				client.output.writeString("HTTP/1.1 200 OK\r\nContent-Length: 100\r\nConnection: close\r\n\r\n");
+				client.close();
+				return;
+			}
 			var path = request[1].substr(1);
 			var file = '$directory/$path';
 			if (request[0] == "GET" && path.indexOf("..") < 0 && FileSystem.exists(file) && !FileSystem.isDirectory(file)) {

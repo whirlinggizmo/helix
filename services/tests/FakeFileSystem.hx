@@ -19,6 +19,12 @@ class FakeFileSystem implements IFileSystem {
 	/** Gets or sets the fake's clock, in seconds, given to each file written. */
 	public var time = 0.;
 
+	/** Gets or sets which paths' writes fail, when it returns true; null for none. */
+	public var failWrite:Null<String->Bool> = null;
+
+	/** Gets the writes and deletes as they landed, in order: "write <path>", "delete <path>". */
+	public final ops:Array<String> = [];
+
 	/** Gets how many writes were made. */
 	public var writes(default, null) = 0;
 
@@ -62,7 +68,8 @@ class FakeFileSystem implements IFileSystem {
 		var copy = Bytes.alloc(bytes.length);
 		copy.blit(0, bytes, 0, bytes.length);
 		writes++;
-		later(() -> if (failWrites) failed("write failed") else {
+		later(() -> if (failWrites || failWrite != null && failWrite(path)) failed("write failed") else {
+			ops.push('write $path');
 			files.set(path, copy);
 			modified.set(path, time);
 			written();
@@ -71,6 +78,7 @@ class FakeFileSystem implements IFileSystem {
 
 	public function deleteFile(path:String, deleted:Void->Void, failed:String->Void):Void
 		later(() -> {
+			ops.push('delete $path');
 			files.remove(path);
 			modified.remove(path);
 			deleted();

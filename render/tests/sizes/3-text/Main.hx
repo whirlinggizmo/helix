@@ -12,6 +12,8 @@ import helix.render.Renderer;
 import helix.render.TextLayout2D;
 import helix.render.TextureRegion2D;
 import helix.services.assets.Assets;
+import helix.services.assets.RevalidateCache;
+import helix.services.assets.ServerSource;
 import helix.services.fonts.Fonts;
 import helix.services.images.Image;
 import helix.services.images.Images;
@@ -19,8 +21,9 @@ import helix.services.images.Images;
 /** A program on helix-render and what it sits on, constructing only what it uses, as a game built on them would. */
 @:adds("helix.platform.adapters.http.fetchapi", "helix.platform.adapters.filesystem.browser", "helix.platform.adapters.fontrasterizer.canvas",
 	"helix.platform.adapters.imagedecoder.canvas", "helix.formats.text", "helix.formats.truetype.TrueTypeTables", "helix.log.Log", "helix.math.RectPacker2D",
-	"helix.math.Vector2D", "helix.render.GpuFont2D", "helix.render.TextLayout2D", "helix.services.assets.AssetCacheMode", "helix.services.assets.AssetSource",
-	"helix.services.assets.Assets", "helix.services.assets.AssetsOptions", "helix.services.fonts.Font2D", "helix.services.fonts.Fonts",
+	"helix.math.Vector2D", "helix.render.GpuFont2D", "helix.render.TextLayout2D", "helix.services.assets.AssetCache", "helix.services.assets.AssetRequest",
+	"helix.services.assets.AssetSource", "helix.services.assets.Assets", "helix.services.assets.CacheDecision", "helix.services.assets.KeptCopies",
+	"helix.services.assets.RevalidateCache", "helix.services.assets.ServerSource", "helix.services.fonts.Font2D", "helix.services.fonts.Fonts",
 	"helix.services.fonts.FontsOptions", "helix.services.fonts.Glyph2D", "helix.services.images.Images")
 class Main {
 	static var window:DomWindowAdapter;
@@ -41,7 +44,7 @@ class Main {
 		sprite = TextureRegion2D.fromTexture(renderer.createTexture(Image.filled(16, 16, 0xffffc040)), 8, 8);
 		var httpClient = new FetchApiHttpAdapter();
 		var downloads = new BrowserFileSystemAdapter({name: "cache"});
-		var assets = new Assets({sources: [HttpServer("assets/")], httpClient: httpClient, cacheFileSystem: downloads});
+		var assets = new Assets([new ServerSource("assets/", httpClient, new RevalidateCache(downloads))]);
 		var decoder = new CanvasImageDecoderAdapter();
 		var rasterizer = new CanvasFontRasterizerAdapter();
 		var fonts = new Fonts(rasterizer, assets, new Images(decoder, assets));
@@ -57,6 +60,7 @@ class Main {
 			events.poll();
 			httpClient.poll();
 			downloads.poll();
+			assets.poll();
 			rasterizer.poll();
 			renderer.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff0a0e18);
 			batch.begin();

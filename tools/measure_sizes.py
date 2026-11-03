@@ -43,8 +43,12 @@ LIBRARIES = {'helix-platform': ROOT / 'platform', 'helix-log': ROOT / 'log', 'he
 # The libraries' classes, by their full names' start.
 LIBRARY_PREFIX = 'helix.'
 # Packages a rung declares by their classes, never whole: a package would declare every class in it, so a class a later rung links
-# without naming it would pass (helix-math's and helix-geometry's, which every library above reaches into, and helix-render's).
-BY_CLASS = ('helix.math', 'helix.geometry', 'helix.render')
+# without naming it would pass (helix-math's and helix-geometry's, which every library above reaches into, helix-render's, and
+# helix-services' assets, whose sources and caches each program links only those of it constructs).
+BY_CLASS = ('helix.math', 'helix.geometry', 'helix.render', 'helix.services.assets')
+# Standard library classes a rung declares in @:adds as it does a library's, being large or slow enough that only what asks for them should
+# link them: SHA-256, which only a ManifestCache hashes with.
+WATCHED = ('haxe.crypto.Sha256',)
 BASELINE = ROOT / 'docs/benchmarks.json'
 TABLE = ROOT / 'docs/benchmarks.md'
 OUT = ROOT / 'build/sizes'
@@ -165,8 +169,9 @@ def unit(path, module):
 
 def links(ladder):
     """The links' check on a ladder's rungs as built (docs/CONVENTIONS.md, "A program links only what it names"): each rung's Main
-    declares, in @:adds, the library packages, modules or classes it adds to the rungs before (read from its build's -xml, as the
-    compiler has the metadata); a rung linking a library class that no declaration up to it names, a declaration naming nothing the
+    declares, in @:adds, the library packages, modules or classes it adds to the rungs before, and the WATCHED standard library classes
+    (read from its build's -xml, as the compiler has the metadata); a rung linking a library or WATCHED class that no declaration up to
+    it names, a declaration naming nothing the
     rung links, a declaration naming a package of BY_CLASS whole, the standard library's run-time type inspection (Type, ValueType, haxe.rtti, js.Boot.getClass) linked, or a library's
     @:keep (tools/haxe/Kept.hx) is a problem. Interfaces, externs and abstracts' implementations aren't counted: the compiler keeps
     those of its own. Returns the problems."""
@@ -181,7 +186,7 @@ def links(ladder):
                 continue
             if path == 'Main':
                 adds = [json.loads(v.text) for m in e.iter('m') if m.get('n') == ':adds' for v in m.findall('e')]
-            elif path.startswith(LIBRARY_PREFIX) and not e.get('interface') and '_Impl_' not in path:
+            elif (path.startswith(LIBRARY_PREFIX) or path in WATCHED) and not e.get('interface') and '_Impl_' not in path:
                 kept[path] = unit(path, e.get('module'))
             fields = {f.tag for f in e if f.tag not in ('meta', 'haxe_doc', 'implements', 'extends')}
             if path in ('Type', 'ValueType') or path.startswith('haxe.rtti.') or path == 'js.Boot' and 'getClass' in fields:

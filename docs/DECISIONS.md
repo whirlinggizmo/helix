@@ -416,3 +416,28 @@ Why things are the way they are, numbered, in order.
     extensions, and morph targets (helix-formats), `Mesh3D`'s second texture coordinates, morph targets and groups (helix-geometry),
     Euler orders, an object's `lookAt` and `Bounds3D` through a matrix (helix-math); and of the platform, a render target's own
     sample count, more depth tests, depth bias, stencil and a sampled depth.
+
+36. **Assets knows a kept copy by its label, and its sources and cache policies are classes the program constructs.** `Assets` took
+    an enum of sources (`FileSystem`, `HttpServer(url, ?cacheMode)`) and an options object (8), and tested `AssetCacheMode` as it
+    ran, so every program with a server linked the manifest reader, the shipped trees and `haxe.crypto.Sha256`, and one reading only a
+    file system linked the server's downloading; and every download was hashed, in every mode, `Off` too, for a hash only `Manifest`
+    ever compared. HeliX hashed every download; the earlier C frameworks (wgrender-c, libwgt) hashed only a download a manifest lists,
+    and HeliX's was the regression. Now `new Assets([sources])` takes `FileSystemSource(fileSystem)` and `ServerSource(url, http,
+    cache)`, the cache a `RevalidateCache`, `TrustCache`, `MemoryCache` or `ManifestCache(fileSystem, {manifestName, shipped})`, the
+    shipped trees given to the cache rather than inferred from the sources after it. A copy is current by its label: the server's ETag,
+    Last-Modified and freshness (Revalidate, Trust), or the manifest hash it was checked under (Manifest). The one hash left is a
+    download a manifest lists, once, before its label is written beside it: only it catches a CDN edge or a half-finished deploy serving
+    the old bytes under a new manifest (option C, labels with no hash, would keep them under the new label). Kept copies and shipped
+    files are never hashed, as none ever were. A record carries the byte count, and a replacement deletes the old record, writes the
+    bytes, then the record, so no failed or interrupted write leaves a label beside bytes it doesn't describe (the old order, bytes
+    then record, could serve new bytes under the old ETag after a rollback); a read with no record, or bytes of another size, downloads
+    again, and a record of the old shape (no size) reads as none. 404 and 410 remove both, a directory's new manifest deletes the
+    copies of the names it dropped as it arrives, and `deleteCopy(path)` deletes every server's copy of a file. `Assets` is
+    `IPollable`: what it answers with nothing of the platform's to wait on (a held file, a refused path) answers at its `poll`, which
+    the program calls each frame, so `MemoryCache` needs no file system to answer later through. Measured (`tools/measure_sizes.py`,
+    gzip): a program reading a file system alone adds 0.7 KB for the assets; a server with a `RevalidateCache` 18.6 KB where 21.7 was
+    (render's text, shapes and mesh rungs and helix-ray's from the texture up 3.0 to 3.3 KB smaller); `ManifestCache` adds 3.9 KB,
+    `Sha256` and the manifests with it, and `measure_sizes --check` holds that only it links them. The `IHttp` contract's `done` meaning
+    the whole body is checked against a server that closes early (`tools/platform_checks.py http`), in a page and natively. Deferred:
+    a listed download hashed off the main thread (`crypto.subtle`, a platform contract to propose), and a listed file streamed while it
+    downloads.

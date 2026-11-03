@@ -6,7 +6,7 @@ What a game program needs over [helix-platform](../platform/README.md) that isn'
 |---|---|
 | `helix.services.time` | `Time`: the game's time, scaled and paused, its timers, real time beside it, frames a second, and a frame rate aimed for |
 | `helix.services.input` | `Keyboard` (with typed text and repeats), `Mouse`, `Touch`, `Gamepads` and `Tilt`: each device held or pressed this frame; `Gestures`: taps, holds, drags, swipes and pinches; `Actions`: names bound to several of them |
-| `helix.services.assets` | `Assets`: files by path, from a file system or downloaded from an HTTP server and kept |
+| `helix.services.assets` | `Assets`: files by path, from a file system (`FileSystemSource`) or downloaded from an HTTP server (`ServerSource`) and kept as its cache decides: revalidated by the server's ETag and Last-Modified (`RevalidateCache`), trusted (`TrustCache`), held for the run (`MemoryCache`), or known by the server's manifests, shipped files read in place (`ManifestCache`); a program links only the sources and caches it constructs |
 | `helix.services.audio` | `Audio`: sounds loaded whole, streamed or made from samples, their lengths, queues of samples played as they are added, voices played in groups with fades, their positions moved |
 | `helix.services.images` | `Images`: image files by path, or images inside other bytes, decoded into pixels |
 | `helix.services.models` | `Models`: glTF, GLB and OBJ models by path, with the files they name (buffers, material libraries) and their images, as meshes and materials |
@@ -28,6 +28,17 @@ Until it is published, link it, and the libraries it's built on (helix-platform,
 haxelib dev helix-services <checkout>/services
 ```
 
+A program polls each service that answers later once a frame, with the platform's adapters it was given: `Assets`, `Audio`, `Images`,
+`Saves`, `Time` and the input devices are `IPollable`. One never polled never answers.
+
+```haxe
+var assets = new Assets([new ServerSource("", httpClient, new RevalidateCache(downloads))]);
+// each frame:
+httpClient.poll();
+downloads.poll();
+assets.poll();
+```
+
 ## Examples
 
 Each example in `examples/` shows one thing, and builds from the hxml files beside it, as the platform's do:
@@ -41,8 +52,8 @@ Each example in `examples/` shows one thing, and builds from the hxml files besi
 - `audio`: one sound loaded and played.
 - `fades`: a group fading its voices in, then `master` fading everything out.
 - `stream`: one long sound played as it's read, as music is.
-- `patch`: shipped files patched from a server, by its manifests: with nothing kept, with the same manifests, and after the server
-  is updated; only what changed is downloaded.
+- `patch`: shipped files patched from a server, by its manifests (`ManifestCache`): with nothing kept, with the same manifests, after
+  the server is updated, with the connection lost, and after a manifest drops a file, whose copy goes; only what changed is downloaded.
 - `quad`: a shader compiled into the program, its values set by handle over defaults, drawn with `IGraphics` directly.
 - `reload`: the same shader with its file, replaced in place when the assets hear it changed.
 

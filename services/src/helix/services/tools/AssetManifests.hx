@@ -30,7 +30,7 @@ class AssetManifests {
 		The build fails when the path isn't a directory.
 
 		@param directory  The tree's root, relative to where the build runs.
-		@param name  Optional. Each manifest's file name, which matches `AssetsOptions.manifestName`. Defaults to "manifest.json". */
+		@param name  Optional. Each manifest's file name, which matches `ManifestCacheOptions.manifestName`. Defaults to "manifest.json". */
 	public static macro function write(directory:String, name:String = "manifest.json"):Expr {
 		try
 			writeTree(directory, name)

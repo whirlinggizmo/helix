@@ -1,5 +1,6 @@
 import haxe.io.Bytes;
 import helix.services.assets.Assets;
+import helix.services.assets.FileSystemSource;
 import helix.services.images.Image;
 import helix.services.images.Images;
 
@@ -21,7 +22,7 @@ class ImagesTests {
 		files.files.set("tiles.png", Bytes.ofString("8x8"));
 		files.files.set("bad.png", Bytes.ofString("junk"));
 		var decoder = new FakeImageDecoder();
-		var assets = new Assets({sources: [FileSystem(files)]});
+		var assets = new Assets([new FileSystemSource(files)]);
 		var images = new Images(decoder, assets);
 		function pump()
 			for (_ in 0...5) {

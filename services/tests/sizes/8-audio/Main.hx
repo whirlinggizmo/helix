@@ -10,6 +10,9 @@ import helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter;
 import helix.platform.adapters.system.dom.DomSystemAdapter;
 import helix.platform.adapters.window.dom.DomWindowAdapter;
 import helix.services.assets.Assets;
+import helix.services.assets.FileSystemSource;
+import helix.services.assets.RevalidateCache;
+import helix.services.assets.ServerSource;
 import helix.services.audio.Audio;
 import helix.services.config.Config;
 import helix.services.input.Actions;
@@ -31,6 +34,7 @@ class Main {
 	static var actions:Actions;
 	static var saveFiles:BrowserFileSystemAdapter;
 	static var saves:Saves;
+	static var files:BrowserFileSystemAdapter;
 	static var httpClient:FetchApiHttpAdapter;
 	static var downloads:BrowserFileSystemAdapter;
 	static var assets:Assets;
@@ -55,7 +59,11 @@ class Main {
 		saves.load(() -> saves.setInt("runs", saves.getInt("runs", 0) + 1));
 		httpClient = new FetchApiHttpAdapter();
 		downloads = new BrowserFileSystemAdapter({name: "cache"});
-		assets = new Assets({sources: [HttpServer("")], httpClient: httpClient, cacheFileSystem: downloads});
+		files = new BrowserFileSystemAdapter({name: "files"});
+		assets = new Assets([
+			new FileSystemSource(files),
+			new ServerSource("", httpClient, new RevalidateCache(downloads))
+		]);
 		assets.load("level.json", bytes -> trace(bytes.length));
 		output = new WebAudioAdapter();
 		decoder = new WebAudioDecoderAdapter();
@@ -71,8 +79,10 @@ class Main {
 				trace("jump");
 			saveFiles.poll();
 			saves.poll();
+			files.poll();
 			httpClient.poll();
 			downloads.poll();
+			assets.poll();
 			output.poll();
 			decoder.poll();
 			audio.poll();

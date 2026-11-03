@@ -1,5 +1,8 @@
 import haxe.io.Bytes;
 import helix.services.assets.Assets;
+import helix.services.assets.FileSystemSource;
+import helix.services.assets.ManifestCache;
+import helix.services.assets.ServerSource;
 import helix.services.tools.AssetManifests;
 import sys.FileSystem;
 import sys.io.File;
@@ -57,7 +60,10 @@ class ManifestTests {
 			shipped.files.set(path, bytes);
 			http.routes.set(base + path, {status: 200, body: bytes});
 		}
-		var assets = new Assets({sources: [HttpServer(base, Manifest), FileSystem(shipped)], httpClient: http, cacheFileSystem: cache});
+		var assets = new Assets([
+			new ServerSource(base, http, new ManifestCache(cache, {shipped: [shipped]})),
+			new FileSystemSource(shipped)
+		]);
 		var got = [];
 		for (path in ["title.png", "levels/1.json", "music/song.ogg"])
 			assets.load(path, bytes -> got.push(bytes.toString()));
@@ -65,6 +71,7 @@ class ManifestTests {
 			http.poll();
 			cache.poll();
 			shipped.poll();
+			assets.poll();
 		}
 		var fetched = [for (r in http.requests) r.url];
 		check(got.length == 3 && got.indexOf("level one, patched") >= 0, "every file loaded");

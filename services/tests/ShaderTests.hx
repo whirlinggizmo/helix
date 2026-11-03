@@ -2,6 +2,7 @@ import haxe.io.Bytes;
 import helix.math.Matrix3D;
 import helix.platform.Sampling;
 import helix.services.assets.Assets;
+import helix.services.assets.FileSystemSource;
 import helix.services.shaders.*;
 import helix.services.tools.ShaderBlockCompiler;
 
@@ -342,7 +343,7 @@ class ShaderTests {
 
 	static function reload():Void {
 		var files = new FakeFileSystem();
-		var assets = new Assets({sources: [FileSystem(files)]});
+		var assets = new Assets([new FileSystemSource(files)]);
 		var shaders = new Shaders(assets);
 		var s = Shader.compile("shaders/quad.vert", "shaders/quad.frag", {file: "shaders/quad.shader"});
 		check(s.filePath == "shaders/quad.shader" && s != QUAD, "a shader with a file is another shader");

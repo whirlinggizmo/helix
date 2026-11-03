@@ -12,6 +12,9 @@ import helix.platform.IPollable;
 import helix.platform.ISystem;
 import helix.platform.IWindow;
 import helix.services.assets.Assets;
+import helix.services.assets.FileSystemSource;
+import helix.services.assets.RevalidateCache;
+import helix.services.assets.ServerSource;
 import helix.services.input.Gamepads;
 import helix.services.input.Gestures;
 import helix.services.input.Keyboard;
@@ -149,15 +152,11 @@ class Runtime {
 		polled.push(callback);
 		memory = new MemoryFiles();
 		polled.push(memory);
-		assets = new Assets({
-			sources: [
-				FileSystem(memory),
-				FileSystem(callback),
-				HttpServer(system.getProgramDirectory())
-			],
-			httpClient: http,
-			cacheFileSystem: cache
-		});
+		assets = new Assets([
+			new FileSystemSource(memory),
+			new FileSystemSource(callback),
+			new ServerSource(system.getProgramDirectory(), http, new RevalidateCache(cache))
+		]);
 		#else
 		var directory = haxe.io.Path.join([system.getProgramDirectory(), root]);
 		var cache = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory, readOnly: true});
@@ -166,9 +165,14 @@ class Runtime {
 		polled.push(callback);
 		memory = new MemoryFiles();
 		polled.push(memory);
-		assets = new Assets({sources: [FileSystem(memory), FileSystem(callback), FileSystem(cache)]});
+		assets = new Assets([
+			new FileSystemSource(memory),
+			new FileSystemSource(callback),
+			new FileSystemSource(cache)
+		]);
 		#end
 		polled.push(cache);
+		polled.push(assets);
 	}
 
 	/** Makes what decodes the program's images, once, over the assets (`loading`): the platform's image decoder and the images over it.

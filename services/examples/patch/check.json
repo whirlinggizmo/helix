@@ -1,9 +1,12 @@
 {
-  "what": "Green once the three runs are done: nothing kept, the same manifests, the server updated.",
+  "what": "Green once the runs are done: nothing kept, the same manifests, and natively the server updated, a connection lost, a name dropped, and its copy gone with no connection.",
   "printed": [
     "nothing kept: a.txt \"the same\", b.txt \"patched\", downloaded: b.txt\n",
     "same manifests: a.txt \"the same\", b.txt \"patched\", downloaded: nothing\n",
-    "server updated: a.txt \"the same\", b.txt \"patched again\", downloaded: b.txt\n"
+    "server updated: a.txt \"the same\", b.txt \"patched again\", downloaded: b.txt\n",
+    "connection lost: a.txt \"the same\", b.txt \"patched again\", downloaded: nothing\n",
+    "a name dropped: a.txt \"the same\", downloaded: nothing\n",
+    "dropped, connection lost: b.txt \"as shipped\", downloaded: nothing\n"
   ],
   "nativeFrames": 40000,
   "points": [

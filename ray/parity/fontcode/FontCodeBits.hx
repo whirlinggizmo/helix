@@ -48,7 +48,7 @@ class FontCodeBits {
 		open();
 		var files = new DiskFiles();
 		Runtime.polled.push(files);
-		Runtime.assets = new helix.services.assets.Assets({sources: [FileSystem(files)]});
+		Runtime.assets = new helix.services.assets.Assets([new helix.services.assets.FileSystemSource(files)]);
 		SetSaveFileTextCallback((fileName, text) -> {
 			saved = text;
 			return true;

@@ -5,6 +5,9 @@ import helix.platform.IFileSystem;
 import helix.platform.IHttp;
 #end
 import helix.services.assets.Assets;
+import helix.services.assets.FileSystemSource;
+import helix.services.assets.RevalidateCache;
+import helix.services.assets.ServerSource;
 import helix.services.audio.Audio;
 import helix.platform.IEvents;
 import helix.platform.IGraphics;
@@ -76,7 +79,9 @@ class Main {
 		downloads = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory()});
 		polled.push(httpClient);
 		polled.push(downloads);
-		assets = new Assets({sources: [HttpServer(system.getProgramDirectory() + "assets/")], httpClient: httpClient, cacheFileSystem: downloads});
+		assets = new Assets([
+			new ServerSource(system.getProgramDirectory() + "assets/", httpClient, new RevalidateCache(downloads))
+		]);
 		#else
 		output = new helix.platform.adapters.audio.sdl3mixer.Sdl3MixerAudioAdapter();
 		decoder = new helix.platform.adapters.audiodecoder.sdl3mixer.Sdl3MixerAudioDecoderAdapter();
@@ -84,8 +89,9 @@ class Main {
 		var files = haxe.io.Path.join([system.getProgramDirectory(), "../web/assets"]);
 		shipped = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: files, readOnly: true});
 		polled.push(shipped);
-		assets = new Assets({sources: [FileSystem(shipped)]});
+		assets = new Assets([new FileSystemSource(shipped)]);
 		#end
+		polled.push(assets);
 		polled.push(output);
 		polled.push(decoder);
 		audio = new Audio(output, decoder, assets, system);

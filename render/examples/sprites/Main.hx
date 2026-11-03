@@ -16,6 +16,9 @@ import helix.platform.ISystem;
 import helix.platform.IWindow;
 import helix.platform.Sampling;
 import helix.services.assets.Assets;
+import helix.services.assets.FileSystemSource;
+import helix.services.assets.RevalidateCache;
+import helix.services.assets.ServerSource;
 import helix.services.fonts.Fonts;
 import helix.services.images.Images;
 import helix.services.time.Time;
@@ -102,19 +105,21 @@ class Main {
 		var downloads:IFileSystem = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory()});
 		polled.push(httpClient);
 		polled.push(downloads);
-		var assets = new Assets({sources: [HttpServer(system.getProgramDirectory() + "assets/")], httpClient: httpClient, cacheFileSystem: downloads});
+		var assets = new Assets([
+			new ServerSource(system.getProgramDirectory() + "assets/", httpClient, new RevalidateCache(downloads))
+		]);
 		#else
 		var shipped:IFileSystem = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({
 			directory: haxe.io.Path.join([system.getProgramDirectory(), "../web/assets"]),
 			readOnly: true
 		});
 		polled.push(shipped);
-		var assets = new Assets({sources: [FileSystem(shipped)]});
+		var assets = new Assets([new FileSystemSource(shipped)]);
 		#end
 		var images = new Images(decoder, assets);
 		var fonts = new Fonts(rasterizer, assets, images);
 		time = new Time(system);
-		for (p in ([events, decoder, rasterizer, images, time] : Array<IPollable>))
+		for (p in ([events, decoder, rasterizer, assets, images, time] : Array<IPollable>))
 			polled.push(p);
 
 		renderer = new Renderer(graphics);

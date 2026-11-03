@@ -8,4 +8,5 @@
 -dce full
 --macro helix.services.tools.AssetManifests.write("web/cdn")
 --macro helix.services.tools.AssetManifests.write("web/cdn-updated")
+--macro helix.services.tools.AssetManifests.write("web/cdn-dropped")
 -js web/app.js

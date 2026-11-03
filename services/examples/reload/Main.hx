@@ -7,6 +7,9 @@ import helix.platform.IPollable;
 import helix.platform.ISystem;
 import helix.platform.IWindow;
 import helix.services.assets.Assets;
+import helix.services.assets.FileSystemSource;
+import helix.services.assets.RevalidateCache;
+import helix.services.assets.ServerSource;
 import helix.services.shaders.Shader;
 import helix.services.shaders.ShaderUniform;
 import helix.services.shaders.ShaderValues;
@@ -58,7 +61,8 @@ class Main {
 		var httpClient = new helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter();
 		var cache:IFileSystem = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory()});
 		polled = [httpClient, cache];
-		assets = new Assets({sources: [HttpServer("assets/")], httpClient: httpClient, cacheFileSystem: cache});
+		assets = new Assets([new ServerSource("assets/", httpClient, new RevalidateCache(cache))]);
+		polled.push(assets);
 		setup();
 		var frame:Float->Void = null;
 		frame = _ -> if (tick()) js.Browser.window.requestAnimationFrame(frame);
@@ -73,7 +77,8 @@ class Main {
 			readOnly: true
 		});
 		polled = [shipped];
-		assets = new Assets({sources: [FileSystem(shipped)]});
+		assets = new Assets([new FileSystemSource(shipped)]);
+		polled.push(assets);
 		setup();
 		while (tick()) {}
 		#end

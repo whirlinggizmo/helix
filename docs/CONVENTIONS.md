@@ -40,15 +40,13 @@ What a program carries is what `-dce full` can't prove unused, so a library is w
   (DECISIONS 29), and chooses as the program runs only for a name it can't know.
 
 `tools/measure_sizes.py --check` holds the size ladders to it: each rung's `Main` declares in `@:adds` the library packages, modules
-or classes it adds (helix-math's, helix-geometry's and helix-render's by class, never a whole package, so a class a later rung links
-without naming it is caught), and a rung linking a library class no rung up to it declares, a declaration it doesn't link, run-time type
+or classes it adds (helix-math's, helix-geometry's, helix-render's and helix-services' assets by class, never a whole package, so a class
+a later rung links without naming it is caught, and `haxe.crypto.Sha256`, which only a `ManifestCache` links), and a rung linking a library class no rung up to it declares, a declaration it doesn't link, run-time type
 inspection, or a library's `@:keep` fails, read from the build's `-xml` and a macro (`tools/haxe/Kept.hx`).
 
 Known, not fixed yet (each a rung's `@:adds` or a program's bytes show):
 
 - helix-services' `Models.load` chooses its reader by the extension (`loadGltf` and `loadObj` don't).
-- helix-services' `Assets` takes its sources as an enum (`AssetSource`) and its cache policy as one (`AssetCacheMode`), so a program
-  reading only a file system links the server's downloading, manifests and cache.
 - helix-services' `Screen` tests its saves each poll, so a program with a screen links `Saves`; helix-ray's poll tests its keyboard,
   so every raylib program links `Keyboard`.
 - helix-ray's `Runtime.fetch` decodes a file by its extension, so a program loading text or data through it links the image
@@ -125,9 +123,9 @@ The API uses what Haxe gives: properties for values, classes for kinds, methods 
   may have declares its default in the field. A choice is an enum (`{graphics: Gl}`), never a `Bool` whose `false` means the other one.
   The compiler refuses a field the class doesn't have, so a guessed setting fails to build rather than doing nothing; for the same
   reason, every field takes effect whatever the others are set to. `tools/check_adapters.py` checks the shape and the name.
-- **An argument or option is named for what it's used for** when that's more than its type says: `Assets`' `cacheFileSystem` is the
-  `IFileSystem` downloaded copies are kept in, its `httpClient` the `IHttp` it downloads with. One that is simply the contract keeps
-  the contract's name (`system`, `events`).
+- **An argument or option is named for what it's used for** when that's more than its type says: `ManifestCacheOptions`' `shipped`
+  is the `IFileSystem`s a file may be read from in place of a download. One that is simply the contract keeps the contract's name
+  (`system`, `events`, `ServerSource`'s `http`).
 - **A directory is a directory,** as Haxe's standard library names it (`FileSystem.readDirectory`, `Path.directory`) and as programming
   APIs generally do: in names, doc comments and docs, never "folder" (the desktop's word) or "dir" (an abbreviation):
   `getProgramDirectory`, `assetDirectory`. Only a third party's own name keeps its word.

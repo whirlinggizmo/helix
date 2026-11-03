@@ -29,7 +29,7 @@ class AudioStreamTests {
 		Runtime.system = new FakeSystem();
 		Runtime.output = output;
 		Runtime.audioDecoder = output;
-		Runtime.audio = new helix.services.audio.Audio(output, output, new helix.services.assets.Assets({sources: []}), Runtime.system);
+		Runtime.audio = new helix.services.audio.Audio(output, output, new helix.services.assets.Assets([]), Runtime.system);
 		Runtime.polled.push(output);
 		Runtime.polled.push(Runtime.audio);
 	}

@@ -1,5 +1,6 @@
 import haxe.io.Bytes;
 import helix.services.assets.Assets;
+import helix.services.assets.FileSystemSource;
 import helix.services.fonts.Font2D;
 import helix.services.fonts.Fonts;
 import helix.services.images.Images;
@@ -33,7 +34,7 @@ class FontsTests {
 		files.files.set("fonts/pixel_1.png", Bytes.ofString("4x4"));
 		var rasterizer = new FakeFontRasterizer(),
 			decoder = new FakeImageDecoder();
-		var assets = new Assets({sources: [FileSystem(files)]});
+		var assets = new Assets([new FileSystemSource(files)]);
 		var images = new Images(decoder, assets);
 		function pump()
 			for (_ in 0...8) {

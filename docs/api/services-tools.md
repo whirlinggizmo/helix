@@ -22,7 +22,7 @@ static macro function write(directory:String, name:String = "manifest.json"):Voi
 
 - `write`: Writes the manifests of a directory and every directory under it, while the program builds.
   - `directory`: The tree's root, relative to where the build runs.
-  - `name`: Optional. Each manifest's file name, which matches `AssetsOptions.manifestName`. Defaults to "manifest.json".
+  - `name`: Optional. Each manifest's file name, which matches `ManifestCacheOptions.manifestName`. Defaults to "manifest.json".
 
   The build fails when the path isn't a directory.
 
