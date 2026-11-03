@@ -36,7 +36,7 @@ typedef Case = {
 
 	The cases: points a pixel each, unindexed and by index, and refused over a program without the point size; a clear, a triangle's
 	colors interpolated, eight vertex buffers read and a ninth refused, each vertex format read (a signed 0 as 0, fewer and more components
-	than the input, formats mixed in one record, instances from the second) and layouts the platform refuses, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
+	than the input, formats mixed in one record, instances from the second), layouts with a gap of slots and layouts the platform refuses, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
 	additive blending, each blend factor and operation and a color write mask, a texture's rectangles replaced, and replaced
 	between passes, targets kept from pass to pass and frame to frame (their depth and samples too) and one never cleared, targets'
 	multisampling chosen apart from their depth (one sample with depth, the screen's, no depth and the most, a count rounded down
@@ -174,6 +174,7 @@ class GraphicsTests {
 		var three = shader(ShaderCompiler.compile("shaders/three.vert", "shaders/color.frag"));
 		var mixed = shader(ShaderCompiler.compile("shaders/mixed.vert", "shaders/color.frag"));
 		var integer = shader(ShaderCompiler.compile("shaders/integer.vert", "shaders/color.frag"));
+		var gap = shader(ShaderCompiler.compile("shaders/gap.vert", "shaders/color.frag"));
 		var sharedSource = ShaderCompiler.compile("shaders/shared.vert", "shaders/shared.frag");
 		var sharing = shader(sharedSource);
 
@@ -249,6 +250,34 @@ class GraphicsTests {
 		});
 		pipelines.push(constant);
 		var unfed = pipeline(color, plain, Blend.OPAQUE);
+		// Layouts with a gap of slots: a position and a color at slots 0 and 2, the tint at 1 between them read as its constant, or as
+		// (0, 0, 0, 1) where none is given.
+		function gapped(?constants:Array<{slot:Int, values:Array<Float>}>):Int {
+			var handle = graphics.createPipeline({
+				shader: gap,
+				buffers: [
+					{
+						stride: 24,
+						instanced: false,
+						attributes: [{slot: 0, format: Float2, offset: 0}, {slot: 2, format: Float4, offset: 8}]
+					}
+				],
+				primitive: Triangles,
+				indexed: false,
+				blend: Blend.OPAQUE,
+				depthTest: Off,
+				depthWrite: false,
+				cull: None,
+				clockwise: false,
+				depthOnly: false,
+				flip: ClipScale,
+				attributeConstants: constants
+			});
+			pipelines.push(handle);
+			return handle;
+		}
+		var tintedGap = gapped([{slot: 1, values: [0, 1, .5, 1]}]),
+			blackGap = gapped();
 		// Instances of a square, each placed by a matrix (slots 1 to 4) and colored (slot 5), from one instanced buffer.
 		var placed = graphics.createPipeline({
 			shader: matrices,
@@ -890,6 +919,22 @@ class GraphicsTests {
 				target: target,
 				check: p -> {
 					p.expect(3, 8, [0, 1, 0, 1], 0);
+					p.expect(12, 8, [0, 0, 0, 1], 0);
+				}
+			},
+			{
+				name: "a layout with a gap of slots",
+				// Left half: white tinted by the constant between its fed slots, green and half blue; right half: the tint given no
+				// constant, (0, 0, 0, 1), black. Red where nothing drew.
+				before: into(1, 0, 0, 1, () -> {
+					graphics.applyViewport(0, 0, 8, SIZE);
+					draw(tintedGap, white, 6);
+					graphics.applyViewport(8, 0, 8, SIZE);
+					draw(blackGap, white, 6);
+				}),
+				target: target,
+				check: p -> {
+					p.expect(3, 8, [0, 1, .5, 1], 1);
 					p.expect(12, 8, [0, 0, 0, 1], 0);
 				}
 			},

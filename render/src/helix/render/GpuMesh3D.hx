@@ -141,6 +141,10 @@ class GpuMesh3D {
 
 	static final layouts = new Map<Int, helix.services.shaders.ShaderVertexLayout>();
 
+	// The bytes of a copy's record in the instance buffer: its matrix, then its color.
+	@:allow(helix.render)
+	static inline final INSTANCE_STRIDE = 68;
+
 	@:allow(helix.render)
 	var indexed(get, never):Bool;
 
@@ -167,7 +171,7 @@ class GpuMesh3D {
 		var found = layouts.get(bits);
 		if (found != null)
 			return found;
-		var placements:Array<helix.services.shaders.ShaderVertexPlacement> = [], offset = 0, fed = [];
+		var placements:Array<helix.services.shaders.ShaderVertexPlacement> = [], offset = 0;
 		for (i in 0...NAMES.length)
 			if (bits & 1 << i != 0) {
 				placements.push({
@@ -176,15 +180,14 @@ class GpuMesh3D {
 					format: FORMATS[i],
 					optional: i > 0
 				});
-				fed.push(NAMES[i]);
 				offset += SIZES[i];
 			}
 		found = new helix.services.shaders.ShaderVertexLayout([
 			{stride: offset, placements: placements},
 			{
-				stride: RenderConstants.MESH_STRIDE,
+				stride: INSTANCE_STRIDE,
 				instanced: true,
-				placements: ([
+				placements: [
 					{name: "instanceModel", offset: 0, optional: true},
 					{
 						name: "instanceColor",
@@ -192,9 +195,9 @@ class GpuMesh3D {
 						format: UByte4Norm,
 						optional: true
 					}
-				] : Array<helix.services.shaders.ShaderVertexPlacement>).concat(RenderConstants.placements(RenderConstants.MESH, fed))
+				]
 			}
-		]);
+		], Renderer.unfedAttributes);
 		layouts.set(bits, found);
 		return found;
 	}

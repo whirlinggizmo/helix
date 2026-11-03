@@ -598,7 +598,7 @@ class Batch2D {
 	}
 
 	// Makes the program's shaders' draws: the View block written for them, shared through its scene, at their first draw after each
-	// open; each shader's names the batch fills, the attributes the vertices don't carry fed from the renderer's constants; and the
+	// open; each shader's names the batch fills, the attributes the vertices don't carry read as the renderer's constants; and the
 	// values a draw reads, captured and compared, so values written since start the next GPU draw.
 	function drawValues():Void {
 		var view = new RenderView(RenderShaders.compileOwn("batch3d.vert", "batch3d.frag"));
@@ -606,7 +606,6 @@ class Batch2D {
 		var runCapture = new ShaderSnapshot(),
 			nextCapture = new ShaderSnapshot();
 		var writtenAt = -1;
-		var fed = ["vertexPosition", "vertexTexCoord", "vertexColor", "vertexCustomData"];
 		var programLayout = new ShaderVertexLayout([
 			{
 				stride: 24,
@@ -631,13 +630,8 @@ class Batch2D {
 						optional: true
 					}
 				]
-			},
-			{
-				stride: RenderConstants.BATCH_STRIDE,
-				instanced: true,
-				placements: RenderConstants.placements(RenderConstants.BATCH, fed)
 			}
-		]);
+		], Renderer.unfedAttributes);
 		function fillFor(s:Shader):RenderFill {
 			var f = fills.get(s);
 			if (f == null)
@@ -684,7 +678,6 @@ class Batch2D {
 			fill.view(view);
 			var d = renderer.makeDraw(renderer.pipelineFor(s, renderer.stateFor(Triangles, false, blend, Off, false, None, All), programLayout));
 			d.setBuffer(0, 0, stream);
-			d.setBuffer(1, renderer.batchConstants());
 			d.first = first;
 			d.count = count;
 			fill.values.capture(d.snapshot);

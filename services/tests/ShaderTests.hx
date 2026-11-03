@@ -495,5 +495,28 @@ class ShaderTests {
 		check(new ShaderVertexLayout([{stride: 4, placements: [{name: "unread", offset: 0, format: UByte4Norm}]}]).key == bytes.key, "and finds the same one");
 		var instanced = LitValues.VARIANTS.getShader(LitValues.SKINNED).computeVertexBuffer(["joints", "weights"], true);
 		check(instanced.instanced && instanced.stride == 32, "an instanced buffer");
+
+		// A matrix's constant spread over its columns' slots, four values apiece; none for a matrix a buffer feeds.
+		var placed = Shader.compileText("#version 450
+in vec2 position;
+in mat4 placement;
+in vec4 tint;
+void main() { gl_Position = placement * vec4(position, 0.0, 1.0) * tint; }", "#version 450
+layout(location = 0) out vec4 result;
+void main() { result = vec4(1.0); }");
+		var identity = [1., 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+		var unfed = new ShaderVertexLayout([{stride: 8, placements: [{name: "position", offset: 0}]}],
+			[{name: "placement", values: identity}, {name: "tint", values: [1, 1, 1, 1]}]);
+		var constants = unfed.computeConstants(placed, unfed.computeBuffers(placed));
+		check(constants.length == 5
+			&& [for (c in constants) c.slot].join(",") == "1,2,3,4,5"
+			&& constants[2].values.join(",") == "0,0,1,0"
+			&& constants[4].values.join(",") == "1,1,1,1",
+			'a matrix\'s constant a column a slot: $constants');
+		var fed = new ShaderVertexLayout([
+			{stride: 72, placements: [{name: "position", offset: 0}, {name: "placement", offset: 8}]}
+		], [{name: "placement", values: identity}]);
+		var none = fed.computeConstants(placed, fed.computeBuffers(placed));
+		check(none.length == 0, 'a matrix a buffer feeds left to it: $none');
 	}
 }

@@ -31,11 +31,6 @@
   `Equal` and `GreaterEqual` (helix-render's revision 9). A render target's own sample count, apart from its depth, is being built. Deferred from the vertex formats
   (DECISIONS 33): bone IDs and three.js' skinIndex fed as normalized bytes or shorts and scaled back by the compiler, rounded, as a
   `ShaderCompileOptions` entry; until then they are floats, or a layer owning its shader scales them itself.
-  For review, from helix-render's stage 1: sokol_gfx's GL adapter refuses a vertex layout whose fed attributes leave a gap of slots
-  (sokol's "layout.attrs is not continuous"; a release build draws nothing past the gap), where the contract has an unfed attribute
-  read its constant; helix-render feeds every attribute it names from records of its own meanwhile (`RenderConstants`, to be removed
-  when the adapter fills the gaps itself). Pros: the contract holds on every backend, and a layer stops carrying the records. Cons: the
-  adapter binds a constants buffer of its own, as its SDL_GPU sibling does.
   The platform's checks of a pipeline's vertex layout (`PipelineLayout.check`, every backend, about 0.3 KB gzip) to be trimmed to what
   a backend would otherwise get wrong silently, once the platform's API is settled.
 - **Assets, resources and objects, as the earlier C frameworks layered them (AGENTS.md's prior art: their resource/object model),

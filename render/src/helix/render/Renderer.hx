@@ -668,15 +668,20 @@ class Renderer {
 		return s;
 	}
 
-	// The record of the values attributes a batch draw's vertices don't carry read (RenderConstants), made the first time.
-	var constants = 0;
-
+	// What helix-render's attributes read where a draw's buffers don't feed them, as its layouts' constants (the pipeline's): a normal
+	// toward +z, a tangent along +x, white, a copy placed where it is, and 0 for joints, weights and custom data; the rest read
+	// (0, 0, 0, 1) as the platform has it.
 	@:allow(helix.render)
-	function batchConstants():Int {
-		if (constants == 0)
-			constants = staticBuffer(RenderConstants.record(RenderConstants.BATCH, RenderConstants.BATCH_STRIDE, false), false);
-		return constants;
-	}
+	static final unfedAttributes:Array<helix.services.shaders.ShaderVertexConstant> = [
+		{name: "vertexNormal", values: [0, 0, 1]},
+		{name: "vertexTangent", values: [1, 0, 0, 1]},
+		{name: "vertexColor", values: [1, 1, 1, 1]},
+		{name: "vertexCustomData", values: [0, 0, 0, 0]},
+		{name: "vertexJoints", values: [0, 0, 0, 0]},
+		{name: "vertexWeights", values: [0, 0, 0, 0]},
+		{name: "instanceModel", values: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]},
+		{name: "instanceColor", values: [1, 1, 1, 1]}
+	];
 
 	// A static buffer the renderer keeps until it is disposed.
 

@@ -322,8 +322,11 @@ class Batch3D {
 		batchShader = RenderShaders.compileOwn("batch3d.vert", "batch3d.frag");
 		narrow = renderer.stream("batch3d", 40, layoutOf(false));
 		wide = renderer.stream("wide3d", 60, layoutOf(true));
-		instances = renderer.stream("instances", RenderConstants.MESH_STRIDE, layoutOf(false));
-		instanceTemplate = RenderConstants.record(RenderConstants.MESH, RenderConstants.MESH_STRIDE, true);
+		instances = renderer.stream("instances", GpuMesh3D.INSTANCE_STRIDE, layoutOf(false));
+		instanceTemplate = Bytes.alloc(GpuMesh3D.INSTANCE_STRIDE);
+		for (i in 0...16)
+			instanceTemplate.setFloat(i * 4, i % 5 == 0 ? 1 : 0);
+		instanceTemplate.setInt32(64, -1);
 		identityInstance = renderer.staticBuffer(instanceTemplate, false);
 		plane = new PlaneDrawing2D(planeUse, planeVertex, planeVisible);
 	}
@@ -545,7 +548,7 @@ class Batch3D {
 			var at = instances.reserve(1),
 				b = instances.bytes,
 				m = copy.values;
-			b.blit(at, instanceTemplate, 0, RenderConstants.MESH_STRIDE);
+			b.blit(at, instanceTemplate, 0, GpuMesh3D.INSTANCE_STRIDE);
 			for (k in 0...16)
 				b.setFloat(at + k * 4, m[k]);
 			bytesOf(b, at + 64, colors == null ? 0xffffffff : colors[i]);
@@ -1132,11 +1135,7 @@ class Batch3D {
 				optional: true
 			});
 		}
-		var fed = [for (p in placements) p.name];
-		var layout = new ShaderVertexLayout([
-			{stride: wide ? 60 : 40, placements: placements},
-			{stride: RenderConstants.BATCH_STRIDE, instanced: true, placements: RenderConstants.placements(RenderConstants.BATCH, fed)}
-		]);
+		var layout = new ShaderVertexLayout([{stride: wide ? 60 : 40, placements: placements}], Renderer.unfedAttributes);
 		if (wide)
 			wideLayout = layout;
 		else
@@ -1335,7 +1334,6 @@ class Batch3D {
 			fill.view(view);
 			var d = renderer.makeDraw(spec);
 			d.setBuffer(0, 0, stream);
-			d.setBuffer(1, renderer.batchConstants());
 			d.first = runFirst;
 			d.count = count;
 			fill.values.capture(d.snapshot);

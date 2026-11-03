@@ -126,8 +126,13 @@ class ShaderVertexLayout {
 					slot = a.slot;
 			} else if (c.slot != null && c.slot < shader.attributes.length && shader.attributes[c.slot] != null)
 				slot = c.slot;
-			if (slot >= 0 && !fed.exists(slot))
-				out.push({slot: slot, values: c.values});
+			// Past four values, a matrix's columns, four apiece, a slot each.
+			var column = 0;
+			while (slot >= 0 && (column == 0 || column * 4 < c.values.length)) {
+				if (!fed.exists(slot + column))
+					out.push({slot: slot + column, values: c.values.length > 4 ? c.values.slice(column * 4, column * 4 + 4) : c.values});
+				column++;
+			}
 		}
 		return out;
 	}

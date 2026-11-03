@@ -1,5 +1,5 @@
 {
- "commit": "0915e41 2026-11-02",
+ "commit": "bdbaa4a 2026-11-02",
  "haxe": "4.3.7",
  "ladders": {
   "platform": {
@@ -298,12 +298,12 @@
   "render": {
    "1-clear": {
     "adds": "the renderer's frame, the screen cleared each frame through it",
-    "raw": 81382,
-    "gzip": 17903,
-    "brotli": 15600,
+    "raw": 81565,
+    "gzip": 17955,
+    "brotli": 15648,
     "packages": {
      "platform/graphics": 26289,
-     "services/shaders": 18080,
+     "services/shaders": 18263,
      "haxe metadata": 12361,
      "render/Renderer": 5668,
      "std/js": 5301,
@@ -323,11 +323,11 @@
    },
    "2-sprites": {
     "adds": "sprites: a texture made from an image in memory, drawn turned by the 2D batch",
-    "raw": 122048,
-    "gzip": 26787,
-    "brotli": 23156,
+    "raw": 122231,
+    "gzip": 26837,
+    "brotli": 23255,
     "packages": {
-     "services/shaders": 34347,
+     "services/shaders": 34530,
      "platform/graphics": 26289,
      "haxe metadata": 14672,
      "render/Renderer": 9482,
@@ -353,11 +353,11 @@
    },
    "3-text": {
     "adds": "text: a TrueType font loaded from beside the page, rasterized by the page's canvas, measured and drawn, and wrapped in a layout",
-    "raw": 197420,
-    "gzip": 44709,
-    "brotli": 37649,
+    "raw": 197603,
+    "gzip": 44761,
+    "brotli": 37645,
     "packages": {
-     "services/shaders": 34347,
+     "services/shaders": 34530,
      "platform/graphics": 26289,
      "haxe metadata": 20989,
      "services/assets": 19762,
@@ -393,11 +393,11 @@
    },
    "4-shapes": {
     "adds": "shapes: lines, a polyline, rectangles rounded and not, circles, ellipses and polygons, filled and stroked",
-    "raw": 212504,
-    "gzip": 47956,
-    "brotli": 40395,
+    "raw": 212687,
+    "gzip": 48008,
+    "brotli": 40438,
     "packages": {
-     "services/shaders": 34347,
+     "services/shaders": 34530,
      "platform/graphics": 26289,
      "haxe metadata": 21077,
      "services/assets": 19762,
@@ -434,20 +434,20 @@
    },
    "5-mesh": {
     "adds": "3D: a cube made in memory, drawn unlit through a camera by the 3D batch, over the 2D",
-    "raw": 325453,
-    "gzip": 69530,
-    "brotli": 57939,
+    "raw": 323349,
+    "gzip": 69033,
+    "brotli": 57572,
     "packages": {
-     "render/Batch3D": 48205,
-     "services/shaders": 43140,
+     "render/Batch3D": 48844,
+     "services/shaders": 43323,
      "platform/graphics": 27277,
      "math": 24911,
-     "haxe metadata": 23377,
+     "haxe metadata": 23280,
      "services/assets": 19762,
      "render/Batch2D": 14334,
      "std/js": 11498,
-     "render/GpuMesh3D": 10804,
-     "render/Renderer": 10591,
+     "render/Renderer": 10783,
+     "render/GpuMesh3D": 10649,
      "render/Tessellator2D": 8939,
      "render/PlaneDrawing2D": 7993,
      "std/haxe": 7063,
@@ -460,7 +460,6 @@
      "program": 3778,
      "platform/events": 3498,
      "platform/filesystem": 3263,
-     "render/RenderConstants": 2866,
      "render/RenderView": 2865,
      "render/GpuFont2D": 2835,
      "platform": 2656,
@@ -872,8 +871,8 @@
    "9-game": {
     "adds": "a game: what a real game uses, its file formats one of each",
     "raw": 601864,
-    "gzip": 124760,
-    "brotli": 100668,
+    "gzip": 124759,
+    "brotli": 100582,
     "packages": {
      "formats": 44369,
      "math": 36921,
@@ -942,9 +941,9 @@
    },
    "10-everything": {
     "adds": "everything: every function of Raylib, Raymath and Rlgl a program can call, and every file reader",
-    "raw": 1331856,
-    "gzip": 246897,
-    "brotli": 193255,
+    "raw": 1331882,
+    "gzip": 246901,
+    "brotli": 193351,
     "packages": {
      "formats": 131738,
      "ray/RTextures": 104278,
@@ -982,7 +981,7 @@
      "ray/Textures": 7305,
      "platform/shared": 7296,
      "platform/fontrasterizer": 6515,
-     "platform/window": 6489,
+     "platform/window": 6515,
      "ray/ObjModels": 6420,
      "services/fonts": 6114,
      "services/saves": 5654,

@@ -1266,7 +1266,7 @@ function findSampler(name:String):Null<ShaderSampler>
 
 Represents the value an attribute reads when no buffer feeds it, as raylib's `rlSetVertexAttributeDefault` sets one (a vertex color white): the same for every vertex.
 
-- `values:Array<Float>`: The value's components, up to four; the rest are 0, 0, 1 as GL's default (0, 0, 0, 1) has them.
+- `values:Array<Float>`: The value's components, up to four; the rest are 0, 0, 1 as GL's default (0, 0, 0, 1) has them. A matrix attribute takes four a column, column by column (16 for a `mat4`): past four, each four are the next slot's.
 - `slot:Null<Int>`: The attribute's slot. Optional; one of `name` and `slot` is given.
 - `name:Null<String>`: The attribute's name. Optional; one of `name` and `slot` is given.
 

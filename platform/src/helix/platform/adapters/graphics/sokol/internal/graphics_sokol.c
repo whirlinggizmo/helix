@@ -278,12 +278,22 @@ static sg_blend_state blend_of(int blend,int *ok){
 }
 /* A helix.platform.ColorChannels (bit 0 red, 1 green, 2 blue, 3 alpha) as sokol's write mask. */
 static sg_color_mask mask_of(int channels){return channels?(sg_color_mask)channels:SG_COLORMASK_NONE;}
+/* A pipeline made from pd, whose layout fed only the slots in fed and fills the gaps below its last fed slot with a stand-in (sokol
+   refuses a layout whose attributes leave a gap, and without validation enables none past it): each stand-in unwired from its buffer
+   again, so the draw disables its array and it reads its constant (glVertexAttrib4fv), as an unfed slot past the last does. */
+static sg_pipeline make_pipeline(const sg_pipeline_desc *pd,int fed){
+ sg_pipeline pipeline=sg_make_pipeline(pd);
+ _sg_pipeline_t *made=_sg_lookup_pipeline(pipeline.id);
+ if(made)for(int a=0;a<HELIX_MAX_VERTEX_ATTRIBUTES&&a<SG_MAX_VERTEX_ATTRIBUTES;a++)if(!(fed&1<<a))made->gl.attrs[a].vb_index=-1;
+ return pipeline;
+}
 /* A pipeline as helix.platform.PipelineDesc describes it, its ints in order: shader, primitive (0 triangles, 1 lines, 2 points), indexed, blend
    (blend_of), depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front), clockwise, depth only, clip flip
    (0 none, 1 clip scale, 2 view-projection), the color channels written (mask_of), the flip uniform's vertex block slot and byte offset, the
    buffer count, then each buffer's stride, instanced and attribute count, each attribute's slot, format (graphics.h) and offset, then the count of
    attribute constants and each one's slot and four floats' bits. An attribute no buffer feeds reads its constant, or (0, 0, 0, 1): GL's
-   generic attribute value, set before each draw. 0 for a description it can't make (a constant for a slot a buffer feeds among them). */
+   generic attribute value, set before each draw, also for a slot between fed ones (make_pipeline). 0 for a description it can't make (a
+   constant for a slot a buffer feeds among them). */
 uint32_t helix_pipeline(const int *desc,int count){
  if(!desc||count<15)return 0;
  const uint32_t shader=(uint32_t)desc[0];const int group=desc[1]==2?1:desc[1]==1?2:3,indexed=desc[2],depth_only=desc[8],clockwise=desc[7],channels=desc[10];int blend_ok=0;
@@ -324,7 +334,12 @@ uint32_t helix_pipeline(const int *desc,int count){
   if(slot<0||slot>=HELIX_MAX_VERTEX_ATTRIBUTES||fed&1<<slot)return 0;
   memcpy(constants[slot],&desc[at+1],sizeof constants[slot]);
  }
- sg_pipeline pipeline=sg_make_pipeline(&pd);
+ /* The slots below the last fed one that no buffer feeds: a stand-in from the first fed one's buffer, for sokol, unwired once made. */
+ int stand_in=-1;
+ for(int a=0;a<HELIX_MAX_VERTEX_ATTRIBUTES;a++)if(fed&1<<a){stand_in=pd.layout.attrs[a].buffer_index;break;}
+ for(int a=0;a<HELIX_MAX_VERTEX_ATTRIBUTES&&fed>>a;a++)
+  if(!(fed&1<<a))pd.layout.attrs[a]=(sg_vertex_attr_state){.format=SG_VERTEXFORMAT_FLOAT,.offset=0,.buffer_index=stand_in};
+ sg_pipeline pipeline=make_pipeline(&pd,fed);
  if(sg_query_pipeline_state(pipeline)!=SG_RESOURCESTATE_VALID||(pipeline.id&0xffff)>=256){sg_destroy_pipeline(pipeline);return 0;}
  const int slot=pipeline.id&0xffff;
  pipeline_descs[slot]=pd;memset(variants[slot],0,sizeof variants[slot]);variants[slot][0]=pipeline;
@@ -720,7 +735,7 @@ static sg_pipeline variant_of(int slot){
   if(v&12)pd.sample_count=1<<(((v>>2)&3)^power_of(screen_samples()));
   /* Flipped: the front faces (and gl_FrontFacing) the other way round. */
   if(v&16)pd.face_winding=pd.face_winding==SG_FACEWINDING_CW?SG_FACEWINDING_CCW:SG_FACEWINDING_CW;
-  variants[slot][v]=sg_make_pipeline(&pd);
+  variants[slot][v]=make_pipeline(&pd,pipeline_info[slot].fed);
  }
  return variants[slot][v];
 }

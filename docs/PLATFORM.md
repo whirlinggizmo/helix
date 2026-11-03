@@ -265,8 +265,10 @@ enum Event {
   as its `ShaderBlock.members` place them, on every adapter: WebGL2 uploads them into a uniform buffer; sokol's GL sets each member by its
   type at its offset, through the names GL lists as active, as NVIDIA's driver also finds names GL doesn't list (sokol_gfx's own uniform layout computes offsets from a flat list of members, which can't hold a struct's padding,
   and has no `mat2`, `mat3`, `uint` or `bool`); SDL_GPU pushes the bytes whole (its Vulkan driver binds 4 KiB of each block, so a shader there reads no further into one). An attribute the program declares that no buffer feeds
-  reads the pipeline's constant for its slot (`PipelineDesc.attributeConstants`), or (0, 0, 0, 1): GL sets it as the attribute's
-  current value, sokol and SDL_GPU read it from a buffer of their own stepped per instance. A draw refuses a texture that is the open
+  reads the pipeline's constant for its slot (`PipelineDesc.attributeConstants`), or (0, 0, 0, 1), a slot between fed ones too, so
+  every backend takes the same layouts: WebGL2 and sokol set it as the attribute's current value, SDL_GPU reads it from a buffer of
+  its own stepped per instance. sokol refuses a layout whose fed attributes leave a gap of slots, and without its validation enables
+  none past the gap, so its adapter gives such a slot a stand-in from a fed buffer and unwires it once the pipeline is made. A draw refuses a texture that is the open
   pass's own target (the render target drawn into, the shadow map whose layer is drawn into), as sampling what a pass draws into is
   undefined on GL and an error on Vulkan.
   A `Sampling` is a filter, each axis's wrap, a `MipmapFilter` (None: the top level alone; Nearest: the nearest mipmap; Linear: the two
