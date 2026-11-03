@@ -594,7 +594,7 @@ function dispose():Void
 
 Provides `IHttp` natively over `sys.Http`, on a worker thread for each transfer.
 
-It fetches http and https URLs only, failing others; `noCache` has no cache to bypass; an abort stops a transfer at its next part of the body, not while it connects.
+It fetches http and https URLs only, failing others; `noCache` has no cache to bypass; an abort stops a transfer at its next part of the body, not while it connects. A server that sends nothing for 10 seconds fails the transfer, as does one that doesn't take the connection within about 20 (10 for the connection, 10 more for the request).
 
 ```haxe
 function new()

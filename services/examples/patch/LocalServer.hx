@@ -16,7 +16,7 @@ class LocalServer {
 	/** Gets or sets the directory served, so the same URL can serve an updated tree. */
 	public var directory(get, set):String;
 
-	/** Gets or sets whether each connection is lost: a request is answered with a head promising a body, and closed before the body. */
+	/** Gets or sets whether each connection is lost: a request is read, and the connection closed with no answer. */
 	public var losing(get, set):Bool;
 
 	/** Gets the paths it served a file for, in order. */
@@ -86,8 +86,6 @@ class LocalServer {
 			var request = StringTools.trim(client.input.readLine()).split(" ");
 			while (StringTools.trim(client.input.readLine()) != "") {}
 			if (losing) {
-				// A head promising a body, then the connection closed, as one lost on the way.
-				client.output.writeString("HTTP/1.1 200 OK\r\nContent-Length: 100\r\nConnection: close\r\n\r\n");
 				client.close();
 				return;
 			}

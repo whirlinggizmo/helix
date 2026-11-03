@@ -13,7 +13,7 @@ import helix.services.assets.ServerSource;
 /** Shows shipped files patched from a server: a server source with a `ManifestCache`, given the shipped files, listed before them, so a
 	shipped file the server's manifests list at the same hash is read in place and only what changed is downloaded. The manifests are
 	written as it builds (its hxml's `AssetManifests.write`). It loads two files, each time as a new run would: with nothing kept (the
-	cache cleared first), with the same manifests, and natively after the server is updated, with each connection lost before its body
+	cache cleared first), with the same manifests, and natively after the server is updated, with each connection lost before an answer
 	(the copies kept answer), and after the server's manifest drops b.txt: its copy is deleted as that manifest arrives, so with the
 	connection lost again the shipped b.txt answers.
 

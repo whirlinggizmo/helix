@@ -201,7 +201,8 @@ def window(browser):
 class ShortBodies:
     """A test server on 127.0.0.1, at a port the OS picks, on a thread of its own: /whole and /chunked send a 1000-byte body whole, as
     its Content-Length says and in chunks; /short closes after 100 bytes of the 1000 its Content-Length promises, and /cut-chunk after
-    100 bytes of a 1000-byte chunk. Any page may read it (Access-Control-Allow-Origin). Stopped by close(), never by a search for it."""
+    100 bytes of a 1000-byte chunk. /closed closes with no bytes, /cut-status partway through the status line, and /cut-head partway
+    through the headers. Any page may read it (Access-Control-Allow-Origin). Stopped by close(), never by a search for it."""
 
     def __init__(self):
         import http.server
@@ -227,6 +228,12 @@ class ShortBodies:
                                      b'\r\n0\r\n\r\n')
                 elif path == '/cut-chunk':
                     self.wfile.write(f'{head}Transfer-Encoding: chunked\r\n\r\n'.encode() + b'3e8\r\n' + body[:100])
+                elif path == '/closed':
+                    pass
+                elif path == '/cut-status':
+                    self.wfile.write(b'HTTP/1.1 20')
+                elif path == '/cut-head':
+                    self.wfile.write(f'{head}Content-Length: 1000\r\nX-Cu'.encode())
                 else:
                     self.wfile.write(f'HTTP/1.1 404 Not Found\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: 0\r\n\r\n'.encode())
                 self.wfile.flush()
@@ -248,8 +255,10 @@ def http(browser):
     try:
         return tests('http', HTTP, 'HttpTests', 'fetch', browser, backends=False, native_extra={'HELIX_SERVER': server.url},
                      query='&server=' + urllib.parse.quote(server.url, safe=''),
-                     # The browser reports each body ended early in the console, as it should.
-                     expected_errors=('ERR_CONTENT_LENGTH_MISMATCH', 'ERR_INCOMPLETE_CHUNKED_ENCODING'))
+                     # The browser reports each body ended early in the console, as it should, and each head: one with no bytes as
+                     # empty, and a cut status line as a response without the header that lets the page read it.
+                     expected_errors=('ERR_CONTENT_LENGTH_MISMATCH', 'ERR_INCOMPLETE_CHUNKED_ENCODING', 'ERR_EMPTY_RESPONSE',
+                                      "/cut-status' from origin", 'net::ERR_FAILED'))
     finally:
         server.close()
 

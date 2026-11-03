@@ -3,7 +3,10 @@ import helix.platform.IHttp;
 
 /** Checks helix-platform's HTTP client against its contract over a test server that ends bodies early: a body as long as its
 	Content-Length, and a chunked body, each calls `done` with every byte; a body the server closes before its Content-Length, and a
-	chunked body it closes mid-chunk, each calls `failed`, never `done`. `done` means the whole body is here.
+	chunked body it closes mid-chunk, each calls `failed`, never `done`. `done` means the whole body is here. A connection it closes with
+	no bytes, or partway through the status line, each calls `failed` and never `head`; natively, so does one it closes partway through the
+	headers. In a page that one isn't asked for: Chromium takes a head cut short as the whole head, and its body as empty, so `fetch`
+	answers it 200 and `done`.
 
 	Built from the hxml files beside it: in a page, over `fetch`, and natively over `sys.Http`. The server's URL is its `server` option
 	(`?server=` in a page, `HELIX_SERVER` natively), which `tools/platform_checks.py` gives it from a server it starts. It ends with
@@ -38,6 +41,11 @@ class HttpTests {
 			ask(server + "chunked", "done");
 			ask(server + "short", "failed");
 			ask(server + "cut-chunk", "failed");
+			ask(server + "closed", "failed", false);
+			ask(server + "cut-status", "failed", false);
+			#if !js
+			ask(server + "cut-head", "failed", false);
+			#end
 		}
 		started = haxe.Timer.stamp();
 		#if js
@@ -51,8 +59,9 @@ class HttpTests {
 		#end
 	}
 
-	// Asks for a URL and checks its answer is the one expected: "done" with the whole body, or "failed".
-	static function ask(url:String, expected:String):Void {
+	// Asks for a URL and checks its answer is the one expected: "done" with the whole body, or "failed"; and that its head arrives, or never
+	// does when headed is false.
+	static function ask(url:String, expected:String, headed = true):Void {
 		left++;
 		var received = 0, answered = false, calling = true;
 		function answer(how:String) {
@@ -65,7 +74,7 @@ class HttpTests {
 			if (how == "done")
 				check(received == SIZE, '$url: done with $received bytes of $SIZE');
 		}
-		http.get(url, true, new Map(), (status, _) -> check(status == 200, '$url: status $status'), (part:Bytes) -> received += part.length,
+		http.get(url, true, new Map(), (status, _) -> check(headed && status == 200, '$url: status $status'), (part:Bytes) -> received += part.length,
 			() -> answer("done"), why -> answer('failed: $why'));
 		calling = false;
 	}
