@@ -1,6 +1,6 @@
 package helix.raylib;
 
-/** Represents raylib's `ModelAnimation`: a skeleton's poses, frame by frame. `Raylib.LoadModelAnimationsAsync` makes them, 60 frames a
+/** Represents raylib's `ModelAnimation`: a skeleton's poses, frame by frame. `Extras.LoadModelAnimationsAsync` makes them, 60 frames a
 	second; `Raylib.UpdateModelAnimation` poses a model by one. */
 class ModelAnimation {
 	/** Gets or sets the number of bones, which a model it moves has too (`Raylib.IsModelAnimationValid`). */

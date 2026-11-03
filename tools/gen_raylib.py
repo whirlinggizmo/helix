@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Writes the generated parts of helix-raylib's Raylib.hx, Raymath.hx and Rlgl.hx, and the types helix-raylib doesn't have yet.
+"""Writes the generated parts of helix-raylib's Raylib.hx, Raymath.hx, Rlgl.hx and Extras.hx, and the types helix-raylib doesn't have yet.
 
-Raylib.hx has RCore, RShapes, RTextures, RText, RModels, RAudio and RAsync, in raylib's module order; Raymath.hx has RMath and Rlgl.hx
-RRlgl. The sections (engines/raylib/src/helix/raylib/modules/) are read as the compiler describes them (haxe -xml), never by matching their text
+Raylib.hx has RCore, RShapes, RTextures, RText, RModels and RAudio, in raylib's module order; Raymath.hx has RMath and Rlgl.hx RRlgl;
+Extras.hx, what helix-raylib adds to raylib's API, has RAsync and RDevice. The sections (engines/raylib/src/helix/raylib/modules/) are read as the compiler describes them (haxe -xml), never by matching their text
 (docs/CONVENTIONS.md). Each file's generated part has two halves:
 
-  - its header's constants that aren't written by hand: raylib's enum values and number defines (engines/raylib/vendor/raylib/raylib_api.json,
+  - its header's constants that aren't written by hand (Extras has no header): raylib's enum values and number defines (engines/raylib/vendor/raylib/raylib_api.json,
     raymath_api.json and rlgl_api.json, raylib's own description of its API, rlgl's and raymath's made by raylib's parser);
   - its functions: every function of its sections as an inline forward with its doc comment, under a heading naming its module and file;
     then each function a program can't call, as a macro with raylib's signature whose call reports its message where it is
@@ -13,7 +13,8 @@ RRlgl. The sections (engines/raylib/src/helix/raylib/modules/) are read as the c
     `@:unsupported("...")` is one helix-raylib won't have (Build.unsupported), one marked `@:unimplemented("...")` one it doesn't have yet
     (Build.unimplemented), and one of the header's that no section writes is declared `@:unimplemented` with "Not implemented".
 
-So each file reads like its header, and a call costs nothing more. The sections are compiled with the files' generated functions left
+So each file reads like its header, and a call costs nothing more. A refusal's message naming a function of Extras names its import too
+(`import helix.raylib.Extras.*;`), as a program reaching for raylib's call doesn't import Extras yet. The sections are compiled with the files' generated functions left
 out, so a stale file doesn't stop its own making. A struct of raylib's that helix-raylib has no type for is written as a type of its own,
 with raylib's fields, in a file that says it is generated; a type written by hand in its place is left alone.
 
@@ -49,14 +50,20 @@ TARGETS = {
         ('RText', 'rtext: text'),
         ('RModels', 'rmodels: 3D shapes, models, meshes and rays'),
         ('RAudio', 'raudio: sound'),
-        ('RAsync', "the async loads, requests and writes, helix-raylib's own in place of raylib's that wait for a file, a window or a write"),
     ], 'raylib_api.json', 'raylib.h'),
     'Raymath.hx': ([('RMath', 'raymath: vectors, matrices and quaternions')], 'raymath_api.json', 'raymath.h'),
     'Rlgl.hx': ([('RRlgl', 'rlgl: the matrix stack, immediate drawing and render state')], 'rlgl_api.json', 'rlgl.h'),
+    'Extras.hx': ([
+        ('RAsync', "async: the loads, requests and writes in place of raylib's that wait for a file, a window or a write"),
+        ('RDevice', "device: the safe area, run options, the device, the window's abilities, orientation and tilt"),
+    ], None, 'Extras'),
 }
+# What a refusal's message names after a function of Extras.hx.
+EXTRAS_IMPORT = 'import helix.raylib.Extras.*;'
 SECTIONS = [s for sections, _, _ in TARGETS.values() for s in sections]
-# A function of raylib's: capitalized, as raylib's names are, or rl (or rlgl) and a capital, as rlgl's.
-FUNCTION = re.compile(r'(?:rlgl|rl)?[A-Z]\w*')
+# A function of raylib's: capitalized, as raylib's names are, or rl (or rlgl) and a capital, as rlgl's; or one of emscripten's, which
+# raylib's web programs call, refused.
+FUNCTION = re.compile(r'(?:rlgl|rl)?[A-Z]\w*|emscripten_\w+')
 # The section metas that make a function a refusal, and the helper (helix.platform.macros.Build) each calls.
 REFUSALS = {':unsupported': 'unsupported', ':unimplemented': 'unimplemented'}
 # A refusal's message naming what to use instead: "See Name(its parameters)".
@@ -286,8 +293,12 @@ def generated(file_sections, functions, api, header, written):
     """A file's generated part, between and including its markers: its header's constants not written by hand, then forwards to its
     sections' functions, then the functions a program can't call: the sections' marked `@:unsupported` or `@:unimplemented`, and the
     header's no section writes."""
-    out = [BEGIN, f"\t// {header}'s constants that aren't written above, then its functions; edit a function in its section, then run",
-           '\t// python3 tools/gen_raylib.py.']
+    if api is None:
+        out = [BEGIN, "\t// helix-raylib's own functions; edit a function in its section, then run python3 tools/gen_raylib.py."]
+        api = {'functions': []}
+    else:
+        out = [BEGIN, f"\t// {header}'s constants that aren't written above, then its functions; edit a function in its section, then run",
+               '\t// python3 tools/gen_raylib.py.']
     # The header's enum values: plain constants, as raylib's are, so a program's BLEND_ADDITIVE names the value even where the function
     # taking it doesn't compile yet.
     for e in api.get('enums', []):
@@ -352,7 +363,7 @@ def layout():
     every = {f.name for fs in functions.values() for f in fs}
     out = {}
     for name, (target_sections, api_file, header) in TARGETS.items():
-        api = json.loads((VENDOR / api_file).read_text(encoding='utf-8'))
+        api = json.loads((VENDOR / api_file).read_text(encoding='utf-8')) if api_file else {'functions': []}
         headings, refused = {}, {'unsupported': [], 'unimplemented': []}
         for section, title in target_sections:
             for f in functions[section]:
@@ -419,15 +430,23 @@ def main():
     if stale:
         print('gen_raylib: a refusal\'s message names a signature that isn\'t written so: ' + ', '.join(stale))
         return 1
+    extras = {f.name for section, _ in TARGETS['Extras.hx'][0] for f in functions[section]} | set(own['Extras.hx'])
+    unimported = sorted(f.name for f in every.values() if f.refusal and EXTRAS_IMPORT not in f.refusal[1]
+                        and any(re.search(rf'\b{name}\b', f.refusal[1]) for name in extras))
+    if unimported:
+        print(f'gen_raylib: a refusal\'s message names a function of Extras without its import ("{EXTRAS_IMPORT}"): ' + ', '.join(unimported))
+        return 1
     files = {}
     for name, text in texts.items():
         target_sections, api_file, header = TARGETS[name]
-        api = json.loads((VENDOR / api_file).read_text(encoding='utf-8'))
+        api = json.loads((VENDOR / api_file).read_text(encoding='utf-8')) if api_file else None
         before, rest = text.split(BEGIN, 1)
         after = rest.split(END, 1)[1]
         # Written: in a section, or by hand in the file itself (its constants and macro functions).
         written = set(every) | set(own[name])
         files[RAY / name] = before + generated(target_sections, functions, api, header, written) + after
+        if api is None:
+            continue
         callbacks = callback_types(api)
         for s in api['structs']:
             if s['name'] in OPAQUE:

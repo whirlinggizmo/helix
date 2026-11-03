@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.Extras.*;
 
 // scene.c's core_vr_simulator, drawn by helix-raylib as raylib's example is written: the third frame saved as helix.png. Its shader (web/)
 // is raylib's distortion330.fs, as the example has it.

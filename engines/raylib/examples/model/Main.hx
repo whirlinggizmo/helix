@@ -1,4 +1,5 @@
 import helix.raylib.Raylib.*;
+import helix.raylib.Extras.*;
 import helix.raylib.Camera3D;
 import helix.raylib.Model;
 import helix.raylib.Vector3;

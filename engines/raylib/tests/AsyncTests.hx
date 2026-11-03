@@ -2,6 +2,7 @@ import haxe.io.Bytes;
 import helix.platform.IClipboard;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.Extras.*;
 import helix.raylib.internal.Runtime;
 import helix.services.input.Mouse;
 import helix.services.saves.Saves;

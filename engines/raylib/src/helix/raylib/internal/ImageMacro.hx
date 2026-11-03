@@ -5,12 +5,12 @@ import haxe.macro.Expr;
 
 using StringTools;
 
-/** Chooses an image file's reader as the program builds (`Raylib.LoadImageAsync`, `LoadImageFromMemoryAsync`, `LoadTextureAsync`,
+/** Chooses an image file's reader as the program builds (`Extras.LoadImageAsync`, `LoadImageFromMemoryAsync`, `LoadTextureAsync`,
 	`LoadFontAsync`, `LoadImageAnimAsync` and `LoadImageAnimFromMemoryAsync`), so a program that names no GIF file carries no GIF
 	reader. */
 @:noCompletion
 class ImageMacro {
-	/** Returns the call loading an image file by the reader its file needs (`Raylib.LoadImageAsync`).
+	/** Returns the call loading an image file by the reader its file needs (`Extras.LoadImageAsync`).
 
 		@param fileName  The file's name.
 		@param loaded  Receives the image.
@@ -20,7 +20,7 @@ class ImageMacro {
 		return byName(fileName, ["loadImage", "loadGifImage", "loadPlainImage"], [fileName, loaded, orNull(failed)]);
 	}
 
-	/** Returns the call decoding an image file's bytes by the reader its type needs (`Raylib.LoadImageFromMemoryAsync`).
+	/** Returns the call decoding an image file's bytes by the reader its type needs (`Extras.LoadImageFromMemoryAsync`).
 
 		@param fileType  The file's extension.
 		@param fileData  The file's bytes.
@@ -32,7 +32,7 @@ class ImageMacro {
 		return byType(fileType, ["decodeImage", "decodeGifImage", "decodePlainImage"], [fileType, fileData, dataSize, loaded, orNull(failed)]);
 	}
 
-	/** Returns the call loading an image file as a texture by the reader its file needs (`Raylib.LoadTextureAsync`).
+	/** Returns the call loading an image file as a texture by the reader its file needs (`Extras.LoadTextureAsync`).
 
 		@param fileName  The file's name.
 		@param loaded  Receives the texture.
@@ -42,7 +42,7 @@ class ImageMacro {
 		return byName(fileName, ["loadTextureFile", "loadGifTexture", "loadPlainTexture"], [fileName, loaded, orNull(failed)]);
 	}
 
-	/** Returns the call loading a font file by the reader its file needs (`Raylib.LoadFontAsync`).
+	/** Returns the call loading a font file by the reader its file needs (`Extras.LoadFontAsync`).
 
 		@param fileName  The file's name.
 		@param loaded  Receives the font.
@@ -52,7 +52,7 @@ class ImageMacro {
 		return byName(fileName, ["loadFont", "loadGifFont", "loadPlainFont"], [fileName, loaded, orNull(failed)]);
 	}
 
-	/** Returns the call loading an animated image by the reader its file needs (`Raylib.LoadImageAnimAsync`).
+	/** Returns the call loading an animated image by the reader its file needs (`Extras.LoadImageAnimAsync`).
 
 		@param fileName  The file's name.
 		@param frames  Receives the frame count.
@@ -63,7 +63,7 @@ class ImageMacro {
 		return byName(fileName, ["loadImageAnim", "loadGifAnim", "loadStillAnim"], [fileName, frames, loaded, orNull(failed)]);
 	}
 
-	/** Returns the call decoding an animated image's bytes by the reader its type needs (`Raylib.LoadImageAnimFromMemoryAsync`).
+	/** Returns the call decoding an animated image's bytes by the reader its type needs (`Extras.LoadImageAnimFromMemoryAsync`).
 
 		@param fileType  The file's extension.
 		@param fileData  The file's bytes.

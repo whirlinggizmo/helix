@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.Extras.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 

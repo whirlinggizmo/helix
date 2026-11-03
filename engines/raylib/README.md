@@ -8,6 +8,7 @@ program written as raylib is written runs in a page and natively.
 | `helix.raylib.Raylib` | raylib's functions, constants and colors, as `raylib.h` names them |
 | `helix.raylib.Raymath` | raymath's vectors, matrices and quaternions, as `raymath.h` names them, imported apart as raylib includes it |
 | `helix.raylib.Rlgl` | rlgl's matrix stack, immediate drawing and render state, as `rlgl.h` names them, imported apart as raylib includes it |
+| `helix.raylib.Extras` | what helix-raylib adds to raylib's API, imported apart (`import helix.raylib.Extras.*;`): the `...Async` loads, requests and writes in place of raylib's calls a page can't wait for, and the safe area, run options, device, window abilities, screen orientation and tilt |
 | `helix.raylib.Vector2`, `Vector3`, `Color`, `Texture2D`, `Camera3D`, `Model`, `Shader`, `RenderTexture2D` and the rest | raylib's structs, with their fields |
 
 The window and frame, the keyboard, mouse, touch and gamepads, text input, shapes (with 6.2's fixes), textures (their pixels updated and read back, their mipmaps made and filtered as raylib's GL filters them; cubemaps from an image in any of raylib's layouts, drawn as a skybox or sampled by a shader), every blend mode (rlgl's custom factors too) and scissor modes, the default
@@ -37,6 +38,18 @@ haxelib dev helix-raylib <checkout>/engines/raylib
 `-D helix-raylib-files=<directory>` names where the program's shaders are as it builds (default `web`), and `-D helix-raylib-native-root=<directory>`
 where a native program finds its files, relative to itself (default `../web`). `-D helix-raylib-custom-frame-control` is raylib's
 `SUPPORT_CUSTOM_FRAME_CONTROL`: `EndDrawing` only draws, and the program calls `SwapScreenBuffer`, `WaitTime` and `PollInputEvents`.
+
+## What helix-raylib adds
+
+`Raylib`, `Raymath` and `Rlgl` are raylib 5.5's API and nothing more (docs/DECISIONS.md 24, 38). What helix-raylib adds is in `Extras`: the
+loads, requests and writes that answer later (`LoadTextureAsync`, `ToggleFullscreenAsync`, `SaveFileTextAsync` and the rest), and what a
+game needs from the device and the page that raylib has no call for (`GetWindowSafeArea`, `GetRunOption`, `IsPlatformWeb`,
+`GetPlatformOS`, `IsTouchScreenAvailable`, `IsFinePointerAvailable`, `IsWindowCloseable`, `IsFullscreenAvailable`,
+`SetScreenOrientationAsync`, `GetScreenOrientation`, and the tilt: `EnableTiltAsync`, `GetTilt`, `SetTiltRange`, `CalibrateTilt`,
+`DisableTilt`). raylib's call a page can't wait for doesn't compile, naming the one in `Extras` and its import; so do emscripten's calls
+raylib's web programs make (`emscripten_set_main_loop` and the rest), saying what to write instead. A program that reaches the page or
+the host itself for what `Extras` answers (the URL's query, `Sys.getEnv`, `matchMedia`, `maxTouchPoints`, `screen.orientation`,
+`env(safe-area-inset-*)`, `deviceorientation`) builds with a warning at each place, naming the call.
 
 ## What a model holds
 

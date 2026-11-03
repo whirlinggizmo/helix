@@ -270,7 +270,7 @@ INTRODUCTIONS = {
             'helix-raylib\'s bytes are counted by source file: raylib\'s modules (R*) and its internals, its facade and structs as raylib. '
             'The last two rungs are its high-water marks. The game is what a real game uses, one file format of each kind (a skinned, '
             'blended glTF model, PNG textures, a TTF font, WAV sounds and Ogg music, every input, a save, a shader and a render '
-            'texture). The kitchen sink calls every function of `Raylib`, `Raymath` and `Rlgl` that compiles, written as the program '
+            'texture). The kitchen sink calls every function of `Raylib`, `Raymath`, `Rlgl` and `Extras` that compiles, written as the program '
             'builds (its `Everything.hx`), and every reader by a constant name of each extension, so nothing of helix-raylib is left out: '
             'it is the comparison point for whole-library sizes, such as an Emscripten build of raylib exporting everything.'),
 }

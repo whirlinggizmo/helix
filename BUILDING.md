@@ -33,7 +33,7 @@ python3 tools/raylib_parity.py                 # helix-raylib against raylib's o
 python3 tools/format.py --check             # layout
 python3 tools/check_docs.py                 # doc comments
 python3 tools/gen_apidoc.py                 # remake docs/api after a doc comment changes (--check in the tests)
-python3 tools/gen_raylib.py                 # remake helix-raylib's Raylib.hx, Raymath.hx and Rlgl.hx after a section changes (--check in the tests)
+python3 tools/gen_raylib.py                 # remake helix-raylib's Raylib.hx, Raymath.hx, Rlgl.hx and Extras.hx after a section changes (--check in the tests)
 ```
 
 Native checks that open a window run on a private display (`tools/private_display.py`), never on the user's desktop. `SDL_AUDIO_DRIVER=dummy`
@@ -54,7 +54,7 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `tools/cli.cjs` | The Node tools' argument parsing (a module) |
 | `tools/format.py` | haxe-formatter over the libraries (`--check` only checks) |
 | `tools/gen_apidoc.py` | The API reference from the doc comments: `docs/api` (committed) and `build/api` (`--check`) |
-| `tools/gen_raylib.py` | helix-raylib's `Raylib.hx`, `Raymath.hx` and `Rlgl.hx`: forwards to each function of its sections (`engines/raylib/src/helix/raylib/modules`, read through `haxe -xml`), by raylib's modules, and the refusals of what helix-raylib won't or doesn't yet have (`--check`) |
+| `tools/gen_raylib.py` | helix-raylib's `Raylib.hx`, `Raymath.hx`, `Rlgl.hx` and `Extras.hx`: forwards to each function of its sections (`engines/raylib/src/helix/raylib/modules`, read through `haxe -xml`), by raylib's modules, and the refusals of what helix-raylib won't or doesn't yet have (`--check`) |
 | `tools/measure_sizes.py` | Each library's and engine's web size ladder (`<directory>/tests/sizes`) against `docs/benchmarks.json` (`--write`, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
 | `tools/native_build.py` | hxcpp's environment for the adapters' C, and the platform's C-only tests built with CMake (a module) |
 | `tools/page_check.cjs` | A page in headless Chromium: its errors, its result and a screenshot (run by `platform_checks.py`) |

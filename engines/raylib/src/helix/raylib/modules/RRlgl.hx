@@ -777,7 +777,7 @@ class RRlgl {
 		draws through helix-platform, not GL, so a call doesn't compile.
 
 		@param slot  As rlgl takes it. */
-	@:unsupported("rlActiveTextureSlot: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlActiveTextureSlot: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlActiveTextureSlot(slot:Int):Void {
 		throw "rlActiveTextureSlot is unsupported";
 	}
@@ -786,7 +786,7 @@ class RRlgl {
 		draws through helix-platform, not GL, so a call doesn't compile.
 
 		@param id  As rlgl takes it. */
-	@:unsupported("rlEnableTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlEnableTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlEnableTexture(id:Int):Void {
 		throw "rlEnableTexture is unsupported";
 	}
@@ -794,7 +794,7 @@ class RRlgl {
 	/** rlgl's `rlDisableTexture`: disable texture, which helix-raylib doesn't have, as it
 		draws through helix-platform, not GL, so a call doesn't compile.
 	 */
-	@:unsupported("rlDisableTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlDisableTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlDisableTexture():Void {
 		throw "rlDisableTexture is unsupported";
 	}
@@ -803,7 +803,7 @@ class RRlgl {
 		draws through helix-platform, not GL, so a call doesn't compile.
 
 		@param id  As rlgl takes it. */
-	@:unsupported("rlEnableTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlEnableTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlEnableTextureCubemap(id:Int):Void {
 		throw "rlEnableTextureCubemap is unsupported";
 	}
@@ -811,7 +811,7 @@ class RRlgl {
 	/** rlgl's `rlDisableTextureCubemap`: disable texture cubemap, which helix-raylib doesn't have, as it
 		draws through helix-platform, not GL, so a call doesn't compile.
 	 */
-	@:unsupported("rlDisableTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlDisableTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlDisableTextureCubemap():Void {
 		throw "rlDisableTextureCubemap is unsupported";
 	}
@@ -822,7 +822,7 @@ class RRlgl {
 		@param id  As rlgl takes it.
 		@param param  As rlgl takes it.
 		@param value  As rlgl takes it. */
-	@:unsupported("rlTextureParameters: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlTextureParameters: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlTextureParameters(id:Int, param:Int, value:Int):Void {
 		throw "rlTextureParameters is unsupported";
 	}
@@ -833,7 +833,7 @@ class RRlgl {
 		@param id  As rlgl takes it.
 		@param param  As rlgl takes it.
 		@param value  As rlgl takes it. */
-	@:unsupported("rlCubemapParameters: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlCubemapParameters: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlCubemapParameters(id:Int, param:Int, value:Int):Void {
 		throw "rlCubemapParameters is unsupported";
 	}
@@ -965,7 +965,7 @@ class RRlgl {
 		draws through helix-platform, not GL, so a call doesn't compile.
 
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlGetTextureIdDefault: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlGetTextureIdDefault: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlGetTextureIdDefault():Int {
 		throw "rlGetTextureIdDefault is unsupported";
 	}
@@ -1190,7 +1190,7 @@ class RRlgl {
 		@param format  As rlgl takes it.
 		@param mipmapCount  As rlgl takes it.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlLoadTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlLoadTexture(data:Dynamic, width:Int, height:Int, format:Int, mipmapCount:Int):Int {
 		throw "rlLoadTexture is unsupported";
 	}
@@ -1202,7 +1202,7 @@ class RRlgl {
 		@param height  As rlgl takes it.
 		@param useRenderBuffer  As rlgl takes it.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadTextureDepth: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlLoadTextureDepth: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlLoadTextureDepth(width:Int, height:Int, useRenderBuffer:Bool):Int {
 		throw "rlLoadTextureDepth is unsupported";
 	}
@@ -1215,7 +1215,7 @@ class RRlgl {
 		@param format  As rlgl takes it.
 		@param mipmapCount  As rlgl takes it.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlLoadTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlLoadTextureCubemap(data:Dynamic, size:Int, format:Int, mipmapCount:Int):Int {
 		throw "rlLoadTextureCubemap is unsupported";
 	}
@@ -1230,7 +1230,7 @@ class RRlgl {
 		@param height  As rlgl takes it.
 		@param format  As rlgl takes it.
 		@param data  As rlgl takes it. */
-	@:unsupported("rlUpdateTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlUpdateTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlUpdateTexture(id:Int, offsetX:Int, offsetY:Int, width:Int, height:Int, format:Int, data:Dynamic):Void {
 		throw "rlUpdateTexture is unsupported";
 	}
@@ -1242,7 +1242,7 @@ class RRlgl {
 		@param glInternalFormat  As rlgl takes it.
 		@param glFormat  As rlgl takes it.
 		@param glType  As rlgl takes it. */
-	@:unsupported("rlGetGlTextureFormats: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlGetGlTextureFormats: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlGetGlTextureFormats(format:Int, glInternalFormat:Array<Int>, glFormat:Array<Int>, glType:Array<Int>):Void {
 		throw "rlGetGlTextureFormats is unsupported";
 	}
@@ -1251,7 +1251,7 @@ class RRlgl {
 		draws through helix-platform, not GL, so a call doesn't compile.
 
 		@param id  As rlgl takes it. */
-	@:unsupported("rlUnloadTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlUnloadTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlUnloadTexture(id:Int):Void {
 		throw "rlUnloadTexture is unsupported";
 	}
@@ -1264,7 +1264,7 @@ class RRlgl {
 		@param height  As rlgl takes it.
 		@param format  As rlgl takes it.
 		@param mipmaps  As rlgl takes it. */
-	@:unsupported("rlGenTextureMipmaps: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlGenTextureMipmaps: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlGenTextureMipmaps(id:Int, width:Int, height:Int, format:Int, mipmaps:Array<Int>):Void {
 		throw "rlGenTextureMipmaps is unsupported";
 	}
@@ -1277,7 +1277,7 @@ class RRlgl {
 		@param height  As rlgl takes it.
 		@param format  As rlgl takes it.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlReadTexturePixels: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlReadTexturePixels: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlReadTexturePixels(id:Int, width:Int, height:Int, format:Int):Dynamic {
 		throw "rlReadTexturePixels is unsupported";
 	}
@@ -1557,7 +1557,7 @@ class RRlgl {
 		@param index  As rlgl takes it.
 		@param format  As rlgl takes it.
 		@param readonly  As rlgl takes it. */
-	@:unsupported("rlBindImageTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlBindImageTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.Extras (import helix.raylib.Extras.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlBindImageTexture(id:Int, index:Int, format:Int, readonly:Bool):Void {
 		throw "rlBindImageTexture is unsupported";
 	}

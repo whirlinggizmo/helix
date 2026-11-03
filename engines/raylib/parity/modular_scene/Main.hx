@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.Extras.*;
 
 // scene.c's Adventurer woman holding the sword, drawn by helix-raylib: the third frame after her loads saved as helix.png.
 class Main {

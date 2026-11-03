@@ -1,15 +1,17 @@
-// helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one everything: every function of Raylib, Raymath and Rlgl a program can call, and every file reader.
+// helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one everything: every function of Raylib, Raymath, Rlgl and Extras a program can call, and every file reader.
 import helix.raylib.Raylib.*;
+import helix.raylib.Extras.*;
 
-/** helix-raylib's high-water mark: a program calling every function of `Raylib`, `Raymath` and `Rlgl` that compiles (`Everything.calls`
+/** helix-raylib's high-water mark: a program calling every function of `Raylib`, `Raymath`, `Rlgl` and `Extras` that compiles (`Everything.calls`
 	writes them as the program builds), and each macro function that chooses a reader by a constant file name (DECISIONS 29) once for each
 	reader, so nothing of helix-raylib can be left out. A game approaches it from below. It is built and measured, never run: its calls are
 	given nothing, and its files aren't there. */
 @:adds("helix.formats.deflate", "helix.formats.gif", "helix.formats.obj", "helix.formats.png", "helix.formats.qoa", "helix.formats.wav",
 	"helix.geometry.Geometry2D", "helix.math.Bounds2D", "helix.math.DistanceField2D", "helix.platform.adapters.clipboard.dom",
-	"helix.platform.adapters.export.download", "helix.math.Interpolate", "helix.raylib.internal.Automation", "helix.raylib.internal.DroppedFiles",
-	"helix.raylib.internal.FontAtlases", "helix.raylib.internal.Mipmaps", "helix.raylib.internal.ObjModels", "helix.raylib.internal.ParShapes",
-	"helix.raylib.internal.Stereo", "helix.raylib.internal.Waves", "helix.services.screenshots")
+	"helix.platform.adapters.export.download", "helix.platform.adapters.tilt.dom", "helix.math.Interpolate", "helix.raylib.internal.Automation",
+	"helix.raylib.internal.DroppedFiles", "helix.raylib.internal.FontAtlases", "helix.raylib.internal.Mipmaps", "helix.raylib.internal.ObjModels",
+	"helix.raylib.internal.ParShapes", "helix.raylib.internal.Stereo", "helix.raylib.internal.Waves", "helix.raylib.modules.RDevice",
+	"helix.services.input.Tilt", "helix.services.input.TiltAxis", "helix.services.screenshots")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

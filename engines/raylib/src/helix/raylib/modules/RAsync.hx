@@ -26,13 +26,13 @@ import helix.raylib.modules.RAsync.*;
 #end
 
 /** Holds the async loads, requests and writes, helix-raylib's own in place of raylib's loads that wait for a file and its window, cursor,
-	clipboard and file calls done when they return, written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
+	clipboard and file calls done when they return, written here; `Extras` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RAsync {
 	#if !macro
 	// ---- The async loads: helix-raylib's own, not raylib's ----
-	// LoadTextureAsync's call where its file's name isn't known as the program builds (Raylib.LoadTextureAsync): a GIF file's first
+	// LoadTextureAsync's call where its file's name isn't known as the program builds (Extras.LoadTextureAsync): a GIF file's first
 	// frame or the platform's decode, picked by its extension as it runs, so both are in the program.
 	static function loadTextureFile(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void {
 		if (isGif(fileName))
@@ -53,7 +53,7 @@ class RAsync {
 		Runtime.fetch(path, error -> error == null ? loaded(RTextures.loadTexture(path)) : refuse("LoadTextureAsync", error, failed));
 	}
 
-	// LoadModelAsync's call where its file's name isn't known as the program builds (Raylib.LoadModelAsync): the reader picked by its
+	// LoadModelAsync's call where its file's name isn't known as the program builds (Extras.LoadModelAsync): the reader picked by its
 	// extension as it runs, so both readers are in the program. A format helix-raylib doesn't read is refused.
 	static function loadModel(fileName:String, loaded:Model->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName), lower = path.toLowerCase();
@@ -242,7 +242,7 @@ class RAsync {
 			entry.answers.push(error -> error == null ? loaded(sound) : refuse("LoadSoundAsync", error, failed));
 	}
 
-	// LoadWaveAsync's call (Raylib.LoadWaveAsync): the file fetched, then read by read, the reader its extension names (WaveMacro).
+	// LoadWaveAsync's call (Extras.LoadWaveAsync): the file fetched, then read by read, the reader its extension names (WaveMacro).
 	static function loadWave(fileName:String, read:WaveReader, loaded:Wave->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
 		Runtime.fetch(path, error -> {
@@ -256,7 +256,7 @@ class RAsync {
 		});
 	}
 
-	// LoadWaveFromMemoryAsync's call (Raylib.LoadWaveFromMemoryAsync): the bytes read by read, the reader fileType names (WaveMacro).
+	// LoadWaveFromMemoryAsync's call (Extras.LoadWaveFromMemoryAsync): the bytes read by read, the reader fileType names (WaveMacro).
 	static function loadWaveFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, read:WaveReader, loaded:Wave->Void, ?failed:String->Void):Void {
 		var data = fileData == null ? haxe.io.Bytes.alloc(0) : dataSize < fileData.length ? fileData.sub(0, Std.int(Math.max(0, dataSize))) : fileData;
 		read(fileType == null ? "" : fileType, data, wave -> loadedWave(wave, loaded), message -> refuse("LoadWaveFromMemoryAsync", message, failed));
@@ -662,7 +662,7 @@ class RAsync {
 		scan(basePath, () -> loaded(list));
 	}
 
-	// LoadFontAsync's call where its file's name isn't known as the program builds (Raylib.LoadFontAsync): a GIF image's glyphs or the
+	// LoadFontAsync's call where its file's name isn't known as the program builds (Extras.LoadFontAsync): a GIF image's glyphs or the
 	// other readers, picked by its extension as it runs, so the GIF reader is in the program.
 	static function loadFont(fileName:String, loaded:Font->Void, ?failed:String->Void):Void {
 		if (isGif(fileName))
@@ -785,7 +785,7 @@ class RAsync {
 			message -> refuse("LoadFontDataAsync", message, failed));
 	}
 
-	// LoadImageAsync's call where its file's name isn't known as the program builds (Raylib.LoadImageAsync): a GIF file's first frame
+	// LoadImageAsync's call where its file's name isn't known as the program builds (Extras.LoadImageAsync): a GIF file's first frame
 	// or the other decodes, picked by its extension as it runs, so both are in the program.
 	static function loadImage(fileName:String, loaded:Image->Void, ?failed:String->Void):Void {
 		if (isGif(fileName))
@@ -870,7 +870,7 @@ class RAsync {
 		}, error -> refuse("LoadImageRawAsync", error, failed));
 	}
 
-	// LoadImageFromMemoryAsync's call where its type isn't known as the program builds (Raylib.LoadImageFromMemoryAsync): raylib's two
+	// LoadImageFromMemoryAsync's call where its type isn't known as the program builds (Extras.LoadImageFromMemoryAsync): raylib's two
 	// spellings of ".gif" read as GIF, any other type decoded as the rest are, so both are in the program.
 	static function decodeImage(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void):Void {
 		if (fileType == ".gif" || fileType == ".GIF")
@@ -904,7 +904,7 @@ class RAsync {
 		Runtime.later(() -> decoded("LoadImageFromMemoryAsync", fileType == null ? "" : fileType.toLowerCase(), data, loaded, failed));
 	}
 
-	// LoadImageAnimAsync's call where its file's name isn't known as the program builds (Raylib.LoadImageAnimAsync): the GIF reader or
+	// LoadImageAnimAsync's call where its file's name isn't known as the program builds (Extras.LoadImageAnimAsync): the GIF reader or
 	// the image load picked by its extension as it runs, so both are in the program.
 	static function loadImageAnim(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void):Void {
 		if (isGif(fileName))

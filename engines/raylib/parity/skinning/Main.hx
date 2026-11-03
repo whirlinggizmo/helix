@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.Extras.*;
 
 // scene.c's greenman, drawn by helix-raylib: the third frame after its loads saved as helix.png. Its files (web/) are the model and raylib
 // 6.2's example skinning shaders.

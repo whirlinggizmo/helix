@@ -12,7 +12,9 @@ class FakeSystem implements ISystem {
 	/** Creates one with no options at time 0. */
 	public function new() {}
 
-	/** Gets null: no test reads the device. */
+	/** Gets or sets what `device` returns: null until a test sets it. */
+	public var described:Null<Device> = null;
+
 	/** Gets "Company". */
 	public var company(default, null):String = "Company";
 
@@ -22,7 +24,7 @@ class FakeSystem implements ISystem {
 	public var device(get, never):Device;
 
 	function get_device():Device
-		return null;
+		return described;
 
 	public function getOption(name:String):Null<String>
 		return options.get(name);

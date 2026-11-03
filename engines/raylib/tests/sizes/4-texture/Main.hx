@@ -1,5 +1,6 @@
 // helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a texture loaded with LoadTextureAsync and drawn.
 import helix.raylib.Raylib.*;
+import helix.raylib.Extras.*;
 import helix.raylib.Texture2D;
 import helix.raylib.Vector2;
 

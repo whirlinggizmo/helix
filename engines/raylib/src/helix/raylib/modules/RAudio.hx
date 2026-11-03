@@ -106,7 +106,7 @@ class RAudio {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadWave: Synchronous loading is not supported. See LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void)")
+	@:unsupported("LoadWave: Synchronous loading is not supported. See LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function LoadWave(fileName:String):Wave {
 		throw "LoadWave is unimplemented";
 	}
@@ -118,7 +118,7 @@ class RAudio {
 		@param fileData  The file's bytes.
 		@param dataSize  How many of them.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadWaveFromMemory: Decoding is asynchronous. See LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void)")
+	@:unsupported("LoadWaveFromMemory: Decoding is asynchronous. See LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function LoadWaveFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Wave {
 		throw "LoadWaveFromMemory is unimplemented";
 	}
@@ -144,7 +144,7 @@ class RAudio {
 		@param wave  The wave.
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportWave: A file is written later, or is refused. See ExportWaveAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("ExportWave: A file is written later, or is refused. See ExportWaveAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function ExportWave(wave:Wave, fileName:String):Bool {
 		throw "ExportWave is unimplemented";
 	}
@@ -167,7 +167,7 @@ class RAudio {
 		@param wave  The wave.
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportWaveAsCode: A file is written later, or is refused. See ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("ExportWaveAsCode: A file is written later, or is refused. See ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function ExportWaveAsCode(wave:Wave, fileName:String):Bool {
 		throw "ExportWaveAsCode is unimplemented";
 	}
@@ -329,7 +329,7 @@ class RAudio {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void)")
+	@:unsupported("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function LoadSound(fileName:String):Sound {
 		throw "LoadSound is unimplemented";
 	}

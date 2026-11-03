@@ -3,7 +3,7 @@ package helix.raylib.internal;
 #if macro
 import haxe.macro.Expr;
 
-/** Chooses a wave's reader as the program builds (`Raylib.LoadWaveAsync`, `Raylib.LoadWaveFromMemoryAsync`), so a program carries only
+/** Chooses a wave's reader as the program builds (`Extras.LoadWaveAsync`, `Extras.LoadWaveFromMemoryAsync`), so a program carries only
 	the readers it names, as `ModelMacro` chooses a model's. */
 @:noCompletion
 class WaveMacro {

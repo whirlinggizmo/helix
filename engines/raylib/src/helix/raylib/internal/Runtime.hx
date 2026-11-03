@@ -550,6 +550,21 @@ class Runtime {
 		return gamepadsService;
 	}
 
+	/** Gets the tilt, made when first asked for. Only the tilt's functions ask, so a program that never calls one links none of it. */
+	public static function tilt():helix.services.input.Tilt {
+		if (tiltService == null) {
+			#if js
+			tiltService = new helix.services.input.Tilt(events, new helix.platform.adapters.tilt.dom.DomTiltAdapter({events: cast events}));
+			#else
+			tiltService = new helix.services.input.Tilt(events, new helix.platform.adapters.tilt.sdl3.Sdl3TiltAdapter({events: cast events}));
+			#end
+			devices.push(tiltService);
+		}
+		return tiltService;
+	}
+
+	static var tiltService:Null<helix.services.input.Tilt> = null;
+
 	/** Draws the frame, shows it, waits out the rest of the frame natively, as raylib does, and reads the next frame's input. With
 		`-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, it only draws the frame: `SwapScreenBuffer` shows it
 		and `PollInputEvents` reads the input. The input recorded for automation is recorded first, as raylib's is. */

@@ -87,7 +87,7 @@ class RCore {
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels. */
-	@:unsupported("SetWindowSize: The window changes later, or is refused. See SetWindowSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("SetWindowSize: The window changes later, or is refused. See SetWindowSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function SetWindowSize(width:Int, height:Int):Void {
 		throw "SetWindowSize is unimplemented";
 	}
@@ -122,28 +122,28 @@ class RCore {
 
 	/** raylib's maximize, done when it returns. The window manager maximizes the window later, or refuses (a page can't), so a
 		call doesn't compile on any target: `MaximizeWindowAsync` asks for it and answers. */
-	@:unsupported("MaximizeWindow: The window changes later, or is refused. See MaximizeWindowAsync(?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("MaximizeWindow: The window changes later, or is refused. See MaximizeWindowAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function MaximizeWindow():Void {
 		throw "MaximizeWindow is unimplemented";
 	}
 
 	/** raylib's minimize, done when it returns. The window manager minimizes the window later, or refuses (a page can't), so a
 		call doesn't compile on any target: `MinimizeWindowAsync` asks for it and answers. */
-	@:unsupported("MinimizeWindow: The window changes later, or is refused. See MinimizeWindowAsync(?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("MinimizeWindow: The window changes later, or is refused. See MinimizeWindowAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function MinimizeWindow():Void {
 		throw "MinimizeWindow is unimplemented";
 	}
 
 	/** raylib's restore, done when it returns. The window manager restores the window later, or refuses, so a call doesn't
 		compile on any target: `RestoreWindowAsync` asks for it and answers. */
-	@:unsupported("RestoreWindow: The window changes later, or is refused. See RestoreWindowAsync(?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("RestoreWindow: The window changes later, or is refused. See RestoreWindowAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function RestoreWindow():Void {
 		throw "RestoreWindow is unimplemented";
 	}
 
 	/** raylib's focus, done when it returns. The window manager gives the window the keyboard later, or keeps it elsewhere, so
 		a call doesn't compile on any target: `SetWindowFocusedAsync` asks for it and answers. */
-	@:unsupported("SetWindowFocused: The window changes later, or is refused. See SetWindowFocusedAsync(?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("SetWindowFocused: The window changes later, or is refused. See SetWindowFocusedAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function SetWindowFocused():Void {
 		throw "SetWindowFocused is unimplemented";
 	}
@@ -185,7 +185,7 @@ class RCore {
 		`SetWindowOpacityAsync` asks for it and answers.
 
 		@param opacity  From 0 (clear) to 1 (opaque). */
-	@:unsupported("SetWindowOpacity: The window changes later, or is refused. See SetWindowOpacityAsync(opacity:Float, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("SetWindowOpacity: The window changes later, or is refused. See SetWindowOpacityAsync(opacity:Float, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function SetWindowOpacity(opacity:Float):Void {
 		throw "SetWindowOpacity is unimplemented";
 	}
@@ -195,7 +195,7 @@ class RCore {
 
 		@param width  The width, in the screen's pixels.
 		@param height  The height. */
-	@:unsupported("SetWindowMinSize: The window changes later, or is refused. See SetWindowMinSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("SetWindowMinSize: The window changes later, or is refused. See SetWindowMinSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function SetWindowMinSize(width:Int, height:Int):Void {
 		throw "SetWindowMinSize is unimplemented";
 	}
@@ -205,7 +205,7 @@ class RCore {
 
 		@param width  The width, in the screen's pixels.
 		@param height  The height. */
-	@:unsupported("SetWindowMaxSize: The window changes later, or is refused. See SetWindowMaxSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("SetWindowMaxSize: The window changes later, or is refused. See SetWindowMaxSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function SetWindowMaxSize(width:Int, height:Int):Void {
 		throw "SetWindowMaxSize is unimplemented";
 	}
@@ -234,7 +234,7 @@ class RCore {
 		call doesn't compile on any target: `SetClipboardTextAsync` writes it and answers.
 
 		@param text  The text. */
-	@:unsupported("SetClipboardText: The clipboard is written later, or is refused. See SetClipboardTextAsync(text:String, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("SetClipboardText: The clipboard is written later, or is refused. See SetClipboardTextAsync(text:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function SetClipboardText(text:String):Void {
 		throw "SetClipboardText is unimplemented";
 	}
@@ -243,7 +243,7 @@ class RCore {
 		`GetClipboardTextAsync` answers it.
 
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GetClipboardText: Synchronous clipboard access is not supported. See GetClipboardTextAsync(read:String->Void, ?failed:String->Void)")
+	@:unsupported("GetClipboardText: Synchronous clipboard access is not supported. See GetClipboardTextAsync(read:String->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function GetClipboardText():String {
 		throw "GetClipboardText is unimplemented";
 	}
@@ -251,7 +251,7 @@ class RCore {
 	/** raylib's clipboard image, which waits for the answer. A call doesn't compile on any target: `GetClipboardImageAsync` answers it.
 
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GetClipboardImage: Synchronous clipboard access is not supported. See GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void)")
+	@:unsupported("GetClipboardImage: Synchronous clipboard access is not supported. See GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function GetClipboardImage():Image {
 		throw "GetClipboardImage is unimplemented";
 	}
@@ -291,14 +291,14 @@ class RCore {
 
 	/** raylib's fullscreen toggle, done when it returns. The platform applies it later or refuses it (a page only soon after a key
 		press, click or tap), so a call doesn't compile on any target: `ToggleFullscreenAsync` asks for it and answers. */
-	@:unsupported("ToggleFullscreen: The window changes later, or is refused. See ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("ToggleFullscreen: The window changes later, or is refused. See ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function ToggleFullscreen():Void {
 		throw "ToggleFullscreen is unimplemented";
 	}
 
 	/** raylib's borderless windowed toggle, done when it returns. The platform applies it later or refuses it, so a call doesn't
 		compile on any target: `ToggleBorderlessWindowedAsync` asks for it and answers. */
-	@:unsupported("ToggleBorderlessWindowed: The window changes later, or is refused. See ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("ToggleBorderlessWindowed: The window changes later, or is refused. See ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function ToggleBorderlessWindowed():Void {
 		throw "ToggleBorderlessWindowed is unimplemented";
 	}
@@ -308,7 +308,7 @@ class RCore {
 
 		@param x  The left edge, in pixels.
 		@param y  The top edge, in pixels. */
-	@:unsupported("SetWindowPosition: The window changes later, or is refused. See SetWindowPositionAsync(x:Int, y:Int, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("SetWindowPosition: The window changes later, or is refused. See SetWindowPositionAsync(x:Int, y:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function SetWindowPosition(x:Int, y:Int):Void {
 		throw "SetWindowPosition is unimplemented";
 	}
@@ -317,7 +317,7 @@ class RCore {
 		compile on any target: `SetWindowMonitorAsync` asks for it and answers.
 
 		@param monitor  The monitor, 0 to `GetMonitorCount() - 1`. */
-	@:unsupported("SetWindowMonitor: The window changes later, or is refused. See SetWindowMonitorAsync(monitor:Int, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("SetWindowMonitor: The window changes later, or is refused. See SetWindowMonitorAsync(monitor:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function SetWindowMonitor(monitor:Int):Void {
 		throw "SetWindowMonitor is unimplemented";
 	}
@@ -892,14 +892,14 @@ class RCore {
 
 	/** raylib's letting go of the mouse, done when it returns. The platform answers later, so a call doesn't compile on any target:
 		`EnableCursorAsync` lets it go and answers. */
-	@:unsupported("EnableCursor: The mouse is let go later, or is refused. See EnableCursorAsync(?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("EnableCursor: The mouse is let go later, or is refused. See EnableCursorAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function EnableCursor():Void {
 		throw "EnableCursor is unimplemented";
 	}
 
 	/** raylib's lock of the mouse, done when it returns. A page locks it only soon after a click or key press, so a call doesn't
 		compile on any target: `DisableCursorAsync` locks it and answers. */
-	@:unsupported("DisableCursor: The mouse is locked later, or is refused. See DisableCursorAsync(?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("DisableCursor: The mouse is locked later, or is refused. See DisableCursorAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function DisableCursor():Void {
 		throw "DisableCursor is unimplemented";
 	}
@@ -1246,7 +1246,7 @@ class RCore {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("FileExists: Synchronous file access is not supported. See FileExistsAsync(fileName:String, answer:Bool->Void)")
+	@:unsupported("FileExists: Synchronous file access is not supported. See FileExistsAsync(fileName:String, answer:Bool->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function FileExists(fileName:String):Bool {
 		throw "FileExists is unimplemented";
 	}
@@ -1256,7 +1256,7 @@ class RCore {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFileText: Synchronous loading is not supported. See LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void)")
+	@:unsupported("LoadFileText: Synchronous loading is not supported. See LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function LoadFileText(fileName:String):Null<String> {
 		throw "LoadFileText is unimplemented";
 	}
@@ -1272,7 +1272,7 @@ class RCore {
 		@param fileName  The file.
 		@param text  Its text.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("SaveFileText: A file is written later, or is refused. See SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("SaveFileText: A file is written later, or is refused. See SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function SaveFileText(fileName:String, text:String):Bool {
 		throw "SaveFileText is unimplemented";
 	}
@@ -1324,7 +1324,7 @@ class RCore {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)")
+	@:unsupported("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function LoadFileData(fileName:String):Null<haxe.io.Bytes> {
 		throw "LoadFileData is unimplemented";
 	}
@@ -1341,7 +1341,7 @@ class RCore {
 		@param data  The bytes.
 		@param dataSize  How many of them.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("SaveFileData: A file is written later, or is refused. See SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("SaveFileData: A file is written later, or is refused. See SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool {
 		throw "SaveFileData is unimplemented";
 	}
@@ -1353,7 +1353,7 @@ class RCore {
 		@param dataSize  How many of them.
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportDataAsCode: A file is written later, or is refused. See ExportDataAsCodeAsync(data:haxe.io.Bytes, dataSize:Int, fileName:String, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("ExportDataAsCode: A file is written later, or is refused. See ExportDataAsCodeAsync(data:haxe.io.Bytes, dataSize:Int, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function ExportDataAsCode(data:haxe.io.Bytes, dataSize:Int, fileName:String):Bool {
 		throw "ExportDataAsCode is unimplemented";
 	}
@@ -1575,7 +1575,7 @@ class RCore {
 
 		@param dirPath  The directory.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("DirectoryExists: Synchronous file access is not supported. See DirectoryExistsAsync(dirPath:String, answer:Bool->Void)")
+	@:unsupported("DirectoryExists: Synchronous file access is not supported. See DirectoryExistsAsync(dirPath:String, answer:Bool->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function DirectoryExists(dirPath:String):Bool {
 		throw "DirectoryExists is unimplemented";
 	}
@@ -1585,7 +1585,7 @@ class RCore {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GetFileLength: Synchronous file access is not supported. See GetFileLengthAsync(fileName:String, answer:Int->Void)")
+	@:unsupported("GetFileLength: Synchronous file access is not supported. See GetFileLengthAsync(fileName:String, answer:Int->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function GetFileLength(fileName:String):Int {
 		throw "GetFileLength is unimplemented";
 	}
@@ -1628,7 +1628,7 @@ class RCore {
 
 		@param path  The path.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("IsPathFile: Synchronous file access is not supported. See IsPathFileAsync(path:String, answer:Bool->Void)")
+	@:unsupported("IsPathFile: Synchronous file access is not supported. See IsPathFileAsync(path:String, answer:Bool->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function IsPathFile(path:String):Bool {
 		throw "IsPathFile is unimplemented";
 	}
@@ -1638,7 +1638,7 @@ class RCore {
 
 		@param dirPath  The directory.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadDirectoryFiles: Synchronous file access is not supported. See LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList->Void)")
+	@:unsupported("LoadDirectoryFiles: Synchronous file access is not supported. See LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function LoadDirectoryFiles(dirPath:String):FilePathList {
 		throw "LoadDirectoryFiles is unimplemented";
 	}
@@ -1650,7 +1650,7 @@ class RCore {
 		@param filter  The extensions kept.
 		@param scanSubdirs  Whether subdirectories are listed too.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadDirectoryFilesEx: Synchronous file access is not supported. See LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void)")
+	@:unsupported("LoadDirectoryFilesEx: Synchronous file access is not supported. See LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function LoadDirectoryFilesEx(basePath:String, filter:String, scanSubdirs:Bool):FilePathList {
 		throw "LoadDirectoryFilesEx is unimplemented";
 	}
@@ -1696,7 +1696,7 @@ class RCore {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GetFileModTime: Synchronous file access is not supported. See GetFileModTimeAsync(fileName:String, answer:Int->Void)")
+	@:unsupported("GetFileModTime: Synchronous file access is not supported. See GetFileModTimeAsync(fileName:String, answer:Int->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function GetFileModTime(fileName:String):Int {
 		throw "GetFileModTime is unimplemented";
 	}
@@ -2011,7 +2011,7 @@ class RCore {
 		@param list  The list.
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportAutomationEventList: A file is written later, or is refused. See ExportAutomationEventListAsync(list:AutomationEventList, fileName:String, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("ExportAutomationEventList: A file is written later, or is refused. See ExportAutomationEventListAsync(list:AutomationEventList, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function ExportAutomationEventList(list:AutomationEventList, fileName:String):Bool {
 		throw "ExportAutomationEventList is unimplemented";
 	}
@@ -2113,7 +2113,7 @@ class RCore {
 		compile on any target: `TakeScreenshotAsync` saves it and answers.
 
 		@param fileName  The file's name, or its path. */
-	@:unsupported("TakeScreenshot: A screenshot is saved later, or is refused. See TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("TakeScreenshot: A screenshot is saved later, or is refused. See TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
 	static function TakeScreenshot(fileName:String):Void {
 		throw "TakeScreenshot is unimplemented";
 	}
@@ -2141,6 +2141,82 @@ class RCore {
 		@param callback  Receives each message's level and text; null for helix-raylib's own log. */
 	static function SetTraceLogCallback(callback:Null<(logLevel:Int, text:String) -> Void>):Void {
 		Runtime.logCallback = callback;
+	}
+
+	// ---- emscripten's calls, which raylib's web programs make: each refuses, saying what to write instead ----
+
+	/** emscripten's main loop, which a raylib program built for the web calls in place of its loop. Here raylib's own loop runs once a
+		frame in a page, so a call doesn't compile.
+
+		@param func  The frame's function.
+		@param fps  The frames a second, or 0 for the display's.
+		@param simulateInfiniteLoop  Whether the call never returns. */
+	@:unsupported("emscripten_set_main_loop: Not needed: raylib's loop, while (!WindowShouldClose()) { ... }, runs once a frame in a page. Write that loop in main, the frame's code in its body.")
+	static function emscripten_set_main_loop(func:Void->Void, fps:Int, simulateInfiniteLoop:Bool):Void {
+		throw "emscripten_set_main_loop is unsupported";
+	}
+
+	/** emscripten's main loop with an argument for its function. Here raylib's own loop runs once a frame in a page, so a call doesn't
+		compile.
+
+		@param func  The frame's function.
+		@param arg  What the function is given.
+		@param fps  The frames a second, or 0 for the display's.
+		@param simulateInfiniteLoop  Whether the call never returns. */
+	@:unsupported("emscripten_set_main_loop_arg: Not needed: raylib's loop, while (!WindowShouldClose()) { ... }, runs once a frame in a page. Write that loop in main, the frame's code in its body, reading the argument from a variable.")
+	static function emscripten_set_main_loop_arg(func:Dynamic->Void, arg:Dynamic, fps:Int, simulateInfiniteLoop:Bool):Void {
+		throw "emscripten_set_main_loop_arg is unsupported";
+	}
+
+	/** emscripten's end of its main loop. Here a program leaves raylib's own loop, so a call doesn't compile. */
+	@:unsupported("emscripten_cancel_main_loop: Not needed: leave raylib's loop, while (!WindowShouldClose()) { ... }, with break, and a page stops running it; the code after the loop runs then.")
+	static function emscripten_cancel_main_loop():Void {
+		throw "emscripten_cancel_main_loop is unsupported";
+	}
+
+	/** emscripten's way to run the page's JavaScript. A program asks helix-raylib for what the page knows instead, so a call doesn't
+		compile.
+
+		@param script  The JavaScript. */
+	@:unsupported("emscripten_run_script: Not supported. Ask helix.raylib.Extras (import helix.raylib.Extras.*;): GetRunOption for the URL's options, IsTouchScreenAvailable and IsFinePointerAvailable for the device, GetWindowSafeArea, SetScreenOrientationAsync, EnableTiltAsync; or write plain Haxe (js.Browser, in #if js).")
+	static function emscripten_run_script(script:String):Void {
+		throw "emscripten_run_script is unsupported";
+	}
+
+	/** emscripten's way to run the page's JavaScript for a number. A program asks helix-raylib for what the page knows instead, so a call
+		doesn't compile.
+
+		@param script  The JavaScript.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("emscripten_run_script_int: Not supported. Ask helix.raylib.Extras (import helix.raylib.Extras.*;): GetRunOption for the URL's options, IsTouchScreenAvailable and IsFinePointerAvailable for the device, GetScreenOrientation; or write plain Haxe (js.Browser, in #if js).")
+	static function emscripten_run_script_int(script:String):Int {
+		throw "emscripten_run_script_int is unsupported";
+	}
+
+	/** emscripten's way to run the page's JavaScript for text. A program asks helix-raylib for what the page knows instead, so a call
+		doesn't compile.
+
+		@param script  The JavaScript.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("emscripten_run_script_string: Not supported. Ask helix.raylib.Extras (import helix.raylib.Extras.*;): GetRunOption for the URL's options, GetPlatformOS for the system; or write plain Haxe (js.Browser, in #if js).")
+	static function emscripten_run_script_string(script:String):String {
+		throw "emscripten_run_script_string is unsupported";
+	}
+
+	/** emscripten's clock, in milliseconds. raylib's own is `GetTime`, so a call doesn't compile.
+
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("emscripten_get_now: Not supported. See GetTime(), the seconds since InitWindow (emscripten's milliseconds are GetTime() * 1000).")
+	static function emscripten_get_now():Float {
+		throw "emscripten_get_now is unsupported";
+	}
+
+	/** emscripten's wait. A page can't wait inside a frame, so a call doesn't compile.
+
+		@param ms  The milliseconds. */
+	@:unsupported("emscripten_sleep: Not supported: a page can't wait inside a frame. End the frame and carry on in a later one, timed with GetTime() or GetFrameTime().")
+	static function emscripten_sleep(ms:Int):Void {
+		throw "emscripten_sleep is unsupported";
 	}
 
 	// ---- What the functions share ----

@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.Extras.*;
 
 // scene.c.in's 2D scene of the shapes helix-raylib takes from raylib 6.2, drawn by helix-raylib; its third frame saved as helix.png. cases.py's
 // list is put into it.
