@@ -29,16 +29,91 @@ private class Parts extends haxe.io.Output {
 	}
 }
 
+/** Waits for a socket's connection, begun without blocking, then makes the socket block; for `Connecting` and `ConnectingSsl`. */
+@:allow(helix.platform.adapters.http.haxehttp)
+private class Connection {
+	/** Waits up to `timeout` seconds for `socket`'s connection, throwing why when it doesn't come or is refused. */
+	static function await(socket:sys.net.Socket, timeout:Float):Void {
+		var ready = sys.net.Socket.select([], [socket], [socket], timeout);
+		if (ready.write.length == 0 && ready.others.length == 0)
+			throw Request.silence(timeout);
+		// A connection refused is ready too, with no peer.
+		if (socket.peer() == null)
+			throw "The connection was refused";
+		socket.setBlocking(true);
+	}
+}
+
+/** Represents a socket whose connect gives up after its timeout. hxcpp's connect ignores a socket's timeout and waits as long as the
+	system does (minutes, on Linux), so this one connects without blocking and waits for the connection itself. */
+private class Connecting extends sys.net.Socket {
+	var timeout:Float;
+
+	/** Creates the socket, its connect and each read and write giving up after `timeout` seconds. */
+	public function new(timeout:Float) {
+		super();
+		this.timeout = timeout;
+		setTimeout(timeout);
+	}
+
+	public override function connect(host:sys.net.Host, port:Int):Void {
+		setBlocking(false);
+		// A connection begun but not yet made throws nothing.
+		super.connect(host, port);
+		Connection.await(this, timeout);
+	}
+}
+
+/** Represents an https socket whose connect gives up after its timeout, as `Connecting`'s does; then it sets up its handshake as
+	`sys.ssl.Socket`'s own connect does. */
+private class ConnectingSsl extends sys.ssl.Socket {
+	var timeout:Float;
+
+	/** Creates the socket, its connect, its handshake and each read and write giving up after `timeout` seconds. */
+	public function new(timeout:Float) {
+		super();
+		this.timeout = timeout;
+		setTimeout(timeout);
+	}
+
+	public override function connect(host:sys.net.Host, port:Int):Void {
+		setBlocking(false);
+		try
+			cpp.NativeSocket.socket_connect(__s, host.ip, port)
+		catch (e:String)
+			if (e != "Blocking")
+				throw "The connection was refused";
+		Connection.await(this, timeout);
+		conf = buildSSLConfig(false);
+		ssl = cpp.NativeSsl.ssl_new(conf);
+		handshakeDone = false;
+		cpp.NativeSsl.ssl_set_socket(ssl, __s);
+		if (hostname == null)
+			hostname = host.host;
+		if (hostname != null)
+			cpp.NativeSsl.ssl_set_hostname(ssl, hostname);
+		handshake();
+	}
+}
+
 /** Represents one request over `sys.Http`, reading the response itself.
 
 	`sys.Http` retries a read that finds the connection closed while it reads the head, so a server that closes before a whole head would
 	spin its thread forever; here that throws, and the transfer fails. An HTTP error status isn't thrown: it's a response. */
+@:allow(helix.platform.adapters.http.haxehttp)
 private class Request extends sys.Http {
 	// The most bytes a response's head may have.
 	static inline final HEAD_LIMIT = 65536;
 
+	/** Returns why a request failed that received nothing for `timeout` seconds. */
+	static function silence(timeout:Float):String
+		return 'Nothing arrived from the server for $timeout ${timeout == 1 ? "second" : "seconds"}';
+
+	/** Returns the socket for `url`'s scheme, its connect and each read and write giving up after `timeout` seconds. */
+	static function socketFor(url:String, timeout:Float):sys.net.Socket
+		return StringTools.startsWith(url, "https://") ? new ConnectingSsl(timeout) : new Connecting(timeout);
+
 	override function readHttpResponse(api:haxe.io.Output, sock:sys.net.Socket):Void {
-		sock.setTimeout(cnxTimeout);
 		var head = new haxe.io.BytesBuffer(), last = 0;
 		// The head ends at a blank line: its last four bytes CR LF CR LF, or a bare LF LF.
 		while (last != 0x0d0a0d0a && (last & 0xffff) != 0x0a0a) {
@@ -138,9 +213,12 @@ private class Transfer {
 /** Provides `IHttp` natively over `sys.Http`, on a worker thread for each transfer.
 
 	It fetches http and https URLs only, failing others; `noCache` has no cache to bypass; an abort stops a transfer at its next part of the
-	body, not while it connects. A server that sends nothing for 10 seconds fails the transfer, as does one that doesn't take the connection
-	within about 20 (10 for the connection, 10 more for the request). */
+	body, not while it connects. The idle timeout holds for each wait on the connection: its connect, each read and each write. Looking up
+	the server's name isn't timed; the system's resolver gives up on its own. */
 class HaxeHttpAdapter implements IHttp {
+	// How long a request may receive nothing, in seconds, when it isn't given: IHttp.get's default.
+	static inline final IDLE_TIMEOUT = 30.;
+
 	var mailbox = new Mailbox();
 	var transfers:Array<Transfer> = [];
 
@@ -148,8 +226,9 @@ class HaxeHttpAdapter implements IHttp {
 	public function new() {}
 
 	public function get(url:String, noCache:Bool, headers:Map<String, String>, head:(status:Int, headers:Map<String, String>) -> Void, body:Bytes->Void,
-			done:Void->Void, failed:String->Void):Void->Void {
-		var http = new Request(url),
+			done:Void->Void, failed:String->Void, ?idleTimeout:Float):Void->Void {
+		var timeout = idleTimeout == null ? IDLE_TIMEOUT : Math.min(Math.max(idleTimeout, 0.001), 86400),
+			http = new Request(url),
 			transfer = new Transfer(mailbox, head, body, done, failed);
 		for (name => value in headers)
 			http.setHeader(name, value);
@@ -175,14 +254,14 @@ class HaxeHttpAdapter implements IHttp {
 					var names:Map<String, String> = [for (name => value in http.responseHeaders) name => value];
 					mailbox.post(() -> if (!transfer.aborted) transfer.head(status, names));
 				};
-				// A socket's timeout, sys.Http's 10 seconds, is reported as Blocked; a connection refused or broken, as EOF.
+				// A socket's timeout is reported as Blocked; a connection refused or broken, as EOF.
 				http.onError = value -> error = switch value {
-					case "Blocked": "The server didn't answer in time";
+					case "Blocked": Request.silence(timeout);
 					case "EOF": "The connection was refused or lost";
 					case _: value;
 				};
 				try {
-					http.customRequest(false, new Parts(transfer));
+					http.customRequest(false, new Parts(transfer), Request.socketFor(url, timeout));
 					finish(error != null ? error : headed ? null : "No HTTP response");
 				} catch (e:Dynamic) {
 					finish(Std.string(e));

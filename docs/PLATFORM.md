@@ -450,17 +450,32 @@ native program links no audio library but SDL3.
 
 ## Http
 
-`IHttp`: `get(url, noCache, headers, head(status, headers), body(part), done(), failed(message))` returning an abort; `head` once (the
-status and the headers, names in lower case), `body` for each part as it arrives, then `done` when the body is all here or `failed` when
-the transfer failed. An HTTP error status is a response, not a failure. After an abort nothing more is called. `poll`; `dispose`, which
-aborts every transfer. Queues, concurrency limits, retries, manifests and caching are above.
+`IHttp`: `get(url, noCache, headers, head(status, headers), body(part), done(), failed(message), ?idleTimeout)` returning an abort;
+`head` once (the status and the headers, names in lower case), `body` for each part as it arrives, then `done` when the body is all here
+or `failed` when the transfer failed. An HTTP error status is a response, not a failure. After an abort nothing more is called. `poll`;
+`dispose`, which aborts every transfer. Queues, concurrency limits, retries, manifests and caching are above.
+
+A request that receives nothing for its idle timeout fails, on both targets: while it connects, while it waits for the head, or between
+parts of the body; one that keeps receiving, however slowly, doesn't. It defaults to 30 seconds, which outlasts a slow mobile network's
+connect (a lost SYN is sent again after 1, 3, 7 and 15 seconds) and a busy server's first byte, and fails a stalled download while
+someone is still waiting on it. Natively the name's lookup isn't timed: the system's resolver has its own. In a page, a request queued
+by the browser behind six others to the same server (HTTP/1.1's limit) isn't timed until its turn.
+
+A body short of its `Content-Length` fails. Natively the adapter reads the response itself, and knows. In a page the browser fails most
+of them, but Chromium takes a connection closed partway through the head as a whole head and an empty body, and Firefox a compressed
+body cut short as a whole one; so a body that ends is checked against its `Content-Length` by the bytes the request's Resource Timing
+entry says arrived, where the page may read it (its own origin, or a server sending `Timing-Allow-Origin`), or else, from the page's own
+origin and uncompressed, by the bytes read. A response from another origin without `Timing-Allow-Origin` can't be checked, and calls
+`done`: there a short body is caught only above, as helix-services' `ManifestCache` catches a listed file by its hash. A server that
+sends `Timing-Allow-Origin` closes the gap. A status below 100, which Chromium makes of a status line cut short, fails without `head`.
 
 A conditional request (`If-None-Match`, `If-Modified-Since`) may be answered 200 with the whole body on any target, as HTTP allows any
 server to. In a page, `http/fetchapi` (`FetchApiHttpAdapter`, over `fetch`, the body read as it arrives, aborted through an
 `AbortController`) leaves those headers out of a request to another origin, where they would need a CORS preflight the server may
 refuse, and has the browser revalidate its own copy instead. Natively, `http/haxehttp` (`HaxeHttpAdapter`, over `sys.Http`, a worker
 thread a transfer) sends the headers as given; it fetches http and https URLs only, `noCache` has no cache to bypass, and an abort stops
-a transfer at its next part of the body, not while it connects. Native HTTPS compiles but hasn't been checked against a server.
+a transfer at its next part of the body, not while it connects. Its sockets connect without blocking and wait out the idle timeout
+themselves, as hxcpp's connect ignores a socket's timeout. Native HTTPS compiles but hasn't been checked against a server.
 
 ## File system
 

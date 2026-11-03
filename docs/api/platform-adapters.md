@@ -578,9 +578,15 @@ Provides `IHttp` in a page over `fetch`: the body read as it arrives, aborted th
 
 Conditional headers (`If-None-Match`, `If-Modified-Since`) to another origin would need a CORS preflight the server may refuse, so there they are left out and the browser revalidates its own copy instead (cache `no-cache`), answering 200.
 
+A body cut short of its `Content-Length` fails. Browsers fail most of those themselves, but not all: Chromium takes a connection closed partway through the head as a whole head and an empty body, and Firefox a compressed body cut short as a whole one. So a body that ends is checked against its `Content-Length`: by the bytes the browser's Resource Timing entry for the request says arrived, where the entry can be read (from the page's origin, or a server that sends `Timing-Allow-Origin`); or else by the bytes read, where the response is from the page's origin and isn't compressed. Where neither can be read, a response from another origin without `Timing-Allow-Origin`, `done` is called unchecked. A 204 or 304 answer has no body to check. A status below 100, which Chromium makes of a status line cut short, fails without `head`.
+
+A browser opens at most six connections to a server over HTTP/1.1 and queues the requests past them, so a request behind six others of this adapter's to the same origin isn't timed until one of them ends; requests the page makes otherwise aren't counted.
+
+The page's Resource Timing buffer is raised whenever it fills, so each request's entry is kept, until `dispose`.
+
 ```haxe
 function new()
-function get(url:String, noCache:Bool, headers:Map<String, String>, head:(status:Int, headers:Map<String, String>) -> Void, body:haxe.io.Bytes -> Void, done:() -> Void, failed:String -> Void):() -> Void
+function get(url:String, noCache:Bool, headers:Map<String, String>, head:(status:Int, headers:Map<String, String>) -> Void, body:haxe.io.Bytes -> Void, done:() -> Void, failed:String -> Void, ?idleTimeout:Float):() -> Void
 function poll():Void
 function dispose():Void
 ```
@@ -594,11 +600,11 @@ function dispose():Void
 
 Provides `IHttp` natively over `sys.Http`, on a worker thread for each transfer.
 
-It fetches http and https URLs only, failing others; `noCache` has no cache to bypass; an abort stops a transfer at its next part of the body, not while it connects. A server that sends nothing for 10 seconds fails the transfer, as does one that doesn't take the connection within about 20 (10 for the connection, 10 more for the request).
+It fetches http and https URLs only, failing others; `noCache` has no cache to bypass; an abort stops a transfer at its next part of the body, not while it connects. The idle timeout holds for each wait on the connection: its connect, each read and each write. Looking up the server's name isn't timed; the system's resolver gives up on its own.
 
 ```haxe
 function new()
-function get(url:String, noCache:Bool, headers:Map<String, String>, head:(status:Int, headers:Map<String, String>) -> Void, body:haxe.io.Bytes -> Void, done:() -> Void, failed:String -> Void):() -> Void
+function get(url:String, noCache:Bool, headers:Map<String, String>, head:(status:Int, headers:Map<String, String>) -> Void, body:haxe.io.Bytes -> Void, done:() -> Void, failed:String -> Void, ?idleTimeout:Float):() -> Void
 function poll():Void
 function dispose():Void
 ```

@@ -91,11 +91,12 @@ def build(directory, hxml, env):
     subprocess.run(['haxe', hxml], cwd=directory, env=env, check=True)
 
 
-def run(name, directory, main, browser, native_run, page_run, native_frames=FRAMES, native_extra=None, query='', expected_errors=()):
+def run(name, directory, main, browser, native_run, page_run, native_frames=FRAMES, native_extra=None, query='', expected_errors=(), site=None):
     """Builds and runs one program both ways, in directory with its main class main, the page in browser: native_run(label, completed) and
     page_run(printed, screenshot) say what's wrong with each run, as a list of problems. native_frames is how many frames a native run
     lasts, which a private display doesn't pace; native_extra what a native run's environment adds; query what the page's query adds
-    (tools/page_check.cjs reads safeArea from it); expected_errors the console errors the page is meant to cause (each named by a part of it). The problems found."""
+    (tools/page_check.cjs reads safeArea from it); expected_errors the console errors the page is meant to cause (each named by a part of it);
+    site the URL the page is opened at, or None to have tools/page_check.cjs serve its web directory. The problems found."""
     import pins
     from native_build import env as native_env
     env = pins.use_haxelib()
@@ -125,7 +126,7 @@ def run(name, directory, main, browser, native_run, page_run, native_frames=FRAM
     out.mkdir(parents=True, exist_ok=True)
     screenshot = out / 'web.png'
     browser_env = {k: v for k, v in os.environ.items() if k not in ('VK_DRIVER_FILES', 'VK_ICD_FILENAMES')}
-    ran = subprocess.run(['node', ROOT / 'tools/page_check.cjs', browser, str(directory / 'web'), f'?frames={FRAMES}{query}', str(screenshot)], cwd=ROOT, env=browser_env, capture_output=True, text=True, encoding='utf-8')
+    ran = subprocess.run(['node', ROOT / 'tools/page_check.cjs', browser, site or str(directory / 'web'), f'?frames={FRAMES}{query}', str(screenshot)], cwd=ROOT, env=browser_env, capture_output=True, text=True, encoding='utf-8')
     if ran.returncode:
         problems.append(f'browser run failed\n{ran.stdout}{ran.stderr}')
     else:
@@ -158,9 +159,9 @@ def example(name, browser):
     return run(name, directory, 'Main', browser, native_run, page_run)
 
 
-def tests(name, directory, main, page, browser, backends=True, native_extra=None, query='', expected_errors=()):
+def tests(name, directory, main, page, browser, backends=True, native_extra=None, query='', expected_errors=(), site=None):
     """Builds and runs a test program both ways (one that ends with {passed, checks, failures}), the page's run on page, natively on
-    each graphics backend it builds for (backends) or none, native_extra, query and expected_errors as run's; the problems found."""
+    each graphics backend it builds for (backends) or none, native_extra, query, expected_errors and site as run's; the problems found."""
 
     def outcome(where, result):
         if result is None:
@@ -180,7 +181,7 @@ def tests(name, directory, main, page, browser, backends=True, native_extra=None
         return found or ([f'exited {ran.returncode}\n{ran.stderr}'] if ran.returncode else [])
 
     return run(name, directory, main, browser, native_run, lambda printed, _: outcome(f'in the page ({page})', printed['result']),
-               native_extra=native_extra, query=query, expected_errors=expected_errors)
+               native_extra=native_extra, query=query, expected_errors=expected_errors, site=site)
 
 
 def graphics(browser):
@@ -199,15 +200,25 @@ def window(browser):
 
 
 class ShortBodies:
-    """A test server on 127.0.0.1, at a port the OS picks, on a thread of its own: /whole and /chunked send a 1000-byte body whole, as
-    its Content-Length says and in chunks; /short closes after 100 bytes of the 1000 its Content-Length promises, and /cut-chunk after
-    100 bytes of a 1000-byte chunk. /closed closes with no bytes, /cut-status partway through the status line, and /cut-head partway
-    through the headers. Any page may read it (Access-Control-Allow-Origin). Stopped by close(), never by a search for it."""
+    """A test server on 127.0.0.1, at ports the OS picks, on threads of its own: /whole and /chunked send a 1000-byte body whole, as its
+    Content-Length says and in chunks, and /trickle in ten parts 0.3 seconds apart; /short closes after 100 bytes of the 1000 its
+    Content-Length promises, /gzip-short halfway through a gzip body its Content-Length gives, and /cut-chunk after 100 bytes of a
+    1000-byte chunk. /closed closes with no bytes, /cut-status partway through the status line, and /cut-head partway through the
+    headers. /stall sends its head and 100 bytes, then nothing; /silent never answers. A path ending -timed adds Timing-Allow-Origin.
+
+    It serves the HTTP tests' page from url (/ and /app.js), and the same answers from a second port, other, another origin to the page.
+    unaccepted is a URL whose connection is never taken: its port listens, its queue filled, and nothing accepts. Any page may read it
+    (Access-Control-Allow-Origin). Stopped by close(), never by a search for it, which also ends each answer still waiting."""
 
     def __init__(self):
+        import gzip
         import http.server
+        import socket
         import threading
         body = bytes(i * 7 & 255 for i in range(1000))
+        packed = gzip.compress(body)
+        page = {'/': ('text/html', HTTP / 'web/index.html'), '/app.js': ('text/javascript', HTTP / 'web/app.js')}
+        self.stopping = stopping = threading.Event()
 
         class Handler(http.server.BaseHTTPRequestHandler):
             protocol_version = 'HTTP/1.1'
@@ -219,46 +230,92 @@ class ShortBodies:
                 path = self.path.split('?')[0]
                 self.close_connection = True
                 head = 'HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\nCache-Control: no-store\r\n'
-                if path == '/whole':
-                    self.wfile.write(f'{head}Content-Length: 1000\r\n\r\n'.encode() + body)
+                if path.endswith('-timed'):
+                    path = path[:-len('-timed')]
+                    head += 'Timing-Allow-Origin: *\r\n'
+                send = self.wfile.write
+                if path in page:
+                    kind, file = page[path]
+                    data = file.read_bytes()
+                    send(f'{head}Content-Type: {kind}\r\nContent-Length: {len(data)}\r\n\r\n'.encode() + data)
+                elif path == '/whole':
+                    send(f'{head}Content-Length: 1000\r\n\r\n'.encode() + body)
+                elif path == '/trickle':
+                    send(f'{head}Content-Length: 1000\r\n\r\n'.encode())
+                    for at in range(0, 1000, 100):
+                        self.wfile.flush()
+                        if stopping.wait(0.3):
+                            break
+                        send(body[at:at + 100])
                 elif path == '/short':
-                    self.wfile.write(f'{head}Content-Length: 1000\r\n\r\n'.encode() + body[:100])
+                    send(f'{head}Content-Length: 1000\r\n\r\n'.encode() + body[:100])
+                elif path == '/gzip-short':
+                    send(f'{head}Content-Encoding: gzip\r\nContent-Length: {len(packed)}\r\n\r\n'.encode() + packed[:len(packed) // 2])
                 elif path == '/chunked':
-                    self.wfile.write(f'{head}Transfer-Encoding: chunked\r\n\r\n'.encode() + b'1f4\r\n' + body[:500] + b'\r\n1f4\r\n' + body[500:] +
-                                     b'\r\n0\r\n\r\n')
+                    send(f'{head}Transfer-Encoding: chunked\r\n\r\n'.encode() + b'1f4\r\n' + body[:500] + b'\r\n1f4\r\n' + body[500:] +
+                         b'\r\n0\r\n\r\n')
                 elif path == '/cut-chunk':
-                    self.wfile.write(f'{head}Transfer-Encoding: chunked\r\n\r\n'.encode() + b'3e8\r\n' + body[:100])
+                    send(f'{head}Transfer-Encoding: chunked\r\n\r\n'.encode() + b'3e8\r\n' + body[:100])
                 elif path == '/closed':
                     pass
                 elif path == '/cut-status':
-                    self.wfile.write(b'HTTP/1.1 20')
+                    send(b'HTTP/1.1 20')
                 elif path == '/cut-head':
-                    self.wfile.write(f'{head}Content-Length: 1000\r\nX-Cu'.encode())
+                    send(f'{head}Content-Length: 1000\r\nX-Cu'.encode())
+                elif path == '/stall':
+                    send(f'{head}Content-Length: 1000\r\n\r\n'.encode() + body[:100])
+                    self.wfile.flush()
+                    stopping.wait(30)
+                elif path == '/silent':
+                    stopping.wait(30)
                 else:
-                    self.wfile.write(f'HTTP/1.1 404 Not Found\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: 0\r\n\r\n'.encode())
+                    send(f'HTTP/1.1 404 Not Found\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: 0\r\n\r\n'.encode())
                 self.wfile.flush()
 
-        self.server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
-        self.url = f'http://127.0.0.1:{self.server.server_address[1]}/'
-        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
-        self.thread.start()
+        class Server(http.server.ThreadingHTTPServer):
+            # Python's queue of 5 drops a connection when the tests ask all at once, and its SYN is sent again a second later, as late
+            # as a short idle timeout.
+            request_queue_size = 64
+
+        self.servers = [Server(('127.0.0.1', 0), Handler) for _ in range(2)]
+        self.url, self.other = (f'http://127.0.0.1:{s.server_address[1]}/' for s in self.servers)
+        for server in self.servers:
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+        # A listening socket that never accepts: once its queue is full, the system drops each new connection's SYN.
+        self.listener = socket.socket()
+        self.listener.bind(('127.0.0.1', 0))
+        self.listener.listen(0)
+        self.unaccepted = f'http://127.0.0.1:{self.listener.getsockname()[1]}/'
+        self.fillers = []
+        for _ in range(3):
+            filler = socket.socket()
+            filler.setblocking(False)
+            filler.connect_ex(self.listener.getsockname())
+            self.fillers.append(filler)
 
     def close(self):
-        self.server.shutdown()
-        self.server.server_close()
+        self.stopping.set()
+        for server in self.servers:
+            server.shutdown()
+            server.server_close()
+        for s in self.fillers + [self.listener]:
+            s.close()
 
 
 def http(browser):
-    """Builds and runs the HTTP tests both ways against a ShortBodies server; the problems found."""
+    """Builds and runs the HTTP tests both ways against a ShortBodies server, the page served from it; the problems found."""
     import urllib.parse
     server = ShortBodies()
     try:
-        return tests('http', HTTP, 'HttpTests', 'fetch', browser, backends=False, native_extra={'HELIX_SERVER': server.url},
-                     query='&server=' + urllib.parse.quote(server.url, safe=''),
+        return tests('http', HTTP, 'HttpTests', 'fetch', browser, backends=False,
+                     native_extra={'HELIX_SERVER': server.url, 'HELIX_UNACCEPTED': server.unaccepted},
+                     query=''.join(f'&{k}=' + urllib.parse.quote(v, safe='') for k, v in
+                                   (('server', server.url), ('other', server.other), ('unaccepted', server.unaccepted))),
+                     site=server.url,
                      # The browser reports each body ended early in the console, as it should, and each head: one with no bytes as
-                     # empty, and a cut status line as a response without the header that lets the page read it.
+                     # empty, and a cut status line as a response it can't read.
                      expected_errors=('ERR_CONTENT_LENGTH_MISMATCH', 'ERR_INCOMPLETE_CHUNKED_ENCODING', 'ERR_EMPTY_RESPONSE',
-                                      "/cut-status' from origin", 'net::ERR_FAILED'))
+                                      'net::ERR_FAILED'))
     finally:
         server.close()
 

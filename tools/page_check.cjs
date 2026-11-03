@@ -1,4 +1,4 @@
-// Serves a directory, opens its page in a headless Chromium with the query given, waits for the page's frames to settle and saves a
+// Serves a directory (SITE), or takes a page already served (SITE an http or https URL), opens its page in a headless Chromium with the query given, waits for the page's frames to settle and saves a
 // screenshot of the 800 x 600 viewport, printing {errors, result} as JSON: the page's errors and console errors, and what a test page
 // leaves in window.helixResult (null for a page that has none). A page that sets window.helixResult to null is waited on, up to 30
 // seconds, until it holds the result. Run by tools/platform_checks.py, which checks an example's screenshot and a test's result.
@@ -45,11 +45,11 @@ async function run(address,args){
 }
 
 (async()=>{
- const server=await serve(site);
- try{const address=`http://127.0.0.1:${server.address().port}/${query}`;
+ const served=/^https?:\/\//.test(site),server=served?null:await serve(site);
+ try{const address=served?`${site}${query}`:`http://127.0.0.1:${server.address().port}/${query}`;
   let result=await run(address,GPU);
   if(result.unavailable)result=await run(address,SOFTWARE);
   if(result.unavailable){console.error('WebGL2 is unavailable, on the GPU and on SwiftShader');process.exit(1);}
   console.log(JSON.stringify(result));}
- finally{server.close();}
+ finally{if(server)server.close();}
 })().catch(e=>{console.error(e.stack||String(e));process.exit(1);});

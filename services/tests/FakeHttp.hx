@@ -15,7 +15,7 @@ typedef FakeResponse = {
 
 	A 200 response takes a `Range` header of one range (`bytes=-N`, `bytes=A-B`, `bytes=A-`), answering 206 with that part of its body
 	and a `Content-Range`, or 416 when none of the body is in it, unless it `ignoresRange`. An `If-Range` that isn't the response's ETag
-	or Last-Modified gets the whole body. The bytes it has sent are counted. */
+	or Last-Modified gets the whole body. The bytes it has sent are counted. Nothing times out: the idle timeout is ignored. */
 class FakeHttp implements IHttp {
 	/** Gets the responses by URL; a URL with none answers 404. */
 	public final routes = new Map<String, FakeResponse>();
@@ -35,7 +35,7 @@ class FakeHttp implements IHttp {
 	public function new() {}
 
 	public function get(url:String, noCache:Bool, headers:Map<String, String>, head:(status:Int, headers:Map<String, String>) -> Void, body:Bytes->Void,
-			done:Void->Void, failed:String->Void):Void->Void {
+			done:Void->Void, failed:String->Void, ?idleTimeout:Float):Void->Void {
 		requests.push({url: url, headers: headers, noCache: noCache});
 		var aborted = false;
 		queued.push(() -> {

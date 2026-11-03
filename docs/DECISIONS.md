@@ -441,3 +441,25 @@ Why things are the way they are, numbered, in order.
     the whole body is checked against a server that closes early (`tools/platform_checks.py http`), in a page and natively. Deferred:
     a listed download hashed off the main thread (`crypto.subtle`, a platform contract to propose), and a listed file streamed while it
     downloads.
+
+37. **An HTTP request fails after an idle timeout, and a page checks a body against its Content-Length.** Natively a request had
+    `sys.Http`'s 10 seconds a read, and its connect none (hxcpp's connect ignores the socket's timeout, waiting minutes on Linux); in a
+    page none at all, so a stalled server held a request until the browser gave up, if it did. Now `get` takes `?idleTimeout`, 30
+    seconds by default on both targets: a request that receives nothing for that long fails, while it connects, waits for its head, or
+    between parts of its body, and one that keeps receiving never does (a total timeout would fail a large download on a slow
+    connection). 30 seconds outlasts a mobile network's connect retries (a lost SYN is sent again after 1, 3, 7 and 15 seconds) and a
+    busy server's first byte. Natively the sockets connect without blocking and wait with `select`; https copies `sys.ssl.Socket`'s
+    connect after its own wait. The name's lookup isn't timed, as it can't be on the thread that makes it. In a page a timer, reset at
+    the head and each part, aborts through the request's `AbortController`; it starts only once the request is among the adapter's
+    first six to its origin, since a browser queues the rest behind its six HTTP/1.1 connections and a timer from `fetch` would fail
+    the seventh of seven slow downloads. `dispose` now ends each request as its abort does, where it aborted the controllers and let
+    their rejections call `failed`. `done` meant the whole body natively but not always in a
+    page: Chromium answered a connection closed mid-head 200 with an empty body, and Firefox a cut gzip body as whole. So a page checks a
+    body that ends against its `Content-Length`: by the Resource Timing entry's `encodedBodySize` (the bytes as sent, so compression
+    doesn't matter) where the page may read the entry, or by the bytes read where the response is the page's own origin's and
+    uncompressed. Chromium adds the entry a task after the body ends, so a check with neither waits one task, once. A response from
+    another origin without `Timing-Allow-Origin` hides both its sizes and its `Content-Encoding`, and calls `done` unchecked: guessing
+    from the bytes read would fail a server's gzip of an incompressible file, whose body decodes shorter than its `Content-Length`. The
+    page's Resource Timing buffer is doubled whenever it fills, since a full one drops each new entry; clearing it would take other
+    code's. Checked by `tools/platform_checks.py http`, its server now serving the page so the cases are asked of the page's own origin
+    and of another, in Chromium and natively (Firefox by hand: it passes the same cases).
