@@ -33,7 +33,11 @@ typedef Request = {
 	ends with `{passed, checks, failures, answers}` as JSON: printed natively, exiting 1 on a failure, and in a page in `window.helixResult`, null
 	until then. Run by `tools/platform_checks.py`. */
 #if cpp
-@:headerCode("#include <SDL3/SDL.h>")
+@:cppFileCode("#include <SDL3/SDL.h>")
+// SDL's headers in this class's own .cpp alone (it pushes SDL's drop events), from the platform's vendored copy, as the adapters take
+// them: a system without SDL3's headers installed (Windows) has no other.
+@:buildXml("<set name='HELIX_PLATFORM' value='${haxelib:helix-platform}' unless='HELIX_PLATFORM'/>
+<files id='haxe'><compilerflag value='-I${HELIX_PLATFORM}/vendor/sdl3'/></files>")
 #end
 class WindowTests {
 	// How long a request may take to answer, in seconds: the native adapter fails one after a second.
