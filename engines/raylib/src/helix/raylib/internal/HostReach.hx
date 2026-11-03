@@ -13,7 +13,8 @@ using StringTools;
 /** Warns, as the program builds, where the program's own code reaches the page or the host for something `Extras` answers on every
 	target: the URL's query or an environment variable (`GetRunOption`), the device's touch screen or pointer (`IsTouchScreenAvailable`,
 	`IsFinePointerAvailable`), the screen's orientation (`SetScreenOrientationAsync`), the safe area's insets (`GetWindowSafeArea`) and
-	the device's tilt (`EnableTiltAsync`). Each site warns once, naming the call; libraries' code isn't looked at. Read from the
+	the device's tilt (`EnableTiltAsync`), when the program is built with `-D helix-raylib-host-warnings`: off by default, as a person
+	reads the README and may reach the host on purpose, and on for an agent writing raylib from memory (a trial). Each site warns once, naming the call; libraries' code isn't looked at. Read from the
 	compiler's typed code, after typing: the fields and types reached, and the text of a string or a `js.Syntax.code` call. Run by the
 	library's `extraParams.hxml`. */
 @:noCompletion
@@ -61,6 +62,8 @@ class HostReach {
 
 	/** Looks at the program's code once it is typed. */
 	public static function register():Void {
+		if (!Context.defined("helix-raylib-host-warnings"))
+			return;
 		Context.onAfterTyping(types -> {
 			if (done)
 				return;

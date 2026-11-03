@@ -487,7 +487,9 @@ Why things are the way they are, numbered, in order.
     runs in a page; the `Extras` call that answers the script's question; `GetTime`); and a program whose own code reaches the host
     for what `Extras` answers (the page's location or `URLSearchParams`, `Sys.getEnv`, `matchMedia`, `maxTouchPoints`,
     `screen.orientation`, `env(safe-area-inset-*)`, `deviceorientation`, in code or in a `js.Syntax.code` string) builds with a
-    warning at each place, naming the call. The warning reads the typed program after typing (`helix.raylib.internal.HostReach`, run
+    warning at each place, naming the call, when built with `-D helix-raylib-host-warnings` (the user's call: off by default, as a person
+    reads this README and may reach the host on purpose; on for an agent writing raylib from memory, which a trial sets, and A/B'd
+    there against refusals alone). The warning reads the typed program after typing (`helix.raylib.internal.HostReach`, run
     by the library's `extraParams.hxml`), never the source's text, and looks only at files outside the libraries' class paths, so it
     costs a program that doesn't reach the host one walk of its own code. Rejected: keeping the `...Async` calls in `Raylib` beside
     raylib's (an agent can't tell which are raylib's), and aliases in both places (no backward compatibility).

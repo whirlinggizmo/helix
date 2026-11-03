@@ -49,7 +49,8 @@ game needs from the device and the page that raylib has no call for (`GetWindowS
 `DisableTilt`). raylib's call a page can't wait for doesn't compile, naming the one in `Extras` and its import; so do emscripten's calls
 raylib's web programs make (`emscripten_set_main_loop` and the rest), saying what to write instead. A program that reaches the page or
 the host itself for what `Extras` answers (the URL's query, `Sys.getEnv`, `matchMedia`, `maxTouchPoints`, `screen.orientation`,
-`env(safe-area-inset-*)`, `deviceorientation`) builds with a warning at each place, naming the call.
+`env(safe-area-inset-*)`, `deviceorientation`) builds with a warning at each place, naming the call, when it is built with
+`-D helix-raylib-host-warnings`; it is off by default, since a program may reach the host on purpose.
 
 ## What a model holds
 

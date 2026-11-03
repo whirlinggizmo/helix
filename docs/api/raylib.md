@@ -6154,4 +6154,5 @@ Set in a build's hxml, as `-D helix-raylib-native-root=../assets`. `haxe --help-
 
 - `helix-raylib-files=<directory>`: Where the program's files are as it builds, relative to the build's directory: LoadShader compiles the shaders it names from there. Defaults to web.
 - `helix-raylib-native-root=<directory>`: Where a native program finds its files, relative to its own directory. Defaults to ../web.
+- `helix-raylib-host-warnings`: Warns where the program's own code reaches the page or the host (the URL's query, Sys.getEnv, matchMedia, maxTouchPoints, screen.orientation, the safe area's insets, deviceorientation) for what helix.raylib.Extras answers on every target, naming the call. Off by default.
 - `helix-raylib-custom-frame-control`: raylib's SUPPORT_CUSTOM_FRAME_CONTROL: EndDrawing only draws, and the program calls SwapScreenBuffer, WaitTime and PollInputEvents itself.

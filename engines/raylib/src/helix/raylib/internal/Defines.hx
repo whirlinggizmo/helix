@@ -22,6 +22,10 @@ class Defines {
 			params: ["directory"]
 		},
 		{
+			define: "helix-raylib-host-warnings",
+			doc: "Warns where the program's own code reaches the page or the host (the URL's query, Sys.getEnv, matchMedia, maxTouchPoints, screen.orientation, the safe area's insets, deviceorientation) for what helix.raylib.Extras answers on every target, naming the call. Off by default."
+		},
+		{
 			define: "helix-raylib-custom-frame-control",
 			doc: "raylib's SUPPORT_CUSTOM_FRAME_CONTROL: EndDrawing only draws, and the program calls SwapScreenBuffer, WaitTime and PollInputEvents itself."
 		}
