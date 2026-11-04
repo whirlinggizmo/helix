@@ -10,6 +10,8 @@ helix-raylib's size and speed where docs/speed.md records them.
   meshes and models, instancing, skinning, `DrawList3D`, the compile macros); 2 (done), lit materials and lights in three.js's units and
   formulas, the lighting linked only by what gives light (DECISIONS 43), and a mesh's large points; next,
   3, shadows; 4, environment maps and the background; 5, post-processing (with the draft's scene example); 6, fog; 7, morph targets.
+  Effects past those stages (particles, model passes such as outlines, sprite and ground effects, more screen effects) start from
+  docs/EFFECTS.md, an inventory of the earlier projects' effects, each judged by other engines and by what the jam's entrants write.
   Asked below it: helix-formats' `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions, and morph
   targets; helix-geometry's second texture coordinates, morph targets and mesh groups; helix-math's Euler orders, an object's `lookAt`
   and `Bounds3D` through a matrix; and of the platform, a per-buffer offset or step divisor, which would let an instanced
