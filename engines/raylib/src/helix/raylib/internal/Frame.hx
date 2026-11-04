@@ -213,6 +213,15 @@ class Frame {
 	public var skinned:Null<(mesh:helix.raylib.Mesh, shader:helix.raylib.Shader, material:helix.raylib.Material, model:Matrix3D, diffuse:Array<Float>,
 			instances:Int, instanceCount:Int) -> Bool> = null;
 
+	/** Gets the draws the last frame sent the GPU, counted as `draw` submits them, for `extras.Debug`'s frame stats. */
+	public var lastDraws = 0;
+
+	/** Gets the triangles the last frame's draws drew, each instance counted. */
+	public var lastTriangles = 0;
+
+	/** Gets how often the last frame's draws switched pipeline (shader and render state) or textures from the draw before them. */
+	public var lastStateChanges = 0;
+
 	/** Creates the frame, with raylib's default shader and the white texture.
 
 		@param graphics  The graphics. */
@@ -932,6 +941,8 @@ class Frame {
 		present();
 		for (call in drawing)
 			call();
+		var draws = 0, triangles = 0, changes = 0, lastPipeline = -1;
+		var lastTextures:Null<Array<Int>> = null;
 		for (p in passes) {
 			for (u in p.updates)
 				graphics.updateTexture(u.texture, u.x, u.y, u.width, u.height, u.rgba);
@@ -975,6 +986,21 @@ class Frame {
 				var samplings = [for (t in textures) Textures.samplingOf(t)];
 				graphics.draw(d.pipeline, d.buffers == null ? [buffer, constants] : d.buffers, null, d.indices, d.first, count, 0, d.instances, textures,
 					samplings, d.uniforms);
+				draws++;
+				if (d.primitive == Triangles)
+					triangles += Std.int(count / 3) * (d.instances > 1 ? d.instances : 1);
+				if (lastTextures != null) {
+					var same = d.pipeline == lastPipeline && textures.length == lastTextures.length;
+					var k = 0;
+					while (same && k < textures.length) {
+						same = textures[k] == lastTextures[k];
+						k++;
+					}
+					if (!same)
+						changes++;
+				}
+				lastPipeline = d.pipeline;
+				lastTextures = textures;
 			}
 			if (p.target == 0) {
 				graphics.endFrame();
@@ -987,6 +1013,9 @@ class Frame {
 			} else
 				graphics.endTargetPass();
 		}
+		lastDraws = draws;
+		lastTriangles = triangles;
+		lastStateChanges = changes;
 		for (b in retired)
 			graphics.disposeBuffer(b);
 		retired.resize(0);

@@ -220,6 +220,50 @@ var glyphs:Array<GlyphInfo>
 - `recs`: Gets or sets each glyph's rectangle on the texture.
 - `glyphs`: Gets or sets each glyph's character, offsets, advance and image.
 
+## FrameStatsStyle
+
+*class* in [`engines/raylib/src/helix/raylib/FrameStatsStyle.hx`](../../engines/raylib/src/helix/raylib/FrameStatsStyle.hx), `import helix.raylib.FrameStatsStyle;`
+
+Represents how DrawFrameStatsEx (helix.raylib.extras.Debug) draws the frame's cost: which stats, and in what look. Every field has a default, so a style sets only what it changes: `{fontSize: 24, triangles: true}`. Each stat shown is a line of its own.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{?fps:Bool, ?frameTime:Bool, ?drawCalls:Bool, ?triangles:Bool, ?stateChanges:Bool, ?targetFps:Int, ?onTargetColor:Color, ?belowTargetColor:Color, ?farBelowTargetColor:Color, ?font:Null<Font>, ?fontSize:Int, ?spacing:Float, ?padding:Int, ?backgroundColor:Color}
+```
+
+```haxe
+var fps:Bool = true
+var frameTime:Bool = true
+var drawCalls:Bool = true
+var triangles:Bool = false
+var stateChanges:Bool = false
+var targetFps:Int = 0
+var onTargetColor:Color = GREEN
+var belowTargetColor:Color = YELLOW
+var farBelowTargetColor:Color = RED
+var font:Null<Font> = null
+var fontSize:Null<Int> = null
+var spacing:Float = 1
+var padding:Int = 4
+var backgroundColor:Color = BLANK
+```
+
+- `fps`: Whether it shows the frames a second. On by default.
+- `frameTime`: Whether it shows the frame time's mean and its slowest 5% (p95) over the last half second, in milliseconds. On by default.
+- `drawCalls`: Whether it shows the last frame's draw calls: how many draws it sent the GPU. On by default.
+- `triangles`: Whether it shows the last frame's triangles drawn. Off by default.
+- `stateChanges`: Whether it shows the last frame's state changes: how often its draws switched shader, render state or textures. Off by default.
+- `targetFps`: The frame rate the stats are judged against, frames a second: 0 by default, for the target SetTargetFPS set, or the monitor's refresh rate when none is set.
+- `onTargetColor`: The text's color when the frame rate is at or above the target. GREEN by default.
+- `belowTargetColor`: The text's color when the frame rate is below the target. YELLOW by default.
+- `farBelowTargetColor`: The text's color when the frame rate is below half the target. RED by default.
+- `font`: The font, or null by default for raylib's default font.
+- `fontSize`: The text's height, in pixels, or null by default to scale it to the window: a 36th of the screen's height (20 at 720 lines, as DrawFPS draws), so the stats read alike at any window size. A size given is used as it is; one under 1 is refused.
+- `spacing`: The space between letters, in pixels at the font's size, as DrawTextEx's. 1 by default.
+- `padding`: The space around the text inside its background, in pixels. 4 by default.
+- `backgroundColor`: The background's color behind the text and its padding. BLANK by default, for none.
+
 ## GlyphInfo
 
 *class* in [`engines/raylib/src/helix/raylib/GlyphInfo.hx`](../../engines/raylib/src/helix/raylib/GlyphInfo.hx), `import helix.raylib.GlyphInfo;`
