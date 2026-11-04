@@ -1,13 +1,14 @@
 // <helix/raylib/shaders/skinning.glsl>: skinning on the GPU, for a vertex stage of helix-raylib's.
 //
 // It declares the bone inputs a skinned mesh feeds, vertexBoneIds and vertexBoneWeights (four bones a vertex, as raylib's), the frame's
-// bone palette (uniform sampler2D bonePalette) and the draw's first bone in it (uniform int boneOffset), and two functions:
+// bone palette (uniform sampler2D bonePalette) and the draw's first bone in it plus one (uniform int boneOffset, 0 for a draw without
+// bones), and two functions:
 // helixSkin() returns the vertex's skin matrix, each of its bones' matrices times its weight, added; helixSkinNormal(normal) returns a
 // normal moved as raylib moves one, by each bone's matrix inverted and transposed, times its weight, added, and not normalized.
 //
 // A shader including it skins on the GPU: a mesh UpdateModelAnimation posed is drawn with its bones written into the palette and
-// boneOffset set, so one model drawn in many poses in a frame draws each as it was asked for. A vertex with no weight at all is left
-// where it is. The palette is filled only for a posed mesh: a mesh drawn before any UpdateModelAnimation reads no bones.
+// boneOffset set, so one model drawn in many poses in a frame draws each as it was asked for. A mesh drawn before any UpdateModelAnimation
+// posed it, or without bones, is drawn in its bind pose, as are the vertices with no weight at all.
 //
 //     #version 330
 //     #include <helix/raylib/shaders/skinning.glsl>
@@ -28,15 +29,17 @@ in vec4 vertexBoneWeights;
 uniform sampler2D bonePalette;
 uniform int boneOffset;
 
-// A bone's matrix: four texels of the palette, its columns, 64 bones a row, the draw's first at boneOffset.
+// A bone's matrix: four texels of the palette, its columns, 64 bones a row, the draw's first at boneOffset - 1.
 mat4 helixBoneMatrix(float id) {
-    int bone = int(id + 0.5) + boneOffset;
+    int bone = int(id + 0.5) + boneOffset - 1;
     ivec2 at = ivec2(bone % 64 * 4, bone / 64);
     return mat4(texelFetch(bonePalette, at, 0), texelFetch(bonePalette, at + ivec2(1, 0), 0), texelFetch(bonePalette, at + ivec2(2, 0), 0),
         texelFetch(bonePalette, at + ivec2(3, 0), 0));
 }
 
 mat4 helixSkin() {
+    if (boneOffset == 0)
+        return mat4(1.0);
     mat4 skin = mat4(0.0);
     bool weighted = false;
     for (int i = 0; i < 4; i++) {
@@ -50,6 +53,8 @@ mat4 helixSkin() {
 }
 
 vec3 helixSkinNormal(vec3 normal) {
+    if (boneOffset == 0)
+        return normal;
     vec3 moved = vec3(0.0);
     bool weighted = false;
     for (int i = 0; i < 4; i++) {

@@ -1,6 +1,6 @@
 {
   "oracle": "6.2",
-  "covers": "one greenman posed and drawn 240 times in a frame (UpdateModelAnimation then DrawModel each), each in its own pose: skinned on the GPU by the default shader's skinned twin, by a program's own shader including <helix/raylib/shaders/skinning.glsl> (a row; raylib's skinning.vs in the C) and by raylib 6.2's example skinning shader (a row)",
+  "covers": "one greenman posed and drawn 240 times in a frame (UpdateModelAnimation then DrawModel each), each in its own pose: skinned on the GPU by the default shader's skinned twin, by a program's own shader including <helix/raylib/shaders/skinning.glsl> (a row; raylib's skinning.vs in the C) and by raylib 6.2's example skinning shader (a row); and a model never posed drawn through that include in its bind pose (raylib's skinning.vs with its identity bones in the C)",
   "kind": "pixels",
   "reference": "scene.c",
   "harness": [

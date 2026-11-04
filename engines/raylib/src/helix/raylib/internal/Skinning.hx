@@ -149,11 +149,14 @@ class Skinning {
 		}
 		if (p.paletteSlot >= 0) {
 			var palette = write(pose);
+			// The draw's first bone plus one: 0, as every other draw through the program reads it, means no bones (the bind pose).
 			if (p.boneOffset != null)
-				p.values.writeInt(p.boneOffset, writtenOffset);
+				p.values.writeInt(p.boneOffset, writtenOffset + 1);
 			var textures = helix.raylib.modules.RModels.mapProgramTextures(p, locs, material);
 			textures[p.paletteSlot] = palette;
 			frame.mesh(mesh, p, transform, diffuse, textures, instances, instanceCount);
+			if (p.boneOffset != null)
+				p.values.writeInt(p.boneOffset, 0);
 			return true;
 		}
 		if (shader.locs[Raylib.SHADER_LOC_VERTEX_BONEIDS] != -1)

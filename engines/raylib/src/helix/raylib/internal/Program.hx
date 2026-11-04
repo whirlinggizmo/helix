@@ -172,6 +172,42 @@ class Program {
 		for (location => numbers in written)
 			if (numbers != null)
 				program.write(program.locate(locations[location].name), numbers);
+		for (s in shader.samplers) {
+			program.setTexture(program.slotOf(s.name), textures[s.slot]);
+			program.setUnit(program.slotOf(s.name), units[s.slot]);
+		}
+	}
+
+	/** Sets the texture at a slot, as `SetShaderValueTexture` does, and at its twin's slot of the same name (`mirror`).
+
+		@param slot  The slot, or -1 for nothing.
+		@param texture  The texture's GPU handle. */
+	public function setTexture(slot:Int, texture:Int):Void {
+		if (slot < 0 || slot >= textures.length)
+			return;
+		textures[slot] = texture;
+		if (twin != null)
+			twin.setTexture(twin.slotOf(nameAt(slot)), texture);
+	}
+
+	/** Sets the texture unit a slot's sampler reads, as `SetShaderValue` on a sampler does, and its twin's of the same name (`mirror`).
+
+		@param slot  The slot, or -1 for nothing.
+		@param unit  The unit: the material map of that index. */
+	public function setUnit(slot:Int, unit:Int):Void {
+		if (slot < 0 || slot >= units.length)
+			return;
+		units[slot] = unit;
+		if (twin != null)
+			twin.setUnit(twin.slotOf(nameAt(slot)), unit);
+	}
+
+	// The name of the sampler at a slot.
+	function nameAt(slot:Int):String {
+		for (s in shader.samplers)
+			if (s.slot == slot)
+				return s.name;
+		return "";
 	}
 
 	// The numbers last written at each location, and the twin they are written to as well (mirror).

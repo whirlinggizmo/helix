@@ -2941,7 +2941,7 @@ class RCore {
 			var unit = numbers(value);
 			if (unit.length > 0) {
 				Runtime.frame.cut();
-				shader.program.units[slot] = Std.int(unit[0]);
+				shader.program.setUnit(slot, Std.int(unit[0]));
 			}
 			return;
 		}
@@ -2974,7 +2974,7 @@ class RCore {
 		var slot = shader.program.textureSlot(locIndex);
 		if (slot >= 0) {
 			Runtime.frame.cut();
-			shader.program.textures[slot] = Textures.handle(texture.id);
+			shader.program.setTexture(slot, Textures.handle(texture.id));
 		}
 	}
 
