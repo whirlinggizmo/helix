@@ -24,4 +24,11 @@ class PointLight3D extends Light3D {
 	function set_range(value:Float):Float {
 		return range = Math.max(0, value);
 	}
+
+	function writeLight(out:Array<Float>, at:Int):Void {
+		Light3D.writePoint(position.x, position.y, position.z, range, out, at);
+		Light3D.writeDirection(0, -1, 0, 1, out, at + 4);
+		Light3D.writeRadiance(color, intensity, out, at + 8);
+		Light3D.writePoint(-1, -1, -1, 0, out, at + 12);
+	}
 }

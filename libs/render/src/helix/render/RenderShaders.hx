@@ -98,7 +98,20 @@ class RenderShaders {
 		"fog" => "int",
 		"flatShading" => "int",
 		"vertexColors" => "int",
-		"colorSpaceSrgb" => "int"
+		"colorSpaceSrgb" => "int",
+		"lightCount" => "int",
+		"lightPositions" => "vec4",
+		"lightDirections" => "vec4",
+		"lightColors" => "vec4",
+		"lightCones" => "vec4",
+		"receiveShadows" => "int",
+		"ambientLight" => "vec4",
+		"environmentIrradiance" => "vec4",
+		"environmentParams" => "vec4",
+		"shadowMatrices" => "mat4",
+		"shadowParams" => "vec4",
+		"shadowColors" => "vec4",
+		"shadowCascadeSplits" => "vec4"
 	];
 
 	/** The textures helix-render binds, each a 2D texture. */
@@ -111,7 +124,8 @@ class RenderShaders {
 		"lightTexture",
 		"emissiveTexture",
 		"boneTexture",
-		"morphTexture"
+		"morphTexture",
+		"brdfTexture"
 	];
 
 	/** One of helix-render's own files, beside this one. */
@@ -156,7 +170,8 @@ class RenderShaders {
 			if (!Lambda.exists(shared, s -> s.name == block) && (declares(vertex.text, block) || declares(fragment.text, block)))
 				shared.push({name: block});
 		var given = options.check;
-		return Shader.makeExpr(vertex, {name: fragment.name, text: wrapClip(vertex.text, fragment.text)}, {
+		var lit = Lambda.exists(shared, s -> s.name == "Lighting");
+		var made = Shader.makeExpr(vertex, {name: fragment.name, text: wrapClip(vertex.text, fragment.text)}, {
 			defines: options.defines,
 			includes: includes,
 			includeDirectories: options.includeDirectories,
@@ -169,6 +184,11 @@ class RenderShaders {
 			},
 			file: options.file
 		}, pos);
+		// A shader reading the lighting links it, as a light does.
+		return lit ? macro @:pos(pos) {
+			@:privateAccess helix.render.BatchLighting.install();
+			$made;
+		} : made;
 	}
 
 	/** Why a shader declares a name helix-render fills with another type than it fills, or null. */

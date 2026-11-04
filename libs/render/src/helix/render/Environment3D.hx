@@ -30,14 +30,17 @@ class Environment3D {
 	/** Creates an environment of no light: no ambient light, no map, no background. */
 	public function new() {}
 
-	/** Sets the ambient light: its color decoded from sRGB, times its intensity.
+	/** Sets the ambient light: its color decoded from sRGB, times its intensity, reaching every surface alike from every side.
 
+		Its intensity is three.js's AmbientLight's: the light falling on a surface whatever way it faces, so at π a white surface shows
+		white, as under a light of π (`Light3D`). It lights the diffuse part of a lit material, darkened by its occlusion map.
 		@param color  The color, as 0xAARRGGBB; its alpha is ignored.
 		@param intensity  The intensity.
 		@return  False, changing nothing, for an intensity below 0. */
 	public function setAmbient(color:Int, intensity:Float):Bool {
 		if (!(intensity >= 0))
 			return false;
+		BatchLighting.install();
 		ambientColor = color;
 		ambientIntensity = intensity;
 		return true;

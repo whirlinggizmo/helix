@@ -125,8 +125,9 @@ import helix.services.shaders.ShaderValues;
 	``` */
 class Material3D {
 	#if !macro
-	/** Gets or sets how the batch's lights shade it: MetallicRoughness until set. */
-	public var shading:Shading3D = MetallicRoughness;
+	/** Gets or sets how the batch's lights shade it: MetallicRoughness until set. Setting a lit shading links the lit shaders
+		(`Light3D` says what else does). */
+	public var shading(default, set):Shading3D = MetallicRoughness;
 
 	/** Gets or sets the base color, multiplied with the base color texture and the vertex color: white until set.
 
@@ -205,13 +206,13 @@ class Material3D {
 	public var occlusionIntensity(default, set):Float = 1;
 
 	/** Gets or sets a baked light map, linear light added as the ambient light is, three.js's lightMap; null for none. */
-	public var lightTexture:Null<Texture2D> = null;
+	public var lightTexture(default, set):Null<Texture2D> = null;
 
 	/** Gets or sets how strongly the light map lights: 1 until set. Below 0 is clamped to 0. */
 	public var lightIntensity(default, set):Float = 1;
 
 	/** Gets or sets the light it gives off, lit or not: black until set. */
-	public var emissiveColor:Int = 0xff000000;
+	public var emissiveColor(default, set):Int = 0xff000000;
 
 	/** Gets or sets how bright its emissive light is, multiplying `emissiveColor`: 1 until set. Below 0 is clamped to 0. */
 	public var emissiveStrength(default, set):Float = 1;
@@ -286,6 +287,25 @@ class Material3D {
 	// A value held to 0 to 1.
 	static function clamp(value:Float):Float
 		return Math.max(0, Math.min(1, value));
+
+	// Inlined, so a program writing Unlit links no lighting.
+	inline function set_shading(value:Shading3D):Shading3D {
+		if (value != Unlit)
+			BatchLighting.install();
+		return shading = value;
+	}
+
+	function set_emissiveColor(value:Int):Int {
+		if (value & 0xffffff != 0)
+			BatchLighting.install();
+		return emissiveColor = value;
+	}
+
+	function set_lightTexture(value:Null<Texture2D>):Null<Texture2D> {
+		if (value != null)
+			BatchLighting.install();
+		return lightTexture = value;
+	}
 
 	function set_metallic(value:Float):Float {
 		return metallic = clamp(value);

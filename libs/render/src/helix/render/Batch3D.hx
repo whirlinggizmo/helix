@@ -39,8 +39,9 @@ import helix.services.shaders.ShaderVertexLayout;
 	views together: a draw is skipped only when it is out of every view.
 
 	**Light.** A material is shaded as its `shading` says by the lights in `lights` (any number; each draw by the 8 that reach it most:
-	each light's brightness through its falloff at the nearest point of the draw's box and its cone at the box's center), the ambient
-	light and environment map of `environment`, and its own maps, in linear light.
+	each light's brightness through its falloff at the nearest point of the draw's box, and a spot's cone toward the box, widened by how
+	far the box reaches from its center), the ambient light and environment map of `environment`, and its own maps, in linear light. A
+	batch draw whose program's shader reads the lights is lit by the 8 that reach the first view's eye most.
 
 	**Shadows.** At most 4 lights cast, on every target: each of the first 4 lights in `lights` that casts (`Light3D.castsShadow`) has its
 	map drawn before the pass the batch draws in, at `Renderer.endFrame`, from the meshes this batch drew casting that its volume holds,
@@ -59,7 +60,9 @@ import helix.services.shaders.ShaderVertexLayout;
 	decoded once, fogged, exposed and tone mapped as they say, and encoded. Into an RGBA16F target it is decoded once and written linear.
 
 	**Points.** A point of `pointSize` 1, not attenuated, is the one pixel its position falls in, on every backend, shaded as its vertex;
-	a larger one is a square facing the screen, made in the vertex stage, with its texture across it.
+	a larger one is a square facing the screen, made in the vertex stage, with its texture across it. A mesh's larger points
+	(`polygonMode` Points) are each vertex's square, its records read one a GPU instance, so an instanced mesh's are a GPU draw for each
+	copy; a program's own vertex stage that doesn't read `vertexCorner` draws them as one-pixel points.
 
 	**Sprites, shapes and text in a plane** (`drawSprite`, `drawTextureRegion`, the shapes from `fillTriangle` to `strokePolygon`,
 	`drawText`, `drawTextLayout`) are what a layer drawing all its 2D through this batch needs, as raylib's rlgl does: wire and point
@@ -178,7 +181,8 @@ import helix.services.shaders.ShaderVertexLayout;
 	vec3 shadePhong(Surface surface);
 	vec3 shadeLambert(Surface surface);
 	// One of the draw's lights (0 to lightCount - 1) arriving at a point: its radiance through its falloff, cone and shadow, and the
-	// unit direction toward it; for a shader shading by its own model.
+	// unit direction toward it; for a shader shading by its own model. A hemisphere light arrives along the normal, its sky and ground
+	// blended by how far the normal faces up: diffuse light alone, which the built-in shadings add as they add the ambient light.
 	vec3 computeLightRadiance(int lightIndex, vec3 position, vec3 normal, out vec3 toLight);
 	// A casting light's shadow at a point (its index is lightCones[i].z): 1 where lit, toward its color by its strength where shadowed.
 	vec3 computeShadow(int shadowIndex, vec3 position, vec3 normal);
@@ -356,6 +360,8 @@ class Batch3D {
 	}
 
 	function set_pointSize(value:Float):Float {
+		if (value != 1)
+			MeshPoints.install();
 		return pointSize = value > 0 ? value : 0;
 	}
 
@@ -372,6 +378,8 @@ class Batch3D {
 	}
 
 	function set_pointSizeAttenuated(value:Bool):Bool {
+		if (value)
+			MeshPoints.install();
 		return pointSizeAttenuated = value;
 	}
 
@@ -400,8 +408,8 @@ class Batch3D {
 		cull = None;
 		colorWrite = All;
 		polygonMode = Fill;
-		pointSize = 1;
-		pointSizeAttenuated = false;
+		@:bypassAccessor pointSize = 1;
+		@:bypassAccessor pointSizeAttenuated = false;
 		shaderValues = null;
 		customData = 0;
 		castShadows = true;
@@ -443,10 +451,14 @@ class Batch3D {
 		for (v in views)
 			if (v.viewportX < 0 || v.viewportY < 0 || v.viewportX + v.viewportWidth > width || v.viewportY + v.viewportHeight > height)
 				throw 'helix-render: a view\'s rectangle (${v.viewportX}, ${v.viewportY}, ${v.viewportWidth} x ${v.viewportHeight}) outside the renderer\'s viewport (${width} x ${height})';
-		renderer.opening(this, flush);
-		open = true;
 		while (viewPool.length < views.length)
 			viewPool.push(new RenderView(batchShader));
+		if (makeLighting != null && lightingBegin == null)
+			makeLighting(this);
+		if (lightingBegin != null)
+			lightingBegin(views.length);
+		renderer.opening(this, flush);
+		open = true;
 		viewCount = views.length;
 		var linear = renderer.linearPass();
 		for (i in 0...views.length) {
@@ -505,12 +517,10 @@ class Batch3D {
 		if (morphWeights != null && morphWeights.length > 0)
 			throw "helix-render: Batch3D.drawMesh with morph weights is not yet built (stage 7, morph targets)";
 		flush();
-		if (culling) {
-			var bounds = skinning != null && mesh.hasJoints ? mesh.skinnedBounds(skinning, new Bounds3D()) : mesh.bounds;
-			if (!placedInView(bounds, transform))
-				return;
-		}
-		meshDraw(mesh, material, transform, skinning, tint, state, 0, 1, false);
+		var bounds = skinning != null && mesh.hasJoints ? mesh.skinnedBounds(skinning, posed) : mesh.bounds;
+		if (culling && !placedInView(bounds, transform))
+			return;
+		meshDraw(mesh, material, transform, skinning, tint, state, 0, 1, false, bounds);
 	}
 
 	/** Draws a mesh many times with one material, each copy placed by its own transform and tinted by its own color, in one GPU draw.
@@ -538,6 +548,9 @@ class Batch3D {
 			return;
 		flush();
 		var first = instances.count, kept = 0;
+		// The box around the copies, in the parent's units, for the lights that reach them.
+		var lit = lightingPrepare != null;
+		posed.makeEmpty();
 		for (i in firstInstanceIndex...firstInstanceIndex + count) {
 			var copy = transforms[i];
 			if (culling) {
@@ -545,6 +558,8 @@ class Batch3D {
 				if (!placedInView(mesh.bounds, world))
 					continue;
 			}
+			if (lit)
+				posed.union(transformBox(mesh.bounds, copy, box), posed);
 			var at = instances.reserve(1),
 				b = instances.bytes,
 				m = copy.values;
@@ -556,7 +571,7 @@ class Batch3D {
 		}
 		if (kept == 0)
 			return;
-		meshDraw(mesh, material, transform == null ? identity : transform, null, null, null, first, kept, true);
+		meshDraw(mesh, material, transform == null ? identity : transform, null, null, null, first, kept, true, posed);
 	}
 
 	/** Draws a model: each of its meshes with its material, placed by a transform, each skinned mesh posed by its skin.
@@ -1075,8 +1090,33 @@ class Batch3D {
 	var planeNZ = 1.;
 	final pending:Array<Float> = [for (_ in 0...18) 0.];
 	var pendingCount = 0;
+
+	// The lit work, hooks a BatchLighting sets at the first begin once something giving light has installed its maker
+	// (BatchLighting.install), so a program giving no light links none of it: reading the lights and the environment at begin and
+	// sharing the Lighting block with the views; and preparing a draw, given its program's shader or none, its material and mesh, and
+	// its box and transform (a batch draw has none of these but its shader): answering the shader it is drawn with (the lit materials'
+	// for a lit one, null for the unlit one), and setting lightWriter to what writes its lights, chosen by its box in the world or by
+	// the first view's eye, with its material's lit names, on its values, or to null when its shader reads none.
+	@:allow(helix.render)
+	static var makeLighting:Null<Batch3D->Void> = null;
+
+	var lightingBegin:Null<Int->Void> = null;
+	var lightingPrepare:Null<(Null<Shader>, Null<Material3D>, Null<GpuMesh3D>, Null<Bounds3D>, Null<Matrix3D>) -> Null<Shader>> = null;
+	var lightWriter:Null<ShaderValues->Void> = null;
+
+	// Meshes drawn as large points, hooks MeshPoints sets once the program sets a point size (MeshPoints.install): the pipeline a mesh's
+	// points are drawn by, and the recording of its draws in a view. A large point's six corners, each with a copy placed where it is
+	// and white, read by a mesh drawn once as large points; the corners of each copy of an instanced one.
+	@:allow(helix.render)
+	static var pointsPipeline:Null<(Batch3D, Shader, GpuMesh3D, Material3D, Null<MeshState3D>) -> RenderDraw.RenderPipeline> = null;
+	@:allow(helix.render)
+	static var pointsRecord:Null<(Batch3D, RenderDraw.RenderPipeline, GpuMesh3D, ShaderValues, Bool, Int, Int, Int) -> Void> = null;
+
+	var pointCorners = 0;
+	var copyCorners:Null<RenderStream> = null;
 	// Scratch values, reused.
 	final box = new Bounds3D();
+	final posed = new Bounds3D();
 	final moved = new Vector3D();
 	final scratch = new Matrix3D();
 	final normalScratch = new Matrix3D();
@@ -1312,6 +1352,10 @@ class Batch3D {
 		var primitive:helix.platform.Primitive = runKind == 1 ? Lines : runKind == 2 ? Points : Triangles;
 		var spec = renderer.pipelineFor(s, renderer.stateFor(primitive, false, runBlend, runDepthTest, runDepthWrite, runCull, runColorWrite),
 			layoutOf(runKind == 3));
+		// A program's shader reading the lights is given those reaching the first view's eye most.
+		if (runValues != null && lightingPrepare != null)
+			lightingPrepare(s, null, null, null, null);
+		var litWrite = runValues != null ? lightWriter : null;
 		for (i in 0...viewCount) {
 			var view = viewPool[i];
 			if (viewCount > 1)
@@ -1331,6 +1375,8 @@ class Batch3D {
 			fill.integer(fill.fogged, runFogged ? 1 : 0);
 			fill.integer(fill.toneMapped, runToneMapped ? 1 : 0);
 			fill.integer(fill.skinned, 0);
+			if (litWrite != null)
+				litWrite(fill.values);
 			fill.view(view);
 			var d = renderer.makeDraw(spec);
 			d.setBuffer(0, 0, stream);
@@ -1541,21 +1587,40 @@ class Batch3D {
 		return times(24) << 24 | times(16) << 16 | times(8) << 8 | times(0);
 	}
 
+	// The pipeline a mesh's faces, edges or one-pixel points are drawn by, its state the draw's or else its material's.
+	function meshPipeline(s:Shader, mesh:GpuMesh3D, material:Material3D, state:Null<MeshState3D>, primitive:helix.platform.Primitive,
+			indexBuffer:Int):RenderDraw.RenderPipeline {
+		var blend = state != null && state.blend != null ? state.blend : material.blend;
+		var depthTest = state != null && state.depthTest != null ? state.depthTest : material.depthTest;
+		var depthWrite = state != null && state.depthWrite != null ? state.depthWrite : material.depthWrite;
+		var cull = state != null && state.cull != null ? state.cull : material.cull;
+		var colorWrite = state != null && state.colorWrite != null ? state.colorWrite : material.colorWrite;
+		return renderer.pipelineFor(s, renderer.stateFor(primitive, indexBuffer != 0, blend, depthTest, depthWrite, cull, colorWrite), mesh.layout);
+	}
+
 	// A mesh's draw, once a view: its material's names or its program's shader, its state, skinned when given matrices; instanced copies
-	// from the frame's stream when it has some.
+	// from the frame's stream when it has some; its lights chosen by its box, in the units its transform places.
 	function meshDraw(mesh:GpuMesh3D, material:Material3D, transform:Matrix3D, skinning:Null<Array<Matrix3D>>, tint:Null<Int>, state:Null<MeshState3D>,
-			firstInstance:Int, instanceCount:Int, instanced:Bool):Void {
+			firstInstance:Int, instanceCount:Int, instanced:Bool, bounds:Bounds3D):Void {
 		if (mesh.disposed)
 			throw "helix-render: a draw of a disposed mesh";
-		if (material.shaderValues == null && material.shading != Unlit)
-			throw "helix-render: a lit material (Material3D.shading) is not yet built (stage 2, lit materials and lights); draw it Unlit";
-		if (material.shaderValues == null && unlitShader == null)
-			unlitShader = RenderShaders.compileOwn("mesh.vert", "unlit.frag");
-		var s = material.shaderValues != null ? material.shaderValues.shader : unlitShader;
+		var custom = material.shaderValues;
+		var s = custom != null ? custom.shader : null;
+		if (lightingPrepare != null)
+			s = lightingPrepare(s, material, mesh, bounds, transform);
+		if (s == null) {
+			if (unlitShader == null)
+				unlitShader = RenderShaders.compileOwn("mesh.vert", "unlit.frag");
+			s = unlitShader;
+		}
+		// A lit material where nothing in the program gives light (BatchLighting.install) is what no light leaves it: black.
+		var dark = s == unlitShader && material.shading != Unlit;
+		var litWrite = lightWriter;
 		var fill = fillFor(s);
 		var primitive:helix.platform.Primitive = Triangles;
 		var indexBuffer = mesh.indexBuffer,
 			count = mesh.indexed ? mesh.triangleCount * 3 : mesh.vertexCount - mesh.vertexCount % 3;
+		var large = false;
 		switch polygonMode {
 			case Fill:
 			case Lines:
@@ -1563,19 +1628,16 @@ class Batch3D {
 				indexBuffer = mesh.edges();
 				count = mesh.edgeCount;
 			case Points:
-				if (pointSize != 1 || pointSizeAttenuated)
-					throw "helix-render: a mesh drawn as points larger than a pixel (polygonMode Points, pointSize) is not yet built";
 				primitive = Points;
 				count = mesh.indexed ? mesh.triangleCount * 3 : mesh.vertexCount;
+				if ((pointSize != 1 || pointSizeAttenuated) && pointsPipeline != null) {
+					var corner = s.findAttribute("vertexCorner");
+					large = corner != null && corner.active;
+				}
 		}
 		if (count <= 0)
 			return;
-		var blend = state != null && state.blend != null ? state.blend : material.blend;
-		var depthTest = state != null && state.depthTest != null ? state.depthTest : material.depthTest;
-		var depthWrite = state != null && state.depthWrite != null ? state.depthWrite : material.depthWrite;
-		var cull = state != null && state.cull != null ? state.cull : material.cull;
-		var colorWrite = state != null && state.colorWrite != null ? state.colorWrite : material.colorWrite;
-		var spec = renderer.pipelineFor(s, renderer.stateFor(primitive, indexBuffer != 0, blend, depthTest, depthWrite, cull, colorWrite), mesh.layout);
+		var spec = large ? pointsPipeline(this, s, mesh, material, state) : meshPipeline(s, mesh, material, state, primitive, indexBuffer);
 		var skinned = skinning != null && mesh.hasJoints;
 		var boneTexture = skinned ? bones(skinning) : 0;
 		var baseTexture = material.baseColorTexture,
@@ -1586,6 +1648,7 @@ class Batch3D {
 		if (normalMatrix == null)
 			normalMatrix = normalScratch.makeIdentity();
 		normalMatrix.transpose(normalMatrix);
+		var color = tint == null ? material.baseColor : tinted(material.baseColor, tint);
 		for (i in 0...viewCount) {
 			var view = viewPool[i];
 			if (viewCount > 1)
@@ -1596,7 +1659,7 @@ class Batch3D {
 			fill.matrix(fill.model, transform);
 			fill.matrix(fill.normalMatrix, normalMatrix);
 			fill.matrix(fill.modelViewProjection, Matrix3D.compose(transform, view.viewProjection, mvpScratch));
-			fill.color(fill.baseColor, tint == null ? material.baseColor : tinted(material.baseColor, tint));
+			fill.color(fill.baseColor, dark ? color & 0xff000000 : color);
 			fill.texture(fill.baseColorTexture, baseHandle, baseTexture == null ? Sampling.LINEAR : baseTexture.sampling);
 			fill.texture(fill.alphaTexture, alphaHandle, alpha == null ? Sampling.LINEAR : alpha.sampling);
 			fill.integer(fill.colorSpaceSrgb, material.colorSpace == Srgb ? 1 : 0);
@@ -1616,7 +1679,13 @@ class Batch3D {
 					for (b in 0...fill.boneMatrices.elementCount)
 						values.writeMatrix(fill.boneMatrices, b < skinning.length ? skinning[b] : identity, b);
 			}
+			if (litWrite != null)
+				litWrite(values);
 			fill.view(view);
+			if (large) {
+				pointsRecord(this, spec, mesh, values, instanced, firstInstance, instanceCount, i);
+				continue;
+			}
 			var d = renderer.makeDraw(spec);
 			d.setBuffer(0, mesh.buffer);
 			if (instanced)

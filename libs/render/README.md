@@ -34,15 +34,19 @@ until that stage is built.
    and `Batch3D`'s unlit work: views, the batch draws (lines, points, triangles, billboards, sprites, shapes and text in a plane),
    unlit meshes and models (tints, `MeshState3D`, instancing, skinning by a bone texture, polygon modes), `DrawList3D`, and the
    compile macros for a program's own shaders.
-2. Lit materials and lights.
+2. **Done:** lit materials and lights: `Lambert`, `Phong` and `MetallicRoughness` (with clearcoat, sheen, specular and ior) shaded by
+   `DirectionalLight3D`, `PointLight3D`, `SpotLight3D` and `HemisphereLight3D` in three.js's units and formulas, each draw by the 8
+   lights reaching its box most, and by the ambient light; normal, metallic-roughness, occlusion, emissive and light maps; flat
+   shading; `lighting.glsl` and `material.glsl` for a program's own lit shader; and a mesh drawn as points larger than a pixel. A
+   program giving no light links none of it (`Light3D` says what links it), and a lit material there is drawn black.
 3. Shadows.
 4. Environment maps and the background.
 5. Post-processing.
 6. Fog.
 7. Morph targets.
 
-Waiting on the libraries below (docs/ROADMAP.md): `TargetDepth.Texture` until the platform samples depth. A mesh drawn as points larger than a pixel
-(`polygonMode` Points with a `pointSize`) throws, not yet built.
+Waiting on the libraries below (docs/ROADMAP.md): `TargetDepth.Texture` until the platform samples depth; the second texture
+coordinates (`occlusionTexture` and `lightTexture` read the first set until helix-geometry's `Mesh3D` holds a second).
 
 ## A frame
 
@@ -76,8 +80,8 @@ comment lists the names it fills; a shader reads what it declares. The includes 
 | `<helix/render/color.glsl>` | `decodeSrgb`, `encodeSrgb`, `applyToneMapping`, `applyFog`, `encodeColor`, `writeColor` (`View3D`). |
 | `<helix/render/batch.glsl>` | A batch draw's attributes, uniforms and outputs, and `placeBatchVertex` (`Batch3D`). |
 | `<helix/render/mesh.glsl>` | A mesh's attributes, the per-draw uniforms and outputs, and `placeVertex`: skinned and instanced (`Material3D`). |
-| `<helix/render/lighting.glsl>` | The `Lighting` block, the draw's lights and the shadings (`Batch3D`); stage 2. |
-| `<helix/render/material.glsl>` | A material's names, `readMaterialSurface`, `shadeMaterial`, `writeMaterialColor` (`Material3D`); stage 2. |
+| `<helix/render/lighting.glsl>` | The `Lighting` block, the draw's lights and the shadings (`Batch3D`). |
+| `<helix/render/material.glsl>` | A material's names, `readMaterialSurface`, `shadeMaterial`, `writeMaterialColor` (`Material3D`). |
 
 ## Colors
 

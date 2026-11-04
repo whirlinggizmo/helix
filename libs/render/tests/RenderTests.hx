@@ -15,7 +15,8 @@ import helix.services.images.Image;
 	their textures pooled, clears recorded in order, viewports and scissors; the 2D batch's joining and splitting of GPU draws, culling,
 	shapes, sprites and draw lists; text measured, wrapped and aligned, a character a font lacks drawn as its stand-in and warned of once;
 	the 3D batch's views, points, lines, polygon modes, instances,
-	meshes, materials, mesh state and skinning. */
+	meshes, materials, mesh state and skinning, a mesh's large points, a lit material drawn black where nothing gives light, the lights chosen
+	for a draw by its box, and a light casting shadows refused until stage 3. */
 @:access(helix.services.fonts)
 @:access(helix.render)
 class RenderTests {
@@ -66,6 +67,9 @@ class RenderTests {
 		views3D();
 		draws3D();
 		meshes3D();
+		points3D();
+		// Last: the first light links the lighting for the rest of the run.
+		lights3D();
 		var space:ColorSpace = Linear, align:TextAlign2D = Right;
 		check('$space $align' == "Linear Right", "the enums print as their names: $space $align");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
@@ -523,7 +527,6 @@ class RenderTests {
 		camera.transform.position.set(0, 0, 10);
 		r.beginFrame(100, 100);
 		b.begin(camera);
-		throws(() -> b.drawMesh(mesh, material, new Matrix3D()), "stage 2", "a lit material waits for stage 2");
 		material.shading = Unlit;
 		var state = new MeshState3D();
 		state.depthTest = Off;
@@ -566,6 +569,133 @@ class RenderTests {
 		b.begin(camera);
 		throws(() -> b.drawMesh(gpu, material, new Matrix3D()), "disposed", "a disposed mesh's draw");
 		b.end();
+		r.endFrame();
+		r.dispose();
+	}
+
+	// Whether a draw's program declares a uniform block of a name.
+	static function declaresBlock(g:RecordingGraphics, draw:Dynamic, name:String):Bool {
+		var source = g.shaders.get(draw.pipeline.shader);
+		return Lambda.exists(source.uniformBlocks, b -> b.glslName == name);
+	}
+
+	// A uniform's first floats as a draw submitted them (an int's bits read as an int), from the block its program declares it in.
+	static function uniformOf(g:RecordingGraphics, draw:Dynamic, name:String, count:Int):Array<Float> {
+		var source = g.shaders.get(draw.pipeline.shader);
+		for (b in source.uniformBlocks)
+			for (m in b.members)
+				if (m.glslName == name) {
+					var bytes:Bytes = draw.uniforms[b.stage == "vertex" ? b.slot : 4 + b.slot];
+					return [
+						for (i in 0...count)
+							m.type == "int" ? bytes.getInt32(m.offset + i * 4) : bytes.getFloat(m.offset + Std.int(i / 4) * m.stride + i % 4 * 4)
+					];
+				}
+		throw 'no uniform $name';
+	}
+
+	static function points3D():Void {
+		var g = new RecordingGraphics(),
+			r = new Renderer(g),
+			b = new Batch3D(r);
+		var mesh = r.createMesh(Mesh3D.fromBox(1, 1, 1));
+		var material = new Material3D();
+		material.shading = Unlit;
+		var camera = new Camera3D();
+		camera.transform.position.set(0, 0, 10);
+		r.beginFrame(100, 100);
+		b.begin(camera);
+		b.polygonMode = Points;
+		b.drawMesh(mesh, material, new Matrix3D());
+		b.pointSize = 6;
+		b.drawMesh(mesh, material, new Matrix3D());
+		b.drawMeshInstanced(mesh, material, [Matrix3D.fromTranslation(-1, 0, 0), Matrix3D.fromTranslation(1, 0, 0)]);
+		b.resetState();
+		b.end();
+		r.endFrame();
+		check(g.draws.length == 4, "one-pixel points, large ones, and a draw for each large copy: " + g.draws.length);
+		check(g.draws[0].pipeline.primitive == Points && g.draws[0].count == 36, "a pixel a corner as indexed");
+		var large = g.draws[1];
+		check(large.pipeline.primitive == Triangles
+			&& !large.pipeline.indexed
+			&& large.count == 6
+			&& large.instanceCount == 24
+			&& large.pipeline.buffers[0].instanced
+			&& large.pipeline.cull == None,
+			"large points: a square of six corners for each of the mesh's vertices, its records one an instance, never culled");
+		check(g.draws[2].first == 0 && g.draws[3].first == 6 && g.draws[3].instanceCount == 24, "each copy's corners its own six");
+		r.dispose();
+	}
+
+	static function lights3D():Void {
+		var g = new RecordingGraphics(),
+			r = new Renderer(g),
+			b = new Batch3D(r);
+		var mesh = r.createMesh(Mesh3D.fromBox(1, 1, 1));
+		var material = new Material3D();
+		var camera = new Camera3D();
+		camera.transform.position.set(0, 0, 10);
+		r.beginFrame(100, 100);
+		b.begin(camera);
+		b.drawMesh(mesh, material, new Matrix3D());
+		b.end();
+		r.endFrame();
+		check(g.draws.length == 1 && !declaresBlock(g, g.draws[0], "Lighting") && Batch3D.makeLighting == null,
+			"a lit material where nothing gives light: drawn black, with no lighting linked");
+		// Ten point lights a unit apart, from 1 to 10 from the box's face; one past its range; a spot turned away and one whose cone
+		// reaches the box's edge.
+		for (i in 0...10) {
+			var p = new PointLight3D();
+			p.position.set(0, 0, .5 + 1 + i);
+			b.lights.push(p);
+		}
+		var short = new PointLight3D();
+		short.position.set(0, .5 + 2, 0);
+		short.range = 1.5;
+		b.lights.push(short);
+		var away = new SpotLight3D();
+		away.position.set(0, -2.5, 0);
+		away.direction.set(0, -1, 0);
+		b.lights.push(away);
+		// Straight down past the box's side: its axis misses the box, its cone of 0.15 radians doesn't reach the box's center, but it
+		// reaches the box.
+		var toward = new SpotLight3D();
+		toward.position.set(.6, 3, 0);
+		toward.direction.set(0, -1, 0);
+		toward.setCone(.1, .15);
+		b.lights.push(toward);
+		g.forget();
+		r.beginFrame(100, 100);
+		b.begin(camera);
+		b.drawMesh(mesh, material, new Matrix3D());
+		b.lights.resize(0);
+		b.lights.push(short);
+		b.lights.push(away);
+		b.lights.push(toward);
+		b.lights.push(new HemisphereLight3D());
+		b.end();
+		b.begin(camera);
+		b.drawMesh(mesh, material, new Matrix3D());
+		b.end();
+		r.endFrame();
+		check(g.draws.length == 2
+			&& declaresBlock(g, g.draws[0], "Lighting"), "a lit material drawn by the lit program, once lights are made");
+		var many = g.draws[0], few = g.draws[1];
+		var positions = uniformOf(g, many, "lightPositions", 32);
+		inline function tenths(v:Float):Float
+			return Math.round(v * 10) / 10;
+		var placesChosen = [for (k in 0...8) '${tenths(positions[k * 4])} ${tenths(positions[k * 4 + 2])}'].join(", ");
+		check(uniformOf(g, many, "lightCount", 1)[0] == 8 && placesChosen == "0 1.5, 0 2.5, 0.6 0, 0 3.5, 0 4.5, 0 5.5, 0 6.5, 0 7.5",
+			"the 8 lights reaching the box most, most first, the spot 2.5 away between the point lights 2 and 3 away: " + placesChosen);
+		var kinds = uniformOf(g, few, "lightDirections", 8);
+		check(uniformOf(g, few, "lightCount", 1)[0] == 2 && kinds[3] == 3 && kinds[7] == 2,
+			"a point light past its range and a spot turned away left out, the hemisphere light first: " + kinds);
+		var sun = new DirectionalLight3D();
+		sun.castsShadow = true;
+		b.lights.push(sun);
+		r.beginFrame(100, 100);
+		throws(() -> b.begin(camera), "stage 3", "a light casting shadows waits for stage 3");
+		check(!b.open, "and the batch stays closed");
 		r.endFrame();
 		r.dispose();
 	}
