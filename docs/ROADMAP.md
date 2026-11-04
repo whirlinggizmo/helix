@@ -1,6 +1,6 @@
 # Roadmap
 
-The order (DECISIONS 40): raygui on helix-raylib (done, DECISIONS 41), then its skins (`extras.GuiSkins`), then helix-render's stages, then helix-raylib
+The order (DECISIONS 40): raygui on helix-raylib (done, DECISIONS 41), then its skins (done, `extras.GuiSkins`, DECISIONS 42), then helix-render's stages, then helix-raylib
 rebuilt on helix-render, then helix-scene with Gyre or a three.js-style engine on it, as the jam decides. Whatever comes next keeps
 helix-raylib's size and speed where docs/speed.md records them.
 
@@ -31,7 +31,7 @@ helix-raylib's size and speed where docs/speed.md records them.
   API has no lights, shadows or post-processing, and the mirror keeps raylib's quirks on purpose. Whether Gyre keeps HeliX's API or
   folds its useful parts (the app's lifecycle, a retained UI, tweens, transitions, the autopilot) into a three.js-style engine on the
   same helix-scene is the jam's question (DECISIONS 40).
-- **helix-raylib (DECISIONS 16, 19, 20, 21, 38):** raylib's API over the services, merged to `main`. Next: raygui's skins (below);
+- **helix-raylib (DECISIONS 16, 19, 20, 21, 38):** raylib's API over the services, merged to `main`. Next:
   rebuilt on helix-render after helix-render's stages; then reloading and placeholders under raylib's own names (the assets,
   resources and objects below). Then a trial of how agents take to
   the `...Async` loads, now in `helix.raylib.extras` (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
@@ -46,9 +46,7 @@ helix-raylib's size and speed where docs/speed.md records them.
   style, icons and tooltips, held to raygui's C by the `raygui`, `raygui_input` and `raygui_values` suites. `.rgs` styles and `.rgi`
   icons load through `GuiLoadStyleAsync` and `GuiLoadIconsAsync` in `extras.Gui`. Left: rGuiLayout's `.rgl` layouts, and its code
   export through a Haxe code template for helix-raylib, if its custom templates allow one (to be checked). raygui styles only
-  colors, borders, text and its icons. Skins from images (a nine-slice texture for each control and state, image buttons), which
-  Godot, Unity and Phaser all have, are helix-raylib's own, in `extras.GuiSkins`, drawing through the same controls so a skinned
-  `GuiButton` keeps raygui's signature. raylib's other companion headers agents know, easings (`reasings.h`) and physics (`physac.h`), are each a module
+  colors, borders, text and its icons. Skins from images are helix-raylib's own, in `extras.GuiSkins` (done, DECISIONS 42). raylib's other companion headers agents know, easings (`reasings.h`) and physics (`physac.h`), are each a module
   of their own the same way when wanted; the extras keep only what has no raylib-family equivalent.
 - **Platform proposals queued, for review:** depth sampled after a pass, depth bias, stencil, and the depth tests `Always`, `Less`,
   `Equal` and `GreaterEqual` (helix-render's revision 9). A render target's own sample count, apart from its depth, is being built. Deferred from the vertex formats

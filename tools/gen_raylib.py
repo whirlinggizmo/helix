@@ -80,6 +80,7 @@ TARGETS = {
         ('RDevice', "device: the safe area, run options, the device, the window's abilities, orientation and tilt"),
     ], None, 'Device'),
     'extras/Gui.hx': ([('RGuiAsync', "gui: the style and icon loads in place of raygui's that wait for a file")], None, 'Gui'),
+    'extras/GuiSkins.hx': ([('RGuiSkins', "gui skins: raygui's controls drawn from textures")], None, 'GuiSkins'),
 }
 # The package of what helix-raylib adds to raylib's API, a module for each of the TARGETS under extras/.
 EXTRAS = 'helix.raylib.extras'

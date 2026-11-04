@@ -554,3 +554,18 @@ Why things are the way they are, numbered, in order.
     raygui's C against raylib 5.5: GL matches pixel for pixel, SDL_GPU within 2 levels in faint blends, and the values to 2e-9.
     Rejected: raygui 5.1's API (agents know 4.x's, which raylib 5.5 ships), and taking its fixes piecemeal (they don't separate
     from its redesigns).
+
+42. **raygui's controls can be skinned from images, in `extras.GuiSkins`, drawing through raygui's own controls.** raygui draws every
+    control as flat boxes in its style's colors. Godot (StyleBoxTexture), Unity (GUIStyle) and Phaser (nine-slice) all draw controls
+    from a game's art, so helix-raylib adds it (40), a feature of its own in a module of its own (38). A `GuiSkin` (`helix.raylib`'s, beside
+    raylib's types) is a texture and a nine-patch for each of raygui's states, falling back to the normal one, and the pressed one to the
+    focused. `GuiSetSkin(control, part, skin)` sets it for a part of a control: its base (the box), its fill (a slider bar's bar, a
+    progress bar's progress, a check box's check), its handle (a slider's, a scroll bar's thumb) or its item (a list's rows). `DEFAULT`
+    behaves as `GuiSetStyle(DEFAULT, ...)` does, setting every control, and its own base is the panels' body. `GuiSkinFromSheet` cuts a
+    sheet of a control's states, down or across. The controls keep raygui's signatures and its text, so a skinned `GuiButton` is
+    `GuiButton(bounds, text)`. raygui's box drawing goes through one hook, null until a skin is set, so a program setting none links
+    none of it and draws exactly as raygui does (the raygui suites unchanged); `GuiSkinsTests` checks a skinned control draws the
+    vertices `DrawTextureNPatch` draws. A trial (docs/trials/2026-11-04-gui-skins) of two Sonnet agents changed the API, not the
+    prose: the type moved to where they looked, the sheet cutter and the panels' skin were added, and the parts were tabled.
+    Rejected: a skinned variant of each control (`GuiSkinnedButton`), which doubles the API agents must learn, and a scoped
+    `GuiWithSkin(..., () -> ...)`, which raygui's style has no counterpart of.

@@ -242,6 +242,34 @@ var image:Image
 - `advanceX`: Character advance position X.
 - `image`: Character image data.
 
+## GuiSkin
+
+*class* in [`engines/raylib/src/helix/raylib/GuiSkin.hx`](../../engines/raylib/src/helix/raylib/GuiSkin.hx), `import helix.raylib.GuiSkin;`
+
+Represents a skin: how a part of raygui's controls is drawn from a texture, a nine-patch for each state, in place of its style's flat colors. Made by `GuiSkinFromTexture` and set by `GuiSetSkin` (`helix.raylib.extras.GuiSkins`).
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{texture:Texture2D, normal:NPatchInfo, focused:Null<NPatchInfo>, pressed:Null<NPatchInfo>, disabled:Null<NPatchInfo>, tint:Color}
+```
+
+```haxe
+var texture:Texture2D
+var normal:NPatchInfo
+var focused:Null<NPatchInfo>
+var pressed:Null<NPatchInfo>
+var disabled:Null<NPatchInfo>
+var tint:Color
+```
+
+- `texture`: Gets or sets the texture the patches are cut from, often one sheet for every skin.
+- `normal`: Gets or sets the patch drawn in `STATE_NORMAL`.
+- `focused`: Gets or sets the patch drawn in `STATE_FOCUSED`, with the pointer over the control, or null to draw `normal`.
+- `pressed`: Gets or sets the patch drawn in `STATE_PRESSED`, or null to draw `focused`, or `normal` when that is null too.
+- `disabled`: Gets or sets the patch drawn in `STATE_DISABLED`, or null to draw `normal`.
+- `tint`: Gets or sets the color the patches are multiplied by, `WHITE` to draw them as they are.
+
 ## GuiStyleProp
 
 *class* in [`engines/raylib/src/helix/raylib/GuiStyleProp.hx`](../../engines/raylib/src/helix/raylib/GuiStyleProp.hx), `import helix.raylib.GuiStyleProp;`

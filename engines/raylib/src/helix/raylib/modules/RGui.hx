@@ -352,6 +352,16 @@ class RGui {
 		return new Color(color.r, color.g, color.b, Std.int(color.a * alpha));
 	}
 
+	// Draws a part of a control from its skin when it has one (helix.raylib.extras.GuiSkins), returning whether it drew: null until a
+	// program sets a skin, so a program setting none links none of the skins.
+	static var skinned:Null<(control:Int, part:Int, state:Int, rec:Rectangle) -> Bool> = null;
+
+	// A part of a control: from its skin, or as raygui draws it (drawRectangle).
+	static inline function box(control:Int, part:Int, state:Int, rec:Rectangle, borderWidth:Int, borderColor:Color, color:Color):Void {
+		if (skinned == null || !skinned(control, part, state, rec))
+			drawRectangle(rec, borderWidth, borderColor, color);
+	}
+
 	// A rectangle filled and bordered, as raygui's GuiDrawRectangle, faded by the gui's alpha.
 	static function drawRectangle(rec:Rectangle, borderWidth:Int, borderColor:Color, color:Color):Void {
 		var x = Std.int(rec.x),
