@@ -532,3 +532,25 @@ Why things are the way they are, numbered, in order.
     own sake. The speed this order holds to was set on 2026-11-04 (docs/speed.md): a bunnymark that drew 50k sprites natively in 30.8
     ms a frame now draws them in 3.1 (raylib C 2.95), from three changes to helix-raylib's batch (nothing allocated per draw, typed
     records in place of anonymous structures, quads as four indexed vertices).
+
+41. **raygui is `helix.raylib.Raygui`, raygui 4.5-dev's API and behavior as raylib 5.5 ships it, its file loads in `extras.Gui`.**
+    raygui is raylib's own immediate-mode GUI, a header of its own (`raygui.h`), so it is a facade of its own, imported apart as
+    `Raymath` and `Rlgl` are (`import helix.raylib.Raygui.*;`). `gen_raylib` generates it from two sections, `RGui` (state, style,
+    icons, tooltips and the text drawing the controls share) and `RGuiControls`, with its constants from
+    `vendor/raygui/raygui_api.json`, which raylib's parser makes from `raygui.h`. Its version is the one raylib 5.5 ships in its
+    examples, 4.5-dev, its one oracle (24). raylib 6.2 ships raygui 5.1-dev, whose changes are redesigns rather than fixes the 4.5
+    signatures can keep (`GuiMessageBox` and `GuiTextInputBox` take another parameter, `GuiSliderPro` goes, and `GuiToggleGroup`,
+    `GuiColorPanel` and `TEXT_LINE_SPACING` are reworked), so none is taken. Moving to 5.1 is a version bump of raygui with raylib's.
+    A pointer a control changes is a one-element array (`[false]`, `[0]`, `[0.5]`, text as `[text]`), as raylib's `int *` is
+    elsewhere, and a struct it changes is changed in place. It draws through helix-raylib's calls and reads input through them, as
+    raygui does through raylib's, so raylib's automation events drive it. raygui computes in floats, and Raygui rounds to floats where
+    that places a pixel. Its state is the sections', so a program that never calls raygui links none of it (30). With every call
+    linked it costs 23.3 KB gzip, its icons included. `GuiLoadStyle` and `GuiLoadIcons` read a file, so they refuse, naming
+    `GuiLoadStyleAsync(fileName, ?done, ?failed)` and `GuiLoadIconsAsync(fileName, loadIconsName, loaded, ?failed)` in `extras.Gui`,
+    raygui's module of async calls (38). A style's font line loads its font through `LoadFontExAsync`. `GuiLoadStyleFromMemory` is
+    private in 4.5-dev, so it isn't in the API. raygui's quirks are kept, as raylib's are: the text boxes' shared cursor, Delete and
+    Backspace removing the size of the last character typed, a style file's last line unread without a break after it, and
+    `GuiLoadStyleDefault` unloading the font set before it. The parity suites `raygui`, `raygui_input` and `raygui_values` build
+    raygui's C against raylib 5.5: GL matches pixel for pixel, SDL_GPU within 2 levels in faint blends, and the values to 2e-9.
+    Rejected: raygui 5.1's API (agents know 4.x's, which raylib 5.5 ships), and taking its fixes piecemeal (they don't separate
+    from its redesigns).
