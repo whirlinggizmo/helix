@@ -1,5 +1,6 @@
 // helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a game: what a real game uses, its file formats one of each.
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Lights.*;
 import helix.raylib.extras.Window.*;
 import helix.raylib.extras.Files.*;
 import helix.raylib.extras.Textures.*;
@@ -37,6 +38,8 @@ import helix.raylib.Vector3;
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");
+		var lit = LoadLightingShader();
+		CreateLight(LIGHT_POINT, new Vector3(2, 4, 2), new Vector3(0, 0, 0), WHITE, lit);
 		InitAudioDevice();
 		SetTargetFPS(60);
 		var camera = new Camera3D(new Vector3(6, 4, 6), new Vector3(0, 1.5, 0), new Vector3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
@@ -64,7 +67,11 @@ void main() {
 ");
 		var timeLocation = GetShaderLocation(shader, "time");
 		var best = 0;
-		LoadModelAsync("hero.glb", loaded -> hero = loaded);
+		LoadModelAsync("hero.glb", loaded -> {
+			hero = loaded;
+			for (m in loaded.materials)
+				m.shader = lit;
+		});
 		LoadModelAnimationsAsync("hero.glb", loaded -> animations = loaded);
 		LoadTextureAsync("tiles.png", loaded -> tiles = loaded);
 		LoadTextureAsync("sprites.png", loaded -> sprites = loaded);

@@ -585,3 +585,37 @@ Why things are the way they are, numbered, in order.
     GL, SDL_GPU and WebGL2. Rejected: linking the lighting from `Material3D`'s constructor, which every unlit program calls; a shader
     for each shading (a shading chosen as the program runs links them all anyway); large points from the mesh's records copied on the
     CPU.
+
+44. **helix-raylib skins an animated model on the GPU, keeping raylib's API, and a program's own shader skins through an include.**
+    raylib's `UpdateModelAnimation` moves every vertex on the CPU, and helix-raylib made two GPU buffers a mesh a call: natively the
+    adapter's 256 buffers ran out at about three characters a frame, and in a page 200 characters cost some 80 ms. Now a call stores the
+    pose, not the vertices: each skinned mesh keeps its bone matrices as they are then, and each draw writes them into the frame's one
+    bone palette (a data texture, four texels a bone, uploaded once before the frame's passes) and is given its first bone, so one
+    model posed and drawn many times in a frame, a game's crowd, draws each as it was asked for. raylib's default shader is drawn through
+    its skinned twin, `shaders/unlit_skinned.vs`. A program's own vertex stage skins on the GPU by including
+    `<helix/raylib/shaders/skinning.glsl>` (the bone inputs, the palette and `helixSkin()`), or as raylib's `skinning.vs` does, with
+    `boneMatrices`; any other shader of its own is skinned on the CPU, as raylib's is, its buffers made once a frame. `animVertices`
+    and `animNormals` are worked out on the CPU when first read after a call, so a program reading them (or wire and point mode) sees
+    what raylib's do. What a shader declares is read from its reflection (its attributes, samplers and uniforms), never its text. The
+    palette, the twin and the CPU path are linked by the first `UpdateModelAnimation` or `UpdateModelAnimationEx` (30): the size ladder's
+    rungs without animation are unchanged but for 6-model (0.3 KB gzip, the allocation-free bone uniforms a loaded skeleton links), and
+    7-skinned grows by the twin and the palette. The `crowd` parity suite draws one model in 240 poses in a frame against raylib's C,
+    which skins on the CPU; the GPU's sums differ from it by float rounding alone. raylib's CPU skinning leaves tangents, and so does the
+    twin. Rejected: generating a skinned twin of every vertex stage a program loads, by rewriting its GLSL (it rewrites the user's code);
+    a buffer per draw (the platform's buffers run out); the bones in a uniform array (a block's 4 KiB on SDL_GPU's Vulkan holds 64).
+
+45. **raylib's examples' lighting is built in, as `extras.Lights`, over a public include.** raylib leaves lighting to its examples:
+    `rlights.h` and the `lighting.vs` and `lighting.fs` they load. A program wanting lit models had to ship those files, and an animated
+    model under them was skinned on the CPU (44). `extras.Lights` (38) mirrors `rlights.h` (`Light`, `CreateLight`,
+    `UpdateLightValues`, `MAX_LIGHTS`, `LIGHT_DIRECTIONAL`, `LIGHT_POINT`, its count of lights the program's, as rlights' is) and adds
+    `LoadLightingShader()`, the example's shader built in, so the example runs unchanged but for its load. helix-raylib's four model
+    shaders are short files in `helix/raylib/shaders/` over two public includes a program's own shader can use as well:
+    `<helix/raylib/shaders/skinning.glsl>` and `<helix/raylib/shaders/lights.glsl>` (rlights' uniforms and `helixLight`, lighting.fs's
+    math), each documented in its head comment; unlit (raylib's default), unlit skinned, lit and lit skinned. A twin is written every
+    uniform its shader is (`Program.mirror`), so `SetShaderValue` on the lit shader reaches its skinned draws. The lit shader is linked
+    by `LoadLightingShader`, the skinned ones by `UpdateModelAnimation`, and the lit skinned one with the lit one (`LoadLightingShader` sets it as its program's
+    skinned twin), so a lit program that never animates carries it too: `@:ifFeature` could link it only when both are called, but a
+    field marked so keeps its class whatever else uses it, so it linked the twin into every lit program all the same. The
+    `lighting` parity suite draws the example's setup and greenman lit and posed, through the built-in shader and through a program's
+    own over both includes, against raylib's C running the example's files and skinning on the CPU. Rejected: the lighting in `Raylib`
+    (it isn't raylib's API, 38), and copies of the GLSL in each shader rather than the includes.

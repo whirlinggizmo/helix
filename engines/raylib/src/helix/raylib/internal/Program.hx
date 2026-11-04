@@ -36,6 +36,13 @@ class Program {
 	public final texture1:Int;
 	public final texture2:Int;
 
+	/** The slot of the bone palette a shader including `<helix/raylib/shaders/skinning.glsl>` declares, -1 for one that doesn't, -2 until
+		`Skinning` first draws through it. */
+	public var paletteSlot = -2;
+
+	/** The draw's first bone in the palette, as that include declares it; null for a shader without it. */
+	public var boneOffset:Null<ShaderUniform> = null;
+
 	/** The platform's program handle. */
 	public final handle:Int;
 
@@ -151,7 +158,60 @@ class Program {
 			return;
 		var l = locations[location];
 		put(l.uniform, numbers, l.elementIndex);
+		written[location] = numbers;
+		if (twin != null)
+			twin.write(twin.locate(l.name), numbers);
 	}
+
+	/** Makes a program the twin of this one (a skinned version of a built-in shader, `Skinning`): every uniform written here, and every
+		one written after, is written there by name, so a draw through the twin reads what the program set on this one.
+
+		@param program  The twin. */
+	public function mirror(program:Program):Void {
+		twin = program;
+		for (location => numbers in written)
+			if (numbers != null)
+				program.write(program.locate(locations[location].name), numbers);
+		for (s in shader.samplers) {
+			program.setTexture(program.slotOf(s.name), textures[s.slot]);
+			program.setUnit(program.slotOf(s.name), units[s.slot]);
+		}
+	}
+
+	/** Sets the texture at a slot, as `SetShaderValueTexture` does, and at its twin's slot of the same name (`mirror`).
+
+		@param slot  The slot, or -1 for nothing.
+		@param texture  The texture's GPU handle. */
+	public function setTexture(slot:Int, texture:Int):Void {
+		if (slot < 0 || slot >= textures.length)
+			return;
+		textures[slot] = texture;
+		if (twin != null)
+			twin.setTexture(twin.slotOf(nameAt(slot)), texture);
+	}
+
+	/** Sets the texture unit a slot's sampler reads, as `SetShaderValue` on a sampler does, and its twin's of the same name (`mirror`).
+
+		@param slot  The slot, or -1 for nothing.
+		@param unit  The unit: the material map of that index. */
+	public function setUnit(slot:Int, unit:Int):Void {
+		if (slot < 0 || slot >= units.length)
+			return;
+		units[slot] = unit;
+		if (twin != null)
+			twin.setUnit(twin.slotOf(nameAt(slot)), unit);
+	}
+
+	// The name of the sampler at a slot.
+	function nameAt(slot:Int):String {
+		for (s in shader.samplers)
+			if (s.slot == slot)
+				return s.name;
+		return "";
+	}
+
+	// The numbers last written at each location, and the twin they are written to as well (mirror).
+	final written:Array<Null<Array<Float>>> = [];
 
 	// Writes whole elements of numbers into a uniform from an element, past its end dropped.
 	function put(u:ShaderUniform, numbers:Array<Float>, first:Int):Void {
@@ -231,8 +291,17 @@ class Program {
 	/** How many of `refs` are the program's own, from `LoadShader`, so `UnloadShader` on a material's copy lets go of one of those first. */
 	public var held = 1;
 
-	/** Frees the pipelines and the program. */
+	/** The skinned version of a built-in shader it is made of, which `Skinning` draws a posed mesh through in place of it (the lit
+		shader's, set by `LoadLightingShader`); null for none, or for the default shader, whose `Skinning` holds. */
+	public var skinned:Null<Shader> = null;
+
+	/** Gets its twin (`mirror`), null for none: freed with it. */
+	public var twin(default, null):Null<Program> = null;
+
+	/** Frees the pipelines and the program, and its twin's. */
 	public function dispose():Void {
+		if (twin != null)
+			twin.dispose();
 		for (p in pipelines)
 			graphics.disposePipeline(p);
 		graphics.disposeShader(handle);

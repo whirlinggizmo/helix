@@ -4791,10 +4791,19 @@ class Raylib {
 	public static inline function UpdateModelAnimationBones(model:Model, anim:ModelAnimation, frame:Float):Void
 		RModels.UpdateModelAnimationBones(model, anim, frame);
 
-	/** Poses a model by a frame of an animation, as raylib 6.2's: its bones as `UpdateModelAnimationBones` poses them, then each skinned
-		mesh's vertices moved on the CPU into its `animVertices` and `animNormals` (each normal by its bones' matrices inverted and
-		transposed, not normalized), which the GPU then draws. A mesh whose material's shader reads `vertexBoneIds` (or
-		`vertexBoneIndices`) is left for the shader to move. Draws asked for before keep the vertices they were asked with.
+	/** Poses a model by a frame of an animation, as raylib 6.2's: its bones as `UpdateModelAnimationBones` poses them, and each skinned
+		mesh drawn in that pose until the next call. Draws asked for before keep the pose they were asked with, so one model can be posed
+		and drawn many times in a frame.
+
+		How a mesh is moved depends on its material's shader. Under raylib's default shader it is moved on the GPU, by a skinned version
+		of that shader. Under a shader of the program's own that declares the bone inputs, as raylib's `skinning.vs` does
+		(`vertexBoneIds`, `vertexBoneWeights` and `uniform mat4 boneMatrices[N]`), or that includes `<helix/raylib/shaders/skinning.glsl>`,
+		it is moved on the GPU by that shader. Under a shader of the program's own without them it is moved on the CPU, every vertex each
+		call, which is slow for many vertices or many models: an animated model under a lighting shader of the program's own draws fastest
+		when that shader declares `skinning.vs`'s inputs or includes `skinning.glsl`.
+
+		`animVertices` and `animNormals` hold the moved positions and normals (each normal by its bones' matrices inverted and transposed,
+		not normalized), worked out on the CPU when first read; a mesh whose shader moves it itself is left as raylib leaves it.
 
 		@param model  The model.
 		@param anim  The animation, of the model's skeleton.
@@ -4803,7 +4812,7 @@ class Raylib {
 		RModels.UpdateModelAnimation(model, anim, frame);
 
 	/** Poses a model by two animations mixed, raylib 6.2's own: each at its frame as `UpdateModelAnimation` takes one, then the two mixed
-		by the blend, the bones and the vertices as it moves them. Note that, as raylib's, a frame is wrapped to its animation's frames
+		by the blend, the bones and the vertices as it moves them, on the GPU or the CPU as `UpdateModelAnimation` says. Note that, as raylib's, a frame is wrapped to its animation's frames
 		before its fraction is taken, so past the last frame it holds the frame it wrapped to. Nothing for a blend outside 0 to 1.
 
 		@param model  The model.

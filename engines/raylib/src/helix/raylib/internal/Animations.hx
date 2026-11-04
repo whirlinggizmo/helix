@@ -1,14 +1,16 @@
 package helix.raylib.internal;
 
 import haxe.io.FPHelper;
+import helix.math.Matrix3D;
 import helix.formats.gltf.GltfFile;
 import helix.raylib.*;
 import helix.raylib.modules.RMath.*;
 
-/** Reads a glTF file's animations as raylib 6.2's `LoadModelAnimationsGLTF` does, and poses a model by them as its
-	`UpdateModelAnimation` and `UpdateModelAnimationEx` do: their code ported line by line, with raymath's functions. */
+/** Reads a glTF file's animations as raylib 6.2's `LoadModelAnimationsGLTF` does, and poses a model's bones by them as its
+	`UpdateModelAnimationBones` and `UpdateModelAnimationBonesEx` do: their code ported line by line, with raymath's functions. */
 @:noCompletion
 @:access(helix.raylib.modules.RMath)
+@:access(helix.raylib.modules.RModels)
 class Animations {
 	/** The frames a second raylib samples an animation at. */
 	static inline final FRAMERATE = 60.0;
@@ -396,92 +398,67 @@ class Animations {
 		}
 	}
 
-	// A bone's pose, and its matrix from it: the bind pose's inverse, then the pose.
+	// A bone's pose, and its matrix from it: the bind pose's inverse, then the pose, as raylib's MatrixMultiply(MatrixInvert(bind),
+	// current) and helix-raylib's raymath compute it (through Matrix3D's compose), written into the bone's matrix in place, so a pose
+	// allocates no matrix.
 	static function setPose(model:Model, boneIndex:Int, translation:Vector3, rotation:Quaternion, scale:Vector3):Void {
 		var pose = model.pose[boneIndex];
 		pose.translation = translation;
 		pose.rotation = rotation;
 		pose.scale = scale;
-		var bind = model.bindPose[boneIndex];
-		var bindPoseMatrix = trs(bind.translation.x, bind.translation.y, bind.translation.z, bind.rotation, bind.scale.x, bind.scale.y, bind.scale.z);
-		var currentPoseMatrix = trs(translation.x, translation.y, translation.z, rotation, scale.x, scale.y, scale.z);
-		model.boneMatrices[boneIndex] = MatrixMultiply(MatrixInvert(bindPoseMatrix), currentPoseMatrix);
+		Matrix3D.fromScale(scale.x, scale.y, scale.z, scaled);
+		Matrix3D.fromQuaternion(rotation.x, rotation.y, rotation.z, rotation.w, rotated);
+		Matrix3D.compose(scaled, rotated, current);
+		Matrix3D.fromTranslation(translation.x, translation.y, translation.z, scaled);
+		Matrix3D.compose(current, scaled, rotated);
+		var v = Matrix3D.compose(inverseBind(model, boneIndex), rotated, current).values;
+		var m = model.boneMatrices[boneIndex];
+		m.m0 = v[0];
+		m.m1 = v[1];
+		m.m2 = v[2];
+		m.m3 = v[3];
+		m.m4 = v[4];
+		m.m5 = v[5];
+		m.m6 = v[6];
+		m.m7 = v[7];
+		m.m8 = v[8];
+		m.m9 = v[9];
+		m.m10 = v[10];
+		m.m11 = v[11];
+		m.m12 = v[12];
+		m.m13 = v[13];
+		m.m14 = v[14];
+		m.m15 = v[15];
 	}
 
-	/** Moves each skinned mesh's vertices by the model's bone matrices, as raylib 6.2's `UpdateModelAnimationVertexBuffers`: a vertex's
-		position and normal (by the matrices inverted and transposed, not normalized) each bone's times its weight, added; the mesh's
-		position and normal buffers on the GPU then made of them. A mesh whose material's shader reads the bone ids skins itself and is
-		left.
+	// What setPose works in.
+	static final scaled = new Matrix3D();
+	static final rotated = new Matrix3D();
+	static final current = new Matrix3D();
 
-		@param model  The model. */
-	public static function skin(model:Model):Void {
-		var normalMatrices:Null<Array<Matrix>> = null;
-		for (m in 0...model.meshCount) {
-			var mesh = model.meshes[m];
-			if (mesh.boneWeights == null || mesh.boneIds == null)
-				continue;
-			var material = model.materials[model.meshMaterial[m]];
-			if (material != null
-				&& material.shader != null
-				&& material.shader.locs != null
-				&& material.shader.locs[Raylib.SHADER_LOC_VERTEX_BONEIDS] != -1)
-				continue;
-			var count = mesh.vertexCount * 3;
-			if (mesh.animVertices == null)
-				mesh.animVertices = mesh.vertices.slice(0, count);
-			if (mesh.normals != null && mesh.animNormals == null)
-				mesh.animNormals = mesh.normals.slice(0, count);
-			// A normal's matrix depends on its bone alone: once a bone, not once a vertex.
-			if (mesh.normals != null && normalMatrices == null)
-				normalMatrices = [
-					for (b in 0...(model.boneCount < 256 ? model.boneCount : 256))
-						MatrixTranspose(MatrixInvert(model.boneMatrices[b]))
-				];
-			var vertices = mesh.vertices,
-				normals = mesh.normals,
-				anim = mesh.animVertices,
-				animNormals = mesh.animNormals;
-			var boneCounter = 0, bufferUpdateRequired = false;
-			var v = 0;
-			while (v < count) {
-				anim[v] = 0;
-				anim[v + 1] = 0;
-				anim[v + 2] = 0;
-				if (animNormals != null) {
-					animNormals[v] = 0;
-					animNormals[v + 1] = 0;
-					animNormals[v + 2] = 0;
-				}
-				for (_ in 0...4) {
-					var boneWeight = mesh.boneWeights[boneCounter];
-					var boneIndex = mesh.boneIds[boneCounter];
-					boneCounter++;
-					// Nothing to add for a bone of no weight.
-					if (boneWeight == 0)
-						continue;
-					var bone = model.boneMatrices[boneIndex];
-					var x = vertices[v],
-						y = vertices[v + 1],
-						z = vertices[v + 2];
-					anim[v] += (bone.m0 * x + bone.m4 * y + bone.m8 * z + bone.m12) * boneWeight;
-					anim[v + 1] += (bone.m1 * x + bone.m5 * y + bone.m9 * z + bone.m13) * boneWeight;
-					anim[v + 2] += (bone.m2 * x + bone.m6 * y + bone.m10 * z + bone.m14) * boneWeight;
-					bufferUpdateRequired = true;
-					if (normals != null && animNormals != null) {
-						var n = normalMatrices[boneIndex];
-						var nx = normals[v],
-							ny = normals[v + 1],
-							nz = normals[v + 2];
-						animNormals[v] += (n.m0 * nx + n.m4 * ny + n.m8 * nz + n.m12) * boneWeight;
-						animNormals[v + 1] += (n.m1 * nx + n.m5 * ny + n.m9 * nz + n.m13) * boneWeight;
-						animNormals[v + 2] += (n.m2 * nx + n.m6 * ny + n.m10 * nz + n.m14) * boneWeight;
-					}
-				}
-				v += 3;
-			}
-			if (bufferUpdateRequired)
-				Models.animate(mesh, anim, normals != null ? animNormals : null);
+	// A bone's bind pose's matrix inverted, kept on the model with the ten numbers it was made from, and made again only when they change.
+	static function inverseBind(model:Model, boneIndex:Int):Matrix3D {
+		var bind = model.bindPose[boneIndex];
+		var t = bind.translation, r = bind.rotation, s = bind.scale;
+		var keys = model.inverseBindKeys, at = boneIndex * 10;
+		if (keys.length < at + 10)
+			keys.resize(at + 10);
+		var inverse = model.inverseBinds[boneIndex];
+		if (inverse == null || keys[at] != t.x || keys[at + 1] != t.y || keys[at + 2] != t.z || keys[at + 3] != r.x || keys[at + 4] != r.y
+			|| keys[at + 5] != r.z || keys[at + 6] != r.w || keys[at + 7] != s.x || keys[at + 8] != s.y || keys[at + 9] != s.z) {
+			inverse = model.inverseBinds[boneIndex] = helix.raylib.modules.RModels.toMatrix3D(MatrixInvert(trs(t.x, t.y, t.z, r, s.x, s.y, s.z)));
+			keys[at] = t.x;
+			keys[at + 1] = t.y;
+			keys[at + 2] = t.z;
+			keys[at + 3] = r.x;
+			keys[at + 4] = r.y;
+			keys[at + 5] = r.z;
+			keys[at + 6] = r.w;
+			keys[at + 7] = s.x;
+			keys[at + 8] = s.y;
+			keys[at + 9] = s.z;
 		}
+		return inverse;
 	}
 
 	// C's cast of a float to int, toward 0.

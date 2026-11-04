@@ -1539,23 +1539,32 @@ class RModels {
 		Animations.updateBones(model, anim, frame);
 	}
 
-	/** Poses a model by a frame of an animation, as raylib 6.2's: its bones as `UpdateModelAnimationBones` poses them, then each skinned
-		mesh's vertices moved on the CPU into its `animVertices` and `animNormals` (each normal by its bones' matrices inverted and
-		transposed, not normalized), which the GPU then draws. A mesh whose material's shader reads `vertexBoneIds` (or
-		`vertexBoneIndices`) is left for the shader to move. Draws asked for before keep the vertices they were asked with.
+	/** Poses a model by a frame of an animation, as raylib 6.2's: its bones as `UpdateModelAnimationBones` poses them, and each skinned
+		mesh drawn in that pose until the next call. Draws asked for before keep the pose they were asked with, so one model can be posed
+		and drawn many times in a frame.
+
+		How a mesh is moved depends on its material's shader. Under raylib's default shader it is moved on the GPU, by a skinned version
+		of that shader. Under a shader of the program's own that declares the bone inputs, as raylib's `skinning.vs` does
+		(`vertexBoneIds`, `vertexBoneWeights` and `uniform mat4 boneMatrices[N]`), or that includes `<helix/raylib/shaders/skinning.glsl>`,
+		it is moved on the GPU by that shader. Under a shader of the program's own without them it is moved on the CPU, every vertex each
+		call, which is slow for many vertices or many models: an animated model under a lighting shader of the program's own draws fastest
+		when that shader declares `skinning.vs`'s inputs or includes `skinning.glsl`.
+
+		`animVertices` and `animNormals` hold the moved positions and normals (each normal by its bones' matrices inverted and transposed,
+		not normalized), worked out on the CPU when first read; a mesh whose shader moves it itself is left as raylib leaves it.
 
 		@param model  The model.
 		@param anim  The animation, of the model's skeleton.
 		@param frame  The frame, from 0, fractional. */
 	static function UpdateModelAnimation(model:Model, anim:ModelAnimation, frame:Float):Void {
-		if (anim.frameCount > 0 && model.bones != null && anim.framePoses != null) {
+		if (anim.frameCount > 0 && model.bones != null && anim.framePoses != null && model.boneMatrices != null) {
 			Animations.updateBones(model, anim, frame);
-			Animations.skin(model);
+			helix.raylib.internal.Skinning.pose(model);
 		}
 	}
 
 	/** Poses a model by two animations mixed, raylib 6.2's own: each at its frame as `UpdateModelAnimation` takes one, then the two mixed
-		by the blend, the bones and the vertices as it moves them. Note that, as raylib's, a frame is wrapped to its animation's frames
+		by the blend, the bones and the vertices as it moves them, on the GPU or the CPU as `UpdateModelAnimation` says. Note that, as raylib's, a frame is wrapped to its animation's frames
 		before its fraction is taken, so past the last frame it holds the frame it wrapped to. Nothing for a blend outside 0 to 1.
 
 		@param model  The model.
@@ -1569,7 +1578,7 @@ class RModels {
 			return;
 		if (animA.frameCount > 0 && animA.framePoses != null && animB.frameCount > 0 && animB.framePoses != null && blend >= 0 && blend <= 1) {
 			Animations.updateBonesEx(model, animA, frameA, animB, frameB, blend);
-			Animations.skin(model);
+			helix.raylib.internal.Skinning.pose(model);
 		}
 	}
 
@@ -2018,18 +2027,27 @@ class RModels {
 	// with a texture at the texture unit of its index, the cubemap, irradiance and prefilter maps as cubemaps and the rest as 2D textures,
 	// and sets the sampler at shader.locs[SHADER_LOC_MAP_DIFFUSE + index] to it; a sampler set to a unit (SetShaderValue) reads what is
 	// bound there. texture0 to texture2 read the first three maps, white for none.
-	static function mapTextures(shader:Shader, material:Material):Array<Int> {
-		var p = shader.program;
-		var textures = [for (_ in p.textures) -1];
-		for (k => slot in [p.texture0, p.texture1, p.texture2])
-			if (slot >= 0)
-				textures[slot] = Textures.handle(material.maps[k].texture.id);
+	static function mapTextures(shader:Shader, material:Material):Array<Int>
+		return mapProgramTextures(shader.program, shader.locs, material);
+
+	// As mapTextures, for a program and the locations it is drawn by (a skinned twin's own, the default shader's).
+	static function mapProgramTextures(p:helix.raylib.internal.Program, locs:Array<Int>, material:Material):Array<Int> {
+		var textures = textureScratch;
+		textures.resize(p.textures.length);
+		for (i in 0...textures.length)
+			textures[i] = -1;
+		if (p.texture0 >= 0)
+			textures[p.texture0] = Textures.handle(material.maps[0].texture.id);
+		if (p.texture1 >= 0)
+			textures[p.texture1] = Textures.handle(material.maps[1].texture.id);
+		if (p.texture2 >= 0)
+			textures[p.texture2] = Textures.handle(material.maps[2].texture.id);
 		for (slot in 0...textures.length) {
 			if (slot == p.texture0 || slot == p.texture1 || slot == p.texture2)
 				continue;
 			var unit = p.units[slot];
 			for (i in 0...MATERIAL_MAP_BRDF + 1) {
-				var location = shader.locs[SHADER_LOC_MAP_DIFFUSE + i];
+				var location = locs[SHADER_LOC_MAP_DIFFUSE + i];
 				if (location >= 0 && material.maps[i].texture.id > 0 && p.textureSlot(location) == slot)
 					unit = i;
 			}
@@ -2043,6 +2061,14 @@ class RModels {
 		return textures;
 	}
 
+	// What drawMesh writes each draw's diffuse color, textures and bones into, read as the draw is recorded.
+	static final diffuseScratch:Array<Float> = [0, 0, 0, 0];
+	static final textureScratch:Array<Int> = [];
+
+	// Writes a mesh's bones' matrices into a skinning shader's boneMatrices (Models.writeBones), set once a model with bones is made, so
+	// a program without one links none of it.
+	static var boneWriter:Null<(mesh:Mesh, shader:Shader) -> Void>;
+
 	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix3D, tint:Color, instances:Int = 0, instanceCount:Int = 1):Void {
 		if (mesh.gpu.buffers == null)
 			Models.upload(mesh);
@@ -2050,24 +2076,20 @@ class RModels {
 			return;
 		var shader = material.shader == null || material.shader.program == null ? defaultShader() : material.shader;
 		var c = material.maps[MATERIAL_MAP_DIFFUSE].color;
-		var diffuse = [
-			c.r / 255 * tint.r / 255,
-			c.g / 255 * tint.g / 255,
-			c.b / 255 * tint.b / 255,
-			c.a / 255 * tint.a / 255
-		];
-		var textures = mapTextures(shader, material);
-		// The bones' matrices, for a skinning shader, as raylib 5.5's DrawMesh uploads them.
-		var bones = shader.locs[SHADER_LOC_BONE_MATRICES];
-		if (bones != -1 && mesh.boneMatrices != null) {
-			var values = [];
-			for (i in 0...mesh.boneCount)
-				if (i < mesh.boneMatrices.length)
-					for (v in toMatrix3D(mesh.boneMatrices[i]).values)
-						values.push(v);
-			shader.program.write(bones, values);
-		}
-		Runtime.frame.mesh(mesh, shader.program, transform, diffuse, textures, instances, instanceCount);
+		// Read as the draw is recorded, so one array serves every draw.
+		var diffuse = diffuseScratch;
+		diffuse[0] = c.r / 255 * tint.r / 255;
+		diffuse[1] = c.g / 255 * tint.g / 255;
+		diffuse[2] = c.b / 255 * tint.b / 255;
+		diffuse[3] = c.a / 255 * tint.a / 255;
+		// A mesh UpdateModelAnimation posed, skinned (Skinning), unless its shader moves it itself.
+		var skinned = Runtime.frame.skinned;
+		if (mesh.pose != null && skinned != null && skinned(mesh, shader, material, transform, diffuse, instances, instanceCount))
+			return;
+		// The bones' matrices, for a skinning shader, as raylib 5.5's DrawMesh uploads them: set once a model with bones is made.
+		if (mesh.boneMatrices != null && boneWriter != null)
+			boneWriter(mesh, shader);
+		Runtime.frame.mesh(mesh, shader.program, transform, diffuse, mapTextures(shader, material), instances, instanceCount);
 	}
 	#end
 }

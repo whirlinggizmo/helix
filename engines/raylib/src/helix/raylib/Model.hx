@@ -44,6 +44,13 @@ class Model {
 	@:allow(helix.raylib)
 	var boneMatrices:Null<Array<Matrix>> = null;
 
+	// Each bone's bind pose inverted, as the animations last needed it, and the bind pose's numbers it was made from (Animations).
+	@:allow(helix.raylib)
+	var inverseBinds:Array<Null<helix.math.Matrix3D>> = [];
+
+	@:allow(helix.raylib)
+	var inverseBindKeys:Array<Float> = [];
+
 	// The file it was loaded from, sharing its GPU data with the file's other loads, or "" for a model of a mesh.
 	@:allow(helix.raylib)
 	var path = "";

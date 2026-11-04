@@ -55,6 +55,7 @@ package `helix.raylib.extras`, each module imported apart:
 | `Models` | `LoadModelAsync`, `LoadModelAnimationsAsync`, `LoadMaterialsAsync`, `ExportMeshAsync` and `ExportMeshAsCodeAsync` |
 | `Audio` | `LoadSoundAsync`, `LoadWaveAsync`, `LoadWaveFromMemoryAsync`, `LoadMusicStreamAsync`, `ExportWaveAsync` and `ExportWaveAsCodeAsync` |
 | `Gui` | raygui's file loads: `GuiLoadStyleAsync` and `GuiLoadIconsAsync` |
+| `Lights` | raylib's examples' lights, `rlights.h` mirrored (`Light`, `CreateLight`, `UpdateLightValues`, `MAX_LIGHTS`, `LIGHT_DIRECTIONAL`, `LIGHT_POINT`), and `LoadLightingShader`, the examples' `lighting.vs` and `lighting.fs` built in |
 | `Device` | what a game needs from the device and the page that raylib has no call for: `GetWindowSafeArea`, `GetRunOption`, `IsPlatformWeb`, `GetPlatformOS`, `IsTouchScreenAvailable`, `IsFinePointerAvailable`, `IsWindowCloseable`, `IsFullscreenAvailable`, `SetScreenOrientationAsync`, `GetScreenOrientation`, and the tilt (`EnableTiltAsync`, `GetTilt`, `SetTiltRange`, `CalibrateTilt`, `DisableTilt`) |
 
 The async versions of raylib's calls are in one module for each raylib module, named for it: rtextures' in `Textures`, rtext's in
@@ -70,6 +71,30 @@ itself for what `Device`, `Files` or `Window` answers (the URL's query, `Sys.get
 `screen.orientation`, `env(safe-area-inset-*)`, `deviceorientation`, the page's storage and fullscreen) builds with a warning at each
 place, naming the call and its module's import, when it is built with `-D helix-raylib-host-warnings`; it is off by default, since a
 program may reach the host on purpose.
+
+## Skinned models
+
+`UpdateModelAnimation` and `UpdateModelAnimationEx` pose a model, and each draw after draws it in that pose, so one model can be posed and
+drawn many times in a frame. Under raylib's default shader a model is skinned on the GPU. A shader of the program's own skins on the GPU
+when its vertex stage includes `<helix/raylib/shaders/skinning.glsl>`, or declares raylib's `skinning.vs` inputs (`vertexBoneIds`,
+`vertexBoneWeights`, `uniform mat4 boneMatrices[N]`); any other is skinned on the CPU, every vertex each call. The include's head comment
+says what it declares, with an example: `helixSkin()` is the vertex's skin matrix, and `helixSkinNormal(normal)` moves a normal as raylib
+does.
+
+```glsl
+#version 330
+#include <helix/raylib/shaders/skinning.glsl>
+in vec3 vertexPosition;
+uniform mat4 mvp;
+void main() {
+    gl_Position = mvp*helixSkin()*vec4(vertexPosition, 1.0);
+}
+```
+
+A shader of the program's own lights as `LoadLightingShader`'s does by including `<helix/raylib/shaders/lights.glsl>` in its fragment
+stage: rlights' uniforms (`lights[MAX_LIGHTS]`, `ambient`, `viewPos`) and `helixLight(texel, tint, position, normal)`, raylib's
+`lighting.fs` math. helix-raylib's own model shaders (unlit, unlit skinned, lit, lit skinned) are files in `src/helix/raylib/shaders/`
+over these two includes.
 
 ## What a model holds
 
