@@ -2,6 +2,55 @@
 
 [Back to the index](README.md)
 
+## AudioEffect
+
+*enum* in [`libs/platform/src/helix/platform/AudioEffect.hx`](../../libs/platform/src/helix/platform/AudioEffect.hx), `import helix.platform.AudioEffect;`
+
+Specifies an effect on a chain of what voices play (`IAudioEffects.addEffect`), with its settings.
+
+Both targets compute each effect the same way, so a game sounds alike on both. The filters follow the Audio EQ Cookbook, as Web Audio's `BiquadFilterNode` does. The reverbs are convolutions, as Web Audio's `ConvolverNode` is, with the same room's response on both. The delay, the distortion, the compressor and the pitch shift are the platform's own, the same code natively and in a page.
+
+- `LowPass(frequency:Float, q:Float)`: Lets through what is below a frequency and cuts what is above it, as underwater or behind a wall sounds.
+  - `frequency`: The cutoff in Hz, 10 to 22050.
+  - `q`: How sharp the cutoff is, 0.1 to 20, where 0.71 is flat to the cutoff.
+- `HighPass(frequency:Float, q:Float)`: Lets through what is above a frequency and cuts what is below it, as a radio or a telephone sounds.
+  - `frequency`: The cutoff in Hz, 10 to 22050.
+  - `q`: How sharp the cutoff is, 0.1 to 20, where 0.71 is flat to the cutoff.
+- `BandPass(frequency:Float, q:Float)`: Lets through a band around a frequency and cuts what is either side of it.
+  - `frequency`: The band's middle in Hz, 10 to 22050.
+  - `q`: How narrow the band is, 0.1 to 20.
+- `Peaking(frequency:Float, q:Float, gain:Float)`: Raises or lowers a band around a frequency, one band of an equalizer.
+  - `frequency`: The band's middle in Hz, 10 to 22050.
+  - `q`: How narrow the band is, 0.1 to 20.
+  - `gain`: The change in decibels, -40 to 40.
+- `LowShelf(frequency:Float, gain:Float)`: Raises or lowers everything below a frequency, an equalizer's bass.
+  - `frequency`: The shelf's edge in Hz, 10 to 22050.
+  - `gain`: The change in decibels, -40 to 40.
+- `HighShelf(frequency:Float, gain:Float)`: Raises or lowers everything above a frequency, an equalizer's treble.
+  - `frequency`: The shelf's edge in Hz, 10 to 22050.
+  - `gain`: The change in decibels, -40 to 40.
+- `Delay(seconds:Float, feedback:Float, mix:Float)`: Repeats what plays after a time, each repeat quieter, as an echo.
+  - `seconds`: The time to each repeat, 0.001 to 2.
+  - `feedback`: How loud each repeat is against the one before, 0 to 0.95.
+  - `mix`: How much of the echo is heard against what plays, 0 (none) to 1 (only the echo).
+- `Reverb(size:Float, damping:Float, mix:Float)`: Adds the reflections of a room, from a small room to a hall. The room's response is made from its size and damping by the platform's own code, the same on both targets.
+  - `size`: The room's size, 0 (small) to 1 (a hall).
+  - `damping`: How soon the reflections lose their highs, 0 (bright) to 1 (dull).
+  - `mix`: How much of the room is heard against what plays, 0 (none) to 1 (only the room).
+- `RecordedReverb(response:haxe.io.Bytes, channelCount:Int, mix:Float)`: Adds the reflections of a recorded room: its impulse response, the echo of a single click played in it.
+  - `response`: The response as 32-bit float PCM at 44100 Hz, -1 to 1, interleaved when stereo, up to 10 seconds. It is copied.
+  - `channelCount`: Its channels, 1 or 2.
+  - `mix`: How much of the room is heard against what plays, 0 (none) to 1 (only the room).
+- `Compressor(threshold:Float, ratio:Float, attack:Float, release:Float)`: Evens out loud and quiet, lowering what is above a level.
+  - `threshold`: The level in decibels where it starts, -60 to 0.
+  - `ratio`: How much it lowers what is above the threshold, 1 (not at all) to 20.
+  - `attack`: The seconds it takes to lower a sound that gets loud, 0 to 1.
+  - `release`: The seconds it takes to let a sound back up, 0 to 1.
+- `Distortion(drive:Float)`: Clips what plays toward a square wave, from warmth to a broken speaker.
+  - `drive`: How hard it clips, 0 (not at all) to 1.
+- `PitchShift(ratio:Float)`: Raises or lowers the pitch of what plays and keeps its speed, as a voice changer or a slowed world sounds. `IAudio.setPitch` changes a voice's pitch and speed together.
+  - `ratio`: The pitch against what plays, 0.5 (an octave down) to 2 (an octave up), where 1 changes nothing.
+
 ## Blend
 
 *abstract* in [`libs/platform/src/helix/platform/Blend.hx`](../../libs/platform/src/helix/platform/Blend.hx), `import helix.platform.Blend;`
@@ -520,6 +569,88 @@ function dispose():Void
   One of `decoded` or `failed` is called once, on the main thread, never during this call.
 - `poll`: Delivers what finished on the platform's threads since the last poll. The program calls it once a frame.
 - `dispose`: Closes the decoder. A decode still running finishes without calling back.
+
+## IAudioEffects
+
+*interface* in [`libs/platform/src/helix/platform/IAudioEffects.hx`](../../libs/platform/src/helix/platform/IAudioEffects.hx), `import helix.platform.IAudioEffects;`, extends `IPollable`
+
+Defines effects on what voices play, and reading what they play, over an `IAudio` output.
+
+Voices play into chains, and each chain plays into another chain or into the mix, which is a chain too (`mix`), so chains form a tree as an engine's buses do. Each chain runs its effects and analysers in the order they were added (`AudioEffect`), then plays into the chain above it. A voice plays into the mix until it is sent to another chain (`send`). A program that never constructs an `IAudioEffects` carries none of its code: every voice plays straight to the output.
+
+Chain and effect ids are the adapter's. The effects run where the platform mixes, on its audio thread natively and in the page's audio graph in a browser, so nothing here runs a program's code on the audio thread.
+
+```haxe
+var mix(get, never):Int
+function createChain(?output:Int):Int
+function disposeChain(chain:Int):Void
+function send(voice:Int, chain:Int):Bool
+function addEffect(chain:Int, effect:AudioEffect):Int
+function addAnalyser(chain:Int, frameCount:Int):Int
+function setEffect(effect:Int, settings:AudioEffect):Bool
+function setBypassed(effect:Int, bypassed:Bool):Bool
+function removeEffect(effect:Int):Void
+function getSamples(effect:Int, into:haxe.io.Bytes):Int
+function getFramesPassed(effect:Int):Float
+function getSpectrum(effect:Int, into:haxe.io.Bytes):Int
+function poll():Void
+function dispose():Void
+```
+
+- `mix`: Gets the chain everything plays through last, on its way to the output. It can't be disposed.
+- `createChain`: Creates a chain.
+  - `output`: Optional. The chain it plays into. Defaults to `mix`.
+  - returns: The chain's id.
+  - throws `String`: For an unknown output chain.
+- `disposeChain`: Disposes a chain and its effects. Its voices, and the chains that played into it, play into its output chain from then on.
+  - `chain`: The chain.
+
+  It does nothing for the mix or an unknown chain.
+- `send`: Sends a voice into a chain, from what it plays next.
+  - `voice`: The voice, as `IAudio` gave it.
+  - `chain`: The chain, or `mix` to play straight into the mix.
+  - returns: False, changing nothing, when the voice isn't playing (unknown, stopped or ended) or the chain is unknown.
+- `addEffect`: Adds an effect at the end of a chain.
+  - `chain`: The chain.
+  - `effect`: The effect and its settings.
+  - returns: The effect's id.
+  - throws `String`: For an unknown chain, or a setting outside its range.
+- `addAnalyser`: Adds an analyser at the end of a chain. It changes nothing, and keeps the latest frames that pass it, for `getSamples` and `getSpectrum`. It is removed and bypassed as an effect is.
+  - `chain`: The chain.
+  - `frameCount`: How many frames it keeps, a power of two from 32 to 32768.
+  - returns: The analyser's id, which is an effect's id.
+  - throws `String`: For an unknown chain, or a frame count that isn't a power of two from 32 to 32768.
+- `setEffect`: Changes an effect's settings.
+  - `effect`: The effect.
+  - `settings`: Its new settings, of the same kind as when it was added.
+  - returns: False, changing nothing, for an unknown effect, an analyser, one of another kind, or a setting outside its range.
+
+  The change is ramped over the output's next block, as `IAudio.setVolume` is, so a filter swept once a frame doesn't click.
+- `setBypassed`: Turns an effect off or on again, keeping its place and settings. Off, it passes what plays unchanged.
+  - `effect`: The effect.
+  - `bypassed`: True to turn it off, false to turn it on.
+  - returns: False for an unknown effect.
+- `removeEffect`: Removes an effect from its chain.
+  - `effect`: The effect.
+
+  It does nothing for an unknown effect.
+- `getSamples`: Copies the latest frames an analyser kept, as they were heard.
+  - `effect`: The analyser.
+  - `into`: Receives the frames as 32-bit floats, stereo interleaved, left first, the oldest first. Its length sets how many, up to the analyser's frame count.
+  - returns: The frames copied: 0 for an unknown analyser, and fewer than asked until enough have played.
+
+  Natively the frames are copied out on the audio thread and read here, up to one output block late.
+- `getFramesPassed`: Returns how many frames have passed an analyser since it was added, so a reader can tell which of the latest frames are new.
+  - `effect`: The analyser.
+  - returns: The frames, counted as `getSamples` sees them; 0 for an unknown analyser.
+- `getSpectrum`: Measures the latest frames an analyser kept by frequency, as Web Audio's `AnalyserNode.getFloatFrequencyData` does.
+  - `effect`: The analyser.
+  - `into`: Receives the bands as 32-bit floats in decibels, from 0 Hz up to half the output's rate. Its length sets how many, up to half the analyser's frame count.
+  - returns: The bands written: 0 for an unknown analyser.
+
+  The channels are mixed to one, windowed (Blackman) and transformed. Each band is smoothed against the last measure, 0.8 of the old to 0.2 of the new.
+- `poll`: Delivers what the audio thread kept since the last poll. The program calls it once a frame.
+- `dispose`: Removes every effect and chain, and sends every voice straight to the output again.
 
 ## IClipboard
 

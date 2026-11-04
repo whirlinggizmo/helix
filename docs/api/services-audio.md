@@ -2,6 +2,37 @@
 
 [Back to the index](README.md)
 
+## Analyser
+
+*class* in [`libs/services/src/helix/services/audio/Analyser.hx`](../../libs/services/src/helix/services/audio/Analyser.hx), `import helix.services.audio.Analyser;`
+
+Represents a reading of what a group plays (`AudioEffects.addAnalyser`), for a level meter or a visualizer, until it is removed.
+
+It reads what was heard at the last `AudioEffects.poll`. Natively that is up to one output block late.
+
+```haxe
+var group(default, null):Group
+var frameCount(default, null):Int
+var framesPassed(get, never):Float
+function getSamples(into:haxe.io.Bytes):Int
+function getSpectrum(into:haxe.io.Bytes):Int
+function getLevel():Float
+function remove():Void
+```
+
+- `group`: Gets the group it reads.
+- `frameCount`: Gets how many of the latest frames it keeps.
+- `framesPassed`: Gets how many frames it has read since it was added, so a reader can tell which of the latest are new since its last read.
+- `getSamples`: Copies the latest frames heard.
+  - `into`: Receives the frames as 32-bit floats, -1 to 1, stereo interleaved, left first, the oldest first. Its length sets how many, up to `frameCount`.
+  - returns: The frames copied, fewer than asked until enough have played.
+- `getSpectrum`: Measures the latest frames heard by frequency, as Web Audio's `AnalyserNode` does.
+  - `into`: Receives the bands as 32-bit floats in decibels, from 0 Hz up to half the output's rate, evenly spaced. Its length sets how many, up to half of `frameCount`.
+  - returns: The bands written.
+- `getLevel`: Returns how loud the latest frames were, for a level meter.
+  - returns: Their root mean square across both channels, 0 (silent) to 1.
+- `remove`: Removes it from its group. Its members change nothing after.
+
 ## Audio
 
 *class* in [`libs/services/src/helix/services/audio/Audio.hx`](../../libs/services/src/helix/services/audio/Audio.hx), `import helix.services.audio.Audio;`, implements `IPollable`
@@ -85,6 +116,73 @@ function dispose():Void
   Call it once a frame.
 - `dispose`: Stops every voice, unloads every sound and disposes every queue.
   Call it before disposing the output, decoder and `Assets` it was given.
+
+## AudioEffects
+
+*class* in [`libs/services/src/helix/services/audio/AudioEffects.hx`](../../libs/services/src/helix/services/audio/AudioEffects.hx), `import helix.services.audio.AudioEffects;`, implements `IPollable`
+
+Provides effects on what groups play, such as a low pass on the music while the game is paused, and reads what a group plays, for a level meter or a visualizer.
+
+A group's effects apply to every voice in it and in the groups under it. A voice in `music`, under `master`, is heard through music's effects and then master's. Each group's effects run in the order they were added. A program constructs it only when it uses effects, so one that doesn't carries none of it. Voices already playing when it is constructed are moved into their groups' effects.
+
+The program calls `poll` once a frame, which steps the fades and delivers what the analysers kept.
+
+```haxe
+var effects = new AudioEffects(audio, new WebAudioEffectsAdapter(output));
+var muffle = effects.add(music, LowPass(22050, 0.71));
+muffle.fadeTo(LowPass(800, 0.71), 0.3); // paused
+var meter = effects.addAnalyser(audio.master, 1024);
+var level = meter.getLevel();
+```
+
+```haxe
+function new(audio:Audio, effects:IAudioEffects)
+function add(group:Group, effect:AudioEffect):Effect
+function addAnalyser(group:Group, frameCount:Int):Analyser
+function poll():Void
+function dispose():Void
+```
+
+- `new`: Creates the effects over the platform's, for an audio's groups.
+  - `audio`: The audio whose groups get effects.
+  - `effects`: The platform's effects, over the same output as `audio`.
+- `add`: Adds an effect at the end of a group's effects.
+  - `group`: The group.
+  - `effect`: The effect and its settings.
+  - returns: The effect.
+  - throws `String`: When a setting is outside its range.
+- `addAnalyser`: Adds an analyser at the end of a group's effects, which reads what the group plays there.
+  - `group`: The group.
+  - `frameCount`: How many of the latest frames it keeps, a power of two from 32 to 32768. 1024 is about a frame's worth at 60 Hz.
+  - returns: The analyser.
+  - throws `String`: When the frame count isn't a power of two from 32 to 32768.
+- `poll`: Steps the effects' fades and delivers what the analysers kept. The program calls it once a frame.
+- `dispose`: Removes every effect and analyser. Every voice is heard without effects again.
+
+## Effect
+
+*class* in [`libs/services/src/helix/services/audio/Effect.hx`](../../libs/services/src/helix/services/audio/Effect.hx), `import helix.services.audio.Effect;`
+
+Represents an effect on what a group plays (`AudioEffects.add`), until it is removed.
+
+```haxe
+var group(default, null):Group
+var settings(default, set):AudioEffect
+var bypassed(default, set):Bool
+function fadeTo(settings:AudioEffect, seconds:Float, ?done:() -> Void):Void
+function remove():Void
+```
+
+- `group`: Gets the group whose voices it changes.
+- `settings`: Gets or sets the effect's settings, of the same kind as when it was added. A change is ramped over a few milliseconds, so one made each frame doesn't click. Setting it ends a fade.
+  - throws `String`: When set to another kind, or a setting outside its range.
+- `bypassed`: Gets or sets a value indicating whether it is off, letting what plays through unchanged while keeping its place and settings. Defaults to false.
+- `fadeTo`: Moves its settings to others over some real time. Frequencies move evenly in octaves, and every other setting in a straight line.
+  - `settings`: The settings to end at, of the same kind.
+  - `seconds`: The fade's length, in real seconds. 0 or less sets them at once.
+  - `done`: Optional. Called once they are reached, unless another fade or set settings end the fade first.
+  - throws `String`: For another kind, or a setting outside its range.
+- `remove`: Removes it from its group. Its members change nothing after.
 
 ## Group
 

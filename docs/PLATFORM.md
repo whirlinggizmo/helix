@@ -375,8 +375,8 @@ for Linux on ARM64. On a system without a build, SPIRV-Cross is built from its s
 - `poll` (feeds the streams, delivers what the platform's threads finished, and in a page starts waiting voices); `dispose`.
 
 A voice played in a page before audio runs waits, and starts when it does, in the order played: `play` returns its voice at once,
-`stop`, `pause` and the setters work on it while it waits, and `isPlaying` is true. Buses, fades, ducking and what a player hears are
-above.
+`stop`, `pause` and the setters work on it while it waits, and `isPlaying` is true. Buses' volumes, fades, ducking and what a player
+hears are above. Effects on what plays are `IAudioEffects` (below).
 
 A queue plays samples as they are added (raylib's `AudioStream`): back to back while they are added ahead, at the queue's own rate, which
 the platform resamples. One that runs dry stays playing, silent, and goes on when fed; it has one voice, and stopping it drops what was
@@ -412,6 +412,39 @@ arriving slowly or stopping, looping, queues fed, run dry and fed again, and a r
 (`AudioTests`, run by `tools/platform_checks.py`) checks both adapters against the clock: natively on SDL3's dummy driver, which mixes in
 time, and in a headless Chromium let start audio without a gesture: decoded channels, a stereo clip's position advancing and moved, a
 stream's length and position, and a queue's frames falling, running dry and resuming.
+
+### Audio effects
+
+`IAudioEffects`: effects on what voices play, and reading what they play, over an `IAudio`. A program constructs it only when it uses
+effects (`new WebAudioEffectsAdapter(audio)`, `new Sdl3MixerAudioEffectsAdapter(audio)`), so one that doesn't carries none of it.
+
+- `mix`, the chain everything plays through last; `createChain(?output)`, a chain playing into another or the mix; `disposeChain` (its
+  voices and chains to its output); `send(voice, chain)`.
+- `addEffect(chain, effect)` at the chain's end, `setEffect` (ramped across the next block), `setBypassed`, `removeEffect`;
+  `addAnalyser(chain, frameCount)`, which changes nothing and keeps the latest frames for `getSamples` (stereo, as heard), `getFramesPassed` and
+  `getSpectrum` (decibels by band, as Web Audio's `AnalyserNode`).
+- `AudioEffect`: `LowPass`, `HighPass`, `BandPass`, `Peaking`, `LowShelf`, `HighShelf`, `Delay`, `Reverb`, `RecordedReverb` (a room's
+  impulse response), `Compressor`, `Distortion`, `PitchShift` (the pitch without the speed).
+- `poll` (delivers what the audio thread kept); `dispose` (every voice straight to the output again).
+
+Chains form a tree, as engines' buses do (Godot's buses, Unity's mixer groups): services' groups are a chain each when effects are used.
+Nothing runs a program's code on the audio thread, which a page can't do.
+
+Both targets compute each effect alike. The filters are the Audio EQ Cookbook's biquads, as Web Audio's `BiquadFilterNode` is, and natively
+the same formulas in C. The reverbs are convolutions with a room's impulse response, as Web Audio's `ConvolverNode` is (its normalizing
+off): `Reverb`'s response is made from its size and damping by the same Haxe code on both targets, `RecordedReverb`'s is the program's. The
+delay, distortion, compressor and pitch shift (a phase vocoder) are the platform's own code: natively C, in a page an
+`AudioWorkletProcessor` the adapter loads from its own source, the same algorithm.
+
+- **In a page, `audioeffects/webaudio` (`WebAudioEffectsAdapter`):** a chain is a gain node its voices' panners and its chains connect to,
+  through its effects to its output's, the mix's to the destination. The filters are `BiquadFilterNode`s, the reverbs `ConvolverNode`s, the
+  platform's own effects one worklet node each, an analyser an `AnalyserNode` per channel (`getFloatTimeDomainData`,
+  `getFloatFrequencyData`). Constructing it moves `WebAudioAdapter`'s voices from the destination to the mix.
+- **Natively, `audioeffects/sdl3mixer` (`Sdl3MixerAudioEffectsAdapter`):** a chain is a `MIX_Group`. SDL3_mixer's groups don't nest, so each
+  group's post-mix callback takes its voices' mix and leaves silence, and the mixer's (`MIX_SetPostMixCallback`), called after every
+  group's, runs the tree: each chain's voices and chains summed, through its effects, into its output, the mix's into what is heard. A
+  reverb is a partitioned FFT convolution. An analyser copies into a ring buffer there, which `poll` reads; the spectrum is computed on the
+  main thread, as Web Audio specifies it. Its C is compiled only when the adapter is.
 
 ## Decoders
 
