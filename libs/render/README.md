@@ -100,6 +100,8 @@ Each example in `examples/` shows one thing, and builds from the hxml files besi
   viewport and a scissor.
 - `unlit`: `Batch3D`'s unlit work: an instanced mesh with per-copy colors, a model drawn with a tint and a `MeshState3D`, lines,
   points of one pixel and large ones, a grid recorded as a `DrawList3D`, and text in a plane.
+- `lit`: lit materials and lights: spheres shaded Lambert, Phong and MetallicRoughness (metallic, and with a clear coat) under a sun, a
+  hemisphere light, a point light and a spot light, and a cube lit only by its emissive light.
 
 Its tests are in `tests/`: the CPU-side work (layout, culling, batching, copy on write) on every target (`helix.py test`), and pixel
 checks drawn on each backend (`tools/render_checks.py`).

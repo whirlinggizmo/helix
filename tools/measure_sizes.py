@@ -257,7 +257,8 @@ INTRODUCTIONS = {
                'Programs on helix-render and what it sits on (`libs/render/tests/sizes/`), each adding one feature to the one before, from the '
                'renderer\'s frame clearing the screen: what a feature costs is its row\'s increment, gzip; brotli in brackets. Its first '
                'draw brings the batches\' shader (GLSL ES carried in the program) and helix-services\' shaders; its text the assets, the '
-               'images and the fonts it loads a TrueType font through; its 3D the 3D batch, a mesh and an unlit material. helix-render\'s '
+               'images and the fonts it loads a TrueType font through; its 3D the 3D batch, a mesh and an unlit material; its light the '
+               'lights and the lit materials\' one shader, every shading, counted under `BatchLighting`, which compiles it. helix-render\'s '
                'bytes are counted by source file, or by package for `effects`.'),
     'raylib': ('helix-raylib',
             'Programs written in raylib on helix-raylib (`engines/raylib/tests/sizes/`), each adding one feature to the one before, from a window '

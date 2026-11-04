@@ -1,0 +1,65 @@
+{
+  "what": "The 60th frame at 800 x 600: the background, the Lambert sphere lit by the sun and the sky, the MetallicRoughness green sphere, the spot light's pool on the ground, the ground tinted by the red point light, and the cube glowing by its emissive light alone.",
+  "points": [
+    {
+      "x": 20,
+      "y": 20,
+      "color": [
+        16,
+        20,
+        24
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 90,
+      "y": 270,
+      "color": [
+        165,
+        170,
+        190
+      ],
+      "tolerance": 4
+    },
+    {
+      "x": 400,
+      "y": 300,
+      "color": [
+        27,
+        112,
+        64
+      ],
+      "tolerance": 4
+    },
+    {
+      "x": 110,
+      "y": 450,
+      "color": [
+        161,
+        163,
+        174
+      ],
+      "tolerance": 4
+    },
+    {
+      "x": 400,
+      "y": 520,
+      "color": [
+        113,
+        104,
+        122
+      ],
+      "tolerance": 4
+    },
+    {
+      "x": 700,
+      "y": 430,
+      "color": [
+        251,
+        160,
+        133
+      ],
+      "tolerance": 4
+    }
+  ]
+}

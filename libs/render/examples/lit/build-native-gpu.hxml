@@ -1,0 +1,9 @@
+# The lit example natively, SDL3 drawing with SDL_GPU (Vulkan, Direct3D 12 or Metal): haxe build-native-gpu.hxml -> native-gpu/Main.
+# --quit_after_frame=60 quits it after frame 60.
+-lib helix-render
+-cp .
+-main Main
+-D sdl_gpu
+-dce full
+-D HXCPP_COMPILE_THREADS=4
+-cpp native-gpu
