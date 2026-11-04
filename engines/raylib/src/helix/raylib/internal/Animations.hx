@@ -1,6 +1,7 @@
 package helix.raylib.internal;
 
 import haxe.io.FPHelper;
+import helix.math.Matrix3D;
 import helix.formats.gltf.GltfFile;
 import helix.raylib.*;
 import helix.raylib.modules.RMath.*;
@@ -9,6 +10,7 @@ import helix.raylib.modules.RMath.*;
 	`UpdateModelAnimationBones` and `UpdateModelAnimationBonesEx` do: their code ported line by line, with raymath's functions. */
 @:noCompletion
 @:access(helix.raylib.modules.RMath)
+@:access(helix.raylib.modules.RModels)
 class Animations {
 	/** The frames a second raylib samples an animation at. */
 	static inline final FRAMERATE = 60.0;
@@ -396,16 +398,67 @@ class Animations {
 		}
 	}
 
-	// A bone's pose, and its matrix from it: the bind pose's inverse, then the pose.
+	// A bone's pose, and its matrix from it: the bind pose's inverse, then the pose, as raylib's MatrixMultiply(MatrixInvert(bind),
+	// current) and helix-raylib's raymath compute it (through Matrix3D's compose), written into the bone's matrix in place, so a pose
+	// allocates no matrix.
 	static function setPose(model:Model, boneIndex:Int, translation:Vector3, rotation:Quaternion, scale:Vector3):Void {
 		var pose = model.pose[boneIndex];
 		pose.translation = translation;
 		pose.rotation = rotation;
 		pose.scale = scale;
+		Matrix3D.fromScale(scale.x, scale.y, scale.z, scaled);
+		Matrix3D.fromQuaternion(rotation.x, rotation.y, rotation.z, rotation.w, rotated);
+		Matrix3D.compose(scaled, rotated, current);
+		Matrix3D.fromTranslation(translation.x, translation.y, translation.z, scaled);
+		Matrix3D.compose(current, scaled, rotated);
+		var v = Matrix3D.compose(inverseBind(model, boneIndex), rotated, current).values;
+		var m = model.boneMatrices[boneIndex];
+		m.m0 = v[0];
+		m.m1 = v[1];
+		m.m2 = v[2];
+		m.m3 = v[3];
+		m.m4 = v[4];
+		m.m5 = v[5];
+		m.m6 = v[6];
+		m.m7 = v[7];
+		m.m8 = v[8];
+		m.m9 = v[9];
+		m.m10 = v[10];
+		m.m11 = v[11];
+		m.m12 = v[12];
+		m.m13 = v[13];
+		m.m14 = v[14];
+		m.m15 = v[15];
+	}
+
+	// What setPose works in.
+	static final scaled = new Matrix3D();
+	static final rotated = new Matrix3D();
+	static final current = new Matrix3D();
+
+	// A bone's bind pose's matrix inverted, kept on the model with the ten numbers it was made from, and made again only when they change.
+	static function inverseBind(model:Model, boneIndex:Int):Matrix3D {
 		var bind = model.bindPose[boneIndex];
-		var bindPoseMatrix = trs(bind.translation.x, bind.translation.y, bind.translation.z, bind.rotation, bind.scale.x, bind.scale.y, bind.scale.z);
-		var currentPoseMatrix = trs(translation.x, translation.y, translation.z, rotation, scale.x, scale.y, scale.z);
-		model.boneMatrices[boneIndex] = MatrixMultiply(MatrixInvert(bindPoseMatrix), currentPoseMatrix);
+		var t = bind.translation, r = bind.rotation, s = bind.scale;
+		var keys = model.inverseBindKeys, at = boneIndex * 10;
+		if (keys.length < at + 10)
+			keys.resize(at + 10);
+		var inverse = model.inverseBinds[boneIndex];
+		if (inverse == null || keys[at] != t.x || keys[at + 1] != t.y || keys[at + 2] != t.z || keys[at + 3] != r.x || keys[at + 4] != r.y
+			|| keys[at + 5] != r.z || keys[at + 6] != r.w || keys[at + 7] != s.x || keys[at + 8] != s.y || keys[at + 9] != s.z) {
+			inverse = model.inverseBinds[boneIndex] = helix.raylib.modules.RModels.toMatrix3D(MatrixInvert(trs(t.x, t.y, t.z, r, s.x, s.y, s.z)));
+			keys[at] = t.x;
+			keys[at + 1] = t.y;
+			keys[at + 2] = t.z;
+			keys[at + 3] = r.x;
+			keys[at + 4] = r.y;
+			keys[at + 5] = r.z;
+			keys[at + 6] = r.w;
+			keys[at + 7] = s.x;
+			keys[at + 8] = s.y;
+			keys[at + 9] = s.z;
+		}
+		return inverse;
 	}
 
 	// C's cast of a float to int, toward 0.
