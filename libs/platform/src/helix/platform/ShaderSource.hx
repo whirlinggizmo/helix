@@ -32,6 +32,12 @@ typedef ShaderSource = {
 	/** The textures it samples. */
 	final textures:Array<ShaderTexture>;
 
+	/** The values the vertex stage passes on, by location: what it declares as outputs. */
+	final vertexOutputs:Array<ShaderVarying>;
+
+	/** The values the fragment stage takes, by location: what it declares as inputs. */
+	final fragmentInputs:Array<ShaderVarying>;
+
 	/** Whether the vertex stage writes a point size of 1, compiled with `ShaderCompileOptions.points`, so `Primitive.Points` pipelines may
 		draw it. Optional; false when omitted. */
 	@:optional final points:Bool;

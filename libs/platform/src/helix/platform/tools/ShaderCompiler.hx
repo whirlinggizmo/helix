@@ -304,16 +304,19 @@ class ShaderCompiler {
 		var results = Scratch.runAll(crossCalls);
 		var per = options.glsl410 ? 3 : 2;
 		var outputs = [for (k => result in results) crossOutput(result, crossCalls[k].args)];
-		var described = describe([
+		var reflected = [
 			"vertex" => haxe.Json.parse(outputs[0]),
 			"fragment" => haxe.Json.parse(outputs[per])
-		], listings, arranged, vertex.name, fragment.name);
+		];
+		var described = describe(reflected, listings, arranged, vertex.name, fragment.name);
 		var source:Dynamic = {
 			attributes: described.attributes,
 			attributeTypes: described.attributeTypes,
 			activeAttributes: described.activeAttributes,
 			uniformBlocks: described.blocks,
 			textures: described.textures,
+			vertexOutputs: varyings(reflected["vertex"].outputs),
+			fragmentInputs: varyings(reflected["fragment"].inputs),
 			glsl300es: {
 				vertex: shortFloats(outputs[1]),
 				fragment: shortFloats(outputs[per + 1])
@@ -332,6 +335,13 @@ class ShaderCompiler {
 				"fragment" => File.getBytes(spv(sdlGpuFragment ? "fragment-sdlgpu" : "fragment"))
 			], described, options.points == true);
 		return source;
+	}
+
+	// A stage's inputs or outputs as SPIRV-Cross reflects them (built-ins left out), by location.
+	static function varyings(list:Null<Array<Dynamic>>):Array<Dynamic> {
+		var out:Array<Dynamic> = list == null ? [] : [for (v in list) {glslName: v.name, type: v.type, location: v.location}];
+		out.sort((a, b) -> a.location - b.location);
+		return out;
 	}
 
 	// GLSL with each float literal SPIRV-Cross wrote with every digit of its 32-bit value (0.054999999701976776123046875) written in the

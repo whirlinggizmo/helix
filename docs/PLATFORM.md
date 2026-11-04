@@ -357,7 +357,10 @@ member whose elements are the array's (`lights.color`, its stride the struct's s
 it (`camera.viewProjection`). Blocks hold `float`, `vecN`, `matN`, `int`, `ivecN`, `uint`, `uvecN`, `bool` and `bvecN` together. The
 attributes' types are `ShaderSource.attributeTypes`. A texture's kind comes from its GLSL type (`sampler2D`, `sampler2DArray`,
 `samplerCube`, `sampler2DArrayShadow` for a shadow map's comparison); a texture the shader reads only with `texelFetch` is never filtered
-(`ShaderTexture.data`), since fetching reads one exact texel.
+(`ShaderTexture.data`), since fetching reads one exact texel. What one stage passes to the next is reflected too: the vertex stage's
+outputs and the fragment stage's inputs (`ShaderSource.vertexOutputs`, `fragmentInputs`, each a `ShaderVarying`: its name, type and
+location), read from the compiled SPIR-V's interface variables, built-ins left out. A layer above decides from them what a stage
+passes, as it decides its blocks from `uniformBlocks`, never by reading the GLSL's text.
 
 **The tools,** pinned in `ShaderTools.hx` and made ready in the user's cache, checked by SHA-256, the first time a shader is compiled:
 glslang's official release builds (Linux x86_64, macOS, Windows x64); SPIRV-Cross, which publishes source only, from the builds of the

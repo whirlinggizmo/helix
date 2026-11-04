@@ -1858,12 +1858,14 @@ Represents a compiled program, with its stages in each dialect the adapters comp
 
 `IGraphics.createShader` builds a program from it. An adapter reads only its own dialect. That is GLSL ES 300 in the browser, GLSL 410 for GL natively, and SDL_GPU's stages for SDL_GPU. The attributes with their types, the blocks with their members, and the textures are the program's reflection, for a caller that fills them by name.
 
+- `vertexOutputs:Array<ShaderVarying>`: The values the vertex stage passes on, by location: what it declares as outputs.
 - `uniformBlocks:Array<ShaderBlock>`: The uniform blocks it declares, with their members.
 - `textures:Array<ShaderTexture>`: The textures it samples.
 - `sdlGpu:Null<SdlGpuStages>`: SDL_GPU's stages. Present only in a build for SDL_GPU.
 - `points:Null<Bool>`: Whether the vertex stage writes a point size of 1, compiled with `ShaderCompileOptions.points`, so `Primitive.Points` pipelines may draw it. Optional; false when omitted.
 - `glsl410:Null<ShaderStages>`: GLSL 410, for GL natively. Absent from a browser build.
 - `glsl300es:ShaderStages`: GLSL ES 300, for WebGL2.
+- `fragmentInputs:Array<ShaderVarying>`: The values the fragment stage takes, by location: what it declares as inputs.
 - `attributes:Array<String>`: The vertex attributes' names, by slot. A matrix's name is at its first slot, and its other columns' slots hold "".
 - `attributeTypes:Array<String>`: The vertex attributes' GLSL types (`float`, `vec2`, `vec3`, `vec4`, `mat4`, `int`, `ivec4` and the rest), by slot: a matrix's at its first slot, and its columns' (`vec4` for a `mat4`) at the rest.
 - `activeAttributes:Array<Int>`: The slots of the vertex attributes the vertex stage's code reads, as glslang finds; the others are declared and fed, and unread. A matrix's slot is its first column's.
@@ -1892,6 +1894,18 @@ A texture is a plain 2D texture unless one of shadow, cube or data is true.
 - `data:Bool`: Whether the program never filters it.
 - `cube:Bool`: Whether it is a cubemap.
 - `active:Bool`: Whether the program's code samples it, as glslang finds; one unsampled is still declared and bound.
+
+## ShaderVarying
+
+*typedef* in [`libs/platform/src/helix/platform/ShaderVarying.hx`](../../libs/platform/src/helix/platform/ShaderVarying.hx), `import helix.platform.ShaderVarying;`
+
+Represents a value one stage of a program passes to the next: an output of the vertex stage, or an input of the fragment stage.
+
+It is read from the compiled program, so it is what the stage declares, built-ins (`gl_Position`, `gl_FragCoord`) left out.
+
+- `type:String`: Its GLSL type: `float`, `vec2`, `vec3`, `vec4`, `int`, `ivecN`, `uint`, `uvecN` or `matN`.
+- `location:Int`: The location it is passed at. A matrix takes a location a column, from its own.
+- `glslName:String`: Its GLSL name.
 
 ## StreamSource
 
