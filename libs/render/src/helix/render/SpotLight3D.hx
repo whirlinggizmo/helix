@@ -41,4 +41,11 @@ class SpotLight3D extends Light3D {
 		this.outerCone = outerCone;
 		return true;
 	}
+
+	function writeLight(out:Array<Float>, at:Int):Void {
+		Light3D.writePoint(position.x, position.y, position.z, range, out, at);
+		Light3D.writeDirection(direction.x, direction.y, direction.z, 2, out, at + 4);
+		Light3D.writeRadiance(color, intensity, out, at + 8);
+		Light3D.writePoint(Math.cos(innerCone), Math.cos(outerCone), -1, 0, out, at + 12);
+	}
 }

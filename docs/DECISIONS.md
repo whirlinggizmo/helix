@@ -569,3 +569,19 @@ Why things are the way they are, numbered, in order.
     prose: the type moved to where they looked, the sheet cutter and the panels' skin were added, and the parts were tabled.
     Rejected: a skinned variant of each control (`GuiSkinnedButton`), which doubles the API agents must learn, and a scoped
     `GuiWithSkin(..., () -> ...)`, which raygui's style has no counterpart of.
+
+43. **helix-render's lighting is linked by what gives light, and lit by three.js's formulas.** Stage 2 builds `Lambert`, `Phong` and
+    `MetallicRoughness` (clearcoat, sheen, specular and ior as glTF's extensions add them) as one shader over `lighting.glsl` and
+    `material.glsl`. Lights are in three.js's units: decay 2 with glTF's range window, a spot's smoothstep between its cones, and a
+    hemisphere light's sky and ground taken as diffuse light along the normal. Ambient light is three.js's `AmbientLight`, so π shows
+    white. Each draw is lit by the 8 lights reaching its box most, a spot's cone judged toward the box and widened by its reach, so a
+    spot aimed at a large mesh's edge isn't dropped. Making a light, setting ambient light, writing a lit shading, an emissive color or
+    a light map, or compiling a shader that reads the lighting installs it (30). A program that does none of them carries none of it
+    (the render ladder's 5-mesh grows 0.28 KB gzip for the hooks), and a lit material there is drawn as no light leaves it, black with
+    its alpha kept, as three.js draws one with no lights. A mesh's points larger than a pixel are each vertex's square made in the vertex
+    stage, its records one per GPU instance, so an instanced mesh is one GPU draw per copy, linked once a point size is set. One-pixel
+    points stay one per index, as raylib draws them. The lit rung (6-lit) costs 9.4 KB gzip over 5-mesh, nearly all of it the shader,
+    whose every shading SPIRV-Cross inlines. Pixel tests check each light kind and shading against three.js's formulas within 3/255 on
+    GL, SDL_GPU and WebGL2. Rejected: linking the lighting from `Material3D`'s constructor, which every unlit program calls; a shader
+    for each shading (a shading chosen as the program runs links them all anyway); large points from the mesh's records copied on the
+    CPU.

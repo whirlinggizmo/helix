@@ -299,7 +299,7 @@ A program constructs one over its `Renderer`, and between `Renderer.beginFrame` 
 
 **Views.** `begin(camera)` draws through one view, the camera's, filling the renderer's viewport. `beginViews` draws through several at once, each with its own matrices and rectangle: every draw is drawn once in each view, in the order given, so the two eyes of a headset or two split screens see one scene drawn once by the program. Lights are chosen, shadows fitted and draws culled for all the views together: a draw is skipped only when it is out of every view.
 
-**Light.** A material is shaded as its `shading` says by the lights in `lights` (any number; each draw by the 8 that reach it most: each light's brightness through its falloff at the nearest point of the draw's box and its cone at the box's center), the ambient light and environment map of `environment`, and its own maps, in linear light.
+**Light.** A material is shaded as its `shading` says by the lights in `lights` (any number; each draw by the 8 that reach it most: each light's brightness through its falloff at the nearest point of the draw's box, and a spot's cone toward the box, widened by how far the box reaches from its center), the ambient light and environment map of `environment`, and its own maps, in linear light. A batch draw whose program's shader reads the lights is lit by the 8 that reach the first view's eye most.
 
 **Shadows.** At most 4 lights cast, on every target: each of the first 4 lights in `lights` that casts (`Light3D.castsShadow`) has its map drawn before the pass the batch draws in, at `Renderer.endFrame`, from the meshes this batch drew casting that its volume holds, and is read by those drawn receiving (`LightShadow3D` says how). A mesh casts when both the batch's `castShadows` and its material's are on, and receives when both `receiveShadows` are. A caster is drawn as it is drawn in color: skinned, morphed, instanced, cut by `alphaCutoff`. The batch draws neither cast nor receive.
 
@@ -307,7 +307,7 @@ A program constructs one over its `Renderer`, and between `Renderer.beginFrame` 
 
 **The batch draws' colors are multiplied as stored.** A batch draw's vertex color, tint and texel are multiplied as the 0xAARRGGBB values and the texture store them, with no decode, as raylib and `Batch2D` multiply them: a 0x80 tint on a 0x80 texel gives 0x40. Into an sRGB target the product is written as it is, unless fog reaches it (`fogged`) or it is tone mapped (`toneMapped`): then it is decoded once, fogged, exposed and tone mapped as they say, and encoded. Into an RGBA16F target it is decoded once and written linear.
 
-**Points.** A point of `pointSize` 1, not attenuated, is the one pixel its position falls in, on every backend, shaded as its vertex; a larger one is a square facing the screen, made in the vertex stage, with its texture across it.
+**Points.** A point of `pointSize` 1, not attenuated, is the one pixel its position falls in, on every backend, shaded as its vertex; a larger one is a square facing the screen, made in the vertex stage, with its texture across it. A mesh's larger points (`polygonMode` Points) are each vertex's square, its records read one a GPU instance, so an instanced mesh's are a GPU draw for each copy; a program's own vertex stage that doesn't read `vertexCorner` draws them as one-pixel points.
 
 **Sprites, shapes and text in a plane** (`drawSprite`, `drawTextureRegion`, the shapes from `fillTriangle` to `strokePolygon`, `drawText`, `drawTextLayout`) are what a layer drawing all its 2D through this batch needs, as raylib's rlgl does: wire and point modes and views (stereo) then reach its 2D too. Each is drawn in the plane z 0 of its transform, x across and y down the texture, as `Batch2D` draws it, so under an orthographic view whose y runs down (`View3D.setFromScreen`, raylib's 2D) it is upright in pixels; in a world whose y runs up, a transform scaled by -1 in y stands it up. They make their corners on the CPU as `Batch2D` does, and join one GPU draw with the batch draws around them that share their texture; shapes are drawn from `shapeRegion`. Lines, outlines and curves are made of triangles, as many as keep a curve's edge within a quarter of a unit of the plane (a pixel under `View3D.setFromScreen`); a thickness is in the plane's units, centered on the edge or the line. A program drawing only 2D uses `Batch2D`.
 
@@ -371,7 +371,8 @@ vec3 shadeMetallicRoughness(Surface surface);
 vec3 shadePhong(Surface surface);
 vec3 shadeLambert(Surface surface);
 // One of the draw's lights (0 to lightCount - 1) arriving at a point: its radiance through its falloff, cone and shadow, and the
-// unit direction toward it; for a shader shading by its own model.
+// unit direction toward it; for a shader shading by its own model. A hemisphere light arrives along the normal, its sky and ground
+// blended by how far the normal faces up: diffuse light alone, which the built-in shadings add as they add the ambient light.
 vec3 computeLightRadiance(int lightIndex, vec3 position, vec3 normal, out vec3 toLight);
 // A casting light's shadow at a point (its index is lightCones[i].z): 1 where lit, toward its color by its strength where shadowed.
 vec3 computeShadow(int shadowIndex, vec3 position, vec3 normal);
@@ -1287,10 +1288,12 @@ function setBackground(map:Null<EnvironmentMap3D>, ?blur:Float = 0.):Bool
 - `rotation`: Gets how far the map and the background are turned about +y, in radians: 0 until set.
 - `background`: Gets the environment map shown behind everything by `Batch3D.drawBackground`, or null for none.
 - `backgroundBlur`: Gets how blurred the background is: 0 sharp, at the picture's own resolution, to 1, a few texels.
-- `setAmbient`: Sets the ambient light: its color decoded from sRGB, times its intensity.
+- `setAmbient`: Sets the ambient light: its color decoded from sRGB, times its intensity, reaching every surface alike from every side.
   - `color`: The color, as 0xAARRGGBB; its alpha is ignored.
   - `intensity`: The intensity.
   - returns: False, changing nothing, for an intensity below 0.
+
+  Its intensity is three.js's AmbientLight's: the light falling on a surface whatever way it faces, so at π a white surface shows white, as under a light of π (`Light3D`). It lights the diffuse part of a lit material, darkened by its occlusion map.
 - `setMap`: Sets the environment map the lit materials are lit and reflect by, beside the lights and the ambient light: diffuse light from its irradiance, reflections from its prefiltered cube, sharp to blurred by roughness.
   - `map`: The map, or null for none.
   - `intensity`: Optional. How strongly it lights, and the background shows; defaults to 1.
@@ -1549,6 +1552,8 @@ A program makes its lights and puts them in `Batch3D.lights`; each `begin` reads
 
 A directional, spot or point light casts shadows while `castsShadow` is set, as its `shadow` says; at most 4 lights of a batch cast, the first 4 casting in `lights`. A hemisphere light casts none.
 
+**What links the lighting.** Making a light, setting an ambient light (`Environment3D.setAmbient`), writing a lit `Material3D.shading`, an emissive color or a light map, or compiling a shader that reads the lighting links the lit shaders. A program that does none of them links none of it, and a lit material there is drawn as no light leaves it: black, its alpha kept.
+
 ```haxe
 var color:Int
 var intensity(default, set):Float
@@ -1674,7 +1679,7 @@ batch.drawMesh(cube, crate, Matrix3D.fromTranslation(0, .5, 0, placement));
 function new()
 static macro function compileShader(fragment:String, ?options:haxe.macro.Expr.ExprOf<ShaderOptions>):haxe.macro.Expr.ExprOf<Shader>
 static macro function compileShaderStages(vertex:String, fragment:String, ?options:haxe.macro.Expr.ExprOf<ShaderOptions>):haxe.macro.Expr.ExprOf<Shader>
-var shading:Shading3D
+var shading(default, set):Shading3D
 var baseColor:Int
 var baseColorTexture:Null<Texture2D>
 var alphaTexture:Null<Texture2D>
@@ -1696,9 +1701,9 @@ var normalScale(default, set):Float
 var flatShading:Bool
 var occlusionTexture:Null<Texture2D>
 var occlusionIntensity(default, set):Float
-var lightTexture:Null<Texture2D>
+var lightTexture(default, set):Null<Texture2D>
 var lightIntensity(default, set):Float
-var emissiveColor:Int
+var emissiveColor(default, set):Int
 var emissiveStrength(default, set):Float
 var emissiveTexture:Null<Texture2D>
 var environmentMap:Null<EnvironmentMap3D>
@@ -1731,7 +1736,7 @@ var shaderValues:Null<ShaderValues>
   - returns: The shader, for a `ShaderValues` over it.
 
   It compiles while the program builds, as helix-services' `Shader.compile` compiles one, and returns it as a value in the program: its vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/color.glsl>`). A name the class lists declared with another type stops the build at the call. Both stages are GLSL in one form, as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440, or `#version 450`. The vertex stage may place its vertices itself, declaring what it reads, as raylib's GLSL 330 vertex stages do; it then skins, morphs and instances only as it does so itself, and is cut by the clip planes only where it writes `worldPosition`. Placed by `placeVertex()` (`#include <helix/render/mesh.glsl>`), skinning, morphing and instancing are done and the outputs a fragment stage reads written, `worldPosition` among them, as the class says.
-- `shading`: Gets or sets how the batch's lights shade it: MetallicRoughness until set.
+- `shading`: Gets or sets how the batch's lights shade it: MetallicRoughness until set. Setting a lit shading links the lit shaders (`Light3D` says what else does).
 - `baseColor`: Gets or sets the base color, multiplied with the base color texture and the vertex color: white until set.
   Its alpha, times the texture's, the vertex color's and `alphaTexture`'s, is the drawn alpha: what `blend` mixes by (Alpha's source alpha), what `alphaCutoff` tests, and what an RGBA target keeps.
 - `baseColorTexture`: Gets or sets the base color texture, or null for none (white).
@@ -1833,7 +1838,7 @@ Specifies how a `Batch3D` draws the triangles of a mesh or of `drawTriangles`: f
 
 - `PolygonMode3D.Fill`: Filled: the triangles themselves.
 - `PolygonMode3D.Lines`: Each triangle's edges, as one-pixel lines: raylib's wire mode, three.js's `wireframe`.
-- `PolygonMode3D.Points`: Each triangle's corners, as points of `Batch3D.pointSize`: raylib's point mode, three.js's `Points`. An indexed mesh draws a point an index, so a corner shared by triangles is drawn once each.
+- `PolygonMode3D.Points`: Each triangle's corners, as points of `Batch3D.pointSize`: raylib's point mode, three.js's `Points`. Points of one pixel are drawn a point an index for an indexed mesh, so a corner shared by triangles is drawn once each, as raylib draws them. A mesh's larger points are drawn once a vertex, each a square made in the vertex stage, and an instanced mesh's a GPU draw for each copy.
 
 ```haxe
 function toString():String

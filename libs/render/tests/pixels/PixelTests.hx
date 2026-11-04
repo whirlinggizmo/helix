@@ -23,12 +23,14 @@ typedef PixelCase = {
 	final check:Pixels->Void;
 }
 
-/** Checks helix-render's stage 1 on the GPU: each case draws a frame through the renderer and its batches into a render target, reads it
+/** Checks helix-render's stages 1 and 2 on the GPU: each case draws a frame through the renderer and its batches into a render target, reads it
 	back with `IGraphics.readPixels`, and checks its pixels against what the API says they are: 2D colors and a tint multiplied as stored,
 	alpha blending as stored, shapes from a white texel, text placed by its ascent, a distance-field font's edge sharp, a program's fragment stage reading `customData`, a
 	target copied on write, a clear recorded in order, a viewport and a scissor; in 3D, an unlit mesh multiplied as stored and one tone
 	mapped (Neutral), instanced copies tinted, a mesh skinned by its bone texture, points of a pixel and large ones, a wide line, a
-	triangle's edges, two views, and a program's material shader; and a render target's own sample count, a target with depth drawn
+	triangle's edges, two views, and a program's material shader; lit materials (Lambert, Phong, MetallicRoughness, emissive) under
+	each light kind and an ambient light, their colors computed from three.js's formulas, and a mesh drawn as large points, instanced
+	too; and a render target's own sample count, a target with depth drawn
 	with one sample and one without depth multisampled where the GPU can.
 
 	Built from the hxml files beside it: in a page it runs on WebGL2, natively on GL, or SDL_GPU with `-D sdl_gpu`. It ends with
@@ -457,6 +459,7 @@ class PixelTests {
 				}
 			}
 		];
+		litCases(threeD, small);
 		// Batch draws tone mapped: a rectangle and a wide line, white through Neutral as the tone-mapped mesh shows it.
 		cases.push({
 			name: "3D: batch draws tone mapped, narrow and wide",
@@ -502,6 +505,223 @@ class PixelTests {
 				}
 			});
 		}
+	}
+
+	// Linear light encoded as an sRGB byte, clamped, as a target holds it.
+	static function encode(linear:Float):Int {
+		var c = Math.max(0, Math.min(1, linear));
+		return Math.round((c <= .0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - .055) * 255);
+	}
+
+	// An sRGB byte decoded to linear light.
+	static function decode(byte:Int):Float {
+		var c = byte / 255;
+		return c <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4);
+	}
+
+	// A grey of linear light as a pixel.
+	static function grey(linear:Float):Int {
+		var e = encode(linear);
+		return e << 16 | e << 8 | e;
+	}
+
+	// A point or spot light's light reaching a pixel's middle on the plane z 0 facing +z, three.js's: its intensity over the distance
+	// squared, times the cosine at the surface, the range's window (pow2(saturate(1 - pow4(d / range)))) and a spot's smoothstep between its
+	// cones' cosines along the axis -z.
+	static function irradianceAt(x:Int, y:Int, lx:Float, ly:Float, lz:Float, intensity:Float, range = 0., ?cones:Array<Float>):Float {
+		var dx = lx - (x + .5), dy = ly - (y + .5), dz = lz;
+		var d2 = dx * dx + dy * dy + dz * dz, d = Math.sqrt(d2);
+		var falloff = 1 / Math.max(d2, .01);
+		if (range > 0) {
+			var w = Math.max(0, 1 - Math.pow(d / range, 4));
+			falloff *= w * w;
+		}
+		if (cones != null) {
+			var cosInner = Math.cos(cones[0]), cosOuter = Math.cos(cones[1]), angle = dz / d;
+			var t = Math.max(0, Math.min(1, (angle - cosOuter) / (cosInner - cosOuter)));
+			falloff *= t * t * (3 - 2 * t);
+		}
+		return intensity * falloff * Math.max(0, dz / d);
+	}
+
+	// A directional light's highlight on the plane z 0 facing +z seen along +z, its light arriving from (0, -sin a, cos a): three.js's
+	// BRDF_BlinnPhong (Phong) or BRDF_GGX (MetallicRoughness), times the light falling on the surface.
+	static function highlight(angle:Float, intensity:Float, f0:Float, phong:Bool, shininess:Float, roughness:Float):Float {
+		var nl = Math.cos(angle);
+		// The half vector between (0, -sin a, cos a) and (0, 0, 1).
+		var hy = -Math.sin(angle),
+			hz = Math.cos(angle) + 1,
+			hl = Math.sqrt(hy * hy + hz * hz);
+		var nh = hz / hl, vh = hz / hl, nv = 1.;
+		var fresnel = f0 + (1 - f0) * Math.pow(1 - vh, 5);
+		if (phong)
+			return intensity * nl * fresnel * .25 * (shininess * .5 + 1) * Math.pow(nh, shininess) / Math.PI;
+		var a = roughness * roughness, a2 = a * a;
+		var gv = nl * Math.sqrt(a2 + (1 - a2) * nv * nv),
+			gl = nv * Math.sqrt(a2 + (1 - a2) * nl * nl);
+		var visibility = .5 / (gv + gl);
+		var denominator = nh * nh * (a2 - 1) + 1;
+		return intensity * nl * fresnel * visibility * a2 / (Math.PI * denominator * denominator);
+	}
+
+	// A lit material of a shading and a base color, written as its light is: not tone mapped, both sides drawn.
+	static function litMaterial(shading:Shading3D, base:Int):Material3D {
+		var m = new Material3D();
+		m.shading = shading;
+		m.baseColor = base;
+		m.cull = None;
+		m.toneMapped = false;
+		return m;
+	}
+
+	// Draws a mesh in a batch of its own, lit by these lights alone.
+	static function drawLit(mesh:GpuMesh3D, material:Material3D, x:Float, y:Float, lights:Array<Light3D>):Void {
+		batch3D.lights.resize(0);
+		for (l in lights)
+			batch3D.lights.push(l);
+		batch3D.beginViews([screenView()]);
+		batch3D.drawMesh(mesh, material, Matrix3D.fromTranslation(x, y, 0));
+		batch3D.end();
+		batch3D.lights.resize(0);
+	}
+
+	/** Adds the cases of lit materials, each light kind, and large points: colors computed from three.js's formulas, each shading
+		drawn on the plane z 0 facing the eye in the target's pixels, a quarter of the target a cell. */
+	static function litCases(threeD:RenderTarget2D, small:GpuMesh3D):Void {
+		// A quad turned to face the eye: under a view whose y runs down, its corners wound the other way.
+		var facing = quad(0, 0, 32, 32);
+		facing.indices = [0, 2, 1, 0, 3, 2];
+		var cell = renderer.createMesh(facing);
+		var corners = renderer.createMesh(quad(16, 16, 32, 32));
+		// A directional light of π shining along a direction.
+		function directional(x:Float, y:Float, z:Float):DirectionalLight3D {
+			var l = new DirectionalLight3D();
+			l.direction.set(x, y, z);
+			return l;
+		}
+		cases.push({
+			name: "3D lit: Lambert under a directional, an ambient and a hemisphere light",
+			draw: () -> {
+				renderer.beginTarget(threeD, 0xff000000);
+				drawLit(cell, litMaterial(Lambert, 0xff808080), 0, 0, [directional(0, 0, -1)]);
+				// Arriving 60 degrees from the normal: half the light.
+				drawLit(cell, litMaterial(Lambert, 0xffffffff), 32, 0, [directional(0, Math.sin(Math.PI / 3), -Math.cos(Math.PI / 3))]);
+				batch3D.environment = new Environment3D();
+				batch3D.environment.setAmbient(0xff808080, Math.PI);
+				drawLit(cell, litMaterial(Lambert, 0xffffffff), 0, 32, []);
+				batch3D.environment = new Environment3D();
+				// The sky along x, the surface facing z: halfway between the sky and the black ground.
+				var hemisphere = new HemisphereLight3D();
+				hemisphere.groundColor = 0xff000000;
+				hemisphere.up.set(1, 0, 0);
+				drawLit(cell, litMaterial(Lambert, 0xffffffff), 32, 32, [hemisphere]);
+				renderer.endTarget();
+				threeD;
+			},
+			check: p -> {
+				expect(p, 16, 16, 0x808080, "a directional light of π facing the surface: its base color");
+				expect(p, 48, 16, grey(.5), "at 60 degrees: half");
+				expect(p, 16, 48, 0x808080, "an ambient light of π, 0x808080: its color on white");
+				expect(p, 48, 48, grey(.5), "a hemisphere light across the surface: half its sky");
+			}
+		});
+		cases.push({
+			name: "3D lit: point and spot lights, falling off and in cones as three.js's",
+			draw: () -> {
+				renderer.beginTarget(threeD, 0xff000000);
+				var point = new PointLight3D();
+				point.position.set(16, 16, 4);
+				point.intensity = 16 * Math.PI;
+				drawLit(cell, litMaterial(Lambert, 0xffffffff), 0, 0, [point]);
+				var ranged = new PointLight3D();
+				ranged.position.set(48, 16, 2);
+				ranged.intensity = 4 * Math.PI;
+				ranged.range = 6;
+				drawLit(cell, litMaterial(Lambert, 0xffffffff), 32, 0, [ranged]);
+				var spot = new SpotLight3D();
+				spot.position.set(32, 48, 6);
+				spot.direction.set(0, 0, -1);
+				spot.setCone(.3, .6);
+				spot.intensity = 36 * Math.PI;
+				drawLit(cell, litMaterial(Lambert, 0xffffffff), 0, 32, [spot]);
+				drawLit(cell, litMaterial(Lambert, 0xffffffff), 32, 32, [spot]);
+				renderer.endTarget();
+				threeD;
+			},
+			check: p -> {
+				inline function lambert(x:Int, y:Int, e:Float)
+					expect(p, x, y, grey(e / Math.PI), 'diffuse light ${e / Math.PI}');
+				lambert(16, 16, irradianceAt(16, 16, 16, 16, 4, 16 * Math.PI));
+				lambert(22, 16, irradianceAt(22, 16, 16, 16, 4, 16 * Math.PI));
+				lambert(26, 26, irradianceAt(26, 26, 16, 16, 4, 16 * Math.PI));
+				lambert(48, 16, irradianceAt(48, 16, 48, 16, 2, 4 * Math.PI, 6));
+				lambert(51, 16, irradianceAt(51, 16, 48, 16, 2, 4 * Math.PI, 6));
+				expect(p, 55, 16, 0x000000, "past the range");
+				lambert(31, 48, irradianceAt(31, 48, 32, 48, 6, 36 * Math.PI, 0, [.3, .6]));
+				lambert(34, 48, irradianceAt(34, 48, 32, 48, 6, 36 * Math.PI, 0, [.3, .6]));
+				lambert(35, 49, irradianceAt(35, 49, 32, 48, 6, 36 * Math.PI, 0, [.3, .6]));
+				expect(p, 37, 48, 0x000000, "past the spot's outer cone");
+			}
+		});
+		var angle = Math.PI / 6;
+		cases.push({
+			name: "3D lit: Phong's highlight, MetallicRoughness's dielectric and metal, emissive light",
+			draw: () -> {
+				renderer.beginTarget(threeD, 0xff000000);
+				var sun = directional(0, Math.sin(angle), -Math.cos(angle));
+				var phong = litMaterial(Phong, 0xff202020);
+				phong.specularColor = 0xff404040;
+				drawLit(cell, phong, 0, 0, [sun]);
+				var dielectric = litMaterial(MetallicRoughness, 0xff404040);
+				dielectric.roughness = .5;
+				drawLit(cell, dielectric, 32, 0, [sun]);
+				var metal = litMaterial(MetallicRoughness, 0xff808080);
+				metal.metallic = 1;
+				metal.roughness = .6;
+				drawLit(cell, metal, 0, 32, [sun]);
+				var glowing = litMaterial(MetallicRoughness, 0xffffffff);
+				glowing.emissiveColor = 0xff404040;
+				glowing.emissiveStrength = 2;
+				drawLit(cell, glowing, 32, 32, []);
+				renderer.endTarget();
+				threeD;
+			},
+			check: p -> {
+				var cosine = Math.cos(angle);
+				var spec = decode(0x40), base = decode(0x20);
+				expect(p, 16, 16, grey(Math.PI * cosine * base / Math.PI + highlight(angle, Math.PI, spec, true, 30, 0)),
+					"Phong: diffuse and Blinn-Phong's highlight");
+				expect(p, 48, 16, grey(cosine * decode(0x40) + highlight(angle, Math.PI, .04, false, 0, .5)),
+					"a dielectric: diffuse and GGX's highlight of 0.04");
+				expect(p, 16, 48, grey(highlight(angle, Math.PI, decode(0x80), false, 0, .6)), "a metal: GGX's highlight of its color, no diffuse");
+				expect(p, 48, 48, grey(decode(0x40) * 2), "unlit but for its emissive light, its strength 2");
+			}
+		});
+		cases.push({
+			name: "3D: a mesh drawn as large points, and instanced copies",
+			draw: () -> {
+				renderer.beginTarget(threeD, 0xff000000);
+				batch3D.beginViews([screenView()]);
+				batch3D.polygonMode = Points;
+				batch3D.pointSize = 6;
+				batch3D.drawMesh(corners, unlit(true), new Matrix3D());
+				batch3D.pointSize = 4;
+				batch3D.drawMeshInstanced(small, unlit(true), [Matrix3D.fromTranslation(8, 56, 0), Matrix3D.fromTranslation(40, 56, 0)],
+					[0xffff0000, 0xff00ff00]);
+				batch3D.resetState();
+				batch3D.end();
+				renderer.endTarget();
+				threeD;
+			},
+			check: p -> {
+				expect(p, 18, 18, 0xffffff, "a corner's point, 2 from its middle");
+				expect(p, 46, 46, 0xffffff, "the opposite corner's");
+				expect(p, 21, 16, 0x000000, "and not 5 from it");
+				expect(p, 32, 32, 0x000000, "the quad's middle, drawn as its corners");
+				expect(p, 5, 53, 0xff0000, "the first copy's corner, red");
+				expect(p, 37, 53, 0x00ff00, "the second's, green");
+			}
+		});
 	}
 
 	/** Frees what was made, says how it went and closes the window where the program owns one. */

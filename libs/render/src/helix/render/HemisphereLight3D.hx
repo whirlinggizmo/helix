@@ -15,4 +15,11 @@ class HemisphereLight3D extends Light3D {
 	public function new() {
 		super();
 	}
+
+	function writeLight(out:Array<Float>, at:Int):Void {
+		Light3D.writeRadiance(groundColor, intensity, out, at);
+		Light3D.writeDirection(up.x, up.y, up.z, 3, out, at + 4);
+		Light3D.writeRadiance(color, intensity, out, at + 8);
+		Light3D.writePoint(0, 0, -1, 0, out, at + 12);
+	}
 }
