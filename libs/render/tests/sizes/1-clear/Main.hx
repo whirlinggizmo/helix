@@ -10,8 +10,8 @@ import helix.render.Renderer;
 	"helix.render.RenderPass", "helix.render.RenderPipeline", "helix.render.RenderStream", "helix.render.RenderTarget2D", "helix.render.Renderer",
 	"helix.render.Texture2D", "helix.services.shaders.Shader", "helix.services.shaders.ShaderBlockLayout", "helix.services.shaders.ShaderPipeline",
 	"helix.services.shaders.ShaderPipelineState", "helix.services.shaders.ShaderPlace", "helix.services.shaders.ShaderPrograms",
-	"helix.services.shaders.ShaderSampler", "helix.services.shaders.ShaderSharedTexture", "helix.services.shaders.ShaderSnapshot",
-	"helix.services.shaders.ShaderUniform", "helix.services.shaders.ShaderVertexLayout")
+	"helix.services.shaders.ShaderShape", "helix.services.shaders.ShaderSampler", "helix.services.shaders.ShaderSharedTexture",
+	"helix.services.shaders.ShaderSnapshot", "helix.services.shaders.ShaderUniform", "helix.services.shaders.ShaderVertexLayout")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;

@@ -232,7 +232,11 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 				continue;
 			}
 			var kept = snapshot.uniforms[i];
-			if (kept == null || kept.length != bytes.length || Lambda.exists(snapshot.uniforms.slice(0, i), k -> k == kept))
+			var keptBefore = false;
+			for (k in 0...i)
+				if (snapshot.uniforms[k] == kept)
+					keptBefore = true;
+			if (kept == null || kept.length != bytes.length || keptBefore)
 				kept = snapshot.uniforms[i] = Bytes.alloc(bytes.length);
 			kept.blit(0, bytes, 0, bytes.length);
 		}
@@ -319,10 +323,10 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 					changed(uniform, index, e);
 	}
 
-	override function typeOf(uniform:ShaderUniform):Null<ShaderValueType> {
+	override function shapeOf(uniform:ShaderUniform):Null<helix.services.shaders.ShaderLayout.ShaderShape> {
 		follow();
 		var places = shader.placesOf(uniform);
-		return places == null ? null : places[0].type;
+		return places == null ? null : places[0].shape;
 	}
 
 	override function elementCountOf(uniform:ShaderUniform):Int {

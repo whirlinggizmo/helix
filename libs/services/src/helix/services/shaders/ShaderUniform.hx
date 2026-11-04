@@ -37,9 +37,25 @@ class ShaderUniform {
 		written through it are then kept, and written once a reload brings it back. */
 	public var declared(default, null):Bool;
 
+	// A number of its own, by which a shader keeps where it is (Shader.placesOf), and its type's shape.
+	@:allow(helix.services.shaders)
+	final id:Int = takeId();
+	@:allow(helix.services.shaders)
+	var shape(default, null):helix.services.shaders.ShaderLayout.ShaderShape;
+
+	// The next id, counted from the first handle, as a shader may be read (in a build macro) before this class's statics are.
+	static var nextId:Null<Int> = null;
+
+	static function takeId():Int {
+		var id = nextId == null ? 0 : nextId;
+		nextId = id + 1;
+		return id;
+	}
+
 	@:allow(helix.services.shaders)
 	function new(name:String, type:ShaderValueType, elementCount:Int, blockName:String, shared:Bool) {
 		this.name = name;
+		shape = helix.services.shaders.ShaderLayout.ShaderShape.of(type);
 		this.type = type;
 		this.elementCount = elementCount;
 		this.blockName = blockName;
@@ -53,6 +69,7 @@ class ShaderUniform {
 	@:allow(helix.services.shaders)
 	function update(type:ShaderValueType, elementCount:Int, blockName:String, shared:Bool, active:Bool, declared:Bool):Void {
 		this.type = type;
+		shape = helix.services.shaders.ShaderLayout.ShaderShape.of(type);
 		this.elementCount = elementCount;
 		this.blockName = blockName;
 		this.shared = shared;

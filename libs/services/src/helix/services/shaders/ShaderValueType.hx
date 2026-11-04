@@ -73,9 +73,12 @@ enum abstract ShaderValueType(String) to String {
 		return last >= "2".code && last <= "4".code ? last - "0".code : 1;
 	}
 
+	// Read by their first letter, as no two kinds share one: these are read as values are written and drawn.
 	function get_columnCount():StdTypes.Int
-		return StringTools.startsWith(this, "mat") ? this.charCodeAt(3) - "0".code : 1;
+		return this.charCodeAt(0) == "m".code ? this.charCodeAt(3) - "0".code : 1;
 
-	function get_integer():StdTypes.Bool
-		return !(StringTools.startsWith(this, "float") || StringTools.startsWith(this, "vec") || StringTools.startsWith(this, "mat"));
+	function get_integer():StdTypes.Bool {
+		var first = this.charCodeAt(0);
+		return first != "f".code && first != "v".code && first != "m".code;
+	}
 }

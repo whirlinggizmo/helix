@@ -1,6 +1,7 @@
 package helix.services.shaders;
 
 import helix.math.Matrix3D;
+import helix.services.shaders.ShaderLayout.ShaderShape;
 
 /** Provides writing uniform values by handle, which `ShaderValues`, `ShaderBlockValues` and `ShaderVariantValues` share.
 
@@ -237,27 +238,25 @@ class ShaderUniformValues {
 		writeMany(uniform, floats, firstElementIndex, "writeInts", INTEGERS);
 	}
 
-	static final FLOAT = ["float"];
-	static final VEC2 = ["vec2"];
-	static final VEC3 = ["vec3"];
-	static final VECTORS = ["vec2", "vec3", "vec4"];
-	static final COLORS = ["vec3", "vec4"];
-	static final BOOL = ["bool"];
-	static final MAT4 = ["mat4"];
-	static final FLOATS = ["float", "vec2", "vec3", "vec4", "mat2", "mat3", "mat4"];
-	static final INTEGERS = [
-		"int", "ivec2", "ivec3", "ivec4", "uint", "uvec2", "uvec3", "uvec4", "bool", "bvec2", "bvec3", "bvec4"
-	];
+	static inline final FLOAT = ShaderShape.FLOAT;
+	static inline final VEC2 = ShaderShape.VEC2;
+	static inline final VEC3 = ShaderShape.VEC3;
+	static inline final VECTORS = ShaderShape.VEC2 | ShaderShape.VEC3 | ShaderShape.VEC4;
+	static inline final COLORS = ShaderShape.VEC3 | ShaderShape.VEC4;
+	static inline final BOOL = ShaderShape.BOOL;
+	static inline final MAT4 = ShaderShape.MAT4;
+	static inline final FLOATS = ShaderShape.FLOATS;
+	static inline final INTEGERS = ShaderShape.INTEGERS;
 
 	// What was written, by handle: each element's components as written, whatever the layout.
 	@:allow(helix.services.shaders)
 	final written = new haxe.ds.ObjectMap<ShaderUniform, helix.services.shaders.ShaderLayout.ShaderWritten>();
 
-	// The type a handle has where these write it, or null where it isn't declared (a write is then kept and checked when it is).
+	// The shape of a handle's type where these write it, or null where it isn't declared (a write is then kept and checked when it is).
 
 	@:allow(helix.services.shaders)
-	function typeOf(uniform:ShaderUniform):Null<ShaderValueType>
-		return uniform.declared ? uniform.type : null;
+	function shapeOf(uniform:ShaderUniform):Null<ShaderShape>
+		return uniform.declared ? uniform.shape : null;
 
 	// The elements a handle has where these write it, or -1 where it isn't declared.
 	function elementCountOf(uniform:ShaderUniform):Int
@@ -270,14 +269,14 @@ class ShaderUniformValues {
 	function changed(uniform:ShaderUniform, elementIndex:Int, values:Array<Float>):Void {}
 
 	// The element a write fills, its type checked: the same array each time, as long as its type's components.
-	function element(uniform:ShaderUniform, elementIndex:Int, method:String, types:Array<String>):Array<Float> {
-		var type = typeOf(uniform);
+	function element(uniform:ShaderUniform, elementIndex:Int, method:String, kinds:Int):Array<Float> {
+		var shape = shapeOf(uniform);
 		var count = elementCountOf(uniform);
-		if (type != null && types.indexOf(type) < 0)
-			throw 'shader values: $method can\'t write ${uniform.name}, a $type';
+		if (shape != null && shape.kind & kinds == 0)
+			throw 'shader values: $method can\'t write ${uniform.name}, a ${shape.type}';
 		if (elementIndex < 0 || count >= 0 && elementIndex >= count)
 			throw 'shader values: ${uniform.name} has no element $elementIndex (it has ${count < 0 ? 1 : count})';
-		var size = type == null ? 16 : type.componentCount * type.columnCount;
+		var size = shape == null ? 16 : shape.size;
 		var w = written.get(uniform);
 		if (w == null)
 			written.set(uniform, w = new helix.services.shaders.ShaderLayout.ShaderWritten());
@@ -293,19 +292,19 @@ class ShaderUniformValues {
 	}
 
 	// writeFloats and writeInts: elements packed one after another, checked whole before any is written.
-	function writeMany(uniform:ShaderUniform, values:Array<Float>, first:Int, method:String, types:Array<String>):Void {
-		var type = typeOf(uniform);
-		if (type != null && types.indexOf(type) < 0)
-			throw 'shader values: $method can\'t write ${uniform.name}, a $type';
-		var size = type == null ? values.length : type.componentCount * type.columnCount;
+	function writeMany(uniform:ShaderUniform, values:Array<Float>, first:Int, method:String, kinds:Int):Void {
+		var shape = shapeOf(uniform);
+		if (shape != null && shape.kind & kinds == 0)
+			throw 'shader values: $method can\'t write ${uniform.name}, a ${shape.type}';
+		var size = shape == null ? values.length : shape.size;
 		if (size == 0 || values.length % size != 0)
-			throw 'shader values: $method gives ${values.length} numbers for ${uniform.name}, not a whole number of ${type}s';
+			throw 'shader values: $method gives ${values.length} numbers for ${uniform.name}, not a whole number of ${shape.type}s';
 		var count = elementCountOf(uniform),
 			elements = Std.int(values.length / size);
 		if (first < 0 || count >= 0 && first + elements > count)
 			throw 'shader values: $method writes ${uniform.name}\'s elements $first to ${first + elements - 1}, past its $count';
 		for (k in 0...elements) {
-			var e = element(uniform, first + k, method, types);
+			var e = element(uniform, first + k, method, kinds);
 			for (i in 0...size)
 				e[i] = values[k * size + i];
 			changed(uniform, first + k, e);
@@ -325,12 +324,12 @@ class ShaderUniformValues {
 
 	@:allow(helix.services.shaders)
 	function writeElement(uniform:ShaderUniform, elementIndex:Int, values:Array<Float>):Void {
-		var type = typeOf(uniform), count = elementCountOf(uniform);
-		if (type != null && (values.length < type.componentCount * type.columnCount || count >= 0 && elementIndex >= count)) {
-			helix.log.Log.warn('shader values: a value kept for ${uniform.name} doesn\'t fit its ${type}; dropped', "shaders");
+		var shape = shapeOf(uniform), count = elementCountOf(uniform);
+		if (shape != null && (values.length < shape.size || count >= 0 && elementIndex >= count)) {
+			helix.log.Log.warn('shader values: a value kept for ${uniform.name} doesn\'t fit its ${shape.type}; dropped', "shaders");
 			return;
 		}
-		var size = type == null ? values.length : type.componentCount * type.columnCount;
+		var size = shape == null ? values.length : shape.size;
 		var w = written.get(uniform);
 		if (w == null)
 			written.set(uniform, w = new helix.services.shaders.ShaderLayout.ShaderWritten());

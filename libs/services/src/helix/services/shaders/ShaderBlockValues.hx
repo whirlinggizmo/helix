@@ -83,11 +83,11 @@ class ShaderBlockValues extends ShaderUniformValues {
 		return found;
 	}
 
-	override function typeOf(uniform:ShaderUniform):Null<ShaderValueType> {
+	override function shapeOf(uniform:ShaderUniform):Null<helix.services.shaders.ShaderLayout.ShaderShape> {
 		var p = placesIn(layout).get(uniform.name);
 		if (p == null)
 			throw 'shader values: ${uniform.name} isn\'t in shared block $blockName';
-		return p.type;
+		return p.shape;
 	}
 
 	override function elementCountOf(uniform:ShaderUniform):Int {

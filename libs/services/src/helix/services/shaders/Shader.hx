@@ -447,6 +447,7 @@ class Shader implements IShaderHandles {
 		}
 		var renamed = new Shader(source, filePath);
 		renamed.renames = names.copy();
+		renamed.placesById = [];
 		for (glsl => given in names)
 			renamed.unnames.set(given, glsl);
 		renamed.markShared(sharedNames);
@@ -466,6 +467,11 @@ class Shader implements IShaderHandles {
 	@:allow(helix.services.shaders)
 	var blocks(default, null):Array<ShaderBlockLayout> = [];
 	final placesByPath = new Map<String, Array<ShaderPlace>>();
+	// Each handle's places, by its id, found at its first use since the shader was last read: NO_PLACES where it isn't declared.
+	var placesById:Array<Null<Array<ShaderPlace>>> = [];
+
+	static var NO_PLACES:Null<Array<ShaderPlace>> = null;
+
 	final handles = new Map<String, ShaderUniform>();
 	final samplerHandles = new Map<String, ShaderSampler>();
 	final paths = new Map<String, ShaderUniformPath>();
@@ -486,6 +492,7 @@ class Shader implements IShaderHandles {
 		this.source = source;
 		blocks = [];
 		placesByPath.clear();
+		placesById = [];
 		var order:Array<String> = [];
 		var declared = new Map<String, {
 			type:ShaderValueType,
@@ -634,11 +641,25 @@ class Shader implements IShaderHandles {
 			renamed.refuse(why);
 	}
 
-	// The places of a uniform, by its name here (a handle of another shader is found by its name), or null when not declared.
+	// The places of a uniform, by its name here (a handle of another shader is found by its name), or null when not declared: looked
+	// up once for each handle, until the shader is read again.
 
 	@:allow(helix.services.shaders)
-	function placesOf(uniform:ShaderUniform):Null<Array<ShaderPlace>>
-		return placesByPath.get(glslNameOf(uniform.name));
+	function placesOf(uniform:ShaderUniform):Null<Array<ShaderPlace>> {
+		var places = uniform.id < placesById.length ? placesById[uniform.id] : null;
+		if (places == null) {
+			places = placesByPath.get(glslNameOf(uniform.name));
+			if (places == null) {
+				if (NO_PLACES == null)
+					NO_PLACES = [];
+				places = NO_PLACES;
+			}
+			while (placesById.length <= uniform.id)
+				placesById.push(null);
+			placesById[uniform.id] = places;
+		}
+		return places == NO_PLACES ? null : places;
+	}
 
 	// The block layout of a name, or null.
 
