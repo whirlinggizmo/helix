@@ -77,6 +77,7 @@ comment lists the names it fills; a shader reads what it declares. The includes 
 | Include | What |
 |---|---|
 | `<helix/render/shaders/view.glsl>` | The `View` block: a view's matrices, its viewport, the target's kind, exposure, tone mapping and fog (`View3D`). |
+| `<helix/render/shaders/clip.glsl>` | The clip planes, `clipPlanes` and `clipPlaneCount` (`Batch3D.clipPlanes`), for a program's own stage that reads them; declared nowhere else. |
 | `<helix/render/shaders/color.glsl>` | `decodeSrgb`, `encodeSrgb`, `applyToneMapping`, `applyFog`, `encodeColor`, `writeColor` (`View3D`). |
 | `<helix/render/shaders/batch.glsl>` | A batch draw's attributes, uniforms and outputs, and `placeBatchVertex` (`Batch3D`). |
 | `<helix/render/shaders/mesh.glsl>` | A mesh's attributes, the per-draw uniforms and outputs, and `placeVertex`: skinned and instanced (`Material3D`). |

@@ -235,7 +235,7 @@ class ShaderMacros {
 	/** `Shader.makeExpr`: one static holding the shader for each distinct text and options in the build. */
 	public static function shaderExpr(vertex:{name:String, text:String}, fragment:{name:String, text:String}, options:ShaderBuildOptions, pos:Position):Expr {
 		var source = compileProgram(vertex, fragment, options, [], pos);
-		var shared = options.shared == null ? [] : options.shared;
+		var shared = declaredShared(source, options.shared);
 		var sharedNames = [for (s in shared) s.name];
 		checkShared(source, shared, vertex.name, pos);
 		var shader = new Shader(source, options.file);
@@ -297,9 +297,9 @@ class ShaderMacros {
 				Context.error('shader: the combination [${combination.join(", ")}] is given twice', pos);
 			bits.push(set);
 			var source = compileProgram(vertex, fragment, options, combination, pos);
-			checkShared(source, shared, vertex.name, pos);
+			checkShared(source, declaredShared(source, shared), vertex.name, pos);
 			var shader = new Shader(source, options.file);
-			shader.markShared(sharedNames);
+			shader.markShared([for (s in declaredShared(source, shared)) s.name]);
 			if (options.check != null) {
 				var why = options.check(shader);
 				if (why != null)
@@ -452,6 +452,13 @@ class ShaderMacros {
 	}
 
 	// Refuses a shared block the shader neither declares nor gathers.
+	// The shared blocks a source takes: those named, less the ones shared only where declared (whereDeclared) that it doesn't declare.
+	static function declaredShared(source:ShaderSource, shared:Null<Array<ShaderSharedBlock>>):Array<ShaderSharedBlock>
+		return shared == null ? [] : [
+			for (s in shared)
+				if (s.whereDeclared != true || Lambda.exists(source.uniformBlocks, b -> b.glslName == s.name)) s
+		];
+
 	static function checkShared(source:ShaderSource, shared:Array<ShaderSharedBlock>, name:String, pos:Position):Void
 		for (s in shared)
 			if (!Lambda.exists(source.uniformBlocks, b -> b.glslName == s.name))

@@ -4,6 +4,7 @@ package helix.render;
 import haxe.io.Path;
 import haxe.macro.Context;
 import haxe.macro.Expr;
+import helix.platform.ShaderSource;
 import helix.services.shaders.Shader;
 import helix.services.shaders.ShaderBuildOptions;
 import helix.services.shaders.ShaderMacros;
@@ -29,6 +30,7 @@ class RenderShaders {
 	/** The includes helix-render gives, by the name an angle-bracket include takes. */
 	public static final INCLUDES = [
 		"view.glsl",
+		"clip.glsl",
 		"color.glsl",
 		"batch.glsl",
 		"mesh.glsl",
@@ -166,13 +168,23 @@ class RenderShaders {
 			}
 		for (name in INCLUDES)
 			includes.set('helix/render/shaders/$name', own(name).text);
+		// View and Lighting are shared wherever the compiled shader declares them: the compiler decides, not the text.
 		var shared:Array<ShaderSharedBlock> = options.shared == null ? [] : options.shared.copy();
 		for (block in ["View", "Lighting"])
-			if (!Lambda.exists(shared, s -> s.name == block) && (declares(vertex.text, block) || declares(fragment.text, block)))
-				shared.push({name: block});
+			if (!Lambda.exists(shared, s -> s.name == block))
+				shared.push({name: block, whereDeclared: true});
 		var given = options.check;
-		var lit = Lambda.exists(shared, s -> s.name == "Lighting");
-		var made = Shader.makeExpr(vertex, {name: fragment.name, text: wrapClip(vertex.text, fragment.text)}, {
+		var lit = false;
+		// Compiled once as written, so the clip planes' wrap is decided from what the stages pass (their reflection), then again wrapped.
+		var probe = ShaderMacros.compileProgram(vertex, fragment, {
+			defines: options.defines,
+			includes: includes,
+			includeDirectories: options.includeDirectories,
+			shared: shared,
+			clipScale: true,
+			points: true
+		}, [], pos);
+		var made = Shader.makeExpr(vertex, {name: fragment.name, text: wrapClip(probe, fragment.text)}, {
 			defines: options.defines,
 			includes: includes,
 			includeDirectories: options.includeDirectories,
@@ -180,6 +192,8 @@ class RenderShaders {
 			clipScale: true,
 			points: true,
 			check: shader -> {
+				if (shader.hasSharedBlock("Lighting"))
+					lit = true;
 				var why = given == null ? null : given(shader);
 				why != null ? why : check(shader);
 			},
@@ -220,28 +234,17 @@ class RenderShaders {
 		return version.replace(text, line);
 	}
 
-	// Whether a stage's text declares a shared block, itself or through helix-render's includes.
-	static function declares(text:String, block:String):Bool {
-		var includes = block == "View" ? "view|color|batch|mesh|lighting|material" : "lighting|material";
-		return new EReg('#\\s*include\\s*<helix/render/shaders/($includes)\\.glsl>', "").match(text)
-			|| new EReg('\\buniform\\s+$block\\b', "").match(text);
-	}
-
-	// A fragment stage wrapped so the clip planes cut it before its main runs, where the vertex stage writes worldPosition.
-	static function wrapClip(vertex:String, fragment:String):String {
-		var writes = ~/#\s*include\s*<helix\/render\/shaders\/(batch|mesh)\.glsl>/.match(vertex)
-			|| ~/\bout\s+(?:(?:highp|mediump|lowp|smooth)\s+)*vec3\s+worldPosition\s*;/.match(vertex);
+	// A fragment stage wrapped so the clip planes cut it before its main runs, where the vertex stage writes worldPosition: decided from
+	// the stages' reflection (their outputs and inputs), never their text. Only the wrap itself, renaming main, edits the text.
+	static function wrapClip(source:ShaderSource, fragment:String):String {
+		var writes = Lambda.exists(source.vertexOutputs, v -> v.glslName == "worldPosition");
 		var main = ~/\bvoid\s+main\s*\(\s*(?:void)?\s*\)/;
 		if (!writes || !main.match(fragment))
 			return fragment;
-		var text = main.replace(fragment, "void helix_render_main()");
-		var reads = ~/#\s*include\s*<helix\/render\/shaders\/material\.glsl>/.match(fragment)
-			|| ~/\bin\s+(?:(?:highp|mediump|lowp|smooth)\s+)*vec3\s+worldPosition\s*;/.match(fragment);
-		var planes = ~/\bclipPlanes\b/.match(fragment);
-		return text
-			+ "\n"
+		var reads = Lambda.exists(source.fragmentInputs, v -> v.glslName == "worldPosition");
+		return main.replace(fragment, "void helix_render_main()")
+			+ "\n#include <helix/render/shaders/clip.glsl>\n"
 			+ (reads ? "" : "in vec3 worldPosition;\n")
-			+ (planes ? "" : "uniform vec4 clipPlanes[4];\nuniform int clipPlaneCount;\n")
 			+ "void main() {\n\tfor (int i = 0; i < 4; i++)\n\t\tif (i < clipPlaneCount && dot(clipPlanes[i].xyz, worldPosition) + clipPlanes[i].w < 0.0)\n"
 			+ "\t\t\tdiscard;\n\thelix_render_main();\n}\n";
 	}

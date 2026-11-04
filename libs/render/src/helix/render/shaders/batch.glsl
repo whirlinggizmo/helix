@@ -4,6 +4,7 @@
 #ifndef HELIX_RENDER_BATCH_GLSL
 #define HELIX_RENDER_BATCH_GLSL
 #include <helix/render/shaders/view.glsl>
+#include <helix/render/shaders/clip.glsl>
 
 in vec3 vertexPosition;
 in vec2 vertexTexCoord;
@@ -21,8 +22,6 @@ uniform int fontKind;
 uniform float lineWidth;
 uniform float pointSize;
 uniform int pointSizeAttenuated;
-uniform vec4 clipPlanes[4];
-uniform int clipPlaneCount;
 uniform int fogged;
 uniform int toneMapped;
 

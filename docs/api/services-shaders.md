@@ -222,7 +222,7 @@ function withNames(names:Map<String, String>):Shader
 - `hasUniform`: Returns whether the shader declares a uniform.
   - `name`: Its path, or the name `withNames` gave it.
   - returns: True when it is declared.
-- `hasSharedBlock`: Returns whether the shader names a shared block (`ShaderOptions.shared`).
+- `hasSharedBlock`: Returns whether the shader shares a block (`ShaderOptions.shared`): names it shared and declares it.
   - `blockName`: The block's name.
   - returns: True when it does.
 - `reserveUniform`: Returns a handle for a uniform the shader may declare now or only after a replacement, for code written ahead of the GLSL: one not declared now is `declared` false, keeps what is written through it, and binds when a replacement declares it, its type then the declaration's. A value kept that the declared type doesn't take is logged and dropped.
@@ -677,6 +677,7 @@ Represents a block whose values many shaders share (`ShaderBlockValues`), named 
 
 A block the shader declares is named alone (`{name: "Frame"}`). Loose uniforms are gathered into one by naming them (`{name: "Lights", uniforms: ["lights", "ambient", "viewPos"]}`), so a shader written with loose uniforms, as raylib's `lighting.fs` is, shares them without its GLSL changing: they become one block both stages read, laid out in the order given, each uniform's declaration taken from wherever the stages declare it.
 
+- `whereDeclared:Null<Bool>`: Whether the block is shared only where the shader declares it, and left out where it doesn't. Optional; false when omitted, when a block the shader doesn't declare stops the build. A library naming its own blocks for every shader it compiles sets it, so the compiled shader decides, not the library reading its text.
 - `uniforms:Null<Array<String>>`: Loose uniforms gathered into the block, by name, a struct array whole (`lights`). Optional; when omitted, the shader declares the block itself.
 - `name:String`: The block's name: one the shader declares, or the name of the block the `uniforms` are gathered into.
 

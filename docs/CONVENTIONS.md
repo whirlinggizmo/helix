@@ -293,6 +293,11 @@ where a pattern breaks on the next arrow or generic it didn't foresee. `tools/ge
 macro (`tools/haxe/Fields.hx`) for the macro functions `-xml` leaves out. A tool still matching text is changed when it is next
 touched.
 
+Shaders are read the same way. What a stage declares (its blocks, uniforms, attributes, textures) is decided from the shader
+compiler's reflection, and its includes are found by the compiler's include mechanism, never by matching the GLSL's text: helix-render
+once chose its shared blocks by matching its includes' paths, and moving its shader files broke that silently. A library naming its
+own blocks for every shader shares them where the compiled shader declares them (`ShaderSharedBlock.whereDeclared`).
+
 ## Examples
 
 - An example shows one thing with its library alone, on both targets, from hxml files beside it. Work that a program would otherwise

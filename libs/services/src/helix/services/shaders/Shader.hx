@@ -197,12 +197,12 @@ class Shader implements IShaderHandles {
 		return u != null && u.declared;
 	}
 
-	/** Returns whether the shader names a shared block (`ShaderOptions.shared`).
+	/** Returns whether the shader shares a block (`ShaderOptions.shared`): names it shared and declares it.
 
 		@param blockName  The block's name.
 		@return  True when it does. */
 	public function hasSharedBlock(blockName:String):Bool {
-		return sharedNames.indexOf(blockName) >= 0;
+		return sharedNames.indexOf(blockName) >= 0 && blockNamed(blockName) != null;
 	}
 
 	/** Returns a handle for a uniform the shader may declare now or only after a replacement, for code written ahead of the GLSL: one not

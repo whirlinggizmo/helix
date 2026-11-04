@@ -13,4 +13,9 @@ typedef ShaderSharedBlock = {
 	/** Loose uniforms gathered into the block, by name, a struct array whole (`lights`). Optional; when omitted, the shader declares the
 		block itself. */
 	@:optional var uniforms:Array<String>;
+
+	/** Whether the block is shared only where the shader declares it, and left out where it doesn't. Optional; false when omitted, when a
+		block the shader doesn't declare stops the build. A library naming its own blocks for every shader it compiles sets it, so the
+		compiled shader decides, not the library reading its text. */
+	@:optional var whereDeclared:Bool;
 }
