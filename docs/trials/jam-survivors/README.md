@@ -40,10 +40,11 @@ The engine names, build commands and runner are filled in per engine. Nothing el
 |---|---|
 | Effort | tokens in and out, wall-clock time, from each transcript |
 | Builds | the builds run, how many failed, and the errors by kind |
-| Code | lines written, split by a reviewer into engine-substitute code (what an engine could have given: animation blending, attachments, UI widgets, nine-slice drawing, pooling) and game logic |
+| Code | lines written, split by a reviewer into engine-substitute code (what an engine could have given: animation blending, attachments, UI widgets, nine-slice drawing, pooling, a particle system, a skinning shader) and game logic |
 | Spec met | a reviewer's reading of the code against the spec's items (met, wrong, missing, can't tell), and a play pass on both targets driven by input scripts, as the drift-field trial graded |
 | Bugs | what the play pass finds, by severity |
-| Frame time | `enemies=50`, `100` and `200`, `seed=1`, `quit_after_frame=1200`: the mean and p95, natively (GL and SDL_GPU) and in a page, on the real display |
+| Frame time | `enemies=50`, `100` and `200`, `seed=1`, `quit_after_frame=1200`: the mean and p95, natively (GL and SDL_GPU) and in a page, on the real display; the page again with Chromium's CPU throttled 4x, as a phone |
+| Shaders | the shaders each entrant wrote (the ground effects, the hit flash), and how its animated enemies are skinned: on the GPU (and by what: the engine's own, a shader of its pieces, one written whole) or on the CPU |
 | Size | the page's files fetched, raw, gzip and brotli; the native binary stripped |
 | Startup | to the title's first frame, natively and in a page |
 | A change | a fresh Sonnet, given the finished game and its notes, adds a dash on Space (a 4 meter dash, 2 seconds' cooldown shown as a bar under the warden) and a new card ("Twin blades": a second sword in the left hand, on `Wrist.L`, striking behind her). Measured as above, plus what it broke |
@@ -54,7 +55,8 @@ until their grades are in.
 ## Before the run
 
 - **Engines ready:** raygui and its skins built on helix-raylib, and both engines building the spec's features: skinned parts on one
-  skeleton, an attachment at a bone, blended animations, many skinned models, a nine-slice image.
+  skeleton, an attachment at a bone, blended animations, many skinned models, a nine-slice image, a program's own shader on a ground
+  quad and on an animated, lit model, many additive sprites.
 - **Prototypes:** a prototype of the hard parts on each engine by the person running the jam (not an entrant), so a failure is the
   entrant's and not a missing feature. What the prototypes find is fixed first and recorded.
 - **Assets:** made and put in `assets/`. The characters are Quaternius's Ultimate Modular Women (CC0, the 40 parts, `Sword.glb`,
