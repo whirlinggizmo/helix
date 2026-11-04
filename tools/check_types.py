@@ -33,8 +33,8 @@ def targets(web=False):
     found.append(('render pixel tests js',['-lib','helix-render','-cp','libs/render/tests/pixels','-main','PixelTests','-js','build/check_types.js']))
     if not web:found.append(('render pixel tests cpp',['-lib','helix-render','-cp','libs/render/tests/pixels','-main','PixelTests','-cpp','build/check_types-cpp']))
     for directory in sorted(p.parent for p in (ROOT/'libs/render/examples').glob('*/Main.hx')):
-        found.append((f'render example {directory.name} js',['-lib','helix-render','-cp',str(directory.relative_to(ROOT)),'-main','Main','-js','build/check_types.js']))
-        if not web:found.append((f'render example {directory.name} cpp',['-lib','helix-render','-cp',str(directory.relative_to(ROOT)),'-main','Main','-cpp','build/check_types-cpp']))
+        found.append((f'render example {directory.name} js',['-lib','helix-render','-cp',str(directory.relative_to(ROOT)),'-cp','libs/render/examples','-main','Main','-js','build/check_types.js']))
+        if not web:found.append((f'render example {directory.name} cpp',['-lib','helix-render','-cp',str(directory.relative_to(ROOT)),'-cp','libs/render/examples','-main','Main','-cpp','build/check_types-cpp']))
     # The size ladder's rungs, the browser's (tools/measure_sizes.py builds them so).
     for library in ('platform','services','render'):
         for rung in sorted((ROOT/'libs'/library/'tests/sizes').glob('*/Main.hx')):
