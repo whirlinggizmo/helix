@@ -76,12 +76,12 @@ comment lists the names it fills; a shader reads what it declares. The includes 
 
 | Include | What |
 |---|---|
-| `<helix/render/view.glsl>` | The `View` block: a view's matrices, its viewport, the target's kind, exposure, tone mapping and fog (`View3D`). |
-| `<helix/render/color.glsl>` | `decodeSrgb`, `encodeSrgb`, `applyToneMapping`, `applyFog`, `encodeColor`, `writeColor` (`View3D`). |
-| `<helix/render/batch.glsl>` | A batch draw's attributes, uniforms and outputs, and `placeBatchVertex` (`Batch3D`). |
-| `<helix/render/mesh.glsl>` | A mesh's attributes, the per-draw uniforms and outputs, and `placeVertex`: skinned and instanced (`Material3D`). |
-| `<helix/render/lighting.glsl>` | The `Lighting` block, the draw's lights and the shadings (`Batch3D`). |
-| `<helix/render/material.glsl>` | A material's names, `readMaterialSurface`, `shadeMaterial`, `writeMaterialColor` (`Material3D`). |
+| `<helix/render/shaders/view.glsl>` | The `View` block: a view's matrices, its viewport, the target's kind, exposure, tone mapping and fog (`View3D`). |
+| `<helix/render/shaders/color.glsl>` | `decodeSrgb`, `encodeSrgb`, `applyToneMapping`, `applyFog`, `encodeColor`, `writeColor` (`View3D`). |
+| `<helix/render/shaders/batch.glsl>` | A batch draw's attributes, uniforms and outputs, and `placeBatchVertex` (`Batch3D`). |
+| `<helix/render/shaders/mesh.glsl>` | A mesh's attributes, the per-draw uniforms and outputs, and `placeVertex`: skinned and instanced (`Material3D`). |
+| `<helix/render/shaders/lighting.glsl>` | The `Lighting` block, the draw's lights and the shadings (`Batch3D`). |
+| `<helix/render/shaders/material.glsl>` | A material's names, `readMaterialSurface`, `shadeMaterial`, `writeMaterialColor` (`Material3D`). |
 
 ## Colors
 

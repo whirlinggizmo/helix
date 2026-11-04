@@ -34,7 +34,7 @@ import helix.services.shaders.ShaderValues;
 	`clipPlanes` before it runs, whichever compiled it. The batch fills, by name, what the shader declares; a name the program writes on
 	its values is overwritten.
 
-	**The material include.** `#include <helix/render/material.glsl>` (fragment stage) declares every name of the material below (its
+	**The material include.** `#include <helix/render/shaders/material.glsl>` (fragment stage) declares every name of the material below (its
 	colors, values and textures, as loose uniforms in the shader's own loose block) and the mesh vertex stage's outputs as inputs, and
 	includes `lighting.glsl` (with `view.glsl` and `color.glsl`), so the shader declares none of them and shades as the built-in materials
 	do. A shader without it declares the names it reads itself, each with the type listed; one declared with another type stops the
@@ -59,7 +59,7 @@ import helix.services.shaders.ShaderValues;
 	```glsl
 	#version 300 es
 	precision highp float;
-	#include <helix/render/material.glsl>
+	#include <helix/render/shaders/material.glsl>
 	uniform vec2 scrollOffset;
 	out vec4 fragColor;
 	void main() {
@@ -73,7 +73,7 @@ import helix.services.shaders.ShaderValues;
 	**The mesh vertex stage** passes, read by name in a fragment stage: `worldPosition` (vec3), `normal` (vec3, world space, not yet
 	turned toward the viewer), `tangent` (vec4, world space, w the bitangent's sign), `texCoord` and `texCoord2` (vec2, moved by
 	`textureTransform`) and `color` (vec4, the vertex color as the mesh holds it: as stored when `colorSpace` is Srgb, linear otherwise).
-	A program's own vertex stage (`compileShaderStages`) gets the same by `#include <helix/render/mesh.glsl>`, which includes `view.glsl`
+	A program's own vertex stage (`compileShaderStages`) gets the same by `#include <helix/render/shaders/mesh.glsl>`, which includes `view.glsl`
 	and declares the attributes and the per-draw uniforms below and those six outputs, so the stage declares none of them, and gives
 	`vec4 placeVertex()`: the vertex skinned, morphed and instanced as `skinned`, `morphTargetCount` and the instance attributes say,
 	its clip position returned and the six outputs written. The stage may write any of them again after the call.
@@ -369,12 +369,12 @@ class Material3D {
 
 		It compiles while the program builds, as helix-services' `Shader.compile` compiles one, and returns it as a value in the program: its
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
-		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/color.glsl>`). A name the class
+		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
 		The fragment stage is GLSL as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440 (GL's form), or
 		`#version 450` (Vulkan's), the mesh vertex stage given in the same form; GLSL ES 100 (raylib's) is not taken, and a layer adapts
 		it first. The vertex stage passes `worldPosition`, `normal`, `tangent`, `texCoord`, `texCoord2` and `color`, as the class says,
-		read by name; `#include <helix/render/material.glsl>` declares them, with the material's names.
+		read by name; `#include <helix/render/shaders/material.glsl>` declares them, with the material's names.
 		@param fragment  The fragment stage's file, relative to the file holding the call.
 		@param options  Optional. Defines, includes and a file to watch, as `Shader.compile` takes them.
 		@return  The shader, for a `ShaderValues` over it. */
@@ -387,12 +387,12 @@ class Material3D {
 
 		It compiles while the program builds, as helix-services' `Shader.compile` compiles one, and returns it as a value in the program: its
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
-		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/color.glsl>`). A name the class
+		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
 		Both stages are GLSL in one form, as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440, or
 		`#version 450`. The vertex stage may place its vertices itself, declaring what it reads, as raylib's GLSL 330 vertex stages do;
 		it then skins, morphs and instances only as it does so itself, and is cut by the clip planes only where it writes
-		`worldPosition`. Placed by `placeVertex()` (`#include <helix/render/mesh.glsl>`), skinning, morphing and instancing are done and
+		`worldPosition`. Placed by `placeVertex()` (`#include <helix/render/shaders/mesh.glsl>`), skinning, morphing and instancing are done and
 		the outputs a fragment stage reads written, `worldPosition` among them, as the class says.
 		@param vertex  The vertex stage's file, relative to the file holding the call.
 		@param fragment  The fragment stage's file, relative to the file holding the call.

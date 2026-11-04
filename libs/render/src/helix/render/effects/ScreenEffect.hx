@@ -9,7 +9,7 @@ package helix.render.effects;
 	**A screen shader** (`ShaderEffect`, `ScreenFrame.drawPass`) is compiled by `compileShader` (a fragment stage over the screen
 	triangle) or `compileShaderStages`. The chain fills, by name, what it declares: `sourceTexture` (sampler2D, the frame it reads),
 	`sourceSize` (vec2, its size in texels) and `time` (float, `PostProcess.draw`'s seconds); the view's `linearTarget`
-	(`View3D`) when it includes `<helix/render/view.glsl>`. */
+	(`View3D`) when it includes `<helix/render/shaders/view.glsl>`. */
 abstract class ScreenEffect {
 	#if !macro
 	/** Gets or sets a value indicating whether the chain draws it: true until set. */
@@ -44,7 +44,7 @@ abstract class ScreenEffect {
 
 		It compiles while the program builds, as helix-services' `Shader.compile` compiles one, and returns it as a value in the program: its
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
-		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/color.glsl>`). A name the class
+		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
 		The fragment stage is GLSL as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440 (GL's form), or
 		`#version 450` (Vulkan's), the screen triangle's vertex stage given in the same form; GLSL ES 100 is not taken. The vertex stage
@@ -61,7 +61,7 @@ abstract class ScreenEffect {
 
 		It compiles while the program builds, as helix-services' `Shader.compile` compiles one, and returns it as a value in the program: its
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
-		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/color.glsl>`). A name the class
+		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
 		Both stages are GLSL in one form, as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440, or
 		`#version 450`. The vertex stage is drawn for the three corners of one triangle covering the frame.

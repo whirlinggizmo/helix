@@ -2,7 +2,7 @@
 // Batch3D's own fragment stage for its batch draws: the texel times the vertex color as stored, written as it is into an sRGB target
 // and decoded into a linear one; a distance-field font's edge made sharp.
 precision highp float;
-#include <helix/render/view.glsl>
+#include <helix/render/shaders/view.glsl>
 
 in vec2 texCoord;
 in vec4 color;

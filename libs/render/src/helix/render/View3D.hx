@@ -24,7 +24,7 @@ import helix.math.Matrix3D;
 	batch.beginViews([left, right]);
 	```
 
-	**In a shader.** Each view is a block a shader reads by `#include <helix/render/view.glsl>` (block `View`, both stages), written once
+	**In a shader.** Each view is a block a shader reads by `#include <helix/render/shaders/view.glsl>` (block `View`, both stages), written once
 	a view and shared with every draw in it (helix-services' `ShaderScene`), never copied per draw; `Batch2D` writes one for its camera
 	or the viewport. A shader that declares one of its names itself, as raylib's declare `viewProjection`'s kin, is written it per
 	draw instead.
@@ -38,7 +38,7 @@ import helix.math.Matrix3D;
 	| `exposure`, `toneMapping` | float, int | `Renderer.exposure` as a multiplier (2 to the stops), and `Renderer.toneMapping`. |
 	| `fogColor`, `fogParams` | vec4 | The fog's color as stored, and its mode, near, far and density. |
 
-	**Colors in a shader.** `#include <helix/render/color.glsl>` (either stage; it includes `view.glsl`) gives the conversions helix-render's
+	**Colors in a shader.** `#include <helix/render/shaders/color.glsl>` (either stage; it includes `view.glsl`) gives the conversions helix-render's
 	own shaders make, and declares `toneMapped` (int: the material's; for a batch draw `Batch3D.toneMapped`; 0 for `Batch2D`'s) for
 	`writeColor`:
 

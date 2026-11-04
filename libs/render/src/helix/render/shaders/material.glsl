@@ -3,7 +3,7 @@
 // lighting.glsl, with color.glsl and view.glsl.
 #ifndef HELIX_RENDER_MATERIAL_GLSL
 #define HELIX_RENDER_MATERIAL_GLSL
-#include <helix/render/lighting.glsl>
+#include <helix/render/shaders/lighting.glsl>
 
 in vec3 worldPosition;
 in vec3 normal;
