@@ -9,7 +9,8 @@ Third-party files, all CC0, are credited one by one in [CREDITS.md](CREDITS.md).
 - `slices.txt`: the margins and the button's layout. The format is unchanged: image, then left, top, right, bottom, then notes. The
   button's cell size is now 190x49.
 - `icons.png`, `icons.txt`: 21 icons of 48x48 in an atlas of 8 per row, named by `icons.txt` ("index name" per line): the five cards,
-  the ten outfits, the four gear slots and the two weapons. They are drawn by `../gen_assets.py`, the only generated files left.
+  the ten outfits, the four gear slots and the two weapons. They are drawn by `../gen_assets.py`, the only generated files left. The outfits' icons are portraits of the warden
+  in each outfit, rendered in Blender from its four parts by `../render_outfits.py` into `../icon-sources/outfits/`.
   Kenney's Game Icons are generic interface symbols with nothing for swords, guns, bullets or outfits, so none are used.
 - `font.ttf`: Kenney Future, CC0, its license text in `font-license.txt`.
 

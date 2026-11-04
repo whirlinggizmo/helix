@@ -7,7 +7,8 @@ Writes into assets/ui/ beside this file:
   icons.txt  one "index name" line per icon, row by row
 
 Kenney's Game Icons are generic interface symbols and have no sword, gun, bullet, outfit
-or armor-slot pictures, so these are drawn here from code. Everything else in assets/ is
+or armor-slot pictures, so these are drawn here from code, but for the outfits: each is a portrait of the warden in it,
+rendered in Blender from the outfit's four parts by render_outfits.py into icon-sources/outfits/. Everything else in assets/ is
 third-party and credited in assets/CREDITS.md. The art is the trial's own.
 
 Run:  python3 gen_assets.py
@@ -203,63 +204,15 @@ def outfit(c, which):
         "worker": (238, 134, 24),
     }
     c.plate(cols[which])
-    if which == "adventurer":  # mountains and a sun
-        c.ell(30, 9, 39, 18, GOLD, OUT)
-        c.poly([(5, 38), (18, 14), (31, 38)], (236, 240, 244), OUT)
-        c.poly([(20, 38), (31, 22), (43, 38)], (205, 215, 225), OUT)
-        c.poly([(13, 24), (18, 14), (23, 24), (18, 22)], WHITE)
-    elif which == "casual":  # a t-shirt
-        c.poly([(15, 8), (21, 8), (24, 12), (27, 8), (33, 8), (43, 15), (38, 23), (35, 21), (35, 40),
-                (13, 40), (13, 21), (10, 23), (5, 15)], WHITE, OUT)
-        c.ell(20, 22, 28, 30, (60, 150, 220))
-    elif which == "formal":  # a bow tie
-        c.poly([(24, 24), (7, 13), (7, 35)], WHITE, OUT)
-        c.poly([(24, 24), (41, 13), (41, 35)], WHITE, OUT)
-        c.rect(20, 19, 28, 29, (250, 220, 220), r=2, outline=OUT)
-    elif which == "medieval":  # a shield
-        c.poly([(9, 8), (39, 8), (39, 26), (24, 42), (9, 26)], (220, 224, 232), OUT)
-        c.poly([(24, 8), (39, 8), (39, 26), (24, 42)], (190, 40, 40))
-        c.poly([(9, 8), (24, 8), (24, 42), (9, 26)], (240, 200, 60))
-        c.line([(24, 8), (24, 42)], OUT, 1.2)
-    elif which == "punk":  # a mohawk of spikes
-        c.rect(8, 34, 40, 41, (30, 30, 36), r=2, outline=OUT)
-        for i, x in enumerate((9, 17, 25, 33)):
-            h = 14 + (i % 2) * 6
-            c.poly([(x, 36), (x + 4, 36 - h - 6), (x + 8, 36)], WHITE, OUT)
-    elif which == "scifi":  # an atom ring and core
-        c.d.arc([8 * SS, 15 * SS, 40 * SS, 33 * SS], 0, 360, fill=WHITE, width=int(2.2 * SS))
-        im = c.im
-        # a second, tilted ring
-        ring = Image.new("RGBA", im.size, (0, 0, 0, 0))
-        rd = ImageDraw.Draw(ring)
-        rd.arc([8 * SS, 15 * SS, 40 * SS, 33 * SS], 0, 360, fill=WHITE, width=int(2.2 * SS))
-        ring = ring.rotate(60, resample=Image.BICUBIC, center=(24 * SS, 24 * SS))
-        im.alpha_composite(ring)
-        ring2 = ring.rotate(60, resample=Image.BICUBIC, center=(24 * SS, 24 * SS))
-        im.alpha_composite(ring2)
-        c.d = ImageDraw.Draw(c.im)
-        c.ell(19, 19, 29, 29, (255, 240, 120), OUT)
-    elif which == "soldier":  # chevrons and a star
-        for y in (8, 15, 22):
-            c.line([(10, y + 7), (24, y), (38, y + 7)], OUT, 6.0)
-            c.line([(10, y + 7), (24, y), (38, y + 7)], (230, 224, 170), 3.6)
-        c.poly([(24, 33), (25.6, 36.6), (29.5, 37), (26.6, 39.6), (27.4, 43.4), (24, 41.4), (20.6, 43.4),
-                (21.4, 39.6), (18.5, 37), (22.4, 36.6)], (255, 215, 80), OUT)
-    elif which == "suit":  # a necktie on a collar
-        c.poly([(8, 8), (24, 20), (40, 8), (42, 40), (6, 40)], WHITE, OUT)
-        c.poly([(24, 20), (30, 12), (24, 10), (18, 12)], (36, 54, 128), OUT)
-        c.poly([(24, 18), (28, 22), (27, 36), (24, 41), (21, 36), (20, 22)], (200, 50, 60), OUT)
-    elif which == "witch":  # a pointed hat
-        c.poly([(24, 5), (31, 28), (17, 28)], (40, 24, 60), OUT)
-        c.poly([(23, 7), (28, 12), (20, 12)], (60, 40, 90))
-        c.rect(19, 21, 29, 26, GOLD)
-        c.poly([(5, 36), (10, 28), (38, 28), (43, 36), (24, 40)], (40, 24, 60), OUT)
-        c.rect(20, 22, 28, 26, GOLD, outline=OUT)
-    elif which == "worker":  # a hard hat
-        c.poly([(8, 30), (9, 22), (14, 14), (24, 10), (34, 14), (39, 22), (40, 30)], (255, 224, 70), OUT)
-        c.rect(21, 8, 27, 24, (240, 190, 40), outline=OUT)
-        c.rect(5, 29, 43, 36, (255, 224, 70), r=3, outline=OUT)
-        c.line([(14, 18), (18, 14)], WHITE, 1.4)
+    # Her portrait in the outfit, rendered from its four parts by render_outfits.py, its head and shoulders inside the plate.
+    name = {"scifi": "SciFi"}.get(which, which.capitalize())
+    shot = Image.open(os.path.join(HERE, "icon-sources", "outfits", name + ".png")).convert("RGBA")
+    shot = shot.crop((20, 0, 108, 88)).resize((40 * SS, 40 * SS), Image.LANCZOS)
+    mask = Image.new("L", shot.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, shot.size[0] - 1, shot.size[1] - 1], radius=7 * SS, fill=255)
+    alpha = Image.fromarray((np.asarray(shot.getchannel("A"), dtype=np.uint16) * np.asarray(mask) // 255).astype(np.uint8))
+    shot.putalpha(alpha)
+    c.im.alpha_composite(shot, (4 * SS, 4 * SS))
 
 
 def make_icons():

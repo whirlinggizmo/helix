@@ -25,4 +25,5 @@ CC0 asks for no credit, they're credited anyway.
 
 ## The trial's own
 
-- `ui/icons.png`, `ui/icons.txt`: the 21 card, outfit, gear-slot and weapon icons, drawn by `../gen_assets.py`.
+- `ui/icons.png`, `ui/icons.txt`: the 21 card, outfit, gear-slot and weapon icons, drawn by `../gen_assets.py`. The ten outfit icons
+  hold portraits rendered by `../render_outfits.py` from Quaternius's Ultimate Modular Women (CC0), as HeliX's examples have them.
