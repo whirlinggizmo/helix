@@ -1,7 +1,8 @@
 # helix-raylib's parity suites
 
 helix-raylib behaves as raylib does, and these suites check it against raylib's own C. Each suite is a C reference built against a raylib
-release and a Haxe harness or program doing the same with helix-raylib. `tools/raylib_parity.py` builds and runs both and compares what they
+release and a Haxe harness or program doing the same with helix-raylib. raygui's suites build raygui's C (the `raygui.h` raylib 5.5 ships in its
+examples) into their reference. `tools/raylib_parity.py` builds and runs both and compares what they
 give: numbers line by line (value suites), or the frames they draw (pixel suites).
 
 ## The oracle
@@ -72,6 +73,8 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `waves` | 5.5 | values | `LoadWave` on WAV, Ogg Vorbis, MP3 (with a LAME tag and without), QOA and FLAC (refused): frames, rate, sample size, channels and every sample, natively and in a page; FLAC music refused |
 | `cubemaps_62` | 6.2 | pixels | `LoadTextureCubemap` in each layout, raylib's skybox example, and cubes sampling cubemaps through their material |
 | `vr` | 5.5 | pixels | raylib's VR simulator: both eyes drawn into a render texture (shapes and a model), drawn through its distortion shader |
+| `raygui` | 5.5 | pixels | raygui 4.5-dev's controls in each state `GuiSetState` sets, its C built against raylib 5.5 |
+| `raygui_input` | 5.5 | pixels | raygui's containers, lists, text editing, color pickers, icons, tooltips and wrapped text over three frames of played input |
 
 Each suite's manifest says in full what it covers (`covers`), and `notes` say why a bar is where it is.
 

@@ -220,6 +220,31 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
   - `done`: Optional. Called once the file is written, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
 
+## Gui
+
+*class* in [`engines/raylib/src/helix/raylib/extras/Gui.hx`](../../engines/raylib/src/helix/raylib/extras/Gui.hx), `import helix.raylib.extras.Gui;`
+
+Provides the async versions of raygui's style and icon loads, helix-raylib's own, as a page can't wait for a file: `GuiLoadStyleAsync` for `GuiLoadStyle` and `GuiLoadIconsAsync` for `GuiLoadIcons`. raygui's own call doesn't compile and names the one here (docs/DECISIONS.md 38). Imported apart: `import helix.raylib.extras.Gui.*;`.
+
+Each answers at a later poll, never during the call: `done` or `loaded` once it is done, `failed` with the reason when it is refused, logged as raylib's warning would be when `failed` is omitted.
+
+### gui: the style and icon loads in place of raygui's that wait for a file
+
+```haxe
+static function GuiLoadStyleAsync(fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
+static function GuiLoadIconsAsync(fileName:String, loadIconsName:Bool, loaded:Array<String> -> Void, ?failed:String -> Void):Void
+```
+
+- `GuiLoadStyleAsync`: Loads a style file (.rgs) over the style, answering when it is loaded: helix-raylib's own, in place of raygui's `GuiLoadStyle`, as a page can't wait for a file. A text file (its first line starting with '#') sets each property its "p" lines name, and its "f" line loads the font it names, beside the style file, at its size and with the characters of its charmap file; a font that can't be loaded leaves raylib's default font at size 10. A binary file sets its properties and, when it holds one, its font, its atlas decompressed. The default style is loaded first if it isn't yet. As in raygui, a text file's last line is read only when a line break ends it.
+  - `fileName`: The style file.
+  - `done`: Optional. Called once the style is loaded, at a later poll.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+- `GuiLoadIconsAsync`: Loads an icon file (.rgi) over the icons, answering when it is loaded: helix-raylib's own, in place of raygui's `GuiLoadIcons`, as a page can't wait for a file. Its icons are read over raygui's from the first, as raygui reads them; a file that isn't an icon file changes nothing.
+  - `fileName`: The icon file.
+  - `loadIconsName`: Whether the icons' names are read.
+  - `loaded`: Receives the icons' names, in order, or null when they weren't read or the file isn't an icon file.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
 ## Models
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Models.hx`](../../engines/raylib/src/helix/raylib/extras/Models.hx), `import helix.raylib.extras.Models;`

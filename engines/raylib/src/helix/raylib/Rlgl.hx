@@ -384,10 +384,10 @@ class Rlgl {
 
 	// ---- Face culling mode (rlCullMode), not written by hand ----
 
-	/**  */
+	/** Face culling mode: `RL_CULL_FACE_FRONT`. */
 	public static inline final RL_CULL_FACE_FRONT = 0;
 
-	/**  */
+	/** Face culling mode: `RL_CULL_FACE_BACK`. */
 	public static inline final RL_CULL_FACE_BACK = 1;
 
 	// ---- rlgl.h's number defines, not written by hand ----

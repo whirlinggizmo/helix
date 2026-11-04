@@ -8,6 +8,7 @@ program written as raylib is written runs in a page and natively.
 | `helix.raylib.Raylib` | raylib's functions, constants and colors, as `raylib.h` names them |
 | `helix.raylib.Raymath` | raymath's vectors, matrices and quaternions, as `raymath.h` names them, imported apart as raylib includes it |
 | `helix.raylib.Rlgl` | rlgl's matrix stack, immediate drawing and render state, as `rlgl.h` names them, imported apart as raylib includes it |
+| `helix.raylib.Raygui` | raygui, raylib's immediate-mode GUI, as the `raygui.h` raylib 5.5 ships names it (raygui 4.5-dev): its controls, style, font, state, tooltips and icons, imported apart (`import helix.raylib.Raygui.*;`) |
 | `helix.raylib.extras.Window`, `Files`, `Textures`, `Text`, `Models`, `Audio` | the `...Async` loads, requests and writes in place of raylib's calls a page can't wait for, a module for each of raylib's modules (rcore's in `Window` and `Files`), each imported apart (`import helix.raylib.extras.Textures.*;`) |
 | `helix.raylib.extras.Device` | the safe area, run options, device, window abilities, screen orientation and tilt, which raylib has no call for (`import helix.raylib.extras.Device.*;`) |
 | `helix.raylib.Vector2`, `Vector3`, `Color`, `Texture2D`, `Camera3D`, `Model`, `Shader`, `RenderTexture2D` and the rest | raylib's structs, with their fields |
@@ -42,7 +43,7 @@ where a native program finds its files, relative to itself (default `../web`). `
 
 ## What helix-raylib adds
 
-`Raylib`, `Raymath` and `Rlgl` are raylib 5.5's API and nothing more (docs/DECISIONS.md 24, 38). What helix-raylib adds is in the
+`Raylib`, `Raymath`, `Rlgl` and `Raygui` are raylib 5.5's API and nothing more (docs/DECISIONS.md 24, 38). What helix-raylib adds is in the
 package `helix.raylib.extras`, each module imported apart:
 
 | Module | What it holds |
@@ -53,6 +54,7 @@ package `helix.raylib.extras`, each module imported apart:
 | `Text` | the font loads (`LoadFontAsync`, `LoadFontExAsync`, `LoadFontFromMemoryAsync`, `LoadFontDataAsync`) and `ExportFontAsCodeAsync` |
 | `Models` | `LoadModelAsync`, `LoadModelAnimationsAsync`, `LoadMaterialsAsync`, `ExportMeshAsync` and `ExportMeshAsCodeAsync` |
 | `Audio` | `LoadSoundAsync`, `LoadWaveAsync`, `LoadWaveFromMemoryAsync`, `LoadMusicStreamAsync`, `ExportWaveAsync` and `ExportWaveAsCodeAsync` |
+| `Gui` | raygui's file loads: `GuiLoadStyleAsync` and `GuiLoadIconsAsync` |
 | `Device` | what a game needs from the device and the page that raylib has no call for: `GetWindowSafeArea`, `GetRunOption`, `IsPlatformWeb`, `GetPlatformOS`, `IsTouchScreenAvailable`, `IsFinePointerAvailable`, `IsWindowCloseable`, `IsFullscreenAvailable`, `SetScreenOrientationAsync`, `GetScreenOrientation`, and the tilt (`EnableTiltAsync`, `GetTilt`, `SetTiltRange`, `CalibrateTilt`, `DisableTilt`) |
 
 The async versions of raylib's calls are in one module for each raylib module, named for it: rtextures' in `Textures`, rtext's in
@@ -115,6 +117,9 @@ this library is built on that work. Portions are from raylib 5.5 (its default fo
 API description, `vendor/raylib/raylib_api.json`, with `raymath_api.json` and `rlgl_api.json` made from `raymath.h` and `rlgl.h` by raylib's parser), altered; zlib
 license, `vendor/raylib/LICENSE`. The meshes raylib generates with par_shapes are made by a port of its part of it, by Philip Rideout;
 MIT license, `vendor/par_shapes/LICENSE`.
+`Raygui` is a port of raygui 4.5-dev, the `raygui.h` raylib 5.5 ships, by Ramon Santamaria (@raysan5) and its contributors: its
+controls, default style and built-in icons, altered; its API description, `vendor/raygui/raygui_api.json`, is made from `raygui.h` by
+raylib's parser; zlib license, `vendor/raygui/LICENSE`.
 The bunnymark's texture, `tests/bunnymark/wabbit_alpha.png`, is raylib 5.5's `textures_bunnymark` resource, under the same zlib license.
 The `text` example's font is [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) Regular, Copyright 2020 The JetBrains Mono
 Project Authors, under the SIL Open Font License 1.1 (`examples/text/web/assets/OFL.txt`).

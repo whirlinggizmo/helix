@@ -1,0 +1,19 @@
+{
+  "oracle": "5.5",
+  "covers": "raygui 4.5-dev (raylib 5.5's examples/shapes/raygui.h) against helix-raylib's Raygui: the default style's controls in each state set with GuiSetState (normal, focused, pressed, disabled): button with an icon, toggles on and off, check boxes, combo box, closed dropdown box, slider, slider bar, progress bar, spinner, value box, text box, toggle group, toggle slider, label with an icon, label button, status bar, dummy rectangle and lines, drawn into a 960 x 560 frame",
+  "kind": "pixels",
+  "main": "Main",
+  "reference": "ref.c",
+  "harness": [
+    "Main.hx"
+  ],
+  "assets": {
+    "src/raygui.h": "raylib:examples/shapes/raygui.h"
+  },
+  "frames": 5,
+  "backends": {
+    "gl": 0,
+    "sdl_gpu": 0
+  },
+  "notes": "Matches raygui's C pixel for pixel on GL and SDL_GPU."
+}
