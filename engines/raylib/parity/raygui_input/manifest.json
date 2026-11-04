@@ -1,6 +1,6 @@
 {
   "oracle": "5.5",
-  "covers": "raygui 4.5-dev against helix-raylib's Raygui over three frames of played input (the mouse and its wheel by automation events, a character typed a frame): a window box, group box, multi-line label, panel, list view scrolled by the wheel and an item chosen by a press, text box and value box in edit mode, a character typed into the text box each frame, scroll panel, grid, tab bar, message box, text input box hiding its text, alpha bar, HSV color picker, color picker dragged, the 16 first icons at twice their size, a button at half alpha, a tooltip, word-wrapped text, an icon at twice its size, text cut with an ellipsis and an open dropdown box, drawn into a 960 x 600 frame",
+  "covers": "raygui 4.5-dev against helix-raylib's Raygui over nine frames of played input (the mouse, its wheel and keys by automation events, a character typed a frame): a window box, group box, multi-line label, panel, list view scrolled by the wheel and an item chosen by a press, text box and value box in edit mode, a character typed into the text box each frame, a second text box edited with Left, Backspace, End, Home and Delete, scroll panel, grid, tab bar, message box, text input box hiding its text, alpha bar, HSV color picker, color picker dragged, the 16 first icons at twice their size, a button at half alpha, a tooltip, word-wrapped text, an icon at twice its size, text cut with an ellipsis and an open dropdown box, drawn into a 960 x 600 frame",
   "kind": "pixels",
   "main": "Main",
   "reference": "ref.c",
@@ -10,7 +10,7 @@
   "assets": {
     "src/raygui.h": "raylib:examples/shapes/raygui.h"
   },
-  "frames": 5,
+  "frames": 10,
   "backends": {
     "gl": 0,
     "sdl_gpu": 4800

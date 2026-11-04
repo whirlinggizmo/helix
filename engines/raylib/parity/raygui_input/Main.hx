@@ -4,10 +4,14 @@ import helix.raylib.Raygui.*;
 import helix.raylib.extras.Window.*;
 import helix.raylib.internal.Runtime;
 
-// ref.c's raygui controls over three frames of played input, drawn by helix-raylib; the third frame saved as helix.png. Frame 0 turns the
+// ref.c's raygui controls over nine frames of played input, drawn by helix-raylib; the ninth frame saved as helix.png. Frame 0 turns the
 // wheel over the list view and types 'H'; frame 1 presses on a list item and types 'i'; frame 2 holds the button down on the color panel
-// and types '!'.
+// and types '!'; frame 3 lets it go and types 'X' into a second text box, which frames 4 to 8 edit with Left, Backspace, End, Home and
+// Delete. The last frame is saved.
 class Main {
+	static inline final KEY_UP_EVENT = 1;
+	static inline final KEY_DOWN_EVENT = 2;
+	static inline final MOUSE_BUTTON_UP_EVENT = 5;
 	static inline final MOUSE_BUTTON_DOWN_EVENT = 6;
 	static inline final MOUSE_POSITION = 7;
 	static inline final MOUSE_WHEEL = 8;
@@ -29,7 +33,10 @@ class Main {
 	static function main():Void {
 		InitWindow(960, 600, "raygui input");
 		var listScroll = [0], listActive = [-1], tab = [1], drop = [1], valueBox = [25];
-		var text = ["Edit"], input = ["secret"], secret = [false];
+		var text = ["Edit"],
+			keys = ["abcdef"],
+			input = ["secret"],
+			secret = [false];
 		var color = new Color(40, 160, 90, 255);
 		var hsv = new Vector3(200, 0.5, 0.8);
 		var alpha = [0.6];
@@ -54,13 +61,37 @@ class Main {
 				Play(MOUSE_POSITION, 830, 60);
 				Type("!".code);
 			}
+			if (frame == 3) {
+				Play(MOUSE_BUTTON_UP_EVENT, 0, 0);
+				Play(MOUSE_POSITION, -100, -100);
+				Type("X".code);
+			}
+			if (frame == 4)
+				Play(KEY_DOWN_EVENT, KEY_LEFT, 0);
+			if (frame == 5) {
+				Play(KEY_UP_EVENT, KEY_LEFT, 0);
+				Play(KEY_DOWN_EVENT, KEY_BACKSPACE, 0);
+			}
+			if (frame == 6) {
+				Play(KEY_UP_EVENT, KEY_BACKSPACE, 0);
+				Play(KEY_DOWN_EVENT, KEY_END, 0);
+			}
+			if (frame == 7) {
+				Play(KEY_UP_EVENT, KEY_END, 0);
+				Play(KEY_DOWN_EVENT, KEY_HOME, 0);
+			}
+			if (frame == 8) {
+				Play(KEY_UP_EVENT, KEY_HOME, 0);
+				Play(KEY_DOWN_EVENT, KEY_DELETE, 0);
+			}
 			ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 			GuiWindowBox(R(20, 20, 300, 200), "#198#Window box");
 			GuiGroupBox(R(30, 70, 280, 50), "Group");
 			GuiLabel(R(40, 80, 260, 30), "Line one\nLine two");
 			GuiPanel(R(30, 130, 280, 80), "Panel");
 			GuiListView(R(340, 20, 160, 200), "Zero;One;Two;Three;Four;Five;Six;Seven;Eight;Nine;Ten;Eleven", listScroll, listActive);
-			GuiTextBox(R(340, 380, 160, 24), text, 32, true);
+			GuiTextBox(R(340, 380, 160, 24), text, 32, frame < 3);
+			GuiTextBox(R(620, 400, 140, 24), keys, 32, frame >= 3);
 			GuiValueBox(R(380, 410, 120, 24), "Value", valueBox, 0, 100, true);
 			GuiScrollPanel(R(20, 240, 300, 160), "Scroll panel", R(0, 0, 500, 400), scroll, view);
 			GuiGrid(R(340, 240, 160, 120), null, 40, 4, cell);
@@ -92,7 +123,7 @@ class Main {
 			GuiSetIconScale(1);
 			GuiLabel(R(620, 530, 100, 20), "A label too long for its bounds");
 			GuiDropdownBox(R(780, 440, 140, 24), "One;Two;Three;Four", drop, true);
-			if (frame == 2)
+			if (frame == 8)
 				TakeScreenshotAsync("helix.png");
 			EndDrawing();
 			frame++;
