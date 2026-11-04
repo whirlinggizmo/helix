@@ -63,6 +63,8 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `tools/render_checks.py` | helix-render's examples and pixel tests on the GPU, natively (GL and SDL_GPU) on a private display and in Chromium (WebGL2) |
 | `tools/services_checks.py` | The services' examples on the platform's real adapters, natively on a private display and in Chromium |
 | `tools/private_display.py` | A private X display for native windows in checks (a module) |
+| `tools/bunnymark.py` | helix-raylib's 2D draw speed with raylib's textures_bunnymark (`engines/raylib/tests/bunnymark`): built for a page and natively (GL and SDL_GPU), and with `--reference` raylib's C, run at several counts into medians of mean and p95 frame time (`tools/bunnymark.cjs` runs the page) (Linux) |
+| `tools/bunnymark.cjs` | One bunnymark page run in headless Chromium on the GPU, printing the program's JSON line (run by `bunnymark.py`) |
 | `tools/raylib_parity.py` | helix-raylib against raylib's own C (`engines/raylib/parity`): each suite's C reference built against its raylib release (fetched, pinned by sha256, built into `build/raylib`), run on a private display, and helix-raylib's harness (Node and hxcpp) or program (natively) compared with it, within the suite's bars (Linux) |
 | `tools/remote_windows.py` | This checkout built and checked on a Windows machine over ssh |
 | `tools/sdl3.py` | The SDL3 library a native build links: the system's, or the pinned release made into `build/deps` |

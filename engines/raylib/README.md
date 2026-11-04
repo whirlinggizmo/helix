@@ -115,5 +115,6 @@ this library is built on that work. Portions are from raylib 5.5 (its default fo
 API description, `vendor/raylib/raylib_api.json`, with `raymath_api.json` and `rlgl_api.json` made from `raymath.h` and `rlgl.h` by raylib's parser), altered; zlib
 license, `vendor/raylib/LICENSE`. The meshes raylib generates with par_shapes are made by a port of its part of it, by Philip Rideout;
 MIT license, `vendor/par_shapes/LICENSE`.
+The bunnymark's texture, `tests/bunnymark/wabbit_alpha.png`, is raylib 5.5's `textures_bunnymark` resource, under the same zlib license.
 The `text` example's font is [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) Regular, Copyright 2020 The JetBrains Mono
 Project Authors, under the SIL Open Font License 1.1 (`examples/text/web/assets/OFL.txt`).
