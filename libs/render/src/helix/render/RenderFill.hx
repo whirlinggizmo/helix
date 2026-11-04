@@ -28,6 +28,7 @@ class RenderFill {
 	final fogged:ShaderUniform;
 	final toneMapped:ShaderUniform;
 	final skinned:ShaderUniform;
+	final boneOffset:ShaderUniform;
 	final boneMatrices:ShaderUniform;
 	final textureTransform:ShaderUniform;
 	final vertexColors:ShaderUniform;
@@ -58,6 +59,7 @@ class RenderFill {
 		fogged = shader.reserveUniform("fogged");
 		toneMapped = shader.reserveUniform("toneMapped");
 		skinned = shader.reserveUniform("skinned");
+		boneOffset = shader.reserveUniform("boneOffset");
 		boneMatrices = shader.reserveUniform("boneMatrices");
 		textureTransform = shader.reserveUniform("textureTransform");
 		vertexColors = shader.reserveUniform("vertexColors");

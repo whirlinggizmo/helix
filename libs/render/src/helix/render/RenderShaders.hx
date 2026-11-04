@@ -64,6 +64,7 @@ class RenderShaders {
 		"fogged" => "int",
 		"toneMapped" => "int",
 		"skinned" => "int",
+		"boneOffset" => "int",
 		"morphTargetCount" => "int",
 		"morphWeights" => "vec4",
 		"boneMatrices" => "mat4",

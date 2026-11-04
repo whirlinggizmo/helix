@@ -107,7 +107,8 @@ import helix.services.shaders.ShaderValues;
 	| `morphWeights`, `morphTargetCount` | vec4[16], int | A morphed mesh's weights, four a vec4, and how many. |
 	| `skinned` | int | 1 when the draw is skinned by `boneTexture` (four texels a bone, its skinning matrix's columns, read with `texelFetch`). |
 	| `boneMatrices` | mat4 array | The skin's matrices, as many as declared, for a shader written with an array (raylib's); zero past the skin's bones. |
-	| `boneTexture`, `morphTexture` | sampler2D | The skin's matrices; the targets' deltas. |
+	| `boneOffset` | int | The index in `boneTexture` of the draw's first bone; a bone's matrix is at `boneOffset` plus its index. |
+	| `boneTexture`, `morphTexture` | sampler2D | The frame's skins' matrices, every skinned draw's after the last's; the targets' deltas. |
 
 	The lights and `receiveShadows` are declared by `lighting.glsl`, not by the shader. With them the view's names (`View3D`) and the
 	lighting block's (`Batch3D`). A shader is given colors as stored but light, which is linear; nothing it writes is encoded after it:
