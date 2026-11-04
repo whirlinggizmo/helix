@@ -352,7 +352,9 @@ class GpuMesh3D {
 		return edgeBuffer;
 	}
 
-	// The box around the mesh as a skin poses it, by its joints' boxes, in the mesh's units before its transform.
+	// The box around the mesh as a skin poses it, by its joints' boxes, in the mesh's units before its transform. Each joint's box is
+	// moved by its center and its half sizes through the matrix's absolute values (Arvo's), which gives the box around its eight moved
+	// corners exactly.
 
 	@:allow(helix.render)
 	function skinnedBounds(skinning:Array<Matrix3D>, out:Bounds3D):Bounds3D {
@@ -362,12 +364,20 @@ class GpuMesh3D {
 			if (b.isEmpty || j >= skinning.length)
 				continue;
 			var m = skinning[j].values;
-			for (corner in 0...8) {
-				var x = corner & 1 == 0 ? b.minX : b.maxX,
-					y = corner & 2 == 0 ? b.minY : b.maxY,
-					z = corner & 4 == 0 ? b.minZ : b.maxZ;
-				out.expand(m[0] * x + m[4] * y + m[8] * z + m[12], m[1] * x + m[5] * y + m[9] * z + m[13], m[2] * x + m[6] * y + m[10] * z + m[14]);
-			}
+			var cx = (b.minX + b.maxX) * .5,
+				cy = (b.minY + b.maxY) * .5,
+				cz = (b.minZ + b.maxZ) * .5;
+			var hx = (b.maxX - b.minX) * .5,
+				hy = (b.maxY - b.minY) * .5,
+				hz = (b.maxZ - b.minZ) * .5;
+			var x = m[0] * cx + m[4] * cy + m[8] * cz + m[12],
+				y = m[1] * cx + m[5] * cy + m[9] * cz + m[13],
+				z = m[2] * cx + m[6] * cy + m[10] * cz + m[14];
+			var ex = Math.abs(m[0]) * hx + Math.abs(m[4]) * hy + Math.abs(m[8]) * hz,
+				ey = Math.abs(m[1]) * hx + Math.abs(m[5]) * hy + Math.abs(m[9]) * hz,
+				ez = Math.abs(m[2]) * hx + Math.abs(m[6]) * hy + Math.abs(m[10]) * hz;
+			out.expand(x - ex, y - ey, z - ez);
+			out.expand(x + ex, y + ey, z + ez);
 		}
 		return out;
 	}
