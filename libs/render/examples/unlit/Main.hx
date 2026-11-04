@@ -115,6 +115,8 @@ class Main {
 		batch.fillCircle(0, 0, 1.5, 0x8040c0ff, Matrix3D.fromRotation(1, 0, 0, -Math.PI / 2, place).appendTranslation(0, .01, 0, place));
 		batch.end();
 		renderer.endFrame();
+		if (framesLeft == 1)
+			Screenshot.save(graphics, system);
 		graphics.present();
 		return framesLeft < 0 || --framesLeft > 0;
 	}

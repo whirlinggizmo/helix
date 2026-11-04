@@ -2,7 +2,8 @@
 """Checks helix-render on the platform's real adapters: its examples (libs/render/examples/<name>) and its pixel tests (libs/render/tests/pixels),
 each built from its own hxml files, run natively on a private display (Linux) on each native build it has (GL, and SDL_GPU from
 build-native-gpu.hxml) and in a headless Chromium (WebGL2), as tools/platform_checks.py runs the platform's. An example's page is checked
-against its check.json (points and the colors expected there, each within a tolerance per channel) and its native runs by their exit;
+against its check.json (points and the colors expected there, each within a tolerance per channel), and so is each native run's last
+frame, which the example saves (`--screenshot`, libs/render/examples/Screenshot.hx);
 the pixel tests draw each stage-1 area through the renderer, read their pixels back and check them themselves, on each backend. Exits 1
 on any failure.
 
@@ -28,11 +29,21 @@ def example(name, browser):
     directory = EXAMPLES / name
     expected = json.loads((directory / 'check.json').read_text(encoding='utf-8'))
 
+    out = ROOT / 'build/results/render' / name
+    out.mkdir(parents=True, exist_ok=True)
+
+    def screenshot(label):
+        return out / f'native-{label}.png'
+
     def native_run(label, ran):
         if ran.returncode:
             return [f'exited {ran.returncode}\n{ran.stdout}{ran.stderr}']
-        print(f'{name}: native {label} ran {FRAMES} frames', flush=True)
-        return []
+        if not screenshot(label).is_file():
+            return ['saved no screenshot']
+        found = check_pixels(screenshot(label), expected)
+        if not found:
+            print(f'{name}: native {label} ran {FRAMES} frames, {len(expected["points"])} points checked', flush=True)
+        return found
 
     def page_run(printed, screenshot):
         found = check_pixels(screenshot, expected)
@@ -40,7 +51,11 @@ def example(name, browser):
             print(f'{name}: the page ran {FRAMES} frames, {len(expected["points"])} points checked', flush=True)
         return found
 
-    return run(name, directory, 'Main', browser, native_run, page_run)
+    def native_args(label):
+        screenshot(label).unlink(missing_ok=True)
+        return [f'--screenshot={screenshot(label)}']
+
+    return run(name, directory, 'Main', browser, native_run, page_run, native_args=native_args)
 
 
 def main():

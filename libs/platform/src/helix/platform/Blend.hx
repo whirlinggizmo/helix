@@ -17,14 +17,14 @@ import helix.platform.BlendOperation;
 	``` */
 abstract Blend(Int) to Int {
 	/** No blending: the color replaces the target's. */
-	public static final OPAQUE = new Blend(One, Zero);
+	public static inline final OPAQUE:Blend = new Blend(One, Zero);
 
 	/** The color blended over the target's by its alpha. The target's alpha becomes `a + destination alpha * (1 - a)`, so what is drawn over
 		a clear target stays as opaque as it was drawn. */
-	public static final ALPHA = new Blend(SourceAlpha, OneMinusSourceAlpha, Add, One, OneMinusSourceAlpha);
+	public static inline final ALPHA:Blend = new Blend(SourceAlpha, OneMinusSourceAlpha, Add, One, OneMinusSourceAlpha);
 
 	/** The color, multiplied by its alpha, added to the target's. It suits light, fire and glows. */
-	public static final ADDITIVE = new Blend(SourceAlpha, One, Add, One, One);
+	public static inline final ADDITIVE:Blend = new Blend(SourceAlpha, One, Add, One, One);
 
 	/** Creates a blend.
 

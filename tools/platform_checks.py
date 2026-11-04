@@ -91,10 +91,12 @@ def build(directory, hxml, env):
     subprocess.run(['haxe', hxml], cwd=directory, env=env, check=True)
 
 
-def run(name, directory, main, browser, native_run, page_run, native_frames=FRAMES, native_extra=None, query='', expected_errors=(), site=None):
+def run(name, directory, main, browser, native_run, page_run, native_frames=FRAMES, native_extra=None, query='', expected_errors=(), site=None,
+        native_args=None):
     """Builds and runs one program both ways, in directory with its main class main, the page in browser: native_run(label, completed) and
     page_run(printed, screenshot) say what's wrong with each run, as a list of problems. native_frames is how many frames a native run
-    lasts, which a private display doesn't pace; native_extra what a native run's environment adds; query what the page's query adds
+    lasts, which a private display doesn't pace; native_extra what a native run's environment adds; native_args(label) the arguments a
+    native run adds; query what the page's query adds
     (tools/page_check.cjs reads safeArea from it); expected_errors the console errors the page is meant to cause (each named by a part of it);
     site the URL the page is opened at, or None to have tools/page_check.cjs serve its web directory. The problems found."""
     import pins
@@ -118,7 +120,7 @@ def run(name, directory, main, browser, native_run, page_run, native_frames=FRAM
             place_runtimes(directory / output, found)
             program = directory / output / (main + '.exe' if sys.platform == 'win32' else main)
             with (nullcontext(dict(os.environ)) if DESKTOP else private_display()) as display:
-                ran = subprocess.run([str(program), f'--quit_after_frame={frames}'], cwd=directory, env=dict(display, **(native_extra or {}), SDL_AUDIO_DRIVER='dummy'), capture_output=True, text=True, encoding='utf-8', timeout=300)
+                ran = subprocess.run([str(program), f'--quit_after_frame={frames}'] + (native_args(label) if native_args else []), cwd=directory, env=dict(display, **(native_extra or {}), SDL_AUDIO_DRIVER='dummy'), capture_output=True, text=True, encoding='utf-8', timeout=300)
             problems += [f'native {label}: {p}' for p in native_run(label, ran)]
     else:
         print(f'{name}: native runs skipped here (a private display needs Linux; --desktop runs them on this machine\'s own)', flush=True)

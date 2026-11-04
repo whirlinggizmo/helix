@@ -65,9 +65,9 @@ var keepAlpha = new Blend(SourceAlpha, OneMinusSourceAlpha, Add, Zero, One);
 ```
 
 ```haxe
-static final OPAQUE(default, null):Blend
-static final ALPHA(default, null):Blend
-static final ADDITIVE(default, null):Blend
+static inline var OPAQUE:Blend
+static inline var ALPHA:Blend
+static inline var ADDITIVE:Blend
 var colorSource(get, never):BlendFactor
 var colorDestination(get, never):BlendFactor
 var alphaSource(get, never):BlendFactor
@@ -1765,8 +1765,8 @@ var floor = new Sampling(Linear, Repeat, Repeat, Linear, 8);
 ```
 
 ```haxe
-static final NEAREST(default, null):Sampling
-static final LINEAR(default, null):Sampling
+static inline var NEAREST:Sampling
+static inline var LINEAR:Sampling
 var filter(get, never):Filter
 var wrapU(get, never):Wrap
 var wrapV(get, never):Wrap

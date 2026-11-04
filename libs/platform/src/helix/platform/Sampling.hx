@@ -14,10 +14,10 @@ import helix.platform.Wrap;
  */
 abstract Sampling(Int) to Int {
 	/** Nearest filtering, clamped, for pixel art. */
-	public static final NEAREST = new Sampling(Nearest);
+	public static inline final NEAREST:Sampling = new Sampling(Nearest);
 
 	/** Linear filtering, clamped, for a smooth look. */
-	public static final LINEAR = new Sampling(Linear);
+	public static inline final LINEAR:Sampling = new Sampling(Linear);
 
 	/** Creates a sampling.
 

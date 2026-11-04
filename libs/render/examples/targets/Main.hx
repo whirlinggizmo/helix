@@ -117,6 +117,8 @@ class Main {
 		renderer.resetScissor();
 		batch.end();
 		renderer.endFrame();
+		if (framesLeft == 1)
+			Screenshot.save(graphics, system);
 		graphics.present();
 		return framesLeft < 0 || --framesLeft > 0;
 	}

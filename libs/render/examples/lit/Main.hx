@@ -149,6 +149,8 @@ class Main {
 		batch.drawMesh(cube, glowing, Matrix3D.fromRotation(0, 1, 0, t, place).appendTranslation(3.5, -.4, 2.2, place));
 		batch.end();
 		renderer.endFrame();
+		if (framesLeft == 1)
+			Screenshot.save(graphics, system);
 		graphics.present();
 		return framesLeft < 0 || --framesLeft > 0;
 	}
