@@ -40,7 +40,9 @@ class Parity {
 		for (d in f.pass.draws) {
 			if (d.buffers != null)
 				continue;
-			for (i in d.first...d.first + d.count) {
+			for (k in d.first...d.first + d.count) {
+				// Quads drawn through their indices, each one's four corners as two triangles, 0 1 2 and 0 2 3.
+				var i = d.indices == 0 ? k : Std.int(k / 6) * 4 + [0, 1, 2, 0, 2, 3][k % 6];
 				// raylib's 36-byte batch vertex: eight floats, then the color's four bytes.
 				var at = i * 36;
 				var v = [for (k in 0...8) if (depth || k != 2) Std.string(f.data.getFloat(at + k * 4))];

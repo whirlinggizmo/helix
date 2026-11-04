@@ -193,12 +193,19 @@ class RRlgl {
 			f.drawTexture = textureId;
 			textureId = 0;
 		}
-		quad.resize(0);
+		dropShortQuad();
 	}
 
 	/** Ends the vertices `rlBegin` started; a shape left short of its vertices isn't drawn. */
 	static function rlEnd():Void {
-		quad.resize(0);
+		dropShortQuad();
+	}
+
+	// Removes the corners of a quad left short of four.
+	static function dropShortQuad():Void {
+		if (quadCorners > 0)
+			Runtime.frame.dropVertices(quadCorners);
+		quadCorners = 0;
 	}
 
 	/** Adds a vertex, with the color, texture coordinate and normal set last.
@@ -224,19 +231,10 @@ class RRlgl {
 		@param z  The z. */
 	static function rlVertex3f(x:Float, y:Float, z:Float):Void {
 		var mode = Runtime.frame.drawMode;
-		if (mode != RL_QUADS) {
-			Runtime.frame.vertex(texture(), mode == RL_LINES, x, y, z, u, v, color);
-			return;
-		}
-		// A quad as two triangles, its first, second and third corners, then its first, third and fourth.
-		quad.push([x, y, z, u, v, color.r, color.g, color.b, color.a]);
-		if (quad.length < 4)
-			return;
-		for (corner in [0, 1, 2, 0, 2, 3]) {
-			var q = quad[corner];
-			Runtime.frame.vertex(texture(), false, q[0], q[1], q[2], q[3], q[4], new Color(Std.int(q[5]), Std.int(q[6]), Std.int(q[7]), Std.int(q[8])));
-		}
-		quad.resize(0);
+		// rlgl's modes are Frame's.
+		Runtime.frame.vertex(texture(), mode, x, y, z, u, v, color);
+		if (mode == RL_QUADS)
+			quadCorners = (quadCorners + 1) % 4;
 	}
 
 	/** Sets the next vertices' texture coordinate.
@@ -1589,7 +1587,8 @@ class RRlgl {
 	static var pushed = false;
 	static final transform = new Matrix3D();
 	static final stack:Array<Matrix3D> = [];
-	static final quad:Array<Array<Float>> = [];
+	// The corners of the quad being added, 0 to 3.
+	static var quadCorners = 0;
 	static var u = 0.;
 	static var v = 0.;
 	static var color = new Color(255, 255, 255, 255);

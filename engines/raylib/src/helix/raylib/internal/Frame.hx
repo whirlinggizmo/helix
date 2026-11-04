@@ -56,6 +56,13 @@ class Frame {
 		"vertexBoneWeights" => 8
 	];
 
+	/** rlgl's modes, as `rlBegin` takes them and a run of the batch keeps its vertices in: lines, triangles, and quads of four
+		vertices each, drawn as two triangles through `quadIndices`. */
+	public static inline final LINES = 1;
+
+	public static inline final TRIANGLES = 4;
+	public static inline final QUADS = 7;
+
 	/** The bytes of the one record of `constants`. */
 	static inline final CONSTANT_BYTES = 120;
 
@@ -91,6 +98,12 @@ class Frame {
 	/** The white texture shapes draw with, and a texture without an image reads as. */
 	public final white:Int;
 
+	// The index buffer quads are drawn through, each quad's first, second and third corners then its first, third and fourth; 0 until a
+	// quad is drawn. It holds quadCapacity quads, from the batch's first vertex.
+	var quadIndices = 0;
+
+	var quadCapacity = 0;
+
 	// One record of zeros, for the attributes in CONSTANTS, read as an instance's so every vertex has it.
 	final constants:Int;
 
@@ -123,9 +136,9 @@ class Frame {
 	public var wire = false;
 
 	/** Gives the points a run of the batch's triangles is drawn as, in rlgl's point mode (`rlEnablePointMode`): null while it is off.
-		`rlEnablePointMode` sets it to `pointsOfRun`, so a program drawing no points links none of it. It receives the run's first vertex
-		and its vertex count, and returns the first vertex and the count of the points. */
-	public var pointRun:Null<(first:Int, count:Int) -> Array<Int>> = null;
+		`rlEnablePointMode` sets it to `pointsOfRun`, so a program drawing no points links none of it. It receives the run's first vertex,
+		its vertex count and whether they are quads, and returns the first vertex and the count of the points. */
+	public var pointRun:Null<(first:Int, count:Int, quads:Bool) -> Array<Int>> = null;
 
 	/** Gives the points a mesh's triangles are drawn as, in rlgl's point mode: null while it is off. `rlEnablePointMode` sets it to
 		`pointsOfMesh`. It receives the mesh, its transform and whether it is drawn as instances, and returns the index buffer of the points
@@ -153,7 +166,7 @@ class Frame {
 
 	/** The mode of the draw call rlgl's next vertices join (`RL_LINES`, `RL_TRIANGLES` or `RL_QUADS`), as `rlBegin` sets it; each flush
 		starts a new one in `RL_QUADS`, as rlgl's batch does. */
-	public var drawMode = 7;
+	public var drawMode = QUADS;
 
 	/** The texture id of the draw call rlgl's next vertices join, as `rlSetTexture` and `rlBegin` set it; 0 for the white texture, as
 		each flush starts. */
@@ -396,7 +409,7 @@ class Frame {
 	/** Draws the batch, rlgl's `rlDrawRenderBatchActive`: its runs into the pass, each through the current program, matrices and state
 		(in wire mode, its triangles as their edges, those culling leaves; in point mode, their corners). */
 	public function flush():Void {
-		drawMode = 7;
+		drawMode = QUADS;
 		drawTexture = 0;
 		if (eyes != null)
 			eyes(() -> drawBatch(), false);
@@ -421,37 +434,85 @@ class Frame {
 	function drawBatch():Void {
 		var m = wire && cull ? Matrix3D.compose(view, projection, viewProjection).values : null;
 		for (run in batch) {
-			if (run.count == 0)
+			var quads = run.mode == QUADS, lines = run.mode == LINES;
+			// A quad's vertices are drawn once all four are in.
+			var count = quads ? run.count - run.count % 4 : run.count;
+			if (count == 0)
 				continue;
 			// GL's point mode: each triangle's corners, as points.
-			if (pointRun != null && !run.lines) {
-				var points = pointRun(run.first, run.count);
-				var d = immediate(run.texture, Points, points[0]);
+			if (pointRun != null && !lines) {
+				var points = pointRun(run.first, count, quads);
+				var d = immediate(run.texture, Points, points[0], false);
 				d.count = points[1];
 				pass.draws.push(d);
 				continue;
 			}
-			if (!wire || run.lines) {
-				var d = immediate(run.texture, run.lines ? Lines : Triangles, run.first);
-				d.count = run.count;
+			if (quads && !wire) {
+				var d = immediate(run.texture, Triangles, Std.int(run.first / 4) * 6, true);
+				d.count = Std.int(count / 4) * 6;
+				pass.draws.push(d);
+				continue;
+			}
+			if (!wire || lines) {
+				var d = immediate(run.texture, lines ? Lines : Triangles, run.first, false);
+				d.count = count;
 				pass.draws.push(d);
 				continue;
 			}
 			// GL's line mode: each triangle's edges, written after the batch's vertices, unless culling drops it.
-			var d = immediate(run.texture, Lines, vertices);
-			for (k in 0...Std.int(run.count / 3)) {
-				var a = (run.first + k * 3) * STRIDE, b = a + STRIDE, c = b + STRIDE;
+			var d = immediate(run.texture, Lines, vertices, false);
+			for (k in 0...Std.int(corners(count, quads) / 3)) {
+				var a = corner(run.first, quads, k * 3) * STRIDE,
+					b = corner(run.first, quads, k * 3 + 1) * STRIDE,
+					c = corner(run.first, quads, k * 3 + 2) * STRIDE;
 				if (m != null
 					&& culled(m, data.getFloat(a), data.getFloat(a + 4), data.getFloat(a + 8), data.getFloat(b), data.getFloat(b + 4), data.getFloat(b + 8),
 						data.getFloat(c), data.getFloat(c + 4), data.getFloat(c + 8)))
 					continue;
-				for (corner in [a, b, b, c, c, a]) {
-					copyVertex(corner);
-					d.count++;
-				}
+				copyVertex(a);
+				copyVertex(b);
+				copyVertex(b);
+				copyVertex(c);
+				copyVertex(c);
+				copyVertex(a);
+				d.count += 6;
 			}
 			pass.draws.push(d);
 		}
+	}
+
+	// The corners of a run's triangles: each quad's two triangles have six.
+	static inline function corners(count:Int, quads:Bool):Int
+		return quads ? Std.int(count / 4) * 6 : count;
+
+	// The vertex at a corner of a run's triangles: a quad's first, second and third corners, then its first, third and fourth.
+	static inline function corner(first:Int, quads:Bool, k:Int):Int {
+		if (!quads)
+			return first + k;
+		var j = k % 6;
+		return first + Std.int(k / 6) * 4 + (j < 3 ? j : j == 3 ? 0 : j - 1);
+	}
+
+	// The quads' index buffer, made to hold the quads up to a vertex, the batch's vertices all at most.
+	function quadIndexBuffer(end:Int):Int {
+		var needed = Std.int((end + 3) / 4);
+		if (needed <= quadCapacity)
+			return quadIndices;
+		if (quadIndices != 0)
+			retire(quadIndices);
+		quadCapacity = Std.int(Math.max(needed, data.length / STRIDE / 4));
+		var bytes = Bytes.alloc(quadCapacity * 24);
+		for (q in 0...quadCapacity) {
+			var at = q * 24, v = q * 4;
+			bytes.setInt32(at, v);
+			bytes.setInt32(at + 4, v + 1);
+			bytes.setInt32(at + 8, v + 2);
+			bytes.setInt32(at + 12, v);
+			bytes.setInt32(at + 16, v + 2);
+			bytes.setInt32(at + 20, v + 3);
+		}
+		quadIndices = graphics.createStaticBuffer(bytes, bytes.length, true);
+		return quadIndices;
 	}
 
 	/** Flushes the batch, as a change rlgl flushes for does: `flush`. */
@@ -462,24 +523,27 @@ class Frame {
 	/** Adds an immediate vertex.
 
 		@param texture  The texture.
-		@param lines  Whether it makes lines rather than triangles.
+		@param mode  What it makes, with the vertices before it in its run: `LINES`, `TRIANGLES` or `QUADS`.
 		@param x  Position.
 		@param y  Position.
 		@param z  Position.
 		@param u  Texture coordinate.
 		@param v  Texture coordinate.
 		@param color  Its color. */
-	public function vertex(texture:Int, lines:Bool, x:Float, y:Float, z:Float, u:Float, v:Float, color:helix.raylib.Color):Void {
+	public function vertex(texture:Int, mode:Int, x:Float, y:Float, z:Float, u:Float, v:Float, color:helix.raylib.Color):Void {
 		if (transform != null) {
 			transform.transformPoint(x, y, z, moved);
 			x = moved.x;
 			y = moved.y;
 			z = moved.z;
 		}
-		if (open == null || open.texture != texture || open.lines != lines) {
+		if (open == null || open.texture != texture || open.mode != mode) {
+			// A run of quads starts at a multiple of four, where the quads' indices for it start.
+			if (mode == QUADS)
+				vertices = (vertices + 3) & ~3;
 			open = {
 				texture: texture,
-				lines: lines,
+				mode: mode,
 				first: vertices,
 				count: 0
 			};
@@ -511,6 +575,17 @@ class Frame {
 		#end
 	}
 
+	/** Removes the last vertices added, a shape left short of its corners.
+
+		@param count  How many, at most those of the run being added to. */
+	public function dropVertices(count:Int):Void {
+		if (open == null)
+			return;
+		var n = count < open.count ? count : open.count;
+		open.count -= n;
+		vertices -= n;
+	}
+
 	// Where the next vertex goes in the buffer, grown to hold it.
 	function room():Int {
 		var at = vertices * STRIDE;
@@ -530,24 +605,29 @@ class Frame {
 	}
 
 	/** Returns the points a run of the batch's triangles is drawn as in point mode, `pointRun` while it is on: each whole triangle's
-		corners, in order; with culling, those of the triangles it leaves, copied after the batch's vertices, as GL culls the triangles
-		whose corners it draws.
+		corners, in order (a quad's two triangles', six); with culling, those of the triangles it leaves. Those not in the run in order are
+		copied after the batch's vertices, as GL culls the triangles whose corners it draws.
 
 		@param first  The run's first vertex.
 		@param count  Its vertex count.
+		@param quads  Whether its vertices are quads.
 		@return  The first vertex of the points and their count. */
-	public function pointsOfRun(first:Int, count:Int):Array<Int> {
-		if (!cull)
+	public function pointsOfRun(first:Int, count:Int, quads:Bool):Array<Int> {
+		if (!cull && !quads)
 			return [first, count - count % 3];
-		var m = Matrix3D.compose(view, projection, viewProjection).values,
+		var m = cull ? Matrix3D.compose(view, projection, viewProjection).values : null,
 			from = vertices;
-		for (k in 0...Std.int(count / 3)) {
-			var a = (first + k * 3) * STRIDE, b = a + STRIDE, c = b + STRIDE;
-			if (culled(m, data.getFloat(a), data.getFloat(a + 4), data.getFloat(a + 8), data.getFloat(b), data.getFloat(b + 4), data.getFloat(b + 8),
-				data.getFloat(c), data.getFloat(c + 4), data.getFloat(c + 8)))
+		for (k in 0...Std.int(corners(count, quads) / 3)) {
+			var a = corner(first, quads, k * 3) * STRIDE,
+				b = corner(first, quads, k * 3 + 1) * STRIDE,
+				c = corner(first, quads, k * 3 + 2) * STRIDE;
+			if (m != null
+				&& culled(m, data.getFloat(a), data.getFloat(a + 4), data.getFloat(a + 8), data.getFloat(b), data.getFloat(b + 4), data.getFloat(b + 8),
+					data.getFloat(c), data.getFloat(c + 4), data.getFloat(c + 8)))
 				continue;
-			for (corner in [a, b, c])
-				copyVertex(corner);
+			copyVertex(a);
+			copyVertex(b);
+			copyVertex(c);
 		}
 		return [from, vertices - from];
 	}
@@ -585,10 +665,11 @@ class Frame {
 		return [buffer, corners.length];
 	}
 
-	// A draw of immediate vertices from first, through the current program, matrices and state.
-	function immediate(texture:Int, primitive:Primitive, first:Int):Draw {
+	// A draw of immediate vertices from first, through the current program, matrices and state; indexed, of quads through the quads'
+	// indices, first and the count then being indices.
+	function immediate(texture:Int, primitive:Primitive, first:Int, indexed:Bool):Draw {
 		var p = program, state = states();
-		var key = 'i${(primitive : Int)}$state';
+		var key = 'i${indexed ? "x" : ""}${(primitive : Int)}$state';
 		var pipeline = p.pipeline(key, () -> graphics.createPipeline({
 			shader: p.handle,
 			buffers: [
@@ -607,7 +688,7 @@ class Frame {
 				}
 			],
 			primitive: primitive,
-			indexed: false,
+			indexed: indexed,
 			blend: colorBlend ? blend : Blend.OPAQUE,
 			colorWrite: colorMask,
 			depthTest: depthTest ? LessEqual : Off,
@@ -626,7 +707,7 @@ class Frame {
 		return {
 			pipeline: pipeline,
 			buffers: null,
-			indices: 0,
+			indices: indexed ? quadIndexBuffer(vertices) : 0,
 			first: first,
 			count: 0,
 			texture: texture,
@@ -948,6 +1029,8 @@ class Frame {
 			graphics.disposeBuffer(buffer);
 		graphics.disposeTexture(white);
 		graphics.disposeBuffer(constants);
+		if (quadIndices != 0)
+			graphics.disposeBuffer(quadIndices);
 		for (b in retired)
 			graphics.disposeBuffer(b);
 		defaultProgram.dispose();
@@ -998,7 +1081,8 @@ private class Draw {
 @:structInit
 private class Run {
 	public final texture:Int;
-	public final lines:Bool;
+	// LINES, TRIANGLES or QUADS.
+	public final mode:Int;
 	public final first:Int;
 	public var count:Int;
 }

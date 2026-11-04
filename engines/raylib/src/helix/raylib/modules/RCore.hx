@@ -2376,7 +2376,7 @@ class RCore {
 	// An immediate vertex in 2D, at z 0.
 
 	static inline function flat(texture:Int, x:Float, y:Float, u:Float, v:Float, color:Color):Void {
-		Runtime.frame.vertex(texture, false, x, y, 0, u, v, color);
+		Runtime.frame.vertex(texture, helix.raylib.internal.Frame.TRIANGLES, x, y, 0, u, v, color);
 	}
 
 	// ---- 2D camera ----
