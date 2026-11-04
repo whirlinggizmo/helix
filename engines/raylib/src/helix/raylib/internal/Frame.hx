@@ -487,13 +487,28 @@ class Frame {
 		}
 		open.count++;
 		var at = room();
-		for (i => value in [x, y, z, u, v, nx, ny, nz])
-			data.setFloat(at + i * 4, value);
+		put(at, x);
+		put(at + 4, y);
+		put(at + 8, z);
+		put(at + 12, u);
+		put(at + 16, v);
+		put(at + 20, nx);
+		put(at + 24, ny);
+		put(at + 28, nz);
 		data.set(at + 32, color.r);
 		data.set(at + 33, color.g);
 		data.set(at + 34, color.b);
 		data.set(at + 35, color.a);
 		vertices++;
+	}
+
+	// Writes a float into the buffer where room made room for it: natively without Bytes.setFloat's bounds check and call.
+	inline function put(at:Int, value:Float):Void {
+		#if cpp
+		untyped __global__.__hxcpp_memory_set_float(data.getData(), at, value);
+		#else
+		data.setFloat(at, value);
+		#end
 	}
 
 	// Where the next vertex goes in the buffer, grown to hold it.
@@ -939,47 +954,51 @@ class Frame {
 	}
 }
 
-private typedef Pass = {
+@:structInit
+private class Pass {
 	// The render target, 0 for the screen, or -1 for no pass: updates alone, between passes.
-	final target:Int;
+	public final target:Int;
 	// The color the pass is cleared to, 0xAARRGGBB, or null to keep what a render texture holds (the screen's black).
-	var clear:Null<Int>;
-	var width:Float;
-	var height:Float;
-	final draws:Array<Draw>;
+	public var clear:Null<Int>;
+	public var width:Float;
+	public var height:Float;
+	public final draws:Array<Draw>;
 	// Textures' rectangles replaced before the pass begins.
-	final updates:Array<Update>;
+	public final updates:Array<Update>;
 }
 
-private typedef Update = {
-	final texture:Int;
-	final x:Int;
-	final y:Int;
-	final width:Int;
-	final height:Int;
-	final rgba:Bytes;
+@:structInit
+private class Update {
+	public final texture:Int;
+	public final x:Int;
+	public final y:Int;
+	public final width:Int;
+	public final height:Int;
+	public final rgba:Bytes;
 }
 
-private typedef Draw = {
-	final pipeline:Int;
-	final buffers:Null<Array<Int>>;
-	final indices:Int;
-	final first:Int;
-	var count:Int;
-	final texture:Int;
-	final primitive:Primitive;
-	final scissor:Null<Array<Float>>;
-	final viewport:Null<Array<Int>>;
-	final textures:Array<Int>;
+@:structInit
+private class Draw {
+	public final pipeline:Int;
+	public final buffers:Null<Array<Int>>;
+	public final indices:Int;
+	public final first:Int;
+	public var count:Int;
+	public final texture:Int;
+	public final primitive:Primitive;
+	public final scissor:Null<Array<Float>>;
+	public final viewport:Null<Array<Int>>;
+	public final textures:Array<Int>;
 	// Whether each slot's sampler is a samplerCube.
-	final cubes:Array<Bool>;
-	final uniforms:Array<Null<Bytes>>;
-	final instances:Int;
+	public final cubes:Array<Bool>;
+	public final uniforms:Array<Null<Bytes>>;
+	public final instances:Int;
 }
 
-private typedef Run = {
-	final texture:Int;
-	final lines:Bool;
-	final first:Int;
-	var count:Int;
+@:structInit
+private class Run {
+	public final texture:Int;
+	public final lines:Bool;
+	public final first:Int;
+	public var count:Int;
 }

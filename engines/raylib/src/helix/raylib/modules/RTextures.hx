@@ -74,8 +74,7 @@ class RTextures {
 		@param posY  The y.
 		@param tint  The color it is multiplied by; `WHITE` keeps it as it is. */
 	static function DrawTexture(texture:Texture2D, posX:Int, posY:Int, tint:Color):Void {
-		DrawTexturePro(texture, new Rectangle(0, 0, texture.width, texture.height), new Rectangle(posX, posY, texture.width, texture.height), new Vector2(),
-			0, tint);
+		quad(texture, 0, 0, texture.width, texture.height, posX, posY, texture.width, texture.height, 0, 0, 0, tint);
 	}
 
 	/** Draws a texture, its top-left corner at a point.
@@ -84,8 +83,7 @@ class RTextures {
 		@param position  The point.
 		@param tint  The color it is multiplied by. */
 	static function DrawTextureV(texture:Texture2D, position:Vector2, tint:Color):Void {
-		DrawTexturePro(texture, new Rectangle(0, 0, texture.width, texture.height), new Rectangle(position.x, position.y, texture.width, texture.height),
-			new Vector2(), 0, tint);
+		quad(texture, 0, 0, texture.width, texture.height, position.x, position.y, texture.width, texture.height, 0, 0, 0, tint);
 	}
 
 	/** Draws a texture turned about its top-left corner and scaled.
@@ -96,8 +94,7 @@ class RTextures {
 		@param scale  The scale.
 		@param tint  The color it is multiplied by. */
 	static function DrawTextureEx(texture:Texture2D, position:Vector2, rotation:Float, scale:Float, tint:Color):Void {
-		DrawTexturePro(texture, new Rectangle(0, 0, texture.width, texture.height),
-			new Rectangle(position.x, position.y, texture.width * scale, texture.height * scale), new Vector2(), rotation, tint);
+		quad(texture, 0, 0, texture.width, texture.height, position.x, position.y, texture.width * scale, texture.height * scale, 0, 0, rotation, tint);
 	}
 
 	/** Draws part of a texture. A negative source width or height flips it.
@@ -107,7 +104,7 @@ class RTextures {
 		@param position  Where its top-left corner goes.
 		@param tint  The color it is multiplied by. */
 	static function DrawTextureRec(texture:Texture2D, source:Rectangle, position:Vector2, tint:Color):Void {
-		DrawTexturePro(texture, source, new Rectangle(position.x, position.y, Math.abs(source.width), Math.abs(source.height)), new Vector2(), 0, tint);
+		quad(texture, source.x, source.y, source.width, source.height, position.x, position.y, Math.abs(source.width), Math.abs(source.height), 0, 0, 0, tint);
 	}
 
 	/** Draws part of a texture into a rectangle, turned about an origin. A negative source width or height flips it.
@@ -119,38 +116,50 @@ class RTextures {
 		@param rotation  Clockwise, in degrees.
 		@param tint  The color it is multiplied by. */
 	static function DrawTexturePro(texture:Texture2D, source:Rectangle, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void {
+		quad(texture, source.x, source.y, source.width, source.height, dest.x, dest.y, dest.width, dest.height, origin.x, origin.y, rotation, tint);
+	}
+
+	// Part of a texture into a rectangle turned about an origin, as DrawTexturePro draws it, from numbers alone so a draw allocates nothing.
+	static function quad(texture:Texture2D, sx:Float, sy:Float, sw:Float, sh:Float, dx:Float, dy:Float, dw:Float, dh:Float, ox:Float, oy:Float,
+			rotation:Float, tint:Color):Void {
 		if (texture.id == 0 || texture.width == 0 || texture.height == 0)
 			return;
-		var u0 = source.x / texture.width, v0 = source.y / texture.height;
-		var u1 = (source.x + Math.abs(source.width)) / texture.width,
-			v1 = (source.y + Math.abs(source.height)) / texture.height;
-		if (source.width < 0) {
+		var u0 = sx / texture.width, v0 = sy / texture.height;
+		var u1 = (sx + Math.abs(sw)) / texture.width,
+			v1 = (sy + Math.abs(sh)) / texture.height;
+		if (sw < 0) {
 			var t = u0;
 			u0 = u1;
 			u1 = t;
 		}
-		if (source.height < 0) {
+		if (sh < 0) {
 			var t = v0;
 			v0 = v1;
 			v1 = t;
 		}
-		var angle = rotation * Math.PI / 180,
-			c = Math.cos(angle),
-			s = Math.sin(angle);
-		var xs = [-origin.x, dest.width - origin.x],
-			ys = [-origin.y, dest.height - origin.y];
 		if (texture.flipped) {
 			v0 = 1 - v0;
 			v1 = 1 - v1;
 		}
+		// The corners from the origin, turned: unturned, the sine and cosine aren't computed.
+		var x0 = -ox, x1 = dw - ox, y0 = -oy, y1 = dh - oy;
+		var c = 1., s = 0.;
+		if (rotation != 0) {
+			var angle = rotation * Math.PI / 180;
+			c = Math.cos(angle);
+			s = Math.sin(angle);
+		}
 		var handle = Textures.handle(texture.id);
-		var corner = (i:Int, j:Int, u:Float, v:Float) -> flat(handle, dest.x + xs[i] * c - ys[j] * s, dest.y + xs[i] * s + ys[j] * c, u, v, tint);
-		corner(0, 0, u0, v0);
-		corner(0, 1, u0, v1);
-		corner(1, 1, u1, v1);
-		corner(0, 0, u0, v0);
-		corner(1, 1, u1, v1);
-		corner(1, 0, u1, v0);
+		var ax = dx + x0 * c - y0 * s, ay = dy + x0 * s + y0 * c;
+		var bx = dx + x0 * c - y1 * s, by = dy + x0 * s + y1 * c;
+		var cx = dx + x1 * c - y1 * s, cy = dy + x1 * s + y1 * c;
+		var ex = dx + x1 * c - y0 * s, ey = dy + x1 * s + y0 * c;
+		flat(handle, ax, ay, u0, v0, tint);
+		flat(handle, bx, by, u0, v1, tint);
+		flat(handle, cx, cy, u1, v1, tint);
+		flat(handle, ax, ay, u0, v0, tint);
+		flat(handle, cx, cy, u1, v1, tint);
+		flat(handle, ex, ey, u1, v0, tint);
 	}
 
 	// ---- Colors ----

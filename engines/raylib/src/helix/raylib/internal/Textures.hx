@@ -312,17 +312,18 @@ class Textures {
 	}
 }
 
-private typedef Entry = {
-	final path:String;
-	var image:Null<Image>;
+@:structInit
+private class Entry {
+	public final path:String;
+	public var image:Null<Image>;
 	// Its mipmaps while it isn't on the GPU, or null for none.
-	var ?levels:Null<Array<haxe.io.Bytes>>;
+	public var levels:Null<Array<haxe.io.Bytes>> = null;
 	// Whether image is its own, so changing it changes no one else's (a file's image is shared with its other loads).
-	var ?owned:Bool;
-	var gpu:Int;
-	var refs:Int;
-	var held:Int;
-	var ?sampling:helix.platform.Sampling;
+	public var owned:Bool = false;
+	public var gpu:Int;
+	public var refs:Int;
+	public var held:Int;
+	public var sampling:Null<helix.platform.Sampling> = null;
 	// A cubemap's size, and its levels while it isn't on the GPU (null once it is); null for a 2D texture.
-	var ?cube:Null<{size:Int, levels:Null<Array<haxe.io.Bytes>>}>;
+	public var cube:Null<{size:Int, levels:Null<Array<haxe.io.Bytes>>}> = null;
 }
