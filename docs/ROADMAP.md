@@ -22,8 +22,7 @@
   against a whole-program rewrite into callbacks. A `Future` of our own over the callbacks, cross-target, may serve the managed layer,
   as Haxe has none (`js.lib.Promise` is the browser's alone). Every raylib 5.5 function is in; what refuses to compile
   does so on purpose (blocking loads, rlgl's GL handles, what a page can't do), naming itself. Platform changes it would like,
-  for review: a sound's length and the position it plays at in services' `Audio` (raylib's `GetMusicTimeLength`,
-  `GetMusicTimePlayed` and `SeekMusicStream` refuse until then), and a page's cache in OPFS readable at once from the main thread (a worker holding OPFS's sync handles, the page
+  for review: a page's cache in OPFS readable at once from the main thread (a worker holding OPFS's sync handles, the page
   spinning on a SharedArrayBuffer for the reply, as emscripten does), which needs the page cross-origin isolated (COOP and COEP), so
   only ever an option a program chooses, never the default.
 - **raygui on helix-raylib (`helix.raylib.Raygui`, imported apart as `Raymath` is):** raylib's own immediate-mode GUI, its API as
