@@ -546,9 +546,9 @@ class RGui {
 				case TEXT_ALIGN_LEFT:
 					x = bounds.x;
 				case TEXT_ALIGN_CENTER:
-					x = bounds.x + bounds.width / 2 - idiv(textSizeX, 2);
+					x = f32(f32(bounds.x + f32(bounds.width / 2)) - idiv(textSizeX, 2));
 				case TEXT_ALIGN_RIGHT:
-					x = bounds.x + bounds.width - textSizeX;
+					x = f32(f32(bounds.x + bounds.width) - textSizeX);
 				default:
 			}
 			if (textSizeX > bounds.width && byteAt(b, line) != 0)
@@ -557,9 +557,9 @@ class RGui {
 				case TEXT_ALIGN_TOP:
 					y = bounds.y + posOffsetY;
 				case TEXT_ALIGN_MIDDLE:
-					y = bounds.y + posOffsetY + bounds.height / 2 - totalHeight / 2 + pixelOffset(bounds.height);
+					y = f32(f32(f32(bounds.y + posOffsetY) + f32(bounds.height / 2)) - f32(totalHeight / 2)) + pixelOffset(bounds.height);
 				case TEXT_ALIGN_BOTTOM:
-					y = bounds.y + posOffsetY + bounds.height - totalHeight + pixelOffset(bounds.height);
+					y = f32(f32(f32(bounds.y + posOffsetY) + bounds.height) - totalHeight) + pixelOffset(bounds.height);
 				default:
 			}
 			x = Std.int(x);

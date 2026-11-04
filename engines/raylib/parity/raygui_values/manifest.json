@@ -1,0 +1,18 @@
+{
+  "oracle": "5.5",
+  "covers": "raygui 4.5-dev's default style (every control's 24 properties), GuiSetStyle's propagation, GuiIconText, the built-in icons, lock and state; over frames of scripted mouse input, what each control returns and changes: button, toggle, check box, combo box, dropdown box, toggle group across rows, toggle slider, slider dragged past its end and back, slider bar, progress bar, spinner, value box, list view (wheel, choose, unchoose, its scroll bar), scroll panel (wheel, view), grid cell, color panel, hue and alpha bars, color pickers, message box buttons and close, label button; and every vertex those controls batch (shapes texture coordinates and colors included), text with an icon, cut, and wrapped by character; GuiLoadStyle on a text style (a font line naming a missing font, falling back to the default font at size 10, and a last line with no break, unread) and a binary one, and GuiLoadIcons with the icons' names (GuiLoadStyleAsync and GuiLoadIconsAsync on helix-raylib's side)",
+  "kind": "values",
+  "main": "RayguiBits",
+  "reference": "ref.c",
+  "harness": [
+    "RayguiBits.hx"
+  ],
+  "assets": {
+    "src/raygui.h": "raylib:examples/shapes/raygui.h",
+    "web/style.rgs": "makestyles.py",
+    "web/dark.rgs": "makestyles.py",
+    "web/icons.rgi": "makestyles.py"
+  },
+  "tolerance": 1e-08,
+  "notes": "raygui computes in floats, helix-raylib's Raygui in doubles rounded to floats where raygui's rounding decides a pixel (text placed at a third, a color's channel): the values differ by at most 2e-9, its vertices not at all, on js and cpp. raygui's input functions read the script by macro in ref.c; RayguiBits.hx plays it into the automation state. Text editing (GetCharPressed) is in raygui_input, as the harness has no keyboard."
+}

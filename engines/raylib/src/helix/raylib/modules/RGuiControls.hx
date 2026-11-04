@@ -420,12 +420,8 @@ class RGuiControls {
 		var items = textSplit(text, ";".code, null), itemCount = items.length;
 		var border = GuiGetStyle(SLIDER, BORDER_WIDTH),
 			padding = GuiGetStyle(SLIDER, SLIDER_PADDING);
-		var slider = new Rectangle(0, bounds.y
-			+ border
-			+ padding, (bounds.width - 2 * border - (itemCount + 1) * padding) / itemCount,
-			bounds.height
-			- 2 * border
-			- 2 * padding);
+		var width = f32((bounds.width - 2 * border - (itemCount + 1) * padding) / itemCount);
+		var slider = new Rectangle(0, bounds.y + border + padding, width, bounds.height - 2 * border - 2 * padding);
 		if (state != STATE_DISABLED && !guiLocked) {
 			if (CheckCollisionPointRec(GetMousePosition(), bounds)) {
 				if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
@@ -442,7 +438,7 @@ class RGuiControls {
 		}
 		if (active[0] >= itemCount)
 			active[0] = 0;
-		slider.x = bounds.x + border + (active[0] + 1) * padding + active[0] * slider.width;
+		slider.x = f32(bounds.x + border + (active[0] + 1) * padding + f32(active[0] * slider.width));
 		drawRectangle(bounds, border, styleColor(TOGGLE, BORDER + state * 3), styleColor(TOGGLE, BASE_COLOR_NORMAL));
 		if (state == STATE_NORMAL)
 			drawRectangle(slider, 0, BLANK, styleColor(SLIDER, BASE_COLOR_PRESSED));
@@ -451,10 +447,11 @@ class RGuiControls {
 		else if (state == STATE_PRESSED)
 			drawRectangle(slider, 0, BLANK, styleColor(SLIDER, BASE_COLOR_PRESSED));
 		if (text != null) {
-			var width = stringWidth(text),
+			var textWidth = stringWidth(text),
 				size = GuiGetStyle(DEFAULT, TEXT_SIZE);
-			var bounds2 = new Rectangle(slider.x + slider.width / 2 - width / 2., bounds.y + bounds.height / 2 - idiv(size, 2), width, size);
-			drawText(items[active[0]], bounds2, GuiGetStyle(TOGGLE, TEXT_ALIGNMENT), Fade(styleColor(TOGGLE, TEXT + state * 3), guiAlpha));
+			var x = f32(f32(slider.x + f32(slider.width / 2)) - textWidth / 2.);
+			drawText(items[active[0]], new Rectangle(x, bounds.y + bounds.height / 2 - idiv(size, 2), textWidth, size), GuiGetStyle(TOGGLE, TEXT_ALIGNMENT),
+				Fade(styleColor(TOGGLE, TEXT + state * 3), guiAlpha));
 		}
 		return result;
 	}

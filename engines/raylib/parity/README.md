@@ -75,6 +75,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `vr` | 5.5 | pixels | raylib's VR simulator: both eyes drawn into a render texture (shapes and a model), drawn through its distortion shader |
 | `raygui` | 5.5 | pixels | raygui 4.5-dev's controls in each state `GuiSetState` sets, its C built against raylib 5.5 |
 | `raygui_input` | 5.5 | pixels | raygui's containers, lists, text editing, color pickers, icons, tooltips and wrapped text over three frames of played input |
+| `raygui_values` | 5.5 | values | raygui's default style, what each control returns and changes over scripted mouse input, and the vertices the controls batch |
 
 Each suite's manifest says in full what it covers (`covers`), and `notes` say why a bar is where it is.
 
