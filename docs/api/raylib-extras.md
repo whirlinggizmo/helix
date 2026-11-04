@@ -381,6 +381,8 @@ Provides the async versions of raylib 5.5's model, material and animation loads 
 
 Each answers at a later poll, never during the call: `done` or `loaded` once it is done, `failed` with the reason when it is refused, logged as raylib's warning would be when `failed` is omitted.
 
+And a model's bounds as posed, which raylib's `GetModelBoundingBox` leaves at the bind pose: `GetModelBoundingBoxPosed`.
+
 ### models: the model, material and animation loads and mesh writes in place of rmodels' that wait
 
 ```haxe
@@ -408,6 +410,16 @@ static function ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:() -> Vo
   - `fileName`: The file; its name, upper case, names the defines and the arrays.
   - `done`: Optional. Called once the file is written, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+### models: a skinned model's bounds as posed
+
+```haxe
+static function GetModelBoundingBoxPosed(model:Model):BoundingBox
+```
+
+- `GetModelBoundingBoxPosed`: Returns a model's bounds as its last `UpdateModelAnimation` (or `UpdateModelAnimationEx`) posed it: `GetModelBoundingBox`'s box, each skinned mesh bounded by its vertices where its bones put them rather than where the skin was bound. A mesh never posed, or without bones, counts as it is, and so does a vertex no bone weights. It is exact whatever shader draws the mesh, as it works the positions out from the pose itself, allocating nothing; that is each skinned vertex moved by its bones, on the CPU, each call. As `GetModelBoundingBox`, its least and most corners are then moved by the model's transform (a turned model's box is not its bounds).
+  - `model`: The model.
+  - returns: The box.
 
 ### Macros, run as the program builds
 

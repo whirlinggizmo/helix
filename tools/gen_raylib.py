@@ -73,8 +73,10 @@ TARGETS = {
     'extras/Files.hx': ([('RFilesAsync', "files: the file reads, writes and questions in place of rcore's that wait for a file")], None, 'Files'),
     'extras/Textures.hx': ([('RTexturesAsync', "textures: the image and texture loads and writes in place of rtextures' that wait")], None, 'Textures'),
     'extras/Text.hx': ([('RTextAsync', "text: the font loads and writes in place of rtext's that wait")], None, 'Text'),
-    'extras/Models.hx': ([('RModelsAsync', "models: the model, material and animation loads and mesh writes in place of rmodels' that wait")], None,
-                         'Models'),
+    'extras/Models.hx': ([
+        ('RModelsAsync', "models: the model, material and animation loads and mesh writes in place of rmodels' that wait"),
+        ('RModelsPosed', "models: a skinned model's bounds as posed"),
+    ], None, 'Models'),
     'extras/Audio.hx': ([('RAudioAsync', "audio: the sound, wave and music loads and wave writes in place of raudio's that wait")], None, 'Audio'),
     'extras/Device.hx': ([
         ('RDevice', "device: the safe area, run options, the device, the window's abilities, orientation and tilt"),

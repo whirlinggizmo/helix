@@ -51,6 +51,7 @@ class Everything {
 		"RMath",
 		"RModels",
 		"RModelsAsync",
+		"RModelsPosed",
 		"RRlgl",
 		"RShapes",
 		"RText",

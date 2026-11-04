@@ -15,7 +15,8 @@ import helix.raylib.extras.Audio.*;
 	"helix.raylib.internal.DroppedFiles", "helix.raylib.internal.FontAtlases", "helix.raylib.internal.GuiIcons", "helix.raylib.internal.Mipmaps",
 	"helix.raylib.internal.ObjModels", "helix.raylib.internal.ParShapes", "helix.raylib.internal.Stereo", "helix.raylib.internal.Waves",
 	"helix.raylib.modules.RDevice", "helix.raylib.modules.RGui", "helix.raylib.modules.RGuiAsync", "helix.raylib.modules.RGuiControls",
-	"helix.raylib.modules.RGuiSkins", "helix.services.input.Tilt", "helix.services.input.TiltAxis", "helix.services.screenshots")
+	"helix.raylib.modules.RGuiSkins", "helix.raylib.modules.RModelsPosed", "helix.services.input.Tilt", "helix.services.input.TiltAxis",
+	"helix.services.screenshots")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

@@ -2,6 +2,7 @@ import haxe.io.Bytes;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.extras.Lights.*;
+import helix.raylib.extras.Models.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.Program;
@@ -124,6 +125,18 @@ void main() {
 		var bytes:Bytes = pass.draws[pass.draws.length - 1].uniforms[place.blockSlot];
 		check(bytes.getFloat(place.offset + 4) == 0.25, "a value set on the lit shader reaches its twin's draws");
 		check(lastOffset(twin) >= 1, "the twin's draw reads its bones");
+
+		// The posed box: raised by one where GetModelBoundingBox keeps the bind pose's, never posed the bind pose's, and alike through a
+		// shader that skins itself (whose CPU vertices raylib leaves as they were).
+		var near = (a:Float, b:Float) -> Math.abs(a - b) < 1e-5;
+		var bind = GetModelBoundingBox(moving),
+			posed = GetModelBoundingBoxPosed(moving);
+		check(near(bind.min.y, -0.5) && near(bind.max.y, 0.5), "GetModelBoundingBox keeps the bind pose");
+		check(near(posed.min.y, 0.5) && near(posed.max.y, 1.5) && near(posed.min.x, -0.5) && near(posed.max.x, 0.5), "the posed box is raised by one");
+		var unposed = GetModelBoundingBoxPosed(still);
+		check(near(unposed.min.y, -0.5) && near(unposed.max.y, 0.5), "a model never posed is bounded as bound");
+		var dancing = GetModelBoundingBoxPosed(dancer);
+		check(near(dancing.min.y, 0.5) && near(dancing.max.y, 1.5), "posed through the lit shader's twin");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
