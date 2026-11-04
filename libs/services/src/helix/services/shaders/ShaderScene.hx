@@ -47,14 +47,19 @@ class ShaderScene {
 		@param samplerName  The sampler's GLSL name.
 		@param shared  The shared texture. */
 	public function shareTexture(samplerName:String, shared:ShaderSharedTexture):Void {
-		textures.set(samplerName, shared);
+		var id = helix.services.shaders.ShaderLayout.ShaderNameIds.of(samplerName);
+		while (textures.length <= id)
+			textures.push(null);
+		textures[id] = shared;
 	}
 
 	/** Stops sharing a texture of a sampler name.
 
 		@param samplerName  The sampler's GLSL name. */
 	public function unshareTexture(samplerName:String):Void {
-		textures.remove(samplerName);
+		var id = helix.services.shaders.ShaderLayout.ShaderNameIds.of(samplerName);
+		if (id < textures.length)
+			textures[id] = null;
 	}
 
 	/** Finds a shared block by name.
@@ -79,9 +84,16 @@ class ShaderScene {
 		@param samplerName  The sampler's GLSL name.
 		@return  The shared texture, or null. */
 	public function findSharedTexture(samplerName:String):Null<ShaderSharedTexture> {
-		return textures.get(samplerName);
+		return sharedTextureAt(helix.services.shaders.ShaderLayout.ShaderNameIds.of(samplerName));
 	}
 
+	// The shared texture of a sampler name's id, or null.
+
+	@:allow(helix.services.shaders)
+	function sharedTextureAt(nameId:Int):Null<ShaderSharedTexture>
+		return nameId >= 0 && nameId < textures.length ? textures[nameId] : null;
+
 	final blocks = new Map<String, ShaderBlockValues>();
-	final textures = new Map<String, ShaderSharedTexture>();
+	// The shared textures, by their sampler name's id (ShaderNameIds).
+	final textures:Array<Null<ShaderSharedTexture>> = [];
 }

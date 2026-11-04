@@ -66,6 +66,8 @@ class ShaderUniformValues {
 		@param elementIndex  Optional. The index of the array element written; defaults to 0. */
 	public function writeFloat(uniform:ShaderUniform, value:Float, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeFloat", FLOAT);
+		if (!fresh && e[0] == value)
+			return;
 		e[0] = value;
 		changed(uniform, elementIndex, e);
 	}
@@ -80,6 +82,8 @@ class ShaderUniformValues {
 		@param elementIndex  Optional. The index of the array element written; defaults to 0. */
 	public function writeVector(uniform:ShaderUniform, x:Float, y:Float, z:Float, w:Float, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeVector", VECTORS);
+		if (!fresh && e[0] == x && e[1] == y && (e.length < 3 || e[2] == z) && (e.length < 4 || e[3] == w))
+			return;
 		e[0] = x;
 		e[1] = y;
 		if (e.length > 2)
@@ -98,6 +102,8 @@ class ShaderUniformValues {
 		@param elementIndex  Optional. The index of the array element written; defaults to 0. */
 	public function writeVector3(uniform:ShaderUniform, x:Float, y:Float, z:Float, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeVector3", VEC3);
+		if (!fresh && e[0] == x && e[1] == y && e[2] == z)
+			return;
 		e[0] = x;
 		e[1] = y;
 		e[2] = z;
@@ -112,6 +118,8 @@ class ShaderUniformValues {
 		@param elementIndex  Optional. The index of the array element written; defaults to 0. */
 	public function writeVector2(uniform:ShaderUniform, x:Float, y:Float, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeVector2", VEC2);
+		if (!fresh && e[0] == x && e[1] == y)
+			return;
 		e[0] = x;
 		e[1] = y;
 		changed(uniform, elementIndex, e);
@@ -124,11 +132,17 @@ class ShaderUniformValues {
 		@param elementIndex  Optional. The index of the array element written; defaults to 0. */
 	public function writeColor(uniform:ShaderUniform, color:Int, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeColor", COLORS);
-		e[0] = (color >> 16 & 255) / 255;
-		e[1] = (color >> 8 & 255) / 255;
-		e[2] = (color & 255) / 255;
+		var r = (color >> 16 & 255) / 255,
+			g = (color >> 8 & 255) / 255,
+			b = (color & 255) / 255,
+			a = (color >>> 24) / 255;
+		if (!fresh && e[0] == r && e[1] == g && e[2] == b && (e.length < 4 || e[3] == a))
+			return;
+		e[0] = r;
+		e[1] = g;
+		e[2] = b;
 		if (e.length > 3)
-			e[3] = (color >>> 24) / 255;
+			e[3] = a;
 		changed(uniform, elementIndex, e);
 	}
 
@@ -141,9 +155,14 @@ class ShaderUniformValues {
 		@param elementIndex  Optional. The index of the array element written; defaults to 0. */
 	public function writeRgb(uniform:ShaderUniform, rgb:Int, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeRgb", COLORS);
-		e[0] = (rgb >> 16 & 255) / 255;
-		e[1] = (rgb >> 8 & 255) / 255;
-		e[2] = (rgb & 255) / 255;
+		var r = (rgb >> 16 & 255) / 255,
+			g = (rgb >> 8 & 255) / 255,
+			b = (rgb & 255) / 255;
+		if (!fresh && e[0] == r && e[1] == g && e[2] == b)
+			return;
+		e[0] = r;
+		e[1] = g;
+		e[2] = b;
 		changed(uniform, elementIndex, e);
 	}
 
@@ -157,9 +176,14 @@ class ShaderUniformValues {
 		@param elementIndex  Optional. The index of the array element written; defaults to 0. */
 	public function writeLinearRgb(uniform:ShaderUniform, rgb:Int, scale:Float = 1, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeLinearRgb", COLORS);
-		e[0] = linear((rgb >> 16 & 255) / 255) * scale;
-		e[1] = linear((rgb >> 8 & 255) / 255) * scale;
-		e[2] = linear((rgb & 255) / 255) * scale;
+		var r = linear((rgb >> 16 & 255) / 255) * scale,
+			g = linear((rgb >> 8 & 255) / 255) * scale,
+			b = linear((rgb & 255) / 255) * scale;
+		if (!fresh && e[0] == r && e[1] == g && e[2] == b)
+			return;
+		e[0] = r;
+		e[1] = g;
+		e[2] = b;
 		changed(uniform, elementIndex, e);
 	}
 
@@ -171,11 +195,17 @@ class ShaderUniformValues {
 		@param elementIndex  Optional. The index of the array element written; defaults to 0. */
 	public function writeLinearColor(uniform:ShaderUniform, color:Int, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeLinearColor", COLORS);
-		e[0] = linear((color >> 16 & 255) / 255);
-		e[1] = linear((color >> 8 & 255) / 255);
-		e[2] = linear((color & 255) / 255);
+		var r = linear((color >> 16 & 255) / 255),
+			g = linear((color >> 8 & 255) / 255),
+			b = linear((color & 255) / 255),
+			a = (color >>> 24) / 255;
+		if (!fresh && e[0] == r && e[1] == g && e[2] == b && (e.length < 4 || e[3] == a))
+			return;
+		e[0] = r;
+		e[1] = g;
+		e[2] = b;
 		if (e.length > 3)
-			e[3] = (color >>> 24) / 255;
+			e[3] = a;
 		changed(uniform, elementIndex, e);
 	}
 
@@ -186,7 +216,10 @@ class ShaderUniformValues {
 		@param elementIndex  Optional. The index of the array element written; defaults to 0. */
 	public function writeBool(uniform:ShaderUniform, value:Bool, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeBool", BOOL);
-		e[0] = value ? 1 : 0;
+		var v = value ? 1 : 0;
+		if (!fresh && e[0] == v)
+			return;
+		e[0] = v;
 		changed(uniform, elementIndex, e);
 	}
 
@@ -198,9 +231,14 @@ class ShaderUniformValues {
 	public function writeMatrix(uniform:ShaderUniform, matrix:Matrix3D, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeMatrix", MAT4);
 		var m = matrix.values;
+		var same = !fresh;
 		for (i in 0...16)
-			e[i] = m[i];
-		changed(uniform, elementIndex, e);
+			if (e[i] != m[i]) {
+				e[i] = m[i];
+				same = false;
+			}
+		if (!same)
+			changed(uniform, elementIndex, e);
 	}
 
 	/** Writes a float uniform from its floats in GLSL's order, packed: each element its type's floats one after another, with no
@@ -222,6 +260,8 @@ class ShaderUniformValues {
 		@param elementIndex  Optional. The index of the array element written; defaults to 0. */
 	public function writeInt(uniform:ShaderUniform, value:Int, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeInt", INTEGERS);
+		if (!fresh && e[0] == value)
+			return;
 		e[0] = value;
 		changed(uniform, elementIndex, e);
 	}
@@ -248,9 +288,41 @@ class ShaderUniformValues {
 	static inline final FLOATS = ShaderShape.FLOATS;
 	static inline final INTEGERS = ShaderShape.INTEGERS;
 
-	// What was written, by handle: each element's components as written, whatever the layout.
+	// What was written, by handle: each element's components as written, whatever the layout; and the same by the handle's id, which a
+	// write reads (the map is for going through them).
 	@:allow(helix.services.shaders)
 	final written = new haxe.ds.ObjectMap<ShaderUniform, helix.services.shaders.ShaderLayout.ShaderWritten>();
+	final writtenById:Array<Null<helix.services.shaders.ShaderLayout.ShaderWritten>> = [];
+	// Whether the element the last element() returned was made by it, its components not yet written: a write of what an element
+	// already holds then changes nothing.
+	var fresh = false;
+
+	// What was written through a handle, made the first time.
+	function writtenFor(uniform:ShaderUniform):helix.services.shaders.ShaderLayout.ShaderWritten {
+		var w = uniform.id < writtenById.length ? writtenById[uniform.id] : null;
+		if (w == null) {
+			written.set(uniform, w = new helix.services.shaders.ShaderLayout.ShaderWritten());
+			while (writtenById.length <= uniform.id)
+				writtenById.push(null);
+			writtenById[uniform.id] = w;
+		}
+		return w;
+	}
+
+	// Forgets what was written through a handle, or through every handle.
+
+	@:allow(helix.services.shaders)
+	function forgetWritten(uniform:ShaderUniform):Void {
+		written.remove(uniform);
+		if (uniform.id < writtenById.length)
+			writtenById[uniform.id] = null;
+	}
+
+	@:allow(helix.services.shaders)
+	function forgetAllWritten():Void {
+		written.clear();
+		writtenById.resize(0);
+	}
 
 	// The shape of a handle's type where these write it, or null where it isn't declared (a write is then kept and checked when it is).
 
@@ -277,13 +349,12 @@ class ShaderUniformValues {
 		if (elementIndex < 0 || count >= 0 && elementIndex >= count)
 			throw 'shader values: ${uniform.name} has no element $elementIndex (it has ${count < 0 ? 1 : count})';
 		var size = shape == null ? 16 : shape.size;
-		var w = written.get(uniform);
-		if (w == null)
-			written.set(uniform, w = new helix.services.shaders.ShaderLayout.ShaderWritten());
+		var w = writtenFor(uniform);
 		while (w.elements.length <= elementIndex)
 			w.elements.push(null);
 		var e = w.elements[elementIndex];
-		if (e == null || e.length != size) {
+		fresh = e == null || e.length != size;
+		if (fresh) {
 			e = [for (_ in 0...size) 0.];
 			initial(uniform, elementIndex, e);
 			w.elements[elementIndex] = e;
@@ -305,9 +376,14 @@ class ShaderUniformValues {
 			throw 'shader values: $method writes ${uniform.name}\'s elements $first to ${first + elements - 1}, past its $count';
 		for (k in 0...elements) {
 			var e = element(uniform, first + k, method, kinds);
+			var same = !fresh;
 			for (i in 0...size)
-				e[i] = values[k * size + i];
-			changed(uniform, first + k, e);
+				if (e[i] != values[k * size + i]) {
+					e[i] = values[k * size + i];
+					same = false;
+				}
+			if (!same)
+				changed(uniform, first + k, e);
 		}
 	}
 
@@ -330,9 +406,7 @@ class ShaderUniformValues {
 			return;
 		}
 		var size = shape == null ? values.length : shape.size;
-		var w = written.get(uniform);
-		if (w == null)
-			written.set(uniform, w = new helix.services.shaders.ShaderLayout.ShaderWritten());
+		var w = writtenFor(uniform);
 		while (w.elements.length <= elementIndex)
 			w.elements.push(null);
 		var e = values.slice(0, size);

@@ -28,9 +28,14 @@ class ShaderSampler {
 	/** Gets a value indicating whether its shader declares it now: false after a reload removed it, or in a variant without it. */
 	public var declared(default, null):Bool;
 
+	// Its name's id (ShaderNameIds), by which values keep the texture it is given.
+	@:allow(helix.services.shaders)
+	final nameId:Int;
+
 	@:allow(helix.services.shaders)
 	function new(name:String, kind:ShaderSamplerKind, slot:Int) {
 		this.name = name;
+		nameId = helix.services.shaders.ShaderLayout.ShaderNameIds.of(name);
 		this.kind = kind;
 		this.slot = slot;
 		active = true;

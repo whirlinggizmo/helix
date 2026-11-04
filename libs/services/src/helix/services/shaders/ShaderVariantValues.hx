@@ -189,7 +189,7 @@ class ShaderVariantValues extends ShaderUniformValues implements IShaderValues {
 
 	/** Removes every written value, texture and share, in every variant, so everything reads its base's again. */
 	public function deleteValues():Void {
-		written.clear();
+		forgetAllWritten();
 		textureWrites.clear();
 		textureShares.clear();
 		blockShares.clear();

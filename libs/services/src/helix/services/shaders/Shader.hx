@@ -486,6 +486,9 @@ class Shader implements IShaderHandles {
 	// Each texture slot's sampler name, "" for none.
 	@:allow(helix.services.shaders)
 	var slotSamplers(default, null):Array<String> = [];
+	// Each texture slot's sampler name's id (ShaderNameIds), -1 for none.
+	@:allow(helix.services.shaders)
+	var slotNameIds(default, null):Array<Int> = [];
 
 	// Reads a program's reflection: its blocks, uniforms, textures and attributes, the handles made before updated in place.
 	function read(source:ShaderSource):Void {
@@ -547,6 +550,7 @@ class Shader implements IShaderHandles {
 		samplerList = [];
 		textureCount = 0;
 		slotSamplers = [];
+		slotNameIds = [];
 		var textures = source.textures.copy();
 		textures.sort((a, b) -> a.slot - b.slot);
 		for (t in textures) {
@@ -562,9 +566,12 @@ class Shader implements IShaderHandles {
 			samplerList.push(s);
 			if (t.slot + 1 > textureCount)
 				textureCount = t.slot + 1;
-			while (slotSamplers.length <= t.slot)
+			while (slotSamplers.length <= t.slot) {
 				slotSamplers.push("");
+				slotNameIds.push(-1);
+			}
 			slotSamplers[t.slot] = name;
+			slotNameIds[t.slot] = s.nameId;
 		}
 		for (name => s in samplerHandles)
 			if (!sampled.exists(name))

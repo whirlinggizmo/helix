@@ -126,7 +126,7 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 	function get_textures():Array<Int> {
 		follow();
 		for (slot in 0...shader.textureCount) {
-			var bound = textureAt(shader.slotSamplers[slot]);
+			var bound = textureAt(shader.slotNameIds[slot]);
 			outTextures[slot] = bound == null ? 0 : bound.texture;
 		}
 		return outTextures;
@@ -135,7 +135,7 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 	function get_samplings():Array<Sampling> {
 		follow();
 		for (slot in 0...shader.textureCount) {
-			var bound = textureAt(shader.slotSamplers[slot]);
+			var bound = textureAt(shader.slotNameIds[slot]);
 			outSamplings[slot] = bound == null ? Sampling.LINEAR : bound.sampling;
 		}
 		return outSamplings;
@@ -148,9 +148,12 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 		@param sampling  Optional. How it is sampled; defaults to `Sampling.LINEAR`. */
 	public function writeTexture(sampler:ShaderSampler, texture:Int, ?sampling:Sampling):Void {
 		follow();
-		var t = ownTextures.get(sampler.name);
-		if (t == null)
-			ownTextures.set(sampler.name, t = new ShaderSharedTexture());
+		var t = sampler.nameId < ownTextures.length ? ownTextures[sampler.nameId] : null;
+		if (t == null) {
+			while (ownTextures.length <= sampler.nameId)
+				ownTextures.push(null);
+			ownTextures[sampler.nameId] = t = new ShaderSharedTexture();
+		}
 		t.texture = texture;
 		t.sampling = sampling == null ? Sampling.LINEAR : sampling;
 	}
@@ -174,14 +177,17 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 		@param sampler  The sampler.
 		@param shared  The shared texture. */
 	public function shareTexture(sampler:ShaderSampler, shared:ShaderSharedTexture):Void {
-		sharedTextures.set(sampler.name, shared);
+		while (sharedTextures.length <= sampler.nameId)
+			sharedTextures.push(null);
+		sharedTextures[sampler.nameId] = shared;
 	}
 
 	/** Stops a sampler reading a shared texture; it reads what was written, or its base's.
 
 		@param sampler  The sampler. */
 	public function unshareTexture(sampler:ShaderSampler):Void {
-		sharedTextures.remove(sampler.name);
+		if (sampler.nameId < sharedTextures.length)
+			sharedTextures[sampler.nameId] = null;
 	}
 
 	/** Makes the shader's block of a shared block's name read the shared block's bytes, replacing one of that name shared before.
@@ -252,7 +258,7 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 
 		@param uniform  The uniform. */
 	public function deleteValue(uniform:ShaderUniform):Void {
-		written.remove(uniform);
+		forgetWritten(uniform);
 		for (i in 0...syncedWith.length)
 			syncedWith[i] = null;
 		// A block with nothing written in it any more reads its base's again.
@@ -263,11 +269,11 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 
 	/** Removes every written value, texture and share, so everything reads its base's again (or nothing). */
 	public function deleteValues():Void {
-		written.clear();
+		forgetAllWritten();
 		for (b in 0...own.length)
 			own[b] = null;
-		ownTextures.clear();
-		sharedTextures.clear();
+		ownTextures.resize(0);
+		sharedTextures.resize(0);
 		sharedBlocks.clear();
 	}
 
@@ -284,8 +290,9 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 	// Each block's zeros, for values with no base and nothing written there.
 	var zeros:Array<Bytes> = [];
 	// Textures written, shared textures and shared blocks, by name.
-	final ownTextures = new Map<String, ShaderSharedTexture>();
-	final sharedTextures = new Map<String, ShaderSharedTexture>();
+	// By their sampler name's id (ShaderNameIds).
+	final ownTextures:Array<Null<ShaderSharedTexture>> = [];
+	final sharedTextures:Array<Null<ShaderSharedTexture>> = [];
 	final sharedBlocks = new Map<String, ShaderBlockValues>();
 	// What a draw takes, kept and updated in place.
 	final out:Array<Null<Bytes>> = [];
@@ -445,23 +452,23 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 	}
 
 	// The texture a sampler of a name reads: shared, written, the base's, then the scene's.
-	function textureAt(name:String):Null<ShaderSharedTexture> {
-		if (name == "")
+	function textureAt(nameId:Int):Null<ShaderSharedTexture> {
+		if (nameId < 0)
 			return null;
-		var found = ownTextureAt(name);
+		var found = ownTextureAt(nameId);
 		if (found != null)
 			return found;
 		var s = scene;
-		return s == null ? null : s.findSharedTexture(name);
+		return s == null ? null : s.sharedTextureAt(nameId);
 	}
 
-	function ownTextureAt(name:String):Null<ShaderSharedTexture> {
-		var t = sharedTextures.get(name);
+	function ownTextureAt(nameId:Int):Null<ShaderSharedTexture> {
+		var t = nameId < sharedTextures.length ? sharedTextures[nameId] : null;
 		if (t != null)
 			return t;
-		t = ownTextures.get(name);
+		t = nameId < ownTextures.length ? ownTextures[nameId] : null;
 		if (t != null)
 			return t;
-		return base != null ? base.ownTextureAt(name) : null;
+		return base != null ? base.ownTextureAt(nameId) : null;
 	}
 }

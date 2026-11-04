@@ -157,6 +157,29 @@ class ShaderShape {
 	}
 }
 
+/** A number for each sampler name, the same in every shader, by which values and scenes keep their textures: a name looked up once,
+	where a handle or a texture slot is made, not as a draw reads its textures. */
+@:noCompletion
+@:allow(helix.services.shaders)
+class ShaderNameIds {
+	// The id of each name seen, made at the first ask, as a shader may be read before this class's statics are.
+	static var ids:Null<Map<String, Int>> = null;
+	static var count:Null<Int> = null;
+
+	/** The id of a name, made the first time it is asked for. */
+	static function of(name:String):Int {
+		if (ids == null)
+			ids = new Map();
+		var id = ids.get(name);
+		if (id == null) {
+			id = count == null ? 0 : count;
+			count = id + 1;
+			ids.set(name, id);
+		}
+		return id;
+	}
+}
+
 /** A uniform's values as written on values, independent of any layout: each element's components (a matrix's by columns), null for an
 	element not written. */
 @:noCompletion
