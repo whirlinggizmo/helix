@@ -1,5 +1,5 @@
 {
- "commit": "d8126b8 2026-11-04",
+ "commit": "e28d90e 2026-11-04",
  "haxe": "4.3.7",
  "ladders": {
   "platform": {
@@ -385,7 +385,7 @@
     "adds": "sprites: a texture made from an image in memory, drawn turned by the 2D batch",
     "raw": 122653,
     "gzip": 26947,
-    "brotli": 23280,
+    "brotli": 23286,
     "packages": {
      "services/shaders": 34530,
      "platform/graphics": 26289,
@@ -414,8 +414,8 @@
    "3-text": {
     "adds": "text: a TrueType font loaded from beside the page, rasterized by the page's canvas, measured and drawn, and wrapped in a layout",
     "raw": 197336,
-    "gzip": 44274,
-    "brotli": 37277,
+    "gzip": 44273,
+    "brotli": 37295,
     "packages": {
      "services/shaders": 34530,
      "platform/graphics": 26289,
@@ -454,8 +454,8 @@
    "4-shapes": {
     "adds": "shapes: lines, a polyline, rectangles rounded and not, circles, ellipses and polygons, filled and stroked",
     "raw": 212420,
-    "gzip": 47530,
-    "brotli": 40057,
+    "gzip": 47529,
+    "brotli": 40045,
     "packages": {
      "services/shaders": 34530,
      "platform/graphics": 26289,
@@ -494,19 +494,19 @@
    },
    "5-mesh": {
     "adds": "3D: a cube made in memory, drawn unlit through a camera by the 3D batch, over the 2D",
-    "raw": 324639,
-    "gzip": 69028,
-    "brotli": 57456,
+    "raw": 326573,
+    "gzip": 69499,
+    "brotli": 57804,
     "packages": {
-     "render/Batch3D": 50088,
+     "render/Batch3D": 51591,
      "services/shaders": 43323,
      "platform/graphics": 27277,
      "math": 24911,
-     "haxe metadata": 21547,
+     "haxe metadata": 21599,
      "render/Batch2D": 15076,
      "formats": 14856,
      "services/assets": 13359,
-     "render/Renderer": 10866,
+     "render/Renderer": 11189,
      "render/GpuMesh3D": 10649,
      "std/js": 10634,
      "render/Tessellator2D": 8939,
@@ -516,7 +516,7 @@
      "platform/fontrasterizer": 5224,
      "geometry": 4958,
      "platform/shared": 4347,
-     "render/RenderFill": 4269,
+     "render/RenderFill": 4325,
      "program": 3786,
      "platform/events": 3498,
      "platform/filesystem": 3263,
@@ -544,20 +544,20 @@
    },
    "6-lit": {
     "adds": "light: the cube drawn lit, metallic-roughness, under a sun and an ambient light",
-    "raw": 381673,
-    "gzip": 78618,
-    "brotli": 64313,
+    "raw": 383875,
+    "gzip": 80436,
+    "brotli": 64640,
     "packages": {
-     "render/BatchLighting": 53107,
-     "render/Batch3D": 50190,
+     "render/BatchLighting": 53375,
+     "render/Batch3D": 51693,
      "services/shaders": 43547,
      "platform/graphics": 27277,
      "math": 24911,
-     "haxe metadata": 22292,
+     "haxe metadata": 22344,
      "render/Batch2D": 15076,
      "formats": 14856,
      "services/assets": 13359,
-     "render/Renderer": 10866,
+     "render/Renderer": 11189,
      "render/GpuMesh3D": 10649,
      "std/js": 10634,
      "render/Tessellator2D": 8939,
@@ -567,7 +567,7 @@
      "platform/fontrasterizer": 5224,
      "geometry": 4958,
      "platform/shared": 4347,
-     "render/RenderFill": 4269,
+     "render/RenderFill": 4325,
      "program": 3955,
      "platform/events": 3498,
      "platform/filesystem": 3263,
@@ -994,8 +994,8 @@
    "9-game": {
     "adds": "a game: what a real game uses, its file formats one of each",
     "raw": 597821,
-    "gzip": 122831,
-    "brotli": 99489,
+    "gzip": 122832,
+    "brotli": 99461,
     "packages": {
      "formats": 44369,
      "math": 36921,
@@ -1070,8 +1070,8 @@
    "10-everything": {
     "adds": "everything: every function of Raylib, Raymath, Rlgl, Raygui and helix.raylib.extras a program can call, and every file reader",
     "raw": 1525817,
-    "gzip": 275338,
-    "brotli": 215239,
+    "gzip": 275341,
+    "brotli": 215329,
     "packages": {
      "formats": 131738,
      "raylib/RTextures": 105800,

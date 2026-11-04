@@ -21,6 +21,7 @@ uniform mat4 model;
 uniform mat4 normalMatrix;
 uniform mat4 modelViewProjection;
 uniform int skinned;
+uniform int boneOffset;
 uniform sampler2D boneTexture;
 uniform vec4 morphWeights[16];
 uniform int morphTargetCount;
@@ -38,8 +39,10 @@ out vec2 texCoord;
 out vec2 texCoord2;
 out vec4 color;
 
-// A bone's skinning matrix: four texels a bone, its columns, rows of whole bones.
+// A bone's skinning matrix: four texels a bone, its columns, rows of whole bones, the draw's bones starting at boneOffset in the
+// frame's one palette.
 mat4 helixBoneMatrix(int bone) {
+	bone += boneOffset;
 	int perRow = textureSize(boneTexture, 0).x / 4;
 	ivec2 at = ivec2((bone - bone / perRow * perRow) * 4, bone / perRow);
 	return mat4(texelFetch(boneTexture, at, 0), texelFetch(boneTexture, at + ivec2(1, 0), 0), texelFetch(boneTexture, at + ivec2(2, 0), 0),

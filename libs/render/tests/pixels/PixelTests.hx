@@ -40,6 +40,8 @@ typedef PixelCase = {
 class PixelTests {
 	// The targets' size, in texels.
 	static inline final SIZE = 64;
+	// The skinned crowd's target size, in texels: 20 cells of 16 a side.
+	static inline final CROWD_SIZE = 320;
 	// How many frames a read back may take before the case fails.
 	static inline final READ_FRAMES = 60;
 
@@ -169,6 +171,10 @@ class PixelTests {
 	static function screenView():View3D
 		return new View3D().setFromScreen(SIZE, SIZE);
 
+	// The color of the crowd's character i, 0xAARRGGBB.
+	static function crowdColor(i:Int):Int
+		return 0xff000000 | (20 + (i >> 1)) << 16 | (20 + i % 50 * 4) << 8 | 0x80;
+
 	static function unlit(srgb:Bool):Material3D {
 		var m = new Material3D();
 		m.shading = Unlit;
@@ -211,6 +217,38 @@ class PixelTests {
 		skinnedMesh.jointIndices = [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0];
 		skinnedMesh.weights = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0];
 		var skinned = renderer.createMesh(skinnedMesh);
+		// A crowd's character: a 4 x 4 quad, each vertex half the first joint's and half the second's.
+		var crowdQuad = quad(0, 0, 4, 4);
+		crowdQuad.jointIndices = [for (_ in 0...4) for (j in [0, 1, 0, 0]) j];
+		crowdQuad.weights = [for (_ in 0...4) for (w in [.5, .5, 0, 0]) w];
+		var crowdMesh = renderer.createMesh(crowdQuad);
+		var crowdTarget = renderer.createRenderTarget(CROWD_SIZE, CROWD_SIZE, Rgba8, Buffer);
+		var crowdMaterial = unlit(true);
+		// Draws count skinned characters, each in a 16 pixel cell, its own pose and its own color: the first joint moves it by a, the
+		// second by b, so the quad is moved by half of each.
+		function crowd(count:Int, phase:Int):RenderTarget2D {
+			renderer.beginTarget(crowdTarget, 0xff000000);
+			batch3D.beginViews([new View3D().setFromScreen(CROWD_SIZE, CROWD_SIZE)]);
+			for (i in 0...count) {
+				var a = 2 * ((i * 3 + phase) % 6),
+					b = 2 * ((i * 5 + phase) % 7);
+				batch3D.drawMesh(crowdMesh, crowdMaterial, Matrix3D.fromTranslation(i % 20 * 16 + 2, Std.int(i / 20) * 16 + 2, 0),
+					[Matrix3D.fromTranslation(a, 0, 0), Matrix3D.fromTranslation(0, b, 0)], null, crowdColor(i));
+			}
+			batch3D.end();
+			renderer.endTarget();
+			return crowdTarget;
+		}
+		function crowdCheck(p:Pixels, count:Int, phase:Int):Void {
+			for (i in 0...count) {
+				var a = 2 * ((i * 3 + phase) % 6),
+					b = 2 * ((i * 5 + phase) % 7);
+				var x = i % 20 * 16, y = Std.int(i / 20) * 16;
+				expect(p, x + 4 + Std.int(a / 2), y + 4 + Std.int(b / 2), crowdColor(i), 'character $i at its own pose', 4);
+				expect(p, x + 1, y + 1, 0x000000, 'character $i not drawn up and left of its pose', 4);
+				expect(p, x + 14, y + 14, 0x000000, 'character $i not drawn down and right of its pose', 4);
+			}
+		}
 		var canvas = target(), copied = target(), threeD = target(true);
 		var single = renderer.createRenderTarget(SIZE, SIZE, Rgba8, Buffer, 1);
 		var multi = renderer.createRenderTarget(SIZE, SIZE, Rgba8, None, 4);
@@ -412,6 +450,21 @@ class PixelTests {
 					expect(p, 22, 50, 0xffffff, "its corner moved by the second joint's matrix");
 					expect(p, 52, 8, 0x2040c0, "the program's material shader");
 				}
+			},
+			{
+				name: "3D: 200 skinned characters in one frame, each its own pose",
+				draw: () -> crowd(200, 0),
+				check: p -> crowdCheck(p, 200, 0)
+			},
+			{
+				name: "3D: 400 skinned characters, more than the frame before held",
+				draw: () -> crowd(400, 1),
+				check: p -> crowdCheck(p, 400, 1)
+			},
+			{
+				name: "3D: 400 skinned characters again, in new poses",
+				draw: () -> crowd(400, 2),
+				check: p -> crowdCheck(p, 400, 2)
 			},
 			{
 				name: "3D: points, a wide line, a triangle's edges",

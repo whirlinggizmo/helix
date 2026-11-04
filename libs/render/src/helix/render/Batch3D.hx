@@ -1126,8 +1126,13 @@ class Batch3D {
 	static var narrowLayout:Null<ShaderVertexLayout> = null;
 	static var wideLayout:Null<ShaderVertexLayout> = null;
 
-	// Each data texture for bones, by its rows.
-	final boneTextures = new Map<Int, Int>();
+	// The frame's bone palette: the matrices of every skinned draw, in chunks of one data texture each (one, once a frame has shown how
+	// many it needs), each uploaded once before the first pass drawing from it. The frame it is filled in, the bones it held last frame.
+	final paletteChunks:Array<BonePalette> = [];
+	var paletteFrame = -1;
+	var paletteLastBones = 0;
+	var paletteBones = 0;
+	var paletteOffset = 0;
 
 	static function layoutOf(wide:Bool):ShaderVertexLayout {
 		if (!wide && narrowLayout != null)
@@ -1564,20 +1569,53 @@ class Batch3D {
 		plane.scale = 1;
 	}
 
-	// The data texture holding a skin's matrices, four texels a bone, 64 bones a row, written before the draw that reads it.
+	// The palette texture holding a skin's matrices, four texels a bone, 64 bones a row, after those of the draws before it; its first
+	// bone is left in paletteOffset. The texture is written once, before the pass that first draws from it.
 	function bones(skinning:Array<Matrix3D>):Int {
-		var rows = Std.int(Math.max(1, Math.ceil(skinning.length / 64)));
-		var handle = boneTextures.get(rows);
-		if (handle == null)
-			boneTextures.set(rows, handle = renderer.dataTexture(256, rows));
-		var data = Bytes.alloc(256 * rows * 16);
-		for (i in 0...skinning.length) {
+		var frame = renderer.frameNumber;
+		if (paletteFrame != frame) {
+			paletteFrame = frame;
+			paletteLastBones = paletteBones;
+			paletteBones = 0;
+			// One chunk of the rows the last frame needed, made again when it is four times too big. A frame needing more than the
+			// chunk holds makes others, each twice the one before.
+			var wanted = Std.int(Math.max(1, Math.ceil(paletteLastBones / 64)));
+			if (paletteChunks.length > 1
+				|| paletteChunks.length == 1
+				&& (paletteChunks[0].rows < wanted || paletteChunks[0].rows > 16 && paletteChunks[0].rows > wanted * 4))
+				for (c in paletteChunks.splice(0, paletteChunks.length))
+					renderer.disposeData(c.handle);
+			for (c in paletteChunks) {
+				c.used = 0;
+				c.uploadedFrame = -1;
+			}
+		}
+		var n = skinning.length;
+		var chunk = paletteChunks.length > 0 ? paletteChunks[paletteChunks.length - 1] : null;
+		if (chunk == null || chunk.used + n > chunk.rows * 64) {
+			var rows = Std.int(Math.max(Math.max(1, Math.ceil(paletteLastBones / 64)), Math.ceil(n / 64)));
+			if (chunk != null)
+				rows = Std.int(Math.max(rows, chunk.rows * 2));
+			paletteChunks.push(chunk = new BonePalette(renderer.dataTexture(256, rows), rows));
+		}
+		var data = chunk.bytes;
+		var at = chunk.used * 64;
+		for (i in 0...n) {
 			var m = skinning[i].values;
 			for (k in 0...16)
-				data.setFloat(i * 64 + k * 4, m[k]);
+				data.setFloat(at + i * 64 + k * 4, m[k]);
 		}
-		renderer.command(UpdateData(handle, 256, rows, data));
-		return handle;
+		paletteOffset = chunk.used;
+		chunk.used += n;
+		paletteBones += n;
+		if (chunk.uploadedFrame != frame) {
+			chunk.uploadedFrame = frame;
+			var graphics = renderer.graphics;
+			renderer.updateBeforePass(() -> {
+				graphics.updateTexture(chunk.handle, 0, 0, 256, chunk.rows, chunk.bytes);
+			});
+		}
+		return chunk.handle;
 	}
 
 	// A color multiplied by a tint, channel by channel, as stored.
@@ -1639,7 +1677,8 @@ class Batch3D {
 			return;
 		var spec = large ? pointsPipeline(this, s, mesh, material, state) : meshPipeline(s, mesh, material, state, primitive, indexBuffer);
 		var skinned = skinning != null && mesh.hasJoints;
-		var boneTexture = skinned ? bones(skinning) : 0;
+		var boneTexture = skinned && fill.boneTexture.declared ? bones(skinning) : 0;
+		var boneOffset = boneTexture != 0 ? paletteOffset : 0;
 		var baseTexture = material.baseColorTexture,
 			alpha = material.alphaTexture;
 		var baseHandle = baseTexture == null ? renderer.white.handle : baseTexture.drawnHandle();
@@ -1669,12 +1708,14 @@ class Batch3D {
 			fill.integer(fill.vertexColors, material.vertexColors ? 1 : 0);
 			fill.integer(fill.toneMapped, material.toneMapped ? 1 : 0);
 			fill.integer(fill.skinned, skinned ? 1 : 0);
+			fill.integer(fill.boneOffset, boneOffset);
 			fill.integer(fill.morphTargetCount, 0);
 			fill.float(fill.pointSize, pointSize);
 			fill.integer(fill.pointSizeAttenuated, pointSizeAttenuated ? 1 : 0);
 			fill.planes(clipPlanes);
 			if (skinned) {
-				fill.texture(fill.boneTexture, boneTexture, Sampling.NEAREST);
+				if (boneTexture != 0)
+					fill.texture(fill.boneTexture, boneTexture, Sampling.NEAREST);
 				if (fill.boneMatrices.declared && !fill.boneMatrices.shared)
 					for (b in 0...fill.boneMatrices.elementCount)
 						values.writeMatrix(fill.boneMatrices, b < skinning.length ? skinning[b] : identity, b);
@@ -1851,3 +1892,30 @@ class Batch3D {
 	}
 	#end
 }
+
+#if !macro
+/** One data texture of the bone palette, and the bytes it is written from. */
+private class BonePalette {
+	/** The data texture. */
+	public final handle:Int;
+
+	/** Its rows of 64 bones. */
+	public final rows:Int;
+
+	/** What is uploaded to it each frame it is drawn from. */
+	public final bytes:Bytes;
+
+	/** The bones written to it this frame. */
+	public var used = 0;
+
+	/** The frame it was last uploaded in. */
+	public var uploadedFrame = -1;
+
+	/** Makes a palette texture of rows. */
+	public function new(handle:Int, rows:Int) {
+		this.handle = handle;
+		this.rows = rows;
+		bytes = Bytes.alloc(256 * rows * 16);
+	}
+}
+#end

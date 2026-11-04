@@ -551,6 +551,7 @@ class Renderer {
 	var pass:Null<RenderPass> = null;
 
 	final reads = new Map<Int, Bool>();
+	@:allow(helix.render)
 	var frameNumber = 0;
 	// The viewport, in the pass's pixels from its top left; the screen's while a target pass is open; whether a scissor is set.
 	@:allow(helix.render)
@@ -785,6 +786,15 @@ class Renderer {
 		dataTextures.push(handle);
 		return handle;
 	}
+
+	// Frees a data texture made by dataTexture, after the frame being recorded when there is one.
+
+	@:allow(helix.render)
+	function disposeData(handle:Int):Void
+		release(() -> {
+			if (dataTextures.remove(handle))
+				graphics.disposeTexture(handle);
+		});
 
 	// A fresh texture for a target copied on write: one the pool holds of its size and format, or a new one.
 	function takeTarget(target:RenderTarget2D):Int {
