@@ -1,22 +1,31 @@
 #!/usr/bin/env python3
-"""Writes the generated parts of helix-raylib's Raylib.hx, Raymath.hx, Rlgl.hx and Extras.hx, and the types helix-raylib doesn't have yet.
+"""Writes the generated parts of helix-raylib's Raylib.hx, Raymath.hx, Rlgl.hx and the modules of helix.raylib.extras, and the types
+helix-raylib doesn't have yet.
 
-Raylib.hx has RCore, RShapes, RTextures, RText, RModels and RAudio, in raylib's module order; Raymath.hx has RMath and Rlgl.hx RRlgl;
-Extras.hx, what helix-raylib adds to raylib's API, has RAsync and RDevice. The sections (engines/raylib/src/helix/raylib/modules/) are read as the compiler describes them (haxe -xml), never by matching their text
+Raylib.hx has RCore, RShapes, RTextures, RText, RModels and RAudio, in raylib's module order; Raymath.hx has RMath and Rlgl.hx RRlgl.
+What helix-raylib adds to raylib's API is in the package helix.raylib.extras, a module for each section: the async versions of a raylib
+module's calls in one module each (extras.Textures from RTexturesAsync, extras.Text from RTextAsync, extras.Models from RModelsAsync,
+extras.Audio from RAudioAsync), rcore's split three ways (extras.Window from RWindowAsync, extras.Files from RFilesAsync, extras.Device
+from RDevice), and each feature helix-raylib adds on its own in a module and a section of its own, never added to an existing one. The
+sections (engines/raylib/src/helix/raylib/modules/) are read as the compiler describes them (haxe -xml), never by matching their text
 (docs/CONVENTIONS.md). Each file's generated part has two halves:
 
-  - its header's constants that aren't written by hand (Extras has no header): raylib's enum values and number defines (engines/raylib/vendor/raylib/raylib_api.json,
-    raymath_api.json and rlgl_api.json, raylib's own description of its API, rlgl's and raymath's made by raylib's parser);
+  - its header's constants that aren't written by hand (an extras module has no header): raylib's enum values and number defines
+    (engines/raylib/vendor/raylib/raylib_api.json, raymath_api.json and rlgl_api.json, raylib's own description of its API, rlgl's and
+    raymath's made by raylib's parser);
   - its functions: every function of its sections as an inline forward with its doc comment, under a heading naming its module and file;
     then each function a program can't call, as a macro with raylib's signature whose call reports its message where it is
     (helix.platform.macros.Build), so the build stops there and the call still has raylib's type. A section's function marked
     `@:unsupported("...")` is one helix-raylib won't have (Build.unsupported), one marked `@:unimplemented("...")` one it doesn't have yet
     (Build.unimplemented), and one of the header's that no section writes is declared `@:unimplemented` with "Not implemented".
 
-So each file reads like its header, and a call costs nothing more. A refusal's message naming a function of Extras names its import too
-(`import helix.raylib.Extras.*;`), as a program reaching for raylib's call doesn't import Extras yet. The sections are compiled with the files' generated functions left
-out, so a stale file doesn't stop its own making. A struct of raylib's that helix-raylib has no type for is written as a type of its own,
-with raylib's fields, in a file that says it is generated; a type written by hand in its place is left alone.
+So each file reads like its header, and a call costs nothing more. A refusal's message naming a function of an extras module names that
+module's import too (`import helix.raylib.extras.Textures.*;`), as a program reaching for raylib's call doesn't import it yet, and the
+module it names is the one holding the function. An extras module is kept to MODULE_LINES lines, so none grows into a monster, and holds
+no static variable with an initializer, which every program importing it would link, so dead-code elimination keeps only the functions a
+program calls. The sections are compiled with the files' generated functions left out, so a stale file doesn't stop its own making. A
+struct of raylib's that helix-raylib has no type for is written as a type of its own, with raylib's fields, in a file that says it is
+generated; a type written by hand in its place is left alone.
 
     python3 tools/gen_raylib.py [--check]
 
@@ -53,13 +62,23 @@ TARGETS = {
     ], 'raylib_api.json', 'raylib.h'),
     'Raymath.hx': ([('RMath', 'raymath: vectors, matrices and quaternions')], 'raymath_api.json', 'raymath.h'),
     'Rlgl.hx': ([('RRlgl', 'rlgl: the matrix stack, immediate drawing and render state')], 'rlgl_api.json', 'rlgl.h'),
-    'Extras.hx': ([
-        ('RAsync', "async: the loads, requests and writes in place of raylib's that wait for a file, a window or a write"),
+    'extras/Window.hx': ([
+        ('RWindowAsync', "window: the window, cursor, clipboard and screenshot requests in place of rcore's that wait for the window"),
+    ], None, 'Window'),
+    'extras/Files.hx': ([('RFilesAsync', "files: the file reads, writes and questions in place of rcore's that wait for a file")], None, 'Files'),
+    'extras/Textures.hx': ([('RTexturesAsync', "textures: the image and texture loads and writes in place of rtextures' that wait")], None, 'Textures'),
+    'extras/Text.hx': ([('RTextAsync', "text: the font loads and writes in place of rtext's that wait")], None, 'Text'),
+    'extras/Models.hx': ([('RModelsAsync', "models: the model, material and animation loads and mesh writes in place of rmodels' that wait")], None,
+                         'Models'),
+    'extras/Audio.hx': ([('RAudioAsync', "audio: the sound, wave and music loads and wave writes in place of raudio's that wait")], None, 'Audio'),
+    'extras/Device.hx': ([
         ('RDevice', "device: the safe area, run options, the device, the window's abilities, orientation and tilt"),
-    ], None, 'Extras'),
+    ], None, 'Device'),
 }
-# What a refusal's message names after a function of Extras.hx.
-EXTRAS_IMPORT = 'import helix.raylib.Extras.*;'
+# The package of what helix-raylib adds to raylib's API, a module for each of the TARGETS under extras/.
+EXTRAS = 'helix.raylib.extras'
+# The most lines an extras module may have.
+MODULE_LINES = 300
 SECTIONS = [s for sections, _, _ in TARGETS.values() for s in sections]
 # A function of raylib's: capitalized, as raylib's names are, or rl (or rlgl) and a capital, as rlgl's; or one of emscripten's, which
 # raylib's web programs call, refused.
@@ -77,6 +96,11 @@ OPAQUE.update({f'{name}{pointer}': 'Dynamic' for name in ('rlVertexBuffer', 'rlD
                for pointer in ('', ' *')})
 # A parameter name Haxe reserves, and the name helix-raylib gives it.
 KEYWORDS = {'dynamic': 'isDynamic'}
+
+
+def class_path(name):
+    """A target's class, by its file's name: helix.raylib.Raylib for Raylib.hx, helix.raylib.extras.Window for extras/Window.hx."""
+    return 'helix.raylib.' + name[:-3].replace('/', '.')
 
 
 def haxe_type(c, callbacks, many):
@@ -243,7 +267,7 @@ def described(texts):
     """The sections' functions and each file's members written by hand, as the compiler describes them (haxe -xml). The sections are
     compiled over a copy of engines/raylib/src whose files keep only their generated constants (which the sections name), so a stale file doesn't
     stop its own making. Returns ({section: [Function, in order]}, {file: names written by hand}, {macro function written by hand: its
-    parameters})."""
+    parameters}, [each static variable an extras module gives a value, by its full name])."""
     sys.path.insert(0, str(ROOT / 'tools'))
     import pins
     env = pins.use_haxelib()
@@ -262,16 +286,19 @@ def described(texts):
         out = Path(tmp) / 'raylib.xml'
         fields = Path(tmp) / 'fields.json'
         args = ['haxe', '-cp', str(src), '-lib', 'helix-services', '-lib', 'helix-platform', '-lib', 'helix-formats', '-lib', 'helix-geometry', '-lib', 'helix-math', '-lib', 'helix-log',
-                '--macro', "include('helix.raylib.modules')", '--macro', "include('helix.raylib', false)", '-xml', str(out), '-D', 'doc-gen', '--no-output', '-js', str(Path(tmp) / 'unused.js'),
+                '--macro', "include('helix.raylib.modules')", '--macro', "include('helix.raylib', false)", '--macro', f"include('{EXTRAS}')", '-xml', str(out), '-D', 'doc-gen', '--no-output', '-js', str(Path(tmp) / 'unused.js'),
                 # The facades' macro functions are in the macro context alone, which -xml doesn't describe.
-                '-cp', str(ROOT / 'tools/haxe'), '--macro', f'Fields.write("{fields.as_posix()}", {json.dumps(["helix.raylib." + n[:-3] for n in texts])})']
+                '-cp', str(ROOT / 'tools/haxe'), '--macro', f'Fields.write("{fields.as_posix()}", {json.dumps([class_path(n) for n in texts])})']
         ran = subprocess.run(args, env=env, capture_output=True, text=True)
         if ran.returncode:
             raise SystemExit('gen_raylib: the sections don\'t compile:\n' + ran.stdout + ran.stderr)
         classes = {c.get('path'): c for c in ET.parse(out).getroot()}
-        facades = {f'helix.raylib.{n[:-3]}' for n in texts}
-        declared = [f for f in json.loads(fields.read_text(encoding='utf-8')) if f['isStatic'] and f['owner'] in facades]
+        files = {class_path(n): n for n in texts}
+        declared = [f for f in json.loads(fields.read_text(encoding='utf-8')) if f['isStatic'] and f['owner'] in files]
         facade_fields = [(f['owner'], f['name'], f['line'], f['isMacro']) for f in declared]
+        # A static variable an extras module gives a value, which every program importing the module would link.
+        initialized = sorted(f"{f['owner']}.{f['name']}" for f in declared if f['owner'].startswith(EXTRAS + '.') and f.get('hasValue')
+                             and not f.get('isInline'))
         # A macro function written by hand (LoadModelAsync), its parameters as a section writes them: each ExprOf<T> as T, its arrows bare.
         macros = {f['name']: ', '.join(('?' if a['optional'] else '') + a['name'] + ':' + bare(a['type']) for a in f['args'])
                   for f in declared if f['isMacro'] and f.get('args') is not None}
@@ -282,11 +309,11 @@ def described(texts):
         sections[name] = sorted(functions, key=lambda f: f.line)
     own = {name: {} for name in texts}
     for path, field, line, is_macro in facade_fields:
-        name = path.rsplit('.', 1)[1] + '.hx'
+        name = files[path]
         first, last = spans[name]
         if not first <= int(line) <= last:
             own[name][field] = is_macro
-    return sections, own, macros
+    return sections, own, macros, initialized
 
 
 def generated(file_sections, functions, api, header, written):
@@ -359,7 +386,7 @@ def layout():
     and the macros the file writes by hand under one of their own. refused holds the functions a call to which doesn't compile, by kind
     ('unsupported', 'unimplemented'), each a list of names in the header's order."""
     texts = {name: (RAY / name).read_text(encoding='utf-8') for name in TARGETS}
-    functions, own, _ = described(texts)
+    functions, own, _, _ = described(texts)
     every = {f.name for fs in functions.values() for f in fs}
     out = {}
     for name, (target_sections, api_file, header) in TARGETS.items():
@@ -384,7 +411,7 @@ def layout():
                 headings.setdefault(field, 'Macros, run as the program builds')
         written = every | set(own[name])
         refused['unimplemented'] += [f['name'] for f in api['functions'] if f['name'] not in written]
-        out[f'helix.raylib.{name[:-3]}'] = (headings, refused)
+        out[class_path(name)] = (headings, refused)
     return out
 
 
@@ -419,7 +446,11 @@ def main():
         if BEGIN not in text or END not in text:
             print(f'gen_raylib: {name} has no generated part (its markers are missing)')
             return 1
-    functions, own, macros = described(texts)
+    functions, own, macros, initialized = described(texts)
+    if initialized:
+        print('gen_raylib: an extras module holds a static variable with an initializer, which every program importing it links; make it '
+              'inline, or keep it in a section: ' + ', '.join(initialized))
+        return 1
     # A refusal's message naming what to use instead gives its parameters as the section writes them, or as a facade's macro function
     # takes them.
     every = {f.name: f for fs in functions.values() for f in fs}
@@ -430,11 +461,24 @@ def main():
     if stale:
         print('gen_raylib: a refusal\'s message names a signature that isn\'t written so: ' + ', '.join(stale))
         return 1
-    extras = {f.name for section, _ in TARGETS['Extras.hx'][0] for f in functions[section]} | set(own['Extras.hx'])
-    unimported = sorted(f.name for f in every.values() if f.refusal and EXTRAS_IMPORT not in f.refusal[1]
-                        and any(re.search(rf'\b{name}\b', f.refusal[1]) for name in extras))
-    if unimported:
-        print(f'gen_raylib: a refusal\'s message names a function of Extras without its import ("{EXTRAS_IMPORT}"): ' + ', '.join(unimported))
+    # The extras module holding each function and constant of helix.raylib.extras, by its name.
+    holder = {}
+    for name, (target_sections, _, _) in TARGETS.items():
+        if class_path(name).startswith(EXTRAS + '.'):
+            for field in [f.name for section, _ in target_sections for f in functions[section]] + list(own[name]):
+                holder[field] = class_path(name)
+    misnamed = []
+    for f in every.values():
+        if not f.refusal:
+            continue
+        # The extras modules holding a function the message names, and those whose import it names.
+        needed = {holder[name] for name in holder if re.search(rf'\b{name}\b', f.refusal[1])}
+        imported = set(re.findall(rf'import ({re.escape(EXTRAS)}\.\w+)\.\*;', f.refusal[1]))
+        if needed != imported:
+            misnamed.append(f'{f.name} (imports {", ".join(sorted(imported)) or "none"}; its calls are in {", ".join(sorted(needed)) or "none"})')
+    if misnamed:
+        print('gen_raylib: a refusal\'s message names a function of an extras module without that module\'s import ("in '
+              f'{EXTRAS}.Textures (import {EXTRAS}.Textures.*;)"), or the import of a module holding none it names: ' + '; '.join(misnamed))
         return 1
     files = {}
     for name, text in texts.items():
@@ -445,6 +489,11 @@ def main():
         # Written: in a section, or by hand in the file itself (its constants and macro functions).
         written = set(every) | set(own[name])
         files[RAY / name] = before + generated(target_sections, functions, api, header, written) + after
+        lines = files[RAY / name].count('\n')
+        if class_path(name).startswith(EXTRAS + '.') and lines > MODULE_LINES:
+            print(f'gen_raylib: {name} would be {lines} lines, over {MODULE_LINES}: split it into modules of their own, each a raylib '
+                  'module\'s or a feature\'s, each with its own section (docs/DECISIONS.md 38)')
+            return 1
         if api is None:
             continue
         callbacks = callback_types(api)
@@ -458,7 +507,7 @@ def main():
     for path, content in files.items():
         current = path.read_text(encoding='utf-8') if path.exists() else None
         # A type written by hand is helix-raylib's own; only a generated one is replaced.
-        if current is not None and path.name not in TARGETS and not current.startswith(GENERATED_TYPE):
+        if current is not None and path.relative_to(RAY).as_posix() not in TARGETS and not current.startswith(GENERATED_TYPE):
             continue
         if current == content:
             continue

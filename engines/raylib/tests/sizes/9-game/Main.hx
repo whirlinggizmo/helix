@@ -1,6 +1,11 @@
 // helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a game: what a real game uses, its file formats one of each.
 import helix.raylib.Raylib.*;
-import helix.raylib.Extras.*;
+import helix.raylib.extras.Window.*;
+import helix.raylib.extras.Files.*;
+import helix.raylib.extras.Textures.*;
+import helix.raylib.extras.Text.*;
+import helix.raylib.extras.Models.*;
+import helix.raylib.extras.Audio.*;
 import helix.raylib.Raymath.*;
 import helix.raylib.BoundingBox;
 import helix.raylib.Camera2D;
@@ -27,7 +32,8 @@ import helix.raylib.Vector3;
 	"helix.geometry.Ray3D", "helix.math.Matrix2D", "helix.math.RectPacker2D", "helix.math.Transform2D", "helix.math.Vector2D",
 	"helix.platform.adapters.fontrasterizer.canvas", "helix.platform.adapters.gamepads.dom", "helix.platform.adapters.keyboard.dom",
 	"helix.platform.adapters.mouse.dom", "helix.platform.adapters.touch.dom", "helix.raylib.internal.AudioStreams", "helix.raylib.internal.FrameConverter",
-	"helix.services.fonts", "helix.services.input.Gamepads", "helix.services.input.Gestures", "helix.services.input.Mouse", "helix.services.input.Touch")
+	"helix.raylib.modules.RFilesAsync", "helix.raylib.modules.RTextAsync", "helix.raylib.modules.RWindowAsync", "helix.services.fonts",
+	"helix.services.input.Gamepads", "helix.services.input.Gestures", "helix.services.input.Mouse", "helix.services.input.Touch")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

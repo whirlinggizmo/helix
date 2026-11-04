@@ -9,7 +9,7 @@ public members, and the tool fails when they differ. The adapters are each one t
 compiler says which, by the target each package types for), and the reference shows both, each marked with its target. The HTML is made from one description,
 js's with cpp's adapters added, so dox has nothing to mark as one target's. Of the tools (helix.platform.tools), which run in the compiler,
 it shows ShaderCompiler, whose compile a program calls: a macro, its signature from the compiler's macro context (tools/haxe/Fields.hx), as
-Haxe's description types a macro's arguments as Dynamic. helix-raylib's facades (Raylib, Raymath, Rlgl, Extras) are laid out as tools/gen_raylib.py
+Haxe's description types a macro's arguments as Dynamic. helix-raylib's facades (Raylib, Raymath, Rlgl and the extras modules) are laid out as tools/gen_raylib.py
 says: their members under headings, and what refuses to compile listed apart. Code is read through the compiler, never as text
 (docs/CONVENTIONS.md, Tools). A @:structInit class is shown as the object a program writes, each field with its default. --check regenerates the Markdown in memory and fails when docs/api differs, so a change to a doc comment is committed with
 its reference (helix.py test runs it)."""

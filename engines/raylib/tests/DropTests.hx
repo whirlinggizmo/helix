@@ -1,6 +1,6 @@
 import haxe.io.Bytes;
 import helix.raylib.Raylib.*;
-import helix.raylib.Extras.*;
+import helix.raylib.extras.Files.*;
 import helix.raylib.internal.MemoryFiles;
 import helix.raylib.internal.Runtime;
 

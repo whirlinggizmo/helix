@@ -3,7 +3,7 @@ package helix.raylib.internal;
 import helix.raylib.AutomationEvent;
 import helix.raylib.AutomationEventList;
 import helix.raylib.modules.RCore;
-import helix.raylib.modules.RAsync;
+import helix.raylib.modules.RWindowAsync;
 
 /** Holds raylib's automation events: the input as raylib keeps it, which the input functions read once automation is used, the list
 	recorded into, and the recording and playing of events, as raylib's rcore does them.
@@ -383,13 +383,13 @@ class Automation implements PlayedInput {
 			case 18:
 				Runtime.shouldClose = true;
 			case 19:
-				RAsync.MaximizeWindowAsync();
+				RWindowAsync.MaximizeWindowAsync();
 			case 20:
-				RAsync.MinimizeWindowAsync();
+				RWindowAsync.MinimizeWindowAsync();
 			case 21:
-				RAsync.SetWindowSizeAsync(p[0], p[1]);
+				RWindowAsync.SetWindowSizeAsync(p[0], p[1]);
 			case 22:
-				RAsync.TakeScreenshotAsync('screenshot${StringTools.lpad(Std.string(screenshots), "0", 3)}.png');
+				RWindowAsync.TakeScreenshotAsync('screenshot${StringTools.lpad(Std.string(screenshots), "0", 3)}.png');
 				screenshots++;
 			case 23:
 				RCore.SetTargetFPS(p[0]);

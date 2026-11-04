@@ -4,7 +4,7 @@ import haxe.macro.Expr;
 import haxe.macro.Type;
 #end
 
-/** Writes, as the program builds, a call to every function of `helix.raylib.Raylib`, `Raymath`, `Rlgl` and `Extras` a program can call, read from
+/** Writes, as the program builds, a call to every function of `helix.raylib.Raylib`, `Raymath`, `Rlgl` and `helix.raylib.extras` a program can call, read from
 	the compiler's types of them, so the size ladder's last rung links all of helix-raylib. Each argument is `Everything.value` and each result
 	goes to `Everything.result`, both of no type, so nothing a call is given or returns is known as the program builds and nothing is
 	folded away. The functions that refuse to compile (a section's `@:unsupported` or `@:unimplemented`) are left out; the macro functions
@@ -23,21 +23,32 @@ class Everything {
 		"helix.raylib.Raylib",
 		"helix.raylib.Raymath",
 		"helix.raylib.Rlgl",
-		"helix.raylib.Extras"
+		"helix.raylib.extras.Window",
+		"helix.raylib.extras.Files",
+		"helix.raylib.extras.Textures",
+		"helix.raylib.extras.Text",
+		"helix.raylib.extras.Models",
+		"helix.raylib.extras.Audio",
+		"helix.raylib.extras.Device"
 	];
 
 	/** raylib's modules in helix-raylib, whose functions carry the refusals' metadata. */
 	static final SECTIONS = [
-		"RAsync",
 		"RAudio",
+		"RAudioAsync",
 		"RCore",
 		"RDevice",
+		"RFilesAsync",
 		"RMath",
 		"RModels",
+		"RModelsAsync",
 		"RRlgl",
 		"RShapes",
 		"RText",
-		"RTextures"
+		"RTextAsync",
+		"RTextures",
+		"RTexturesAsync",
+		"RWindowAsync"
 	];
 
 	/** The section metadata that makes a function refuse to compile. */

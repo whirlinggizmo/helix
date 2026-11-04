@@ -5,8 +5,8 @@ import haxe.macro.PositionTools;
 import haxe.macro.Printer;
 
 /** Writes classes' fields as they are declared, as the compiler parsed them: a JSON array, one object a field, with its class, name, the
-	line it starts on, whether it is static and a macro function, and a function's arguments (name, whether optional, type, default) and
-	result, types as declared. A target's description (haxe -xml) types a macro function's arguments as Dynamic, and omits some; this
+	line it starts on, whether it is static, inline and a macro function, and a function's arguments (name, whether optional, type,
+	default) and result, types as declared, or whether a variable has an initializer. A target's description (haxe -xml) types a macro function's arguments as Dynamic, and omits some; this
 	gives them as written (ExprOf<String>).
 
 	--macro Fields.write("fields.json", ["helix.raylib.Raylib", "helix.raylib.Raymath"])
@@ -40,7 +40,8 @@ class Fields {
 				name: field.name,
 				line: PositionTools.toLocation(field.pos).range.start.line,
 				isStatic: field.access != null && field.access.indexOf(AStatic) >= 0,
-				isMacro: field.access != null && field.access.indexOf(AMacro) >= 0
+				isMacro: field.access != null && field.access.indexOf(AMacro) >= 0,
+				isInline: field.access != null && field.access.indexOf(AInline) >= 0
 			};
 			switch field.kind {
 				case FFun(f):
@@ -54,7 +55,8 @@ class Fields {
 							}
 					];
 					described.result = f.ret == null ? null : printer.printComplexType(f.ret);
-				case _:
+				case FVar(_, value) | FProp(_, _, _, value):
+					described.hasValue = value != null;
 			}
 			found.push(described);
 		}

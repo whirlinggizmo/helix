@@ -17,7 +17,7 @@
   HeliX's games ported, its effort and its size beside its HeliX build.
 - **helix-raylib (DECISIONS 16, 19, 20, 21, 38):** raylib's API over the services, merged to `main`. Next: rebuilt on helix-render; then reloading and placeholders under raylib's own names (the assets,
   resources and objects below). Then a trial of how agents take to
-  the `...Async` loads, now in `Extras` (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
+  the `...Async` loads, now in `helix.raylib.extras` (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
   (Atomics.wait, which a worker may; cross-origin isolation, OffscreenCanvas, input and audio relayed; raylib's loop run as written)
   against a whole-program rewrite into callbacks. A `Future` of our own over the callbacks, cross-target, may serve the managed layer,
   as Haxe has none (`js.lib.Promise` is the browser's alone). Every raylib 5.5 function is in; what refuses to compile
@@ -29,9 +29,9 @@
   `raygui.h` names it (the controls, `GuiSetStyle`/`GuiLoadStyle` and its styles, its icons), drawn through helix-raylib, so a game
   writes its menus and HUD from what agents already know rather than its own widgets (the Katawami port's blind trial wrote some 700
   lines of UI by hand). raylib's own GUI tools then work unchanged: rGuiStyler's `.rgs` styles (and raygui's bundled ones) load
-  through `GuiLoadStyleAsync` in `Extras`, as every file load does; rGuiLayout's `.rgl` layouts, and its code export through a Haxe
+  through `GuiLoadStyleAsync` in an extras module of its own, as every file load is async; rGuiLayout's `.rgl` layouts, and its code export through a Haxe
   code template for helix-raylib, if its custom templates allow one (to be checked). raylib's other companion headers agents know, easings (`reasings.h`) and physics (`physac.h`), are each a module
-  of their own the same way when wanted; `Extras` keeps only what has no raylib-family equivalent.
+  of their own the same way when wanted; the extras keep only what has no raylib-family equivalent.
 - **Platform proposals queued, for review:** depth sampled after a pass, depth bias, stencil, and the depth tests `Always`, `Less`,
   `Equal` and `GreaterEqual` (helix-render's revision 9). A render target's own sample count, apart from its depth, is being built. Deferred from the vertex formats
   (DECISIONS 33): bone IDs and three.js' skinIndex fed as normalized bytes or shorts and scaled back by the compiler, rounded, as a

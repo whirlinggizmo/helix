@@ -2,18 +2,18 @@ import helix.platform.Device;
 import helix.platform.Orientation;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
-import helix.raylib.Extras.*;
+import helix.raylib.extras.Device.*;
 import helix.raylib.internal.Runtime;
 import helix.services.input.Tilt;
 import helix.services.screen.Screen;
 
-/** Checks `Extras`' answers about the device and the page over fakes (services' `FakeSystem`, `FakeWindow`, `FakeEvents` and
+/** Checks `extras.Device`'s answers about the device and the page over fakes (services' `FakeSystem`, `FakeWindow`, `FakeEvents` and
 	`FakeDevices`, and a window here that holds the screen one way up): the safe area in the screen's coordinates, a design's among them;
 	the run options; the device; whether the window closes and goes fullscreen; the orientation asked for, granted, refused and out of
 	range; and the tilt, its range and its level, refused where the platform can't read it. Each `...Async` call answers once, at a
 	later poll. */
 @:access(helix.raylib.internal.Runtime)
-class ExtrasTests {
+class DeviceTests {
 	static var checks = 0;
 
 	static function check(value:Bool, message:String):Void {

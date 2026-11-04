@@ -2,12 +2,13 @@ package helix.raylib.modules;
 
 #if !macro
 import helix.raylib.*;
+import helix.raylib.internal.Answers;
 import helix.raylib.internal.Runtime;
 #end
 
 /** Holds what a game needs from the device and the page that raylib 5.5 has no call for, helix-raylib's own: the safe area, the run
-	options, the device, the window's abilities, the screen's orientation and the tilt, written here; `Extras` forwards to each
-	(`tools/gen_raylib.py`). */
+	options, the device, the window's abilities, the screen's orientation and the tilt. Each is written here, and
+	`helix.raylib.extras.Device` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RDevice {
@@ -95,11 +96,11 @@ class RDevice {
 		@param failed  Optional. Receives why it was refused; when omitted, it is logged. */
 	static function SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void):Void {
 		if (orientation < 0 || orientation > 2) {
-			Runtime.later(() -> RAsync.refuse("SetScreenOrientationAsync", '$orientation is not an ORIENTATION_ value', failed));
+			Runtime.later(() -> Answers.refuse("SetScreenOrientationAsync", '$orientation is not an ORIENTATION_ value', failed));
 			return;
 		}
 		var window = Runtime.window;
-		RAsync.ask("SetScreenOrientationAsync", (granted, refused) -> window.requestOrientation(cast orientation, granted, refused),
+		Answers.ask("SetScreenOrientationAsync", (granted, refused) -> window.requestOrientation(cast orientation, granted, refused),
 			"the screen can't be held one way up here", done, failed);
 	}
 
@@ -120,7 +121,7 @@ class RDevice {
 		@param failed  Optional. Receives why there will be none: refused, the page isn't HTTPS, or no sensor; when omitted, it is logged. */
 	static function EnableTiltAsync(?done:Void->Void, ?failed:String->Void):Void {
 		var tilt = Runtime.tilt();
-		RAsync.ask("EnableTiltAsync", (granted, refused) -> tilt.requestAccess(granted, refused), "the tilt can't be read here", done, failed);
+		Answers.ask("EnableTiltAsync", (granted, refused) -> tilt.requestAccess(granted, refused), "the tilt can't be read here", done, failed);
 	}
 
 	/** Stops the tilt's readings. A permission granted stays granted. */

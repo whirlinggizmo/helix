@@ -1,6 +1,7 @@
 // helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one the model's animations loaded with LoadModelAnimationsAsync and one played.
 import helix.raylib.Raylib.*;
-import helix.raylib.Extras.*;
+import helix.raylib.extras.Textures.*;
+import helix.raylib.extras.Models.*;
 import helix.raylib.Camera3D;
 import helix.raylib.Model;
 import helix.raylib.ModelAnimation;

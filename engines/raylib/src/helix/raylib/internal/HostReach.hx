@@ -10,22 +10,19 @@ import sys.FileSystem;
 using StringTools;
 #end
 
-/** Warns, as the program builds, where the program's own code reaches the page or the host for something `Extras` or `Raylib` answers
+/** Warns, as the program builds, where the program's own code reaches the page or the host for something `helix.raylib.extras` or `Raylib` answers
 	on every target: the URL's query or an environment variable (`GetRunOption`), the device's touch screen or pointer
 	(`IsTouchScreenAvailable`, `IsFinePointerAvailable`), the screen's orientation (`SetScreenOrientationAsync`), the safe area's insets
 	(`GetWindowSafeArea`), the device's tilt (`EnableTiltAsync`), the page's storage (`SaveFileTextAsync`, `LoadFileTextAsync`) and its
 	fullscreen (`IsFullscreenAvailable`, `IsWindowFullscreen`, `ToggleFullscreenAsync`), when the program is built with
 	`-D helix-raylib-host-warnings`: off by default, as a person reads the README and may reach the host on purpose, and on for an agent
 	writing raylib from memory (a trial). Each warning reads as a refusal does ("js.html.Window.matchMedia: Works only in a browser. See
-	IsTouchScreenAvailable() or IsFinePointerAvailable() in helix.raylib.Extras (import helix.raylib.Extras.*;)."). Each site warns
+	IsTouchScreenAvailable() or IsFinePointerAvailable() in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)."). Each site warns
 	once for each call, and libraries' code isn't looked at. Read from the compiler's typed code, after typing: the fields and types reached, and the text
 	of a string or a `js.Syntax.code` call. Run by the library's `extraParams.hxml`. */
 @:noCompletion
 class HostReach {
 	#if macro
-	/** What `import helix.raylib.Extras.*;` gives, as each warning naming an `Extras` call ends. */
-	static inline final IMPORT = "in helix.raylib.Extras (import helix.raylib.Extras.*;)";
-
 	static inline final RUN_OPTION = "GetRunOption(name:String)";
 	static inline final POINTER = "IsTouchScreenAvailable() or IsFinePointerAvailable()";
 	static inline final TOUCH_SCREEN = "IsTouchScreenAvailable()";
@@ -37,8 +34,18 @@ class HostReach {
 	static inline final IS_FULLSCREEN = "IsWindowFullscreen()";
 	static inline final FULLSCREEN = "ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void)";
 
-	/** The calls `Raylib` has, which need no import. */
-	static final RAYLIB = [IS_FULLSCREEN];
+	/** The module of `helix.raylib.extras` holding each call, which a warning names with its import; a call of `Raylib`'s needs none. */
+	static final MODULES:Map<String, String> = [
+		RUN_OPTION => "Device",
+		POINTER => "Device",
+		TOUCH_SCREEN => "Device",
+		ORIENTATION => "Device",
+		TILT => "Device",
+		SAFE_AREA => "Device",
+		CAN_FULLSCREEN => "Device",
+		SAVE => "Files",
+		FULLSCREEN => "Window"
+	];
 
 	/** What a warning naming a call adds, after the call. */
 	static final NOTES:Map<String, String> = [
@@ -185,7 +192,8 @@ class HostReach {
 		if (!own(pos))
 			return;
 		var target = reached.startsWith("Sys.") ? "natively" : "in a browser";
-		var where = RAYLIB.indexOf(call) < 0 ? " " + IMPORT : "";
+		var module = MODULES.get(call);
+		var where = module == null ? "" : ' in helix.raylib.extras.$module (import helix.raylib.extras.$module.*;)';
 		var note = NOTES.exists(call) ? " " + NOTES.get(call) : "";
 		Context.warning('$reached: Works only $target. See $call$where.$note', pos);
 	}

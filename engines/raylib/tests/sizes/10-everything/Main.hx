@@ -1,8 +1,11 @@
-// helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one everything: every function of Raylib, Raymath, Rlgl and Extras a program can call, and every file reader.
+// helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one everything: every function of Raylib, Raymath, Rlgl and helix.raylib.extras a program can call, and every file reader.
 import helix.raylib.Raylib.*;
-import helix.raylib.Extras.*;
+import helix.raylib.extras.Textures.*;
+import helix.raylib.extras.Text.*;
+import helix.raylib.extras.Models.*;
+import helix.raylib.extras.Audio.*;
 
-/** helix-raylib's high-water mark: a program calling every function of `Raylib`, `Raymath`, `Rlgl` and `Extras` that compiles (`Everything.calls`
+/** helix-raylib's high-water mark: a program calling every function of `Raylib`, `Raymath`, `Rlgl` and `helix.raylib.extras` that compiles (`Everything.calls`
 	writes them as the program builds), and each macro function that chooses a reader by a constant file name (DECISIONS 29) once for each
 	reader, so nothing of helix-raylib can be left out. A game approaches it from below. It is built and measured, never run: its calls are
 	given nothing, and its files aren't there. */

@@ -1,7 +1,7 @@
 import haxe.io.Bytes;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
-import helix.raylib.Extras.*;
+import helix.raylib.extras.Audio.*;
 import helix.raylib.internal.Runtime;
 
 // helix-raylib's waves, printed as ref.c prints raylib 5.5's, for tools/raylib_parity.py: each file read through LoadWaveFromMemoryAsync

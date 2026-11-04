@@ -17,7 +17,6 @@ import helix.raylib.modules.RText.*;
 import helix.raylib.modules.RModels.*;
 import helix.raylib.modules.RAudio.*;
 import helix.raylib.modules.RMath.*;
-import helix.raylib.modules.RAsync.*;
 #end
 
 /** Holds raylib's raudio (sounds), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
@@ -106,7 +105,7 @@ class RAudio {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadWave: Synchronous loading is not supported. See LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("LoadWave: Synchronous loading is not supported. See LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void) in helix.raylib.extras.Audio (import helix.raylib.extras.Audio.*;)")
 	static function LoadWave(fileName:String):Wave {
 		throw "LoadWave is unimplemented";
 	}
@@ -118,7 +117,7 @@ class RAudio {
 		@param fileData  The file's bytes.
 		@param dataSize  How many of them.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadWaveFromMemory: Decoding is asynchronous. See LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("LoadWaveFromMemory: Decoding is asynchronous. See LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void) in helix.raylib.extras.Audio (import helix.raylib.extras.Audio.*;)")
 	static function LoadWaveFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Wave {
 		throw "LoadWaveFromMemory is unimplemented";
 	}
@@ -144,7 +143,7 @@ class RAudio {
 		@param wave  The wave.
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportWave: A file is written later, or is refused. See ExportWaveAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("ExportWave: A file is written later, or is refused. See ExportWaveAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Audio (import helix.raylib.extras.Audio.*;)")
 	static function ExportWave(wave:Wave, fileName:String):Bool {
 		throw "ExportWave is unimplemented";
 	}
@@ -167,7 +166,7 @@ class RAudio {
 		@param wave  The wave.
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportWaveAsCode: A file is written later, or is refused. See ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("ExportWaveAsCode: A file is written later, or is refused. See ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Audio (import helix.raylib.extras.Audio.*;)")
 	static function ExportWaveAsCode(wave:Wave, fileName:String):Bool {
 		throw "ExportWaveAsCode is unimplemented";
 	}
@@ -329,7 +328,7 @@ class RAudio {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void) in helix.raylib.extras.Audio (import helix.raylib.extras.Audio.*;)")
 	static function LoadSound(fileName:String):Sound {
 		throw "LoadSound is unimplemented";
 	}
@@ -637,7 +636,7 @@ class RAudio {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadMusicStream: Synchronous loading is not supported. See LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("LoadMusicStream: Synchronous loading is not supported. See LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void) in helix.raylib.extras.Audio (import helix.raylib.extras.Audio.*;)")
 	static function LoadMusicStream(fileName:String):Music {
 		throw "LoadMusicStream is unimplemented";
 	}

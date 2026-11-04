@@ -19,7 +19,6 @@ import helix.raylib.modules.RText.*;
 import helix.raylib.modules.RModels.*;
 import helix.raylib.modules.RAudio.*;
 import helix.raylib.modules.RMath.*;
-import helix.raylib.modules.RAsync.*;
 import helix.raylib.Rlgl.*;
 import helix.raylib.modules.RRlgl.*;
 #end

@@ -1,6 +1,7 @@
 // helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a glTF model loaded with LoadModelAsync and drawn beside the cube.
 import helix.raylib.Raylib.*;
-import helix.raylib.Extras.*;
+import helix.raylib.extras.Textures.*;
+import helix.raylib.extras.Models.*;
 import helix.raylib.Camera3D;
 import helix.raylib.Model;
 import helix.raylib.Texture2D;
@@ -11,7 +12,7 @@ import helix.raylib.Vector3;
 	its model engines/raylib/parity/assets/robot.glb. */
 @:adds("helix.formats.gltf", "helix.formats.text", "helix.geometry.Animation3D", "helix.geometry.AnimationProperty3D", "helix.geometry.AnimationTrack3D",
 	"helix.geometry.Bone3D", "helix.geometry.KeyInterpolation", "helix.geometry.Mesh3D", "helix.geometry.Skeleton3D", "helix.geometry.Skin3D",
-	"helix.raylib.internal.Animations", "helix.raylib.modules.RMath", "helix.services.models")
+	"helix.raylib.internal.Animations", "helix.raylib.modules.RMath", "helix.raylib.modules.RModelsAsync", "helix.services.models")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

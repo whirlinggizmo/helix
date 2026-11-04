@@ -1,6 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
-import helix.raylib.Extras.*;
+import helix.raylib.extras.Window.*;
 import helix.raylib.Rlgl.*;
 
 // scene.c.in's wire, culling and depth scene, drawn by helix-raylib; its third frame saved as helix.png. cases.py's list is put into it.

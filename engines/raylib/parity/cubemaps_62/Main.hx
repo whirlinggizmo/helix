@@ -1,6 +1,7 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
-import helix.raylib.Extras.*;
+import helix.raylib.extras.Window.*;
+import helix.raylib.extras.Textures.*;
 import helix.raylib.Rlgl.*;
 
 // scene.c's cubemaps, drawn by helix-raylib: the third frame after the skybox's image loads saved as helix.png. Its files (web/) are raylib's

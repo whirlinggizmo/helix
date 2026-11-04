@@ -17,7 +17,6 @@ import helix.raylib.modules.RText.*;
 import helix.raylib.modules.RModels.*;
 import helix.raylib.modules.RAudio.*;
 import helix.raylib.modules.RMath.*;
-import helix.raylib.modules.RAsync.*;
 #end
 
 /** Holds raylib's rtextures (textures, render textures and colors), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
@@ -31,7 +30,7 @@ class RTextures {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)")
 	static function LoadTexture(fileName:String):Texture2D {
 		throw "LoadTexture is unimplemented";
 	}
@@ -516,7 +515,7 @@ class RTextures {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImage: Synchronous loading is not supported. See LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("LoadImage: Synchronous loading is not supported. See LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)")
 	static function LoadImage(fileName:String):Image {
 		throw "LoadImage is unimplemented";
 	}
@@ -530,7 +529,7 @@ class RTextures {
 		@param format  The pixel format (`PIXELFORMAT_*`).
 		@param headerSize  The bytes before the pixels.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageRaw: Synchronous loading is not supported. See LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("LoadImageRaw: Synchronous loading is not supported. See LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)")
 	static function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int):Image {
 		throw "LoadImageRaw is unimplemented";
 	}
@@ -542,7 +541,7 @@ class RTextures {
 		@param fileData  The file's bytes.
 		@param dataSize  How many.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageFromMemory: Images are decoded asynchronously. See LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("LoadImageFromMemory: Images are decoded asynchronously. See LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)")
 	static function LoadImageFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Image {
 		throw "LoadImageFromMemory is unimplemented";
 	}
@@ -553,7 +552,7 @@ class RTextures {
 		@param fileName  The file.
 		@param frames  Would be set to how many frames.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageAnim: Synchronous loading is not supported. See LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("LoadImageAnim: Synchronous loading is not supported. See LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)")
 	static function LoadImageAnim(fileName:String, frames:Array<Int>):Image {
 		throw "LoadImageAnim is unimplemented";
 	}
@@ -566,7 +565,7 @@ class RTextures {
 		@param dataSize  How many.
 		@param frames  Would be set to how many frames.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageAnimFromMemory: Images are decoded asynchronously. See LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("LoadImageAnimFromMemory: Images are decoded asynchronously. See LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)")
 	static function LoadImageAnimFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>):Image {
 		throw "LoadImageAnimFromMemory is unimplemented";
 	}
@@ -576,7 +575,7 @@ class RTextures {
 
 		@param texture  The texture.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageFromTexture: A texture is read back asynchronously. See LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("LoadImageFromTexture: A texture is read back asynchronously. See LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)")
 	static function LoadImageFromTexture(texture:Texture2D):Image {
 		throw "LoadImageFromTexture is unimplemented";
 	}
@@ -585,7 +584,7 @@ class RTextures {
 		doesn't compile on any target: `LoadImageFromScreenAsync` reads it.
 
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageFromScreen: The screen is read back asynchronously. See LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("LoadImageFromScreen: The screen is read back asynchronously. See LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)")
 	static function LoadImageFromScreen():Image {
 		throw "LoadImageFromScreen is unimplemented";
 	}
@@ -611,7 +610,7 @@ class RTextures {
 		@param image  The image.
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportImage: A file is written later, or is refused. See ExportImageAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("ExportImage: A file is written later, or is refused. See ExportImageAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)")
 	static function ExportImage(image:Image, fileName:String):Bool {
 		throw "ExportImage is unimplemented";
 	}
@@ -644,7 +643,7 @@ class RTextures {
 		@param image  The image.
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportImageAsCode: A file is written later, or is refused. See ExportImageAsCodeAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.Extras (import helix.raylib.Extras.*;)")
+	@:unsupported("ExportImageAsCode: A file is written later, or is refused. See ExportImageAsCodeAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)")
 	static function ExportImageAsCode(image:Image, fileName:String):Bool {
 		throw "ExportImageAsCode is unimplemented";
 	}

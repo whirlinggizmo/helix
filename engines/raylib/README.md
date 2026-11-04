@@ -8,7 +8,8 @@ program written as raylib is written runs in a page and natively.
 | `helix.raylib.Raylib` | raylib's functions, constants and colors, as `raylib.h` names them |
 | `helix.raylib.Raymath` | raymath's vectors, matrices and quaternions, as `raymath.h` names them, imported apart as raylib includes it |
 | `helix.raylib.Rlgl` | rlgl's matrix stack, immediate drawing and render state, as `rlgl.h` names them, imported apart as raylib includes it |
-| `helix.raylib.Extras` | what helix-raylib adds to raylib's API, imported apart (`import helix.raylib.Extras.*;`): the `...Async` loads, requests and writes in place of raylib's calls a page can't wait for, and the safe area, run options, device, window abilities, screen orientation and tilt |
+| `helix.raylib.extras.Window`, `Files`, `Textures`, `Text`, `Models`, `Audio` | the `...Async` loads, requests and writes in place of raylib's calls a page can't wait for, a module for each of raylib's modules (rcore's in `Window` and `Files`), each imported apart (`import helix.raylib.extras.Textures.*;`) |
+| `helix.raylib.extras.Device` | the safe area, run options, device, window abilities, screen orientation and tilt, which raylib has no call for (`import helix.raylib.extras.Device.*;`) |
 | `helix.raylib.Vector2`, `Vector3`, `Color`, `Texture2D`, `Camera3D`, `Model`, `Shader`, `RenderTexture2D` and the rest | raylib's structs, with their fields |
 
 The window and frame, the keyboard, mouse, touch and gamepads, text input, shapes (with 6.2's fixes), textures (their pixels updated and read back, their mipmaps made and filtered as raylib's GL filters them; cubemaps from an image in any of raylib's layouts, drawn as a skybox or sampled by a shader), every blend mode (rlgl's custom factors too) and scissor modes, the default
@@ -41,16 +42,32 @@ where a native program finds its files, relative to itself (default `../web`). `
 
 ## What helix-raylib adds
 
-`Raylib`, `Raymath` and `Rlgl` are raylib 5.5's API and nothing more (docs/DECISIONS.md 24, 38). What helix-raylib adds is in `Extras`: the
-loads, requests and writes that answer later (`LoadTextureAsync`, `ToggleFullscreenAsync`, `SaveFileTextAsync` and the rest), and what a
-game needs from the device and the page that raylib has no call for (`GetWindowSafeArea`, `GetRunOption`, `IsPlatformWeb`,
-`GetPlatformOS`, `IsTouchScreenAvailable`, `IsFinePointerAvailable`, `IsWindowCloseable`, `IsFullscreenAvailable`,
-`SetScreenOrientationAsync`, `GetScreenOrientation`, and the tilt: `EnableTiltAsync`, `GetTilt`, `SetTiltRange`, `CalibrateTilt`,
-`DisableTilt`). raylib's call a page can't wait for doesn't compile, naming the one in `Extras` and its import; so do emscripten's calls
-raylib's web programs make (`emscripten_set_main_loop` and the rest), saying what to write instead. A program that reaches the page or
-the host itself for what `Extras` answers (the URL's query, `Sys.getEnv`, `matchMedia`, `maxTouchPoints`, `screen.orientation`,
-`env(safe-area-inset-*)`, `deviceorientation`) builds with a warning at each place, naming the call, when it is built with
-`-D helix-raylib-host-warnings`; it is off by default, since a program may reach the host on purpose.
+`Raylib`, `Raymath` and `Rlgl` are raylib 5.5's API and nothing more (docs/DECISIONS.md 24, 38). What helix-raylib adds is in the
+package `helix.raylib.extras`, each module imported apart:
+
+| Module | What it holds |
+|---|---|
+| `Window` | the window's requests (`SetWindowSizeAsync`, `SetWindowPositionAsync`, `MaximizeWindowAsync` and the rest), `ToggleFullscreenAsync`, `ToggleBorderlessWindowedAsync`, `DisableCursorAsync`, `EnableCursorAsync`, the clipboard (`GetClipboardTextAsync`, `SetClipboardTextAsync`, `GetClipboardImageAsync`) and `TakeScreenshotAsync` |
+| `Files` | the file reads, writes and questions (`LoadFileTextAsync`, `SaveFileTextAsync`, `FileExistsAsync`, `LoadDirectoryFilesAsync` and the rest), `ExportDataAsCodeAsync` and the automation event lists' files |
+| `Textures` | the image and texture loads (`LoadTextureAsync`, `LoadImageAsync`, `LoadImageAnimAsync` and the rest), `ExportImageAsync` and `ExportImageAsCodeAsync` |
+| `Text` | the font loads (`LoadFontAsync`, `LoadFontExAsync`, `LoadFontFromMemoryAsync`, `LoadFontDataAsync`) and `ExportFontAsCodeAsync` |
+| `Models` | `LoadModelAsync`, `LoadModelAnimationsAsync`, `LoadMaterialsAsync`, `ExportMeshAsync` and `ExportMeshAsCodeAsync` |
+| `Audio` | `LoadSoundAsync`, `LoadWaveAsync`, `LoadWaveFromMemoryAsync`, `LoadMusicStreamAsync`, `ExportWaveAsync` and `ExportWaveAsCodeAsync` |
+| `Device` | what a game needs from the device and the page that raylib has no call for: `GetWindowSafeArea`, `GetRunOption`, `IsPlatformWeb`, `GetPlatformOS`, `IsTouchScreenAvailable`, `IsFinePointerAvailable`, `IsWindowCloseable`, `IsFullscreenAvailable`, `SetScreenOrientationAsync`, `GetScreenOrientation`, and the tilt (`EnableTiltAsync`, `GetTilt`, `SetTiltRange`, `CalibrateTilt`, `DisableTilt`) |
+
+The async versions of raylib's calls are in one module for each raylib module, named for it: rtextures' in `Textures`, rtext's in
+`Text`, rmodels' in `Models`, raudio's in `Audio`. rcore's alone would be some 50 calls, so it is split three ways: `Window`, `Files`
+and `Device`. A feature helix-raylib adds on its own gets a module of its own, never a place in an existing one. Each module is
+generated by `tools/gen_raylib.py` from its own section in `src/helix/raylib/modules/`, is kept under 300 lines, and holds no static
+variable with an initializer, so a program links only the functions it calls.
+
+raylib's call a page can't wait for doesn't compile, naming the one that replaces it, its module and its import ("See
+LoadTextureAsync(...) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)"); so do emscripten's calls raylib's web
+programs make (`emscripten_set_main_loop` and the rest), saying what to write instead. A program that reaches the page or the host
+itself for what `Device`, `Files` or `Window` answers (the URL's query, `Sys.getEnv`, `matchMedia`, `maxTouchPoints`,
+`screen.orientation`, `env(safe-area-inset-*)`, `deviceorientation`, the page's storage and fullscreen) builds with a warning at each
+place, naming the call and its module's import, when it is built with `-D helix-raylib-host-warnings`; it is off by default, since a
+program may reach the host on purpose.
 
 ## What a model holds
 

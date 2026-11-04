@@ -1,6 +1,8 @@
 // helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one audio: a sound loaded with LoadSoundAsync and played once it is loaded.
 import helix.raylib.Raylib.*;
-import helix.raylib.Extras.*;
+import helix.raylib.extras.Textures.*;
+import helix.raylib.extras.Models.*;
+import helix.raylib.extras.Audio.*;
 import helix.raylib.Camera3D;
 import helix.raylib.Model;
 import helix.raylib.ModelAnimation;
@@ -11,7 +13,8 @@ import helix.raylib.Vector3;
 
 /** A program written in raylib on helix-raylib, as a game in raylib would be. Its image and sound are
 	docs/trials/2026-10-30-async/assets/player.png and coin.wav, its model and animations engines/raylib/parity/assets/robot.glb. */
-@:adds("helix.platform.adapters.audio.webaudio", "helix.platform.adapters.audiodecoder.webaudio", "helix.raylib.modules.RAudio", "helix.services.audio")
+@:adds("helix.platform.adapters.audio.webaudio", "helix.platform.adapters.audiodecoder.webaudio", "helix.raylib.modules.RAudio",
+	"helix.raylib.modules.RAudioAsync", "helix.services.audio")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

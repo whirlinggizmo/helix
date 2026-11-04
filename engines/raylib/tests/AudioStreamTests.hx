@@ -1,7 +1,7 @@
 import haxe.io.Bytes;
 import helix.raylib.AudioStream;
 import helix.raylib.Raylib.*;
-import helix.raylib.Extras.*;
+import helix.raylib.extras.Audio.*;
 import helix.raylib.internal.AudioStreams;
 import helix.raylib.internal.Runtime;
 
