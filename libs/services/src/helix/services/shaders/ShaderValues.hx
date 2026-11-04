@@ -10,7 +10,7 @@ import helix.services.shaders.ShaderLayout.ShaderBlockLayout;
 	draw hands the three arrays over as they are:
 
 	```haxe
-	graphics.draw(pipeline.handle, [vertices], indices, 0, 6, 0, 1, values.textures, values.samplings, values.uniforms);
+	graphics.draw(pipeline.handle, [vertices], null, indices, 0, 6, 0, 1, values.textures, values.samplings, values.uniforms);
 	```
 
 	`IGraphics.draw` reads them during the call, so a value changed between two draws gives each its own. Values are written by handle
@@ -34,7 +34,7 @@ import helix.services.shaders.ShaderLayout.ShaderBlockLayout;
 	drawn.base = red;
 	drawn.scene = mainScene;
 	drawn.writeMatrix(model, transform);
-	graphics.draw(pipeline.handle, buffers, indices, 0, count, 0, 1, drawn.textures, drawn.samplings, drawn.uniforms);
+	graphics.draw(pipeline.handle, buffers, null, indices, 0, count, 0, 1, drawn.textures, drawn.samplings, drawn.uniforms);
 	```
 
 	Setting `base` copies nothing for the blocks the draw values haven't written into; the block holding their per-draw uniforms is

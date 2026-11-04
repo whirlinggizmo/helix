@@ -230,7 +230,10 @@ enum Event {
   passes so far before a pass of fewer samples than one already in its command buffer, as NVIDIA's Vulkan driver loses the device on
   such a pair in one command buffer), `createShadowMap(size, layerCount)` (a depth array read through a comparison sampler), `disposeTexture`; `canSample(format)`
   and `canRender(format)` say what the GPU can.
-- Buffers: `createBuffer(capacityBytes)` and `updateBuffer`, `createStaticBuffer(data, bytes, index)`, `disposeBuffer`.
+- Buffers: `createBuffer(capacityBytes)`, `updateBuffer` (replaces a stream buffer's contents for the draws after it) and `appendBuffer`
+  (adds bytes after the frame's earlier ones and returns their byte offset, the earlier bytes staying readable, so many draws' vertex data
+  can share one stream buffer; a buffer is updated or appended to in a frame, not both; SDL_GPU sets aside the buffer's whole capacity of
+  its upload space for the frame at the first append, as sokol and WebGL2 write at the offset in place), `createStaticBuffer(data, bytes, index)`, `disposeBuffer`.
 - Programs and pipelines: `createShader(source:ShaderSource)`, `createPipeline(desc:PipelineDesc)` (a program, its buffers' layout,
   primitive (`Primitive`: triangles, lines, or points), indexing, blend, the color channels written, depth test and write, culling and winding, depth-only, the clip flip and the
   place of the uniform it flips, and what attributes no buffer feeds read), each with its `dispose`. A `Blend` is a factor for each side (`BlendFactor`: zero, one, the source's or destination's color or alpha and
@@ -258,9 +261,11 @@ enum Event {
   what passes leave in it, its samples and depth too, from pass to pass and frame to frame; a new one holds transparent black and the
   farthest depth) and `endTargetPass`; the screen's, `beginFrame(width,
   height, clearColor)` and `endFrame`; within a pass `applyViewport`, `applyScissor`, `resetScissor`.
-- `draw(pipeline, buffers, indexBuffer, firstElementIndex, elementCount, firstInstanceIndex, instanceCount, textures, samplings, uniforms)`: whole
+- `draw(pipeline, buffers, bufferOffsets, indexBuffer, firstElementIndex, elementCount, firstInstanceIndex, instanceCount, textures, samplings, uniforms)`: whole
   primitives (three elements a triangle, two a line, one a point), buffers by the
-  pipeline's buffer index, an index buffer for indexed pipelines, a range, instances, textures, samplings and uniform blocks by stage and
+  pipeline's buffer index, a byte offset into each (null for 0, a multiple of 4, vertex and instanced buffers alike; the elements and
+  instances count from it and must end inside the buffer's bytes; an indexed draw has no base vertex, so an offset is how its vertices start
+  elsewhere: sokol's `vertex_buffer_offsets`, SDL_GPU's `SDL_GPUBufferBinding.offset`, WebGL2's `vertexAttribPointer` offset), an index buffer for indexed pipelines, a range, instances, textures, samplings and uniform blocks by stage and
   slot (the vertex stage's slot n at n, the fragment stage's at 4 + n, a block both stages read at both). Each block's bytes are std140
   as its `ShaderBlock.members` place them, on every adapter: WebGL2 uploads them into a uniform buffer; sokol's GL sets each member by its
   type at its offset, through the names GL lists as active, as NVIDIA's driver also finds names GL doesn't list (sokol_gfx's own uniform layout computes offsets from a flat list of members, which can't hold a struct's padding,

@@ -129,9 +129,9 @@ class RenderShaders {
 		"brdfTexture"
 	];
 
-	/** One of helix-render's own files, beside this one. */
+	/** One of helix-render's own shader files, in helix/render/shaders/. */
 	public static function own(name:String):{name:String, text:String} {
-		var path = Context.resolvePath('helix/render/$name');
+		var path = Context.resolvePath('helix/render/shaders/$name');
 		return {name: FileSystem.fullPath(path), text: File.getContent(path)};
 	}
 
@@ -160,12 +160,12 @@ class RenderShaders {
 		var includes = new Map<String, String>();
 		if (options.includes != null)
 			for (name => text in options.includes) {
-				if (INCLUDES.indexOf(name.replace("helix/render/", "")) >= 0 && name.startsWith("helix/render/"))
+				if (INCLUDES.indexOf(name.replace("helix/render/shaders/", "")) >= 0 && name.startsWith("helix/render/shaders/"))
 					Context.error('helix-render: the include $name is helix-render\'s own; give the text under another name', pos);
 				includes.set(name, text);
 			}
 		for (name in INCLUDES)
-			includes.set('helix/render/$name', own(name).text);
+			includes.set('helix/render/shaders/$name', own(name).text);
 		var shared:Array<ShaderSharedBlock> = options.shared == null ? [] : options.shared.copy();
 		for (block in ["View", "Lighting"])
 			if (!Lambda.exists(shared, s -> s.name == block) && (declares(vertex.text, block) || declares(fragment.text, block)))
@@ -223,19 +223,19 @@ class RenderShaders {
 	// Whether a stage's text declares a shared block, itself or through helix-render's includes.
 	static function declares(text:String, block:String):Bool {
 		var includes = block == "View" ? "view|color|batch|mesh|lighting|material" : "lighting|material";
-		return new EReg('#\\s*include\\s*<helix/render/($includes)\\.glsl>', "").match(text)
+		return new EReg('#\\s*include\\s*<helix/render/shaders/($includes)\\.glsl>', "").match(text)
 			|| new EReg('\\buniform\\s+$block\\b', "").match(text);
 	}
 
 	// A fragment stage wrapped so the clip planes cut it before its main runs, where the vertex stage writes worldPosition.
 	static function wrapClip(vertex:String, fragment:String):String {
-		var writes = ~/#\s*include\s*<helix\/render\/(batch|mesh)\.glsl>/.match(vertex)
+		var writes = ~/#\s*include\s*<helix\/render\/shaders\/(batch|mesh)\.glsl>/.match(vertex)
 			|| ~/\bout\s+(?:(?:highp|mediump|lowp|smooth)\s+)*vec3\s+worldPosition\s*;/.match(vertex);
 		var main = ~/\bvoid\s+main\s*\(\s*(?:void)?\s*\)/;
 		if (!writes || !main.match(fragment))
 			return fragment;
 		var text = main.replace(fragment, "void helix_render_main()");
-		var reads = ~/#\s*include\s*<helix\/render\/material\.glsl>/.match(fragment)
+		var reads = ~/#\s*include\s*<helix\/render\/shaders\/material\.glsl>/.match(fragment)
 			|| ~/\bin\s+(?:(?:highp|mediump|lowp|smooth)\s+)*vec3\s+worldPosition\s*;/.match(fragment);
 		var planes = ~/\bclipPlanes\b/.match(fragment);
 		return text

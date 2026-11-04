@@ -112,7 +112,7 @@ class Main {
 			}
 		values.writeFloat(time, frame++ / 60);
 		graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff0a0e18);
-		graphics.draw(pipeline, [vertices], indices, 0, 6, 0, 1, values.textures, values.samplings, values.uniforms);
+		graphics.draw(pipeline, [vertices], null, indices, 0, 6, 0, 1, values.textures, values.samplings, values.uniforms);
 		graphics.endFrame();
 		graphics.present();
 		return framesLeft < 0 || --framesLeft > 0;

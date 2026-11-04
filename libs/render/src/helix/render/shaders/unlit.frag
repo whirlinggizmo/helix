@@ -2,7 +2,7 @@
 // The Unlit material: its base color, texture and vertex color multiplied as its colorSpace says, its alpha by alphaTexture's green, cut
 // by alphaCutoff, then exposed, tone mapped and encoded as writeColor says.
 precision highp float;
-#include <helix/render/color.glsl>
+#include <helix/render/shaders/color.glsl>
 
 in vec3 worldPosition;
 in vec2 texCoord;

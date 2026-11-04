@@ -599,7 +599,7 @@ class GraphicsTests {
 
 		var clip = floatBytes([1, 1, 0, 0]);
 		function fedDraw(pipeline:Int, values:Int):Void
-			graphics.draw(pipeline, [positions, values], 0, 0, 6, 0, 1, [], [], [clip]);
+			graphics.draw(pipeline, [positions, values], null, 0, 0, 6, 0, 1, [], [], [clip]);
 		// The shared block's bytes, each member written at the place the reflection gives it.
 		var sharedBlock = Lambda.find(sharedSource.uniformBlocks, b -> b.glslName == "Shared");
 		var sharedBytes = Bytes.alloc(sharedBlock.size);
@@ -628,7 +628,7 @@ class GraphicsTests {
 		put("turn", 0, [0, 0, 0, 0, 0, .75, 0, 0, 0], false);
 		var sharedVertexBlock = floatBytes([7, 7, 7, 7, 0, 0, 0, 0]);
 		function draw(pipeline:Int, buffer:Int, count:Int, ?textures:Array<Int>, ?samplings:Array<Sampling>, ?uniforms:Array<Null<Bytes>>):Void
-			graphics.draw(pipeline, [buffer], 0, 0, count, 0, 1, textures == null ? [] : textures, samplings == null ? [] : samplings,
+			graphics.draw(pipeline, [buffer], null, 0, 0, count, 0, 1, textures == null ? [] : textures, samplings == null ? [] : samplings,
 				uniforms == null ? [clip] : uniforms);
 		function into(r:Float, g:Float, b:Float, a:Float, draws:() -> Void):() -> Void
 			return () -> {
@@ -644,11 +644,20 @@ class GraphicsTests {
 		// Five points at texels' centers, each a color: red, green, blue, white, yellow; and indices drawing the fourth and the first.
 		var spots = [[2, 3], [13, 1], [7, 7], [0, 15], [15, 10]],
 			spotColors = [[1., 0, 0], [0., 1, 0], [0., 0, 1], [1., 1, 1], [1., 1, 0]];
-		var dots = buffer([
+		var dotFloats = [
 			for (i => s in spots)
 				for (v in [clipX(s[0]), clipY(s[1])].concat(spotColors[i]).concat([1]))
 					v
-		]);
+		];
+		var dots = buffer(dotFloats);
+		// A junk point (magenta, at 10, 12) and then the five, to be drawn from an offset of one point (24 bytes); and a junk instance (white,
+		// at the center, which reaches 6, 10) and then the three instances, from an offset of one record (80 bytes).
+		var dotsAfterJunk = buffer([clipX(10), clipY(12), 1, 0, 1, 1].concat(dotFloats));
+		var instancesAfterJunk = buffer(instance(0, 0,
+			[1, 1, 1, 1]).concat(instance(-.5, .5, [1, 0, 0, 1])).concat(instance(.5, -.5, [0, 1, 0, 1])).concat(instance(.5, .5, [0, 0, 1, 1])));
+		// A stream buffer the five points are appended to, two and then three, each range drawn right after it is written.
+		var appendedDots = graphics.createBuffer(dotFloats.length * 4);
+		buffers.push(appendedDots);
 		var dotIndices = Bytes.alloc(8);
 		dotIndices.setInt32(0, 3);
 		dotIndices.setInt32(4, 0);
@@ -699,7 +708,7 @@ class GraphicsTests {
 			},
 			{
 				name: "points by index",
-				before: into(0, 0, 0, 1, () -> graphics.draw(dottedIndexed, [dots], dotIndexBuffer, 0, 2, 0, 1, [], [], [clip])),
+				before: into(0, 0, 0, 1, () -> graphics.draw(dottedIndexed, [dots], null, dotIndexBuffer, 0, 2, 0, 1, [], [], [clip])),
 				target: target,
 				check: p -> {
 					expectSpot(p, spots[3], [1, 1, 1, 1]);
@@ -741,7 +750,7 @@ class GraphicsTests {
 			},
 			{
 				name: "eight buffers read, a ninth refused",
-				before: into(0, 0, 0, 0, () -> graphics.draw(eightBuffers, [positions].concat(numbers), 0, 0, 6, 0, 1, [], [], [clip])),
+				before: into(0, 0, 0, 0, () -> graphics.draw(eightBuffers, [positions].concat(numbers), null, 0, 0, 6, 0, 1, [], [], [clip])),
 				target: target,
 				check: p -> {
 					if (!nineRefused)
@@ -837,7 +846,7 @@ class GraphicsTests {
 			},
 			{
 				name: "one interleaved record of Float2, UByte4Norm and UShort2Norm",
-				before: into(0, 0, 0, 0, () -> graphics.draw(interleaved, [mixedBuffer], 0, 0, 6, 0, 1, [], [], [clip])),
+				before: into(0, 0, 0, 0, () -> graphics.draw(interleaved, [mixedBuffer], null, 0, 0, 6, 0, 1, [], [], [clip])),
 				target: target,
 				check: p -> for (at in [[0, 0], [8, 8], [15, 15]])
 					p.expect(at[0], at[1], [1, .4, .2, 1], 1)
@@ -845,7 +854,7 @@ class GraphicsTests {
 			{
 				name: "instances colored by UByte4Norm, from the second",
 				// Of three instances, the second and third: green bottom right, blue top right; the first's top left stays clear.
-				before: into(0, 0, 0, 1, () -> graphics.draw(byteInstances, [positions, placements, instanceColorBuffer], 0, 0, 6, 1, 2, [], [], [clip])),
+				before: into(0, 0, 0, 1, () -> graphics.draw(byteInstances, [positions, placements, instanceColorBuffer], null, 0, 0, 6, 1, 2, [], [], [clip])),
 				target: target,
 				check: p -> {
 					p.expect(4, 4, [0, 0, 0, 1], 0);
@@ -1161,11 +1170,92 @@ class GraphicsTests {
 				}
 			},
 			{
+				name: "a vertex buffer drawn from an offset",
+				before: into(0, 0, 0, 1, () -> graphics.draw(dotted, [dotsAfterJunk], [24], 0, 0, 5, 0, 1, [], [], [clip])),
+				target: target,
+				check: p -> {
+					for (i => s in spots)
+						expectSpot(p, s, spotColors[i].concat([1]));
+					p.expect(10, 12, [0, 0, 0, 1], 0);
+				}
+			},
+			{
+				name: "an indexed draw from an offset",
+				before: into(0, 0, 0, 1, () -> graphics.draw(dottedIndexed, [dotsAfterJunk], [24], dotIndexBuffer, 0, 2, 0, 1, [], [], [clip])),
+				target: target,
+				check: p -> {
+					expectSpot(p, spots[3], [1, 1, 1, 1]);
+					expectSpot(p, spots[0], [1, 0, 0, 1]);
+					for (s in [spots[1], spots[2], spots[4]])
+						p.expect(s[0], s[1], [0, 0, 0, 1], 0);
+					p.expect(10, 12, [0, 0, 0, 1], 0);
+				}
+			},
+			{
+				name: "an instanced buffer drawn from an offset",
+				before: into(0, 0, 0, 1, () -> {
+					graphics.draw(placed, [positions, instancesAfterJunk], [0, 80], 0, 0, 6, 0, 2, [], [], [clip]);
+					graphics.draw(placed, [positions, instancesAfterJunk], [0, 80], 0, 0, 6, 2, 1, [], [], [clip]);
+				}),
+				target: target,
+				check: p -> {
+					p.expect(4, 4, [1, 0, 0, 1], 0);
+					p.expect(12, 12, [0, 1, 0, 1], 0);
+					p.expect(12, 4, [0, 0, 1, 1], 0);
+					p.expect(6, 10, [0, 0, 0, 1], 0);
+				}
+			},
+			{
+				name: "a stream buffer appended to, each range drawn from its offset",
+				before: into(0, 0, 0, 1, () -> {
+					var at = graphics.appendBuffer(appendedDots, floatBytes(dotFloats.slice(0, 12)), 48);
+					graphics.draw(dotted, [appendedDots], [at], 0, 0, 2, 0, 1, [], [], [clip]);
+					var next = graphics.appendBuffer(appendedDots, floatBytes(dotFloats.slice(12)), 72);
+					graphics.draw(dotted, [appendedDots], [next], 0, 0, 3, 0, 1, [], [], [clip]);
+					// The first range is still there, drawn again after the second was written.
+					graphics.draw(dotted, [appendedDots], [at], 0, 0, 5, 0, 1, [], [], [clip]);
+					if (at != 0 || next != 48)
+						throw 'appended at $at and $next, not 0 and 48';
+					var updated = try {
+						graphics.updateBuffer(appendedDots, floatBytes(dotFloats), 120);
+						true;
+					} catch (_:Dynamic)
+						false;
+					if (updated)
+						throw "a buffer appended to this frame was updated";
+					var overflowed = try {
+						graphics.appendBuffer(appendedDots, floatBytes(dotFloats), 120);
+						true;
+					} catch (_:Dynamic)
+						false;
+					if (overflowed)
+						throw "an append past the capacity was accepted";
+				}),
+				target: target,
+				check: p -> for (i => s in spots)
+					expectSpot(p, s, spotColors[i].concat([1]))
+			},
+			{
+				name: "a draw whose offset is out of range is refused",
+				before: into(0, 0, 0, 1, () -> {
+					var refused = 0;
+					for (offsets in [[-4], [2], [dotFloats.length * 4 + 4], [24]])
+						try
+							graphics.draw(dotted, [dots], offsets, 0, 0, 5, 0, 1, [], [], [clip])
+						catch (_:Dynamic)
+							refused++;
+					if (refused != 4)
+						throw 'offsets out of range refused: $refused of 4';
+				}),
+				target: target,
+				check: p -> p.expect(2, 3, [0, 0, 0, 1], 0)
+			},
+			{
 				name: "instances placed by a matrix input",
 				// The first two instances; the third (top right) only from a second draw starting at it.
 				before: into(0, 0, 0, 1, () -> {
-					graphics.draw(placed, [positions, instances], 0, 0, 6, 0, 2, [], [], [clip]);
-					graphics.draw(placed, [positions, instances], 0, 0, 6, 2, 1, [], [], [clip]);
+					graphics.draw(placed, [positions, instances], null, 0, 0, 6, 0, 2, [], [], [clip]);
+					graphics.draw(placed, [positions, instances], null, 0, 0, 6, 2, 1, [], [], [clip]);
 				}),
 				target: target,
 				check: p -> {

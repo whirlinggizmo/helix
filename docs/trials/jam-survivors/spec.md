@@ -51,6 +51,16 @@ engine and no function.
 - **Gems:** each killed enemy drops a gem, a small spinning green crystal, which flies to the warden when she's within 3 meters and
   gives 1 experience.
 
+## Effects
+- **Death bursts:** a killed enemy bursts into 40 sparks of its red, flying out and falling, drawn added to what's behind them (so
+  they glow where they cross), each fading out over 0.6 seconds. Up to 2,000 sparks alive at once, with no stutter at `enemies=200`.
+- **Target ring:** a thin ring on the ground around the warden, as wide as her sword's reach (2 meters, wider with Long reach),
+  pulsing gently once a second. It's drawn by a shader the game writes, worked out from the ground's coordinates, not from an image.
+- **Spawn warnings:** where an enemy is about to appear in view, a red circle on the ground fills from its middle out over 1 second
+  before the enemy comes. Drawn the same way, by the game's own shader, its fill a value the game passes in.
+- **Hit flash:** a struck enemy flashes white for 0.1 seconds, still animating as it flashes. Drawn by the game's own shader on the
+  animated, lit enemy.
+
 ## Levels and choices
 - **Levels:** experience fills a bar along the top of the window. Level 2 takes 5 gems, and each level after takes 5 more than the last.
 - **Choosing:** at each level up, play stops and three cards are offered, drawn from the list below, each with its name, a picture

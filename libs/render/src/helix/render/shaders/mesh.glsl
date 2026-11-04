@@ -2,7 +2,7 @@
 // placeVertex, which skins, instances and places a vertex as the materials' own stage does.
 #ifndef HELIX_RENDER_MESH_GLSL
 #define HELIX_RENDER_MESH_GLSL
-#include <helix/render/view.glsl>
+#include <helix/render/shaders/view.glsl>
 
 in vec3 vertexPosition;
 in vec3 vertexNormal;

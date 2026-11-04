@@ -973,8 +973,8 @@ class Frame {
 						t != 0 && (slot < d.cubes.length && d.cubes[slot]) != Textures.isCubeHandle(t) ? 0 : t
 				];
 				var samplings = [for (t in textures) Textures.samplingOf(t)];
-				graphics.draw(d.pipeline, d.buffers == null ? [buffer, constants] : d.buffers, d.indices, d.first, count, 0, d.instances, textures, samplings,
-					d.uniforms);
+				graphics.draw(d.pipeline, d.buffers == null ? [buffer, constants] : d.buffers, null, d.indices, d.first, count, 0, d.instances, textures,
+					samplings, d.uniforms);
 			}
 			if (p.target == 0) {
 				graphics.endFrame();

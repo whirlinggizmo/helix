@@ -516,6 +516,7 @@ function canSample(format:TextureFormat):Bool
 function createBuffer(capacityBytes:Int):Int
 function createStaticBuffer(data:haxe.io.Bytes, bytes:Int, index:Bool):Int
 function updateBuffer(handle:Int, data:haxe.io.Bytes, usedBytes:Int):Void
+function appendBuffer(handle:Int, data:haxe.io.Bytes, usedBytes:Int):Int
 function createShader(source:ShaderSource):Int
 function disposeShader(handle:Int):Void
 function createPipeline(desc:PipelineDesc):Int
@@ -532,7 +533,7 @@ function beginFrame(width:Int, height:Int, clearColor:Int):Void
 function applyScissor(x:Int, y:Int, w:Int, h:Int):Void
 function resetScissor():Void
 function applyViewport(x:Int, y:Int, w:Int, h:Int):Void
-function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<haxe.io.Bytes>>):Void
+function draw(pipeline:Int, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<haxe.io.Bytes>>):Void
 function endFrame():Void
 function present():Void
 function readPixels(handle:Int, read:(pixels:haxe.io.Bytes, width:Int, height:Int) -> Void, failed:String -> Void):Void

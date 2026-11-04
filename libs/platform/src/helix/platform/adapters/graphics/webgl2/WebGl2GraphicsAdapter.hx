@@ -47,6 +47,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 
 	var next = 1;
 	var buffers:Map<Int, Dynamic> = [];
+	// The stream buffers written this frame, so the frame's end can empty the ones appended to.
+	var written:Array<Int> = [];
 	var textures:Map<Int, Dynamic> = [];
 	// One sampler object for each Sampling value used, made when first used.
 	var samplers:Array<Dynamic> = [];
@@ -338,7 +340,9 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			capacity: capacityBytes,
 			used: 0,
 			index: false,
-			isStatic: false
+			isStatic: false,
+			appended: false,
+			updated: false
 		};
 		return id;
 	}
@@ -363,17 +367,37 @@ class WebGl2GraphicsAdapter implements IGraphics {
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void {
 		var b = buffers[handle];
-		if (!active
-			|| b == null
-			|| b.isStatic
-			|| usedBytes < 0
-			|| usedBytes % 4 != 0
-			|| usedBytes > b.capacity
-			|| usedBytes > data.length)
+		if (!active || b == null || b.isStatic || b.appended || usedBytes < 0 || usedBytes % 4 != 0 || usedBytes > b.capacity || usedBytes > data.length)
 			throw "Invalid upload";
 		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, b.buffer);
 		gl.bufferSubData(WebGL2RenderingContext.ARRAY_BUFFER, 0, new js.lib.Uint8Array(data.getData(), 0, usedBytes));
 		b.used = usedBytes;
+		if (!b.updated) {
+			b.updated = true;
+			written.push(handle);
+		}
+	}
+
+	public function appendBuffer(handle:Int, data:Bytes, usedBytes:Int):Int {
+		var b = buffers[handle];
+		if (!active
+			|| b == null
+			|| b.isStatic
+			|| usedBytes <= 0
+			|| usedBytes % 4 != 0
+			|| usedBytes > data.length
+			|| b.updated
+			|| (b.appended ? b.used : 0) + usedBytes > b.capacity)
+			throw "Invalid append";
+		var at:Int = b.appended ? b.used : 0;
+		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, b.buffer);
+		gl.bufferSubData(WebGL2RenderingContext.ARRAY_BUFFER, at, new js.lib.Uint8Array(data.getData(), 0, usedBytes));
+		if (!b.appended) {
+			b.appended = true;
+			written.push(handle);
+		}
+		b.used = at + usedBytes;
+		return at;
 	}
 
 	function compile(type:Int, source:String):Dynamic {
@@ -765,8 +789,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			gl.blendEquationSeparate(OPERATIONS[mode.colorOperation], OPERATIONS[mode.alphaOperation]);
 		}
 
-	public function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int,
-			instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
+	public function draw(pipeline:Int, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int,
+			firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
 		var p = pipelines[pipeline];
 		if (!active || p == null)
 			throw "Invalid draw";
@@ -787,13 +811,17 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			if (layout.attributes.length == 0)
 				continue;
 			var b = i < buffers.length ? this.buffers[buffers[i]] : null;
+			var offset = bufferOffsets != null && i < bufferOffsets.length ? bufferOffsets[i] : 0;
 			if (b == null
 				|| b.index
+				|| offset < 0
+				|| offset % 4 != 0
+				|| offset > b.used
 				|| layout.instanced
-				&& (firstInstanceIndex + instanceCount) * layout.stride > b.used
+				&& offset + (firstInstanceIndex + instanceCount) * layout.stride > b.used
 					|| !layout.instanced
 					&& !p.indexed
-					&& (firstElementIndex + elementCount) * layout.stride > b.used)
+					&& offset + (firstElementIndex + elementCount) * layout.stride > b.used)
 				throw "Invalid draw";
 		}
 		gl.useProgram(shader.program);
@@ -806,7 +834,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				continue;
 			gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.buffers[buffers[i]].buffer);
 			// No base instance in WebGL2: an instanced buffer's attributes start at the draw's first record instead.
-			var base = layout.instanced ? firstInstanceIndex * layout.stride : 0;
+			var base = (bufferOffsets != null && i < bufferOffsets.length ? bufferOffsets[i] : 0)
+				+ (layout.instanced ? firstInstanceIndex * layout.stride : 0);
 			for (a in layout.attributes) {
 				gl.enableVertexAttribArray(a.slot);
 				gl.vertexAttribPointer(a.slot, a.format.componentCount, TYPES[a.format],
@@ -954,6 +983,15 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			throw "No screen pass";
 		active = false;
 		frameEnded = true;
+		for (h in written) {
+			var b = buffers[h];
+			if (b == null)
+				continue;
+			if (b.appended)
+				b.used = 0;
+			b.appended = b.updated = false;
+		}
+		written = [];
 	}
 
 	public function present():Void {}

@@ -64,10 +64,10 @@ import helix.render.RenderPass.RenderCommand;
 	| `pointSize`, `pointSizeAttenuated` | float, int | 1 and 0. |
 
 	With them the view's names (`View3D`: `viewProjection`, `linearTarget` and the rest), shared through `#include
-	<helix/render/view.glsl>` or written per draw when declared alone. A name the program writes on its values is overwritten by the
+	<helix/render/shaders/view.glsl>` or written per draw when declared alone. A name the program writes on its values is overwritten by the
 	batch's. A name `Shader.withNames` gives is filled exactly as the same name declared in the GLSL, and the batch shares the `View`
 	block with each draw itself, so the program sets no `ShaderValues.scene` (`Batch3D` says how). Colors are given as stored and
-	nothing the shader writes is encoded after it, so it works in the space it chooses; `#include <helix/render/color.glsl>` gives the
+	nothing the shader writes is encoded after it, so it works in the space it chooses; `#include <helix/render/shaders/color.glsl>` gives the
 	conversions (`View3D` lists them). The batch's vertex stage passes `texCoord` (vec2), `color` (vec4), `customData` (vec4), `normal`
 	(vec3) and `worldPosition` (vec3), read by name in a fragment stage, as `Batch3D`'s does.
 
@@ -777,7 +777,7 @@ class Batch2D {
 
 		It compiles while the program builds, as helix-services' `Shader.compile` compiles one, and returns it as a value in the program: its
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
-		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/color.glsl>`). A name the class
+		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
 		The fragment stage is GLSL as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440 (GL's form), or
 		`#version 450` (Vulkan's), the batch's vertex stage given in the same form; GLSL ES 100 (raylib's) is not taken, and a layer
@@ -794,11 +794,11 @@ class Batch2D {
 
 		It compiles while the program builds, as helix-services' `Shader.compile` compiles one, and returns it as a value in the program: its
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
-		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/color.glsl>`). A name the class
+		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
 		Both stages are GLSL in one form, as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440, or
 		`#version 450`. The batch makes its lines and shapes as triangles itself, so the vertex stage need only place each vertex and
-		write what its fragment stage reads; `#include <helix/render/batch.glsl>` declares the names and outputs `Batch3D` lists, and its
+		write what its fragment stage reads; `#include <helix/render/shaders/batch.glsl>` declares the names and outputs `Batch3D` lists, and its
 		`placeBatchVertex(vertexPosition, vertexLineEnd)` does both, as for `Batch3D`.
 		@param vertex  The vertex stage's file, relative to the file holding the call.
 		@param fragment  The fragment stage's file, relative to the file holding the call.

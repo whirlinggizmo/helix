@@ -191,6 +191,13 @@ abstract class NativeGraphics implements IGraphics {
 			throw "Invalid native upload";
 	}
 
+	public function appendBuffer(handle:Int, data:Bytes, usedBytes:Int):Int {
+		var at = usedBytes > data.length || usedBytes < 0 ? -1 : GraphicsDeviceBridge.append(handle, pointer(data), usedBytes);
+		if (at < 0)
+			throw "Invalid native append";
+		return at;
+	}
+
 	public function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int
 		return GraphicsDeviceBridge.maxTargetSamples(format);
 
@@ -242,15 +249,18 @@ abstract class NativeGraphics implements IGraphics {
 			throw "Invalid native viewport";
 	}
 
-	public function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int,
-			instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
+	public function draw(pipeline:Int, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int,
+			firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
 		var args = pack(textures, samplings, uniforms),
-			handles = new haxe.ds.Vector<cpp.UInt32>(buffers.length < 1 ? 1 : buffers.length);
-		for (i in 0...buffers.length)
+			handles = new haxe.ds.Vector<cpp.UInt32>(buffers.length < 1 ? 1 : buffers.length),
+			offsets = new haxe.ds.Vector<Int>(buffers.length < 1 ? 1 : buffers.length);
+		for (i in 0...buffers.length) {
 			handles[i] = buffers[i];
-		var drawn = GraphicsDeviceBridge.draw(pipeline, cpp.Pointer.ofArray(handles.toData()).raw, buffers.length, indexBuffer, firstElementIndex,
-			elementCount, firstInstanceIndex, instanceCount, cpp.Pointer.ofArray(args.handles.toData()).raw, cpp.Pointer.ofArray(args.modes.toData()).raw,
-			textures.length, pointer(args.uniforms), args.bytes);
+			offsets[i] = bufferOffsets != null && i < bufferOffsets.length ? bufferOffsets[i] : 0;
+		}
+		var drawn = GraphicsDeviceBridge.draw(pipeline, cpp.Pointer.ofArray(handles.toData()).raw, cpp.Pointer.ofArray(offsets.toData()).raw, buffers.length,
+			indexBuffer, firstElementIndex, elementCount, firstInstanceIndex, instanceCount, cpp.Pointer.ofArray(args.handles.toData()).raw,
+			cpp.Pointer.ofArray(args.modes.toData()).raw, textures.length, pointer(args.uniforms), args.bytes);
 		if (drawn == -1)
 			throw "Invalid native draw: a texture is the pass's own target, which a draw into it can't sample";
 		if (drawn != 1)

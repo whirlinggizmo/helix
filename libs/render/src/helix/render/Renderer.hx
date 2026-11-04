@@ -853,7 +853,7 @@ class Renderer {
 		for (c in p.commands)
 			switch c {
 				case Draw(d):
-					graphics.draw(d.pipeline.built.handle, d.resolveBuffers(), d.indexBuffer, d.first, d.count, d.firstInstance, d.instanceCount,
+					graphics.draw(d.pipeline.built.handle, d.resolveBuffers(), null, d.indexBuffer, d.first, d.count, d.firstInstance, d.instanceCount,
 						d.snapshot.textures, d.snapshot.samplings, d.snapshot.uniforms);
 				case Viewport(x, y, w, h):
 					graphics.applyViewport(x, p.height - y - h, w, h);

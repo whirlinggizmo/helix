@@ -1,8 +1,8 @@
 #version 300 es
-// Batch3D's own fragment stage for its batch draws with toneMapped on: the texel times the vertex color as stored, decoded, exposed, tone
-// mapped and encoded into an sRGB target; decoded and written linear into a linear one; a distance-field font's edge made sharp.
+// Batch3D's own fragment stage for its batch draws: the texel times the vertex color as stored, written as it is into an sRGB target
+// and decoded into a linear one; a distance-field font's edge made sharp.
 precision highp float;
-#include <helix/render/color.glsl>
+#include <helix/render/shaders/view.glsl>
 
 in vec2 texCoord;
 in vec4 color;
@@ -18,6 +18,9 @@ void main() {
 		t.a = smoothstep(0.5 - w, 0.5 + w, t.a);
 	}
 	vec4 c = t * color;
-	vec3 light = decodeSrgb(c.rgb);
-	fragColor = vec4(linearTarget != 0 ? light : encodeSrgb(clamp(applyToneMapping(light), 0.0, 1.0)), c.a);
+	if (linearTarget != 0) {
+		vec3 s = max(c.rgb, vec3(0.0));
+		c.rgb = mix(s / 12.92, pow((s + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), s));
+	}
+	fragColor = c;
 }

@@ -2,7 +2,7 @@
 // (three.js's curves), the fog, and what a target is written. Declares toneMapped, which writeColor reads.
 #ifndef HELIX_RENDER_COLOR_GLSL
 #define HELIX_RENDER_COLOR_GLSL
-#include <helix/render/view.glsl>
+#include <helix/render/shaders/view.glsl>
 
 uniform int toneMapped;
 

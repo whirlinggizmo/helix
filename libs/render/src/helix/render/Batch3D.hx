@@ -118,7 +118,7 @@ import helix.services.shaders.ShaderVertexLayout;
 	uniforms and outputs it uses, as raylib's GLSL 330 vertex stages do (`gl_Position = mvp * vec4(vertexPosition, 1.0)`). It then gives
 	up what the batch's stage makes from `vertexCorner`: wide lines are drawn as one-pixel lines and large points as one-pixel points,
 	their middles, as the build sees the stage doesn't call `placeBatchVertex`; and the planes cut it only where it writes
-	`worldPosition`. Or it includes `batch.glsl` (`#include <helix/render/batch.glsl>`), which includes `view.glsl` and declares the
+	`worldPosition`. Or it includes `batch.glsl` (`#include <helix/render/shaders/batch.glsl>`), which includes `view.glsl` and declares the
 	attributes and uniforms above and the five outputs, so the stage declares none of them, and gives one function:
 
 	```glsl
@@ -131,7 +131,7 @@ import helix.services.shaders.ShaderVertexLayout;
 
 	A fragment stage is cut by `clipPlanes` before it runs, whichever compiled it: the macros wrap its `main`.
 
-	**The lighting include.** `#include <helix/render/lighting.glsl>` (fragment stage) declares everything a lit shader reads, so the
+	**The lighting include.** `#include <helix/render/shaders/lighting.glsl>` (fragment stage) declares everything a lit shader reads, so the
 	shader declares none of it: the shared block `Lighting`, written at each `begin` and shared with every draw; its shared textures;
 	and the draw's own lights as loose uniforms (`lightCount`, `lightPositions`, `lightDirections`, `lightColors`, `lightCones` and
 	`receiveShadows`, which `Material3D` lists), in the shader's own loose block. It includes `view.glsl` and `color.glsl`. A material's
@@ -1834,7 +1834,7 @@ class Batch3D {
 
 		It compiles while the program builds, as helix-services' `Shader.compile` compiles one, and returns it as a value in the program: its
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
-		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/color.glsl>`). A name the class
+		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
 		The fragment stage is GLSL as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440 (GL's form), or
 		`#version 450` (Vulkan's), the batch's vertex stage given in the same form; GLSL ES 100 (raylib's) is not taken, and a layer
@@ -1852,11 +1852,11 @@ class Batch3D {
 
 		It compiles while the program builds, as helix-services' `Shader.compile` compiles one, and returns it as a value in the program: its
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
-		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/color.glsl>`). A name the class
+		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
 		Both stages are GLSL in one form, as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440, or
 		`#version 450`. The vertex stage may place its vertices itself, declaring what it reads; wide lines and large points are then
-		drawn as their one-pixel middles. Placed by `placeBatchVertex(position, lineEnd)` (`#include <helix/render/batch.glsl>`), they are
+		drawn as their one-pixel middles. Placed by `placeBatchVertex(position, lineEnd)` (`#include <helix/render/shaders/batch.glsl>`), they are
 		drawn wide and large, as the class says.
 		@param vertex  The vertex stage's file, relative to the file holding the call.
 		@param fragment  The fragment stage's file, relative to the file holding the call.
@@ -1877,7 +1877,7 @@ class Batch3D {
 		`placeBatchVertex`; the fragment stage is cut by `clipPlanes`, as there. Names the shader is given by `withNames` are filled as
 		declared ones, and the batch shares `View` and `Lighting` with each draw itself (the class says so). The
 		options are `Shader.makeExpr`'s, and the shader is compiled with them as given but for what helix-render sets itself: `clipScale`
-		and `points` on, whatever the options say; helix-render's includes (`helix/render/batch.glsl`, `mesh.glsl`, `material.glsl`,
+		and `points` on, whatever the options say; helix-render's includes (`helix/render/shaders/batch.glsl`, `mesh.glsl`, `material.glsl`,
 		`lighting.glsl`, `view.glsl`, `color.glsl`) added to `includes`, where a text given under one of their names stops the build; the
 		blocks `View` and `Lighting` added to `shared` where the shader declares them; and its check of the names the classes list run
 		after the options' own `check`.

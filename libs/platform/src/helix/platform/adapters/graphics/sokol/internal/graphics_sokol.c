@@ -99,6 +99,8 @@ static int screen_width,screen_height,frame_ended;
    before a bind: renamed[slot] is how many of its extras are in use this frame, bound[slot] whether the current one was bound since its write. */
 #define MAX_RENAMES 8
 static sg_buffer extras[256][MAX_RENAMES];static int renamed[256],bound[256];
+/* Whether a stream buffer was appended to this frame (helix_append), so it isn't updated too. */
+static char appended[256];
 /* Render targets, by texture view slot: their color and depth attachment views (no depth view without depth), depth image and size, the
    pipelines' variant drawing into them (unflipped), and whether a pass has cleared them yet. */
 static struct{sg_view color,depth,resolve;sg_image depth_image,samples_image;int width,height,variant,cleared;}targets[256];
@@ -249,7 +251,7 @@ static sg_view current_view(uint32_t texture){
 uint32_t helix_buffer(int capacity){
  if(capacity<=0||capacity%4)return 0;
  sg_buffer buffer=sg_make_buffer(&(sg_buffer_desc){.size=(size_t)capacity,.usage={.vertex_buffer=true,.write_transient=true}});
- if((buffer.id&0xffff)<256){int slot=buffer.id&0xffff;used[slot]=0;index_buffers[slot]=0;stream_buffers[slot]=1;
+ if((buffer.id&0xffff)<256){int slot=buffer.id&0xffff;used[slot]=0;appended[slot]=0;index_buffers[slot]=0;stream_buffers[slot]=1;
   renamed[slot]=bound[slot]=0;memset(extras[slot],0,sizeof extras[slot]);}return buffer.id;
 }
 /* The sokol buffer a stream buffer's draws read now: itself, or the extra its latest write went to. */
@@ -351,7 +353,7 @@ uint32_t helix_pipeline(const int *desc,int count){
 }
 int helix_update(uint32_t id,const void *data,int bytes){
  sg_buffer buffer={id};int slot=id&0xffff;
- if(!active||!data||bytes<0||bytes%4||slot>=256||sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(size_t)bytes>sg_query_buffer_size(buffer)||!stream_buffers[slot])return 0;
+ if(!active||!data||bytes<0||bytes%4||slot>=256||sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(size_t)bytes>sg_query_buffer_size(buffer)||!stream_buffers[slot]||appended[slot])return 0;
  if(bound[slot]){
   /* Bound since its last write: the write goes to the next extra, made the first time it's needed. */
   if(renamed[slot]==MAX_RENAMES)return 0;
@@ -363,6 +365,17 @@ int helix_update(uint32_t id,const void *data,int bytes){
   renamed[slot]++;bound[slot]=0;
  }
  if(bytes)sg_write_buffer_transient(&(sg_write_buffer_desc){.src.data={data,(size_t)bytes},.dst.buffer=current_buffer(id)});used[slot]=bytes;return 1;
+}
+/* Adds bytes after a stream buffer's used ones, in a pass: the offset they landed at, -1 for anything invalid. A write to a range no draw has
+   read needs no new buffer, as an update's of the whole buffer does, so earlier ranges stay in place for the draws after it. */
+int helix_append(uint32_t id,const void *data,int bytes){
+ sg_buffer buffer=(sg_buffer){id};int slot=id&0xffff;
+ if(!active||!data||bytes<=0||bytes%4||slot>=256||sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||!stream_buffers[slot])return -1;
+ if(!appended[slot]&&(used[slot]||renamed[slot]))return -1;
+ if((size_t)used[slot]+(size_t)bytes>sg_query_buffer_size(buffer))return -1;
+ const int at=used[slot];
+ sg_write_buffer_transient(&(sg_write_buffer_desc){.src.data={data,(size_t)bytes},.dst.buffer=buffer,.dst.offset=(size_t)at});
+ appended[slot]=1;used[slot]=at+bytes;return at;
 }
 /* A member's type as a setter's base, components a column and columns: GL 410 declares a bool as a uint, a bvecN as a uvecN. 0 for one it
    doesn't know. */
@@ -739,11 +752,11 @@ static sg_pipeline variant_of(int slot){
  }
  return variants[slot][v];
 }
-/* A draw through pipeline p: count vertices from first (or indices, for an indexed pipeline, from first of `indices`) as instance_count
+/* A draw through pipeline p: offsets[i] bytes into buffers[i] (a multiple of 4, within its used bytes); count vertices from first (or indices, for an indexed pipeline, from first of `indices`) as instance_count
    instances from record first_instance of its instanced buffers; buffers[i] its buffer i (0 for one it doesn't read), the program's textures
    and samplings by slot, its uniform blocks' bytes one after another by index (a vertex block's slot, a fragment block's 4 + its slot, a
    block both stages read at both). -1, drawing nothing, for a texture that is the pass's own target; 0 for anything else invalid. */
-int helix_draw(uint32_t p,const uint32_t *buffers,int buffer_count,uint32_t indices,int first,int count,int first_instance,int instance_count,
+int helix_draw(uint32_t p,const uint32_t *buffers,const int *offsets,int buffer_count,uint32_t indices,int first,int count,int first_instance,int instance_count,
                const uint32_t *textures,const int *samplings,int texture_count,const void *uniforms,int uniform_bytes){
  const int pslot=p&0xffff;
  if(!active||pslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID)return 0;
@@ -759,10 +772,12 @@ int helix_draw(uint32_t p,const uint32_t *buffers,int buffer_count,uint32_t indi
   if(!pipeline_info[pslot].read[b])continue;
   const int slot=buffers[b]&0xffff,stride=pipeline_info[pslot].stride[b],instanced=pipeline_info[pslot].instanced[b];
   if(slot>=256||sg_query_buffer_state((sg_buffer){buffers[b]})!=SG_RESOURCESTATE_VALID||index_buffers[slot])return 0;
-  if(instanced&&(long)(first_instance+instance_count)*stride>used[slot])return 0;
-  if(!instanced&&!indexed&&(long)(first+count)*stride>used[slot])return 0;
+  const long offset=offsets[b];
+  if(offset<0||offset%4||offset>used[slot])return 0;
+  if(instanced&&offset+(long)(first_instance+instance_count)*stride>used[slot])return 0;
+  if(!instanced&&!indexed&&offset+(long)(first+count)*stride>used[slot])return 0;
   bindings.vertex_buffers[b]=current_buffer(buffers[b]);
-  if(instanced)bindings.vertex_buffer_offsets[b]=first_instance*stride;
+  bindings.vertex_buffer_offsets[b]=(int)offset+(instanced?first_instance*stride:0);
  }
  {const int bound=bind_program(shader,&bindings,textures,samplings,texture_count,uniform_bytes);if(bound!=1)return bound;}
  const sg_pipeline pipeline=variant_of(pslot);
@@ -778,7 +793,7 @@ int helix_draw(uint32_t p,const uint32_t *buffers,int buffer_count,uint32_t indi
 void helix_end(void){
  if(active!=1)abort();sg_end_pass();sg_commit();active=0;frame_ended=1;
  /* Stream buffers start each frame empty and unrenamed; a static one keeps its size. */
- for(int i=0;i<256;i++){if(stream_buffers[i]){used[i]=0;renamed[i]=bound[i]=0;}data_textures[i].written=data_textures[i].bound=data_textures[i].renamed=0;}
+ for(int i=0;i<256;i++){if(stream_buffers[i]){used[i]=0;appended[i]=0;renamed[i]=bound[i]=0;}data_textures[i].written=data_textures[i].bound=data_textures[i].renamed=0;}
 }
 /* The frame shown: the window swaps it (surface.h), waiting for the display. */
 void helix_present(void){helix_surface_present();}

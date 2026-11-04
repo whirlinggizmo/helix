@@ -4,7 +4,7 @@
 // hemisphere light's sky and ground). Includes color.glsl and view.glsl.
 #ifndef HELIX_RENDER_LIGHTING_GLSL
 #define HELIX_RENDER_LIGHTING_GLSL
-#include <helix/render/color.glsl>
+#include <helix/render/shaders/color.glsl>
 
 layout(std140) uniform Lighting {
 	vec4 ambientLight;

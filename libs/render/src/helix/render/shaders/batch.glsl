@@ -3,7 +3,7 @@
 // screen.
 #ifndef HELIX_RENDER_BATCH_GLSL
 #define HELIX_RENDER_BATCH_GLSL
-#include <helix/render/view.glsl>
+#include <helix/render/shaders/view.glsl>
 
 in vec3 vertexPosition;
 in vec2 vertexTexCoord;

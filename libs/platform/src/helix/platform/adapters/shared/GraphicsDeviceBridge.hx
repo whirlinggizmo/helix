@@ -17,6 +17,7 @@ extern class GraphicsDeviceBridge {
 	@:native("helix_static_buffer") static function staticBuffer(data:cpp.RawPointer<cpp.UInt8>, bytes:Int, index:Int):Int;
 	@:native("helix_pipeline") static function pipeline(desc:cpp.RawPointer<Int>, count:Int):Int;
 	@:native("helix_update") static function update(buffer:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
+	@:native("helix_append") static function append(buffer:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
 	@:native("helix_target") static function target(w:Int, h:Int, format:Int, depth:Int, askedSamples:Int):Int;
 	@:native("helix_max_target_samples") static function maxTargetSamples(format:Int):Int;
 	@:native("helix_can_render") static function canRender(format:Int):Int;
@@ -27,8 +28,8 @@ extern class GraphicsDeviceBridge {
 	@:native("helix_begin_shadow") static function beginShadow(map:Int, layer:Int):Int;
 	@:native("helix_begin") static function begin(width:Int, height:Int, color:Int):Int;
 	@:native("helix_viewport") static function viewport(x:Int, y:Int, w:Int, h:Int):Int;
-	@:native("helix_draw") static function draw(pipeline:Int, buffers:cpp.RawPointer<cpp.UInt32>, bufferCount:Int, indices:Int, first:Int, count:Int,
-		firstInstance:Int, instanceCount:Int, textures:cpp.RawPointer<cpp.UInt32>, samplings:cpp.RawPointer<Int>, textureCount:Int,
+	@:native("helix_draw") static function draw(pipeline:Int, buffers:cpp.RawPointer<cpp.UInt32>, offsets:cpp.RawPointer<Int>, bufferCount:Int, indices:Int,
+		first:Int, count:Int, firstInstance:Int, instanceCount:Int, textures:cpp.RawPointer<cpp.UInt32>, samplings:cpp.RawPointer<Int>, textureCount:Int,
 		uniforms:cpp.RawPointer<cpp.UInt8>, uniformBytes:Int):Int;
 	@:native("helix_end") static function end():Void;
 	@:native("helix_present") static function present():Void;
