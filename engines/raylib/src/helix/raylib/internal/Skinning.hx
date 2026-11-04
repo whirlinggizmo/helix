@@ -10,8 +10,8 @@ import helix.raylib.modules.RMath.*;
 	A call stores the pose, not the vertices: each skinned mesh keeps the model's bone matrices as they are then (`MeshPose`), and is
 	drawn by them:
 
-	- through a shader including `<helix/raylib/shaders/skinning.glsl>` (raylib's default shader is drawn through its skinned twin,
-	  `Defaults.skinnedShader`), on the GPU: the draw's bones are written into the frame's bone palette, a data texture of four texels a
+	- through a shader including `<helix/raylib/shaders/skinning.glsl>` (raylib's default shader and the lit shader are drawn through
+	  their skinned twins, `Defaults.skinnedShader` and `litSkinnedShader`, each written every uniform its shader is), on the GPU: the draw's bones are written into the frame's bone palette, a data texture of four texels a
 	  bone, 64 bones a row, uploaded once before the frame's passes, and the draw is given its first bone (`boneOffset`), so one model
 	  drawn in many poses in one frame draws each as it was asked for;
 	- through a shader reading the bone ids itself (raylib's `skinning.vs`), as it is: drawn with `boneMatrices`;
@@ -31,9 +31,6 @@ class Skinning {
 
 	// The calls that have posed, each mesh posed by one given its number (MeshPose.stamp).
 	static var stamp = 0;
-
-	// The default shader's skinned twin, made at the first draw through it.
-	static var twin:Null<Program>;
 
 	// The twin's locations, by SHADER_LOC_*: none set, so its maps bind as the default shader's (texture0 to texture2).
 	static var twinLocs:Array<Int>;
@@ -60,7 +57,6 @@ class Skinning {
 		if (installed != Runtime.frame) {
 			// A window made again (CloseWindow, InitWindow) has a frame and a GPU of its own.
 			installed = Runtime.frame;
-			twin = null;
 			twinLocs = [for (_ in 0...32) -1];
 			chunks = [];
 			drawn = true;
@@ -131,11 +127,20 @@ class Skinning {
 		var frame = Runtime.frame;
 		var p = shader.program;
 		var locs = shader.locs;
-		if (p == frame.defaultProgram && instances == 0) {
-			if (twin == null)
-				twin = new Program(Runtime.graphics, Defaults.skinnedShader());
-			p = twin;
-			locs = twinLocs;
+		// A built-in shader's skinned twin: the default's, or the lit one's.
+		if (instances == 0) {
+			var twin = p.twin;
+			if (twin == null) {
+				var skinned = p == frame.defaultProgram ? Defaults.skinnedShader() : p.skinned;
+				if (skinned != null) {
+					twin = new Program(Runtime.graphics, skinned);
+					p.mirror(twin);
+				}
+			}
+			if (twin != null) {
+				p = twin;
+				locs = twinLocs;
+			}
 		}
 		if (p.paletteSlot == -2) {
 			var sampler = p.shader.findSampler("bonePalette");

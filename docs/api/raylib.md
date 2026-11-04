@@ -320,6 +320,42 @@ var format:Int
 - `mipmaps`: Gets or sets the number of mipmap levels, 1 for the image alone.
 - `format`: Gets or sets the pixel format (`PIXELFORMAT_*`).
 
+## Light
+
+*class* in [`engines/raylib/src/helix/raylib/Light.hx`](../../engines/raylib/src/helix/raylib/Light.hx), `import helix.raylib.Light;`
+
+Represents rlights' `Light` (raylib's examples' `rlights.h`): a light of a lit shader, made by `CreateLight` and set again by `UpdateLightValues` (`helix.raylib.extras.Lights`) after a field changes.
+
+```haxe
+function new()
+var type:Int
+var enabled:Bool
+var position:Vector3
+var target:Vector3
+var color:Color
+var attenuation:Float
+var enabledLoc:Int
+var typeLoc:Int
+var positionLoc:Int
+var targetLoc:Int
+var colorLoc:Int
+var attenuationLoc:Int
+```
+
+- `new`: Creates a light that is off, every field 0, as C's `Light light = { 0 }`. Lights are made by `CreateLight`.
+- `type`: Gets or sets its type: `LIGHT_DIRECTIONAL` or `LIGHT_POINT`.
+- `enabled`: Gets or sets a value indicating whether it shines.
+- `position`: Gets or sets where it is.
+- `target`: Gets or sets where it points, for a directional light.
+- `color`: Gets or sets its color.
+- `attenuation`: Gets or sets its attenuation, which rlights keeps and its shader doesn't read.
+- `enabledLoc`: Gets or sets the location of its `enabled` in its shader.
+- `typeLoc`: Gets or sets the location of its `type`.
+- `positionLoc`: Gets or sets the location of its `position`.
+- `targetLoc`: Gets or sets the location of its `target`.
+- `colorLoc`: Gets or sets the location of its `color`.
+- `attenuationLoc`: Gets or sets the location of its `attenuation`, which rlights never finds.
+
 ## Material
 
 *class* in [`engines/raylib/src/helix/raylib/Material.hx`](../../engines/raylib/src/helix/raylib/Material.hx), `import helix.raylib.Material;`

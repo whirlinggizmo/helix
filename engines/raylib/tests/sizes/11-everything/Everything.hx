@@ -32,7 +32,8 @@ class Everything {
 		"helix.raylib.extras.Audio",
 		"helix.raylib.extras.Device",
 		"helix.raylib.extras.Gui",
-		"helix.raylib.extras.GuiSkins"
+		"helix.raylib.extras.GuiSkins",
+		"helix.raylib.extras.Lights"
 	];
 
 	/** raylib's modules in helix-raylib, whose functions carry the refusals' metadata. */
@@ -46,6 +47,7 @@ class Everything {
 		"RGuiAsync",
 		"RGuiControls",
 		"RGuiSkins",
+		"RLights",
 		"RMath",
 		"RModels",
 		"RModelsAsync",

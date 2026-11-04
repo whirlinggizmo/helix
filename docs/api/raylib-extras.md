@@ -315,6 +315,64 @@ static function GuiClearSkins():Void
   - returns: The skin, or null when the part is drawn flat.
 - `GuiClearSkins`: Removes every skin, so every control is drawn flat in its style's colors again. Loading a style leaves skins as they are.
 
+## Lights
+
+*class* in [`engines/raylib/src/helix/raylib/extras/Lights.hx`](../../engines/raylib/src/helix/raylib/extras/Lights.hx), `import helix.raylib.extras.Lights;`
+
+Provides raylib's examples' lights, `rlights.h` as raylib's lighting examples include it, and the lit shader they light, built in: `LoadLightingShader` in place of loading the examples' `lighting.vs` and `lighting.fs`, so the examples' code runs as it is but for that load. Imported apart: `import helix.raylib.extras.Lights.*;`. The light's type, `Light`, is `helix.raylib`'s, with raylib's.
+
+```haxe
+var shader = LoadLightingShader();
+SetShaderValue(shader, GetShaderLocation(shader, "ambient"), [0.1, 0.1, 0.1, 1.0], SHADER_UNIFORM_VEC4);
+var light = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), Vector3Zero(), YELLOW, shader);
+model.materials[0].shader = shader;
+// each frame
+SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], [camera.position.x, camera.position.y, camera.position.z],
+SHADER_UNIFORM_VEC3);
+UpdateLightValues(shader, light);
+```
+
+A model posed by `UpdateModelAnimation` under the lit shader is skinned on the GPU. A program's own shader lights as it does by including `<helix/raylib/shaders/lights.glsl>`, whose head comment says what it declares. A program that calls none of this links none of it.
+
+```haxe
+static inline var MAX_LIGHTS:Int
+static inline var LIGHT_DIRECTIONAL:Int
+static inline var LIGHT_POINT:Int
+```
+
+- `MAX_LIGHTS`: The most lights a lit shader holds, rlights' `MAX_LIGHTS`.
+- `LIGHT_DIRECTIONAL`: A light shining one way from far off, from its position toward its target, rlights' `LIGHT_DIRECTIONAL`.
+- `LIGHT_POINT`: A light shining every way from its position, rlights' `LIGHT_POINT`.
+
+### lights: raylib's examples' rlights and the lit shader built on them
+
+```haxe
+static function LoadLightingShader():Shader
+static function CreateLight(type:Int, position:Vector3, target:Vector3, color:Color, shader:Shader):Light
+static function UpdateLightValues(shader:Shader, light:Light):Void
+```
+
+- `LoadLightingShader`: Returns helix-raylib's lit shader: raylib's examples' `lighting.vs` and `lighting.fs`, built in, so a program needs no shader files. Its locations are set as raylib's lighting example sets them: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, which the program sets to the camera's position each frame; `GetShaderLocation(shader, "ambient")` finds the ambient color. Lights are added with `CreateLight`. A model posed by `UpdateModelAnimation` under it is skinned on the GPU. Its stages are `helix/raylib/shaders/lit.vs` and `lit.fs`, over `<helix/raylib/shaders/lights.glsl>`, which a program's own shader can include.
+  - returns: The shader, the program's until `UnloadShader`.
+
+  ```haxe
+  var shader = LoadLightingShader();
+  var ambientLoc = GetShaderLocation(shader, "ambient");
+  SetShaderValue(shader, ambientLoc, [0.1, 0.1, 0.1, 1.0], SHADER_UNIFORM_VEC4);
+  model.materials[0].shader = shader;
+  var light = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), Vector3Zero(), YELLOW, shader);
+  ```
+- `CreateLight`: Makes a light and sets it in a lit shader, as rlights' `CreateLight`: the next of the shader's `lights`, its locations found by name (`lights[0].enabled` and the rest). Past `MAX_LIGHTS` lights it makes a light that is off and sets nothing. The count is the program's, as rlights' is, not the shader's.
+  - `type`: `LIGHT_DIRECTIONAL` or `LIGHT_POINT`.
+  - `position`: Where it is.
+  - `target`: Where it points, for a directional light.
+  - `color`: Its color.
+  - `shader`: The lit shader.
+  - returns: The light.
+- `UpdateLightValues`: Sets a light's values in a lit shader, as rlights' `UpdateLightValues`: whether it is on, its type, position, target and color, for the draws after it.
+  - `shader`: The lit shader.
+  - `light`: The light.
+
 ## Models
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Models.hx`](../../engines/raylib/src/helix/raylib/extras/Models.hx), `import helix.raylib.extras.Models;`

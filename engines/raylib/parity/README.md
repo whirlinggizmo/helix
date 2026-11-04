@@ -70,6 +70,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `points` | 5.5 | pixels | rlgl's point mode: `DrawModelPoints` and `DrawModelPointsEx` (a cloud, indexed meshes), point mode with culling, the batch as points |
 | `skinning` | 6.2 | pixels | greenman skinned by the default shader (on the GPU, raylib's CPU skinning its oracle), by raylib's skinning shader, and blended |
 | `crowd` | 6.2 | pixels | one greenman posed and drawn 240 times in a frame, each in its own pose, by the default shader and by raylib's skinning shader |
+| `lighting` | 6.2 | pixels | raylib's lighting example (rlights.h, lighting.vs and lighting.fs) as `extras.Lights` builds it in: point and directional lights, one off; greenman lit and posed twice in a frame (on the GPU, raylib's CPU skinning its oracle), and lit by a program's own shader over `<helix/raylib/shaders/skinning.glsl>` and `lights.glsl` |
 | `modular_scene` | 6.2 | pixels | the modular woman dressed and holding the sword, CPU-skinned |
 | `waves` | 5.5 | values | `LoadWave` on WAV, Ogg Vorbis, MP3 (with a LAME tag and without), QOA and FLAC (refused): frames, rate, sample size, channels and every sample, natively and in a page; FLAC music refused |
 | `cubemaps_62` | 6.2 | pixels | `LoadTextureCubemap` in each layout, raylib's skybox example, and cubes sampling cubemaps through their material |

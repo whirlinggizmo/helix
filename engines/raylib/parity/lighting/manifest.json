@@ -1,0 +1,22 @@
+{
+  "oracle": "6.2",
+  "covers": "raylib's lighting example's setup (rlights.h, lighting.vs and lighting.fs, as LoadLightingShader and CreateLight build them in): a plane and a cube lit by point and directional lights, a light turned off; greenman lit and posed twice in a frame (skinned on the GPU, raylib's CPU skinning its oracle), and lit by a program's own shader over <helix/raylib/shaders/skinning.glsl> and lights.glsl",
+  "kind": "pixels",
+  "reference": "scene.c",
+  "harness": [
+    "Main.hx"
+  ],
+  "assets": {
+    "web/greenman.glb": "../assets/greenman.glb",
+    "src/rlights.h": "raylib:examples/shaders/rlights.h",
+    "web/lighting.vs": "raylib:examples/shaders/resources/shaders/glsl330/lighting.vs",
+    "web/lighting.fs": "raylib:examples/shaders/resources/shaders/glsl330/lighting.fs",
+    "web/own.vs": "own.vs",
+    "web/own.fs": "own.fs"
+  },
+  "frames": 40,
+  "backends": {
+    "gl": 150,
+    "sdl_gpu": 12000
+  }
+}
