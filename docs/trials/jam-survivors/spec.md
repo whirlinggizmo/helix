@@ -13,6 +13,8 @@ engine and no function.
 
 ## The arena
 - **Ground and walls:** a square 40 x 40 meters, a ground plane with a grid drawn on it, and low walls around its edge that nothing passes.
+- **Models:** `assets/models/` holds optional dungeon pieces as GLB (a floor tile, a wall, a pillar, barrels, boxes, crates, a keg and a
+  chest, see `assets/README.md`). The walls may use the wall model, and props may stand about. Nothing here changes the rules above.
 - **Camera:** looks down at about 55 degrees from 14 meters, following the warden smoothly. Lit by one sun (a directional light),
   with a soft fill from above.
 

@@ -1,111 +1,25 @@
 #!/usr/bin/env python3
-"""Generates the UI art and the sounds for Wardens, the jam's game (see spec.md).
+"""Generates the icon atlas for Wardens, the jam's game (see spec.md).
 
-Writes into assets/ beside this file:
+Writes into assets/ui/ beside this file:
 
-  ui/panel.png    96x96 nine-slice panel, margins in ui/slices.txt
-  ui/button.png   64x128 nine-slice button sheet, four 64x32 states stacked
-  ui/icons.png    384x144 atlas of 48x48 icons, 8 per row, named in ui/icons.txt
-  ui/slices.txt   the nine-slice margins and the button's state layout
-  ui/icons.txt    one "index name" line per icon, row by row
-  sound/slash.wav, shot.wav, hit.wav, gem.wav, level.wav
-                  16-bit PCM, 44100 Hz, mono, synthesized
-  sound/music.ogg a 24 second seamless loop, Vorbis at about 96 kbps
+  icons.png  384x144 atlas of 48x48 icons, 8 per row
+  icons.txt  one "index name" line per icon, row by row
 
-Everything is drawn or synthesized here from code, so the art and sounds are
-the trial's own and contain no third-party content. Seeds are fixed, so a
-rerun gives identical files. The characters are not made here (see
-assets/README.md).
+Kenney's Game Icons are generic interface symbols and have no sword, gun, bullet, outfit
+or armor-slot pictures, so these are drawn here from code. Everything else in assets/ is
+third-party and credited in assets/CREDITS.md. The art is the trial's own.
 
 Run:  python3 gen_assets.py
-Needs Python 3, PIL, numpy and ffmpeg (with libvorbis) at /usr/bin/ffmpeg.
+Needs Python 3, PIL and numpy.
 """
 import os
-import subprocess
-import wave
 
 import numpy as np
 from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "assets")
-UI = os.path.join(OUT, "ui")
-SND = os.path.join(OUT, "sound")
-RATE = 44100
-FFMPEG = "/usr/bin/ffmpeg"
-
-# ---------------------------------------------------------------- nine-slices
-
-
-def lerp(a, b, t):
-    return tuple(a[i] + (b[i] - a[i]) * t for i in range(len(a)))
-
-
-def rounded_box(w, h, radius, body_top, body_bot, light, dark, bevel=3.0,
-                outline=(12, 14, 20), sat=1.0, ss=4):
-    """A rounded box with an outline, a bevel (light top left, dark bottom
-    right) and a vertical body gradient. Computed from a signed distance,
-    supersampled by ss."""
-    W, H = w * ss, h * ss
-    ys, xs = np.mgrid[0:H, 0:W]
-    px = (xs + 0.5) / ss
-    py = (ys + 0.5) / ss
-    r = radius
-    # distance inside the rounded rectangle (positive inside)
-    cx = np.clip(px, r, w - r)
-    cy = np.clip(py, r, h - r)
-    dist_c = np.hypot(px - cx, py - cy)
-    inside = r - dist_c  # positive inside the corner arcs, edge distance elsewhere
-    edge = np.minimum(np.minimum(px, w - px), np.minimum(py, h - py))
-    d = np.where((px < r) | (px > w - r), np.where((py < r) | (py > h - r), inside, edge), edge)
-    d = np.where((py < r) | (py > h - r), np.where((px < r) | (px > w - r), inside, d), d)
-
-    t = py / h
-    body = np.array([lerp(body_top, body_bot, tt) for tt in np.linspace(0, 1, 256)])
-    body_img = body[np.clip((t * 255).astype(int), 0, 255)]
-    # bevel colour runs light (top left) to dark (bottom right)
-    s = np.clip((px / w + py / h) / 2.0, 0, 1)
-    s = np.clip((s - 0.25) / 0.5, 0, 1)
-    lc = np.array(light, float)
-    dc = np.array(dark, float)
-    bev = lc[None, None, :] * (1 - s[..., None]) + dc[None, None, :] * s[..., None]
-    col = np.where((d < 1.0 + bevel)[..., None], bev, body_img)
-    col = np.where((d < 1.0)[..., None], np.array(outline, float)[None, None, :], col)
-    a = (d > 0).astype(float) * 255
-    img = np.dstack([col, a])
-    out = Image.fromarray(img.clip(0, 255).astype(np.uint8), "RGBA")
-    out = out.resize((w, h), Image.BOX)
-    if sat != 1.0:
-        arr = np.asarray(out).astype(float)
-        g = arr[..., :3].mean(axis=2, keepdims=True)
-        arr[..., :3] = g + (arr[..., :3] - g) * sat
-        out = Image.fromarray(arr.clip(0, 255).astype(np.uint8), "RGBA")
-    return out
-
-
-def make_panel():
-    img = rounded_box(96, 96, 12, (44, 52, 66), (30, 36, 48),
-                      (150, 168, 196), (70, 82, 104), bevel=3.0)
-    img.save(os.path.join(UI, "panel.png"))
-
-
-BUTTON_MARGIN = 12
-
-
-def make_button():
-    sheet = Image.new("RGBA", (64, 128), (0, 0, 0, 0))
-    # (top, bottom, light, dark, saturation, y offset)
-    states = [
-        ((70, 84, 108), (46, 56, 76), (170, 188, 214), (84, 98, 124), 1.0, 0),
-        ((96, 114, 144), (66, 80, 106), (214, 228, 248), (110, 128, 156), 1.0, 0),
-        ((34, 42, 58), (26, 32, 44), (96, 110, 136), (52, 62, 82), 1.0, 1),
-        ((60, 64, 72), (50, 53, 60), (110, 114, 122), (72, 75, 82), 0.0, 0),
-    ]
-    for i, (top, bot, lt, dk, sat, dy) in enumerate(states):
-        # The shape is 31 high so a pressed button can move down 1 px inside its cell.
-        box = rounded_box(64, 31, 8, top, bot, lt, dk, bevel=2.0, sat=sat)
-        sheet.alpha_composite(box, (0, i * 32 + dy))
-    sheet.save(os.path.join(UI, "button.png"))
+UI = os.path.join(HERE, "assets", "ui")
 
 
 # ---------------------------------------------------------------------- icons
@@ -360,189 +274,9 @@ def make_icons():
             f.write("%d %s\n" % (i, n))
 
 
-def make_slices():
-    m = BUTTON_MARGIN
-    with open(os.path.join(UI, "slices.txt"), "w") as f:
-        f.write("# image left top right bottom (pixels), then any notes\n")
-        f.write("panel.png 16 16 16 16\n")
-        f.write("button.png %d %d %d %d states=4 layout=vertical size=64x32 order=normal,focused,pressed,disabled\n"
-                % (m, m, m, m))
-        f.write("# Each button state is its own 64x32 cell, nine-sliced with those margins on its own.\n")
-        f.write("# The shape fills 31 rows of its cell, so the pressed state's 1 px shift stays inside it.\n")
-
-
-# --------------------------------------------------------------------- sounds
-
-
-def write_wav(name, x):
-    x = np.asarray(x, float)
-    n = int(0.004 * RATE)
-    x[-n:] *= np.linspace(1, 0, n)
-    x[:8] *= np.linspace(0, 1, 8)
-    x = x / np.max(np.abs(x)) * 0.85  # -1.4 dBFS
-    pcm = np.round(x * 32767).astype("<i2")
-    with wave.open(os.path.join(SND, name), "wb") as w:
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(RATE)
-        w.writeframes(pcm.tobytes())
-
-
-def tt(sec):
-    return np.arange(int(sec * RATE)) / RATE
-
-
-def lowpass(x, cutoff):
-    """One-pole low pass with a per-sample cutoff in Hz."""
-    a = 1 - np.exp(-2 * np.pi * cutoff / RATE)
-    y = np.zeros_like(x)
-    s = 0.0
-    for i in range(len(x)):
-        s += a[i] * (x[i] - s)
-        y[i] = s
-    return y
-
-
-def slash(rng):
-    t = tt(0.28)
-    u = t / t[-1]
-    noise = rng.standard_normal(len(t))
-    cut = 400 + 5200 * np.sin(np.pi * u) ** 1.5
-    y = lowpass(lowpass(noise, cut), cut * 1.5)
-    env = np.sin(np.pi * u) ** 1.6 * (1 - 0.3 * u)
-    return y * env
-
-
-def shot(rng):
-    t = tt(0.2)
-    f = 200 + 1500 * np.exp(-t * 22)
-    ph = 2 * np.pi * np.cumsum(f) / RATE
-    y = np.sin(ph) + 0.35 * np.sign(np.sin(ph)) * 0.5
-    y *= np.exp(-t * 14)
-    click = rng.standard_normal(len(t)) * np.exp(-t * 400) * 0.5
-    return y + click
-
-
-def hit(rng):
-    t = tt(0.24)
-    f = 48 + 90 * np.exp(-t * 30)
-    ph = 2 * np.pi * np.cumsum(f) / RATE
-    body = np.sin(ph) * np.exp(-t * 14)
-    n = lowpass(rng.standard_normal(len(t)), np.full(len(t), 900.0)) * np.exp(-t * 45)
-    return body + 0.7 * n
-
-
-def bell(t, f, decay):
-    return (np.sin(2 * np.pi * f * t) + 0.35 * np.sin(2 * np.pi * f * 2.01 * t)
-            + 0.12 * np.sin(2 * np.pi * f * 3.02 * t)) * np.exp(-t * decay)
-
-
-def gem(rng):
-    y = np.zeros(int(0.5 * RATE))
-    for start, f in ((0.0, 1318.5), (0.09, 1975.5)):
-        i = int(start * RATE)
-        seg = tt(0.5 - start)
-        y[i:] += bell(seg, f, 7.0) * np.minimum(1, seg * 1000)
-    return y
-
-
-def level(rng):
-    notes = [523.25, 659.25, 783.99, 1046.5, 1318.5]
-    y = np.zeros(int(0.95 * RATE))
-    for k, f in enumerate(notes):
-        i = int(k * 0.085 * RATE)
-        seg = tt(0.95) [: len(y) - i]
-        amp = 0.7 + 0.1 * k
-        y[i:] += amp * (np.sin(2 * np.pi * f * seg) * 0.8 + 0.25 * np.sin(2 * np.pi * f * 2 * seg)) \
-            * np.exp(-seg * (5.0 if k < 4 else 3.0)) * np.minimum(1, seg * 800)
-    return y
-
-
-def midi(n):
-    return 440.0 * 2 ** ((n - 69) / 12)
-
-
-def make_music():
-    bpm = 120
-    beat = 60.0 / bpm
-    bars = 12
-    total = bars * 4 * beat  # 24 s
-    N = int(round(total * RATE))
-    mix = np.zeros(N)
-
-    def add(start, sig):
-        """Adds sig at start seconds, wrapping around the end so the loop is seamless."""
-        i = int(round(start * RATE))
-        idx = (i + np.arange(len(sig))) % N
-        np.add.at(mix, idx, sig)
-
-    # Am, F, Dm, E per four bars, three times: a minor key with a major dominant.
-    chords = [
-        (57, [0, 3, 7]),   # A minor (root MIDI 57)
-        (53, [0, 4, 7]),   # F major
-        (50, [0, 3, 7]),   # D minor
-        (52, [0, 4, 7]),   # E major
-    ]
-    rng = np.random.default_rng(7)
-    pattern = [0, 1, 2, 3, 2, 1, 2, 1]  # eighth notes up and down the chord plus its octave
-    for bar in range(bars):
-        root, ints = chords[bar % 4]
-        tones = [root + 12 + i for i in ints] + [root + 24]
-        t0 = bar * 4 * beat
-        # arpeggio, two notes of a pluck every beat
-        for k in range(8):
-            f = midi(tones[pattern[k]])
-            seg = tt(0.7)
-            pl = (np.sin(2 * np.pi * f * seg) + 0.4 * np.sin(2 * np.pi * 2 * f * seg)
-                  + 0.2 * np.sin(2 * np.pi * 3 * f * seg)) * np.exp(-seg * 6.5)
-            pl *= np.minimum(1, seg * 600)
-            add(t0 + k * beat / 2, 0.20 * pl)
-        # bass, root on 1 and 3, fifth on 4
-        for k, (off, note) in enumerate(((0, root - 12), (1.5, root - 12), (2, root - 12), (3, root - 5))):
-            f = midi(note)
-            dur = 0.9 * beat if k != 1 else 0.45 * beat
-            seg = tt(dur)
-            env = np.minimum(1, seg * 200) * np.minimum(1, (dur - seg) * 100) * np.exp(-seg * 2.0)
-            add(t0 + off * beat, 0.42 * (np.sin(2 * np.pi * f * seg) + 0.3 * np.sin(4 * np.pi * f * seg)) * env)
-        # a soft pad of the chord's tones, held the bar
-        seg = tt(4 * beat)
-        env = np.minimum(1, seg * 3) * np.minimum(1, (4 * beat - seg) * 3)
-        for i in ints:
-            f = midi(root + 12 + i)
-            add(t0, 0.05 * np.sin(2 * np.pi * f * seg) * env)
-    # a quiet hat on the off beats
-    for k in range(bars * 8):
-        seg = tt(0.04)
-        h = rng.standard_normal(len(seg)) * np.exp(-seg * 120)
-        h = np.diff(np.concatenate([[0], h]))
-        add(k * beat + beat / 2 * (k % 2), 0.05 * h)
-    mix = mix / np.max(np.abs(mix)) * 0.7  # leaves room for Vorbis overshoot
-    pcm = np.round(mix * 32767).astype("<i2")
-    tmp = os.path.join(SND, "_music.wav")
-    with wave.open(tmp, "wb") as w:
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(RATE)
-        w.writeframes(pcm.tobytes())
-    out = os.path.join(SND, "music.ogg")
-    subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-i", tmp, "-c:a", "libvorbis",
-                    "-b:a", "96k", "-fflags", "+bitexact", "-flags:a", "+bitexact",
-                    "-map_metadata", "-1", "-serial_offset", "1", out], check=True)
-    os.remove(tmp)
-
-
 def main():
     os.makedirs(UI, exist_ok=True)
-    os.makedirs(SND, exist_ok=True)
-    make_panel()
-    make_button()
     make_icons()
-    make_slices()
-    rng = np.random.default_rng(1)
-    for name, fn in (("slash.wav", slash), ("shot.wav", shot), ("hit.wav", hit),
-                     ("gem.wav", gem), ("level.wav", level)):
-        write_wav(name, fn(rng))
-    make_music()
 
 
 if __name__ == "__main__":
