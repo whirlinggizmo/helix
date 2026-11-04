@@ -145,60 +145,10 @@ class Models {
 		retire(mesh.gpu, old);
 	}
 
-	// Frees a buffer a holder no longer draws with once the frame is drawn, unless it is borrowed from the holder it was made from.
+	// Frees a buffer a holder no longer draws with once the frame is drawn.
 	static function retire(gpu:MeshGpu, buffer:Int):Void {
-		if (buffer != 0 && !gpu.borrowed.remove(buffer))
+		if (buffer != 0)
 			Runtime.frame.retire(buffer);
-	}
-
-	/** Puts an animation's positions and normals in a mesh's GPU buffers, as raylib's `UpdateModelAnimation` does: each buffer made
-		again, so the draws asked for before keep the old one, freed when the frame is drawn. A mesh sharing its buffers with other loads
-		of its file takes its own first (`own`), so the others don't move.
-
-		@param mesh  The mesh.
-		@param positions  The positions, x, y and z a vertex.
-		@param normals  The normals, or null to leave them. */
-	public static function animate(mesh:Mesh, positions:Array<Float>, normals:Null<Array<Float>>):Void {
-		upload(mesh);
-		if (mesh.gpu.buffers == null)
-			return;
-		own(mesh);
-		replace(mesh, 0, positions);
-		if (normals != null)
-			replace(mesh, 2, normals);
-	}
-
-	// A buffer made again of numbers, as 32-bit floats, the old one retired.
-	static function replace(mesh:Mesh, index:Int, values:Array<Float>):Void {
-		var n = mesh.vertexCount * SIZES[index];
-		var bytes = haxe.io.Bytes.alloc(n * 4);
-		for (i in 0...n)
-			bytes.setFloat(i * 4, i < values.length ? values[i] : 0);
-		mesh.gpu.contents[index] = bytes;
-		var old = mesh.gpu.buffers[index];
-		mesh.gpu.buffers[index] = Runtime.graphics.createStaticBuffer(bytes, bytes.length, false);
-		retire(mesh.gpu, old);
-	}
-
-	/** Gives a mesh of a file's load (`load`) a holder of GPU buffers of its own, borrowing the shared one's until it
-		replaces them, and keeping the mesh's hold on the shared one (`MeshGpu.source`); nothing for a mesh with its own already.
-
-		@param mesh  The mesh, uploaded. */
-	public static function own(mesh:Mesh):Void {
-		var shared = mesh.gpu;
-		if (!shared.shared || shared.buffers == null)
-			return;
-		var own = new MeshGpu();
-		own.buffers = shared.buffers.copy();
-		own.indexBuffer = shared.indexBuffer;
-		own.edgeBuffer = shared.edgeBuffer;
-		for (i => bytes in shared.contents)
-			own.contents[i] = bytes;
-		for (b in own.buffers.concat([own.indexBuffer, own.edgeBuffer]))
-			if (b != 0)
-				own.borrowed.push(b);
-		own.source = shared;
-		mesh.gpu = own;
 	}
 
 	/** Returns an uploaded mesh's edges, as an index buffer of two indices an edge, three a triangle, made when first asked for.
@@ -240,27 +190,23 @@ class Models {
 		mesh.gpu = new MeshGpu();
 	}
 
-	// Lets go of a mesh's hold on a holder of GPU buffers, freeing those it hasn't borrowed when it was the last, then its own source's.
+	// Lets go of a mesh's hold on a holder of GPU buffers, freeing them when it was the last.
 	static function freeGpu(gpu:MeshGpu):Void {
 		if (--gpu.holders > 0)
 			return;
 		function dispose(b:Int):Void
-			if (b != 0 && gpu.borrowed.indexOf(b) < 0)
+			if (b != 0)
 				Runtime.graphics.disposeBuffer(b);
 		if (gpu.buffers != null)
 			for (b in gpu.buffers)
 				dispose(b);
 		dispose(gpu.indexBuffer);
 		dispose(gpu.edgeBuffer);
-		gpu.borrowed.resize(0);
 		gpu.buffers = null;
 		gpu.indexBuffer = 0;
 		gpu.edgeBuffer = 0;
 		for (i in 0...gpu.contents.length)
 			gpu.contents[i] = null;
-		if (gpu.source != null)
-			freeGpu(gpu.source);
-		gpu.source = null;
 	}
 
 	/** Takes one more holder of a material: a model it is put in.
@@ -566,6 +512,7 @@ class Models {
 	static function animated(model:Model):Void {
 		if (model.boneCount == 0)
 			return;
+		RModels.boneWriter = writeBones;
 		model.pose = [for (_ in 0...model.boneCount) new Transform()];
 		model.boneMatrices = [
 			for (_ in 0...model.boneCount)
@@ -576,6 +523,39 @@ class Models {
 			mesh.boneMatrices = model.boneMatrices;
 		}
 	}
+
+	// A mesh's bones' matrices written into a skinning shader's boneMatrices, as raylib 5.5's DrawMesh uploads them.
+	static function writeBones(mesh:Mesh, shader:Shader):Void {
+		var location = shader.locs[Raylib.SHADER_LOC_BONE_MATRICES];
+		if (location != -1) {
+			var count = mesh.boneCount < mesh.boneMatrices.length ? mesh.boneCount : mesh.boneMatrices.length;
+			var values = bones;
+			values.resize(count * 16);
+			for (i in 0...count) {
+				var m = mesh.boneMatrices[i], at = i * 16;
+				values[at] = m.m0;
+				values[at + 1] = m.m1;
+				values[at + 2] = m.m2;
+				values[at + 3] = m.m3;
+				values[at + 4] = m.m4;
+				values[at + 5] = m.m5;
+				values[at + 6] = m.m6;
+				values[at + 7] = m.m7;
+				values[at + 8] = m.m8;
+				values[at + 9] = m.m9;
+				values[at + 10] = m.m10;
+				values[at + 11] = m.m11;
+				values[at + 12] = m.m12;
+				values[at + 13] = m.m13;
+				values[at + 14] = m.m14;
+				values[at + 15] = m.m15;
+			}
+			shader.program.write(location, values);
+		}
+	}
+
+	// What writeBones fills, read as the draw is recorded.
+	static final bones:Array<Float> = [];
 
 	/** Returns a name as raylib's 32 bytes hold it: its first 31 bytes, in UTF-8, less a character those bytes would cut in two (which
 		a String can't hold).

@@ -71,6 +71,25 @@ itself for what `Device`, `Files` or `Window` answers (the URL's query, `Sys.get
 place, naming the call and its module's import, when it is built with `-D helix-raylib-host-warnings`; it is off by default, since a
 program may reach the host on purpose.
 
+## Skinned models
+
+`UpdateModelAnimation` and `UpdateModelAnimationEx` pose a model, and each draw after draws it in that pose, so one model can be posed and
+drawn many times in a frame. Under raylib's default shader a model is skinned on the GPU. A shader of the program's own skins on the GPU
+when its vertex stage includes `<helix/raylib/shaders/skinning.glsl>`, or declares raylib's `skinning.vs` inputs (`vertexBoneIds`,
+`vertexBoneWeights`, `uniform mat4 boneMatrices[N]`); any other is skinned on the CPU, every vertex each call. The include's head comment
+says what it declares, with an example: `helixSkin()` is the vertex's skin matrix, and `helixSkinNormal(normal)` moves a normal as raylib
+does.
+
+```glsl
+#version 330
+#include <helix/raylib/shaders/skinning.glsl>
+in vec3 vertexPosition;
+uniform mat4 mvp;
+void main() {
+    gl_Position = mvp*helixSkin()*vec4(vertexPosition, 1.0);
+}
+```
+
 ## What a model holds
 
 raylib leaves textures and shaders to the program: its `UnloadModel` frees a model's meshes and nothing else. helix-raylib counts holders

@@ -203,6 +203,16 @@ class Frame {
 		screenshots do once a program asks for one (`Runtime.screenshots`). A program asking for none links none. */
 	public final ended:Array<() -> Void> = [];
 
+	/** What runs each frame before its passes are drawn, in the order added: what the passes read and only a program asking for it
+		writes, as the bone palette once a program poses a model (`Skinning`). */
+	public final drawing:Array<() -> Void> = [];
+
+	/** Draws a mesh `UpdateModelAnimation` posed, skinned: set by the first call (`Skinning`), null before, so a program without one links
+		none of it. Receives the mesh, the shader, the material, the transform, the diffuse color, and the instances' buffer and count;
+		returns false for a draw it leaves to be drawn as it is. */
+	public var skinned:Null<(mesh:helix.raylib.Mesh, shader:helix.raylib.Shader, material:helix.raylib.Material, model:Matrix3D, diffuse:Array<Float>,
+			instances:Int, instanceCount:Int) -> Bool> = null;
+
 	/** Creates the frame, with raylib's default shader and the white texture.
 
 		@param graphics  The graphics. */
@@ -750,6 +760,7 @@ class Frame {
 		@param instanceCount  Optional. How many instances; defaults to 1. */
 	public function mesh(mesh:helix.raylib.Mesh, p:Program, model:Matrix3D, diffuse:Array<Float>, textures:Array<Int>, instances:Int = 0,
 			instanceCount:Int = 1):Void {
+		meshBuffers = null;
 		// In point mode, the mesh's triangles drawn as their corners: those culling leaves, found here, as GL's point mode culls the
 		// triangles whose corners it draws.
 		var points:Null<Array<Int>> = null;
@@ -825,6 +836,7 @@ class Frame {
 			for (i => name in names)
 				if (isMatrix(names, i)) instances != 0 ? instances : constants else if (name != "") Models.buffer(mesh, MESH_BUFFERS.get(name))
 		];
+		meshBuffers = buffers;
 		function add():Void
 			pass.draws.push({
 				pipeline: pipeline,
@@ -846,6 +858,10 @@ class Frame {
 		else
 			add();
 	}
+
+	/** The buffers, by the program's slot, of the draws the last `mesh` added, which a caller may change before the frame is drawn (a
+		mesh posed on the CPU, `Skinning`); null when it added none. */
+	public var meshBuffers:Null<Array<Int>> = null;
 
 	// The view and projection together, reused.
 	final viewProjection = new Matrix3D();
@@ -914,6 +930,8 @@ class Frame {
 	public function draw(framebufferWidth:Int, framebufferHeight:Int, show:Bool):Void {
 		flush();
 		present();
+		for (call in drawing)
+			call();
 		for (p in passes) {
 			for (u in p.updates)
 				graphics.updateTexture(u.texture, u.x, u.y, u.width, u.height, u.rgba);

@@ -37,33 +37,16 @@ class ShaderMacro {
 		"vertexBoneWeights"
 	];
 
-	/** raylib's default vertex stage, as its rlgl writes it. */
-	public static final DEFAULT_VS = "#version 330
-in vec3 vertexPosition;
-in vec2 vertexTexCoord;
-in vec4 vertexColor;
-out vec2 fragTexCoord;
-out vec4 fragColor;
-uniform mat4 mvp;
-void main() {
-    fragTexCoord = vertexTexCoord;
-    fragColor = vertexColor;
-    gl_Position = mvp*vec4(vertexPosition, 1.0);
-}
-";
+	/** Returns the text of one of helix-raylib's own shader files, in `helix/raylib/shaders/` on its class path.
 
-	/** raylib's default fragment stage, as its rlgl writes it. */
-	public static final DEFAULT_FS = "#version 330
-in vec2 fragTexCoord;
-in vec4 fragColor;
-out vec4 finalColor;
-uniform sampler2D texture0;
-uniform vec4 colDiffuse;
-void main() {
-    vec4 texelColor = texture(texture0, fragTexCoord);
-    finalColor = texelColor*colDiffuse*fragColor;
-}
-";
+		@param file  The file's name (`unlit.vs`).
+		@param pos  Where an error points.
+		@return  Its text. */
+	public static function builtIn(file:String, pos:Position):String {
+		var path = try Context.resolvePath('helix/raylib/shaders/$file') catch (_:Dynamic) Context.error('helix-raylib: shaders/$file not found', pos);
+		Context.registerModuleDependency(Context.getLocalModule(), path);
+		return File.getContent(path);
+	}
 
 	/** Returns the expression of a raylib shader compiled from two stages' text, either null for raylib's default.
 
@@ -78,8 +61,8 @@ void main() {
 		@return  An expression of type `helix.services.shaders.Shader`. */
 	public static function program(vsName:String, vs:Null<String>, fsName:String, fs:Null<String>, pos:Position,
 			?initials:Array<{name:String, numbers:Array<Float>}>):Expr {
-		var vertex = adapt(vs == null ? DEFAULT_VS : vs, true, vsName, pos),
-			fragment = adapt(fs == null ? DEFAULT_FS : fs, false, fsName, pos);
+		var vertex = adapt(vs == null ? builtIn("unlit.vs", pos) : vs, true, vsName, pos),
+			fragment = adapt(fs == null ? builtIn("unlit.fs", pos) : fs, false, fsName, pos);
 		if (initials != null) {
 			vertex = initialize(vertex, vsName, pos, initials);
 			fragment = initialize(fragment, fsName, pos, initials);

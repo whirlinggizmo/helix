@@ -36,6 +36,13 @@ class Program {
 	public final texture1:Int;
 	public final texture2:Int;
 
+	/** The slot of the bone palette a shader including `<helix/raylib/shaders/skinning.glsl>` declares, -1 for one that doesn't, -2 until
+		`Skinning` first draws through it. */
+	public var paletteSlot = -2;
+
+	/** The draw's first bone in the palette, as that include declares it; null for a shader without it. */
+	public var boneOffset:Null<ShaderUniform> = null;
+
 	/** The platform's program handle. */
 	public final handle:Int;
 

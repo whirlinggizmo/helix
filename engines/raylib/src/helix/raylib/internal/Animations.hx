@@ -5,8 +5,8 @@ import helix.formats.gltf.GltfFile;
 import helix.raylib.*;
 import helix.raylib.modules.RMath.*;
 
-/** Reads a glTF file's animations as raylib 6.2's `LoadModelAnimationsGLTF` does, and poses a model by them as its
-	`UpdateModelAnimation` and `UpdateModelAnimationEx` do: their code ported line by line, with raymath's functions. */
+/** Reads a glTF file's animations as raylib 6.2's `LoadModelAnimationsGLTF` does, and poses a model's bones by them as its
+	`UpdateModelAnimationBones` and `UpdateModelAnimationBonesEx` do: their code ported line by line, with raymath's functions. */
 @:noCompletion
 @:access(helix.raylib.modules.RMath)
 class Animations {
@@ -406,82 +406,6 @@ class Animations {
 		var bindPoseMatrix = trs(bind.translation.x, bind.translation.y, bind.translation.z, bind.rotation, bind.scale.x, bind.scale.y, bind.scale.z);
 		var currentPoseMatrix = trs(translation.x, translation.y, translation.z, rotation, scale.x, scale.y, scale.z);
 		model.boneMatrices[boneIndex] = MatrixMultiply(MatrixInvert(bindPoseMatrix), currentPoseMatrix);
-	}
-
-	/** Moves each skinned mesh's vertices by the model's bone matrices, as raylib 6.2's `UpdateModelAnimationVertexBuffers`: a vertex's
-		position and normal (by the matrices inverted and transposed, not normalized) each bone's times its weight, added; the mesh's
-		position and normal buffers on the GPU then made of them. A mesh whose material's shader reads the bone ids skins itself and is
-		left.
-
-		@param model  The model. */
-	public static function skin(model:Model):Void {
-		var normalMatrices:Null<Array<Matrix>> = null;
-		for (m in 0...model.meshCount) {
-			var mesh = model.meshes[m];
-			if (mesh.boneWeights == null || mesh.boneIds == null)
-				continue;
-			var material = model.materials[model.meshMaterial[m]];
-			if (material != null
-				&& material.shader != null
-				&& material.shader.locs != null
-				&& material.shader.locs[Raylib.SHADER_LOC_VERTEX_BONEIDS] != -1)
-				continue;
-			var count = mesh.vertexCount * 3;
-			if (mesh.animVertices == null)
-				mesh.animVertices = mesh.vertices.slice(0, count);
-			if (mesh.normals != null && mesh.animNormals == null)
-				mesh.animNormals = mesh.normals.slice(0, count);
-			// A normal's matrix depends on its bone alone: once a bone, not once a vertex.
-			if (mesh.normals != null && normalMatrices == null)
-				normalMatrices = [
-					for (b in 0...(model.boneCount < 256 ? model.boneCount : 256))
-						MatrixTranspose(MatrixInvert(model.boneMatrices[b]))
-				];
-			var vertices = mesh.vertices,
-				normals = mesh.normals,
-				anim = mesh.animVertices,
-				animNormals = mesh.animNormals;
-			var boneCounter = 0, bufferUpdateRequired = false;
-			var v = 0;
-			while (v < count) {
-				anim[v] = 0;
-				anim[v + 1] = 0;
-				anim[v + 2] = 0;
-				if (animNormals != null) {
-					animNormals[v] = 0;
-					animNormals[v + 1] = 0;
-					animNormals[v + 2] = 0;
-				}
-				for (_ in 0...4) {
-					var boneWeight = mesh.boneWeights[boneCounter];
-					var boneIndex = mesh.boneIds[boneCounter];
-					boneCounter++;
-					// Nothing to add for a bone of no weight.
-					if (boneWeight == 0)
-						continue;
-					var bone = model.boneMatrices[boneIndex];
-					var x = vertices[v],
-						y = vertices[v + 1],
-						z = vertices[v + 2];
-					anim[v] += (bone.m0 * x + bone.m4 * y + bone.m8 * z + bone.m12) * boneWeight;
-					anim[v + 1] += (bone.m1 * x + bone.m5 * y + bone.m9 * z + bone.m13) * boneWeight;
-					anim[v + 2] += (bone.m2 * x + bone.m6 * y + bone.m10 * z + bone.m14) * boneWeight;
-					bufferUpdateRequired = true;
-					if (normals != null && animNormals != null) {
-						var n = normalMatrices[boneIndex];
-						var nx = normals[v],
-							ny = normals[v + 1],
-							nz = normals[v + 2];
-						animNormals[v] += (n.m0 * nx + n.m4 * ny + n.m8 * nz + n.m12) * boneWeight;
-						animNormals[v + 1] += (n.m1 * nx + n.m5 * ny + n.m9 * nz + n.m13) * boneWeight;
-						animNormals[v + 2] += (n.m2 * nx + n.m6 * ny + n.m10 * nz + n.m14) * boneWeight;
-					}
-				}
-				v += 3;
-			}
-			if (bufferUpdateRequired)
-				Models.animate(mesh, anim, normals != null ? animNormals : null);
-		}
 	}
 
 	// C's cast of a float to int, toward 0.

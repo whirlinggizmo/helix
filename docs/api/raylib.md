@@ -434,8 +434,8 @@ var normals:Null<Array<Float>>
 var tangents:Null<Array<Float>>
 var colors:Null<Array<Int>>
 var indices:Null<Array<Int>>
-var animVertices:Null<Array<Float>>
-var animNormals:Null<Array<Float>>
+var animVertices(get, default):Null<Array<Float>>
+var animNormals(get, default):Null<Array<Float>>
 var boneIds:Null<Array<Int>>
 var boneWeights:Null<Array<Float>>
 var boneMatrices:Null<Array<Matrix>>
@@ -452,8 +452,9 @@ var boneCount:Int
 - `tangents`: Gets or sets the tangents, x, y, z and w a vertex (w is 1 or -1, the way the bitangent turns), or null for none. `GenMeshTangents` makes them.
 - `colors`: Gets or sets the colors, r, g, b and a a vertex, 0 to 255, or null for white.
 - `indices`: Gets or sets the indices, three a triangle, or null for vertices taken three at a time.
-- `animVertices`: Gets the positions `UpdateModelAnimation` last moved its vertices to, x, y and z a vertex, or null until it has; the GPU draws these in place of `vertices`.
-- `animNormals`: Gets the normals `UpdateModelAnimation` last turned its vertices' to, or null until it has (or for a mesh without normals). Each is moved by its bones' matrices inverted and transposed, and not normalized, as raylib's.
+- `animVertices`: Gets or sets the positions `UpdateModelAnimation` last moved its vertices to, x, y and z a vertex, or null until it has.
+  They are worked out on the CPU when first read after a call that moved them, from the pose that call left, as raylib's `UpdateModelAnimation` moves them; a draw doesn't read them, but for a mesh drawn through the CPU path (see `UpdateModelAnimation`), or in wire or point mode.
+- `animNormals`: Gets or sets the normals `UpdateModelAnimation` last turned its vertices' to, or null until it has (or for a mesh without normals). Each is moved by its bones' matrices inverted and transposed, and not normalized, as raylib's; like `animVertices`, they are worked out when first read.
 - `boneIds`: Gets or sets the bones each vertex follows, four a vertex, as indices into its model's `bones` (0 to 255), or null for none. A shader reads them as the attribute `vertexBoneIds` (raylib 5.5's name) or `vertexBoneIndices` (6.2's), floats.
 - `boneWeights`: Gets or sets how much each of a vertex's four bones moves it, or null for none: the attribute `vertexBoneWeights`.
 - `boneMatrices`: Gets or sets the bones' matrices, by bone, each taking a vertex from where the skin was bound to where the bone is now: `UpdateModelAnimationBones` sets them, and a shader declaring `uniform mat4 boneMatrices[N]` is given them as the mesh is drawn. Shared by a model's meshes; null for a mesh without bones.
@@ -4793,11 +4794,15 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `model`: The model.
   - `anim`: The animation, of the model's skeleton (`IsModelAnimationValid`).
   - `frame`: The frame, from 0.
-- `UpdateModelAnimation`: Poses a model by a frame of an animation, as raylib 6.2's: its bones as `UpdateModelAnimationBones` poses them, then each skinned mesh's vertices moved on the CPU into its `animVertices` and `animNormals` (each normal by its bones' matrices inverted and transposed, not normalized), which the GPU then draws. A mesh whose material's shader reads `vertexBoneIds` (or `vertexBoneIndices`) is left for the shader to move. Draws asked for before keep the vertices they were asked with.
+- `UpdateModelAnimation`: Poses a model by a frame of an animation, as raylib 6.2's: its bones as `UpdateModelAnimationBones` poses them, and each skinned mesh drawn in that pose until the next call. Draws asked for before keep the pose they were asked with, so one model can be posed and drawn many times in a frame.
   - `model`: The model.
   - `anim`: The animation, of the model's skeleton.
   - `frame`: The frame, from 0, fractional.
-- `UpdateModelAnimationEx`: Poses a model by two animations mixed, raylib 6.2's own: each at its frame as `UpdateModelAnimation` takes one, then the two mixed by the blend, the bones and the vertices as it moves them. Note that, as raylib's, a frame is wrapped to its animation's frames before its fraction is taken, so past the last frame it holds the frame it wrapped to. Nothing for a blend outside 0 to 1.
+
+  How a mesh is moved depends on its material's shader. Under raylib's default shader it is moved on the GPU, by a skinned version of that shader. Under a shader of the program's own that declares the bone inputs, as raylib's `skinning.vs` does (`vertexBoneIds`, `vertexBoneWeights` and `uniform mat4 boneMatrices[N]`), or that includes `<helix/raylib/shaders/skinning.glsl>`, it is moved on the GPU by that shader. Under a shader of the program's own without them it is moved on the CPU, every vertex each call, which is slow for many vertices or many models: an animated model under a lighting shader of the program's own draws fastest when that shader declares `skinning.vs`'s inputs or includes `skinning.glsl`.
+
+  `animVertices` and `animNormals` hold the moved positions and normals (each normal by its bones' matrices inverted and transposed, not normalized), worked out on the CPU when first read; a mesh whose shader moves it itself is left as raylib leaves it.
+- `UpdateModelAnimationEx`: Poses a model by two animations mixed, raylib 6.2's own: each at its frame as `UpdateModelAnimation` takes one, then the two mixed by the blend, the bones and the vertices as it moves them, on the GPU or the CPU as `UpdateModelAnimation` says. Note that, as raylib's, a frame is wrapped to its animation's frames before its fraction is taken, so past the last frame it holds the frame it wrapped to. Nothing for a blend outside 0 to 1.
   - `model`: The model.
   - `animA`: The first animation.
   - `frameA`: Its frame, fractional.

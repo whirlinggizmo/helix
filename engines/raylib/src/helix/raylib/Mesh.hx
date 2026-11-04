@@ -38,13 +38,17 @@ class Mesh {
 	/** Gets or sets the indices, three a triangle, or null for vertices taken three at a time. */
 	public var indices:Null<Array<Int>> = null;
 
-	/** Gets the positions `UpdateModelAnimation` last moved its vertices to, x, y and z a vertex, or null until it has; the GPU draws
-		these in place of `vertices`. */
-	public var animVertices:Null<Array<Float>> = null;
+	/** Gets or sets the positions `UpdateModelAnimation` last moved its vertices to, x, y and z a vertex, or null until it has.
 
-	/** Gets the normals `UpdateModelAnimation` last turned its vertices' to, or null until it has (or for a mesh without normals). Each
-		is moved by its bones' matrices inverted and transposed, and not normalized, as raylib's. */
-	public var animNormals:Null<Array<Float>> = null;
+		They are worked out on the CPU when first read after a call that moved them, from the pose that call left, as raylib's
+		`UpdateModelAnimation` moves them; a draw doesn't read them, but for a mesh drawn through the CPU path (see
+		`UpdateModelAnimation`), or in wire or point mode. */
+	@:isVar public var animVertices(get, default):Null<Array<Float>>;
+
+	/** Gets or sets the normals `UpdateModelAnimation` last turned its vertices' to, or null until it has (or for a mesh without
+		normals). Each is moved by its bones' matrices inverted and transposed, and not normalized, as raylib's; like `animVertices`,
+		they are worked out when first read. */
+	@:isVar public var animNormals(get, default):Null<Array<Float>>;
 
 	/** Gets or sets the bones each vertex follows, four a vertex, as indices into its model's `bones` (0 to 255), or null for none. A
 		shader reads them as the attribute `vertexBoneIds` (raylib 5.5's name) or `vertexBoneIndices` (6.2's), floats. */
@@ -60,6 +64,26 @@ class Mesh {
 
 	/** Gets or sets the number of bones, its model's. */
 	public var boneCount:Int = 0;
+
+	// The pose UpdateModelAnimation last left it in (Skinning), null until a call poses it.
+	@:allow(helix.raylib)
+	var pose:Null<helix.raylib.internal.MeshPose> = null;
+
+	// Works out animVertices and animNormals from the pose: set by the first UpdateModelAnimation, as only it makes a pose.
+	@:allow(helix.raylib)
+	static var posing:Mesh->Void;
+
+	function get_animVertices():Null<Array<Float>> {
+		if (pose != null)
+			posing(this);
+		return animVertices;
+	}
+
+	function get_animNormals():Null<Array<Float>> {
+		if (pose != null)
+			posing(this);
+		return animNormals;
+	}
 
 	// Its GPU buffers, shared with the copies of the same mesh when its model is loaded again.
 	@:allow(helix.raylib)
