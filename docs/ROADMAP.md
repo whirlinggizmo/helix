@@ -1,5 +1,9 @@
 # Roadmap
 
+The order (DECISIONS 40): raygui on helix-raylib, then its skins (`extras.GuiSkins`), then helix-render's stages, then helix-raylib
+rebuilt on helix-render, then helix-scene with Gyre or a three.js-style engine on it, as the jam decides. Whatever comes next keeps
+helix-raylib's size and speed where docs/speed.md records them.
+
 - **helix-render, being built** (directory `libs/render/`, packages `helix.render` and `helix.render.effects`; DECISIONS 35), from its
   agreed API (revision 9), in stages, each member of a later stage throwing and naming it: 1 (done), the renderer and its recorded
   frame, textures and targets, `Batch2D`, `DrawList2D`, fonts and text, and `Batch3D`'s unlit work (views, the batch draws, unlit
@@ -8,14 +12,27 @@
   3, shadows; 4, environment maps and the background; 5, post-processing (with the draft's scene example); 6, fog; 7, morph targets.
   Asked below it: helix-formats' `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions, and morph
   targets; helix-geometry's second texture coordinates, morph targets and mesh groups; helix-math's Euler orders, an object's `lookAt`
-  and `Bounds3D` through a matrix. Then helix-raylib rebuilt on it (immediate, as raylib is, on helix-render directly).
+  and `Bounds3D` through a matrix. Its frame is a command stream (DECISIONS 39). Nine-slice drawing and skins move into `Batch2D`, for
+  raygui's skins and a retained UI alike. Then helix-raylib rebuilt on it (immediate, as raylib is, on helix-render directly), only if
+  each size rung grows by at most 1 to 2 KB gzip and the bunnymark (`tools/bunnymark.py`) is no slower than docs/speed.md's numbers;
+  otherwise helix-raylib keeps its own `Frame`. HeliX's `Batch2D`, which helix-render's came from, drew a bunnymark's 150k sprites in
+  41 ms a frame in a page against helix-raylib's 18 before its batch was fixed (docs/speed.md), so helix-render's batch takes the
+  same fixes first: nothing allocated per draw, typed records, indexed quads.
+- **The jam, before Gyre's shape is decided:** agents (Sonnet, docs allowed) build the same small 3D top-down survivors-like on
+  helix-raylib and on HeliX, two or three each, with gear worn from the modular characters' parts (CC0, Quaternius). Measured: tokens,
+  time, build failures, bugs, lines written (engine-substitute against game logic), frame time, size, startup, and a change made
+  later by a fresh agent. It answers whether a framework's structure beats a familiar API agents were trained on.
 - **helix-scene and Gyre, HeliX's engine (`engines/gyre/`, `helix.gyre`): HeliX on top of the libraries, not replaced by them.** helix-scene (`libs/scene/`, `helix.scene`) is
   HeliX's scene code (its stage, 2D and 3D nodes, transforms, hierarchy, the walk that culls, gathers lights and sorts, picking) moved
   onto helix-render and made engine-neutral, the link rule applied (a 2D game carries no 3D): a port of HeliX's code, not a new
   design. Gyre is HeliX's game-level API (app, loader, UI, transitions, animator, autopilot) on helix-scene, helix-render and
   the services, so its users keep the API they know; a three.js-style engine later on the same helix-scene. The test: one of
-  HeliX's games ported, its effort and its size beside its HeliX build.
-- **helix-raylib (DECISIONS 16, 19, 20, 21, 38):** raylib's API over the services, merged to `main`. Next: rebuilt on helix-render; then reloading and placeholders under raylib's own names (the assets,
+  HeliX's games ported, its effort and its size beside its HeliX build. Gyre is a sibling of helix-raylib, never built on it: raylib's
+  API has no lights, shadows or post-processing, and the mirror keeps raylib's quirks on purpose. Whether Gyre keeps HeliX's API or
+  folds its useful parts (the app's lifecycle, a retained UI, tweens, transitions, the autopilot) into a three.js-style engine on the
+  same helix-scene is the jam's question (DECISIONS 40).
+- **helix-raylib (DECISIONS 16, 19, 20, 21, 38):** raylib's API over the services, merged to `main`. Next: raygui and its skins (below);
+  rebuilt on helix-render after helix-render's stages; then reloading and placeholders under raylib's own names (the assets,
   resources and objects below). Then a trial of how agents take to
   the `...Async` loads, now in `helix.raylib.extras` (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
   (Atomics.wait, which a worker may; cross-origin isolation, OffscreenCanvas, input and audio relayed; raylib's loop run as written)
@@ -30,7 +47,9 @@
   writes its menus and HUD from what agents already know rather than its own widgets (the Katawami port's blind trial wrote some 700
   lines of UI by hand). raylib's own GUI tools then work unchanged: rGuiStyler's `.rgs` styles (and raygui's bundled ones) load
   through `GuiLoadStyleAsync` in an extras module of its own, as every file load is async; rGuiLayout's `.rgl` layouts, and its code export through a Haxe
-  code template for helix-raylib, if its custom templates allow one (to be checked). raylib's other companion headers agents know, easings (`reasings.h`) and physics (`physac.h`), are each a module
+  code template for helix-raylib, if its custom templates allow one (to be checked). raygui styles only colors, borders, text and its
+  icons; skins from images (a nine-slice texture for each control and state, image buttons), which Godot, Unity and Phaser all have,
+  are helix-raylib's own, in `extras.GuiSkins`, drawing through the same controls so a skinned `GuiButton` keeps raygui's signature. raylib's other companion headers agents know, easings (`reasings.h`) and physics (`physac.h`), are each a module
   of their own the same way when wanted; the extras keep only what has no raylib-family equivalent.
 - **Platform proposals queued, for review:** depth sampled after a pass, depth bias, stencil, and the depth tests `Always`, `Less`,
   `Equal` and `GreaterEqual` (helix-render's revision 9). A render target's own sample count, apart from its depth, is being built. Deferred from the vertex formats

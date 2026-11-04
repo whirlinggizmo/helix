@@ -504,3 +504,31 @@ Why things are the way they are, numbered, in order.
     costs a program that doesn't reach the host one walk of its own code. Rejected: keeping the `...Async` calls in `Raylib` beside
     raylib's (an agent can't tell which are raylib's), aliases in both places (no backward compatibility), and one `Extras` class
     for everything, which grows past reading as each feature lands.
+
+39. **helix-render's frame is a command stream, kept lean, and helix-raylib moves onto it only if it costs no size or speed.** The
+    recorded frame (35) is a list of commands for each pass, each an opcode and its arguments appended as the program draws, and
+    played in order at `endFrame`: shadow passes, then target passes in the order begun, then the screen's. A target read and then
+    drawn into again is one copy command. What only some programs use is linked only when used: the pipeline choice, disposal, the
+    checks, `Batch3D`'s setup and the shader cache. Its costs were weighed and accepted: an error found at `endFrame` rather than at
+    the call, arguments copied into the stream, a read in the middle of a frame (a screenshot, a pixel) waiting for the passes before
+    it, a resource freed only after the frame that uses it, passes depending on each other in recording order, a frame's latency of
+    one recording, and a harder trace when debugging. They are what rlgl's own batch and the earlier C frameworks' frame commands
+    already pay. helix-raylib's `Frame` is the same idea, written for raylib alone. helix-raylib is rebuilt on helix-render only if each
+    size rung grows by at most 1 to 2 KB gzip and `tools/bunnymark.py` is no slower than docs/speed.md records. Otherwise it keeps
+    its `Frame`. Rejected: drawing at each call (a render texture drawn into after the screen has begun needs its pass first, which
+    raylib allows), and a retained scene inside the renderer (helix-scene's job).
+
+40. **The order: raygui, its skins, helix-render's stages, helix-raylib on helix-render, then helix-scene, and Gyre's shape waits on
+    the jam.** raygui depends on nothing helix-render adds. It draws through helix-raylib's calls, it rounds out the API agents know,
+    and the jam needs a UI that agents don't hand-roll, so it comes first. raygui styles only colors, borders, text and icons. Skins
+    from images (nine-slice textures for each control and state, image buttons) are what Godot, Unity and Phaser give, so helix-raylib
+    adds them in `extras.GuiSkins`, a feature of its own (38), drawing through raygui's controls so their signatures stay raygui's.
+    Their drawing moves into helix-render's `Batch2D` when helix-raylib moves onto it, where a retained UI uses it too. helix-render's
+    stages come next, then helix-raylib on it under 39's bar, then helix-scene, the retained mode both Gyre and a three.js-style engine
+    sit on. Gyre is a sibling of helix-raylib, never built on it: raylib's API has no lights, shadows or post-processing, and the
+    mirror keeps raylib's quirks on purpose, which a scene would inherit. What Gyre holds of its own (the app's lifecycle, a retained
+    UI, tweens, transitions, the autopilot) is the jam's question: agents build the same game on helix-raylib and on HeliX, and if the
+    framework's structure doesn't beat the familiar API, those parts become services or extras and Gyre's API is not kept for its
+    own sake. The speed this order holds to was set on 2026-11-04 (docs/speed.md): a bunnymark that drew 50k sprites natively in 30.8
+    ms a frame now draws them in 3.1 (raylib C 2.95), from three changes to helix-raylib's batch (nothing allocated per draw, typed
+    records in place of anonymous structures, quads as four indexed vertices).
