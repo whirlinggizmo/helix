@@ -6,6 +6,7 @@ import helix.platform.*;
 	vertices a draw submitted. */
 class RecordingGraphics implements IGraphics {
 	var next = 1;
+	var appended = new Map<Int, Bool>();
 
 	/** Gets what was asked, in order, one line each. */
 	public final log:Array<String> = [];
@@ -14,6 +15,7 @@ class RecordingGraphics implements IGraphics {
 	public final draws:Array<{
 		pipeline:PipelineDesc,
 		buffers:Array<Int>,
+		bufferOffsets:Array<Int>,
 		indexBuffer:Int,
 		first:Int,
 		count:Int,
@@ -117,6 +119,18 @@ class RecordingGraphics implements IGraphics {
 		buffers.set(handle, data.sub(0, usedBytes));
 	}
 
+	public function appendBuffer(handle:Int, data:Bytes, usedBytes:Int):Int {
+		if (!active)
+			throw 'appendBuffer outside a pass';
+		var before = appended.exists(handle) ? buffers.get(handle) : Bytes.alloc(0),
+			grown = Bytes.alloc(before.length + usedBytes);
+		grown.blit(0, before, 0, before.length);
+		grown.blit(before.length, data, 0, usedBytes);
+		buffers.set(handle, grown);
+		appended.set(handle, true);
+		return before.length;
+	}
+
 	public function disposeBuffer(handle:Int):Void
 		buffers.remove(handle);
 
@@ -160,6 +174,7 @@ class RecordingGraphics implements IGraphics {
 
 	public function beginFrame(width:Int, height:Int, clearColor:Int):Void {
 		active = true;
+		appended.clear();
 		log.push('begin screen $width $height clear ${StringTools.hex(clearColor, 8)}');
 	}
 
@@ -172,8 +187,8 @@ class RecordingGraphics implements IGraphics {
 	public function resetScissor():Void
 		log.push('reset scissor');
 
-	public function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int,
-			instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
+	public function draw(pipeline:Int, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int,
+			firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
 		if (!active)
 			throw 'draw outside a pass';
 		for (t in textures)
@@ -182,6 +197,7 @@ class RecordingGraphics implements IGraphics {
 		draws.push({
 			pipeline: pipelines.get(pipeline),
 			buffers: buffers.copy(),
+			bufferOffsets: bufferOffsets == null ? [] : bufferOffsets.copy(),
 			indexBuffer: indexBuffer,
 			first: firstElementIndex,
 			count: elementCount,

@@ -47,7 +47,7 @@ static int slot_of(uint32_t handle){return (int)(handle&0xffff)-1;}
 
 /* Buffers: static ones (a GPU buffer of their own; index buffers of uint32) and stream ones (createBuffer's), whose writes are ranges of the
    arena: the latest range's buffer, offset and bytes. */
-static struct{uint32_t generation;int live,stream,index,capacity,used;SDL_GPUBuffer *buffer;Uint32 offset;}buffers[SLOTS];
+static struct{uint32_t generation;int live,stream,index,appended,capacity,used;SDL_GPUBuffer *buffer;Uint32 offset;}buffers[SLOTS];
 
 /* Programs: their shaders, their attribute slots, each block by its index in a draw's uniforms (its size, 0 for none, and whether it is the
    fragment copy of a block both stages read, pushed from the vertex copy), and where each texture slot lands in SDL_GPU's numbering (per
@@ -331,7 +331,7 @@ static uint32_t take_buffer(int slot){buffers[slot].live=1;buffers[slot].generat
 uint32_t helix_buffer(int capacity){
  const int slot=free_buffer_slot();
  if(slot<0||capacity<=0||capacity%4)return 0;
- buffers[slot].stream=1;buffers[slot].index=0;buffers[slot].capacity=capacity;buffers[slot].used=0;buffers[slot].buffer=NULL;buffers[slot].offset=0;
+ buffers[slot].stream=1;buffers[slot].index=0;buffers[slot].appended=0;buffers[slot].capacity=capacity;buffers[slot].used=0;buffers[slot].buffer=NULL;buffers[slot].offset=0;
  return take_buffer(slot);
 }
 /* An immutable vertex buffer, or an index buffer of uint32 indices, holding the bytes of data. */
@@ -345,28 +345,50 @@ uint32_t helix_static_buffer(const void *data,int bytes,int index){
  buffers[slot].stream=0;buffers[slot].index=index!=0;buffers[slot].capacity=buffers[slot].used=bytes;buffers[slot].buffer=buffer;buffers[slot].offset=0;
  return take_buffer(slot);
 }
+/* Sets aside bytes of the arena for a stream buffer's ranges, growing it when full: the offset, or -1. */
+static int arena_reserve(int bytes){
+ const int at=(arena_used+15)&~15;
+ if(arena&&at+bytes<=arena_size){arena_used=at+bytes;return at;}
+ /* Full: a larger arena from here on; the old one is released at the frame's end, after the draws reading it. */
+ int size=arena_size?arena_size:1<<20;while(size<bytes*2||size<arena_size*2)size*=2;
+ SDL_GPUBuffer *bigger=SDL_CreateGPUBuffer(device,&(SDL_GPUBufferCreateInfo){.usage=SDL_GPU_BUFFERUSAGE_VERTEX,.size=(Uint32)size});
+ if(!bigger||(arena&&retired_count==16)){if(bigger)SDL_ReleaseGPUBuffer(device,bigger);return -1;}
+ if(arena)retired[retired_count++]=arena;
+ arena=bigger;arena_size=size;arena_used=bytes;arena_cycled=1;
+ return 0;
+}
 /* Writes a stream buffer, inside a pass: its bytes staged for the pass's copy into a new range of the arena, which its later draws read. */
 int helix_update(uint32_t handle,const void *data,int bytes){
  if(!active||!data||bytes<0||bytes%4||!buffer_live(handle))return 0;
  const int slot=slot_of(handle);
- if(!buffers[slot].stream||bytes>buffers[slot].capacity)return 0;
+ if(!buffers[slot].stream||bytes>buffers[slot].capacity||buffers[slot].appended)return 0;
  buffers[slot].used=bytes;
  if(!bytes)return 1;
- const int at=(arena_used+15)&~15;
- if(!arena||at+bytes>arena_size){
-  /* Full: a larger arena from here on; the old one is released at the frame's end, after the draws reading it. */
-  int size=arena_size?arena_size:1<<20;while(size<bytes*2||size<arena_size*2)size*=2;
-  SDL_GPUBuffer *bigger=SDL_CreateGPUBuffer(device,&(SDL_GPUBufferCreateInfo){.usage=SDL_GPU_BUFFERUSAGE_VERTEX,.size=(Uint32)size});
-  if(!bigger||retired_count==16){if(bigger)SDL_ReleaseGPUBuffer(device,bigger);return 0;}
-  if(arena)retired[retired_count++]=arena;
-  arena=bigger;arena_size=size;arena_used=0;arena_cycled=1;
-  return helix_update(handle,data,bytes);
- }
+ const int at=arena_reserve(bytes);
+ if(at<0)return 0;
  const size_t staged=stage_bytes(data,(size_t)bytes);Upload *u=staged==(size_t)-1?NULL:add_upload();
  if(!u)return 0;
  u->at=staged;u->bytes=(Uint32)bytes;u->buffer=arena;u->offset=(Uint32)at;
- buffers[slot].buffer=arena;buffers[slot].offset=(Uint32)at;arena_used=at+bytes;
+ buffers[slot].buffer=arena;buffers[slot].offset=(Uint32)at;
  return 1;
+}
+/* Adds bytes after a stream buffer's used ones, in a pass: the offset they landed at, -1 for anything invalid. Its first append of a frame
+   sets aside the buffer's whole capacity of the arena, so its ranges are one run the draws read from offsets. */
+int helix_append(uint32_t handle,const void *data,int bytes){
+ if(!active||!data||bytes<=0||bytes%4||!buffer_live(handle))return -1;
+ const int slot=slot_of(handle);
+ if(!buffers[slot].stream||buffers[slot].used+bytes>buffers[slot].capacity)return -1;
+ if(!buffers[slot].appended){
+  if(buffers[slot].used)return -1;
+  const int base=arena_reserve(buffers[slot].capacity);
+  if(base<0)return -1;
+  buffers[slot].buffer=arena;buffers[slot].offset=(Uint32)base;buffers[slot].appended=1;
+ }
+ const size_t staged=stage_bytes(data,(size_t)bytes);Upload *u=staged==(size_t)-1?NULL:add_upload();
+ if(!u)return -1;
+ const int at=buffers[slot].used;
+ u->at=staged;u->bytes=(Uint32)bytes;u->buffer=buffers[slot].buffer;u->offset=buffers[slot].offset+(Uint32)at;
+ buffers[slot].used=at+bytes;return at;
 }
 
 /* A program from its stages in the device's format (helix_sdl3gpu_shader_format: SPIR-V, MSL or HLSL; text ends with a NUL) and its layout,
@@ -770,8 +792,8 @@ static SDL_GPUBuffer *constant_buffer(int ps,int instances){
    an indexed pipeline, from first of `indices`) as instance_count instances from record first_instance of its instanced buffers; buffers[i]
    its buffer i (0 for one it doesn't read); the program's textures and samplings by slot; its uniform blocks' bytes one after another by
    their index (the vertex stage's slots 0 to 3, the fragment stage's 4 to 7, a block both read at both), the pipeline's flip uniform
-   written as its clip flip says. -1 for a texture that is the pass's own target; 0, drawing nothing, for anything else invalid. */
-int helix_draw(uint32_t p,const uint32_t *buffer_handles,int buffer_count,uint32_t indices,int first,int count,int first_instance,int instance_count,
+   written as its clip flip says. offsets[i]: bytes into buffers[i], a multiple of 4 within its used bytes. -1 for a texture that is the pass's own target; 0, drawing nothing, for anything else invalid. */
+int helix_draw(uint32_t p,const uint32_t *buffer_handles,const int *offsets,int buffer_count,uint32_t indices,int first,int count,int first_instance,int instance_count,
                const uint32_t *texture_handles,const int *samplings,int texture_count,const void *uniforms,int uniform_total){
  if(!active||!pipeline_live(p))return 0;
  const int ps=slot_of(p),group=pipelines[ps].group,indexed=pipelines[ps].indexed;
@@ -795,9 +817,11 @@ int helix_draw(uint32_t p,const uint32_t *buffer_handles,int buffer_count,uint32
   if(!buffer_live(buffer_handles[b]))return 0;
   const int bs=slot_of(buffer_handles[b]),stride=pipelines[ps].stride[b],instanced=pipelines[ps].instanced[b];
   if(buffers[bs].index||!buffers[bs].buffer)return 0;
-  if(instanced&&(long)(first_instance+instance_count)*stride>buffers[bs].used)return 0;
-  if(!instanced&&!indexed&&(long)(first+count)*stride>buffers[bs].used)return 0;
-  c.vertex[c.vertex_count++]=(SDL_GPUBufferBinding){buffers[bs].buffer,buffers[bs].offset+(Uint32)(instanced?first_instance*stride:0)};
+  const long offset=offsets[b];
+  if(offset<0||offset%4||offset>buffers[bs].used)return 0;
+  if(instanced&&offset+(long)(first_instance+instance_count)*stride>buffers[bs].used)return 0;
+  if(!instanced&&!indexed&&offset+(long)(first+count)*stride>buffers[bs].used)return 0;
+  c.vertex[c.vertex_count++]=(SDL_GPUBufferBinding){buffers[bs].buffer,buffers[bs].offset+(Uint32)offset+(Uint32)(instanced?first_instance*stride:0)};
  }
  if(pipelines[ps].constant_attributes){
   SDL_GPUBuffer *constants=constant_buffer(ps,instance_count);
@@ -853,7 +877,7 @@ void helix_end(void){
  for(int i=0;i<retired_count;i++)SDL_ReleaseGPUBuffer(device,retired[i]);
  retired_count=0;arena_used=0;arena_cycled=0;
  /* Stream buffers start each frame empty; data textures' versions are free again. */
- for(int i=0;i<SLOTS;i++){if(buffers[i].live&&buffers[i].stream){buffers[i].used=0;buffers[i].buffer=NULL;}if(textures[i].kind==DATA)memset(textures[i].bound,0,sizeof textures[i].bound);}
+ for(int i=0;i<SLOTS;i++){if(buffers[i].live&&buffers[i].stream){buffers[i].used=0;buffers[i].appended=0;buffers[i].buffer=NULL;}if(textures[i].kind==DATA)memset(textures[i].bound,0,sizeof textures[i].bound);}
 }
 
 /* What handle 0 (the frame just ended), an RGBA8 render target or an RGBA8 2D texture of helix_texture reads back as: its width and

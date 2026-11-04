@@ -80,6 +80,9 @@ class CountingGraphics implements IGraphics {
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void {}
 
+	public function appendBuffer(handle:Int, data:Bytes, usedBytes:Int):Int
+		return 0;
+
 	public function disposeBuffer(handle:Int):Void
 		gone(buffers, handle);
 
@@ -110,8 +113,8 @@ class CountingGraphics implements IGraphics {
 
 	public function resetScissor():Void {}
 
-	public function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int,
-		instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {}
+	public function draw(pipeline:Int, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int,
+		firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {}
 
 	public function endFrame():Void {}
 
