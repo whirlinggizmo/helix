@@ -122,7 +122,7 @@ class Main {
 			shade.setFloat(i * 4, brightness);
 		shade.setFloat(12, 1);
 		graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff0a0e18);
-		graphics.draw(pipeline, [buffer], 0, 0, 6, 0, 1, [texture], [new Sampling(Nearest, Repeat, Repeat)], [place, null, null, null, null, shade]);
+		graphics.draw(pipeline, [buffer], null, 0, 0, 6, 0, 1, [texture], [new Sampling(Nearest, Repeat, Repeat)], [place, null, null, null, null, shade]);
 		graphics.endFrame();
 		graphics.present();
 		frame++;

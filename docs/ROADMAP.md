@@ -12,7 +12,7 @@ helix-raylib's size and speed where docs/speed.md records them.
   3, shadows; 4, environment maps and the background; 5, post-processing (with the draft's scene example); 6, fog; 7, morph targets.
   Asked below it: helix-formats' `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions, and morph
   targets; helix-geometry's second texture coordinates, morph targets and mesh groups; helix-math's Euler orders, an object's `lookAt`
-  and `Bounds3D` through a matrix; and of the platform, a per-buffer offset or step divisor, which would let an instanced
+  and `Bounds3D` through a matrix; and of the platform, a per-buffer offset (done: `draw`'s `bufferOffsets`, with `appendBuffer`), which lets an instanced
   mesh's large points be one GPU draw. Its frame is a command stream (DECISIONS 39). Nine-slice drawing and skins move into `Batch2D`, for
   raygui's skins and a retained UI alike. Then helix-raylib rebuilt on it (immediate, as raylib is, on helix-render directly), only if
   each size rung grows by at most 1 to 2 KB gzip and the bunnymark (`tools/bunnymark.py`) is no slower than docs/speed.md's numbers;

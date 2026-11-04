@@ -72,7 +72,7 @@ class Main {
 			images.poll();
 			files.poll();
 			graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff0a0e18);
-			graphics.draw(pipeline, [buffer], 0, 0, 3, 0, 1, [], [], []);
+			graphics.draw(pipeline, [buffer], null, 0, 0, 3, 0, 1, [], [], []);
 			graphics.endFrame();
 			graphics.present();
 			js.Browser.window.requestAnimationFrame(frame);

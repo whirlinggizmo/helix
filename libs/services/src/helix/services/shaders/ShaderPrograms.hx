@@ -29,7 +29,7 @@ import helix.platform.IGraphics;
 	// each frame:
 	programs.prepareFrame();
 	graphics.beginFrame(width, height, 0xff000000);
-	graphics.draw(pipeline.handle, buffers, indices, 0, count, 0, 1, values.textures, values.samplings, values.uniforms);
+	graphics.draw(pipeline.handle, buffers, null, indices, 0, count, 0, 1, values.textures, values.samplings, values.uniforms);
 	graphics.endFrame();
 	programs.finishFrame();
 	``` */

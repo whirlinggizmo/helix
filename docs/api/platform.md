@@ -943,6 +943,7 @@ function disposeTexture(handle:Int):Void
 function createBuffer(capacityBytes:Int):Int
 function createStaticBuffer(data:haxe.io.Bytes, bytes:Int, index:Bool):Int
 function updateBuffer(handle:Int, data:haxe.io.Bytes, usedBytes:Int):Void
+function appendBuffer(handle:Int, data:haxe.io.Bytes, usedBytes:Int):Int
 function disposeBuffer(handle:Int):Void
 function createShader(source:ShaderSource):Int
 function disposeShader(handle:Int):Void
@@ -956,7 +957,7 @@ function beginFrame(width:Int, height:Int, clearColor:Int):Void
 function applyViewport(x:Int, y:Int, w:Int, h:Int):Void
 function applyScissor(x:Int, y:Int, w:Int, h:Int):Void
 function resetScissor():Void
-function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<haxe.io.Bytes>>):Void
+function draw(pipeline:Int, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<haxe.io.Bytes>>):Void
 function endFrame():Void
 function present():Void
 function readPixels(handle:Int, read:(pixels:haxe.io.Bytes, width:Int, height:Int) -> Void, failed:String -> Void):Void
@@ -1050,9 +1051,17 @@ function dispose():Void
   - `handle`: The stream buffer.
   - `data`: The new contents.
   - `usedBytes`: The number of bytes of data to use.
-  - throws `String`: A call outside a pass, an unknown handle, or a size out of range.
+  - throws `String`: A call outside a pass, an unknown handle, a size out of range, or a buffer appended to this frame.
 
-  It must be called inside a pass, and can be called any number of times a frame. A buffer drawn into a target and then into the screen is uploaded twice.
+  It must be called inside a pass, and can be called any number of times a frame. A buffer drawn into a target and then into the screen is uploaded twice. A buffer a frame has appended to (`appendBuffer`) can't be updated until the next frame.
+- `appendBuffer`: Adds bytes to the end of a stream buffer, so draws can read each range from its own offset.
+  - `handle`: The stream buffer.
+  - `data`: The bytes to add.
+  - `usedBytes`: The number of bytes of data to use, which must be a multiple of 4.
+  - returns: The byte offset in the buffer where the bytes landed, which is a multiple of 4. Pass it in a draw's `bufferOffsets`.
+  - throws `String`: A call outside a pass, an unknown handle, a size out of range, bytes that don't fit in the buffer's capacity, or a buffer updated this frame.
+
+  A frame starts with every stream buffer empty. Each call writes after the bytes the frame's earlier calls wrote, and the earlier bytes stay as they were, so a draw after any call can read any range written so far. It must be called inside a pass, and can be called any number of times a frame. A buffer is either appended to or updated (`updateBuffer`) in a frame, not both. An adapter may set aside the buffer's whole capacity of its upload space for the frame, at the first call.
 - `disposeBuffer`: Frees a buffer.
   - `handle`: The buffer.
   - throws `String`: An unknown handle.
@@ -1120,6 +1129,7 @@ function dispose():Void
 - `draw`: Draws through a pipeline.
   - `pipeline`: The pipeline.
   - `buffers`: The buffer for each of the pipeline's buffers, by index, or 0 for a gap. Each is a `createBuffer` handle as this frame's upload left it, or a `createStaticBuffer` handle.
+  - `bufferOffsets`: The byte offset in each of `buffers` where its data starts, so draws can read different ranges of one buffer. Null, or a buffer past the array's end, is 0. An offset is a multiple of 4. The draw's elements and instances are counted from it, and must end inside the buffer's bytes, written this frame or static: a vertex buffer's at `firstElementIndex` plus `elementCount` records for a pipeline that isn't indexed, an instanced buffer's at `firstInstanceIndex` plus `instanceCount`. An indexed pipeline's vertex data is read from the offset by index, with no base vertex. It applies to vertex and instanced buffers alike.
   - `indexBuffer`: For an indexed pipeline, a static index buffer. Otherwise it is ignored.
   - `firstElementIndex`: The index of the first element drawn: its first vertex, or for an indexed pipeline its first index.
   - `elementCount`: The number of elements drawn: vertices, or for an indexed pipeline indices.
@@ -1128,7 +1138,7 @@ function dispose():Void
   - `textures`: The texture bound at each of the program's texture slots, by slot. A slot provided 0, or past the array's end, reads a clear 1x1 texture of its kind, for a texture the program declares and doesn't read.
   - `samplings`: How each texture is sampled, by slot. A shadow map or data texture is sampled as its kind requires.
   - `uniforms`: The bytes of each uniform block at its declared size, by stage and slot: the vertex stage's slot n at index n, the fragment stage's at 4 + n, a block both stages read at both (`ShaderBlock`); null at an index the program has no block for.
-  - throws `String`: Anything invalid, before drawing: a texture that is the pass's own target among them.
+  - throws `String`: Anything invalid, before drawing: a texture that is the pass's own target among them, or an offset out of range.
 
   Only whole primitives are drawn. A pipeline without buffers draws `elementCount` vertices from no data, so one triangle over the viewport is three vertices. An attribute the program declares that no buffer feeds reads the pipeline's constant for its slot, or (0, 0, 0, 1) (`PipelineDesc.attributeConstants`). The uniform the pipeline names is flipped as its `ClipFlip` specifies, in the adapter's own copy of the block. A texture that is the open pass's own target (the render target drawn into, or the shadow map whose layer is drawn into) is refused, as sampling what a pass draws into is undefined.
 - `endFrame`: Ends the screen's pass and the frame, and submits it.

@@ -155,11 +155,26 @@ interface IGraphics {
 
 		It must be called inside a pass, and can be called any number of times a frame. A buffer drawn into a target and then into the
 		screen is uploaded twice.
+		A buffer a frame has appended to (`appendBuffer`) can't be updated until the next frame.
 		@param handle  The stream buffer.
 		@param data  The new contents.
 		@param usedBytes  The number of bytes of data to use.
-		@throws String  A call outside a pass, an unknown handle, or a size out of range. */
+		@throws String  A call outside a pass, an unknown handle, a size out of range, or a buffer appended to this frame. */
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void;
+
+	/** Adds bytes to the end of a stream buffer, so draws can read each range from its own offset.
+
+		A frame starts with every stream buffer empty. Each call writes after the bytes the frame's earlier calls wrote, and the earlier bytes
+		stay as they were, so a draw after any call can read any range written so far. It must be called inside a pass, and can be called
+		any number of times a frame. A buffer is either appended to or updated (`updateBuffer`) in a frame, not both. An adapter may set aside
+		the buffer's whole capacity of its upload space for the frame, at the first call.
+		@param handle  The stream buffer.
+		@param data  The bytes to add.
+		@param usedBytes  The number of bytes of data to use, which must be a multiple of 4.
+		@return  The byte offset in the buffer where the bytes landed, which is a multiple of 4. Pass it in a draw's `bufferOffsets`.
+		@throws String  A call outside a pass, an unknown handle, a size out of range, bytes that don't fit in the buffer's capacity, or
+			a buffer updated this frame. */
+	public function appendBuffer(handle:Int, data:Bytes, usedBytes:Int):Int;
 
 	/** Frees a buffer.
 
@@ -273,6 +288,11 @@ interface IGraphics {
 		@param pipeline  The pipeline.
 		@param buffers  The buffer for each of the pipeline's buffers, by index, or 0 for a gap. Each is a `createBuffer` handle as this
 			frame's upload left it, or a `createStaticBuffer` handle.
+		@param bufferOffsets  The byte offset in each of `buffers` where its data starts, so draws can read different ranges of one
+			buffer. Null, or a buffer past the array's end, is 0. An offset is a multiple of 4. The draw's elements and instances are counted from
+			it, and must end inside the buffer's bytes, written this frame or static: a vertex buffer's at `firstElementIndex` plus
+			`elementCount` records for a pipeline that isn't indexed, an instanced buffer's at `firstInstanceIndex` plus `instanceCount`. An
+			indexed pipeline's vertex data is read from the offset by index, with no base vertex. It applies to vertex and instanced buffers alike.
 		@param indexBuffer  For an indexed pipeline, a static index buffer. Otherwise it is ignored.
 		@param firstElementIndex  The index of the first element drawn: its first vertex, or for an indexed pipeline its first index.
 		@param elementCount  The number of elements drawn: vertices, or for an indexed pipeline indices.
@@ -283,9 +303,9 @@ interface IGraphics {
 		@param samplings  How each texture is sampled, by slot. A shadow map or data texture is sampled as its kind requires.
 		@param uniforms  The bytes of each uniform block at its declared size, by stage and slot: the vertex stage's slot n at index n, the
 			fragment stage's at 4 + n, a block both stages read at both (`ShaderBlock`); null at an index the program has no block for.
-		@throws String  Anything invalid, before drawing: a texture that is the pass's own target among them. */
-	public function draw(pipeline:Int, buffers:Array<Int>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int, firstInstanceIndex:Int,
-		instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void;
+		@throws String  Anything invalid, before drawing: a texture that is the pass's own target among them, or an offset out of range. */
+	public function draw(pipeline:Int, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int,
+		firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void;
 
 	/** Ends the screen's pass and the frame, and submits it.
 

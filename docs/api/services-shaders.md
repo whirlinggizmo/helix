@@ -520,7 +520,7 @@ var pipeline = programs.getPipeline(lit.getShader(skinned), ShaderPipelineState.
 // each frame:
 programs.prepareFrame();
 graphics.beginFrame(width, height, 0xff000000);
-graphics.draw(pipeline.handle, buffers, indices, 0, count, 0, 1, values.textures, values.samplings, values.uniforms);
+graphics.draw(pipeline.handle, buffers, null, indices, 0, count, 0, 1, values.textures, values.samplings, values.uniforms);
 graphics.endFrame();
 programs.finishFrame();
 ```
@@ -933,7 +933,7 @@ Represents values for one shader's uniforms and textures, kept as `IGraphics.dra
 Each uniform block is kept as its bytes at its declared size, by slot; each texture slot as a texture handle and its sampling. A draw hands the three arrays over as they are:
 
 ```haxe
-graphics.draw(pipeline.handle, [vertices], indices, 0, 6, 0, 1, values.textures, values.samplings, values.uniforms);
+graphics.draw(pipeline.handle, [vertices], null, indices, 0, 6, 0, 1, values.textures, values.samplings, values.uniforms);
 ```
 
 `IGraphics.draw` reads them during the call, so a value changed between two draws gives each its own. Values are written by handle (`ShaderUniformValues`' `write` methods, `writeTexture`).
@@ -950,7 +950,7 @@ var drawn = new ShaderValues(lit);                      // the renderer's, for e
 drawn.base = red;
 drawn.scene = mainScene;
 drawn.writeMatrix(model, transform);
-graphics.draw(pipeline.handle, buffers, indices, 0, count, 0, 1, drawn.textures, drawn.samplings, drawn.uniforms);
+graphics.draw(pipeline.handle, buffers, null, indices, 0, count, 0, 1, drawn.textures, drawn.samplings, drawn.uniforms);
 ```
 
 Setting `base` copies nothing for the blocks the draw values haven't written into; the block holding their per-draw uniforms is filled again from the new base once (one copy of that block a draw). With no base, a uniform reads 0, a texture none.
