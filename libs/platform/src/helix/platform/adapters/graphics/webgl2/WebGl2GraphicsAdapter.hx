@@ -28,7 +28,10 @@ private typedef Target = {
 	drawn:Dynamic,
 	color:Dynamic,
 	width:Int,
-	height:Int
+	height:Int,
+	// What made it: whether it has depth, and the samples asked for, so a restore makes it again.
+	hasDepth:Bool,
+	asked:Int
 }
 
 /** A program's uniform block: its binding point, which is its index in a draw's uniforms, its size, and whether the linked program kept
@@ -39,9 +42,25 @@ private typedef ProgramBlock = {
 	final bound:Bool;
 }
 
+/** A program: the linked program, its uniform blocks' points and sizes by slot, its textures' sampler locations by slot, and the source
+	it was built from, built again at a restore. */
+private typedef Program = {
+	program:Dynamic,
+	blocks:Array<ProgramBlock>,
+	textures:Array<Dynamic>,
+	unfiltered:Array<Bool>,
+	kinds:Array<Int>,
+	attributeTypes:Array<String>,
+	points:Bool,
+	source:ShaderSource
+}
+
 /** Provides `IGraphics` on a canvas's WebGL2 context.
 
-	It builds programs from a `ShaderSource`'s GLSL ES 300 and pipelines from a `PipelineDesc`. */
+	It builds programs from a `ShaderSource`'s GLSL ES 300 and pipelines from a `PipelineDesc`. A lost context (`Event.GraphicsLost`) is
+	taken as `IGraphics` says: every call does nothing until the browser gives the context back, when the adapter remakes programs, stream
+	buffers, data textures, render targets and shadow maps under their handles from what it was told, and drops textures and static
+	buffers. */
 class WebGl2GraphicsAdapter implements IGraphics {
 	var gl:WebGL2RenderingContext;
 
@@ -79,15 +98,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		WebGL2RenderingContext.HALF_FLOAT
 	];
 
-	var shaders:Map<Int, {
-		program:Dynamic,
-		blocks:Array<ProgramBlock>,
-		textures:Array<Dynamic>,
-		unfiltered:Array<Bool>,
-		kinds:Array<Int>,
-		attributeTypes:Array<String>,
-		points:Bool
-	}> = [];
+	var shaders:Map<Int, Program> = [];
 	// Pipelines, by handle: their description.
 	var pipelines:Map<Int, PipelineDesc> = [];
 	// Cube textures' handles.
@@ -144,6 +155,59 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		if (gl == null)
 			throw new helix.platform.GraphicsUnavailableException("WebGL2 is required");
 		this.msaaSampleCount = Std.int(Math.max(1, gl.getParameter(WebGL2RenderingContext.SAMPLES)));
+		// Cancelled, so the browser restores the context (the events adapter cancels it too, and tells the program).
+		var canvas = DomPage.canvas(options.canvasId);
+		canvas.addEventListener("webglcontextlost", e -> e.preventDefault());
+		canvas.addEventListener("webglcontextrestored", _ -> restore());
+	}
+
+	// Whether the context is lost: its calls do nothing and answer nothing, so nothing is checked or cached while it is.
+	inline function gone():Bool
+		return gl.isContextLost();
+
+	// The context given back: nothing of the old one's objects remains. What was described is made again under its handle (programs, stream
+	// buffers, data textures, render targets, shadow maps); textures and static buffers, whose contents were given once, are dropped.
+	function restore():Void {
+		msaaSampleCount = Std.int(Math.max(1, gl.getParameter(WebGL2RenderingContext.SAMPLES)));
+		formats = [];
+		renderable = [];
+		samplers = [];
+		comparison = null;
+		reading = null;
+		blockBuffers = [];
+		blockBufferSizes = [];
+		enabled = [];
+		placeholders = [0, 0, 0];
+		active = inTarget = flipped = frameEnded = false;
+		drawing = null;
+		passTexture = 0;
+		written = [];
+		for (id in [for (id in textures.keys()) if (plainTextures.exists(id) || cubes.exists(id)) id]) {
+			textures.remove(id);
+			plainTextures.remove(id);
+			cubes.remove(id);
+		}
+		for (id in [for (id => b in buffers) if (b.isStatic) id])
+			buffers.remove(id);
+		for (id => s in shaders)
+			shaders[id] = program(s.source);
+		for (b in buffers) {
+			b.buffer = streamBuffer(b.capacity);
+			b.used = 0;
+			b.appended = b.updated = false;
+		}
+		for (id => d in dataTextures)
+			textures[id] = dataTexture(d.width, d.height);
+		for (id => t in targets) {
+			var made = target(t.width, t.height, t.half, t.hasDepth, t.asked);
+			textures[id] = made.texture;
+			targets[id] = made.target;
+		}
+		for (id => m in shadowMaps) {
+			var made = shadowMap(m.size, m.framebuffers.length);
+			textures[id] = made.texture;
+			shadowMaps[id] = made.map;
+		}
 	}
 
 	@:isVar public var msaaSampleCount(get, null):Int = 1;
@@ -223,17 +287,21 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	}
 
 	public function createDataTexture(width:Int, height:Int):Int {
-		var largest:Int = gl.getParameter(WebGL2RenderingContext.MAX_TEXTURE_SIZE);
+		var largest:Int = gone() ? 1 << 30 : gl.getParameter(WebGL2RenderingContext.MAX_TEXTURE_SIZE);
 		if (width <= 0 || height <= 0 || width > largest || height > largest)
 			throw "Invalid data texture";
+		var id = next++;
+		textures[id] = dataTexture(width, height);
+		dataTextures[id] = {width: width, height: height};
+		return id;
+	}
+
+	function dataTexture(width:Int, height:Int):Dynamic {
 		var tex = gl.createTexture();
 		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, tex);
 		// One immutable level: complete under any sampler, as texelFetch reads it.
 		gl.texStorage2D(WebGL2RenderingContext.TEXTURE_2D, 1, WebGL2RenderingContext.RGBA32F, width, height);
-		var id = next++;
-		textures[id] = tex;
-		dataTextures[id] = {width: width, height: height};
-		return id;
+		return tex;
 	}
 
 	public function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:Bytes):Void {
@@ -323,15 +391,16 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	public function canSample(format:TextureFormat):Bool {
 		var known = formats[format];
 		if (known == null) {
-			// Asking for an extension also turns it on.
-			known = switch format {
+			// Asking for an extension also turns it on. A lost context answers nothing: yes for now, and asked again once it is back.
+			known = gone() ? true : switch format {
 				// WebGL2 filters half floats without an extension.
 				case Rgba8 | Rgba16f: true;
 				case Bc7: gl.getExtension("EXT_texture_compression_bptc") != null;
 				case Astc4x4: gl.getExtension("WEBGL_compressed_texture_astc") != null;
 				case Etc2Rgba8: gl.getExtension("WEBGL_compressed_texture_etc") != null;
 			}
-			formats[format] = known;
+			if (!gone())
+				formats[format] = known;
 		}
 		return known;
 	}
@@ -373,12 +442,9 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	public function createBuffer(capacityBytes:Int):Int {
 		if (capacityBytes <= 0 || capacityBytes % 4 != 0)
 			throw "Invalid buffer capacity";
-		var buffer = gl.createBuffer();
-		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, buffer);
-		gl.bufferData(WebGL2RenderingContext.ARRAY_BUFFER, capacityBytes, WebGL2RenderingContext.DYNAMIC_DRAW);
 		var id = next++;
 		buffers[id] = {
-			buffer: buffer,
+			buffer: streamBuffer(capacityBytes),
 			capacity: capacityBytes,
 			used: 0,
 			index: false,
@@ -387,6 +453,13 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			updated: false
 		};
 		return id;
+	}
+
+	function streamBuffer(capacityBytes:Int):Dynamic {
+		var buffer = gl.createBuffer();
+		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, buffer);
+		gl.bufferData(WebGL2RenderingContext.ARRAY_BUFFER, capacityBytes, WebGL2RenderingContext.DYNAMIC_DRAW);
+		return buffer;
 	}
 
 	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int {
@@ -446,7 +519,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		var s = gl.createShader(type);
 		gl.shaderSource(s, source);
 		gl.compileShader(s);
-		if (!gl.getShaderParameter(s, WebGL2RenderingContext.COMPILE_STATUS)) {
+		if (!gone() && !gl.getShaderParameter(s, WebGL2RenderingContext.COMPILE_STATUS)) {
 			var log = gl.getShaderInfoLog(s);
 			gl.deleteShader(s);
 			throw log;
@@ -455,6 +528,14 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	}
 
 	public function createShader(source:ShaderSource):Int {
+		var made = program(source);
+		var id = next++;
+		shaders[id] = made;
+		return id;
+	}
+
+	// A program built from its source: compiled, linked, its blocks bound to their points and its samplers to their units.
+	function program(source:ShaderSource):Program {
 		var v = compile(WebGL2RenderingContext.VERTEX_SHADER, source.glsl300es.vertex);
 		var f = try compile(WebGL2RenderingContext.FRAGMENT_SHADER, source.glsl300es.fragment) catch (e:Dynamic) {
 			gl.deleteShader(v);
@@ -470,7 +551,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		gl.linkProgram(p);
 		gl.deleteShader(v);
 		gl.deleteShader(f);
-		if (!gl.getProgramParameter(p, WebGL2RenderingContext.LINK_STATUS)) {
+		if (!gone() && !gl.getProgramParameter(p, WebGL2RenderingContext.LINK_STATUS)) {
 			var log = gl.getProgramInfoLog(p);
 			gl.deleteProgram(p);
 			throw log;
@@ -496,17 +577,16 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			// Texture slot i samples unit i.
 			gl.uniform1i(samplerLocations[t.slot], t.slot);
 		}
-		var id = next++;
-		shaders[id] = {
+		return {
 			program: p,
 			blocks: blocks,
 			textures: samplerLocations,
 			unfiltered: unfiltered,
 			kinds: kinds,
 			attributeTypes: source.attributeTypes,
-			points: source.points == true
+			points: source.points == true,
+			source: source
 		};
-		return id;
 	}
 
 	public function disposeShader(handle:Int):Void {
@@ -550,10 +630,11 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			// Asking for the extension also turns it on: half floats then draw, blend and (WebGL2's own) filter.
 			known = switch format {
 				case Rgba8: true;
-				case Rgba16f: gl.getExtension("EXT_color_buffer_float") != null;
+				case Rgba16f: gone() || gl.getExtension("EXT_color_buffer_float") != null;
 				case _: false;
 			}
-			renderable[format] = known;
+			if (!gone())
+				renderable[format] = known;
 		}
 		return known;
 	}
@@ -575,8 +656,19 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0):Int {
 		if (width <= 0 || height <= 0 || !canRender(format) || msaaSampleCount < 0)
 			throw "Invalid render target";
-		var half = format == Rgba16f,
-			internal = half ? WebGL2RenderingContext.RGBA16F : WebGL2RenderingContext.RGBA8;
+		var made = target(width, height, format == Rgba16f, depth, msaaSampleCount);
+		var id = next++;
+		textures[id] = made.texture;
+		targets[id] = made.target;
+		return id;
+	}
+
+	// A render target width x height, of half floats or bytes, with or without depth, of the samples asked (0: the screen's).
+	function target(width:Int, height:Int, half:Bool, depth:Bool, msaaSampleCount:Int):{texture:Dynamic, target:Target} {
+		// Half floats draw only once their extension is asked for, which a context given back hasn't been yet.
+		if (half)
+			canRender(Rgba16f);
+		var internal = half ? WebGL2RenderingContext.RGBA16F : WebGL2RenderingContext.RGBA8;
 		var tex = gl.createTexture();
 		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, tex);
 		gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, internal, width, height, 0, WebGL2RenderingContext.RGBA,
@@ -621,7 +713,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				&& gl.checkFramebufferStatus(WebGL2RenderingContext.FRAMEBUFFER) == WebGL2RenderingContext.FRAMEBUFFER_COMPLETE;
 		}
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
-		if (!complete) {
+		if (!complete && !gone()) {
 			gl.deleteFramebuffer(framebuffer);
 			if (depthBuffer != null)
 				gl.deleteRenderbuffer(depthBuffer);
@@ -632,26 +724,37 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			gl.deleteTexture(tex);
 			throw "Render target incomplete";
 		}
-		var id = next++;
-		textures[id] = tex;
-		targets[id] = {
-			framebuffer: framebuffer,
-			cleared: false,
-			depth: depthBuffer,
-			half: half,
-			drawn: drawn,
-			color: color,
-			width: width,
-			height: height
+		return {
+			texture: tex,
+			target: {
+				framebuffer: framebuffer,
+				cleared: false,
+				depth: depthBuffer,
+				half: half,
+				drawn: drawn,
+				color: color,
+				width: width,
+				height: height,
+				hasDepth: depth,
+				asked: msaaSampleCount
+			}
 		};
-		return id;
 	}
 
 	public function createShadowMap(size:Int, layerCount:Int):Int {
-		var largest:Int = gl.getParameter(WebGL2RenderingContext.MAX_TEXTURE_SIZE),
-			most:Int = gl.getParameter(WebGL2RenderingContext.MAX_ARRAY_TEXTURE_LAYERS);
+		var largest:Int = gone() ? 1 << 30 : gl.getParameter(WebGL2RenderingContext.MAX_TEXTURE_SIZE),
+			most:Int = gone() ? 1 << 30 : gl.getParameter(WebGL2RenderingContext.MAX_ARRAY_TEXTURE_LAYERS);
 		if (size <= 0 || layerCount <= 0 || size > largest || layerCount > most)
 			throw "Invalid shadow map";
+		var made = shadowMap(size, layerCount);
+		var id = next++;
+		textures[id] = made.texture;
+		shadowMaps[id] = made.map;
+		return id;
+	}
+
+	// A shadow map of layerCount layers, size x size, a framebuffer a layer.
+	function shadowMap(size:Int, layerCount:Int):{texture:Dynamic, map:{framebuffers:Array<Dynamic>, size:Int}} {
 		var tex = gl.createTexture();
 		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D_ARRAY, tex);
 		gl.texStorage3D(WebGL2RenderingContext.TEXTURE_2D_ARRAY, 1, WebGL2RenderingContext.DEPTH_COMPONENT24, size, size, layerCount);
@@ -668,16 +771,13 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		// Checked once here, never at a pass (a check at every pass stalls the browser).
 		var complete = gl.checkFramebufferStatus(WebGL2RenderingContext.FRAMEBUFFER) == WebGL2RenderingContext.FRAMEBUFFER_COMPLETE;
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
-		if (!complete) {
+		if (!complete && !gone()) {
 			for (framebuffer in framebuffers)
 				gl.deleteFramebuffer(framebuffer);
 			gl.deleteTexture(tex);
 			throw "Shadow map incomplete";
 		}
-		var id = next++;
-		textures[id] = tex;
-		shadowMaps[id] = {framebuffers: framebuffers, size: size};
-		return id;
+		return {texture: tex, map: {framebuffers: framebuffers, size: size}};
 	}
 
 	// The sampler for shadow maps: each read compares with the map's depth (less or equal), filtered linearly over its texels.
@@ -866,6 +966,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 					&& offset + (firstElementIndex + elementCount) * layout.stride > b.used)
 				throw "Invalid draw";
 		}
+		if (gone())
+			return;
 		gl.useProgram(shader.program);
 		bindTextures(shader, textures, samplings);
 		bindBlocks(shader, uniforms, p);
@@ -936,14 +1038,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 
 	// Binds textures by the program's slots, each sampled by its kind: a shadow map through the comparison sampler, a slot the program never
 	// filters (it only fetches texels) and a data texture nearest, any other as its sampling says.
-	function bindTextures(shader:{
-		program:Dynamic,
-		blocks:Array<ProgramBlock>,
-		textures:Array<Dynamic>,
-		unfiltered:Array<Bool>,
-		kinds:Array<Int>,
-		attributeTypes:Array<String>
-	}, textures:Array<Int>, samplings:Array<Sampling>):Void
+	function bindTextures(shader:Program, textures:Array<Int>, samplings:Array<Sampling>):Void
 		for (slot in 0...shader.textures.length) {
 			if (shader.textures[slot] == null)
 				continue;
@@ -972,14 +1067,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 
 	// Uploads the program's uniform blocks from uniforms by stage and slot, each its declared size, into their binding points' buffers; the
 	// pipeline's flip uniform written into a copy as its flip says.
-	function bindBlocks(shader:{
-		program:Dynamic,
-		blocks:Array<ProgramBlock>,
-		textures:Array<Dynamic>,
-		unfiltered:Array<Bool>,
-		kinds:Array<Int>,
-		attributeTypes:Array<String>
-	}, uniforms:Array<Null<Bytes>>, p:PipelineDesc):Void
+	function bindBlocks(shader:Program, uniforms:Array<Null<Bytes>>, p:PipelineDesc):Void
 		for (block in shader.blocks) {
 			var data = block.point < uniforms.length ? uniforms[block.point] : null;
 			if (data == null || data.length < block.size)
@@ -1041,6 +1129,10 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	public function readPixels(handle:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void {
 		if (active)
 			throw "Inside a pass";
+		if (gone()) {
+			failed("The graphics context is lost");
+			return;
+		}
 		var t = targets[handle], p = plainTextures[handle];
 		// Half floats read back only as floats in WebGL2: not this call's RGBA8.
 		if (handle != 0 && (t == null || t.half) && (p == null || p.format != Rgba8))

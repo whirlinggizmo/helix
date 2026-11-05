@@ -42,7 +42,9 @@ typedef Case = {
 	multisampling chosen apart from their depth (one sample with depth, the screen's, no depth and the most, a count rounded down
 	to the most and a negative one refused) on a window asking for 4 samples, textures read
 	back, instances placed by a mat4 vertex input, mipmaps under each mipmap filter, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
-	texel by texel, a cubemap's six faces, and declared textures left unbound reading clear. The shaders are `shaders/*.vert` and `*.frag`,
+	texel by texel, a cubemap's six faces, declared textures left unbound reading clear, and, in a page, the context lost and given back:
+	frames taken while it is lost, then a texture and a buffer made again drawn into a render target the adapter remade, and that to the
+	screen. The shaders are `shaders/*.vert` and `*.frag`,
 	compiled by the build, so it checks the shader compiler's dialects too. One case runs a frame; on a GPU that reads back later, the next
 	waits for it.
 
@@ -70,6 +72,13 @@ class GraphicsTests {
 	static var pipelines:Array<Int> = [];
 	static var buffers:Array<Int> = [];
 	static var textures:Array<Int> = [];
+	// Of those, the ones a lost context leaves (render targets, data textures, stream buffers): the rest are gone at the restore.
+	static var surviving:Array<Int> = [];
+	// The lost context case: 0 none, 1 asked for, 2 lost, 3 given back; the frames since it was asked for; what a call threw meanwhile.
+	static var losing = 0;
+	static var lostFrames = 0;
+	static var lostThrew:Null<String> = null;
+	static var loseExtension:Dynamic = null;
 
 	static function main():Void {
 		#if js
@@ -103,12 +112,38 @@ class GraphicsTests {
 		events.poll();
 		for (event in events.events)
 			switch event {
-				case CloseRequested | GraphicsLost:
+				case GraphicsLost if (losing == 1):
+					losing = 2;
+				case GraphicsRestored if (losing == 2):
+					losing = 3;
+				case CloseRequested | GraphicsLost | GraphicsRestored:
 					fail('stopped by $event, ${cases.length - next} cases not run');
 					return false;
 				case _:
 			}
 		var width = window.framebufferWidth, height = window.framebufferHeight;
+		if (losing == 1 || losing == 2) {
+			// Frames while the context is lost: every call taken, drawing nothing; the context asked back after 30 of them.
+			if (++lostFrames > READ_FRAMES * 4) {
+				fail('the context never came back');
+				return false;
+			}
+			try {
+				graphics.beginFrame(width, height, 0xff000000);
+				graphics.endFrame();
+				graphics.present();
+			} catch (error:Dynamic)
+				lostThrew = Std.string(error);
+			if (losing == 2 && lostFrames == 30)
+				loseExtension.restoreContext();
+			return true;
+		}
+		if (losing == 3) {
+			// Given back: the textures and static buffers made before are gone, not to be disposed.
+			losing = 0;
+			textures = textures.filter(t -> surviving.indexOf(t) >= 0);
+			buffers = buffers.filter(b -> surviving.indexOf(b) >= 0);
+		}
 		if (waiting > 0) {
 			if (++waiting > READ_FRAMES) {
 				fail('no read back after $READ_FRAMES frames');
@@ -127,6 +162,11 @@ class GraphicsTests {
 		try {
 			if (c.before != null)
 				c.before();
+			if (losing == 1) {
+				// The case that loses the context: nothing drawn or read this frame.
+				waiting = 0;
+				return true;
+			}
 			graphics.beginFrame(width, height, c.clear == null ? 0xff000000 : c.clear);
 			if (c.screen != null)
 				c.screen(width, height);
@@ -548,10 +588,10 @@ class GraphicsTests {
 		// With depth, multisampled as the screen is, kept from one frame to the next; and one never cleared.
 		var kept = graphics.createRenderTarget(SIZE, SIZE),
 			fresh = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1);
-		textures.push(target);
-		textures.push(second);
-		textures.push(kept);
-		textures.push(fresh);
+		for (t in [target, second, kept, fresh]) {
+			textures.push(t);
+			surviving.push(t);
+		}
 		// Multisampling chosen apart from depth: depth and one sample (raylib's render textures), depth and the screen's samples, no depth
 		// and the most the format takes, and far more than any GPU takes, rounded down to that most.
 		var most = graphics.getMaxRenderTargetMsaaSampleCount(Rgba8);
@@ -559,11 +599,16 @@ class GraphicsTests {
 			screenDepth = graphics.createRenderTarget(SIZE, SIZE, Rgba8, true),
 			mostFlat = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, most),
 			clamped = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1000);
-		for (t in [singleDepth, screenDepth, mostFlat, clamped])
+		for (t in [singleDepth, screenDepth, mostFlat, clamped]) {
 			textures.push(t);
+			surviving.push(t);
+		}
 		var mostHalf = graphics.getMaxRenderTargetMsaaSampleCount(Rgba16f);
-		if (graphics.canRender(Rgba16f))
-			textures.push(graphics.createRenderTarget(SIZE, SIZE, Rgba16f, true, 1000));
+		if (graphics.canRender(Rgba16f)) {
+			var halfTarget = graphics.createRenderTarget(SIZE, SIZE, Rgba16f, true, 1000);
+			textures.push(halfTarget);
+			surviving.push(halfTarget);
+		}
 		var negativeRefused = try {
 			textures.push(graphics.createRenderTarget(SIZE, SIZE, Rgba8, true, -1));
 			false;
@@ -594,6 +639,7 @@ class GraphicsTests {
 		// Floats beyond 0 to 1, which only a float texture keeps.
 		var table = graphics.createDataTexture(4, 1);
 		textures.push(table);
+		surviving.push(table);
 		var floats = [1., -.25, .5, 0, 3, -.5, .25, 0, 5, -.75, 1, 0, 7, 0, 0, 0];
 		graphics.updateTexture(table, 0, 0, 4, 1, floatBytes(floats));
 
@@ -658,6 +704,7 @@ class GraphicsTests {
 		// A stream buffer the five points are appended to, two and then three, each range drawn right after it is written.
 		var appendedDots = graphics.createBuffer(dotFloats.length * 4);
 		buffers.push(appendedDots);
+		surviving.push(appendedDots);
 		var dotIndices = Bytes.alloc(8);
 		dotIndices.setInt32(0, 3);
 		dotIndices.setInt32(4, 0);
@@ -1388,6 +1435,43 @@ class GraphicsTests {
 				}
 			}
 		];
+		#if js
+		// Last: the context lost with WEBGL_lose_context and given back, as IGraphics says, then drawn with again. The frames while it is lost
+		// are tick's; the case after it is the owner's part, a texture and a buffer made again, into a target the adapter remade.
+		cases.push({
+			name: "the context lost",
+			before: () -> {
+				var canvas:Dynamic = js.Browser.document.getElementById("canvas");
+				loseExtension = canvas.getContext("webgl2").getExtension("WEBGL_lose_context");
+				losing = 1;
+				lostFrames = 0;
+				loseExtension.loseContext();
+			},
+			target: 0,
+			check: _ -> {}
+		});
+		cases.push({
+			name: "drawn again after the context came back",
+			before: () -> {
+				check(lostThrew == null, 'a call threw while the context was lost: $lostThrew');
+				check(lostFrames >= 30, '$lostFrames frames while lost, 30 or more expected');
+				var again = texture2D(2, 2, [0xff0000ff, 0x00ff00ff, 0x0000ffff, 0xffffffff]),
+					quadAgain = buffer(uvSquare);
+				graphics.beginTargetPass(target, 0, 0, 0, 1);
+				draw(sampled, quadAgain, 6, [again], [Sampling.NEAREST]);
+				graphics.endTargetPass();
+			},
+			screen: (_, _) -> draw(sampled, buffer(uvSquare), 6, [target], [Sampling.NEAREST]),
+			target: 0,
+			check: p -> {
+				var w = p.width, h = p.height;
+				p.expect(w >> 2, h >> 2, [1, 0, 0], 0);
+				p.expect(w * 3 >> 2, h >> 2, [0, 1, 0], 0);
+				p.expect(w >> 2, h * 3 >> 2, [0, 0, 1], 0);
+				p.expect(w * 3 >> 2, h * 3 >> 2, [1, 1, 1], 0);
+			}
+		});
+		#end
 	}
 
 	/** Checks the slanted red triangle over black: some texels wholly red and some black, and texels partly red along its edge exactly when
