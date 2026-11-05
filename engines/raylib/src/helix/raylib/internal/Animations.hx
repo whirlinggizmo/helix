@@ -402,6 +402,8 @@ class Animations {
 	// current) and helix-raylib's raymath compute it (through Matrix3D's compose), written into the bone's matrix in place, so a pose
 	// allocates no matrix.
 	static function setPose(model:Model, boneIndex:Int, translation:Vector3, rotation:Quaternion, scale:Vector3):Void {
+		if (model.pose == null)
+			model.pose = [for (_ in 0...model.boneCount) new Transform()];
 		var pose = model.pose[boneIndex];
 		pose.translation = translation;
 		pose.rotation = rotation;

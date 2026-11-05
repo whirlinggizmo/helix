@@ -83,6 +83,7 @@ TARGETS = {
     ], None, 'Device'),
     'extras/Gui.hx': ([('RGuiAsync', "gui: the style and icon loads in place of raygui's that wait for a file")], None, 'Gui'),
     'extras/GuiSkins.hx': ([('RGuiSkins', "gui skins: raygui's controls drawn from textures")], None, 'GuiSkins'),
+    'extras/Debug.hx': ([('RDebug', "debug: a model's skeleton and bounds as posed, and the frame's cost")], None, 'Debug'),
     'extras/Lights.hx': ([('RLights', "lights: raylib's examples' rlights and the lit shader built on them")], None, 'Lights'),
 }
 # The package of what helix-raylib adds to raylib's API, a module for each of the TARGETS under extras/.

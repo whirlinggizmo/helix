@@ -62,6 +62,59 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
 
   The reader is chosen as the program builds when `fileType` is a constant, so a program reading only Ogg files carries no WAV or QOA reader; a type known only as the program runs brings every reader.
 
+## Debug
+
+*class* in [`engines/raylib/src/helix/raylib/extras/Debug.hx`](../../engines/raylib/src/helix/raylib/extras/Debug.hx), `import helix.raylib.extras.Debug;`
+
+Provides drawing for looking at what a program does: a model's skeleton as posed, its posed bounds, and the frame's cost. helix-raylib's own. raylib's DrawModelWires, DrawBoundingBox, DrawGrid and DrawFPS draw the rest. Imported apart: `import helix.raylib.extras.Debug.*;`.
+
+### debug: a model's skeleton and bounds as posed, and the frame's cost
+
+```haxe
+static function DrawModelSkeleton(model:Model, position:Vector3, scale:Float, color:Color):Void
+static function DrawModelBoundingBoxPosed(model:Model, position:Vector3, scale:Float, color:Color):Void
+static function DrawFrameStats(posX:Int, posY:Int, fontSize:Int):Void
+static function DrawFrameStatsEx(position:Vector2, style:FrameStatsStyle):Void
+static function MeasureFrameStats(style:FrameStatsStyle):Vector2
+```
+
+- `DrawModelSkeleton`: Draws a model's skeleton in the pose it has at the call, as DrawModel draws the model: a line from each bone to its parent, and a small cross at each joint, placed as DrawModel places the model. A model never posed draws its bind pose; one without bones draws nothing. Drawn in 3D mode (BeginMode3D), over what's drawn before it, as DrawLine3D is.
+  - `model`: The model.
+  - `position`: Where the model is drawn, as DrawModel's.
+  - `scale`: Its scale, as DrawModel's.
+  - `color`: The lines' color.
+
+  One model drawn as several copies, each posed apart, is posed, drawn and looked at copy by copy:
+
+  ```haxe
+  for (i in 0...copies) {
+  UpdateModelAnimation(model, anim, frame + i * 10);
+  var at = new Vector3(i * 2, 0, 0);
+  DrawModel(model, at, 1, WHITE);
+  DrawModelSkeleton(model, at, 1, YELLOW);
+  DrawModelBoundingBoxPosed(model, at, 1, RED);
+  }
+  ```
+- `DrawModelBoundingBoxPosed`: Draws a model's bounds in the pose it has at the call, GetModelBoundingBoxPosed's box (helix.raylib.extras.Models), placed as DrawModel places the model. Drawn in 3D mode, as DrawBoundingBox is.
+  - `model`: The model.
+  - `position`: Where the model is drawn, as DrawModel's.
+  - `scale`: Its scale, as DrawModel's.
+  - `color`: The box's color.
+- `DrawFrameStats`: Draws the frame's cost at a point on the screen, as DrawFPS draws the rate, in FrameStatsStyle's default look at a size: the frames a second, the frame time's mean and its slowest 5% (p95) over the last half second, in milliseconds, and the last frame's draw calls, a line each. It is `DrawFrameStatsEx(new Vector2(posX, posY), {fontSize: fontSize})`: every other field the style's default, so its color is judged against SetTargetFPS's target, or the monitor's refresh rate without one.
+  - `posX`: The text's left, in pixels.
+  - `posY`: The text's top, in pixels.
+  - `fontSize`: The text's height, in pixels, as DrawText's; DrawFPS draws at 20.
+- `DrawFrameStatsEx`: Draws the frame's cost at a point on the screen as a style says: which stats, in what font, size, spacing and colors, over what background. Each stat is a line, so the text's height follows what's shown (MeasureFrameStats). Each number keeps its place: it is right-aligned in a slot of a set width, so the stats don't move as the numbers change.
+  - `position`: The text's top left, in pixels (its background's, padding around the text).
+  - `style`: What to show and how; each field left out takes its default.
+
+  ```haxe
+  DrawFrameStatsEx(new Vector2(10, 10), {fontSize: 24, backgroundColor: Fade(BLACK, 0.5), triangles: true});
+  ```
+- `MeasureFrameStats`: Returns the size DrawFrameStatsEx draws in with a style, its padding included, sized for its widest values so it doesn't change from frame to frame, for placing it (at a corner, say).
+  - `style`: What to show and how.
+  - returns: The width and height, in pixels.
+
 ## Device
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Device.hx`](../../engines/raylib/src/helix/raylib/extras/Device.hx), `import helix.raylib.extras.Device;`

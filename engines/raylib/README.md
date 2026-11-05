@@ -56,6 +56,7 @@ package `helix.raylib.extras`, each module imported apart:
 | `Audio` | `LoadSoundAsync`, `LoadWaveAsync`, `LoadWaveFromMemoryAsync`, `LoadMusicStreamAsync`, `ExportWaveAsync` and `ExportWaveAsCodeAsync` |
 | `Gui` | raygui's file loads: `GuiLoadStyleAsync` and `GuiLoadIconsAsync` |
 | `Lights` | raylib's examples' lights, `rlights.h` mirrored (`Light`, `CreateLight`, `UpdateLightValues`, `MAX_LIGHTS`, `LIGHT_DIRECTIONAL`, `LIGHT_POINT`), and `LoadLightingShader`, the examples' `lighting.vs` and `lighting.fs` built in |
+| `Debug` | a model's skeleton and posed bounds drawn (`DrawModelSkeleton`, `DrawModelBoundingBoxPosed`), and the frame's cost (`DrawFrameStats`, `DrawFrameStatsEx`, `MeasureFrameStats`, styled by `FrameStatsStyle`) |
 | `Device` | what a game needs from the device and the page that raylib has no call for: `GetWindowSafeArea`, `GetRunOption`, `IsPlatformWeb`, `GetPlatformOS`, `IsTouchScreenAvailable`, `IsFinePointerAvailable`, `IsWindowCloseable`, `IsFullscreenAvailable`, `SetScreenOrientationAsync`, `GetScreenOrientation`, and the tilt (`EnableTiltAsync`, `GetTilt`, `SetTiltRange`, `CalibrateTilt`, `DisableTilt`) |
 
 The async versions of raylib's calls are in one module for each raylib module, named for it: rtextures' in `Textures`, rtext's in
