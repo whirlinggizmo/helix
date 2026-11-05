@@ -11,7 +11,10 @@ import helix.platform.VertexFormat;
 /** Records a frame's drawing as rlgl orders it, and draws it at the frame's end: each render texture's pass, then the screen's.
 
 	Shapes, text and textures are immediate vertices, collected in one buffer, uploaded once in each pass; a mesh draws from its own
-	buffers. As in rlgl, immediate vertices wait in a batch until it is flushed (`flush`: a change of mode, matrices, shader, blending,
+	buffers. A run of quads of one texture through the default shader, flat in z and each quad one color over a rectangle of the texture
+	(every `DrawTexture*`, `DrawRectangle*` and glyph), is kept as sprites instead: a 52-byte record a quad, drawn as instances of one
+	quad through the sprite shader, a third of the bytes and a quarter of the writes of its four vertices. Anything else keeps its
+	vertices, and runs stay in order, so mixing them costs nothing. As in rlgl, immediate vertices wait in a batch until it is flushed (`flush`: a change of mode, matrices, shader, blending,
 	scissor or pass, and the pass's end), and are drawn then with the state and the program's values as they are at that moment: rlgl's
 	state calls (wire and point mode, culling, depth) don't flush, so they reach what is in the batch. A mesh is drawn as it is asked for, with the
 	state then, ahead of the batch's vertices still waiting. */
@@ -63,6 +66,13 @@ class Frame {
 	public static inline final TRIANGLES = 4;
 	public static inline final QUADS = 7;
 
+	/** A run of sprites: quads kept as one record each, drawn as instances (`sprite.vs`). Never rlgl's mode, only a run's. */
+	public static inline final SPRITES = 8;
+
+	/** The bytes of a sprite's record: its four corners' x and y, its texture rectangle's u0, v0, u1 and v1 as floats, and its color as four
+		bytes. */
+	static inline final SPRITE_BYTES = 52;
+
 	/** The bytes of the one record of `constants`. */
 	static inline final CONSTANT_BYTES = 120;
 
@@ -85,6 +95,36 @@ class Frame {
 	var vertices = 0;
 	var buffer = 0;
 	var capacity = 0;
+	// The sprites' records, their count, their stream buffer and its capacity, as the vertices' above.
+	var spriteData = Bytes.alloc(SPRITE_BYTES * 1024);
+	var sprites = 0;
+	var spriteBuffer = 0;
+	var spriteCapacity = 0;
+	// The quad sprites are instances of: four corner numbers as a vertex buffer, and its six indices; 0 until a sprite is drawn.
+	var spriteQuad = 0;
+	var spriteIndices = 0;
+
+	/** Gives the sprite shader (`Defaults.spriteShader`): set by `Sprites.register` as a module adding quads starts, null in a program
+		adding none, which then links neither the shader nor the sprite path. */
+	public static var spriteShader:Null<Void->helix.services.shaders.Shader> = null;
+
+	// The sprite shader's program, made when first drawn through.
+	var spriteProgram:Null<Program> = null;
+	// A quad's corners as they arrive through `vertex`, kept until the fourth decides whether they are a sprite: how many so far, and
+	// each one's texture, position, texture coordinate and color.
+	var pending = 0;
+	final pendingTexture = [0, 0, 0, 0];
+	final pendingX = [0., 0, 0, 0];
+	final pendingY = [0., 0, 0, 0];
+	final pendingZ = [0., 0, 0, 0];
+	final pendingU = [0., 0, 0, 0];
+	final pendingV = [0., 0, 0, 0];
+	final pendingColor = [0, 0, 0, 0];
+	#if js
+	// The buffers' floats, written through views rather than Bytes.setFloat; remade when a buffer grows.
+	var floats:js.lib.Float32Array;
+	var spriteFloats:js.lib.Float32Array;
+	#end
 	final passes:Array<Pass> = [];
 	var pass:Pass;
 	// The batch: runs of immediate vertices waiting to be drawn, and the one being added to.
@@ -220,6 +260,10 @@ class Frame {
 		this.graphics = graphics;
 		defaultProgram = new Program(graphics, Defaults.shader());
 		program = defaultProgram;
+		#if js
+		floats = new js.lib.Float32Array(data.getData());
+		spriteFloats = new js.lib.Float32Array(spriteData.getData());
+		#end
 		makeOwn();
 		view = new Matrix3D();
 		projection = new Matrix3D();
@@ -255,6 +299,8 @@ class Frame {
 		var screen = passes.length > 0 ? passes[passes.length - 1] : null;
 		passes.resize(0);
 		vertices = 0;
+		sprites = 0;
+		pending = 0;
 		pass = {
 			target: 0,
 			clear: 0xff000000,
@@ -414,6 +460,8 @@ class Frame {
 	public function flush():Void {
 		drawMode = QUADS;
 		drawTexture = 0;
+		// A quad left short of its corners isn't drawn, as rlgl's batch leaves one.
+		pending = 0;
 		if (eyes != null)
 			eyes(() -> drawBatch(), false);
 		else if (batch.length > 0)
@@ -437,6 +485,16 @@ class Frame {
 	function drawBatch():Void {
 		var m = wire && cull ? Matrix3D.compose(view, projection, viewProjection).values : null;
 		for (run in batch) {
+			if (run.mode == SPRITES) {
+				if (run.count == 0)
+					continue;
+				// Wire and point modes read vertices: the sprites' written out as quads, drawn as a run of them.
+				if (pointRun == null && !wire) {
+					pass.draws.push(spriteDraw(run.texture, run.first, run.count));
+					continue;
+				}
+				run = expand(run);
+			}
 			var quads = run.mode == QUADS, lines = run.mode == LINES;
 			// A quad's vertices are drawn once all four are in.
 			var count = quads ? run.count - run.count % 4 : run.count;
@@ -518,6 +576,98 @@ class Frame {
 		return quadIndices;
 	}
 
+	// A sprite run's records written out as a run of quads after the batch's vertices, for the modes that read vertices.
+	function expand(run:Run):Run {
+		vertices = (vertices + 3) & ~3;
+		var quads:Run = {
+			texture: run.texture,
+			mode: QUADS,
+			first: vertices,
+			count: run.count * 4
+		};
+		for (i in run.first...run.first + run.count) {
+			var at = i * SPRITE_BYTES;
+			var u0 = spriteData.getFloat(at + 32),
+				v0 = spriteData.getFloat(at + 36),
+				u1 = spriteData.getFloat(at + 40),
+				v1 = spriteData.getFloat(at + 44);
+			var r = spriteData.get(at + 48),
+				g = spriteData.get(at + 49),
+				b = spriteData.get(at + 50),
+				a = spriteData.get(at + 51);
+			for (c in 0...4)
+				addVertex(run.texture, QUADS, spriteData.getFloat(at + c * 8), spriteData.getFloat(at + c * 8 + 4), 0,
+					c < 2 ? u0 : u1, c == 0 || c == 3 ? v0 : v1, r, g, b, a);
+		}
+		return quads;
+	}
+
+	// A draw of a run of sprites, instances of the one quad through the sprite program, with the current matrices and state.
+	function spriteDraw(texture:Int, first:Int, count:Int):Draw {
+		var p = spriteProgram;
+		if (p == null)
+			p = spriteProgram = new Program(graphics, spriteShader());
+		if (spriteQuad == 0) {
+			var corners = Bytes.alloc(16);
+			for (c in 0...4)
+				corners.setFloat(c * 4, c);
+			spriteQuad = GpuMemory.buffer(graphics.createStaticBuffer(corners, 16, false), 16);
+			var indices = Bytes.alloc(24);
+			for (k => i in [0, 1, 2, 0, 2, 3])
+				indices.setInt32(k * 4, i);
+			spriteIndices = GpuMemory.buffer(graphics.createStaticBuffer(indices, 24, true), 24);
+		}
+		var state = states();
+		var pipeline = p.pipeline('s$state', () -> graphics.createPipeline({
+			shader: p.handle,
+			buffers: [
+				{stride: 4, instanced: false, attributes: [{slot: 0, format: Float1, offset: 0}]},
+				{
+					stride: SPRITE_BYTES,
+					instanced: true,
+					attributes: [
+						{slot: 1, format: Float4, offset: 0},
+						{slot: 2, format: Float4, offset: 16},
+						{slot: 3, format: Float4, offset: 32},
+						{slot: 4, format: UByte4Norm, offset: 48}
+					]
+				}
+			],
+			primitive: Triangles,
+			indexed: true,
+			blend: colorBlend ? blend : Blend.OPAQUE,
+			colorWrite: colorMask,
+			depthTest: depthTest ? LessEqual : Off,
+			depthWrite: depthTest && depthMask,
+			cull: cullFace(),
+			clockwise: false,
+			depthOnly: false,
+			flip: ClipScale,
+			flipBlockSlot: p.flipSlot,
+			flipOffset: p.flipOffset
+		}));
+		var textures = p.textures.copy();
+		if (p.texture0 >= 0)
+			textures[p.texture0] = texture;
+		return {
+			pipeline: pipeline,
+			buffers: null,
+			sprite: true,
+			indices: spriteIndices,
+			first: 0,
+			count: 6,
+			texture: texture,
+			primitive: Triangles,
+			scissor: scissor,
+			viewport: viewport,
+			textures: textures,
+			cubes: p.cubes,
+			uniforms: values(p, new Matrix3D(), [1, 1, 1, 1]),
+			instances: count,
+			firstInstance: first
+		};
+	}
+
 	// The frame's own GPU things: the white texture and the constants' record (an identity matrix for the attributes no buffer feeds).
 	function makeOwn():Void {
 		var texel = Bytes.alloc(4);
@@ -537,9 +687,12 @@ class Frame {
 		GpuMemory.freed(white);
 		GpuMemory.freed(constants);
 		GpuMemory.freed(quadIndices);
+		GpuMemory.freed(spriteQuad);
+		GpuMemory.freed(spriteIndices);
 		makeOwn();
 		quadIndices = 0;
 		quadCapacity = 0;
+		spriteQuad = spriteIndices = 0;
 	}
 
 	/** Flushes the batch, as a change rlgl flushes for does: `flush`. */
@@ -564,6 +717,153 @@ class Frame {
 			y = moved.y;
 			z = moved.z;
 		}
+		if (mode == QUADS && program == defaultProgram && spriteShader != null) {
+			// A quad's corners wait for the fourth: a sprite when all four are one texture and color, flat, and read the texture's rectangle
+			// corner by corner as a sprite's rectangle; otherwise the four vertices they always were.
+			var i = pending++;
+			pendingTexture[i] = texture;
+			pendingX[i] = x;
+			pendingY[i] = y;
+			pendingZ[i] = z;
+			pendingU[i] = u;
+			pendingV[i] = v;
+			pendingColor[i] = color.r | color.g << 8 | color.b << 16 | color.a << 24;
+			if (pending < 4)
+				return;
+			pending = 0;
+			if (isSprite()) {
+				sprite(texture, pendingU[0], pendingV[0], pendingU[2], pendingV[2], color.r, color.g, color.b, color.a);
+				return;
+			}
+			for (c in 0...4) {
+				var packed = pendingColor[c];
+				addVertex(pendingTexture[c], QUADS, pendingX[c], pendingY[c], pendingZ[c], pendingU[c], pendingV[c], packed & 255, packed >> 8 & 255,
+					packed >> 16 & 255, packed >>> 24);
+			}
+			return;
+		}
+		addVertex(texture, mode, x, y, z, u, v, color.r, color.g, color.b, color.a);
+	}
+
+	/** Adds a quad of one texture, one color and a rectangle of the texture, its corners in rlgl's order (`DrawTexturePro`'s): a sprite
+		record when it draws as one (the default shader, flat under the transform pushed, the sprite shader given), else its four vertices.
+		What `vertex` decides from four calls, decided at once.
+
+		@param texture  The texture.
+		@param ax  The first corner.
+		@param ay  The first corner.
+		@param bx  The second.
+		@param by  The second.
+		@param cx  The third.
+		@param cy  The third.
+		@param ex  The fourth.
+		@param ey  The fourth.
+		@param u0  The rectangle's left, at the first and second corners.
+		@param v0  Its top, at the first and fourth.
+		@param u1  Its right, at the third and fourth.
+		@param v1  Its bottom, at the second and third.
+		@param color  Its color. */
+	public function quad(texture:Int, ax:Float, ay:Float, bx:Float, by:Float, cx:Float, cy:Float, ex:Float, ey:Float, u0:Float, v0:Float, u1:Float, v1:Float,
+			color:helix.raylib.Color):Void {
+		if (transform != null || program != defaultProgram || spriteShader == null) {
+			vertex(texture, QUADS, ax, ay, 0, u0, v0, color);
+			vertex(texture, QUADS, bx, by, 0, u0, v1, color);
+			vertex(texture, QUADS, cx, cy, 0, u1, v1, color);
+			vertex(texture, QUADS, ex, ey, 0, u1, v0, color);
+			return;
+		}
+		var at = spriteRoom(texture);
+		putSprite(at, ax);
+		putSprite(at + 4, ay);
+		putSprite(at + 8, bx);
+		putSprite(at + 12, by);
+		putSprite(at + 16, cx);
+		putSprite(at + 20, cy);
+		putSprite(at + 24, ex);
+		putSprite(at + 28, ey);
+		putSprite(at + 32, u0);
+		putSprite(at + 36, v0);
+		putSprite(at + 40, u1);
+		putSprite(at + 44, v1);
+		spriteData.set(at + 48, color.r);
+		spriteData.set(at + 49, color.g);
+		spriteData.set(at + 50, color.b);
+		spriteData.set(at + 51, color.a);
+	}
+
+	// Whether the four corners waiting make a sprite: one texture, one color, z 0, and texture coordinates u0, v0, then u0, v1, then u1,
+	// v1, then u1, v0.
+	function isSprite():Bool {
+		return pendingTexture[1] == pendingTexture[0]
+			&& pendingTexture[2] == pendingTexture[0]
+			&& pendingTexture[3] == pendingTexture[0]
+			&& pendingColor[1] == pendingColor[0]
+			&& pendingColor[2] == pendingColor[0]
+			&& pendingColor[3] == pendingColor[0]
+			&& pendingZ[0] == 0
+			&& pendingZ[1] == 0
+			&& pendingZ[2] == 0
+			&& pendingZ[3] == 0
+			&& pendingU[1] == pendingU[0]
+			&& pendingV[2] == pendingV[1]
+			&& pendingU[3] == pendingU[2]
+			&& pendingV[3] == pendingV[0];
+	}
+
+	// Where the next sprite's record goes, in a run of sprites of its texture, the buffer grown to hold it.
+	function spriteRoom(texture:Int):Int {
+		if (open == null || open.texture != texture || open.mode != SPRITES) {
+			open = {
+				texture: texture,
+				mode: SPRITES,
+				first: sprites,
+				count: 0
+			};
+			batch.push(open);
+		}
+		open.count++;
+		var at = sprites++ * SPRITE_BYTES;
+		if (at + SPRITE_BYTES > spriteData.length) {
+			var grown = Bytes.alloc(spriteData.length * 2);
+			grown.blit(0, spriteData, 0, at);
+			spriteData = grown;
+			#if js
+			spriteFloats = new js.lib.Float32Array(spriteData.getData());
+			#end
+		}
+		return at;
+	}
+
+	// Adds a sprite from the corners waiting: its record, in a run of sprites of its texture.
+	function sprite(texture:Int, u0:Float, v0:Float, u1:Float, v1:Float, r:Int, g:Int, b:Int, a:Int):Void {
+		var at = spriteRoom(texture);
+		for (c in 0...4) {
+			putSprite(at + c * 8, pendingX[c]);
+			putSprite(at + c * 8 + 4, pendingY[c]);
+		}
+		putSprite(at + 32, u0);
+		putSprite(at + 36, v0);
+		putSprite(at + 40, u1);
+		putSprite(at + 44, v1);
+		spriteData.set(at + 48, r);
+		spriteData.set(at + 49, g);
+		spriteData.set(at + 50, b);
+		spriteData.set(at + 51, a);
+	}
+
+	// Writes a float into the sprites' buffer.
+	inline function putSprite(at:Int, value:Float):Void {
+		#if cpp
+		untyped __global__.__hxcpp_memory_set_float(spriteData.getData(), at, value);
+		#elseif js
+		spriteFloats[at >> 2] = value;
+		#else
+		spriteData.setFloat(at, value);
+		#end
+	}
+
+	// Adds an immediate vertex to the run of its texture and mode, starting one when the open run is another's.
+	function addVertex(texture:Int, mode:Int, x:Float, y:Float, z:Float, u:Float, v:Float, r:Int, g:Int, b:Int, a:Int):Void {
 		if (open == null || open.texture != texture || open.mode != mode) {
 			// A run of quads starts at a multiple of four, where the quads' indices for it start.
 			if (mode == QUADS)
@@ -586,17 +886,20 @@ class Frame {
 		put(at + 20, nx);
 		put(at + 24, ny);
 		put(at + 28, nz);
-		data.set(at + 32, color.r);
-		data.set(at + 33, color.g);
-		data.set(at + 34, color.b);
-		data.set(at + 35, color.a);
+		data.set(at + 32, r);
+		data.set(at + 33, g);
+		data.set(at + 34, b);
+		data.set(at + 35, a);
 		vertices++;
 	}
 
-	// Writes a float into the buffer where room made room for it: natively without Bytes.setFloat's bounds check and call.
+	// Writes a float into the buffer where room made room for it: natively without Bytes.setFloat's bounds check and call, in a page
+	// through the buffer's float view.
 	inline function put(at:Int, value:Float):Void {
 		#if cpp
 		untyped __global__.__hxcpp_memory_set_float(data.getData(), at, value);
+		#elseif js
+		floats[at >> 2] = value;
 		#else
 		data.setFloat(at, value);
 		#end
@@ -606,8 +909,20 @@ class Frame {
 
 		@param count  How many, at most those of the run being added to. */
 	public function dropVertices(count:Int):Void {
-		if (open == null)
+		// The corners still waiting first, then the open run's: a run of sprites by whole sprites.
+		var waiting = count < pending ? count : pending;
+		pending -= waiting;
+		count -= waiting;
+		if (count <= 0 || open == null)
 			return;
+		if (open.mode == SPRITES) {
+			var n = Std.int(count / 4);
+			if (n > open.count)
+				n = open.count;
+			open.count -= n;
+			sprites -= n;
+			return;
+		}
 		var n = count < open.count ? count : open.count;
 		open.count -= n;
 		vertices -= n;
@@ -620,6 +935,9 @@ class Frame {
 			var grown = Bytes.alloc(data.length * 2);
 			grown.blit(0, data, 0, at);
 			data = grown;
+			#if js
+			floats = new js.lib.Float32Array(data.getData());
+			#end
 		}
 		return at;
 	}
@@ -990,8 +1308,8 @@ class Frame {
 						t != 0 && (slot < d.cubes.length && d.cubes[slot]) != Textures.isCubeHandle(t) ? 0 : t
 				];
 				var samplings = [for (t in textures) Textures.samplingOf(t)];
-				graphics.draw(d.pipeline, d.buffers == null ? [buffer, constants] : d.buffers, null, d.indices, d.first, count, 0, d.instances, textures,
-					samplings, d.uniforms);
+				graphics.draw(d.pipeline, d.buffers != null ? d.buffers : d.sprite ? [spriteQuad, spriteBuffer] : [buffer, constants], null, d.indices,
+					d.first, count, d.firstInstance, d.instances, textures, samplings, d.uniforms);
 			}
 			if (p.target == 0) {
 				graphics.endFrame();
@@ -1048,33 +1366,43 @@ class Frame {
 	}
 
 	function upload():Void {
-		if (vertices == 0)
-			return;
-		var bytes = vertices * STRIDE;
-		if (bytes > capacity) {
-			if (buffer != 0) {
-				graphics.disposeBuffer(buffer);
-				GpuMemory.freed(buffer);
+		if (vertices > 0) {
+			var bytes = vertices * STRIDE;
+			if (bytes > capacity) {
+				if (buffer != 0) {
+					graphics.disposeBuffer(buffer);
+					GpuMemory.freed(buffer);
+				}
+				capacity = data.length;
+				buffer = GpuMemory.buffer(graphics.createBuffer(capacity), capacity);
 			}
-			capacity = data.length;
-			buffer = GpuMemory.buffer(graphics.createBuffer(capacity), capacity);
+			graphics.updateBuffer(buffer, data, bytes);
 		}
-		graphics.updateBuffer(buffer, data, bytes);
+		if (sprites > 0) {
+			var bytes = sprites * SPRITE_BYTES;
+			if (bytes > spriteCapacity) {
+				if (spriteBuffer != 0) {
+					graphics.disposeBuffer(spriteBuffer);
+					GpuMemory.freed(spriteBuffer);
+				}
+				spriteCapacity = spriteData.length;
+				spriteBuffer = GpuMemory.buffer(graphics.createBuffer(spriteCapacity), spriteCapacity);
+			}
+			graphics.updateBuffer(spriteBuffer, spriteData, bytes);
+		}
 	}
 
-	/** Frees the buffer, the white texture and the default program. */
+	/** Frees the buffers, the white texture and the default and sprite programs. */
 	public function dispose():Void {
-		if (buffer != 0)
-			graphics.disposeBuffer(buffer);
+		for (b in [buffer, constants, quadIndices, spriteBuffer, spriteQuad, spriteIndices].concat(retired))
+			if (b != 0)
+				graphics.disposeBuffer(b);
 		graphics.disposeTexture(white);
-		graphics.disposeBuffer(constants);
-		if (quadIndices != 0)
-			graphics.disposeBuffer(quadIndices);
-		for (b in retired)
-			graphics.disposeBuffer(b);
-		for (h in [buffer, white, constants, quadIndices].concat(retired))
+		for (h in [buffer, white, constants, quadIndices, spriteBuffer, spriteQuad, spriteIndices].concat(retired))
 			GpuMemory.freed(h);
 		defaultProgram.dispose();
+		if (spriteProgram != null)
+			spriteProgram.dispose();
 	}
 }
 
@@ -1104,7 +1432,10 @@ private class Update {
 @:structInit
 private class Draw {
 	public final pipeline:Int;
+	// The buffers by the pipeline's slots, or null for the frame's own: the batch's vertices and the constants, or for a sprite run
+	// (sprite) the quad and the sprites' records, both taken when the frame is drawn, as their buffers may be remade before.
 	public final buffers:Null<Array<Int>>;
+	public var sprite:Bool = false;
 	public final indices:Int;
 	public final first:Int;
 	public var count:Int;
@@ -1117,13 +1448,17 @@ private class Draw {
 	public final cubes:Array<Bool>;
 	public final uniforms:Array<Null<Bytes>>;
 	public final instances:Int;
+	// The first instance drawn: a sprite run's first record.
+	public var firstInstance:Int = 0;
 }
 
 @:structInit
 private class Run {
 	public final texture:Int;
-	// LINES, TRIANGLES or QUADS.
+	// LINES, TRIANGLES, QUADS or SPRITES.
 	public final mode:Int;
+	// The run's first vertex, or first sprite record.
 	public final first:Int;
+	// Its vertices, or its sprites.
 	public var count:Int;
 }

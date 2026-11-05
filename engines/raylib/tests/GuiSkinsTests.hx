@@ -31,6 +31,13 @@ class GuiSkinsTests {
 			if (d.buffers != null)
 				continue;
 			out.add('${d.texture}:');
+			if (d.sprite) {
+				// A sprite run: its records.
+				for (i in d.firstInstance...d.firstInstance + d.instances)
+					out.add(f.spriteData.sub(i * 52, 52).toHex());
+				out.add(";");
+				continue;
+			}
 			for (k in d.first...d.first + d.count) {
 				var i = d.indices == 0 ? k : Std.int(k / 6) * 4 + [0, 1, 2, 0, 2, 3][k % 6];
 				out.add(f.data.sub(i * 36, 36).toHex());
