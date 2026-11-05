@@ -1,5 +1,5 @@
 {
- "commit": "c417d19 2026-11-05",
+ "commit": "267dd67 2026-11-05",
  "haxe": "4.3.7",
  "ladders": {
   "platform": {
@@ -385,7 +385,7 @@
     "adds": "sprites: a texture made from an image in memory, drawn turned by the 2D batch",
     "raw": 132744,
     "gzip": 28744,
-    "brotli": 24854,
+    "brotli": 24935,
     "packages": {
      "services/shaders": 37077,
      "platform/graphics": 33451,
@@ -414,8 +414,8 @@
    "3-text": {
     "adds": "text: a TrueType font loaded from beside the page, rasterized by the page's canvas, measured and drawn, and wrapped in a layout",
     "raw": 207815,
-    "gzip": 46169,
-    "brotli": 38948,
+    "gzip": 46168,
+    "brotli": 38940,
     "packages": {
      "services/shaders": 37077,
      "platform/graphics": 33451,
@@ -455,7 +455,7 @@
     "adds": "shapes: lines, a polyline, rectangles rounded and not, circles, ellipses and polygons, filled and stroked",
     "raw": 222899,
     "gzip": 49449,
-    "brotli": 41674,
+    "brotli": 41673,
     "packages": {
      "services/shaders": 37077,
      "platform/graphics": 33451,
@@ -495,8 +495,8 @@
    "5-mesh": {
     "adds": "3D: a cube made in memory, drawn unlit through a camera by the 3D batch, over the 2D",
     "raw": 338448,
-    "gzip": 71592,
-    "brotli": 59654,
+    "gzip": 71595,
+    "brotli": 59735,
     "packages": {
      "render/Batch3D": 52437,
      "services/shaders": 45760,
@@ -545,8 +545,8 @@
    "6-lit": {
     "adds": "light: the cube drawn lit, metallic-roughness, under a sun and an ambient light",
     "raw": 396297,
-    "gzip": 82679,
-    "brotli": 66499,
+    "gzip": 82242,
+    "brotli": 66543,
     "packages": {
      "render/BatchLighting": 53922,
      "render/Batch3D": 52539,
@@ -602,7 +602,7 @@
     "adds": "a window cleared each frame: raylib's loop and frame, and what helix-raylib builds before main",
     "raw": 161689,
     "gzip": 34853,
-    "brotli": 29561,
+    "brotli": 29527,
     "packages": {
      "platform/graphics": 35699,
      "services/shaders": 27405,
@@ -637,7 +637,7 @@
     "adds": "2D shapes: a rectangle, a circle, a line and a triangle",
     "raw": 189301,
     "gzip": 39603,
-    "brotli": 33390,
+    "brotli": 33368,
     "packages": {
      "platform/graphics": 36445,
      "raylib/Frame": 30812,
@@ -676,7 +676,7 @@
     "adds": "text in raylib's default font",
     "raw": 215070,
     "gzip": 46064,
-    "brotli": 38450,
+    "brotli": 38432,
     "packages": {
      "platform/graphics": 36445,
      "raylib/Frame": 31880,
@@ -719,7 +719,7 @@
     "adds": "a texture loaded with LoadTextureAsync and drawn",
     "raw": 262187,
     "gzip": 56038,
-    "brotli": 46478,
+    "brotli": 46442,
     "packages": {
      "platform/graphics": 36445,
      "raylib/Frame": 31880,
@@ -827,7 +827,7 @@
     "adds": "a glTF model loaded with LoadModelAsync and drawn beside the cube",
     "raw": 393009,
     "gzip": 83480,
-    "brotli": 67892,
+    "brotli": 67875,
     "packages": {
      "raylib/Frame": 37458,
      "platform/graphics": 36445,
@@ -889,7 +889,7 @@
     "adds": "the model's animations loaded with LoadModelAnimationsAsync and one played",
     "raw": 437800,
     "gzip": 91736,
-    "brotli": 74196,
+    "brotli": 74185,
     "packages": {
      "raylib/Frame": 37458,
      "platform/graphics": 36900,
@@ -952,7 +952,7 @@
     "adds": "light: the model lit by LoadLightingShader, raylib's examples' lighting built in, and one light from CreateLight",
     "raw": 456575,
     "gzip": 93950,
-    "brotli": 76015,
+    "brotli": 75848,
     "packages": {
      "raylib/Frame": 37458,
      "platform/graphics": 36900,
@@ -1016,7 +1016,7 @@
     "adds": "audio: a sound loaded with LoadSoundAsync and played once it is loaded",
     "raw": 482126,
     "gzip": 99259,
-    "brotli": 80219,
+    "brotli": 80180,
     "packages": {
      "raylib/Frame": 37458,
      "platform/graphics": 36900,
@@ -1085,7 +1085,7 @@
     "adds": "a game: what a real game uses, its file formats one of each",
     "raw": 671336,
     "gzip": 134560,
-    "brotli": 108458,
+    "brotli": 108387,
     "packages": {
      "formats": 44369,
      "raylib/Frame": 37886,
@@ -1165,8 +1165,8 @@
    "11-everything": {
     "adds": "everything: every function of Raylib, Raymath, Rlgl, Raygui and helix.raylib.extras a program can call, and every file reader",
     "raw": 1618194,
-    "gzip": 290962,
-    "brotli": 227036,
+    "gzip": 290965,
+    "brotli": 227057,
     "packages": {
      "formats": 131738,
      "raylib/RTextures": 106259,
