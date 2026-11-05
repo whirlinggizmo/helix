@@ -619,3 +619,15 @@ Why things are the way they are, numbered, in order.
     `lighting` parity suite draws the example's setup and greenman lit and posed, through the built-in shader and through a program's
     own over both includes, against raylib's C running the example's files and skinning on the CPU. Rejected: the lighting in `Raylib`
     (it isn't raylib's API, 38), and copies of the GLSL in each shader rather than the includes.
+
+46. **helix-raylib keeps raylib's API and behaviour exactly, and its pixels as a default, not a rule.** The API is the value: an agent
+    or a developer who knows raylib writes raylib and it compiles, with the names, parameters, conventions and quirks they expect. Where a
+    target forces a change (a page can't block on a file, so `LoadTexture` can't be), the call is a compile error naming its
+    replacement and where to import it from, and a raylib type named without its import gets a compiler note with the import line;
+    additions live in `extras` and are reached the same way. Never a silent difference: a call that compiles, runs and does something
+    other than raylib. Pixel exactness against raylib's C (the parity suites, byte for byte) is kept because it is a free oracle: every
+    drawing path is checked without written expectations, and a regression anywhere shows at once. It is not what agents need, which is
+    behaviour they can predict, so where exactness would block a real gain in speed or quality, the gain is taken, that suite loosened to
+    a stated tolerance of a pixel, and the reason recorded here. The sprite runs (2026-11-05) kept exactness because it cost 8 bytes a
+    record. Rejected: exactness as a rule binding GPU-side math, and a README listing the differences (a message from the compiler, not
+    prose).
