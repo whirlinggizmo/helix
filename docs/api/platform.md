@@ -706,6 +706,31 @@ function dispose():Void
   One of `done` or `failed` is called once, never during this call.
 - `dispose`: Releases the adapter; the clipboard keeps what was put on it, where the system does.
 
+## IDecodedImage
+
+*interface* in [`libs/platform/src/helix/platform/IDecodedImage.hx`](../../libs/platform/src/helix/platform/IDecodedImage.hx), `import helix.platform.IDecodedImage;`
+
+Represents an image decoded for the GPU: what `IImageDecoder.decodeForGpu` gives and `IGraphics.createTextureFromImage` uploads, so a program draws a file without ever holding its pixels.
+
+In a page it is the browser's decoded image (`bitmapHandle` names it), uploaded as it is. Natively it is the pixels. Either can give its pixels (`pixels`) when a program wants them after all, at the cost a page's readback has.
+
+```haxe
+var width(get, never):Int
+var height(get, never):Int
+var bitmapHandle(get, never):Int
+function pixels():haxe.io.Bytes
+function dispose():Void
+```
+
+- `width`: Gets its width, in pixels.
+- `height`: Gets its height, in pixels.
+- `bitmapHandle`: Gets the handle of the browser's decoded image in a page (an `ImageBitmap`, which `IGraphics.createTextureFromImage` uploads as it is), or 0 natively, where `pixels` holds the image, and once disposed.
+- `pixels`: Returns its pixels, 8-bit RGBA with rows top to bottom, not premultiplied, `width * height * 4` bytes, made once and kept.
+  - returns: The pixels.
+
+  In a page they are read back from the bitmap through a canvas, which stores pixels premultiplied, so a partly transparent pixel may come back a level or two from the file's value.
+- `dispose`: Frees it: the bitmap closed, the pixels let go. It isn't uploaded or read after this.
+
 ## IEvents
 
 *interface* in [`libs/platform/src/helix/platform/IEvents.hx`](../../libs/platform/src/helix/platform/IEvents.hx), `import helix.platform.IEvents;`, extends `IPollable`
@@ -941,6 +966,7 @@ A call that cannot be done throws before doing anything.
 
 ```haxe
 function createTexture(width:Int, height:Int, levels:Array<haxe.io.Bytes>, ?format:TextureFormat = Rgba8):Int
+function createTextureFromImage(image:IDecodedImage):Int
 function createCubeTexture(size:Int, levels:Array<haxe.io.Bytes>, format:TextureFormat):Int
 function createDataTexture(width:Int, height:Int):Int
 function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:haxe.io.Bytes):Void
@@ -986,6 +1012,12 @@ function dispose():Void
   - throws `String`: A size of 0 or less, no levels, a level of the wrong size, or a format this GPU cannot sample.
 
   Each draw chooses how the texture is sampled (`Sampling`).
+- `createTextureFromImage`: Uploads a decoded image (`IImageDecoder.decodeForGpu`) as a texture of one level, format Rgba8.
+  - `image`: The decoded image.
+  - returns: The texture's handle.
+  - throws `String`: A disposed image.
+
+  In a page the browser's decoded image goes to the GPU as it is, with no premultiplying and no color conversion, so the texels are the file's as the native decoder reads them. The image is still the caller's to dispose.
 - `createCubeTexture`: Uploads a cubemap.
   - `size`: Each face's width and height, in texels.
   - `levels`: Mip 0, then optionally its mips, each half the size of the last and at least 1. Each level holds its six faces in the order +X, -X, +Y, -Y, +Z, -Z, in GL's cube orientation, where a face's first row is its t = 0. Each face is `format.levelBytes` of its size.
@@ -1215,6 +1247,7 @@ It reads PNG, JPEG, BMP, TGA and GIF files, and a GIF's first frame only. The pi
 
 ```haxe
 function decode(encoded:haxe.io.Bytes, decoded:(pixels:haxe.io.Bytes, width:Int, height:Int) -> Void, failed:String -> Void):Void
+function decodeForGpu(encoded:haxe.io.Bytes, decoded:IDecodedImage -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
 ```
@@ -1222,6 +1255,12 @@ function dispose():Void
 - `decode`: Decodes a file, off the main thread where the platform can.
   - `encoded`: The file's bytes.
   - `decoded`: Receives the pixels, `width * height * 4` bytes, and the image's width and height.
+  - `failed`: Receives why the file can't be read.
+
+  One of `decoded` or `failed` is called once, on the main thread, never during this call.
+- `decodeForGpu`: Decodes a file for the GPU, off the main thread where the platform can: in a page the browser's own decoded image, with no readback, which `IGraphics.createTextureFromImage` uploads as it is; natively the pixels.
+  - `encoded`: The file's bytes.
+  - `decoded`: Receives the image. The receiver disposes it once it is uploaded, or when it isn't wanted.
   - `failed`: Receives why the file can't be read.
 
   One of `decoded` or `failed` is called once, on the main thread, never during this call.

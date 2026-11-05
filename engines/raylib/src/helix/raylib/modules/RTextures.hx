@@ -41,6 +41,14 @@ class RTextures {
 
 	static function loadTexture(fileName:String):Texture2D {
 		var path = normalize(fileName);
+		if (Textures.hasPath(path)) {
+			var id = Textures.fromDecoded(path, null);
+			return new Texture2D(id, Textures.widthOf(id), Textures.heightOf(id));
+		}
+		var picture = Runtime.picture(path);
+		if (picture != null)
+			return new Texture2D(Textures.fromDecoded(path, picture), picture.width, picture.height);
+		// A GIF's first frame, or a file whose pixels a program already asked for, is in memory as pixels.
 		var image = Runtime.image(path);
 		if (image == null) {
 			Runtime.log(4, 'LoadTextureAsync: $path couldn\'t be read');

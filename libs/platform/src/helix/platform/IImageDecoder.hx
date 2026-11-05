@@ -15,6 +15,15 @@ interface IImageDecoder extends IPollable {
 		@param failed  Receives why the file can't be read. */
 	function decode(encoded:Bytes, decoded:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void;
 
+	/** Decodes a file for the GPU, off the main thread where the platform can: in a page the browser's own decoded image, with no
+		readback, which `IGraphics.createTextureFromImage` uploads as it is; natively the pixels.
+
+		One of `decoded` or `failed` is called once, on the main thread, never during this call.
+		@param encoded  The file's bytes.
+		@param decoded  Receives the image. The receiver disposes it once it is uploaded, or when it isn't wanted.
+		@param failed  Receives why the file can't be read. */
+	function decodeForGpu(encoded:Bytes, decoded:IDecodedImage->Void, failed:String->Void):Void;
+
 	/** Delivers what finished on the platform's threads since the last poll. The program calls it once a frame. */
 	function poll():Void;
 

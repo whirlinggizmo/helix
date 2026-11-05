@@ -33,8 +33,9 @@ The interfaces in `libs/platform/src/helix/platform/` are the authority; this is
   reach; no adapter reaches into another's directory, but a device's adapter is given the events adapter it is built over (Events).
 - **Contracts don't know each other.** No contract or its adapters imports another contract's (http never names graphics, the file
   system never names audio); only `adapters/shared/` is common to them. `check_layers` enforces it: a contract's files are its
-  interface, the types it reaches and its adapters; anything else may name at most one contract. A base any contract may extend
-  (`IPollable`) is no contract's and names no other type. A device (`IKeyboard`, `IMouse`, `ITouch`, `IGamepads`, `ITilt`) is built
+  interface, the types it reaches and its adapters; anything else may name at most one contract. A shared interface (`IPollable`,
+  which every contract extends; `IDecodedImage`, which the image decoder gives and the graphics take) is no contract's and names no
+  other type. A device (`IKeyboard`, `IMouse`, `ITouch`, `IGamepads`, `ITilt`) is built
   over the events, and may name theirs.
 - **Both targets, one interface.** Every contract has the same members on js and cpp; an adapter is for one API on one target.
 - **Units** as CONVENTIONS: seconds, radians, framebuffer pixels for the pointer, logical pixels for the window, `0xAARRGGBB` colors.
@@ -219,7 +220,9 @@ enum Event {
 
 `IGraphics`: resources, passes and one draw. The adapter knows no program or layout of its caller's.
 
-- Textures: `createTexture(width, height, levels, format)` (2D, with its mip levels), `createCubeTexture`, `createDataTexture` (floats read texel by texel),
+- Textures: `createTexture(width, height, levels, format)`, `createTextureFromImage(image)` (a `IDecodedImage` as it is, one level of
+  Rgba8: in a page the browser's bitmap with no premultiplying or color conversion, so its texels are the file's as the native decoder
+  reads them) (2D, with its mip levels), `createCubeTexture`, `createDataTexture` (floats read texel by texel),
   `updateTexture(handle, x, y, width, height, data)` (a rectangle of a texture's top level, RGBA8 or half floats, outside a pass, the
   passes before it reading the old texels; a data texture whole, at any time; sokol writes through GL directly, SDL_GPU copies in the
   frame's command buffer, uncycled), `createRenderTarget(width, height, format, depth, msaaSampleCount)` (RGBA8 or half floats, with or
@@ -470,10 +473,15 @@ at `poll`. Its built-in decoders are stb_vorbis 1.22 and dr_mp3 0.7.4, which ski
 Info frame and trims its LAME delay and padding.
 
 `IImageDecoder`: `decode(encoded, decoded(pixels, width, height), failed(message))`, the pixels 8-bit RGBA with rows top to bottom, not
-premultiplied; `poll`; `dispose`. It reads **PNG, JPEG, BMP, TGA and GIF** (the first frame). In a page, `imagedecoder/canvas`
-(`CanvasImageDecoderAdapter`): `createImageBitmap` with no color conversion or premultiplying, read back through an `OffscreenCanvas`,
-which stores pixels premultiplied, so a partly transparent pixel may come back a level or two from the file's value. Natively,
-`imagedecoder/stb` (`StbImageDecoderAdapter`): stb_image 2.30 (`libs/platform/vendor/stb`) on a worker thread, exact, delivered at `poll`.
+premultiplied; `decodeForGpu(encoded, decoded(image), failed(message))`, a `IDecodedImage` for `IGraphics.createTextureFromImage`, so a
+program draws a file without holding its pixels (its `width`, `height`, `bitmapHandle`: the browser's `ImageBitmap` in a page by handle,
+kept by `adapters/shared/dom/DomImages` for the graphics adapter, and 0 natively, `pixels()` read when wanted after all and kept,
+`dispose`); `poll`; `dispose`. It reads **PNG, JPEG, BMP, TGA and GIF** (the
+first frame). In a page, `imagedecoder/canvas` (`CanvasImageDecoderAdapter`): `createImageBitmap` with no color conversion or
+premultiplying, the bitmap itself for the GPU, and for pixels read back through an `OffscreenCanvas`, which stores pixels premultiplied,
+so a partly transparent pixel may come back a level or two from the file's value. Natively, `imagedecoder/stb`
+(`StbImageDecoderAdapter`): stb_image 2.30 (`libs/platform/vendor/stb`) on a worker thread, exact, delivered at `poll`; its
+`decodeForGpu` is the pixels (`adapters/shared/PixelsImage`).
 
 `IFontRasterizer`: `rasterize(encoded, size, codepoints, rasterized(glyphs, ascent, descent, lineGap), failed(message))` for coverage,
 `rasterizeDistanceField` with the same arguments for signed distances, so a program rasterizing coverage carries no distance

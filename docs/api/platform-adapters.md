@@ -510,6 +510,7 @@ var msaaSampleCount(get, never):Int
 var maxMsaaSampleCount(get, never):Int
 var device(get, never):GraphicsDevice
 function createTexture(width:Int, height:Int, levels:Array<haxe.io.Bytes>, ?format:TextureFormat = Rgba8):Int
+function createTextureFromImage(image:IDecodedImage):Int
 function createDataTexture(width:Int, height:Int):Int
 function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:haxe.io.Bytes):Void
 function createCubeTexture(size:Int, levels:Array<haxe.io.Bytes>, format:TextureFormat):Int
@@ -617,13 +618,14 @@ function dispose():Void
 
 *class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/imagedecoder/canvas/CanvasImageDecoderAdapter.hx`](../../libs/platform/src/helix/platform/adapters/imagedecoder/canvas/CanvasImageDecoderAdapter.hx), `import helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter;`, implements `IImageDecoder`
 
-Provides `IImageDecoder` in a page over its own decoder (`createImageBitmap`, with no color conversion or premultiplying), read back through an `OffscreenCanvas`.
+Provides `IImageDecoder` in a page over its own decoder (`createImageBitmap`, with no color conversion or premultiplying).
 
-The canvas stores pixels premultiplied, so a partly transparent pixel may come back a level or two from the file's value.
+`decodeForGpu` gives the bitmap itself, which the graphics adapter uploads as it is. `decode` reads it back through an `OffscreenCanvas`, which stores pixels premultiplied, so a partly transparent pixel may come back a level or two from the file's value.
 
 ```haxe
 function new()
 function decode(encoded:haxe.io.Bytes, decoded:(pixels:haxe.io.Bytes, width:Int, height:Int) -> Void, failed:String -> Void):Void
+function decodeForGpu(encoded:haxe.io.Bytes, decoded:IDecodedImage -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
 ```
@@ -640,6 +642,7 @@ Provides `IImageDecoder` natively over stb_image, each decode on a worker thread
 ```haxe
 function new()
 function decode(encoded:haxe.io.Bytes, decoded:(pixels:haxe.io.Bytes, width:Int, height:Int) -> Void, failed:String -> Void):Void
+function decodeForGpu(encoded:haxe.io.Bytes, decoded:IDecodedImage -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
 ```

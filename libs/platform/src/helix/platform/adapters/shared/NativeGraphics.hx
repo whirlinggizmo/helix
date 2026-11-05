@@ -48,6 +48,9 @@ abstract class NativeGraphics implements IGraphics {
 		return valid(GraphicsDeviceBridge.texture(width, height, pointer(packed), packed.length, levels.length, format));
 	}
 
+	public function createTextureFromImage(image:helix.platform.IDecodedImage):Int
+		return createTexture(image.width, image.height, [image.pixels()]);
+
 	public function createCubeTexture(size:Int, levels:Array<Bytes>, format:TextureFormat):Int {
 		if (levels.length == 0 || !canSample(format))
 			throw "Invalid cube texture";

@@ -203,6 +203,25 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		return id;
 	}
 
+	public function createTextureFromImage(image:IDecodedImage):Int {
+		var bitmap = image.bitmapHandle == 0 ? null : helix.platform.adapters.shared.dom.DomImages.get(image.bitmapHandle);
+		if (bitmap == null)
+			return createTexture(image.width, image.height, [image.pixels()]);
+		var tex = gl.createTexture();
+		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, tex);
+		// The file's texels as they are: the bitmap was decoded without premultiplying or color conversion, and the upload does neither.
+		gl.pixelStorei(WebGL2RenderingContext.UNPACK_FLIP_Y_WEBGL, 0);
+		gl.pixelStorei(WebGL2RenderingContext.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 0);
+		gl.pixelStorei(WebGL2RenderingContext.UNPACK_COLORSPACE_CONVERSION_WEBGL, WebGL2RenderingContext.NONE);
+		gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE,
+			bitmap);
+		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, 0);
+		var id = next++;
+		textures[id] = tex;
+		plainTextures[id] = {width: image.width, height: image.height, format: Rgba8};
+		return id;
+	}
+
 	public function createDataTexture(width:Int, height:Int):Int {
 		var largest:Int = gl.getParameter(WebGL2RenderingContext.MAX_TEXTURE_SIZE);
 		if (width <= 0 || height <= 0 || width > largest || height > largest)

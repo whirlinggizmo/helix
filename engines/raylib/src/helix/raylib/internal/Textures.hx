@@ -37,11 +37,73 @@ class Textures {
 			gpu: 0,
 			refs: 1,
 			held: 1,
-			levels: levels
+			levels: levels,
+			width: image.width,
+			height: image.height
 		});
 		if (path != "")
 			byPath.set(path, id);
 		return id;
+	}
+
+	/** Returns the id of a file's texture from its image decoded for the GPU (`Runtime.picture`), shared with its earlier loads while any
+		holds it, held by the program: the image goes to the GPU as it is when first drawn, and is let go of then (`Runtime.forgetPicture`).
+
+		@param path  The file.
+		@param picture  Its image decoded for the GPU, used when no load of the file is held, and null when one is.
+		@return  The id. */
+	public static function fromDecoded(path:String, picture:Null<helix.platform.IDecodedImage>):Int {
+		if (byPath.exists(path)) {
+			var id = byPath.get(path), e = entries.get(id);
+			e.refs++;
+			e.held++;
+			return id;
+		}
+		var id = next++;
+		entries.set(id, {
+			path: path,
+			image: null,
+			decoded: picture,
+			gpu: 0,
+			refs: 1,
+			held: 1,
+			width: picture.width,
+			height: picture.height
+		});
+		byPath.set(path, id);
+		return id;
+	}
+
+	/** Returns a texture's width in pixels, or 0 for an id with no texture (a render texture's or the default font's, made elsewhere, is 0 too).
+
+		@param id  The texture's id. */
+	public static function widthOf(id:Int):Int {
+		var e = entries.get(id);
+		return e == null ? 0 : e.width;
+	}
+
+	/** Returns a texture's height in pixels, or 0 as `widthOf` is.
+
+		@param id  The texture's id. */
+	public static function heightOf(id:Int):Int {
+		var e = entries.get(id);
+		return e == null ? 0 : e.height;
+	}
+
+	// Takes a texture's pixels from its image decoded for the GPU, as its own, when a program touches them before it is drawn: the picture
+	// is let go of, a load of the file again decoding it again.
+	static function materialize(e:Entry):Void {
+		var picture = e.decoded;
+		if (picture == null)
+			return;
+		var pixels = picture.pixels();
+		e.image = new Image(e.path, picture.width, picture.height, pixels.sub(0, pixels.length));
+		e.owned = true;
+		e.decoded = null;
+		if (e.path != "")
+			Runtime.forgetPicture(e.path);
+		else
+			picture.dispose();
 	}
 
 	/** Returns an id for a texture already on the GPU, held by the program: a render texture's, or the default font's.
@@ -75,6 +137,8 @@ class Textures {
 			gpu: 0,
 			refs: 1,
 			held: 1,
+			width: size,
+			height: size,
 			cube: {size: size, levels: levels},
 			sampling: new helix.platform.Sampling(Linear, Clamp, Clamp, levels.length > 1 ? Linear : None)
 		});
@@ -176,7 +240,11 @@ class Textures {
 		var e = entries.get(id);
 		if (e == null)
 			return null;
-		return e.image != null ? e.image : e.path != "" ? Runtime.image(e.path) : null;
+		if (e.image != null)
+			return e.image;
+		if (e.decoded != null && e.path == "")
+			return new Image("", e.decoded.width, e.decoded.height, e.decoded.pixels());
+		return e.path != "" ? Runtime.image(e.path) : null;
 	}
 
 	/** Returns a texture's GPU handle, sending it to the GPU if this is its first use.
@@ -189,7 +257,15 @@ class Textures {
 		var e = entries.get(id);
 		if (e == null)
 			return 0;
-		if (e.gpu == 0 && e.image != null) {
+		if (e.gpu == 0 && e.decoded != null) {
+			e.gpu = Runtime.graphics.createTextureFromImage(e.decoded);
+			if (e.sampling != null)
+				samplings.set(e.gpu, e.sampling);
+			// It is on the GPU now, and its picture isn't needed again: a load of the file again decodes it again.
+			e.decoded = null;
+			if (e.path != "")
+				Runtime.forgetPicture(e.path);
+		} else if (e.gpu == 0 && e.image != null) {
 			e.gpu = Runtime.graphics.createTexture(e.image.width, e.image.height, e.levels == null ? [e.image.pixels] : [e.image.pixels].concat(e.levels));
 			if (e.sampling != null)
 				samplings.set(e.gpu, e.sampling);
@@ -218,6 +294,8 @@ class Textures {
 		var e = entries.get(id);
 		if (e == null || e.cube != null)
 			return;
+		if (e.gpu == 0)
+			materialize(e);
 		if (e.gpu == 0 && e.image != null) {
 			// Its own copy: a file's image may be shared with other loads, and the decoded file kept.
 			if (!e.owned) {
@@ -253,6 +331,7 @@ class Textures {
 		if (e == null || id == DEFAULT || e.cube != null)
 			return;
 		if (e.gpu == 0) {
+			materialize(e);
 			if (e.image != null)
 				e.levels = Mipmaps.build(e.image.width, e.image.height, e.image.pixels);
 			return;
@@ -291,6 +370,13 @@ class Textures {
 			return true;
 		if (--e.refs > 0)
 			return false;
+		if (e.decoded != null) {
+			if (e.path != "")
+				Runtime.forgetPicture(e.path);
+			else
+				e.decoded.dispose();
+			e.decoded = null;
+		}
 		if (e.gpu != 0) {
 			Runtime.graphics.disposeTexture(e.gpu);
 			samplings.remove(e.gpu);
@@ -316,6 +402,10 @@ class Textures {
 private class Entry {
 	public final path:String;
 	public var image:Null<Image>;
+	// Its image decoded for the GPU (a file's, Runtime.pictures') while it isn't on the GPU and no pixels of it were asked for.
+	public var decoded:Null<helix.platform.IDecodedImage> = null;
+	public var width:Int = 0;
+	public var height:Int = 0;
 	// Its mipmaps while it isn't on the GPU, or null for none.
 	public var levels:Null<Array<haxe.io.Bytes>> = null;
 	// Whether image is its own, so changing it changes no one else's (a file's image is shared with its other loads).

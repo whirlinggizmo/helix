@@ -22,6 +22,9 @@ class FakeImageDecoder implements IImageDecoder {
 	}
 
 	/** Delivers what was decoded. */
+	public function decodeForGpu(encoded:Bytes, decoded:helix.platform.IDecodedImage->Void, failed:String->Void):Void
+		decode(encoded, (pixels, width, height) -> decoded(new helix.platform.adapters.shared.PixelsImage(width, height, pixels)), failed);
+
 	public function poll():Void {
 		var now = pending.copy();
 		pending.resize(0);

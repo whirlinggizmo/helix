@@ -50,6 +50,9 @@ class FakeGraphics implements IGraphics {
 			shadingLanguage: ""
 		};
 
+	public function createTextureFromImage(image:helix.platform.IDecodedImage):Int
+		return createTexture(image.width, image.height, [image.pixels()]);
+
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int
 		return next++;
 

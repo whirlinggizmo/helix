@@ -1,9 +1,11 @@
 package helix.platform.adapters.imagedecoder.stb;
 
 import haxe.io.Bytes;
+import helix.platform.IDecodedImage;
 import helix.platform.IImageDecoder;
 import helix.platform.adapters.imagedecoder.stb.internal.ImageBridge;
 import helix.platform.adapters.shared.Mailbox;
+import helix.platform.adapters.shared.PixelsImage;
 import sys.thread.Thread;
 
 /** Provides `IImageDecoder` natively over stb_image, each decode on a worker thread. */
@@ -29,6 +31,9 @@ class StbImageDecoderAdapter implements IImageDecoder {
 			ImageBridge.free(image);
 			mailbox.post(() -> decoded(pixels, width, height));
 		});
+
+	public function decodeForGpu(encoded:Bytes, decoded:IDecodedImage->Void, failed:String->Void):Void
+		decode(encoded, (pixels, width, height) -> decoded(new PixelsImage(width, height, pixels)), failed);
 
 	public function poll():Void
 		if (!closed)

@@ -8,8 +8,9 @@ reaches an engine.
   A library's tests and examples (TESTS) are held to rule 1 too, as they build with that library alone.
   3. In helix-platform, contracts don't know each other (docs/PLATFORM.md): a contract's files are its interface, the types in
      helix.platform it reaches, and its adapters (adapters/<contract>/); none names another contract's. Anything else (adapters/shared/, a
-     type no contract reaches) is common, and may name at most one contract, whose it then is. A base (BASES) is an interface any
-     contract may extend: no contract's, and naming no other type in helix.platform. A device (DEVICES) is built over another contract,
+     type no contract reaches) is common, and may name at most one contract, whose it then is. A shared interface (SHARED) passes
+     between contracts, extended (IPollable) or given by one and taken by another (IDecodedImage): no contract's, and naming no other
+     type in helix.platform. A device (DEVICES) is built over another contract,
      the events: it and its adapters may name that contract's types and adapters too, and nothing else of another's.
   4. A library (libs/<name>) knows no consumer: nothing in it reaches an engine (engines/<name>), which may own the loop and keep
      statics. Beyond rule 1's packages, its build files and code (comments aside) name no engine's haxelib and no path into engines/.
@@ -42,8 +43,9 @@ LAYERS = [
 # Each library's tests and examples, held to its layer too: they build with that library alone.
 TESTS = {'helix-math': ['libs/math/tests'], 'helix-geometry': ['libs/geometry/tests'], 'helix-log': ['libs/log/tests'], 'helix-formats': ['libs/formats/tests'], 'helix-platform': ['libs/platform/tests', 'libs/platform/examples'],
          'helix-services': ['libs/services/tests'], 'helix-render': ['libs/render/tests', 'libs/render/examples'], 'helix-raylib': ['engines/raylib/examples']}
-# The interfaces in helix.platform that contracts extend (rule 3): IPollable, the poll a program calls each frame.
-BASES = {'IPollable'}
+# The interfaces in helix.platform shared between contracts (rule 3): IPollable, the poll a program calls each frame, and IDecodedImage,
+# an image the decoder gives for the graphics to upload.
+SHARED = {'IPollable', 'IDecodedImage'}
 # The contracts built over another (rule 3): each device's adapters add their events to the events adapter of their API.
 DEVICES = {'keyboard': 'events', 'mouse': 'events', 'touch': 'events', 'gamepads': 'events', 'tilt': 'events'}
 
@@ -90,11 +92,11 @@ def contracts():
 
     owner = {}
     for name, path in top.items():
-        if re.fullmatch(r'I[A-Z]\w*', name) and name not in BASES:
+        if re.fullmatch(r'I[A-Z]\w*', name) and name not in SHARED:
             contract, todo = name[1:].lower(), [path]
             while todo:
                 for t in named(todo.pop()):
-                    if isinstance(t, Path) and t.parent == base and t not in owner and t.stem not in BASES:
+                    if isinstance(t, Path) and t.parent == base and t not in owner and t.stem not in SHARED:
                         owner[t] = contract
                         todo.append(t)
             owner[path] = contract
@@ -119,9 +121,9 @@ def contracts():
     violations = []
     for path in sorted(texts):
         where = path.relative_to(ROOT)
-        if path.parent == base and path.stem in BASES:
+        if path.parent == base and path.stem in SHARED:
             if named(path):
-                violations.append(f'{where}: a base, but names {", ".join(sorted(t if isinstance(t, str) else t.stem for t in named(path)))}')
+                violations.append(f'{where}: shared, but names {", ".join(sorted(t if isinstance(t, str) else t.stem for t in named(path)))}')
         elif path in owner:
             for t in sorted(named(path), key=str):
                 others = knows(t) - {owner[path], DEVICES.get(owner[path])}

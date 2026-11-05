@@ -18,8 +18,8 @@
   7. What an adopter of the platform writes against is visible: the adapter classes and what sits beside them in their API directory (an
      options class, an enum it takes) are not @:noCompletion, so the language server offers them. What no caller names is hidden: every type in an adapter's internal/ and in adapters/shared/ is @:noCompletion, so the
      language server doesn't offer it and the API reference leaves it out (dox and tools/gen_apidoc.py skip what's marked).
-  8. An adapter class makes public only its constructor and the members of the contract it implements: anything else a caller needs
-     belongs in the contract. Extern bridges (internal/) are the C's and exempt, as is an override, which the base class it extends made
+  8. An adapter class makes public only its constructor and the members of the interfaces it implements (its contract, or a shared
+     interface such as IDecodedImage): anything else a caller needs belongs in the contract. Extern bridges (internal/) are the C's and exempt, as is an override, which the base class it extends made
      public.
   9. An adapter's constructor takes nothing, or one <Adapter>Options: a @:structInit class in its own file beside the adapter
      (docs/CONVENTIONS.md), so every value is named at the call.

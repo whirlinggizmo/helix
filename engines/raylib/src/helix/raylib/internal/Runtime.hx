@@ -75,7 +75,10 @@ class Runtime {
 	/** What runs as the window closes, before it does: keeping the saves. */
 	public static final closing:Array<Void->Void> = [];
 
-	/** The files in memory, by path, as the loads brought them in: images decoded, and every file's bytes. */
+	/** The files in memory, by path, as the loads brought them in: an image file decoded for the GPU (`pictures`, until its texture is
+		made, then let go of), its pixels once a program asked for them (`images`, kept), and every file's bytes (`files`). */
+	public static final pictures = new Map<String, helix.platform.IDecodedImage>();
+
 	public static final images = new Map<String, helix.services.images.Image>();
 
 	public static final files = new Map<String, Bytes>();
@@ -230,13 +233,13 @@ class Runtime {
 		var image = lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".tga");
 		if (image)
 			imaging();
-		if (image ? images.exists(path) : files.exists(path)) {
+		if (image ? pictures.exists(path) || images.exists(path) : files.exists(path)) {
 			later(() -> done(null));
 			return;
 		}
 		if (image && files.exists(path)) {
-			decoding.decode(files.get(path), decoded -> {
-				images.set(path, decoded);
+			decoding.decodeForGpu(files.get(path), decoded -> {
+				pictures.set(path, decoded);
 				done(null);
 			}, error -> done('$path: $error'));
 			return;
@@ -248,8 +251,8 @@ class Runtime {
 			// The file's bytes are kept too, for LoadFileDataAsync; an image's are small beside its pixels.
 			files.set(path, bytes);
 			if (image) {
-				decoding.decode(bytes, decoded -> {
-					images.set(path, decoded);
+				decoding.decodeForGpu(bytes, decoded -> {
+					pictures.set(path, decoded);
 					done(null);
 				}, error -> done('$path: $error'));
 				return;
@@ -311,7 +314,34 @@ class Runtime {
 		@param key  The file's path.
 		@return  The image, or null when it isn't in memory. */
 	public static function image(key:String):Null<helix.services.images.Image> {
-		return images.get(key);
+		var image = images.get(key);
+		if (image == null) {
+			// Its pixels from the picture, read once and kept, as a load of the file brought it in for the GPU.
+			var picture = pictures.get(key);
+			if (picture != null)
+				images.set(key, image = new helix.services.images.Image(key, picture.width, picture.height, picture.pixels()));
+		}
+		return image;
+	}
+
+	/** Returns a file's image decoded for the GPU, while it is in memory: from its load until its texture is made (`Textures.handle`), or
+		until it is let go of (`forgetPicture`).
+
+		@param path  The file.
+		@return  The image, or null. */
+	public static function picture(path:String):Null<helix.platform.IDecodedImage>
+		return pictures.get(path);
+
+	/** Lets go of a file's image decoded for the GPU, freeing it: its texture is made, or it isn't wanted. A load of the file again
+		decodes its bytes again.
+
+		@param path  The file. */
+	public static function forgetPicture(path:String):Void {
+		var picture = pictures.get(path);
+		if (picture == null)
+			return;
+		pictures.remove(path);
+		picture.dispose();
 	}
 
 	/** Gets the saves, made and read when first asked for, so a program that never saves never reads them. A value set before the read

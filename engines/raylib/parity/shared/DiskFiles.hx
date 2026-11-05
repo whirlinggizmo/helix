@@ -81,6 +81,9 @@ class WhiteDecoder implements helix.platform.IImageDecoder {
 		decoded(p, 1, 1);
 	}
 
+	public function decodeForGpu(encoded:Bytes, decoded:helix.platform.IDecodedImage->Void, failed:String->Void):Void
+		decode(encoded, (pixels, width, height) -> decoded(new helix.platform.adapters.shared.PixelsImage(width, height, pixels)), failed);
+
 	public function poll():Void {}
 
 	public function dispose():Void {}

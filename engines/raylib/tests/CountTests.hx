@@ -455,6 +455,9 @@ private class SolidDecoder implements helix.platform.IImageDecoder {
 		waiting.push(() -> decoded(p, 2, 2));
 	}
 
+	public function decodeForGpu(encoded:Bytes, decoded:helix.platform.IDecodedImage->Void, failed:String->Void):Void
+		decode(encoded, (pixels, width, height) -> decoded(new helix.platform.adapters.shared.PixelsImage(width, height, pixels)), failed);
+
 	public function poll():Void {
 		var now = waiting.copy();
 		waiting.resize(0);

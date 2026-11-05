@@ -124,10 +124,8 @@ class RFilesAsync {
 	static function FileExistsAsync(fileName:String, answer:Bool->Void):Void {
 		var path = normalize(fileName);
 		Runtime.withSaves(saves -> {
-			if (saves.hasKey(SAVED + path)
-				|| saves.hasKey(SAVED_DATA + path)
-				|| Runtime.files.exists(path)
-				|| Runtime.images.exists(path))
+			if (saves.hasKey(SAVED + path) || saves.hasKey(SAVED_DATA + path) || Runtime.files.exists(path) || Runtime.images.exists(path)
+				|| Runtime.pictures.exists(path))
 				Runtime.later(() -> answer(true));
 			else
 				Runtime.fetch(path, error -> answer(error == null));
@@ -154,7 +152,8 @@ class RFilesAsync {
 	static function IsPathFileAsync(path:String, answer:Bool->Void):Void {
 		var file = normalize(path);
 		Runtime.withSaves(saves -> {
-			if (saves.hasKey(SAVED + file) || saves.hasKey(SAVED_DATA + file) || Runtime.file(file) != null || Runtime.images.exists(file)) {
+			if (saves.hasKey(SAVED + file) || saves.hasKey(SAVED_DATA + file) || Runtime.file(file) != null || Runtime.images.exists(file)
+				|| Runtime.pictures.exists(file)) {
 				Runtime.later(() -> answer(true));
 				return;
 			}

@@ -17,6 +17,9 @@ class PngDecoder implements helix.platform.IImageDecoder {
 		waiting.push(() -> result == null ? failed(error) : decoded(result.pixels, result.width, result.height));
 	}
 
+	public function decodeForGpu(encoded:Bytes, decoded:helix.platform.IDecodedImage->Void, failed:String->Void):Void
+		decode(encoded, (pixels, width, height) -> decoded(new helix.platform.adapters.shared.PixelsImage(width, height, pixels)), failed);
+
 	static function read(png:Bytes):{pixels:Bytes, width:Int, height:Int} {
 		var at = 8, width = 0, height = 0, channels = 0;
 		var idat = new haxe.io.BytesBuffer();

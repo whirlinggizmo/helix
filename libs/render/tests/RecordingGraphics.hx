@@ -70,6 +70,9 @@ class RecordingGraphics implements IGraphics {
 		draws.resize(0);
 	}
 
+	public function createTextureFromImage(image:helix.platform.IDecodedImage):Int
+		return createTexture(image.width, image.height, [image.pixels()]);
+
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int {
 		textures.set(next, {width: width, height: height, target: false});
 		return next++;

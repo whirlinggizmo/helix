@@ -391,6 +391,7 @@ images.load("player.png", image -> texture = graphics.createTexture(image.width,
 function new(decoder:IImageDecoder, assets:Assets)
 function load(path:String, loaded:Image -> Void, ?failed:String -> Void):() -> Void
 function decode(encoded:haxe.io.Bytes, decoded:Image -> Void, ?failed:String -> Void):() -> Void
+function decodeForGpu(encoded:haxe.io.Bytes, decoded:IDecodedImage -> Void, ?failed:String -> Void):() -> Void
 function poll():Void
 function dispose():Void
 ```
@@ -410,6 +411,13 @@ function dispose():Void
   - `decoded`: Receives the image, its `path` "".
   - `failed`: Optional. Receives why it couldn't be decoded. When omitted, the failure is logged.
   - returns: A function that aborts the decode; neither callback is called after it, and once one was, it does nothing.
+
+  One of `decoded` or `failed` is called once, at a later `poll`, never during this call.
+- `decodeForGpu`: Decodes an image file for the GPU (`IImageDecoder.decodeForGpu`): in a page the browser's decoded image, uploaded as it is by `IGraphics.createTextureFromImage`, so the program never holds its pixels; natively the pixels.
+  - `encoded`: The image file's bytes.
+  - `decoded`: Receives the image, which the receiver disposes once uploaded.
+  - `failed`: Optional. Receives why it couldn't be decoded. When omitted, the failure is logged.
+  - returns: A function that aborts the decode; neither callback is called after it, and once one was, it does nothing. An image decoded after the abort is disposed.
 
   One of `decoded` or `failed` is called once, at a later `poll`, never during this call.
 - `poll`: Delivers what was loaded and decoded since the last poll.

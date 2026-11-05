@@ -1,6 +1,7 @@
 package helix.services.images;
 
 import haxe.io.Bytes;
+import helix.platform.IDecodedImage;
 import helix.platform.IImageDecoder;
 import helix.platform.IPollable;
 import helix.services.assets.Assets;
@@ -60,16 +61,50 @@ class Images implements IPollable {
 		return request.abort;
 	}
 
+	/** Decodes an image file for the GPU (`IImageDecoder.decodeForGpu`): in a page the browser's decoded image, uploaded as it is by
+		`IGraphics.createTextureFromImage`, so the program never holds its pixels; natively the pixels.
+
+		One of `decoded` or `failed` is called once, at a later `poll`, never during this call.
+		@param encoded  The image file's bytes.
+		@param decoded  Receives the image, which the receiver disposes once uploaded.
+		@param failed  Optional. Receives why it couldn't be decoded. When omitted, the failure is logged.
+		@return  A function that aborts the decode; neither callback is called after it, and once one was, it does nothing. An image
+			decoded after the abort is disposed. */
+	public function decodeForGpu(encoded:Bytes, decoded:IDecodedImage->Void, ?failed:String->Void):Void->Void {
+		var request = new Request("", failed);
+		request.loadedForGpu = decoded;
+		requests.push(request);
+		decoder.decodeForGpu(encoded, image -> {
+			if (request.aborted || disposed) {
+				image.dispose();
+				return;
+			}
+			request.forGpu = image;
+			ready.push(request);
+		}, message -> {
+			if (request.aborted || disposed)
+				return;
+			request.message = message;
+			ready.push(request);
+		});
+		return request.abort;
+	}
+
 	/** Delivers what was loaded and decoded since the last poll. */
 	public function poll():Void {
 		var now = ready;
 		ready = [];
 		for (request in now) {
 			requests.remove(request);
-			if (request.aborted)
+			if (request.aborted) {
+				if (request.forGpu != null)
+					request.forGpu.dispose();
 				continue;
+			}
 			request.aborted = true;
-			if (request.image != null)
+			if (request.forGpu != null)
+				request.loadedForGpu(request.forGpu);
+			else if (request.image != null)
 				request.loaded(request.image);
 			else if (request.failed != null)
 				request.failed(request.message);
@@ -82,6 +117,9 @@ class Images implements IPollable {
 	public function dispose():Void {
 		for (request in requests)
 			request.abort();
+		for (request in ready)
+			if (request.forGpu != null)
+				request.forGpu.dispose();
 		requests = [];
 		ready = [];
 		disposed = true;
@@ -122,6 +160,12 @@ private class Request {
 
 	/** Gets or sets the image, once decoded. */
 	public var image:Null<Image> = null;
+
+	/** Gets or sets what receives the image decoded for the GPU (`decodeForGpu`). */
+	public var loadedForGpu:IDecodedImage->Void = null;
+
+	/** Gets or sets the image decoded for the GPU, once it is. */
+	public var forGpu:Null<IDecodedImage> = null;
 
 	/** Gets or sets why it failed. */
 	public var message = "";

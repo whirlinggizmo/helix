@@ -26,6 +26,15 @@ interface IGraphics {
 		@throws String  A size of 0 or less, no levels, a level of the wrong size, or a format this GPU cannot sample. */
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int;
 
+	/** Uploads a decoded image (`IImageDecoder.decodeForGpu`) as a texture of one level, format Rgba8.
+
+		In a page the browser's decoded image goes to the GPU as it is, with no premultiplying and no color conversion, so the texels are
+		the file's as the native decoder reads them. The image is still the caller's to dispose.
+		@param image  The decoded image.
+		@return  The texture's handle.
+		@throws String  A disposed image. */
+	public function createTextureFromImage(image:IDecodedImage):Int;
+
 	/** Uploads a cubemap.
 
 		A cubemap is sampled at a texture slot like any texture. The sampling's filter applies and its wrap is ignored.
