@@ -37,6 +37,12 @@ class Models {
 		if (mesh.gpu.buffers != null || mesh.vertexCount == 0)
 			return;
 		var g = Runtime.graphics;
+		if (!restoring) {
+			restoring = true;
+			Runtime.restoring.push(graphicsRestored);
+		}
+		if (!uploaded.contains(mesh.gpu))
+			uploaded.push(mesh.gpu);
 		mesh.gpu.buffers = [
 			for (i in 0...9)
 				i < 4 ? g.createStaticBuffer(bytesOf(mesh, i), bufferBytes(mesh, i), false) : 0
@@ -190,10 +196,28 @@ class Models {
 		mesh.gpu = new MeshGpu();
 	}
 
+	// Every holder of GPU buffers sent, until freed: what a restore forgets; and whether graphicsRestored is in Runtime.restoring, put
+	// there as the first mesh is sent.
+	static final uploaded:Array<MeshGpu> = [];
+	static var restoring = false;
+
+	/** Forgets every mesh's GPU buffers after the GPU's context was lost and given back (`Event.GraphicsRestored`): static buffers are
+		gone with it, so each mesh is sent again when next drawn (`upload`), from its vertices and the bytes `UpdateMeshBuffer` left
+		(`MeshGpu.contents`). */
+	public static function graphicsRestored():Void {
+		for (gpu in uploaded) {
+			gpu.buffers = null;
+			gpu.indexBuffer = 0;
+			gpu.edgeBuffer = 0;
+		}
+		uploaded.resize(0);
+	}
+
 	// Lets go of a mesh's hold on a holder of GPU buffers, freeing them when it was the last.
 	static function freeGpu(gpu:MeshGpu):Void {
 		if (--gpu.holders > 0)
 			return;
+		uploaded.remove(gpu);
 		function dispose(b:Int):Void
 			if (b != 0)
 				Runtime.graphics.disposeBuffer(b);

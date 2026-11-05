@@ -96,7 +96,7 @@ class Frame {
 	public final defaultProgram:Program;
 
 	/** The white texture shapes draw with, and a texture without an image reads as. */
-	public final white:Int;
+	public var white(default, null):Int;
 
 	// The index buffer quads are drawn through, each quad's first, second and third corners then its first, third and fourth; 0 until a
 	// quad is drawn. It holds quadCapacity quads, from the batch's first vertex.
@@ -105,7 +105,7 @@ class Frame {
 	var quadCapacity = 0;
 
 	// One record of zeros, for the attributes in CONSTANTS, read as an instance's so every vertex has it.
-	final constants:Int;
+	var constants:Int;
 
 	// The buffers replaced while the frame was asked for, freed once it is drawn.
 	final retired:Array<Int> = [];
@@ -220,14 +220,7 @@ class Frame {
 		this.graphics = graphics;
 		defaultProgram = new Program(graphics, Defaults.shader());
 		program = defaultProgram;
-		var texel = Bytes.alloc(4);
-		texel.fill(0, 4, 255);
-		white = graphics.createTexture(1, 1, [texel]);
-		var record = Bytes.alloc(CONSTANT_BYTES);
-		record.fill(0, CONSTANT_BYTES, 0);
-		for (column in 0...4)
-			record.setFloat((MATRIX_CONSTANT + column * 4 + 3) * 4, 1);
-		constants = graphics.createStaticBuffer(record, CONSTANT_BYTES, false);
+		makeOwn();
 		view = new Matrix3D();
 		projection = new Matrix3D();
 		pass = {
@@ -523,6 +516,27 @@ class Frame {
 		}
 		quadIndices = graphics.createStaticBuffer(bytes, bytes.length, true);
 		return quadIndices;
+	}
+
+	// The frame's own GPU things: the white texture and the constants' record (an identity matrix for the attributes no buffer feeds).
+	function makeOwn():Void {
+		var texel = Bytes.alloc(4);
+		texel.fill(0, 4, 255);
+		white = graphics.createTexture(1, 1, [texel]);
+		var record = Bytes.alloc(CONSTANT_BYTES);
+		record.fill(0, CONSTANT_BYTES, 0);
+		for (column in 0...4)
+			record.setFloat((MATRIX_CONSTANT + column * 4 + 3) * 4, 1);
+		constants = graphics.createStaticBuffer(record, CONSTANT_BYTES, false);
+	}
+
+	/** Makes the frame's own GPU things again after the GPU's context was lost and given back (`Event.GraphicsRestored`): the white
+		texture and the constants, gone with the context; the quads' indices, made again when next needed. The vertex buffer, the programs
+		and the pipelines keep their handles, remade by the platform. */
+	public function graphicsRestored():Void {
+		makeOwn();
+		quadIndices = 0;
+		quadCapacity = 0;
 	}
 
 	/** Flushes the batch, as a change rlgl flushes for does: `flush`. */

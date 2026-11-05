@@ -18,6 +18,18 @@ class CountingGraphics implements IGraphics {
 	/** How many disposals were of a handle not live. */
 	public var doubles = 0;
 
+	/** How many textures were made (createTexture, createTextureFromImage, createCubeTexture). */
+	public var textureCreations = 0;
+
+	/** How many static and stream buffers were made. */
+	public var bufferCreations = 0;
+
+	/** How many render targets were made. */
+	public var targetCreations = 0;
+
+	/** How many data textures were made. */
+	public var dataTextureCreations = 0;
+
 	function made(live:Map<Int, Bool>):Int {
 		var h = next++;
 		live.set(h, true);
@@ -57,22 +69,30 @@ class CountingGraphics implements IGraphics {
 	public function createTextureFromImage(image:helix.platform.IDecodedImage):Int
 		return createTexture(image.width, image.height, [image.pixels()]);
 
-	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int
+	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int {
+		textureCreations++;
 		return made(textures);
+	}
 
-	public function createCubeTexture(size:Int, levels:Array<Bytes>, format:TextureFormat):Int
+	public function createCubeTexture(size:Int, levels:Array<Bytes>, format:TextureFormat):Int {
+		textureCreations++;
 		return made(textures);
+	}
 
-	public function createDataTexture(width:Int, height:Int):Int
+	public function createDataTexture(width:Int, height:Int):Int {
+		dataTextureCreations++;
 		return handle();
+	}
 
 	public function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:Bytes):Void {}
 
 	public function canSample(format:TextureFormat):Bool
 		return true;
 
-	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0):Int
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0):Int {
+		targetCreations++;
 		return made(textures);
+	}
 
 	public function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int
 		return 1;
@@ -86,11 +106,15 @@ class CountingGraphics implements IGraphics {
 	public function disposeTexture(handle:Int):Void
 		gone(textures, handle);
 
-	public function createBuffer(capacityBytes:Int):Int
+	public function createBuffer(capacityBytes:Int):Int {
+		bufferCreations++;
 		return made(buffers);
+	}
 
-	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int
+	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int {
+		bufferCreations++;
 		return made(buffers);
+	}
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void {}
 

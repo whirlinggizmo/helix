@@ -294,7 +294,8 @@ Positions are in framebuffer pixels from the window's top-left corner. A key is 
   It arrives only natively. A page never receives it, because a closing tab gives no frame to decide in. A page's end is `IWindow.onClose`.
 - `FilesDropped(count:Int)`: Files were dropped on the window, count of them. `IWindow.readDroppedFile` reads each, 0 to count - 1, until the next `FilesDropped`.
   Every file dropped since the last poll is in the one event: natively from the desktop's drag and drop, in a page dropped on the canvas. A dropped directory is no file and isn't counted.
-- `GraphicsLost`: The GPU's context is gone. In a page, the WebGL context was lost to a GPU reset or an evicted tab.
+- `GraphicsLost`: The GPU's context is gone. In a page, the WebGL context was lost to a GPU reset or an evicted tab. Until `GraphicsRestored`, the graphics take every call and draw nothing.
+- `GraphicsRestored`: The GPU's context is back after `GraphicsLost`, and the graphics have remade what they could under their handles (`IGraphics`): textures and static buffers are gone, for their owner to make again.
 
 ## FilePath
 
@@ -963,6 +964,8 @@ Resources are textures of a few kinds, buffers, programs built from a `ShaderSou
 An adapter knows nothing of its caller's programs, layouts or pipelines. The caller describes them as data. Whoever creates a handle disposes it, once.
 
 A call that cannot be done throws before doing anything.
+
+**A lost context** (a page's `GraphicsLost`). While the context is lost, every call is taken and does nothing: a creation returns a handle, a draw draws nothing, `readPixels` fails. At `GraphicsRestored` the adapter has remade what it was given the description of, under the old handles: programs, pipelines, render targets and shadow maps (their texels cleared), data textures and stream buffers (rewritten each frame anyway). Textures (`createTexture`, `createTextureFromImage`, `createCubeTexture`) and static buffers are gone, those made during the loss too, because the adapter had only their contents. Their handles are disposed, and their owner makes them again from what it keeps. Natively a context isn't lost.
 
 ```haxe
 function createTexture(width:Int, height:Int, levels:Array<haxe.io.Bytes>, ?format:TextureFormat = Rgba8):Int
