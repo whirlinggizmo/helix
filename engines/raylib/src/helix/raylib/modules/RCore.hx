@@ -496,6 +496,7 @@ class RCore {
 
 	/** Begins a frame's drawing. */
 	static function BeginDrawing():Void {
+		Runtime.beginDrawing();
 		Runtime.frame.begin(GetScreenWidth(), GetScreenHeight());
 	}
 

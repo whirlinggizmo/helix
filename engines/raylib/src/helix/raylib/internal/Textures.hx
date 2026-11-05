@@ -56,7 +56,8 @@ class Textures {
 	public static function fromDecoded(path:String, picture:Null<helix.platform.IDecodedImage>):Int {
 		restores();
 		if (refetch == null)
-			refetch = (path, failed) -> Runtime.fetch(path, error -> if (error != null) failed());
+			// A file the fetch doesn't decode (a QOI's) brings no picture: gone for good then, like a failure.
+			refetch = (path, failed) -> Runtime.fetch(path, error -> if (error != null || Runtime.picture(path) == null) failed());
 		if (byPath.exists(path)) {
 			var id = byPath.get(path), e = entries.get(id);
 			e.refs++;

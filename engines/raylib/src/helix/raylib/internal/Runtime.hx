@@ -35,6 +35,11 @@ class Runtime {
 	public static var system:ISystem;
 	public static var window:Null<IWindow> = null;
 	public static var events:Null<IEvents> = null;
+
+	/** The platform's events adapter itself, which the device adapters are built over; `events` wraps it (`EarlyEvents`). */
+	public static var eventsAdapter:Null<IEvents> = null;
+
+	static var early:Null<EarlyEvents> = null;
 	public static var graphics:Null<IGraphics> = null;
 	public static var frame:Null<Frame> = null;
 	public static var time:Null<Time> = null;
@@ -430,7 +435,7 @@ class Runtime {
 		var samples = flags & helix.raylib.Raylib.FLAG_MSAA_4X_HINT != 0 ? 4 : 1;
 		#if js
 		window = new helix.platform.adapters.window.dom.DomWindowAdapter({canvasId: "canvas"});
-		events = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
+		eventsAdapter = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
 		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvasId: "canvas", msaaSampleCount: samples});
 		#else
 		var vsync = flags & helix.raylib.Raylib.FLAG_VSYNC_HINT != 0;
@@ -441,11 +446,12 @@ class Runtime {
 		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gl, msaaSampleCount: samples, vsync: vsync});
 		graphics = new helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter();
 		#end
-		events = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();
+		eventsAdapter = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();
 		window.requestSize(width, height);
 		// The exit key closes a native window, as raylib's does; a page has none.
 		keyboard();
 		#end
+		events = early = new EarlyEvents(eventsAdapter);
 		window.title = title;
 		// The device, in rlgl's lines as it writes them when the window opens; a backend other than GL names itself.
 		var device = graphics.device;
@@ -468,9 +474,9 @@ class Runtime {
 	public static function keyboard():Keyboard {
 		if (keyboardService == null) {
 			#if js
-			keyboardService = new Keyboard(events, new helix.platform.adapters.keyboard.dom.DomKeyboardAdapter({events: cast events}));
+			keyboardService = new Keyboard(events, new helix.platform.adapters.keyboard.dom.DomKeyboardAdapter({events: cast eventsAdapter}));
 			#else
-			keyboardService = new Keyboard(events, new helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapter({events: cast events}));
+			keyboardService = new Keyboard(events, new helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapter({events: cast eventsAdapter}));
 			#end
 			devices.push(keyboardService);
 		}
@@ -487,9 +493,9 @@ class Runtime {
 	public static function mouse():Mouse {
 		if (mouseService == null) {
 			#if js
-			mouseAdapter = new helix.platform.adapters.mouse.dom.DomMouseAdapter({events: cast events});
+			mouseAdapter = new helix.platform.adapters.mouse.dom.DomMouseAdapter({events: cast eventsAdapter});
 			#else
-			mouseAdapter = new helix.platform.adapters.mouse.sdl3.Sdl3MouseAdapter({events: cast events});
+			mouseAdapter = new helix.platform.adapters.mouse.sdl3.Sdl3MouseAdapter({events: cast eventsAdapter});
 			#end
 			mouseService = new Mouse(events, mouseAdapter);
 			devices.push(mouseService);
@@ -505,9 +511,9 @@ class Runtime {
 	public static function touch():Touch {
 		if (touchService == null) {
 			#if js
-			touchService = new Touch(events, new helix.platform.adapters.touch.dom.DomTouchAdapter({events: cast events}));
+			touchService = new Touch(events, new helix.platform.adapters.touch.dom.DomTouchAdapter({events: cast eventsAdapter}));
 			#else
-			touchService = new Touch(events, new helix.platform.adapters.touch.sdl3.Sdl3TouchAdapter({events: cast events}));
+			touchService = new Touch(events, new helix.platform.adapters.touch.sdl3.Sdl3TouchAdapter({events: cast eventsAdapter}));
 			#end
 			devices.push(touchService);
 		}
@@ -588,9 +594,9 @@ class Runtime {
 	public static function gamepads():Gamepads {
 		if (gamepadsService == null) {
 			#if js
-			gamepadsAdapter = new helix.platform.adapters.gamepads.dom.DomGamepadsAdapter({events: cast events});
+			gamepadsAdapter = new helix.platform.adapters.gamepads.dom.DomGamepadsAdapter({events: cast eventsAdapter});
 			#else
-			gamepadsAdapter = new helix.platform.adapters.gamepads.sdl3.Sdl3GamepadsAdapter({events: cast events});
+			gamepadsAdapter = new helix.platform.adapters.gamepads.sdl3.Sdl3GamepadsAdapter({events: cast eventsAdapter});
 			#end
 			gamepadsService = new Gamepads(events, gamepadsAdapter);
 			gamepadsService.deadZone = 0;
@@ -603,9 +609,9 @@ class Runtime {
 	public static function tilt():helix.services.input.Tilt {
 		if (tiltService == null) {
 			#if js
-			tiltService = new helix.services.input.Tilt(events, new helix.platform.adapters.tilt.dom.DomTiltAdapter({events: cast events}));
+			tiltService = new helix.services.input.Tilt(events, new helix.platform.adapters.tilt.dom.DomTiltAdapter({events: cast eventsAdapter}));
 			#else
-			tiltService = new helix.services.input.Tilt(events, new helix.platform.adapters.tilt.sdl3.Sdl3TiltAdapter({events: cast events}));
+			tiltService = new helix.services.input.Tilt(events, new helix.platform.adapters.tilt.sdl3.Sdl3TiltAdapter({events: cast eventsAdapter}));
 			#end
 			devices.push(tiltService);
 		}
@@ -715,10 +721,6 @@ class Runtime {
 				case FilesDropped(count):
 					if (dropping != null)
 						dropping(count);
-				case GraphicsLost:
-					graphicsLost();
-				case GraphicsRestored:
-					graphicsRestored();
 				case _:
 			}
 		for (device in devices)
@@ -738,6 +740,13 @@ class Runtime {
 	static function pollAll():Void {
 		for (p in polled)
 			p.poll();
+	}
+
+	/** Begins a frame's drawing (`BeginDrawing`): a look at the events so far for the GPU's context lost or given back, acted on before
+		the frame draws (`EarlyEvents`), the rest waiting for `poll`. */
+	public static function beginDrawing():Void {
+		if (early != null)
+			early.peek(graphicsLost, graphicsRestored);
 	}
 
 	/** The GPU's context is gone (`Event.GraphicsLost`): said once. The platform takes every call and draws nothing until it is back, so
