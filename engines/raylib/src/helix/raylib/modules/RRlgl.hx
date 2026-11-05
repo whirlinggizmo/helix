@@ -24,6 +24,11 @@ import helix.raylib.modules.RRlgl.*;
 @:noCompletion
 @:allow(helix.raylib)
 class RRlgl {
+	// The quads added here draw as sprites: the frame given its sprite shader as the module starts.
+	static function __init__():Void {
+		helix.raylib.internal.Sprites.register();
+	}
+
 	#if !macro
 	// ---- Matrices ----
 

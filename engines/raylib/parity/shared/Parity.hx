@@ -40,6 +40,32 @@ class Parity {
 		for (d in f.pass.draws) {
 			if (d.buffers != null)
 				continue;
+			if (d.sprite) {
+				// A sprite run: each record's quad as rlgl's batch holds it, its two triangles' corners 0 1 2 and 0 2 3, flat, no normal, the
+				// rectangle's u0, v0 then u0, v1 then u1, v1 then u1, v0.
+				for (i in d.firstInstance...d.firstInstance + d.instances) {
+					var at = i * 52;
+					for (c in [0, 1, 2, 0, 2, 3]) {
+						var u = f.spriteData.getFloat(at + (c < 2 ? 32 : 40)),
+							v = f.spriteData.getFloat(at + (c == 0 || c == 3 ? 36 : 44));
+						// Flat, with the normal rlgl's batch would hold, the frame's.
+						var v8 = [
+							f.spriteData.getFloat(at + c * 8),
+							f.spriteData.getFloat(at + c * 8 + 4),
+							0.,
+							u,
+							v,
+							f.nx,
+							f.ny,
+							f.nz
+						];
+						var values = [for (k in 0...8) if (depth || k != 2) Std.string(v8[k])];
+						var color = [for (k in 0...4) Std.string(f.spriteData.get(at + 48 + k))];
+						lines.push('$name T ' + values.concat(color).join(" "));
+					}
+				}
+				continue;
+			}
 			for (k in d.first...d.first + d.count) {
 				// Quads drawn through their indices, each one's four corners as two triangles, 0 1 2 and 0 2 3.
 				var i = d.indices == 0 ? k : Std.int(k / 6) * 4 + [0, 1, 2, 0, 2, 3][k % 6];

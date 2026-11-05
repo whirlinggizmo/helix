@@ -65,6 +65,13 @@ class DebugTests {
 		for (d in f.pass.draws) {
 			if (d.buffers != null || (d.primitive == helix.platform.Primitive.Lines) != lines)
 				continue;
+			if (d.sprite) {
+				// A sprite run: each record's four corners, flat.
+				for (i in d.firstInstance...d.firstInstance + d.instances)
+					for (c in 0...4)
+						out.push(new Vector3(f.spriteData.getFloat(i * 52 + c * 8), f.spriteData.getFloat(i * 52 + c * 8 + 4), 0));
+				continue;
+			}
 			for (k in d.first...d.first + d.count) {
 				var i = d.indices == 0 ? k : Std.int(k / 6) * 4 + [0, 1, 2, 0, 2, 3][k % 6];
 				out.push(new Vector3(f.data.getFloat(i * 36), f.data.getFloat(i * 36 + 4), f.data.getFloat(i * 36 + 8)));
@@ -316,8 +323,10 @@ class DebugTests {
 		var f = Runtime.frame;
 		f.flush();
 		var d = f.pass.draws[0];
-		var i = d.indices == 0 ? d.first : Std.int(d.first / 6) * 4;
-		check(f.data.get(i * 36 + 32) == BLUE.r && f.data.get(i * 36 + 35) == BLUE.a && f.data.get(i * 36 + 34) == BLUE.b, "the text is drawn in that color");
+		// The text's glyphs are a sprite run: its first record's color.
+		var at = d.firstInstance * 52 + 48;
+		check(d.sprite && f.spriteData.get(at) == BLUE.r && f.spriteData.get(at + 3) == BLUE.a && f.spriteData.get(at + 2) == BLUE.b,
+			"the text is drawn in that color");
 		f.draw(64, 64, true);
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});

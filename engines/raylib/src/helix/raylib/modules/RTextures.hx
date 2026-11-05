@@ -25,6 +25,11 @@ import helix.raylib.modules.RMath.*;
 @:noCompletion
 @:allow(helix.raylib)
 class RTextures {
+	// The quads added here draw as sprites: the frame given its sprite shader as the module starts.
+	static function __init__():Void {
+		helix.raylib.internal.Sprites.register();
+	}
+
 	#if !macro
 	// ---- Textures ----
 
@@ -164,11 +169,7 @@ class RTextures {
 		var bx = dx + x0 * c - y1 * s, by = dy + x0 * s + y1 * c;
 		var cx = dx + x1 * c - y1 * s, cy = dy + x1 * s + y1 * c;
 		var ex = dx + x1 * c - y0 * s, ey = dy + x1 * s + y0 * c;
-		var f = Runtime.frame;
-		f.vertex(handle, Frame.QUADS, ax, ay, 0, u0, v0, tint);
-		f.vertex(handle, Frame.QUADS, bx, by, 0, u0, v1, tint);
-		f.vertex(handle, Frame.QUADS, cx, cy, 0, u1, v1, tint);
-		f.vertex(handle, Frame.QUADS, ex, ey, 0, u1, v0, tint);
+		Runtime.frame.quad(handle, ax, ay, bx, by, cx, cy, ex, ey, u0, v0, u1, v1, tint);
 	}
 
 	// ---- Colors ----
