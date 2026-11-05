@@ -1,7 +1,7 @@
 # Conventions
 
-Rules for the libraries' public API, their examples, and the agents working on them. Names are predictable from what they do, so code
-and agents can find an API before reading it.
+Rules for the code: the libraries' public API and their examples. Names are predictable from what they do, so a reader finds an API
+before reading it. How work on the repository runs is in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ## No backward compatibility
 
@@ -44,21 +44,11 @@ or classes it adds (helix-math's, helix-geometry's, helix-render's and helix-ser
 a later rung links without naming it is caught, and `haxe.crypto.Sha256`, which no page links: a `ManifestCache` hashes with the browser's digest there, and with it natively), and a rung linking a library class no rung up to it declares, a declaration it doesn't link, run-time type
 inspection, or a library's `@:keep` fails, read from the build's `-xml` and a macro (`tools/haxe/Kept.hx`).
 
-Known, not fixed yet (each a rung's `@:adds` or a program's bytes show):
-
-- helix-services' `Models.load` chooses its reader by the extension (`loadGltf` and `loadObj` don't).
-- helix-services' `Screen` tests its saves each poll, so a program with a screen links `Saves`; helix-raylib's poll tests its keyboard,
-  so every raylib program links `Keyboard`.
-- helix-raylib's `Runtime.fetch` decodes a file by its extension, so a program loading text or data through it links the image
-  decoder; its `LoadImageFromMemoryAsync` and `LoadMusicStreamFromMemory` choose by their `fileType`, as raylib's do, and
-  `LoadWaveAsync` and `LoadWaveFromMemoryAsync` by a name or type known only as the program runs; and in a page its assets are made
-  over the server and its cache whatever a program loads.
-
 ## Names
 
 The API uses what Haxe gives: properties for values, classes for kinds, methods named for what they do. The earlier C frameworks' rules
-(a method for everything, so a binding could be made of it; a type field instead of a class) were theirs, not Haxe's, and were dropped
-.
+(a method for everything, so a binding could be made of it, and a type field instead of a class) were theirs, not Haxe's, and were
+dropped.
 
 | Kind | Form | Example |
 | --- | --- | --- |
@@ -223,7 +213,8 @@ Code is written to be read, by people and agents, not packed.
             @param failed  Receives why it can't be read.
             @return  The abort: nothing is called after it. */
 
-  `tools/gen_apidoc.py` renders the tags as a list under the summary, the remarks after.
+  `tools/gen_apidoc.py` renders the tags as a list under the summary, the remarks after. CONTRIBUTING.md says when the formatter,
+  `check_docs`, `check_types` and `gen_apidoc` run.
 - **Generated API documentation.** The doc comments are the API reference: dox (`dox` on lib.haxe.org) generates it from them, so what
   a developer or an agent reads is what the code says; `docs/api/<library>.md` is the same, committed, checked by `gen_apidoc --check`,
   and the platform's adapters, each one target's, are together in `docs/api/platform-adapters.md`, each marked with its target.
@@ -247,57 +238,6 @@ Code is written to be read, by people and agents, not packed.
     type, but for an optional argument a user leaves out; `check_adapters` requires the marks on the platform's bridges and helpers and
     their absence on its contracts and adapters. A new type is marked when it's added; when unsure, ask whether a user would name it.
 
-```console
-python3 tools/format.py         # lay out the Haxe source; --check only checks
-python3 tools/check_docs.py     # list public API without a doc comment, and docs naming what they mustn't
-python3 tools/check_types.py    # every library, every target it supports, in seconds
-python3 tools/gen_apidoc.py     # the API reference: docs/api (committed; --check in the tests) and build/api/index.html
-```
-
-- **Tools are named for what they are:** a runnable tool is verb_noun, words apart by underscores (`check_types.py`,
-  `measure_sizes.py`); a `check_` tool only reports, a `gen_` tool makes files (committed ones), the rest do what they say. Every tool
-  answers `--help` with its usage, from its docstring (a Node tool's leading comment), and does nothing else, and refuses an argument
-  it doesn't take (`tools/cli.py`); a module the tools import says so when it's run. BUILDING.md names every tool, and
-  `tools/check_tools.py` checks all of it. A module only imported by other tools is named for what it holds, a plain noun that can't
-  read as a verb (`variants.py`, `pins.py`). Front doors keep their noun (`helix.py`). What a program runs is Haxe, on a library's
-  class path under `helix.<library>.tools` (`helix.platform.tools.ShaderCompiler`), run in the compiler or its interpreter, so a program
-  needs no Python, and never compiled into a program.
-- **What a user runs needs only Haxe:** a library's examples build from hxml files beside them, so nothing else is installed to use a
-  library. Python and Node are the repository's own checks (`tools/`), never in a user's path.
-
-The formatter and dox are pinned in `dependencies.json` and installed into the repository's own haxelib (`build/haxelib`), as hxcpp is.
-
-## Build
-
-A build is named `<platform>-<config>-<backend>[-<option>...][-<sanitizer>]`, each part chosen from a fixed list, so a name says what
-was built and where it is (`tools/variants.py` holds the lists).
-
-- **platform:** what the program links against, this machine's for a native build: `linux-x64`, `linux-arm64`, `macos-arm64`,
-  `macos-x64`, `windows-x64-msvc` (hxcpp's default on Windows; `windows-x64-mingw` would be MinGW's, not supported yet), and `js` for
-  the browser.
-- **config:** `debug` or `release`. `release` is what ships: full dead-code elimination, the analyzer's optimizations, Terser in the
-  browser. `debug` finds faults: Haxe's `-debug` (a source map in the browser; natively hxcpp's debug runtime with stack lines and null
-  checks), the standard dead-code elimination, no optimizer, and the adapters' C unoptimized with its assertions and sokol_gfx's
-  validation on.
-- **backend:** always named, never implied by the platform: the exact API the build draws with, `webgl2`, `sdl3-gl`, `sdl3-gpu`.
-  `sdl3-gl` draws with sokol_gfx on GL; WebGPU's, when it comes, is `webgpu`. `sdl3-gpu` is SDL_GPU, whose driver (Vulkan, Direct3D 12,
-  Metal) SDL picks as the program starts; a program chooses it by constructing `Sdl3GpuGraphicsAdapter` (`-D sdl_gpu` in the
-  platform's examples). A `headless` backend (no window or GPU, for tests) is to come; none exists yet.
-- **options**, then a **sanitizer**, in that order: a name only adds, never `-noX`. None exists yet.
-
-## Tools
-
-A tool that reads Haxe code (a generator, a check, the API reference) reads it as the compiler describes it, `haxe -xml` or a macro run
-in the compile, never by matching its text: the compiler resolves types, parameters, metadata and doc comments as the code means them,
-where a pattern breaks on the next arrow or generic it didn't foresee. `tools/gen_raylib.py` reads helix-raylib's sections so, with a
-macro (`tools/haxe/Fields.hx`) for the macro functions `-xml` leaves out. A tool still matching text is changed when it is next
-touched.
-
-Shaders are read the same way. What a stage declares (its blocks, uniforms, attributes, textures) is decided from the shader
-compiler's reflection, and its includes are found by the compiler's include mechanism, never by matching the GLSL's text: helix-render
-once chose its shared blocks by matching its includes' paths, and moving its shader files broke that silently. A library naming its
-own blocks for every shader shares them where the compiled shader declares them (`ShaderSharedBlock.whereDeclared`).
-
 ## Examples
 
 - An example shows one thing with its library alone, on both targets, from hxml files beside it. Work that a program would otherwise
@@ -305,5 +245,3 @@ own blocks for every shader shares them where the compiled shader declares them 
 - An example declares each adapter with its contract's type, named for what the program uses it for: `var httpClient:IHttp = new
   HaxeHttpAdapter();`, `var shipped:IFileSystem = new NativeFileSystemAdapter({...})`, so a reader sees the adapter, the contract and
   its use on one line.
-- Native checks that drive a window run on a private display (`tools/private_display.py`), never on the user's desktop: a new window
-  takes the keyboard focus, so the user's typing would land in it.

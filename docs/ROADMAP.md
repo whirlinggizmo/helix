@@ -102,3 +102,15 @@ helix-raylib's size and speed where docs/speed.md records them.
     user's path (F73, GOALS 6).
   - helix-geometry: polygon triangulation returning indices, for textured polygons and extruded outlines (F23, F24); circle-vs-segment,
     rectangle and polygon contacts with normal and depth (F18).
+
+## Known size leaks
+
+What a rung's `@:adds` or a program's bytes show a program links without naming (docs/CONVENTIONS.md, "A program links only what it names"):
+
+- helix-services' `Models.load` chooses its reader by the extension (`loadGltf` and `loadObj` don't).
+- helix-services' `Screen` tests its saves each poll, so a program with a screen links `Saves`; helix-raylib's poll tests its keyboard,
+  so every raylib program links `Keyboard`.
+- helix-raylib's `Runtime.fetch` decodes a file by its extension, so a program loading text or data through it links the image
+  decoder; its `LoadImageFromMemoryAsync` and `LoadMusicStreamFromMemory` choose by their `fileType`, as raylib's do, and
+  `LoadWaveAsync` and `LoadWaveFromMemoryAsync` by a name or type known only as the program runs; and in a page its assets are made
+  over the server and its cache whatever a program loads.

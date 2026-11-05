@@ -5,7 +5,7 @@
      Python, cli.cjs's args in Node; a tool that doesn't is never run here, as it would do its work with --help ignored;
   2. answers --help with a usage line, exiting 0, within SECONDS;
   3. refuses an option no tool takes, exiting non-zero;
-  4. is named in BUILDING.md's table of tools, and the table names no tool that isn't there.
+  4. is named in CONTRIBUTING.md's table of tools, and the table names no tool that isn't there.
 
 The tools run in parallel, from the checkout. Run by helix.py test. Exits 1, listing each problem. Standard library only."""
 import re
@@ -52,8 +52,8 @@ def check(tool):
 
 
 def listed():
-    """The tools BUILDING.md's table names."""
-    text = (ROOT / 'BUILDING.md').read_text(encoding='utf-8')
+    """The tools CONTRIBUTING.md's table names."""
+    text = (ROOT / 'CONTRIBUTING.md').read_text(encoding='utf-8')
     return set(re.findall(r'^\| `([\w./]+\.(?:py|cjs))` \|', text, re.M))
 
 
@@ -62,8 +62,8 @@ def problems():
     with ThreadPoolExecutor() as pool:
         found = [p for ps in pool.map(check, every) for p in ps]
     named = listed()
-    found += [f'{tool}: not named in BUILDING.md\'s table of tools' for tool in every if tool not in named]
-    found += [f'{tool}: named in BUILDING.md\'s table of tools, but there is no such tool' for tool in sorted(named - set(every))]
+    found += [f'{tool}: not named in CONTRIBUTING.md\'s table of tools' for tool in every if tool not in named]
+    found += [f'{tool}: named in CONTRIBUTING.md\'s table of tools, but there is no such tool' for tool in sorted(named - set(every))]
     return found
 
 
