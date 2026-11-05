@@ -1,0 +1,1059 @@
+{
+ "rows": [
+  {
+   "contender": "helix-raylib",
+   "variant": "",
+   "program": "bunnymark",
+   "where": "page-gl",
+   "version": "helix-2.0 78f16db",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "100000": {
+     "meanMs": 9.35,
+     "p95Ms": 11.2,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "rawKB": 197.7,
+    "gzipKB": 43.8,
+    "brotliKB": 36.8
+   }
+  },
+  {
+   "contender": "raylib-c",
+   "variant": "",
+   "program": "bunnymark",
+   "where": "page-gl",
+   "version": "raylib 5.5",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "100000": {
+     "meanMs": 6.35,
+     "p95Ms": 6.5,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "rawKB": 357.5,
+    "gzipKB": 117.4,
+    "brotliKB": 99.5
+   }
+  },
+  {
+   "contender": "three",
+   "variant": "InstancedMesh",
+   "program": "bunnymark",
+   "where": "page-gl",
+   "version": "three.js 0.187.0",
+   "date": "2026-11-05",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "10000": {
+     "meanMs": 0.21,
+     "p95Ms": 0.6,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 0.96,
+     "p95Ms": 2,
+     "runs": 3
+    },
+    "100000": {
+     "meanMs": 1.89,
+     "p95Ms": 3.2,
+     "runs": 3
+    },
+    "150000": {
+     "meanMs": 2.78,
+     "p95Ms": 3.5,
+     "runs": 3
+    },
+    "200000": {
+     "meanMs": 4.61,
+     "p95Ms": 7.6,
+     "runs": 3
+    }
+   },
+   "held": 369000,
+   "size": {
+    "rawKB": 2141,
+    "gzipKB": 422,
+    "brotliKB": 317
+   },
+   "bundledSize": {
+    "rawKB": 548,
+    "gzipKB": 136,
+    "brotliKB": 113
+   }
+  },
+  {
+   "contender": "three",
+   "variant": "a Sprite each",
+   "program": "bunnymark",
+   "where": "page-gl",
+   "version": "three.js 0.187.0",
+   "date": "2026-11-05",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "10000": {
+     "meanMs": 14.75,
+     "p95Ms": 18.7,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 60.1,
+     "p95Ms": 71.7,
+     "runs": 3
+    },
+    "100000": {
+     "meanMs": 113.78,
+     "p95Ms": 130.3,
+     "runs": 3
+    },
+    "150000": {
+     "meanMs": 170.83,
+     "p95Ms": 196.1,
+     "runs": 3
+    },
+    "200000": {
+     "meanMs": 227.03,
+     "p95Ms": 258.7,
+     "runs": 3
+    }
+   },
+   "held": 16000,
+   "size": {
+    "rawKB": 2141,
+    "gzipKB": 422,
+    "brotliKB": 317
+   },
+   "bundledSize": {
+    "rawKB": 548,
+    "gzipKB": 136,
+    "brotliKB": 113
+   }
+  },
+  {
+   "contender": "helix-raylib",
+   "variant": "",
+   "program": "bunnymark",
+   "where": "page-vulkan",
+   "version": "helix-2.0 78f16db",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "10000": {
+     "meanMs": 0.84,
+     "p95Ms": 1.1,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 3.63,
+     "p95Ms": 3.8,
+     "runs": 3
+    },
+    "100000": {
+     "meanMs": 7.75,
+     "p95Ms": 8.4,
+     "runs": 3
+    },
+    "150000": {
+     "meanMs": 13.48,
+     "p95Ms": 14.4,
+     "runs": 3
+    },
+    "200000": {
+     "meanMs": 17.44,
+     "p95Ms": 18.3,
+     "runs": 3
+    }
+   },
+   "held": 179000,
+   "size": {
+    "rawKB": 197.7,
+    "gzipKB": 43.8,
+    "brotliKB": 36.8
+   }
+  },
+  {
+   "contender": "raylib-c",
+   "variant": "",
+   "program": "bunnymark",
+   "where": "page-vulkan",
+   "version": "raylib 5.5",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "10000": {
+     "meanMs": 0.76,
+     "p95Ms": 0.9,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 3.27,
+     "p95Ms": 3.4,
+     "runs": 3
+    },
+    "100000": {
+     "meanMs": 6.34,
+     "p95Ms": 6.9,
+     "runs": 3
+    },
+    "150000": {
+     "meanMs": 9.69,
+     "p95Ms": 10.8,
+     "runs": 3
+    },
+    "200000": {
+     "meanMs": 13.04,
+     "p95Ms": 15,
+     "runs": 3
+    }
+   },
+   "held": 227000,
+   "size": {
+    "rawKB": 357.5,
+    "gzipKB": 117.4,
+    "brotliKB": 99.5
+   }
+  },
+  {
+   "contender": "godot",
+   "variant": "MultiMesh",
+   "program": "bunnymark",
+   "where": "page-vulkan",
+   "version": "Godot 4.7.2",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "10000": {
+     "meanMs": 10.16,
+     "p95Ms": 11.4,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 46.27,
+     "p95Ms": 49.3,
+     "runs": 3
+    },
+    "100000": {
+     "meanMs": 91.0,
+     "p95Ms": 94.2,
+     "runs": 3
+    },
+    "150000": {
+     "meanMs": 135.61,
+     "p95Ms": 140,
+     "runs": 3
+    },
+    "200000": {
+     "meanMs": 183.95,
+     "p95Ms": 187.5,
+     "runs": 3
+    }
+   },
+   "held": 15000,
+   "size": {
+    "rawKB": 39800.0,
+    "gzipKB": 10125.4,
+    "brotliKB": 6964.2
+   }
+  },
+  {
+   "contender": "godot",
+   "variant": "a Sprite2D each",
+   "program": "bunnymark",
+   "where": "page-vulkan",
+   "version": "Godot 4.7.2",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "10000": {
+     "meanMs": 20.17,
+     "p95Ms": 23.1,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 102.34,
+     "p95Ms": 116.2,
+     "runs": 3
+    },
+    "100000": {
+     "meanMs": 203.58,
+     "p95Ms": 235,
+     "runs": 1
+    },
+    "150000": {
+     "meanMs": 285.45,
+     "p95Ms": 326.6,
+     "runs": 1
+    },
+    "200000": {
+     "meanMs": 376.67,
+     "p95Ms": 429.4,
+     "runs": 1
+    }
+   },
+   "held": 7000,
+   "size": {
+    "rawKB": 39800.0,
+    "gzipKB": 10125.4,
+    "brotliKB": 6964.1
+   }
+  },
+  {
+   "contender": "three",
+   "variant": "InstancedMesh",
+   "program": "bunnymark",
+   "where": "page-vulkan",
+   "version": "three.js 0.187.0",
+   "date": "2026-11-05",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "10000": {
+     "meanMs": 0.17,
+     "p95Ms": 0.3,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 0.63,
+     "p95Ms": 1.2,
+     "runs": 3
+    },
+    "100000": {
+     "meanMs": 1.44,
+     "p95Ms": 2,
+     "runs": 3
+    },
+    "150000": {
+     "meanMs": 2.26,
+     "p95Ms": 3.2,
+     "runs": 3
+    },
+    "200000": {
+     "meanMs": 3.08,
+     "p95Ms": 3.6,
+     "runs": 3
+    }
+   },
+   "held": 482000,
+   "size": {
+    "rawKB": 2141,
+    "gzipKB": 422,
+    "brotliKB": 317
+   },
+   "bundledSize": {
+    "rawKB": 548,
+    "gzipKB": 136,
+    "brotliKB": 113
+   }
+  },
+  {
+   "contender": "three",
+   "variant": "a Sprite each",
+   "program": "bunnymark",
+   "where": "page-vulkan",
+   "version": "three.js 0.187.0",
+   "date": "2026-11-05",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "10000": {
+     "meanMs": 14.2,
+     "p95Ms": 17.4,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 64.13,
+     "p95Ms": 76,
+     "runs": 3
+    },
+    "100000": {
+     "meanMs": 129.18,
+     "p95Ms": 143.6,
+     "runs": 3
+    },
+    "150000": {
+     "meanMs": 192.81,
+     "p95Ms": 220.8,
+     "runs": 3
+    },
+    "200000": {
+     "meanMs": 258.13,
+     "p95Ms": 290.5,
+     "runs": 3
+    }
+   },
+   "held": 16000,
+   "size": {
+    "rawKB": 2141,
+    "gzipKB": 422,
+    "brotliKB": 317
+   },
+   "bundledSize": {
+    "rawKB": 548,
+    "gzipKB": 136,
+    "brotliKB": 113
+   }
+  },
+  {
+   "contender": "helix1",
+   "variant": "a Sprite2D each",
+   "program": "bunnymark",
+   "where": "page-vulkan",
+   "version": "HeliX",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "10000": {
+     "meanMs": 2.64,
+     "p95Ms": 2.8,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 14.81,
+     "p95Ms": 15.4,
+     "runs": 3
+    },
+    "100000": {
+     "meanMs": 28.04,
+     "p95Ms": 29.3,
+     "runs": 3
+    },
+    "150000": {
+     "meanMs": 41.58,
+     "p95Ms": 45,
+     "runs": 3
+    },
+    "200000": {
+     "meanMs": 54.7,
+     "p95Ms": 56.6,
+     "runs": 3
+    }
+   },
+   "held": 63000,
+   "size": {
+    "rawKB": 216.4,
+    "gzipKB": 83.6,
+    "brotliKB": 75.5
+   }
+  },
+  {
+   "contender": "helix-raylib",
+   "variant": "",
+   "program": "bunnymark",
+   "where": "native-gl",
+   "version": "helix-2.0 78f16db",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "10000": {
+     "meanMs": 0.72,
+     "p95Ms": 0.87,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 2.98,
+     "p95Ms": 3.27,
+     "runs": 3
+    },
+    "100000": {
+     "meanMs": 6.02,
+     "p95Ms": 6.9,
+     "runs": 3
+    },
+    "150000": {
+     "meanMs": 9.57,
+     "p95Ms": 13.65,
+     "runs": 3
+    },
+    "200000": {
+     "meanMs": 15.73,
+     "p95Ms": 19.85,
+     "runs": 3
+    }
+   },
+   "held": 174000,
+   "size": {
+    "strippedMB": 7.92
+   }
+  },
+  {
+   "contender": "raylib-c",
+   "variant": "",
+   "program": "bunnymark",
+   "where": "native-gl",
+   "version": "raylib 5.5",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "10000": {
+     "meanMs": 0.75,
+     "p95Ms": 0.77,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 3.18,
+     "p95Ms": 3.21,
+     "runs": 3
+    },
+    "100000": {
+     "meanMs": 6.04,
+     "p95Ms": 6.14,
+     "runs": 3
+    },
+    "150000": {
+     "meanMs": 8.9,
+     "p95Ms": 9.11,
+     "runs": 3
+    },
+    "200000": {
+     "meanMs": 11.72,
+     "p95Ms": 11.8,
+     "runs": 3
+    }
+   },
+   "held": 279000,
+   "size": {
+    "strippedMB": 0.9
+   }
+  },
+  {
+   "contender": "godot",
+   "variant": "MultiMesh",
+   "program": "bunnymark",
+   "where": "native-gl",
+   "version": "Godot 4.7.2",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "10000": {
+     "meanMs": 1.45,
+     "p95Ms": 1.6,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 7.19,
+     "p95Ms": 7.48,
+     "runs": 3
+    },
+    "100000": {
+     "meanMs": 13.92,
+     "p95Ms": 14.81,
+     "runs": 3
+    },
+    "150000": {
+     "meanMs": 21.03,
+     "p95Ms": 22.81,
+     "runs": 3
+    },
+    "200000": {
+     "meanMs": 27.81,
+     "p95Ms": 29.89,
+     "runs": 3
+    }
+   },
+   "held": 111000,
+   "size": {
+    "strippedMB": 73.52
+   }
+  },
+  {
+   "contender": "helix-raylib",
+   "variant": "",
+   "program": "bunnymark",
+   "where": "native-sdlgpu",
+   "version": "helix-2.0 78f16db",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "10000": {
+     "meanMs": 0.66,
+     "p95Ms": 0.74,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 3.05,
+     "p95Ms": 3.29,
+     "runs": 3
+    },
+    "100000": {
+     "meanMs": 6.74,
+     "p95Ms": 7.16,
+     "runs": 3
+    },
+    "150000": {
+     "meanMs": 8.73,
+     "p95Ms": 9.28,
+     "runs": 3
+    },
+    "200000": {
+     "meanMs": 11.89,
+     "p95Ms": 12.68,
+     "runs": 3
+    }
+   },
+   "held": 268000,
+   "size": {
+    "strippedMB": 7.14
+   }
+  },
+  {
+   "contender": "godot",
+   "variant": "MultiMesh",
+   "program": "bunnymark",
+   "where": "native-vulkan",
+   "version": "Godot 4.7.2",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "10000": {
+     "meanMs": 1.31,
+     "p95Ms": 1.42,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 6.12,
+     "p95Ms": 6.76,
+     "runs": 3
+    },
+    "100000": {
+     "meanMs": 11.77,
+     "p95Ms": 13.13,
+     "runs": 3
+    },
+    "150000": {
+     "meanMs": 16.99,
+     "p95Ms": 18.2,
+     "runs": 3
+    },
+    "200000": {
+     "meanMs": 23.66,
+     "p95Ms": 25.75,
+     "runs": 3
+    }
+   },
+   "held": 131000,
+   "size": {
+    "strippedMB": 73.52
+   }
+  },
+  {
+   "contender": "helix-raylib",
+   "variant": "",
+   "program": "robots",
+   "where": "page-gl",
+   "version": "helix-2.0 78f16db",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "200": {
+     "meanMs": 20.42,
+     "p95Ms": 23.4,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "rawKB": 366.7,
+    "gzipKB": 78.5,
+    "brotliKB": 63.8
+   }
+  },
+  {
+   "contender": "raylib-c",
+   "variant": "CPU skinning",
+   "program": "robots",
+   "where": "page-gl",
+   "version": "raylib 5.5",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "200": {
+     "meanMs": 24.28,
+     "p95Ms": 27.3,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "rawKB": 568.6,
+    "gzipKB": 192.9,
+    "brotliKB": 159.5
+   }
+  },
+  {
+   "contender": "raylib-c",
+   "variant": "GPU skinning",
+   "program": "robots",
+   "where": "page-gl",
+   "version": "raylib 5.5",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "200": {
+     "meanMs": 8.4,
+     "p95Ms": 9.6,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "rawKB": 570.7,
+    "gzipKB": 192.6,
+    "brotliKB": 159.2
+   }
+  },
+  {
+   "contender": "three",
+   "variant": "",
+   "program": "robots",
+   "where": "page-gl",
+   "version": "three.js 0.187.0",
+   "date": "2026-11-05",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "50": {
+     "meanMs": 6.3,
+     "p95Ms": 11.7,
+     "runs": 3
+    },
+    "200": {
+     "meanMs": 34.5,
+     "p95Ms": 36.7,
+     "runs": 3
+    },
+    "400": {
+     "meanMs": 70.25,
+     "p95Ms": 78.9,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "rawKB": 2308,
+    "gzipKB": 460,
+    "brotliKB": 349
+   },
+   "bundledSize": {
+    "rawKB": 637,
+    "gzipKB": 160,
+    "brotliKB": 133
+   }
+  },
+  {
+   "contender": "helix-raylib",
+   "variant": "",
+   "program": "robots",
+   "where": "page-vulkan",
+   "version": "helix-2.0 78f16db",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "50": {
+     "meanMs": 3.16,
+     "p95Ms": 5.7,
+     "runs": 3
+    },
+    "200": {
+     "meanMs": 13.06,
+     "p95Ms": 15.9,
+     "runs": 3
+    },
+    "400": {
+     "meanMs": 26.04,
+     "p95Ms": 30.9,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "rawKB": 366.7,
+    "gzipKB": 78.5,
+    "brotliKB": 63.8
+   }
+  },
+  {
+   "contender": "raylib-c",
+   "variant": "CPU skinning",
+   "program": "robots",
+   "where": "page-vulkan",
+   "version": "raylib 5.5",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "50": {
+     "meanMs": 21.89,
+     "p95Ms": 23.4,
+     "runs": 3
+    },
+    "200": {
+     "meanMs": 86.41,
+     "p95Ms": 89,
+     "runs": 3
+    },
+    "400": {
+     "meanMs": 173.0,
+     "p95Ms": 178.8,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "rawKB": 568.6,
+    "gzipKB": 192.9,
+    "brotliKB": 159.5
+   }
+  },
+  {
+   "contender": "raylib-c",
+   "variant": "GPU skinning",
+   "program": "robots",
+   "where": "page-vulkan",
+   "version": "raylib 5.5",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "50": {
+     "meanMs": 2.64,
+     "p95Ms": 2.8,
+     "runs": 3
+    },
+    "200": {
+     "meanMs": 10.6,
+     "p95Ms": 12.6,
+     "runs": 3
+    },
+    "400": {
+     "meanMs": 24.66,
+     "p95Ms": 29.7,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "rawKB": 570.7,
+    "gzipKB": 192.6,
+    "brotliKB": 159.2
+   }
+  },
+  {
+   "contender": "godot",
+   "variant": "",
+   "program": "robots",
+   "where": "page-vulkan",
+   "version": "Godot 4.7.2",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "50": {
+     "meanMs": 13.2,
+     "p95Ms": 14.3,
+     "runs": 3
+    },
+    "200": {
+     "meanMs": 56.44,
+     "p95Ms": 60.6,
+     "runs": 3
+    },
+    "400": {
+     "meanMs": 163.98,
+     "p95Ms": 171.5,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "rawKB": 39800.0,
+    "gzipKB": 10125.4,
+    "brotliKB": 6964.2
+   }
+  },
+  {
+   "contender": "three",
+   "variant": "",
+   "program": "robots",
+   "where": "page-vulkan",
+   "version": "three.js 0.187.0",
+   "date": "2026-11-05",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "50": {
+     "meanMs": 5.13,
+     "p95Ms": 7.2,
+     "runs": 3
+    },
+    "200": {
+     "meanMs": 19.2,
+     "p95Ms": 20.1,
+     "runs": 3
+    },
+    "400": {
+     "meanMs": 39.97,
+     "p95Ms": 42.7,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "rawKB": 2308,
+    "gzipKB": 460,
+    "brotliKB": 349
+   },
+   "bundledSize": {
+    "rawKB": 637,
+    "gzipKB": 160,
+    "brotliKB": 133
+   }
+  },
+  {
+   "contender": "helix-raylib",
+   "variant": "",
+   "program": "robots",
+   "where": "native-gl",
+   "version": "helix-2.0 78f16db",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "50": {
+     "meanMs": 2.99,
+     "p95Ms": 5.51,
+     "runs": 3
+    },
+    "200": {
+     "meanMs": 12.14,
+     "p95Ms": 14.73,
+     "runs": 3
+    },
+    "400": {
+     "meanMs": 24.24,
+     "p95Ms": 27.38,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "strippedMB": 8.75
+   }
+  },
+  {
+   "contender": "raylib-c",
+   "variant": "CPU skinning",
+   "program": "robots",
+   "where": "native-gl",
+   "version": "raylib 5.5",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "50": {
+     "meanMs": 5.49,
+     "p95Ms": 5.59,
+     "runs": 3
+    },
+    "200": {
+     "meanMs": 22.22,
+     "p95Ms": 22.65,
+     "runs": 3
+    },
+    "400": {
+     "meanMs": 42.67,
+     "p95Ms": 48.31,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "strippedMB": 1.16
+   }
+  },
+  {
+   "contender": "raylib-c",
+   "variant": "GPU skinning",
+   "program": "robots",
+   "where": "native-gl",
+   "version": "raylib 5.5",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "50": {
+     "meanMs": 3.62,
+     "p95Ms": 3.66,
+     "runs": 3
+    },
+    "200": {
+     "meanMs": 15.13,
+     "p95Ms": 15.4,
+     "runs": 3
+    },
+    "400": {
+     "meanMs": 29.27,
+     "p95Ms": 30.21,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "strippedMB": 1.16
+   }
+  },
+  {
+   "contender": "godot",
+   "variant": "",
+   "program": "robots",
+   "where": "native-gl",
+   "version": "Godot 4.7.2",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "50": {
+     "meanMs": 15.08,
+     "p95Ms": 15.48,
+     "runs": 3
+    },
+    "200": {
+     "meanMs": 59.72,
+     "p95Ms": 61.61,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "strippedMB": 73.52
+   }
+  },
+  {
+   "contender": "helix-raylib",
+   "variant": "",
+   "program": "robots",
+   "where": "native-sdlgpu",
+   "version": "helix-2.0 78f16db",
+   "date": "2026-11-04",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "counts": {
+    "50": {
+     "meanMs": 2.79,
+     "p95Ms": 5.15,
+     "runs": 3
+    },
+    "200": {
+     "meanMs": 11.71,
+     "p95Ms": 14.26,
+     "runs": 3
+    },
+    "400": {
+     "meanMs": 23.5,
+     "p95Ms": 26.19,
+     "runs": 3
+    }
+   },
+   "held": null,
+   "size": {
+    "strippedMB": 7.96
+   }
+  }
+ ]
+}
