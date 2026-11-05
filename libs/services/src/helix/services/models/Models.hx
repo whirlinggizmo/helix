@@ -107,11 +107,11 @@ class Models {
 			function done():Void {
 				if (--left > 0 || aborted || finished)
 					return;
-				finished = true;
 				var found = try contents(file, path) catch (e:String) {
 					fail('$path: $e');
 					return;
 				}
+				finished = true;
 				loaded(new Model3D(path, found.meshes, found.materials, found.skins, found.transforms, found.skeleton, found.madeSkins, found.animations,
 					file.materials, decoded));
 			}
