@@ -2,7 +2,9 @@ package helix.services.assets;
 
 import haxe.DynamicAccess;
 import haxe.Json;
+#if !js
 import haxe.crypto.Sha256;
+#end
 import haxe.io.Bytes;
 import helix.log.Log;
 import helix.platform.IFileSystem;
@@ -90,8 +92,8 @@ class ManifestCache extends AssetCache {
 		copies.clearCopies(cleared, failed);
 	}
 
-	override function verify(bytes:Bytes, label:String):Bool
-		return hashOf(bytes) == label;
+	override function verify(bytes:Bytes, label:String, request:AssetRequest, verified:Bool->Void):Void
+		digest(bytes, hex -> request.later(() -> verified("sha256:" + hex == label)));
 
 	// The copies of the names an old manifest listed and a new one doesn't: files, and whole subdirectories.
 	function prune(server:ServerSource, level:String, old:Null<Manifest>, now:Null<Manifest>):Void {
@@ -184,9 +186,27 @@ class ManifestCache extends AssetCache {
 		});
 	}
 
-	/** Returns the hash of bytes in the form manifests write it, "sha256:" followed by 64 hex digits. */
-	static function hashOf(bytes:Bytes):String
-		return "sha256:" + Sha256.make(bytes).toHex();
+	/** Hashes bytes with SHA-256 and gives the 64 hex digits, as manifests write them after "sha256:": the browser's digest in a page,
+		off the main thread and so not during this call; Node's where a page's build runs there (the tests); Haxe's natively, during
+		the call. */
+	static function digest(bytes:Bytes, done:String->Void):Void {
+		#if js
+		// The bytes alone: a buffer's storage can run past its length.
+		var view = new js.lib.Uint8Array(bytes.getData(), 0, bytes.length);
+		if (js.Syntax.code("typeof process !== 'undefined' && process.versions && process.versions.node")) {
+			done(js.Syntax.code("require('crypto').createHash('sha256').update({0}).digest('hex')", view));
+			return;
+		}
+		js.Syntax.code("globalThis.crypto.subtle.digest('SHA-256', {0})", view).then((hashed:js.lib.ArrayBuffer) -> {
+			var digits = new StringBuf(), view = new js.lib.Uint8Array(hashed);
+			for (i in 0...view.length)
+				digits.add(StringTools.hex(view[i], 2).toLowerCase());
+			done(digits.toString());
+		});
+		#else
+		done(Sha256.make(bytes).toHex());
+		#end
+	}
 
 	/** Returns one directory's manifest, or null for anything that isn't one.
 

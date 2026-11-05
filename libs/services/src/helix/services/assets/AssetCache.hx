@@ -37,7 +37,13 @@ abstract class AssetCache {
 	/** Empties the copies, and forgets what this run holds. */
 	abstract function clearCopies(server:ServerSource, cleared:Void->Void, failed:String->Void):Void;
 
-	/** Returns whether downloaded bytes have the label they were downloaded for. */
-	function verify(bytes:Bytes, label:String):Bool
-		return true;
+	/** Tells whether downloaded bytes have the label they were downloaded for, at the request's next poll. A cache that doesn't label
+		says yes.
+
+		@param bytes  The download.
+		@param label  The label it was downloaded for.
+		@param request  Its request, which the answer waits on: aborted, nothing is called.
+		@param verified  Receives whether they match. */
+	function verify(bytes:Bytes, label:String, request:AssetRequest, verified:Bool->Void):Void
+		request.later(() -> verified(true));
 }

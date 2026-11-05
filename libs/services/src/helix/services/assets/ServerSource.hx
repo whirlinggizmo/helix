@@ -220,11 +220,12 @@ class ServerSource extends AssetSource {
 				readCopy(path, request, renewed, bytes -> got(bytes, null), missing, failed);
 			} else if (status >= 200 && status < 300) {
 				var bytes = buffer.getBytes();
-				if (label != null && !cache.verify(bytes, label)) {
-					failed('the download doesn\'t match the manifest');
-					return;
-				}
-				keep(path, request, bytes, recordOf(responseHeaders, label, bytes.length), replacing, waitForKeep, () -> got(bytes, source), failed);
+				function store():Void
+					keep(path, request, bytes, recordOf(responseHeaders, label, bytes.length), replacing, waitForKeep, () -> got(bytes, source), failed);
+				if (label == null)
+					store();
+				else
+					cache.verify(bytes, label, request, matches -> matches ? store() : failed('the download doesn\'t match the manifest'));
 			} else if (status >= 400 && status < 500) {
 				if (record != null || replacing)
 					cache.forget(this, path, () -> {}, _ -> {});

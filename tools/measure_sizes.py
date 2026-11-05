@@ -48,7 +48,7 @@ LIBRARY_PREFIX = 'helix.'
 # helix-services' assets, whose sources and caches each program links only those of it constructs).
 BY_CLASS = ('helix.math', 'helix.geometry', 'helix.render', 'helix.services.assets')
 # Standard library classes a rung declares in @:adds as it does a library's, being large or slow enough that only what asks for them should
-# link them: SHA-256, which only a ManifestCache hashes with.
+# link them: SHA-256, which a ManifestCache hashes with natively alone (a page uses the browser's digest), so no page links it.
 WATCHED = ('haxe.crypto.Sha256',)
 BASELINE = ROOT / 'docs/benchmarks.json'
 TABLE = ROOT / 'docs/benchmarks.md'
