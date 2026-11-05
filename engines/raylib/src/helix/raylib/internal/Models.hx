@@ -4,7 +4,10 @@ import helix.math.Matrix3D;
 import haxe.io.Bytes;
 import helix.raylib.*;
 import helix.formats.gltf.GltfMaterial;
+import helix.platform.IDecodedImage;
+import helix.services.images.Image;
 import helix.services.models.Model3D;
+import helix.services.models.ModelImage3D;
 import helix.raylib.modules.RMath;
 import helix.raylib.modules.RModels;
 
@@ -403,8 +406,12 @@ class Models {
 	}
 
 	// A load's materials: material 0 raylib's default, then the file's, as raylib numbers them and as raylib 6.2 reads them (`material`).
-	static function materialsOf(read:Model3D, shader:Shader):Array<Material>
-		return [defaultMaterial(shader)].concat([for (m in read.materials) material(read, m, shader)]);
+	// The first load's materials take the model's decoded images; what no material names is freed then.
+	static function materialsOf(read:Model3D, shader:Shader):Array<Material> {
+		var materials = [defaultMaterial(shader)].concat([for (m in read.materials) material(read, m, shader)]);
+		read.dispose();
+		return materials;
+	}
 
 	// raylib 6.2's LoadGLTF's materials part: the default material, and only when the material has a pbrMetallicRoughness block, the
 	// base color image and factor; the metallic-roughness image split into two grayscale textures, roughness from its green, metalness
@@ -412,58 +419,87 @@ class Models {
 	// set only when the material has that image; the normal, occlusion and emissive images; the emissive factor, alpha 255, only when it
 	// has an emissive image. A factor's byte is raylib's (unsigned char)(f*255), in floats. An image that couldn't be decoded leaves its
 	// map as it was. Each texture is kept by its image's file, or the model's path and the image's index (and the split's name), so the
-	// loads of a file share it while any holds it.
+	// loads of a file share it while any holds it; the first load takes the image decoded for the GPU from the model, and a texture made
+	// after it is gone decodes the image's file again (Textures.fromEncoded).
 	static function material(read:Model3D, m:GltfMaterial, shader:Shader):Material {
 		var material = defaultMaterial(shader), maps = material.maps;
 		if (!m.hasPbrMetallicRoughness)
 			return material;
-		function set(map:Int, index:Int):Void {
-			var image = index >= 0 ? read.images[index] : null;
-			if (image != null)
-				give(maps[map], image.path != "" ? image.path : '${read.path}#$index', () -> image, image.width, image.height,
-					Raylib.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+		// The images decoded for the GPU this material took from the model and still owns, by index: the metallic-roughness image is read
+		// for its split first, then given whole to a map naming it too, and what no map took is disposed at the end.
+		var owned = new Map<Int, IDecodedImage>();
+		function picture(index:Int):Null<IDecodedImage> {
+			if (owned.exists(index))
+				return owned.get(index);
+			var taken = read.images[index].takeDecoded();
+			if (taken != null)
+				owned.set(index, taken);
+			return taken;
 		}
-		set(Raylib.MATERIAL_MAP_ALBEDO, m.baseColorImageIndex);
-		maps[Raylib.MATERIAL_MAP_ALBEDO].color = byteColor(m.baseColorFactor, byte(m.baseColorFactor[3]));
 		if (m.metallicRoughnessImageIndex >= 0) {
 			var image = read.images[m.metallicRoughnessImageIndex];
 			if (image != null) {
-				var w = image.width, h = image.height;
-				// GetImageColor's green (roughness) or blue (metalness): the decoded image is RGBA. Made only when no load holds it.
-				function split(channel:Int):helix.services.images.Image {
+				// GetImageColor's green (roughness) or blue (metalness): the decoded image is RGBA. A texture made with no picture in hand
+				// decodes the file again.
+				function split(picture:IDecodedImage, channel:Int):Image {
+					var w = picture.width,
+						h = picture.height,
+						pixels = picture.pixels();
 					var gray = Bytes.alloc(w * h);
 					for (x in 0...w)
 						for (y in 0...h)
-							gray.set(y * w + x, image.pixels.get((y * w + x) * 4 + channel));
-					return new helix.services.images.Image("", w, h, Pixels.colors(gray, w, h, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE));
+							gray.set(y * w + x, pixels.get((y * w + x) * 4 + channel));
+					return new Image("", w, h, Pixels.colors(gray, w, h, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE));
 				}
 				var key = '${read.path}#${m.metallicRoughnessImageIndex}';
-				give(maps[Raylib.MATERIAL_MAP_ROUGHNESS], '$key:roughness', () -> split(1), w, h, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
-				give(maps[Raylib.MATERIAL_MAP_METALNESS], '$key:metalness', () -> split(2), w, h, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+				var rough = '$key:roughness', metal = '$key:metalness';
+				var p = Textures.hasPath(rough) && Textures.hasPath(metal) ? null : picture(m.metallicRoughnessImageIndex);
+				give(maps[Raylib.MATERIAL_MAP_ROUGHNESS], rough, image, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE, p, d -> split(d, 1));
+				give(maps[Raylib.MATERIAL_MAP_METALNESS], metal, image, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE, p, d -> split(d, 2));
 			}
 			maps[Raylib.MATERIAL_MAP_ROUGHNESS].value = Pixels.f32(m.roughness);
 			maps[Raylib.MATERIAL_MAP_METALNESS].value = Pixels.f32(m.metallic);
 		}
+		function set(map:Int, index:Int):Void {
+			var image = index >= 0 ? read.images[index] : null;
+			if (image == null)
+				return;
+			var key = image.path != "" ? image.path : '${read.path}#$index';
+			if (Textures.hasPath(key)) {
+				give(maps[map], key, image, Raylib.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8, null);
+				return;
+			}
+			// The texture owns the picture from here.
+			var p = picture(index);
+			owned.remove(index);
+			give(maps[map], key, image, Raylib.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8, p);
+		}
+		set(Raylib.MATERIAL_MAP_ALBEDO, m.baseColorImageIndex);
+		maps[Raylib.MATERIAL_MAP_ALBEDO].color = byteColor(m.baseColorFactor, byte(m.baseColorFactor[3]));
 		set(Raylib.MATERIAL_MAP_NORMAL, m.normalImageIndex);
 		set(Raylib.MATERIAL_MAP_OCCLUSION, m.occlusionImageIndex);
 		if (m.emissiveImageIndex >= 0) {
 			set(Raylib.MATERIAL_MAP_EMISSION, m.emissiveImageIndex);
 			maps[Raylib.MATERIAL_MAP_EMISSION].color = byteColor(m.emissiveFactor, 255);
 		}
+		for (p in owned)
+			p.dispose();
 		return material;
 	}
 
-	/** Gives a map the texture kept by a key, made of an image when no load holds it: the map holds it, the making's hold let go.
+	/** Gives a map the texture of one of a model's images, kept by a key (`Textures.fromEncoded`): the map holds it, the making's hold let
+		go.
 
 		@param map  The map.
-		@param key  The texture's key: its file, or a key of its own.
-		@param image  Returns its pixels, asked for only when no load holds it.
-		@param width  Its width, in pixels.
-		@param height  Its height, in pixels.
-		@param format  Its pixel format, as raylib numbers them. */
-	public static function give(map:MaterialMap, key:String, image:Void->helix.services.images.Image, width:Int, height:Int, format:Int):Void {
-		var id = Textures.fromImage(key, Textures.hasPath(key) ? null : image());
-		map.texture = new Texture2D(id, width, height, 1, format);
+		@param key  The texture's key: the image's file, or the model's path and the image's index.
+		@param image  The model's image: its file's bytes and size.
+		@param format  Its pixel format, as raylib numbers them.
+		@param picture  The image decoded for the GPU, or null when a load holds the texture already or to decode the file now. Without
+			`derive` the texture owns it; with `derive` it stays the caller's.
+		@param derive  Optional. Makes the texture's pixels of the decoded image, as `Textures.fromEncoded` takes it. */
+	public static function give(map:MaterialMap, key:String, image:ModelImage3D, format:Int, picture:Null<IDecodedImage>, ?derive:IDecodedImage->Image):Void {
+		var id = Textures.fromEncoded(key, image.encoded, picture, derive);
+		map.texture = new Texture2D(id, image.width, image.height, 1, format);
 		Textures.releaseHeld(id);
 	}
 

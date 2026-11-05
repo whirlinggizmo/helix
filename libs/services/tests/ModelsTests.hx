@@ -7,7 +7,8 @@ import helix.services.models.Models;
 
 /** Checks Models over fakes: a .gltf whose buffer and image are files of their own (named URI-encoded, beside it in a folder) and whose
 	second image is held in it, read with what it names; its nodes' transforms put into its mesh's positions and normals; a lines primitive
-	left out; the images decoded by index, one that won't decode null; a rig's skeleton (its joints and the node above them), skin,
+	left out; the images decoded for the GPU by index, each with its file's bytes and path, its decoded image taken once, one that won't
+	decode null, a load aborted disposing what it decoded; a rig's skeleton (its joints and the node above them), skin,
 	skinned mesh left unplaced beside its node's transform, and animation of its bones alone; a missing buffer failing the load by
 	name; and OBJ files: their libraries (a missing and a broken one skipped) and textures (a missing one null), a mesh for each group
 	and material, vertices made of corners, v turned, normals made length 1 or computed, MTL materials as glTF's, positions' colors, an
@@ -189,10 +190,12 @@ class ModelsTests {
 		check(house.images.length == 4
 			&& house.images[0].path == "objs/tex/wall.png"
 			&& house.images[0].width == 2
+			&& house.images[0].encoded.toString() == "2x2"
+			&& house.images[0].takeDecoded() != null
 			&& house.images[1] == null
 			&& house.images[2].width == 1
 			&& house.images[3].width == 3,
-			"its textures decoded, a missing one null");
+			"its textures decoded for the GPU with their files' bytes, a missing one null");
 
 		files.files.set("objs/colors.OBJ", Bytes.ofString("v 0 0 0 1 0 0\nv 1 0 0 0 1 0\nv 0 1 0 0 0 1\nf 1 2 3\n"));
 		var colored:Model3D = null;
@@ -263,7 +266,8 @@ class ModelsTests {
 			textures: [{source: 0}, {source: 1}],
 			images: [
 				{uri: "wood%20grain.png"},
-				{uri: "data:image/png;base64," + haxe.crypto.Base64.encode(Bytes.ofString("junk"))}
+				{uri: "data:image/png;base64," + haxe.crypto.Base64.encode(Bytes.ofString("junk"))},
+				{uri: "data:image/png;base64," + haxe.crypto.Base64.encode(Bytes.ofString("2x2"))}
 			],
 			buffers: [{uri: "mesh%20data.bin", byteLength: 72}],
 			bufferViews: [
@@ -313,10 +317,43 @@ class ModelsTests {
 		check(near(mesh.positions[0], 10) && near(mesh.positions[3], 12) && near(mesh.positions[7], 2), "the nodes' transforms in its positions");
 		check(near(mesh.normals[2], 1) && mesh.indices == null && model.meshMaterialIndices.join(",") == "0",
 			"its normals kept unit length; no indices; its material beside it");
-		check(model.materials[0].baseColorImageIndex == 0 && model.images.length == 2, "materials name images by index");
-		check(model.images[0] != null && model.images[0].width == 4 && model.images[0].path == "models/wood grain.png",
-			"the image beside it, its name decoded, decoded");
+		check(model.materials[0].baseColorImageIndex == 0 && model.images.length == 3, "materials name images by index");
+		var wood = model.images[0];
+		check(wood != null
+			&& wood.width == 4
+			&& wood.height == 4
+			&& wood.path == "models/wood grain.png"
+			&& wood.encoded.toString() == "4x4",
+			"the image beside it, its name decoded, decoded for the GPU with its file's bytes");
+		var picture = wood.takeDecoded();
+		check(picture != null && picture.width == 4 && picture.pixels()
+			.length == 64 && picture.pixels().get(0) == 7, "its decoded image taken: the decoder's");
+		check(wood.takeDecoded() == null, "taken once");
+		picture.dispose();
 		check(model.images[1] == null, "an image that won't decode: null");
+		var held = model.images[2];
+		check(held != null && held.path == "" && held.encoded.toString() == "2x2" && held.width == 2, "an image held in the file: no path, its bytes");
+		model.dispose();
+		check(held.takeDecoded() == null, "dispose frees what wasn't taken");
+
+		// A load aborted once its held images are decoded and delivered, while the image beside it is still to come: what it decoded is
+		// disposed.
+		var disposer = new DisposingDecoder(),
+			slowImages = new Images(disposer, assets);
+		var slow = new Models(assets, slowImages);
+		var abort = slow.load("models/thing.gltf", _ -> throw "an aborted load answered");
+		files.poll();
+		files.poll();
+		disposer.poll();
+		slowImages.poll();
+		check(disposer.made == 2 && disposer.disposed == 0, "the held images decoded and delivered, the file's own still to come");
+		abort();
+		for (_ in 0...5) {
+			files.poll();
+			disposer.poll();
+			slowImages.poll();
+		}
+		check(disposer.disposed == 2 && disposer.made == 2, 'an aborted load disposes the images it decoded: ${disposer.disposed} of ${disposer.made}');
 		check(model.skeleton == null
 			&& model.skins.length == 0
 			&& model.animations.length == 0
@@ -365,4 +402,60 @@ class ModelsTests {
 		Sys.println(report);
 		#end
 	}
+}
+
+// Decodes anything as a 1x1 image at its next poll, counting the images made and disposed.
+private class DisposingDecoder implements helix.platform.IImageDecoder {
+	public var made = 0;
+	public var disposed = 0;
+
+	final pending:Array<Void->Void> = [];
+
+	public function new() {}
+
+	public function decode(encoded:Bytes, decoded:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void
+		pending.push(() -> decoded(Bytes.alloc(4), 1, 1));
+
+	public function decodeForGpu(encoded:Bytes, decoded:helix.platform.IDecodedImage->Void, failed:String->Void):Void
+		pending.push(() -> {
+			made++;
+			decoded(new CountedImage(this));
+		});
+
+	public function poll():Void {
+		var now = pending.copy();
+		pending.resize(0);
+		for (f in now)
+			f();
+	}
+
+	public function dispose():Void {}
+}
+
+private class CountedImage implements helix.platform.IDecodedImage {
+	final decoder:DisposingDecoder;
+
+	public function new(decoder:DisposingDecoder)
+		this.decoder = decoder;
+
+	public var width(get, never):Int;
+
+	function get_width():Int
+		return 1;
+
+	public var height(get, never):Int;
+
+	function get_height():Int
+		return 1;
+
+	public var bitmapHandle(get, never):Int;
+
+	function get_bitmapHandle():Int
+		return 0;
+
+	public function pixels():Bytes
+		return Bytes.alloc(4);
+
+	public function dispose():Void
+		decoder.disposed++;
 }

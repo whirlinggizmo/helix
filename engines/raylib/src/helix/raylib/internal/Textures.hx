@@ -1,11 +1,14 @@
 package helix.raylib.internal;
 
+import haxe.io.Bytes;
+import helix.platform.IDecodedImage;
 import helix.services.images.Image;
 
 /** Holds every texture a program has, by the id its `Texture2D` carries: one GPU texture for each file however often it is loaded,
 	counted by its holders (docs/DECISIONS.md 25) and freed when the last lets go, and sent to the GPU when first drawn rather than when
-	loaded; a cubemap (`fromCube`) is one too. A holder is the program, from each load of it (`fromImage`, `fromHandle`, `fromCube`) until `releaseHeld`, or a material map given it
-	(`retain`, `release`); the program's holds are counted apart too, so `UnloadTexture` on a map's copy lets go of one of them first. */
+	loaded; a cubemap (`fromCube`) is one too. A holder is the program, from each load of it (`fromImage`, `fromDecoded`, `fromEncoded`,
+	`fromHandle`, `fromCube`) until `releaseHeld`, or a material map given it (`retain`, `release`); the program's holds are counted apart
+	too, so `UnloadTexture` on a map's copy lets go of one of them first. */
 @:noCompletion
 class Textures {
 	/** The id of raylib's default texture, rlgl's 1x1 white pixel (`rlGetTextureIdDefault`): the frame's white texture, which
@@ -79,6 +82,74 @@ class Textures {
 		return id;
 	}
 
+	/** Returns the id of a texture kept by a key of its own, a model's image's (`Models.give`), shared with its earlier makes while any
+		holds it, held by the program. It is made from the image decoded for the GPU, which goes to the GPU as it is when first drawn and is
+		disposed then, or from pixels made of it (`derive`). With no picture, and after the GPU's context is lost and given back
+		(`graphicsRestored`), the image file is decoded again (`Runtime.decoding`), the texture drawn as nothing until it is.
+
+		@param key  The key.
+		@param encoded  The image file's bytes, kept for decoding it again.
+		@param picture  Its image decoded for the GPU, or null to decode `encoded` now. Ignored when the key is held. Without `derive` the
+			texture owns it and disposes it once sent; with `derive` it stays the caller's.
+		@param derive  Optional. Makes the texture's pixels of the decoded image (one channel of it), in place of sending the image as it
+			is. An image decoded here is disposed after it.
+		@return  The id. */
+	public static function fromEncoded(key:String, encoded:Bytes, picture:Null<IDecodedImage>, ?derive:IDecodedImage->Image):Int {
+		restores();
+		if (redecode == null)
+			redecode = (e, id) -> {
+				e.refetching = true;
+				Runtime.decoding.decodeForGpu(e.encoded, decoded -> {
+					if (entries.get(id) != e || !e.refetching || e.gpu != 0) {
+						decoded.dispose();
+						return;
+					}
+					e.refetching = false;
+					e.width = decoded.width;
+					e.height = decoded.height;
+					if (e.derive != null) {
+						e.image = e.derive(decoded);
+						e.owned = true;
+						decoded.dispose();
+					} else
+						e.decoded = decoded;
+				}, _ -> if (entries.get(id) == e && e.refetching) {
+					e.refetching = false;
+					e.lost = true;
+				});
+			};
+		if (byPath.exists(key)) {
+			var id = byPath.get(key), e = entries.get(id);
+			e.refs++;
+			e.held++;
+			return id;
+		}
+		var id = next++;
+		var e:Entry = {
+			path: key,
+			image: null,
+			encoded: encoded,
+			derive: derive,
+			gpu: 0,
+			refs: 1,
+			held: 1
+		};
+		entries.set(id, e);
+		byPath.set(key, id);
+		if (picture == null) {
+			redecode(e, id);
+			return id;
+		}
+		e.width = picture.width;
+		e.height = picture.height;
+		if (derive != null) {
+			e.image = derive(picture);
+			e.owned = true;
+		} else
+			e.decoded = picture;
+		return id;
+	}
+
 	/** Returns a texture's width in pixels, or 0 for an id with no texture (a render texture's or the default font's, made elsewhere, is 0 too).
 
 		@param id  The texture's id. */
@@ -112,8 +183,16 @@ class Textures {
 		var pixels = picture.pixels();
 		e.image = new Image(e.path, picture.width, picture.height, pixels.sub(0, pixels.length));
 		e.owned = true;
+		dropPicture(e);
+	}
+
+	// Lets go of a texture's image decoded for the GPU: a file's through Runtime.pictures, which holds it; a key's or no file's disposed here.
+	static function dropPicture(e:Entry):Void {
+		var picture = e.decoded;
 		e.decoded = null;
-		if (e.path != "")
+		if (picture == null)
+			return;
+		if (e.path != "" && e.encoded == null)
 			Runtime.forgetPicture(e.path);
 		else
 			picture.dispose();
@@ -148,6 +227,10 @@ class Textures {
 	// none links no mipmap builder.
 	static var remipmap:Null<Entry->Void> = null;
 
+	// Decodes a keyed texture's image file again (Runtime.decoding), set as the first is made (fromEncoded), so a program loading no model
+	// links no decoding here.
+	static var redecode:Null<(e:Entry, id:Int) -> Void> = null;
+
 	static function restores():Void {
 		if (restoring)
 			return;
@@ -167,9 +250,9 @@ class Textures {
 
 	/** Sends every texture again, after the GPU's context was lost and given back (`Event.GraphicsRestored`): its GPU copy is gone, so each
 		goes to the GPU again when next drawn, from what is in memory. A file's is decoded again from its bytes (`Runtime.fetch`), or taken
-		from its pixels when a program asked for them; one kept (`keepPixels`) from them; a render texture's handle the platform remade,
-		blank. The rest, pixels sent once and let go of (`LoadTextureFromImage`'s, a cubemap's), can't come back: each is drawn as nothing
-		and warned of once. */
+		from its pixels when a program asked for them; a model's image's from its file's bytes kept with it (`fromEncoded`); one kept
+		(`keepPixels`) from them; a render texture's handle the platform remade, blank. The rest, pixels sent once and let go of
+		(`LoadTextureFromImage`'s, a cubemap's), can't come back: each is drawn as nothing and warned of once. */
 	public static function graphicsRestored():Void {
 		samplings.clear();
 		cubeHandles.clear();
@@ -189,6 +272,10 @@ class Textures {
 			e.levels = null;
 			if (e.cube != null) {
 				e.lost = true;
+				continue;
+			}
+			if (e.encoded != null) {
+				redecode(e, id);
 				continue;
 			}
 			var pixels = e.path != "" ? Runtime.images.get(e.path) : null;
@@ -327,9 +414,9 @@ class Textures {
 			return null;
 		if (e.image != null)
 			return e.image;
-		if (e.decoded != null && e.path == "")
-			return new Image("", e.decoded.width, e.decoded.height, e.decoded.pixels());
-		return e.path != "" ? Runtime.image(e.path) : null;
+		if (e.decoded != null && (e.path == "" || e.encoded != null))
+			return new Image(e.path, e.decoded.width, e.decoded.height, e.decoded.pixels());
+		return e.path != "" && e.encoded == null ? Runtime.image(e.path) : null;
 	}
 
 	/** Returns a texture's GPU handle, sending it to the GPU if this is its first use.
@@ -342,8 +429,8 @@ class Textures {
 		var e = entries.get(id);
 		if (e == null)
 			return 0;
-		if (e.gpu == 0 && e.refetching) {
-			// Decoded again after a restore: its picture, once it is there.
+		if (e.gpu == 0 && e.refetching && e.encoded == null) {
+			// A file decoded again after a restore: its picture, once it is there.
 			var picture = Runtime.picture(e.path);
 			if (picture != null) {
 				e.decoded = picture;
@@ -354,16 +441,14 @@ class Textures {
 			e.warned = true;
 			Runtime.log(4, 'TEXTURE: [ID $id] Lost with the GPU context and not in memory: drawn as nothing');
 		}
-		if (e.gpu == 0 && e.decoded != null && e.mipmapped && remipmap != null)
+		if (e.gpu == 0 && e.mipmapped && e.levels == null && remipmap != null && (e.decoded != null || e.image != null))
 			remipmap(e);
 		if (e.gpu == 0 && e.decoded != null) {
 			e.gpu = GpuMemory.texture(Runtime.graphics.createTextureFromImage(e.decoded), e.decoded.width * e.decoded.height * 4);
 			if (e.sampling != null)
 				samplings.set(e.gpu, e.sampling);
 			// It is on the GPU now, and its picture isn't needed again: a load of the file again decodes it again.
-			e.decoded = null;
-			if (e.path != "")
-				Runtime.forgetPicture(e.path);
+			dropPicture(e);
 		} else if (e.gpu == 0 && e.image != null) {
 			var levels = e.levels == null ? [e.image.pixels] : [e.image.pixels].concat(e.levels);
 			e.gpu = GpuMemory.texture(Runtime.graphics.createTexture(e.image.width, e.image.height, levels), levelBytes(levels));
@@ -482,13 +567,7 @@ class Textures {
 			return true;
 		if (--e.refs > 0)
 			return false;
-		if (e.decoded != null) {
-			if (e.path != "")
-				Runtime.forgetPicture(e.path);
-			else
-				e.decoded.dispose();
-			e.decoded = null;
-		}
+		dropPicture(e);
 		if (e.gpu != 0) {
 			Runtime.graphics.disposeTexture(e.gpu);
 			GpuMemory.freed(e.gpu);
@@ -516,7 +595,11 @@ private class Entry {
 	public final path:String;
 	public var image:Null<Image>;
 	// Its image decoded for the GPU (a file's, Runtime.pictures') while it isn't on the GPU and no pixels of it were asked for.
-	public var decoded:Null<helix.platform.IDecodedImage> = null;
+	public var decoded:Null<IDecodedImage> = null;
+	// A keyed texture's image file (fromEncoded), decoded again after a restore; null for every other texture.
+	public var encoded:Null<Bytes> = null;
+	// What makes a keyed texture's pixels of its decoded image (fromEncoded's derive), or null to send the image as it is.
+	public var derive:Null<IDecodedImage->Image> = null;
 	public var width:Int = 0;
 	public var height:Int = 0;
 	// Its mipmaps while it isn't on the GPU, or null for none.

@@ -105,18 +105,22 @@ class GpuModel3D {
 		return model.skins[skinIndex].computeSkinning(bones, skinnings[skinIndex]);
 	}
 
-	// A model uploaded: its textures, meshes and materials.
+	// A model uploaded: its textures, meshes and materials. Each image's decoded image is taken from the model and disposed once sent: as it
+	// is without mipmaps, from its pixels with them (built on the CPU).
 
 	@:allow(helix.render)
-	static function make(renderer:Renderer, model:Model3D, upload:Image->Texture2D, mipmapFilter:helix.platform.MipmapFilter,
-			colorSpace:ColorSpace):GpuModel3D {
+	static function make(renderer:Renderer, model:Model3D, mipmapped:Bool, colorSpace:ColorSpace):GpuModel3D {
 		var textures:Array<Null<Texture2D>> = [
-			for (image in model.images)
-				if (image == null) null else {
-					var t = upload(image);
-					t.sampling = new helix.platform.Sampling(Linear, Repeat, Repeat, mipmapFilter);
+			for (image in model.images) {
+				var decoded = image == null ? null : image.takeDecoded();
+				if (decoded == null) null else {
+					var t = mipmapped ? renderer.createTextureMipmapped(new Image(image.path, decoded.width, decoded.height,
+						decoded.pixels())) : renderer.createTextureFromImage(decoded);
+					decoded.dispose();
+					t.sampling = new helix.platform.Sampling(Linear, Repeat, Repeat, mipmapped ? Linear : None);
 					t;
 				}
+			}
 		];
 		var meshes = [for (m in model.meshes) renderer.createMesh(m)];
 		var obj = StringTools.endsWith(model.path.toLowerCase(), ".obj");
