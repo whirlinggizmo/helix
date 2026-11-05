@@ -436,6 +436,7 @@ class Runtime {
 		#if js
 		window = new helix.platform.adapters.window.dom.DomWindowAdapter({canvasId: "canvas"});
 		eventsAdapter = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
+		events = early = new EarlyEvents(eventsAdapter);
 		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvasId: "canvas", msaaSampleCount: samples});
 		#else
 		var vsync = flags & helix.raylib.Raylib.FLAG_VSYNC_HINT != 0;
@@ -447,11 +448,11 @@ class Runtime {
 		graphics = new helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter();
 		#end
 		eventsAdapter = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();
+		events = early = new EarlyEvents(eventsAdapter);
 		window.requestSize(width, height);
 		// The exit key closes a native window, as raylib's does; a page has none.
 		keyboard();
 		#end
-		events = early = new EarlyEvents(eventsAdapter);
 		window.title = title;
 		// The device, in rlgl's lines as it writes them when the window opens; a backend other than GL names itself.
 		var device = graphics.device;
