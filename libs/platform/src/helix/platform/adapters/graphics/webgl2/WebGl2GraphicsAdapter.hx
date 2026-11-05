@@ -157,6 +157,29 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	function get_maxMsaaSampleCount():Int
 		return msaaSampleCount > 1 ? msaaSampleCount : gl.getParameter(WebGL2RenderingContext.MAX_SAMPLES) >= 4 ? 4 : 1;
 
+	public var device(get, never):GraphicsDevice;
+
+	function get_device():GraphicsDevice {
+		var vendor:String = gl.getParameter(WebGL2RenderingContext.VENDOR),
+			renderer:String = gl.getParameter(WebGL2RenderingContext.RENDERER);
+		// Chrome and Safari mask the names ("WebKit", "WebKit WebGL") and give them through the extension; Firefox gives its own and
+		// warns when the extension is asked for.
+		if (StringTools.startsWith(renderer, "WebKit")) {
+			var names = gl.getExtension("WEBGL_debug_renderer_info");
+			if (names != null) {
+				vendor = gl.getParameter(names.UNMASKED_VENDOR_WEBGL);
+				renderer = gl.getParameter(names.UNMASKED_RENDERER_WEBGL);
+			}
+		}
+		return {
+			api: "WebGL 2",
+			vendor: vendor,
+			renderer: renderer,
+			version: gl.getParameter(WebGL2RenderingContext.VERSION),
+			shadingLanguage: gl.getParameter(WebGL2RenderingContext.SHADING_LANGUAGE_VERSION)
+		};
+	}
+
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int {
 		if (width <= 0 || height <= 0 || levels.length == 0 || !canSample(format))
 			throw "Invalid texture";

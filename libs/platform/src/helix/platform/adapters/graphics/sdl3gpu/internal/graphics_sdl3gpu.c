@@ -225,6 +225,19 @@ int helix_sdl3gpu_setup(void){
 int helix_sdl3gpu_shader_format(void){return shader_format==SDL_GPU_SHADERFORMAT_SPIRV?0:shader_format==SDL_GPU_SHADERFORMAT_MSL?1:2;}
 int helix_msaa_samples(void){return window_samples;}
 int helix_max_msaa_samples(void){return max_samples;}
+/* The device as SDL names it (IGraphics.device): 0 the API, 1 the driver's name, 2 the GPU, 3 the driver's version, 4 the shader format; "" for
+   one SDL doesn't give. */
+const char *helix_device_info(int field){
+ if(!device)return "";
+ const char *driver=SDL_GetGPUDeviceDriver(device);
+ if(field==0)return !driver?"":strcmp(driver,"vulkan")==0?"Vulkan":strcmp(driver,"metal")==0?"Metal":strcmp(driver,"direct3d12")==0?"Direct3D 12":driver;
+ if(field==4)return shader_format==SDL_GPU_SHADERFORMAT_SPIRV?"SPIR-V":shader_format==SDL_GPU_SHADERFORMAT_MSL?"MSL":"DXBC";
+ const SDL_PropertiesID p=SDL_GetGPUDeviceProperties(device);
+ if(field==1)return SDL_GetStringProperty(p,SDL_PROP_GPU_DEVICE_DRIVER_NAME_STRING,"");
+ if(field==2)return SDL_GetStringProperty(p,SDL_PROP_GPU_DEVICE_NAME_STRING,"");
+ if(field==3){const char *info=SDL_GetStringProperty(p,SDL_PROP_GPU_DEVICE_DRIVER_INFO_STRING,NULL);return info?info:SDL_GetStringProperty(p,SDL_PROP_GPU_DEVICE_DRIVER_VERSION_STRING,"");}
+ return "";
+}
 /* The power of two of a sample count (1, 2, 4 or 8). */
 static int power_of(int samples){return samples>=8?3:samples>=4?2:samples>=2?1:0;}
 

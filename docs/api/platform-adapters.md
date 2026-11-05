@@ -508,6 +508,7 @@ It builds programs from a `ShaderSource`'s GLSL ES 300 and pipelines from a `Pip
 function new(options:WebGl2GraphicsAdapterOptions)
 var msaaSampleCount(get, never):Int
 var maxMsaaSampleCount(get, never):Int
+var device(get, never):GraphicsDevice
 function createTexture(width:Int, height:Int, levels:Array<haxe.io.Bytes>, ?format:TextureFormat = Rgba8):Int
 function createDataTexture(width:Int, height:Int):Int
 function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:haxe.io.Bytes):Void

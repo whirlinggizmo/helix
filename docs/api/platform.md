@@ -331,6 +331,18 @@ function toString():String
 
 - `toString`: Returns the value's name as written (Nearest, Linear): what Std.string, interpolation and trace show.
 
+## GraphicsDevice
+
+*typedef* in [`libs/platform/src/helix/platform/GraphicsDevice.hx`](../../libs/platform/src/helix/platform/GraphicsDevice.hx), `import helix.platform.GraphicsDevice;`
+
+Represents the GPU and driver a graphics adapter draws with, as the graphics API reports them. A value the API doesn't report is "".
+
+- `version:String`: The API's or the driver's version.
+- `vendor:String`: The GPU's maker, or the driver's.
+- `shadingLanguage:String`: The shading language the adapter compiles programs for, and its version.
+- `renderer:String`: The GPU, or the software renderer drawing in its place.
+- `api:String`: The graphics API: "WebGL 2", "OpenGL", "Vulkan", "Metal" or "Direct3D 12".
+
 ## GraphicsUnavailableException
 
 *class* in [`libs/platform/src/helix/platform/GraphicsUnavailableException.hx`](../../libs/platform/src/helix/platform/GraphicsUnavailableException.hx), `import helix.platform.GraphicsUnavailableException;`, extends `Exception`
@@ -935,6 +947,7 @@ function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:hax
 function canSample(format:TextureFormat):Bool
 var msaaSampleCount(get, never):Int
 var maxMsaaSampleCount(get, never):Int
+var device(get, never):GraphicsDevice
 function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int
 function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:Bool = true, ?msaaSampleCount:Int = 0):Int
 function canRender(format:TextureFormat):Bool
@@ -1007,6 +1020,8 @@ function dispose():Void
   It can be fewer than the window asked for. A render target created with a sample count of 0 is drawn with the same number, where its format takes it.
 - `maxMsaaSampleCount`: Gets the largest number of multisampling samples a window could ask for here, at most 8.
   A browser only switches antialiasing on or off, and chooses its own count. In a browser this is therefore the count the canvas has when antialiasing is on, which is 4 where the GPU supports 4, and 1 otherwise. A render target's limit is `getMaxRenderTargetMsaaSampleCount`.
+- `device`: Gets the GPU and driver drawing, as the graphics API reports them, for a program to log or show.
+  A browser may mask them: the adapter asks for the unmasked names (`WEBGL_debug_renderer_info`) where the browser gives them, and otherwise has the browser's own, such as "WebKit WebGL".
 - `getMaxRenderTargetMsaaSampleCount`: Returns the largest number of multisampling samples a render target of a format can be drawn with here, at most 8.
   - `format`: The format.
   - returns: The largest sample count `createRenderTarget` gives a target of the format.

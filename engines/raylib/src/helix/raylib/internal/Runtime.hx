@@ -417,6 +417,13 @@ class Runtime {
 		keyboard();
 		#end
 		window.title = title;
+		// The device, in rlgl's lines as it writes them when the window opens; a backend other than GL names itself.
+		var device = graphics.device;
+		log(helix.raylib.Raylib.LOG_INFO, 'GL: ${device.api == "OpenGL" || device.api == "WebGL 2" ? "OpenGL" : device.api} device information:');
+		log(helix.raylib.Raylib.LOG_INFO, '    > Vendor:   ${device.vendor}');
+		log(helix.raylib.Raylib.LOG_INFO, '    > Renderer: ${device.renderer}');
+		log(helix.raylib.Raylib.LOG_INFO, '    > Version:  ${device.version}');
+		log(helix.raylib.Raylib.LOG_INFO, '    > GLSL:     ${device.shadingLanguage}');
 		frame = new Frame(graphics);
 		screen = new helix.services.screen.Screen(window, events);
 		devices.push(screen);

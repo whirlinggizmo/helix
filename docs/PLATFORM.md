@@ -281,7 +281,8 @@ enum Event {
   (sokol takes it so; WebGL2 through EXT_texture_filter_anisotropic where the browser has it), each adapter keeping a sampler a value.
   Mipmaps come with a texture's levels; the platform makes none.
 - `readPixels(handle, read(pixels, width, height), failed(message))`: an RGBA8 texture's top level, an RGBA8 render target, or the frame
-  just ended (0); `msaaSampleCount` (the screen's), `maxMsaaSampleCount` (the most a window could ask for); `dispose`.
+  just ended (0); `msaaSampleCount` (the screen's), `maxMsaaSampleCount` (the most a window could ask for); `device` (a `GraphicsDevice`: the API, vendor, renderer, version and
+  shading language as the API reports them, a page's unmasked through `WEBGL_debug_renderer_info` where the browser gives them); `dispose`.
 
 `endFrame` ends the screen's pass and submits it; `present()` shows the frame and waits for the display's refresh, which paces the
 owner's loop. Between the two the frame can still be read back (`readPixels(0)`), and the owner can do work in the time the display

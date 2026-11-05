@@ -40,6 +40,17 @@ class CountingGraphics implements IGraphics {
 	function get_maxMsaaSampleCount():Int
 		return 1;
 
+	public var device(get, never):helix.platform.GraphicsDevice;
+
+	function get_device():helix.platform.GraphicsDevice
+		return {
+			api: "",
+			vendor: "",
+			renderer: "",
+			version: "",
+			shadingLanguage: ""
+		};
+
 	function handle():Int
 		return next++;
 

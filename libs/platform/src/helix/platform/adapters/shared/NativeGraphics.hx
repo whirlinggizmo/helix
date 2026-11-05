@@ -88,6 +88,17 @@ abstract class NativeGraphics implements IGraphics {
 	function get_maxMsaaSampleCount():Int
 		return GraphicsDeviceBridge.maxMsaaSamples();
 
+	public var device(get, never):helix.platform.GraphicsDevice;
+
+	function get_device():helix.platform.GraphicsDevice
+		return {
+			api: GraphicsDeviceBridge.deviceInfo(0).toString(),
+			vendor: GraphicsDeviceBridge.deviceInfo(1).toString(),
+			renderer: GraphicsDeviceBridge.deviceInfo(2).toString(),
+			version: GraphicsDeviceBridge.deviceInfo(3).toString(),
+			shadingLanguage: GraphicsDeviceBridge.deviceInfo(4).toString()
+		};
+
 	public function createBuffer(capacityBytes:Int):Int
 		return valid(GraphicsDeviceBridge.buffer(capacityBytes));
 

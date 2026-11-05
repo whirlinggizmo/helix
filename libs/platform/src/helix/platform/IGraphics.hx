@@ -85,6 +85,12 @@ interface IGraphics {
 		`getMaxRenderTargetMsaaSampleCount`. */
 	var maxMsaaSampleCount(get, never):Int;
 
+	/** Gets the GPU and driver drawing, as the graphics API reports them, for a program to log or show.
+
+		A browser may mask them: the adapter asks for the unmasked names (`WEBGL_debug_renderer_info`) where the browser gives them, and
+		otherwise has the browser's own, such as "WebKit WebGL". */
+	var device(get, never):GraphicsDevice;
+
 	/** Returns the largest number of multisampling samples a render target of a format can be drawn with here, at most 8.
 
 		It is 1, 2, 4 or 8: 1 where this GPU cannot multisample the format, or cannot draw into it at all (`canRender`).

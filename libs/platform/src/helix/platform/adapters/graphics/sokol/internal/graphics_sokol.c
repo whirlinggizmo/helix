@@ -127,6 +127,12 @@ static sg_swapchain swapchain(void){
 }
 int helix_msaa_samples(void){return window_samples;}
 int helix_max_msaa_samples(void){return max_samples;}
+/* The device as GL names it (IGraphics.device): 0 the API, 1 its vendor, 2 renderer, 3 version, 4 shading language; "" for one GL doesn't give. */
+const char *helix_device_info(int field){
+ if(field==0)return "OpenGL";
+ const GLubyte *s=field==1?glGetString(GL_VENDOR):field==2?glGetString(GL_RENDERER):field==3?glGetString(GL_VERSION):field==4?glGetString(GL_SHADING_LANGUAGE_VERSION):NULL;
+ return s?(const char*)s:"";
+}
 /* The power of two of a sample count (1, 2, 4 or 8), and the screen's samples (sokol's environment default, which pipelines are made for). */
 static int power_of(int samples){return samples>=8?3:samples>=4?2:samples>=2?1:0;}
 static int screen_samples(void){const int n=sg_query_desc().environment.defaults.sample_count;return n>1?n:1;}
