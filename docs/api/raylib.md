@@ -229,7 +229,7 @@ Represents how DrawFrameStatsEx (helix.raylib.extras.Debug) draws the frame's co
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{?fps:Bool, ?frameTime:Bool, ?drawCalls:Bool, ?triangles:Bool, ?stateChanges:Bool, ?targetFps:Int, ?onTargetColor:Color, ?belowTargetColor:Color, ?farBelowTargetColor:Color, ?font:Null<Font>, ?fontSize:Int, ?spacing:Float, ?padding:Int, ?backgroundColor:Color}
+{?fps:Bool, ?frameTime:Bool, ?drawCalls:Bool, ?triangles:Bool, ?stateChanges:Bool, ?gpuTextures:Bool, ?gpuBuffers:Bool, ?targetFps:Int, ?onTargetColor:Color, ?belowTargetColor:Color, ?farBelowTargetColor:Color, ?font:Null<Font>, ?fontSize:Int, ?spacing:Float, ?padding:Int, ?backgroundColor:Color}
 ```
 
 ```haxe
@@ -238,6 +238,8 @@ var frameTime:Bool = true
 var drawCalls:Bool = true
 var triangles:Bool = false
 var stateChanges:Bool = false
+var gpuTextures:Bool = false
+var gpuBuffers:Bool = false
 var targetFps:Int = 0
 var onTargetColor:Color = GREEN
 var belowTargetColor:Color = YELLOW
@@ -254,6 +256,8 @@ var backgroundColor:Color = BLANK
 - `drawCalls`: Whether it shows the last frame's draw calls: how many draws it sent the GPU. On by default.
 - `triangles`: Whether it shows the last frame's triangles drawn. Off by default.
 - `stateChanges`: Whether it shows the last frame's state changes: how often its draws switched shader, render state or textures. Off by default.
+- `gpuTextures`: Whether it shows the megabytes of textures helix-raylib holds on the GPU: textures, cubemaps, render textures and the skinning palettes, as their levels' bytes, without the GPU's own padding. Off by default.
+- `gpuBuffers`: Whether it shows the megabytes of buffers helix-raylib holds on the GPU: meshes' vertices and indices, the frame's batch and its quad indices, a frame's instances. Off by default.
 - `targetFps`: The frame rate the stats are judged against, frames a second: 0 by default, for the target SetTargetFPS set, or the monitor's refresh rate when none is set.
 - `onTargetColor`: The text's color when the frame rate is at or above the target. GREEN by default.
 - `belowTargetColor`: The text's color when the frame rate is below the target. YELLOW by default.

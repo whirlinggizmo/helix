@@ -95,6 +95,14 @@ class Textures {
 		return e == null ? 0 : e.height;
 	}
 
+	// The bytes of a texture's levels together.
+	static function levelBytes(levels:Array<haxe.io.Bytes>):Float {
+		var total = 0.;
+		for (level in levels)
+			total += level.length;
+		return total;
+	}
+
 	// Takes a texture's pixels from its image decoded for the GPU, as its own, when a program touches them before it is drawn: the picture
 	// is let go of, a load of the file again decoding it again.
 	static function materialize(e:Entry):Void {
@@ -173,6 +181,7 @@ class Textures {
 					samplings.set(e.gpu, e.sampling);
 				continue;
 			}
+			GpuMemory.freed(e.gpu);
 			e.gpu = 0;
 			if (e.image != null && e.keep)
 				continue;
@@ -348,7 +357,7 @@ class Textures {
 		if (e.gpu == 0 && e.decoded != null && e.mipmapped && remipmap != null)
 			remipmap(e);
 		if (e.gpu == 0 && e.decoded != null) {
-			e.gpu = Runtime.graphics.createTextureFromImage(e.decoded);
+			e.gpu = GpuMemory.texture(Runtime.graphics.createTextureFromImage(e.decoded), e.decoded.width * e.decoded.height * 4);
 			if (e.sampling != null)
 				samplings.set(e.gpu, e.sampling);
 			// It is on the GPU now, and its picture isn't needed again: a load of the file again decodes it again.
@@ -356,7 +365,8 @@ class Textures {
 			if (e.path != "")
 				Runtime.forgetPicture(e.path);
 		} else if (e.gpu == 0 && e.image != null) {
-			e.gpu = Runtime.graphics.createTexture(e.image.width, e.image.height, e.levels == null ? [e.image.pixels] : [e.image.pixels].concat(e.levels));
+			var levels = e.levels == null ? [e.image.pixels] : [e.image.pixels].concat(e.levels);
+			e.gpu = GpuMemory.texture(Runtime.graphics.createTexture(e.image.width, e.image.height, levels), levelBytes(levels));
 			if (e.sampling != null)
 				samplings.set(e.gpu, e.sampling);
 			// Its pixels are on the GPU now; the copy here isn't needed again, unless kept for a restore.
@@ -365,7 +375,8 @@ class Textures {
 				e.levels = null;
 			}
 		} else if (e.gpu == 0 && e.cube != null) {
-			e.gpu = Runtime.graphics.createCubeTexture(e.cube.size, e.cube.levels, helix.platform.TextureFormat.Rgba8);
+			e.gpu = GpuMemory.texture(Runtime.graphics.createCubeTexture(e.cube.size, e.cube.levels, helix.platform.TextureFormat.Rgba8),
+				levelBytes(e.cube.levels));
 			cubeHandles.set(e.gpu, true);
 			samplings.set(e.gpu, e.sampling);
 			e.cube = {size: e.cube.size, levels: null};
@@ -440,13 +451,15 @@ class Textures {
 			Runtime.graphics.readPixels(gpu, (pixels, width, height) -> {
 				if (entries.get(id) != e || e.gpu != gpu)
 					return;
-				var made = Runtime.graphics.createTexture(width, height, [pixels].concat(Mipmaps.build(width, height, pixels)));
+				var levels = [pixels].concat(Mipmaps.build(width, height, pixels));
+				var made = GpuMemory.texture(Runtime.graphics.createTexture(width, height, levels), levelBytes(levels));
 				var sampling = samplings.get(gpu);
 				if (sampling != null)
 					samplings.set(made, sampling);
 				e.gpu = made;
 				Runtime.frame.afterDraw(() -> {
 					Runtime.graphics.disposeTexture(gpu);
+					GpuMemory.freed(gpu);
 					samplings.remove(gpu);
 				});
 			}, _ -> {});
@@ -478,6 +491,7 @@ class Textures {
 		}
 		if (e.gpu != 0) {
 			Runtime.graphics.disposeTexture(e.gpu);
+			GpuMemory.freed(e.gpu);
 			samplings.remove(e.gpu);
 			cubeHandles.remove(e.gpu);
 		}

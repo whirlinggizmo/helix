@@ -170,6 +170,39 @@ class DebugTests {
 		check(refused.indexOf("fontSize") >= 0, "DrawFrameStats refuses one too");
 		Runtime.frame.draw(64, 64, true);
 
+		// The GPU memory lines: a 512 x 512 texture is a megabyte of textures once drawn (sent at its first draw), and none once unloaded;
+		// the frame's own buffers (its batch, constants and quad indices) are what the buffers line shows.
+		var memory:FrameStatsStyle = {
+			fps: false,
+			frameTime: false,
+			drawCalls: false,
+			gpuTextures: true,
+			gpuBuffers: true
+		};
+		var before = RDebug.plain(memory);
+		check(before[0] == "GPU textures: 0.0 MB", 'no texture of size yet: "${before[0]}"');
+		check(StringTools.startsWith(before[1], "GPU buffers: ")
+			&& StringTools.endsWith(before[1], " MB")
+			&& helix.raylib.internal.GpuMemory.bufferBytes > 0,
+			'the frame\'s own buffers, under a megabyte: "${before[1]}"');
+		var big = GenImageColor(512, 512, RED);
+		var texture = LoadTextureFromImage(big);
+		UnloadImage(big);
+		check(RDebug.plain(memory)[0] == "GPU textures: 0.0 MB", "a texture not yet drawn isn't on the GPU");
+		DrawTexture(texture, 0, 0, WHITE);
+		Runtime.frame.draw(64, 64, true);
+		check(RDebug.plain(memory)[0] == "GPU textures: 1.0 MB", 'drawn, its megabyte is counted: "${RDebug.plain(memory)[0]}"');
+		UnloadTexture(texture);
+		check(RDebug.plain(memory)[0] == "GPU textures: 0.0 MB", 'unloaded, it is not: "${RDebug.plain(memory)[0]}"');
+		check(MeasureFrameStats({
+			fontSize: 10,
+			padding: 0,
+			fps: false,
+			frameTime: false,
+			drawCalls: false,
+			gpuTextures: true
+		}).y == 10, "a memory stat is a line");
+
 		// What is drawn is what is measured: the background and the text within it span the measured size from the position.
 		var style:FrameStatsStyle = {fontSize: 12, backgroundColor: BLACK, triangles: true};
 		var size = MeasureFrameStats(style);

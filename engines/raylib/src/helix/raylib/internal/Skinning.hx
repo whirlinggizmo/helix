@@ -204,8 +204,10 @@ class Skinning {
 			// holds makes others, each twice the one before.
 			var wanted = Std.int(Math.max(1, Math.ceil(lastBones / 64)));
 			if (chunks.length > 1 || chunks.length == 1 && (chunks[0].rows < wanted || chunks[0].rows > 16 && chunks[0].rows > wanted * 4))
-				for (c in chunks.splice(0, chunks.length))
+				for (c in chunks.splice(0, chunks.length)) {
 					Runtime.graphics.disposeTexture(c.handle);
+					GpuMemory.freed(c.handle);
+				}
 			for (c in chunks)
 				c.used = 0;
 		}
@@ -217,7 +219,7 @@ class Skinning {
 			var rows = Std.int(Math.max(Math.max(1, Math.ceil(lastBones / 64)), Math.ceil(n / 64)));
 			if (chunk != null)
 				rows = Std.int(Math.max(rows, chunk.rows * 2));
-			chunks.push(chunk = new Chunk(Runtime.graphics.createDataTexture(256, rows), rows));
+			chunks.push(chunk = new Chunk(GpuMemory.texture(Runtime.graphics.createDataTexture(256, rows), 256 * rows * 16), rows));
 		}
 		var data = chunk.bytes, at = chunk.used * 64;
 		for (i in 0...floats.length)
@@ -261,7 +263,7 @@ class Skinning {
 		var bytes = Bytes.alloc(n * 4);
 		for (i in 0...n)
 			bytes.setFloat(i * 4, i < values.length ? values[i] : 0);
-		var buffer = Runtime.graphics.createStaticBuffer(bytes, bytes.length, false);
+		var buffer = GpuMemory.buffer(Runtime.graphics.createStaticBuffer(bytes, bytes.length, false), bytes.length);
 		Runtime.frame.retire(buffer);
 		return buffer;
 	}

@@ -2,6 +2,7 @@ package helix.raylib.modules;
 
 #if !macro
 import helix.raylib.*;
+import helix.raylib.internal.GpuMemory;
 import helix.raylib.modules.RCore.*;
 import helix.raylib.modules.RMath.*;
 import helix.raylib.modules.RModels.*;
@@ -350,6 +351,18 @@ class RDebug {
 			lines.push([text("Triangles: "), number(whole(triangles, 7), "ddddddd")]);
 		if (style.stateChanges)
 			lines.push([text("State changes: "), number(whole(changes, 7), "ddddddd")]);
+		if (style.gpuTextures)
+			lines.push([
+				text("GPU textures: "),
+				number(GpuMemory.megabytes(GpuMemory.textureBytes), "dddd.d"),
+				text(" MB")
+			]);
+		if (style.gpuBuffers)
+			lines.push([
+				text("GPU buffers: "),
+				number(GpuMemory.megabytes(GpuMemory.bufferBytes), "dddd.d"),
+				text(" MB")
+			]);
 		return lines;
 	}
 

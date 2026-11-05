@@ -20,6 +20,14 @@ import helix.raylib.Raylib.*;
 	/** Whether it shows the last frame's state changes: how often its draws switched shader, render state or textures. Off by default. */
 	public var stateChanges:Bool = false;
 
+	/** Whether it shows the megabytes of textures helix-raylib holds on the GPU: textures, cubemaps, render textures and the skinning
+		palettes, as their levels' bytes, without the GPU's own padding. Off by default. */
+	public var gpuTextures:Bool = false;
+
+	/** Whether it shows the megabytes of buffers helix-raylib holds on the GPU: meshes' vertices and indices, the frame's batch and its
+		quad indices, a frame's instances. Off by default. */
+	public var gpuBuffers:Bool = false;
+
 	/** The frame rate the stats are judged against, frames a second: 0 by default, for the target SetTargetFPS set, or the monitor's
 		refresh rate when none is set. */
 	public var targetFps:Int = 0;

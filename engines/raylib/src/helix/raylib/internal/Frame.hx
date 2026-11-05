@@ -514,7 +514,7 @@ class Frame {
 			bytes.setInt32(at + 16, v + 2);
 			bytes.setInt32(at + 20, v + 3);
 		}
-		quadIndices = graphics.createStaticBuffer(bytes, bytes.length, true);
+		quadIndices = GpuMemory.buffer(graphics.createStaticBuffer(bytes, bytes.length, true), bytes.length);
 		return quadIndices;
 	}
 
@@ -522,18 +522,21 @@ class Frame {
 	function makeOwn():Void {
 		var texel = Bytes.alloc(4);
 		texel.fill(0, 4, 255);
-		white = graphics.createTexture(1, 1, [texel]);
+		white = GpuMemory.texture(graphics.createTexture(1, 1, [texel]), 4);
 		var record = Bytes.alloc(CONSTANT_BYTES);
 		record.fill(0, CONSTANT_BYTES, 0);
 		for (column in 0...4)
 			record.setFloat((MATRIX_CONSTANT + column * 4 + 3) * 4, 1);
-		constants = graphics.createStaticBuffer(record, CONSTANT_BYTES, false);
+		constants = GpuMemory.buffer(graphics.createStaticBuffer(record, CONSTANT_BYTES, false), CONSTANT_BYTES);
 	}
 
 	/** Makes the frame's own GPU things again after the GPU's context was lost and given back (`Event.GraphicsRestored`): the white
 		texture and the constants, gone with the context; the quads' indices, made again when next needed. The vertex buffer, the programs
 		and the pipelines keep their handles, remade by the platform. */
 	public function graphicsRestored():Void {
+		GpuMemory.freed(white);
+		GpuMemory.freed(constants);
+		GpuMemory.freed(quadIndices);
 		makeOwn();
 		quadIndices = 0;
 		quadCapacity = 0;
@@ -684,7 +687,7 @@ class Frame {
 		var bytes = Bytes.alloc(corners.length * 4);
 		for (i => index in corners)
 			bytes.setInt32(i * 4, index);
-		var buffer = graphics.createStaticBuffer(bytes, bytes.length, true);
+		var buffer = GpuMemory.buffer(graphics.createStaticBuffer(bytes, bytes.length, true), bytes.length);
 		retire(buffer);
 		return [buffer, corners.length];
 	}
@@ -794,7 +797,7 @@ class Frame {
 			var bytes = Bytes.alloc(edgeCount * 4);
 			for (i => index in front)
 				bytes.setInt32(i * 4, index);
-			edges = graphics.createStaticBuffer(bytes, bytes.length, true);
+			edges = GpuMemory.buffer(graphics.createStaticBuffer(bytes, bytes.length, true), bytes.length);
 			retire(edges);
 		} else if (wire)
 			edges = Models.edges(mesh);
@@ -1001,8 +1004,10 @@ class Frame {
 			} else
 				graphics.endTargetPass();
 		}
-		for (b in retired)
+		for (b in retired) {
 			graphics.disposeBuffer(b);
+			GpuMemory.freed(b);
+		}
 		retired.resize(0);
 		reset();
 		var calls = drawn.copy();
@@ -1047,10 +1052,12 @@ class Frame {
 			return;
 		var bytes = vertices * STRIDE;
 		if (bytes > capacity) {
-			if (buffer != 0)
+			if (buffer != 0) {
 				graphics.disposeBuffer(buffer);
+				GpuMemory.freed(buffer);
+			}
 			capacity = data.length;
-			buffer = graphics.createBuffer(capacity);
+			buffer = GpuMemory.buffer(graphics.createBuffer(capacity), capacity);
 		}
 		graphics.updateBuffer(buffer, data, bytes);
 	}
@@ -1065,6 +1072,8 @@ class Frame {
 			graphics.disposeBuffer(quadIndices);
 		for (b in retired)
 			graphics.disposeBuffer(b);
+		for (h in [buffer, white, constants, quadIndices].concat(retired))
+			GpuMemory.freed(h);
 		defaultProgram.dispose();
 	}
 }

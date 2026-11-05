@@ -6,6 +6,7 @@ import helix.raylib.Raylib.*;
 import helix.math.Matrix3D;
 import helix.math.Trig;
 import helix.raylib.internal.DefaultFont;
+import helix.raylib.internal.GpuMemory;
 import helix.raylib.internal.Animations;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.ParShapes;
@@ -880,7 +881,7 @@ class RModels {
 		for (i in 0...count)
 			for (k => v in toMatrix3D(transforms[i]).values)
 				bytes.setFloat((i * 16 + k) * 4, v);
-		var buffer = Runtime.graphics.createStaticBuffer(bytes, bytes.length, false);
+		var buffer = GpuMemory.buffer(Runtime.graphics.createStaticBuffer(bytes, bytes.length, false), bytes.length);
 		Runtime.frame.retire(buffer);
 		drawMesh(mesh, material, new Matrix3D(), WHITE, buffer, count);
 	}
