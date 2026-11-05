@@ -104,14 +104,14 @@ static function MeasureFrameStats(style:FrameStatsStyle):Vector2
   - `posX`: The text's left, in pixels.
   - `posY`: The text's top, in pixels.
   - `fontSize`: The text's height, in pixels, as DrawText's; DrawFPS draws at 20.
-- `DrawFrameStatsEx`: Draws the frame's cost at a point on the screen as a style says: which stats, in what font, size, spacing and colors, over what background. Each stat is a line, so the text's height follows what's shown (MeasureFrameStats).
+- `DrawFrameStatsEx`: Draws the frame's cost at a point on the screen as a style says: which stats, in what font, size, spacing and colors, over what background. Each stat is a line, so the text's height follows what's shown (MeasureFrameStats). Each number keeps its place: it is right-aligned in a slot of a set width, so the stats don't move as the numbers change.
   - `position`: The text's top left, in pixels (its background's, padding around the text).
   - `style`: What to show and how; each field left out takes its default.
 
   ```haxe
   DrawFrameStatsEx(new Vector2(10, 10), {fontSize: 24, backgroundColor: Fade(BLACK, 0.5), triangles: true});
   ```
-- `MeasureFrameStats`: Returns the size DrawFrameStatsEx draws in with a style, its padding included, for placing it (at a corner, say).
+- `MeasureFrameStats`: Returns the size DrawFrameStatsEx draws in with a style, its padding included, sized for its widest values so it doesn't change from frame to frame, for placing it (at a corner, say).
   - `style`: What to show and how.
   - returns: The width and height, in pixels.
 

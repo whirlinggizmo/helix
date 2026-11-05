@@ -507,13 +507,11 @@ class Models {
 		animated(model);
 	}
 
-	// A model's pose and bone matrices, at rest: raylib 6.2's currentPose zeros, its matrices identities, every mesh's boneMatrices
-	// those (raylib 5.5 gives each mesh of a skinned model its own).
+	// A model's bone matrices, at rest: identities, every mesh's boneMatrices those (raylib 5.5 gives each mesh of a skinned model its own).
 	static function animated(model:Model):Void {
 		if (model.boneCount == 0)
 			return;
 		RModels.boneWriter = writeBones;
-		model.pose = [for (_ in 0...model.boneCount) new Transform()];
 		model.boneMatrices = [
 			for (_ in 0...model.boneCount)
 				new Matrix(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)

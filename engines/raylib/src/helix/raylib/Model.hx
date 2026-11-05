@@ -35,7 +35,8 @@ class Model {
 		none, its node's at rest; null without a skin. */
 	public var bindPose:Null<Array<Transform>> = null;
 
-	// The pose UpdateModelAnimation last set, by bone (raylib 6.2's currentPose); null without bones.
+	// The pose UpdateModelAnimation last set, by bone (raylib 6.2's currentPose); null until a call sets it (Animations.setPose), so a
+	// model never posed is the one without it.
 	@:allow(helix.raylib)
 	var pose:Null<Array<Transform>> = null;
 

@@ -35,6 +35,14 @@ class RDebug {
 
 	static var count = 0;
 
+	// The draws, triangles and state changes of the frame being drawn or drawn last, counted from its recorded draws as its drawing
+	// starts (`tally`), so the stats of the next frame show it.
+	static var draws = 0;
+
+	static var triangles = 0;
+
+	static var changes = 0;
+
 	// The frame whose drawing records each frame's time, once a program draws the stats (a frame made again is hooked again).
 	static var hooked:Null<Frame> = null;
 
@@ -60,7 +68,7 @@ class RDebug {
 		@param color  The lines' color. */
 	static function DrawModelSkeleton(model:Model, position:Vector3, scale:Float, color:Color):Void {
 		var bones = model.bones;
-		var pose = posed(model) ? model.pose : model.bindPose;
+		var pose = model.pose != null ? model.pose : model.bindPose;
 		if (bones == null || pose == null)
 			return;
 		var n = bones.length < pose.length ? bones.length : pose.length;
@@ -120,7 +128,8 @@ class RDebug {
 	}
 
 	/** Draws the frame's cost at a point on the screen as a style says: which stats, in what font, size, spacing and colors, over what
-		background. Each stat is a line, so the text's height follows what's shown (MeasureFrameStats).
+		background. Each stat is a line, so the text's height follows what's shown (MeasureFrameStats). Each number keeps its place: it is
+		right-aligned in a slot of a set width, so the stats don't move as the numbers change.
 
 		```haxe
 		DrawFrameStatsEx(new Vector2(10, 10), {fontSize: 24, backgroundColor: Fade(BLACK, 0.5), triangles: true});
@@ -139,11 +148,26 @@ class RDebug {
 		if (style.backgroundColor.a > 0)
 			DrawRectangleRec(new Rectangle(position.x, position.y, measured.x, measured.y), style.backgroundColor);
 		var color = colorOf(style);
-		for (i in 0...lines.length)
-			DrawTextEx(font, lines[i], new Vector2(position.x + style.padding, position.y + style.padding + i * size), size, style.spacing, color);
+		var digit = widestDigit(font, size, style.spacing);
+		for (i in 0...lines.length) {
+			var x = position.x + style.padding,
+				y = position.y + style.padding + i * size;
+			for (part in lines[i]) {
+				var advance = advanceOf(part, font, size, style.spacing, digit);
+				if (part.template == null)
+					DrawTextEx(font, part.text, new Vector2(x, y), size, style.spacing, color);
+				else {
+					// A number's right end is its slot's.
+					var right = x + advance - style.spacing;
+					DrawTextEx(font, part.text, new Vector2(right - MeasureTextEx(font, part.text, size, style.spacing).x, y), size, style.spacing, color);
+				}
+				x += advance;
+			}
+		}
 	}
 
-	/** Returns the size DrawFrameStatsEx draws in with a style, its padding included, for placing it (at a corner, say).
+	/** Returns the size DrawFrameStatsEx draws in with a style, its padding included, sized for its widest values so it doesn't change
+		from frame to frame, for placing it (at a corner, say).
 
 		@param style  What to show and how.
 		@return  The width and height, in pixels. */
@@ -153,17 +177,6 @@ class RDebug {
 		if (lines.length == 0)
 			return new Vector2(0, 0);
 		return measure(style, lines, style.font != null ? style.font : GetFontDefault(), size);
-	}
-
-	// Whether a model has been posed: its pose holds a rotation, which an unposed model's zeros (raylib 6.2's currentPose at rest) don't.
-	static function posed(model:Model):Bool {
-		var pose = model.pose;
-		if (pose == null)
-			return false;
-		for (t in pose)
-			if (t.rotation.x != 0 || t.rotation.y != 0 || t.rotation.z != 0 || t.rotation.w != 0)
-				return true;
-		return false;
 	}
 
 	// The text's height: the style's, or a 36th of the screen's; a size under 1 is refused.
@@ -176,14 +189,37 @@ class RDebug {
 		return size;
 	}
 
-	static function measure(style:FrameStatsStyle, lines:Array<String>, font:Font, size:Int):Vector2 {
+	// The size of the lines: each part's width (a number's, its slot's) added up, the widest line's, so it is the same whatever the numbers.
+	static function measure(style:FrameStatsStyle, lines:Array<Array<Part>>, font:Font, size:Int):Vector2 {
+		var digit = widestDigit(font, size, style.spacing);
 		var widest = 0.;
 		for (line in lines) {
-			var w = MeasureTextEx(font, line, size, style.spacing).x;
+			var w = -style.spacing;
+			for (part in line)
+				w += advanceOf(part, font, size, style.spacing, digit);
 			if (w > widest)
 				widest = w;
 		}
 		return new Vector2(widest + style.padding * 2, lines.length * size + style.padding * 2);
+	}
+
+	// The font's widest digit at a size.
+	static function widestDigit(font:Font, size:Int, spacing:Float):String {
+		var widest = "0", most = -1.;
+		for (c in 0...10) {
+			var w = MeasureTextEx(font, String.fromCharCode(48 + c), size, spacing).x;
+			if (w > most) {
+				most = w;
+				widest = String.fromCharCode(48 + c);
+			}
+		}
+		return widest;
+	}
+
+	// A part's width and the space after it: its text's, or for a number its template's with the widest digit in each place.
+	static function advanceOf(part:Part, font:Font, size:Int, spacing:Float, digit:String):Float {
+		var text = part.template == null ? part.text : part.template.split("d").join(digit);
+		return MeasureTextEx(font, text, size, spacing).x + spacing;
 	}
 
 	// A frame's time recorded each frame once the stats are drawn, so a window holds each frame, drawn or not.
@@ -192,7 +228,45 @@ class RDebug {
 		if (hooked == frame)
 			return;
 		hooked = frame;
-		frame.drawing.push(() -> record(GetFrameTime()));
+		frame.drawing.push(() -> {
+			record(GetFrameTime());
+			tally(frame);
+		});
+	}
+
+	// Counts a frame's recorded draws as Frame.draw submits them: each draw with something to draw, its triangles (each instance), and a
+	// change from the draw before it when its pipeline or any texture differs.
+
+	@:access(helix.raylib.internal.Frame)
+	static function tally(frame:Frame):Void {
+		var drawn = 0, tris = 0, switched = 0, pipeline = -1;
+		var before:Null<Array<Int>> = null;
+		for (p in frame.passes) {
+			if (p.target == -1)
+				continue;
+			for (d in p.draws) {
+				if (d.count == 0)
+					continue;
+				drawn++;
+				if (d.primitive == helix.platform.Primitive.Triangles)
+					tris += Std.int(d.count / 3) * (d.instances > 1 ? d.instances : 1);
+				if (before != null) {
+					var same = d.pipeline == pipeline && d.textures.length == before.length;
+					var k = 0;
+					while (same && k < before.length) {
+						same = d.textures[k] == before[k];
+						k++;
+					}
+					if (!same)
+						switched++;
+				}
+				pipeline = d.pipeline;
+				before = d.textures;
+			}
+		}
+		draws = drawn;
+		triangles = tris;
+		changes = switched;
 	}
 
 	// Adds a frame's time to the ring, over the oldest.
@@ -235,30 +309,53 @@ class RDebug {
 		p95 = k == 0 ? 0 : slowest[k - 1];
 	}
 
-	// A number of milliseconds to a tenth.
+	// A number of seconds as milliseconds with 2 decimals, up to 999.99.
 	static function ms(seconds:Float):String {
-		var tenths = Math.round(seconds * 10000);
-		return Std.int(tenths / 10) + "." + tenths % 10;
+		var hundredths = Math.round(seconds * 100000);
+		if (hundredths > 99999)
+			hundredths = 99999;
+		var h = hundredths % 100;
+		return Std.int(hundredths / 100) + "." + (h < 10 ? "0" : "") + h;
 	}
 
-	// The frames a second as GetFPS reports them: helix-raylib's own average over the last half second.
-	static function linesOf(style:FrameStatsStyle):Array<String> {
+	// A count capped to its digits.
+	static function whole(value:Int, digits:Int):String
+		return Std.string(Std.int(Math.min(value, Math.pow(10, digits) - 1)));
+
+	static inline function text(t:String):Part
+		return {text: t, template: null};
+
+	static inline function number(t:String, template:String):Part
+		return {text: t, template: template};
+
+	// The lines of the stats shown, each as parts: fixed text and numbers, whose templates give their slots (d for a digit). The frames a
+	// second are GetFPS's: helix-raylib's own average over the last half second.
+	static function linesOf(style:FrameStatsStyle):Array<Array<Part>> {
 		var lines = [];
-		var frame = Runtime.frame;
 		if (style.fps)
-			lines.push("FPS: " + GetFPS());
+			lines.push([text("FPS: "), number(whole(GetFPS(), 4), "dddd")]);
 		if (style.frameTime) {
 			window();
-			lines.push("Frame: " + ms(mean) + " ms (p95 " + ms(p95) + ")");
+			lines.push([
+				text("Frame: "),
+				number(ms(mean), "ddd.dd"),
+				text(" ms (p95 "),
+				number(ms(p95), "ddd.dd"),
+				text(" ms)")
+			]);
 		}
 		if (style.drawCalls)
-			lines.push("Draw calls: " + (frame == null ? 0 : frame.lastDraws));
+			lines.push([text("Draw calls: "), number(whole(draws, 7), "ddddddd")]);
 		if (style.triangles)
-			lines.push("Triangles: " + (frame == null ? 0 : frame.lastTriangles));
+			lines.push([text("Triangles: "), number(whole(triangles, 7), "ddddddd")]);
 		if (style.stateChanges)
-			lines.push("State changes: " + (frame == null ? 0 : frame.lastStateChanges));
+			lines.push([text("State changes: "), number(whole(changes, 7), "ddddddd")]);
 		return lines;
 	}
+
+	// The lines' texts as drawn, a number's as its digits, for a test to read.
+	static function plain(style:FrameStatsStyle):Array<String>
+		return [for (line in linesOf(style)) [for (part in line) part.text].join("")];
 
 	// The text's color: the frame rate against the target, the style's or SetTargetFPS's or the monitor's.
 	static function colorOf(style:FrameStatsStyle):Color {
@@ -272,3 +369,6 @@ class RDebug {
 	}
 	#end
 }
+
+/** A piece of a stats line: fixed text, or a number with the template of its slot. */
+private typedef Part = {text:String, template:Null<String>};

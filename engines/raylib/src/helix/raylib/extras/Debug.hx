@@ -64,7 +64,8 @@ class Debug {
 		RDebug.DrawFrameStats(posX, posY, fontSize);
 
 	/** Draws the frame's cost at a point on the screen as a style says: which stats, in what font, size, spacing and colors, over what
-		background. Each stat is a line, so the text's height follows what's shown (MeasureFrameStats).
+		background. Each stat is a line, so the text's height follows what's shown (MeasureFrameStats). Each number keeps its place: it is
+		right-aligned in a slot of a set width, so the stats don't move as the numbers change.
 
 		```haxe
 		DrawFrameStatsEx(new Vector2(10, 10), {fontSize: 24, backgroundColor: Fade(BLACK, 0.5), triangles: true});
@@ -75,7 +76,8 @@ class Debug {
 	public static inline function DrawFrameStatsEx(position:Vector2, style:FrameStatsStyle):Void
 		RDebug.DrawFrameStatsEx(position, style);
 
-	/** Returns the size DrawFrameStatsEx draws in with a style, its padding included, for placing it (at a corner, say).
+	/** Returns the size DrawFrameStatsEx draws in with a style, its padding included, sized for its widest values so it doesn't change
+		from frame to frame, for placing it (at a corner, say).
 
 		@param style  What to show and how.
 		@return  The width and height, in pixels. */

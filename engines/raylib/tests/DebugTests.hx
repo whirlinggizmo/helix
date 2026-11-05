@@ -107,6 +107,7 @@ class DebugTests {
 		var at = new Vector3(10, 0, 0);
 
 		// The skeleton: a model never posed draws its bind pose, a posed one where the bones are now, scaled and moved as DrawModel.
+		check(model.pose == null, "a model never posed has no pose");
 		DrawModelSkeleton(model, new Vector3(1, 2, 3), 2, YELLOW);
 		var lines = drawn(true);
 		check(lines.length == 2 * (1 + 2 * 3), 'a root, its child, a cross on each: 7 lines, not ${lines.length / 2}');
@@ -184,6 +185,43 @@ class DebugTests {
 		check(near(minX, 5) && near(minY, 7), 'drawn from the position, not $minX, $minY');
 		check(near(maxX, 5 + size.x) && near(maxY, 7 + size.y), 'drawn as measured ${size.x} by ${size.y}, not ${maxX - 5} by ${maxY - 7}');
 
+		// The numbers keep their places: very different counts draw the same box, measured as drawn with the widest values, and a
+		// number ending alike ends at the same x.
+		var fixed:FrameStatsStyle = {
+			fontSize: 12,
+			backgroundColor: BLACK,
+			fps: false,
+			frameTime: false
+		};
+		var plainText:FrameStatsStyle = {fontSize: 12, fps: false, frameTime: false};
+		var extent = (v:Array<Vector3>) -> {
+			var most = -1e9, least = 1e9, low = 1e9, high = -1e9;
+			for (p in v) {
+				most = Math.max(most, p.x);
+				least = Math.min(least, p.x);
+				high = Math.max(high, p.y);
+				low = Math.min(low, p.y);
+			}
+			[least, most, low, high];
+		};
+		var measuredBox = MeasureFrameStats(fixed);
+		var ends = [];
+		var boxes = [];
+		for (n in [5, 55, 9999999]) {
+			RDebug.draws = n;
+			DrawFrameStatsEx(new Vector2(3, 4), fixed);
+			boxes.push(extent(drawn(false)));
+			RDebug.draws = n;
+			DrawFrameStatsEx(new Vector2(3, 4), plainText);
+			ends.push(extent(drawn(false))[1]);
+		}
+		check(boxes[0].join(",") == boxes[1].join(",")
+			&& boxes[1].join(",") == boxes[2].join(","), 'the box is the same for each count: $boxes');
+		check(near(boxes[2][1] - 3, measuredBox.x)
+			&& near(boxes[2][3] - 4, measuredBox.y), "the measured size is what is drawn with the widest values");
+		check(near(ends[0], ends[1]) && near(ends[1], ends[2]), 'a number\'s last digit is at the same x: $ends');
+		check(MeasureFrameStats(fixed).x == measuredBox.x && MeasureFrameStats(fixed).y == measuredBox.y, "measured the same each time");
+
 		// The frame times: a ring that wraps, then a half second of them.
 		for (_ in 0...2000)
 			RDebug.record(.0001);
@@ -195,10 +233,12 @@ class DebugTests {
 			RDebug.record(.05);
 		RDebug.window();
 		check(RDebug.used == 28, 'a half second is the 5 slow frames and 23 of the others, not ${RDebug.used}');
-		check(RDebug.ms(RDebug.mean) == "18.0", 'the mean is 18.0 ms, not ${RDebug.ms(RDebug.mean)}');
-		check(RDebug.ms(RDebug.p95) == "50.0", 'the p95 is the second slowest of 28, 50.0 ms, not ${RDebug.ms(RDebug.p95)}');
-		var text = RDebug.linesOf({});
-		check(text[1] == "Frame: 18.0 ms (p95 50.0)", 'the frame line: ${text[1]}');
+		check(RDebug.ms(RDebug.mean) == "17.96", 'the mean is 17.96 ms, not ${RDebug.ms(RDebug.mean)}');
+		check(RDebug.ms(RDebug.p95) == "50.00", 'the p95 is the second slowest of 28, 50.00 ms, not ${RDebug.ms(RDebug.p95)}');
+		var text = RDebug.plain({});
+		check(text[1] == "Frame: 17.96 ms (p95 50.00 ms)", 'the frame line: ${text[1]}');
+		RDebug.record(5);
+		check(RDebug.plain({})[1] == "Frame: 999.99 ms (p95 999.99 ms)", "times past 999.99 are shown as it");
 
 		// The counts: a frame of two rectangles (one draw), a texture (a second, a change), a rectangle again (a third, a second change).
 		var texture = LoadTextureFromImage(GenImageColor(2, 2, RED));
@@ -208,14 +248,14 @@ class DebugTests {
 		DrawRectangle(20, 0, 4, 4, WHITE);
 		Runtime.frame.draw(64, 64, true);
 		var f = Runtime.frame;
-		check(f.lastDraws == 3, 'three draws, not ${f.lastDraws}');
-		check(f.lastTriangles == 8, 'eight triangles, not ${f.lastTriangles}');
-		check(f.lastStateChanges == 2, 'two changes of texture, not ${f.lastStateChanges}');
-		text = RDebug.linesOf({triangles: true, stateChanges: true});
+		check(RDebug.draws == 3, 'three draws, not ${RDebug.draws}');
+		check(RDebug.triangles == 8, 'eight triangles, not ${RDebug.triangles}');
+		check(RDebug.changes == 2, 'two changes of texture, not ${RDebug.changes}');
+		text = RDebug.plain({triangles: true, stateChanges: true});
 		check(text.length == 5 && text[2] == "Draw calls: 3" && text[3] == "Triangles: 8" && text[4] == "State changes: 2", 'the lines: $text');
 		DrawRectangle(0, 0, 4, 4, WHITE);
 		Runtime.frame.draw(64, 64, true);
-		check(f.lastDraws == 1 && f.lastTriangles == 2 && f.lastStateChanges == 0, "the next frame's counts are its own");
+		check(RDebug.draws == 1 && RDebug.triangles == 2 && RDebug.changes == 0, "the next frame's counts are its own");
 
 		// The colors: the frame rate against a target. 60 polls 0.02 s apart make 50 frames a second.
 		var system:FakeSystem = cast Runtime.system;
