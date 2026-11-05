@@ -15,11 +15,10 @@ import helix.platform.Sampling;
 	A call that cannot be done throws before doing anything.
 
 	**A lost context** (a page's `GraphicsLost`). While the context is lost, every call is taken and does nothing: a creation returns a
-	handle, a draw draws nothing, `readPixels` fails. At `GraphicsRestored` the adapter has remade what it was given the description of,
-	under the old handles: programs, pipelines, render targets and shadow maps (their texels cleared), data textures and stream buffers
-	(rewritten each frame anyway). Textures (`createTexture`, `createTextureFromImage`, `createCubeTexture`) and static buffers are gone,
-	those made during the loss too, because the adapter had only their contents. Their handles are disposed, and their owner makes them
-	again from what it keeps. Natively a context isn't lost. */
+	handle, a draw draws nothing, `readPixels` fails. At `GraphicsRestored` the adapter has remade, under the old handles, its programs,
+	pipelines, render targets and shadow maps (their texels cleared), data textures and stream buffers (rewritten each frame anyway).
+	Textures (`createTexture`, `createTextureFromImage`, `createCubeTexture`) and static buffers are gone, those made during the loss too,
+	and their handles disposed: their owner makes them again from what it keeps. Natively a context isn't lost. */
 interface IGraphics {
 	/** Uploads an image as a texture.
 

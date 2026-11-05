@@ -502,7 +502,7 @@ function dispose():Void
 
 Provides `IGraphics` on a canvas's WebGL2 context.
 
-It builds programs from a `ShaderSource`'s GLSL ES 300 and pipelines from a `PipelineDesc`.
+It builds programs from a `ShaderSource`'s GLSL ES 300 and pipelines from a `PipelineDesc`. A lost context (`Event.GraphicsLost`) is taken as `IGraphics` says: every call does nothing until the browser gives the context back, when the adapter remakes programs, stream buffers, data textures, render targets and shadow maps under their handles from what it was told, and drops textures and static buffers.
 
 ```haxe
 function new(options:WebGl2GraphicsAdapterOptions)

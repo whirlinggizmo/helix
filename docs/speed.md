@@ -1,8 +1,7 @@
 # Speed
 
 How fast helix-raylib draws, and how large it is, against raylib C, Godot and HeliX on the same programs. Whatever changes
-helix-raylib's drawing (helix-render underneath it, DECISIONS 39) is held to these numbers. This page is replaced when the numbers are
-measured again, and git keeps the earlier ones.
+helix-raylib's drawing (helix-render underneath it, DECISIONS 39) is held to these numbers.
 
 Measured 2026-11-04 at helix-2.0 78f16db on coinspinner: an i9-13900HX and an RTX 4080 Laptop GPU, on Linux and X11. Native programs
 ran in windows on the real display with vsync off. Pages ran in headless Chromium 1248 on the GPU (ANGLE over Vulkan) with its frame
