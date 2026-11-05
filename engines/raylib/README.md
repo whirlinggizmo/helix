@@ -73,6 +73,12 @@ itself for what `Device`, `Files` or `Window` answers (the URL's query, `Sys.get
 place, naming the call and its module's import, when it is built with `-D helix-raylib-host-warnings`; it is off by default, since a
 program may reach the host on purpose.
 
+A page's GPU context can be lost (a GPU reset, a tab evicted) and given back, which raylib's native programs never meet. helix-raylib
+draws nothing while it is lost and carries on when it is back: textures loaded from files are decoded again from their bytes, fonts'
+atlases are kept in memory and sent again, meshes are sent again from their vertices, render textures come back blank, and the programs
+and pipelines keep their handles. A texture whose pixels were sent once and let go of (`LoadTextureFromImage`'s, a cubemap's) can't
+come back: it is drawn as nothing, with one warning naming it.
+
 ## Skinned models
 
 `UpdateModelAnimation` and `UpdateModelAnimationEx` pose a model, and each draw after draws it in that pose, so one model can be posed and

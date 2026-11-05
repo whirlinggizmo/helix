@@ -715,6 +715,10 @@ class Runtime {
 				case FilesDropped(count):
 					if (dropping != null)
 						dropping(count);
+				case GraphicsLost:
+					graphicsLost();
+				case GraphicsRestored:
+					graphicsRestored();
 				case _:
 			}
 		for (device in devices)
@@ -734,6 +738,26 @@ class Runtime {
 	static function pollAll():Void {
 		for (p in polled)
 			p.poll();
+	}
+
+	/** The GPU's context is gone (`Event.GraphicsLost`): said once. The platform takes every call and draws nothing until it is back, so
+		nothing else changes. */
+	public static function graphicsLost():Void {
+		log(3, "DISPLAY: GPU context lost: drawing nothing until it is restored");
+	}
+
+	/** What runs when the GPU's context is back (`graphicsRestored`), after the frame's own: the textures' and the meshes' (`Textures`,
+		`Models`), each put here when the program first makes one, so a program without them links nothing of theirs. */
+	public static final restoring:Array<Void->Void> = [];
+
+	/** The GPU's context is back (`Event.GraphicsRestored`): what the platform remade keeps its handles, and what it dropped (the frame's
+		own, textures, meshes' buffers) is made again now or as it is next drawn (`Frame.graphicsRestored`, then `restoring`). */
+	public static function graphicsRestored():Void {
+		log(3, "DISPLAY: GPU context restored: textures and meshes sent again as they are drawn");
+		if (frame != null)
+			frame.graphicsRestored();
+		for (f in restoring)
+			f();
 	}
 
 	/** Frees what was made, and closes the window where the program owns one. */

@@ -241,6 +241,7 @@ class RText {
 		font.glyphPadding = 0;
 		font.texture = LoadTextureFromImage(image);
 		keepAtlas(font, image);
+		Textures.keepPixels(font.texture.id);
 		// raylib's layout: rows of glyphs a pixel apart, a row ending where the next glyph would reach the texture's edge.
 		var line = 0, x = 1, test = 1;
 		for (i in 0...font.glyphCount) {
@@ -559,6 +560,7 @@ class RText {
 		var fontClear = new Image(pixels, width, height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
 		font.texture = LoadTextureFromImage(fontClear);
 		keepAtlas(font, fontClear);
+		Textures.keepPixels(font.texture.id);
 		font.glyphCount = values.length;
 		font.glyphPadding = 0;
 		font.recs = recs;
@@ -722,6 +724,7 @@ class RText {
 		var atlas = GenImageFontAtlas(glyphs, font.recs, font.glyphCount, font.baseSize, font.glyphPadding, 0);
 		font.texture = LoadTextureFromImage(atlas);
 		keepAtlas(font, atlas);
+		Textures.keepPixels(font.texture.id);
 		for (i in 0...font.glyphCount) {
 			var rec = font.recs[i],
 				image = new Image(),
@@ -747,6 +750,7 @@ class RText {
 		font.glyphCount = read.glyphs.length;
 		font.glyphPadding = 0;
 		font.texture = new Texture2D(Textures.fromImage(atlas.path, atlas), atlas.width, atlas.height);
+		Textures.keepPixels(font.texture.id);
 		keepAtlas(font, new Image(atlas.pixels, atlas.width, atlas.height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8));
 		for (g in read.glyphs) {
 			font.recs.push(new Rectangle(g.x, g.y, g.width, g.height));
