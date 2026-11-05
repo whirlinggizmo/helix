@@ -92,6 +92,11 @@ enum Event {
 		canvas. A dropped directory is no file and isn't counted. */
 	FilesDropped(count:Int);
 
-	/** The GPU's context is gone. In a page, the WebGL context was lost to a GPU reset or an evicted tab. */
+	/** The GPU's context is gone. In a page, the WebGL context was lost to a GPU reset or an evicted tab. Until `GraphicsRestored`, the
+		graphics take every call and draw nothing. */
 	GraphicsLost;
+
+	/** The GPU's context is back after `GraphicsLost`, and the graphics have remade what they could under their handles (`IGraphics`):
+		textures and static buffers are gone, for their owner to make again. */
+	GraphicsRestored;
 }

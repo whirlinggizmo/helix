@@ -49,9 +49,11 @@ class DomEventsAdapter implements IEvents {
 			stream.record(Resized(canvas.width, canvas.height));
 		});
 		listeners.add(canvas, "webglcontextlost", e -> {
+			// Cancelled, so the browser restores the context (the graphics adapter cancels it too, for a program without events).
 			e.preventDefault();
 			stream.record(GraphicsLost);
 		});
+		listeners.add(canvas, "webglcontextrestored", _ -> stream.record(GraphicsRestored));
 		// A drop's files, which the canvas takes rather than the page opening them; a dragged directory is no file. Every drop since the
 		// last poll is one FilesDropped, delivered at the poll's end.
 		listeners.add(canvas, "dragover", e -> e.preventDefault());

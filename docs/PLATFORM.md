@@ -181,6 +181,7 @@ enum Event {
 	CloseRequested;                      // natively; a page's end is IWindow.onClose
 	FilesDropped(count:Int);             // files dropped since the last poll (SDL3's drop events; a page's canvas drop), read by IWindow.readDroppedFile
 	GraphicsLost;                        // the GPU's context is gone (a page's WebGL context lost: a GPU reset, an evicted tab)
+	GraphicsRestored;                    // it is back, the graphics remade under their handles but textures and static buffers (IGraphics)
 }
 ```
 
@@ -611,7 +612,12 @@ interface ISystem {
 ## Page errors
 
 An uncaught script error or an unhandled rejection in a page is not the platform's: catching it, stopping the frames and telling the
-player are the owner's choices. A lost GPU context is the platform's, an event (`GraphicsLost`) the owner reads in its next poll.
+player are the owner's choices. A lost GPU context is the platform's. The owner reads `GraphicsLost` at its next poll. While the context
+is lost, the graphics take every call and draw nothing. When the browser gives the context back, the owner reads `GraphicsRestored`.
+By then the graphics adapter has remade its programs, pipelines, render targets, shadow maps, data textures and stream buffers under
+their old handles, from the descriptions it was given. Textures and static buffers are gone, because it had only their contents: their
+owner makes them again from what it keeps (`IGraphics`). The events adapter cancels the loss event so the browser restores the
+context, and so does the graphics adapter.
 
 ## Not in the platform
 
