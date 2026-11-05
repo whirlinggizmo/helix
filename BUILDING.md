@@ -48,6 +48,8 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `tools/check_docs.py` | Every public type and member has a doc comment; nothing but DECISIONS.md and AGENTS.md names the earlier frameworks |
 | `tools/check_layers.py` | Each library names only itself and what it's built on, and no library reaches an engine; the platform's contracts don't know each other |
 | `tools/check_names.py` | 2D and 3D named apart (docs/CONVENTIONS.md) |
+| `tools/compare/compare.py` | helix-raylib's speed and size against raylib C, Godot, three.js and HeliX on the same programs (`tools/compare/contenders`), pages in headless Chromium and native programs on a private display or `--desktop`; `--write` updates `docs/speed.json` and `docs/speed.md`'s tables |
+| `tools/compare/page.cjs` | One page run in headless Chromium on the GPU, ANGLE over Vulkan or GL, printing the program's JSON line and the files fetched (run by `compare.py`) |
 | `tools/check_tools.py` | Every tool answers `--help`, refuses an argument it doesn't take, and is in this table |
 | `tools/check_types.py` | Every entry point type-checked on its targets (`--web`: the browser alone) |
 | `tools/cli.py` | The Python tools' argument parsing (a module) |
@@ -55,7 +57,7 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `tools/format.py` | haxe-formatter over the libraries (`--check` only checks) |
 | `tools/gen_apidoc.py` | The API reference from the doc comments: `docs/api` (committed) and `build/api` (`--check`) |
 | `tools/gen_raylib.py` | helix-raylib's `Raylib.hx`, `Raymath.hx`, `Rlgl.hx` and the `extras` modules: forwards to each function of its sections (`engines/raylib/src/helix/raylib/modules`, read through `haxe -xml`), by raylib's modules, and the refusals of what helix-raylib won't or doesn't yet have (`--check`) |
-| `tools/measure_sizes.py` | Each library's and engine's web size ladder (`<directory>/tests/sizes`) against `docs/benchmarks.json` (`--write`, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
+| `tools/measure_sizes.py` | Each library's and engine's web size ladder (`<directory>/tests/sizes`) against `docs/sizes.json` (`--write`, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
 | `tools/native_build.py` | hxcpp's environment for the adapters' C, and the platform's C-only tests built with CMake (a module) |
 | `tools/page_check.cjs` | A page in headless Chromium: its errors, its result and a screenshot (run by `platform_checks.py`) |
 | `tools/pins.py` | The repository's haxelib: dev links to the libraries and the pinned hxcpp (a module) |
@@ -63,8 +65,6 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `tools/render_checks.py` | helix-render's examples and pixel tests on the GPU, natively (GL and SDL_GPU) on a private display and in Chromium (WebGL2) |
 | `tools/services_checks.py` | The services' examples on the platform's real adapters, natively on a private display and in Chromium |
 | `tools/private_display.py` | A private X display for native windows in checks (a module) |
-| `tools/bunnymark.py` | helix-raylib's 2D draw speed with raylib's textures_bunnymark (`engines/raylib/tests/bunnymark`): built for a page and natively (GL and SDL_GPU), and with `--reference` raylib's C, run at several counts into medians of mean and p95 frame time (`tools/bunnymark.cjs` runs the page) (Linux) |
-| `tools/bunnymark.cjs` | One bunnymark page run in headless Chromium on the GPU, printing the program's JSON line (run by `bunnymark.py`) |
 | `tools/raylib_parity.py` | helix-raylib against raylib's own C (`engines/raylib/parity`): each suite's C reference built against its raylib release (fetched, pinned by sha256, built into `build/raylib`), run on a private display, and helix-raylib's harness (Node and hxcpp) or program (natively) compared with it, within the suite's bars (Linux) |
 | `tools/remote_windows.py` | This checkout built and checked on a Windows machine over ssh |
 | `tools/sdl3.py` | The SDL3 library a native build links: the system's, or the pinned release made into `build/deps` |

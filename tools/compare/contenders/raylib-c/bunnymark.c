@@ -1,4 +1,4 @@
-// raylib 5.5's textures_bunnymark, spawning from run options instead of the mouse (count=N or ramp=1). The same as Main.hx, for tools/bunnymark.py.
+// raylib 5.5's textures_bunnymark, spawning from run options instead of the mouse (count=N or ramp=1). The same as helix-raylib's Main.hx, for tools/compare/compare.py.
 #include "raylib.h"
 #include <stdio.h>
 #include <stdlib.h>

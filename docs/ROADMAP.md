@@ -17,7 +17,7 @@ helix-raylib's size and speed where docs/speed.md records them.
   and `Bounds3D` through a matrix; and of the platform, a per-buffer offset (done: `draw`'s `bufferOffsets`, with `appendBuffer`), which lets an instanced
   mesh's large points be one GPU draw. Its frame is a command stream (DECISIONS 39). Nine-slice drawing and skins move into `Batch2D`, for
   raygui's skins and a retained UI alike. Then helix-raylib rebuilt on it (immediate, as raylib is, on helix-render directly), only if
-  each size rung grows by at most 1 to 2 KB gzip and the bunnymark (`tools/bunnymark.py`) is no slower than docs/speed.md's numbers;
+  each size rung grows by at most 1 to 2 KB gzip and the bunnymark (`tools/compare/compare.py`) is no slower than docs/speed.md's numbers;
   otherwise helix-raylib keeps its own `Frame`. HeliX's `Batch2D`, which helix-render's came from, drew a bunnymark's 150k sprites in
   41 ms a frame in a page against helix-raylib's 18 before its batch was fixed, so helix-render's batch takes the
   same fixes first: nothing allocated per draw, typed records, indexed quads.

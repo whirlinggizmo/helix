@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Checks the tools (docs/CONVENTIONS.md, "Every tool answers --help"): every Python tool (tools/*.py, helix.py) and Node tool (tools/*.cjs)
+"""Checks the tools (docs/CONVENTIONS.md, "Every tool answers --help"): every Python tool (tools/*.py, tools/compare/*.py, helix.py) and Node tool (tools/*.cjs, tools/compare/*.cjs)
 
   1. reads its arguments through a parser, read in its source before anything runs: cli.parser or cli.module (tools/cli.py) or argparse in
      Python, cli.cjs's args in Node; a tool that doesn't is never run here, as it would do its work with --help ignored;
@@ -25,7 +25,7 @@ PARSES = {'.py': re.compile(r'\bcli\.(parser|module)\(|argparse\.ArgumentParser\
 
 def tools():
     """Every tool, relative to the checkout."""
-    found = sorted(ROOT.glob('tools/*.py')) + sorted(ROOT.glob('tools/*.cjs')) + [ROOT / 'helix.py']
+    found = sorted(ROOT.glob('tools/*.py')) + sorted(ROOT.glob('tools/compare/*.py')) + sorted(ROOT.glob('tools/*.cjs')) + sorted(ROOT.glob('tools/compare/*.cjs')) + [ROOT / 'helix.py']
     return [path.relative_to(ROOT).as_posix() for path in found]
 
 
@@ -54,7 +54,7 @@ def check(tool):
 def listed():
     """The tools BUILDING.md's table names."""
     text = (ROOT / 'BUILDING.md').read_text(encoding='utf-8')
-    return set(re.findall(r'^\| `((?:tools/)?[\w.]+\.(?:py|cjs))` \|', text, re.M))
+    return set(re.findall(r'^\| `([\w./]+\.(?:py|cjs))` \|', text, re.M))
 
 
 def problems():

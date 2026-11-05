@@ -514,7 +514,7 @@ Why things are the way they are, numbered, in order.
     it, a resource freed only after the frame that uses it, passes depending on each other in recording order, a frame's latency of
     one recording, and a harder trace when debugging. They are what rlgl's own batch and the earlier C frameworks' frame commands
     already pay. helix-raylib's `Frame` is the same idea, written for raylib alone. helix-raylib is rebuilt on helix-render only if each
-    size rung grows by at most 1 to 2 KB gzip and `tools/bunnymark.py` is no slower than docs/speed.md records. Otherwise it keeps
+    size rung grows by at most 1 to 2 KB gzip and `tools/compare/compare.py` finds the bunnymark no slower than docs/speed.md records. Otherwise it keeps
     its `Frame`. Rejected: drawing at each call (a render texture drawn into after the screen has begun needs its pass first, which
     raylib allows), and a retained scene inside the renderer (helix-scene's job).
 

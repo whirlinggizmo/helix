@@ -25,7 +25,7 @@ class Bunny {
 }
 
 /**
-	raylib's textures_bunnymark on helix-raylib, for tools/bunnymark.py. It spawns from run options instead of the mouse: count=N spawns N bunnies,
+	raylib's textures_bunnymark on helix-raylib, for tools/compare/compare.py. It spawns from run options instead of the mouse: count=N spawns N bunnies,
 	draws 120 frames to warm up and times 600, then prints one JSON line. ramp=1 starts at 1000 and adds 1000 each 60 frames while those held 59 fps,
 	printing the largest count that did. Every bunny starts the same from a fixed xorshift32 seed, as in the C version.
 **/
