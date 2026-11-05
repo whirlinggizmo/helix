@@ -5,8 +5,9 @@ import helix.services.images.Image;
 import helix.services.images.Images;
 
 /** Checks Images over fakes: files loaded through Assets and decoded, answered at a poll and never during the call, failures named by
-	path (a file that won't decode, one not found), bytes decoded with no path, loads and decodes aborted (and an abort after the answer
-	doing nothing), and nothing answered after dispose. */
+	path (a file that won't decode, one not found), bytes decoded with no path, bytes decoded for the GPU (the decoder's image, its pixels
+	read, a failure, an abort answering nothing), loads and decodes aborted (and an abort after the answer doing nothing), and
+	nothing answered after dispose. */
 class ImagesTests {
 	static var checks = 0;
 
@@ -59,6 +60,19 @@ class ImagesTests {
 		pump();
 		check(embedded != null && embedded.path == "" && embedded.width == 2 && embedded.height == 3, "bytes decoded, with no path");
 		check(bad == "not an image", "bytes that won't decode fail");
+
+		var forGpu:helix.platform.IDecodedImage = null, gpuBad = "";
+		images.decodeForGpu(Bytes.ofString("3x2"), image -> forGpu = image);
+		images.decodeForGpu(Bytes.ofString("junk"), _ -> {}, message -> gpuBad = message);
+		var abortForGpu = images.decodeForGpu(Bytes.ofString("1x1"), _ -> throw "an aborted decode for the GPU answered");
+		check(forGpu == null, "a decode for the GPU isn't answered during the call");
+		decoder.poll();
+		abortForGpu();
+		pump();
+		check(forGpu != null && forGpu.width == 3 && forGpu.height == 2 && forGpu.pixels().length == 24 && forGpu.pixels().get(0) == 7,
+			"bytes decoded for the GPU: the decoder's image, its pixels read");
+		forGpu.dispose();
+		check(gpuBad == "not an image", "bytes that won't decode for the GPU fail");
 
 		var late:Image = null;
 		images.load("hero.png", image -> late = image);

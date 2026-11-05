@@ -2,6 +2,7 @@ import haxe.io.Bytes;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.extras.Textures.*;
+import helix.raylib.extras.Models.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.Runtime;
@@ -10,8 +11,10 @@ import helix.raylib.internal.Textures;
 /** Checks what helix-raylib does when the GPU's context is lost and given back (Event.GraphicsLost, Event.GraphicsRestored), on graphics
 	that count what is made: nothing throws while it is lost; at the restore the frame's own texture and buffer are made again, a file's
 	texture is decoded again from its bytes and sent when next drawn, a font's atlas is sent again from the pixels it kept, a mesh is
-	sent again when next drawn, a render texture keeps the handle the platform remade, a data texture is left to the platform, and a
-	texture made from pixels let go of is drawn as nothing with one warning. */
+	sent again when next drawn, a render texture keeps the handle the platform remade, a data texture is left to the platform, a
+	texture made from pixels let go of is drawn as nothing with one warning, and a model's textures held in its file (its base color, and
+	the roughness and metalness split from one image) are decoded again from the model's bytes and sent, as is one a load makes after
+	the program unloaded the last load's. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Textures)
 @:access(helix.raylib.Mesh)
@@ -48,7 +51,7 @@ class RestoreTests {
 		graphics = new CountingGraphics();
 		Runtime.graphics = graphics;
 		Runtime.frame = new Frame(graphics);
-		var files = new MemoryFiles(["wood.png" => Bytes.ofString("any")]);
+		var files = new MemoryFiles(["wood.png" => Bytes.ofString("any"), "ship.gltf" => Bytes.ofString(ship())]);
 		var decoder = new SolidDecoder();
 		Runtime.polled.push(files);
 		Runtime.polled.push(decoder);
@@ -70,6 +73,18 @@ class RestoreTests {
 		var target = LoadRenderTexture(4, 4);
 		var data = Runtime.graphics.createDataTexture(256, 1);
 		check(fileGpu != 0 && pixelsGpu != 0 && fontGpu != 0 && mesh.gpu.buffers != null && target.id != 0 && data != 0, "before: everything on the GPU");
+		// A model whose textures are held in its file: its base color, and the roughness and metalness split from one image.
+		var model:Model = null;
+		LoadModelAsync("ship.gltf", m -> model = m, e -> throw e);
+		pump(() -> model != null);
+		var maps = model.materials[1].maps;
+		var albedo = maps[MATERIAL_MAP_ALBEDO].texture.id,
+			rough = maps[MATERIAL_MAP_ROUGHNESS].texture.id,
+			metal = maps[MATERIAL_MAP_METALNESS].texture.id;
+		var albedoGpu = Textures.handle(albedo),
+			roughGpu = Textures.handle(rough),
+			metalGpu = Textures.handle(metal);
+		check(albedoGpu != 0 && roughGpu != 0 && metalGpu != 0 && albedo != rough && rough != metal, "before: a model's textures on the GPU");
 		var white = Runtime.frame.white;
 		var textures = graphics.textureCreations,
 			buffers = graphics.bufferCreations,
@@ -89,6 +104,8 @@ class RestoreTests {
 			"restored: the frame's texture and constants, nothing else yet");
 		textures++;
 		buffers++;
+		check(Textures.onGpu(albedo) == 0 && Textures.onGpu(rough) == 0 && Textures.handle(albedo) == 0 && Textures.handle(rough) == 0,
+			"a model's textures: off the GPU, drawn as nothing while the model's bytes are decoded again");
 
 		// The file's texture: decoded again from its bytes, drawn as nothing meanwhile, then sent.
 		check(Textures.onGpu(file.id) == 0, "a file's texture: off the GPU");
@@ -115,6 +132,32 @@ class RestoreTests {
 		Models.upload(mesh);
 		check(mesh.gpu.buffers != null && mesh.gpu.indexBuffer != 0 && graphics.bufferCreations >= buffers + 4, "a mesh: sent again when drawn");
 
+		// A model's textures held in its file: decoded again from the model's bytes, then sent, none warned of.
+		pump(() -> Textures.handle(albedo) != 0);
+		var albedoAgain = Textures.handle(albedo),
+			roughAgain = Textures.handle(rough),
+			metalAgain = Textures.handle(metal);
+		check(albedoAgain != albedoGpu && roughAgain != 0 && roughAgain != roughGpu && metalAgain != 0 && metalAgain != metalGpu,
+			"a model's textures: sent again from the file decoded again");
+		check(graphics.textureCreations == textures + 3 && warnings == 1, "a model's textures: three made, none warned of");
+		textures += 3;
+		check(Textures.handle(albedo) == albedoAgain && Textures.handle(rough) == roughAgain && graphics.textureCreations == textures,
+			"a model's textures: sent once");
+
+		// A load's texture the program unloads while the model stays kept: the next load's is made with no picture in hand, from the file
+		// decoded again.
+		UnloadTexture(maps[MATERIAL_MAP_ALBEDO].texture);
+		check(Textures.onGpu(albedo) == 0 && !Textures.hasPath("ship.gltf#0"), "a model's texture unloaded: freed");
+		var second:Model = null;
+		LoadModelAsync("ship.gltf", m -> second = m, e -> throw e);
+		pump(() -> second != null);
+		var made = second.materials[1].maps[MATERIAL_MAP_ALBEDO].texture.id;
+		check(made != albedo && Textures.handle(made) == 0, "a texture made with no picture in hand: drawn as nothing while the file is decoded again");
+		pump(() -> Textures.handle(made) != 0);
+		check(Textures.handle(made) != 0 && warnings == 1, "then sent, not warned of");
+		check(second.materials[1].maps[MATERIAL_MAP_ROUGHNESS].texture.id == rough, "the next load shares what is still held");
+		UnloadModel(second);
+
 		// The render texture and the data texture: the platform's to remake, under their handles.
 		check(Textures.onGpu(target.texture.id) == target.id && graphics.targetCreations == targets, "a render texture: its handle kept");
 		check(graphics.dataTextureCreations == dataTextures, "a data texture: left to the platform");
@@ -124,6 +167,7 @@ class RestoreTests {
 		UnloadTexture(pixels);
 		UnloadMesh(mesh);
 		UnloadRenderTexture(target);
+		UnloadModel(model);
 		check(graphics.doubles == 0, "unloaded: nothing disposed twice");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
@@ -132,6 +176,22 @@ class RestoreTests {
 		#else
 		Sys.println(report);
 		#end
+	}
+
+	// A glTF file holding a triangle and two images: the first its material's base color, the second its metallic-roughness image.
+	static function ship():String {
+		var b = new haxe.io.BytesOutput();
+		for (v in [0., 0, 0, 1, 0, 0, 0, 1, 0])
+			b.writeFloat(v);
+		var buffer = haxe.crypto.Base64.encode(b.getBytes());
+		var image = 'data:image/png;base64,${haxe.crypto.Base64.encode(Bytes.ofString("png"))}';
+		return '{"asset":{"version":"2.0"},"scene":0,"scenes":[{"nodes":[0]}],"nodes":[{"mesh":0}],
+			"meshes":[{"primitives":[{"attributes":{"POSITION":0},"material":0}]}],
+			"materials":[{"pbrMetallicRoughness":{"baseColorTexture":{"index":0},"metallicRoughnessTexture":{"index":1}}}],
+			"textures":[{"source":0},{"source":1}],"images":[{"uri":"$image"},{"uri":"$image"}],
+			"buffers":[{"byteLength":36,"uri":"data:application/octet-stream;base64,$buffer"}],
+			"bufferViews":[{"buffer":0,"byteOffset":0,"byteLength":36}],
+			"accessors":[{"bufferView":0,"componentType":5126,"count":3,"type":"VEC3","min":[0,0,0],"max":[1,1,0]}]}';
 	}
 }
 

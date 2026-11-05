@@ -18,13 +18,12 @@ import helix.math.Transform3D;
 import helix.log.Log;
 import helix.math.Matrix3D;
 import helix.services.assets.Assets;
-import helix.services.images.Image;
 import helix.services.images.Images;
 
 /** Provides 3D models by path: a glTF 2.0 file (.gltf or .glb) or a Wavefront OBJ file (.obj) read through the assets, with the files it
-	names (a glTF file's buffers and images, an OBJ file's material libraries and their textures) brought in and its images decoded, as one
-	`Model3D`. `load` reads a file as its extension says; `loadGltf` and `loadObj` read one format, so a program reading one carries only
-	its reader.
+	names (a glTF file's buffers and images, an OBJ file's material libraries and their textures) brought in and its images decoded for
+	the GPU, as one `Model3D`. `load` reads a file as its extension says; `loadGltf` and `loadObj` read one format, so a program reading
+	one carries only its reader.
 
 	The file is read by helix-formats' `GltfFile`. Each node of its scene puts its transform, and its parents', into its meshes'
 	positions, normals and tangents (`Mesh3D.transform`), so a model's meshes are drawn as they are; a skinned mesh's vertices stay as
@@ -39,6 +38,9 @@ import helix.services.images.Images;
 	its corners. Its materials are given as `GltfMaterial`s (`Model3D.materials` says how), and the textures they name decoded. It has
 	no skeleton or animations.
 
+	Each image, held in the model's file or in a file of its own, is decoded through `Images.decodeForGpu`, so in a page the program never
+	holds its pixels: a `ModelImage3D` carries the decoded image for what uploads it, and the image file's bytes for decoding it again.
+
 	Its answers come as the assets and images it reads through are polled.
 
 	```haxe
@@ -52,7 +54,7 @@ class Models {
 	/** Creates the models over the assets they are found in and the images that decode theirs.
 
 		@param assets  The assets the files are read through.
-		@param images  The images a model's are decoded by. */
+		@param images  The images a model's are decoded by (`Images.decodeForGpu`). */
 	public function new(assets:Assets, images:Images) {
 		this.assets = assets;
 		this.images = images;
@@ -72,19 +74,22 @@ class Models {
 	/** Loads a glTF 2.0 model (.gltf or .glb), the files it names and its images.
 
 		One of `loaded` or `failed` is called once, at a later poll, never during this call. A buffer the file names that can't be read
-		fails the load; an image that can't be read or decoded is null in the model, and logged.
+		fails the load; an image that can't be read or decoded is null in the model, and logged. A load that fails or is aborted disposes
+		the images it decoded.
 		@param path  The file, as the assets name it.
 		@param loaded  Receives the model.
 		@param failed  Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
 		@return  A function that aborts the load; neither callback is called after it, and once one was, it does nothing. */
 	public function loadGltf(path:String, loaded:Model3D->Void, ?failed:String->Void):Void->Void {
 		var aborted = false, finished = false, aborts:Array<Void->Void> = [];
+		var decoded:Array<Null<ModelImage3D>> = [];
 		function fail(message:String):Void {
 			if (aborted || finished)
 				return;
 			finished = true;
 			for (abort in aborts)
 				abort();
+			disposeAll(decoded);
 			if (failed != null)
 				failed(message);
 			else
@@ -98,7 +103,7 @@ class Models {
 				return;
 			}
 			// What's left to come: each buffer the file names, then each image once the buffers are in.
-			var left = 1, decoded:Array<Null<Image>> = [];
+			var left = 1;
 			function done():Void {
 				if (--left > 0 || aborted || finished)
 					return;
@@ -116,7 +121,7 @@ class Models {
 				for (i in 0...list.length) {
 					var image = list[i];
 					left++;
-					var answer = (result:Image) -> {
+					var answer = (result:ModelImage3D) -> {
 						decoded[i] = result;
 						done();
 					}, missing = (message:String) -> {
@@ -124,9 +129,10 @@ class Models {
 						done();
 					};
 					if (image.encoded != null)
-						aborts.push(images.decode(image.encoded, answer, message -> missing('$path: image $i: $message')));
+						aborts.push(images.decodeForGpu(image.encoded, result -> answer(new ModelImage3D("", image.encoded, result)),
+							message -> missing('$path: image $i: $message')));
 					else if (image.path != null)
-						aborts.push(images.load(image.path, answer, missing));
+						aborts.push(loadImage(image.path, answer, missing));
 					else
 						done();
 				}
@@ -156,6 +162,9 @@ class Models {
 			aborted = true;
 			for (abort in aborts)
 				abort();
+			// Nothing delivered is touched: an abort after the answer does nothing.
+			if (!finished)
+				disposeAll(decoded);
 		};
 	}
 
@@ -163,19 +172,21 @@ class Models {
 
 		The file is read first, then each library it names (one that can't be read logged and skipped), then each texture its materials
 		name, decoded (one that can't be, null in the model and logged). One of `loaded` or `failed` is called once, at a later poll, never
-		during this call.
+		during this call. A load that fails or is aborted disposes the images it decoded.
 		@param path  The file, as the assets name it.
 		@param loaded  Receives the model.
 		@param failed  Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
 		@return  A function that aborts the load; neither callback is called after it, and once one was, it does nothing. */
 	public function loadObj(path:String, loaded:Model3D->Void, ?failed:String->Void):Void->Void {
 		var aborted = false, finished = false, aborts:Array<Void->Void> = [];
+		var decoded:Array<Null<ModelImage3D>> = [];
 		function fail(message:String):Void {
 			if (aborted || finished)
 				return;
 			finished = true;
 			for (abort in aborts)
 				abort();
+			disposeAll(decoded);
 			if (failed != null)
 				failed(message);
 			else
@@ -197,8 +208,7 @@ class Models {
 				left = paths.length + 1;
 			function textures():Void {
 				var materials = file.computeMaterials(MtlFile.combine([for (l in libraries) if (l != null) l]));
-				var imagePaths:Array<String> = [],
-					decoded:Array<Null<Image>> = [];
+				var imagePaths:Array<String> = [];
 				function image(texture:Null<String>):Int {
 					if (texture == null)
 						return -1;
@@ -224,7 +234,7 @@ class Models {
 				}
 				decoded.resize(imagePaths.length);
 				for (i => texture in imagePaths)
-					aborts.push(images.load(texture, image -> {
+					aborts.push(loadImage(texture, image -> {
 						decoded[i] = image;
 						done();
 					}, message -> {
@@ -253,7 +263,32 @@ class Models {
 			aborted = true;
 			for (abort in aborts)
 				abort();
+			// Nothing delivered is touched: an abort after the answer does nothing.
+			if (!finished)
+				disposeAll(decoded);
 		};
+	}
+
+	// An image in a file of its own: read through the assets and decoded for the GPU, as one held in the model is. A failure names the file.
+	function loadImage(path:String, loaded:ModelImage3D->Void, failed:String->Void):Void->Void {
+		var aborted = false, abortDecode:Null<Void->Void> = null;
+		var abortLoad = assets.load(path,
+			bytes -> if (!aborted) abortDecode = images.decodeForGpu(bytes, image -> loaded(new ModelImage3D(path, bytes, image)),
+				message -> failed('$path: $message')),
+			failed);
+		return () -> {
+			aborted = true;
+			abortLoad();
+			if (abortDecode != null)
+				abortDecode();
+		};
+	}
+
+	// Frees the decoded images of a load that won't deliver them.
+	static function disposeAll(decoded:Array<Null<ModelImage3D>>):Void {
+		for (image in decoded)
+			if (image != null)
+				image.dispose();
 	}
 
 	// An MTL material as glTF's: its diffuse color and opacity the base color, its diffuse texture the base color image, its computed

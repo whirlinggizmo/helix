@@ -18,6 +18,7 @@ import helix.geometry.Mesh3D;
 import helix.platform.IGraphics;
 import helix.platform.TextureFormat;
 import helix.services.fonts.Font2D;
+import helix.platform.IDecodedImage;
 import helix.services.images.Image;
 import helix.services.models.Model3D;
 
@@ -107,6 +108,16 @@ class Renderer {
 		@throws String  An image larger than this GPU allows. */
 	public function createTexture(image:Image):Texture2D {
 		return own(new Texture2D(graphics.createTexture(image.width, image.height, [image.pixels]), image.width, image.height));
+	}
+
+	/** Uploads an image decoded for the GPU (helix-services' `Images.decodeForGpu`) as a texture, without mipmaps: in a page the browser's
+		image goes to the GPU as it is, its pixels never held here.
+
+		@param image  The decoded image. It is left to the caller, who disposes it once uploaded.
+		@return  The texture, sampled linearly and clamped until its `sampling` is set, as `createTexture` gives one.
+		@throws String  An image larger than this GPU allows. */
+	public function createTextureFromImage(image:IDecodedImage):Texture2D {
+		return own(new Texture2D(graphics.createTextureFromImage(image), image.width, image.height));
 	}
 
 	/** Uploads an image as a texture with its mipmaps, made on the CPU (helix-services' `Image.getMipmaps`), so it shrinks without
@@ -238,6 +249,9 @@ class Renderer {
 		its textures' samplers their `sampling`, its texture transform `textureTransform`, and its KHR_materials_clearcoat, sheen,
 		specular, ior and emissive_strength values the material's; otherwise opaque, uncut, back faces culled, linear and repeated, and
 		none of the extensions. An OBJ file's materials are shaded `Phong` from their Ks and Ns. Meshes keep their morph targets.
+
+		Each image goes to the GPU once, taken from the model (`ModelImage3D.takeDecoded`) and disposed once sent: a second GpuModel3D of
+		the same model has no textures. One GpuModel3D is drawn as often as wanted.
 		@param model  The model, as helix-services' `Models` reads it.
 		@param colorSpace  Optional. How the file's color factors and vertex colors are taken. `Auto`, the default, as the format says:
 			glTF's are linear, its factors encoded to sRGB for the materials' 0xAARRGGBB colors and its vertex colors read as linear
@@ -247,17 +261,18 @@ class Renderer {
 			every file's as linear.
 		@return  The uploaded model, which owns its meshes and textures. */
 	public function createModel(model:Model3D, colorSpace:ColorSpace = Auto):GpuModel3D {
-		return GpuModel3D.make(this, model, createTexture, helix.platform.MipmapFilter.None, colorSpace);
+		return GpuModel3D.make(this, model, false, colorSpace);
 	}
 
-	/** Uploads a model as `createModel` does, its textures made with mipmaps (`createTextureMipmapped`), as three.js makes them.
+	/** Uploads a model as `createModel` does, its textures made with mipmaps (`createTextureMipmapped`, from each image's pixels), as
+		three.js makes them.
 
 		@param model  The model, as helix-services' `Models` reads it.
 		@param colorSpace  Optional. How the file's color factors and vertex colors are taken, as `createModel` takes it; `Auto` by
 			default.
 		@return  The uploaded model, which owns its meshes and textures. */
 	public function createModelMipmapped(model:Model3D, colorSpace:ColorSpace = Auto):GpuModel3D {
-		return GpuModel3D.make(this, model, createTextureMipmapped, helix.platform.MipmapFilter.Linear, colorSpace);
+		return GpuModel3D.make(this, model, true, colorSpace);
 	}
 
 	/** Uploads a finished environment bake: its prefiltered and background cubes, and its irradiance.

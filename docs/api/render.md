@@ -1925,6 +1925,7 @@ var inFrame(default, null):Bool
 var exposure(default, set):Float
 var toneMapping:ToneMapping
 function createTexture(image:Image):Texture2D
+function createTextureFromImage(image:IDecodedImage):Texture2D
 function createTextureMipmapped(image:Image):Texture2D
 function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:TargetDepth = Buffer, ?msaaSampleCount:Int):RenderTarget2D
 function createCubeTexture(faces:Array<Image>):CubeTexture3D
@@ -1961,6 +1962,10 @@ function dispose():Void
   - `image`: The image. Its pixels are copied, so it may be changed or dropped after.
   - returns: The texture, sampled linearly and clamped until its `sampling` is set; `Sampling`'s anisotropy sharpens it at grazing angles. `createTextureMipmapped` makes one that shrinks without shimmering.
   - throws `String`: An image larger than this GPU allows.
+- `createTextureFromImage`: Uploads an image decoded for the GPU (helix-services' `Images.decodeForGpu`) as a texture, without mipmaps: in a page the browser's image goes to the GPU as it is, its pixels never held here.
+  - `image`: The decoded image. It is left to the caller, who disposes it once uploaded.
+  - returns: The texture, sampled linearly and clamped until its `sampling` is set, as `createTexture` gives one.
+  - throws `String`: An image larger than this GPU allows.
 - `createTextureMipmapped`: Uploads an image as a texture with its mipmaps, made on the CPU (helix-services' `Image.getMipmaps`), so it shrinks without shimmering.
   - `image`: The image. Its pixels are copied, so it may be changed or dropped after.
   - returns: The texture, sampled linearly and clamped until its `sampling` is set, its mipmaps blended (`MipmapFilter.Linear`); `Sampling`'s anisotropy sharpens it at grazing angles.
@@ -1994,7 +1999,9 @@ function dispose():Void
   - returns: The uploaded model, which owns its meshes and textures.
 
   An image that is null (one the model couldn't read) gives no texture, and a material naming it draws without it. A mesh without a material in the file is given one more material, white, at the end of `materials`. Each texture's `colorSpace` is set from the slot it fills. Where helix-formats' `GltfMaterial` gives them, its alpha mode, cutoff and double-sidedness become `blend`, `alphaCutoff` and `cull`, its textures' samplers their `sampling`, its texture transform `textureTransform`, and its KHR_materials_clearcoat, sheen, specular, ior and emissive_strength values the material's; otherwise opaque, uncut, back faces culled, linear and repeated, and none of the extensions. An OBJ file's materials are shaded `Phong` from their Ks and Ns. Meshes keep their morph targets.
-- `createModelMipmapped`: Uploads a model as `createModel` does, its textures made with mipmaps (`createTextureMipmapped`), as three.js makes them.
+
+  Each image goes to the GPU once, taken from the model (`ModelImage3D.takeDecoded`) and disposed once sent: a second GpuModel3D of the same model has no textures. One GpuModel3D is drawn as often as wanted.
+- `createModelMipmapped`: Uploads a model as `createModel` does, its textures made with mipmaps (`createTextureMipmapped`, from each image's pixels), as three.js makes them.
   - `model`: The model, as helix-services' `Models` reads it.
   - `colorSpace`: Optional. How the file's color factors and vertex colors are taken, as `createModel` takes it; `Auto` by default.
   - returns: The uploaded model, which owns its meshes and textures.

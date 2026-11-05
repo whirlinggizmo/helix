@@ -6,11 +6,10 @@ import helix.geometry.Mesh3D;
 import helix.geometry.Skeleton3D;
 import helix.geometry.Skin3D;
 import helix.math.Matrix3D;
-import helix.services.images.Image;
 
 /** Represents a model as `Models` reads it: its meshes, with their nodes' transforms put into them, its materials, and its images
-	decoded. A glTF file and an OBJ file give the same kinds: an OBJ file's materials are made glTF materials (`materials`), and it has no
-	skeleton, skins or animations. */
+	decoded for the GPU (`ModelImage3D`). A glTF file and an OBJ file give the same kinds: an OBJ file's materials are made glTF materials
+	(`materials`), and it has no skeleton, skins or animations. */
 class Model3D {
 	/** Gets the file it was read from, as the assets name it. */
 	public final path:String;
@@ -53,13 +52,14 @@ class Model3D {
 		texture with that color black, and that texture the emissive image; no occlusion image. A name no library gives is a material of every default. */
 	public final materials:Array<GltfMaterial>;
 
-	/** Gets the images, decoded, by their index in the file; null for one that couldn't be read or decoded (the failure logged). An OBJ
-		file's are the textures its materials name, each file once, in the order they are first named. */
-	public final images:Array<Null<Image>>;
+	/** Gets the images, each decoded for the GPU with its file's bytes, by their index in the file; null for one that couldn't be read or
+		decoded (the failure logged). An OBJ file's are the textures its materials name, each file once, in the order they are first
+		named. */
+	public final images:Array<Null<ModelImage3D>>;
 
 	@:allow(helix.services.models)
 	function new(path:String, meshes:Array<Mesh3D>, meshMaterialIndices:Array<Int>, meshSkinIndices:Array<Int>, meshTransforms:Array<Matrix3D>,
-			skeleton:Null<Skeleton3D>, skins:Array<Skin3D>, animations:Array<Animation3D>, materials:Array<GltfMaterial>, images:Array<Null<Image>>) {
+			skeleton:Null<Skeleton3D>, skins:Array<Skin3D>, animations:Array<Animation3D>, materials:Array<GltfMaterial>, images:Array<Null<ModelImage3D>>) {
 		this.path = path;
 		this.meshes = meshes;
 		this.meshMaterialIndices = meshMaterialIndices;
@@ -81,5 +81,13 @@ class Model3D {
 			if (animation.name == name)
 				return i;
 		return -1;
+	}
+
+	/** Frees each image's decoded image still held (`ModelImage3D.dispose`): those nothing uploaded. The meshes, materials and each
+		image's `encoded` stay. */
+	public function dispose():Void {
+		for (image in images)
+			if (image != null)
+				image.dispose();
 	}
 }

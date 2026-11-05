@@ -155,8 +155,8 @@ class ObjModels {
 		the normal map the bump texture (`bumpTexture`), its color white and its value the specular exponent (`Ns`); the emission
 		color (`Ke`); the height map the displacement texture (`disp`); each value 0 but the normal map's. What the file doesn't give is
 		tinyobj_loader_c's default: each color black, the specular exponent 1. A color's bytes are raylib's
-		(unsigned char)(f*255). A texture is its file's, decoded already (`Runtime.image`), shared with every load of the file; one that
-		couldn't be read is none (id 0). With no materials, a model has the default material alone (`LoadOBJ`).
+		(unsigned char)(f*255). A texture is its file's, decoded already (`Runtime.picture`) and sent to the GPU as a texture loaded by
+		name is (`Textures.fromDecoded`), shared with every load of the file; one that couldn't be read is none (id 0). With no materials, a model has the default material alone (`LoadOBJ`).
 
 		@param library  The library.
 		@param shader  The default shader.
@@ -170,13 +170,32 @@ class ObjModels {
 		function color(c:Null<haxe.ds.ReadOnlyArray<Float>>):Color
 			return c == null ? new Color(0, 0, 0, 255) : new Color(Models.byte(c[0]), Models.byte(c[1]), Models.byte(c[2]), 255);
 		function texture(map:MaterialMap, path:String):Void {
-			var image = Runtime.image(path);
-			if (image == null) {
-				Runtime.log(4, 'IMAGE: Failed to load image data');
-				map.texture = new Texture2D();
-				return;
+			var id = 0, width = 0, height = 0;
+			if (Textures.hasPath(path)) {
+				id = Textures.fromDecoded(path, null);
+				width = Textures.widthOf(id);
+				height = Textures.heightOf(id);
+			} else {
+				var picture = Runtime.picture(path);
+				if (picture != null) {
+					id = Textures.fromDecoded(path, picture);
+					width = picture.width;
+					height = picture.height;
+				} else {
+					// A file whose pixels a program already asked for is in memory as pixels.
+					var image = Runtime.image(path);
+					if (image == null) {
+						Runtime.log(4, 'IMAGE: Failed to load image data');
+						map.texture = new Texture2D();
+						return;
+					}
+					id = Textures.fromImage(path, image);
+					width = image.width;
+					height = image.height;
+				}
 			}
-			Models.give(map, path, () -> image, image.width, image.height, Raylib.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+			map.texture = new Texture2D(id, width, height, 1, Raylib.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+			Textures.releaseHeld(id);
 		}
 		var diffuse = maps[Raylib.MATERIAL_MAP_DIFFUSE];
 		if (m.diffuseTexturePath != null)
