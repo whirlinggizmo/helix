@@ -105,8 +105,9 @@ class Frame {
 	var spriteIndices = 0;
 
 	/** Gives the sprite shader (`Defaults.spriteShader`): set by `Sprites.register` as a module adding quads starts, null in a program
-		adding none, which then links neither the shader nor the sprite path. */
-	public static var spriteShader:Null<Void->helix.services.shaders.Shader> = null;
+		adding none, which then links neither the shader nor the sprite path. It has no initial value, so Frame's own start (hxcpp boots
+		the classes in its order) never resets what the module set. */
+	public static var spriteShader:Null<Void->helix.services.shaders.Shader>;
 
 	// The sprite shader's program, made when first drawn through.
 	var spriteProgram:Null<Program> = null;
