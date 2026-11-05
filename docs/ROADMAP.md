@@ -19,7 +19,7 @@ helix-raylib's size and speed where docs/speed.md records them.
   raygui's skins and a retained UI alike. Then helix-raylib rebuilt on it (immediate, as raylib is, on helix-render directly), only if
   each size rung grows by at most 1 to 2 KB gzip and the bunnymark (`tools/bunnymark.py`) is no slower than docs/speed.md's numbers;
   otherwise helix-raylib keeps its own `Frame`. HeliX's `Batch2D`, which helix-render's came from, drew a bunnymark's 150k sprites in
-  41 ms a frame in a page against helix-raylib's 18 before its batch was fixed (docs/speed.md), so helix-render's batch takes the
+  41 ms a frame in a page against helix-raylib's 18 before its batch was fixed, so helix-render's batch takes the
   same fixes first: nothing allocated per draw, typed records, indexed quads.
 - **The jam, before Gyre's shape is decided:** agents (Sonnet, docs allowed) build the same small 3D top-down survivors-like on
   helix-raylib and on HeliX, two or three each, with gear worn from the modular characters' parts (CC0, Quaternius). Measured: tokens,
