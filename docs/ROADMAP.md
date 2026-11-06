@@ -54,6 +54,14 @@ helix-raylib's size and speed where docs/speed.md records them.
   draw of one brings it back as a restore does, the frame drawn with it missing as after a lost context. Render textures, fonts and the
   frame's own textures are never evicted. `DrawFrameStats` shows evictions a frame beside the GPU bytes. Not built until the user has
   read it; the bar says one engine, so it may also be dropped.
+- **The frame stats in pages, with the frame's shape:** `DrawFrameStats` (`extras.Debug`) grows a line a feature and will crowd. Make it
+  pages, cycled as three.js's stats panel cycles on a click: a click or tap on the panel (and `ToggleFrameStats()` for a key the program
+  binds) shows the next, `FrameStatsStyle.page` says which. Page 0 fps and the frame time's mean and p95; 1 draw calls, triangles,
+  state changes; 2 memory, the GPU's textures and buffers and the process's; 3 the frame's shape over the last five seconds, which
+  found tonight's stalls where a half second's p95 stayed innocent: median against mean, the worst frame, and how many frames ran over
+  a threshold (25 ms until set). What the display can't reach stays in the tools: GPU time, the GPU process's waits and the collector's
+  pauses, read from a Chrome trace or perf (`scratchpad` scripts from 2026-11-05: `robots_profile.cjs`, `cpu_profile.cjs`,
+  `gpu_perf.sh`, `phone_page.cjs`, to be kept under tools/compare when they settle).
 - **The sprite path's per-sprite cost in a page:** the bunnymark at 200k takes 6.73 ms over Vulkan against three.js's InstancedMesh at
   3.84 (docs/speed.md), both one instanced draw, so the gap is JavaScript a sprite, about 34 ns against 19. Ours passes through
   `DrawTexture`, its draw helper, `Frame.quad`, `spriteRoom` and twelve record writes, with a Map lookup of the texture's GPU handle;
