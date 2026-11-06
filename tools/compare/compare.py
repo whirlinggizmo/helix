@@ -555,7 +555,7 @@ def versions_of(contenders):
     """What each contender is, for its rows: its version."""
     versions = pins()
     commit = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
-    return {'helix-raylib': f'helix-2.0 {commit}', 'raylib-c': f'raylib {RAYLIB}', 'godot': f'Godot {versions["godot"]}', 'three': f'three.js {versions["three"]}',
+    return {'helix-raylib': f'helix-2.0 {commit}', 'raylib-c': f'raylib {RAYLIB}', 'godot': f'Godot {versions["godot"]}', 'three': f'three.js {versions["three"]}', 'lime': f'Lime {versions["lime"]}',
             'helix1': 'HeliX'}
 
 
