@@ -1201,8 +1201,9 @@ class Raylib {
 
 	/** Returns how many of the display's pixels a pixel drawn takes, across and down: 2 on most phones and high-density displays.
 
-		It is the display's scale whatever the flags, as raylib 5.5's desktop build has it and 6.2's web build; raylib 6.2's desktop build
-		gives 1 unless `FLAG_WINDOW_HIGHDPI` is set and the window isn't fullscreen, and 5.5's web build always 1.
+		Natively it is the display's scale whatever the flags, as raylib 5.5's desktop build has it (6.2's gives 1 unless
+		`FLAG_WINDOW_HIGHDPI` is set and the window isn't fullscreen). In a page it is 1 unless `FLAG_WINDOW_HIGHDPI` was set before
+		`InitWindow`, which draws the canvas at the device's ratio where raylib's web build always draws at its logical size.
 
 		@return  The scale. */
 	public static inline function GetWindowScaleDPI():Vector2

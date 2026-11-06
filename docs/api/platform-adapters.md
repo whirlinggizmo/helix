@@ -997,7 +997,7 @@ final events:Sdl3EventsAdapter
 
 Provides `IWindow` in a browser page: the page is the window.
 
-Its title is the document's, its size the viewport's, and fullscreen and visibility are the canvas's, whose drawing size follows the viewport and the pixel ratio. A page can't move, size, maximize or minimize its window, choose a monitor, or close; it sees one screen. Those requests fail at the next `DomEventsAdapter` poll, saying so, and what a page can do answers there too; fullscreen and the orientation answer as the browser does. A dropped file is the File the canvas's drop gave, read later.
+Its title is the document's, its size the canvas's box on the page (the viewport's where the page gives it none), and fullscreen and visibility are the canvas's, whose drawing buffer follows that box at the ratio the options choose: the canvas's logical size until `highDpi` is set, then the device's pixel ratio times it. A page can't move, size, maximize or minimize its window, choose a monitor, or close; it sees one screen. Those requests fail at the next `DomEventsAdapter` poll, saying so, and what a page can do answers there too; fullscreen and the orientation answer as the browser does. A dropped file is the File the canvas's drop gave, read later.
 
 ```haxe
 function new(options:DomWindowAdapterOptions)
@@ -1049,8 +1049,8 @@ function close():Void
 var onClose:Null<() -> Void>
 ```
 
-- `new`: Creates the page's window over the canvas the program draws in, sizing its drawing buffer to the viewport.
-  - `options`: The canvas's id.
+- `new`: Creates the page's window over the canvas the program draws in, sizing its drawing buffer to the canvas's box at the ratio chosen.
+  - `options`: The canvas's id, and whether it draws at the device's pixel ratio.
   - throws `String`: No canvas has that id.
 
 ## DomWindowAdapterOptions
@@ -1062,14 +1062,16 @@ Represents what `DomWindowAdapter` is made over.
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{canvasId:String}
+{canvasId:String, ?highDpi:Bool}
 ```
 
 ```haxe
 final canvasId:String
+final highDpi:Bool = false
 ```
 
 - `canvasId`: Gets the id of the canvas the program draws in: what goes fullscreen or hides, and the drawing surface.
+- `highDpi`: Gets whether the drawing buffer is the canvas's size times the device's pixel ratio, sharp on a dense screen at the ratio squared in pixels filled, or the canvas's logical size, one framebuffer pixel a CSS pixel, which the browser scales to the screen. False until set.
 
 ## Sdl3WindowAdapter
 
