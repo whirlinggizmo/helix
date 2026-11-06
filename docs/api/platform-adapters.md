@@ -504,6 +504,8 @@ Provides `IGraphics` on a canvas's WebGL2 context.
 
 It builds programs from a `ShaderSource`'s GLSL ES 300 and pipelines from a `PipelineDesc`. A lost context (`Event.GraphicsLost`) is taken as `IGraphics` says: every call does nothing until the browser gives the context back, when the adapter remakes programs, stream buffers, data textures, render targets and shadow maps under their handles from what it was told, and drops textures and static buffers.
 
+A draw sets only the GL state that differs from the last draw's. A layout over static buffers is kept as a vertex array object, bound again when the same mesh is drawn, and each draw's uniform blocks go into buffers of their own, taken in turn over three frames, so no write waits on a draw still reading.
+
 ```haxe
 function new(options:WebGl2GraphicsAdapterOptions)
 var msaaSampleCount(get, never):Int

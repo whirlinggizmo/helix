@@ -5,41 +5,41 @@
    "variant": "",
    "program": "bunnymark",
    "where": "page-gl",
-   "version": "helix-2.0 4fae8a6",
+   "version": "helix-2.0 4a7abcf",
    "date": "2026-11-05",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "10000": {
-     "meanMs": 0.33,
-     "p95Ms": 0.4,
+     "meanMs": 0.45,
+     "p95Ms": 0.6,
      "runs": 3
     },
     "50000": {
-     "meanMs": 1.72,
-     "p95Ms": 1.9,
+     "meanMs": 1.57,
+     "p95Ms": 1.7,
      "runs": 3
     },
     "100000": {
-     "meanMs": 3.28,
-     "p95Ms": 3.7,
+     "meanMs": 3.26,
+     "p95Ms": 3.5,
      "runs": 3
     },
     "150000": {
-     "meanMs": 5.18,
+     "meanMs": 5.13,
      "p95Ms": 5.7,
      "runs": 3
     },
     "200000": {
-     "meanMs": 7.32,
-     "p95Ms": 7.6,
+     "meanMs": 7.08,
+     "p95Ms": 7.5,
      "runs": 3
     }
    },
-   "held": 323000,
+   "held": 324000,
    "size": {
-    "rawKB": 233.3,
-    "gzipKB": 49.8,
-    "brotliKB": 41.6
+    "rawKB": 240.5,
+    "gzipKB": 51.3,
+    "brotliKB": 42.9
    },
    "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 Laptop GPU/PCIe/SSE2, OpenGL 4.5.0)"
   },
@@ -49,21 +49,42 @@
    "program": "bunnymark",
    "where": "page-gl",
    "version": "raylib 5.5",
-   "date": "2026-11-04",
-   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "date": "2026-11-05",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
+    "10000": {
+     "meanMs": 0.69,
+     "p95Ms": 0.8,
+     "runs": 3
+    },
+    "50000": {
+     "meanMs": 3.43,
+     "p95Ms": 3.7,
+     "runs": 3
+    },
     "100000": {
-     "meanMs": 6.35,
-     "p95Ms": 6.5,
+     "meanMs": 6.62,
+     "p95Ms": 6.8,
+     "runs": 3
+    },
+    "150000": {
+     "meanMs": 10.1,
+     "p95Ms": 10.8,
+     "runs": 3
+    },
+    "200000": {
+     "meanMs": 13.09,
+     "p95Ms": 14.3,
      "runs": 3
     }
    },
-   "held": null,
+   "held": 261000,
    "size": {
-    "rawKB": 357.5,
+    "rawKB": 357.7,
     "gzipKB": 117.4,
-    "brotliKB": 99.5
-   }
+    "brotliKB": 99.6
+   },
+   "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 Laptop GPU/PCIe/SSE2, OpenGL 4.5.0)"
   },
   {
    "contender": "three",
@@ -164,7 +185,7 @@
    "variant": "",
    "program": "bunnymark",
    "where": "page-vulkan",
-   "version": "helix-2.0 4fae8a6",
+   "version": "helix-2.0 4a7abcf",
    "date": "2026-11-05",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
@@ -174,31 +195,31 @@
      "runs": 3
     },
     "50000": {
-     "meanMs": 1.5,
-     "p95Ms": 1.6,
+     "meanMs": 1.48,
+     "p95Ms": 1.7,
      "runs": 3
     },
     "100000": {
-     "meanMs": 3.16,
-     "p95Ms": 3.5,
+     "meanMs": 3.1,
+     "p95Ms": 3.4,
      "runs": 3
     },
     "150000": {
-     "meanMs": 5.08,
-     "p95Ms": 5.5,
+     "meanMs": 4.88,
+     "p95Ms": 5.1,
      "runs": 3
     },
     "200000": {
-     "meanMs": 6.82,
-     "p95Ms": 7.9,
+     "meanMs": 6.88,
+     "p95Ms": 7.3,
      "runs": 3
     }
    },
-   "held": 408000,
+   "held": 417000,
    "size": {
-    "rawKB": 233.3,
-    "gzipKB": 49.8,
-    "brotliKB": 41.6
+    "rawKB": 240.5,
+    "gzipKB": 51.3,
+    "brotliKB": 42.9
    },
    "renderer": "ANGLE (NVIDIA, Vulkan 1.4.329 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
   },
@@ -208,41 +229,42 @@
    "program": "bunnymark",
    "where": "page-vulkan",
    "version": "raylib 5.5",
-   "date": "2026-11-04",
-   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "date": "2026-11-05",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "10000": {
-     "meanMs": 0.76,
-     "p95Ms": 0.9,
+     "meanMs": 0.71,
+     "p95Ms": 0.8,
      "runs": 3
     },
     "50000": {
-     "meanMs": 3.27,
-     "p95Ms": 3.4,
+     "meanMs": 3.19,
+     "p95Ms": 3.3,
      "runs": 3
     },
     "100000": {
-     "meanMs": 6.34,
-     "p95Ms": 6.9,
+     "meanMs": 6.46,
+     "p95Ms": 6.6,
      "runs": 3
     },
     "150000": {
-     "meanMs": 9.69,
-     "p95Ms": 10.8,
+     "meanMs": 9.72,
+     "p95Ms": 10.5,
      "runs": 3
     },
     "200000": {
-     "meanMs": 13.04,
-     "p95Ms": 15,
+     "meanMs": 12.74,
+     "p95Ms": 13.1,
      "runs": 3
     }
    },
-   "held": 227000,
+   "held": 254000,
    "size": {
-    "rawKB": 357.5,
+    "rawKB": 357.7,
     "gzipKB": 117.4,
-    "brotliKB": 99.5
-   }
+    "brotliKB": 99.6
+   },
+   "renderer": "ANGLE (NVIDIA, Vulkan 1.4.329 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
   },
   {
    "contender": "godot",
@@ -669,22 +691,33 @@
    "variant": "",
    "program": "robots",
    "where": "page-gl",
-   "version": "helix-2.0 78f16db",
-   "date": "2026-11-04",
-   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "version": "helix-2.0 4a7abcf",
+   "date": "2026-11-05",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
+    "50": {
+     "meanMs": 2.7,
+     "p95Ms": 5,
+     "runs": 3
+    },
     "200": {
-     "meanMs": 20.42,
-     "p95Ms": 23.4,
+     "meanMs": 10.83,
+     "p95Ms": 12.7,
+     "runs": 3
+    },
+    "400": {
+     "meanMs": 20.8,
+     "p95Ms": 27.4,
      "runs": 3
     }
    },
    "held": null,
    "size": {
-    "rawKB": 366.7,
-    "gzipKB": 78.5,
-    "brotliKB": 63.8
-   }
+    "rawKB": 407.8,
+    "gzipKB": 86.2,
+    "brotliKB": 69.8
+   },
+   "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 Laptop GPU/PCIe/SSE2, OpenGL 4.5.0)"
   },
   {
    "contender": "raylib-c",
@@ -692,21 +725,32 @@
    "program": "robots",
    "where": "page-gl",
    "version": "raylib 5.5",
-   "date": "2026-11-04",
-   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "date": "2026-11-05",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
+    "50": {
+     "meanMs": 5.91,
+     "p95Ms": 6.2,
+     "runs": 3
+    },
     "200": {
-     "meanMs": 24.28,
-     "p95Ms": 27.3,
+     "meanMs": 23.51,
+     "p95Ms": 26.1,
+     "runs": 3
+    },
+    "400": {
+     "meanMs": 46.28,
+     "p95Ms": 51.1,
      "runs": 3
     }
    },
    "held": null,
    "size": {
-    "rawKB": 568.6,
-    "gzipKB": 192.9,
+    "rawKB": 569.1,
+    "gzipKB": 193.1,
     "brotliKB": 159.5
-   }
+   },
+   "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 Laptop GPU/PCIe/SSE2, OpenGL 4.5.0)"
   },
   {
    "contender": "raylib-c",
@@ -714,21 +758,32 @@
    "program": "robots",
    "where": "page-gl",
    "version": "raylib 5.5",
-   "date": "2026-11-04",
-   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "date": "2026-11-05",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
+    "50": {
+     "meanMs": 1.96,
+     "p95Ms": 2.1,
+     "runs": 3
+    },
     "200": {
-     "meanMs": 8.4,
-     "p95Ms": 9.6,
+     "meanMs": 7.84,
+     "p95Ms": 9,
+     "runs": 3
+    },
+    "400": {
+     "meanMs": 15.33,
+     "p95Ms": 16.6,
      "runs": 3
     }
    },
    "held": null,
    "size": {
-    "rawKB": 570.7,
-    "gzipKB": 192.6,
-    "brotliKB": 159.2
-   }
+    "rawKB": 571.2,
+    "gzipKB": 192.8,
+    "brotliKB": 159.3
+   },
+   "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 Laptop GPU/PCIe/SSE2, OpenGL 4.5.0)"
   },
   {
    "contender": "three",
@@ -772,32 +827,33 @@
    "variant": "",
    "program": "robots",
    "where": "page-vulkan",
-   "version": "helix-2.0 78f16db",
-   "date": "2026-11-04",
-   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "version": "helix-2.0 4a7abcf",
+   "date": "2026-11-05",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "50": {
-     "meanMs": 3.16,
-     "p95Ms": 5.7,
+     "meanMs": 2.49,
+     "p95Ms": 2.8,
      "runs": 3
     },
     "200": {
-     "meanMs": 13.06,
-     "p95Ms": 15.9,
+     "meanMs": 10.21,
+     "p95Ms": 12.9,
      "runs": 3
     },
     "400": {
-     "meanMs": 26.04,
-     "p95Ms": 30.9,
+     "meanMs": 17.83,
+     "p95Ms": 19.5,
      "runs": 3
     }
    },
    "held": null,
    "size": {
-    "rawKB": 366.7,
-    "gzipKB": 78.5,
-    "brotliKB": 63.8
-   }
+    "rawKB": 407.8,
+    "gzipKB": 86.2,
+    "brotliKB": 69.8
+   },
+   "renderer": "ANGLE (NVIDIA, Vulkan 1.4.329 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
   },
   {
    "contender": "raylib-c",
@@ -805,31 +861,32 @@
    "program": "robots",
    "where": "page-vulkan",
    "version": "raylib 5.5",
-   "date": "2026-11-04",
-   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "date": "2026-11-05",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "50": {
-     "meanMs": 21.89,
-     "p95Ms": 23.4,
+     "meanMs": 21.35,
+     "p95Ms": 22.7,
      "runs": 3
     },
     "200": {
-     "meanMs": 86.41,
-     "p95Ms": 89,
+     "meanMs": 85.66,
+     "p95Ms": 88,
      "runs": 3
     },
     "400": {
-     "meanMs": 173.0,
-     "p95Ms": 178.8,
+     "meanMs": 171.98,
+     "p95Ms": 177.9,
      "runs": 3
     }
    },
    "held": null,
    "size": {
-    "rawKB": 568.6,
-    "gzipKB": 192.9,
+    "rawKB": 569.1,
+    "gzipKB": 193.1,
     "brotliKB": 159.5
-   }
+   },
+   "renderer": "ANGLE (NVIDIA, Vulkan 1.4.329 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
   },
   {
    "contender": "raylib-c",
@@ -837,31 +894,32 @@
    "program": "robots",
    "where": "page-vulkan",
    "version": "raylib 5.5",
-   "date": "2026-11-04",
-   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA GeForce RTX 4080 Laptop GPU, Linux",
+   "date": "2026-11-05",
+   "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "50": {
-     "meanMs": 2.64,
-     "p95Ms": 2.8,
+     "meanMs": 1.97,
+     "p95Ms": 2.1,
      "runs": 3
     },
     "200": {
-     "meanMs": 10.6,
-     "p95Ms": 12.6,
+     "meanMs": 7.95,
+     "p95Ms": 8.8,
      "runs": 3
     },
     "400": {
-     "meanMs": 24.66,
-     "p95Ms": 29.7,
+     "meanMs": 15.92,
+     "p95Ms": 17.7,
      "runs": 3
     }
    },
    "held": null,
    "size": {
-    "rawKB": 570.7,
-    "gzipKB": 192.6,
-    "brotliKB": 159.2
-   }
+    "rawKB": 571.2,
+    "gzipKB": 192.8,
+    "brotliKB": 159.3
+   },
+   "renderer": "ANGLE (NVIDIA, Vulkan 1.4.329 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
   },
   {
    "contender": "godot",

@@ -60,7 +60,11 @@ private typedef Program = {
 	It builds programs from a `ShaderSource`'s GLSL ES 300 and pipelines from a `PipelineDesc`. A lost context (`Event.GraphicsLost`) is
 	taken as `IGraphics` says: every call does nothing until the browser gives the context back, when the adapter remakes programs, stream
 	buffers, data textures, render targets and shadow maps under their handles from what it was told, and drops textures and static
-	buffers. */
+	buffers.
+
+	A draw sets only the GL state that differs from the last draw's. A layout over static buffers is kept as a vertex array object, bound
+	again when the same mesh is drawn, and each draw's uniform blocks go into buffers of their own, taken in turn over three frames, so no
+	write waits on a draw still reading. */
 class WebGl2GraphicsAdapter implements IGraphics {
 	var gl:WebGL2RenderingContext;
 
@@ -128,15 +132,56 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	var comparison:Dynamic = null;
 	// A block's bytes with its flip uniform written, the caller's left as they are; grown as needed.
 	var flippedBlock = new js.lib.Uint8Array(256);
-	// A uniform buffer for each binding point (a vertex block's slot, a fragment block's 4 + its slot), and its size; made when first used.
-	var blockBuffers:Array<Dynamic> = [];
+	// The uniform buffers of each binding point (a vertex block's slot, a fragment block's 4 + its slot): poolDepth of them taken in turn, a
+	// draw each, so a draw's blocks never go into a buffer a draw still in flight reads, which the GL driver would wait for (ANGLE's GL
+	// backend passes the write through; the robots page took twice as long over GL as over Vulkan from that alone). Each point's buffers
+	// are its largest block's size, remade when a larger one comes. The depth holds three frames of the most draws a frame has made, grown
+	// at a frame's start, and the buffers are made as their turn first comes.
+	var blockBuffers:Array<Array<Dynamic>> = [];
 	var blockBufferSizes:Array<Int> = [];
+	var poolDepth = 256;
+	var drawTurn = 0;
+	var frameDraws = 0;
 	// The texture the open target or shadow pass draws into, 0 for none: a draw may not sample it.
 	var passTexture = 0;
 	// The framebuffer a texture is read back through, made the first time.
 	var reading:Dynamic = null;
 	// Attribute slots enabled by the last draw: each draw enables its own and turns the rest off.
 	var enabled:Array<Bool> = [];
+	// The GL state the last draw left, so a draw asking for the same skips the call: the program in use, the unit active, each unit's texture
+	// (by handle, 0 for not known) and sampler, each binding point's uniform buffer, the index buffer bound, the pipeline whose fixed state
+	// (depth, cull, winding, color mask, blend) is set and whether it was set flipped, and the vertex layout fed (the pipeline, its buffers,
+	// their offsets and the first instance). Forgotten where something else changes the state: a pass opened, a texture made or updated on
+	// the unit active, a program, texture or buffer disposed, the context given back.
+	var boundProgram:Dynamic = null;
+	var activeUnit = 0;
+	var unitTextures:Array<Int> = [];
+	var unitSamplers:Array<Dynamic> = [];
+	var boundIndex:Dynamic = null;
+	var statePipeline:Null<PipelineDesc> = null;
+	var stateFlipped = false;
+	var layoutPipeline:Null<PipelineDesc> = null;
+	var layoutBuffers:Array<Int> = [];
+	var layoutOffsets:Null<Array<Int>> = null;
+	var layoutFirstInstance = 0;
+	// The pipeline whose attribute constants (what no buffer feeds) are set: context state, not a vertex array's.
+	var constantsPipeline:Null<PipelineDesc> = null;
+	// A vertex array for each layout over static buffers alone, keyed by the pipeline, buffers, offsets and first instance, so a mesh drawn
+	// again binds one object in place of every attribute's pointer. The default vertex array feeds layouts over stream buffers, whose
+	// offsets change with each draw. The element buffer binding is each vertex array's own: boundIndex is the current one's, defaultIndex
+	// the default's.
+	var vaos:Map<String, {
+		vao:Dynamic,
+		index:Dynamic,
+		pipeline:Int,
+		buffers:Array<Int>
+	}> = [];
+	var vaoCount = 0;
+	var currentVao:Dynamic = null;
+	var defaultIndex:Dynamic = null;
+
+	// Vertex arrays kept before they are all let go, so a run of layouts never seen again doesn't hold them forever.
+	static inline final MOST_VAOS = 1024;
 
 	/** Creates the adapter on a canvas's WebGL2 context.
 
@@ -165,6 +210,44 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	inline function gone():Bool
 		return gl.isContextLost();
 
+	// Nothing of the GL state is known: the next draw sets all of it.
+	function forgetState():Void {
+		boundProgram = null;
+		unitTextures = [];
+		unitSamplers = [];
+		boundIndex = null;
+		statePipeline = null;
+		layoutPipeline = null;
+		constantsPipeline = null;
+		currentVao = null;
+		defaultIndex = null;
+	}
+
+	// Lets every vertex array go (deleted, or gone with the context).
+	function dropVaos(delete:Bool):Void {
+		if (delete)
+			for (v in vaos)
+				gl.deleteVertexArray(v.vao);
+		vaos = [];
+		vaoCount = 0;
+		currentVao = null;
+	}
+
+	// Binds the default vertex array, whose element buffer is then the one bound.
+	function defaultVao():Void {
+		if (currentVao != null) {
+			gl.bindVertexArray(null);
+			currentVao = null;
+		}
+		boundIndex = defaultIndex;
+	}
+
+	// Binds a texture to make or change it, on the unit active, whose binding is then not known.
+	inline function bindToChange(target:Int, tex:Dynamic):Void {
+		gl.bindTexture(target, tex);
+		unitTextures[activeUnit] = 0;
+	}
+
 	// The context given back: nothing of the old one's objects remains. What was described is made again under its handle (programs, stream
 	// buffers, data textures, render targets, shadow maps); textures and static buffers, whose contents were given once, are dropped.
 	function restore():Void {
@@ -176,7 +259,11 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		reading = null;
 		blockBuffers = [];
 		blockBufferSizes = [];
+		frameDraws = 0;
 		enabled = [];
+		dropVaos(false);
+		forgetState();
+		activeUnit = 0;
 		placeholders = [0, 0, 0];
 		active = inTarget = flipped = frameEnded = false;
 		drawing = null;
@@ -248,7 +335,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		if (width <= 0 || height <= 0 || levels.length == 0 || !canSample(format))
 			throw "Invalid texture";
 		var tex = gl.createTexture();
-		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, tex);
+		bindToChange(WebGL2RenderingContext.TEXTURE_2D, tex);
 		gl.pixelStorei(WebGL2RenderingContext.UNPACK_ALIGNMENT, 1);
 		var lw = width, lh = height;
 		for (i in 0...levels.length) {
@@ -272,7 +359,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		if (bitmap == null)
 			return createTexture(image.width, image.height, [image.pixels()]);
 		var tex = gl.createTexture();
-		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, tex);
+		bindToChange(WebGL2RenderingContext.TEXTURE_2D, tex);
 		// The file's texels as they are: the bitmap was decoded without premultiplying or color conversion, and the upload does neither.
 		gl.pixelStorei(WebGL2RenderingContext.UNPACK_FLIP_Y_WEBGL, 0);
 		gl.pixelStorei(WebGL2RenderingContext.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 0);
@@ -298,7 +385,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 
 	function dataTexture(width:Int, height:Int):Dynamic {
 		var tex = gl.createTexture();
-		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, tex);
+		bindToChange(WebGL2RenderingContext.TEXTURE_2D, tex);
 		// One immutable level: complete under any sampler, as texelFetch reads it.
 		gl.texStorage2D(WebGL2RenderingContext.TEXTURE_2D, 1, WebGL2RenderingContext.RGBA32F, width, height);
 		return tex;
@@ -309,7 +396,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		if (d != null) {
 			if (x != 0 || y != 0 || width != d.width || height != d.height || data.length < d.width * d.height * 16)
 				throw "Invalid data texture update";
-			gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, textures[handle]);
+			bindToChange(WebGL2RenderingContext.TEXTURE_2D, textures[handle]);
 			gl.pixelStorei(WebGL2RenderingContext.UNPACK_ALIGNMENT, 4);
 			gl.texSubImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, 0, 0, d.width, d.height, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.FLOAT,
 				new js.lib.Float32Array(data.getData(), 0, d.width * d.height * 4));
@@ -328,7 +415,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			|| y + height > p.height
 			|| data.length < p.format.levelBytes(width, height))
 			throw "Invalid texture update";
-		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, textures[handle]);
+		bindToChange(WebGL2RenderingContext.TEXTURE_2D, textures[handle]);
 		gl.pixelStorei(WebGL2RenderingContext.UNPACK_ALIGNMENT, 1);
 		// The texture's first row is its top, as uploaded: GL's y counts from it.
 		if (p.format == Rgba8)
@@ -343,7 +430,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		if (size <= 0 || levels.length == 0 || !canSample(format))
 			throw "Invalid cube texture";
 		var tex = gl.createTexture();
-		gl.bindTexture(WebGL2RenderingContext.TEXTURE_CUBE_MAP, tex);
+		bindToChange(WebGL2RenderingContext.TEXTURE_CUBE_MAP, tex);
 		gl.pixelStorei(WebGL2RenderingContext.UNPACK_ALIGNMENT, 1);
 		var s = size;
 		for (i in 0...levels.length) {
@@ -467,8 +554,13 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			throw "Invalid static buffer";
 		var target = index ? WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER : WebGL2RenderingContext.ARRAY_BUFFER;
 		var buffer = gl.createBuffer();
+		// An element buffer binds into the vertex array current: the default's, not a cached layout's.
+		if (index)
+			defaultVao();
 		gl.bindBuffer(target, buffer);
 		gl.bufferData(target, new js.lib.Uint8Array(data.getData(), 0, bytes), WebGL2RenderingContext.STATIC_DRAW);
+		if (index)
+			boundIndex = defaultIndex = buffer;
 		var id = next++;
 		buffers[id] = {
 			buffer: buffer,
@@ -569,7 +661,9 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				gl.uniformBlockBinding(p, index, point);
 			blocks.push({point: point, size: b.size, bound: index != WebGL2RenderingContext.INVALID_INDEX});
 		}
+		// Made current to set its sampler units, which the next draw must know.
 		gl.useProgram(p);
+		boundProgram = p;
 		for (t in source.textures) {
 			samplerLocations[t.slot] = gl.getUniformLocation(p, t.glslName);
 			unfiltered[t.slot] = t.data;
@@ -598,6 +692,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				pipelines.remove(id);
 		gl.deleteProgram(s.program);
 		shaders.remove(handle);
+		if (boundProgram == s.program)
+			boundProgram = null;
 	}
 
 	public function createPipeline(desc:PipelineDesc):Int {
@@ -622,6 +718,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		if (!pipelines.exists(handle))
 			throw "Invalid pipeline";
 		pipelines.remove(handle);
+		dropVaosOver(0, handle);
 	}
 
 	public function canRender(format:TextureFormat):Bool {
@@ -670,7 +767,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			canRender(Rgba16f);
 		var internal = half ? WebGL2RenderingContext.RGBA16F : WebGL2RenderingContext.RGBA8;
 		var tex = gl.createTexture();
-		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, tex);
+		bindToChange(WebGL2RenderingContext.TEXTURE_2D, tex);
 		gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, internal, width, height, 0, WebGL2RenderingContext.RGBA,
 			half ? WebGL2RenderingContext.HALF_FLOAT : WebGL2RenderingContext.UNSIGNED_BYTE, null);
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, 0);
@@ -756,7 +853,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	// A shadow map of layerCount layers, size x size, a framebuffer a layer.
 	function shadowMap(size:Int, layerCount:Int):{texture:Dynamic, map:{framebuffers:Array<Dynamic>, size:Int}} {
 		var tex = gl.createTexture();
-		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D_ARRAY, tex);
+		bindToChange(WebGL2RenderingContext.TEXTURE_2D_ARRAY, tex);
 		gl.texStorage3D(WebGL2RenderingContext.TEXTURE_2D_ARRAY, 1, WebGL2RenderingContext.DEPTH_COMPONENT24, size, size, layerCount);
 		var framebuffers = [];
 		for (layer in 0...layerCount) {
@@ -849,6 +946,10 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		inTarget = flipped = frameEnded = false;
 		frameWidth = width;
 		frameHeight = height;
+		// Three frames of blocks apart: the last frame's draws, three times, rounded up to a power of two, when the pool is shallower.
+		while (frameDraws * 3 > poolDepth)
+			poolDepth *= 2;
+		frameDraws = 0;
 		open(width, height, true, Color.getRed(clearColor) / 255, Color.getGreen(clearColor) / 255, Color.getBlue(clearColor) / 255,
 			Color.getAlpha(clearColor) / 255);
 	}
@@ -857,6 +958,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	function open(width:Int, height:Int, clear:Bool, red:Float, green:Float, blue:Float, alpha:Float):Void {
 		active = true;
 		passHeight = height;
+		// Culling and the masks change here: the first draw sets its pipeline's fixed state whole.
+		statePipeline = null;
 		gl.disable(WebGL2RenderingContext.SCISSOR_TEST);
 		gl.disable(WebGL2RenderingContext.CULL_FACE);
 		if (clear) {
@@ -968,9 +1071,132 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		}
 		if (gone())
 			return;
-		gl.useProgram(shader.program);
+		if (boundProgram != shader.program) {
+			gl.useProgram(shader.program);
+			boundProgram = shader.program;
+		}
 		bindTextures(shader, textures, samplings);
 		bindBlocks(shader, uniforms, p);
+		var kept = allStatic(p, buffers) ? vao(pipeline, p, buffers, bufferOffsets, firstInstanceIndex) : null;
+		if (kept == null) {
+			defaultVao();
+			if (!sameLayout(p, buffers, bufferOffsets, firstInstanceIndex))
+				feed(p, buffers, bufferOffsets, firstInstanceIndex);
+		}
+		if (constantsPipeline != p)
+			constants(p, shader);
+		if (statePipeline != p || stateFlipped != flipped)
+			fixedState(p);
+		var mode = p.primitive == Points ? WebGL2RenderingContext.POINTS : p.primitive == Lines ? WebGL2RenderingContext.LINES : WebGL2RenderingContext.TRIANGLES;
+		if (p.indexed) {
+			if (boundIndex != ix.buffer) {
+				gl.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, ix.buffer);
+				boundIndex = ix.buffer;
+				if (kept != null)
+					kept.index = ix.buffer;
+				else
+					defaultIndex = ix.buffer;
+			}
+			gl.drawElementsInstanced(mode, elementCount, WebGL2RenderingContext.UNSIGNED_INT, firstElementIndex * 4, instanceCount);
+		} else
+			gl.drawArraysInstanced(mode, firstElementIndex, elementCount, instanceCount);
+	}
+
+	// Whether every buffer the pipeline reads attributes from is static, so a vertex array over them stays right.
+	function allStatic(p:PipelineDesc, buffers:Array<Int>):Bool {
+		for (i in 0...p.buffers.length)
+			if (p.buffers[i].attributes.length > 0 && !this.buffers[buffers[i]].isStatic)
+				return false;
+		return true;
+	}
+
+	// The vertex array for a layout over static buffers, bound: made and fed the first time, found by its key after.
+	function vao(pipeline:Int, p:PipelineDesc, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, firstInstanceIndex:Int):{
+		vao:Dynamic,
+		index:Dynamic,
+		pipeline:Int,
+		buffers:Array<Int>
+	} {
+		var key = pipeline
+			+ ":"
+			+ buffers.join(",")
+			+ ":"
+			+ (bufferOffsets == null ? "" : bufferOffsets.join(","))
+			+ ":"
+			+ firstInstanceIndex;
+		var kept = vaos.get(key);
+		if (kept == null) {
+			if (vaoCount >= MOST_VAOS)
+				dropVaos(true);
+			kept = {
+				vao: gl.createVertexArray(),
+				index: null,
+				pipeline: pipeline,
+				buffers: buffers.copy()
+			};
+			vaos.set(key, kept);
+			vaoCount++;
+			gl.bindVertexArray(kept.vao);
+			currentVao = kept.vao;
+			pointers(p, buffers, bufferOffsets, firstInstanceIndex);
+		} else if (currentVao != kept.vao) {
+			gl.bindVertexArray(kept.vao);
+			currentVao = kept.vao;
+		}
+		boundIndex = kept.index;
+		return kept;
+	}
+
+	// Lets go of the vertex arrays over a buffer, or of a pipeline (0 for any).
+	function dropVaosOver(buffer:Int, pipeline:Int):Void {
+		for (key => v in vaos)
+			if (v.pipeline == pipeline || v.buffers.indexOf(buffer) >= 0) {
+				if (currentVao == v.vao) {
+					gl.bindVertexArray(null);
+					currentVao = null;
+					boundIndex = defaultIndex;
+				}
+				gl.deleteVertexArray(v.vao);
+				vaos.remove(key);
+				vaoCount--;
+			}
+	}
+
+	// Whether the vertex layout fed to the last draw is the one this draw asks: the same pipeline, buffers, offsets and first instance.
+	function sameLayout(p:PipelineDesc, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, firstInstanceIndex:Int):Bool {
+		if (layoutPipeline != p || layoutFirstInstance != firstInstanceIndex || layoutBuffers.length != buffers.length)
+			return false;
+		for (i in 0...buffers.length)
+			if (layoutBuffers[i] != buffers[i])
+				return false;
+		if (bufferOffsets == null)
+			return layoutOffsets == null;
+		if (layoutOffsets == null || layoutOffsets.length != bufferOffsets.length)
+			return false;
+		for (i in 0...bufferOffsets.length)
+			if (layoutOffsets[i] != bufferOffsets[i])
+				return false;
+		return true;
+	}
+
+	// Feeds the pipeline's buffers to its attributes in the default vertex array: each attribute's pointer into its buffer, the slots the
+	// last layout enabled and this one doesn't disabled, and the layout remembered.
+	function feed(p:PipelineDesc, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, firstInstanceIndex:Int):Void {
+		var used = pointers(p, buffers, bufferOffsets, firstInstanceIndex);
+		for (slot in 0...enabled.length)
+			if (enabled[slot] && used[slot] != true) {
+				gl.disableVertexAttribArray(slot);
+				gl.vertexAttribDivisor(slot, 0);
+			}
+		enabled = used;
+		layoutPipeline = p;
+		layoutBuffers = buffers.copy();
+		layoutOffsets = bufferOffsets == null ? null : bufferOffsets.copy();
+		layoutFirstInstance = firstInstanceIndex;
+	}
+
+	// Sets each attribute's pointer into its buffer, enabled, in the vertex array bound, and returns the slots fed.
+	function pointers(p:PipelineDesc, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, firstInstanceIndex:Int):Array<Bool> {
 		var used = [];
 		for (i in 0...p.buffers.length) {
 			var layout = p.buffers[i];
@@ -988,21 +1214,29 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				used[a.slot] = true;
 			}
 		}
-		for (slot in 0...enabled.length)
-			if (enabled[slot] && used[slot] != true) {
-				gl.disableVertexAttribArray(slot);
-				gl.vertexAttribDivisor(slot, 0);
-			}
-		enabled = used;
-		// What no buffer feeds reads the pipeline's constant, or (0, 0, 0, 1).
+		return used;
+	}
+
+	// Sets what no buffer of the pipeline feeds: the pipeline's constant, or (0, 0, 0, 1).
+	function constants(p:PipelineDesc, shader:Program):Void {
+		var fed = [];
+		for (layout in p.buffers)
+			for (a in layout.attributes)
+				fed[a.slot] = true;
 		for (slot in 0...shader.attributeTypes.length)
-			if (used[slot] != true)
+			if (fed[slot] != true)
 				gl.vertexAttrib4f(slot, 0, 0, 0, 1);
 		if (p.attributeConstants != null)
 			for (c in p.attributeConstants) {
 				var v = c.values;
 				gl.vertexAttrib4f(c.slot, v.length > 0 ? v[0] : 0, v.length > 1 ? v[1] : 0, v.length > 2 ? v[2] : 0, v.length > 3 ? v[3] : 1);
 			}
+		constantsPipeline = p;
+	}
+
+	// Sets the pipeline's fixed state: depth test and write, culling, winding (flipped, the front faces wind the other way, gl_FrontFacing
+	// too), color mask and blend.
+	function fixedState(p:PipelineDesc):Void {
 		if (p.depthTest != DepthTest.Off) {
 			gl.enable(WebGL2RenderingContext.DEPTH_TEST);
 			gl.depthFunc(p.depthTest == DepthTest.Greater ? WebGL2RenderingContext.GREATER : WebGL2RenderingContext.LEQUAL);
@@ -1014,17 +1248,12 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			gl.cullFace(p.cull == CullFace.Front ? WebGL2RenderingContext.FRONT : WebGL2RenderingContext.BACK);
 		} else
 			gl.disable(WebGL2RenderingContext.CULL_FACE);
-		// The front faces as described; flipped, they wind the other way (gl_FrontFacing too).
 		gl.frontFace(flipped != p.clockwise ? WebGL2RenderingContext.CW : WebGL2RenderingContext.CCW);
 		var write:ColorChannels = p.depthOnly ? None : p.colorWrite == null ? All : p.colorWrite;
 		gl.colorMask(write.hasChannels(Red), write.hasChannels(Green), write.hasChannels(Blue), write.hasChannels(Alpha));
 		blend(p.blend);
-		var mode = p.primitive == Points ? WebGL2RenderingContext.POINTS : p.primitive == Lines ? WebGL2RenderingContext.LINES : WebGL2RenderingContext.TRIANGLES;
-		if (p.indexed) {
-			gl.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, ix.buffer);
-			gl.drawElementsInstanced(mode, elementCount, WebGL2RenderingContext.UNSIGNED_INT, firstElementIndex * 4, instanceCount);
-		} else
-			gl.drawArraysInstanced(mode, firstElementIndex, elementCount, instanceCount);
+		statePipeline = p;
+		stateFlipped = flipped;
 	}
 
 	// What an unbound slot reads (a draw's texture 0 where the program declares one): a 1x1 texture of the slot's kind, clear, made when
@@ -1049,25 +1278,36 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				throw "Invalid draw texture";
 			if (handle == passTexture)
 				throw "Invalid draw texture: it is the pass's own target, which a draw into it can't sample";
-			gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + slot);
-			if (shadowMaps.exists(handle)) {
-				gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D_ARRAY, t);
-				gl.bindSampler(slot, comparisonSampler());
-			} else if (cubes.exists(handle)) {
-				gl.bindTexture(WebGL2RenderingContext.TEXTURE_CUBE_MAP, t);
-				gl.bindSampler(slot, sampler(slot < samplings.length ? samplings[slot] : Sampling.LINEAR));
-			} else {
-				gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, t);
-				gl.bindSampler(slot,
-					sampler(dataTextures.exists(handle)
-						|| shader.unfiltered[slot]
-						|| slot >= samplings.length ? Sampling.NEAREST : samplings[slot]));
+			var shadow = shadowMaps.exists(handle),
+				cube = !shadow && cubes.exists(handle);
+			var s = shadow ? comparisonSampler() : cube ? sampler(slot < samplings.length ? samplings[slot] : Sampling.LINEAR) : sampler(dataTextures.exists(handle)
+				|| shader.unfiltered[slot]
+				|| slot >= samplings.length ? Sampling.NEAREST : samplings[slot]);
+			var sameTexture = unitTextures[slot] == handle,
+				sameSampler = unitSamplers[slot] == s;
+			if (sameTexture && sameSampler)
+				continue;
+			if (!sameTexture) {
+				if (activeUnit != slot) {
+					gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + slot);
+					activeUnit = slot;
+				}
+				gl.bindTexture(shadow ? WebGL2RenderingContext.TEXTURE_2D_ARRAY : cube ? WebGL2RenderingContext.TEXTURE_CUBE_MAP : WebGL2RenderingContext.TEXTURE_2D,
+					t);
+				unitTextures[slot] = handle;
+			}
+			if (!sameSampler) {
+				gl.bindSampler(slot, s);
+				unitSamplers[slot] = s;
 			}
 		}
 
 	// Uploads the program's uniform blocks from uniforms by stage and slot, each its declared size, into their binding points' buffers; the
 	// pipeline's flip uniform written into a copy as its flip says.
-	function bindBlocks(shader:Program, uniforms:Array<Null<Bytes>>, p:PipelineDesc):Void
+	function bindBlocks(shader:Program, uniforms:Array<Null<Bytes>>, p:PipelineDesc):Void {
+		// The turn goes round the pool; the pool can only have grown since the last draw, which keeps every turn's buffer its own.
+		drawTurn = drawTurn + 1 < poolDepth ? drawTurn + 1 : 0;
+		frameDraws++;
 		for (block in shader.blocks) {
 			var data = block.point < uniforms.length ? uniforms[block.point] : null;
 			if (data == null || data.length < block.size)
@@ -1094,19 +1334,28 @@ class WebGl2GraphicsAdapter implements IGraphics {
 						floats[at + i] = -floats[at + i];
 				bytes = copy;
 			}
-			var buffer = blockBuffers[block.point];
-			if (buffer == null || blockBufferSizes[block.point] < block.size) {
-				if (buffer != null)
-					gl.deleteBuffer(buffer);
-				buffer = blockBuffers[block.point] = gl.createBuffer();
+			var pool = blockBuffers[block.point];
+			if (pool == null || blockBufferSizes[block.point] < block.size) {
+				// A larger block than the point's buffers hold: they go, and are made again at its size as their turns come.
+				if (pool != null)
+					for (made in pool)
+						if (made != null)
+							gl.deleteBuffer(made);
+				pool = blockBuffers[block.point] = [];
 				blockBufferSizes[block.point] = block.size;
+			}
+			var buffer = pool[drawTurn];
+			if (buffer == null) {
+				buffer = pool[drawTurn] = gl.createBuffer();
 				gl.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, buffer);
-				gl.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, block.size, WebGL2RenderingContext.DYNAMIC_DRAW);
+				gl.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, blockBufferSizes[block.point], WebGL2RenderingContext.DYNAMIC_DRAW);
 			} else
 				gl.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, buffer);
 			gl.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, bytes);
-			gl.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, block.point, buffer, 0, block.size);
+			// The point reads the whole buffer, the point's largest block, so a block of any size that fits reads it.
+			gl.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, block.point, buffer);
 		}
+	}
 
 	public function endFrame():Void {
 		if (!active || inTarget)
@@ -1174,6 +1423,13 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			throw "Invalid buffer";
 		gl.deleteBuffer(b.buffer);
 		buffers.remove(handle);
+		// Deleted, it is unbound wherever it was bound; the layout fed may have read it, and a vertex array over it goes.
+		dropVaosOver(handle, 0);
+		if (boundIndex == b.buffer)
+			boundIndex = null;
+		if (defaultIndex == b.buffer)
+			defaultIndex = null;
+		layoutPipeline = null;
 	}
 
 	public function disposeTexture(handle:Int):Void {
@@ -1181,6 +1437,10 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		if (t == null)
 			throw "Invalid texture";
 		gl.deleteTexture(t);
+		// Deleted, it is unbound from every unit it was on.
+		for (unit in 0...unitTextures.length)
+			if (unitTextures[unit] == handle)
+				unitTextures[unit] = 0;
 		textures.remove(handle);
 		cubes.remove(handle);
 		dataTextures.remove(handle);
@@ -1223,10 +1483,14 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		if (reading != null)
 			gl.deleteFramebuffer(reading);
 		reading = null;
-		for (made in blockBuffers)
-			if (made != null)
-				gl.deleteBuffer(made);
+		for (pool in blockBuffers)
+			if (pool != null)
+				for (made in pool)
+					if (made != null)
+						gl.deleteBuffer(made);
 		blockBuffers = [];
 		blockBufferSizes = [];
+		dropVaos(true);
+		forgetState();
 	}
 }

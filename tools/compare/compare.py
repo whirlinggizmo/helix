@@ -182,6 +182,9 @@ def build_raylib_c(programs, page, native):
             if web_lib.exists():
                 shutil.rmtree(web_lib)
             shutil.copytree(source / 'src', web_lib)
+            # The native build's objects come with the sources, and make would take them as made: gone, so every one is compiled for wasm.
+            for made in list(web_lib.glob('*.o')) + list(web_lib.glob('*.a')):
+                made.unlink()
             run(['make', '-C', web_lib, 'PLATFORM=PLATFORM_WEB', 'CUSTOM_CFLAGS=-O3', f'RAYLIB_RELEASE_PATH={web_lib}', f'-j{os.cpu_count() or 4}'], env=emsdk)
     for program in programs:
         home = OUT / 'raylib-c' / program

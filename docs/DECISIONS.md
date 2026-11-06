@@ -631,3 +631,24 @@ Why things are the way they are, numbered, in order.
     a stated tolerance of a pixel, and the reason recorded here. The sprite runs (2026-11-05) kept exactness because it cost 8 bytes a
     record. Rejected: exactness as a rule binding GPU-side math, and a README listing the differences (a message from the compiler, not
     prose).
+
+47. **What goes in: the libraries by the engine bar, an engine's extras only as doors onto them.** A feature enters a library
+    (platform, services, helix-render) when two of Godot, Unity, Heaps, three.js and raylib have it and a game in the shape we aim at
+    would use it; it is then built once, properly, whether or not a consumer asks yet. helix-raylib's API is raylib's, complete and
+    exact, and nothing is added to it. An extra is a raylib-shaped call onto machinery a library already has, for a raylib user who
+    would otherwise drop a layer: the async loads, GPU skinning's include, the lights, an instanced texture draw. An extra passes two
+    questions, not one: a library has or needs the machinery by the engine bar, and a raylib user would reach for it in raylib's terms.
+    Only the second true is a what-if and is refused; only the first is a library item with no extra yet. Lit sprites (Godot's Light2D
+    with normal maps, Unity's 2D lights, Phaser's) are a library item by this rule. Rejected: judging extras by raylib's own set alone,
+    which leaves the engine with raylib and the async loads; and machinery of its own in an extra.
+
+48. **The WebGL2 adapter sets state once a change, keeps vertex arrays over static buffers, and gives each draw's uniform blocks their
+    own buffers in turn.** Measured on the robots page at 200 (2026-11-05): over ANGLE's GL backend a frame took 19 ms against 10 over
+    its Vulkan backend, in stalls of 400 to 1100 ms about once a second while the GPU process waited on the driver. The stall was the
+    uniform upload: writing a buffer a draw in flight still reads makes the NVIDIA GL driver wait for that draw, a round trip a draw.
+    ANGLE's Vulkan backend stages the write itself and never showed it; raylib, Heaps and Lime use plain uniforms and have no buffer to
+    collide on. Uniform blocks stay, as the spec has them on every backend, and each binding point gets buffers taken in turn, a draw
+    each, enough for three frames of the most draws a frame has made. The GL frame fell to 10.6 ms, Vulkan to 9.8. The state cache and
+    the vertex arrays cut the GL calls a draw from 27 to 5 and gave Vulkan a quarter; over GL they moved nothing alone, which is how the
+    upload was found. Rejected: one ring buffer a frame bound by range (Vulkan 4x slower, GL unchanged), rotating the skinning palette's
+    textures (unchanged), and plain uniforms for small blocks (a second shader dialect).

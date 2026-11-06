@@ -303,6 +303,11 @@ declare more than a draw binds. Adapters: `graphics/webgl2` (`WebGl2GraphicsAdap
 sokol_gfx on GL 4.1), `graphics/sdl3gpu` (`Sdl3GpuGraphicsAdapter`, SDL_GPU on Vulkan, Direct3D 12 or Metal). `libs/platform/tests/graphics`
 draws on each and checks the pixels it reads back.
 
+The WebGL2 adapter pays for a draw once. It sets only the GL state that differs from the last draw's; a layout over static buffers is
+kept as a vertex array object and bound again when that mesh is drawn; and each draw's uniform blocks go into buffers of their own, taken
+in turn over three frames, since a write into a buffer a draw in flight still reads makes the GL driver wait for it (over ANGLE's GL
+backend that doubled a frame of 2000 draws, which ANGLE's Vulkan backend never showed, staging the write itself).
+
 ## Shader compiler
 
 `helix.platform.tools.ShaderCompiler`: a program on `IGraphics` needs every backend's dialect, and gets them from standard GLSL.

@@ -45,6 +45,15 @@ helix-raylib's size and speed where docs/speed.md records them.
   for review: a page's cache in OPFS readable at once from the main thread (a worker holding OPFS's sync handles, the page
   spinning on a SharedArrayBuffer for the reply, as emscripten does), which needs the page cross-origin isolated (COOP and COEP), so
   only ever an option a program chooses, never the default.
+- **Lit sprites, in helix-render (DECISIONS 47):** 2D point and directional lights over a batch, a region with an optional normal map
+  (Godot's Light2D and CanvasItem normal maps, Unity's 2D lights and lit sprite material, Phaser's Light2D), so a top-down game has a
+  torch, a flash and a night. An extra in helix-raylib as a door onto it once it exists.
+- **The garbage collector's share of a frame, natively first:** hxcpp's collector over helix-raylib's draw path is unmeasured. Measure
+  it on the robots and bunnymark programs (hxcpp's `GC_STATS`, or perf on the collector's symbols), find what each draw allocates in
+  `Frame`, `Models` and `Skinning`, and take it out or pool it; then see whether the collector's own settings (its generational mode,
+  the minimum working memory) are worth setting for a program. In a page the collector is V8's: the robots page at 200 scavenges every
+  third frame (125 in 8 s, 332 ms of main thread, none over 4 ms), from a typed-array view a block a draw and a key string a draw in
+  the WebGL2 adapter, and helix-raylib's own; the same pass trims those.
 - **raygui on helix-raylib (done, DECISIONS 41):** `helix.raylib.Raygui`, raygui 4.5-dev as raylib 5.5 ships it, every control, its
   style, icons and tooltips, held to raygui's C by the `raygui`, `raygui_input` and `raygui_values` suites. `.rgs` styles and `.rgi`
   icons load through `GuiLoadStyleAsync` and `GuiLoadIconsAsync` in `extras.Gui`. Left: rGuiLayout's `.rgl` layouts, and its code
