@@ -848,6 +848,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 
 	// A shadow map of layerCount layers, size x size, a framebuffer a layer.
 	function shadowMap(size:Int, layerCount:Int):{texture:Dynamic, map:{framebuffers:Array<Dynamic>, size:Int}} {
+		// Made inside a pass too (a draw's placeholder), so the pass's framebuffer is bound again after.
+		var bound = gone() ? null : gl.getParameter(WebGL2RenderingContext.FRAMEBUFFER_BINDING);
 		var tex = gl.createTexture();
 		bindToChange(WebGL2RenderingContext.TEXTURE_2D_ARRAY, tex);
 		gl.texStorage3D(WebGL2RenderingContext.TEXTURE_2D_ARRAY, 1, WebGL2RenderingContext.DEPTH_COMPONENT24, size, size, layerCount);
@@ -863,7 +865,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		}
 		// Checked once here, never at a pass (a check at every pass stalls the browser).
 		var complete = gl.checkFramebufferStatus(WebGL2RenderingContext.FRAMEBUFFER) == WebGL2RenderingContext.FRAMEBUFFER_COMPLETE;
-		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
+		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, bound);
 		if (!complete && !gone()) {
 			for (framebuffer in framebuffers)
 				gl.deleteFramebuffer(framebuffer);
