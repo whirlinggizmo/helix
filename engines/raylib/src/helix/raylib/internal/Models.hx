@@ -423,6 +423,7 @@ class Models {
 	// after it is gone decodes the image's file again (Textures.fromEncoded).
 	static function material(read:Model3D, m:GltfMaterial, shader:Shader):Material {
 		var material = defaultMaterial(shader), maps = material.maps;
+		material.unlit = m.unlit;
 		if (!m.hasPbrMetallicRoughness)
 			return material;
 		// The images decoded for the GPU this material took from the model and still owns, by index: the metallic-roughness image is read

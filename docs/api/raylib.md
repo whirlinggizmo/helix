@@ -419,6 +419,7 @@ function new(shader:Shader, maps:Array<MaterialMap>, ?params:Array<Float>)
 var shader(default, set):Shader
 var maps:Array<MaterialMap>
 var params:Array<Float>
+var unlit:Bool
 ```
 
 - `new`: Creates a material. Materials are made by `Raylib.LoadMaterialDefault` and `extras.Models.LoadModelAsync`.
@@ -428,6 +429,7 @@ var params:Array<Float>
 - `shader`: Gets or sets the shader it draws with. Assigning keeps a copy of the record, counted as one of the shader's holders, and lets go of the shader it replaces; the material lets go of it when it is freed. The default shader is never freed.
 - `maps`: Gets its maps, `MAX_MATERIAL_MAPS` of them, by `MATERIAL_MAP_*`.
 - `params`: Gets four values for a shader's own use.
+- `unlit`: Gets or sets whether the material is unlit, a glTF's `KHR_materials_unlit`: its base color is what it shows, lit by nothing. `LoadModel` sets it from the file, and `LoadPbrShader` draws such a material through its unlit twin; raylib's own shaders don't read it.
 
 ## MaterialMap
 

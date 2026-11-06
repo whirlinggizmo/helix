@@ -8,14 +8,16 @@ import helix.raylib.internal.Defaults;
 import helix.raylib.extras.Lights.*;
 #end
 
-/** Holds raylib's examples' lights (`examples/shaders/rlights.h`, raylib 5.5) and helix-raylib's lit shader built on them. Each is
-	written here, and `helix.raylib.extras.Lights` forwards to each (`tools/gen_raylib.py`). */
+/** Holds raylib's examples' lights (`examples/shaders/rlights.h`, raylib 5.5) and helix-raylib's lit and PBR shaders built on them.
+	Each is written here, and `helix.raylib.extras.Lights` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RLights {
 	#if !macro
 	// The lights made, as rlights counts them: each takes the next of a lit shader's lights, MAX_LIGHTS at most.
 	static var lightsCount:Null<Int>;
+	// One texel of a flat normal, which a PBR shader's normalMap reads for a material without one; made with the first PBR shader.
+	static var flatNormal:Null<Texture2D>;
 
 	/** Returns helix-raylib's lit shader: raylib's examples' `lighting.vs` and `lighting.fs`, built in, so a program needs no shader
 		files. Its locations are set as raylib's lighting example sets them: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, which the
@@ -36,6 +38,76 @@ class RLights {
 		// Its skinned twin, drawn for a mesh UpdateModelAnimation posed.
 		shader.program.skinned = Defaults.litSkinnedShader();
 		return shader;
+	}
+
+	/** Returns helix-raylib's PBR shader: a glTF's materials drawn as authored, metallic-roughness under rlights' lights, built in.
+		raylib's examples' lighting shader has no roughness or metallic input, so every material shines alike under it; this one reads
+		each material's maps and values as `LoadModel` reads a glTF's. Its locations are set as raylib's basic PBR example sets them:
+		`locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, which the program sets to the camera's position each frame, and
+		`locs[SHADER_LOC_MAP_ALBEDO]`, `SHADER_LOC_MAP_METALNESS`, `SHADER_LOC_MAP_ROUGHNESS`, `SHADER_LOC_MAP_NORMAL`,
+		`SHADER_LOC_MAP_OCCLUSION` and `SHADER_LOC_MAP_EMISSION` are its samplers `albedoMap`, `metalnessMap`, `roughnessMap`,
+		`normalMap`, `occlusionMap` and `emissiveMap`, each set to its map's unit, so `DrawMesh` binds the material's map with a texture
+		there; a map without one reads white, the normal map a flat normal. A mesh without tangents whose material has a normal map
+		gets them with its first draw (`GenMeshTangents`), as glTF asks of a file without them. Each draw writes the material's values:
+		`maps[MATERIAL_MAP_ALBEDO].color` times the tint as `colDiffuse`, `maps[MATERIAL_MAP_METALNESS].value` as `metallicValue`,
+		`maps[MATERIAL_MAP_ROUGHNESS].value` as `roughnessValue` and `maps[MATERIAL_MAP_EMISSION].color` as `emissiveColor`, the colors
+		taken as linear, as a glTF's factors are, where an image's texels are decoded from sRGB. A material from `LoadMaterialDefault`
+		is a smooth non-metal, both values 0, until set. A material marked `unlit` (glTF's `KHR_materials_unlit`) is drawn through the
+		shader's unlit twin, its base color as authored and no light. Lights are added with `CreateLight` and
+		`GetShaderLocation(shader, "ambient")` finds the ambient color, as for the lit shader, a light's color what a white surface
+		facing it shows. A model posed by `UpdateModelAnimation` under it is skinned on the GPU. Its stages are
+		`helix/raylib/shaders/pbr.vs` and `pbr.fs`, over `<helix/raylib/shaders/pbr.glsl>`, which a program's own shader can include.
+
+		```haxe
+		var pbr = LoadPbrShader();
+		SetShaderValue(pbr, GetShaderLocation(pbr, "ambient"), [0.2, 0.2, 0.2, 1.0], SHADER_UNIFORM_VEC4);
+		CreateLight(LIGHT_DIRECTIONAL, new Vector3(2, 4, 2), Vector3Zero(), WHITE, pbr);
+		for (m in model.materials)
+			m.shader = pbr;
+		// each frame
+		SetShaderValue(pbr, pbr.locs[SHADER_LOC_VECTOR_VIEW], [camera.position.x, camera.position.y, camera.position.z],
+			SHADER_UNIFORM_VEC3);
+		```
+		@return  The shader, the program's until `UnloadShader`. */
+	static function LoadPbrShader():Shader {
+		var shader = @:privateAccess RModels.makeShader(Defaults.pbrShader());
+		// Its skinned twin, drawn for a mesh UpdateModelAnimation posed.
+		shader.program.skinned = Defaults.pbrSkinnedShader();
+		// Its unlit twin, drawn for a material marked unlit, and that one's skinned twin.
+		shader.program.unlit = Defaults.pbrUnlitShader();
+		shader.program.unlitSkinned = Defaults.pbrUnlitSkinnedShader();
+		shader.program.material = true;
+		RModels.materialWriter = writeMaterial;
+		var samplers = [
+			MATERIAL_MAP_ALBEDO => "albedoMap",
+			MATERIAL_MAP_METALNESS => "metalnessMap",
+			MATERIAL_MAP_ROUGHNESS => "roughnessMap",
+			MATERIAL_MAP_NORMAL => "normalMap",
+			MATERIAL_MAP_OCCLUSION => "occlusionMap",
+			MATERIAL_MAP_EMISSION => "emissiveMap"
+		];
+		for (map => name in samplers) {
+			var location = GetShaderLocation(shader, name);
+			shader.locs[SHADER_LOC_MAP_ALBEDO + map] = location;
+			// The sampler reads its map's unit, which its twins take over by name.
+			SetShaderValue(shader, location, map, SHADER_UNIFORM_INT);
+		}
+		// A material without a normal map reads a flat one, where a missing map reads white.
+		if (flatNormal == null)
+			flatNormal = RTextures.LoadTextureFromImage(RTextures.GenImageColor(1, 1, new Color(128, 128, 255, 255)));
+		SetShaderValueTexture(shader, shader.locs[SHADER_LOC_MAP_NORMAL], flatNormal);
+		return shader;
+	}
+
+	// Writes a material's values for a draw through the PBR shader or a twin (Program.writeMaterial), and first gives a mesh without
+	// tangents whose material has a normal map its tangents (GenMeshTangents), as glTF asks of a file without them.
+	static function writeMaterial(p:helix.raylib.internal.Program, mesh:Mesh, material:Material):Void {
+		if (mesh.tangents == null
+			&& mesh.texcoords != null
+			&& mesh.normals != null
+			&& material.maps[MATERIAL_MAP_NORMAL].texture.id > 0)
+			RModels.GenMeshTangents(mesh);
+		p.writeMaterial(material);
 	}
 
 	/** Makes a light and sets it in a lit shader, as rlights' `CreateLight`: the next of the shader's `lights`, its locations found by

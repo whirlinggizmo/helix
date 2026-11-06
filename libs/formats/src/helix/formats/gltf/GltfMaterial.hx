@@ -41,10 +41,14 @@ class GltfMaterial {
 	/** Gets the index of the emissive image in `GltfFile.images`, or -1 when there is none. */
 	public final emissiveImageIndex:Int;
 
+	/** Gets whether the material is unlit, the `KHR_materials_unlit` extension: its base color is what it shows, and the rest is unused. */
+	public final unlit:Bool;
+
 	@:allow(helix.formats.gltf)
 	function new(name:String, hasPbrMetallicRoughness:Bool, baseColorFactor:Array<Float>, baseColorImageIndex:Int, metallic:Float, roughness:Float,
-			metallicRoughnessImageIndex:Int, normalImageIndex:Int, occlusionImageIndex:Int, emissiveFactor:Array<Float>, emissiveImageIndex:Int) {
+			metallicRoughnessImageIndex:Int, normalImageIndex:Int, occlusionImageIndex:Int, emissiveFactor:Array<Float>, emissiveImageIndex:Int, unlit:Bool) {
 		this.name = name;
+		this.unlit = unlit;
 		this.hasPbrMetallicRoughness = hasPbrMetallicRoughness;
 		this.baseColorFactor = baseColorFactor;
 		this.baseColorImageIndex = baseColorImageIndex;

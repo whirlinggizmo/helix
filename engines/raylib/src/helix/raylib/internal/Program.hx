@@ -159,16 +159,20 @@ class Program {
 		var l = locations[location];
 		put(l.uniform, numbers, l.elementIndex);
 		written[location] = numbers;
-		if (twin != null)
-			twin.write(twin.locate(l.name), numbers);
+		for (t in twins)
+			t.write(t.locate(l.name), numbers);
 	}
 
-	/** Makes a program the twin of this one (a skinned version of a built-in shader, `Skinning`): every uniform written here, and every
-		one written after, is written there by name, so a draw through the twin reads what the program set on this one.
+	/** Makes a program a twin of this one (a skinned version of a built-in shader, `Skinning`, or its unlit version, `unlitOf`): every
+		uniform written here, and every one written after, is written there by name, and every texture and unit set here is set there,
+		so a draw through the twin reads what the program set on this one. The skinned twin is `twin`.
 
 		@param program  The twin. */
 	public function mirror(program:Program):Void {
-		twin = program;
+		if (program.shader.findSampler("bonePalette") != null)
+			twin = program;
+		twins.push(program);
+		program.material = material;
 		for (location => numbers in written)
 			if (numbers != null)
 				program.write(program.locate(locations[location].name), numbers);
@@ -186,8 +190,8 @@ class Program {
 		if (slot < 0 || slot >= textures.length)
 			return;
 		textures[slot] = texture;
-		if (twin != null)
-			twin.setTexture(twin.slotOf(nameAt(slot)), texture);
+		for (t in twins)
+			t.setTexture(t.slotOf(nameAt(slot)), texture);
 	}
 
 	/** Sets the texture unit a slot's sampler reads, as `SetShaderValue` on a sampler does, and its twin's of the same name (`mirror`).
@@ -198,8 +202,8 @@ class Program {
 		if (slot < 0 || slot >= units.length)
 			return;
 		units[slot] = unit;
-		if (twin != null)
-			twin.setUnit(twin.slotOf(nameAt(slot)), unit);
+		for (t in twins)
+			t.setUnit(t.slotOf(nameAt(slot)), unit);
 	}
 
 	// The name of the sampler at a slot.
@@ -210,8 +214,9 @@ class Program {
 		return "";
 	}
 
-	// The numbers last written at each location, and the twin they are written to as well (mirror).
+	// The numbers last written at each location, and the twins they are written to as well (mirror).
 	final written:Array<Null<Array<Float>>> = [];
+	final twins:Array<Program> = [];
 
 	// Writes whole elements of numbers into a uniform from an element, past its end dropped.
 	function put(u:ShaderUniform, numbers:Array<Float>, first:Int):Void {
@@ -302,13 +307,80 @@ class Program {
 		shader's, set by `LoadLightingShader`); null for none, or for the default shader, whose `Skinning` holds. */
 	public var skinned:Null<Shader> = null;
 
-	/** Gets its twin (`mirror`), null for none: freed with it. */
+	/** Whether each draw writes the material's values (`writeMaterial`, through `RModels.materialWriter`): the PBR shader's
+		(`LoadPbrShader`), and its twins'. */
+	public var material = false;
+
+	/** The unlit version of a built-in shader it is made of, which `DrawMesh` draws a material marked `unlit` through in place of it
+		(the PBR shader's, set by `LoadPbrShader`); null for none. */
+	public var unlit:Null<Shader> = null;
+
+	/** The unlit version skinned, the `skinned` of the twin `unlitOf` makes; null for none. */
+	public var unlitSkinned:Null<Shader> = null;
+
+	/** Gets the program of `unlit` (`unlitOf`), null until a material marked `unlit` is drawn: freed with this one. */
+	public var unlitTwin(default, null):Null<Program> = null;
+
+	/** Returns the program of `unlit`, made on the first call and mirrored (`mirror`), so a draw through it reads what the program set.
+
+		@return  The unlit twin. */
+	public function unlitOf():Program {
+		if (unlitTwin == null) {
+			unlitTwin = new Program(graphics, unlit);
+			unlitTwin.skinned = unlitSkinned;
+			mirror(unlitTwin);
+		}
+		return unlitTwin;
+	}
+
+	// The PBR shader's uniforms of the material's values, found when first written: null for one the shader doesn't declare.
+	var metallicValue:Null<ShaderUniform>;
+	var roughnessValue:Null<ShaderUniform>;
+	var emissiveColor:Null<ShaderUniform>;
+	var materialFound = false;
+
+	// What a draw's values are written from, so a draw allocates none.
+	static final one:Array<Float> = [0];
+	static final four:Array<Float> = [0, 0, 0, 0];
+
+	/** Writes a material's values for the draw after, as the PBR shader reads them: `maps[MATERIAL_MAP_METALNESS].value` as
+		`metallicValue`, `maps[MATERIAL_MAP_ROUGHNESS].value` as `roughnessValue` and `maps[MATERIAL_MAP_EMISSION].color` as
+		`emissiveColor`, taken as linear.
+
+		@param m  The material. */
+	public function writeMaterial(m:helix.raylib.Material):Void {
+		if (!materialFound) {
+			materialFound = true;
+			metallicValue = shader.findUniform("metallicValue");
+			roughnessValue = shader.findUniform("roughnessValue");
+			emissiveColor = shader.findUniform("emissiveColor");
+		}
+		var maps = m.maps;
+		if (metallicValue != null) {
+			one[0] = maps[helix.raylib.Raylib.MATERIAL_MAP_METALNESS].value;
+			put(metallicValue, one, 0);
+		}
+		if (roughnessValue != null) {
+			one[0] = maps[helix.raylib.Raylib.MATERIAL_MAP_ROUGHNESS].value;
+			put(roughnessValue, one, 0);
+		}
+		if (emissiveColor != null) {
+			var c = maps[helix.raylib.Raylib.MATERIAL_MAP_EMISSION].color;
+			four[0] = c.r / 255;
+			four[1] = c.g / 255;
+			four[2] = c.b / 255;
+			four[3] = c.a / 255;
+			put(emissiveColor, four, 0);
+		}
+	}
+
+	/** Gets its skinned twin (`mirror`), null for none: freed with it. */
 	public var twin(default, null):Null<Program> = null;
 
-	/** Frees the pipelines and the program, and its twin's. */
+	/** Frees the pipelines and the program, and its twins'. */
 	public function dispose():Void {
-		if (twin != null)
-			twin.dispose();
+		for (t in twins)
+			t.dispose();
 		for (p in pipelines)
 			graphics.disposePipeline(p);
 		graphics.disposeShader(handle);

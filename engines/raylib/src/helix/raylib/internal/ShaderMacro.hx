@@ -268,6 +268,16 @@ class ShaderMacro {
 	static function declarations(text:String):Array<{kind:String, type:String, name:String}> {
 		var out = [];
 		var declaration = ~/^[ \t]*(?:flat\s+|smooth\s+)?(in|out)\s+(?:(?:lowp|mediump|highp)\s+)?(\w+)\s+(\w+)\s*(?:\[[^\]]*\])?\s*;/m;
+		// A stage's own include (<helix/raylib/shaders/...>) declares for it: read in its place, once.
+		var included = ~/^[ \t]*#include\s*<helix\/raylib\/shaders\/([\w.]+)>/m;
+		var seen = [];
+		while (included.match(text)) {
+			var file = included.matched(1);
+			var path = try Context.resolvePath('helix/raylib/shaders/$file') catch (_:Dynamic) null;
+			var body = path == null || seen.indexOf(file) >= 0 ? "" : File.getContent(path);
+			seen.push(file);
+			text = included.matchedLeft() + "\n" + body + "\n" + included.matchedRight();
+		}
 		var rest = ~/\/\*[\s\S]*?\*\//g.replace(text, "");
 		rest = ~/\/\/[^\n]*/g.replace(rest, "");
 		while (declaration.match(rest)) {

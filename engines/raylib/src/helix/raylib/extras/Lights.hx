@@ -24,10 +24,13 @@ import helix.raylib.modules.RLights;
 	UpdateLightValues(shader, light);
 	```
 
-	A model posed by `UpdateModelAnimation` under the lit shader is skinned on the GPU. A program's own shader lights as it does by
-	including `<helix/raylib/shaders/lights.glsl>`: rlights' uniforms and `vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition,
-	vec3 fragNormal)`, called as `helixLight(texture(texture0, fragTexCoord), colDiffuse*fragColor, fragPosition, fragNormal)`. A program
-	that calls none of this links none of it. */
+	Beside it, `LoadPbrShader` draws a glTF's materials as authored, metallic-roughness under the same lights, where the lit shader
+	shines every material alike. A model posed by `UpdateModelAnimation` under either is skinned on the GPU. A program's own shader
+	lights as the lit one does by including `<helix/raylib/shaders/lights.glsl>`: rlights' uniforms and `vec4 helixLight(vec4 texelColor,
+	vec4 tint, vec3 fragPosition, vec3 fragNormal)`, called as `helixLight(texture(texture0, fragTexCoord), colDiffuse*fragColor,
+	fragPosition, fragNormal)`; and as the PBR one does by including `<helix/raylib/shaders/pbr.glsl>`, `vec4 helixPbr(vec4 baseColor,
+	float metallic, float roughness, float occlusion, vec3 emissive, vec3 fragPosition, vec3 normal)`. A program that calls none of
+	this links none of it. */
 class Lights {
 	/** The most lights a lit shader holds, rlights' `MAX_LIGHTS`. */
 	public static inline final MAX_LIGHTS = 4;
@@ -60,6 +63,38 @@ class Lights {
 		@return  The shader, the program's until `UnloadShader`. */
 	public static inline function LoadLightingShader():Shader
 		return RLights.LoadLightingShader();
+
+	/** Returns helix-raylib's PBR shader: a glTF's materials drawn as authored, metallic-roughness under rlights' lights, built in.
+		raylib's examples' lighting shader has no roughness or metallic input, so every material shines alike under it; this one reads
+		each material's maps and values as `LoadModel` reads a glTF's. Its locations are set as raylib's basic PBR example sets them:
+		`locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, which the program sets to the camera's position each frame, and
+		`locs[SHADER_LOC_MAP_ALBEDO]`, `SHADER_LOC_MAP_METALNESS`, `SHADER_LOC_MAP_ROUGHNESS`, `SHADER_LOC_MAP_NORMAL`,
+		`SHADER_LOC_MAP_OCCLUSION` and `SHADER_LOC_MAP_EMISSION` are its samplers `albedoMap`, `metalnessMap`, `roughnessMap`,
+		`normalMap`, `occlusionMap` and `emissiveMap`, each set to its map's unit, so `DrawMesh` binds the material's map with a texture
+		there; a map without one reads white, the normal map a flat normal. A mesh without tangents whose material has a normal map
+		gets them with its first draw (`GenMeshTangents`), as glTF asks of a file without them. Each draw writes the material's values:
+		`maps[MATERIAL_MAP_ALBEDO].color` times the tint as `colDiffuse`, `maps[MATERIAL_MAP_METALNESS].value` as `metallicValue`,
+		`maps[MATERIAL_MAP_ROUGHNESS].value` as `roughnessValue` and `maps[MATERIAL_MAP_EMISSION].color` as `emissiveColor`, the colors
+		taken as linear, as a glTF's factors are, where an image's texels are decoded from sRGB. A material from `LoadMaterialDefault`
+		is a smooth non-metal, both values 0, until set. A material marked `unlit` (glTF's `KHR_materials_unlit`) is drawn through the
+		shader's unlit twin, its base color as authored and no light. Lights are added with `CreateLight` and
+		`GetShaderLocation(shader, "ambient")` finds the ambient color, as for the lit shader, a light's color what a white surface
+		facing it shows. A model posed by `UpdateModelAnimation` under it is skinned on the GPU. Its stages are
+		`helix/raylib/shaders/pbr.vs` and `pbr.fs`, over `<helix/raylib/shaders/pbr.glsl>`, which a program's own shader can include.
+
+		```haxe
+		var pbr = LoadPbrShader();
+		SetShaderValue(pbr, GetShaderLocation(pbr, "ambient"), [0.2, 0.2, 0.2, 1.0], SHADER_UNIFORM_VEC4);
+		CreateLight(LIGHT_DIRECTIONAL, new Vector3(2, 4, 2), Vector3Zero(), WHITE, pbr);
+		for (m in model.materials)
+			m.shader = pbr;
+		// each frame
+		SetShaderValue(pbr, pbr.locs[SHADER_LOC_VECTOR_VIEW], [camera.position.x, camera.position.y, camera.position.z],
+			SHADER_UNIFORM_VEC3);
+		```
+		@return  The shader, the program's until `UnloadShader`. */
+	public static inline function LoadPbrShader():Shader
+		return RLights.LoadPbrShader();
 
 	/** Makes a light and sets it in a lit shader, as rlights' `CreateLight`: the next of the shader's `lights`, its locations found by
 		name (`lights[0].enabled` and the rest). Past `MAX_LIGHTS` lights it makes a light that is off and sets nothing. The count is the

@@ -137,7 +137,12 @@ class Skinning {
 		var frame = Runtime.frame;
 		var p = shader.program;
 		var locs = shader.locs;
-		// A built-in shader's skinned twin: the default's, or the lit one's.
+		// A material marked unlit, through the shader's unlit twin (the PBR shader's), and then that twin's skinned one.
+		if (material.unlit && p.unlit != null) {
+			p = p.unlitOf();
+			locs = twinLocs;
+		}
+		// A built-in shader's skinned twin: the default's, or the lit or PBR one's.
 		if (instances == 0) {
 			var twin = p.twin;
 			if (twin == null) {
@@ -164,6 +169,9 @@ class Skinning {
 				p.values.writeInt(p.boneOffset, writtenOffset + 1);
 			var textures = helix.raylib.modules.RModels.mapProgramTextures(p, locs, material);
 			textures[p.paletteSlot] = palette;
+			var materialWriter = helix.raylib.modules.RModels.materialWriter;
+			if (p.material && materialWriter != null)
+				materialWriter(p, mesh, material);
 			frame.mesh(mesh, p, transform, diffuse, textures, instances, instanceCount);
 			if (p.boneOffset != null)
 				p.values.writeInt(p.boneOffset, 0);

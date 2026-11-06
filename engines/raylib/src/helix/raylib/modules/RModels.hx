@@ -2090,10 +2090,16 @@ class RModels {
 	// What drawMesh writes each draw's diffuse color, textures and bones into, read as the draw is recorded.
 	static final diffuseScratch:Array<Float> = [0, 0, 0, 0];
 	static final textureScratch:Array<Int> = [];
+	// A twin's locations, by SHADER_LOC_*: none set, so its maps bind by the units its samplers were set to.
+	static final noLocs = [for (_ in 0...32) -1];
 
 	// Writes a mesh's bones' matrices into a skinning shader's boneMatrices (Models.writeBones), set once a model with bones is made, so
 	// a program without one links none of it.
 	static var boneWriter:Null<(mesh:Mesh, shader:Shader) -> Void>;
+
+	// Writes a material's values into a program whose draws read them (Program.material), and gives a normal-mapped mesh its tangents:
+	// set by LoadPbrShader (RLights.writeMaterial), so a program without it links none of it.
+	static var materialWriter:Null<(p:helix.raylib.internal.Program, mesh:Mesh, material:Material) -> Void>;
 
 	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix3D, tint:Color, instances:Int = 0, instanceCount:Int = 1):Void {
 		if (mesh.gpu.buffers == null)
@@ -2115,7 +2121,13 @@ class RModels {
 		// The bones' matrices, for a skinning shader, as raylib 5.5's DrawMesh uploads them: set once a model with bones is made.
 		if (mesh.boneMatrices != null && boneWriter != null)
 			boneWriter(mesh, shader);
-		Runtime.frame.mesh(mesh, shader.program, transform, diffuse, mapTextures(shader, material), instances, instanceCount);
+		var p = shader.program;
+		// A material marked unlit, through the shader's unlit twin, whose maps bind by their units (the twin's own locations are none).
+		var textures = material.unlit
+			&& p.unlit != null ? mapProgramTextures(p = p.unlitOf(), noLocs, material) : mapTextures(shader, material);
+		if (p.material && materialWriter != null)
+			materialWriter(p, mesh, material);
+		Runtime.frame.mesh(mesh, p, transform, diffuse, textures, instances, instanceCount);
 	}
 	#end
 }

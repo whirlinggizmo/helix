@@ -21,6 +21,11 @@ class Material {
 	/** Gets four values for a shader's own use. */
 	public var params:Array<Float>;
 
+	/** Gets or sets whether the material is unlit, a glTF's `KHR_materials_unlit`: its base color is what it shows, lit by nothing.
+		`LoadModel` sets it from the file, and `LoadPbrShader` draws such a material through its unlit twin; raylib's own shaders don't
+		read it. */
+	public var unlit = false;
+
 	/** Creates a material. Materials are made by `Raylib.LoadMaterialDefault` and `extras.Models.LoadModelAsync`.
 
 		@param shader  The shader.

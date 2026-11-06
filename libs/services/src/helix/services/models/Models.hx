@@ -294,7 +294,7 @@ class Models {
 		if (emissive >= 0 && emission[0] == 0 && emission[1] == 0 && emission[2] == 0)
 			emission = [1, 1, 1];
 		return new GltfMaterial(m.name, true, [diffuse[0], diffuse[1], diffuse[2], m.computeOpacity()], base, m.computeMetalness(), m.computeRoughness(), -1,
-			normal, -1, emission, emissive);
+			normal, -1, emission, emissive, false);
 	}
 
 	// A part's triangles as a mesh: a vertex for each corner whose position, texture coordinate and normal differ, the triangles indexing

@@ -42,7 +42,7 @@ Represents a glTF 2.0 model read from a .gltf or GLB file: its nodes, its scene,
 
 `read` takes the file's bytes and its path. A buffer held in the file (a GLB's BIN chunk, a base64 `data:` URI) is read then; one in a file of its own is listed in `missingBuffers`, its path resolved against the model's, for the caller to fetch and give to `setBuffer`. `nodes`, `sceneNodeIndices` and `materials` are read with the file; `meshes` and `images` read the buffers when asked for, and throw while a buffer they need is missing.
 
-Accessors of every component type are read, normalized integers scaled to 0..1 or -1..1; one with no buffer view is zeros, and a sparse accessor throws. Positions and normals are in each mesh's own units: no node's transform is applied. Skins and animations are read as the file has them, as `meshes` are; morph targets, cameras, texture samplers and extensions are not read yet.
+Accessors of every component type are read, normalized integers scaled to 0..1 or -1..1; one with no buffer view is zeros, and a sparse accessor throws. Positions and normals are in each mesh's own units: no node's transform is applied. Skins and animations are read as the file has them, as `meshes` are; morph targets, cameras, texture samplers and the extensions but `KHR_materials_unlit` (`GltfMaterial.unlit`) are not read yet.
 
 ```haxe
 var model = GltfFile.read(bytes, "models/ship.gltf");
@@ -125,6 +125,7 @@ final normalImageIndex:Int
 final occlusionImageIndex:Int
 final emissiveFactor:Array<Float>
 final emissiveImageIndex:Int
+final unlit:Bool
 ```
 
 - `name`: Gets the material's name: empty when the file gives none.
@@ -138,6 +139,7 @@ final emissiveImageIndex:Int
 - `occlusionImageIndex`: Gets the index of the occlusion image in `GltfFile.images`, or -1 when there is none: how much light reaches each point, in its red channel.
 - `emissiveFactor`: Gets the emissive factor: red, green and blue, each 0 to 1, multiplying the emissive image. Defaults to 0, 0, 0.
 - `emissiveImageIndex`: Gets the index of the emissive image in `GltfFile.images`, or -1 when there is none.
+- `unlit`: Gets whether the material is unlit, the `KHR_materials_unlit` extension: its base color is what it shows, and the rest is unused.
 
 ## GltfMesh
 

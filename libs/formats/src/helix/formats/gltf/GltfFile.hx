@@ -14,7 +14,7 @@ import helix.math.Transform3D;
 
 	Accessors of every component type are read, normalized integers scaled to 0..1 or -1..1; one with no buffer view is zeros, and a
 	sparse accessor throws. Positions and normals are in each mesh's own units: no node's transform is applied. Skins and animations are
-	read as the file has them, as `meshes` are; morph targets, cameras, texture samplers and extensions are not read yet.
+	read as the file has them, as `meshes` are; morph targets, cameras, texture samplers and the extensions but `KHR_materials_unlit` (`GltfMaterial.unlit`) are not read yet.
 
 	```haxe
 	var model = GltfFile.read(bytes, "models/ship.gltf");
@@ -137,7 +137,7 @@ class GltfFile {
 				new GltfMaterial(text(m, "name"), pbr != null, numbers(field(pbr, "baseColorFactor"), [1, 1, 1, 1]), image(field(pbr, "baseColorTexture")),
 					number(pbr, "metallicFactor", 1), number(pbr, "roughnessFactor", 1), image(field(pbr, "metallicRoughnessTexture")),
 					image(field(m, "normalTexture")), image(field(m, "occlusionTexture")), numbers(field(m, "emissiveFactor"), [0, 0, 0]),
-					image(field(m, "emissiveTexture")));
+					image(field(m, "emissiveTexture")), field(field(m, "extensions"), "KHR_materials_unlit") != null);
 			}
 		];
 		nodes = [
