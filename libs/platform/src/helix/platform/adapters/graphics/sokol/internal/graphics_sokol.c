@@ -11,8 +11,21 @@
 #define SOKOL_LOG_IMPL
 #define SOKOL_LOG_API_DECL static
 #include "sokol/sokol_log.h"
-/* The most of each resource kind alive at once: a slot each, its handle the sokol id (slot in the low bits, generation above). */
+/* The most of each resource kind alive at once: a slot each, by the sokol id's slot (its low 16 bits). */
 #define SLOTS 2048
+/* A handle is the sokol id's low 28 bits: its slot, and the low 12 bits of sokol's generation above, the bits over them the kind's
+   (graphics.h). Each kind's ids by slot give a handle its whole id back: 0 for one that isn't the slot's latest. */
+enum{BUFFER_IDS,TEXTURE_IDS,PIPELINE_IDS,SHADER_IDS};
+static uint32_t ids[4][SLOTS];
+static uint32_t handle_of(int kind,uint32_t id){
+ const uint32_t slot=id&0xffff;
+ if(!id||slot>=SLOTS)return 0;
+ ids[kind][slot]=id;return id&HELIX_HANDLE_MASK;
+}
+static uint32_t id_of(int kind,uint32_t handle){
+ const uint32_t slot=handle&0xffff;
+ return handle&&slot<SLOTS&&(ids[kind][slot]&HELIX_HANDLE_MASK)==handle?ids[kind][slot]:0;
+}
 
 #if defined(_WIN32)
 /* sokol's Win32 GL loader declares only what sokol calls; these are the rest this file uses. glReadPixels is GL 1.1's, which opengl32
@@ -175,7 +188,7 @@ void helix_dispose(void){
  for(int i=0;i<SAMPLINGS;i++)if(samplers[i].id)sg_destroy_sampler(samplers[i]);
  if(comparison.id)sg_destroy_sampler(comparison);
  sg_shutdown();
- memset(placeholders,0,sizeof placeholders);
+ memset(placeholders,0,sizeof placeholders);memset(ids,0,sizeof ids);
 }
 /* helix.platform.TextureFormat's values as sokol's: RGBA8, BC7, ASTC 4x4, ETC2 RGBA8, RGBA16F. */
 static sg_pixel_format format_of(int format){
@@ -200,7 +213,7 @@ uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int for
  if(offset!=(size_t)bytes)return 0;
  sg_image image=sg_make_image(&desc);
  if(sg_query_image_state(image)!=SG_RESOURCESTATE_VALID)return 0;
- return sg_make_view(&(sg_view_desc){.texture.image=image}).id;
+ return handle_of(TEXTURE_IDS,sg_make_view(&(sg_view_desc){.texture.image=image}).id);
 }
 /* A cube of size, levels mip levels of format, each its six faces (+X, -X, +Y, -Y, +Z, -Z) one after another, the levels packed one after
    another in data. */
@@ -215,7 +228,7 @@ uint32_t helix_cube_texture(int size,const void *data,int bytes,int levels,int f
  if(offset!=(size_t)bytes)return 0;
  sg_image image=sg_make_image(&desc);
  if(sg_query_image_state(image)!=SG_RESOURCESTATE_VALID)return 0;
- return sg_make_view(&(sg_view_desc){.texture.image=image}).id;
+ return handle_of(TEXTURE_IDS,sg_make_view(&(sg_view_desc){.texture.image=image}).id);
 }
 /* A data texture: RGBA32F, width x height, written each frame it's used and read texel by texel. */
 static sg_image data_image(int w,int h){return sg_make_image(&(sg_image_desc){.width=w,.height=h,.pixel_format=SG_PIXELFORMAT_RGBA32F,.usage.write_transient=true,.label="helix-data"});}
@@ -228,7 +241,7 @@ uint32_t helix_data_texture(int w,int h){
  if(slot>=SLOTS||!copy){free(copy);sg_destroy_view(view);sg_destroy_image(image);return 0;}
  memset(&data_textures[slot],0,sizeof data_textures[slot]);data_textures[slot].image=image;data_textures[slot].width=w;data_textures[slot].height=h;
  data_textures[slot].copy=copy;
- return view.id;
+ return handle_of(TEXTURE_IDS,view.id);
 }
 /* The image a data texture's draws read now: itself, or the spare its latest write went to. */
 static sg_image current_data_image(int slot){return data_textures[slot].renamed?data_textures[slot].extra_images[data_textures[slot].renamed-1]:data_textures[slot].image;}
@@ -258,7 +271,8 @@ static int update_data(int slot,const void *data,int bytes){
 /* Replaces a rectangle of a texture's texels: a data texture's whole (x and y 0, its size), inside a pass or outside; a helix_texture
    texture's top level, RGBA8 or half floats, outside a pass, through GL directly (sokol can't write an image made with its data), with
    sokol's cached GL state reset after. GL's rows run from the first, which is the texture's top. 0 for anything else. */
-int helix_update_texture(uint32_t texture,int x,int y,int w,int h,const void *data,int bytes){
+int helix_update_texture(uint32_t handle,int x,int y,int w,int h,const void *data,int bytes){
+ const uint32_t texture=id_of(TEXTURE_IDS,handle);
  const int slot=texture&0xffff;
  if(!data||slot>=SLOTS||x<0||y<0||w<=0||h<=0||sg_query_view_state((sg_view){texture})!=SG_RESOURCESTATE_VALID)return 0;
  if(data_textures[slot].image.id)return x||y||w!=data_textures[slot].width||h!=data_textures[slot].height?0:update_data(slot,data,bytes);
@@ -283,7 +297,7 @@ uint32_t helix_buffer(int capacity){
  if(capacity<=0||capacity%4)return 0;
  sg_buffer buffer=sg_make_buffer(&(sg_buffer_desc){.size=(size_t)capacity,.usage={.vertex_buffer=true,.write_transient=true}});
  if((buffer.id&0xffff)<SLOTS){int slot=buffer.id&0xffff;used[slot]=0;appended[slot]=0;index_buffers[slot]=0;stream_buffers[slot]=1;
-  renamed[slot]=bound[slot]=0;memset(extras[slot],0,sizeof extras[slot]);}return buffer.id;
+  renamed[slot]=bound[slot]=0;memset(extras[slot],0,sizeof extras[slot]);}return handle_of(BUFFER_IDS,buffer.id);
 }
 /* The sokol buffer a stream buffer's draws read now: itself, or the extra its latest write went to. */
 static sg_buffer current_buffer(uint32_t id){int slot=id&0xffff;return slot<SLOTS&&renamed[slot]?extras[slot][renamed[slot]-1]:(sg_buffer){id};}
@@ -292,7 +306,7 @@ uint32_t helix_static_buffer(const void *data,int bytes,int index){
  if(!data||bytes<=0||bytes%4)return 0;
  sg_buffer buffer=sg_make_buffer(&(sg_buffer_desc){.data={data,(size_t)bytes},.usage={.vertex_buffer=!index,.index_buffer=index!=0}});
  if(sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(buffer.id&0xffff)>=SLOTS){sg_destroy_buffer(buffer);return 0;}
- int slot=buffer.id&0xffff;used[slot]=bytes;index_buffers[slot]=index!=0;stream_buffers[slot]=0;return buffer.id;
+ int slot=buffer.id&0xffff;used[slot]=bytes;index_buffers[slot]=index!=0;stream_buffers[slot]=0;return handle_of(BUFFER_IDS,buffer.id);
 }
 /* A helix.platform.Blend (bits 0-3 the color's source factor, 4-7 its destination's, 8-11 and 12-15 the alpha's, 16-18 the color's
    operation, 19-21 the alpha's) as sokol's blend state: BlendFactor's and BlendOperation's values in order. No blending for One, Zero and
@@ -330,7 +344,7 @@ static sg_pipeline make_pipeline(const sg_pipeline_desc *pd,int fed){
    constant for a slot a buffer feeds among them). */
 uint32_t helix_pipeline(const int *desc,int count){
  if(!desc||count<15)return 0;
- const uint32_t shader=(uint32_t)desc[0];const int group=desc[1]==2?1:desc[1]==1?2:3,indexed=desc[2],depth_only=desc[8],clockwise=desc[7],channels=desc[10];int blend_ok=0;
+ const uint32_t shader=id_of(SHADER_IDS,(uint32_t)desc[0]);const int group=desc[1]==2?1:desc[1]==1?2:3,indexed=desc[2],depth_only=desc[8],clockwise=desc[7],channels=desc[10];int blend_ok=0;
  const sg_blend_state blend=blend_of(desc[3],&blend_ok);
  if(desc[1]<0||desc[1]>2||!blend_ok||channels<0||channels>15||(shader&0xffff)>=SLOTS||sg_query_shader_state((sg_shader){shader})!=SG_RESOURCESTATE_VALID)return 0;
  sg_pipeline_desc pd={.shader={shader},.primitive_type=group==1?SG_PRIMITIVETYPE_POINTS:group==2?SG_PRIMITIVETYPE_LINES:SG_PRIMITIVETYPE_TRIANGLES,
@@ -383,9 +397,10 @@ uint32_t helix_pipeline(const int *desc,int count){
  pipeline_info[slot].depth_only=depth_only!=0;pipeline_info[slot].flip=desc[9];
  pipeline_info[slot].flip_slot=flip_slot;pipeline_info[slot].flip_offset=flip_offset;pipeline_info[slot].fed=fed;memcpy(pipeline_info[slot].constants,constants,sizeof constants);
  memcpy(pipeline_info[slot].stride,strides,sizeof strides);memcpy(pipeline_info[slot].instanced,instanced,sizeof instanced);memcpy(pipeline_info[slot].read,read,sizeof read);
- return pipeline.id;
+ return handle_of(PIPELINE_IDS,pipeline.id);
 }
-int helix_update(uint32_t id,const void *data,int bytes){
+int helix_update(uint32_t handle,const void *data,int bytes){
+ const uint32_t id=id_of(BUFFER_IDS,handle);
  sg_buffer buffer={id};int slot=id&0xffff;
  if(!active||!data||bytes<0||bytes%4||slot>=SLOTS||sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(size_t)bytes>sg_query_buffer_size(buffer)||!stream_buffers[slot]||appended[slot])return 0;
  if(bound[slot]){
@@ -402,7 +417,8 @@ int helix_update(uint32_t id,const void *data,int bytes){
 }
 /* Adds bytes after a stream buffer's used ones, in a pass: the offset they landed at, -1 for anything invalid. A write to a range no draw has
    read needs no new buffer, as an update's of the whole buffer does, so earlier ranges stay in place for the draws after it. */
-int helix_append(uint32_t id,const void *data,int bytes){
+int helix_append(uint32_t handle,const void *data,int bytes){
+ const uint32_t id=id_of(BUFFER_IDS,handle);
  sg_buffer buffer=(sg_buffer){id};int slot=id&0xffff;
  if(!active||!data||bytes<=0||bytes%4||slot>=SLOTS||sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||!stream_buffers[slot])return -1;
  if(!appended[slot]&&(used[slot]||renamed[slot]))return -1;
@@ -544,7 +560,7 @@ uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
  }
  int slot=shader.id&0xffff;programs[slot].texture_mask=textures;programs[slot].unfiltered_mask=unfiltered;memcpy(programs[slot].kind,kinds,sizeof kinds);memcpy(programs[slot].block_size,sizes,sizeof sizes);
  free(programs[slot].setters);programs[slot].setters=list;programs[slot].setter_count=list_count;
- return shader.id;
+ return handle_of(SHADER_IDS,shader.id);
 }
 /* Whether render targets of format (helix.platform.TextureFormat's) can be drawn into, blended over and sampled filtered: RGBA8, and RGBA16F
    where GL has it. */
@@ -583,7 +599,7 @@ uint32_t helix_target(int w,int h,int format,int depth,int asked){
  if(depth){targets[slot].depth=sg_make_view(&(sg_view_desc){.depth_stencil_attachment.image=depth_image});targets[slot].depth_image=depth_image;}
  targets[slot].width=w;targets[slot].height=h;
  targets[slot].variant=(format==4?1:0)|(depth?0:2)|((power_of(samples)^power_of(screen_samples()))<<2);
- return texture.id;
+ return handle_of(TEXTURE_IDS,texture.id);
 }
 /* A shadow map: a depth array of layers layers, each size x size, sampled through the returned texture view, with an attachment view a layer. */
 uint32_t helix_shadow_map(int size,int layers){
@@ -600,11 +616,12 @@ uint32_t helix_shadow_map(int size,int layers){
  for(int i=0;i<layers;i++)shadow_maps[slot].layers[i]=sg_make_view(&(sg_view_desc){.depth_stencil_attachment={.image=image,.slice=i}});
  if(!comparison.id)comparison=sg_make_sampler(&(sg_sampler_desc){.min_filter=SG_FILTER_LINEAR,.mag_filter=SG_FILTER_LINEAR,
   .wrap_u=SG_WRAP_CLAMP_TO_EDGE,.wrap_v=SG_WRAP_CLAMP_TO_EDGE,.compare=SG_COMPAREFUNC_LESS_EQUAL});
- return texture.id;
+ return handle_of(TEXTURE_IDS,texture.id);
 }
 /* A depth-only pass into layer of map, cleared to the farthest and kept (sokol's default for depth is to discard it). Not flipped: a shadow map's
    rows run bottom first, as its lookups expect. */
-int helix_begin_shadow(uint32_t map,int layer){
+int helix_begin_shadow(uint32_t handle,int layer){
+ const uint32_t map=id_of(TEXTURE_IDS,handle);
  int slot=map&0xffff;
  if(active||slot>=SLOTS||!shadow_maps[slot].image.id||layer<0||layer>=shadow_maps[slot].count||sg_query_view_state((sg_view){map})!=SG_RESOURCESTATE_VALID)return 0;
  active=2;flipped=0;pass_variant=0;frame_width=frame_height=shadow_maps[slot].size;pass_texture=map;
@@ -630,8 +647,8 @@ static int begin_target(uint32_t target,int clear,sg_color color){
   .attachments={.colors[0]=targets[slot].color,.resolves[0]=targets[slot].resolve,.depth_stencil=targets[slot].depth}});
  return 1;
 }
-int helix_begin_target(uint32_t target,float red,float green,float blue,float alpha){return begin_target(target,1,(sg_color){red,green,blue,alpha});}
-int helix_resume_target(uint32_t target){return begin_target(target,0,(sg_color){0,0,0,0});}
+int helix_begin_target(uint32_t target,float red,float green,float blue,float alpha){return begin_target(id_of(TEXTURE_IDS,target),1,(sg_color){red,green,blue,alpha});}
+int helix_resume_target(uint32_t target){return begin_target(id_of(TEXTURE_IDS,target),0,(sg_color){0,0,0,0});}
 int helix_end_target(void){if(active!=2)return 0;sg_end_pass();active=0;flipped=0;pass_texture=0;return 1;}
 int helix_begin(int width,int height,uint32_t color){
  if(active||width<=0||height<=0)return 0;
@@ -650,20 +667,25 @@ static sg_image_desc plain_desc(uint32_t texture){
  return desc.type==SG_IMAGETYPE_2D&&desc.pixel_format==SG_PIXELFORMAT_RGBA8?desc:(sg_image_desc){0};
 }
 static int readable(uint32_t target){int slot=target&0xffff;return slot<SLOTS&&targets[slot].color.id&&!(targets[slot].variant&1);}
-int helix_read_width(uint32_t handle){
- if(!handle)return frame_ended?screen_width:0;
- return readable(handle)?targets[handle&0xffff].width:plain_desc(handle).width;
+static int read_width(uint32_t texture){
+ if(!texture)return frame_ended?screen_width:0;
+ return readable(texture)?targets[texture&0xffff].width:plain_desc(texture).width;
 }
-int helix_read_height(uint32_t handle){
- if(!handle)return frame_ended?screen_height:0;
- return readable(handle)?targets[handle&0xffff].height:plain_desc(handle).height;
+static int read_height(uint32_t texture){
+ if(!texture)return frame_ended?screen_height:0;
+ return readable(texture)?targets[texture&0xffff].height:plain_desc(texture).height;
 }
+/* A handle other than 0 that isn't a texture's latest reads as a texture that can't be read: 0. */
+int helix_read_width(uint32_t handle){return handle&&!id_of(TEXTURE_IDS,handle)?0:read_width(id_of(TEXTURE_IDS,handle));}
+int helix_read_height(uint32_t handle){return handle&&!id_of(TEXTURE_IDS,handle)?0:read_height(id_of(TEXTURE_IDS,handle));}
 /* Reads target into out (width * height * 4 bytes, RGBA8, rows top first) through GL, outside any pass: the back buffer for 0 (GL's rows
    come bottom first, so they're turned over), else the texture's (a target's color) top level attached to a framebuffer of the moment (its
    rows are already top first: textures are uploaded first row first, and target passes draw flipped). sokol caches GL state, so its cache is
    reset after. */
-int helix_read_pixels(uint32_t target,unsigned char *out){
- int w=helix_read_width(target),h=helix_read_height(target);
+int helix_read_pixels(uint32_t handle,unsigned char *out){
+ const uint32_t target=id_of(TEXTURE_IDS,handle);
+ if(handle&&!target)return 0;
+ int w=read_width(target),h=read_height(target);
  if(active||!out||w<=0||h<=0)return 0;
  GLuint framebuffer=0;
  if(target){
@@ -713,7 +735,8 @@ static sg_sampler sampler_of(int sampling){
 static uint32_t placeholder(char kind){
  static const unsigned char clear[24]={0};
  const int which=kind=='c'?1:kind=='s'?2:0;
- if(!placeholders[which])placeholders[which]=which==1?helix_cube_texture(1,clear,24,1,0):which==2?helix_shadow_map(1,1):helix_texture(1,1,clear,4,1,0);
+ if(!placeholders[which])
+  placeholders[which]=id_of(TEXTURE_IDS,which==1?helix_cube_texture(1,clear,24,1,0):which==2?helix_shadow_map(1,1):helix_texture(1,1,clear,4,1,0));
  return placeholders[which];
 }
 static int bind_program(int shader,sg_bindings *bindings,const uint32_t *textures,const int *samplings,int texture_count,int uniform_bytes){
@@ -724,7 +747,7 @@ static int bind_program(int shader,sg_bindings *bindings,const uint32_t *texture
  for(int i=0;i<MAX_TEXTURES;i++){
   if(!(mask&1<<i))continue;
   /* A slot the draw leaves unbound reads a placeholder of its kind. */
-  const uint32_t texture=i<texture_count&&textures[i]?textures[i]:placeholder(programs[shader].kind[i]);
+  const uint32_t texture=i<texture_count&&textures[i]?id_of(TEXTURE_IDS,textures[i]):placeholder(programs[shader].kind[i]);
   /* Sampling what the pass draws into is undefined. */
   if(texture==pass_texture)return -1;
   const int sampling=i<texture_count?samplings[i]:0;
@@ -790,9 +813,9 @@ static sg_pipeline variant_of(int slot){
    instances from record first_instance of its instanced buffers; buffers[i] its buffer i (0 for one it doesn't read), the program's textures
    and samplings by slot, its uniform blocks' bytes one after another by index (a vertex block's slot, a fragment block's 4 + its slot, a
    block both stages read at both). -1, drawing nothing, for a texture that is the pass's own target; 0 for anything else invalid. */
-int helix_draw(uint32_t p,const uint32_t *buffers,const int *offsets,int buffer_count,uint32_t indices,int first,int count,int first_instance,int instance_count,
+int helix_draw(uint32_t pipeline_handle,const uint32_t *buffers,const int *offsets,int buffer_count,uint32_t index_handle,int first,int count,int first_instance,int instance_count,
                const uint32_t *textures,const int *samplings,int texture_count,const void *uniforms,int uniform_bytes){
- const int pslot=p&0xffff;
+ const uint32_t p=id_of(PIPELINE_IDS,pipeline_handle),indices=id_of(BUFFER_IDS,index_handle);const int pslot=p&0xffff;
  if(!active||pslot>=SLOTS||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID)return 0;
  const int shader=pipeline_info[pslot].shader&0xffff,group=pipeline_info[pslot].group,indexed=pipeline_info[pslot].indexed;
  if(first<0||count<=0||count%group||first_instance<0||instance_count<=0||buffer_count<pipeline_info[pslot].buffer_count)return 0;
@@ -804,13 +827,14 @@ int helix_draw(uint32_t p,const uint32_t *buffers,const int *offsets,int buffer_
  }
  for(int b=0;b<pipeline_info[pslot].buffer_count;b++){
   if(!pipeline_info[pslot].read[b])continue;
-  const int slot=buffers[b]&0xffff,stride=pipeline_info[pslot].stride[b],instanced=pipeline_info[pslot].instanced[b];
-  if(slot>=SLOTS||sg_query_buffer_state((sg_buffer){buffers[b]})!=SG_RESOURCESTATE_VALID||index_buffers[slot])return 0;
+  const uint32_t buffer=id_of(BUFFER_IDS,buffers[b]);
+  const int slot=buffer&0xffff,stride=pipeline_info[pslot].stride[b],instanced=pipeline_info[pslot].instanced[b];
+  if(slot>=SLOTS||sg_query_buffer_state((sg_buffer){buffer})!=SG_RESOURCESTATE_VALID||index_buffers[slot])return 0;
   const long offset=offsets[b];
   if(offset<0||offset%4||offset>used[slot])return 0;
   if(instanced&&offset+(long)(first_instance+instance_count)*stride>used[slot])return 0;
   if(!instanced&&!indexed&&offset+(long)(first+count)*stride>used[slot])return 0;
-  bindings.vertex_buffers[b]=current_buffer(buffers[b]);
+  bindings.vertex_buffers[b]=current_buffer(buffer);
   bindings.vertex_buffer_offsets[b]=(int)offset+(instanced?first_instance*stride:0);
  }
  {const int bound=bind_program(shader,&bindings,textures,samplings,texture_count,uniform_bytes);if(bound!=1)return bound;}
@@ -840,8 +864,10 @@ static void dispose_pipeline(uint32_t id){
   memset(variants[slot],0,sizeof variants[slot]);memset(&pipeline_info[slot],0,sizeof pipeline_info[slot]);
  }
 }
-int helix_dispose_resource(int kind,uint32_t id){
- int slot=id&0xffff;
+int helix_dispose_resource(int kind,uint32_t handle){
+ /* The kinds by number as the tables are: 0 buffer, 1 texture, 2 pipeline, 3 shader. */
+ if(kind<0||kind>3)return 0;
+ const uint32_t id=id_of(kind,handle);int slot=id&0xffff;
  if(kind==0&&sg_query_buffer_state((sg_buffer){id})==SG_RESOURCESTATE_VALID){
   sg_destroy_buffer((sg_buffer){id});
   if(slot<SLOTS){stream_buffers[slot]=0;for(int i=0;i<MAX_RENAMES;i++)if(extras[slot][i].id)sg_destroy_buffer(extras[slot][i]);memset(extras[slot],0,sizeof extras[slot]);}

@@ -40,9 +40,10 @@ static SDL_GPUShaderFormat shader_format;
 static SDL_GPUTextureFormat depth_format;
 static int window_samples=1,max_samples=1;
 
-/* A handle is its table slot plus one in the low 16 bits and the slot's generation above, so a disposed handle isn't taken for its slot's
-   next resource. */
-static uint32_t handle_of(int slot,uint32_t generation){return (generation<<16)|(uint32_t)(slot+1);}
+/* A handle is its table slot plus one in the low 16 bits and the low 12 bits of the slot's generation above, so a disposed handle isn't
+   taken for its slot's next resource; the bits above are the kind's (graphics.h). */
+#define GENERATION_MASK 0xfffu
+static uint32_t handle_of(int slot,uint32_t generation){return ((generation&GENERATION_MASK)<<16)|(uint32_t)(slot+1);}
 static int slot_of(uint32_t handle){return (int)(handle&0xffff)-1;}
 
 /* Buffers: static ones (a GPU buffer of their own; index buffers of uint32) and stream ones (createBuffer's), whose writes are ranges of the
@@ -303,7 +304,7 @@ uint32_t helix_data_texture(int w,int h){
  textures[slot].versions[0]=textures[slot].texture=texture;textures[slot].current=0;
  return take_texture(slot,DATA,w,h);
 }
-static int texture_live(uint32_t handle){const int s=slot_of(handle);return s>=0&&s<SLOTS&&textures[s].live&&(handle>>16)==textures[s].generation;}
+static int texture_live(uint32_t handle){const int s=slot_of(handle);return s>=0&&s<SLOTS&&textures[s].live&&(handle>>16)==(textures[s].generation&GENERATION_MASK);}
 /* Rewrites a data texture whole. Its current version, unless a draw read it this frame: then the next it hasn't, made when first needed.
    Staged for the pass's copy, or uploaded at once outside a pass. */
 static int update_data(int slot,const void *data,int bytes){
@@ -338,7 +339,7 @@ int helix_update_texture(uint32_t handle,int x,int y,int w,int h,const void *dat
 }
 
 static int free_buffer_slot(void){for(int i=0;i<SLOTS;i++)if(!buffers[i].live)return i;return -1;}
-static int buffer_live(uint32_t handle){const int s=slot_of(handle);return s>=0&&s<SLOTS&&buffers[s].live&&(handle>>16)==buffers[s].generation;}
+static int buffer_live(uint32_t handle){const int s=slot_of(handle);return s>=0&&s<SLOTS&&buffers[s].live&&(handle>>16)==(buffers[s].generation&GENERATION_MASK);}
 static uint32_t take_buffer(int slot){buffers[slot].live=1;buffers[slot].generation++;return handle_of(slot,buffers[slot].generation);}
 /* A stream buffer: up to capacity bytes a write, each write a new range of the arena. */
 uint32_t helix_buffer(int capacity){
@@ -461,7 +462,7 @@ uint32_t helix_sdl3gpu_shader(const void *vs,int vs_bytes,const void *fs,int fs_
  programs[slot].live=1;programs[slot].generation++;
  return handle_of(slot,programs[slot].generation);
 }
-static int program_live(uint32_t handle){const int s=slot_of(handle);return s>=0&&s<SLOTS&&programs[s].live&&(handle>>16)==programs[s].generation;}
+static int program_live(uint32_t handle){const int s=slot_of(handle);return s>=0&&s<SLOTS&&programs[s].live&&(handle>>16)==(programs[s].generation&GENERATION_MASK);}
 
 /* A helix.platform.Blend (bits 0-3 the color's source factor, 4-7 its destination's, 8-11 and 12-15 the alpha's, 16-18 the color's
    operation, 19-21 the alpha's) and ColorChannels (bit 0 red, 1 green, 2 blue, 3 alpha) as SDL_GPU's blend state: BlendFactor's and
@@ -571,7 +572,7 @@ uint32_t helix_pipeline(const int *desc,int count){
  pipelines[slot].live=1;pipelines[slot].generation++;
  return handle_of(slot,pipelines[slot].generation);
 }
-static int pipeline_live(uint32_t handle){const int s=slot_of(handle);return s>=0&&s<SLOTS&&pipelines[s].live&&(handle>>16)==pipelines[s].generation;}
+static int pipeline_live(uint32_t handle){const int s=slot_of(handle);return s>=0&&s<SLOTS&&pipelines[s].live&&(handle>>16)==(pipelines[s].generation&GENERATION_MASK);}
 
 /* A color texture of format (RGBA8 or half floats), drawn into and sampled; a multisampled one of samples (drawn into, resolved into the first)
    when samples > 1; depth. */

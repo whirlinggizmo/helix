@@ -34,7 +34,8 @@ typedef Case = {
 /** Checks helix-platform's graphics on the GPU, with the library alone: each case draws, reads the result back with `readPixels` and checks
 	its pixels against what arithmetic says they are.
 
-	The cases: points a pixel each, unindexed and by index, and refused over a program without the point size; a clear, a triangle's
+	The cases: points a pixel each, unindexed and by index, and refused over a program without the point size; a handle of each kind
+	refused where another kind is taken; a clear, a triangle's
 	colors interpolated, eight vertex buffers read and a ninth refused, each vertex format read (a signed 0 as 0, fewer and more components
 	than the input, formats mixed in one record, instances from the second), layouts with a gap of slots and layouts the platform refuses, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
 	additive blending, each blend factor and operation and a color write mask, a texture's rectangles replaced, and replaced
@@ -787,6 +788,48 @@ class GraphicsTests {
 					for (s in [spots[1], spots[2], spots[4]])
 						p.expect(s[0], s[1], [0, 0, 0, 1], 0);
 				}
+			},
+			{
+				name: "a handle of another kind refused",
+				// Each mistake refused with its message, drawing and disposing nothing; then the right kinds drawn, the second draw with a
+				// texture for the index buffer a pipeline that isn't indexed ignores: the five points.
+				before: into(0, 0, 0, 1, () -> {
+					function refusal(mistake:String, message:String, call:() -> Void):Void {
+						var threw:Null<String> = null;
+						try
+							call()
+						catch (e:Dynamic)
+							threw = Std.string(e);
+						check(threw == message, '$mistake: ${threw == null ? "taken" : 'threw "$threw"'}, not "$message"');
+					}
+					refusal("a buffer as a texture", "Invalid draw texture", () -> draw(sampled, uvQuad, 6, [dots], [Sampling.NEAREST]));
+					refusal("a buffer disposed as a texture", "Invalid texture", () -> graphics.disposeTexture(dots));
+					refusal("a texture as a buffer", "Invalid draw", () -> draw(dotted, checker, 5));
+					refusal("a texture disposed as a buffer", "Invalid buffer", () -> graphics.disposeBuffer(checker));
+					refusal("a pipeline as a shader", "Invalid pipeline shader", () -> pipelines.push(graphics.createPipeline({
+						shader: dotted,
+						buffers: [colored],
+						primitive: Points,
+						indexed: false,
+						blend: Blend.OPAQUE,
+						depthTest: Off,
+						depthWrite: false,
+						cull: Back,
+						clockwise: false,
+						depthOnly: false,
+						flip: ClipScale
+					})));
+					refusal("a pipeline disposed as a shader", "Invalid shader", () -> graphics.disposeShader(dotted));
+					refusal("a shader as a pipeline", "Invalid draw", () -> draw(pointProgram, dots, 5));
+					refusal("a shader disposed as a pipeline", "Invalid pipeline", () -> graphics.disposePipeline(pointProgram));
+					refusal("a texture as the index buffer", "Invalid draw",
+						() -> graphics.draw(dottedIndexed, [dots], null, checker, 0, 2, 0, 1, [], [], [clip]));
+					graphics.draw(dottedIndexed, [dots], null, dotIndexBuffer, 0, 2, 0, 1, [], [], [clip]);
+					graphics.draw(dotted, [dots], null, checker, 0, 5, 0, 1, [], [], [clip]);
+				}),
+				target: target,
+				check: p -> for (i => s in spots)
+					expectSpot(p, s, spotColors[i].concat([1]))
 			},
 			{
 				name: "a target cleared",

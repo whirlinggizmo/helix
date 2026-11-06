@@ -4,6 +4,9 @@
 /* The graphics calls every native graphics adapter's C implements (sokol_gfx's, SDL_GPU's), which NativeGraphics makes IGraphics of through
    GraphicsDeviceBridge. Handles are nonzero; 0 from a maker, or from an int-returning call, means it refused. Each adapter's own header adds
    its setup, dispose and program making, which differ in what they take. */
+/* The bits a handle may use: NativeGraphics puts the resource's kind above them (GraphicsHandle), and takes it off before a handle comes
+   back here. */
+#define HELIX_HANDLE_MASK 0x0fffffffu
 /* IGraphics' limits (PipelineDesc): the vertex buffers a pipeline reads, and its attributes across them, each at a slot below that many. */
 #define HELIX_MAX_VERTEX_BUFFERS 8
 #define HELIX_MAX_VERTEX_ATTRIBUTES 16

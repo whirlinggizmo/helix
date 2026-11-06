@@ -14,6 +14,7 @@ import helix.platform.Sampling;
 import helix.platform.ShaderSource;
 import helix.platform.TextureFormat;
 import helix.platform.VertexFormat;
+import helix.platform.adapters.shared.GraphicsHandle;
 import helix.platform.adapters.shared.PipelineLayout;
 import helix.platform.adapters.shared.dom.DomPage;
 import js.html.webgl.WebGL2RenderingContext;
@@ -344,7 +345,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			lh = lh > 1 ? Std.int(lh / 2) : 1;
 		}
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, levels.length - 1);
-		var id = next++;
+		var id = GraphicsHandle.make(GraphicsHandle.TEXTURE, next++);
 		textures[id] = tex;
 		plainTextures[id] = {width: width, height: height, format: format};
 		return id;
@@ -363,7 +364,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE,
 			bitmap);
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, 0);
-		var id = next++;
+		var id = GraphicsHandle.make(GraphicsHandle.TEXTURE, next++);
 		textures[id] = tex;
 		plainTextures[id] = {width: image.width, height: image.height, format: Rgba8};
 		return id;
@@ -373,7 +374,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		var largest:Int = gone() ? 1 << 30 : gl.getParameter(WebGL2RenderingContext.MAX_TEXTURE_SIZE);
 		if (width <= 0 || height <= 0 || width > largest || height > largest)
 			throw "Invalid data texture";
-		var id = next++;
+		var id = GraphicsHandle.make(GraphicsHandle.TEXTURE, next++);
 		textures[id] = dataTexture(width, height);
 		dataTextures[id] = {width: width, height: height};
 		return id;
@@ -388,6 +389,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	}
 
 	public function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:Bytes):Void {
+		GraphicsHandle.expect(handle, GraphicsHandle.TEXTURE, "Invalid texture update");
 		var d = dataTextures[handle];
 		if (d != null) {
 			if (x != 0 || y != 0 || width != d.width || height != d.height || data.length < d.width * d.height * 16)
@@ -440,7 +442,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			s = s > 1 ? Std.int(s / 2) : 1;
 		}
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_CUBE_MAP, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, levels.length - 1);
-		var id = next++;
+		var id = GraphicsHandle.make(GraphicsHandle.TEXTURE, next++);
 		textures[id] = tex;
 		cubes[id] = true;
 		return id;
@@ -525,7 +527,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	public function createBuffer(capacityBytes:Int):Int {
 		if (capacityBytes <= 0 || capacityBytes % 4 != 0)
 			throw "Invalid buffer capacity";
-		var id = next++;
+		var id = GraphicsHandle.make(GraphicsHandle.BUFFER, next++);
 		buffers[id] = {
 			buffer: streamBuffer(capacityBytes),
 			capacity: capacityBytes,
@@ -557,7 +559,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		gl.bufferData(target, new js.lib.Uint8Array(data.getData(), 0, bytes), WebGL2RenderingContext.STATIC_DRAW);
 		if (index)
 			boundIndex = defaultIndex = buffer;
-		var id = next++;
+		var id = GraphicsHandle.make(GraphicsHandle.BUFFER, next++);
 		buffers[id] = {
 			buffer: buffer,
 			capacity: bytes,
@@ -569,6 +571,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	}
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void {
+		GraphicsHandle.expect(handle, GraphicsHandle.BUFFER, "Invalid upload");
 		var b = buffers[handle];
 		if (!active || b == null || b.isStatic || b.appended || usedBytes < 0 || usedBytes % 4 != 0 || usedBytes > b.capacity || usedBytes > data.length)
 			throw "Invalid upload";
@@ -582,6 +585,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	}
 
 	public function appendBuffer(handle:Int, data:Bytes, usedBytes:Int):Int {
+		GraphicsHandle.expect(handle, GraphicsHandle.BUFFER, "Invalid append");
 		var b = buffers[handle];
 		if (!active
 			|| b == null
@@ -617,7 +621,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 
 	public function createShader(source:ShaderSource):Int {
 		var made = program(source);
-		var id = next++;
+		var id = GraphicsHandle.make(GraphicsHandle.SHADER, next++);
 		shaders[id] = made;
 		return id;
 	}
@@ -680,6 +684,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	}
 
 	public function disposeShader(handle:Int):Void {
+		GraphicsHandle.expect(handle, GraphicsHandle.SHADER, "Invalid shader");
 		var s = shaders[handle];
 		if (s == null)
 			throw "Invalid shader";
@@ -693,6 +698,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	}
 
 	public function createPipeline(desc:PipelineDesc):Int {
+		GraphicsHandle.expect(desc.shader, GraphicsHandle.SHADER, "Invalid pipeline shader");
 		if (!shaders.exists(desc.shader))
 			throw "Invalid pipeline shader";
 		if (desc.primitive == Points && !shaders[desc.shader].points)
@@ -705,12 +711,13 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			flipOffset = desc.flipOffset == null ? 0 : desc.flipOffset;
 		if (desc.flip != None && (flipSlot < 0 || flipSlot > 3 || flipOffset < 0 || flipOffset % 4 != 0))
 			throw "Invalid pipeline flip place";
-		var id = next++;
+		var id = GraphicsHandle.make(GraphicsHandle.PIPELINE, next++);
 		pipelines[id] = desc;
 		return id;
 	}
 
 	public function disposePipeline(handle:Int):Void {
+		GraphicsHandle.expect(handle, GraphicsHandle.PIPELINE, "Invalid pipeline");
 		if (!pipelines.exists(handle))
 			throw "Invalid pipeline";
 		pipelines.remove(handle);
@@ -750,7 +757,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		if (width <= 0 || height <= 0 || !canRender(format) || msaaSampleCount < 0)
 			throw "Invalid render target";
 		var made = target(width, height, format == Rgba16f, depth, msaaSampleCount);
-		var id = next++;
+		var id = GraphicsHandle.make(GraphicsHandle.TEXTURE, next++);
 		textures[id] = made.texture;
 		targets[id] = made.target;
 		return id;
@@ -840,7 +847,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		if (size <= 0 || layerCount <= 0 || size > largest || layerCount > most)
 			throw "Invalid shadow map";
 		var made = shadowMap(size, layerCount);
-		var id = next++;
+		var id = GraphicsHandle.make(GraphicsHandle.TEXTURE, next++);
 		textures[id] = made.texture;
 		shadowMaps[id] = made.map;
 		return id;
@@ -890,6 +897,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	}
 
 	public function beginShadowPass(map:Int, layerIndex:Int):Void {
+		GraphicsHandle.expect(map, GraphicsHandle.TEXTURE, "Invalid shadow pass");
 		var m = shadowMaps[map];
 		if (active || m == null || layerIndex < 0 || layerIndex >= m.framebuffers.length)
 			throw "Invalid shadow pass";
@@ -910,6 +918,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	// A pass into a target, cleared or keeping what it holds (cleared to transparent black the first time): its multisampled framebuffer
 	// when it has one, which keeps its samples from pass to pass, resolved into the texture at each pass's end.
 	function beginTarget(target:Int, clear:Bool, red:Float, green:Float, blue:Float, alpha:Float):Void {
+		GraphicsHandle.expect(target, GraphicsHandle.TEXTURE, "Invalid target pass");
 		var t = targets[target];
 		if (active || t == null)
 			throw "Invalid target pass";
@@ -1034,12 +1043,19 @@ class WebGl2GraphicsAdapter implements IGraphics {
 
 	public function draw(pipeline:Int, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int,
 			firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
+		GraphicsHandle.expect(pipeline, GraphicsHandle.PIPELINE, "Invalid draw");
+		for (texture in textures)
+			if (texture != 0)
+				GraphicsHandle.expect(texture, GraphicsHandle.TEXTURE, "Invalid draw texture");
+		for (buffer in buffers)
+			if (buffer != 0)
+				GraphicsHandle.expect(buffer, GraphicsHandle.BUFFER, "Invalid draw");
 		var p = pipelines[pipeline];
 		if (!active || p == null)
 			throw "Invalid draw";
 		var shader = shaders[p.shader],
 			group = p.primitive == Points ? 1 : p.primitive == Lines ? 2 : 3,
-			ix = p.indexed ? this.buffers[indexBuffer] : null;
+			ix = p.indexed ? this.buffers[GraphicsHandle.expect(indexBuffer, GraphicsHandle.BUFFER, "Invalid draw")] : null;
 		if (firstElementIndex < 0
 			|| elementCount <= 0
 			|| elementCount % group != 0
@@ -1401,6 +1417,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	public function present():Void {}
 
 	public function readPixels(handle:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void {
+		if (handle != 0)
+			GraphicsHandle.expect(handle, GraphicsHandle.TEXTURE, "Invalid texture to read");
 		if (active)
 			throw "Inside a pass";
 		if (gone()) {
@@ -1443,6 +1461,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	}
 
 	public function disposeBuffer(handle:Int):Void {
+		GraphicsHandle.expect(handle, GraphicsHandle.BUFFER, "Invalid buffer");
 		var b = buffers[handle];
 		if (b == null)
 			throw "Invalid buffer";
@@ -1458,6 +1477,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	}
 
 	public function disposeTexture(handle:Int):Void {
+		GraphicsHandle.expect(handle, GraphicsHandle.TEXTURE, "Invalid texture");
 		var t = textures[handle];
 		if (t == null)
 			throw "Invalid texture";

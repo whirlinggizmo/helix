@@ -35,17 +35,22 @@ abstract class NativeGraphics implements IGraphics {
 	static function pointer(data:Bytes):cpp.RawPointer<cpp.UInt8>
 		return cpp.Pointer.arrayElem(data.getData(), 0).raw;
 
-	static function valid(handle:Int):Int {
-		if (handle == 0)
+	// A handle of a kind for the C's number, which is 0 when the C refused.
+	static function valid(kind:Int, number:Int):Int {
+		if (number == 0)
 			throw "Native resource creation failed";
-		return handle;
+		return GraphicsHandle.make(kind, number);
 	}
+
+	// The C's number in a texture handle, 0 for none: any other kind throws the message.
+	static inline function textureOrNone(handle:Int, message:String):Int
+		return handle == 0 ? 0 : GraphicsHandle.numberOf(handle, GraphicsHandle.TEXTURE, message);
 
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int {
 		if (levels.length == 0 || !canSample(format))
 			throw "Invalid texture";
 		var packed = packLevels(levels);
-		return valid(GraphicsDeviceBridge.texture(width, height, pointer(packed), packed.length, levels.length, format));
+		return valid(GraphicsHandle.TEXTURE, GraphicsDeviceBridge.texture(width, height, pointer(packed), packed.length, levels.length, format));
 	}
 
 	public function createTextureFromImage(image:helix.platform.IDecodedImage):Int
@@ -55,7 +60,7 @@ abstract class NativeGraphics implements IGraphics {
 		if (levels.length == 0 || !canSample(format))
 			throw "Invalid cube texture";
 		var packed = packLevels(levels);
-		return valid(GraphicsDeviceBridge.cubeTexture(size, pointer(packed), packed.length, levels.length, format));
+		return valid(GraphicsHandle.TEXTURE, GraphicsDeviceBridge.cubeTexture(size, pointer(packed), packed.length, levels.length, format));
 	}
 
 	// Levels one after another in one buffer: the bridge points each mip level into it.
@@ -72,11 +77,13 @@ abstract class NativeGraphics implements IGraphics {
 	}
 
 	public function createDataTexture(width:Int, height:Int):Int
-		return valid(GraphicsDeviceBridge.dataTexture(width, height));
+		return valid(GraphicsHandle.TEXTURE, GraphicsDeviceBridge.dataTexture(width, height));
 
-	public function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:Bytes):Void
-		if (data.length == 0 || GraphicsDeviceBridge.updateTexture(handle, x, y, width, height, pointer(data), data.length) != 1)
+	public function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:Bytes):Void {
+		var texture = GraphicsHandle.numberOf(handle, GraphicsHandle.TEXTURE, "Invalid native texture update");
+		if (data.length == 0 || GraphicsDeviceBridge.updateTexture(texture, x, y, width, height, pointer(data), data.length) != 1)
 			throw "Invalid native texture update";
+	}
 
 	public function canSample(format:TextureFormat):Bool
 		return GraphicsDeviceBridge.canSample(format) == 1;
@@ -103,12 +110,12 @@ abstract class NativeGraphics implements IGraphics {
 		};
 
 	public function createBuffer(capacityBytes:Int):Int
-		return valid(GraphicsDeviceBridge.buffer(capacityBytes));
+		return valid(GraphicsHandle.BUFFER, GraphicsDeviceBridge.buffer(capacityBytes));
 
 	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int {
 		if (bytes <= 0 || bytes > data.length)
 			throw "Invalid static buffer";
-		return valid(GraphicsDeviceBridge.staticBuffer(pointer(data), bytes, index ? 1 : 0));
+		return valid(GraphicsHandle.BUFFER, GraphicsDeviceBridge.staticBuffer(pointer(data), bytes, index ? 1 : 0));
 	}
 
 	// A draw's arguments as the bridge reads them, kept from draw to draw and grown as needed, so a draw allocates nothing: the texture
@@ -143,10 +150,27 @@ abstract class NativeGraphics implements IGraphics {
 	}
 
 	// The programs, by handle, as their sources describe them: whether Points pipelines may draw one, and its attributes' types, which
-	// a pipeline's layout must feed. Set by a subclass's createShader.
+	// a pipeline's layout must feed. Set by program, from a subclass's createShader.
 	final programs = new Map<Int, helix.platform.ShaderSource>();
+	// The indexed pipelines, by handle: their program's handle. A draw reads it only to refuse an index buffer of another kind.
+	final indexedPipelines = new Map<Int, Int>();
+
+	/** Returns the handle of the program the C built, keeping its source, for a subclass's `createShader`.
+
+		@param number  The C's number for the program, 0 when it didn't build.
+		@param source  The program's source.
+		@return  The program's handle.
+		@throws String  A program the C didn't build. */
+	function program(number:Int, source:helix.platform.ShaderSource):Int {
+		if (number == 0)
+			throw "The shader didn't build (see the log)";
+		var handle = GraphicsHandle.make(GraphicsHandle.SHADER, number);
+		programs.set(handle, source);
+		return handle;
+	}
 
 	public function createPipeline(desc:PipelineDesc):Int {
+		var shader = GraphicsHandle.numberOf(desc.shader, GraphicsHandle.SHADER, "Invalid pipeline shader");
 		var program = programs.get(desc.shader);
 		if (program == null)
 			throw "Invalid pipeline shader";
@@ -156,7 +180,7 @@ abstract class NativeGraphics implements IGraphics {
 		// The description as the bridge reads it: the state, then each buffer's stride, step and attributes.
 		var colorWrite:Int = desc.colorWrite == null ? (All : ColorChannels) : desc.colorWrite;
 		var ints:Array<Int> = [
-			desc.shader,
+			shader,
 			desc.primitive,
 			desc.indexed ? 1 : 0,
 			desc.blend,
@@ -193,22 +217,31 @@ abstract class NativeGraphics implements IGraphics {
 		ints.push(haxe.io.FPHelper.floatToI32(desc.depthBias == null ? 0 : desc.depthBias));
 		ints.push(haxe.io.FPHelper.floatToI32(desc.depthSlopeBias == null ? 0 : desc.depthSlopeBias));
 		var packed = haxe.ds.Vector.fromArrayCopy(ints);
-		return valid(GraphicsDeviceBridge.pipeline(cpp.Pointer.ofArray(packed.toData()).raw, ints.length));
+		var handle = valid(GraphicsHandle.PIPELINE, GraphicsDeviceBridge.pipeline(cpp.Pointer.ofArray(packed.toData()).raw, ints.length));
+		if (desc.indexed)
+			indexedPipelines.set(handle, desc.shader);
+		return handle;
 	}
 
 	public function disposeShader(handle:Int):Void {
-		if (GraphicsDeviceBridge.disposeResource(3, handle) != 1)
-			throw "Invalid native shader";
+		if (GraphicsDeviceBridge.disposeResource(3, GraphicsHandle.numberOf(handle, GraphicsHandle.SHADER, "Invalid shader")) != 1)
+			throw "Invalid shader";
 		programs.remove(handle);
+		// The C disposed its pipelines too.
+		for (pipeline => shader in indexedPipelines)
+			if (shader == handle)
+				indexedPipelines.remove(pipeline);
 	}
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void {
-		if (usedBytes > data.length || usedBytes < 0 || GraphicsDeviceBridge.update(handle, pointer(data), usedBytes) != 1)
+		var buffer = GraphicsHandle.numberOf(handle, GraphicsHandle.BUFFER, "Invalid native upload");
+		if (usedBytes > data.length || usedBytes < 0 || GraphicsDeviceBridge.update(buffer, pointer(data), usedBytes) != 1)
 			throw "Invalid native upload";
 	}
 
 	public function appendBuffer(handle:Int, data:Bytes, usedBytes:Int):Int {
-		var at = usedBytes > data.length || usedBytes < 0 ? -1 : GraphicsDeviceBridge.append(handle, pointer(data), usedBytes);
+		var buffer = GraphicsHandle.numberOf(handle, GraphicsHandle.BUFFER, "Invalid native append");
+		var at = usedBytes > data.length || usedBytes < 0 ? -1 : GraphicsDeviceBridge.append(buffer, pointer(data), usedBytes);
 		if (at < 0)
 			throw "Invalid native append";
 		return at;
@@ -221,26 +254,27 @@ abstract class NativeGraphics implements IGraphics {
 		if (msaaSampleCount < 0)
 			throw "Invalid native render target";
 		// The count asked (0: the screen's), which the C rounds down to one the GPU takes for the format.
-		return valid(GraphicsDeviceBridge.target(width, height, format, depth ? 1 : 0,
-			msaaSampleCount == 0 ? GraphicsDeviceBridge.msaaSamples() : msaaSampleCount));
+		return valid(GraphicsHandle.TEXTURE,
+			GraphicsDeviceBridge.target(width, height, format, depth ? 1 : 0, msaaSampleCount == 0 ? GraphicsDeviceBridge.msaaSamples() : msaaSampleCount));
 	}
 
 	public function canRender(format:TextureFormat):Bool
 		return GraphicsDeviceBridge.canRender(format) == 1;
 
 	public function createShadowMap(size:Int, layerCount:Int):Int
-		return valid(GraphicsDeviceBridge.shadowMap(size, layerCount));
+		return valid(GraphicsHandle.TEXTURE, GraphicsDeviceBridge.shadowMap(size, layerCount));
 
 	public function beginShadowPass(map:Int, layerIndex:Int):Void
-		if (GraphicsDeviceBridge.beginShadow(map, layerIndex) != 1)
+		if (GraphicsDeviceBridge.beginShadow(GraphicsHandle.numberOf(map, GraphicsHandle.TEXTURE, "Invalid native shadow pass"), layerIndex) != 1)
 			throw "Invalid native shadow pass";
 
 	public function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void
-		if (GraphicsDeviceBridge.beginTarget(target, red, green, blue, alpha) != 1)
+		if (GraphicsDeviceBridge.beginTarget(GraphicsHandle.numberOf(target, GraphicsHandle.TEXTURE, "Invalid native target pass"), red, green, blue,
+			alpha) != 1)
 			throw "Invalid native target pass";
 
 	public function resumeTargetPass(target:Int):Void
-		if (GraphicsDeviceBridge.resumeTarget(target) != 1)
+		if (GraphicsDeviceBridge.resumeTarget(GraphicsHandle.numberOf(target, GraphicsHandle.TEXTURE, "Invalid native target pass")) != 1)
 			throw "Invalid native target pass";
 
 	public function endTargetPass():Void
@@ -267,13 +301,20 @@ abstract class NativeGraphics implements IGraphics {
 
 	public function draw(pipeline:Int, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int,
 			firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
+		var drawing = GraphicsHandle.numberOf(pipeline, GraphicsHandle.PIPELINE, "Invalid draw");
+		// An index buffer is read, and so refused when of another kind, only by an indexed pipeline.
+		var indices = 0;
+		if (GraphicsHandle.kindOf(indexBuffer) == GraphicsHandle.BUFFER)
+			indices = indexBuffer & GraphicsHandle.NUMBER_MASK;
+		else if (indexedPipelines.exists(pipeline))
+			throw "Invalid draw";
 		var bytes = pack(uniforms);
 		if (textureHandles.length < textures.length) {
 			textureHandles = new haxe.ds.Vector<cpp.UInt32>(textures.length);
 			textureModes = new haxe.ds.Vector<Int>(textures.length);
 		}
 		for (i in 0...textures.length) {
-			textureHandles[i] = textures[i];
+			textureHandles[i] = textureOrNone(textures[i], "Invalid draw texture");
 			textureModes[i] = i < samplings.length ? samplings[i] : 0;
 		}
 		if (bufferHandles.length < buffers.length) {
@@ -281,13 +322,12 @@ abstract class NativeGraphics implements IGraphics {
 			bufferOffsetsPacked = new haxe.ds.Vector<Int>(buffers.length);
 		}
 		for (i in 0...buffers.length) {
-			bufferHandles[i] = buffers[i];
+			bufferHandles[i] = buffers[i] == 0 ? 0 : GraphicsHandle.numberOf(buffers[i], GraphicsHandle.BUFFER, "Invalid draw");
 			bufferOffsetsPacked[i] = bufferOffsets != null && i < bufferOffsets.length ? bufferOffsets[i] : 0;
 		}
-		var drawn = GraphicsDeviceBridge.draw(pipeline, cpp.Pointer.ofArray(bufferHandles.toData()).raw,
-			cpp.Pointer.ofArray(bufferOffsetsPacked.toData()).raw, buffers.length, indexBuffer, firstElementIndex, elementCount, firstInstanceIndex,
-			instanceCount, cpp.Pointer.ofArray(textureHandles.toData()).raw, cpp.Pointer.ofArray(textureModes.toData()).raw, textures.length, pointer(packed),
-			bytes);
+		var drawn = GraphicsDeviceBridge.draw(drawing, cpp.Pointer.ofArray(bufferHandles.toData()).raw, cpp.Pointer.ofArray(bufferOffsetsPacked.toData()).raw,
+			buffers.length, indices, firstElementIndex, elementCount, firstInstanceIndex, instanceCount, cpp.Pointer.ofArray(textureHandles.toData()).raw,
+			cpp.Pointer.ofArray(textureModes.toData()).raw, textures.length, pointer(packed), bytes);
 		if (drawn == -1)
 			throw "Invalid native draw: a texture is the pass's own target, which a draw into it can't sample";
 		if (drawn != 1)
@@ -301,8 +341,9 @@ abstract class NativeGraphics implements IGraphics {
 		GraphicsDeviceBridge.present();
 
 	public function readPixels(handle:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void {
-		var width = GraphicsDeviceBridge.readWidth(handle),
-			height = GraphicsDeviceBridge.readHeight(handle);
+		var texture = textureOrNone(handle, "Invalid texture to read");
+		var width = GraphicsDeviceBridge.readWidth(texture),
+			height = GraphicsDeviceBridge.readHeight(texture);
 		if (handle != 0 && width == 0)
 			throw "Invalid texture to read";
 		if (width == 0) {
@@ -310,20 +351,22 @@ abstract class NativeGraphics implements IGraphics {
 			return;
 		}
 		var rgba = Bytes.alloc(width * height * 4);
-		if (GraphicsDeviceBridge.readPixels(handle, cpp.Pointer.arrayElem(rgba.getData(), 0).raw) != 1)
+		if (GraphicsDeviceBridge.readPixels(texture, cpp.Pointer.arrayElem(rgba.getData(), 0).raw) != 1)
 			throw "Native read back failed";
 		read(rgba, width, height);
 	}
 
 	public function disposeBuffer(handle:Int):Void
-		if (GraphicsDeviceBridge.disposeResource(0, handle) != 1)
+		if (GraphicsDeviceBridge.disposeResource(0, GraphicsHandle.numberOf(handle, GraphicsHandle.BUFFER, "Invalid buffer")) != 1)
 			throw "Invalid buffer";
 
 	public function disposeTexture(handle:Int):Void
-		if (GraphicsDeviceBridge.disposeResource(1, handle) != 1)
+		if (GraphicsDeviceBridge.disposeResource(1, GraphicsHandle.numberOf(handle, GraphicsHandle.TEXTURE, "Invalid texture")) != 1)
 			throw "Invalid texture";
 
-	public function disposePipeline(handle:Int):Void
-		if (GraphicsDeviceBridge.disposeResource(2, handle) != 1)
+	public function disposePipeline(handle:Int):Void {
+		if (GraphicsDeviceBridge.disposeResource(2, GraphicsHandle.numberOf(handle, GraphicsHandle.PIPELINE, "Invalid pipeline")) != 1)
 			throw "Invalid pipeline";
+		indexedPipelines.remove(handle);
+	}
 }

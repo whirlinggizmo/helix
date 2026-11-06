@@ -963,7 +963,7 @@ Defines the GPU as a platform's graphics adapter provides it, with its resources
 
 Resources are textures of a few kinds, buffers, programs built from a `ShaderSource`, and pipelines made from a `PipelineDesc`. A frame is any number of passes into render targets and shadow maps, then the screen's pass from `beginFrame` to `endFrame`.
 
-An adapter knows nothing of its caller's programs, layouts or pipelines. The caller describes them as data. Whoever creates a handle disposes it, once.
+An adapter knows nothing of its caller's programs, layouts or pipelines. The caller describes them as data. Whoever creates a handle disposes it, once. A handle carries its kind (a buffer, a texture of any kind, a program or a pipeline), and a call refuses a handle of another kind as unknown.
 
 A call that cannot be done throws before doing anything.
 

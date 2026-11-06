@@ -305,6 +305,9 @@ declare more than a draw binds. Adapters: `graphics/webgl2` (`WebGl2GraphicsAdap
 sokol_gfx on GL 4.1), `graphics/sdl3gpu` (`Sdl3GpuGraphicsAdapter`, SDL_GPU on Vulkan, Direct3D 12 or Metal). `libs/platform/tests/graphics`
 draws on each and checks the pixels it reads back.
 
+A handle carries its kind (a buffer, a texture of any kind, a program or a pipeline), and a call refuses a handle of another kind as
+unknown.
+
 Every adapter holds at least 2047 of each resource kind alive at once (buffers, textures, programs, pipelines, render targets, shadow
 maps): the native adapters' tables are that size, the WebGL2 adapter's maps have no bound.
 
