@@ -243,6 +243,23 @@ class RenderTests {
 		r.endFrame();
 		check(g.log[0] == 'update $held 1 1 2 2' && g.log[1] == 'update $held 3 3 1 1' && !g.textures.exists(held),
 			"updates before the pass; the texture freed after the frame");
+		// The screen's pass is drawn last, so an update called in it still goes ahead of a target pass begun after it.
+		var later = r.createTexture(Image.filled(4, 4, 0xffffffff));
+		g.forget();
+		r.beginFrame(200, 100);
+		later.update(Image.filled(1, 1, 0xff000000));
+		r.beginTarget(target, 0xff000000);
+		b.begin();
+		b.drawTexture(later, 0, 0);
+		b.end();
+		r.endTarget();
+		r.endFrame();
+		var updatedAt = g.log.indexOf('update ${later.handle} 0 0 1 1'), targetAt = -1;
+		for (i => l in g.log)
+			if (targetAt < 0 && StringTools.startsWith(l, "begin target"))
+				targetAt = i;
+		check(updatedAt >= 0 && targetAt > updatedAt, "an update in the screen's pass runs before a target pass begun after it: " + g.log);
+		later.dispose();
 		r.beginFrame(10, 10);
 		b.begin();
 		throws(() -> b.drawTexture(texture, 0, 0), "disposed", "a disposed texture's draw");

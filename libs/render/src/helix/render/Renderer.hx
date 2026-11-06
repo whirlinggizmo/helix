@@ -562,6 +562,9 @@ class Renderer {
 	final passes:Array<RenderPass> = [];
 	var screen:Null<RenderPass> = null;
 
+	// A pass's handle when it is a pass of updates alone, no pass on the GPU.
+	static inline final UPDATES = -1;
+
 	@:allow(helix.render)
 	var pass:Null<RenderPass> = null;
 
@@ -633,10 +636,19 @@ class Renderer {
 
 	@:allow(helix.render)
 	function updateBeforePass(update:() -> Void):Void {
-		if (inFrame)
-			pass.updates.push(update);
-		else
+		if (!inFrame)
 			update();
+		else if (pass != screen)
+			pass.updates.push(update);
+		else {
+			// The screen's pass runs last: a pass of updates alone keeps the update ahead of the target passes begun after it.
+			var last = passes.length > 0 ? passes[passes.length - 1] : null;
+			if (last == null || last.handle != UPDATES) {
+				last = new RenderPass(null, UPDATES, 0, 0, null);
+				passes.push(last);
+			}
+			last.updates.push(update);
+		}
 	}
 
 	function resetViewportState():Void {
@@ -855,6 +867,8 @@ class Renderer {
 	function run(p:RenderPass):Void {
 		for (u in p.updates)
 			u();
+		if (p.handle == UPDATES)
+			return;
 		if (p.begin != null)
 			p.begin(graphics);
 		else if (p.target == null)
