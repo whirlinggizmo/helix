@@ -256,6 +256,8 @@ class Textures {
 	public static function graphicsRestored():Void {
 		samplings.clear();
 		cubeHandles.clear();
+		for (i in 0...gpus.length)
+			gpus[i] = 0;
 		for (id => e in entries) {
 			if (e.gpu == 0)
 				continue;
@@ -424,6 +426,22 @@ class Textures {
 		@param id  The texture's id.
 		@return  The handle, the frame's white texture for `DEFAULT`, or 0 for an id with no texture. */
 	public static function handle(id:Int):Int {
+		var gpu = id > 0 && id < gpus.length ? gpus[id] : 0;
+		return gpu != 0 ? gpu : send(id);
+	}
+
+	// Each texture's GPU handle by its id, once `send` has returned one, else 0: what `handle` reads before anything else. A handle that
+	// changes or goes (`graphicsRestored`, `generateMipmaps`, `release`) is forgotten here, and `send` finds it again.
+	static final gpus:Array<Int> = [];
+
+	// Forgets a texture's GPU handle in `gpus`.
+	static function forget(id:Int):Void {
+		if (id > 0 && id < gpus.length)
+			gpus[id] = 0;
+	}
+
+	// Returns a texture's GPU handle, sending it to the GPU if this is its first use, and keeps it in `gpus`: `handle` once its handle isn't kept.
+	static function send(id:Int):Int {
 		if (id == DEFAULT)
 			return Runtime.frame.white;
 		var e = entries.get(id);
@@ -465,6 +483,11 @@ class Textures {
 			cubeHandles.set(e.gpu, true);
 			samplings.set(e.gpu, e.sampling);
 			e.cube = {size: e.cube.size, levels: null};
+		}
+		if (e.gpu != 0) {
+			while (gpus.length <= id)
+				gpus.push(0);
+			gpus[id] = e.gpu;
 		}
 		return e.gpu;
 	}
@@ -542,6 +565,7 @@ class Textures {
 				if (sampling != null)
 					samplings.set(made, sampling);
 				e.gpu = made;
+				forget(id);
 				Runtime.frame.afterDraw(() -> {
 					Runtime.graphics.disposeTexture(gpu);
 					GpuMemory.freed(gpu);
@@ -575,6 +599,7 @@ class Textures {
 			cubeHandles.remove(e.gpu);
 		}
 		entries.remove(id);
+		forget(id);
 		if (e.path != "" && byPath.get(e.path) == id)
 			byPath.remove(e.path);
 		return true;

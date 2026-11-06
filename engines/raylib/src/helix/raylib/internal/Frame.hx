@@ -794,10 +794,10 @@ class Frame {
 		putSprite(at + 36, v0);
 		putSprite(at + 40, u1);
 		putSprite(at + 44, v1);
-		spriteData.set(at + 48, color.r);
-		spriteData.set(at + 49, color.g);
-		spriteData.set(at + 50, color.b);
-		spriteData.set(at + 51, color.a);
+		putSpriteByte(at + 48, color.r);
+		putSpriteByte(at + 49, color.g);
+		putSpriteByte(at + 50, color.b);
+		putSpriteByte(at + 51, color.a);
 	}
 
 	// Whether the four corners waiting make a sprite: one texture, one color, z 0, and texture coordinates u0, v0, then u0, v1, then u1,
@@ -854,10 +854,10 @@ class Frame {
 		putSprite(at + 36, v0);
 		putSprite(at + 40, u1);
 		putSprite(at + 44, v1);
-		spriteData.set(at + 48, r);
-		spriteData.set(at + 49, g);
-		spriteData.set(at + 50, b);
-		spriteData.set(at + 51, a);
+		putSpriteByte(at + 48, r);
+		putSpriteByte(at + 49, g);
+		putSpriteByte(at + 50, b);
+		putSpriteByte(at + 51, a);
 	}
 
 	// Writes a float into the sprites' buffer.
@@ -868,6 +868,15 @@ class Frame {
 		spriteFloats[at >> 2] = value;
 		#else
 		spriteData.setFloat(at, value);
+		#end
+	}
+
+	// Writes a byte into the sprites' buffer.
+	inline function putSpriteByte(at:Int, value:Int):Void {
+		#if cpp
+		untyped __global__.__hxcpp_memory_set_byte(spriteData.getData(), at, value);
+		#else
+		spriteData.set(at, value);
 		#end
 	}
 
