@@ -303,6 +303,8 @@ class Frame {
 	// After a frame is drawn: nothing recorded, the screen's pass alone.
 	function reset():Void {
 		snapshotCount = 0;
+		drawCount = 0;
+		intCount = 0;
 		var screen = passes.length > 0 ? passes[passes.length - 1] : null;
 		passes.resize(0);
 		vertices = 0;
@@ -1128,12 +1130,85 @@ class Frame {
 			edges = Models.edges(mesh);
 		var primitive:Primitive = points != null ? Points : wire ? Lines : Triangles;
 		// Point mode and wire mode are never both on: each ends the other, as GL's one polygon mode.
-		var indexed = points != null ? points[0] != 0 : wire || mesh.gpu.indexBuffer != 0,
-			state = states();
-		var key = 'm${indexed ? "x" : ""}${(primitive : Int)}${instances != 0 ? "i" : ""}$state';
+		var indexed = points != null ? points[0] != 0 : wire || mesh.gpu.indexBuffer != 0;
+		var key = meshKey(indexed, primitive, instances != 0);
+		var pipeline = p.cached(key);
+		if (pipeline == -1)
+			pipeline = meshPipeline(p, key, primitive, indexed, instances);
+		// The draw's textures and buffers, from the frame's pool: read when the frame is drawn, taken again after.
+		var bound = ints();
+		for (t in p.textures)
+			bound.push(t);
+		for (slot => t in textures)
+			if (t >= 0 && slot < bound.length)
+				bound[slot] = t;
+		for (i in 0...bound.length)
+			if (bound[i] == 0)
+				bound[i] = white;
 		// A buffer an attribute: the platform takes eight, as many as raylib's attributes.
+		var names = p.attributes, buffers = ints();
+		for (i => name in names)
+			if (isMatrix(names, i))
+				buffers.push(instances != 0 ? instances : constants);
+			else if (name != "")
+				buffers.push(Models.buffer(mesh, MESH_BUFFERS.get(name)));
+		meshBuffers = buffers;
+		var indices = points != null ? points[0] : wire ? edges : mesh.gpu.indexBuffer,
+			count = points != null ? points[1] : wire ? edgeCount : indexed ? mesh.triangleCount * 3 : mesh.vertexCount;
+		if (eyes != null)
+			meshEyes(pipeline, buffers, indices, count, primitive, bound, p, model, diffuse, instanceCount);
+		else
+			addMesh(pipeline, buffers, indices, count, primitive, bound, p, model, diffuse, instanceCount);
+	}
+
+	// A mesh's draw, in the pass: its blocks captured as they are now.
+	function addMesh(pipeline:Int, buffers:Array<Int>, indices:Int, count:Int, primitive:Primitive, bound:Array<Int>, p:Program, model:Matrix3D,
+			diffuse:Array<Float>, instanceCount:Int):Void {
+		var d = drawCount < drawPool.length ? drawPool[drawCount] : null;
+		if (d == null)
+			drawPool[drawCount] = d = {
+				pipeline: 0,
+				buffers: null,
+				indices: 0,
+				first: 0,
+				count: 0,
+				texture: 0,
+				primitive: Triangles,
+				scissor: null,
+				viewport: null,
+				textures: null,
+				cubes: null,
+				uniforms: null,
+				instances: 0
+			};
+		drawCount++;
+		d.pipeline = pipeline;
+		d.buffers = buffers;
+		d.sprite = false;
+		d.indices = indices;
+		d.first = 0;
+		d.count = count;
+		d.texture = 0;
+		d.primitive = primitive;
+		d.scissor = scissor;
+		d.viewport = viewport;
+		d.textures = bound;
+		d.cubes = p.cubes;
+		d.uniforms = values(p, model, diffuse);
+		d.instances = instanceCount;
+		d.firstInstance = 0;
+		pass.draws.push(d);
+	}
+
+	// A mesh's draws in stereo, one an eye, sharing its buffers (meshBuffers).
+	function meshEyes(pipeline:Int, buffers:Array<Int>, indices:Int, count:Int, primitive:Primitive, bound:Array<Int>, p:Program, model:Matrix3D,
+			diffuse:Array<Float>, instanceCount:Int):Void
+		eyes(() -> addMesh(pipeline, buffers, indices, count, primitive, bound, p, model, diffuse, instanceCount), true);
+
+	// Makes the pipeline drawing a mesh through a program in a way, under its key.
+	function meshPipeline(p:Program, key:String, primitive:Primitive, indexed:Bool, instances:Int):Int {
 		var names = p.attributes;
-		var pipeline = p.pipeline(key, () -> {
+		return p.pipeline(key, () -> {
 			// A matrix's columns from the instances' transforms, or from the constants' record.
 			var layouts:Array<helix.platform.VertexBuffer> = [
 				for (i => name in names)
@@ -1167,38 +1242,45 @@ class Frame {
 				flipOffset: p.flipOffset
 			});
 		});
-		var bound = p.textures.copy();
-		for (slot => t in textures)
-			if (t >= 0 && slot < bound.length)
-				bound[slot] = t;
-		for (i in 0...bound.length)
-			if (bound[i] == 0)
-				bound[i] = white;
-		var buffers = [
-			for (i => name in names)
-				if (isMatrix(names, i)) instances != 0 ? instances : constants else if (name != "") Models.buffer(mesh, MESH_BUFFERS.get(name))
-		];
-		meshBuffers = buffers;
-		function add():Void
-			pass.draws.push({
-				pipeline: pipeline,
-				buffers: buffers,
-				indices: points != null ? points[0] : wire ? edges : mesh.gpu.indexBuffer,
-				first: 0,
-				count: points != null ? points[1] : wire ? edgeCount : indexed ? mesh.triangleCount * 3 : mesh.vertexCount,
-				texture: 0,
-				primitive: primitive,
-				scissor: scissor,
-				viewport: viewport,
-				textures: bound,
-				cubes: p.cubes,
-				uniforms: values(p, model, diffuse),
-				instances: instanceCount
-			});
-		if (eyes != null)
-			eyes(add, true);
+	}
+
+	// The key of a mesh's pipeline: how it is drawn and the render state (states), kept for the state last found, so a draw builds none.
+	function meshKey(indexed:Bool, primitive:Primitive, instanced:Bool):String {
+		var state = states();
+		if (state != meshKeysState) {
+			meshKeysState = state;
+			meshKeys.resize(0);
+		}
+		var at = (primitive : Int) * 4 + (indexed ? 2 : 0) + (instanced ? 1 : 0);
+		var key = at < meshKeys.length ? meshKeys[at] : null;
+		if (key == null) {
+			key = 'm${indexed ? "x" : ""}${(primitive : Int)}${instanced ? "i" : ""}$state';
+			while (meshKeys.length <= at)
+				meshKeys.push(null);
+			meshKeys[at] = key;
+		}
+		return key;
+	}
+
+	// The mesh keys made for meshKeysState, by meshKey's index.
+	final meshKeys:Array<Null<String>> = [];
+	var meshKeysState:Null<String> = null;
+
+	// The frame's mesh draws, and the arrays its draws hold, kept from frame to frame and taken again after the frame is drawn.
+	final drawPool:Array<Draw> = [];
+	var drawCount = 0;
+	final intPool:Array<Array<Int>> = [];
+	var intCount = 0;
+
+	// An empty array of the frame's, held by a draw until the frame is drawn.
+	function ints():Array<Int> {
+		var a = intCount < intPool.length ? intPool[intCount] : null;
+		if (a == null)
+			intPool[intCount] = a = [];
 		else
-			add();
+			a.resize(0);
+		intCount++;
+		return a;
 	}
 
 	/** The buffers, by the program's slot, of the draws the last `mesh` added, which a caller may change before the frame is drawn (a
@@ -1252,9 +1334,37 @@ class Frame {
 		return edges;
 	}
 
-	// The render state a pipeline is made for, as part of its key.
-	function states():String
-		return '${depthTest ? "d" : ""}${depthTest && depthMask ? "w" : ""}${cull ? (cullFront ? "f" : "b") : ""}${colorBlend ? (blend : Int) : -1}c${(colorMask : Int)}';
+	// The render state a pipeline is made for, as part of its key: made again only when the state changes.
+	function states():String {
+		var text = stateText;
+		if (text == null
+			|| depthTest != stateDepthTest
+			|| depthMask != stateDepthMask
+			|| cull != stateCull
+			|| cullFront != stateCullFront
+			|| colorBlend != stateColorBlend
+			|| (blend : Int) != stateBlend || (colorMask : Int) != stateColorMask) {
+			stateDepthTest = depthTest;
+			stateDepthMask = depthMask;
+			stateCull = cull;
+			stateCullFront = cullFront;
+			stateColorBlend = colorBlend;
+			stateBlend = blend;
+			stateColorMask = colorMask;
+			stateText = text = '${depthTest ? "d" : ""}${depthTest && depthMask ? "w" : ""}${cull ? (cullFront ? "f" : "b") : ""}${colorBlend ? (blend : Int) : -1}c${(colorMask : Int)}';
+		}
+		return text;
+	}
+
+	// The state stateText was made for.
+	var stateText:Null<String> = null;
+	var stateDepthTest = false;
+	var stateDepthMask = false;
+	var stateCull = false;
+	var stateCullFront = false;
+	var stateColorBlend = false;
+	var stateBlend = 0;
+	var stateColorMask = 0;
 
 	function cullFace():helix.platform.CullFace
 		return cull ? (cullFront ? Front : Back) : None;
@@ -1315,13 +1425,21 @@ class Frame {
 				}
 				var count = d.primitive == Points ? d.count : d.primitive == Lines ? d.count - d.count % 2 : d.count - d.count % 3;
 				// A texture binds only to a sampler of its kind, a cubemap to a samplerCube; any other reads the platform's clear texture.
-				var textures = [
-					for (slot => t in d.textures)
-						t != 0 && (slot < d.cubes.length && d.cubes[slot]) != Textures.isCubeHandle(t) ? 0 : t
-				];
-				var samplings = [for (t in textures) Textures.samplingOf(t)];
-				graphics.draw(d.pipeline, d.buffers != null ? d.buffers : d.sprite ? [spriteQuad, spriteBuffer] : [buffer, constants], null, d.indices,
-					d.first, count, d.firstInstance, d.instances, textures, samplings, d.uniforms);
+				// Into arrays of the frame's, as the graphics adapter reads them during the call alone.
+				var textures = drawTextures, samplings = drawSamplings;
+				textures.resize(0);
+				samplings.resize(0);
+				for (slot => t in d.textures)
+					textures.push(t != 0 && (slot < d.cubes.length && d.cubes[slot]) != Textures.isCubeHandle(t) ? 0 : t);
+				for (t in textures)
+					samplings.push(Textures.samplingOf(t));
+				var buffers = d.buffers;
+				if (buffers == null) {
+					buffers = ownBuffers;
+					buffers[0] = d.sprite ? spriteQuad : buffer;
+					buffers[1] = d.sprite ? spriteBuffer : constants;
+				}
+				graphics.draw(d.pipeline, buffers, null, d.indices, d.first, count, d.firstInstance, d.instances, textures, samplings, d.uniforms);
 			}
 			if (p.target == 0) {
 				graphics.endFrame();
@@ -1345,6 +1463,11 @@ class Frame {
 		for (call in calls)
 			call();
 	}
+
+	// What draw hands the graphics adapter a draw's textures, samplings and the frame's own buffers in.
+	final drawTextures:Array<Int> = [];
+	final drawSamplings:Array<helix.platform.Sampling> = [];
+	final ownBuffers:Array<Int> = [0, 0];
 
 	/** Frees a buffer once the frame is drawn, as draws asked for already may read it.
 
@@ -1443,23 +1566,23 @@ private class Update {
 
 @:structInit
 private class Draw {
-	public final pipeline:Int;
+	public var pipeline:Int;
 	// The buffers by the pipeline's slots, or null for the frame's own: the batch's vertices and the constants, or for a sprite run
 	// (sprite) the quad and the sprites' records, both taken when the frame is drawn, as their buffers may be remade before.
-	public final buffers:Null<Array<Int>>;
+	public var buffers:Null<Array<Int>>;
 	public var sprite:Bool = false;
-	public final indices:Int;
-	public final first:Int;
+	public var indices:Int;
+	public var first:Int;
 	public var count:Int;
-	public final texture:Int;
-	public final primitive:Primitive;
-	public final scissor:Null<Array<Float>>;
-	public final viewport:Null<Array<Int>>;
-	public final textures:Array<Int>;
+	public var texture:Int;
+	public var primitive:Primitive;
+	public var scissor:Null<Array<Float>>;
+	public var viewport:Null<Array<Int>>;
+	public var textures:Array<Int>;
 	// Whether each slot's sampler is a samplerCube.
-	public final cubes:Array<Bool>;
-	public final uniforms:Array<Null<Bytes>>;
-	public final instances:Int;
+	public var cubes:Array<Bool>;
+	public var uniforms:Array<Null<Bytes>>;
+	public var instances:Int;
 	// The first instance drawn: a sprite run's first record.
 	public var firstInstance:Int = 0;
 }

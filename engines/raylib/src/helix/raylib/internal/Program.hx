@@ -280,13 +280,16 @@ class Program {
 		@param key  The way, as a string, for the cache.
 		@param make  Makes it. */
 	public function pipeline(key:String, make:Void->Int):Int {
-		var p = pipelines.get(key);
-		if (p == null) {
-			p = make();
-			pipelines.set(key, p);
-		}
-		return p;
+		if (!pipelines.exists(key))
+			pipelines.set(key, make());
+		return pipelines.get(key);
 	}
+
+	/** Returns the pipeline made for a way, or -1 when none is made yet, without making one.
+
+		@param key  The way, as `pipeline` takes it. */
+	public function cached(key:String):Int
+		return pipelines.exists(key) ? pipelines.get(key) : -1;
 
 	/** How many hold it (docs/DECISIONS.md 25): the program from `LoadShader` until `UnloadShader`, and each material given it. It is
 		freed when the last lets go; the default program is never counted. */

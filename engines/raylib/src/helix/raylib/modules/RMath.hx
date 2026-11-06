@@ -671,7 +671,18 @@ class RMath {
 		@param amount  0 for the start, 1 for the end.
 		@return  The point. */
 	static function Vector3Lerp(v1:Vector3, v2:Vector3, amount:Float):Vector3 {
-		return new Vector3(v1.x + amount * (v2.x - v1.x), v1.y + amount * (v2.y - v1.y), v1.z + amount * (v2.z - v1.z));
+		return vector3LerpInto(v1, v2, amount, new Vector3());
+	}
+
+	// Vector3Lerp written into a vector, which may be either of the two, so a caller posing every frame allocates none (Animations).
+	static function vector3LerpInto(v1:Vector3, v2:Vector3, amount:Float, out:Vector3):Vector3 {
+		var x = v1.x + amount * (v2.x - v1.x),
+			y = v1.y + amount * (v2.y - v1.y),
+			z = v1.z + amount * (v2.z - v1.z);
+		out.x = x;
+		out.y = y;
+		out.z = z;
+		return out;
 	}
 
 	/** Returns a point part of the way along a cubic Hermite curve, from one point to another, leaving and arriving along tangents.
@@ -1599,6 +1610,12 @@ class RMath {
 		@param amount  0 for the start, 1 for the end.
 		@return  The quaternion. */
 	static function QuaternionSlerp(q1:Quaternion, q2:Quaternion, amount:Float):Quaternion {
+		return quaternionSlerpInto(q1, q2, amount, new Vector4());
+	}
+
+	// QuaternionSlerp written into a quaternion, which may be either of the two, so a caller posing every frame allocates none
+	// (Animations).
+	static function quaternionSlerpInto(q1:Quaternion, q2:Quaternion, amount:Float, out:Quaternion):Quaternion {
 		var x2 = q2.x, y2 = q2.y, z2 = q2.z, w2 = q2.w;
 		var cosHalfTheta = q1.x * x2 + q1.y * y2 + q1.z * z2 + q1.w * w2;
 		if (cosHalfTheta < 0) {
@@ -1611,16 +1628,35 @@ class RMath {
 		// Whether they are one rotation is decided as C's floats find it, each product and sum rounded to a float: rotations that close
 		// are the same one to raylib, which keeps the first.
 		if (Math.abs(f32(f32(f32(f32(f32(q1.x) * f32(q2.x)) + f32(f32(q1.y) * f32(q2.y))) + f32(f32(q1.z) * f32(q2.z))) + f32(f32(q1.w) * f32(q2.w)))) >= 1)
-			return new Vector4(q1.x, q1.y, q1.z, q1.w);
-		if (cosHalfTheta > .95)
-			return QuaternionNlerp(q1, new Vector4(x2, y2, z2, w2), amount);
+			return set4(out, q1.x, q1.y, q1.z, q1.w);
+		if (cosHalfTheta > .95) {
+			// QuaternionNlerp's: lerped, then normalized as QuaternionNormalize does.
+			var x = q1.x + amount * (x2 - q1.x),
+				y = q1.y + amount * (y2 - q1.y),
+				z = q1.z + amount * (z2 - q1.z),
+				w = q1.w + amount * (w2 - q1.w);
+			var length = Math.sqrt(x * x + y * y + z * z + w * w);
+			if (length == 0)
+				length = 1;
+			var ilength = 1 / length;
+			return set4(out, x * ilength, y * ilength, z * ilength, w * ilength);
+		}
 		var halfTheta = Math.acos(cosHalfTheta);
 		var sinHalfTheta = Math.sqrt(1 - cosHalfTheta * cosHalfTheta);
 		if (Math.abs(sinHalfTheta) < Raymath.EPSILON)
-			return new Vector4(q1.x * .5 + x2 * .5, q1.y * .5 + y2 * .5, q1.z * .5 + z2 * .5, q1.w * .5 + w2 * .5);
+			return set4(out, q1.x * .5 + x2 * .5, q1.y * .5 + y2 * .5, q1.z * .5 + z2 * .5, q1.w * .5 + w2 * .5);
 		var ratioA = Math.sin((1 - amount) * halfTheta) / sinHalfTheta;
 		var ratioB = Math.sin(amount * halfTheta) / sinHalfTheta;
-		return new Vector4(q1.x * ratioA + x2 * ratioB, q1.y * ratioA + y2 * ratioB, q1.z * ratioA + z2 * ratioB, q1.w * ratioA + w2 * ratioB);
+		return set4(out, q1.x * ratioA + x2 * ratioB, q1.y * ratioA + y2 * ratioB, q1.z * ratioA + z2 * ratioB, q1.w * ratioA + w2 * ratioB);
+	}
+
+	// Sets a quaternion's four numbers and returns it.
+	static inline function set4(out:Quaternion, x:Float, y:Float, z:Float, w:Float):Quaternion {
+		out.x = x;
+		out.y = y;
+		out.z = z;
+		out.w = w;
+		return out;
 	}
 
 	/** Returns a rotation part of the way along a cubic Hermite curve, from one quaternion to another, leaving and arriving along tangents,
