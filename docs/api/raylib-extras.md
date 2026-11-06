@@ -489,6 +489,31 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
 
   The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming only glTF files carries no OBJ reader, and one naming only OBJ files no glTF reader; a name known only as the program runs brings both, the reader chosen by its extension then.
 
+## Sprites
+
+*class* in [`engines/raylib/src/helix/raylib/extras/Sprites.hx`](../../engines/raylib/src/helix/raylib/extras/Sprites.hx), `import helix.raylib.extras.Sprites;`
+
+Provides helix-raylib's instanced texture draw, `DrawTextureInstanced`: many copies of one part of a texture, each placed by a matrix, in one call, as three.js's InstancedMesh, Godot's MultiMesh and Unity's instancing draw many of one thing (docs/DECISIONS.md 47). Imported apart: `import helix.raylib.extras.Sprites.*;`.
+
+```haxe
+var copies = [for (i in 0...100) MatrixMultiply(MatrixRotateZ(i * 0.1), MatrixTranslate(i * 8, 100, 0))];
+DrawTextureInstanced(texture, new Rectangle(0, 0, 32, 32), copies, WHITE);
+```
+
+### sprites: many copies of one part of a texture, each placed by a matrix, in one call
+
+```haxe
+static function DrawTextureInstanced(texture:Texture2D, source:Rectangle, transforms:Array<Matrix>, tint:Color):Void
+```
+
+- `DrawTextureInstanced`: Draws a part of a texture many times in one call, each copy placed by a matrix: what `DrawTexturePro` draws for each, in the batch's order, so the copies join the frame's sprite run and cost what the same draws would, with no call for each. Like three.js's InstancedMesh, Godot's MultiMesh and Unity's instancing, for a 2D sprite.
+  - `texture`: The texture.
+  - `source`: The part of it, in pixels.
+  - `transforms`: Each copy's matrix.
+  - `tint`: The tint, every copy's.
+
+  A copy is the part, `source.width` by `source.height` pixels with its top left at the origin, taken through its matrix as `Vector2Transform` applies one (`m0`, `m4`, `m12` across, `m1`, `m5`, `m13` down): `MatrixTranslate` places it, `MatrixRotateZ` turns it about its top left, `MatrixScale` sizes it, and their products do all three. A negative width or height flips the part.
+
 ## Text
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Text.hx`](../../engines/raylib/src/helix/raylib/extras/Text.hx), `import helix.raylib.extras.Text;`

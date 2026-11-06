@@ -85,6 +85,7 @@ TARGETS = {
     'extras/GuiSkins.hx': ([('RGuiSkins', "gui skins: raygui's controls drawn from textures")], None, 'GuiSkins'),
     'extras/Debug.hx': ([('RDebug', "debug: a model's skeleton and bounds as posed, and the frame's cost")], None, 'Debug'),
     'extras/Lights.hx': ([('RLights', "lights: raylib's examples' rlights and the lit shader built on them")], None, 'Lights'),
+    'extras/Sprites.hx': ([('RSprites', "sprites: many copies of one part of a texture, each placed by a matrix, in one call")], None, 'Sprites'),
 }
 # The package of what helix-raylib adds to raylib's API, a module for each of the TARGETS under extras/.
 EXTRAS = 'helix.raylib.extras'
