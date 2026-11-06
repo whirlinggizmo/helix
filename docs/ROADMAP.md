@@ -89,7 +89,13 @@ helix-raylib's size and speed where docs/speed.md records them.
   Underneath, an internal registry in the services for layer authors: one resource per path (or generator's parameters), reference
   counted, replaced in place while the program runs (the changed file loaded beside the old, swapped at a frame boundary, a failure
   keeping the old, as `Shaders.watch` replaces a shader), a placeholder while it first loads. Linked only by a program that loads or
-  watches that kind; a game reads nothing new.
+  watches that kind; a game reads nothing new. What each kind shares, as the earlier C frameworks' keyed resources did and as
+  helix-raylib's textures already do (`Textures.byPath`, counted by holders, DECISIONS 25): a model file's decoded meshes and their
+  GPU buffers, loaded twice or a hundred times one resident copy; a font file's atlas texture and glyph table at a size; a sound file's
+  decoded wave, each Sound its own playback (raylib's `LoadSoundAlias` by hand); one compiled program per distinct source pair, each
+  Shader record's locations its own; music never, a stream being one playback; images never, a load being a mutable copy as raylib's
+  is. Each engine's per-load records stay as its API has them; the sharing is underneath. After the jam, which measures the engine as
+  it is.
 - **Services features an engine needs and helix-raylib now reaches the platform for:** the mouse cursor (shape, visibility, lock) on
   `Mouse`, gamepad vibration and mappings on `Gamepads`, and a clipboard service.
 - **The layer above the services:** constructs the platform and the services for a target, runs the frame in order and ends with the
