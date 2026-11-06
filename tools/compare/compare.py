@@ -159,11 +159,14 @@ def build_helix_raylib(programs, page, native):
             for asset in assets[program]:
                 shutil.copy(asset, web / asset.name)
         if native:
+            # A native helix-raylib program reads its files from ../web beside its directory (Runtime.root), as the examples are laid out, so
+            # the assets go there too, whether or not the page was built.
+            (home / 'web').mkdir(parents=True, exist_ok=True)
+            for asset in assets[program]:
+                shutil.copy(asset, home / 'web' / asset.name)
             for backend, defines in (('native-gl', []), ('native-sdlgpu', ['-D', 'sdl_gpu'])):
                 say(f'building helix-raylib {program} {backend}')
                 haxe(common + defines + ['-D', jobs, '-cpp', home / backend], env)
-                for asset in assets[program]:
-                    shutil.copy(asset, home / backend / asset.name)
 
 
 def build_raylib_c(programs, page, native):
