@@ -170,12 +170,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	// again binds one object in place of every attribute's pointer. The default vertex array feeds layouts over stream buffers, whose
 	// offsets change with each draw. The element buffer binding is each vertex array's own: boundIndex is the current one's, defaultIndex
 	// the default's.
-	var vaos:Map<String, {
-		vao:Dynamic,
-		index:Dynamic,
-		pipeline:Int,
-		buffers:Array<Int>
-	}> = [];
+	var vaos:Map<Int, Array<Vao>> = [];
 	var vaoCount = 0;
 	var currentVao:Dynamic = null;
 	var defaultIndex:Dynamic = null;
@@ -226,8 +221,9 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	// Lets every vertex array go (deleted, or gone with the context).
 	function dropVaos(delete:Bool):Void {
 		if (delete)
-			for (v in vaos)
-				gl.deleteVertexArray(v.vao);
+			for (made in vaos)
+				for (v in made)
+					gl.deleteVertexArray(v.vao);
 		vaos = [];
 		vaoCount = 0;
 		currentVao = null;
@@ -1077,7 +1073,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		}
 		bindTextures(shader, textures, samplings);
 		bindBlocks(shader, uniforms, p);
-		var kept = allStatic(p, buffers) ? vao(pipeline, p, buffers, bufferOffsets, firstInstanceIndex) : null;
+		var kept:Null<Vao> = allStatic(p, buffers) ? vao(pipeline, p, buffers, bufferOffsets, firstInstanceIndex) : null;
 		if (kept == null) {
 			defaultVao();
 			if (!sameLayout(p, buffers, bufferOffsets, firstInstanceIndex))
@@ -1110,31 +1106,30 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		return true;
 	}
 
-	// The vertex array for a layout over static buffers, bound: made and fed the first time, found by its key after.
-	function vao(pipeline:Int, p:PipelineDesc, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, firstInstanceIndex:Int):{
-		vao:Dynamic,
-		index:Dynamic,
-		pipeline:Int,
-		buffers:Array<Int>
-	} {
-		var key = pipeline
-			+ ":"
-			+ buffers.join(",")
-			+ ":"
-			+ (bufferOffsets == null ? "" : bufferOffsets.join(","))
-			+ ":"
-			+ firstInstanceIndex;
-		var kept = vaos.get(key);
+	// The vertex array for a layout over static buffers, bound: made and fed the first time, found among the pipeline's after.
+	function vao(pipeline:Int, p:PipelineDesc, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, firstInstanceIndex:Int):Vao {
+		var made = vaos.get(pipeline);
+		if (made == null)
+			vaos.set(pipeline, made = []);
+		var kept:Null<Vao> = null;
+		for (v in made)
+			if (v.firstInstance == firstInstanceIndex && same(v.buffers, buffers) && same(v.offsets, bufferOffsets)) {
+				kept = v;
+				break;
+			}
 		if (kept == null) {
-			if (vaoCount >= MOST_VAOS)
+			if (vaoCount >= MOST_VAOS) {
 				dropVaos(true);
+				vaos.set(pipeline, made = []);
+			}
 			kept = {
 				vao: gl.createVertexArray(),
 				index: null,
-				pipeline: pipeline,
-				buffers: buffers.copy()
+				buffers: buffers.copy(),
+				offsets: bufferOffsets == null ? null : bufferOffsets.copy(),
+				firstInstance: firstInstanceIndex
 			};
-			vaos.set(key, kept);
+			made.push(kept);
 			vaoCount++;
 			gl.bindVertexArray(kept.vao);
 			currentVao = kept.vao;
@@ -1147,19 +1142,38 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		return kept;
 	}
 
+	// Whether two lists of ints hold the same, both null counting as the same.
+	static function same(a:Null<Array<Int>>, b:Null<Array<Int>>):Bool {
+		if (a == null || b == null)
+			return a == b;
+		if (a.length != b.length)
+			return false;
+		for (i in 0...a.length)
+			if (a[i] != b[i])
+				return false;
+		return true;
+	}
+
 	// Lets go of the vertex arrays over a buffer, or of a pipeline (0 for any).
 	function dropVaosOver(buffer:Int, pipeline:Int):Void {
-		for (key => v in vaos)
-			if (v.pipeline == pipeline || v.buffers.indexOf(buffer) >= 0) {
-				if (currentVao == v.vao) {
-					gl.bindVertexArray(null);
-					currentVao = null;
-					boundIndex = defaultIndex;
-				}
-				gl.deleteVertexArray(v.vao);
-				vaos.remove(key);
-				vaoCount--;
-			}
+		for (owner => made in vaos) {
+			var keep = [];
+			for (v in made)
+				if (owner == pipeline || v.buffers.indexOf(buffer) >= 0) {
+					if (currentVao == v.vao) {
+						gl.bindVertexArray(null);
+						currentVao = null;
+						boundIndex = defaultIndex;
+					}
+					gl.deleteVertexArray(v.vao);
+					vaoCount--;
+				} else
+					keep.push(v);
+			if (keep.length == 0)
+				vaos.remove(owner);
+			else
+				vaos.set(owner, keep);
+		}
 	}
 
 	// Whether the vertex layout fed to the last draw is the one this draw asks: the same pipeline, buffers, offsets and first instance.
@@ -1314,14 +1328,15 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				throw "Invalid draw uniforms: a block's bytes missing or short";
 			if (!block.bound)
 				continue;
-			var bytes = new js.lib.Uint8Array(data.getData(), 0, block.size);
+			// The block's own bytes, read up to its size: nothing made a draw.
+			var bytes:js.lib.Uint8Array = @:privateAccess data.b;
 			var flipSlot = p.flipBlockSlot == null ? 0 : p.flipBlockSlot,
 				flipOffset = p.flipOffset == null ? 0 : p.flipOffset;
 			if (p.flip != None && block.point == flipSlot && (p.flip == ClipScale || flipped)) {
 				if (flippedBlock.length < block.size)
 					flippedBlock = new js.lib.Uint8Array(block.size);
 				var copy = flippedBlock.subarray(0, block.size);
-				copy.set(bytes);
+				copy.set(bytes.length == block.size ? bytes : bytes.subarray(0, block.size));
 				var floats = new js.lib.Float32Array(copy.buffer, 0, block.size >> 2),
 					at = flipOffset >> 2;
 				if (p.flip == ClipScale && at + 4 <= floats.length) {
@@ -1351,7 +1366,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				gl.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, blockBufferSizes[block.point], WebGL2RenderingContext.DYNAMIC_DRAW);
 			} else
 				gl.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, buffer);
-			gl.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, bytes);
+			gl.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, bytes, 0, block.size);
 			// The point reads the whole buffer, the point's largest block, so a block of any size that fits reads it.
 			gl.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, block.point, buffer);
 		}
@@ -1493,4 +1508,13 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		dropVaos(true);
 		forgetState();
 	}
+}
+
+/** A vertex array kept for a layout: its object, the element buffer bound in it, and the layout's buffers, offsets and first instance. */
+private typedef Vao = {
+	vao:Dynamic,
+	index:Dynamic,
+	buffers:Array<Int>,
+	offsets:Null<Array<Int>>,
+	firstInstance:Int
 }

@@ -240,6 +240,7 @@ class Program {
 	/** Returns the blocks a draw reads, raylib's own uniforms written first: the matrices and the diffuse color, each copied, as a draw is
 		recorded and submitted when the frame is drawn.
 
+		@param snapshot  The snapshot the blocks are copied into, its bytes reused when their sizes fit.
 		@param model  The model's matrix.
 		@param view  The view's.
 		@param projection  The projection's.
@@ -247,12 +248,12 @@ class Program {
 		@param mvpView  Optional. The view the mvp is made with in place of `view` (an eye's, in stereo).
 		@param mvpProjection  Optional. The projection it is made with in place of `projection`.
 		@return  The blocks' bytes, by stage and slot. */
-	public function capture(model:helix.math.Matrix3D, view:helix.math.Matrix3D, projection:helix.math.Matrix3D, diffuse:Array<Float>,
-			?mvpView:helix.math.Matrix3D, ?mvpProjection:helix.math.Matrix3D):Array<Null<Bytes>> {
-		if (mvp != null)
-			values.writeMatrix(mvp,
-				helix.math.Matrix3D.compose(helix.math.Matrix3D.compose(model, mvpView != null ? mvpView : view),
-					mvpProjection != null ? mvpProjection : projection));
+	public function capture(snapshot:ShaderSnapshot, model:helix.math.Matrix3D, view:helix.math.Matrix3D, projection:helix.math.Matrix3D,
+			diffuse:Array<Float>, ?mvpView:helix.math.Matrix3D, ?mvpProjection:helix.math.Matrix3D):Array<Null<Bytes>> {
+		if (mvp != null) {
+			helix.math.Matrix3D.compose(model, mvpView != null ? mvpView : view, scratch);
+			values.writeMatrix(mvp, helix.math.Matrix3D.compose(scratch, mvpProjection != null ? mvpProjection : projection, composed));
+		}
 		if (matModel != null)
 			values.writeMatrix(matModel, model);
 		if (matView != null)
@@ -260,16 +261,19 @@ class Program {
 		if (matProjection != null)
 			values.writeMatrix(matProjection, projection);
 		if (matNormal != null) {
-			var normal = new helix.math.Matrix3D().copyFrom(model);
+			var normal = scratch.copyFrom(model);
 			normal.invert(normal);
 			values.writeMatrix(matNormal, normal.transpose(normal));
 		}
 		if (colDiffuse != null)
 			put(colDiffuse, diffuse, 0);
-		var snapshot = new ShaderSnapshot();
 		values.capture(snapshot);
 		return snapshot.uniforms;
 	}
+
+	// Matrices a capture composes into, so a draw allocates none.
+	static final scratch = new helix.math.Matrix3D();
+	static final composed = new helix.math.Matrix3D();
 
 	/** Returns the pipeline drawing through the program in a way.
 

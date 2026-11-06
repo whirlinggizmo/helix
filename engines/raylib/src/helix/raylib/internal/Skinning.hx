@@ -66,6 +66,8 @@ class Skinning {
 		}
 		stamp++;
 		var count = model.boneCount;
+		// The model's bones as floats, copied once and shared by its meshes' poses: every mesh of a model is posed by the same bones.
+		var shared:Null<Array<Float>> = null;
 		for (m in 0...model.meshCount) {
 			var mesh = model.meshes[m];
 			if (mesh.boneWeights == null || mesh.boneIds == null)
@@ -88,7 +90,15 @@ class Skinning {
 					normalBuffer: 0,
 					buffersFrame: -1
 				};
-			var floats = pose.bones;
+			if (shared != null) {
+				pose.bones = shared;
+				pose.stamp = stamp;
+				if (cpu)
+					pose.changed = true;
+				pose.buffersFrame = -1;
+				continue;
+			}
+			var floats = shared = pose.bones;
 			if (floats.length != count * 16)
 				floats.resize(count * 16);
 			for (b in 0...count) {

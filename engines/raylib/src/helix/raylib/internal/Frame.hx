@@ -295,8 +295,14 @@ class Frame {
 		screen2D();
 	}
 
+	// The snapshots of the frame's draws' blocks, one a draw, kept from frame to frame so a draw allocates nothing once a frame's worth
+	// exist: each is taken again after the frame is drawn.
+	final snapshots:Array<helix.services.shaders.ShaderSnapshot> = [];
+	var snapshotCount = 0;
+
 	// After a frame is drawn: nothing recorded, the screen's pass alone.
 	function reset():Void {
+		snapshotCount = 0;
 		var screen = passes.length > 0 ? passes[passes.length - 1] : null;
 		passes.resize(0);
 		vertices = 0;
@@ -1254,8 +1260,13 @@ class Frame {
 		return cull ? (cullFront ? Front : Back) : None;
 
 	// The program's blocks as they are now, with raylib's own values set: the matrices and the diffuse color.
-	function values(p:Program, model:Matrix3D, diffuse:Array<Float>):Array<Null<Bytes>>
-		return p.capture(model, view, projection, diffuse, meshView, meshProjection);
+	function values(p:Program, model:Matrix3D, diffuse:Array<Float>):Array<Null<Bytes>> {
+		var snapshot = snapshotCount < snapshots.length ? snapshots[snapshotCount] : null;
+		if (snapshot == null)
+			snapshots[snapshotCount] = snapshot = new helix.services.shaders.ShaderSnapshot();
+		snapshotCount++;
+		return p.capture(snapshot, model, view, projection, diffuse, meshView, meshProjection);
+	}
 
 	/** Draws the frame: each render texture's pass, then the screen's, then shows it unless told to wait for `present`. A frame ended
 		and not shown yet is shown first.

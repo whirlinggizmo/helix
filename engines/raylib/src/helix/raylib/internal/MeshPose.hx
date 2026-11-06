@@ -4,8 +4,9 @@ package helix.raylib.internal;
 	class, so `Mesh.pose`, which every program drawing a mesh links, links no class of it. */
 @:noCompletion
 typedef MeshPose = {
-	/** The bone matrices, 16 floats a bone, column by column. */
-	final bones:Array<Float>;
+	/** The bone matrices, 16 floats a bone, column by column: one array shared by the meshes one call posed, as a model's meshes are
+		posed by the same bones. */
+	var bones:Array<Float>;
 
 	/** Which call posed it: equal for the meshes one call posed, so a frame's palette holds their bones once. */
 	var stamp:Int;
