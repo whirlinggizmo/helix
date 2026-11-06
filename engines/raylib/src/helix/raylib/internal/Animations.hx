@@ -350,11 +350,15 @@ class Animations {
 			currentFrame = currentFrame % anim.frameCount;
 		if (nextFrame >= anim.frameCount)
 			nextFrame = nextFrame % anim.frameCount;
+		var poses = posed(model);
 		for (boneIndex in 0...model.boneCount) {
 			var a = anim.framePoses[currentFrame][boneIndex],
-				b = anim.framePoses[nextFrame][boneIndex];
-			setPose(model, boneIndex, Vector3Lerp(a.translation, b.translation, blend), QuaternionSlerp(a.rotation, b.rotation, blend),
-				Vector3Lerp(a.scale, b.scale, blend));
+				b = anim.framePoses[nextFrame][boneIndex],
+				pose = poses[boneIndex];
+			vector3LerpInto(a.translation, b.translation, blend, pose.translation);
+			quaternionSlerpInto(a.rotation, b.rotation, blend, pose.rotation);
+			vector3LerpInto(a.scale, b.scale, blend, pose.scale);
+			setPose(model, boneIndex, pose);
 		}
 	}
 
@@ -383,31 +387,46 @@ class Animations {
 		var blendB = Clamp(frameB - currentFrameB, 0, 1);
 		if (nextFrameB >= animB.frameCount)
 			nextFrameB = nextFrameB % animB.frameCount;
+		var poses = posed(model);
+		var ta = mixA.translation, ra = mixA.rotation, sa = mixA.scale;
+		var tb = mixB.translation, rb = mixB.rotation, sb = mixB.scale;
 		for (boneIndex in 0...model.boneCount) {
 			var a0 = animA.framePoses[currentFrameA][boneIndex],
 				a1 = animA.framePoses[nextFrameA][boneIndex];
 			var b0 = animB.framePoses[currentFrameB][boneIndex],
 				b1 = animB.framePoses[nextFrameB][boneIndex];
-			var ta = Vector3Lerp(a0.translation, a1.translation, blendA),
-				ra = QuaternionSlerp(a0.rotation, a1.rotation, blendA),
-				sa = Vector3Lerp(a0.scale, a1.scale, blendA);
-			var tb = Vector3Lerp(b0.translation, b1.translation, blendB),
-				rb = QuaternionSlerp(b0.rotation, b1.rotation, blendB),
-				sb = Vector3Lerp(b0.scale, b1.scale, blendB);
-			setPose(model, boneIndex, Vector3Lerp(ta, tb, blend), QuaternionSlerp(ra, rb, blend), Vector3Lerp(sa, sb, blend));
+			vector3LerpInto(a0.translation, a1.translation, blendA, ta);
+			quaternionSlerpInto(a0.rotation, a1.rotation, blendA, ra);
+			vector3LerpInto(a0.scale, a1.scale, blendA, sa);
+			vector3LerpInto(b0.translation, b1.translation, blendB, tb);
+			quaternionSlerpInto(b0.rotation, b1.rotation, blendB, rb);
+			vector3LerpInto(b0.scale, b1.scale, blendB, sb);
+			var pose = poses[boneIndex];
+			vector3LerpInto(ta, tb, blend, pose.translation);
+			quaternionSlerpInto(ra, rb, blend, pose.rotation);
+			vector3LerpInto(sa, sb, blend, pose.scale);
+			setPose(model, boneIndex, pose);
 		}
 	}
 
-	// A bone's pose, and its matrix from it: the bind pose's inverse, then the pose, as raylib's MatrixMultiply(MatrixInvert(bind),
-	// current) and helix-raylib's raymath compute it (through Matrix3D's compose), written into the bone's matrix in place, so a pose
-	// allocates no matrix.
-	static function setPose(model:Model, boneIndex:Int, translation:Vector3, rotation:Quaternion, scale:Vector3):Void {
+	// The model's pose, a transform a bone, each with vectors of its own that the posing functions write into: made the first time.
+	static function posed(model:Model):Array<Transform> {
 		if (model.pose == null)
 			model.pose = [for (_ in 0...model.boneCount) new Transform()];
-		var pose = model.pose[boneIndex];
-		pose.translation = translation;
-		pose.rotation = rotation;
-		pose.scale = scale;
+		return model.pose;
+	}
+
+	// The two animations' poses updateBonesEx mixes, written for each bone.
+	static final mixA = new Transform();
+	static final mixB = new Transform();
+
+	// A bone's matrix from its pose, just written into the model's: the bind pose's inverse, then the pose, as raylib's
+	// MatrixMultiply(MatrixInvert(bind), current) and helix-raylib's raymath compute it (through Matrix3D's compose), written into the
+	// bone's matrix in place, so a pose allocates no matrix.
+	static function setPose(model:Model, boneIndex:Int, pose:Transform):Void {
+		var translation = pose.translation,
+			rotation = pose.rotation,
+			scale = pose.scale;
 		Matrix3D.fromScale(scale.x, scale.y, scale.z, scaled);
 		Matrix3D.fromQuaternion(rotation.x, rotation.y, rotation.z, rotation.w, rotated);
 		Matrix3D.compose(scaled, rotated, current);

@@ -757,7 +757,7 @@ class RModels {
 		@param scale  The scale, the same on each axis.
 		@param tint  The tint. */
 	static function DrawModel(model:Model, position:Vector3, scale:Float, tint:Color):Void {
-		DrawModelEx(model, position, new Vector3(0, 1, 0), 0, new Vector3(scale, scale, scale), tint);
+		drawModelAt(model, position.x, position.y, position.z, 0, 1, 0, 0, scale, scale, scale, tint);
 	}
 
 	/** Draws a model scaled, turned about an axis and moved, after its own transform.
@@ -769,10 +769,16 @@ class RModels {
 		@param scale  The scale on each axis.
 		@param tint  The tint. */
 	static function DrawModelEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void {
-		var m = Matrix3D.fromScale(scale.x, scale.y, scale.z);
-		m = Matrix3D.compose(m, Matrix3D.fromRotation(rotationAxis.x, rotationAxis.y, rotationAxis.z, rotationAngle * DEG2RAD));
-		m = Matrix3D.compose(m, Matrix3D.fromTranslation(position.x, position.y, position.z));
-		var transform = Matrix3D.compose(toMatrix3D(model.transform), m);
+		drawModelAt(model, position.x, position.y, position.z, rotationAxis.x, rotationAxis.y, rotationAxis.z, rotationAngle, scale.x, scale.y, scale.z, tint);
+	}
+
+	// DrawModelEx from numbers, its matrices composed into the scratch ones, so a draw allocates none.
+	static function drawModelAt(model:Model, x:Float, y:Float, z:Float, axisX:Float, axisY:Float, axisZ:Float, angle:Float, scaleX:Float, scaleY:Float,
+			scaleZ:Float, tint:Color):Void {
+		var m = Matrix3D.fromScale(scaleX, scaleY, scaleZ, placed);
+		Matrix3D.compose(m, Matrix3D.fromRotation(axisX, axisY, axisZ, angle * DEG2RAD, placing), m);
+		Matrix3D.compose(m, Matrix3D.fromTranslation(x, y, z, placing), m);
+		var transform = Matrix3D.compose(toMatrix3D(model.transform, placing), m, placing);
 		for (i in 0...model.meshCount) {
 			var material = model.materials[model.meshMaterial[i]];
 			if (material == null)
@@ -780,6 +786,10 @@ class RModels {
 			drawMesh(model.meshes[i], material, transform, tint);
 		}
 	}
+
+	// The matrices drawModelAt composes in: the placement, and what is composed into it, then the model's transform placed.
+	static final placed = new Matrix3D();
+	static final placing = new Matrix3D();
 
 	/** Draws a model's triangles as their edges, as `DrawModel` places it, through rlgl's wire mode.
 
@@ -852,7 +862,7 @@ class RModels {
 		@param material  The material.
 		@param transform  The transform. */
 	static function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void {
-		drawMesh(mesh, material, toMatrix3D(transform), WHITE);
+		drawMesh(mesh, material, toMatrix3D(transform, placing), WHITE);
 	}
 
 	/** Draws a mesh many times in one draw, as raylib 5.5's does: each instance is placed by its own transform, which the material's
@@ -2009,13 +2019,26 @@ class RModels {
 
 	// raylib's Matrix, named by rows, and helix-math's, stored by columns: m0 to m3 the first column in both.
 
-	static function toMatrix3D(m:Matrix):Matrix3D {
-		var out = new Matrix3D(), v = out.values;
-		var all = [
-			m.m0, m.m1, m.m2, m.m3, m.m4, m.m5, m.m6, m.m7, m.m8, m.m9, m.m10, m.m11, m.m12, m.m13, m.m14, m.m15
-		];
-		for (i in 0...16)
-			v[i] = all[i];
+	static function toMatrix3D(m:Matrix, ?out:Matrix3D):Matrix3D {
+		if (out == null)
+			out = new Matrix3D();
+		var v = out.values;
+		v[0] = m.m0;
+		v[1] = m.m1;
+		v[2] = m.m2;
+		v[3] = m.m3;
+		v[4] = m.m4;
+		v[5] = m.m5;
+		v[6] = m.m6;
+		v[7] = m.m7;
+		v[8] = m.m8;
+		v[9] = m.m9;
+		v[10] = m.m10;
+		v[11] = m.m11;
+		v[12] = m.m12;
+		v[13] = m.m13;
+		v[14] = m.m14;
+		v[15] = m.m15;
 		return out;
 	}
 
