@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lime's own BunnyMark demo (lime-samples 7.0.0, demos/BunnyMark) shaped as tools/compare/compare.py's bunnymark: raylib's bunnies, a
+     count from the page's query, one JSON line after 720 frames. Built by compare.py with `haxelib run lime build html5 -release`. -->
+<project>
+	<meta title="Lime bunnymark" package="compare.lime.bunnymark" version="1.0.0" company="helix-2.0" />
+	<app main="Main" path="Export" file="bunnymark" />
+	<window width="800" height="450" fps="0" background="#f5f5f5" if="html5" />
+	<source path="Source" />
+	<haxelib name="lime" />
+	<assets path="Assets" rename="assets" />
+</project>

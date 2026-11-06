@@ -51,7 +51,7 @@ haxe build-native.hxml   # native/Main, with hxcpp and SDL3 installed (CONTRIBUT
 - [docs/CONVENTIONS.md](docs/CONVENTIONS.md): names, units, layout and doc comments.
 - [docs/api/](docs/api/README.md): the API reference, generated from the doc comments.
 - [docs/benchmarks.md](docs/benchmarks.md): the measurements. [docs/sizes.md](docs/sizes.md) is each library's web size ladder, and
-  [docs/speed.md](docs/speed.md) is speed and size against raylib C, Godot, three.js and HeliX.
+  [docs/speed.md](docs/speed.md) is speed and size against raylib C, Godot, three.js, Lime and HeliX.
 - [docs/ROADMAP.md](docs/ROADMAP.md): what's next. [docs/DECISIONS.md](docs/DECISIONS.md): why things are the way they are.
 
 ## License

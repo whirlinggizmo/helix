@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""helix-raylib's speed and size against raylib C, Godot, three.js and HeliX on the same two programs, written for each in
+"""helix-raylib's speed and size against raylib C, Godot, three.js, Lime and HeliX on the same two programs, written for each in
 tools/compare/contenders/<name>/: raylib's textures_bunnymark (bunnies of one texture bouncing in an 800 x 450 window) and its
 models_animation many at once (the robots: a grid of robot.glb, each posed at its own frame, in 1280 x 720). The numbers are docs/speed.md's.
 
     python3 tools/compare/compare.py [--native] [--page] [--backend vulkan|gl] [--runs 3] [--desktop] [--browser PATH] [--write]
                                      [bunnymark] [robots] [CONTENDER ...]
 
-The programs are bunnymark and robots, both when none is named. The contenders are helix-raylib, raylib-c, godot, three and helix1, all when
+The programs are bunnymark and robots, both when none is named. The contenders are helix-raylib, raylib-c, godot, three, lime (the bunnymark alone) and helix1, all when
 none is named; each is built into build/compare/<contender>/ under build/.lock, with the assets taken from raylib's own release (the bunny's
 texture, the robot). A contender whose toolchain this machine lacks is skipped with one line saying so: raylib-c's page needs Emscripten
 (EMSDK, or HELIX_EMSDK, or ~/toolchains/emsdk), godot needs its binary (HELIX_GODOT, or godot on PATH, or ~/toolchains/godot/Godot_v<version>-stable_linux.x86_64),
-three needs npm, helix1 needs HeliX's checkout (HELIX1, or ../helix beside this one). The versions are dependencies.json's compare entry.
+three needs npm, lime needs Lime installed in the user's haxelib at the pinned version (its own BunnyMark demo's renderer), helix1 needs HeliX's checkout (HELIX1, or ../helix beside this one). The versions are dependencies.json's compare entry.
 
 --page runs the pages (in headless Chromium with its frame rate cap lifted, on ANGLE over Vulkan, or over GL with --backend gl) and --native
 the native programs (on a private display with software GL, whose times aren't representative, or with --desktop in windows on $DISPLAY,
@@ -48,7 +48,7 @@ LOCK = ROOT / 'build/.lock'
 STORE = ROOT / 'docs/speed.json'
 PAGE = ROOT / 'docs/speed.md'
 PROGRAMS = ['bunnymark', 'robots']
-CONTENDERS = ['helix-raylib', 'raylib-c', 'godot', 'three', 'helix1']
+CONTENDERS = ['helix-raylib', 'raylib-c', 'godot', 'three', 'lime', 'helix1']
 BUNNY_COUNTS = [10000, 50000, 100000, 150000, 200000]
 ROBOT_COUNTS = [50, 200, 400]
 # A page's run: seconds before it is given up; native runs the same.
@@ -286,6 +286,34 @@ def build_three(programs):
     return True
 
 
+def build_lime(programs):
+    """Lime's own BunnyMark demo shaped as the bunnymark (tools/compare/contenders/lime/bunnymark), built with `haxelib run lime build html5
+    -release` from the user's haxelib, where lime is installed at the version dependencies.json pins; skipped without it."""
+    if 'bunnymark' not in programs:
+        return False
+    env = dict(os.environ)
+    env.pop('HAXELIB_PATH', None)
+    listed = subprocess.run(['haxelib', 'list', 'lime'], capture_output=True, text=True, encoding='utf-8', env=env).stdout
+    wanted = pins()['lime']
+    if f'[{wanted}]' not in listed and f' {wanted}' not in listed:
+        say(f'lime skipped: lime {wanted} is not installed in the user\'s haxelib (haxelib list lime: {listed.strip() or "none"})')
+        return False
+    home = OUT / 'lime/bunnymark'
+    work = home / 'work'
+    if work.exists():
+        shutil.rmtree(work)
+    shutil.copytree(CONTENDERS_DIR / 'lime/bunnymark', work)
+    (work / 'Assets').mkdir(exist_ok=True)
+    shutil.copy(raylib_source() / 'examples/textures/resources/wabbit_alpha.png', work / 'Assets')
+    say('building lime bunnymark page')
+    run(['haxelib', 'run', 'lime', 'build', 'html5', '-release'], cwd=work, env=env, timeout=900)
+    web = home / 'web'
+    if web.exists():
+        shutil.rmtree(web)
+    shutil.copytree(work / 'Export/html5/bin', web)
+    return True
+
+
 def build_helix1():
     """HeliX's bunnymark page, built as one of its examples by its tools/example.py (the program copied in as examples/bunnymark while it
     builds, and taken out again), its site and assets into build/compare/helix1."""
@@ -332,6 +360,9 @@ def build(programs, contenders, page, native):
             elif contender == 'three':
                 if not page or not build_three(programs):
                     continue
+            elif contender == 'lime':
+                if not page or not build_lime(programs):
+                    continue
             elif contender == 'helix1':
                 if not page or 'bunnymark' not in programs or not build_helix1():
                     continue
@@ -368,6 +399,8 @@ def pages(programs, contenders):
                 found.append(('three', 'a Sprite each', program, OUT / 'three/bunny', lambda mode: mode + '&variant=sprite', size))
             else:
                 found.append(('three', '', program, OUT / 'three/robots', plain, size))
+        if 'lime' in contenders and program == 'bunnymark':
+            found.append(('lime', '', program, OUT / 'lime/bunnymark/web', plain, size))
         if 'helix1' in contenders and program == 'bunnymark':
             found.append(('helix1', 'a Sprite2D each', program, OUT / 'helix1', plain, size))
     return [p for p in found if (p[3] / 'index.html').is_file()]
@@ -585,12 +618,12 @@ def write_store(entries):
 
 WHERE = {'page-vulkan': 'page', 'page-gl': 'page', 'native-gl': 'native, GL', 'native-sdlgpu': 'native, SDL_GPU (Vulkan)', 'native-vulkan': 'native, Vulkan'}
 API = {('helix-raylib', 'page'): 'WebGL2', ('raylib-c', 'page'): 'wasm, WebGL1', ('godot', 'page'): 'wasm, WebGL2', ('three', 'page'): 'WebGL2',
-       ('helix1', 'page'): 'WebGL2', ('godot', 'native-vulkan'): 'Forward+', ('godot', 'native-gl'): 'Compatibility'}
+       ('helix1', 'page'): 'WebGL2', ('lime', 'page'): 'WebGL', ('godot', 'native-vulkan'): 'Forward+', ('godot', 'native-gl'): 'Compatibility'}
 
 
 def label(row):
     name = {'helix-raylib': '**helix-raylib**', 'raylib-c': 'raylib C ' + row['version'].split()[-1], 'godot': 'Godot ' + row['version'].split()[-1],
-            'three': 'three.js ' + row['version'].split()[-1], 'helix1': 'HeliX'}[row['contender']]
+            'three': 'three.js ' + row['version'].split()[-1], 'lime': 'Lime ' + row['version'].split()[-1], 'helix1': 'HeliX'}[row['contender']]
     return name + (f', {row["variant"]}' if row['variant'] else '')
 
 

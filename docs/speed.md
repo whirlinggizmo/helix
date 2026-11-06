@@ -1,6 +1,6 @@
 # Speed
 
-How fast helix-raylib draws, and how large it is, against raylib C, Godot, three.js and HeliX on the same programs. Whatever changes
+How fast helix-raylib draws, and how large it is, against raylib C, Godot, three.js, Lime and HeliX on the same programs. Whatever changes
 helix-raylib's drawing (helix-render underneath it, DECISIONS 39) is held to these numbers. The tables are written by
 `tools/compare/compare.py --write` from `speed.json`, which keeps each contender's last measurement: helix-raylib's rows are measured
 again with each change to its drawing, the others' when they change, and a row measured on another date than its table's newest says

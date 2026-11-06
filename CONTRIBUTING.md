@@ -130,7 +130,7 @@ built and where it is (`tools/variants.py` holds the lists).
 | `tools/check_docs.py` | Every public type and member has a doc comment; nothing but DECISIONS.md and AGENTS.md names the earlier frameworks |
 | `tools/check_layers.py` | Each library names only itself and what it's built on, and no library reaches an engine; the platform's contracts don't know each other |
 | `tools/check_names.py` | 2D and 3D named apart, counts and indices named as such (docs/CONVENTIONS.md) |
-| `tools/compare/compare.py` | helix-raylib's speed and size against raylib C, Godot, three.js and HeliX on the same programs (`tools/compare/contenders`), pages in headless Chromium and native programs on a private display or the desktop; `--write` keeps `docs/speed.json` and `docs/speed.md`'s tables |
+| `tools/compare/compare.py` | helix-raylib's speed and size against raylib C, Godot, three.js, Lime and HeliX on the same programs (`tools/compare/contenders`), pages in headless Chromium and native programs on a private display or the desktop; `--write` keeps `docs/speed.json` and `docs/speed.md`'s tables |
 | `tools/compare/page.cjs` | One page run in headless Chromium on the GPU, ANGLE over Vulkan or GL, printing the program's JSON line and the files fetched (run by `compare.py`) |
 | `tools/check_tools.py` | Every tool answers `--help`, refuses an argument it doesn't take, and is in this table |
 | `tools/check_types.py` | Every entry point type-checked on its targets (`--web`: the browser alone) |
