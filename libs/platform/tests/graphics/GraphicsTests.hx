@@ -1262,6 +1262,28 @@ class GraphicsTests {
 					p.expect(8, 8, [0, 1, 0, 1], 1);
 				}
 			},
+			{
+				name: "300 buffers and 300 textures alive at once, the last drawn",
+				// A game's models and parts run past 255 of each; every adapter holds them, and lets them go.
+				before: () -> {
+					var buffers = [
+						for (_ in 0...300)
+							graphics.createStaticBuffer(floatBytes(square), square.length * 4, false)
+					];
+					var made = [for (_ in 0...300) graphics.createTexture(1, 1, [Bytes.alloc(4)])];
+					graphics.beginTargetPass(kept, 0, 0, 0, 1);
+					draw(always, buffers[299], 6, null, null, [clip, floatBytes([0, 0, 0, 0]), null, null, null, null, floatBytes([0, 1, 0, 1])]);
+					graphics.endTargetPass();
+					for (b in buffers)
+						graphics.disposeBuffer(b);
+					for (t in made)
+						graphics.disposeTexture(t);
+				},
+				target: kept,
+				check: p -> {
+					p.expect(8, 8, [0, 1, 0, 1], 1);
+				}
+			},
 			slantedCase("depth and one sample: every texel one color or the other", singleDepth, false),
 			slantedCase('depth and the screen\'s samples (${graphics.msaaSampleCount})', screenDepth, Math.min(graphics.msaaSampleCount, most) > 1),
 			slantedCase('no depth and the most samples the format takes ($most)', mostFlat, most > 1),

@@ -25,7 +25,7 @@
 #include <d3dcompiler.h>
 #endif
 
-#define SLOTS 256
+#define SLOTS 2048
 #define MAX_BLOCKS 4
 /* A draw's uniforms by stage and slot: the vertex stage's 0 to 3, the fragment stage's 4 to 7. */
 #define MAX_BLOCK_INDICES 8
