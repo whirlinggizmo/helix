@@ -63,12 +63,13 @@ helix-raylib's size and speed where docs/speed.md records them.
   a once-a-second stall shows without any threshold. What the display can't reach stays in the tools: GPU time, the GPU process's waits and the collector's
   pauses, read from a Chrome trace or perf (`scratchpad` scripts from 2026-11-05: `robots_profile.cjs`, `cpu_profile.cjs`,
   `gpu_perf.sh`, `phone_page.cjs`, to be kept under tools/compare when they settle).
-- **The sprite path's per-sprite cost in a page:** the bunnymark at 200k takes 6.73 ms over Vulkan against three.js's InstancedMesh at
-  3.84 (docs/speed.md), both one instanced draw, so the gap is JavaScript a sprite, about 34 ns against 19. Ours passes through
-  `DrawTexture`, its draw helper, `Frame.quad`, `spriteRoom` and twelve record writes, with a Map lookup of the texture's GPU handle;
-  three writes a matrix into a Float32Array. Flatten it: the handle an array index, the forwards inlined, the corner math and the
-  writes in one function, measured with the CPU profile. Expected about 4.5 ms. On the phone the same path with the robots is
-  script-bound too (36 ms of 40 at 100 robots, raylib wasm 30 whole), so the draw path's cost per call is the mobile item as well.
+- **The sprite path's per-sprite cost in a page:** the bunnymark at 200k takes 5.21 ms over Vulkan (docs/speed.md, after `DrawTexture`
+  learned to write its record itself with the texture's handle an array read, from 6.73) against three.js's InstancedMesh at 3.84, both
+  one instanced draw, so what is left is JavaScript a sprite, about 26 ns against 19: the record's twelve writes (about 2.5 ms of the
+  5.2 for 200k, measured in isolation) and reading the bunnies' objects (about 2.1). The other texture draws (`DrawTextureRec`, `Pro`,
+  `DrawTextureInstanced`) still go through `Frame.quad` out of line, since inlining it everywhere cost 640 B gzip a rung. On the phone
+  the robots are script-bound the same way (36 ms of 40 at 100 robots, raylib wasm 30 whole): the draw path's cost per call is the
+  mobile item as well.
 - **Type bits in the graphics handles, and the resource floor's shape:** the native adapters pack a slot and a generation into a handle
   (sokol's own ids, the SDL_GPU adapter's slot + 1 below a generation), per kind, so a buffer handle given where a texture is expected is
   caught only when its slot and generation miss a live texture; the earlier C frameworks' handles carried the kind too. Put the kind in the handle's
