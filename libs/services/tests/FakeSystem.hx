@@ -32,6 +32,9 @@ class FakeSystem implements ISystem {
 	public function getTime():Float
 		return now;
 
+	public function getMemoryBytes():Float
+		return 0;
+
 	public function getProgramDirectory():String
 		return "program";
 
