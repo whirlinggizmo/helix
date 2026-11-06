@@ -46,12 +46,24 @@ class BatchLighting {
 	// A draw's box in the world, or the first view's eye, for its lights.
 	final box = new Bounds3D();
 
-	/** Reads the batch's lights and environment as its `begin` does, writes the block, and shares it with the views it opens. */
-	function begin(viewCount:Int):Void {
+	/** Reads the batch's lights and environment as its `begin` does, fits the shadows to the views where a light casts, writes the
+		block, and shares it with the views it opens. */
+	function begin(views:Array<View3D>):Void {
 		read(batch.lights, batch.environment);
-		for (i in 0...viewCount)
+		if (makeShadows != null && shadowsBegin == null)
+			makeShadows(this);
+		if (shadowsBegin != null)
+			shadowsBegin(views);
+		for (i in 0...views.length)
 			batch.viewPool[i].scene.shareBlock(block);
 	}
+
+	// The shadow work, a hook a BatchShadows sets at the first begin once a light has cast (BatchShadows.install), so a program casting
+	// no shadow links none of it: choosing the casting lights, writing their index into the lights read and their maps into the block,
+	// and making the frame's shadow passes, fitted to the views.
+	static var makeShadows:Null<BatchLighting->Void> = null;
+
+	var shadowsBegin:Null<Array<View3D>->Void> = null;
 
 	/** Prepares a draw: given its program's shader or null, the shader it is drawn with, the lit materials' for a material lit (a lit
 		shading, or emissive light to add) or null for the unlit one; and the batch's `lightWriter` set to `write` where that shader reads
@@ -128,11 +140,8 @@ class BatchLighting {
 		var floats = this.lights;
 		while (floats.length < lights.length * FLOATS)
 			floats.push(0);
-		for (i in 0...lights.length) {
+		for (i in 0...lights.length)
 			lights[i].writeLight(floats, i * FLOATS);
-			if (lights[i].castsShadow && floats[i * FLOATS + 7] != 3)
-				throw "helix-render: a light casting shadows (Light3D.castsShadow) is not yet built (stage 3, shadows); set it to false";
-		}
 		lightCount = lights.length;
 		Light3D.writeRadiance(environment.ambientColor, environment.ambientIntensity, positions, 0);
 		block.writeVector(ambientLight, positions[0], positions[1], positions[2], 0);

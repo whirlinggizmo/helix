@@ -18,6 +18,9 @@ class RenderPass {
 	final updates:Array<() -> Void> = [];
 	// The streams its draws read, uploaded as it begins.
 	final streams:Array<RenderStream> = [];
+	// For a shadow pass, what begins it (the shadow work's, so a program casting none links no shadow pass); null for a target's or the
+	// screen's.
+	var begin:Null<helix.platform.IGraphics->Void> = null;
 
 	function new(target:Null<RenderTarget2D>, handle:Int, width:Int, height:Int, clear:Null<Int>) {
 		this.target = target;

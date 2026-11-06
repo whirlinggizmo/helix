@@ -108,8 +108,10 @@ class RecordingGraphics implements IGraphics {
 	public function canRender(format:TextureFormat):Bool
 		return true;
 
-	public function createShadowMap(size:Int, layerCount:Int):Int
+	public function createShadowMap(size:Int, layerCount:Int):Int {
+		textures.set(next, {width: size, height: size, target: true});
 		return next++;
+	}
 
 	public function disposeTexture(handle:Int):Void {
 		if (!textures.exists(handle))

@@ -80,9 +80,27 @@ vec3 helixToEye(vec3 position) {
 	return normalize(cameraPosition.xyz - position);
 }
 
-vec3 computeShadow(int shadowIndex, vec3 position, vec3 normal) {
-	// Shadows are stage 3: nothing casts yet, so every point is lit.
+#ifdef HELIX_RENDER_SHADOWS
+#include <helix/render/shaders/shadows.glsl>
+#else
+// Built without shadows (-D helix_render_no_shadows): nothing is in shadow, and a light told to cast stops the program.
+vec3 helixShadow(int shadowIndex, vec3 position, vec3 normal, vec3 toLight) {
 	return vec3(1.0);
+}
+#endif
+
+vec3 computeShadow(int shadowIndex, vec3 position, vec3 normal) {
+	int kind = int(mod(floor(shadowParams[shadowIndex].x / 256.0), 4.0));
+	mat4 m = shadowMatrices[int(mod(shadowParams[shadowIndex].x, 32.0))];
+	vec3 toLight;
+	if (kind < 2)
+		toLight = -normalize(vec3(m[0][2], m[1][2], m[2][2]));
+	else {
+		// The light's place: where the map's x, y and w are all 0.
+		mat3 rows = mat3(vec3(m[0][0], m[0][1], m[0][3]), vec3(m[1][0], m[1][1], m[1][3]), vec3(m[2][0], m[2][1], m[2][3]));
+		toLight = normalize(inverse(rows) * -vec3(m[3][0], m[3][1], m[3][3]) - position);
+	}
+	return helixShadow(shadowIndex, position, normal, toLight);
 }
 
 vec3 computeLightRadiance(int lightIndex, vec3 position, vec3 normal, out vec3 toLight) {
@@ -90,8 +108,11 @@ vec3 computeLightRadiance(int lightIndex, vec3 position, vec3 normal, out vec3 t
 	vec4 d = lightDirections[lightIndex];
 	vec3 radiance = lightColors[lightIndex].rgb;
 	int kind = int(d.w + 0.5);
+	int shadow = int(lightCones[lightIndex].z);
 	if (kind == 0) {
 		toLight = -d.xyz;
+		if (shadow >= 0 && receiveShadows != 0)
+			radiance *= helixShadow(shadow, position, normal, toLight);
 		return radiance;
 	}
 	if (kind == 3) {
@@ -113,9 +134,8 @@ vec3 computeLightRadiance(int lightIndex, vec3 position, vec3 normal, out vec3 t
 		float angle = dot(-toLight, d.xyz);
 		falloff *= cone.x - cone.y > 1e-6 ? smoothstep(cone.y, cone.x, angle) : step(cone.y, angle);
 	}
-	int shadow = int(lightCones[lightIndex].z);
 	if (shadow >= 0 && receiveShadows != 0)
-		radiance *= computeShadow(shadow, position, normal);
+		radiance *= helixShadow(shadow, position, normal, toLight);
 	return radiance * falloff;
 }
 

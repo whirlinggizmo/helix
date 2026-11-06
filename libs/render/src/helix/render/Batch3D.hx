@@ -47,7 +47,9 @@ import helix.services.shaders.ShaderVertexLayout;
 	map drawn before the pass the batch draws in, at `Renderer.endFrame`, from the meshes this batch drew casting that its volume holds,
 	and is read by those drawn receiving (`LightShadow3D` says how). A mesh casts when both the batch's `castShadows` and its material's
 	are on, and receives when both `receiveShadows` are. A caster is drawn as it is drawn in color: skinned, morphed, instanced, cut by
-	`alphaCutoff`. The batch draws neither cast nor receive.
+	`alphaCutoff`. The batch draws neither cast nor receive. The shadow code is compiled into the lit stage (`shadows.glsl`), a few
+	kilobytes of text that compress to near nothing; a program that never casts may build with `-D helix_render_no_shadows` to leave it
+	out, and a light told to cast in such a build stops the program, naming the define.
 
 	**Targets.** What a target holds is its format's. Into an RGBA8 target or the screen, which hold sRGB, lit color and a material with
 	`toneMapped` on are exposed and tone mapped by the renderer's `exposure` and `toneMapping`, everything is encoded, and the GPU
@@ -456,7 +458,7 @@ class Batch3D {
 		if (makeLighting != null && lightingBegin == null)
 			makeLighting(this);
 		if (lightingBegin != null)
-			lightingBegin(views.length);
+			lightingBegin(views);
 		renderer.opening(this, flush);
 		open = true;
 		viewCount = views.length;
@@ -518,8 +520,12 @@ class Batch3D {
 			throw "helix-render: Batch3D.drawMesh with morph weights is not yet built (stage 7, morph targets)";
 		flush();
 		var bounds = skinning != null && mesh.hasJoints ? mesh.skinnedBounds(skinning, posed) : mesh.bounds;
-		if (culling && !placedInView(bounds, transform))
+		if (culling && !placedInView(bounds, transform)) {
+			// Out of view, it may still cast into it.
+			if (shadowMesh != null)
+				shadowMesh(mesh, material, transform, state, bounds, skinning, 0, 0);
 			return;
+		}
 		meshDraw(mesh, material, transform, skinning, tint, state, 0, 1, false, bounds);
 	}
 
@@ -547,6 +553,8 @@ class Batch3D {
 		if (count == 0)
 			return;
 		flush();
+		if (shadowInstanced != null)
+			shadowInstanced(mesh, material, transforms, transform, firstInstanceIndex, count);
 		var first = instances.count, kept = 0;
 		// The box around the copies, in the parent's units, for the lights that reach them.
 		var lit = lightingPrepare != null;
@@ -1032,7 +1040,7 @@ class Batch3D {
 		@throws String  A mesh, model or texture it holds disposed. */
 	public function drawList(list:DrawList3D, transform:Matrix3D):Void {
 		requireOpen();
-		if (!list.bounds.isEmpty && !placedInView(list.bounds, transform))
+		if (!list.bounds.isEmpty && shadowMesh == null && !placedInView(list.bounds, transform))
 			return;
 		list.replay(this, transform);
 	}
@@ -1100,9 +1108,15 @@ class Batch3D {
 	@:allow(helix.render)
 	static var makeLighting:Null<Batch3D->Void> = null;
 
-	var lightingBegin:Null<Int->Void> = null;
+	var lightingBegin:Null<Array<View3D>->Void> = null;
 	var lightingPrepare:Null<(Null<Shader>, Null<Material3D>, Null<GpuMesh3D>, Null<Bounds3D>, Null<Matrix3D>) -> Null<Shader>> = null;
 	var lightWriter:Null<ShaderValues->Void> = null;
+
+	// The shadow casters, hooks a BatchShadows sets once a light has cast (BatchShadows.install): a mesh drawn once, given its box in
+	// its own units and its skin's palette and first bone where the color draw has written them (0, 0 where it hasn't), and a mesh's
+	// instanced copies, each given before the view culls them, so what is out of view still casts into it.
+	var shadowMesh:Null<(GpuMesh3D, Material3D, Matrix3D, Null<MeshState3D>, Bounds3D, Null<Array<Matrix3D>>, Int, Int) -> Void> = null;
+	var shadowInstanced:Null<(GpuMesh3D, Material3D, Array<Matrix3D>, Null<Matrix3D>, Int, Int) -> Void> = null;
 
 	// Meshes drawn as large points, hooks MeshPoints sets once the program sets a point size (MeshPoints.install): the pipeline a mesh's
 	// points are drawn by, and the recording of its draws in a view. A large point's six corners, each with a copy placed where it is
@@ -1679,6 +1693,8 @@ class Batch3D {
 		var skinned = skinning != null && mesh.hasJoints;
 		var boneTexture = skinned && fill.boneTexture.declared ? bones(skinning) : 0;
 		var boneOffset = boneTexture != 0 ? paletteOffset : 0;
+		if (shadowMesh != null && !instanced)
+			shadowMesh(mesh, material, transform, state, bounds, skinned ? skinning : null, boneTexture, boneOffset);
 		var baseTexture = material.baseColorTexture,
 			alpha = material.alphaTexture;
 		var baseHandle = baseTexture == null ? renderer.white.handle : baseTexture.drawnHandle();

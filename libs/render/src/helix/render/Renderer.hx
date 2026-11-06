@@ -855,7 +855,9 @@ class Renderer {
 	function run(p:RenderPass):Void {
 		for (u in p.updates)
 			u();
-		if (p.target == null)
+		if (p.begin != null)
+			p.begin(graphics);
+		else if (p.target == null)
 			graphics.beginFrame(p.width, p.height, p.clear == null ? 0xff000000 : p.clear);
 		else if (p.clear == null)
 			graphics.resumeTargetPass(p.handle);
@@ -879,7 +881,7 @@ class Renderer {
 				case UpdateData(handle, w, h, data):
 					graphics.updateTexture(handle, 0, 0, w, h, data);
 			}
-		if (p.target == null)
+		if (p.target == null && p.begin == null)
 			graphics.endFrame();
 		else
 			graphics.endTargetPass();

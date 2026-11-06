@@ -1,0 +1,75 @@
+{
+  "what": "The 60th frame at 800 x 600: the background, the spot's pool lit by both lights, the floor under the sun alone, the box's sun shadow on the pool, the pillar's sun shadow, the box's spot shadow where the sun's falls too (the spot's blue), and the box's lit face.",
+  "points": [
+    {
+      "x": 20,
+      "y": 20,
+      "color": [
+        16,
+        20,
+        24
+      ],
+      "tolerance": 3
+    },
+    {
+      "x": 500,
+      "y": 400,
+      "color": [
+        234,
+        234,
+        226
+      ],
+      "tolerance": 4
+    },
+    {
+      "x": 700,
+      "y": 500,
+      "color": [
+        167,
+        169,
+        163
+      ],
+      "tolerance": 4
+    },
+    {
+      "x": 470,
+      "y": 300,
+      "color": [
+        143,
+        145,
+        140
+      ],
+      "tolerance": 4
+    },
+    {
+      "x": 320,
+      "y": 330,
+      "color": [
+        115,
+        117,
+        114
+      ],
+      "tolerance": 4
+    },
+    {
+      "x": 390,
+      "y": 290,
+      "color": [
+        14,
+        32,
+        53
+      ],
+      "tolerance": 4
+    },
+    {
+      "x": 420,
+      "y": 220,
+      "color": [
+        167,
+        93,
+        21
+      ],
+      "tolerance": 4
+    }
+  ]
+}

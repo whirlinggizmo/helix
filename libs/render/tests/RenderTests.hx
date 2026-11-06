@@ -17,7 +17,7 @@ import helix.services.images.Image;
 	shapes, sprites and draw lists; text measured, wrapped and aligned, a character a font lacks drawn as its stand-in and warned of once;
 	the 3D batch's views, points, lines, polygon modes, instances,
 	meshes, materials, mesh state and skinning, a mesh's large points, a lit material drawn black where nothing gives light, the lights chosen
-	for a draw by its box, and a light casting shadows refused until stage 3. */
+	for a draw by its box, and a light casting shadows drawn into its passes first. */
 @:access(helix.services.fonts)
 @:access(helix.render)
 class RenderTests {
@@ -726,13 +726,32 @@ class RenderTests {
 		var kinds = uniformOf(g, few, "lightDirections", 8);
 		check(uniformOf(g, few, "lightCount", 1)[0] == 2 && kinds[3] == 3 && kinds[7] == 2,
 			"a point light past its range and a spot turned away left out, the hemisphere light first: " + kinds);
+		// A sun casting, two cascades, and a material casting none: the sun's two passes before the screen's, the caster drawn
+		// depth alone into each, and the lit draw told its shadow's index.
+		b.lights.resize(0);
 		var sun = new DirectionalLight3D();
 		sun.castsShadow = true;
+		sun.shadow.cascadeCount = 2;
 		b.lights.push(sun);
+		var glass = new Material3D();
+		glass.castShadows = false;
+		g.draws.resize(0);
+		g.log.resize(0);
 		r.beginFrame(100, 100);
-		throws(() -> b.begin(camera), "stage 3", "a light casting shadows waits for stage 3");
-		check(!b.open, "and the batch stays closed");
+		b.begin(camera);
+		b.drawMesh(mesh, material, new Matrix3D());
+		b.drawMesh(mesh, glass, Matrix3D.fromTranslation(0, 2, 0));
+		b.end();
 		r.endFrame();
+		var order = [
+			for (l in g.log)
+				if (l.indexOf("shadow") == 0 || l.indexOf("begin screen") == 0) l.split(" ")[0] + " " + l.split(" ")[2]
+		];
+		check(order.join(", ") == "shadow 0, shadow 1, begin 100", "the shadow passes first, a layer each: " + order.join(", "));
+		check(g.draws.length == 4 && g.draws[0].pipeline.depthOnly && g.draws[1].pipeline.depthOnly && !g.draws[2].pipeline.depthOnly,
+			"the caster drawn depth alone into each pass, the glass into none: " + g.draws.length);
+		check(uniformOf(g, g.draws[2], "lightCones", 4)[2] == 0, "the lit draw reading the sun's shadow, its index 0");
+		check(uniformOf(g, g.draws[2], "shadowParams", 4)[0] == 0 + 32 * 2 + 1024 * 16, "its first map, two of them, a radius of 1");
 		r.dispose();
 	}
 }
