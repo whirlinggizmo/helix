@@ -54,6 +54,13 @@ helix-raylib's size and speed where docs/speed.md records them.
   draw of one brings it back as a restore does, the frame drawn with it missing as after a lost context. Render textures, fonts and the
   frame's own textures are never evicted. `DrawFrameStats` shows evictions a frame beside the GPU bytes. Not built until the user has
   read it; the bar says one engine, so it may also be dropped.
+- **Type bits in the graphics handles, and the resource floor's shape:** the native adapters pack a slot and a generation into a handle
+  (sokol's own ids, the SDL_GPU adapter's slot + 1 below a generation), per kind, so a buffer handle given where a texture is expected is
+  caught only when its slot and generation miss a live texture; wgrender-c's handles carried the kind too. Put the kind in the handle's
+  high bits on every adapter (the WebGL2 one hands out plain increasing ints) and refuse a handle of another kind, with a graphics test
+  for each mistake. The floor of 2047 of each kind alive (docs/PLATFORM.md) is the native tables' size; a mesh takes a buffer an
+  attribute, so interleaving a mesh's attributes into one buffer (helix-geometry's meshes, helix-raylib's Models) cuts a scene's count
+  six-fold before the tables need to grow.
 - **Lit sprites, in helix-render (DECISIONS 47):** 2D point and directional lights over a batch, a region with an optional normal map
   (Godot's Light2D and CanvasItem normal maps, Unity's 2D lights and lit sprite material, Phaser's Light2D), so a top-down game has a
   torch, a flash and a night. An extra in helix-raylib as a door onto it once it exists.
