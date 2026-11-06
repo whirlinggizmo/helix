@@ -147,7 +147,7 @@ class RModelsAsync {
 			if (--left == 0)
 				done();
 		for (p in paths)
-			Runtime.fetch(p, error -> {
+			Runtime.fetchImage(p, error -> {
 				if (error != null)
 					Runtime.log(4, 'TEXTURE: $error');
 				one();

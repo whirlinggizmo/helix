@@ -89,7 +89,7 @@ class RTexturesAsync {
 			Runtime.later(() -> refuse("LoadImageAsync", '$path: .$type images aren\'t read here', failed));
 			return;
 		}
-		Runtime.fetch(path, error -> {
+		Runtime.fetchImage(path, error -> {
 			if (error != null) {
 				refuse("LoadImageAsync", error, failed);
 				return;
@@ -318,7 +318,7 @@ class RTexturesAsync {
 	// LoadTextureAsync's call for any other file.
 	static function loadPlainTexture(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
-		Runtime.fetch(path, error -> error == null ? loaded(RTextures.loadTexture(path)) : refuse("LoadTextureAsync", error, failed));
+		Runtime.fetchImage(path, error -> error == null ? loaded(RTextures.loadTexture(path)) : refuse("LoadTextureAsync", error, failed));
 	}
 
 	/** Reads a texture's pixels, answering when they are read: helix-raylib's own, in place of raylib's `LoadImageFromTexture`, as the GPU

@@ -60,7 +60,7 @@ class Textures {
 		restores();
 		if (refetch == null)
 			// A file the fetch doesn't decode (a QOI's) brings no picture: gone for good then, like a failure.
-			refetch = (path, failed) -> Runtime.fetch(path, error -> if (error != null || Runtime.picture(path) == null) failed());
+			refetch = (path, failed) -> Runtime.fetchImage(path, error -> if (error != null || Runtime.picture(path) == null) failed());
 		if (byPath.exists(path)) {
 			var id = byPath.get(path), e = entries.get(id);
 			e.refs++;
@@ -219,7 +219,7 @@ class Textures {
 	// Whether graphicsRestored is in Runtime.restoring: put there as the first texture is made.
 	static var restoring = false;
 
-	// Decodes a file again after a restore (Runtime.fetch), set as the first file's texture is made (fromDecoded), so a program loading no
+	// Decodes a file again after a restore (Runtime.fetchImage), set as the first file's texture is made (fromDecoded), so a program loading no
 	// file links no loading.
 	static var refetch:Null<(path:String, failed:Void->Void) -> Void> = null;
 
@@ -249,7 +249,7 @@ class Textures {
 	}
 
 	/** Sends every texture again, after the GPU's context was lost and given back (`Event.GraphicsRestored`): its GPU copy is gone, so each
-		goes to the GPU again when next drawn, from what is in memory. A file's is decoded again from its bytes (`Runtime.fetch`), or taken
+		goes to the GPU again when next drawn, from what is in memory. A file's is decoded again from its bytes (`Runtime.fetchImage`), or taken
 		from its pixels when a program asked for them; a model's image's from its file's bytes kept with it (`fromEncoded`); one kept
 		(`keepPixels`) from them; a render texture's handle the platform remade, blank. The rest, pixels sent once and let go of
 		(`LoadTextureFromImage`'s, a cubemap's), can't come back: each is drawn as nothing and warned of once. */

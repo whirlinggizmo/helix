@@ -232,26 +232,15 @@ class Runtime {
 			models = new helix.services.models.Models(assets, decoding);
 	}
 
-	/** Brings a file into memory: an image decoded, a glTF file with its images decoded and the files it points to, anything else as
-		bytes. Answers at a later poll, never during the call.
+	/** Brings a file into memory as bytes, in `files`. Answers at a later poll, never during the call. It decodes nothing, so a program
+		loading text or data never links an image decoder; `fetchImage` is for an image file.
 
 		@param path  The file.
 		@param done  Receives whether it was brought in, and why not when it wasn't. */
 	public static function fetch(path:String, done:Null<String>->Void):Void {
 		loading();
-		var lower = path.toLowerCase();
-		var image = lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".tga");
-		if (image)
-			imaging();
-		if (image ? pictures.exists(path) || images.exists(path) : files.exists(path)) {
+		if (files.exists(path)) {
 			later(() -> done(null));
-			return;
-		}
-		if (image && files.exists(path)) {
-			decoding.decodeForGpu(files.get(path), decoded -> {
-				pictures.set(path, decoded);
-				done(null);
-			}, error -> done('$path: $error'));
 			return;
 		}
 		// Named before it's asked for, so a file that isn't there (a page's 404, which the browser reports without naming the program's call)
@@ -260,15 +249,44 @@ class Runtime {
 		assets.load(path, bytes -> {
 			// The file's bytes are kept too, for LoadFileDataAsync; an image's are small beside its pixels.
 			files.set(path, bytes);
-			if (image) {
-				decoding.decodeForGpu(bytes, decoded -> {
-					pictures.set(path, decoded);
-					done(null);
-				}, error -> done('$path: $error'));
-				return;
-			}
 			done(null);
 		}, error -> done(error));
+	}
+
+	/** Brings an image file into memory: its bytes in `files` and, for a PNG, JPEG, BMP or TGA file, its pixels decoded for the GPU in
+		`pictures`. Any other file is brought in as `fetch` does. Answers at a later poll, never during the call.
+
+		@param path  The file.
+		@param done  Receives whether it was brought in, and why not when it wasn't. */
+	public static function fetchImage(path:String, done:Null<String>->Void):Void {
+		var lower = path.toLowerCase();
+		if (!(lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".tga"))) {
+			fetch(path, done);
+			return;
+		}
+		loading();
+		imaging();
+		if (pictures.exists(path) || images.exists(path)) {
+			later(() -> done(null));
+			return;
+		}
+		if (files.exists(path)) {
+			decoding.decodeForGpu(files.get(path), decoded -> {
+				pictures.set(path, decoded);
+				done(null);
+			}, error -> done('$path: $error'));
+			return;
+		}
+		fetch(path, error -> {
+			if (error != null) {
+				done(error);
+				return;
+			}
+			decoding.decodeForGpu(files.get(path), decoded -> {
+				pictures.set(path, decoded);
+				done(null);
+			}, error -> done('$path: $error'));
+		});
 	}
 
 	/** The least level `log` writes, as `SetTraceLogLevel` sets it: raylib's LOG_INFO (3) until set. */
