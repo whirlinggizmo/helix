@@ -292,7 +292,7 @@ Why things are the way they are, numbered, in order.
     the OBJ and MTL readers (ray/tests/sizes' 6-model). `LoadModelAsync` is now a macro in `Raylib`, as `LoadShader` is: a name known as
     the program builds (a constant, or constants joined with +) calls its extension's reader alone, so dead-code elimination drops the
     other; a name known only as the program runs calls the one choosing then, which brings both. helix-services' `Models.load` chose by
-    the extension too, so it gains `loadGltf` and `loadObj` beside it, and helix-ray's glTF reader calls `loadGltf`: any engine on the
+    the extension too, so it was removed for `loadGltf` and `loadObj`, and helix-ray's glTF reader calls `loadGltf`: any engine on the
     services carries only the readers it calls. The loads of an image file choose its GIF reader so (`LoadImageAsync`,
     `LoadTextureAsync`, `LoadFontAsync` and `LoadImageAnimAsync` by the name, `LoadImageFromMemoryAsync` and
     `LoadImageAnimFromMemoryAsync` by the type), so a program naming no GIF file carries no GIF reader. Two size trades follow from

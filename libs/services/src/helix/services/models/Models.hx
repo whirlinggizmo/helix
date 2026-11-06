@@ -22,8 +22,8 @@ import helix.services.images.Images;
 
 /** Provides 3D models by path: a glTF 2.0 file (.gltf or .glb) or a Wavefront OBJ file (.obj) read through the assets, with the files it
 	names (a glTF file's buffers and images, an OBJ file's material libraries and their textures) brought in and its images decoded for
-	the GPU, as one `Model3D`. `load` reads a file as its extension says; `loadGltf` and `loadObj` read one format, so a program reading
-	one carries only its reader.
+	the GPU, as one `Model3D`. `loadGltf` and `loadObj` each read one format, so a program carries only the reader it calls. A program
+	that takes a name as it runs chooses between them itself.
 
 	The file is read by helix-formats' `GltfFile`. Each node of its scene puts its transform, and its parents', into its meshes'
 	positions, normals and tangents (`Mesh3D.transform`), so a model's meshes are drawn as they are; a skinned mesh's vertices stay as
@@ -45,7 +45,7 @@ import helix.services.images.Images;
 
 	```haxe
 	var models = new Models(assets, images);
-	models.load("trophy.glb", model -> trophy = model);
+	models.loadGltf("trophy.glb", model -> trophy = model);
 	``` */
 class Models {
 	final assets:Assets;
@@ -58,17 +58,6 @@ class Models {
 	public function new(assets:Assets, images:Images) {
 		this.assets = assets;
 		this.images = images;
-	}
-
-	/** Loads a model, the files it names and its images, read as its extension says: `loadObj` for an .obj file, `loadGltf` for any other.
-
-		A program calling `load` carries both readers; one calling `loadGltf` or `loadObj` alone carries only that one's.
-		@param path  The file, as the assets name it.
-		@param loaded  Receives the model.
-		@param failed  Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
-		@return  A function that aborts the load; neither callback is called after it, and once one was, it does nothing. */
-	public function load(path:String, loaded:Model3D->Void, ?failed:String->Void):Void->Void {
-		return StringTools.endsWith(path.toLowerCase(), ".obj") ? loadObj(path, loaded, failed) : loadGltf(path, loaded, failed);
 	}
 
 	/** Loads a glTF 2.0 model (.gltf or .glb), the files it names and its images.

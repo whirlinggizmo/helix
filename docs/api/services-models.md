@@ -68,7 +68,7 @@ function dispose():Void
 
 *class* in [`libs/services/src/helix/services/models/Models.hx`](../../libs/services/src/helix/services/models/Models.hx), `import helix.services.models.Models;`
 
-Provides 3D models by path: a glTF 2.0 file (.gltf or .glb) or a Wavefront OBJ file (.obj) read through the assets, with the files it names (a glTF file's buffers and images, an OBJ file's material libraries and their textures) brought in and its images decoded for the GPU, as one `Model3D`. `load` reads a file as its extension says; `loadGltf` and `loadObj` read one format, so a program reading one carries only its reader.
+Provides 3D models by path: a glTF 2.0 file (.gltf or .glb) or a Wavefront OBJ file (.obj) read through the assets, with the files it names (a glTF file's buffers and images, an OBJ file's material libraries and their textures) brought in and its images decoded for the GPU, as one `Model3D`. `loadGltf` and `loadObj` each read one format, so a program carries only the reader it calls. A program that takes a name as it runs chooses between them itself.
 
 The file is read by helix-formats' `GltfFile`. Each node of its scene puts its transform, and its parents', into its meshes' positions, normals and tangents (`Mesh3D.transform`), so a model's meshes are drawn as they are; a skinned mesh's vertices stay as the file gives them, its skin's matrices placing it. Its skins become a skeleton (`Model3D.skeleton`), and its animations of that skeleton's bones `Animation3D`s. Only triangles are read; morph targets aren't yet.
 
@@ -80,12 +80,11 @@ Its answers come as the assets and images it reads through are polled.
 
 ```haxe
 var models = new Models(assets, images);
-models.load("trophy.glb", model -> trophy = model);
+models.loadGltf("trophy.glb", model -> trophy = model);
 ```
 
 ```haxe
 function new(assets:Assets, images:Images)
-function load(path:String, loaded:Model3D -> Void, ?failed:String -> Void):() -> Void
 function loadGltf(path:String, loaded:Model3D -> Void, ?failed:String -> Void):() -> Void
 function loadObj(path:String, loaded:Model3D -> Void, ?failed:String -> Void):() -> Void
 ```
@@ -93,13 +92,6 @@ function loadObj(path:String, loaded:Model3D -> Void, ?failed:String -> Void):()
 - `new`: Creates the models over the assets they are found in and the images that decode theirs.
   - `assets`: The assets the files are read through.
   - `images`: The images a model's are decoded by (`Images.decodeForGpu`).
-- `load`: Loads a model, the files it names and its images, read as its extension says: `loadObj` for an .obj file, `loadGltf` for any other.
-  - `path`: The file, as the assets name it.
-  - `loaded`: Receives the model.
-  - `failed`: Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
-  - returns: A function that aborts the load; neither callback is called after it, and once one was, it does nothing.
-
-  A program calling `load` carries both readers; one calling `loadGltf` or `loadObj` alone carries only that one's.
 - `loadGltf`: Loads a glTF 2.0 model (.gltf or .glb), the files it names and its images.
   - `path`: The file, as the assets name it.
   - `loaded`: Receives the model.

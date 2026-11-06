@@ -143,7 +143,7 @@ class ModelsTests {
 		files.files.set("objs/glow.png", Bytes.ofString("1x1"));
 		files.files.set("objs/roof.png", Bytes.ofString("3x3"));
 		var house:Model3D = null;
-		models.load("objs/house.obj", m -> house = m, e -> throw e);
+		models.loadObj("objs/house.obj", m -> house = m, e -> throw e);
 		pump();
 		check(house != null && house.path == "objs/house.obj", "an OBJ file loaded, a missing and a broken library skipped");
 		check(house.meshes.length == 4
@@ -199,7 +199,7 @@ class ModelsTests {
 
 		files.files.set("objs/colors.OBJ", Bytes.ofString("v 0 0 0 1 0 0\nv 1 0 0 0 1 0\nv 0 1 0 0 0 1\nf 1 2 3\n"));
 		var colored:Model3D = null;
-		models.load("objs/colors.OBJ", m -> colored = m, e -> throw e);
+		models.loadObj("objs/colors.OBJ", m -> colored = m, e -> throw e);
 		pump();
 		check(colored != null
 			&& colored.materials.length == 0
@@ -215,7 +215,7 @@ class ModelsTests {
 		files.files.set("objs/latin.mtl", mtl);
 		files.files.set("objs/caf\u00e9.png", Bytes.ofString("2x2"));
 		var latin:Model3D = null;
-		models.load("objs/latin.obj", m -> latin = m, e -> throw e);
+		models.loadObj("objs/latin.obj", m -> latin = m, e -> throw e);
 		pump();
 		check(latin != null
 			&& latin.materials[0].name == "caf\u00e9"
@@ -226,18 +226,18 @@ class ModelsTests {
 
 		files.files.set("objs/bad.obj", Bytes.ofString("v 0 0 0\nf 1 1 x\n"));
 		var why = "";
-		models.load("objs/bad.obj", _ -> throw "loaded a bad file", message -> why = message);
+		models.loadObj("objs/bad.obj", _ -> throw "loaded a bad file", message -> why = message);
 		pump();
 		check(why.indexOf("objs/bad.obj") >= 0 && why.indexOf("Line 2") >= 0, "a file that can't be read fails, by its path and line");
 		// An MP3's first bytes named as glTF: not UTF-8, which a browser's Bytes.toString throws a RangeError for.
 		files.files.set("objs/noise.gltf", Bytes.ofHex("fffb9064ffffffff"));
 		why = "";
-		models.load("objs/noise.gltf", _ -> throw "loaded what isn't glTF", message -> why = message);
+		models.loadGltf("objs/noise.gltf", _ -> throw "loaded what isn't glTF", message -> why = message);
 		pump();
 		check(why.indexOf("objs/noise.gltf") >= 0 && why.indexOf("Not UTF-8") >= 0, "bytes that aren't text fail as a glTF file, by path: " + why);
 		files.files.set("objs/missing.obj", Bytes.ofString("v 0 0 0\nf 1 2 3\n"));
 		why = "";
-		models.load("objs/missing.obj", _ -> throw "loaded a file naming what it lacks", message -> why = message);
+		models.loadObj("objs/missing.obj", _ -> throw "loaded a file naming what it lacks", message -> why = message);
 		pump();
 		check(why.indexOf("objs/missing.obj") >= 0
 			&& why.indexOf("2 of its corners") >= 0, "a file naming positions it lacks fails: " + why);
@@ -308,7 +308,7 @@ class ModelsTests {
 			}
 
 		var model:Model3D = null;
-		models.load("models/thing.gltf", m -> model = m);
+		models.loadGltf("models/thing.gltf", m -> model = m);
 		check(model == null, "not answered during the call");
 		pump();
 		check(model != null && model.path == "models/thing.gltf", "loaded, with what it names");
@@ -341,7 +341,7 @@ class ModelsTests {
 		var disposer = new DisposingDecoder(),
 			slowImages = new Images(disposer, assets);
 		var slow = new Models(assets, slowImages);
-		var abort = slow.load("models/thing.gltf", _ -> throw "an aborted load answered");
+		var abort = slow.loadGltf("models/thing.gltf", _ -> throw "an aborted load answered");
 		files.poll();
 		files.poll();
 		disposer.poll();
@@ -362,7 +362,7 @@ class ModelsTests {
 			"no skin: no skeleton, no animations; its node's transform beside it");
 
 		var rigged:Model3D = null;
-		models.load("models/rig.gltf", m -> rigged = m);
+		models.loadGltf("models/rig.gltf", m -> rigged = m);
 		pump();
 		var bones = rigged.skeleton.bones;
 		check(bones.length == 3 && bones[0].name == "armature" && bones[0].parentIndex == -1 && bones[1].name == "hip" && bones[1].parentIndex == 0
@@ -391,7 +391,7 @@ class ModelsTests {
 		check(rigged.findAnimation("Kick") == 0 && rigged.findAnimation("Nope") == -1, "an animation found by name");
 
 		var why = "";
-		models.load("broken/thing.gltf", _ -> throw "loaded without its buffer", message -> why = message);
+		models.loadGltf("broken/thing.gltf", _ -> throw "loaded without its buffer", message -> why = message);
 		pump();
 		check(why.indexOf("broken/mesh data.bin") >= 0, "a missing buffer fails the load, by its path");
 		obj(files, models, pump);
