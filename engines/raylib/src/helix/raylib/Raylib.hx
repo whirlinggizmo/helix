@@ -30,7 +30,13 @@ import helix.raylib.modules.RTextures;
 	twice is shared, and goes to the GPU when first drawn. `SaveFileTextAsync` writes are kept across runs. Shaders are raylib's GLSL,
 	compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported
 	apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.raylib.modules`) and listed here
-	by module; what raylib has and helix-raylib doesn't refuses to compile, naming itself. */
+	by module; what raylib has and helix-raylib doesn't refuses to compile, naming itself.
+
+	A page's GPU context can be lost (a GPU reset, a tab evicted) and given back, which raylib's native programs never meet. The program
+	draws nothing while it is lost and carries on when it is back: textures loaded from files and a model's textures, embedded or in
+	files of their own, are decoded again from their bytes, fonts' atlases are kept in memory and sent again, meshes are sent again from
+	their vertices, render textures come back blank, and the programs and pipelines keep their handles. A texture whose pixels were
+	sent once and let go of (`LoadTextureFromImage`'s, `LoadTextureCubemap`'s) draws as nothing from then on, with one warning naming it. */
 class Raylib {
 	// ---- Keys (KeyboardKey) ----
 
@@ -3106,7 +3112,8 @@ class Raylib {
 	public static inline function GetPixelDataSize(width:Int, height:Int, format:Int):Int
 		return RTextures.GetPixelDataSize(width, height, format);
 
-	/** Makes a texture to draw into, with depth, 8-bit RGBA.
+	/** Makes a texture to draw into, with depth, 8-bit RGBA. What is drawn into it stays from frame to frame; after a page's GPU context
+		is lost it comes back blank (`Raylib`).
 
 		@param width  Its width, in pixels.
 		@param height  Its height.
@@ -3786,7 +3793,8 @@ class Raylib {
 	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, its mipmaps too when it
 		has them (`ImageMipmaps`), filtered through them, trilinear, as raylib sets it.
 		Its format is the image's, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed
-		format gives no texture, with a warning.
+		format gives no texture, with a warning. Its pixels are let go of once sent, so after a page's GPU context is lost it draws as
+		nothing, with one warning (`Raylib`).
 
 		@param image  The image.
 		@return  The texture. */
@@ -3812,7 +3820,8 @@ class Raylib {
 
 		The cubemap is a `Texture2D`'s record: a material's `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` or `MATERIAL_MAP_PREFILTER`
 		binds it to a shader's `samplerCube` (`DrawMesh`), as does `SetShaderValueTexture`; drawn as a 2D texture, it draws nothing.
-		`UnloadTexture` lets go of it, and it is counted as any texture is (docs/DECISIONS.md 25).
+		`UnloadTexture` lets go of it, and it is counted as any texture is (docs/DECISIONS.md 25). Its pixels are let go of once sent, so
+		after a page's GPU context is lost it draws as nothing, with one warning (`Raylib`).
 
 		@param image  The image.
 		@param layout  The layout (`CUBEMAP_LAYOUT_*`).
@@ -4801,7 +4810,9 @@ class Raylib {
 		(`vertexBoneIds`, `vertexBoneWeights` and `uniform mat4 boneMatrices[N]`), or that includes `<helix/raylib/shaders/skinning.glsl>`,
 		it is moved on the GPU by that shader. Under a shader of the program's own without them it is moved on the CPU, every vertex each
 		call, which is slow for many vertices or many models: an animated model under a lighting shader of the program's own draws fastest
-		when that shader declares `skinning.vs`'s inputs or includes `skinning.glsl`.
+		when that shader declares `skinning.vs`'s inputs or includes `skinning.glsl`. The include declares the bone inputs, the frame's
+		bone palette, `mat4 helixSkin()`, the vertex's skin matrix, and `vec3 helixSkinNormal(vec3 normal)`, a normal moved as raylib moves
+		one: `gl_Position = mvp*helixSkin()*vec4(vertexPosition, 1.0);`.
 
 		`animVertices` and `animNormals` hold the moved positions and normals (each normal by its bones' matrices inverted and transposed,
 		not normalized), worked out on the CPU when first read; a mesh whose shader moves it itself is left as raylib leaves it.

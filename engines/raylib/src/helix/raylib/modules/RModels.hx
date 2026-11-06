@@ -1559,7 +1559,9 @@ class RModels {
 		(`vertexBoneIds`, `vertexBoneWeights` and `uniform mat4 boneMatrices[N]`), or that includes `<helix/raylib/shaders/skinning.glsl>`,
 		it is moved on the GPU by that shader. Under a shader of the program's own without them it is moved on the CPU, every vertex each
 		call, which is slow for many vertices or many models: an animated model under a lighting shader of the program's own draws fastest
-		when that shader declares `skinning.vs`'s inputs or includes `skinning.glsl`.
+		when that shader declares `skinning.vs`'s inputs or includes `skinning.glsl`. The include declares the bone inputs, the frame's
+		bone palette, `mat4 helixSkin()`, the vertex's skin matrix, and `vec3 helixSkinNormal(vec3 normal)`, a normal moved as raylib moves
+		one: `gl_Position = mvp*helixSkin()*vec4(vertexPosition, 1.0);`.
 
 		`animVertices` and `animNormals` hold the moved positions and normals (each normal by its bones' matrices inverted and transposed,
 		not normalized), worked out on the CPU when first read; a mesh whose shader moves it itself is left as raylib leaves it.

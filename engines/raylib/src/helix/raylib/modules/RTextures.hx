@@ -446,7 +446,8 @@ class RTextures {
 
 	// ---- Render textures ----
 
-	/** Makes a texture to draw into, with depth, 8-bit RGBA.
+	/** Makes a texture to draw into, with depth, 8-bit RGBA. What is drawn into it stays from frame to frame; after a page's GPU context
+		is lost it comes back blank (`Raylib`).
 
 		@param width  Its width, in pixels.
 		@param height  Its height.
@@ -2438,7 +2439,8 @@ class RTextures {
 	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, its mipmaps too when it
 		has them (`ImageMipmaps`), filtered through them, trilinear, as raylib sets it.
 		Its format is the image's, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed
-		format gives no texture, with a warning.
+		format gives no texture, with a warning. Its pixels are let go of once sent, so after a page's GPU context is lost it draws as
+		nothing, with one warning (`Raylib`).
 
 		@param image  The image.
 		@return  The texture. */
@@ -2489,7 +2491,8 @@ class RTextures {
 
 		The cubemap is a `Texture2D`'s record: a material's `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` or `MATERIAL_MAP_PREFILTER`
 		binds it to a shader's `samplerCube` (`DrawMesh`), as does `SetShaderValueTexture`; drawn as a 2D texture, it draws nothing.
-		`UnloadTexture` lets go of it, and it is counted as any texture is (docs/DECISIONS.md 25).
+		`UnloadTexture` lets go of it, and it is counted as any texture is (docs/DECISIONS.md 25). Its pixels are let go of once sent, so
+		after a page's GPU context is lost it draws as nothing, with one warning (`Raylib`).
 
 		@param image  The image.
 		@param layout  The layout (`CUBEMAP_LAYOUT_*`).
