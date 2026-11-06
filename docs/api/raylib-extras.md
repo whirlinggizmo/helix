@@ -627,7 +627,6 @@ static function ExportImageAsCodeAsync(image:Image, fileName:String, ?done:() ->
 static macro function LoadImageAsync(fileName:String, loaded:Image -> Void, ?failed:String -> Void):Void
 static macro function LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image -> Void, ?failed:String -> Void):Void
 static macro function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void, ?failed:String -> Void):Void
-static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?failed:String -> Void):Void
 static macro function LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
 static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
 ```
@@ -647,10 +646,6 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 - `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-raylib's own, in place of raylib's `LoadTexture`, as a page can't wait for a file. The file is read as `LoadImageAsync` reads it, a GIF file's first frame among them, its reader chosen as the program builds as `LoadImageAsync`'s is. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the texture.
-  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-raylib's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto one texture, as raylib's; an image (PNG, JPEG, BMP, TGA, QOI, or a GIF file's first frame) its glyphs on a `MAGENTA` key from the space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`. The GIF reader is chosen as the program builds as `LoadImageAsync`'s is.
-  - `fileName`: The file, as the program names it.
-  - `loaded`: Receives the font.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
 - `LoadImageAnimAsync`: Loads an animated image's frames, answering when they are decoded: helix-raylib's own, in place of raylib's `LoadImageAnim`. The frames are one image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, the file's screen size, each frame's pixels after the last's (`GetPixelDataSize(width, height, format)` bytes each), and `frames[0]` is set to how many before `loaded` is called. Their delays and loop count aren't kept.
   - `fileName`: The file, as the program names it.

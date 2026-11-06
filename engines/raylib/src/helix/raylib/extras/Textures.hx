@@ -127,19 +127,6 @@ class Textures {
 		return helix.raylib.internal.ImageMacro.loadTexture(fileName, loaded, failed);
 	}
 
-	/** Loads a font file, answering when its glyphs are ready: helix-raylib's own, in place of raylib's `LoadFont`. A TrueType or OpenType
-		file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto
-		one texture, as raylib's; an image (PNG, JPEG, BMP, TGA, QOI, or a GIF file's first frame) its glyphs on a `MAGENTA` key from the
-		space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`. The GIF reader is chosen as the program
-		builds as `LoadImageAsync`'s is.
-
-		@param fileName  The file, as the program names it.
-		@param loaded  Receives the font.
-		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
-	public static macro function LoadFontAsync(fileName:ExprOf<String>, loaded:ExprOf<Font->Void>, ?failed:ExprOf<String->Void>):ExprOf<Void> {
-		return helix.raylib.internal.ImageMacro.loadFont(fileName, loaded, failed);
-	}
-
 	/** Loads an animated image's frames, answering when they are decoded: helix-raylib's own, in place of raylib's `LoadImageAnim`. The
 		frames are one image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, the file's screen size, each frame's pixels after the last's
 		(`GetPixelDataSize(width, height, format)` bytes each), and `frames[0]` is set to how many before `loaded` is called. Their
