@@ -25,7 +25,6 @@ newest says so. A page's size is every file it fetched but the assets (gzip and 
 is also its page bundled and minified with esbuild, the size a three.js game ships. A native program's size is its binary stripped.
 
 Linux only. Standard library only."""
-import fcntl
 import gzip
 import json
 import os
@@ -41,6 +40,12 @@ TOOLS = HERE.parent
 ROOT = TOOLS.parent
 sys.path.insert(0, str(TOOLS))
 import cli  # noqa: E402
+
+# The checkout's build lock is Unix's advisory lock; Windows has none here, and the measurements aren't made there.
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None
 
 CONTENDERS_DIR = HERE / 'contenders'
 OUT = ROOT / 'build/compare'
@@ -351,7 +356,8 @@ def build(programs, contenders, page, native):
     built = []
     with LOCK.open('w') as lock:
         say('waiting for build/.lock')
-        fcntl.flock(lock, fcntl.LOCK_EX)
+        if fcntl is not None:
+            fcntl.flock(lock, fcntl.LOCK_EX)
         for contender in contenders:
             if contender == 'helix-raylib':
                 build_helix_raylib(programs, page, native)
