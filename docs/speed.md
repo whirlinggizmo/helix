@@ -27,18 +27,18 @@ Frame time in ms:
 <!-- compare: bunnymark -->
 | program | where | 10k | 50k | 100k | 150k | 200k | most held | size |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| **helix-raylib** | page, WebGL2 | 0.38 | 1.59 | 3.01 | 4.78 | 6.73 | 407k | 50.7 KB |
-| raylib C 5.5 | page, wasm, WebGL1 | 0.67 | 3.43 | 6.50 | 9.57 | 13.17 | 267k | 117.4 KB |
+| **helix-raylib** | page, WebGL2 | 0.31 | 1.06 | 2.18 | 3.77 | 5.21 | 516k | 51.6 KB |
+| raylib C 5.5 | page, wasm, WebGL1 | 0.68 | 3.38 | 6.45 | 10.00 | 13.63 | 254k | 117.4 KB |
 | Godot 4.7.2, MultiMesh | page, wasm, WebGL2 (2026-11-04) | 10.16 | 46.27 | 91.00 | 135.61 | 183.95 | 15k | 10,125.4 KB |
 | Godot 4.7.2, a Sprite2D each | page, wasm, WebGL2 (2026-11-04) | 20.17 | 102.34 | 203.58 | 285.45 | 376.67 | 7k | 10,125.4 KB |
-| three.js 0.187.0, InstancedMesh | page, WebGL2 | 0.13 | 0.51 | 1.03 | 3.54 | 3.84 | 512k | 136.2 KB bundled (422.3 as served) |
-| three.js 0.187.0, a Sprite each | page, WebGL2 | 11.07 | 55.96 | 112.18 | 166.96 | 223.06 | 16k | 136.2 KB bundled (422.3 as served) |
-| Lime 8.3.1 | page, WebGL | 0.35 | 3.61 | 5.50 | 7.93 | 11.16 | 288k | 151.2 KB |
+| three.js 0.187.0, InstancedMesh | page, WebGL2 (2026-11-05) | 0.13 | 0.51 | 1.03 | 3.54 | 3.84 | 512k | 136.2 KB bundled (422.3 as served) |
+| three.js 0.187.0, a Sprite each | page, WebGL2 (2026-11-05) | 11.07 | 55.96 | 112.18 | 166.96 | 223.06 | 16k | 136.2 KB bundled (422.3 as served) |
+| Lime 8.3.1 | page, WebGL (2026-11-05) | 0.35 | 3.61 | 5.50 | 7.93 | 11.16 | 288k | 151.2 KB |
 | HeliX, a Sprite2D each | page, WebGL2 (2026-11-04) | 2.64 | 14.81 | 28.04 | 41.58 | 54.70 | 63k | 83.6 KB |
-| **helix-raylib** | native, GL | 0.48 | 1.71 | 3.35 | 4.91 | 6.79 | 452k | 8.1 MB |
-| raylib C 5.5 | native, GL | 0.72 | 3.27 | 6.50 | 9.41 | 11.71 | 273k | 0.9 MB |
+| **helix-raylib** | native, GL (2026-11-05) | 0.48 | 1.71 | 3.35 | 4.91 | 6.79 | 452k | 8.1 MB |
+| raylib C 5.5 | native, GL (2026-11-05) | 0.72 | 3.27 | 6.50 | 9.41 | 11.71 | 273k | 0.9 MB |
 | Godot 4.7.2, MultiMesh | native, GL, Compatibility (2026-11-04) | 1.45 | 7.19 | 13.92 | 21.03 | 27.81 | 111k | 73.5 MB |
-| **helix-raylib** | native, SDL_GPU (Vulkan) | 0.37 | 1.68 | 3.40 | 5.27 | 7.33 | 468k | 7.3 MB |
+| **helix-raylib** | native, SDL_GPU (Vulkan) (2026-11-05) | 0.37 | 1.68 | 3.40 | 5.27 | 7.33 | 468k | 7.3 MB |
 | Godot 4.7.2, MultiMesh | native, Vulkan, Forward+ (2026-11-04) | 1.31 | 6.12 | 11.77 | 16.99 | 23.66 | 131k | 73.5 MB |
 <!-- /compare: bunnymark -->
 
@@ -94,8 +94,8 @@ of headless over GL. Over Vulkan a visible window loses its WebGL context at sta
 <!-- compare: bunnymark-gl -->
 | program | where | 10k | 50k | 100k | 150k | 200k | most held | size |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| **helix-raylib** | page, WebGL2 | 0.42 | 1.58 | 3.29 | 5.14 | 7.05 | 324k | 50.7 KB |
-| raylib C 5.5 | page, wasm, WebGL1 | 0.69 | 3.29 | 6.65 | 9.73 | 13.24 | 260k | 117.4 KB |
+| **helix-raylib** | page, WebGL2 | 0.33 | 1.18 | 2.54 | 4.24 | 5.59 | 452k | 51.6 KB |
+| raylib C 5.5 | page, wasm, WebGL1 | 0.78 | 3.40 | 6.84 | 10.29 | 13.35 | 243k | 117.4 KB |
 | three.js 0.187.0, InstancedMesh | page, WebGL2 | 0.15 | 0.67 | 1.30 | 2.23 | 3.33 | 512k | 136.2 KB bundled (422.3 as served) |
 | three.js 0.187.0, a Sprite each | page, WebGL2 | 11.11 | 54.95 | 111.51 | 164.81 | 222.86 | 16k | 136.2 KB bundled (422.3 as served) |
 | Lime 8.3.1 | page, WebGL | 0.47 | 1.83 | 15.50 | 19.53 | 32.89 | 89k | 151.2 KB |

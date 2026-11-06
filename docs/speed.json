@@ -5,41 +5,41 @@
    "variant": "",
    "program": "bunnymark",
    "where": "page-gl",
-   "version": "helix-2.0 3f13e57",
+   "version": "helix-2.0 e2ce111",
    "date": "2026-11-06",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "10000": {
-     "meanMs": 0.42,
+     "meanMs": 0.33,
      "p95Ms": 0.5,
      "runs": 3
     },
     "50000": {
-     "meanMs": 1.58,
-     "p95Ms": 1.7,
+     "meanMs": 1.18,
+     "p95Ms": 1.3,
      "runs": 3
     },
     "100000": {
-     "meanMs": 3.29,
-     "p95Ms": 3.7,
+     "meanMs": 2.54,
+     "p95Ms": 3,
      "runs": 3
     },
     "150000": {
-     "meanMs": 5.14,
-     "p95Ms": 5.4,
+     "meanMs": 4.24,
+     "p95Ms": 5.0,
      "runs": 3
     },
     "200000": {
-     "meanMs": 7.05,
-     "p95Ms": 7.6,
+     "meanMs": 5.59,
+     "p95Ms": 6.7,
      "runs": 3
     }
    },
-   "held": 324000,
+   "held": 452000,
    "size": {
-    "rawKB": 238.9,
-    "gzipKB": 50.7,
-    "brotliKB": 42.5
+    "rawKB": 244.1,
+    "gzipKB": 51.6,
+    "brotliKB": 43.2
    },
    "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 Laptop GPU/PCIe/SSE2, OpenGL 4.5.0)"
   },
@@ -53,32 +53,32 @@
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "10000": {
-     "meanMs": 0.69,
-     "p95Ms": 0.8,
+     "meanMs": 0.78,
+     "p95Ms": 0.9,
      "runs": 3
     },
     "50000": {
-     "meanMs": 3.29,
-     "p95Ms": 3.5,
+     "meanMs": 3.4,
+     "p95Ms": 3.8,
      "runs": 3
     },
     "100000": {
-     "meanMs": 6.65,
-     "p95Ms": 6.8,
+     "meanMs": 6.84,
+     "p95Ms": 7.5,
      "runs": 3
     },
     "150000": {
-     "meanMs": 9.73,
-     "p95Ms": 9.9,
+     "meanMs": 10.29,
+     "p95Ms": 11.5,
      "runs": 3
     },
     "200000": {
-     "meanMs": 13.24,
-     "p95Ms": 14.5,
+     "meanMs": 13.35,
+     "p95Ms": 15.1,
      "runs": 3
     }
    },
-   "held": 260000,
+   "held": 243000,
    "size": {
     "rawKB": 357.7,
     "gzipKB": 117.4,
@@ -230,41 +230,41 @@
    "variant": "",
    "program": "bunnymark",
    "where": "page-vulkan",
-   "version": "helix-2.0 69e35a9",
-   "date": "2026-11-05",
+   "version": "helix-2.0 e2ce111",
+   "date": "2026-11-06",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "10000": {
-     "meanMs": 0.38,
-     "p95Ms": 0.5,
+     "meanMs": 0.31,
+     "p95Ms": 0.4,
      "runs": 3
     },
     "50000": {
-     "meanMs": 1.59,
-     "p95Ms": 1.8,
+     "meanMs": 1.06,
+     "p95Ms": 1.2,
      "runs": 3
     },
     "100000": {
-     "meanMs": 3.01,
-     "p95Ms": 3.2,
+     "meanMs": 2.18,
+     "p95Ms": 2.6,
      "runs": 3
     },
     "150000": {
-     "meanMs": 4.78,
-     "p95Ms": 5.0,
+     "meanMs": 3.77,
+     "p95Ms": 4.6,
      "runs": 3
     },
     "200000": {
-     "meanMs": 6.73,
-     "p95Ms": 7.0,
+     "meanMs": 5.21,
+     "p95Ms": 6.1,
      "runs": 3
     }
    },
-   "held": 407000,
+   "held": 516000,
    "size": {
-    "rawKB": 238.9,
-    "gzipKB": 50.7,
-    "brotliKB": 42.5
+    "rawKB": 244.1,
+    "gzipKB": 51.6,
+    "brotliKB": 43.2
    },
    "renderer": "ANGLE (NVIDIA, Vulkan 1.4.329 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
   },
@@ -274,36 +274,36 @@
    "program": "bunnymark",
    "where": "page-vulkan",
    "version": "raylib 5.5",
-   "date": "2026-11-05",
+   "date": "2026-11-06",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "10000": {
-     "meanMs": 0.67,
+     "meanMs": 0.68,
      "p95Ms": 0.8,
      "runs": 3
     },
     "50000": {
-     "meanMs": 3.43,
+     "meanMs": 3.38,
      "p95Ms": 3.6,
      "runs": 3
     },
     "100000": {
-     "meanMs": 6.5,
-     "p95Ms": 7.2,
+     "meanMs": 6.45,
+     "p95Ms": 6.7,
      "runs": 3
     },
     "150000": {
-     "meanMs": 9.57,
-     "p95Ms": 9.8,
+     "meanMs": 10.0,
+     "p95Ms": 11.1,
      "runs": 3
     },
     "200000": {
-     "meanMs": 13.17,
-     "p95Ms": 14.3,
+     "meanMs": 13.63,
+     "p95Ms": 15,
      "runs": 3
     }
    },
-   "held": 267000,
+   "held": 254000,
    "size": {
     "rawKB": 357.7,
     "gzipKB": 117.4,
