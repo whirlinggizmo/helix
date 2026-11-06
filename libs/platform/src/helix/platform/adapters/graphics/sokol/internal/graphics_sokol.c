@@ -129,10 +129,33 @@ static sg_swapchain swapchain(void){
 }
 int helix_msaa_samples(void){return window_samples;}
 int helix_max_msaa_samples(void){return max_samples;}
+/* glGetString and its names: on Windows sokol loads GL itself and declares only what it calls, so the function comes from opengl32.dll. */
+#ifndef GL_VENDOR
+#define GL_VENDOR 0x1F00
+#endif
+#ifndef GL_RENDERER
+#define GL_RENDERER 0x1F01
+#endif
+#ifndef GL_VERSION
+#define GL_VERSION 0x1F02
+#endif
+#ifndef GL_SHADING_LANGUAGE_VERSION
+#define GL_SHADING_LANGUAGE_VERSION 0x8B8C
+#endif
+#if defined(_WIN32)
+typedef const GLubyte *(APIENTRY *helix_gl_get_string_t)(GLenum name);
+static const GLubyte *helix_gl_string(GLenum name){
+ static helix_gl_get_string_t f;
+ if(!f){HMODULE m=GetModuleHandleA("opengl32.dll");if(!m)m=LoadLibraryA("opengl32.dll");if(m)f=(helix_gl_get_string_t)(void*)GetProcAddress(m,"glGetString");}
+ return f?f(name):NULL;
+}
+#else
+#define helix_gl_string glGetString
+#endif
 /* The device as GL names it (IGraphics.device): 0 the API, 1 its vendor, 2 renderer, 3 version, 4 shading language; "" for one GL doesn't give. */
 const char *helix_device_info(int field){
  if(field==0)return "OpenGL";
- const GLubyte *s=field==1?glGetString(GL_VENDOR):field==2?glGetString(GL_RENDERER):field==3?glGetString(GL_VERSION):field==4?glGetString(GL_SHADING_LANGUAGE_VERSION):NULL;
+ const GLubyte *s=field==1?helix_gl_string(GL_VENDOR):field==2?helix_gl_string(GL_RENDERER):field==3?helix_gl_string(GL_VERSION):field==4?helix_gl_string(GL_SHADING_LANGUAGE_VERSION):NULL;
  return s?(const char*)s:"";
 }
 /* The power of two of a sample count (1, 2, 4 or 8), and the screen's samples (sokol's environment default, which pipelines are made for). */
