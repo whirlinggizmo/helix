@@ -3,7 +3,7 @@ import helix.platform.*;
 
 /** Stands in for the GPU in helix-render's tests: what the renderer asks of it recorded as lines of text (passes, viewports, scissors,
 	updates, draws), the textures, buffers and pipelines it holds, and each stream buffer's bytes as last uploaded, so a test reads the
-	vertices a draw submitted. */
+	vertices a draw submitted, and its second buffer's (a run of sprites' records). */
 class RecordingGraphics implements IGraphics {
 	var next = 1;
 	var appended = new Map<Int, Bool>();
@@ -23,7 +23,8 @@ class RecordingGraphics implements IGraphics {
 		instanceCount:Int,
 		textures:Array<Int>,
 		uniforms:Array<Null<Bytes>>,
-		vertices:Null<Bytes>
+		vertices:Null<Bytes>,
+		instances:Null<Bytes>
 	}> = [];
 
 	/** Gets the textures held, by handle: their width and height. */
@@ -219,7 +220,8 @@ class RecordingGraphics implements IGraphics {
 			instanceCount: instanceCount,
 			textures: textures.copy(),
 			uniforms: [for (u in uniforms) u == null ? null : u.sub(0, u.length)],
-			vertices: buffers.length > 0 && this.buffers.exists(buffers[0]) ? this.buffers.get(buffers[0]) : null});
+			vertices: buffers.length > 0 && this.buffers.exists(buffers[0]) ? this.buffers.get(buffers[0]) : null,
+			instances: buffers.length > 1 && this.buffers.exists(buffers[1]) ? this.buffers.get(buffers[1]) : null});
 		log.push('draw ${pipelines.get(pipeline).primitive} $elementCount textures ${textures.join(",")}');
 	}
 

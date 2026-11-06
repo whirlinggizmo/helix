@@ -27,7 +27,7 @@ import helix.platform.IHttp;
 #end
 
 /** Shows helix-render's 2D batch: a ship sprite from a sheet, turning about its frames' middle and flipped, under a camera that follows
-	it; asteroids drawn as shapes from a white texel on the same sheet, so rocks and ship are one GPU draw; and a panel of wrapped, centered text, recorded once as a draw list, replayed over it all in the screen's pixels. What is off
+	it; asteroids drawn as shapes from a white texel on the same sheet, so rocks and ship read one texture; and a panel of wrapped, centered text, recorded once as a draw list, replayed over it all in the screen's pixels. What is off
 	screen is culled, as `Batch2D.culling` is on.
 
 	The window, its events and the loop are the platform's, written out as a program does them until the layer above the services does.

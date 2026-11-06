@@ -6,6 +6,7 @@ import helix.math.Bounds3D;
 import helix.math.Matrix2D;
 import helix.math.Matrix3D;
 import helix.platform.Blend;
+import helix.platform.VertexBuffer;
 import helix.render.*;
 import helix.services.fonts.Font2D;
 import helix.services.fonts.Glyph2D;
@@ -50,11 +51,38 @@ class RenderTests {
 		return new Font2D(Coverage, 10, 8, -2, 2, Image.filled(64, 64, 0xffffffff), glyphs);
 	}
 
+	// Whether a draw is a Batch2D run of sprites: instances of one quad's four corners, a 56-byte record each.
+	static function isSprites(d:Dynamic):Bool {
+		var buffers:Array<VertexBuffer> = d.pipeline.buffers;
+		return buffers.length == 2 && buffers[0].stride == 4 && buffers[1].stride == 56 && buffers[1].instanced;
+	}
+
+	// The vertices a draw makes as triangles: a run of sprites' six a quad, its first, second and third corners then its first, third
+	// and fourth.
+	static function vertexCount(d:Dynamic):Int
+		return isSprites(d) ? (d.instanceCount : Int) * 6 : (d.count : Int);
+
+	// Where a run of sprites' record holds a part of a vertex (0 x, 1 y, 2 u, 3 v), the vertex counted as its triangles make them.
+	static function spriteAt(d:Dynamic, i:Int, part:Int):Int {
+		var quad = Std.int(i / 6), corner = [0, 1, 2, 0, 2, 3][i % 6];
+		var at:Int = (d.firstInstance + quad) * 56;
+		return switch part {
+			case 0: at + corner * 8;
+			case 1: at + corner * 8 + 4;
+			case 2: at + (corner == 1 || corner == 2 ? 40 : 32);
+			case _: at + (corner < 2 ? 36 : 44);
+		}
+	}
+
 	static function vertexX(d:Dynamic, i:Int, stride:Int):Float
-		return (d.vertices : Bytes).getFloat((d.first + i) * stride);
+		return isSprites(d) ? (d.instances : Bytes).getFloat(spriteAt(d, i, 0)) : (d.vertices : Bytes).getFloat((d.first + i) * stride);
 
 	static function vertexY(d:Dynamic, i:Int, stride:Int):Float
-		return (d.vertices : Bytes).getFloat((d.first + i) * stride + 4);
+		return isSprites(d) ? (d.instances : Bytes).getFloat(spriteAt(d, i, 1)) : (d.vertices : Bytes).getFloat((d.first + i) * stride + 4);
+
+	// A 2D vertex's u: a 24-byte vertex's, or a sprite's corner's.
+	static function vertexU(d:Dynamic, i:Int):Float
+		return isSprites(d) ? (d.instances : Bytes).getFloat(spriteAt(d, i, 2)) : (d.vertices : Bytes).getFloat((d.first + i) * 24 + 8);
 
 	static function main():Void {
 		frames();
@@ -244,19 +272,23 @@ class RenderTests {
 		b.transform.appendTranslation(5, 0, b.transform);
 		b.drawSprite(a, 70, 10);
 		b.shapeRegion = sheet.writeWhiteTexel(63, 63);
-		b.fillCircle(100, 100, 10, 0xffff0000);
+		b.fillRectangle(100, 100, 10, 10, 0xffff0000);
 		b.drawSprite(a, 70, 10);
+		b.fillCircle(100, 100, 10, 0xffff0000);
 		b.end();
 		r.endFrame();
-		check(g.draws.length == 2,
-			"sprites of one sheet, customData and a transform between them, one GPU draw; assigning shapeRegion ends it: " + g.draws.length);
+		check(g.draws.length == 3,
+			"sprites of one sheet, customData and a transform between them, one GPU draw; assigning shapeRegion ends it; a circle's triangles start the next: " +
+			g.draws.length);
 		var d = g.draws[0];
-		check(d.count == 18 && near(vertexX(d, 12, 24), 75), "three quads, the third moved by the transform");
-		check(d.vertices.get((d.first + 6) * 24 + 20) == 0x22
-			&& d.vertices.get((d.first + 6) * 24 + 23) == 0x11, "customData's bytes in the vertex");
-		check(g.draws[1].textures[0] == sheet.handle, "shapes drawn from the sheet's white texel join its GPU draw");
-		var u = g.draws[1].vertices.getFloat(g.draws[1].first * 24 + 8);
-		check(near(u, 63.5 / 64), "a shape reads the white texel's center");
+		check(isSprites(d) && vertexCount(d) == 18 && near(vertexX(d, 12, 24), 75), "three quads, the third moved by the transform");
+		check(d.instances.get((d.firstInstance + 1) * 56 + 52) == 0x22 && d.instances.get((d.firstInstance + 1) * 56 + 55) == 0x11,
+			"customData's bytes in the record");
+		check(g.draws[1].textures[0] == sheet.handle && isSprites(g.draws[1]) && vertexCount(g.draws[1]) == 12,
+			"a filled rectangle drawn from the sheet's white texel joins the sprites' GPU draw");
+		check(near(vertexU(g.draws[1], 0), 63.5 / 64), "a shape reads the white texel's center");
+		check(g.draws[2].textures[0] == sheet.handle && !isSprites(g.draws[2]) && near(vertexU(g.draws[2], 0), 63.5 / 64),
+			"a circle drawn as triangles from the white texel");
 		b.resetState();
 		check(b.transform.tx == 0 && b.customData == 0 && b.blend == Blend.ALPHA, "resetState puts the draw state back");
 
@@ -349,7 +381,7 @@ class RenderTests {
 		var d = g.draws[0];
 		check(d.textures[0] == f.atlas.handle && near(vertexX(d, 0, 24), 10 + 100 - 5) && near(vertexY(d, 0, 24), 0),
 			"a right-aligned line ends at the box's right edge, its glyph's top at the ascent");
-		check(d.count == 18 && near(vertexX(d, 6, 24), 0) && near(vertexX(d, 12, 24), 8) && near(vertexY(d, 6, 24), 50),
+		check(vertexCount(d) == 18 && near(vertexX(d, 6, 24), 0) && near(vertexX(d, 12, 24), 8) && near(vertexY(d, 6, 24), 50),
 			"a space draws nothing; text's top at y");
 		r.dispose();
 		kerning();
@@ -399,8 +431,8 @@ class RenderTests {
 		b.end();
 		r.endFrame();
 		var question = f.font.getGlyph("?".code);
-		check(g.draws[0].count == 6 * 5 && near(vertexX(g.draws[0], 6, 24), 5), "each character it lacks drawn as its '?', advancing as it does");
-		check(near((g.draws[0].vertices : Bytes).getFloat(g.draws[0].first * 24 + 8), question.x / 64), "from the '?' glyph's place on the atlas");
+		check(vertexCount(g.draws[0]) == 6 * 5 && near(vertexX(g.draws[0], 6, 24), 5), "each character it lacks drawn as its '?', advancing as it does");
+		check(near(vertexU(g.draws[0], 0), question.x / 64), "from the '?' glyph's place on the atlas");
 		check(warnings.length == 2 && warnings[0].indexOf("U+00E9") >= 0 && warnings[1].indexOf("U+00FC") >= 0,
 			'warned once per character a font lacks, not for a control character: $warnings');
 		f.dispose();
@@ -455,8 +487,12 @@ class RenderTests {
 		b.drawList(list, Matrix2D.fromTranslation(500, 10));
 		b.end();
 		r.endFrame();
-		check(g.draws.length == 1 && g.draws[0].count == 6 + 6 + 3 && near(vertexX(g.draws[0], 0, 24), 10),
-			"replayed placed, one GPU draw; a list out of view skipped whole");
+		check(g.draws.length == 2
+			&& isSprites(g.draws[0])
+			&& vertexCount(g.draws[0]) == 6
+			&& near(vertexX(g.draws[0], 0, 24), 10)
+			&& g.draws[1].count == 6 + 3,
+			"replayed placed, its rectangle a sprite's GPU draw and its line and polygon one of triangles; a list out of view skipped whole");
 		check(list.makeEmpty().callCount == 0 && list.bounds.isEmpty, "makeEmpty");
 		r.dispose();
 	}
