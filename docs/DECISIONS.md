@@ -697,3 +697,14 @@ Why things are the way they are, numbered, in order.
     handles as the id's low 28 bits and each kind's whole ids by slot, to give a handle its id back. Rejected: the C packing the kind
     itself (the encoding in C and again in Haxe, which checks it to throw), and a map from handle to the C's number (a lookup for
     each handle a draw passes).
+
+52. **helix-raylib is rebuilt on helix-render before helix-render's stages 4 to 7, not after.** 40 put the rebuild after every stage.
+    The jam's entrants showed the cost of that order: a glTF's materials (metallic, roughness, flat base colors) are read and kept,
+    and helix-raylib's lit path, raylib's examples' lighting.fs mirrored, can't show them, while helix-render's `Material3D` and
+    `Shading3D` can. Anything lit, shadowed or material-aware written for helix-raylib on the platform now is written again when it
+    moves onto helix-render, so the move comes first and those features arrive as doors onto helix-render's (47). 39's bar is
+    unchanged: each size rung may grow by at most 1 to 2 KB gzip and `tools/compare/compare.py` must find the bunnymark, and now the
+    robots contender too, no slower than docs/speed.md records, raylib C in the run; otherwise helix-raylib keeps its `Frame`.
+    Stages 4 to 7 follow the rebuild, each then reaching helix-raylib's users through an extra at once. Rejected: a PBR shader of
+    helix-raylib's own on the platform first (a second lit path, replaced by the move); and raylib's default shader lighting a glTF
+    as authored (raylib's default is unlit, and pixel parity is the default oracle, 46).
