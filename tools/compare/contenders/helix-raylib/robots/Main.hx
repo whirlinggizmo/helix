@@ -4,7 +4,8 @@ import helix.raylib.extras.Models.*;
 import helix.raylib.extras.Device.*;
 
 // raylib's models_animation, many at once: N robots each posed by UpdateModelAnimation at its own frame, drawn with DrawModel, for
-// tools/compare/compare.py. count=N run option.
+// tools/compare/compare.py. count=N run option. Natively, gc-min=MB sets hxcpp's minimum working memory (cpp.vm.Gc.setMinimumWorkingMemory)
+// at start, to measure whether that collector setting changes the frame time or the collector's share of it.
 class Main {
 	static function emit(line:String):Void {
 		#if js
@@ -19,6 +20,11 @@ class Main {
 		var opt = GetRunOption("count");
 		var count = opt == null ? 100 : Std.parseInt(opt);
 		var copt = GetRunOption("chunk");
+		#if cpp
+		var gcMin = GetRunOption("gc-min");
+		if (gcMin != null)
+			cpp.vm.Gc.setMinimumWorkingMemory(Std.parseInt(gcMin) * 1024 * 1024);
+		#end
 		var chunk = copt == null ? count : Std.parseInt(copt); // characters a BeginDrawing/EndDrawing pair holds; a whole measured frame is count of them
 		InitWindow(1280, 720, "skin helix");
 		var cols = Math.ceil(Math.sqrt(count));
