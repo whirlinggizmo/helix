@@ -31,12 +31,9 @@ class Sdl3GpuGraphicsAdapter extends NativeGraphics implements IGraphics {
 		// Text keeps its NUL past the bytes given.
 		var vertexBytes = format == 0 ? vertex.length : vertex.length - 1,
 			fragmentBytes = format == 0 ? fragment.length : fragment.length - 1;
-		var handle = GraphicsBridge.shader(cpp.Pointer.arrayElem(vertex.getData(), 0).raw, vertexBytes, cpp.Pointer.arrayElem(fragment.getData(), 0).raw,
-			fragmentBytes, cpp.ConstCharStar.fromString(lines));
-		if (handle == 0)
-			throw "The shader didn't build (see the log)";
-		programs.set(handle, source);
-		return handle;
+		return program(GraphicsBridge.shader(cpp.Pointer.arrayElem(vertex.getData(), 0).raw, vertexBytes, cpp.Pointer.arrayElem(fragment.getData(), 0).raw,
+			fragmentBytes, cpp.ConstCharStar.fromString(lines)),
+			source);
 	}
 
 	/** Returns a stage's text as UTF-8 bytes ending in a NUL. */

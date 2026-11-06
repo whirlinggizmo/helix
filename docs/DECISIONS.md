@@ -671,3 +671,18 @@ Why things are the way they are, numbered, in order.
     text, a few hundred bytes compressed, kept in by default since a build chooses once and a game with lights usually wants it). Rejected: the pipeline's depth bias (depth
     units, the earlier frameworks' failure), a cube map for a point light (six layers of the one array keep one sampler), and a uniform
     more in the block (the agreed table is the spec).
+
+51. **A graphics handle carries its kind, so a handle of another kind is refused on every adapter.** The kind (1 buffer, 2 texture of
+    any kind, 3 program, 4 pipeline) is in bits 28 to 30, bit 31 clear so a handle is a positive `Int`, and 0 is still no handle.
+    `GraphicsHandle` in the adapters' shared code is the one place that says so: the WebGL2 adapter puts the kind above its counter,
+    and `NativeGraphics` puts it above the C's number and takes it off before a call, so the C sees only numbers below 1 << 28
+    (`HELIX_HANDLE_MASK`). Each call checks the kind before anything else and throws the message it throws for an unknown handle, the
+    same on every adapter: a draw "Invalid draw" (its textures "Invalid draw texture"), a pipeline's program "Invalid pipeline shader",
+    a dispose "Invalid buffer", "Invalid texture", "Invalid shader" or "Invalid pipeline". The index buffer is checked only for an
+    indexed pipeline, as IGraphics says another ignores it, so `NativeGraphics` keeps which pipelines are indexed. Before, the native
+    adapters' kinds each counted from the same slot and generation, so a mixed-up handle reached another kind's table and could be
+    taken there. The SDL_GPU adapter now keeps a slot's generation's low 12 bits in a handle (16 before), so a stale handle is taken
+    for a new one only after 4096 reuses of its slot. sokol's generation fills its id's top 16 bits, so the sokol adapter keeps its
+    handles as the id's low 28 bits and each kind's whole ids by slot, to give a handle its id back. Rejected: the C packing the kind
+    itself (the encoding in C and again in Haxe, which checks it to throw), and a map from handle to the C's number (a lookup for
+    each handle a draw passes).
