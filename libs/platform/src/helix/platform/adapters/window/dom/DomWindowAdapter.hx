@@ -11,21 +11,22 @@ import js.html.CanvasElement;
 
 /** Provides `IWindow` in a browser page: the page is the window.
 
-	Its title is the document's, its size the viewport's, and fullscreen and visibility are the canvas's, whose drawing size follows the
-	viewport and the pixel ratio. A page can't move, size, maximize or minimize its window, choose a monitor, or close; it sees one screen.
+	Its title is the document's, its size the canvas's box on the page (the viewport's where the page gives it none), and fullscreen and
+	visibility are the canvas's, whose drawing buffer follows that box at the ratio the options choose: the canvas's logical size until
+	`highDpi` is set, then the device's pixel ratio times it. A page can't move, size, maximize or minimize its window, choose a monitor, or close; it sees one screen.
 	Those requests fail at the next `DomEventsAdapter` poll, saying so, and what a page can do answers there too; fullscreen and the
 	orientation answer as the browser does. A dropped file is the File the canvas's drop gave, read later. */
 class DomWindowAdapter implements IWindow {
 	var canvas:CanvasElement;
 	var closed = false;
 
-	/** Creates the page's window over the canvas the program draws in, sizing its drawing buffer to the viewport.
+	/** Creates the page's window over the canvas the program draws in, sizing its drawing buffer to the canvas's box at the ratio chosen.
 
-		@param options  The canvas's id.
+		@param options  The canvas's id, and whether it draws at the device's pixel ratio.
 		@throws String  No canvas has that id. */
 	public function new(options:DomWindowAdapterOptions) {
 		canvas = DomPage.canvas(options.canvasId);
-		DomPage.fit(canvas);
+		DomPage.fit(canvas, options.highDpi ? Browser.window.devicePixelRatio : 1);
 		Browser.window.addEventListener("pagehide", _ -> {
 			if (closed)
 				return;
@@ -48,7 +49,7 @@ class DomWindowAdapter implements IWindow {
 	public var pixelRatio(get, never):Float;
 
 	function get_pixelRatio():Float
-		return Browser.window.devicePixelRatio;
+		return DomPage.ratioOf(canvas);
 
 	public var focused(get, never):Bool;
 

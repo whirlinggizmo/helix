@@ -45,7 +45,9 @@ The interfaces in `libs/platform/src/helix/platform/` are the authority; this is
 `IWindow`: the drawing surface and the window around it. The graphics adapter is made after the window and draws into its surface
 (natively through `surface.h`, which the window's C implements).
 
-- `title`; `width`, `height` (logical pixels) and `framebufferWidth`, `framebufferHeight`, `pixelRatio`; `focused`.
+- `title`; `width`, `height` (logical pixels) and `framebufferWidth`, `framebufferHeight`, `pixelRatio`; `focused`. In a page the
+  window is the canvas's box: its logical size is the canvas's CSS size (the viewport's where the page gives it none), and its drawing
+  buffer is that size times 1, or times the device's pixel ratio with `DomWindowAdapterOptions.highDpi`, which `pixelRatio` reports.
 - The safe area, `safeAreaX`, `safeAreaY`, `safeAreaWidth`, `safeAreaHeight` (logical pixels in the window): what no notch, rounded
   corner or system bar covers, the whole window where nothing does. Natively SDL's `SDL_GetWindowSafeArea`; in a page the viewport
   less CSS's `env(safe-area-inset-*)`, read through an unseen element's padding. A browser reports the insets only to a page whose

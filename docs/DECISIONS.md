@@ -652,3 +652,14 @@ Why things are the way they are, numbered, in order.
     the vertex arrays cut the GL calls a draw from 27 to 5 and gave Vulkan a quarter; over GL they moved nothing alone, which is how the
     upload was found. Rejected: one ring buffer a frame bound by range (Vulkan 4x slower, GL unchanged), rotating the skinning palette's
     textures (unchanged), and plain uniforms for small blocks (a second shader dialect).
+
+50. **A page draws its canvas at the canvas's own size, logical by default, the device's ratio on request.** The page window sized its
+    drawing buffer to the viewport times the device's pixel ratio whatever the canvas's box, so a 800 x 450 canvas on a phone drew
+    1715 x 3197 pixels, 15 times its own, and the bunnymark took 59 ms a frame there against raylib wasm's 27 (found on the moto g
+    over adb, 2026-11-05); at 800 x 450 it takes 19. Now the buffer is the canvas's CSS box (the viewport's where the page gives it
+    none) times a ratio its options choose: 1 until `DomWindowAdapterOptions.highDpi`, then the device's, which `pixelRatio` reports so
+    the services' screen lays out right. helix-raylib sets it from `FLAG_WINDOW_HIGHDPI` at `InitWindow`: without the flag a page looks
+    as raylib's web build does, soft on a dense screen and cheap; with it the canvas is sharp at the ratio squared in pixels filled,
+    as raylib's desktop build honours the flag. Rejected: the device's ratio by default (crisp, but three to four times the fill on
+    every phone for every program, and not what raylib's page does), and a build define (the program decides at run time, as the API
+    has it).
