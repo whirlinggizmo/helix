@@ -85,8 +85,8 @@ come back: it is drawn as nothing, with one warning naming it.
 drawn many times in a frame. Under raylib's default shader a model is skinned on the GPU. A shader of the program's own skins on the GPU
 when its vertex stage includes `<helix/raylib/shaders/skinning.glsl>`, or declares raylib's `skinning.vs` inputs (`vertexBoneIds`,
 `vertexBoneWeights`, `uniform mat4 boneMatrices[N]`); any other is skinned on the CPU, every vertex each call. The include's head comment
-says what it declares, with an example: `helixSkin()` is the vertex's skin matrix, and `helixSkinNormal(normal)` moves a normal as raylib
-does.
+says what it declares, with an example: `mat4 helixSkin()` is the vertex's skin matrix, and `vec3 helixSkinNormal(vec3 normal)` moves a
+normal as raylib does.
 
 ```glsl
 #version 330
@@ -99,8 +99,9 @@ void main() {
 ```
 
 A shader of the program's own lights as `LoadLightingShader`'s does by including `<helix/raylib/shaders/lights.glsl>` in its fragment
-stage: rlights' uniforms (`lights[MAX_LIGHTS]`, `ambient`, `viewPos`) and `helixLight(texel, tint, position, normal)`, raylib's
-`lighting.fs` math. helix-raylib's own model shaders (unlit, unlit skinned, lit, lit skinned) are files in `src/helix/raylib/shaders/`
+stage: rlights' uniforms (`lights[MAX_LIGHTS]`, `ambient`, `viewPos`) and `vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition,
+vec3 fragNormal)`, raylib's `lighting.fs` math: `finalColor = helixLight(texture(texture0, fragTexCoord), colDiffuse*fragColor, fragPosition,
+fragNormal);`. helix-raylib's own model shaders (unlit, unlit skinned, lit, lit skinned) are files in `src/helix/raylib/shaders/`
 over these two includes.
 
 ## What a model holds

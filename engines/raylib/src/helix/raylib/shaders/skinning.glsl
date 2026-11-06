@@ -3,8 +3,8 @@
 // It declares the bone inputs a skinned mesh feeds, vertexBoneIds and vertexBoneWeights (four bones a vertex, as raylib's), the frame's
 // bone palette (uniform sampler2D bonePalette) and the draw's first bone in it plus one (uniform int boneOffset, 0 for a draw without
 // bones), and two functions:
-// helixSkin() returns the vertex's skin matrix, each of its bones' matrices times its weight, added; helixSkinNormal(normal) returns a
-// normal moved as raylib moves one, by each bone's matrix inverted and transposed, times its weight, added, and not normalized.
+// mat4 helixSkin() returns the vertex's skin matrix, each of its bones' matrices times its weight, added; vec3 helixSkinNormal(vec3 normal)
+// returns a normal moved as raylib moves one, by each bone's matrix inverted and transposed, times its weight, added, and not normalized.
 //
 // A shader including it skins on the GPU: a mesh UpdateModelAnimation posed is drawn with its bones written into the palette and
 // boneOffset set, so one model drawn in many poses in a frame draws each as it was asked for. A mesh drawn before any UpdateModelAnimation

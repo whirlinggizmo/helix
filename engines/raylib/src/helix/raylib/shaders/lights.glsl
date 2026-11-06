@@ -3,10 +3,10 @@
 //
 // It declares rlights' uniforms: lights[MAX_LIGHTS] (MAX_LIGHTS is 4), each with enabled, type (LIGHT_DIRECTIONAL or LIGHT_POINT),
 // position, target and color, which CreateLight and UpdateLightValues (helix.raylib.extras.Lights) set; ambient, a color; and viewPos,
-// the camera's position, which a program sets each frame at shader.locs[SHADER_LOC_VECTOR_VIEW]. And one function: helixLight(texel,
-// tint, position, normal) returns the fragment's color as lighting.fs computes it: each enabled light's diffuse and specular (a shine of
-// 16), the ambient light a tenth of ambient, and the result gamma corrected (to the power 1/2.2). The position is the fragment's in the
-// world, and the normal its own; it is normalized here.
+// the camera's position, which a program sets each frame at shader.locs[SHADER_LOC_VECTOR_VIEW]. And one function,
+// vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal), the fragment's color as lighting.fs computes it: each
+// enabled light's diffuse and specular (a shine of 16), the ambient light a tenth of ambient, and the result gamma corrected (to the
+// power 1/2.2). fragPosition is the fragment's in the world, and fragNormal its own, normalized here.
 //
 // LoadLightingShader (helix.raylib.extras.Lights) is a shader built on it. A program's own fragment stage lights with it so:
 //
@@ -41,10 +41,10 @@ uniform Light lights[MAX_LIGHTS];
 uniform vec4 ambient;
 uniform vec3 viewPos;
 
-vec4 helixLight(vec4 texelColor, vec4 tint, vec3 position, vec3 fragmentNormal) {
+vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal) {
     vec3 lightDot = vec3(0.0);
-    vec3 normal = normalize(fragmentNormal);
-    vec3 viewD = normalize(viewPos - position);
+    vec3 normal = normalize(fragNormal);
+    vec3 viewD = normalize(viewPos - fragPosition);
     vec3 specular = vec3(0.0);
     for (int i = 0; i < MAX_LIGHTS; i++) {
         if (lights[i].enabled == 1) {
@@ -52,7 +52,7 @@ vec4 helixLight(vec4 texelColor, vec4 tint, vec3 position, vec3 fragmentNormal) 
             if (lights[i].type == LIGHT_DIRECTIONAL)
                 light = -normalize(lights[i].target - lights[i].position);
             if (lights[i].type == LIGHT_POINT)
-                light = normalize(lights[i].position - position);
+                light = normalize(lights[i].position - fragPosition);
             float NdotL = max(dot(normal, light), 0.0);
             lightDot += lights[i].color.rgb*NdotL;
             float specCo = 0.0;

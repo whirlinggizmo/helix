@@ -25,8 +25,9 @@ import helix.raylib.modules.RLights;
 	```
 
 	A model posed by `UpdateModelAnimation` under the lit shader is skinned on the GPU. A program's own shader lights as it does by
-	including `<helix/raylib/shaders/lights.glsl>`, whose head comment says what it declares. A program that calls none of this links
-	none of it. */
+	including `<helix/raylib/shaders/lights.glsl>`: rlights' uniforms and `vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition,
+	vec3 fragNormal)`, called as `helixLight(texture(texture0, fragTexCoord), colDiffuse*fragColor, fragPosition, fragNormal)`. A program
+	that calls none of this links none of it. */
 class Lights {
 	/** The most lights a lit shader holds, rlights' `MAX_LIGHTS`. */
 	public static inline final MAX_LIGHTS = 4;
