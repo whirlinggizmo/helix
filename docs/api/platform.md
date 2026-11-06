@@ -219,9 +219,11 @@ function toString():String
 
 Specifies which fragments a pipeline's depth test passes, compared with the depth already in the target.
 
-- `DepthTest.Off`: There is no test, so every fragment is drawn.
+- `DepthTest.Off`: The depth buffer is off for the draws: no test, so every fragment is drawn, and no depth written whatever `PipelineDesc.depthWrite` says.
 - `DepthTest.LessEqual`: Fragments as near as or nearer than the depth there pass. This is the usual test.
 - `DepthTest.Greater`: Fragments farther than the depth there pass, so only what is hidden behind something drawn before is drawn.
+- `DepthTest.Always`: Every fragment passes, and its depth is written as `PipelineDesc.depthWrite` says: the depth buffer is on, unlike `Off`, so a draw can lay down depth without testing it.
+- `DepthTest.Less`: Fragments nearer than the depth there pass; one exactly as near doesn't, so a second draw of the same surface leaves the first.
 
 ```haxe
 function toString():String
@@ -1777,9 +1779,11 @@ Represents everything a pipeline fixes for the draws through it.
 - `flipOffset:Null<Int>`: The byte offset in its block of the uniform `flip` reads. Optional; 0 when omitted. The adapter flips its own copy of the bytes as it uploads them, never the caller's, and reverses the winding with it, so `clockwise` and `cull` hold in a target and on the screen alike.
 - `flipBlockSlot:Null<Int>`: The slot of the vertex stage's block holding the uniform `flip` reads. Optional; 0 when omitted.
 - `flip:ClipFlip`: How a draw into a render target is turned the right way up, and through which uniform: the one at `flipBlockSlot` and `flipOffset`.
-- `depthWrite:Bool`: Whether the draws write depth.
-- `depthTest:DepthTest`: The depth test.
+- `depthWrite:Bool`: Whether the draws write depth, where the test is on.
+- `depthTest:DepthTest`: The depth test. `Off` turns the depth buffer off for the draws: no test and no write.
+- `depthSlopeBias:Null<Float>`: The slope depth bias, scaled by how steeply the triangle's depth changes across a pixel and added with `depthBias`, so a surface seen edge-on gets more. Omitted, 0.
 - `depthOnly:Bool`: Whether the draws write depth alone, for a shadow pass.
+- `depthBias:Null<Float>`: The constant depth bias, in units of the smallest difference the target's depth resolves, added to each fragment's depth before the test and the write: positive pushes the draws away from the eye, negative pulls them nearer, so a decal wins over the surface under it and a shadow caster is lifted off itself. Omitted, 0.
 - `cull:CullFace`: Which faces are culled.
 - `colorWrite:Null<ColorChannels>`: The color channels the draws write; omitted, all of them. A channel left out keeps the target's value, blended or not. Depth is written as `depthWrite` specifies, and a depth-only pipeline writes no color whatever this holds.
 - `clockwise:Bool`: Whether clockwise winding is the front face.

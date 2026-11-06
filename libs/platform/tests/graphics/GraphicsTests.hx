@@ -355,6 +355,30 @@ class GraphicsTests {
 			flip: ClipScale
 		});
 		pipelines.push(deep);
+		// The depth tests and biases apart: Off writing no depth, Always, Less, and Less pulled nearer or LessEqual pushed away by a bias.
+		function depthPipeline(test:helix.platform.DepthTest, bias:Float):Int {
+			var made = graphics.createPipeline({
+				shader: tint,
+				buffers: [plain],
+				primitive: Triangles,
+				indexed: false,
+				blend: Blend.OPAQUE,
+				depthTest: test,
+				depthWrite: true,
+				cull: None,
+				clockwise: false,
+				depthOnly: false,
+				flip: ClipScale,
+				depthBias: bias
+			});
+			pipelines.push(made);
+			return made;
+		}
+		var offWrite = depthPipeline(Off, 0),
+			always = depthPipeline(Always, 0),
+			less = depthPipeline(Less, 0),
+			pulled = depthPipeline(Less, -16),
+			pushed = depthPipeline(LessEqual, 16);
 		// Each blend over the target's (.25, .5, .75, .25) with (1, .5, 0, .5), and what it leaves there, red, green, blue and alpha.
 		var blends:Array<{blend:Blend, expected:Array<Float>}> = [
 			{blend: new Blend(DestinationColor, OneMinusSourceAlpha), expected: [.375, .5, .375, .25]},
@@ -1161,6 +1185,81 @@ class GraphicsTests {
 					p.expect(3, 10, [1, 0, 0, 1], 1);
 					p.expect(3, 14, [0, 1, 0, 1], 1);
 					p.expect(12, 10, [0, 1, 0, 1], 1);
+				}
+			},
+			{
+				name: "Always writes depth without testing, Off tests and writes none",
+				// Yellow everywhere at 0.5 through Always, then red farther, hidden by it; blue in the middle through Off, nearer but writing
+				// nothing, so green at 0.5 passes over it.
+				before: () -> {
+					graphics.beginTargetPass(kept, 0, 0, 0, 1);
+					draw(always, positions, 6, null, null, [clip, floatBytes([0, 0, 0, 0]), null, null, null, null, floatBytes([1, 1, 0, 1])]);
+					draw(deep, positions, 6, null, null, [
+						clip,
+						floatBytes([0, 0, .5, 0]),
+						null,
+						null,
+						null,
+						null,
+						floatBytes([1, 0, 0, 1])
+					]);
+					draw(offWrite, half, 6, null, null, [
+						clip,
+						floatBytes([0, 0, -.5, 0]),
+						null,
+						null,
+						null,
+						null,
+						floatBytes([0, 0, 1, 1])
+					]);
+					draw(deep, half, 6, null, null, [clip, floatBytes([0, 0, 0, 0]), null, null, null, null, floatBytes([0, 1, 0, 1])]);
+					graphics.endTargetPass();
+				},
+				target: kept,
+				check: p -> {
+					p.expect(1, 1, [1, 1, 0, 1], 1);
+					p.expect(8, 8, [0, 1, 0, 1], 1);
+				}
+			},
+			{
+				name: "Less fails an equal depth where LessEqual passes it",
+				// Red everywhere at 0.5; green at the same depth through Less, nowhere; blue nearer through Less, in the middle.
+				before: () -> {
+					graphics.beginTargetPass(kept, 0, 0, 0, 1);
+					draw(deep, positions, 6, null, null, [clip, floatBytes([0, 0, 0, 0]), null, null, null, null, floatBytes([1, 0, 0, 1])]);
+					draw(less, positions, 6, null, null, [clip, floatBytes([0, 0, 0, 0]), null, null, null, null, floatBytes([0, 1, 0, 1])]);
+					draw(less, half, 6, null, null, [
+						clip,
+						floatBytes([0, 0, -.5, 0]),
+						null,
+						null,
+						null,
+						null,
+						floatBytes([0, 0, 1, 1])
+					]);
+					graphics.endTargetPass();
+				},
+				target: kept,
+				check: p -> {
+					p.expect(1, 1, [1, 0, 0, 1], 1);
+					p.expect(8, 8, [0, 0, 1, 1], 1);
+				}
+			},
+			{
+				name: "a depth bias pulls a coplanar draw nearer, or pushes it away",
+				// Red everywhere at 0.5; green at the same depth through Less with a bias of -16 units, so it wins; blue at the same depth
+				// through LessEqual with +16, so it loses.
+				before: () -> {
+					graphics.beginTargetPass(kept, 0, 0, 0, 1);
+					draw(deep, positions, 6, null, null, [clip, floatBytes([0, 0, 0, 0]), null, null, null, null, floatBytes([1, 0, 0, 1])]);
+					draw(pulled, positions, 6, null, null, [clip, floatBytes([0, 0, 0, 0]), null, null, null, null, floatBytes([0, 1, 0, 1])]);
+					draw(pushed, half, 6, null, null, [clip, floatBytes([0, 0, 0, 0]), null, null, null, null, floatBytes([0, 0, 1, 1])]);
+					graphics.endTargetPass();
+				},
+				target: kept,
+				check: p -> {
+					p.expect(1, 1, [0, 1, 0, 1], 1);
+					p.expect(8, 8, [0, 1, 0, 1], 1);
 				}
 			},
 			slantedCase("depth and one sample: every texel one color or the other", singleDepth, false),

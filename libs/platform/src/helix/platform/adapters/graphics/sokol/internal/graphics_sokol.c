@@ -299,7 +299,8 @@ static sg_pipeline make_pipeline(const sg_pipeline_desc *pd,int fed){
    (blend_of), depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front), clockwise, depth only, clip flip
    (0 none, 1 clip scale, 2 view-projection), the color channels written (mask_of), the flip uniform's vertex block slot and byte offset, the
    buffer count, then each buffer's stride, instanced and attribute count, each attribute's slot, format (graphics.h) and offset, then the count of
-   attribute constants and each one's slot and four floats' bits. An attribute no buffer feeds reads its constant, or (0, 0, 0, 1): GL's
+   attribute constants and each one's slot and four floats' bits, then the depth bias and the slope bias as floats' bits (the depth test: 0 off,
+   with no write, 1 less or equal, 2 greater, 3 always, 4 less). An attribute no buffer feeds reads its constant, or (0, 0, 0, 1): GL's
    generic attribute value, set before each draw, also for a slot between fed ones (make_pipeline). 0 for a description it can't make (a
    constant for a slot a buffer feeds among them). */
 uint32_t helix_pipeline(const int *desc,int count){
@@ -308,7 +309,7 @@ uint32_t helix_pipeline(const int *desc,int count){
  const sg_blend_state blend=blend_of(desc[3],&blend_ok);
  if(desc[1]<0||desc[1]>2||!blend_ok||channels<0||channels>15||(shader&0xffff)>=256||sg_query_shader_state((sg_shader){shader})!=SG_RESOURCESTATE_VALID)return 0;
  sg_pipeline_desc pd={.shader={shader},.primitive_type=group==1?SG_PRIMITIVETYPE_POINTS:group==2?SG_PRIMITIVETYPE_LINES:SG_PRIMITIVETYPE_TRIANGLES,
-  .index_type=indexed?SG_INDEXTYPE_UINT32:SG_INDEXTYPE_NONE,.depth={.compare=desc[4]==2?SG_COMPAREFUNC_GREATER:desc[4]?SG_COMPAREFUNC_LESS_EQUAL:SG_COMPAREFUNC_ALWAYS,.write_enabled=desc[5]!=0},
+  .index_type=indexed?SG_INDEXTYPE_UINT32:SG_INDEXTYPE_NONE,.depth={.compare=desc[4]==2?SG_COMPAREFUNC_GREATER:desc[4]==4?SG_COMPAREFUNC_LESS:desc[4]==1?SG_COMPAREFUNC_LESS_EQUAL:SG_COMPAREFUNC_ALWAYS,.write_enabled=desc[5]!=0&&desc[4]!=0},
   .cull_mode=desc[6]==2?SG_CULLMODE_FRONT:desc[6]?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,.colors[0]={.blend=blend,.write_mask=mask_of(channels)}};
  /* Depth alone: a shadow pass's, no color attachment. */
  if(depth_only){pd.depth.pixel_format=SG_PIXELFORMAT_DEPTH;pd.color_count=0;pd.sample_count=1;}
@@ -342,6 +343,8 @@ uint32_t helix_pipeline(const int *desc,int count){
   if(slot<0||slot>=HELIX_MAX_VERTEX_ATTRIBUTES||fed&1<<slot)return 0;
   memcpy(constants[slot],&desc[at+1],sizeof constants[slot]);
  }
+ /* The depth biases: the constant in resolvable units, the slope's scale. */
+ if(at+2<=count){memcpy(&pd.depth.bias,&desc[at],4);memcpy(&pd.depth.bias_slope_scale,&desc[at+1],4);at+=2;}
  /* The slots below the last fed one that no buffer feeds: a stand-in from the first fed one's buffer, for sokol, unwired once made. */
  int stand_in=-1;
  for(int a=0;a<HELIX_MAX_VERTEX_ATTRIBUTES;a++)if(fed&1<<a){stand_in=pd.layout.attrs[a].buffer_index;break;}

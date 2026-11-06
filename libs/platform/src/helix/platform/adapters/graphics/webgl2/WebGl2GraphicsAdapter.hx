@@ -1253,10 +1253,18 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	function fixedState(p:PipelineDesc):Void {
 		if (p.depthTest != DepthTest.Off) {
 			gl.enable(WebGL2RenderingContext.DEPTH_TEST);
-			gl.depthFunc(p.depthTest == DepthTest.Greater ? WebGL2RenderingContext.GREATER : WebGL2RenderingContext.LEQUAL);
+			gl.depthFunc(p.depthTest == DepthTest.Greater ? WebGL2RenderingContext.GREATER : p.depthTest == DepthTest.Always ? WebGL2RenderingContext.ALWAYS : p.depthTest == DepthTest.Less ? WebGL2RenderingContext.LESS : WebGL2RenderingContext.LEQUAL);
 		} else
 			gl.disable(WebGL2RenderingContext.DEPTH_TEST);
 		gl.depthMask(p.depthWrite);
+		// GL's polygon offset: the slope's factor, then the constant in resolvable units.
+		var bias = p.depthBias == null ? 0. : p.depthBias,
+			slope = p.depthSlopeBias == null ? 0. : p.depthSlopeBias;
+		if (bias != 0 || slope != 0) {
+			gl.enable(WebGL2RenderingContext.POLYGON_OFFSET_FILL);
+			gl.polygonOffset(slope, bias);
+		} else
+			gl.disable(WebGL2RenderingContext.POLYGON_OFFSET_FILL);
 		if (p.cull != CullFace.None) {
 			gl.enable(WebGL2RenderingContext.CULL_FACE);
 			gl.cullFace(p.cull == CullFace.Front ? WebGL2RenderingContext.FRONT : WebGL2RenderingContext.BACK);

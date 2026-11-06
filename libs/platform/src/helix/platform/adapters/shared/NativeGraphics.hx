@@ -190,6 +190,9 @@ abstract class NativeGraphics implements IGraphics {
 			for (i in 0...4)
 				ints.push(haxe.io.FPHelper.floatToI32(i < c.values.length ? c.values[i] : i == 3 ? 1 : 0));
 		}
+		// The depth biases, as their floats' bits.
+		ints.push(haxe.io.FPHelper.floatToI32(desc.depthBias == null ? 0 : desc.depthBias));
+		ints.push(haxe.io.FPHelper.floatToI32(desc.depthSlopeBias == null ? 0 : desc.depthSlopeBias));
 		var packed = haxe.ds.Vector.fromArrayCopy(ints);
 		return valid(GraphicsDeviceBridge.pipeline(cpp.Pointer.ofArray(packed.toData()).raw, ints.length));
 	}

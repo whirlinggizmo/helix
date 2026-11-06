@@ -30,11 +30,20 @@ typedef PipelineDesc = {
 		written as `depthWrite` specifies, and a depth-only pipeline writes no color whatever this holds. */
 	final ?colorWrite:ColorChannels;
 
-	/** The depth test. */
+	/** The depth test. `Off` turns the depth buffer off for the draws: no test and no write. */
 	final depthTest:DepthTest;
 
-	/** Whether the draws write depth. */
+	/** Whether the draws write depth, where the test is on. */
 	final depthWrite:Bool;
+
+	/** The constant depth bias, in units of the smallest difference the target's depth resolves, added to each fragment's depth before
+		the test and the write: positive pushes the draws away from the eye, negative pulls them nearer, so a decal wins over the surface
+		under it and a shadow caster is lifted off itself. Omitted, 0. */
+	final ?depthBias:Float;
+
+	/** The slope depth bias, scaled by how steeply the triangle's depth changes across a pixel and added with `depthBias`, so a surface
+		seen edge-on gets more. Omitted, 0. */
+	final ?depthSlopeBias:Float;
 
 	/** Which faces are culled. */
 	final cull:CullFace;

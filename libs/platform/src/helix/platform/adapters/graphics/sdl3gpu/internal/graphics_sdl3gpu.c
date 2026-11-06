@@ -483,7 +483,8 @@ static SDL_GPUColorTargetBlendState blend_of(int blend,int channels,int *ok){
    1 lines, 2 points), indexed, blend (blend_of), depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front),
    clockwise, depth only, clip flip (0 none, 1 clip scale, 2 view-projection), the color channels written (blend_of), the flip uniform's
    block slot (the vertex stage's) and byte offset, the buffer count, then each buffer's stride, instanced and attribute count, each
-   attribute's slot, format (graphics.h) and offset, then the constants' count and each one's slot and four floats' bits. */
+   attribute's slot, format (graphics.h) and offset, then the constants' count and each one's slot and four floats' bits, then the depth bias
+   and the slope bias as floats' bits (the depth test: 0 off, with no write, 1 less or equal, 2 greater, 3 always, 4 less). */
 uint32_t helix_pipeline(const int *desc,int count){
  int slot=-1;for(int i=0;i<SLOTS;i++)if(!pipelines[i].live){slot=i;break;}
  if(slot<0||!desc||count<15||!program_live((uint32_t)desc[0]))return 0;
@@ -521,6 +522,9 @@ uint32_t helix_pipeline(const int *desc,int count){
   if(location<0||location>=HELIX_MAX_VERTEX_ATTRIBUTES||fed[location])return 0;
   has_constant[location]=1;for(int i=0;i<4;i++){union{int i;float f;}bits={desc[at+1+i]};given[location][i]=bits.f;}
  }
+ /* The depth biases: the constant in resolvable units, the slope's factor. */
+ float depth_bias=0,slope_bias=0;
+ if(at+2<=count){union{int i;float f;}b1={desc[at]},b2={desc[at+1]};depth_bias=b1.f;slope_bias=b2.f;at+=2;}
  /* Buffers no attribute reads aren't described: SDL_GPU wants none it isn't given. The rest are numbered in order, as a draw binds them;
     the constants' buffer after them. */
  SDL_GPUVertexBufferDescription described[HELIX_MAX_VERTEX_BUFFERS+1];int ndescribed=0,renumbered[HELIX_MAX_VERTEX_BUFFERS]={0};
@@ -540,9 +544,10 @@ uint32_t helix_pipeline(const int *desc,int count){
   .vertex_input_state={.vertex_buffer_descriptions=described,.num_vertex_buffers=(Uint32)ndescribed,.vertex_attributes=attrs,.num_vertex_attributes=(Uint32)nattrs},
   .primitive_type=group==1?SDL_GPU_PRIMITIVETYPE_POINTLIST:group==2?SDL_GPU_PRIMITIVETYPE_LINELIST:SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
   .rasterizer_state={.fill_mode=SDL_GPU_FILLMODE_FILL,.cull_mode=desc[6]==2?SDL_GPU_CULLMODE_FRONT:desc[6]?SDL_GPU_CULLMODE_BACK:SDL_GPU_CULLMODE_NONE,
-   .front_face=clockwise?SDL_GPU_FRONTFACE_CLOCKWISE:SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,.enable_depth_clip=true},
+   .front_face=clockwise?SDL_GPU_FRONTFACE_CLOCKWISE:SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,.enable_depth_clip=true,
+   .depth_bias_constant_factor=depth_bias,.depth_bias_slope_factor=slope_bias,.enable_depth_bias=depth_bias!=0||slope_bias!=0},
   .multisample_state={.sample_count=depth_only?SDL_GPU_SAMPLECOUNT_1:sample_count_of(window_samples)},
-  .depth_stencil_state={.compare_op=desc[4]==2?SDL_GPU_COMPAREOP_GREATER:desc[4]?SDL_GPU_COMPAREOP_LESS_OR_EQUAL:SDL_GPU_COMPAREOP_ALWAYS,.enable_depth_test=true,.enable_depth_write=desc[5]!=0},
+  .depth_stencil_state={.compare_op=desc[4]==2?SDL_GPU_COMPAREOP_GREATER:desc[4]==4?SDL_GPU_COMPAREOP_LESS:desc[4]==1?SDL_GPU_COMPAREOP_LESS_OR_EQUAL:SDL_GPU_COMPAREOP_ALWAYS,.enable_depth_test=desc[4]!=0,.enable_depth_write=desc[5]!=0&&desc[4]!=0},
   .target_info={.color_target_descriptions=depth_only?NULL:&color,.num_color_targets=depth_only?0:1,.depth_stencil_format=depth_format,.has_depth_stencil_target=true}};
  SDL_GPUGraphicsPipeline *pipeline=SDL_CreateGPUGraphicsPipeline(device,&info),*twin=NULL;
  if(!pipeline){fprintf(stderr,"HeliX SDL_GPU: a pipeline didn't build: %s\n",SDL_GetError());return 0;}
