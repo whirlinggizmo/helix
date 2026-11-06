@@ -24,6 +24,13 @@ interface ISystem {
 		@return  The option's value, or null when it is not set. */
 	function getOption(name:String):Null<String>;
 
+	/** Returns the bytes of memory the program holds now, as far as the platform tells: natively the process's resident memory (what the
+		OS has in RAM for it, code and data alike); in a page the script's heap where the browser reports it (Chromium), and 0 where it
+		doesn't. A reading for a stats line, not an accounting: what it counts differs by platform, so compare readings on one.
+
+		@return  The bytes, or 0 when the platform can't tell. */
+	function getMemoryBytes():Float;
+
 	/** Returns the time on a monotonic clock, for measuring how long something took, such as a frame.
 
 		It never goes back or jumps when the system's clock is set. A pause in the program, such as at a debugger or in a hidden page,

@@ -817,6 +817,7 @@ var product(default, null):String
 var device(get, never):Device
 function getOption(name:String):Null<String>
 function getTime():Float
+function getMemoryBytes():Float
 function getProgramDirectory():String
 function getDataDirectory():String
 function openUrl(url:String):Bool
@@ -840,6 +841,7 @@ var product(default, null):String
 var device(get, never):Device
 function getOption(name:String):Null<String>
 function getTime():Float
+function getMemoryBytes():Float
 function getProgramDirectory():String
 function getDataDirectory():String
 function openUrl(url:String):Bool

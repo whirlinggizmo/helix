@@ -1352,6 +1352,7 @@ var company(default, null):String
 var product(default, null):String
 var device(get, never):Device
 function getOption(name:String):Null<String>
+function getMemoryBytes():Float
 function getTime():Float
 function getProgramDirectory():String
 function getDataDirectory():String
@@ -1367,6 +1368,8 @@ function openUrl(url:String):Bool
   - returns: The option's value, or null when it is not set.
 
   Natively the option is the command line's `--name=value`, or a bare `--name` for an empty value. When the command line doesn't have it, it is the environment variable named HELIX_ followed by the name in capitals. In a page it is the URL's query parameter of that name.
+- `getMemoryBytes`: Returns the bytes of memory the program holds now, as far as the platform tells: natively the process's resident memory (what the OS has in RAM for it, code and data alike); in a page the script's heap where the browser reports it (Chromium), and 0 where it doesn't. A reading for a stats line, not an accounting: what it counts differs by platform, so compare readings on one.
+  - returns: The bytes, or 0 when the platform can't tell.
 - `getTime`: Returns the time on a monotonic clock, for measuring how long something took, such as a frame.
   - returns: Seconds from an unspecified zero.
 

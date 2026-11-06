@@ -6,7 +6,11 @@
 #include <windows.h>
 #include <dwmapi.h>
 #include <shlobj.h>
+#include <psapi.h>
 #else
+#if defined(__APPLE__)
+#include <mach/mach.h>
+#endif
 #include <pwd.h>
 #include <unistd.h>
 #endif
@@ -99,6 +103,22 @@ const char *helix_sdl3_getenv(const char *name){return SDL_getenv(name);}
 int helix_sdl3_open_url(const char *url){return SDL_OpenURL(url);}
 const char *helix_sdl3_base_path(void){return SDL_GetBasePath();}
 double helix_sdl3_time(void){return (double)SDL_GetTicksNS()/1e9;}
+/* What the OS has in memory for the process: Linux's resident pages (/proc/self/statm), macOS's task resident size, Windows' working set. */
+double helix_sdl3_memory_bytes(void){
+#if defined(_WIN32)
+ PROCESS_MEMORY_COUNTERS counters;
+ if(GetProcessMemoryInfo(GetCurrentProcess(),&counters,sizeof counters))return (double)counters.WorkingSetSize;
+ return 0;
+#elif defined(__APPLE__)
+ struct mach_task_basic_info info;mach_msg_type_number_t count=MACH_TASK_BASIC_INFO_COUNT;
+ if(task_info(mach_task_self(),MACH_TASK_BASIC_INFO,(task_info_t)&info,&count)==KERN_SUCCESS)return (double)info.resident_size;
+ return 0;
+#else
+ FILE *f=fopen("/proc/self/statm","r");if(!f)return 0;
+ long size=0,resident=0;const int read=fscanf(f,"%ld %ld",&size,&resident);fclose(f);
+ return read==2?(double)resident*(double)sysconf(_SC_PAGESIZE):0;
+#endif
+}
 
 /* Names the program for SDL, which uses the name where the OS shows one (its audio mixer, a Wayland compositor): once, before any of
    SDL's subsystems starts, by whichever adapter starts one first. */

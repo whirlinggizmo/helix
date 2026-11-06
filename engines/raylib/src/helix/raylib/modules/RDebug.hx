@@ -363,6 +363,11 @@ class RDebug {
 				number(GpuMemory.megabytes(GpuMemory.bufferBytes), "dddd.d"),
 				text(" MB")
 			]);
+		if (style.memory) {
+			var bytes = Runtime.system.getMemoryBytes();
+			if (bytes > 0)
+				lines.push([text("Memory: "), number(GpuMemory.megabytes(bytes), "dddd.d"), text(" MB")]);
+		}
 		return lines;
 	}
 

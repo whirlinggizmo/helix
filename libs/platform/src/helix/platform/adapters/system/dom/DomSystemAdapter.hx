@@ -64,6 +64,12 @@ class DomSystemAdapter implements ISystem {
 	public function getTime():Float
 		return js.Browser.window.performance.now() / 1000;
 
+	public function getMemoryBytes():Float {
+		// Chromium's reading of the script heap; other browsers have none.
+		var memory:Dynamic = untyped js.Browser.window.performance.memory;
+		return memory != null && memory.usedJSHeapSize != null ? memory.usedJSHeapSize : 0;
+	}
+
 	public function getProgramDirectory():String
 		return "./";
 

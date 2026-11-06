@@ -57,6 +57,9 @@ class Sdl3SystemAdapter implements ISystem {
 	public function getTime():Float
 		return Sdl3Bridge.time();
 
+	public function getMemoryBytes():Float
+		return Sdl3Bridge.memoryBytes();
+
 	public function getProgramDirectory():String {
 		// SDL's, ending in a separator; the executable's own if SDL can't tell.
 		var base = Sdl3Bridge.basePath();

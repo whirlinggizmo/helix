@@ -28,6 +28,10 @@ import helix.raylib.Raylib.*;
 		quad indices, a frame's instances. Off by default. */
 	public var gpuBuffers:Bool = false;
 
+	/** Whether it shows the megabytes of memory the program holds, as the platform tells it (`ISystem.getMemoryBytes`): natively the
+		process's resident memory, in a page the script heap where the browser reports it, and nothing where it doesn't. Off by default. */
+	public var memory:Bool = false;
+
 	/** The frame rate the stats are judged against, frames a second: 0 by default, for the target SetTargetFPS set, or the monitor's
 		refresh rate when none is set. */
 	public var targetFps:Int = 0;

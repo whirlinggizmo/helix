@@ -209,6 +209,19 @@ class DebugTests {
 			drawCalls: false,
 			gpuTextures: true
 		}).y == 10, "a memory stat is a line");
+		// The program's memory, as the platform tells it: a line of megabytes where it can (natively, Chromium), no line where it can't.
+		var held = RDebug.plain({
+			fps: false,
+			frameTime: false,
+			drawCalls: false,
+			memory: true
+		});
+		check(held.length == 0
+			|| held.length == 1
+			&& StringTools.startsWith(held[0], "Memory: ")
+			&& StringTools.endsWith(held[0], " MB")
+			&& Std.parseFloat(held[0].substr(8)) > 0,
+			'the memory line, or none where the platform can\'t tell: ${held}');
 
 		// What is drawn is what is measured: the background and the text within it span the measured size from the position.
 		var style:FrameStatsStyle = {fontSize: 12, backgroundColor: BLACK, triangles: true};

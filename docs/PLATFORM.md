@@ -592,6 +592,7 @@ interface ISystem {
 	var device(get, never):Device;                  // what it runs on: browser, OS, architecture, touch screen, fine pointer
 	function getOption(name:String):Null<String>;   // natively --name=value or HELIX_<NAME>; in a page the URL's query parameter
 	function getTime():Float;                       // seconds on a monotonic clock: performance.now in a page, SDL's natively
+	function getMemoryBytes():Float;                // the process's resident memory natively, the script heap in a page (Chromium), else 0
 	function getProgramDirectory():String;    // the files shipped with the program; "./" in a page, a URL
 	function getDataDirectory():String;     // where lasting files go; a database's name in a page
 	function getCacheDirectory():String;    // where what can be fetched again goes; a database's name in a page
@@ -601,6 +602,9 @@ interface ISystem {
 
 - `getTime` never goes back or jumps when the system's clock is set; a pause in the program (a debugger, a hidden page) is time that
   passed.
+- `getMemoryBytes` is a reading for a stats line, not an accounting: natively the process's resident memory (Linux's `/proc/self/statm`,
+  macOS's task resident size, Windows' working set), in a page `performance.memory.usedJSHeapSize` where the browser has it (Chromium)
+  and 0 where it doesn't. What it counts differs by platform, so readings compare on one platform only.
 - `getProgramDirectory` is the executable's directory natively (in a macOS app bundle, its `Contents/Resources`); in a page `"./"`,
   the page's own directory on its server, a URL `IHttp` fetches from.
 - `getDataDirectory` is the user's data directory (`$XDG_DATA_HOME` or `~/.local/share` on Linux, `~/Library/Application Support` on
