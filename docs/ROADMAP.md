@@ -56,7 +56,7 @@ helix-raylib's size and speed where docs/speed.md records them.
   read it; the bar says one engine, so it may also be dropped.
 - **Type bits in the graphics handles, and the resource floor's shape:** the native adapters pack a slot and a generation into a handle
   (sokol's own ids, the SDL_GPU adapter's slot + 1 below a generation), per kind, so a buffer handle given where a texture is expected is
-  caught only when its slot and generation miss a live texture; wgrender-c's handles carried the kind too. Put the kind in the handle's
+  caught only when its slot and generation miss a live texture; the earlier C frameworks' handles carried the kind too. Put the kind in the handle's
   high bits on every adapter (the WebGL2 one hands out plain increasing ints) and refuse a handle of another kind, with a graphics test
   for each mistake. The floor of 2047 of each kind alive (docs/PLATFORM.md) is the native tables' size; a mesh takes a buffer an
   attribute, so interleaving a mesh's attributes into one buffer (helix-geometry's meshes, helix-raylib's Models) cuts a scene's count
