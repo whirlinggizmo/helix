@@ -61,11 +61,11 @@ Frame time in ms:
 | raylib C 5.5, GPU skinning | page, wasm, WebGL1 | 1.97 | 7.95 | 15.92 | 192.8 KB |
 | Godot 4.7.2 | page, wasm, WebGL2 (2026-11-04) | 13.20 | 56.44 | 163.98 | 10,125.4 KB |
 | three.js 0.187.0 | page, WebGL2 | 5.13 | 19.20 | 39.97 | 160.0 KB bundled (460.0 as served) |
-| **helix-raylib** | native, GL (2026-11-04) | 2.99 | 12.14 | 24.24 | 8.8 MB |
-| raylib C 5.5, CPU skinning | native, GL (2026-11-04) | 5.49 | 22.22 | 42.67 | 1.2 MB |
-| raylib C 5.5, GPU skinning | native, GL (2026-11-04) | 3.62 | 15.13 | 29.27 | 1.2 MB |
+| **helix-raylib** | native, GL | 2.49 | 10.11 | 20.13 | 8.9 MB |
+| raylib C 5.5, CPU skinning | native, GL | 5.81 | 21.56 | 43.86 | 1.2 MB |
+| raylib C 5.5, GPU skinning | native, GL | 3.47 | 14.24 | 27.07 | 1.2 MB |
 | Godot 4.7.2 | native, GL, Compatibility (2026-11-04) | 15.08 | 59.72 |  | 73.5 MB |
-| **helix-raylib** | native, SDL_GPU (Vulkan) (2026-11-04) | 2.79 | 11.71 | 23.50 | 8.0 MB |
+| **helix-raylib** | native, SDL_GPU (Vulkan) | 2.56 | 10.17 | 20.87 | 8.1 MB |
 <!-- /compare: robots -->
 
 ## Where they differ

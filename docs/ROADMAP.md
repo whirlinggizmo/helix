@@ -45,6 +45,15 @@ helix-raylib's size and speed where docs/speed.md records them.
   for review: a page's cache in OPFS readable at once from the main thread (a worker holding OPFS's sync handles, the page
   spinning on a SharedArrayBuffer for the reply, as emscripten does), which needs the page cross-origin isolated (COOP and COEP), so
   only ever an option a program chooses, never the default.
+- **Texture eviction, a proposal for review (DECISIONS 47's bar first):** of the engine set only Unity evicts on its own (its mipmap
+  streaming under a memory budget); Godot, three.js, Heaps and raylib hold a texture until the program disposes it. What a user has is a
+  page's GPU memory ceiling on phones, so the proposal is small and off by default. In helix-raylib: `extras.Textures.setGpuBudget(
+  megabytes)` (0, the default, holds everything); each GPU texture carries the frame it was last drawn in (`Textures` stamps it as a draw
+  binds it); when the frame's end finds `GpuMemory.textureBytes` over the budget, textures not drawn for 60 frames go, least recently
+  drawn first, until under it, each keeping what refetches it after a lost context (its path, its encoded bytes, its pixels); the next
+  draw of one brings it back as a restore does, the frame drawn with it missing as after a lost context. Render textures, fonts and the
+  frame's own textures are never evicted. `DrawFrameStats` shows evictions a frame beside the GPU bytes. Not built until the user has
+  read it; the bar says one engine, so it may also be dropped.
 - **Lit sprites, in helix-render (DECISIONS 47):** 2D point and directional lights over a batch, a region with an optional normal map
   (Godot's Light2D and CanvasItem normal maps, Unity's 2D lights and lit sprite material, Phaser's Light2D), so a top-down game has a
   torch, a flash and a night. An extra in helix-raylib as a door onto it once it exists.
