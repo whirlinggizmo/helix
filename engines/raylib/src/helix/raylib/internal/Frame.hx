@@ -655,7 +655,7 @@ class Frame {
 			flipBlockSlot: p.flipSlot,
 			flipOffset: p.flipOffset
 		}));
-		var textures = p.textures.copy();
+		var textures = p.bindTextures([]);
 		if (p.texture0 >= 0)
 			textures[p.texture0] = texture;
 		return {
@@ -1063,7 +1063,7 @@ class Frame {
 			flipBlockSlot: p.flipSlot,
 			flipOffset: p.flipOffset
 		}));
-		var textures = p.textures.copy();
+		var textures = p.bindTextures([]);
 		if (p.texture0 >= 0)
 			textures[p.texture0] = texture;
 		var model = new Matrix3D();
@@ -1145,9 +1145,7 @@ class Frame {
 		if (pipeline == -1)
 			pipeline = meshPipeline(p, key, primitive, indexed, instances);
 		// The draw's textures and buffers, from the frame's pool: read when the frame is drawn, taken again after.
-		var bound = ints();
-		for (t in p.textures)
-			bound.push(t);
+		var bound = p.bindTextures(ints());
 		for (slot => t in textures)
 			if (t >= 0 && slot < bound.length)
 				bound[slot] = t;

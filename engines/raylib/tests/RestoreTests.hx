@@ -3,6 +3,7 @@ import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.extras.Textures.*;
 import helix.raylib.extras.Models.*;
+import helix.raylib.extras.Lights.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.Runtime;
@@ -12,12 +13,16 @@ import helix.raylib.internal.Textures;
 	that count what is made: nothing throws while it is lost; at the restore the frame's own texture and buffer are made again, a file's
 	texture is decoded again from its bytes and sent when next drawn, a font's atlas is sent again from the pixels it kept, a mesh is
 	sent again when next drawn, a render texture keeps the handle the platform remade, a data texture is left to the platform, a
-	texture made from pixels let go of is drawn as nothing with one warning, and a model's textures held in its file (its base color, and
+	texture made from pixels let go of is drawn as nothing with one warning, a model's textures held in its file (its base color, and
 	the roughness and metalness split from one image) are decoded again from the model's bytes and sent, as is one a load makes after
-	the program unloaded the last load's. */
+	the program unloaded the last load's, and a texture set on a shader (`SetShaderValueTexture`) is bound by the handle it was sent
+	again with. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Textures)
 @:access(helix.raylib.Mesh)
+@:access(helix.raylib.Shader)
+@:access(helix.raylib.internal.Frame)
+@:access(helix.raylib.internal.Program)
 class RestoreTests {
 	static var checks = 0;
 	static var graphics:CountingGraphics;
@@ -85,6 +90,19 @@ class RestoreTests {
 			roughGpu = Textures.handle(rough),
 			metalGpu = Textures.handle(metal);
 		check(albedoGpu != 0 && roughGpu != 0 && metalGpu != 0 && albedo != rough && rough != metal, "before: a model's textures on the GPU");
+		// A texture set on a shader's own sampler, bound by its handle at each draw.
+		var pbr = LoadPbrShader();
+		SetShaderValueTexture(pbr, GetShaderLocation(pbr, "emissiveMap"), file);
+		var cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
+		cube.materials[0].shader = pbr;
+		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
+		var slot = pbr.program.slotOf("emissiveMap");
+		function boundEmissive():Int {
+			var pass = Runtime.frame.pass;
+			var bound:Array<Int> = pass.draws[pass.draws.length - 1].textures;
+			return bound[slot];
+		}
+		check(boundEmissive() == fileGpu, "before: a texture set on a shader bound by its handle");
 		var white = Runtime.frame.white;
 		var textures = graphics.textureCreations,
 			buffers = graphics.bufferCreations,
@@ -114,6 +132,11 @@ class RestoreTests {
 		check(again != 0 && again != fileGpu && graphics.textureCreations == textures + 1, "a file's texture: sent again from its bytes");
 		textures++;
 		check(Textures.handle(file.id) == again && graphics.textureCreations == textures, "a file's texture: sent once");
+		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
+		check(boundEmissive() == again, "a texture set on a shader: bound by the handle it was sent again with");
+		// The draw sent the PBR shader's flat normal texel again, from the pixels it keeps.
+		textures++;
+		check(graphics.textureCreations == textures, "the PBR shader's flat normal: sent again from its kept pixels");
 
 		// One from pixels let go of: nothing, warned of once.
 		check(Textures.handle(pixels.id) == 0 && warnings == 1, "a texture from pixels: drawn as nothing, warned of");

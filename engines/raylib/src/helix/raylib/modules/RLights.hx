@@ -93,8 +93,11 @@ class RLights {
 			SetShaderValue(shader, location, map, SHADER_UNIFORM_INT);
 		}
 		// A material without a normal map reads a flat one, where a missing map reads white.
-		if (flatNormal == null)
+		if (flatNormal == null) {
 			flatNormal = RTextures.LoadTextureFromImage(RTextures.GenImageColor(1, 1, new Color(128, 128, 255, 255)));
+			// Sent again after the GPU's context is restored.
+			helix.raylib.internal.Textures.keepPixels(flatNormal.id);
+		}
 		SetShaderValueTexture(shader, shader.locs[SHADER_LOC_MAP_NORMAL], flatNormal);
 		return shader;
 	}

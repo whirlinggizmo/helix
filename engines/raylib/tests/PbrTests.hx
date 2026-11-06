@@ -165,6 +165,15 @@ class PbrTests {
 		check(drawnTexture(unlitSkinned, "albedoMap") == Textures.handle(albedo.id) && drawnTexture(unlitSkinned, "bonePalette") != 0,
 			"it binds the albedo map by its unit and reads the bone palette");
 
+		// A texture set on the shader by SetShaderValueTexture is kept by its id and bound by its handle (RestoreTests: after a restore,
+		// the handle it was sent again with).
+		var emissiveLoc = GetShaderLocation(pbr, "emissiveMap");
+		SetShaderValueTexture(pbr, emissiveLoc, normal);
+		material.maps[MATERIAL_MAP_NORMAL].texture = new Texture2D();
+		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
+		check(drawnTexture(p, "emissiveMap") == Textures.handle(normal.id) && p.textures[p.slotOf("emissiveMap")] == normal.id,
+			"a texture set on the shader, kept by its id and bound by its handle");
+
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

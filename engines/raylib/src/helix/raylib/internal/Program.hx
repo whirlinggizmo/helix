@@ -20,8 +20,24 @@ class Program {
 	/** The values its uniforms hold, as `SetShaderValue` writes them. */
 	public final values:ShaderValues;
 
-	/** The texture at each slot, set by `SetShaderValueTexture` or by the draw. */
+	/** The texture at each slot by its id (`Texture2D.id`), set by `SetShaderValueTexture`; 0 for none. A draw binds its GPU handle
+		(`bindTextures`), so a texture sent again after the GPU's context was restored is found by the draws after. */
 	public final textures:Array<Int> = [];
+
+	/** Finds a texture's GPU handle by its id (`Textures.handle`), set by `SetShaderValueTexture` with the first texture it sets, so a
+		program that sets none links nothing of the textures' sending. */
+	public static var resolve:Null<Int->Int>;
+
+	/** Writes the GPU handle of the texture at each slot (`resolve`), 0 for a slot with none, for a draw's own textures.
+
+		@param out  The array written, from its start.
+		@return  out. */
+	public function bindTextures(out:Array<Int>):Array<Int> {
+		out.resize(textures.length);
+		for (slot => id in textures)
+			out[slot] = id > 0 && resolve != null ? resolve(id) : 0;
+		return out;
+	}
 
 	/** Whether the texture at each slot is a `samplerCube`, which only a cubemap binds to. */
 	public final cubes:Array<Bool> = [];
@@ -182,10 +198,10 @@ class Program {
 		}
 	}
 
-	/** Sets the texture at a slot, as `SetShaderValueTexture` does, and at its twin's slot of the same name (`mirror`).
+	/** Sets the texture at a slot, as `SetShaderValueTexture` does, and at its twins' slots of the same name (`mirror`).
 
 		@param slot  The slot, or -1 for nothing.
-		@param texture  The texture's GPU handle. */
+		@param texture  The texture's id, 0 for none. */
 	public function setTexture(slot:Int, texture:Int):Void {
 		if (slot < 0 || slot >= textures.length)
 			return;

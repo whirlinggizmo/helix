@@ -111,11 +111,11 @@ void main() {
 		var twin = lit.program.twin;
 		check(twin != null, "a posed draw through the lit shader makes its skinned twin");
 		var slot = twin.slotOf("texture0");
-		check(twin.textures[slot] == Textures.handle(red.id), "a texture set before the twin is set on it");
+		check(twin.textures[slot] == red.id, "a texture set before the twin is set on it");
 		check(twin.units[slot] == MATERIAL_MAP_EMISSION, "a unit set before the twin is set on it");
 		SetShaderValueTexture(lit, location, blue);
 		SetShaderValue(lit, location, MATERIAL_MAP_ALBEDO, SHADER_UNIFORM_INT);
-		check(twin.textures[slot] == Textures.handle(blue.id), "a texture set after the twin is set on it");
+		check(twin.textures[slot] == blue.id, "a texture set after the twin is set on it");
 		check(twin.units[slot] == MATERIAL_MAP_ALBEDO, "a unit set after the twin is set on it");
 		var ambient = GetShaderLocation(lit, "ambient");
 		SetShaderValue(lit, ambient, [0.5, 0.25, 0.125, 1], SHADER_UNIFORM_VEC4);
