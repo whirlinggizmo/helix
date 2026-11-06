@@ -125,8 +125,10 @@ helix-raylib's size and speed where docs/speed.md records them.
 
 What a rung's `@:adds` or a program's bytes show a program links without naming (docs/CONVENTIONS.md, "A program links only what it names"):
 
-- helix-services' `Models.load` chooses its reader by the extension (`loadGltf` and `loadObj` don't).
-- helix-raylib's `Runtime.fetch` decodes a file by its extension, so a program loading text or data through it links the image
-  decoder; its `LoadImageFromMemoryAsync` and `LoadMusicStreamFromMemory` choose by their `fileType`, as raylib's do, and
-  `LoadWaveAsync` and `LoadWaveFromMemoryAsync` by a name or type known only as the program runs; and in a page its assets are made
-  over the server and its cache whatever a program loads.
+- helix-services' `Models.load` chooses its reader by the extension (`loadGltf` and `loadObj` don't): a program calling it carries
+  both readers, 8.9 KB gzip over one. Its doc comment says so. The branch size-leaks (commit 5344879) removes it outright; whether the
+  convenience goes or stays is the user's call.
+- helix-raylib's `LoadImageFromMemoryAsync` and `LoadMusicStreamFromMemory` choose by their `fileType`, as raylib's do, and
+  `LoadWaveAsync` and `LoadWaveFromMemoryAsync` by a name or type known only as the program runs: raylib's API, so they stay. And in a
+  page its assets are made over the server and its cache whatever a program loads: a program can't be told from its calls whether it
+  reads anything from the server.
