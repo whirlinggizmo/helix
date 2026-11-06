@@ -132,6 +132,11 @@ class Runtime {
 	public static final charsPressed:Array<Int> = [];
 
 	static var keyboardService:Null<Keyboard> = null;
+
+	/** What reads the keyboard's keys and characters into `keysPressed` and `charsPressed` each poll: set when `keyboard` makes it, null
+		until then, so a program that never asks for the keyboard never links it from the poll. */
+	static var keyboardRead:Null<Void->Void> = null;
+
 	static var mouseService:Null<Mouse> = null;
 
 	/** The platform's mouse, made with the mouse: its cursor and lock. */
@@ -480,6 +485,13 @@ class Runtime {
 			keyboardService = new Keyboard(events, new helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapter({events: cast eventsAdapter}));
 			#end
 			devices.push(keyboardService);
+			var made = keyboardService;
+			keyboardRead = () -> {
+				for (key in made.pressedKeys)
+					keysPressed.push(key);
+				for (c in new haxe.iterators.StringIteratorUnicode(made.text))
+					charsPressed.push(c);
+			}
 		}
 		return keyboardService;
 	}
@@ -726,12 +738,8 @@ class Runtime {
 			}
 		for (device in devices)
 			device.poll();
-		if (keyboardService != null) {
-			for (key in keyboardService.pressedKeys)
-				keysPressed.push(key);
-			for (c in new haxe.iterators.StringIteratorUnicode(keyboardService.text))
-				charsPressed.push(c);
-		}
+		if (keyboardRead != null)
+			keyboardRead();
 		#if !js
 		if (exitKey != 0 && keyboardService.isKeyPressed(cast exitKey))
 			shouldClose = true;

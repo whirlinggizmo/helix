@@ -35,10 +35,10 @@ class Screen implements IPollable {
 	// The requests for the windowed size and place, asked for on leaving fullscreen, that haven't answered yet: what the window has
 	// counts again once they have, whatever the window manager gave.
 	var restoring = 0;
-	// Where the window is kept between runs, and what was last kept there.
-	var saves:Null<Saves> = null;
-	var key = "";
-	var kept = "";
+	// What keeps the window in the saves, set by `remember` and null until then, so a program that never remembers never links the saves;
+	// and which call of `remember` is current.
+	var keeping:Null<Bool->Void> = null;
+	var remembering = 0;
 	// The framebuffer size and pixel ratio the fit was last worked out for.
 	var laidWidth = -1;
 	var laidHeight = -1;
@@ -238,10 +238,24 @@ class Screen implements IPollable {
 		@param saves  The saves.
 		@param key  Optional. The key it is kept under. Defaults to "screen". */
 	public function remember(saves:Saves, key = "screen"):Void {
-		this.saves = saves;
-		this.key = key;
+		var mine = ++remembering, kept = "";
+		keeping = full -> {
+			if (!saves.loaded)
+				return;
+			var now = Json.stringify({
+				width: windowedWidth,
+				height: windowedHeight,
+				x: windowedX,
+				y: windowedY,
+				fullscreen: full
+			});
+			if (now != kept) {
+				kept = now;
+				saves.setString(key, now);
+			}
+		}
 		saves.load(() -> {
-			if (this.saves != saves || !saves.hasKey(key))
+			if (mine != remembering || !saves.hasKey(key))
 				return;
 			kept = saves.getString(key, "");
 			var was:Dynamic = try Json.parse(kept) catch (_:Dynamic) null;
@@ -282,19 +296,8 @@ class Screen implements IPollable {
 		}
 		wasFullscreen = full;
 		layout();
-		if (saves != null && saves.loaded) {
-			var now = Json.stringify({
-				width: windowedWidth,
-				height: windowedHeight,
-				x: windowedX,
-				y: windowedY,
-				fullscreen: full
-			});
-			if (now != kept) {
-				kept = now;
-				saves.setString(key, now);
-			}
-		}
+		if (keeping != null)
+			keeping(full);
 	}
 
 	// Asks for part of the windowed size and place back, counted until it answers, granted or not.
