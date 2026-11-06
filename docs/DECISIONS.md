@@ -708,3 +708,29 @@ Why things are the way they are, numbered, in order.
     Stages 4 to 7 follow the rebuild, each then reaching helix-raylib's users through an extra at once. Rejected: a PBR shader of
     helix-raylib's own on the platform first (a second lit path, replaced by the move); and raylib's default shader lighting a glTF
     as authored (raylib's default is unlit, and pixel parity is the default oracle, 46).
+
+53. **helix-raylib keeps its `Frame`, helix-render is set aside, and a shared layer waits for its second user.** 52's step one was
+    built (branch `raylib-on-render`, unmerged): `Frame` recording into `Renderer`, sprites through a `SpriteRuns2D` that `Batch2D`
+    shared, meshes still `Frame`'s own. It drew raylib's pixels and failed both gates, main and branch alternating with raylib C steady
+    in the run: +7.1 to +7.5 KB gzip on every rung to 9 and +9.7 at the game rung against 39's 1 to 2 (`Renderer` +11 KB raw, the
+    shader service's programs, pipelines and variants +12, `SpriteRuns2D` +7, with 5 leaving `Frame`; every draw through `Renderer`
+    was estimated to recover 1.4 KB gzip, a floor near +5.5), and the bunnymark 6% slower at 200k sprites (4.98 to 5.31 ms, raylib C
+    12.8), the robots 3%, the cause untraced. Step two would have added `Batch3D`'s 52.7 KB raw. The numbers say the move can't
+    reach the bar: the recorded frame, values by handle and copy on write are helix-render's own design, and raylib's API keeps
+    `Frame`'s rlgl shape, so a raylib program carries both. Read plainly, nothing outside helix-render links it (its users are its
+    examples, tests and size rungs), and the one engine measured on it draws better on the platform directly. So helix-render stays
+    on main as built through stage 3, its checks running, set aside until an engine needs it, and stages 4 to 7 come off the queue;
+    the one bug the branch found, a `Texture2D.update` in the screen's pass running after the target passes begun after it, went to
+    main. The rule taken: a layer shared between engines is extracted from the first engine once the second exists, as `Images` and
+    `Matrix3D` were (17) and the shader service was (31), never designed ahead of both; helix-render was built from HeliX's batch
+    before any engine ran on it. A retained-mode engine is tried on helix-raylib itself, whose path is the one measured fast and
+    small: raylib's API already holds cameras, materials, instancing, skinning, render textures and shaders by location, the scene,
+    transforms and sort are the engine's own, and what raylib lacks (lights past four, shadows, environment maps, a linear pipeline,
+    stable handles) arrives as extras, whatever proves engine-neutral moving down later. The first is `LoadPbrShader`, on
+    helix-raylib with helix-render's BRDF cribbed into `pbr.glsl` so no second BRDF is designed: four programs rather than flags (lit
+    and unlit, each skinned), a missing normal map a flat texel, so the fragment stage has no branch, and the material's values
+    written by a hook only the shader installs, so a program without it links none of it. Rejected: loosening 39's bar to merge step
+    one; a flag per feature in the fragment stage (an uber-shader by increments); helix-services computing a glTF's missing tangents
+    at load (1.3 KB gzip on every glTF program for what one shader reads, so it happens at the first draw under the PBR shader
+    instead); and an unlit material drawn through raylib's default shader (it reads the base color factor as sRGB bytes, so an unlit
+    material drew the wrong color).

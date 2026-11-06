@@ -24,10 +24,11 @@ Until it is published, link it, and the libraries it's built on, from a checkout
 haxelib dev helix-render <checkout>/libs/render
 ```
 
-## Being built
+## Set aside
 
-helix-render is built in stages from its agreed API (docs/DECISIONS.md, 34); every member of a later stage throws, naming its stage,
-until that stage is built.
+helix-render was built in stages from its agreed API (docs/DECISIONS.md, 34) through stage 3, and is set aside there (DECISIONS 53):
+no engine draws on it, since helix-raylib's rebuild on it failed its size and speed gates, and its later stages wait for an engine that
+needs them. It stays on main with its examples, tests and checks. Every member of a later stage throws, naming its stage.
 
 1. **Done:** the renderer and its recorded frame (target passes, copy on write, clears in order, viewport and scissor), textures,
    render targets and cube textures, `Batch2D` and `DrawList2D` (sprites, shapes, text, draw lists, culling), fonts and text layout,

@@ -1,57 +1,44 @@
 # Roadmap
 
-The order (DECISIONS 40, 52): raygui on helix-raylib (done, DECISIONS 41), then its skins (done, `extras.GuiSkins`, DECISIONS 42), then
-helix-render's stages 1 to 3 (done), then helix-raylib rebuilt on helix-render, then helix-render's stages 4 to 7, then helix-scene with
-Gyre or a three.js-style engine on it, as the jam decides. Whatever comes next keeps helix-raylib's size and speed where docs/speed.md
-records them.
+The order (DECISIONS 40, 53): raygui on helix-raylib (done, DECISIONS 41), then its skins (done, `extras.GuiSkins`, DECISIONS 42), then
+helix-render's stages 1 to 3 (done, and set aside, DECISIONS 53), then helix-raylib's lit extras (`LoadPbrShader` done; environment
+maps next), then a retained-mode engine tried on helix-raylib, Gyre's or a three.js-style one as the jam decides. Whatever comes next
+keeps helix-raylib's size and speed where docs/speed.md records them.
 
-- **helix-render, being built** (directory `libs/render/`, packages `helix.render` and `helix.render.effects`; DECISIONS 35), from its
-  agreed API (revision 9), in stages, each member of a later stage throwing and naming it: 1 (done), the renderer and its recorded
-  frame, textures and targets, `Batch2D`, `DrawList2D`, fonts and text, and `Batch3D`'s unlit work (views, the batch draws, unlit
-  meshes and models, instancing, skinning, `DrawList3D`, the compile macros); 2 (done), lit materials and lights in three.js's units and
-  formulas, the lighting linked only by what gives light (DECISIONS 43), and a mesh's large points; 3 (done), shadows (DECISIONS 49);
-  after helix-raylib's rebuild on it (below), 4, environment maps and the background; 5, post-processing (with the draft's scene
-  example); 6, fog; 7, morph targets.
-  Effects past those stages (particles, model passes such as outlines, sprite and ground effects, more screen effects) start from
-  docs/EFFECTS.md, an inventory of the earlier projects' effects, each judged by other engines and by what the jam's entrants write.
-  Asked below it: helix-formats' `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions, and morph
-  targets; helix-geometry's second texture coordinates, morph targets and mesh groups; helix-math's Euler orders, an object's `lookAt`
-  and `Bounds3D` through a matrix; and of the platform, a per-buffer offset (done: `draw`'s `bufferOffsets`, with `appendBuffer`), which lets an instanced
-  mesh's large points be one GPU draw. Its frame is a command stream (DECISIONS 39). Nine-slice drawing and skins move into `Batch2D`, for
-  raygui's skins and a retained UI alike. Then helix-raylib rebuilt on it (immediate, as raylib is, on helix-render directly), only if
-  each size rung grows by at most 1 to 2 KB gzip and the bunnymark (`tools/compare/compare.py`) is no slower than docs/speed.md's numbers;
-  otherwise helix-raylib keeps its own `Frame`. HeliX's `Batch2D`, which helix-render's came from, drew a bunnymark's 150k sprites in
-  41 ms a frame in a page against helix-raylib's 18 before its batch was fixed, so helix-render's batch takes the
-  same fixes first: nothing allocated per draw, typed records, indexed quads.
-- **helix-raylib rebuilt on helix-render, next (DECISIONS 39, 52):** on a branch, in two steps, each measured against docs/speed.md
-  and docs/sizes.md with raylib C in the run before it merges. First the sprite path: `DrawTexture` and raylib's batch onto `Batch2D`
-  and its sprite runs, the bunnymark (`tools/compare/compare.py`) and the size rungs the gate. Then models and lights onto `Batch3D`:
-  the robots contender the gate, and the lit shaders become doors onto `Material3D` and `Shading3D`. The first payoff: a model drawn
-  as authored. raylib's examples' lighting.fs, which `LoadLightingShader` and `lights.glsl` mirror, has no roughness or metallic
-  input, one Phong specular with a shine of 16 on every material, so a glTF's dull non-metal shines like plastic (the jam's
-  characters: metallic 0, roughness 0.69, no images, flat `baseColorFactor` colors). Godot, Unity, three.js and Heaps draw a glTF as
-  authored, and helix-render does. `LoadLightingShader` stays raylib's (the lighting parity suite holds it to raylib's C), and beside
-  it `LoadPbrShader`, raylib's `models_basic_pbr` example's shader as a door onto helix-render's BRDF, reading the material's
-  metalness and roughness values and maps, its normal and emissive maps; a `pbr.glsl` include beside `lights.glsl` for a program's own
-  fragment stage. It takes the base color factor as linear, where raylib reads a linear factor as sRGB bytes (a 0.62 skin factor
-  becomes byte 157, bronze under the unlit default shader), so a model's color comes out as authored under it and as raylib's under
-  the other two; the default shader stays raylib's unlit one (DECISIONS 46). If a gate fails, the numbers say where, and the branch is
-  fixed or dropped: helix-raylib keeps its `Frame` and the PBR extra is written on the platform instead.
+- **helix-render, set aside (DECISIONS 53)** (directory `libs/render/`, packages `helix.render` and `helix.render.effects`; DECISIONS
+  35): built from its agreed API (revision 9) through stage 3 (the renderer and its recorded frame, textures and targets, `Batch2D`,
+  `DrawList2D`, fonts and text, `Batch3D` unlit and lit, lights in three.js's units, shadows), and no engine draws on it: helix-raylib's
+  rebuild on it failed its size and speed gates (DECISIONS 53), and nothing else links it. It stays on main with its checks running,
+  and its stages 4 to 7 (environment maps and the background, post-processing, fog, morph targets) wait for an engine that needs it,
+  pulled out of that engine rather than built ahead of it. What was asked of the libraries below it is still wanted on its own:
+  helix-formats' `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions (`KHR_materials_unlit` done),
+  and morph targets; helix-geometry's second texture coordinates, morph targets and mesh groups; helix-math's Euler orders, an
+  object's `lookAt` and `Bounds3D` through a matrix. Effects (particles, model passes such as outlines, sprite and ground effects,
+  screen effects) start from docs/EFFECTS.md, an inventory of the earlier projects' effects, each judged by other engines and by what
+  the jam's entrants write.
+- **helix-raylib's lit extras (DECISIONS 53):** what raylib's API lacks for a model drawn as authored, each an extra only a program
+  calling it links. Done: `LoadPbrShader` beside `LoadLightingShader` (which stays raylib's, the lighting parity suite holding it to
+  raylib's C): a glTF's materials under rlights' lights, the base color factor taken as linear where raylib reads it as sRGB bytes,
+  `KHR_materials_unlit` honoured, `pbr.glsl` for a program's own fragment stage. Next, environment maps: a cubemap prefiltered at
+  load for the material's roughness and a BRDF table, on raylib's `MATERIAL_MAP_IRRADIANCE`, `MATERIAL_MAP_PREFILTER` and
+  `MATERIAL_MAP_BRDF` slots and `LoadTextureCubemap`, so a metal under the PBR shader reflects something. Then lit sprites (below),
+  shadows, and lights past rlights' four, as the jam's games ask.
 - **The jam, before Gyre's shape is decided:** agents (Sonnet, docs allowed) build the same small 3D top-down survivors-like on
   helix-raylib and on HeliX, two or three each, with gear worn from the modular characters' parts (CC0, Quaternius). Measured: tokens,
   time, build failures, bugs, lines written (engine-substitute against game logic), frame time, size, startup, and a change made
   later by a fresh agent. It answers whether a framework's structure beats a familiar API agents were trained on.
-- **helix-scene and Gyre, HeliX's engine (`engines/gyre/`, `helix.gyre`): HeliX on top of the libraries, not replaced by them.** helix-scene (`libs/scene/`, `helix.scene`) is
-  HeliX's scene code (its stage, 2D and 3D nodes, transforms, hierarchy, the walk that culls, gathers lights and sorts, picking) moved
-  onto helix-render and made engine-neutral, the link rule applied (a 2D game carries no 3D): a port of HeliX's code, not a new
-  design. Gyre is HeliX's game-level API (app, loader, UI, transitions, animator, autopilot) on helix-scene, helix-render and
-  the services, so its users keep the API they know; a three.js-style engine later on the same helix-scene. The test: one of
-  HeliX's games ported, its effort and its size beside its HeliX build. Gyre is a sibling of helix-raylib, never built on it: raylib's
-  API has no lights, shadows or post-processing, and the mirror keeps raylib's quirks on purpose. Whether Gyre keeps HeliX's API or
-  folds its useful parts (the app's lifecycle, a retained UI, tweens, transitions, the autopilot) into a three.js-style engine on the
-  same helix-scene is the jam's question (DECISIONS 40).
+- **A retained-mode engine on helix-raylib (DECISIONS 53), then Gyre's shape.** The scene (a stage, 2D and 3D nodes, transforms,
+  hierarchy, the walk that culls, gathers lights and sorts, picking), ported from HeliX's scene code rather than designed anew, issues
+  raylib's calls each frame as three.js does under its graph: the speed and size measured for `DrawTexturePro` and `DrawMesh` are
+  its, raylib's holders are its GPU handles, and what raylib lacks comes as the extras above. First a sketch: a lit, skinned glTF
+  model and a sprite layer through raylib's calls, to see what the scene layer needs that raylib has no door for (stable handles
+  across a reload are one, listed below). Gyre is HeliX's game-level API (app, loader, UI, transitions, animator, autopilot) on that
+  scene and the services, so its users keep the API they know; the test is one of HeliX's games ported, its effort and its size
+  beside its HeliX build. Whether Gyre keeps HeliX's API or folds its useful parts (the app's lifecycle, a retained UI, tweens,
+  transitions, the autopilot) into a three.js-style engine on the same scene is the jam's question (DECISIONS 40). Whatever of the
+  scene proves engine-neutral moves down into a library of its own once a second engine wants it, as `Images` did.
 - **helix-raylib (DECISIONS 16, 19, 20, 21, 38):** raylib's API over the services, merged to `main`. Next:
-  rebuilt on helix-render (above); then reloading and placeholders under raylib's own names (the assets,
+  the environment-map extra (above); then reloading and placeholders under raylib's own names (the assets,
   resources and objects below). Then a trial of how agents take to
   the `...Async` loads, now in `helix.raylib.extras` (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
   (Atomics.wait, which a worker may; cross-origin isolation, OffscreenCanvas, input and audio relayed; raylib's loop run as written)
@@ -101,11 +88,11 @@ records them.
   bone fills it with the rest pose at load, so partial clips dilute each other through a single blend. helix-geometry's `Animation3D`
   holds a clip's tracks per bone and `Skeleton3D` its rest pose, so the blend and the mask from a clip's tracks are theirs; the
   extra poses a `Model` by two animations and a mask under raylib's names, and keeps which bones each loaded clip animates beside its
-  frames (`ModelAnimation` holds every bone's pose and says nothing of which were authored). helix-render only takes the matrices.
+  frames (`ModelAnimation` holds every bone's pose and says nothing of which were authored). A shader only takes the matrices.
   Then the jam's spec can ask for an attack on the upper body over the legs' run.
-- **Lit sprites, in helix-render (DECISIONS 47):** 2D point and directional lights over a batch, a region with an optional normal map
+- **Lit sprites (DECISIONS 47, 53):** 2D point and directional lights over a sprite run, a region with an optional normal map
   (Godot's Light2D and CanvasItem normal maps, Unity's 2D lights and lit sprite material, Phaser's Light2D), so a top-down game has a
-  torch, a flash and a night. An extra in helix-raylib as a door onto it once it exists.
+  torch, a flash and a night. An extra in helix-raylib over `Frame`'s sprite runs, a shader as `LoadPbrShader` is.
 - **The garbage collector's share of a frame, natively first:** hxcpp's collector over helix-raylib's draw path is unmeasured. Measure
   it on the robots and bunnymark programs (hxcpp's `GC_STATS`, or perf on the collector's symbols), find what each draw allocates in
   `Frame`, `Models` and `Skinning`, and take it out or pool it (done 2026-11-05: the robots program's allocations a frame fell from 200k
@@ -128,7 +115,7 @@ records them.
   The platform's checks of a pipeline's vertex layout (`PipelineLayout.check`, every backend, about 0.3 KB gzip) to be trimmed to what
   a backend would otherwise get wrong silently, once the platform's API is settled.
 - **Assets, resources and objects, as the earlier C frameworks layered them (AGENTS.md's prior art: their resource/object model),
-  after helix-render's stages, as plumbing a game never calls.** Each engine keeps its own names: helix-raylib's `texture.id` becomes a
+  after the lit extras, as plumbing a game never calls.** Each engine keeps its own names: helix-raylib's `texture.id` becomes a
   stable handle its table maps to the current resource; helix-render's `Texture2D`, `GpuModel3D` and `GpuFont2D` are the stable
   identities, their platform handles internal; the HeliX engine's and a three.js layer's objects are their own nodes and meshes.
   Underneath, an internal registry in the services for layer authors: one resource per path (or generator's parameters), reference
