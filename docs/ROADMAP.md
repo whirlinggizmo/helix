@@ -81,8 +81,11 @@ helix-raylib's size and speed where docs/speed.md records them.
   torch, a flash and a night. An extra in helix-raylib as a door onto it once it exists.
 - **The garbage collector's share of a frame, natively first:** hxcpp's collector over helix-raylib's draw path is unmeasured. Measure
   it on the robots and bunnymark programs (hxcpp's `GC_STATS`, or perf on the collector's symbols), find what each draw allocates in
-  `Frame`, `Models` and `Skinning`, and take it out or pool it; then see whether the collector's own settings (its generational mode,
-  the minimum working memory) are worth setting for a program. In a page the collector is V8's: the robots page at 200 scavenges every
+  `Frame`, `Models` and `Skinning`, and take it out or pool it (done 2026-11-05: the robots program's allocations a frame fell from 200k
+  to 53k and the collector's share from 12.6% to 1.2% of the main thread's cycles, with the native adapter's draw allocating nothing). The
+  collector's own settings were measured and are not worth setting: generational mode (`-D HXCPP_GC_GENERATIONAL`, a build define in
+  hxcpp 4.3.2) and a 256 MB minimum working memory each take under half a point more, the floor at the cost of its memory; the robots
+  contender keeps a `gc-min=MB` run option for measuring. In a page the collector is V8's: the robots page at 200 scavenges every
   third frame (125 in 8 s, 332 ms of main thread, none over 4 ms), from a typed-array view a block a draw and a key string a draw in
   the WebGL2 adapter, and helix-raylib's own; the same pass trims those.
 - **raygui on helix-raylib (done, DECISIONS 41):** `helix.raylib.Raygui`, raygui 4.5-dev as raylib 5.5 ships it, every control, its
