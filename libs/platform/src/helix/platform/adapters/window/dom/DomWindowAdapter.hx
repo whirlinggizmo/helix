@@ -68,12 +68,12 @@ class DomWindowAdapter implements IWindow {
 	public var width(get, never):Int;
 
 	function get_width():Int
-		return Browser.window.innerWidth;
+		return Math.round(DomPage.logicalWidth(canvas));
 
 	public var height(get, never):Int;
 
 	function get_height():Int
-		return Browser.window.innerHeight;
+		return Math.round(DomPage.logicalHeight(canvas));
 
 	// An element out of sight whose padding is the page's safe-area insets, made at the first read: a script reads env() only through
 	// a style.

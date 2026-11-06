@@ -25,11 +25,32 @@ class DomPage {
 		return cast element;
 	}
 
-	/** Sizes the canvas's drawing buffer to the viewport, in framebuffer pixels.
+	/** Sizes the canvas's drawing buffer to the canvas's own box on the page, in framebuffer pixels: its CSS size times the device's
+		pixel ratio, or the viewport's where the page gives it no size. A canvas laid out smaller than the viewport (a game in a page of
+		other things, or a 800 x 450 canvas on a phone's screen) is drawn at its own size, not the screen's.
 
 		@param canvas  The canvas the program draws in. */
 	public static function fit(canvas:CanvasElement):Void {
-		canvas.width = Std.int(Math.max(1, Browser.window.innerWidth * Browser.window.devicePixelRatio));
-		canvas.height = Std.int(Math.max(1, Browser.window.innerHeight * Browser.window.devicePixelRatio));
+		var ratio = Browser.window.devicePixelRatio;
+		canvas.width = Std.int(Math.max(1, logicalWidth(canvas) * ratio));
+		canvas.height = Std.int(Math.max(1, logicalHeight(canvas) * ratio));
+	}
+
+	/** Returns the canvas's width on the page, in logical pixels: its CSS box's, or the viewport's where the page gives it no size.
+
+		@param canvas  The canvas.
+		@return  The width. */
+	public static function logicalWidth(canvas:CanvasElement):Float {
+		var box = canvas.getBoundingClientRect();
+		return box.width > 0 ? box.width : Browser.window.innerWidth;
+	}
+
+	/** Returns the canvas's height on the page, in logical pixels: its CSS box's, or the viewport's where the page gives it no size.
+
+		@param canvas  The canvas.
+		@return  The height. */
+	public static function logicalHeight(canvas:CanvasElement):Float {
+		var box = canvas.getBoundingClientRect();
+		return box.height > 0 ? box.height : Browser.window.innerHeight;
 	}
 }
