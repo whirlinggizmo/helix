@@ -2,7 +2,7 @@ package helix.render;
 
 /** What both batches draw in a plane: textures, sprites, shapes and text, made into textured, colored vertices on the CPU, as `Batch2D`
 	draws them and `Batch3D` draws them in a plane. The batch gives where the vertices go (`vertex`), which texture they read (`use`), and
-	what is in view (`visible`). */
+	what is in view (`visible`), and may take a quad of one color whole (`plainQuad`). */
 @:noCompletion
 @:allow(helix.render)
 class PlaneDrawing2D {
@@ -15,6 +15,13 @@ class PlaneDrawing2D {
 	/** Whether a box of the plane may be seen, or a draw of it is skipped. */
 	var visible:(minX:Float, minY:Float, maxX:Float, maxY:Float) -> Bool;
 
+	/** Draws a quad of one color whole and returns true, or returns false to have it culled and made of vertices: its texture (null for
+		the white one) read a font's kind's way, its four corners in the plane's units in order round it, its texture's rectangle (u0, v0
+		at the first corner, u1, v1 at the third), its color, and whether to cull it, false when its draw was culled whole. Null makes
+		every quad of vertices. */
+	var plainQuad:Null<(texture:Null<Texture2D>, fontKind:Int, x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, x3:Float, y3:Float, u0:Float,
+			v0:Float, u1:Float, v1:Float, color:Int, cull:Bool) -> Bool> = null;
+
 	/** The region shapes read the center of, or null for the white texture. */
 	var shapeRegion:Null<TextureRegion2D> = null;
 
@@ -23,6 +30,7 @@ class PlaneDrawing2D {
 	var shapeU = .5;
 	var shapeV = .5;
 	var shapeColor = 0;
+	var shapeTexture:Null<Texture2D> = null;
 
 	static final corners = [for (_ in 0...8) 0.];
 
@@ -52,6 +60,7 @@ class PlaneDrawing2D {
 	// Makes the following shapes read the shapes' region's center, in a color.
 	function shape(color:Int):Void {
 		var r = shapeRegion;
+		shapeTexture = r == null ? null : r.texture;
 		if (r == null) {
 			use(null, 0);
 			shapeU = shapeV = .5;
@@ -63,7 +72,8 @@ class PlaneDrawing2D {
 		shapeColor = color;
 	}
 
-	// A quad's four corners (x, y each, in order round it) with their texture coordinates.
+	// A quad's four corners (x, y each, in order round it) with their texture coordinates, as two triangles: the first, second and third
+	// corners and the first, third and fourth.
 	function quad(c:Array<Float>, u0:Float, v0:Float, u1:Float, v1:Float, tint:Int):Void {
 		vertex(c[0], c[1], u0, v0, tint);
 		vertex(c[2], c[3], u1, v0, tint);
@@ -75,31 +85,53 @@ class PlaneDrawing2D {
 
 	// Whether the four corners' box may be seen.
 	function cornersVisible(c:Array<Float>):Bool {
-		var minX = Math.min(Math.min(c[0], c[2]), Math.min(c[4], c[6])),
-			maxX = Math.max(Math.max(c[0], c[2]), Math.max(c[4], c[6]));
-		var minY = Math.min(Math.min(c[1], c[3]), Math.min(c[5], c[7])),
-			maxY = Math.max(Math.max(c[1], c[3]), Math.max(c[5], c[7]));
-		return visible(minX, minY, maxX, maxY);
+		var x0 = c[0], x1 = c[2], x2 = c[4], x3 = c[6];
+		var y0 = c[1], y1 = c[3], y2 = c[5], y3 = c[7];
+		return visible(least(least(x0, x1), least(x2, x3)), least(least(y0, y1), least(y2, y3)), most(most(x0, x1), most(x2, x3)),
+			most(most(y0, y1), most(y2, y3)));
 	}
 
-	// A rectangle's corners turned about a point of it and moved: from (left, top) to (right, bottom) around the origin, then turned and
-	// placed at x, y.
-	function place(left:Float, top:Float, right:Float, bottom:Float, x:Float, y:Float, rotation:Float):Array<Float> {
-		var c = corners, cos = Math.cos(rotation), sin = Math.sin(rotation);
-		var px = [left, right, right, left], py = [top, top, bottom, bottom];
-		for (i in 0...4) {
-			c[i * 2] = x + px[i] * cos - py[i] * sin;
-			c[i * 2 + 1] = y + px[i] * sin + py[i] * cos;
+	static inline function least(a:Float, b:Float):Float
+		return a < b ? a : b;
+
+	static inline function most(a:Float, b:Float):Float
+		return a > b ? a : b;
+
+	// A rectangle of a texture turned about a point of it and moved: from (left, top) to (right, bottom) around the origin, then turned
+	// and placed at x, y; the batch's quad when it takes one, else culled and made of vertices.
+	function placedQuad(texture:Texture2D, left:Float, top:Float, right:Float, bottom:Float, x:Float, y:Float, rotation:Float, u0:Float, v0:Float, u1:Float,
+			v1:Float, tint:Int):Void {
+		var cos = 1., sin = 0.;
+		if (rotation != 0) {
+			cos = Math.cos(rotation);
+			sin = Math.sin(rotation);
 		}
-		return c;
+		var x0 = x + left * cos - top * sin, y0 = y + left * sin + top * cos;
+		var x1 = x + right * cos - top * sin, y1 = y + right * sin + top * cos;
+		var x2 = x + right * cos - bottom * sin,
+			y2 = y + right * sin + bottom * cos;
+		var x3 = x + left * cos - bottom * sin,
+			y3 = y + left * sin + bottom * cos;
+		if (plainQuad != null && plainQuad(texture, 0, x0, y0, x1, y1, x2, y2, x3, y3, u0, v0, u1, v1, tint, true))
+			return;
+		var c = corners;
+		c[0] = x0;
+		c[1] = y0;
+		c[2] = x1;
+		c[3] = y1;
+		c[4] = x2;
+		c[5] = y2;
+		c[6] = x3;
+		c[7] = y3;
+		if (!cornersVisible(c))
+			return;
+		use(texture, 0);
+		quad(c, u0, v0, u1, v1, tint);
 	}
 
 	function textureRegion(texture:Texture2D, regionX:Float, regionY:Float, regionWidth:Float, regionHeight:Float, x:Float, y:Float, width:Float,
 			height:Float, rotation:Float, originX:Float, originY:Float, tint:Int):Void {
 		texture.drawnHandle();
-		var c = place(-originX, -originY, width - originX, height - originY, x, y, rotation);
-		if (!cornersVisible(c))
-			return;
 		var w = texture.width, h = texture.height;
 		var u0 = regionX / w, u1 = (regionX + Math.abs(regionWidth)) / w;
 		var v0 = regionY / h, v1 = (regionY + Math.abs(regionHeight)) / h;
@@ -113,8 +145,7 @@ class PlaneDrawing2D {
 			v0 = v1;
 			v1 = t;
 		}
-		use(texture, 0);
-		quad(c, u0, v0, u1, v1, tint);
+		placedQuad(texture, -originX, -originY, width - originX, height - originY, x, y, rotation, u0, v0, u1, v1, tint);
 	}
 
 	function sprite(region:TextureRegion2D, x:Float, y:Float, rotation:Float, scaleX:Float, scaleY:Float, tint:Int, flipX:Bool, flipY:Bool, ?originX:Float,
@@ -124,12 +155,9 @@ class PlaneDrawing2D {
 		var ox = originX == null ? region.originX : originX,
 			oy = originY == null ? region.originY : originY;
 		var sx = flipX ? -scaleX : scaleX, sy = flipY ? -scaleY : scaleY;
-		var c = place(-ox * sx, -oy * sy, (region.regionWidth - ox) * sx, (region.regionHeight - oy) * sy, x, y, rotation);
-		if (!cornersVisible(c))
-			return;
 		var w = texture.width, h = texture.height;
-		use(texture, 0);
-		quad(c, region.regionX / w, region.regionY / h, (region.regionX + region.regionWidth) / w, (region.regionY + region.regionHeight) / h, tint);
+		placedQuad(texture, -ox * sx, -oy * sy, (region.regionWidth - ox) * sx, (region.regionHeight - oy) * sy, x, y, rotation, region.regionX / w,
+			region.regionY / h, (region.regionX + region.regionWidth) / w, (region.regionY + region.regionHeight) / h, tint);
 	}
 
 	function line(x0:Float, y0:Float, x1:Float, y1:Float, thickness:Float, color:Int):Void {
@@ -175,6 +203,9 @@ class PlaneDrawing2D {
 		if (!visible(Math.min(x, x + width), Math.min(y, y + height), Math.max(x, x + width), Math.max(y, y + height)))
 			return;
 		shape(color);
+		if (plainQuad != null
+			&& plainQuad(shapeTexture, 0, x, y, x + width, y, x + width, y + height, x, y + height, shapeU, shapeV, shapeU, shapeV, color, false))
+			return;
 		tess().rectangle(x, y, width, height);
 	}
 
@@ -289,15 +320,19 @@ class PlaneDrawing2D {
 					gy = baseline + g.offsetY * scale;
 				var right = left + g.width * scale,
 					bottom = gy + g.height * scale;
-				c[0] = left;
-				c[1] = gy;
-				c[2] = right;
-				c[3] = gy;
-				c[4] = right;
-				c[5] = bottom;
-				c[6] = left;
-				c[7] = bottom;
-				quad(c, g.x / aw, g.y / ah, (g.x + g.width) / aw, (g.y + g.height) / ah, color);
+				var u0 = g.x / aw, v0 = g.y / ah, u1 = (g.x + g.width) / aw, v1 = (g.y + g.height) / ah;
+				if (plainQuad == null
+					|| !plainQuad(atlas, cast f.kind, left, gy, right, gy, right, bottom, left, bottom, u0, v0, u1, v1, color, false)) {
+					c[0] = left;
+					c[1] = gy;
+					c[2] = right;
+					c[3] = gy;
+					c[4] = right;
+					c[5] = bottom;
+					c[6] = left;
+					c[7] = bottom;
+					quad(c, u0, v0, u1, v1, color);
+				}
 			}
 			pen += g.advance * scale + spacing;
 		}

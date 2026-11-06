@@ -32,15 +32,19 @@ import helix.render.RenderPass.RenderCommand;
 	frames, as raylib's rlgl state is: a value set holds until the program sets another, and `resetState` puts all four back.
 
 	**Order and batching.** Draws are drawn in the order they are called; nothing is sorted, so what is drawn later is on top. Consecutive
-	draws become one GPU draw while they share a texture, the shader values with nothing written to them between, a blend mode, and the
-	renderer's clip. A draw that differs in one of them starts the next GPU draw, and so do assigning `blend` or `shaderValues`,
-	`Renderer.applyScissor`, and `end`. `transform` and `customData` split nothing: they are written into the vertices as each draw is
-	made. Sprites, shapes and text of every kind of font are drawn by one shader, so only their textures part them: shapes are drawn
-	from `shapeRegion`, the batch's own white texture until set, so a white texel on a sheet (`Texture2D.writeWhiteTexel`) or a font's
-	atlas lets its sprites or its text and the shapes between them be one GPU draw.
+	draws become one GPU draw while they share a texture, the shader values with nothing written to them between, a blend mode, the
+	renderer's clip, and a kind. A quad of one color is one kind: a texture, a sprite, a glyph or a filled rectangle, kept as one record
+	and drawn as an instance of one quad. Every other draw is the other kind, made of triangles: lines, outlines, the other shapes and
+	`drawTriangles`. While `shaderValues` is set, every draw is made of triangles. A draw that differs in one of them starts the next GPU
+	draw, and so do assigning `blend` or `shaderValues`, `Renderer.applyScissor`, and `end`. `transform` and `customData` split nothing:
+	they are written into the records and vertices as each draw is made. Sprites, shapes and text of every kind of font are drawn by one
+	fragment stage, so only their textures and kinds part them: shapes are drawn from `shapeRegion`, the batch's own white texture until
+	set, so a white texel on a sheet (`Texture2D.writeWhiteTexel`) or a font's atlas lets its sprites or its text and the filled
+	rectangles between them be one GPU draw.
 
-	**Culling.** With `culling` on, read at each draw, a draw wholly outside the view is skipped: its box (a turned sprite's turned box,
-	a shape's, a text's lines') moved by `transform`, against the camera's visible rectangle (`Camera2D.computeBounds`) or the viewport.
+	**Culling.** With `culling` on, read at each draw, a draw wholly outside the view is skipped: the box of a quad's corners (a turned
+	sprite's turned) moved by `transform`, or a shape's or a text's lines' box so moved, against the camera's visible rectangle
+	(`Camera2D.computeBounds`) or the viewport.
 	`drawTriangles`, and every draw while `shaderValues` is set, aren't culled, as their vertices may be moved where the batch can't know.
 
 	**A program's shader** (`shaderValues`) is compiled by `compileShader` (a fragment stage over the batch's vertex stage) or
@@ -132,8 +136,8 @@ class Batch2D {
 	/** Gets or sets the region shapes, lines and outlines are drawn with: null until set, for the batch's own white texture.
 
 		Shapes read the texel at the region's center alone, so it must be white there: `Texture2D.writeWhiteTexel` makes one on a sheet
-		or an atlas, and shapes then join one GPU draw with its sprites, as raylib's `SetShapesTexture` does. Assigning it ends the open
-		GPU draw. It is not draw state: `resetState` leaves it. */
+		or an atlas, and its sprites and filled rectangles then share GPU draws, as raylib's `SetShapesTexture` lets them. Assigning it
+		ends the open GPU draw. It is not draw state: `resetState` leaves it. */
 	public var shapeRegion(default, set):Null<TextureRegion2D> = null;
 
 	/** Gets or sets a value indicating whether draws out of view are skipped: true until set; read at each draw. */
@@ -170,8 +174,36 @@ class Batch2D {
 					]
 				}
 			]);
+		if (spriteLayout == null)
+			spriteLayout = new ShaderVertexLayout([
+				{stride: 4, placements: [{name: "spriteCorner", offset: 0}]},
+				{
+					stride: SPRITE_BYTES,
+					instanced: true,
+					placements: [
+						{name: "spriteCornersAB", offset: 0},
+						{name: "spriteCornersCD", offset: 16},
+						{name: "spriteRegion", offset: 32},
+						{name: "spriteColor", offset: 48, format: UByte4Norm},
+						{
+							name: "spriteCustomData",
+							offset: 52,
+							format: UByte4Norm,
+							optional: true
+						}
+					]
+				}
+			]);
 		stream = renderer.stream("batch2d", 24, layout);
+		spriteShader = RenderShaders.compileOwn("batch2d-sprite.vert", "batch2d.frag");
+		spriteValues = new ShaderValues(spriteShader);
+		spriteModelViewProjection = spriteShader.getUniform("modelViewProjection");
+		spriteLinearTarget = spriteShader.getUniform("linearTarget");
+		spriteFontKind = spriteShader.getUniform("fontKind");
+		spriteBaseColorTexture = spriteShader.getSampler("baseColorTexture");
+		sprites = renderer.stream("batch2d-sprites", SPRITE_BYTES, spriteLayout);
 		plane = new PlaneDrawing2D(use, vertex, visible);
+		plane.plainQuad = sprite;
 	}
 
 	function set_blend(value:Blend):Blend {
@@ -543,8 +575,27 @@ class Batch2D {
 	final baseColorTexture:ShaderSampler;
 	final stream:RenderStream;
 	final plane:PlaneDrawing2D;
-	// The GPU draw being made: its first vertex, texture, sampling, font kind and the program's values.
+	// The sprite path: the shader drawing a quad a record, its values and the names it fills, the stream of records, and the quad they
+	// are instances of, its four corner numbers and six indices (0 until the first run of sprites is drawn).
+	final spriteShader:Shader;
+	final spriteValues:ShaderValues;
+	final spriteModelViewProjection:ShaderUniform;
+	final spriteLinearTarget:ShaderUniform;
+	final spriteFontKind:ShaderUniform;
+	final spriteBaseColorTexture:ShaderSampler;
+	final sprites:RenderStream;
+	var quadCorners = 0;
+	var quadIndices = 0;
+	#if js
+	// The records' bytes, and their floats and ints written through views rather than Bytes' calls; remade when the stream grows.
+	var spriteBytes:Null<haxe.io.Bytes> = null;
+	var spriteFloats:Null<js.lib.Float32Array> = null;
+	var spriteInts:Null<js.lib.Int32Array> = null;
+	#end
+	// The GPU draw being made: whether it holds nothing yet, vertices or sprites, its first vertex or record, texture, sampling, font kind
+	// and the program's values.
 	var running = false;
+	var runKind = EMPTY;
 	var runFirst = 0;
 	var runTexture = 0;
 	var runSampling = Sampling.LINEAR;
@@ -570,6 +621,15 @@ class Batch2D {
 	static final identity = new Matrix3D();
 	// The default shader's vertices: x and y, u and v as floats, the color as four bytes, and customData's four bytes it doesn't read.
 	static var layout:Null<ShaderVertexLayout> = null;
+	// The sprite stage's buffers: the quad's corner numbers, and the records, each the four corners' x and y and the texture's u0, v0,
+	// u1 and v1 as floats, the color's four bytes and customData's.
+	static var spriteLayout:Null<ShaderVertexLayout> = null;
+
+	static inline final SPRITE_BYTES = 56;
+	// What the GPU draw being made holds: nothing yet, vertices, or sprites.
+	static inline final EMPTY = 0;
+	static inline final VERTICES = 1;
+	static inline final SPRITES = 2;
 
 	function requireOpen():Void
 		if (!open)
@@ -589,7 +649,7 @@ class Batch2D {
 			flush();
 		if (!running) {
 			running = true;
-			runFirst = stream.count;
+			runKind = EMPTY;
 			runTexture = handle;
 			runSampling = sampling;
 			runFontKind = fontKind;
@@ -709,6 +769,8 @@ class Batch2D {
 
 	// A vertex in the batch's units, moved by the transform.
 	function vertex(x:Float, y:Float, u:Float, v:Float, color:Int):Void {
+		if (runKind != VERTICES)
+			startKind(VERTICES);
 		var t = transform;
 		var at = stream.reserve(1), b = stream.bytes;
 		b.setFloat(at, t.a * x + t.c * y + t.tx);
@@ -726,13 +788,121 @@ class Batch2D {
 		b.set(at + 23, d >>> 24);
 	}
 
+	// Makes the GPU draw being made hold vertices or sprites: one holding the other kind is recorded, and the next, of the same texture
+	// and values, starts where the kind's stream is.
+	function startKind(kind:Int):Void {
+		if (runKind != EMPTY)
+			record();
+		runKind = kind;
+		runFirst = kind == SPRITES ? sprites.count : stream.count;
+	}
+
+	// A quad of one color as a sprite's record, its corners moved by the transform, skipped when culled wholly out of view; false while
+	// shaderValues is set, whose shader's vertex stage reads vertices.
+	function sprite(texture:Null<Texture2D>, fontKind:Int, x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, x3:Float, y3:Float, u0:Float, v0:Float,
+			u1:Float, v1:Float, color:Int, cull:Bool):Bool {
+		if (shaderValues != null)
+			return false;
+		requireOpen();
+		var t = transform;
+		var ax = t.a * x0 + t.c * y0 + t.tx, ay = t.b * x0 + t.d * y0 + t.ty;
+		var bx = t.a * x1 + t.c * y1 + t.tx, by = t.b * x1 + t.d * y1 + t.ty;
+		var cx = t.a * x2 + t.c * y2 + t.tx, cy = t.b * x2 + t.d * y2 + t.ty;
+		var dx = t.a * x3 + t.c * y3 + t.tx, dy = t.b * x3 + t.d * y3 + t.ty;
+		if (cull && culling) {
+			// The corners' box, as moved, against the view.
+			var b = viewBounds;
+			var low = ax < bx ? ax : bx, high = ax < bx ? bx : ax;
+			if (cx < low)
+				low = cx;
+			if (cx > high)
+				high = cx;
+			if (dx < low)
+				low = dx;
+			if (dx > high)
+				high = dx;
+			if (high < b.minX || low > b.maxX)
+				return true;
+			low = ay < by ? ay : by;
+			high = ay < by ? by : ay;
+			if (cy < low)
+				low = cy;
+			if (cy > high)
+				high = cy;
+			if (dy < low)
+				low = dy;
+			if (dy > high)
+				high = dy;
+			if (high < b.minY || low > b.maxY)
+				return true;
+		}
+		use(texture, fontKind);
+		if (runKind != SPRITES)
+			startKind(SPRITES);
+		var s = sprites;
+		var at = s.reserve(1);
+		#if js
+		if (s.bytes != spriteBytes) {
+			spriteBytes = s.bytes;
+			spriteFloats = new js.lib.Float32Array(s.bytes.getData());
+			spriteInts = new js.lib.Int32Array(s.bytes.getData());
+		}
+		#end
+		putSprite(at, ax);
+		putSprite(at + 4, ay);
+		putSprite(at + 8, bx);
+		putSprite(at + 12, by);
+		putSprite(at + 16, cx);
+		putSprite(at + 20, cy);
+		putSprite(at + 24, dx);
+		putSprite(at + 28, dy);
+		putSprite(at + 32, u0);
+		putSprite(at + 36, v0);
+		putSprite(at + 40, u1);
+		putSprite(at + 44, v1);
+		// 0xAARRGGBB as its red, green, blue and alpha bytes in order, one little-endian int.
+		putSpriteInt(at + 48, (color & 0xff00ff00) | (color >> 16 & 255) | (color & 255) << 16);
+		var d = customData;
+		putSpriteInt(at + 52, (d & 0xff00ff00) | (d >> 16 & 255) | (d & 255) << 16);
+		return true;
+	}
+
+	// Writes a float into the sprites' records: natively without Bytes.setFloat's bounds check and call, in a page through the float view.
+	inline function putSprite(at:Int, value:Float):Void {
+		#if cpp
+		untyped __global__.__hxcpp_memory_set_float(sprites.bytes.getData(), at, value);
+		#elseif js
+		spriteFloats[at >> 2] = value;
+		#else
+		sprites.bytes.setFloat(at, value);
+		#end
+	}
+
+	// Writes a little-endian int into the sprites' records, as putSprite writes a float.
+	inline function putSpriteInt(at:Int, value:Int):Void {
+		#if cpp
+		untyped __global__.__hxcpp_memory_set_i32(sprites.bytes.getData(), at, value);
+		#elseif js
+		spriteInts[at >> 2] = value;
+		#else
+		sprites.bytes.setInt32(at, value);
+		#end
+	}
+
 	// Whether a box in the batch's units, moved by the transform, may be seen; always while culling is off or shaderValues set.
 	function visible(minX:Float, minY:Float, maxX:Float, maxY:Float):Bool {
 		requireOpen();
 		plane.scale = zoom * Math.sqrt(Math.abs(transform.a * transform.d - transform.b * transform.c));
 		if (!culling || shaderValues != null)
 			return true;
-		var t = transform;
+		var t = transform, b = viewBounds;
+		if (t.b == 0 && t.c == 0) {
+			// Unturned: the box's two edges each way, moved.
+			var x0 = t.a * minX + t.tx, x1 = t.a * maxX + t.tx;
+			var y0 = t.d * minY + t.ty, y1 = t.d * maxY + t.ty;
+			return !((x0 > x1 ? x0 : x1) < b.minX
+				|| (x0 < x1 ? x0 : x1) > b.maxX || (y0 > y1 ? y0 : y1) < b.minY || (y0 < y1 ? y0 : y1) > b.maxY);
+		}
 		var x0 = t.a * minX + t.c * minY + t.tx,
 			y0 = t.b * minX + t.d * minY + t.ty;
 		var x1 = t.a * maxX + t.c * minY + t.tx,
@@ -741,18 +911,28 @@ class Batch2D {
 			y2 = t.b * maxX + t.d * maxY + t.ty;
 		var x3 = t.a * minX + t.c * maxY + t.tx,
 			y3 = t.b * minX + t.d * maxY + t.ty;
-		var b = viewBounds;
 		return !(Math.max(Math.max(x0, x1), Math.max(x2, x3)) < b.minX
 			|| Math.min(Math.min(x0, x1), Math.min(x2, x3)) > b.maxX
 			|| Math.max(Math.max(y0, y1), Math.max(y2, y3)) < b.minY
 			|| Math.min(Math.min(y0, y1), Math.min(y2, y3)) > b.maxY);
 	}
 
-	// Records the GPU draw being made, with the names the batch fills.
+	// Ends the GPU draw being made, recording it.
 	function flush():Void {
 		if (!running)
 			return;
 		running = false;
+		record();
+	}
+
+	// Records the GPU draw being made, with the names the batch fills: its vertices, or its sprites as instances of one quad.
+	function record():Void {
+		if (runKind == SPRITES) {
+			recordSprites();
+			return;
+		}
+		if (runKind == EMPTY)
+			return;
 		var count = stream.count - runFirst;
 		if (count <= 0)
 			return;
@@ -769,6 +949,37 @@ class Batch2D {
 		d.first = runFirst;
 		d.count = count;
 		values.capture(d.snapshot);
+		renderer.record(d);
+	}
+
+	// Records the run of sprites being made: instances of one quad, a record each, through the sprite stage.
+	function recordSprites():Void {
+		var count = sprites.count - runFirst;
+		if (count <= 0)
+			return;
+		if (quadCorners == 0) {
+			var corners = haxe.io.Bytes.alloc(16);
+			for (c in 0...4)
+				corners.setFloat(c * 4, c);
+			quadCorners = renderer.staticBuffer(corners, false);
+			var indices = haxe.io.Bytes.alloc(24);
+			for (k => i in [0, 1, 2, 0, 2, 3])
+				indices.setInt32(k * 4, i);
+			quadIndices = renderer.staticBuffer(indices, true);
+		}
+		spriteValues.writeTexture(spriteBaseColorTexture, runTexture, runSampling);
+		spriteValues.writeMatrix(spriteModelViewProjection, viewProjection);
+		spriteValues.writeInt(spriteLinearTarget, linear ? 1 : 0);
+		spriteValues.writeInt(spriteFontKind, runFontKind);
+		var d = renderer.makeDraw(renderer.pipelineFor(spriteShader, renderer.stateFor(Triangles, true, blend, Off, false, None, All), spriteLayout));
+		d.setBuffer(0, quadCorners);
+		d.setBuffer(1, 0, sprites);
+		d.indexBuffer = quadIndices;
+		d.first = 0;
+		d.count = 6;
+		d.firstInstance = runFirst;
+		d.instanceCount = count;
+		spriteValues.capture(d.snapshot);
 		renderer.record(d);
 	}
 	#end
