@@ -89,7 +89,20 @@ class RTextures {
 		@param posY  The y.
 		@param tint  The color it is multiplied by; `WHITE` keeps it as it is. */
 	static function DrawTexture(texture:Texture2D, posX:Int, posY:Int, tint:Color):Void {
-		quad(texture, 0, 0, texture.width, texture.height, posX, posY, texture.width, texture.height, 0, 0, 0, tint);
+		// A texture of no size, or of a negative one, through quad, which handles each.
+		var w = texture.width, h = texture.height;
+		if (w <= 0 || h <= 0) {
+			quad(texture, 0, 0, w, h, posX, posY, w, h, 0, 0, 0, tint);
+			return;
+		}
+		if (texture.id == 0)
+			return;
+		// The whole texture unturned: the corners and rectangle quad works out for it, the same numbers without its arithmetic. The frame's
+		// quad and the handle are inlined here alone, as this is the draw a program makes most often.
+		var x:Float = posX, y:Float = posY;
+		var v0 = texture.flipped ? 1. : 0., v1 = texture.flipped ? 0. : 1.;
+		var handle = inline Textures.handle(texture.id);
+		inline Runtime.frame.quad(handle, x, y, x, y + h, x + w, y + h, x + w, y, 0, v0, 1, v1, tint);
 	}
 
 	/** Draws a texture, its top-left corner at a point.
