@@ -652,3 +652,19 @@ Why things are the way they are, numbered, in order.
     the vertex arrays cut the GL calls a draw from 27 to 5 and gave Vulkan a quarter; over GL they moved nothing alone, which is how the
     upload was found. Rejected: one ring buffer a frame bound by range (Vulkan 4x slower, GL unchanged), rotating the skinning palette's
     textures (unchanged), and plain uniforms for small blocks (a second shader dialect).
+
+49. **helix-render's shadows are biased in texels, in the shader, and linked only by a light casting.** Each map is a layer of one
+    shadow map a `begin`, drawn by its own pass before the frame's others, its casters drawn depth alone by the color draw's vertex
+    stage (skinned and instanced alike) and, for a cut-out material, a fragment stage that discards by `alphaCutoff`. The lit stage
+    converts the bias where it reads: a texel's width in the world at the point comes from the map's matrix and size, the lookup moves
+    off the surface along its normal by `normalOffset` texels (more where the light grazes) and toward the light by `bias` plus
+    `slopeBias` times the slope, capped at 3, so the same settings hold for any map size, reach, or a spot's distance. The earlier C
+    frameworks found that a bias in depth units (0.0015) lifted shadows off feet and lost thin parts, which is why the pipeline's depth
+    bias goes unused. A directional light's cascades split `distance` by `cascadeSplit`, each a square around its slice's sphere,
+    snapped to its texels, so edges hold still as the camera moves and turns. Only one vec4 holds cascade ends, so the first directional
+    light following the camera picks by the view's depth and another picks the first map that holds the point. `shadowParams` packs the
+    first map, the count, the kind and the radius into its x, as the uniform table leaves four floats for seven values. A spot's or a
+    point's near plane is a fixed share of its far one, so the shader reads the fade's distance from the depth alone. `castsShadow` is a
+    property whose setter installs the work, so a program casting nothing links none of it. Rejected: the pipeline's depth bias (depth
+    units, the earlier frameworks' failure), a cube map for a point light (six layers of the one array keep one sampler), and a uniform
+    more in the block (the agreed table is the spec).

@@ -26,13 +26,20 @@ abstract class Light3D {
 
 	/** Gets or sets a value indicating whether it casts shadows: false until set, as a shadow map costs a pass and memory. Ignored for a
 		hemisphere light. */
-	public var castsShadow:Bool = false;
+	public var castsShadow(default, set):Bool = false;
 
 	/** Gets how its shadows are made, while it casts them. */
 	public final shadow = new LightShadow3D();
 
 	function new() {
 		BatchLighting.install();
+	}
+
+	// Setting it links the shadow work, so a program casting none carries none of it.
+	function set_castsShadow(value:Bool):Bool {
+		if (value)
+			BatchShadows.install();
+		return castsShadow = value;
 	}
 
 	function set_intensity(value:Float):Float {

@@ -1557,7 +1557,7 @@ A directional, spot or point light casts shadows while `castsShadow` is set, as 
 ```haxe
 var color:Int
 var intensity(default, set):Float
-var castsShadow:Bool
+var castsShadow(default, set):Bool
 final shadow:LightShadow3D
 ```
 

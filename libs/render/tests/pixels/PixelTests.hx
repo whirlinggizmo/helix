@@ -4,6 +4,7 @@ import helix.math.Matrix3D;
 import helix.platform.IEvents;
 import helix.platform.IGraphics;
 import helix.platform.ISystem;
+import helix.platform.Sampling;
 import helix.platform.IWindow;
 import helix.render.*;
 import helix.services.fonts.Font2D;
@@ -23,14 +24,14 @@ typedef PixelCase = {
 	final check:Pixels->Void;
 }
 
-/** Checks helix-render's stages 1 and 2 on the GPU: each case draws a frame through the renderer and its batches into a render target, reads it
+/** Checks helix-render's stages 1 to 3 on the GPU: each case draws a frame through the renderer and its batches into a render target, reads it
 	back with `IGraphics.readPixels`, and checks its pixels against what the API says they are: 2D colors and a tint multiplied as stored,
 	alpha blending as stored, shapes from a white texel, text placed by its ascent, a distance-field font's edge sharp, a program's fragment stage reading `customData`, a
 	target copied on write, a clear recorded in order, a viewport and a scissor; in 3D, an unlit mesh multiplied as stored and one tone
 	mapped (Neutral), instanced copies tinted, a mesh skinned by its bone texture, points of a pixel and large ones, a wide line, a
 	triangle's edges, two views, and a program's material shader; lit materials (Lambert, Phong, MetallicRoughness, emissive) under
 	each light kind and an ambient light, their colors computed from three.js's formulas, and a mesh drawn as large points, instanced
-	too; and a render target's own sample count, a target with depth drawn
+	too; shadows of a directional, a spot and a point light, two cascades, a receiver and a caster turned off and a cut-out caster; and a render target's own sample count, a target with depth drawn
 	with one sample and one without depth multisampled where the GPU can.
 
 	Built from the hxml files beside it: in a page it runs on WebGL2, natively on GL, or SDL_GPU with `-D sdl_gpu`. It ends with
@@ -513,6 +514,7 @@ class PixelTests {
 			}
 		];
 		litCases(threeD, small);
+		shadowCases(threeD);
 		// Batch draws tone mapped: a rectangle and a wide line, white through Neutral as the tone-mapped mesh shows it.
 		cases.push({
 			name: "3D: batch draws tone mapped, narrow and wide",
@@ -773,6 +775,192 @@ class PixelTests {
 				expect(p, 32, 32, 0x000000, "the quad's middle, drawn as its corners");
 				expect(p, 5, 53, 0xff0000, "the first copy's corner, red");
 				expect(p, 37, 53, 0x00ff00, "the second's, green");
+			}
+		});
+	}
+
+	// A view in the target's pixels, y down, seeing z from -100 (farthest) to 100 (nearest), as setFromScreen does but deeper.
+	static function deepView():View3D {
+		var v = new View3D();
+		Matrix3D.fromOrthographic(0, SIZE, SIZE, 0, -100, 100, v.projectionMatrix);
+		return v;
+	}
+
+	// The light a point or spot light gives a pixel of the plane z 0 facing +z, over π: its intensity over the distance squared, times the
+	// cosine at the surface.
+	static function diffuseFrom(x:Int, y:Int, lx:Float, ly:Float, lz:Float, intensity:Float):Float {
+		var dx = lx - (x + .5),
+			dy = ly - (y + .5),
+			d2 = dx * dx + dy * dy + lz * lz;
+		return intensity / d2 * lz / Math.sqrt(d2) / Math.PI;
+	}
+
+	/** Adds the cases of shadows: a box over a plane under each kind of light, the plane lit by an ambient light too, so a texel in the
+		shadow keeps the ambient light alone and one outside it both; two cascades; a plane not receiving, a box not casting, and a caster
+		cut by its alphaCutoff. */
+	static function shadowCases(threeD:RenderTarget2D):Void {
+		var facing = quad(0, 0, 64, 64);
+		facing.indices = [0, 2, 1, 0, 3, 2];
+		var plane = renderer.createMesh(facing);
+		var half = quad(0, 0, 32, 64);
+		half.indices = [0, 2, 1, 0, 3, 2];
+		var halfPlane = renderer.createMesh(half);
+		var box = renderer.createMesh(Mesh3D.fromBox(12, 16, 4));
+		var small = renderer.createMesh(Mesh3D.fromBox(8, 16, 4));
+		var sheet = renderer.createMesh(quad(0, 0, 16, 16));
+		// Two texels: the left one clear, the right one opaque.
+		var halves = Image.filled(2, 1, 0x00ffffff).setPixel(1, 0, 0xffffffff);
+		var cutTexture = renderer.createTexture(halves);
+		cutTexture.sampling = Sampling.NEAREST;
+		var ambient = decode(0x40);
+		// The sun, along (1, 0, -1): a shadow falls 10 to 14 pixels toward +x of a caster 10 to 14 above the plane.
+		function sun():DirectionalLight3D {
+			var l = new DirectionalLight3D();
+			l.direction.set(1, 0, -1);
+			l.castsShadow = true;
+			l.shadow.mapSize = 1024;
+			return l;
+		}
+		// Draws the plane and the box 10 to 14 above it, x 8 to 20, y 24 to 40, under a light and the ambient light.
+		function scene(light:Light3D, ?floor:Material3D, ?caster:Material3D):RenderTarget2D {
+			renderer.beginTarget(threeD, 0xff000000);
+			batch3D.lights.resize(0);
+			batch3D.lights.push(light);
+			batch3D.environment = new Environment3D();
+			batch3D.environment.setAmbient(0xff404040, Math.PI);
+			batch3D.beginViews([deepView()]);
+			batch3D.drawMesh(plane, floor == null ? litMaterial(Lambert, 0xffffffff) : floor, new Matrix3D());
+			batch3D.drawMesh(box, caster == null ? litMaterial(Lambert, 0xffffffff) : caster, Matrix3D.fromTranslation(14, 32, 12));
+			batch3D.end();
+			batch3D.lights.resize(0);
+			batch3D.environment = new Environment3D();
+			renderer.endTarget();
+			return threeD;
+		}
+		var sunLit = ambient + Math.cos(Math.PI / 4);
+		cases.push({
+			name: "3D shadows: a directional light's",
+			draw: () -> scene(sun()),
+			check: p -> {
+				expect(p, 27, 32, grey(ambient), "in the box's shadow: the ambient light alone");
+				expect(p, 48, 32, grey(sunLit), "past it: the sun's share too");
+				expect(p, 4, 32, grey(sunLit), "before it");
+				expect(p, 27, 50, grey(sunLit), "beside it");
+			}
+		});
+		// A spot and a point light at (0, 32, 30), shining toward (32, 32, 0): the box's shadow falls from x 12 to 37.
+		var intensity = 3000 * Math.PI;
+		cases.push({
+			name: "3D shadows: a spot light's",
+			draw: () -> {
+				var spot = new SpotLight3D();
+				spot.position.set(0, 32, 30);
+				spot.direction.set(32, 0, -30);
+				spot.setCone(.7, .8);
+				spot.intensity = intensity;
+				spot.castsShadow = true;
+				spot.shadow.mapSize = 1024;
+				spot.shadow.distance = 100;
+				scene(spot);
+			},
+			check: p -> {
+				expect(p, 28, 32, grey(ambient), "in the box's shadow: the ambient light alone");
+				expect(p, 44, 32, grey(ambient + diffuseFrom(44, 32, 0, 32, 30, intensity)), "past it: the spot's share too");
+			}
+		});
+		cases.push({
+			name: "3D shadows: a point light's, its six faces",
+			draw: () -> {
+				var point = new PointLight3D();
+				point.position.set(0, 32, 30);
+				point.intensity = intensity;
+				point.castsShadow = true;
+				point.shadow.mapSize = 512;
+				point.shadow.distance = 100;
+				scene(point);
+			},
+			check: p -> {
+				expect(p, 28, 32, grey(ambient), "in the box's shadow, on the face below the light: the ambient light alone");
+				expect(p, 44, 32, grey(ambient + diffuseFrom(44, 32, 0, 32, 30, intensity)), "past it, on the face toward +x: lit");
+				expect(p, 32, 8, grey(ambient + diffuseFrom(32, 8, 0, 32, 30, intensity)), "beside it, lit");
+			}
+		});
+		cases.push({
+			name: "3D shadows: two cascades, a plane in each",
+			draw: () -> {
+				var light = sun();
+				light.shadow.cascadeCount = 2;
+				light.shadow.cascadeSplit = 0;
+				// Evenly from -100 to 50: the first cascade ends at -25, so the plane at z 40 is in it and the one at z 0 in the second.
+				renderer.beginTarget(threeD, 0xff000000);
+				batch3D.lights.push(light);
+				batch3D.environment = new Environment3D();
+				batch3D.environment.setAmbient(0xff404040, Math.PI);
+				batch3D.beginViews([deepView()]);
+				var floor = litMaterial(Lambert, 0xffffffff);
+				batch3D.drawMesh(halfPlane, floor, new Matrix3D());
+				batch3D.drawMesh(halfPlane, floor, Matrix3D.fromTranslation(32, 0, 40));
+				batch3D.drawMesh(small, floor, Matrix3D.fromTranslation(6, 32, 12));
+				batch3D.drawMesh(small, floor, Matrix3D.fromTranslation(38, 32, 52));
+				batch3D.end();
+				batch3D.lights.resize(0);
+				batch3D.environment = new Environment3D();
+				renderer.endTarget();
+				threeD;
+			},
+			check: p -> {
+				expect(p, 18, 32, grey(ambient), "the near plane's shadow, in the second cascade");
+				expect(p, 28, 32, grey(sunLit), "lit past it");
+				expect(p, 50, 32, grey(ambient), "the far plane's, in the first");
+				expect(p, 60, 32, grey(sunLit), "lit past it");
+			}
+		});
+		cases.push({
+			name: "3D shadows: a box not casting them",
+			draw: () -> {
+				var glass = litMaterial(Lambert, 0xffffffff);
+				glass.castShadows = false;
+				scene(sun(), null, glass);
+			},
+			check: p -> {
+				expect(p, 27, 32, grey(sunLit), "where the shadow would be: lit");
+			}
+		});
+		cases.push({
+			name: "3D shadows: a plane not receiving them",
+			draw: () -> {
+				var floor = litMaterial(Lambert, 0xffffffff);
+				floor.receiveShadows = false;
+				scene(sun(), floor);
+			},
+			check: p -> {
+				expect(p, 27, 32, grey(sunLit), "where the shadow would be: lit");
+			}
+		});
+		cases.push({
+			name: "3D shadows: a caster cut by its alphaCutoff",
+			draw: () -> {
+				// A sheet 20 above the plane, x 4 to 20, its left half clear: only the right half's shadow, x 32 to 40.
+				renderer.beginTarget(threeD, 0xff000000);
+				batch3D.lights.push(sun());
+				batch3D.environment = new Environment3D();
+				batch3D.environment.setAmbient(0xff404040, Math.PI);
+				batch3D.beginViews([deepView()]);
+				batch3D.drawMesh(plane, litMaterial(Lambert, 0xffffffff), new Matrix3D());
+				var leaf = litMaterial(Lambert, 0xffffffff);
+				leaf.baseColorTexture = cutTexture;
+				leaf.alphaCutoff = .5;
+				batch3D.drawMesh(sheet, leaf, Matrix3D.fromTranslation(4, 24, 20));
+				batch3D.end();
+				batch3D.lights.resize(0);
+				batch3D.environment = new Environment3D();
+				renderer.endTarget();
+				threeD;
+			},
+			check: p -> {
+				expect(p, 8, 32, grey(sunLit), "under the clear half, seen through it: lit");
+				expect(p, 28, 32, grey(sunLit), "where the clear half's shadow would be: lit");
+				expect(p, 36, 32, grey(ambient), "the opaque half's shadow");
 			}
 		});
 	}
