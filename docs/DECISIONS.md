@@ -671,3 +671,14 @@ Why things are the way they are, numbered, in order.
     text, a few hundred bytes compressed, kept in by default since a build chooses once and a game with lights usually wants it). Rejected: the pipeline's depth bias (depth
     units, the earlier frameworks' failure), a cube map for a point light (six layers of the one array keep one sampler), and a uniform
     more in the block (the agreed table is the spec).
+
+50. **A page draws its canvas at the canvas's own size, logical by default, the device's ratio on request.** The page window sized its
+    drawing buffer to the viewport times the device's pixel ratio whatever the canvas's box, so a 800 x 450 canvas on a phone drew
+    1715 x 3197 pixels, 15 times its own, and the bunnymark took 59 ms a frame there against raylib wasm's 27 (found on the moto g
+    over adb, 2026-11-05); at 800 x 450 it takes 19. Now the buffer is the canvas's CSS box (the viewport's where the page gives it
+    none) times a ratio its options choose: 1 until `DomWindowAdapterOptions.highDpi`, then the device's, which `pixelRatio` reports so
+    the services' screen lays out right. helix-raylib sets it from `FLAG_WINDOW_HIGHDPI` at `InitWindow`: without the flag a page looks
+    as raylib's web build does, soft on a dense screen and cheap; with it the canvas is sharp at the ratio squared in pixels filled,
+    as raylib's desktop build honours the flag. Rejected: the device's ratio by default (crisp, but three to four times the fill on
+    every phone for every program, and not what raylib's page does), and a build define (the program decides at run time, as the API
+    has it).

@@ -457,7 +457,11 @@ class Runtime {
 		var flags = helix.raylib.modules.RCore.configFlags;
 		var samples = flags & helix.raylib.Raylib.FLAG_MSAA_4X_HINT != 0 ? 4 : 1;
 		#if js
-		window = new helix.platform.adapters.window.dom.DomWindowAdapter({canvasId: "canvas"});
+		// The page draws at the canvas's logical size, as raylib's web build does, unless FLAG_WINDOW_HIGHDPI asks for the device's ratio.
+		window = new helix.platform.adapters.window.dom.DomWindowAdapter({
+			canvasId: "canvas",
+			highDpi: flags & helix.raylib.Raylib.FLAG_WINDOW_HIGHDPI != 0
+		});
 		eventsAdapter = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
 		events = early = new EarlyEvents(eventsAdapter);
 		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvasId: "canvas", msaaSampleCount: samples});
