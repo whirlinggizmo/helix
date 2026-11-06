@@ -328,6 +328,25 @@ class Textures {
 		return e != null && e.cube != null;
 	}
 
+	/** Moves a render texture to the GPU texture a pass into it went to (`Frame.toTarget`).
+
+		@param gpu  The handle it had.
+		@param moved  The handle it has now. */
+	public static function moved(gpu:Int, moved:Int):Void {
+		for (id => e in entries)
+			if (e.gpu == gpu) {
+				e.gpu = moved;
+				if (id < gpus.length)
+					gpus[id] = moved;
+			}
+		var s = samplings.get(gpu);
+		if (s != null) {
+			samplings.remove(gpu);
+			samplings.set(moved, s);
+		}
+		GpuMemory.moved(gpu, moved);
+	}
+
 	/** Returns whether a GPU texture is a cubemap's, so a draw binds it only where a program samples a cube.
 
 		@param gpu  The GPU handle.
@@ -593,7 +612,10 @@ class Textures {
 			return false;
 		dropPicture(e);
 		if (e.gpu != 0) {
-			Runtime.graphics.disposeTexture(e.gpu);
+			if (e.external)
+				Runtime.frame.disposeTarget(e.gpu);
+			else
+				Runtime.graphics.disposeTexture(e.gpu);
 			GpuMemory.freed(e.gpu);
 			samplings.remove(e.gpu);
 			cubeHandles.remove(e.gpu);

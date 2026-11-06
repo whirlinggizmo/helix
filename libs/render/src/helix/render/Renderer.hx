@@ -69,6 +69,9 @@ class Renderer {
 	/** Gets the height of the current pass's viewport, in pixels. 0 outside a frame. */
 	public var viewportHeight(default, null):Int = 0;
 
+	/** Gets one opaque white texel, which the batches draw shapes and missing textures with, and a layer may too. */
+	public final white:Texture2D;
+
 	/** Gets a value indicating whether a frame is being recorded: from `beginFrame` until `endFrame`. */
 	public var inFrame(default, null):Bool = false;
 
@@ -444,7 +447,7 @@ class Renderer {
 		var kept:Array<RenderCommand> = [];
 		for (c in pass.commands)
 			switch c {
-				case Draw(_):
+				case Draw(_) | Call(_):
 				case _:
 					kept.push(c);
 			}
@@ -488,6 +491,30 @@ class Renderer {
 		resetViewportState();
 	}
 
+	/** Records a call into the current pass, run at this point as the frame is drawn, for a layer's own GPU work between the batches'
+		draws: inside the pass, its draws through the platform's `IGraphics`.
+
+		It is dropped with the draws around it by `clearTarget`. A viewport or clip it sets holds for what is drawn after it.
+		@param call  The function.
+		@throws String  No frame being recorded. */
+	public function recordCall(call:() -> Void):Void {
+		if (!inFrame)
+			throw "helix-render: recordCall with no frame being recorded";
+		flushOpen();
+		pass.commands.push(Call(call));
+	}
+
+	/** Records a call replacing texels, run between the frame's passes in the order recorded: after the passes begun before it, and before
+		the rest of the pass it is called in and those after, so `IGraphics.updateTexture` runs outside a pass.
+
+		@param call  The function.
+		@throws String  No frame being recorded. */
+	public function recordUpdate(call:() -> Void):Void {
+		if (!inFrame)
+			throw "helix-render: recordUpdate with no frame being recorded";
+		updateBeforePass(call);
+	}
+
 	/** Clips the following draws to a rectangle of the current pass, until `resetScissor` or the pass's end.
 
 		It may be set while a batch is open; the draws before it are not clipped by it.
@@ -515,6 +542,18 @@ class Renderer {
 		flushOpen();
 		scissored = false;
 		pass.commands.push(ResetScissor);
+	}
+
+	/** Makes its own GPU things again after the GPU's context was lost and given back (`Event.GraphicsRestored`): the white texture, and
+		the static buffers the batches made, again as they are next drawn. The streams, shaders and pipelines keep their handles, remade by the
+		platform. What the program made is the program's to make again. It is called outside a frame. */
+	public function graphicsRestored():Void {
+		var texel = Bytes.alloc(4);
+		texel.fill(0, 4, 255);
+		white.restored(graphics.createTexture(1, 1, [texel]));
+		staticBuffers.resize(0);
+		copyCorners = 0;
+		restores++;
 	}
 
 	/** Frees everything made through it that the program hasn't disposed, then its own textures and buffers.
@@ -546,12 +585,9 @@ class Renderer {
 		programs.dispose();
 	}
 
-	// The shaders built on the GPU, the white texture every batch draws shapes and missing textures with.
+	// The shaders built on the GPU.
 	@:allow(helix.render)
 	final programs:ShaderPrograms;
-
-	@:allow(helix.render)
-	final white:Texture2D;
 
 	// What was made through it and not disposed, each with its dispose.
 	@:allow(helix.render)
@@ -586,6 +622,10 @@ class Renderer {
 	@:allow(helix.render)
 	var openFlush:Null<() -> Void> = null;
 
+	// How many times the context came back, so a batch makes its static buffers again.
+	@:allow(helix.render)
+	var restores = 0;
+
 	// The frame's vertex streams, by name; static buffers the renderer made; data textures (bones).
 	final streamsByName = new Map<String, RenderStream>();
 	final streams:Array<RenderStream> = [];
@@ -600,6 +640,10 @@ class Renderer {
 	// Render targets' textures retired by a copy on write or a resize, by size and format, each with the frame it was last used in.
 	final pool = new Map<String, Array<{handle:Int, frame:Int}>>();
 	final retiring:Array<{key:String, handle:Int}> = [];
+
+	// A pass's handle when it is a pass of updates alone, no pass on the GPU.
+	static inline final UPDATES = -1;
+
 	// The copy pass's shader, values and corner buffer, made when a target is first copied on write.
 	var copyFill:Null<RenderFill> = null;
 	var copyCorners = 0;
@@ -633,10 +677,19 @@ class Renderer {
 
 	@:allow(helix.render)
 	function updateBeforePass(update:() -> Void):Void {
-		if (inFrame)
-			pass.updates.push(update);
-		else
+		if (!inFrame)
 			update();
+		else if (pass != screen)
+			pass.updates.push(update);
+		else {
+			// The screen's pass runs last: a pass of updates alone keeps the update ahead of the target passes begun after it.
+			var last = passes.length > 0 ? passes[passes.length - 1] : null;
+			if (last == null || last.handle != UPDATES) {
+				last = new RenderPass(null, UPDATES, 0, 0, null);
+				passes.push(last);
+			}
+			last.updates.push(update);
+		}
 	}
 
 	function resetViewportState():Void {
@@ -855,6 +908,8 @@ class Renderer {
 	function run(p:RenderPass):Void {
 		for (u in p.updates)
 			u();
+		if (p.handle == UPDATES)
+			return;
 		if (p.begin != null)
 			p.begin(graphics);
 		else if (p.target == null)
@@ -872,6 +927,8 @@ class Renderer {
 				case Draw(d):
 					graphics.draw(d.pipeline.built.handle, d.resolveBuffers(), null, d.indexBuffer, d.first, d.count, d.firstInstance, d.instanceCount,
 						d.snapshot.textures, d.snapshot.samplings, d.snapshot.uniforms);
+				case Call(call):
+					call();
 				case Viewport(x, y, w, h):
 					graphics.applyViewport(x, p.height - y - h, w, h);
 				case Scissor(x, y, w, h):

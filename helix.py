@@ -72,7 +72,7 @@ RAYLIB_TESTS=('CountTests','DropTests','AudioStreamTests','RefusalTests','AsyncT
 
 def raylib_tests(native):
     """helix-raylib's tests on Node, and with native in hxcpp: on graphics of their own, without a window."""
-    base=[a for lib in ('helix-log','helix-math','helix-geometry','helix-formats','helix-platform','helix-services') for a in ('-lib',lib)]
+    base=[a for lib in ('helix-log','helix-math','helix-geometry','helix-formats','helix-platform','helix-services','helix-render') for a in ('-lib',lib)]
     base+=['-cp','engines/raylib/src','--macro','helix.raylib.internal.Metadata.register()','-cp','engines/raylib/tests','-cp','libs/services/tests']
     for main in RAYLIB_TESTS:
         run(['haxe',*base,'-main',main,'-js',f'build/tests/{main}.js','-D','js-es=6'])

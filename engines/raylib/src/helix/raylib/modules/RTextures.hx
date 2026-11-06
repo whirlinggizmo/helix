@@ -454,7 +454,7 @@ class RTextures {
 		@return  The render texture. */
 	static function LoadRenderTexture(width:Int, height:Int):RenderTexture2D {
 		// raylib 5.5's render textures: a depth buffer and one sample, however the window is multisampled.
-		var target = GpuMemory.texture(Runtime.graphics.createRenderTarget(width, height, helix.platform.TextureFormat.Rgba8, true, 1), width * height * 8);
+		var target = GpuMemory.texture(Runtime.frame.createTarget(width, height), width * height * 8);
 		var texture = new Texture2D(Textures.fromHandle(target), width, height);
 		texture.flipped = true;
 		return new RenderTexture(target, texture, new Texture2D(0, width, height));

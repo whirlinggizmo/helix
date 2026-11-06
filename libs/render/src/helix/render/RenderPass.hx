@@ -45,6 +45,9 @@ enum RenderCommand {
 	/** A GPU draw. */
 	Draw(draw:RenderDraw);
 
+	/** A layer's own GPU work (`Renderer.recordCall`). */
+	Call(call:() -> Void);
+
 	/** The rectangle the following draws fill, in the pass's pixels from its top left. */
 	Viewport(x:Int, y:Int, width:Int, height:Int);
 

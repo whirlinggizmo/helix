@@ -23,7 +23,7 @@ class SpritesTests {
 	static function records():Array<Float> {
 		var frame = Runtime.frame;
 		var out = [];
-		for (s in 0...frame.sprites) {
+		for (s in 0...frame.spriteCount) {
 			var at = s * 52;
 			for (i in 0...12)
 				out.push(frame.spriteData.getFloat(at + i * 4));
@@ -59,7 +59,7 @@ class SpritesTests {
 			MatrixMultiply(MatrixRotateZ(30 * Math.PI / 180), MatrixTranslate(5, 7, 0)),
 			MatrixMultiply(MatrixScale(2, 3, 1), MatrixTranslate(1, 1, 0))
 		], BLUE);
-		check(Runtime.frame.sprites == 3, 'three copies are three records, not ${Runtime.frame.sprites}');
+		check(Runtime.frame.spriteCount == 3, 'three copies are three records, not ${Runtime.frame.spriteCount}');
 		var instanced = records();
 		DrawTexturePro(texture, part, new Rectangle(10, 20, 8, 4), new Vector2(0, 0), 0, BLUE);
 		DrawTexturePro(texture, part, new Rectangle(5, 7, 8, 4), new Vector2(0, 0), 30, BLUE);
@@ -75,9 +75,9 @@ class SpritesTests {
 
 		// No matrices draw nothing; a texture that isn't one draws nothing.
 		DrawTextureInstanced(texture, part, [], WHITE);
-		check(Runtime.frame.sprites == 0, "no copies, no records");
+		check(Runtime.frame.spriteCount == 0, "no copies, no records");
 		DrawTextureInstanced(new Texture2D(), part, [MatrixIdentity()], WHITE);
-		check(Runtime.frame.sprites == 0, "an empty texture draws nothing");
+		check(Runtime.frame.spriteCount == 0, "an empty texture draws nothing");
 		UnloadTexture(texture);
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});

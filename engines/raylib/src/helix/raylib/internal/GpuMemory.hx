@@ -59,6 +59,18 @@ class GpuMemory {
 		}
 	}
 
+	/** Counts a texture as held under another handle (a render texture moved by a copy on write).
+
+		@param handle  The handle it had.
+		@param moved  The handle it has now. */
+	public static function moved(handle:Int, moved:Int):Void {
+		var bytes = textures.get(handle);
+		if (bytes != null) {
+			textures.remove(handle);
+			textures.set(moved, bytes);
+		}
+	}
+
 	/** Returns bytes as megabytes with one decimal, for the stats: "1.5", capped at 9999.9.
 
 		@param bytes  The bytes.

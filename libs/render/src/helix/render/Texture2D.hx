@@ -109,6 +109,14 @@ class Texture2D {
 		}
 	}
 
+	// Takes the handle its texture was made again with, after a lost context.
+
+	@:allow(helix.render)
+	function restored(handle:Int):Void {
+		this.handle = handle;
+		sharedTexture.texture = handle;
+	}
+
 	// The renderer that made it, and whether it was made with mipmaps.
 	@:allow(helix.render)
 	var renderer:Null<Renderer> = null;

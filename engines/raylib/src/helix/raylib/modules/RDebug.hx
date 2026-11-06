@@ -243,8 +243,6 @@ class RDebug {
 		var drawn = 0, tris = 0, switched = 0, pipeline = -1;
 		var before:Null<Array<Int>> = null;
 		for (p in frame.passes) {
-			if (p.target == -1)
-				continue;
 			for (d in p.draws) {
 				if (d.count == 0)
 					continue;

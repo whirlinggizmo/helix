@@ -50,7 +50,7 @@ URL = 'https://github.com/raysan5/raylib/archive/refs/tags/{}.tar.gz'
 # What a C reference links besides libraylib.a: raylib's desktop build on Linux (GLFW over X11).
 LINK = ['-lGL', '-lm', '-lpthread', '-ldl', '-lrt', '-lX11']
 # The libraries a value harness builds with (helix-raylib itself from its source, without its program loop).
-LIBRARIES = ['helix-log', 'helix-math', 'helix-geometry', 'helix-formats', 'helix-platform', 'helix-services']
+LIBRARIES = ['helix-log', 'helix-math', 'helix-geometry', 'helix-formats', 'helix-platform', 'helix-services', 'helix-render']
 TIMEOUT = 300
 # The targets a value suite's harness runs on, unless its manifest names others (targets): a suite whose functions need what one target
 # lacks (the native font rasterizer) runs on the other alone, and one needing a browser (Web Audio's decoder) names page, the harness

@@ -51,10 +51,10 @@ class RenderTests {
 		return new Font2D(Coverage, 10, 8, -2, 2, Image.filled(64, 64, 0xffffffff), glyphs);
 	}
 
-	// Whether a draw is a Batch2D run of sprites: instances of one quad's four corners, a 56-byte record each.
+	// Whether a draw is a Batch2D run of sprites: instances of one quad's four corners, a 52-byte record each.
 	static function isSprites(d:Dynamic):Bool {
 		var buffers:Array<VertexBuffer> = d.pipeline.buffers;
-		return buffers.length == 2 && buffers[0].stride == 4 && buffers[1].stride == 56 && buffers[1].instanced;
+		return buffers.length == 2 && buffers[0].stride == 4 && buffers[1].stride == 52 && buffers[1].instanced;
 	}
 
 	// The vertices a draw makes as triangles: a run of sprites' six a quad, its first, second and third corners then its first, third
@@ -62,13 +62,14 @@ class RenderTests {
 	static function vertexCount(d:Dynamic):Int
 		return isSprites(d) ? (d.instanceCount : Int) * 6 : (d.count : Int);
 
-	// Where a run of sprites' record holds a part of a vertex (0 x, 1 y, 2 u, 3 v), the vertex counted as its triangles make them.
+	// Where a run of sprites' record holds a part of a vertex (0 x, 1 y, 2 u, 3 v), the vertex counted as a quad's corners round it from
+	// its top left to the right, a record holding them the other way round.
 	static function spriteAt(d:Dynamic, i:Int, part:Int):Int {
 		var quad = Std.int(i / 6), corner = [0, 1, 2, 0, 2, 3][i % 6];
-		var at:Int = (d.firstInstance + quad) * 56;
+		var at:Int = (d.firstInstance + quad) * 52;
 		return switch part {
-			case 0: at + corner * 8;
-			case 1: at + corner * 8 + 4;
+			case 0: at + [0, 3, 2, 1][corner] * 8;
+			case 1: at + [0, 3, 2, 1][corner] * 8 + 4;
 			case 2: at + (corner == 1 || corner == 2 ? 40 : 32);
 			case _: at + (corner < 2 ? 36 : 44);
 		}
@@ -282,8 +283,6 @@ class RenderTests {
 			g.draws.length);
 		var d = g.draws[0];
 		check(isSprites(d) && vertexCount(d) == 18 && near(vertexX(d, 12, 24), 75), "three quads, the third moved by the transform");
-		check(d.instances.get((d.firstInstance + 1) * 56 + 52) == 0x22 && d.instances.get((d.firstInstance + 1) * 56 + 55) == 0x11,
-			"customData's bytes in the record");
 		check(g.draws[1].textures[0] == sheet.handle && isSprites(g.draws[1]) && vertexCount(g.draws[1]) == 12,
 			"a filled rectangle drawn from the sheet's white texel joins the sprites' GPU draw");
 		check(near(vertexU(g.draws[1], 0), 63.5 / 64), "a shape reads the white texel's center");

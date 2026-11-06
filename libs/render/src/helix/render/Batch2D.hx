@@ -174,34 +174,8 @@ class Batch2D {
 					]
 				}
 			]);
-		if (spriteLayout == null)
-			spriteLayout = new ShaderVertexLayout([
-				{stride: 4, placements: [{name: "spriteCorner", offset: 0}]},
-				{
-					stride: SPRITE_BYTES,
-					instanced: true,
-					placements: [
-						{name: "spriteCornersAB", offset: 0},
-						{name: "spriteCornersCD", offset: 16},
-						{name: "spriteRegion", offset: 32},
-						{name: "spriteColor", offset: 48, format: UByte4Norm},
-						{
-							name: "spriteCustomData",
-							offset: 52,
-							format: UByte4Norm,
-							optional: true
-						}
-					]
-				}
-			]);
 		stream = renderer.stream("batch2d", 24, layout);
-		spriteShader = RenderShaders.compileOwn("batch2d-sprite.vert", "batch2d.frag");
-		spriteValues = new ShaderValues(spriteShader);
-		spriteModelViewProjection = spriteShader.getUniform("modelViewProjection");
-		spriteLinearTarget = spriteShader.getUniform("linearTarget");
-		spriteFontKind = spriteShader.getUniform("fontKind");
-		spriteBaseColorTexture = spriteShader.getSampler("baseColorTexture");
-		sprites = renderer.stream("batch2d-sprites", SPRITE_BYTES, spriteLayout);
+		sprites = new SpriteRuns2D(renderer);
 		plane = new PlaneDrawing2D(use, vertex, visible);
 		plane.plainQuad = sprite;
 	}
@@ -575,23 +549,8 @@ class Batch2D {
 	final baseColorTexture:ShaderSampler;
 	final stream:RenderStream;
 	final plane:PlaneDrawing2D;
-	// The sprite path: the shader drawing a quad a record, its values and the names it fills, the stream of records, and the quad they
-	// are instances of, its four corner numbers and six indices (0 until the first run of sprites is drawn).
-	final spriteShader:Shader;
-	final spriteValues:ShaderValues;
-	final spriteModelViewProjection:ShaderUniform;
-	final spriteLinearTarget:ShaderUniform;
-	final spriteFontKind:ShaderUniform;
-	final spriteBaseColorTexture:ShaderSampler;
-	final sprites:RenderStream;
-	var quadCorners = 0;
-	var quadIndices = 0;
-	#if js
-	// The records' bytes, and their floats and ints written through views rather than Bytes' calls; remade when the stream grows.
-	var spriteBytes:Null<haxe.io.Bytes> = null;
-	var spriteFloats:Null<js.lib.Float32Array> = null;
-	var spriteInts:Null<js.lib.Int32Array> = null;
-	#end
+	// The sprite path: a quad a record, drawn as instances of one quad.
+	final sprites:SpriteRuns2D;
 	// The GPU draw being made: whether it holds nothing yet, vertices or sprites, its first vertex or record, texture, sampling, font kind
 	// and the program's values.
 	var running = false;
@@ -621,11 +580,6 @@ class Batch2D {
 	static final identity = new Matrix3D();
 	// The default shader's vertices: x and y, u and v as floats, the color as four bytes, and customData's four bytes it doesn't read.
 	static var layout:Null<ShaderVertexLayout> = null;
-	// The sprite stage's buffers: the quad's corner numbers, and the records, each the four corners' x and y and the texture's u0, v0,
-	// u1 and v1 as floats, the color's four bytes and customData's.
-	static var spriteLayout:Null<ShaderVertexLayout> = null;
-
-	static inline final SPRITE_BYTES = 56;
 	// What the GPU draw being made holds: nothing yet, vertices, or sprites.
 	static inline final EMPTY = 0;
 	static inline final VERTICES = 1;
@@ -841,52 +795,22 @@ class Batch2D {
 			startKind(SPRITES);
 		var s = sprites;
 		var at = s.reserve(1);
-		#if js
-		if (s.bytes != spriteBytes) {
-			spriteBytes = s.bytes;
-			spriteFloats = new js.lib.Float32Array(s.bytes.getData());
-			spriteInts = new js.lib.Int32Array(s.bytes.getData());
-		}
-		#end
-		putSprite(at, ax);
-		putSprite(at + 4, ay);
-		putSprite(at + 8, bx);
-		putSprite(at + 12, by);
-		putSprite(at + 16, cx);
-		putSprite(at + 20, cy);
-		putSprite(at + 24, dx);
-		putSprite(at + 28, dy);
-		putSprite(at + 32, u0);
-		putSprite(at + 36, v0);
-		putSprite(at + 40, u1);
-		putSprite(at + 44, v1);
+		// Round the quad the other way from how it arrives, as a record's texture rectangle is read.
+		s.writeFloat(at, ax);
+		s.writeFloat(at + 4, ay);
+		s.writeFloat(at + 8, dx);
+		s.writeFloat(at + 12, dy);
+		s.writeFloat(at + 16, cx);
+		s.writeFloat(at + 20, cy);
+		s.writeFloat(at + 24, bx);
+		s.writeFloat(at + 28, by);
+		s.writeFloat(at + 32, u0);
+		s.writeFloat(at + 36, v0);
+		s.writeFloat(at + 40, u1);
+		s.writeFloat(at + 44, v1);
 		// 0xAARRGGBB as its red, green, blue and alpha bytes in order, one little-endian int.
-		putSpriteInt(at + 48, (color & 0xff00ff00) | (color >> 16 & 255) | (color & 255) << 16);
-		var d = customData;
-		putSpriteInt(at + 52, (d & 0xff00ff00) | (d >> 16 & 255) | (d & 255) << 16);
+		s.writeColor(at + 48, (color & 0xff00ff00) | (color >> 16 & 255) | (color & 255) << 16);
 		return true;
-	}
-
-	// Writes a float into the sprites' records: natively without Bytes.setFloat's bounds check and call, in a page through the float view.
-	inline function putSprite(at:Int, value:Float):Void {
-		#if cpp
-		untyped __global__.__hxcpp_memory_set_float(sprites.bytes.getData(), at, value);
-		#elseif js
-		spriteFloats[at >> 2] = value;
-		#else
-		sprites.bytes.setFloat(at, value);
-		#end
-	}
-
-	// Writes a little-endian int into the sprites' records, as putSprite writes a float.
-	inline function putSpriteInt(at:Int, value:Int):Void {
-		#if cpp
-		untyped __global__.__hxcpp_memory_set_i32(sprites.bytes.getData(), at, value);
-		#elseif js
-		spriteInts[at >> 2] = value;
-		#else
-		sprites.bytes.setInt32(at, value);
-		#end
 	}
 
 	// Whether a box in the batch's units, moved by the transform, may be seen; always while culling is off or shaderValues set.
@@ -928,7 +852,7 @@ class Batch2D {
 	// Records the GPU draw being made, with the names the batch fills: its vertices, or its sprites as instances of one quad.
 	function record():Void {
 		if (runKind == SPRITES) {
-			recordSprites();
+			sprites.draw(runFirst, sprites.count - runFirst, runTexture, runSampling, viewProjection, blend, Off, false, None, All, runFontKind, linear);
 			return;
 		}
 		if (runKind == EMPTY)
@@ -949,37 +873,6 @@ class Batch2D {
 		d.first = runFirst;
 		d.count = count;
 		values.capture(d.snapshot);
-		renderer.record(d);
-	}
-
-	// Records the run of sprites being made: instances of one quad, a record each, through the sprite stage.
-	function recordSprites():Void {
-		var count = sprites.count - runFirst;
-		if (count <= 0)
-			return;
-		if (quadCorners == 0) {
-			var corners = haxe.io.Bytes.alloc(16);
-			for (c in 0...4)
-				corners.setFloat(c * 4, c);
-			quadCorners = renderer.staticBuffer(corners, false);
-			var indices = haxe.io.Bytes.alloc(24);
-			for (k => i in [0, 1, 2, 0, 2, 3])
-				indices.setInt32(k * 4, i);
-			quadIndices = renderer.staticBuffer(indices, true);
-		}
-		spriteValues.writeTexture(spriteBaseColorTexture, runTexture, runSampling);
-		spriteValues.writeMatrix(spriteModelViewProjection, viewProjection);
-		spriteValues.writeInt(spriteLinearTarget, linear ? 1 : 0);
-		spriteValues.writeInt(spriteFontKind, runFontKind);
-		var d = renderer.makeDraw(renderer.pipelineFor(spriteShader, renderer.stateFor(Triangles, true, blend, Off, false, None, All), spriteLayout));
-		d.setBuffer(0, quadCorners);
-		d.setBuffer(1, 0, sprites);
-		d.indexBuffer = quadIndices;
-		d.first = 0;
-		d.count = 6;
-		d.firstInstance = runFirst;
-		d.instanceCount = count;
-		spriteValues.capture(d.snapshot);
 		renderer.record(d);
 	}
 	#end

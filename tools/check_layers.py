@@ -38,7 +38,7 @@ LAYERS = [
     ('helix-platform', 'libs/platform/src', ['helix.platform'], ['helix-formats', 'helix-geometry', 'helix-math']),
     ('helix-services', 'libs/services/src', ['helix.services'], ['helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
     ('helix-render', 'libs/render/src', ['helix.render'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
-    ('helix-raylib', 'engines/raylib/src', ['helix.raylib'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
+    ('helix-raylib', 'engines/raylib/src', ['helix.raylib'], ['helix-render', 'helix-services', 'helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
 ]
 # Each library's tests and examples, held to its layer too: they build with that library alone.
 TESTS = {'helix-math': ['libs/math/tests'], 'helix-geometry': ['libs/geometry/tests'], 'helix-log': ['libs/log/tests'], 'helix-formats': ['libs/formats/tests'], 'helix-platform': ['libs/platform/tests', 'libs/platform/examples'],

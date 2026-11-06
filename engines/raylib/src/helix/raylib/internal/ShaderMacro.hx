@@ -78,17 +78,6 @@ class ShaderMacro {
 		return helix.services.shaders.Shader.makeExpr({name: vsName, text: vertex}, {name: fsName, text: fragment}, {clipScale: true, points: true}, pos);
 	}
 
-	/** Returns the expression of helix-raylib's sprite shader: its own vertex stage (`shaders/sprite.vs`, whose attributes are the sprite
-		records', not raylib's, so it isn't held to raylib's attribute rules) over raylib's default fragment stage.
-
-		@param pos  Where errors point.
-		@return  An expression of type `helix.services.shaders.Shader`. */
-	public static function sprites(pos:Position):Expr {
-		var fsName = "raylib default fragment shader";
-		return helix.services.shaders.Shader.makeExpr({name: "helix-raylib sprite vertex shader", text: builtIn("sprite.vs", pos)},
-			{name: fsName, text: adapt(builtIn("unlit.fs", pos), false, fsName, pos)}, {clipScale: true}, pos);
-	}
-
 	/** Returns the expression of a raylib shader loaded from two stages' text (`LoadShader`, `LoadShaderFromMemory`), either null for
 		raylib's default: the shader made, and each uniform given an initializer in the GLSL set to it, as GL sets one when it links.
 

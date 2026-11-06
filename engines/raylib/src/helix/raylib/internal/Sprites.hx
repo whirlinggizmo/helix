@@ -1,16 +1,16 @@
 package helix.raylib.internal;
 
-/** Gives the frame its sprite shader (`Frame.spriteShader`), so a run of quads of one texture is drawn as instances (`Frame`'s sprite
-	runs). The modules that add quads (`RTextures`, `RRlgl`, which the shapes and text draw through) register it as they start, so a
-	program drawing no quads links neither the shader nor the sprite path. */
+/** Gives the frame its sprite runs (`Frame.makeSprites`), so a run of quads of one texture is drawn as instances. The modules that add
+	quads (`RTextures`, `RRlgl`, which the shapes and text draw through) register it as they start, so a program drawing no quads links
+	neither the sprite shader nor the sprite path. */
 @:noCompletion
 class Sprites {
-	/** Sets the frame's sprite shader, once. */
+	/** Sets what makes the frame's sprite runs, once. */
 	public static function register():Void {
-		if (Frame.spriteShader == null)
-			Frame.spriteShader = shader;
+		if (Frame.makeSprites == null)
+			Frame.makeSprites = make;
 	}
 
-	static function shader():helix.services.shaders.Shader
-		return Defaults.spriteShader();
+	static function make(renderer:helix.render.Renderer):helix.render.SpriteRuns2D
+		return new helix.render.SpriteRuns2D(renderer);
 }
