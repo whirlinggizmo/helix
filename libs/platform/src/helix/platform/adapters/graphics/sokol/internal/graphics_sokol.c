@@ -108,7 +108,7 @@ static char appended[SLOTS];
 static struct{sg_view color,depth,resolve;sg_image depth_image,samples_image;int width,height,variant,cleared;}targets[SLOTS];
 /* Shadow maps, by texture view slot: the depth array, an attachment view a layer, and their size; and the sampler they're read through
    (comparing, linear, clamped), made with the first. */
-#define MAX_SHADOW_LAYERS 16
+#define MAX_SHADOW_LAYERS 24
 static struct{sg_image image;sg_view layers[MAX_SHADOW_LAYERS];int size,count;}shadow_maps[SLOTS];static sg_sampler comparison;
 /* Data textures, by texture view slot: RGBA32F, rewritten whole by helix_update_texture. sokol's write-transient images hold what's written for
    the frame alone, and take writes only until they're bound, so the adapter keeps the contents (copy) and writes them at the first bind of a

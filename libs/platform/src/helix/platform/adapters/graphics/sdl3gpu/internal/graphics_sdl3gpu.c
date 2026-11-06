@@ -31,7 +31,7 @@
 #define MAX_BLOCK_INDICES 8
 #define MAX_TEXTURES 12
 #define MAX_RENAMES 8
-#define MAX_SHADOW_LAYERS 16
+#define MAX_SHADOW_LAYERS 24
 
 static SDL_GPUDevice *device;
 static SDL_Window *window;

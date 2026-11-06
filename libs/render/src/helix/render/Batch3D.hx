@@ -47,7 +47,9 @@ import helix.services.shaders.ShaderVertexLayout;
 	map drawn before the pass the batch draws in, at `Renderer.endFrame`, from the meshes this batch drew casting that its volume holds,
 	and is read by those drawn receiving (`LightShadow3D` says how). A mesh casts when both the batch's `castShadows` and its material's
 	are on, and receives when both `receiveShadows` are. A caster is drawn as it is drawn in color: skinned, morphed, instanced, cut by
-	`alphaCutoff`. The batch draws neither cast nor receive.
+	`alphaCutoff`. The batch draws neither cast nor receive. The shadow code is compiled into the lit stage (`shadows.glsl`), a few
+	kilobytes of text that compress to near nothing; a program that never casts may build with `-D helix_render_no_shadows` to leave it
+	out, and a light told to cast in such a build stops the program, naming the define.
 
 	**Targets.** What a target holds is its format's. Into an RGBA8 target or the screen, which hold sRGB, lit color and a material with
 	`toneMapped` on are exposed and tone mapped by the renderer's `exposure` and `toneMapping`, everything is encoded, and the GPU

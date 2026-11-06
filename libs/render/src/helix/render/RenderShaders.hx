@@ -23,7 +23,9 @@ class RenderShaders {
 	/** Compiles one of helix-render's own pairs of stages, beside this file, as every helix-render shader is compiled. */
 	public static macro function compileOwn(vertex:String, fragment:String):ExprOf<helix.services.shaders.Shader> {
 		var pos = Context.currentPos();
-		return make(own(vertex), own(fragment), {}, pos);
+		// The shadows are compiled into the lit stage unless the program is built without them (-D helix_render_no_shadows), for a program
+		// that never casts and counts its raw bytes: the shadow GLSL is a few kilobytes of text, near nothing compressed.
+		return make(own(vertex), own(fragment), {defines: Context.defined("helix_render_no_shadows") ? [] : ["HELIX_RENDER_SHADOWS"]}, pos);
 	}
 
 	#if macro
@@ -35,6 +37,7 @@ class RenderShaders {
 		"batch.glsl",
 		"mesh.glsl",
 		"lighting.glsl",
+		"shadows.glsl",
 		"material.glsl"
 	];
 

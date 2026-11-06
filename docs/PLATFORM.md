@@ -232,7 +232,7 @@ enum Event {
   one: lavapipe takes 1 and 4), 1 where it can't multisample the format; a multisampled target is resolved into its texture at each
   pass's end, WebGL2 blitting its multisampled renderbuffers, sokol and SDL_GPU through a resolve attachment; SDL_GPU submits the frame's
   passes so far before a pass of fewer samples than one already in its command buffer, as NVIDIA's Vulkan driver loses the device on
-  such a pair in one command buffer), `createShadowMap(size, layerCount)` (a depth array read through a comparison sampler), `disposeTexture`; `canSample(format)`
+  such a pair in one command buffer), `createShadowMap(size, layerCount)` (a depth array read through a comparison sampler, at least 24 layers on every backend), `disposeTexture`; `canSample(format)`
   and `canRender(format)` say what the GPU can.
 - Buffers: `createBuffer(capacityBytes)`, `updateBuffer` (replaces a stream buffer's contents for the draws after it) and `appendBuffer`
   (adds bytes after the frame's earlier ones and returns their byte offset, the earlier bytes staying readable, so many draws' vertex data

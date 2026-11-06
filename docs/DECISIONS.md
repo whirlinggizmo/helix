@@ -663,8 +663,11 @@ Why things are the way they are, numbered, in order.
     bias goes unused. A directional light's cascades split `distance` by `cascadeSplit`, each a square around its slice's sphere,
     snapped to its texels, so edges hold still as the camera moves and turns. Only one vec4 holds cascade ends, so the first directional
     light following the camera picks by the view's depth and another picks the first map that holds the point. `shadowParams` packs the
-    first map, the count, the kind and the radius into its x, as the uniform table leaves four floats for seven values. A spot's or a
+    first map, the count, the kind and the radius into its x, as the uniform table leaves four floats for seven values; if a value's
+    precision ever shows, the table widens to two vec4 a light. A spot's or a
     point's near plane is a fixed share of its far one, so the shader reads the fade's distance from the depth alone. `castsShadow` is a
-    property whose setter installs the work, so a program casting nothing links none of it. Rejected: the pipeline's depth bias (depth
+    property whose setter installs the work, so a program casting nothing links none of it but the lit stage's shadow GLSL
+    (`shadows.glsl`, included under `HELIX_RENDER_SHADOWS`, on unless the program is built with `-D helix_render_no_shadows`: 6.5 KB of
+    text, a few hundred bytes compressed, kept in by default since a build chooses once and a game with lights usually wants it). Rejected: the pipeline's depth bias (depth
     units, the earlier frameworks' failure), a cube map for a point light (six layers of the one array keep one sampler), and a uniform
     more in the block (the agreed table is the spec).

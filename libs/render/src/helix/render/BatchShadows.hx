@@ -42,6 +42,9 @@ class BatchShadows {
 
 	/** Makes the batches cast shadows from their next `begin`. */
 	static function install():Void {
+		#if helix_render_no_shadows
+		throw "helix-render: built without shadows (-D helix_render_no_shadows), so no light can cast; build without the define";
+		#end
 		if (BatchLighting.makeShadows == null)
 			BatchLighting.makeShadows = attach;
 	}
