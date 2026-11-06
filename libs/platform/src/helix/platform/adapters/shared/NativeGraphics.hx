@@ -111,36 +111,35 @@ abstract class NativeGraphics implements IGraphics {
 		return valid(GraphicsDeviceBridge.staticBuffer(pointer(data), bytes, index ? 1 : 0));
 	}
 
-	// Textures, samplings and uniform blocks as the bridge reads them: two arrays, and the blocks' bytes one after another by their index in
-	// uniforms (stage and slot: the vertex stage's 0 to 3, the fragment stage's 4 to 7), a block both read at both.
-	static function pack(textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):{
-		handles:haxe.ds.Vector<cpp.UInt32>,
-		modes:haxe.ds.Vector<Int>,
-		uniforms:Bytes,
-		bytes:Int
-	} {
+	// A draw's arguments as the bridge reads them, kept from draw to draw and grown as needed, so a draw allocates nothing: the texture
+	// handles and their samplings, the buffer handles and their offsets, and the uniform blocks' bytes one after another by their index in
+	// uniforms (stage and slot: the vertex stage's 0 to 3, the fragment stage's 4 to 7), a block both read at both. The bridge reads them
+	// during the call and keeps nothing of them.
+	var textureHandles = new haxe.ds.Vector<cpp.UInt32>(16);
+	var textureModes = new haxe.ds.Vector<Int>(16);
+	var bufferHandles = new haxe.ds.Vector<cpp.UInt32>(8);
+	var bufferOffsetsPacked = new haxe.ds.Vector<Int>(8);
+	var packed = Bytes.alloc(1024);
+
+	// Packs the uniform blocks into `packed`, grown when they outgrow it, and returns their total bytes.
+	function pack(uniforms:Array<Null<Bytes>>):Int {
 		var total = 0;
 		for (block in uniforms)
 			if (block != null)
 				total += block.length;
-		var packed = Bytes.alloc(total < 4 ? 4 : total), at = 0;
+		if (packed.length < total) {
+			var size = packed.length;
+			while (size < total)
+				size *= 2;
+			packed = Bytes.alloc(size);
+		}
+		var at = 0;
 		for (block in uniforms)
 			if (block != null) {
 				packed.blit(at, block, 0, block.length);
 				at += block.length;
 			}
-		var handles = new haxe.ds.Vector<cpp.UInt32>(textures.length < 1 ? 1 : textures.length),
-			modes = new haxe.ds.Vector<Int>(textures.length < 1 ? 1 : textures.length);
-		for (i in 0...textures.length) {
-			handles[i] = textures[i];
-			modes[i] = i < samplings.length ? samplings[i] : 0;
-		}
-		return {
-			handles: handles,
-			modes: modes,
-			uniforms: packed,
-			bytes: total
-		};
+		return total;
 	}
 
 	// The programs, by handle, as their sources describe them: whether Points pipelines may draw one, and its attributes' types, which
@@ -268,16 +267,27 @@ abstract class NativeGraphics implements IGraphics {
 
 	public function draw(pipeline:Int, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int,
 			firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
-		var args = pack(textures, samplings, uniforms),
-			handles = new haxe.ds.Vector<cpp.UInt32>(buffers.length < 1 ? 1 : buffers.length),
-			offsets = new haxe.ds.Vector<Int>(buffers.length < 1 ? 1 : buffers.length);
-		for (i in 0...buffers.length) {
-			handles[i] = buffers[i];
-			offsets[i] = bufferOffsets != null && i < bufferOffsets.length ? bufferOffsets[i] : 0;
+		var bytes = pack(uniforms);
+		if (textureHandles.length < textures.length) {
+			textureHandles = new haxe.ds.Vector<cpp.UInt32>(textures.length);
+			textureModes = new haxe.ds.Vector<Int>(textures.length);
 		}
-		var drawn = GraphicsDeviceBridge.draw(pipeline, cpp.Pointer.ofArray(handles.toData()).raw, cpp.Pointer.ofArray(offsets.toData()).raw, buffers.length,
-			indexBuffer, firstElementIndex, elementCount, firstInstanceIndex, instanceCount, cpp.Pointer.ofArray(args.handles.toData()).raw,
-			cpp.Pointer.ofArray(args.modes.toData()).raw, textures.length, pointer(args.uniforms), args.bytes);
+		for (i in 0...textures.length) {
+			textureHandles[i] = textures[i];
+			textureModes[i] = i < samplings.length ? samplings[i] : 0;
+		}
+		if (bufferHandles.length < buffers.length) {
+			bufferHandles = new haxe.ds.Vector<cpp.UInt32>(buffers.length);
+			bufferOffsetsPacked = new haxe.ds.Vector<Int>(buffers.length);
+		}
+		for (i in 0...buffers.length) {
+			bufferHandles[i] = buffers[i];
+			bufferOffsetsPacked[i] = bufferOffsets != null && i < bufferOffsets.length ? bufferOffsets[i] : 0;
+		}
+		var drawn = GraphicsDeviceBridge.draw(pipeline, cpp.Pointer.ofArray(bufferHandles.toData()).raw,
+			cpp.Pointer.ofArray(bufferOffsetsPacked.toData()).raw, buffers.length, indexBuffer, firstElementIndex, elementCount, firstInstanceIndex,
+			instanceCount, cpp.Pointer.ofArray(textureHandles.toData()).raw, cpp.Pointer.ofArray(textureModes.toData()).raw, textures.length, pointer(packed),
+			bytes);
 		if (drawn == -1)
 			throw "Invalid native draw: a texture is the pass's own target, which a draw into it can't sample";
 		if (drawn != 1)
