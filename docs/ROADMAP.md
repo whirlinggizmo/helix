@@ -93,6 +93,16 @@ records them.
   for each mistake. The floor of 2047 of each kind alive (docs/PLATFORM.md) is the native tables' size; a mesh takes a buffer an
   attribute, so interleaving a mesh's attributes into one buffer (helix-geometry's meshes, helix-raylib's Models) cuts a scene's count
   six-fold before the tables need to grow.
+- **A masked animation blend, in helix-geometry, with a helix-raylib extra as its door (DECISIONS 47):** a pose blended from two
+  clips bone by bone, each bone taking the second clip by a weight of its own: a set the program names (a bone and its children,
+  `Spine` up for the upper body), or the bones the clip has tracks for, so a clip authored for the legs alone moves the legs alone.
+  Godot's and Unity's animation trees blend by bone masks; raylib 6.2's `UpdateModelAnimationEx` blends the whole body by one value,
+  so an attack clip replaces the run on the legs too and the character slides (the jam's warden does), and a clip with no track for a
+  bone fills it with the rest pose at load, so partial clips dilute each other through a single blend. helix-geometry's `Animation3D`
+  holds a clip's tracks per bone and `Skeleton3D` its rest pose, so the blend and the mask from a clip's tracks are theirs; the
+  extra poses a `Model` by two animations and a mask under raylib's names, and keeps which bones each loaded clip animates beside its
+  frames (`ModelAnimation` holds every bone's pose and says nothing of which were authored). helix-render only takes the matrices.
+  Then the jam's spec can ask for an attack on the upper body over the legs' run.
 - **Lit sprites, in helix-render (DECISIONS 47):** 2D point and directional lights over a batch, a region with an optional normal map
   (Godot's Light2D and CanvasItem normal maps, Unity's 2D lights and lit sprite material, Phaser's Light2D), so a top-down game has a
   torch, a flash and a night. An extra in helix-raylib as a door onto it once it exists.
