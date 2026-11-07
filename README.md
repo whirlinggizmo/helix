@@ -10,7 +10,7 @@ Helix is a suite of libraries and engines for Haxe game development.  It provide
 
 | Library | Description | API | Dependencies |
 |---|---|---|---|
-| [helix-platform](libs/platform/README.md) | The hardware and the OS as contracts (window, events, GPU, audio, decoders, HTTP, files, export, system), one adapter per API: the browser's, SDL3, WebGL2, sokol_gfx, SDL_GPU, SDL3_mixer | [API](https://whirlinggizmo.github.io/helix/api/helix/platform/index.html) | helix-math, helix-formats |
+| [helix-platform](libs/platform/README.md) | Provides access to hardware and OS functions via adapters and interfaces | [API](https://whirlinggizmo.github.io/helix/api/helix/platform/index.html) | helix-math, helix-formats |
 | [helix-math](libs/math/README.md) | Points, bounds, matrices, curves, interpolation, deterministic trigonometry and random numbers | [API](https://whirlinggizmo.github.io/helix/api/helix/math/index.html) | nothing |
 | [helix-geometry](libs/geometry/README.md) | Cameras, frustums, rays, meshes in the usual shapes, and tests on segments, triangles and polygons | [API](https://whirlinggizmo.github.io/helix/api/helix/geometry/index.html) | helix-math |
 | [helix-formats](libs/formats/README.md) | File formats read into plain data: glTF 2.0 and GLB models, BMFont text fonts, TrueType and OpenType font tables | [API](https://whirlinggizmo.github.io/helix/api/helix/formats/index.html) | helix-math |

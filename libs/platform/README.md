@@ -1,6 +1,6 @@
 # helix-platform
 
-The hardware and the OS, in the browser and natively. Each device is a contract, an interface in
+Provides access to hardware and OS functions via adapters and interfaces, in the browser and natively. Each device is a contract, an interface in
 `helix.platform`, and each API behind it is an adapter in `helix.platform.adapters.<contract>.<api>`, as the table names them. It has no policy of its own.
 
 | Contract | What | Browser | Native |
