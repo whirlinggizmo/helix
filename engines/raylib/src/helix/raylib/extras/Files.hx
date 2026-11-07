@@ -33,7 +33,8 @@ class Files {
 		`SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
 
 		A file's text ends at its first NUL byte, as raylib's C string does, and a byte that isn't UTF-8 is read as U+FFFD: a file is never
-		refused for what it holds.
+		refused for what it holds. In a page, a file nobody saved yet is asked of the server, which logs a 404 in the browser's console
+		before `failed` answers: a program reading a save on its first run sees one.
 
 		@param fileName  The file.
 		@param loaded  Receives its text.

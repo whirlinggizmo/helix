@@ -6,9 +6,11 @@
 // mat4 helixSkin() returns the vertex's skin matrix, each of its bones' matrices times its weight, added; vec3 helixSkinNormal(vec3 normal)
 // returns a normal moved as raylib moves one, by each bone's matrix inverted and transposed, times its weight, added, and not normalized.
 //
-// A shader including it skins on the GPU: a mesh UpdateModelAnimation posed is drawn with its bones written into the palette and
-// boneOffset set, so one model drawn in many poses in a frame draws each as it was asked for. A mesh drawn before any UpdateModelAnimation
-// posed it, or without bones, is drawn in its bind pose, as are the vertices with no weight at all.
+// It declares nothing else: the stage declares raylib's attributes, its uniforms and its outputs itself, as the example does.
+//
+// A shader including it skins on the GPU: a mesh UpdateModelAnimation or UpdateModelAnimationBones posed is drawn with its bones written
+// into the palette and boneOffset set, so one model drawn in many poses in a frame draws each as it was asked for. A mesh drawn before
+// either posed it, or without bones, is drawn in its bind pose, as are the vertices with no weight at all.
 //
 //     #version 330
 //     #include <helix/raylib/shaders/skinning.glsl>

@@ -545,7 +545,7 @@ var boneCount:Int
 - `animNormals`: Gets or sets the normals `UpdateModelAnimation` last turned its vertices' to, or null until it has (or for a mesh without normals). Each is moved by its bones' matrices inverted and transposed, and not normalized, as raylib's; like `animVertices`, they are worked out when first read.
 - `boneIds`: Gets or sets the bones each vertex follows, four a vertex, as indices into its model's `bones` (0 to 255), or null for none. A shader reads them as the attribute `vertexBoneIds` (raylib 5.5's name) or `vertexBoneIndices` (6.2's), floats.
 - `boneWeights`: Gets or sets how much each of a vertex's four bones moves it, or null for none: the attribute `vertexBoneWeights`.
-- `boneMatrices`: Gets or sets the bones' matrices, by bone, each taking a vertex from where the skin was bound to where the bone is now: `UpdateModelAnimationBones` sets them, and a shader declaring `uniform mat4 boneMatrices[N]` is given them as the mesh is drawn. Shared by a model's meshes; null for a mesh without bones.
+- `boneMatrices`: Gets or sets the bones' matrices, by bone, each taking a vertex from where the skin was bound to where the bone is now: `UpdateModelAnimationBones` sets them, and a shader declaring `uniform mat4 boneMatrices[N]` is given them as the mesh is drawn. Shared by a model's meshes; null for a mesh without bones. A shader including `<helix/raylib/shaders/skinning.glsl>` reads the pose the model was given at its last `UpdateModelAnimation` or `UpdateModelAnimationBones`, not this array as it is drawn, so giving one model's array to another model's meshes doesn't pose them: pose each model.
 - `boneCount`: Gets or sets the number of bones, its model's.
 
 ## Model
@@ -4880,7 +4880,7 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `mesh`: The mesh; one without positions, texture coordinates or normals is unchanged.
 
   A vertex whose tangent comes out of length near 0, or along its normal, takes one square to the normal: x when the normal is mostly z, else (-y, x, 0) of the normal, w 1.
-- `UpdateModelAnimationBones`: Poses a model's bones by a frame of an animation, as raylib 6.2's: the frame's whole part and the next mixed by its fraction (a 5.5 program's whole frames work as they did), each wrapped to the animation's frames; each bone's matrix then its bind pose's inverse and the pose, in each mesh's `boneMatrices`. Its vertices don't move: a skinning shader moves them as they are drawn, or `UpdateModelAnimation` on the CPU. Nothing for a model without bones or an animation without frames.
+- `UpdateModelAnimationBones`: Poses a model's bones by a frame of an animation, as raylib 6.2's: the frame's whole part and the next mixed by its fraction (a 5.5 program's whole frames work as they did), each wrapped to the animation's frames; each bone's matrix then its bind pose's inverse and the pose, in each mesh's `boneMatrices`. Its vertices don't move: a shader of the program's own that reads the bones (raylib's `skinning.vs`'s `boneMatrices`, or `<helix/raylib/shaders/skinning.glsl>`) draws the pose, and under raylib's default shader, the lit and PBR ones or a shader without them the mesh stays as it was, as raylib's does; `UpdateModelAnimation` poses it under any. Nothing for a model without bones or an animation without frames.
   - `model`: The model.
   - `anim`: The animation, of the model's skeleton (`IsModelAnimationValid`).
   - `frame`: The frame, from 0.
@@ -5196,7 +5196,7 @@ static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<Stri
 static macro function LoadAutomationEventList(fileName:Null<String>):AutomationEventList
 ```
 
-- `LoadShader`: Loads a shader from raylib GLSL files (330, or 100 for the web), either null for raylib's default stage. They are compiled as the program builds, for every target, so their names are constants; the files are found under `-D helix-raylib-files` (default `web`), as the program's other files are. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25). A uniform given an initializer in the GLSL (`uniform vec2 scale = vec2(0.25, 0.45);`) starts at it, as GL sets it.
+- `LoadShader`: Loads a shader from raylib GLSL files (330, or 100; one 330 file serves the web too, compiled to its GLSL ES as the program builds), either null for raylib's default stage. They are compiled as the program builds, for every target, so their names are constants; the files are found under `-D helix-raylib-files` (default `web`), as the program's other files are. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25). A uniform given an initializer in the GLSL (`uniform vec2 scale = vec2(0.25, 0.45);`) starts at it, as GL sets it.
   - `vsFileName`: The vertex stage's file, or null.
   - `fsFileName`: The fragment stage's file, or null.
   - returns: The shader.

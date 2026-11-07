@@ -52,8 +52,10 @@ class Skinning {
 	/** Stores a model's pose in each of its skinned meshes, their posed vertices and buffers then out of date; the hooks the draws and
 		`Mesh.animVertices` reach installed the first time.
 
-		@param model  The model, its bone matrices just computed. */
-	public static function pose(model:Model):Void {
+		@param model  The model, its bone matrices just computed.
+		@param bonesOnly  Whether only the meshes whose shader reads the bones itself take the pose (`UpdateModelAnimationBones`, as
+			raylib 6.2's moves no vertex): the rest keep the pose they had, or their bind pose. */
+	public static function pose(model:Model, bonesOnly = false):Void {
 		if (installed != Runtime.frame) {
 			// A window made again (CloseWindow, InitWindow) has a frame and a GPU of its own.
 			installed = Runtime.frame;
@@ -78,6 +80,8 @@ class Skinning {
 				&& material.shader != null
 				&& material.shader.locs != null
 				&& material.shader.locs[Raylib.SHADER_LOC_VERTEX_BONEIDS] != -1);
+			if (bonesOnly && cpu)
+				continue;
 			var pose = mesh.pose;
 			if (pose == null)
 				pose = mesh.pose = {

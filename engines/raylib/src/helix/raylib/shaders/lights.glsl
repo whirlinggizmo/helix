@@ -8,6 +8,9 @@
 // enabled light's diffuse and specular (a shine of 16), the ambient light a tenth of ambient, and the result gamma corrected (to the
 // power 1/2.2). fragPosition is the fragment's in the world, and fragNormal its own, normalized here.
 //
+// It declares nothing else: the stage declares its inputs (raylib's varyings fragPosition, fragTexCoord, fragColor and fragNormal, as
+// its vertex stage names them), its textures and uniforms, and its output itself, as the example does.
+//
 // LoadLightingShader (helix.raylib.extras.Lights) is a shader built on it. A program's own fragment stage lights with it so:
 //
 //     #version 330

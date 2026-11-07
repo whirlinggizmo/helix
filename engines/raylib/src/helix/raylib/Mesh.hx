@@ -59,7 +59,9 @@ class Mesh {
 
 	/** Gets or sets the bones' matrices, by bone, each taking a vertex from where the skin was bound to where the bone is now:
 		`UpdateModelAnimationBones` sets them, and a shader declaring `uniform mat4 boneMatrices[N]` is given them as the mesh is drawn.
-		Shared by a model's meshes; null for a mesh without bones. */
+		Shared by a model's meshes; null for a mesh without bones. A shader including `<helix/raylib/shaders/skinning.glsl>` reads the
+		pose the model was given at its last `UpdateModelAnimation` or `UpdateModelAnimationBones`, not this array as it is drawn, so
+		giving one model's array to another model's meshes doesn't pose them: pose each model. */
 	public var boneMatrices:Null<Array<Matrix>> = null;
 
 	/** Gets or sets the number of bones, its model's. */

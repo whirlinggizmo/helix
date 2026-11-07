@@ -222,7 +222,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
   - `loaded`: Receives its text.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 
-  A file's text ends at its first NUL byte, as raylib's C string does, and a byte that isn't UTF-8 is read as U+FFFD: a file is never refused for what it holds.
+  A file's text ends at its first NUL byte, as raylib's C string does, and a byte that isn't UTF-8 is read as U+FFFD: a file is never refused for what it holds. In a page, a file nobody saved yet is asked of the server, which logs a 404 in the browser's console before `failed` answers: a program reading a save on its first run sees one.
 - `SaveFileDataAsync`: Writes a file's bytes, answering once they are kept or refused: helix-raylib's own, in place of raylib's `SaveFileData`. They are written through the program's `SetSaveFileDataCallback` when it has one, else kept across runs as `SaveFileTextAsync`'s are. `LoadFileDataAsync` reads them back.
   - `fileName`: The file.
   - `data`: The bytes.

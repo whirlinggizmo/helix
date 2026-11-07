@@ -1540,14 +1540,19 @@ class RModels {
 
 	/** Poses a model's bones by a frame of an animation, as raylib 6.2's: the frame's whole part and the next mixed by its fraction (a
 		5.5 program's whole frames work as they did), each wrapped to the animation's frames; each bone's matrix then its bind pose's
-		inverse and the pose, in each mesh's `boneMatrices`. Its vertices don't move: a skinning shader moves them as they are drawn, or
-		`UpdateModelAnimation` on the CPU. Nothing for a model without bones or an animation without frames.
+		inverse and the pose, in each mesh's `boneMatrices`. Its vertices don't move: a shader of the program's own that reads the bones
+		(raylib's `skinning.vs`'s `boneMatrices`, or `<helix/raylib/shaders/skinning.glsl>`) draws the pose, and under raylib's default
+		shader, the lit and PBR ones or a shader without them the mesh stays as it was, as raylib's does; `UpdateModelAnimation` poses
+		it under any. Nothing for a model without bones or an animation without frames.
 
 		@param model  The model.
 		@param anim  The animation, of the model's skeleton (`IsModelAnimationValid`).
 		@param frame  The frame, from 0. */
 	static function UpdateModelAnimationBones(model:Model, anim:ModelAnimation, frame:Float):Void {
-		Animations.updateBones(model, anim, frame);
+		if (anim.frameCount > 0 && model.bones != null && anim.framePoses != null && model.boneMatrices != null) {
+			Animations.updateBones(model, anim, frame);
+			helix.raylib.internal.Skinning.pose(model, true);
+		}
 	}
 
 	/** Poses a model by a frame of an animation, as raylib 6.2's: its bones as `UpdateModelAnimationBones` poses them, and each skinned

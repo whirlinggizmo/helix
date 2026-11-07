@@ -20,6 +20,7 @@ import helix.raylib.internal.Textures;
 @:access(helix.raylib.internal.Program)
 @:access(helix.raylib.Shader)
 @:access(helix.raylib.Model)
+@:access(helix.raylib.Mesh)
 class SkinningTests {
 	static var checks = 0;
 
@@ -96,6 +97,17 @@ void main() {
 		check(lastOffset(own.program) == 1, 'a posed draw reads its first bone plus one, not ${lastOffset(own.program)}');
 		DrawModel(still, new Vector3(0, 0, 0), 1, WHITE);
 		check(lastOffset(own.program) == 0, "a draw after a posed one reads no bones");
+		// UpdateModelAnimationBones, raylib 6.2's bones-only call: a shader reading the bones itself draws the pose, the default shader
+		// leaves the mesh as it was.
+		var bonesOnly = skinned(own);
+		UpdateModelAnimationBones(bonesOnly, anim, 0);
+		DrawModel(bonesOnly, new Vector3(0, 0, 0), 1, WHITE);
+		check(lastOffset(own.program) >= 1, "UpdateModelAnimationBones poses a mesh under a shader that reads the bones");
+		var plain = skinned(null);
+		UpdateModelAnimationBones(plain, anim, 0);
+		DrawModel(plain, new Vector3(0, 0, 0), 1, WHITE);
+		check(plain.meshes[0].pose == null && Runtime.frame.defaultProgram.twin == null,
+			"UpdateModelAnimationBones under the default shader leaves the mesh as it was, as raylib's");
 		check(moving.meshes[0].animVertices == null, "a shader reading the bone ids leaves animVertices, as raylib's CPU skinning does");
 
 		// The lit shader: a texture and a unit set before its twin is made, and after, reach the twin.
