@@ -13,7 +13,8 @@ import helix.raylib.internal.Textures;
 	that count what is made: nothing throws while it is lost; at the restore the frame's own texture and buffer are made again, a file's
 	texture is decoded again from its bytes and sent when next drawn, a font's atlas is sent again from the pixels it kept, a mesh is
 	sent again when next drawn, a render texture keeps the handle the platform remade, a data texture is left to the platform, a
-	texture made from pixels let go of is drawn as nothing with one warning, a model's textures held in its file (its base color, and
+	texture made from pixels (`LoadTextureFromImage`) and a cubemap are sent again from the pixels a page keeps, with what
+	`UpdateTexture` wrote since (natively, where none are kept, drawn as nothing with one warning each), a model's textures held in its file (its base color, and
 	the roughness and metalness split from one image) are decoded again from the model's bytes and sent, as is one a load makes after
 	the program unloaded the last load's, and a texture set on a shader (`SetShaderValueTexture`) is bound by the handle it was sent
 	again with. */
@@ -71,13 +72,20 @@ class RestoreTests {
 		var fileGpu = Textures.handle(file.id);
 		var pixels = LoadTextureFromImage(GenImageColor(2, 2, RED));
 		var pixelsGpu = Textures.handle(pixels.id);
+		var green = haxe.io.Bytes.alloc(16);
+		for (i in 0...4)
+			green.setInt32(i * 4, 0xff30e400);
+		UpdateTexture(pixels, green);
+		var sky = LoadTextureCubemap(GenImageColor(2, 12, BLUE), CUBEMAP_LAYOUT_LINE_VERTICAL);
+		var skyGpu = Textures.handle(sky.id);
 		var font = GetFontDefault();
 		var fontGpu = Textures.handle(font.texture.id);
 		var mesh = GenMeshCube(1, 1, 1);
 		UploadMesh(mesh, false);
 		var target = LoadRenderTexture(4, 4);
 		var data = Runtime.graphics.createDataTexture(256, 1);
-		check(fileGpu != 0 && pixelsGpu != 0 && fontGpu != 0 && mesh.gpu.buffers != null && target.id != 0 && data != 0, "before: everything on the GPU");
+		check(fileGpu != 0 && pixelsGpu != 0 && skyGpu != 0 && fontGpu != 0 && mesh.gpu.buffers != null && target.id != 0 && data != 0,
+			"before: everything on the GPU");
 		// A model whose textures are held in its file: its base color, and the roughness and metalness split from one image.
 		var model:Model = null;
 		LoadModelAsync("ship.gltf", m -> model = m, e -> throw e);
@@ -138,10 +146,26 @@ class RestoreTests {
 		textures++;
 		check(graphics.textureCreations == textures, "the PBR shader's flat normal: sent again from its kept pixels");
 
-		// One from pixels let go of: nothing, warned of once.
-		check(Textures.handle(pixels.id) == 0 && warnings == 1, "a texture from pixels: drawn as nothing, warned of");
+		// One from pixels, and a cubemap: sent again from the pixels kept in a page, the update with them. Natively, where a lost
+		// context isn't recovered, they aren't kept: drawn as nothing, warned of once each.
+		#if js
+		var pixelsAgain = Textures.handle(pixels.id);
+		check(pixelsAgain != 0 && pixelsAgain != pixelsGpu && graphics.textureCreations == textures + 1 && warnings == 0,
+			"a texture from pixels: sent again from its kept pixels");
+		check(graphics.lastLevels[0].getInt32(0) == 0xff30e400, "a texture from pixels: sent with what UpdateTexture wrote");
+		textures++;
+		var skyAgain = Textures.handle(sky.id);
+		check(skyAgain != 0
+			&& skyAgain != skyGpu
+			&& graphics.textureCreations == textures + 1, "a cubemap: sent again from its kept faces");
+		textures++;
+		#else
+		check(Textures.handle(pixels.id) == 0 && Textures.handle(sky.id) == 0 && warnings == 2,
+			"natively: a texture from pixels and a cubemap drawn as nothing, warned of");
 		Textures.handle(pixels.id);
-		check(warnings == 1 && graphics.textureCreations == textures, "a texture from pixels: warned of once, nothing made");
+		check(warnings == 2 && graphics.textureCreations == textures, "natively: warned of once each, nothing made");
+		warnings = 0;
+		#end
 
 		// The font's atlas: kept in memory, sent again.
 		var fontAgain = Textures.handle(font.texture.id);
@@ -162,7 +186,7 @@ class RestoreTests {
 			metalAgain = Textures.handle(metal);
 		check(albedoAgain != albedoGpu && roughAgain != 0 && roughAgain != roughGpu && metalAgain != 0 && metalAgain != metalGpu,
 			"a model's textures: sent again from the file decoded again");
-		check(graphics.textureCreations == textures + 3 && warnings == 1, "a model's textures: three made, none warned of");
+		check(graphics.textureCreations == textures + 3 && warnings == 0, "a model's textures: three made, none warned of");
 		textures += 3;
 		check(Textures.handle(albedo) == albedoAgain && Textures.handle(rough) == roughAgain && graphics.textureCreations == textures,
 			"a model's textures: sent once");
@@ -177,7 +201,7 @@ class RestoreTests {
 		var made = second.materials[1].maps[MATERIAL_MAP_ALBEDO].texture.id;
 		check(made != albedo && Textures.handle(made) == 0, "a texture made with no picture in hand: drawn as nothing while the file is decoded again");
 		pump(() -> Textures.handle(made) != 0);
-		check(Textures.handle(made) != 0 && warnings == 1, "then sent, not warned of");
+		check(Textures.handle(made) != 0 && warnings == 0, "then sent, not warned of");
 		check(second.materials[1].maps[MATERIAL_MAP_ROUGHNESS].texture.id == rough, "the next load shares what is still held");
 		UnloadModel(second);
 

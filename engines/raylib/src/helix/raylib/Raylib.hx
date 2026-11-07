@@ -30,13 +30,7 @@ import helix.raylib.modules.RTextures;
 	twice is shared, and goes to the GPU when first drawn. `SaveFileTextAsync` writes are kept across runs. Shaders are raylib's GLSL,
 	compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported
 	apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.raylib.modules`) and listed here
-	by module; what raylib has and helix-raylib doesn't refuses to compile, naming itself.
-
-	A page's GPU context can be lost (a GPU reset, a tab evicted) and given back, which raylib's native programs never meet. The program
-	draws nothing while it is lost and carries on when it is back: textures loaded from files and a model's textures, embedded or in
-	files of their own, are decoded again from their bytes, fonts' atlases are kept in memory and sent again, meshes are sent again from
-	their vertices, render textures come back blank, and the programs and pipelines keep their handles. A texture whose pixels were
-	sent once and let go of (`LoadTextureFromImage`'s, `LoadTextureCubemap`'s) draws as nothing from then on, with one warning naming it. */
+	by module; what raylib has and helix-raylib doesn't refuses to compile, naming itself. */
 class Raylib {
 	// ---- Keys (KeyboardKey) ----
 
@@ -3350,7 +3344,7 @@ class Raylib {
 
 		What is drawn into the render texture stays from frame to frame.
 
-		After a page's GPU context is lost, the render texture comes back blank (`Raylib`).
+		After a lost GPU context in a page, the render texture is cleared and stays empty until drawn into again.
 
 		@param width  Its width, in pixels.
 		@param height  Its height.
@@ -4138,7 +4132,7 @@ class Raylib {
 
 		A compressed format gives no texture, with a warning.
 
-		The pixels are let go of once sent, so after a page's GPU context is lost the texture draws as nothing, with one warning (`Raylib`).
+		In a page a copy of the pixels stays in memory, so the texture survives a lost GPU context.
 
 		@param image  The image.
 		@return  The texture. */
@@ -4179,7 +4173,7 @@ class Raylib {
 
 		`UnloadTexture` lets go of the cubemap, which is counted as any texture is.
 
-		The pixels are let go of once sent, so after a page's GPU context is lost the cubemap draws as nothing, with one warning (`Raylib`).
+		In a page a copy of the pixels stays in memory, so the cubemap survives a lost GPU context.
 
 		@param image  The image.
 		@param layout  The layout (`CUBEMAP_LAYOUT_*`).

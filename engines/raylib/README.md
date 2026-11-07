@@ -11,13 +11,13 @@
 | `helix.raylib.extras` | what helix-raylib adds: async loads, PBR lighting, device and window info |
 | `helix.raylib.Vector2`, `Color`, `Model` and the rest | raylib's structs |
 
-Three things differ from raylib:
+## Differences from raylib
 
-- Files load with the `...Async` calls in `helix.raylib.extras`. A page can't wait for a file.
-- `LoadShader` takes constant file names. Shaders compile with the program.
+- Files load with the `...Async` calls in `helix.raylib.extras`.
+- Loading a shader that wasn't present at build time is unsupported.
 - Models, shapes and images follow raylib 6.2, which fixed bugs in 5.5.
-
-Not supported: IQM, VOX and M3D models, morph targets, models drawn as points, and compressed images.
+- In a page, a lost GPU context is recovered automatically. Render textures are cleared.
+- Not supported: IQM, VOX and M3D models, morph targets, models drawn as points, and compressed images.
 
 See the [API reference](https://whirlinggizmo.github.io/helix/api/helix/raylib/index.html) for everything else.
 

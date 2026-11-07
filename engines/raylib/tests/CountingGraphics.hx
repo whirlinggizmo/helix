@@ -63,6 +63,9 @@ class CountingGraphics implements IGraphics {
 			shadingLanguage: ""
 		};
 
+	// The levels of the last texture made with createTexture.
+	public var lastLevels:Array<Bytes> = null;
+
 	function handle():Int
 		return next++;
 
@@ -71,6 +74,7 @@ class CountingGraphics implements IGraphics {
 
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int {
 		textureCreations++;
+		lastLevels = levels;
 		return made(textures);
 	}
 

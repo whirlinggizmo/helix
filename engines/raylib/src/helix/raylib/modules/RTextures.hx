@@ -460,7 +460,7 @@ class RTextures {
 
 		What is drawn into the render texture stays from frame to frame.
 
-		After a page's GPU context is lost, the render texture comes back blank (`Raylib`).
+		After a lost GPU context in a page, the render texture is cleared and stays empty until drawn into again.
 
 		@param width  Its width, in pixels.
 		@param height  Its height.
@@ -2579,7 +2579,7 @@ class RTextures {
 
 		A compressed format gives no texture, with a warning.
 
-		The pixels are let go of once sent, so after a page's GPU context is lost the texture draws as nothing, with one warning (`Raylib`).
+		In a page a copy of the pixels stays in memory, so the texture survives a lost GPU context.
 
 		@param image  The image.
 		@return  The texture. */
@@ -2645,7 +2645,7 @@ class RTextures {
 
 		`UnloadTexture` lets go of the cubemap, which is counted as any texture is.
 
-		The pixels are let go of once sent, so after a page's GPU context is lost the cubemap draws as nothing, with one warning (`Raylib`).
+		In a page a copy of the pixels stays in memory, so the cubemap survives a lost GPU context.
 
 		@param image  The image.
 		@param layout  The layout (`CUBEMAP_LAYOUT_*`).

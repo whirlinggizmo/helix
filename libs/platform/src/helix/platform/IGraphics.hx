@@ -19,7 +19,7 @@ import helix.platform.Sampling;
 	handle, a draw draws nothing, `readPixels` fails. At `GraphicsRestored` the adapter has remade, under the old handles, its programs,
 	pipelines, render targets and shadow maps (their texels cleared), data textures and stream buffers (rewritten each frame anyway).
 	Textures (`createTexture`, `createTextureFromImage`, `createCubeTexture`) and static buffers are gone, those made during the loss too,
-	and their handles disposed: their owner makes them again from what it keeps. Natively a context isn't lost. */
+	and their handles disposed: their owner makes them again from what it keeps. Natively, a lost context (rare) is currently unrecoverable. */
 interface IGraphics {
 	/** Uploads an image as a texture.
 

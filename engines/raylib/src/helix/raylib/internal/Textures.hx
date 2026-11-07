@@ -16,6 +16,9 @@ class Textures {
 	public static inline final DEFAULT = 1;
 
 	static var next = DEFAULT + 1;
+	// Whether a lost GPU context is given back (IGraphics: in a page; natively it isn't recovered), so a texture of no file keeps its
+	// pixels for the restore.
+	static inline var RESTORES = #if js true #else false #end;
 	static final entries = new Map<Int, Entry>();
 	static final byPath = new Map<String, Int>();
 
@@ -43,8 +46,8 @@ class Textures {
 			held: 1,
 			levels: levels,
 			width: image.width,
-			height: image.height
-		});
+			height: image.height,
+			keep: path == "" && RESTORES});
 		if (path != "")
 			byPath.set(path, id);
 		return id;
@@ -239,7 +242,7 @@ class Textures {
 	}
 
 	/** Keeps a texture's pixels in memory once they are sent, so a lost GPU context gets them back (`graphicsRestored`): a font's atlas,
-		small and costly to make again. Nothing for a texture already sent, or a cubemap.
+		small and costly to make again. Nothing for a texture already sent, or a cubemap (whose pixels are kept where a context can be lost).
 
 		@param id  The texture's id. */
 	public static function keepPixels(id:Int):Void {
@@ -268,7 +271,7 @@ class Textures {
 			}
 			GpuMemory.freed(e.gpu);
 			e.gpu = 0;
-			if (e.image != null && e.keep)
+			if (e.keep && (e.image != null || e.cube != null))
 				continue;
 			e.image = null;
 			e.levels = null;
@@ -314,7 +317,8 @@ class Textures {
 			width: size,
 			height: size,
 			cube: {size: size, levels: levels},
-			sampling: new helix.platform.Sampling(Linear, Clamp, Clamp, levels.length > 1 ? Linear : None)
+			sampling: new helix.platform.Sampling(Linear, Clamp, Clamp, levels.length > 1 ? Linear : None),
+			keep: RESTORES
 		});
 		return id;
 	}
@@ -477,12 +481,13 @@ class Textures {
 				e.image = null;
 				e.levels = null;
 			}
-		} else if (e.gpu == 0 && e.cube != null) {
+		} else if (e.gpu == 0 && e.cube != null && e.cube.levels != null) {
 			e.gpu = GpuMemory.texture(Runtime.graphics.createCubeTexture(e.cube.size, e.cube.levels, helix.platform.TextureFormat.Rgba8),
 				levelBytes(e.cube.levels));
 			cubeHandles.set(e.gpu, true);
 			samplings.set(e.gpu, e.sampling);
-			e.cube = {size: e.cube.size, levels: null};
+			if (!e.keep)
+				e.cube = {size: e.cube.size, levels: null};
 		}
 		if (e.gpu != 0) {
 			while (gpus.length <= id)
@@ -517,8 +522,18 @@ class Textures {
 				e.image.pixels.blit(((y + row) * e.image.width + x) * 4, rgba, row * width * 4, width * 4);
 			return;
 		}
-		if (e.gpu != 0)
+		if (e.gpu != 0) {
 			Runtime.frame.updateTexture(e.gpu, x, y, width, height, rgba);
+			// A kept copy changes too, so a restore sends what the GPU had.
+			if (e.keep && e.image != null) {
+				if (!e.owned) {
+					e.image = new Image(e.image.path, e.image.width, e.image.height, e.image.pixels.sub(0, e.image.pixels.length));
+					e.owned = true;
+				}
+				for (row in 0...height)
+					e.image.pixels.blit(((y + row) * e.image.width + x) * 4, rgba, row * width * 4, width * 4);
+			}
+		}
 	}
 
 	/** Returns a texture's GPU handle when it is on the GPU, without sending it there.
@@ -565,6 +580,9 @@ class Textures {
 				if (sampling != null)
 					samplings.set(made, sampling);
 				e.gpu = made;
+				// A kept copy's mipmaps are made again from its pixels at a restore.
+				if (e.keep)
+					e.levels = null;
 				forget(id);
 				Runtime.frame.afterDraw(() -> {
 					Runtime.graphics.disposeTexture(gpu);
