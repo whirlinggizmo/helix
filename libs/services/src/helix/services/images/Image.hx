@@ -24,7 +24,10 @@ import helix.services.fonts.Glyph2D;
 	badge.drawCircle(32, 32, 30, 0xffe03030);
 	badge.drawText(font, "7", 24, 16, 32, 0, 0xffffffff);
 	var small = badge.resize(32, 32, Bilinear);
-	``` */
+	```
+
+	Natively the generated C++ is compiled with `-fwrapv` on GCC and clang, as Haxe's Int wraps on overflow and C++'s int doesn't. */
+@:buildXml("<files id='haxe'><compilerflag value='-fwrapv' unless='windows'/></files>")
 class Image {
 	/** Gets the path it was loaded from, or "" for one made or decoded from bytes. */
 	public final path:String;

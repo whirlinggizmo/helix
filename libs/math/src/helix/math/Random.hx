@@ -11,7 +11,10 @@ package helix.math;
 	var angle = random.nextRange(0, 2 * Math.PI);
 	var card = random.pick(deck);
 	```
- */
+
+	Natively the generated C++ is compiled with `-fwrapv` on GCC and clang. Haxe's Int wraps on overflow, and C++'s int doesn't, so
+	without it a compiler may change the sequence. */
+@:buildXml("<files id='haxe'><compilerflag value='-fwrapv' unless='windows'/></files>")
 class Random {
 	// xoshiro128**'s four words.
 	final words = new haxe.ds.Vector<Int>(4);

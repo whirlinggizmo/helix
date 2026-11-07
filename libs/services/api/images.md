@@ -19,6 +19,8 @@ badge.drawText(font, "7", 24, 16, 32, 0, 0xffffffff);
 var small = badge.resize(32, 32, Bilinear);
 ```
 
+Natively the generated C++ is compiled with `-fwrapv` on GCC and clang, as Haxe's Int wraps on overflow and C++'s int doesn't.
+
 ```haxe
 function new(path:String, width:Int, height:Int, pixels:haxe.io.Bytes)
 static function filled(width:Int, height:Int, color:Int):Image

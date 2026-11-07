@@ -1048,6 +1048,8 @@ var angle = random.nextRange(0, 2 * Math.PI);
 var card = random.pick(deck);
 ```
 
+Natively the generated C++ is compiled with `-fwrapv` on GCC and clang. Haxe's Int wraps on overflow, and C++'s int doesn't, so without it a compiler may change the sequence.
+
 ```haxe
 function new(?seed:Int = 12345)
 var seed(default, set):Int
