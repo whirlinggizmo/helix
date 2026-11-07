@@ -199,6 +199,12 @@ Code is written to be read, by people and agents, not packed.
     or ignored, what state it reads, limits, and a fenced example where a call's shape isn't obvious from its signature. A fact that
     changes what the reader does belongs here ("A browser plays no sound until the player has pressed a key."); the design's reasons,
     its history and comparisons to other frameworks don't (DECISIONS holds those).
+  - **A doc comment is a lookup, not a chapter.** Its reader, a developer or an agent, lands on it by name and reads it once, and an
+    agent pays again for every line it carries after, so: the summary carries the decision (what it does, and what to call instead
+    when this isn't it: `LoadLightingShader` names `LoadPbrShader`); the remarks are short paragraphs, one fact each, the one most
+    callers need first; what a member reads from the program's data is listed, not described around; and what is true of the
+    program's own files (an asset's bone names, where a model is authored) is the program's spec's, not the API's. A comment that
+    needs a second screen is two members' or a README's.
   - **Standard words.** Never "you". "Optional", "provided", "omitted", "receives", "defaults to", "must be", "skipped", "ignored",
     "clamped to", "unchanged", "local units", "its subtree": not "when given", "left out", "held to", "says", "as it was", "the node's
     own units", "what's under it".
