@@ -234,7 +234,7 @@ Code is written to be read, by people and agents, not packed.
             ```
             @return  The shader, the program's until `UnloadShader`. */
   - **Standard words.** Never "you", and no people: not "the player", "the user" or "nobody", but what happens (a key press, click
-    or tap; permission the browser asks for; a file not yet saved; a size the window can be resized to). "Optional", "provided", "omitted", "receives", "defaults to", "must be", "skipped", "ignored",
+    or tap; permission the browser asks for; a file not yet saved; a size the window may take). "Optional", "provided", "omitted", "receives", "defaults to", "must be", "skipped", "ignored",
     "clamped to", "unchanged", "local units", "its subtree": not "when given", "left out", "held to", "says", "as it was", "the node's
     own units", "what's under it".
   - **Sample**, `IFileSystem.read`:

@@ -86,7 +86,7 @@ class RWindowAsync {
 		}, refused), "the window can't be fullscreen here", done, failed);
 	}
 
-	/** Asynchronously asks for the window's size, replacing raylib's `SetWindowSize`. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting the sizes it can be resized to.
+	/** Asynchronously asks for the window's size, replacing raylib's `SetWindowSize`. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting how small or large it can be.
 
 		The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
 
@@ -186,7 +186,7 @@ class RWindowAsync {
 		ask("SetWindowOpacityAsync", (granted, refused) -> Runtime.window.requestOpacity(opacity, granted, refused), "", done, failed);
 	}
 
-	/** Asynchronously asks for the smallest size the window can be resized to, replacing raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
+	/** Asynchronously asks for the smallest size the window may take, replacing raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
 
 		Refused in a page, whose canvas follows the page.
 
@@ -201,7 +201,7 @@ class RWindowAsync {
 			'$width x $height is under 0 pixels', done, failed);
 	}
 
-	/** Asynchronously asks for the largest size the window can be resized to, replacing raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
+	/** Asynchronously asks for the largest size the window may take, replacing raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
 
 		Refused in a page, whose canvas follows the page.
 

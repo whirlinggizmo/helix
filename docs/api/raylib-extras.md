@@ -1008,7 +1008,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   Called while fullscreen, it only switches to borderless.
 
   As in raylib, `IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)` is true while it is, and `IsWindowFullscreen` false.
-- `SetWindowSizeAsync`: Asynchronously asks for the window's size, replacing raylib's `SetWindowSize`. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting the sizes it can be resized to.
+- `SetWindowSizeAsync`: Asynchronously asks for the window's size, replacing raylib's `SetWindowSize`. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting how small or large it can be.
   - `width`: The width, in pixels.
   - `height`: The height, in pixels.
   - `done`: Optional. Called once the window has a size from the request, or once it is refused, at a later poll.
@@ -1062,7 +1062,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   In a page the canvas fades.
 
   A desktop without a compositor refuses it.
-- `SetWindowMinSizeAsync`: Asynchronously asks for the smallest size the window can be resized to, replacing raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
+- `SetWindowMinSizeAsync`: Asynchronously asks for the smallest size the window may take, replacing raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
   - `width`: The width, in the screen's pixels.
   - `height`: The height.
   - `done`: Optional. Called once the window has the limit, or once it is refused, at a later poll.
@@ -1071,7 +1071,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   Refused in a page, whose canvas follows the page.
 
   A size under 0 pixels is refused.
-- `SetWindowMaxSizeAsync`: Asynchronously asks for the largest size the window can be resized to, replacing raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
+- `SetWindowMaxSizeAsync`: Asynchronously asks for the largest size the window may take, replacing raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
   - `width`: The width, in the screen's pixels.
   - `height`: The height.
   - `done`: Optional. Called once the window has the limit, or once it is refused, at a later poll.
