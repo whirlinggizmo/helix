@@ -1,6 +1,6 @@
 # helix-math
 
-Math for games: pure Haxe, depending on nothing.
+Math for games, in pure Haxe.
 
 - `Trig`: trigonometry giving the same bits on every target, so a simulation plays alike in the browser and natively.
 - `Random`: a seeded generator giving the same sequence on every target.
