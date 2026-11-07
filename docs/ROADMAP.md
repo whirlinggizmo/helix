@@ -27,7 +27,10 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
 - **The jam, before Gyre's shape is decided:** agents (Sonnet, docs allowed) build the same small 3D top-down survivors-like on
   helix-raylib and on HeliX, two or three each, with gear worn from the modular characters' parts (CC0, Quaternius). Measured: tokens,
   time, build failures, bugs, lines written (engine-substitute against game logic), frame time, size, startup, and a change made
-  later by a fresh agent. It answers whether a framework's structure beats a familiar API agents were trained on.
+  later by a fresh agent. It answers whether a framework's structure beats a familiar API agents were trained on. Run on Sonnet
+  2026-11-06, three a side, a tie but for a quarter less reading on helix-raylib, with the play pass, timing at 200 and the change task
+  left. It compared two of our own APIs: the harder control is HeliX's docs/TRIAL.md, the same game as a clean room on plain
+  TypeScript, on Three.js, Pixi, OpenFL and Godot, to which helix-raylib is added, with this spec in place of the draft's game.
 - **A retained-mode engine on helix-raylib (DECISIONS 53), then Gyre's shape.** The scene (a stage, 2D and 3D nodes, transforms,
   hierarchy, the walk that culls, gathers lights and sorts, picking), ported from HeliX's scene code rather than designed anew, issues
   raylib's calls each frame as three.js does under its graph: the speed and size measured for `DrawTexturePro` and `DrawMesh` are
