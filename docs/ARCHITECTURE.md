@@ -81,6 +81,5 @@ The specification is docs/PLATFORM.md; this is the map.
 | `IFileSystem` | `filesystem/browser` (IndexedDB), `filesystem/native` (a directory) | Files on this machine under a root: read and written whole by path, removed, cleared, located for streaming. Bringing a file in when it's missing or stale is a service's, over `IHttp`. |
 | `IExport` | `export/download` (browser), `export/filesystem` (native) | Hands a finished file to the user: a download, or a file in a directory. |
 
-Some interfaces answer later. Each of these is an `IPollable`, and it delivers its answers only in its `poll`, on the main thread. A
-program calls `poll` on each of them every frame. Native adapters hand results from their threads back through `adapters/shared/Mailbox`,
-which `poll` drains.
+Adapters that implement `IPollable` must be pumped every frame via `poll()`, with results being returned on the main thread during that
+poll. Note that native adapters return results from their threads back through `adapters/shared/Mailbox`, drained by `poll()`.
