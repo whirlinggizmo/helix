@@ -44,13 +44,6 @@ for (mesh in model.meshes)
 -lib helix-formats
 ```
 
-Until it is published, link it, and helix-math, from a checkout:
-
-```
-haxelib dev helix-formats <checkout>/libs/formats
-haxelib dev helix-math <checkout>/libs/math
-```
-
 The API reference is [api/](api/README.md). Its tests, in `tests/`, build with `-lib helix-formats` alone, from this repository's root: `TrueTypeTests` embeds the font
 in `tests/assets` as it compiles, and `GifTests` the GIF files in `tests/assets/gif`.
 

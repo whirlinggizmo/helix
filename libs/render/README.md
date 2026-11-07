@@ -18,12 +18,6 @@ helix-log.
 -lib helix-render
 ```
 
-Until it is published, link it, and the libraries it's built on, from a checkout:
-
-```
-haxelib dev helix-render <checkout>/libs/render
-```
-
 ## Set aside
 
 helix-render was built in stages from its agreed API (docs/DECISIONS.md, 34) through stage 3, and is set aside there (DECISIONS 53):
