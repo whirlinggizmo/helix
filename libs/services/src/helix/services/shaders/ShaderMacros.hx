@@ -247,13 +247,7 @@ class ShaderMacros {
 		}
 		if (options.file != null)
 			writeFile(options.file, {kind: "shader", source: source, shared: sharedNames}, pos);
-		var name = holderName("Shader", [
-			vertex.text,
-			fragment.text,
-			vertex.name,
-			fragment.name,
-			haxe.Json.stringify(clean(options))
-		]);
+		var name = holderName("Shader", [haxe.Json.stringify(source), haxe.Json.stringify(key(options))]);
 		compiled.set(name, {
 			kind: "shader",
 			sources: [source],
@@ -330,13 +324,10 @@ class ShaderMacros {
 				shared: sharedNames
 			}, pos);
 		var name = holderName("Variants", [
-			vertex.text,
-			fragment.text,
-			vertex.name,
-			fragment.name,
+			haxe.Json.stringify(sources),
 			features.join(","),
 			haxe.Json.stringify(combinations),
-			haxe.Json.stringify(clean(options))
+			haxe.Json.stringify(key(options))
 		]);
 		compiled.set(name, {
 			kind: "variants",
@@ -358,19 +349,20 @@ class ShaderMacros {
 		return macro @:pos(pos) helix.services.shaders.compiled.$name.VARIANTS;
 	}
 
-	// The options as a key, without the check (a function).
-	static function clean(options:ShaderBuildOptions):Dynamic
+	// The options as a key: without the check (a function), and without the include directories, which are paths and reach the key
+	// through what the compile made.
+	static function key(options:ShaderBuildOptions):Dynamic
 		return {
 			defines: options.defines,
 			includes: options.includes == null ? null : [for (k => v in options.includes) '$k=$v'],
-			includeDirectories: options.includeDirectories,
 			shared: options.shared,
 			clipScale: options.clipScale,
 			points: options.points,
 			file: options.file
 		};
 
-	// The holder class's name for a compile: its kind and a hash of everything it was compiled from.
+	// The holder class's name for a compile: its kind and a hash of what the compile made and the options it was made with, never of a
+	// file's path, so a build names its holders alike wherever the checkout is.
 	static function holderName(kind:String, parts:Array<String>):String
 		return kind + haxe.crypto.Sha1.encode(parts.join("\u0000")).substr(0, 16);
 

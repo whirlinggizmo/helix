@@ -197,14 +197,24 @@ $files </files>
 		return key;
 	}
 
-	// Unpacks a release's zip, fetched and checked, into the directory above program's bin/, replacing what was there.
+	// Unpacks a release's zip, fetched and checked, into the directory above program's bin/. Unpacked beside it first and renamed into
+	// place, so compiles fetching at once never see a part: the first to finish places it, and the others drop theirs.
 	static function unpack(release:{url:String, sha256:String}, program:String):Void {
 		var directory = Path.directory(Path.directory(program));
 		var archive = Downloads.fetch([release.url], release.sha256, "shader");
-		Files.removeDirectory(directory);
-		Downloads.unzip(archive, directory);
+		var partial = '$directory.part-${Std.random(0x7fffffff)}';
+		Downloads.unzip(archive, partial);
 		if (Sys.systemName() != "Windows")
-			Sys.command("chmod", ["755", program]);
+			Sys.command("chmod", ["755", Path.join([partial, "bin", Path.withoutDirectory(program)])]);
+		if (!Files.isFile(program)) {
+			Files.removeDirectory(directory);
+			try
+				FileSystem.rename(partial, directory)
+			catch (e:Dynamic)
+				if (!Files.isFile(program))
+					throw new CommandException('shader: unpacking into $directory failed: $e');
+		}
+		Files.removeDirectory(partial);
 	}
 
 	static function exe(name:String):String
