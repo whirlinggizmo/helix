@@ -204,7 +204,24 @@ Code is written to be read, by people and agents, not packed.
     when this isn't it: `LoadLightingShader` names `LoadPbrShader`); the remarks are short paragraphs, one fact each, the one most
     callers need first; what a member reads from the program's data is listed, not described around; and what is true of the
     program's own files (an asset's bone names, where a model is authored) is the program's spec's, not the API's. A comment that
-    needs a second screen is two members' or a README's.
+    needs a second screen is two members' or a README's. Sample, `LoadLightingShader`, where the summary names the member a reader
+    may want instead, the first paragraph is the setup every caller does, and the example is the call's shape:
+
+        /** Returns raylib's examples' lighting shader (`lighting.vs` and `lighting.fs`), built in. It shines every material alike, one
+            Phong highlight whatever the material says: `LoadPbrShader` draws a glTF's materials as authored.
+
+            Set up as raylib's lighting example does: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, set to the camera's position each frame;
+            `GetShaderLocation(shader, "ambient")` finds the ambient color; lights come from `CreateLight`. A model posed by
+            `UpdateModelAnimation` under it is skinned on the GPU. A program's own shader lights the same way by including
+            `<helix/raylib/shaders/lights.glsl>`.
+
+            ```haxe
+            var shader = LoadLightingShader();
+            SetShaderValue(shader, GetShaderLocation(shader, "ambient"), [0.1, 0.1, 0.1, 1.0], SHADER_UNIFORM_VEC4);
+            model.materials[0].shader = shader;
+            var light = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), Vector3Zero(), YELLOW, shader);
+            ```
+            @return  The shader, the program's until `UnloadShader`. */
   - **Standard words.** Never "you". "Optional", "provided", "omitted", "receives", "defaults to", "must be", "skipped", "ignored",
     "clamped to", "unchanged", "local units", "its subtree": not "when given", "left out", "held to", "says", "as it was", "the node's
     own units", "what's under it".
