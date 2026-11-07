@@ -3,10 +3,7 @@ package helix.raylib;
 /** Represents a model's materials, raylib's `model.materials`: read and written by index (`model.materials[0] = material`), iterated, and
 	with a `length`.
 
-	The model holds a count on each material here. Writing one retains the new material and releases the one it replaces. `UnloadModel`
-	releases them all.
-
-	An array assigned to `Model.materials` is copied, so changing the array afterwards changes nothing here. */
+	An array assigned to `Model.materials` is copied, so changing the array afterwards doesn't change the model. */
 @:forward(length, iterator, keyValueIterator, indexOf, contains, copy)
 abstract ModelMaterials(Array<Material>) {
 	inline function new(materials:Array<Material>)

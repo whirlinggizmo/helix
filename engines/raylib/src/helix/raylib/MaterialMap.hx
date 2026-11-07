@@ -2,9 +2,7 @@ package helix.raylib;
 
 /** Represents raylib's `MaterialMap`: one of a material's maps (`MATERIAL_MAP_*`), a texture with a color and a value.
 
-	Holds a count on its texture. Assigning a texture keeps a copy of its record, retains it and releases the texture it replaces.
-
-	A texture the program unloads after giving it to a map lives until the map lets go of it. */
+	Holds a reference to its texture, so a texture the program unloads lives until the map's reference is released. */
 @:structInit
 class MaterialMap {
 	/** Gets or sets the texture, id 0 for none, which draws as white.

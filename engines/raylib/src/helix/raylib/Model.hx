@@ -2,10 +2,7 @@ package helix.raylib;
 
 /** Represents raylib's `Model`: meshes, materials, each mesh's material, and a transform.
 
-	Holds a count on each of its meshes and materials. Putting one in `meshes` or `materials` retains it. Replacing it or `UnloadModel`
-	releases it.
-
-	A mesh or material nothing holds is freed. */
+	Holds a reference to each of its meshes and materials, released by `UnloadModel` or by replacing them. */
 class Model {
 	/** Gets or sets the transform applied before `DrawModel`'s position, rotation and scale. */
 	public var transform:Matrix;

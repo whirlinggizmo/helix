@@ -4,10 +4,8 @@ package helix.raylib;
 
 	`Raylib.UploadMesh` sends a mesh to the GPU. `extras.Models.LoadModelAsync` and the `GenMesh*` functions upload theirs themselves.
 
-	Counted. The program holds a mesh from `new` or a `GenMesh*` function until `UnloadMesh`, and so does each model whose `meshes` has the
-	mesh.
-
-	When the last holder lets go, the mesh's GPU buffers are freed. */
+	The program holds a reference until `UnloadMesh`, and each model using it holds one too. Its GPU buffers are freed when the last held
+	reference is released. */
 class Mesh {
 	// Its holders: the program until UnloadMesh, and each model whose meshes holds it. At 0 its GPU buffers go (`Models.releaseMesh`).
 	@:allow(helix.raylib)

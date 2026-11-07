@@ -19,18 +19,9 @@ import helix.raylib.modules.RText;
 import helix.raylib.modules.RTextures;
 #end
 
-/** Provides raylib 5.5's API, as `raylib.h` names it, over helix-platform and helix-services: a program writes raylib, and it runs in
-	a page and natively.
+/** Provides raylib 5.5's functions, constants and colors, as `raylib.h` names them. Imported with `import helix.raylib.Raylib.*;`.
 
-	A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`: any `while` or `do`-`while` in
-	the main class that calls `WindowShouldClose()`, in its condition or its body, a statement of a function's own block. In a page its
-	body runs once a frame; one elsewhere doesn't compile. A page can't wait for a file, so on every target files are loaded by helix-raylib's own `...Async` loads,
-	in the package `helix.raylib.extras` with the rest of what helix-raylib adds, a module for each of raylib's (`import helix.raylib.extras.Textures.*;`); raylib's `LoadTexture`, `LoadImage`, `LoadModel`, `LoadSound`,
-	`LoadWave`, `LoadFileData` and `LoadFileText` don't compile, naming the load to use. A file loaded
-	twice is shared, and goes to the GPU when first drawn. `SaveFileTextAsync` writes are kept across runs. Shaders are raylib's GLSL,
-	compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported
-	apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.raylib.modules`) and listed here
-	by module; what raylib has and helix-raylib doesn't refuses to compile, naming itself. */
+	A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`. */
 class Raylib {
 	// ---- Keys (KeyboardKey) ----
 

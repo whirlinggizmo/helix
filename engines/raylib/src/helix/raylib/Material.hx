@@ -4,11 +4,8 @@ package helix.raylib;
 
 	A draw shows the diffuse map's texture and color.
 
-	Counted. The program holds a material from `new` or `LoadMaterialDefault` until `UnloadMaterial`, and so does each model whose
-	`materials` has the material.
-
-	When the last holder lets go, the maps let go of their textures and the material lets go of its shader. Each is freed when nothing else
-	holds it. */
+	The program holds a reference until `UnloadMaterial`, and each model using it holds one too. Freed when the last held reference is
+	released, which releases its maps' textures and its shader. */
 class Material {
 	// Its holders (docs/DECISIONS.md 25): the program from `LoadMaterialDefault` or `new` until `UnloadMaterial`, and each model whose
 	// `materials` holds it. At 0 its maps let go of their textures and it of its shader (`Models.releaseMaterial`).

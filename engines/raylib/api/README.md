@@ -10,11 +10,9 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
 
 *class* in [`engines/raylib/src/helix/raylib/AudioStream.hx`](../src/helix/raylib/AudioStream.hx), `import helix.raylib.AudioStream;`
 
-Represents raylib's `AudioStream`: samples a program makes as it goes, played as `UpdateAudioStream` gives them, over helix-services' `SampleQueue`.
+Represents raylib's `AudioStream`: samples a program makes as it goes, played as `UpdateAudioStream` gives them.
 
-Holds raylib's double buffer: two buffers of `SetAudioStreamBufferSizeDefault` frames each, 1470 until set (a 30th of a second at 44100 Hz).
-
-Each update fills one buffer while the other plays.
+It has two buffers of `SetAudioStreamBufferSizeDefault` frames each, 1470 until set. Each update fills one while the other plays.
 
 ```haxe
 var sampleRate(default, null):Int
@@ -445,9 +443,7 @@ Represents raylib's `Material`: a shader and its maps (`MATERIAL_MAP_*`).
 
 A draw shows the diffuse map's texture and color.
 
-Counted. The program holds a material from `new` or `LoadMaterialDefault` until `UnloadMaterial`, and so does each model whose `materials` has the material.
-
-When the last holder lets go, the maps let go of their textures and the material lets go of its shader. Each is freed when nothing else holds it.
+The program holds a reference until `UnloadMaterial`, and each model using it holds one too. Freed when the last held reference is released, which releases its maps' textures and its shader.
 
 ```haxe
 function new(shader:Shader, maps:Array<MaterialMap>, ?params:Array<Float>)
@@ -478,9 +474,7 @@ var unlit:Bool
 
 Represents raylib's `MaterialMap`: one of a material's maps (`MATERIAL_MAP_*`), a texture with a color and a value.
 
-Holds a count on its texture. Assigning a texture keeps a copy of its record, retains it and releases the texture it replaces.
-
-A texture the program unloads after giving it to a map lives until the map lets go of it.
+Holds a reference to its texture, so a texture the program unloads lives until the map's reference is released.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -561,9 +555,7 @@ Represents raylib's `Mesh`: vertices, and its triangles' indices when it has the
 
 `Raylib.UploadMesh` sends a mesh to the GPU. `extras.Models.LoadModelAsync` and the `GenMesh*` functions upload theirs themselves.
 
-Counted. The program holds a mesh from `new` or a `GenMesh*` function until `UnloadMesh`, and so does each model whose `meshes` has the mesh.
-
-When the last holder lets go, the mesh's GPU buffers are freed.
+The program holds a reference until `UnloadMesh`, and each model using it holds one too. Its GPU buffers are freed when the last held reference is released.
 
 ```haxe
 function new()
@@ -623,9 +615,7 @@ var boneCount:Int
 
 Represents raylib's `Model`: meshes, materials, each mesh's material, and a transform.
 
-Holds a count on each of its meshes and materials. Putting one in `meshes` or `materials` retains it. Replacing it or `UnloadModel` releases it.
-
-A mesh or material nothing holds is freed.
+Holds a reference to each of its meshes and materials, released by `UnloadModel` or by replacing them.
 
 ```haxe
 function new(meshes:Array<Mesh>, materials:Array<Material>, meshMaterial:Array<Int>)
@@ -690,9 +680,7 @@ var name:String
 
 Represents a model's materials, raylib's `model.materials`: read and written by index (`model.materials[0] = material`), iterated, and with a `length`.
 
-The model holds a count on each material here. Writing one retains the new material and releases the one it replaces. `UnloadModel` releases them all.
-
-An array assigned to `Model.materials` is copied, so changing the array afterwards changes nothing here.
+An array assigned to `Model.materials` is copied, so changing the array afterwards doesn't change the model.
 
 ## ModelMeshes
 
@@ -700,9 +688,7 @@ An array assigned to `Model.materials` is copied, so changing the array afterwar
 
 Represents a model's meshes, raylib's `model.meshes`: read and written by index (`model.meshes[0] = mesh`), iterated, and with a `length`.
 
-The model holds a count on each mesh here. Writing one retains the new mesh and releases the one it replaces. `UnloadModel` releases them all.
-
-An array assigned to `Model.meshes` is copied, so changing the array afterwards changes nothing here.
+An array assigned to `Model.meshes` is copied, so changing the array afterwards doesn't change the model.
 
 ## Music
 
@@ -802,14 +788,14 @@ var normal:Vector3
 
 *class* in [`engines/raylib/src/helix/raylib/Raygui.hx`](../src/helix/raylib/Raygui.hx), `import helix.raylib.Raygui;`
 
-Provides raygui's API, raylib's immediate-mode GUI, as raylib 5.5's `raygui.h` (raygui 4.5-dev) names it: its controls (`GuiButton`, `GuiSlider`, `GuiTextBox`, `GuiListView`, `GuiColorPicker` and the rest), drawn and read each frame between `BeginDrawing` and `EndDrawing`, its style (`GuiSetStyle`, `GuiGetStyle`, `GuiLoadStyleDefault`), font, state, alpha, tooltips and icons. As in raylib, where raygui is a header of its own, it is apart from `Raylib`, so a program that uses it imports it too:
+Provides raygui's API, raylib's immediate-mode GUI, as raylib 5.5's `raygui.h` (raygui 4.5-dev) names it. As in raylib, it is imported apart from `Raylib`:
 
 ```haxe
 import helix.raylib.Raylib.*;
 import helix.raylib.Raygui.*;
 ```
 
-A value a control changes is passed in a one-element array, as raygui takes a pointer: `GuiCheckBox(bounds, "On", checked)` with `var checked = [false];`, `GuiSlider(bounds, null, null, value, 0, 100)` with `var value = [50.];`, `GuiTextBox(bounds, text, 64, editing)` with `var text = ["name"];`. A struct a control changes (`Color`, `Vector2`, `Rectangle`, `Vector3`) is changed in place. A style file loads with `GuiLoadStyleAsync` and an icon file with `GuiLoadIconsAsync`, in `helix.raylib.extras.Gui`.
+A value a control changes is passed in a one-element array, as raygui takes a pointer: `GuiCheckBox(bounds, "On", checked)` with `var checked = [false];`. A struct a control changes (`Color`, `Vector2`, `Rectangle`, `Vector3`) is changed in place.
 
 Its members are on their own page: [raygui.md](raygui.md).
 
@@ -823,9 +809,9 @@ Each of these is raylib's name (or emscripten's, which raylib's web programs cal
 
 *class* in [`engines/raylib/src/helix/raylib/Raylib.hx`](../src/helix/raylib/Raylib.hx), `import helix.raylib.Raylib;`
 
-Provides raylib 5.5's API, as `raylib.h` names it, over helix-platform and helix-services: a program writes raylib, and it runs in a page and natively.
+Provides raylib 5.5's functions, constants and colors, as `raylib.h` names them. Imported with `import helix.raylib.Raylib.*;`.
 
-A program's loop is raylib's, `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`: any `while` or `do`-`while` in the main class that calls `WindowShouldClose()`, in its condition or its body, a statement of a function's own block. In a page its body runs once a frame; one elsewhere doesn't compile. A page can't wait for a file, so on every target files are loaded by helix-raylib's own `...Async` loads, in the package `helix.raylib.extras` with the rest of what helix-raylib adds, a module for each of raylib's (`import helix.raylib.extras.Textures.*;`); raylib's `LoadTexture`, `LoadImage`, `LoadModel`, `LoadSound`, `LoadWave`, `LoadFileData` and `LoadFileText` don't compile, naming the load to use. A file loaded twice is shared, and goes to the GPU when first drawn. `SaveFileTextAsync` writes are kept across runs. Shaders are raylib's GLSL, compiled as the program builds, so `LoadShader` names its files with constants. raymath's functions are `Raymath`'s, imported apart as raylib includes `raymath.h`. Its functions are written in files by raylib's modules (`helix.raylib.modules`) and listed here by module; what raylib has and helix-raylib doesn't refuses to compile, naming itself.
+A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
 
 Its members are on their own pages:
 
@@ -847,14 +833,12 @@ Each of these is raylib's name (or emscripten's, which raylib's web programs cal
 
 *class* in [`engines/raylib/src/helix/raylib/Raymath.hx`](../src/helix/raylib/Raymath.hx), `import helix.raylib.Raymath;`
 
-Provides raymath's API, as raylib 5.5's `raymath.h` names it: vectors, matrices and quaternions, and `Clamp`, `Lerp` and the like. As in raylib, it is apart from `Raylib`, so a program that uses it imports it too:
+Provides raymath's API, as raylib 5.5's `raymath.h` names it. As in raylib, it is imported apart from `Raylib`:
 
 ```haxe
 import helix.raylib.Raylib.*;
 import helix.raylib.Raymath.*;
 ```
-
-What raymath has and helix-raylib doesn't refuses to compile, naming itself.
 
 Its members are on their own page: [raymath.md](raymath.md).
 
@@ -918,14 +902,12 @@ An alias of `RenderTexture`.
 
 *class* in [`engines/raylib/src/helix/raylib/Rlgl.hx`](../src/helix/raylib/Rlgl.hx), `import helix.raylib.Rlgl;`
 
-Provides rlgl's API, as raylib 5.5's `rlgl.h` names it: the matrix stack, immediate drawing (`rlBegin`, `rlVertex3f`, `rlEnd`) and render state. As in raylib, it is apart from `Raylib`, so a program that uses it imports it too:
+Provides rlgl's API, as raylib 5.5's `rlgl.h` names it. As in raylib, it is imported apart from `Raylib`:
 
 ```haxe
 import helix.raylib.Raylib.*;
 import helix.raylib.Rlgl.*;
 ```
-
-rlgl's GPU objects (vertex arrays and buffers, framebuffers, GL ids) aren't here: helix-raylib draws through helix-platform, which has no GL. What rlgl has and helix-raylib doesn't refuses to compile, naming itself.
 
 Its members are on their own page: [rlgl.md](rlgl.md).
 

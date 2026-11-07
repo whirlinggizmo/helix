@@ -9,15 +9,12 @@ import haxe.macro.Expr;
 import helix.raylib.modules.RMath;
 #end
 
-/** Provides raymath's API, as raylib 5.5's `raymath.h` names it: vectors, matrices and quaternions, and `Clamp`, `Lerp` and the
-	like. As in raylib, it is apart from `Raylib`, so a program that uses it imports it too:
+/** Provides raymath's API, as raylib 5.5's `raymath.h` names it. As in raylib, it is imported apart from `Raylib`:
 
 	```haxe
 	import helix.raylib.Raylib.*;
 	import helix.raylib.Raymath.*;
-	```
-
-	What raymath has and helix-raylib doesn't refuses to compile, naming itself. */
+	``` */
 class Raymath {
 	// ---- Constants ----
 
