@@ -535,7 +535,7 @@
    "renderer": "ANGLE (NVIDIA, Vulkan 1.4.329 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
   },
   {
-   "contender": "helix1",
+   "contender": "helix-legacy",
    "variant": "a Sprite2D each",
    "program": "bunnymark",
    "where": "page-vulkan",

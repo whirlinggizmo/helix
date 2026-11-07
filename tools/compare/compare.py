@@ -6,11 +6,11 @@ models_animation many at once (the robots: a grid of robot.glb, each posed at it
     python3 tools/compare/compare.py [--native] [--page] [--backend vulkan|gl] [--runs 3] [--desktop] [--browser PATH] [--write]
                                      [bunnymark] [robots] [CONTENDER ...]
 
-The programs are bunnymark and robots, both when none is named. The contenders are helix-raylib, raylib-c, godot, three, lime (the bunnymark alone) and helix1, all when
+The programs are bunnymark and robots, both when none is named. The contenders are helix-raylib, raylib-c, godot, three, lime (the bunnymark alone) and helix-legacy, all when
 none is named; each is built into build/compare/<contender>/ under build/.lock, with the assets taken from raylib's own release (the bunny's
 texture, the robot). A contender whose toolchain this machine lacks is skipped with one line saying so: raylib-c's page needs Emscripten
 (EMSDK, or HELIX_EMSDK, or ~/toolchains/emsdk), godot needs its binary (HELIX_GODOT, or godot on PATH, or ~/toolchains/godot/Godot_v<version>-stable_linux.x86_64),
-three needs npm, lime needs Lime installed in the user's haxelib at the pinned version (its own BunnyMark demo's renderer), helix1 needs helix-legacy's checkout (HELIX1, or ../helix-legacy beside this one). The versions are dependencies.json's compare entry.
+three needs npm, lime needs Lime installed in the user's haxelib at the pinned version (its own BunnyMark demo's renderer), helix-legacy needs helix-legacy's checkout (HELIX_LEGACY, or ../helix-legacy beside this one). The versions are dependencies.json's compare entry.
 
 --page runs the pages (in headless Chromium with its frame rate cap lifted, on ANGLE over Vulkan, or over GL with --backend gl) and --native
 the native programs (on a private display with software GL, whose times aren't representative, or with --desktop in windows on $DISPLAY,
@@ -53,7 +53,7 @@ LOCK = ROOT / 'build/.lock'
 STORE = ROOT / 'docs/speed.json'
 PAGE = ROOT / 'docs/speed.md'
 PROGRAMS = ['bunnymark', 'robots']
-CONTENDERS = ['helix-raylib', 'raylib-c', 'godot', 'three', 'lime', 'helix1']
+CONTENDERS = ['helix-raylib', 'raylib-c', 'godot', 'three', 'lime', 'helix-legacy']
 BUNNY_COUNTS = [10000, 50000, 100000, 150000, 200000]
 ROBOT_COUNTS = [50, 200, 400]
 # A page's run: seconds before it is given up; native runs the same.
@@ -112,9 +112,9 @@ def godot_binary():
     return guess if guess.is_file() else None
 
 
-def helix1_checkout():
+def legacy_checkout():
     """helix-legacy's checkout, or None."""
-    named = Path(os.environ.get('HELIX1') or ROOT.parent / 'helix-legacy')
+    named = Path(os.environ.get('HELIX_LEGACY') or ROOT.parent / 'helix-legacy')
     return named if (named / 'tools/example.py').is_file() else None
 
 
@@ -322,24 +322,24 @@ def build_lime(programs):
     return True
 
 
-def build_helix1():
+def build_legacy():
     """helix-legacy's bunnymark page, built as one of its examples by its tools/example.py (the program copied in as examples/bunnymark while it
-    builds, and taken out again), its site and assets into build/compare/helix1."""
-    checkout = helix1_checkout()
+    builds, and taken out again), its site and assets into build/compare/helix-legacy."""
+    checkout = legacy_checkout()
     if checkout is None:
-        say('helix1 skipped: no helix-legacy checkout (HELIX1, or ../helix-legacy)')
+        say('helix-legacy skipped: no helix-legacy checkout (HELIX_LEGACY, or ../helix-legacy)')
         return False
     example = checkout / 'examples/bunnymark'
     placed = not example.exists()
     if placed:
-        shutil.copytree(CONTENDERS_DIR / 'helix1', example)
+        shutil.copytree(CONTENDERS_DIR / 'helix-legacy', example)
         (example / 'assets/bunnymark').mkdir(parents=True, exist_ok=True)
         shutil.copy(raylib_source() / 'examples/textures/resources/wabbit_alpha.png', example / 'assets/bunnymark/wabbit_alpha.png')
     try:
-        say('building helix1 bunnymark page')
+        say('building helix-legacy bunnymark page')
         run([sys.executable, 'tools/example.py', 'bunnymark', 'build', 'release-webgl2'], cwd=checkout, timeout=1800)
         site = checkout / 'out/js/release-webgl2/site'
-        home = OUT / 'helix1'
+        home = OUT / 'helix-legacy'
         if home.exists():
             shutil.rmtree(home)
         shutil.copytree(site / 'bunnymark', home)
@@ -372,8 +372,8 @@ def build(programs, contenders, page, native):
             elif contender == 'lime':
                 if not page or not build_lime(programs):
                     continue
-            elif contender == 'helix1':
-                if not page or 'bunnymark' not in programs or not build_helix1():
+            elif contender == 'helix-legacy':
+                if not page or 'bunnymark' not in programs or not build_legacy():
                     continue
             built.append(contender)
     return built
@@ -410,8 +410,8 @@ def pages(programs, contenders):
                 found.append(('three', '', program, OUT / 'three/robots', plain, size))
         if 'lime' in contenders and program == 'bunnymark':
             found.append(('lime', '', program, OUT / 'lime/bunnymark/web', plain, size))
-        if 'helix1' in contenders and program == 'bunnymark':
-            found.append(('helix1', 'a Sprite2D each', program, OUT / 'helix1', plain, size))
+        if 'helix-legacy' in contenders and program == 'bunnymark':
+            found.append(('helix-legacy', 'a Sprite2D each', program, OUT / 'helix-legacy', plain, size))
     return [p for p in found if (p[3] / 'index.html').is_file()]
 
 
@@ -556,7 +556,7 @@ def versions_of(contenders):
     versions = pins()
     commit = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
     return {'helix-raylib': f'helix {commit}', 'raylib-c': f'raylib {RAYLIB}', 'godot': f'Godot {versions["godot"]}', 'three': f'three.js {versions["three"]}', 'lime': f'Lime {versions["lime"]}',
-            'helix1': 'helix-legacy'}
+            'helix-legacy': 'helix-legacy'}
 
 
 def machine():
@@ -627,12 +627,12 @@ def write_store(entries):
 
 WHERE = {'page-vulkan': 'page', 'page-gl': 'page', 'native-gl': 'native, GL', 'native-sdlgpu': 'native, SDL_GPU (Vulkan)', 'native-vulkan': 'native, Vulkan'}
 API = {('helix-raylib', 'page'): 'WebGL2', ('raylib-c', 'page'): 'wasm, WebGL1', ('godot', 'page'): 'wasm, WebGL2', ('three', 'page'): 'WebGL2',
-       ('helix1', 'page'): 'WebGL2', ('lime', 'page'): 'WebGL', ('godot', 'native-vulkan'): 'Forward+', ('godot', 'native-gl'): 'Compatibility'}
+       ('helix-legacy', 'page'): 'WebGL2', ('lime', 'page'): 'WebGL', ('godot', 'native-vulkan'): 'Forward+', ('godot', 'native-gl'): 'Compatibility'}
 
 
 def label(row):
     name = {'helix-raylib': '**helix-raylib**', 'raylib-c': 'raylib C ' + row['version'].split()[-1], 'godot': 'Godot ' + row['version'].split()[-1],
-            'three': 'three.js ' + row['version'].split()[-1], 'lime': 'Lime ' + row['version'].split()[-1], 'helix1': 'helix-legacy'}[row['contender']]
+            'three': 'three.js ' + row['version'].split()[-1], 'lime': 'Lime ' + row['version'].split()[-1], 'helix-legacy': 'helix-legacy'}[row['contender']]
     return name + (f', {row["variant"]}' if row['variant'] else '')
 
 
@@ -709,7 +709,7 @@ def main():
     parser.add_argument('--desktop', action='store_true', help='native runs in windows on $DISPLAY, not on a private display')
     parser.add_argument('--browser', default='', help="a Chromium to run the pages in (default Playwright's own)")
     parser.add_argument('--write', action='store_true', help="update docs/speed.json and docs/speed.md's tables with the run")
-    parser.add_argument('names', nargs='*', metavar='NAME', help='programs (bunnymark, robots) and contenders (helix-raylib, raylib-c, godot, three, helix1)')
+    parser.add_argument('names', nargs='*', metavar='NAME', help='programs (bunnymark, robots) and contenders (helix-raylib, raylib-c, godot, three, helix-legacy)')
     a = parser.parse_args()
     if not sys.platform.startswith('linux'):
         print('compare: Linux only')
