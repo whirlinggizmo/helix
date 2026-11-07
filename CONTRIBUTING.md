@@ -10,8 +10,12 @@ To use the libraries:
 - **Haxe 4.3.7.** Enough for the browser, and for writing shaders. The platform's shader compiler fetches glslang and SPIRV-Cross into
   the user's cache the first time.
 - **Natively:** hxcpp 4.3.2 (`dependencies.json`'s pin), the C/C++ compiler it drives, and SDL3. `tools/sdl3.py` finds or makes the
-  pinned release into `build/deps` for this repository. A program elsewhere names the library with `HELIX_SDL3_LIBRARY`. On Linux, SDL
-  loads X11/Xrandr/Xi/Xcursor and GL for the window and graphics, and ALSA or PulseAudio for audio.
+  pinned release into `build/deps` for this repository. A program elsewhere names the library with `HELIX_SDL3_LIBRARY`.
+  - **Linux:** GCC or clang. SDL loads X11/Xrandr/Xi/Xcursor and GL for the window and graphics, and ALSA or PulseAudio for audio.
+    `tools/sdl3.py` uses the system's SDL3, or builds the pinned release with CMake.
+  - **Windows:** Visual Studio's C++ build tools (MSVC). `tools/sdl3.py` unpacks the official release, and its DLL goes beside each
+    program.
+  - **macOS:** Xcode's command line tools. `tools/sdl3.py` copies the official release's framework, which goes beside each program.
 
 To develop them, also:
 
