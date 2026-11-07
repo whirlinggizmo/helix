@@ -37,7 +37,7 @@ import helix.raylib.modules.RAudioAsync.*;
 @:allow(helix.raylib)
 class RFilesAsync {
 	#if !macro
-	/** Asynchronously reads a file's bytes, in place of raylib's `LoadFileData`. See `LoadFileTextAsync` for reading a text file.
+	/** Asynchronously reads a file's bytes, replacing raylib's `LoadFileData`. See `LoadFileTextAsync` for reading a text file.
 
 		Reads the first of these that has the file:
 		- the program's `SetLoadFileDataCallback`
@@ -59,7 +59,7 @@ class RFilesAsync {
 		});
 	}
 
-	/** Asynchronously reads a text file, in place of raylib's `LoadFileText`. See `LoadFileDataAsync` for reading a file's bytes.
+	/** Asynchronously reads a text file, replacing raylib's `LoadFileText`. See `LoadFileDataAsync` for reading a file's bytes.
 
 		Reads the first of these that has the file:
 		- the program's `SetLoadFileTextCallback`
@@ -103,7 +103,7 @@ class RFilesAsync {
 		return helix.formats.text.Utf8Text.decodeReplacing(bytes, 0, end);
 	}
 
-	/** Asynchronously writes a file's bytes, in place of raylib's `SaveFileData`. See `SaveFileTextAsync` for writing text.
+	/** Asynchronously writes a file's bytes, replacing raylib's `SaveFileData`. See `SaveFileTextAsync` for writing text.
 
 		They are written through the program's `SetSaveFileDataCallback` when it has one. Otherwise they are kept across runs, as
 		`SaveFileTextAsync`'s are.
@@ -119,7 +119,7 @@ class RFilesAsync {
 		RCore.writeData(fileName, data, dataSize, answered(done), error -> refuse("SaveFileDataAsync", error, failed));
 	}
 
-	/** Asynchronously writes a text file, in place of raylib's `SaveFileText`. See `SaveFileDataAsync` for writing bytes.
+	/** Asynchronously writes a text file, replacing raylib's `SaveFileText`. See `SaveFileDataAsync` for writing bytes.
 
 		Written through the program's `SetSaveFileTextCallback` when it has one, during the call, and answered by what that returned.
 
@@ -135,7 +135,7 @@ class RFilesAsync {
 		RCore.writeText(fileName, text, answered(done), error -> refuse("SaveFileTextAsync", error, failed));
 	}
 
-	/** Asynchronously answers whether a file exists, in place of raylib's `FileExists`. See `DirectoryExistsAsync`
+	/** Asynchronously answers whether a file exists, replacing raylib's `FileExists`. See `DirectoryExistsAsync`
 		for a directory.
 
 		The answer comes at a later frame, never during the call.
@@ -157,7 +157,7 @@ class RFilesAsync {
 		});
 	}
 
-	/** Asynchronously answers whether a directory exists, in place of raylib's `DirectoryExists`. See
+	/** Asynchronously answers whether a directory exists, replacing raylib's `DirectoryExists`. See
 		`FileExistsAsync` for a file.
 
 		The answer comes at a later frame, never during the call.
@@ -175,7 +175,7 @@ class RFilesAsync {
 		listOf(directoryOf(dirPath), names -> answer(names != null));
 	}
 
-	/** Asynchronously answers whether a path is a file, not a directory, in place of raylib's `IsPathFile`. See
+	/** Asynchronously answers whether a path is a file, not a directory, replacing raylib's `IsPathFile`. See
 		`DirectoryExistsAsync` for a directory.
 
 		The answer comes at a later frame, never during the call.
@@ -207,7 +207,7 @@ class RFilesAsync {
 		});
 	}
 
-	/** Asynchronously answers a file's size, in place of raylib's `GetFileLength`.
+	/** Asynchronously answers a file's size, replacing raylib's `GetFileLength`.
 
 		The answer comes at a later frame, never during the call.
 
@@ -246,7 +246,7 @@ class RFilesAsync {
 		});
 	}
 
-	/** Asynchronously answers when a file was last written, in place of raylib's `GetFileModTime`.
+	/** Asynchronously answers when a file was last written, replacing raylib's `GetFileModTime`.
 
 		The answer comes at a later frame, never during the call.
 
@@ -269,7 +269,7 @@ class RFilesAsync {
 		});
 	}
 
-	/** Asynchronously lists a directory's files and subdirectories, in place of raylib's `LoadDirectoryFiles`. See
+	/** Asynchronously lists a directory's files and subdirectories, replacing raylib's `LoadDirectoryFiles`. See
 		`LoadDirectoryFilesExAsync` for a filter by extension and the subdirectories' files.
 
 		The answer comes at a later frame, never during the call.
@@ -302,7 +302,7 @@ class RFilesAsync {
 	}
 
 	/** Asynchronously lists a directory's files with some extensions, and with `scanSubdirs` its subdirectories' too,
-		in place of raylib's `LoadDirectoryFilesEx`. See `LoadDirectoryFilesAsync` for listing one directory's every file and subdirectory.
+		replacing raylib's `LoadDirectoryFilesEx`. See `LoadDirectoryFilesAsync` for listing one directory's every file and subdirectory.
 
 		The answer comes at a later frame, never during the call.
 
@@ -437,8 +437,7 @@ class RFilesAsync {
 		exportText("ExportDataAsCodeAsync", fileName, RCore.dataAsCode(data, dataSize, fileName), "Data as code exported successfully", done, failed);
 	}
 
-	/** Asynchronously loads an automation events list from a text file, in place of raylib's
-		`LoadAutomationEventList` given a file. See `ExportAutomationEventListAsync` for writing one.
+	/** Asynchronously loads an automation events list from a text file, replacing raylib's `LoadAutomationEventList` given a file. See `ExportAutomationEventListAsync` for writing one.
 
 		The file is read as `LoadFileTextAsync` reads it.
 

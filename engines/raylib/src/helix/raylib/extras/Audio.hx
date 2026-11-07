@@ -23,7 +23,7 @@ class Audio {
 	#if !macro
 	// ---- audio: the sound, wave and music loads and wave writes in place of raudio's that wait (raylib/RAudioAsync.hx) ----
 
-	/** Asynchronously loads and decodes a sound file, ready to play at once, in place of raylib's `LoadSound`. See `LoadMusicStreamAsync` for playing a file as it is read.
+	/** Asynchronously loads and decodes a sound file, ready to play at once, replacing raylib's `LoadSound`. See `LoadMusicStreamAsync` for playing a file as it is read.
 
 		`InitAudioDevice` must come first.
 
@@ -35,7 +35,7 @@ class Audio {
 	public static inline function LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void):Void
 		RAudioAsync.LoadSoundAsync(fileName, loaded, failed);
 
-	/** Asynchronously opens a music file to be played as it is read, in place of raylib's `LoadMusicStream`. See `LoadSoundAsync` for decoding a file whole first.
+	/** Asynchronously opens a music file to be played as it is read, replacing raylib's `LoadMusicStream`. See `LoadSoundAsync` for decoding a file whole first.
 
 		`InitAudioDevice` must come first.
 
@@ -50,7 +50,7 @@ class Audio {
 	public static inline function LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void):Void
 		RAudioAsync.LoadMusicStreamAsync(fileName, loaded, failed);
 
-	/** Asynchronously writes a wave to a sound file, in place of raylib's `ExportWave`. See `ExportWaveAsCodeAsync` for writing a C header.
+	/** Asynchronously writes a wave to a sound file, replacing raylib's `ExportWave`. See `ExportWaveAsCodeAsync` for writing a C header.
 
 		The extension chooses the format:
 
@@ -68,7 +68,7 @@ class Audio {
 	public static inline function ExportWaveAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
 		RAudioAsync.ExportWaveAsync(wave, fileName, done, failed);
 
-	/** Asynchronously writes a wave as a C header, in place of raylib's `ExportWaveAsCode`. See `ExportWaveAsync` for writing a sound file.
+	/** Asynchronously writes a wave as a C header, replacing raylib's `ExportWaveAsCode`. See `ExportWaveAsync` for writing a sound file.
 
 		The header holds:
 

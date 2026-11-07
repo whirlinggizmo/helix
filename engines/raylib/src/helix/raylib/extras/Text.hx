@@ -22,7 +22,7 @@ class Text {
 	#if !macro
 	// ---- text: the font loads and writes in place of rtext's that wait (raylib/RTextAsync.hx) ----
 
-	/** Asynchronously loads a TrueType or OpenType font file at a size, in place of raylib's `LoadFontEx`. See `LoadFontFromMemoryAsync` for making a font from bytes already loaded.
+	/** Asynchronously loads a TrueType or OpenType font file at a size, replacing raylib's `LoadFontEx`. See `LoadFontFromMemoryAsync` for making a font from bytes already loaded.
 
 		The font holds only the characters the file has. `glyphCount` may be fewer than asked for, and a character it lacks draws as its '?'.
 
@@ -38,7 +38,7 @@ class Text {
 			?failed:String->Void):Void
 		RTextAsync.LoadFontExAsync(fileName, fontSize, codepoints, codepointCount, loaded, failed);
 
-	/** Asynchronously makes a font from a TrueType or OpenType file's bytes, in place of raylib's `LoadFontFromMemory`. See `LoadFontExAsync` for loading a file by its name.
+	/** Asynchronously makes a font from a TrueType or OpenType file's bytes, replacing raylib's `LoadFontFromMemory`. See `LoadFontExAsync` for loading a file by its name.
 		The glyphs are rasterized off the main thread.
 
 		The font holds only the characters the file has, as `LoadFontExAsync`'s does. With none of them, it is the default font.
@@ -56,7 +56,7 @@ class Text {
 		RTextAsync.LoadFontFromMemoryAsync(fileType, fileData, dataSize, fontSize, codepoints, codepointCount, loaded, failed);
 
 	/** Asynchronously rasterizes a TrueType or OpenType font's glyphs, each with its own image. See
-		`LoadFontFromMemoryAsync` for a font ready to draw, in place of raylib's `LoadFontData`.
+		`LoadFontFromMemoryAsync` for a font ready to draw, replacing raylib's `LoadFontData`.
 
 		Each glyph's image is 8-bit grayscale, for `GenImageFontAtlas`.
 
@@ -76,7 +76,7 @@ class Text {
 		RTextAsync.LoadFontDataAsync(fileData, dataSize, fontSize, codepoints, codepointCount, type, loaded, failed);
 
 	/** Asynchronously writes a font as a C header, the text raylib 5.5's `ExportFontAsCode` writes.
-		The file is written through `SaveFileTextAsync`, in place of raylib's `ExportFontAsCode`.
+		The file is written through `SaveFileTextAsync`, replacing raylib's `ExportFontAsCode`.
 
 		The header holds the texture's pixels, each glyph's rectangle, character, offsets and advance, and a function loading the font. The
 		file's name, in Pascal case, names them.

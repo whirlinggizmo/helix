@@ -38,7 +38,7 @@ import helix.raylib.modules.RModelsAsync.*;
 @:allow(helix.raylib)
 class RAudioAsync {
 	#if !macro
-	/** Asynchronously loads and decodes a sound file, ready to play at once, in place of raylib's `LoadSound`. See `LoadMusicStreamAsync` for playing a file as it is read.
+	/** Asynchronously loads and decodes a sound file, ready to play at once, replacing raylib's `LoadSound`. See `LoadMusicStreamAsync` for playing a file as it is read.
 
 		`InitAudioDevice` must come first.
 
@@ -151,7 +151,7 @@ class RAudioAsync {
 		}, message -> failed('WAVE: Failed to load MP3 data: $message'));
 	}
 
-	/** Asynchronously opens a music file to be played as it is read, in place of raylib's `LoadMusicStream`. See `LoadSoundAsync` for decoding a file whole first.
+	/** Asynchronously opens a music file to be played as it is read, replacing raylib's `LoadMusicStream`. See `LoadSoundAsync` for decoding a file whole first.
 
 		`InitAudioDevice` must come first.
 
@@ -177,7 +177,7 @@ class RAudioAsync {
 		RAudio.open(music, path, "LoadMusicStreamAsync", () -> loaded(music), error -> refuse("LoadMusicStreamAsync", error, failed));
 	}
 
-	/** Asynchronously writes a wave to a sound file, in place of raylib's `ExportWave`. See `ExportWaveAsCodeAsync` for writing a C header.
+	/** Asynchronously writes a wave to a sound file, replacing raylib's `ExportWave`. See `ExportWaveAsCodeAsync` for writing a C header.
 
 		The extension chooses the format:
 
@@ -196,7 +196,7 @@ class RAudioAsync {
 		exportData("ExportWaveAsync", fileName, RAudio.waveFile(wave, fileName), "Wave data exported successfully", "Failed to export wave data", done, failed);
 	}
 
-	/** Asynchronously writes a wave as a C header, in place of raylib's `ExportWaveAsCode`. See `ExportWaveAsync` for writing a sound file.
+	/** Asynchronously writes a wave as a C header, replacing raylib's `ExportWaveAsCode`. See `ExportWaveAsync` for writing a sound file.
 
 		The header holds:
 

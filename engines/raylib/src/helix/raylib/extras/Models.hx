@@ -26,7 +26,7 @@ class Models {
 	#if !macro
 	// ---- models: the model, material and animation loads and mesh writes in place of rmodels' that wait (raylib/RModelsAsync.hx) ----
 
-	/** Asynchronously loads a glTF or GLB file's animations, in place of raylib's `LoadModelAnimations`.
+	/** Asynchronously loads a glTF or GLB file's animations, replacing raylib's `LoadModelAnimations`.
 
 		A file without skins gives none. Only the file's first skin is read.
 
@@ -42,8 +42,7 @@ class Models {
 	public static inline function LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void):Void
 		RModelsAsync.LoadModelAnimationsAsync(fileName, loaded, failed);
 
-	/** Asynchronously loads an .mtl file's materials with the textures they name, in place of raylib's
-		`LoadMaterials`. See `LoadModelAsync` for loading an OBJ file with the materials its `mtllib` names.
+	/** Asynchronously loads an .mtl file's materials with the textures they name, replacing raylib's `LoadMaterials`. See `LoadModelAsync` for loading an OBJ file with the materials its `mtllib` names.
 
 		The program holds each material until `UnloadMaterial`.
 
@@ -69,7 +68,7 @@ class Models {
 	public static inline function LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void):Void
 		RModelsAsync.LoadMaterialsAsync(fileName, loaded, failed);
 
-	/** Asynchronously writes a mesh as an OBJ file through `SaveFileTextAsync`, in place of raylib's `ExportMesh`.
+	/** Asynchronously writes a mesh as an OBJ file through `SaveFileTextAsync`, replacing raylib's `ExportMesh`.
 		See `ExportMeshAsCodeAsync` for writing a C header.
 
 		Positions and texture coordinates are written to 6 places, normals to 4, and each face as a triangle, as raylib's `ExportMesh`
@@ -82,8 +81,7 @@ class Models {
 	public static inline function ExportMeshAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
 		RModelsAsync.ExportMeshAsync(mesh, fileName, done, failed);
 
-	/** Asynchronously writes a mesh as a C header through `SaveFileTextAsync`, in place of raylib's
-		`ExportMeshAsCode`. See `ExportMeshAsync` for writing an OBJ file.
+	/** Asynchronously writes a mesh as a C header through `SaveFileTextAsync`, replacing raylib's `ExportMeshAsCode`. See `ExportMeshAsync` for writing an OBJ file.
 
 		The mesh\'s counts are written as defines, and each array it has as 20 values a line, floats to 3 places, as raylib's `ExportMeshAsCode`
 		writes them.

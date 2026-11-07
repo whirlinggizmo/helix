@@ -39,7 +39,7 @@ import helix.raylib.modules.RAudioAsync.*;
 class RWindowAsync {
 	#if !macro
 	/** Asynchronously asks for fullscreen, or for the window back at the size and place it had. See
-		`ToggleBorderlessWindowedAsync` for the borderless window, in place of raylib's `ToggleFullscreen`.
+		`ToggleBorderlessWindowedAsync` for the borderless window, replacing raylib's `ToggleFullscreen`.
 
 		In a page the browser grants it only soon after a key press, click or tap. Without one, it waits for the next, or refuses.
 
@@ -54,7 +54,7 @@ class RWindowAsync {
 	}
 
 	/** Asynchronously asks for the window to fill the screen without borders, or back to the window. See
-		`ToggleFullscreenAsync` for fullscreen, in place of raylib's `ToggleBorderlessWindowed`.
+		`ToggleFullscreenAsync` for fullscreen, replacing raylib's `ToggleBorderlessWindowed`.
 
 		The screen goes fullscreen. Natively a fullscreen window is borderless and the size of the desktop.
 
@@ -86,7 +86,7 @@ class RWindowAsync {
 		}, refused), "the window can't be fullscreen here", done, failed);
 	}
 
-	/** Asynchronously asks for the window's size, in place of raylib's `SetWindowSize`. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting the sizes it can be resized to.
+	/** Asynchronously asks for the window's size, replacing raylib's `SetWindowSize`. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting the sizes it can be resized to.
 
 		The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
 
@@ -103,7 +103,7 @@ class RWindowAsync {
 			done, failed);
 	}
 
-	/** Asynchronously asks for the window's place on the desktop, in place of raylib's `SetWindowPosition`. See `SetWindowMonitorAsync` for moving it to another monitor.
+	/** Asynchronously asks for the window's place on the desktop, replacing raylib's `SetWindowPosition`. See `SetWindowMonitorAsync` for moving it to another monitor.
 
 		Refused in a page, under Wayland, and while the window is fullscreen or maximized.
 
@@ -115,7 +115,7 @@ class RWindowAsync {
 		ask("SetWindowPositionAsync", (granted, refused) -> Runtime.window.requestPosition(x, y, granted, refused), "", done, failed);
 	}
 
-	/** Asynchronously asks for the window on another monitor, in place of raylib's `SetWindowMonitor`. See `SetWindowPositionAsync` for placing it on the desktop.
+	/** Asynchronously asks for the window on another monitor, replacing raylib's `SetWindowMonitor`. See `SetWindowPositionAsync` for placing it on the desktop.
 
 		Where the window can't be moved, a monitor other than its own is refused.
 
@@ -127,7 +127,7 @@ class RWindowAsync {
 			done, failed);
 	}
 
-	/** Asynchronously asks for the window maximized, in place of raylib's `MaximizeWindow`. See `RestoreWindowAsync` for bringing it back.
+	/** Asynchronously asks for the window maximized, replacing raylib's `MaximizeWindow`. See `RestoreWindowAsync` for bringing it back.
 
 		Refused in a page, which can't maximize its window.
 
@@ -137,7 +137,7 @@ class RWindowAsync {
 		ask("MaximizeWindowAsync", (granted, refused) -> Runtime.window.requestMaximized(true, granted, refused), "", done, failed);
 	}
 
-	/** Asynchronously asks for the window minimized, in place of raylib's `MinimizeWindow`. See `RestoreWindowAsync` for bringing it back.
+	/** Asynchronously asks for the window minimized, replacing raylib's `MinimizeWindow`. See `RestoreWindowAsync` for bringing it back.
 
 		Refused in a page, which can't minimize its window.
 
@@ -147,7 +147,7 @@ class RWindowAsync {
 		ask("MinimizeWindowAsync", (granted, refused) -> Runtime.window.requestMinimized(true, granted, refused), "", done, failed);
 	}
 
-	/** Asynchronously asks for the window back to its size from minimized or maximized, in place of raylib's `RestoreWindow`. See `MaximizeWindowAsync` and
+	/** Asynchronously asks for the window back to its size from minimized or maximized, replacing raylib's `RestoreWindow`. See `MaximizeWindowAsync` and
 		`MinimizeWindowAsync` for changing it.
 
 		A minimized window is restored from minimized, any other from maximized.
@@ -161,7 +161,7 @@ class RWindowAsync {
 			done, failed);
 	}
 
-	/** Asynchronously asks for the window brought to the front with the keyboard, in place of raylib's `SetWindowFocused`.
+	/** Asynchronously asks for the window brought to the front with the keyboard, replacing raylib's `SetWindowFocused`.
 
 		A window manager may only flash it.
 
@@ -173,7 +173,7 @@ class RWindowAsync {
 		ask("SetWindowFocusedAsync", (granted, refused) -> Runtime.window.requestFocus(granted, refused), "", done, failed);
 	}
 
-	/** Asynchronously asks for the window's opacity, in place of raylib's `SetWindowOpacity`.
+	/** Asynchronously asks for the window's opacity, replacing raylib's `SetWindowOpacity`.
 
 		In a page the canvas fades.
 
@@ -186,7 +186,7 @@ class RWindowAsync {
 		ask("SetWindowOpacityAsync", (granted, refused) -> Runtime.window.requestOpacity(opacity, granted, refused), "", done, failed);
 	}
 
-	/** Asynchronously asks for the smallest size the window can be resized to, in place of raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
+	/** Asynchronously asks for the smallest size the window can be resized to, replacing raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
 
 		Refused in a page, whose canvas follows the page.
 
@@ -201,7 +201,7 @@ class RWindowAsync {
 			'$width x $height is under 0 pixels', done, failed);
 	}
 
-	/** Asynchronously asks for the largest size the window can be resized to, in place of raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
+	/** Asynchronously asks for the largest size the window can be resized to, replacing raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
 
 		Refused in a page, whose canvas follows the page.
 
@@ -216,7 +216,7 @@ class RWindowAsync {
 			'$width x $height is under 0 pixels', done, failed);
 	}
 
-	/** Asynchronously locks the mouse to the window and hides the cursor, for looking around, in place of raylib's `DisableCursor`. See `EnableCursorAsync`
+	/** Asynchronously locks the mouse to the window and hides the cursor, for looking around, replacing raylib's `DisableCursor`. See `EnableCursorAsync`
 		for letting it go.
 
 		`GetMouseDelta` keeps coming while the position goes on past the window's edges.
@@ -234,7 +234,7 @@ class RWindowAsync {
 		RCore.cursorHidden = true;
 	}
 
-	/** Asynchronously lets go of the mouse that `DisableCursorAsync` locked and shows the cursor, in place of raylib's `EnableCursor`.
+	/** Asynchronously lets go of the mouse that `DisableCursorAsync` locked and shows the cursor, replacing raylib's `EnableCursor`.
 
 		`IsCursorHidden` is false from the call.
 
@@ -248,7 +248,7 @@ class RWindowAsync {
 		RCore.cursorHidden = false;
 	}
 
-	/** Asynchronously puts text on the system's clipboard, in place of raylib's `SetClipboardText`. See `GetClipboardTextAsync` for reading it.
+	/** Asynchronously puts text on the system's clipboard, replacing raylib's `SetClipboardText`. See `GetClipboardTextAsync` for reading it.
 
 		A page writes it only while it has the keyboard, soon after a press.
 
@@ -263,7 +263,7 @@ class RWindowAsync {
 		}, "", done, failed);
 	}
 
-	/** Asynchronously reads the clipboard's text, in place of raylib's `GetClipboardText`. See `GetClipboardImageAsync` for reading an image.
+	/** Asynchronously reads the clipboard's text, replacing raylib's `GetClipboardText`. See `GetClipboardImageAsync` for reading an image.
 
 		A page reads it only with permission, which the browser may ask for.
 
@@ -273,7 +273,7 @@ class RWindowAsync {
 		Runtime.clipboard().requestText(read, error -> refuse("GetClipboardTextAsync", error, failed));
 	}
 
-	/** Asynchronously reads the clipboard's image, in place of raylib's `GetClipboardImage`. See `GetClipboardTextAsync` for reading text.
+	/** Asynchronously reads the clipboard's image, replacing raylib's `GetClipboardImage`. See `GetClipboardTextAsync` for reading text.
 
 		A page reads it only with permission, which the browser may ask for.
 
@@ -285,7 +285,7 @@ class RWindowAsync {
 			.requestImage(png -> decoded("GetClipboardImageAsync", ".png", png, loaded, failed), error -> refuse("GetClipboardImageAsync", error, failed));
 	}
 
-	/** Asynchronously takes a screenshot of the next frame and saves it as a file, in place of raylib's `TakeScreenshot`. See `LoadImageFromScreenAsync` for
+	/** Asynchronously takes a screenshot of the next frame and saves it as a file, replacing raylib's `TakeScreenshot`. See `LoadImageFromScreenAsync` for
 		the screen as an `Image`.
 
 		The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.

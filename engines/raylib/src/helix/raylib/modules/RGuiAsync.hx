@@ -19,7 +19,7 @@ import helix.raylib.modules.RGui.*;
 @:allow(helix.raylib)
 class RGuiAsync {
 	#if !macro
-	/** Asynchronously loads a style file (.rgs) over the current style, in place of raygui's `GuiLoadStyle`.
+	/** Asynchronously loads a style file (.rgs) over the current style, replacing raygui's `GuiLoadStyle`.
 
 		The default style is loaded first if it isn't yet.
 
@@ -74,7 +74,7 @@ class RGuiAsync {
 		}, error -> refuse("GuiLoadStyleAsync", error, failed));
 	}
 
-	/** Asynchronously loads an icon file (.rgi) over raygui's icons, in place of raygui's `GuiLoadIcons`.
+	/** Asynchronously loads an icon file (.rgi) over raygui's icons, replacing raygui's `GuiLoadIcons`.
 
 		The file's icons replace raygui's from the first, as raygui reads them.
 

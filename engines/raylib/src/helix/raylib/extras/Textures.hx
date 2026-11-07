@@ -23,7 +23,7 @@ class Textures {
 	#if !macro
 	// ---- textures: the image and texture loads and writes in place of rtextures' that wait (raylib/RTexturesAsync.hx) ----
 
-	/** Asynchronously loads an image's raw pixels from a file, in place of raylib's `LoadImageRaw`. See
+	/** Asynchronously loads an image's raw pixels from a file, replacing raylib's `LoadImageRaw`. See
 		`LoadImageAsync` for an encoded image file.
 
 		A file with fewer bytes than the pixels need fails.
@@ -41,7 +41,7 @@ class Textures {
 			?failed:String->Void):Void
 		RTexturesAsync.LoadImageRawAsync(fileName, width, height, format, headerSize, loaded, failed);
 
-	/** Asynchronously reads a texture's pixels into an RGBA image, in place of raylib's `LoadImageFromTexture`. See
+	/** Asynchronously reads a texture's pixels into an RGBA image, replacing raylib's `LoadImageFromTexture`. See
 		`LoadImageFromScreenAsync` for the screen.
 
 		The image is RGBA, whatever the texture's format.
@@ -62,8 +62,7 @@ class Textures {
 	public static inline function LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void):Void
 		RTexturesAsync.LoadImageFromTextureAsync(texture, loaded, failed);
 
-	/** Asynchronously reads the screen into an RGBA image as the next frame ends, in place of raylib's
-		`LoadImageFromScreen`. See `TakeScreenshotAsync` for saving the screen to a file.
+	/** Asynchronously reads the screen into an RGBA image as the next frame ends, replacing raylib's `LoadImageFromScreen`. See `TakeScreenshotAsync` for saving the screen to a file.
 
 		The image is the framebuffer's size, not the screen's, rows top first, its alpha opaque.
 
@@ -74,8 +73,7 @@ class Textures {
 	public static inline function LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void):Void
 		RTexturesAsync.LoadImageFromScreenAsync(loaded, failed);
 
-	/** Asynchronously writes an image to a PNG, QOI or raw file through `SaveFileDataAsync`, in place of raylib's
-		`ExportImage`. See `ExportImageAsCodeAsync` for writing a C header.
+	/** Asynchronously writes an image to a PNG, QOI or raw file through `SaveFileDataAsync`, replacing raylib's `ExportImage`. See `ExportImageAsCodeAsync` for writing a C header.
 
 		The file's extension chooses the format:
 
@@ -92,8 +90,7 @@ class Textures {
 	public static inline function ExportImageAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
 		RTexturesAsync.ExportImageAsync(image, fileName, done, failed);
 
-	/** Asynchronously writes an image as a C header through `SaveFileTextAsync`, in place of raylib's
-		`ExportImageAsCode`. See `ExportImageAsync` for writing a PNG, QOI or raw file.
+	/** Asynchronously writes an image as a C header through `SaveFileTextAsync`, replacing raylib's `ExportImageAsCode`. See `ExportImageAsync` for writing a PNG, QOI or raw file.
 
 		The header holds:
 

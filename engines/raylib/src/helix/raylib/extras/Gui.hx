@@ -22,7 +22,7 @@ class Gui {
 	#if !macro
 	// ---- gui: the style and icon loads in place of raygui's that wait for a file (raylib/RGuiAsync.hx) ----
 
-	/** Asynchronously loads a style file (.rgs) over the current style, in place of raygui's `GuiLoadStyle`.
+	/** Asynchronously loads a style file (.rgs) over the current style, replacing raygui's `GuiLoadStyle`.
 
 		The default style is loaded first if it isn't yet.
 
@@ -43,7 +43,7 @@ class Gui {
 	public static inline function GuiLoadStyleAsync(fileName:String, ?done:Void->Void, ?failed:String->Void):Void
 		RGuiAsync.GuiLoadStyleAsync(fileName, done, failed);
 
-	/** Asynchronously loads an icon file (.rgi) over raygui's icons, in place of raygui's `GuiLoadIcons`.
+	/** Asynchronously loads an icon file (.rgi) over raygui's icons, replacing raygui's `GuiLoadIcons`.
 
 		The file's icons replace raygui's from the first, as raygui reads them.
 
