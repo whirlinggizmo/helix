@@ -57,8 +57,6 @@ haxe build-native.hxml   # native/Main, with hxcpp and SDL3 installed (CONTRIBUT
 
 ## License
 
-zlib: [LICENSE](LICENSE), with a copy in each library's directory (haxelib.json says BSD, as haxelib has no zlib). A program built with
-the libraries owes no notice. A copy of their source keeps it. What a library includes of others' work, each with its license, is in its
-README's Credit section ([helix-platform](libs/platform/README.md#credit), [helix-math](libs/math/README.md#credit),
-[helix-geometry](libs/geometry/README.md#credit), [helix-raylib](engines/raylib/README.md#credit)). None of it asks anything of a built
-program either.
+zlib. See [LICENSE](LICENSE).
+
+Third-party code a library includes is credited in its README.
