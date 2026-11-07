@@ -6,7 +6,7 @@ Helix is a suite of libraries and engines for Haxe game development.  It provide
 
 ## What's here
 
-| Library | What it is | API | Needs (haxelib.json) |
+| Library | Description | API | Dependencies |
 |---|---|---|---|
 | [helix-platform](libs/platform/README.md) | The hardware and the OS as contracts (window, events, GPU, audio, decoders, HTTP, files, export, system), one adapter per API: the browser's, SDL3, WebGL2, sokol_gfx, SDL_GPU, SDL3_mixer | [API](https://whirlinggizmo.github.io/helix/api/helix/platform/index.html) | helix-math, helix-formats |
 | [helix-math](libs/math/README.md) | Points, bounds, matrices, curves, interpolation, deterministic trigonometry and random numbers | [API](https://whirlinggizmo.github.io/helix/api/helix/math/index.html) | nothing |
@@ -18,7 +18,7 @@ Helix is a suite of libraries and engines for Haxe game development.  It provide
 
 The libraries are plain. A program constructs what it uses and nothing runs on its own. An engine on top may run the loop:
 
-| Engine | What it is | API | Needs (haxelib.json) |
+| Engine | Description | API | Dependencies |
 |---|---|---|---|
 | [helix-raylib](engines/raylib/README.md) | raylib 5.5's API over the services and the platform, 2D and 3D, in a page and natively | [API](https://whirlinggizmo.github.io/helix/api/helix/raylib/index.html) | helix-services, helix-platform, helix-geometry, helix-math |
 
