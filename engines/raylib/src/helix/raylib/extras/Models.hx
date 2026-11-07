@@ -26,10 +26,15 @@ class Models {
 	#if !macro
 	// ---- models: the model, material and animation loads and mesh writes in place of rmodels' that wait (raylib/RModelsAsync.hx) ----
 
-	/** Loads a glTF or GLB file's animations, answering when they are read: helix-raylib's own, in place of raylib's
-		`LoadModelAnimations`. They are read as raylib 6.2 reads them, of the file's first skin: each sampled 60 times a second, with
-		(int)(duration * 60) + 1 frames, each frame's pose its bones' transforms in the model. A file without skins gives none. IQM and M3D
-		animations aren't read (docs/DECISIONS.md 27).
+	/** Asynchronously loads a glTF or GLB file's animations, in place of raylib's `LoadModelAnimations`.
+
+		A file without skins gives none. Only the file's first skin is read.
+
+		IQM and M3D animations are refused, as is any file but glTF and GLB.
+
+		Each animation is sampled 60 times a second, as raylib 6.2 samples it, with (int)(duration * 60) + 1 frames.
+
+		Each frame's pose is its bones' transforms in the model.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the animations, as many as the file has; their count is its length.
@@ -37,14 +42,25 @@ class Models {
 	public static inline function LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void):Void
 		RModelsAsync.LoadModelAnimationsAsync(fileName, loaded, failed);
 
-	/** Loads the materials of an .mtl file, with the textures they name, answering when they are ready: helix-raylib's own, in place of
-		raylib's `LoadMaterials`. Each is made as raylib's `ProcessMaterialsOBJ` makes it: raylib's default material, then its diffuse
-		texture (`map_Kd`), or with none its diffuse color (`Kd`, alpha 255); its specular texture (`map_Ks`) and color (`Ks`); the
-		normal map its bump texture (`bump` or `map_bump`), white, its value the specular exponent (`Ns`); its emission color (`Ke`); the
-		height map its displacement texture (`disp`). What a material doesn't give is tinyobj_loader_c's default, as raylib has it: each
-		color black, the specular exponent 1. A texture that can't be read is none (id 0, logged). The program holds each material until
-		`UnloadMaterial`. Where raylib's reading is broken, helix-raylib reads the file as the format has it (a texture's path resolved
-		against the file's directory among them), and a file that breaks the format fails (docs/DECISIONS.md 28).
+	/** Asynchronously loads an .mtl file's materials with the textures they name, in place of raylib's
+		`LoadMaterials`. See `LoadModelAsync` for loading an OBJ file with the materials its `mtllib` names.
+
+		The program holds each material until `UnloadMaterial`.
+
+		Each starts as raylib's default material, and reads these fields as raylib's `ProcessMaterialsOBJ` does:
+
+		- `map_Kd`, the diffuse texture, or with none `Kd`, the diffuse color (alpha 255).
+		- `map_Ks` and `Ks`, the specular texture and color.
+		- `bump` or `map_bump`, the normal map's texture. The normal map's color is white and its value is `Ns`, the specular exponent.
+		- `Ke`, the emission color.
+		- `disp`, the height map's texture.
+
+		A field a material doesn't give defaults to tinyobj_loader_c's default, as raylib has it. Each color is black and the specular
+		exponent is 1.
+
+		A texture's path is resolved against the file's directory. A texture that can't be read is none (id 0) and is logged.
+
+		A file that breaks the format fails.
 
 		@param fileName  The file, as the program names it: an .mtl file.
 		@param loaded  Receives the materials, in the file's order; their count is its length.
@@ -53,22 +69,28 @@ class Models {
 	public static inline function LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void):Void
 		RModelsAsync.LoadMaterialsAsync(fileName, loaded, failed);
 
-	/** Writes a mesh as an OBJ file through `SaveFileTextAsync`, as raylib's `ExportMesh` does: its positions and texture coordinates to
-		6 places, its normals to 4, and a face a triangle. helix-raylib's own, answering once the file is written.
+	/** Asynchronously writes a mesh as an OBJ file through `SaveFileTextAsync`, in place of raylib's `ExportMesh`.
+		See `ExportMeshAsCodeAsync` for writing a C header.
+
+		Positions and texture coordinates are written to 6 places, normals to 4, and each face as a triangle, as raylib's `ExportMesh`
+		writes them.
 
 		@param mesh  The mesh, with positions, texture coordinates and normals.
 		@param fileName  The file; only ".obj" is written.
-		@param done  Optional. Called once the file is written, at a later poll.
+		@param done  Optional. Called once the file is written, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't, such as another extension; when omitted, it is logged. */
 	public static inline function ExportMeshAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
 		RModelsAsync.ExportMeshAsync(mesh, fileName, done, failed);
 
-	/** Writes a mesh as a C header through `SaveFileTextAsync`, as raylib's `ExportMeshAsCode` does: its counts as defines, and each
-		array it has, 20 values a line, floats to 3 places. helix-raylib's own, answering once the file is written.
+	/** Asynchronously writes a mesh as a C header through `SaveFileTextAsync`, in place of raylib's
+		`ExportMeshAsCode`. See `ExportMeshAsync` for writing an OBJ file.
+
+		Its counts are written as defines, and each array it has as 20 values a line, floats to 3 places, as raylib's `ExportMeshAsCode`
+		writes them.
 
 		@param mesh  The mesh.
 		@param fileName  The file; its name, upper case, names the defines and the arrays.
-		@param done  Optional. Called once the file is written, at a later poll.
+		@param done  Optional. Called once the file is written, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
 	public static inline function ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
 		RModelsAsync.ExportMeshAsCodeAsync(mesh, fileName, done, failed);

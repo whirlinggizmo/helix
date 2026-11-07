@@ -13,8 +13,9 @@ import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 #end
 
-/** Holds helix-raylib's drawing for looking at what a program does: a model's skeleton and bounds as posed, and the frame's cost. Each
-	is written here, and `helix.raylib.extras.Debug` forwards to each (`tools/gen_raylib.py`). */
+/** Provides the drawing that shows what a program does: a model's skeleton and bounds as posed, and the frame's cost.
+
+	Each member is written here. `helix.raylib.extras.Debug` forwards to it (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RDebug {
@@ -47,11 +48,15 @@ class RDebug {
 	// The frame whose drawing records each frame's time, once a program draws the stats (a frame made again is hooked again).
 	static var hooked:Null<Frame> = null;
 
-	/** Draws a model's skeleton in the pose it has at the call, as DrawModel draws the model: a line from each bone to its parent, and
-		a small cross at each joint, placed as DrawModel places the model. A model never posed draws its bind pose; one without bones draws
-		nothing. Drawn in 3D mode (BeginMode3D), over what's drawn before it, as DrawLine3D is.
+	/** Draws a model's skeleton in the pose it has at the call, placed as DrawModel places the model. See `DrawModelBoundingBoxPosed` for drawing its bounds.
 
-		One model drawn as several copies, each posed apart, is posed, drawn and looked at copy by copy:
+		Each bone is a line to its parent, and each joint a small cross.
+
+		A model never posed draws its bind pose. A model without bones draws nothing.
+
+		It draws in 3D mode (BeginMode3D), over what is drawn before it, as DrawLine3D does.
+
+		A model drawn as several copies, each posed apart, is posed and drawn copy by copy:
 
 		```haxe
 		for (i in 0...copies) {
@@ -95,8 +100,11 @@ class RDebug {
 		}
 	}
 
-	/** Draws a model's bounds in the pose it has at the call, GetModelBoundingBoxPosed's box (helix.raylib.extras.Models), placed as
-		DrawModel places the model. Drawn in 3D mode, as DrawBoundingBox is.
+	/** Draws a model's bounds in the pose it has at the call, placed as DrawModel places the model. See `DrawModelSkeleton` for drawing its bones.
+
+		The box is GetModelBoundingBoxPosed's (helix.raylib.extras.Models).
+
+		It draws in 3D mode, as DrawBoundingBox does.
 
 		@param model  The model.
 		@param position  Where the model is drawn, as DrawModel's.
@@ -116,10 +124,17 @@ class RDebug {
 			color);
 	}
 
-	/** Draws the frame's cost at a point on the screen, as DrawFPS draws the rate, in FrameStatsStyle's default look at a size: the
-		frames a second, the frame time's mean and its slowest 5% (p95) over the last half second, in milliseconds, and the last frame's
-		draw calls, a line each. It is `DrawFrameStatsEx(new Vector2(posX, posY), {fontSize: fontSize})`: every other field the
-		style's default, so its color is judged against SetTargetFPS's target, or the monitor's refresh rate without one.
+	/** Draws the frame's cost at a point on the screen in FrameStatsStyle's default look at a size, as DrawFPS draws the rate.
+		See `DrawFrameStatsEx` for choosing the stats and their look.
+
+		It draws a line each for:
+		- the frames a second
+		- the frame time's mean and its slowest 5% (p95) over the last half second, in milliseconds
+		- the last frame's draw calls
+
+		The text's color is judged against SetTargetFPS's target, or the monitor's refresh rate without one.
+
+		It is `DrawFrameStatsEx(new Vector2(posX, posY), {fontSize: fontSize})`, every other field the style's default.
 
 		@param posX  The text's left, in pixels.
 		@param posY  The text's top, in pixels.
@@ -128,9 +143,11 @@ class RDebug {
 		DrawFrameStatsEx(new Vector2(posX, posY), {fontSize: fontSize});
 	}
 
-	/** Draws the frame's cost at a point on the screen as a style says: which stats, in what font, size, spacing and colors, over what
-		background. Each stat is a line, so the text's height follows what's shown (MeasureFrameStats). Each number keeps its place: it is
-		right-aligned in a slot of a set width, so the stats don't move as the numbers change.
+	/** Draws the frame's cost at a point on the screen in a style's stats, font, size, spacing, colors and background. See `DrawFrameStats` for drawing the default look at a size.
+
+		Each stat is a line, so the text's height follows the stats shown. `MeasureFrameStats` returns the size.
+
+		Each number is right-aligned in a slot of a fixed width, so the stats stay in place as the numbers change.
 
 		```haxe
 		DrawFrameStatsEx(new Vector2(10, 10), {fontSize: 24, backgroundColor: Fade(BLACK, 0.5), triangles: true});
@@ -167,8 +184,11 @@ class RDebug {
 		}
 	}
 
-	/** Returns the size DrawFrameStatsEx draws in with a style, its padding included, sized for its widest values so it doesn't change
-		from frame to frame, for placing it (at a corner, say).
+	/** Returns the size DrawFrameStatsEx draws a style's stats in, for placing them (at a corner, say).
+
+		The size includes the padding.
+
+		It is sized for the widest values, so it is the same from frame to frame.
 
 		@param style  What to show and how.
 		@return  The width and height, in pixels. */
@@ -388,5 +408,5 @@ class RDebug {
 	#end
 }
 
-/** A piece of a stats line: fixed text, or a number with the template of its slot. */
+/** Represents a piece of a stats line, fixed text or a number with its slot's template. */
 private typedef Part = {text:String, template:Null<String>};

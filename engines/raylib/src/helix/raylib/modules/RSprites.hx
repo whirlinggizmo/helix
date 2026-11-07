@@ -6,20 +6,24 @@ import helix.raylib.internal.Runtime;
 import helix.raylib.internal.Textures;
 #end
 
-/** Holds helix-raylib's instanced texture draw: many copies of one part of a texture, each placed by a matrix, in one call. Each is
-	written here, and `helix.raylib.extras.Sprites` forwards to each (`tools/gen_raylib.py`). */
+/** Provides helix-raylib's instanced texture draw, written here and forwarded by `helix.raylib.extras.Sprites` (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RSprites {
 	#if !macro
-	/** Draws a part of a texture many times in one call, each copy placed by a matrix: what `DrawTexturePro` draws for each, in the
-		batch's order, so the copies join the frame's sprite run and cost what the same draws would, with no call for each. Like three.js's
-		InstancedMesh, Godot's MultiMesh and Unity's instancing, for a 2D sprite.
+	/** Draws one part of a texture many times in one call, each copy placed by its own matrix. See `DrawTexturePro` for drawing a single copy.
+
+		Each copy is what `DrawTexturePro` draws, in the batch's order, so the copies join the frame's sprite run and cost what the same
+		draws would.
 
 		A copy is the part, `source.width` by `source.height` pixels with its top left at the origin, taken through its matrix as
-		`Vector2Transform` applies one (`m0`, `m4`, `m12` across, `m1`, `m5`, `m13` down): `MatrixTranslate` places it,
-		`MatrixRotateZ` turns it about its top left, `MatrixScale` sizes it, and their products do all three. A negative width or height
-		flips the part.
+		`Vector2Transform` applies one. The fields read are `m0`, `m4` and `m12` across, and `m1`, `m5` and `m13` down.
+
+		`MatrixTranslate` places a copy, `MatrixRotateZ` turns it about its top left and `MatrixScale` sizes it. Their products do all three.
+
+		A negative `source.width` or `source.height` flips the part.
+
+		Nothing is drawn when the texture's id, width or height is 0.
 
 		@param texture  The texture.
 		@param source  The part of it, in pixels.

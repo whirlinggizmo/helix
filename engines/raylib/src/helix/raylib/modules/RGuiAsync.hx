@@ -12,18 +12,27 @@ import helix.raylib.internal.Answers.*;
 import helix.raylib.modules.RGui.*;
 #end
 
-/** Holds the async versions of raygui's style and icon loads, helix-raylib's own in place of raygui's calls that wait for a file. Each is
-	written here, and `helix.raylib.extras.Gui` forwards to each (`tools/gen_raylib.py`). */
+/** Provides the async versions of raygui's style and icon loads. They take the place of raygui's calls that wait for a file.
+
+	`helix.raylib.extras.Gui` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RGuiAsync {
 	#if !macro
-	/** Loads a style file (.rgs) over the style, answering when it is loaded: helix-raylib's own, in place of raygui's `GuiLoadStyle`, as
-		a page can't wait for a file. A text file (its first line starting with '#') sets each property its "p" lines name, and its "f"
-		line loads the font it names, beside the style file, at its size and with the characters of its charmap file; a font that can't
-		be loaded leaves raylib's default font at size 10. A binary file sets its properties and, when it holds one, its font, its
-		atlas decompressed. The default style is loaded first if it isn't yet. As in raygui, a text file's last line is read only when a
-		line break ends it.
+	/** Asynchronously loads a style file (.rgs) over the current style, in place of raygui's `GuiLoadStyle`.
+
+		The default style is loaded first if it isn't yet.
+
+		A text file's first line starts with '#'. It reads:
+		- each `p <control> <property> 0x<value>` line, which sets that property.
+		- the `f <size> <charmap> <font>` line, which loads the font at its size with the charmap file's characters. Both files are
+		  beside the style file.
+
+		A font that can't be loaded leaves raylib's default font at size 10.
+
+		A text file's last line is read only when a line break ends it, as in raygui.
+
+		A binary file sets its properties, and its font when it holds one.
 
 		@param fileName  The style file.
 		@param done  Optional. Called once the style is loaded, at a later poll.
@@ -65,9 +74,11 @@ class RGuiAsync {
 		}, error -> refuse("GuiLoadStyleAsync", error, failed));
 	}
 
-	/** Loads an icon file (.rgi) over the icons, answering when it is loaded: helix-raylib's own, in place of raygui's `GuiLoadIcons`, as
-		a page can't wait for a file. Its icons are read over raygui's from the first, as raygui reads them; a file that isn't an icon
-		file changes nothing.
+	/** Asynchronously loads an icon file (.rgi) over raygui's icons, in place of raygui's `GuiLoadIcons`.
+
+		The file's icons replace raygui's from the first, as raygui reads them.
+
+		A file that isn't an icon file changes nothing.
 
 		@param fileName  The icon file.
 		@param loadIconsName  Whether the icons' names are read.

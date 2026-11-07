@@ -58,7 +58,7 @@ class GuiSkins {
 	#if !macro
 	// ---- gui skins: raygui's controls drawn from textures (raylib/RGuiSkins.hx) ----
 
-	/** Makes a skin from a texture and its patches, one for each state.
+	/** Returns a skin cut from a texture by one patch for each state. See `GuiSkinFromSheet` for cutting the patches from a sheet of equal cells.
 
 		@param texture  The texture the patches are cut from.
 		@param normal  The patch drawn in `STATE_NORMAL`.
@@ -71,9 +71,15 @@ class GuiSkins {
 			?tint:Color):GuiSkin
 		return RGuiSkins.GuiSkinFromTexture(texture, normal, focused, pressed, disabled, tint);
 
-	/** Makes a skin from a sheet of a control's states, cells of one size in raygui's order of states: normal, focused, pressed and
-		disabled, from the top down, or from the left across when the sheet is one cell high. A sheet of fewer than four cells leaves the
-		rest to their fallbacks (`GuiSkin`). Each cell is cut as a nine-patch by the same borders.
+	/** Returns a skin cut from a sheet of a control's states, one cell of one size each. See `GuiSkinFromTexture` for cutting a patch per state from one texture.
+
+		The cells are in raygui's order of states: normal, focused, pressed, disabled.
+
+		They run from the top down, or from the left across when the sheet is less than two cells high.
+
+		A sheet of fewer than four cells leaves the rest to their fallbacks (`GuiSkin`).
+
+		Each cell is cut as a nine-patch by the same borders.
 
 		@param texture  The sheet.
 		@param cellWidth  A cell's width, in texels.
@@ -86,19 +92,22 @@ class GuiSkins {
 	public static inline function GuiSkinFromSheet(texture:Texture2D, cellWidth:Int, cellHeight:Int, left:Int, top:Int, right:Int, bottom:Int):GuiSkin
 		return RGuiSkins.GuiSkinFromSheet(texture, cellWidth, cellHeight, left, top, right, bottom);
 
-	/** Sets the skin a part of a control is drawn with, in place of its style's border and base colors. It is read as each control
-		draws, so a skin set before one call and put back after it changes that call's control alone.
+	/** Sets the skin a part of a control is drawn with, in place of its style's border and base colors. See `GuiGetSkin` for reading the skin set, and `GuiClearSkins` for removing every one.
 
-		Set on `DEFAULT`, it is set on every control too, as raygui's `GuiSetStyle` sets `DEFAULT`'s base properties, so set it first and
-		each control's own after. `DEFAULT`'s own `GUI_SKIN_BASE` is what `GuiPanel`, `GuiWindowBox` and `GuiScrollPanel` draw their body
-		with.
+		A skin set on `DEFAULT` is set on every control too, as `GuiSetStyle` sets `DEFAULT`'s base properties. Set `DEFAULT`'s first and
+		each control's own after.
+
+		The skin is read as each control draws. A skin set before one call and put back after it changes that call's control alone.
+
+		`GuiPanel`, `GuiWindowBox` and `GuiScrollPanel` draw their body with `DEFAULT`'s own `GUI_SKIN_BASE`.
+
 		@param control  The control: `DEFAULT`, `BUTTON`, `SLIDER` and the rest of raygui's.
 		@param part  `GUI_SKIN_BASE`, `GUI_SKIN_FILL`, `GUI_SKIN_HANDLE` or `GUI_SKIN_ITEM`.
 		@param skin  The skin, or null to draw the part flat in its style's colors again. */
 	public static inline function GuiSetSkin(control:Int, part:Int, skin:Null<GuiSkin>):Void
 		RGuiSkins.GuiSetSkin(control, part, skin);
 
-	/** Returns the skin a part of a control is drawn with, for putting it back after a change.
+	/** Returns the skin a part of a control is drawn with, to put back after a change. See `GuiSetSkin` for setting it.
 
 		@param control  The control.
 		@param part  The part.
@@ -106,7 +115,9 @@ class GuiSkins {
 	public static inline function GuiGetSkin(control:Int, part:Int):Null<GuiSkin>
 		return RGuiSkins.GuiGetSkin(control, part);
 
-	/** Removes every skin, so every control is drawn flat in its style's colors again. Loading a style leaves skins as they are. */
+	/** Removes every skin, so every control is drawn flat in its style's colors again. See `GuiSetSkin` with null for removing one.
+
+		Loading a style leaves the skins unchanged. */
 	public static inline function GuiClearSkins():Void
 		RGuiSkins.GuiClearSkins();
 	#end

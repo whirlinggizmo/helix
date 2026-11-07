@@ -20,8 +20,12 @@ class Files {
 	#if !macro
 	// ---- files: the file reads, writes and questions in place of rcore's that wait for a file (raylib/RFilesAsync.hx) ----
 
-	/** Reads a file's bytes, answering when they are read: helix-raylib's own, in place of raylib's `LoadFileData`. The program's
-		`SetLoadFileDataCallback` answers first, then what `SaveFileData` wrote, then the program's files.
+	/** Asynchronously reads a file's bytes, in place of raylib's `LoadFileData`. See `LoadFileTextAsync` for reading a text file.
+
+		It reads the first of these that has the file:
+		- the program's `SetLoadFileDataCallback`
+		- what `SaveFileData` wrote
+		- the program's files
 
 		@param fileName  The file.
 		@param loaded  Receives its bytes.
@@ -29,12 +33,19 @@ class Files {
 	public static inline function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):Void
 		RFilesAsync.LoadFileDataAsync(fileName, loaded, failed);
 
-	/** Reads a text file, answering when it is read: helix-raylib's own, in place of raylib's `LoadFileText`. The program's
-		`SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
+	/** Asynchronously reads a text file, in place of raylib's `LoadFileText`. See `LoadFileDataAsync` for reading a file's bytes.
 
-		A file's text ends at its first NUL byte, as raylib's C string does, and a byte that isn't UTF-8 is read as U+FFFD: a file is never
-		refused for what it holds. In a page, a file nobody saved yet is asked of the server, which logs a 404 in the browser's console
-		before `failed` answers: a program reading a save on its first run sees one.
+		It reads the first of these that has the file:
+		- the program's `SetLoadFileTextCallback`
+		- what `SaveFileText` wrote
+		- the program's files
+
+		The text ends at the file's first NUL byte, as raylib's C string does.
+
+		A byte that isn't UTF-8 is read as U+FFFD. A file is never refused for what it holds.
+
+		In a page, a file nobody saved yet is asked of the server, which logs a 404 in the browser's console before `failed` answers. A
+		program reading a save on its first run sees one.
 
 		@param fileName  The file.
 		@param loaded  Receives its text.
@@ -42,82 +53,125 @@ class Files {
 	public static inline function LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void):Void
 		RFilesAsync.LoadFileTextAsync(fileName, loaded, failed);
 
-	/** Writes a file's bytes, answering once they are kept or refused: helix-raylib's own, in place of raylib's `SaveFileData`. They are
-		written through the program's `SetSaveFileDataCallback` when it has one, else kept across runs as `SaveFileTextAsync`'s are.
+	/** Asynchronously writes a file's bytes, in place of raylib's `SaveFileData`. See `SaveFileTextAsync` for writing text.
+
+		They are written through the program's `SetSaveFileDataCallback` when it has one. Otherwise they are kept across runs, as
+		`SaveFileTextAsync`'s are.
+
 		`LoadFileDataAsync` reads them back.
 
 		@param fileName  The file.
 		@param data  The bytes.
 		@param dataSize  How many of them.
-		@param done  Optional. Called once the file is written, at a later poll.
+		@param done  Optional. Called once the file is written, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
 	public static inline function SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:Void->Void, ?failed:String->Void):Void
 		RFilesAsync.SaveFileDataAsync(fileName, data, dataSize, done, failed);
 
-	/** Writes a text file, answering once it is kept or refused: helix-raylib's own, in place of raylib's `SaveFileText`. It is written
-		through the program's `SetSaveFileTextCallback` when it has one, during the call, answered by what that returned. Otherwise it is
-		answered once the write has finished. The save file persists between runs, including both native and web builds. `LoadFileTextAsync` reads
-		it back.
+	/** Asynchronously writes a text file, in place of raylib's `SaveFileText`. See `SaveFileDataAsync` for writing bytes.
+
+		It is written through the program's `SetSaveFileTextCallback` when it has one, during the call, and answered by what that returned.
+
+		Otherwise it is kept across runs, natively and in a page, and answered once the write has finished.
+
+		`LoadFileTextAsync` reads it back.
 
 		@param fileName  The file.
 		@param text  Its text.
-		@param done  Optional. Called once the file is written, at a later poll.
+		@param done  Optional. Called once the file is written, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
 	public static inline function SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void):Void
 		RFilesAsync.SaveFileTextAsync(fileName, text, done, failed);
 
-	/** Answers whether a file exists: helix-raylib's own, in place of raylib's `FileExists`. One `SaveFileText` or `SaveFileData` wrote
-		exists, as does one of the program's; finding one of the program's reads it, so a load of it after answers at once. The answer
-		comes at a later frame, never during the call.
+	/** Asynchronously answers whether a file exists, in place of raylib's `FileExists`. See `DirectoryExistsAsync`
+		for a directory.
+
+		The answer comes at a later frame, never during the call.
+
+		A file exists when `SaveFileText` or `SaveFileData` wrote it, or when it is one of the program's.
+
+		Finding one of the program's files reads it, so a load of it after answers at once.
 
 		@param fileName  The file.
 		@param answer  Receives true when it exists. */
 	public static inline function FileExistsAsync(fileName:String, answer:Bool->Void):Void
 		RFilesAsync.FileExistsAsync(fileName, answer);
 
-	/** Answers whether a directory exists: helix-raylib's own, in place of raylib's `DirectoryExists`. Natively it is a directory of the
-		program's files; `helix-raylib-dropped` and the directories under it hold the dropped files. A page's own files are on its server,
-		which can't be listed, so there only its root ("", "." or "./") and the dropped files' directories exist. The answer comes at a later
-		frame, never during the call.
+	/** Asynchronously answers whether a directory exists, in place of raylib's `DirectoryExists`. See
+		`FileExistsAsync` for a file.
+
+		The answer comes at a later frame, never during the call.
+
+		Natively it is a directory of the program's files.
+
+		`helix-raylib-dropped` and the directories under it hold the dropped files.
+
+		A page's own files are on its server, which can't be listed. There only its root ("", "." or "./") and the dropped files'
+		directories exist.
 
 		@param dirPath  The directory.
 		@param answer  Receives true when it exists. */
 	public static inline function DirectoryExistsAsync(dirPath:String, answer:Bool->Void):Void
 		RFilesAsync.DirectoryExistsAsync(dirPath, answer);
 
-	/** Answers whether a path is a file, not a directory: helix-raylib's own, in place of raylib's `IsPathFile`. A file `SaveFileText` or
-		`SaveFileData` wrote, a dropped file, and a file the program has, as `FileExistsAsync` finds them, are files. The answer comes at a
-		later frame, never during the call.
+	/** Asynchronously answers whether a path is a file, not a directory, in place of raylib's `IsPathFile`. See
+		`DirectoryExistsAsync` for a directory.
+
+		The answer comes at a later frame, never during the call.
+
+		These are files, as `FileExistsAsync` finds them:
+		- a file `SaveFileText` or `SaveFileData` wrote
+		- a dropped file
+		- a file the program has
 
 		@param path  The path.
 		@param answer  Receives true for a file; false for a directory or nothing there. */
 	public static inline function IsPathFileAsync(path:String, answer:Bool->Void):Void
 		RFilesAsync.IsPathFileAsync(path, answer);
 
-	/** Answers a file's size: helix-raylib's own, in place of raylib's `GetFileLength`. A file `SaveFileText` or `SaveFileData` wrote, or
-		the program's `SetLoadFileDataCallback` gives, is its bytes' size; a dropped file's is its own. Natively a file of the program's is
-		its size on disk; in a page it is read from the server to be measured, so a load of it after answers at once. The answer comes at
-		a later frame, never during the call.
+	/** Asynchronously answers a file's size, in place of raylib's `GetFileLength`.
+
+		The answer comes at a later frame, never during the call.
+
+		The size is:
+		- for a file `SaveFileText` or `SaveFileData` wrote, or the program's `SetLoadFileDataCallback` gives, its bytes' size
+		- for a dropped file, its own
+		- for a file of the program's, natively its size on disk
+
+		In a page, a file of the program's is read from the server to be measured, so a load of it after answers at once.
 
 		@param fileName  The file.
 		@param answer  Receives its size in bytes; 0 when there is no file, as raylib's. */
 	public static inline function GetFileLengthAsync(fileName:String, answer:Int->Void):Void
 		RFilesAsync.GetFileLengthAsync(fileName, answer);
 
-	/** Answers when a file was last written: helix-raylib's own, in place of raylib's `GetFileModTime`. Natively a file of the program's
-		answers its time on disk; a file `SaveFileText` or `SaveFileData` wrote, when it was saved. A page's own files are on its server,
-		and a dropped file or one the program's load callback gives has no time kept, so each answers 0. The answer comes at a later frame,
-		never during the call.
+	/** Asynchronously answers when a file was last written, in place of raylib's `GetFileModTime`.
+
+		The answer comes at a later frame, never during the call.
+
+		The time is:
+		- for a file of the program's, natively its time on disk
+		- for a file `SaveFileText` or `SaveFileData` wrote, when it was saved
+		- 0 for a page's own file, a dropped file and one the program's load callback gives, which have no time kept
 
 		@param fileName  The file.
 		@param answer  Receives the time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's. */
 	public static inline function GetFileModTimeAsync(fileName:String, answer:Int->Void):Void
 		RFilesAsync.GetFileModTimeAsync(fileName, answer);
 
-	/** Lists a directory's files and subdirectories: helix-raylib's own, in place of raylib's `LoadDirectoryFiles`. Each path is the
-		directory's followed by `/` and the name (`dirPath` "levels" gives "levels/1.json"), sorted by name, a subdirectory's without a
-		slash at its end. The directories are `DirectoryExistsAsync`'s; a page lists only the dropped files. Files `SaveFileText` and
-		`SaveFileData` wrote aren't listed. The answer comes at a later frame, never during the call.
+	/** Asynchronously lists a directory's files and subdirectories, in place of raylib's `LoadDirectoryFiles`. See
+		`LoadDirectoryFilesExAsync` for a filter by extension and the subdirectories' files.
+
+		The answer comes at a later frame, never during the call.
+
+		Each path is the directory's followed by `/` and the name (`dirPath` "levels" gives "levels/1.json"). A subdirectory's has no
+		slash at its end.
+
+		The paths are sorted by name.
+
+		The directories are `DirectoryExistsAsync`'s. A page lists only the dropped files.
+
+		Files `SaveFileText` and `SaveFileData` wrote aren't listed.
 
 		@param dirPath  The directory.
 		@param loaded  Receives the list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as
@@ -125,11 +179,18 @@ class Files {
 	public static inline function LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList->Void):Void
 		RFilesAsync.LoadDirectoryFilesAsync(dirPath, loaded);
 
-	/** Lists a directory's files, those with some extensions, and with `scanSubdirs` its subdirectories' too: helix-raylib's own, in place
-		of raylib's `LoadDirectoryFilesEx`. The paths are `LoadDirectoryFilesAsync`'s, a subdirectory's files right after it. As raylib's:
-		a null filter keeps every file, and without `scanSubdirs` every subdirectory too; a filter is `IsFileExtension`'s list, and
-		"DIR" in it keeps the subdirectories; at most 8192 paths are listed (`MAX_FILEPATH_CAPACITY`), with a warning when there are
-		more. The answer comes at a later frame, never during the call.
+	/** Asynchronously lists a directory's files with some extensions, and with `scanSubdirs` its subdirectories' too,
+		in place of raylib's `LoadDirectoryFilesEx`. See `LoadDirectoryFilesAsync` for listing one directory's every file and subdirectory.
+
+		The answer comes at a later frame, never during the call.
+
+		The paths are `LoadDirectoryFilesAsync`'s, a subdirectory's files right after it.
+
+		A filter is `IsFileExtension`'s list. "DIR" in it keeps the subdirectories.
+
+		A null filter keeps every file, and without `scanSubdirs` every subdirectory too.
+
+		At most 8192 paths are listed (`MAX_FILEPATH_CAPACITY`), with a warning when there are more.
 
 		@param basePath  The directory.
 		@param filter  The extensions kept, such as ".png;.jpg;DIR", or null for every file.
@@ -138,22 +199,35 @@ class Files {
 	public static inline function LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void):Void
 		RFilesAsync.LoadDirectoryFilesExAsync(basePath, filter, scanSubdirs, loaded);
 
-	/** Writes bytes as a C header through `SaveFileTextAsync`, as raylib's `ExportDataAsCode` does, byte for byte: their count as a
-		define, and the bytes as an array, in hexadecimal, 20 a line. helix-raylib's own, answering once the file is written.
+	/** Asynchronously writes bytes as a C header, the text raylib's `ExportDataAsCode` writes. See
+		`SaveFileDataAsync` for the bytes as they are.
+
+		The header is raylib's, byte for byte:
+		- the bytes' count, as a define
+		- the bytes, as an array in hexadecimal, 20 a line
+
+		It is written through `SaveFileTextAsync`.
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
 		@param fileName  The file; its name, upper case, names the define and the array, with `_` for `.`, `-`, `?`, `!` and `+`.
-		@param done  Optional. Called once the file is written, at a later poll.
+		@param done  Optional. Called once the file is written, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
 	public static inline function ExportDataAsCodeAsync(data:haxe.io.Bytes, dataSize:Int, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
 		RFilesAsync.ExportDataAsCodeAsync(data, dataSize, fileName, done, failed);
 
-	/** Loads an automation events list from a text file, answering when it is read: helix-raylib's own, in place of raylib's
-		`LoadAutomationEventList` given a file. It reads the file as `LoadFileTextAsync` does, then as raylib's does: each line starting
-		`c` sets the count, each starting `e` is an event, its frame, type and four parameters; other lines are skipped, and so is a last
-		line with no newline at its end, as raylib's reading skips it. A count that isn't the events read warns, and the events read are
-		the count.
+	/** Asynchronously loads an automation events list from a text file, in place of raylib's
+		`LoadAutomationEventList` given a file. See `ExportAutomationEventListAsync` for writing one.
+
+		The file is read as `LoadFileTextAsync` reads it.
+
+		It reads these lines, as raylib's does:
+		- a line starting `c`, the count
+		- a line starting `e`, an event: its frame, type and four parameters
+
+		Other lines are skipped. So is a last line with no newline at its end, as raylib's reading skips it.
+
+		A count that isn't the number of events read warns, and the count becomes the events read.
 
 		@param fileName  The file, as `ExportAutomationEventList` writes it.
 		@param loaded  Receives the list, its capacity 16384.
@@ -161,13 +235,19 @@ class Files {
 	public static inline function LoadAutomationEventListAsync(fileName:String, loaded:AutomationEventList->Void, ?failed:String->Void):Void
 		RFilesAsync.LoadAutomationEventListAsync(fileName, loaded, failed);
 
-	/** Writes a list's events as text through `SaveFileTextAsync`, as raylib's `ExportAutomationEventList` does, byte for byte: a header
-		of comments, `c` and the count, then a line for each event, `e`, its frame, type and four parameters, and its type's name.
-		helix-raylib's own, answering once the file is written.
+	/** Asynchronously writes a list's events as text, the text raylib's `ExportAutomationEventList` writes. See
+		`LoadAutomationEventListAsync` for reading it back.
+
+		The text is raylib's, byte for byte:
+		- a header of comments
+		- `c` and the count
+		- a line for each event: `e`, its frame, type and four parameters, and its type's name
+
+		It is written through `SaveFileTextAsync`.
 
 		@param list  The list.
 		@param fileName  The file.
-		@param done  Optional. Called once the file is written, at a later poll.
+		@param done  Optional. Called once the file is written, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
 	public static inline function ExportAutomationEventListAsync(list:AutomationEventList, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
 		RFilesAsync.ExportAutomationEventListAsync(list, fileName, done, failed);

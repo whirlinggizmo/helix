@@ -19,24 +19,56 @@ static function ExportWaveAsync(wave:Wave, fileName:String, ?done:() -> Void, ?f
 static function ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
 ```
 
-- `LoadSoundAsync`: Loads a sound file and decodes it, answering when it is ready to play at once: helix-raylib's own, in place of raylib's `LoadSound`. A file loaded again shares its first load's decoded sound. `InitAudioDevice` comes first.
+- `LoadSoundAsync`: Asynchronously loads and decodes a sound file, ready to play at once. See `LoadMusicStreamAsync` for playing a file as it is read.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the sound.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadMusicStreamAsync`: Opens a music file, to be played as it is read (helix-services' `Audio.stream`), answering once enough of it has arrived to start: helix-raylib's own, in place of raylib's `LoadMusicStream`. Natively it is read from its file, in a page from the download as it arrives, never loaded whole. A FLAC file isn't opened, as raylib 5.5's default build leaves FLAC out (docs/DECISIONS.md 32). `InitAudioDevice` comes first.
+
+  It replaces raylib's `LoadSound`.
+
+  `InitAudioDevice` must come first.
+
+  A file loaded again shares its first load's decoded sound.
+- `LoadMusicStreamAsync`: Asynchronously opens a music file to be played as it is read. See `LoadSoundAsync` for decoding a file whole first.
   - `fileName`: The file, as the program names it, such as "assets/theme.ogg".
-  - `loaded`: Receives the music, ready to play.
+  - `loaded`: Receives the music, ready to play, once enough of the file has arrived to start.
   - `failed`: Optional. Receives why it couldn't be opened; when omitted, it is logged.
-- `ExportWaveAsync`: Writes a wave to a file through `SaveFileDataAsync`, as raylib's `ExportWave` does: ".wav" (8, 16 and 24 bits as integers, 32 as floats, as raylib's dr_wav writes them) or ".raw" (the samples as they are). raylib's ".qoa" isn't written here. helix-raylib's own, answering once the file is written; the file is kept as `SaveFileDataAsync` keeps it.
+
+  It replaces raylib's `LoadMusicStream`.
+
+  `InitAudioDevice` must come first.
+
+  A FLAC file is refused, as raylib 5.5's default build leaves FLAC out.
+
+  It is never loaded whole. Natively it is read from its file, and in a page from the download as it arrives (helix-services' `Audio.stream`).
+- `ExportWaveAsync`: Asynchronously writes a wave to a sound file. See `ExportWaveAsCodeAsync` for writing a C header.
   - `wave`: The wave.
   - `fileName`: The file; its extension chooses the format.
-  - `done`: Optional. Called once the file is written, at a later poll.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't, such as a wave with no samples or another extension; when omitted, it is logged.
-- `ExportWaveAsCodeAsync`: Writes a wave as a C header through `SaveFileTextAsync`, as raylib's `ExportWaveAsCode` does: its frames, rate, sample size and channels as defines, and its samples as an array: floats with 4 places for 32-bit samples, else bytes, 20 a line. helix-raylib's own, answering once the file is written.
+
+  It replaces raylib's `ExportWave`.
+
+  The extension chooses the format:
+
+  - ".wav": 8, 16 and 24-bit samples as integers, 32-bit as floats, as raylib's dr_wav writes them. - ".raw": the samples unchanged.
+
+  A ".qoa" file is refused, though raylib writes one.
+
+  The file is written and kept by `SaveFileDataAsync`.
+- `ExportWaveAsCodeAsync`: Asynchronously writes a wave as a C header. See `ExportWaveAsync` for writing a sound file.
   - `wave`: The wave.
   - `fileName`: The file; its name, upper case, names the defines and the array.
-  - `done`: Optional. Called once the file is written, at a later poll.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  It replaces raylib's `ExportWaveAsCode`.
+
+  The header holds:
+
+  - the frame count, sample rate, sample size and channel count, as defines. - the samples, as an array of floats with 4 places for 32-bit samples, else of bytes, 20 a line.
+
+  The file is written by `SaveFileTextAsync`.
 
 ### Macros, run as the program builds
 
@@ -78,13 +110,19 @@ static function DrawFrameStatsEx(position:Vector2, style:FrameStatsStyle):Void
 static function MeasureFrameStats(style:FrameStatsStyle):Vector2
 ```
 
-- `DrawModelSkeleton`: Draws a model's skeleton in the pose it has at the call, as DrawModel draws the model: a line from each bone to its parent, and a small cross at each joint, placed as DrawModel places the model. A model never posed draws its bind pose; one without bones draws nothing. Drawn in 3D mode (BeginMode3D), over what's drawn before it, as DrawLine3D is.
+- `DrawModelSkeleton`: Draws a model's skeleton in the pose it has at the call, placed as DrawModel places the model. See `DrawModelBoundingBoxPosed` for drawing its bounds.
   - `model`: The model.
   - `position`: Where the model is drawn, as DrawModel's.
   - `scale`: Its scale, as DrawModel's.
   - `color`: The lines' color.
 
-  One model drawn as several copies, each posed apart, is posed, drawn and looked at copy by copy:
+  Each bone is a line to its parent, and each joint a small cross.
+
+  A model never posed draws its bind pose. A model without bones draws nothing.
+
+  It draws in 3D mode (BeginMode3D), over what is drawn before it, as DrawLine3D does.
+
+  A model drawn as several copies, each posed apart, is posed and drawn copy by copy:
 
   ```haxe
   for (i in 0...copies) {
@@ -95,25 +133,43 @@ static function MeasureFrameStats(style:FrameStatsStyle):Vector2
   DrawModelBoundingBoxPosed(model, at, 1, RED);
   }
   ```
-- `DrawModelBoundingBoxPosed`: Draws a model's bounds in the pose it has at the call, GetModelBoundingBoxPosed's box (helix.raylib.extras.Models), placed as DrawModel places the model. Drawn in 3D mode, as DrawBoundingBox is.
+- `DrawModelBoundingBoxPosed`: Draws a model's bounds in the pose it has at the call, placed as DrawModel places the model. See `DrawModelSkeleton` for drawing its bones.
   - `model`: The model.
   - `position`: Where the model is drawn, as DrawModel's.
   - `scale`: Its scale, as DrawModel's.
   - `color`: The box's color.
-- `DrawFrameStats`: Draws the frame's cost at a point on the screen, as DrawFPS draws the rate, in FrameStatsStyle's default look at a size: the frames a second, the frame time's mean and its slowest 5% (p95) over the last half second, in milliseconds, and the last frame's draw calls, a line each. It is `DrawFrameStatsEx(new Vector2(posX, posY), {fontSize: fontSize})`: every other field the style's default, so its color is judged against SetTargetFPS's target, or the monitor's refresh rate without one.
+
+  The box is GetModelBoundingBoxPosed's (helix.raylib.extras.Models).
+
+  It draws in 3D mode, as DrawBoundingBox does.
+- `DrawFrameStats`: Draws the frame's cost at a point on the screen in FrameStatsStyle's default look at a size, as DrawFPS draws the rate. See `DrawFrameStatsEx` for choosing the stats and their look.
   - `posX`: The text's left, in pixels.
   - `posY`: The text's top, in pixels.
   - `fontSize`: The text's height, in pixels, as DrawText's; DrawFPS draws at 20.
-- `DrawFrameStatsEx`: Draws the frame's cost at a point on the screen as a style says: which stats, in what font, size, spacing and colors, over what background. Each stat is a line, so the text's height follows what's shown (MeasureFrameStats). Each number keeps its place: it is right-aligned in a slot of a set width, so the stats don't move as the numbers change.
+
+  It draws a line each for: - the frames a second - the frame time's mean and its slowest 5% (p95) over the last half second, in milliseconds - the last frame's draw calls
+
+  The text's color is judged against SetTargetFPS's target, or the monitor's refresh rate without one.
+
+  It is `DrawFrameStatsEx(new Vector2(posX, posY), {fontSize: fontSize})`, every other field the style's default.
+- `DrawFrameStatsEx`: Draws the frame's cost at a point on the screen in a style's stats, font, size, spacing, colors and background. See `DrawFrameStats` for drawing the default look at a size.
   - `position`: The text's top left, in pixels (its background's, padding around the text).
   - `style`: What to show and how; each field left out takes its default.
+
+  Each stat is a line, so the text's height follows the stats shown. `MeasureFrameStats` returns the size.
+
+  Each number is right-aligned in a slot of a fixed width, so the stats stay in place as the numbers change.
 
   ```haxe
   DrawFrameStatsEx(new Vector2(10, 10), {fontSize: 24, backgroundColor: Fade(BLACK, 0.5), triangles: true});
   ```
-- `MeasureFrameStats`: Returns the size DrawFrameStatsEx draws in with a style, its padding included, sized for its widest values so it doesn't change from frame to frame, for placing it (at a corner, say).
+- `MeasureFrameStats`: Returns the size DrawFrameStatsEx draws a style's stats in, for placing them (at a corner, say).
   - `style`: What to show and how.
   - returns: The width and height, in pixels.
+
+  The size includes the padding.
+
+  It is sized for the widest values, so it is the same from frame to frame.
 
 ## Device
 
@@ -153,38 +209,79 @@ static function SetTiltRange(degrees:Float):Void
 static function CalibrateTilt():Void
 ```
 
-- `GetWindowSafeArea`: Returns the part of the window no notch, rounded corner or system bar covers, in the screen's coordinates (as `GetScreenWidth` measures): where a HUD and buttons go. On a desktop, or in a page without `viewport-fit=cover` in its viewport meta tag, it is the whole window.
+- `GetWindowSafeArea`: Returns the part of the window no notch, rounded corner or system bar covers, in the screen's coordinates as `GetScreenWidth` measures them.
   - returns: The safe area.
-- `GetRunOption`: Returns an option the program was started with: in a page, the URL's query parameter of that name (`?level=3`); natively, the command line's `--level=3`, or else the environment variable `HELIX_` and the name in capitals (`HELIX_LEVEL=3`).
+
+  A HUD and buttons go inside it.
+
+  On a desktop it is the whole window. In a page it is the whole window unless the viewport meta tag has `viewport-fit=cover`.
+- `GetRunOption`: Returns an option the program was started with, or null when it isn't set.
   - `name`: The option's name.
   - returns: Its value, or null when it isn't set.
-- `IsPlatformWeb`: Returns whether the program runs in a browser page rather than natively.
+
+  In a page it is the URL's query parameter of that name (`?level=3`).
+
+  Natively it is the command line's `--level=3`, or else the environment variable `HELIX_` and the name in capitals (`HELIX_LEVEL=3`).
+- `IsPlatformWeb`: Returns whether the program runs in a browser page rather than natively. See `GetPlatformOS` for naming the operating system.
   - returns: True in a page.
-- `GetPlatformOS`: Returns the operating system, in lowercase: "windows", "macos", "linux", "android", "ios" or "chromeos"; "" where the platform names none.
+- `GetPlatformOS`: Returns the operating system's name in lowercase, or "" where the platform names none. See `IsPlatformWeb` for whether the program runs in a page.
   - returns: The system's name.
-- `IsTouchScreenAvailable`: Returns whether the device has a touch screen. Always false natively. A laptop may have both a touch screen and a mouse, so touch controls also belong on the first touch, not on this alone.
+
+  The names are "windows", "macos", "linux", "android", "ios" and "chromeos".
+- `IsTouchScreenAvailable`: Returns whether the device has a touch screen. See `IsFinePointerAvailable` for whether there is a mouse, a trackpad or a pen.
   - returns: True with a touch screen.
-- `IsFinePointerAvailable`: Returns whether the device has a fine pointer: a mouse, a trackpad or a pen. False on a phone or a tablet alone.
+
+  Always false natively.
+
+  A laptop may have both a touch screen and a mouse. Touch controls also belong on the first touch, not on this alone.
+- `IsFinePointerAvailable`: Returns whether the device has a fine pointer, such as a mouse, a trackpad or a pen. See `IsTouchScreenAvailable` for whether there is a touch screen.
   - returns: True with a fine pointer.
-- `IsWindowCloseable`: Returns whether the program can close its own window: false in a page, which can't close its tab, so a game hides its Quit there.
+
+  False on a phone or a tablet alone.
+- `IsWindowCloseable`: Returns whether the program can close its own window.
   - returns: True where `CloseWindow` ends the program's window.
-- `IsFullscreenAvailable`: Returns whether the window can go fullscreen: false in a page that isn't allowed to (an iframe without permission, iOS Safari on an iPhone).
+
+  False in a page, which can't close its tab. A game hides its Quit there.
+- `IsFullscreenAvailable`: Returns whether the window can go fullscreen. See `ToggleFullscreenAsync` for asking for it.
   - returns: True where `ToggleFullscreenAsync` can be granted.
-- `SetScreenOrientationAsync`: Asks for the screen to be held one way up, or released. Only some browsers lock it, Chrome on Android only in fullscreen, so ask in `ToggleFullscreenAsync`'s `done`; natively and on iOS it is refused, and a game shows "turn your device" when the shape is wrong (`GetScreenWidth() < GetScreenHeight()`).
+
+  False in a page that isn't allowed to, such as an iframe without permission or iOS Safari on an iPhone.
+- `SetScreenOrientationAsync`: Asynchronously asks for the screen to be held one way up, or released. See `GetScreenOrientation` for reading how it is held.
   - `orientation`: `ORIENTATION_LANDSCAPE`, `ORIENTATION_PORTRAIT`, or `ORIENTATION_ANY` to release a lock.
-  - `done`: Optional. Called once the screen is held, at a later poll.
+  - `done`: Optional. Called once the screen is held, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
-- `GetScreenOrientation`: Returns how the screen is held for the program, as `SetScreenOrientationAsync` asked: `ORIENTATION_ANY` when it isn't held. A page loses the lock as it leaves fullscreen.
+
+  Natively and on iOS it is refused.
+
+  Only some browsers lock it. Chrome on Android locks it only in fullscreen, so a program asks in `ToggleFullscreenAsync`'s `done`.
+
+  Where the lock is refused, a game shows "turn your device" when the shape is wrong (`GetScreenWidth() < GetScreenHeight()`).
+
+  A value that isn't an `ORIENTATION_` value is refused.
+- `GetScreenOrientation`: Returns how the screen is held for the program, as `SetScreenOrientationAsync` asked, or `ORIENTATION_ANY` when it isn't held.
   - returns: `ORIENTATION_ANY`, `ORIENTATION_LANDSCAPE` or `ORIENTATION_PORTRAIT`.
-- `EnableTiltAsync`: Asks for the device's tilt, for a game steered by tilting a phone. A page may need the player's permission, asked at their next tap, so ask before the tap that starts play; natively it is refused.
+
+  A page loses the lock as it leaves fullscreen.
+- `EnableTiltAsync`: Asynchronously asks for the device's tilt readings, for a game steered by tilting a phone. See `GetTilt` for reading them and `DisableTilt` for stopping them.
   - `done`: Optional. Called once readings arrive, at a later poll.
   - `failed`: Optional. Receives why there will be none: refused, the page isn't HTTPS, or no sensor; when omitted, it is logged.
-- `DisableTilt`: Stops the tilt's readings. A permission granted stays granted.
-- `GetTilt`: Returns the tilt from level, turned with the screen: x across and y down the screen, each -1 to 1 at `SetTiltRange`'s angle; 0 until readings arrive and the device has been held steady once (level is taken then).
+
+  Natively it is refused.
+
+  A page may need the player's permission, asked at their next tap. A game asks before the tap that starts play.
+- `DisableTilt`: Stops the tilt's readings. See `EnableTiltAsync` for asking for them.
+  A permission granted stays granted.
+- `GetTilt`: Returns the tilt from level, turned with the screen, each axis -1 to 1. See `CalibrateTilt` for setting what reads as level.
   - returns: The tilt.
-- `SetTiltRange`: Sets the angle, in degrees, that reads as a full tilt of 1 (30 until set).
+
+  x is across the screen and y is down it.
+
+  A full tilt of 1 is `SetTiltRange`'s angle.
+
+  It is 0 until readings arrive and the device has been held steady once. Level is taken then.
+- `SetTiltRange`: Sets the angle, in degrees, that reads as a full tilt of 1. It defaults to 30.
   - `degrees`: The angle.
-- `CalibrateTilt`: Takes how the device is held now as level.
+- `CalibrateTilt`: Takes how the device is held now as level. See `GetTilt` for reading the tilt from it.
 
 ## Files
 
@@ -213,65 +310,147 @@ static function LoadAutomationEventListAsync(fileName:String, loaded:AutomationE
 static function ExportAutomationEventListAsync(list:AutomationEventList, fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
 ```
 
-- `LoadFileDataAsync`: Reads a file's bytes, answering when they are read: helix-raylib's own, in place of raylib's `LoadFileData`. The program's `SetLoadFileDataCallback` answers first, then what `SaveFileData` wrote, then the program's files.
+- `LoadFileDataAsync`: Asynchronously reads a file's bytes, in place of raylib's `LoadFileData`. See `LoadFileTextAsync` for reading a text file.
   - `fileName`: The file.
   - `loaded`: Receives its bytes.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
-- `LoadFileTextAsync`: Reads a text file, answering when it is read: helix-raylib's own, in place of raylib's `LoadFileText`. The program's `SetLoadFileTextCallback` answers first, then what `SaveFileText` wrote, then the program's files.
+
+  It reads the first of these that has the file: - the program's `SetLoadFileDataCallback` - what `SaveFileData` wrote - the program's files
+- `LoadFileTextAsync`: Asynchronously reads a text file, in place of raylib's `LoadFileText`. See `LoadFileDataAsync` for reading a file's bytes.
   - `fileName`: The file.
   - `loaded`: Receives its text.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 
-  A file's text ends at its first NUL byte, as raylib's C string does, and a byte that isn't UTF-8 is read as U+FFFD: a file is never refused for what it holds. In a page, a file nobody saved yet is asked of the server, which logs a 404 in the browser's console before `failed` answers: a program reading a save on its first run sees one.
-- `SaveFileDataAsync`: Writes a file's bytes, answering once they are kept or refused: helix-raylib's own, in place of raylib's `SaveFileData`. They are written through the program's `SetSaveFileDataCallback` when it has one, else kept across runs as `SaveFileTextAsync`'s are. `LoadFileDataAsync` reads them back.
+  It reads the first of these that has the file: - the program's `SetLoadFileTextCallback` - what `SaveFileText` wrote - the program's files
+
+  The text ends at the file's first NUL byte, as raylib's C string does.
+
+  A byte that isn't UTF-8 is read as U+FFFD. A file is never refused for what it holds.
+
+  In a page, a file nobody saved yet is asked of the server, which logs a 404 in the browser's console before `failed` answers. A program reading a save on its first run sees one.
+- `SaveFileDataAsync`: Asynchronously writes a file's bytes, in place of raylib's `SaveFileData`. See `SaveFileTextAsync` for writing text.
   - `fileName`: The file.
   - `data`: The bytes.
   - `dataSize`: How many of them.
-  - `done`: Optional. Called once the file is written, at a later poll.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
-- `SaveFileTextAsync`: Writes a text file, answering once it is kept or refused: helix-raylib's own, in place of raylib's `SaveFileText`. It is written through the program's `SetSaveFileTextCallback` when it has one, during the call, answered by what that returned. Otherwise it is answered once the write has finished. The save file persists between runs, including both native and web builds. `LoadFileTextAsync` reads it back.
+
+  They are written through the program's `SetSaveFileDataCallback` when it has one. Otherwise they are kept across runs, as `SaveFileTextAsync`'s are.
+
+  `LoadFileDataAsync` reads them back.
+- `SaveFileTextAsync`: Asynchronously writes a text file, in place of raylib's `SaveFileText`. See `SaveFileDataAsync` for writing bytes.
   - `fileName`: The file.
   - `text`: Its text.
-  - `done`: Optional. Called once the file is written, at a later poll.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
-- `FileExistsAsync`: Answers whether a file exists: helix-raylib's own, in place of raylib's `FileExists`. One `SaveFileText` or `SaveFileData` wrote exists, as does one of the program's; finding one of the program's reads it, so a load of it after answers at once. The answer comes at a later frame, never during the call.
+
+  It is written through the program's `SetSaveFileTextCallback` when it has one, during the call, and answered by what that returned.
+
+  Otherwise it is kept across runs, natively and in a page, and answered once the write has finished.
+
+  `LoadFileTextAsync` reads it back.
+- `FileExistsAsync`: Asynchronously answers whether a file exists, in place of raylib's `FileExists`. See `DirectoryExistsAsync` for a directory.
   - `fileName`: The file.
   - `answer`: Receives true when it exists.
-- `DirectoryExistsAsync`: Answers whether a directory exists: helix-raylib's own, in place of raylib's `DirectoryExists`. Natively it is a directory of the program's files; `helix-raylib-dropped` and the directories under it hold the dropped files. A page's own files are on its server, which can't be listed, so there only its root ("", "." or "./") and the dropped files' directories exist. The answer comes at a later frame, never during the call.
+
+  The answer comes at a later frame, never during the call.
+
+  A file exists when `SaveFileText` or `SaveFileData` wrote it, or when it is one of the program's.
+
+  Finding one of the program's files reads it, so a load of it after answers at once.
+- `DirectoryExistsAsync`: Asynchronously answers whether a directory exists, in place of raylib's `DirectoryExists`. See `FileExistsAsync` for a file.
   - `dirPath`: The directory.
   - `answer`: Receives true when it exists.
-- `IsPathFileAsync`: Answers whether a path is a file, not a directory: helix-raylib's own, in place of raylib's `IsPathFile`. A file `SaveFileText` or `SaveFileData` wrote, a dropped file, and a file the program has, as `FileExistsAsync` finds them, are files. The answer comes at a later frame, never during the call.
+
+  The answer comes at a later frame, never during the call.
+
+  Natively it is a directory of the program's files.
+
+  `helix-raylib-dropped` and the directories under it hold the dropped files.
+
+  A page's own files are on its server, which can't be listed. There only its root ("", "." or "./") and the dropped files' directories exist.
+- `IsPathFileAsync`: Asynchronously answers whether a path is a file, not a directory, in place of raylib's `IsPathFile`. See `DirectoryExistsAsync` for a directory.
   - `path`: The path.
   - `answer`: Receives true for a file; false for a directory or nothing there.
-- `GetFileLengthAsync`: Answers a file's size: helix-raylib's own, in place of raylib's `GetFileLength`. A file `SaveFileText` or `SaveFileData` wrote, or the program's `SetLoadFileDataCallback` gives, is its bytes' size; a dropped file's is its own. Natively a file of the program's is its size on disk; in a page it is read from the server to be measured, so a load of it after answers at once. The answer comes at a later frame, never during the call.
+
+  The answer comes at a later frame, never during the call.
+
+  These are files, as `FileExistsAsync` finds them: - a file `SaveFileText` or `SaveFileData` wrote - a dropped file - a file the program has
+- `GetFileLengthAsync`: Asynchronously answers a file's size, in place of raylib's `GetFileLength`.
   - `fileName`: The file.
   - `answer`: Receives its size in bytes; 0 when there is no file, as raylib's.
-- `GetFileModTimeAsync`: Answers when a file was last written: helix-raylib's own, in place of raylib's `GetFileModTime`. Natively a file of the program's answers its time on disk; a file `SaveFileText` or `SaveFileData` wrote, when it was saved. A page's own files are on its server, and a dropped file or one the program's load callback gives has no time kept, so each answers 0. The answer comes at a later frame, never during the call.
+
+  The answer comes at a later frame, never during the call.
+
+  The size is: - for a file `SaveFileText` or `SaveFileData` wrote, or the program's `SetLoadFileDataCallback` gives, its bytes' size - for a dropped file, its own - for a file of the program's, natively its size on disk
+
+  In a page, a file of the program's is read from the server to be measured, so a load of it after answers at once.
+- `GetFileModTimeAsync`: Asynchronously answers when a file was last written, in place of raylib's `GetFileModTime`.
   - `fileName`: The file.
   - `answer`: Receives the time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's.
-- `LoadDirectoryFilesAsync`: Lists a directory's files and subdirectories: helix-raylib's own, in place of raylib's `LoadDirectoryFiles`. Each path is the directory's followed by `/` and the name (`dirPath` "levels" gives "levels/1.json"), sorted by name, a subdirectory's without a slash at its end. The directories are `DirectoryExistsAsync`'s; a page lists only the dropped files. Files `SaveFileText` and `SaveFileData` wrote aren't listed. The answer comes at a later frame, never during the call.
+
+  The answer comes at a later frame, never during the call.
+
+  The time is: - for a file of the program's, natively its time on disk - for a file `SaveFileText` or `SaveFileData` wrote, when it was saved - 0 for a page's own file, a dropped file and one the program's load callback gives, which have no time kept
+- `LoadDirectoryFilesAsync`: Asynchronously lists a directory's files and subdirectories, in place of raylib's `LoadDirectoryFiles`. See `LoadDirectoryFilesExAsync` for a filter by extension and the subdirectories' files.
   - `dirPath`: The directory.
   - `loaded`: Receives the list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as raylib's.
-- `LoadDirectoryFilesExAsync`: Lists a directory's files, those with some extensions, and with `scanSubdirs` its subdirectories' too: helix-raylib's own, in place of raylib's `LoadDirectoryFilesEx`. The paths are `LoadDirectoryFilesAsync`'s, a subdirectory's files right after it. As raylib's: a null filter keeps every file, and without `scanSubdirs` every subdirectory too; a filter is `IsFileExtension`'s list, and "DIR" in it keeps the subdirectories; at most 8192 paths are listed (`MAX_FILEPATH_CAPACITY`), with a warning when there are more. The answer comes at a later frame, never during the call.
+
+  The answer comes at a later frame, never during the call.
+
+  Each path is the directory's followed by `/` and the name (`dirPath` "levels" gives "levels/1.json"). A subdirectory's has no slash at its end.
+
+  The paths are sorted by name.
+
+  The directories are `DirectoryExistsAsync`'s. A page lists only the dropped files.
+
+  Files `SaveFileText` and `SaveFileData` wrote aren't listed.
+- `LoadDirectoryFilesExAsync`: Asynchronously lists a directory's files with some extensions, and with `scanSubdirs` its subdirectories' too, in place of raylib's `LoadDirectoryFilesEx`. See `LoadDirectoryFilesAsync` for listing one directory's every file and subdirectory.
   - `basePath`: The directory.
   - `filter`: The extensions kept, such as ".png;.jpg;DIR", or null for every file.
   - `scanSubdirs`: Whether the subdirectories' files are listed too.
   - `loaded`: Receives the list, its `capacity` 8192; a directory that can't be listed adds nothing, with a warning.
-- `ExportDataAsCodeAsync`: Writes bytes as a C header through `SaveFileTextAsync`, as raylib's `ExportDataAsCode` does, byte for byte: their count as a define, and the bytes as an array, in hexadecimal, 20 a line. helix-raylib's own, answering once the file is written.
+
+  The answer comes at a later frame, never during the call.
+
+  The paths are `LoadDirectoryFilesAsync`'s, a subdirectory's files right after it.
+
+  A filter is `IsFileExtension`'s list. "DIR" in it keeps the subdirectories.
+
+  A null filter keeps every file, and without `scanSubdirs` every subdirectory too.
+
+  At most 8192 paths are listed (`MAX_FILEPATH_CAPACITY`), with a warning when there are more.
+- `ExportDataAsCodeAsync`: Asynchronously writes bytes as a C header, the text raylib's `ExportDataAsCode` writes. See `SaveFileDataAsync` for the bytes as they are.
   - `data`: The bytes.
   - `dataSize`: How many of them.
   - `fileName`: The file; its name, upper case, names the define and the array, with `_` for `.`, `-`, `?`, `!` and `+`.
-  - `done`: Optional. Called once the file is written, at a later poll.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
-- `LoadAutomationEventListAsync`: Loads an automation events list from a text file, answering when it is read: helix-raylib's own, in place of raylib's `LoadAutomationEventList` given a file. It reads the file as `LoadFileTextAsync` does, then as raylib's does: each line starting `c` sets the count, each starting `e` is an event, its frame, type and four parameters; other lines are skipped, and so is a last line with no newline at its end, as raylib's reading skips it. A count that isn't the events read warns, and the events read are the count.
+
+  The header is raylib's, byte for byte: - the bytes' count, as a define - the bytes, as an array in hexadecimal, 20 a line
+
+  It is written through `SaveFileTextAsync`.
+- `LoadAutomationEventListAsync`: Asynchronously loads an automation events list from a text file, in place of raylib's `LoadAutomationEventList` given a file. See `ExportAutomationEventListAsync` for writing one.
   - `fileName`: The file, as `ExportAutomationEventList` writes it.
   - `loaded`: Receives the list, its capacity 16384.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
-- `ExportAutomationEventListAsync`: Writes a list's events as text through `SaveFileTextAsync`, as raylib's `ExportAutomationEventList` does, byte for byte: a header of comments, `c` and the count, then a line for each event, `e`, its frame, type and four parameters, and its type's name. helix-raylib's own, answering once the file is written.
+
+  The file is read as `LoadFileTextAsync` reads it.
+
+  It reads these lines, as raylib's does: - a line starting `c`, the count - a line starting `e`, an event: its frame, type and four parameters
+
+  Other lines are skipped. So is a last line with no newline at its end, as raylib's reading skips it.
+
+  A count that isn't the number of events read warns, and the count becomes the events read.
+- `ExportAutomationEventListAsync`: Asynchronously writes a list's events as text, the text raylib's `ExportAutomationEventList` writes. See `LoadAutomationEventListAsync` for reading it back.
   - `list`: The list.
   - `fileName`: The file.
-  - `done`: Optional. Called once the file is written, at a later poll.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  The text is raylib's, byte for byte: - a header of comments - `c` and the count - a line for each event: `e`, its frame, type and four parameters, and its type's name
+
+  It is written through `SaveFileTextAsync`.
 
 ## Gui
 
@@ -288,15 +467,29 @@ static function GuiLoadStyleAsync(fileName:String, ?done:() -> Void, ?failed:Str
 static function GuiLoadIconsAsync(fileName:String, loadIconsName:Bool, loaded:Array<String> -> Void, ?failed:String -> Void):Void
 ```
 
-- `GuiLoadStyleAsync`: Loads a style file (.rgs) over the style, answering when it is loaded: helix-raylib's own, in place of raygui's `GuiLoadStyle`, as a page can't wait for a file. A text file (its first line starting with '#') sets each property its "p" lines name, and its "f" line loads the font it names, beside the style file, at its size and with the characters of its charmap file; a font that can't be loaded leaves raylib's default font at size 10. A binary file sets its properties and, when it holds one, its font, its atlas decompressed. The default style is loaded first if it isn't yet. As in raygui, a text file's last line is read only when a line break ends it.
+- `GuiLoadStyleAsync`: Asynchronously loads a style file (.rgs) over the current style, in place of raygui's `GuiLoadStyle`.
   - `fileName`: The style file.
   - `done`: Optional. Called once the style is loaded, at a later poll.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
-- `GuiLoadIconsAsync`: Loads an icon file (.rgi) over the icons, answering when it is loaded: helix-raylib's own, in place of raygui's `GuiLoadIcons`, as a page can't wait for a file. Its icons are read over raygui's from the first, as raygui reads them; a file that isn't an icon file changes nothing.
+
+  The default style is loaded first if it isn't yet.
+
+  A text file's first line starts with '#'. It reads: - each `p <control> <property> 0x<value>` line, which sets that property. - the `f <size> <charmap> <font>` line, which loads the font at its size with the charmap file's characters. Both files are beside the style file.
+
+  A font that can't be loaded leaves raylib's default font at size 10.
+
+  A text file's last line is read only when a line break ends it, as in raygui.
+
+  A binary file sets its properties, and its font when it holds one.
+- `GuiLoadIconsAsync`: Asynchronously loads an icon file (.rgi) over raygui's icons, in place of raygui's `GuiLoadIcons`.
   - `fileName`: The icon file.
   - `loadIconsName`: Whether the icons' names are read.
   - `loaded`: Receives the icons' names, in order, or null when they weren't read or the file isn't an icon file.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+  The file's icons replace raygui's from the first, as raygui reads them.
+
+  A file that isn't an icon file changes nothing.
 
 ## GuiSkins
 
@@ -339,7 +532,7 @@ static function GuiGetSkin(control:Int, part:Int):Null<GuiSkin>
 static function GuiClearSkins():Void
 ```
 
-- `GuiSkinFromTexture`: Makes a skin from a texture and its patches, one for each state.
+- `GuiSkinFromTexture`: Returns a skin cut from a texture by one patch for each state. See `GuiSkinFromSheet` for cutting the patches from a sheet of equal cells.
   - `texture`: The texture the patches are cut from.
   - `normal`: The patch drawn in `STATE_NORMAL`.
   - `focused`: Optional. The patch drawn in `STATE_FOCUSED`; `normal` when omitted.
@@ -347,7 +540,7 @@ static function GuiClearSkins():Void
   - `disabled`: Optional. The patch drawn in `STATE_DISABLED`; `normal` when omitted.
   - `tint`: Optional. The color the patches are multiplied by; `WHITE` when omitted.
   - returns: The skin.
-- `GuiSkinFromSheet`: Makes a skin from a sheet of a control's states, cells of one size in raygui's order of states: normal, focused, pressed and disabled, from the top down, or from the left across when the sheet is one cell high. A sheet of fewer than four cells leaves the rest to their fallbacks (`GuiSkin`). Each cell is cut as a nine-patch by the same borders.
+- `GuiSkinFromSheet`: Returns a skin cut from a sheet of a control's states, one cell of one size each. See `GuiSkinFromTexture` for cutting a patch per state from one texture.
   - `texture`: The sheet.
   - `cellWidth`: A cell's width, in texels.
   - `cellHeight`: A cell's height, in texels.
@@ -356,17 +549,30 @@ static function GuiClearSkins():Void
   - `right`: The right border's width.
   - `bottom`: The bottom border's height.
   - returns: The skin.
-- `GuiSetSkin`: Sets the skin a part of a control is drawn with, in place of its style's border and base colors. It is read as each control draws, so a skin set before one call and put back after it changes that call's control alone.
+
+  The cells are in raygui's order of states: normal, focused, pressed, disabled.
+
+  They run from the top down, or from the left across when the sheet is less than two cells high.
+
+  A sheet of fewer than four cells leaves the rest to their fallbacks (`GuiSkin`).
+
+  Each cell is cut as a nine-patch by the same borders.
+- `GuiSetSkin`: Sets the skin a part of a control is drawn with, in place of its style's border and base colors. See `GuiGetSkin` for reading the skin set, and `GuiClearSkins` for removing every one.
   - `control`: The control: `DEFAULT`, `BUTTON`, `SLIDER` and the rest of raygui's.
   - `part`: `GUI_SKIN_BASE`, `GUI_SKIN_FILL`, `GUI_SKIN_HANDLE` or `GUI_SKIN_ITEM`.
   - `skin`: The skin, or null to draw the part flat in its style's colors again.
 
-  Set on `DEFAULT`, it is set on every control too, as raygui's `GuiSetStyle` sets `DEFAULT`'s base properties, so set it first and each control's own after. `DEFAULT`'s own `GUI_SKIN_BASE` is what `GuiPanel`, `GuiWindowBox` and `GuiScrollPanel` draw their body with.
-- `GuiGetSkin`: Returns the skin a part of a control is drawn with, for putting it back after a change.
+  A skin set on `DEFAULT` is set on every control too, as `GuiSetStyle` sets `DEFAULT`'s base properties. Set `DEFAULT`'s first and each control's own after.
+
+  The skin is read as each control draws. A skin set before one call and put back after it changes that call's control alone.
+
+  `GuiPanel`, `GuiWindowBox` and `GuiScrollPanel` draw their body with `DEFAULT`'s own `GUI_SKIN_BASE`.
+- `GuiGetSkin`: Returns the skin a part of a control is drawn with, to put back after a change. See `GuiSetSkin` for setting it.
   - `control`: The control.
   - `part`: The part.
   - returns: The skin, or null when the part is drawn flat.
-- `GuiClearSkins`: Removes every skin, so every control is drawn flat in its style's colors again. Loading a style leaves skins as they are.
+- `GuiClearSkins`: Removes every skin, so every control is drawn flat in its style's colors again. See `GuiSetSkin` with null for removing one.
+  Loading a style leaves the skins unchanged.
 
 ## Lights
 
@@ -406,7 +612,7 @@ static function CreateLight(type:Int, position:Vector3, target:Vector3, color:Co
 static function UpdateLightValues(shader:Shader, light:Light):Void
 ```
 
-- `LoadLightingShader`: Returns raylib's examples' lighting shader (`lighting.vs` and `lighting.fs`), built in. It shines every material alike, one Phong highlight whatever the material says: `LoadPbrShader` draws a glTF's materials as authored.
+- `LoadLightingShader`: Returns raylib's examples' lighting shader (`lighting.vs` and `lighting.fs`), built in. It shines every material alike, one Phong highlight whatever the material says. See `LoadPbrShader` for drawing a glTF's materials as authored.
   - returns: The shader, the program's until `UnloadShader`.
 
   Set up as raylib's lighting example does: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, set to the camera's position each frame; `GetShaderLocation(shader, "ambient")` finds the ambient color; lights come from `CreateLight`. A model posed by `UpdateModelAnimation` under it is skinned on the GPU. A program's own shader lights the same way by including `<helix/raylib/shaders/lights.glsl>`.
@@ -464,24 +670,48 @@ static function ExportMeshAsync(mesh:Mesh, fileName:String, ?done:() -> Void, ?f
 static function ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
 ```
 
-- `LoadModelAnimationsAsync`: Loads a glTF or GLB file's animations, answering when they are read: helix-raylib's own, in place of raylib's `LoadModelAnimations`. They are read as raylib 6.2 reads them, of the file's first skin: each sampled 60 times a second, with (int)(duration * 60) + 1 frames, each frame's pose its bones' transforms in the model. A file without skins gives none. IQM and M3D animations aren't read (docs/DECISIONS.md 27).
+- `LoadModelAnimationsAsync`: Asynchronously loads a glTF or GLB file's animations, in place of raylib's `LoadModelAnimations`.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the animations, as many as the file has; their count is its length.
   - `failed`: Optional. Receives why they couldn't be loaded; when omitted, it is logged.
-- `LoadMaterialsAsync`: Loads the materials of an .mtl file, with the textures they name, answering when they are ready: helix-raylib's own, in place of raylib's `LoadMaterials`. Each is made as raylib's `ProcessMaterialsOBJ` makes it: raylib's default material, then its diffuse texture (`map_Kd`), or with none its diffuse color (`Kd`, alpha 255); its specular texture (`map_Ks`) and color (`Ks`); the normal map its bump texture (`bump` or `map_bump`), white, its value the specular exponent (`Ns`); its emission color (`Ke`); the height map its displacement texture (`disp`). What a material doesn't give is tinyobj_loader_c's default, as raylib has it: each color black, the specular exponent 1. A texture that can't be read is none (id 0, logged). The program holds each material until `UnloadMaterial`. Where raylib's reading is broken, helix-raylib reads the file as the format has it (a texture's path resolved against the file's directory among them), and a file that breaks the format fails (docs/DECISIONS.md 28).
+
+  A file without skins gives none. Only the file's first skin is read.
+
+  IQM and M3D animations are refused, as is any file but glTF and GLB.
+
+  Each animation is sampled 60 times a second, as raylib 6.2 samples it, with (int)(duration * 60) + 1 frames.
+
+  Each frame's pose is its bones' transforms in the model.
+- `LoadMaterialsAsync`: Asynchronously loads an .mtl file's materials with the textures they name, in place of raylib's `LoadMaterials`. See `LoadModelAsync` for loading an OBJ file with the materials its `mtllib` names.
   - `fileName`: The file, as the program names it: an .mtl file.
   - `loaded`: Receives the materials, in the file's order; their count is its length.
   - `failed`: Optional. Receives why they couldn't be loaded (the file isn't an .mtl file, can't be found or can't be read); when omitted, it is logged.
-- `ExportMeshAsync`: Writes a mesh as an OBJ file through `SaveFileTextAsync`, as raylib's `ExportMesh` does: its positions and texture coordinates to 6 places, its normals to 4, and a face a triangle. helix-raylib's own, answering once the file is written.
+
+  The program holds each material until `UnloadMaterial`.
+
+  Each starts as raylib's default material, and reads these fields as raylib's `ProcessMaterialsOBJ` does:
+
+  - `map_Kd`, the diffuse texture, or with none `Kd`, the diffuse color (alpha 255). - `map_Ks` and `Ks`, the specular texture and color. - `bump` or `map_bump`, the normal map's texture. The normal map's color is white and its value is `Ns`, the specular exponent. - `Ke`, the emission color. - `disp`, the height map's texture.
+
+  A field a material doesn't give defaults to tinyobj_loader_c's default, as raylib has it. Each color is black and the specular exponent is 1.
+
+  A texture's path is resolved against the file's directory. A texture that can't be read is none (id 0) and is logged.
+
+  A file that breaks the format fails.
+- `ExportMeshAsync`: Asynchronously writes a mesh as an OBJ file through `SaveFileTextAsync`, in place of raylib's `ExportMesh`. See `ExportMeshAsCodeAsync` for writing a C header.
   - `mesh`: The mesh, with positions, texture coordinates and normals.
   - `fileName`: The file; only ".obj" is written.
-  - `done`: Optional. Called once the file is written, at a later poll.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't, such as another extension; when omitted, it is logged.
-- `ExportMeshAsCodeAsync`: Writes a mesh as a C header through `SaveFileTextAsync`, as raylib's `ExportMeshAsCode` does: its counts as defines, and each array it has, 20 values a line, floats to 3 places. helix-raylib's own, answering once the file is written.
+
+  Positions and texture coordinates are written to 6 places, normals to 4, and each face as a triangle, as raylib's `ExportMesh` writes them.
+- `ExportMeshAsCodeAsync`: Asynchronously writes a mesh as a C header through `SaveFileTextAsync`, in place of raylib's `ExportMeshAsCode`. See `ExportMeshAsync` for writing an OBJ file.
   - `mesh`: The mesh.
   - `fileName`: The file; its name, upper case, names the defines and the arrays.
-  - `done`: Optional. Called once the file is written, at a later poll.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  Its counts are written as defines, and each array it has as 20 values a line, floats to 3 places, as raylib's `ExportMeshAsCode` writes them.
 
 ### models: a skinned model's bounds as posed
 
@@ -525,13 +755,21 @@ DrawTextureInstanced(texture, new Rectangle(0, 0, 32, 32), copies, WHITE);
 static function DrawTextureInstanced(texture:Texture2D, source:Rectangle, transforms:Array<Matrix>, tint:Color):Void
 ```
 
-- `DrawTextureInstanced`: Draws a part of a texture many times in one call, each copy placed by a matrix: what `DrawTexturePro` draws for each, in the batch's order, so the copies join the frame's sprite run and cost what the same draws would, with no call for each. Like three.js's InstancedMesh, Godot's MultiMesh and Unity's instancing, for a 2D sprite.
+- `DrawTextureInstanced`: Draws one part of a texture many times in one call, each copy placed by its own matrix. See `DrawTexturePro` for drawing a single copy.
   - `texture`: The texture.
   - `source`: The part of it, in pixels.
   - `transforms`: Each copy's matrix.
   - `tint`: The tint, every copy's.
 
-  A copy is the part, `source.width` by `source.height` pixels with its top left at the origin, taken through its matrix as `Vector2Transform` applies one (`m0`, `m4`, `m12` across, `m1`, `m5`, `m13` down): `MatrixTranslate` places it, `MatrixRotateZ` turns it about its top left, `MatrixScale` sizes it, and their products do all three. A negative width or height flips the part.
+  Each copy is what `DrawTexturePro` draws, in the batch's order, so the copies join the frame's sprite run and cost what the same draws would.
+
+  A copy is the part, `source.width` by `source.height` pixels with its top left at the origin, taken through its matrix as `Vector2Transform` applies one. The fields read are `m0`, `m4` and `m12` across, and `m1`, `m5` and `m13` down.
+
+  `MatrixTranslate` places a copy, `MatrixRotateZ` turns it about its top left and `MatrixScale` sizes it. Their products do all three.
+
+  A negative `source.width` or `source.height` flips the part.
+
+  Nothing is drawn when the texture's id, width or height is 0.
 
 ## Text
 
@@ -550,40 +788,62 @@ static function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize
 static function ExportFontAsCodeAsync(font:Font, fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
 ```
 
-- `LoadFontExAsync`: Loads a TrueType or OpenType font file at a size, answering when its glyphs are ready: helix-raylib's own, in place of raylib's `LoadFontEx`.
+- `LoadFontExAsync`: Asynchronously loads a TrueType or OpenType font file at a size. See `LoadFontFromMemoryAsync` for making a font from bytes already loaded.
   - `fileName`: The file, as the program names it.
   - `fontSize`: The glyphs' size: the height of a line, in pixels.
   - `codepoints`: The characters, or null for those from the space on.
   - `codepointCount`: How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
-  - `loaded`: Receives the font.
+  - `loaded`: Receives the font once its glyphs are ready.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
 
-  The font holds only the characters the file has, so `glyphCount` may be fewer than asked for and a character it lacks draws as its '?'; each Unicode space it has (U+0020, U+00A0, U+2000 to U+200A, U+3000 and the others) is a blank glyph as wide as its advance.
-- `LoadFontFromMemoryAsync`: Makes a font from a TrueType or OpenType file's bytes, answering when its glyphs are ready: helix-raylib's own, in place of raylib's `LoadFontFromMemory`, as the glyphs are rasterized off the main thread.
-  - `fileType`: The file's extension, ".ttf" or ".otf".
+  It replaces raylib's `LoadFontEx`.
+
+  The font holds only the characters the file has. `glyphCount` may be fewer than asked for, and a character it lacks draws as its '?'.
+
+  Each Unicode space the file has (U+0020, U+00A0, U+2000 to U+200A, U+3000 and the others) is a blank glyph as wide as its advance.
+- `LoadFontFromMemoryAsync`: Asynchronously makes a font from a TrueType or OpenType file's bytes. See `LoadFontExAsync` for loading a file by its name.
+  - `fileType`: The file's extension, ".ttf" or ".otf". Any other is refused.
   - `fileData`: The file's bytes.
   - `dataSize`: How many of them.
   - `fontSize`: The glyphs' size: the height of a line, in pixels.
   - `codepoints`: The characters, or null for those from the space on.
   - `codepointCount`: How many characters; 0 for 95.
-  - `loaded`: Receives the font.
+  - `loaded`: Receives the font once its glyphs are ready.
   - `failed`: Optional. Receives why it couldn't be made; when omitted, it is logged.
 
-  The font holds only the characters the file has, as `LoadFontExAsync`'s does; with none of them, it is the default font.
-- `LoadFontDataAsync`: Rasterizes a TrueType or OpenType font's glyphs, answering when they are ready: helix-raylib's own, in place of raylib's `LoadFontData`. Each glyph has its own image, 8-bit grayscale, for `GenImageFontAtlas`; `FONT_SDF` makes them signed distances, with 4 texels of padding, 128 on the outline and 64 a texel.
+  It replaces raylib's `LoadFontFromMemory`. The glyphs are rasterized off the main thread.
+
+  The font holds only the characters the file has, as `LoadFontExAsync`'s does. With none of them, it is the default font.
+- `LoadFontDataAsync`: Asynchronously rasterizes a TrueType or OpenType font's glyphs, each with its own image. See `LoadFontFromMemoryAsync` for a font ready to draw.
   - `fileData`: The font file's bytes.
   - `dataSize`: How many of them.
   - `fontSize`: The glyphs' size: the height of a line, in pixels.
   - `codepoints`: The characters, or null for those from the space on.
   - `codepointCount`: How many characters; 0 for 95.
-  - `type`: `FONT_DEFAULT` for antialiased glyphs, `FONT_BITMAP` for glyphs with no gray, `FONT_SDF` for signed distances.
-  - `loaded`: Receives the glyphs.
+  - `type`: `FONT_DEFAULT` for antialiased glyphs, `FONT_BITMAP` for glyphs with no gray, `FONT_SDF` for signed distances. Any other is taken as `FONT_DEFAULT`.
+  - `loaded`: Receives the glyphs once they are ready.
   - `failed`: Optional. Receives why the font couldn't be read; when omitted, it is logged.
-- `ExportFontAsCodeAsync`: Writes a font as a C header through `SaveFileTextAsync`, the text raylib 5.5's `ExportFontAsCode` writes: its texture's pixels in the texture's format (gray and alpha for the default font and a TrueType font's), compressed as `CompressData` compresses them, 20 bytes a line; each glyph's rectangle and its character, offsets and advance; and a function loading it. The file's name, in Pascal case, names them. The pixels are those the font's texture was made from, or the texture's own while it hasn't been drawn; one made otherwise and already on the GPU (a render texture's) is written as an empty image, as raylib writes a texture it can't read back. helix-raylib's own, answering once the file is written.
+
+  It replaces raylib's `LoadFontData`.
+
+  Each glyph's image is 8-bit grayscale, for `GenImageFontAtlas`.
+
+  Under `FONT_SDF` the images hold signed distances, with 4 texels of padding, 128 on the outline and 64 for each texel.
+- `ExportFontAsCodeAsync`: Asynchronously writes a font as a C header, the text raylib 5.5's `ExportFontAsCode` writes.
   - `font`: The font.
   - `fileName`: The file.
-  - `done`: Optional. Called once the file is written, at a later poll.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  It replaces raylib's `ExportFontAsCode`. The file is written through `SaveFileTextAsync`.
+
+  The header holds the texture's pixels, each glyph's rectangle, character, offsets and advance, and a function loading the font. The file's name, in Pascal case, names them.
+
+  The pixels are in the texture's format (gray and alpha for the default font and a TrueType font's), compressed as `CompressData` compresses them, 20 bytes a line.
+
+  The pixels are those the font's texture was made from, or the texture's own while it hasn't been drawn.
+
+  A texture made otherwise and already on the GPU (a render texture's) is written as an empty image, as raylib writes a texture it can't read back.
 
 ### Macros, run as the program builds
 
@@ -614,7 +874,7 @@ static function ExportImageAsync(image:Image, fileName:String, ?done:() -> Void,
 static function ExportImageAsCodeAsync(image:Image, fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
 ```
 
-- `LoadImageRawAsync`: Loads an image's raw pixels from a file, answering when they are read: helix-raylib's own, in place of raylib's `LoadImageRaw`. The file holds the pixels in a format, after a header of some bytes; a file too small for them fails.
+- `LoadImageRawAsync`: Asynchronously loads an image's raw pixels from a file, in place of raylib's `LoadImageRaw`. See `LoadImageAsync` for an encoded image file.
   - `fileName`: The file.
   - `width`: The width, in pixels.
   - `height`: The height, in pixels.
@@ -622,23 +882,53 @@ static function ExportImageAsCodeAsync(image:Image, fileName:String, ?done:() ->
   - `headerSize`: The bytes before the pixels, skipped when the file holds them and the pixels.
   - `loaded`: Receives the image.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-- `LoadImageFromTextureAsync`: Reads a texture's pixels, answering when they are read: helix-raylib's own, in place of raylib's `LoadImageFromTexture`, as the GPU answers later. A texture on the GPU (one drawn, or a render texture) is read back from it as the frames drawn so far left it; a render texture's rows come bottom first, as raylib's do, so it reads upside down as raylib's does. A texture updated this frame (`UpdateTexture`) is read once the frame is drawn, so the update shows. One not drawn yet is read from memory (raylib's default texture is its white pixel). The image is RGBA, whatever the texture's format. A cubemap's can't be read.
+
+  A file with fewer bytes than the pixels need fails.
+
+  A file too small for the header and the pixels is read from its first byte.
+- `LoadImageFromTextureAsync`: Asynchronously reads a texture's pixels into an RGBA image, in place of raylib's `LoadImageFromTexture`. See `LoadImageFromScreenAsync` for the screen.
   - `texture`: The texture.
   - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
-- `LoadImageFromScreenAsync`: Reads the screen, answering as the next frame ends: helix-raylib's own, in place of raylib's `LoadImageFromScreen`, as the GPU answers later. The image is the framebuffer's size, as raylib 6.2's is (5.5 scaled the screen's size by its DPI instead), rows top first, its alpha opaque.
+
+  The image is RGBA, whatever the texture's format.
+
+  A texture on the GPU (one drawn, or a render texture) is read as the frames drawn so far left it.
+
+  A render texture's rows come bottom first, as raylib's do, so its image is upside down.
+
+  A texture updated this frame (`UpdateTexture`) is read once the frame is drawn, so the update shows.
+
+  A texture not drawn yet is read from memory. raylib's default texture is its white pixel.
+
+  A cubemap is read from the image it was made from while that is kept in memory. Its faces on the GPU aren't read.
+- `LoadImageFromScreenAsync`: Asynchronously reads the screen into an RGBA image as the next frame ends, in place of raylib's `LoadImageFromScreen`. See `TakeScreenshotAsync` for saving the screen to a file.
   - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
-- `ExportImageAsync`: Writes an image to a file through `SaveFileDataAsync`, as raylib's default build's `ExportImage` writes it: ".png" (any uncompressed format; a format other than 8-bit grayscale, grayscale and alpha, RGB or RGBA is written as RGBA), ".qoi" (RGB or RGBA alone) or ".raw" (the pixels as they are). helix-raylib's own, answering once the file is written. The file is kept as `SaveFileDataAsync` keeps it; `TakeScreenshotAsync` writes a real file.
+
+  The image is the framebuffer's size, not the screen's, rows top first, its alpha opaque.
+
+  A call before `InitWindow` fails.
+- `ExportImageAsync`: Asynchronously writes an image to a PNG, QOI or raw file through `SaveFileDataAsync`, in place of raylib's `ExportImage`. See `ExportImageAsCodeAsync` for writing a C header.
   - `image`: The image.
   - `fileName`: The file; its extension chooses the format.
-  - `done`: Optional. Called once the file is written, at a later poll.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't, such as an empty image or another extension; when omitted, it is logged.
-- `ExportImageAsCodeAsync`: Writes an image as a C header through `SaveFileTextAsync`, as raylib's `ExportImageAsCode` does: its size and format as defines, and its pixels (the first level's) as an array of bytes, 20 a line. helix-raylib's own, answering once the file is written.
+
+  The file's extension chooses the format:
+
+  - ".png": any uncompressed format. A format other than 8-bit grayscale, grayscale and alpha, RGB or RGBA is written as RGBA. - ".qoi": RGB or RGBA alone. - ".raw": the pixels as they are.
+
+  The file is kept as `SaveFileDataAsync` keeps it. `TakeScreenshotAsync` writes a real file.
+- `ExportImageAsCodeAsync`: Asynchronously writes an image as a C header through `SaveFileTextAsync`, in place of raylib's `ExportImageAsCode`. See `ExportImageAsync` for writing a PNG, QOI or raw file.
   - `image`: The image.
   - `fileName`: The file; its name, upper case, names the defines and the array.
-  - `done`: Optional. Called once the file is written, at a later poll.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  The header holds:
+
+  - the image's size and format, as defines. - its first level's pixels, as an array of bytes, 20 a line.
 
 ### Macros, run as the program builds
 
@@ -714,69 +1004,179 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
 static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
 ```
 
-- `ToggleFullscreenAsync`: Asks for fullscreen, or back to the window, the size and place it had, answering once it is granted or refused: helix-raylib's own, in place of raylib's `ToggleFullscreen`. In a page the browser grants it only soon after a key press, click or tap; without one, it waits for the player's next, or refuses. `IsWindowFullscreen` says the new state once the window has changed, not when the call returns.
-  - `done`: Optional. Called once the window has changed, at a later poll.
+- `ToggleFullscreenAsync`: Asynchronously asks for fullscreen, or for the window back at the size and place it had. See `ToggleBorderlessWindowedAsync` for the borderless window.
+  - `done`: Optional. Called once the window has changed, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
-- `ToggleBorderlessWindowedAsync`: Asks for the window to fill the screen without borders, or back to the window, answering once it is granted or refused: helix-raylib's own, in place of raylib's `ToggleBorderlessWindowed`. The screen is asked for fullscreen, as a fullscreen window natively is borderless and the size of the desktop. As in raylib, `IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)` is true while it is, and `IsWindowFullscreen` false.
-  - `done`: Optional. Called once the window has changed, at a later poll.
+
+  It replaces raylib's `ToggleFullscreen`.
+
+  In a page the browser grants it only soon after a key press, click or tap. Without one, it waits for the player's next, or refuses.
+
+  Called while borderless, it only switches to fullscreen.
+
+  `IsWindowFullscreen` reports the new state once the window has changed, not when the call returns.
+- `ToggleBorderlessWindowedAsync`: Asynchronously asks for the window to fill the screen without borders, or back to the window. See `ToggleFullscreenAsync` for fullscreen.
+  - `done`: Optional. Called once the window has changed, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
-- `SetWindowSizeAsync`: Asks for the window's size, answering once the window manager has resized it or refused: helix-raylib's own, in place of raylib's `SetWindowSize`. The window manager may give another size, which `GetScreenWidth` and `GetScreenHeight` say once it has. A fullscreen or maximized window keeps its size, and a page's canvas follows the page, so those are refused.
+
+  It replaces raylib's `ToggleBorderlessWindowed`.
+
+  The screen goes fullscreen. Natively a fullscreen window is borderless and the size of the desktop.
+
+  In a page it waits for a key press, click or tap, as `ToggleFullscreenAsync` does.
+
+  Called while fullscreen, it only switches to borderless.
+
+  As in raylib, `IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)` is true while it is, and `IsWindowFullscreen` false.
+- `SetWindowSizeAsync`: Asynchronously asks for the window's size. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting the sizes the player can make it.
   - `width`: The width, in pixels.
   - `height`: The height, in pixels.
-  - `done`: Optional. Called once the window has a size from the request, at a later poll.
+  - `done`: Optional. Called once the window has a size from the request, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't resized; when omitted, it is logged.
-- `SetWindowPositionAsync`: Asks for the window's place on the desktop, answering once it has moved or the move is refused: helix-raylib's own, in place of raylib's `SetWindowPosition`. Where the window can't be moved (in a page, or under Wayland), or while it is fullscreen or maximized, it is refused.
+
+  It replaces raylib's `SetWindowSize`.
+
+  The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
+
+  It is refused while the window is fullscreen or maximized, and in a page, whose canvas follows the page.
+
+  A size under 1 pixel is refused.
+- `SetWindowPositionAsync`: Asynchronously asks for the window's place on the desktop. See `SetWindowMonitorAsync` for moving it to another monitor.
   - `x`: The left edge, in pixels.
   - `y`: The top edge, in pixels.
-  - `done`: Optional. Called once the window has moved, at a later poll.
+  - `done`: Optional. Called once the window has moved, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it didn't move; when omitted, it is logged.
-- `SetWindowMonitorAsync`: Asks for the window on another monitor, answering once it is there or the move is refused: helix-raylib's own, in place of raylib's `SetWindowMonitor`. Where the window can't be moved, a monitor other than its own is refused.
+
+  It replaces raylib's `SetWindowPosition`.
+
+  It is refused in a page, under Wayland, and while the window is fullscreen or maximized.
+- `SetWindowMonitorAsync`: Asynchronously asks for the window on another monitor. See `SetWindowPositionAsync` for placing it on the desktop.
   - `monitor`: The monitor, 0 to `GetMonitorCount() - 1`.
-  - `done`: Optional. Called once the window is on the monitor, at a later poll.
+  - `done`: Optional. Called once the window is on the monitor, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it isn't, such as a monitor that isn't there; when omitted, it is logged.
-- `MaximizeWindowAsync`: Asks for the window maximized, answering once it is or the window manager refuses: helix-raylib's own, in place of raylib's `MaximizeWindow`. A page can't maximize its window, so it is refused there.
-  - `done`: Optional. Called once the window is maximized, at a later poll.
+
+  It replaces raylib's `SetWindowMonitor`.
+
+  Where the window can't be moved, a monitor other than its own is refused.
+- `MaximizeWindowAsync`: Asynchronously asks for the window maximized. See `RestoreWindowAsync` for bringing it back.
+  - `done`: Optional. Called once the window is maximized, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
-- `MinimizeWindowAsync`: Asks for the window minimized, answering once it is or the window manager refuses: helix-raylib's own, in place of raylib's `MinimizeWindow`. A page can't minimize its window, so it is refused there.
-  - `done`: Optional. Called once the window is minimized, at a later poll.
+
+  It replaces raylib's `MaximizeWindow`.
+
+  It is refused in a page, which can't maximize its window.
+- `MinimizeWindowAsync`: Asynchronously asks for the window minimized. See `RestoreWindowAsync` for bringing it back.
+  - `done`: Optional. Called once the window is minimized, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
-- `RestoreWindowAsync`: Asks for the window back to its size from minimized or maximized, answering once it is or the window manager refuses: helix-raylib's own, in place of raylib's `RestoreWindow`.
-  - `done`: Optional. Called once the window is restored, at a later poll.
+
+  It replaces raylib's `MinimizeWindow`.
+
+  It is refused in a page, which can't minimize its window.
+- `RestoreWindowAsync`: Asynchronously asks for the window back to its size from minimized or maximized. See `MaximizeWindowAsync` and `MinimizeWindowAsync` for changing it.
+  - `done`: Optional. Called once the window is restored, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
-- `SetWindowFocusedAsync`: Asks for the window brought to the front with the keyboard, answering once it has the keyboard or the window manager keeps it elsewhere: helix-raylib's own, in place of raylib's `SetWindowFocused`. A window manager may only flash it; in a page the canvas takes the keyboard.
-  - `done`: Optional. Called once the window has the keyboard, at a later poll.
+
+  It replaces raylib's `RestoreWindow`.
+
+  A minimized window is restored from minimized, any other from maximized.
+- `SetWindowFocusedAsync`: Asynchronously asks for the window brought to the front with the keyboard.
+  - `done`: Optional. Called once the window has the keyboard or the window manager keeps it elsewhere, at a later poll.
   - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
-- `SetWindowOpacityAsync`: Asks for the window see-through, answering once it is or it is refused: helix-raylib's own, in place of raylib's `SetWindowOpacity`. In a page the canvas fades; a desktop without a compositor refuses it.
+
+  It replaces raylib's `SetWindowFocused`.
+
+  A window manager may only flash it.
+
+  In a page the canvas takes the keyboard.
+- `SetWindowOpacityAsync`: Asynchronously asks for the window's opacity.
   - `opacity`: From 0 (clear) to 1 (opaque).
-  - `done`: Optional. Called once the window has the opacity, at a later poll.
+  - `done`: Optional. Called once the window has the opacity, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
-- `SetWindowMinSizeAsync`: Asks for the smallest size the player can make the window, answering once it has it or it is refused: helix-raylib's own, in place of raylib's `SetWindowMinSize`. A page's canvas follows the page, so it is refused there.
+
+  It replaces raylib's `SetWindowOpacity`.
+
+  In a page the canvas fades.
+
+  A desktop without a compositor refuses it.
+- `SetWindowMinSizeAsync`: Asynchronously asks for the smallest size the player can make the window. See `SetWindowMaxSizeAsync` for setting the largest.
   - `width`: The width, in the screen's pixels.
   - `height`: The height.
-  - `done`: Optional. Called once the window has the limit, at a later poll.
+  - `done`: Optional. Called once the window has the limit, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
-- `SetWindowMaxSizeAsync`: Asks for the largest size the player can make the window, answering once it has it or it is refused: helix-raylib's own, in place of raylib's `SetWindowMaxSize`. A page's canvas follows the page, so it is refused there.
+
+  It replaces raylib's `SetWindowMinSize`.
+
+  It is refused in a page, whose canvas follows the page.
+
+  A size under 0 pixels is refused.
+- `SetWindowMaxSizeAsync`: Asynchronously asks for the largest size the player can make the window. See `SetWindowMinSizeAsync` for setting the smallest.
   - `width`: The width, in the screen's pixels.
   - `height`: The height.
-  - `done`: Optional. Called once the window has the limit, at a later poll.
+  - `done`: Optional. Called once the window has the limit, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
-- `DisableCursorAsync`: Locks the mouse to the window and hides the cursor, for looking around, answering once it is locked or refused: helix-raylib's own, in place of raylib's `DisableCursor`. `GetMouseDelta` keeps coming while the position goes on past the window's edges. In a page the browser locks it only soon after a click or key press, so without one it locks at the player's next, and Escape lets it go. `IsCursorHidden` is true from the call.
-  - `done`: Optional. Called once the mouse is locked, at a later poll.
+
+  It replaces raylib's `SetWindowMaxSize`.
+
+  It is refused in a page, whose canvas follows the page.
+
+  A size under 0 pixels is refused.
+- `DisableCursorAsync`: Asynchronously locks the mouse to the window and hides the cursor, for looking around. See `EnableCursorAsync` for letting it go.
+  - `done`: Optional. Called once the mouse is locked, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
-- `EnableCursorAsync`: Lets go of the mouse that `DisableCursorAsync` locked, and shows the cursor, answering once it is let go: helix-raylib's own, in place of raylib's `EnableCursor`.
+
+  It replaces raylib's `DisableCursor`.
+
+  `GetMouseDelta` keeps coming while the position goes on past the window's edges.
+
+  `IsCursorHidden` is true from the call.
+
+  In a page the browser locks it only soon after a click or key press. Without one, it locks at the player's next. Escape lets it go.
+- `EnableCursorAsync`: Asynchronously lets go of the mouse that `DisableCursorAsync` locked and shows the cursor.
   - `done`: Optional. Called once the mouse is let go, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
-- `SetClipboardTextAsync`: Puts text on the system's clipboard, answering once it is there or refused: helix-raylib's own, in place of raylib's `SetClipboardText`. A page writes it only while it has the keyboard, soon after a press.
+
+  It replaces raylib's `EnableCursor`.
+
+  `IsCursorHidden` is false from the call.
+- `SetClipboardTextAsync`: Asynchronously puts text on the system's clipboard. See `GetClipboardTextAsync` for reading it.
   - `text`: The text.
-  - `done`: Optional. Called once the text is on the clipboard, at a later poll.
+  - `done`: Optional. Called once the text is on the clipboard, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it isn't; when omitted, it is logged.
-- `GetClipboardTextAsync`: Reads the clipboard's text, answering at a later poll: helix-raylib's own, in place of raylib's `GetClipboardText`, as a page's clipboard answers later. A page reads it only with the player's permission, which the browser may ask for.
-  - `read`: Receives the text; "" when the clipboard holds none.
+
+  It replaces raylib's `SetClipboardText`.
+
+  A page writes it only while it has the keyboard, soon after a press.
+- `GetClipboardTextAsync`: Asynchronously reads the clipboard's text. See `GetClipboardImageAsync` for reading an image.
+  - `read`: Receives the text at a later poll; "" when the clipboard holds none.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
-- `GetClipboardImageAsync`: Reads the clipboard's image, answering at a later poll once it is decoded: helix-raylib's own, in place of raylib's `GetClipboardImage`. A page reads it only with the player's permission.
-  - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+
+  It replaces raylib's `GetClipboardText`.
+
+  A page reads it only with the player's permission, which the browser may ask for.
+- `GetClipboardImageAsync`: Asynchronously reads the clipboard's image. See `GetClipboardTextAsync` for reading text.
+  - `loaded`: Receives the image once it is decoded, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged.
-- `TakeScreenshotAsync`: Takes a screenshot of the next frame and hands it to the user as a file, as `ExportImageAsync` writes it by the name's extension (".png", ".qoi" or ".raw"), answering once it is saved or refused: helix-raylib's own, in place of raylib's `TakeScreenshot`. In a page it is downloaded under the name's file name, as raylib's web build does; natively it is written where the name says, as raylib 6.2 writes it: a relative name under the working directory, its directories kept, and an absolute one where it is. A directory that isn't there isn't made, and the screenshot isn't saved. raylib's is taken from the frame drawn last, before it is shown; this one is taken as the next frame ends, when its pixels can be read back. Its alpha is opaque, as raylib's is.
+
+  It replaces raylib's `GetClipboardImage`.
+
+  A page reads it only with the player's permission.
+- `TakeScreenshotAsync`: Asynchronously takes a screenshot of the next frame and saves it as a file. See `LoadImageFromScreenAsync` for the screen as an `Image`.
   - `fileName`: The file's name, or its path; a name with `'` is refused, as raylib's is.
-  - `done`: Optional. Called once the file is written or downloaded, at a later poll.
+  - `done`: Optional. Called once the file is written or downloaded, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  It replaces raylib's `TakeScreenshot`.
+
+  The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.
+
+  In a page it is downloaded under the name's file name, as raylib's web build does.
+
+  Natively it is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories kept. An absolute one is where it is.
+
+  A directory that isn't there isn't made, and the screenshot is refused.
+
+  It is taken as the next frame ends, not from the frame drawn last as raylib's is.
+
+  Its alpha is opaque, as raylib's is.
+
+  It is refused before `InitWindow`.

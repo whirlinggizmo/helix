@@ -30,8 +30,10 @@ import helix.raylib.modules.RModelsAsync.*;
 import helix.raylib.modules.RAudioAsync.*;
 #end
 
-/** Holds the async versions of rtextures' image and texture loads and writes, helix-raylib's own in place of raylib's calls that wait
-	for a file, the GPU or a write. Each is written here, and `helix.raylib.extras.Textures` forwards to each (`tools/gen_raylib.py`). */
+/** Holds the async versions of rtextures' image and texture loads and writes, in place of raylib's calls that wait for a file, the
+	GPU or a write.
+
+	`helix.raylib.extras.Textures` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RTexturesAsync {
@@ -99,8 +101,12 @@ class RTexturesAsync {
 		});
 	}
 
-	/** Loads an image's raw pixels from a file, answering when they are read: helix-raylib's own, in place of raylib's `LoadImageRaw`. The
-		file holds the pixels in a format, after a header of some bytes; a file too small for them fails.
+	/** Asynchronously loads an image's raw pixels from a file, in place of raylib's `LoadImageRaw`. See
+		`LoadImageAsync` for an encoded image file.
+
+		A file with fewer bytes than the pixels need fails.
+
+		A file too small for the header and the pixels is read from its first byte.
 
 		@param fileName  The file.
 		@param width  The width, in pixels.
@@ -321,11 +327,20 @@ class RTexturesAsync {
 		Runtime.fetchImage(path, error -> error == null ? loaded(RTextures.loadTexture(path)) : refuse("LoadTextureAsync", error, failed));
 	}
 
-	/** Reads a texture's pixels, answering when they are read: helix-raylib's own, in place of raylib's `LoadImageFromTexture`, as the GPU
-		answers later. A texture on the GPU (one drawn, or a render texture) is read back from it as the frames drawn so far left it; a
-		render texture's rows come bottom first, as raylib's do, so it reads upside down as raylib's does. A texture updated this frame
-		(`UpdateTexture`) is read once the frame is drawn, so the update shows. One not drawn yet is read from memory (raylib's default
-		texture is its white pixel). The image is RGBA, whatever the texture's format. A cubemap's can't be read.
+	/** Asynchronously reads a texture's pixels into an RGBA image, in place of raylib's `LoadImageFromTexture`. See
+		`LoadImageFromScreenAsync` for the screen.
+
+		The image is RGBA, whatever the texture's format.
+
+		A texture on the GPU (one drawn, or a render texture) is read as the frames drawn so far left it.
+
+		A render texture's rows come bottom first, as raylib's do, so its image is upside down.
+
+		A texture updated this frame (`UpdateTexture`) is read once the frame is drawn, so the update shows.
+
+		A texture not drawn yet is read from memory. raylib's default texture is its white pixel.
+
+		A cubemap is read from the image it was made from while that is kept in memory. Its faces on the GPU aren't read.
 
 		@param texture  The texture.
 		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
@@ -356,9 +371,12 @@ class RTexturesAsync {
 			read();
 	}
 
-	/** Reads the screen, answering as the next frame ends: helix-raylib's own, in place of raylib's `LoadImageFromScreen`, as the GPU
-		answers later. The image is the framebuffer's size, as raylib 6.2's is (5.5 scaled the screen's size by its DPI instead), rows top
-		first, its alpha opaque.
+	/** Asynchronously reads the screen into an RGBA image as the next frame ends, in place of raylib's
+		`LoadImageFromScreen`. See `TakeScreenshotAsync` for saving the screen to a file.
+
+		The image is the framebuffer's size, not the screen's, rows top first, its alpha opaque.
+
+		A call before `InitWindow` fails.
 
 		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
@@ -375,26 +393,37 @@ class RTexturesAsync {
 		}, error -> refuse("LoadImageFromScreenAsync", error, failed));
 	}
 
-	/** Writes an image to a file through `SaveFileDataAsync`, as raylib's default build's `ExportImage` writes it: ".png" (any
-		uncompressed format; a format other than 8-bit grayscale, grayscale and alpha, RGB or RGBA is written as RGBA), ".qoi" (RGB or
-		RGBA alone) or ".raw" (the pixels as they are). helix-raylib's own, answering once the file is written. The file is kept as
-		`SaveFileDataAsync` keeps it; `TakeScreenshotAsync` writes a real file.
+	/** Asynchronously writes an image to a PNG, QOI or raw file through `SaveFileDataAsync`, in place of raylib's
+		`ExportImage`. See `ExportImageAsCodeAsync` for writing a C header.
+
+		The file's extension chooses the format:
+
+		- ".png": any uncompressed format. A format other than 8-bit grayscale, grayscale and alpha, RGB or RGBA is written as RGBA.
+		- ".qoi": RGB or RGBA alone.
+		- ".raw": the pixels as they are.
+
+		The file is kept as `SaveFileDataAsync` keeps it. `TakeScreenshotAsync` writes a real file.
 
 		@param image  The image.
 		@param fileName  The file; its extension chooses the format.
-		@param done  Optional. Called once the file is written, at a later poll.
+		@param done  Optional. Called once the file is written, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't, such as an empty image or another extension; when omitted, it is logged. */
 	static function ExportImageAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
 		var file = image.width == 0 || image.height == 0 || image.data == null ? null : RTextures.encodeImage(image, fileName);
 		exportData("ExportImageAsync", fileName, file, "Image exported successfully", "Failed to export image", done, failed);
 	}
 
-	/** Writes an image as a C header through `SaveFileTextAsync`, as raylib's `ExportImageAsCode` does: its size and format as defines,
-		and its pixels (the first level's) as an array of bytes, 20 a line. helix-raylib's own, answering once the file is written.
+	/** Asynchronously writes an image as a C header through `SaveFileTextAsync`, in place of raylib's
+		`ExportImageAsCode`. See `ExportImageAsync` for writing a PNG, QOI or raw file.
+
+		The header holds:
+
+		- the image's size and format, as defines.
+		- its first level's pixels, as an array of bytes, 20 a line.
 
 		@param image  The image.
 		@param fileName  The file; its name, upper case, names the defines and the array.
-		@param done  Optional. Called once the file is written, at a later poll.
+		@param done  Optional. Called once the file is written, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
 	static function ExportImageAsCodeAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
 		exportText("ExportImageAsCodeAsync", fileName, RTextures.imageAsCode(image, fileName), "Image as code exported successfully", done, failed);

@@ -200,15 +200,22 @@ Code is written to be read, by people and agents, not packed.
     changes what the reader does belongs here ("A browser plays no sound until the player has pressed a key."); the design's reasons,
     its history and comparisons to other frameworks don't (DECISIONS holds those).
   - **A doc comment is a lookup, not a chapter.** Its reader, a developer or an agent, lands on it by name and reads it once, and an
-    agent pays again for every line it carries after, so: the summary carries the decision (what it does, and what to call instead
-    when this isn't it: `LoadLightingShader` names `LoadPbrShader`); the remarks are short paragraphs, one fact each, the one most
-    callers need first; what a member reads from the program's data is listed, not described around; and what is true of the
-    program's own files (an asset's bone names, where a model is authored) is the program's spec's, not the API's. A comment that
-    needs a second screen is two members' or a README's. Sample, `LoadLightingShader`, where the summary names the member a reader
-    may want instead, the first paragraph is the setup every caller does, and the example is the call's shape:
+    agent pays again for every line it carries after, so:
+    - The summary carries the decision: what the member does, in one sentence. An `...Async` member's starts "Asynchronously ...",
+      as .NET's do, and when and with what its callback answers goes on the callback's `@param` line.
+    - What to call instead when this member isn't it follows as a sentence of its own, "See `X` for doing Y.", Y what X does as a
+      gerund or a "whether" clause so it can't read as this member's result, never a clause after a colon or comma
+      (`LoadLightingShader`: "See `LoadPbrShader` for drawing a glTF's materials as authored.").
+    - The remarks are short paragraphs, one fact each, the one most callers need first. What a member reads from the program's data
+      is listed, not described around.
+    - What is true of the program's own files (an asset's bone names, where a model is authored) is the program's spec's, not the
+      API's. A comment that needs a second screen is two members' or a README's.
+
+    Sample, `LoadLightingShader`, where the summary names the member a reader may want instead, the first paragraph is the setup
+    every caller does, and the example is the call's shape:
 
         /** Returns raylib's examples' lighting shader (`lighting.vs` and `lighting.fs`), built in. It shines every material alike, one
-            Phong highlight whatever the material says: `LoadPbrShader` draws a glTF's materials as authored.
+            Phong highlight whatever the material says. See `LoadPbrShader` for drawing a glTF's materials as authored.
 
             Set up as raylib's lighting example does: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, set to the camera's position each frame;
             `GetShaderLocation(shader, "ambient")` finds the ambient color; lights come from `CreateLight`. A model posed by

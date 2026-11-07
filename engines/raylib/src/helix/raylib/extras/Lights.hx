@@ -48,7 +48,7 @@ class Lights {
 	// ---- lights: raylib's examples' rlights and the lit shader built on them (raylib/RLights.hx) ----
 
 	/** Returns raylib's examples' lighting shader (`lighting.vs` and `lighting.fs`), built in. It shines every material alike, one
-		Phong highlight whatever the material says: `LoadPbrShader` draws a glTF's materials as authored.
+		Phong highlight whatever the material says. See `LoadPbrShader` for drawing a glTF's materials as authored.
 
 		Set up as raylib's lighting example does: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, set to the camera's position each frame;
 		`GetShaderLocation(shader, "ambient")` finds the ambient color; lights come from `CreateLight`. A model posed by

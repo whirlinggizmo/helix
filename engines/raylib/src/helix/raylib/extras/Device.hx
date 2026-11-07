@@ -32,104 +32,138 @@ class Device {
 	#if !macro
 	// ---- device: the safe area, run options, the device, the window's abilities, orientation and tilt (raylib/RDevice.hx) ----
 
-	/** Returns the part of the window no notch, rounded corner or system bar covers, in the screen's coordinates (as `GetScreenWidth`
-		measures): where a HUD and buttons go. On a desktop, or in a page without `viewport-fit=cover` in its viewport meta tag, it is the
-		whole window.
+	/** Returns the part of the window no notch, rounded corner or system bar covers, in the screen's coordinates as `GetScreenWidth`
+		measures them.
+
+		A HUD and buttons go inside it.
+
+		On a desktop it is the whole window. In a page it is the whole window unless the viewport meta tag has `viewport-fit=cover`.
 
 		@return  The safe area. */
 	public static inline function GetWindowSafeArea():Rectangle
 		return RDevice.GetWindowSafeArea();
 
-	/** Returns an option the program was started with: in a page, the URL's query parameter of that name (`?level=3`); natively, the
-		command line's `--level=3`, or else the environment variable `HELIX_` and the name in capitals (`HELIX_LEVEL=3`).
+	/** Returns an option the program was started with, or null when it isn't set.
+
+		In a page it is the URL's query parameter of that name (`?level=3`).
+
+		Natively it is the command line's `--level=3`, or else the environment variable `HELIX_` and the name in capitals
+		(`HELIX_LEVEL=3`).
 
 		@param name  The option's name.
 		@return  Its value, or null when it isn't set. */
 	public static inline function GetRunOption(name:String):Null<String>
 		return RDevice.GetRunOption(name);
 
-	/** Returns whether the program runs in a browser page rather than natively.
+	/** Returns whether the program runs in a browser page rather than natively. See `GetPlatformOS` for naming the operating system.
 
 		@return  True in a page. */
 	public static inline function IsPlatformWeb():Bool
 		return RDevice.IsPlatformWeb();
 
-	/** Returns the operating system, in lowercase: "windows", "macos", "linux", "android", "ios" or "chromeos"; "" where the platform
-		names none.
+	/** Returns the operating system's name in lowercase, or "" where the platform names none. See `IsPlatformWeb` for whether the program runs in a page.
+
+		The names are "windows", "macos", "linux", "android", "ios" and "chromeos".
 
 		@return  The system's name. */
 	public static inline function GetPlatformOS():String
 		return RDevice.GetPlatformOS();
 
-	/** Returns whether the device has a touch screen. Always false natively. A laptop may have both a touch screen and a mouse, so touch
-		controls also belong on the first touch, not on this alone.
+	/** Returns whether the device has a touch screen. See `IsFinePointerAvailable` for whether there is a mouse, a trackpad or a pen.
+
+		Always false natively.
+
+		A laptop may have both a touch screen and a mouse. Touch controls also belong on the first touch, not on this alone.
 
 		@return  True with a touch screen. */
 	public static inline function IsTouchScreenAvailable():Bool
 		return RDevice.IsTouchScreenAvailable();
 
-	/** Returns whether the device has a fine pointer: a mouse, a trackpad or a pen. False on a phone or a tablet alone.
+	/** Returns whether the device has a fine pointer, such as a mouse, a trackpad or a pen. See `IsTouchScreenAvailable` for whether there is a touch screen.
+
+		False on a phone or a tablet alone.
 
 		@return  True with a fine pointer. */
 	public static inline function IsFinePointerAvailable():Bool
 		return RDevice.IsFinePointerAvailable();
 
-	/** Returns whether the program can close its own window: false in a page, which can't close its tab, so a game hides its Quit there.
+	/** Returns whether the program can close its own window.
+
+		False in a page, which can't close its tab. A game hides its Quit there.
 
 		@return  True where `CloseWindow` ends the program's window. */
 	public static inline function IsWindowCloseable():Bool
 		return RDevice.IsWindowCloseable();
 
-	/** Returns whether the window can go fullscreen: false in a page that isn't allowed to (an iframe without permission, iOS Safari on
-		an iPhone).
+	/** Returns whether the window can go fullscreen. See `ToggleFullscreenAsync` for asking for it.
+
+		False in a page that isn't allowed to, such as an iframe without permission or iOS Safari on an iPhone.
 
 		@return  True where `ToggleFullscreenAsync` can be granted. */
 	public static inline function IsFullscreenAvailable():Bool
 		return RDevice.IsFullscreenAvailable();
 
-	/** Asks for the screen to be held one way up, or released. Only some browsers lock it, Chrome on Android only in fullscreen, so ask
-		in `ToggleFullscreenAsync`'s `done`; natively and on iOS it is refused, and a game shows "turn your device" when the shape is
-		wrong (`GetScreenWidth() < GetScreenHeight()`).
+	/** Asynchronously asks for the screen to be held one way up, or released. See `GetScreenOrientation` for reading how it is held.
+
+		Natively and on iOS it is refused.
+
+		Only some browsers lock it. Chrome on Android locks it only in fullscreen, so a program asks in `ToggleFullscreenAsync`'s `done`.
+
+		Where the lock is refused, a game shows "turn your device" when the shape is wrong (`GetScreenWidth() < GetScreenHeight()`).
+
+		A value that isn't an `ORIENTATION_` value is refused.
 
 		@param orientation  `ORIENTATION_LANDSCAPE`, `ORIENTATION_PORTRAIT`, or `ORIENTATION_ANY` to release a lock.
-		@param done  Optional. Called once the screen is held, at a later poll.
+		@param done  Optional. Called once the screen is held, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it was refused; when omitted, it is logged. */
 	public static inline function SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void):Void
 		RDevice.SetScreenOrientationAsync(orientation, done, failed);
 
-	/** Returns how the screen is held for the program, as `SetScreenOrientationAsync` asked: `ORIENTATION_ANY` when it isn't held. A page
-		loses the lock as it leaves fullscreen.
+	/** Returns how the screen is held for the program, as `SetScreenOrientationAsync` asked, or `ORIENTATION_ANY` when it isn't held.
+
+		A page loses the lock as it leaves fullscreen.
 
 		@return  `ORIENTATION_ANY`, `ORIENTATION_LANDSCAPE` or `ORIENTATION_PORTRAIT`. */
 	public static inline function GetScreenOrientation():Int
 		return RDevice.GetScreenOrientation();
 
-	/** Asks for the device's tilt, for a game steered by tilting a phone. A page may need the player's permission, asked at their next
-		tap, so ask before the tap that starts play; natively it is refused.
+	/** Asynchronously asks for the device's tilt readings, for a game steered by tilting a phone. See `GetTilt` for
+		reading them and `DisableTilt` for stopping them.
+
+		Natively it is refused.
+
+		A page may need the player's permission, asked at their next tap. A game asks before the tap that starts play.
 
 		@param done  Optional. Called once readings arrive, at a later poll.
 		@param failed  Optional. Receives why there will be none: refused, the page isn't HTTPS, or no sensor; when omitted, it is logged. */
 	public static inline function EnableTiltAsync(?done:Void->Void, ?failed:String->Void):Void
 		RDevice.EnableTiltAsync(done, failed);
 
-	/** Stops the tilt's readings. A permission granted stays granted. */
+	/** Stops the tilt's readings. See `EnableTiltAsync` for asking for them.
+
+		A permission granted stays granted. */
 	public static inline function DisableTilt():Void
 		RDevice.DisableTilt();
 
-	/** Returns the tilt from level, turned with the screen: x across and y down the screen, each -1 to 1 at `SetTiltRange`'s angle; 0
-		until readings arrive and the device has been held steady once (level is taken then).
+	/** Returns the tilt from level, turned with the screen, each axis -1 to 1. See `CalibrateTilt` for setting what reads as level.
+
+		x is across the screen and y is down it.
+
+		A full tilt of 1 is `SetTiltRange`'s angle.
+
+		It is 0 until readings arrive and the device has been held steady once. Level is taken then.
 
 		@return  The tilt. */
 	public static inline function GetTilt():Vector2
 		return RDevice.GetTilt();
 
-	/** Sets the angle, in degrees, that reads as a full tilt of 1 (30 until set).
+	/** Sets the angle, in degrees, that reads as a full tilt of 1. It defaults to 30.
 
 		@param degrees  The angle. */
 	public static inline function SetTiltRange(degrees:Float):Void
 		RDevice.SetTiltRange(degrees);
 
-	/** Takes how the device is held now as level. */
+	/** Takes how the device is held now as level. See `GetTilt` for reading the tilt from it. */
 	public static inline function CalibrateTilt():Void
 		RDevice.CalibrateTilt();
 	#end

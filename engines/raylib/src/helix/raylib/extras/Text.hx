@@ -22,66 +22,82 @@ class Text {
 	#if !macro
 	// ---- text: the font loads and writes in place of rtext's that wait (raylib/RTextAsync.hx) ----
 
-	/** Loads a TrueType or OpenType font file at a size, answering when its glyphs are ready: helix-raylib's own, in place of raylib's
-		`LoadFontEx`.
+	/** Asynchronously loads a TrueType or OpenType font file at a size. See `LoadFontFromMemoryAsync` for making a font from bytes already loaded.
 
-		The font holds only the characters the file has, so `glyphCount` may be fewer than asked for and a character it lacks draws as
-		its '?'; each Unicode space it has (U+0020, U+00A0, U+2000 to U+200A, U+3000 and the others) is a blank glyph as wide as its
-		advance.
+		It replaces raylib's `LoadFontEx`.
+
+		The font holds only the characters the file has. `glyphCount` may be fewer than asked for, and a character it lacks draws as its '?'.
+
+		Each Unicode space the file has (U+0020, U+00A0, U+2000 to U+200A, U+3000 and the others) is a blank glyph as wide as its advance.
 
 		@param fileName  The file, as the program names it.
 		@param fontSize  The glyphs' size: the height of a line, in pixels.
 		@param codepoints  The characters, or null for those from the space on.
 		@param codepointCount  How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
-		@param loaded  Receives the font.
+		@param loaded  Receives the font once its glyphs are ready.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	public static inline function LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void,
 			?failed:String->Void):Void
 		RTextAsync.LoadFontExAsync(fileName, fontSize, codepoints, codepointCount, loaded, failed);
 
-	/** Makes a font from a TrueType or OpenType file's bytes, answering when its glyphs are ready: helix-raylib's own, in place of raylib's
-		`LoadFontFromMemory`, as the glyphs are rasterized off the main thread.
+	/** Asynchronously makes a font from a TrueType or OpenType file's bytes. See `LoadFontExAsync` for loading a file by its name.
 
-		The font holds only the characters the file has, as `LoadFontExAsync`'s does; with none of them, it is the default font.
+		It replaces raylib's `LoadFontFromMemory`. The glyphs are rasterized off the main thread.
 
-		@param fileType  The file's extension, ".ttf" or ".otf".
+		The font holds only the characters the file has, as `LoadFontExAsync`'s does. With none of them, it is the default font.
+
+		@param fileType  The file's extension, ".ttf" or ".otf". Any other is refused.
 		@param fileData  The file's bytes.
 		@param dataSize  How many of them.
 		@param fontSize  The glyphs' size: the height of a line, in pixels.
 		@param codepoints  The characters, or null for those from the space on.
 		@param codepointCount  How many characters; 0 for 95.
-		@param loaded  Receives the font.
+		@param loaded  Receives the font once its glyphs are ready.
 		@param failed  Optional. Receives why it couldn't be made; when omitted, it is logged. */
 	public static inline function LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>,
 			codepointCount:Int, loaded:Font->Void, ?failed:String->Void):Void
 		RTextAsync.LoadFontFromMemoryAsync(fileType, fileData, dataSize, fontSize, codepoints, codepointCount, loaded, failed);
 
-	/** Rasterizes a TrueType or OpenType font's glyphs, answering when they are ready: helix-raylib's own, in place of raylib's
-		`LoadFontData`. Each glyph has its own image, 8-bit grayscale, for `GenImageFontAtlas`; `FONT_SDF` makes them signed distances, with
-		4 texels of padding, 128 on the outline and 64 a texel.
+	/** Asynchronously rasterizes a TrueType or OpenType font's glyphs, each with its own image. See
+		`LoadFontFromMemoryAsync` for a font ready to draw.
+
+		It replaces raylib's `LoadFontData`.
+
+		Each glyph's image is 8-bit grayscale, for `GenImageFontAtlas`.
+
+		Under `FONT_SDF` the images hold signed distances, with 4 texels of padding, 128 on the outline and 64 for each texel.
 
 		@param fileData  The font file's bytes.
 		@param dataSize  How many of them.
 		@param fontSize  The glyphs' size: the height of a line, in pixels.
 		@param codepoints  The characters, or null for those from the space on.
 		@param codepointCount  How many characters; 0 for 95.
-		@param type  `FONT_DEFAULT` for antialiased glyphs, `FONT_BITMAP` for glyphs with no gray, `FONT_SDF` for signed distances.
-		@param loaded  Receives the glyphs.
+		@param type  `FONT_DEFAULT` for antialiased glyphs, `FONT_BITMAP` for glyphs with no gray, `FONT_SDF` for signed distances. Any
+			other is taken as `FONT_DEFAULT`.
+		@param loaded  Receives the glyphs once they are ready.
 		@param failed  Optional. Receives why the font couldn't be read; when omitted, it is logged. */
 	public static inline function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int,
 			loaded:Array<GlyphInfo>->Void, ?failed:String->Void):Void
 		RTextAsync.LoadFontDataAsync(fileData, dataSize, fontSize, codepoints, codepointCount, type, loaded, failed);
 
-	/** Writes a font as a C header through `SaveFileTextAsync`, the text raylib 5.5's `ExportFontAsCode` writes: its texture's pixels in
-		the texture's format (gray and alpha for the default font and a TrueType font's), compressed as `CompressData` compresses them,
-		20 bytes a line; each glyph's rectangle and its character, offsets and advance; and a function loading it. The file's name, in
-		Pascal case, names them. The pixels are those the font's texture was made from, or the texture's own while it hasn't been drawn;
-		one made otherwise and already on the GPU (a render texture's) is written as an empty image, as raylib writes a texture it can't
-		read back. helix-raylib's own, answering once the file is written.
+	/** Asynchronously writes a font as a C header, the text raylib 5.5's `ExportFontAsCode` writes.
+
+		It replaces raylib's `ExportFontAsCode`. The file is written through `SaveFileTextAsync`.
+
+		The header holds the texture's pixels, each glyph's rectangle, character, offsets and advance, and a function loading the font. The
+		file's name, in Pascal case, names them.
+
+		The pixels are in the texture's format (gray and alpha for the default font and a TrueType font's), compressed as `CompressData`
+		compresses them, 20 bytes a line.
+
+		The pixels are those the font's texture was made from, or the texture's own while it hasn't been drawn.
+
+		A texture made otherwise and already on the GPU (a render texture's) is written as an empty image, as raylib writes a texture it
+		can't read back.
 
 		@param font  The font.
 		@param fileName  The file.
-		@param done  Optional. Called once the file is written, at a later poll.
+		@param done  Optional. Called once the file is written, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
 	public static inline function ExportFontAsCodeAsync(font:Font, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
 		RTextAsync.ExportFontAsCodeAsync(font, fileName, done, failed);

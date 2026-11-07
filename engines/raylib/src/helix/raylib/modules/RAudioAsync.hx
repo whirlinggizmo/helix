@@ -30,15 +30,21 @@ import helix.raylib.modules.RTextAsync.*;
 import helix.raylib.modules.RModelsAsync.*;
 #end
 
-/** Holds the async versions of raudio's sound, wave and music loads and wave writes, helix-raylib's own in place of raylib's calls that
-	wait for a file, a decode or a write. Each is written here, and `helix.raylib.extras.Audio` forwards to each
-	(`tools/gen_raylib.py`). */
+/** Provides helix-raylib's async sound, wave and music loads and wave writes. They replace raylib's calls that wait for a file, a
+	decode or a write.
+
+	`helix.raylib.extras.Audio` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RAudioAsync {
 	#if !macro
-	/** Loads a sound file and decodes it, answering when it is ready to play at once: helix-raylib's own, in place of raylib's `LoadSound`.
-		A file loaded again shares its first load's decoded sound. `InitAudioDevice` comes first.
+	/** Asynchronously loads and decodes a sound file, ready to play at once. See `LoadMusicStreamAsync` for playing a file as it is read.
+
+		It replaces raylib's `LoadSound`.
+
+		`InitAudioDevice` must come first.
+
+		A file loaded again shares its first load's decoded sound.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the sound.
@@ -147,13 +153,19 @@ class RAudioAsync {
 		}, message -> failed('WAVE: Failed to load MP3 data: $message'));
 	}
 
-	/** Opens a music file, to be played as it is read (helix-services' `Audio.stream`), answering once enough of it has arrived to start:
-		helix-raylib's own, in place of raylib's `LoadMusicStream`. Natively it is read from its file, in a page from the download as it
-		arrives, never loaded whole. A FLAC file isn't opened, as raylib 5.5's default build leaves FLAC out (docs/DECISIONS.md 32).
-		`InitAudioDevice` comes first.
+	/** Asynchronously opens a music file to be played as it is read. See `LoadSoundAsync` for decoding a file whole first.
+
+		It replaces raylib's `LoadMusicStream`.
+
+		`InitAudioDevice` must come first.
+
+		A FLAC file is refused, as raylib 5.5's default build leaves FLAC out.
+
+		It is never loaded whole. Natively it is read from its file, and in a page from the download as it arrives (helix-services'
+		`Audio.stream`).
 
 		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
-		@param loaded  Receives the music, ready to play.
+		@param loaded  Receives the music, ready to play, once enough of the file has arrived to start.
 		@param failed  Optional. Receives why it couldn't be opened; when omitted, it is logged. */
 	static function LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
@@ -169,25 +181,41 @@ class RAudioAsync {
 		RAudio.open(music, path, "LoadMusicStreamAsync", () -> loaded(music), error -> refuse("LoadMusicStreamAsync", error, failed));
 	}
 
-	/** Writes a wave to a file through `SaveFileDataAsync`, as raylib's `ExportWave` does: ".wav" (8, 16 and 24 bits as integers, 32 as
-		floats, as raylib's dr_wav writes them) or ".raw" (the samples as they are). raylib's ".qoa" isn't written here. helix-raylib's own,
-		answering once the file is written; the file is kept as `SaveFileDataAsync` keeps it.
+	/** Asynchronously writes a wave to a sound file. See `ExportWaveAsCodeAsync` for writing a C header.
+
+		It replaces raylib's `ExportWave`.
+
+		The extension chooses the format:
+
+		- ".wav": 8, 16 and 24-bit samples as integers, 32-bit as floats, as raylib's dr_wav writes them.
+		- ".raw": the samples unchanged.
+
+		A ".qoa" file is refused, though raylib writes one.
+
+		The file is written and kept by `SaveFileDataAsync`.
 
 		@param wave  The wave.
 		@param fileName  The file; its extension chooses the format.
-		@param done  Optional. Called once the file is written, at a later poll.
+		@param done  Optional. Called once the file is written, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't, such as a wave with no samples or another extension; when omitted, it is logged. */
 	static function ExportWaveAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
 		exportData("ExportWaveAsync", fileName, RAudio.waveFile(wave, fileName), "Wave data exported successfully", "Failed to export wave data", done, failed);
 	}
 
-	/** Writes a wave as a C header through `SaveFileTextAsync`, as raylib's `ExportWaveAsCode` does: its frames, rate, sample size and
-		channels as defines, and its samples as an array: floats with 4 places for 32-bit samples, else bytes, 20 a line. helix-raylib's
-		own, answering once the file is written.
+	/** Asynchronously writes a wave as a C header. See `ExportWaveAsync` for writing a sound file.
+
+		It replaces raylib's `ExportWaveAsCode`.
+
+		The header holds:
+
+		- the frame count, sample rate, sample size and channel count, as defines.
+		- the samples, as an array of floats with 4 places for 32-bit samples, else of bytes, 20 a line.
+
+		The file is written by `SaveFileTextAsync`.
 
 		@param wave  The wave.
 		@param fileName  The file; its name, upper case, names the defines and the array.
-		@param done  Optional. Called once the file is written, at a later poll.
+		@param done  Optional. Called once the file is written, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
 	static function ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
 		exportText("ExportWaveAsCodeAsync", fileName, RAudio.waveAsCode(wave, fileName), "Wave as code exported successfully", done, failed);
