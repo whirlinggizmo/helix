@@ -11,7 +11,8 @@ compiler says which, by the target each package types for), and the reference sh
 js's with cpp's adapters added, so dox has nothing to mark as one target's. Of the tools (helix.platform.tools), which run in the compiler,
 it shows ShaderCompiler, whose compile a program calls: a macro, its signature from the compiler's macro context (tools/haxe/Fields.hx), as
 Haxe's description types a macro's arguments as Dynamic. helix-raylib's facades (Raylib, Raymath, Rlgl and the extras modules) are laid out as tools/gen_raylib.py
-says: their members under headings, and what refuses to compile listed apart. Code is read through the compiler, never as text
+says: their members under headings, and what refuses to compile listed apart. Raylib, Raymath, Rlgl and Raygui each have pages of their
+own in engines/raylib/api/, Raylib's one for each of raylib's modules (core.md, shapes.md and the rest) and one for its constants. Code is read through the compiler, never as text
 (docs/CONVENTIONS.md, Tools). A @:structInit class is shown as the object a program writes, each field with its default. --check regenerates the Markdown in memory and fails when a library's api/ differs, so a change to a doc comment is committed with
 its reference (helix.py test runs it)."""
 import json
@@ -297,6 +298,36 @@ def sectioned(members,layout=None):
                 ', '.join(f'`{n}`' for n in refused['unimplemented'])+'.','']
     return lines
 
+# helix-raylib's facades at its package's top (Raylib, Raymath, Rlgl, Raygui) are long, so each is a page of its own beside the library's
+# README.md, which keeps its description and links it; Raylib's is a page for each of raylib's modules (rcore's is core.md) and one for its
+# constants. By page, from the checkout's root.
+PAGES={}
+
+def paged(path,members):
+    """A facade's members on pages of their own (PAGES); returns what its library's README.md shows of them: the pages, and what refuses
+    to compile."""
+    named,refused=LAYOUT[path]
+    folder=Path(package_file(path.rsplit('.',1)[0])).parent
+    groups=[['',[]]]
+    for line in sectioned(members,(named,{'unsupported':[],'unimplemented':[]})):
+        if line.startswith('### '):groups.append([line[4:],[]])
+        else:groups[-1][1].append(line)
+    pages={}
+    for title,lines in groups:
+        if not lines:continue
+        module=re.match(r'r(\w+): ',title) if short(path)=='Raylib' else None
+        name=module.group(1) if module else 'constants' if short(path)=='Raylib' else short(path).lower()
+        page=pages.setdefault(name,{'titles':[],'lines':[]})
+        page['titles'].append(title)
+        page['lines']+=lines if module or short(path)!='Raylib' and len(groups)<=2 else ([f'## {title}',''] if title else [])+lines
+    links=[]
+    for name,page in pages.items():
+        heading=short(path) if short(path)!='Raylib' else page['titles'][0] if name!='constants' else 'Raylib\'s constants'
+        PAGES[(folder/f'{name}.md').as_posix()]='\n'.join([f'# {heading}','','[Back to the library](README.md)','']+page['lines']).rstrip('\n')+'\n'
+        links.append(f'- [{name}.md]({name}.md): {heading}')
+    out=['Its members are on their own pages:','']+links if len(links)>1 else [f'Its members are on their own page: [{name}.md]({name}.md).']
+    return out+['']+sectioned([],(named,refused))
+
 def merged(js,cpp,output):
     """One description from both targets': js's, and cpp's adapters; writes it to output, the description the reference is made from.
     Merged as Haxe wrote them, as text: ElementTree would rewrite what dox reads (an empty haxe_doc, CDATA)."""
@@ -359,7 +390,7 @@ def markdown(xml,native=frozenset()):
                 fields=[n+':'+type_text(k[0] if n.startswith('?') and k.get('path')=='Null' and len(k) else k,known) for n,k in zip(names,list(f)[:-1])]
                 lines+=['Written as an object where one is expected; a field marked `?` may be left out, for its default:','','```haxe','{'+', '.join(fields)+'}','```','']
                 members=[(sig+''.join(f' = {v[0].text}' for meta in n.findall('meta') for v in meta if v.get('n')==':value' and len(v)),d,n) for sig,d,n in members if not sig.split('(')[0].endswith(' new')]
-            if members:lines+=sectioned(members,LAYOUT.get(path))
+            if members:lines+=paged(path,members) if path in LAYOUT and path.count('.')==2 and path.startswith('helix.raylib.') else sectioned(members,LAYOUT.get(path))
         elif node.tag=='enum':
             for c in node:
                 if c.tag in ('haxe_doc','meta'):continue
@@ -387,6 +418,7 @@ def markdown(xml,native=frozenset()):
         lines=[f'# {library}','','Generated from the doc comments by `tools/gen_apidoc.py`.','']
         if others:lines+=['## Packages','']+[f'- [`{p}`]({Path(package_file(p)).name}): '+', '.join(short(t) for t,_ in index[p]) for p in others]+['']
         out[package_file(library)]='\n'.join(lines+files.get(library,[])).rstrip('\n')+'\n'
+    out.update(PAGES)
     return out
 
 def main():
