@@ -63,23 +63,26 @@ has a list for known violations; it is empty, and it only shrinks.
 
 The specification is docs/PLATFORM.md; this is the map.
 
-| Interface | Adapters | What it provides |
-| --- | --- | --- |
-| `IGraphics` | `graphics/webgl2` (browser), `graphics/sokol` + C (native, sokol_gfx on GL 4.1), `graphics/sdl3gpu` + C (native, SDL_GPU on Vulkan, Direct3D 12 or Metal) | Textures (2D, cube, data, render targets of RGBA8 or half floats with or without depth, depth arrays), buffers, programs built from a `ShaderSource`, pipelines made as a `PipelineDesc` says, passes, one draw, reading pixels back, `present`. |
-| `IWindow` | `window/dom` (browser), `window/sdl3` + C (native) | The drawing surface (framebuffer size, pixel ratio), focus, title, sizes, position, fullscreen, displays and visibility where the platform has them, and closing. No loop: the program's owner calls each frame. |
-| `IEvents` (polled) | `events/dom` (browser), `events/sdl3` + `shared/sdl3` C (native) | The window's focus, visibility, size and close events and the first press as records at each `poll`, in one stream the devices add to. Edges, gestures and pad slots are a service's. |
-| `IKeyboard` | `keyboard/dom`, `keyboard/sdl3` | Keys (`Key`) and typed text in the events' stream, built over the events adapter. |
-| `IMouse` | `mouse/dom`, `mouse/sdl3` | The mouse's buttons (`MouseButton`), moves and wheel in the events' stream. |
-| `ITouch` | `touch/dom`, `touch/sdl3` | Fingers in the events' stream. |
-| `IGamepads` | `gamepads/dom`, `gamepads/sdl3` | Pads connecting and their buttons in the events' stream, and their state after each poll (`PadButton`, `PadAxis`). |
-| `ITilt` | `tilt/dom`, `tilt/sdl3` (unavailable) | The device's orientation in the events' stream, once access is asked for. |
-| `ISystem` | `system/dom` (browser), `system/sdl3` (native) | The device, the run options (the URL query in a page, `--name=value` or a `HELIX_*` environment variable natively), a monotonic clock (`getTime`), the directory of the files the program ships with, and where the OS keeps a program's data and cache. |
-| `IAudio` (polled) | `audio/webaudio` (browser), `audio/sdl3mixer` + C (native, SDL3_mixer) | Output: clips copied from PCM, streams opened from a source, voices with a volume, a pitch and a pan, each change ramped so nothing clicks; whether audio exists and runs now. In a page a voice played before the first gesture waits and starts when audio runs. Natively it decodes its streams itself as they're read, from a file or a download arriving; `playsUrls` says whether it plays a remote URL itself (a browser) or is given the download (natively). Buses, fades and lifetimes are a service's. |
-| `IAudioDecoder` (polled) | `audiodecoder/webaudio` (browser), `audiodecoder/sdl3mixer` + C (native) | A whole WAV, Ogg Vorbis, MP3 or FLAC file to float PCM in its channels, at its own rate or one asked for. |
-| `IImageDecoder` (polled) | `imagedecoder/canvas` (browser), `imagedecoder/stb` + C (native, stb_image) | A PNG, JPEG, BMP, TGA or GIF file to RGBA. |
-| `IHttp` (polled) | `http/fetchapi` (browser), `http/haxehttp` (native) | A GET whose response arrives in parts, and its abort. Limits, timeouts, progress and queuing are a service's. |
-| `IFileSystem` (polled) | `filesystem/browser` (IndexedDB), `filesystem/native` (a directory) | Files on this machine under a root: read and written whole by path, removed, cleared, located for streaming. Bringing a file in when it's missing or stale is a service's, over `IHttp`. |
-| `IExport` | `export/download` (browser), `export/filesystem` (native) | Hands a finished file to the user: a download, or a file in a directory. |
+| Interface | Polled | Adapters | What it provides |
+| --- | --- | --- | --- |
+| `IGraphics` | | `graphics/webgl2` (browser), `graphics/sokol` + C (native, sokol_gfx on GL 4.1), `graphics/sdl3gpu` + C (native, SDL_GPU on Vulkan, Direct3D 12 or Metal) | Textures (2D, cube, data, render targets of RGBA8 or half floats with or without depth, depth arrays), buffers, programs built from a `ShaderSource`, pipelines made as a `PipelineDesc` says, passes, one draw, reading pixels back, `present`. |
+| `IWindow` | | `window/dom` (browser), `window/sdl3` + C (native) | The drawing surface (framebuffer size, pixel ratio), focus, title, sizes, position, fullscreen, displays and visibility where the platform has them, and closing. No loop: the program's owner calls each frame. |
+| `IEvents` | Yes | `events/dom` (browser), `events/sdl3` + `shared/sdl3` C (native) | The window's focus, visibility, size and close events and the first press as records at each `poll`, in one stream the devices add to. Edges, gestures and pad slots are a service's. |
+| `IKeyboard` | | `keyboard/dom`, `keyboard/sdl3` | Keys (`Key`) and typed text in the events' stream, built over the events adapter. |
+| `IMouse` | | `mouse/dom`, `mouse/sdl3` | The mouse's buttons (`MouseButton`), moves and wheel in the events' stream. |
+| `ITouch` | | `touch/dom`, `touch/sdl3` | Fingers in the events' stream. |
+| `IGamepads` | | `gamepads/dom`, `gamepads/sdl3` | Pads connecting and their buttons in the events' stream, and their state after each poll (`PadButton`, `PadAxis`). |
+| `ITilt` | | `tilt/dom`, `tilt/sdl3` (unavailable) | The device's orientation in the events' stream, once access is asked for. |
+| `ISystem` | | `system/dom` (browser), `system/sdl3` (native) | The device, the run options (the URL query in a page, `--name=value` or a `HELIX_*` environment variable natively), a monotonic clock (`getTime`), the directory of the files the program ships with, and where the OS keeps a program's data and cache. |
+| `IAudio` | Yes | `audio/webaudio` (browser), `audio/sdl3mixer` + C (native, SDL3_mixer) | Output: clips copied from PCM, streams opened from a source, voices with a volume, a pitch and a pan, each change ramped so nothing clicks; whether audio exists and runs now. In a page a voice played before the first gesture waits and starts when audio runs. Natively it decodes its streams itself as they're read, from a file or a download arriving; `playsUrls` says whether it plays a remote URL itself (a browser) or is given the download (natively). Buses, fades and lifetimes are a service's. |
+| `IAudioEffects` | Yes | not built yet (`audioeffects/webaudio`, `audioeffects/sdl3mixer` in docs/PLATFORM.md) | Effects on what voices play, and reading what they play, over an `IAudio`. |
+| `IAudioDecoder` | Yes | `audiodecoder/webaudio` (browser), `audiodecoder/sdl3mixer` + C (native) | A whole WAV, Ogg Vorbis, MP3 or FLAC file to float PCM in its channels, at its own rate or one asked for. |
+| `IImageDecoder` | Yes | `imagedecoder/canvas` (browser), `imagedecoder/stb` + C (native, stb_image) | A PNG, JPEG, BMP, TGA or GIF file to RGBA. |
+| `IFontRasterizer` | Yes | `fontrasterizer/canvas` (browser), `fontrasterizer/stb` + C (native, stb_truetype) | A TrueType or OpenType font's glyphs to bitmaps. |
+| `IHttp` | Yes | `http/fetchapi` (browser), `http/haxehttp` (native) | A GET whose response arrives in parts, and its abort. Limits, timeouts, progress and queuing are a service's. |
+| `IFileSystem` | Yes | `filesystem/browser` (IndexedDB), `filesystem/native` (a directory) | Files on this machine under a root: read and written whole by path, removed, cleared, located for streaming. Bringing a file in when it's missing or stale is a service's, over `IHttp`. |
+| `IExport` | | `export/download` (browser), `export/filesystem` (native) | Hands a finished file to the user: a download, or a file in a directory. |
+| `IClipboard` | | `clipboard/dom` (browser), `clipboard/sdl3` (native) | The clipboard's text, and an image as PNG. |
 
 Adapters that implement `IPollable` must be pumped every frame via `poll()`, with results being returned on the main thread during that
 poll. Note that native adapters return results from their threads back through `adapters/shared/Mailbox`, drained by `poll()`.
