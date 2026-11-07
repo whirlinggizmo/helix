@@ -54,7 +54,7 @@ class RDebug {
 
 		A model never posed draws its bind pose. A model without bones draws nothing.
 
-		Draws in 3D mode (BeginMode3D), over what is drawn before it, as DrawLine3D does.
+		Draws in 3D mode (BeginMode3D) with depth, as DrawLine3D draws, so the model's surface hides the bones inside it.
 
 		A model drawn as several copies, each posed apart, is posed and drawn copy by copy:
 

@@ -857,7 +857,7 @@ class Rlgl {
 
 		0 keeps the texture the next vertices have, and the next change of mode starts with the white texture.
 
-		@param id  The texture's id (`Texture2D.id`), or 0 for none. */
+		@param id  The texture's id (`Texture2D.id`), or 0 to keep the texture the next vertices have. */
 	public static inline function rlSetTexture(id:Int):Void
 		RRlgl.rlSetTexture(id);
 

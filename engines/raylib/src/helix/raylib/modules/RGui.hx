@@ -263,7 +263,7 @@ class RGui {
 
 	/** Returns a control's text with an icon before it, as raygui writes one.
 
-		The icon is "#", the icon's number in three digits, then "#".
+		The icon is "#", the icon's number padded to three characters with a minus sign counting as one (`#012#`, `#-01#`), then "#".
 
 		@param iconId  The icon (`ICON_*`).
 		@param text  The text, or null for the icon alone.

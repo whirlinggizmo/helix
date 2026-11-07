@@ -112,7 +112,7 @@ static function MeasureFrameStats(style:FrameStatsStyle):Vector2
 
   A model never posed draws its bind pose. A model without bones draws nothing.
 
-  Draws in 3D mode (BeginMode3D), over what is drawn before it, as DrawLine3D does.
+  Draws in 3D mode (BeginMode3D) with depth, as DrawLine3D draws, so the model's surface hides the bones inside it.
 
   A model drawn as several copies, each posed apart, is posed and drawn copy by copy:
 
@@ -383,7 +383,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   The answer comes at a later frame, never during the call.
 
-  The time is: - for a file of the program's, natively its time on disk - for a file `SaveFileText` or `SaveFileData` wrote, when it was saved - 0 for a page's own file, a dropped file and one the program's load callback gives, which have no time kept
+  The time is: - for a file of the program's, natively its time on disk - for a file `SaveFileText` or `SaveFileData` wrote, when it was saved - for a dropped file, the time the browser keeps for it - 0 for a page's own file and one the program's load callback gives, which have no time kept
 - `LoadDirectoryFilesAsync`: Asynchronously lists a directory's files and subdirectories, replacing raylib's `LoadDirectoryFiles`. See `LoadDirectoryFilesExAsync` for a filter by extension and the subdirectories' files.
   - `dirPath`: The directory.
   - `loaded`: Receives the list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as raylib's.
@@ -431,7 +431,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   Reads these lines, as raylib's does: - a line starting `c`, the count - a line starting `e`, an event: its frame, type and four parameters
 
-  Other lines are skipped. So is a last line with no newline at its end, as raylib's reading skips it.
+  Other lines are skipped. So is a last line with no newline at its end, as raylib's reading skips it. A line is read 255 characters at most, as raylib's `fgets` reads it.
 
   A count that isn't the number of events read warns, and the count becomes the events read.
 - `ExportAutomationEventListAsync`: Asynchronously writes a list's events as text, the text raylib's `ExportAutomationEventList` writes. See `LoadAutomationEventListAsync` for reading it back.
@@ -468,7 +468,7 @@ static function GuiLoadIconsAsync(fileName:String, loadIconsName:Bool, loaded:Ar
 
   A text file's first line starts with '#'. It reads: - each `p <control> <property> 0x<value>` line, which sets that property. - the `f <size> <charmap> <font>` line, which loads the font at its size with the charmap file's characters. Both files are beside the style file.
 
-  A font that can't be loaded leaves raylib's default font at size 10.
+  A font that can't be loaded, or an `f` line naming none, leaves raylib's default font at size 10. A file that can't be read leaves the default style, loaded first.
 
   A text file's last line is read only when a line break ends it, as in raygui.
 

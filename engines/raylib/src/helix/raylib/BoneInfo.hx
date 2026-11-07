@@ -13,7 +13,7 @@ class BoneInfo {
 
 		@param name  The name.
 		@param parent  The parent's index, or -1 for a root. */
-	public function new(name:String = "", parent:Int = 0) {
+	public function new(name:String = "", parent:Int = -1) {
 		this.name = name;
 		this.parent = parent;
 	}

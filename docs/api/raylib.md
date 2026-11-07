@@ -1693,7 +1693,7 @@ static function GuiDrawIcon(iconId:Int, posX:Int, posY:Int, pixelSize:Int, color
   - `text`: The text, or null for the icon alone.
   - returns: The text, as "#012#text".
 
-  The icon is "#", the icon's number in three digits, then "#".
+  The icon is "#", the icon's number padded to three characters with a minus sign counting as one (`#012#`, `#-01#`), then "#".
 - `GuiSetIconScale`: Sets the size icons are drawn at in text, a whole multiple of their 16 pixels.
   - `scale`: The scale, 1 or more; less is ignored.
 - `GuiGetIcons`: Returns the icons' bits, which a program may change.
@@ -1856,7 +1856,7 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
   - `text`: The text, in `text[0]`, edited in place.
   - `textSize`: The most bytes the text may take, its UTF-8 bytes and one more, as raygui's buffer holds them.
   - `editMode`: Whether it is being edited.
-  - returns: 1 when it was clicked out of edit mode, or Enter or a click outside ended editing, else 0.
+  - returns: 1 when its edit mode should flip: while editing, Enter (a single-line box) or a click outside it; otherwise a click on it. Else 0.
 
   The program turns edit mode on and off with the result.
 
@@ -1870,7 +1870,7 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
   - `minValue`: The least.
   - `maxValue`: The most.
   - `editMode`: Whether its value box is being edited.
-  - returns: The value box's result: 1 when it was clicked into or out of edit mode, else 0.
+  - returns: The value box's result: 1 when its edit mode should flip, as `GuiTextBox`'s; else 0.
 
   In edit mode, the value box takes typed digits.
 
@@ -1928,6 +1928,8 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
   - returns: 0.
 
   Colors the border as far as the value reaches.
+
+  The fill is the value over the most less the least, so the least only clamps, as raygui's. A null value is drawn at half.
 - `GuiStatusBar`: Draws a status bar, a bordered bar with text, as a window's title.
   - `bounds`: The bar.
   - `text`: The text, or null.
@@ -4569,7 +4571,7 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
 
   The formats with alpha change:
 
-  - gray and alpha - R5G5B5A1: the alpha bit tested against a threshold of 0.5, the color's channels cut to 5 bits, unscaled - R4G4B4A4: the color's channels cut to 4 bits, unscaled - RGBA, and its 32-bit and 16-bit float forms
+  - gray and alpha - R5G5B5A1: the alpha bit tested against a threshold of 0.5, the color's channels cut to 5 bits, unscaled - R4G4B4A4: the alpha's 4 bits tested against the threshold in 16 steps, the color's channels cut to 4 bits, unscaled - RGBA, and its 32-bit and 16-bit float forms
 
   Another format is unchanged.
 - `ImageAlphaMask`: Sets an image's alpha from the grayscale of a mask the same size.
@@ -6780,7 +6782,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
 - `MatrixRotateXYZ`: Returns a rotation by three angles that turns a point about z, then y, then x. See `MatrixRotateZYX` for turning in the reverse order.
   - `angle`: The angles, in radians.
   - returns: The matrix.
-- `MatrixRotateZYX`: Returns rotations about z, then y, then x.
+- `MatrixRotateZYX`: Returns a rotation by three angles that turns a point about x, then y, then z, the reverse of `MatrixRotateXYZ`.
   - `angle`: The angles, in radians.
   - returns: The matrix.
 - `MatrixScale`: Returns a scale.
@@ -7645,7 +7647,7 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   - `z`: The blue.
   - `w`: The alpha.
 - `rlSetTexture`: Sets the texture the next vertices draw with.
-  - `id`: The texture's id (`Texture2D.id`), or 0 for none.
+  - `id`: The texture's id (`Texture2D.id`), or 0 to keep the texture the next vertices have.
 
   The draw call the next change of mode (`rlBegin`) starts also draws with the texture.
 

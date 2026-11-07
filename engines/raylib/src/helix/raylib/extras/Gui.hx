@@ -31,7 +31,7 @@ class Gui {
 		- the `f <size> <charmap> <font>` line, which loads the font at its size with the charmap file's characters. Both files are
 		  beside the style file.
 
-		A font that can't be loaded leaves raylib's default font at size 10.
+		A font that can't be loaded, or an `f` line naming none, leaves raylib's default font at size 10. A file that can't be read leaves the default style, loaded first.
 
 		A text file's last line is read only when a line break ends it, as in raygui.
 

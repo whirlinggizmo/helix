@@ -679,7 +679,7 @@ class RGuiControls {
 		@param text  The text, in `text[0]`, edited in place.
 		@param textSize  The most bytes the text may take, its UTF-8 bytes and one more, as raygui's buffer holds them.
 		@param editMode  Whether it is being edited.
-		@return  1 when it was clicked out of edit mode, or Enter or a click outside ended editing, else 0. */
+		@return  1 when its edit mode should flip: while editing, Enter (a single-line box) or a click outside it; otherwise a click on it. Else 0. */
 	static function GuiTextBox(bounds:Rectangle, text:Array<String>, textSize:Int, editMode:Bool):Int {
 		var result = 0, state = guiState;
 		var wrapMode = GuiGetStyle(DEFAULT, TEXT_WRAP_MODE);
@@ -886,7 +886,7 @@ class RGuiControls {
 		@param minValue  The least.
 		@param maxValue  The most.
 		@param editMode  Whether its value box is being edited.
-		@return  The value box's result: 1 when it was clicked into or out of edit mode, else 0. */
+		@return  The value box's result: 1 when its edit mode should flip, as `GuiTextBox`'s; else 0. */
 	static function GuiSpinner(bounds:Rectangle, text:String, value:Array<Int>, minValue:Int, maxValue:Int, editMode:Bool):Int {
 		var state = guiState;
 		var tempValue = [value[0]];
@@ -1066,6 +1066,8 @@ class RGuiControls {
 	/** Draws a progress bar, filled from the left to the value.
 
 		Colors the border as far as the value reaches.
+
+		The fill is the value over the most less the least, so the least only clamps, as raygui's. A null value is drawn at half.
 
 		@param bounds  The bar.
 		@param textLeft  The text left of it, or null.

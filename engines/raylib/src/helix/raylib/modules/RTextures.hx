@@ -1260,7 +1260,7 @@ class RTextures {
 
 		- gray and alpha
 		- R5G5B5A1: the alpha bit tested against a threshold of 0.5, the color's channels cut to 5 bits, unscaled
-		- R4G4B4A4: the color's channels cut to 4 bits, unscaled
+		- R4G4B4A4: the alpha's 4 bits tested against the threshold in 16 steps, the color's channels cut to 4 bits, unscaled
 		- RGBA, and its 32-bit and 16-bit float forms
 
 		Another format is unchanged.

@@ -28,7 +28,7 @@ class RGuiAsync {
 		- the `f <size> <charmap> <font>` line, which loads the font at its size with the charmap file's characters. Both files are
 		  beside the style file.
 
-		A font that can't be loaded leaves raylib's default font at size 10.
+		A font that can't be loaded, or an `f` line naming none, leaves raylib's default font at size 10. A file that can't be read leaves the default style, loaded first.
 
 		A text file's last line is read only when a line break ends it, as in raygui.
 
@@ -38,9 +38,10 @@ class RGuiAsync {
 		@param done  Optional. Called once the style is loaded, at a later poll.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	static function GuiLoadStyleAsync(fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
+		// The default style first, as raygui's GuiLoadStyle loads it before reading the file, so a file that can't be read leaves it.
+		if (!guiStyleLoaded)
+			GuiLoadStyleDefault();
 		RFilesAsync.LoadFileDataAsync(fileName, data -> {
-			if (!guiStyleLoaded)
-				GuiLoadStyleDefault();
 			if (data.length == 0 || data.get(0) != "#".code) {
 				loadStyleFromMemory(data);
 				if (done != null)

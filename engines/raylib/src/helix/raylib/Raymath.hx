@@ -930,7 +930,7 @@ class Raymath {
 	public static inline function MatrixRotateXYZ(angle:Vector3):Matrix
 		return RMath.MatrixRotateXYZ(angle);
 
-	/** Returns rotations about z, then y, then x.
+	/** Returns a rotation by three angles that turns a point about x, then y, then z, the reverse of `MatrixRotateXYZ`.
 
 		@param angle  The angles, in radians.
 		@return  The matrix. */

@@ -153,7 +153,8 @@ class Files {
 		The time is:
 		- for a file of the program's, natively its time on disk
 		- for a file `SaveFileText` or `SaveFileData` wrote, when it was saved
-		- 0 for a page's own file, a dropped file and one the program's load callback gives, which have no time kept
+		- for a dropped file, the time the browser keeps for it
+		- 0 for a page's own file and one the program's load callback gives, which have no time kept
 
 		@param fileName  The file.
 		@param answer  Receives the time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's. */
@@ -225,7 +226,7 @@ class Files {
 		- a line starting `c`, the count
 		- a line starting `e`, an event: its frame, type and four parameters
 
-		Other lines are skipped. So is a last line with no newline at its end, as raylib's reading skips it.
+		Other lines are skipped. So is a last line with no newline at its end, as raylib's reading skips it. A line is read 255 characters at most, as raylib's `fgets` reads it.
 
 		A count that isn't the number of events read warns, and the count becomes the events read.
 

@@ -1215,7 +1215,7 @@ class Raygui {
 
 	/** Returns a control's text with an icon before it, as raygui writes one.
 
-		The icon is "#", the icon's number in three digits, then "#".
+		The icon is "#", the icon's number padded to three characters with a minus sign counting as one (`#012#`, `#-01#`), then "#".
 
 		@param iconId  The icon (`ICON_*`).
 		@param text  The text, or null for the icon alone.
@@ -1437,7 +1437,7 @@ class Raygui {
 		@param text  The text, in `text[0]`, edited in place.
 		@param textSize  The most bytes the text may take, its UTF-8 bytes and one more, as raygui's buffer holds them.
 		@param editMode  Whether it is being edited.
-		@return  1 when it was clicked out of edit mode, or Enter or a click outside ended editing, else 0. */
+		@return  1 when its edit mode should flip: while editing, Enter (a single-line box) or a click outside it; otherwise a click on it. Else 0. */
 	public static inline function GuiTextBox(bounds:Rectangle, text:Array<String>, textSize:Int, editMode:Bool):Int
 		return RGuiControls.GuiTextBox(bounds, text, textSize, editMode);
 
@@ -1454,7 +1454,7 @@ class Raygui {
 		@param minValue  The least.
 		@param maxValue  The most.
 		@param editMode  Whether its value box is being edited.
-		@return  The value box's result: 1 when it was clicked into or out of edit mode, else 0. */
+		@return  The value box's result: 1 when its edit mode should flip, as `GuiTextBox`'s; else 0. */
 	public static inline function GuiSpinner(bounds:Rectangle, text:String, value:Array<Int>, minValue:Int, maxValue:Int, editMode:Bool):Int
 		return RGuiControls.GuiSpinner(bounds, text, value, minValue, maxValue, editMode);
 
@@ -1523,6 +1523,8 @@ class Raygui {
 	/** Draws a progress bar, filled from the left to the value.
 
 		Colors the border as far as the value reaches.
+
+		The fill is the value over the most less the least, so the least only clamps, as raygui's. A null value is drawn at half.
 
 		@param bounds  The bar.
 		@param textLeft  The text left of it, or null.
