@@ -702,22 +702,38 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   The batch has no such limit and is drawn only as it is flushed (`rlDrawRenderBatchActive`).
 - `rlEnableColorBlend`: Blends the next draws by the blend mode.
   On when raylib starts.
+
+  The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first.
 - `rlDisableColorBlend`: Stops blending the next draws, so they replace what is drawn there.
+  The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first.
 - `rlEnableDepthTest`: Tests the next draws' depth, keeping only what is as near as or nearer than what is drawn there.
   `BeginMode3D` turns the test on.
+
+  The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first.
 - `rlDisableDepthTest`: Stops testing the next draws' depth.
   Off when raylib starts, and `EndMode3D` turns the test off.
+
+  The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first.
 - `rlEnableDepthMask`: Lets the next draws that test depth write it.
   On when raylib starts.
+
+  The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first.
 - `rlDisableDepthMask`: Stops the next draws writing depth, so what is drawn after isn't hidden by them.
   Used for drawing something see-through.
+
+  The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first.
 - `rlEnableBackfaceCulling`: Leaves out the backs of the next triangles, or the fronts by `rlSetCullFace`.
   On when raylib starts.
 
   A triangle's front is the side from which its corners run counterclockwise.
+
+  The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first.
 - `rlDisableBackfaceCulling`: Draws both sides of the next triangles.
+  The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first.
 - `rlSetCullFace`: Chooses which side of triangles culling leaves out.
   - `mode`: The side, `RL_CULL_FACE_BACK` (the default) or `RL_CULL_FACE_FRONT`.
+
+  The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first.
 - `rlEnableWireMode`: Draws triangles as their edges from now on, as GL's line mode does. See `rlEnablePointMode` for drawing their corners.
   A model drawn after the call is drawn so at once, and the shapes in rlgl's batch when the batch is next drawn (`rlDrawRenderBatchActive`).
 
@@ -726,6 +742,8 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   Culling still leaves out the triangles GL would cull, by their facing on the screen. That facing ignores a shader that moves the vertices.
 
   Ends point mode.
+
+  The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first.
 - `rlEnablePointMode`: Draws triangles as their corners from now on, one pixel each, as desktop GL's point mode does. See `rlEnableWireMode` for drawing their edges.
   A model drawn after the call is drawn so at once, each index of its triangles or, without indices, each vertex of its whole triangles. The triangles in rlgl's batch are drawn so when the batch is next drawn.
 
@@ -738,8 +756,12 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   A shader's own `gl_PointSize` is ignored. Every point is one pixel, the size every backend draws.
 
   `rlDisableWireMode` ends point mode, and `rlEnableWireMode` replaces it.
+
+  The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first.
 - `rlDisableWireMode`: Draws the next triangles filled, ending wire mode or point mode.
   Filled when raylib starts.
+
+  The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first.
 - `rlEnableScissorTest`: Clips the next draws to the rectangle `rlScissor` last set, or to the whole pass until one is set.
 - `rlDisableScissorTest`: Stops clipping the next draws, as `EndScissorMode` does.
 - `rlScissor`: Sets the rectangle that clips the next draws while the scissor test is on, in the framebuffer's pixels from its bottom left, as GL takes it. See `BeginScissorMode` for setting one from the top left in the screen's pixels.

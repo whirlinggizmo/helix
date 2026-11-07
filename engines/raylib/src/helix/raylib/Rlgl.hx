@@ -924,35 +924,47 @@ class Rlgl {
 
 	/** Blends the next draws by the blend mode.
 
-		On when raylib starts. */
+		On when raylib starts.
+
+		The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first. */
 	public static inline function rlEnableColorBlend():Void
 		RRlgl.rlEnableColorBlend();
 
-	/** Stops blending the next draws, so they replace what is drawn there. */
+	/** Stops blending the next draws, so they replace what is drawn there.
+
+		The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first. */
 	public static inline function rlDisableColorBlend():Void
 		RRlgl.rlDisableColorBlend();
 
 	/** Tests the next draws' depth, keeping only what is as near as or nearer than what is drawn there.
 
-		`BeginMode3D` turns the test on. */
+		`BeginMode3D` turns the test on.
+
+		The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first. */
 	public static inline function rlEnableDepthTest():Void
 		RRlgl.rlEnableDepthTest();
 
 	/** Stops testing the next draws' depth.
 
-		Off when raylib starts, and `EndMode3D` turns the test off. */
+		Off when raylib starts, and `EndMode3D` turns the test off.
+
+		The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first. */
 	public static inline function rlDisableDepthTest():Void
 		RRlgl.rlDisableDepthTest();
 
 	/** Lets the next draws that test depth write it.
 
-		On when raylib starts. */
+		On when raylib starts.
+
+		The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first. */
 	public static inline function rlEnableDepthMask():Void
 		RRlgl.rlEnableDepthMask();
 
 	/** Stops the next draws writing depth, so what is drawn after isn't hidden by them.
 
-		Used for drawing something see-through. */
+		Used for drawing something see-through.
+
+		The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first. */
 	public static inline function rlDisableDepthMask():Void
 		RRlgl.rlDisableDepthMask();
 
@@ -960,15 +972,21 @@ class Rlgl {
 
 		On when raylib starts.
 
-		A triangle's front is the side from which its corners run counterclockwise. */
+		A triangle's front is the side from which its corners run counterclockwise.
+
+		The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first. */
 	public static inline function rlEnableBackfaceCulling():Void
 		RRlgl.rlEnableBackfaceCulling();
 
-	/** Draws both sides of the next triangles. */
+	/** Draws both sides of the next triangles.
+
+		The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first. */
 	public static inline function rlDisableBackfaceCulling():Void
 		RRlgl.rlDisableBackfaceCulling();
 
 	/** Chooses which side of triangles culling leaves out.
+
+		The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first.
 
 		@param mode  The side, `RL_CULL_FACE_BACK` (the default) or `RL_CULL_FACE_FRONT`. */
 	public static inline function rlSetCullFace(mode:Int):Void
@@ -984,7 +1002,9 @@ class Rlgl {
 		Culling still leaves out the triangles GL would cull, by their facing on the screen. That facing ignores a shader that moves
 		the vertices.
 
-		Ends point mode. */
+		Ends point mode.
+
+		The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first. */
 	public static inline function rlEnableWireMode():Void
 		RRlgl.rlEnableWireMode();
 
@@ -1002,13 +1022,17 @@ class Rlgl {
 
 		A shader's own `gl_PointSize` is ignored. Every point is one pixel, the size every backend draws.
 
-		`rlDisableWireMode` ends point mode, and `rlEnableWireMode` replaces it. */
+		`rlDisableWireMode` ends point mode, and `rlEnableWireMode` replaces it.
+
+		The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first. */
 	public static inline function rlEnablePointMode():Void
 		RRlgl.rlEnablePointMode();
 
 	/** Draws the next triangles filled, ending wire mode or point mode.
 
-		Filled when raylib starts. */
+		Filled when raylib starts.
+
+		The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first. */
 	public static inline function rlDisableWireMode():Void
 		RRlgl.rlDisableWireMode();
 
