@@ -1,8 +1,8 @@
 # Roadmap
 
 The order (DECISIONS 40, 53): raygui on helix-raylib (done, DECISIONS 41), then its skins (done, `extras.GuiSkins`, DECISIONS 42), then
-helix-render's stages 1 to 3 (done, and set aside, DECISIONS 53), then helix-raylib's lit extras (`LoadPbrShader` done; environment
-maps next), then a retained-mode engine tried on helix-raylib, Gyre's or a three.js-style one as the jam decides. Whatever comes next
+helix-render's stages 1 to 3 (done, and set aside, DECISIONS 53), then helix-raylib's lit extras (`LoadPbrShader` done; light range,
+intensity and tone mapping next, then environment maps), then a retained-mode engine tried on helix-raylib, Gyre's or a three.js-style one as the jam decides. Whatever comes next
 keeps helix-raylib's size and speed where docs/speed.md records them.
 
 - **helix-render, set aside (DECISIONS 53)** (directory `libs/render/`, packages `helix.render` and `helix.render.effects`; DECISIONS
@@ -19,7 +19,10 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
 - **helix-raylib's lit extras (DECISIONS 53):** what raylib's API lacks for a model drawn as authored, each an extra only a program
   calling it links. Done: `LoadPbrShader` beside `LoadLightingShader` (which stays raylib's, the lighting parity suite holding it to
   raylib's C): a glTF's materials under rlights' lights, the base color factor taken as linear where raylib reads it as sRGB bytes,
-  `KHR_materials_unlit` honoured, `pbr.glsl` for a program's own fragment stage. Next, environment maps: a cubemap prefiltered at
+  `KHR_materials_unlit` honoured, `pbr.glsl` for a program's own fragment stage. Next, lights a scene of several can use: `range` and
+  `intensity` on `Light`, read by `LoadPbrShader` alone, with a falloff by distance, and tone mapping in `pbr.glsl` in place of its hard
+  clamp, since a point light dims with no distance today and four near-white lights clip to white. A scene graph with lights as nodes
+  needs them first. Then environment maps: a cubemap prefiltered at
   load for the material's roughness and a BRDF table, on raylib's `MATERIAL_MAP_IRRADIANCE`, `MATERIAL_MAP_PREFILTER` and
   `MATERIAL_MAP_BRDF` slots and `LoadTextureCubemap`, so a metal under the PBR shader reflects something. `DrawMeshInstanced` draws
   nothing under `LoadPbrShader`, which has no `mat4` attribute, so an instanced twin is wanted too. Then lit sprites (below), shadows,
