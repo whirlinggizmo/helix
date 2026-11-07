@@ -108,4 +108,4 @@ Each example in `examples/` shows one thing, and builds from the hxml files besi
 Its tests are in `tests/`: the CPU-side work (layout, culling, batching, copy on write) on every target (`helix.py test`), and pixel
 checks drawn on each backend (`tools/render_checks.py`).
 
-The API reference is [docs/api/](https://github.com/whirlinggizmo/helix/blob/main/docs/api/README.md), one page per package.
+The API reference is [api/](api/README.md), one page per package.

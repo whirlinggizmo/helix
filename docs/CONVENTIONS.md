@@ -251,8 +251,8 @@ Code is written to be read, by people and agents, not packed.
   `tools/gen_apidoc.py` renders the tags as a list under the summary, the remarks after. CONTRIBUTING.md says when the formatter,
   `check_docs`, `check_types` and `gen_apidoc` run.
 - **Generated API documentation.** The doc comments are the API reference: dox (`dox` on lib.haxe.org) generates it from them, so what
-  a developer or an agent reads is what the code says; `docs/api/<library>.md` is the same, committed, checked by `gen_apidoc --check`,
-  and the platform's adapters, each one target's, are together in `docs/api/platform-adapters.md`, each marked with its target.
+  a developer or an agent reads is what the code says; each library's `api/` holds the same as Markdown, committed and
+  checked by `gen_apidoc --check`, so it moves with the library.
 - **Each library's reference is what its own users write against, and nothing else.** A developer or an agent given only the
   reference and a hello world should be able to build any program, and not be put off by machinery. Haxe has no internal, so what
   another package of a library must reach is public, and the library's own is marked:

@@ -63,9 +63,7 @@ Its tests are in `tests/`.
 
 ## Documents
 
-- [docs/api/platform.md](https://github.com/whirlinggizmo/helix/blob/main/docs/api/platform.md) and
-  [docs/api/platform-adapters.md](https://github.com/whirlinggizmo/helix/blob/main/docs/api/platform-adapters.md): the API
-  reference, the contracts and the adapters.
+- [api/](api/README.md): the API reference. The adapters are in [api/adapters.md](api/adapters.md).
 - [docs/PLATFORM.md](https://github.com/whirlinggizmo/helix/blob/main/docs/PLATFORM.md): each contract, what it means and what each adapter does.
 - [docs/ARCHITECTURE.md](https://github.com/whirlinggizmo/helix/blob/main/docs/ARCHITECTURE.md): contracts, adapters and what belongs in each.
 - [docs/CONVENTIONS.md](https://github.com/whirlinggizmo/helix/blob/main/docs/CONVENTIONS.md): names, units, layout and doc comments.

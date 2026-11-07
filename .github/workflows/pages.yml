@@ -1,0 +1,52 @@
+# The repository's site, deployed to GitHub Pages: the API reference from the doc comments (tools/pages.py, through tools/gen_apidoc.py's
+# dox). Daily and on demand (gh workflow run pages, or the Actions tab), not on every push.
+name: pages
+
+on:
+  schedule:
+    - cron: "17 11 * * *"
+  workflow_dispatch:
+
+# One deploy at a time; a newer one waits rather than cancelling a deploy half done.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  pages:
+    name: the site (GitHub Pages)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+      - uses: krdlab/setup-haxe@v2
+        with:
+          haxe-version: 4.3.7
+      - uses: actions/cache@v4
+        with:
+          path: build/haxelib
+          key: haxelib-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
+      - uses: actions/cache@v4
+        with:
+          # helix-platform's shader compiler's: glslang fetched and SPIRV-Cross, in the user's cache.
+          path: ~/.cache/helix/tools
+          key: helix-tools-${{ runner.os }}-${{ hashFiles('libs/platform/src/helix/platform/tools/ShaderTools.hx') }}
+      - name: The site
+        run: python tools/pages.py
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/site
+      - id: deploy
+        uses: actions/deploy-pages@v4

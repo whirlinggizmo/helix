@@ -55,7 +55,7 @@ python3 tools/render_checks.py --browser <chromium>     # helix-render's example
 python3 tools/raylib_parity.py                 # helix-raylib against raylib's own C, each suite against its release (Linux)
 python3 tools/format.py --check             # layout
 python3 tools/check_docs.py                 # doc comments
-python3 tools/gen_apidoc.py                 # remake docs/api after a doc comment changes (--check in the tests)
+python3 tools/gen_apidoc.py                 # remake each library's api/ after a doc comment changes (--check in the tests)
 python3 tools/gen_raylib.py                 # remake helix-raylib's Raylib.hx, Raymath.hx, Rlgl.hx and extras/*.hx after a section changes (--check in the tests)
 ```
 
@@ -137,7 +137,8 @@ built and where it is (`tools/variants.py` holds the lists).
 | `tools/cli.py` | The Python tools' argument parsing (a module) |
 | `tools/cli.cjs` | The Node tools' argument parsing (a module) |
 | `tools/format.py` | haxe-formatter over the libraries (`--check` only checks) |
-| `tools/gen_apidoc.py` | The API reference from the doc comments: `docs/api` (committed) and `build/api` (`--check`) |
+| `tools/gen_apidoc.py` | The API reference from the doc comments: each library's `api/` (committed) and `build/api` (`--check`) |
+| `tools/pages.py` | The GitHub Pages site in `build/site`: the API reference's HTML at `api/`. The pages workflow deploys it |
 | `tools/gen_raylib.py` | helix-raylib's `Raylib.hx`, `Raymath.hx`, `Rlgl.hx` and the `extras` modules: forwards to each function of its sections (`engines/raylib/src/helix/raylib/modules`, read through `haxe -xml`), by section (`--check`) |
 | `tools/measure_sizes.py` | Each library's and engine's web size ladder (`<directory>/tests/sizes`) against `docs/sizes.json` (`--write`, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
 | `tools/native_build.py` | hxcpp's environment for the adapters' C, and the platform's C-only tests built with CMake (a module) |

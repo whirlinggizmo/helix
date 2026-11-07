@@ -1,26 +1,26 @@
 # helix
 
-Helix is a suite of libraries and engines for Haxe game development.  It provides useful core libraries, platform abstractions, higher level services, and a game engine that mirrors [Raylib](https://github.com/raysan5/raylib)'s 5.5 API (with some [extras](docs/api/raylib-extras.md)). 
+Helix is a suite of libraries and engines for Haxe game development.  It provides useful core libraries, platform abstractions, higher level services, and a game engine that mirrors [Raylib](https://github.com/raysan5/raylib)'s 5.5 API (with some [extras](https://whirlinggizmo.github.io/helix/api/helix/raylib/extras/index.html)). 
 
 > **Work in progress.** No API is stable yet, and any name may change in any commit. Caveat Emptor.
 
 ## What's here
 
-| Library | What it is | Needs (haxelib.json) |
-|---|---|---|
-| [helix-platform](libs/platform/README.md) | The hardware and the OS as contracts (window, events, GPU, audio, decoders, HTTP, files, export, system), one adapter per API: the browser's, SDL3, WebGL2, sokol_gfx, SDL_GPU, SDL3_mixer | helix-math, helix-formats |
-| [helix-math](libs/math/README.md) | Points, bounds, matrices, curves, interpolation, deterministic trigonometry and random numbers | nothing |
-| [helix-geometry](libs/geometry/README.md) | Cameras, frustums, rays, meshes in the usual shapes, and tests on segments, triangles and polygons | helix-math |
-| [helix-formats](libs/formats/README.md) | File formats read into plain data: glTF 2.0 and GLB models, BMFont text fonts, TrueType and OpenType font tables | helix-math |
-| [helix-log](libs/log/README.md) | Levels and tags, to the browser's console or the process's output | nothing |
-| [helix-services](libs/services/README.md) | Time, input, assets, audio, images, saves and config over the platform | helix-platform, helix-geometry, helix-math, helix-log |
-| [helix-render](libs/render/README.md) | Drawing: 2D and 3D batches, draw lists, text, materials, lights, shadows, environment maps and post-processing. Being built in stages | helix-services, helix-platform, helix-formats, helix-geometry, helix-math, helix-log |
+| Library | What it is | API | Needs (haxelib.json) |
+|---|---|---|---|
+| [helix-platform](libs/platform/README.md) | The hardware and the OS as contracts (window, events, GPU, audio, decoders, HTTP, files, export, system), one adapter per API: the browser's, SDL3, WebGL2, sokol_gfx, SDL_GPU, SDL3_mixer | [API](https://whirlinggizmo.github.io/helix/api/helix/platform/index.html) | helix-math, helix-formats |
+| [helix-math](libs/math/README.md) | Points, bounds, matrices, curves, interpolation, deterministic trigonometry and random numbers | [API](https://whirlinggizmo.github.io/helix/api/helix/math/index.html) | nothing |
+| [helix-geometry](libs/geometry/README.md) | Cameras, frustums, rays, meshes in the usual shapes, and tests on segments, triangles and polygons | [API](https://whirlinggizmo.github.io/helix/api/helix/geometry/index.html) | helix-math |
+| [helix-formats](libs/formats/README.md) | File formats read into plain data: glTF 2.0 and GLB models, BMFont text fonts, TrueType and OpenType font tables | [API](https://whirlinggizmo.github.io/helix/api/helix/formats/index.html) | helix-math |
+| [helix-log](libs/log/README.md) | Levels and tags, to the browser's console or the process's output | [API](https://whirlinggizmo.github.io/helix/api/helix/log/index.html) | nothing |
+| [helix-services](libs/services/README.md) | Time, input, assets, audio, images, saves and config over the platform | [API](https://whirlinggizmo.github.io/helix/api/helix/services/index.html) | helix-platform, helix-geometry, helix-math, helix-log |
+| [helix-render](libs/render/README.md) | Drawing: 2D and 3D batches, draw lists, text, materials, lights, shadows, environment maps and post-processing. Being built in stages | [API](https://whirlinggizmo.github.io/helix/api/helix/render/index.html) | helix-services, helix-platform, helix-formats, helix-geometry, helix-math, helix-log |
 
 The libraries are plain. A program constructs what it uses and nothing runs on its own. An engine on top may run the loop:
 
-| Engine | What it is | Needs (haxelib.json) |
-|---|---|---|
-| [helix-raylib](engines/raylib/README.md) | raylib 5.5's API over the services and the platform, 2D and 3D, in a page and natively | helix-services, helix-platform, helix-geometry, helix-math |
+| Engine | What it is | API | Needs (haxelib.json) |
+|---|---|---|---|
+| [helix-raylib](engines/raylib/README.md) | raylib 5.5's API over the services and the platform, 2D and 3D, in a page and natively | [API](https://whirlinggizmo.github.io/helix/api/helix/raylib/index.html) | helix-services, helix-platform, helix-geometry, helix-math |
 
 ## Try it
 
@@ -47,7 +47,8 @@ haxe build-native.hxml   # native/Main, with hxcpp and SDL3 installed (CONTRIBUT
 - [docs/PLATFORM.md](docs/PLATFORM.md): each platform contract, what it means and what each adapter does.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): contracts, adapters and the adapter rule.
 - [docs/CONVENTIONS.md](docs/CONVENTIONS.md): names, units, layout and doc comments.
-- [docs/api/](docs/api/README.md): the API reference, generated from the doc comments.
+- [The API reference](https://whirlinggizmo.github.io/helix/api/index.html), generated from the doc comments. Each library's `api/`
+  directory holds the same as Markdown.
 - [docs/benchmarks.md](docs/benchmarks.md): the measurements. [docs/sizes.md](docs/sizes.md) is each library's web size ladder, and
   [docs/speed.md](docs/speed.md) is speed and size against raylib C, Godot, three.js, Lime and HeliX.
 - [docs/ROADMAP.md](docs/ROADMAP.md): what's next. [docs/DECISIONS.md](docs/DECISIONS.md): why things are the way they are.

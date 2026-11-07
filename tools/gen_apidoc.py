@@ -1,6 +1,7 @@
 """Generate the libraries' API reference from their doc comments: as HTML with dox (pinned in dependencies.json) into build/api, and as
-Markdown in docs/api, committed, so the repository carries a readable reference (README.md, the index of packages, then a file a
-package with each type's public members, and the platform's adapters together in platform-adapters.md).
+Markdown in each library's api/ directory, committed, so the repository carries a readable reference: api/README.md holds the
+library's own package and lists the rest, a file each with its types' public members (helix.services.audio in libs/services/api/audio.md),
+and the platform's adapters together in libs/platform/api/adapters.md.
 
 The reference is what a program writes against: a type or member marked @:noCompletion is a library's own (an adapter's internals,
 checked by tools/check_adapters.py), hidden from the language server and left out here as dox leaves it out. Haxe describes the code
@@ -11,7 +12,7 @@ js's with cpp's adapters added, so dox has nothing to mark as one target's. Of t
 it shows ShaderCompiler, whose compile a program calls: a macro, its signature from the compiler's macro context (tools/haxe/Fields.hx), as
 Haxe's description types a macro's arguments as Dynamic. helix-raylib's facades (Raylib, Raymath, Rlgl and the extras modules) are laid out as tools/gen_raylib.py
 says: their members under headings, and what refuses to compile listed apart. Code is read through the compiler, never as text
-(docs/CONVENTIONS.md, Tools). A @:structInit class is shown as the object a program writes, each field with its default. --check regenerates the Markdown in memory and fails when docs/api differs, so a change to a doc comment is committed with
+(docs/CONVENTIONS.md, Tools). A @:structInit class is shown as the object a program writes, each field with its default. --check regenerates the Markdown in memory and fails when a library's api/ differs, so a change to a doc comment is committed with
 its reference (helix.py test runs it)."""
 import json
 import re
@@ -28,11 +29,9 @@ sys.path.insert(0,str(ROOT/'tools'))
 import pins  # noqa: E402
 pins.use_haxelib()
 OUT=ROOT/'build/api'
-DOCS=ROOT/'docs/api'
 # The adapters: each compiles on its own target alone, so each target's description holds its own, and the reference shows both.
 ADAPTERS='helix.platform.adapters'
 # What the reference says of its targets, once.
-TARGETS='Every type here is on both Haxe targets, js (the browser) and cpp (native), but the adapters, each for one target, which a program constructs by name; a library\'s own types beneath (@:noCompletion) are left out.'
 
 def types_for(package,target):
     """Whether a package types for a target, as the compiler says."""
@@ -125,10 +124,15 @@ def short(path):
     """A type's name without its package."""
     return path.rsplit('.',1)[-1]
 
-def package_file(path):
-    """The Markdown file a package's types go in: the package's name after helix; the adapters' all in one, platform-adapters.md."""
-    package=ADAPTERS if adapter(path) else path.rsplit('.',1)[0]
-    return package[len('helix.'):].replace('.','-')+'.md' if package!='helix' else 'helix.md'
+def page_package(path):
+    """The package whose page a type is on: its own, the adapters' all on one."""
+    return ADAPTERS if adapter(path) else path.rsplit('.',1)[0]
+
+def package_file(package):
+    """The Markdown file a package's page is, from the checkout's root: in its library's api/ directory, README.md for the library's own
+    package and the rest by their names below it (helix.services.audio is libs/services/api/audio.md)."""
+    parts=package.split('.')
+    return (pins.LIBRARIES['helix-'+parts[1]].relative_to(ROOT)/'api'/('README.md' if len(parts)==2 else '-'.join(parts[2:])+'.md')).as_posix()
 
 def type_text(node,known):
     """A type as Haxe writes it, from the XML's type element, helix's own types by their short names (the index finds them)."""
@@ -314,19 +318,19 @@ def markdown(xml,native=frozenset()):
         # What it extends and implements, by name: a contract's base, an adapter's contract.
         parents=''.join(f', {word} '+', '.join(f'`{short(e.get("path"))}`' for e in node.findall(word))
                         for word in ('extends','implements') if node.findall(word))
-        # Its source, relative to docs/api: a link on GitHub and in a checkout alike.
+        # Its source, relative to its page: a link on GitHub and in a checkout alike.
         source=node.get('file','')
         # A library reached through a haxelib dev link is reported by its absolute path: made relative to the checkout.
         if Path(source).is_absolute() and Path(source).resolve().is_relative_to(ROOT.resolve()):source=Path(source).resolve().relative_to(ROOT.resolve()).as_posix()
         # The import that names it: its own path, as each shown type is its own file (checked above).
         target=(', native (cpp)' if path in native else ', for the browser (js)') if adapter(path) else ''
-        lines=[f'## {header}','',f'*{kind}*{target} in [`{source}`](../../{source})'+f', `import {path};`'+parents,'']
+        lines=[f'## {header}','',f'*{kind}*{target} in [`{source}`]({os.path.relpath(ROOT/source,ROOT/Path(package_file(page_package(path))).parent).replace(os.sep,"/")})'+f', `import {path};`'+parents,'']
         doc=doc_text(node)
         if doc:
             lines+=[doc,'']
             more=doc_lines(node)
             if more:lines+=more+['']
-        file=package_file(path)
+        file=page_package(path)
         # An abstract's values and members are its implementation class's statics: an enum abstract's values (:enum) listed by name, the
         # rest as a class's members.
         impl=node.find('impl') if node.tag=='abstract' else None
@@ -372,18 +376,22 @@ def markdown(xml,native=frozenset()):
                 else:lines.append(f'An alias of `{type_text(inner[0],known)}`.')
                 lines.append('')
         index.setdefault(file,[]).append((path,doc));files.setdefault(file,[]).append('\n'.join(lines))
+    # A page a package, and a library's README.md its own package's (or none, when it has no types of its own) with the rest listed.
     out={}
-    readme=['# API reference','','Every public type of each library, from the code\'s doc comments: generated by `tools/gen_apidoc.py`; `python3 tools/gen_apidoc.py --check` fails when it\'s stale. A file a package, each type with its public members. '+TARGETS,'']
-    for file in sorted(files):
-        package='helix'+('' if file=='helix.md' else '.'+file[:-3].replace('-','.'))
-        readme.append(f'- [`{package}`]({file}): '+', '.join(short(p) for p,_ in index[file]))
-        out[file]='\n'.join([f'# {package}','']+(['[Back to the index](README.md)','']) + files[file]).rstrip('\n')+'\n'
-    out['README.md']='\n'.join(readme)+'\n'
+    libraries={}
+    for package in files:libraries.setdefault('.'.join(package.split('.')[:2]),[]).append(package)
+    for library,packages in sorted(libraries.items()):
+        others=[p for p in sorted(packages) if p!=library]
+        for package in others:
+            out[package_file(package)]='\n'.join([f'# {package}','','[Back to the library](README.md)','']+files[package]).rstrip('\n')+'\n'
+        lines=[f'# {library}','','Generated from the doc comments by `tools/gen_apidoc.py`.','']
+        if others:lines+=['## Packages','']+[f'- [`{p}`]({Path(package_file(p)).name}): '+', '.join(short(t) for t,_ in index[p]) for p in others]+['']
+        out[package_file(library)]='\n'.join(lines+files.get(library,[])).rstrip('\n')+'\n'
     return out
 
 def main():
     import cli
-    p=cli.parser(__doc__);p.add_argument('--check',action='store_true',help="write nothing; fail when docs/api isn't what the sources give")
+    p=cli.parser(__doc__);p.add_argument('--check',action='store_true',help="write nothing; fail when a library's api/ isn't what the sources give")
     generate(check=p.parse_args().check)
 
 def defines_section(env,library,macro,example):
@@ -398,8 +406,12 @@ def defines_section(env,library,macro,example):
         lines.append(f'- `{define["define"]}{params}`: {define["doc"]}')
     return '\n'.join(lines)+'\n'
 
+def written():
+    """The API pages in the checkout, each library's api/*.md, from the checkout's root."""
+    return [p.relative_to(ROOT).as_posix() for d in pins.LIBRARIES.values() for p in sorted((d/'api').glob('*.md'))]
+
 def generate(check=False):
-    """docs/api and the HTML in build/api from the doc comments; with check, writes nothing and fails when docs/api isn't what they give.
+    """Each library's api/ and the HTML in build/api from the doc comments; with check, writes nothing and fails when an api/ isn't what they give.
     What another tool calls (tools/pages.py): main reads the command line, this doesn't."""
     version=json.loads((ROOT/'dependencies.json').read_text(encoding='utf-8'))['dox']
     env=dict(os.environ,HAXELIB_PATH=str(ROOT/'build/haxelib'));(ROOT/'build/haxelib').mkdir(parents=True,exist_ok=True)
@@ -421,31 +433,30 @@ def generate(check=False):
     leaked=leaks(OUT/'xml/api.xml')
     if leaked:sys.exit('gen_apidoc: shown members name hidden (@:noCompletion) types; hide or privatize the member, or show the type:\n  '+'\n  '.join(leaked))
     pages=markdown(OUT/'xml/api.xml',native)
-    pages['platform.md']=pages['platform.md'].rstrip('\n')+'\n\n'+defines_section(env,'helix-platform','helix.platform.macros.Defines','-D helix-product=Asteroids')
-    pages['raylib.md']=pages['raylib.md'].rstrip('\n')+'\n\n'+defines_section(env,'helix-raylib','helix.raylib.internal.Defines','-D helix-raylib-native-root=../assets')
+    pages['libs/platform/api/README.md']=pages['libs/platform/api/README.md'].rstrip('\n')+'\n\n'+defines_section(env,'helix-platform','helix.platform.macros.Defines','-D helix-product=Asteroids')
+    pages['engines/raylib/api/README.md']=pages['engines/raylib/api/README.md'].rstrip('\n')+'\n\n'+defines_section(env,'helix-raylib','helix.raylib.internal.Defines','-D helix-raylib-native-root=../assets')
     if check:
-        stale=[name for name,text in pages.items() if not (DOCS/name).is_file() or (DOCS/name).read_text(encoding='utf-8')!=text]
-        extra=[p.name for p in DOCS.glob('*.md') if p.name not in pages] if DOCS.is_dir() else []
+        stale=[name for name,text in pages.items() if not (ROOT/name).is_file() or (ROOT/name).read_text(encoding='utf-8')!=text]
+        extra=[name for name in written() if name not in pages]
         if stale or extra:
             # The first differing lines of each stale page, so a check failing on another system says what differs there.
             import difflib
             for name in stale:
-                if (DOCS/name).is_file():
-                    diff=list(difflib.unified_diff((DOCS/name).read_text(encoding='utf-8').splitlines(),pages[name].splitlines(),'committed '+name,'generated '+name,lineterm='',n=1))
+                if (ROOT/name).is_file():
+                    diff=list(difflib.unified_diff((ROOT/name).read_text(encoding='utf-8').splitlines(),pages[name].splitlines(),'committed '+name,'generated '+name,lineterm='',n=1))
                     print('\n'.join(diff[:40]),flush=True)
-            sys.exit('gen_apidoc: docs/api is stale ('+', '.join(stale+extra)+'); run python3 tools/gen_apidoc.py and commit it')
-        print('gen_apidoc: docs/api is current');return
-    DOCS.mkdir(parents=True,exist_ok=True)
-    for p in DOCS.glob('*.md'):
-        if p.name not in pages:p.unlink()
-    for name,text in pages.items():(DOCS/name).write_text(text,encoding='utf-8')
+            sys.exit('gen_apidoc: the API pages are stale ('+', '.join(stale+extra)+'); run python3 tools/gen_apidoc.py and commit it')
+        print('gen_apidoc: the API pages are current');return
+    for name in written():
+        if name not in pages:(ROOT/name).unlink()
+    for name,text in pages.items():(ROOT/name).parent.mkdir(parents=True,exist_ok=True);(ROOT/name).write_text(text,encoding='utf-8')
     # One description, both targets' merged (the same but for the adapters): dox marks nothing as one target's and offers no filter by
     # one. It leaves out what's @:noCompletion itself.
     # Each type's View Source on GitHub, at the commit described, so the code linked is the code documented.
     described=subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
     commit=described.stdout.strip() if described.returncode==0 else 'main'
     subprocess.run(['haxelib','run','dox','-i',str(OUT/'xml/api.xml'),'-o',str(OUT),'-in','^helix','-D','source-path',f'https://github.com/whirlinggizmo/helix/blob/{commit}/',
-        '--title','API reference','-D','description',TARGETS],cwd=ROOT,env=env,check=True)
-    print('API reference:',OUT/'index.html','and',DOCS)
+        '--title','helix API','--toplevel-package','helix','--keep-field-order','-D','website','https://github.com/whirlinggizmo/helix'],cwd=ROOT,env=env,check=True)
+    print('API reference:',OUT/'index.html','and each library\'s api/')
 
 if __name__=='__main__':main()

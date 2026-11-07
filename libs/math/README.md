@@ -27,7 +27,7 @@ var angle = random.nextRange(0, 2 * Math.PI);
 var x = Trig.cos(angle) * speed, y = Trig.sin(angle) * speed;
 ```
 
-The API reference is [docs/api/math.md](https://github.com/whirlinggizmo/helix/blob/main/docs/api/math.md). Its tests, in `tests/`,
+The API reference is [api/](api/README.md). Its tests, in `tests/`,
 build with `-lib helix-math` alone.
 
 ## Credit
