@@ -57,4 +57,4 @@ haxe build-native.hxml   # native/Main, with hxcpp and SDL3 installed (CONTRIBUT
 
 ## License
 
-zlib. See [LICENSE](LICENSE).
+Helix is released under the [zlib License](LICENSE).
