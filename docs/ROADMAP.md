@@ -21,8 +21,9 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
   raylib's C): a glTF's materials under rlights' lights, the base color factor taken as linear where raylib reads it as sRGB bytes,
   `KHR_materials_unlit` honoured, `pbr.glsl` for a program's own fragment stage. Next, environment maps: a cubemap prefiltered at
   load for the material's roughness and a BRDF table, on raylib's `MATERIAL_MAP_IRRADIANCE`, `MATERIAL_MAP_PREFILTER` and
-  `MATERIAL_MAP_BRDF` slots and `LoadTextureCubemap`, so a metal under the PBR shader reflects something. Then lit sprites (below),
-  shadows, and lights past rlights' four, as the jam's games ask.
+  `MATERIAL_MAP_BRDF` slots and `LoadTextureCubemap`, so a metal under the PBR shader reflects something. `DrawMeshInstanced` draws
+  nothing under `LoadPbrShader`, which has no `mat4` attribute, so an instanced twin is wanted too. Then lit sprites (below), shadows,
+  and lights past rlights' four a draw, as the jam's games ask.
 - **The jam, before Gyre's shape is decided:** agents (Sonnet, docs allowed) build the same small 3D top-down survivors-like on
   helix-raylib and on HeliX, two or three each, with gear worn from the modular characters' parts (CC0, Quaternius). Measured: tokens,
   time, build failures, bugs, lines written (engine-substitute against game logic), frame time, size, startup, and a change made
@@ -30,9 +31,9 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
 - **A retained-mode engine on helix-raylib (DECISIONS 53), then Gyre's shape.** The scene (a stage, 2D and 3D nodes, transforms,
   hierarchy, the walk that culls, gathers lights and sorts, picking), ported from HeliX's scene code rather than designed anew, issues
   raylib's calls each frame as three.js does under its graph: the speed and size measured for `DrawTexturePro` and `DrawMesh` are
-  its, raylib's holders are its GPU handles, and what raylib lacks comes as the extras above. First a sketch: a lit, skinned glTF
-  model and a sprite layer through raylib's calls, to see what the scene layer needs that raylib has no door for (stable handles
-  across a reload are one, listed below). Gyre is HeliX's game-level API (app, loader, UI, transitions, animator, autopilot) on that
+  its, raylib's holders are its GPU handles, and what raylib lacks comes as the extras above. The sketch is done
+  (docs/trials/2026-11-06-retained-sketch): a thin graph issuing raylib's calls, nine gaps and the extras for them, unbuilt and
+  untimed. Next, a small program of that graph timed against the robots contender. Gyre is HeliX's game-level API (app, loader, UI, transitions, animator, autopilot) on that
   scene and the services, so its users keep the API they know; the test is one of HeliX's games ported, its effort and its size
   beside its HeliX build. Whether Gyre keeps HeliX's API or folds its useful parts (the app's lifecycle, a retained UI, tweens,
   transitions, the autopilot) into a three.js-style engine on the same scene is the jam's question (DECISIONS 40). Whatever of the
