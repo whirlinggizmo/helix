@@ -147,6 +147,11 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
   library change. helix-ray is helix-raylib: `engines/raylib/`, `-lib helix-raylib`, `import helix.raylib.Raylib.*;`, its defines
   `helix-raylib-native-root` and `helix-raylib-custom-frame-control`. Next, separate repositories, each engine
   pinning a library version, once the platform has held through a second consumer and is versioned.
+- **Audio effects, low priority:** the API is agreed and committed (`IAudioEffects`, `AudioEffect`, PLATFORM.md's plan, and helix-services'
+  `AudioEffects`, `Effect` and `Analyser` with their bodies unimplemented). Still to build: the two adapters (`WebAudioEffectsAdapter`,
+  `Sdl3MixerAudioEffectsAdapter`), the services' bodies, and `helix.raylib.extras.AudioEffects`. raylib has no effects of its own. Its
+  programs write them as audio processors (`AttachAudioStreamProcessor`, `AttachAudioMixedProcessor`), which helix-raylib refuses, as
+  they run on the audio thread.
 - **A compiled shader per dialect, low priority (DECISIONS 54):** `CompileShaderFile` writes every dialect into one file, so a page
   fetches GLSL 410 and SDL_GPU's code it never reads (about 13 KB raw a shader, 3 KB gzip). Each graphics adapter would name the
   `ShaderSource` field it reads (an `IGraphics` member, a platform interface change for review), `CompileShaderFile` would write a file
