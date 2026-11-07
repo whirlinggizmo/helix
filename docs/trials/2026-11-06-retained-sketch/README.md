@@ -4,7 +4,7 @@ What a retained-mode engine wearing three.js's shape (3D) and a display list's (
 (DECISIONS 53). The same brief went to Opus and Fable, blind, in worktrees of their own. Their work is in [opus/](opus) and
 [fable/](fable) as delivered. This page is the best of the two, read against the code, and the one to work from.
 
-Both sketches type-check on JS and C++. Neither was run, so nothing here is measured. Every extra below is an API proposal, unbuilt.
+Both sketches type-check on JS and C++. Neither was run. A small program of the graph was, below. Every extra is an API proposal, unbuilt.
 
 ## The answer
 
@@ -12,9 +12,29 @@ The scene layer is a thin graph issuing raylib's calls, with no draw path of its
 draw, keeps call order and draws the pose on the mesh. rlgl's matrix stack carries a 2D hierarchy through one sprite run. What is the
 engine's own is what three.js's is too: the tree, the world matrices, the frustum planes, the sort and the choice of lights.
 
-The open question is cost. Opus's graph allocates a `Matrix` per multiply and makes 20 `SetShaderValue` calls per lit draw, and neither
-is timed. The first step is a small program of that graph, timed against the robots contender in `tools/compare/compare.py`, raylib C in
-the run. If it is slow, the graph keeps its matrices in helix-math's types, which changes its arithmetic and not its draw path.
+The cost is measured, and holds if the graph keeps its matrices in helix-math's types.
+
+The program ([timing/Main.hx](timing/Main.hx), raw lines in [timing/runs.jsonl](timing/runs.jsonl)) draws the robots contender's scene six
+ways: `direct` as the contender; `graph`, a tree of root, groups of 10, robots and 19 mesh nodes a robot, world matrices by raymath each
+frame, six-plane culling, a depth sort and `DrawMesh`; `graph-math` the same through helix-math's `Matrix3D`, written in place; and each
+under `LoadPbrShader`, the graph's with six scene lights and the nearest four refilled per robot. Mean ms a frame, median of three runs of
+600 frames, 2026-11-07 on coinspinner, Performance profile, every robot in view:
+
+| Mode | Page 50 | Page 200 | Page 400 | SDL_GPU 50 | SDL_GPU 200 | SDL_GPU 400 |
+|---|---|---|---|---|---|---|
+| `direct` | 1.98 | 7.90 | 15.04 | 1.60 | 6.35 | 13.75 |
+| `graph` | 2.37 | 9.69 | 19.55 | 2.49 | 9.95 | 19.66 |
+| `graph-math` | 2.07 | 7.97 | 16.00 | 1.74 | 7.10 | 14.90 |
+| `direct-pbr` | 2.64 | 10.22 | 21.07 | 2.32 | 9.88 | 22.58 |
+| `graph-pbr` | 3.38 | 12.97 | 26.40 | 3.84 | 16.04 | 32.67 |
+| `graph-math-pbr` | 2.93 | 11.74 | 23.80 | 2.97 | 12.57 | 28.50 |
+
+raylib C held steady through it (GPU skinning, page 400: 16.73 before, 15.79 after), and `direct` matched helix-raylib's own contender.
+At 400 robots, raymath's allocating matrices cost 30% on the page and 43% natively. helix-math's cost 6% and 8%, tree, cull and sort
+included. Under the PBR shader the graph adds 13% on the page and 26% natively over `direct-pbr`, mostly the 20 `SetShaderValue` calls a
+robot. `LoadPbrShader` itself adds 40% on the page over `direct`, and the robots fill little of the screen. Every robot passes the cull
+here, so culling costs and saves nothing. The lights were near-white with no falloff, so those frames are over-lit, which doesn't change
+the shader's work. Not timed: GL natively, a page on a phone, and a scene the cull thins.
 
 ## Carried by raylib's API as it is
 

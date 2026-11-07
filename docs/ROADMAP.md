@@ -38,8 +38,9 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
   hierarchy, the walk that culls, gathers lights and sorts, picking), ported from HeliX's scene code rather than designed anew, issues
   raylib's calls each frame as three.js does under its graph: the speed and size measured for `DrawTexturePro` and `DrawMesh` are
   its, raylib's holders are its GPU handles, and what raylib lacks comes as the extras above. The sketch is done
-  (docs/trials/2026-11-06-retained-sketch): a thin graph issuing raylib's calls, nine gaps and the extras for them, unbuilt and
-  untimed. Next, a small program of that graph timed against the robots contender. Gyre is HeliX's game-level API (app, loader, UI, transitions, animator, autopilot) on that
+  (docs/trials/2026-11-06-retained-sketch): a thin graph issuing raylib's calls, nine gaps and the extras for them, unbuilt. Timed
+  against the robots contender, the tree, cull and sort cost 6 to 8% at 400 robots with helix-math's matrices, 30 to 43% with raymath's
+  allocating ones, so the graph keeps helix-math's. Gyre is HeliX's game-level API (app, loader, UI, transitions, animator, autopilot) on that
   scene and the services, so its users keep the API they know; the test is one of HeliX's games ported, its effort and its size
   beside its HeliX build. Whether Gyre keeps HeliX's API or folds its useful parts (the app's lifecycle, a retained UI, tweens,
   transitions, the autopilot) into a three.js-style engine on the same scene is the jam's question (DECISIONS 40). Whatever of the
