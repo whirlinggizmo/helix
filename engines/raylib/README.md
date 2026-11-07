@@ -28,12 +28,6 @@ See the [API reference](https://whirlinggizmo.github.io/helix/api/helix/raylib/i
 -lib helix-raylib
 ```
 
-Until it is published, link it, and the libraries it's built on, from a checkout:
-
-```
-haxelib dev helix-raylib <checkout>/engines/raylib
-```
-
 Defines, set in the build's hxml:
 
 - `-D helix-raylib-native-root=<directory>`: where a native program finds its files, relative to itself. Default `../web`.
