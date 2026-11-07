@@ -28,6 +28,18 @@ See the [API reference](https://whirlinggizmo.github.io/helix/api/helix/raylib/i
 -lib helix-raylib
 ```
 
+Until it is on haxelib, install it and the libraries it depends on from GitHub:
+
+```
+haxelib git helix-math https://github.com/whirlinggizmo/helix main libs/math
+haxelib git helix-formats https://github.com/whirlinggizmo/helix main libs/formats
+haxelib git helix-platform https://github.com/whirlinggizmo/helix main libs/platform
+haxelib git helix-geometry https://github.com/whirlinggizmo/helix main libs/geometry
+haxelib git helix-log https://github.com/whirlinggizmo/helix main libs/log
+haxelib git helix-services https://github.com/whirlinggizmo/helix main libs/services
+haxelib git helix-raylib https://github.com/whirlinggizmo/helix main engines/raylib
+```
+
 Defines, set in the build's hxml:
 
 - `-D helix-raylib-native-root=<directory>`: where a native program finds its files, relative to itself. Default `../web`.

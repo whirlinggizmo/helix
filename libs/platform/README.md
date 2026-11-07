@@ -30,6 +30,14 @@ behind it is an adapter in `helix.platform.adapters.<interface>.<api>`. Note tha
 -lib helix-platform
 ```
 
+Until it is on haxelib, install it and the libraries it depends on from GitHub:
+
+```
+haxelib git helix-math https://github.com/whirlinggizmo/helix main libs/math
+haxelib git helix-formats https://github.com/whirlinggizmo/helix main libs/formats
+haxelib git helix-platform https://github.com/whirlinggizmo/helix main libs/platform
+```
+
 A program constructs one adapter for each interface it uses, for its target, and after that uses the interface alone. Native builds link
 SDL3: `HELIX_SDL3_LIBRARY` names the library.
 

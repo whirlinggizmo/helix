@@ -18,6 +18,18 @@ helix-log.
 -lib helix-render
 ```
 
+Until it is on haxelib, install it and the libraries it depends on from GitHub:
+
+```
+haxelib git helix-math https://github.com/whirlinggizmo/helix main libs/math
+haxelib git helix-formats https://github.com/whirlinggizmo/helix main libs/formats
+haxelib git helix-platform https://github.com/whirlinggizmo/helix main libs/platform
+haxelib git helix-geometry https://github.com/whirlinggizmo/helix main libs/geometry
+haxelib git helix-log https://github.com/whirlinggizmo/helix main libs/log
+haxelib git helix-services https://github.com/whirlinggizmo/helix main libs/services
+haxelib git helix-render https://github.com/whirlinggizmo/helix main libs/render
+```
+
 ## Set aside
 
 helix-render was built in stages from its agreed API (docs/DECISIONS.md, 34) through stage 3, and is set aside there (DECISIONS 53):

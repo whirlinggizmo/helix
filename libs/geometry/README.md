@@ -21,6 +21,19 @@ var ray = camera.computeRay(pointerX / width * 2 - 1, 1 - pointerY / height * 2,
 var hit = ray.intersectMesh(ball, placement, new RayHit3D());
 ```
 
+## Using it
+
+```
+-lib helix-geometry
+```
+
+Until it is on haxelib, install it and the libraries it depends on from GitHub:
+
+```
+haxelib git helix-math https://github.com/whirlinggizmo/helix main libs/math
+haxelib git helix-geometry https://github.com/whirlinggizmo/helix main libs/geometry
+```
+
 The API reference is [api/](api/README.md). Its tests, in `tests/`,
 build with `-lib helix-geometry` alone.
 

@@ -22,6 +22,17 @@ What a game program needs over [helix-platform](../platform/README.md) that isn'
 -lib helix-services
 ```
 
+Until it is on haxelib, install it and the libraries it depends on from GitHub:
+
+```
+haxelib git helix-math https://github.com/whirlinggizmo/helix main libs/math
+haxelib git helix-formats https://github.com/whirlinggizmo/helix main libs/formats
+haxelib git helix-platform https://github.com/whirlinggizmo/helix main libs/platform
+haxelib git helix-geometry https://github.com/whirlinggizmo/helix main libs/geometry
+haxelib git helix-log https://github.com/whirlinggizmo/helix main libs/log
+haxelib git helix-services https://github.com/whirlinggizmo/helix main libs/services
+```
+
 A program polls each service that answers later once a frame, with the platform's adapters it was given: `Assets`, `Audio`, `Images`,
 `Saves`, `Time` and the input devices are `IPollable`. One never polled never answers.
 

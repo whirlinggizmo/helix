@@ -44,6 +44,13 @@ for (mesh in model.meshes)
 -lib helix-formats
 ```
 
+Until it is on haxelib, install it and the libraries it depends on from GitHub:
+
+```
+haxelib git helix-math https://github.com/whirlinggizmo/helix main libs/math
+haxelib git helix-formats https://github.com/whirlinggizmo/helix main libs/formats
+```
+
 The API reference is [api/](api/README.md). Its tests, in `tests/`, build with `-lib helix-formats` alone, from this repository's root: `TrueTypeTests` embeds the font
 in `tests/assets` as it compiles, and `GifTests` the GIF files in `tests/assets/gif`.
 

@@ -27,6 +27,18 @@ var angle = random.nextRange(0, 2 * Math.PI);
 var x = Trig.cos(angle) * speed, y = Trig.sin(angle) * speed;
 ```
 
+## Using it
+
+```
+-lib helix-math
+```
+
+Until it is on haxelib, install it from GitHub:
+
+```
+haxelib git helix-math https://github.com/whirlinggizmo/helix main libs/math
+```
+
 The API reference is [api/](api/README.md). Its tests, in `tests/`,
 build with `-lib helix-math` alone.
 
