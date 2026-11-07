@@ -17,7 +17,7 @@ import helix.raylib.modules.RDevice;
 class Device {
 	// ---- Screen orientation ----
 
-	/** The screen held as the player holds it, or released. */
+	/** The screen held as the device is held, or released. */
 	public static inline final ORIENTATION_ANY = 0;
 
 	/** The screen held wider than tall. */
@@ -132,7 +132,7 @@ class Device {
 
 		Natively it is refused.
 
-		A page may need the player's permission, asked at their next tap. A game asks before the tap that starts play.
+		A page may need permission, which the browser asks for at the next tap. A game asks before the tap that starts play.
 
 		@param done  Optional. Called once readings arrive, at a later poll.
 		@param failed  Optional. Receives why there will be none: refused, the page isn't HTTPS, or no sensor; when omitted, it is logged. */

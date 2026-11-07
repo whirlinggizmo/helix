@@ -185,7 +185,7 @@ static inline var ORIENTATION_LANDSCAPE:Int
 static inline var ORIENTATION_PORTRAIT:Int
 ```
 
-- `ORIENTATION_ANY`: The screen held as the player holds it, or released.
+- `ORIENTATION_ANY`: The screen held as the device is held, or released.
 - `ORIENTATION_LANDSCAPE`: The screen held wider than tall.
 - `ORIENTATION_PORTRAIT`: The screen held taller than wide.
 
@@ -268,7 +268,7 @@ static function CalibrateTilt():Void
 
   Natively it is refused.
 
-  A page may need the player's permission, asked at their next tap. A game asks before the tap that starts play.
+  A page may need permission, which the browser asks for at the next tap. A game asks before the tap that starts play.
 - `DisableTilt`: Stops the tilt's readings. See `EnableTiltAsync` for asking for them.
   A permission granted stays granted.
 - `GetTilt`: Returns the tilt from level, turned with the screen, each axis -1 to 1. See `CalibrateTilt` for setting what reads as level.
@@ -327,7 +327,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   A byte that isn't UTF-8 is read as U+FFFD. A file is never refused for what it holds.
 
-  In a page, a file nobody saved yet is asked of the server, which logs a 404 in the browser's console before `failed` answers. A program reading a save on its first run sees one.
+  In a page, reading a file that hasn't been saved yet asks the server for it and logs a 404 in the browser's console before `failed` answers. A program reading a save on its first run sees one.
 - `SaveFileDataAsync`: Asynchronously writes a file's bytes, in place of raylib's `SaveFileData`. See `SaveFileTextAsync` for writing text.
   - `fileName`: The file.
   - `data`: The bytes.
@@ -1010,7 +1010,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
 
   It replaces raylib's `ToggleFullscreen`.
 
-  In a page the browser grants it only soon after a key press, click or tap. Without one, it waits for the player's next, or refuses.
+  In a page the browser grants it only soon after a key press, click or tap. Without one, it waits for the next, or refuses.
 
   Called while borderless, it only switches to fullscreen.
 
@@ -1028,7 +1028,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   Called while fullscreen, it only switches to borderless.
 
   As in raylib, `IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)` is true while it is, and `IsWindowFullscreen` false.
-- `SetWindowSizeAsync`: Asynchronously asks for the window's size. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting the sizes the player can make it.
+- `SetWindowSizeAsync`: Asynchronously asks for the window's size. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting the sizes it can be resized to.
   - `width`: The width, in pixels.
   - `height`: The height, in pixels.
   - `done`: Optional. Called once the window has a size from the request, or once it is refused, at a later poll.
@@ -1098,7 +1098,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   In a page the canvas fades.
 
   A desktop without a compositor refuses it.
-- `SetWindowMinSizeAsync`: Asynchronously asks for the smallest size the player can make the window. See `SetWindowMaxSizeAsync` for setting the largest.
+- `SetWindowMinSizeAsync`: Asynchronously asks for the smallest size the window can be resized to. See `SetWindowMaxSizeAsync` for setting the largest.
   - `width`: The width, in the screen's pixels.
   - `height`: The height.
   - `done`: Optional. Called once the window has the limit, or once it is refused, at a later poll.
@@ -1109,7 +1109,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   It is refused in a page, whose canvas follows the page.
 
   A size under 0 pixels is refused.
-- `SetWindowMaxSizeAsync`: Asynchronously asks for the largest size the player can make the window. See `SetWindowMinSizeAsync` for setting the smallest.
+- `SetWindowMaxSizeAsync`: Asynchronously asks for the largest size the window can be resized to. See `SetWindowMinSizeAsync` for setting the smallest.
   - `width`: The width, in the screen's pixels.
   - `height`: The height.
   - `done`: Optional. Called once the window has the limit, or once it is refused, at a later poll.
@@ -1130,7 +1130,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
 
   `IsCursorHidden` is true from the call.
 
-  In a page the browser locks it only soon after a click or key press. Without one, it locks at the player's next. Escape lets it go.
+  In a page the browser locks it only soon after a click or key press. Without one, it locks at the next. Escape lets it go.
 - `EnableCursorAsync`: Asynchronously lets go of the mouse that `DisableCursorAsync` locked and shows the cursor.
   - `done`: Optional. Called once the mouse is let go, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
@@ -1152,14 +1152,14 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
 
   It replaces raylib's `GetClipboardText`.
 
-  A page reads it only with the player's permission, which the browser may ask for.
+  A page reads it only with permission, which the browser may ask for.
 - `GetClipboardImageAsync`: Asynchronously reads the clipboard's image. See `GetClipboardTextAsync` for reading text.
   - `loaded`: Receives the image once it is decoded, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged.
 
   It replaces raylib's `GetClipboardImage`.
 
-  A page reads it only with the player's permission.
+  A page reads it only with permission, which the browser may ask for.
 - `TakeScreenshotAsync`: Asynchronously takes a screenshot of the next frame and saves it as a file. See `LoadImageFromScreenAsync` for the screen as an `Image`.
   - `fileName`: The file's name, or its path; a name with `'` is refused, as raylib's is.
   - `done`: Optional. Called once the file is written or downloaded, or once it is refused, at a later poll.

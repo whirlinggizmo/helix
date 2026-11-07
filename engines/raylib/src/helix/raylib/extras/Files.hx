@@ -44,7 +44,8 @@ class Files {
 
 		A byte that isn't UTF-8 is read as U+FFFD. A file is never refused for what it holds.
 
-		In a page, a file nobody saved yet is asked of the server, which logs a 404 in the browser's console before `failed` answers. A
+		In a page, reading a file that hasn't been saved yet asks the server for it and logs a 404 in the browser's console before
+		`failed` answers. A
 		program reading a save on its first run sees one.
 
 		@param fileName  The file.

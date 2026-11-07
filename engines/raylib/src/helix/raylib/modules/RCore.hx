@@ -106,7 +106,7 @@ class RCore {
 		return !Runtime.window.visible;
 	}
 
-	/** Returns whether the player can't see the window: minimized, or in a page its tab in the background.
+	/** Returns whether the window is out of sight: minimized, or in a page its tab in the background.
 
 		@return  True while it is. */
 	static function IsWindowMinimized():Bool {
@@ -861,7 +861,7 @@ class RCore {
 		mouseScaleY = scaleY;
 	}
 
-	/** Returns how far the wheel turned this frame, in both directions: right and away from the player are positive.
+	/** Returns how far the wheel turned this frame, in both directions: right and forward are positive.
 
 		@return  The notches. */
 	static function GetMouseWheelMoveV():Vector2 {
@@ -939,7 +939,7 @@ class RCore {
 		}
 	}
 
-	/** Returns how far the wheel turned this frame, the larger of its two directions; away from the player is positive.
+	/** Returns how far the wheel turned this frame, the larger of its two directions; forward is positive.
 
 		@return  The notches. */
 	static function GetMouseWheelMove():Float {

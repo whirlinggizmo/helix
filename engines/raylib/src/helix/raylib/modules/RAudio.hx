@@ -26,7 +26,7 @@ class RAudio {
 	#if !macro
 	// ---- Audio ----
 
-	/** Opens the audio output, with helix-services' `Audio` over it. In a page it plays once the player's first press lets it. */
+	/** Opens the audio output, with helix-services' `Audio` over it. In a page it plays once a first key press, click or tap lets it. */
 	static function InitAudioDevice():Void {
 		if (Runtime.audio != null)
 			return;

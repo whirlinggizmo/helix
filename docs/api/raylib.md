@@ -2862,7 +2862,7 @@ static function EndScissorMode():Void
   - returns: True while it is.
 - `IsWindowHidden`: Returns whether the program hid the window (`FLAG_WINDOW_HIDDEN`). In a page it tells whether the canvas is hidden.
   - returns: True while it is.
-- `IsWindowMinimized`: Returns whether the player can't see the window: minimized, or in a page its tab in the background.
+- `IsWindowMinimized`: Returns whether the window is out of sight: minimized, or in a page its tab in the background.
   - returns: True while it is.
 - `IsWindowMaximized`: Returns whether the window is maximized. It is false in a page.
   - returns: True while it is.
@@ -2996,7 +2996,7 @@ static function EndScissorMode():Void
 - `SetMouseScale`: Sets what `GetMousePosition` multiplies the mouse's position by, after its offset.
   - `scaleX`: The scale across.
   - `scaleY`: The scale down.
-- `GetMouseWheelMoveV`: Returns how far the wheel turned this frame, in both directions: right and away from the player are positive.
+- `GetMouseWheelMoveV`: Returns how far the wheel turned this frame, in both directions: right and forward are positive.
   - returns: The notches.
 - `ShowCursor`: Shows the cursor.
 - `HideCursor`: Hides the cursor over the window.
@@ -3006,7 +3006,7 @@ static function EndScissorMode():Void
   - returns: True from its first move over the window until it leaves.
 - `SetMouseCursor`: Sets the cursor's shape: the system's own cursor of each kind.
   - `cursor`: The shape (`MOUSE_CURSOR_*`); `MOUSE_CURSOR_DEFAULT` and `MOUSE_CURSOR_ARROW` are both the arrow.
-- `GetMouseWheelMove`: Returns how far the wheel turned this frame, the larger of its two directions; away from the player is positive.
+- `GetMouseWheelMove`: Returns how far the wheel turned this frame, the larger of its two directions; forward is positive.
   - returns: The notches.
 - `GetTouchPointCount`: Returns the number of fingers down.
   - returns: The count.
@@ -5035,7 +5035,7 @@ static function SetAudioStreamBufferSizeDefault(size:Int):Void
 static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void
 ```
 
-- `InitAudioDevice`: Opens the audio output, with helix-services' `Audio` over it. In a page it plays once the player's first press lets it.
+- `InitAudioDevice`: Opens the audio output, with helix-services' `Audio` over it. In a page it plays once a first key press, click or tap lets it.
 - `CloseAudioDevice`: Closes the audio output, stopping and unloading every sound.
 - `IsAudioDeviceReady`: Returns whether the audio output is open.
   - returns: True after `InitAudioDevice`, where the platform has an output.

@@ -1152,7 +1152,7 @@ class Raylib {
 	public static inline function IsWindowHidden():Bool
 		return RCore.IsWindowHidden();
 
-	/** Returns whether the player can't see the window: minimized, or in a page its tab in the background.
+	/** Returns whether the window is out of sight: minimized, or in a page its tab in the background.
 
 		@return  True while it is. */
 	public static inline function IsWindowMinimized():Bool
@@ -1537,7 +1537,7 @@ class Raylib {
 	public static inline function SetMouseScale(scaleX:Float, scaleY:Float):Void
 		RCore.SetMouseScale(scaleX, scaleY);
 
-	/** Returns how far the wheel turned this frame, in both directions: right and away from the player are positive.
+	/** Returns how far the wheel turned this frame, in both directions: right and forward are positive.
 
 		@return  The notches. */
 	public static inline function GetMouseWheelMoveV():Vector2
@@ -1569,7 +1569,7 @@ class Raylib {
 	public static inline function SetMouseCursor(cursor:Int):Void
 		RCore.SetMouseCursor(cursor);
 
-	/** Returns how far the wheel turned this frame, the larger of its two directions; away from the player is positive.
+	/** Returns how far the wheel turned this frame, the larger of its two directions; forward is positive.
 
 		@return  The notches. */
 	public static inline function GetMouseWheelMove():Float
@@ -4994,7 +4994,7 @@ class Raylib {
 
 	// ---- raudio: sound (raylib/RAudio.hx) ----
 
-	/** Opens the audio output, with helix-services' `Audio` over it. In a page it plays once the player's first press lets it. */
+	/** Opens the audio output, with helix-services' `Audio` over it. In a page it plays once a first key press, click or tap lets it. */
 	public static inline function InitAudioDevice():Void
 		RAudio.InitAudioDevice();
 

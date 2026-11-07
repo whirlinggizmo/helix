@@ -88,7 +88,7 @@ class Runtime {
 
 	public static final files = new Map<String, Bytes>();
 
-	/** The frame: whether the window should close, whether the player can't see it (minimized, or its tab in the background), frames
+	/** The frame: whether the window should close, whether it is out of sight (minimized, or its tab in the background), frames
 		left of the `quit_after_frame` option. */
 	public static var shouldClose = false;
 
@@ -590,7 +590,7 @@ class Runtime {
 
 	static var screenshotsService:Null<helix.services.screenshots.Screenshots> = null;
 
-	/** Gets where files are handed to the user, made when first asked for: in a page a download, natively the working directory. */
+	/** Gets where files are handed out, made when first asked for: in a page a download, natively the working directory. */
 	public static function exporter():helix.platform.IExport {
 		if (exportAdapter == null) {
 			#if js
@@ -604,7 +604,7 @@ class Runtime {
 
 	static var exportAdapter:Null<helix.platform.IExport> = null;
 
-	/** Makes what hands files to the user natively write to the working directory as it is now, after `ChangeDirectory`. */
+	/** Makes what hands files out natively write to the working directory as it is now, after `ChangeDirectory`. */
 	public static function workingDirectoryChanged():Void {
 		#if !js
 		exportAdapter = null;

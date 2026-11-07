@@ -206,8 +206,10 @@ Code is written to be read, by people and agents, not packed.
     - What to call instead when this member isn't it follows as a sentence of its own, "See `X` for doing Y.", Y what X does as a
       gerund or a "whether" clause so it can't read as this member's result, never a clause after a colon or comma
       (`LoadLightingShader`: "See `LoadPbrShader` for drawing a glTF's materials as authored.").
-    - The remarks are short paragraphs, one fact each, the one most callers need first. What a member reads from the program's data
-      is listed, not described around.
+    - The remarks are short paragraphs, one fact each, the one most callers need first. A fact is cause then effect, in the order it
+      happens, with the call as the subject, in the active voice: "In a page, reading a file that hasn't been saved yet asks the
+      server for it and logs a 404 in the browser's console before `failed` answers", not "a file nobody saved yet is asked of the
+      server, which logs a 404". What a member reads from the program's data is listed, not described around.
     - What is true of the program's own files (an asset's bone names, where a model is authored) is the program's spec's, not the
       API's. A comment that needs a second screen is two members' or a README's.
 
@@ -229,7 +231,8 @@ Code is written to be read, by people and agents, not packed.
             var light = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), Vector3Zero(), YELLOW, shader);
             ```
             @return  The shader, the program's until `UnloadShader`. */
-  - **Standard words.** Never "you". "Optional", "provided", "omitted", "receives", "defaults to", "must be", "skipped", "ignored",
+  - **Standard words.** Never "you", and no people: not "the player", "the user" or "nobody", but what happens (a key press, click
+    or tap; permission the browser asks for; a file not yet saved; a size the window can be resized to). "Optional", "provided", "omitted", "receives", "defaults to", "must be", "skipped", "ignored",
     "clamped to", "unchanged", "local units", "its subtree": not "when given", "left out", "held to", "says", "as it was", "the node's
     own units", "what's under it".
   - **Sample**, `IFileSystem.read`:

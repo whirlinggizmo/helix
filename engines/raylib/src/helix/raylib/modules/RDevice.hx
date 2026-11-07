@@ -143,7 +143,7 @@ class RDevice {
 
 		Natively it is refused.
 
-		A page may need the player's permission, asked at their next tap. A game asks before the tap that starts play.
+		A page may need permission, which the browser asks for at the next tap. A game asks before the tap that starts play.
 
 		@param done  Optional. Called once readings arrive, at a later poll.
 		@param failed  Optional. Receives why there will be none: refused, the page isn't HTTPS, or no sensor; when omitted, it is logged. */

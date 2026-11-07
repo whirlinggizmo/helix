@@ -43,7 +43,7 @@ class RWindowAsync {
 
 		It replaces raylib's `ToggleFullscreen`.
 
-		In a page the browser grants it only soon after a key press, click or tap. Without one, it waits for the player's next, or refuses.
+		In a page the browser grants it only soon after a key press, click or tap. Without one, it waits for the next, or refuses.
 
 		Called while borderless, it only switches to fullscreen.
 
@@ -90,7 +90,7 @@ class RWindowAsync {
 		}, refused), "the window can't be fullscreen here", done, failed);
 	}
 
-	/** Asynchronously asks for the window's size. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting the sizes the player can make it.
+	/** Asynchronously asks for the window's size. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting the sizes it can be resized to.
 
 		It replaces raylib's `SetWindowSize`.
 
@@ -206,7 +206,7 @@ class RWindowAsync {
 		ask("SetWindowOpacityAsync", (granted, refused) -> Runtime.window.requestOpacity(opacity, granted, refused), "", done, failed);
 	}
 
-	/** Asynchronously asks for the smallest size the player can make the window. See `SetWindowMaxSizeAsync` for setting the largest.
+	/** Asynchronously asks for the smallest size the window can be resized to. See `SetWindowMaxSizeAsync` for setting the largest.
 
 		It replaces raylib's `SetWindowMinSize`.
 
@@ -223,7 +223,7 @@ class RWindowAsync {
 			'$width x $height is under 0 pixels', done, failed);
 	}
 
-	/** Asynchronously asks for the largest size the player can make the window. See `SetWindowMinSizeAsync` for setting the smallest.
+	/** Asynchronously asks for the largest size the window can be resized to. See `SetWindowMinSizeAsync` for setting the smallest.
 
 		It replaces raylib's `SetWindowMaxSize`.
 
@@ -249,7 +249,7 @@ class RWindowAsync {
 
 		`IsCursorHidden` is true from the call.
 
-		In a page the browser locks it only soon after a click or key press. Without one, it locks at the player's next. Escape lets it go.
+		In a page the browser locks it only soon after a click or key press. Without one, it locks at the next. Escape lets it go.
 
 		@param done  Optional. Called once the mouse is locked, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
@@ -297,7 +297,7 @@ class RWindowAsync {
 
 		It replaces raylib's `GetClipboardText`.
 
-		A page reads it only with the player's permission, which the browser may ask for.
+		A page reads it only with permission, which the browser may ask for.
 
 		@param read  Receives the text at a later poll; "" when the clipboard holds none.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
@@ -309,7 +309,7 @@ class RWindowAsync {
 
 		It replaces raylib's `GetClipboardImage`.
 
-		A page reads it only with the player's permission.
+		A page reads it only with permission, which the browser may ask for.
 
 		@param loaded  Receives the image once it is decoded, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
 		@param failed  Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged. */
