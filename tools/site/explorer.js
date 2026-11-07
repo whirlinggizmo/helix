@@ -18,7 +18,8 @@ $(function () {
 		list = branch.children("ul");
 	}
 	if (file != "index.html")
-		list.children("li").has("a.treeLink").filter(function () {
-			return $(this).children("a.treeLink")[0].href.split(/[?#]/)[0] == location.href.split(/[?#]/)[0];
+		list.children("li").filter(function () {
+			var link = $(this).children("a.treeLink")[0];
+			return link != null && link.href.split(/[?#]/)[0] == location.href.split(/[?#]/)[0];
 		}).addClass("active");
 });

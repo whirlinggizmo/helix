@@ -328,6 +328,34 @@ def paged(path,members):
     out=['Its members are on their own pages:','']+links if len(links)>1 else [f'Its members are on their own page: [{name}.md]({name}.md).']
     return out+['']+sectioned([],(named,refused))
 
+def for_dox(source,output):
+    """The description dox reads: source's, with Raylib's functions moved to a class for each of raylib's modules (the module classes of
+    helix.raylib.modules, each with the functions it writes), so the HTML has a page for each, as the Markdown does. Raylib keeps its
+    constants and links the modules. As text, as merged() is."""
+    import gen_raylib
+    text=source.read_text(encoding='utf-8')
+    named,refused=LAYOUT['helix.raylib.Raylib']
+    skipped={n for kind in refused.values() for n in kind}
+    raylib=re.search(r'^\t<class path="helix\.raylib\.Raylib" [^>]*file="([^"]*)">\n(.*?)^\t</class>\n',text,re.M|re.S)
+    folder=Path(raylib.group(1)).parent/'modules'
+    sections=gen_raylib.TARGETS['Raylib.hx'][0]
+    moved={title:[] for _,title in sections}
+    kept=raylib.group(2)
+    for member in re.finditer(r'^\t\t<(\w+)\b(?:[^>]*?/>|[^>]*>.*?</\1>)\n',raylib.group(2),re.M|re.S):
+        title=named.get(member.group(1))
+        if title in moved and member.group(1) not in skipped:
+            moved[title].append(member.group(0));kept=kept.replace(member.group(0),'',1)
+    links=', '.join(f'[{name}](modules/{name}.html)' for name,_ in sections)
+    kept=re.sub(r'</haxe_doc>(\n\t\t<meta>(?:(?!</haxe_doc>).)*)?$',lambda m:f"\n\nIts functions are on a page for each of raylib's modules: {links}.</haxe_doc>"+(m.group(1) or ''),kept,count=1,flags=re.S)
+    blocks=[]
+    for name,title in sections:
+        # The module class's own description gives way to the functions it writes, as Raylib's.
+        text=re.sub(r'^\t<class path="helix\.raylib\.modules\.'+name+r'" .*?^\t</class>\n','',text,count=1,flags=re.M|re.S)
+        blocks.append(f'\t<class path="helix.raylib.modules.{name}" params="" file="{folder/(name+".hx")}">\n'+''.join(moved[title])
+                      +f"\t\t<haxe_doc>raylib's {title}. They are `Raylib`'s functions, called with `import helix.raylib.Raylib.*;`.</haxe_doc>\n\t</class>\n")
+    text=text.replace(raylib.group(0),raylib.group(0).replace(raylib.group(2),kept),1)
+    output.write_text(text[:text.rindex('</haxe>')]+''.join(blocks)+'</haxe>\n',encoding='utf-8')
+
 def merged(js,cpp,output):
     """One description from both targets': js's, and cpp's adapters; writes it to output, the description the reference is made from.
     Merged as Haxe wrote them, as text: ElementTree would rewrite what dox reads (an empty haxe_doc, CDATA)."""
@@ -487,7 +515,8 @@ def generate(check=False):
     # Each type's View Source on GitHub, at the commit described, so the code linked is the code documented.
     described=subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
     commit=described.stdout.strip() if described.returncode==0 else 'main'
-    subprocess.run(['haxelib','run','dox','-i',str(OUT/'xml/api.xml'),'-o',str(OUT),'-in','^helix','-D','source-path',f'https://github.com/whirlinggizmo/helix/blob/{commit}/',
+    for_dox(OUT/'xml/api.xml',OUT/'xml/dox.xml')
+    subprocess.run(['haxelib','run','dox','-i',str(OUT/'xml/dox.xml'),'-o',str(OUT),'-in','^helix','-D','source-path',f'https://github.com/whirlinggizmo/helix/blob/{commit}/',
         '--title','helix API','--toplevel-package','helix','--keep-field-order','-D','website','https://github.com/whirlinggizmo/helix'],cwd=ROOT,env=env,check=True)
     print('API reference:',OUT/'index.html','and each library\'s api/')
 
