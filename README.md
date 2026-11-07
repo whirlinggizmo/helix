@@ -58,5 +58,3 @@ haxe build-native.hxml   # native/Main, with hxcpp and SDL3 installed (CONTRIBUT
 ## License
 
 zlib. See [LICENSE](LICENSE).
-
-Third-party code a library includes is credited in its README.
