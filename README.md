@@ -1,10 +1,8 @@
 # helix
 
-Write a game once in Haxe and run it in a browser page or as a native program. The libraries are small and plain: a 2D bunnymark is a 44 KB
-gzip download, a whole game about 130 KB. On top of them sits raylib's API, so anyone who knows raylib, or any model trained on it, can
-start writing.
+A Helix is a suite of libraries and engines for Haxe game development.  It provides platform abstractions, higher level services, and game engine that mirrors raylib's API. 
 
-> **Work in progress.** No API is stable yet, and any name may change in any commit. There are no releases to pin.
+> **Work in progress.** No API is stable yet, and any name may change in any commit. Caveat Emptor.
 
 ## What's here
 
