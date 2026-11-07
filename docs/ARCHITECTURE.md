@@ -1,6 +1,6 @@
 # Architecture
 
-helix-2.0 is layered libraries (docs/PLAN.md), and inside the bottom one, the platform, code belongs to exactly one of two sides:
+helix is layered libraries (docs/PLAN.md), and inside the bottom one, the platform, code belongs to exactly one of two sides:
 
 | Side | Where | What it is |
 | --- | --- | --- |
@@ -92,6 +92,6 @@ through `adapters/shared/Mailbox`, drained by that `poll`.
 | Build and run a program in a browser | Haxe. Node and Terser only to minify a release build. |
 | Build and run a program natively (Linux) | Haxe, hxcpp, a C/C++ compiler, SDL3 (`tools/sdl3.py`, or `HELIX_SDL3_LIBRARY`), and the system libraries SDL loads: X11/Xrandr/Xi/Xcursor and GL (window, graphics), ALSA or PulseAudio (audio output). Audio decoding is SDL3_mixer's, compiled with the program. |
 | Write a program's shaders | Haxe alone: `ShaderCompiler.compile("x.vert", "x.frag")` in the build fetches glslang and SPIRV-Cross into the user's cache the first time; on a system without a build of SPIRV-Cross (Linux on neither x86_64 nor ARM64) it builds it with hxcpp and a C++ compiler. |
-| Develop helix-2.0 itself | The above, plus Python 3 (the checks), Node with Playwright and pngjs (browser checks). |
+| Develop helix itself | The above, plus Python 3 (the checks), Node with Playwright and pngjs (browser checks). |
 
 Wasm (physics, later) would be built by maintainers with Emscripten and shipped prebuilt; natively the same C/C++ links through hxcpp.

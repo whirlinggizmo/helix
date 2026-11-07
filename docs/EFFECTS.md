@@ -1,11 +1,11 @@
 # Effects inventory
 
-Visual effects, shaders and particle systems found in the earlier projects, listed as candidates for helix-2.0's libraries. Nothing here
+Visual effects, shaders and particle systems found in the earlier projects, listed as candidates for helix's libraries. Nothing here
 is committed to. Before any entry is built, it is judged by what other engines provide (Godot, Unity, three.js, raylib's examples) and
 whether a program using the library directly would want it.
 
 "Where it was" paths are relative to the `whirlinggizmo/` projects directory. `helix/` is HeliX, `wgrender-c/` the earlier C framework,
-`gamejams/` the two games. "In helix-2.0 already?" paths are relative to this repository. Where a source did not say, the cell says
+`gamejams/` the two games. "In helix already?" paths are relative to this repository. Where a source did not say, the cell says
 "unclear".
 
 Fit labels:
@@ -22,7 +22,7 @@ Both HeliX and the C framework drove particles the same way. The CPU writes one 
 birth time, velocity, life, size scale, spin, a random number). The GPU works out where the particle is from its age, one instanced quad
 a particle, one draw an emitter. `wgrender-c/` is where it started and HeliX's `Emitter` is its port.
 
-| Effect | Where it was | What it does | Fit in helix-2.0 | In helix-2.0 already? |
+| Effect | Where it was | What it does | Fit in helix | In helix already? |
 |---|---|---|---|---|
 | Birth-record GPU emitter, 3D | `wgrender-c/include/wgr_emitter3d.h`, `wgrender-c/src/wgr_emitter.c`, `helix/src/helix/particle/Emitter.hx`, `helix/src/helix/graphics/shaders/particle3d.glsl` | Many camera-facing quads from one texture, placed on the GPU from age, up to 65,536 alive with newer ones replacing the oldest. | render, built in (an emitter class over instanced billboards), or a library of its own: unclear | no |
 | Birth-record emitter, 2D | `wgrender-c/include/wgr_emitter2d.h`, `helix/src/helix/render2d/Particles2D.hx` | The same emitter in stage pixels, drawn with the 2D members in layer order. | render, built in, drawn through `Batch2D` | no |
@@ -46,9 +46,9 @@ a particle, one draw an emitter. `wgrender-c/` is where it started and HeliX's `
 ## Material shaders
 
 HeliX's were surface shaders over its stage's shading, packed with `ShaderPacker`. The C framework's were custom materials against
-`wgr.glsl`. In helix-2.0 a program's shader is a fragment stage with `Material3D.shaderValues`, using `lighting.glsl` and `material.glsl`.
+`wgr.glsl`. In helix a program's shader is a fragment stage with `Material3D.shaderValues`, using `lighting.glsl` and `material.glsl`.
 
-| Effect | Where it was | What it does | Fit in helix-2.0 | In helix-2.0 already? |
+| Effect | Where it was | What it does | Fit in helix | In helix already? |
 |---|---|---|---|---|
 | Toon | `helix/src/helix/shader/toon.glsl`, `wgrender-c/examples/shaders/toon.glsl` | Each light's lambert term quantized to N bands, the unlit side held at a shadow color. HeliX's bands its shadow term too, so shadows band with the light. | raylib, shader or example, or render, include (a banding helper in `lighting.glsl`) | no |
 | Rim light | `helix/src/helix/shader/Rim.hx`, `wgrender-c/examples/shaders/toon.glsl` | A color added by `pow(1 - dot(n, v), power)`, brightest at grazing angles. In HeliX it is a field on every material, off until set. | render, include | no |
@@ -65,7 +65,7 @@ HeliX's were surface shaders over its stage's shading, packed with `ShaderPacker
 HeliX's `ModelPass3D` draws a model again after the stage's opaque models, with its own flat shader, static or skinned, instanced like
 the model. The C framework had no model passes.
 
-| Effect | Where it was | What it does | Fit in helix-2.0 | In helix-2.0 already? |
+| Effect | Where it was | What it does | Fit in helix | In helix already? |
 |---|---|---|---|---|
 | Outline | `helix/src/helix/shader/Outline.hx`, `helix/src/helix/render3d/ModelPass3D.hx`, `Mesh3D.passVertices` | Draws the model again pushed out along its normals by a width in world units with front faces culled, so the far side of the shell shows as a band. The normals are averaged over every vertex at the same position, so a low-poly model's hard edges (split vertices) do not crack the shell. A cube's flat faces move out less than the width, by .58 of it. | render, built in (a pass in `Batch3D`) or example only. Keep the averaged normals. | no |
 | Silhouette | `helix/src/helix/shader/Silhouette.hx` | Draws the model's shape in a flat blended color only where something nearer hides it (depth greater), before the model itself, so its own layered parts never hide it. | as Outline | no |
@@ -76,7 +76,7 @@ the model. The C framework had no model passes.
 HeliX's were sprite shaders, drawn through `Node2D.effect`, `Batch2D.effect` or a 3D sprite. They read `helix_region_texel_at` so an atlas
 neighbor never leaks in.
 
-| Effect | Where it was | What it does | Fit in helix-2.0 | In helix-2.0 already? |
+| Effect | Where it was | What it does | Fit in helix | In helix already? |
 |---|---|---|---|---|
 | Sprite outline | `helix/src/helix/shader/sprite_outline.glsl`, `wgrender-c/examples/shaders/sprite_fx.glsl` | Eight reads around each pixel (sides and diagonals), only inside the sprite's region, drawing a color where the sprite is see-through next to an opaque texel. The C one used 8 reads on a circle and a hard 0.5 alpha test. | raylib, shader or example | no. A program's `Batch2D` shader is possible: unclear if its sprites keep their region. |
 | Sprite flash | `helix/src/helix/shader/sprite_flash.glsl` | A color mixed over the sprite's, alpha kept. | raylib, shader or example | no |
@@ -89,10 +89,10 @@ neighbor never leaks in.
 
 ## Screen effects
 
-HeliX's ran in a `PostProcess` chain on sRGB or HDR frames. In helix-2.0 `PostProcess` runs linear effects, then the resolve (exposure and
+HeliX's ran in a `PostProcess` chain on sRGB or HDR frames. In helix `PostProcess` runs linear effects, then the resolve (exposure and
 tone mapping), then display effects.
 
-| Effect | Where it was | What it does | Fit in helix-2.0 | In helix-2.0 already? |
+| Effect | Where it was | What it does | Fit in helix | In helix already? |
 |---|---|---|---|---|
 | Bloom | `helix/src/helix/shader/bloom.glsl` | Light past a threshold with a soft knee, a 13-tap filter down a chain (Jimenez's, each group of four weighted by brightness so a lone texel does not flicker), a 3 x 3 tent filter back up. | render, effect class | yes: `libs/render/src/helix/render/effects/BloomEffect.hx` |
 | Blur | `helix/src/helix/shader/blur.glsl` | Gaussian in two passes, 17 taps, at a fraction of the frame's size, taps written out (no indexed array) for mobile compilers. | render, effect class | no |
@@ -111,7 +111,7 @@ tone mapping), then display effects.
 
 ## Ground and world effects
 
-| Effect | Where it was | What it does | Fit in helix-2.0 | In helix-2.0 already? |
+| Effect | Where it was | What it does | Fit in helix | In helix already? |
 |---|---|---|---|---|
 | Ground ring, selection, range | `helix/src/helix/shader/sprite_ring.glsl` | See Sprite ring. A selection under a unit, a target on the ground, a spell's reach. | as Sprite ring | no |
 | Decals, 3D | `helix/src/helix/render3d/Decals3D.hx`, `helix/src/helix/decal/DecalPool.hx` | A fixed pool of flat sprites. Once full, the oldest is reused, the next ones to go fade by how soon, and with a life they fade out on the game's clock (so a pause holds them). `placeOn` puts one on a pick hit and the node carries it. Lifted a little so it does not flicker into the surface. Skid marks, footsteps, scorch, bullet holes. | render, built in or example only | no |

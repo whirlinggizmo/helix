@@ -5,7 +5,7 @@ import helix.render2d.Stage;
 import helix.texture.Texture2D;
 import helix.texture.Textures;
 
-/** raylib's textures_bunnymark on HeliX, a Sprite2D per bunny (count=N or ramp=1), for helix-2.0's tools/compare/compare.py, which builds it
+/** raylib's textures_bunnymark on HeliX, a Sprite2D per bunny (count=N or ramp=1), for helix's tools/compare/compare.py, which builds it
 	as a HeliX example. */
 class App extends helix.App {
 	static var seed = 0x92D68CA2;

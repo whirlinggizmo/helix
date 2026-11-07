@@ -1,6 +1,6 @@
 # The plan
 
-helix-2.0 is several haxelibs in one repository, built from the bottom up: the libraries, which know no consumer, and the engines over
+helix is several haxelibs in one repository, built from the bottom up: the libraries, which know no consumer, and the engines over
 them, which may own the loop and keep statics.
 
 ## Layers

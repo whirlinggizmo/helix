@@ -21,7 +21,7 @@ var ray = camera.computeRay(pointerX / width * 2 - 1, 1 - pointerY / height * 2,
 var hit = ray.intersectMesh(ball, placement, new RayHit3D());
 ```
 
-The API reference is [docs/api/geometry.md](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/api/geometry.md). Its tests, in `tests/`,
+The API reference is [docs/api/geometry.md](https://github.com/whirlinggizmo/helix/blob/main/docs/api/geometry.md). Its tests, in `tests/`,
 build with `-lib helix-geometry` alone.
 
 ## Depends on

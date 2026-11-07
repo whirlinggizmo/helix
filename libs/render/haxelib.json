@@ -1,6 +1,6 @@
 {
 	"name": "helix-render",
-	"url": "https://github.com/whirlinggizmo/helix-2.0",
+	"url": "https://github.com/whirlinggizmo/helix",
 	"license": "BSD",
 	"tags": ["game", "2d", "3d", "rendering", "js", "cpp"],
 	"description": "Drawing over helix-platform and helix-services: 2D and 3D batches, draw lists, text, materials, lights, shadows, environment maps and post-processing.",

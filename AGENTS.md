@@ -1,6 +1,6 @@
-# Agent instructions: helix-2.0
+# Agent instructions: helix
 
-helix-2.0 is a Haxe game framework built as layered libraries: Haxe → JS for the browser, Haxe → hxcpp/C++ natively. Read
+helix is a Haxe game framework built as layered libraries: Haxe → JS for the browser, Haxe → hxcpp/C++ natively. Read
 [GOALS.md](GOALS.md), then [docs/PLAN.md](docs/PLAN.md) and [docs/CONVENTIONS.md](docs/CONVENTIONS.md) before changing code; what's
 next is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
@@ -11,7 +11,7 @@ next is in [docs/ROADMAP.md](docs/ROADMAP.md).
   from "the engine does it this way", ask instead what a program using them directly would construct. The layers above (the runner, an
   engine wearing a known API) may own the loop, and build a feature when its API is first touched where the API they match requires it
   (DECISIONS 15).
-- **HeliX is prior art.** [HeliX](https://github.com/whirlinggizmo/helix), and the earlier C frameworks (`../wgrender-c`, `../libwgf`),
+- **HeliX is prior art.** [HeliX](https://github.com/whirlinggizmo/helix-legacy), the framework this repository took its name from (`../helix-legacy`, and "HeliX" in these docs always means it), and the earlier C frameworks (`../wgrender-c`, `../libwgf`),
   are read for how they did a thing and the platform quirks they found. Useful code may be cribbed, refactored to this library's
   conventions and needs, or this library's own written instead; HeliX's design (its runner, statics, profiles) is never a reason for
   this library's shape. Don't name libwgf in code or docs.

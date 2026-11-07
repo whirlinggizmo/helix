@@ -444,7 +444,7 @@ def generate(check=False):
     # Each type's View Source on GitHub, at the commit described, so the code linked is the code documented.
     described=subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
     commit=described.stdout.strip() if described.returncode==0 else 'main'
-    subprocess.run(['haxelib','run','dox','-i',str(OUT/'xml/api.xml'),'-o',str(OUT),'-in','^helix','-D','source-path',f'https://github.com/whirlinggizmo/helix-2.0/blob/{commit}/',
+    subprocess.run(['haxelib','run','dox','-i',str(OUT/'xml/api.xml'),'-o',str(OUT),'-in','^helix','-D','source-path',f'https://github.com/whirlinggizmo/helix/blob/{commit}/',
         '--title','API reference','-D','description',TARGETS],cwd=ROOT,env=env,check=True)
     print('API reference:',OUT/'index.html','and',DOCS)
 

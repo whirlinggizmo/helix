@@ -38,5 +38,5 @@ binary stripped.
 
 Found, never fetched, and a contender whose toolchain is missing is skipped with one line: Emscripten (`EMSDK`, `HELIX_EMSDK` or
 `~/toolchains/emsdk`), Godot's binary (`HELIX_GODOT`, `godot` on PATH, or `~/toolchains/godot/Godot_v<version>-stable_linux.x86_64`),
-HeliX's checkout (`HELIX1`, or `../helix`), npm for three.js and esbuild (installed into `build/compare/three/npm` at the versions
+HeliX's checkout (`HELIX1`, or `../helix-legacy`), npm for three.js and esbuild (installed into `build/compare/three/npm` at the versions
 `dependencies.json`'s `compare` entry pins), `brotli` for the brotli sizes.

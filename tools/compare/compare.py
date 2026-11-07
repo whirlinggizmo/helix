@@ -10,7 +10,7 @@ The programs are bunnymark and robots, both when none is named. The contenders a
 none is named; each is built into build/compare/<contender>/ under build/.lock, with the assets taken from raylib's own release (the bunny's
 texture, the robot). A contender whose toolchain this machine lacks is skipped with one line saying so: raylib-c's page needs Emscripten
 (EMSDK, or HELIX_EMSDK, or ~/toolchains/emsdk), godot needs its binary (HELIX_GODOT, or godot on PATH, or ~/toolchains/godot/Godot_v<version>-stable_linux.x86_64),
-three needs npm, lime needs Lime installed in the user's haxelib at the pinned version (its own BunnyMark demo's renderer), helix1 needs HeliX's checkout (HELIX1, or ../helix beside this one). The versions are dependencies.json's compare entry.
+three needs npm, lime needs Lime installed in the user's haxelib at the pinned version (its own BunnyMark demo's renderer), helix1 needs HeliX's checkout (HELIX1, or ../helix-legacy beside this one). The versions are dependencies.json's compare entry.
 
 --page runs the pages (in headless Chromium with its frame rate cap lifted, on ANGLE over Vulkan, or over GL with --backend gl) and --native
 the native programs (on a private display with software GL, whose times aren't representative, or with --desktop in windows on $DISPLAY,
@@ -114,7 +114,7 @@ def godot_binary():
 
 def helix1_checkout():
     """HeliX's checkout, or None."""
-    named = Path(os.environ.get('HELIX1') or ROOT.parent / 'helix')
+    named = Path(os.environ.get('HELIX1') or ROOT.parent / 'helix-legacy')
     return named if (named / 'tools/example.py').is_file() else None
 
 
@@ -327,7 +327,7 @@ def build_helix1():
     builds, and taken out again), its site and assets into build/compare/helix1."""
     checkout = helix1_checkout()
     if checkout is None:
-        say('helix1 skipped: no HeliX checkout (HELIX1, or ../helix)')
+        say('helix1 skipped: no HeliX checkout (HELIX1, or ../helix-legacy)')
         return False
     example = checkout / 'examples/bunnymark'
     placed = not example.exists()
@@ -555,7 +555,7 @@ def versions_of(contenders):
     """What each contender is, for its rows: its version."""
     versions = pins()
     commit = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
-    return {'helix-raylib': f'helix-2.0 {commit}', 'raylib-c': f'raylib {RAYLIB}', 'godot': f'Godot {versions["godot"]}', 'three': f'three.js {versions["three"]}', 'lime': f'Lime {versions["lime"]}',
+    return {'helix-raylib': f'helix {commit}', 'raylib-c': f'raylib {RAYLIB}', 'godot': f'Godot {versions["godot"]}', 'three': f'three.js {versions["three"]}', 'lime': f'Lime {versions["lime"]}',
             'helix1': 'HeliX'}
 
 

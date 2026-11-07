@@ -60,7 +60,7 @@ def desktop(steps, env):
 def script(directory, archive, steps, env, keep, on_desktop):
     """The .bat run there: unpack, each step (in the desktop session with on_desktop), clean up, and exit with whether every step passed."""
     lines = ['@echo off',
-             'rem written by helix-2.0 tools/remote_windows.py; it deletes itself',
+             'rem written by helix tools/remote_windows.py; it deletes itself',
              f'set ROOT=%USERPROFILE%\\{directory}',
              'set FAILED=0',
              'if exist "%ROOT%" rmdir /s /q "%ROOT%"',

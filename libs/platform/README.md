@@ -43,7 +43,7 @@ SDL3: `HELIX_SDL3_LIBRARY` names the library.
 
 A shader is standard GLSL 450, a `.vert` and a `.frag` file. `ShaderCompiler.compile("x.vert", "x.frag")`, in `helix.platform.tools`,
 compiles it while the program builds, into the `ShaderSource` that `IGraphics.createShader` takes on every adapter. What a shader may
-declare is in [docs/PLATFORM.md](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/PLATFORM.md).
+declare is in [docs/PLATFORM.md](https://github.com/whirlinggizmo/helix/blob/main/docs/PLATFORM.md).
 
 ## Examples
 
@@ -63,13 +63,13 @@ Its tests are in `tests/`.
 
 ## Documents
 
-- [docs/api/platform.md](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/api/platform.md) and
-  [docs/api/platform-adapters.md](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/api/platform-adapters.md): the API
+- [docs/api/platform.md](https://github.com/whirlinggizmo/helix/blob/main/docs/api/platform.md) and
+  [docs/api/platform-adapters.md](https://github.com/whirlinggizmo/helix/blob/main/docs/api/platform-adapters.md): the API
   reference, the contracts and the adapters.
-- [docs/PLATFORM.md](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/PLATFORM.md): each contract, what it means and what each adapter does.
-- [docs/ARCHITECTURE.md](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/ARCHITECTURE.md): contracts, adapters and what belongs in each.
-- [docs/CONVENTIONS.md](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/CONVENTIONS.md): names, units, layout and doc comments.
-- [GOALS.md](https://github.com/whirlinggizmo/helix-2.0/blob/main/GOALS.md): what the libraries are for.
+- [docs/PLATFORM.md](https://github.com/whirlinggizmo/helix/blob/main/docs/PLATFORM.md): each contract, what it means and what each adapter does.
+- [docs/ARCHITECTURE.md](https://github.com/whirlinggizmo/helix/blob/main/docs/ARCHITECTURE.md): contracts, adapters and what belongs in each.
+- [docs/CONVENTIONS.md](https://github.com/whirlinggizmo/helix/blob/main/docs/CONVENTIONS.md): names, units, layout and doc comments.
+- [GOALS.md](https://github.com/whirlinggizmo/helix/blob/main/GOALS.md): what the libraries are for.
 
 ## Credit
 

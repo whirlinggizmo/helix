@@ -1,6 +1,6 @@
 {
 	"name": "helix-formats",
-	"url": "https://github.com/whirlinggizmo/helix-2.0",
+	"url": "https://github.com/whirlinggizmo/helix",
 	"license": "BSD",
 	"tags": ["gltf", "glb", "bmfont", "truetype", "png", "qoi", "deflate", "wav", "ogg", "mp3", "flac", "parser", "js", "cpp"],
 	"description": "File formats read into plain data, and written from it: glTF 2.0 and GLB models, AngelCode BMFont text fonts, the tables of TrueType and OpenType fonts; PNG and QOI images and DEFLATE compression written as raylib 5.5 writes them; WAV read and written as raylib 5.5 does; a sound file's length from its first and last bytes. Pure Haxe: bytes or text in, data out; no I/O. Depends on helix-math.",

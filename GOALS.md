@@ -1,6 +1,6 @@
 # Goals
 
-What helix-2.0 is for. When a choice is unclear, these decide it.
+What helix is for. When a choice is unclear, these decide it.
 
 1. **An API a developer or an agent can build with from the API alone, and can guess.** One they already know beats one they must
    learn; names follow rules, so the next one can be predicted from the last. If something has to be explained in a README or a guide

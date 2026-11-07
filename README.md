@@ -1,4 +1,4 @@
-# helix-2.0
+# helix
 
 Write a game once in Haxe and run it in a browser page or as a native program. The libraries are small and plain: a 2D bunnymark is a 44 KB
 gzip download, a whole game about 130 KB. On top of them sits raylib's API, so anyone who knows raylib, or any model trained on it, can

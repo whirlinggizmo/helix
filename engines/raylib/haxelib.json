@@ -1,6 +1,6 @@
 {
 	"name": "helix-raylib",
-	"url": "https://github.com/whirlinggizmo/helix-2.0",
+	"url": "https://github.com/whirlinggizmo/helix",
 	"license": "BSD",
 	"tags": ["game", "raylib", "2d", "js", "cpp"],
 	"description": "raylib's API over helix-platform and helix-services: a program written in raylib runs in a page and natively.",

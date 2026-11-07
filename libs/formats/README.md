@@ -51,7 +51,7 @@ haxelib dev helix-formats <checkout>/libs/formats
 haxelib dev helix-math <checkout>/libs/math
 ```
 
-The API reference is [docs/api/](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/api/README.md) (the `helix.formats`
+The API reference is [docs/api/](https://github.com/whirlinggizmo/helix/blob/main/docs/api/README.md) (the `helix.formats`
 packages). Its tests, in `tests/`, build with `-lib helix-formats` alone, from this repository's root: `TrueTypeTests` embeds the font
 in `tests/assets` as it compiles, and `GifTests` the GIF files in `tests/assets/gif`.
 

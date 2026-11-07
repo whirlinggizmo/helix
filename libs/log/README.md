@@ -13,5 +13,5 @@ Log.setTagLevel("physics", Warning);           // that tag's debug and info quie
 Log.listen((level, line) -> overlay.add(line)); // each line, for an in-program console
 ```
 
-The API reference is [docs/api/log.md](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/api/log.md). Its tests, in `tests/`,
+The API reference is [docs/api/log.md](https://github.com/whirlinggizmo/helix/blob/main/docs/api/log.md). Its tests, in `tests/`,
 build with `-lib helix-log` alone.

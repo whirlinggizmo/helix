@@ -1,6 +1,6 @@
 {
 	"name": "helix-services",
-	"url": "https://github.com/whirlinggizmo/helix-2.0",
+	"url": "https://github.com/whirlinggizmo/helix",
 	"license": "BSD",
 	"tags": ["game", "time", "input", "assets", "audio", "saves", "js", "cpp"],
 	"description": "What a game program needs over helix-platform: time, input, assets, audio, images, saves and config, each constructed on its own.",
