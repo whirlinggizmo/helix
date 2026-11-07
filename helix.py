@@ -22,7 +22,9 @@ def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check
 
 def result(args,**kw):
     """The JSON a test prints last, its passed asserted."""
-    output=subprocess.check_output(args,cwd=ROOT,text=True,encoding='utf-8',**kw)
+    done=subprocess.run(args,cwd=ROOT,stdout=subprocess.PIPE,text=True,encoding='utf-8',**kw);output=done.stdout
+    # A test that dies prints its error where its JSON would be, so it's shown before the failure.
+    if done.returncode:sys.exit(f'{output}\n{args[0]} exited {done.returncode}')
     value=json.loads(output[output.index('{'):]);assert value['passed'],output
     return value
 
