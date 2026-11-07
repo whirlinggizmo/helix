@@ -64,7 +64,7 @@ private class SmallDeflate {
 	static inline final MIN_MATCH = 4;
 	static inline final BLK_MAX = 256 * 1024;
 	static inline final SYM_MAX = 288;
-	static inline final OFF_MAX = 32;
+	static inline final OFF_SYM_MAX = 32;
 	static inline final PRE_MAX = 19;
 	static inline final NIL = -1;
 	static inline final MAX_MATCH = 258;
@@ -119,11 +119,11 @@ private class SmallDeflate {
 	final seqLen = new Vector<Int>(BLK_MAX + 1, 0);
 	var seqCnt = 0;
 	final freqLit = new Vector<Int>(SYM_MAX, 0);
-	final freqOff = new Vector<Int>(OFF_MAX, 0);
+	final freqOff = new Vector<Int>(OFF_SYM_MAX, 0);
 	final wordLit = new Vector<Int>(SYM_MAX, 0);
-	final wordOff = new Vector<Int>(OFF_MAX, 0);
+	final wordOff = new Vector<Int>(OFF_SYM_MAX, 0);
 	final lenLit = new Vector<Int>(SYM_MAX, 0);
-	final lenOff = new Vector<Int>(OFF_MAX, 0);
+	final lenOff = new Vector<Int>(OFF_SYM_MAX, 0);
 	// The last match found, sdefl_fnd's struct sdefl_match.
 	var matchOff = 0;
 	var matchLen = 0;
@@ -344,14 +344,14 @@ private class SmallDeflate {
 				break;
 			symLit--;
 		}
-		symOff = OFF_MAX;
+		symOff = OFF_SYM_MAX;
 		while (symOff > 1) {
 			if (lenOff[symOff - 1] != 0)
 				break;
 			symOff--;
 		}
 		var total = symLit + symOff;
-		var lens = new Vector<Int>(SYM_MAX + OFF_MAX, 0);
+		var lens = new Vector<Int>(SYM_MAX + OFF_SYM_MAX, 0);
 		for (i in 0...symLit)
 			lens[i] = lenLit[i];
 		for (i in 0...symOff)
@@ -434,12 +434,12 @@ private class SmallDeflate {
 		var codes = new Vector<Int>(PRE_MAX, 0);
 		var lens = new Vector<Int>(PRE_MAX, 0);
 		var freqs = new Vector<Int>(PRE_MAX, 0);
-		var items = new Vector<Int>(SYM_MAX + OFF_MAX, 0);
+		var items = new Vector<Int>(SYM_MAX + OFF_SYM_MAX, 0);
 
 		// The Huffman codes.
 		freqLit[EOB]++;
 		huff(lenLit, wordLit, freqLit, SYM_MAX, LIT_LEN_CODES);
-		huff(lenOff, wordOff, freqOff, OFF_MAX, OFF_CODES);
+		huff(lenOff, wordOff, freqOff, OFF_SYM_MAX, OFF_CODES);
 		precode(freqs, items);
 		huff(lens, codes, freqs, PRE_MAX, PRE_CODES);
 		var itemCnt = PRE_MAX;
@@ -501,7 +501,7 @@ private class SmallDeflate {
 		}
 		for (i in 0...SYM_MAX)
 			freqLit[i] = 0;
-		for (i in 0...OFF_MAX)
+		for (i in 0...OFF_SYM_MAX)
 			freqOff[i] = 0;
 		seqCnt = 0;
 	}
