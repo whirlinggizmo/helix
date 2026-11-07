@@ -22,7 +22,7 @@ typedef Request = {
 	final ?expected:String;
 }
 
-/** Checks helix-platform's window requests against the contract, with the library alone: each answers once, at a later `IEvents.poll`
+/** Checks helix-platform's window requests against the interface, with the library alone: each answers once, at a later `IEvents.poll`
 	and never during its call, with `done` once the window reflects it or `failed` and a reason; a request refused before it asks returns
 	false and answers nothing. What a page can't do fails and what it can is done; natively, what the window manager does is its own, so
 	each answer is listed (`<request>: done` or `failed: <reason>`) as what this desktop honors. The mouse's lock and the clipboard

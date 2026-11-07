@@ -6,12 +6,12 @@ reaches an engine.
      (comments and strings aside): not one above it, nor one beside it (math and log know nothing of each other, nor log and platform, nor formats and log).
   2. A library's files declare only packages under the roots it owns; no other library declares a package under them.
   A library's tests and examples (TESTS) are held to rule 1 too, as they build with that library alone.
-  3. In helix-platform, contracts don't know each other (docs/PLATFORM.md): a contract's files are its interface, the types in
-     helix.platform it reaches, and its adapters (adapters/<contract>/); none names another contract's. Anything else (adapters/shared/, a
-     type no contract reaches) is common, and may name at most one contract, whose it then is. A shared interface (SHARED) passes
-     between contracts, extended (IPollable) or given by one and taken by another (IDecodedImage): no contract's, and naming no other
-     type in helix.platform. A device (DEVICES) is built over another contract,
-     the events: it and its adapters may name that contract's types and adapters too, and nothing else of another's.
+  3. In helix-platform, interfaces don't know each other (docs/PLATFORM.md): an interface's files are its interface, the types in
+     helix.platform it reaches, and its adapters (adapters/<interface>/); none names another interface's. Anything else (adapters/shared/, a
+     type no interface reaches) is common, and may name at most one interface, whose it then is. A shared interface (SHARED) passes
+     between interfaces, extended (IPollable) or given by one and taken by another (IDecodedImage): no interface's, and naming no other
+     type in helix.platform. A device (DEVICES) is built over another interface,
+     the events: it and its adapters may name that interface's types and adapters too, and nothing else of another's.
   4. A library (libs/<name>) knows no consumer: nothing in it reaches an engine (engines/<name>), which may own the loop and keep
      statics. Beyond rule 1's packages, its build files and code (comments aside) name no engine's haxelib and no path into engines/.
      Every haxelib.json under libs/ and engines/ is a layer here, named as LAYERS names it and depending only on what it's built on.
@@ -43,10 +43,10 @@ LAYERS = [
 # Each library's tests and examples, held to its layer too: they build with that library alone.
 TESTS = {'helix-math': ['libs/math/tests'], 'helix-geometry': ['libs/geometry/tests'], 'helix-log': ['libs/log/tests'], 'helix-formats': ['libs/formats/tests'], 'helix-platform': ['libs/platform/tests', 'libs/platform/examples'],
          'helix-services': ['libs/services/tests'], 'helix-render': ['libs/render/tests', 'libs/render/examples'], 'helix-raylib': ['engines/raylib/examples']}
-# The interfaces in helix.platform shared between contracts (rule 3): IPollable, the poll a program calls each frame, and IDecodedImage,
+# The interfaces in helix.platform shared between interfaces (rule 3): IPollable, the poll a program calls each frame, and IDecodedImage,
 # an image the decoder gives for the graphics to upload.
 SHARED = {'IPollable', 'IDecodedImage'}
-# The contracts built over another (rule 3): each device's adapters add their events to the events adapter of their API.
+# The interfaces built over another (rule 3): each device's adapters add their events to the events adapter of their API.
 DEVICES = {'keyboard': 'events', 'mouse': 'events', 'touch': 'events', 'gamepads': 'events', 'tilt': 'events'}
 
 PACKAGE = re.compile(r'^package\s+([\w.]+)\s*;', re.M)
@@ -71,14 +71,14 @@ def owner(name):
     return -1
 
 
-def contracts():
+def interfaces():
     """Violations of rule 3 in libs/platform/src/helix/platform."""
     base = ROOT / 'libs/platform/src/helix/platform'
     top = {p.stem: p for p in base.glob('*.hx')}
     texts = {p: code(p.read_text(encoding='utf-8')) for p in base.rglob('*.hx')}
 
     def named(path):
-        """The files in helix.platform that path names: types, adapter directories (as a contract's name) and shared files."""
+        """The files in helix.platform that path names: types, adapter directories (as an interface's name) and shared files."""
         text = texts[path]
         found = {top[n] for n in re.findall(r'\bhelix\.platform\.([A-Z]\w*)', text) if n in top}
         if path.parent == base:
@@ -93,13 +93,13 @@ def contracts():
     owner = {}
     for name, path in top.items():
         if re.fullmatch(r'I[A-Z]\w*', name) and name not in SHARED:
-            contract, todo = name[1:].lower(), [path]
+            interface, todo = name[1:].lower(), [path]
             while todo:
                 for t in named(todo.pop()):
                     if isinstance(t, Path) and t.parent == base and t not in owner and t.stem not in SHARED:
-                        owner[t] = contract
+                        owner[t] = interface
                         todo.append(t)
-            owner[path] = contract
+            owner[path] = interface
     for path in texts:
         parts = path.relative_to(base).parts
         if parts[0] == 'adapters' and parts[1] != 'shared':
@@ -108,7 +108,7 @@ def contracts():
     known = {}
 
     def knows(item):
-        """The contracts item belongs to or, if common, names."""
+        """The interfaces item belongs to or, if common, names."""
         if isinstance(item, str):
             return {item}
         if item in owner:
@@ -130,7 +130,7 @@ def contracts():
                 if others:
                     violations.append(f'{where}: {owner[path]} names {'adapters/' + t if isinstance(t, str) else t.stem}, {", ".join(sorted(others))}\'s')
         elif len(knows(path)) > 1:
-            violations.append(f'{where}: common to contracts, but names {", ".join(sorted(knows(path)))}')
+            violations.append(f'{where}: common to interfaces, but names {", ".join(sorted(knows(path)))}')
     return violations
 
 
@@ -207,7 +207,7 @@ def main():
                     elif other is not None and other not in allowed:
                         where = 'above it' if other > index else 'which it isn\'t built on'
                         violations.append(f'{path.relative_to(ROOT)}:{number}: {library} names {name}, in {LAYERS[other][0]}, {where}')
-    violations += contracts()
+    violations += interfaces()
     violations += reaches()
     for v in violations:
         print(v)

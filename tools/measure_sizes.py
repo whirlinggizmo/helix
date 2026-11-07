@@ -100,7 +100,7 @@ def vlq(text):
 
 
 def package(source):
-    """The package a source file's bytes are counted under: the platform's by contract (its adapters under their contract), the services'
+    """The package a source file's bytes are counted under: the platform's by interface (its adapters under their interface), the services'
     by service, helix-render's by source file (its effects by package), helix-raylib's by source file (raylib's modules, R*, and its
     internals; its facade and structs as raylib), another library's by
     its name, Haxe's standard library, the program's."""
@@ -248,11 +248,11 @@ INTRODUCTIONS = {
     'platform': ('helix-platform',
                  'Programs on helix-platform alone (`libs/platform/tests/sizes/`), each constructing only the adapters it uses and adding one to '
                  'the one before: what a feature costs is its row\'s increment, gzip; brotli in brackets. The adapters\' bytes are counted '
-                 'under their contract.'),
+                 'under their interface.'),
     'services': ('helix-services',
                  'Programs on helix-services and what it sits on (`libs/services/tests/sizes/`), each adding one service, with the platform\'s '
                  'adapters it needs, to the one before, from a window cleared each frame: what a service costs is its row\'s increment, gzip; '
-                 'brotli in brackets. Each service\'s bytes are counted under its package; the adapters\' under their contract.'),
+                 'brotli in brackets. Each service\'s bytes are counted under its package; the adapters\' under their interface.'),
     'render': ('helix-render',
                'Programs on helix-render and what it sits on (`libs/render/tests/sizes/`), each adding one feature to the one before, from the '
                'renderer\'s frame clearing the screen: what a feature costs is its row\'s increment, gzip; brotli in brackets. Its first '

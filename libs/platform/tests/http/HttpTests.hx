@@ -1,7 +1,7 @@
 import haxe.io.Bytes;
 import helix.platform.IHttp;
 
-/** Checks helix-platform's HTTP client against its contract over a test server that ends bodies early and stalls: a body as long as its
+/** Checks helix-platform's HTTP client against its interface over a test server that ends bodies early and stalls: a body as long as its
 	Content-Length and a chunked body each call `done` with every byte, as do seven bodies at once sent slowly in parts, never a second
 	apart (in a page the seventh waits behind the browser's six connections to a server). A body the server closes before its
 	Content-Length (plain or gzip), and a chunked body it closes mid-chunk, each call `failed`, never `done`: `done` means the whole body

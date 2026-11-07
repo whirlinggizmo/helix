@@ -2,24 +2,24 @@
 """Checks the adapter rule (docs/ARCHITECTURE.md) where it can be checked mechanically:
 
   1. An adapter (libs/platform/src/helix/platform/adapters/) names nothing above the platform: no helix package but helix.platform, and
-     helix.math and helix.formats, which the platform is built on. It implements a platform contract and nothing else.
+     helix.math and helix.formats, which the platform is built on. It implements a platform interface and nothing else.
   2. The platform's own code (libs/platform/src/helix/platform/ outside adapters/, macros/ and tools/) uses no platform API (js.html,
      js.Browser, js.Syntax, js.lib, sys., cpp.) and no target conditional (#if js, cpp, sys, hl). The macros (macros/) run in the
      compiler, not on a target, and the tools (tools/: the shader compiler) in the compiler or Haxe's interpreter, never in a program.
   3. An adapter's C includes no generated shader header: programs reach adapters as data.
-  4. Adapters of the same contract don't copy code: no run of DUPLICATE_LINES or more identical (normalized) lines in two adapters of
+  4. Adapters of the same interface don't copy code: no run of DUPLICATE_LINES or more identical (normalized) lines in two adapters of
      one area. A call into an adapter's own extern bridge (its internal/*Bridge) is its own, as it reaches that adapter's C: two thin
      adapters over shared code in adapters/shared/ (the native hosts over NativeHost) differ in what they call. The same logic written
      differently isn't caught here; review is for that.
-  5. Each adapter directory (adapters/<contract>/) is named for its contract: some class in it implements I<Contract>, the directory's
+  5. Each adapter directory (adapters/<interface>/) is named for its interface: some class in it implements I<Interface>, the directory's
      name being the interface's without the I, lowercased.
-  6. Each API directory (adapters/<contract>/<api>/) holds the adapter <Api><Contract>Adapter implementing I<Contract>, words the API's
-     name ends with and the contract's starts with written once (webaudio + Audio is WebAudioAdapter, haxehttp + Http HaxeHttpAdapter).
+  6. Each API directory (adapters/<interface>/<api>/) holds the adapter <Api><Interface>Adapter implementing I<Interface>, words the API's
+     name ends with and the interface's starts with written once (webaudio + Audio is WebAudioAdapter, haxehttp + Http HaxeHttpAdapter).
   7. What an adopter of the platform writes against is visible: the adapter classes and what sits beside them in their API directory (an
      options class, an enum it takes) are not @:noCompletion, so the language server offers them. What no caller names is hidden: every type in an adapter's internal/ and in adapters/shared/ is @:noCompletion, so the
      language server doesn't offer it and the API reference leaves it out (dox and tools/gen_apidoc.py skip what's marked).
-  8. An adapter class makes public only its constructor and the members of the interfaces it implements (its contract, or a shared
-     interface such as IDecodedImage): anything else a caller needs belongs in the contract. Extern bridges (internal/) are the C's and exempt, as is an override, which the base class it extends made
+  8. An adapter class makes public only its constructor and the members of the interfaces it implements (its interface, or a shared
+     interface such as IDecodedImage): anything else a caller needs belongs in the interface. Extern bridges (internal/) are the C's and exempt, as is an override, which the base class it extends made
      public.
   9. An adapter's constructor takes nothing, or one <Adapter>Options: a @:structInit class in its own file beside the adapter
      (docs/CONVENTIONS.md), so every value is named at the call.
@@ -96,10 +96,10 @@ def duplicates(files):
     return found
 
 
-def adapter_name(api, contract):
-    """The lowercased class name an adapter for contract (I<Contract>, given without the I) in api/ must have: api, the contract without
+def adapter_name(api, interface):
+    """The lowercased class name an adapter for interface (I<Interface>, given without the I) in api/ must have: api, the interface without
     the words api already ends with, then 'adapter'."""
-    words = [w.lower() for w in re.findall(r'[A-Z][a-z0-9]*', contract)]
+    words = [w.lower() for w in re.findall(r'[A-Z][a-z0-9]*', interface)]
     for k in range(len(words), 0, -1):
         if api.endswith(''.join(words[:k])):
             return api + ''.join(words[k:]) + 'adapter'
@@ -132,22 +132,22 @@ def main():
             files = sorted(area.rglob(suffix))
             for a, la, b, lb in duplicates(files):
                 violations.append(('duplicate', area, la, f'{a.relative_to(ROOT)}:{la} repeats in {b.relative_to(ROOT)}:{lb}'))
-    # Each area is named for a contract one of its classes implements.
+    # Each area is named for an interface one of its classes implements.
     for area in areas:
-        contracts = {m.lower() for f in area.rglob('*.hx') for m in re.findall(r'\bimplements\s+(?:[\w.]+\.)?I(\w+)', f.read_text(encoding='utf-8'))}
-        if area.name not in contracts:
-            violations.append(('name', area, 0, f'no adapter in {area.name}/ implements I<{area.name}> (it implements {sorted(contracts)})'))
-    # Each API directory holds <Api><Contract>Adapter, its overlap written once.
+        interfaces = {m.lower() for f in area.rglob('*.hx') for m in re.findall(r'\bimplements\s+(?:[\w.]+\.)?I(\w+)', f.read_text(encoding='utf-8'))}
+        if area.name not in interfaces:
+            violations.append(('name', area, 0, f'no adapter in {area.name}/ implements I<{area.name}> (it implements {sorted(interfaces)})'))
+    # Each API directory holds <Api><Interface>Adapter, its overlap written once.
     for area in areas:
         for api in sorted(p for p in area.iterdir() if p.is_dir() and p.name != 'internal'):
             found = []
             for f in api.glob('*.hx'):
-                for name, contract in re.findall(r'\bclass\s+(\w+)[^{]*?\bimplements\s+(?:[\w.]+\.)?I(\w+)', f.read_text(encoding='utf-8')):
-                    if contract.lower() == area.name:
+                for name, interface in re.findall(r'\bclass\s+(\w+)[^{]*?\bimplements\s+(?:[\w.]+\.)?I(\w+)', f.read_text(encoding='utf-8')):
+                    if interface.lower() == area.name:
                         found.append(name)
-                        expected = adapter_name(api.name, contract)
+                        expected = adapter_name(api.name, interface)
                         if name.lower() != expected:
-                            violations.append(('name', f, 0, f'{name} implements I{contract} in {area.name}/{api.name}/: expected {expected} (any case)'))
+                            violations.append(('name', f, 0, f'{name} implements I{interface} in {area.name}/{api.name}/: expected {expected} (any case)'))
             if not found and any(api.glob('*.hx')):
                 violations.append(('name', api, 0, f'no class in {area.name}/{api.name}/ implements I<{area.name}>'))
     # Rule 7: what no caller names is hidden (@:noCompletion among the metadata lines right above each type); the adapter classes are shown.
@@ -168,7 +168,7 @@ def main():
                 violations.append(('hidden', path, number, f'{found.group(1)} is what an adopter constructs: take off its @:noCompletion'))
             elif not shown and not hidden:
                 violations.append(('hidden', path, number, f'{found.group(1)} is platform code: mark it @:noCompletion on the line above'))
-    # Rule 8: an adapter's public members are its contract's and its constructor.
+    # Rule 8: an adapter's public members are its interface's and its constructor.
     interfaces = {}
     for source in SOURCES:
         for f in source.rglob('I*.hx'):
@@ -179,18 +179,18 @@ def main():
         if 'internal' in path.parts:
             continue
         text = path.read_text(encoding='utf-8')
-        contracts = re.findall(r'\bimplements\s+(?:[\w.]+\.)?(I\w+)', text)
+        implemented = re.findall(r'\bimplements\s+(?:[\w.]+\.)?(I\w+)', text)
         bases = re.findall(r'\bextends\s+(?:[\w.]+\.)?(\w+)', text)
-        if not contracts and not bases:
+        if not implemented and not bases:
             continue
-        allowed = {'new'} | {name for c in contracts for name in interfaces.get(c, set())}
+        allowed = {'new'} | {name for c in implemented for name in interfaces.get(c, set())}
         for base in bases:
             for f in (ROOT / 'libs/platform/src').rglob(base + '.hx'):
                 allowed |= {name for c in re.findall(r'\bimplements\s+(?:[\w.]+\.)?(I\w+)', f.read_text(encoding='utf-8')) for name in interfaces.get(c, set())}
         for number, line in code_lines(path):
             m = re.match(r'\s*(?:@:[\w.]+(?:\([^)]*\))?\s*)*((?:override|inline|static|final)\s+)*public\s+(?:(?:override|inline|static|final)\s+)*(?:function|var|final)\s+(\w+)', line)
             if m and m.group(2) not in allowed and not re.search(r'\boverride\b', m.group(0)):
-                violations.append(('public', path, number, f'{m.group(2)} is public but not in its contract: move it into the contract, or make it private'))
+                violations.append(('public', path, number, f'{m.group(2)} is public but not in its interface: move it into the interface, or make it private'))
     # Rule 9: the constructor takes nothing, or one <Adapter>Options, a @:structInit class in its own file beside it.
     for area in areas:
         for api in sorted(p for p in area.iterdir() if p.is_dir() and p.name != 'internal'):

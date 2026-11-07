@@ -374,7 +374,7 @@ def markdown(xml,native=frozenset()):
         node=types[path];name=short(path);params=node.get('params','')
         header=name+(f'<{params.replace(":",", ")}>' if params else '')
         kind='interface' if node.get('interface')=='1' else {'class':'class','enum':'enum','typedef':'typedef','abstract':'abstract'}[node.tag]
-        # What it extends and implements, by name: a contract's base, an adapter's contract.
+        # What it extends and implements, by name: an interface's base, an adapter's interface.
         parents=''.join(f', {word} '+', '.join(f'`{short(e.get("path"))}`' for e in node.findall(word))
                         for word in ('extends','implements') if node.findall(word))
         # Its source, relative to its page: a link on GitHub and in a checkout alike.

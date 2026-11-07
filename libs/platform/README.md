@@ -1,9 +1,9 @@
 # helix-platform
 
-Provides access to hardware and OS functions via adapters and interfaces, in the browser and natively. Each device is a contract, an interface in
-`helix.platform`, and each API behind it is an adapter in `helix.platform.adapters.<contract>.<api>`, as the table names them. It has no policy of its own.
+Provides access to hardware and OS functions via adapters and interfaces. Each device is an interface in `helix.platform`, and each API
+behind it is an adapter in `helix.platform.adapters.<interface>.<api>`. Note that platform has no policy of its own.
 
-| Contract | What | Browser | Native |
+| Interface | Device | Browser Adapters | Native Adapters |
 |---|---|---|---|
 | `IGraphics` | The GPU | `graphics.webgl2.WebGl2GraphicsAdapter` | `graphics.sokol.SokolGraphicsAdapter` (GL 4.1), `graphics.sdl3gpu.Sdl3GpuGraphicsAdapter` (Vulkan, Direct3D 12, Metal) |
 | `IWindow` | The window | `window.dom.DomWindowAdapter` | `window.sdl3.Sdl3WindowAdapter` |
@@ -36,7 +36,7 @@ haxelib dev helix-math <checkout>/libs/math
 haxelib dev helix-formats <checkout>/libs/formats
 ```
 
-A program constructs one adapter for each contract it uses, for its target, and after that uses the contract alone. Native builds link
+A program constructs one adapter for each interface it uses, for its target, and after that uses the interface alone. Native builds link
 SDL3: `HELIX_SDL3_LIBRARY` names the library.
 
 ## Shaders
@@ -64,8 +64,8 @@ Its tests are in `tests/`.
 ## Documents
 
 - [api/](api/README.md): the API reference. The adapters are in [api/adapters.md](api/adapters.md).
-- [docs/PLATFORM.md](https://github.com/whirlinggizmo/helix/blob/main/docs/PLATFORM.md): each contract, what it means and what each adapter does.
-- [docs/ARCHITECTURE.md](https://github.com/whirlinggizmo/helix/blob/main/docs/ARCHITECTURE.md): contracts, adapters and what belongs in each.
+- [docs/PLATFORM.md](https://github.com/whirlinggizmo/helix/blob/main/docs/PLATFORM.md): each interface, what it means and what each adapter does.
+- [docs/ARCHITECTURE.md](https://github.com/whirlinggizmo/helix/blob/main/docs/ARCHITECTURE.md): interfaces, adapters and what belongs in each.
 - [docs/CONVENTIONS.md](https://github.com/whirlinggizmo/helix/blob/main/docs/CONVENTIONS.md): names, units, layout and doc comments.
 - [GOALS.md](https://github.com/whirlinggizmo/helix/blob/main/GOALS.md): what the libraries are for.
 

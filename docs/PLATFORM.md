@@ -1,14 +1,14 @@
-# helix-platform: the contracts
+# helix-platform: the interfaces
 
-What the platform library is, contract by contract: each contract's members, what they mean, and what each adapter does beneath them.
-The interfaces in `libs/platform/src/helix/platform/` are the authority; this is their specification, and a contract changes here first.
+What the platform library is, interface by interface: each interface's members, what they mean, and what each adapter does beneath them.
+The interfaces in `libs/platform/src/helix/platform/` are the authority; this is their specification, and an interface changes here first.
 
 ## Principles
 
 - **Pumped, never driving.** Nothing in the platform runs the program or calls into it on its own; the one exception is
   `IWindow.onClose`, because a browser gives no frame in which to poll it. Everything that must be serviced once a frame is its own
   small `poll`, named for what it services and doing nothing else: input, http, the file system, each decoder, audio. Each of those
-  contracts extends `IPollable`, the one interface they share, so a program can hold them as one list. The platform never bundles them;
+  interfaces extends `IPollable`, the one interface they share, so a program can hold them as one list. The platform never bundles them;
   whoever owns the program does, in its own order (raylib hides the same pumps inside `EndDrawing`).
 - **Granular, for whoever builds on it.** The platform keeps the pieces separate (end the frame, read it back, present, poll) and
   leaves their order to the layer above. A smaller surface, like raylib's `EndDrawing` that flushes, captures, swaps, waits and polls in
@@ -23,21 +23,21 @@ The interfaces in `libs/platform/src/helix/platform/` are the authority; this is
   caller decides whether it is worth a log line; the platform depends on no logger.
 - **Fails before doing anything.** A call that can't be done throws, saying why; one that may be refused returns false or null and its
   doc says when.
-- **One contract per thing, one adapter per API.** An adapter's public members are its constructor and its contract's, nothing else; the
+- **One interface per thing, one adapter per API.** An adapter's public members are its constructor and its interface's, nothing else; the
   constructor takes nothing, or one `<Adapter>Options` holding the platform's own arguments (a canvas's id, a directory), named at the call:
   `new DomWindowAdapter({canvasId: "canvas"})`. `check_adapters` holds both.
-- **One directory per contract, even when one library provides several.** SDL3 provides the window, the events and the system, and a
-  page does the same: each still gets its own adapter in `adapters/<contract>/<api>/` (`adapters/window/sdl3/Sdl3WindowAdapter`,
-  `adapters/events/sdl3/Sdl3EventsAdapter`), so a program chooses each contract's adapter on its own. What two adapters of one library
+- **One directory per interface, even when one library provides several.** SDL3 provides the window, the events and the system, and a
+  page does the same: each still gets its own adapter in `adapters/<interface>/<api>/` (`adapters/window/sdl3/Sdl3WindowAdapter`,
+  `adapters/events/sdl3/Sdl3EventsAdapter`), so a program chooses each interface's adapter on its own. What two adapters of one library
   share (the SDL window, the page's canvas, state seen by one and answered by another) lives in `adapters/shared/<api>/`, which both
   reach; no adapter reaches into another's directory, but a device's adapter is given the events adapter it is built over (Events).
-- **Contracts don't know each other.** No contract or its adapters imports another contract's (http never names graphics, the file
-  system never names audio); only `adapters/shared/` is common to them. `check_layers` enforces it: a contract's files are its
-  interface, the types it reaches and its adapters; anything else may name at most one contract. A shared interface (`IPollable`,
-  which every contract extends; `IDecodedImage`, which the image decoder gives and the graphics take) is no contract's and names no
+- **Interfaces don't know each other.** No interface or its adapters imports another interface's (http never names graphics, the file
+  system never names audio); only `adapters/shared/` is common to them. `check_layers` enforces it: an interface's files are its
+  interface, the types it reaches and its adapters; anything else may name at most one interface. A shared interface (`IPollable`,
+  which every interface extends; `IDecodedImage`, which the image decoder gives and the graphics take) is no interface's and names no
   other type. A device (`IKeyboard`, `IMouse`, `ITouch`, `IGamepads`, `ITilt`) is built
   over the events, and may name theirs.
-- **Both targets, one interface.** Every contract has the same members on js and cpp; an adapter is for one API on one target.
+- **Both targets, one interface.** Every interface has the same members on js and cpp; an adapter is for one API on one target.
 - **Units** as CONVENTIONS: seconds, radians, framebuffer pixels for the pointer, logical pixels for the window, `0xAARRGGBB` colors.
 
 ## Window
@@ -109,11 +109,11 @@ the OS has one queue: one pump drains it and one consumer walks it, and the orde
 platform keeps no listeners; a state model (arrays of what's held) or a dispatch model (listeners) is a short walk over what a poll
 delivers, built above.
 
-Each device is a contract of its own, built over the events: `IKeyboard`, `IMouse`, `ITouch`, `IGamepads` and `ITilt`. Its adapter is
+Each device is an interface of its own, built over the events: `IKeyboard`, `IMouse`, `ITouch`, `IGamepads` and `ITilt`. Its adapter is
 constructed over the events adapter of its API (`new DomKeyboardAdapter({events: events})`) and adds its events to the same stream,
 delivered by the events' `poll`. A device that isn't constructed isn't listened to: a page installs none of its listeners and doesn't
 read its pads; natively SDL's events for it are turned off, and SDL's gamepads aren't started, so a program links and runs only the
-devices it makes. A device's contract may name the events' types and adapters, and nothing else of another contract's.
+devices it makes. A device's interface may name the events' types and adapters, and nothing else of another interface's.
 
 ```haxe
 interface IEvents {
@@ -640,4 +640,4 @@ context, and so does the graphics adapter.
 
 What's above it: logging (helix-log, beside the platform); the loop and the frame's order; input state, edges and actions; audio buses
 and fades; download queues and limits; caches, manifests and assets; saves; config; a game clock; every renderer and its programs and
-pipelines. `adapters/shared/Mailbox` is an implementation helper behind the native adapters' `poll`, not a contract.
+pipelines. `adapters/shared/Mailbox` is an implementation helper behind the native adapters' `poll`, not an interface.

@@ -83,7 +83,7 @@ dropped.
   to offer the request at all.
 - **A value-like type's method that changes it returns it,** so calls chain: the math types and `Image`
   (`bounds.makeEmpty().expand(x, y)`, `transform.yaw(turn).moveForward(step)`, `image.grayscale().contrast(20)`). One that can refuse
-  at once returns `Bool` instead, and doesn't chain. A command on a service or a device (a platform contract, `Audio`, a `Voice`,
+  at once returns `Bool` instead, and doesn't chain. A command on a service or a device (a platform interface, `Audio`, a `Voice`,
   `graphics.applyViewport`) returns `Void`, or `Bool` when it can refuse: chaining side effects gains nothing.
 - **A value type's operations write into an optional out, last, and return it:** `a.add(b, ?out)`, `v.normalize(?out)`,
   `m.append(other, ?out)`. Omitted, it makes a new value and leaves its own unchanged; given the object itself, it works in place
@@ -96,7 +96,7 @@ dropped.
   (`Vector3D.lerp(a, b, amount, ?out)`, `Matrix3D.compose(first, second, ?out)`). `toX(?out)` converts one into another kind
   (`rotation.toMatrix()`) and `computeX(?out)` derives a value from it (`transform.computeForward()`). A number it has is a property
   (`vector.length`).
-- **A completion takes a lambda per outcome, success first,** and on a platform contract none is optional (`read(path, maxBytes,
+- **A completion takes a lambda per outcome, success first,** and on a platform interface none is optional (`read(path, maxBytes,
   loaded, missing, failed)`): one of them is called once, on the main thread, never during the call; a cancelled request calls
   nothing. A service above may make the failure's lambda optional, logging what it was given with the path, so nothing fails
   silently. No result enum to switch on.
@@ -104,9 +104,9 @@ dropped.
   by reflection at run time.
 - **One concept, one name across types:** a sprite's part of its texture is its region everywhere (`regionX`, `regionWidth`), not a
   region here and a source there.
-- **Adapter classes are `<Api><Contract>Adapter`**, words the API's name ends with and the contract's starts with written once
+- **Adapter classes are `<Api><Interface>Adapter`**, words the API's name ends with and the interface's starts with written once
   (`WebAudioAdapter`, not `WebAudioAudioAdapter`); ARCHITECTURE.md has the directories, and `tools/check_adapters.py` checks both. A
-  contract whose adapters differ only by the target they run on names the target instead of the API (`BrowserFileSystemAdapter`,
+  interface whose adapters differ only by the target they run on names the target instead of the API (`BrowserFileSystemAdapter`,
   `NativeFileSystemAdapter`), since that is what a reader picks it by.
 - **An adapter's constructor takes nothing, or one `<Adapter>Options`:** a `@:structInit` class beside it, so every value is named at
   the call (`new NativeFileSystemAdapter({directory: path, readOnly: true})`). A value it must have is a field without a default; one it
@@ -114,7 +114,7 @@ dropped.
   The compiler refuses a field the class doesn't have, so a guessed setting fails to build rather than doing nothing; for the same
   reason, every field takes effect whatever the others are set to. `tools/check_adapters.py` checks the shape and the name.
 - **An argument or option is named for what it's used for** when that's more than its type says: `ManifestCacheOptions`' `shipped`
-  is the `IFileSystem`s a file may be read from in place of a download. One that is simply the contract keeps the contract's name
+  is the `IFileSystem`s a file may be read from in place of a download. One that is simply the interface keeps the interface's name
   (`system`, `events`, `ServerSource`'s `http`).
 - **A directory is a directory,** as Haxe's standard library names it (`FileSystem.readDirectory`, `Path.directory`) and as programming
   APIs generally do: in names, doc comments and docs, never "folder" (the desktop's word) or "dir" (an abbreviation):
@@ -138,7 +138,7 @@ dropped.
   set of names and can be mistaken for each other, but in Haxe a package is lowercase and a type capitalized, so they never can.
 - **A type is named plural when it hands out many of one kind, singular when it is one thing:** `Assets`, `Timers`; `Audio`, `Log`.
 - **An exception type ends in `Exception`** and extends `haxe.Exception`: `GraphicsUnavailableException`, `CommandException`.
-- **What holds something releases it with `dispose()`:** an object, a service or a cache, a contract's resource by kind
+- **What holds something releases it with `dispose()`:** an object, a service or a cache, an interface's resource by kind
   (`IGraphics.disposeTexture`, `IAudio.disposeClip`), and the libraries' own C (`helix_dispose`), as .NET, OpenFL, Lime and Heaps name
   it. Nothing is named `destroy`, `cleanup` or `shutdown`. `close` is kept where `open` is its pair (`IWindow.close`, a device's
   `helix_audio_open` and `helix_audio_close`); a third party's names (`sg_shutdown`, `SDL_DestroyGPUDevice`) stay theirs.
@@ -256,7 +256,7 @@ Code is written to be read, by people and agents, not packed.
 - **Each library's reference is what its own users write against, and nothing else.** A developer or an agent given only the
   reference and a hello world should be able to build any program, and not be put off by machinery. Haxe has no internal, so what
   another package of a library must reach is public, and the library's own is marked:
-  - helix-platform's users are programs and engines built on it: they construct its adapters and call its contracts
+  - helix-platform's users are programs and engines built on it: they construct its adapters and call its interfaces
     (`WebGl2GraphicsAdapter`, `IGraphics`, `IFileSystem`), so those and the types they take are shown, and only its C bridges
     (`internal/`) and shared helpers (`adapters/shared/`) are marked; `tools/check_adapters.py` holds both.
   - **A type a library's users never make, name, set or get back** carries `@:noCompletion`: out of the language server's completion
@@ -271,12 +271,12 @@ Code is written to be read, by people and agents, not packed.
     file only through that file's module, which no one guesses. A family gets a package; a hidden helper may share its user's file.
   - **Checked:** `gen_apidoc` fails when a shown type is in another type's file, and when a shown member's signature names a hidden
     type, but for an optional argument a user leaves out; `check_adapters` requires the marks on the platform's bridges and helpers and
-    their absence on its contracts and adapters. A new type is marked when it's added; when unsure, ask whether a user would name it.
+    their absence on its interfaces and adapters. A new type is marked when it's added; when unsure, ask whether a user would name it.
 
 ## Examples
 
 - An example shows one thing with its library alone, on both targets, from hxml files beside it. Work that a program would otherwise
   repeat belongs in a library; an example that has to do it by hand says so in its comment.
-- An example declares each adapter with its contract's type, named for what the program uses it for: `var httpClient:IHttp = new
-  HaxeHttpAdapter();`, `var shipped:IFileSystem = new NativeFileSystemAdapter({...})`, so a reader sees the adapter, the contract and
+- An example declares each adapter with its interface's type, named for what the program uses it for: `var httpClient:IHttp = new
+  HaxeHttpAdapter();`, `var shipped:IFileSystem = new NativeFileSystemAdapter({...})`, so a reader sees the adapter, the interface and
   its use on one line.

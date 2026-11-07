@@ -149,7 +149,7 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
   pinning a library version, once the platform has held through a second consumer and is versioned.
 - **A compiled shader per dialect, low priority (DECISIONS 54):** `CompileShaderFile` writes every dialect into one file, so a page
   fetches GLSL 410 and SDL_GPU's code it never reads (about 13 KB raw a shader, 3 KB gzip). Each graphics adapter would name the
-  `ShaderSource` field it reads (an `IGraphics` member, a platform contract change for review), `CompileShaderFile` would write a file
+  `ShaderSource` field it reads (an `IGraphics` member, a platform interface change for review), `CompileShaderFile` would write a file
   for each (`glow.glsl300es.shader`) and the loads would fetch the running adapter's, so a new adapter's dialect needs no table above
   the platform.
 - **SDL3 with the platform:** a native build needs only Haxe and hxcpp (goal 6), so the platform haxelib ships the pinned SDL3 per

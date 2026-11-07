@@ -11,7 +11,7 @@ libs/                the libraries
   geometry/          cameras, rays, meshes, tests on shapes                   depends on math
   log/               levels and tags, to the console or stdio                 depends on nothing
   formats/           file formats read into plain data: glTF, BMFont, fonts   depends on math
-  platform/          the hardware and the OS as contracts and adapters        depends on math, formats
+  platform/          the hardware and the OS as interfaces and adapters        depends on math, formats
   services/          what a program needs over the platform that isn't drawing
   render/            drawing: 2D and 3D batches, materials, lights, post-processing, over the services (DECISIONS 35)
   ...                later scene and UI
@@ -38,7 +38,7 @@ once the platform has held through a second consumer and is versioned.
 
 ## platform versus services
 
-**platform** is the hardware and the OS: one contract per device, one adapter per API, no policy (no queues, caches, buses, frame order
+**platform** is the hardware and the OS: one interface per device, one adapter per API, no policy (no queues, caches, buses, frame order
 or idea of an asset). **services** is the policy a program needs over it that another engine on the same platform would take as it is:
 assets (manifests, cache modes, bringing a file in when it's missing or stale), saves, audio buses and fades, input state and actions,
 a game clock and timers, config. If it must exist for anything to draw or be heard at all, it's platform. If it's a policy, it's

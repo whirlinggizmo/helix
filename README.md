@@ -46,8 +46,8 @@ haxe build-native.hxml   # native/Main, with hxcpp and SDL3 installed (CONTRIBUT
 - [GOALS.md](GOALS.md): what the libraries are for.
 - [CONTRIBUTING.md](CONTRIBUTING.md): prerequisites, the checks, the tools and how work runs.
 - [docs/PLAN.md](docs/PLAN.md): the layers, what makes a library, and how the next one is built.
-- [docs/PLATFORM.md](docs/PLATFORM.md): each platform contract, what it means and what each adapter does.
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): contracts, adapters and the adapter rule.
+- [docs/PLATFORM.md](docs/PLATFORM.md): each platform interface, what it means and what each adapter does.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): interfaces, adapters and the adapter rule.
 - [docs/CONVENTIONS.md](docs/CONVENTIONS.md): names, units, layout and doc comments.
 - [The API reference](https://whirlinggizmo.github.io/helix/api/index.html), generated from the doc comments. Each library's `api/`
   directory holds the same as Markdown.
