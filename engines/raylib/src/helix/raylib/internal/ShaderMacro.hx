@@ -61,6 +61,49 @@ class ShaderMacro {
 		@return  An expression of type `helix.services.shaders.Shader`. */
 	public static function program(vsName:String, vs:Null<String>, fsName:String, fs:Null<String>, pos:Position,
 			?initials:Array<{name:String, numbers:Array<Float>}>):Expr {
+		var s = stages(vsName, vs, fsName, fs, pos, initials);
+		return helix.services.shaders.Shader.makeExpr(s.vertex, s.fragment, {clipScale: true, points: true}, pos);
+	}
+
+	/** Compiles a raylib shader's two stages into a file `LoadShaderAsync` loads (`haxelib run helix-raylib shader`): the compiled
+		program in every dialect, for every target, and each uniform's initializer. Run on its own, with no target, so the file holds
+		the native dialects too.
+
+		@param vsFileName  The vertex stage's file, or null for raylib's default.
+		@param fsFileName  The fragment stage's file, or null for raylib's default.
+		@param outFileName  The file to write. */
+	public static function compileFile(vsFileName:Null<String>, fsFileName:Null<String>, outFileName:String):Void {
+		var pos = Context.currentPos();
+		if (Context.defined("js") || Context.defined("cpp"))
+			Context.error("helix-raylib: a shader file is compiled on its own, with no target, so it holds every target's dialects", pos);
+		function read(file:Null<String>):Null<String>
+			return file == null ? null : FileSystem.exists(file) ? File.getContent(file) : Context.error('helix-raylib: $file not found', pos);
+		var initials = [];
+		var s = stages(vsFileName == null ? "default vertex" : vsFileName, read(vsFileName), fsFileName == null ? "default fragment" : fsFileName,
+			read(fsFileName), pos, initials);
+		var source = helix.services.shaders.ShaderMacros.compileProgram(s.vertex, s.fragment, {clipScale: true, points: true}, [], pos);
+		var directory = Path.directory(outFileName);
+		if (directory != "")
+			FileSystem.createDirectory(directory);
+		File.saveContent(outFileName, haxe.Json.stringify({
+			kind: "shader",
+			source: source,
+			shared: [],
+			initials: initials
+		}));
+		// A run of these alone has nothing else to compile: it ends once every one has run.
+		if (!ending) {
+			ending = true;
+			Context.onAfterInitMacros(() -> Sys.exit(0));
+		}
+	}
+
+	static var ending = false;
+
+	// A raylib shader's stages as helix-services compiles them: raylib's GLSL adapted, the default for a stage left out, and the
+	// attributes and what the stages pass checked.
+	static function stages(vsName:String, vs:Null<String>, fsName:String, fs:Null<String>, pos:Position,
+			?initials:Array<{name:String, numbers:Array<Float>}>):{vertex:{name:String, text:String}, fragment:{name:String, text:String}} {
 		var vertex = adapt(vs == null ? builtIn("unlit.vs", pos) : vs, true, vsName, pos),
 			fragment = adapt(fs == null ? builtIn("unlit.fs", pos) : fs, false, fsName, pos);
 		if (initials != null) {
@@ -75,7 +118,7 @@ class ShaderMacro {
 			if (d.kind == "in" && ATTRIBUTES.indexOf(d.name) < 0 && d.type != "mat4")
 				Context.error('$vsName: the attribute "${d.name}" isn\'t one raylib gives here (${ATTRIBUTES.join(", ")}, or a mat4 of the instances\' transforms, `DrawMeshInstanced`\'s)',
 					pos);
-		return helix.services.shaders.Shader.makeExpr({name: vsName, text: vertex}, {name: fsName, text: fragment}, {clipScale: true, points: true}, pos);
+		return {vertex: {name: vsName, text: vertex}, fragment: {name: fsName, text: fragment}};
 	}
 
 	/** Returns the expression of helix-raylib's sprite shader: its own vertex stage (`shaders/sprite.vs`, whose attributes are the sprite

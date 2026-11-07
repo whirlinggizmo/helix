@@ -14,7 +14,7 @@
 ## Differences from raylib
 
 - Files load with the `...Async` calls in `helix.raylib.extras`.
-- Loading a shader that wasn't present at build time is unsupported.
+- A shader not present at build time loads from a file compiled ahead of time (`LoadShaderAsync`, `CompileShaderFile`).
 - Models, shapes and images follow raylib 6.2, which fixed bugs in 5.5.
 - In a page, a lost GPU context is recovered automatically. Render textures are cleared.
 - Not supported: IQM, VOX and M3D models, morph targets, models drawn as points, and compressed images.

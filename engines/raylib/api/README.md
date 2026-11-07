@@ -4,7 +4,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
 
 ## Packages
 
-- [`helix.raylib.extras`](extras.md): Audio, Debug, Device, Files, Gui, GuiSkins, Lights, Models, Sprites, Text, Textures, Window
+- [`helix.raylib.extras`](extras.md): Audio, Debug, Device, Files, Gui, GuiSkins, Lights, Models, Shaders, Sprites, Text, Textures, Window
 
 ## AudioStream
 

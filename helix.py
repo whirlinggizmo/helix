@@ -70,19 +70,24 @@ def test(native,audio_device):
         if audio_device:print(subprocess.check_output([str(tool('native-sdl3mixer-device-probe'))],text=True,encoding='utf-8'),end='')
 
 # helix-raylib's own tests, built as the parity harnesses are: from its source, without its program loop (tools/raylib_parity.py).
-RAYLIB_TESTS=('CountTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','LoopTests','DeviceTests','GuiSkinsTests','SkinningTests','PbrTests','DebugTests','RestoreTests','SpritesTests')
+RAYLIB_TESTS=('CountTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','LoopTests','DeviceTests','GuiSkinsTests','SkinningTests','PbrTests','DebugTests','RestoreTests','SpritesTests','ShaderFileTests')
+# ShaderFileTests' shader, compiled ahead of time as a program's would be (CompileShaderFile), its build embedding the file, and its
+# LoadShader reading the same files.
+SHADER_FILE=['-resource','build/tests/glow.shader@glow.shader','-D','helix-raylib-files=engines/raylib/tests/shaders']
 
 def raylib_tests(native):
     """helix-raylib's tests on Node, and with native in hxcpp: on graphics of their own, without a window."""
     base=[a for lib in ('helix-log','helix-math','helix-geometry','helix-formats','helix-platform','helix-services') for a in ('-lib',lib)]
     base+=['-cp','engines/raylib/src','--macro','helix.raylib.internal.Metadata.register()','-cp','engines/raylib/tests','-cp','libs/services/tests']
+    run(['haxe',*base,'--macro','helix.raylib.extras.Shaders.CompileShaderFile("engines/raylib/tests/shaders/glow.vs", "engines/raylib/tests/shaders/glow.fs", "build/tests/glow.shader")'])
     for main in RAYLIB_TESTS:
-        run(['haxe',*base,'-main',main,'-js',f'build/tests/{main}.js','-D','js-es=6'])
+        extra=SHADER_FILE if main=='ShaderFileTests' else []
+        run(['haxe',*base,*extra,'-main',main,'-js',f'build/tests/{main}.js','-D','js-es=6'])
         value=result(['node',f'build/tests/{main}.js'])
         if native:
             import native_build,sdl3
             found=sdl3.find()
-            run(['haxe',*base,'-main',main,'-cpp',f'build/tests/{main}-cpp','-D','analyzer-optimize','-D',native_build.ARCH],env=native_build.env(found))
+            run(['haxe',*base,*extra,'-main',main,'-cpp',f'build/tests/{main}-cpp','-D','analyzer-optimize','-D',native_build.ARCH],env=native_build.env(found))
             # helix-raylib links SDL3 (its runtime's adapters): on Windows its DLL goes beside the program, or the program doesn't start.
             native_build.place_runtimes(ROOT/'build/tests'/f'{main}-cpp',found)
             result([str(ROOT/'build/tests'/f'{main}-cpp'/(f'{main}.exe' if sys.platform=='win32' else main))])

@@ -730,6 +730,25 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
 
   The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming only glTF files carries no OBJ reader, and one naming only OBJ files no glTF reader; a name known only as the program runs brings both, the reader chosen by its extension then.
 
+## Shaders
+
+*class* in [`engines/raylib/src/helix/raylib/extras/Shaders.hx`](../src/helix/raylib/extras/Shaders.hx), `import helix.raylib.extras.Shaders;`
+
+Provides the load of a shader compiled ahead of time, such as one a program fetches. Imported apart: `import helix.raylib.extras.Shaders.*;`.
+
+### shaders: the loads of shaders compiled ahead of time
+
+```haxe
+static function LoadShaderAsync(fileName:String, loaded:Shader -> Void, ?failed:String -> Void):Void
+```
+
+- `LoadShaderAsync`: Asynchronously loads a shader compiled ahead of time by `CompileShaderFile`. See `LoadShader` for loading a shader the build holds.
+  - `fileName`: The compiled shader's file.
+  - `loaded`: Receives the shader.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+
+  The file holds the shader for every target, so the same file loads in a page and natively.
+
 ## Sprites
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Sprites.hx`](../src/helix/raylib/extras/Sprites.hx), `import helix.raylib.extras.Sprites;`
