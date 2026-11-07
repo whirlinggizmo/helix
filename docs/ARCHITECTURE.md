@@ -84,7 +84,3 @@ The specification is docs/PLATFORM.md; this is the map.
 Each interface that answers later delivers its answers in its `poll`, on the main thread, never at any other time, and a program calls
 `poll` each frame on each it constructed (the platform's README, "Each frame"); each such interface is an `IPollable`. Native adapters hand their threads' results back
 through `adapters/shared/Mailbox`, drained by that `poll`.
-
-## Build Requirements
-
-Build requirements are outlined in [CONTRIBUTING.md](../CONTRIBUTING.md#prerequisites).
