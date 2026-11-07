@@ -1,6 +1,6 @@
 # helix-log
 
-A log: messages with a level and an optional tag, to the browser's console or the process's output. It depends on nothing.
+A log: messages with a level and an optional tag, to the browser's console or the process's output.
 
 ```haxe
 import helix.log.Log;
