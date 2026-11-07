@@ -21,13 +21,19 @@ class RCompiledShaders {
 		@param loaded  Receives the shader.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	static function LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void):Void {
-		RFilesAsync.LoadFileDataAsync(compiledShaderFileName, bytes -> {
-			var shader = make(bytes, compiledShaderFileName);
+		// One of the program's files, fetched as a texture's or a model's is.
+		var path = RCore.normalize(compiledShaderFileName);
+		Runtime.fetch(path, error -> {
+			if (error != null) {
+				refuse("LoadCompiledShaderAsync", error, failed);
+				return;
+			}
+			var shader = make(Runtime.files.get(path), compiledShaderFileName);
 			if (shader == null)
 				refuse("LoadCompiledShaderAsync", '$compiledShaderFileName isn\'t a compiled shader', failed);
 			else
 				loaded(shader);
-		}, error -> refuse("LoadCompiledShaderAsync", error, failed));
+		});
 	}
 
 	/** Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShaderAsync` for
