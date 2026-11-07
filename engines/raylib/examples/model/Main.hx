@@ -5,7 +5,7 @@ import helix.raylib.Model;
 import helix.raylib.Vector3;
 
 /** raylib's model loading: a glTF model on a grid, the camera turning about it, in raylib's own shape, the model loaded with
-	`LoadModelAsync` so it loads the same in a page and natively. The model is `web/assets/trophy.glb`.
+	`LoadModelAsync`. The model is `web/assets/trophy.glb`.
 	The `quit_after_frame` option (`--quit_after_frame=60` natively, `?quit_after_frame=60` in a page) quits it after that frame. */
 class Main {
 	static function main():Void {

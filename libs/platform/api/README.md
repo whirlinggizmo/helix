@@ -308,7 +308,7 @@ Positions are in framebuffer pixels from the window's top-left corner. A key is 
 
 *class* in [`libs/platform/src/helix/platform/FilePath.hx`](../src/helix/platform/FilePath.hx), `import helix.platform.FilePath;`
 
-Provides the rule for the paths `IFileSystem` takes, which every file system adapter checks, and which helix-services' `Assets` holds every source to, so a name is refused the same way in a page and natively.
+Provides the rule for the paths `IFileSystem` takes, which every file system adapter checks, and which helix-services' `Assets` holds every source to, so a name is refused the same way on every target.
 
 ```haxe
 static function isValid(path:String):Bool

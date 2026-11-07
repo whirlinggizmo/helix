@@ -15,7 +15,7 @@ import helix.platform.StreamSource;
 	`ServerSource` at "".
 
 	A path is plain names joined by `/`, as in `IFileSystem` (`FilePath`), from every source: a server is never asked for one the file
-	systems would refuse, so a name fails alike in a page and natively. Each call answers once, on the main thread, in a later poll,
+	systems would refuse, so a name fails alike on every target. Each call answers once, on the main thread, in a later poll,
 	never during the call. The failure callback is optional; when it is omitted, the failure is logged with the path.
 
 	The program polls the assets once a frame, with the HTTP client and file systems it was given. Downloads and copies finish in their

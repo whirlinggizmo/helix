@@ -4,7 +4,7 @@ import haxe.io.FPHelper;
 
 /** Provides trigonometry that gives the same bits on every target.
 
-	A simulation that must play alike in the browser and natively (a recorded run's replay, a lockstep game, physics) uses these in place
+	A simulation that must play alike on every target (a recorded run's replay, a lockstep game, physics) uses these in place
 	of `Math`'s, whose last bit differs between targets for some angles. Drawing doesn't need them. Results are within a few ulp of
 	`Math`'s. Angles are in radians, of any size: an angle that keeps growing stays as accurate however large it gets. An infinite or NaN
 	angle gives NaN, as do `asin` and `acos` outside -1 to 1.

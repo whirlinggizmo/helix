@@ -22,7 +22,7 @@ Provides files by path, from a file system on this machine or from an HTTP serve
 
 It asks its sources in order, and the first that has the path answers. A file missing from one source is looked for in the next. A game whose files never change lists its file system alone (`FileSystemSource`). A game patched from a server lists the server first, with a `ManifestCache` given the shipped files, and its shipped files after it. A shipped file that the server's manifest lists at the same hash is then read in place, and only what changed is downloaded. A page, whose files are on the server that served it, lists a `ServerSource` at "".
 
-A path is plain names joined by `/`, as in `IFileSystem` (`FilePath`), from every source: a server is never asked for one the file systems would refuse, so a name fails alike in a page and natively. Each call answers once, on the main thread, in a later poll, never during the call. The failure callback is optional; when it is omitted, the failure is logged with the path.
+A path is plain names joined by `/`, as in `IFileSystem` (`FilePath`), from every source: a server is never asked for one the file systems would refuse, so a name fails alike on every target. Each call answers once, on the main thread, in a later poll, never during the call. The failure callback is optional; when it is omitted, the failure is logged with the path.
 
 The program polls the assets once a frame, with the HTTP client and file systems it was given. Downloads and copies finish in their polls, and what Assets answers with nothing of theirs to wait on (a file held in memory, a refused path) in its own. Assets that are never polled answer nothing.
 

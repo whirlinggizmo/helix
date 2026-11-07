@@ -3,7 +3,7 @@ import helix.raylib.extras.Text.*;
 import helix.raylib.Font;
 import helix.raylib.Vector2;
 
-/** raylib's text in a font of its own: a TrueType font loaded with `LoadFontAsync`, so it loads the same in a page and natively, and
+/** raylib's text in a font of its own: a TrueType font loaded with `LoadFontAsync` and
 	drawn with `DrawTextEx` beside raylib's default font. The font is `web/assets/JetBrainsMono-Regular.ttf` (SIL Open Font License,
 	`web/assets/OFL.txt`). The `quit_after_frame` option (`--quit_after_frame=60` natively, `?quit_after_frame=60` in a page) quits it after
 	that frame. */
