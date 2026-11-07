@@ -2438,7 +2438,7 @@ class RTextures {
 
 	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, its mipmaps too when it
 		has them (`ImageMipmaps`), filtered through them, trilinear, as raylib sets it.
-		Its format is the image's, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed
+		The texture\'s format is the image\'s, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed
 		format gives no texture, with a warning. Its pixels are let go of once sent, so after a page's GPU context is lost it draws as
 		nothing, with one warning (`Raylib`).
 

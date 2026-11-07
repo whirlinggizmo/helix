@@ -19,35 +19,29 @@ static function ExportWaveAsync(wave:Wave, fileName:String, ?done:() -> Void, ?f
 static function ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
 ```
 
-- `LoadSoundAsync`: Asynchronously loads and decodes a sound file, ready to play at once. See `LoadMusicStreamAsync` for playing a file as it is read.
+- `LoadSoundAsync`: Asynchronously loads and decodes a sound file, ready to play at once, in place of raylib's `LoadSound`. See `LoadMusicStreamAsync` for playing a file as it is read.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the sound.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
 
-  It replaces raylib's `LoadSound`.
-
   `InitAudioDevice` must come first.
 
   A file loaded again shares its first load's decoded sound.
-- `LoadMusicStreamAsync`: Asynchronously opens a music file to be played as it is read. See `LoadSoundAsync` for decoding a file whole first.
+- `LoadMusicStreamAsync`: Asynchronously opens a music file to be played as it is read, in place of raylib's `LoadMusicStream`. See `LoadSoundAsync` for decoding a file whole first.
   - `fileName`: The file, as the program names it, such as "assets/theme.ogg".
   - `loaded`: Receives the music, ready to play, once enough of the file has arrived to start.
   - `failed`: Optional. Receives why it couldn't be opened; when omitted, it is logged.
-
-  It replaces raylib's `LoadMusicStream`.
 
   `InitAudioDevice` must come first.
 
   A FLAC file is refused, as raylib 5.5's default build leaves FLAC out.
 
-  It is never loaded whole. Natively it is read from its file, and in a page from the download as it arrives (helix-services' `Audio.stream`).
-- `ExportWaveAsync`: Asynchronously writes a wave to a sound file. See `ExportWaveAsCodeAsync` for writing a C header.
+  Never loaded whole. Natively it is read from its file, and in a page from the download as it arrives (helix-services' `Audio.stream`).
+- `ExportWaveAsync`: Asynchronously writes a wave to a sound file, in place of raylib's `ExportWave`. See `ExportWaveAsCodeAsync` for writing a C header.
   - `wave`: The wave.
   - `fileName`: The file; its extension chooses the format.
   - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't, such as a wave with no samples or another extension; when omitted, it is logged.
-
-  It replaces raylib's `ExportWave`.
 
   The extension chooses the format:
 
@@ -56,13 +50,11 @@ static function ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:() -> Vo
   A ".qoa" file is refused, though raylib writes one.
 
   The file is written and kept by `SaveFileDataAsync`.
-- `ExportWaveAsCodeAsync`: Asynchronously writes a wave as a C header. See `ExportWaveAsync` for writing a sound file.
+- `ExportWaveAsCodeAsync`: Asynchronously writes a wave as a C header, in place of raylib's `ExportWaveAsCode`. See `ExportWaveAsync` for writing a sound file.
   - `wave`: The wave.
   - `fileName`: The file; its name, upper case, names the defines and the array.
   - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
-
-  It replaces raylib's `ExportWaveAsCode`.
 
   The header holds:
 
@@ -120,7 +112,7 @@ static function MeasureFrameStats(style:FrameStatsStyle):Vector2
 
   A model never posed draws its bind pose. A model without bones draws nothing.
 
-  It draws in 3D mode (BeginMode3D), over what is drawn before it, as DrawLine3D does.
+  Draws in 3D mode (BeginMode3D), over what is drawn before it, as DrawLine3D does.
 
   A model drawn as several copies, each posed apart, is posed and drawn copy by copy:
 
@@ -141,17 +133,17 @@ static function MeasureFrameStats(style:FrameStatsStyle):Vector2
 
   The box is GetModelBoundingBoxPosed's (helix.raylib.extras.Models).
 
-  It draws in 3D mode, as DrawBoundingBox does.
+  Draws in 3D mode, as DrawBoundingBox does.
 - `DrawFrameStats`: Draws the frame's cost at a point on the screen in FrameStatsStyle's default look at a size, as DrawFPS draws the rate. See `DrawFrameStatsEx` for choosing the stats and their look.
   - `posX`: The text's left, in pixels.
   - `posY`: The text's top, in pixels.
   - `fontSize`: The text's height, in pixels, as DrawText's; DrawFPS draws at 20.
 
-  It draws a line each for: - the frames a second - the frame time's mean and its slowest 5% (p95) over the last half second, in milliseconds - the last frame's draw calls
+  Draws a line each for: - the frames a second - the frame time's mean and its slowest 5% (p95) over the last half second, in milliseconds - the last frame's draw calls
 
   The text's color is judged against SetTargetFPS's target, or the monitor's refresh rate without one.
 
-  It is `DrawFrameStatsEx(new Vector2(posX, posY), {fontSize: fontSize})`, every other field the style's default.
+  The same as `DrawFrameStatsEx(new Vector2(posX, posY), {fontSize: fontSize})`, every other field the style's default.
 - `DrawFrameStatsEx`: Draws the frame's cost at a point on the screen in a style's stats, font, size, spacing, colors and background. See `DrawFrameStats` for drawing the default look at a size.
   - `position`: The text's top left, in pixels (its background's, padding around the text).
   - `style`: What to show and how; each field left out takes its default.
@@ -169,7 +161,7 @@ static function MeasureFrameStats(style:FrameStatsStyle):Vector2
 
   The size includes the padding.
 
-  It is sized for the widest values, so it is the same from frame to frame.
+  Sized for the widest values, so it is the same from frame to frame.
 
 ## Device
 
@@ -278,7 +270,7 @@ static function CalibrateTilt():Void
 
   A full tilt of 1 is `SetTiltRange`'s angle.
 
-  It is 0 until readings arrive and the device has been held steady once. Level is taken then.
+  The tilt is 0 until readings arrive and the device has been held steady once. Level is taken then.
 - `SetTiltRange`: Sets the angle, in degrees, that reads as a full tilt of 1. It defaults to 30.
   - `degrees`: The angle.
 - `CalibrateTilt`: Takes how the device is held now as level. See `GetTilt` for reading the tilt from it.
@@ -315,13 +307,13 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
   - `loaded`: Receives its bytes.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 
-  It reads the first of these that has the file: - the program's `SetLoadFileDataCallback` - what `SaveFileData` wrote - the program's files
+  Reads the first of these that has the file: - the program's `SetLoadFileDataCallback` - what `SaveFileData` wrote - the program's files
 - `LoadFileTextAsync`: Asynchronously reads a text file, in place of raylib's `LoadFileText`. See `LoadFileDataAsync` for reading a file's bytes.
   - `fileName`: The file.
   - `loaded`: Receives its text.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 
-  It reads the first of these that has the file: - the program's `SetLoadFileTextCallback` - what `SaveFileText` wrote - the program's files
+  Reads the first of these that has the file: - the program's `SetLoadFileTextCallback` - what `SaveFileText` wrote - the program's files
 
   The text ends at the file's first NUL byte, as raylib's C string does.
 
@@ -344,7 +336,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
   - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
 
-  It is written through the program's `SetSaveFileTextCallback` when it has one, during the call, and answered by what that returned.
+  Written through the program's `SetSaveFileTextCallback` when it has one, during the call, and answered by what that returned.
 
   Otherwise it is kept across runs, natively and in a page, and answered once the write has finished.
 
@@ -429,7 +421,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   The header is raylib's, byte for byte: - the bytes' count, as a define - the bytes, as an array in hexadecimal, 20 a line
 
-  It is written through `SaveFileTextAsync`.
+  Written through `SaveFileTextAsync`.
 - `LoadAutomationEventListAsync`: Asynchronously loads an automation events list from a text file, in place of raylib's `LoadAutomationEventList` given a file. See `ExportAutomationEventListAsync` for writing one.
   - `fileName`: The file, as `ExportAutomationEventList` writes it.
   - `loaded`: Receives the list, its capacity 16384.
@@ -437,7 +429,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   The file is read as `LoadFileTextAsync` reads it.
 
-  It reads these lines, as raylib's does: - a line starting `c`, the count - a line starting `e`, an event: its frame, type and four parameters
+  Reads these lines, as raylib's does: - a line starting `c`, the count - a line starting `e`, an event: its frame, type and four parameters
 
   Other lines are skipped. So is a last line with no newline at its end, as raylib's reading skips it.
 
@@ -450,7 +442,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   The text is raylib's, byte for byte: - a header of comments - `c` and the count - a line for each event: `e`, its frame, type and four parameters, and its type's name
 
-  It is written through `SaveFileTextAsync`.
+  Written through `SaveFileTextAsync`.
 
 ## Gui
 
@@ -711,7 +703,7 @@ static function ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:() -> Vo
   - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
 
-  Its counts are written as defines, and each array it has as 20 values a line, floats to 3 places, as raylib's `ExportMeshAsCode` writes them.
+  The mesh\'s counts are written as defines, and each array it has as 20 values a line, floats to 3 places, as raylib's `ExportMeshAsCode` writes them.
 
 ### models: a skinned model's bounds as posed
 
@@ -788,7 +780,7 @@ static function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize
 static function ExportFontAsCodeAsync(font:Font, fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
 ```
 
-- `LoadFontExAsync`: Asynchronously loads a TrueType or OpenType font file at a size. See `LoadFontFromMemoryAsync` for making a font from bytes already loaded.
+- `LoadFontExAsync`: Asynchronously loads a TrueType or OpenType font file at a size, in place of raylib's `LoadFontEx`. See `LoadFontFromMemoryAsync` for making a font from bytes already loaded.
   - `fileName`: The file, as the program names it.
   - `fontSize`: The glyphs' size: the height of a line, in pixels.
   - `codepoints`: The characters, or null for those from the space on.
@@ -796,12 +788,10 @@ static function ExportFontAsCodeAsync(font:Font, fileName:String, ?done:() -> Vo
   - `loaded`: Receives the font once its glyphs are ready.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
 
-  It replaces raylib's `LoadFontEx`.
-
   The font holds only the characters the file has. `glyphCount` may be fewer than asked for, and a character it lacks draws as its '?'.
 
   Each Unicode space the file has (U+0020, U+00A0, U+2000 to U+200A, U+3000 and the others) is a blank glyph as wide as its advance.
-- `LoadFontFromMemoryAsync`: Asynchronously makes a font from a TrueType or OpenType file's bytes. See `LoadFontExAsync` for loading a file by its name.
+- `LoadFontFromMemoryAsync`: Asynchronously makes a font from a TrueType or OpenType file's bytes, in place of raylib's `LoadFontFromMemory`. See `LoadFontExAsync` for loading a file by its name. The glyphs are rasterized off the main thread.
   - `fileType`: The file's extension, ".ttf" or ".otf". Any other is refused.
   - `fileData`: The file's bytes.
   - `dataSize`: How many of them.
@@ -811,10 +801,8 @@ static function ExportFontAsCodeAsync(font:Font, fileName:String, ?done:() -> Vo
   - `loaded`: Receives the font once its glyphs are ready.
   - `failed`: Optional. Receives why it couldn't be made; when omitted, it is logged.
 
-  It replaces raylib's `LoadFontFromMemory`. The glyphs are rasterized off the main thread.
-
   The font holds only the characters the file has, as `LoadFontExAsync`'s does. With none of them, it is the default font.
-- `LoadFontDataAsync`: Asynchronously rasterizes a TrueType or OpenType font's glyphs, each with its own image. See `LoadFontFromMemoryAsync` for a font ready to draw.
+- `LoadFontDataAsync`: Asynchronously rasterizes a TrueType or OpenType font's glyphs, each with its own image. See `LoadFontFromMemoryAsync` for a font ready to draw, in place of raylib's `LoadFontData`.
   - `fileData`: The font file's bytes.
   - `dataSize`: How many of them.
   - `fontSize`: The glyphs' size: the height of a line, in pixels.
@@ -824,18 +812,14 @@ static function ExportFontAsCodeAsync(font:Font, fileName:String, ?done:() -> Vo
   - `loaded`: Receives the glyphs once they are ready.
   - `failed`: Optional. Receives why the font couldn't be read; when omitted, it is logged.
 
-  It replaces raylib's `LoadFontData`.
-
   Each glyph's image is 8-bit grayscale, for `GenImageFontAtlas`.
 
   Under `FONT_SDF` the images hold signed distances, with 4 texels of padding, 128 on the outline and 64 for each texel.
-- `ExportFontAsCodeAsync`: Asynchronously writes a font as a C header, the text raylib 5.5's `ExportFontAsCode` writes.
+- `ExportFontAsCodeAsync`: Asynchronously writes a font as a C header, the text raylib 5.5's `ExportFontAsCode` writes. The file is written through `SaveFileTextAsync`, in place of raylib's `ExportFontAsCode`.
   - `font`: The font.
   - `fileName`: The file.
   - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
-
-  It replaces raylib's `ExportFontAsCode`. The file is written through `SaveFileTextAsync`.
 
   The header holds the texture's pixels, each glyph's rectangle, character, offsets and advance, and a function loading the font. The file's name, in Pascal case, names them.
 
@@ -1004,22 +988,18 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
 static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
 ```
 
-- `ToggleFullscreenAsync`: Asynchronously asks for fullscreen, or for the window back at the size and place it had. See `ToggleBorderlessWindowedAsync` for the borderless window.
+- `ToggleFullscreenAsync`: Asynchronously asks for fullscreen, or for the window back at the size and place it had. See `ToggleBorderlessWindowedAsync` for the borderless window, in place of raylib's `ToggleFullscreen`.
   - `done`: Optional. Called once the window has changed, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
-
-  It replaces raylib's `ToggleFullscreen`.
 
   In a page the browser grants it only soon after a key press, click or tap. Without one, it waits for the next, or refuses.
 
   Called while borderless, it only switches to fullscreen.
 
   `IsWindowFullscreen` reports the new state once the window has changed, not when the call returns.
-- `ToggleBorderlessWindowedAsync`: Asynchronously asks for the window to fill the screen without borders, or back to the window. See `ToggleFullscreenAsync` for fullscreen.
+- `ToggleBorderlessWindowedAsync`: Asynchronously asks for the window to fill the screen without borders, or back to the window. See `ToggleFullscreenAsync` for fullscreen, in place of raylib's `ToggleBorderlessWindowed`.
   - `done`: Optional. Called once the window has changed, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
-
-  It replaces raylib's `ToggleBorderlessWindowed`.
 
   The screen goes fullscreen. Natively a fullscreen window is borderless and the size of the desktop.
 
@@ -1028,144 +1008,112 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   Called while fullscreen, it only switches to borderless.
 
   As in raylib, `IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)` is true while it is, and `IsWindowFullscreen` false.
-- `SetWindowSizeAsync`: Asynchronously asks for the window's size. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting the sizes it can be resized to.
+- `SetWindowSizeAsync`: Asynchronously asks for the window's size, in place of raylib's `SetWindowSize`. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting the sizes it can be resized to.
   - `width`: The width, in pixels.
   - `height`: The height, in pixels.
   - `done`: Optional. Called once the window has a size from the request, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't resized; when omitted, it is logged.
 
-  It replaces raylib's `SetWindowSize`.
-
   The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
 
-  It is refused while the window is fullscreen or maximized, and in a page, whose canvas follows the page.
+  Refused while the window is fullscreen or maximized, and in a page, whose canvas follows the page.
 
   A size under 1 pixel is refused.
-- `SetWindowPositionAsync`: Asynchronously asks for the window's place on the desktop. See `SetWindowMonitorAsync` for moving it to another monitor.
+- `SetWindowPositionAsync`: Asynchronously asks for the window's place on the desktop, in place of raylib's `SetWindowPosition`. See `SetWindowMonitorAsync` for moving it to another monitor.
   - `x`: The left edge, in pixels.
   - `y`: The top edge, in pixels.
   - `done`: Optional. Called once the window has moved, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it didn't move; when omitted, it is logged.
 
-  It replaces raylib's `SetWindowPosition`.
-
-  It is refused in a page, under Wayland, and while the window is fullscreen or maximized.
-- `SetWindowMonitorAsync`: Asynchronously asks for the window on another monitor. See `SetWindowPositionAsync` for placing it on the desktop.
+  Refused in a page, under Wayland, and while the window is fullscreen or maximized.
+- `SetWindowMonitorAsync`: Asynchronously asks for the window on another monitor, in place of raylib's `SetWindowMonitor`. See `SetWindowPositionAsync` for placing it on the desktop.
   - `monitor`: The monitor, 0 to `GetMonitorCount() - 1`.
   - `done`: Optional. Called once the window is on the monitor, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it isn't, such as a monitor that isn't there; when omitted, it is logged.
 
-  It replaces raylib's `SetWindowMonitor`.
-
   Where the window can't be moved, a monitor other than its own is refused.
-- `MaximizeWindowAsync`: Asynchronously asks for the window maximized. See `RestoreWindowAsync` for bringing it back.
+- `MaximizeWindowAsync`: Asynchronously asks for the window maximized, in place of raylib's `MaximizeWindow`. See `RestoreWindowAsync` for bringing it back.
   - `done`: Optional. Called once the window is maximized, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
 
-  It replaces raylib's `MaximizeWindow`.
-
-  It is refused in a page, which can't maximize its window.
-- `MinimizeWindowAsync`: Asynchronously asks for the window minimized. See `RestoreWindowAsync` for bringing it back.
+  Refused in a page, which can't maximize its window.
+- `MinimizeWindowAsync`: Asynchronously asks for the window minimized, in place of raylib's `MinimizeWindow`. See `RestoreWindowAsync` for bringing it back.
   - `done`: Optional. Called once the window is minimized, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
 
-  It replaces raylib's `MinimizeWindow`.
-
-  It is refused in a page, which can't minimize its window.
-- `RestoreWindowAsync`: Asynchronously asks for the window back to its size from minimized or maximized. See `MaximizeWindowAsync` and `MinimizeWindowAsync` for changing it.
+  Refused in a page, which can't minimize its window.
+- `RestoreWindowAsync`: Asynchronously asks for the window back to its size from minimized or maximized, in place of raylib's `RestoreWindow`. See `MaximizeWindowAsync` and `MinimizeWindowAsync` for changing it.
   - `done`: Optional. Called once the window is restored, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
 
-  It replaces raylib's `RestoreWindow`.
-
   A minimized window is restored from minimized, any other from maximized.
-- `SetWindowFocusedAsync`: Asynchronously asks for the window brought to the front with the keyboard.
+- `SetWindowFocusedAsync`: Asynchronously asks for the window brought to the front with the keyboard, in place of raylib's `SetWindowFocused`.
   - `done`: Optional. Called once the window has the keyboard or the window manager keeps it elsewhere, at a later poll.
   - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
-
-  It replaces raylib's `SetWindowFocused`.
 
   A window manager may only flash it.
 
   In a page the canvas takes the keyboard.
-- `SetWindowOpacityAsync`: Asynchronously asks for the window's opacity.
+- `SetWindowOpacityAsync`: Asynchronously asks for the window's opacity, in place of raylib's `SetWindowOpacity`.
   - `opacity`: From 0 (clear) to 1 (opaque).
   - `done`: Optional. Called once the window has the opacity, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
 
-  It replaces raylib's `SetWindowOpacity`.
-
   In a page the canvas fades.
 
   A desktop without a compositor refuses it.
-- `SetWindowMinSizeAsync`: Asynchronously asks for the smallest size the window can be resized to. See `SetWindowMaxSizeAsync` for setting the largest.
+- `SetWindowMinSizeAsync`: Asynchronously asks for the smallest size the window can be resized to, in place of raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
   - `width`: The width, in the screen's pixels.
   - `height`: The height.
   - `done`: Optional. Called once the window has the limit, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
 
-  It replaces raylib's `SetWindowMinSize`.
-
-  It is refused in a page, whose canvas follows the page.
+  Refused in a page, whose canvas follows the page.
 
   A size under 0 pixels is refused.
-- `SetWindowMaxSizeAsync`: Asynchronously asks for the largest size the window can be resized to. See `SetWindowMinSizeAsync` for setting the smallest.
+- `SetWindowMaxSizeAsync`: Asynchronously asks for the largest size the window can be resized to, in place of raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
   - `width`: The width, in the screen's pixels.
   - `height`: The height.
   - `done`: Optional. Called once the window has the limit, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
 
-  It replaces raylib's `SetWindowMaxSize`.
-
-  It is refused in a page, whose canvas follows the page.
+  Refused in a page, whose canvas follows the page.
 
   A size under 0 pixels is refused.
-- `DisableCursorAsync`: Asynchronously locks the mouse to the window and hides the cursor, for looking around. See `EnableCursorAsync` for letting it go.
+- `DisableCursorAsync`: Asynchronously locks the mouse to the window and hides the cursor, for looking around, in place of raylib's `DisableCursor`. See `EnableCursorAsync` for letting it go.
   - `done`: Optional. Called once the mouse is locked, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
-
-  It replaces raylib's `DisableCursor`.
 
   `GetMouseDelta` keeps coming while the position goes on past the window's edges.
 
   `IsCursorHidden` is true from the call.
 
   In a page the browser locks it only soon after a click or key press. Without one, it locks at the next. Escape lets it go.
-- `EnableCursorAsync`: Asynchronously lets go of the mouse that `DisableCursorAsync` locked and shows the cursor.
+- `EnableCursorAsync`: Asynchronously lets go of the mouse that `DisableCursorAsync` locked and shows the cursor, in place of raylib's `EnableCursor`.
   - `done`: Optional. Called once the mouse is let go, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
 
-  It replaces raylib's `EnableCursor`.
-
   `IsCursorHidden` is false from the call.
-- `SetClipboardTextAsync`: Asynchronously puts text on the system's clipboard. See `GetClipboardTextAsync` for reading it.
+- `SetClipboardTextAsync`: Asynchronously puts text on the system's clipboard, in place of raylib's `SetClipboardText`. See `GetClipboardTextAsync` for reading it.
   - `text`: The text.
   - `done`: Optional. Called once the text is on the clipboard, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it isn't; when omitted, it is logged.
 
-  It replaces raylib's `SetClipboardText`.
-
   A page writes it only while it has the keyboard, soon after a press.
-- `GetClipboardTextAsync`: Asynchronously reads the clipboard's text. See `GetClipboardImageAsync` for reading an image.
+- `GetClipboardTextAsync`: Asynchronously reads the clipboard's text, in place of raylib's `GetClipboardText`. See `GetClipboardImageAsync` for reading an image.
   - `read`: Receives the text at a later poll; "" when the clipboard holds none.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 
-  It replaces raylib's `GetClipboardText`.
-
   A page reads it only with permission, which the browser may ask for.
-- `GetClipboardImageAsync`: Asynchronously reads the clipboard's image. See `GetClipboardTextAsync` for reading text.
+- `GetClipboardImageAsync`: Asynchronously reads the clipboard's image, in place of raylib's `GetClipboardImage`. See `GetClipboardTextAsync` for reading text.
   - `loaded`: Receives the image once it is decoded, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged.
 
-  It replaces raylib's `GetClipboardImage`.
-
   A page reads it only with permission, which the browser may ask for.
-- `TakeScreenshotAsync`: Asynchronously takes a screenshot of the next frame and saves it as a file. See `LoadImageFromScreenAsync` for the screen as an `Image`.
+- `TakeScreenshotAsync`: Asynchronously takes a screenshot of the next frame and saves it as a file, in place of raylib's `TakeScreenshot`. See `LoadImageFromScreenAsync` for the screen as an `Image`.
   - `fileName`: The file's name, or its path; a name with `'` is refused, as raylib's is.
   - `done`: Optional. Called once the file is written or downloaded, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
-
-  It replaces raylib's `TakeScreenshot`.
 
   The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.
 
@@ -1175,8 +1123,8 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
 
   A directory that isn't there isn't made, and the screenshot is refused.
 
-  It is taken as the next frame ends, not from the frame drawn last as raylib's is.
+  Taken as the next frame ends, not from the frame drawn last as raylib's is.
 
-  Its alpha is opaque, as raylib's is.
+  The image\'s alpha is opaque, as raylib's is.
 
-  It is refused before `InitWindow`.
+  Refused before `InitWindow`.

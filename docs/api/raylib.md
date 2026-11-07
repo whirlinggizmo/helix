@@ -3536,7 +3536,7 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `v3`: The third point.
   - `color`: The color.
 
-  Its points must go counterclockwise on the screen, as raylib's must: a triangle whose points go clockwise faces away, and isn't drawn while back faces are culled (`rlEnableBackfaceCulling`, the default).
+  The points must go counterclockwise on the screen, as raylib's must: a triangle whose points go clockwise faces away, and isn't drawn while back faces are culled (`rlEnableBackfaceCulling`, the default).
 - `DrawTriangleLines`: Draws a triangle's outline, one pixel wide.
   - `v1`: The first point.
   - `v2`: The second point.
@@ -4252,7 +4252,7 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   - `fontSize`: The height of a line, in pixels.
   - `spacing`: The space between letters, at the font's size.
   - `tint`: The color.
-- `LoadTextureFromImage`: Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, its mipmaps too when it has them (`ImageMipmaps`), filtered through them, trilinear, as raylib sets it. Its format is the image's, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed format gives no texture, with a warning. Its pixels are let go of once sent, so after a page's GPU context is lost it draws as nothing, with one warning (`Raylib`).
+- `LoadTextureFromImage`: Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, its mipmaps too when it has them (`ImageMipmaps`), filtered through them, trilinear, as raylib sets it. The texture\'s format is the image\'s, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed format gives no texture, with a warning. Its pixels are let go of once sent, so after a page's GPU context is lost it draws as nothing, with one warning (`Raylib`).
   - `image`: The image.
   - returns: The texture.
 - `LoadTextureCubemap`: Makes a cubemap of an image, its six faces laid out as raylib's layouts lay them: `CUBEMAP_LAYOUT_LINE_VERTICAL` (a column, +X, -X, +Y, -Y, +Z, -Z from the top), `CUBEMAP_LAYOUT_LINE_HORIZONTAL` (a row, in that order from the left), `CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR` (3 faces wide, 4 high: +Y, +X, -Y and -X down the middle column, +Z left of +X and -Z right of it) or `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE` (4 wide, 3 high: +Y at the top of the second column, then -X, +Z, +X, -Z across, then -Y below +Z), each face's rows top first as GL's cube faces take them; `CUBEMAP_LAYOUT_AUTO_DETECT` takes the layout from the image's shape. A face is the image's height over 6 (a column), its width over 6 (a row), over 3 (3 by 4) or over 4 (4 by 3).
@@ -4418,7 +4418,7 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
   - `packMethod`: 0 packs rows in order; 1 packs by height, as raylib's skyline packer.
   - returns: The image.
 
-  Its size is estimated from the glyphs' widths, a power of two wide; when packing rows in order (`packMethod` 0) runs out of rows, it is made twice as high, as many times as it needs, so every glyph has its place. The skyline packer (1) leaves a glyph that doesn't fit out, with a warning, placed at 2147483648 across and down, as raylib's.
+  The atlas\'s size is estimated from the glyphs' widths, a power of two wide; when packing rows in order (`packMethod` 0) runs out of rows, it is made twice as high, as many times as it needs, so every glyph has its place. The skyline packer (1) leaves a glyph that doesn't fit out, with a warning, placed at 2147483648 across and down, as raylib's.
 - `LoadFontFromImage`: Makes a font from an image of glyphs, as raylib's does: the glyphs in rows on a key color, the key's border before the first glyph giving the space between glyphs and between rows; each glyph a run of pixels that aren't the key, numbered from a first character. The key becomes clear on the font's texture. An image with no such border gives the default font. A glyph's height ends at the image's bottom and its width at its right edge, as raylib's scan has them. At most 256 glyphs are read, where raylib's writes past its 256.
   - `image`: The image, in any uncompressed format.
   - `key`: The color around the glyphs.
@@ -4501,7 +4501,7 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
   - `text`: The text.
   - returns: The number; 0 when it starts with none, or for null text.
 
-  It is worked out in 32-bit floats, digit by digit, as raylib works it, so the result is the float raylib returns: "0.1" is 0.100000001490116.
+  Worked out in 32-bit floats, digit by digit, as raylib works it, so the result is the float raylib returns: "0.1" is 0.100000001490116.
 - `LoadUTF8`: Returns the text of characters.
   - `codepoints`: The characters' codes.
   - `length`: How many of them.

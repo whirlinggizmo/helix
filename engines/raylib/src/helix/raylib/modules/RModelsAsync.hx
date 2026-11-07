@@ -243,7 +243,7 @@ class RModelsAsync {
 	/** Asynchronously writes a mesh as a C header through `SaveFileTextAsync`, in place of raylib's
 		`ExportMeshAsCode`. See `ExportMeshAsync` for writing an OBJ file.
 
-		Its counts are written as defines, and each array it has as 20 values a line, floats to 3 places, as raylib's `ExportMeshAsCode`
+		The mesh\'s counts are written as defines, and each array it has as 20 values a line, floats to 3 places, as raylib's `ExportMeshAsCode`
 		writes them.
 
 		@param mesh  The mesh.

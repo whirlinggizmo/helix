@@ -54,7 +54,7 @@ class RDebug {
 
 		A model never posed draws its bind pose. A model without bones draws nothing.
 
-		It draws in 3D mode (BeginMode3D), over what is drawn before it, as DrawLine3D does.
+		Draws in 3D mode (BeginMode3D), over what is drawn before it, as DrawLine3D does.
 
 		A model drawn as several copies, each posed apart, is posed and drawn copy by copy:
 
@@ -104,7 +104,7 @@ class RDebug {
 
 		The box is GetModelBoundingBoxPosed's (helix.raylib.extras.Models).
 
-		It draws in 3D mode, as DrawBoundingBox does.
+		Draws in 3D mode, as DrawBoundingBox does.
 
 		@param model  The model.
 		@param position  Where the model is drawn, as DrawModel's.
@@ -127,14 +127,14 @@ class RDebug {
 	/** Draws the frame's cost at a point on the screen in FrameStatsStyle's default look at a size, as DrawFPS draws the rate.
 		See `DrawFrameStatsEx` for choosing the stats and their look.
 
-		It draws a line each for:
+		Draws a line each for:
 		- the frames a second
 		- the frame time's mean and its slowest 5% (p95) over the last half second, in milliseconds
 		- the last frame's draw calls
 
 		The text's color is judged against SetTargetFPS's target, or the monitor's refresh rate without one.
 
-		It is `DrawFrameStatsEx(new Vector2(posX, posY), {fontSize: fontSize})`, every other field the style's default.
+		The same as `DrawFrameStatsEx(new Vector2(posX, posY), {fontSize: fontSize})`, every other field the style's default.
 
 		@param posX  The text's left, in pixels.
 		@param posY  The text's top, in pixels.
@@ -188,7 +188,7 @@ class RDebug {
 
 		The size includes the padding.
 
-		It is sized for the widest values, so it is the same from frame to frame.
+		Sized for the widest values, so it is the same from frame to frame.
 
 		@param style  What to show and how.
 		@return  The width and height, in pixels. */

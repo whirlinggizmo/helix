@@ -22,7 +22,7 @@ class Files {
 
 	/** Asynchronously reads a file's bytes, in place of raylib's `LoadFileData`. See `LoadFileTextAsync` for reading a text file.
 
-		It reads the first of these that has the file:
+		Reads the first of these that has the file:
 		- the program's `SetLoadFileDataCallback`
 		- what `SaveFileData` wrote
 		- the program's files
@@ -35,7 +35,7 @@ class Files {
 
 	/** Asynchronously reads a text file, in place of raylib's `LoadFileText`. See `LoadFileDataAsync` for reading a file's bytes.
 
-		It reads the first of these that has the file:
+		Reads the first of these that has the file:
 		- the program's `SetLoadFileTextCallback`
 		- what `SaveFileText` wrote
 		- the program's files
@@ -71,7 +71,7 @@ class Files {
 
 	/** Asynchronously writes a text file, in place of raylib's `SaveFileText`. See `SaveFileDataAsync` for writing bytes.
 
-		It is written through the program's `SetSaveFileTextCallback` when it has one, during the call, and answered by what that returned.
+		Written through the program's `SetSaveFileTextCallback` when it has one, during the call, and answered by what that returned.
 
 		Otherwise it is kept across runs, natively and in a page, and answered once the write has finished.
 
@@ -207,7 +207,7 @@ class Files {
 		- the bytes' count, as a define
 		- the bytes, as an array in hexadecimal, 20 a line
 
-		It is written through `SaveFileTextAsync`.
+		Written through `SaveFileTextAsync`.
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
@@ -222,7 +222,7 @@ class Files {
 
 		The file is read as `LoadFileTextAsync` reads it.
 
-		It reads these lines, as raylib's does:
+		Reads these lines, as raylib's does:
 		- a line starting `c`, the count
 		- a line starting `e`, an event: its frame, type and four parameters
 
@@ -244,7 +244,7 @@ class Files {
 		- `c` and the count
 		- a line for each event: `e`, its frame, type and four parameters, and its type's name
 
-		It is written through `SaveFileTextAsync`.
+		Written through `SaveFileTextAsync`.
 
 		@param list  The list.
 		@param fileName  The file.

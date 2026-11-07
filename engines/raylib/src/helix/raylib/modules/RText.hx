@@ -401,7 +401,7 @@ class RText {
 		image is white with the glyphs' coverage as alpha (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`), and its bottom-right 3 by 3 texels are
 		opaque white.
 
-		Its size is estimated from the glyphs' widths, a power of two wide; when packing rows in order (`packMethod` 0) runs out of rows,
+		The atlas\'s size is estimated from the glyphs' widths, a power of two wide; when packing rows in order (`packMethod` 0) runs out of rows,
 		it is made twice as high, as many times as it needs, so every glyph has its place. The skyline packer (1) leaves a glyph that
 		doesn't fit out, with a warning, placed at 2147483648 across and down, as raylib's.
 
@@ -1295,7 +1295,7 @@ class RText {
 	/** Returns the number text starts with, as raylib reads it: an optional "+" or "-", digits, then a "." and more digits. An exponent,
 		as in "1e3", isn't read, and nothing is skipped.
 
-		It is worked out in 32-bit floats, digit by digit, as raylib works it, so the result is the float raylib returns: "0.1" is
+		Worked out in 32-bit floats, digit by digit, as raylib works it, so the result is the float raylib returns: "0.1" is
 		0.100000001490116.
 
 		@param text  The text.

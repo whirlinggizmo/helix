@@ -23,9 +23,7 @@ class Audio {
 	#if !macro
 	// ---- audio: the sound, wave and music loads and wave writes in place of raudio's that wait (raylib/RAudioAsync.hx) ----
 
-	/** Asynchronously loads and decodes a sound file, ready to play at once. See `LoadMusicStreamAsync` for playing a file as it is read.
-
-		It replaces raylib's `LoadSound`.
+	/** Asynchronously loads and decodes a sound file, ready to play at once, in place of raylib's `LoadSound`. See `LoadMusicStreamAsync` for playing a file as it is read.
 
 		`InitAudioDevice` must come first.
 
@@ -37,15 +35,13 @@ class Audio {
 	public static inline function LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void):Void
 		RAudioAsync.LoadSoundAsync(fileName, loaded, failed);
 
-	/** Asynchronously opens a music file to be played as it is read. See `LoadSoundAsync` for decoding a file whole first.
-
-		It replaces raylib's `LoadMusicStream`.
+	/** Asynchronously opens a music file to be played as it is read, in place of raylib's `LoadMusicStream`. See `LoadSoundAsync` for decoding a file whole first.
 
 		`InitAudioDevice` must come first.
 
 		A FLAC file is refused, as raylib 5.5's default build leaves FLAC out.
 
-		It is never loaded whole. Natively it is read from its file, and in a page from the download as it arrives (helix-services'
+		Never loaded whole. Natively it is read from its file, and in a page from the download as it arrives (helix-services'
 		`Audio.stream`).
 
 		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
@@ -54,9 +50,7 @@ class Audio {
 	public static inline function LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void):Void
 		RAudioAsync.LoadMusicStreamAsync(fileName, loaded, failed);
 
-	/** Asynchronously writes a wave to a sound file. See `ExportWaveAsCodeAsync` for writing a C header.
-
-		It replaces raylib's `ExportWave`.
+	/** Asynchronously writes a wave to a sound file, in place of raylib's `ExportWave`. See `ExportWaveAsCodeAsync` for writing a C header.
 
 		The extension chooses the format:
 
@@ -74,9 +68,7 @@ class Audio {
 	public static inline function ExportWaveAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
 		RAudioAsync.ExportWaveAsync(wave, fileName, done, failed);
 
-	/** Asynchronously writes a wave as a C header. See `ExportWaveAsync` for writing a sound file.
-
-		It replaces raylib's `ExportWaveAsCode`.
+	/** Asynchronously writes a wave as a C header, in place of raylib's `ExportWaveAsCode`. See `ExportWaveAsync` for writing a sound file.
 
 		The header holds:
 

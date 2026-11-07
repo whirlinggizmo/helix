@@ -900,7 +900,7 @@ class RShapes {
 
 	/** Draws a filled triangle.
 
-		Its points must go counterclockwise on the screen, as raylib's must: a triangle whose points go clockwise faces away, and isn't
+		The points must go counterclockwise on the screen, as raylib's must: a triangle whose points go clockwise faces away, and isn't
 		drawn while back faces are culled (`rlEnableBackfaceCulling`, the default).
 
 		@param v1  The first point.

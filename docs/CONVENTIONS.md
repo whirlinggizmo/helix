@@ -209,7 +209,9 @@ Code is written to be read, by people and agents, not packed.
     - The remarks are short paragraphs, one fact each, the one most callers need first. A fact is cause then effect, in the order it
       happens, with the call as the subject, in the active voice: "In a page, reading a file that hasn't been saved yet asks the
       server for it and logs a 404 in the browser's console before `failed` answers", not "a file nobody saved yet is asked of the
-      server, which logs a 404". What a member reads from the program's data is listed, not described around.
+      server, which logs a 404". A remark about the member itself is a fragment as the summary is, the member its implied subject and
+      no pronoun ("Refused in a page.", "Written through `SaveFileTextAsync`."), as .NET's are; "it" names something else in the
+      sentence, never the member. What a member reads from the program's data is listed, not described around.
     - What is true of the program's own files (an asset's bone names, where a model is authored) is the program's spec's, not the
       API's. A comment that needs a second screen is two members' or a README's.
 

@@ -165,7 +165,7 @@ class RDevice {
 
 		A full tilt of 1 is `SetTiltRange`'s angle.
 
-		It is 0 until readings arrive and the device has been held steady once. Level is taken then.
+		The tilt is 0 until readings arrive and the device has been held steady once. Level is taken then.
 
 		@return  The tilt. */
 	static function GetTilt():Vector2 {
