@@ -4,7 +4,9 @@ Helix is a suite of libraries and engines for Haxe game development.  It provide
 
 > **Work in progress.** No API is stable yet, and any name may change in any commit. Caveat Emptor.
 
-## What's here
+## Components
+
+### Libraries
 
 | Library | Description | API | Dependencies |
 |---|---|---|---|
@@ -16,7 +18,7 @@ Helix is a suite of libraries and engines for Haxe game development.  It provide
 | [helix-services](libs/services/README.md) | Time, input, assets, audio, images, saves and config over the platform | [API](https://whirlinggizmo.github.io/helix/api/helix/services/index.html) | helix-platform, helix-geometry, helix-math, helix-log |
 | [helix-render](libs/render/README.md) | Drawing: 2D and 3D batches, draw lists, text, materials, lights, shadows, environment maps and post-processing. Being built in stages | [API](https://whirlinggizmo.github.io/helix/api/helix/render/index.html) | helix-services, helix-platform, helix-formats, helix-geometry, helix-math, helix-log |
 
-The libraries are plain. A program constructs what it uses and nothing runs on its own. An engine on top may run the loop:
+### Engines
 
 | Engine | Description | API | Dependencies |
 |---|---|---|---|
