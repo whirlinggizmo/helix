@@ -7,19 +7,19 @@ behind it is an adapter in `helix.platform.adapters.<interface>.<api>`. Note tha
 |---|---|---|---|
 | `IGraphics` | The GPU | `graphics.webgl2.WebGl2GraphicsAdapter` | `graphics.sokol.SokolGraphicsAdapter` (GL 4.1), `graphics.sdl3gpu.Sdl3GpuGraphicsAdapter` (Vulkan, Direct3D 12, Metal) |
 | `IWindow` | The window | `window.dom.DomWindowAdapter` | `window.sdl3.Sdl3WindowAdapter` |
-| `IEvents` | The window's events, and the stream the devices add to | `events.dom.DomEventsAdapter` | `events.sdl3.Sdl3EventsAdapter` |
+| `IEvents` (polled) | The window's events, and the stream the devices add to | `events.dom.DomEventsAdapter` | `events.sdl3.Sdl3EventsAdapter` |
 | `IKeyboard` | Keys and typed text | `keyboard.dom.DomKeyboardAdapter` | `keyboard.sdl3.Sdl3KeyboardAdapter` |
 | `IMouse` | The mouse | `mouse.dom.DomMouseAdapter` | `mouse.sdl3.Sdl3MouseAdapter` |
 | `ITouch` | Fingers | `touch.dom.DomTouchAdapter` | `touch.sdl3.Sdl3TouchAdapter` |
 | `IGamepads` | Gamepads | `gamepads.dom.DomGamepadsAdapter` | `gamepads.sdl3.Sdl3GamepadsAdapter` |
 | `ITilt` | The device's tilt | `tilt.dom.DomTiltAdapter` | `tilt.sdl3.Sdl3TiltAdapter` (unavailable) |
 | `ISystem` | The device, the clock and the program's directories | `system.dom.DomSystemAdapter` | `system.sdl3.Sdl3SystemAdapter` |
-| `IAudio` | Sound | `audio.webaudio.WebAudioAdapter` | `audio.sdl3mixer.Sdl3MixerAudioAdapter` |
-| `IAudioDecoder` | Audio files to samples | `audiodecoder.webaudio.WebAudioDecoderAdapter` | `audiodecoder.sdl3mixer.Sdl3MixerAudioDecoderAdapter` |
-| `IImageDecoder` | Image files to pixels | `imagedecoder.canvas.CanvasImageDecoderAdapter` | `imagedecoder.stb.StbImageDecoderAdapter` |
-| `IFontRasterizer` | TrueType and OpenType glyphs to bitmaps | `fontrasterizer.canvas.CanvasFontRasterizerAdapter` | `fontrasterizer.stb.StbFontRasterizerAdapter` |
-| `IHttp` | HTTP GET | `http.fetchapi.FetchApiHttpAdapter` | `http.haxehttp.HaxeHttpAdapter` |
-| `IFileSystem` | Files on this machine | `filesystem.browser.BrowserFileSystemAdapter` | `filesystem.native.NativeFileSystemAdapter` |
+| `IAudio` (polled) | Sound | `audio.webaudio.WebAudioAdapter` | `audio.sdl3mixer.Sdl3MixerAudioAdapter` |
+| `IAudioDecoder` (polled) | Audio files to samples | `audiodecoder.webaudio.WebAudioDecoderAdapter` | `audiodecoder.sdl3mixer.Sdl3MixerAudioDecoderAdapter` |
+| `IImageDecoder` (polled) | Image files to pixels | `imagedecoder.canvas.CanvasImageDecoderAdapter` | `imagedecoder.stb.StbImageDecoderAdapter` |
+| `IFontRasterizer` (polled) | TrueType and OpenType glyphs to bitmaps | `fontrasterizer.canvas.CanvasFontRasterizerAdapter` | `fontrasterizer.stb.StbFontRasterizerAdapter` |
+| `IHttp` (polled) | HTTP GET | `http.fetchapi.FetchApiHttpAdapter` | `http.haxehttp.HaxeHttpAdapter` |
+| `IFileSystem` (polled) | Files on this machine | `filesystem.browser.BrowserFileSystemAdapter` | `filesystem.native.NativeFileSystemAdapter` |
 | `IExport` | A file handed to the user | `export.download.DownloadExportAdapter` | `export.filesystem.FileSystemExportAdapter` |
 
 ## Using it
