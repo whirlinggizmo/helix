@@ -9,7 +9,8 @@
   "assets": {
     "web/distortion330.fs": "raylib:examples/core/resources/distortion330.fs"
   },
-  "frames": 5,
+  "shaders": [[null, "web/distortion330.fs", "web/distortion.shader"]],
+  "frames": 40,
   "backends": {
     "gl": 80,
     "sdl_gpu": 1100

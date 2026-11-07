@@ -81,7 +81,7 @@ TARGETS = {
     'extras/Device.hx': ([
         ('RDevice', "device: the safe area, run options, the device, the window's abilities, orientation and tilt"),
     ], None, 'Device'),
-    'extras/Shaders.hx': ([('RShadersAsync', "shaders: the loads of shaders compiled ahead of time")], None, 'Shaders'),
+    'extras/Shaders.hx': ([('RCompiledShaders', "shaders: the loads of shaders compiled ahead of time")], None, 'Shaders'),
     'extras/Gui.hx': ([('RGuiAsync', "gui: the style and icon loads in place of raygui's that wait for a file")], None, 'Gui'),
     'extras/GuiSkins.hx': ([('RGuiSkins', "gui skins: raygui's controls drawn from textures")], None, 'GuiSkins'),
     'extras/Debug.hx': ([('RDebug', "debug: a model's skeleton and bounds as posed, and the frame's cost")], None, 'Debug'),

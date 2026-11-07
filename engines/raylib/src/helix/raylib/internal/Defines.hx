@@ -12,11 +12,6 @@ class Defines {
 	/** helix-raylib's defines, each with its documentation. */
 	public static final ALL:Array<haxe.macro.Compiler.DefineDescription> = [
 		{
-			define: "helix-raylib-files",
-			doc: "Where the program's files are as it builds, relative to the build's directory: LoadShader compiles the shaders it names from there. Defaults to web.",
-			params: ["directory"]
-		},
-		{
 			define: "helix-raylib-native-root",
 			doc: "Where a native program finds its files, relative to its own directory. Defaults to ../web.",
 			params: ["directory"]

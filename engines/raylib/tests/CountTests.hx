@@ -72,7 +72,7 @@ class CountTests {
 						map.texture.id
 		];
 
-	// A shader of its own: raylib's default program, made again, as LoadShader makes one.
+	// A shader of its own: raylib's default program, made again, as LoadCompiledShaderAsync makes one.
 	static function makeShader():Shader
 		return @:privateAccess helix.raylib.modules.RModels.makeShader(helix.raylib.internal.Defaults.shader());
 

@@ -145,7 +145,7 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
 - **Libraries apart from engines (done):** the libraries in `libs/` know no consumer, and the engines over them in `engines/` may own
   the loop and keep statics (docs/PLAN.md); `check_layers` refuses a library that reaches an engine, and the engines' tests run on every
   library change. helix-ray is helix-raylib: `engines/raylib/`, `-lib helix-raylib`, `import helix.raylib.Raylib.*;`, its defines
-  `helix-raylib-files`, `helix-raylib-native-root` and `helix-raylib-custom-frame-control`. Next, separate repositories, each engine
+  `helix-raylib-native-root` and `helix-raylib-custom-frame-control`. Next, separate repositories, each engine
   pinning a library version, once the platform has held through a second consumer and is versioned.
 - **SDL3 with the platform:** a native build needs only Haxe and hxcpp (goal 6), so the platform haxelib ships the pinned SDL3 per
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.

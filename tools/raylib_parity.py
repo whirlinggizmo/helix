@@ -14,7 +14,8 @@ A value suite's Haxe harness is then built for Node (js) and hxcpp (cpp), or the
 in a headless Chromium, Playwright's own, muted, through tools/page_check.cjs, for what only a browser has), and run, each
 printing what the reference prints, a line at a time. Each section's lines (by their first word, or as the manifest's sections say) are compared word by word: words and integers
 exactly, other numbers relative to max(1, |either|, the line's scale), within the section's bar (the manifest's bars, a target's own where it names one, else its
-tolerance). A pixel suite's helix-raylib program is built natively for each backend it names (gl, sdl_gpu) and run on the private display,
+tolerance). A pixel suite's helix-raylib program is built natively for each backend it names (gl, sdl_gpu), its shaders (the manifest's
+shaders) compiled ahead of time by the same build, and run on the private display,
 and its frame compared with raylib's: how many pixels differ at all, against the backend's allowance. Each section's or backend's
 worst is printed beside its bar. Exits 1 on any failure.
 
@@ -141,6 +142,14 @@ def build_reference(manifest, reference, source, out):
     built = subprocess.run(command, capture_output=True, text=True)
     if built.returncode:
         raise Failure(f'the C reference didn\'t build\n{built.stderr[-3000:]}')
+
+
+def compiled_shaders(manifest):
+    """The build's lines compiling each of the manifest's shaders (its shaders: [vertex, fragment, compiled], each a path in the suite's
+    output or null for raylib's default stage) into the file LoadCompiledShaderAsync loads, as a program's build does."""
+    def quoted(path):return 'null' if path is None else json.dumps(path)
+    return [a for vs, fs, out in manifest.get('shaders', [])
+            for a in ('--macro', f'helix.raylib.extras.Shaders.CompileShaderFile({quoted(vs)}, {quoted(fs)}, {quoted(out)})')]
 
 
 class Failure(Exception):
@@ -352,7 +361,7 @@ def check_pixels(name, manifest, main, out, display, env):
         directory = out / ('native' if backend == 'gl' else 'native-gpu')
         defines = ['-D', 'sdl_gpu'] if backend == 'sdl_gpu' else []
         haxe(['-lib', 'helix-raylib', '-cp', str(out / 'src'), '-main', main, '-dce', 'full', '-D', f'HXCPP_COMPILE_THREADS={os.cpu_count() or 4}']
-             + defines + ['-cpp', str(directory)], env, cwd=out)
+             + defines + compiled_shaders(manifest) + ['-cpp', str(directory)], env, cwd=out)
         native_build.place_runtimes(directory, SDL3)
         shot = directory / 'helix.png'
         if shot.exists():

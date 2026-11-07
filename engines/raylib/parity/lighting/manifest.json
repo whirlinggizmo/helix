@@ -14,6 +14,7 @@
     "web/own.vs": "own.vs",
     "web/own.fs": "own.fs"
   },
+  "shaders": [["web/own.vs", "web/own.fs", "web/own.shader"]],
   "frames": 40,
   "backends": {
     "gl": 150,

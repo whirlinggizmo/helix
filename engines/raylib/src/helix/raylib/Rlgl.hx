@@ -1276,14 +1276,14 @@ class Rlgl {
 		return helix.platform.macros.Build.unsupported("rlCubemapParameters: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableShader` (binding a shader program). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Refuses to compile on every target, replacing rlgl's `rlEnableShader` (binding a shader program). See `LoadCompiledShaderAsync` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlEnableShader(id:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlEnableShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlEnableShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableShader` (unbinding the shader program). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Refuses to compile on every target, replacing rlgl's `rlDisableShader` (unbinding the shader program). See `LoadCompiledShaderAsync` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlDisableShader():ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDisableShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlDisableShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlEnableFramebuffer` (binding a framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
@@ -1347,14 +1347,14 @@ class Rlgl {
 		return helix.platform.macros.Build.unsupported("rlGetTextureIdDefault: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync, in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;), or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetShaderIdDefault` (getting the default shader's id). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Refuses to compile on every target, replacing rlgl's `rlGetShaderIdDefault` (getting the default shader's id). See `LoadCompiledShaderAsync` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlGetShaderIdDefault():ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlGetShaderIdDefault: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlGetShaderIdDefault: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro(0 : Int));
 
 	/** Refuses to compile on every target, replacing rlgl's `rlGetShaderLocsDefault` (getting the default shader's locations). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlGetShaderLocsDefault():ExprOf<Array<Int>>
-		return helix.platform.macros.Build.unsupported("rlGetShaderLocsDefault: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlGetShaderLocsDefault: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro(null : Array<Int>));
 
 	/** Refuses to compile on every target, replacing rlgl's `rlLoadRenderBatch` (making a render batch). See `rlDrawRenderBatchActive` for drawing the frame's one batch. */
@@ -1520,59 +1520,59 @@ class Rlgl {
 		return helix.platform.macros.Build.unsupported("rlUnloadFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadShaderCode` (making a shader from source). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Refuses to compile on every target, replacing rlgl's `rlLoadShaderCode` (making a shader from source). See `LoadCompiledShaderAsync` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlLoadShaderCode(vsCode:ExprOf<String>, fsCode:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadShaderCode: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlLoadShaderCode: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlCompileShader` (compiling one stage of a shader). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Refuses to compile on every target, replacing rlgl's `rlCompileShader` (compiling one stage of a shader). See `LoadCompiledShaderAsync` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlCompileShader(shaderCode:ExprOf<String>, type:ExprOf<Int>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlCompileShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlCompileShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadShaderProgram` (linking a shader program). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Refuses to compile on every target, replacing rlgl's `rlLoadShaderProgram` (linking a shader program). See `LoadCompiledShaderAsync` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlLoadShaderProgram(vShaderId:ExprOf<Int>, fShaderId:ExprOf<Int>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadShaderProgram: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlLoadShaderProgram: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadShaderProgram` (unloading a shader program). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Refuses to compile on every target, replacing rlgl's `rlUnloadShaderProgram` (unloading a shader program). See `LoadCompiledShaderAsync` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlUnloadShaderProgram(id:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUnloadShaderProgram: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlUnloadShaderProgram: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetLocationUniform` (finding a uniform's location). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Refuses to compile on every target, replacing rlgl's `rlGetLocationUniform` (finding a uniform's location). See `LoadCompiledShaderAsync` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlGetLocationUniform(shaderId:ExprOf<Int>, uniformName:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlGetLocationUniform: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlGetLocationUniform: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetLocationAttrib` (finding an attribute's location). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Refuses to compile on every target, replacing rlgl's `rlGetLocationAttrib` (finding an attribute's location). See `LoadCompiledShaderAsync` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlGetLocationAttrib(shaderId:ExprOf<Int>, attribName:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlGetLocationAttrib: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlGetLocationAttrib: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetUniform` (setting a uniform's value). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Refuses to compile on every target, replacing rlgl's `rlSetUniform` (setting a uniform's value). See `LoadCompiledShaderAsync` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlSetUniform(locIndex:ExprOf<Int>, value:ExprOf<Dynamic>, uniformType:ExprOf<Int>, count:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetUniform: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlSetUniform: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformMatrix` (setting a matrix uniform). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformMatrix` (setting a matrix uniform). See `LoadCompiledShaderAsync` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlSetUniformMatrix(locIndex:ExprOf<Int>, mat:ExprOf<Matrix>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetUniformMatrix: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlSetUniformMatrix: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformMatrices` (setting an array of matrix uniforms). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlSetUniformMatrices(locIndex:ExprOf<Int>, mat:ExprOf<Array<Matrix>>, count:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetUniformMatrices: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlSetUniformMatrices: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformSampler` (setting a sampler uniform). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformSampler` (setting a sampler uniform). See `LoadCompiledShaderAsync` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlSetUniformSampler(locIndex:ExprOf<Int>, textureId:ExprOf<Int>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetUniformSampler: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlSetUniformSampler: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetShader` (choosing the shader rlgl draws with). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Refuses to compile on every target, replacing rlgl's `rlSetShader` (choosing the shader rlgl draws with). See `LoadCompiledShaderAsync` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlSetShader(id:ExprOf<Int>, locs:ExprOf<Array<Int>>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlSetShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlLoadComputeShaderProgram` (making a compute shader program). No target has compute shaders or shader storage buffers, as WebGL2 has none. */

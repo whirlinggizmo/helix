@@ -9,8 +9,11 @@
   "assets": {
     "web/skybox.png": "raylib:examples/models/resources/skybox.png",
     "web/skybox.vs": "raylib:examples/models/resources/shaders/glsl330/skybox.vs",
-    "web/skybox.fs": "raylib:examples/models/resources/shaders/glsl330/skybox.fs"
+    "web/skybox.fs": "raylib:examples/models/resources/shaders/glsl330/skybox.fs",
+    "web/cube.vs": "cube.vs",
+    "web/cube.fs": "cube.fs"
   },
+  "shaders": [["web/skybox.vs", "web/skybox.fs", "web/skybox.shader"], ["web/cube.vs", "web/cube.fs", "web/cube.shader"]],
   "frames": 300,
   "backends": {
     "gl": 50,

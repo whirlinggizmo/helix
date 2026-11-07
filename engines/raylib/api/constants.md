@@ -679,6 +679,8 @@ static macro function emscripten_run_script_int(script:String):Int
 static macro function emscripten_run_script_string(script:String):String
 static macro function emscripten_get_now():Float
 static macro function emscripten_sleep(ms:Int):Void
+static macro function LoadShader(vsFileName:String, fsFileName:String):Shader
+static macro function LoadShaderFromMemory(vsCode:String, fsCode:String):Shader
 static macro function LoadTexture(fileName:String):Texture2D
 static macro function LoadImage(fileName:String):Image
 static macro function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int):Image
@@ -763,6 +765,8 @@ static macro function DetachAudioMixedProcessor(processor:Null<(bufferData:haxe.
 - `emscripten_run_script_string`: Doesn't compile, since a program asks helix-raylib for what the page knows instead. See `GetPlatformOS` for reading the system.
 - `emscripten_get_now`: Doesn't compile. See `GetTime` for reading the seconds since `InitWindow`.
 - `emscripten_sleep`: Doesn't compile, since a page can't wait inside a frame. See `GetTime` for timing a later frame.
+- `LoadShader`: Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader compiled ahead of time by `CompileShaderFile`.
+- `LoadShaderFromMemory`: Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromData` for making a shader from compiled data in memory.
 - `LoadTexture`: Names raylib's texture load, which waits for the file, and doesn't compile on any target. See `LoadTextureAsync` for loading a texture from a file. A page can't wait for a file.
 - `LoadImage`: Names raylib's image load, which waits for the file, and doesn't compile on any target. See `LoadImageAsync` for loading an image from a file. A page can't wait for a file.
 - `LoadImageRaw`: Names raylib's load of an image's raw pixels, which waits for the file, and doesn't compile on any target. See `LoadImageRawAsync` for loading raw pixels from a file. A page can't wait for a file.
@@ -999,19 +1003,9 @@ static inline var NPATCH_THREE_PATCH_HORIZONTAL:Int
 
 
 ```haxe
-static macro function LoadShader(vsFileName:Null<String>, fsFileName:Null<String>):Shader
-static macro function LoadShaderFromMemory(vsCode:Null<String>, fsCode:Null<String>):Shader
 static macro function LoadAutomationEventList(fileName:Null<String>):AutomationEventList
 ```
 
-- `LoadShader`: Loads a shader from raylib GLSL files (330, or 100; one 330 file serves the web too, compiled to its GLSL ES as the program builds), either null for raylib's default stage. They are compiled as the program builds, for every target, so their names are constants; the files are found under `-D helix-raylib-files` (default `web`), as the program's other files are. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25). A uniform given an initializer in the GLSL (`uniform vec2 scale = vec2(0.25, 0.45);`) starts at it, as GL sets it.
-  - `vsFileName`: The vertex stage's file, or null.
-  - `fsFileName`: The fragment stage's file, or null.
-  - returns: The shader.
-- `LoadShaderFromMemory`: Loads a shader from raylib GLSL text, either null for raylib's default stage. It is compiled as the program builds, so the text is a constant. The program holds it until `UnloadShader`, and each material given it holds it too (docs/DECISIONS.md 25). A uniform given an initializer in the GLSL starts at it, as GL sets it.
-  - `vsCode`: The vertex stage's text, or null.
-  - `fsCode`: The fragment stage's text, or null.
-  - returns: The shader.
 - `LoadAutomationEventList`: Returns an empty automation events list to record into, its capacity raylib's 16384, as raylib's `LoadAutomationEventList(NULL)`. Given a file instead, a call doesn't compile: a page can't wait for a file, so `LoadAutomationEventListAsync` reads one.
   - `fileName`: Null (or 0, as raylib's examples write it).
   - returns: The list.

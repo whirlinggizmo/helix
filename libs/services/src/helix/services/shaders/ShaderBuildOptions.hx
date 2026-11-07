@@ -27,4 +27,8 @@ typedef ShaderBuildOptions = {
 
 	/** The asset path of the file, as `ShaderOptions.file`. Optional; no file by default. */
 	@:optional final file:String;
+
+	/** Whether the program is compiled for every target, whatever the build's: GLSL ES, GLSL 410 and SDL_GPU's stages, for a file one
+		page and one native program both load. Optional; false by default, the build's target's alone. */
+	@:optional final everyTarget:Bool;
 }

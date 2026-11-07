@@ -389,7 +389,7 @@ class ShaderMacros {
 		class paths, loose uniforms taken and the shared ones gathered. */
 	public static function compileProgram(vertex:{name:String, text:String}, fragment:{name:String, text:String}, options:ShaderBuildOptions,
 			features:Array<String>, pos:Position):ShaderSource {
-		var js = Context.defined("js");
+		var js = Context.defined("js") && options.everyTarget != true;
 		var includes:Array<String> = [];
 		var scratch:Null<String> = null;
 		if (options.includes != null) {

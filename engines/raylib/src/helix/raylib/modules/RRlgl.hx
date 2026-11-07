@@ -914,18 +914,18 @@ class RRlgl {
 		throw "rlCubemapParameters is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableShader` (binding a shader program). See `LoadShader` for making a
+	/** Refuses to compile on every target, replacing rlgl's `rlEnableShader` (binding a shader program). See `LoadCompiledShaderAsync` for making a
 		shader and `BeginShaderMode` for drawing with one.
 
 		@param id  As rlgl takes it. */
-	@:unsupported("rlEnableShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlEnableShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlEnableShader(id:Int):Void {
 		throw "rlEnableShader is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableShader` (unbinding the shader program). See `LoadShader` for
+	/** Refuses to compile on every target, replacing rlgl's `rlDisableShader` (unbinding the shader program). See `LoadCompiledShaderAsync` for
 		making a shader and `BeginShaderMode` for drawing with one. */
-	@:unsupported("rlDisableShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlDisableShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlDisableShader():Void {
 		throw "rlDisableShader is unsupported";
 	}
@@ -1042,11 +1042,11 @@ class RRlgl {
 		throw "rlGetTextureIdDefault is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetShaderIdDefault` (getting the default shader's id). See `LoadShader`
+	/** Refuses to compile on every target, replacing rlgl's `rlGetShaderIdDefault` (getting the default shader's id). See `LoadCompiledShaderAsync`
 		for making a shader and `BeginShaderMode` for drawing with one.
 
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlGetShaderIdDefault: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlGetShaderIdDefault: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlGetShaderIdDefault():Int {
 		throw "rlGetShaderIdDefault is unsupported";
 	}
@@ -1055,7 +1055,7 @@ class RRlgl {
 		`LoadShader` for making a shader and `BeginShaderMode` for drawing with one.
 
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlGetShaderLocsDefault: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlGetShaderLocsDefault: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlGetShaderLocsDefault():Array<Int> {
 		throw "rlGetShaderLocsDefault is unsupported";
 	}
@@ -1406,88 +1406,88 @@ class RRlgl {
 		throw "rlUnloadFramebuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadShaderCode` (making a shader from source). See `LoadShader` for
+	/** Refuses to compile on every target, replacing rlgl's `rlLoadShaderCode` (making a shader from source). See `LoadCompiledShaderAsync` for
 		making a shader and `BeginShaderMode` for drawing with one.
 
 		@param vsCode  As rlgl takes it.
 		@param fsCode  As rlgl takes it.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadShaderCode: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlLoadShaderCode: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlLoadShaderCode(vsCode:String, fsCode:String):Int {
 		throw "rlLoadShaderCode is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlCompileShader` (compiling one stage of a shader). See `LoadShader` for
+	/** Refuses to compile on every target, replacing rlgl's `rlCompileShader` (compiling one stage of a shader). See `LoadCompiledShaderAsync` for
 		making a shader and `BeginShaderMode` for drawing with one.
 
 		@param shaderCode  As rlgl takes it.
 		@param type  As rlgl takes it.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlCompileShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlCompileShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlCompileShader(shaderCode:String, type:Int):Int {
 		throw "rlCompileShader is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadShaderProgram` (linking a shader program). See `LoadShader` for
+	/** Refuses to compile on every target, replacing rlgl's `rlLoadShaderProgram` (linking a shader program). See `LoadCompiledShaderAsync` for
 		making a shader and `BeginShaderMode` for drawing with one.
 
 		@param vShaderId  As rlgl takes it.
 		@param fShaderId  As rlgl takes it.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadShaderProgram: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlLoadShaderProgram: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlLoadShaderProgram(vShaderId:Int, fShaderId:Int):Int {
 		throw "rlLoadShaderProgram is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadShaderProgram` (unloading a shader program). See `LoadShader` for
+	/** Refuses to compile on every target, replacing rlgl's `rlUnloadShaderProgram` (unloading a shader program). See `LoadCompiledShaderAsync` for
 		making a shader and `BeginShaderMode` for drawing with one.
 
 		@param id  As rlgl takes it. */
-	@:unsupported("rlUnloadShaderProgram: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlUnloadShaderProgram: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlUnloadShaderProgram(id:Int):Void {
 		throw "rlUnloadShaderProgram is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetLocationUniform` (finding a uniform's location). See `LoadShader`
+	/** Refuses to compile on every target, replacing rlgl's `rlGetLocationUniform` (finding a uniform's location). See `LoadCompiledShaderAsync`
 		for making a shader and `BeginShaderMode` for drawing with one.
 
 		@param shaderId  As rlgl takes it.
 		@param uniformName  As rlgl takes it.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlGetLocationUniform: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlGetLocationUniform: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlGetLocationUniform(shaderId:Int, uniformName:String):Int {
 		throw "rlGetLocationUniform is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetLocationAttrib` (finding an attribute's location). See `LoadShader`
+	/** Refuses to compile on every target, replacing rlgl's `rlGetLocationAttrib` (finding an attribute's location). See `LoadCompiledShaderAsync`
 		for making a shader and `BeginShaderMode` for drawing with one.
 
 		@param shaderId  As rlgl takes it.
 		@param attribName  As rlgl takes it.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlGetLocationAttrib: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlGetLocationAttrib: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlGetLocationAttrib(shaderId:Int, attribName:String):Int {
 		throw "rlGetLocationAttrib is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetUniform` (setting a uniform's value). See `LoadShader` for making a
+	/** Refuses to compile on every target, replacing rlgl's `rlSetUniform` (setting a uniform's value). See `LoadCompiledShaderAsync` for making a
 		shader and `BeginShaderMode` for drawing with one.
 
 		@param locIndex  As rlgl takes it.
 		@param value  As rlgl takes it.
 		@param uniformType  As rlgl takes it.
 		@param count  As rlgl takes it. */
-	@:unsupported("rlSetUniform: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlSetUniform: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlSetUniform(locIndex:Int, value:Dynamic, uniformType:Int, count:Int):Void {
 		throw "rlSetUniform is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformMatrix` (setting a matrix uniform). See `LoadShader` for
+	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformMatrix` (setting a matrix uniform). See `LoadCompiledShaderAsync` for
 		making a shader and `BeginShaderMode` for drawing with one.
 
 		@param locIndex  As rlgl takes it.
 		@param mat  As rlgl takes it. */
-	@:unsupported("rlSetUniformMatrix: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlSetUniformMatrix: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlSetUniformMatrix(locIndex:Int, mat:Matrix):Void {
 		throw "rlSetUniformMatrix is unsupported";
 	}
@@ -1498,27 +1498,27 @@ class RRlgl {
 		@param locIndex  As rlgl takes it.
 		@param mat  As rlgl takes it.
 		@param count  As rlgl takes it. */
-	@:unsupported("rlSetUniformMatrices: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlSetUniformMatrices: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlSetUniformMatrices(locIndex:Int, mat:Array<Matrix>, count:Int):Void {
 		throw "rlSetUniformMatrices is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformSampler` (setting a sampler uniform). See `LoadShader` for
+	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformSampler` (setting a sampler uniform). See `LoadCompiledShaderAsync` for
 		making a shader and `BeginShaderMode` for drawing with one.
 
 		@param locIndex  As rlgl takes it.
 		@param textureId  As rlgl takes it. */
-	@:unsupported("rlSetUniformSampler: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlSetUniformSampler: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlSetUniformSampler(locIndex:Int, textureId:Int):Void {
 		throw "rlSetUniformSampler is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetShader` (choosing the shader rlgl draws with). See `LoadShader` for
+	/** Refuses to compile on every target, replacing rlgl's `rlSetShader` (choosing the shader rlgl draws with). See `LoadCompiledShaderAsync` for
 		making a shader and `BeginShaderMode` for drawing with one.
 
 		@param id  As rlgl takes it.
 		@param locs  As rlgl takes it. */
-	@:unsupported("rlSetShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled as the program builds by LoadShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlSetShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShaderAsync in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;), set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlSetShader(id:Int, locs:Array<Int>):Void {
 		throw "rlSetShader is unsupported";
 	}

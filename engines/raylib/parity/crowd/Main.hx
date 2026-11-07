@@ -2,10 +2,11 @@ import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.extras.Window.*;
 import helix.raylib.extras.Models.*;
+import helix.raylib.extras.Shaders.*;
 
 // scene.c's crowd, drawn by helix-raylib: one greenman posed and drawn 240 times in a frame, the last row through raylib's example
 // skinning shader and the one before, and a model never posed, through a shader of its own including
-// <helix/raylib/shaders/skinning.glsl>; the third frame
+// <helix/raylib/shaders/skinning.glsl>, both compiled ahead of time; the third frame
 // after its loads saved as helix.png.
 class Main {
 	static function main():Void {
@@ -16,11 +17,12 @@ class Main {
 		for (_ in 0...4)
 			LoadModelAsync("greenman.glb", m -> models.push(m));
 		LoadModelAnimationsAsync("greenman.glb", a -> anims = a);
-		var skinning = LoadShader("skinning.vs", "skinning.fs");
-		var own = LoadShader("own.vs", "skinning.fs");
+		var skinning:Shader = null, own:Shader = null;
+		LoadCompiledShaderAsync("skinning.shader", s -> skinning = s);
+		LoadCompiledShaderAsync("own.shader", s -> own = s);
 		var frame = -1;
 		while (!WindowShouldClose()) {
-			var ready = models.length == 4 && anims != null;
+			var ready = models.length == 4 && anims != null && skinning != null && own != null;
 			if (ready && frame < 0) {
 				frame = 0;
 				models[1].materials[1].shader = skinning;

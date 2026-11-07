@@ -14,7 +14,8 @@
 ## Differences from raylib
 
 - Files load with the `...Async` calls in `helix.raylib.extras`.
-- A shader not present at build time loads from a file compiled ahead of time (`LoadShaderAsync`, `CompileShaderFile`).
+- Shaders are compiled ahead of time (`CompileShaderFile`) and loaded from the file (`LoadCompiledShaderAsync`) or its data
+  (`LoadCompiledShaderFromData`).
 - Models, shapes and images follow raylib 6.2, which fixed bugs in 5.5.
 - In a page, a lost GPU context is recovered automatically. Render textures are cleared.
 - Not supported: IQM, VOX and M3D models, morph targets, models drawn as points, and compressed images.
@@ -35,7 +36,6 @@ haxelib dev helix-raylib <checkout>/engines/raylib
 
 Defines, set in the build's hxml:
 
-- `-D helix-raylib-files=<directory>`: where the shaders are at build time. Default `web`.
 - `-D helix-raylib-native-root=<directory>`: where a native program finds its files, relative to itself. Default `../web`.
 - `-D helix-raylib-custom-frame-control`: raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`. `EndDrawing` only draws. The program calls
   `SwapScreenBuffer`, `WaitTime` and `PollInputEvents`.

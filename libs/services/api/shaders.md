@@ -358,6 +358,7 @@ Represents how `Shader.makeExpr` and `ShaderVariants.makeExpr` compile, for a li
 - `includes:Null<Map<String, String>>`: Texts an angle-bracket `#include` takes by name, before the build's class paths are looked in. Optional; none by default.
 - `includeDirectories:Null<Array<String>>`: Directories a quoted `#include` looks in after the including file's own. Optional; none by default.
 - `file:Null<String>`: The asset path of the file, as `ShaderOptions.file`. Optional; no file by default.
+- `everyTarget:Null<Bool>`: Whether the program is compiled for every target, whatever the build's: GLSL ES, GLSL 410 and SDL_GPU's stages, for a file one page and one native program both load. Optional; false by default, the build's target's alone.
 - `defines:Null<Array<String>>`: Names defined in both stages, each `NAME` (defined as 1) or `NAME=VALUE`, besides each stage's `HELIX_VERTEX` or `HELIX_FRAGMENT`. Optional; none by default.
 - `clipScale:Null<Bool>`: Whether the compiler wraps the vertex stage with a clip scale, as `ShaderOptions.clipScale`. Optional; false by default.
 - `check:Null<Shader -> Null<String>>`: The library's rules, run on the compiled shader: returns why it breaks them, which stops the build, or null. Optional.

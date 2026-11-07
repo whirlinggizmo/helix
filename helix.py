@@ -71,17 +71,18 @@ def test(native,audio_device):
 
 # helix-raylib's own tests, built as the parity harnesses are: from its source, without its program loop (tools/raylib_parity.py).
 RAYLIB_TESTS=('CountTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','LoopTests','DeviceTests','GuiSkinsTests','SkinningTests','PbrTests','DebugTests','RestoreTests','SpritesTests','ShaderFileTests')
-# ShaderFileTests' shader, compiled ahead of time as a program's would be (CompileShaderFile), its build embedding the file, and its
-# LoadShader reading the same files.
-SHADER_FILE=['-resource','build/tests/glow.shader@glow.shader','-D','helix-raylib-files=engines/raylib/tests/shaders']
+# The tests' shaders (engines/raylib/tests/shaders): each compiled ahead of time as a program's is (CompileShaderFile), into
+# build/tests, and embedded in every test as a resource of its file's name.
+TEST_SHADERS=[('glow.vs','glow.fs','glow.shader'),('own_skinning.vs',None,'own_skinning.shader')]
 
 def raylib_tests(native):
     """helix-raylib's tests on Node, and with native in hxcpp: on graphics of their own, without a window."""
     base=[a for lib in ('helix-log','helix-math','helix-geometry','helix-formats','helix-platform','helix-services') for a in ('-lib',lib)]
     base+=['-cp','engines/raylib/src','--macro','helix.raylib.internal.Metadata.register()','-cp','engines/raylib/tests','-cp','libs/services/tests']
-    run(['haxe',*base,'--macro','helix.raylib.extras.Shaders.CompileShaderFile("engines/raylib/tests/shaders/glow.vs", "engines/raylib/tests/shaders/glow.fs", "build/tests/glow.shader")'])
+    def path(name,folder):return 'null' if name is None else json.dumps(f'{folder}/{name}')
+    run(['haxe',*base,*[a for vs,fs,out in TEST_SHADERS for a in ('--macro',f'helix.raylib.extras.Shaders.CompileShaderFile({path(vs,"engines/raylib/tests/shaders")}, {path(fs,"engines/raylib/tests/shaders")}, {path(out,"build/tests")})')]])
+    extra=[a for _,_,out in TEST_SHADERS for a in ('-resource',f'build/tests/{out}@{out}')]
     for main in RAYLIB_TESTS:
-        extra=SHADER_FILE if main=='ShaderFileTests' else []
         run(['haxe',*base,*extra,'-main',main,'-js',f'build/tests/{main}.js','-D','js-es=6'])
         value=result(['node',f'build/tests/{main}.js'])
         if native:

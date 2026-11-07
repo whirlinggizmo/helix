@@ -7,6 +7,7 @@ import helix.raylib.extras.Textures.*;
 import helix.raylib.extras.Text.*;
 import helix.raylib.extras.Models.*;
 import helix.raylib.extras.Audio.*;
+import helix.raylib.extras.Shaders.*;
 import helix.raylib.Raymath.*;
 import helix.raylib.BoundingBox;
 import helix.raylib.Camera2D;
@@ -33,8 +34,8 @@ import helix.raylib.Vector3;
 	"helix.geometry.Ray3D", "helix.math.Matrix2D", "helix.math.RectPacker2D", "helix.math.Transform2D", "helix.math.Vector2D",
 	"helix.platform.adapters.fontrasterizer.canvas", "helix.platform.adapters.gamepads.dom", "helix.platform.adapters.keyboard.dom",
 	"helix.platform.adapters.mouse.dom", "helix.platform.adapters.touch.dom", "helix.raylib.internal.AudioStreams", "helix.raylib.internal.FrameConverter",
-	"helix.raylib.modules.RFilesAsync", "helix.raylib.modules.RTextAsync", "helix.raylib.modules.RWindowAsync", "helix.services.fonts",
-	"helix.services.input.Gamepads", "helix.services.input.Gestures", "helix.services.input.Keyboard", "helix.services.input.Mouse",
+	"helix.raylib.modules.RCompiledShaders", "helix.raylib.modules.RFilesAsync", "helix.raylib.modules.RTextAsync", "helix.raylib.modules.RWindowAsync",
+	"helix.services.fonts", "helix.services.input.Gamepads", "helix.services.input.Gestures", "helix.services.input.Keyboard", "helix.services.input.Mouse",
 	"helix.services.input.Touch", "helix.services.saves")
 class Main {
 	static function main():Void {
@@ -54,19 +55,12 @@ class Main {
 		var coin:Null<Sound> = null;
 		var music:Null<Music> = null;
 		var target:RenderTexture2D = LoadRenderTexture(400, 225);
-		var shader:Shader = LoadShaderFromMemory(null, "#version 330
-in vec2 fragTexCoord;
-in vec4 fragColor;
-out vec4 finalColor;
-uniform sampler2D texture0;
-uniform vec4 colDiffuse;
-uniform float time;
-void main() {
-    vec4 texel = texture(texture0, fragTexCoord);
-    finalColor = vec4(texel.rgb*(0.75 + 0.25*sin(time)), texel.a)*colDiffuse*fragColor;
-}
-");
-		var timeLocation = GetShaderLocation(shader, "time");
+		var shader:Null<Shader> = null;
+		var timeLocation = -1;
+		LoadCompiledShaderAsync("wave.shader", loaded -> {
+			shader = loaded;
+			timeLocation = GetShaderLocation(shader, "time");
+		});
 		var best = 0;
 		LoadModelAsync("hero.glb", loaded -> {
 			hero = loaded;
@@ -146,11 +140,14 @@ void main() {
 			EndTextureMode();
 			BeginDrawing();
 			ClearBackground(BLACK);
-			SetShaderValue(shader, timeLocation, time, SHADER_UNIFORM_FLOAT);
-			BeginShaderMode(shader);
+			if (shader != null) {
+				SetShaderValue(shader, timeLocation, time, SHADER_UNIFORM_FLOAT);
+				BeginShaderMode(shader);
+			}
 			DrawTexturePro(target.texture, new Rectangle(0, 0, 400, -225), new Rectangle(0, 0, GetScreenWidth(), GetScreenHeight()), new Vector2(0, 0), 0,
 				WHITE);
-			EndShaderMode();
+			if (shader != null)
+				EndShaderMode();
 			// The 2D layer: tiles and a sprite from the sheet with a 2D camera, then the text.
 			BeginMode2D(camera2D);
 			if (tiles != null)

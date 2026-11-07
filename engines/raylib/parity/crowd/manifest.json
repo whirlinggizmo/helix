@@ -12,6 +12,7 @@
     "web/skinning.fs": "raylib:examples/models/resources/shaders/glsl330/skinning.fs",
     "web/own.vs": "own.vs"
   },
+  "shaders": [["web/skinning.vs", "web/skinning.fs", "web/skinning.shader"], ["web/own.vs", "web/skinning.fs", "web/own.shader"]],
   "frames": 40,
   "backends": {
     "gl": 150,

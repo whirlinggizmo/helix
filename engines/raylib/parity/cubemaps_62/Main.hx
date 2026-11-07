@@ -2,31 +2,12 @@ import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.extras.Window.*;
 import helix.raylib.extras.Textures.*;
+import helix.raylib.extras.Shaders.*;
 import helix.raylib.Rlgl.*;
 
-// scene.c's cubemaps, drawn by helix-raylib: the third frame after the skybox's image loads saved as helix.png. Its files (web/) are raylib's
-// skybox example's image and shaders.
+// scene.c's cubemaps, drawn by helix-raylib: the third frame after the skybox's image and the shaders load saved as helix.png. Its files
+// (web/) are raylib's skybox example's image and shaders, and cube.vs and cube.fs, each pair compiled ahead of time.
 class Main {
-	static final CUBE_VS = "#version 330
-in vec3 vertexPosition;
-uniform mat4 mvp;
-out vec3 fragPosition;
-void main() {
-    fragPosition = vertexPosition;
-    gl_Position = mvp*vec4(vertexPosition, 1.0);
-}
-";
-
-	static final CUBE_FS = "#version 330
-in vec3 fragPosition;
-uniform samplerCube cubeMap;
-uniform vec4 colDiffuse;
-out vec4 finalColor;
-void main() {
-    finalColor = texture(cubeMap, fragPosition)*colDiffuse;
-}
-";
-
 	// Face i painted at (x, y): its color, and a white bar along its top from its left, so a face turned or mirrored shows.
 	static function paint(image:Image, x:Int, y:Int, size:Int, i:Int):Void {
 		var colors = [RED, LIME, BLUE, GOLD, PURPLE, ORANGE];
@@ -67,28 +48,34 @@ void main() {
 		var none = LoadTextureCubemap(square, CUBEMAP_LAYOUT_AUTO_DETECT);
 		var skyCube:TextureCubemap = null;
 		var skybox = LoadModelFromMesh(GenMeshCube(1, 1, 1));
-		skybox.materials[0].shader = LoadShader("skybox.vs", "skybox.fs");
-		var shader = skybox.materials[0].shader;
-		SetShaderValue(shader, GetShaderLocation(shader, "environmentMap"), [MATERIAL_MAP_CUBEMAP], SHADER_UNIFORM_INT);
-		SetShaderValue(shader, GetShaderLocation(shader, "doGamma"), [0], SHADER_UNIFORM_INT);
-		SetShaderValue(shader, GetShaderLocation(shader, "vflipped"), [0], SHADER_UNIFORM_INT);
+		var shaders = 0;
+		LoadCompiledShaderAsync("skybox.shader", shader -> {
+			skybox.materials[0].shader = shader;
+			SetShaderValue(shader, GetShaderLocation(shader, "environmentMap"), [MATERIAL_MAP_CUBEMAP], SHADER_UNIFORM_INT);
+			SetShaderValue(shader, GetShaderLocation(shader, "doGamma"), [0], SHADER_UNIFORM_INT);
+			SetShaderValue(shader, GetShaderLocation(shader, "vflipped"), [0], SHADER_UNIFORM_INT);
+			shaders++;
+		});
 		LoadImageAsync("skybox.png", sky -> {
 			skyCube = LoadTextureCubemap(sky, CUBEMAP_LAYOUT_AUTO_DETECT);
 			skybox.materials[0].maps[MATERIAL_MAP_CUBEMAP].texture = skyCube;
 		});
-		var sampling = LoadShaderFromMemory(CUBE_VS, CUBE_FS);
-		sampling.locs[SHADER_LOC_MAP_CUBEMAP] = GetShaderLocation(sampling, "cubeMap");
 		var models = [
 			for (i in 0...6) {
 				var model = LoadModelFromMesh(GenMeshCube(1.6, 1.6, 1.6));
-				model.materials[0].shader = sampling;
 				model.materials[0].maps[MATERIAL_MAP_CUBEMAP].texture = cubes[i];
 				model;
 			}
 		];
+		LoadCompiledShaderAsync("cube.shader", sampling -> {
+			sampling.locs[SHADER_LOC_MAP_CUBEMAP] = GetShaderLocation(sampling, "cubeMap");
+			for (model in models)
+				model.materials[0].shader = sampling;
+			shaders++;
+		});
 		var frame = -1;
 		while (!WindowShouldClose()) {
-			if (skyCube != null && frame < 0)
+			if (skyCube != null && shaders == 2 && frame < 0)
 				frame = 0;
 			BeginDrawing();
 			ClearBackground(RAYWHITE);

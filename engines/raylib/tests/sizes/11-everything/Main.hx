@@ -51,18 +51,6 @@ class Main {
 			LoadWaveFromMemoryAsync(".ogg", Everything.value, 0, loaded -> Everything.result = loaded);
 			LoadWaveFromMemoryAsync(".mp3", Everything.value, 0, loaded -> Everything.result = loaded);
 			LoadWaveFromMemoryAsync(".qoa", Everything.value, 0, loaded -> Everything.result = loaded);
-			// Shaders, compiled as the program builds: raylib's default, and one of the program's own.
-			Everything.result = LoadShader(null, null);
-			Everything.result = LoadShaderFromMemory(null, "#version 330
-in vec2 fragTexCoord;
-in vec4 fragColor;
-out vec4 finalColor;
-uniform sampler2D texture0;
-uniform vec4 colDiffuse;
-void main() {
-    finalColor = texture(texture0, fragTexCoord)*colDiffuse*fragColor;
-}
-");
 			// An automation event list made in memory, as raylib's LoadAutomationEventList(NULL).
 			Everything.result = LoadAutomationEventList(null);
 			EndDrawing();

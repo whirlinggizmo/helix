@@ -6,10 +6,10 @@ import helix.raylib.internal.Frame;
 import helix.raylib.internal.Program;
 import helix.raylib.internal.Runtime;
 
-/** Checks `LoadShaderAsync` on a shader compiled ahead of time by `CompileShaderFile` (helix.py compiles tests/shaders' glow into
-	build/tests/glow.shader first, and the build embeds it): it answers at a later poll with the shader, whose code is the one the build
-	compiles for `LoadShader` of the same files, its locations raylib's and its uniform's initializer written; a draw through it uses
-	it; and a file that isn't a compiled shader, or isn't there, is refused with why. */
+/** Checks the loads of a shader compiled ahead of time by `CompileShaderFile` (helix.py compiles tests/shaders' glow into
+	build/tests/glow.shader first, and the build embeds it): `LoadCompiledShaderAsync` answers at a later poll with the shader, its
+	locations raylib's and its uniform's initializer written, and a draw through it uses it; `LoadCompiledShaderFromData` makes the
+	same shader at once; and a file or data that isn't a compiled shader, or a file that isn't there, is refused with why. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Program)
@@ -38,7 +38,7 @@ class ShaderFileTests {
 
 	static function load(fileName:String):{shader:Null<Shader>, error:Null<String>} {
 		var answer:{shader:Null<Shader>, error:Null<String>} = null;
-		LoadShaderAsync(fileName, s -> answer = {shader: s, error: null}, e -> answer = {shader: null, error: e});
+		LoadCompiledShaderAsync(fileName, s -> answer = {shader: s, error: null}, e -> answer = {shader: null, error: e});
 		check(answer == null, '$fileName: not answered during the call');
 		pump(() -> answer != null);
 		return answer;
@@ -62,10 +62,13 @@ class ShaderFileTests {
 
 		var loaded = load("glow.shader");
 		check(loaded.shader != null, "a compiled shader: loaded");
-		var shader = loaded.shader, built = LoadShader("glow.vs", "glow.fs");
-		check(haxe.Json.stringify(shader.program.shader.source.glsl300es) == haxe.Json.stringify(built.program.shader.source.glsl300es),
-			"its code: the build's for the same files");
-		check(shader.locs[SHADER_LOC_VERTEX_POSITION] == built.locs[SHADER_LOC_VERTEX_POSITION]
+		var shader = loaded.shader,
+			made = LoadCompiledShaderFromData(haxe.Resource.getBytes("glow.shader"));
+		check(made.id != 0
+			&& haxe.Json.stringify(made.program.shader.source) == haxe.Json.stringify(shader.program.shader.source)
+			&& made.locs.join(",") == shader.locs.join(","),
+			"from its data: the same shader, at once");
+		check(shader.locs[SHADER_LOC_VERTEX_POSITION] == 0
 			&& shader.locs[SHADER_LOC_MATRIX_MVP] >= 0
 			&& shader.locs[SHADER_LOC_COLOR_DIFFUSE] >= 0
 			&& shader.locs[SHADER_LOC_MAP_ALBEDO] >= 0,
@@ -88,6 +91,7 @@ class ShaderFileTests {
 		check(wrong.shader == null && wrong.error.indexOf("isn't a compiled shader") >= 0, "a file that isn't a compiled shader: refused");
 		var missing = load("none.shader");
 		check(missing.shader == null && missing.error != null, "a file that isn't there: refused");
+		check(LoadCompiledShaderFromData(Bytes.ofString("not a shader")).id == 0, "data that isn't a compiled shader: an empty shader");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

@@ -4,10 +4,11 @@ import helix.raylib.Raymath.*;
 import helix.raylib.extras.Lights.*;
 import helix.raylib.extras.Window.*;
 import helix.raylib.extras.Models.*;
+import helix.raylib.extras.Shaders.*;
 
 // scene.c drawn by helix-raylib: its lighting shader is LoadLightingShader, built in, and its second a program's own (own.vs and own.fs,
-// over <helix/raylib/shaders/skinning.glsl> and <helix/raylib/shaders/lights.glsl>); greenman is skinned on the GPU under both. The
-// third frame after its loads saved as helix.png.
+// over <helix/raylib/shaders/skinning.glsl> and <helix/raylib/shaders/lights.glsl>, compiled ahead of time into own.shader); greenman is
+// skinned on the GPU under both. The third frame after its loads saved as helix.png.
 class Main {
 	static function main():Void {
 		InitWindow(640, 360, "lighting");
@@ -15,20 +16,23 @@ class Main {
 		var shader = LoadLightingShader();
 		var ambientLoc = GetShaderLocation(shader, "ambient");
 		SetShaderValue(shader, ambientLoc, [0.1, 0.1, 0.1, 1.0], SHADER_UNIFORM_VEC4);
-		var own = LoadShader("own.vs", "own.fs");
-		own.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(own, "viewPos");
-		SetShaderValue(own, GetShaderLocation(own, "ambient"), [0.2, 0.2, 0.3, 1.0], SHADER_UNIFORM_VEC4);
 		var lights = [
 			CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), Vector3Zero(), YELLOW, shader),
 			CreateLight(LIGHT_POINT, new Vector3(2, 1, 2), Vector3Zero(), RED, shader),
 			CreateLight(LIGHT_POINT, new Vector3(-2, 1, 2), Vector3Zero(), GREEN, shader),
 			CreateLight(LIGHT_DIRECTIONAL, new Vector3(2, 3, -2), Vector3Zero(), BLUE, shader)
 		];
-		CreateLight(LIGHT_POINT, new Vector3(0, 3, 0), Vector3Zero(), WHITE, own);
-		SetShaderValue(own, GetShaderLocation(own, "lights[0].enabled"), 1, SHADER_UNIFORM_INT);
-		SetShaderValue(own, GetShaderLocation(own, "lights[0].type"), LIGHT_POINT, SHADER_UNIFORM_INT);
-		SetShaderValue(own, GetShaderLocation(own, "lights[0].position"), [1, 2, 2], SHADER_UNIFORM_VEC3);
-		SetShaderValue(own, GetShaderLocation(own, "lights[0].color"), [1, 0.8, 0.6, 1], SHADER_UNIFORM_VEC4);
+		var own:Shader = null;
+		LoadCompiledShaderAsync("own.shader", s -> {
+			own = s;
+			own.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(own, "viewPos");
+			SetShaderValue(own, GetShaderLocation(own, "ambient"), [0.2, 0.2, 0.3, 1.0], SHADER_UNIFORM_VEC4);
+			CreateLight(LIGHT_POINT, new Vector3(0, 3, 0), Vector3Zero(), WHITE, own);
+			SetShaderValue(own, GetShaderLocation(own, "lights[0].enabled"), 1, SHADER_UNIFORM_INT);
+			SetShaderValue(own, GetShaderLocation(own, "lights[0].type"), LIGHT_POINT, SHADER_UNIFORM_INT);
+			SetShaderValue(own, GetShaderLocation(own, "lights[0].position"), [1, 2, 2], SHADER_UNIFORM_VEC3);
+			SetShaderValue(own, GetShaderLocation(own, "lights[0].color"), [1, 0.8, 0.6, 1], SHADER_UNIFORM_VEC4);
+		});
 		var plane = LoadModelFromMesh(GenMeshPlane(10, 10, 1, 1)),
 			cube = LoadModelFromMesh(GenMeshCube(2, 4, 2));
 		plane.materials[0].shader = shader;
@@ -40,7 +44,7 @@ class Main {
 		LoadModelAnimationsAsync("greenman.glb", a -> anims = a);
 		var frame = -1;
 		while (!WindowShouldClose()) {
-			var ready = models.length == 2 && anims != null;
+			var ready = models.length == 2 && anims != null && own != null;
 			if (ready && frame < 0) {
 				frame = 0;
 				for (m in models[0].materials)
@@ -50,7 +54,8 @@ class Main {
 			}
 			var f = frame < 0 ? 0 : frame;
 			SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], [camera.position.x, camera.position.y, camera.position.z], SHADER_UNIFORM_VEC3);
-			SetShaderValue(own, own.locs[SHADER_LOC_VECTOR_VIEW], [camera.position.x, camera.position.y, camera.position.z], SHADER_UNIFORM_VEC3);
+			if (own != null)
+				SetShaderValue(own, own.locs[SHADER_LOC_VECTOR_VIEW], [camera.position.x, camera.position.y, camera.position.z], SHADER_UNIFORM_VEC3);
 			lights[2].enabled = f != 1;
 			for (light in lights)
 				UpdateLightValues(shader, light);

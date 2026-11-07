@@ -841,7 +841,7 @@ Its members are on their own pages:
 
 Each of these is raylib's name (or emscripten's, which raylib's web programs call), and a call to it doesn't compile, saying why and what to use instead.
 
-`SetWindowSize`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowFocused`, `SetWindowOpacity`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `ToggleFullscreen`, `ToggleBorderlessWindowed`, `SetWindowPosition`, `SetWindowMonitor`, `EnableCursor`, `DisableCursor`, `FileExists`, `LoadFileText`, `SaveFileText`, `LoadFileData`, `SaveFileData`, `ExportDataAsCode`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `ExportAutomationEventList`, `MemAlloc`, `MemRealloc`, `MemFree`, `TakeScreenshot`, `emscripten_set_main_loop`, `emscripten_set_main_loop_arg`, `emscripten_cancel_main_loop`, `emscripten_run_script`, `emscripten_run_script_int`, `emscripten_run_script_string`, `emscripten_get_now`, `emscripten_sleep`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `ExportImage`, `ExportImageAsCode`, `ExportFontAsCode`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadMaterials`, `ExportMesh`, `ExportMeshAsCode`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `ExportWave`, `ExportWaveAsCode`, `LoadSound`, `LoadMusicStream`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`SetWindowSize`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowFocused`, `SetWindowOpacity`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `ToggleFullscreen`, `ToggleBorderlessWindowed`, `SetWindowPosition`, `SetWindowMonitor`, `EnableCursor`, `DisableCursor`, `FileExists`, `LoadFileText`, `SaveFileText`, `LoadFileData`, `SaveFileData`, `ExportDataAsCode`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `ExportAutomationEventList`, `MemAlloc`, `MemRealloc`, `MemFree`, `TakeScreenshot`, `emscripten_set_main_loop`, `emscripten_set_main_loop_arg`, `emscripten_cancel_main_loop`, `emscripten_run_script`, `emscripten_run_script_int`, `emscripten_run_script_string`, `emscripten_get_now`, `emscripten_sleep`, `LoadShader`, `LoadShaderFromMemory`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `ExportImage`, `ExportImageAsCode`, `ExportFontAsCode`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadMaterials`, `ExportMesh`, `ExportMeshAsCode`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `ExportWave`, `ExportWaveAsCode`, `LoadSound`, `LoadMusicStream`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ## Raymath
 
@@ -941,7 +941,7 @@ Each of these is raylib's name (or emscripten's, which raylib's web programs cal
 
 Represents raylib's `Shader`: a program and the locations of what it declares.
 
-Made by `Raylib.LoadShader` or `Raylib.LoadShaderFromMemory`.
+Made by `LoadCompiledShaderAsync` or `LoadCompiledShaderFromData` (`helix.raylib.extras.Shaders`), or by helix-raylib's own, such as `LoadPbrShader`.
 
 ```haxe
 var id(default, null):Int
@@ -1206,7 +1206,6 @@ var data:Null<haxe.io.Bytes>
 
 Set in a build's hxml, as `-D helix-raylib-native-root=../assets`. `haxe --help-user-defines` lists them too, and an editor completes them in an hxml file.
 
-- `helix-raylib-files=<directory>`: Where the program's files are as it builds, relative to the build's directory: LoadShader compiles the shaders it names from there. Defaults to web.
 - `helix-raylib-native-root=<directory>`: Where a native program finds its files, relative to its own directory. Defaults to ../web.
 - `helix-raylib-host-warnings`: Warns where the program's own code reaches the page or the host (the URL's query, Sys.getEnv, matchMedia, maxTouchPoints, screen.orientation, the safe area's insets, deviceorientation, localStorage, the page's fullscreen) for what helix.raylib.extras or Raylib answers on every target, naming the call. Off by default.
 - `helix-raylib-custom-frame-control`: raylib's SUPPORT_CUSTOM_FRAME_CONTROL: EndDrawing only draws, and the program calls SwapScreenBuffer, WaitTime and PollInputEvents itself.

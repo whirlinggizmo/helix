@@ -316,7 +316,7 @@ class Program {
 		freed when the last lets go; the default program is never counted. */
 	public var refs = 1;
 
-	/** How many of `refs` are the program's own, from `LoadShader`, so `UnloadShader` on a material's copy lets go of one of those first. */
+	/** How many of `refs` are the program's own, from `LoadCompiledShaderAsync` or `LoadCompiledShaderFromData`, so `UnloadShader` on a material's copy lets go of one of those first. */
 	public var held = 1;
 
 	/** The skinned version of a built-in shader it is made of, which `Skinning` draws a posed mesh through in place of it (the lit

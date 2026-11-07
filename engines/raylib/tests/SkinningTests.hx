@@ -1,6 +1,7 @@
 import haxe.io.Bytes;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Shaders.*;
 import helix.raylib.extras.Lights.*;
 import helix.raylib.extras.Models.*;
 import helix.raylib.internal.Frame;
@@ -74,21 +75,9 @@ class SkinningTests {
 		Runtime.frame = new Frame(graphics);
 		var anim = raise();
 
-		// A program's own shader skinning from the palette: the bind pose until posed, and again for a draw after the posed one.
-		var own = LoadShaderFromMemory("#version 330
-#include <helix/raylib/shaders/skinning.glsl>
-in vec3 vertexPosition;
-in vec2 vertexTexCoord;
-in vec4 vertexColor;
-out vec2 fragTexCoord;
-out vec4 fragColor;
-uniform mat4 mvp;
-void main() {
-    fragTexCoord = vertexTexCoord;
-    fragColor = vertexColor;
-    gl_Position = mvp*helixSkin()*vec4(vertexPosition, 1.0);
-}
-", null);
+		// A program's own shader skinning from the palette (tests/shaders/own_skinning.vs, compiled ahead of time by helix.py): the bind pose
+		// until posed, and again for a draw after the posed one.
+		var own = LoadCompiledShaderFromData(haxe.Resource.getBytes("own_skinning.shader"));
 		var still = skinned(own), moving = skinned(own);
 		DrawModel(still, new Vector3(0, 0, 0), 1, WHITE);
 		check(lastOffset(own.program) == 0, "a draw before any pose reads no bones");

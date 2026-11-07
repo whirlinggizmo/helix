@@ -734,20 +734,22 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Shaders.hx`](../src/helix/raylib/extras/Shaders.hx), `import helix.raylib.extras.Shaders;`
 
-Provides the load of a shader compiled ahead of time, such as one a program fetches. Imported apart: `import helix.raylib.extras.Shaders.*;`.
+Provides the loads of shaders compiled ahead of time, in place of raylib's `LoadShader` and `LoadShaderFromMemory`. Imported apart: `import helix.raylib.extras.Shaders.*;`.
 
 ### shaders: the loads of shaders compiled ahead of time
 
 ```haxe
-static function LoadShaderAsync(fileName:String, loaded:Shader -> Void, ?failed:String -> Void):Void
+static function LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader -> Void, ?failed:String -> Void):Void
+static function LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes):Shader
 ```
 
-- `LoadShaderAsync`: Asynchronously loads a shader compiled ahead of time by `CompileShaderFile`. See `LoadShader` for loading a shader the build holds.
-  - `fileName`: The compiled shader's file.
+- `LoadCompiledShaderAsync`: Asynchronously loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See `LoadCompiledShaderFromData` for making one from compiled data in memory.
+  - `compiledShaderFileName`: The compiled shader's file.
   - `loaded`: Receives the shader.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-
-  The file holds the shader for every target, so the same file loads in a page and natively.
+- `LoadCompiledShaderFromData`: Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShaderAsync` for loading one from a file.
+  - `compiledShaderData`: The compiled shader, as `CompileShaderFile` writes it.
+  - returns: The shader, or an empty one (id 0) when the data isn't a compiled shader, with a warning.
 
 ## Sprites
 

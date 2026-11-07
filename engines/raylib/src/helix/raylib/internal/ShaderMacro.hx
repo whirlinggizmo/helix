@@ -19,8 +19,8 @@ using StringTools;
 	What raylib's GLSL needs before helix-services compiles it is done here: GLSL 100 written as 330 (`attribute`, `varying`,
 	`gl_FragColor` and `texture2D`), a stage left out given rlgl's default, the attributes declared in raylib's order, so each takes
 	the location rlgl gives it, and each array uniform in a block of its own, so the rest stay within the 4 KiB of a block SDL_GPU's
-	Vulkan reads, and each uniform's initializer taken out, its value written when the shader is made (`load`), as GL sets it
-	when it links. The rest is the service's: GL's form, loose uniforms gathered, every type in its block, and the vertex
+	Vulkan reads, and each uniform's initializer taken out, its value written when the shader is made (`compileFile`), as GL
+	sets it when it links. The rest is the service's: GL's form, loose uniforms gathered, every type in its block, and the vertex
 	stage wrapped with a clip scale (`ShaderOptions.clipScale`), which the platform turns over in a pass into a render target, and to
 	write a point size of 1 (`ShaderOptions.points`), so any shader can draw in rlgl's point mode, as GL draws points with any shader. */
 class ShaderMacro {
@@ -44,7 +44,10 @@ class ShaderMacro {
 		@return  Its text. */
 	public static function builtIn(file:String, pos:Position):String {
 		var path = try Context.resolvePath('helix/raylib/shaders/$file') catch (_:Dynamic) Context.error('helix-raylib: shaders/$file not found', pos);
-		Context.registerModuleDependency(Context.getLocalModule(), path);
+		// A module built with it is built again when the file changes; a --macro (CompileShaderFile) runs in none.
+		var module = try Context.getLocalModule() catch (_:Dynamic) "";
+		if (module != "")
+			Context.registerModuleDependency(module, path);
 		return File.getContent(path);
 	}
 
@@ -55,44 +58,39 @@ class ShaderMacro {
 		@param fsName  The fragment stage's name.
 		@param fs  Its text, or null.
 		@param pos  Where errors point.
-		@param initials  Optional. Receives each uniform the stages give an initializer (`uniform vec2 scale = vec2(0.25, 0.45);`), its
-			name and its value's numbers; the initializers are taken out of the text, which the service refuses them in. When omitted, an
-			initializer is refused.
 		@return  An expression of type `helix.services.shaders.Shader`. */
-	public static function program(vsName:String, vs:Null<String>, fsName:String, fs:Null<String>, pos:Position,
-			?initials:Array<{name:String, numbers:Array<Float>}>):Expr {
-		var s = stages(vsName, vs, fsName, fs, pos, initials);
+	public static function program(vsName:String, vs:Null<String>, fsName:String, fs:Null<String>, pos:Position):Expr {
+		var s = stages(vsName, vs, fsName, fs, pos);
 		return helix.services.shaders.Shader.makeExpr(s.vertex, s.fragment, {clipScale: true, points: true}, pos);
 	}
 
-	/** Compiles a raylib shader's two stages into a file `LoadShaderAsync` loads (`haxelib run helix-raylib shader`): the compiled
-		program in every dialect, for every target, and each uniform's initializer. Run on its own, with no target, so the file holds
-		the native dialects too.
+	/** Compiles a raylib shader's two stages into a file `LoadCompiledShaderAsync` loads (`CompileShaderFile`): the compiled program for
+		every target, and each uniform's initializer. In a build with no target, which has nothing else to compile, the run ends once every
+		`--macro` has run.
 
 		@param vsFileName  The vertex stage's file, or null for raylib's default.
 		@param fsFileName  The fragment stage's file, or null for raylib's default.
-		@param outFileName  The file to write. */
-	public static function compileFile(vsFileName:Null<String>, fsFileName:Null<String>, outFileName:String):Void {
+		@param compiledShaderFileName  The file to write. */
+	public static function compileFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String):Void {
 		var pos = Context.currentPos();
-		if (Context.defined("js") || Context.defined("cpp"))
-			Context.error("helix-raylib: a shader file is compiled on its own, with no target, so it holds every target's dialects", pos);
 		function read(file:Null<String>):Null<String>
-			return file == null ? null : FileSystem.exists(file) ? File.getContent(file) : Context.error('helix-raylib: $file not found', pos);
+			return file == null ? null : FileSystem.exists(file) ? File.getContent(file) : Context.error('CompileShaderFile: $file not found', pos);
 		var initials = [];
 		var s = stages(vsFileName == null ? "default vertex" : vsFileName, read(vsFileName), fsFileName == null ? "default fragment" : fsFileName,
 			read(fsFileName), pos, initials);
-		var source = helix.services.shaders.ShaderMacros.compileProgram(s.vertex, s.fragment, {clipScale: true, points: true}, [], pos);
-		var directory = Path.directory(outFileName);
+		var source = helix.services.shaders.ShaderMacros.compileProgram(s.vertex, s.fragment, {clipScale: true, points: true, everyTarget: true}, [], pos);
+		var directory = Path.directory(compiledShaderFileName);
 		if (directory != "")
 			FileSystem.createDirectory(directory);
-		File.saveContent(outFileName, haxe.Json.stringify({
+		var text = haxe.Json.stringify({
 			kind: "shader",
 			source: source,
 			shared: [],
 			initials: initials
-		}));
-		// A run of these alone has nothing else to compile: it ends once every one has run.
-		if (!ending) {
+		});
+		if (!FileSystem.exists(compiledShaderFileName) || File.getContent(compiledShaderFileName) != text)
+			File.saveContent(compiledShaderFileName, text);
+		if (!ending && !Context.defined("js") && !Context.defined("cpp")) {
 			ending = true;
 			Context.onAfterInitMacros(() -> Sys.exit(0));
 		}
@@ -101,7 +99,8 @@ class ShaderMacro {
 	static var ending = false;
 
 	// A raylib shader's stages as helix-services compiles them: raylib's GLSL adapted, the default for a stage left out, and the
-	// attributes and what the stages pass checked.
+	// attributes and what the stages pass checked. With initials, each uniform's initializer is taken out of the text, which the service
+	// refuses them in, and added there; without, an initializer is refused.
 	static function stages(vsName:String, vs:Null<String>, fsName:String, fs:Null<String>, pos:Position,
 			?initials:Array<{name:String, numbers:Array<Float>}>):{vertex:{name:String, text:String}, fragment:{name:String, text:String}} {
 		var vertex = adapt(vs == null ? builtIn("unlit.vs", pos) : vs, true, vsName, pos),
@@ -130,34 +129,6 @@ class ShaderMacro {
 		var fsName = "raylib default fragment shader";
 		return helix.services.shaders.Shader.makeExpr({name: "helix-raylib sprite vertex shader", text: builtIn("sprite.vs", pos)},
 			{name: fsName, text: adapt(builtIn("unlit.fs", pos), false, fsName, pos)}, {clipScale: true}, pos);
-	}
-
-	/** Returns the expression of a raylib shader loaded from two stages' text (`LoadShader`, `LoadShaderFromMemory`), either null for
-		raylib's default: the shader made, and each uniform given an initializer in the GLSL set to it, as GL sets one when it links.
-
-		@param vsName  The vertex stage's name, for errors.
-		@param vs  Its text, or null.
-		@param fsName  The fragment stage's name.
-		@param fs  Its text, or null.
-		@param pos  Where errors point.
-		@return  An expression of type `helix.raylib.Shader`. */
-	public static function load(vsName:String, vs:Null<String>, fsName:String, fs:Null<String>, pos:Position):Expr {
-		var initials = [];
-		var shader = program(vsName, vs, fsName, fs, pos, initials);
-		var made = macro @:privateAccess helix.raylib.modules.RModels.makeShader($shader);
-		if (initials.length == 0)
-			return made;
-		var writes = [
-			for (i in initials) {
-				var numbers = [for (n in i.numbers) macro $v{n}];
-				macro @:privateAccess shader.program.writeNamed($v{i.name}, ([$a{numbers}] : Array<Float>));
-			}
-		];
-		return macro {
-			var shader = $made;
-			$b{writes};
-			shader;
-		};
 	}
 
 	// A stage with its uniforms' initializers taken out, each uniform's name and value added to initials. A value is a constant: numbers,
@@ -330,28 +301,6 @@ class ShaderMacro {
 		return out;
 	}
 
-	/** Returns the text a shader argument names: a constant string, or a file's text by its path, relative to the program's files
-		(`helix-raylib-files`); null for a null argument.
-
-		@param e  The argument.
-		@param file  Whether it names a file.
-		@return  The text and a name for errors, or null. */
-	public static function text(e:Expr, file:Bool):Null<{name:String, text:String}> {
-		var value = constant(e);
-		if (value == null)
-			return null;
-		if (!file)
-			return {name: "shader text", text: value};
-		var files = Context.definedValue("helix-raylib-files");
-		if (files == null)
-			files = "web";
-		var path = Path.join([files, value]);
-		if (!FileSystem.exists(path))
-			Context.error('LoadShader: $path not found (the file is read as the program builds, from -D helix-raylib-files, default web)', e.pos);
-		Context.registerModuleDependency(Context.getLocalModule(), path);
-		return {name: value, text: File.getContent(path)};
-	}
-
 	/** Returns a string known as the program builds: a constant, or constants joined with +.
 
 		@param e  The expression.
@@ -365,24 +314,6 @@ class ShaderMacro {
 			case _:
 		}
 		return try fold(Context.typeExpr(e)) catch (_:Dynamic) null;
-	}
-
-	// A constant string, a null, or one made of constants with +: what the program builds with.
-	static function constant(e:Expr):Null<String> {
-		switch e.expr {
-			case EConst(CIdent("null")):
-				return null;
-			case EConst(CString(s, _)):
-				return s;
-			case _:
-		}
-		var typed = Context.typeExpr(e);
-		var value = fold(typed);
-		if (value == null)
-			Context.error("A shader is compiled as the program builds, so its file name or text must be known then: a constant string, or "
-				+ "constants joined with +",
-				e.pos);
-		return value;
 	}
 
 	static function fold(t:TypedExpr):Null<String> {

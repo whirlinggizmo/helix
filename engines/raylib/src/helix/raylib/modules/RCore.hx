@@ -3083,6 +3083,28 @@ class RCore {
 
 	// ---- Shaders ----
 
+	/** Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader
+		compiled ahead of time by `CompileShaderFile`.
+
+		@param vsFileName  The vertex stage's file.
+		@param fsFileName  The fragment stage's file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadShader: Shaders are compiled ahead of time. See CompileShaderFile and LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void) in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;)")
+	static function LoadShader(vsFileName:String, fsFileName:String):Shader {
+		throw "LoadShader is unimplemented";
+	}
+
+	/** Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromData` for making a shader
+		from compiled data in memory.
+
+		@param vsCode  The vertex stage's text.
+		@param fsCode  The fragment stage's text.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadShaderFromMemory: Shaders are compiled ahead of time. See CompileShaderFile and LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) in helix.raylib.extras.Shaders (import helix.raylib.extras.Shaders.*;)")
+	static function LoadShaderFromMemory(vsCode:String, fsCode:String):Shader {
+		throw "LoadShaderFromMemory is unimplemented";
+	}
+
 	/** Returns whether a shader was made.
 
 		@param shader  The shader.

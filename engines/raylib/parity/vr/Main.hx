@@ -1,9 +1,10 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.extras.Window.*;
+import helix.raylib.extras.Shaders.*;
 
-// scene.c's core_vr_simulator, drawn by helix-raylib as raylib's example is written: the third frame saved as helix.png. Its shader (web/)
-// is raylib's distortion330.fs, as the example has it.
+// scene.c's core_vr_simulator, drawn by helix-raylib as raylib's example is written: the third frame after its shader loads saved as
+// helix.png. Its shader (web/) is raylib's distortion330.fs, as the example has it, compiled ahead of time into distortion.shader.
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "vr");
@@ -19,15 +20,18 @@ class Main {
 			chromaAbCorrection: [0.996, -0.004, 1.014, 0.0]
 		};
 		var config = LoadVrStereoConfig(device);
-		var distortion = LoadShader(null, "distortion330.fs");
-		SetShaderValue(distortion, GetShaderLocation(distortion, "leftLensCenter"), config.leftLensCenter, SHADER_UNIFORM_VEC2);
-		SetShaderValue(distortion, GetShaderLocation(distortion, "rightLensCenter"), config.rightLensCenter, SHADER_UNIFORM_VEC2);
-		SetShaderValue(distortion, GetShaderLocation(distortion, "leftScreenCenter"), config.leftScreenCenter, SHADER_UNIFORM_VEC2);
-		SetShaderValue(distortion, GetShaderLocation(distortion, "rightScreenCenter"), config.rightScreenCenter, SHADER_UNIFORM_VEC2);
-		SetShaderValue(distortion, GetShaderLocation(distortion, "scale"), config.scale, SHADER_UNIFORM_VEC2);
-		SetShaderValue(distortion, GetShaderLocation(distortion, "scaleIn"), config.scaleIn, SHADER_UNIFORM_VEC2);
-		SetShaderValue(distortion, GetShaderLocation(distortion, "deviceWarpParam"), device.lensDistortionValues, SHADER_UNIFORM_VEC4);
-		SetShaderValue(distortion, GetShaderLocation(distortion, "chromaAbParam"), device.chromaAbCorrection, SHADER_UNIFORM_VEC4);
+		var distortion:Shader = null;
+		LoadCompiledShaderAsync("distortion.shader", s -> {
+			distortion = s;
+			SetShaderValue(distortion, GetShaderLocation(distortion, "leftLensCenter"), config.leftLensCenter, SHADER_UNIFORM_VEC2);
+			SetShaderValue(distortion, GetShaderLocation(distortion, "rightLensCenter"), config.rightLensCenter, SHADER_UNIFORM_VEC2);
+			SetShaderValue(distortion, GetShaderLocation(distortion, "leftScreenCenter"), config.leftScreenCenter, SHADER_UNIFORM_VEC2);
+			SetShaderValue(distortion, GetShaderLocation(distortion, "rightScreenCenter"), config.rightScreenCenter, SHADER_UNIFORM_VEC2);
+			SetShaderValue(distortion, GetShaderLocation(distortion, "scale"), config.scale, SHADER_UNIFORM_VEC2);
+			SetShaderValue(distortion, GetShaderLocation(distortion, "scaleIn"), config.scaleIn, SHADER_UNIFORM_VEC2);
+			SetShaderValue(distortion, GetShaderLocation(distortion, "deviceWarpParam"), device.lensDistortionValues, SHADER_UNIFORM_VEC4);
+			SetShaderValue(distortion, GetShaderLocation(distortion, "chromaAbParam"), device.chromaAbCorrection, SHADER_UNIFORM_VEC4);
+		});
 		var target = LoadRenderTexture(device.hResolution, device.vResolution);
 		var sourceRec = new Rectangle(0, 0, target.texture.width, -target.texture.height);
 		var destRec = new Rectangle(0, 0, GetScreenWidth(), GetScreenHeight());
@@ -36,6 +40,11 @@ class Main {
 		var sphere = LoadModelFromMesh(GenMeshSphere(0.6, 16, 16));
 		var frame = 0;
 		while (!WindowShouldClose()) {
+			if (distortion == null) {
+				BeginDrawing();
+				EndDrawing();
+				continue;
+			}
 			BeginTextureMode(target);
 			ClearBackground(RAYWHITE);
 			BeginVrStereoMode(config);

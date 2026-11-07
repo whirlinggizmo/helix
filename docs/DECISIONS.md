@@ -734,3 +734,17 @@ Why things are the way they are, numbered, in order.
     at load (1.3 KB gzip on every glTF program for what one shader reads, so it happens at the first draw under the PBR shader
     instead); and an unlit material drawn through raylib's default shader (it reads the base color factor as sRGB bytes, so an unlit
     material drew the wrong color).
+
+54. **A program's shaders are compiled ahead of time and loaded as its other files are.** `LoadShader` and `LoadShaderFromMemory` were
+    macros compiling raylib's GLSL into the program as it built, the one load that stayed synchronous; a shader the build didn't hold
+    (fetched, a mod's) couldn't load, and compiling at run time was rejected in 31 (megabytes of compiler in a page). Shaders now take
+    the textures' path (38): `CompileShaderFile(vsFileName, fsFileName, compiledShaderFileName)`, a `--macro` of the program's build or
+    of an hxml of its own, writes the program in every dialect (GLSL ES, GLSL 410, SDL_GPU's) with its uniforms' initializers, so one
+    file loads on every target; `LoadCompiledShaderAsync` loads it, and `LoadCompiledShaderFromData` makes one at once from its data
+    in memory, as `LoadTextureFromImage` does from pixels. raylib's two calls refuse to compile, naming them. Each name that takes a
+    compiled shader says so, as raylib's `LoadShader` takes GLSL files and a twin of the same name would take either. helix-raylib's
+    own shaders (`LoadPbrShader`, the lighting and default programs) stay built in, as part of the library, and `-D
+    helix-raylib-files` went with the macros, which alone read it. helix-services' `ShaderBuildOptions.everyTarget` compiles every
+    dialect in a target's build, as a page and a native program share one files folder. Rejected: keeping `LoadShader` for a shader
+    the build holds beside the files (two paths, the one taking constants alone); and `LoadShaderFromMemory` taking compiled bytes
+    (raylib's name, another input).
