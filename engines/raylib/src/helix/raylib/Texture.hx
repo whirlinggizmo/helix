@@ -1,4 +1,4 @@
 package helix.raylib;
 
-/** raylib's `Texture`, the same as `Texture2D`. */
+/** Represents raylib's `Texture`, the same type as `Texture2D`. */
 typedef Texture = Texture2D;

@@ -17,14 +17,18 @@ import helix.raylib.modules.RAudio.*;
 import helix.raylib.modules.RMath.*;
 #end
 
-/** Holds raylib's rtext (text in the default font), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
+/** Provides raylib's rtext functions (fonts, drawing text, text strings), each forwarded from `Raylib` by `tools/gen_raylib.py`. */
 @:noCompletion
 @:allow(helix.raylib)
 class RText {
 	#if !macro
 	// ---- Text ----
 
-	/** Draws text in raylib's default font. A size under 10 is drawn at 10, and letters are a tenth of the size apart.
+	/** Draws text in raylib's default font. See `DrawTextEx` for drawing text in another font.
+
+		A size under 10 draws at 10.
+
+		The letters are a tenth of the size apart.
 
 		@param text  The text; "\n" starts a line.
 		@param posX  The left edge.
@@ -37,7 +41,9 @@ class RText {
 		DrawTextEx(GetFontDefault(), text, new Vector2(posX, posY), fontSize, Std.int(fontSize / DefaultFont.HEIGHT), color);
 	}
 
-	/** Returns the width text is drawn at by `DrawText`, its widest line's.
+	/** Returns the width of text's widest line as `DrawText` draws it. See `MeasureTextEx` for measuring text's height too.
+
+		A size under 10 is measured at 10.
 
 		@param text  The text.
 		@param fontSize  The height of a line, in pixels.
@@ -48,7 +54,9 @@ class RText {
 		return Std.int(MeasureTextEx(GetFontDefault(), text, fontSize, Std.int(fontSize / DefaultFont.HEIGHT)).x);
 	}
 
-	/** Draws text in a font.
+	/** Draws text in a font. See `DrawTextPro` for drawing text turned about a point.
+
+		Each "\n" moves down by the size and the space `SetTextLineSpacing` sets.
 
 		@param font  The font; one with no texture draws as the default font.
 		@param text  The text; "\n" starts a line.
@@ -96,7 +104,7 @@ class RText {
 		frame.view = view;
 	}
 
-	/** Draws one character in a font.
+	/** Draws one character in a font. See `DrawTextCodepoints` for drawing several.
 
 		@param font  The font.
 		@param codepoint  The character.
@@ -141,7 +149,9 @@ class RText {
 		}
 	}
 
-	/** Sets the space between lines that "\n" adds to the size, 2 pixels until set.
+	/** Sets the space between lines of text, added to the size at each "\n".
+
+		Defaults to 2 pixels.
 
 		@param spacing  The space, in pixels. */
 	static function SetTextLineSpacing(spacing:Int):Void {
@@ -184,7 +194,9 @@ class RText {
 		return new Vector2(f32(f32(widest * scale) + f32((most - 1) * f32(spacing))), height);
 	}
 
-	/** Returns where a character is in a font's glyphs: its own, else the question mark's, else the first.
+	/** Returns the index of a character's glyph in a font.
+
+		A character the font lacks gives the index of the font's "?", or 0 when the font lacks that too.
 
 		@param font  The font.
 		@param codepoint  The character.
@@ -220,9 +232,14 @@ class RText {
 		return font.recs[GetGlyphIndex(font, codepoint)];
 	}
 
-	/** Returns raylib's default font: 224 glyphs, Latin-1 from the space, 10 pixels high, made at its first use as raylib makes it, each
-		glyph's image its part of the font's image (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`, white), so `ImageText` draws with it. Its
-		texture goes to the GPU when first drawn.
+	/** Returns raylib's default font, made at the first call.
+
+		Holds 224 glyphs, Latin-1 from the space, 10 pixels high, laid out as raylib lays them out.
+
+		Each glyph's image is its part of the font's image, white in `PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`, so `ImageText` draws with the
+		font.
+
+		The font's texture goes to the GPU when first drawn.
 
 		@return  The font. */
 	static function GetFontDefault():Font {
@@ -266,7 +283,7 @@ class RText {
 		return fontDefault = font;
 	}
 
-	/** Returns whether a font holds glyphs: a size, glyphs, and their places on its texture.
+	/** Returns whether a font has a size, glyphs, and their places on its texture.
 
 		@param font  The font.
 		@return  True when it does. */
@@ -274,7 +291,9 @@ class RText {
 		return font.baseSize > 0 && font.glyphCount > 0 && font.recs != null && font.glyphs != null;
 	}
 
-	/** Frees a font: its texture and its glyphs' images. The default font is never freed.
+	/** Frees a font's texture and its glyphs' images.
+
+		Skipped for the default font.
 
 		@param font  The font. */
 	static function UnloadFont(font:Font):Void {
@@ -284,8 +303,8 @@ class RText {
 		UnloadTexture(font.texture);
 	}
 
-	/** raylib's export of a font as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
-		`ExportFontAsCodeAsync` writes it and answers.
+	/** Doesn't compile on any target, since the file is written after the call would return. See `ExportFontAsCodeAsync` for writing a
+		font as code.
 
 		@param font  The font.
 		@param fileName  The file.
@@ -397,13 +416,18 @@ class RText {
 				UnloadImage(glyphs[i].image);
 	}
 
-	/** Packs glyphs' images into one image, a font's texture once loaded, as raylib does: its glyphs' places go into `glyphRecs`, the
-		image is white with the glyphs' coverage as alpha (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`), and its bottom-right 3 by 3 texels are
-		opaque white.
+	/** Packs glyphs' images into one image for a font's texture, as raylib does, and returns the image.
 
-		The atlas\'s size is estimated from the glyphs' widths, a power of two wide; when packing rows in order (`packMethod` 0) runs out of rows,
-		it is made twice as high, as many times as it needs, so every glyph has its place. The skyline packer (1) leaves a glyph that
-		doesn't fit out, with a warning, placed at 2147483648 across and down, as raylib's.
+		The image is white, the glyphs' coverage its alpha (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`).
+
+		The image's bottom-right 3 by 3 texels are opaque white.
+
+		The image's size is estimated from the glyphs' widths, a power of two wide.
+
+		Packing rows in order (`packMethod` 0) doubles the image's height each time the rows run out, so every glyph has its place.
+
+		The skyline packer (`packMethod` 1) skips a glyph that doesn't fit, logs a warning, and places the glyph at 2147483648 across and
+		down.
 
 		@param glyphs  The glyphs, their images 8-bit grayscale.
 		@param glyphRecs  Receives each glyph's place, replacing what it held.
@@ -498,11 +522,19 @@ class RText {
 		return atlas;
 	}
 
-	/** Makes a font from an image of glyphs, as raylib's does: the glyphs in rows on a key color, the key's border before the first
-		glyph giving the space between glyphs and between rows; each glyph a run of pixels that aren't the key, numbered from a first
-		character. The key becomes clear on the font's texture. An image with no such border gives the default font. A glyph's height
-		ends at the image's bottom and its width at its right edge, as raylib's scan has them. At most 256 glyphs are read, where
-		raylib's writes past its 256.
+	/** Returns a font read from an image of glyphs in rows on a key color, as raylib reads it.
+
+		The key's border before the first glyph gives the space between glyphs and between rows.
+
+		Each glyph is a run of pixels that aren't the key, numbered from `firstChar`.
+
+		The key becomes clear on the font's texture.
+
+		An image with no such border gives the default font.
+
+		A glyph's height stops at the image's bottom and its width at the image's right edge.
+
+		At most 256 glyphs are read.
 
 		@param image  The image, in any uncompressed format.
 		@param key  The color around the glyphs.
@@ -575,8 +607,7 @@ class RText {
 		return font;
 	}
 
-	/** raylib's font load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontAsync` loads
-		it.
+	/** Doesn't compile on any target, since raylib's waits for the file and a page can't wait. See `LoadFontAsync` for loading a font.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -585,8 +616,8 @@ class RText {
 		throw "LoadFont is unimplemented";
 	}
 
-	/** raylib's font load at a size, which waits for the file. A page can't wait, so a call doesn't compile on any target:
-		`LoadFontExAsync` loads it.
+	/** Doesn't compile on any target, since raylib's waits for the file and a page can't wait. See `LoadFontExAsync` for loading a font
+		at a size.
 
 		@param fileName  The file.
 		@param fontSize  The size.
@@ -598,8 +629,8 @@ class RText {
 		throw "LoadFontEx is unimplemented";
 	}
 
-	/** raylib's font load from a file's bytes, which rasterizes the glyphs before it returns. They are rasterized off the main thread
-		here, so a call doesn't compile on any target: `LoadFontFromMemoryAsync` loads it.
+	/** Doesn't compile on any target, since raylib's rasterizes the glyphs before returning and here they are rasterized off the main
+		thread. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes.
 
 		@param fileType  The file's extension.
 		@param fileData  The file's bytes.
@@ -613,8 +644,8 @@ class RText {
 		throw "LoadFontFromMemory is unimplemented";
 	}
 
-	/** raylib's glyph rasterizing, which returns the glyphs. They are rasterized off the main thread here, so a call doesn't compile on
-		any target: `LoadFontDataAsync` rasterizes them.
+	/** Doesn't compile on any target, since raylib's returns the glyphs rasterized and here they are rasterized off the main thread. See
+		`LoadFontDataAsync` for rasterizing glyphs.
 
 		@param fileData  The font file's bytes.
 		@param dataSize  How many.
@@ -784,7 +815,9 @@ class RText {
 	static inline final BUFFER = 1024;
 	static inline final SPLIT = 128;
 
-	/** Draws the frames a second, as "60 FPS", in green.
+	/** Draws the frames a second as "60 FPS", 20 pixels high in the default font.
+
+		Green at 30 or more, orange under 30, red under 15.
 
 		@param posX  The left edge.
 		@param posY  The top edge. */
@@ -796,12 +829,17 @@ class RText {
 
 	// ---- Text strings ----
 
-	/** Formats text as C's `printf` does. It takes `%d` and `%i`, `%u`, `%f` and `%F` (6 places unless a precision is given, as in
-		`%.2f`), `%e`, `%g`, `%x`, `%X`, `%o`, `%c` (a character code), `%s` and `%%`. It also takes C's flags (`-`, `0`, `+`, space,
-		`#`), widths and precisions, as in `%5d`, `%-8s`, `%03i` and `%*d`. C's length modifiers (`l`, `ll`, `h`, `z`) are read and
-		ignored.
+	/** Returns text formatted as C's `printf` formats it.
 
-		As raylib's, the text is at most 1023 UTF-8 bytes: longer, it is cut to its first 1020 and "..." ends it.
+		Takes `%d` and `%i`, `%u`, `%f` and `%F`, `%e` and `%E`, `%g` and `%G`, `%x`, `%X`, `%o`, `%c` (a character code), `%s` and `%%`.
+
+		Takes C's flags (`-`, `0`, `+`, space, `#`), widths and precisions, as in `%5d`, `%-8s`, `%03i` and `%*d`.
+
+		`%f` writes 6 places unless a precision is given, as in `%.2f`.
+
+		Reads and ignores C's length modifiers (`l`, `ll`, `h`, `z`).
+
+		Text past 1023 UTF-8 bytes is cut to its first 1020, and "..." ends it.
 
 		@param text  The format.
 		@param args  The values, one for each conversion.
@@ -1028,7 +1066,8 @@ class RText {
 		return parts.length > 1 ? number + (text.indexOf("E") >= 0 ? "E" : "e") + parts[1] : number;
 	}
 
-	/** raylib's copy into a C buffer. A Haxe string can't be written into, so a call doesn't compile on any target: assign it instead.
+	/** Doesn't compile on any target, since raylib's copies into a C buffer and a Haxe string can't be written. Assigning `dst = src`
+		copies the text.
 
 		@param dst  The text written into.
 		@param src  The text copied.
@@ -1038,8 +1077,8 @@ class RText {
 		throw "TextCopy is unimplemented";
 	}
 
-	/** raylib's append into a C buffer at a cursor. A Haxe string can't be written into, so a call doesn't compile on any target: join
-		the text instead.
+	/** Doesn't compile on any target, since raylib's appends into a C buffer and a Haxe string can't be written. Joining
+		`text += append` appends the text.
 
 		@param text  The text written into.
 		@param append  The text appended.
@@ -1059,8 +1098,11 @@ class RText {
 		return text1 != null && text2 != null && text1 == text2;
 	}
 
-	/** Returns the length of text in UTF-8 bytes, as raylib counts it: "héllo" is 6. The text functions' positions and lengths are all
-		in these bytes, where `String.length` counts otherwise, and not alike on every target.
+	/** Returns the length of text in UTF-8 bytes, as raylib counts it: "héllo" is 6.
+
+		The text functions' positions and lengths are all in these bytes.
+
+		`String.length` counts otherwise, and not alike on every target.
 
 		@param text  The text.
 		@return  The length, in bytes; 0 for null text. */
@@ -1073,9 +1115,11 @@ class RText {
 		return length;
 	}
 
-	/** Returns a piece of text, by its place in UTF-8 bytes. The piece ends with the text, and is at most 1023 bytes, as raylib's.
+	/** Returns a piece of text, by its place in UTF-8 bytes.
 
-		A character the piece cuts through is a "?" for each of its bytes taken, as raylib draws it.
+		The piece stops at the text's end and is at most 1023 bytes.
+
+		A character the piece cuts through becomes a "?" for each of its bytes taken.
 
 		@param text  The text.
 		@param position  Where the piece starts, in bytes from the start.
@@ -1106,9 +1150,11 @@ class RText {
 		return text.split(replace).join(by);
 	}
 
-	/** Returns text with other text put in at a place in UTF-8 bytes. As raylib's, the result is at most 1022 bytes.
+	/** Returns text with other text put in at a place in UTF-8 bytes.
 
-		A character the place cuts through is a "?" for each of its bytes, as raylib draws it.
+		The result is at most 1022 bytes.
+
+		A character the place cuts through becomes a "?" for each of its bytes.
 
 		@param text  The text.
 		@param insert  The text put in.
@@ -1131,8 +1177,9 @@ class RText {
 
 	/** Returns texts joined into one, a delimiter between each two.
 
-		As raylib's, the result is at most 1023 UTF-8 bytes: a text that would take it past them, with its delimiter, is left out, and the
-		texts after it are still joined.
+		The result is at most 1023 UTF-8 bytes.
+
+		A text that would take the result past 1023 bytes, with its delimiter, is skipped, and the texts after it are still joined.
 
 		@param textList  The texts; a null one is empty.
 		@param count  How many of them.
@@ -1151,10 +1198,15 @@ class RText {
 		return decoded(out, 0, out.length);
 	}
 
-	/** Returns the pieces of text between a delimiter: one more than the delimiters it holds, an empty one between two together.
+	/** Returns the pieces of text between a delimiter: one more than the delimiters the text holds, an empty one between two together.
 
-		As raylib's, the delimiter is one byte (its low 8 bits), only the text's first 1023 UTF-8 bytes are read, and there are at most 128
-		pieces, the last of them empty when the text holds more. A character a piece cuts through is a "?" for each of its bytes.
+		The delimiter is one byte, its low 8 bits.
+
+		Only the text's first 1023 UTF-8 bytes are read.
+
+		There are at most 128 pieces, the last of them empty when the text holds more.
+
+		A character a piece cuts through becomes a "?" for each of its bytes.
 
 		@param text  The text.
 		@param delimiter  The byte between pieces, such as `",".code`.
@@ -1193,7 +1245,9 @@ class RText {
 		return index < 0 ? -1 : TextLength(text.substr(0, index));
 	}
 
-	/** Returns text with its letters a to z made capitals, as raylib makes them. Other letters, as "é", are unchanged.
+	/** Returns text with its letters a to z made capitals.
+
+		Other letters, as "é", are unchanged.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
@@ -1205,7 +1259,9 @@ class RText {
 		return out.toString();
 	}
 
-	/** Returns text with its capitals A to Z made lower case, as raylib makes them. Other letters, as "É", are unchanged.
+	/** Returns text with its capitals A to Z made lower case.
+
+		Other letters, as "É", are unchanged.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
@@ -1217,8 +1273,11 @@ class RText {
 		return out.toString();
 	}
 
-	/** Returns snake-case text in Pascal case: "hello_world" is "HelloWorld". Each run of underscores is dropped, and the first letter
-		and the one after each run are made capitals if they are a to z. As raylib's, the result is at most 1023 UTF-8 bytes.
+	/** Returns snake-case text in Pascal case: "hello_world" is "HelloWorld". See `TextToCamel` for making camel case.
+
+		Drops each run of underscores, and makes the first letter and the one after each run capitals if they are a to z.
+
+		The result is at most 1023 UTF-8 bytes.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
@@ -1226,11 +1285,16 @@ class RText {
 		return joinedWords(text, true);
 	}
 
-	/** Returns Pascal- or camel-case text, or words, in snake case: "helloWorld" and "Hello World" are "hello_world", "HTTPServer" is
-		"http_server". Each capital A to Z is made lower case, an underscore before it when it follows a letter a to z, or a capital with
-		a letter a to z after it; a space is an underscore. No underscore is added where the text so far ends in one, nor at its start.
+	/** Returns Pascal- or camel-case text, or words, in snake case: "helloWorld" and "Hello World" are "hello_world".
 
-		As raylib's, the result is at most 1023 UTF-8 bytes.
+		Makes each capital A to Z lower case, with an underscore before it when it follows a letter a to z, or follows a capital and has a
+		letter a to z after it. "HTTPServer" is "http_server".
+
+		Makes each space an underscore.
+
+		Adds no underscore at the start, nor where the text so far ends in one.
+
+		The result is at most 1023 UTF-8 bytes.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
@@ -1262,9 +1326,13 @@ class RText {
 		return decoded(out, 0, out.length);
 	}
 
-	/** Returns snake-case text in camel case: "hello_world" is "helloWorld". Each run of underscores is dropped, the letter after it
-		made a capital if it is a to z, and the first letter made lower case if it is A to Z. As raylib's, the result is at most 1023
-		UTF-8 bytes.
+	/** Returns snake-case text in camel case: "hello_world" is "helloWorld". See `TextToPascal` for making Pascal case.
+
+		Drops each run of underscores, and makes the letter after each run a capital if it is a to z.
+
+		Makes the first letter lower case if it is A to Z.
+
+		The result is at most 1023 UTF-8 bytes.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
@@ -1272,8 +1340,11 @@ class RText {
 		return joinedWords(text, false);
 	}
 
-	/** Returns the whole number text starts with, as raylib reads it: an optional "+" or "-", then the digits up to the first that
-		isn't one. Nothing else is skipped, spaces neither; a number past 32 bits wraps.
+	/** Returns the whole number text starts with: an optional "+" or "-", then the digits up to the first character that isn't one.
+
+		Skips nothing, not even spaces.
+
+		A number past 32 bits wraps.
 
 		@param text  The text.
 		@return  The number; 0 when it starts with none, or for null text. */
@@ -1292,11 +1363,11 @@ class RText {
 		return (value * sign) | 0;
 	}
 
-	/** Returns the number text starts with, as raylib reads it: an optional "+" or "-", digits, then a "." and more digits. An exponent,
-		as in "1e3", isn't read, and nothing is skipped.
+	/** Returns the number text starts with: an optional "+" or "-", digits, then a "." and more digits.
 
-		Worked out in 32-bit floats, digit by digit, as raylib works it, so the result is the float raylib returns: "0.1" is
-		0.100000001490116.
+		Reads no exponent, as in "1e3", and skips nothing.
+
+		Worked out in 32-bit floats, digit by digit, as raylib works it: "0.1" is 0.100000001490116.
 
 		@param text  The text.
 		@return  The number; 0 when it starts with none, or for null text. */
@@ -1340,7 +1411,7 @@ class RText {
 		return decoded(bytes, 0, bytes.length);
 	}
 
-	/** Does nothing: text from `LoadUTF8` is freed by the garbage collector.
+	/** Does nothing, since the garbage collector frees text from `LoadUTF8`.
 
 		@param text  The text. */
 	static function UnloadUTF8(text:String):Void {}
@@ -1366,7 +1437,7 @@ class RText {
 		return codepoints;
 	}
 
-	/** Does nothing: codes from `LoadCodepoints` are freed by the garbage collector.
+	/** Does nothing, since the garbage collector frees codes from `LoadCodepoints`.
 
 		@param codepoints  The codes. */
 	static function UnloadCodepoints(codepoints:Array<Int>):Void {}
@@ -1385,7 +1456,8 @@ class RText {
 		return count;
 	}
 
-	/** Returns the code of text's first character, checked as RFC 3629 has UTF-8, as raylib checks it.
+	/** Returns the code of text's first character, checking its UTF-8 bytes as RFC 3629 has them. See `GetCodepointNext` for reading
+		the character without the check.
 
 		@param text  The text.
 		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by; 1 for empty or
@@ -1399,7 +1471,7 @@ class RText {
 		return codepoint;
 	}
 
-	/** Returns the code of text's first character.
+	/** Returns the code of text's first character. See `GetCodepoint` for checking its UTF-8 bytes as RFC 3629 has them.
 
 		@param text  The text.
 		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by, as in
@@ -1413,9 +1485,11 @@ class RText {
 		return codepoint;
 	}
 
-	/** Returns the code of text's last character: the one before where it ends, as raylib's finds the one before a place in text.
+	/** Returns the code of text's last character.
 
-		@param text  The text; `TextSubtext(text, 0, position)` gives the character before a position.
+		`GetCodepointPrevious(TextSubtext(text, 0, position), size)` gives the character before a position.
+
+		@param text  The text.
 		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move back by; 1 for empty or null
 			text.
 		@return  The code; '?' (0x3F) for empty or null text. */

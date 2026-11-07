@@ -1,14 +1,16 @@
 package helix.raylib;
 
-/** Represents raylib's `Shader`: a program, made by `Raylib.LoadShader` or `Raylib.LoadShaderFromMemory`, and the locations of what it
-	declares. */
+/** Represents raylib's `Shader`: a program and the locations of what it declares.
+
+	Made by `Raylib.LoadShader` or `Raylib.LoadShaderFromMemory`. */
 class Shader {
 	/** Gets the program's handle, 0 for none. */
 	@:allow(helix.raylib)
 	public var id(default, null):Int;
 
-	/** Gets the locations of the values raylib sets itself, by `SHADER_LOC_*`, -1 for each it doesn't declare. A program may set them, as
-		raylib's do; values are found by name here, so they change nothing. */
+	/** Gets the locations of the values raylib sets itself, by `SHADER_LOC_*`, -1 for each the shader doesn't declare.
+
+		A program may set them, as raylib's programs do. Values are found by name here, so setting them changes nothing. */
 	public var locs(default, null):Array<Int>;
 
 	@:allow(helix.raylib)
@@ -22,7 +24,7 @@ class Shader {
 	@:allow(helix.raylib)
 	var spent = false;
 
-	/** Creates a shader's record. Shaders are made by `Raylib.LoadShader`.
+	/** Creates a shader's record. See `Raylib.LoadShader` for making a shader.
 
 		@param id  The handle.
 		@param locs  The locations, by `SHADER_LOC_*`. */

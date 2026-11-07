@@ -1102,7 +1102,11 @@ class Raylib {
 	#if !macro
 	// ---- rcore: the window and frame, input, files, cameras and shaders (raylib/RCore.hx) ----
 
-	/** Opens the window and its graphics. In a page the canvas fills the page, and width and height are ignored.
+	/** Opens the window and its graphics.
+
+		In a page the canvas fills the page, and width and height are ignored.
+
+		Seeds `GetRandomValue` from the time, unless `SetRandomSeed` was called first.
 
 		@param width  The window's width, in pixels.
 		@param height  The window's height, in pixels.
@@ -1110,12 +1114,18 @@ class Raylib {
 	public static inline function InitWindow(width:Int, height:Int, title:String):Void
 		RCore.InitWindow(width, height, title);
 
-	/** Closes the window, after keeping what `SaveFileText` wrote. */
+	/** Closes the window, after keeping what `SaveFileTextAsync` wrote. */
 	public static inline function CloseWindow():Void
 		RCore.CloseWindow();
 
-	/** Returns whether the window should close: the exit key was pressed (Escape unless `SetExitKey` changed it) or it was asked to close.
-		In a page it is always false; the loop that reads it runs once a frame there.
+	/** Returns whether the window should close, after the exit key is pressed or the window is asked to close.
+
+		The exit key is Escape unless `SetExitKey` changed it.
+
+		Always false in a page, where the loop that reads it runs once a frame.
+
+		In a page, the program's loop must be a `while` or `do`-`while` in the main class, a statement of a function's own block. A call in
+		a loop that never lets the page draw throws.
 
 		@return  True once the window should close. */
 	public static inline function WindowShouldClose():Bool
@@ -1139,39 +1149,49 @@ class Raylib {
 	public static inline function SetWindowTitle(title:String):Void
 		RCore.SetWindowTitle(title);
 
-	/** Returns whether the window is fullscreen, not a borderless window (`ToggleBorderlessWindowedAsync`), as raylib tells them apart.
-		In a page it tells whether the canvas is.
+	/** Returns whether the window is fullscreen, false for a borderless window (`ToggleBorderlessWindowedAsync`).
+
+		In a page, whether the canvas is fullscreen.
 
 		@return  True while it is. */
 	public static inline function IsWindowFullscreen():Bool
 		return RCore.IsWindowFullscreen();
 
-	/** Returns whether the program hid the window (`FLAG_WINDOW_HIDDEN`). In a page it tells whether the canvas is hidden.
+	/** Returns whether the window is hidden (`FLAG_WINDOW_HIDDEN`).
+
+		In a page, whether the canvas is hidden.
 
 		@return  True while it is. */
 	public static inline function IsWindowHidden():Bool
 		return RCore.IsWindowHidden();
 
-	/** Returns whether the window is out of sight: minimized, or in a page its tab in the background.
+	/** Returns whether the window is minimized, or in a page whether its tab is in the background.
 
 		@return  True while it is. */
 	public static inline function IsWindowMinimized():Bool
 		return RCore.IsWindowMinimized();
 
-	/** Returns whether the window is maximized. It is false in a page.
+	/** Returns whether the window is maximized.
+
+		Always false in a page.
 
 		@return  True while it is. */
 	public static inline function IsWindowMaximized():Bool
 		return RCore.IsWindowMaximized();
 
-	/** Sets the window's icon; in a page, the page's icon. As raylib's, the image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+	/** Sets the window's icon, in a page the page's icon. See `SetWindowIcons` for giving several sizes.
+
+		The image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`. Another format logs a warning and changes nothing.
+
+		An image with no data is ignored.
 
 		@param image  The icon. */
 	public static inline function SetWindowIcon(image:Image):Void
 		RCore.SetWindowIcon(image);
 
-	/** Sets the window's icon from several sizes: the largest is used, as the desktop scales it. Each must be
-		`PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+	/** Sets the window's icon from several sizes, using the largest.
+
+		Each image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`. One in another format logs a warning and changes nothing.
 
 		@param images  The icons.
 		@param count  How many of them. */
@@ -1185,9 +1205,15 @@ class Raylib {
 	public static inline function GetMonitorRefreshRate(monitor:Int):Int
 		return RCore.GetMonitorRefreshRate(monitor);
 
-	/** Opens a URL in the system's browser; in a page, a new tab, at the next press when there is no fresh one. As raylib 6.2's, a URL
-		with `'` or `"` is refused as possibly malicious. helix-raylib opens only http, https and mailto URLs, where raylib 5.5 opens any and
-		6.2 only http and https.
+	/** Opens a URL in the system's browser, in a page a new tab.
+
+		Opens only http, https and mailto URLs.
+
+		A URL with `'` or `"` logs a warning and doesn't open.
+
+		In a page, a URL opens at the next key press, click or tap when none came just before.
+
+		A URL that fails to open logs a warning.
 
 		@param url  The URL. */
 	public static inline function OpenURL(url:String):Void
@@ -1205,17 +1231,19 @@ class Raylib {
 	public static inline function GetWindowPosition():Vector2
 		return RCore.GetWindowPosition();
 
-	/** Returns how many of the display's pixels a pixel drawn takes, across and down: 2 on most phones and high-density displays.
+	/** Returns how many of the display's pixels a pixel drawn takes, across and down, 2 on most phones and high-density displays.
 
-		Natively it is the display's scale whatever the flags, as raylib 5.5's desktop build has it (6.2's gives 1 unless
-		`FLAG_WINDOW_HIGHDPI` is set and the window isn't fullscreen). In a page it is 1 unless `FLAG_WINDOW_HIGHDPI` was set before
-		`InitWindow`, which draws the canvas at the device's ratio where raylib's web build always draws at its logical size.
+		Natively, the display's scale whatever the flags.
+
+		In a page, 1 unless `FLAG_WINDOW_HIGHDPI` was set before `InitWindow`. The flag draws the canvas at the device's pixel ratio.
 
 		@return  The scale. */
 	public static inline function GetWindowScaleDPI():Vector2
 		return RCore.GetWindowScaleDPI();
 
-	/** Returns the number of monitors. A page sees one.
+	/** Returns the number of monitors.
+
+		Always 1 in a page.
 
 		@return  The count, at least 1. */
 	public static inline function GetMonitorCount():Int
@@ -1255,39 +1283,46 @@ class Raylib {
 	public static inline function GetMonitorName(monitor:Int):String
 		return RCore.GetMonitorName(monitor);
 
-	/** Returns the screen's width, in the pixels drawing is in.
+	/** Returns the screen's width, in the pixels drawing is in. See `GetRenderWidth` for reading the framebuffer's width.
 
 		@return  The width. */
 	public static inline function GetScreenWidth():Int
 		return RCore.GetScreenWidth();
 
-	/** Returns the screen's height, in the pixels drawing is in.
+	/** Returns the screen's height, in the pixels drawing is in. See `GetRenderHeight` for reading the framebuffer's height.
 
 		@return  The height. */
 	public static inline function GetScreenHeight():Int
 		return RCore.GetScreenHeight();
 
-	/** Returns the framebuffer's width, in the display's pixels.
+	/** Returns the framebuffer's width, in the display's pixels. See `GetScreenWidth` for reading the width drawing is in.
 
 		@return  The width. */
 	public static inline function GetRenderWidth():Int
 		return RCore.GetRenderWidth();
 
-	/** Returns the framebuffer's height, in the display's pixels.
+	/** Returns the framebuffer's height, in the display's pixels. See `GetScreenHeight` for reading the height drawing is in.
 
 		@return  The height. */
 	public static inline function GetRenderHeight():Int
 		return RCore.GetRenderHeight();
 
-	/** Sets flags for the window before `InitWindow` (`FLAG_*`). `FLAG_MSAA_4X_HINT` asks for 4 samples a pixel, and `FLAG_VSYNC_HINT`
-		for frames shown at the display's refresh; without it, frames natively show as soon as they are drawn, as raylib's do, while a
-		page's always follow the display. The window is resizable here whatever they say.
+	/** Sets flags for the window before `InitWindow` (`FLAG_*`).
+
+		`FLAG_MSAA_4X_HINT` asks for 4 samples a pixel.
+
+		`FLAG_VSYNC_HINT` shows frames at the display's refresh. Without it, frames natively show as soon as they are drawn. A page's frames
+		always follow the display.
+
+		The window is resizable whatever the flags.
 
 		@param flags  The flags, or'd together. */
 	public static inline function SetConfigFlags(flags:Int):Void
 		RCore.SetConfigFlags(flags);
 
-	/** Sets flags on the open window (`FLAG_*`). A window here is resizable whatever they say, and the others aren't read.
+	/** Sets flags on the open window (`FLAG_*`).
+
+		Changes nothing on the window itself, which stays resizable. `IsWindowState` reads the flags back.
 
 		@param flags  The flags, or'd together. */
 	public static inline function SetWindowState(flags:Int):Void
@@ -1299,16 +1334,21 @@ class Raylib {
 	public static inline function ClearWindowState(flags:Int):Void
 		RCore.ClearWindowState(flags);
 
-	/** Returns whether flags are set on the window. `FLAG_FULLSCREEN_MODE` and `FLAG_BORDERLESS_WINDOWED_MODE` say what the window is
-		now, as `IsWindowFullscreen` does.
+	/** Returns whether flags are set on the window.
+
+		`FLAG_FULLSCREEN_MODE` and `FLAG_BORDERLESS_WINDOWED_MODE` read what the window is now, as `IsWindowFullscreen` does.
 
 		@param flag  The flags, or'd together.
 		@return  True when all of them are. */
 	public static inline function IsWindowState(flag:Int):Bool
 		return RCore.IsWindowState(flag);
 
-	/** Sets the most frames a second, as raylib's `EndDrawing` waits out the rest of each frame. Natively it waits; in a page, where
-		frames follow the display's refresh, a frame is skipped until it is time, so a rate above the display's changes nothing.
+	/** Sets the most frames a second, for `EndDrawing` to wait out the rest of each frame.
+
+		Natively, `EndDrawing` waits.
+
+		In a page, where frames follow the display's refresh, a frame is skipped until it is time. A rate above the display's changes nothing
+		there.
 
 		@param fps  The frames a second, or 0 for no limit. */
 	public static inline function SetTargetFPS(fps:Int):Void
@@ -1326,8 +1366,9 @@ class Raylib {
 	public static inline function GetFrameTime():Float
 		return RCore.GetFrameTime();
 
-	/** Stops the program for a time, drawing nothing and reading no input until it ends. In a page it spins, as raylib's web build does,
-		so the page doesn't respond meanwhile.
+	/** Stops the program for a time, drawing nothing and reading no input until it ends.
+
+		Spins in a page, so the page doesn't respond meanwhile.
 
 		@param seconds  How long. */
 	public static inline function WaitTime(seconds:Float):Void
@@ -1339,7 +1380,9 @@ class Raylib {
 	public static inline function GetTime():Float
 		return RCore.GetTime();
 
-	/** Sets the key that closes the window natively, or `KEY_NULL` for none. It is Escape until set.
+	/** Sets the key that closes the window natively, or `KEY_NULL` for none.
+
+		Escape until set.
 
 		@param key  The key. */
 	public static inline function SetExitKey(key:Int):Void
@@ -1349,34 +1392,47 @@ class Raylib {
 	public static inline function BeginDrawing():Void
 		RCore.BeginDrawing();
 
-	/** Ends a frame's drawing: shows it, waits out the rest of the frame natively (`SetTargetFPS`), then reads the next frame's input.
-		Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, it only ends the drawing:
-		`SwapScreenBuffer` shows the frame, `WaitTime` waits and `PollInputEvents` reads the input, as the program calls them. */
+	/** Ends a frame's drawing and shows it, then natively waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input.
+
+		Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then
+		calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input. */
 	public static inline function EndDrawing():Void
 		RCore.EndDrawing();
 
-	/** Shows the frame `EndDrawing` ended, for a program built with `-D helix-raylib-custom-frame-control`, raylib's
-		`SUPPORT_CUSTOM_FRAME_CONTROL`. Without it, `EndDrawing` has shown the frame already and this does nothing. A frame not shown by
-		the next `EndDrawing` is shown then. In a page the browser shows a frame when the loop's body returns, as raylib's web build has it,
-		so the frame shows then however this is called. */
+	/** Shows the frame `EndDrawing` ended, for a program built with `-D helix-raylib-custom-frame-control`.
+
+		Does nothing without the define, as `EndDrawing` has shown the frame already.
+
+		A frame not shown by the next `EndDrawing` is shown then.
+
+		In a page, the browser shows the frame when the loop's body returns, wherever the call is. */
 	public static inline function SwapScreenBuffer():Void
 		RCore.SwapScreenBuffer();
 
-	/** Reads the input that came since the last read: each key's, button's and finger's state, and the window's events. `EndDrawing`
-		reads it already unless the program is built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`; a
-		second read, as raylib's, starts a new frame of input, so what was pressed before it reads as held. With `EnableEventWaiting`, it
-		waits for an event natively first. */
+	/** Reads the input that came since the last read: each key's, button's and finger's state, and the window's events.
+
+		`EndDrawing` reads the input already, unless the program is built with `-D helix-raylib-custom-frame-control`.
+
+		A second read starts a new frame of input, so a key pressed before it reads as held.
+
+		With `EnableEventWaiting`, waits natively for an event first. */
 	public static inline function PollInputEvents():Void
 		RCore.PollInputEvents();
 
-	/** Makes each frame natively wait for an event before the next is read, as raylib's: a key, a mouse button, the mouse moved, the
-		window changed, from a device the program reads. The program draws nothing meanwhile and uses little time; the platform and
-		helix-raylib's async loads are still served, so a load answers while it waits and is drawn after the next event. In a page it changes nothing,
-		as raylib's web build doesn't wait: the browser runs each frame. */
+	/** Makes each frame natively wait for an event before the next is read. See `DisableEventWaiting` for going back to reading the events
+		there are.
+
+		An event is a key, a mouse button, the mouse moving or the window changing, from a device the program reads.
+
+		The program draws nothing while waiting, and uses little time.
+
+		The platform and helix-raylib's async loads are still served, so a load answers while waiting and is drawn after the next event.
+
+		Changes nothing in a page, where the browser runs each frame. */
 	public static inline function EnableEventWaiting():Void
 		RCore.EnableEventWaiting();
 
-	/** Makes each frame read the events there are and go on, as it does until `EnableEventWaiting`. */
+	/** Makes each frame read the events there are and go on, the default until `EnableEventWaiting`. */
 	public static inline function DisableEventWaiting():Void
 		RCore.DisableEventWaiting();
 
@@ -1386,8 +1442,12 @@ class Raylib {
 	public static inline function ClearBackground(color:Color):Void
 		RCore.ClearBackground(color);
 
-	/** Returns a random whole number from min to max, both included, from raylib's generator (xoshiro128**, helix-math's `Random`), so a seed gives the
-		numbers raylib's gives.
+	/** Returns a random whole number from min to max, both included, from raylib's generator. See `LoadRandomSequence` for drawing several
+		numbers with none twice.
+
+		The generator is xoshiro128** (helix-math's `Random`), so a seed gives the numbers raylib's gives.
+
+		min and max are swapped when min is more.
 
 		@param min  The least.
 		@param max  The most.
@@ -1395,16 +1455,21 @@ class Raylib {
 	public static inline function GetRandomValue(min:Int, max:Int):Int
 		return RCore.GetRandomValue(min, max);
 
-	/** Seeds `GetRandomValue` and `LoadRandomSequence`, as raylib's: helix-math's `Random` is raylib's generator, so the numbers repeat
-		from the same seed and are raylib's.
+	/** Seeds `GetRandomValue` and `LoadRandomSequence`.
+
+		The numbers repeat from the same seed, and are the ones raylib's give.
+
+		Until called, `InitWindow` seeds from the time.
 
 		@param seed  The seed, read as unsigned. */
 	public static inline function SetRandomSeed(seed:Int):Void
 		RCore.SetRandomSeed(seed);
 
-	/** Returns numbers from min to max, both included, none twice, from `GetRandomValue`'s generator, as raylib's: the same numbers
-		raylib's gives for a seed. As raylib's, min and max aren't swapped: when min is more, the numbers run from min up by the range's
-		size.
+	/** Returns numbers from min to max, both included, none twice, from `GetRandomValue`'s generator.
+
+		A seed gives the numbers raylib's gives.
+
+		min and max aren't swapped. When min is more, the numbers run from min up by the range's size.
 
 		@param count  How many.
 		@param min  The least.
@@ -1413,7 +1478,9 @@ class Raylib {
 	public static inline function LoadRandomSequence(count:Int, min:Int, max:Int):Null<Array<Int>>
 		return RCore.LoadRandomSequence(count, min, max);
 
-	/** Frees numbers `LoadRandomSequence` gave. There is nothing to free here.
+	/** Frees numbers `LoadRandomSequence` gave.
+
+		Has nothing to free.
 
 		@param sequence  The numbers. */
 	public static inline function UnloadRandomSequence(sequence:Null<Array<Int>>):Void
@@ -1447,41 +1514,54 @@ class Raylib {
 	public static inline function IsKeyUp(key:Int):Bool
 		return RCore.IsKeyUp(key);
 
-	/** Returns the next key pressed this frame, each once; call it until it returns `KEY_NULL`.
+	/** Returns the next key pressed this frame, each key once. See `GetCharPressed` for reading typed text.
+
+		A loop calling it until it returns `KEY_NULL` reads every key pressed.
 
 		@return  The key (`KEY_*`), or `KEY_NULL` when no more were pressed. */
 	public static inline function GetKeyPressed():Int
 		return RCore.GetKeyPressed();
 
-	/** Returns whether the OS repeated a held key this frame, as it does after a moment, at its own rate.
+	/** Returns whether the system repeated a held key this frame.
+
+		The system starts repeating a key after a moment, at its own rate.
 
 		@param key  The key (`KEY_*`).
 		@return  True for the frames it repeated. */
 	public static inline function IsKeyPressedRepeat(key:Int):Bool
 		return RCore.IsKeyPressedRepeat(key);
 
-	/** Returns the next character typed this frame, each once; call it until it returns 0. Typed text is read from the first call on, so
-		on a phone its keyboard shows from then.
+	/** Returns the next character typed this frame, each once. See `GetKeyPressed` for reading keys.
+
+		A loop calling it until it returns 0 reads every character typed.
+
+		Typed text is read from the first call on, so a phone's keyboard shows from then.
 
 		@return  The character's codepoint, or 0 when no more were typed. */
 	public static inline function GetCharPressed():Int
 		return RCore.GetCharPressed();
 
-	/** Returns whether a mouse button went down this frame. A finger touching counts as the left button, as in raylib.
+	/** Returns whether a mouse button went down this frame.
+
+		A finger touching counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
 	public static inline function IsMouseButtonPressed(button:Int):Bool
 		return RCore.IsMouseButtonPressed(button);
 
-	/** Returns whether a mouse button is held. A finger down counts as the left button.
+	/** Returns whether a mouse button is held.
+
+		A finger down counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True while it is down. */
 	public static inline function IsMouseButtonDown(button:Int):Bool
 		return RCore.IsMouseButtonDown(button);
 
-	/** Returns whether a mouse button went up this frame. The last finger lifting counts as the left button.
+	/** Returns whether a mouse button went up this frame.
+
+		The last finger lifting counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
@@ -1495,28 +1575,32 @@ class Raylib {
 	public static inline function IsMouseButtonUp(button:Int):Bool
 		return RCore.IsMouseButtonUp(button);
 
-	/** Returns the mouse's x, in the screen's pixels; the first finger's while one is down.
+	/** Returns the mouse's x, in the screen's pixels, the first finger's while one is down.
 
 		@return  The x. */
 	public static inline function GetMouseX():Int
 		return RCore.GetMouseX();
 
-	/** Returns the mouse's y, in the screen's pixels; the first finger's while one is down.
+	/** Returns the mouse's y, in the screen's pixels, the first finger's while one is down.
 
 		@return  The y. */
 	public static inline function GetMouseY():Int
 		return RCore.GetMouseY();
 
-	/** Returns the mouse's position, in the screen's pixels, `SetMouseOffset`'s offset added and `SetMouseScale`'s scale applied; the
-		first finger's while one is down.
+	/** Returns the mouse's position, in the screen's pixels, the first finger's while one is down.
+
+		`SetMouseOffset`'s offset is added first, then `SetMouseScale`'s scale applied.
 
 		@return  The position. */
 	public static inline function GetMousePosition():Vector2
 		return RCore.GetMousePosition();
 
-	/** Moves the mouse to a place on the screen. As raylib 6.2's, where the mouse was isn't forgotten: `GetMouseDelta` this frame includes
-		the move. Where the cursor can't be moved (always in a page, and natively where the system refuses, as Wayland does), the position
-		reads there until the mouse moves, and a warning says why, once a run for each reason.
+	/** Moves the mouse to a place on the screen.
+
+		`GetMouseDelta` this frame includes the move.
+
+		In a page, and natively where the system refuses as Wayland does, the cursor stays. The position reads the place given until the
+		mouse moves, and a warning says why, once a run for each reason.
 
 		@param x  The place across, in the screen's pixels.
 		@param y  The place down. */
@@ -1537,7 +1621,8 @@ class Raylib {
 	public static inline function SetMouseScale(scaleX:Float, scaleY:Float):Void
 		RCore.SetMouseScale(scaleX, scaleY);
 
-	/** Returns how far the wheel turned this frame, in both directions: right and forward are positive.
+	/** Returns how far the wheel turned this frame, in both directions, right and forward positive. See `GetMouseWheelMove` for reading the
+		larger direction alone.
 
 		@return  The notches. */
 	public static inline function GetMouseWheelMoveV():Vector2
@@ -1563,13 +1648,14 @@ class Raylib {
 	public static inline function IsCursorOnScreen():Bool
 		return RCore.IsCursorOnScreen();
 
-	/** Sets the cursor's shape: the system's own cursor of each kind.
+	/** Sets the cursor's shape, the system's own cursor of each kind.
 
-		@param cursor  The shape (`MOUSE_CURSOR_*`); `MOUSE_CURSOR_DEFAULT` and `MOUSE_CURSOR_ARROW` are both the arrow. */
+		@param cursor  The shape (`MOUSE_CURSOR_*`). `MOUSE_CURSOR_DEFAULT` and `MOUSE_CURSOR_ARROW` are both the arrow. */
 	public static inline function SetMouseCursor(cursor:Int):Void
 		RCore.SetMouseCursor(cursor);
 
-	/** Returns how far the wheel turned this frame, the larger of its two directions; forward is positive.
+	/** Returns how far the wheel turned this frame, the larger of its two directions, forward positive. See `GetMouseWheelMoveV` for
+		reading both directions.
 
 		@return  The notches. */
 	public static inline function GetMouseWheelMove():Float
@@ -1581,7 +1667,9 @@ class Raylib {
 	public static inline function GetTouchPointCount():Int
 		return RCore.GetTouchPointCount();
 
-	/** Returns a finger's position, in the screen's pixels. While no finger is down, the first is where the mouse is, as raylib's.
+	/** Returns a finger's position, in the screen's pixels.
+
+		While no finger is down, the first is where the mouse is.
 
 		@param index  Which finger, 0 for the first down.
 		@return  The position, or (0, 0) when fewer are down. */
@@ -1595,26 +1683,31 @@ class Raylib {
 	public static inline function GetTouchPointId(index:Int):Int
 		return RCore.GetTouchPointId(index);
 
-	/** Returns the first finger's x, in the screen's pixels: the mouse's while no finger is down.
+	/** Returns the first finger's x, in the screen's pixels, the mouse's while no finger is down.
 
 		@return  The x. */
 	public static inline function GetTouchX():Int
 		return RCore.GetTouchX();
 
-	/** Returns the first finger's y, in the screen's pixels: the mouse's while no finger is down.
+	/** Returns the first finger's y, in the screen's pixels, the mouse's while no finger is down.
 
 		@return  The y. */
 	public static inline function GetTouchY():Int
 		return RCore.GetTouchY();
 
-	/** Sets which gestures are detected; all of them until it is called.
+	/** Sets which gestures are detected.
+
+		All gestures until called.
 
 		@param flags  The gestures (`GESTURE_*`), or'd together. */
 	public static inline function SetGesturesEnabled(flags:Int):Void
 		RCore.SetGesturesEnabled(flags);
 
-	/** Returns whether a gesture is the one detected now. A mouse button counts as a finger, as in raylib. A tap or double tap lasts a
-		frame, then becomes a hold; a swipe lasts a frame.
+	/** Returns whether a gesture is the one detected now.
+
+		A mouse button counts as a finger.
+
+		A tap or double tap lasts a frame, then becomes a hold. A swipe lasts a frame.
 
 		@param gesture  The gesture (`GESTURE_*`).
 		@return  True while it is the gesture, and enabled. */
@@ -1657,9 +1750,14 @@ class Raylib {
 	public static inline function GetGesturePinchAngle():Float
 		return RCore.GetGesturePinchAngle();
 
-	/** Shakes a gamepad: its left motor is the heavy one, its right the light one, as raylib's. Shaking lasts at most 2 seconds, as
-		raylib's. An empty slot is passed over, as raylib's. A pad that can't shake (one without motors, or any in a browser without
-		vibration, as Firefox) doesn't, and a warning says so, once a run.
+	/** Shakes a gamepad, its left motor the heavy one and its right the light one.
+
+		Shaking lasts at most 2 seconds.
+
+		An empty slot is passed over.
+
+		A pad that can't shake, one without motors or any in a browser without vibration (Firefox), stays still and logs a warning, once a
+		run.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param leftMotor  The heavy motor's strength, 0 to 1.
@@ -1668,10 +1766,10 @@ class Raylib {
 	public static inline function SetGamepadVibration(gamepad:Int, leftMotor:Float, rightMotor:Float, duration:Float):Void
 		RCore.SetGamepadVibration(gamepad, leftMotor, rightMotor, duration);
 
-	/** Adds mappings for pads the system doesn't know, in SDL's controller database format, as raylib's.
+	/** Adds mappings for pads the system doesn't know, in SDL's controller database format.
 
 		@param mappings  The mappings, one a line.
-		@return  How many were added or updated; 0 in a page, whose browser maps pads itself. */
+		@return  How many were added or updated, or 0 in a page, whose browser maps pads itself. */
 	public static inline function SetGamepadMappings(mappings:String):Int
 		return RCore.SetGamepadMappings(mappings);
 
@@ -1721,9 +1819,14 @@ class Raylib {
 	public static inline function IsGamepadButtonUp(gamepad:Int, button:Int):Bool
 		return RCore.IsGamepadButtonUp(gamepad, button);
 
-	/** Returns the last button held, as raylib polls them: gamepads 0 to 3, each's buttons in the browser's order in a page (the second
-		triggers among them, the middle button never), else GLFW's (the middle button among them), then, as raylib 6.2's, the left
-		second trigger and the right while its axis (`GetGamepadAxisMovement`) is over 0.1.
+	/** Returns the last button held, polling the buttons as raylib does.
+
+		The poll runs over gamepads 0 to 3, each's buttons in the browser's order in a page, else GLFW's.
+
+		In a page, the second triggers are among the buttons and the middle button never is.
+
+		Natively, the middle button is among them, and the left and right second triggers count as held while their axis
+		(`GetGamepadAxisMovement`) is over 0.1.
 
 		@return  The button (`GAMEPAD_BUTTON_*`), or `GAMEPAD_BUTTON_UNKNOWN` when none is held. */
 	public static inline function GetGamepadButtonPressed():Int
@@ -1736,8 +1839,11 @@ class Raylib {
 	public static inline function GetGamepadAxisCount(gamepad:Int):Int
 		return RCore.GetGamepadAxisCount(gamepad);
 
-	/** Returns how far a gamepad's axis is pushed, with no dead zone. A stick is -1 to 1, down and right positive; a trigger is -1
-		released to 1 pulled, as raylib's are.
+	/** Returns how far a gamepad's axis is pushed, with no dead zone.
+
+		A stick runs from -1 to 1, down and right positive.
+
+		A trigger runs from -1 released to 1 pulled.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param axis  The axis (`GAMEPAD_AXIS_*`).
@@ -1745,46 +1851,66 @@ class Raylib {
 	public static inline function GetGamepadAxisMovement(gamepad:Int, axis:Int):Float
 		return RCore.GetGamepadAxisMovement(gamepad, axis);
 
-	/** Frees text `LoadFileTextAsync` gave. There is nothing to free here.
+	/** Frees text `LoadFileTextAsync` gave.
+
+		Has nothing to free.
 
 		@param text  The text. */
 	public static inline function UnloadFileText(text:Null<String>):Void
 		RCore.UnloadFileText(text);
 
-	/** Frees bytes `LoadFileDataAsync` gave. There is nothing to free here.
+	/** Frees bytes `LoadFileDataAsync` gave.
+
+		Has nothing to free.
 
 		@param data  The bytes. */
 	public static inline function UnloadFileData(data:Null<haxe.io.Bytes>):Void
 		RCore.UnloadFileData(data);
 
-	/** Returns the working directory: natively the process's, where `TakeScreenshot` writes; in a page ".", the page's own directory.
-		helix-raylib's loads don't read from it: a file's name is under the program's files wherever it is (`GetApplicationDirectory`).
+	/** Returns the working directory, natively the process's and in a page ".", the page's own. See `GetApplicationDirectory` for finding
+		the program's files.
+
+		Natively, `TakeScreenshotAsync` writes to it.
+
+		helix-raylib's loads don't read from it. A file's name is under the program's files wherever the working directory is.
 
 		@return  The directory, without a slash at its end. */
 	public static inline function GetWorkingDirectory():String
 		return RCore.GetWorkingDirectory();
 
-	/** Returns the directory the program's files are read from, as raylib programs name a file from their application's directory:
-		natively `-D helix-raylib-native-root` from the executable's directory (`../web` unless set), in a page "./", the page's own. A load
-		given a path in it reads the file it names, so `GetApplicationDirectory() + "resources/a.png"` loads "resources/a.png".
+	/** Returns the directory the program's files are read from.
+
+		Natively, `-D helix-raylib-native-root` from the executable's directory, `../web` unless set.
+
+		In a page, "./", the page's own directory.
+
+		A load given a path in it reads the file the path names, so `GetApplicationDirectory() + "resources/a.png"` loads
+		"resources/a.png".
 
 		@return  The directory, with a slash at its end. */
 	public static inline function GetApplicationDirectory():String
 		return RCore.GetApplicationDirectory();
 
-	/** Changes the working directory, natively the process's, as raylib's: `TakeScreenshot` writes to it from then on. helix-raylib's loads
-		are unchanged, reading the program's files wherever it is. A page has no working directory of its own: there, only "." or the
-		page's directory (`GetApplicationDirectory`) succeeds, changing nothing. A failure is logged, as raylib's is.
+	/** Changes the working directory, natively the process's.
+
+		`TakeScreenshotAsync` writes to the new directory from then on.
+
+		helix-raylib's loads are unchanged, reading the program's files wherever the working directory is.
+
+		In a page, only "." or "./" succeeds, changing nothing.
+
+		A failure logs a warning.
 
 		@param dir  The directory.
 		@return  True when the working directory is it now. */
 	public static inline function ChangeDirectory(dir:String):Bool
 		return RCore.ChangeDirectory(dir);
 
-	/** Returns whether a file name ends in one of some extensions, ignoring the case of A to Z, as raylib 6.2's.
+	/** Returns whether a file name ends in one of some extensions, ignoring the case of A to Z.
 
-		Up to 15 characters of the file's extension are compared, and the list's first 32 extensions. An extension in the list without
-		its dot matches as well ("png" as ".png").
+		Up to 15 characters of the file's extension are compared, and the list's first 32 extensions.
+
+		An extension in the list without its dot matches as well ("png" as ".png").
 
 		@param fileName  The file name.
 		@param ext  The extensions, `;` between them: ".png;.jpg".
@@ -1799,36 +1925,37 @@ class Raylib {
 	public static inline function GetFileExtension(fileName:String):String
 		return RCore.GetFileExtension(fileName);
 
-	/** Returns a path's file name: what follows its last `/` or `\`.
+	/** Returns a path's file name, what follows its last `/` or `\`.
 
 		@param filePath  The path.
-		@return  The file name with its extension; the path itself when it has no slash. */
+		@return  The file name with its extension, or the path itself when it has no slash. */
 	public static inline function GetFileName(filePath:String):String
 		return RCore.GetFileName(filePath);
 
-	/** Returns a path's file name without its extension: up to its last dot, unless that dot is its first character.
+	/** Returns a path's file name without its extension, up to its last dot unless that dot is its first character.
 
 		@param filePath  The path.
-		@return  The file name; "" for null. */
+		@return  The file name, or "" for null. */
 	public static inline function GetFileNameWithoutExt(filePath:String):String
 		return RCore.GetFileNameWithoutExt(filePath);
 
-	/** Returns the directory of a path: up to its last `/` or `\`. A relative path's starts "./", as raylib's does: "dir/file.png"
-		gives "./dir", "file.png" gives "./", and "/file.png" gives "/".
+	/** Returns the directory of a path, up to its last `/` or `\`.
+
+		A relative path's directory starts "./": "dir/file.png" gives "./dir", "file.png" gives "./", and "/file.png" gives "/".
 
 		@param filePath  The path.
 		@return  The directory, without a slash at its end. */
 	public static inline function GetDirectoryPath(filePath:String):String
 		return RCore.GetDirectoryPath(filePath);
 
-	/** Returns the directory a path is in, as raylib 6.2's: up to its last `/` or `\` but one at its end, keeping a root's ("/",
-		"C:\").
+	/** Returns the directory a path is in, up to its last `/` or `\` but one at its end, keeping a root's ("/", "C:\").
 
-		"/a/b/" gives "/a", "/a" gives "/" and "abc" gives "". raylib 6.2 also takes a path naming a file to its directory's parent; a
-		file can't be looked for without waiting here, so every path is taken as a directory's.
+		"/a/b/" gives "/a", "/a" gives "/" and "abc" gives "".
+
+		Every path is taken as a directory's, so a path naming a file gives the file's directory.
 
 		@param dirPath  The path.
-		@return  The directory above it; "" when there is none. */
+		@return  The directory above it, or "" when there is none. */
 	public static inline function GetPrevDirectoryPath(dirPath:String):String
 		return RCore.GetPrevDirectoryPath(dirPath);
 
@@ -1836,49 +1963,62 @@ class Raylib {
 		only dots.
 
 		@param fileName  The file name, without a directory.
-		@return  True when it could; true for null or "", as raylib's is. */
+		@return  True when it could, and true for null or "". */
 	public static inline function IsFileNameValid(fileName:String):Bool
 		return RCore.IsFileNameValid(fileName);
 
-	/** Makes a directory. There is nothing to make: a directory is there once a file is written under it, so this succeeds for any path
-		that could name one.
+	/** Makes a directory, succeeding for any path that could name one.
+
+		Nothing is made, as a directory is there once a file is written under it.
 
 		@param dirPath  The directory.
-		@return  0, success; 1 for null or "", as raylib 5.5's; -1, as raylib 6.2's for a directory not made, for a path that can't name
-			one. */
+		@return  0 for success, 1 for null or "", and -1 for a path that can't name a directory. */
 	public static inline function MakeDirectory(dirPath:String):Int
 		return RCore.MakeDirectory(dirPath);
 
-	/** Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave. There is nothing to free here, and the list is
-		unchanged.
+	/** Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave.
+
+		Has nothing to free, and the list is unchanged.
 
 		@param files  The listing. */
 	public static inline function UnloadDirectoryFiles(files:FilePathList):Void
 		RCore.UnloadDirectoryFiles(files);
 
-	/** Returns whether files were dropped on the window, natively from the desktop and in a page on the canvas. It stays true until
-		`UnloadDroppedFiles`, and a new drop's files replace the last one's, as raylib's do. A dropped file counts once its bytes are read,
-		natively in the frame after it is dropped, in a page a frame or so after.
+	/** Returns whether files were dropped on the window, natively from the desktop and in a page on the canvas. See `LoadDroppedFiles` for
+		reading their paths.
+
+		Stays true until `UnloadDroppedFiles`.
+
+		A new drop's files replace the last one's.
+
+		A dropped file counts once its bytes are read, natively in the frame after the drop and in a page a frame or so after.
 
 		@return  True while dropped files are held. */
 	public static inline function IsFileDropped():Bool
 		return RCore.IsFileDropped();
 
-	/** Returns the paths of the files last dropped. Each is helix-raylib's own, `helix-raylib-dropped/<n>/<name>`, which every load reads, as
-		`LoadTextureAsync(path)`: the file's name is its last part, a character a path can't hold made `_`. A directory dropped isn't listed.
+	/** Returns the paths of the files last dropped.
 
-		@return  The paths, `count` of them; `capacity` is 0, as raylib's. */
+		Each path is helix-raylib's own, `helix-raylib-dropped/<n>/<name>`, which every load reads, as `LoadTextureAsync(path)` does.
+
+		The file's name is the path's last part, with `_` for a character a path can't hold.
+
+		A directory dropped isn't listed.
+
+		@return  The paths, `count` of them, with `capacity` 0. */
 	public static inline function LoadDroppedFiles():FilePathList
 		return RCore.LoadDroppedFiles();
 
-	/** Lets go of the list of files last dropped, so `IsFileDropped` is false until the next drop. The files stay, as a dropped file stays
-		on raylib's disk: a load of one of their paths, started before or after, reads it until the next drop's files replace them.
+	/** Lets go of the list of files last dropped, so `IsFileDropped` is false until the next drop.
 
-		@param files  The list `LoadDroppedFiles` gave; one of no files does nothing, as raylib's. */
+		The files stay. A load of one of their paths, started before or after, reads the file until the next drop's files replace them.
+
+		@param files  The list `LoadDroppedFiles` gave. A list of no files changes nothing. */
 	public static inline function UnloadDroppedFiles(files:FilePathList):Void
 		RCore.UnloadDroppedFiles(files);
 
-	/** Compresses bytes as raylib's `CompressData` does, byte for byte: raw DEFLATE (no zlib header), sdefl's level 8.
+	/** Compresses bytes as raylib's `CompressData` does, byte for byte, raw DEFLATE with no zlib header at sdefl's level 8. See
+		`DecompressData` for reading them back.
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
@@ -1887,17 +2027,20 @@ class Raylib {
 	public static inline function CompressData(data:haxe.io.Bytes, dataSize:Int, compDataSize:Array<Int>):haxe.io.Bytes
 		return RCore.CompressData(data, dataSize, compDataSize);
 
-	/** Returns DEFLATE data decompressed: a raw stream with no zlib header, as raylib's `CompressData` makes. Like raylib's, it gives
-		at most 64 MB.
+	/** Returns DEFLATE data decompressed, a raw stream with no zlib header as `CompressData` makes.
+
+		Gives at most 64 MB.
+
+		Data that isn't DEFLATE, or stops short, gives the bytes read before it, perhaps none, and logs a warning.
 
 		@param compData  The compressed bytes.
 		@param compDataSize  How many of them.
 		@param dataSize  Its first element is set to how many bytes it gives.
-		@return  The bytes. Data that isn't DEFLATE, or stops short, gives what was read before it, perhaps nothing, and a warning. */
+		@return  The bytes. */
 	public static inline function DecompressData(compData:haxe.io.Bytes, compDataSize:Int, dataSize:Array<Int>):haxe.io.Bytes
 		return RCore.DecompressData(compData, compDataSize, dataSize);
 
-	/** Returns some bytes as Base64 text, padded with `=` to a multiple of 4 characters.
+	/** Returns some bytes as Base64 text, padded with `=` to a multiple of 4 characters. See `DecodeDataBase64` for reading them back.
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
@@ -1906,9 +2049,13 @@ class Raylib {
 	public static inline function EncodeDataBase64(data:haxe.io.Bytes, dataSize:Int, outputSize:Array<Int>):String
 		return RCore.EncodeDataBase64(data, dataSize, outputSize);
 
-	/** Returns the bytes of Base64 text, as raylib 6.2 decodes it: the text runs to a zero byte or the end, and is read 4 characters at a
-		time, a character that isn't Base64's reading as 0. Text whose length isn't a multiple of 4 warns and is read up to its last 4
-		characters.
+	/** Returns the bytes of Base64 text.
+
+		The text runs to a zero byte or the end, read 4 characters at a time.
+
+		A character that isn't Base64's reads as 0.
+
+		Text whose length isn't a multiple of 4 logs a warning and is read up to its last 4 characters.
 
 		@param data  The text's bytes.
 		@param outputSize  Its first element is set to how many bytes it gives: 3 for every 4 characters, less one for each `=` at the
@@ -1921,7 +2068,7 @@ class Raylib {
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
-		@return  Its 32 bits; one above 0x7fffffff is negative. */
+		@return  Its 32 bits, one above 0x7fffffff negative. */
 	public static inline function ComputeCRC32(data:haxe.io.Bytes, dataSize:Int):Int
 		return RCore.ComputeCRC32(data, dataSize);
 
@@ -1934,64 +2081,81 @@ class Raylib {
 	public static inline function ComputeMD5(data:haxe.io.Bytes, dataSize:Int):Array<Int>
 		return RCore.ComputeMD5(data, dataSize);
 
-	/** Returns the SHA-1 hash of some bytes, as raylib 6.2 computes it: standard SHA-1 (raylib 5.5's padding held only the lowest byte of
-		the length in bits, so from 32 bytes on it wasn't).
+	/** Returns the standard SHA-1 hash of some bytes.
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
-		@return  Its 5 words, the first the hash's first 4 bytes, the highest first; one above 0x7fffffff is negative. */
+		@return  Its 5 words, the first the hash's first 4 bytes, the highest first. One above 0x7fffffff is negative. */
 	public static inline function ComputeSHA1(data:haxe.io.Bytes, dataSize:Int):Array<Int>
 		return RCore.ComputeSHA1(data, dataSize);
 
-	/** Reads files through the program from now on: every load raylib makes of a file (textures, models, sounds, music, data) asks it
-		first, and a file it doesn't have (null) is read as it would be. In a page, a texture's or model's images still decode only
-		asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load those it gives.
+	/** Reads files through the program from now on.
 
-		@param callback  Returns a file's bytes, or null; null for none. */
+		Every load raylib makes of a file (textures, models, sounds, music, data) asks the callback first. A null answer reads the file as
+		it would be read without the callback.
+
+		In a page, a texture's or model's images still decode only asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load the ones
+		the callback gives.
+
+		@param callback  Returns a file's bytes or null, or is null for none. */
 	public static inline function SetLoadFileDataCallback(callback:Null<(fileName:String) -> Null<haxe.io.Bytes>>):Void
 		RCore.SetLoadFileDataCallback(callback);
 
-	/** Writes files through the program from now on (`SaveFileData`).
+	/** Writes files through the program from now on (`SaveFileDataAsync`).
 
-		@param callback  Writes a file's bytes, returning whether it did; null for none. */
+		@param callback  Writes a file's bytes, returning whether it did, or is null for none. */
 	public static inline function SetSaveFileDataCallback(callback:Null<(fileName:String, data:haxe.io.Bytes, dataSize:Int) -> Bool>):Void
 		RCore.SetSaveFileDataCallback(callback);
 
 	/** Reads text files through the program from now on (`LoadFileTextAsync`).
 
-		@param callback  Returns a file's text, or null; null for none. */
+		@param callback  Returns a file's text or null, or is null for none. */
 	public static inline function SetLoadFileTextCallback(callback:Null<(fileName:String) -> Null<String>>):Void
 		RCore.SetLoadFileTextCallback(callback);
 
-	/** Writes text files through the program from now on (`SaveFileText`).
+	/** Writes text files through the program from now on (`SaveFileTextAsync`).
 
-		@param callback  Writes a file's text, returning whether it did; null for none. */
+		@param callback  Writes a file's text, returning whether it did, or is null for none. */
 	public static inline function SetSaveFileTextCallback(callback:Null<(fileName:String, text:String) -> Bool>):Void
 		RCore.SetSaveFileTextCallback(callback);
 
-	/** Frees a list's events. There is nothing to free here, and the list is unchanged.
+	/** Frees a list's events.
+
+		Has nothing to free, and the list is unchanged.
 
 		@param list  The list. */
 	public static inline function UnloadAutomationEventList(list:AutomationEventList):Void
 		RCore.UnloadAutomationEventList(list);
 
-	/** Sets the list `StartAutomationEventRecording` records into. From the first call, the input functions read the input as
-		automation keeps it, so an event `PlayAutomationEvent` plays reads as real input.
+	/** Sets the list `StartAutomationEventRecording` records into.
+
+		From the first call, the input functions read the input as automation keeps it, so an event `PlayAutomationEvent` plays reads as
+		real input.
 
 		@param list  The list, made by `LoadAutomationEventList(null)` or `LoadAutomationEventListAsync`. */
 	public static inline function SetAutomationEventList(list:AutomationEventList):Void
 		RCore.SetAutomationEventList(list);
 
-	/** Sets the frame the next event recorded is stamped with; each frame after counts up from it. Until set, it is the frames since
-		`InitWindow`.
+	/** Sets the frame the next event recorded is stamped with, each frame after counting up from it.
+
+		The frames since `InitWindow` until set.
 
 		@param frame  The frame. */
 	public static inline function SetAutomationEventBaseFrame(frame:Int):Void
 		RCore.SetAutomationEventBaseFrame(frame);
 
-	/** Starts recording into the list `SetAutomationEventList` set: as each frame ends, before the next frame's input is read, every
-		key, mouse button and finger held, the mouse's moves, the wheel's and, as raylib 6.2's, the fingers', gamepads' buttons held and
-		axes off rest, and the gesture, as raylib records them, each logged. A full list (16384 events) records no more. */
+	/** Starts recording into the list `SetAutomationEventList` set. See `StopAutomationEventRecording` for stopping.
+
+		Records as each frame ends, before the next frame's input is read. Each event recorded is logged.
+
+		Records:
+
+		- every key, mouse button and finger held.
+		- the mouse's moves, the wheel's and the fingers'.
+		- the gamepads' buttons held and axes off rest.
+		- the gesture.
+
+		A full list (16384 events) records no more. */
 	public static inline function StartAutomationEventRecording():Void
 		RCore.StartAutomationEventRecording();
 
@@ -1999,24 +2163,33 @@ class Raylib {
 	public static inline function StopAutomationEventRecording():Void
 		RCore.StopAutomationEventRecording();
 
-	/** Plays an event, as raylib's: input becomes the input the functions read now, as it would from the devices, and stays until they
-		change it or another event does; a window event or an action is done (`WINDOW_CLOSE` makes `WindowShouldClose` true). Nothing is
-		played while recording. As raylib's, the program plays each event in its frame, after the frame's input is read: a key held is
-		an event every frame, so a frame's events are played together.
+	/** Plays an event, making its input the input the functions read now.
+
+		The input stays until the devices change it or another event does.
+
+		A window event or an action is done. `WINDOW_CLOSE` makes `WindowShouldClose` true.
+
+		Plays nothing while recording.
+
+		A program plays each event in its frame, after the frame's input is read. A key held is an event every frame, so a frame's events
+		are played together.
 
 		@param event  The event. */
 	public static inline function PlayAutomationEvent(event:AutomationEvent):Void
 		RCore.PlayAutomationEvent(event);
 
-	/** Writes a message to the log, when its level is at least `SetTraceLogLevel`'s. raylib formats its arguments as printf does;
-		here the text is written as it is (Haxe's string interpolation builds it).
+	/** Writes a message to the log when its level is at least `SetTraceLogLevel`'s.
+
+		The text is written as it is, with no printf formatting. Haxe's string interpolation builds it.
 
 		@param logLevel  The level (`LOG_*`).
 		@param text  The message. */
 	public static inline function TraceLog(logLevel:Int, text:String):Void
 		RCore.TraceLog(logLevel, text);
 
-	/** Sets the least level the log writes; `LOG_INFO` until set.
+	/** Sets the least level the log writes.
+
+		`LOG_INFO` until set.
 
 		@param logLevel  The level (`LOG_*`). */
 	public static inline function SetTraceLogLevel(logLevel:Int):Void
@@ -2024,7 +2197,7 @@ class Raylib {
 
 	/** Writes the log through the program from now on, helix-raylib's own messages among it.
 
-		@param callback  Receives each message's level and text; null for helix-raylib's own log. */
+		@param callback  Receives each message's level and text, or is null for helix-raylib's own log. */
 	public static inline function SetTraceLogCallback(callback:Null<(logLevel:Int, text:String) -> Void>):Void
 		RCore.SetTraceLogCallback(callback);
 
@@ -2057,7 +2230,7 @@ class Raylib {
 
 		@param position  The screen position.
 		@param camera  The camera.
-		@return  The point; NaN at zoom 0, as raylib's inverse of a matrix with none gives. */
+		@return  The point, or NaN at zoom 0. */
 	public static inline function GetScreenToWorld2D(position:Vector2, camera:Camera2D):Vector2
 		return RCore.GetScreenToWorld2D(position, camera);
 
@@ -2071,28 +2244,40 @@ class Raylib {
 	public static inline function EndMode3D():Void
 		RCore.EndMode3D();
 
-	/** Moves a camera as one of raylib's modes does, by the keyboard, the mouse and the first gamepad, as rcamera's `UpdateCamera`.
+	/** Moves a camera by the keyboard, the mouse and the first gamepad, as one of rcamera's modes does. See `UpdateCameraPro` for moving
+		it by amounts.
 
-		`CAMERA_ORBITAL` turns it about its target, half a radian a second. `CAMERA_FREE`, `CAMERA_FIRST_PERSON` and
-		`CAMERA_THIRD_PERSON` turn it by the mouse, the right stick and the arrow keys (Q and E roll it), its look stopping short of
-		straight up and down, and move it by WASD and the left stick, 5.4 units a second; first and third person along the ground, third
-		person turning about its target. `CAMERA_FREE` also moves up and down by space and left control, and pans while the middle button
-		is held. `CAMERA_FREE`, `CAMERA_ORBITAL` and `CAMERA_THIRD_PERSON` move toward the target by the wheel and the keypad's plus and
-		minus. `CAMERA_CUSTOM` leaves it.
+		`CAMERA_ORBITAL` turns the camera about its target, half a radian a second.
+
+		`CAMERA_FREE`, `CAMERA_FIRST_PERSON` and `CAMERA_THIRD_PERSON`:
+
+		- turn by the mouse, the right stick and the arrow keys, the look stopping short of straight up and down.
+		- roll by Q and E.
+		- move by WASD and the left stick, 5.4 units a second.
+
+		`CAMERA_FIRST_PERSON` and `CAMERA_THIRD_PERSON` move along the ground, and `CAMERA_THIRD_PERSON` turns about its target.
+
+		`CAMERA_FREE` also moves up and down by space and left control, and pans while the middle button is held.
+
+		`CAMERA_FREE`, `CAMERA_ORBITAL` and `CAMERA_THIRD_PERSON` move toward the target by the wheel and the keypad's plus and minus.
+
+		`CAMERA_CUSTOM` leaves the camera unchanged.
 
 		@param camera  The camera, changed.
 		@param mode  The mode (`CAMERA_*`). */
 	public static inline function UpdateCamera(camera:Camera3D, mode:Int):Void
 		RCore.UpdateCamera(camera, mode);
 
-	/** Moves and turns a camera by amounts, as raylib's rcamera does: it pitches (looking no further up or down than straight), yaws and
-		rolls about its own position, then moves forward and right along the ground and up along its up direction, then toward its
-		target, the distance kept above 0.
+	/** Moves and turns a camera by amounts, as rcamera does. See `UpdateCamera` for moving it by input.
+
+		Pitches first, no further up or down than straight, then yaws and rolls about the camera's own position.
+
+		Then moves forward and right along the ground and up along the camera's up, then toward its target, the distance kept above 0.
 
 		@param camera  The camera, changed.
 		@param movement  The distances it moves: forward (x), right (y) and up (z), in world units.
 		@param rotation  The angles it turns: yaw to the right (x), pitch down (y) and roll (z), in degrees.
-		@param zoom  How much further from its target it moves, in world units; a negative zoom moves it closer. */
+		@param zoom  How much further from its target it moves, in world units. A negative zoom moves it closer. */
 	public static inline function UpdateCameraPro(camera:Camera, movement:Vector3, rotation:Vector3, zoom:Float):Void
 		RCore.UpdateCameraPro(camera, movement, rotation, zoom);
 
@@ -2103,7 +2288,8 @@ class Raylib {
 	public static inline function GetCameraMatrix(camera:Camera3D):Matrix
 		return RCore.GetCameraMatrix(camera);
 
-	/** Returns the ray from a camera through a screen position, as raylib's picking uses it.
+	/** Returns the ray from a camera through a screen position, for picking. See `GetScreenToWorldRayEx` for casting through a view of
+		another size.
 
 		@param position  The screen position.
 		@param camera  The camera.
@@ -2121,7 +2307,7 @@ class Raylib {
 	public static inline function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int):Ray
 		return RCore.GetScreenToWorldRayEx(position, camera, width, height);
 
-	/** Returns the ray from a camera through a screen position: raylib's old name for `GetScreenToWorldRay`.
+	/** Returns the ray from a camera through a screen position, under raylib's old name for `GetScreenToWorldRay`.
 
 		@param position  The screen position.
 		@param camera  The camera.
@@ -2129,7 +2315,7 @@ class Raylib {
 	public static inline function GetMouseRay(position:Vector2, camera:Camera3D):Ray
 		return RCore.GetMouseRay(position, camera);
 
-	/** Returns where a point in the world is on the screen.
+	/** Returns where a point in the world is on the screen. See `GetWorldToScreenEx` for placing it in a view of another size.
 
 		@param position  The point.
 		@param camera  The camera.
@@ -2143,42 +2329,54 @@ class Raylib {
 		@param camera  The camera.
 		@param width  The view's width.
 		@param height  The view's height.
-		@return  The position in the view; infinite or NaN for a point level with a perspective camera's position, as raylib's is. */
+		@return  The position in the view, or infinite or NaN for a point level with a perspective camera's position. */
 	public static inline function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int):Vector2
 		return RCore.GetWorldToScreenEx(position, camera, width, height);
 
-	/** Returns how far the mouse moved since the last frame, in the screen's pixels times the mouse's scale (`SetMouseScale`), as raylib
-		6.2's. A `SetMousePosition` this frame is part of it.
+	/** Returns how far the mouse moved since the last frame, in the screen's pixels times the mouse's scale (`SetMouseScale`).
+
+		A `SetMousePosition` this frame is part of the movement.
 
 		@return  The movement. */
 	public static inline function GetMouseDelta():Vector2
 		return RCore.GetMouseDelta();
 
-	/** Starts drawing for both eyes of a head-mounted display: stereo rendering on (`rlEnableStereoRender`) with the config's
-		projections and view offsets. Until `EndVrStereoMode`, each flush of the batch and each mesh is drawn twice, the left half of
-		what is drawn into for the first eye and the right half for the second; `BeginMode3D`'s projection is replaced by each eye's.
-		raylib's VR simulator draws the eyes into a render texture, then draws it to the screen through a distortion shader.
+	/** Starts drawing for both eyes of a head-mounted display, with the config's projections and view offsets (`rlEnableStereoRender`).
+
+		Until `EndVrStereoMode`, each flush of the batch and each mesh draws twice, into the left half of what is drawn into for the first
+		eye and the right half for the second.
+
+		Each eye's projection replaces `BeginMode3D`'s.
+
+		raylib's VR simulator draws the eyes into a render texture, then draws that to the screen through a distortion shader.
 
 		@param config  The config, from `LoadVrStereoConfig`. */
 	public static inline function BeginVrStereoMode(config:VrStereoConfig):Void
 		RCore.BeginVrStereoMode(config);
 
-	/** Stops drawing for both eyes (`rlDisableStereoRender`), for the next flush of the batch and the next mesh drawn: shapes drawn in
-		stereo and not flushed yet (`EndMode3D` flushes them) are drawn once. */
+	/** Stops drawing for both eyes (`rlDisableStereoRender`), from the next flush of the batch and the next mesh drawn.
+
+		Shapes drawn in stereo and not flushed yet draw once. `EndMode3D` flushes them. */
 	public static inline function EndVrStereoMode():Void
 		RCore.EndVrStereoMode();
 
-	/** Returns the stereo config of a head-mounted display, as raylib 5.5 computes it: each eye's projection, from the field of view
-		the lenses' distortion widens, shifted by the lenses' offset from the eyes' halves of the screen, between the clip planes
-		(`rlSetClipPlanes`); each eye's view offset, half the interpupillary distance to its side, 0.075 up and 0.045 forward; and the
-		lens and screen centers and scales a distortion shader reads (raylib's `distortion330.fs`).
+	/** Returns the stereo config of a head-mounted display, as raylib 5.5 computes it.
+
+		The config holds:
+
+		- each eye's projection, from the field of view the lenses' distortion widens, shifted by the lenses' offset from the eyes'
+		  halves of the screen, between the clip planes (`rlSetClipPlanes`).
+		- each eye's view offset, half the interpupillary distance to its side, 0.075 up and 0.045 forward.
+		- the lens and screen centers and scales a distortion shader reads (raylib's `distortion330.fs`).
 
 		@param device  The display's parameters.
 		@return  The config. */
 	public static inline function LoadVrStereoConfig(device:VrDeviceInfo):VrStereoConfig
 		return RCore.LoadVrStereoConfig(device);
 
-	/** Frees a stereo config, which holds nothing to free, as raylib's: it logs that, as raylib 5.5 does.
+	/** Frees a stereo config.
+
+		Has nothing to free, and logs that, as raylib 5.5 does.
 
 		@param config  The config. */
 	public static inline function UnloadVrStereoConfig(config:VrStereoConfig):Void
@@ -2191,15 +2389,19 @@ class Raylib {
 	public static inline function IsShaderValid(shader:Shader):Bool
 		return RCore.IsShaderValid(shader);
 
-	/** Lets go of the program's hold on a shader (docs/DECISIONS.md 25), its id set to 0: the shader is freed when no material holds it
-		too, else when the last material holding it lets go. Given a material's shader (`material.shader`), it lets go of one hold and
-		leaves the material drawing with it while anything holds it. The default shader stays.
+	/** Lets go of the program's hold on a shader, setting its id to 0.
+
+		The shader is freed when no material holds it too, else when the last material holding it lets go.
+
+		Given a material's shader (`material.shader`), lets go of one hold and leaves the material drawing with it while anything holds it.
+
+		The default shader stays.
 
 		@param shader  The shader. */
 	public static inline function UnloadShader(shader:Shader):Void
 		RCore.UnloadShader(shader);
 
-	/** Returns the location of a shader's uniform or texture, by its name.
+	/** Returns the location of a shader's uniform or texture, by its name. See `GetShaderLocationAttrib` for finding an attribute.
 
 		@param shader  The shader.
 		@param uniformName  The name.
@@ -2215,10 +2417,14 @@ class Raylib {
 	public static inline function GetShaderLocationAttrib(shader:Shader, attribName:String):Int
 		return RCore.GetShaderLocationAttrib(shader, attribName);
 
-	/** Sets a shader's uniform, for the models drawn after it and the shapes in rlgl's batch when it is next drawn, as raylib's: shapes
-		drawn before it but not yet flushed (`BeginShaderMode`, `EndShaderMode`, a mode changing, `rlDrawRenderBatchActive`) take it too.
-		A texture's location takes the texture unit its sampler reads, as GL's: `DrawMesh` binds there the material's map of that index
-		(raylib's skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`).
+	/** Sets a shader's uniform, for the models drawn after the call and the shapes in rlgl's batch when the batch is next drawn. See
+		`SetShaderValueV` for setting an array's elements.
+
+		Shapes drawn before the call but not yet flushed take the value too. `BeginShaderMode`, `EndShaderMode`, a mode changing and
+		`rlDrawRenderBatchActive` flush them.
+
+		A texture's location takes the texture unit its sampler reads. `DrawMesh` binds the material's map of that index there, as raylib's
+		skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`.
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
@@ -2227,7 +2433,7 @@ class Raylib {
 	public static inline function SetShaderValue(shader:Shader, locIndex:Int, value:Dynamic, uniformType:Int):Void
 		RCore.SetShaderValue(shader, locIndex, value, uniformType);
 
-	/** Sets elements of a shader's array uniform, for the draws after it.
+	/** Sets elements of a shader's array uniform, for the draws after the call.
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
@@ -2237,7 +2443,7 @@ class Raylib {
 	public static inline function SetShaderValueV(shader:Shader, locIndex:Int, value:Dynamic, uniformType:Int, count:Int):Void
 		RCore.SetShaderValueV(shader, locIndex, value, uniformType, count);
 
-	/** Sets a shader's matrix uniform, for the draws after it.
+	/** Sets a shader's matrix uniform, for the draws after the call.
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
@@ -2245,9 +2451,10 @@ class Raylib {
 	public static inline function SetShaderValueMatrix(shader:Shader, locIndex:Int, mat:Matrix):Void
 		RCore.SetShaderValueMatrix(shader, locIndex, mat);
 
-	/** Sets a shader's texture, for the draws after it: a `Texture2D` at a `sampler2D`, or a cubemap (`LoadTextureCubemap`) at a
-		`samplerCube`. A texture at a sampler of the other kind binds nothing. raylib 5.5's binds every texture it is given as a 2D texture,
-		so a cubemap given it reads as black there; here it is bound.
+	/** Sets a shader's texture for the draws after the call, a `Texture2D` at a `sampler2D` or a cubemap (`LoadTextureCubemap`) at a
+		`samplerCube`.
+
+		A texture at a sampler of the other kind binds nothing.
 
 		@param shader  The shader.
 		@param locIndex  The texture's location.
@@ -2265,11 +2472,18 @@ class Raylib {
 	public static inline function EndShaderMode():Void
 		RCore.EndShaderMode();
 
-	/** Blends what is drawn until `EndBlendMode` another way, as rlgl sets GL's blending: `BLEND_ALPHA` (alpha blended by the same factors
-		as the color), `BLEND_ADDITIVE`, `BLEND_MULTIPLIED`, `BLEND_ADD_COLORS`, `BLEND_SUBTRACT_COLORS` and `BLEND_ALPHA_PREMULTIPLY`;
-		`BLEND_CUSTOM` and `BLEND_CUSTOM_SEPARATE` take the factors `rlSetBlendFactors` and `rlSetBlendFactorsSeparate` last set. The
-		batch is drawn first when the mode changes, or when a custom mode is set again after its factors changed; otherwise nothing
-		happens. A mode raylib doesn't have changes nothing but the mode remembered.
+	/** Blends what is drawn until `EndBlendMode` another way, as rlgl sets GL's blending.
+
+		The modes:
+
+		- `BLEND_ALPHA`, alpha blended by the same factors as the color.
+		- `BLEND_ADDITIVE`, `BLEND_MULTIPLIED`, `BLEND_ADD_COLORS`, `BLEND_SUBTRACT_COLORS` and `BLEND_ALPHA_PREMULTIPLY`.
+		- `BLEND_CUSTOM` and `BLEND_CUSTOM_SEPARATE`, with the factors `rlSetBlendFactors` and `rlSetBlendFactorsSeparate` last set.
+
+		Changing the mode draws the batch first, as does setting a custom mode again after its factors changed. Setting the mode already set
+		changes nothing.
+
+		A mode raylib doesn't have changes nothing but the mode remembered.
 
 		@param mode  The mode (`BLEND_*`). */
 	public static inline function BeginBlendMode(mode:Int):Void
@@ -2294,21 +2508,24 @@ class Raylib {
 
 	// ---- rshapes: 2D shapes and collisions (raylib/RShapes.hx) ----
 
-	/** Sets the texture and the part of it the filled shapes draw with, as one white pixel of a font's texture lets shapes and text
-		share a draw. A texture with no id, or an empty rectangle, goes back to the white pixel shapes draw with at first.
+	/** Sets the texture, and the rectangle of it, that the filled shapes sample.
+
+		Pointing it at a white pixel in a font's texture lets shapes and text share one draw.
+
+		A texture with no id, or an empty rectangle, restores the default white pixel.
 
 		@param texture  The texture.
 		@param source  The part of it, in pixels. */
 	public static inline function SetShapesTexture(texture:Texture2D, source:Rectangle):Void
 		RShapes.SetShapesTexture(texture, source);
 
-	/** Returns the texture the filled shapes draw with: raylib's default texture, a white pixel, unless `SetShapesTexture` set another.
+	/** Returns the filled shapes' texture, raylib's default white pixel unless `SetShapesTexture` set another.
 
 		@return  The texture. */
 	public static inline function GetShapesTexture():Texture2D
 		return RShapes.GetShapesTexture();
 
-	/** Returns the part of the shapes texture the filled shapes draw with.
+	/** Returns the rectangle of the shapes texture that the filled shapes sample.
 
 		@return  The rectangle, in pixels. */
 	public static inline function GetShapesTextureRectangle():Rectangle
@@ -2329,7 +2546,7 @@ class Raylib {
 	public static inline function DrawPixelV(position:Vector2, color:Color):Void
 		RShapes.DrawPixelV(position, color);
 
-	/** Draws a line one pixel wide.
+	/** Draws a line one pixel wide. See `DrawLineEx` for drawing a line of a thickness.
 
 		@param startPosX  The start's x.
 		@param startPosY  The start's y.
@@ -2339,7 +2556,7 @@ class Raylib {
 	public static inline function DrawLine(startPosX:Int, startPosY:Int, endPosX:Int, endPosY:Int, color:Color):Void
 		RShapes.DrawLine(startPosX, startPosY, endPosX, endPosY, color);
 
-	/** Draws a line one pixel wide.
+	/** Draws a line one pixel wide. See `DrawLineEx` for drawing a line of a thickness.
 
 		@param startPos  The start.
 		@param endPos  The end.
@@ -2356,7 +2573,7 @@ class Raylib {
 	public static inline function DrawLineEx(startPos:Vector2, endPos:Vector2, thick:Float, color:Color):Void
 		RShapes.DrawLineEx(startPos, endPos, thick, color);
 
-	/** Draws lines one pixel wide from each point to the next.
+	/** Draws lines one pixel wide from each point to the next. See `DrawSplineLinear` for drawing them of a thickness.
 
 		@param points  The points.
 		@param pointCount  How many of them to draw through, 2 or more.
@@ -2401,7 +2618,9 @@ class Raylib {
 	public static inline function DrawCircleSector(center:Vector2, radius:Float, startAngle:Float, endAngle:Float, segments:Int, color:Color):Void
 		RShapes.DrawCircleSector(center, radius, startAngle, endAngle, segments, color);
 
-	/** Draws a slice of a circle's outline, one pixel wide, with lines from the center to its ends; a whole turn has none.
+	/** Draws a slice of a circle's outline, one pixel wide, with lines from the center to its ends.
+
+		A whole turn draws no lines from the center.
 
 		@param center  The center.
 		@param radius  The radius; 0 or less draws nothing.
@@ -2472,7 +2691,9 @@ class Raylib {
 			color:Color):Void
 		RShapes.DrawRing(center, innerRadius, outerRadius, startAngle, endAngle, segments, color);
 
-	/** Draws a ring's outline, or a slice of one, one pixel wide, with lines across its ends; a whole turn has none.
+	/** Draws a ring's outline, or a slice of one, one pixel wide, with lines across its ends.
+
+		A whole turn draws no lines across the ends.
 
 		@param center  The center.
 		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle.
@@ -2541,8 +2762,9 @@ class Raylib {
 	public static inline function DrawRectangleGradientH(posX:Int, posY:Int, width:Int, height:Int, left:Color, right:Color):Void
 		RShapes.DrawRectangleGradientH(posX, posY, width, height, left, right);
 
-	/** Draws a filled rectangle that blends between a color at each corner. As in raylib 5.5, `topRight` colors the bottom-right corner
-		and `bottomRight` the top-right one.
+	/** Draws a filled rectangle that blends between a color at each corner.
+
+		`topRight` colors the bottom-right corner and `bottomRight` the top-right one, as in raylib 5.5.
 
 		@param rec  The rectangle.
 		@param topLeft  The top-left corner's color.
@@ -2552,10 +2774,12 @@ class Raylib {
 	public static inline function DrawRectangleGradientEx(rec:Rectangle, topLeft:Color, bottomLeft:Color, topRight:Color, bottomRight:Color):Void
 		RShapes.DrawRectangleGradientEx(rec, topLeft, bottomLeft, topRight, bottomRight);
 
-	/** Draws a rectangle's outline, one pixel wide, its lines through the centers of its edge pixels.
+	/** Draws a rectangle's outline, one pixel wide, its lines through the centers of its edge pixels. See `DrawRectangleLinesEx` for
+		drawing an outline of a thickness.
 
-		The lines are half a pixel inside the edges, by the matrix `rlPushMatrix` and its kin set (`rlGetMatrixTransform`); a 2D camera's
-		zoom isn't counted, so under a camera they are half a unit inside.
+		The lines sit half a pixel inside the edges, scaled by the matrix `rlPushMatrix` and its kin set (`rlGetMatrixTransform`).
+
+		A 2D camera's zoom isn't in that matrix, so under a camera the lines sit half a unit inside the edges.
 
 		@param posX  The left edge.
 		@param posY  The top edge.
@@ -2583,7 +2807,8 @@ class Raylib {
 	public static inline function DrawRectangleRounded(rec:Rectangle, roundness:Float, segments:Int, color:Color):Void
 		RShapes.DrawRectangleRounded(rec, roundness, segments, color);
 
-	/** Draws a rounded rectangle's outline, one pixel wide, its lines through the centers of its edge pixels.
+	/** Draws a rounded rectangle's outline, one pixel wide, its lines through the centers of its edge pixels. See
+		`DrawRectangleRoundedLinesEx` for drawing an outline of a thickness.
 
 		@param rec  The rectangle.
 		@param roundness  How round its corners are: 0 or less for square (`DrawRectangleLines`, the rectangle cut to whole pixels), 1 for
@@ -2605,8 +2830,9 @@ class Raylib {
 
 	/** Draws a filled triangle.
 
-		The points must go counterclockwise on the screen, as raylib's must: a triangle whose points go clockwise faces away, and isn't
-		drawn while back faces are culled (`rlEnableBackfaceCulling`, the default).
+		The points must go counterclockwise on the screen, as raylib's must.
+
+		While back faces are culled (`rlEnableBackfaceCulling`, the default), points that go clockwise face away and draw nothing.
 
 		@param v1  The first point.
 		@param v2  The second point.
@@ -2652,7 +2878,7 @@ class Raylib {
 	public static inline function DrawPoly(center:Vector2, sides:Int, radius:Float, rotation:Float, color:Color):Void
 		RShapes.DrawPoly(center, sides, radius, rotation, color);
 
-	/** Draws a regular polygon's outline, one pixel wide.
+	/** Draws a regular polygon's outline, one pixel wide. See `DrawPolyLinesEx` for drawing an outline of a thickness.
 
 		@param center  The center.
 		@param sides  How many sides it has, 3 or more.
@@ -2683,7 +2909,7 @@ class Raylib {
 	public static inline function DrawSplineLinear(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
 		RShapes.DrawSplineLinear(points, pointCount, thick, color);
 
-	/** Draws a B-spline of a thickness through points, with round ends; it passes near the points rather than through them.
+	/** Draws a B-spline of a thickness with round ends, passing near the points rather than through them.
 
 		@param points  The points.
 		@param pointCount  How many of them to draw through, 4 or more.
@@ -2692,8 +2918,7 @@ class Raylib {
 	public static inline function DrawSplineBasis(points:Array<Vector2>, pointCount:Int, thick:Float, color:Color):Void
 		RShapes.DrawSplineBasis(points, pointCount, thick, color);
 
-	/** Draws a Catmull-Rom spline of a thickness through points, with round ends; it passes through all but the first and last, which
-		only steer it.
+	/** Draws a Catmull-Rom spline of a thickness with round ends, through every point but the first and last, which only steer it.
 
 		@param points  The points.
 		@param pointCount  How many of them to draw through, 4 or more.
@@ -2824,7 +3049,7 @@ class Raylib {
 	public static inline function GetSplinePointBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, t:Float):Vector2
 		return RShapes.GetSplinePointBezierCubic(p1, c2, c3, p4, t);
 
-	/** Returns whether two rectangles overlap.
+	/** Returns whether two rectangles overlap. See `GetCollisionRec` for finding where they overlap.
 
 		@param rec1  One rectangle.
 		@param rec2  The other.
@@ -2878,7 +3103,9 @@ class Raylib {
 	public static inline function CheckCollisionPointCircle(point:Vector2, center:Vector2, radius:Float):Bool
 		return RShapes.CheckCollisionPointCircle(point, center, radius);
 
-	/** Returns whether a point is inside a triangle; a point on its edge isn't.
+	/** Returns whether a point is inside a triangle.
+
+		A point on an edge is outside.
 
 		@param point  The point.
 		@param p1  The triangle's first point.
@@ -2928,11 +3155,14 @@ class Raylib {
 
 	// ---- rtextures: textures, render textures and colors (raylib/RTextures.hx) ----
 
-	/** Lets go of a texture (docs/DECISIONS.md 25): the program's hold from its load, its id set to 0. The texture is freed, the GPU's
-		copy with it, when nothing else holds it: another load of its file, or a material map given it, keeps it until that lets go. Given
-		a map's texture (`map.texture`), as `UnloadTexture(model.materials[0].maps[0].texture)` frees one a program gave a map without
-		keeping it, it lets go of one hold and leaves the map's id: the map draws it while anything holds it, and lets go in turn when its
-		material is freed.
+	/** Lets go of the program's hold on a texture from its load, and sets the texture's id to 0.
+
+		The texture and its GPU copy are freed once nothing else holds them. Another load of its file, or a material map given it, keeps it
+		until that lets go.
+
+		Given a map's texture (`map.texture`), lets go of one hold and leaves the map's id. The map draws the texture while anything holds
+		it, and lets go in turn when its material is freed. So `UnloadTexture(model.materials[0].maps[0].texture)` frees a texture a program
+		gave a map without keeping it.
 
 		@param texture  The texture. */
 	public static inline function UnloadTexture(texture:Texture2D):Void
@@ -2972,7 +3202,9 @@ class Raylib {
 	public static inline function DrawTextureEx(texture:Texture2D, position:Vector2, rotation:Float, scale:Float, tint:Color):Void
 		RTextures.DrawTextureEx(texture, position, rotation, scale, tint);
 
-	/** Draws part of a texture. A negative source width or height flips it.
+	/** Draws part of a texture.
+
+		A negative source width or height flips the part.
 
 		@param texture  The texture.
 		@param source  The part, in the texture's pixels.
@@ -2981,7 +3213,9 @@ class Raylib {
 	public static inline function DrawTextureRec(texture:Texture2D, source:Rectangle, position:Vector2, tint:Color):Void
 		RTextures.DrawTextureRec(texture, source, position, tint);
 
-	/** Draws part of a texture into a rectangle, turned about an origin. A negative source width or height flips it.
+	/** Draws part of a texture into a rectangle, turned about an origin.
+
+		A negative source width or height flips the part.
 
 		@param texture  The texture.
 		@param source  The part, in the texture's pixels.
@@ -3044,7 +3278,7 @@ class Raylib {
 	public static inline function ColorToHSV(color:Color):Vector3
 		return RTextures.ColorToHSV(color);
 
-	/** Returns the color of a hue, saturation and value; its alpha is 255.
+	/** Returns the color of a hue, saturation and value, its alpha 255.
 
 		@param hue  The hue, in degrees, 0 to 360.
 		@param saturation  0 (gray) to 1.
@@ -3061,7 +3295,7 @@ class Raylib {
 	public static inline function ColorTint(color:Color, tint:Color):Color
 		return RTextures.ColorTint(color, tint);
 
-	/** Returns a color made darker or lighter; its alpha is kept.
+	/** Returns a color made darker or lighter, its alpha kept.
 
 		@param color  The color.
 		@param factor  -1 (black) to 1 (white); 0 keeps it as it is.
@@ -3069,7 +3303,7 @@ class Raylib {
 	public static inline function ColorBrightness(color:Color, factor:Float):Color
 		return RTextures.ColorBrightness(color, factor);
 
-	/** Returns a color with more or less contrast about the middle gray; its alpha is kept.
+	/** Returns a color with more or less contrast about the middle gray, its alpha kept.
 
 		@param color  The color.
 		@param contrast  -1 (all middle gray) to 1; 0 keeps it as it is.
@@ -3112,8 +3346,11 @@ class Raylib {
 	public static inline function GetPixelDataSize(width:Int, height:Int, format:Int):Int
 		return RTextures.GetPixelDataSize(width, height, format);
 
-	/** Makes a texture to draw into, with depth, 8-bit RGBA. What is drawn into it stays from frame to frame; after a page's GPU context
-		is lost it comes back blank (`Raylib`).
+	/** Makes a texture to draw into, with depth, 8-bit RGBA.
+
+		What is drawn into the render texture stays from frame to frame.
+
+		After a page's GPU context is lost, the render texture comes back blank (`Raylib`).
 
 		@param width  Its width, in pixels.
 		@param height  Its height.
@@ -3134,8 +3371,11 @@ class Raylib {
 	public static inline function UnloadRenderTexture(target:RenderTexture2D):Void
 		RTextures.UnloadRenderTexture(target);
 
-	/** Draws into a render texture until `EndTextureMode`, over what it holds: what was drawn into it before, in this frame or an earlier
-		one, stays until `ClearBackground` clears it, as raylib's does. A render texture never drawn into holds transparent black.
+	/** Draws into a render texture until `EndTextureMode`, over what it holds.
+
+		What was drawn into the render texture before, in this frame or an earlier one, stays until `ClearBackground` clears it.
+
+		A render texture never drawn into holds transparent black.
 
 		@param target  The render texture. */
 	public static inline function BeginTextureMode(target:RenderTexture2D):Void
@@ -3145,22 +3385,34 @@ class Raylib {
 	public static inline function EndTextureMode():Void
 		RTextures.EndTextureMode();
 
-	/** Sets how a texture is sampled when drawn larger or smaller, as raylib's GL does, by whether the texture has mipmaps
-		(`texture.mipmaps`, as this copy of it says): `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel (of the nearest
-		mipmap); `TEXTURE_FILTER_BILINEAR` blends the nearest four (of the nearest mipmap); `TEXTURE_FILTER_TRILINEAR` blends the nearest
-		four of the two nearest mipmaps, or, without mipmaps, is `TEXTURE_FILTER_BILINEAR`, with a warning. `TEXTURE_FILTER_ANISOTROPIC_4X`,
-		`8X` and `16X` read up to that many texels along a surface seen at a slant, leaving the filter as it was; the GPU uses it only with
-		`TEXTURE_FILTER_TRILINEAR` on a mipmapped texture. A cubemap (`LoadTextureCubemap`) is left unchanged: raylib's binds it as a 2D texture, which GL refuses.
+	/** Sets how a texture is sampled when drawn larger or smaller, by whether it has mipmaps (`texture.mipmaps`, as this copy of it says).
+
+		The filters:
+
+		- `TEXTURE_FILTER_POINT`, the default: the nearest texel, of the nearest mipmap.
+		- `TEXTURE_FILTER_BILINEAR`: the nearest four texels blended, of the nearest mipmap.
+		- `TEXTURE_FILTER_TRILINEAR`: the nearest four of the two nearest mipmaps blended. Without mipmaps it is `TEXTURE_FILTER_BILINEAR`,
+		  with a warning.
+		- `TEXTURE_FILTER_ANISOTROPIC_4X`, `8X` and `16X`: up to that many texels read along a surface seen at a slant, the filter left as
+		  it was. The GPU uses the anisotropy only with `TEXTURE_FILTER_TRILINEAR` on a mipmapped texture.
+
+		A cubemap (`LoadTextureCubemap`) is left unchanged.
 
 		@param texture  The texture.
 		@param filter  The filter (`TEXTURE_FILTER_*`). */
 	public static inline function SetTextureFilter(texture:Texture2D, filter:Int):Void
 		RTextures.SetTextureFilter(texture, filter);
 
-	/** Makes a texture's mipmaps, down to 1 by 1, as raylib's does with GL's `glGenerateMipmap`: each level the rounded average of the
-		2 by 2 above it, made on the CPU, so the same on every target. `texture.mipmaps` becomes their count. The texture's filter is left
-		as it was: `SetTextureFilter` after it reads them. A texture already drawn gets them from its pixels read back from the GPU, and
-		draws asked for before it this frame don't; a render texture's and a cubemap's can't be made, with a warning.
+	/** Makes a texture's mipmaps, down to 1 by 1, and sets `texture.mipmaps` to their count.
+
+		The texture's filter is unchanged. A `SetTextureFilter` after the call reads the mipmaps.
+
+		Each level is the rounded average of the 2 by 2 above it, made on the CPU, so the same on every target.
+
+		A texture already drawn gets its mipmaps from its pixels read back from the GPU. Draws asked for before the call this frame don't
+		use them.
+
+		Skipped for a render texture or a cubemap, with a warning.
 
 		@param texture  The texture. */
 	public static inline function GenTextureMipmaps(texture:Texture2D):Void
@@ -3179,9 +3431,11 @@ class Raylib {
 	public static inline function UnloadImage(image:Image):Void
 		RTextures.UnloadImage(image);
 
-	/** Returns an image encoded as a file in memory: ".png" alone, as raylib's. Like raylib's, an image's bytes are read as 8-bit gray,
-		gray and alpha, RGB or RGBA by its format, and as RGBA for any other format, which a 16-bit format has too few of: those it lacks
-		read as 0.
+	/** Returns an image encoded as a PNG file in memory.
+
+		An image's bytes are read by its format as 8-bit gray, gray and alpha, RGB or RGBA.
+
+		Any other format's bytes are read as RGBA. A 16-bit format has too few, and those it lacks read as 0.
 
 		@param image  The image.
 		@param fileType  ".png" or ".PNG".
@@ -3232,7 +3486,9 @@ class Raylib {
 	public static inline function GenImageGradientSquare(width:Int, height:Int, density:Float, inner:Color, outer:Color):Image
 		return RTextures.GenImageGradientSquare(width, height, density, inner, outer);
 
-	/** Returns a checkerboard of two colors, RGBA. A square size under 1 is taken as 1, where raylib's divides by zero.
+	/** Returns a checkerboard of two colors, RGBA.
+
+		A square size under 1 is taken as 1.
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
@@ -3244,7 +3500,9 @@ class Raylib {
 	public static inline function GenImageChecked(width:Int, height:Int, checksX:Int, checksY:Int, col1:Color, col2:Color):Image
 		return RTextures.GenImageChecked(width, height, checksX, checksY, col1, col2);
 
-	/** Returns white noise, RGBA: each pixel white or black, drawn from `GetRandomValue`, one number a pixel, so `SetRandomSeed` repeats it.
+	/** Returns white noise, RGBA, each pixel white or black.
+
+		Each pixel draws one number from `GetRandomValue`, so `SetRandomSeed` repeats the image.
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
@@ -3264,8 +3522,11 @@ class Raylib {
 	public static inline function GenImagePerlinNoise(width:Int, height:Int, offsetX:Int, offsetY:Int, scale:Float):Image
 		return RTextures.GenImagePerlinNoise(width, height, offsetX, offsetY, scale);
 
-	/** Returns cellular noise in gray, RGBA: each pixel's distance to the nearest of points scattered one a tile, drawn from
-		`GetRandomValue`, so `SetRandomSeed` repeats it. A tile size under 1 is taken as 1, where raylib's divides by zero.
+	/** Returns cellular noise in gray, RGBA, each pixel its distance to the nearest of points scattered one a tile.
+
+		The points are drawn from `GetRandomValue`, so `SetRandomSeed` repeats the image.
+
+		A tile size under 1 is taken as 1.
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
@@ -3290,8 +3551,9 @@ class Raylib {
 	public static inline function ImageCopy(image:Image):Image
 		return RTextures.ImageCopy(image);
 
-	/** Returns a rectangle of an image, in its format. A rectangle not wholly inside the image, of no size, or of a compressed image
-		gives an empty image, with a warning.
+	/** Returns a rectangle of an image, in its format.
+
+		A rectangle not wholly inside the image, of no size, or of a compressed image gives an empty image, with a warning.
 
 		@param image  The image.
 		@param rec  The rectangle, in pixels, cut to whole pixels.
@@ -3299,8 +3561,13 @@ class Raylib {
 	public static inline function ImageFromImage(image:Image, rec:Rectangle):Image
 		return RTextures.ImageFromImage(image, rec);
 
-	/** Returns one channel of an image as grayscale: 0 red, 1 green, 2 blue, 3 alpha. A channel the format lacks is taken as raylib takes
-		it, with its warning: a one-channel format's only channel, gray and alpha's alpha, an RGB format's red.
+	/** Returns one channel of an image as grayscale: 0 red, 1 green, 2 blue, 3 alpha.
+
+		A channel the format lacks is taken from another, with a warning:
+
+		- a one-channel format: its only channel
+		- gray and alpha: its alpha
+		- an RGB format: its red
 
 		@param image  The image.
 		@param selectedChannel  The channel.
@@ -3308,7 +3575,11 @@ class Raylib {
 	public static inline function ImageFromChannel(image:Image, selectedChannel:Int):Image
 		return RTextures.ImageFromChannel(image, selectedChannel);
 
-	/** Returns text in raylib's default font, as an image, RGBA. A size under 10 is drawn at 10, letters a tenth of the size apart.
+	/** Returns text in raylib's default font as an RGBA image.
+
+		A size under 10 is drawn at 10.
+
+		The letters are a tenth of the size apart.
 
 		@param text  The text.
 		@param fontSize  The height of a line, in pixels.
@@ -3317,10 +3588,13 @@ class Raylib {
 	public static inline function ImageText(text:String, fontSize:Int, color:Color):Image
 		return RTextures.ImageText(text, fontSize, color);
 
-	/** Returns text in a font, as an image, RGBA, laid out as raylib's: at the font's size, each glyph's image drawn tinted, then scaled
-		to the size, nearest for the default font. A newline starts a line one and a half of the font's size down, though the image's
-		height counts each line as the size and `SetTextLineSpacing`'s spacing, as raylib's does. Another font is scaled by
-		`ImageResize`, which isn't raylib's.
+	/** Returns text in a font as an RGBA image.
+
+		Each glyph's image is drawn tinted at the font's size, then the whole is scaled to the size, nearest for the default font. Another
+		font is scaled by `ImageResize`, whose pixels differ from raylib's.
+
+		A newline starts a line one and a half of the font's size down. The image's height still counts each line as the size and
+		`SetTextLineSpacing`'s spacing.
 
 		@param font  The font, its glyphs' images drawn.
 		@param text  The text; null gives an empty image.
@@ -3331,8 +3605,12 @@ class Raylib {
 	public static inline function ImageTextEx(font:Font, text:String, fontSize:Float, spacing:Float, tint:Color):Image
 		return RTextures.ImageTextEx(font, text, fontSize, spacing, tint);
 
-	/** Converts an image to another pixel format, through floats as raylib's does: to grayscale by luminance (0.299 red, 0.587 green,
-		0.114 blue), R32 and R16 to their luminance, 16-bit channels rounded. An image with mipmaps has them made again.
+	/** Converts an image to another pixel format.
+
+		The conversion runs through floats. Grayscale is by luminance (0.299 red, 0.587 green, 0.114 blue), R32 and R16 become their
+		luminance, and 16-bit channels are rounded.
+
+		An image with mipmaps has them made again.
 
 		@param image  The image.
 		@param newFormat  The format (`PIXELFORMAT_UNCOMPRESSED_*`); a compressed one is refused, with a warning. */
@@ -3346,8 +3624,11 @@ class Raylib {
 	public static inline function ImageToPOT(image:Image, fill:Color):Void
 		RTextures.ImageToPOT(image, fill);
 
-	/** Crops an image to a rectangle, cut to the image; one whose corner is past the image's right or bottom edge leaves it unchanged,
-		with a warning. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+	/** Crops an image to a rectangle, cut to the image.
+
+		A rectangle whose corner is past the image's right or bottom edge leaves the image unchanged, with a warning.
+
+		The image's mipmaps are dropped, though its mipmap count is kept.
 
 		@param image  The image.
 		@param crop  The rectangle, in pixels. */
@@ -3361,9 +3642,16 @@ class Raylib {
 	public static inline function ImageAlphaCrop(image:Image, threshold:Float):Void
 		RTextures.ImageAlphaCrop(image, threshold);
 
-	/** Sets every pixel whose alpha is at or under a threshold to a color, as raylib's does for its formats with alpha: gray and alpha,
-		R5G5B5A1 (the alpha bit against a threshold of 0.5; the color's channels, unscaled, are cut to 5 bits), R4G4B4A4 (likewise to 4
-		bits), RGBA and its 32-bit and 16-bit float forms. Another format is unchanged.
+	/** Sets every pixel whose alpha is at or under a threshold to a color.
+
+		The formats with alpha change:
+
+		- gray and alpha
+		- R5G5B5A1: the alpha bit tested against a threshold of 0.5, the color's channels cut to 5 bits, unscaled
+		- R4G4B4A4: the color's channels cut to 4 bits, unscaled
+		- RGBA, and its 32-bit and 16-bit float forms
+
+		Another format is unchanged.
 
 		@param image  The image.
 		@param color  The color.
@@ -3371,32 +3659,41 @@ class Raylib {
 	public static inline function ImageAlphaClear(image:Image, color:Color, threshold:Float):Void
 		RTextures.ImageAlphaClear(image, color, threshold);
 
-	/** Sets an image's alpha from another image of the same size, its grayscale: a grayscale image becomes gray and alpha, any other
-		RGBA. A mask of another size changes nothing, with a warning.
+	/** Sets an image's alpha from the grayscale of a mask the same size.
+
+		A grayscale image becomes gray and alpha, any other RGBA.
+
+		A mask of another size changes nothing, with a warning.
 
 		@param image  The image.
 		@param alphaMask  The mask. */
 	public static inline function ImageAlphaMask(image:Image, alphaMask:Image):Void
 		RTextures.ImageAlphaMask(image, alphaMask);
 
-	/** Multiplies each pixel's red, green and blue by its alpha, rounding down; the image keeps its format.
+	/** Multiplies each pixel's red, green and blue by its alpha, rounding down, in the image's format.
 
 		@param image  The image. */
 	public static inline function ImageAlphaPremultiply(image:Image):Void
 		RTextures.ImageAlphaPremultiply(image);
 
-	/** Blurs an image, as raylib's does: an approximate Gaussian, four passes of a box blur across and down, over premultiplied alpha,
-		each channel taken back from it no higher than 255. A box reaching past the image's last pixel reads 0 there, where raylib's reads
-		past its pixels.
+	/** Blurs an image with an approximate Gaussian, four passes of a box blur across and down.
+
+		The blur runs over premultiplied alpha, and each channel taken back from it is no higher than 255.
+
+		A box reaching past the image's last pixel reads 0 there.
 
 		@param image  The image.
 		@param blurSize  How far each box reaches either side of a pixel, in pixels. */
 	public static inline function ImageBlurGaussian(image:Image, blurSize:Int):Void
 		RTextures.ImageBlurGaussian(image, blurSize);
 
-	/** Applies a square kernel to an image, as raylib's does: each channel, alpha too, the sum of the pixels around it as fractions times
-		the weights, clamped to 0 to 1. A pixel past an edge is taken from the edge. A count that isn't square changes nothing, with a
-		warning.
+	/** Applies a square kernel to an image, each channel, alpha too, the sum of the pixels around it times the weights.
+
+		The pixels are taken as fractions, and each sum is clamped to 0 to 1.
+
+		A pixel past an edge is taken from the edge.
+
+		A count that isn't square changes nothing, with a warning.
 
 		@param image  The image.
 		@param kernel  The weights, rows top first.
@@ -3404,8 +3701,11 @@ class Raylib {
 	public static inline function ImageKernelConvolution(image:Image, kernel:Array<Float>, kernelSize:Int):Void
 		RTextures.ImageKernelConvolution(image, kernel, kernelSize);
 
-	/** Resizes an image. Unlike raylib's, whose `stb_image_resize2` this library doesn't have, it is helix-services' `Bicubic` (Catmull-Rom,
-		alpha-weighted), so the pixels aren't raylib's; an 8-bit format is resized in its channels, any other through RGBA, as raylib's.
+	/** Resizes an image with helix-services' `Bicubic` (Catmull-Rom, alpha-weighted).
+
+		The pixels differ from raylib's, which come from `stb_image_resize2`.
+
+		An 8-bit format is resized in its channels, any other through RGBA.
 
 		@param image  The image.
 		@param newWidth  The width, in pixels.
@@ -3413,7 +3713,7 @@ class Raylib {
 	public static inline function ImageResize(image:Image, newWidth:Int, newHeight:Int):Void
 		RTextures.ImageResize(image, newWidth, newHeight);
 
-	/** Resizes an image to the nearest pixels, as raylib's does, through RGBA; it keeps its format.
+	/** Resizes an image to the nearest pixels, through RGBA, keeping its format.
 
 		@param image  The image.
 		@param newWidth  The width, in pixels.
@@ -3421,8 +3721,11 @@ class Raylib {
 	public static inline function ImageResizeNN(image:Image, newWidth:Int, newHeight:Int):Void
 		RTextures.ImageResizeNN(image, newWidth, newHeight);
 
-	/** Puts an image on a canvas of another size, in its format: the canvas filled with a color as `SetPixelColor` writes it (a float
-		format's canvas stays zero), the image at an offset, what falls outside cropped. A canvas the image's size leaves it unchanged.
+	/** Puts an image on a canvas of another size, in its format, at an offset, cropping what falls outside.
+
+		The canvas is filled with a color as `SetPixelColor` writes it, so a float format's canvas stays zero.
+
+		A canvas the image's size leaves the image unchanged.
 
 		@param image  The image.
 		@param newWidth  The canvas's width, in pixels.
@@ -3433,15 +3736,22 @@ class Raylib {
 	public static inline function ImageResizeCanvas(image:Image, newWidth:Int, newHeight:Int, offsetX:Int, offsetY:Int, fill:Color):Void
 		RTextures.ImageResizeCanvas(image, newWidth, newHeight, offsetX, offsetY, fill);
 
-	/** Makes an image's mipmaps, down to 1 by 1, after its pixels, in its format; levels it has are kept. Each is made by `ImageResize`
-		from the last, so they aren't raylib's.
+	/** Makes an image's mipmaps, down to 1 by 1, after its pixels, in its format.
+
+		Levels the image has are kept.
+
+		Each level is made by `ImageResize` from the last, so the levels differ from raylib's.
 
 		@param image  The image. */
 	public static inline function ImageMipmaps(image:Image):Void
 		RTextures.ImageMipmaps(image);
 
-	/** Dithers an image to 16 bits a pixel or fewer (Floyd-Steinberg), as raylib's does: R5G6B5, R5G5B5A1 or R4G4B4A4 when the bits
-		are one of those, else format 0 with the bits packed in 16, and a warning. More than 16 bits changes nothing, with a warning.
+	/** Dithers an image to 16 bits a pixel or fewer (Floyd-Steinberg).
+
+		The image becomes R5G6B5, R5G5B5A1 or R4G4B4A4 when the bits are one of those. Other bits give format 0 with the bits packed in 16,
+		and a warning.
+
+		More than 16 bits changes nothing, with a warning.
 
 		@param image  The image.
 		@param rBpp  Red's bits.
@@ -3451,20 +3761,25 @@ class Raylib {
 	public static inline function ImageDither(image:Image, rBpp:Int, gBpp:Int, bBpp:Int, aBpp:Int):Void
 		RTextures.ImageDither(image, rBpp, gBpp, bBpp, aBpp);
 
-	/** Turns an image upside down, in its format. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+	/** Turns an image upside down, in its format.
+
+		The image's mipmaps are dropped, though its mipmap count is kept.
 
 		@param image  The image. */
 	public static inline function ImageFlipVertical(image:Image):Void
 		RTextures.ImageFlipVertical(image);
 
-	/** Mirrors an image left to right, in its format. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+	/** Mirrors an image left to right, in its format.
+
+		The image's mipmaps are dropped, though its mipmap count is kept.
 
 		@param image  The image. */
 	public static inline function ImageFlipHorizontal(image:Image):Void
 		RTextures.ImageFlipHorizontal(image);
 
-	/** Turns an image by an angle, on a canvas big enough to hold it, clear around it: each byte of a pixel blends the four it falls
-		between, as raylib's does in every format.
+	/** Turns an image by an angle, on a canvas big enough to hold it, clear around it.
+
+		Each byte of a pixel blends the four it falls between, in every format.
 
 		@param image  The image.
 		@param degrees  The angle, in degrees clockwise. */
@@ -3483,41 +3798,42 @@ class Raylib {
 	public static inline function ImageRotateCCW(image:Image):Void
 		RTextures.ImageRotateCCW(image);
 
-	/** Multiplies each pixel by a color, channel by channel, alpha too; the image keeps its format.
+	/** Multiplies each pixel by a color, channel by channel, alpha too, in the image's format.
 
 		@param image  The image.
 		@param color  The color; `WHITE` keeps it unchanged. */
 	public static inline function ImageColorTint(image:Image, color:Color):Void
 		RTextures.ImageColorTint(image, color);
 
-	/** Inverts each pixel's red, green and blue; the image keeps its format.
+	/** Inverts each pixel's red, green and blue, in the image's format.
 
 		@param image  The image. */
 	public static inline function ImageColorInvert(image:Image):Void
 		RTextures.ImageColorInvert(image);
 
-	/** Makes an image grayscale, as raylib's does: it becomes `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`, its alpha dropped.
+	/** Makes an image `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`, its alpha dropped.
 
 		@param image  The image. */
 	public static inline function ImageColorGrayscale(image:Image):Void
 		RTextures.ImageColorGrayscale(image);
 
-	/** Changes an image's contrast; the image keeps its format.
+	/** Changes an image's contrast, in its format.
 
 		@param image  The image.
 		@param contrast  -100 (all mid-gray) to 100; 0 leaves it unchanged. */
 	public static inline function ImageColorContrast(image:Image, contrast:Float):Void
 		RTextures.ImageColorContrast(image, contrast);
 
-	/** Changes an image's brightness, adding to red, green and blue; the image keeps its format. A channel taken below 0 becomes 1, as
-		raylib's does.
+	/** Changes an image's brightness by adding to red, green and blue, in its format.
+
+		A channel taken below 0 becomes 1.
 
 		@param image  The image.
 		@param brightness  -255 to 255. */
 	public static inline function ImageColorBrightness(image:Image, brightness:Int):Void
 		RTextures.ImageColorBrightness(image, brightness);
 
-	/** Changes every pixel of one color to another; the image keeps its format.
+	/** Changes every pixel of one color to another, in the image's format.
 
 		@param image  The image.
 		@param color  The color changed, alpha too.
@@ -3525,15 +3841,18 @@ class Raylib {
 	public static inline function ImageColorReplace(image:Image, color:Color, replace:Color):Void
 		RTextures.ImageColorReplace(image, color, replace);
 
-	/** Returns an image's pixels as colors, as raylib's reads each format: a 5-bit channel times 8, a 6-bit times 4, a 4-bit times 17; R32
-		and R16 as red alone.
+	/** Returns an image's pixels as colors.
+
+		A 5-bit channel is read times 8, a 6-bit times 4 and a 4-bit times 17. R32 and R16 are read as red alone.
 
 		@param image  The image.
 		@return  The colors, rows top first, or null for an image 0 wide or high. */
 	public static inline function LoadImageColors(image:Image):Array<Color>
 		return RTextures.LoadImageColors(image);
 
-	/** Returns an image's colors, each once, in the order first met; clear pixels are skipped.
+	/** Returns an image's colors, each once, in the order first met.
+
+		Clear pixels are skipped.
 
 		@param image  The image.
 		@param maxPaletteSize  The most colors.
@@ -3542,13 +3861,17 @@ class Raylib {
 	public static inline function LoadImagePalette(image:Image, maxPaletteSize:Int, colorCount:Array<Int>):Array<Color>
 		return RTextures.LoadImagePalette(image, maxPaletteSize, colorCount);
 
-	/** Frees colors `LoadImageColors` gave. There is nothing to free here.
+	/** Frees colors `LoadImageColors` gave.
+
+		Does nothing, as the colors need no freeing.
 
 		@param colors  The colors. */
 	public static inline function UnloadImageColors(colors:Array<Color>):Void
 		RTextures.UnloadImageColors(colors);
 
-	/** Frees colors `LoadImagePalette` gave. There is nothing to free here.
+	/** Frees colors `LoadImagePalette` gave.
+
+		Does nothing, as the colors need no freeing.
 
 		@param colors  The colors. */
 	public static inline function UnloadImagePalette(colors:Array<Color>):Void
@@ -3562,7 +3885,9 @@ class Raylib {
 	public static inline function GetImageAlphaBorder(image:Image, threshold:Float):Rectangle
 		return RTextures.GetImageAlphaBorder(image, threshold);
 
-	/** Returns a pixel's color, as `LoadImageColors` reads it. A pixel outside the image is clear black, with a warning.
+	/** Returns a pixel's color, as `LoadImageColors` reads it.
+
+		A pixel outside the image is clear black, with a warning.
 
 		@param image  The image.
 		@param x  The pixel's column.
@@ -3578,8 +3903,11 @@ class Raylib {
 	public static inline function ImageClearBackground(dst:Image, color:Color):Void
 		RTextures.ImageClearBackground(dst, color);
 
-	/** Sets a pixel, in the image's format: grayscale by luminance, a 16-bit format's channels rounded, R5G5B5A1's alpha bit set over an
-		alpha of 50. One outside the image is skipped.
+	/** Sets a pixel, in the image's format.
+
+		Grayscale is by luminance, a 16-bit format's channels are rounded, and R5G5B5A1's alpha bit is set over an alpha of 50.
+
+		A pixel outside the image is skipped.
 
 		@param dst  The image.
 		@param posX  The pixel's column.
@@ -3616,9 +3944,11 @@ class Raylib {
 	public static inline function ImageDrawLineV(dst:Image, start:Vector2, end:Vector2, color:Color):Void
 		RTextures.ImageDrawLineV(dst, start, end, color);
 
-	/** Draws a line of a thickness: as many lines as it is thick, side by side, below and above the line for a line more across than
-		down, right and left of it otherwise (the odd one out below or right). Its ends are rounded to whole pixels; a line from a pixel
-		to itself draws nothing.
+	/** Draws a line of a thickness, as many one-pixel lines side by side as it is thick.
+
+		A line more across than down gets its lines below and above it, any other right and left of it, the odd one out below or right.
+
+		The ends are rounded to whole pixels. A line from a pixel to itself draws nothing.
 
 		@param dst  The image.
 		@param start  The start.
@@ -3666,7 +3996,7 @@ class Raylib {
 	public static inline function ImageDrawCircleLinesV(dst:Image, center:Vector2, radius:Int, color:Color):Void
 		RTextures.ImageDrawCircleLinesV(dst, center, radius, color);
 
-	/** Fills a rectangle; what falls outside the image is skipped.
+	/** Fills a rectangle, skipping what falls outside the image.
 
 		@param dst  The image.
 		@param posX  The left edge.
@@ -3686,7 +4016,9 @@ class Raylib {
 	public static inline function ImageDrawRectangleV(dst:Image, position:Vector2, size:Vector2, color:Color):Void
 		RTextures.ImageDrawRectangleV(dst, position, size, color);
 
-	/** Fills a rectangle, as raylib's does: cut to the image, then to whole pixels; one 0 wide still sets its top-left pixel.
+	/** Fills a rectangle, cut to the image, then to whole pixels.
+
+		A rectangle 0 wide still sets its top-left pixel.
 
 		@param dst  The image.
 		@param rec  The rectangle, in pixels.
@@ -3703,7 +4035,7 @@ class Raylib {
 	public static inline function ImageDrawRectangleLines(dst:Image, rec:Rectangle, thick:Int, color:Color):Void
 		RTextures.ImageDrawRectangleLines(dst, rec, thick, color);
 
-	/** Fills a triangle; its corners may go either way round.
+	/** Fills a triangle whose corners may go either way round.
 
 		@param dst  The image.
 		@param v1  The first corner.
@@ -3713,8 +4045,9 @@ class Raylib {
 	public static inline function ImageDrawTriangle(dst:Image, v1:Vector2, v2:Vector2, v3:Vector2, color:Color):Void
 		RTextures.ImageDrawTriangle(dst, v1, v2, v3, color);
 
-	/** Fills a triangle, each corner its own color, blended across it as raylib's does: each channel by the pixel's weights, each
-		rounded down, so three corners of one color may not give it exactly.
+	/** Fills a triangle, each corner its own color, blended across it.
+
+		Each channel is weighted by the pixel's weights and rounded down, so three corners of one color may not give that color exactly.
 
 		@param dst  The image.
 		@param v1  The first corner.
@@ -3754,10 +4087,16 @@ class Raylib {
 	public static inline function ImageDrawTriangleStrip(dst:Image, points:Array<Vector2>, pointCount:Int, color:Color):Void
 		RTextures.ImageDrawTriangleStrip(dst, points, pointCount, color);
 
-	/** Draws a rectangle of one image into a rectangle of another, tinted, blended over (raylib's `ColorAlphaBlend`), in their formats.
-		A source with no alpha under an opaque tint is copied, the tint's color ignored, as raylib's is; a float destination is unchanged,
-		as `SetPixelColor` writes none. A source rectangle of another whole-pixel size than the destination's is first resized by
-		`ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them.
+	/** Draws a rectangle of one image into a rectangle of another, tinted and blended over (`ColorAlphaBlend`), in their formats.
+
+		A source with no alpha under an opaque tint is copied, the tint's color ignored.
+
+		A float destination is unchanged, as `SetPixelColor` writes none.
+
+		A source rectangle of another whole-pixel size than the destination's is first resized by `ImageResize`, whose pixels differ from
+		raylib's.
+
+		The images' mipmaps are drawn too, when both have them.
 
 		@param dst  The image drawn into.
 		@param src  The image drawn from.
@@ -3790,38 +4129,57 @@ class Raylib {
 	public static inline function ImageDrawTextEx(dst:Image, font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
 		RTextures.ImageDrawTextEx(dst, font, text, position, fontSize, spacing, tint);
 
-	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, its mipmaps too when it
-		has them (`ImageMipmaps`), filtered through them, trilinear, as raylib sets it.
-		The texture\'s format is the image\'s, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed
-		format gives no texture, with a warning. Its pixels are let go of once sent, so after a page's GPU context is lost it draws as
-		nothing, with one warning (`Raylib`).
+	/** Makes a texture of an image in any uncompressed format.
+
+		The image's pixels go to the GPU as RGBA when the texture is first drawn, its mipmaps too when it has them (`ImageMipmaps`). A
+		texture with mipmaps is filtered through them, trilinear.
+
+		The texture's format is the image's, so a grayscale image's texture has `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`.
+
+		A compressed format gives no texture, with a warning.
+
+		The pixels are let go of once sent, so after a page's GPU context is lost the texture draws as nothing, with one warning (`Raylib`).
 
 		@param image  The image.
 		@return  The texture. */
 	public static inline function LoadTextureFromImage(image:Image):Texture2D
 		return RTextures.LoadTextureFromImage(image);
 
-	/** Makes a cubemap of an image, its six faces laid out as raylib's layouts lay them: `CUBEMAP_LAYOUT_LINE_VERTICAL` (a column, +X,
-		-X, +Y, -Y, +Z, -Z from the top), `CUBEMAP_LAYOUT_LINE_HORIZONTAL` (a row, in that order from the left),
-		`CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR` (3 faces wide, 4 high: +Y, +X, -Y and -X down the middle column, +Z left of +X and -Z right
-		of it) or `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE` (4 wide, 3 high: +Y at the top of the second column, then -X, +Z, +X, -Z
-		across, then -Y below +Z), each face's rows top first as GL's cube faces take them; `CUBEMAP_LAYOUT_AUTO_DETECT` takes the layout
-		from the image's shape. A face is the image's height over 6 (a column), its width over 6 (a row), over 3 (3 by 4) or over 4 (4 by 3).
+	/** Makes a cubemap of an image, its six faces laid out by a layout.
 
-		As raylib's: a column is read as it is, the face size squared times 6 pixels from the image's first, row after row, so an image
-		not 1 face by 6 is read across its rows; the other layouts draw each face onto magenta (`ImageDraw`), a translucent pixel blended
-		over it, a face partly past the image's edge its part inside stretched to the face, and one wholly past it left magenta (raylib's
-		divides by zero). A shape `CUBEMAP_LAYOUT_AUTO_DETECT` doesn't know gives no cubemap,
-		with a warning. Its format is the image's, its pixels RGBA on the GPU, sampled linearly as rlgl's cubemaps are. An image with
-		mipmaps gives a cubemap with mipmaps, sampled through them: a column's from the image's levels, read as its first is; the other
-		layouts' made from each face, as GL's `glGenerateMipmap` makes them, where raylib 6.2's are magenta (5.5's are magenta whatever the
-		image). Where raylib's differs, it makes an empty GL cubemap: a face size of 0 (an image too small for its layout, or a layout raylib
-		doesn't have) gives none here, as do a compressed format and an image too small for the column it is read as, with a warning.
+		The layouts:
 
-		The cubemap is a `Texture2D`'s record: a material's `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` or `MATERIAL_MAP_PREFILTER`
-		binds it to a shader's `samplerCube` (`DrawMesh`), as does `SetShaderValueTexture`; drawn as a 2D texture, it draws nothing.
-		`UnloadTexture` lets go of it, and it is counted as any texture is (docs/DECISIONS.md 25). Its pixels are let go of once sent, so
-		after a page's GPU context is lost it draws as nothing, with one warning (`Raylib`).
+		- `CUBEMAP_LAYOUT_LINE_VERTICAL`: a column, +X, -X, +Y, -Y, +Z, -Z from the top. A face is the image's height over 6.
+		- `CUBEMAP_LAYOUT_LINE_HORIZONTAL`: a row, in that order from the left. A face is the image's width over 6.
+		- `CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR`: 3 faces wide, 4 high, +Y, +X, -Y and -X down the middle column, +Z left of +X and -Z right
+		  of it. A face is the image's width over 3.
+		- `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE`: 4 faces wide, 3 high, +Y at the top of the second column, then -X, +Z, +X, -Z across, then
+		  -Y below +Z. A face is the image's width over 4.
+		- `CUBEMAP_LAYOUT_AUTO_DETECT`: the layout the image's shape gives. A shape it doesn't know gives no cubemap, with a warning.
+
+		Each face's rows run top first, as GL's cube faces take them.
+
+		A column is read as it is, the face size squared times 6 pixels from the image's first, row after row. An image not 1 face by 6 is
+		read across its rows.
+
+		The other layouts draw each face onto magenta (`ImageDraw`). A translucent pixel is blended over the magenta. A face partly past the
+		image's edge has its part inside stretched to the face, and a face wholly past it stays magenta.
+
+		The cubemap's format is the image's. Its pixels are RGBA on the GPU, sampled linearly.
+
+		An image with mipmaps gives a cubemap with mipmaps, sampled through them. A column's come from the image's levels, read as its first
+		is. The other layouts' are made from each face, as GL's `glGenerateMipmap` makes them.
+
+		No cubemap comes back, with a warning, for a face size of 0 (an image too small for its layout, or a layout raylib doesn't have), a
+		compressed format, or an image too small for the column it is read as.
+
+		The cubemap is a `Texture2D`'s record. A material's `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` or `MATERIAL_MAP_PREFILTER`
+		binds it to a shader's `samplerCube` (`DrawMesh`), as `SetShaderValueTexture` does. Drawn as a 2D texture, the cubemap draws
+		nothing.
+
+		`UnloadTexture` lets go of the cubemap, which is counted as any texture is.
+
+		The pixels are let go of once sent, so after a page's GPU context is lost the cubemap draws as nothing, with one warning (`Raylib`).
 
 		@param image  The image.
 		@param layout  The layout (`CUBEMAP_LAYOUT_*`).
@@ -3829,19 +4187,23 @@ class Raylib {
 	public static inline function LoadTextureCubemap(image:Image, layout:Int):TextureCubemap
 		return RTextures.LoadTextureCubemap(image, layout);
 
-	/** Replaces a texture's pixels, as raylib's does on the GPU. The pixels are in the texture's format (`texture.format`), rows top
-		first, its width by its height. Draws asked for before it this frame in a render texture drawn into since, or on the screen, show
-		the new pixels too, as rlgl's batch drawn after it does; those in render textures drawn into before it keep the old. A render
-		texture's, a cubemap's, a compressed format's and pixels too few for the texture change nothing (raylib's reads past them), with a
-		warning.
+	/** Replaces a texture's pixels on the GPU.
+
+		The pixels are in the texture's format (`texture.format`), rows top first, its width by its height.
+
+		Draws asked for before the call this frame show the new pixels too when they are on the screen or in a render texture drawn into
+		since. Those in render textures drawn into before the call keep the old.
+
+		Changes nothing, with a warning, for a render texture, a cubemap, a compressed format or too few pixels.
 
 		@param texture  The texture.
 		@param pixels  The pixels: their bytes (`haxe.io.Bytes`), or an array of `Color` (R8G8B8A8's bytes, as raylib's `Color *` is). */
 	public static inline function UpdateTexture(texture:Texture2D, pixels:Dynamic):Void
 		RTextures.UpdateTexture(texture, pixels);
 
-	/** Replaces a rectangle of a texture's pixels, as `UpdateTexture` does the whole. A rectangle not inside the texture changes nothing,
-		as GL refuses it.
+	/** Replaces a rectangle of a texture's pixels, as `UpdateTexture` does the whole.
+
+		A rectangle not inside the texture changes nothing.
 
 		@param texture  The texture.
 		@param rec  The rectangle, in pixels from the texture's top-left corner; its numbers are cut to whole pixels.
@@ -3849,16 +4211,21 @@ class Raylib {
 	public static inline function UpdateTextureRec(texture:Texture2D, rec:Rectangle, pixels:Dynamic):Void
 		RTextures.UpdateTextureRec(texture, rec, pixels);
 
-	/** Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT` (raylib's default), `TEXTURE_WRAP_CLAMP` or
-		`TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning. A cubemap is left unchanged.
+	/** Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT` (the default), `TEXTURE_WRAP_CLAMP` or `TEXTURE_WRAP_MIRROR_REPEAT`.
+
+		`TEXTURE_WRAP_MIRROR_CLAMP` leaves the texture unchanged, with a warning.
+
+		A cubemap is left unchanged.
 
 		@param texture  The texture.
 		@param wrap  The wrap (`TEXTURE_WRAP_*`). */
 	public static inline function SetTextureWrap(texture:Texture2D, wrap:Int):Void
 		RTextures.SetTextureWrap(texture, wrap);
 
-	/** Draws a texture as a nine-patch (or a three-patch) into a rectangle, turned about an origin, as raylib's does: its corners kept,
-		its edges and middle stretched; a rectangle smaller than the borders shrinks them and drops the middle.
+	/** Draws a texture as a nine-patch or a three-patch into a rectangle, turned about an origin, its corners kept and its edges and middle
+		stretched.
+
+		A rectangle smaller than the borders shrinks them and drops the middle.
 
 		@param texture  The texture.
 		@param nPatchInfo  The patch: its rectangle on the texture, its borders and its layout (`NPATCH_*`).
@@ -3869,8 +4236,11 @@ class Raylib {
 	public static inline function DrawTextureNPatch(texture:Texture2D, nPatchInfo:NPatchInfo, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void
 		RTextures.DrawTextureNPatch(texture, nPatchInfo, dest, origin, rotation, tint);
 
-	/** Returns one pixel's color from pixels in a format, as raylib's does: 16-bit channels widened by integers, floats times 255.
-		raylib takes a pointer to the pixel; here it is the pixels and the pixel's first byte.
+	/** Returns one pixel's color from pixels in a format.
+
+		16-bit channels are widened by integers, and floats are multiplied by 255.
+
+		Takes the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
 
 		@param srcPtr  The pixels.
 		@param format  Their format (`PIXELFORMAT_UNCOMPRESSED_*`).
@@ -3879,8 +4249,11 @@ class Raylib {
 	public static inline function GetPixelColor(srcPtr:haxe.io.Bytes, format:Int, offset:Int = 0):Color
 		return RTextures.GetPixelColor(srcPtr, format, offset);
 
-	/** Writes one pixel's color into pixels in a format, as raylib's does: grayscale by luminance, 16-bit channels rounded; a float
-		format is left unchanged. raylib takes a pointer to the pixel; here it is the pixels and the pixel's first byte.
+	/** Writes one pixel's color into pixels in a format.
+
+		Grayscale is by luminance, and 16-bit channels are rounded. A float format is left unchanged.
+
+		Takes the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
 
 		@param dstPtr  The pixels.
 		@param color  The color.
@@ -3891,7 +4264,11 @@ class Raylib {
 
 	// ---- rtext: text (raylib/RText.hx) ----
 
-	/** Draws text in raylib's default font. A size under 10 is drawn at 10, and letters are a tenth of the size apart.
+	/** Draws text in raylib's default font. See `DrawTextEx` for drawing text in another font.
+
+		A size under 10 draws at 10.
+
+		The letters are a tenth of the size apart.
 
 		@param text  The text; "\n" starts a line.
 		@param posX  The left edge.
@@ -3901,7 +4278,9 @@ class Raylib {
 	public static inline function DrawText(text:String, posX:Int, posY:Int, fontSize:Int, color:Color):Void
 		RText.DrawText(text, posX, posY, fontSize, color);
 
-	/** Returns the width text is drawn at by `DrawText`, its widest line's.
+	/** Returns the width of text's widest line as `DrawText` draws it. See `MeasureTextEx` for measuring text's height too.
+
+		A size under 10 is measured at 10.
 
 		@param text  The text.
 		@param fontSize  The height of a line, in pixels.
@@ -3909,7 +4288,9 @@ class Raylib {
 	public static inline function MeasureText(text:String, fontSize:Int):Int
 		return RText.MeasureText(text, fontSize);
 
-	/** Draws text in a font.
+	/** Draws text in a font. See `DrawTextPro` for drawing text turned about a point.
+
+		Each "\n" moves down by the size and the space `SetTextLineSpacing` sets.
 
 		@param font  The font; one with no texture draws as the default font.
 		@param text  The text; "\n" starts a line.
@@ -3934,7 +4315,7 @@ class Raylib {
 			tint:Color):Void
 		RText.DrawTextPro(font, text, position, origin, rotation, fontSize, spacing, tint);
 
-	/** Draws one character in a font.
+	/** Draws one character in a font. See `DrawTextCodepoints` for drawing several.
 
 		@param font  The font.
 		@param codepoint  The character.
@@ -3957,7 +4338,9 @@ class Raylib {
 			tint:Color):Void
 		RText.DrawTextCodepoints(font, codepoints, codepointCount, position, fontSize, spacing, tint);
 
-	/** Sets the space between lines that "\n" adds to the size, 2 pixels until set.
+	/** Sets the space between lines of text, added to the size at each "\n".
+
+		Defaults to 2 pixels.
 
 		@param spacing  The space, in pixels. */
 	public static inline function SetTextLineSpacing(spacing:Int):Void
@@ -3973,7 +4356,9 @@ class Raylib {
 	public static inline function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2
 		return RText.MeasureTextEx(font, text, fontSize, spacing);
 
-	/** Returns where a character is in a font's glyphs: its own, else the question mark's, else the first.
+	/** Returns the index of a character's glyph in a font.
+
+		A character the font lacks gives the index of the font's "?", or 0 when the font lacks that too.
 
 		@param font  The font.
 		@param codepoint  The character.
@@ -3997,22 +4382,29 @@ class Raylib {
 	public static inline function GetGlyphAtlasRec(font:Font, codepoint:Int):Rectangle
 		return RText.GetGlyphAtlasRec(font, codepoint);
 
-	/** Returns raylib's default font: 224 glyphs, Latin-1 from the space, 10 pixels high, made at its first use as raylib makes it, each
-		glyph's image its part of the font's image (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`, white), so `ImageText` draws with it. Its
-		texture goes to the GPU when first drawn.
+	/** Returns raylib's default font, made at the first call.
+
+		Holds 224 glyphs, Latin-1 from the space, 10 pixels high, laid out as raylib lays them out.
+
+		Each glyph's image is its part of the font's image, white in `PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`, so `ImageText` draws with the
+		font.
+
+		The font's texture goes to the GPU when first drawn.
 
 		@return  The font. */
 	public static inline function GetFontDefault():Font
 		return RText.GetFontDefault();
 
-	/** Returns whether a font holds glyphs: a size, glyphs, and their places on its texture.
+	/** Returns whether a font has a size, glyphs, and their places on its texture.
 
 		@param font  The font.
 		@return  True when it does. */
 	public static inline function IsFontValid(font:Font):Bool
 		return RText.IsFontValid(font);
 
-	/** Frees a font: its texture and its glyphs' images. The default font is never freed.
+	/** Frees a font's texture and its glyphs' images.
+
+		Skipped for the default font.
 
 		@param font  The font. */
 	public static inline function UnloadFont(font:Font):Void
@@ -4025,13 +4417,18 @@ class Raylib {
 	public static inline function UnloadFontData(glyphs:Array<GlyphInfo>, glyphCount:Int):Void
 		RText.UnloadFontData(glyphs, glyphCount);
 
-	/** Packs glyphs' images into one image, a font's texture once loaded, as raylib does: its glyphs' places go into `glyphRecs`, the
-		image is white with the glyphs' coverage as alpha (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`), and its bottom-right 3 by 3 texels are
-		opaque white.
+	/** Packs glyphs' images into one image for a font's texture, as raylib does, and returns the image.
 
-		The atlas\'s size is estimated from the glyphs' widths, a power of two wide; when packing rows in order (`packMethod` 0) runs out of rows,
-		it is made twice as high, as many times as it needs, so every glyph has its place. The skyline packer (1) leaves a glyph that
-		doesn't fit out, with a warning, placed at 2147483648 across and down, as raylib's.
+		The image is white, the glyphs' coverage its alpha (`PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA`).
+
+		The image's bottom-right 3 by 3 texels are opaque white.
+
+		The image's size is estimated from the glyphs' widths, a power of two wide.
+
+		Packing rows in order (`packMethod` 0) doubles the image's height each time the rows run out, so every glyph has its place.
+
+		The skyline packer (`packMethod` 1) skips a glyph that doesn't fit, logs a warning, and places the glyph at 2147483648 across and
+		down.
 
 		@param glyphs  The glyphs, their images 8-bit grayscale.
 		@param glyphRecs  Receives each glyph's place, replacing what it held.
@@ -4044,11 +4441,19 @@ class Raylib {
 			packMethod:Int):Image
 		return RText.GenImageFontAtlas(glyphs, glyphRecs, glyphCount, fontSize, padding, packMethod);
 
-	/** Makes a font from an image of glyphs, as raylib's does: the glyphs in rows on a key color, the key's border before the first
-		glyph giving the space between glyphs and between rows; each glyph a run of pixels that aren't the key, numbered from a first
-		character. The key becomes clear on the font's texture. An image with no such border gives the default font. A glyph's height
-		ends at the image's bottom and its width at its right edge, as raylib's scan has them. At most 256 glyphs are read, where
-		raylib's writes past its 256.
+	/** Returns a font read from an image of glyphs in rows on a key color, as raylib reads it.
+
+		The key's border before the first glyph gives the space between glyphs and between rows.
+
+		Each glyph is a run of pixels that aren't the key, numbered from `firstChar`.
+
+		The key becomes clear on the font's texture.
+
+		An image with no such border gives the default font.
+
+		A glyph's height stops at the image's bottom and its width at the image's right edge.
+
+		At most 256 glyphs are read.
 
 		@param image  The image, in any uncompressed format.
 		@param key  The color around the glyphs.
@@ -4057,19 +4462,26 @@ class Raylib {
 	public static inline function LoadFontFromImage(image:Image, key:Color, firstChar:Int):Font
 		return RText.LoadFontFromImage(image, key, firstChar);
 
-	/** Draws the frames a second, as "60 FPS", in green.
+	/** Draws the frames a second as "60 FPS", 20 pixels high in the default font.
+
+		Green at 30 or more, orange under 30, red under 15.
 
 		@param posX  The left edge.
 		@param posY  The top edge. */
 	public static inline function DrawFPS(posX:Int, posY:Int):Void
 		RText.DrawFPS(posX, posY);
 
-	/** Formats text as C's `printf` does. It takes `%d` and `%i`, `%u`, `%f` and `%F` (6 places unless a precision is given, as in
-		`%.2f`), `%e`, `%g`, `%x`, `%X`, `%o`, `%c` (a character code), `%s` and `%%`. It also takes C's flags (`-`, `0`, `+`, space,
-		`#`), widths and precisions, as in `%5d`, `%-8s`, `%03i` and `%*d`. C's length modifiers (`l`, `ll`, `h`, `z`) are read and
-		ignored.
+	/** Returns text formatted as C's `printf` formats it.
 
-		As raylib's, the text is at most 1023 UTF-8 bytes: longer, it is cut to its first 1020 and "..." ends it.
+		Takes `%d` and `%i`, `%u`, `%f` and `%F`, `%e` and `%E`, `%g` and `%G`, `%x`, `%X`, `%o`, `%c` (a character code), `%s` and `%%`.
+
+		Takes C's flags (`-`, `0`, `+`, space, `#`), widths and precisions, as in `%5d`, `%-8s`, `%03i` and `%*d`.
+
+		`%f` writes 6 places unless a precision is given, as in `%.2f`.
+
+		Reads and ignores C's length modifiers (`l`, `ll`, `h`, `z`).
+
+		Text past 1023 UTF-8 bytes is cut to its first 1020, and "..." ends it.
 
 		@param text  The format.
 		@param args  The values, one for each conversion.
@@ -4085,17 +4497,22 @@ class Raylib {
 	public static inline function TextIsEqual(text1:String, text2:String):Bool
 		return RText.TextIsEqual(text1, text2);
 
-	/** Returns the length of text in UTF-8 bytes, as raylib counts it: "héllo" is 6. The text functions' positions and lengths are all
-		in these bytes, where `String.length` counts otherwise, and not alike on every target.
+	/** Returns the length of text in UTF-8 bytes, as raylib counts it: "héllo" is 6.
+
+		The text functions' positions and lengths are all in these bytes.
+
+		`String.length` counts otherwise, and not alike on every target.
 
 		@param text  The text.
 		@return  The length, in bytes; 0 for null text. */
 	public static inline function TextLength(text:String):Int
 		return RText.TextLength(text);
 
-	/** Returns a piece of text, by its place in UTF-8 bytes. The piece ends with the text, and is at most 1023 bytes, as raylib's.
+	/** Returns a piece of text, by its place in UTF-8 bytes.
 
-		A character the piece cuts through is a "?" for each of its bytes taken, as raylib draws it.
+		The piece stops at the text's end and is at most 1023 bytes.
+
+		A character the piece cuts through becomes a "?" for each of its bytes taken.
 
 		@param text  The text.
 		@param position  Where the piece starts, in bytes from the start.
@@ -4113,9 +4530,11 @@ class Raylib {
 	public static inline function TextReplace(text:String, replace:String, by:String):String
 		return RText.TextReplace(text, replace, by);
 
-	/** Returns text with other text put in at a place in UTF-8 bytes. As raylib's, the result is at most 1022 bytes.
+	/** Returns text with other text put in at a place in UTF-8 bytes.
 
-		A character the place cuts through is a "?" for each of its bytes, as raylib draws it.
+		The result is at most 1022 bytes.
+
+		A character the place cuts through becomes a "?" for each of its bytes.
 
 		@param text  The text.
 		@param insert  The text put in.
@@ -4126,8 +4545,9 @@ class Raylib {
 
 	/** Returns texts joined into one, a delimiter between each two.
 
-		As raylib's, the result is at most 1023 UTF-8 bytes: a text that would take it past them, with its delimiter, is left out, and the
-		texts after it are still joined.
+		The result is at most 1023 UTF-8 bytes.
+
+		A text that would take the result past 1023 bytes, with its delimiter, is skipped, and the texts after it are still joined.
 
 		@param textList  The texts; a null one is empty.
 		@param count  How many of them.
@@ -4136,10 +4556,15 @@ class Raylib {
 	public static inline function TextJoin(textList:Array<String>, count:Int, delimiter:String):String
 		return RText.TextJoin(textList, count, delimiter);
 
-	/** Returns the pieces of text between a delimiter: one more than the delimiters it holds, an empty one between two together.
+	/** Returns the pieces of text between a delimiter: one more than the delimiters the text holds, an empty one between two together.
 
-		As raylib's, the delimiter is one byte (its low 8 bits), only the text's first 1023 UTF-8 bytes are read, and there are at most 128
-		pieces, the last of them empty when the text holds more. A character a piece cuts through is a "?" for each of its bytes.
+		The delimiter is one byte, its low 8 bits.
+
+		Only the text's first 1023 UTF-8 bytes are read.
+
+		There are at most 128 pieces, the last of them empty when the text holds more.
+
+		A character a piece cuts through becomes a "?" for each of its bytes.
 
 		@param text  The text.
 		@param delimiter  The byte between pieces, such as `",".code`.
@@ -4156,61 +4581,80 @@ class Raylib {
 	public static inline function TextFindIndex(text:String, find:String):Int
 		return RText.TextFindIndex(text, find);
 
-	/** Returns text with its letters a to z made capitals, as raylib makes them. Other letters, as "é", are unchanged.
+	/** Returns text with its letters a to z made capitals.
+
+		Other letters, as "é", are unchanged.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
 	public static inline function TextToUpper(text:String):String
 		return RText.TextToUpper(text);
 
-	/** Returns text with its capitals A to Z made lower case, as raylib makes them. Other letters, as "É", are unchanged.
+	/** Returns text with its capitals A to Z made lower case.
+
+		Other letters, as "É", are unchanged.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
 	public static inline function TextToLower(text:String):String
 		return RText.TextToLower(text);
 
-	/** Returns snake-case text in Pascal case: "hello_world" is "HelloWorld". Each run of underscores is dropped, and the first letter
-		and the one after each run are made capitals if they are a to z. As raylib's, the result is at most 1023 UTF-8 bytes.
+	/** Returns snake-case text in Pascal case: "hello_world" is "HelloWorld". See `TextToCamel` for making camel case.
+
+		Drops each run of underscores, and makes the first letter and the one after each run capitals if they are a to z.
+
+		The result is at most 1023 UTF-8 bytes.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
 	public static inline function TextToPascal(text:String):String
 		return RText.TextToPascal(text);
 
-	/** Returns Pascal- or camel-case text, or words, in snake case: "helloWorld" and "Hello World" are "hello_world", "HTTPServer" is
-		"http_server". Each capital A to Z is made lower case, an underscore before it when it follows a letter a to z, or a capital with
-		a letter a to z after it; a space is an underscore. No underscore is added where the text so far ends in one, nor at its start.
+	/** Returns Pascal- or camel-case text, or words, in snake case: "helloWorld" and "Hello World" are "hello_world".
 
-		As raylib's, the result is at most 1023 UTF-8 bytes.
+		Makes each capital A to Z lower case, with an underscore before it when it follows a letter a to z, or follows a capital and has a
+		letter a to z after it. "HTTPServer" is "http_server".
+
+		Makes each space an underscore.
+
+		Adds no underscore at the start, nor where the text so far ends in one.
+
+		The result is at most 1023 UTF-8 bytes.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
 	public static inline function TextToSnake(text:String):String
 		return RText.TextToSnake(text);
 
-	/** Returns snake-case text in camel case: "hello_world" is "helloWorld". Each run of underscores is dropped, the letter after it
-		made a capital if it is a to z, and the first letter made lower case if it is A to Z. As raylib's, the result is at most 1023
-		UTF-8 bytes.
+	/** Returns snake-case text in camel case: "hello_world" is "helloWorld". See `TextToPascal` for making Pascal case.
+
+		Drops each run of underscores, and makes the letter after each run a capital if it is a to z.
+
+		Makes the first letter lower case if it is A to Z.
+
+		The result is at most 1023 UTF-8 bytes.
 
 		@param text  The text.
 		@return  The new text; empty for null text. */
 	public static inline function TextToCamel(text:String):String
 		return RText.TextToCamel(text);
 
-	/** Returns the whole number text starts with, as raylib reads it: an optional "+" or "-", then the digits up to the first that
-		isn't one. Nothing else is skipped, spaces neither; a number past 32 bits wraps.
+	/** Returns the whole number text starts with: an optional "+" or "-", then the digits up to the first character that isn't one.
+
+		Skips nothing, not even spaces.
+
+		A number past 32 bits wraps.
 
 		@param text  The text.
 		@return  The number; 0 when it starts with none, or for null text. */
 	public static inline function TextToInteger(text:String):Int
 		return RText.TextToInteger(text);
 
-	/** Returns the number text starts with, as raylib reads it: an optional "+" or "-", digits, then a "." and more digits. An exponent,
-		as in "1e3", isn't read, and nothing is skipped.
+	/** Returns the number text starts with: an optional "+" or "-", digits, then a "." and more digits.
 
-		Worked out in 32-bit floats, digit by digit, as raylib works it, so the result is the float raylib returns: "0.1" is
-		0.100000001490116.
+		Reads no exponent, as in "1e3", and skips nothing.
+
+		Worked out in 32-bit floats, digit by digit, as raylib works it: "0.1" is 0.100000001490116.
 
 		@param text  The text.
 		@return  The number; 0 when it starts with none, or for null text. */
@@ -4225,7 +4669,7 @@ class Raylib {
 	public static inline function LoadUTF8(codepoints:Array<Int>, length:Int):String
 		return RText.LoadUTF8(codepoints, length);
 
-	/** Does nothing: text from `LoadUTF8` is freed by the garbage collector.
+	/** Does nothing, since the garbage collector frees text from `LoadUTF8`.
 
 		@param text  The text. */
 	public static inline function UnloadUTF8(text:String):Void
@@ -4239,7 +4683,7 @@ class Raylib {
 	public static inline function LoadCodepoints(text:String, count:Array<Int>):Array<Int>
 		return RText.LoadCodepoints(text, count);
 
-	/** Does nothing: codes from `LoadCodepoints` are freed by the garbage collector.
+	/** Does nothing, since the garbage collector frees codes from `LoadCodepoints`.
 
 		@param codepoints  The codes. */
 	public static inline function UnloadCodepoints(codepoints:Array<Int>):Void
@@ -4252,7 +4696,8 @@ class Raylib {
 	public static inline function GetCodepointCount(text:String):Int
 		return RText.GetCodepointCount(text);
 
-	/** Returns the code of text's first character, checked as RFC 3629 has UTF-8, as raylib checks it.
+	/** Returns the code of text's first character, checking its UTF-8 bytes as RFC 3629 has them. See `GetCodepointNext` for reading
+		the character without the check.
 
 		@param text  The text.
 		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by; 1 for empty or
@@ -4261,7 +4706,7 @@ class Raylib {
 	public static inline function GetCodepoint(text:String, codepointSize:Array<Int>):Int
 		return RText.GetCodepoint(text, codepointSize);
 
-	/** Returns the code of text's first character.
+	/** Returns the code of text's first character. See `GetCodepoint` for checking its UTF-8 bytes as RFC 3629 has them.
 
 		@param text  The text.
 		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move past it by, as in
@@ -4270,9 +4715,11 @@ class Raylib {
 	public static inline function GetCodepointNext(text:String, codepointSize:Array<Int>):Int
 		return RText.GetCodepointNext(text, codepointSize);
 
-	/** Returns the code of text's last character: the one before where it ends, as raylib's finds the one before a place in text.
+	/** Returns the code of text's last character.
 
-		@param text  The text; `TextSubtext(text, 0, position)` gives the character before a position.
+		`GetCodepointPrevious(TextSubtext(text, 0, position), size)` gives the character before a position.
+
+		@param text  The text.
 		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move back by; 1 for empty or null
 			text.
 		@return  The code; '?' (0x3F) for empty or null text. */
@@ -4297,18 +4744,18 @@ class Raylib {
 	public static inline function DrawLine3D(startPos:Vector3, endPos:Vector3, color:Color):Void
 		RModels.DrawLine3D(startPos, endPos, color);
 
-	/** Draws a point in 3D, as raylib does: a line 0.1 long toward +z.
+	/** Draws a point in 3D as a line 0.1 long toward +z, as raylib's does.
 
 		@param position  The point.
 		@param color  The color. */
 	public static inline function DrawPoint3D(position:Vector3, color:Color):Void
 		RModels.DrawPoint3D(position, color);
 
-	/** Draws a circle's outline in 3D, 36 lines, on the XY plane turned about an axis.
+	/** Draws a circle's outline in 3D as 36 lines, on the XY plane turned about an axis.
 
 		@param center  Its center.
 		@param radius  Its radius.
-		@param rotationAxis  The axis it is turned about.
+		@param rotationAxis  The axis of the turn.
 		@param rotationAngle  The angle, in degrees.
 		@param color  The color. */
 	public static inline function DrawCircle3D(center:Vector3, radius:Float, rotationAxis:Vector3, rotationAngle:Float, color:Color):Void
@@ -4323,10 +4770,10 @@ class Raylib {
 	public static inline function DrawTriangle3D(v1:Vector3, v2:Vector3, v3:Vector3, color:Color):Void
 		RModels.DrawTriangle3D(v1, v2, v3, color);
 
-	/** Draws a strip of triangles in 3D: each point after the second makes a triangle with the two before it.
+	/** Draws a strip of triangles in 3D, each point after the second making a triangle with the two before it.
 
 		@param points  The points.
-		@param pointCount  How many of them; fewer than 3 draws nothing.
+		@param pointCount  How many of them. Fewer than 3 draws nothing.
 		@param color  The color. */
 	public static inline function DrawTriangleStrip3D(points:Array<Vector3>, pointCount:Int, color:Color):Void
 		RModels.DrawTriangleStrip3D(points, pointCount, color);
@@ -4367,7 +4814,7 @@ class Raylib {
 	public static inline function DrawCubeWiresV(position:Vector3, size:Vector3, color:Color):Void
 		RModels.DrawCubeWiresV(position, size, color);
 
-	/** Draws a filled sphere, 16 rings and 16 slices.
+	/** Draws a filled sphere of 16 rings and 16 slices. See `DrawSphereEx` for choosing the rings and slices.
 
 		@param centerPos  Its center.
 		@param radius  Its radius.
@@ -4375,7 +4822,7 @@ class Raylib {
 	public static inline function DrawSphere(centerPos:Vector3, radius:Float, color:Color):Void
 		RModels.DrawSphere(centerPos, radius, color);
 
-	/** Draws a filled sphere: rings bands of slices, from the top, each vertex with its normal.
+	/** Draws a filled sphere of `rings` bands and `slices` slices from the top, each vertex with its normal.
 
 		@param centerPos  Its center.
 		@param radius  Its radius.
@@ -4385,7 +4832,8 @@ class Raylib {
 	public static inline function DrawSphereEx(centerPos:Vector3, radius:Float, rings:Int, slices:Int, color:Color):Void
 		RModels.DrawSphereEx(centerPos, radius, rings, slices, color);
 
-	/** Draws a sphere's wires: rings bands of slices, from the top, each face's longitude, latitude and diagonal lines.
+	/** Draws a sphere's wires, `rings` bands and `slices` slices from the top, with each face's longitude, latitude and diagonal
+		lines.
 
 		@param centerPos  Its center.
 		@param radius  Its radius.
@@ -4401,7 +4849,7 @@ class Raylib {
 		@param radiusTop  Its top's radius.
 		@param radiusBottom  Its base's.
 		@param height  Its height.
-		@param sides  Its sides, at least 3.
+		@param sides  Its sides, raised to 3 when fewer.
 		@param color  The color. */
 	public static inline function DrawCylinder(position:Vector3, radiusTop:Float, radiusBottom:Float, height:Float, sides:Int, color:Color):Void
 		RModels.DrawCylinder(position, radiusTop, radiusBottom, height, sides, color);
@@ -4412,7 +4860,7 @@ class Raylib {
 		@param endPos  Its top's.
 		@param startRadius  Its base's radius.
 		@param endRadius  Its top's.
-		@param sides  Its sides, at least 3.
+		@param sides  Its sides, raised to 3 when fewer.
 		@param color  The color. */
 	public static inline function DrawCylinderEx(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int, color:Color):Void
 		RModels.DrawCylinderEx(startPos, endPos, startRadius, endRadius, sides, color);
@@ -4423,7 +4871,7 @@ class Raylib {
 		@param radiusTop  Its top's radius.
 		@param radiusBottom  Its base's.
 		@param height  Its height.
-		@param sides  Its sides, at least 3.
+		@param sides  Its sides, raised to 3 when fewer.
 		@param color  The color. */
 	public static inline function DrawCylinderWires(position:Vector3, radiusTop:Float, radiusBottom:Float, height:Float, sides:Int, color:Color):Void
 		RModels.DrawCylinderWires(position, radiusTop, radiusBottom, height, sides, color);
@@ -4434,29 +4882,29 @@ class Raylib {
 		@param endPos  Its top's.
 		@param startRadius  Its base's radius.
 		@param endRadius  Its top's.
-		@param sides  Its sides, at least 3.
+		@param sides  Its sides, raised to 3 when fewer.
 		@param color  The color. */
 	public static inline function DrawCylinderWiresEx(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int, color:Color):Void
 		RModels.DrawCylinderWiresEx(startPos, endPos, startRadius, endRadius, sides, color);
 
-	/** Draws a filled capsule: a cylinder with half a sphere on each end, their centers the two points.
+	/** Draws a filled capsule, a cylinder with half a sphere on each end, the two points their centers.
 
 		@param startPos  One end's center.
 		@param endPos  The other's.
 		@param radius  Its radius.
-		@param slices  Slices around, at least 3.
-		@param rings  Rings in each half sphere, at least 1.
+		@param slices  Slices around, raised to 3 when fewer.
+		@param rings  Rings in each half sphere, raised to 1 when fewer.
 		@param color  The color. */
 	public static inline function DrawCapsule(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void
 		RModels.DrawCapsule(startPos, endPos, radius, slices, rings, color);
 
-	/** Draws a capsule's wires: a cylinder with half a sphere on each end, their centers the two points.
+	/** Draws a capsule's wires, a cylinder with half a sphere on each end, the two points their centers.
 
 		@param startPos  One end's center.
 		@param endPos  The other's.
 		@param radius  Its radius.
-		@param slices  Slices around, at least 3.
-		@param rings  Rings in each half sphere, at least 1.
+		@param slices  Slices around, raised to 3 when fewer.
+		@param rings  Rings in each half sphere, raised to 1 when fewer.
 		@param color  The color. */
 	public static inline function DrawCapsuleWires(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void
 		RModels.DrawCapsuleWires(startPos, endPos, radius, slices, rings, color);
@@ -4476,7 +4924,7 @@ class Raylib {
 	public static inline function DrawRay(ray:Ray, color:Color):Void
 		RModels.DrawRay(ray, color);
 
-	/** Draws a grid on the XZ plane, centered on the origin, its center lines darker, as raylib's.
+	/** Draws a grid on the XZ plane centered on the origin, its center lines darker.
 
 		@param slices  The lines each way.
 		@param spacing  The space between them. */
@@ -4490,7 +4938,7 @@ class Raylib {
 	public static inline function DrawBoundingBox(box:BoundingBox, color:Color):Void
 		RModels.DrawBoundingBox(box, color);
 
-	/** Draws a texture facing the camera, turning about y alone, at a height of scale and its own proportions.
+	/** Draws a texture facing the camera and turning about y alone, `scale` high in the texture's own proportions.
 
 		@param camera  The camera.
 		@param texture  The texture.
@@ -4526,8 +4974,9 @@ class Raylib {
 			origin:Vector2, rotation:Float, tint:Color):Void
 		RModels.DrawBillboardPro(camera, texture, source, position, up, size, origin, rotation, tint);
 
-	/** Makes a model of one mesh, with the default material. The model takes over the program's hold on the mesh, as a raylib program
-		doesn't unload a mesh it gave a model: `UnloadModel` frees it, and a later `UnloadMesh` does nothing.
+	/** Returns a model of one mesh with the default material.
+
+		The model takes over the program's hold on the mesh. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
 
 		@param mesh  The mesh.
 		@return  The model. */
@@ -4537,17 +4986,22 @@ class Raylib {
 	/** Returns whether a model has meshes.
 
 		@param model  The model.
-		@return  True when it has. */
+		@return  True when the model has meshes. */
 	public static inline function IsModelValid(model:Model):Bool
 		return RModels.IsModelValid(model);
 
-	/** Frees a model: it lets go of its meshes and materials, and what no one else holds is freed with it (docs/DECISIONS.md 25): a
-		mesh's GPU buffers, a material's maps' textures and its shader, each when nothing else holds it (another load of its file, another
-		model, the program); the default shader and texture stay. The model is left empty, so unloading it again does nothing.
+	/** Lets go of a model's meshes and materials, freeing each that nothing else holds.
 
-		raylib's frees only the meshes, and leaves the textures and shaders to the program. Where helix-raylib's differs: a texture or shader
-		copied out of a material (`var t = map.texture`) and used after the model is unloaded is freed, where raylib's leaks it; and a
-		material or mesh shared between models works, where raylib's C frees it twice.
+		Frees a mesh's GPU buffers, and a material's maps' textures and its shader, once nothing else holds them. Another load of the same
+		file, another model and the program each hold them.
+
+		Leaves the default shader and texture.
+
+		Copying a texture or shader out of a material (`var t = map.texture`) doesn't hold it, so the copy is freed with the model.
+
+		Frees a material or mesh shared between models once, when the last model lets go of it.
+
+		Leaves the model empty, so unloading it again does nothing.
 
 		@param model  The model. */
 	public static inline function UnloadModel(model:Model):Void
@@ -4593,10 +5047,13 @@ class Raylib {
 	public static inline function DrawModelWiresEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
 		RModels.DrawModelWiresEx(model, position, rotationAxis, rotationAngle, scale, tint);
 
-	/** Draws a model's triangles as their corners, one pixel each, as `DrawModel` places it, through rlgl's point mode with culling off.
+	/** Draws a model's triangles' corners as points one pixel each, placed as `DrawModel` places a model.
 
-		Each index of a mesh's triangles is a point, or each vertex of its whole triangles when it has no indices (a cloud of points is a
-		mesh of vertices alone). Culling is on after it, as raylib leaves it.
+		Draws a point at each index of a mesh's triangles, or at each vertex when the mesh has no indices. A cloud of points is a mesh of
+		vertices alone.
+
+		Turns backface culling off through rlgl's point mode and on after, as raylib leaves it.
+
 		@param model  The model.
 		@param position  Where.
 		@param scale  The scale, the same on each axis.
@@ -4604,10 +5061,12 @@ class Raylib {
 	public static inline function DrawModelPoints(model:Model, position:Vector3, scale:Float, tint:Color):Void
 		RModels.DrawModelPoints(model, position, scale, tint);
 
-	/** Draws a model's triangles as their corners, one pixel each, as `DrawModelEx` places it, through rlgl's point mode with culling off.
+	/** Draws a model's triangles' corners as points one pixel each, placed as `DrawModelEx` places a model.
 
-		Each index of a mesh's triangles is a point, or each vertex of its whole triangles when it has no indices. Culling is on after it,
-		as raylib leaves it.
+		Draws a point at each index of a mesh's triangles, or at each vertex when the mesh has no indices.
+
+		Turns backface culling off through rlgl's point mode and on after, as raylib leaves it.
+
 		@param model  The model.
 		@param position  Where.
 		@param rotationAxis  The axis.
@@ -4619,10 +5078,14 @@ class Raylib {
 
 	/** Draws a mesh with a material and a transform.
 
-		The material's maps bind as raylib's: the first three at `texture0` to `texture2`, and each other map with a texture at the sampler
-		`shader.locs[SHADER_LOC_MAP_DIFFUSE + index]` names, or at a sampler set to its index with `SetShaderValue` (raylib's skybox sets
-		its `samplerCube` to `MATERIAL_MAP_CUBEMAP`). `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` and `MATERIAL_MAP_PREFILTER` bind a
-		cubemap (`LoadTextureCubemap`) to a `samplerCube`, the rest a 2D texture to a `sampler2D`; a texture of the other kind binds nothing.
+		Binds the material's maps as raylib does:
+
+		- The first three at `texture0` to `texture2`.
+		- Each other map with a texture at the sampler `shader.locs[SHADER_LOC_MAP_DIFFUSE + index]` names, or at a sampler set to the
+		  map's index with `SetShaderValue`. raylib's skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`.
+
+		Binds a cubemap (`LoadTextureCubemap`) to a `samplerCube` for `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` and
+		`MATERIAL_MAP_PREFILTER`, and a 2D texture to a `sampler2D` for the rest. A texture of the other kind binds nothing.
 
 		@param mesh  The mesh.
 		@param material  The material.
@@ -4630,11 +5093,17 @@ class Raylib {
 	public static inline function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void
 		RModels.DrawMesh(mesh, material, transform);
 
-	/** Draws a mesh many times in one draw, as raylib 5.5's does: each instance is placed by its own transform, which the material's
-		shader takes as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies itself (raylib's instancing example sets
-		it with `GetShaderLocationAttrib(shader, "instanceTransform")`). `mvp` is the camera's alone, and `matNormal` the identity. A shader
-		without a `mat4` attribute there draws nothing, with a warning. The mesh's attributes and the transforms are a buffer each, eight
-		at most, so a shader reading every one of raylib's attributes besides the transforms can't be drawn.
+	/** Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does.
+
+		The material's shader takes each transform as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies it itself.
+		raylib's instancing example sets that location with `GetShaderLocationAttrib(shader, "instanceTransform")`.
+
+		Draws nothing, with a warning, when the shader has no `mat4` attribute there.
+
+		Sets `mvp` to the camera's alone and `matNormal` to the identity.
+
+		Sends the mesh's attributes and the transforms as a buffer each, eight at most. A shader reading every one of raylib's attributes
+		besides the transforms can't be drawn.
 
 		@param mesh  The mesh.
 		@param material  Its material: the shader, the diffuse color and the textures.
@@ -4643,22 +5112,29 @@ class Raylib {
 	public static inline function DrawMeshInstanced(mesh:Mesh, material:Material, transforms:Array<Matrix>, instances:Int):Void
 		RModels.DrawMeshInstanced(mesh, material, transforms, instances);
 
-	/** Sends a mesh's vertices to the GPU, so it can be drawn. A mesh not sent goes when it is first drawn, as `LoadModelAsync`'s and the
-		`GenMesh*` functions' do.
+	/** Sends a mesh's vertices to the GPU, so the mesh can be drawn.
 
-		An attribute the mesh has no array for reads a default in a shader: texture coordinates 0, 0, normals 0, 0, 1, colors white,
-		tangents 1, 0, 0, 1, second texture coordinates, bone ids and bone weights 0.
+		A mesh not sent this way is sent when first drawn, as `LoadModelAsync`'s meshes and the `GenMesh*` meshes are.
+
+		An attribute the mesh has no array for reads a default in a shader:
+
+		- Texture coordinates 0, 0.
+		- Normals 0, 0, 1.
+		- Colors white.
+		- Tangents 1, 0, 0, 1.
+		- Second texture coordinates, bone ids and bone weights 0.
 
 		@param mesh  The mesh.
-		@param isDynamic  Whether it will change (raylib names it `dynamic`, a Haxe keyword); any mesh here can be changed by
-			`UpdateMeshBuffer`, so it is ignored. */
+		@param isDynamic  Whether the mesh will change. Ignored, as `UpdateMeshBuffer` can change any mesh here. raylib names it
+			`dynamic`, a Haxe keyword. */
 	public static inline function UploadMesh(mesh:Mesh, isDynamic:Bool):Void
 		RModels.UploadMesh(mesh, isDynamic);
 
-	/** Changes part of one of a mesh's buffers on the GPU, as raylib's: the mesh's own arrays stay as they were. Draws asked for before
-		it keep what was there; those after see the change.
+	/** Changes part of one of a mesh's buffers on the GPU, leaving the mesh's own arrays unchanged, as raylib's does.
 
-		@param mesh  The mesh, uploaded (`UploadMesh`, or drawn once); one that isn't changes nothing.
+		Draws asked for before the call keep the old values, and those after see the change.
+
+		@param mesh  The mesh, uploaded by `UploadMesh` or drawn once. One that isn't changes nothing.
 		@param index  The buffer: 0 positions, 1 texture coordinates, 2 normals, 3 colors, 4 tangents, 5 second texture coordinates,
 			6 indices. One the mesh has no array for changes nothing.
 		@param data  The new values: raylib's bytes (`haxe.io.Bytes`: 32-bit floats, colors a byte each, indices 16-bit), or an array of
@@ -4668,23 +5144,25 @@ class Raylib {
 	public static inline function UpdateMeshBuffer(mesh:Mesh, index:Int, data:Dynamic, dataSize:Int, offset:Int):Void
 		RModels.UpdateMeshBuffer(mesh, index, data, dataSize, offset);
 
-	/** Lets go of the program's hold on a mesh, freeing its GPU buffers unless a model still holds it (docs/DECISIONS.md 25). A mesh given
-		to `LoadModelFromMesh`, or already freed, is left: the model frees it.
+	/** Lets go of the program's hold on a mesh, freeing its GPU buffers unless a model still holds it.
+
+		Does nothing for a mesh given to `LoadModelFromMesh`, which its model frees, or for one already freed.
 
 		@param mesh  The mesh. */
 	public static inline function UnloadMesh(mesh:Mesh):Void
 		RModels.UnloadMesh(mesh);
 
-	/** Makes a flat regular polygon on the XZ plane, facing up, centered on the origin: a triangle a side, with no indices, its texture
-		coordinates 0.
+	/** Returns a flat regular polygon mesh on the XZ plane, facing up and centered on the origin.
 
-		@param sides  Its sides; fewer than 3 make an empty mesh.
+		Makes a triangle a side, with no indices and texture coordinates 0.
+
+		@param sides  Its sides. Fewer than 3 make an empty mesh.
 		@param radius  Its corners' distance from the center.
 		@return  The mesh. */
 	public static inline function GenMeshPoly(sides:Int, radius:Float):Mesh
 		return RModels.GenMeshPoly(sides, radius);
 
-	/** Makes a flat mesh on the XZ plane, facing up, centered on the origin: a grid of vertices shared by its cells' triangles.
+	/** Returns a flat mesh on the XZ plane, facing up and centered on the origin, a grid of vertices shared by its cells' triangles.
 
 		@param width  Along x.
 		@param length  Along z.
@@ -4694,7 +5172,7 @@ class Raylib {
 	public static inline function GenMeshPlane(width:Float, length:Float, resX:Int, resZ:Int):Mesh
 		return RModels.GenMeshPlane(width, length, resX, resZ);
 
-	/** Makes a box mesh, centered on the origin: four vertices a face, each face's texture its whole.
+	/** Returns a box mesh centered on the origin, four vertices a face, each face textured by the whole texture.
 
 		@param width  Along x.
 		@param height  Along y.
@@ -4703,64 +5181,79 @@ class Raylib {
 	public static inline function GenMeshCube(width:Float, height:Float, length:Float):Mesh
 		return RModels.GenMeshCube(width, height, length);
 
-	/** Makes a sphere mesh, centered on the origin, its poles on z, three vertices a triangle with no indices, as raylib's (par_shapes').
+	/** Returns a sphere mesh centered on the origin with its poles on z, as raylib's (par_shapes') does.
+
+		Makes three vertices a triangle, with no indices.
 
 		@param radius  Its radius.
 		@param rings  Rings pole to pole, at least 3.
 		@param slices  Slices around, at least 3.
-		@return  The mesh; empty for fewer rings or slices. */
+		@return  The mesh, empty for fewer rings or slices. */
 	public static inline function GenMeshSphere(radius:Float, rings:Int, slices:Int):Mesh
 		return RModels.GenMeshSphere(radius, rings, slices);
 
-	/** Makes half a sphere, open at its base, on the side of +y from the origin, three vertices a triangle with no indices.
+	/** Returns a half sphere mesh, open at its base, on the +y side of the origin.
 
-		@param radius  Its radius; a negative one is 0.
+		Makes three vertices a triangle, with no indices.
+
+		@param radius  Its radius. A negative one is 0.
 		@param rings  Rings from the pole, at least 3.
 		@param slices  Slices around, at least 3.
-		@return  The mesh; empty for fewer rings or slices. */
+		@return  The mesh, empty for fewer rings or slices. */
 	public static inline function GenMeshHemiSphere(radius:Float, rings:Int, slices:Int):Mesh
 		return RModels.GenMeshHemiSphere(radius, rings, slices);
 
-	/** Makes a closed cylinder standing on the XZ plane from the origin, three vertices a triangle with no indices.
+	/** Returns a closed cylinder mesh standing on the XZ plane at the origin.
+
+		Makes three vertices a triangle, with no indices.
 
 		@param radius  Its radius.
 		@param height  Its height.
 		@param slices  Slices around, at least 3.
-		@return  The mesh; empty for fewer slices. */
+		@return  The mesh, empty for fewer slices. */
 	public static inline function GenMeshCylinder(radius:Float, height:Float, slices:Int):Mesh
 		return RModels.GenMeshCylinder(radius, height, slices);
 
-	/** Makes a closed cone standing on the XZ plane from the origin, three vertices a triangle with no indices.
+	/** Returns a closed cone mesh standing on the XZ plane at the origin.
+
+		Makes three vertices a triangle, with no indices.
 
 		@param radius  Its base's radius.
 		@param height  Its height.
 		@param slices  Slices around, at least 3.
-		@return  The mesh; empty for fewer slices. */
+		@return  The mesh, empty for fewer slices. */
 	public static inline function GenMeshCone(radius:Float, height:Float, slices:Int):Mesh
 		return RModels.GenMeshCone(radius, height, slices);
 
-	/** Makes a torus on the XY plane, centered on the origin, three vertices a triangle with no indices.
+	/** Returns a torus mesh on the XY plane, centered on the origin.
 
-		@param radius  The tube's radius against the ring's, 0.1 to 1 (others are clamped to it).
+		Makes three vertices a triangle, with no indices.
+
+		@param radius  The tube's radius against the ring's, clamped to 0.1 to 1.
 		@param size  The torus's width, out to the ring's middle on each side.
 		@param radSeg  Slices around the ring, at least 3.
 		@param sides  Slices around the tube, at least 3.
-		@return  The mesh; empty for fewer slices. */
+		@return  The mesh, empty for fewer slices. */
 	public static inline function GenMeshTorus(radius:Float, size:Float, radSeg:Int, sides:Int):Mesh
 		return RModels.GenMeshTorus(radius, size, radSeg, sides);
 
-	/** Makes a trefoil knot, centered on the origin, three vertices a triangle with no indices.
+	/** Returns a trefoil knot mesh centered on the origin.
 
-		@param radius  The tube's radius, in tenths, 0.5 to 3 (others are clamped to it).
+		Makes three vertices a triangle, with no indices.
+
+		@param radius  The tube's radius in tenths, clamped to 0.5 to 3.
 		@param size  The knot's scale.
 		@param radSeg  Slices along the knot, at least 3.
 		@param sides  Slices around the tube, at least 3.
-		@return  The mesh; empty for fewer slices. */
+		@return  The mesh, empty for fewer slices. */
 	public static inline function GenMeshKnot(radius:Float, size:Float, radSeg:Int, sides:Int):Mesh
 		return RModels.GenMeshKnot(radius, size, radSeg, sides);
 
-	/** Makes terrain from an image: a vertex a pixel, from the origin along +x and +z, each the height of its pixel's gray (red, green and
-		blue averaged), two triangles a cell with a flat normal each, three vertices a triangle with no indices.
+	/** Returns a terrain mesh from an image, a vertex a pixel from the origin along +x and +z, each the height of its pixel's gray.
+
+		Takes a pixel's gray as its red, green and blue averaged.
+
+		Makes two triangles a cell, each with a flat normal, and three vertices a triangle, with no indices.
 
 		@param heightmap  The image.
 		@param size  The terrain's size: x and z across the image, y the height of white.
@@ -4768,10 +5261,20 @@ class Raylib {
 	public static inline function GenMeshHeightmap(heightmap:Image, size:Vector3):Mesh
 		return RModels.GenMeshHeightmap(heightmap, size);
 
-	/** Makes a maze of cubes from an image, a cube a pixel centered on it from the origin: a white pixel a wall, its faces where its
-		neighbors are black or the map ends, and its top and bottom; a black pixel a floor and a ceiling, facing in. The texture is split in
-		four: walls from its top left (right, front) and top right (left, back), tops from its bottom left and bottoms from its bottom right.
-		Three vertices a triangle, with no indices.
+	/** Returns a maze mesh of cubes from an image, a cube a pixel, each centered on its pixel's place from the origin.
+
+		Makes a white pixel a wall, with faces where its neighbors are black or the map ends, and a top and a bottom.
+
+		Makes a black pixel a floor and a ceiling, facing in.
+
+		Splits the texture in four:
+
+		- Walls' right and front faces from its top left.
+		- Walls' left and back faces from its top right.
+		- Tops from its bottom left.
+		- Bottoms from its bottom right.
+
+		Makes three vertices a triangle, with no indices.
 
 		@param cubicmap  The image.
 		@param cubeSize  A cube's size: x along the image's width, z along its height, y the walls' height.
@@ -4779,23 +5282,32 @@ class Raylib {
 	public static inline function GenMeshCubicmap(cubicmap:Image, cubeSize:Vector3):Mesh
 		return RModels.GenMeshCubicmap(cubicmap, cubeSize);
 
-	/** Computes a mesh's tangents from its positions, texture coordinates and normals: each triangle's direction of u, by its indices
-		when it has them, summed at each of its vertices, made square to the vertex's normal and of length 1, w the side the summed
-		direction of v is on.
+	/** Computes a mesh's tangents from its positions, texture coordinates and normals.
 
-		A vertex whose tangent comes out of length near 0, or along its normal, takes one square to the normal: x when the normal is
-		mostly z, else (-y, x, 0) of the normal, w 1.
+		Sums each triangle's direction of u at each of its vertices, by its indices when the mesh has them. Then makes each sum square to
+		the vertex's normal and of length 1, with w the side the summed direction of v is on.
 
-		@param mesh  The mesh; one without positions, texture coordinates or normals is unchanged. */
+		Gives a vertex whose tangent comes out near length 0, or along its normal, a tangent square to the normal: x when the normal is
+		mostly z, else (-y, x, 0) of the normal, with w 1.
+
+		@param mesh  The mesh. One without positions, texture coordinates or normals is unchanged. */
 	public static inline function GenMeshTangents(mesh:Mesh):Void
 		RModels.GenMeshTangents(mesh);
 
-	/** Poses a model's bones by a frame of an animation, as raylib 6.2's: the frame's whole part and the next mixed by its fraction (a
-		5.5 program's whole frames work as they did), each wrapped to the animation's frames; each bone's matrix then its bind pose's
-		inverse and the pose, in each mesh's `boneMatrices`. Its vertices don't move: a shader of the program's own that reads the bones
-		(raylib's `skinning.vs`'s `boneMatrices`, or `<helix/raylib/shaders/skinning.glsl>`) draws the pose, and under raylib's default
-		shader, the lit and PBR ones or a shader without them the mesh stays as it was, as raylib's does; `UpdateModelAnimation` poses
-		it under any. Nothing for a model without bones or an animation without frames.
+	/** Poses a model's bones by a frame of an animation, as raylib 6.2's does, leaving its vertices where they are. See
+		`UpdateModelAnimation` for posing the meshes under any shader.
+
+		Mixes the frame's whole part and the next by its fraction, each wrapped to the animation's frames. A whole frame poses that frame,
+		as in raylib 5.5.
+
+		Writes each bone's matrix, its bind pose's inverse then the pose, to each mesh's `boneMatrices`.
+
+		A shader of the program's own that reads the bones draws the pose. Such a shader reads raylib's `skinning.vs`'s `boneMatrices`, or
+		includes `<helix/raylib/shaders/skinning.glsl>`.
+
+		Under raylib's default shader, the lit and PBR ones, or a shader without the bones, the mesh draws unposed, as raylib's does.
+
+		Does nothing for a model without bones or an animation without frames.
 
 		@param model  The model.
 		@param anim  The animation, of the model's skeleton (`IsModelAnimationValid`).
@@ -4803,21 +5315,33 @@ class Raylib {
 	public static inline function UpdateModelAnimationBones(model:Model, anim:ModelAnimation, frame:Float):Void
 		RModels.UpdateModelAnimationBones(model, anim, frame);
 
-	/** Poses a model by a frame of an animation, as raylib 6.2's: its bones as `UpdateModelAnimationBones` poses them, and each skinned
-		mesh drawn in that pose until the next call. Draws asked for before keep the pose they were asked with, so one model can be posed
-		and drawn many times in a frame.
+	/** Poses a model by a frame of an animation, as raylib 6.2's does, each skinned mesh drawing in that pose until the next call.
 
-		How a mesh is moved depends on its material's shader. Under raylib's default shader it is moved on the GPU, by a skinned version
-		of that shader. Under a shader of the program's own that declares the bone inputs, as raylib's `skinning.vs` does
-		(`vertexBoneIds`, `vertexBoneWeights` and `uniform mat4 boneMatrices[N]`), or that includes `<helix/raylib/shaders/skinning.glsl>`,
-		it is moved on the GPU by that shader. Under a shader of the program's own without them it is moved on the CPU, every vertex each
-		call, which is slow for many vertices or many models: an animated model under a lighting shader of the program's own draws fastest
-		when that shader declares `skinning.vs`'s inputs or includes `skinning.glsl`. The include declares the bone inputs, the frame's
-		bone palette, `mat4 helixSkin()`, the vertex's skin matrix, and `vec3 helixSkinNormal(vec3 normal)`, a normal moved as raylib moves
-		one: `gl_Position = mvp*helixSkin()*vec4(vertexPosition, 1.0);`.
+		Poses the bones as `UpdateModelAnimationBones` does.
 
-		`animVertices` and `animNormals` hold the moved positions and normals (each normal by its bones' matrices inverted and transposed,
-		not normalized), worked out on the CPU when first read; a mesh whose shader moves it itself is left as raylib leaves it.
+		Draws asked for before the call keep the pose they were asked with, so one model can be posed and drawn many times in a frame.
+
+		Moves a mesh by its material's shader:
+
+		- Under raylib's default shader, on the GPU by a skinned version of that shader.
+		- Under a shader of the program's own that declares the bone inputs as raylib's `skinning.vs` does (`vertexBoneIds`,
+		  `vertexBoneWeights` and `uniform mat4 boneMatrices[N]`), or includes `<helix/raylib/shaders/skinning.glsl>`, on the GPU by
+		  that shader.
+		- Under a shader of the program's own without them, on the CPU, every vertex each call.
+
+		Moving on the CPU is slow for many vertices or many models. A lighting shader of the program's own draws an animated model fastest
+		when it declares `skinning.vs`'s inputs or includes `skinning.glsl`.
+
+		`skinning.glsl` declares:
+
+		- The bone inputs and the frame's bone palette.
+		- `mat4 helixSkin()`, the vertex's skin matrix, as in `gl_Position = mvp*helixSkin()*vec4(vertexPosition, 1.0);`.
+		- `vec3 helixSkinNormal(vec3 normal)`, a normal moved as raylib moves one.
+
+		`animVertices` and `animNormals` hold the moved positions and normals, worked out on the CPU when first read. Each normal is moved
+		by its bones' matrices inverted and transposed, not normalized.
+
+		Leaves a mesh whose shader moves it as raylib leaves it.
 
 		@param model  The model.
 		@param anim  The animation, of the model's skeleton.
@@ -4825,9 +5349,16 @@ class Raylib {
 	public static inline function UpdateModelAnimation(model:Model, anim:ModelAnimation, frame:Float):Void
 		RModels.UpdateModelAnimation(model, anim, frame);
 
-	/** Poses a model by two animations mixed, raylib 6.2's own: each at its frame as `UpdateModelAnimation` takes one, then the two mixed
-		by the blend, the bones and the vertices as it moves them, on the GPU or the CPU as `UpdateModelAnimation` says. Note that, as raylib's, a frame is wrapped to its animation's frames
-		before its fraction is taken, so past the last frame it holds the frame it wrapped to. Nothing for a blend outside 0 to 1.
+	/** Poses a model by two animations mixed by a blend, raylib 6.2's own call.
+
+		Takes each animation at its frame as `UpdateModelAnimation` takes one, then mixes the two by the blend.
+
+		Moves the bones and the vertices on the GPU or the CPU as `UpdateModelAnimation` does.
+
+		Wraps a frame to its animation's frames before taking its fraction, as raylib's does, so a frame past the last holds the frame it
+		wrapped to.
+
+		Does nothing for a blend outside 0 to 1.
 
 		@param model  The model.
 		@param animA  The first animation.
@@ -4838,7 +5369,7 @@ class Raylib {
 	public static inline function UpdateModelAnimationEx(model:Model, animA:ModelAnimation, frameA:Float, animB:ModelAnimation, frameB:Float, blend:Float):Void
 		RModels.UpdateModelAnimationEx(model, animA, frameA, animB, frameB, blend);
 
-	/** Frees an animation's frames: its poses and bones are let go, its counts 0.
+	/** Frees an animation's frames, letting go of its poses and bones and setting its counts to 0.
 
 		@param anim  The animation. */
 	public static inline function UnloadModelAnimation(anim:ModelAnimation):Void
@@ -4851,7 +5382,7 @@ class Raylib {
 	public static inline function UnloadModelAnimations(animations:Array<ModelAnimation>, animCount:Int):Void
 		RModels.UnloadModelAnimations(animations, animCount);
 
-	/** Returns whether an animation moves a model's skeleton, as raylib 6.2 checks it: whether they have as many bones.
+	/** Returns whether an animation moves a model's skeleton, by whether they have as many bones, as raylib 6.2 checks.
 
 		@param model  The model.
 		@param anim  The animation.
@@ -4859,24 +5390,37 @@ class Raylib {
 	public static inline function IsModelAnimationValid(model:Model, anim:ModelAnimation):Bool
 		return RModels.IsModelAnimationValid(model, anim);
 
-	/** Returns raylib's default material: the default shader, the diffuse map raylib's default texture (a 1x1 white pixel), the diffuse
-		and specular colors white, and the other maps empty. The program holds it until `UnloadMaterial`; a model it is put in holds it too.
+	/** Returns raylib's default material, which the program holds until `UnloadMaterial`.
+
+		The material has:
+
+		- The default shader.
+		- A diffuse map of raylib's default texture, a 1x1 white pixel.
+		- White diffuse and specular colors.
+		- Empty other maps.
+
+		A model the material is put in holds it too.
 
 		@return  The material. */
 	public static inline function LoadMaterialDefault():Material
 		return RModels.LoadMaterialDefault();
 
-	/** Returns whether a material can draw: whether it has maps and a shader.
+	/** Returns whether a material has maps and a shader, so it can draw.
 
 		@param material  The material.
 		@return  True when its maps aren't null and its shader's id is above 0. */
 	public static inline function IsMaterialValid(material:Material):Bool
 		return RModels.IsMaterialValid(material);
 
-	/** Lets go of a material (docs/DECISIONS.md 25): the program's hold from `LoadMaterialDefault`, or, for a model's material, the
-		model's. When no one else holds it, its shader is unloaded unless it is the default one, and its maps let go of their textures:
-		each texture is freed when nothing else holds it (a texture the program still holds, or another load of a file shares, stays).
-		Releasing it again does nothing.
+	/** Lets go of a material, freeing what nothing else holds.
+
+		Releases the program's hold from `LoadMaterialDefault`, or for a model's material the model's.
+
+		Once nothing else holds the material, unloads its shader unless it is the default one, and releases its maps' textures.
+
+		Frees each texture once nothing else holds it. Leaves a texture the program still holds, or one another load of its file shares.
+
+		Releasing the material again does nothing.
 
 		@param material  The material. */
 	public static inline function UnloadMaterial(material:Material):Void
@@ -4898,15 +5442,19 @@ class Raylib {
 	public static inline function SetModelMeshMaterial(model:Model, meshId:Int, materialId:Int):Void
 		RModels.SetModelMeshMaterial(model, meshId, materialId);
 
-	/** Returns a mesh's bounds: the least and the most of its positions; 0 for a mesh without them.
+	/** Returns a mesh's bounds, the least and the most of its positions.
+
+		Returns a box of zeros for a mesh without positions.
 
 		@param mesh  The mesh.
 		@return  The box. */
 	public static inline function GetMeshBoundingBox(mesh:Mesh):BoundingBox
 		return RModels.GetMeshBoundingBox(mesh);
 
-	/** Returns a model's bounds: its meshes' together, its least and most corners then moved by its transform, as raylib's (a turned
-		model's box is not its bounds; transform its eight corners for those).
+	/** Returns a model's bounds, its meshes' boxes together with the least and most corners moved by its transform, as raylib's
+		does.
+
+		A turned model's box is not its bounds. Transforming its eight corners gives those.
 
 		@param model  The model.
 		@return  The box. */
@@ -4940,10 +5488,13 @@ class Raylib {
 	public static inline function CheckCollisionBoxSphere(box:BoundingBox, center:Vector3, radius:Float):Bool
 		return RModels.CheckCollisionBoxSphere(box, center, radius);
 
-	/** Returns where a ray meets a sphere: the near side from outside, the far side from inside (its normal then pointing in).
+	/** Returns where a ray meets a sphere, the near side from outside and the far side from inside.
 
-		A sphere wholly behind the ray is missed. On a miss the point, normal and distance are 0. The ray's direction should be of
-		length 1.
+		From inside, the hit's normal points in.
+
+		Misses a sphere wholly behind the ray. On a miss the point, normal and distance are 0.
+
+		Expects the ray's direction to be of length 1.
 
 		@param ray  The ray.
 		@param center  The sphere's center.
@@ -4952,8 +5503,11 @@ class Raylib {
 	public static inline function GetRayCollisionSphere(ray:Ray, center:Vector3, radius:Float):RayCollision
 		return RModels.GetRayCollisionSphere(ray, center, radius);
 
-	/** Returns where a ray meets a box, as raylib's: from inside, the way out, its distance negative and its normal pointing in; its point,
-		distance and normal are set even when it misses.
+	/** Returns where a ray meets a box, as raylib's does.
+
+		From inside the box, returns the way out, its distance negative and its normal pointing in.
+
+		Sets the hit's point, distance and normal even on a miss.
 
 		@param ray  The ray.
 		@param box  The box.
@@ -4961,7 +5515,7 @@ class Raylib {
 	public static inline function GetRayCollisionBox(ray:Ray, box:BoundingBox):RayCollision
 		return RModels.GetRayCollisionBox(ray, box);
 
-	/** Returns where a ray first meets a mesh moved by a transform: the nearest of its triangles it meets.
+	/** Returns where a ray first meets a mesh moved by a transform, at the nearest of the mesh's triangles.
 
 		@param ray  The ray.
 		@param mesh  The mesh, with its positions.
@@ -4970,8 +5524,9 @@ class Raylib {
 	public static inline function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision
 		return RModels.GetRayCollisionMesh(ray, mesh, transform);
 
-	/** Returns where a ray meets a triangle from either side (Möller and Trumbore's test, as raylib's), its normal that of the corners
-		taken counterclockwise.
+	/** Returns where a ray meets a triangle from either side, its normal that of the corners taken counterclockwise.
+
+		Uses Möller and Trumbore's test, as raylib's does.
 
 		@param ray  The ray.
 		@param p1  A corner.
@@ -4994,11 +5549,17 @@ class Raylib {
 
 	// ---- raudio: sound (raylib/RAudio.hx) ----
 
-	/** Opens the audio output, with helix-services' `Audio` over it. In a page it plays once a first key press, click or tap lets it. */
+	/** Opens the audio output, with helix-services' `Audio` over it.
+
+		In a page, no sound plays until a first key press, click or tap.
+
+		Does nothing when the output is already open. */
 	public static inline function InitAudioDevice():Void
 		RAudio.InitAudioDevice();
 
-	/** Closes the audio output, stopping and unloading every sound. */
+	/** Closes the audio output, stopping and unloading every sound.
+
+		Does nothing when the output isn't open. */
 	public static inline function CloseAudioDevice():Void
 		RAudio.CloseAudioDevice();
 
@@ -5010,13 +5571,15 @@ class Raylib {
 
 	/** Sets the volume of every sound.
 
+		Ignored before `InitAudioDevice`.
+
 		@param volume  0 (silent) to 1. */
 	public static inline function SetMasterVolume(volume:Float):Void
 		RAudio.SetMasterVolume(volume);
 
 	/** Returns the volume of every sound.
 
-		@return  0 (silent) to 1. */
+		@return  0 (silent) to 1, or 1 before `InitAudioDevice`. */
 	public static inline function GetMasterVolume():Float
 		return RAudio.GetMasterVolume();
 
@@ -5027,21 +5590,22 @@ class Raylib {
 	public static inline function IsWaveValid(wave:Wave):Bool
 		return RAudio.IsWaveValid(wave);
 
-	/** Frees a wave's samples: its data is null after.
+	/** Frees a wave's samples, leaving its `data` null.
 
 		@param wave  The wave. */
 	public static inline function UnloadWave(wave:Wave):Void
 		RAudio.UnloadWave(wave);
 
-	/** Returns a copy of a wave, its samples its own.
+	/** Returns a copy of a wave, with samples of its own.
 
 		@param wave  The wave.
 		@return  The copy. */
 	public static inline function WaveCopy(wave:Wave):Wave
 		return RAudio.WaveCopy(wave);
 
-	/** Crops a wave to a range of its frames, as raylib's: from `initFrame` up to `finalFrame`, not including it. A range outside the
-		wave, or empty, changes nothing and warns.
+	/** Crops a wave to a range of its frames, from `initFrame` up to `finalFrame`, not including it.
+
+		A range outside the wave, or an empty one, changes nothing and logs a warning.
 
 		@param wave  The wave, changed in place.
 		@param initFrame  The first frame kept.
@@ -5049,9 +5613,15 @@ class Raylib {
 	public static inline function WaveCrop(wave:Wave, initFrame:Int, finalFrame:Int):Void
 		RAudio.WaveCrop(wave, initFrame, finalFrame);
 
-	/** Converts a wave's samples to another rate, sample size and channels, as raylib's does through miniaudio: integers to floats and
-		back without dithering, channels mixed by miniaudio's standard speaker layouts, and the rate changed by its linear resampler,
-		low-pass filtered. A wave it can't convert is unchanged, with a warning.
+	/** Converts a wave's samples to another rate, sample size and channel count, as raylib's does through miniaudio.
+
+		The conversion:
+
+		- turns integers to floats and back without dithering.
+		- mixes channels by miniaudio's standard speaker layouts.
+		- changes the rate by miniaudio's linear resampler, low-pass filtered.
+
+		A wave that can't be converted is unchanged, and a warning is logged.
 
 		@param wave  The wave, changed in place.
 		@param sampleRate  The frames a second.
@@ -5060,58 +5630,80 @@ class Raylib {
 	public static inline function WaveFormat(wave:Wave, sampleRate:Int, sampleSize:Int, channels:Int):Void
 		RAudio.WaveFormat(wave, sampleRate, sampleSize, channels);
 
-	/** Returns a wave's samples as numbers from -1 to 1, as raylib's: 8-bit ones less 128 over 128, 16-bit ones over 32768, 32-bit ones
-		as they are; other sizes give 0.
+	/** Returns a wave's samples as numbers from -1 to 1, as raylib's does.
+
+		Each sample size maps as:
+
+		- 8-bit: less 128, over 128.
+		- 16-bit: over 32768.
+		- 32-bit: unchanged.
+		- any other size: 0.
 
 		@param wave  The wave.
 		@return  `frameCount * channels` samples, interleaved. */
 	public static inline function LoadWaveSamples(wave:Wave):Array<Float>
 		return RAudio.LoadWaveSamples(wave);
 
-	/** Frees samples `LoadWaveSamples` gave. There is nothing to free here.
+	/** Frees samples `LoadWaveSamples` returned.
+
+		Does nothing, as there is nothing to free.
 
 		@param samples  The samples. */
 	public static inline function UnloadWaveSamples(samples:Array<Float>):Void
 		RAudio.UnloadWaveSamples(samples);
 
-	/** Makes a sound from a wave, to play at once: its samples converted to 32-bit floats at 44100 Hz, as raylib converts them to the
-		output's format, its channels kept when 1 or 2 and more mixed to 2 (raylib makes every sound stereo). `InitAudioDevice` comes first.
+	/** Returns a sound made from a wave, ready to play at once.
 
-		@param wave  The wave; it is unchanged, and may be unloaded after.
+		`InitAudioDevice` must come first.
+
+		The samples are converted to 32-bit floats at 44100 Hz. A wave with 1 or 2 channels keeps them, and one with more is mixed to 2.
+
+		@param wave  The wave. It is unchanged, and may be unloaded after.
 		@return  The sound, or one that isn't valid (`IsSoundValid`) when the wave has no samples or can't be converted. */
 	public static inline function LoadSoundFromWave(wave:Wave):Sound
 		return RAudio.LoadSoundFromWave(wave);
 
-	/** Makes a sound that plays another's samples with its own volume, pitch, pan and voice, as raylib's alias does. It needs none of
-		its own memory; once its source is unloaded, it plays nothing.
+	/** Returns an alias that plays another sound's samples with its own volume, pitch, pan and voice, as raylib's does.
+
+		Takes no memory for samples of its own.
+
+		Once the source is unloaded, the alias plays nothing.
 
 		@param source  The sound whose samples it plays.
 		@return  The alias, or one that isn't valid when the source isn't loaded. */
 	public static inline function LoadSoundAlias(source:Sound):Sound
 		return RAudio.LoadSoundAlias(source);
 
-	/** Frees a sound, stopping it: one load of its file, the decoded sound with the last; a sound made from a wave, its samples. Its
-		aliases play nothing after. An alias is freed as `UnloadSoundAlias` frees it.
+	/** Frees a sound, stopping it.
+
+		What is freed:
+
+		- a sound loaded from a file: one load of the file, and the decoded sound with the last load.
+		- a sound made from a wave: its samples.
+		- an alias: as `UnloadSoundAlias` frees it.
+
+		The sound's aliases play nothing after.
 
 		@param sound  The sound. */
 	public static inline function UnloadSound(sound:Sound):Void
 		RAudio.UnloadSound(sound);
 
-	/** Frees an alias, stopping it; its source's samples are kept.
+	/** Frees an alias, stopping it, and keeps its source's samples.
 
 		@param alias  The alias. */
 	public static inline function UnloadSoundAlias(alias:Sound):Void
 		RAudio.UnloadSoundAlias(alias);
 
-	/** Returns whether a sound was loaded.
+	/** Returns whether a sound is loaded.
 
 		@param sound  The sound.
 		@return  True once it is decoded or made, until it is unloaded. */
 	public static inline function IsSoundValid(sound:Sound):Bool
 		return RAudio.IsSoundValid(sound);
 
-	/** Writes new samples over the start of a sound, stopping it, as raylib's does; its length is unchanged. Its aliases play the new
-		samples.
+	/** Writes new samples over the start of a sound and stops it, as raylib's does.
+
+		The sound's length is unchanged. Its aliases play the new samples.
 
 		@param sound  The sound, or one of its aliases.
 		@param data  32-bit float samples at 44100 Hz in the sound's channels (a wave's channels, when 1 or 2), interleaved.
@@ -5121,6 +5713,10 @@ class Raylib {
 		RAudio.UpdateSound(sound, data, sampleCount);
 
 	/** Plays a sound from its start, restarting it when it is already playing.
+
+		A sound still decoding starts once decoded, once for each play asked for meanwhile.
+
+		Ignored before `InitAudioDevice`, and once the sound is unloaded.
 
 		@param sound  The sound. */
 	public static inline function PlaySound(sound:Sound):Void
@@ -5147,50 +5743,56 @@ class Raylib {
 	/** Returns whether a sound is playing.
 
 		@param sound  The sound.
-		@return  True while it plays; false while it is paused, as raylib's. */
+		@return  True while it plays. False while it is paused, as raylib's is. */
 	public static inline function IsSoundPlaying(sound:Sound):Bool
 		return RAudio.IsSoundPlaying(sound);
 
-	/** Sets a sound's volume, for its next play and the one playing.
+	/** Sets a sound's volume, for the play under way and the next.
 
 		@param sound  The sound.
 		@param volume  0 (silent) to 1. */
 	public static inline function SetSoundVolume(sound:Sound, volume:Float):Void
 		RAudio.SetSoundVolume(sound, volume);
 
-	/** Sets a sound's pitch, for its next play and the one playing: the pitch given, whatever was set before, so 1 sets it back to as
-		recorded. It speeds or slows the sound with it, and is clamped to 0.25 to 4, the platform's range.
+	/** Sets a sound's pitch, for the play under way and the next, speeding or slowing the sound with it.
+
+		The pitch is absolute, whatever was set before, so 1 sets the sound back to as recorded.
+
+		Clamped to 0.25 to 4, the platform's range.
 
 		@param sound  The sound.
 		@param pitch  1 for as recorded, 2 an octave up. */
 	public static inline function SetSoundPitch(sound:Sound, pitch:Float):Void
 		RAudio.SetSoundPitch(sound, pitch);
 
-	/** Sets where a sound is heard, for its next play and the one playing.
+	/** Sets where a sound is heard, for the play under way and the next.
 
-		The range is raylib 5.5's, 0 to 1 with 0.5 the middle, and 1 is the right, as later releases' +1 is; raylib 5.5's own mixer put 1
-		on the left.
+		The range is raylib 5.5's, 0 to 1 with 0.5 the middle and 1 the right.
 
 		@param sound  The sound.
 		@param pan  0 for left, 0.5 the middle, 1 for right. */
 	public static inline function SetSoundPan(sound:Sound, pan:Float):Void
 		RAudio.SetSoundPan(sound, pan);
 
-	/** Opens music from a file's bytes, to be played as it is read, as `LoadMusicStreamAsync` plays a file: in a page from a Blob's URL, natively
-		from a copy written to the program's cache directory, deleted when the music is unloaded. `InitAudioDevice` comes first.
+	/** Returns music opened from a file's bytes, to be played as it is read.
 
-		@param fileType  The file's extension, such as ".ogg": Ogg Vorbis, MP3 or WAV. FLAC (".flac" or ".FLAC") isn't opened, as raylib
-			5.5's default build leaves it out ("STREAM: Data format not supported"): the music is invalid.
+		`InitAudioDevice` must come first.
+
+		In a page the bytes are read from a Blob's URL. Natively they are read from a copy written to the program's cache directory, deleted when the music is unloaded.
+
+		A FLAC file (".flac" or ".FLAC") is refused, as raylib 5.5's default build leaves FLAC out. The music is invalid, and "STREAM: Data format not supported" is logged.
+
+		@param fileType  The file's extension, such as ".ogg": Ogg Vorbis, MP3 or WAV.
 		@param data  The file's bytes; they are kept until the music is unloaded.
 		@param dataSize  How many of them.
 		@return  The music. */
 	public static inline function LoadMusicStreamFromMemory(fileType:String, data:haxe.io.Bytes, dataSize:Int):Music
 		return RAudio.LoadMusicStreamFromMemory(fileType, data, dataSize);
 
-	/** Returns whether music was opened, or is still opening.
+	/** Returns whether music is open, or still opening.
 
 		@param music  The music.
-		@return  False once its file couldn't be opened. */
+		@return  False once its file couldn't be opened, or once it is unloaded. */
 	public static inline function IsMusicValid(music:Music):Bool
 		return RAudio.IsMusicValid(music);
 
@@ -5200,7 +5802,9 @@ class Raylib {
 	public static inline function UnloadMusicStream(music:Music):Void
 		RAudio.UnloadMusicStream(music);
 
-	/** Plays music from its start, looping while its `looping` is true; from where `SeekMusicStream` put it, when it was moved before.
+	/** Plays music from its start, or from where `SeekMusicStream` moved it, looping while its `looping` is true.
+
+		Music still opening starts once it opens.
 
 		@param music  The music. */
 	public static inline function PlayMusicStream(music:Music):Void
@@ -5209,12 +5813,13 @@ class Raylib {
 	/** Returns whether music is playing, or will once it opens.
 
 		@param music  The music.
-		@return  True while it plays; false while it is paused, as raylib's. */
+		@return  True while it plays. False while it is paused, as raylib's is. */
 	public static inline function IsMusicStreamPlaying(music:Music):Bool
 		return RAudio.IsMusicStreamPlaying(music);
 
-	/** Keeps music playing. raylib's programs call it each frame; here the stream feeds itself, so it does nothing. Music that doesn't
-		loop is heard to its last sample, and stops then.
+	/** Does nothing, as the stream feeds itself.
+
+		Music that doesn't loop is heard to its last sample, and stops then.
 
 		@param music  The music. */
 	public static inline function UpdateMusicStream(music:Music):Void
@@ -5238,11 +5843,14 @@ class Raylib {
 	public static inline function ResumeMusicStream(music:Music):Void
 		RAudio.ResumeMusicStream(music);
 
-	/** Moves music to a position. Music not playing starts there when next played. In a page, a server's file moves only within what
-		its server lets the media element ask for (range requests).
+	/** Moves music to a position.
+
+		Music not playing starts there when next played.
+
+		In a page, a server's file moves only as far as its server's range requests reach.
 
 		@param music  The music.
-		@param position  The position, in seconds from its start. */
+		@param position  The position, in seconds from its start, clamped to 0 or more. */
 	public static inline function SeekMusicStream(music:Music, position:Float):Void
 		RAudio.SeekMusicStream(music, position);
 
@@ -5253,38 +5861,45 @@ class Raylib {
 	public static inline function SetMusicVolume(music:Music, volume:Float):Void
 		RAudio.SetMusicVolume(music, volume);
 
-	/** Sets music's pitch: the pitch given, whatever was set before, clamped to 0.25 to 4, as `SetSoundPitch` sets a sound's.
+	/** Sets music's pitch, absolute whatever was set before, as `SetSoundPitch` sets a sound's.
+
+		Clamped to 0.25 to 4.
 
 		@param music  The music.
 		@param pitch  1 for as recorded. */
 	public static inline function SetMusicPitch(music:Music, pitch:Float):Void
 		RAudio.SetMusicPitch(music, pitch);
 
-	/** Sets where music is heard, in `SetSoundPan`'s range: 1 is the right.
+	/** Sets where music is heard, in `SetSoundPan`'s range, with 1 the right.
 
 		@param music  The music.
 		@param pan  0 for left, 0.5 the middle, 1 for right. */
 	public static inline function SetMusicPan(music:Music, pan:Float):Void
 		RAudio.SetMusicPan(music, pan);
 
-	/** Returns music's length (helix-services' `Sound.duration`): known once it opens from a file natively or in a page; a server's file
-		natively once its start and its last 64 KiB have arrived. 0 while it isn't known.
+	/** Returns music's length (helix-services' `Sound.duration`).
+
+		Known once the music opens from a file, natively or in a page. Natively, a server's file's length is known once its start and its last 64 KiB have arrived.
 
 		@param music  The music.
-		@return  The length, in seconds. */
+		@return  The length, in seconds, or 0 while it isn't known. */
 	public static inline function GetMusicTimeLength(music:Music):Float
 		return RAudio.GetMusicTimeLength(music);
 
-	/** Returns how far music has played, back to 0 at each loop, as raylib's. Paused, it holds; stopped, or played to its end without
-		looping, it is 0; played again, it starts from 0.
+	/** Returns how far music has played, back to 0 at each loop, as raylib's does.
+
+		Holds while paused. Is 0 once stopped, or once played to its end without looping, and starts from 0 when played again.
 
 		@param music  The music.
 		@return  The position, in seconds from its start. */
 	public static inline function GetMusicTimePlayed(music:Music):Float
 		return RAudio.GetMusicTimePlayed(music);
 
-	/** Opens a stream for samples the program makes as it goes, played as they are given (`UpdateAudioStream`) through helix-services'
-		`SampleQueue`, which the platform resamples. `InitAudioDevice` comes first.
+	/** Returns a stream that plays samples the program makes as it goes, each buffer as `UpdateAudioStream` gives it.
+
+		`InitAudioDevice` must come first.
+
+		Played through helix-services' `SampleQueue`, which the platform resamples.
 
 		@param sampleRate  The frames a second, 8000 to 96000.
 		@param sampleSize  The bits a sample takes: 8 (unsigned), 16 (signed) or 32 (float).
@@ -5293,7 +5908,7 @@ class Raylib {
 	public static inline function LoadAudioStream(sampleRate:Int, sampleSize:Int, channels:Int):AudioStream
 		return RAudio.LoadAudioStream(sampleRate, sampleSize, channels);
 
-	/** Returns whether a stream was opened.
+	/** Returns whether a stream is open.
 
 		@param stream  The stream.
 		@return  True when it has its queue, a rate, a sample size and channels. */
@@ -5306,8 +5921,9 @@ class Raylib {
 	public static inline function UnloadAudioStream(stream:AudioStream):Void
 		RAudio.UnloadAudioStream(stream);
 
-	/** Gives a stream its next buffer of samples, as raylib's: once a buffer has been heard (`IsAudioStreamProcessed`), and at most a
-		buffer's frames (`SetAudioStreamBufferSizeDefault`), the rest of the buffer silent. Otherwise nothing is taken, with a warning.
+	/** Gives a stream its next buffer of samples, as raylib's does, filling the rest of the buffer with silence.
+
+		Taken only once a buffer has been heard (`IsAudioStreamProcessed`), and only up to a buffer's frames (`SetAudioStreamBufferSizeDefault`). Otherwise nothing is taken, and a warning is logged.
 
 		@param stream  The stream.
 		@param data  The samples in the stream's sample size and channels, interleaved.
@@ -5315,15 +5931,16 @@ class Raylib {
 	public static inline function UpdateAudioStream(stream:AudioStream, data:haxe.io.Bytes, frameCount:Int):Void
 		RAudio.UpdateAudioStream(stream, data, frameCount);
 
-	/** Returns whether a stream has room for another buffer: true while it holds no more than one buffer not yet heard, as raylib's double
-		buffer has one free.
+	/** Returns whether a stream has room for another buffer, as raylib's double buffer has one free.
 
 		@param stream  The stream.
-		@return  True when `UpdateAudioStream` would take samples. */
+		@return  True while it holds no more than one buffer not yet heard, when `UpdateAudioStream` would take samples. */
 	public static inline function IsAudioStreamProcessed(stream:AudioStream):Bool
 		return RAudio.IsAudioStreamProcessed(stream);
 
-	/** Plays a stream: what it holds, and what it is given after. A stream with a callback is filled by it at once.
+	/** Plays a stream: what it holds, and what it is given after.
+
+		A stream with a callback (`SetAudioStreamCallback`) is filled by it at once.
 
 		@param stream  The stream. */
 	public static inline function PlayAudioStream(stream:AudioStream):Void
@@ -5344,11 +5961,11 @@ class Raylib {
 	/** Returns whether a stream is playing.
 
 		@param stream  The stream.
-		@return  True while it plays, even when it has run out of samples; false while it is paused, as raylib's. */
+		@return  True while it plays, even when it has run out of samples. False while it is paused, as raylib's is. */
 	public static inline function IsAudioStreamPlaying(stream:AudioStream):Bool
 		return RAudio.IsAudioStreamPlaying(stream);
 
-	/** Stops a stream, dropping the samples it hadn't played.
+	/** Stops a stream, dropping the samples it hasn't played.
 
 		@param stream  The stream. */
 	public static inline function StopAudioStream(stream:AudioStream):Void
@@ -5361,31 +5978,39 @@ class Raylib {
 	public static inline function SetAudioStreamVolume(stream:AudioStream, volume:Float):Void
 		RAudio.SetAudioStreamVolume(stream, volume);
 
-	/** Sets a stream's pitch: the pitch given, whatever was set before, clamped to 0.25 to 4, as `SetSoundPitch` sets a sound's.
+	/** Sets a stream's pitch, absolute whatever was set before, as `SetSoundPitch` sets a sound's.
+
+		Clamped to 0.25 to 4.
 
 		@param stream  The stream.
 		@param pitch  1 for as given. */
 	public static inline function SetAudioStreamPitch(stream:AudioStream, pitch:Float):Void
 		RAudio.SetAudioStreamPitch(stream, pitch);
 
-	/** Sets where a stream is heard, in `SetSoundPan`'s range: 1 is the right.
+	/** Sets where a stream is heard, in `SetSoundPan`'s range, with 1 the right.
 
 		@param stream  The stream.
 		@param pan  0 for left, 0.5 the middle, 1 for right. */
 	public static inline function SetAudioStreamPan(stream:AudioStream, pan:Float):Void
 		RAudio.SetAudioStreamPan(stream, pan);
 
-	/** Sets the frames in each of a stream's two buffers, for the streams opened after; 0 for raylib's default, a 30th of a second at
-		44100 Hz (1470 frames).
+	/** Sets the frames in each of a stream's two buffers, for the streams opened after.
+
+		0 restores raylib's default, a 30th of a second at 44100 Hz (1470 frames).
 
 		@param size  The frames. */
 	public static inline function SetAudioStreamBufferSizeDefault(size:Int):Void
 		RAudio.SetAudioStreamBufferSizeDefault(size);
 
-	/** Has a stream ask the program for its samples: while it plays, the callback is called with a buffer's frames to fill until the
-		stream holds two buffers ahead of what is heard. raylib calls it on its audio thread as the mixer needs frames; a page can't run
-		Haxe there, so here it is called on the main thread as each frame ends (`EndDrawing`'s poll), and once as the stream starts to
-		play. A frame long enough to empty both buffers is heard as a gap.
+	/** Sets the callback a stream asks for its samples, or removes it.
+
+		While the stream plays, the callback is called with a buffer's frames to fill until the stream holds two buffers ahead of what is heard.
+
+		Called on the main thread as each frame ends (`EndDrawing`'s poll), and once as the stream starts to play. raylib calls it on its audio thread.
+
+		A frame long enough to empty both buffers is heard as a gap.
+
+		Ignored for a stream that isn't open.
 
 		@param stream  The stream.
 		@param callback  Receives a buffer to fill, in the stream's sample size and channels, and its frames; null for none. */
@@ -5395,391 +6020,391 @@ class Raylib {
 
 	// ---- raylib.h's functions helix-raylib won't have: each refuses to compile, saying why and what to use ----
 
-	/** raylib's window size, done when it returns. The window manager resizes the window later, or refuses (a page's canvas follows the page), so a call doesn't compile on any target: `SetWindowSizeAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowSizeAsync` for asking for a size. Refused in a page, whose canvas follows the page. */
 	public static macro function SetWindowSize(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetWindowSize: The window changes later, or is refused. See SetWindowSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's maximize, done when it returns. The window manager maximizes the window later, or refuses (a page can't), so a call doesn't compile on any target: `MaximizeWindowAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `MaximizeWindowAsync` for asking for the window maximized. Refused in a page. */
 	public static macro function MaximizeWindow():ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("MaximizeWindow: The window changes later, or is refused. See MaximizeWindowAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's minimize, done when it returns. The window manager minimizes the window later, or refuses (a page can't), so a call doesn't compile on any target: `MinimizeWindowAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `MinimizeWindowAsync` for asking for the window minimized. Refused in a page. */
 	public static macro function MinimizeWindow():ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("MinimizeWindow: The window changes later, or is refused. See MinimizeWindowAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's restore, done when it returns. The window manager restores the window later, or refuses, so a call doesn't compile on any target: `RestoreWindowAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `RestoreWindowAsync` for asking for the window restored. */
 	public static macro function RestoreWindow():ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("RestoreWindow: The window changes later, or is refused. See RestoreWindowAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's focus, done when it returns. The window manager gives the window the keyboard later, or keeps it elsewhere, so a call doesn't compile on any target: `SetWindowFocusedAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window gets the keyboard later or not at all. See `SetWindowFocusedAsync` for asking for the keyboard. */
 	public static macro function SetWindowFocused():ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetWindowFocused: The window changes later, or is refused. See SetWindowFocusedAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's opacity, done when it returns. A desktop without a compositor refuses it, so a call doesn't compile on any target: `SetWindowOpacityAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowOpacityAsync` for asking for an opacity. Refused by a desktop without a compositor. */
 	public static macro function SetWindowOpacity(opacity:ExprOf<Float>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetWindowOpacity: The window changes later, or is refused. See SetWindowOpacityAsync(opacity:Float, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's smallest window size, done when it returns. A page refuses it, so a call doesn't compile on any target: `SetWindowMinSizeAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMinSizeAsync` for asking for the smallest size the window may take. Refused in a page. */
 	public static macro function SetWindowMinSize(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetWindowMinSize: The window changes later, or is refused. See SetWindowMinSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's largest window size, done when it returns. A page refuses it, so a call doesn't compile on any target: `SetWindowMaxSizeAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMaxSizeAsync` for asking for the largest size the window may take. Refused in a page. */
 	public static macro function SetWindowMaxSize(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetWindowMaxSize: The window changes later, or is refused. See SetWindowMaxSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's clipboard write, done when it returns. A page writes it only while it has the keyboard, soon after a press, so a call doesn't compile on any target: `SetClipboardTextAsync` writes it and answers. */
+	/** Doesn't compile on any target, since the clipboard is written later or is refused. See `SetClipboardTextAsync` for writing the clipboard. A page writes the clipboard only while it has the keyboard, soon after a press. */
 	public static macro function SetClipboardText(text:ExprOf<String>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetClipboardText: The clipboard is written later, or is refused. See SetClipboardTextAsync(text:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's clipboard text, which waits for the answer. A page's clipboard answers later, so a call doesn't compile on any target: `GetClipboardTextAsync` answers it. */
+	/** Doesn't compile on any target, since a page's clipboard answers later. See `GetClipboardTextAsync` for reading the clipboard. */
 	public static macro function GetClipboardText():ExprOf<String>
 		return helix.platform.macros.Build.unsupported("GetClipboardText: Synchronous clipboard access is not supported. See GetClipboardTextAsync(read:String->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro(null : String));
 
-	/** raylib's clipboard image, which waits for the answer. A call doesn't compile on any target: `GetClipboardImageAsync` answers it. */
+	/** Doesn't compile on any target, since the clipboard answers later. See `GetClipboardImageAsync` for reading an image from the clipboard. */
 	public static macro function GetClipboardImage():ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("GetClipboardImage: Synchronous clipboard access is not supported. See GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro(null : helix.raylib.Image));
 
-	/** raylib's handle of the native window. helix-raylib's window has none to give, so a call doesn't compile. */
+	/** Doesn't compile, since helix-raylib's window has no native handle to give. */
 	public static macro function GetWindowHandle():ExprOf<Dynamic>
 		return helix.platform.macros.Build.unsupported("GetWindowHandle: The native window's handle is the platform's own and is not given out.",
 			macro(null : Dynamic));
 
-	/** raylib's physical width of a monitor. SDL3 doesn't tell it, so a call doesn't compile. */
+	/** Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorWidth` for reading the width in pixels. */
 	public static macro function GetMonitorPhysicalWidth(monitor:ExprOf<Int>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalWidth: A monitor's physical size is not known to helix-raylib's platform.",
 			macro(0 : Int));
 
-	/** raylib's physical height of a monitor. SDL3 doesn't tell it, so a call doesn't compile. */
+	/** Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorHeight` for reading the height in pixels. */
 	public static macro function GetMonitorPhysicalHeight(monitor:ExprOf<Int>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalHeight: A monitor's physical size is not known to helix-raylib's platform.",
 			macro(0 : Int));
 
-	/** raylib's fullscreen toggle, done when it returns. The platform applies it later or refuses it (a page only soon after a key press, click or tap), so a call doesn't compile on any target: `ToggleFullscreenAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `ToggleFullscreenAsync` for asking for fullscreen. A page allows fullscreen only soon after a key press, click or tap. */
 	public static macro function ToggleFullscreen():ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("ToggleFullscreen: The window changes later, or is refused. See ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's borderless windowed toggle, done when it returns. The platform applies it later or refuses it, so a call doesn't compile on any target: `ToggleBorderlessWindowedAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `ToggleBorderlessWindowedAsync` for asking for a borderless window. */
 	public static macro function ToggleBorderlessWindowed():ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("ToggleBorderlessWindowed: The window changes later, or is refused. See ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's window position, done when it returns. The window manager moves the window later, or refuses (a page, Wayland), so a call doesn't compile on any target: `SetWindowPositionAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowPositionAsync` for asking for a place on the desktop. Refused in a page and on Wayland. */
 	public static macro function SetWindowPosition(x:ExprOf<Int>, y:ExprOf<Int>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetWindowPosition: The window changes later, or is refused. See SetWindowPositionAsync(x:Int, y:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's move to a monitor, done when it returns. The window manager moves the window later, or refuses, so a call doesn't compile on any target: `SetWindowMonitorAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMonitorAsync` for asking for another monitor. */
 	public static macro function SetWindowMonitor(monitor:ExprOf<Int>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetWindowMonitor: The window changes later, or is refused. See SetWindowMonitorAsync(monitor:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's letting go of the mouse, done when it returns. The platform answers later, so a call doesn't compile on any target: `EnableCursorAsync` lets it go and answers. */
+	/** Doesn't compile on any target, since the mouse is let go later. See `EnableCursorAsync` for letting go of the mouse. */
 	public static macro function EnableCursor():ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("EnableCursor: The mouse is let go later, or is refused. See EnableCursorAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's lock of the mouse, done when it returns. A page locks it only soon after a click or key press, so a call doesn't compile on any target: `DisableCursorAsync` locks it and answers. */
+	/** Doesn't compile on any target, since the mouse is locked later or refused. See `DisableCursorAsync` for locking the mouse. A page locks the mouse only soon after a click or key press. */
 	public static macro function DisableCursor():ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("DisableCursor: The mouse is locked later, or is refused. See DisableCursorAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** raylib's check for a file, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `FileExistsAsync` answers it. */
+	/** Doesn't compile on any target, since a page can't wait for the answer. See `FileExistsAsync` for asking whether a file exists. */
 	public static macro function FileExists(fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("FileExists: Synchronous file access is not supported. See FileExistsAsync(fileName:String, answer:Bool->Void) in helix.raylib.extras.Files (import helix.raylib.extras.Files.*;)",
 			macro(false : Bool));
 
-	/** raylib's text file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileTextAsync` reads it. */
+	/** Doesn't compile on any target, since a page can't wait for the file. See `LoadFileTextAsync` for reading a text file. */
 	public static macro function LoadFileText(fileName:ExprOf<String>):ExprOf<Null<String>>
 		return helix.platform.macros.Build.unsupported("LoadFileText: Synchronous loading is not supported. See LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void) in helix.raylib.extras.Files (import helix.raylib.extras.Files.*;)",
 			macro(null : Null<String>));
 
-	/** raylib's text file write, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `SaveFileTextAsync` writes it and answers. */
+	/** Doesn't compile on any target, since a file is kept later, once written. See `SaveFileTextAsync` for writing a text file. */
 	public static macro function SaveFileText(fileName:ExprOf<String>, text:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("SaveFileText: A file is written later, or is refused. See SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Files (import helix.raylib.extras.Files.*;)",
 			macro(false : Bool));
 
-	/** raylib's file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileDataAsync` reads it. */
+	/** Doesn't compile on any target, since a page can't wait for the file. See `LoadFileDataAsync` for reading a file's bytes. */
 	public static macro function LoadFileData(fileName:ExprOf<String>):ExprOf<Null<haxe.io.Bytes>>
 		return helix.platform.macros.Build.unsupported("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void) in helix.raylib.extras.Files (import helix.raylib.extras.Files.*;)",
 			macro(null : Null<haxe.io.Bytes>));
 
-	/** raylib's file write, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `SaveFileDataAsync` writes it and answers. */
+	/** Doesn't compile on any target, since a file is kept later, once written. See `SaveFileDataAsync` for writing a file's bytes. */
 	public static macro function SaveFileData(fileName:ExprOf<String>, data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("SaveFileData: A file is written later, or is refused. See SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Files (import helix.raylib.extras.Files.*;)",
 			macro(false : Bool));
 
-	/** raylib's export of bytes as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportDataAsCodeAsync` writes it and answers. */
+	/** Doesn't compile on any target, since a file is kept later, once written. See `ExportDataAsCodeAsync` for writing bytes as code. */
 	public static macro function ExportDataAsCode(data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportDataAsCode: A file is written later, or is refused. See ExportDataAsCodeAsync(data:haxe.io.Bytes, dataSize:Int, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Files (import helix.raylib.extras.Files.*;)",
 			macro(false : Bool));
 
-	/** raylib's check for a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `DirectoryExistsAsync` answers it. */
+	/** Doesn't compile on any target, since a page can't wait for the answer. See `DirectoryExistsAsync` for asking whether a directory exists. */
 	public static macro function DirectoryExists(dirPath:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("DirectoryExists: Synchronous file access is not supported. See DirectoryExistsAsync(dirPath:String, answer:Bool->Void) in helix.raylib.extras.Files (import helix.raylib.extras.Files.*;)",
 			macro(false : Bool));
 
-	/** raylib's file size, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `GetFileLengthAsync` answers it. */
+	/** Doesn't compile on any target, since a page can't wait for the answer. See `GetFileLengthAsync` for asking a file's size. */
 	public static macro function GetFileLength(fileName:ExprOf<String>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("GetFileLength: Synchronous file access is not supported. See GetFileLengthAsync(fileName:String, answer:Int->Void) in helix.raylib.extras.Files (import helix.raylib.extras.Files.*;)",
 			macro(0 : Int));
 
-	/** raylib's check for a file, as against a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `IsPathFileAsync` answers it. */
+	/** Doesn't compile on any target, since a page can't wait for the answer. See `IsPathFileAsync` for asking whether a path is a file. */
 	public static macro function IsPathFile(path:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("IsPathFile: Synchronous file access is not supported. See IsPathFileAsync(path:String, answer:Bool->Void) in helix.raylib.extras.Files (import helix.raylib.extras.Files.*;)",
 			macro(false : Bool));
 
-	/** raylib's directory listing, which waits for it. A page can't wait, so a call doesn't compile on any target: `LoadDirectoryFilesAsync` lists it. */
+	/** Doesn't compile on any target, since a page can't wait for the listing. See `LoadDirectoryFilesAsync` for listing a directory. */
 	public static macro function LoadDirectoryFiles(dirPath:ExprOf<String>):ExprOf<FilePathList>
 		return helix.platform.macros.Build.unsupported("LoadDirectoryFiles: Synchronous file access is not supported. See LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList->Void) in helix.raylib.extras.Files (import helix.raylib.extras.Files.*;)",
 			macro(null : helix.raylib.FilePathList));
 
-	/** raylib's filtered and recursive directory listing, which waits for it. A page can't wait, so a call doesn't compile on any target: `LoadDirectoryFilesExAsync` lists it. */
+	/** Doesn't compile on any target, since a page can't wait for the listing. See `LoadDirectoryFilesExAsync` for listing a directory by extension and with its subdirectories. */
 	public static macro function LoadDirectoryFilesEx(basePath:ExprOf<String>, filter:ExprOf<String>, scanSubdirs:ExprOf<Bool>):ExprOf<FilePathList>
 		return helix.platform.macros.Build.unsupported("LoadDirectoryFilesEx: Synchronous file access is not supported. See LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void) in helix.raylib.extras.Files (import helix.raylib.extras.Files.*;)",
 			macro(null : helix.raylib.FilePathList));
 
-	/** raylib's file modification time, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `GetFileModTimeAsync` answers it. */
+	/** Doesn't compile on any target, since a page can't wait for the answer. See `GetFileModTimeAsync` for asking when a file was last written. */
 	public static macro function GetFileModTime(fileName:ExprOf<String>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("GetFileModTime: Synchronous file access is not supported. See GetFileModTimeAsync(fileName:String, answer:Int->Void) in helix.raylib.extras.Files (import helix.raylib.extras.Files.*;)",
 			macro(0 : Int));
 
-	/** raylib's export of an automation list, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportAutomationEventListAsync` writes it and answers. */
+	/** Doesn't compile on any target, since a file is kept later, once written. See `ExportAutomationEventListAsync` for writing a list to a file. */
 	public static macro function ExportAutomationEventList(list:ExprOf<AutomationEventList>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportAutomationEventList: A file is written later, or is refused. See ExportAutomationEventListAsync(list:AutomationEventList, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Files (import helix.raylib.extras.Files.*;)",
 			macro(false : Bool));
 
-	/** raylib's allocator. Haxe has no raw memory to allocate, so a call doesn't compile. */
+	/** Doesn't compile, since Haxe has no raw memory to allocate. See `haxe.io.Bytes.alloc` for making bytes. */
 	public static macro function MemAlloc(size:ExprOf<Int>):ExprOf<Dynamic>
 		return helix.platform.macros.Build.unsupported("MemAlloc: Haxe has no raw memory to allocate. Make bytes instead: haxe.io.Bytes.alloc(size)",
 			macro(null : Dynamic));
 
-	/** raylib's reallocator. Haxe has no raw memory, so a call doesn't compile. */
+	/** Doesn't compile, since Haxe has no raw memory to reallocate. See `haxe.io.Bytes.alloc` and `blit` for copying into new bytes. */
 	public static macro function MemRealloc(ptr:ExprOf<Dynamic>, size:ExprOf<Int>):ExprOf<Dynamic>
 		return helix.platform.macros.Build.unsupported("MemRealloc: Haxe has no raw memory to reallocate. Make new bytes and copy into them instead: haxe.io.Bytes.alloc(size), then blit",
 			macro(null : Dynamic));
 
-	/** raylib's free. Haxe frees memory once nothing holds it, so a call doesn't compile. */
+	/** Doesn't compile, since Haxe frees memory once nothing holds it. */
 	public static macro function MemFree(ptr:ExprOf<Dynamic>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("MemFree: Haxe frees memory once nothing holds it. Drop the reference instead.", macro {});
 
-	/** raylib's screenshot, saved when it returns. Here it is read back as the next frame ends and saved after, so a call doesn't compile on any target: `TakeScreenshotAsync` saves it and answers. */
+	/** Doesn't compile on any target, since a screenshot is read back as the next frame ends and saved after. See `TakeScreenshotAsync` for saving a screenshot. */
 	public static macro function TakeScreenshot(fileName:ExprOf<String>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("TakeScreenshot: A screenshot is saved later, or is refused. See TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)",
 			macro {});
 
-	/** emscripten's main loop, which a raylib program built for the web calls in place of its loop. Here raylib's own loop runs once a frame in a page, so a call doesn't compile. */
+	/** Doesn't compile, since raylib's own loop runs once a frame in a page. See `WindowShouldClose` for writing the loop. */
 	public static macro function emscripten_set_main_loop(func:ExprOf<Void->Void>, fps:ExprOf<Int>, simulateInfiniteLoop:ExprOf<Bool>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("emscripten_set_main_loop: Not needed: raylib's loop, while (!WindowShouldClose()) { ... }, runs once a frame in a page. Write that loop in main, the frame's code in its body.",
 			macro {});
 
-	/** emscripten's main loop with an argument for its function. Here raylib's own loop runs once a frame in a page, so a call doesn't compile. */
+	/** Doesn't compile, since raylib's own loop runs once a frame in a page. See `WindowShouldClose` for writing the loop. */
 	public static macro function emscripten_set_main_loop_arg(func:ExprOf<Dynamic->Void>, arg:ExprOf<Dynamic>, fps:ExprOf<Int>,
 			simulateInfiniteLoop:ExprOf<Bool>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("emscripten_set_main_loop_arg: Not needed: raylib's loop, while (!WindowShouldClose()) { ... }, runs once a frame in a page. Write that loop in main, the frame's code in its body, reading the argument from a variable.",
 			macro {});
 
-	/** emscripten's end of its main loop. Here a program leaves raylib's own loop, so a call doesn't compile. */
+	/** Doesn't compile, since a program leaves raylib's own loop instead. See `WindowShouldClose` for writing the loop. */
 	public static macro function emscripten_cancel_main_loop():ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("emscripten_cancel_main_loop: Not needed: leave raylib's loop, while (!WindowShouldClose()) { ... }, with break, and a page stops running it; the code after the loop runs then.",
 			macro {});
 
-	/** emscripten's way to run the page's JavaScript. A program asks helix-raylib for what the page knows instead, so a call doesn't compile. */
+	/** Doesn't compile, since a program asks helix-raylib for what the page knows instead. See `GetRunOption` for reading the URL's options. */
 	public static macro function emscripten_run_script(script:ExprOf<String>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("emscripten_run_script: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, IsTouchScreenAvailable and IsFinePointerAvailable for the device, GetWindowSafeArea, SetScreenOrientationAsync, EnableTiltAsync; or write plain Haxe (js.Browser, in #if js).",
 			macro {});
 
-	/** emscripten's way to run the page's JavaScript for a number. A program asks helix-raylib for what the page knows instead, so a call doesn't compile. */
+	/** Doesn't compile, since a program asks helix-raylib for what the page knows instead. See `GetRunOption` for reading the URL's options. */
 	public static macro function emscripten_run_script_int(script:ExprOf<String>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("emscripten_run_script_int: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, IsTouchScreenAvailable and IsFinePointerAvailable for the device, GetScreenOrientation; or write plain Haxe (js.Browser, in #if js).",
 			macro(0 : Int));
 
-	/** emscripten's way to run the page's JavaScript for text. A program asks helix-raylib for what the page knows instead, so a call doesn't compile. */
+	/** Doesn't compile, since a program asks helix-raylib for what the page knows instead. See `GetPlatformOS` for reading the system. */
 	public static macro function emscripten_run_script_string(script:ExprOf<String>):ExprOf<String>
 		return helix.platform.macros.Build.unsupported("emscripten_run_script_string: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, GetPlatformOS for the system; or write plain Haxe (js.Browser, in #if js).",
 			macro(null : String));
 
-	/** emscripten's clock, in milliseconds. raylib's own is `GetTime`, so a call doesn't compile. */
+	/** Doesn't compile. See `GetTime` for reading the seconds since `InitWindow`. */
 	public static macro function emscripten_get_now():ExprOf<Float>
 		return helix.platform.macros.Build.unsupported("emscripten_get_now: Not supported. See GetTime(), the seconds since InitWindow (emscripten's milliseconds are GetTime() * 1000).",
 			macro(0.0 : Float));
 
-	/** emscripten's wait. A page can't wait inside a frame, so a call doesn't compile. */
+	/** Doesn't compile, since a page can't wait inside a frame. See `GetTime` for timing a later frame. */
 	public static macro function emscripten_sleep(ms:ExprOf<Int>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("emscripten_sleep: Not supported: a page can't wait inside a frame. End the frame and carry on in a later one, timed with GetTime() or GetFrameTime().",
 			macro {});
 
-	/** raylib's texture load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadTextureAsync` loads it. */
+	/** Names raylib's texture load, which waits for the file, and doesn't compile on any target. See `LoadTextureAsync` for loading a texture from a file. A page can't wait for a file. */
 	public static macro function LoadTexture(fileName:ExprOf<String>):ExprOf<Texture2D>
 		return helix.platform.macros.Build.unsupported("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)",
 			macro(null : helix.raylib.Texture2D));
 
-	/** raylib's image load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadImageAsync` loads it. */
+	/** Names raylib's image load, which waits for the file, and doesn't compile on any target. See `LoadImageAsync` for loading an image from a file. A page can't wait for a file. */
 	public static macro function LoadImage(fileName:ExprOf<String>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImage: Synchronous loading is not supported. See LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)",
 			macro(null : helix.raylib.Image));
 
-	/** raylib's load of an image's raw pixels, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadImageRawAsync` loads it. */
+	/** Names raylib's load of an image's raw pixels, which waits for the file, and doesn't compile on any target. See `LoadImageRawAsync` for loading raw pixels from a file. A page can't wait for a file. */
 	public static macro function LoadImageRaw(fileName:ExprOf<String>, width:ExprOf<Int>, height:ExprOf<Int>, format:ExprOf<Int>,
 			headerSize:ExprOf<Int>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageRaw: Synchronous loading is not supported. See LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)",
 			macro(null : helix.raylib.Image));
 
-	/** raylib's decode of an image file's bytes, which returns the image. Images are decoded asynchronously here, so a call doesn't compile on any target: `LoadImageFromMemoryAsync` decodes it. */
+	/** Names raylib's decode of an image file's bytes, which returns the image, and doesn't compile on any target. See `LoadImageFromMemoryAsync` for decoding an image file's bytes. Images are decoded asynchronously. */
 	public static macro function LoadImageFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageFromMemory: Images are decoded asynchronously. See LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)",
 			macro(null : helix.raylib.Image));
 
-	/** raylib's load of an animated image's frames, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadImageAnimAsync` loads them. */
+	/** Names raylib's load of an animated image's frames, which waits for the file, and doesn't compile on any target. See `LoadImageAnimAsync` for loading an animated image's frames from a file. A page can't wait for a file. */
 	public static macro function LoadImageAnim(fileName:ExprOf<String>, frames:ExprOf<Array<Int>>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageAnim: Synchronous loading is not supported. See LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)",
 			macro(null : helix.raylib.Image));
 
-	/** raylib's decode of an animated image file's bytes, which returns its frames. Images are decoded asynchronously here, so a call doesn't compile on any target: `LoadImageAnimFromMemoryAsync` decodes them. */
+	/** Names raylib's decode of an animated image file's bytes, which returns its frames, and doesn't compile on any target. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes. Images are decoded asynchronously. */
 	public static macro function LoadImageAnimFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>,
 			frames:ExprOf<Array<Int>>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageAnimFromMemory: Images are decoded asynchronously. See LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)",
 			macro(null : helix.raylib.Image));
 
-	/** raylib's read of a texture back from the GPU, which waits for it. A texture is read back asynchronously here, so a call doesn't compile on any target: `LoadImageFromTextureAsync` reads it. */
+	/** Names raylib's read of a texture back from the GPU, which waits for it, and doesn't compile on any target. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image. A texture is read back asynchronously. */
 	public static macro function LoadImageFromTexture(texture:ExprOf<Texture2D>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageFromTexture: A texture is read back asynchronously. See LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)",
 			macro(null : helix.raylib.Image));
 
-	/** raylib's read of the screen, which waits for the GPU. The screen is read back asynchronously here, as a frame ends, so a call doesn't compile on any target: `LoadImageFromScreenAsync` reads it. */
+	/** Names raylib's read of the screen, which waits for the GPU, and doesn't compile on any target. See `LoadImageFromScreenAsync` for reading the screen into an image. The screen is read back asynchronously, as a frame ends. */
 	public static macro function LoadImageFromScreen():ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageFromScreen: The screen is read back asynchronously. See LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)",
 			macro(null : helix.raylib.Image));
 
-	/** raylib's image export, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportImageAsync` writes it and answers. */
+	/** Names raylib's image export, done when it returns, and doesn't compile on any target. See `ExportImageAsync` for writing an image to a file. A file is written later, or is refused. */
 	public static macro function ExportImage(image:ExprOf<Image>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportImage: A file is written later, or is refused. See ExportImageAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)",
 			macro(false : Bool));
 
-	/** raylib's export of an image as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportImageAsCodeAsync` writes it and answers. */
+	/** Names raylib's export of an image as code, done when it returns, and doesn't compile on any target. See `ExportImageAsCodeAsync` for writing an image as a C header. A file is written later, or is refused. */
 	public static macro function ExportImageAsCode(image:ExprOf<Image>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportImageAsCode: A file is written later, or is refused. See ExportImageAsCodeAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)",
 			macro(false : Bool));
 
-	/** raylib's export of a font as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportFontAsCodeAsync` writes it and answers. */
+	/** Doesn't compile on any target, since the file is written after the call would return. See `ExportFontAsCodeAsync` for writing a font as code. */
 	public static macro function ExportFontAsCode(font:ExprOf<Font>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportFontAsCode: A file is written later, or is refused. See ExportFontAsCodeAsync(font:Font, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Text (import helix.raylib.extras.Text.*;)",
 			macro(false : Bool));
 
-	/** raylib's font load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontAsync` loads it. */
+	/** Doesn't compile on any target, since raylib's waits for the file and a page can't wait. See `LoadFontAsync` for loading a font. */
 	public static macro function LoadFont(fileName:ExprOf<String>):ExprOf<Font>
 		return helix.platform.macros.Build.unsupported("LoadFont: Synchronous loading is not supported. See LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void) in helix.raylib.extras.Text (import helix.raylib.extras.Text.*;)",
 			macro(null : helix.raylib.Font));
 
-	/** raylib's font load at a size, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFontExAsync` loads it. */
+	/** Doesn't compile on any target, since raylib's waits for the file and a page can't wait. See `LoadFontExAsync` for loading a font at a size. */
 	public static macro function LoadFontEx(fileName:ExprOf<String>, fontSize:ExprOf<Int>, codepoints:ExprOf<Array<Int>>,
 			codepointCount:ExprOf<Int>):ExprOf<Font>
 		return helix.platform.macros.Build.unsupported("LoadFontEx: Synchronous loading is not supported. See LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void) in helix.raylib.extras.Text (import helix.raylib.extras.Text.*;)",
 			macro(null : helix.raylib.Font));
 
-	/** raylib's font load from a file's bytes, which rasterizes the glyphs before it returns. They are rasterized off the main thread here, so a call doesn't compile on any target: `LoadFontFromMemoryAsync` loads it. */
+	/** Doesn't compile on any target, since raylib's rasterizes the glyphs before returning and here they are rasterized off the main thread. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes. */
 	public static macro function LoadFontFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fontSize:ExprOf<Int>,
 			codepoints:ExprOf<Array<Int>>, codepointCount:ExprOf<Int>):ExprOf<Font>
 		return helix.platform.macros.Build.unsupported("LoadFontFromMemory: Fonts are rasterized asynchronously. See LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void) in helix.raylib.extras.Text (import helix.raylib.extras.Text.*;)",
 			macro(null : helix.raylib.Font));
 
-	/** raylib's glyph rasterizing, which returns the glyphs. They are rasterized off the main thread here, so a call doesn't compile on any target: `LoadFontDataAsync` rasterizes them. */
+	/** Doesn't compile on any target, since raylib's returns the glyphs rasterized and here they are rasterized off the main thread. See `LoadFontDataAsync` for rasterizing glyphs. */
 	public static macro function LoadFontData(fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fontSize:ExprOf<Int>, codepoints:ExprOf<Array<Int>>,
 			codepointCount:ExprOf<Int>, type:ExprOf<Int>):ExprOf<Array<GlyphInfo>>
 		return helix.platform.macros.Build.unsupported("LoadFontData: Fonts are rasterized asynchronously. See LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void) in helix.raylib.extras.Text (import helix.raylib.extras.Text.*;)",
 			macro(null : Array<helix.raylib.GlyphInfo>));
 
-	/** raylib's copy into a C buffer. A Haxe string can't be written into, so a call doesn't compile on any target: assign it instead. */
+	/** Doesn't compile on any target, since raylib's copies into a C buffer and a Haxe string can't be written. Assigning `dst = src` copies the text. */
 	public static macro function TextCopy(dst:ExprOf<String>, src:ExprOf<String>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("TextCopy: A String can't be written into. Assign it instead: dst = src", macro(0 : Int));
 
-	/** raylib's append into a C buffer at a cursor. A Haxe string can't be written into, so a call doesn't compile on any target: join the text instead. */
+	/** Doesn't compile on any target, since raylib's appends into a C buffer and a Haxe string can't be written. Joining `text += append` appends the text. */
 	public static macro function TextAppend(text:ExprOf<String>, append:ExprOf<String>, position:ExprOf<Array<Int>>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("TextAppend: A String can't be written into. Join the text instead: text += append", macro {});
 
-	/** raylib's model load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAsync` loads it. */
+	/** Refuses to compile on any target, as raylib's model load waits for the file. See `LoadModelAsync` for loading a model. */
 	public static macro function LoadModel(fileName:ExprOf<String>):ExprOf<Model>
 		return helix.platform.macros.Build.unsupported("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void) in helix.raylib.extras.Models (import helix.raylib.extras.Models.*;)",
 			macro(null : helix.raylib.Model));
 
-	/** raylib's material load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadMaterialsAsync` loads them. */
+	/** Refuses to compile on any target, as raylib's material load waits for the file. See `LoadMaterialsAsync` for loading a file's materials. */
 	public static macro function LoadMaterials(fileName:ExprOf<String>, materialCount:ExprOf<Array<Int>>):ExprOf<Array<Material>>
 		return helix.platform.macros.Build.unsupported("LoadMaterials: Synchronous loading is not supported. See LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void) in helix.raylib.extras.Models (import helix.raylib.extras.Models.*;)",
 			macro(null : Array<helix.raylib.Material>));
 
-	/** raylib's mesh export, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportMeshAsync` writes it and answers. */
+	/** Refuses to compile on any target, as raylib's mesh export is done when it returns and a file here is written later. See `ExportMeshAsync` for writing a mesh's file. */
 	public static macro function ExportMesh(mesh:ExprOf<Mesh>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportMesh: A file is written later, or is refused. See ExportMeshAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Models (import helix.raylib.extras.Models.*;)",
 			macro(false : Bool));
 
-	/** raylib's export of a mesh as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportMeshAsCodeAsync` writes it and answers. */
+	/** Refuses to compile on any target, as raylib's export of a mesh as code is done when it returns and a file here is written later. See `ExportMeshAsCodeAsync` for writing a mesh as code. */
 	public static macro function ExportMeshAsCode(mesh:ExprOf<Mesh>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportMeshAsCode: A file is written later, or is refused. See ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Models (import helix.raylib.extras.Models.*;)",
 			macro(false : Bool));
 
-	/** raylib's animation load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAnimationsAsync` loads them. */
+	/** Refuses to compile on any target, as raylib's animation load waits for the file. See `LoadModelAnimationsAsync` for loading a file's animations. */
 	public static macro function LoadModelAnimations(fileName:ExprOf<String>, animCount:ExprOf<Array<Int>>):ExprOf<Array<ModelAnimation>>
 		return helix.platform.macros.Build.unsupported("LoadModelAnimations: Synchronous loading is not supported. See LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void) in helix.raylib.extras.Models (import helix.raylib.extras.Models.*;)",
 			macro(null : Array<helix.raylib.ModelAnimation>));
 
-	/** raylib's wave load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadWaveAsync` loads it. */
+	/** Doesn't compile on any target, as raylib's wave load waits for the file. See `LoadWaveAsync` for loading a wave file. A page can't wait for a file. */
 	public static macro function LoadWave(fileName:ExprOf<String>):ExprOf<Wave>
 		return helix.platform.macros.Build.unsupported("LoadWave: Synchronous loading is not supported. See LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void) in helix.raylib.extras.Audio (import helix.raylib.extras.Audio.*;)",
 			macro(null : helix.raylib.Wave));
 
-	/** raylib's wave load from a file's bytes, which answers at once. A file other than WAV or QOA is decoded off the main thread here, so a call doesn't compile on any target: `LoadWaveFromMemoryAsync` loads it. */
+	/** Doesn't compile on any target, as raylib's wave load from a file's bytes answers at once. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes. A file other than WAV or QOA is decoded off the main thread. */
 	public static macro function LoadWaveFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Wave>
 		return helix.platform.macros.Build.unsupported("LoadWaveFromMemory: Decoding is asynchronous. See LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void) in helix.raylib.extras.Audio (import helix.raylib.extras.Audio.*;)",
 			macro(null : helix.raylib.Wave));
 
-	/** raylib's wave export, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportWaveAsync` writes it and answers. */
+	/** Doesn't compile on any target, as raylib's wave export is done when it returns. See `ExportWaveAsync` for writing a wave to a sound file. A file is kept later, once written. */
 	public static macro function ExportWave(wave:ExprOf<Wave>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportWave: A file is written later, or is refused. See ExportWaveAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Audio (import helix.raylib.extras.Audio.*;)",
 			macro(false : Bool));
 
-	/** raylib's export of a wave as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target: `ExportWaveAsCodeAsync` writes it and answers. */
+	/** Doesn't compile on any target, as raylib's export of a wave as code is done when it returns. See `ExportWaveAsCodeAsync` for writing a wave as a C header. A file is kept later, once written. */
 	public static macro function ExportWaveAsCode(wave:ExprOf<Wave>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportWaveAsCode: A file is written later, or is refused. See ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Audio (import helix.raylib.extras.Audio.*;)",
 			macro(false : Bool));
 
-	/** raylib's sound load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadSoundAsync` loads it. */
+	/** Doesn't compile on any target, as raylib's sound load waits for the file. See `LoadSoundAsync` for loading a sound file. A page can't wait for a file. */
 	public static macro function LoadSound(fileName:ExprOf<String>):ExprOf<Sound>
 		return helix.platform.macros.Build.unsupported("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void) in helix.raylib.extras.Audio (import helix.raylib.extras.Audio.*;)",
 			macro(null : helix.raylib.Sound));
 
-	/** raylib's music load, which knows at once whether the file opened. A page can't wait to find out, so a call doesn't compile on any target: `LoadMusicStreamAsync` opens it. */
+	/** Doesn't compile on any target, as raylib's music load knows at once whether the file opened. See `LoadMusicStreamAsync` for opening a music file. A page can't wait to find out. */
 	public static macro function LoadMusicStream(fileName:ExprOf<String>):ExprOf<Music>
 		return helix.platform.macros.Build.unsupported("LoadMusicStream: Synchronous loading is not supported. See LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void) in helix.raylib.extras.Audio (import helix.raylib.extras.Audio.*;)",
 			macro(null : helix.raylib.Music));
 
-	/** raylib's processor on a stream's samples, which it calls on its audio thread. A page can't run Haxe there, so a call doesn't compile on any target. */
+	/** Doesn't compile on any target, as raylib calls a stream's processor on its audio thread, where a page can't run Haxe. */
 	public static macro function AttachAudioStreamProcessor(stream:ExprOf<AudioStream>,
 			processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("AttachAudioStreamProcessor: raylib calls it on the audio thread, where a page can't run Haxe",
 			macro {});
 
-	/** raylib's removal of a stream's processor, which helix-raylib can't attach. A call doesn't compile on any target. */
+	/** Doesn't compile on any target, as no stream processor can be attached (`AttachAudioStreamProcessor`). */
 	public static macro function DetachAudioStreamProcessor(stream:ExprOf<AudioStream>,
 			processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("DetachAudioStreamProcessor: raylib calls processors on the audio thread, where a page can't run Haxe",
 			macro {});
 
-	/** raylib's processor on every sound mixed, which it calls on its audio thread. A page can't run Haxe there, so a call doesn't compile on any target. */
+	/** Doesn't compile on any target, as raylib calls the mix's processor on its audio thread, where a page can't run Haxe. */
 	public static macro function AttachAudioMixedProcessor(processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("AttachAudioMixedProcessor: raylib calls it on the audio thread, where a page can't run Haxe", macro {});
 
-	/** raylib's removal of the mix's processor, which helix-raylib can't attach. A call doesn't compile on any target. */
+	/** Doesn't compile on any target, as no mix processor can be attached (`AttachAudioMixedProcessor`). */
 	public static macro function DetachAudioMixedProcessor(processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("DetachAudioMixedProcessor: raylib calls processors on the audio thread, where a page can't run Haxe",
 			macro {});

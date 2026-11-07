@@ -12,18 +12,24 @@ import helix.raylib.modules.RGui.*;
 import helix.raylib.modules.RGuiControls.*;
 #end
 
-/** Holds raygui's controls, as raylib 5.5's raygui (4.5-dev, `raygui.h`) draws them and reads the mouse and keys for them; `Raygui`
-	forwards to each (`tools/gen_raylib.py`). A control is drawn when it is called, each frame, between `BeginDrawing` and `EndDrawing`.
+/** Provides raygui's controls, as raylib 5.5's raygui (4.5-dev, `raygui.h`) draws them and reads the mouse and keys for them.
 
-	A value a control changes is passed in a one-element array (`[false]`, `[0]`, `[0.5]`), as raygui takes a pointer, or as a struct the
-	control changes in place (`Vector2`, `Rectangle`, `Color`, `Vector3`). Text a control edits is passed as `[text]`. */
+	`Raygui` forwards to each (`tools/gen_raylib.py`).
+
+	A control is drawn when it is called, each frame, between `BeginDrawing` and `EndDrawing`.
+
+	A value a control changes is passed in a one-element array (`[false]`, `[0]`, `[0.5]`), or as a struct the control changes in
+	place (`Vector2`, `Rectangle`, `Color`, `Vector3`).
+
+	Text a control edits is passed as `[text]`. */
 @:noCompletion
 @:allow(helix.raylib)
 class RGuiControls {
 	#if !macro
 	// ---- Container controls ----
 
-	/** Draws a window: a title bar with a close button, over a panel.
+	/** Draws a window, a title bar with a close button over a panel, and returns 1 when the close button is clicked. See `GuiPanel`
+		for drawing a panel with no close button.
 
 		@param bounds  The window, its title bar 24 pixels high; it is at least 48.
 		@param title  The title, or null.
@@ -47,7 +53,7 @@ class RGuiControls {
 		return result;
 	}
 
-	/** Draws a group box: a frame with its name in its top line.
+	/** Draws a group box, a frame with its name in its top line.
 
 		@param bounds  The box.
 		@param text  Its name, or null.
@@ -61,7 +67,7 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a line across its bounds' middle, with text in it when given ("--- text ------").
+	/** Draws a line across its bounds' middle, with the text in it when provided ("--- text ------").
 
 		@param bounds  The line's bounds.
 		@param text  The text, or null for a plain line.
@@ -88,7 +94,7 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a panel, with a header bar when it has text.
+	/** Draws a panel, with a header bar when the text is provided. See `GuiScrollPanel` for showing content larger than the panel.
 
 		@param bounds  The panel; with a header it is at least 48 pixels high.
 		@param text  The header's text, or null for none.
@@ -109,12 +115,18 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a bar of tabs, each a toggle 160 pixels wide with a close button, scrolled so the active tab shows.
+	/** Draws a bar of tabs and returns the tab whose close button is clicked or that the middle button presses.
+
+		Each tab is a toggle 160 pixels wide with a close button.
+
+		A click on a tab makes it the active tab.
+
+		Scrolls the bar so the active tab shows.
 
 		@param bounds  The bar; its height is the tabs'.
 		@param text  The tabs' names.
 		@param count  How many tabs.
-		@param active  The active tab, in `active[0]`, held to the tabs; a tab clicked becomes it.
+		@param active  The active tab, in `active[0]`, clamped to the tabs.
 		@return  The tab whose close button was clicked or that the middle button pressed, else -1. */
 	static function GuiTabBar(bounds:Rectangle, text:Array<String>, count:Int, active:Array<Int>):Int {
 		var result = -1;
@@ -161,8 +173,10 @@ class RGuiControls {
 		return result;
 	}
 
-	/** Draws a scroll panel: a view of content larger than it, with scroll bars where the content is wider or taller, scrolled by the
-		bars and the mouse wheel (across with Shift or Control held).
+	/** Draws a scroll panel, a view of content larger than the panel, with scroll bars where the content is wider or taller. See
+		`GuiPanel` for drawing a panel with no scrolling.
+
+		The bars and the mouse wheel scroll the content, across while Shift or Control is held.
 
 		@param bounds  The panel; with a header it is at least 48 pixels high.
 		@param text  The header's text, or null for none.
@@ -284,7 +298,7 @@ class RGuiControls {
 
 	// ---- Basic controls ----
 
-	/** Draws a label: text in its bounds, aligned as the label style says.
+	/** Draws a label, text in its bounds aligned as the label style sets. See `GuiLabelButton` for drawing a label that takes clicks.
 
 		@param bounds  The label.
 		@param text  The text, or null.
@@ -294,7 +308,9 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a button, focused under the mouse and pressed while the left button is held over it.
+	/** Draws a button and returns 1 when the left button is released over it.
+
+		Drawn focused while the mouse is over the button, and pressed while the left button is held there.
 
 		@param bounds  The button.
 		@param text  Its text, or null.
@@ -315,7 +331,8 @@ class RGuiControls {
 		return result;
 	}
 
-	/** Draws a label that works as a button, at least as wide as its text.
+	/** Draws a label that works as a button, at least as wide as its text, and returns 1 when the left button is released over it.
+		See `GuiButton` for drawing a button.
 
 		@param bounds  The label.
 		@param text  Its text, or null.
@@ -339,7 +356,9 @@ class RGuiControls {
 		return pressed;
 	}
 
-	/** Draws a toggle button, drawn pressed while it is on; a click turns it over.
+	/** Draws a toggle button, drawn pressed while on. See `GuiCheckBox` for drawing a check box.
+
+		A click turns the toggle over.
 
 		@param bounds  The button.
 		@param text  Its text, or null.
@@ -374,11 +393,16 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a group of toggles, one on at a time: a toggle for each of the text's items ("One;Two;Three"), a new row at each '\n'.
+	/** Draws a group of toggles, one on at a time, a toggle for each of the text's items ("One;Two;Three"). See `GuiToggleSlider` for
+		drawing the items under one slider.
+
+		Starts a new row at each '\n'.
+
+		A click on a toggle turns it on and the one that was on off.
 
 		@param bounds  The first toggle; each is this size.
 		@param text  The items, split at ';' and '\n'.
-		@param active  The item on, in `active[0]`, or null; a click on another makes it on.
+		@param active  The item on, in `active[0]`, or null.
 		@return  0. */
 	static function GuiToggleGroup(bounds:Rectangle, text:String, active:Array<Int>):Int {
 		var b = new Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
@@ -407,12 +431,15 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a toggle slider: its items ("Off;On") side by side, the active one under a slider; a click moves it to the next.
+	/** Draws a toggle slider, its items ("Off;On") side by side with the active one under a slider, and returns 1 when clicked. See
+		`GuiToggleGroup` for drawing a toggle for each item.
+
+		A click moves the slider to the next item, and from the last back to the first.
 
 		@param bounds  The slider.
 		@param text  The items, split at ';'.
-		@param active  The active item, in `active[0]`, or null; past the last it goes back to the first.
-		@return  1 when it was clicked, else 0. */
+		@param active  The active item, in `active[0]`, or null.
+		@return  1 when clicked, else 0. */
 	static function GuiToggleSlider(bounds:Rectangle, text:String, active:Array<Int>):Int {
 		var result = 0, state = guiState;
 		if (active == null)
@@ -456,12 +483,14 @@ class RGuiControls {
 		return result;
 	}
 
-	/** Draws a check box, its text beside it; a click on either turns it over.
+	/** Draws a check box with its text beside it, and returns 1 when clicked. See `GuiToggle` for drawing a toggle button.
+
+		A click on the box or its text turns the check over.
 
 		@param bounds  The box.
 		@param text  Its text, or null.
 		@param checked  Whether it is checked, in `checked[0]`, or null.
-		@return  1 when it was clicked, else 0. */
+		@return  1 when clicked, else 0. */
 	static function GuiCheckBox(bounds:Rectangle, text:String, checked:Array<Bool>):Int {
 		var result = 0, state = guiState;
 		if (checked == null)
@@ -499,12 +528,14 @@ class RGuiControls {
 		return result;
 	}
 
-	/** Draws a combo box: its active item, and a button showing which of how many; a press on either moves to the next, after the last
-		the first.
+	/** Draws a combo box, its active item and a button showing which of how many. See `GuiDropdownBox` for listing the items to
+		choose from.
+
+		A press on the item or the button moves to the next item, and from the last back to the first.
 
 		@param bounds  The box, its button included.
 		@param text  The items, split at ';'.
-		@param active  The active item, in `active[0]`, or null; held to the items.
+		@param active  The active item, in `active[0]`, or null; clamped to the items.
 		@return  0. */
 	static function GuiComboBox(bounds:Rectangle, text:String, active:Array<Int>):Int {
 		var state = guiState;
@@ -541,8 +572,14 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a dropdown box: its active item, and in edit mode its items listed below it (above with `DROPDOWN_ROLL_UP`), the one under
-		the mouse focused. The program turns edit mode on and off with the result.
+	/** Draws a dropdown box, its active item with its items listed below it in edit mode. See `GuiComboBox` for stepping through the
+		items in place.
+
+		The program turns edit mode on and off with the result.
+
+		Lists the items above the box with `DROPDOWN_ROLL_UP`.
+
+		Focuses the item under the mouse.
 
 		@param bounds  The box; each item is its size.
 		@param text  The items, split at ';'.
@@ -627,9 +664,16 @@ class RGuiControls {
 		return result;
 	}
 
-	/** Draws a text box; in edit mode it takes typed text and the keys that move its cursor and delete (Home, End, Delete, Backspace,
-		Control-Backspace for a word, the arrows, held to repeat), and a click places the cursor. The program turns edit mode on and off
-		with the result.
+	/** Draws a text box that takes typed text in edit mode.
+
+		The program turns edit mode on and off with the result.
+
+		In edit mode, a click places the cursor, and these keys move the cursor and delete, repeating while held:
+
+		- Home and End
+		- the arrows
+		- Delete and Backspace
+		- Control-Backspace, which deletes a word
 
 		@param bounds  The box.
 		@param text  The text, in `text[0]`, edited in place.
@@ -829,11 +873,16 @@ class RGuiControls {
 		return result;
 	}
 
-	/** Draws a spinner: a value box between buttons that step its value down and up. In edit mode the value box takes typed digits.
+	/** Draws a spinner, a value box between buttons that step its value down and up. See `GuiValueBox` for drawing the value box
+		alone.
+
+		In edit mode, the value box takes typed digits.
+
+		Out of edit mode, the value is clamped to the range.
 
 		@param bounds  The spinner, its buttons included.
 		@param text  Its label, beside it, or null.
-		@param value  The value, in `value[0]`; out of edit mode it is held to the range.
+		@param value  The value, in `value[0]`.
 		@param minValue  The least.
 		@param maxValue  The most.
 		@param editMode  Whether its value box is being edited.
@@ -868,8 +917,13 @@ class RGuiControls {
 		return result;
 	}
 
-	/** Draws a value box: a whole number, centered; in edit mode it takes typed digits and Backspace, and Enter or a click outside ends
-		editing, holding the value to the range. The program turns edit mode on and off with the result.
+	/** Draws a value box, a whole number centered. See `GuiValueBoxFloat` for editing a number with a fraction.
+
+		The program turns edit mode on and off with the result.
+
+		In edit mode, the box takes typed digits and Backspace.
+
+		Enter or a click outside ends editing and clamps the value to the range.
 
 		@param bounds  The box.
 		@param text  Its label, beside it, or null.
@@ -925,8 +979,12 @@ class RGuiControls {
 		return result;
 	}
 
-	/** Draws a value box for a number with a fraction: its text, kept by the program, is shown and edited (digits, '.', and a sign
-		first), and the value read from it.
+	/** Draws a value box for a number with a fraction, showing and editing the number's text and reading the value from it. See
+		`GuiValueBox` for editing a whole number.
+
+		The program keeps the text.
+
+		In edit mode, the box takes digits, '.', and a sign first.
 
 		@param bounds  The box.
 		@param text  Its label, beside it, or null.
@@ -975,12 +1033,15 @@ class RGuiControls {
 		return result;
 	}
 
-	/** Draws a slider: a handle along a bar, dragged with the left button (the drag goes on outside the bar until it is released).
+	/** Draws a slider, a handle along a bar dragged with the left button, and returns 1 when the value changes. See `GuiSliderBar`
+		for drawing a bar filled to the value.
+
+		The drag goes on outside the bar until the left button is released.
 
 		@param bounds  The slider.
 		@param textLeft  The text left of it, or null.
 		@param textRight  The text right of it, or null.
-		@param value  The value, in `value[0]`, held to the range.
+		@param value  The value, in `value[0]`, clamped to the range.
 		@param minValue  The value at the left end.
 		@param maxValue  The value at the right end.
 		@return  1 when the value changed, else 0. */
@@ -988,12 +1049,13 @@ class RGuiControls {
 		return sliderPro(bounds, textLeft, textRight, value, minValue, maxValue, GuiGetStyle(SLIDER, SLIDER_WIDTH));
 	}
 
-	/** Draws a slider bar: a bar filled from the left to the value, dragged with the left button.
+	/** Draws a slider bar, filled from the left to the value and dragged with the left button, and returns 1 when the value changes.
+		See `GuiSlider` for drawing a handle along a bar.
 
 		@param bounds  The bar.
 		@param textLeft  The text left of it, or null.
 		@param textRight  The text right of it, or null.
-		@param value  The value, in `value[0]`, held to the range.
+		@param value  The value, in `value[0]`, clamped to the range.
 		@param minValue  The value at the left end.
 		@param maxValue  The value at the right end.
 		@return  1 when the value changed, else 0. */
@@ -1001,12 +1063,14 @@ class RGuiControls {
 		return sliderPro(bounds, textLeft, textRight, value, minValue, maxValue, 0);
 	}
 
-	/** Draws a progress bar, filled from the left to the value; its border is colored as far as the value reaches.
+	/** Draws a progress bar, filled from the left to the value.
+
+		Colors the border as far as the value reaches.
 
 		@param bounds  The bar.
 		@param textLeft  The text left of it, or null.
 		@param textRight  The text right of it, or null.
-		@param value  The value, in `value[0]`, or null; held to the most.
+		@param value  The value, in `value[0]`, or null; clamped to the most.
 		@param minValue  The least.
 		@param maxValue  The most.
 		@return  0. */
@@ -1048,7 +1112,7 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a status bar: a bordered bar with text, as a window's title.
+	/** Draws a status bar, a bordered bar with text, as a window's title.
 
 		@param bounds  The bar.
 		@param text  The text, or null.
@@ -1061,7 +1125,7 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a placeholder: a filled rectangle with centered text.
+	/** Draws a placeholder, a filled rectangle with centered text.
 
 		@param bounds  The rectangle.
 		@param text  The text, or null.
@@ -1077,7 +1141,7 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a grid: lines every spacing divided by subdivs, every subdivs-th line stronger.
+	/** Draws a grid, a line every spacing divided by subdivs, every subdivs-th line stronger.
 
 		@param bounds  The grid.
 		@param text  Not drawn.
@@ -1119,25 +1183,33 @@ class RGuiControls {
 
 	// ---- Advanced controls ----
 
-	/** Draws a list view of the text's items ("One;Two;Three"), scrolled by a bar and the mouse wheel when they don't fit.
+	/** Draws a list view of the text's items ("One;Two;Three"), scrolled by a bar and the mouse wheel when they don't fit. See
+		`GuiListViewEx` for listing an array of items and reading the one under the mouse.
+
+		A click on an item chooses it, and a second click unchooses it.
 
 		@param bounds  The list.
 		@param text  The items, split at ';'.
 		@param scrollIndex  The first item shown, in `scrollIndex[0]`, or null.
-		@param active  The item chosen, in `active[0]`, -1 for none, or null; a click chooses one, and again unchooses it.
+		@param active  The item chosen, in `active[0]`, -1 for none, or null.
 		@return  0. */
 	static function GuiListView(bounds:Rectangle, text:String, scrollIndex:Array<Int>, active:Array<Int>):Int {
 		var items = text == null ? null : textSplit(text, ";".code, null);
 		return GuiListViewEx(bounds, items, items == null ? 0 : items.length, scrollIndex, active, null);
 	}
 
-	/** Draws a list view of items, scrolled by a bar and the mouse wheel when they don't fit, the item under the mouse focused.
+	/** Draws a list view of an array of items, scrolled by a bar and the mouse wheel when they don't fit. See `GuiListView` for
+		listing the items of a string split at ';'.
+
+		Focuses the item under the mouse.
+
+		A click on an item chooses it, and a second click unchooses it.
 
 		@param bounds  The list.
 		@param text  The items.
 		@param count  How many items.
 		@param scrollIndex  The first item shown, in `scrollIndex[0]`, or null.
-		@param active  The item chosen, in `active[0]`, -1 for none, or null; a click chooses one, and again unchooses it.
+		@param active  The item chosen, in `active[0]`, -1 for none, or null.
 		@param focus  Receives the item under the mouse, in `focus[0]`, -1 for none, or null.
 		@return  0. */
 	static function GuiListViewEx(bounds:Rectangle, text:Array<String>, count:Int, scrollIndex:Array<Int>, active:Array<Int>, focus:Array<Int>):Int {
@@ -1230,7 +1302,8 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a message box: a window with a centered message and a row of buttons.
+	/** Draws a message box, a window with a centered message and a row of buttons, and returns the button clicked. See
+		`GuiTextInputBox` for adding a text box.
 
 		@param bounds  The window.
 		@param title  Its title, or null.
@@ -1270,8 +1343,14 @@ class RGuiControls {
 		return result;
 	}
 
-	/** Draws a text input box: a window with a message, a text box and a row of buttons; a click on the text box edits it, and with
-		`secretViewActive` a toggle beside it shows the text or hides it behind stars. One may be open at a time.
+	/** Draws a text input box, a window with a message, a text box and a row of buttons, and returns the button clicked. See
+		`GuiMessageBox` for drawing the message and buttons alone.
+
+		A click on the text box starts editing the text.
+
+		With `secretViewActive`, a toggle beside the text box shows the text or hides it behind stars.
+
+		One text input box may be open at a time.
 
 		@param bounds  The window.
 		@param title  Its title, or null.
@@ -1343,8 +1422,10 @@ class RGuiControls {
 		return result;
 	}
 
-	/** Draws a color picker: a saturation and value panel and a hue bar beside it, both dragged with the left button. The color goes
-		through HSV each call, so its hue may shift where red, green and blue are close.
+	/** Draws a color picker, a saturation and value panel with a hue bar beside it, both dragged with the left button. See
+		`GuiColorPickerHSV` for keeping the hue steady.
+
+		Converts the color through HSV each call, so its hue may shift where red, green and blue are close.
 
 		@param bounds  The panel; the hue bar is beside it.
 		@param text  Not drawn.
@@ -1366,7 +1447,8 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a color panel: saturation across and value down at the color's hue, dragged with the left button.
+	/** Draws a color panel, saturation across and value down at the color's hue, dragged with the left button. See `GuiColorPanelHSV`
+		for editing an HSV color.
 
 		@param bounds  The panel.
 		@param text  Not drawn.
@@ -1385,7 +1467,7 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws an alpha bar: clear to opaque across, over a checked background, its selector dragged with the left button.
+	/** Draws an alpha bar, clear to opaque across over a checked background, its selector dragged with the left button.
 
 		@param bounds  The bar.
 		@param text  Not drawn.
@@ -1438,7 +1520,7 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a hue bar: the hues from red at the top round to red at the bottom, its selector dragged with the left button.
+	/** Draws a hue bar, the hues from red at the top round to red at the bottom, its selector dragged with the left button.
 
 		@param bounds  The bar.
 		@param text  Not drawn.
@@ -1502,7 +1584,10 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a color picker that keeps its color as HSV, so its hue never shifts: a saturation and value panel and a hue bar beside it.
+	/** Draws a color picker for an HSV color, a saturation and value panel with a hue bar beside it. See `GuiColorPicker` for editing
+		a `Color`.
+
+		Keeps the color as HSV, so its hue never shifts.
 
 		@param bounds  The panel; the hue bar is beside it.
 		@param text  Not drawn.
@@ -1520,7 +1605,8 @@ class RGuiControls {
 		return 0;
 	}
 
-	/** Draws a color panel for an HSV color: saturation across and value down at its hue, dragged with the left button.
+	/** Draws a color panel for an HSV color, saturation across and value down at its hue, dragged with the left button. See
+		`GuiColorPanel` for editing a `Color`.
 
 		@param bounds  The panel.
 		@param text  Not drawn.

@@ -1,6 +1,8 @@
 package helix.raylib;
 
-/** Represents raylib's `VrDeviceInfo`: a head-mounted display's parameters, which `LoadVrStereoConfig` makes a stereo config of. */
+/** Represents raylib's `VrDeviceInfo`: a head-mounted display's parameters.
+
+	`LoadVrStereoConfig` makes a stereo config from them. */
 @:structInit
 class VrDeviceInfo {
 	/** Gets or sets the horizontal resolution, in pixels. */
@@ -30,7 +32,7 @@ class VrDeviceInfo {
 	/** Gets or sets the four chromatic aberration correction parameters. */
 	public var chromaAbCorrection:Array<Float>;
 
-	/** Creates a VrDeviceInfo.
+	/** Creates a display's parameters.
 
 		@param hResolution  The horizontal resolution, in pixels.
 		@param vResolution  The vertical resolution, in pixels.

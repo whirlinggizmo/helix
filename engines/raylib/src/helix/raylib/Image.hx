@@ -2,9 +2,13 @@ package helix.raylib;
 
 /** Represents raylib's `Image`: pixels in memory, in one of raylib's pixel formats.
 
-	The bytes are laid out as raylib's are: rows top first, each pixel `GetPixelDataSize(1, 1, format)` bytes; 16-bit values (the packed
-	formats, the half floats) and 32-bit floats little-endian. An image with mipmaps holds its smaller levels after it, each half the size
-	of the last. The `Image*` functions change an image in place, as raylib's do through its pointer: its fields are replaced. */
+	The bytes are laid out as raylib's: rows top first, each pixel `GetPixelDataSize(1, 1, format)` bytes.
+
+	16-bit values (the packed formats, the half floats) and 32-bit floats are little-endian.
+
+	An image with mipmaps holds its smaller levels after it, each half the size of the last.
+
+	The `Image*` functions change an image in place, as raylib's do through its pointer, replacing its fields. */
 class Image {
 	/** Gets or sets the pixels, or null for none. */
 	public var data:Null<haxe.io.Bytes>;
@@ -21,8 +25,8 @@ class Image {
 	/** Gets or sets the pixel format (`PIXELFORMAT_*`). */
 	public var format:Int;
 
-	/** Creates an image's record. Its fields are zero and its data null unless given, as raylib's `Image image = { 0 }` is; images are
-		made by the `GenImage*` functions and loaded by `LoadImageAsync`.
+	/** Creates an image's record, its fields zero and its data null unless provided, as raylib's `Image image = { 0 }` is. See the
+		`GenImage*` functions for making an image, and `LoadImageAsync` for loading one.
 
 		@param data  Optional. The pixels.
 		@param width  The width, in pixels.

@@ -13,33 +13,41 @@ import helix.raylib.modules.RGuiControls.*;
 #end
 
 /** Holds raygui's state, style, icons and tooltips, and the text and rectangle drawing its controls share, as raylib 5.5's raygui
-	(4.5-dev, `raygui.h`) has them; `Raygui` forwards to each (`tools/gen_raylib.py`). The state is kept here, so a program that calls
-	no raygui function links none of it. */
+	(4.5-dev, `raygui.h`) has them.
+
+	`Raygui` forwards to each function here (`tools/gen_raylib.py`).
+
+	A program that calls no raygui function links none of this state. */
 @:noCompletion
 @:allow(helix.raylib)
 class RGui {
 	#if !macro
 	// ---- Gui state ----
 
-	/** Enables the controls again, after `GuiDisable`. A state other than disabled, set with `GuiSetState`, is left as it is. */
+	/** Enables the controls again after `GuiDisable`.
+
+		A state other than disabled, set with `GuiSetState`, is unchanged. */
 	static function GuiEnable():Void {
 		if (guiState == STATE_DISABLED)
 			guiState = STATE_NORMAL;
 	}
 
-	/** Disables the controls: they are drawn disabled and take no input. A state other than normal, set with `GuiSetState`, is left as it
-		is. */
+	/** Disables the controls, so they draw disabled and take no input. See `GuiLock` for stopping the controls' input while they keep
+		their look.
+
+		A state other than normal, set with `GuiSetState`, is unchanged. */
 	static function GuiDisable():Void {
 		if (guiState == STATE_NORMAL)
 			guiState = STATE_DISABLED;
 	}
 
-	/** Locks the controls: they are drawn as they are and take no input, until `GuiUnlock`. */
+	/** Locks the controls until `GuiUnlock`, so they draw as they are and take no input. See `GuiDisable` for drawing the controls
+		disabled. */
 	static function GuiLock():Void {
 		guiLocked = true;
 	}
 
-	/** Unlocks the controls, after `GuiLock`. */
+	/** Unlocks the controls after `GuiLock`. */
 	static function GuiUnlock():Void {
 		guiLocked = false;
 	}
@@ -53,7 +61,7 @@ class RGui {
 
 	/** Sets how opaque the controls are drawn.
 
-		@param alpha  0 for clear to 1 for opaque, held to that range. */
+		@param alpha  0 for clear to 1 for opaque, clamped to that range. */
 	static function GuiSetAlpha(alpha:Float):Void {
 		if (alpha < 0)
 			alpha = 0;
@@ -62,7 +70,11 @@ class RGui {
 		guiAlpha = alpha;
 	}
 
-	/** Sets the state every control is drawn in: normal controls follow the mouse, any other state is forced on them all.
+	/** Sets the state every control is drawn in.
+
+		With `STATE_NORMAL`, each control follows the mouse.
+
+		Any other state is forced on every control.
 
 		@param state  The state (`STATE_NORMAL`, `STATE_FOCUSED`, `STATE_PRESSED` or `STATE_DISABLED`). */
 	static function GuiSetState(state:Int):Void {
@@ -78,8 +90,11 @@ class RGui {
 
 	// ---- Font and style ----
 
-	/** Sets the font the controls draw their text in. A font with no texture is ignored. The default style is loaded first if it isn't
-		yet, so loading it later doesn't undo this.
+	/** Sets the font the controls draw their text in.
+
+		A font with no texture is ignored.
+
+		Loads the default style first when no style is loaded yet, so a control's first use of the style keeps this font.
 
 		@param font  The font. */
 	static function GuiSetFont(font:Font):Void {
@@ -90,15 +105,22 @@ class RGui {
 		}
 	}
 
-	/** Returns the font the controls draw their text in: raylib's default font once the style is loaded, or another set with
-		`GuiSetFont`. Before anything is drawn or styled it is an empty font.
+	/** Returns the font the controls draw their text in.
+
+		Once the style is loaded, the font is raylib's default font or the one set with `GuiSetFont`.
+
+		Before anything is drawn or styled, the font is an empty font.
 
 		@return  The font. */
 	static function GuiGetFont():Font {
 		return guiFont == null ? new Font() : guiFont;
 	}
 
-	/** Sets one property of a control's style. A base property of `DEFAULT` (below 16) is set for every control.
+	/** Sets one property of a control's style.
+
+		Setting a base property of `DEFAULT` (below 16) sets that property for every control.
+
+		Loads the default style first when no style is loaded yet.
 
 		@param control  The control (`DEFAULT`, `LABEL`, `BUTTON` and the rest).
 		@param property  The property (`BORDER_COLOR_NORMAL`, `TEXT_SIZE`, `SLIDER_WIDTH` and the rest).
@@ -114,6 +136,8 @@ class RGui {
 
 	/** Returns one property of a control's style.
 
+		Loads the default style first when no style is loaded yet.
+
 		@param control  The control (`DEFAULT`, `LABEL`, `BUTTON` and the rest).
 		@param property  The property (`BORDER_COLOR_NORMAL`, `TEXT_SIZE`, `SLIDER_WIDTH` and the rest).
 		@return  Its value: a color as 0xRRGGBBAA, a size in pixels, or one of the property's values. */
@@ -124,7 +148,8 @@ class RGui {
 		return at >= 0 && at < guiStyle.length ? guiStyle[at] : 0;
 	}
 
-	/** raygui's style file load. A page can't wait for a file, so a call doesn't compile.
+	/** Stands for raygui's style file load, which doesn't compile. See `GuiLoadStyleAsync` in `helix.raylib.extras.Gui` for loading
+		a style file.
 
 		@param fileName  The style file (.rgs). */
 	@:unsupported("GuiLoadStyle: Synchronous loading is not supported. See GuiLoadStyleAsync(fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Gui (import helix.raylib.extras.Gui.*;)")
@@ -132,9 +157,11 @@ class RGui {
 		throw "GuiLoadStyle is unimplemented";
 	}
 
-	/** Loads raygui's default style, its light theme, over the style: every control's colors, borders, text and sizes. The font goes back
-		to raylib's default font, the font set before unloaded, and raylib's shapes are drawn from the font's white glyph, as raygui does,
-		so text and shapes share one texture. */
+	/** Loads raygui's default style, its light theme, over every control's colors, borders, text and sizes.
+
+		Sets the font back to raylib's default font and unloads the font set before.
+
+		Sets raylib's shapes to draw from the default font's white glyph, so text and shapes share one texture. */
 	static function GuiLoadStyleDefault():Void {
 		guiStyleLoaded = true;
 		GuiSetStyle(DEFAULT, BORDER_COLOR_NORMAL, 0x838383ff);
@@ -214,17 +241,18 @@ class RGui {
 
 	// ---- Tooltips ----
 
-	/** Turns tooltips on: a control the mouse is over draws the text set with `GuiSetTooltip` below it. */
+	/** Turns tooltips on, so a control the mouse is over draws the text set with `GuiSetTooltip` below it. */
 	static function GuiEnableTooltip():Void {
 		guiTooltip = true;
 	}
 
-	/** Turns tooltips off, after `GuiEnableTooltip`. */
+	/** Turns tooltips off after `GuiEnableTooltip`. */
 	static function GuiDisableTooltip():Void {
 		guiTooltip = false;
 	}
 
-	/** Sets the tooltip the next controls show while tooltips are on, until it is set again.
+	/** Sets the tooltip the next controls show while tooltips are on, until the next call. See `GuiEnableTooltip` for turning
+		tooltips on.
 
 		@param tooltip  The text, or null for none. */
 	static function GuiSetTooltip(tooltip:String):Void {
@@ -233,7 +261,9 @@ class RGui {
 
 	// ---- Icons ----
 
-	/** Returns a control's text with an icon before it, as raygui writes one: "#" and the icon's number in three digits, then "#".
+	/** Returns a control's text with an icon before it, as raygui writes one.
+
+		The icon is "#", the icon's number in three digits, then "#".
 
 		@param iconId  The icon (`ICON_*`).
 		@param text  The text, or null for the icon alone.
@@ -254,15 +284,21 @@ class RGui {
 			guiIconScale = scale;
 	}
 
-	/** Returns the icons' bits, which a program may change: eight 32-bit words an icon, `ICON_*` times 8, two 16-pixel rows a word, bit
-		0 the leftmost pixel of the first.
+	/** Returns the icons' bits, which a program may change.
+
+		The bits are laid out as:
+
+		- eight 32-bit words an icon, the icon's first at `ICON_*` times 8
+		- two 16-pixel rows a word
+		- bit 0 the leftmost pixel of the word's first row
 
 		@return  The icons, 2048 words. */
 	static function GuiGetIcons():Array<Int> {
 		return icons();
 	}
 
-	/** raygui's icon file load. A page can't wait for a file, so a call doesn't compile.
+	/** Stands for raygui's icon file load, which doesn't compile. See `GuiLoadIconsAsync` in `helix.raylib.extras.Gui` for loading
+		an icon file.
 
 		@param fileName  The icon file (.rgi).
 		@param loadIconsName  Whether the icons' names are read.
@@ -272,7 +308,9 @@ class RGui {
 		throw "GuiLoadIcons is unimplemented";
 	}
 
-	/** Draws an icon, each of its pixels a square, faded by `GuiSetAlpha`.
+	/** Draws an icon, each of its pixels a square.
+
+		Fades the icon by the alpha set with `GuiSetAlpha`.
 
 		@param iconId  The icon (`ICON_*`).
 		@param posX  Its left edge, in pixels.

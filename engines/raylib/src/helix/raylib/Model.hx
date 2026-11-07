@@ -1,9 +1,11 @@
 package helix.raylib;
 
-/** Represents raylib's `Model`: meshes, materials, which material each mesh draws with, and a transform.
+/** Represents raylib's `Model`: meshes, materials, each mesh's material, and a transform.
 
-	A model holds a count on each of its meshes and materials (docs/DECISIONS.md 25): putting one in `meshes` or `materials` retains it,
-	replacing or `UnloadModel` releases it, and what no one holds any more is freed. */
+	Holds a count on each of its meshes and materials. Putting one in `meshes` or `materials` retains it. Replacing it or `UnloadModel`
+	releases it.
+
+	A mesh or material nothing holds is freed. */
 class Model {
 	/** Gets or sets the transform applied before `DrawModel`'s position, rotation and scale. */
 	public var transform:Matrix;
@@ -14,25 +16,30 @@ class Model {
 	/** Gets the number of materials, set when `materials` is. */
 	public var materialCount:Int;
 
-	/** Gets or sets the meshes, each held by the model. Setting copies the array, retains its meshes, releases the ones it replaces and
-		sets `meshCount`. */
+	/** Gets or sets the meshes, each held by the model.
+
+		Setting copies the array, retains its meshes, releases the ones it replaces and sets `meshCount`. */
 	public var meshes(default, set):ModelMeshes;
 
-	/** Gets or sets the materials, each held by the model. Setting copies the array, retains its materials, releases the ones it
-		replaces and sets `materialCount`. */
+	/** Gets or sets the materials, each held by the model.
+
+		Setting copies the array, retains its materials, releases the ones it replaces and sets `materialCount`. */
 	public var materials(default, set):ModelMaterials;
 
 	/** Gets the material of each mesh, by its index in `materials`. */
 	public var meshMaterial:Array<Int>;
 
-	/** Gets the number of bones: the joints of the file's first skin, 0 for a model without one. */
+	/** Gets the number of bones, the joints of the file's first skin, or 0 for a model without one. */
 	public var boneCount:Int = 0;
 
-	/** Gets the bones, the file's first skin's joints in its order, each parent the nearest joint above it; null without a skin. */
+	/** Gets the bones, or null without a skin.
+
+		The file's first skin's joints, in its order, each parent the nearest joint above it. */
 	public var bones:Null<Array<BoneInfo>> = null;
 
-	/** Gets each bone's transform in the model as the skin was bound to it: its inverse bind matrix inverted, or, for a file that gives
-		none, its node's at rest; null without a skin. */
+	/** Gets each bone's transform in the model as the skin was bound to it, or null without a skin.
+
+		Each is its inverse bind matrix inverted, or its node's at rest for a file that gives none. */
 	public var bindPose:Null<Array<Transform>> = null;
 
 	// The pose UpdateModelAnimation last set, by bone (raylib 6.2's currentPose); null until a call sets it (Animations.setPose), so a
@@ -56,7 +63,8 @@ class Model {
 	@:allow(helix.raylib)
 	var path = "";
 
-	/** Creates a model, holding its meshes and materials. Models are made by `extras.Models.LoadModelAsync` and `Raylib.LoadModelFromMesh`.
+	/** Creates a model holding the meshes and materials. See `extras.Models.LoadModelAsync` for loading a model, and
+		`Raylib.LoadModelFromMesh` for making one of a mesh.
 
 		@param meshes  The meshes.
 		@param materials  The materials.

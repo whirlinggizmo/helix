@@ -23,15 +23,18 @@ import helix.raylib.Rlgl.*;
 import helix.raylib.modules.RRlgl.*;
 #end
 
-/** Holds raylib's rshapes (2D shapes and their collisions), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
+/** Provides raylib's rshapes, the 2D shapes and their collisions. `Raylib` forwards each call here through `tools/gen_raylib.py`. */
 @:noCompletion
 @:allow(helix.raylib)
 class RShapes {
 	#if !macro
 	// ---- Shapes texture ----
 
-	/** Sets the texture and the part of it the filled shapes draw with, as one white pixel of a font's texture lets shapes and text
-		share a draw. A texture with no id, or an empty rectangle, goes back to the white pixel shapes draw with at first.
+	/** Sets the texture, and the rectangle of it, that the filled shapes sample.
+
+		Pointing it at a white pixel in a font's texture lets shapes and text share one draw.
+
+		A texture with no id, or an empty rectangle, restores the default white pixel.
 
 		@param texture  The texture.
 		@param source  The part of it, in pixels. */
@@ -51,14 +54,14 @@ class RShapes {
 		shapeV1 = (texShapesRec.y + texShapesRec.height) / h;
 	}
 
-	/** Returns the texture the filled shapes draw with: raylib's default texture, a white pixel, unless `SetShapesTexture` set another.
+	/** Returns the filled shapes' texture, raylib's default white pixel unless `SetShapesTexture` set another.
 
 		@return  The texture. */
 	static function GetShapesTexture():Texture2D {
 		return texShapes != null ? texShapes : new Texture2D(Textures.DEFAULT, 1, 1);
 	}
 
-	/** Returns the part of the shapes texture the filled shapes draw with.
+	/** Returns the rectangle of the shapes texture that the filled shapes sample.
 
 		@return  The rectangle, in pixels. */
 	static function GetShapesTextureRectangle():Rectangle {
@@ -95,7 +98,7 @@ class RShapes {
 		rlSetTexture(0);
 	}
 
-	/** Draws a line one pixel wide.
+	/** Draws a line one pixel wide. See `DrawLineEx` for drawing a line of a thickness.
 
 		@param startPosX  The start's x.
 		@param startPosY  The start's y.
@@ -110,7 +113,7 @@ class RShapes {
 		rlEnd();
 	}
 
-	/** Draws a line one pixel wide.
+	/** Draws a line one pixel wide. See `DrawLineEx` for drawing a line of a thickness.
 
 		@param startPos  The start.
 		@param endPos  The end.
@@ -138,7 +141,7 @@ class RShapes {
 		}
 	}
 
-	/** Draws lines one pixel wide from each point to the next.
+	/** Draws lines one pixel wide from each point to the next. See `DrawSplineLinear` for drawing them of a thickness.
 
 		@param points  The points.
 		@param pointCount  How many of them to draw through, 2 or more.
@@ -250,7 +253,9 @@ class RShapes {
 		rlSetTexture(0);
 	}
 
-	/** Draws a slice of a circle's outline, one pixel wide, with lines from the center to its ends; a whole turn has none.
+	/** Draws a slice of a circle's outline, one pixel wide, with lines from the center to its ends.
+
+		A whole turn draws no lines from the center.
 
 		@param center  The center.
 		@param radius  The radius; 0 or less draws nothing.
@@ -432,7 +437,9 @@ class RShapes {
 		rlSetTexture(0);
 	}
 
-	/** Draws a ring's outline, or a slice of one, one pixel wide, with lines across its ends; a whole turn has none.
+	/** Draws a ring's outline, or a slice of one, one pixel wide, with lines across its ends.
+
+		A whole turn draws no lines across the ends.
 
 		@param center  The center.
 		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle.
@@ -586,8 +593,9 @@ class RShapes {
 		DrawRectangleGradientEx(new Rectangle(posX, posY, width, height), left, left, right, right);
 	}
 
-	/** Draws a filled rectangle that blends between a color at each corner. As in raylib 5.5, `topRight` colors the bottom-right corner
-		and `bottomRight` the top-right one.
+	/** Draws a filled rectangle that blends between a color at each corner.
+
+		`topRight` colors the bottom-right corner and `bottomRight` the top-right one, as in raylib 5.5.
 
 		@param rec  The rectangle.
 		@param topLeft  The top-left corner's color.
@@ -610,10 +618,12 @@ class RShapes {
 		rlSetTexture(0);
 	}
 
-	/** Draws a rectangle's outline, one pixel wide, its lines through the centers of its edge pixels.
+	/** Draws a rectangle's outline, one pixel wide, its lines through the centers of its edge pixels. See `DrawRectangleLinesEx` for
+		drawing an outline of a thickness.
 
-		The lines are half a pixel inside the edges, by the matrix `rlPushMatrix` and its kin set (`rlGetMatrixTransform`); a 2D camera's
-		zoom isn't counted, so under a camera they are half a unit inside.
+		The lines sit half a pixel inside the edges, scaled by the matrix `rlPushMatrix` and its kin set (`rlGetMatrixTransform`).
+
+		A 2D camera's zoom isn't in that matrix, so under a camera the lines sit half a unit inside the edges.
 
 		@param posX  The left edge.
 		@param posY  The top edge.
@@ -750,7 +760,8 @@ class RShapes {
 		rlSetTexture(0);
 	}
 
-	/** Draws a rounded rectangle's outline, one pixel wide, its lines through the centers of its edge pixels.
+	/** Draws a rounded rectangle's outline, one pixel wide, its lines through the centers of its edge pixels. See
+		`DrawRectangleRoundedLinesEx` for drawing an outline of a thickness.
 
 		@param rec  The rectangle.
 		@param roundness  How round its corners are: 0 or less for square (`DrawRectangleLines`, the rectangle cut to whole pixels), 1 for
@@ -900,8 +911,9 @@ class RShapes {
 
 	/** Draws a filled triangle.
 
-		The points must go counterclockwise on the screen, as raylib's must: a triangle whose points go clockwise faces away, and isn't
-		drawn while back faces are culled (`rlEnableBackfaceCulling`, the default).
+		The points must go counterclockwise on the screen, as raylib's must.
+
+		While back faces are culled (`rlEnableBackfaceCulling`, the default), points that go clockwise face away and draw nothing.
 
 		@param v1  The first point.
 		@param v2  The second point.
@@ -1012,7 +1024,7 @@ class RShapes {
 		rlSetTexture(0);
 	}
 
-	/** Draws a regular polygon's outline, one pixel wide.
+	/** Draws a regular polygon's outline, one pixel wide. See `DrawPolyLinesEx` for drawing an outline of a thickness.
 
 		@param center  The center.
 		@param sides  How many sides it has, 3 or more.
@@ -1097,7 +1109,7 @@ class RShapes {
 		}
 	}
 
-	/** Draws a B-spline of a thickness through points, with round ends; it passes near the points rather than through them.
+	/** Draws a B-spline of a thickness with round ends, passing near the points rather than through them.
 
 		@param points  The points.
 		@param pointCount  How many of them to draw through, 4 or more.
@@ -1157,8 +1169,7 @@ class RShapes {
 		DrawCircleV(new Vector2(currentX, currentY), thick / 2, color);
 	}
 
-	/** Draws a Catmull-Rom spline of a thickness through points, with round ends; it passes through all but the first and last, which
-		only steer it.
+	/** Draws a Catmull-Rom spline of a thickness with round ends, through every point but the first and last, which only steer it.
 
 		@param points  The points.
 		@param pointCount  How many of them to draw through, 4 or more.
@@ -1390,7 +1401,7 @@ class RShapes {
 
 	// ---- Collisions ----
 
-	/** Returns whether two rectangles overlap.
+	/** Returns whether two rectangles overlap. See `GetCollisionRec` for finding where they overlap.
 
 		@param rec1  One rectangle.
 		@param rec2  The other.
@@ -1454,7 +1465,9 @@ class RShapes {
 		return CheckCollisionCircles(point, 0, center, radius);
 	}
 
-	/** Returns whether a point is inside a triangle; a point on its edge isn't.
+	/** Returns whether a point is inside a triangle.
+
+		A point on an edge is outside.
 
 		@param point  The point.
 		@param p1  The triangle's first point.

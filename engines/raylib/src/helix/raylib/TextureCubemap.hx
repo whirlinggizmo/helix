@@ -1,4 +1,6 @@
 package helix.raylib;
 
-/** raylib's `TextureCubemap`, the same as `Texture`: a cubemap's record, made by `Raylib.LoadTextureCubemap`. */
+/** Represents raylib's `TextureCubemap`, the same type as `Texture`: a cubemap's record.
+
+	Made by `Raylib.LoadTextureCubemap`. */
 typedef TextureCubemap = Texture;

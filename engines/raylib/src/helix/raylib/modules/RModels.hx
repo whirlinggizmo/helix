@@ -23,7 +23,9 @@ import helix.raylib.Rlgl.*;
 import helix.raylib.modules.RRlgl.*;
 #end
 
-/** Holds raylib's rmodels (3D shapes, models, meshes, materials and rays), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
+/** Provides raylib's rmodels functions: 3D shapes, models, meshes, materials and rays.
+
+	`Raylib` forwards to each, through `tools/gen_raylib.py`. */
 @:noCompletion
 @:allow(helix.raylib)
 class RModels {
@@ -44,7 +46,7 @@ class RModels {
 		rlEnd();
 	}
 
-	/** Draws a point in 3D, as raylib does: a line 0.1 long toward +z.
+	/** Draws a point in 3D as a line 0.1 long toward +z, as raylib's does.
 
 		@param position  The point.
 		@param color  The color. */
@@ -59,11 +61,11 @@ class RModels {
 		rlPopMatrix();
 	}
 
-	/** Draws a circle's outline in 3D, 36 lines, on the XY plane turned about an axis.
+	/** Draws a circle's outline in 3D as 36 lines, on the XY plane turned about an axis.
 
 		@param center  Its center.
 		@param radius  Its radius.
-		@param rotationAxis  The axis it is turned about.
+		@param rotationAxis  The axis of the turn.
 		@param rotationAngle  The angle, in degrees.
 		@param color  The color. */
 	static function DrawCircle3D(center:Vector3, radius:Float, rotationAxis:Vector3, rotationAngle:Float, color:Color):Void {
@@ -97,10 +99,10 @@ class RModels {
 		rlEnd();
 	}
 
-	/** Draws a strip of triangles in 3D: each point after the second makes a triangle with the two before it.
+	/** Draws a strip of triangles in 3D, each point after the second making a triangle with the two before it.
 
 		@param points  The points.
-		@param pointCount  How many of them; fewer than 3 draws nothing.
+		@param pointCount  How many of them. Fewer than 3 draws nothing.
 		@param color  The color. */
 	static function DrawTriangleStrip3D(points:Array<Vector3>, pointCount:Int, color:Color):Void {
 		if (pointCount < 3)
@@ -190,7 +192,7 @@ class RModels {
 		DrawCubeWires(position, size.x, size.y, size.z, color);
 	}
 
-	/** Draws a filled sphere, 16 rings and 16 slices.
+	/** Draws a filled sphere of 16 rings and 16 slices. See `DrawSphereEx` for choosing the rings and slices.
 
 		@param centerPos  Its center.
 		@param radius  Its radius.
@@ -199,7 +201,7 @@ class RModels {
 		DrawSphereEx(centerPos, radius, 16, 16, color);
 	}
 
-	/** Draws a filled sphere: rings bands of slices, from the top, each vertex with its normal.
+	/** Draws a filled sphere of `rings` bands and `slices` slices from the top, each vertex with its normal.
 
 		@param centerPos  Its center.
 		@param radius  Its radius.
@@ -227,7 +229,8 @@ class RModels {
 		rlPopMatrix();
 	}
 
-	/** Draws a sphere's wires: rings bands of slices, from the top, each face's longitude, latitude and diagonal lines.
+	/** Draws a sphere's wires, `rings` bands and `slices` slices from the top, with each face's longitude, latitude and diagonal
+		lines.
 
 		@param centerPos  Its center.
 		@param radius  Its radius.
@@ -284,7 +287,7 @@ class RModels {
 		@param radiusTop  Its top's radius.
 		@param radiusBottom  Its base's.
 		@param height  Its height.
-		@param sides  Its sides, at least 3.
+		@param sides  Its sides, raised to 3 when fewer.
 		@param color  The color. */
 	static function DrawCylinder(position:Vector3, radiusTop:Float, radiusBottom:Float, height:Float, sides:Int, color:Color):Void {
 		if (sides < 3)
@@ -357,7 +360,7 @@ class RModels {
 		@param endPos  Its top's.
 		@param startRadius  Its base's radius.
 		@param endRadius  Its top's.
-		@param sides  Its sides, at least 3.
+		@param sides  Its sides, raised to 3 when fewer.
 		@param color  The color. */
 	static function DrawCylinderEx(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int, color:Color):Void {
 		if (sides < 3)
@@ -386,7 +389,7 @@ class RModels {
 		@param radiusTop  Its top's radius.
 		@param radiusBottom  Its base's.
 		@param height  Its height.
-		@param sides  Its sides, at least 3.
+		@param sides  Its sides, raised to 3 when fewer.
 		@param color  The color. */
 	static function DrawCylinderWires(position:Vector3, radiusTop:Float, radiusBottom:Float, height:Float, sides:Int, color:Color):Void {
 		if (sides < 3)
@@ -420,7 +423,7 @@ class RModels {
 		@param endPos  Its top's.
 		@param startRadius  Its base's radius.
 		@param endRadius  Its top's.
-		@param sides  Its sides, at least 3.
+		@param sides  Its sides, raised to 3 when fewer.
 		@param color  The color. */
 	static function DrawCylinderWiresEx(startPos:Vector3, endPos:Vector3, startRadius:Float, endRadius:Float, sides:Int, color:Color):Void {
 		if (sides < 3)
@@ -479,13 +482,13 @@ class RModels {
 		return quads;
 	}
 
-	/** Draws a filled capsule: a cylinder with half a sphere on each end, their centers the two points.
+	/** Draws a filled capsule, a cylinder with half a sphere on each end, the two points their centers.
 
 		@param startPos  One end's center.
 		@param endPos  The other's.
 		@param radius  Its radius.
-		@param slices  Slices around, at least 3.
-		@param rings  Rings in each half sphere, at least 1.
+		@param slices  Slices around, raised to 3 when fewer.
+		@param rings  Rings in each half sphere, raised to 1 when fewer.
 		@param color  The color. */
 	static function DrawCapsule(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void {
 		if (slices < 3)
@@ -504,13 +507,13 @@ class RModels {
 		rlEnd();
 	}
 
-	/** Draws a capsule's wires: a cylinder with half a sphere on each end, their centers the two points.
+	/** Draws a capsule's wires, a cylinder with half a sphere on each end, the two points their centers.
 
 		@param startPos  One end's center.
 		@param endPos  The other's.
 		@param radius  Its radius.
-		@param slices  Slices around, at least 3.
-		@param rings  Rings in each half sphere, at least 1.
+		@param slices  Slices around, raised to 3 when fewer.
+		@param rings  Rings in each half sphere, raised to 1 when fewer.
 		@param color  The color. */
 	static function DrawCapsuleWires(startPos:Vector3, endPos:Vector3, radius:Float, slices:Int, rings:Int, color:Color):Void {
 		if (slices < 3)
@@ -565,7 +568,7 @@ class RModels {
 		rlEnd();
 	}
 
-	/** Draws a grid on the XZ plane, centered on the origin, its center lines darker, as raylib's.
+	/** Draws a grid on the XZ plane centered on the origin, its center lines darker.
 
 		@param slices  The lines each way.
 		@param spacing  The space between them. */
@@ -595,7 +598,7 @@ class RModels {
 		DrawCubeWires(center, size.x, size.y, size.z, color);
 	}
 
-	/** Draws a texture facing the camera, turning about y alone, at a height of scale and its own proportions.
+	/** Draws a texture facing the camera and turning about y alone, `scale` high in the texture's own proportions.
 
 		@param camera  The camera.
 		@param texture  The texture.
@@ -679,7 +682,7 @@ class RModels {
 
 	// ---- Models and meshes ----
 
-	/** raylib's model load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadModelAsync` loads it.
+	/** Refuses to compile on any target, as raylib's model load waits for the file. See `LoadModelAsync` for loading a model.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -688,8 +691,8 @@ class RModels {
 		throw "LoadModel is unimplemented";
 	}
 
-	/** raylib's material load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadMaterialsAsync`
-		loads them.
+	/** Refuses to compile on any target, as raylib's material load waits for the file. See `LoadMaterialsAsync` for loading a
+		file's materials.
 
 		@param fileName  The file.
 		@param materialCount  Receives how many.
@@ -712,8 +715,9 @@ class RModels {
 		return model;
 	}
 
-	/** Makes a model of one mesh, with the default material. The model takes over the program's hold on the mesh, as a raylib program
-		doesn't unload a mesh it gave a model: `UnloadModel` frees it, and a later `UnloadMesh` does nothing.
+	/** Returns a model of one mesh with the default material.
+
+		The model takes over the program's hold on the mesh. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
 
 		@param mesh  The mesh.
 		@return  The model. */
@@ -727,18 +731,23 @@ class RModels {
 	/** Returns whether a model has meshes.
 
 		@param model  The model.
-		@return  True when it has. */
+		@return  True when the model has meshes. */
 	static function IsModelValid(model:Model):Bool {
 		return model.meshCount > 0;
 	}
 
-	/** Frees a model: it lets go of its meshes and materials, and what no one else holds is freed with it (docs/DECISIONS.md 25): a
-		mesh's GPU buffers, a material's maps' textures and its shader, each when nothing else holds it (another load of its file, another
-		model, the program); the default shader and texture stay. The model is left empty, so unloading it again does nothing.
+	/** Lets go of a model's meshes and materials, freeing each that nothing else holds.
 
-		raylib's frees only the meshes, and leaves the textures and shaders to the program. Where helix-raylib's differs: a texture or shader
-		copied out of a material (`var t = map.texture`) and used after the model is unloaded is freed, where raylib's leaks it; and a
-		material or mesh shared between models works, where raylib's C frees it twice.
+		Frees a mesh's GPU buffers, and a material's maps' textures and its shader, once nothing else holds them. Another load of the same
+		file, another model and the program each hold them.
+
+		Leaves the default shader and texture.
+
+		Copying a texture or shader out of a material (`var t = map.texture`) doesn't hold it, so the copy is freed with the model.
+
+		Frees a material or mesh shared between models once, when the last model lets go of it.
+
+		Leaves the model empty, so unloading it again does nothing.
 
 		@param model  The model. */
 	static function UnloadModel(model:Model):Void {
@@ -817,10 +826,13 @@ class RModels {
 		rlDisableWireMode();
 	}
 
-	/** Draws a model's triangles as their corners, one pixel each, as `DrawModel` places it, through rlgl's point mode with culling off.
+	/** Draws a model's triangles' corners as points one pixel each, placed as `DrawModel` places a model.
 
-		Each index of a mesh's triangles is a point, or each vertex of its whole triangles when it has no indices (a cloud of points is a
-		mesh of vertices alone). Culling is on after it, as raylib leaves it.
+		Draws a point at each index of a mesh's triangles, or at each vertex when the mesh has no indices. A cloud of points is a mesh of
+		vertices alone.
+
+		Turns backface culling off through rlgl's point mode and on after, as raylib leaves it.
+
 		@param model  The model.
 		@param position  Where.
 		@param scale  The scale, the same on each axis.
@@ -833,10 +845,12 @@ class RModels {
 		rlDisableWireMode();
 	}
 
-	/** Draws a model's triangles as their corners, one pixel each, as `DrawModelEx` places it, through rlgl's point mode with culling off.
+	/** Draws a model's triangles' corners as points one pixel each, placed as `DrawModelEx` places a model.
 
-		Each index of a mesh's triangles is a point, or each vertex of its whole triangles when it has no indices. Culling is on after it,
-		as raylib leaves it.
+		Draws a point at each index of a mesh's triangles, or at each vertex when the mesh has no indices.
+
+		Turns backface culling off through rlgl's point mode and on after, as raylib leaves it.
+
 		@param model  The model.
 		@param position  Where.
 		@param rotationAxis  The axis.
@@ -853,10 +867,14 @@ class RModels {
 
 	/** Draws a mesh with a material and a transform.
 
-		The material's maps bind as raylib's: the first three at `texture0` to `texture2`, and each other map with a texture at the sampler
-		`shader.locs[SHADER_LOC_MAP_DIFFUSE + index]` names, or at a sampler set to its index with `SetShaderValue` (raylib's skybox sets
-		its `samplerCube` to `MATERIAL_MAP_CUBEMAP`). `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` and `MATERIAL_MAP_PREFILTER` bind a
-		cubemap (`LoadTextureCubemap`) to a `samplerCube`, the rest a 2D texture to a `sampler2D`; a texture of the other kind binds nothing.
+		Binds the material's maps as raylib does:
+
+		- The first three at `texture0` to `texture2`.
+		- Each other map with a texture at the sampler `shader.locs[SHADER_LOC_MAP_DIFFUSE + index]` names, or at a sampler set to the
+		  map's index with `SetShaderValue`. raylib's skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`.
+
+		Binds a cubemap (`LoadTextureCubemap`) to a `samplerCube` for `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` and
+		`MATERIAL_MAP_PREFILTER`, and a 2D texture to a `sampler2D` for the rest. A texture of the other kind binds nothing.
 
 		@param mesh  The mesh.
 		@param material  The material.
@@ -865,11 +883,17 @@ class RModels {
 		drawMesh(mesh, material, toMatrix3D(transform, placing), WHITE);
 	}
 
-	/** Draws a mesh many times in one draw, as raylib 5.5's does: each instance is placed by its own transform, which the material's
-		shader takes as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies itself (raylib's instancing example sets
-		it with `GetShaderLocationAttrib(shader, "instanceTransform")`). `mvp` is the camera's alone, and `matNormal` the identity. A shader
-		without a `mat4` attribute there draws nothing, with a warning. The mesh's attributes and the transforms are a buffer each, eight
-		at most, so a shader reading every one of raylib's attributes besides the transforms can't be drawn.
+	/** Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does.
+
+		The material's shader takes each transform as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies it itself.
+		raylib's instancing example sets that location with `GetShaderLocationAttrib(shader, "instanceTransform")`.
+
+		Draws nothing, with a warning, when the shader has no `mat4` attribute there.
+
+		Sets `mvp` to the camera's alone and `matNormal` to the identity.
+
+		Sends the mesh's attributes and the transforms as a buffer each, eight at most. A shader reading every one of raylib's attributes
+		besides the transforms can't be drawn.
 
 		@param mesh  The mesh.
 		@param material  Its material: the shader, the diffuse color and the textures.
@@ -896,23 +920,30 @@ class RModels {
 		drawMesh(mesh, material, new Matrix3D(), WHITE, buffer, count);
 	}
 
-	/** Sends a mesh's vertices to the GPU, so it can be drawn. A mesh not sent goes when it is first drawn, as `LoadModelAsync`'s and the
-		`GenMesh*` functions' do.
+	/** Sends a mesh's vertices to the GPU, so the mesh can be drawn.
 
-		An attribute the mesh has no array for reads a default in a shader: texture coordinates 0, 0, normals 0, 0, 1, colors white,
-		tangents 1, 0, 0, 1, second texture coordinates, bone ids and bone weights 0.
+		A mesh not sent this way is sent when first drawn, as `LoadModelAsync`'s meshes and the `GenMesh*` meshes are.
+
+		An attribute the mesh has no array for reads a default in a shader:
+
+		- Texture coordinates 0, 0.
+		- Normals 0, 0, 1.
+		- Colors white.
+		- Tangents 1, 0, 0, 1.
+		- Second texture coordinates, bone ids and bone weights 0.
 
 		@param mesh  The mesh.
-		@param isDynamic  Whether it will change (raylib names it `dynamic`, a Haxe keyword); any mesh here can be changed by
-			`UpdateMeshBuffer`, so it is ignored. */
+		@param isDynamic  Whether the mesh will change. Ignored, as `UpdateMeshBuffer` can change any mesh here. raylib names it
+			`dynamic`, a Haxe keyword. */
 	static function UploadMesh(mesh:Mesh, isDynamic:Bool):Void {
 		Models.upload(mesh);
 	}
 
-	/** Changes part of one of a mesh's buffers on the GPU, as raylib's: the mesh's own arrays stay as they were. Draws asked for before
-		it keep what was there; those after see the change.
+	/** Changes part of one of a mesh's buffers on the GPU, leaving the mesh's own arrays unchanged, as raylib's does.
 
-		@param mesh  The mesh, uploaded (`UploadMesh`, or drawn once); one that isn't changes nothing.
+		Draws asked for before the call keep the old values, and those after see the change.
+
+		@param mesh  The mesh, uploaded by `UploadMesh` or drawn once. One that isn't changes nothing.
 		@param index  The buffer: 0 positions, 1 texture coordinates, 2 normals, 3 colors, 4 tangents, 5 second texture coordinates,
 			6 indices. One the mesh has no array for changes nothing.
 		@param data  The new values: raylib's bytes (`haxe.io.Bytes`: 32-bit floats, colors a byte each, indices 16-bit), or an array of
@@ -939,18 +970,20 @@ class RModels {
 		Models.update(mesh, index, values, offset);
 	}
 
-	/** Lets go of the program's hold on a mesh, freeing its GPU buffers unless a model still holds it (docs/DECISIONS.md 25). A mesh given
-		to `LoadModelFromMesh`, or already freed, is left: the model frees it.
+	/** Lets go of the program's hold on a mesh, freeing its GPU buffers unless a model still holds it.
+
+		Does nothing for a mesh given to `LoadModelFromMesh`, which its model frees, or for one already freed.
 
 		@param mesh  The mesh. */
 	static function UnloadMesh(mesh:Mesh):Void {
 		Models.releaseMesh(mesh);
 	}
 
-	/** Makes a flat regular polygon on the XZ plane, facing up, centered on the origin: a triangle a side, with no indices, its texture
-		coordinates 0.
+	/** Returns a flat regular polygon mesh on the XZ plane, facing up and centered on the origin.
 
-		@param sides  Its sides; fewer than 3 make an empty mesh.
+		Makes a triangle a side, with no indices and texture coordinates 0.
+
+		@param sides  Its sides. Fewer than 3 make an empty mesh.
 		@param radius  Its corners' distance from the center.
 		@return  The mesh. */
 	static function GenMeshPoly(sides:Int, radius:Float):Mesh {
@@ -982,7 +1015,7 @@ class RModels {
 		return mesh;
 	}
 
-	/** Makes a flat mesh on the XZ plane, facing up, centered on the origin: a grid of vertices shared by its cells' triangles.
+	/** Returns a flat mesh on the XZ plane, facing up and centered on the origin, a grid of vertices shared by its cells' triangles.
 
 		@param width  Along x.
 		@param length  Along z.
@@ -1024,7 +1057,7 @@ class RModels {
 		return mesh;
 	}
 
-	/** Makes a box mesh, centered on the origin: four vertices a face, each face's texture its whole.
+	/** Returns a box mesh centered on the origin, four vertices a face, each face textured by the whole texture.
 
 		@param width  Along x.
 		@param height  Along y.
@@ -1085,12 +1118,14 @@ class RModels {
 		return mesh;
 	}
 
-	/** Makes a sphere mesh, centered on the origin, its poles on z, three vertices a triangle with no indices, as raylib's (par_shapes').
+	/** Returns a sphere mesh centered on the origin with its poles on z, as raylib's (par_shapes') does.
+
+		Makes three vertices a triangle, with no indices.
 
 		@param radius  Its radius.
 		@param rings  Rings pole to pole, at least 3.
 		@param slices  Slices around, at least 3.
-		@return  The mesh; empty for fewer rings or slices. */
+		@return  The mesh, empty for fewer rings or slices. */
 	static function GenMeshSphere(radius:Float, rings:Int, slices:Int):Mesh {
 		if (rings < 3 || slices < 3) {
 			Runtime.log(LOG_WARNING, "MESH: Failed to generate mesh: sphere");
@@ -1102,12 +1137,14 @@ class RModels {
 		return fromParMesh(sphere);
 	}
 
-	/** Makes half a sphere, open at its base, on the side of +y from the origin, three vertices a triangle with no indices.
+	/** Returns a half sphere mesh, open at its base, on the +y side of the origin.
 
-		@param radius  Its radius; a negative one is 0.
+		Makes three vertices a triangle, with no indices.
+
+		@param radius  Its radius. A negative one is 0.
 		@param rings  Rings from the pole, at least 3.
 		@param slices  Slices around, at least 3.
-		@return  The mesh; empty for fewer rings or slices. */
+		@return  The mesh, empty for fewer rings or slices. */
 	static function GenMeshHemiSphere(radius:Float, rings:Int, slices:Int):Mesh {
 		if (rings < 3 || slices < 3) {
 			Runtime.log(LOG_WARNING, "MESH: Failed to generate mesh: hemisphere");
@@ -1120,12 +1157,14 @@ class RModels {
 		return fromParMesh(sphere);
 	}
 
-	/** Makes a closed cylinder standing on the XZ plane from the origin, three vertices a triangle with no indices.
+	/** Returns a closed cylinder mesh standing on the XZ plane at the origin.
+
+		Makes three vertices a triangle, with no indices.
 
 		@param radius  Its radius.
 		@param height  Its height.
 		@param slices  Slices around, at least 3.
-		@return  The mesh; empty for fewer slices. */
+		@return  The mesh, empty for fewer slices. */
 	static function GenMeshCylinder(radius:Float, height:Float, slices:Int):Mesh {
 		if (slices < 3) {
 			Runtime.log(LOG_WARNING, "MESH: Failed to generate mesh: cylinder");
@@ -1148,12 +1187,14 @@ class RModels {
 		return fromParMesh(cylinder);
 	}
 
-	/** Makes a closed cone standing on the XZ plane from the origin, three vertices a triangle with no indices.
+	/** Returns a closed cone mesh standing on the XZ plane at the origin.
+
+		Makes three vertices a triangle, with no indices.
 
 		@param radius  Its base's radius.
 		@param height  Its height.
 		@param slices  Slices around, at least 3.
-		@return  The mesh; empty for fewer slices. */
+		@return  The mesh, empty for fewer slices. */
 	static function GenMeshCone(radius:Float, height:Float, slices:Int):Mesh {
 		if (slices < 3) {
 			Runtime.log(LOG_WARNING, "MESH: Failed to generate mesh: cone");
@@ -1170,13 +1211,15 @@ class RModels {
 		return fromParMesh(cone);
 	}
 
-	/** Makes a torus on the XY plane, centered on the origin, three vertices a triangle with no indices.
+	/** Returns a torus mesh on the XY plane, centered on the origin.
 
-		@param radius  The tube's radius against the ring's, 0.1 to 1 (others are clamped to it).
+		Makes three vertices a triangle, with no indices.
+
+		@param radius  The tube's radius against the ring's, clamped to 0.1 to 1.
 		@param size  The torus's width, out to the ring's middle on each side.
 		@param radSeg  Slices around the ring, at least 3.
 		@param sides  Slices around the tube, at least 3.
-		@return  The mesh; empty for fewer slices. */
+		@return  The mesh, empty for fewer slices. */
 	static function GenMeshTorus(radius:Float, size:Float, radSeg:Int, sides:Int):Mesh {
 		if (sides < 3 || radSeg < 3) {
 			Runtime.log(LOG_WARNING, "MESH: Failed to generate mesh: torus");
@@ -1191,13 +1234,15 @@ class RModels {
 		return fromParMesh(torus);
 	}
 
-	/** Makes a trefoil knot, centered on the origin, three vertices a triangle with no indices.
+	/** Returns a trefoil knot mesh centered on the origin.
 
-		@param radius  The tube's radius, in tenths, 0.5 to 3 (others are clamped to it).
+		Makes three vertices a triangle, with no indices.
+
+		@param radius  The tube's radius in tenths, clamped to 0.5 to 3.
 		@param size  The knot's scale.
 		@param radSeg  Slices along the knot, at least 3.
 		@param sides  Slices around the tube, at least 3.
-		@return  The mesh; empty for fewer slices. */
+		@return  The mesh, empty for fewer slices. */
 	static function GenMeshKnot(radius:Float, size:Float, radSeg:Int, sides:Int):Mesh {
 		if (sides < 3 || radSeg < 3) {
 			Runtime.log(LOG_WARNING, "MESH: Failed to generate mesh: knot");
@@ -1212,8 +1257,11 @@ class RModels {
 		return fromParMesh(knot);
 	}
 
-	/** Makes terrain from an image: a vertex a pixel, from the origin along +x and +z, each the height of its pixel's gray (red, green and
-		blue averaged), two triangles a cell with a flat normal each, three vertices a triangle with no indices.
+	/** Returns a terrain mesh from an image, a vertex a pixel from the origin along +x and +z, each the height of its pixel's gray.
+
+		Takes a pixel's gray as its red, green and blue averaged.
+
+		Makes two triangles a cell, each with a flat normal, and three vertices a triangle, with no indices.
 
 		@param heightmap  The image.
 		@param size  The terrain's size: x and z across the image, y the height of white.
@@ -1263,10 +1311,20 @@ class RModels {
 		return mesh;
 	}
 
-	/** Makes a maze of cubes from an image, a cube a pixel centered on it from the origin: a white pixel a wall, its faces where its
-		neighbors are black or the map ends, and its top and bottom; a black pixel a floor and a ceiling, facing in. The texture is split in
-		four: walls from its top left (right, front) and top right (left, back), tops from its bottom left and bottoms from its bottom right.
-		Three vertices a triangle, with no indices.
+	/** Returns a maze mesh of cubes from an image, a cube a pixel, each centered on its pixel's place from the origin.
+
+		Makes a white pixel a wall, with faces where its neighbors are black or the map ends, and a top and a bottom.
+
+		Makes a black pixel a floor and a ceiling, facing in.
+
+		Splits the texture in four:
+
+		- Walls' right and front faces from its top left.
+		- Walls' left and back faces from its top right.
+		- Tops from its bottom left.
+		- Bottoms from its bottom right.
+
+		Makes three vertices a triangle, with no indices.
 
 		@param cubicmap  The image.
 		@param cubeSize  A cube's size: x along the image's width, z along its height, y the walls' height.
@@ -1345,14 +1403,15 @@ class RModels {
 		return mesh;
 	}
 
-	/** Computes a mesh's tangents from its positions, texture coordinates and normals: each triangle's direction of u, by its indices
-		when it has them, summed at each of its vertices, made square to the vertex's normal and of length 1, w the side the summed
-		direction of v is on.
+	/** Computes a mesh's tangents from its positions, texture coordinates and normals.
 
-		A vertex whose tangent comes out of length near 0, or along its normal, takes one square to the normal: x when the normal is
-		mostly z, else (-y, x, 0) of the normal, w 1.
+		Sums each triangle's direction of u at each of its vertices, by its indices when the mesh has them. Then makes each sum square to
+		the vertex's normal and of length 1, with w the side the summed direction of v is on.
 
-		@param mesh  The mesh; one without positions, texture coordinates or normals is unchanged. */
+		Gives a vertex whose tangent comes out near length 0, or along its normal, a tangent square to the normal: x when the normal is
+		mostly z, else (-y, x, 0) of the normal, with w 1.
+
+		@param mesh  The mesh. One without positions, texture coordinates or normals is unchanged. */
 	static function GenMeshTangents(mesh:Mesh):Void {
 		if (mesh.vertices == null || mesh.texcoords == null || mesh.normals == null) {
 			Runtime.log(LOG_WARNING, "MESH: Tangents generation requires vertices, texcoords and normals vertex attribute data");
@@ -1423,8 +1482,8 @@ class RModels {
 		Runtime.log(LOG_INFO, "MESH: Tangents data computed and uploaded for provided mesh");
 	}
 
-	/** raylib's mesh export, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
-		`ExportMeshAsync` writes it and answers.
+	/** Refuses to compile on any target, as raylib's mesh export is done when it returns and a file here is written later. See
+		`ExportMeshAsync` for writing a mesh's file.
 
 		@param mesh  The mesh.
 		@param fileName  The file.
@@ -1467,8 +1526,8 @@ class RModels {
 		return text.toString();
 	}
 
-	/** raylib's export of a mesh as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
-		`ExportMeshAsCodeAsync` writes it and answers.
+	/** Refuses to compile on any target, as raylib's export of a mesh as code is done when it returns and a file here is written
+		later. See `ExportMeshAsCodeAsync` for writing a mesh as code.
 
 		@param mesh  The mesh.
 		@param fileName  The file.
@@ -1527,8 +1586,8 @@ class RModels {
 	// As raylib 6.2 has them (raylib.h's 5.5 names and signatures, its frame a float as 6.2's): its glTF animations read, its frames mixed,
 	// its CPU skinning; the bone matrices in each mesh's boneMatrices, raylib 5.5's place, so a skinning shader is given them as it draws.
 
-	/** raylib's animation load, which waits for the file. A page can't wait, so a call doesn't compile on any target:
-		`LoadModelAnimationsAsync` loads them.
+	/** Refuses to compile on any target, as raylib's animation load waits for the file. See `LoadModelAnimationsAsync` for
+		loading a file's animations.
 
 		@param fileName  The file.
 		@param animCount  Would be set to how many.
@@ -1538,12 +1597,20 @@ class RModels {
 		throw "LoadModelAnimations is unimplemented";
 	}
 
-	/** Poses a model's bones by a frame of an animation, as raylib 6.2's: the frame's whole part and the next mixed by its fraction (a
-		5.5 program's whole frames work as they did), each wrapped to the animation's frames; each bone's matrix then its bind pose's
-		inverse and the pose, in each mesh's `boneMatrices`. Its vertices don't move: a shader of the program's own that reads the bones
-		(raylib's `skinning.vs`'s `boneMatrices`, or `<helix/raylib/shaders/skinning.glsl>`) draws the pose, and under raylib's default
-		shader, the lit and PBR ones or a shader without them the mesh stays as it was, as raylib's does; `UpdateModelAnimation` poses
-		it under any. Nothing for a model without bones or an animation without frames.
+	/** Poses a model's bones by a frame of an animation, as raylib 6.2's does, leaving its vertices where they are. See
+		`UpdateModelAnimation` for posing the meshes under any shader.
+
+		Mixes the frame's whole part and the next by its fraction, each wrapped to the animation's frames. A whole frame poses that frame,
+		as in raylib 5.5.
+
+		Writes each bone's matrix, its bind pose's inverse then the pose, to each mesh's `boneMatrices`.
+
+		A shader of the program's own that reads the bones draws the pose. Such a shader reads raylib's `skinning.vs`'s `boneMatrices`, or
+		includes `<helix/raylib/shaders/skinning.glsl>`.
+
+		Under raylib's default shader, the lit and PBR ones, or a shader without the bones, the mesh draws unposed, as raylib's does.
+
+		Does nothing for a model without bones or an animation without frames.
 
 		@param model  The model.
 		@param anim  The animation, of the model's skeleton (`IsModelAnimationValid`).
@@ -1555,21 +1622,33 @@ class RModels {
 		}
 	}
 
-	/** Poses a model by a frame of an animation, as raylib 6.2's: its bones as `UpdateModelAnimationBones` poses them, and each skinned
-		mesh drawn in that pose until the next call. Draws asked for before keep the pose they were asked with, so one model can be posed
-		and drawn many times in a frame.
+	/** Poses a model by a frame of an animation, as raylib 6.2's does, each skinned mesh drawing in that pose until the next call.
 
-		How a mesh is moved depends on its material's shader. Under raylib's default shader it is moved on the GPU, by a skinned version
-		of that shader. Under a shader of the program's own that declares the bone inputs, as raylib's `skinning.vs` does
-		(`vertexBoneIds`, `vertexBoneWeights` and `uniform mat4 boneMatrices[N]`), or that includes `<helix/raylib/shaders/skinning.glsl>`,
-		it is moved on the GPU by that shader. Under a shader of the program's own without them it is moved on the CPU, every vertex each
-		call, which is slow for many vertices or many models: an animated model under a lighting shader of the program's own draws fastest
-		when that shader declares `skinning.vs`'s inputs or includes `skinning.glsl`. The include declares the bone inputs, the frame's
-		bone palette, `mat4 helixSkin()`, the vertex's skin matrix, and `vec3 helixSkinNormal(vec3 normal)`, a normal moved as raylib moves
-		one: `gl_Position = mvp*helixSkin()*vec4(vertexPosition, 1.0);`.
+		Poses the bones as `UpdateModelAnimationBones` does.
 
-		`animVertices` and `animNormals` hold the moved positions and normals (each normal by its bones' matrices inverted and transposed,
-		not normalized), worked out on the CPU when first read; a mesh whose shader moves it itself is left as raylib leaves it.
+		Draws asked for before the call keep the pose they were asked with, so one model can be posed and drawn many times in a frame.
+
+		Moves a mesh by its material's shader:
+
+		- Under raylib's default shader, on the GPU by a skinned version of that shader.
+		- Under a shader of the program's own that declares the bone inputs as raylib's `skinning.vs` does (`vertexBoneIds`,
+		  `vertexBoneWeights` and `uniform mat4 boneMatrices[N]`), or includes `<helix/raylib/shaders/skinning.glsl>`, on the GPU by
+		  that shader.
+		- Under a shader of the program's own without them, on the CPU, every vertex each call.
+
+		Moving on the CPU is slow for many vertices or many models. A lighting shader of the program's own draws an animated model fastest
+		when it declares `skinning.vs`'s inputs or includes `skinning.glsl`.
+
+		`skinning.glsl` declares:
+
+		- The bone inputs and the frame's bone palette.
+		- `mat4 helixSkin()`, the vertex's skin matrix, as in `gl_Position = mvp*helixSkin()*vec4(vertexPosition, 1.0);`.
+		- `vec3 helixSkinNormal(vec3 normal)`, a normal moved as raylib moves one.
+
+		`animVertices` and `animNormals` hold the moved positions and normals, worked out on the CPU when first read. Each normal is moved
+		by its bones' matrices inverted and transposed, not normalized.
+
+		Leaves a mesh whose shader moves it as raylib leaves it.
 
 		@param model  The model.
 		@param anim  The animation, of the model's skeleton.
@@ -1581,9 +1660,16 @@ class RModels {
 		}
 	}
 
-	/** Poses a model by two animations mixed, raylib 6.2's own: each at its frame as `UpdateModelAnimation` takes one, then the two mixed
-		by the blend, the bones and the vertices as it moves them, on the GPU or the CPU as `UpdateModelAnimation` says. Note that, as raylib's, a frame is wrapped to its animation's frames
-		before its fraction is taken, so past the last frame it holds the frame it wrapped to. Nothing for a blend outside 0 to 1.
+	/** Poses a model by two animations mixed by a blend, raylib 6.2's own call.
+
+		Takes each animation at its frame as `UpdateModelAnimation` takes one, then mixes the two by the blend.
+
+		Moves the bones and the vertices on the GPU or the CPU as `UpdateModelAnimation` does.
+
+		Wraps a frame to its animation's frames before taking its fraction, as raylib's does, so a frame past the last holds the frame it
+		wrapped to.
+
+		Does nothing for a blend outside 0 to 1.
 
 		@param model  The model.
 		@param animA  The first animation.
@@ -1600,7 +1686,7 @@ class RModels {
 		}
 	}
 
-	/** Frees an animation's frames: its poses and bones are let go, its counts 0.
+	/** Frees an animation's frames, letting go of its poses and bones and setting its counts to 0.
 
 		@param anim  The animation. */
 	static function UnloadModelAnimation(anim:ModelAnimation):Void {
@@ -1622,7 +1708,7 @@ class RModels {
 				UnloadModelAnimation(animations[i]);
 	}
 
-	/** Returns whether an animation moves a model's skeleton, as raylib 6.2 checks it: whether they have as many bones.
+	/** Returns whether an animation moves a model's skeleton, by whether they have as many bones, as raylib 6.2 checks.
 
 		@param model  The model.
 		@param anim  The animation.
@@ -1631,15 +1717,23 @@ class RModels {
 		return model.boneCount == anim.boneCount;
 	}
 
-	/** Returns raylib's default material: the default shader, the diffuse map raylib's default texture (a 1x1 white pixel), the diffuse
-		and specular colors white, and the other maps empty. The program holds it until `UnloadMaterial`; a model it is put in holds it too.
+	/** Returns raylib's default material, which the program holds until `UnloadMaterial`.
+
+		The material has:
+
+		- The default shader.
+		- A diffuse map of raylib's default texture, a 1x1 white pixel.
+		- White diffuse and specular colors.
+		- Empty other maps.
+
+		A model the material is put in holds it too.
 
 		@return  The material. */
 	static function LoadMaterialDefault():Material {
 		return Models.defaultMaterial(defaultShader());
 	}
 
-	/** Returns whether a material can draw: whether it has maps and a shader.
+	/** Returns whether a material has maps and a shader, so it can draw.
 
 		@param material  The material.
 		@return  True when its maps aren't null and its shader's id is above 0. */
@@ -1647,10 +1741,15 @@ class RModels {
 		return material.maps != null && material.shader != null && material.shader.id > 0;
 	}
 
-	/** Lets go of a material (docs/DECISIONS.md 25): the program's hold from `LoadMaterialDefault`, or, for a model's material, the
-		model's. When no one else holds it, its shader is unloaded unless it is the default one, and its maps let go of their textures:
-		each texture is freed when nothing else holds it (a texture the program still holds, or another load of a file shares, stays).
-		Releasing it again does nothing.
+	/** Lets go of a material, freeing what nothing else holds.
+
+		Releases the program's hold from `LoadMaterialDefault`, or for a model's material the model's.
+
+		Once nothing else holds the material, unloads its shader unless it is the default one, and releases its maps' textures.
+
+		Frees each texture once nothing else holds it. Leaves a texture the program still holds, or one another load of its file shares.
+
+		Releasing the material again does nothing.
 
 		@param material  The material. */
 	static function UnloadMaterial(material:Material):Void {
@@ -1675,7 +1774,9 @@ class RModels {
 		model.meshMaterial[meshId] = materialId;
 	}
 
-	/** Returns a mesh's bounds: the least and the most of its positions; 0 for a mesh without them.
+	/** Returns a mesh's bounds, the least and the most of its positions.
+
+		Returns a box of zeros for a mesh without positions.
 
 		@param mesh  The mesh.
 		@return  The box. */
@@ -1693,8 +1794,10 @@ class RModels {
 		return new BoundingBox(minVertex, maxVertex);
 	}
 
-	/** Returns a model's bounds: its meshes' together, its least and most corners then moved by its transform, as raylib's (a turned
-		model's box is not its bounds; transform its eight corners for those).
+	/** Returns a model's bounds, its meshes' boxes together with the least and most corners moved by its transform, as raylib's
+		does.
+
+		A turned model's box is not its bounds. Transforming its eight corners gives those.
 
 		@param model  The model.
 		@return  The box. */
@@ -1787,10 +1890,13 @@ class RModels {
 		return dmin <= radius * radius;
 	}
 
-	/** Returns where a ray meets a sphere: the near side from outside, the far side from inside (its normal then pointing in).
+	/** Returns where a ray meets a sphere, the near side from outside and the far side from inside.
 
-		A sphere wholly behind the ray is missed. On a miss the point, normal and distance are 0. The ray's direction should be of
-		length 1.
+		From inside, the hit's normal points in.
+
+		Misses a sphere wholly behind the ray. On a miss the point, normal and distance are 0.
+
+		Expects the ray's direction to be of length 1.
 
 		@param ray  The ray.
 		@param center  The sphere's center.
@@ -1824,8 +1930,11 @@ class RModels {
 		return collision;
 	}
 
-	/** Returns where a ray meets a box, as raylib's: from inside, the way out, its distance negative and its normal pointing in; its point,
-		distance and normal are set even when it misses.
+	/** Returns where a ray meets a box, as raylib's does.
+
+		From inside the box, returns the way out, its distance negative and its normal pointing in.
+
+		Sets the hit's point, distance and normal even on a miss.
 
 		@param ray  The ray.
 		@param box  The box.
@@ -1865,7 +1974,7 @@ class RModels {
 		return collision;
 	}
 
-	/** Returns where a ray first meets a mesh moved by a transform: the nearest of its triangles it meets.
+	/** Returns where a ray first meets a mesh moved by a transform, at the nearest of the mesh's triangles.
 
 		@param ray  The ray.
 		@param mesh  The mesh, with its positions.
@@ -1892,8 +2001,9 @@ class RModels {
 		return collision;
 	}
 
-	/** Returns where a ray meets a triangle from either side (Möller and Trumbore's test, as raylib's), its normal that of the corners
-		taken counterclockwise.
+	/** Returns where a ray meets a triangle from either side, its normal that of the corners taken counterclockwise.
+
+		Uses Möller and Trumbore's test, as raylib's does.
 
 		@param ray  The ray.
 		@param p1  A corner.
@@ -1970,7 +2080,7 @@ class RModels {
 		return shaderDefault;
 	}
 
-	/** Makes a shader from a program compiled as the program built (`LoadShader`).
+	/** Returns a shader made from a program compiled as the program built (`LoadShader`).
 
 		@param source  The compiled shader.
 		@return  The shader. */

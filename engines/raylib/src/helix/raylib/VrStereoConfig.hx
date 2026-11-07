@@ -1,16 +1,18 @@
 package helix.raylib;
 
-/** Represents raylib's `VrStereoConfig`: what `BeginVrStereoMode` draws each eye with, and what a distortion shader reads, as
-	`LoadVrStereoConfig` computes them from a display's parameters. */
+/** Represents raylib's `VrStereoConfig`: each eye's projection and view offset for `BeginVrStereoMode`, and the values a distortion shader
+	reads.
+
+	`LoadVrStereoConfig` computes them from a `VrDeviceInfo`. */
 @:structInit
 class VrStereoConfig {
-	/** Gets or sets each eye's projection: the first drawn in the left half. */
+	/** Gets or sets each eye's projection, the first drawn in the left half. */
 	public var projection:Array<Matrix>;
 
 	/** Gets or sets each eye's view offset, applied after the view. */
 	public var viewOffset:Array<Matrix>;
 
-	/** Gets or sets the left lens's center, x and y, 0 to 1 across what is drawn into. */
+	/** Gets or sets the left lens's center, x and y, 0 to 1 across the render target. */
 	public var leftLensCenter:Array<Float>;
 
 	/** Gets or sets the right lens's center. */
@@ -25,10 +27,10 @@ class VrStereoConfig {
 	/** Gets or sets the distortion's scale, x and y. */
 	public var scale:Array<Float>;
 
-	/** Gets or sets the distortion's scale in, x and y. */
+	/** Gets or sets the distortion's input scale, x and y. */
 	public var scaleIn:Array<Float>;
 
-	/** Creates a VrStereoConfig, each omitted field zero.
+	/** Creates a stereo config, each omitted field zero.
 
 		@param projection  Optional. Each eye's projection.
 		@param viewOffset  Optional. Each eye's view offset.

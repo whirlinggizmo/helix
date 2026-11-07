@@ -21,7 +21,7 @@ import helix.raylib.modules.RAudio.*;
 import helix.raylib.modules.RMath.*;
 #end
 
-/** Holds raylib's rtextures (textures, render textures and colors), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
+/** Holds raylib's rtextures (textures, render textures and colors), written here. `Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RTextures {
@@ -33,7 +33,10 @@ class RTextures {
 	#if !macro
 	// ---- Textures ----
 
-	/** raylib's texture load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadTextureAsync` loads it.
+	/** Names raylib's texture load, which waits for the file, and doesn't compile on any target. See `LoadTextureAsync` for loading a
+		texture from a file.
+
+		A page can't wait for a file.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -63,11 +66,14 @@ class RTextures {
 		return new Texture2D(Textures.fromImage(path, image), image.width, image.height);
 	}
 
-	/** Lets go of a texture (docs/DECISIONS.md 25): the program's hold from its load, its id set to 0. The texture is freed, the GPU's
-		copy with it, when nothing else holds it: another load of its file, or a material map given it, keeps it until that lets go. Given
-		a map's texture (`map.texture`), as `UnloadTexture(model.materials[0].maps[0].texture)` frees one a program gave a map without
-		keeping it, it lets go of one hold and leaves the map's id: the map draws it while anything holds it, and lets go in turn when its
-		material is freed.
+	/** Lets go of the program's hold on a texture from its load, and sets the texture's id to 0.
+
+		The texture and its GPU copy are freed once nothing else holds them. Another load of its file, or a material map given it, keeps it
+		until that lets go.
+
+		Given a map's texture (`map.texture`), lets go of one hold and leaves the map's id. The map draws the texture while anything holds
+		it, and lets go in turn when its material is freed. So `UnloadTexture(model.materials[0].maps[0].texture)` frees a texture a program
+		gave a map without keeping it.
 
 		@param texture  The texture. */
 	static function UnloadTexture(texture:Texture2D):Void {
@@ -125,7 +131,9 @@ class RTextures {
 		quad(texture, 0, 0, texture.width, texture.height, position.x, position.y, texture.width * scale, texture.height * scale, 0, 0, rotation, tint);
 	}
 
-	/** Draws part of a texture. A negative source width or height flips it.
+	/** Draws part of a texture.
+
+		A negative source width or height flips the part.
 
 		@param texture  The texture.
 		@param source  The part, in the texture's pixels.
@@ -135,7 +143,9 @@ class RTextures {
 		quad(texture, source.x, source.y, source.width, source.height, position.x, position.y, Math.abs(source.width), Math.abs(source.height), 0, 0, 0, tint);
 	}
 
-	/** Draws part of a texture into a rectangle, turned about an origin. A negative source width or height flips it.
+	/** Draws part of a texture into a rectangle, turned about an origin.
+
+		A negative source width or height flips the part.
 
 		@param texture  The texture.
 		@param source  The part, in the texture's pixels.
@@ -274,7 +284,7 @@ class RTextures {
 		return hsv;
 	}
 
-	/** Returns the color of a hue, saturation and value; its alpha is 255.
+	/** Returns the color of a hue, saturation and value, its alpha 255.
 
 		@param hue  The hue, in degrees, 0 to 360.
 		@param saturation  0 (gray) to 1.
@@ -305,7 +315,7 @@ class RTextures {
 		return new Color(times(color.r, tint.r), times(color.g, tint.g), times(color.b, tint.b), times(color.a, tint.a));
 	}
 
-	/** Returns a color made darker or lighter; its alpha is kept.
+	/** Returns a color made darker or lighter, its alpha kept.
 
 		@param color  The color.
 		@param factor  -1 (black) to 1 (white); 0 keeps it as it is.
@@ -323,7 +333,7 @@ class RTextures {
 		return new Color(channel(color.r), channel(color.g), channel(color.b), color.a);
 	}
 
-	/** Returns a color with more or less contrast about the middle gray; its alpha is kept.
+	/** Returns a color with more or less contrast about the middle gray, its alpha kept.
 
 		@param color  The color.
 		@param contrast  -1 (all middle gray) to 1; 0 keeps it as it is.
@@ -446,8 +456,11 @@ class RTextures {
 
 	// ---- Render textures ----
 
-	/** Makes a texture to draw into, with depth, 8-bit RGBA. What is drawn into it stays from frame to frame; after a page's GPU context
-		is lost it comes back blank (`Raylib`).
+	/** Makes a texture to draw into, with depth, 8-bit RGBA.
+
+		What is drawn into the render texture stays from frame to frame.
+
+		After a page's GPU context is lost, the render texture comes back blank (`Raylib`).
 
 		@param width  Its width, in pixels.
 		@param height  Its height.
@@ -477,8 +490,11 @@ class RTextures {
 		target.texture.id = 0;
 	}
 
-	/** Draws into a render texture until `EndTextureMode`, over what it holds: what was drawn into it before, in this frame or an earlier
-		one, stays until `ClearBackground` clears it, as raylib's does. A render texture never drawn into holds transparent black.
+	/** Draws into a render texture until `EndTextureMode`, over what it holds.
+
+		What was drawn into the render texture before, in this frame or an earlier one, stays until `ClearBackground` clears it.
+
+		A render texture never drawn into holds transparent black.
 
 		@param target  The render texture. */
 	static function BeginTextureMode(target:RenderTexture2D):Void {
@@ -490,12 +506,18 @@ class RTextures {
 		Runtime.frame.toScreen();
 	}
 
-	/** Sets how a texture is sampled when drawn larger or smaller, as raylib's GL does, by whether the texture has mipmaps
-		(`texture.mipmaps`, as this copy of it says): `TEXTURE_FILTER_POINT`, raylib's default, takes the nearest texel (of the nearest
-		mipmap); `TEXTURE_FILTER_BILINEAR` blends the nearest four (of the nearest mipmap); `TEXTURE_FILTER_TRILINEAR` blends the nearest
-		four of the two nearest mipmaps, or, without mipmaps, is `TEXTURE_FILTER_BILINEAR`, with a warning. `TEXTURE_FILTER_ANISOTROPIC_4X`,
-		`8X` and `16X` read up to that many texels along a surface seen at a slant, leaving the filter as it was; the GPU uses it only with
-		`TEXTURE_FILTER_TRILINEAR` on a mipmapped texture. A cubemap (`LoadTextureCubemap`) is left unchanged: raylib's binds it as a 2D texture, which GL refuses.
+	/** Sets how a texture is sampled when drawn larger or smaller, by whether it has mipmaps (`texture.mipmaps`, as this copy of it says).
+
+		The filters:
+
+		- `TEXTURE_FILTER_POINT`, the default: the nearest texel, of the nearest mipmap.
+		- `TEXTURE_FILTER_BILINEAR`: the nearest four texels blended, of the nearest mipmap.
+		- `TEXTURE_FILTER_TRILINEAR`: the nearest four of the two nearest mipmaps blended. Without mipmaps it is `TEXTURE_FILTER_BILINEAR`,
+		  with a warning.
+		- `TEXTURE_FILTER_ANISOTROPIC_4X`, `8X` and `16X`: up to that many texels read along a surface seen at a slant, the filter left as
+		  it was. The GPU uses the anisotropy only with `TEXTURE_FILTER_TRILINEAR` on a mipmapped texture.
+
+		A cubemap (`LoadTextureCubemap`) is left unchanged.
 
 		@param texture  The texture.
 		@param filter  The filter (`TEXTURE_FILTER_*`). */
@@ -523,10 +545,16 @@ class RTextures {
 		Textures.setSampling(texture.id, sampling);
 	}
 
-	/** Makes a texture's mipmaps, down to 1 by 1, as raylib's does with GL's `glGenerateMipmap`: each level the rounded average of the
-		2 by 2 above it, made on the CPU, so the same on every target. `texture.mipmaps` becomes their count. The texture's filter is left
-		as it was: `SetTextureFilter` after it reads them. A texture already drawn gets them from its pixels read back from the GPU, and
-		draws asked for before it this frame don't; a render texture's and a cubemap's can't be made, with a warning.
+	/** Makes a texture's mipmaps, down to 1 by 1, and sets `texture.mipmaps` to their count.
+
+		The texture's filter is unchanged. A `SetTextureFilter` after the call reads the mipmaps.
+
+		Each level is the rounded average of the 2 by 2 above it, made on the CPU, so the same on every target.
+
+		A texture already drawn gets its mipmaps from its pixels read back from the GPU. Draws asked for before the call this frame don't
+		use them.
+
+		Skipped for a render texture or a cubemap, with a warning.
 
 		@param texture  The texture. */
 	static function GenTextureMipmaps(texture:Texture2D):Void {
@@ -544,7 +572,10 @@ class RTextures {
 
 	// ---- Images: loading and exporting ----
 
-	/** raylib's image load, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadImageAsync` loads it.
+	/** Names raylib's image load, which waits for the file, and doesn't compile on any target. See `LoadImageAsync` for loading an image
+		from a file.
+
+		A page can't wait for a file.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -553,8 +584,10 @@ class RTextures {
 		throw "LoadImage is unimplemented";
 	}
 
-	/** raylib's load of an image's raw pixels, which waits for the file. A page can't wait, so a call doesn't compile on any target:
-		`LoadImageRawAsync` loads it.
+	/** Names raylib's load of an image's raw pixels, which waits for the file, and doesn't compile on any target. See `LoadImageRawAsync`
+		for loading raw pixels from a file.
+
+		A page can't wait for a file.
 
 		@param fileName  The file.
 		@param width  The width, in pixels.
@@ -567,8 +600,10 @@ class RTextures {
 		throw "LoadImageRaw is unimplemented";
 	}
 
-	/** raylib's decode of an image file's bytes, which returns the image. Images are decoded asynchronously here, so a call doesn't
-		compile on any target: `LoadImageFromMemoryAsync` decodes it.
+	/** Names raylib's decode of an image file's bytes, which returns the image, and doesn't compile on any target. See
+		`LoadImageFromMemoryAsync` for decoding an image file's bytes.
+
+		Images are decoded asynchronously.
 
 		@param fileType  The file's extension, ".png".
 		@param fileData  The file's bytes.
@@ -579,8 +614,10 @@ class RTextures {
 		throw "LoadImageFromMemory is unimplemented";
 	}
 
-	/** raylib's load of an animated image's frames, which waits for the file. A page can't wait, so a call doesn't compile on any target:
-		`LoadImageAnimAsync` loads them.
+	/** Names raylib's load of an animated image's frames, which waits for the file, and doesn't compile on any target. See
+		`LoadImageAnimAsync` for loading an animated image's frames from a file.
+
+		A page can't wait for a file.
 
 		@param fileName  The file.
 		@param frames  Would be set to how many frames.
@@ -590,8 +627,10 @@ class RTextures {
 		throw "LoadImageAnim is unimplemented";
 	}
 
-	/** raylib's decode of an animated image file's bytes, which returns its frames. Images are decoded asynchronously here, so a call
-		doesn't compile on any target: `LoadImageAnimFromMemoryAsync` decodes them.
+	/** Names raylib's decode of an animated image file's bytes, which returns its frames, and doesn't compile on any target. See
+		`LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes.
+
+		Images are decoded asynchronously.
 
 		@param fileType  The file's extension, ".gif".
 		@param fileData  The file's bytes.
@@ -603,8 +642,10 @@ class RTextures {
 		throw "LoadImageAnimFromMemory is unimplemented";
 	}
 
-	/** raylib's read of a texture back from the GPU, which waits for it. A texture is read back asynchronously here, so a call doesn't
-		compile on any target: `LoadImageFromTextureAsync` reads it.
+	/** Names raylib's read of a texture back from the GPU, which waits for it, and doesn't compile on any target. See
+		`LoadImageFromTextureAsync` for reading a texture's pixels into an image.
+
+		A texture is read back asynchronously.
 
 		@param texture  The texture.
 		@return  Never returns: a call doesn't compile. */
@@ -613,8 +654,10 @@ class RTextures {
 		throw "LoadImageFromTexture is unimplemented";
 	}
 
-	/** raylib's read of the screen, which waits for the GPU. The screen is read back asynchronously here, as a frame ends, so a call
-		doesn't compile on any target: `LoadImageFromScreenAsync` reads it.
+	/** Names raylib's read of the screen, which waits for the GPU, and doesn't compile on any target. See `LoadImageFromScreenAsync` for
+		reading the screen into an image.
+
+		The screen is read back asynchronously, as a frame ends.
 
 		@return  Never returns: a call doesn't compile. */
 	@:unsupported("LoadImageFromScreen: The screen is read back asynchronously. See LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)")
@@ -637,8 +680,10 @@ class RTextures {
 		image.data = null;
 	}
 
-	/** raylib's image export, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
-		`ExportImageAsync` writes it and answers.
+	/** Names raylib's image export, done when it returns, and doesn't compile on any target. See `ExportImageAsync` for writing an image to
+		a file.
+
+		A file is written later, or is refused.
 
 		@param image  The image.
 		@param fileName  The file.
@@ -648,9 +693,11 @@ class RTextures {
 		throw "ExportImage is unimplemented";
 	}
 
-	/** Returns an image encoded as a file in memory: ".png" alone, as raylib's. Like raylib's, an image's bytes are read as 8-bit gray,
-		gray and alpha, RGB or RGBA by its format, and as RGBA for any other format, which a 16-bit format has too few of: those it lacks
-		read as 0.
+	/** Returns an image encoded as a PNG file in memory.
+
+		An image's bytes are read by its format as 8-bit gray, gray and alpha, RGB or RGBA.
+
+		Any other format's bytes are read as RGBA. A 16-bit format has too few, and those it lacks read as 0.
 
 		@param image  The image.
 		@param fileType  ".png" or ".PNG".
@@ -670,8 +717,10 @@ class RTextures {
 		return file;
 	}
 
-	/** raylib's export of an image as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
-		`ExportImageAsCodeAsync` writes it and answers.
+	/** Names raylib's export of an image as code, done when it returns, and doesn't compile on any target. See `ExportImageAsCodeAsync` for
+		writing an image as a C header.
+
+		A file is written later, or is refused.
 
 		@param image  The image.
 		@param fileName  The file.
@@ -809,7 +858,9 @@ class RTextures {
 			Pixels.argb(Pixels.ofColor(outer))));
 	}
 
-	/** Returns a checkerboard of two colors, RGBA. A square size under 1 is taken as 1, where raylib's divides by zero.
+	/** Returns a checkerboard of two colors, RGBA.
+
+		A square size under 1 is taken as 1.
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
@@ -823,7 +874,9 @@ class RTextures {
 			Pixels.argb(Pixels.ofColor(col2))));
 	}
 
-	/** Returns white noise, RGBA: each pixel white or black, drawn from `GetRandomValue`, one number a pixel, so `SetRandomSeed` repeats it.
+	/** Returns white noise, RGBA, each pixel white or black.
+
+		Each pixel draws one number from `GetRandomValue`, so `SetRandomSeed` repeats the image.
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
@@ -845,8 +898,11 @@ class RTextures {
 		return rgbaImage(helix.services.images.Image.perlinNoise(width, height, offsetX, offsetY, scale));
 	}
 
-	/** Returns cellular noise in gray, RGBA: each pixel's distance to the nearest of points scattered one a tile, drawn from
-		`GetRandomValue`, so `SetRandomSeed` repeats it. A tile size under 1 is taken as 1, where raylib's divides by zero.
+	/** Returns cellular noise in gray, RGBA, each pixel its distance to the nearest of points scattered one a tile.
+
+		The points are drawn from `GetRandomValue`, so `SetRandomSeed` repeats the image.
+
+		A tile size under 1 is taken as 1.
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
@@ -900,8 +956,9 @@ class RTextures {
 		return new Image(data, image.width, image.height, image.mipmaps, image.format);
 	}
 
-	/** Returns a rectangle of an image, in its format. A rectangle not wholly inside the image, of no size, or of a compressed image
-		gives an empty image, with a warning.
+	/** Returns a rectangle of an image, in its format.
+
+		A rectangle not wholly inside the image, of no size, or of a compressed image gives an empty image, with a warning.
 
 		@param image  The image.
 		@param rec  The rectangle, in pixels, cut to whole pixels.
@@ -934,8 +991,13 @@ class RTextures {
 		return new Image(data, width, height, 1, image.format);
 	}
 
-	/** Returns one channel of an image as grayscale: 0 red, 1 green, 2 blue, 3 alpha. A channel the format lacks is taken as raylib takes
-		it, with its warning: a one-channel format's only channel, gray and alpha's alpha, an RGB format's red.
+	/** Returns one channel of an image as grayscale: 0 red, 1 green, 2 blue, 3 alpha.
+
+		A channel the format lacks is taken from another, with a warning:
+
+		- a one-channel format: its only channel
+		- gray and alpha: its alpha
+		- an RGB format: its red
 
 		@param image  The image.
 		@param selectedChannel  The channel.
@@ -1015,7 +1077,11 @@ class RTextures {
 		return result;
 	}
 
-	/** Returns text in raylib's default font, as an image, RGBA. A size under 10 is drawn at 10, letters a tenth of the size apart.
+	/** Returns text in raylib's default font as an RGBA image.
+
+		A size under 10 is drawn at 10.
+
+		The letters are a tenth of the size apart.
 
 		@param text  The text.
 		@param fontSize  The height of a line, in pixels.
@@ -1027,10 +1093,13 @@ class RTextures {
 		return ImageTextEx(GetFontDefault(), text, fontSize, Std.int(fontSize / DefaultFont.HEIGHT), color);
 	}
 
-	/** Returns text in a font, as an image, RGBA, laid out as raylib's: at the font's size, each glyph's image drawn tinted, then scaled
-		to the size, nearest for the default font. A newline starts a line one and a half of the font's size down, though the image's
-		height counts each line as the size and `SetTextLineSpacing`'s spacing, as raylib's does. Another font is scaled by
-		`ImageResize`, which isn't raylib's.
+	/** Returns text in a font as an RGBA image.
+
+		Each glyph's image is drawn tinted at the font's size, then the whole is scaled to the size, nearest for the default font. Another
+		font is scaled by `ImageResize`, whose pixels differ from raylib's.
+
+		A newline starts a line one and a half of the font's size down. The image's height still counts each line as the size and
+		`SetTextLineSpacing`'s spacing.
 
 		@param font  The font, its glyphs' images drawn.
 		@param text  The text; null gives an empty image.
@@ -1075,8 +1144,12 @@ class RTextures {
 		return imText;
 	}
 
-	/** Converts an image to another pixel format, through floats as raylib's does: to grayscale by luminance (0.299 red, 0.587 green,
-		0.114 blue), R32 and R16 to their luminance, 16-bit channels rounded. An image with mipmaps has them made again.
+	/** Converts an image to another pixel format.
+
+		The conversion runs through floats. Grayscale is by luminance (0.299 red, 0.587 green, 0.114 blue), R32 and R16 become their
+		luminance, and 16-bit channels are rounded.
+
+		An image with mipmaps has them made again.
 
 		@param image  The image.
 		@param newFormat  The format (`PIXELFORMAT_UNCOMPRESSED_*`); a compressed one is refused, with a warning. */
@@ -1116,8 +1189,11 @@ class RTextures {
 			ImageResizeCanvas(image, width, height, 0, 0, fill);
 	}
 
-	/** Crops an image to a rectangle, cut to the image; one whose corner is past the image's right or bottom edge leaves it unchanged,
-		with a warning. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+	/** Crops an image to a rectangle, cut to the image.
+
+		A rectangle whose corner is past the image's right or bottom edge leaves the image unchanged, with a warning.
+
+		The image's mipmaps are dropped, though its mipmap count is kept.
 
 		@param image  The image.
 		@param crop  The rectangle, in pixels. */
@@ -1178,9 +1254,16 @@ class RTextures {
 			ImageCrop(image, crop);
 	}
 
-	/** Sets every pixel whose alpha is at or under a threshold to a color, as raylib's does for its formats with alpha: gray and alpha,
-		R5G5B5A1 (the alpha bit against a threshold of 0.5; the color's channels, unscaled, are cut to 5 bits), R4G4B4A4 (likewise to 4
-		bits), RGBA and its 32-bit and 16-bit float forms. Another format is unchanged.
+	/** Sets every pixel whose alpha is at or under a threshold to a color.
+
+		The formats with alpha change:
+
+		- gray and alpha
+		- R5G5B5A1: the alpha bit tested against a threshold of 0.5, the color's channels cut to 5 bits, unscaled
+		- R4G4B4A4: the color's channels cut to 4 bits, unscaled
+		- RGBA, and its 32-bit and 16-bit float forms
+
+		Another format is unchanged.
 
 		@param image  The image.
 		@param color  The color.
@@ -1242,8 +1325,11 @@ class RTextures {
 		}
 	}
 
-	/** Sets an image's alpha from another image of the same size, its grayscale: a grayscale image becomes gray and alpha, any other
-		RGBA. A mask of another size changes nothing, with a warning.
+	/** Sets an image's alpha from the grayscale of a mask the same size.
+
+		A grayscale image becomes gray and alpha, any other RGBA.
+
+		A mask of another size changes nothing, with a warning.
 
 		@param image  The image.
 		@param alphaMask  The mask. */
@@ -1278,16 +1364,18 @@ class RTextures {
 		}
 	}
 
-	/** Multiplies each pixel's red, green and blue by its alpha, rounding down; the image keeps its format.
+	/** Multiplies each pixel's red, green and blue by its alpha, rounding down, in the image's format.
 
 		@param image  The image. */
 	static function ImageAlphaPremultiply(image:Image):Void {
 		throughColors(image, pixels -> pixels.premultiplyAlpha());
 	}
 
-	/** Blurs an image, as raylib's does: an approximate Gaussian, four passes of a box blur across and down, over premultiplied alpha,
-		each channel taken back from it no higher than 255. A box reaching past the image's last pixel reads 0 there, where raylib's reads
-		past its pixels.
+	/** Blurs an image with an approximate Gaussian, four passes of a box blur across and down.
+
+		The blur runs over premultiplied alpha, and each channel taken back from it is no higher than 255.
+
+		A box reaching past the image's last pixel reads 0 there.
 
 		@param image  The image.
 		@param blurSize  How far each box reaches either side of a pixel, in pixels. */
@@ -1367,9 +1455,13 @@ class RTextures {
 		backToFormat(image, pixels);
 	}
 
-	/** Applies a square kernel to an image, as raylib's does: each channel, alpha too, the sum of the pixels around it as fractions times
-		the weights, clamped to 0 to 1. A pixel past an edge is taken from the edge. A count that isn't square changes nothing, with a
-		warning.
+	/** Applies a square kernel to an image, each channel, alpha too, the sum of the pixels around it times the weights.
+
+		The pixels are taken as fractions, and each sum is clamped to 0 to 1.
+
+		A pixel past an edge is taken from the edge.
+
+		A count that isn't square changes nothing, with a warning.
 
 		@param image  The image.
 		@param kernel  The weights, rows top first.
@@ -1421,8 +1513,11 @@ class RTextures {
 		backToFormat(image, result);
 	}
 
-	/** Resizes an image. Unlike raylib's, whose `stb_image_resize2` this library doesn't have, it is helix-services' `Bicubic` (Catmull-Rom,
-		alpha-weighted), so the pixels aren't raylib's; an 8-bit format is resized in its channels, any other through RGBA, as raylib's.
+	/** Resizes an image with helix-services' `Bicubic` (Catmull-Rom, alpha-weighted).
+
+		The pixels differ from raylib's, which come from `stb_image_resize2`.
+
+		An 8-bit format is resized in its channels, any other through RGBA.
 
 		@param image  The image.
 		@param newWidth  The width, in pixels.
@@ -1471,7 +1566,7 @@ class RTextures {
 		image.height = newHeight;
 	}
 
-	/** Resizes an image to the nearest pixels, as raylib's does, through RGBA; it keeps its format.
+	/** Resizes an image to the nearest pixels, through RGBA, keeping its format.
 
 		@param image  The image.
 		@param newWidth  The width, in pixels.
@@ -1489,8 +1584,11 @@ class RTextures {
 		ImageFormat(image, format);
 	}
 
-	/** Puts an image on a canvas of another size, in its format: the canvas filled with a color as `SetPixelColor` writes it (a float
-		format's canvas stays zero), the image at an offset, what falls outside cropped. A canvas the image's size leaves it unchanged.
+	/** Puts an image on a canvas of another size, in its format, at an offset, cropping what falls outside.
+
+		The canvas is filled with a color as `SetPixelColor` writes it, so a float format's canvas stays zero.
+
+		A canvas the image's size leaves the image unchanged.
 
 		@param image  The image.
 		@param newWidth  The canvas's width, in pixels.
@@ -1548,8 +1646,11 @@ class RTextures {
 		image.height = newHeight;
 	}
 
-	/** Makes an image's mipmaps, down to 1 by 1, after its pixels, in its format; levels it has are kept. Each is made by `ImageResize`
-		from the last, so they aren't raylib's.
+	/** Makes an image's mipmaps, down to 1 by 1, after its pixels, in its format.
+
+		Levels the image has are kept.
+
+		Each level is made by `ImageResize` from the last, so the levels differ from raylib's.
 
 		@param image  The image. */
 	static function ImageMipmaps(image:Image):Void {
@@ -1598,8 +1699,12 @@ class RTextures {
 		image.mipmaps = mipCount;
 	}
 
-	/** Dithers an image to 16 bits a pixel or fewer (Floyd-Steinberg), as raylib's does: R5G6B5, R5G5B5A1 or R4G4B4A4 when the bits
-		are one of those, else format 0 with the bits packed in 16, and a warning. More than 16 bits changes nothing, with a warning.
+	/** Dithers an image to 16 bits a pixel or fewer (Floyd-Steinberg).
+
+		The image becomes R5G6B5, R5G5B5A1 or R4G4B4A4 when the bits are one of those. Other bits give format 0 with the bits packed in 16,
+		and a warning.
+
+		More than 16 bits changes nothing, with a warning.
 
 		@param image  The image.
 		@param rBpp  Red's bits.
@@ -1665,7 +1770,9 @@ class RTextures {
 		image.data = data;
 	}
 
-	/** Turns an image upside down, in its format. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+	/** Turns an image upside down, in its format.
+
+		The image's mipmaps are dropped, though its mipmap count is kept.
 
 		@param image  The image. */
 	static function ImageFlipVertical(image:Image):Void {
@@ -1679,7 +1786,9 @@ class RTextures {
 		image.data = flipped;
 	}
 
-	/** Mirrors an image left to right, in its format. Its mipmaps are dropped, as raylib's are, though its mipmap count is kept.
+	/** Mirrors an image left to right, in its format.
+
+		The image's mipmaps are dropped, though its mipmap count is kept.
 
 		@param image  The image. */
 	static function ImageFlipHorizontal(image:Image):Void {
@@ -1694,8 +1803,9 @@ class RTextures {
 		image.data = flipped;
 	}
 
-	/** Turns an image by an angle, on a canvas big enough to hold it, clear around it: each byte of a pixel blends the four it falls
-		between, as raylib's does in every format.
+	/** Turns an image by an angle, on a canvas big enough to hold it, clear around it.
+
+		Each byte of a pixel blends the four it falls between, in every format.
 
 		@param image  The image.
 		@param degrees  The angle, in degrees clockwise. */
@@ -1783,7 +1893,7 @@ class RTextures {
 		image.height = width;
 	}
 
-	/** Multiplies each pixel by a color, channel by channel, alpha too; the image keeps its format.
+	/** Multiplies each pixel by a color, channel by channel, alpha too, in the image's format.
 
 		@param image  The image.
 		@param color  The color; `WHITE` keeps it unchanged. */
@@ -1791,21 +1901,21 @@ class RTextures {
 		throughColors(image, pixels -> pixels.tint(Pixels.argb(Pixels.ofColor(color))));
 	}
 
-	/** Inverts each pixel's red, green and blue; the image keeps its format.
+	/** Inverts each pixel's red, green and blue, in the image's format.
 
 		@param image  The image. */
 	static function ImageColorInvert(image:Image):Void {
 		throughColors(image, pixels -> pixels.invert());
 	}
 
-	/** Makes an image grayscale, as raylib's does: it becomes `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`, its alpha dropped.
+	/** Makes an image `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`, its alpha dropped.
 
 		@param image  The image. */
 	static function ImageColorGrayscale(image:Image):Void {
 		ImageFormat(image, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
 	}
 
-	/** Changes an image's contrast; the image keeps its format.
+	/** Changes an image's contrast, in its format.
 
 		@param image  The image.
 		@param contrast  -100 (all mid-gray) to 100; 0 leaves it unchanged. */
@@ -1813,8 +1923,9 @@ class RTextures {
 		throughColors(image, pixels -> pixels.contrast(contrast));
 	}
 
-	/** Changes an image's brightness, adding to red, green and blue; the image keeps its format. A channel taken below 0 becomes 1, as
-		raylib's does.
+	/** Changes an image's brightness by adding to red, green and blue, in its format.
+
+		A channel taken below 0 becomes 1.
 
 		@param image  The image.
 		@param brightness  -255 to 255. */
@@ -1822,7 +1933,7 @@ class RTextures {
 		throughColors(image, pixels -> pixels.brighten(brightness));
 	}
 
-	/** Changes every pixel of one color to another; the image keeps its format.
+	/** Changes every pixel of one color to another, in the image's format.
 
 		@param image  The image.
 		@param color  The color changed, alpha too.
@@ -1831,8 +1942,9 @@ class RTextures {
 		throughColors(image, pixels -> pixels.replaceColor(Pixels.argb(Pixels.ofColor(color)), Pixels.argb(Pixels.ofColor(replace))));
 	}
 
-	/** Returns an image's pixels as colors, as raylib's reads each format: a 5-bit channel times 8, a 6-bit times 4, a 4-bit times 17; R32
-		and R16 as red alone.
+	/** Returns an image's pixels as colors.
+
+		A 5-bit channel is read times 8, a 6-bit times 4 and a 4-bit times 17. R32 and R16 are read as red alone.
 
 		@param image  The image.
 		@return  The colors, rows top first, or null for an image 0 wide or high. */
@@ -1843,7 +1955,9 @@ class RTextures {
 		return [for (i in 0...image.width * image.height) Pixels.toColor(pixels.getInt32(i * 4))];
 	}
 
-	/** Returns an image's colors, each once, in the order first met; clear pixels are skipped.
+	/** Returns an image's colors, each once, in the order first met.
+
+		Clear pixels are skipped.
 
 		@param image  The image.
 		@param maxPaletteSize  The most colors.
@@ -1867,12 +1981,16 @@ class RTextures {
 		return palette;
 	}
 
-	/** Frees colors `LoadImageColors` gave. There is nothing to free here.
+	/** Frees colors `LoadImageColors` gave.
+
+		Does nothing, as the colors need no freeing.
 
 		@param colors  The colors. */
 	static function UnloadImageColors(colors:Array<Color>):Void {}
 
-	/** Frees colors `LoadImagePalette` gave. There is nothing to free here.
+	/** Frees colors `LoadImagePalette` gave.
+
+		Does nothing, as the colors need no freeing.
 
 		@param colors  The colors. */
 	static function UnloadImagePalette(colors:Array<Color>):Void {}
@@ -1890,7 +2008,9 @@ class RTextures {
 		return border.isEmpty ? new Rectangle() : new Rectangle(border.minX, border.minY, border.width, border.height);
 	}
 
-	/** Returns a pixel's color, as `LoadImageColors` reads it. A pixel outside the image is clear black, with a warning.
+	/** Returns a pixel's color, as `LoadImageColors` reads it.
+
+		A pixel outside the image is clear black, with a warning.
 
 		@param image  The image.
 		@param x  The pixel's column.
@@ -1926,8 +2046,11 @@ class RTextures {
 			dst.data.blit(i * bytesPerPixel, dst.data, 0, bytesPerPixel);
 	}
 
-	/** Sets a pixel, in the image's format: grayscale by luminance, a 16-bit format's channels rounded, R5G5B5A1's alpha bit set over an
-		alpha of 50. One outside the image is skipped.
+	/** Sets a pixel, in the image's format.
+
+		Grayscale is by luminance, a 16-bit format's channels are rounded, and R5G5B5A1's alpha bit is set over an alpha of 50.
+
+		A pixel outside the image is skipped.
 
 		@param dst  The image.
 		@param posX  The pixel's column.
@@ -1971,9 +2094,11 @@ class RTextures {
 			color);
 	}
 
-	/** Draws a line of a thickness: as many lines as it is thick, side by side, below and above the line for a line more across than
-		down, right and left of it otherwise (the odd one out below or right). Its ends are rounded to whole pixels; a line from a pixel
-		to itself draws nothing.
+	/** Draws a line of a thickness, as many one-pixel lines side by side as it is thick.
+
+		A line more across than down gets its lines below and above it, any other right and left of it, the odd one out below or right.
+
+		The ends are rounded to whole pixels. A line from a pixel to itself draws nothing.
 
 		@param dst  The image.
 		@param start  The start.
@@ -2026,7 +2151,7 @@ class RTextures {
 		ImageDrawCircleLines(dst, Std.int(f32(center.x)), Std.int(f32(center.y)), radius, color);
 	}
 
-	/** Fills a rectangle; what falls outside the image is skipped.
+	/** Fills a rectangle, skipping what falls outside the image.
 
 		@param dst  The image.
 		@param posX  The left edge.
@@ -2048,7 +2173,9 @@ class RTextures {
 		ImageDrawRectangle(dst, Std.int(f32(position.x)), Std.int(f32(position.y)), Std.int(f32(size.x)), Std.int(f32(size.y)), color);
 	}
 
-	/** Fills a rectangle, as raylib's does: cut to the image, then to whole pixels; one 0 wide still sets its top-left pixel.
+	/** Fills a rectangle, cut to the image, then to whole pixels.
+
+		A rectangle 0 wide still sets its top-left pixel.
 
 		@param dst  The image.
 		@param rec  The rectangle, in pixels.
@@ -2108,7 +2235,7 @@ class RTextures {
 		ImageDrawRectangle(dst, Std.int(x), Std.int(f32(f32(y + height) - thick)), Std.int(width), thick, color);
 	}
 
-	/** Fills a triangle; its corners may go either way round.
+	/** Fills a triangle whose corners may go either way round.
 
 		@param dst  The image.
 		@param v1  The first corner.
@@ -2119,8 +2246,9 @@ class RTextures {
 		shape(dst, color, (pixels, c) -> pixels.drawTriangle(v1.x, v1.y, v2.x, v2.y, v3.x, v3.y, c, c, c));
 	}
 
-	/** Fills a triangle, each corner its own color, blended across it as raylib's does: each channel by the pixel's weights, each
-		rounded down, so three corners of one color may not give it exactly.
+	/** Fills a triangle, each corner its own color, blended across it.
+
+		Each channel is weighted by the pixel's weights and rounded down, so three corners of one color may not give that color exactly.
 
 		@param dst  The image.
 		@param v1  The first corner.
@@ -2218,10 +2346,16 @@ class RTextures {
 					ImageDrawTriangle(dst, points[i], points[i - 1], points[i - 2], color);
 	}
 
-	/** Draws a rectangle of one image into a rectangle of another, tinted, blended over (raylib's `ColorAlphaBlend`), in their formats.
-		A source with no alpha under an opaque tint is copied, the tint's color ignored, as raylib's is; a float destination is unchanged,
-		as `SetPixelColor` writes none. A source rectangle of another whole-pixel size than the destination's is first resized by
-		`ImageResize`, which isn't raylib's. Their mipmaps are drawn too, when both have them.
+	/** Draws a rectangle of one image into a rectangle of another, tinted and blended over (`ColorAlphaBlend`), in their formats.
+
+		A source with no alpha under an opaque tint is copied, the tint's color ignored.
+
+		A float destination is unchanged, as `SetPixelColor` writes none.
+
+		A source rectangle of another whole-pixel size than the destination's is first resized by `ImageResize`, whose pixels differ from
+		raylib's.
+
+		The images' mipmaps are drawn too, when both have them.
 
 		@param dst  The image drawn into.
 		@param src  The image drawn from.
@@ -2436,11 +2570,16 @@ class RTextures {
 
 	// ---- Images as textures ----
 
-	/** Makes a texture of an image, in any uncompressed format: its pixels go to the GPU as RGBA when first drawn, its mipmaps too when it
-		has them (`ImageMipmaps`), filtered through them, trilinear, as raylib sets it.
-		The texture\'s format is the image\'s, as raylib's is, so a grayscale image's texture says `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`. A compressed
-		format gives no texture, with a warning. Its pixels are let go of once sent, so after a page's GPU context is lost it draws as
-		nothing, with one warning (`Raylib`).
+	/** Makes a texture of an image in any uncompressed format.
+
+		The image's pixels go to the GPU as RGBA when the texture is first drawn, its mipmaps too when it has them (`ImageMipmaps`). A
+		texture with mipmaps is filtered through them, trilinear.
+
+		The texture's format is the image's, so a grayscale image's texture has `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`.
+
+		A compressed format gives no texture, with a warning.
+
+		The pixels are let go of once sent, so after a page's GPU context is lost the texture draws as nothing, with one warning (`Raylib`).
 
 		@param image  The image.
 		@return  The texture. */
@@ -2472,27 +2611,41 @@ class RTextures {
 		return new Texture2D(id, image.width, image.height, levels.length + 1, image.format);
 	}
 
-	/** Makes a cubemap of an image, its six faces laid out as raylib's layouts lay them: `CUBEMAP_LAYOUT_LINE_VERTICAL` (a column, +X,
-		-X, +Y, -Y, +Z, -Z from the top), `CUBEMAP_LAYOUT_LINE_HORIZONTAL` (a row, in that order from the left),
-		`CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR` (3 faces wide, 4 high: +Y, +X, -Y and -X down the middle column, +Z left of +X and -Z right
-		of it) or `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE` (4 wide, 3 high: +Y at the top of the second column, then -X, +Z, +X, -Z
-		across, then -Y below +Z), each face's rows top first as GL's cube faces take them; `CUBEMAP_LAYOUT_AUTO_DETECT` takes the layout
-		from the image's shape. A face is the image's height over 6 (a column), its width over 6 (a row), over 3 (3 by 4) or over 4 (4 by 3).
+	/** Makes a cubemap of an image, its six faces laid out by a layout.
 
-		As raylib's: a column is read as it is, the face size squared times 6 pixels from the image's first, row after row, so an image
-		not 1 face by 6 is read across its rows; the other layouts draw each face onto magenta (`ImageDraw`), a translucent pixel blended
-		over it, a face partly past the image's edge its part inside stretched to the face, and one wholly past it left magenta (raylib's
-		divides by zero). A shape `CUBEMAP_LAYOUT_AUTO_DETECT` doesn't know gives no cubemap,
-		with a warning. Its format is the image's, its pixels RGBA on the GPU, sampled linearly as rlgl's cubemaps are. An image with
-		mipmaps gives a cubemap with mipmaps, sampled through them: a column's from the image's levels, read as its first is; the other
-		layouts' made from each face, as GL's `glGenerateMipmap` makes them, where raylib 6.2's are magenta (5.5's are magenta whatever the
-		image). Where raylib's differs, it makes an empty GL cubemap: a face size of 0 (an image too small for its layout, or a layout raylib
-		doesn't have) gives none here, as do a compressed format and an image too small for the column it is read as, with a warning.
+		The layouts:
 
-		The cubemap is a `Texture2D`'s record: a material's `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` or `MATERIAL_MAP_PREFILTER`
-		binds it to a shader's `samplerCube` (`DrawMesh`), as does `SetShaderValueTexture`; drawn as a 2D texture, it draws nothing.
-		`UnloadTexture` lets go of it, and it is counted as any texture is (docs/DECISIONS.md 25). Its pixels are let go of once sent, so
-		after a page's GPU context is lost it draws as nothing, with one warning (`Raylib`).
+		- `CUBEMAP_LAYOUT_LINE_VERTICAL`: a column, +X, -X, +Y, -Y, +Z, -Z from the top. A face is the image's height over 6.
+		- `CUBEMAP_LAYOUT_LINE_HORIZONTAL`: a row, in that order from the left. A face is the image's width over 6.
+		- `CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR`: 3 faces wide, 4 high, +Y, +X, -Y and -X down the middle column, +Z left of +X and -Z right
+		  of it. A face is the image's width over 3.
+		- `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE`: 4 faces wide, 3 high, +Y at the top of the second column, then -X, +Z, +X, -Z across, then
+		  -Y below +Z. A face is the image's width over 4.
+		- `CUBEMAP_LAYOUT_AUTO_DETECT`: the layout the image's shape gives. A shape it doesn't know gives no cubemap, with a warning.
+
+		Each face's rows run top first, as GL's cube faces take them.
+
+		A column is read as it is, the face size squared times 6 pixels from the image's first, row after row. An image not 1 face by 6 is
+		read across its rows.
+
+		The other layouts draw each face onto magenta (`ImageDraw`). A translucent pixel is blended over the magenta. A face partly past the
+		image's edge has its part inside stretched to the face, and a face wholly past it stays magenta.
+
+		The cubemap's format is the image's. Its pixels are RGBA on the GPU, sampled linearly.
+
+		An image with mipmaps gives a cubemap with mipmaps, sampled through them. A column's come from the image's levels, read as its first
+		is. The other layouts' are made from each face, as GL's `glGenerateMipmap` makes them.
+
+		No cubemap comes back, with a warning, for a face size of 0 (an image too small for its layout, or a layout raylib doesn't have), a
+		compressed format, or an image too small for the column it is read as.
+
+		The cubemap is a `Texture2D`'s record. A material's `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` or `MATERIAL_MAP_PREFILTER`
+		binds it to a shader's `samplerCube` (`DrawMesh`), as `SetShaderValueTexture` does. Drawn as a 2D texture, the cubemap draws
+		nothing.
+
+		`UnloadTexture` lets go of the cubemap, which is counted as any texture is.
+
+		The pixels are let go of once sent, so after a page's GPU context is lost the cubemap draws as nothing, with one warning (`Raylib`).
 
 		@param image  The image.
 		@param layout  The layout (`CUBEMAP_LAYOUT_*`).
@@ -2595,11 +2748,14 @@ class RTextures {
 		return new Texture2D(id, size, size, levels.length, image.format);
 	}
 
-	/** Replaces a texture's pixels, as raylib's does on the GPU. The pixels are in the texture's format (`texture.format`), rows top
-		first, its width by its height. Draws asked for before it this frame in a render texture drawn into since, or on the screen, show
-		the new pixels too, as rlgl's batch drawn after it does; those in render textures drawn into before it keep the old. A render
-		texture's, a cubemap's, a compressed format's and pixels too few for the texture change nothing (raylib's reads past them), with a
-		warning.
+	/** Replaces a texture's pixels on the GPU.
+
+		The pixels are in the texture's format (`texture.format`), rows top first, its width by its height.
+
+		Draws asked for before the call this frame show the new pixels too when they are on the screen or in a render texture drawn into
+		since. Those in render textures drawn into before the call keep the old.
+
+		Changes nothing, with a warning, for a render texture, a cubemap, a compressed format or too few pixels.
 
 		@param texture  The texture.
 		@param pixels  The pixels: their bytes (`haxe.io.Bytes`), or an array of `Color` (R8G8B8A8's bytes, as raylib's `Color *` is). */
@@ -2607,8 +2763,9 @@ class RTextures {
 		updateRectangle(texture, 0, 0, texture.width, texture.height, pixels);
 	}
 
-	/** Replaces a rectangle of a texture's pixels, as `UpdateTexture` does the whole. A rectangle not inside the texture changes nothing,
-		as GL refuses it.
+	/** Replaces a rectangle of a texture's pixels, as `UpdateTexture` does the whole.
+
+		A rectangle not inside the texture changes nothing.
 
 		@param texture  The texture.
 		@param rec  The rectangle, in pixels from the texture's top-left corner; its numbers are cut to whole pixels.
@@ -2650,8 +2807,11 @@ class RTextures {
 		Textures.update(texture.id, x, y, width, height, Pixels.colors(bytes, width, height, texture.format));
 	}
 
-	/** Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT` (raylib's default), `TEXTURE_WRAP_CLAMP` or
-		`TEXTURE_WRAP_MIRROR_REPEAT`. `TEXTURE_WRAP_MIRROR_CLAMP` isn't here, and leaves it unchanged, with a warning. A cubemap is left unchanged.
+	/** Sets how a texture wraps past its edges: `TEXTURE_WRAP_REPEAT` (the default), `TEXTURE_WRAP_CLAMP` or `TEXTURE_WRAP_MIRROR_REPEAT`.
+
+		`TEXTURE_WRAP_MIRROR_CLAMP` leaves the texture unchanged, with a warning.
+
+		A cubemap is left unchanged.
 
 		@param texture  The texture.
 		@param wrap  The wrap (`TEXTURE_WRAP_*`). */
@@ -2668,8 +2828,10 @@ class RTextures {
 		Textures.setSampling(texture.id, Textures.samplingOfId(texture.id).withWrap(mode, mode));
 	}
 
-	/** Draws a texture as a nine-patch (or a three-patch) into a rectangle, turned about an origin, as raylib's does: its corners kept,
-		its edges and middle stretched; a rectangle smaller than the borders shrinks them and drops the middle.
+	/** Draws a texture as a nine-patch or a three-patch into a rectangle, turned about an origin, its corners kept and its edges and middle
+		stretched.
+
+		A rectangle smaller than the borders shrinks them and drops the middle.
 
 		@param texture  The texture.
 		@param nPatchInfo  The patch: its rectangle on the texture, its borders and its layout (`NPATCH_*`).
@@ -2767,8 +2929,11 @@ class RTextures {
 
 	// ---- Pixels ----
 
-	/** Returns one pixel's color from pixels in a format, as raylib's does: 16-bit channels widened by integers, floats times 255.
-		raylib takes a pointer to the pixel; here it is the pixels and the pixel's first byte.
+	/** Returns one pixel's color from pixels in a format.
+
+		16-bit channels are widened by integers, and floats are multiplied by 255.
+
+		Takes the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
 
 		@param srcPtr  The pixels.
 		@param format  Their format (`PIXELFORMAT_UNCOMPRESSED_*`).
@@ -2778,8 +2943,11 @@ class RTextures {
 		return Pixels.toColor(Pixels.getColor(srcPtr, offset, format));
 	}
 
-	/** Writes one pixel's color into pixels in a format, as raylib's does: grayscale by luminance, 16-bit channels rounded; a float
-		format is left unchanged. raylib takes a pointer to the pixel; here it is the pixels and the pixel's first byte.
+	/** Writes one pixel's color into pixels in a format.
+
+		Grayscale is by luminance, and 16-bit channels are rounded. A float format is left unchanged.
+
+		Takes the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
 
 		@param dstPtr  The pixels.
 		@param color  The color.

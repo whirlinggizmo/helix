@@ -1,12 +1,14 @@
 package helix.raylib;
 
-/** Represents raylib's `AudioStream`: samples a program makes as it goes, played as they are given (`UpdateAudioStream`), over
-	helix-services' `SampleQueue`.
+/** Represents raylib's `AudioStream`: samples a program makes as it goes, played as `UpdateAudioStream` gives them, over helix-services'
+	`SampleQueue`.
 
-	It holds raylib's double buffer: two buffers of `SetAudioStreamBufferSizeDefault` frames each (1470, a 30th of a second at 44100 Hz,
-	until set), one filled by each update while the other plays. */
+	Holds raylib's double buffer: two buffers of `SetAudioStreamBufferSizeDefault` frames each, 1470 until set (a 30th of a second at 44100
+	Hz).
+
+	Each update fills one buffer while the other plays. */
 class AudioStream {
-	/** Gets the frames a second. */
+	/** Gets the sample rate, in frames a second. */
 	public var sampleRate(default, null):Int;
 
 	/** Gets the bits a sample takes: 8 (unsigned), 16 (signed) or 32 (float). */

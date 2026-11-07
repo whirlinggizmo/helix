@@ -2,10 +2,10 @@ package helix.raylib;
 
 /** Represents raylib's `Music`: a sound played as it is read, never held whole, through helix-services' `Audio.stream`. */
 class Music {
-	/** Gets or sets whether it starts again from its beginning when it ends; true until set, as raylib's. */
+	/** Gets or sets a value indicating whether the music starts again from its beginning when it ends. Defaults to true, as raylib's. */
 	public var looping = true;
 
-	/** Gets the number of frames, at 44100 a second; 0 until its length is known (`GetMusicTimeLength`). */
+	/** Gets the number of frames, at 44100 a second, or 0 until the length is known (`GetMusicTimeLength`). */
 	public var frameCount(get, never):Int;
 
 	function get_frameCount():Int {

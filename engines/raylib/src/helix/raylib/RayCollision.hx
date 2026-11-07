@@ -3,7 +3,7 @@ package helix.raylib;
 /** Represents raylib's `RayCollision`: whether and where a ray hit. */
 @:structInit
 class RayCollision {
-	/** Gets or sets whether it hit. */
+	/** Gets or sets a value indicating whether the ray hit. */
 	public var hit:Bool;
 
 	/** Gets or sets the distance to the hit. */

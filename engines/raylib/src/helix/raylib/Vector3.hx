@@ -12,7 +12,7 @@ class Vector3 {
 	/** Gets or sets the z component. */
 	public var z:Float;
 
-	/** Creates a Vector3.
+	/** Creates a vector.
 
 		@param x  Gets or sets the x component.
 		@param y  Gets or sets the y component.

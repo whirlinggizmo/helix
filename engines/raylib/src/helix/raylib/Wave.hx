@@ -2,8 +2,11 @@ package helix.raylib;
 
 /** Represents raylib's `Wave`: sound samples in memory, as `LoadWaveAsync` reads them and `LoadSoundFromWave` plays them.
 
-	The samples are interleaved, a frame a sample for each channel, left first: 8-bit unsigned, 16-bit signed or 32-bit float, little-endian.
-	The `Wave*` functions change a wave in place, as raylib's do through its pointer: its fields are replaced. */
+	The samples are interleaved, a frame a sample for each channel, left first.
+
+	A sample is 8-bit unsigned, 16-bit signed or 32-bit float, little-endian.
+
+	The `Wave*` functions change a wave in place, as raylib's do through its pointer, replacing its fields. */
 class Wave {
 	/** Gets or sets the number of frames, a sample for each channel. */
 	public var frameCount:Int;
@@ -20,7 +23,7 @@ class Wave {
 	/** Gets or sets the samples, or null for none. */
 	public var data:Null<haxe.io.Bytes>;
 
-	/** Creates a wave's record. Its fields are zero and its data null unless given, as raylib's `Wave wave = { 0 }` is.
+	/** Creates a wave's record, its fields zero and its data null unless provided, as raylib's `Wave wave = { 0 }` is.
 
 		@param frameCount  The number of frames.
 		@param sampleRate  The frames a second.

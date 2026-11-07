@@ -1,21 +1,21 @@
 package helix.raylib;
 
-/** Represents raylib's `Camera3D`, which is also its `Camera`: where it is, what it looks at, and its lens. */
+/** Represents raylib's `Camera3D`, also its `Camera`: the camera's position, its target and its lens. */
 @:structInit
 class Camera3D {
-	/** Gets or sets where it is. */
+	/** Gets or sets the camera's position. */
 	public var position:Vector3;
 
-	/** Gets or sets the point it looks at. */
+	/** Gets or sets the camera's target, the point in the middle of its view. */
 	public var target:Vector3;
 
-	/** Gets or sets its up direction. */
+	/** Gets or sets the camera's up direction. */
 	public var up:Vector3;
 
-	/** Gets or sets the field of view, top to bottom, in degrees; in orthographic, the height seen. */
+	/** Gets or sets the field of view, top to bottom, in degrees, or the height seen in orthographic. */
 	public var fovy:Float;
 
-	/** Gets or sets `CAMERA_PERSPECTIVE` or `CAMERA_ORTHOGRAPHIC`. */
+	/** Gets or sets the projection: `CAMERA_PERSPECTIVE` or `CAMERA_ORTHOGRAPHIC`. */
 	public var projection:Int;
 
 	/** Creates a Camera3D.

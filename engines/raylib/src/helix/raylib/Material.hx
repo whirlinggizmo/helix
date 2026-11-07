@@ -1,32 +1,43 @@
 package helix.raylib;
 
-/** Represents raylib's `Material`: a shader and its maps (`MATERIAL_MAP_*`); the diffuse map's texture and color are what a draw shows.
+/** Represents raylib's `Material`: a shader and its maps (`MATERIAL_MAP_*`).
 
-	It is counted (docs/DECISIONS.md 25): the program holds it from `LoadMaterialDefault` until `UnloadMaterial`, and each model whose
-	`materials` holds it holds it too. When the last lets go, its maps let go of their textures and it of its shader, each freed when
-	nothing else holds it. */
+	A draw shows the diffuse map's texture and color.
+
+	Counted. The program holds a material from `new` or `LoadMaterialDefault` until `UnloadMaterial`, and so does each model whose
+	`materials` has the material.
+
+	When the last holder lets go, the maps let go of their textures and the material lets go of its shader. Each is freed when nothing else
+	holds it. */
 class Material {
 	// Its holders (docs/DECISIONS.md 25): the program from `LoadMaterialDefault` or `new` until `UnloadMaterial`, and each model whose
 	// `materials` holds it. At 0 its maps let go of their textures and it of its shader (`Models.releaseMaterial`).
 	@:allow(helix.raylib)
 	var refs = 1;
 
-	/** Gets or sets the shader it draws with. Assigning keeps a copy of the record, counted as one of the shader's holders, and lets go of
-		the shader it replaces; the material lets go of it when it is freed. The default shader is never freed. */
+	/** Gets or sets the material's shader.
+
+		Assigning keeps a copy of the record, counted as one of the shader's holders, and lets go of the shader it replaces.
+
+		A freed material lets go of its shader. The default shader is never freed. */
 	public var shader(default, set):Shader;
 
-	/** Gets its maps, `MAX_MATERIAL_MAPS` of them, by `MATERIAL_MAP_*`. */
+	/** Gets the maps, `MAX_MATERIAL_MAPS` of them, by `MATERIAL_MAP_*`. */
 	public var maps:Array<MaterialMap>;
 
 	/** Gets four values for a shader's own use. */
 	public var params:Array<Float>;
 
-	/** Gets or sets whether the material is unlit, a glTF's `KHR_materials_unlit`: its base color is what it shows, lit by nothing.
-		`LoadModel` sets it from the file, and `LoadPbrShader` draws such a material through its unlit twin; raylib's own shaders don't
-		read it. */
+	/** Gets or sets a value indicating whether the material is unlit (a glTF's `KHR_materials_unlit`), showing its base color lit by
+		nothing.
+
+		`LoadModel` sets it from the file.
+
+		`LoadPbrShader` draws an unlit material through its unlit twin. raylib's own shaders ignore it. */
 	public var unlit = false;
 
-	/** Creates a material. Materials are made by `Raylib.LoadMaterialDefault` and `extras.Models.LoadModelAsync`.
+	/** Creates a material. See `Raylib.LoadMaterialDefault` for making raylib's default material, and `extras.Models.LoadModelAsync` for
+		loading a model's materials.
 
 		@param shader  The shader.
 		@param maps  The maps.

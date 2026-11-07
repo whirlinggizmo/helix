@@ -1,6 +1,10 @@
 package helix.raylib;
 
-/** Represents raylib's `Matrix`: 4 x 4, named by rows (`m0, m4, m8, m12` the first), stored and sent to shaders by columns (`m0` to `m3` the first), as raylib's is. */
+/** Represents raylib's `Matrix`: 4 by 4, named by rows and stored by columns, as raylib's is.
+
+	`m0, m4, m8, m12` is the first row.
+
+	`m0` to `m3` is the first column, stored first and sent to shaders first. */
 @:structInit
 class Matrix {
 	/** Gets or sets row 1, column 1. */
@@ -51,7 +55,7 @@ class Matrix {
 	/** Gets or sets row 4, column 4. */
 	public var m15:Float;
 
-	/** Creates a Matrix.
+	/** Creates a matrix.
 
 		@param m0  Gets or sets row 1, column 1.
 		@param m4  Gets or sets row 1, column 2.

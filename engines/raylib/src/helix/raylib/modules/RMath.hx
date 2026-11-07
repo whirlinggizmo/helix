@@ -17,7 +17,9 @@ import helix.raylib.modules.RAudio.*;
 import helix.raylib.modules.RMath.*;
 #end
 
-/** Holds raylib's raymath (vectors, matrices and quaternions), written here; `Raymath` forwards to each (`tools/gen_raylib.py`). */
+/** Provides raylib's raymath functions for vectors, matrices and quaternions, written in Haxe.
+
+	`Raymath` forwards to each, through `tools/gen_raylib.py`. */
 @:noCompletion
 @:allow(helix.raylib)
 class RMath {
@@ -77,7 +79,9 @@ class RMath {
 		return value - (max - min) * Math.ffloor((value - min) / (max - min));
 	}
 
-	/** Returns whether two values are equal but for rounding: no further apart than `EPSILON`, times the larger when it is over 1.
+	/** Returns whether two values are equal but for rounding.
+
+		Counts them equal when they are no further apart than `EPSILON`, times the larger magnitude when that is over 1.
 
 		@param x  One.
 		@param y  The other.
@@ -182,7 +186,9 @@ class RMath {
 		return (v1.x - v2.x) * (v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y);
 	}
 
-	/** Returns the angle from one vector to another, from -pi to pi: positive turning from x toward y.
+	/** Returns the angle from one vector to another, from -pi to pi.
+
+		Positive turning from x toward y.
 
 		@param v1  The first.
 		@param v2  The second.
@@ -193,7 +199,9 @@ class RMath {
 		return Math.atan2(det, dot);
 	}
 
-	/** Returns the angle of the line from one point to another, from the x axis: positive turning from x toward -y.
+	/** Returns the angle of the line from one point to another, measured from the x axis.
+
+		Positive turning from x toward -y.
 
 		@param start  The line's start.
 		@param end  Its end.
@@ -304,7 +312,9 @@ class RMath {
 		return new Vector2(v.x * cosres - v.y * sinres, v.x * sinres + v.y * cosres);
 	}
 
-	/** Returns a point moved toward a target by at most a distance; the target when it is that near.
+	/** Returns a point moved toward a target by at most a distance.
+
+		Gives the target itself when the target is within that distance.
 
 		@param v  The point.
 		@param target  The target.
@@ -649,7 +659,9 @@ class RMath {
 		return new Vector3(p.x, p.y, p.z);
 	}
 
-	/** Returns a point moved toward a target by at most a distance; the target when it is that near.
+	/** Returns a point moved toward a target by at most a distance.
+
+		Gives the target itself when the target is within that distance.
 
 		@param v  The point.
 		@param target  The target.
@@ -1124,7 +1136,9 @@ class RMath {
 			+ amount * (v2.w - v1.w));
 	}
 
-	/** Returns a point moved toward a target by at most a distance; the target when it is that near.
+	/** Returns a point moved toward a target by at most a distance.
+
+		Gives the target itself when the target is within that distance.
 
 		@param v  The point.
 		@param target  The target.
@@ -1196,8 +1210,9 @@ class RMath {
 		return toMatrix(toMatrix3D(mat).transpose());
 	}
 
-	/** Returns a matrix inverted, by raymath's own steps: a singular matrix's inverse divides by a determinant of 0, so it is infinite or
-		NaN, as raylib's is.
+	/** Returns a matrix's inverse.
+
+		Inverting a singular matrix divides by a determinant of 0 and gives infinite or NaN values.
 
 		@param mat  The matrix.
 		@return  Its inverse. */
@@ -1352,8 +1367,8 @@ class RMath {
 		return toMatrix(Matrix3D.fromRotation(0, 0, 1, angle));
 	}
 
-	/** Returns raymath's xyz rotation, by its own steps: built from the negated angles and laid out as raylib's is, which turns a point
-		about z, then y, then x (the reverse of `MatrixRotateZYX`'s order).
+	/** Returns a rotation by three angles that turns a point about z, then y, then x. See `MatrixRotateZYX` for turning in the reverse
+		order.
 
 		@param angle  The angles, in radians.
 		@return  The matrix. */
@@ -1525,7 +1540,9 @@ class RMath {
 		return new Vector4(q.x * ilength, q.y * ilength, q.z * ilength, q.w * ilength);
 	}
 
-	/** Returns a quaternion's inverse: the rotation back, for one of length 1; the quaternion itself when its length is 0.
+	/** Returns a quaternion's inverse, which for a quaternion of length 1 is the rotation back.
+
+		Gives the quaternion unchanged when its length is 0.
 
 		@param q  The quaternion.
 		@return  Its inverse. */
@@ -1682,8 +1699,11 @@ class RMath {
 		return QuaternionNormalize(QuaternionAdd(QuaternionAdd(QuaternionAdd(p0, m0), p1), m1));
 	}
 
-	/** Returns the rotation turning one direction to another, as raylib 6.2's: the directions may be of any length, and opposite ones
-		give half a turn about a direction square to the first.
+	/** Returns the rotation turning one direction to another.
+
+		Takes directions of any length.
+
+		Opposite directions give half a turn about a direction square to the first.
 
 		@param from  The direction turned from.
 		@param to  The direction turned to.
@@ -1751,7 +1771,9 @@ class RMath {
 		return toMatrix(Matrix3D.fromQuaternion(q.x, q.y, q.z, q.w));
 	}
 
-	/** Returns the rotation about an axis as a quaternion, normalized; the identity for an axis of no length.
+	/** Returns the rotation about an axis as a quaternion, normalized.
+
+		Gives the identity for an axis of length 0.
 
 		@param axis  The axis.
 		@param angle  The angle, in radians.
@@ -1771,7 +1793,9 @@ class RMath {
 		return new Vector4(qx / length, qy / length, qz / length, qw / length);
 	}
 
-	/** Gives a quaternion's rotation as an axis and an angle about it; the axis is x when the angle is 0.
+	/** Finds a quaternion's rotation as an axis and an angle about it.
+
+		Gives x as the axis when the angle is 0.
 
 		@param q  The quaternion, normalized first when its w is over 1 either way.
 		@param outAxis  Its first element is set to the axis, of length 1.
@@ -1866,9 +1890,13 @@ class RMath {
 		return same || negated ? 1 : 0;
 	}
 
-	/** Splits a transform matrix into its translation, rotation and scale, as raylib 6.2's (5.5's took the scale from the rows, wrong for a
-		turned matrix scaled unevenly): the columns, made orthonormal one after another (the shear between them dropped), are the
-		rotation, their lengths the scale, all three negated when the matrix mirrors.
+	/** Splits a transform matrix into its translation, rotation and scale.
+
+		Makes the columns orthonormal one after another. The orthonormal columns are the rotation, and their lengths are the scale.
+
+		Drops any shear between the columns.
+
+		Decomposing a matrix that mirrors negates all three components of the scale.
 
 		@param mat  The matrix.
 		@param translation  Set to its translation.

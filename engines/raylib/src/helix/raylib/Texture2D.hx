@@ -15,9 +15,12 @@ class Texture2D {
 	/** Gets the number of mipmap levels, 1 for none. */
 	public var mipmaps:Int;
 
-	/** Gets the pixel format: the image's for a texture made of one (`LoadTextureFromImage`; a glTF model's roughness and metalness
-		maps are `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`), `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` for the rest. Its pixels are RGBA on the GPU
-		either way. */
+	/** Gets the pixel format: the image's for a texture made of one (`LoadTextureFromImage`), or `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` for
+		the rest.
+
+		A glTF model's roughness and metalness maps are `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`.
+
+		The pixels are RGBA on the GPU whatever the format. */
 	public var format:Int;
 
 	// A render texture's color, which raylib stores bottom row first, so it draws upside down unless flipped as raylib's programs do.
@@ -33,7 +36,7 @@ class Texture2D {
 	@:allow(helix.raylib)
 	var spent = false;
 
-	/** Creates a texture's record. Textures are made by `extras.Textures.LoadTextureAsync`.
+	/** Creates a texture's record. See `extras.Textures.LoadTextureAsync` for loading a texture.
 
 		@param id  The handle.
 		@param width  The width, in pixels.

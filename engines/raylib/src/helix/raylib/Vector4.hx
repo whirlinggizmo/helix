@@ -1,6 +1,6 @@
 package helix.raylib;
 
-/** Represents raylib's `Vector4`, which is also its `Quaternion`. */
+/** Represents raylib's `Vector4`, also its `Quaternion`: four components. */
 @:structInit
 class Vector4 {
 	/** Gets or sets the x component. */
@@ -15,7 +15,7 @@ class Vector4 {
 	/** Gets or sets the w component. */
 	public var w:Float;
 
-	/** Creates a Vector4.
+	/** Creates a vector.
 
 		@param x  Gets or sets the x component.
 		@param y  Gets or sets the y component.

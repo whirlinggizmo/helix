@@ -12,7 +12,7 @@ class Transform {
 	/** Gets or sets the scale on each axis. */
 	public var scale:Vector3;
 
-	/** Creates a Transform, each part omitted zero, as raylib's struct starts.
+	/** Creates a transform, each omitted part zero, as raylib's struct starts.
 
 		@param translation  The translation.
 		@param rotation  The rotation, a quaternion.

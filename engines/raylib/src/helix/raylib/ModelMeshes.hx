@@ -3,8 +3,10 @@ package helix.raylib;
 /** Represents a model's meshes, raylib's `model.meshes`: read and written by index (`model.meshes[0] = mesh`), iterated, and with a
 	`length`.
 
-	The model holds a count on each mesh here (docs/DECISIONS.md 25): writing one retains the new mesh and releases the one it replaces,
-	and `UnloadModel` releases them all. An array assigned to `Model.meshes` is copied, so changing it afterwards changes nothing here. */
+	The model holds a count on each mesh here. Writing one retains the new mesh and releases the one it replaces. `UnloadModel` releases
+	them all.
+
+	An array assigned to `Model.meshes` is copied, so changing the array afterwards changes nothing here. */
 @:forward(length, iterator, keyValueIterator, indexOf, contains, copy)
 abstract ModelMeshes(Array<Mesh>) {
 	inline function new(meshes:Array<Mesh>)

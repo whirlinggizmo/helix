@@ -23,14 +23,20 @@ import helix.raylib.modules.RAudio.*;
 import helix.raylib.modules.RMath.*;
 #end
 
-/** Holds raylib's rcore (the window and the frame, the keyboard, mouse, touch and gamepads, files, the 2D and 3D cameras and shaders), written here; `Raylib` forwards to each (`tools/gen_raylib.py`). */
+/** Provides raylib's rcore: the window and the frame, the keyboard, mouse, touch and gamepads, files, the 2D and 3D cameras and shaders.
+
+	`Raylib` forwards to each member (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RCore {
 	#if !macro
 	// ---- Window and frame ----
 
-	/** Opens the window and its graphics. In a page the canvas fills the page, and width and height are ignored.
+	/** Opens the window and its graphics.
+
+		In a page the canvas fills the page, and width and height are ignored.
+
+		Seeds `GetRandomValue` from the time, unless `SetRandomSeed` was called first.
 
 		@param width  The window's width, in pixels.
 		@param height  The window's height, in pixels.
@@ -43,13 +49,19 @@ class RCore {
 			SetRandomSeed(Std.int(Date.now().getTime() % 0x7fffffff));
 	}
 
-	/** Closes the window, after keeping what `SaveFileText` wrote. */
+	/** Closes the window, after keeping what `SaveFileTextAsync` wrote. */
 	static function CloseWindow():Void {
 		Runtime.close();
 	}
 
-	/** Returns whether the window should close: the exit key was pressed (Escape unless `SetExitKey` changed it) or it was asked to close.
-		In a page it is always false; the loop that reads it runs once a frame there.
+	/** Returns whether the window should close, after the exit key is pressed or the window is asked to close.
+
+		The exit key is Escape unless `SetExitKey` changed it.
+
+		Always false in a page, where the loop that reads it runs once a frame.
+
+		In a page, the program's loop must be a `while` or `do`-`while` in the main class, a statement of a function's own block. A call in
+		a loop that never lets the page draw throws.
 
 		@return  True once the window should close. */
 	static function WindowShouldClose():Bool {
@@ -81,8 +93,9 @@ class RCore {
 		Runtime.window.title = title;
 	}
 
-	/** raylib's window size, done when it returns. The window manager resizes the window later, or refuses (a page's canvas follows the
-		page), so a call doesn't compile on any target: `SetWindowSizeAsync` asks for it and answers.
+	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowSizeAsync` for asking for a size.
+
+		Refused in a page, whose canvas follows the page.
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels. */
@@ -91,64 +104,77 @@ class RCore {
 		throw "SetWindowSize is unimplemented";
 	}
 
-	/** Returns whether the window is fullscreen, not a borderless window (`ToggleBorderlessWindowedAsync`), as raylib tells them apart.
-		In a page it tells whether the canvas is.
+	/** Returns whether the window is fullscreen, false for a borderless window (`ToggleBorderlessWindowedAsync`).
+
+		In a page, whether the canvas is fullscreen.
 
 		@return  True while it is. */
 	static function IsWindowFullscreen():Bool {
 		return Runtime.screen.fullscreen && !Runtime.borderless;
 	}
 
-	/** Returns whether the program hid the window (`FLAG_WINDOW_HIDDEN`). In a page it tells whether the canvas is hidden.
+	/** Returns whether the window is hidden (`FLAG_WINDOW_HIDDEN`).
+
+		In a page, whether the canvas is hidden.
 
 		@return  True while it is. */
 	static function IsWindowHidden():Bool {
 		return !Runtime.window.visible;
 	}
 
-	/** Returns whether the window is out of sight: minimized, or in a page its tab in the background.
+	/** Returns whether the window is minimized, or in a page whether its tab is in the background.
 
 		@return  True while it is. */
 	static function IsWindowMinimized():Bool {
 		return Runtime.window.minimized || Runtime.hidden;
 	}
 
-	/** Returns whether the window is maximized. It is false in a page.
+	/** Returns whether the window is maximized.
+
+		Always false in a page.
 
 		@return  True while it is. */
 	static function IsWindowMaximized():Bool {
 		return Runtime.window.maximized;
 	}
 
-	/** raylib's maximize, done when it returns. The window manager maximizes the window later, or refuses (a page can't), so a
-		call doesn't compile on any target: `MaximizeWindowAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `MaximizeWindowAsync` for asking for the window
+		maximized.
+
+		Refused in a page. */
 	@:unsupported("MaximizeWindow: The window changes later, or is refused. See MaximizeWindowAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
 	static function MaximizeWindow():Void {
 		throw "MaximizeWindow is unimplemented";
 	}
 
-	/** raylib's minimize, done when it returns. The window manager minimizes the window later, or refuses (a page can't), so a
-		call doesn't compile on any target: `MinimizeWindowAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `MinimizeWindowAsync` for asking for the window
+		minimized.
+
+		Refused in a page. */
 	@:unsupported("MinimizeWindow: The window changes later, or is refused. See MinimizeWindowAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
 	static function MinimizeWindow():Void {
 		throw "MinimizeWindow is unimplemented";
 	}
 
-	/** raylib's restore, done when it returns. The window manager restores the window later, or refuses, so a call doesn't
-		compile on any target: `RestoreWindowAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `RestoreWindowAsync` for asking for the window
+		restored. */
 	@:unsupported("RestoreWindow: The window changes later, or is refused. See RestoreWindowAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
 	static function RestoreWindow():Void {
 		throw "RestoreWindow is unimplemented";
 	}
 
-	/** raylib's focus, done when it returns. The window manager gives the window the keyboard later, or keeps it elsewhere, so
-		a call doesn't compile on any target: `SetWindowFocusedAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window gets the keyboard later or not at all. See `SetWindowFocusedAsync` for asking for the
+		keyboard. */
 	@:unsupported("SetWindowFocused: The window changes later, or is refused. See SetWindowFocusedAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
 	static function SetWindowFocused():Void {
 		throw "SetWindowFocused is unimplemented";
 	}
 
-	/** Sets the window's icon; in a page, the page's icon. As raylib's, the image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+	/** Sets the window's icon, in a page the page's icon. See `SetWindowIcons` for giving several sizes.
+
+		The image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`. Another format logs a warning and changes nothing.
+
+		An image with no data is ignored.
 
 		@param image  The icon. */
 	static function SetWindowIcon(image:Image):Void {
@@ -161,8 +187,9 @@ class RCore {
 		Runtime.window.setIcon(image.width, image.height, image.data);
 	}
 
-	/** Sets the window's icon from several sizes: the largest is used, as the desktop scales it. Each must be
-		`PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+	/** Sets the window's icon from several sizes, using the largest.
+
+		Each image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`. One in another format logs a warning and changes nothing.
 
 		@param images  The icons.
 		@param count  How many of them. */
@@ -181,8 +208,9 @@ class RCore {
 			Runtime.window.setIcon(largest.width, largest.height, largest.data);
 	}
 
-	/** raylib's opacity, done when it returns. A desktop without a compositor refuses it, so a call doesn't compile on any target:
-		`SetWindowOpacityAsync` asks for it and answers.
+	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowOpacityAsync` for asking for an opacity.
+
+		Refused by a desktop without a compositor.
 
 		@param opacity  From 0 (clear) to 1 (opaque). */
 	@:unsupported("SetWindowOpacity: The window changes later, or is refused. See SetWindowOpacityAsync(opacity:Float, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
@@ -190,8 +218,10 @@ class RCore {
 		throw "SetWindowOpacity is unimplemented";
 	}
 
-	/** raylib's smallest window size, done when it returns. A page refuses it, so a call doesn't compile on any target:
-		`SetWindowMinSizeAsync` asks for it and answers.
+	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMinSizeAsync` for asking for the smallest
+		size the window may take.
+
+		Refused in a page.
 
 		@param width  The width, in the screen's pixels.
 		@param height  The height. */
@@ -200,8 +230,10 @@ class RCore {
 		throw "SetWindowMinSize is unimplemented";
 	}
 
-	/** raylib's largest window size, done when it returns. A page refuses it, so a call doesn't compile on any target:
-		`SetWindowMaxSizeAsync` asks for it and answers.
+	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMaxSizeAsync` for asking for the largest
+		size the window may take.
+
+		Refused in a page.
 
 		@param width  The width, in the screen's pixels.
 		@param height  The height. */
@@ -218,9 +250,15 @@ class RCore {
 		return Math.round(Runtime.window.getMonitorRefreshRate(monitor));
 	}
 
-	/** Opens a URL in the system's browser; in a page, a new tab, at the next press when there is no fresh one. As raylib 6.2's, a URL
-		with `'` or `"` is refused as possibly malicious. helix-raylib opens only http, https and mailto URLs, where raylib 5.5 opens any and
-		6.2 only http and https.
+	/** Opens a URL in the system's browser, in a page a new tab.
+
+		Opens only http, https and mailto URLs.
+
+		A URL with `'` or `"` logs a warning and doesn't open.
+
+		In a page, a URL opens at the next key press, click or tap when none came just before.
+
+		A URL that fails to open logs a warning.
 
 		@param url  The URL. */
 	static function OpenURL(url:String):Void {
@@ -230,8 +268,10 @@ class RCore {
 			Runtime.log(LOG_WARNING, 'SYSTEM: Failed to open URL: $url');
 	}
 
-	/** raylib's clipboard write, done when it returns. A page writes it only while it has the keyboard, soon after a press, so a
-		call doesn't compile on any target: `SetClipboardTextAsync` writes it and answers.
+	/** Doesn't compile on any target, since the clipboard is written later or is refused. See `SetClipboardTextAsync` for writing the
+		clipboard.
+
+		A page writes the clipboard only while it has the keyboard, soon after a press.
 
 		@param text  The text. */
 	@:unsupported("SetClipboardText: The clipboard is written later, or is refused. See SetClipboardTextAsync(text:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
@@ -239,8 +279,7 @@ class RCore {
 		throw "SetClipboardText is unimplemented";
 	}
 
-	/** raylib's clipboard text, which waits for the answer. A page's clipboard answers later, so a call doesn't compile on any target:
-		`GetClipboardTextAsync` answers it.
+	/** Doesn't compile on any target, since a page's clipboard answers later. See `GetClipboardTextAsync` for reading the clipboard.
 
 		@return  Never returns: a call doesn't compile. */
 	@:unsupported("GetClipboardText: Synchronous clipboard access is not supported. See GetClipboardTextAsync(read:String->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
@@ -248,7 +287,8 @@ class RCore {
 		throw "GetClipboardText is unimplemented";
 	}
 
-	/** raylib's clipboard image, which waits for the answer. A call doesn't compile on any target: `GetClipboardImageAsync` answers it.
+	/** Doesn't compile on any target, since the clipboard answers later. See `GetClipboardImageAsync` for reading an image from the
+		clipboard.
 
 		@return  Never returns: a call doesn't compile. */
 	@:unsupported("GetClipboardImage: Synchronous clipboard access is not supported. See GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
@@ -256,7 +296,7 @@ class RCore {
 		throw "GetClipboardImage is unimplemented";
 	}
 
-	/** raylib's handle of the native window. helix-raylib's window has none to give, so a call doesn't compile.
+	/** Doesn't compile, since helix-raylib's window has no native handle to give.
 
 		@return  Never returns: a call doesn't compile. */
 	@:unsupported("GetWindowHandle: The native window's handle is the platform's own and is not given out.")
@@ -264,7 +304,7 @@ class RCore {
 		throw "GetWindowHandle is unimplemented";
 	}
 
-	/** raylib's physical width of a monitor. SDL3 doesn't tell it, so a call doesn't compile.
+	/** Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorWidth` for reading the width in pixels.
 
 		@param monitor  The monitor.
 		@return  Never returns: a call doesn't compile. */
@@ -273,7 +313,7 @@ class RCore {
 		throw "GetMonitorPhysicalWidth is unimplemented";
 	}
 
-	/** raylib's physical height of a monitor. SDL3 doesn't tell it, so a call doesn't compile.
+	/** Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorHeight` for reading the height in pixels.
 
 		@param monitor  The monitor.
 		@return  Never returns: a call doesn't compile. */
@@ -289,22 +329,25 @@ class RCore {
 		return Runtime.window.focused;
 	}
 
-	/** raylib's fullscreen toggle, done when it returns. The platform applies it later or refuses it (a page only soon after a key
-		press, click or tap), so a call doesn't compile on any target: `ToggleFullscreenAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `ToggleFullscreenAsync` for asking for fullscreen.
+
+		A page allows fullscreen only soon after a key press, click or tap. */
 	@:unsupported("ToggleFullscreen: The window changes later, or is refused. See ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
 	static function ToggleFullscreen():Void {
 		throw "ToggleFullscreen is unimplemented";
 	}
 
-	/** raylib's borderless windowed toggle, done when it returns. The platform applies it later or refuses it, so a call doesn't
-		compile on any target: `ToggleBorderlessWindowedAsync` asks for it and answers. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `ToggleBorderlessWindowedAsync` for asking for a
+		borderless window. */
 	@:unsupported("ToggleBorderlessWindowed: The window changes later, or is refused. See ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
 	static function ToggleBorderlessWindowed():Void {
 		throw "ToggleBorderlessWindowed is unimplemented";
 	}
 
-	/** raylib's window position, done when it returns. The window manager moves the window later, or refuses (a page, Wayland),
-		so a call doesn't compile on any target: `SetWindowPositionAsync` asks for it and answers.
+	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowPositionAsync` for asking for a place on
+		the desktop.
+
+		Refused in a page and on Wayland.
 
 		@param x  The left edge, in pixels.
 		@param y  The top edge, in pixels. */
@@ -313,8 +356,8 @@ class RCore {
 		throw "SetWindowPosition is unimplemented";
 	}
 
-	/** raylib's move to a monitor, done when it returns. The window manager moves the window later, or refuses, so a call doesn't
-		compile on any target: `SetWindowMonitorAsync` asks for it and answers.
+	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMonitorAsync` for asking for another
+		monitor.
 
 		@param monitor  The monitor, 0 to `GetMonitorCount() - 1`. */
 	@:unsupported("SetWindowMonitor: The window changes later, or is refused. See SetWindowMonitorAsync(monitor:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
@@ -329,18 +372,20 @@ class RCore {
 		return new Vector2(Runtime.window.x, Runtime.window.y);
 	}
 
-	/** Returns how many of the display's pixels a pixel drawn takes, across and down: 2 on most phones and high-density displays.
+	/** Returns how many of the display's pixels a pixel drawn takes, across and down, 2 on most phones and high-density displays.
 
-		Natively it is the display's scale whatever the flags, as raylib 5.5's desktop build has it (6.2's gives 1 unless
-		`FLAG_WINDOW_HIGHDPI` is set and the window isn't fullscreen). In a page it is 1 unless `FLAG_WINDOW_HIGHDPI` was set before
-		`InitWindow`, which draws the canvas at the device's ratio where raylib's web build always draws at its logical size.
+		Natively, the display's scale whatever the flags.
+
+		In a page, 1 unless `FLAG_WINDOW_HIGHDPI` was set before `InitWindow`. The flag draws the canvas at the device's pixel ratio.
 
 		@return  The scale. */
 	static function GetWindowScaleDPI():Vector2 {
 		return new Vector2(Runtime.window.pixelRatio, Runtime.window.pixelRatio);
 	}
 
-	/** Returns the number of monitors. A page sees one.
+	/** Returns the number of monitors.
+
+		Always 1 in a page.
 
 		@return  The count, at least 1. */
 	static function GetMonitorCount():Int {
@@ -386,44 +431,51 @@ class RCore {
 		return Runtime.window.getMonitorName(monitor);
 	}
 
-	/** Returns the screen's width, in the pixels drawing is in.
+	/** Returns the screen's width, in the pixels drawing is in. See `GetRenderWidth` for reading the framebuffer's width.
 
 		@return  The width. */
 	static function GetScreenWidth():Int {
 		return Std.int(Runtime.screen.width);
 	}
 
-	/** Returns the screen's height, in the pixels drawing is in.
+	/** Returns the screen's height, in the pixels drawing is in. See `GetRenderHeight` for reading the framebuffer's height.
 
 		@return  The height. */
 	static function GetScreenHeight():Int {
 		return Std.int(Runtime.screen.height);
 	}
 
-	/** Returns the framebuffer's width, in the display's pixels.
+	/** Returns the framebuffer's width, in the display's pixels. See `GetScreenWidth` for reading the width drawing is in.
 
 		@return  The width. */
 	static function GetRenderWidth():Int {
 		return Runtime.window.framebufferWidth;
 	}
 
-	/** Returns the framebuffer's height, in the display's pixels.
+	/** Returns the framebuffer's height, in the display's pixels. See `GetScreenHeight` for reading the height drawing is in.
 
 		@return  The height. */
 	static function GetRenderHeight():Int {
 		return Runtime.window.framebufferHeight;
 	}
 
-	/** Sets flags for the window before `InitWindow` (`FLAG_*`). `FLAG_MSAA_4X_HINT` asks for 4 samples a pixel, and `FLAG_VSYNC_HINT`
-		for frames shown at the display's refresh; without it, frames natively show as soon as they are drawn, as raylib's do, while a
-		page's always follow the display. The window is resizable here whatever they say.
+	/** Sets flags for the window before `InitWindow` (`FLAG_*`).
+
+		`FLAG_MSAA_4X_HINT` asks for 4 samples a pixel.
+
+		`FLAG_VSYNC_HINT` shows frames at the display's refresh. Without it, frames natively show as soon as they are drawn. A page's frames
+		always follow the display.
+
+		The window is resizable whatever the flags.
 
 		@param flags  The flags, or'd together. */
 	static function SetConfigFlags(flags:Int):Void {
 		configFlags = flags;
 	}
 
-	/** Sets flags on the open window (`FLAG_*`). A window here is resizable whatever they say, and the others aren't read.
+	/** Sets flags on the open window (`FLAG_*`).
+
+		Changes nothing on the window itself, which stays resizable. `IsWindowState` reads the flags back.
 
 		@param flags  The flags, or'd together. */
 	static function SetWindowState(flags:Int):Void {
@@ -437,8 +489,9 @@ class RCore {
 		configFlags &= ~flags;
 	}
 
-	/** Returns whether flags are set on the window. `FLAG_FULLSCREEN_MODE` and `FLAG_BORDERLESS_WINDOWED_MODE` say what the window is
-		now, as `IsWindowFullscreen` does.
+	/** Returns whether flags are set on the window.
+
+		`FLAG_FULLSCREEN_MODE` and `FLAG_BORDERLESS_WINDOWED_MODE` read what the window is now, as `IsWindowFullscreen` does.
 
 		@param flag  The flags, or'd together.
 		@return  True when all of them are. */
@@ -451,8 +504,12 @@ class RCore {
 		return flags & flag == flag;
 	}
 
-	/** Sets the most frames a second, as raylib's `EndDrawing` waits out the rest of each frame. Natively it waits; in a page, where
-		frames follow the display's refresh, a frame is skipped until it is time, so a rate above the display's changes nothing.
+	/** Sets the most frames a second, for `EndDrawing` to wait out the rest of each frame.
+
+		Natively, `EndDrawing` waits.
+
+		In a page, where frames follow the display's refresh, a frame is skipped until it is time. A rate above the display's changes nothing
+		there.
 
 		@param fps  The frames a second, or 0 for no limit. */
 	static function SetTargetFPS(fps:Int):Void {
@@ -473,8 +530,9 @@ class RCore {
 		return Runtime.time == null ? 0 : Runtime.time.realDelta;
 	}
 
-	/** Stops the program for a time, drawing nothing and reading no input until it ends. In a page it spins, as raylib's web build does,
-		so the page doesn't respond meanwhile.
+	/** Stops the program for a time, drawing nothing and reading no input until it ends.
+
+		Spins in a page, so the page doesn't respond meanwhile.
 
 		@param seconds  How long. */
 	static function WaitTime(seconds:Float):Void {
@@ -488,7 +546,9 @@ class RCore {
 		return Runtime.system.getTime() - start;
 	}
 
-	/** Sets the key that closes the window natively, or `KEY_NULL` for none. It is Escape until set.
+	/** Sets the key that closes the window natively, or `KEY_NULL` for none.
+
+		Escape until set.
 
 		@param key  The key. */
 	static function SetExitKey(key:Int):Void {
@@ -501,40 +561,53 @@ class RCore {
 		Runtime.frame.begin(GetScreenWidth(), GetScreenHeight());
 	}
 
-	/** Ends a frame's drawing: shows it, waits out the rest of the frame natively (`SetTargetFPS`), then reads the next frame's input.
-		Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, it only ends the drawing:
-		`SwapScreenBuffer` shows the frame, `WaitTime` waits and `PollInputEvents` reads the input, as the program calls them. */
+	/** Ends a frame's drawing and shows it, then natively waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input.
+
+		Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then
+		calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input. */
 	static function EndDrawing():Void {
 		Runtime.endFrame();
 	}
 
-	/** Shows the frame `EndDrawing` ended, for a program built with `-D helix-raylib-custom-frame-control`, raylib's
-		`SUPPORT_CUSTOM_FRAME_CONTROL`. Without it, `EndDrawing` has shown the frame already and this does nothing. A frame not shown by
-		the next `EndDrawing` is shown then. In a page the browser shows a frame when the loop's body returns, as raylib's web build has it,
-		so the frame shows then however this is called. */
+	/** Shows the frame `EndDrawing` ended, for a program built with `-D helix-raylib-custom-frame-control`.
+
+		Does nothing without the define, as `EndDrawing` has shown the frame already.
+
+		A frame not shown by the next `EndDrawing` is shown then.
+
+		In a page, the browser shows the frame when the loop's body returns, wherever the call is. */
 	static function SwapScreenBuffer():Void {
 		if (Runtime.frame != null)
 			Runtime.frame.present();
 	}
 
-	/** Reads the input that came since the last read: each key's, button's and finger's state, and the window's events. `EndDrawing`
-		reads it already unless the program is built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`; a
-		second read, as raylib's, starts a new frame of input, so what was pressed before it reads as held. With `EnableEventWaiting`, it
-		waits for an event natively first. */
+	/** Reads the input that came since the last read: each key's, button's and finger's state, and the window's events.
+
+		`EndDrawing` reads the input already, unless the program is built with `-D helix-raylib-custom-frame-control`.
+
+		A second read starts a new frame of input, so a key pressed before it reads as held.
+
+		With `EnableEventWaiting`, waits natively for an event first. */
 	static function PollInputEvents():Void {
 		if (Runtime.events != null)
 			Runtime.poll();
 	}
 
-	/** Makes each frame natively wait for an event before the next is read, as raylib's: a key, a mouse button, the mouse moved, the
-		window changed, from a device the program reads. The program draws nothing meanwhile and uses little time; the platform and
-		helix-raylib's async loads are still served, so a load answers while it waits and is drawn after the next event. In a page it changes nothing,
-		as raylib's web build doesn't wait: the browser runs each frame. */
+	/** Makes each frame natively wait for an event before the next is read. See `DisableEventWaiting` for going back to reading the events
+		there are.
+
+		An event is a key, a mouse button, the mouse moving or the window changing, from a device the program reads.
+
+		The program draws nothing while waiting, and uses little time.
+
+		The platform and helix-raylib's async loads are still served, so a load answers while waiting and is drawn after the next event.
+
+		Changes nothing in a page, where the browser runs each frame. */
 	static function EnableEventWaiting():Void {
 		Runtime.eventWaiting = true;
 	}
 
-	/** Makes each frame read the events there are and go on, as it does until `EnableEventWaiting`. */
+	/** Makes each frame read the events there are and go on, the default until `EnableEventWaiting`. */
 	static function DisableEventWaiting():Void {
 		Runtime.eventWaiting = false;
 	}
@@ -546,8 +619,12 @@ class RCore {
 		Runtime.frame.clear((color.a << 24) | (color.r << 16) | (color.g << 8) | color.b);
 	}
 
-	/** Returns a random whole number from min to max, both included, from raylib's generator (xoshiro128**, helix-math's `Random`), so a seed gives the
-		numbers raylib's gives.
+	/** Returns a random whole number from min to max, both included, from raylib's generator. See `LoadRandomSequence` for drawing several
+		numbers with none twice.
+
+		The generator is xoshiro128** (helix-math's `Random`), so a seed gives the numbers raylib's gives.
+
+		min and max are swapped when min is more.
 
 		@param min  The least.
 		@param max  The most.
@@ -561,8 +638,11 @@ class RCore {
 		return randomIn(min, max);
 	}
 
-	/** Seeds `GetRandomValue` and `LoadRandomSequence`, as raylib's: helix-math's `Random` is raylib's generator, so the numbers repeat
-		from the same seed and are raylib's.
+	/** Seeds `GetRandomValue` and `LoadRandomSequence`.
+
+		The numbers repeat from the same seed, and are the ones raylib's give.
+
+		Until called, `InitWindow` seeds from the time.
 
 		@param seed  The seed, read as unsigned. */
 	static function SetRandomSeed(seed:Int):Void {
@@ -576,9 +656,11 @@ class RCore {
 		return low >= 2147483648.0 ? Std.int(low - 4294967296.0) : Std.int(low);
 	}
 
-	/** Returns numbers from min to max, both included, none twice, from `GetRandomValue`'s generator, as raylib's: the same numbers
-		raylib's gives for a seed. As raylib's, min and max aren't swapped: when min is more, the numbers run from min up by the range's
-		size.
+	/** Returns numbers from min to max, both included, none twice, from `GetRandomValue`'s generator.
+
+		A seed gives the numbers raylib's gives.
+
+		min and max aren't swapped. When min is more, the numbers run from min up by the range's size.
 
 		@param count  How many.
 		@param min  The least.
@@ -597,7 +679,9 @@ class RCore {
 		return sequence;
 	}
 
-	/** Frees numbers `LoadRandomSequence` gave. There is nothing to free here.
+	/** Frees numbers `LoadRandomSequence` gave.
+
+		Has nothing to free.
 
 		@param sequence  The numbers. */
 	static function UnloadRandomSequence(sequence:Null<Array<Int>>):Void {}
@@ -668,7 +752,9 @@ class RCore {
 		return !IsKeyDown(key);
 	}
 
-	/** Returns the next key pressed this frame, each once; call it until it returns `KEY_NULL`.
+	/** Returns the next key pressed this frame, each key once. See `GetCharPressed` for reading typed text.
+
+		A loop calling it until it returns `KEY_NULL` reads every key pressed.
 
 		@return  The key (`KEY_*`), or `KEY_NULL` when no more were pressed. */
 	static function GetKeyPressed():Int {
@@ -676,7 +762,9 @@ class RCore {
 		return Runtime.keysPressed.length == 0 ? KEY_NULL : Runtime.keysPressed.shift();
 	}
 
-	/** Returns whether the OS repeated a held key this frame, as it does after a moment, at its own rate.
+	/** Returns whether the system repeated a held key this frame.
+
+		The system starts repeating a key after a moment, at its own rate.
 
 		@param key  The key (`KEY_*`).
 		@return  True for the frames it repeated. */
@@ -686,8 +774,11 @@ class RCore {
 		return k >= 0 && Runtime.keyboard().isKeyRepeated(cast k);
 	}
 
-	/** Returns the next character typed this frame, each once; call it until it returns 0. Typed text is read from the first call on, so
-		on a phone its keyboard shows from then.
+	/** Returns the next character typed this frame, each once. See `GetKeyPressed` for reading keys.
+
+		A loop calling it until it returns 0 reads every character typed.
+
+		Typed text is read from the first call on, so a phone's keyboard shows from then.
 
 		@return  The character's codepoint, or 0 when no more were typed. */
 	static function GetCharPressed():Int {
@@ -697,7 +788,9 @@ class RCore {
 
 	// ---- Mouse and touch ----
 
-	/** Returns whether a mouse button went down this frame. A finger touching counts as the left button, as in raylib.
+	/** Returns whether a mouse button went down this frame.
+
+		A finger touching counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
@@ -718,7 +811,9 @@ class RCore {
 		return button >= 0 && button <= 2 && mouse.isButtonPressed(cast button);
 	}
 
-	/** Returns whether a mouse button is held. A finger down counts as the left button.
+	/** Returns whether a mouse button is held.
+
+		A finger down counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True while it is down. */
@@ -737,7 +832,9 @@ class RCore {
 		return button >= 0 && button <= 2 && mouse.isButtonDown(cast button);
 	}
 
-	/** Returns whether a mouse button went up this frame. The last finger lifting counts as the left button.
+	/** Returns whether a mouse button went up this frame.
+
+		The last finger lifting counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
@@ -764,22 +861,23 @@ class RCore {
 		return !IsMouseButtonDown(button);
 	}
 
-	/** Returns the mouse's x, in the screen's pixels; the first finger's while one is down.
+	/** Returns the mouse's x, in the screen's pixels, the first finger's while one is down.
 
 		@return  The x. */
 	static function GetMouseX():Int {
 		return Std.int(GetMousePosition().x);
 	}
 
-	/** Returns the mouse's y, in the screen's pixels; the first finger's while one is down.
+	/** Returns the mouse's y, in the screen's pixels, the first finger's while one is down.
 
 		@return  The y. */
 	static function GetMouseY():Int {
 		return Std.int(GetMousePosition().y);
 	}
 
-	/** Returns the mouse's position, in the screen's pixels, `SetMouseOffset`'s offset added and `SetMouseScale`'s scale applied; the
-		first finger's while one is down.
+	/** Returns the mouse's position, in the screen's pixels, the first finger's while one is down.
+
+		`SetMouseOffset`'s offset is added first, then `SetMouseScale`'s scale applied.
 
 		@return  The position. */
 	static function GetMousePosition():Vector2 {
@@ -813,9 +911,12 @@ class RCore {
 		}
 	}
 
-	/** Moves the mouse to a place on the screen. As raylib 6.2's, where the mouse was isn't forgotten: `GetMouseDelta` this frame includes
-		the move. Where the cursor can't be moved (always in a page, and natively where the system refuses, as Wayland does), the position
-		reads there until the mouse moves, and a warning says why, once a run for each reason.
+	/** Moves the mouse to a place on the screen.
+
+		`GetMouseDelta` this frame includes the move.
+
+		In a page, and natively where the system refuses as Wayland does, the cursor stays. The position reads the place given until the
+		mouse moves, and a warning says why, once a run for each reason.
 
 		@param x  The place across, in the screen's pixels.
 		@param y  The place down. */
@@ -861,7 +962,8 @@ class RCore {
 		mouseScaleY = scaleY;
 	}
 
-	/** Returns how far the wheel turned this frame, in both directions: right and forward are positive.
+	/** Returns how far the wheel turned this frame, in both directions, right and forward positive. See `GetMouseWheelMove` for reading the
+		larger direction alone.
 
 		@return  The notches. */
 	static function GetMouseWheelMoveV():Vector2 {
@@ -898,15 +1000,15 @@ class RCore {
 		return cursorHidden;
 	}
 
-	/** raylib's letting go of the mouse, done when it returns. The platform answers later, so a call doesn't compile on any target:
-		`EnableCursorAsync` lets it go and answers. */
+	/** Doesn't compile on any target, since the mouse is let go later. See `EnableCursorAsync` for letting go of the mouse. */
 	@:unsupported("EnableCursor: The mouse is let go later, or is refused. See EnableCursorAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
 	static function EnableCursor():Void {
 		throw "EnableCursor is unimplemented";
 	}
 
-	/** raylib's lock of the mouse, done when it returns. A page locks it only soon after a click or key press, so a call doesn't
-		compile on any target: `DisableCursorAsync` locks it and answers. */
+	/** Doesn't compile on any target, since the mouse is locked later or refused. See `DisableCursorAsync` for locking the mouse.
+
+		A page locks the mouse only soon after a click or key press. */
 	@:unsupported("DisableCursor: The mouse is locked later, or is refused. See DisableCursorAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
 	static function DisableCursor():Void {
 		throw "DisableCursor is unimplemented";
@@ -920,9 +1022,9 @@ class RCore {
 		return Runtime.cursorOnScreen;
 	}
 
-	/** Sets the cursor's shape: the system's own cursor of each kind.
+	/** Sets the cursor's shape, the system's own cursor of each kind.
 
-		@param cursor  The shape (`MOUSE_CURSOR_*`); `MOUSE_CURSOR_DEFAULT` and `MOUSE_CURSOR_ARROW` are both the arrow. */
+		@param cursor  The shape (`MOUSE_CURSOR_*`). `MOUSE_CURSOR_DEFAULT` and `MOUSE_CURSOR_ARROW` are both the arrow. */
 	static function SetMouseCursor(cursor:Int):Void {
 		Runtime.mouse();
 		Runtime.mouseAdapter.cursorShape = switch cursor {
@@ -939,7 +1041,8 @@ class RCore {
 		}
 	}
 
-	/** Returns how far the wheel turned this frame, the larger of its two directions; forward is positive.
+	/** Returns how far the wheel turned this frame, the larger of its two directions, forward positive. See `GetMouseWheelMoveV` for
+		reading both directions.
 
 		@return  The notches. */
 	static function GetMouseWheelMove():Float {
@@ -973,7 +1076,9 @@ class RCore {
 		return new Vector2(Runtime.screen.toDesignX(touch.getX(id)), Runtime.screen.toDesignY(touch.getY(id)));
 	}
 
-	/** Returns a finger's position, in the screen's pixels. While no finger is down, the first is where the mouse is, as raylib's.
+	/** Returns a finger's position, in the screen's pixels.
+
+		While no finger is down, the first is where the mouse is.
 
 		@param index  Which finger, 0 for the first down.
 		@return  The position, or (0, 0) when fewer are down. */
@@ -993,29 +1098,34 @@ class RCore {
 		return index >= 0 && index < touch.fingers.length ? touch.fingers[index] : -1;
 	}
 
-	/** Returns the first finger's x, in the screen's pixels: the mouse's while no finger is down.
+	/** Returns the first finger's x, in the screen's pixels, the mouse's while no finger is down.
 
 		@return  The x. */
 	static function GetTouchX():Int {
 		return Std.int(GetTouchPosition(0).x);
 	}
 
-	/** Returns the first finger's y, in the screen's pixels: the mouse's while no finger is down.
+	/** Returns the first finger's y, in the screen's pixels, the mouse's while no finger is down.
 
 		@return  The y. */
 	static function GetTouchY():Int {
 		return Std.int(GetTouchPosition(0).y);
 	}
 
-	/** Sets which gestures are detected; all of them until it is called.
+	/** Sets which gestures are detected.
+
+		All gestures until called.
 
 		@param flags  The gestures (`GESTURE_*`), or'd together. */
 	static function SetGesturesEnabled(flags:Int):Void {
 		Runtime.gestures().enabled = flags;
 	}
 
-	/** Returns whether a gesture is the one detected now. A mouse button counts as a finger, as in raylib. A tap or double tap lasts a
-		frame, then becomes a hold; a swipe lasts a frame.
+	/** Returns whether a gesture is the one detected now.
+
+		A mouse button counts as a finger.
+
+		A tap or double tap lasts a frame, then becomes a hold. A swipe lasts a frame.
 
 		@param gesture  The gesture (`GESTURE_*`).
 		@return  True while it is the gesture, and enabled. */
@@ -1077,9 +1187,14 @@ class RCore {
 
 	// ---- Gamepads ----
 
-	/** Shakes a gamepad: its left motor is the heavy one, its right the light one, as raylib's. Shaking lasts at most 2 seconds, as
-		raylib's. An empty slot is passed over, as raylib's. A pad that can't shake (one without motors, or any in a browser without
-		vibration, as Firefox) doesn't, and a warning says so, once a run.
+	/** Shakes a gamepad, its left motor the heavy one and its right the light one.
+
+		Shaking lasts at most 2 seconds.
+
+		An empty slot is passed over.
+
+		A pad that can't shake, one without motors or any in a browser without vibration (Firefox), stays still and logs a warning, once a
+		run.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param leftMotor  The heavy motor's strength, 0 to 1.
@@ -1097,10 +1212,10 @@ class RCore {
 		}
 	}
 
-	/** Adds mappings for pads the system doesn't know, in SDL's controller database format, as raylib's.
+	/** Adds mappings for pads the system doesn't know, in SDL's controller database format.
 
 		@param mappings  The mappings, one a line.
-		@return  How many were added or updated; 0 in a page, whose browser maps pads itself. */
+		@return  How many were added or updated, or 0 in a page, whose browser maps pads itself. */
 	static function SetGamepadMappings(mappings:String):Int {
 		Runtime.gamepads();
 		return Runtime.gamepadsAdapter.addMappings(mappings);
@@ -1202,9 +1317,14 @@ class RCore {
 		return !IsGamepadButtonDown(gamepad, button);
 	}
 
-	/** Returns the last button held, as raylib polls them: gamepads 0 to 3, each's buttons in the browser's order in a page (the second
-		triggers among them, the middle button never), else GLFW's (the middle button among them), then, as raylib 6.2's, the left
-		second trigger and the right while its axis (`GetGamepadAxisMovement`) is over 0.1.
+	/** Returns the last button held, polling the buttons as raylib does.
+
+		The poll runs over gamepads 0 to 3, each's buttons in the browser's order in a page, else GLFW's.
+
+		In a page, the second triggers are among the buttons and the middle button never is.
+
+		Natively, the middle button is among them, and the left and right second triggers count as held while their axis
+		(`GetGamepadAxisMovement`) is over 0.1.
 
 		@return  The button (`GAMEPAD_BUTTON_*`), or `GAMEPAD_BUTTON_UNKNOWN` when none is held. */
 	static function GetGamepadButtonPressed():Int {
@@ -1236,8 +1356,11 @@ class RCore {
 		return IsGamepadAvailable(gamepad) ? 6 : 0;
 	}
 
-	/** Returns how far a gamepad's axis is pushed, with no dead zone. A stick is -1 to 1, down and right positive; a trigger is -1
-		released to 1 pulled, as raylib's are.
+	/** Returns how far a gamepad's axis is pushed, with no dead zone.
+
+		A stick runs from -1 to 1, down and right positive.
+
+		A trigger runs from -1 released to 1 pulled.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param axis  The axis (`GAMEPAD_AXIS_*`).
@@ -1251,8 +1374,7 @@ class RCore {
 
 	// ---- Files ----
 
-	/** raylib's check for a file, which waits for the answer. A page can't wait, so a call doesn't compile on any target:
-		`FileExistsAsync` answers it.
+	/** Doesn't compile on any target, since a page can't wait for the answer. See `FileExistsAsync` for asking whether a file exists.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -1261,8 +1383,7 @@ class RCore {
 		throw "FileExists is unimplemented";
 	}
 
-	/** raylib's text file read, which waits for the file. A page can't wait, so a call doesn't compile on any target:
-		`LoadFileTextAsync` reads it.
+	/** Doesn't compile on any target, since a page can't wait for the file. See `LoadFileTextAsync` for reading a text file.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -1271,13 +1392,14 @@ class RCore {
 		throw "LoadFileText is unimplemented";
 	}
 
-	/** Frees text `LoadFileTextAsync` gave. There is nothing to free here.
+	/** Frees text `LoadFileTextAsync` gave.
+
+		Has nothing to free.
 
 		@param text  The text. */
 	static function UnloadFileText(text:Null<String>):Void {}
 
-	/** raylib's text file write, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
-		`SaveFileTextAsync` writes it and answers.
+	/** Doesn't compile on any target, since a file is kept later, once written. See `SaveFileTextAsync` for writing a text file.
 
 		@param fileName  The file.
 		@param text  Its text.
@@ -1330,7 +1452,7 @@ class RCore {
 		});
 	}
 
-	/** raylib's file read, which waits for the file. A page can't wait, so a call doesn't compile on any target: `LoadFileDataAsync` reads it.
+	/** Doesn't compile on any target, since a page can't wait for the file. See `LoadFileDataAsync` for reading a file's bytes.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -1339,13 +1461,14 @@ class RCore {
 		throw "LoadFileData is unimplemented";
 	}
 
-	/** Frees bytes `LoadFileDataAsync` gave. There is nothing to free here.
+	/** Frees bytes `LoadFileDataAsync` gave.
+
+		Has nothing to free.
 
 		@param data  The bytes. */
 	static function UnloadFileData(data:Null<haxe.io.Bytes>):Void {}
 
-	/** raylib's file write, done when it returns. A file is kept later, once written, so a call doesn't compile on any target:
-		`SaveFileDataAsync` writes it and answers.
+	/** Doesn't compile on any target, since a file is kept later, once written. See `SaveFileDataAsync` for writing a file's bytes.
 
 		@param fileName  The file.
 		@param data  The bytes.
@@ -1356,8 +1479,7 @@ class RCore {
 		throw "SaveFileData is unimplemented";
 	}
 
-	/** raylib's export of bytes as code, done when it returns. A file is kept later, once written, so a call doesn't compile on any
-		target: `ExportDataAsCodeAsync` writes it and answers.
+	/** Doesn't compile on any target, since a file is kept later, once written. See `ExportDataAsCodeAsync` for writing bytes as code.
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
@@ -1400,8 +1522,12 @@ class RCore {
 
 	// ---- Directories ----
 
-	/** Returns the working directory: natively the process's, where `TakeScreenshot` writes; in a page ".", the page's own directory.
-		helix-raylib's loads don't read from it: a file's name is under the program's files wherever it is (`GetApplicationDirectory`).
+	/** Returns the working directory, natively the process's and in a page ".", the page's own. See `GetApplicationDirectory` for finding
+		the program's files.
+
+		Natively, `TakeScreenshotAsync` writes to it.
+
+		helix-raylib's loads don't read from it. A file's name is under the program's files wherever the working directory is.
 
 		@return  The directory, without a slash at its end. */
 	static function GetWorkingDirectory():String {
@@ -1412,9 +1538,14 @@ class RCore {
 		#end
 	}
 
-	/** Returns the directory the program's files are read from, as raylib programs name a file from their application's directory:
-		natively `-D helix-raylib-native-root` from the executable's directory (`../web` unless set), in a page "./", the page's own. A load
-		given a path in it reads the file it names, so `GetApplicationDirectory() + "resources/a.png"` loads "resources/a.png".
+	/** Returns the directory the program's files are read from.
+
+		Natively, `-D helix-raylib-native-root` from the executable's directory, `../web` unless set.
+
+		In a page, "./", the page's own directory.
+
+		A load given a path in it reads the file the path names, so `GetApplicationDirectory() + "resources/a.png"` loads
+		"resources/a.png".
 
 		@return  The directory, with a slash at its end. */
 	static function GetApplicationDirectory():String {
@@ -1425,9 +1556,15 @@ class RCore {
 		#end
 	}
 
-	/** Changes the working directory, natively the process's, as raylib's: `TakeScreenshot` writes to it from then on. helix-raylib's loads
-		are unchanged, reading the program's files wherever it is. A page has no working directory of its own: there, only "." or the
-		page's directory (`GetApplicationDirectory`) succeeds, changing nothing. A failure is logged, as raylib's is.
+	/** Changes the working directory, natively the process's.
+
+		`TakeScreenshotAsync` writes to the new directory from then on.
+
+		helix-raylib's loads are unchanged, reading the program's files wherever the working directory is.
+
+		In a page, only "." or "./" succeeds, changing nothing.
+
+		A failure logs a warning.
 
 		@param dir  The directory.
 		@return  True when the working directory is it now. */
@@ -1453,10 +1590,11 @@ class RCore {
 
 	// ---- File names ----
 
-	/** Returns whether a file name ends in one of some extensions, ignoring the case of A to Z, as raylib 6.2's.
+	/** Returns whether a file name ends in one of some extensions, ignoring the case of A to Z.
 
-		Up to 15 characters of the file's extension are compared, and the list's first 32 extensions. An extension in the list without
-		its dot matches as well ("png" as ".png").
+		Up to 15 characters of the file's extension are compared, and the list's first 32 extensions.
+
+		An extension in the list without its dot matches as well ("png" as ".png").
 
 		@param fileName  The file name.
 		@param ext  The extensions, `;` between them: ".png;.jpg".
@@ -1487,20 +1625,20 @@ class RCore {
 		return dot <= 0 ? null : fileName.substr(dot);
 	}
 
-	/** Returns a path's file name: what follows its last `/` or `\`.
+	/** Returns a path's file name, what follows its last `/` or `\`.
 
 		@param filePath  The path.
-		@return  The file name with its extension; the path itself when it has no slash. */
+		@return  The file name with its extension, or the path itself when it has no slash. */
 	static function GetFileName(filePath:String):String {
 		if (filePath == null)
 			return null;
 		return filePath.substr(lastSlash(filePath) + 1);
 	}
 
-	/** Returns a path's file name without its extension: up to its last dot, unless that dot is its first character.
+	/** Returns a path's file name without its extension, up to its last dot unless that dot is its first character.
 
 		@param filePath  The path.
-		@return  The file name; "" for null. */
+		@return  The file name, or "" for null. */
 	static function GetFileNameWithoutExt(filePath:String):String {
 		if (filePath == null)
 			return "";
@@ -1509,8 +1647,9 @@ class RCore {
 		return dot > 0 ? name.substr(0, dot) : name;
 	}
 
-	/** Returns the directory of a path: up to its last `/` or `\`. A relative path's starts "./", as raylib's does: "dir/file.png"
-		gives "./dir", "file.png" gives "./", and "/file.png" gives "/".
+	/** Returns the directory of a path, up to its last `/` or `\`.
+
+		A relative path's directory starts "./": "dir/file.png" gives "./dir", "file.png" gives "./", and "/file.png" gives "/".
 
 		@param filePath  The path.
 		@return  The directory, without a slash at its end. */
@@ -1526,14 +1665,14 @@ class RCore {
 		return (relative ? "./" : "") + filePath.substr(0, slash);
 	}
 
-	/** Returns the directory a path is in, as raylib 6.2's: up to its last `/` or `\` but one at its end, keeping a root's ("/",
-		"C:\").
+	/** Returns the directory a path is in, up to its last `/` or `\` but one at its end, keeping a root's ("/", "C:\").
 
-		"/a/b/" gives "/a", "/a" gives "/" and "abc" gives "". raylib 6.2 also takes a path naming a file to its directory's parent; a
-		file can't be looked for without waiting here, so every path is taken as a directory's.
+		"/a/b/" gives "/a", "/a" gives "/" and "abc" gives "".
+
+		Every path is taken as a directory's, so a path naming a file gives the file's directory.
 
 		@param dirPath  The path.
-		@return  The directory above it; "" when there is none. */
+		@return  The directory above it, or "" when there is none. */
 	static function GetPrevDirectoryPath(dirPath:String):String {
 		var lastIndex = dirPath.length - 1;
 		var i = lastIndex;
@@ -1558,7 +1697,7 @@ class RCore {
 		only dots.
 
 		@param fileName  The file name, without a directory.
-		@return  True when it could; true for null or "", as raylib's is. */
+		@return  True when it could, and true for null or "". */
 	static function IsFileNameValid(fileName:String):Bool {
 		if (fileName == null || fileName.length == 0)
 			return true;
@@ -1580,8 +1719,8 @@ class RCore {
 
 	// ---- Directories and dropped files ----
 
-	/** raylib's check for a directory, which waits for the answer. A page can't wait, so a call doesn't compile on any target:
-		`DirectoryExistsAsync` answers it.
+	/** Doesn't compile on any target, since a page can't wait for the answer. See `DirectoryExistsAsync` for asking whether a directory
+		exists.
 
 		@param dirPath  The directory.
 		@return  Never returns: a call doesn't compile. */
@@ -1590,8 +1729,7 @@ class RCore {
 		throw "DirectoryExists is unimplemented";
 	}
 
-	/** raylib's file size, which waits for the answer. A page can't wait, so a call doesn't compile on any target: `GetFileLengthAsync`
-		answers it.
+	/** Doesn't compile on any target, since a page can't wait for the answer. See `GetFileLengthAsync` for asking a file's size.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -1600,12 +1738,12 @@ class RCore {
 		throw "GetFileLength is unimplemented";
 	}
 
-	/** Makes a directory. There is nothing to make: a directory is there once a file is written under it, so this succeeds for any path
-		that could name one.
+	/** Makes a directory, succeeding for any path that could name one.
+
+		Nothing is made, as a directory is there once a file is written under it.
 
 		@param dirPath  The directory.
-		@return  0, success; 1 for null or "", as raylib 5.5's; -1, as raylib 6.2's for a directory not made, for a path that can't name
-			one. */
+		@return  0 for success, 1 for null or "", and -1 for a path that can't name a directory. */
 	static function MakeDirectory(dirPath:String):Int {
 		if (dirPath == null || dirPath == "")
 			return 1;
@@ -1633,8 +1771,7 @@ class RCore {
 		#end
 	}
 
-	/** raylib's check for a file, as against a directory, which waits for the answer. A page can't wait, so a call doesn't compile on
-		any target: `IsPathFileAsync` answers it.
+	/** Doesn't compile on any target, since a page can't wait for the answer. See `IsPathFileAsync` for asking whether a path is a file.
 
 		@param path  The path.
 		@return  Never returns: a call doesn't compile. */
@@ -1643,8 +1780,7 @@ class RCore {
 		throw "IsPathFile is unimplemented";
 	}
 
-	/** raylib's directory listing, which waits for it. A page can't wait, so a call doesn't compile on any target:
-		`LoadDirectoryFilesAsync` lists it.
+	/** Doesn't compile on any target, since a page can't wait for the listing. See `LoadDirectoryFilesAsync` for listing a directory.
 
 		@param dirPath  The directory.
 		@return  Never returns: a call doesn't compile. */
@@ -1653,8 +1789,8 @@ class RCore {
 		throw "LoadDirectoryFiles is unimplemented";
 	}
 
-	/** raylib's filtered and recursive directory listing, which waits for it. A page can't wait, so a call doesn't compile on any
-		target: `LoadDirectoryFilesExAsync` lists it.
+	/** Doesn't compile on any target, since a page can't wait for the listing. See `LoadDirectoryFilesExAsync` for listing a directory by
+		extension and with its subdirectories.
 
 		@param basePath  The directory.
 		@param filter  The extensions kept.
@@ -1665,25 +1801,36 @@ class RCore {
 		throw "LoadDirectoryFilesEx is unimplemented";
 	}
 
-	/** Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave. There is nothing to free here, and the list is
-		unchanged.
+	/** Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave.
+
+		Has nothing to free, and the list is unchanged.
 
 		@param files  The listing. */
 	static function UnloadDirectoryFiles(files:FilePathList):Void {}
 
-	/** Returns whether files were dropped on the window, natively from the desktop and in a page on the canvas. It stays true until
-		`UnloadDroppedFiles`, and a new drop's files replace the last one's, as raylib's do. A dropped file counts once its bytes are read,
-		natively in the frame after it is dropped, in a page a frame or so after.
+	/** Returns whether files were dropped on the window, natively from the desktop and in a page on the canvas. See `LoadDroppedFiles` for
+		reading their paths.
+
+		Stays true until `UnloadDroppedFiles`.
+
+		A new drop's files replace the last one's.
+
+		A dropped file counts once its bytes are read, natively in the frame after the drop and in a page a frame or so after.
 
 		@return  True while dropped files are held. */
 	static function IsFileDropped():Bool {
 		return DroppedFiles.paths().length > 0;
 	}
 
-	/** Returns the paths of the files last dropped. Each is helix-raylib's own, `helix-raylib-dropped/<n>/<name>`, which every load reads, as
-		`LoadTextureAsync(path)`: the file's name is its last part, a character a path can't hold made `_`. A directory dropped isn't listed.
+	/** Returns the paths of the files last dropped.
 
-		@return  The paths, `count` of them; `capacity` is 0, as raylib's. */
+		Each path is helix-raylib's own, `helix-raylib-dropped/<n>/<name>`, which every load reads, as `LoadTextureAsync(path)` does.
+
+		The file's name is the path's last part, with `_` for a character a path can't hold.
+
+		A directory dropped isn't listed.
+
+		@return  The paths, `count` of them, with `capacity` 0. */
 	static function LoadDroppedFiles():FilePathList {
 		var list = new FilePathList();
 		list.paths = DroppedFiles.paths().copy();
@@ -1691,18 +1838,19 @@ class RCore {
 		return list;
 	}
 
-	/** Lets go of the list of files last dropped, so `IsFileDropped` is false until the next drop. The files stay, as a dropped file stays
-		on raylib's disk: a load of one of their paths, started before or after, reads it until the next drop's files replace them.
+	/** Lets go of the list of files last dropped, so `IsFileDropped` is false until the next drop.
 
-		@param files  The list `LoadDroppedFiles` gave; one of no files does nothing, as raylib's. */
+		The files stay. A load of one of their paths, started before or after, reads the file until the next drop's files replace them.
+
+		@param files  The list `LoadDroppedFiles` gave. A list of no files changes nothing. */
 	static function UnloadDroppedFiles(files:FilePathList):Void {
 		if (files == null || files.count <= 0)
 			return;
 		Runtime.dropped = [];
 	}
 
-	/** raylib's file modification time, which waits for the answer. A page can't wait, so a call doesn't compile on any target:
-		`GetFileModTimeAsync` answers it.
+	/** Doesn't compile on any target, since a page can't wait for the answer. See `GetFileModTimeAsync` for asking when a file was last
+		written.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -1713,7 +1861,8 @@ class RCore {
 
 	// ---- Encoding and hashes ----
 
-	/** Compresses bytes as raylib's `CompressData` does, byte for byte: raw DEFLATE (no zlib header), sdefl's level 8.
+	/** Compresses bytes as raylib's `CompressData` does, byte for byte, raw DEFLATE with no zlib header at sdefl's level 8. See
+		`DecompressData` for reading them back.
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
@@ -1727,13 +1876,16 @@ class RCore {
 		return compressed;
 	}
 
-	/** Returns DEFLATE data decompressed: a raw stream with no zlib header, as raylib's `CompressData` makes. Like raylib's, it gives
-		at most 64 MB.
+	/** Returns DEFLATE data decompressed, a raw stream with no zlib header as `CompressData` makes.
+
+		Gives at most 64 MB.
+
+		Data that isn't DEFLATE, or stops short, gives the bytes read before it, perhaps none, and logs a warning.
 
 		@param compData  The compressed bytes.
 		@param compDataSize  How many of them.
 		@param dataSize  Its first element is set to how many bytes it gives.
-		@return  The bytes. Data that isn't DEFLATE, or stops short, gives what was read before it, perhaps nothing, and a warning. */
+		@return  The bytes. */
 	static function DecompressData(compData:haxe.io.Bytes, compDataSize:Int, dataSize:Array<Int>):haxe.io.Bytes {
 		var limit = 64 * 1024 * 1024;
 		var output = new haxe.io.BytesBuffer(),
@@ -1757,7 +1909,7 @@ class RCore {
 		return data;
 	}
 
-	/** Returns some bytes as Base64 text, padded with `=` to a multiple of 4 characters.
+	/** Returns some bytes as Base64 text, padded with `=` to a multiple of 4 characters. See `DecodeDataBase64` for reading them back.
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
@@ -1782,9 +1934,13 @@ class RCore {
 		return text.toString().substr(0, size - padding) + "==".substr(0, padding);
 	}
 
-	/** Returns the bytes of Base64 text, as raylib 6.2 decodes it: the text runs to a zero byte or the end, and is read 4 characters at a
-		time, a character that isn't Base64's reading as 0. Text whose length isn't a multiple of 4 warns and is read up to its last 4
-		characters.
+	/** Returns the bytes of Base64 text.
+
+		The text runs to a zero byte or the end, read 4 characters at a time.
+
+		A character that isn't Base64's reads as 0.
+
+		Text whose length isn't a multiple of 4 logs a warning and is read up to its last 4 characters.
 
 		@param data  The text's bytes.
 		@param outputSize  Its first element is set to how many bytes it gives: 3 for every 4 characters, less one for each `=` at the
@@ -1839,7 +1995,7 @@ class RCore {
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
-		@return  Its 32 bits; one above 0x7fffffff is negative. */
+		@return  Its 32 bits, one above 0x7fffffff negative. */
 	static function ComputeCRC32(data:haxe.io.Bytes, dataSize:Int):Int {
 		if (crcTable == null) {
 			crcTable = [];
@@ -1903,12 +2059,11 @@ class RCore {
 		return hash;
 	}
 
-	/** Returns the SHA-1 hash of some bytes, as raylib 6.2 computes it: standard SHA-1 (raylib 5.5's padding held only the lowest byte of
-		the length in bits, so from 32 bytes on it wasn't).
+	/** Returns the standard SHA-1 hash of some bytes.
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
-		@return  Its 5 words, the first the hash's first 4 bytes, the highest first; one above 0x7fffffff is negative. */
+		@return  Its 5 words, the first the hash's first 4 bytes, the highest first. One above 0x7fffffff is negative. */
 	static function ComputeSHA1(data:haxe.io.Bytes, dataSize:Int):Array<Int> {
 		var hash = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0];
 		var newDataSize = (Std.int((dataSize + 8) / 64) + 1) * 64;
@@ -1970,32 +2125,36 @@ class RCore {
 
 	// ---- Hooks ----
 
-	/** Reads files through the program from now on: every load raylib makes of a file (textures, models, sounds, music, data) asks it
-		first, and a file it doesn't have (null) is read as it would be. In a page, a texture's or model's images still decode only
-		asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load those it gives.
+	/** Reads files through the program from now on.
 
-		@param callback  Returns a file's bytes, or null; null for none. */
+		Every load raylib makes of a file (textures, models, sounds, music, data) asks the callback first. A null answer reads the file as
+		it would be read without the callback.
+
+		In a page, a texture's or model's images still decode only asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load the ones
+		the callback gives.
+
+		@param callback  Returns a file's bytes or null, or is null for none. */
 	static function SetLoadFileDataCallback(callback:Null<(fileName:String) -> Null<haxe.io.Bytes>>):Void {
 		CallbackFiles.load = callback;
 	}
 
-	/** Writes files through the program from now on (`SaveFileData`).
+	/** Writes files through the program from now on (`SaveFileDataAsync`).
 
-		@param callback  Writes a file's bytes, returning whether it did; null for none. */
+		@param callback  Writes a file's bytes, returning whether it did, or is null for none. */
 	static function SetSaveFileDataCallback(callback:Null<(fileName:String, data:haxe.io.Bytes, dataSize:Int) -> Bool>):Void {
 		saveData = callback;
 	}
 
 	/** Reads text files through the program from now on (`LoadFileTextAsync`).
 
-		@param callback  Returns a file's text, or null; null for none. */
+		@param callback  Returns a file's text or null, or is null for none. */
 	static function SetLoadFileTextCallback(callback:Null<(fileName:String) -> Null<String>>):Void {
 		loadText = callback;
 	}
 
-	/** Writes text files through the program from now on (`SaveFileText`).
+	/** Writes text files through the program from now on (`SaveFileTextAsync`).
 
-		@param callback  Writes a file's text, returning whether it did; null for none. */
+		@param callback  Writes a file's text, returning whether it did, or is null for none. */
 	static function SetSaveFileTextCallback(callback:Null<(fileName:String, text:String) -> Bool>):Void {
 		saveText = callback;
 	}
@@ -2010,13 +2169,15 @@ class RCore {
 		return list;
 	}
 
-	/** Frees a list's events. There is nothing to free here, and the list is unchanged.
+	/** Frees a list's events.
+
+		Has nothing to free, and the list is unchanged.
 
 		@param list  The list. */
 	static function UnloadAutomationEventList(list:AutomationEventList):Void {}
 
-	/** raylib's export of an automation list, done when it returns. A file is kept later, once written, so a call doesn't compile on
-		any target: `ExportAutomationEventListAsync` writes it and answers.
+	/** Doesn't compile on any target, since a file is kept later, once written. See `ExportAutomationEventListAsync` for writing a list to
+		a file.
 
 		@param list  The list.
 		@param fileName  The file.
@@ -2050,25 +2211,37 @@ class RCore {
 		return text.toString();
 	}
 
-	/** Sets the list `StartAutomationEventRecording` records into. From the first call, the input functions read the input as
-		automation keeps it, so an event `PlayAutomationEvent` plays reads as real input.
+	/** Sets the list `StartAutomationEventRecording` records into.
+
+		From the first call, the input functions read the input as automation keeps it, so an event `PlayAutomationEvent` plays reads as
+		real input.
 
 		@param list  The list, made by `LoadAutomationEventList(null)` or `LoadAutomationEventListAsync`. */
 	static function SetAutomationEventList(list:AutomationEventList):Void {
 		Automation.use().list = list;
 	}
 
-	/** Sets the frame the next event recorded is stamped with; each frame after counts up from it. Until set, it is the frames since
-		`InitWindow`.
+	/** Sets the frame the next event recorded is stamped with, each frame after counting up from it.
+
+		The frames since `InitWindow` until set.
 
 		@param frame  The frame. */
 	static function SetAutomationEventBaseFrame(frame:Int):Void {
 		Automation.use().frameOffset = frame - Runtime.frames;
 	}
 
-	/** Starts recording into the list `SetAutomationEventList` set: as each frame ends, before the next frame's input is read, every
-		key, mouse button and finger held, the mouse's moves, the wheel's and, as raylib 6.2's, the fingers', gamepads' buttons held and
-		axes off rest, and the gesture, as raylib records them, each logged. A full list (16384 events) records no more. */
+	/** Starts recording into the list `SetAutomationEventList` set. See `StopAutomationEventRecording` for stopping.
+
+		Records as each frame ends, before the next frame's input is read. Each event recorded is logged.
+
+		Records:
+
+		- every key, mouse button and finger held.
+		- the mouse's moves, the wheel's and the fingers'.
+		- the gamepads' buttons held and axes off rest.
+		- the gesture.
+
+		A full list (16384 events) records no more. */
 	static function StartAutomationEventRecording():Void {
 		Automation.use().recording = true;
 	}
@@ -2078,10 +2251,16 @@ class RCore {
 		Automation.use().recording = false;
 	}
 
-	/** Plays an event, as raylib's: input becomes the input the functions read now, as it would from the devices, and stays until they
-		change it or another event does; a window event or an action is done (`WINDOW_CLOSE` makes `WindowShouldClose` true). Nothing is
-		played while recording. As raylib's, the program plays each event in its frame, after the frame's input is read: a key held is
-		an event every frame, so a frame's events are played together.
+	/** Plays an event, making its input the input the functions read now.
+
+		The input stays until the devices change it or another event does.
+
+		A window event or an action is done. `WINDOW_CLOSE` makes `WindowShouldClose` true.
+
+		Plays nothing while recording.
+
+		A program plays each event in its frame, after the frame's input is read. A key held is an event every frame, so a frame's events
+		are played together.
 
 		@param event  The event. */
 	static function PlayAutomationEvent(event:AutomationEvent):Void {
@@ -2090,7 +2269,7 @@ class RCore {
 
 	// ---- Memory ----
 
-	/** raylib's allocator. Haxe has no raw memory to allocate, so a call doesn't compile.
+	/** Doesn't compile, since Haxe has no raw memory to allocate. See `haxe.io.Bytes.alloc` for making bytes.
 
 		@param size  The bytes.
 		@return  Never returns: a call doesn't compile. */
@@ -2099,7 +2278,7 @@ class RCore {
 		throw "MemAlloc is unimplemented";
 	}
 
-	/** raylib's reallocator. Haxe has no raw memory, so a call doesn't compile.
+	/** Doesn't compile, since Haxe has no raw memory to reallocate. See `haxe.io.Bytes.alloc` and `blit` for copying into new bytes.
 
 		@param ptr  The memory.
 		@param size  The bytes.
@@ -2109,7 +2288,7 @@ class RCore {
 		throw "MemRealloc is unimplemented";
 	}
 
-	/** raylib's free. Haxe frees memory once nothing holds it, so a call doesn't compile.
+	/** Doesn't compile, since Haxe frees memory once nothing holds it.
 
 		@param ptr  The memory. */
 	@:unsupported("MemFree: Haxe frees memory once nothing holds it. Drop the reference instead.")
@@ -2119,8 +2298,8 @@ class RCore {
 
 	// ---- Screenshots ----
 
-	/** raylib's screenshot, saved when it returns. Here it is read back as the next frame ends and saved after, so a call doesn't
-		compile on any target: `TakeScreenshotAsync` saves it and answers.
+	/** Doesn't compile on any target, since a screenshot is read back as the next frame ends and saved after. See `TakeScreenshotAsync`
+		for saving a screenshot.
 
 		@param fileName  The file's name, or its path. */
 	@:unsupported("TakeScreenshot: A screenshot is saved later, or is refused. See TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
@@ -2130,8 +2309,9 @@ class RCore {
 
 	// ---- Log ----
 
-	/** Writes a message to the log, when its level is at least `SetTraceLogLevel`'s. raylib formats its arguments as printf does;
-		here the text is written as it is (Haxe's string interpolation builds it).
+	/** Writes a message to the log when its level is at least `SetTraceLogLevel`'s.
+
+		The text is written as it is, with no printf formatting. Haxe's string interpolation builds it.
 
 		@param logLevel  The level (`LOG_*`).
 		@param text  The message. */
@@ -2139,7 +2319,9 @@ class RCore {
 		Runtime.log(logLevel, text);
 	}
 
-	/** Sets the least level the log writes; `LOG_INFO` until set.
+	/** Sets the least level the log writes.
+
+		`LOG_INFO` until set.
 
 		@param logLevel  The level (`LOG_*`). */
 	static function SetTraceLogLevel(logLevel:Int):Void {
@@ -2148,15 +2330,14 @@ class RCore {
 
 	/** Writes the log through the program from now on, helix-raylib's own messages among it.
 
-		@param callback  Receives each message's level and text; null for helix-raylib's own log. */
+		@param callback  Receives each message's level and text, or is null for helix-raylib's own log. */
 	static function SetTraceLogCallback(callback:Null<(logLevel:Int, text:String) -> Void>):Void {
 		Runtime.logCallback = callback;
 	}
 
 	// ---- emscripten's calls, which raylib's web programs make: each refuses, saying what to write instead ----
 
-	/** emscripten's main loop, which a raylib program built for the web calls in place of its loop. Here raylib's own loop runs once a
-		frame in a page, so a call doesn't compile.
+	/** Doesn't compile, since raylib's own loop runs once a frame in a page. See `WindowShouldClose` for writing the loop.
 
 		@param func  The frame's function.
 		@param fps  The frames a second, or 0 for the display's.
@@ -2166,8 +2347,7 @@ class RCore {
 		throw "emscripten_set_main_loop is unsupported";
 	}
 
-	/** emscripten's main loop with an argument for its function. Here raylib's own loop runs once a frame in a page, so a call doesn't
-		compile.
+	/** Doesn't compile, since raylib's own loop runs once a frame in a page. See `WindowShouldClose` for writing the loop.
 
 		@param func  The frame's function.
 		@param arg  What the function is given.
@@ -2178,14 +2358,14 @@ class RCore {
 		throw "emscripten_set_main_loop_arg is unsupported";
 	}
 
-	/** emscripten's end of its main loop. Here a program leaves raylib's own loop, so a call doesn't compile. */
+	/** Doesn't compile, since a program leaves raylib's own loop instead. See `WindowShouldClose` for writing the loop. */
 	@:unsupported("emscripten_cancel_main_loop: Not needed: leave raylib's loop, while (!WindowShouldClose()) { ... }, with break, and a page stops running it; the code after the loop runs then.")
 	static function emscripten_cancel_main_loop():Void {
 		throw "emscripten_cancel_main_loop is unsupported";
 	}
 
-	/** emscripten's way to run the page's JavaScript. A program asks helix-raylib for what the page knows instead, so a call doesn't
-		compile.
+	/** Doesn't compile, since a program asks helix-raylib for what the page knows instead. See `GetRunOption` for reading the URL's
+		options.
 
 		@param script  The JavaScript. */
 	@:unsupported("emscripten_run_script: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, IsTouchScreenAvailable and IsFinePointerAvailable for the device, GetWindowSafeArea, SetScreenOrientationAsync, EnableTiltAsync; or write plain Haxe (js.Browser, in #if js).")
@@ -2193,8 +2373,8 @@ class RCore {
 		throw "emscripten_run_script is unsupported";
 	}
 
-	/** emscripten's way to run the page's JavaScript for a number. A program asks helix-raylib for what the page knows instead, so a call
-		doesn't compile.
+	/** Doesn't compile, since a program asks helix-raylib for what the page knows instead. See `GetRunOption` for reading the URL's
+		options.
 
 		@param script  The JavaScript.
 		@return  Never returns: a call doesn't compile. */
@@ -2203,8 +2383,7 @@ class RCore {
 		throw "emscripten_run_script_int is unsupported";
 	}
 
-	/** emscripten's way to run the page's JavaScript for text. A program asks helix-raylib for what the page knows instead, so a call
-		doesn't compile.
+	/** Doesn't compile, since a program asks helix-raylib for what the page knows instead. See `GetPlatformOS` for reading the system.
 
 		@param script  The JavaScript.
 		@return  Never returns: a call doesn't compile. */
@@ -2213,7 +2392,7 @@ class RCore {
 		throw "emscripten_run_script_string is unsupported";
 	}
 
-	/** emscripten's clock, in milliseconds. raylib's own is `GetTime`, so a call doesn't compile.
+	/** Doesn't compile. See `GetTime` for reading the seconds since `InitWindow`.
 
 		@return  Never returns: a call doesn't compile. */
 	@:unsupported("emscripten_get_now: Not supported. See GetTime(), the seconds since InitWindow (emscripten's milliseconds are GetTime() * 1000).")
@@ -2221,7 +2400,7 @@ class RCore {
 		throw "emscripten_get_now is unsupported";
 	}
 
-	/** emscripten's wait. A page can't wait inside a frame, so a call doesn't compile.
+	/** Doesn't compile, since a page can't wait inside a frame. See `GetTime` for timing a later frame.
 
 		@param ms  The milliseconds. */
 	@:unsupported("emscripten_sleep: Not supported: a page can't wait inside a frame. End the frame and carry on in a later one, timed with GetTime() or GetFrameTime().")
@@ -2418,7 +2597,7 @@ class RCore {
 
 		@param position  The screen position.
 		@param camera  The camera.
-		@return  The point; NaN at zoom 0, as raylib's inverse of a matrix with none gives. */
+		@return  The point, or NaN at zoom 0. */
 	static function GetScreenToWorld2D(position:Vector2, camera:Camera2D):Vector2 {
 		var p = camera2D(camera).viewToWorld(position.x, position.y, point2D);
 		return p == null ? new Vector2(Math.NaN, Math.NaN) : new Vector2(p.x, p.y);
@@ -2460,14 +2639,24 @@ class RCore {
 		Runtime.frame.depthTest = false;
 	}
 
-	/** Moves a camera as one of raylib's modes does, by the keyboard, the mouse and the first gamepad, as rcamera's `UpdateCamera`.
+	/** Moves a camera by the keyboard, the mouse and the first gamepad, as one of rcamera's modes does. See `UpdateCameraPro` for moving
+		it by amounts.
 
-		`CAMERA_ORBITAL` turns it about its target, half a radian a second. `CAMERA_FREE`, `CAMERA_FIRST_PERSON` and
-		`CAMERA_THIRD_PERSON` turn it by the mouse, the right stick and the arrow keys (Q and E roll it), its look stopping short of
-		straight up and down, and move it by WASD and the left stick, 5.4 units a second; first and third person along the ground, third
-		person turning about its target. `CAMERA_FREE` also moves up and down by space and left control, and pans while the middle button
-		is held. `CAMERA_FREE`, `CAMERA_ORBITAL` and `CAMERA_THIRD_PERSON` move toward the target by the wheel and the keypad's plus and
-		minus. `CAMERA_CUSTOM` leaves it.
+		`CAMERA_ORBITAL` turns the camera about its target, half a radian a second.
+
+		`CAMERA_FREE`, `CAMERA_FIRST_PERSON` and `CAMERA_THIRD_PERSON`:
+
+		- turn by the mouse, the right stick and the arrow keys, the look stopping short of straight up and down.
+		- roll by Q and E.
+		- move by WASD and the left stick, 5.4 units a second.
+
+		`CAMERA_FIRST_PERSON` and `CAMERA_THIRD_PERSON` move along the ground, and `CAMERA_THIRD_PERSON` turns about its target.
+
+		`CAMERA_FREE` also moves up and down by space and left control, and pans while the middle button is held.
+
+		`CAMERA_FREE`, `CAMERA_ORBITAL` and `CAMERA_THIRD_PERSON` move toward the target by the wheel and the keypad's plus and minus.
+
+		`CAMERA_CUSTOM` leaves the camera unchanged.
 
 		@param camera  The camera, changed.
 		@param mode  The mode (`CAMERA_*`). */
@@ -2550,14 +2739,16 @@ class RCore {
 		}
 	}
 
-	/** Moves and turns a camera by amounts, as raylib's rcamera does: it pitches (looking no further up or down than straight), yaws and
-		rolls about its own position, then moves forward and right along the ground and up along its up direction, then toward its
-		target, the distance kept above 0.
+	/** Moves and turns a camera by amounts, as rcamera does. See `UpdateCamera` for moving it by input.
+
+		Pitches first, no further up or down than straight, then yaws and rolls about the camera's own position.
+
+		Then moves forward and right along the ground and up along the camera's up, then toward its target, the distance kept above 0.
 
 		@param camera  The camera, changed.
 		@param movement  The distances it moves: forward (x), right (y) and up (z), in world units.
 		@param rotation  The angles it turns: yaw to the right (x), pitch down (y) and roll (z), in degrees.
-		@param zoom  How much further from its target it moves, in world units; a negative zoom moves it closer. */
+		@param zoom  How much further from its target it moves, in world units. A negative zoom moves it closer. */
 	static function UpdateCameraPro(camera:Camera, movement:Vector3, rotation:Vector3, zoom:Float):Void {
 		cameraPitch(camera, -rotation.y * DEG2RAD, true, false, false);
 		cameraYaw(camera, -rotation.x * DEG2RAD, false);
@@ -2709,7 +2900,8 @@ class RCore {
 		return toMatrix(camera3D(camera).computeViewMatrix(viewMatrix3D));
 	}
 
-	/** Returns the ray from a camera through a screen position, as raylib's picking uses it.
+	/** Returns the ray from a camera through a screen position, for picking. See `GetScreenToWorldRayEx` for casting through a view of
+		another size.
 
 		@param position  The screen position.
 		@param camera  The camera.
@@ -2734,7 +2926,7 @@ class RCore {
 		return new Ray(new Vector3(origin.x, origin.y, origin.z), new Vector3(direction.x, direction.y, direction.z));
 	}
 
-	/** Returns the ray from a camera through a screen position: raylib's old name for `GetScreenToWorldRay`.
+	/** Returns the ray from a camera through a screen position, under raylib's old name for `GetScreenToWorldRay`.
 
 		@param position  The screen position.
 		@param camera  The camera.
@@ -2743,7 +2935,7 @@ class RCore {
 		return GetScreenToWorldRay(position, camera);
 	}
 
-	/** Returns where a point in the world is on the screen.
+	/** Returns where a point in the world is on the screen. See `GetWorldToScreenEx` for placing it in a view of another size.
 
 		@param position  The point.
 		@param camera  The camera.
@@ -2758,7 +2950,7 @@ class RCore {
 		@param camera  The camera.
 		@param width  The view's width.
 		@param height  The view's height.
-		@return  The position in the view; infinite or NaN for a point level with a perspective camera's position, as raylib's is. */
+		@return  The position in the view, or infinite or NaN for a point level with a perspective camera's position. */
 	static function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int):Vector2 {
 		var p = camera3D(camera).project(position.x, position.y, position.z, width / height, point3D);
 		return new Vector2((p.x + 1) / 2 * width, (1 - p.y) / 2 * height);
@@ -2789,8 +2981,9 @@ class RCore {
 		return view3D;
 	}
 
-	/** Returns how far the mouse moved since the last frame, in the screen's pixels times the mouse's scale (`SetMouseScale`), as raylib
-		6.2's. A `SetMousePosition` this frame is part of it.
+	/** Returns how far the mouse moved since the last frame, in the screen's pixels times the mouse's scale (`SetMouseScale`).
+
+		A `SetMousePosition` this frame is part of the movement.
 
 		@return  The movement. */
 	static function GetMouseDelta():Vector2 {
@@ -2812,10 +3005,14 @@ class RCore {
 
 	// ---- VR stereo rendering ----
 
-	/** Starts drawing for both eyes of a head-mounted display: stereo rendering on (`rlEnableStereoRender`) with the config's
-		projections and view offsets. Until `EndVrStereoMode`, each flush of the batch and each mesh is drawn twice, the left half of
-		what is drawn into for the first eye and the right half for the second; `BeginMode3D`'s projection is replaced by each eye's.
-		raylib's VR simulator draws the eyes into a render texture, then draws it to the screen through a distortion shader.
+	/** Starts drawing for both eyes of a head-mounted display, with the config's projections and view offsets (`rlEnableStereoRender`).
+
+		Until `EndVrStereoMode`, each flush of the batch and each mesh draws twice, into the left half of what is drawn into for the first
+		eye and the right half for the second.
+
+		Each eye's projection replaces `BeginMode3D`'s.
+
+		raylib's VR simulator draws the eyes into a render texture, then draws that to the screen through a distortion shader.
 
 		@param config  The config, from `LoadVrStereoConfig`. */
 	static function BeginVrStereoMode(config:VrStereoConfig):Void {
@@ -2824,16 +3021,21 @@ class RCore {
 		helix.raylib.modules.RRlgl.rlSetMatrixViewOffsetStereo(config.viewOffset[0], config.viewOffset[1]);
 	}
 
-	/** Stops drawing for both eyes (`rlDisableStereoRender`), for the next flush of the batch and the next mesh drawn: shapes drawn in
-		stereo and not flushed yet (`EndMode3D` flushes them) are drawn once. */
+	/** Stops drawing for both eyes (`rlDisableStereoRender`), from the next flush of the batch and the next mesh drawn.
+
+		Shapes drawn in stereo and not flushed yet draw once. `EndMode3D` flushes them. */
 	static function EndVrStereoMode():Void {
 		helix.raylib.modules.RRlgl.rlDisableStereoRender();
 	}
 
-	/** Returns the stereo config of a head-mounted display, as raylib 5.5 computes it: each eye's projection, from the field of view
-		the lenses' distortion widens, shifted by the lenses' offset from the eyes' halves of the screen, between the clip planes
-		(`rlSetClipPlanes`); each eye's view offset, half the interpupillary distance to its side, 0.075 up and 0.045 forward; and the
-		lens and screen centers and scales a distortion shader reads (raylib's `distortion330.fs`).
+	/** Returns the stereo config of a head-mounted display, as raylib 5.5 computes it.
+
+		The config holds:
+
+		- each eye's projection, from the field of view the lenses' distortion widens, shifted by the lenses' offset from the eyes'
+		  halves of the screen, between the clip planes (`rlSetClipPlanes`).
+		- each eye's view offset, half the interpupillary distance to its side, 0.075 up and 0.045 forward.
+		- the lens and screen centers and scales a distortion shader reads (raylib's `distortion330.fs`).
 
 		@param device  The display's parameters.
 		@return  The config. */
@@ -2870,7 +3072,9 @@ class RCore {
 		return config;
 	}
 
-	/** Frees a stereo config, which holds nothing to free, as raylib's: it logs that, as raylib 5.5 does.
+	/** Frees a stereo config.
+
+		Has nothing to free, and logs that, as raylib 5.5 does.
 
 		@param config  The config. */
 	static function UnloadVrStereoConfig(config:VrStereoConfig):Void {
@@ -2887,16 +3091,20 @@ class RCore {
 		return shader.id != 0;
 	}
 
-	/** Lets go of the program's hold on a shader (docs/DECISIONS.md 25), its id set to 0: the shader is freed when no material holds it
-		too, else when the last material holding it lets go. Given a material's shader (`material.shader`), it lets go of one hold and
-		leaves the material drawing with it while anything holds it. The default shader stays.
+	/** Lets go of the program's hold on a shader, setting its id to 0.
+
+		The shader is freed when no material holds it too, else when the last material holding it lets go.
+
+		Given a material's shader (`material.shader`), lets go of one hold and leaves the material drawing with it while anything holds it.
+
+		The default shader stays.
 
 		@param shader  The shader. */
 	static function UnloadShader(shader:Shader):Void {
 		helix.raylib.internal.Models.unloadShader(shader);
 	}
 
-	/** Returns the location of a shader's uniform or texture, by its name.
+	/** Returns the location of a shader's uniform or texture, by its name. See `GetShaderLocationAttrib` for finding an attribute.
 
 		@param shader  The shader.
 		@param uniformName  The name.
@@ -2914,10 +3122,14 @@ class RCore {
 		return shader.program == null ? -1 : shader.program.attributes.indexOf(attribName);
 	}
 
-	/** Sets a shader's uniform, for the models drawn after it and the shapes in rlgl's batch when it is next drawn, as raylib's: shapes
-		drawn before it but not yet flushed (`BeginShaderMode`, `EndShaderMode`, a mode changing, `rlDrawRenderBatchActive`) take it too.
-		A texture's location takes the texture unit its sampler reads, as GL's: `DrawMesh` binds there the material's map of that index
-		(raylib's skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`).
+	/** Sets a shader's uniform, for the models drawn after the call and the shapes in rlgl's batch when the batch is next drawn. See
+		`SetShaderValueV` for setting an array's elements.
+
+		Shapes drawn before the call but not yet flushed take the value too. `BeginShaderMode`, `EndShaderMode`, a mode changing and
+		`rlDrawRenderBatchActive` flush them.
+
+		A texture's location takes the texture unit its sampler reads. `DrawMesh` binds the material's map of that index there, as raylib's
+		skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`.
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
@@ -2927,7 +3139,7 @@ class RCore {
 		SetShaderValueV(shader, locIndex, value, uniformType, 1);
 	}
 
-	/** Sets elements of a shader's array uniform, for the draws after it.
+	/** Sets elements of a shader's array uniform, for the draws after the call.
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
@@ -2951,7 +3163,7 @@ class RCore {
 		shader.program.write(locIndex, numbers(value));
 	}
 
-	/** Sets a shader's matrix uniform, for the draws after it.
+	/** Sets a shader's matrix uniform, for the draws after the call.
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
@@ -2963,9 +3175,10 @@ class RCore {
 		shader.program.write(locIndex, toMatrix3D(mat).values);
 	}
 
-	/** Sets a shader's texture, for the draws after it: a `Texture2D` at a `sampler2D`, or a cubemap (`LoadTextureCubemap`) at a
-		`samplerCube`. A texture at a sampler of the other kind binds nothing. raylib 5.5's binds every texture it is given as a 2D texture,
-		so a cubemap given it reads as black there; here it is bound.
+	/** Sets a shader's texture for the draws after the call, a `Texture2D` at a `sampler2D` or a cubemap (`LoadTextureCubemap`) at a
+		`samplerCube`.
+
+		A texture at a sampler of the other kind binds nothing.
 
 		@param shader  The shader.
 		@param locIndex  The texture's location.
@@ -2997,11 +3210,18 @@ class RCore {
 		Runtime.frame.program = Runtime.frame.defaultProgram;
 	}
 
-	/** Blends what is drawn until `EndBlendMode` another way, as rlgl sets GL's blending: `BLEND_ALPHA` (alpha blended by the same factors
-		as the color), `BLEND_ADDITIVE`, `BLEND_MULTIPLIED`, `BLEND_ADD_COLORS`, `BLEND_SUBTRACT_COLORS` and `BLEND_ALPHA_PREMULTIPLY`;
-		`BLEND_CUSTOM` and `BLEND_CUSTOM_SEPARATE` take the factors `rlSetBlendFactors` and `rlSetBlendFactorsSeparate` last set. The
-		batch is drawn first when the mode changes, or when a custom mode is set again after its factors changed; otherwise nothing
-		happens. A mode raylib doesn't have changes nothing but the mode remembered.
+	/** Blends what is drawn until `EndBlendMode` another way, as rlgl sets GL's blending.
+
+		The modes:
+
+		- `BLEND_ALPHA`, alpha blended by the same factors as the color.
+		- `BLEND_ADDITIVE`, `BLEND_MULTIPLIED`, `BLEND_ADD_COLORS`, `BLEND_SUBTRACT_COLORS` and `BLEND_ALPHA_PREMULTIPLY`.
+		- `BLEND_CUSTOM` and `BLEND_CUSTOM_SEPARATE`, with the factors `rlSetBlendFactors` and `rlSetBlendFactorsSeparate` last set.
+
+		Changing the mode draws the batch first, as does setting a custom mode again after its factors changed. Setting the mode already set
+		changes nothing.
+
+		A mode raylib doesn't have changes nothing but the mode remembered.
 
 		@param mode  The mode (`BLEND_*`). */
 	static function BeginBlendMode(mode:Int):Void {

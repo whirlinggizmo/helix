@@ -1,18 +1,18 @@
 package helix.raylib;
 
-/** Represents raylib's `Camera2D`: what it looks at, where that shows on the screen, its rotation and its zoom. */
+/** Represents raylib's `Camera2D`: its target, where the target shows on the screen, its rotation and its zoom. */
 @:structInit
 class Camera2D {
 	/** Gets or sets where the target shows, in the screen's pixels. */
 	public var offset:Vector2;
 
-	/** Gets or sets the point in the world it looks at. */
+	/** Gets or sets the camera's target, the point in the world shown at `offset`. */
 	public var target:Vector2;
 
-	/** Gets or sets its rotation, in degrees. */
+	/** Gets or sets the rotation, in degrees. */
 	public var rotation:Float;
 
-	/** Gets or sets its zoom, 1 for none. */
+	/** Gets or sets the zoom, 1 for none. */
 	public var zoom:Float;
 
 	/** Creates a 2D camera.

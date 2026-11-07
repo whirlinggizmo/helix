@@ -2,7 +2,7 @@ package helix.raylib;
 
 /** Represents raylib's `Font`: its glyphs, their places on its texture, and the texture. */
 class Font {
-	/** Gets or sets the size it was made at: its glyphs' height, in pixels. */
+	/** Gets or sets the size the font was made at, its glyphs' height in pixels. */
 	public var baseSize:Int = 0;
 
 	/** Gets or sets how many glyphs it has. */
@@ -11,7 +11,7 @@ class Font {
 	/** Gets or sets the padding around each glyph on its texture, in pixels. */
 	public var glyphPadding:Int = 0;
 
-	/** Gets or sets the texture its glyphs are drawn from. */
+	/** Gets or sets the texture holding the glyphs. */
 	public var texture:Texture2D;
 
 	/** Gets or sets each glyph's rectangle on the texture. */
@@ -28,6 +28,7 @@ class Font {
 	@:allow(helix.raylib)
 	var atlasTexture = 0;
 
-	/** Creates a font, its fields zero or empty. Fonts are made by `Raylib.GetFontDefault`, `extras.Text.LoadFontExAsync` and the other loads. */
+	/** Creates a font, its fields zero or empty. See `extras.Text.LoadFontExAsync` and the other loads for loading a font, and
+		`Raylib.GetFontDefault` for getting raylib's default font. */
 	public function new() {}
 }

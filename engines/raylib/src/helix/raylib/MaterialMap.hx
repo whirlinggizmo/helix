@@ -2,12 +2,16 @@ package helix.raylib;
 
 /** Represents raylib's `MaterialMap`: one of a material's maps (`MATERIAL_MAP_*`), a texture with a color and a value.
 
-	The map holds a count on its texture (docs/DECISIONS.md 25): assigning one keeps a copy of its record, retains it and releases the
-	texture it replaces, so a texture the program unloads after giving it to a map lives until the map lets go of it. */
+	Holds a count on its texture. Assigning a texture keeps a copy of its record, retains it and releases the texture it replaces.
+
+	A texture the program unloads after giving it to a map lives until the map lets go of it. */
 @:structInit
 class MaterialMap {
-	/** Gets or sets the texture; id 0 for none, drawn as white. Assigning keeps a copy of the record, counted as one of the texture's
-		holders, and releases the texture it replaces; the material releases it when it is freed. */
+	/** Gets or sets the texture, id 0 for none, which draws as white.
+
+		Assigning keeps a copy of the record, counted as one of the texture's holders, and releases the texture it replaces.
+
+		A freed material releases its maps' textures. */
 	public var texture(default, set):Texture2D;
 
 	/** Gets or sets the color. */
@@ -16,7 +20,7 @@ class MaterialMap {
 	/** Gets or sets the value. */
 	public var value:Float;
 
-	/** Creates a MaterialMap.
+	/** Creates a material map.
 
 		@param texture  Optional. The texture, counted as `texture`'s assignment counts it; none when omitted.
 		@param color  Optional. The color; transparent black when omitted.

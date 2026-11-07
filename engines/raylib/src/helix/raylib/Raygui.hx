@@ -1098,20 +1098,25 @@ class Raygui {
 	#if !macro
 	// ---- raygui: its state, style, icons and tooltips (raylib/RGui.hx) ----
 
-	/** Enables the controls again, after `GuiDisable`. A state other than disabled, set with `GuiSetState`, is left as it is. */
+	/** Enables the controls again after `GuiDisable`.
+
+		A state other than disabled, set with `GuiSetState`, is unchanged. */
 	public static inline function GuiEnable():Void
 		RGui.GuiEnable();
 
-	/** Disables the controls: they are drawn disabled and take no input. A state other than normal, set with `GuiSetState`, is left as it
-		is. */
+	/** Disables the controls, so they draw disabled and take no input. See `GuiLock` for stopping the controls' input while they keep
+		their look.
+
+		A state other than normal, set with `GuiSetState`, is unchanged. */
 	public static inline function GuiDisable():Void
 		RGui.GuiDisable();
 
-	/** Locks the controls: they are drawn as they are and take no input, until `GuiUnlock`. */
+	/** Locks the controls until `GuiUnlock`, so they draw as they are and take no input. See `GuiDisable` for drawing the controls
+		disabled. */
 	public static inline function GuiLock():Void
 		RGui.GuiLock();
 
-	/** Unlocks the controls, after `GuiLock`. */
+	/** Unlocks the controls after `GuiLock`. */
 	public static inline function GuiUnlock():Void
 		RGui.GuiUnlock();
 
@@ -1123,11 +1128,15 @@ class Raygui {
 
 	/** Sets how opaque the controls are drawn.
 
-		@param alpha  0 for clear to 1 for opaque, held to that range. */
+		@param alpha  0 for clear to 1 for opaque, clamped to that range. */
 	public static inline function GuiSetAlpha(alpha:Float):Void
 		RGui.GuiSetAlpha(alpha);
 
-	/** Sets the state every control is drawn in: normal controls follow the mouse, any other state is forced on them all.
+	/** Sets the state every control is drawn in.
+
+		With `STATE_NORMAL`, each control follows the mouse.
+
+		Any other state is forced on every control.
 
 		@param state  The state (`STATE_NORMAL`, `STATE_FOCUSED`, `STATE_PRESSED` or `STATE_DISABLED`). */
 	public static inline function GuiSetState(state:Int):Void
@@ -1139,21 +1148,31 @@ class Raygui {
 	public static inline function GuiGetState():Int
 		return RGui.GuiGetState();
 
-	/** Sets the font the controls draw their text in. A font with no texture is ignored. The default style is loaded first if it isn't
-		yet, so loading it later doesn't undo this.
+	/** Sets the font the controls draw their text in.
+
+		A font with no texture is ignored.
+
+		Loads the default style first when no style is loaded yet, so a control's first use of the style keeps this font.
 
 		@param font  The font. */
 	public static inline function GuiSetFont(font:Font):Void
 		RGui.GuiSetFont(font);
 
-	/** Returns the font the controls draw their text in: raylib's default font once the style is loaded, or another set with
-		`GuiSetFont`. Before anything is drawn or styled it is an empty font.
+	/** Returns the font the controls draw their text in.
+
+		Once the style is loaded, the font is raylib's default font or the one set with `GuiSetFont`.
+
+		Before anything is drawn or styled, the font is an empty font.
 
 		@return  The font. */
 	public static inline function GuiGetFont():Font
 		return RGui.GuiGetFont();
 
-	/** Sets one property of a control's style. A base property of `DEFAULT` (below 16) is set for every control.
+	/** Sets one property of a control's style.
+
+		Setting a base property of `DEFAULT` (below 16) sets that property for every control.
+
+		Loads the default style first when no style is loaded yet.
 
 		@param control  The control (`DEFAULT`, `LABEL`, `BUTTON` and the rest).
 		@param property  The property (`BORDER_COLOR_NORMAL`, `TEXT_SIZE`, `SLIDER_WIDTH` and the rest).
@@ -1163,33 +1182,40 @@ class Raygui {
 
 	/** Returns one property of a control's style.
 
+		Loads the default style first when no style is loaded yet.
+
 		@param control  The control (`DEFAULT`, `LABEL`, `BUTTON` and the rest).
 		@param property  The property (`BORDER_COLOR_NORMAL`, `TEXT_SIZE`, `SLIDER_WIDTH` and the rest).
 		@return  Its value: a color as 0xRRGGBBAA, a size in pixels, or one of the property's values. */
 	public static inline function GuiGetStyle(control:Int, property:Int):Int
 		return RGui.GuiGetStyle(control, property);
 
-	/** Loads raygui's default style, its light theme, over the style: every control's colors, borders, text and sizes. The font goes back
-		to raylib's default font, the font set before unloaded, and raylib's shapes are drawn from the font's white glyph, as raygui does,
-		so text and shapes share one texture. */
+	/** Loads raygui's default style, its light theme, over every control's colors, borders, text and sizes.
+
+		Sets the font back to raylib's default font and unloads the font set before.
+
+		Sets raylib's shapes to draw from the default font's white glyph, so text and shapes share one texture. */
 	public static inline function GuiLoadStyleDefault():Void
 		RGui.GuiLoadStyleDefault();
 
-	/** Turns tooltips on: a control the mouse is over draws the text set with `GuiSetTooltip` below it. */
+	/** Turns tooltips on, so a control the mouse is over draws the text set with `GuiSetTooltip` below it. */
 	public static inline function GuiEnableTooltip():Void
 		RGui.GuiEnableTooltip();
 
-	/** Turns tooltips off, after `GuiEnableTooltip`. */
+	/** Turns tooltips off after `GuiEnableTooltip`. */
 	public static inline function GuiDisableTooltip():Void
 		RGui.GuiDisableTooltip();
 
-	/** Sets the tooltip the next controls show while tooltips are on, until it is set again.
+	/** Sets the tooltip the next controls show while tooltips are on, until the next call. See `GuiEnableTooltip` for turning
+		tooltips on.
 
 		@param tooltip  The text, or null for none. */
 	public static inline function GuiSetTooltip(tooltip:String):Void
 		RGui.GuiSetTooltip(tooltip);
 
-	/** Returns a control's text with an icon before it, as raygui writes one: "#" and the icon's number in three digits, then "#".
+	/** Returns a control's text with an icon before it, as raygui writes one.
+
+		The icon is "#", the icon's number in three digits, then "#".
 
 		@param iconId  The icon (`ICON_*`).
 		@param text  The text, or null for the icon alone.
@@ -1203,14 +1229,21 @@ class Raygui {
 	public static inline function GuiSetIconScale(scale:Int):Void
 		RGui.GuiSetIconScale(scale);
 
-	/** Returns the icons' bits, which a program may change: eight 32-bit words an icon, `ICON_*` times 8, two 16-pixel rows a word, bit
-		0 the leftmost pixel of the first.
+	/** Returns the icons' bits, which a program may change.
+
+		The bits are laid out as:
+
+		- eight 32-bit words an icon, the icon's first at `ICON_*` times 8
+		- two 16-pixel rows a word
+		- bit 0 the leftmost pixel of the word's first row
 
 		@return  The icons, 2048 words. */
 	public static inline function GuiGetIcons():Array<Int>
 		return RGui.GuiGetIcons();
 
-	/** Draws an icon, each of its pixels a square, faded by `GuiSetAlpha`.
+	/** Draws an icon, each of its pixels a square.
+
+		Fades the icon by the alpha set with `GuiSetAlpha`.
 
 		@param iconId  The icon (`ICON_*`).
 		@param posX  Its left edge, in pixels.
@@ -1222,7 +1255,8 @@ class Raygui {
 
 	// ---- raygui: its controls (raylib/RGuiControls.hx) ----
 
-	/** Draws a window: a title bar with a close button, over a panel.
+	/** Draws a window, a title bar with a close button over a panel, and returns 1 when the close button is clicked. See `GuiPanel`
+		for drawing a panel with no close button.
 
 		@param bounds  The window, its title bar 24 pixels high; it is at least 48.
 		@param title  The title, or null.
@@ -1230,7 +1264,7 @@ class Raygui {
 	public static inline function GuiWindowBox(bounds:Rectangle, title:String):Int
 		return RGuiControls.GuiWindowBox(bounds, title);
 
-	/** Draws a group box: a frame with its name in its top line.
+	/** Draws a group box, a frame with its name in its top line.
 
 		@param bounds  The box.
 		@param text  Its name, or null.
@@ -1238,7 +1272,7 @@ class Raygui {
 	public static inline function GuiGroupBox(bounds:Rectangle, text:String):Int
 		return RGuiControls.GuiGroupBox(bounds, text);
 
-	/** Draws a line across its bounds' middle, with text in it when given ("--- text ------").
+	/** Draws a line across its bounds' middle, with the text in it when provided ("--- text ------").
 
 		@param bounds  The line's bounds.
 		@param text  The text, or null for a plain line.
@@ -1246,7 +1280,7 @@ class Raygui {
 	public static inline function GuiLine(bounds:Rectangle, text:String):Int
 		return RGuiControls.GuiLine(bounds, text);
 
-	/** Draws a panel, with a header bar when it has text.
+	/** Draws a panel, with a header bar when the text is provided. See `GuiScrollPanel` for showing content larger than the panel.
 
 		@param bounds  The panel; with a header it is at least 48 pixels high.
 		@param text  The header's text, or null for none.
@@ -1254,18 +1288,26 @@ class Raygui {
 	public static inline function GuiPanel(bounds:Rectangle, text:String):Int
 		return RGuiControls.GuiPanel(bounds, text);
 
-	/** Draws a bar of tabs, each a toggle 160 pixels wide with a close button, scrolled so the active tab shows.
+	/** Draws a bar of tabs and returns the tab whose close button is clicked or that the middle button presses.
+
+		Each tab is a toggle 160 pixels wide with a close button.
+
+		A click on a tab makes it the active tab.
+
+		Scrolls the bar so the active tab shows.
 
 		@param bounds  The bar; its height is the tabs'.
 		@param text  The tabs' names.
 		@param count  How many tabs.
-		@param active  The active tab, in `active[0]`, held to the tabs; a tab clicked becomes it.
+		@param active  The active tab, in `active[0]`, clamped to the tabs.
 		@return  The tab whose close button was clicked or that the middle button pressed, else -1. */
 	public static inline function GuiTabBar(bounds:Rectangle, text:Array<String>, count:Int, active:Array<Int>):Int
 		return RGuiControls.GuiTabBar(bounds, text, count, active);
 
-	/** Draws a scroll panel: a view of content larger than it, with scroll bars where the content is wider or taller, scrolled by the
-		bars and the mouse wheel (across with Shift or Control held).
+	/** Draws a scroll panel, a view of content larger than the panel, with scroll bars where the content is wider or taller. See
+		`GuiPanel` for drawing a panel with no scrolling.
+
+		The bars and the mouse wheel scroll the content, across while Shift or Control is held.
 
 		@param bounds  The panel; with a header it is at least 48 pixels high.
 		@param text  The header's text, or null for none.
@@ -1276,7 +1318,7 @@ class Raygui {
 	public static inline function GuiScrollPanel(bounds:Rectangle, text:String, content:Rectangle, scroll:Vector2, view:Rectangle):Int
 		return RGuiControls.GuiScrollPanel(bounds, text, content, scroll, view);
 
-	/** Draws a label: text in its bounds, aligned as the label style says.
+	/** Draws a label, text in its bounds aligned as the label style sets. See `GuiLabelButton` for drawing a label that takes clicks.
 
 		@param bounds  The label.
 		@param text  The text, or null.
@@ -1284,7 +1326,9 @@ class Raygui {
 	public static inline function GuiLabel(bounds:Rectangle, text:String):Int
 		return RGuiControls.GuiLabel(bounds, text);
 
-	/** Draws a button, focused under the mouse and pressed while the left button is held over it.
+	/** Draws a button and returns 1 when the left button is released over it.
+
+		Drawn focused while the mouse is over the button, and pressed while the left button is held there.
 
 		@param bounds  The button.
 		@param text  Its text, or null.
@@ -1292,7 +1336,8 @@ class Raygui {
 	public static inline function GuiButton(bounds:Rectangle, text:String):Int
 		return RGuiControls.GuiButton(bounds, text);
 
-	/** Draws a label that works as a button, at least as wide as its text.
+	/** Draws a label that works as a button, at least as wide as its text, and returns 1 when the left button is released over it.
+		See `GuiButton` for drawing a button.
 
 		@param bounds  The label.
 		@param text  Its text, or null.
@@ -1300,7 +1345,9 @@ class Raygui {
 	public static inline function GuiLabelButton(bounds:Rectangle, text:String):Int
 		return RGuiControls.GuiLabelButton(bounds, text);
 
-	/** Draws a toggle button, drawn pressed while it is on; a click turns it over.
+	/** Draws a toggle button, drawn pressed while on. See `GuiCheckBox` for drawing a check box.
+
+		A click turns the toggle over.
 
 		@param bounds  The button.
 		@param text  Its text, or null.
@@ -1309,45 +1356,63 @@ class Raygui {
 	public static inline function GuiToggle(bounds:Rectangle, text:String, active:Array<Bool>):Int
 		return RGuiControls.GuiToggle(bounds, text, active);
 
-	/** Draws a group of toggles, one on at a time: a toggle for each of the text's items ("One;Two;Three"), a new row at each '\n'.
+	/** Draws a group of toggles, one on at a time, a toggle for each of the text's items ("One;Two;Three"). See `GuiToggleSlider` for
+		drawing the items under one slider.
+
+		Starts a new row at each '\n'.
+
+		A click on a toggle turns it on and the one that was on off.
 
 		@param bounds  The first toggle; each is this size.
 		@param text  The items, split at ';' and '\n'.
-		@param active  The item on, in `active[0]`, or null; a click on another makes it on.
+		@param active  The item on, in `active[0]`, or null.
 		@return  0. */
 	public static inline function GuiToggleGroup(bounds:Rectangle, text:String, active:Array<Int>):Int
 		return RGuiControls.GuiToggleGroup(bounds, text, active);
 
-	/** Draws a toggle slider: its items ("Off;On") side by side, the active one under a slider; a click moves it to the next.
+	/** Draws a toggle slider, its items ("Off;On") side by side with the active one under a slider, and returns 1 when clicked. See
+		`GuiToggleGroup` for drawing a toggle for each item.
+
+		A click moves the slider to the next item, and from the last back to the first.
 
 		@param bounds  The slider.
 		@param text  The items, split at ';'.
-		@param active  The active item, in `active[0]`, or null; past the last it goes back to the first.
-		@return  1 when it was clicked, else 0. */
+		@param active  The active item, in `active[0]`, or null.
+		@return  1 when clicked, else 0. */
 	public static inline function GuiToggleSlider(bounds:Rectangle, text:String, active:Array<Int>):Int
 		return RGuiControls.GuiToggleSlider(bounds, text, active);
 
-	/** Draws a check box, its text beside it; a click on either turns it over.
+	/** Draws a check box with its text beside it, and returns 1 when clicked. See `GuiToggle` for drawing a toggle button.
+
+		A click on the box or its text turns the check over.
 
 		@param bounds  The box.
 		@param text  Its text, or null.
 		@param checked  Whether it is checked, in `checked[0]`, or null.
-		@return  1 when it was clicked, else 0. */
+		@return  1 when clicked, else 0. */
 	public static inline function GuiCheckBox(bounds:Rectangle, text:String, checked:Array<Bool>):Int
 		return RGuiControls.GuiCheckBox(bounds, text, checked);
 
-	/** Draws a combo box: its active item, and a button showing which of how many; a press on either moves to the next, after the last
-		the first.
+	/** Draws a combo box, its active item and a button showing which of how many. See `GuiDropdownBox` for listing the items to
+		choose from.
+
+		A press on the item or the button moves to the next item, and from the last back to the first.
 
 		@param bounds  The box, its button included.
 		@param text  The items, split at ';'.
-		@param active  The active item, in `active[0]`, or null; held to the items.
+		@param active  The active item, in `active[0]`, or null; clamped to the items.
 		@return  0. */
 	public static inline function GuiComboBox(bounds:Rectangle, text:String, active:Array<Int>):Int
 		return RGuiControls.GuiComboBox(bounds, text, active);
 
-	/** Draws a dropdown box: its active item, and in edit mode its items listed below it (above with `DROPDOWN_ROLL_UP`), the one under
-		the mouse focused. The program turns edit mode on and off with the result.
+	/** Draws a dropdown box, its active item with its items listed below it in edit mode. See `GuiComboBox` for stepping through the
+		items in place.
+
+		The program turns edit mode on and off with the result.
+
+		Lists the items above the box with `DROPDOWN_ROLL_UP`.
+
+		Focuses the item under the mouse.
 
 		@param bounds  The box; each item is its size.
 		@param text  The items, split at ';'.
@@ -1357,9 +1422,16 @@ class Raygui {
 	public static inline function GuiDropdownBox(bounds:Rectangle, text:String, active:Array<Int>, editMode:Bool):Int
 		return RGuiControls.GuiDropdownBox(bounds, text, active, editMode);
 
-	/** Draws a text box; in edit mode it takes typed text and the keys that move its cursor and delete (Home, End, Delete, Backspace,
-		Control-Backspace for a word, the arrows, held to repeat), and a click places the cursor. The program turns edit mode on and off
-		with the result.
+	/** Draws a text box that takes typed text in edit mode.
+
+		The program turns edit mode on and off with the result.
+
+		In edit mode, a click places the cursor, and these keys move the cursor and delete, repeating while held:
+
+		- Home and End
+		- the arrows
+		- Delete and Backspace
+		- Control-Backspace, which deletes a word
 
 		@param bounds  The box.
 		@param text  The text, in `text[0]`, edited in place.
@@ -1369,11 +1441,16 @@ class Raygui {
 	public static inline function GuiTextBox(bounds:Rectangle, text:Array<String>, textSize:Int, editMode:Bool):Int
 		return RGuiControls.GuiTextBox(bounds, text, textSize, editMode);
 
-	/** Draws a spinner: a value box between buttons that step its value down and up. In edit mode the value box takes typed digits.
+	/** Draws a spinner, a value box between buttons that step its value down and up. See `GuiValueBox` for drawing the value box
+		alone.
+
+		In edit mode, the value box takes typed digits.
+
+		Out of edit mode, the value is clamped to the range.
 
 		@param bounds  The spinner, its buttons included.
 		@param text  Its label, beside it, or null.
-		@param value  The value, in `value[0]`; out of edit mode it is held to the range.
+		@param value  The value, in `value[0]`.
 		@param minValue  The least.
 		@param maxValue  The most.
 		@param editMode  Whether its value box is being edited.
@@ -1381,8 +1458,13 @@ class Raygui {
 	public static inline function GuiSpinner(bounds:Rectangle, text:String, value:Array<Int>, minValue:Int, maxValue:Int, editMode:Bool):Int
 		return RGuiControls.GuiSpinner(bounds, text, value, minValue, maxValue, editMode);
 
-	/** Draws a value box: a whole number, centered; in edit mode it takes typed digits and Backspace, and Enter or a click outside ends
-		editing, holding the value to the range. The program turns edit mode on and off with the result.
+	/** Draws a value box, a whole number centered. See `GuiValueBoxFloat` for editing a number with a fraction.
+
+		The program turns edit mode on and off with the result.
+
+		In edit mode, the box takes typed digits and Backspace.
+
+		Enter or a click outside ends editing and clamps the value to the range.
 
 		@param bounds  The box.
 		@param text  Its label, beside it, or null.
@@ -1394,8 +1476,12 @@ class Raygui {
 	public static inline function GuiValueBox(bounds:Rectangle, text:String, value:Array<Int>, minValue:Int, maxValue:Int, editMode:Bool):Int
 		return RGuiControls.GuiValueBox(bounds, text, value, minValue, maxValue, editMode);
 
-	/** Draws a value box for a number with a fraction: its text, kept by the program, is shown and edited (digits, '.', and a sign
-		first), and the value read from it.
+	/** Draws a value box for a number with a fraction, showing and editing the number's text and reading the value from it. See
+		`GuiValueBox` for editing a whole number.
+
+		The program keeps the text.
+
+		In edit mode, the box takes digits, '.', and a sign first.
 
 		@param bounds  The box.
 		@param text  Its label, beside it, or null.
@@ -1406,43 +1492,49 @@ class Raygui {
 	public static inline function GuiValueBoxFloat(bounds:Rectangle, text:String, textValue:Array<String>, value:Array<Float>, editMode:Bool):Int
 		return RGuiControls.GuiValueBoxFloat(bounds, text, textValue, value, editMode);
 
-	/** Draws a slider: a handle along a bar, dragged with the left button (the drag goes on outside the bar until it is released).
+	/** Draws a slider, a handle along a bar dragged with the left button, and returns 1 when the value changes. See `GuiSliderBar`
+		for drawing a bar filled to the value.
+
+		The drag goes on outside the bar until the left button is released.
 
 		@param bounds  The slider.
 		@param textLeft  The text left of it, or null.
 		@param textRight  The text right of it, or null.
-		@param value  The value, in `value[0]`, held to the range.
+		@param value  The value, in `value[0]`, clamped to the range.
 		@param minValue  The value at the left end.
 		@param maxValue  The value at the right end.
 		@return  1 when the value changed, else 0. */
 	public static inline function GuiSlider(bounds:Rectangle, textLeft:String, textRight:String, value:Array<Float>, minValue:Float, maxValue:Float):Int
 		return RGuiControls.GuiSlider(bounds, textLeft, textRight, value, minValue, maxValue);
 
-	/** Draws a slider bar: a bar filled from the left to the value, dragged with the left button.
+	/** Draws a slider bar, filled from the left to the value and dragged with the left button, and returns 1 when the value changes.
+		See `GuiSlider` for drawing a handle along a bar.
 
 		@param bounds  The bar.
 		@param textLeft  The text left of it, or null.
 		@param textRight  The text right of it, or null.
-		@param value  The value, in `value[0]`, held to the range.
+		@param value  The value, in `value[0]`, clamped to the range.
 		@param minValue  The value at the left end.
 		@param maxValue  The value at the right end.
 		@return  1 when the value changed, else 0. */
 	public static inline function GuiSliderBar(bounds:Rectangle, textLeft:String, textRight:String, value:Array<Float>, minValue:Float, maxValue:Float):Int
 		return RGuiControls.GuiSliderBar(bounds, textLeft, textRight, value, minValue, maxValue);
 
-	/** Draws a progress bar, filled from the left to the value; its border is colored as far as the value reaches.
+	/** Draws a progress bar, filled from the left to the value.
+
+		Colors the border as far as the value reaches.
 
 		@param bounds  The bar.
 		@param textLeft  The text left of it, or null.
 		@param textRight  The text right of it, or null.
-		@param value  The value, in `value[0]`, or null; held to the most.
+		@param value  The value, in `value[0]`, or null; clamped to the most.
 		@param minValue  The least.
 		@param maxValue  The most.
 		@return  0. */
 	public static inline function GuiProgressBar(bounds:Rectangle, textLeft:String, textRight:String, value:Array<Float>, minValue:Float, maxValue:Float):Int
 		return RGuiControls.GuiProgressBar(bounds, textLeft, textRight, value, minValue, maxValue);
 
-	/** Draws a status bar: a bordered bar with text, as a window's title.
+	/** Draws a status bar, a bordered bar with text, as a window's title.
 
 		@param bounds  The bar.
 		@param text  The text, or null.
@@ -1450,7 +1542,7 @@ class Raygui {
 	public static inline function GuiStatusBar(bounds:Rectangle, text:String):Int
 		return RGuiControls.GuiStatusBar(bounds, text);
 
-	/** Draws a placeholder: a filled rectangle with centered text.
+	/** Draws a placeholder, a filled rectangle with centered text.
 
 		@param bounds  The rectangle.
 		@param text  The text, or null.
@@ -1458,7 +1550,7 @@ class Raygui {
 	public static inline function GuiDummyRec(bounds:Rectangle, text:String):Int
 		return RGuiControls.GuiDummyRec(bounds, text);
 
-	/** Draws a grid: lines every spacing divided by subdivs, every subdivs-th line stronger.
+	/** Draws a grid, a line every spacing divided by subdivs, every subdivs-th line stronger.
 
 		@param bounds  The grid.
 		@param text  Not drawn.
@@ -1470,30 +1562,39 @@ class Raygui {
 	public static inline function GuiGrid(bounds:Rectangle, text:String, spacing:Float, subdivs:Int, mouseCell:Vector2):Int
 		return RGuiControls.GuiGrid(bounds, text, spacing, subdivs, mouseCell);
 
-	/** Draws a list view of the text's items ("One;Two;Three"), scrolled by a bar and the mouse wheel when they don't fit.
+	/** Draws a list view of the text's items ("One;Two;Three"), scrolled by a bar and the mouse wheel when they don't fit. See
+		`GuiListViewEx` for listing an array of items and reading the one under the mouse.
+
+		A click on an item chooses it, and a second click unchooses it.
 
 		@param bounds  The list.
 		@param text  The items, split at ';'.
 		@param scrollIndex  The first item shown, in `scrollIndex[0]`, or null.
-		@param active  The item chosen, in `active[0]`, -1 for none, or null; a click chooses one, and again unchooses it.
+		@param active  The item chosen, in `active[0]`, -1 for none, or null.
 		@return  0. */
 	public static inline function GuiListView(bounds:Rectangle, text:String, scrollIndex:Array<Int>, active:Array<Int>):Int
 		return RGuiControls.GuiListView(bounds, text, scrollIndex, active);
 
-	/** Draws a list view of items, scrolled by a bar and the mouse wheel when they don't fit, the item under the mouse focused.
+	/** Draws a list view of an array of items, scrolled by a bar and the mouse wheel when they don't fit. See `GuiListView` for
+		listing the items of a string split at ';'.
+
+		Focuses the item under the mouse.
+
+		A click on an item chooses it, and a second click unchooses it.
 
 		@param bounds  The list.
 		@param text  The items.
 		@param count  How many items.
 		@param scrollIndex  The first item shown, in `scrollIndex[0]`, or null.
-		@param active  The item chosen, in `active[0]`, -1 for none, or null; a click chooses one, and again unchooses it.
+		@param active  The item chosen, in `active[0]`, -1 for none, or null.
 		@param focus  Receives the item under the mouse, in `focus[0]`, -1 for none, or null.
 		@return  0. */
 	public static inline function GuiListViewEx(bounds:Rectangle, text:Array<String>, count:Int, scrollIndex:Array<Int>, active:Array<Int>,
 			focus:Array<Int>):Int
 		return RGuiControls.GuiListViewEx(bounds, text, count, scrollIndex, active, focus);
 
-	/** Draws a message box: a window with a centered message and a row of buttons.
+	/** Draws a message box, a window with a centered message and a row of buttons, and returns the button clicked. See
+		`GuiTextInputBox` for adding a text box.
 
 		@param bounds  The window.
 		@param title  Its title, or null.
@@ -1503,8 +1604,14 @@ class Raygui {
 	public static inline function GuiMessageBox(bounds:Rectangle, title:String, message:String, buttons:String):Int
 		return RGuiControls.GuiMessageBox(bounds, title, message, buttons);
 
-	/** Draws a text input box: a window with a message, a text box and a row of buttons; a click on the text box edits it, and with
-		`secretViewActive` a toggle beside it shows the text or hides it behind stars. One may be open at a time.
+	/** Draws a text input box, a window with a message, a text box and a row of buttons, and returns the button clicked. See
+		`GuiMessageBox` for drawing the message and buttons alone.
+
+		A click on the text box starts editing the text.
+
+		With `secretViewActive`, a toggle beside the text box shows the text or hides it behind stars.
+
+		One text input box may be open at a time.
 
 		@param bounds  The window.
 		@param title  Its title, or null.
@@ -1518,8 +1625,10 @@ class Raygui {
 			secretViewActive:Array<Bool>):Int
 		return RGuiControls.GuiTextInputBox(bounds, title, message, buttons, text, textMaxSize, secretViewActive);
 
-	/** Draws a color picker: a saturation and value panel and a hue bar beside it, both dragged with the left button. The color goes
-		through HSV each call, so its hue may shift where red, green and blue are close.
+	/** Draws a color picker, a saturation and value panel with a hue bar beside it, both dragged with the left button. See
+		`GuiColorPickerHSV` for keeping the hue steady.
+
+		Converts the color through HSV each call, so its hue may shift where red, green and blue are close.
 
 		@param bounds  The panel; the hue bar is beside it.
 		@param text  Not drawn.
@@ -1528,7 +1637,8 @@ class Raygui {
 	public static inline function GuiColorPicker(bounds:Rectangle, text:String, color:Color):Int
 		return RGuiControls.GuiColorPicker(bounds, text, color);
 
-	/** Draws a color panel: saturation across and value down at the color's hue, dragged with the left button.
+	/** Draws a color panel, saturation across and value down at the color's hue, dragged with the left button. See `GuiColorPanelHSV`
+		for editing an HSV color.
 
 		@param bounds  The panel.
 		@param text  Not drawn.
@@ -1537,7 +1647,7 @@ class Raygui {
 	public static inline function GuiColorPanel(bounds:Rectangle, text:String, color:Color):Int
 		return RGuiControls.GuiColorPanel(bounds, text, color);
 
-	/** Draws an alpha bar: clear to opaque across, over a checked background, its selector dragged with the left button.
+	/** Draws an alpha bar, clear to opaque across over a checked background, its selector dragged with the left button.
 
 		@param bounds  The bar.
 		@param text  Not drawn.
@@ -1546,7 +1656,7 @@ class Raygui {
 	public static inline function GuiColorBarAlpha(bounds:Rectangle, text:String, alpha:Array<Float>):Int
 		return RGuiControls.GuiColorBarAlpha(bounds, text, alpha);
 
-	/** Draws a hue bar: the hues from red at the top round to red at the bottom, its selector dragged with the left button.
+	/** Draws a hue bar, the hues from red at the top round to red at the bottom, its selector dragged with the left button.
 
 		@param bounds  The bar.
 		@param text  Not drawn.
@@ -1555,7 +1665,10 @@ class Raygui {
 	public static inline function GuiColorBarHue(bounds:Rectangle, text:String, value:Array<Float>):Int
 		return RGuiControls.GuiColorBarHue(bounds, text, value);
 
-	/** Draws a color picker that keeps its color as HSV, so its hue never shifts: a saturation and value panel and a hue bar beside it.
+	/** Draws a color picker for an HSV color, a saturation and value panel with a hue bar beside it. See `GuiColorPicker` for editing
+		a `Color`.
+
+		Keeps the color as HSV, so its hue never shifts.
 
 		@param bounds  The panel; the hue bar is beside it.
 		@param text  Not drawn.
@@ -1564,7 +1677,8 @@ class Raygui {
 	public static inline function GuiColorPickerHSV(bounds:Rectangle, text:String, colorHsv:Vector3):Int
 		return RGuiControls.GuiColorPickerHSV(bounds, text, colorHsv);
 
-	/** Draws a color panel for an HSV color: saturation across and value down at its hue, dragged with the left button.
+	/** Draws a color panel for an HSV color, saturation across and value down at its hue, dragged with the left button. See
+		`GuiColorPanel` for editing a `Color`.
 
 		@param bounds  The panel.
 		@param text  Not drawn.
@@ -1576,12 +1690,12 @@ class Raygui {
 
 	// ---- raygui.h's functions helix-raylib won't have: each refuses to compile, saying why and what to use ----
 
-	/** raygui's style file load. A page can't wait for a file, so a call doesn't compile. */
+	/** Stands for raygui's style file load, which doesn't compile. See `GuiLoadStyleAsync` in `helix.raylib.extras.Gui` for loading a style file. */
 	public static macro function GuiLoadStyle(fileName:ExprOf<String>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("GuiLoadStyle: Synchronous loading is not supported. See GuiLoadStyleAsync(fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Gui (import helix.raylib.extras.Gui.*;)",
 			macro {});
 
-	/** raygui's icon file load. A page can't wait for a file, so a call doesn't compile. */
+	/** Stands for raygui's icon file load, which doesn't compile. See `GuiLoadIconsAsync` in `helix.raylib.extras.Gui` for loading an icon file. */
 	public static macro function GuiLoadIcons(fileName:ExprOf<String>, loadIconsName:ExprOf<Bool>):ExprOf<Array<String>>
 		return helix.platform.macros.Build.unsupported("GuiLoadIcons: Synchronous loading is not supported. See GuiLoadIconsAsync(fileName:String, loadIconsName:Bool, loaded:Array<String>->Void, ?failed:String->Void) in helix.raylib.extras.Gui (import helix.raylib.extras.Gui.*;)",
 			macro(null : Array<String>));

@@ -87,7 +87,9 @@ class Raymath {
 	public static inline function Wrap(value:Float, min:Float, max:Float):Float
 		return RMath.Wrap(value, min, max);
 
-	/** Returns whether two values are equal but for rounding: no further apart than `EPSILON`, times the larger when it is over 1.
+	/** Returns whether two values are equal but for rounding.
+
+		Counts them equal when they are no further apart than `EPSILON`, times the larger magnitude when that is over 1.
 
 		@param x  One.
 		@param y  The other.
@@ -177,7 +179,9 @@ class Raymath {
 	public static inline function Vector2DistanceSqr(v1:Vector2, v2:Vector2):Float
 		return RMath.Vector2DistanceSqr(v1, v2);
 
-	/** Returns the angle from one vector to another, from -pi to pi: positive turning from x toward y.
+	/** Returns the angle from one vector to another, from -pi to pi.
+
+		Positive turning from x toward y.
 
 		@param v1  The first.
 		@param v2  The second.
@@ -185,7 +189,9 @@ class Raymath {
 	public static inline function Vector2Angle(v1:Vector2, v2:Vector2):Float
 		return RMath.Vector2Angle(v1, v2);
 
-	/** Returns the angle of the line from one point to another, from the x axis: positive turning from x toward -y.
+	/** Returns the angle of the line from one point to another, measured from the x axis.
+
+		Positive turning from x toward -y.
 
 		@param start  The line's start.
 		@param end  Its end.
@@ -280,7 +286,9 @@ class Raymath {
 	public static inline function Vector2Rotate(v:Vector2, angle:Float):Vector2
 		return RMath.Vector2Rotate(v, angle);
 
-	/** Returns a point moved toward a target by at most a distance; the target when it is that near.
+	/** Returns a point moved toward a target by at most a distance.
+
+		Gives the target itself when the target is within that distance.
 
 		@param v  The point.
 		@param target  The target.
@@ -522,7 +530,9 @@ class Raymath {
 	public static inline function Vector3RotateByAxisAngle(v:Vector3, axis:Vector3, angle:Float):Vector3
 		return RMath.Vector3RotateByAxisAngle(v, axis, angle);
 
-	/** Returns a point moved toward a target by at most a distance; the target when it is that near.
+	/** Returns a point moved toward a target by at most a distance.
+
+		Gives the target itself when the target is within that distance.
 
 		@param v  The point.
 		@param target  The target.
@@ -788,7 +798,9 @@ class Raymath {
 	public static inline function Vector4Lerp(v1:Vector4, v2:Vector4, amount:Float):Vector4
 		return RMath.Vector4Lerp(v1, v2, amount);
 
-	/** Returns a point moved toward a target by at most a distance; the target when it is that near.
+	/** Returns a point moved toward a target by at most a distance.
+
+		Gives the target itself when the target is within that distance.
 
 		@param v  The point.
 		@param target  The target.
@@ -833,8 +845,9 @@ class Raymath {
 	public static inline function MatrixTranspose(mat:Matrix):Matrix
 		return RMath.MatrixTranspose(mat);
 
-	/** Returns a matrix inverted, by raymath's own steps: a singular matrix's inverse divides by a determinant of 0, so it is infinite or
-		NaN, as raylib's is.
+	/** Returns a matrix's inverse.
+
+		Inverting a singular matrix divides by a determinant of 0 and gives infinite or NaN values.
 
 		@param mat  The matrix.
 		@return  Its inverse. */
@@ -909,8 +922,8 @@ class Raymath {
 	public static inline function MatrixRotateZ(angle:Float):Matrix
 		return RMath.MatrixRotateZ(angle);
 
-	/** Returns raymath's xyz rotation, by its own steps: built from the negated angles and laid out as raylib's is, which turns a point
-		about z, then y, then x (the reverse of `MatrixRotateZYX`'s order).
+	/** Returns a rotation by three angles that turns a point about z, then y, then x. See `MatrixRotateZYX` for turning in the reverse
+		order.
 
 		@param angle  The angles, in radians.
 		@return  The matrix. */
@@ -1035,7 +1048,9 @@ class Raymath {
 	public static inline function QuaternionNormalize(q:Quaternion):Quaternion
 		return RMath.QuaternionNormalize(q);
 
-	/** Returns a quaternion's inverse: the rotation back, for one of length 1; the quaternion itself when its length is 0.
+	/** Returns a quaternion's inverse, which for a quaternion of length 1 is the rotation back.
+
+		Gives the quaternion unchanged when its length is 0.
 
 		@param q  The quaternion.
 		@return  Its inverse. */
@@ -1105,8 +1120,11 @@ class Raymath {
 	public static inline function QuaternionCubicHermiteSpline(q1:Quaternion, outTangent1:Quaternion, q2:Quaternion, inTangent2:Quaternion, t:Float):Quaternion
 		return RMath.QuaternionCubicHermiteSpline(q1, outTangent1, q2, inTangent2, t);
 
-	/** Returns the rotation turning one direction to another, as raylib 6.2's: the directions may be of any length, and opposite ones
-		give half a turn about a direction square to the first.
+	/** Returns the rotation turning one direction to another.
+
+		Takes directions of any length.
+
+		Opposite directions give half a turn about a direction square to the first.
 
 		@param from  The direction turned from.
 		@param to  The direction turned to.
@@ -1128,7 +1146,9 @@ class Raymath {
 	public static inline function QuaternionToMatrix(q:Quaternion):Matrix
 		return RMath.QuaternionToMatrix(q);
 
-	/** Returns the rotation about an axis as a quaternion, normalized; the identity for an axis of no length.
+	/** Returns the rotation about an axis as a quaternion, normalized.
+
+		Gives the identity for an axis of length 0.
 
 		@param axis  The axis.
 		@param angle  The angle, in radians.
@@ -1136,7 +1156,9 @@ class Raymath {
 	public static inline function QuaternionFromAxisAngle(axis:Vector3, angle:Float):Quaternion
 		return RMath.QuaternionFromAxisAngle(axis, angle);
 
-	/** Gives a quaternion's rotation as an axis and an angle about it; the axis is x when the angle is 0.
+	/** Finds a quaternion's rotation as an axis and an angle about it.
+
+		Gives x as the axis when the angle is 0.
 
 		@param q  The quaternion, normalized first when its w is over 1 either way.
 		@param outAxis  Its first element is set to the axis, of length 1.
@@ -1177,9 +1199,13 @@ class Raymath {
 	public static inline function QuaternionEquals(p:Quaternion, q:Quaternion):Int
 		return RMath.QuaternionEquals(p, q);
 
-	/** Splits a transform matrix into its translation, rotation and scale, as raylib 6.2's (5.5's took the scale from the rows, wrong for a
-		turned matrix scaled unevenly): the columns, made orthonormal one after another (the shear between them dropped), are the
-		rotation, their lengths the scale, all three negated when the matrix mirrors.
+	/** Splits a transform matrix into its translation, rotation and scale.
+
+		Makes the columns orthonormal one after another. The orthonormal columns are the rotation, and their lengths are the scale.
+
+		Drops any shear between the columns.
+
+		Decomposing a matrix that mirrors negates all three components of the scale.
 
 		@param mat  The matrix.
 		@param translation  Set to its translation.
