@@ -21,7 +21,8 @@ engine and no function.
 ## The warden
 - **Model:** built from the modular character's parts in `assets/characters/`: a head, a body, legs and feet, each a separate model
   on one shared skeleton, animated together by `assets/characters/Animations.glb`. She starts in the Adventurer outfit (the four
-  `Adventurer_*.glb` parts).
+  `Adventurer_*.glb` parts). The clips are named with the armature's prefix (`CharacterArmature|Run`); `Sword.glb` and `Gun.glb`
+  are skinned to the same skeleton, modelled in the right hand of the bind pose.
 - **Moving:** WASD, the arrow keys or a gamepad's left stick, at 5 meters a second whatever the frame rate, no faster on a diagonal. She
   faces where she moves. Walls stop her.
 - **Animations:**
@@ -31,6 +32,7 @@ engine and no function.
   - `HitRecieve` when hit.
   - `Death` at the end.
   - Changes between them blend over 0.2 seconds.
+- **Materials:** the parts' glTF materials drawn as authored, their metallic and roughness values honoured, not every surface alike.
 - **Weapons:** held in her right hand, on the `Wrist.R` bone, following the hand through every animation. She starts with the
   sword (`Sword.glb`).
   - **The sword** strikes on its own every 0.8 seconds, hitting every enemy within 2 meters in front of her (a 120 degree arc) for 10

@@ -47,16 +47,17 @@ class Lights {
 	#if !macro
 	// ---- lights: raylib's examples' rlights and the lit shader built on them (raylib/RLights.hx) ----
 
-	/** Returns helix-raylib's lit shader: raylib's examples' `lighting.vs` and `lighting.fs`, built in, so a program needs no shader
-		files. Its locations are set as raylib's lighting example sets them: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, which the
-		program sets to the camera's position each frame; `GetShaderLocation(shader, "ambient")` finds the ambient color. Lights are
-		added with `CreateLight`. A model posed by `UpdateModelAnimation` under it is skinned on the GPU. Its stages are
-		`helix/raylib/shaders/lit.vs` and `lit.fs`, over `<helix/raylib/shaders/lights.glsl>`, which a program's own shader can include.
+	/** Returns raylib's examples' lighting shader (`lighting.vs` and `lighting.fs`), built in. It shines every material alike, one
+		Phong highlight whatever the material says: `LoadPbrShader` draws a glTF's materials as authored.
+
+		Set up as raylib's lighting example does: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, set to the camera's position each frame;
+		`GetShaderLocation(shader, "ambient")` finds the ambient color; lights come from `CreateLight`. A model posed by
+		`UpdateModelAnimation` under it is skinned on the GPU. A program's own shader lights the same way by including
+		`<helix/raylib/shaders/lights.glsl>`.
 
 		```haxe
 		var shader = LoadLightingShader();
-		var ambientLoc = GetShaderLocation(shader, "ambient");
-		SetShaderValue(shader, ambientLoc, [0.1, 0.1, 0.1, 1.0], SHADER_UNIFORM_VEC4);
+		SetShaderValue(shader, GetShaderLocation(shader, "ambient"), [0.1, 0.1, 0.1, 1.0], SHADER_UNIFORM_VEC4);
 		model.materials[0].shader = shader;
 		var light = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), Vector3Zero(), YELLOW, shader);
 		```
@@ -64,23 +65,22 @@ class Lights {
 	public static inline function LoadLightingShader():Shader
 		return RLights.LoadLightingShader();
 
-	/** Returns helix-raylib's PBR shader: a glTF's materials drawn as authored, metallic-roughness under rlights' lights, built in.
-		raylib's examples' lighting shader has no roughness or metallic input, so every material shines alike under it; this one reads
-		each material's maps and values as `LoadModel` reads a glTF's. Its locations are set as raylib's basic PBR example sets them:
-		`locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, which the program sets to the camera's position each frame, and
-		`locs[SHADER_LOC_MAP_ALBEDO]`, `SHADER_LOC_MAP_METALNESS`, `SHADER_LOC_MAP_ROUGHNESS`, `SHADER_LOC_MAP_NORMAL`,
-		`SHADER_LOC_MAP_OCCLUSION` and `SHADER_LOC_MAP_EMISSION` are its samplers `albedoMap`, `metalnessMap`, `roughnessMap`,
-		`normalMap`, `occlusionMap` and `emissiveMap`, each set to its map's unit, so `DrawMesh` binds the material's map with a texture
-		there; a map without one reads white, the normal map a flat normal. A mesh without tangents whose material has a normal map
-		gets them with its first draw (`GenMeshTangents`), as glTF asks of a file without them. Each draw writes the material's values:
+	/** Returns helix-raylib's PBR shader, built in: a glTF's materials drawn as authored, metallic-roughness under the same lights as
+		`LoadLightingShader`, which shines every material alike.
+
+		Set up as that one: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, set to the camera's position each frame; `GetShaderLocation(shader,
+		"ambient")` finds the ambient color; lights come from `CreateLight`, a light's color what a white surface facing it shows. A model
+		posed by `UpdateModelAnimation` under it is skinned on the GPU. A material marked `unlit` (glTF's `KHR_materials_unlit`) draws its
+		base color and no light.
+
+		What each draw reads from the material: its maps, bound at `locs[SHADER_LOC_MAP_ALBEDO]`, `METALNESS`, `ROUGHNESS`, `NORMAL`,
+		`OCCLUSION` and `EMISSION` (the samplers `albedoMap`, `metalnessMap`, `roughnessMap`, `normalMap`, `occlusionMap` and
+		`emissiveMap`, each set to its map's unit), a missing map reading white and a missing normal map a flat normal; and its values,
 		`maps[MATERIAL_MAP_ALBEDO].color` times the tint as `colDiffuse`, `maps[MATERIAL_MAP_METALNESS].value` as `metallicValue`,
-		`maps[MATERIAL_MAP_ROUGHNESS].value` as `roughnessValue` and `maps[MATERIAL_MAP_EMISSION].color` as `emissiveColor`, the colors
-		taken as linear, as a glTF's factors are, where an image's texels are decoded from sRGB. A material from `LoadMaterialDefault`
-		is a smooth non-metal, both values 0, until set. A material marked `unlit` (glTF's `KHR_materials_unlit`) is drawn through the
-		shader's unlit twin, its base color as authored and no light. Lights are added with `CreateLight` and
-		`GetShaderLocation(shader, "ambient")` finds the ambient color, as for the lit shader, a light's color what a white surface
-		facing it shows. A model posed by `UpdateModelAnimation` under it is skinned on the GPU. Its stages are
-		`helix/raylib/shaders/pbr.vs` and `pbr.fs`, over `<helix/raylib/shaders/pbr.glsl>`, which a program's own shader can include.
+		`maps[MATERIAL_MAP_ROUGHNESS].value` as `roughnessValue` and `maps[MATERIAL_MAP_EMISSION].color` as `emissiveColor`. Colors are
+		taken as linear, as a glTF's factors are, and an image's texels decoded from sRGB. A material from `LoadMaterialDefault` is a
+		smooth non-metal, both values 0, until set. A mesh without tangents under a normal map gets them with its first draw
+		(`GenMeshTangents`). A program's own shader draws the same way by including `<helix/raylib/shaders/pbr.glsl>`.
 
 		```haxe
 		var pbr = LoadPbrShader();
