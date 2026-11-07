@@ -152,6 +152,8 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
   `ShaderSource` field it reads (an `IGraphics` member, a platform interface change for review), `CompileShaderFile` would write a file
   for each (`glow.glsl300es.shader`) and the loads would fetch the running adapter's, so a new adapter's dialect needs no table above
   the platform.
+- **Physics in Wasm:** built by maintainers with Emscripten and shipped prebuilt for the browser. Natively the same C/C++ links through
+  hxcpp.
 - **SDL3 with the platform:** a native build needs only Haxe and hxcpp (goal 6), so the platform haxelib ships the pinned SDL3 per
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.
 - **Gestures:** taps, double taps, drags and flicks (the mouse and fingers alike), and two fingers' pan, pinch and twist, over `Touch`

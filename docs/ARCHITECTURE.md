@@ -85,8 +85,6 @@ Each interface that answers later delivers its answers in its `poll`, on the mai
 `poll` each frame on each it constructed (the platform's README, "Each frame"); each such interface is an `IPollable`. Native adapters hand their threads' results back
 through `adapters/shared/Mailbox`, drained by that `poll`.
 
-## Requirements
+## Build Requirements
 
-What a program and a contributor need on each system is in [CONTRIBUTING.md](../CONTRIBUTING.md#prerequisites).
-
-Wasm (physics, later) would be built by maintainers with Emscripten and shipped prebuilt; natively the same C/C++ links through hxcpp.
+Build requirements are outlined in [CONTRIBUTING.md](../CONTRIBUTING.md#prerequisites).
