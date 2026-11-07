@@ -3,7 +3,7 @@
 	"url": "https://github.com/whirlinggizmo/helix",
 	"license": "BSD",
 	"tags": ["game", "raylib", "2d", "js", "cpp"],
-	"description": "raylib's API over helix-platform and helix-services: a program written in raylib runs in a page and natively.",
+	"description": "raylib's API over helix-platform and helix-services.",
 	"version": "0.1.0",
 	"classPath": "src/",
 	"releasenote": "First release.",

@@ -1,6 +1,6 @@
 # helix-raylib
 
-[raylib](https://www.raylib.com) 5.5's API in Haxe. A raylib program runs in a page and natively.
+[raylib](https://www.raylib.com) 5.5's API in Haxe.
 
 | Type | What |
 |---|---|
