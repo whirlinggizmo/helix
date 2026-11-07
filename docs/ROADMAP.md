@@ -28,21 +28,21 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
   nothing under `LoadPbrShader`, which has no `mat4` attribute, so an instanced twin is wanted too. Then lit sprites (below), shadows,
   and lights past rlights' four a draw, as the jam's games ask.
 - **The jam, before Gyre's shape is decided:** agents (Sonnet, docs allowed) build the same small 3D top-down survivors-like on
-  helix-raylib and on HeliX, two or three each, with gear worn from the modular characters' parts (CC0, Quaternius). Measured: tokens,
+  helix-raylib and on helix-legacy, two or three each, with gear worn from the modular characters' parts (CC0, Quaternius). Measured: tokens,
   time, build failures, bugs, lines written (engine-substitute against game logic), frame time, size, startup, and a change made
   later by a fresh agent. It answers whether a framework's structure beats a familiar API agents were trained on. Run on Sonnet
   2026-11-06, three a side, a tie but for a quarter less reading on helix-raylib, with the play pass, timing at 200 and the change task
-  left. It compared two of our own APIs: the harder control is HeliX's docs/TRIAL.md, the same game as a clean room on plain
+  left. It compared two of our own APIs: the harder control is helix-legacy's docs/TRIAL.md, the same game as a clean room on plain
   TypeScript, on Three.js, Pixi, OpenFL and Godot, to which helix-raylib is added, with this spec in place of the draft's game.
 - **A retained-mode engine on helix-raylib (DECISIONS 53), then Gyre's shape.** The scene (a stage, 2D and 3D nodes, transforms,
-  hierarchy, the walk that culls, gathers lights and sorts, picking), ported from HeliX's scene code rather than designed anew, issues
+  hierarchy, the walk that culls, gathers lights and sorts, picking), ported from helix-legacy's scene code rather than designed anew, issues
   raylib's calls each frame as three.js does under its graph: the speed and size measured for `DrawTexturePro` and `DrawMesh` are
   its, raylib's holders are its GPU handles, and what raylib lacks comes as the extras above. The sketch is done
   (docs/trials/2026-11-06-retained-sketch): a thin graph issuing raylib's calls, nine gaps and the extras for them, unbuilt. Timed
   against the robots contender, the tree, cull and sort cost 6 to 8% at 400 robots with helix-math's matrices, 30 to 43% with raymath's
-  allocating ones, so the graph keeps helix-math's. Gyre is HeliX's game-level API (app, loader, UI, transitions, animator, autopilot) on that
-  scene and the services, so its users keep the API they know; the test is one of HeliX's games ported, its effort and its size
-  beside its HeliX build. Whether Gyre keeps HeliX's API or folds its useful parts (the app's lifecycle, a retained UI, tweens,
+  allocating ones, so the graph keeps helix-math's. Gyre is helix-legacy's game-level API (app, loader, UI, transitions, animator, autopilot) on that
+  scene and the services, so its users keep the API they know; the test is one of helix-legacy's games ported, its effort and its size
+  beside its helix-legacy build. Whether Gyre keeps helix-legacy's API or folds its useful parts (the app's lifecycle, a retained UI, tweens,
   transitions, the autopilot) into a three.js-style engine on the same scene is the jam's question (DECISIONS 40). Whatever of the
   scene proves engine-neutral moves down into a library of its own once a second engine wants it, as `Images` did.
 - **helix-raylib (DECISIONS 16, 19, 20, 21, 38):** raylib's API over the services, merged to `main`. Next:
@@ -125,7 +125,7 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
 - **Assets, resources and objects, as the earlier C frameworks layered them (AGENTS.md's prior art: their resource/object model),
   after the lit extras, as plumbing a game never calls.** Each engine keeps its own names: helix-raylib's `texture.id` becomes a
   stable handle its table maps to the current resource; helix-render's `Texture2D`, `GpuModel3D` and `GpuFont2D` are the stable
-  identities, their platform handles internal; the HeliX engine's and a three.js layer's objects are their own nodes and meshes.
+  identities, their platform handles internal; the helix-legacy engine's and a three.js layer's objects are their own nodes and meshes.
   Underneath, an internal registry in the services for layer authors: one resource per path (or generator's parameters), reference
   counted, replaced in place while the program runs (the changed file loaded beside the old, swapped at a frame boundary, a failure
   keeping the old, as `Shaders.watch` replaces a shader), a placeholder while it first loads. Linked only by a program that loads or
@@ -155,7 +155,7 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
 - **SDL3 with the platform:** a native build needs only Haxe and hxcpp (goal 6), so the platform haxelib ships the pinned SDL3 per
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.
 - **Gestures:** taps, double taps, drags and flicks (the mouse and fingers alike), and two fingers' pan, pinch and twist, over `Touch`
-  and `Mouse`, as HeliX's `PointerGestures` and touch gesture had them.
+  and `Mouse`, as helix-legacy's `PointerGestures` and touch gesture had them.
 - **On-screen controls, not as a service, where to be decided:** touch regions and floating touch sticks (one, two halves, regions;
   dead zone, takeover, blocked by buttons) read by `Actions` through `IActionDevice`, placed in the game's units and drawn
   (DECISIONS 13).
@@ -165,7 +165,7 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
     that never hovers from a finger (F63); the stage's default font (F66); 3D picking through a function registered when a 3D layer
     is added, not a hardwired 3D renderer (F74); reparenting that keeps the world transform (F44).
   - helix-render's size ladder: a 2D-only rung (`Batch2D` and text, no `Batch3D` or lighting) and a rung with UI and a pointer (F74).
-  - HeliX's engine: an event queue (F3); splash, loading screen and transitions run as halves, held until a condition (F7-F11, F41,
+  - helix-legacy's engine: an event queue (F3); splash, loading screen and transitions run as halves, held until a condition (F7-F11, F41,
     F42); `Collect2D`/`Collect3D` taking a region or factory, a parent and `cancel` (F37, F70, F71); a loader over the services'
     loads, fonts too (F39, F75); a camera that follows in 3D (F44).
   - A UI library: input from the events, not a kept `Input` (F12); keys held at a reset ignored alone (F13, F14); aligned slider

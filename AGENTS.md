@@ -11,10 +11,11 @@ next is in [docs/ROADMAP.md](docs/ROADMAP.md).
   from "the engine does it this way", ask instead what a program using them directly would construct. The layers above (the runner, an
   engine wearing a known API) may own the loop, and build a feature when its API is first touched where the API they match requires it
   (DECISIONS 15).
-- **HeliX is prior art.** [HeliX](https://github.com/whirlinggizmo/helix-legacy), the framework this repository took its name from (`../helix-legacy`, and "HeliX" in these docs always means it), and the earlier C frameworks (`../wgrender-c`, `../libwgf`),
-  are read for how they did a thing and the platform quirks they found. Useful code may be cribbed, refactored to this library's
-  conventions and needs, or this library's own written instead; HeliX's design (its runner, statics, profiles) is never a reason for
-  this library's shape. Don't name libwgf in code or docs.
+- **helix-legacy is prior art.** HeliX is this repository. [helix-legacy](https://github.com/whirlinggizmo/helix-legacy) (`../helix-legacy`),
+  the framework that held the name before, and the earlier C frameworks (`../wgrender-c`, `../libwgf`), are read for how they did a
+  thing and the platform quirks they found. Useful code may be cribbed, refactored to this library's conventions and needs, or this
+  library's own written instead. helix-legacy's design (its runner, statics, profiles) is never a reason for this library's shape.
+  DECISIONS and docs/trials keep the names they were written with, where "HeliX" means helix-legacy. Don't name libwgf in code or docs.
 - **The spec is the authority.** docs/PLATFORM.md for the platform. A library above starts as its API: its types and members with
   their doc comments and no implementation, agreed with the user and tried by fresh agents before any of it is written; those doc
   comments are its spec. A library changes when it doesn't do what its spec says, or when the spec changes first.

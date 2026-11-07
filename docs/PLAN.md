@@ -17,7 +17,7 @@ libs/                the libraries
   ...                later scene and UI
 engines/             the engines, each an API a program is written in
   raylib/            helix-raylib: raylib's API over the services (DECISIONS 16)
-  ...                later Gyre, what HeliX's engine becomes, and a three.js-style one
+  ...                later Gyre, what helix-legacy's engine becomes, and a three.js-style one
 ```
 
 A library imports only the libraries below it that it's built on, and no library reaches an engine (`tools/check_layers.py`); an

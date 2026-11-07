@@ -4,7 +4,7 @@ Visual effects, shaders and particle systems found in the earlier projects, list
 is committed to. Before any entry is built, it is judged by what other engines provide (Godot, Unity, three.js, raylib's examples) and
 whether a program using the library directly would want it.
 
-"Where it was" paths are relative to the `whirlinggizmo/` projects directory. `helix/` is HeliX, `wgrender-c/` the earlier C framework,
+"Where it was" paths are relative to the `whirlinggizmo/` projects directory. `helix/` is helix-legacy, `wgrender-c/` the earlier C framework,
 `gamejams/` the two games. "In helix already?" paths are relative to this repository. Where a source did not say, the cell says
 "unclear".
 
@@ -18,9 +18,9 @@ Fit labels:
 
 ## Particles and emitters
 
-Both HeliX and the C framework drove particles the same way. The CPU writes one birth record per particle when it is born (position,
+Both helix-legacy and the C framework drove particles the same way. The CPU writes one birth record per particle when it is born (position,
 birth time, velocity, life, size scale, spin, a random number). The GPU works out where the particle is from its age, one instanced quad
-a particle, one draw an emitter. `wgrender-c/` is where it started and HeliX's `Emitter` is its port.
+a particle, one draw an emitter. `wgrender-c/` is where it started and helix-legacy's `Emitter` is its port.
 
 | Effect | Where it was | What it does | Fit in helix | In helix already? |
 |---|---|---|---|---|
@@ -45,16 +45,16 @@ a particle, one draw an emitter. `wgrender-c/` is where it started and HeliX's `
 
 ## Material shaders
 
-HeliX's were surface shaders over its stage's shading, packed with `ShaderPacker`. The C framework's were custom materials against
+helix-legacy's were surface shaders over its stage's shading, packed with `ShaderPacker`. The C framework's were custom materials against
 `wgr.glsl`. In helix a program's shader is a fragment stage with `Material3D.shaderValues`, using `lighting.glsl` and `material.glsl`.
 
 | Effect | Where it was | What it does | Fit in helix | In helix already? |
 |---|---|---|---|---|
-| Toon | `helix/src/helix/shader/toon.glsl`, `wgrender-c/examples/shaders/toon.glsl` | Each light's lambert term quantized to N bands, the unlit side held at a shadow color. HeliX's bands its shadow term too, so shadows band with the light. | raylib, shader or example, or render, include (a banding helper in `lighting.glsl`) | no |
-| Rim light | `helix/src/helix/shader/Rim.hx`, `wgrender-c/examples/shaders/toon.glsl` | A color added by `pow(1 - dot(n, v), power)`, brightest at grazing angles. In HeliX it is a field on every material, off until set. | render, include | no |
+| Toon | `helix/src/helix/shader/toon.glsl`, `wgrender-c/examples/shaders/toon.glsl` | Each light's lambert term quantized to N bands, the unlit side held at a shadow color. helix-legacy's bands its shadow term too, so shadows band with the light. | raylib, shader or example, or render, include (a banding helper in `lighting.glsl`) | no |
+| Rim light | `helix/src/helix/shader/Rim.hx`, `wgrender-c/examples/shaders/toon.glsl` | A color added by `pow(1 - dot(n, v), power)`, brightest at grazing angles. In helix-legacy it is a field on every material, off until set. | render, include | no |
 | Hit flash on a material | `helix/src/helix/shader/HitFlash.hx` | A color mixed over the lit result after exposure, all at a trigger and fading over some seconds, so it works on the stage's own shading and on every library shader. | render, include (a flash value in the material block), or an example | no. Needs a program's shader: `Material3D.shaderValues`. |
 | Pulsing white flash | `wgrender-c/examples/shaders/sprite_fx.glsl` | White mixed over a sprite by a sine pulse. | merged with Hit flash | no |
-| Dissolve | `helix/src/helix/shader/dissolve.glsl`, `wgrender-c/examples/shaders/dissolve.glsl` | Discards where noise is below a rising threshold with a glowing edge. HeliX's reads the noise triplanar in model space (so it needs no UVs), dithers the edge's opacity with a 4 x 4 Bayer pattern so the model stays opaque and unsorted, and its discard reaches the shadow caster. | raylib, shader or example. A discard that reaches the shadow pass wants a hook in helix-render's shadow caster: unclear how. | no |
+| Dissolve | `helix/src/helix/shader/dissolve.glsl`, `wgrender-c/examples/shaders/dissolve.glsl` | Discards where noise is below a rising threshold with a glowing edge. helix-legacy's reads the noise triplanar in model space (so it needs no UVs), dithers the edge's opacity with a 4 x 4 Bayer pattern so the model stays opaque and unsorted, and its discard reaches the shadow caster. | raylib, shader or example. A discard that reaches the shadow pass wants a hook in helix-render's shadow caster: unclear how. | no |
 | Water | `helix/src/helix/shader/water.glsl`, `wgrender-c/examples/shaders/wave.glsl` | A vertex hook moves the surface along its normals in travelling waves and tilts the normals by the slope. The fragment shades deep to shallow by view angle, reflects the environment at grazing angles (Fresnel) and adds glints. | example only (needs a vertex stage: `compileShaderStages`) | no |
 | Unlit with emission | `helix/src/helix/shader/unlit.glsl` | Base color times a color plus emission, no light, still exposed and tone mapped. | render, built in | yes: `Shading3D.Unlit` in `libs/render/src/helix/render/Shading3D.hx` |
 | Image-based lighting | `wgrender-c/include/wgr_environment.h`, `helix/src/helix/render3d/Environment3D.hx`, `helix/examples/environment/App.hx` | An equirectangular .hdr prepared into diffuse irradiance and blurred reflections per roughness, on a worker thread, with a sharp or blurred background and rotation. | render, built in | yes: `libs/render/src/helix/render/Environment3D.hx`, `EnvironmentBake3D.hx` |
@@ -62,7 +62,7 @@ HeliX's were surface shaders over its stage's shading, packed with `ShaderPacker
 
 ## Model passes
 
-HeliX's `ModelPass3D` draws a model again after the stage's opaque models, with its own flat shader, static or skinned, instanced like
+helix-legacy's `ModelPass3D` draws a model again after the stage's opaque models, with its own flat shader, static or skinned, instanced like
 the model. The C framework had no model passes.
 
 | Effect | Where it was | What it does | Fit in helix | In helix already? |
@@ -73,7 +73,7 @@ the model. The C framework had no model passes.
 
 ## Sprite effects
 
-HeliX's were sprite shaders, drawn through `Node2D.effect`, `Batch2D.effect` or a 3D sprite. They read `helix_region_texel_at` so an atlas
+helix-legacy's were sprite shaders, drawn through `Node2D.effect`, `Batch2D.effect` or a 3D sprite. They read `helix_region_texel_at` so an atlas
 neighbor never leaks in.
 
 | Effect | Where it was | What it does | Fit in helix | In helix already? |
@@ -89,7 +89,7 @@ neighbor never leaks in.
 
 ## Screen effects
 
-HeliX's ran in a `PostProcess` chain on sRGB or HDR frames. In helix `PostProcess` runs linear effects, then the resolve (exposure and
+helix-legacy's ran in a `PostProcess` chain on sRGB or HDR frames. In helix `PostProcess` runs linear effects, then the resolve (exposure and
 tone mapping), then display effects.
 
 | Effect | Where it was | What it does | Fit in helix | In helix already? |
@@ -119,7 +119,7 @@ tone mapping), then display effects.
 | Ground-facing sprite | `helix/src/helix/render3d/SpriteFacing3D.hx`, `sprite3d.glsl` | A sprite quad facing the camera, upright (the camera's right flattened, world up), or lying on the ground, or on its own axes. | render, built in | partly: billboards are in `Batch3D` (`libs/render/src/helix/render/Batch3D.hx`). Ground facing: unclear. |
 | Environment background | `helix/src/helix/graphics/shaders/background3d.glsl`, `wgrender-c/include/wgr_scene.h` (`set_background`) | One triangle at the far plane showing the cube map in each pixel's view direction, a mip for blur, turned and scaled as the lighting is, then tone mapped. | render, built in | yes: `libs/render/src/helix/render/Environment3D.hx`, `CubeTexture3D.hx` |
 | Shadow maps | `wgrender-c/src/wgr_shadow.c`, `wgrender-c/examples/shadows.c`, `helix/examples/shadows/App.hx` | A depth map per casting light (directional, spot), compared through a comparison sampler, with a distance, a bias in texels, a strength and a tint of what the shadow leaves. | render, built in | partly: `libs/render/src/helix/render/LightShadow3D.hx` declares the API; stage 3 builds it (a light casting shadows throws until then) |
-| Fog | none in the sources read | Not found in HeliX or the C framework. | render, built in | yes: `libs/render/src/helix/render/Fog3D.hx` |
+| Fog | none in the sources read | Not found in helix-legacy or the C framework. | render, built in | yes: `libs/render/src/helix/render/Fog3D.hx` |
 | Instanced batching | `helix/examples/instancing/App.hx`, `wgrender-c/examples/instancing.c` | Models that agree on mesh and material but differ in transform and tint are one draw, also into the shadow map. | render, built in | yes, per `libs/render/README.md` (instancing) |
 | Trails (ribbon) | none in the sources read | No ribbon or line trail was found. Trails were particles left behind a moving emitter (see Particles). | n/a | no |
 

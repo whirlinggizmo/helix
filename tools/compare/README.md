@@ -1,6 +1,6 @@
 # The comparison
 
-`compare.py` measures helix-raylib against raylib C, Godot, three.js and HeliX on the same two programs and writes the numbers into
+`compare.py` measures helix-raylib against raylib C, Godot, three.js and helix-legacy on the same two programs and writes the numbers into
 `docs/speed.json` and `docs/speed.md`. `compare.py --help` has the command line.
 
 ## The programs
@@ -38,5 +38,5 @@ binary stripped.
 
 Found, never fetched, and a contender whose toolchain is missing is skipped with one line: Emscripten (`EMSDK`, `HELIX_EMSDK` or
 `~/toolchains/emsdk`), Godot's binary (`HELIX_GODOT`, `godot` on PATH, or `~/toolchains/godot/Godot_v<version>-stable_linux.x86_64`),
-HeliX's checkout (`HELIX1`, or `../helix-legacy`), npm for three.js and esbuild (installed into `build/compare/three/npm` at the versions
+helix-legacy's checkout (`HELIX1`, or `../helix-legacy`), npm for three.js and esbuild (installed into `build/compare/three/npm` at the versions
 `dependencies.json`'s `compare` entry pins), `brotli` for the brotli sizes.

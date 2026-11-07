@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""helix-raylib's speed and size against raylib C, Godot, three.js, Lime and HeliX on the same two programs, written for each in
+"""helix-raylib's speed and size against raylib C, Godot, three.js, Lime and helix-legacy on the same two programs, written for each in
 tools/compare/contenders/<name>/: raylib's textures_bunnymark (bunnies of one texture bouncing in an 800 x 450 window) and its
 models_animation many at once (the robots: a grid of robot.glb, each posed at its own frame, in 1280 x 720). The numbers are docs/speed.md's.
 
@@ -10,7 +10,7 @@ The programs are bunnymark and robots, both when none is named. The contenders a
 none is named; each is built into build/compare/<contender>/ under build/.lock, with the assets taken from raylib's own release (the bunny's
 texture, the robot). A contender whose toolchain this machine lacks is skipped with one line saying so: raylib-c's page needs Emscripten
 (EMSDK, or HELIX_EMSDK, or ~/toolchains/emsdk), godot needs its binary (HELIX_GODOT, or godot on PATH, or ~/toolchains/godot/Godot_v<version>-stable_linux.x86_64),
-three needs npm, lime needs Lime installed in the user's haxelib at the pinned version (its own BunnyMark demo's renderer), helix1 needs HeliX's checkout (HELIX1, or ../helix-legacy beside this one). The versions are dependencies.json's compare entry.
+three needs npm, lime needs Lime installed in the user's haxelib at the pinned version (its own BunnyMark demo's renderer), helix1 needs helix-legacy's checkout (HELIX1, or ../helix-legacy beside this one). The versions are dependencies.json's compare entry.
 
 --page runs the pages (in headless Chromium with its frame rate cap lifted, on ANGLE over Vulkan, or over GL with --backend gl) and --native
 the native programs (on a private display with software GL, whose times aren't representative, or with --desktop in windows on $DISPLAY,
@@ -62,7 +62,7 @@ NATIVE_SECONDS = {'count': 180, 'ramp': 900}
 # Files a page fetches that aren't its code: the assets each program loads.
 ASSET_SUFFIXES = ('.png', '.glb', '.data', '.pck', '.ico')
 RAYLIB = '5.5'
-# One file fetched by HeliX's page that is its code, under a name the suffix rule would count out.
+# One file fetched by helix-legacy's page that is its code, under a name the suffix rule would count out.
 GODOT_PRESETS = {'linux': 'Linux', 'web': 'Web'}
 
 
@@ -113,7 +113,7 @@ def godot_binary():
 
 
 def helix1_checkout():
-    """HeliX's checkout, or None."""
+    """helix-legacy's checkout, or None."""
     named = Path(os.environ.get('HELIX1') or ROOT.parent / 'helix-legacy')
     return named if (named / 'tools/example.py').is_file() else None
 
@@ -323,11 +323,11 @@ def build_lime(programs):
 
 
 def build_helix1():
-    """HeliX's bunnymark page, built as one of its examples by its tools/example.py (the program copied in as examples/bunnymark while it
+    """helix-legacy's bunnymark page, built as one of its examples by its tools/example.py (the program copied in as examples/bunnymark while it
     builds, and taken out again), its site and assets into build/compare/helix1."""
     checkout = helix1_checkout()
     if checkout is None:
-        say('helix1 skipped: no HeliX checkout (HELIX1, or ../helix-legacy)')
+        say('helix1 skipped: no helix-legacy checkout (HELIX1, or ../helix-legacy)')
         return False
     example = checkout / 'examples/bunnymark'
     placed = not example.exists()
@@ -556,7 +556,7 @@ def versions_of(contenders):
     versions = pins()
     commit = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
     return {'helix-raylib': f'helix {commit}', 'raylib-c': f'raylib {RAYLIB}', 'godot': f'Godot {versions["godot"]}', 'three': f'three.js {versions["three"]}', 'lime': f'Lime {versions["lime"]}',
-            'helix1': 'HeliX'}
+            'helix1': 'helix-legacy'}
 
 
 def machine():
@@ -632,7 +632,7 @@ API = {('helix-raylib', 'page'): 'WebGL2', ('raylib-c', 'page'): 'wasm, WebGL1',
 
 def label(row):
     name = {'helix-raylib': '**helix-raylib**', 'raylib-c': 'raylib C ' + row['version'].split()[-1], 'godot': 'Godot ' + row['version'].split()[-1],
-            'three': 'three.js ' + row['version'].split()[-1], 'lime': 'Lime ' + row['version'].split()[-1], 'helix1': 'HeliX'}[row['contender']]
+            'three': 'three.js ' + row['version'].split()[-1], 'lime': 'Lime ' + row['version'].split()[-1], 'helix1': 'helix-legacy'}[row['contender']]
     return name + (f', {row["variant"]}' if row['variant'] else '')
 
 

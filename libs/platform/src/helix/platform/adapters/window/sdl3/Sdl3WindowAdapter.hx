@@ -24,7 +24,7 @@ class Sdl3WindowAdapter implements IWindow {
 		if (Sdl3Bridge.open(options.msaaSampleCount, options.graphics == Gl ? 1 : 0, options.vsync ? 1 : 0) != 1)
 			throw "SDL3 can't open a window here (see the log)";
 		WindowBridge.watch(1);
-		title = "HeliX";
+		title = "helix-legacy";
 	}
 
 	// How long a request is waited for, in seconds, before it fails: SDL reports nothing when the window manager ignores one. SDL's own

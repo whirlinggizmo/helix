@@ -1,6 +1,6 @@
 # Speed
 
-How fast helix-raylib draws, and how large it is, against raylib C, Godot, three.js, Lime and HeliX on the same programs. Whatever changes
+How fast helix-raylib draws, and how large it is, against raylib C, Godot, three.js, Lime and helix-legacy on the same programs. Whatever changes
 helix-raylib's drawing (helix-render underneath it, DECISIONS 39) is held to these numbers. The tables are written by
 `tools/compare/compare.py --write` from `speed.json`, which keeps each contender's last measurement: helix-raylib's rows are measured
 again with each change to its drawing, the others' when they change, and a row measured on another date than its table's newest says
@@ -34,7 +34,7 @@ Frame time in ms:
 | three.js 0.187.0, InstancedMesh | page, WebGL2 (2026-11-05) | 0.13 | 0.51 | 1.03 | 3.54 | 3.84 | 512k | 136.2 KB bundled (422.3 as served) |
 | three.js 0.187.0, a Sprite each | page, WebGL2 (2026-11-05) | 11.07 | 55.96 | 112.18 | 166.96 | 223.06 | 16k | 136.2 KB bundled (422.3 as served) |
 | Lime 8.3.1 | page, WebGL (2026-11-05) | 0.35 | 3.61 | 5.50 | 7.93 | 11.16 | 288k | 151.2 KB |
-| HeliX, a Sprite2D each | page, WebGL2 (2026-11-04) | 2.64 | 14.81 | 28.04 | 41.58 | 54.70 | 63k | 83.6 KB |
+| helix-legacy, a Sprite2D each | page, WebGL2 (2026-11-04) | 2.64 | 14.81 | 28.04 | 41.58 | 54.70 | 63k | 83.6 KB |
 | **helix-raylib** | native, GL (2026-11-05) | 0.48 | 1.71 | 3.35 | 4.91 | 6.79 | 452k | 8.1 MB |
 | raylib C 5.5 | native, GL (2026-11-05) | 0.72 | 3.27 | 6.50 | 9.41 | 11.71 | 273k | 0.9 MB |
 | Godot 4.7.2, MultiMesh | native, GL, Compatibility (2026-11-04) | 1.45 | 7.19 | 13.92 | 21.03 | 27.81 | 111k | 73.5 MB |
@@ -83,7 +83,7 @@ Frame time in ms:
 - **Godot's programs** are GDScript. The `Sprite2D` version is the idiomatic one (one manager's `_process` moves every node), and
   MultiMesh is its documented fast path. Its web export has only the Compatibility renderer. It draws at fractional positions, where
   raylib and helix-raylib truncate them to whole pixels.
-- **HeliX** draws a `Sprite2D` on its stage for each bunny. Its `Batch2D`, the fast path, is internal and not something a game reaches.
+- **helix-legacy** draws a `Sprite2D` on its stage for each bunny. Its `Batch2D`, the fast path, is internal and not something a game reaches.
 - **Chromium's backend** changes the page's numbers: see below.
 
 ## Pages over GL
