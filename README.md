@@ -1,6 +1,6 @@
 # helix
 
-Helix is a suite of libraries and engines for Haxe game development.  It provides useful core libraries, platform abstractions, higher level services, and a game engine that mirrors .[Raylib](https://github.com/raysan5/raylib)'s 5.5 API (with some extras). 
+Helix is a suite of libraries and engines for Haxe game development.  It provides useful core libraries, platform abstractions, higher level services, and a game engine that mirrors [Raylib](https://github.com/raysan5/raylib)'s 5.5 API (with some [extras](docs/api/extras/raylib-extras.md)). 
 
 > **Work in progress.** No API is stable yet, and any name may change in any commit. Caveat Emptor.
 
