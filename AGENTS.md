@@ -11,7 +11,8 @@ next is in [docs/ROADMAP.md](docs/ROADMAP.md).
   from "the engine does it this way", ask instead what a program using them directly would construct. The layers above (the runner, an
   engine wearing a known API) may own the loop, and build a feature when its API is first touched where the API they match requires it
   (DECISIONS 15).
-- **helix-legacy is prior art.** HeliX is this repository. [helix-legacy](https://github.com/whirlinggizmo/helix-legacy) (`../helix-legacy`),
+- **helix-legacy is prior art.** Everything here is helix: the repository, its packages and its libraries (`helix-raylib`). HeliX,
+  capital H and X (for Haxe), is the brand, in prose. [helix-legacy](https://github.com/whirlinggizmo/helix-legacy) (`../helix-legacy`),
   the framework that held the name before, and the earlier C frameworks (`../wgrender-c`, `../libwgf`), are read for how they did a
   thing and the platform quirks they found. Useful code may be cribbed, refactored to this library's conventions and needs, or this
   library's own written instead. helix-legacy's design (its runner, statics, profiles) is never a reason for this library's shape.
